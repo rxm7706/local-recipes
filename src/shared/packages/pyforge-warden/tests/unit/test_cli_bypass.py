@@ -485,19 +485,21 @@ def test_warn_only_downgrades_a_real_policy_violation_to_warn_with_a_nudge(
 def test_warn_only_nudge_counts_only_downgraded_findings_not_the_total(
     capsys, tmp_path
 ):
-    """Mixed-finding-count row: one native-warn hygiene DEP002 finding
-    (never touched by warn_blocking, since it was never policy-violation/
-    indeterminate) alongside the one real downgraded critical vuln -- the
-    nudge must name 1, never the report's total finding count of 2."""
+    """Mixed-finding-count row: one native-warn hygiene DEP002 finding and
+    one native-warn license:unknown finding (Story 6.2: pdos-vuln-fixture is
+    not an installed package) -- neither touched by warn_blocking, since
+    neither was ever policy-violation/indeterminate -- alongside the one
+    real downgraded critical vuln -- the nudge must name 1, never the
+    report's total finding count of 3."""
     _critical_vuln_fixture(tmp_path)
     rc, document, _ = scan_json(capsys, tmp_path, ["--warn-only"])
     assert rc == 0
-    assert len(document["findings"]) == 2
+    assert len(document["findings"]) == 3
 
     capsys.readouterr()
     main(["scan", str(tmp_path), "--warn-only"])
     captured = capsys.readouterr()
-    assert "findings=2" in captured.out  # the verdict line's own total
+    assert "findings=3" in captured.out  # the verdict line's own total
     assert "[warn-only] 1 finding not enforced" in captured.out
 
 

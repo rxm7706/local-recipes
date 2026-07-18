@@ -14,10 +14,11 @@ reimplementing it — see the osv-db-offline-provisioning decision record's
 Registry semantics: engines register via ``register_engine(factory)`` at
 module-import time; ``registered_engines()`` instantiates them in
 registration order — deterministic because module execution is. The registry
-is ``[NullEngine, DeptryEngine, OsvEngine]``: ``NullEngine`` is a harmless
-no-op retained so its 1.2 unit contract is unchanged, ``DeptryEngine`` is the
-hygiene-axis engine (1.3), ``OsvEngine`` is the vulnerability-axis engine
-(1.5).
+is ``[NullEngine, DeptryEngine, OsvEngine, LicenseEngine]``: ``NullEngine``
+is a harmless no-op retained so its 1.2 unit contract is unchanged,
+``DeptryEngine`` is the hygiene-axis engine (1.3), ``OsvEngine`` is the
+vulnerability-axis engine (1.5), ``LicenseEngine`` is the license-axis
+engine (6.2) — the first engine that spawns no subprocess at all.
 
 ``NullEngine`` spawns no subprocess; ``DeptryEngine`` runs ``deptry`` via
 ``_engine_env`` (its exit code is CONTENT — exit 1 = issues found — never the
@@ -79,9 +80,11 @@ from .hygiene import (
 )
 from .interfaces import Engine, EngineResult
 from .inventory import Component, ResolvedInventory
+from .license import license_findings
 from .models import (
     AXIS_HYGIENE,
     AXIS_INGESTION,
+    AXIS_LICENSE,
     AXIS_VULNERABILITY,
     AxisCoverage,
     ErrorKind,
@@ -1054,6 +1057,56 @@ class OsvEngine:
         )
 
 
+class LicenseEngine:
+    """The third real engine: per-component SPDX license verdicts (Story
+    6.2, axis ``"license"``). Unlike ``DeptryEngine``/``OsvEngine``, this
+    engine spawns NO subprocess — ``license.license_findings`` owns the
+    whole axis's substantive logic (conda's ``about: license:`` re-read,
+    pypi's ``importlib.metadata`` lookup, SPDX normalization, verdict
+    classification, id/finding construction); this class is a thin
+    coverage-and-``EngineResult`` wrapper, mirroring ``DeptryEngine``'s/
+    ``OsvEngine``'s producer-module/engine-class division of labor.
+
+    Coverage (Story 6.2's Boundaries): every component gets a real attempt
+    this story — ``deps_assessed == deps_total == inventory.count``
+    unconditionally (``license_covered`` stays inert/``True`` per 6.1's
+    landed design; no structural exclusion mechanism is activated yet)."""
+
+    name: str = "license"
+    axis: str = AXIS_LICENSE
+
+    def __init__(
+        self,
+        *,
+        allow_licenses: tuple[str, ...] = (),
+        deny_licenses: tuple[str, ...] = (),
+    ) -> None:
+        self.allow_licenses = allow_licenses
+        self.deny_licenses = deny_licenses
+
+    def run(self, target: Path, inventory: ResolvedInventory) -> EngineResult:
+        findings = license_findings(
+            inventory.components,
+            target,
+            allow_licenses=self.allow_licenses,
+            deny_licenses=self.deny_licenses,
+        )
+        coverage = (
+            AxisCoverage(
+                axis=AXIS_LICENSE,
+                manifests_found=0,
+                manifests_parsed=0,
+                deps_total=inventory.count,
+                deps_assessed=inventory.count,
+                resolution_depth=None,
+            ),
+        )
+        return EngineResult(
+            findings=findings, errors=(), coverage=coverage, axis=self.axis
+        )
+
+
 register_engine(NullEngine)
 register_engine(DeptryEngine)
 register_engine(OsvEngine)
+register_engine(LicenseEngine)

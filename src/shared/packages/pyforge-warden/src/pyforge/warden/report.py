@@ -182,6 +182,7 @@ def assemble_report(
     fail_under_coverage: float = 0.0,
     suppressions: Sequence[SuppressedFinding] = (),
     kev_data: FeedProvenance | None = None,
+    license_gating: bool = False,
 ) -> ComplianceReport:
     """Assemble the ``ComplianceReport`` from the pipeline's outputs.
 
@@ -231,7 +232,25 @@ def assemble_report(
     floor. A ``deps_total == 0`` axis (not-applicable, or a genuinely empty
     scan) is never flagged — a percentage has nothing to be computed over.
     At the default (``0``), a percentage is never negative, so the
-    comparison structurally never fires (a no-op)."""
+    comparison structurally never fires (a no-op).
+
+    ``license_gating`` (Story 6.2, default ``False`` — every pre-6.2 caller's
+    behavior, unchanged): ``cli.py`` passes ``config.license_gating``
+    (``True`` iff ``--allow-licenses``/``--deny-licenses`` is set) into the
+    license axis's OWN ``AxisCoverage.gating`` — every other axis's row
+    keeps the field's own default (``False``). Transparency of
+    configuration state (FR37's "gating: false is honesty, not
+    invisibility"), independent of the fact that real license-axis
+    escalation is deferred to Story 6.5.
+
+    Fix 8 (review finding, 2026-07-18): ``gating`` is additionally gated on
+    the axis actually being applicable/assessed (``AXIS_LICENSE in
+    assessed_by_axis`` — the SAME condition ``not_applicable`` already
+    computes for ``deps_total``/``deps_assessed``/``resolution_depth`` in
+    the coverage-row loop below), so ``config.license_gating`` alone can
+    never claim ``gating: true`` for a scan where the license engine never
+    ran (e.g. ``manifests_parsed == 0``) — that combination was
+    self-contradictory (an active gate over zero assessed dependencies)."""
     findings = list(findings)
     rungs = list(rungs)
     resolution_depth = (
@@ -294,6 +313,19 @@ def assemble_report(
                     else min(assessed_by_axis.get(axis, 0), inventory.count)
                 ),
                 resolution_depth=None if not_applicable else resolution_depth,
+                # Fix 8 (review finding, 2026-07-18): gate `gating` the SAME
+                # way `not_applicable` already gates deps_total/deps_assessed/
+                # resolution_depth above -- config.license_gating threaded in
+                # alone let a manifests_parsed==0 scan (the license engine
+                # never runs; AXIS_LICENSE never enters assessed_by_axis)
+                # report gating=true alongside deps_total=0/deps_assessed=0,
+                # self-contradictory ("the gate is active" + "nothing was
+                # assessed"). `not not_applicable` for AXIS_LICENSE is exactly
+                # "AXIS_LICENSE in assessed_by_axis" per the not_applicable
+                # expression above.
+                gating=(license_gating and not not_applicable)
+                if axis == AXIS_LICENSE
+                else False,
             )
         )
     coverage = tuple(coverage)

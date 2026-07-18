@@ -27,6 +27,10 @@ hatchling = "*"
 # curl-fetched at runtime (OD1). osv-scanner + deptry are consumed from the
 # existing conda-forge feedstocks. The library uses a lean, targeted dep set
 # (revised architecture): pyyaml, packaging, cyclonedx-python-lib, jsonschema.
+# license-expression (Story 6.2): SPDX license-expression parsing/
+# normalization for the license axis (license.py) — unpinned, matching
+# deptry/osv-scanner's existing "*" convention (range-pinning is Story 6.6's
+# job).
 [package.run-dependencies]
 python = ">=3.12"
 deptry = "*"
@@ -35,3 +39,4 @@ pyyaml = "*"
 packaging = "*"
 cyclonedx-python-lib = "*"
 jsonschema = "*"
+license-expression = "*"
