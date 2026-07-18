@@ -1,0 +1,800 @@
+# pyforge-atlas — Data Catalog (Story A2; spec § 5.1/§ 9, FR-1, AD-2/AD-3/AD-13/AD-15).
+#
+# Every API source and every persisted output of the seven § 5.2 pipelines is
+# declared HERE — no data-access logic ever lives in node functions (AC-2;
+# enforced structurally by kedro-catalog-check's no-inline-IO meta-test).
+#
+# Conventions (spine Consistency rows; asserted by tests/catalog/):
+#   - names: `<domain>_<entity>` snake_case; the domain prefix maps 1:1 to a
+#     § 5.2 pipeline (core / pypi_intelligence / vulnerability / vcs_health /
+#     universal_sbom / seed_gaps / derived_artifacts — map declared once in
+#     tests/catalog/conftest.py).
+#   - layers: raw / intermediate / primary / derived via `metadata.layer`.
+#   - persisted outputs: Parquet under `data/<layer>/<dataset_name>/`
+#     (nodes never choose physical layout).
+#   - endpoints: every external entry routes through a `${globals:...}`
+#     endpoint-base (AD-13) — NO host is ever hardcoded here.
+#   - credentials: per-host keys ONLY where the destination host requires
+#     them (FR-1/AD-2 — the legacy `_http.py` JFrog leak is FIXED, not
+#     ported: no global credential injection exists; a JFrog key may only
+#     ever be attached to a dataset whose endpoint-base resolves to an
+#     Artifactory host, and the shipped defaults are all public hosts, so
+#     NO entry below carries the `jfrog` key).
+#   - `# A3: IncrementalParquetDataset` markers: TTL-gated entries declared
+#     with standard kedro_datasets types NOW (assumption A2-A1 — the catalog
+#     must resolve before A3's class exists); Story A3 flips `type:` on
+#     exactly these entries and consumes their `ttls.<name>` parameter.
+#
+# Deliberately NOT declared (spec § 3.3/§ 3.4): `phase_state` (FR-4 removes
+# it), the 5 SQL views (query-time constructs — Waves D/F), dropped post-v25
+# tables, gemini_server + recipe-authoring surfaces + template trees +
+# authoring-time live fetches, read-CLI internals. § 13.1 Candidate /
+# Conditional rows (incl. the unshipped Phase T) are NOT cataloged (AD-19).
+
+# =============================================================================
+# core — conda-side backbone (Phases B / B.5 / B.6 / F / I / J / M)
+# =============================================================================
+
+# --- external sources (layer raw) ---
+
+core_repodata_raw:
+  type: api.APIDataset
+  url: ${globals:endpoint_bases.CONDA_FORGE_BASE_URL}/noarch/current_repodata.json
+  metadata:
+    layer: raw
+
+core_channeldata_raw:
+  type: api.APIDataset
+  url: ${globals:endpoint_bases.CONDA_FORGE_BASE_URL}/channeldata.json
+  metadata:
+    layer: raw
+
+# Phase B.5 canonical 1:N package->feedstock source. Live route verified:
+# _download_feedstock_outputs_archive() -> resolve_github_urls (GITHUB_BASE_URL,
+# archive main.zip) — the drafting inventory's GITHUB_RAW claim is corrected
+# (recorded in the Dev Agent Record).
+core_feedstock_outputs_raw:
+  type: api.APIDataset
+  url: ${globals:endpoint_bases.GITHUB_BASE_URL}/conda-forge/feedstock-outputs/archive/refs/heads/main.zip
+  metadata:
+    layer: raw
+
+# Phases F/I anaconda.org download counts. Routes through the A2-G2 EXTRA
+# override (ANACONDA_API_BASE_URL — current data access, NOT one of the 20
+# helper-backed points; asserted separately by kedro-catalog-check).
+# B1 LANDED the flip (was `# FLIP(B1)`): the per-package request
+# parameterization (/package/<owner>/<name>) + rate-limit discipline now live in
+# AnacondaDownloadsDataset (datasets/request_datasets.py, AD-2) — request_path()
+# builds the per-package path so a NODE never does (AC-2). The `url:` stays the
+# per-package base so the A2-G2 override + no-hardcoded-host gates still hold.
+core_anaconda_downloads_raw:
+  type: pyforge.atlas.datasets.AnacondaDownloadsDataset
+  url: ${globals:extra_overrides.ANACONDA_API_BASE_URL}/package
+  metadata:
+    layer: raw
+
+# Phase F alternative source / consumer profile (PHASE_F_SOURCE=s3-parquet).
+core_s3_download_stats_raw:
+  type: api.APIDataset
+  url: ${globals:endpoint_bases.S3_PARQUET_BASE_URL}/conda/monthly
+  metadata:
+    layer: raw
+
+# regro/cf-graph tarball (Phases J/M; consumed cross-pipeline by E per AD-3 —
+# declared ONCE here by the core producer). Cached with ttls.core_cf_graph_raw.
+core_cf_graph_raw:
+  type: api.APIDataset
+  url: ${globals:endpoint_bases.GITHUB_BASE_URL}/regro/cf-graph-countyfair/archive/refs/heads/master.tar.gz
+  metadata:
+    layer: raw
+
+# --- persisted outputs ---
+
+core_packages_enumerated:
+  type: pandas.ParquetDataset
+  filepath: data/intermediate/core_packages_enumerated/core_packages_enumerated.parquet
+  metadata:
+    layer: intermediate
+
+# Phase B.5 attribution (_pick_feedstock semantics — prefer the entry equal to
+# the package name when a split-out feedstock coexists with an umbrella).
+core_feedstock_attribution:
+  type: pandas.ParquetDataset
+  filepath: data/intermediate/core_feedstock_attribution/core_feedstock_attribution.parquet
+  metadata:
+    layer: intermediate
+
+core_latest_status:
+  type: pandas.ParquetDataset
+  filepath: data/intermediate/core_latest_status/core_latest_status.parquet
+  metadata:
+    layer: intermediate
+
+# A3: IncrementalParquetDataset
+core_downloads:
+  type: pyforge.atlas.datasets.IncrementalParquetDataset
+  filepath: data/primary/core_downloads/core_downloads.parquet
+  metadata:
+    layer: primary
+
+# A3: IncrementalParquetDataset
+core_downloads_platform_breakdown:
+  type: pyforge.atlas.datasets.IncrementalParquetDataset
+  filepath: data/primary/core_downloads_platform_breakdown/core_downloads_platform_breakdown.parquet
+  metadata:
+    layer: primary
+
+# A3: IncrementalParquetDataset
+core_downloads_pyver_breakdown:
+  type: pyforge.atlas.datasets.IncrementalParquetDataset
+  filepath: data/primary/core_downloads_pyver_breakdown/core_downloads_pyver_breakdown.parquet
+  metadata:
+    layer: primary
+
+# A3: IncrementalParquetDataset
+core_downloads_channel_breakdown:
+  type: pyforge.atlas.datasets.IncrementalParquetDataset
+  filepath: data/primary/core_downloads_channel_breakdown/core_downloads_channel_breakdown.parquet
+  metadata:
+    layer: primary
+
+# Phase I per-version history — PROMOTED to an explicit declared output (FR-2).
+# A3: IncrementalParquetDataset
+core_version_download_history:
+  type: pyforge.atlas.datasets.IncrementalParquetDataset
+  filepath: data/primary/core_version_download_history/core_version_download_history.parquet
+  metadata:
+    layer: primary
+
+core_dependencies:
+  type: pandas.ParquetDataset
+  filepath: data/primary/core_dependencies/core_dependencies.parquet
+  metadata:
+    layer: primary
+
+core_feedstock_health:
+  type: pandas.ParquetDataset
+  filepath: data/primary/core_feedstock_health/core_feedstock_health.parquet
+  metadata:
+    layer: primary
+
+# =============================================================================
+# pypi_intelligence — PyPI-side intelligence (Phases C / D / H / O / P / Q / R / S)
+# =============================================================================
+
+# --- external sources (layer raw) ---
+
+pypi_simple_index_raw:
+  type: api.APIDataset
+  url: ${globals:endpoint_bases.PYPI_BASE_URL}
+  metadata:
+    layer: raw
+
+# Per-project JSON (Phases H/R). B2 LANDED the flip (was `# FLIP(B2)`): the
+# per-project `/pypi/<name>/json` parameterization + the DW-B1-2 scheduler
+# `acquire()` wiring now live in PyPIJsonRequestDataset (datasets/request_datasets.py,
+# AD-2) — request_path(name) builds the per-project path + load_many() is the
+# scheduler-gated fan-out, so a NODE never builds a request URL (AC-2). The `url:`
+# stays the PyPI JSON host base (request_path appends `/pypi/<name>/json`).
+pypi_json_raw:
+  type: pyforge.atlas.datasets.PyPIJsonRequestDataset
+  url: ${globals:endpoint_bases.PYPI_JSON_BASE_URL}
+  metadata:
+    layer: raw
+
+# Phase P BigQuery `pypi.file_downloads` (admin opt-in, PHASE_P_ENABLED=1;
+# credentialed runs attended-only per NFR-2 — the gate never touches it).
+# Declared with a standard resolvable type NOW (same A2-A1 rationale: the
+# lean env does not carry google-cloud-bigquery); the credentialed
+# materialization flips this to pandas.GBQQueryDataset (query-parameterized —
+# an APIDataset cannot express BigQuery jobs). Judgment call recorded (A2-J1).
+# G-1(B2): marker CORRECTED B3->B2 — Phase P is a B2 pypi phase (B1 Dev Agent
+# Record G-2 flagged this "B2/B3's to reconcile"). B2 authored the two-layer
+# cost gate + BigQueryDownloadsDataset class (datasets/request_datasets.py) +
+# its fixture tests (test_no_thirty_gb_lie carried over); the catalog stays an
+# offline-resolvable interim because the credentialed GBQ run is attended-only
+# (NFR-2/AD-11), so the FLIP marker stays as an interim attributed to B2.
+# FLIP(B2): pandas.GBQQueryDataset (credentialed materialization; cost gate authored in B2)
+pypi_bigquery_downloads_raw:
+  type: api.APIDataset
+  url: ${globals:extra_overrides.BIGQUERY_BASE_URL}/projects
+  credentials: bigquery_adc
+  metadata:
+    layer: raw
+
+# Phase C parselmouth mapping (cf-graph + conda-forge-metadata).
+pypi_parselmouth_mapping_raw:
+  type: api.APIDataset
+  url: ${globals:endpoint_bases.GITHUB_RAW_BASE_URL}/regro/cf-graph-countyfair/master/mappings/pypi
+  metadata:
+    layer: raw
+
+# Phase Q bulk cross-channel repodata — ONE runtime-parameterized entry covers
+# the dynamic `{CHANNEL}_BASE_URL` pattern (gap A2-G3: counted as ONE override
+# point, the resolve_anaconda_channel_urls helper).
+pypi_cross_channel_repodata_raw:
+  type: api.APIDataset
+  url: ${globals:endpoint_bases.ANACONDA_CHANNEL_BASE_URL}/${runtime_params:cross_channel,bioconda}/noarch/current_repodata.json
+  metadata:
+    layer: raw
+
+# endoflife.date (TTL 7 d; consumed cross-pipeline by seed_gaps per AD-3).
+# `skip_auth` semantics — NO credential is ever attached to this host.
+pypi_endoflife_raw:
+  type: api.APIDataset
+  url: ${globals:endpoint_bases.ENDOFLIFE_BASE_URL}/api/all.json
+  metadata:
+    layer: raw
+
+# § 3.4 store 3 — flat conda<->PyPI mapping cache (pypi_conda_map.json). Story B5
+# LANDED the refresh wrap under the Q6 default (consolidate on Phase C): the
+# `export_pypi_conda_map` node (pypi_intelligence) is the SINGLE writer, exporting the
+# migrated Phase C mapping (`pypi_conda_mapping`) to this flat file — offline-safe (no
+# regro/cf-graph re-fetch) and preserving g10_spelling + no-clobber (AD-10). The
+# `{pypi_name: conda_name}` format stays byte-compatible with the legacy authoring-time
+# readers (name_resolver.py / recipe-generator.py); their re-point at Phase C directly is
+# DW-B5-1 (read-only .claude/**), so this file is retained as the compatibility shim.
+# B5 LANDED the flip to MappingCacheDataset: the export node passes the {pypi_name:
+# conda_name} map and the dataset MERGES it onto the last-good cache (Phase C wins on
+# conflict; old-only keys retained) + keeps-last-good on an empty export (AD-13
+# never-clobber-with-empty) — the same discipline the vdb/OSV stores carry.
+pypi_conda_map_store:
+  type: pyforge.atlas.datasets.MappingCacheDataset
+  filepath: ${globals:paths.pypi_conda_map}
+  metadata:
+    layer: raw
+
+# --- persisted outputs ---
+
+# Phase D 7 d universe upsert.
+# A3: IncrementalParquetDataset
+pypi_universe:
+  type: pyforge.atlas.datasets.IncrementalParquetDataset
+  filepath: data/intermediate/pypi_universe/pypi_universe.parquet
+  metadata:
+    layer: intermediate
+
+# Phase O 90-day rolling serial snapshots.
+pypi_universe_serial_snapshots:
+  type: pandas.ParquetDataset
+  filepath: data/intermediate/pypi_universe_serial_snapshots/pypi_universe_serial_snapshots.parquet
+  metadata:
+    layer: intermediate
+
+# Phase C mapping (g10_spelling provenance tier; the no-clobber contract is
+# B2/B6 node/test law — noted for the Wave B stories).
+pypi_conda_mapping:
+  type: pandas.ParquetDataset
+  filepath: data/primary/pypi_conda_mapping/pypi_conda_mapping.parquet
+  metadata:
+    layer: primary
+
+# Phase H (serial-gated). Legacy SQLite gate column was `pypi_version_fetched_at`
+# (historical provenance only); the Parquet TTL stamp is the generic `fetched_at`
+# (A3 P2 — standardized across all flipped datasets; ttl from ttls.pypi_current_versions).
+# A3: IncrementalParquetDataset
+pypi_current_versions:
+  type: pyforge.atlas.datasets.IncrementalParquetDataset
+  filepath: data/primary/pypi_current_versions/pypi_current_versions.parquet
+  metadata:
+    layer: primary
+
+# Phase P 30 d monthly partitions (admin-only).
+# A3: IncrementalParquetDataset
+pypi_downloads_monthly:
+  type: pyforge.atlas.datasets.IncrementalParquetDataset
+  filepath: data/primary/pypi_downloads_monthly/pypi_downloads_monthly.parquet
+  metadata:
+    layer: primary
+
+# A3: IncrementalParquetDataset
+pypi_cross_channel_flags:
+  type: pyforge.atlas.datasets.IncrementalParquetDataset
+  filepath: data/primary/pypi_cross_channel_flags/pypi_cross_channel_flags.parquet
+  metadata:
+    layer: primary
+
+# Phase R top-N enrichment slice.
+# A3: IncrementalParquetDataset
+pypi_intelligence_enriched:
+  type: pyforge.atlas.datasets.IncrementalParquetDataset
+  filepath: data/primary/pypi_intelligence_enriched/pypi_intelligence_enriched.parquet
+  metadata:
+    layer: primary
+
+# Phase S readiness + template (preserves `notes` operator overrides).
+pypi_intelligence_scored:
+  type: pandas.ParquetDataset
+  filepath: data/derived/pypi_intelligence_scored/pypi_intelligence_scored.parquet
+  metadata:
+    layer: derived
+
+# =============================================================================
+# vulnerability — vuln intelligence (Phases G / G' + KEV / EPSS / CWE fetchers)
+# =============================================================================
+
+# --- external sources (layer raw) ---
+
+vulnerability_cisa_kev_raw:
+  type: api.APIDataset
+  url: ${globals:fetcher_urls.CISA_KEV_URL}
+  metadata:
+    layer: raw
+
+vulnerability_epss_raw:
+  type: api.APIDataset
+  url: ${globals:fetcher_urls.EPSS_FEED_URL}
+  metadata:
+    layer: raw
+
+vulnerability_cwe_catalog_raw:
+  type: api.APIDataset
+  url: ${globals:fetcher_urls.CWE_CATALOG_URL}
+  metadata:
+    layer: raw
+
+# § 3.4 store 1 — AppThreat vdb (~2.5 GB). Story B5 LANDED the flip (was
+# `# FLIP(B5)`): VDBStoreDataset is the read-only VDB store class that owns the
+# vdb file format (still NOT pickle — the A2 P2 honest-format fix) AND wraps the
+# refresh as the SINGLE writer. The vuln-db env is a DECLARED resource requirement
+# (AC-3), the fetch is dataset-owned IO via an injected refresher (no shell-out in
+# package code), and `coerce_cvss_score` is applied at the read boundary (DW-B2-2)
+# so Phases G / G' consume load() -> an already-parsed + coerced per-CVE frame.
+# AD-13: an air-gapped / never-refreshed load keeps last-good + surfaces a staleness
+# marker rather than crashing.
+vulnerability_vdb_store:
+  type: pyforge.atlas.datasets.VDBStoreDataset
+  filepath: ${globals:paths.vdb_store}
+  metadata:
+    layer: raw
+
+# § 3.4 store 2 — offline OSV CVE store (`cve/`). Story B5 LANDED the refresh wrap:
+# OSVOfflineStoreDataset is the SINGLE writer (dataset-owned IO via the injected
+# fetcher + the OSV_VULNS_BUCKET_URL endpoint base — AD-2: no hardcoded host, no HTTP
+# client imported in package code). The offline vulnerability scanner / scan-project
+# consume load() read-only, air-gapped (AD-13 keep-last-good + staleness marker).
+vulnerability_osv_offline_store:
+  type: pyforge.atlas.datasets.OSVOfflineStoreDataset
+  filepath: ${globals:paths.osv_offline_store}
+  bucket_url: ${globals:extra_overrides.OSV_VULNS_BUCKET_URL}
+  metadata:
+    layer: raw
+
+# FLIP(B8) LANDED — Basilisk conda-native vulnerability source (FR-19). The 20th
+# override point BASILISK_BASE_URL (A2 reserved) is now consumed here. IO is
+# DATASET-owned: BasiliskBatchDataset owns the POST /v1/querybatch ≤1,000-query
+# chunking + an INJECTED fetcher (default None == OFFLINE -> keep last-good + mark
+# stale, AD-13). No `# FLIP` marker existed on it (RESERVED, not an interim FLIP),
+# so EXPECTED_FLIP_MARKERS is unchanged (type change only).
+vulnerability_basilisk_raw:
+  type: pyforge.atlas.datasets.BasiliskBatchDataset
+  url: ${globals:endpoint_bases.BASILISK_BASE_URL}/v1/querybatch
+  filepath: ${globals:paths.data_root}/raw/vulnerability_basilisk_raw
+  metadata:
+    layer: raw
+
+# Story B8 — the bounded GET /v1/vulns/{id} detail source. BasiliskDetailDataset
+# binds the standard atlas rate-limit discipline (concurrency cap + Retry-After +
+# jittered backoff, RateLimitedScheduler) via an INJECTED fetcher (default None ==
+# OFFLINE, AD-13). Same BASILISK_BASE_URL override point (no new helper).
+vulnerability_basilisk_detail_raw:
+  type: pyforge.atlas.datasets.BasiliskDetailDataset
+  url: ${globals:endpoint_bases.BASILISK_BASE_URL}/v1/vulns
+  filepath: ${globals:paths.data_root}/raw/vulnerability_basilisk_detail_raw
+  metadata:
+    layer: raw
+
+# --- persisted outputs ---
+
+vulnerability_cisa_kev:
+  type: pandas.ParquetDataset
+  filepath: data/intermediate/vulnerability_cisa_kev/vulnerability_cisa_kev.parquet
+  metadata:
+    layer: intermediate
+
+# 0-100 normalized EPSS scores.
+vulnerability_epss_scores:
+  type: pandas.ParquetDataset
+  filepath: data/intermediate/vulnerability_epss_scores/vulnerability_epss_scores.parquet
+  metadata:
+    layer: intermediate
+
+vulnerability_cwe_categories:
+  type: pandas.ParquetDataset
+  filepath: data/intermediate/vulnerability_cwe_categories/vulnerability_cwe_categories.parquet
+  metadata:
+    layer: intermediate
+
+# Phase G report-only rollup semantics preserved.
+# A3: IncrementalParquetDataset
+vulnerability_package_rollup:
+  type: pyforge.atlas.datasets.IncrementalParquetDataset
+  filepath: data/primary/vulnerability_package_rollup/vulnerability_package_rollup.parquet
+  metadata:
+    layer: primary
+
+# Phase G' (row-absence TTL).
+# A3: IncrementalParquetDataset
+vulnerability_package_version_vulns:
+  type: pyforge.atlas.datasets.IncrementalParquetDataset
+  filepath: data/primary/vulnerability_package_version_vulns/vulnerability_package_version_vulns.parquet
+  metadata:
+    layer: primary
+
+# Story B8 output — the AD-14 new-signal PRIMARY (batch shape: conda_name,
+# advisory_id, modified). Name aligned to B4's fixture-enforced
+# EXCLUDED_NEW_SIGNAL_DATASETS ("vulnerability_basilisk_advisories", parity/
+# legacy_surface.py; renamed from the A2/B2 placeholder vulnerability_basilisk_vulns).
+# Matched BY PACKAGE NAME (never the OSV ecosystem tag). NEVER parity-gated (AD-14).
+vulnerability_basilisk_advisories:
+  type: pandas.ParquetDataset
+  filepath: data/primary/vulnerability_basilisk_advisories/vulnerability_basilisk_advisories.parquet
+  metadata:
+    layer: primary
+
+# Story B8 — per-advisory tri-state fix_available (true/false/unknown; unknown NEVER
+# collapses to false). Intermediate (NOT a new-signal primary -> NOT in the EXCLUDED
+# set, which stays len==3). Consumed by the v_basilisk_advisories read-view transform.
+vulnerability_basilisk_details:
+  type: pandas.ParquetDataset
+  filepath: data/intermediate/vulnerability_basilisk_details/vulnerability_basilisk_details.parquet
+  metadata:
+    layer: intermediate
+
+# =============================================================================
+# vcs_health — VCS + registry health (Phases E / E.5 / K / L / N)
+# =============================================================================
+
+# --- external sources (layer raw) ---
+
+# GitHub REST + GraphQL (Phases E.5/K/N). The ONLY entry carrying the
+# per-host github_token credential (FR-1: attaches to this destination
+# host only). GraphQL requires POST — the composed APIDataset takes `method`
+# as a top-level param and feeds `load_args.json` as the request body.
+# Gap G-2 (corrected in B1): A2's comment mis-attributed the per-query
+# request dataset to "the vcs port (B2)" — but E.5/K/N are B1 vcs_health
+# phases, so GitHubRequestDataset (datasets/request_datasets.py) is authored
+# HERE. It owns the per-query request-body parameterization (with_query()) +
+# the Phase K single-worker 3-RPS token bucket + Retry-After discipline at
+# dataset level, so a NODE never builds a request (AC-2). The query below is
+# a benign placeholder for the concrete per-query fan-out (dataset-owned).
+vcs_github_api_raw:
+  type: pyforge.atlas.datasets.GitHubRequestDataset
+  url: ${globals:endpoint_bases.GITHUB_API_BASE_URL}/graphql
+  method: POST
+  load_args:
+    json:
+      query: "query { rateLimit { remaining } }"
+  credentials: github_token
+  metadata:
+    layer: raw
+
+vcs_gitlab_api_raw:
+  type: api.APIDataset
+  url: ${globals:endpoint_bases.GITLAB_API_BASE_URL}/projects
+  metadata:
+    layer: raw
+
+vcs_codeberg_api_raw:
+  type: api.APIDataset
+  url: ${globals:endpoint_bases.CODEBERG_API_BASE_URL}/repos
+  metadata:
+    layer: raw
+
+# Phase L cross-ecosystem registries — one entry per registry, one override
+# point each (the 8 registry resolve_*_urls helpers).
+vcs_registry_npm_raw:
+  type: api.APIDataset
+  url: ${globals:endpoint_bases.NPM_BASE_URL}
+  metadata:
+    layer: raw
+
+vcs_registry_cran_raw:
+  type: api.APIDataset
+  url: ${globals:endpoint_bases.CRAN_BASE_URL}
+  metadata:
+    layer: raw
+
+vcs_registry_cpan_raw:
+  type: api.APIDataset
+  url: ${globals:endpoint_bases.CPAN_BASE_URL}
+  metadata:
+    layer: raw
+
+vcs_registry_luarocks_raw:
+  type: api.APIDataset
+  url: ${globals:endpoint_bases.LUAROCKS_BASE_URL}
+  metadata:
+    layer: raw
+
+vcs_registry_crates_raw:
+  type: api.APIDataset
+  url: ${globals:endpoint_bases.CRATES_BASE_URL}
+  metadata:
+    layer: raw
+
+vcs_registry_rubygems_raw:
+  type: api.APIDataset
+  url: ${globals:endpoint_bases.RUBYGEMS_BASE_URL}
+  metadata:
+    layer: raw
+
+vcs_registry_maven_raw:
+  type: api.APIDataset
+  url: ${globals:endpoint_bases.MAVEN_BASE_URL}
+  metadata:
+    layer: raw
+
+vcs_registry_nuget_raw:
+  type: api.APIDataset
+  url: ${globals:endpoint_bases.NUGET_BASE_URL}
+  metadata:
+    layer: raw
+
+# --- persisted outputs ---
+
+vcs_maintainers:
+  type: pandas.ParquetDataset
+  filepath: data/intermediate/vcs_maintainers/vcs_maintainers.parquet
+  metadata:
+    layer: intermediate
+
+vcs_package_maintainers:
+  type: pandas.ParquetDataset
+  filepath: data/intermediate/vcs_package_maintainers/vcs_package_maintainers.parquet
+  metadata:
+    layer: intermediate
+
+vcs_archived_feedstocks:
+  type: pandas.ParquetDataset
+  filepath: data/intermediate/vcs_archived_feedstocks/vcs_archived_feedstocks.parquet
+  metadata:
+    layer: intermediate
+
+# Phase K (`last_error` column convention). Legacy SQLite gate column was
+# `github_version_fetched_at` (historical provenance only); the Parquet TTL stamp is
+# the generic `fetched_at` (A3 P2 — standardized; ttl from ttls.vcs_upstream_versions).
+# A3: IncrementalParquetDataset
+vcs_upstream_versions:
+  type: pyforge.atlas.datasets.IncrementalParquetDataset
+  filepath: data/primary/vcs_upstream_versions/vcs_upstream_versions.parquet
+  metadata:
+    layer: primary
+
+# Phase L (per-source TTLs).
+# A3: IncrementalParquetDataset
+vcs_registry_versions:
+  type: pyforge.atlas.datasets.IncrementalParquetDataset
+  filepath: data/primary/vcs_registry_versions/vcs_registry_versions.parquet
+  metadata:
+    layer: primary
+
+# Phase N live signals.
+# A3: IncrementalParquetDataset
+vcs_live_health:
+  type: pyforge.atlas.datasets.IncrementalParquetDataset
+  filepath: data/primary/vcs_live_health/vcs_live_health.parquet
+  metadata:
+    layer: primary
+
+# Story B9 output — the FR-20 release-to-availability velocity column pair
+# (release_lag_hours + release_lag_qualifies). AD-14 new-signal PRIMARY: name aligned
+# to B4's fixture-enforced EXCLUDED_NEW_SIGNAL_DATASETS ("vcs_release_velocity",
+# parity/legacy_surface.py). Lag = first availability of the matched version (MIN
+# per-build repodata timestamp), never latest_conda_upload; 90-day recency gate. NEVER
+# parity-gated (AD-14). Derived from already-fetched data (no new external source).
+vcs_release_velocity:
+  type: pandas.ParquetDataset
+  filepath: data/primary/vcs_release_velocity/vcs_release_velocity.parquet
+  metadata:
+    layer: primary
+
+# --- Story B10 — conda-forge-bot-data migration-status sources (FR-21) --------
+# The data behind conda-forge.org/status/#migrations. AD-14 NEW-SIGNAL family:
+# NEVER parity-gated. All fetches route through the EXISTING GITHUB_RAW_BASE_URL
+# override point (no new resolve_*_urls helper; enterprise/JFrog mirror routing
+# inherited). IO is DATASET-owned via an INJECTED fetcher (default None == OFFLINE
+# -> keep last-good + mark stale, AD-13). DELIBERATELY EXCLUDED: version_status.v2.json
+# (the bot's version-update queue) — the atlas measures currency itself (Phases H/K).
+
+# Category-list sources — enumerate active/closed/paused migrations; regular +
+# longterm drive which per-migration detail partitions exist (so the surface
+# generalizes with zero code change: python314 today, python315 tomorrow).
+vcs_migration_regular_status_raw:
+  type: pyforge.atlas.datasets.MigrationCategoryDataset
+  url: ${globals:endpoint_bases.GITHUB_RAW_BASE_URL}/conda-forge/conda-forge-bot-data/main/status/regular_status.json
+  filepath: ${globals:paths.data_root}/raw/vcs_migration_regular_status_raw
+  metadata:
+    layer: raw
+
+vcs_migration_longterm_status_raw:
+  type: pyforge.atlas.datasets.MigrationCategoryDataset
+  url: ${globals:endpoint_bases.GITHUB_RAW_BASE_URL}/conda-forge/conda-forge-bot-data/main/status/longterm_status.json
+  filepath: ${globals:paths.data_root}/raw/vcs_migration_longterm_status_raw
+  metadata:
+    layer: raw
+
+vcs_migration_closed_status_raw:
+  type: pyforge.atlas.datasets.MigrationCategoryDataset
+  url: ${globals:endpoint_bases.GITHUB_RAW_BASE_URL}/conda-forge/conda-forge-bot-data/main/status/closed_status.json
+  filepath: ${globals:paths.data_root}/raw/vcs_migration_closed_status_raw
+  metadata:
+    layer: raw
+
+vcs_migration_paused_status_raw:
+  type: pyforge.atlas.datasets.MigrationCategoryDataset
+  url: ${globals:endpoint_bases.GITHUB_RAW_BASE_URL}/conda-forge/conda-forge-bot-data/main/status/paused_status.json
+  filepath: ${globals:paths.data_root}/raw/vcs_migration_paused_status_raw
+  metadata:
+    layer: raw
+
+# The summary category (total counts across all migrations).
+vcs_migration_total_status_raw:
+  type: pyforge.atlas.datasets.MigrationCategoryDataset
+  url: ${globals:endpoint_bases.GITHUB_RAW_BASE_URL}/conda-forge/conda-forge-bot-data/main/status/total_status.json
+  filepath: ${globals:paths.data_root}/raw/vcs_migration_total_status_raw
+  metadata:
+    layer: raw
+
+# Per-migration detail — PARTITIONED by active migration (mirrors the
+# partitions.PartitionedDataset shape with the AD-13 offline-safety a stock
+# PartitionedDataset cannot provide). The fetch appends /<name>.json to the url;
+# one <name>.json partition per active migration the category lists surfaced.
+# Consumed by the classify_migration_readiness node.
+vcs_migration_detail_raw:
+  type: pyforge.atlas.datasets.MigrationDetailDataset
+  url: ${globals:endpoint_bases.GITHUB_RAW_BASE_URL}/conda-forge/conda-forge-bot-data/main/status/migration_json
+  filepath: ${globals:paths.data_root}/raw/vcs_migration_detail_raw
+  metadata:
+    layer: raw
+
+# Story B10 output — the FR-21 readiness classification (four-way split +
+# blocker buckets + inferred not-in-tracker label + top-unmigrated-by-volume
+# rank). AD-14 new-signal PRIMARY: name aligned to B4's fixture-enforced
+# EXCLUDED_NEW_SIGNAL_DATASETS ("vcs_migration_readiness", parity/legacy_surface.py).
+# NEVER parity-gated (AD-14).
+vcs_migration_readiness:
+  type: pandas.ParquetDataset
+  filepath: data/primary/vcs_migration_readiness/vcs_migration_readiness.parquet
+  metadata:
+    layer: primary
+
+# =============================================================================
+# universal_sbom — user-inventory intake + matching (entry-scoped, § 3.4)
+# =============================================================================
+
+# User-supplied manifests/locks/SBOMs/containers — per-invocation ENTRY
+# dataset, runtime-parameterized (§ 3.4 "modeled as such in the catalog"):
+# `kedro run --params sbom_intake_path=<file>`.
+# B7 LANDED the § 4.10 tiered-intake parser: interim json.JSONDataset ->
+# SbomIntakeDataset (dataset-owned file parsing, AD-2). No FLIP marker existed
+# on this entry, so EXPECTED_FLIP_MARKERS is unchanged (type change only).
+sbom_intake_entry:
+  type: pyforge.atlas.datasets.SbomIntakeDataset
+  filepath: ${runtime_params:sbom_intake_path,data/raw/sbom_intake_entry/intake.json}
+  metadata:
+    layer: raw
+
+# Transitive resolution of the intake manifest (FR-17). Dataset-owned IO via an
+# INJECTED resolver (pip --dry-run --report / py-rattler solve); default offline
+# -> `unresolved` marker (AD-13). NEVER imports subprocess (A2 denylist).
+sbom_resolution_entry:
+  type: pyforge.atlas.datasets.TransitiveResolverDataset
+  filepath: ${runtime_params:sbom_intake_path,data/raw/sbom_resolution_entry/intake.json}
+  metadata:
+    layer: raw
+
+# Normalized CycloneDX BOM (entry-scoped; `cfe:*` properties and the
+# `?channel=conda-forge` purl qualifier are NEVER stripped).
+sbom_normalized_bom_entry:
+  type: json.JSONDataset
+  filepath: ${runtime_params:sbom_normalized_out,data/intermediate/sbom_normalized_bom_entry/bom.cdx.json}
+  metadata:
+    layer: intermediate
+
+# Six-bucket match report (entry-scoped per AD-12; the repo-scope derived
+# report is Story F4's dataset to declare, not A2's — recorded).
+sbom_match_report_entry:
+  type: json.JSONDataset
+  filepath: ${runtime_params:sbom_match_report_out,data/primary/sbom_match_report_entry/match_report.json}
+  metadata:
+    layer: primary
+
+# F4 deptry dependency-hygiene node output (FR-16). Source-less intake ->
+# not-applicable (never a failure); source-bearing -> deptry hygiene findings.
+sbom_hygiene_entry:
+  type: json.JSONDataset
+  filepath: ${runtime_params:sbom_hygiene_out,data/intermediate/sbom_hygiene_entry/hygiene.json}
+  metadata:
+    layer: intermediate
+
+# F4 TERMINAL four-axis ComplianceReport (AD-12 single producer; FR-18). The
+# converged CI gate artifact — schema-validated against pyforge-warden's schema
+# (imported, never vendored) with the frozen exit code (verdict.exit_code_for).
+sbom_compliance_report_entry:
+  type: json.JSONDataset
+  filepath: ${runtime_params:sbom_compliance_report_out,data/derived/sbom_compliance_report_entry/compliance_report.json}
+  metadata:
+    layer: derived
+
+# =============================================================================
+# seed_gaps — hand-curated seeds (declared inputs) + gap-report outputs
+# =============================================================================
+
+# Git-tracked seeds (versioned external inputs; the byte-identical-seed
+# guarantee is Story B6's test — the catalog only declares them).
+
+seed_lts_registry:
+  type: yaml.YAMLDataset
+  filepath: ${globals:paths.seed_root}/lts-registry.yaml
+  metadata:
+    layer: raw
+
+seed_cwe_categories:
+  type: json.JSONDataset
+  filepath: ${globals:paths.seed_root}/cwe_categories_seed.json
+  metadata:
+    layer: raw
+
+seed_spdx_schema:
+  type: json.JSONDataset
+  filepath: ${globals:paths.seed_root}/spdx.schema.json
+  metadata:
+    layer: raw
+
+# Upstream SPDX license list (spdx-schema-gap ground truth; § 13.1 override
+# "—" — rides the existing GITHUB_RAW_BASE_URL point).
+seed_spdx_upstream_list_raw:
+  type: api.APIDataset
+  url: ${globals:endpoint_bases.GITHUB_RAW_BASE_URL}/spdx/license-list-data/main/json/licenses.json
+  metadata:
+    layer: raw
+
+# Report-only gap-suggester outputs (the registry/seed/schema/map stay
+# hand-curated; git review decides).
+
+seed_gaps_lts_registry_report:
+  type: pandas.ParquetDataset
+  filepath: data/derived/seed_gaps_lts_registry_report/seed_gaps_lts_registry_report.parquet
+  metadata:
+    layer: derived
+
+seed_gaps_cwe_report:
+  type: pandas.ParquetDataset
+  filepath: data/derived/seed_gaps_cwe_report/seed_gaps_cwe_report.parquet
+  metadata:
+    layer: derived
+
+seed_gaps_spdx_report:
+  type: pandas.ParquetDataset
+  filepath: data/derived/seed_gaps_spdx_report/seed_gaps_spdx_report.parquet
+  metadata:
+    layer: derived
+
+seed_gaps_license_map_report:
+  type: pandas.ParquetDataset
+  filepath: data/derived/seed_gaps_license_map_report/seed_gaps_license_map_report.parquet
+  metadata:
+    layer: derived
+
+# =============================================================================
+# derived_artifacts — cross-pipeline derived exports (AD-15: 14-day freshness
+# via params:freshness.stale_after_days — a consumer gate, not a fetch TTL)
+# =============================================================================
+
+# The 6 purl/mapping artifacts as ONE partitioned dataset (recorded choice —
+# alternative was six entries; one partition per artifact keeps the producer
+# single and the layout uniform).
+derived_purl_exports:
+  type: partitions.PartitionedDataset
+  path: data/derived/derived_purl_exports
+  dataset: text.TextDataset
+  metadata:
+    layer: derived
+
+# Full-universe CycloneDX BOM (~856k components).
+derived_universe_sbom:
+  type: json.JSONDataset
+  filepath: data/derived/derived_universe_sbom/universe_sbom.cdx.json
+  metadata:
+    layer: derived

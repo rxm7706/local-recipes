@@ -128,6 +128,12 @@ export CONDA_PKGS_DIRS=/opt/mirror/pkgs
 
 Artifactory can serve as a Remote Repository (proxy), a Local Repository (internal packages), and a Virtual Repository (combined).
 
+> **Auth-var scope:** `ARTIFACTORY_TOKEN` in this section is used **only** by the raw
+> `curl` examples below (repo admin + upload/reindex REST calls). The repo's *runtime*
+> HTTP helper (`_http.py`, used by every conda-forge-expert script) does **not** read
+> `ARTIFACTORY_TOKEN` — it authenticates with `JFROG_API_KEY` (→ `X-JFrog-Art-Api`) or
+> `JFROG_USERNAME` + `JFROG_PASSWORD` (→ Basic). See § 6 for the full runtime env-var set.
+
 ### Repository Setup via REST API
 
 **Remote Repository (Proxy)**
@@ -390,8 +396,14 @@ The `detail-cf-atlas` script now has a two-stage chain for the build-matrix sect
 `detail_cf_atlas.py:fetch_anaconda_files` hits `https://api.anaconda.org/package/conda-forge/<name>/files`. Override the base via:
 
 ```bash
-export ANACONDA_API_BASE=https://artifactory.corp/artifactory/anaconda-org-remote
+export ANACONDA_API_BASE_URL=https://artifactory.corp/artifactory/anaconda-org-remote
 ```
+
+> **Var name:** `ANACONDA_API_BASE_URL` is the canonical project-convention name (the
+> `*_BASE_URL` family in § 6). `ANACONDA_API_BASE` (no `_URL`) is a **legacy alias** still
+> honored by `detail_cf_atlas.py` for backwards compatibility; `conda_forge_atlas.py`
+> resolves `ANACONDA_API_BASE_URL` first, then falls back to `ANACONDA_API_BASE`. Prefer
+> the `_URL` form in new setups.
 
 This works only if your JFrog admin has set up a Generic Remote Repository proxying `api.anaconda.org`. Many shops haven't, because anaconda.org's metadata API is rarely on the standard "things to mirror" checklist.
 
@@ -439,7 +451,7 @@ Build matrix (7 subdirs, latest per subdir from anaconda.org)
 
 ```bash
 # Force the files API to fail and confirm the channel mirror picks up the slack:
-ANACONDA_API_BASE=https://nope.invalid pixi run -e local-recipes detail-cf-atlas django
+ANACONDA_API_BASE_URL=https://nope.invalid pixi run -e local-recipes detail-cf-atlas django
 
 # Check the source-summary footer — you should see anaconda failing AND
 # conda-forge channel (repodata) succeeding, with the resolved base URL.
@@ -450,8 +462,67 @@ ANACONDA_API_BASE=https://nope.invalid pixi run -e local-recipes detail-cf-atlas
 ```bash
 # Point at your JFrog channel mirror and confirm the build-matrix header
 # shows the JFrog URL (not anaconda.org or prefix.dev).
-ANACONDA_API_BASE=https://nope.invalid \
+ANACONDA_API_BASE_URL=https://nope.invalid \
 CONDA_FORGE_BASE_URL=https://artifactory.corp/artifactory/conda-forge-remote \
 JFROG_API_KEY=$MY_TOKEN \
   pixi run -e local-recipes detail-cf-atlas django
 ```
+
+---
+
+## 6. Runtime enterprise routing — the `*_BASE_URL` override family
+
+Every outbound HTTP call made by the `conda-forge-expert` scripts flows through
+`_http.py`, which resolves each upstream through an **ordered chain**: an
+env-var override first, then public CDN mirrors, then the canonical public host
+last. Set the override to your JFrog (or other) mirror and the whole toolchain —
+generators, atlas phases, CVE refresh, name-mapping — routes through it. All are
+env-vars only; **nothing is ever committed**.
+
+Each `resolve_*_urls()` helper in `_http.py` reads one env var:
+
+| Env var | Upstream it redirects | Used by |
+|---|---|---|
+| `PYPI_BASE_URL` | `pypi.org/packages` (sdist/wheel source) | recipe source fetch |
+| `PYPI_JSON_BASE_URL` | `pypi.org/pypi/<pkg>/json` | `generate_recipe_from_pypi`, version checks |
+| `CONDA_FORGE_BASE_URL` | `conda.anaconda.org/conda-forge` repodata | atlas build-matrix, feedstock reuse |
+| `ANACONDA_API_BASE_URL` | `api.anaconda.org` files/metadata API | `detail-cf-atlas` (§5) |
+| `GITHUB_API_BASE_URL` | `api.github.com` | version/release checks |
+| `GITHUB_BASE_URL` | `github.com` (tarballs, git) | GitHub-source recipes, cf-graph |
+| `GITHUB_RAW_BASE_URL` | `raw.githubusercontent.com` | raw file fetch |
+| `GITLAB_API_BASE_URL` | `gitlab.com/api` | GitLab-source recipes |
+| `CODEBERG_API_BASE_URL` | `codeberg.org/api` | Codeberg-source recipes |
+| `NPM_BASE_URL` | `registry.npmjs.org` | npm generator |
+| `CRAN_BASE_URL` | CRAN | R generator |
+| `CPAN_BASE_URL` | MetaCPAN | Perl generator |
+| `LUAROCKS_BASE_URL` | LuaRocks | Lua generator |
+| `CRATES_BASE_URL` | `crates.io` | Rust generator |
+| `RUBYGEMS_BASE_URL` | `rubygems.org` | Ruby generator |
+| `MAVEN_BASE_URL` | Maven Central | Java generator |
+| `NUGET_BASE_URL` | NuGet | .NET generator |
+| `ENDOFLIFE_BASE_URL` | `endoflife.date` API | LTS/currency signals |
+| `S3_PARQUET_BASE_URL` | `anaconda-package-data` S3 bucket | download stats (Phase F) |
+| `<CHANNEL>_BASE_URL` | any anaconda.org channel (uppercase, `-`→`_`; e.g. `BIOCONDA_BASE_URL`, `PYTORCH_BASE_URL`) | cross-channel presence (Phase Q) |
+
+### Two independent TLS-trust chains
+
+Enterprise CA roots are honored in **two separate layers** — set both if the
+corporate CA is not in the default bundle:
+
+1. **The resolver layer (pixi/uv)** — `tls-root-certs = "native"` (or `"all"`) in
+   pixi config, or `UV_NATIVE_TLS=true`. Applies to `pixi install` / dependency
+   solves *before* any script runs (see § 4).
+2. **The runtime layer (`_http.py`)** — `inject_ssl_truststore()` runs at script
+   start and honors `REQUESTS_CA_BUNDLE` / `SSL_CERT_FILE` first, then falls back
+   to `truststore.inject_into_ssl()` (OS trust anchors). Applies to every
+   conda-forge-expert script call.
+
+### Credential-leak opt-out: `skip_auth`
+
+The cross-host leak in § 2 (JFrog token attaching to public hosts) now has a
+code-level guard in addition to the shell-scoping patterns above:
+`auth_headers_for(url, skip_auth=True)` and `make_request(..., skip_auth=True)`
+return no auth headers, so JFrog/GitHub tokens never attach to known-public
+endpoints. Resolvers for public-only APIs pass `skip_auth=True` at their call
+sites. The shell-scoping mitigations remain the right tool for the CLI entry
+points listed in § 2.

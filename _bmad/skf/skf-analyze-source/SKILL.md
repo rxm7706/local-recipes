@@ -1,0 +1,101 @@
+---
+name: skf-analyze-source
+description: Discover what to skill in a large repo and produce recommended skill briefs. Use when the user requests to "analyze source for skills" or "discover skill opportunities."
+---
+
+# Analyze Source
+
+## Overview
+
+Analyzes a large repo or multi-service project to identify discrete skillable units, map exports and integration points, and produce recommended skill-brief.yaml files as the primary entry point for brownfield onboarding. The analysis must be thorough enough to produce actionable briefs, but scoped enough to avoid overwhelming the user with false positives. Scanning depth adapts to forge tier — Quick (file structure), Forge (AST), Forge+ (AST + CCC semantic pre-ranking), Deep (AST+QMD).
+
+## Conventions
+
+- Bare paths (e.g. `references/<name>.md`) resolve from the skill root.
+- `references/` holds prompt content carved out of SKILL.md (workflow stages chained via frontmatter `nextStepFile`, plus static reference docs); `scripts/` and `assets/` hold deterministic helpers and templates.
+- `{skill-root}` resolves to this skill's installed directory (where `customize.toml` lives, if present).
+- `{project-root}`-prefixed paths resolve from the project working directory.
+- `{skill-name}` resolves to the skill directory's basename.
+
+## Role
+
+You are a source code analyst and decomposition architect collaborating with a developer onboarding an existing project, pairing your codebase-analysis and skill-scoping expertise with their domain knowledge.
+
+## Workflow Rules
+
+These rules apply to every step in this workflow:
+
+- Only load one step file at a time — never preload future steps
+- Always communicate in `{communication_language}` (the language for user-facing prose). Written artifact text — the per-unit recommendation `description` and `scope.notes` persisted into `skill-brief.yaml` — is in `{document_output_language}`; per-step rules call this out where it applies. The two values may be the same.
+- If `{headless_mode}` is true, auto-proceed through confirmation gates with their default action and log each auto-decision
+
+## Stages
+
+| # | Step | File | Auto-proceed | Condition |
+|---|------|------|--------------|-----------|
+| 1 | Initialize | references/init.md | Yes | Always |
+| 1a | Auto-Scope | references/step-auto-scope.md | Yes | `[auto]` mode only — bypasses steps 2–6; owns pin resolution, coexistence detection, and the docs-only short-circuit |
+| 1b | Continue (session resume) | references/continue.md | Yes | Always |
+| 2 | Scan Project | references/scan-project.md | No (confirm) | Interactive mode only |
+| 3 | Identify Units | references/identify-units.md | No (confirm) | Interactive mode only |
+| 4 | Map & Detect | references/map-and-detect.md | Yes | Interactive mode only |
+| 5 | Recommend | references/recommend.md | No (confirm) | Interactive mode only |
+| 6 | Generate Briefs | references/generate-briefs.md | No (confirm) | Interactive mode only |
+| 7 | Workflow Health Check | references/health-check.md | Yes | Always |
+
+**Auto mode path:** With `[auto]` present, init routes directly to step 1a. Step 1a may confirm N > 1 units (a monorepo splits into N briefs / N `brief_paths`, or merges to one), and routes docs-only targets to `references/auto-docs-only.md`.
+
+**Shape detection reference:** `references/step-shape-detect.md` — loaded by step 1a as a reference doc (not a chained step).
+
+## Invocation Contract
+
+| Aspect | Detail |
+|--------|--------|
+| **Inputs** | project_path [required], scope_hint [optional]. `project_path` is a GitHub repo URL or a local filesystem path. In `[auto]` mode it may also be a documentation URL — step 1a classifies the URL type and routes docs-only targets (see Stages row 1a). |
+| **Headless inputs** | `--project-path <path>` (skip Step 1 project-path prompt; in `[auto]` mode also accepts documentation URLs for docs-only mode), `--scope-hint <text>` (skip Step 1 scope-hint prompt), `--intent-hint <text>` (pre-supply analysis intent; drives recommendation ranking in Step 5), `--pin <version>` (`[auto]` mode only — pin to a specific version tag or branch; accepts semver tags, git tags, and branch names; when absent, resolves to the latest release tag; interactive/headless runs use `--target-refs`/`--target-ref` instead) |
+| **Headless flag** | `--headless` / `-H` flips every confirm gate to auto-proceed |
+| **Auto flag** | `[auto]` bracket modifier — activates auto-scope mode (step 1a; see **Auto mode path** above). Pipelines pass this as `AN[auto]`. Requires `--project-path`. |
+| **Gates** | steps 2/3/5: Confirm Gate [C]; step 6: Confirm Gate [Y] (write briefs) — all skipped in auto mode |
+| **Outputs** | analysis-report.md, skill-brief.yaml files (one per recommended unit); final `SKF_ANALYZE_RESULT_JSON` line on stdout when `{headless_mode}` is true. In auto mode, the envelope includes `"mode":"auto"`. |
+| **Headless** | All gates auto-resolve with default action when `{headless_mode}` is true |
+| **Exit codes** | See `references/headless-contract.md` |
+
+## Headless Result Contract
+
+Headless/pipeline runs emit a single-line `SKF_ANALYZE_RESULT_JSON` envelope — on **stdout** for the terminal success path (step 6 or step 1a), on **stderr** with `status: "error"` for every HARD HALT — and exit with a stable code per failure class. The envelope shape, the `halt_reason` enum, and the exit-code table live in `references/headless-contract.md`; step files emit the concrete instance at each site.
+
+## On Activation
+
+1. Load config from `{project-root}/_bmad/skf/config.yaml` and resolve:
+   - `project_name`, `output_folder`, `user_name`, `communication_language`, `document_output_language`, `forge_data_folder`, `skills_output_folder`, `sidecar_path`
+   - If the config cannot be loaded, HARD HALT with exit code 2 (`input-missing`) per `references/headless-contract.md` — the workflow has no forge context to run against.
+
+2. **Resolve `{headless_mode}`**: true if `--headless` or `-H` was passed as an argument, or if `headless_mode: true` in preferences.yaml. Default: false.
+
+3. **Resolve workflow customization.** Run:
+
+   ```bash
+   python3 {project-root}/_bmad/scripts/resolve_customization.py \
+       --skill {skill-root} --key workflow
+   ```
+
+   The script merges the three customization layers per `bmad-customize`'s structural merge rules (scalars override, arrays append):
+
+   - `{skill-root}/customize.toml` — bundled defaults
+   - `_bmad/custom/<skill-name>.toml` under `{project-root}` — team overrides (committed)
+   - `_bmad/custom/<skill-name>.user.toml` under `{project-root}` — personal overrides (gitignored)
+
+   If the script fails or is missing, fall back to reading `{skill-root}/customize.toml` directly — the bundled defaults are an empty string for each path scalar.
+
+   Apply the path-scalar fallback now, so stage files reference the resolved variable with no conditional at the usage site. For each scalar, if the merged value is empty or absent, use the bundled default:
+
+   - `{unitDetectionHeuristicsPath}` ← `workflow.unit_detection_heuristics_path` if non-empty, else `references/unit-detection-heuristics.md`
+   - `{briefSchemaPath}` ← `workflow.brief_schema_path` if non-empty, else `assets/skill-brief-schema.md`
+   - `{analysisReportTemplatePath}` ← `workflow.analysis_report_template_path` if non-empty, else `templates/analysis-report-template.md`
+   - `{onCompleteCommand}` ← `workflow.on_complete` if non-empty, else empty string (hook invocation skipped)
+
+   Stash all four as workflow-context variables. A non-empty value lets an org swap in a house-style copy (or wire a pipeline hook) without forking the skill.
+
+   Apply the array surfaces too: run `workflow.activation_steps_prepend` now, treat `workflow.persistent_facts` as standing context for the run (`file:`-prefixed entries load their file/glob contents as facts), then run `workflow.activation_steps_append` after activation.
+
+4. Load, read the full file, and then execute `references/init.md` to begin the workflow.

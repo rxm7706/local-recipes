@@ -317,6 +317,40 @@ tests:
         - <module>
 ```
 
+**Before settling for `package_contents`, try to make the import work (v8.78.0).** The escape hatch above verifies only that files landed — it proves *nothing* about importability, which is the thing the test existed to check. For the **Django** class specifically, the blocker is usually just that some module reads `settings.<X>` at import scope, and a **two-line `settings.configure()` is enough** to get a real import. Prefer a `script:` test that configures settings and then imports for real:
+
+```yaml
+# CFEP-25-justified: Django app — a bare `import <pkg>` raises ImproperlyConfigured
+# because <pkg>.config reads settings.DEBUG at module scope. These script tests
+# configure settings first and then import for real, on python_min and newest.
+tests:
+  - script:
+      - python -c "from django.conf import settings; settings.configure(DEBUG=False); import <pkg>; print(<pkg>.__version__)"
+      - pip check
+    requirements:
+      run:
+        - pip
+        - python ${{ python_min }}.*
+  - script:
+      - python -c "from django.conf import settings; settings.configure(DEBUG=False); import <pkg>; print(<pkg>.__version__)"
+      - pip check
+    requirements:
+      run:
+        - pip
+        - python
+```
+
+Two blocks, not one, so the `python_min` and newest-Python legs are both covered — that is what the CFEP-25 triad's `python_version: [${{ python_min }}.*, "*"]` buys, and a script test cannot express it in a single block. **Pin `python` explicitly in each block's `requirements.run:`** or the solver silently resolves only the newest interpreter. `pip check` is invoked directly (a script test has no `pip_check:` key), which keeps the dependency-graph validation the escape hatch would otherwise discard — including any flattened extras (G25).
+
+**Determine the minimum viable configuration empirically, in the failed build's surviving `test_env`** (the G27 probe technique) rather than guessing how much Django setup is needed:
+
+```bash
+TE=$(ls -d build_artifacts/<cfg>/test/test_<name>*/test_env | head -1)
+"$TE/bin/python" -c "from django.conf import settings; settings.configure(DEBUG=False); import <pkg>; print('OK')"
+```
+
+Escalate only as far as the probe demands: bare `settings.configure(DEBUG=False)` → `configure(INSTALLED_APPS=[...], DATABASES={})` + `django.setup()`. Stop at the first form that works; the fuller form drags in app-registry checks and their warnings for no verification gain. Fall back to `package_contents`-only when even a configured import can't run (the ML-benchmark / unsolvable-test-env classes above), and note that `optimize_recipe`'s **TEST-003** is satisfied by the `# CFEP-25-justified:` comment either way — so the comment is required for the script-test form too.
+
 The `recipe_optimizer` check **`TEST-003`** flags any noarch:python recipe missing both `python.imports:` AND the `# CFEP-25-justified:` comment. This catches the same drift that a web-service review would catch — before submission.
 
 `recipe-generator.py` always emits the canonical CFEP-25 triad on the PyPI / grayskull path. Manual edits and remediation passes must not silently substitute `package_contents` without the justification comment.
@@ -334,6 +368,14 @@ This produces three patterns in order of preference:
 3. **Secondary `source.url` fetching LICENSE from GitHub** (the pattern this skill used pre-v8.10.0) — works but is **non-canonical**. Adds a brittle commit-pin + sha256 maintenance burden and looks unusual to reviewers. Convert to pattern (2) when you encounter it.
 
 When pattern (2) is used, ship the LICENSE in-recipe and remove the stale "upstream archive ships no LICENSE; secondary source pulled..." comment from `source:`. The `source:` block can return to its flat single-URL form.
+
+**An sdist that vendors `node_modules/` — ship the licenses of what SHIPS, not of what's vendored (v8.78.0).** Some Python sdists vendor an entire `src/js/node_modules/` tree (hundreds of `LICENSE` files) to make their JS build hermetic. Enumerating them all into `license_file:` is wrong in both directions: it bloats the recipe, and it pollutes `about.license` with SPDX terms from packages that never reach the artifact. Derive the real set from **what the built wheel contains**, not from what the sdist carries:
+
+1. `src/js/package.json` → **`dependencies`** ship; **`devDependencies`** (eslint, prettier, typescript, `@types/*`) do not.
+2. The bundler **inlines** its entry point's transitive runtime deps into the emitted bundle, so those licenses ship too — read the runtime deps' own `package.json` `dependencies`.
+3. Vendored dists that get copied wholesale often carry their own bundled third-party license texts (e.g. `@pyscript/core/src/3rd-party-licenses/`) — include that directory rather than re-deriving it.
+
+Confirm against `unzip -l <upstream>.whl | grep static/` — only paths present there need licenses. Live: `reactpy-django 6.0.0b1` (2026-07-14) declared `BSD-2-Clause AND Apache-2.0 AND MIT AND EPL-2.0 AND BSD-3-Clause` over ~200 enumerated `node_modules` LICENSE files; the artifact actually ships only `@pyscript/core` (Apache-2.0), `morphdom` (MIT), and `@reactpy/client` (MIT, inlining preact + event-to-object + json-pointer, all MIT). Correct answer: **`MIT AND Apache-2.0`** over 8 entries. The spurious `EPL-2.0` / `BSD-*` came purely from dev-only tooling.
 
 Why this matters: the conda-forge web-service review accepts any of the three patterns, but reviewers occasionally flag (3) ("can this be simplified?"). (1) is invisible; (2) reads as deliberate and gets a free conversational checkpoint with reviewers ("ship LICENSE in-recipe because upstream archive omits it").
 
@@ -3088,7 +3130,18 @@ script:
 
 **Precedents** (verified 2026-06-27): `gradio` (GitHub-archive source + `nodejs`+`pnpm` build deps, runs `scripts/build_frontend.sh` = `pnpm i --frozen-lockfile && pnpm build` at build — the exact no-sdist analogue), `chainlit` (`pnpm` build via the hatchling build hook), `mlflow` (`yarn install; yarn build` of `mlflow/server/js`, then strips `node_modules`/`.map`), `agentsview`/`nebi` (`pnpm install && pnpm run build`, then embed). **Verify the result** with a `package_contents` test (env-free — it inspects the built `.conda`, so it works even when the test-env solve is blocked): `site_packages: [<pkg>/frontend/index.html, <pkg>/frontend/assets/*.js]`.
 
-**Alternatives, in order of preference**: (1) **sdist that already includes the frontend** — if upstream's sdist ships the built bundle, just `pip install` it (dominant pattern: streamlit/bokeh/jupyterlab); (2) **node-build from the tag** (above — when no usable sdist exists); (3) **`tensorboard` model** — source the wheel **wholesale** as the package when the wheel is exactly what you want to ship (`noarch: python` downgrades the wheel-in-source lint **R-029**→non-blocking hint **R-030**). **Avoid the wheel-graft** (extract `<pkg>/frontend/` from a *secondary* wheel source while building the rest from the tag): it has **no conda-forge precedent** and draws reviewer pushback. Note on the wheel-in-source lint: **R-028** (compiled wheel) and **R-029** (pure wheel, non-noarch) are blocking lints; **R-030** (pure wheel + `noarch: python`) is a non-blocking hint; **none is skippable** via `conda-forge.yml linter.skip` (no skip key exists for this check).
+**CHECK ALTERNATIVE (1) FIRST — a "JS-building" package often needs no JS toolchain at all (v8.78.0).** The reflex "this bundles a frontend, so the recipe needs node/bun" is frequently wrong: the *sdist* may already ship the hook's complete output even when the GitHub tag does not. This is the **inverse of G51/G73's headline case** — here the published sdist is the complete artifact and the *GitHub tag* is the one that would need a toolchain. One command settles it before you design anything:
+
+```bash
+# does the sdist already contain the built assets?
+tar tzf <pkg>-<ver>.tar.gz | grep -cE '/static/|\.js$'
+# ...and does it match what upstream's own wheel ships?
+unzip -l <pkg>-<ver>-py3-none-any.whl | grep -c '<pkg>/static/'
+```
+
+Equal counts ⇒ take the sdist and **neutralize the hook** (per [G106](#g106-a-build-hook-skip-env-var-does-not-stop-hatch-build-scripts-from-deleting-the-hooks-prebuilt-artifacts-first--clean_artifacts-defaults-to-true-so-skipping-silently-ships-an-incomplete-package): remove the block when its `artifacts = []`, or patch `clean_artifacts = false` when it declares artifacts) rather than adding `nodejs`/`bun` + a network fetch to the build. Verified 2026-07-14 across three packages in one chain — `reactpy` (72 static files incl. an embedded wheel), `reactpy-router` (`bundle.js`), `reactpy-django` (64 files) — every one shipped byte-parity assets in its sdist while its hook ran `bun`; all three build clean with **zero** JS toolchain. Reach for the node-build only after this check fails.
+
+**Alternatives, in order of preference**: (1) **sdist that already includes the frontend** — if upstream's sdist ships the built bundle, just `pip install` it (dominant pattern: streamlit/bokeh/jupyterlab; and see the CHECK above — this case is more common than it looks); (2) **node-build from the tag** (above — when no usable sdist exists); (3) **`tensorboard` model** — source the wheel **wholesale** as the package when the wheel is exactly what you want to ship (`noarch: python` downgrades the wheel-in-source lint **R-029**→non-blocking hint **R-030**). **Avoid the wheel-graft** (extract `<pkg>/frontend/` from a *secondary* wheel source while building the rest from the tag): it has **no conda-forge precedent** and draws reviewer pushback. Note on the wheel-in-source lint: **R-028** (compiled wheel) and **R-029** (pure wheel, non-noarch) are blocking lints; **R-030** (pure wheel + `noarch: python`) is a non-blocking hint; **none is skippable** via `conda-forge.yml linter.skip` (no skip key exists for this check).
 
 **Case study**: `langflow-suite` (langflow-base + langflow built from the `langflow-ai/langflow` v1.10.1 tag), surfaced Jun 27 2026 during an adversarial spec review: the built `langflow-base`/`langflow` `.conda` shipped **0** frontend files while the `langflow-base` PyPI wheel ships **~1,874** (`langflow/frontend/index.html` + the Vite/React assets bundle). `import langflow`/`pip_check` were green throughout — the UI-less break was invisible to them. **Fixed** by building the frontend at build time in the `langflow-base` output (`nodejs >=20.19` build dep; `npm ci && npm run build` of `src/frontend` → copy `build/` into `src/backend/base/langflow/frontend/` before `pip install`), guarded by a `package_contents` test for `langflow/frontend/index.html` + `assets/*.js`. The initial fix attempt was a wheel-graft; deep research into cf feedstocks (gradio/chainlit/mlflow) showed node-build-from-tag is the precedented idiom and that build-time network is available — the wheel-graft was dropped (no precedent). **Verified 2026-06-27:** the rebuilt `langflow-base` `.conda` grew **1.9 MB → 14 MB** and contains **1,873** frontend files (`index.html` + 1,855 JS + 2 CSS, vs the wheel's ~1,874); the `package_contents` test passes at packaging time even under `--test skip`.
 
@@ -3401,6 +3454,10 @@ python -c "import <a>; import <b>"                     # AttributeError: <FIELD>
 8. **Unfilled placeholders beyond license/maintainer** — `REPLACE_SUMMARY` / `REPLACE_DESCRIPTION` in `about:` (langgraph-api — reached a submitted draft PR before a human caught it). Sanitize must grep the whole emitted recipe for `REPLACE_` before calling it done.
 Also 2 near-miss classes from the same waves: the generator DOES emit `context.python_min` when upstream's `Requires-Python` exceeds the cf floor — **check before inserting your own** (3 duplicate-key incidents: django-wildewidgets, langgraph-runtime-inmem, langgraph-api); and license-file-less sdists whose GitHub repo is unavailable can take the **canonical SPDX text** (`raw.githubusercontent.com/spdx/license-list-data/main/text/<ID>.txt` — used for the Elastic-2.0 langgraph pair).
 
+**Addendum 3 (Jul 14, 2026) — two emission gaps on the COMPILED path, both self-contradictory output:**
+9. **`noarch: python` emitted ALONGSIDE `compiler('c')`** for a Cython package — the two cannot both be true, and `stdlib('c')` was missing as well (STD-001). Hit on **both** compiled recipes generated in the reactpy-v2 chain (`http-router`, `asgi-tools`), so treat it as the default outcome for any `.pyx` sdist, not a one-off. Verify the shape from the sdist per [G46](#g46-a-stale-local-metayamls-noarch-python-flag-can-be-wrong-for-a-genuinely-compiled-package--the-current-sdist-is-the-source-of-truth-the-local-meta-is-wrong-sibling-of-g42)/[G48](#g48-rust--go-upstream-does-not-imply-a-heavy-from-source-compile--verify-the-actual-pep-517-build-backend-before-sizing-the-build-or-adding-compilercxx): `.pyx`/`.pxd` present + zero `py3-none-any` wheels on PyPI ⇒ compiled ⇒ drop `noarch`, add `stdlib('c')`, drop the CFEP-25 cross-version test triad ([G49](#g49-per-python-compiled--abi3--verify-against-cargotoml--setuppy-before-adding-version_independent--python-abi3-a-per-python-artifact-needs-a-simple-importspip_check-test-not-the-cfep-25-cross-version-triad)).
+10. **`skip: py>=400`** — a **v0-form selector that v1 silently ignores** ([G3](#g3-py--n-skip-selectors-do-nothing-in-v1-recipeyaml)), i.e. it was doing nothing at all. The genuine need (asgi-tools' upstream `requires-python = ">=3.11,<4"` vs the cf matrix starting at 3.10) requires the v1 form `skip: match(python, "<3.11")`. Confirmed working: the py3.10 variant reported `Skipping asgi-tools 3.0.0 - skip conditions evaluated to true` while 3.11/3.12/3.13 built.
+
 ### G91. PEP 517 backend + plugin host deps the generator misses — `uv_build` backends and hatchling metadata hooks fail at METADATA-PREP; read `[build-system].requires` from the sdist
 
 **Symptom**: the build dies inside pip's metadata preparation (`error: metadata-generation-failed` / `ERROR: Exception` mid-resolver) with either
@@ -3497,6 +3554,171 @@ Also 2 near-miss classes from the same waves: the generator DOES emit `context.p
 
 **Case study**: cyclonedx-universe-inventory Wave B local gate (2026-07-05) — the S4 "validate the REAL full BOM" gate. First run killed at 75 min; the 10k benchmark misdiagnosed the cost as ~63 min linear; schema inspection found `uniqueItems`; the strip + O(n) exact check + 14-worker chunked walk validated all 856,766 components (VALID, 0 duplicate components) in 31 s wall.
 
+### G100. npm CLIs are per-arch recipes (openspec/bmalph pattern) — noarch + bash-wrapper + `__unix` cannot serve Windows and fights the symlink check
+
+**Symptom**: a `noarch: generic` npm CLI recipe needs three compensating hacks — replace npm's `bin/<name>` symlink with a bash wrapper (rattler rejects symlinks in noarch), strip `node_modules/.bin` (G6), and gate installation with `if: unix then: __unix` — and the result is still uninstallable on Windows (the bash wrapper cannot run there; a single noarch artifact cannot carry both unix symlinks and win `.cmd` shims).
+
+**Why**: npm lays down *platform-native* bin shims at install time (symlinks on unix, `.cmd`/`.ps1` on win), so the artifact is inherently per-platform even when the JS payload is portable. The two conda-forge-proven npm recipes in this repo — `openspec` (merged feedstock) and `bmalph` — are BOTH per-arch for exactly this reason.
+
+**Fix** — the per-arch npm CLI shape (no wrappers, no `.bin` stripping, no `__unix`):
+
+```yaml
+build:
+  number: 0        # NOT noarch
+  script:
+    - if: unix
+      then:
+        - export npm_config_prefix="${PREFIX}"
+        - npm pack --ignore-scripts
+        - npm install -g ./<tgz-name>-${{ version }}.tgz
+      else:
+        - call npm config set prefix "%PREFIX%"
+        - if %ERRORLEVEL% neq 0 exit 1
+        - call npm pack --ignore-scripts
+        - if %ERRORLEVEL% neq 0 exit 1
+        - call npm install --userconfig nonexistentrc -g <tgz-name>-${{ version }}.tgz
+        - if %ERRORLEVEL% neq 0 exit 1
+```
+
+(`call` on every `.cmd` shim per the build.bat rule; add the `pnpm install --prod` + `pnpm-licenses` pair on both branches when the package has runtime deps.) `noarch: generic` remains correct only for bin-less node **libraries** (pptxgenjs) and content bundles (skills collections) — nothing platform-native gets written.
+
+**Case study**: the 2026-07-12 win-64 sweep — caveman, ccusage, claude-mem, cdxgen, pi-coding-agent converted noarch→per-arch; codegraph authored per-arch from the start (its npm dist bundles per-platform native binaries, G101). The scoped-tarball pack names differ from the package name (`@cyclonedx/cdxgen` → `cyclonedx-cdxgen-<ver>.tgz`).
+
+---
+
+### G101. npm dists that are shims over per-platform Bun static binaries — detect via `optionalDependencies`; the native may segfault and CANNOT be built from source
+
+**Symptom**: an npm CLI's published tarball contains only a tiny `npm-shim.js`/`src/cli.js`, `dependencies` is empty, and `optionalDependencies` lists `@scope/<name>-<os>-<arch>` platform packages. The CLI either errors `"native binary is not available for <platform>"` (installed with `--omit=optional`) or — worse — the fetched native binary **segfaults** (exit 139) on some hosts, sometimes intermittently (a run that passed at build time crashed an hour later).
+
+**Why**: upstream compiles the app with **Bun** into static-PIE per-platform executables and publishes the JS package as a thin dispatcher. The binary is prebuilt and opaque: bun is not on conda-forge, so there is no source-build path; host-specific crashes (observed deterministic after intermittent) cannot be fixed at the recipe level — not by node version (24 and 26 both crash), `--jitless`, stack size, or disabling ASLR.
+
+**Fix**: (1) detect early — inspect the published tarball's `package.json` for platform-named `optionalDependencies` and a shim-sized payload; the REPO's package.json may look completely different (codegraph's repo showed `bin: dist/bin/codegraph.js` + 10 real deps; the published tarball had `bin: npm-shim.js` + 6 platform optionals). (2) The recipe must be per-arch (G100) so npm fetches the matching platform binary. (3) The CLI test must actually EXECUTE the binary (`<name> --version`) — file-existence tests would false-green a segfaulting native. (4) If the binary crashes on the build host, pin to the **last pure-JS, node-runnable version** and record the reason in `cfe-forge-blocker-list` (find it by walking npm versions for the newest one without platform optionalDeps).
+
+**Case study** (2026-07-12): codegraph 1.4.1 — native works, per-arch recipe bundles it, GREEN. ccusage — v20.0.17's `@ccusage/ccusage-linux-x64` Bun binary segfaulted 10/10 on the build host (earlier same-day passes were intermittent survivals); pinned to 19.0.3 (last pure-JS release, `bin: dist/cli.js`, zero deps) and the broken 20.0.17 uploads were removed from the personal channel.
+
+---
+
+### G102. The staged-recipes win-64 leg builds noarch recipes too — a unix-only build script renders EMPTY on Windows and dies as "No license files were copied"
+
+**Symptom**: a noarch recipe that is green on the linux/osx legs fails the staged-recipes win-64 leg with `Error: × No license files were copied` — even though `license_file` points at a file that exists in the source. The win log shows the build script ran as `IF "" == "" (call build_env.bat)` — i.e. nothing.
+
+**Why**: three stacked facts. (1) staged-recipes CI builds every recipe on all three platform legs, noarch included (`target_platform: noarch` on the win runner). (2) An inline `script: - if: unix then: [...]` with **no `else`** renders to an empty script on win — the build "succeeds" having installed nothing; similarly a recipe-dir `build.sh` with no `build.bat` runs nothing on win. (3) rattler copies license files only after packaging, and **one missing file in `license_file` aborts the whole copy** — a build-generated file (`third-party-licenses.txt` from pnpm-licenses) is the classic casualty, since the empty script never generated it.
+
+**Fix**: every recipe headed to staged-recipes needs exactly one of: a win `else:` branch (G100 shape, `call` + errorlevel checks), a `build.bat` next to `build.sh` (rattler auto-selects when no `script:` key is set — the bmad-utility-skills pattern), or an explicit `build: skip: - win` for deliberately unix-only tools (upstream errors on Windows, bash-orchestrator payloads). Related trap: npm tarballs often omit LICENSE (the `files` array excludes it) — vendor it from the repo tag as a second source with `file_name: LICENSE`, and remember "No license files were copied" also fires when ANY declared license file is missing, not just all of them.
+
+**Case study**: pptxgenjs on staged-recipes PR #34176 (2026-07-12) — linux legs green, win-64 leg dead at the license copy because the unix-only script never ran pnpm-licenses. Fixed with the full win branch; the same sweep audited every branch recipe (5 npm CLIs → per-arch, quarkdown gained the upstream `windows-x64.zip` source + build.bat, bmad-story-automator + bmad-autopilot got `skip: win`).
+
+---
+
+### G103. Don't copy npm `engines` version caps into conda run deps — the host nodejs run-export makes the combined constraint unsolvable
+
+**Symptom**: an npm recipe with `run: nodejs >=20,<25` (mirroring the package.json `engines` field) builds fine but its test env fails to solve: the artifact's run deps carry BOTH the explicit `nodejs >=20,<25` AND `nodejs >=26.5.0,<27.0a0` — an empty intersection.
+
+**Why**: conda-forge's `nodejs` has a `run_exports`, so whatever nodejs lands in `host:` pins a major-series run constraint into the artifact automatically. An explicit engines-derived cap in `run:` intersects with it; when the host solved a newer major than the engines cap allows, the package can never install. npm `engines` caps are advisory (upper bounds are routinely stale — tools run fine on newer majors).
+
+**Fix**: put the FLOOR (if any) on `host:` (which selects the variant and hence the run-export) and leave `run: nodejs` bare — or omit both and let the run-export do all the work. Only mirror an engines ceiling when upstream demonstrably breaks on newer node, and then constrain the HOST so the export matches.
+
+**Case study**: codegraph (2026-07-12) — `run: nodejs >=20,<25` from engines vs a nodejs-26.5 host export = unsolvable test env; fixed by dropping the explicit pin. Note the local variant config builds nodejs 24 AND 26 variants for bare-nodejs recipes — two artifacts, each tested against its own major (which is how the ccusage/G101 crash surfaced on the 24 variant).
+
+---
+
+### G104. Strict channel priority: ANY stale local-channel package shadows every conda-forge version of that name
+
+**Symptom**: a recipe's test env fails to solve with `package X is excluded because due to strict channel priority not using this option from 'conda-forge'` — even though conda-forge has exactly the version needed.
+
+**Why**: local builds solve with the local `build_artifacts` channel at top priority and **strict** channel priority: if the local channel contains ANY version of a package name, ALL conda-forge versions of that name are excluded from resolution. A years-old local recipe (portalocker 2.7.0) silently caps every downstream consumer's ceiling for that package.
+
+**Fix**: refresh the local recipe to the needed version and build it (the new artifact joins the old in the local channel — old versions stay resolvable for consumers pinned to them, e.g. `>=2.7,<2.8`). Loosening the consumer's floor to the stale version is usually the wrong direction — check the consumers (`grep -l <name> recipes/*/recipe.yaml`) before deciding which side moves.
+
+**Case study**: openkb (2026-07-12) needed `portalocker >=3.2.0`; conda-forge had 3.2.0 but the local channel's 2.7.0 shadowed it. Bumped the local portalocker recipe 2.7.0→3.2.0 (also fixing its unconditional pywin32 run dep → win-gated, and its stale PSF-2.0 license → BSD-3-Clause); the 2.7.0 artifact stays for the `<2.8`-pinned consumers.
+
+---
+
+### G105. rattler-build python tests run `pip check` BY DEFAULT — an omitted `pip_check:` means true, and the repo convention is explicit true + dual `python_version`
+
+**Symptom**: a python test block written without `pip_check:` fails at test time with e.g. `<pkg> requires <dep>, which is not installed` — the author believed pip check was opt-in.
+
+**Why**: in the v1 python test element, `pip_check` **defaults to true**. Separately, a single `python_version: ${{ python_min }}.*` only exercises the floor interpreter.
+
+**Fix** — the repo's canonical python test block:
+
+```yaml
+tests:
+  - python:
+      imports:
+        - <module>
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+```
+
+Downgrade to `pip_check: false` ONLY with a factual blocker, recorded twice — an inline comment above the line AND the `cfe-pip-check: "false:<reason-code>"` field. Confirmed blocker classes: upstream exact `==` pins that the loosened conda deps legitimately violate (openkb, hermes-agent); a PyPI shim dist with no conda dist-info (`dotenv` → python-dotenv); a dep satisfied by a non-Python conda package (ast-grep-cli → the `ast-grep` binary, headroom-ai); a transitive third-party METADATA skew the solver picks badly (pageindex's fix was raising the `openai-agents` floor so pip check PASSES — prefer fixing the pick over waiving).
+
+**Case study**: headroom-ai (2026-07-12) — first build failed at `pip check` (`ast-grep-cli … not installed`) precisely because the test block omitted `pip_check`, assuming off-by-default.
+
+---
+
+### G106. A build-hook SKIP env var does NOT stop `hatch-build-scripts` from DELETING the hook's prebuilt artifacts first — `clean_artifacts` defaults to true, so skipping silently ships an incomplete package
+
+**Symptom**: a recipe neutralizes an upstream build hook via the hook script's own documented skip switch (an env var the script checks first), the build goes green, `import <pkg>` and `pip_check` both pass — but the built `.conda` is **missing a file the upstream wheel ships**. The log even confirms the skip worked (`Skipping local <X> build.`).
+
+**Why**: `hatch-build-scripts`' `OneScriptConfig` declares **`clean_artifacts: bool = True`** (verified by reading `plugin.py` in the 1.0.0 wheel). Its `initialize()` runs BEFORE any command:
+
+```python
+for script in all_scripts:
+    if script.clean_out_dir: shutil.rmtree(Path(self.root, script.out_dir), ignore_errors=True)
+    elif script.clean_artifacts:
+        for out_file in script.out_files(self.root):
+            out_file.unlink(missing_ok=True)      # <-- deletes the PREBUILT artifact
+for script in all_scripts:
+    for cmd in script.commands: run(cmd, ...)     # <-- your skip makes this a no-op
+```
+
+So the order is **delete-then-skip**: the plugin unlinks every file matching the hook's `artifacts` globs, *then* runs the command, which your env var turns into a no-op that regenerates nothing. The prebuilt artifact the sdist shipped is simply gone. The skip switch was designed for a working *source tree* (where the next real build re-creates the file), not for an sdist consumer that wants to keep what upstream already built.
+
+**The failure is silent by construction.** The deleted file is a data asset (a JS bundle, an embedded wheel, a static dir), so nothing in the Python import graph references it — `imports:` and `pip_check` stay green. Only an assertion on package *contents* catches it.
+
+**Fix** — patch the hook config to keep its artifacts, rather than relying on the skip alone:
+
+```toml
+[[tool.hatch.build.hooks.build-scripts.scripts]]
+commands = ['python "src/build_scripts/build_py_wheel.py"']
+artifacts = ["src/reactpy/static/wheels/*.whl"]
+clean_artifacts = false                    # <-- the load-bearing line
+```
+
+Ship it as a **source patch** (G59), not an in-build `sed` — the edit needs no `${{ version }}` interpolation, and a `noarch` recipe builds on osx/win where bare `sed -i` breaks. Keep the skip env var too: the two are complementary (`clean_artifacts=false` preserves the file; the skip prevents the expensive regeneration).
+
+**Triage rule — read the hook's `artifacts` field**:
+
+- **`artifacts` is non-empty** → `clean_artifacts=True` matches those globs and WILL delete them. You must patch `clean_artifacts = false` (or let the hook run for real).
+- **`artifacts = []`** → the spec matches nothing, so nothing is deleted and the prebuilt output survives untouched. Here you can simply **remove the hook block** and the prebuilt assets ship as-is (the wheel target's own `artifacts = ["/src/<pkg>/static/"]` un-excludes them from hatchling's VCS-ignore filtering).
+
+Both shapes occur in one upstream family, so check per package — do not generalize from a sibling.
+
+**Detection — diff your built package against upstream's published wheel.** This is the general lesson: for any package whose value includes non-Python data assets, the authoritative reference is what upstream's own wheel ships. "The tests passed" proves nothing about assets.
+
+```bash
+# upstream's wheel = ground truth
+unzip -l <pkg>-<ver>-py3-none-any.whl | grep -c '<pkg>/static/'
+# then compare against the same paths inside the built .conda (extract pkg-*.tar.zst)
+```
+
+Then encode the answer as a **`package_contents` regression guard** so it can never silently regress:
+
+```yaml
+tests:
+  - package_contents:
+      site_packages:
+        - <pkg>/static/index.js
+        - <pkg>/static/wheels/<pkg>-${{ version }}-py3-none-any.whl
+```
+
+`package_contents` is also env-free — it still runs when a test-env solve is blocked ([G95](#g95-build-clean-test-blocked-means-metadata-unverified--a-recipe-whose-local-test-env-never-solved-has-an-unexercised-import-list-and-pip-check-statically-verify-both-before-shipping-it-anywhere)).
+
+**Case study**: the reactpy v2 chain (2026-07-14). `reactpy 2.0.0b13`'s sdist ships its built JS **and** a 1.6 MB embedded PyScript wheel at `src/reactpy/static/wheels/`, and its hook honors `REACTPY_SKIP_PY_WHEEL_BUILD` (which otherwise runs `hatch run javascript:build` + a recursive `hatch build`). Setting the env var alone produced a package with **71 of upstream's 72** static files — the embedded wheel had been unlinked by `clean_artifacts` before the skipped script ran. `import reactpy` + `pip_check` were green throughout; only the `package_contents` guard caught it. Adding `clean_artifacts = false` restored exact 72/72 parity with upstream's wheel (artifact 1.1 MB → 2.72 MiB). The two siblings in the same chain — `reactpy-router 3.0.0b1` and `reactpy-django 6.0.0b1` — both declare `artifacts = []` on their `bun install && bun build` hooks, so removing those hook blocks was sufficient there and no `clean_artifacts` patch was needed: same upstream org, same plugin, opposite handling.
+
 ---
 
 ## Skill Automation
@@ -3535,6 +3757,11 @@ To run an off-cycle audit locally: `.claude/skills/conda-forge-expert/automation
 
 ## Version History
 
+- **v8.79.0** (Jul 18, 2026) — **pyforge-atlas Kedro-migration retro (Rule 2): 1 new reference subsection, no recipe/gotcha change (MINOR).** The BMAD project `pyforge-atlas` completed its 32-story Kedro/Dagster/DuckDB migration of the cf_atlas orchestrator (Waves 0 + A–H; the Wave-H AI-Software-Factory layer — Karpathy wiki + agno crews + La Suite/Wagtail sync + Dagster crew orchestration — landed across PRs #96–#102). The effort **authored no conda recipes and changed no operational guidance** (it is a parallel reimplementation, not a replacement of `conda_forge_atlas.py`), but validated two durable phase-engineering patterns now captured in `reference/atlas-phase-engineering.md` **§ 14**, both applicable to the current hand-rolled phases: **(§ 14.1)** make a phase's network fetch an INJECTED callable defaulting to OFFLINE — no HTTP/DB/process-client import in the phase body, and the default REFUSES rather than reaching for a public endpoint — so the phase's dry-run gate is genuinely offline and the live client is one documented injection point (validated across the migration's `refresher`/`event_source`/`raw_lister`/`opener` seams, enforced by a `no-inline-IO` AST gate worth borrowing as a review check); **(§ 14.2)** propagate the source `StalenessMarker` forward through EVERY derivation hop so a derived card never reads "fresh" over a skipped/last-good source (the AD-13 "degrade toward stale/indeterminate, never a false fresh" discipline the live atlas already applies to Phase G KEV, stated as a rule). No new gotcha, no CLI/schema/phase change. **Files**: `reference/atlas-phase-engineering.md` (§ 14 + this note), `config/skill-config.yaml` (8.78.0 → 8.79.0), `CHANGELOG.md`.
+
+- **v8.78.0** (Jul 14, 2026) — **reactpy-v2 chain retro (Rule 2): 1 new gotcha G106 + 4 refinements (MINOR).** From packaging the `reactpy-django 6.0.0b1` (ReactPy v2) pre-release chain local-only — 5 recipes (`http-router` → `asgi-tools` → `reactpy 2.0.0b13` → `reactpy-router 3.0.0b1` → `reactpy-django 6.0.0b1`), all GREEN on linux-64, verified end-to-end in a fresh env and published to SelfExplainML. **G106 (new)** — a build-hook SKIP env var does NOT stop `hatch-build-scripts` from DELETING the hook's prebuilt artifacts: `OneScriptConfig.clean_artifacts` defaults to **True** and `initialize()` unlinks every file matching the hook's `artifacts` globs BEFORE running commands, so a skipped script regenerates nothing and the sdist's prebuilt asset is gone. Silent by construction (the asset is data — `imports:` + `pip_check` stay green); live: reactpy shipped **71 of upstream's 72** static files, losing the 1.6 MB embedded PyScript wheel, until a `clean_artifacts = false` source patch restored 72/72 parity. Triage by the hook's `artifacts` field: non-empty ⇒ patch `clean_artifacts = false`; `artifacts = []` ⇒ nothing is deleted, just remove the hook block (both shapes occur in ONE upstream family — reactpy vs reactpy-router/reactpy-django — so check per package). General lesson: diff the built package against **upstream's published wheel** and encode the answer as a `package_contents` guard. **CFEP-25 Django escape-hatch refinement** — don't settle for `package_contents`-only (it proves nothing about importability): a two-line `settings.configure(DEBUG=False)` usually makes a REAL import work, so prefer two `script:` tests (python_min + newest) with an explicit `pip check`, probing the minimum viable config in the failed build's surviving `test_env` (G27 technique). **G73 refinement** — CHECK the sdist before adding a JS toolchain: a "JS-building" package often ships the hook's complete output in its sdist (the INVERSE of G51/G73's headline case); verified on all 3 JS packages in the chain, every one builds with **zero** node/bun. **G90 addendum 3** — 2 compiled-path emission gaps, both self-contradictory: `noarch: python` emitted alongside `compiler('c')` for Cython sdists (+ missing `stdlib`), on BOTH compiled recipes; and `skip: py>=400`, a v0 form v1 silently ignores (G3) where the real need was `match(python, "<3.11")`. **License-File refinement** — an sdist vendoring `node_modules/` must ship licenses for what SHIPS (package.json `dependencies` + bundler-inlined transitives + copied dists' own 3rd-party texts), not all ~200 vendored files: reactpy-django's `BSD-2-Clause AND Apache-2.0 AND MIT AND EPL-2.0 AND BSD-3-Clause` narrowed to **`MIT AND Apache-2.0`** over 8 entries (the EPL/BSD came from dev-only tooling). Also verified live: **G41** (reactpy-django declares `>=3.9`; real floor is 3.11 via reactpy 2.x — trusting the declared floor would ship an unsolvable 3.10 install), **G25** (the `reactpy[asgi]` flatten is why `asgi-tools`+`http-router` exist at all; `pip_check` enforces it), **G94** (stale mirror pruning — incl. a reactpy `LICENSE` carrying the wrong pre-relicense copyright). Recipe-level, no skill change: `http-router` ships **no license file anywhere** (absent from sdist AND repo; only metadata claims MIT) — a genuine cf-submission blocker, recorded in its blocker list. **Files**: `SKILL.md` (G106 + CFEP-25 escape-hatch refinement + G73 CHECK + G90 addendum 3 + License-File node_modules note + Version History); `config/skill-config.yaml` (8.77.0 → 8.78.0); `CHANGELOG.md`.
+- **v8.77.0** (Jul 12, 2026) — **agent-tooling recipe-wave retro (Rule 2): 6 new gotchas G100–G105 (MINOR).** From the 35-recipe build+publish wave (SelfExplainML channel). **G100** npm CLIs are per-arch (openspec/bmalph pattern) — noarch+bash-wrapper+`__unix` can't serve win; **G101** Bun-native npm dists (shim + per-platform `optionalDependencies` static binaries; may segfault, no source build — pin to last pure-JS version; ccusage 19.0.3); **G102** staged-recipes win-64 leg builds noarch too — unix-only scripts render EMPTY and die at "No license files were copied" (PR #34176; win branch / build.bat / skip:win); **G103** don't copy npm `engines` caps into run deps (nodejs run-export conflict); **G104** strict channel priority — any stale local-channel package shadows ALL conda-forge versions (portalocker 2.7.0 vs openkb); **G105** rattler python tests run `pip check` by default + the canonical dual-`python_version` test block. See CHANGELOG.
+- **v8.76.1** (Jul 11, 2026) — **atlas + detail-card bug-fix bundle (PATCH — 4 fixes; no schema/CLI/phase/gotcha change).** From a direct atlas-operations session (admin refresh + `rxm7706/about` maintainer-list update). (1) **`detail-cf-atlas --vdb-all` ScoreType crash** — appthreat-vulnerability-db 6.6.2's partial `model_dump` leaves the CVSS `baseScore` as a `RootModel`/`ScoreType` object → the per-CVE sort's `float(cvss_score)` threw; new `_coerce_cvss_score()` unwraps it. (2) **`--vdb-all` KEV alignment** — the raw list read KEV from vdb's own flags (~always False; aqua ignores `kevc/`) → 0 KEV vs the Phase G card's real count; new `_load_kev_cves()` overlays the atlas `cisa_kev` catalog and reports KEV-affecting-current (matches Phase G). (3) **Phase B.5 dbt-collapse** — `feedstock_name` took `feedstocks[0]`; for a split-out output `feedstock-outputs` lists both the umbrella and the dedicated feedstock (`dbt-bigquery → ['dbt','dbt-bigquery']`), collapsing the `dbt-*` family into `dbt`; new `_pick_feedstock()` prefers the entry `== pkg_name` when `>1` (live: family splits into 18 feedstocks). (4) **`write_meta` `phases_run` overwrite** — the v8.22.0 split runs core/F/K/N as separate `build --only` calls each overwriting `phases_run` → a full admin run recorded only `['N']`; now MERGES (union, canonical order) via `_merge_phases_run` + `_read_meta_phases_run`. All verified live (`--fresh` + non-fresh admin reruns: F/K/N land, `phases_run == full B…N`). +11 unit tests. See CHANGELOG.
 - **v8.76.0** (Jul 6, 2026) — **`license-map-gap` — the 4th seed-gap suggester (MINOR — new CLI).** Targets the last un-automated curated asset: the **in-code** `conda_forge_atlas._LICENSE_TO_SPDX` free-text→SPDX map (~36 entries; `_normalize_license_to_spdx` returns `None` on a miss, silently degrading the Phase R/S license-readiness score). Offline: scans `pypi_intelligence` for `license_raw` rows whose `license_spdx IS NULL` (the map missed), ranks by package count, filters junk (empty/`unknown`, >60-char full-text pastes, `see …`/URL forms, SPDX expressions, already-mapped forms), and tiers each surviving form as `likely` (exactly one whole-token vendored-SPDX candidate → a paste-ready `"<form>": "<id>",` line) or `report` (zero/multiple candidates → human picks). No fuzzy matching — a wrong license map is a correctness bug; the candidate is a conservative hint only. **READ-ONLY** — no write path to `conda_forge_atlas.py` (a fixture test asserts the source is byte-identical across a full CLI run). Three-place rule; CLI/pixi-only. 7 fixture tests. Spec: `docs/specs/seed-gap-suggesters.md` (family spec, extended). See CHANGELOG.
 - **v8.75.0** (Jul 6, 2026) — **`cwe-seed-gap` + `spdx-schema-gap` suggesters (MINOR — two new CLIs).** The seed-gap family after v8.74.0 `lts-registry-gap`, extending the "push automation further" line to two more hand-curated `data/` assets. **`cwe-seed-gap`** (offline) scans `cwe_categories` rows still bucketed `Other`, keyword-classifies each `cwe_name` into the 7 real categories at `strong` (category-defining phrase) / `weak` (generic word) tiers via a fixed-precedence heuristic (so "OS Command Injection" → RCE, not Injection), and emits ready-to-paste seed lines + an "`Other`-bucket affects N packages" impact headline. **`spdx-schema-gap`** diffs the vendored 811-ID SPDX enum against the upstream SPDX license list (`spdx/license-list-data`, `GITHUB_RAW_BASE_URL`-routable, TTL-7d cache + offline-stale fallback) and partitions the license strings on `v_actionable_packages` the enum misses into `add-to-schema` (a real upstream SPDX ID → genuine staleness, package-count-ranked) vs `non-standard` (normalize, report-only); compound SPDX expressions are skipped; `--drift` lists the pure upstream-vs-vendored delta. **Both are READ-ONLY** — the seeds stay hand-curated, accept/reject is git review, and each fixture suite asserts its seed file is byte-identical across a full CLI run. Three-place rule per tool; CLI/pixi-only. 14 fixture tests. Spec: `docs/specs/seed-gap-suggesters.md`. Kedro reflection (three seed-gap loops as read-only report nodes) folded into the § 3.4 boundary + prototype branches once they land. See CHANGELOG.
 - **v8.74.0** (Jul 6, 2026) — **`lts-registry-gap` suggester (MINOR — new CLI).** The mapping-gap sibling for the LTS registry: diffs endoflife.date's all-products list (`/api/all.json` via `resolve_endoflife_urls("all")`, TTL-7d `eol_products.json` cache with offline-stale fallback) against `v_actionable_packages`, excludes registry-covered names (aliases included via `load_lts_registry`), and proposes ready-to-paste YAML entries at conservative `exact` / `likely` tiers (lowercase equality; `_`→`-` normalization; `python-`/`py-` prefix strip). READ-ONLY by design — the registry stays hand-curated; accept/reject is git review. Three-place rule + 10 fixture tests (incl. a registry-file-untouched assertion); CLI/pixi-only like `library-futures`/`add-handoff`. In-PR Gemini review applied (mixed-case registry-key fold for direct `classify()` callers; `--out` parent-dir creation). Spec: `docs/specs/lts-registry-gap.md`. See CHANGELOG.

@@ -1,0 +1,9 @@
+# deptry DEP002 fixture (Story 1.3): requests is declared but never imported
+# by the source -> deptry emits DEP002 (unused dependency), which the default
+# hygiene policy maps to warn (exit 0).
+[project]
+name = "deptry-unused-fixture"
+version = "1.0.0"
+dependencies = [
+    "requests==2.31.0",
+]

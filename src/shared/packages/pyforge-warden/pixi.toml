@@ -1,0 +1,42 @@
+# pyforge-warden (Warden) — pixi build workspace member (Option B).
+#
+# This is a MEMBER package of the parent `staged-recipes` workspace: there is
+# deliberately NO [workspace] table here. The root ../../../../pixi.toml owns
+# workspace config (channels, platforms, environments, the `preview = ["pixi-build"]`
+# flag) and pulls this package in via a path dependency in the
+# `[feature.pyforge-warden.dependencies]` table. `pixi-build-python` builds
+# this into a conda package.
+#
+# The E1–E4 implementation (extractor, deptry/osv-scanner runners,
+# schema-validated ComplianceReport, argparse CLI + exit gate) is delivered by
+# bmad-quick-dev against docs/specs/pyforge-warden.md.
+
+[package]
+name = "pyforge-warden"
+version = "0.1.0"
+
+[package.build.backend]
+name = "pixi-build-python"
+version = "0.*"
+
+[package.host-dependencies]
+python = ">=3.12"          # explicit build-time interpreter for pixi-build-python (Gemini PR#49)
+hatchling = "*"
+
+# Runtime engines are provisioned as conda packages (NFR1/NFR2) — never
+# curl-fetched at runtime (OD1). osv-scanner + deptry are consumed from the
+# existing conda-forge feedstocks. The library uses a lean, targeted dep set
+# (revised architecture): pyyaml, packaging, cyclonedx-python-lib, jsonschema.
+# license-expression (Story 6.2): SPDX license-expression parsing/
+# normalization for the license axis (license.py) — unpinned, matching
+# deptry/osv-scanner's existing "*" convention (range-pinning is Story 6.6's
+# job).
+[package.run-dependencies]
+python = ">=3.12"
+deptry = "*"
+osv-scanner = "*"
+pyyaml = "*"
+packaging = "*"
+cyclonedx-python-lib = "*"
+jsonschema = "*"
+license-expression = "*"

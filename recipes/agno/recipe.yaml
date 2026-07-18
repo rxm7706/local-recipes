@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "2.6.22"
+  version: "2.7.2"
 
 package:
   name: agno
@@ -10,12 +10,15 @@ package:
 
 source:
   url: https://pypi.org/packages/source/a/agno/agno-${{ version }}.tar.gz
-  sha256: 05ed663db2ee360454eb410560491eae57c32d0b1a4b309e38a120c8500d5635
+  sha256: 9dab9cdacaec8083a3dea392d58703011b8eaa0ef086a40919d5a3dcc4b1a793
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps --no-build-isolation -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - agno = agnoctl.main:app
 
 requirements:
   host:
@@ -24,31 +27,34 @@ requirements:
     - setuptools
   run:
     - python >=${{ python_min }}
+    - agnoctl >=0.1.1
     - docstring_parser
-    - gitpython
     - h11 >=0.16.0
     - httpx
-    - h2
     - packaging
-    - pydantic
     - pydantic-settings
-    - python-dotenv
-    - python-multipart
+    - pydantic
     - pyyaml
     - rich
-    - typer
     - typing_extensions
 
 tests:
   - python:
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
       imports:
         - agno
         - agno.agent
         - agno.models
         - agno.tools
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+  - requirements:
+      run:
+        - pip
+        - python
+    script:
+      - agno --help
 
 about:
   homepage: https://agno.com

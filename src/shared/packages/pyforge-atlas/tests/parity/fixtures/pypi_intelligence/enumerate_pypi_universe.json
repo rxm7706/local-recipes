@@ -1,0 +1,29 @@
+{
+  "phase": "enumerate_pypi_universe",
+  "node": "enumerate_pypi_universe",
+  "provenance": "shape-only-seed-B2-needs-B4-recapture",
+  "inputs": {
+    "pypi_simple_index_raw": [
+      {
+        "pypi_name": "a",
+        "last_serial": 10
+      },
+      {
+        "pypi_name": "b",
+        "last_serial": 20
+      }
+    ]
+  },
+  "expected": {
+    "pypi_universe": [
+      {
+        "pypi_name": "a",
+        "last_serial": 10
+      },
+      {
+        "pypi_name": "b",
+        "last_serial": 20
+      }
+    ]
+  }
+}

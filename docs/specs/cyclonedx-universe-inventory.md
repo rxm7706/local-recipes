@@ -1,6 +1,6 @@
 ---
 status: shipped
-spec_updated: 2026-07-06
+spec_updated: 2026-07-12
 implemented_by: bmad-quick-dev (web waves A-E on claude.ai/code) + local live-gate slices (Waves B/C/D local surfaces + gates)
 shipped_ref: "local-recipes@main — Wave A ad0d3be3c1+4821907ab0, B dd54e47d4d+a3f4b9b0ad (PR #33), C 44ea7345b0+aacd5776d9 (PRs #34/#35), D 7b0c84cc3c+c6b6a650cd+5a1ee00a10 (PRs #36/#37), E S9 PR #38 + S-retro (CFE v8.73.0); all local gates PASS, dated Dev Notes in §§ Wave B/C/D"
 ---
@@ -959,6 +959,21 @@ re-verified **at the retro**. Full-tree impact analysis (all 13 specs, 2026-07-0
   `architecture-cf-atlas.md`, `architecture-mcp-server.md` — all pin schema v28 /
   42 MCP tools / 22 phases) are re-grounded via the documented sync loop
   (`bmad-groundtruth` → reconciler skills → `-- --write-baseline`), never hand-edited.
+
+**Post-ship amendment (2026-07-12, from the pyforge-warden Phase-0
+review):** the S5 `inventory-match --policy` exit-code convention shipped as
+`0 = pass, 2 = policy violations, 1 = error` — **inverted** relative to
+`pyforge-warden.md`'s frozen enum (`0` pass / **`1` policy-violation** /
+**`2` error** / `130` SIGINT) and to the kedro-migration **FR-18 unified gate**,
+which is specced to the pyforge-warden convention while naming
+`inventory-match --policy` as a co-source. `rc==2` therefore means "block the
+merge" here and "operational error, page the platform owner" there. **Obligation
+(owned at the FR-18 implementation, or earlier if a shared CI template lands):**
+flip `inventory-match --policy` to the pyforge-warden convention with
+a deprecation window for existing consumers (e.g. honor an
+`INVENTORY_MATCH_LEGACY_EXIT=1` env for one release). Cross-ref:
+`pyforge-warden.md` § Cross-spec impact & sync item 1; full analysis
+in gist `326be5f25e702e0fcce343046c70a6b2` (finding X1).
 
 **Retro-time tasks (S-retro):** the closing all-specs sync sweep — re-verify both
 impacted specs against what actually shipped, add the optional cfe-shipped-releases

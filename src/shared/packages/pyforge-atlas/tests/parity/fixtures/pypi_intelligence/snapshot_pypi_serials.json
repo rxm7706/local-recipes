@@ -1,0 +1,24 @@
+{
+  "phase": "snapshot_pypi_serials",
+  "node": "snapshot_pypi_serials",
+  "provenance": "shape-only-seed-B2-needs-B4-recapture",
+  "inputs": {
+    "pypi_simple_index_raw": [
+      {
+        "pypi_name": "hot",
+        "last_serial": 1000,
+        "prev_serial": 800
+      }
+    ]
+  },
+  "expected": {
+    "pypi_universe_serial_snapshots": [
+      {
+        "pypi_name": "hot",
+        "last_serial": 1000,
+        "serial_delta": 200,
+        "activity_band": "high"
+      }
+    ]
+  }
+}

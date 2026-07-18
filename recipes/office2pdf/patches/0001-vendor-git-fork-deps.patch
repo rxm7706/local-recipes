@@ -1,0 +1,10 @@
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -9,5 +9,5 @@
+ repository = "https://github.com/developer0hye/office2pdf"
+ 
+ [patch.crates-io]
+-umya-spreadsheet = { git = "https://github.com/developer0hye/umya-spreadsheet.git", branch = "fix/panic-safety-v2" }
+-docx-rs = { git = "https://github.com/developer0hye/docx-rs.git", branch = "fix/parse-tolerance" }
++umya-spreadsheet = { path = "../umya" }
++docx-rs = { path = "../docxrs/docx-core" }

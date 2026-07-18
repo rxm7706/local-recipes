@@ -1,0 +1,21 @@
+{
+  "name": "agentic-sdlc-deck",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Agentic AI across the software lifecycle — a field-guide deck grounded in the BMAD Method.",
+  "scripts": {
+    "extract": "node scripts/extract-slides.mjs",
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.4",
+    "vite": "^5.4.11"
+  }
+}

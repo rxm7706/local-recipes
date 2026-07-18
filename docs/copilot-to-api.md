@@ -131,9 +131,9 @@ known Copilot-to-API pattern:
 | `recipes/litellm-proxy-extras/` | Sibling-package supplement (SQL migrations) for litellm proxy | conda-forge/staged-recipes |
 | `recipes/litellm-enterprise/` | **Local-only**, proprietary licence (BerriAI Enterprise) | **Do not submit** |
 
-Plus four supporting recipes (`recipes/rq/`, `recipes/prisma/`, `recipes/resend/`,
+Plus five supporting recipes (`recipes/rq/`, `recipes/prisma/`, `recipes/resend/`,
 `recipes/semantic-router/`, `recipes/aurelio-sdk/`) needed by the litellm
-constrains and downstream packages.
+constraints and downstream packages.
 
 ---
 
@@ -623,7 +623,7 @@ ecosystem just works. Tested clients:
 | **Continue (VS Code/JetBrains)** | ✅ | ✅ | ✅ | ✅ | ✅ |
 | **Aider** | ✅ | ✅ | ✅ | ✅ | ✅ |
 | **Open WebUI** | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **Embeddings clients** | ✅ | ✅ | ✅ | ❌ | depends on upstream |
+| **Embeddings clients** | ✅ | ✅ | ✅ | ✅ | depends on upstream |
 
 ### Generic OpenAI-compatible client config
 
@@ -1605,6 +1605,57 @@ base URL will work.
     the PyPI source-URL convention recipes here use
   - `docs/developer-guide.md` — local recipe development workflow
   - `docs/mcp-server-architecture.md` — FastMCP server + name-mapping subsystem
+  - `docs/specs/copilot-bridge-vscode-extension.md` — sideload-only VS Code
+    extension that wraps the copilot-api bridge pattern described here
+
+---
+
+## Driving headless BMAD through the bridge
+
+The bridge isn't only for GUI apps — it's the model backend that lets this repo's
+**unattended `bmad-loop` / `bmad-dev-auto`** workflow (see `docs/bmad-setup-plan.md`
+Phase 9) run against a Copilot subscription instead of a provider key. Those runners
+are headless: they spawn coding-agent sessions in tmux with no editor and no chat
+panel, so they cannot use VS Code's in-IDE Copilot integration — they need an
+OpenAI/Anthropic-compatible **HTTP** endpoint, which is exactly what the bridge serves.
+
+### Wiring
+
+Point the loop's agent sessions at the local proxy (Approach 1 `copilot-api` or any of
+the five that expose the surface your runner speaks):
+
+```bash
+# Anthropic-shaped clients (Claude Code / bmad-dev-auto's default):
+export ANTHROPIC_BASE_URL="http://127.0.0.1:4141"
+
+# OpenAI-shaped clients:
+export OPENAI_BASE_URL="http://127.0.0.1:4141/v1"
+export OPENAI_API_KEY="sk-local-anything"   # bridge ignores the value; must be non-empty
+```
+
+Scope these to the **loop's run environment** (the `.bmad-loop/` run env or the
+`pixi run -e local-recipes` activation), not a global shell rc — so only loop runs are
+routed. The `copilot-bridge` extension automates this via *Configure BMAD runners*
+(`docs/specs/copilot-bridge-vscode-extension.md` Story 13).
+
+### Multiproject caveat
+
+This repo drives multiple BMAD projects from one install
+(`_bmad-output/projects/<slug>/`). Backend wiring is **per project** — a loop run for
+`pyforge-atlas` and one for `pyforge-warden` should not share a cross-wired
+`*_BASE_URL`. Resolve the active project with `scripts/bmad-switch --current` before
+launching a run, and keep the export scoped to that run (Story 14).
+
+### TOS caveat — headless is higher-risk than interactive
+
+Sustained, **automated** request volume (a loop running unattended for hours) presents
+a larger abuse-detection surface than interactive editor use. Keep the bind address on
+loopback (`127.0.0.1`), keep the rate limit conservative, and prefer the sanctioned
+in-IDE path for *interactive* work: the `@bmad` Copilot Chat adapter
+(`docs/specs/bmad-copilot-adapter-upstream.md`), which runs through VS Code's Language
+Model API rather than a local OpenAI-shaped proxy. Rule of thumb: **`@bmad` adapter for
+humans in the IDE; this HTTP bridge for headless loops.** See § "Terms of Service &
+Account Risk" (top of this doc) for the full paraphrase of the GitHub Copilot terms.
 
 ---
 

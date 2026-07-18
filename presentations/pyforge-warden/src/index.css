@@ -1,0 +1,62 @@
+:root {
+  --paper: #f6f4ee;
+  --navy: #0b1626;
+  --ink: #0e1c30;
+  --gold: #f4c233;
+  --blue: #1e7fd6;
+  --sky: #5bb3f5;
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: var(--navy);
+  color: var(--paper);
+  font-family: 'IBM Plex Sans', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+#root {
+  height: 100%;
+}
+
+a {
+  color: var(--blue);
+}
+a:hover {
+  color: #0e5fb0;
+}
+
+/* Placeholder that replaces the prototype's drag-to-drop <image-slot>.
+   Rendered inside the "See it in action" slide's dark panels. */
+.image-slot {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  border: 2px dashed rgba(246, 244, 238, 0.22);
+  color: rgba(246, 244, 238, 0.5);
+  font-family: 'IBM Plex Mono', monospace;
+}
+.image-slot__plus {
+  font-size: 46px;
+  font-weight: 300;
+  line-height: 1;
+  color: rgba(246, 244, 238, 0.35);
+}
+.image-slot__label {
+  font-size: 20px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}

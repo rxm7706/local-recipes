@@ -1,0 +1,30 @@
+# False-green sentinel (Story 1.2): one bare dep (withheld: no-version) and
+# one range-only dep (withheld: range-only). A pipeline that ever reports
+# this project green has regressed on C0 -- the harness asserts status
+# indeterminate, exit 1, >=1 indeterminate:* finding.
+#
+# Story 1.3: this fixture has no source module, so deptry would flag both
+# declared deps DEP002 (unused). [tool.deptry] ignore keeps deptry quiet so
+# the sentinel stays focused on its axis (the extractor's vulnerability-side
+# withhold, which the harness polices) -- the indeterminate rungs dominate
+# the lattice regardless, but silencing deptry keeps the fixture's assertions
+# exactly about the withhold path. It does NOT touch [project].dependencies,
+# so the extractor path is unchanged.
+#
+# Story 2.4 (AC3): this fixture has zero adjacent .py files, so DeptryEngine
+# no longer runs against it at all via the real cli.main() pipeline -- the
+# [tool.deptry] ignore below is harmless vestige from before that fix, kept
+# because test_deptry_corpus_unparseable_rate_is_within_baseline still runs
+# the real deptry binary directly against this fixture (bypassing cli.main
+# and its hygiene_applicable gate entirely) and removing it would be an
+# unrelated cleanup, not required by this story.
+[project]
+name = "sentinel-fixture"
+version = "1.0.0"
+dependencies = [
+    "leftpad",
+    "requests>=2.0",
+]
+
+[tool.deptry]
+ignore = ["DEP002"]

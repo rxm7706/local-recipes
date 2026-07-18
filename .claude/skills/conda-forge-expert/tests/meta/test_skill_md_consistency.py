@@ -79,6 +79,8 @@ class TestSkillMdConsistency:
             "foo_pb2.py",                 # G88 illustrative protoc-generated stub path
             "_version.py",                # G39/G54 upstream dynamic-version module
             "main.py",                    # G31 case study (llms/main.py imports)
+            "build_py_wheel.py",          # G106 reactpy upstream sdist build-hook script (src/build_scripts/)
+            "plugin.py",                  # G106 hatch-build-scripts' own plugin source (where clean_artifacts defaults True)
             # Illustrative recipe-internal helpers that gotchas recommend
             # authoring/checking-in (named in prose, not skill-local scripts):
             "pin_version.py",             # G39 recipe-dir version-pin helper

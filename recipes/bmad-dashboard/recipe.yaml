@@ -36,8 +36,10 @@ tests:
   - python:
       imports:
         - bmad_dashboard
-      python_version: ${{ python_min }}.*
       pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
   - script:
       - python -m bmad_dashboard.installer --print-vsix
       - python -m bmad_dashboard.installer --help
@@ -77,3 +79,51 @@ extra:
       tarball by commit SHA. The package version 1.2.2.dev0 reflects
       the version declared in upstream package.json with a PEP 440
       .dev0 suffix to mark this as a pre-release snapshot.
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: bmad-dashboard
+  cfe-upstream-registry: github
+  cfe-upstream-name: bmad-code-org/bmad-method-ui
+  cfe-purls:
+    - pkg:conda/bmad-dashboard@${{ version }}?channel=conda-forge
+    - "pkg:github/bmad-code-org/bmad-method-ui@33b330ef113c62f58a77413a241ca30f4f0b8a99"
+  cfe-upstream-repo: https://github.com/bmad-code-org/bmad-method-ui
+  cfe-upstream-homepage: https://github.com/bmad-code-org/bmad-method-ui
+  cfe-import-names: [bmad_dashboard]
+  cfe-source-kind: github-commit
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: pending-approval-on-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-submission-pr: https://github.com/conda-forge/staged-recipes/pull/33513
+  cfe-last-checked: "2026-07-12T14:24:56Z"
+  cfe-generated-by-version: 8.76.0
+  cfe-generated-at-datetime: "2026-07-12T14:24:56Z"
+  cfe-local-build-status: success
+  cfe-local-build-datetime: "2026-07-12T15:53:18Z"
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # CONSUME-NOT-SUBMIT mirror of conda-forge/staged-recipes PR #33513
+#    # (author killua156; external PR — we consume, never compete; G58/db-gpt
+#    # precedent). Body kept a faithful verbatim mirror of the PR head
+#    # (killua156:add-bmad-dashboard-snapshot); all human comments preserved.
+# context:
+#    # DELIBERATE DIVERGENCE from the mirrored PR head (operator decision
+#    # 2026-07-14): PR #33513 declares python_min "3.9", below the conda-forge
+#    # 3.10 floor. That line is dropped here so conda-forge-pinning supplies the
+#    # floor (SKILL.md § Python Version Policy item 6 — python_min belongs in
+#    # context ONLY to override the default upward).
+#    # This is the one point where the faithful-mirror rule is knowingly broken.
+#    # Rationale: the repo's test_no_redundant_python_min meta-test fails fast on
+#    # any below-floor python_min and refuses allowlist entries by design, so the
+#    # mirror could not stay faithful AND keep the suite green. The 3.9 was
+#    # inert here anyway — the cf matrix starts at 3.10, so nothing ever built
+#    # against it. The real fix still belongs to PR #33513's review; if that PR
+#    # lands with a corrected floor, re-mirror and delete this note.
+####

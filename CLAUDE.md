@@ -42,6 +42,15 @@ This repository uses a single BMAD installation to drive multiple projects. Each
 3. `_bmad/custom/.active-project` marker file (managed by `scripts/bmad-switch`, gitignored).
 4. None — only global config layers resolve; skills fall back to repo-root `_bmad-output/`.
 
+**The marker is only half the switch — two gitignored symlinks are the other half:**
+
+```
+_bmad-output/planning-artifacts       -> projects/<slug>/planning-artifacts
+_bmad-output/implementation-artifacts -> projects/<slug>/implementation-artifacts
+```
+
+`_bmad/bmm/config.yaml` hard-codes `planning_artifacts: "{project-root}/_bmad-output/planning-artifacts"`, and that key does **NOT** compose with a project's `output_folder` override — so **every BMAD skill that writes planning artifacts resolves through these symlinks**, not through the marker. Marker and symlinks must always agree; when they disagree, a write-skill silently targets the *other* project. **Always switch with `scripts/bmad-switch <slug>`** (since 2026-07-14 it re-points the symlinks atomically and writes the marker last, so a failed re-point can't desync); never hand-edit the marker. `scripts/bmad-switch --current` / `--list` warn on a desync — heed it before running any BMAD write-skill. Live near-miss (2026-07-14): the symlinks sat on `pyforge-warden` while the marker said `local-recipes`, so a local-recipes doc re-sync would have overwritten pyforge-warden's PRD/epics/architecture.
+
 **Six-layer config merge** (highest priority last):
 
 | Layer | Path                                                         | Scope                                |
@@ -69,14 +78,14 @@ This repo is spec-driven and tool-agnostic — the spec is the contract; the age
 
 Rules: an **intake spec belongs in Tier 1 (`docs/specs/`)** — never a Tier-3 output dir; `implementation-artifacts/` is gitignored, so **nothing there may be git-tracked**. `bmad-drift-check` enforces both (HARD `tracked-impl-artifact` finding).
 
-**Spec-first (MANDATORY, always-on):** before implementing any non-trivial effort, a spec MUST exist in `docs/specs/<name>.md` — if none exists, create it first (`spec-driven-development` skill or `bmad-create-*`) and bring it to `status: ready` before writing code. **Keep the spec's `status:` frontmatter current** (`draft → ready → in-progress → shipped`, with `implemented_by:` + `shipped_ref:` when shipped) — it is the framework-neutral source of truth, updated regardless of which agent/tool/human did the work. Full convention + frontmatter contract: **`AGENTS.md`** (repo root). Check status anytime with `pixi run -e local-recipes bmad-drift-check --specs`.
+**Spec-first (MANDATORY, always-on):** before implementing any non-trivial effort, a spec MUST exist in `docs/specs/<name>.md` — if none exists, create it first (`spec-driven-development` skill or `bmad-spec`) and bring it to `status: ready` before writing code. **Keep the spec's `status:` frontmatter current** (`draft → ready → in-progress → shipped`, with `implemented_by:` + `shipped_ref:` when shipped) — it is the framework-neutral source of truth, updated regardless of which agent/tool/human did the work. Full convention + frontmatter contract: **`AGENTS.md`** (repo root). Check status anytime with `pixi run -e local-recipes bmad-drift-check --specs`.
 
 ### Keeping BMAD artifacts in sync with the live repo (always-on)
 
 The `_bmad-output/projects/local-recipes/` artifacts (PRD, architecture set, epics, project-context, overview, specs) hard-code volatile facts about the factory (skill version, cf_atlas schema, MCP tool / atlas-phase / pixi-env counts, gotcha range) and drift behind the fast-moving `conda-forge-expert` skill. A **two-layer sync loop** keeps them accurate and able to catch up after *any* out-of-band change (BMAD or not):
 
 - **Detector** (cheap, deterministic): `pixi run -e local-recipes bmad-drift-check` (and `bmad-groundtruth` for live facts as JSON). Reports pin drift, count/phase-list staleness, stale rules, archive-hygiene + stray files (auto-fix with `-- --fix`), coverage completeness (every project file must be classified), and baseline-vs-live surface change. Enforced in the test suite by `.claude/skills/conda-forge-expert/tests/meta/test_bmad_artifacts_in_sync.py` (integrity only).
-- **Reconciler** (correctness): the **BMAD skills themselves** — `bmad-document-project` re-grounds the living architecture/overview/source-tree/parts docs; `bmad-generate-project-context` the rulebook; `bmad-correct-course` + `bmad-create-epics-and-stories` the PRD/epics; `bmad-validate-prd` + `bmad-check-implementation-readiness` the gate reports; `bmad-index-docs` the index. Then re-stamp the baseline (`bmad-drift-check -- --write-baseline`).
+- **Reconciler** (correctness): the **BMAD skills themselves** — `bmad-document-project` re-grounds the living architecture/overview/source-tree/parts docs; `bmad-generate-project-context` the rulebook; `bmad-correct-course` + `bmad-create-epics-and-stories` the PRD/epics; `bmad-prd` (validate) + `bmad-check-implementation-readiness` the gate reports; `bmad-index-docs` the index. Then re-stamp the baseline (`bmad-drift-check -- --write-baseline`).
 
 **When to run:** after every CFE retro / skill MINOR bump, and whenever the detector reports `surface-changed` (an out-of-band edit to `recipes/`, `.claude/`, `pixi.toml`, or `docs/specs/`). Full procedure + finding→remedy mapping: **`_bmad-output/projects/local-recipes/SYNC-RUNBOOK.md`**. The detector is `scripts/bmad_drift_check.py`.
 
@@ -86,7 +95,7 @@ The `_bmad-output/projects/local-recipes/` artifacts (PRD, architecture set, epi
 |---|---|---|
 | `conda-forge-expert` | Full conda-forge recipe lifecycle (generate → validate → build → submit) | Creating/updating recipes, fixing build failures, any conda packaging |
 | `bmad-quick-dev` | Implement story / feature / fix from a spec | Direct implementation requests when the story spec exists |
-| `bmad-create-prd` / `-create-architecture` / `-create-epics-and-stories` / `-create-story` | BMAD planning chain | Starting a new product or feature in `_bmad-output/projects/<slug>/` |
+| `bmad-prd` / `bmad-architecture` / `bmad-create-epics-and-stories` / `bmad-create-story` | BMAD planning chain (6.10: the old `bmad-create-prd` / `bmad-create-architecture` are deprecated thin wrappers, removed in v7) | Starting a new product or feature in `_bmad-output/projects/<slug>/` |
 | `bmad-document-project` | Brownfield project documentation | "Document this project" requests |
 | `bmad-agent-*` (analyst/architect/dev/pm/tech-writer/ux-designer) | Persona-led workflows | "Talk to John/Mary/Winston/…" requests |
 
@@ -139,6 +148,7 @@ For extended architectural context, please reference the centralized `docs/` fol
 - **`docs/enterprise-deployment.md`** — Air-gapped environments and JFrog Artifactory integration.
 - **`docs/developer-guide.md`** — Local testing and general recipe development guidelines.
 - **`docs/copilot-to-api.md`** — Five ways to drive a GitHub Copilot subscription as a local model backend (`copilot-api`, `litellm`, `copilot-openai-api`, `copilot-api-proxy`, `c2p`); decision tree, auth flows, configuration reference.
+- **`docs/library-llms-full.md`** — LLM/agent-facing catalog of every library and CLI in the pixi environments: capabilities, version pins, import-name gotchas, env membership, and what is deliberately NOT installed. Derived from `pixi.toml` (regeneration prompt in its header) — consult before importing a library or proposing a new dependency. Drift detector: `pixi run -e local-recipes llms-full-check` (exits non-zero when the catalog is stale; reconcile by regenerating).
 
 ### Intake specs (`docs/specs/` — Tier 1)
 
@@ -155,15 +165,18 @@ otherwise, run a spec via `bmad-quick-dev` with the spec path + parameters named
 | `docs/specs/db-gpt-conda-forge.md` | DB-GPT on conda-forge. **TERMINAL — delivered via external PR #33883 (consume-not-submit, G58); do NOT re-run BMAD on it.** Only § Current State + § Readiness are authoritative; the stories are historical. |
 | `docs/specs/flyte-conda-forge.md` | Flyte 2 SDK (PyPI `flyte` ≠ v1 `flytekit`) — 6-recipe closure built GREEN locally; submission blocked on the buf.validate namespace collision (G88). python_min 3.11 (G40/G41). |
 | `docs/specs/feedstock-refresh.md` | Two-track bulk refresh of ALL 769 feedstocks rxm7706 can modify (regenerate, v0→v1, platform-expand). Track A (sole, 537): Waves B–F shipped, reopened for Wave H total-coverage (179 remaining). Track B (co, 232): ready; adds co-maintainer etiquette + a no-local-recipe bucket. Delegates per-feedstock work to `feedstock-platform-expansion.md`. |
+| `docs/specs/bmad-loop-adoption.md` | BMAD 6.6.0→6.10.0 upgrade (gains `bmad-dev-auto`) + bmad-loop v0.8.1 adoption (deterministic dev-loop orchestrator; pixi-provisioned: conda-forge `bmad-method` + tmux, git-pinned bmad-loop) so pyforge-warden implementation runs loop-driven with graduated gates. W1–W3 done (validate 9/9, sprint feed 20/20); W4 = BMad Method UI dashboards (consume-not-submit mirrors of staged-recipes#33513 → local `bmad-ui` pixi env). Remaining: hooks approval + the 1.1 pilot; Rule-2 CFE retro at closeout (W4 touches recipes/). |
+| `docs/specs/cfe-atlas-datapipeline-kedro-migration.md` | Migrate the cf_atlas orchestrator from hand-rolled phases to a Kedro/Dagster/DuckDB stack (Waves 0 + A–H, 22 FRs incl. FR-19 Basilisk vuln source / FR-20 release velocity / FR-21 migration readiness / FR-22 factory layer; v5.6 analysis-complete 2026-07-16). Tier-2 planning underway since 2026-07-17 under BMAD project `pyforge-atlas` (PRD → architecture → epics → readiness → sprint). Execution via bmad-loop per § 2.5 graduated autonomy. |
 
 **Ready (backlog, unimplemented):**
 
 | Spec | What it is |
 |---|---|
-| `docs/specs/trendshift-conda-forge.md` | Two-track upstream-sweep packaging. Track A: cf_atlas **Phase T** GitHub-trending discovery engine (schema v28→v29, `trending-candidates` CLI/MCP tool) + tiered packaging workflow, first batch seeded by `cli-anything-hub` — resume at Wave A. Track B (absorbed `microsoft-conda-forge.md`): the June 2026 `github.com/microsoft/*` org audit — ~10–14 recipes in 3 waves, Q1–Q3 open. |
-| `docs/specs/cfe-atlas-datapipeline-kedro-migration.md` | Migrate the cf_atlas orchestrator from hand-rolled phases to a Kedro/Dagster/DuckDB stack (Waves A–G). Run via `bmad`. |
+| `docs/specs/trendshift-conda-forge.md` | Two-track upstream-sweep packaging. Track A: cf_atlas **Phase T** GitHub-trending discovery engine (schema v29→v30, `trending-candidates` CLI/MCP tool) + tiered packaging workflow, first batch seeded by `cli-anything-hub` — resume at Wave A. Track B (absorbed `microsoft-conda-forge.md`): the June 2026 `github.com/microsoft/*` org audit — ~10–14 recipes in 3 waves, Q1–Q3 open. |
 | `docs/specs/claude-team-memory.md` | `.claude/memory/` team-shared memory layer + `team-memory` skill (10 waved stories). |
-| `docs/specs/copilot-bridge-vscode-extension.md` | Sideload-only VS Code extension wrapping the copilot-api bridge pattern (see `docs/copilot-to-api.md`). |
+| `docs/specs/copilot-bridge-vscode-extension.md` | Sideload-only VS Code extension wrapping the copilot-api bridge pattern (see `docs/copilot-to-api.md`). Headless/HTTP-bridge layer; now includes BMAD-runner + multiproject stories (13–15) to back the unattended `bmad-loop`/`bmad-dev-auto` workflow. |
+| `docs/specs/bmad-copilot-adapter-upstream.md` | **(draft)** Contribution brief to upstream the `@bmad` Copilot-Chat adapter (`bmad-code-org/bmad-method-ui#2`, unmerged) into the official `bmad-dashboard` extension — the in-IDE conversational companion to the headless copilot-bridge. Needs a contribution-path decision. |
+| `docs/specs/pyforge-warden.md` | **Warden** — pluggable multi-axis Python dependency compliance gate (v1 axes: hygiene `deptry`, security `osv-scanner`+CISA-KEV+EPSS gates, license + currency with **flag-activated gates**, baseline & grandfathering, opt-in fix-PR actuator) over Python/Conda/Pixi manifests; one schema-validated `ComplianceReport` + CI exit-code gate. Spec-first since 2026-07-15; v1 re-baselined 2026-07-16 (D12: the former v1.1 bucket is v1) — 6 epics / 31 stories, FR1–FR40. Stories 1.1–1.4 shipped. osv-scanner consumed from the existing conda-forge feedstock (no new recipe). |
 
 **Timeless workflows (`workflow` — parameterized, re-runnable; per-case state appends to their Worked Examples):**
 
@@ -171,6 +184,7 @@ otherwise, run a spec via `bmad-quick-dev` with the spec path + parameters named
 |---|---|
 | `docs/specs/feedstock-platform-expansion.md` | Dual-goal per-feedstock workflow: refresh `recipes/<feedstock>/` to the latest CFE shape at the latest upstream version AND widen the build matrix (osx-arm64 / linux-aarch64) in the same PR. The procedural core both refresh specs delegate to; deep detail in `.claude/skills/conda-forge-expert/guides/feedstock-platform-expansion.md`. |
 | `docs/specs/feedstock-failure-remediation.md` | Red feedstock-PR remediation loop: triage FLAKE / REAL_FIX / BLOCKED (G32 signature catalog), execute-locally-first, maintainer-edit push to the bot fork, rerender-after-push. Worked example: the 2026-06-17/18 12-PR batch (G31–G34). |
+| `docs/specs/presentation-deck.md` | Reusable React+Vite slide-deck workflow: turn a Claude Design 1920×1080 `.dc.html` prototype into a self-contained deck via mechanical slide extraction → a small deck engine (fit-to-viewport, keyboard nav, URL-hash routing, overview grid, presenter view w/ notes+timer), a static offline-safe Vite bundle, and Marp + PPTX exports. Parameterized by topic (non-conda-forge). Worked Example 1 = the 45-slide *Agentic AI across the SDLC* / BMAD deck (`presentations/agentic-sdlc/`, PR #50). |
 
 **Shipped (historical record — evidence in each spec's `shipped_ref`):**
 

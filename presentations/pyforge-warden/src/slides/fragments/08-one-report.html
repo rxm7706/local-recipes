@@ -1,0 +1,21 @@
+<div style="display:flex; align-items:baseline; gap:24px; border-bottom:3px solid #201e1d; padding-bottom:18px;">
+      <span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:30px; color:#ec3013;">05</span>
+      <h2 style="font-size:46px; margin:0; letter-spacing:-0.02em; font-weight:800;">One report, one schema</h2>
+    </div>
+    <div style="flex:1; display:grid; grid-template-columns:1fr 1.15fr; gap:56px; align-items:center;">
+      <div>
+        <p style="font-size:30px; line-height:1.45; font-weight:500; margin:0;">Every engine and axis merges into one <b>ComplianceReport</b>, schema-validated against a committed contract.</p>
+        <div style="display:flex; flex-direction:column; gap:18px; margin-top:36px; font-size:25px;">
+          <div style="display:flex; gap:16px; align-items:baseline;"><span style="color:#ec3013; font-weight:800;">→</span><span>Producer-agnostic — the source of truth, not the log</span></div>
+          <div style="display:flex; gap:16px; align-items:baseline;"><span style="color:#ec3013; font-weight:800;">→</span><span>Carries <b>coverage</b> &amp; <b>provenance</b> per axis</span></div>
+          <div style="display:flex; gap:16px; align-items:baseline;"><span style="color:#ec3013; font-weight:800;">→</span><span>Versioned schema — the contract can't silently drift</span></div>
+        </div>
+      </div>
+      <div style="background:#1a1918; color:#e8e6e4; font-family:'IBM Plex Mono',monospace; font-size:21px; line-height:1.65; border:2px solid #201e1d;">
+        <div style="display:flex; gap:9px; align-items:center; padding:16px 22px; border-bottom:1px solid #3a3836;"><span style="width:13px; height:13px; border-radius:50%; background:#ec3013; display:inline-block;"></span><span style="width:13px; height:13px; border-radius:50%; background:#4a4846; display:inline-block;"></span><span style="width:13px; height:13px; border-radius:50%; background:#4a4846; display:inline-block;"></span><span style="margin-left:12px; color:#8a8785; font-size:16px;">compliance-report.json</span></div>
+        <div style="padding:26px 30px;"><span style="color:#8a8785;">{</span><br>&nbsp;&nbsp;"schema_version": <span style="color:#7fd6a0;">"1.0.0"</span>,<br>&nbsp;&nbsp;"verdict": <span style="color:#ff7a5e;">"policy-violation"</span>,<br>&nbsp;&nbsp;"exit_code": <span style="color:#ff7a5e;">1</span>,<br>&nbsp;&nbsp;"axes": {<br>&nbsp;&nbsp;&nbsp;&nbsp;"hygiene": <span style="color:#7fd6a0;">"clean"</span>,<br>&nbsp;&nbsp;&nbsp;&nbsp;"security": <span style="color:#ff7a5e;">"policy-violation"</span>,<br>&nbsp;&nbsp;&nbsp;&nbsp;"license": <span style="color:#ffd27f;">"indeterminate"</span><br>&nbsp;&nbsp;},<br>&nbsp;&nbsp;"coverage": { "manifests": <span style="color:#7fd6a0;">6</span>, "resolved": <span style="color:#7fd6a0;">312</span> }<br><span style="color:#8a8785;">}</span></div>
+      </div>
+    </div>
+    <div style="display:flex; justify-content:space-between; align-items:center; border-top:2px solid #d3d0cf; padding-top:16px; font-family:'IBM Plex Mono',monospace; font-size:15px; letter-spacing:0.04em; color:rgba(32,30,29,.55);">
+      <span style="font-weight:600; color:#201e1d;">WARDEN</span><span>never false-green</span><span>ACT II · 08</span>
+    </div>

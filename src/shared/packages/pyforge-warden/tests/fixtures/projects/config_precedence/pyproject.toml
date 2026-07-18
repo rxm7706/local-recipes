@@ -1,0 +1,15 @@
+# Config-precedence fixture (Story 3.1): [project] deps mirror
+# ../clean/pyproject.toml's exact-pinned shape exactly (a genuinely clean
+# scan), so this fixture's only interesting property is its
+# [tool.pyforge-warden] table -- fail-on="high" here conflicts with
+# pixi.toml's fail-on="low" (same directory); pyproject.toml must win.
+[project]
+name = "config-precedence-fixture"
+version = "1.0.0"
+dependencies = [
+    "requests==2.31.0",
+    "packaging==24.0",
+]
+
+[tool.pyforge-warden]
+fail-on = "high"

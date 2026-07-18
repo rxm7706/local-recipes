@@ -1,0 +1,6 @@
+output_folder = "_bmad-output/projects/pyforge-atlas"
+
+[project]
+slug = "pyforge-atlas"
+description = "Kedro/Dagster/DuckDB migration of the cf_atlas orchestrator (~10k LOC, 23 cataloged phases) with a Vizro/Vizro-AI read surface, Boring Semantic Layer, and MCP/A2A agent interface. Intake spec: docs/specs/cfe-atlas-datapipeline-kedro-migration.md (v5.6, analysis complete)."
+status = "active"

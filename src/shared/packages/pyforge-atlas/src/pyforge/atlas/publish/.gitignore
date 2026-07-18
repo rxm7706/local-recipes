@@ -1,0 +1,3 @@
+# The emitted static-host layout is a build product (reproducible from the emitter);
+# never commit it. The LIVE publish of this dir is the attended DW-G2 boundary event.
+_site/

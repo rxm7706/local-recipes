@@ -1,0 +1,19 @@
+<div style="display:flex; align-items:baseline; gap:24px; border-bottom:3px solid #201e1d; padding-bottom:18px;">
+      <span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:30px; color:#ec3013;">08</span>
+      <h2 style="font-size:46px; margin:0; letter-spacing:-0.02em; font-weight:800;">deptry — the hygiene axis <span style="font-family:'IBM Plex Mono',monospace; font-size:24px; color:#f3f2f2; background:#ec3013; padding:4px 14px; font-weight:600; vertical-align:middle;">v1</span></h2>
+    </div>
+    <div style="flex:1; display:grid; grid-template-columns:1fr 1.1fr; gap:56px; align-items:center;">
+      <div>
+        <p style="font-size:30px; line-height:1.45; font-weight:500; margin:0;">AST import analysis over the source tree, cross-checked against declared dependencies. Honors your existing <span style="font-family:'IBM Plex Mono',monospace; color:#c22a10;">[tool.deptry]</span> config.</p>
+      </div>
+      <div style="font-family:'IBM Plex Mono',monospace; border:2px solid #201e1d;">
+        <div style="display:flex; gap:22px; padding:18px 26px; border-bottom:2px solid #d3d0cf; font-size:24px;"><span style="color:#c22a10; font-weight:600; min-width:110px;">DEP001</span><span>missing — imported, not declared</span></div>
+        <div style="display:flex; gap:22px; padding:18px 26px; border-bottom:2px solid #d3d0cf; font-size:24px;"><span style="color:#c22a10; font-weight:600; min-width:110px;">DEP002</span><span>unused — declared, not imported</span></div>
+        <div style="display:flex; gap:22px; padding:18px 26px; border-bottom:2px solid #d3d0cf; font-size:24px;"><span style="color:#c22a10; font-weight:600; min-width:110px;">DEP003</span><span>transitive — used, not declared</span></div>
+        <div style="display:flex; gap:22px; padding:18px 26px; border-bottom:2px solid #d3d0cf; font-size:24px;"><span style="color:#c22a10; font-weight:600; min-width:110px;">DEP004</span><span>misplaced dev dependency</span></div>
+        <div style="display:flex; gap:22px; padding:18px 26px; font-size:24px;"><span style="color:#c22a10; font-weight:600; min-width:110px;">DEP005</span><span>duplicate declaration</span></div>
+      </div>
+    </div>
+    <div style="display:flex; justify-content:space-between; align-items:center; border-top:2px solid #d3d0cf; padding-top:16px; font-family:'IBM Plex Mono',monospace; font-size:15px; letter-spacing:0.04em; color:rgba(32,30,29,.55);">
+      <span style="font-weight:600; color:#201e1d;">WARDEN</span><span>never false-green</span><span>ACT III · 12</span>
+    </div>

@@ -1,0 +1,15 @@
+# CISA KEV opt-out fixture (Story 6.4): same pdos-kev-fixture==1.0.0 pin as
+# ../vuln_kev/pyproject.toml, but `fail-on-kev = false` -- proves that with
+# the gate off, the KEV cache is never even consulted and the MEDIUM-tier
+# match's CVSS-only gating (warn/exit 0) is byte-identical to pre-6.4
+# behavior, even when a real KEV match would otherwise force
+# policy-violation (AC2/matrix "Policy off" row).
+[project]
+name = "vuln-kev-fail-on-kev-false-fixture"
+version = "1.0.0"
+dependencies = [
+    "pdos-kev-fixture==1.0.0",
+]
+
+[tool.pyforge-warden]
+fail-on-kev = false
