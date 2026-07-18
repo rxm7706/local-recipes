@@ -15,11 +15,14 @@ the renderer level, independent of any real scan pipeline.
 
 from __future__ import annotations
 
+import json
+
 from pyforge.warden.interfaces import EngineResult
 from pyforge.warden.inventory import ResolvedInventory
 from pyforge.warden.models import (
     AXIS_HYGIENE,
     AXIS_INGESTION,
+    AXIS_VULNERABILITY,
     AxisCoverage,
     ComplianceReport,
     ErrorKind,
@@ -31,7 +34,7 @@ from pyforge.warden.models import (
     StatusDriver,
     VulnData,
 )
-from pyforge.warden.report import assemble_report, render_text
+from pyforge.warden.report import assemble_report, render_json, render_text
 
 _NO_VULN_DATA = VulnData(source=None, snapshot_at=None, max_age_ok=None)
 
@@ -67,6 +70,62 @@ def test_default_omitted_preserves_the_pre_2_4_coverage_shape(component_factory)
     assert by_axis["vulnerability"].deps_total == 2
     assert by_axis["vulnerability"].deps_assessed == 0
     assert by_axis["vulnerability"].resolution_depth == "direct-only"
+
+
+def test_license_currency_axes_get_coverage_rows(component_factory):
+    """Story 6.1: license/currency register in _REPORT_AXES, so every report
+    now carries their coverage rows. With no producer yet they are honestly
+    not-applicable (deps_total=0, deps_assessed=0, resolution_depth=None) --
+    NOT '0 of N assessed', which --fail-under-coverage would (wrongly) flag.
+    manifest counts stay real; gating defaults False (config.py is sole writer)."""
+    inventory = _inventory(component_factory)
+    report = _assemble(inventory)
+    by_axis = {c.axis: c for c in report.coverage}
+    assert set(by_axis) == {"hygiene", "vulnerability", "license", "currency"}
+    for axis in ("license", "currency"):
+        assert by_axis[axis].manifests_found == 1
+        assert by_axis[axis].manifests_parsed == 1
+        assert by_axis[axis].deps_total == 0
+        assert by_axis[axis].deps_assessed == 0
+        assert by_axis[axis].resolution_depth is None
+        assert by_axis[axis].gating is False
+
+
+def test_assemble_report_stamps_schema_version_1_1_0(component_factory):
+    """Story 6.1 (P1): the schema bump to 1.1.0 IS the deliverable — pin it on
+    a real assembled report AND its rendered JSON (the literal string, so a
+    silent revert to 1.0.0 fails here, not just in a hand-built fixture)."""
+    inventory = _inventory(component_factory)
+    report = _assemble(inventory)
+    assert report.schema_version == "1.1.0"
+    assert json.loads(render_json(report))["schema_version"] == "1.1.0"
+
+
+def test_coverage_claim_for_unregistered_axis_is_a_hard_error(component_factory):
+    """Story 6.1 (F6): a coverage claim for an axis NOT in _REPORT_AXES is a
+    hard error, never silently dropped."""
+    from pyforge.warden.models import AxisCoverage
+
+    inventory = _inventory(component_factory)
+    engine_result = EngineResult(
+        findings=(),
+        errors=(),
+        coverage=(
+            AxisCoverage(
+                axis="sast",  # not a registered axis
+                manifests_found=1,
+                manifests_parsed=1,
+                deps_total=2,
+                deps_assessed=2,
+                resolution_depth=None,
+            ),
+        ),
+        axis="sast",
+    )
+    import pytest
+
+    with pytest.raises(ValueError, match="unregistered axis"):
+        _assemble(inventory, engine_results=(engine_result,))
 
 
 def test_explicit_true_matches_the_default_byte_for_byte(component_factory):
@@ -181,6 +240,75 @@ def test_empty_extraction_does_not_touch_deps_total_or_assessed(
     by_axis = {c.axis: c for c in report.coverage}
     assert by_axis["hygiene"].deps_total == 0
     assert by_axis["vulnerability"].deps_total == 0
+
+
+# --- fail_under_coverage (Story 3.1, FR19's coverage-floor role) ----------
+
+
+def test_fail_under_coverage_flags_a_below_floor_axis(component_factory):
+    inventory = _inventory(component_factory)
+    report = _assemble(inventory, fail_under_coverage=50.0)
+    finding_ids = {f.id for f in report.findings}
+    assert "indeterminate:coverage-floor:hygiene" in finding_ids
+    assert "indeterminate:coverage-floor:vulnerability" in finding_ids
+    assert report.status is Status.INDETERMINATE
+    assert report.exit_code == 1
+
+
+def test_fail_under_coverage_at_or_above_floor_is_unaffected(component_factory):
+    inventory = _inventory(component_factory)
+    engine_result = EngineResult(
+        findings=(),
+        errors=(),
+        coverage=(
+            AxisCoverage(
+                axis=AXIS_HYGIENE,
+                manifests_found=1,
+                manifests_parsed=1,
+                deps_total=2,
+                deps_assessed=2,
+                resolution_depth=None,
+            ),
+            AxisCoverage(
+                axis=AXIS_VULNERABILITY,
+                manifests_found=1,
+                manifests_parsed=1,
+                deps_total=2,
+                deps_assessed=2,
+                resolution_depth=None,
+            ),
+        ),
+        axis=AXIS_HYGIENE,
+    )
+    unfloored = _assemble(inventory, engine_results=(engine_result,))
+    at_floor = _assemble(
+        inventory, fail_under_coverage=50.0, engine_results=(engine_result,)
+    )
+    # 100% assessed for both axes is at-or-above a 50% floor -- byte-for-
+    # byte unaffected, same report a caller who never set the floor gets.
+    assert at_floor == unfloored
+
+
+def test_fail_under_coverage_never_flags_a_deps_total_zero_axis(component_factory):
+    """A deps_total == 0 axis (here: hygiene, via hygiene_applicable=False)
+    is vacuous -- never flagged regardless of the floor, even a floor of
+    100. The vulnerability axis (deps_total=2, deps_assessed=0) still gets
+    flagged, proving the exclusion is deps_total==0-specific, not a blanket
+    'hygiene axis is exempt' special case."""
+    inventory = _inventory(component_factory)
+    report = _assemble(inventory, fail_under_coverage=100.0, hygiene_applicable=False)
+    finding_ids = {f.id for f in report.findings}
+    assert "indeterminate:coverage-floor:hygiene" not in finding_ids
+    assert "indeterminate:coverage-floor:vulnerability" in finding_ids
+
+
+def test_fail_under_coverage_default_is_byte_identical_to_omitting_the_param(
+    component_factory,
+):
+    inventory = _inventory(component_factory)
+    default_report = _assemble(inventory)
+    explicit_report = _assemble(inventory, fail_under_coverage=0.0)
+    assert explicit_report == default_report
 
 
 # --- render_text (Story 1.8) ---------------------------------------------

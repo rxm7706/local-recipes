@@ -1151,7 +1151,11 @@ def test_unreadable_manifest_is_unparsable_manifest_not_a_crash(
 ):
     """An OS failure READING the manifest (chmod-000) is a genuine manifest
     problem: kind unparsable-manifest with the OS error in the message,
-    report emitted, exit via the error projection."""
+    report emitted, exit via the error projection. Story 3.1: ConfigLoader
+    independently hits the identical permission failure reading the same
+    file for [tool.pyforge-warden], so a config-parse error rides alongside
+    the pre-existing unparsable-manifest one -- both use the same symbolic-
+    errno convention."""
     if os.geteuid() == 0:
         pytest.skip("root ignores file permission bits")
     path = write_pyproject(tmp_path, ["requests==2.31.0"])
@@ -1163,18 +1167,27 @@ def test_unreadable_manifest_is_unparsable_manifest_not_a_crash(
     assert rc == 2
     assert rc == document["exit_code"]
     assert document["status"]["value"] == "error"
-    (error,) = document["errors"]
-    assert error["kind"] == "unparsable-manifest"
-    assert "unreadable manifest" in error["message"]
-    # The errno is stated SYMBOLICALLY: locale-independent (glibc renders
-    # strerror in the session locale) and free of the absolute path that
-    # OSError.__str__ embeds (report bytes must not vary by locale or
-    # scan location).
-    assert "EACCES" in error["message"]
-    assert "PermissionError" in error["message"]
-    assert str(tmp_path) not in error["message"]  # no absolute path leak
-    assert document["status"]["driver"]["finding_id"] == (
-        "error:unparsable-manifest:pyproject.toml"
+    by_kind = {e["kind"]: e for e in document["errors"]}
+    assert set(by_kind) == {"config-parse", "unparsable-manifest"}
+    assert "unreadable manifest" in by_kind["unparsable-manifest"]["message"]
+    # The errno is stated SYMBOLICALLY in BOTH errors: locale-independent
+    # (glibc renders strerror in the session locale) and free of the
+    # absolute path that OSError.__str__ embeds (report bytes must not
+    # vary by locale or scan location).
+    assert "EACCES" in by_kind["unparsable-manifest"]["message"]
+    assert "PermissionError" in by_kind["unparsable-manifest"]["message"]
+    assert str(tmp_path) not in by_kind["unparsable-manifest"]["message"]
+    assert "EACCES" in by_kind["config-parse"]["message"]
+    assert "PermissionError" in by_kind["config-parse"]["message"]
+    # config-parse's own subject IS the scan target path (spec-literal:
+    # _record_error(..., subject=str(target))) -- unlike unparsable-
+    # manifest's relative-path subject, its finding_id legitimately embeds
+    # the absolute target path (ConfigLoader has no per-manifest "relative
+    # path" concept -- it operates on the whole scan target); the deterministic
+    # tie-break (smallest (axis, finding_id), both AXIS_INGESTION) picks it
+    # as the driver since "config-parse" < "unparsable-manifest" lexically.
+    assert document["status"]["driver"]["finding_id"].startswith(
+        "error:config-parse:"
     )
     assert err != ""
 

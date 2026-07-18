@@ -16,6 +16,7 @@ from pathlib import Path
 import pytest
 
 from pyforge.warden import engines as engines_module
+from pyforge.warden.config import EffectiveConfig
 from pyforge.warden.engines import (
     NullEngine,
     register_engine,
@@ -32,8 +33,10 @@ from pyforge.warden.interfaces import (
 )
 from pyforge.warden.inventory import ResolvedInventory, merge_components
 from pyforge.warden.models import (
+    AXIS_CURRENCY,
     AXIS_HYGIENE,
     AXIS_INGESTION,
+    AXIS_LICENSE,
     AXIS_VULNERABILITY,
     CveMatchLevel,
     Ecosystem,
@@ -298,6 +301,107 @@ def test_severity_less_vuln_axis_finding_still_feeds_indeterminate(
     ) in rungs
 
 
+# --- Story 3.1: EffectiveConfig threading ------------------------------------
+
+
+def test_default_policy_no_config_arg_is_unchanged(component_factory):
+    """DefaultPolicy() (no config) reproduces every pre-3.1 caller's
+    behavior byte-for-byte -- CRITICAL still blocks, HIGH still warns."""
+    engine_finding = Finding(
+        id="vuln:GHSA-xxxx:foo@1.0.0",
+        axis=AXIS_VULNERABILITY,
+        message="foo: GHSA-xxxx",
+        subject="foo",
+        severity=Severity(tier=SeverityTier.HIGH, raw=None),
+    )
+    result = EngineResult(
+        findings=(engine_finding,), errors=(), coverage=(), axis=AXIS_VULNERABILITY
+    )
+    inventory = make_inventory(component_factory(name="requests", version="2.31.0"))
+    _, rungs = DefaultPolicy().evaluate(inventory, [result])
+    assert (
+        Status.WARN,
+        StatusDriver(axis=AXIS_VULNERABILITY, finding_id=engine_finding.id),
+    ) in rungs
+
+
+def test_default_policy_with_fail_on_high_escalates_a_high_severity_finding(
+    component_factory,
+):
+    """Story 3.1: EffectiveConfig(fail_on=HIGH) escalates a HIGH-severity
+    finding to policy-violation (default: warn)."""
+    engine_finding = Finding(
+        id="vuln:GHSA-xxxx:foo@1.0.0",
+        axis=AXIS_VULNERABILITY,
+        message="foo: GHSA-xxxx",
+        subject="foo",
+        severity=Severity(tier=SeverityTier.HIGH, raw=None),
+    )
+    result = EngineResult(
+        findings=(engine_finding,), errors=(), coverage=(), axis=AXIS_VULNERABILITY
+    )
+    inventory = make_inventory(component_factory(name="requests", version="2.31.0"))
+    config = EffectiveConfig(fail_on=SeverityTier.HIGH)
+    _, rungs = DefaultPolicy(config).evaluate(inventory, [result])
+    assert (
+        Status.POLICY_VIOLATION,
+        StatusDriver(axis=AXIS_VULNERABILITY, finding_id=engine_finding.id),
+    ) in rungs
+
+
+def test_default_policy_with_dep001_block_confidence_likely_keeps_dep001_blocking(
+    component_factory,
+):
+    """Story 3.1: EffectiveConfig(dep001_block_confidence="likely") keeps
+    DEP001 at policy-violation with a "likely"-confidence component present
+    (the default "verified" threshold downgrades it to warn instead)."""
+    engine_finding = Finding(
+        id="hygiene:DEP001:leftpad",
+        axis=AXIS_HYGIENE,
+        message="missing",
+        subject="leftpad",
+        severity=None,
+    )
+    result = EngineResult(
+        findings=(engine_finding,), errors=(), coverage=(), axis=AXIS_HYGIENE
+    )
+    inventory = make_inventory(
+        component_factory(name="pytorch", version="2.1.0", mapping_confidence="likely")
+    )
+    config = EffectiveConfig(dep001_block_confidence="likely")
+    _, rungs = DefaultPolicy(config).evaluate(inventory, [result])
+    assert (
+        Status.POLICY_VIOLATION,
+        StatusDriver(axis=AXIS_HYGIENE, finding_id="hygiene:DEP001:leftpad"),
+    ) in rungs
+
+
+def test_default_policy_default_confidence_threshold_downgrades_on_a_likely_component(
+    component_factory,
+):
+    """The default (dep001_block_confidence="verified") reproduces today's
+    exact behavior: a "likely"-confidence component anywhere downgrades
+    DEP001 to warn."""
+    engine_finding = Finding(
+        id="hygiene:DEP001:leftpad",
+        axis=AXIS_HYGIENE,
+        message="missing",
+        subject="leftpad",
+        severity=None,
+    )
+    result = EngineResult(
+        findings=(engine_finding,), errors=(), coverage=(), axis=AXIS_HYGIENE
+    )
+    inventory = make_inventory(
+        component_factory(name="pytorch", version="2.1.0", mapping_confidence="likely")
+    )
+    _, rungs = DefaultPolicy().evaluate(inventory, [result])
+    assert (
+        Status.WARN,
+        StatusDriver(axis=AXIS_HYGIENE, finding_id="hygiene:DEP001:leftpad"),
+    ) in rungs
+
+
 def test_hypothetical_future_axis_still_hits_the_backstop(component_factory):
     """Now that BOTH v1 axes (hygiene, vulnerability) have real mappings, the
     generic backstop is reachable only by a finding whose axis is neither —
@@ -559,6 +663,79 @@ def test_doubly_deficient_component_derives_both_axis_findings(
     assert len(rungs) == 2
     assert all(status is Status.INDETERMINATE for status, _ in rungs)
     assert all(driver is not None for _, driver in rungs)
+
+
+# --- Story 6.1: license/currency coverage (axis-qualified tokens) --------------
+
+
+def test_license_uncovered_component_derives_axis_qualified_finding(
+    component_factory,
+):
+    """A license_covered=False component (producer path; inert in 6.1's own
+    fixtures where it defaults True) derives an axis-qualified
+    ``uncovered-license`` finding on AXIS_LICENSE."""
+    inventory = make_inventory(
+        component_factory(name="oddball", version="1.0.0", license_covered=False)
+    )
+    findings, rungs = DefaultPolicy().evaluate(inventory, [EMPTY_RESULT])
+    assert [f.id for f in findings] == ["indeterminate:uncovered-license:oddball"]
+    assert findings[0].axis == AXIS_LICENSE
+    ((status, driver),) = rungs
+    assert status is Status.INDETERMINATE
+    assert driver == StatusDriver(
+        axis=AXIS_LICENSE, finding_id="indeterminate:uncovered-license:oddball"
+    )
+
+
+def test_currency_uncovered_component_derives_axis_qualified_finding(
+    component_factory,
+):
+    inventory = make_inventory(
+        component_factory(name="oddball", version="1.0.0", currency_covered=False)
+    )
+    findings, rungs = DefaultPolicy().evaluate(inventory, [EMPTY_RESULT])
+    assert [f.id for f in findings] == ["indeterminate:uncovered-currency:oddball"]
+    assert findings[0].axis == AXIS_CURRENCY
+    ((status, driver),) = rungs
+    assert status is Status.INDETERMINATE
+    assert driver == StatusDriver(
+        axis=AXIS_CURRENCY, finding_id="indeterminate:uncovered-currency:oddball"
+    )
+
+
+def test_triple_uncovered_component_keeps_three_distinct_axis_ids(
+    component_factory,
+):
+    """The three uncovered tokens MUST stay distinct — a bare "uncovered"
+    for all three axes would collide onto one id and silently swallow two
+    axes via the id-dedupe. Axis-qualifying license/currency closes it."""
+    inventory = make_inventory(
+        component_factory(
+            name="oddball",
+            version="1.0.0",
+            hygiene_covered=False,
+            license_covered=False,
+            currency_covered=False,
+        )
+    )
+    findings, rungs = DefaultPolicy().evaluate(inventory, [EMPTY_RESULT])
+    by_id = {f.id: f.axis for f in findings}
+    assert by_id == {
+        "indeterminate:uncovered:oddball": AXIS_HYGIENE,
+        "indeterminate:uncovered-license:oddball": AXIS_LICENSE,
+        "indeterminate:uncovered-currency:oddball": AXIS_CURRENCY,
+    }
+    assert len(rungs) == 3
+    assert all(status is Status.INDETERMINATE for status, _ in rungs)
+
+
+def test_fully_covered_component_derives_no_uncovered_findings(component_factory):
+    """The default (6.1-era) component is license/currency-covered=True, so
+    the new blocks stay inert — behavior-neutral."""
+    inventory = make_inventory(component_factory(name="ok", version="1.0.0"))
+    findings, rungs = DefaultPolicy().evaluate(inventory, [EMPTY_RESULT])
+    assert findings == ()
+    assert rungs == ((Status.CLEAN, None),)
 
 
 # --- driver axis mirrors the referenced finding (P10) --------------------------

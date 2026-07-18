@@ -9,8 +9,12 @@ Ownership decisions recorded here:
   ``routing.py`` the router) and *conform* to these shapes; Stories
   1.3/1.5/2.x implement the seams, never redesign them. ``DefaultPolicy``
   is the RECORDED EXCEPTION to that layering rule: the fail-closed
-  inventory→verdict bridge lives WITH the seam it closes (no policy stage
-  module exists until Story 3.1's config/policy tables).
+  inventory→verdict bridge lives WITH the seam it closes. Story 3.1 landed
+  the policy stage module (``config.py``'s ``EffectiveConfig``/
+  ``ConfigLoader``); ``DefaultPolicy`` now consumes it (``self._config``)
+  for DEP001's mapping-confidence trust threshold and the vulnerability-
+  axis severity→status table, defaulting to ``EffectiveConfig.default()``
+  when no config is supplied.
 * Engine findings pass through into the report AND each feeds one
   conservative ``indeterminate`` rung whose driver references it — the
   FALSE-GREEN BACKSTOP: ``register_engine`` is a public seam, so a
@@ -76,9 +80,12 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol, runtime_checkable
 
+from .config import EffectiveConfig
 from .inventory import Component, ResolvedInventory
 from .models import (
+    AXIS_CURRENCY,
     AXIS_HYGIENE,
+    AXIS_LICENSE,
     AXIS_VULNERABILITY,
     AxisCoverage,
     Ecosystem,
@@ -244,29 +251,34 @@ class DefaultPolicy:
       a component name is CR/LF-sanitized (``_sanitize_id_segment``).
     """
 
+    def __init__(self, config: EffectiveConfig | None = None) -> None:
+        # No config -> EffectiveConfig.default(), which reproduces every
+        # pre-3.1 caller's behavior byte-for-byte (Story 3.1's Boundaries:
+        # DefaultPolicy() must stay unchanged).
+        self._config = config or EffectiveConfig.default()
+
     def evaluate(
         self, inventory: ResolvedInventory, engine_results: Sequence[EngineResult]
     ) -> tuple[tuple[Finding, ...], tuple[tuple[Status, StatusDriver | None], ...]]:
-        # Lazy imports break the interfaces<->hygiene, interfaces<->vuln, and
-        # interfaces<->extract.lockfiles cycles (extract.lockfiles imports
-        # Router from here); by the time evaluate() runs, all modules are
-        # fully loaded.
-        from .extract.lockfiles import TRUSTED_MATCH_CONFIDENCE
+        # Lazy imports break the interfaces<->hygiene and interfaces<->vuln
+        # cycles; by the time evaluate() runs, all modules are fully loaded.
         from .hygiene import hygiene_rung
         from .vuln import vuln_rung
 
         # Story 2.1, Gap-A: DEP001 is trusted (blocks) unless the inventory
-        # carries a positive ambiguous-mapping signal — a "likely"-confidence
-        # conda component — anywhere. Computed once per scan, not per
-        # finding (see hygiene.hygiene_rung's docstring for why). A total
-        # map miss (mapping_confidence is None) does NOT count as ambiguous:
-        # most conda packages are legitimately non-Python/native and will
-        # NEVER have a pypi_identity, so treating every miss as a distrust
-        # signal would make this gate false almost universally — only a
-        # POSITIVE untrusted candidate (a "likely" hit) is evidence the
+        # carries a positive ambiguous-mapping signal — a component whose
+        # mapping_confidence ranks below the configured
+        # dep001_block_confidence threshold (Story 3.1: self._config.
+        # is_confidence_trusted, default "verified") — anywhere. Computed
+        # once per scan, not per finding (see hygiene.hygiene_rung's
+        # docstring for why). A total map miss (mapping_confidence is None)
+        # does NOT count as ambiguous: most conda packages are legitimately
+        # non-Python/native and will NEVER have a pypi_identity, so treating
+        # every miss as a distrust signal would make this gate false almost
+        # universally — only a POSITIVE untrusted candidate is evidence the
         # mapping pipeline actually saw ambiguity for this scan.
         dep001_trusted = all(
-            component.mapping_confidence in (None, TRUSTED_MATCH_CONFIDENCE)
+            self._config.is_confidence_trusted(component.mapping_confidence)
             for component in inventory.components
         )
 
@@ -298,8 +310,13 @@ class DefaultPolicy:
                     # never mapping a finding to clean (C0 preserved). The
                     # axis's own indeterminate: withhold findings (severity
                     # is None) still land on indeterminate via vuln_rung's
-                    # own fallback, unchanged from today.
-                    rungs.append(vuln_rung(finding))
+                    # own fallback, unchanged from today. Story 3.1: the
+                    # policy table is derived from self._config's fail_on
+                    # (default reproduces DEFAULT_VULN_SEVERITY_POLICY
+                    # exactly).
+                    rungs.append(
+                        vuln_rung(finding, policy=self._config.vuln_severity_policy)
+                    )
                 else:
                     # The false-green backstop now only governs a
                     # hypothetical future axis with no mapping of its own: a
@@ -369,6 +386,32 @@ class DefaultPolicy:
                         AXIS_HYGIENE,
                         f"{component.name}: not hygiene-covered — "
                         "hygiene-axis cleanliness cannot be claimed",
+                    )
+                )
+            # Story 6.1: the license/currency coverage mechanism, landed inert
+            # (every 6.1-era component is license_covered/currency_covered=True;
+            # producers set False later). The reason tokens MUST be
+            # axis-qualified — a bare "uncovered" (hygiene's token) would
+            # collide all three onto one id ("indeterminate:uncovered:<name>")
+            # and silently swallow two axes via the id-dedupe below.
+            if not component.license_covered:
+                derived.append(
+                    (
+                        Status.INDETERMINATE,
+                        "uncovered-license",
+                        AXIS_LICENSE,
+                        f"{component.name}: not license-covered — "
+                        "license-axis cleanliness cannot be claimed",
+                    )
+                )
+            if not component.currency_covered:
+                derived.append(
+                    (
+                        Status.INDETERMINATE,
+                        "uncovered-currency",
+                        AXIS_CURRENCY,
+                        f"{component.name}: not currency-covered — "
+                        "currency-axis cleanliness cannot be claimed",
                     )
                 )
             if not derived:

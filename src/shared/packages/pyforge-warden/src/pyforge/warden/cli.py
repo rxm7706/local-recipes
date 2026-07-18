@@ -128,19 +128,80 @@ Ownership decisions recorded:
   ``tmp_path`` dirs to test its own argv/error-handling logic in isolation,
   and embedding the skip there would exercise the wrong branch in every one
   of those tests.
+* Waiver wiring (Story 3.2, FR24-FR26): ``target / ".warden-waivers.yaml"``
+  is read AFTER the D2(c) empty-extraction append and BEFORE
+  ``assemble_report`` — every rung fed by ``DefaultPolicy``/D2(c) up to
+  that point (including the D2(c) driver) is present, so waiver matching
+  and ``--bypass`` see that picture. NOT covered (review finding,
+  documented rather than silently overclaimed): the
+  ``indeterminate:coverage-floor:<axis>`` rung ``report.assemble_report``
+  computes internally, strictly AFTER this point — that axis is
+  out-of-scope for waiver-matching in this story (opt-in, defaults off;
+  see the story's spec) and neither a committed waiver nor ``--bypass``
+  can suppress it. A malformed/schema-invalid file surfaces through the
+  SAME ``_record_error`` seam as every other ingestion-stage failure
+  (``owner="waiver"``); a missing file is normal (zero waivers, no error).
+  ``--bypass`` force-bypasses every remaining non-clean, Finding-backed
+  rung it can see (the same coverage-floor exclusion applies) and prints
+  ``waiver.emit_bypass_stanza``'s output to stdout BEFORE the report
+  itself — never to a file (the tool never writes into the scanned tree);
+  ``--bypass`` without ``--reason`` is the ONE usage error this module
+  adds beyond argparse's own (``scan_parser.error(...)``, exit 2, never
+  0). Under ``--format json``, the stanza is NOT written to stdout (NFR-I3:
+  stdout carries exactly one schema-valid document or nothing) — it is
+  written to stderr instead, so the audit-trail affordance is never
+  silently lost regardless of output format.
+* Waiver-expiry visibility + ``--warn-only`` (Story 3.3, FR23/FR25):
+  ``apply_waivers`` now returns a 3-tuple; the new ``expired_waivers`` list
+  is threaded into ``render_text`` unchanged in MEANING (a distinct
+  ``[waiver-expired]`` line per expired match — the already-correct
+  re-block fall-through itself is untouched, only its visibility is new).
+  ``--warn-only`` (``store_true``, next to ``--bypass``) calls
+  ``waiver.warn_blocking`` AFTER the existing ``apply_waivers``/
+  ``--bypass`` block, downgrading every still-blocking ``policy-
+  violation``/``indeterminate`` rung it sees to ``warn`` (never ``error``)
+  — the ``indeterminate:coverage-floor:<axis>`` rung ``report.
+  assemble_report`` computes internally is added strictly AFTER this
+  point, so it structurally survives ``--warn-only`` untouched (the FR19
+  guardrail). The downgraded-rung count feeds ``render_text``'s
+  graduate-to-enforcing nudge, gated on ALL of ``warn_only``,
+  ``status["value"] == "warn"``, and ``warn_only_downgraded > 0`` — see
+  ``report.py``'s own docstring for why ``status == "warn"`` alone is not
+  sufficient.
+* ``--sbom-output`` (Story 4.1): an independent sibling artifact, written
+  right after ``report = assemble_report(...)`` — the report is ALREADY
+  fully assembled by this point, so NO failure here (rendering OR writing)
+  may suppress its emission below or alter ``report.exit_code`` (review
+  finding, 2026-07-18: an earlier revision let a non-``(OSError, ValueError)``
+  rendering defect — e.g. ``sbom.SbomValidationError`` — escape uncaught to
+  ``main``'s last-resort net, which discarded the already-valid report
+  entirely and overrode the exit code; live-reproduced, now closed).
+  Rendering and writing are two separate ``try`` blocks so the stderr
+  diagnostic correctly names which phase failed; BOTH catch broadly
+  (``Exception``, not just ``OSError``/``ValueError``) — an unrelated
+  artifact's internal bug must degrade to a loud stderr line, never a
+  silent report loss.
 """
 
 from __future__ import annotations
 
 import argparse
 import errno as errno_module
+import getpass
 import os
 import stat as stat_module
 import sys
 import traceback
+from datetime import UTC, datetime
 from pathlib import Path
 
 from . import __version__
+from .config import (
+    ConfigLoader,
+    ConfigParseError,
+    ConfigValidationError,
+    EffectiveConfig,
+)
 from .discovery import CONDA_LOCK_KIND, PIXI_LOCK_KIND, discover
 from .engines import DeptryEngine, engine_factories
 from .extract import UnparsableManifestError, extractor_for
@@ -156,11 +217,22 @@ from .models import (
     Finding,
     Status,
     StatusDriver,
+    SuppressedFinding,
     VulnData,
 )
 from .report import TOOL_NAME, assemble_report, render_json, render_text
 from .routing import DefaultRouter
+from .sbom import render_cyclonedx
 from .verdict import EXIT_SIGINT, exit_code_for
+from .waiver import (
+    WaiverParseError,
+    WaiverValidationError,
+    apply_waivers,
+    bypass_blocking,
+    emit_bypass_stanza,
+    load_waivers,
+    warn_blocking,
+)
 
 # D2(c) empty-extraction (Story 1.9): one shared message stem for both the
 # stderr notice and the paired Finding below — kept as ONE literal so a
@@ -170,8 +242,33 @@ _EMPTY_EXTRACTION_MESSAGE = (
     "{path!r}"
 )
 
+# Story 3.2: the one waiver-file name this tool ever reads, relative to the
+# scan target -- never written by the tool itself (--bypass prints its
+# stanza to stdout only, for a human to commit).
+_WAIVER_FILENAME = ".warden-waivers.yaml"
 
-def _build_parser() -> argparse.ArgumentParser:
+
+def _coverage_floor(value: str) -> float:
+    """``argparse`` ``type=`` for ``--fail-under-coverage``: a float in
+    ``[0, 100]`` — an out-of-range or unparsable value is a usage error
+    (argparse's own exit 2), not a scan-time ``ConfigValidationError`` (the
+    CLI flag is validated at parse time, before ``ConfigLoader.load`` ever
+    runs; a TOML-sourced value goes through ``config.py``'s own coercion
+    instead)."""
+    try:
+        numeric = float(value)
+    except ValueError:
+        raise argparse.ArgumentTypeError(
+            f"--fail-under-coverage must be a number in [0, 100], got {value!r}"
+        ) from None
+    if not (0.0 <= numeric <= 100.0):
+        raise argparse.ArgumentTypeError(
+            f"--fail-under-coverage must be in [0, 100], got {value!r}"
+        )
+    return numeric
+
+
+def _build_parser() -> tuple[argparse.ArgumentParser, argparse.ArgumentParser]:
     parser = argparse.ArgumentParser(
         prog=TOOL_NAME,
         description=(
@@ -203,6 +300,18 @@ def _build_parser() -> argparse.ArgumentParser:
         ),
     )
     scan.add_argument(
+        "--sbom-output",
+        metavar="PATH",
+        default=None,
+        help=(
+            "write a schema-valid CycloneDX 1.6 SBOM to PATH, as an "
+            "independent sibling artifact alongside the report -- a "
+            "rendering or write failure is a non-fatal stderr diagnostic "
+            "and never alters the scan's exit code or suppresses the "
+            "report"
+        ),
+    )
+    scan.add_argument(
         "--deterministic",
         action="store_true",
         help=(
@@ -222,16 +331,76 @@ def _build_parser() -> argparse.ArgumentParser:
             "coverage still records no resolution-depth claim"
         ),
     )
-    return parser
+    scan.add_argument(
+        "--fail-on",
+        choices=("critical", "high", "medium", "low", "none"),
+        default=None,
+        help=(
+            "the vulnerability-axis severity tier at-or-above which a "
+            "finding composes 'policy-violation' rather than 'warn' "
+            "(default: critical — overrides any [tool.pyforge-warden] "
+            "fail-on config value)"
+        ),
+    )
+    scan.add_argument(
+        "--fail-under-coverage",
+        type=_coverage_floor,
+        default=None,
+        help=(
+            "per-axis coverage floor, 0-100 (default: 0/off) — an axis "
+            "whose deps_assessed/deps_total*100 falls below this composes "
+            "one 'indeterminate' rung (overrides any [tool.pyforge-warden] "
+            "fail-under-coverage config value)"
+        ),
+    )
+    scan.add_argument(
+        "--bypass",
+        action="store_true",
+        help=(
+            "force every still-non-clean finding to 'bypassed' and print a "
+            ".warden-waivers.yaml-ready stanza to stdout for a human to "
+            "commit (requires --reason; never writes into the scanned "
+            "tree)"
+        ),
+    )
+    scan.add_argument(
+        "--reason",
+        default=None,
+        help=(
+            "the waiver reason recorded in the --bypass stanza (required "
+            "alongside --bypass; no prompts, ever)"
+        ),
+    )
+    scan.add_argument(
+        "--warn-only",
+        action="store_true",
+        help=(
+            "downgrade every still-blocking rung ('policy-violation'/"
+            "'indeterminate') to 'warn' before the verdict composes -- "
+            "never a tool error -- a non-blocking on-ramp for adopting "
+            "the gate over a repo's pre-existing findings (FR23). The "
+            "composed status/exit code are unaffected by --fail-on while "
+            "this is set (only dropping --warn-only re-enables "
+            "enforcement); --fail-on still decides which findings compose "
+            "'policy-violation' before this downgrade runs, so the text "
+            "report's downgraded-finding count can still differ across "
+            "--fail-on values even when the final status/exit code do not"
+        ),
+    )
+    return parser, scan
 
 
 def main(argv: list[str] | None = None) -> int:
     if argv is None:
         argv = sys.argv[1:]
     try:
-        parser = _build_parser()
+        parser, scan_parser = _build_parser()
         try:
             args = parser.parse_args(argv)
+            if args.command == "scan" and args.bypass and args.reason is None:
+                # --bypass's own subparser (never the top-level parser) so
+                # the usage message names 'scan', not the whole tool.
+                scan_parser.error("--bypass requires --reason")
         except SystemExit as exc:
             # argparse exits itself: --version/--help -> 0, usage error -> 2
             # (never 0). Surface its code as a return value — a caught
@@ -323,6 +492,47 @@ def _run_scan(args: argparse.Namespace) -> int:
     rungs: list[tuple[Status, StatusDriver | None]] = []
     manifests_parsed = 0
     parsed_kinds: set[str] = set()
+    # Story 3.1: config loads BEFORE discovery — DefaultPolicy/assemble_
+    # report below both need the resolved EffectiveConfig, and a config
+    # failure must not abort the scan (it still runs, report still emits,
+    # on EffectiveConfig.default() — see config.py's module docstring for
+    # the parse-vs-validation error taxonomy this maps).
+    try:
+        config, config_warnings = ConfigLoader().load(
+            target,
+            cli_fail_on=args.fail_on,
+            cli_fail_under_coverage=args.fail_under_coverage,
+        )
+    except (ConfigParseError, ConfigValidationError) as exc:
+        # Review finding: an unrelated config-file error must not silently
+        # discard an already-argparse-validated CLI flag the user
+        # explicitly passed (--fail-on/--fail-under-coverage are unrelated
+        # to WHY the TOML failed to load).
+        config = EffectiveConfig.default_with_cli_overrides(
+            cli_fail_on=args.fail_on,
+            cli_fail_under_coverage=args.fail_under_coverage,
+        )
+        # Review finding: warnings gathered before the raise (e.g. a
+        # malformed-but-non-fatal pixi.toml) must still reach stderr.
+        for warning in exc.warnings:
+            _stderr(f"{TOOL_NAME}: {warning}")
+        kind = (
+            ErrorKind.CONFIG_PARSE
+            if isinstance(exc, ConfigParseError)
+            else ErrorKind.CONFIG_VALIDATION
+        )
+        _record_error(
+            errors,
+            rungs,
+            kind=kind,
+            owner="config",
+            subject=str(target),
+            message=str(exc),
+            axis=AXIS_INGESTION,
+        )
+    else:
+        for warning in config_warnings:
+            _stderr(f"{TOOL_NAME}: {warning}")
     try:
         manifests = discover(target)
     except OSError as exc:
@@ -532,7 +742,7 @@ def _run_scan(args: argparse.Namespace) -> int:
             )
     for result in engine_results:
         errors.extend(result.errors)
-    findings, policy_rungs = DefaultPolicy().evaluate(inventory, engine_results)
+    findings, policy_rungs = DefaultPolicy(config).evaluate(inventory, engine_results)
     if not hygiene_applicable:
         # AC3 (review finding, 2026-07-17): DefaultPolicy derives a
         # per-component `indeterminate:uncovered:<pkg>` (axis=hygiene)
@@ -588,6 +798,73 @@ def _run_scan(args: argparse.Namespace) -> int:
             )
         )
 
+    # Story 3.2 (FR24-FR26): a missing waiver file is normal (empty tuple,
+    # no error) -- mirrors config.py's own missing-file handling. A
+    # malformed/schema-invalid one is fail-closed: zero waivers apply, and
+    # a typed error rung/record surfaces via the SAME _record_error seam
+    # every other ingestion-stage failure uses.
+    try:
+        waivers = load_waivers(target / _WAIVER_FILENAME)
+    except (WaiverParseError, WaiverValidationError) as exc:
+        waivers = ()
+        _record_error(
+            errors,
+            rungs,
+            kind=(
+                ErrorKind.CONFIG_PARSE
+                if isinstance(exc, WaiverParseError)
+                else ErrorKind.CONFIG_VALIDATION
+            ),
+            owner="waiver",
+            subject=str(target),
+            message=str(exc),
+            axis=AXIS_INGESTION,
+        )
+    now = datetime.now(UTC)
+    rungs, applied_waivers, expired_waivers = apply_waivers(rungs, waivers, now=now)
+    # Story 6.1: echo each applied waiver into the JSON contract's
+    # suppressions[] (WaiverNotice -> SuppressedFinding, origin="waiver").
+    # Until now applied waivers echoed in --format text only; the baseline
+    # half (origin="baseline") is Story 6.8. Every notice.id exact-matched a
+    # blocking rung's driver.finding_id, which references a real findings[]
+    # entry, so ComplianceReport's suppressions[]<->findings[] cross-check holds.
+    suppressions = tuple(
+        SuppressedFinding(
+            finding_id=notice.id,
+            origin="waiver",
+            reason=notice.reason,
+            authorized_by=notice.authorized_by,
+            expires_at=notice.expires_at,
+        )
+        for notice in applied_waivers
+    )
+    bypass_stanza: str | None = None
+    if args.bypass:
+        try:
+            authorized_by = getpass.getuser()
+        except Exception:  # noqa: BLE001 — no CLI flag exists for this;
+            # fall back rather than let an unusual host environment
+            # (no /etc/passwd entry, no *_NAME env vars) crash the scan.
+            authorized_by = "unknown"
+        bypass_stanza = emit_bypass_stanza(
+            rungs,
+            reason=args.reason,
+            authorized_by=authorized_by,
+            accepted_at=now,
+            expiry_days=config.waiver_default_expiry_days,
+        )
+        rungs = bypass_blocking(rungs)
+
+    # Story 3.3 (FR23/FR25): --warn-only runs AFTER apply_waivers/--bypass
+    # above -- a waiver still shows as bypassed distinctly, and warn-only
+    # only mops up whatever is still blocking (policy-violation/
+    # indeterminate, never error). warn_only_downgraded is threaded into
+    # render_text's nudge below -- the nudge's exact count, never the
+    # report's total finding count.
+    warn_only_downgraded = 0
+    if args.warn_only:
+        rungs, warn_only_downgraded = warn_blocking(rungs)
+
     # The first non-None vuln_data across engine results, in engine-
     # registration order (Story 1.5: OsvEngine populates it on a completed
     # 0/1 run; every other engine/path leaves it None) — else an all-None
@@ -609,12 +886,63 @@ def _run_scan(args: argparse.Namespace) -> int:
         hygiene_applicable=hygiene_applicable,
         allow_empty=args.allow_empty,
         empty_extraction=empty_extraction,
+        fail_under_coverage=config.fail_under_coverage,
+        suppressions=suppressions,
     )
+    if args.sbom_output is not None:
+        # Story 4.1: an independent sibling artifact -- rendering and
+        # writing are separate try blocks (own module docstring) so
+        # NEITHER can suppress the already-assembled report below or
+        # alter report.exit_code; both catch broadly (Exception), not
+        # just OSError/ValueError -- a rendering defect must degrade to
+        # a loud stderr line, never a silent report loss.
+        try:
+            rendered_sbom = render_cyclonedx(inventory, report)
+        except Exception as exc:
+            _stderr(
+                f"{TOOL_NAME}: --sbom-output rendering failed "
+                f"({exc.__class__.__name__}): {exc}"
+            )
+        else:
+            try:
+                Path(args.sbom_output).write_text(rendered_sbom, encoding="utf-8")
+            except OSError as exc:
+                _stderr(
+                    f"{TOOL_NAME}: --sbom-output write to "
+                    f"{args.sbom_output!r} failed "
+                    f"({exc.__class__.__name__}): {exc}"
+                )
     try:
         if args.format == "json":
+            # NFR-I3 (Story 1.2, unchanged by this story): json-format
+            # stdout carries EXACTLY one schema-valid document or nothing --
+            # the stanza is a human-facing affordance (something to copy
+            # into a committed .warden-waivers.yaml) that would otherwise
+            # corrupt that guarantee for a machine consumer. The report
+            # itself already reflects the bypass fully (status=bypassed,
+            # exit_code=0); the stanza text itself still goes to stderr
+            # (review finding: silently dropping it entirely would leave a
+            # json-consuming caller with no way to recover the waiver text
+            # to commit) -- stderr carries no such purity contract.
+            if bypass_stanza is not None:
+                _stderr(bypass_stanza.rstrip("\n"))
             sys.stdout.write(render_json(report) + "\n")
         else:
-            sys.stdout.write(render_text(report) + "\n")
+            if bypass_stanza is not None:
+                # Printed BEFORE the report itself, for a human to copy
+                # into a committed .warden-waivers.yaml -- the tool never
+                # writes it into the scanned tree.
+                sys.stdout.write(bypass_stanza)
+            sys.stdout.write(
+                render_text(
+                    report,
+                    applied_waivers=applied_waivers,
+                    expired_waivers=expired_waivers,
+                    warn_only=args.warn_only,
+                    warn_only_downgraded=warn_only_downgraded,
+                )
+                + "\n"
+            )
         # Flush INSIDE the guarded region: on a block-buffered pipe whose
         # consumer vanished, the BrokenPipeError must surface HERE (absorbed
         # below) — not at interpreter-exit flush (CPython exit 120).

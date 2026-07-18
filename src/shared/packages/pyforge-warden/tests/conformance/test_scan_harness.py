@@ -27,6 +27,7 @@ import pytest
 
 from pyforge.warden import engines as engines_module
 from pyforge.warden.cli import main
+from pyforge.warden.config import ConfigLoader
 from pyforge.warden.interfaces import EngineResult
 from pyforge.warden.mapping import load_conda_pypi_map
 from pyforge.warden.models import (
@@ -35,6 +36,7 @@ from pyforge.warden.models import (
     ErrorKind,
     ErrorRecord,
     Finding,
+    SeverityTier,
 )
 
 FIXTURES = Path(__file__).resolve().parent.parent / "fixtures" / "projects"
@@ -52,6 +54,7 @@ HYGIENE_NOT_APPLICABLE = FIXTURES / "hygiene_not_applicable"
 HYGIENE_NOT_APPLICABLE_MALFORMED = FIXTURES / "hygiene_not_applicable_malformed"
 PIXI_LOCK_BASIC = FIXTURES / "pixi_lock_basic"
 CONDA_LOCK_BASIC = FIXTURES / "conda_lock_basic"
+CONFIG_PRECEDENCE = FIXTURES / "config_precedence"
 
 
 def load_schema() -> dict:
@@ -95,8 +98,10 @@ def test_clean_fixture_coverage_reflects_deptry_hygiene_assessment(capsys):
     _, out, _ = run_scan(capsys, CLEAN)
     document = parse_report(out)
     by_axis = {block["axis"]: block for block in document["coverage"]}
-    assert set(by_axis) == {"hygiene", "vulnerability"}
-    for block in by_axis.values():
+    # Story 6.1: license/currency register as producer axes.
+    assert set(by_axis) == {"hygiene", "vulnerability", "license", "currency"}
+    for axis in ("hygiene", "vulnerability"):
+        block = by_axis[axis]
         assert block["manifests_found"] == 1
         assert block["manifests_parsed"] == 1
         assert block["deps_total"] == 2
@@ -107,6 +112,16 @@ def test_clean_fixture_coverage_reflects_deptry_hygiene_assessment(capsys):
     # not the pre-1.5 "no engine ever consulted" stub 0.
     assert by_axis["hygiene"]["deps_assessed"] == 2
     assert by_axis["vulnerability"]["deps_assessed"] == 2
+    # Story 6.1: the new producer axes have no engine yet — honestly
+    # not-applicable (deps_total=0/deps_assessed=0/resolution_depth=None),
+    # NOT "0 of N assessed" (which --fail-under-coverage would flag).
+    for axis in ("license", "currency"):
+        block = by_axis[axis]
+        assert block["manifests_found"] == 1
+        assert block["manifests_parsed"] == 1
+        assert block["deps_total"] == 0
+        assert block["deps_assessed"] == 0
+        assert block["resolution_depth"] is None
 
 
 def test_sentinel_fixture_never_false_greens(capsys):
@@ -201,10 +216,20 @@ def test_malformed_toml_still_emits_an_error_report(capsys, tmp_path):
     assert rc == document["exit_code"]
     assert document["status"]["value"] == "error"
     assert document["status"]["driver"] is not None
+    # Story 3.1: pyproject.toml is BOTH the primary config source and the
+    # manifest -- malformed TOML there now produces TWO independent typed
+    # errors (config-parse from ConfigLoader, unparsable-manifest from
+    # extraction, each reading the same broken file for its own purpose).
+    # verdict.compose's deterministic tie-break (smallest (axis, finding_id);
+    # both share AXIS_INGESTION) picks config-parse, since "config-parse" <
+    # "unparsable-manifest" lexically.
     assert document["status"]["driver"]["finding_id"].startswith(
-        "error:unparsable-manifest:"
+        "error:config-parse:"
     )
-    assert [e["kind"] for e in document["errors"]] == ["unparsable-manifest"]
+    assert {e["kind"] for e in document["errors"]} == {
+        "config-parse",
+        "unparsable-manifest",
+    }
     assert err != ""  # the diagnostic went to stderr, not stdout
 
 
@@ -241,9 +266,11 @@ def test_error_report_driver_is_a_dangling_error_grammar_id(capsys, tmp_path):
     """Error-status drivers use the ``error:<kind>:<subject>`` grammar and
     do NOT reference findings[] (Story 1.7 ratified this as the final
     grammar): driver non-null, findings possibly empty, report still
-    schema-valid. This fixture's failure is a malformed pyproject.toml — a
-    pre-engine EXTRACT-stage failure, so the driver's axis is "ingestion"
-    (never a blanket vulnerability default)."""
+    schema-valid. This fixture's failure is a malformed pyproject.toml --
+    BOTH a config-load failure (Story 3.1) and a pre-engine EXTRACT-stage
+    failure, so the driver's axis is "ingestion" either way (never a
+    blanket vulnerability default); config-parse wins the deterministic
+    tie-break (see test_malformed_toml_still_emits_an_error_report above)."""
     (tmp_path / "pyproject.toml").write_text(
         "[project\nname = 'broken", encoding="utf-8"
     )
@@ -252,7 +279,7 @@ def test_error_report_driver_is_a_dangling_error_grammar_id(capsys, tmp_path):
     assert rc == 2
     driver = document["status"]["driver"]
     assert driver is not None
-    assert driver["finding_id"] == "error:unparsable-manifest:pyproject.toml"
+    assert driver["finding_id"].startswith("error:config-parse:")
     assert driver["axis"] == "ingestion"
     assert document["findings"] == []
     assert driver["finding_id"] not in {f["id"] for f in document["findings"]}
@@ -448,7 +475,11 @@ def test_deeply_nested_toml_is_unparsable_manifest_not_a_crash(
     """Hostile nesting overflows tomllib's recursive parser with
     RecursionError (not TOMLDecodeError): still a structurally-broken
     manifest — unparsable-manifest, report emitted, error exit; never a
-    traceback with no report and never 'internal error'."""
+    traceback with no report and never 'internal error'. Story 3.1:
+    ConfigLoader independently hits the identical RecursionError reading
+    the same file for [tool.pyforge-warden] (config.py mirrors extract/
+    pyproject.py's own hostile-input guard), so a config-parse error rides
+    alongside the pre-existing unparsable-manifest one -- neither crashes."""
     (tmp_path / "pyproject.toml").write_text(
         "x = " + "[" * 8000 + "]" * 8000 + "\n", encoding="utf-8"
     )
@@ -457,8 +488,10 @@ def test_deeply_nested_toml_is_unparsable_manifest_not_a_crash(
     assert rc == 2
     assert rc == document["exit_code"]
     assert document["status"]["value"] == "error"
-    (error,) = document["errors"]
-    assert error["kind"] == "unparsable-manifest"
+    assert {e["kind"] for e in document["errors"]} == {
+        "config-parse",
+        "unparsable-manifest",
+    }
     assert err != ""
 
 
@@ -898,6 +931,82 @@ def test_high_severity_vuln_fixture_composes_warn(capsys):
     assert err == ""
 
 
+# --- Story 3.1: configurable policy (--fail-on, config precedence) -----------
+
+
+def test_fail_on_high_escalates_vuln_high_fixture_to_policy_violation(capsys):
+    """--fail-on=high moves a HIGH-severity finding from warn to
+    policy-violation -- the same VULN_HIGH fixture as the warn/exit-0 test
+    above, now escalated end to end through the real osv-scanner subprocess
+    plus the CLI's --fail-on flag."""
+    rc, out, err = run_scan(capsys, VULN_HIGH, "--fail-on", "high")
+    document = parse_report(out)
+    assert rc == 1
+    assert rc == document["exit_code"]
+    assert document["status"]["value"] == "policy-violation"
+    finding_id = "vuln:PDOS-FIXTURE-0002:pdos-vuln-fixture-high@1.0.0"
+    matches = [f for f in document["findings"] if f["id"] == finding_id]
+    assert len(matches) == 1
+    assert matches[0]["severity"]["tier"] == "high"
+    driver = document["status"]["driver"]
+    assert driver is not None
+    assert driver["finding_id"] == finding_id
+    assert driver["axis"] == "vulnerability"
+    assert err == ""
+
+
+def test_config_precedence_pyproject_wins_with_conflict_warning(capsys):
+    """FR30: pyproject.toml (fail-on=high) and pixi.toml (fail-on=low) in
+    the same directory -- a same-key conflict resolves pyproject-wins,
+    surfaced as one stderr warning naming the key + both values + the
+    winner, never failing the build (the scan still completes normally)."""
+    rc, out, err = run_scan(capsys, CONFIG_PRECEDENCE)
+    document = parse_report(out)
+    assert rc == 0
+    assert rc == document["exit_code"]
+    assert document["status"]["value"] == "clean"
+    assert document["errors"] == []
+    assert "fail-on" in err
+    assert "high" in err
+    assert "low" in err
+    assert "pyproject.toml" in err
+    config, warnings = ConfigLoader().load(CONFIG_PRECEDENCE)
+    assert config.fail_on is SeverityTier.HIGH
+    assert len(warnings) == 1
+
+
+def test_config_cli_flag_overrides_both_files(capsys):
+    """CLI flags win over both files unconditionally -- --fail-on=critical
+    resolves to CRITICAL even though pyproject.toml says "high" and
+    pixi.toml says "low" (same CONFIG_PRECEDENCE fixture as above)."""
+    config, _ = ConfigLoader().load(CONFIG_PRECEDENCE, cli_fail_on="critical")
+    assert config.fail_on is SeverityTier.CRITICAL
+    rc, out, err = run_scan(capsys, CONFIG_PRECEDENCE, "--fail-on", "critical")
+    document = parse_report(out)
+    assert rc == 0
+    assert rc == document["exit_code"]
+    assert document["status"]["value"] == "clean"
+    assert document["errors"] == []
+
+
+def test_fail_under_coverage_rejects_out_of_range_value_as_a_usage_error(capsys):
+    """--fail-under-coverage's own argparse `type=` callback validates at
+    parse time -- an out-of-range value is a usage error (argparse's own
+    exit 2), never reaching ConfigLoader/ConfigValidationError (review
+    finding: this end-to-end argparse path had no test)."""
+    rc, out, err = run_scan(capsys, CLEAN, "--fail-under-coverage", "150")
+    assert rc == 2
+    assert out == ""
+    assert "--fail-under-coverage" in err
+
+
+def test_fail_under_coverage_rejects_non_numeric_value_as_a_usage_error(capsys):
+    rc, out, err = run_scan(capsys, CLEAN, "--fail-under-coverage", "not-a-number")
+    assert rc == 2
+    assert out == ""
+    assert "--fail-under-coverage" in err
+
+
 def test_indeterminate_outranks_a_live_warn_end_to_end(capsys):
     """AC2: one project composing a real hygiene warn rung (DEP002 on
     requests) alongside a real vulnerability-axis indeterminate rung
@@ -962,7 +1071,7 @@ def test_recipe_common_is_the_combined_ac1_ac2_ac3_conformance_proof(capsys):
     assert rc == document["exit_code"]
     assert document["status"]["value"] == "indeterminate"
     by_axis = {block["axis"]: block for block in document["coverage"]}
-    assert set(by_axis) == {"hygiene", "vulnerability"}
+    assert set(by_axis) == {"hygiene", "vulnerability", "license", "currency"}
     # AC3: no adjacent .py source anywhere -- the hygiene axis is honestly
     # not-applicable, never a 100%-DEP002 noise wall.
     assert by_axis["hygiene"]["deps_total"] == 0
@@ -1123,7 +1232,11 @@ def test_text_format_findings_fixture_emits_driver_and_finding_lines(capsys):
 
 def test_text_format_error_fixture_emits_driver_and_error_lines(capsys, tmp_path):
     """FR17/error taxonomy: a Status.ERROR report's text output carries the
-    error:<kind>:<subject> driver line plus one line per error."""
+    error:<kind>:<subject> driver line plus one line per error. Story 3.1:
+    a malformed pyproject.toml now yields TWO errors (config-parse +
+    unparsable-manifest -- see test_malformed_toml_still_emits_an_error_
+    report), so this now carries two error lines, sorted by (kind, owner,
+    message) -- "config-parse" < "unparsable-manifest" lexically."""
     (tmp_path / "pyproject.toml").write_text(
         "[project\nname = 'broken", encoding="utf-8"
     )
@@ -1131,13 +1244,12 @@ def test_text_format_error_fixture_emits_driver_and_error_lines(capsys, tmp_path
     captured = capsys.readouterr()
     assert rc == 2
     lines = captured.out.splitlines()
-    assert len(lines) == 3
+    assert len(lines) == 4
     assert lines[0] == "warden: status=error exit_code=2 findings=0"
-    assert lines[1] == (
-        "  driver: axis=ingestion id=error:unparsable-manifest:pyproject.toml"
-    )
-    # line 2's message text is exception-derived; only the prefix is pinned.
-    assert lines[2].startswith("  [error:unparsable-manifest] extract -- ")
+    assert lines[1].startswith("  driver: axis=ingestion id=error:config-parse:")
+    # line 2/3's message text is exception-derived; only the prefix is pinned.
+    assert lines[2].startswith("  [error:config-parse] config -- ")
+    assert lines[3].startswith("  [error:unparsable-manifest] extract -- ")
 
 
 def test_json_format_stays_pure_under_a_chatty_engine_and_a_pseudo_tty(
