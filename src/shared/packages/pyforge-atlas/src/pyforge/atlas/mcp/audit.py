@@ -71,6 +71,8 @@ PIPELINE_TRIGGER_TOOLS = (
     "run_pypi_intelligence_pipeline",
     "run_vulnerability_pipeline",
     "run_seed_gaps_pipeline",
+    "run_universal_sbom_pipeline",  # B7: SBOM intake -> match pipeline trigger
+    "run_derived_artifacts_pipeline",  # B7: universe-BOM pipeline trigger
 )
 
 

@@ -36,6 +36,16 @@ from .rate_limit import (
     parse_retry_after,
     resolve_worker_count,
 )
+from .sbom_intake import (
+    SbomIntakeDataset,
+    TransitiveResolverDataset,
+    normalize_ws,
+    parse_conda_list_text,
+    parse_cyclonedx,
+    parse_intake,
+    parse_pip_list_text,
+    parse_requirements_txt,
+)
 from .request_datasets import (
     AnacondaDownloadsDataset,
     BigQueryDownloadsDataset,
@@ -70,4 +80,13 @@ __all__ = [
     "VULN_DB_ENV_RESOURCE",
     "LEGACY_REFRESH_TTLS",
     "WEEKLY_SECONDS",
+    # Story B7 — Universal SBOM intake (§ 4.10) + transitive resolver (FR-17)
+    "SbomIntakeDataset",
+    "TransitiveResolverDataset",
+    "normalize_ws",
+    "parse_intake",
+    "parse_requirements_txt",
+    "parse_pip_list_text",
+    "parse_conda_list_text",
+    "parse_cyclonedx",
 ]

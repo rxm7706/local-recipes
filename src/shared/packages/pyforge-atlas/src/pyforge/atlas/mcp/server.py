@@ -51,6 +51,16 @@ def build_server(name: str = "pyforge-atlas-atlas"):
         return tools.run_pipeline("seed_gaps")
 
     @mcp.tool()
+    def run_universal_sbom_pipeline() -> dict:
+        """Trigger the `universal_sbom` pipeline (§ 4.10 intake -> CycloneDX -> six-bucket match) run."""
+        return tools.run_pipeline("universal_sbom")
+
+    @mcp.tool()
+    def run_derived_artifacts_pipeline() -> dict:
+        """Trigger the `derived_artifacts` pipeline (full-universe CycloneDX BOM) run."""
+        return tools.run_pipeline("derived_artifacts")
+
+    @mcp.tool()
     def read_atlas_dataset(name: str):
         """Read a catalog dataset natively — a thin catalog.load passthrough."""
         return tools.read_dataset(name)
