@@ -268,3 +268,44 @@ def _osv_ambient_db_env(
     monkeypatch.setenv(
         "OSV_SCANNER_LOCAL_DB_CACHE_DIRECTORY", str(_osv_ambient_cache_root)
     )
+
+
+# --- Story 6.4: ambient CISA KEV feed (keeps the fail-on-kev-default-true
+# pre-6.4 suite green) ---------------------------------------------------
+#
+# ``EffectiveConfig.fail_on_kev`` now defaults ``True``, so ANY test that
+# invokes ``cli.main()``/``OsvEngine.run()`` for real reaches Story 6.4's KEV
+# consultation (``engines._kev_enrichment``). Without an ambient feed, EVERY
+# one of the 1265 pre-6.4 tests would regress: an absent
+# ``PYFORGE_WARDEN_FEED_CACHE_DIR`` reads as "KEV feed unavailable", which
+# forces the WHOLE vulnerability axis to ``indeterminate`` (``vuln.
+# kev_stale_finding(unavailable=True)``) regardless of how clean the
+# underlying CVSS match actually is. This fixture provisions a real, EMPTY
+# KEV cache (present + fresh + zero entries -- never "absent", never
+# "stale") so an ordinary scan reads exactly as it did pre-6.4: the feed WAS
+# consulted, found no match, `kev: false` (or unchanged for a non-`vuln:`
+# finding). A test exercising the feed-absent/stale/matched paths overrides
+# the env var itself (``monkeypatch.setenv``/``delenv`` in the test body
+# composes with -- and wins over -- this fixture's own env var, exactly like
+# ``_osv_ambient_db_env`` above).
+#
+# Session-scoped + autouse (unlike ``_osv_ambient_db_env``, which is
+# function-scoped because it depends on the function-scoped ``monkeypatch``
+# fixture): the cache is written ONCE for the whole session (a KEV cache is
+# never mutated by anything under test), so the env var is set via a
+# standalone ``pytest.MonkeyPatch()`` instance (the documented pattern for a
+# session-scoped fixture that still wants monkeypatch's own-value-restore
+# semantics -- the ordinary function-scoped ``monkeypatch`` fixture cannot be
+# depended on from a session-scoped fixture).
+
+
+@pytest.fixture(scope="session", autouse=True)
+def _kev_ambient_feed_env(tmp_path_factory: pytest.TempPathFactory):
+    from pyforge.warden.feeds import FEED_CACHE_DIR_ENV_VAR, write_kev_cache
+
+    cache_root = tmp_path_factory.mktemp("kev-ambient-cache")
+    write_kev_cache(cache_root, {"vulnerabilities": []})
+    mp = pytest.MonkeyPatch()
+    mp.setenv(FEED_CACHE_DIR_ENV_VAR, str(cache_root))
+    yield
+    mp.undo()
