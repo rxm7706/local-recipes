@@ -378,6 +378,39 @@ def test_no_cli_flag_parameter_exists_for_waiver_default_expiry_days():
     assert "cli_waiver_default_expiry_days" not in params
 
 
+# --- ConfigLoader.load: fail-on-kev (Story 6.4) -------------------------------
+
+
+def test_fail_on_kev_defaults_true(tmp_path):
+    config, _ = ConfigLoader().load(tmp_path)
+    assert config.fail_on_kev is True
+
+
+def test_fail_on_kev_toml_override(tmp_path):
+    _write(
+        tmp_path / "pyproject.toml",
+        "[tool.pyforge-warden]\nfail-on-kev = false\n",
+    )
+    config, _ = ConfigLoader().load(tmp_path)
+    assert config.fail_on_kev is False
+
+
+def test_wrong_typed_fail_on_kev_raises_config_validation_error(tmp_path):
+    _write(
+        tmp_path / "pyproject.toml",
+        '[tool.pyforge-warden]\nfail-on-kev = "yes"\n',
+    )
+    with pytest.raises(ConfigValidationError):
+        ConfigLoader().load(tmp_path)
+
+
+def test_no_cli_flag_parameter_exists_for_fail_on_kev():
+    """TOML-only key (Design Notes): no CLI flag exists for fail-on-kev
+    either -- mirrors dep001-block-confidence/waiver-default-expiry-days."""
+    params = inspect.signature(ConfigLoader.load).parameters
+    assert "cli_fail_on_kev" not in params
+
+
 def test_invalid_cli_fail_on_raises_config_validation_error_not_a_bare_value_error(
     tmp_path,
 ):
@@ -437,6 +470,15 @@ def test_effective_config_rejects_invalid_waiver_default_expiry_days_at_construc
 
 def test_effective_config_accepts_waiver_default_expiry_days_upper_boundary():
     assert EffectiveConfig(waiver_default_expiry_days=3650).waiver_default_expiry_days == 3650
+
+
+def test_effective_config_fail_on_kev_defaults_true():
+    assert EffectiveConfig().fail_on_kev is True
+
+
+def test_effective_config_rejects_non_bool_fail_on_kev_at_construction():
+    with pytest.raises(ValueError):
+        EffectiveConfig(fail_on_kev="true")
 
 
 # --- EffectiveConfig.default_with_cli_overrides ------------------------------

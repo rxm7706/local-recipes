@@ -62,14 +62,16 @@ module.
 
 from __future__ import annotations
 
+import dataclasses
 import os
 import subprocess
 import tempfile
 import tomllib
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from datetime import UTC, datetime
 from pathlib import Path
 
+from . import feeds
 from .hygiene import (
     _synthesize_deptry_frontdoor,
     parse_deptry_output,
@@ -84,6 +86,7 @@ from .models import (
     AxisCoverage,
     ErrorKind,
     ErrorRecord,
+    FeedProvenance,
     Finding,
     VulnData,
 )
@@ -94,6 +97,8 @@ from .vuln import (
     db_snapshot_at,
     db_zip_path,
     is_db_stale,
+    kev_match,
+    kev_stale_finding,
     name_level_critical_advisory_ids,
     name_level_critical_cve_finding,
     offline_db_unavailable_finding,
@@ -580,6 +585,83 @@ def _name_level_findings(
     return tuple(sorted(findings, key=lambda f: f.id))
 
 
+# --- Story 6.4 (FR36): CISA KEV enrichment -----------------------------------
+
+
+def _kev_enrichment(
+    fail_on_kev: bool,
+) -> tuple[dict[str, str] | None, FeedProvenance | None, tuple[Finding, ...]]:
+    """Consult the KEV feed (``feeds.py``) ONCE per ``OsvEngine.run`` call —
+    mirrors the class docstring's "staleness computed ONCE" precedent for
+    the OSV DB itself, one level up (feed provenance, not advisory
+    content). Returns ``(catalog, kev_data, kev_axis_findings)``:
+
+    * ``fail_on_kev=False`` -> ``(None, None, ())`` — the KEV cache is
+      never even opened (matrix row 3).
+    * The feed is absent/unreadable/content-corrupt -> ``(None, None,
+      (kev_stale_finding(unavailable=True),))`` — no catalog to match
+      against, so every ``vuln:`` finding's ``kev`` stays ``None``.
+    * The feed loads but is stale -> ``(catalog, kev_data, (kev_stale_
+      finding(unavailable=False),))`` — matrix row 5: per-finding matching
+      still runs against the loaded (if aged) catalog; the whole axis is
+      independently forced ``indeterminate`` by the returned finding.
+    * The feed loads and is fresh -> ``(catalog, kev_data, ())``."""
+    if not fail_on_kev:
+        return None, None, ()
+    cache_dir = feeds.resolve_cache_dir()
+    if cache_dir is None:
+        return None, None, (kev_stale_finding(unavailable=True),)
+    path = feeds.kev_cache_path(cache_dir)
+    catalog = feeds.load_kev_catalog(path)
+    if catalog is None:
+        return None, None, (kev_stale_finding(unavailable=True),)
+    try:
+        kev_data = feeds.feed_provenance(
+            source=str(path),
+            path=path,
+            max_age_days=feeds.DEFAULT_FEED_MAX_AGE_DAYS,
+            now=datetime.now(UTC),
+        )
+    except OSError:
+        # The cache file vanished between the catalog read above and this
+        # provenance stat (TOCTOU) -- treat exactly like "no usable feed"
+        # rather than letting the race propagate as an engine crash.
+        return None, None, (kev_stale_finding(unavailable=True),)
+    kev_findings = () if kev_data.max_age_ok else (kev_stale_finding(unavailable=False),)
+    return catalog, kev_data, kev_findings
+
+
+def _stamp_kev(
+    findings: tuple[Finding, ...],
+    catalog: Mapping[str, str] | None,
+    kev_candidates: Mapping[str, tuple[str, ...]],
+) -> tuple[Finding, ...]:
+    """Stamp ``kev``/``kev_date`` onto every ``vuln:`` finding via
+    ``dataclasses.replace`` (this module's sole enrichment site — BEFORE
+    ``EngineResult`` is returned, per the class docstring's hard
+    positioning invariant: ``interfaces.py``'s engine-dedup loop must
+    never see an un-stamped finding). Every non-``vuln:`` finding (the
+    axis's own ``indeterminate:`` withhold/name-level/stale findings)
+    passes through unchanged — KEV enrichment only ever concerns a real
+    per-advisory match. ``catalog=None`` (KEV never consulted, or
+    unavailable) is a no-op: every finding is returned as-is, so ``kev``
+    stays its default ``None`` (matrix rows 3/4)."""
+    if catalog is None:
+        return findings
+    stamped: list[Finding] = []
+    for finding in findings:
+        if not finding.id.startswith("vuln:"):
+            stamped.append(finding)
+            continue
+        date_added = kev_match(kev_candidates.get(finding.id, ()), catalog)
+        stamped.append(
+            dataclasses.replace(
+                finding, kev=date_added is not None, kev_date=date_added
+            )
+        )
+    return tuple(stamped)
+
+
 class OsvEngine:
     """The second real engine: vulnerability matching via ``osv-scanner``,
     fully offline (Story 1.5), widened with two honesty tiers (Story 2.5).
@@ -622,10 +704,24 @@ class OsvEngine:
     anomaly, e.g. TOCTOU) is a typed engine error, 128 (no packages found)
     mirrors the pre-flight-failure withholding, and any other code is a
     typed engine error — the name-level findings, having been computed
-    independently of the subprocess, survive every one of these paths."""
+    independently of the subprocess, survive every one of these paths.
+
+    Story 6.4 (FR36): ``fail_on_kev`` (default ``True``) gates a THIRD,
+    independent consultation — the CISA KEV feed (``feeds.py`` +
+    ``vuln.py``'s KEV helpers), computed ONCE per run right alongside
+    staleness (``_kev_enrichment``, called immediately after
+    ``stale_findings`` below) and merged into every content-bearing
+    result the same way ``stale_findings`` already is. When it produces a
+    usable catalog, every ``vuln:`` finding is stamped ``kev``/``kev_date``
+    via ``_stamp_kev`` BEFORE this method returns its ``EngineResult`` —
+    a hard positioning invariant: ``interfaces.py``'s engine-dedup loop
+    must never see an un-stamped finding."""
 
     name: str = "osv-scanner"
     axis: str = AXIS_VULNERABILITY
+
+    def __init__(self, *, fail_on_kev: bool = True) -> None:
+        self.fail_on_kev = fail_on_kev
 
     def run(self, target: Path, inventory: ResolvedInventory) -> EngineResult:
         # Ecosystem-agnostic (Story 2.1): a resolved pypi_identity is the
@@ -661,12 +757,21 @@ class OsvEngine:
         stale = is_db_stale(snapshot_at, DB_MAX_AGE_DAYS, now=datetime.now(UTC))
         name_level_findings = _name_level_findings(zip_path, name_level_candidates)
         stale_findings = (stale_vuln_data_finding(),) if stale else ()
+        # Story 6.4 (FR36): consulted ONCE here, right alongside the OSV DB's
+        # own staleness above — merged into every content-bearing result
+        # below the exact same way stale_findings already is (see class
+        # docstring). `catalog` feeds `_stamp_kev` below; `kev_findings` is
+        # the 0-or-1 whole-axis KEV-provenance indeterminate finding.
+        catalog, kev_data, kev_findings = _kev_enrichment(self.fail_on_kev)
 
         if not candidates:
             # Name-level-only scan: osv-scanner has no "any version" query
             # mode, so this never invokes the subprocess at all.
             findings = tuple(
-                sorted((*name_level_findings, *stale_findings), key=lambda f: f.id)
+                sorted(
+                    (*name_level_findings, *stale_findings, *kev_findings),
+                    key=lambda f: f.id,
+                )
             )
             vuln_data = VulnData(
                 source=str(zip_path), snapshot_at=snapshot_at, max_age_ok=not stale
@@ -677,6 +782,7 @@ class OsvEngine:
                 coverage=(),
                 axis=self.axis,
                 vuln_data=vuln_data,
+                kev_data=kev_data,
             )
 
         synthesized = _synthesize_requirements(candidates)
@@ -698,7 +804,12 @@ class OsvEngine:
             # DB was actually read.
             findings = tuple(
                 sorted(
-                    (*excluded_findings, *name_level_findings, *stale_findings),
+                    (
+                        *excluded_findings,
+                        *name_level_findings,
+                        *stale_findings,
+                        *kev_findings,
+                    ),
                     key=lambda f: f.id,
                 )
             )
@@ -711,6 +822,7 @@ class OsvEngine:
                 coverage=(),
                 axis=self.axis,
                 vuln_data=vuln_data,
+                kev_data=kev_data,
             )
 
         try:
@@ -739,7 +851,12 @@ class OsvEngine:
             # SAME DB they were read from (review finding, 2026-07-17).
             findings = tuple(
                 sorted(
-                    (*excluded_findings, *name_level_findings, *stale_findings),
+                    (
+                        *excluded_findings,
+                        *name_level_findings,
+                        *stale_findings,
+                        *kev_findings,
+                    ),
                     key=lambda f: f.id,
                 )
             )
@@ -749,6 +866,7 @@ class OsvEngine:
                 coverage=(),
                 axis=self.axis,
                 vuln_data=None,
+                kev_data=kev_data,
             )
         try:
             os.close(handle)
@@ -787,7 +905,12 @@ class OsvEngine:
             # (review finding, 2026-07-17).
             findings = tuple(
                 sorted(
-                    (*excluded_findings, *name_level_findings, *stale_findings),
+                    (
+                        *excluded_findings,
+                        *name_level_findings,
+                        *stale_findings,
+                        *kev_findings,
+                    ),
                     key=lambda f: f.id,
                 )
             )
@@ -797,6 +920,7 @@ class OsvEngine:
                 coverage=(),
                 axis=self.axis,
                 vuln_data=None,
+                kev_data=kev_data,
             )
 
         if exit_code in (0, 1):
@@ -816,13 +940,21 @@ class OsvEngine:
                 snapshot_at=snapshot_at,
                 max_age_ok=not stale,
             )
+            # Story 6.4: the ONLY place real `vuln:` findings exist to stamp
+            # -- BEFORE they are merged into `findings` and this method
+            # returns (the hard positioning invariant: interfaces.py's
+            # engine-dedup loop must never see an un-stamped finding).
+            stamped_parse_findings = _stamp_kev(
+                parse.findings, catalog, parse.kev_candidates
+            )
             findings = tuple(
                 sorted(
                     (
                         *excluded_findings,
-                        *parse.findings,
+                        *stamped_parse_findings,
                         *name_level_findings,
                         *stale_findings,
+                        *kev_findings,
                     ),
                     key=lambda f: f.id,
                 )
@@ -833,6 +965,7 @@ class OsvEngine:
                 coverage=coverage,
                 axis=self.axis,
                 vuln_data=vuln_data,
+                kev_data=kev_data,
             )
 
         if exit_code == 127:
@@ -849,7 +982,12 @@ class OsvEngine:
             )
             findings = tuple(
                 sorted(
-                    (*excluded_findings, *name_level_findings, *stale_findings),
+                    (
+                        *excluded_findings,
+                        *name_level_findings,
+                        *stale_findings,
+                        *kev_findings,
+                    ),
                     key=lambda f: f.id,
                 )
             )
@@ -859,6 +997,7 @@ class OsvEngine:
                 coverage=(),
                 axis=self.axis,
                 vuln_data=None,
+                kev_data=kev_data,
             )
 
         if exit_code == 128:
@@ -875,6 +1014,7 @@ class OsvEngine:
                         *_withheld_findings(candidates),
                         *name_level_findings,
                         *stale_findings,
+                        *kev_findings,
                     ),
                     key=lambda f: f.id,
                 )
@@ -885,6 +1025,7 @@ class OsvEngine:
                 coverage=(),
                 axis=self.axis,
                 vuln_data=None,
+                kev_data=kev_data,
             )
 
         error_record = ErrorRecord(
@@ -894,7 +1035,12 @@ class OsvEngine:
         )
         findings = tuple(
             sorted(
-                (*excluded_findings, *name_level_findings, *stale_findings),
+                (
+                    *excluded_findings,
+                    *name_level_findings,
+                    *stale_findings,
+                    *kev_findings,
+                ),
                 key=lambda f: f.id,
             )
         )
@@ -904,6 +1050,7 @@ class OsvEngine:
             coverage=(),
             axis=self.axis,
             vuln_data=None,
+            kev_data=kev_data,
         )
 
 
