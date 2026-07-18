@@ -22,7 +22,7 @@ Page set (honest core; the full 28-page inventory is CIS-two-spine-deferred, DW-
 from __future__ import annotations
 
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable
 

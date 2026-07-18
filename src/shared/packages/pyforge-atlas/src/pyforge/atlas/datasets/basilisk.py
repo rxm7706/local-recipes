@@ -92,7 +92,10 @@ def _as_item_list(value: Any) -> list[Any]:
     if isinstance(value, str):
         return [value]
     try:
-        return [v for v in value if v is not None]
+        # Drop None AND scalar NaN/NA (a NaN from a pandas Series would otherwise become a "nan"
+        # query key downstream). ``is_scalar`` guards pd.isna so a nested container element — which
+        # pd.isna would reject with an ambiguous-truth error — is still passed through (Gemini #81).
+        return [v for v in value if not (v is None or (pd.api.types.is_scalar(v) and pd.isna(v)))]
     except TypeError:
         return []
 

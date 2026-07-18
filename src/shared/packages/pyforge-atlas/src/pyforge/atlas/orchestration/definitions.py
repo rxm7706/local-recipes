@@ -426,7 +426,7 @@ def _with_per_op_budgets(graph: dg.GraphDefinition) -> dg.GraphDefinition:
         new_inv = dg.NodeInvocation(
             name=inv.name,
             alias=inv.alias,
-            tags={**inv.tags, "dagster/max_runtime": str(budget)},
+            tags={**(inv.tags or {}), "dagster/max_runtime": str(budget)},
             hook_defs=inv.hook_defs,
             retry_policy=DEFAULT_RETRY,
         )
@@ -474,10 +474,10 @@ def build_upstream_sensor(
     def _sensor(context: dg.SensorEvaluationContext):
         try:
             raw = list(event_source())
+            decision = evaluate_events(raw, context.cursor, run_key_prefix=run_key_prefix)
         except Exception as exc:  # noqa: BLE001 — degrade, never crash the daemon
-            yield dg.SkipReason(f"event source error: {type(exc).__name__}: {exc}")
+            yield dg.SkipReason(f"sensor evaluation error: {type(exc).__name__}: {exc}")
             return
-        decision = evaluate_events(raw, context.cursor, run_key_prefix=run_key_prefix)
         if decision.run:
             context.update_cursor(decision.new_cursor)
             yield dg.RunRequest(
@@ -694,7 +694,7 @@ def build_definitions(
                 job=jobs_by_name[target_job],
                 run_key_prefix=run_key_prefix,
                 description=description,
-                event_source=sources.get(sensor_name, offline_event_source),
+                event_source=sources.get(sensor_name) or offline_event_source,
             )
         )
 

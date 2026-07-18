@@ -1659,7 +1659,7 @@ CI — cf. § 12's dry-run preflight), and the live path is one documented injec
 
 When a phase DERIVES an output from a cached/last-good source that could be stale, carry the
 source's staleness marker FORWARD into the derived output — machine-readable
-(`{stale, reason, marked_at}`) and, on any human-facing surface, visibly. A derived card that
+(`{stale, reason, marked_at}`) and, on any human-facing surface, visible. A derived card that
 reads "fresh" while its source was a skipped/last-good refresh is a silent correctness bug. The
 migration formalized this as a `StalenessMarker` sidecar threaded through every derived dataset,
 plus a lint that FAILS a derived page whose body dropped its stale banner. The live atlas already

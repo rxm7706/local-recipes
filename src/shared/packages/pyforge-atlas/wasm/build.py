@@ -51,13 +51,16 @@ def _run(cmd: list[str], **kw) -> None:
 
 
 def _npm() -> str:
-    npm = shutil.which("npm") or f"{NODE_BIN}/npm"
-    if not Path(npm).exists() and not shutil.which("npm"):
-        sys.exit(
-            "npm not found. Node 22 is expected at /opt/node22/bin — "
-            "add it to PATH or install Node before building the WASM artifact."
-        )
-    return npm
+    npm = shutil.which("npm")
+    if npm:
+        return npm
+    fallback = Path(NODE_BIN) / "npm"
+    if fallback.exists():
+        return str(fallback)
+    sys.exit(
+        "npm not found. Node 22 is expected at /opt/node22/bin — "
+        "add it to PATH or install Node before building the WASM artifact."
+    )
 
 
 def main() -> int:

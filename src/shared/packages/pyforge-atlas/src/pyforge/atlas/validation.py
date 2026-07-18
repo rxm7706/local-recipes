@@ -140,6 +140,36 @@ def _is_dataframe(data: Any) -> bool:
     return isinstance(shape, tuple) and len(shape) == 2 and hasattr(data, "columns")
 
 
+def _coerce_json_native(obj: Any) -> Any:
+    """Blanket-coerce a value to a JSON-native shape, RECURSIVELY. Beyond ``str()``-ing unknowns,
+    this maps pandas/numpy nulls (``pd.NA`` / ``NaN`` / ``NaT``) to ``None`` and unwraps numpy
+    scalars/arrays to native Python — so pandera/backend evidence carries clean JSON ``null`` and
+    native numbers instead of ``"<NA>"`` / ``"nan"`` / numpy reprs (Gemini #91/#93)."""
+    if obj is None:
+        return None
+    if isinstance(obj, bool):  # bool BEFORE int (bool is an int subclass)
+        return obj
+    if isinstance(obj, dict):
+        return {str(k): _coerce_json_native(v) for k, v in obj.items()}
+    if isinstance(obj, (list, tuple, set)):
+        return [_coerce_json_native(v) for v in obj]
+    # numpy scalar/array → native (then recurse in case it became a list/dict). ``__module__``
+    # can be None on some dynamically-created / C-extension types, so guard before splitting.
+    module = getattr(type(obj), "__module__", None)
+    if isinstance(module, str) and module.split(".")[0] == "numpy" and hasattr(obj, "tolist"):
+        return _coerce_json_native(obj.tolist())
+    # scalar pandas/numpy null → JSON null (guard is_scalar so a container doesn't raise).
+    import pandas as pd
+
+    if pd.api.types.is_scalar(obj) and pd.isna(obj):
+        return None
+    if isinstance(obj, (int, str)):
+        return obj
+    if isinstance(obj, float):
+        return obj if (obj == obj and obj not in (float("inf"), float("-inf"))) else str(obj)
+    return str(obj)
+
+
 def _pandera_evidence(exc: pa.errors.SchemaErrors) -> dict[str, Any]:
     """Compact, JSON-native evidence from a pandera ``SchemaErrors`` failure set.
 
@@ -151,7 +181,7 @@ def _pandera_evidence(exc: pa.errors.SchemaErrors) -> dict[str, Any]:
         fc = exc.failure_cases
         cols = [c for c in ("schema_context", "column", "check", "failure_case") if c in fc.columns]
         for _, row in fc.head(_MAX_EVIDENCE_CASES).iterrows():
-            cases.append({c: (None if row[c] is None else str(row[c])) for c in cols})
+            cases.append({c: _coerce_json_native(row[c]) for c in cols})
         total = int(len(fc))
     except Exception:  # noqa: BLE001 - evidence is best-effort; never let it mask the halt
         total = len(cases)
@@ -279,18 +309,10 @@ class DataValidationHooks:
 
     @staticmethod
     def _json_native(obj: Any) -> Any:
-        """Blanket-coerce a value to a JSON-native shape so any backend's evidence is safe to
-        put in an AtlasAlert (mirrors _pandera_evidence's str() discipline). dict/list recurse;
-        None/bool/int/str pass; everything else (numpy scalar, set, non-finite float, …) → str."""
-        if obj is None or isinstance(obj, (bool, int, str)):
-            return obj
-        if isinstance(obj, float):
-            return obj if obj == obj and obj not in (float("inf"), float("-inf")) else str(obj)
-        if isinstance(obj, dict):
-            return {str(k): DataValidationHooks._json_native(v) for k, v in obj.items()}
-        if isinstance(obj, (list, tuple)):
-            return [DataValidationHooks._json_native(v) for v in obj]
-        return str(obj)
+        """Blanket-coerce a value to a JSON-native shape so any backend's evidence is safe to put
+        in an AtlasAlert — delegates to the shared :func:`_coerce_json_native` (recursive; maps
+        pandas/numpy nulls to ``null`` and unwraps numpy scalars, Gemini #93)."""
+        return _coerce_json_native(obj)
 
     def _build_alert(self, dataset: str, violations: list[ContractViolation], rule: str) -> AtlasAlert:
         """Build the A2A alert with JSON-native-coerced evidence + a non-empty rule fallback, so

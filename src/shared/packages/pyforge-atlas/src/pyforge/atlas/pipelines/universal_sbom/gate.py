@@ -85,6 +85,19 @@ _DEFAULT_POLICY: dict[str, Any] = {
 }
 
 
+def _as_dict(value: Any) -> dict:
+    """A config sub-section coerced to a dict — a key set to ``null`` (or a scalar/list) in
+    parameters.yml yields ``None``/non-dict, on which ``.get()`` would raise; degrade to ``{}``
+    so a malformed params file can't crash the gate with an AttributeError (Gemini #95)."""
+    return value if isinstance(value, dict) else {}
+
+
+def _as_list(value: Any) -> list:
+    """A config list coerced to a list — a key set to ``null`` yields ``None``, over which
+    iteration would raise; degrade to ``[]`` (Gemini #95)."""
+    return value if isinstance(value, list) else []
+
+
 class GateDependencyMissing(RuntimeError):
     """Raised (with :data:`INSTALL_HINT`) when the ``pyforge-atlas[gate]`` extra
     is absent — the schema-by-import contract's explicit, actionable failure."""
@@ -138,8 +151,8 @@ def run_dependency_hygiene(
     Emits a plain, JSON-native dict (never a ``ComplianceReport`` — AD-12: only
     the terminal gate node produces that)."""
     params = parameters or {}
-    source_dir = params.get("gate", {}).get("hygiene_source_dir") or params.get(
-        "hygiene", {}
+    source_dir = _as_dict(params.get("gate")).get("hygiene_source_dir") or _as_dict(
+        params.get("hygiene")
     ).get("source_dir")
     if not source_dir:
         return _not_applicable_hygiene(
@@ -224,7 +237,7 @@ def assemble_and_gate(
     no-op (offline), the F4 gate test injects a ``hand_off`` → ``AuthoringInbox``
     sink to prove the alert rides the real A2A channel."""
     params = parameters or {}
-    gate_params = params.get("gate", {})
+    gate_params = _as_dict(params.get("gate"))
     # Schema BY IMPORT (AD-12) — lazy; the install hint fires here if [gate] absent.
     models, verdict, report, version = _load_warden()
 
@@ -234,11 +247,11 @@ def assemble_and_gate(
     rungs: list[tuple[Any, Any]] = []
 
     # --- hygiene axis (deptry node) ---
-    hyg = sbom_hygiene_entry or {}
+    hyg = _as_dict(sbom_hygiene_entry)
     if hyg.get("applicable"):
         from pyforge.warden.hygiene import hygiene_rung
 
-        for fd in hyg.get("findings", []):
+        for fd in _as_list(hyg.get("findings")):
             finding = models.Finding(
                 id=fd["id"],
                 axis=models.AXIS_HYGIENE,
@@ -248,14 +261,15 @@ def assemble_and_gate(
             )
             findings.append(finding)
             rungs.append(hygiene_rung(finding))
-        for ed in hyg.get("errors", []):
+        hyg_errors = _as_list(hyg.get("errors"))
+        for ed in hyg_errors:
             errors.append(
                 models.ErrorRecord(
                     kind=models.ErrorKind(ed["kind"]), owner=ed["owner"], message=ed["message"]
                 )
             )
-        if hyg.get("errors"):
-            first = hyg["errors"][0]
+        if hyg_errors:
+            first = hyg_errors[0]
             rungs.append(
                 (
                     models.Status.ERROR,
@@ -264,7 +278,7 @@ def assemble_and_gate(
                     ),
                 )
             )
-        n_hyg = len(hyg.get("findings", []))
+        n_hyg = len(_as_list(hyg.get("findings")))
         coverage.append(
             models.AxisCoverage(
                 models.AXIS_HYGIENE,
@@ -281,9 +295,9 @@ def assemble_and_gate(
         coverage.append(models.AxisCoverage(models.AXIS_HYGIENE, 0, 0, 0, 0, None))
 
     # --- security axis (atlas-native inventory-match/cve; policy-evaluated) ---
-    security = gate_params.get("security", {})
-    security_findings = security.get("findings", [])
-    policy = {**_DEFAULT_POLICY, **gate_params.get("policy", {})}
+    security = _as_dict(gate_params.get("security"))
+    security_findings = _as_list(security.get("findings"))
+    policy = {**_DEFAULT_POLICY, **_as_dict(gate_params.get("policy"))}
     if security_findings:
         n_crit = n_high = 0
         kev_hit_id: str | None = None
@@ -327,8 +341,13 @@ def assemble_and_gate(
             # axis has NO vuln: id — the old min(... vuln:) was an empty sequence → ValueError
             # crashing the terminal gate (MUST-FIX, both reviewers). Drive the WARN off the
             # smallest real finding id (prefer a vuln: id when present), never a min() over empty.
-            vuln_ids = sorted(f.id for f in findings if f.id.startswith("vuln:"))
-            driver_id = vuln_ids[0] if vuln_ids else min(f.id for f in findings)
+            # Restrict to the VULNERABILITY axis: ``findings`` also holds hygiene ids, and
+            # "hygiene:" < "indeterminate:" lexicographically, so a min() over ALL findings could
+            # pick a hygiene id as this axis's driver (Gemini #95). The vuln axis is non-empty
+            # here (this branch runs because security_findings is applicable).
+            vuln_axis_ids = sorted(f.id for f in findings if f.axis == models.AXIS_VULNERABILITY)
+            vuln_ids = [i for i in vuln_axis_ids if i.startswith("vuln:")]
+            driver_id = vuln_ids[0] if vuln_ids else vuln_axis_ids[0]
             rungs.append((models.Status.WARN, models.StatusDriver(models.AXIS_VULNERABILITY, driver_id)))
         coverage.append(
             models.AxisCoverage(
@@ -360,7 +379,7 @@ def assemble_and_gate(
         rungs.append((models.Status.NOT_APPLICABLE, None))
 
     # --- license axis (atlas-native SPDX or not-applicable) ---
-    license_findings = gate_params.get("license", {}).get("findings", [])
+    license_findings = _as_list(_as_dict(gate_params.get("license")).get("findings"))
     if license_findings:
         for ld in license_findings:
             finding = models.Finding(
@@ -407,13 +426,17 @@ def assemble_and_gate(
     # A whitespace-only stamp ("   ") is truthy, so a bare `or` chain would pass it through and
     # then AtlasAlert's _stamp_present validator would reject it — a confusing ValueError on the
     # BREACH path, masking the real breach (Reviewer-B). Test emptiness with .strip().
+    # str()-coerce each candidate: a build_stamp parsed from unquoted YAML can be an int or a
+    # date object, and calling .strip() on it directly would raise AttributeError (Gemini #95).
     stamp = (
-        (build_stamp or "").strip()
-        or (gate_params.get("build_stamp") or "").strip()
-        or (params.get("build_stamp") or "").strip()
+        str(build_stamp or "").strip()
+        or str(gate_params.get("build_stamp") or "").strip()
+        or str(params.get("build_stamp") or "").strip()
         or "unknown-build"
     )
-    subject = gate_params.get("subject") or params.get("sbom", {}).get("project_name") or "user-inventory"
+    sbom_cfg = params.get("sbom")
+    sbom_cfg = sbom_cfg if isinstance(sbom_cfg, dict) else {}
+    subject = gate_params.get("subject") or sbom_cfg.get("project_name") or "user-inventory"
     alert_severity = Severity.critical if status is models.Status.ERROR else Severity.high
     evidence = {
         "exit_code": exit_code,

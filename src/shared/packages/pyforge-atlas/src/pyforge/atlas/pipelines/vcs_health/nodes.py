@@ -355,11 +355,11 @@ def derive_release_velocity(
     )
 
     # -- pypi side: map pypi_name → conda_name, then match on (conda_name, version).
-    p = pcv[["pypi_name", "version", "upload_time_iso_8601"]].copy()
+    p = pcv[["pypi_name", "version", "upload_time_iso_8601"]].copy(deep=False)
     p["version"] = p["version"].map(_key)
     p = p.dropna(subset=["pypi_name", "version"])
 
-    m = mp[["pypi_name", "conda_name"]].drop_duplicates().copy()
+    m = mp[["pypi_name", "conda_name"]].drop_duplicates().copy(deep=False)
     m["conda_name"] = m["conda_name"].map(_key)
     m = m.dropna(subset=["pypi_name", "conda_name"])
 
