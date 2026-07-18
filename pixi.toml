@@ -209,6 +209,19 @@ description = "Wave G verify gate (Story G1, FR-14 / AD-11 / AD-21): wasm-smoke 
 cmd = "python -m pytest src/shared/packages/pyforge-atlas/tests/wasm -q"
 env = { PYTHONPATH = "src/shared/packages/pyforge-atlas/src:src/shared/packages/pyforge-warden/src" }
 
+[feature.local-recipes.tasks.publish]
+description = "Wave G build step (Story G2, FR-14 / AD-2): emit the host-agnostic static-host layout — chunked Parquet + a single-owner manifest.json — for the demo core_feedstock_health dataset into src/shared/packages/pyforge-atlas/src/pyforge/atlas/publish/_site/ (gitignored). The emitter targets a filesystem PATH ('the static host filesystem'); WHICH host serves it (GitHub Pages public path, or an enterprise mirror) is a deploy choice, never baked in. Fully local + offline. The LIVE GitHub Pages publish is the ATTENDED boundary event and is DEFERRED (DW-G2)."
+cmd = "python -m pyforge.atlas.publish"
+env = { PYTHONPATH = "src/shared/packages/pyforge-atlas/src:src/shared/packages/pyforge-warden/src" }
+
+[feature.local-recipes.tasks.publish-range]
+description = "Wave G verify gate (Story G2, FR-14 / AD-2 / AD-21): publish-range — prove the emitted static-host layout is consumed via HTTP RANGE. Emits the chunked Parquet + manifest to a tmp dir, serves it over a Range-capable loopback host, points a DuckDB httpfs client at it, and asserts (a) consumption is via 206 Partial Content reading STRICTLY FEWER bytes than the whole file (a whole-file 200 FAILS), (b) the chunk path is discovered FROM the manifest + matches its checksums, (c) host-agnostic (same dir, two bases), (d) the D1 ci_red result is correct over the range-served Parquet — plus determinism + edge cases (empty/multi-chunk/corruption/past-EOF/non-Range fallback). httpfs LOADed OFFLINE from cache (skips if unprovisioned locally, fails under CI). Live publish DEFERRED (DW-G2). --frozen."
+cmd = "python -m pytest src/shared/packages/pyforge-atlas/tests/publish -q"
+# PUBLISH_RANGE_REQUIRED: the AUTHORITATIVE gate must FAIL (not skip) if httpfs is
+# unprovisioned, so it can never exit 0 having proven nothing about HTTP Range — the
+# load-bearing G2 claim (Reviewer-A skip-to-green). Ad-hoc local runs use the bare pytest.
+env = { PYTHONPATH = "src/shared/packages/pyforge-atlas/src:src/shared/packages/pyforge-warden/src", PUBLISH_RANGE_REQUIRED = "1" }
+
 
 [feature.local-recipes.tasks.submit-pr]
 description = "Submit a recipe PR to conda-forge/staged-recipes (use --dry-run first). Runs prepare-pr internally then opens the PR."
