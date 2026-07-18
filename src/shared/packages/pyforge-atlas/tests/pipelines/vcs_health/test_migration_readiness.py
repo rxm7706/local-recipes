@@ -109,10 +109,14 @@ def test_not_in_tracker_is_labeled_inferred_never_confirmed():
     pkgs = _pkgs(
         [
             {"conda_name": "numpy", "latest_version": "2.0", "subdirs": ["linux-64"]},
+            {"conda_name": "pend", "latest_version": "3.0", "subdirs": ["linux-64"]},  # a CONFIRMED-pending row
             {"conda_name": "ghost", "latest_version": "1.0", "subdirs": ["linux-64"]},  # absent from detail
         ]
     )
-    detail = {"python314": {"done": ["numpy"]}}  # ghost is in NO bucket
+    # `pend` sits in a confirmed pending bucket — the "confirmed" class the inferred flag
+    # must never touch (Reviewer-A F1: the mandatory test must place a confirmed-pending
+    # row in the frame, else a regression setting inferred=True on it slips through).
+    detail = {"python314": {"done": ["numpy"], "in-pr": ["pend"]}}  # ghost is in NO bucket
     out = classify_migration_readiness(detail, pkgs, _downloads([])).set_index("conda_name")
 
     # ghost: absent from the migration JSON -> not-in-tracker, and the inferred flag is SET.
@@ -123,9 +127,16 @@ def test_not_in_tracker_is_labeled_inferred_never_confirmed():
     assert out.loc["numpy", "readiness"] == READINESS_REBUILD_DONE
     assert bool(out.loc["numpy", "not_in_tracker_inferred"]) is False
 
+    # pend: confirmed PENDING (in-pr) -> inferred is explicitly FALSE. A confirmed row that
+    # carried the inferred flag is exactly the "present an inference as confirmed status"
+    # failure the FR-21 contract forbids.
+    assert out.loc["pend", "readiness"] == READINESS_CONFIRMED_PENDING
+    assert bool(out.loc["pend", "not_in_tracker_inferred"]) is False
+
     # The inferred column exists and is a real boolean surface in the report.
     assert "not_in_tracker_inferred" in out.columns
-    # ONLY not-in-tracker rows carry the inferred flag (no confirmed row does).
+    # ONLY not-in-tracker rows carry the inferred flag — now proven with a confirmed-pending
+    # row present, so the set-equality genuinely excludes the pending class.
     inferred_rows = out[out["not_in_tracker_inferred"]]
     assert set(inferred_rows["readiness"]) == {READINESS_NOT_IN_TRACKER}
 
