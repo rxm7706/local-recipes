@@ -16,9 +16,10 @@ whenever pyforge-atlas changes so the viz never drifts.
 ## Regenerate + run
 
 ```bash
-pixi run -e local-recipes regenerate-kedro-viz-proto   # re-mirror from pyforge-atlas
+pixi run -e local-recipes regenerate-kedro-viz-proto   # re-mirror + render docs/dag.svg + dag.drawio
 pixi run -e local-recipes kedro-run-proto              # <1 s smoke run (77 stub tasks)
 pixi run -e local-recipes kedro-viz-proto              # interactive DAG in the browser
+pixi run -e local-recipes capture-kedro-viz-proto      # snapshot the REAL kedro-viz UI → docs/kedro-viz-dag.png
 # static SPA export: `cd` here, then `kedro viz build`  (build/ is gitignored)
 ```
 
@@ -38,6 +39,32 @@ Both `kedro` and `kedro-viz` are already in the `local-recipes` pixi env.
 
 Node counts include the zero-input **extraction** stubs the generator adds for
 each free/raw input so `kedro run` executes end-to-end on MemoryDatasets.
+
+## Rendered images
+
+Two flavors, both under `docs/`:
+
+**1. The actual kedro-viz UI** — `capture-kedro-viz-proto` runs `kedro viz build`
+and screenshots the real kedro-viz SPA in headless Chrome (playwright), so the
+image is pixel-faithful to what `kedro viz` shows in the browser:
+
+- **`docs/kedro-viz-dag.png`** — the full `__default__` DAG in the native
+  kedro-viz flowchart, with the node list + storage-layer rail. The first-run
+  feature-tour popup is pre-suppressed and the light theme forced. (The static
+  build can't route `?pipeline_id=`, so this is the full DAG only; for a single
+  pipeline, open `kedro-viz-proto` and pick it from the dropdown, or use the
+  per-pipeline Graphviz SVGs below.)
+
+**2. Static Graphviz renders** — `regenerate-kedro-viz-proto` also renders
+always-accurate vector images (via Graphviz `dot` + `graphviz2drawio` — both in
+the `local-recipes` env), a cleaner non-native layout that stays legible when
+zoomed and never goes stale:
+
+- **`docs/dag.svg`** — the full DAG (zoomable; dataset ellipses colored by
+  storage layer, function nodes clustered per pipeline). Plus
+  **`docs/dag-<pipeline>.svg`** — one per pipeline.
+- **`docs/dag.drawio`** — the same DAG as an **editable** diagrams.net file (open
+  in draw.io, the VS Code Draw.io Integration extension, or diagrams.net web).
 
 Dataset **layers** (the kedro-viz left rail) are copied from the real
 `pyforge-atlas` catalog's `kedro-viz.layer` metadata (`raw` API feeds → `atlas`

@@ -98,6 +98,98 @@ def layer_for(ds: str, real_layers: dict[str, str]) -> str:
     return "atlas"
 
 
+def is_param(ds: str) -> bool:
+    return ds == "parameters" or ds.startswith("params:")
+
+
+# ---- graphviz DAG image ----------------------------------------------------
+
+_LAYER_FILL = {
+    "raw": "#ffe0b2", "atlas": "#bbdefb", "views": "#c8e6c9",
+    "derived": "#f8bbd0", "read_surface": "#d1c4e9",
+}
+_CLUSTER_FILL = ["#e3f2fd", "#f1f8e9", "#fff3e0", "#fce4ec", "#ede7f6",
+                 "#e0f7fa", "#f9fbe7", "#efebe9", "#eceff1"]
+
+
+def _build_graph(pipe_names, parsed, assigned, real_layers):
+    """Build a graphviz Digraph mirroring the given pipeline subset."""
+    import graphviz  # dot binary + python-graphviz (both in the local-recipes env)
+
+    keep = list(pipe_names)
+    datasets = {
+        d for name in keep for nd in parsed[name]
+        for d in nd["inputs"] + nd["outputs"]
+        if d and not is_param(d) and d != "<dynamic>"
+    }
+    g = graphviz.Digraph("pyforge_atlas_dag")
+    g.attr(rankdir="LR", bgcolor="white", fontname="Helvetica",
+           nodesep="0.22", ranksep="0.7", splines="spline")
+    g.attr("node", fontname="Helvetica", fontsize="9")
+    g.attr("edge", color="#90a4ae", arrowsize="0.6")
+
+    for d in sorted(datasets):
+        g.node("ds__" + d, d, shape="ellipse", style="filled", fontsize="8",
+               color="#b0bec5", fillcolor=_LAYER_FILL.get(layer_for(d, real_layers), "#eceff1"))
+
+    for i, name in enumerate(sorted(keep)):
+        with g.subgraph(name="cluster_" + name) as c:
+            c.attr(label=name, style="filled,rounded", color="#78909c",
+                   fillcolor=_CLUSTER_FILL[i % len(_CLUSTER_FILL)],
+                   fontname="Helvetica-Bold", fontsize="13")
+            for d in sorted(dd for dd, p in assigned.items() if p == name and dd in datasets):
+                c.node("fn__extract_" + d, "extract_" + d, shape="box",
+                       style="filled,rounded", fillcolor="white", color="#546e7a")
+            for nd in parsed[name]:
+                c.node("fn__" + nd["name"], nd["name"], shape="box",
+                       style="filled,rounded", fillcolor="white", color="#546e7a")
+
+    for name in keep:
+        for d in sorted(dd for dd, p in assigned.items() if p == name and dd in datasets):
+            g.edge("fn__extract_" + d, "ds__" + d)
+        for nd in parsed[name]:
+            for inp in nd["inputs"]:
+                if inp in datasets:
+                    g.edge("ds__" + inp, "fn__" + nd["name"])
+            for out in nd["outputs"]:
+                if out in datasets:
+                    g.edge("fn__" + nd["name"], "ds__" + out)
+
+    return g
+
+
+def emit_graphviz(parsed, assigned, real_layers, docs_dir) -> int:
+    """Emit a full-DAG SVG + one per pipeline, plus an editable .drawio of the
+    full DAG. Each format skips gracefully (not fatal) if its lib is absent."""
+    try:
+        import graphviz  # noqa: F401
+    except Exception as exc:  # pragma: no cover
+        print(f"graphviz unavailable ({exc}); skipped DAG images")
+        return 0
+    docs_dir.mkdir(parents=True, exist_ok=True)
+    for f in [*docs_dir.glob("dag*.svg"), *docs_dir.glob("dag*.drawio")]:
+        f.unlink()
+
+    n = 0
+    full = _build_graph(sorted(parsed), parsed, assigned, real_layers)
+    (docs_dir / "dag.svg").write_bytes(full.pipe(format="svg"))
+    n += 1
+    for name in sorted(parsed):
+        g = _build_graph([name], parsed, assigned, real_layers)
+        (docs_dir / f"dag-{name}.svg").write_bytes(g.pipe(format="svg"))
+        n += 1
+
+    # editable drawio (diagrams.net) of the full DAG — via graphviz2drawio
+    try:
+        from graphviz2drawio import graphviz2drawio
+        (docs_dir / "dag.drawio").write_text(
+            graphviz2drawio.convert(full.source), encoding="utf-8")
+        n += 1
+    except Exception as exc:  # pragma: no cover
+        print(f"graphviz2drawio unavailable ({exc}); skipped dag.drawio")
+    return n
+
+
 # ---- emit ------------------------------------------------------------------
 
 def _fmt(vals: list[str]):
@@ -138,9 +230,6 @@ def main() -> int:
     for nodes in parsed.values():
         for n in nodes:
             produced.update(n["outputs"])
-
-    def is_param(ds: str) -> bool:
-        return ds == "parameters" or ds.startswith("params:")
 
     all_datasets: set[str] = set()
     param_paths: set[str] = set()
@@ -245,11 +334,15 @@ def main() -> int:
         encoding="utf-8",
     )
 
+    # ---- DAG images (graphviz SVG: full DAG + one per pipeline) ----
+    n_svg = emit_graphviz(parsed, assigned, real_layers, PROTO_CONF.parents[1] / "docs")
+
     n_nodes = sum(len(v) for v in parsed.values()) + len(assigned)
     print(f"pipelines: {sorted(parsed)}")
     print(f"nodes: {n_nodes} ({len(assigned)} extraction + "
           f"{sum(len(v) for v in parsed.values())} real-mirrored)")
-    print(f"datasets: {len(all_datasets)} | params: {len(param_paths)}")
+    print(f"datasets: {len(all_datasets)} | params: {len(param_paths)} | "
+          f"dag images: {n_svg} (svg + drawio)")
     return 0
 
 
