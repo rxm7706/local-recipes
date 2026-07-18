@@ -53,6 +53,8 @@ from pyforge.warden.vuln import (
     cvss_v31_base_score,
     db_zip_path,
     is_db_stale,
+    kev_match,
+    kev_stale_finding,
     name_level_critical_advisory_ids,
     name_level_critical_cve_finding,
     offline_db_unavailable_finding,
@@ -540,6 +542,49 @@ def test_parse_osv_output_attributes_group_max_severity_to_every_aliased_id():
     assert by_id["vuln:CVE-alias:foo@1.0"].severity.raw is None
 
 
+def test_parse_osv_output_captures_kev_candidates_per_finding():
+    """Story 6.4 (FR36): each finding's ``kev_candidates`` entry is its own
+    ``advisory_id`` plus the group's ``aliases`` (deduplicated,
+    order-preserving) -- the RAW candidate set ``kev_match`` checks against
+    a CISA KEV catalog. This is the one shape osv-scanner ACTUALLY emits
+    (empirically confirmed): ``aliases`` includes the group's own
+    primary id alongside any CVE cross-reference, not just the CVE."""
+    raw = json.dumps(
+        {
+            "results": [
+                {
+                    "packages": [
+                        {
+                            "package": {
+                                "name": "pdos-kev-fixture",
+                                "version": "1.0.0",
+                                "ecosystem": "PyPI",
+                            },
+                            "groups": [
+                                {
+                                    "ids": ["PDOS-KEV-FIXTURE-0001"],
+                                    "aliases": [
+                                        "CVE-1970-00001",
+                                        "PDOS-KEV-FIXTURE-0001",
+                                    ],
+                                    "max_severity": "5.4",
+                                }
+                            ],
+                            "vulnerabilities": [],
+                        }
+                    ]
+                }
+            ]
+        }
+    )
+    parse = parse_osv_output(raw)
+    (finding,) = parse.findings
+    assert parse.kev_candidates[finding.id] == (
+        "PDOS-KEV-FIXTURE-0001",
+        "CVE-1970-00001",
+    )
+
+
 def test_parse_osv_output_findings_are_sorted_by_id():
     raw = _doc(
         _package("zzz-pkg", "1.0", ids=["ZZZ-0001"], max_severity="5.0"),
@@ -798,6 +843,113 @@ def test_vuln_rung_with_no_severity_is_indeterminate():
     assert driver == StatusDriver(
         axis=AXIS_VULNERABILITY, finding_id="indeterminate:no-version:leftpad"
     )
+
+
+# --- Story 6.4 (FR36): vuln_rung's fail_on_kev param --------------------------
+
+
+def _kev_finding(*, kev: bool | None, tier: SeverityTier = SeverityTier.MEDIUM) -> Finding:
+    return Finding(
+        id="vuln:PDOS-KEV-FIXTURE-0001:pdos-kev-fixture@1.0.0",
+        axis=AXIS_VULNERABILITY,
+        message="pdos-kev-fixture: PDOS-KEV-FIXTURE-0001",
+        subject="pdos-kev-fixture",
+        severity=Severity(tier=tier, raw=None),
+        kev=kev,
+    )
+
+
+def test_vuln_rung_fail_on_kev_forces_policy_violation_regardless_of_tier():
+    """AC1: a KEV-listed MEDIUM-tier finding (normally warn) is forced to
+    policy-violation when fail_on_kev is active -- independent of the CVSS
+    tier."""
+    finding = _kev_finding(kev=True, tier=SeverityTier.MEDIUM)
+    status, driver = vuln_rung(finding, fail_on_kev=True)
+    assert status is Status.POLICY_VIOLATION
+    assert driver == StatusDriver(axis=AXIS_VULNERABILITY, finding_id=finding.id)
+
+
+def test_vuln_rung_fail_on_kev_never_downgrades_an_already_critical_status():
+    """A CRITICAL-tier KEV match stays policy-violation (forcing the same
+    value is a no-op, never a downgrade)."""
+    finding = _kev_finding(kev=True, tier=SeverityTier.CRITICAL)
+    status, _ = vuln_rung(finding, fail_on_kev=True)
+    assert status is Status.POLICY_VIOLATION
+
+
+def test_vuln_rung_fail_on_kev_false_leaves_cvss_only_gating_untouched():
+    finding = _kev_finding(kev=True, tier=SeverityTier.MEDIUM)
+    status, _ = vuln_rung(finding, fail_on_kev=False)
+    assert status is Status.WARN
+
+
+def test_vuln_rung_default_fail_on_kev_is_false():
+    """Every pre-6.4 direct caller (no fail_on_kev kwarg at all) is
+    unaffected: a kev=True finding does NOT force policy-violation unless
+    the caller explicitly opts in."""
+    finding = _kev_finding(kev=True, tier=SeverityTier.MEDIUM)
+    status, _ = vuln_rung(finding)
+    assert status is Status.WARN
+
+
+def test_vuln_rung_fail_on_kev_with_kev_false_does_not_force():
+    finding = _kev_finding(kev=False, tier=SeverityTier.MEDIUM)
+    status, _ = vuln_rung(finding, fail_on_kev=True)
+    assert status is Status.WARN
+
+
+def test_vuln_rung_fail_on_kev_with_kev_none_does_not_force():
+    finding = _kev_finding(kev=None, tier=SeverityTier.MEDIUM)
+    status, _ = vuln_rung(finding, fail_on_kev=True)
+    assert status is Status.WARN
+
+
+# --- Story 6.4 (FR36): kev_match / kev_stale_finding --------------------------
+
+
+def test_kev_match_finds_the_advisory_id_itself():
+    catalog = {"PDOS-KEV-FIXTURE-0001": "2026-01-01"}
+    assert (
+        kev_match(("PDOS-KEV-FIXTURE-0001", "CVE-1970-00001"), catalog)
+        == "2026-01-01"
+    )
+
+
+def test_kev_match_finds_an_alias():
+    catalog = {"CVE-1970-00001": "2026-01-01"}
+    assert (
+        kev_match(("PDOS-KEV-FIXTURE-0001", "CVE-1970-00001"), catalog)
+        == "2026-01-01"
+    )
+
+
+def test_kev_match_no_match_is_none():
+    catalog = {"CVE-9999-99999": "2026-01-01"}
+    assert kev_match(("PDOS-KEV-FIXTURE-0001", "CVE-1970-00001"), catalog) is None
+
+
+def test_kev_match_empty_candidates_is_none():
+    assert kev_match((), {"CVE-1970-00001": "2026-01-01"}) is None
+
+
+def test_kev_match_empty_catalog_is_none():
+    assert kev_match(("CVE-1970-00001",), {}) is None
+
+
+def test_kev_stale_finding_unavailable():
+    finding = kev_stale_finding(unavailable=True)
+    assert finding.id == "indeterminate:kev-data-unavailable:kev-feed"
+    assert finding.axis == AXIS_VULNERABILITY
+    assert finding.subject == "kev-feed"
+    assert finding.severity is None
+
+
+def test_kev_stale_finding_stale():
+    finding = kev_stale_finding(unavailable=False)
+    assert finding.id == "indeterminate:kev-data-stale:kev-feed"
+    assert finding.axis == AXIS_VULNERABILITY
+    assert finding.subject == "kev-feed"
+    assert finding.severity is None
 
 
 # --- Story 2.5 (FR12): is_db_stale / stale_vuln_data_finding -----------------

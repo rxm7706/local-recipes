@@ -9,16 +9,55 @@ schema-validated via ``jsonschema``.
 
 from __future__ import annotations
 
+import importlib.metadata
 import json
 from datetime import datetime, timedelta
+from email.message import Message
 from importlib import resources
 from pathlib import Path
 
 import jsonschema
+import pytest
 import yaml
 
 from pyforge.warden.cli import main
 from pyforge.warden.report import TOOL_NAME
+
+
+# Follow-up review pass (2026-07-18): this module's fixtures declare
+# `requests==2.31.0`, whose license-axis outcome depended on whatever
+# requests metadata the AMBIENT pixi env happens to carry — the exact
+# relock fragility Fix 9 already pinned away in
+# tests/conformance/test_scan_harness.py. Same pattern replicated here:
+# only "requests"/"packaging" get pinned, deterministic metadata; every
+# other name still resolves via the real importlib.metadata.metadata.
+
+
+def _fake_license_metadata(*, license_expression: str) -> Message:
+    msg = Message()
+    msg["License-Expression"] = license_expression
+    return msg
+
+
+_PINNED_PYPI_LICENSE_METADATA: dict[str, Message] = {
+    "requests": _fake_license_metadata(license_expression="Apache-2.0"),
+    "packaging": _fake_license_metadata(
+        license_expression="Apache-2.0 OR BSD-2-Clause"
+    ),
+}
+
+
+@pytest.fixture(autouse=True)
+def _pin_pypi_license_metadata(monkeypatch):
+    real_metadata = importlib.metadata.metadata
+
+    def fake_metadata(name, *args, **kwargs):
+        pinned = _PINNED_PYPI_LICENSE_METADATA.get(name)
+        if pinned is not None:
+            return pinned
+        return real_metadata(name, *args, **kwargs)
+
+    monkeypatch.setattr(importlib.metadata, "metadata", fake_metadata)
 
 _FAR_FUTURE = "2099-01-01T00:00:00+00:00"
 _LONG_AGO = "2000-01-01T00:00:00+00:00"
@@ -485,19 +524,21 @@ def test_warn_only_downgrades_a_real_policy_violation_to_warn_with_a_nudge(
 def test_warn_only_nudge_counts_only_downgraded_findings_not_the_total(
     capsys, tmp_path
 ):
-    """Mixed-finding-count row: one native-warn hygiene DEP002 finding
-    (never touched by warn_blocking, since it was never policy-violation/
-    indeterminate) alongside the one real downgraded critical vuln -- the
-    nudge must name 1, never the report's total finding count of 2."""
+    """Mixed-finding-count row: one native-warn hygiene DEP002 finding and
+    one native-warn license:unknown finding (Story 6.2: pdos-vuln-fixture is
+    not an installed package) -- neither touched by warn_blocking, since
+    neither was ever policy-violation/indeterminate -- alongside the one
+    real downgraded critical vuln -- the nudge must name 1, never the
+    report's total finding count of 3."""
     _critical_vuln_fixture(tmp_path)
     rc, document, _ = scan_json(capsys, tmp_path, ["--warn-only"])
     assert rc == 0
-    assert len(document["findings"]) == 2
+    assert len(document["findings"]) == 3
 
     capsys.readouterr()
     main(["scan", str(tmp_path), "--warn-only"])
     captured = capsys.readouterr()
-    assert "findings=2" in captured.out  # the verdict line's own total
+    assert "findings=3" in captured.out  # the verdict line's own total
     assert "[warn-only] 1 finding not enforced" in captured.out
 
 

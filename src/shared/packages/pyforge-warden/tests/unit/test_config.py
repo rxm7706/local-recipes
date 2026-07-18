@@ -19,7 +19,7 @@ from pyforge.warden.config import (
     ConfigValidationError,
     EffectiveConfig,
 )
-from pyforge.warden.models import SeverityTier, Status
+from pyforge.warden.models import LicenseVerdict, SeverityTier, Status
 
 
 def _write(path, text: str) -> None:
@@ -378,6 +378,39 @@ def test_no_cli_flag_parameter_exists_for_waiver_default_expiry_days():
     assert "cli_waiver_default_expiry_days" not in params
 
 
+# --- ConfigLoader.load: fail-on-kev (Story 6.4) -------------------------------
+
+
+def test_fail_on_kev_defaults_true(tmp_path):
+    config, _ = ConfigLoader().load(tmp_path)
+    assert config.fail_on_kev is True
+
+
+def test_fail_on_kev_toml_override(tmp_path):
+    _write(
+        tmp_path / "pyproject.toml",
+        "[tool.pyforge-warden]\nfail-on-kev = false\n",
+    )
+    config, _ = ConfigLoader().load(tmp_path)
+    assert config.fail_on_kev is False
+
+
+def test_wrong_typed_fail_on_kev_raises_config_validation_error(tmp_path):
+    _write(
+        tmp_path / "pyproject.toml",
+        '[tool.pyforge-warden]\nfail-on-kev = "yes"\n',
+    )
+    with pytest.raises(ConfigValidationError):
+        ConfigLoader().load(tmp_path)
+
+
+def test_no_cli_flag_parameter_exists_for_fail_on_kev():
+    """TOML-only key (Design Notes): no CLI flag exists for fail-on-kev
+    either -- mirrors dep001-block-confidence/waiver-default-expiry-days."""
+    params = inspect.signature(ConfigLoader.load).parameters
+    assert "cli_fail_on_kev" not in params
+
+
 def test_invalid_cli_fail_on_raises_config_validation_error_not_a_bare_value_error(
     tmp_path,
 ):
@@ -439,6 +472,15 @@ def test_effective_config_accepts_waiver_default_expiry_days_upper_boundary():
     assert EffectiveConfig(waiver_default_expiry_days=3650).waiver_default_expiry_days == 3650
 
 
+def test_effective_config_fail_on_kev_defaults_true():
+    assert EffectiveConfig().fail_on_kev is True
+
+
+def test_effective_config_rejects_non_bool_fail_on_kev_at_construction():
+    with pytest.raises(ValueError):
+        EffectiveConfig(fail_on_kev="true")
+
+
 # --- EffectiveConfig.default_with_cli_overrides ------------------------------
 
 
@@ -458,3 +500,215 @@ def test_default_with_cli_overrides_no_flags_is_plain_default():
 def test_default_with_cli_overrides_rejects_invalid_fail_on():
     with pytest.raises(ConfigValidationError):
         EffectiveConfig.default_with_cli_overrides(cli_fail_on="extreme")
+
+
+# --- ConfigLoader.load: allow-licenses/deny-licenses (Story 6.2, FR33) -------
+
+
+def test_allow_deny_licenses_default_to_empty(tmp_path):
+    config, _ = ConfigLoader().load(tmp_path)
+    assert config.allow_licenses == ()
+    assert config.deny_licenses == ()
+    assert config.license_gating is False
+
+
+def test_toml_comma_separated_string_allow_licenses(tmp_path):
+    _write(
+        tmp_path / "pyproject.toml",
+        '[tool.pyforge-warden]\nallow-licenses = "MIT, Apache-2.0"\n',
+    )
+    config, _ = ConfigLoader().load(tmp_path)
+    assert config.allow_licenses == ("MIT", "Apache-2.0")
+    assert config.license_gating is True
+
+
+def test_toml_list_deny_licenses(tmp_path):
+    _write(
+        tmp_path / "pyproject.toml",
+        '[tool.pyforge-warden]\ndeny-licenses = ["GPL-3.0-only", "AGPL-3.0-only"]\n',
+    )
+    config, _ = ConfigLoader().load(tmp_path)
+    assert config.deny_licenses == ("GPL-3.0-only", "AGPL-3.0-only")
+    assert config.license_gating is True
+
+
+def test_blank_entries_are_dropped_from_a_comma_separated_list(tmp_path):
+    _write(
+        tmp_path / "pyproject.toml",
+        '[tool.pyforge-warden]\nallow-licenses = "MIT, , Apache-2.0,"\n',
+    )
+    config, _ = ConfigLoader().load(tmp_path)
+    assert config.allow_licenses == ("MIT", "Apache-2.0")
+
+
+@pytest.mark.parametrize("key", ["allow-licenses", "deny-licenses"])
+def test_wrong_typed_license_list_raises_config_validation_error(tmp_path, key):
+    _write(tmp_path / "pyproject.toml", f"[tool.pyforge-warden]\n{key} = 42\n")
+    with pytest.raises(ConfigValidationError):
+        ConfigLoader().load(tmp_path)
+
+
+@pytest.mark.parametrize("key", ["allow-licenses", "deny-licenses"])
+def test_mixed_type_list_raises_config_validation_error(tmp_path, key):
+    _write(tmp_path / "pyproject.toml", f'[tool.pyforge-warden]\n{key} = ["MIT", 1]\n')
+    with pytest.raises(ConfigValidationError):
+        ConfigLoader().load(tmp_path)
+
+
+# --- Fix 5 (review finding, 2026-07-18): an explicitly-configured license --
+# list that resolves to zero usable entries must raise, never silently
+# no-op license_gating.
+
+
+@pytest.mark.parametrize("key", ["allow-licenses", "deny-licenses"])
+def test_blank_string_license_list_raises_config_validation_error(tmp_path, key):
+    """``--deny-licenses ""`` (an explicit, empty string) must raise --
+    silently producing an empty tuple would leave license_gating=False
+    while the user believes they configured a gate."""
+    _write(tmp_path / "pyproject.toml", f'[tool.pyforge-warden]\n{key} = ""\n')
+    with pytest.raises(ConfigValidationError):
+        ConfigLoader().load(tmp_path)
+
+
+@pytest.mark.parametrize("key", ["allow-licenses", "deny-licenses"])
+def test_all_comma_license_list_raises_config_validation_error(tmp_path, key):
+    """``--deny-licenses " , "`` (blank/all-comma) resolves to zero usable
+    tokens after stripping -- same treatment as an empty string."""
+    _write(tmp_path / "pyproject.toml", f'[tool.pyforge-warden]\n{key} = " , "\n')
+    with pytest.raises(ConfigValidationError):
+        ConfigLoader().load(tmp_path)
+
+
+@pytest.mark.parametrize("key", ["allow-licenses", "deny-licenses"])
+def test_empty_list_license_list_raises_config_validation_error(tmp_path, key):
+    """An explicit empty TOML list (``[]``) is the same "configured but
+    empty" case as a blank string."""
+    _write(tmp_path / "pyproject.toml", f"[tool.pyforge-warden]\n{key} = []\n")
+    with pytest.raises(ConfigValidationError):
+        ConfigLoader().load(tmp_path)
+
+
+def test_cli_deny_licenses_blank_raises_config_validation_error(tmp_path):
+    """The CLI-override path is gated the same way as the TOML path --
+    ``--deny-licenses "  "`` explicitly passed but blank must raise, not
+    silently resolve to an unconfigured gate."""
+    with pytest.raises(ConfigValidationError):
+        ConfigLoader().load(tmp_path, cli_deny_licenses="  ")
+
+
+def test_cli_allow_licenses_blank_raises_config_validation_error(tmp_path):
+    with pytest.raises(ConfigValidationError):
+        ConfigLoader().load(tmp_path, cli_allow_licenses="")
+
+
+def test_cli_allow_licenses_overrides_both_files(tmp_path):
+    _write(tmp_path / "pyproject.toml", '[tool.pyforge-warden]\nallow-licenses = "MIT"\n')
+    _write(tmp_path / "pixi.toml", '[tool.pyforge-warden]\nallow-licenses = "ISC"\n')
+    config, _ = ConfigLoader().load(tmp_path, cli_allow_licenses="Apache-2.0")
+    assert config.allow_licenses == ("Apache-2.0",)
+
+
+def test_cli_deny_licenses_overrides_both_files(tmp_path):
+    _write(tmp_path / "pyproject.toml", '[tool.pyforge-warden]\ndeny-licenses = "MIT"\n')
+    _write(tmp_path / "pixi.toml", '[tool.pyforge-warden]\ndeny-licenses = "ISC"\n')
+    config, _ = ConfigLoader().load(tmp_path, cli_deny_licenses="GPL-3.0-only")
+    assert config.deny_licenses == ("GPL-3.0-only",)
+
+
+def test_license_gating_true_iff_either_list_is_non_empty():
+    assert EffectiveConfig().license_gating is False
+    assert EffectiveConfig(allow_licenses=("MIT",)).license_gating is True
+    assert EffectiveConfig(deny_licenses=("GPL-3.0-only",)).license_gating is True
+
+
+def test_license_policy_maps_denied_and_unknown_to_warn():
+    policy = EffectiveConfig().license_policy
+    assert policy == {
+        LicenseVerdict.DENIED: Status.WARN,
+        LicenseVerdict.UNKNOWN: Status.WARN,
+    }
+
+
+def test_effective_config_rejects_non_tuple_allow_licenses_at_construction():
+    with pytest.raises(ValueError):
+        EffectiveConfig(allow_licenses=["MIT"])  # a list, not a tuple
+
+
+def test_effective_config_rejects_empty_string_entry_at_construction():
+    with pytest.raises(ValueError):
+        EffectiveConfig(deny_licenses=("",))
+
+
+def test_default_with_cli_overrides_applies_license_flags():
+    config = EffectiveConfig.default_with_cli_overrides(
+        cli_allow_licenses="MIT,Apache-2.0", cli_deny_licenses="GPL-3.0-only"
+    )
+    assert config.allow_licenses == ("MIT", "Apache-2.0")
+    assert config.deny_licenses == ("GPL-3.0-only",)
+
+
+# --- Follow-up review pass (2026-07-18): entry validity ----------------------
+
+
+@pytest.mark.parametrize("key", ["allow-licenses", "deny-licenses"])
+@pytest.mark.parametrize("bad_entry", ["GPLv3", "BSD", "Apache 2.0", "()"])
+def test_invalid_spdx_toml_entry_raises_config_validation_error(
+    tmp_path, key, bad_entry
+):
+    """A configured entry that cannot normalize as SPDX could never match
+    any resolved license — the gate would read active (gating: true) while
+    being structurally unable to fire. Fail at load, like the
+    zero-usable-entries check already does."""
+    _write(
+        tmp_path / "pyproject.toml",
+        f'[tool.pyforge-warden]\n{key} = "{bad_entry}"\n',
+    )
+    with pytest.raises(ConfigValidationError, match="never match"):
+        ConfigLoader().load(tmp_path)
+
+
+def test_invalid_spdx_cli_entry_raises_config_validation_error(tmp_path):
+    with pytest.raises(ConfigValidationError, match="GPLv3"):
+        ConfigLoader().load(tmp_path, cli_deny_licenses="GPLv3")
+    with pytest.raises(ConfigValidationError):
+        ConfigLoader().load(tmp_path, cli_allow_licenses="()")
+
+
+def test_one_invalid_entry_among_valid_ones_still_raises(tmp_path):
+    with pytest.raises(ConfigValidationError, match="GPLv3"):
+        ConfigLoader().load(tmp_path, cli_deny_licenses="MIT, GPLv3")
+
+
+def test_license_ref_with_grant_and_compound_entries_are_accepted(tmp_path):
+    """The full valid-entry surface: single ids, compound expressions,
+    WITH grants, and SPDX's user-defined LicenseRef-* references."""
+    config, _ = ConfigLoader().load(
+        tmp_path,
+        cli_deny_licenses=(
+            "LicenseRef-Proprietary, MIT OR Apache-2.0, "
+            "GPL-2.0-only WITH Classpath-exception-2.0"
+        ),
+    )
+    assert config.deny_licenses == (
+        "LicenseRef-Proprietary",
+        "MIT OR Apache-2.0",
+        "GPL-2.0-only WITH Classpath-exception-2.0",
+    )
+
+
+def test_effective_config_rejects_blank_entry_at_construction():
+    """A whitespace-only entry used to construct fine and flip
+    license_gating True over a token _normalize_tokens silently empties —
+    inconsistent with _coerce_license_list's stripped-token guarantee."""
+    with pytest.raises(ValueError):
+        EffectiveConfig(deny_licenses=(" ",))
+
+
+def test_license_policy_property_matches_module_default_table():
+    """config.license_policy and license.DEFAULT_LICENSE_POLICY are two
+    independently-declared copies of the same table with no consumer until
+    Story 6.5 — this cross-check is the only thing keeping them from
+    silently drifting apart before then."""
+    from pyforge.warden.license import DEFAULT_LICENSE_POLICY
+
+    assert EffectiveConfig().license_policy == dict(DEFAULT_LICENSE_POLICY)

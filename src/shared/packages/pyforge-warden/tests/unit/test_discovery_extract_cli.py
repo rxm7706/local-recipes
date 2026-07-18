@@ -1122,10 +1122,14 @@ def test_newline_in_dependency_name_still_completes_the_scan(capsys, tmp_path):
     """A dependency name embedding a newline (valid TOML) must not crash
     Finding construction: the scan completes with the escaped form in the
     finding ids and the raw name in the subjects. The raw-malformed entry
-    surfaces BOTH deficiencies: withheld from vuln matching AND not
-    hygiene-covered. deptry handles the odd name gracefully (no finding, no
-    error), so the extractor's indeterminate verdict stands. An adjacent
-    .py module keeps the hygiene axis applicable (Story 2.4, AC3) so both
+    surfaces THREE deficiencies: withheld from vuln matching, not
+    hygiene-covered, AND (Story 6.2) unresolvable on the license axis --
+    ``pypi_identity`` is None for a raw-malformed entry, so LicenseEngine
+    falls back to the raw (newline-embedding) component name, which
+    ``importlib.metadata.metadata`` simply reports as not-found (never a
+    crash). deptry handles the odd name gracefully (no finding, no error),
+    so the extractor's indeterminate verdict stands. An adjacent .py module
+    keeps the hygiene axis applicable (Story 2.4, AC3) so all three
     deficiencies stay observable in one scan -- without it, hygiene is
     honestly not-applicable and its own uncovered finding is correctly
     suppressed (see the Story 2.4 conformance tests)."""
@@ -1138,11 +1142,13 @@ def test_newline_in_dependency_name_still_completes_the_scan(capsys, tmp_path):
     assert sorted(f["id"] for f in document["findings"]) == [
         "indeterminate:no-version:foo%0Abar",
         "indeterminate:uncovered:foo%0Abar",
+        "license:unknown:foo%0Abar@unspecified",
     ]
     assert all(f["subject"] == "foo\nbar" for f in document["findings"])
     axes = {f["id"]: f["axis"] for f in document["findings"]}
     assert axes["indeterminate:no-version:foo%0Abar"] == "vulnerability"
     assert axes["indeterminate:uncovered:foo%0Abar"] == "hygiene"
+    assert axes["license:unknown:foo%0Abar@unspecified"] == "license"
 
 
 @pytest.mark.skipif(os.name != "posix", reason="POSIX permission semantics")

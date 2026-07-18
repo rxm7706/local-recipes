@@ -58,6 +58,28 @@ Ownership decisions recorded:
   no CLI flag exists for it either; ``cli.py``'s ``--bypass`` path reads
   ``EffectiveConfig.waiver_default_expiry_days`` directly to compute a
   waiver's default expiry window.
+* ``fail-on-kev`` (Story 6.4, FR36/FR18's default-gate role) is likewise
+  TOML-only, no CLI flag — same treatment as ``dep001-block-confidence``
+  (epics.md's retired-flag-family note: only ``--fail-on``/
+  ``--fail-under-coverage`` ever get a CLI flag). Defaults ``true``: a
+  CISA-KEV-listed advisory blocks by default, matching every other v1
+  default-on gate. ``interfaces.DefaultPolicy.evaluate`` threads
+  ``self._config.fail_on_kev`` into ``vuln.vuln_rung``; ``cli.py``
+  constructs ``OsvEngine(fail_on_kev=config.fail_on_kev)`` the same way it
+  already special-cases ``DeptryEngine`` in its engine-construction loop.
+* ``allow-licenses``/``deny-licenses`` (Story 6.2, FR33's v1 gate-activation
+  rule) DO get CLI flags (``--allow-licenses``/``--deny-licenses``) — unlike
+  ``dep001-block-confidence``/``fail-on-kev`` above, these two ARE part of
+  epics.md's spelled-out v1 CLI surface. Both accept a comma-separated
+  string OR a TOML list of strings (``_coerce_allow_licenses``/
+  ``_coerce_deny_licenses``); CLI wins over either TOML file, same
+  last-applied precedence as ``fail-on``/``fail-under-coverage``.
+  ``license_gating`` (``True`` iff either tuple is non-empty) and
+  ``license_policy`` (a ``LicenseVerdict -> Status`` table, mirroring
+  ``vuln_severity_policy``'s shape) are both defined this story per the
+  architecture's ownership split — ``license_policy`` has no caller yet
+  (``license.license_rung`` is a hard warn-cap this story, oblivious to any
+  policy table; real escalation is Story 6.5's).
 
 This module parses TOML as DATA: no I/O beyond reading the two candidate
 files, no subprocess, no network, no exec.
@@ -70,12 +92,12 @@ import tomllib
 from dataclasses import dataclass
 from pathlib import Path
 
-from .models import SeverityTier, Status
+from .models import LicenseVerdict, SeverityTier, Status
 
 _PYPROJECT_FILENAME = "pyproject.toml"
 _PIXI_FILENAME = "pixi.toml"
 
-# The 4 recognized [tool.pyforge-warden] keys (hyphenated only — an
+# The 6 recognized [tool.pyforge-warden] keys (hyphenated only — an
 # underscore-spelled variant of any of these is UNRECOGNIZED, never
 # silently accepted as an alias).
 _RECOGNIZED_KEYS = frozenset(
@@ -84,6 +106,9 @@ _RECOGNIZED_KEYS = frozenset(
         "fail-under-coverage",
         "dep001-block-confidence",
         "waiver-default-expiry-days",
+        "fail-on-kev",
+        "allow-licenses",
+        "deny-licenses",
     }
 )
 
@@ -162,6 +187,9 @@ class EffectiveConfig:
     fail_under_coverage: float = 0.0
     dep001_block_confidence: str = "verified"
     waiver_default_expiry_days: int = 14
+    fail_on_kev: bool = True
+    allow_licenses: tuple[str, ...] = ()
+    deny_licenses: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
         """Fail at construction, not at first use (review finding: without
@@ -200,6 +228,24 @@ class EffectiveConfig:
                 f"{_MAX_WAIVER_DEFAULT_EXPIRY_DAYS}, got "
                 f"{self.waiver_default_expiry_days!r}"
             )
+        if not isinstance(self.fail_on_kev, bool):
+            raise ValueError(
+                f"fail_on_kev must be a bool, got {self.fail_on_kev!r}"
+            )
+        for field_name in ("allow_licenses", "deny_licenses"):
+            value = getattr(self, field_name)
+            # item.strip(), not bare item (follow-up review pass,
+            # 2026-07-18): a whitespace-only entry constructed fine and
+            # flipped license_gating True over a token _normalize_tokens
+            # silently empties — inconsistent with _coerce_license_list's
+            # own stripped-token guarantee for the CLI/TOML path.
+            if not isinstance(value, tuple) or not all(
+                isinstance(item, str) and item.strip() for item in value
+            ):
+                raise ValueError(
+                    f"{field_name} must be a tuple of non-blank strings, got "
+                    f"{value!r}"
+                )
 
     @classmethod
     def default(cls) -> EffectiveConfig:
@@ -215,6 +261,8 @@ class EffectiveConfig:
         *,
         cli_fail_on: str | None = None,
         cli_fail_under_coverage: float | None = None,
+        cli_allow_licenses: str | None = None,
+        cli_deny_licenses: str | None = None,
     ) -> EffectiveConfig:
         """The built-in default, with any CLI-supplied overrides still
         applied (review finding: ``cli.py``'s config-load-failure fallback
@@ -225,7 +273,10 @@ class EffectiveConfig:
         still goes through ``_coerce_fail_on`` (not a bare
         ``SeverityTier(...)`` call) so an invalid direct-caller value raises
         the module's own ``ConfigValidationError``, matching ``ConfigLoader.
-        load``'s own CLI-override handling."""
+        load``'s own CLI-override handling. ``cli_allow_licenses``/
+        ``cli_deny_licenses`` (Story 6.2) follow the SAME pattern: an
+        already-argparse-supplied ``--allow-licenses``/``--deny-licenses``
+        flag must survive an unrelated config-load failure too."""
         defaults = cls.default()
         fail_on = (
             _coerce_fail_on(cli_fail_on) if cli_fail_on is not None else defaults.fail_on
@@ -235,11 +286,24 @@ class EffectiveConfig:
             if cli_fail_under_coverage is not None
             else defaults.fail_under_coverage
         )
+        allow_licenses = (
+            _coerce_allow_licenses(cli_allow_licenses)
+            if cli_allow_licenses is not None
+            else defaults.allow_licenses
+        )
+        deny_licenses = (
+            _coerce_deny_licenses(cli_deny_licenses)
+            if cli_deny_licenses is not None
+            else defaults.deny_licenses
+        )
         return cls(
             fail_on=fail_on,
             fail_under_coverage=fail_under_coverage,
             dep001_block_confidence=defaults.dep001_block_confidence,
             waiver_default_expiry_days=defaults.waiver_default_expiry_days,
+            fail_on_kev=defaults.fail_on_kev,
+            allow_licenses=allow_licenses,
+            deny_licenses=deny_licenses,
         )
 
     @property
@@ -277,6 +341,34 @@ class EffectiveConfig:
             self.dep001_block_confidence, _CONFIDENCE_RANK["verified"]
         )
         return _CONFIDENCE_RANK.get(mapping_confidence, -1) >= threshold
+
+    @property
+    def license_gating(self) -> bool:
+        """Whether the license axis's gate is active this scan (Story 6.2,
+        FR33's v1 gate-activation rule) — ``True`` iff ``allow_licenses`` or
+        ``deny_licenses`` is non-empty. Threaded into the reported
+        ``AxisCoverage.gating`` for the license axis
+        (``report.assemble_report``) — transparency of configuration state,
+        independent of the fact that real escalation itself is deferred to
+        Story 6.5."""
+        return bool(self.allow_licenses or self.deny_licenses)
+
+    @property
+    def license_policy(self) -> dict[LicenseVerdict, Status]:
+        """The license-axis verdict->status table Story 6.5's real
+        escalation will consult — mirrors ``vuln_severity_policy``'s shape
+        (a plain dict, not the module-default ``MappingProxyType``, matching
+        that property's own return type). Defined THIS story per the
+        architecture's ownership split even though nothing consumes it yet:
+        ``license.license_rung`` is a hard ``Status.WARN`` cap, oblivious to
+        this table (see its own docstring). Every Finding-eligible verdict
+        (``denied``/``unknown`` — ``allowed`` never reaches a ``Finding``)
+        maps to ``Status.WARN``, matching ``license_rung``'s own cap
+        byte-for-byte."""
+        return {
+            LicenseVerdict.DENIED: Status.WARN,
+            LicenseVerdict.UNKNOWN: Status.WARN,
+        }
 
 
 def _extract_table(document: dict[str, object], *, source: str) -> dict[str, object]:
@@ -357,6 +449,93 @@ def _coerce_waiver_default_expiry_days(value: object) -> int:
     return value
 
 
+def _coerce_fail_on_kev(value: object) -> bool:
+    if not isinstance(value, bool):
+        raise ConfigValidationError(
+            f"'fail-on-kev' must be a bool, got {value!r}"
+        )
+    return value
+
+
+def _coerce_license_list(value: object, *, key: str) -> tuple[str, ...]:
+    """A comma-separated string OR a list of strings (Story 6.2) -> a tuple
+    of stripped, non-empty tokens — the shared shape ``_coerce_allow_
+    licenses``/``_coerce_deny_licenses`` wrap. Mirrors every other
+    ``_coerce_*`` helper: a wrong-typed value is a ``ConfigValidationError``,
+    raised regardless of source (a CLI-supplied value is always a ``str``;
+    the TOML path may supply either shape). An entry that normalizes to
+    empty text (blank/whitespace-only) is dropped, never turned into a
+    spurious empty token.
+
+    Fix 5 (review finding, 2026-07-18): this helper is only ever called
+    when the key/flag was EXPLICITLY configured — ``ConfigLoader._load``
+    gates the call on ``key in merged``, ``default_with_cli_overrides``/
+    ``ConfigLoader._load``'s CLI-override branch gate it on
+    ``cli_*_licenses is not None`` — so a result that resolves to zero
+    usable entries (``""``, ``" , "``, ``[]``) always means the user
+    explicitly configured an EMPTY gate, not that the gate was simply left
+    unconfigured. Silently returning ``()`` here let ``license_gating``
+    stay ``False`` with no error, even though the user believed they had
+    activated the license gate — a typed ``ConfigValidationError`` instead,
+    the same "fail at construction" posture every other ``_coerce_*``
+    helper in this module already takes.
+
+    Follow-up review pass (2026-07-18): every surviving entry must also
+    normalize as a real SPDX expression (``license.is_valid_license_token``
+    — single ids, compounds, ``WITH`` grants, and ``LicenseRef-*``
+    references all pass; colloquial labels like ``GPLv3``/``BSD`` do not).
+    A resolved component license is ALWAYS a normalized SPDX product, so an
+    entry that cannot normalize the same way could never match anything:
+    the gate reads as active (``license_gating=True``, ``gating: true`` in
+    the report) while being structurally unable to fire — the same
+    configured-but-ineffective fail-open the zero-usable-entries check
+    above already rejects, one level deeper."""
+    if isinstance(value, str):
+        candidates: list[str] = value.split(",")
+    elif isinstance(value, list) and all(isinstance(item, str) for item in value):
+        candidates = value
+    else:
+        raise ConfigValidationError(
+            f"'{key}' must be a comma-separated string or a list of "
+            f"strings, got {value!r}"
+        )
+    tokens = tuple(token.strip() for token in candidates if token.strip())
+    if not tokens:
+        raise ConfigValidationError(
+            f"'{key}' was configured but resolved to zero usable entries "
+            f"(got {value!r}) — omit the key/flag entirely instead of "
+            "setting an empty gate"
+        )
+    invalid = [token for token in tokens if not _is_valid_license_token(token)]
+    if invalid:
+        raise ConfigValidationError(
+            f"'{key}' entries {invalid!r} are not valid SPDX license "
+            "expressions (nor LicenseRef-* references) — they could never "
+            "match any resolved license, leaving the configured gate "
+            "silently ineffective; use exact SPDX ids (e.g. 'GPL-3.0-only', "
+            "not 'GPLv3')"
+        )
+    return tokens
+
+
+def _is_valid_license_token(text: str) -> bool:
+    # Lazy import (mirrors interfaces.py's own documented workaround):
+    # license.py imports interfaces.py at module top, and interfaces.py
+    # imports THIS module at module top — a top-level import here would
+    # open a config -> license -> interfaces -> config cycle.
+    from .license import is_valid_license_token
+
+    return is_valid_license_token(text)
+
+
+def _coerce_allow_licenses(value: object) -> tuple[str, ...]:
+    return _coerce_license_list(value, key="allow-licenses")
+
+
+def _coerce_deny_licenses(value: object) -> tuple[str, ...]:
+    return _coerce_license_list(value, key="deny-licenses")
+
+
 class ConfigLoader:
     """Loads + merges ``[tool.pyforge-warden]`` from ``pyproject.toml``
     (primary) and ``pixi.toml`` (secondary) into one ``EffectiveConfig``
@@ -369,6 +548,8 @@ class ConfigLoader:
         *,
         cli_fail_on: str | None = None,
         cli_fail_under_coverage: float | None = None,
+        cli_allow_licenses: str | None = None,
+        cli_deny_licenses: str | None = None,
     ) -> tuple[EffectiveConfig, tuple[str, ...]]:
         """Resolve one scan's ``EffectiveConfig`` under ``target``. Returns
         ``(config, warnings)`` — ``warnings`` are stderr-destined diagnostic
@@ -389,6 +570,8 @@ class ConfigLoader:
                 target,
                 cli_fail_on=cli_fail_on,
                 cli_fail_under_coverage=cli_fail_under_coverage,
+                cli_allow_licenses=cli_allow_licenses,
+                cli_deny_licenses=cli_deny_licenses,
                 warnings=warnings,
             )
         except (ConfigParseError, ConfigValidationError) as exc:
@@ -401,6 +584,8 @@ class ConfigLoader:
         *,
         cli_fail_on: str | None,
         cli_fail_under_coverage: float | None,
+        cli_allow_licenses: str | None,
+        cli_deny_licenses: str | None,
         warnings: list[str],
     ) -> tuple[EffectiveConfig, tuple[str, ...]]:
         pyproject_table = self._read_table(
@@ -445,6 +630,21 @@ class ConfigLoader:
             if "waiver-default-expiry-days" in merged
             else defaults.waiver_default_expiry_days
         )
+        fail_on_kev = (
+            _coerce_fail_on_kev(merged["fail-on-kev"])
+            if "fail-on-kev" in merged
+            else defaults.fail_on_kev
+        )
+        allow_licenses = (
+            _coerce_allow_licenses(merged["allow-licenses"])
+            if "allow-licenses" in merged
+            else defaults.allow_licenses
+        )
+        deny_licenses = (
+            _coerce_deny_licenses(merged["deny-licenses"])
+            if "deny-licenses" in merged
+            else defaults.deny_licenses
+        )
 
         # CLI flags win over both files. Routed through the SAME _coerce_*
         # helpers the TOML-sourced values use (review finding: a bare
@@ -457,12 +657,19 @@ class ConfigLoader:
             fail_on = _coerce_fail_on(cli_fail_on)
         if cli_fail_under_coverage is not None:
             fail_under_coverage = _coerce_fail_under_coverage(cli_fail_under_coverage)
+        if cli_allow_licenses is not None:
+            allow_licenses = _coerce_allow_licenses(cli_allow_licenses)
+        if cli_deny_licenses is not None:
+            deny_licenses = _coerce_deny_licenses(cli_deny_licenses)
 
         config = EffectiveConfig(
             fail_on=fail_on,
             fail_under_coverage=fail_under_coverage,
             dep001_block_confidence=dep001_block_confidence,
             waiver_default_expiry_days=waiver_default_expiry_days,
+            fail_on_kev=fail_on_kev,
+            allow_licenses=allow_licenses,
+            deny_licenses=deny_licenses,
         )
         return config, tuple(warnings)
 
