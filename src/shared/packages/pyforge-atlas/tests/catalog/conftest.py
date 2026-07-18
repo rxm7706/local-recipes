@@ -79,11 +79,11 @@ EXPECTED_PIPELINE_COUNTS = {
     "pypi_intelligence": 15,
     "vulnerability": 14,  # B8: + vulnerability_basilisk_detail_raw + vulnerability_basilisk_details (FR-19)
     "vcs_health": 25,  # B10: +5 category-list + vcs_migration_detail_raw + vcs_migration_readiness (FR-21; new-signal, AD-14)
-    "universal_sbom": 4,  # B7: + sbom_resolution_entry (TransitiveResolverDataset, FR-17)
+    "universal_sbom": 6,  # F4: + sbom_hygiene_entry + sbom_compliance_report_entry (FR-16/FR-18, AD-12)
     "seed_gaps": 8,
     "derived_artifacts": 2,
 }
-EXPECTED_TOTAL = 84  # B10: 77 + 7 migration-status entries (FR-21)
+EXPECTED_TOTAL = 86  # F4: 84 + sbom_hygiene_entry + sbom_compliance_report_entry
 
 # The A3 IncrementalParquetDataset flip list (TTL-gated persisted outputs).
 FLIP_LIST = {

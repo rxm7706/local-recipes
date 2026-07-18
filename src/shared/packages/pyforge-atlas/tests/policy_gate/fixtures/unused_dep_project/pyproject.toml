@@ -1,0 +1,8 @@
+# F4 hygiene fixture: `requests` is declared but never imported by the source,
+# so deptry emits DEP002 (unused dependency) -> a hygiene:DEP002:requests finding.
+[project]
+name = "f4-unused-dep-fixture"
+version = "1.0.0"
+dependencies = [
+    "requests==2.31.0",
+]
