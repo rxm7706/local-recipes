@@ -14,7 +14,7 @@ from .harness import NODE_REGISTRY
 _PIPELINES = ("core", "vcs_health", "pypi_intelligence", "vulnerability")
 _EXPECTED_NODE_COUNTS = {
     "core": 7,
-    "vcs_health": 5,
+    "vcs_health": 6,  # B9 added derive_release_velocity (FR-20; new-signal, AD-14)
     "pypi_intelligence": 10,  # B5 added export_pypi_conda_map (§ 3.4 refresh asset)
     "vulnerability": 9,  # B5 +refresh_vdb_store/+refresh_osv_offline_store; B8 +2 Basilisk (FR-19)
 }
@@ -36,6 +36,8 @@ _REFRESH_ASSETS = {
 _NEW_SIGNAL_NODES = {
     "ingest_basilisk_advisories",
     "fetch_basilisk_details",
+    # Story B9 release-velocity node (FR-20) — same AD-14 additive-rider boundary.
+    "derive_release_velocity",
 }
 
 

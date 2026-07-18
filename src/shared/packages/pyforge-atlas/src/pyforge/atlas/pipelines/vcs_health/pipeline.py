@@ -10,6 +10,7 @@ from __future__ import annotations
 from kedro.pipeline import Pipeline, node
 
 from .nodes import (
+    derive_release_velocity,
     detect_archived_feedstocks,
     enrich_maintainers,
     fetch_live_health,
@@ -63,6 +64,21 @@ def create_pipeline(**kwargs) -> Pipeline:
                 inputs="vcs_github_api_raw",
                 outputs="vcs_live_health",
                 name="fetch_live_health",
+            ),
+            # FR-20 (Story B9) — NEW-SIGNAL, NOT parity-gated (AD-14). Reads the
+            # Phase H `pypi_current_versions` (produced by pypi_intelligence) + the
+            # Phase C `pypi_conda_mapping` + `core_repodata_raw` by catalog name
+            # (cross-pipeline shared datasets, ownership=producer, AD-3). `now` is
+            # injected from params so a fixture pins it; the pipeline uses the default.
+            node(
+                func=derive_release_velocity,
+                inputs=[
+                    "pypi_current_versions",
+                    "core_repodata_raw",
+                    "pypi_conda_mapping",
+                ],
+                outputs="vcs_release_velocity",
+                name="derive_release_velocity",
             ),
         ]
     )
