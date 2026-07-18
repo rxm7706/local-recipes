@@ -10,17 +10,56 @@ CLI rows.
 
 from __future__ import annotations
 
+import importlib.metadata
 import json
+from email.message import Message
 from importlib import resources
 from pathlib import Path
 
 import jsonschema
+import pytest
 from cyclonedx.schema import SchemaVersion
 from cyclonedx.validation.json import JsonStrictValidator
 
 from pyforge.warden.cli import main
 
 _VALIDATOR = JsonStrictValidator(SchemaVersion.V1_6)
+
+
+# Follow-up review pass (2026-07-18): this module's fixtures declare
+# `requests==2.31.0`, whose license-axis outcome depended on whatever
+# requests metadata the AMBIENT pixi env happens to carry — the exact
+# relock fragility Fix 9 already pinned away in
+# tests/conformance/test_scan_harness.py. Same pattern replicated here:
+# only "requests"/"packaging" get pinned, deterministic metadata; every
+# other name still resolves via the real importlib.metadata.metadata.
+
+
+def _fake_license_metadata(*, license_expression: str) -> Message:
+    msg = Message()
+    msg["License-Expression"] = license_expression
+    return msg
+
+
+_PINNED_PYPI_LICENSE_METADATA: dict[str, Message] = {
+    "requests": _fake_license_metadata(license_expression="Apache-2.0"),
+    "packaging": _fake_license_metadata(
+        license_expression="Apache-2.0 OR BSD-2-Clause"
+    ),
+}
+
+
+@pytest.fixture(autouse=True)
+def _pin_pypi_license_metadata(monkeypatch):
+    real_metadata = importlib.metadata.metadata
+
+    def fake_metadata(name, *args, **kwargs):
+        pinned = _PINNED_PYPI_LICENSE_METADATA.get(name)
+        if pinned is not None:
+            return pinned
+        return real_metadata(name, *args, **kwargs)
+
+    monkeypatch.setattr(importlib.metadata, "metadata", fake_metadata)
 
 
 def write_pyproject(directory: Path, deps: list[str]) -> None:

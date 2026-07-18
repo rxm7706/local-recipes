@@ -645,3 +645,70 @@ def test_default_with_cli_overrides_applies_license_flags():
     )
     assert config.allow_licenses == ("MIT", "Apache-2.0")
     assert config.deny_licenses == ("GPL-3.0-only",)
+
+
+# --- Follow-up review pass (2026-07-18): entry validity ----------------------
+
+
+@pytest.mark.parametrize("key", ["allow-licenses", "deny-licenses"])
+@pytest.mark.parametrize("bad_entry", ["GPLv3", "BSD", "Apache 2.0", "()"])
+def test_invalid_spdx_toml_entry_raises_config_validation_error(
+    tmp_path, key, bad_entry
+):
+    """A configured entry that cannot normalize as SPDX could never match
+    any resolved license — the gate would read active (gating: true) while
+    being structurally unable to fire. Fail at load, like the
+    zero-usable-entries check already does."""
+    _write(
+        tmp_path / "pyproject.toml",
+        f'[tool.pyforge-warden]\n{key} = "{bad_entry}"\n',
+    )
+    with pytest.raises(ConfigValidationError, match="never match"):
+        ConfigLoader().load(tmp_path)
+
+
+def test_invalid_spdx_cli_entry_raises_config_validation_error(tmp_path):
+    with pytest.raises(ConfigValidationError, match="GPLv3"):
+        ConfigLoader().load(tmp_path, cli_deny_licenses="GPLv3")
+    with pytest.raises(ConfigValidationError):
+        ConfigLoader().load(tmp_path, cli_allow_licenses="()")
+
+
+def test_one_invalid_entry_among_valid_ones_still_raises(tmp_path):
+    with pytest.raises(ConfigValidationError, match="GPLv3"):
+        ConfigLoader().load(tmp_path, cli_deny_licenses="MIT, GPLv3")
+
+
+def test_license_ref_with_grant_and_compound_entries_are_accepted(tmp_path):
+    """The full valid-entry surface: single ids, compound expressions,
+    WITH grants, and SPDX's user-defined LicenseRef-* references."""
+    config, _ = ConfigLoader().load(
+        tmp_path,
+        cli_deny_licenses=(
+            "LicenseRef-Proprietary, MIT OR Apache-2.0, "
+            "GPL-2.0-only WITH Classpath-exception-2.0"
+        ),
+    )
+    assert config.deny_licenses == (
+        "LicenseRef-Proprietary",
+        "MIT OR Apache-2.0",
+        "GPL-2.0-only WITH Classpath-exception-2.0",
+    )
+
+
+def test_effective_config_rejects_blank_entry_at_construction():
+    """A whitespace-only entry used to construct fine and flip
+    license_gating True over a token _normalize_tokens silently empties —
+    inconsistent with _coerce_license_list's stripped-token guarantee."""
+    with pytest.raises(ValueError):
+        EffectiveConfig(deny_licenses=(" ",))
+
+
+def test_license_policy_property_matches_module_default_table():
+    """config.license_policy and license.DEFAULT_LICENSE_POLICY are two
+    independently-declared copies of the same table with no consumer until
+    Story 6.5 — this cross-check is the only thing keeping them from
+    silently drifting apart before then."""
+    from pyforge.warden.license import DEFAULT_LICENSE_POLICY
+
+    assert EffectiveConfig().license_policy == dict(DEFAULT_LICENSE_POLICY)

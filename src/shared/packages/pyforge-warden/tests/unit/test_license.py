@@ -25,9 +25,11 @@ from pyforge.warden.engines import LicenseEngine
 from pyforge.warden.inventory import PypiIdentity, ResolvedInventory, merge_components
 from pyforge.warden.license import (
     DEFAULT_LICENSE_POLICY,
+    _classifier_license_candidate,
     _classify_verdict,
     _normalize_tokens,
     _parse_spdx,
+    is_valid_license_token,
     license_findings,
     license_rung,
 )
@@ -785,3 +787,221 @@ def test_normalize_tokens_keeps_an_unparsable_entry_as_its_own_stripped_text():
 
 def test_normalize_tokens_drops_blank_entries():
     assert _normalize_tokens(("", "   ", "MIT")) == frozenset({"MIT"})
+
+
+# --- Follow-up review pass (2026-07-18) --------------------------------------
+
+
+@pytest.mark.parametrize("degenerate", ["()", "( )", "(())", "MIT AND ()", "() OR MIT"])
+def test_parse_spdx_empty_parenthesis_group_degrades_never_raises(degenerate):
+    """Empty parenthesis groups make license-expression raise bare
+    ``IndexError`` (NOT ``ExpressionError`` — verified live against
+    30.4.4), which crashed the whole license axis from a single manifest
+    value or config token. The never-raises contract now catches any
+    parser escape."""
+    assert _parse_spdx(degenerate) is None
+
+
+def test_parse_spdx_bare_gpl_label_degrades_never_a_version_guess():
+    """license-expression's alias table confidently maps the bare,
+    version-ambiguous ``GPL`` label to ``GPL-1.0-or-later`` — a guess this
+    module's own unknown-over-wrong principle forbids. The deprecated-but-
+    unambiguous ``GPL-2.0`` id keeps its mapping: that one is SPDX's own
+    official deprecation resolution, not a guess."""
+    assert _parse_spdx("GPL") is None
+    assert _parse_spdx("gpl") is None
+    assert _parse_spdx("GPL-2.0") == ("GPL-2.0-only", "GPL2")
+
+
+def test_parse_spdx_license_ref_reference_is_valid_opaque_spdx():
+    """``LicenseRef-*`` is SPDX's own user-defined-reference grammar —
+    syntactically valid SPDX whose key is by definition absent from the
+    registry. Real conda-forge recipes use these (LicenseRef-HDF5,
+    LicenseRef-NVIDIA-...); rejecting them made every such license
+    ``unknown`` AND made a ``--deny-licenses LicenseRef-...`` entry
+    structurally inert."""
+    assert _parse_spdx("LicenseRef-Proprietary") == ("LicenseRef-Proprietary", None)
+    mixed = _parse_spdx("MIT OR LicenseRef-NVIDIA")
+    assert mixed is not None
+    assert "LicenseRef-NVIDIA" in mixed[0]
+    # A non-LicenseRef unknown key still degrades — this is not a general
+    # validate=False escape hatch.
+    assert _parse_spdx("TotallyMadeUp-1.0") is None
+    assert _parse_spdx("MIT OR TotallyMadeUp-1.0") is None
+
+
+def test_parse_spdx_long_valid_compound_expression_resolves():
+    """A VALID many-clause compound expression (a vendored-deps recipe's
+    16-id AND chain is ~220 chars) blew the old 200-char cap and
+    misreported a resolvable — and deny-matching — license as unknown.
+    The cap still rejects full-license-text-scale input."""
+    ids = (
+        "Apache-2.0", "MIT", "BSD-3-Clause", "GPL-3.0-only", "LGPL-3.0-only",
+        "MPL-2.0", "ISC", "Zlib", "Unlicense", "PSF-2.0", "AGPL-3.0-only",
+        "GPL-2.0-only", "BSD-2-Clause", "0BSD", "Apache-1.1", "LGPL-2.1-only",
+    )
+    long_expression = " AND ".join(ids)
+    assert len(long_expression) > 200
+    resolution = _parse_spdx(long_expression)
+    assert resolution is not None
+    assert (
+        _classify_verdict(
+            resolution, allow=frozenset(), deny=_normalize_tokens(("GPL-3.0-only",))
+        )
+        is LicenseVerdict.DENIED
+    )
+    assert _parse_spdx("MIT AND " * 200 + "MIT") is None  # >1000 chars: cap intact
+
+
+def test_classify_verdict_deny_of_base_license_taints_with_exception_variant():
+    """Deny-side WITH expansion: denying a base license must taint every
+    exception-carrying variant of it (the grant still operates under the
+    base license's obligations) — the pre-fix indivisible-grant reading
+    let ``--deny-licenses GPL-2.0-only`` silently pass
+    ``GPL-2.0-only WITH Classpath-exception-2.0``."""
+    resolution = _parse_spdx("GPL-2.0-only WITH Classpath-exception-2.0")
+    assert (
+        _classify_verdict(
+            resolution, allow=frozenset(), deny=_normalize_tokens(("GPL-2.0-only",))
+        )
+        is LicenseVerdict.DENIED
+    )
+
+
+def test_classify_verdict_allow_of_base_license_does_not_auto_allow_with_variant():
+    """The ALLOW side deliberately keeps the indivisible-grant reading: an
+    unreviewed exception grant stays denied under an allow-list."""
+    resolution = _parse_spdx("GPL-2.0-only WITH Classpath-exception-2.0")
+    assert (
+        _classify_verdict(
+            resolution, allow=_normalize_tokens(("GPL-2.0-only",)), deny=frozenset()
+        )
+        is LicenseVerdict.DENIED
+    )
+
+
+def test_conda_license_ref_resolves_and_deny_matches(tmp_path, component_factory):
+    (tmp_path / "recipe.yaml").write_text(
+        "about:\n  license: LicenseRef-Proprietary\n", encoding="utf-8"
+    )
+    component = component_factory(
+        name="mypkg",
+        version="1.0.0",
+        ecosystem=Ecosystem.CONDA,
+        provenance=(("recipe.yaml", "requirements.host"),),
+    )
+    # Resolvable + unrestricted -> allowed, no finding.
+    assert license_findings([component], tmp_path) == ()
+    (finding,) = license_findings(
+        [component], tmp_path, deny_licenses=("LicenseRef-Proprietary",)
+    )
+    assert finding.license.verdict is LicenseVerdict.DENIED
+    assert finding.license.expression == "LicenseRef-Proprietary"
+    assert finding.id == "license:LicenseRef-Proprietary:mypkg@1.0.0"
+
+
+def test_conda_empty_paren_license_value_degrades_to_unknown_never_crashes(
+    tmp_path, component_factory
+):
+    """End-to-end EC guard: a manifest whose ``about: license:`` is the
+    grammar-degenerate ``()`` used to kill the whole axis via the parser's
+    bare ``IndexError``."""
+    (tmp_path / "recipe.yaml").write_text("about:\n  license: ()\n", encoding="utf-8")
+    component = component_factory(
+        name="mypkg",
+        version="1.0.0",
+        ecosystem=Ecosystem.CONDA,
+        provenance=(("recipe.yaml", "requirements.host"),),
+    )
+    (finding,) = license_findings([component], tmp_path)
+    assert finding.license.verdict is LicenseVerdict.UNKNOWN
+
+
+def test_deeply_nested_manifest_flow_collections_degrade_never_crash(
+    tmp_path, component_factory
+):
+    """``yaml.safe_load`` raises ``RecursionError`` (not a ``YAMLError``)
+    on deeply nested flow collections — the degrade-to-unknown contract
+    must hold for the license re-read regardless of how the file got past
+    extraction (TOCTOU rewrite, direct ``license_findings`` callers)."""
+    (tmp_path / "recipe.yaml").write_text(
+        "[" * 5000 + "]" * 5000, encoding="utf-8"
+    )
+    component = component_factory(
+        name="mypkg",
+        version="1.0.0",
+        ecosystem=Ecosystem.CONDA,
+        provenance=(("recipe.yaml", "requirements.host"),),
+    )
+    (finding,) = license_findings([component], tmp_path)
+    assert finding.license.verdict is LicenseVerdict.UNKNOWN
+
+
+def test_pypi_unmapped_license_naming_classifier_alongside_mapped_degrades(
+    monkeypatch, tmp_path, component_factory
+):
+    """Edge introduced by Fix 6: the ambiguity check only counted MAPPED
+    classifiers, so the (deliberately unmapped) generic BSD classifier
+    next to a mapped MIT one confidently resolved MIT — silently
+    discarding an equally-declared license."""
+    _patch_metadata(
+        monkeypatch,
+        _fake_metadata(
+            classifiers=(
+                "License :: OSI Approved :: BSD License",
+                "License :: OSI Approved :: MIT License",
+            )
+        ),
+    )
+    component = component_factory(name="fake-pkg", version="1.0.0")
+    (finding,) = license_findings([component], tmp_path)
+    assert finding.license.verdict is LicenseVerdict.UNKNOWN
+
+
+def test_pypi_generic_parent_approval_classifier_is_not_a_conflict(
+    monkeypatch, tmp_path, component_factory
+):
+    """The bare ``License :: OSI Approved`` parent names no license — its
+    presence next to a mapped classifier must not degrade the tier."""
+    _patch_metadata(
+        monkeypatch,
+        _fake_metadata(
+            classifiers=(
+                "License :: OSI Approved",
+                "License :: OSI Approved :: MIT License",
+            )
+        ),
+    )
+    component = component_factory(name="fake-pkg", version="1.0.0")
+    assert license_findings([component], tmp_path) == ()
+
+
+def test_classifier_candidate_counts_unmapped_naming_classifiers():
+    meta = _fake_metadata(
+        classifiers=(
+            "License :: OSI Approved :: BSD License",
+            "License :: OSI Approved :: MIT License",
+        )
+    )
+    assert _classifier_license_candidate(meta) is None
+
+
+@pytest.mark.parametrize(
+    "token,expected",
+    [
+        ("MIT", True),
+        ("MIT OR Apache-2.0", True),
+        ("GPL-2.0-only WITH Classpath-exception-2.0", True),
+        ("LicenseRef-Proprietary", True),
+        ("GPLv3", False),
+        ("BSD", False),
+        ("Apache 2.0", False),
+        ("GPL", False),
+        ("()", False),
+    ],
+)
+def test_is_valid_license_token(token, expected):
+    """The config-load validation surface (``config._coerce_license_list``
+    consults this): an entry that cannot normalize like a resolved license
+    could never match anything — a silently-dead policy gate."""
+    assert is_valid_license_token(token) is expected

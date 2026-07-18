@@ -1175,6 +1175,24 @@ def test_blank_deny_licenses_flag_is_a_clean_config_error_not_a_crash(capsys):
     assert "Traceback" not in err
 
 
+def test_invalid_spdx_deny_licenses_flag_is_a_clean_config_error_not_a_crash(capsys):
+    """Follow-up review pass (2026-07-18): an entry that cannot normalize
+    as SPDX (the colloquial ``GPLv3``) could never match any resolved
+    license — a configured-but-structurally-inert gate. Config load now
+    rejects it; must land as a normal error report through cli.py's whole
+    recovery chain: exit 2, one config-validation record naming the entry,
+    never a traceback."""
+    rc, out, err = run_scan(capsys, CLEAN, "--deny-licenses", "GPLv3")
+    document = parse_report(out)
+    assert rc == 2
+    assert rc == document["exit_code"]
+    assert document["status"]["value"] == "error"
+    assert [e["kind"] for e in document["errors"]] == ["config-validation"]
+    assert "GPLv3" in document["errors"][0]["message"]
+    assert "internal error" not in err
+    assert "Traceback" not in err
+
+
 # --- Story 2.4: honest split coverage + the indeterminate producer (C0b) ----
 
 
