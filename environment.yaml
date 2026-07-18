@@ -6,12 +6,12 @@ channels:
 dependencies:
 - python >=3.14.6,3.14.*
 - python 3.14.*
-- pixi >=0.72.2
+- pixi >=0.73.0
 - gh >=2.96.0
-- gitpython >=3.1.51
+- gitpython >=3.1.52
 - nodejs >=24.16.0,24.*,<25.0
 - bmad-method >=6.10.0
-- spec-kit >=0.12.11
+- spec-kit >=0.12.17
 - truststore >=0.10.4
 - conda >=26.5.0
 - conda-libmamba-solver >=24.9.0
@@ -22,5 +22,5 @@ dependencies:
 - frozendict *
 - rattler-build-conda-compat >=1.2.0,<2.0.0a0
 - pip >=26.1.2
-- uv >=0.11.28
+- uv >=0.11.29
 

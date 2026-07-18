@@ -1,0 +1,41 @@
+{
+  "phase": "B.5",
+  "node": "attribute_feedstocks",
+  "inputs": {
+    "core_feedstock_outputs_raw": [
+      {
+        "conda_name": "dbt-bigquery",
+        "feedstocks": [
+          "dbt",
+          "dbt-bigquery"
+        ]
+      },
+      {
+        "conda_name": "numpy",
+        "feedstocks": [
+          "numpy"
+        ]
+      },
+      {
+        "conda_name": "orphan",
+        "feedstocks": []
+      }
+    ]
+  },
+  "expected": {
+    "core_feedstock_attribution": [
+      {
+        "conda_name": "dbt-bigquery",
+        "feedstock_name": "dbt-bigquery"
+      },
+      {
+        "conda_name": "numpy",
+        "feedstock_name": "numpy"
+      },
+      {
+        "conda_name": "orphan",
+        "feedstock_name": null
+      }
+    ]
+  }
+}

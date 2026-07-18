@@ -141,6 +141,10 @@ gcloud = ["python", "gcloud-sdk"]
 # default [dependencies] (python 3.14 + pixi + conda + pip + uv), so this env
 # carries only the built pyforge-warden package + its conda run-deps + pytest.
 pyforge-warden = { features = ["pyforge-warden"], no-default-feature = true }
+# Lean atlas env (Story A1, AD-16/§ 2.5): no-default-feature excludes the fat
+# default [dependencies]; loop worktrees materialize THIS env, never the fat
+# local-recipes env — this is the worktree-affordability claim A3 measures.
+pyforge-atlas = { features = ["pyforge-atlas"], no-default-feature = true }
 # BMad Method UI dashboards (docs/specs/bmad-loop-adoption.md W4): consumes the
 # LOCALLY-BUILT bmad-dashboard + mybmad-dashboard packages (consume-not-submit
 # mirrors of conda-forge/staged-recipes#33513) from ./build_artifacts/linux64.
@@ -185,6 +189,38 @@ cmd = "python scripts/bmad_drift_check.py --json"
 [feature.local-recipes.tasks.llms-full-check]
 description = "Detector: report drift between docs/library-llms-full.md (the library catalog) and pixi.toml — undocumented deps, ghost entries, version-floor drift. Exits non-zero on drift. Reconciler = the regeneration prompt in the catalog header. Pass -- --json for machine output."
 cmd = "python scripts/llms_full_check.py"
+
+[feature.local-recipes.tasks.dashboard-dryrun]
+description = "Wave D verify gate (Story D2, FR-9 / AD-8 / AD-17 / NFR-8): dashboard-dryrun — build the BSL-driven Vizro Dashboard OBJECT offline (no server, no .run()), assert each expected page is present w/ a stable id+title (deterministic layout), pages are BSL-driven (loaders route through the D1 semantic models, proven vs an independent BSL query), the factory-status page reads the real sprint-status.yaml + carries a build timestamp (AD-17), and the agent-legibility structural props hold. Runs in local-recipes (the env carrying vizro + boring_semantic_layer). Full 28-page inventory is CIS-two-spine deferred (DW-D2). Offline, --frozen."
+cmd = "python -m pytest src/shared/packages/pyforge-atlas/tests/dashboard -q"
+env = { PYTHONPATH = "src/shared/packages/pyforge-atlas/src:src/shared/packages/pyforge-warden/src" }
+
+[feature.local-recipes.tasks.vizro-ai-dryrun]
+description = "Wave D verify gate (Story D3, FR-9 / AD-7 / AD-8 / Q3 §11): vizro-ai-dryrun — offline, no-network, no-live-LLM. Asserts the query_vizro_ai MCP tool is registered (FastMCP server + audit + package export) and callable; with NO backend env configured returns the structured 'backend not configured — attended Q3 bring-up (DW-D3)' advisory (no network, no crash, no fabricated chart); the backend resolver reads the endpoint from repo model-backend config (OPENAI_BASE_URL/ANTHROPIC_BASE_URL env) with NO hardcoded public host baked in (Q3 §11 load-bearing invariant); the tool body stays AD-7-thin (only the _nl seam); and the NL query is grounded in the D1 BSL models (AD-8). The live NL->chart invocation + the dashboard NL query field are the attended Q3 event (DW-D3). Offline, --frozen."
+cmd = "python -m pytest src/shared/packages/pyforge-atlas/tests/nl -q"
+env = { PYTHONPATH = "src/shared/packages/pyforge-atlas/src:src/shared/packages/pyforge-warden/src" }
+
+[feature.local-recipes.tasks.wasm-build]
+description = "Wave G build step (Story G1, FR-14): build the self-contained, backend-free DuckDB-WASM read-surface artifact into src/shared/packages/pyforge-atlas/wasm/build/ (gitignored). npm-installs @duckdb/duckdb-wasm + esbuild, bundles the browser ESM (inlining apache-arrow), copies the MVP wasm module + worker, VENDORS the matching parquet extension locally (so the runtime never hits extensions.duckdb.org), and materializes the demo Parquet from wasm/data/feedstock_health.csv. BUILD-TIME network is allowed (npm + the extension host); the artifact it produces runs fully OFFLINE. Run this once before wasm-smoke."
+cmd = "python src/shared/packages/pyforge-atlas/wasm/build.py"
+
+[feature.local-recipes.tasks.wasm-smoke]
+description = "Wave G verify gate (Story G1, FR-14 / AD-11 / AD-21): wasm-smoke — a Playwright HEADLESS Chromium load-and-query against the built wasm artifact (run `wasm-build` first). Proves the intelligence read surface loads and its query runs CLIENT-SIDE in the browser with NO backend: serves wasm/build/ over a loopback static host, drives the pre-provisioned Chromium, BLOCKS + asserts zero non-loopback requests (offline / no-CDN proof), waits for the in-browser DuckDB-WASM query to reach ready (an in-page error FAILS, never silently passes), and asserts the client-side ci_red result (D1 feedstock-health semantics). Full Vizro-in-Pyodide render is deferred (DW-G1). Offline at runtime, --frozen."
+cmd = "python -m pytest src/shared/packages/pyforge-atlas/tests/wasm -q"
+env = { PYTHONPATH = "src/shared/packages/pyforge-atlas/src:src/shared/packages/pyforge-warden/src" }
+
+[feature.local-recipes.tasks.publish]
+description = "Wave G build step (Story G2, FR-14 / AD-2): emit the host-agnostic static-host layout — chunked Parquet + a single-owner manifest.json — for the demo core_feedstock_health dataset into src/shared/packages/pyforge-atlas/src/pyforge/atlas/publish/_site/ (gitignored). The emitter targets a filesystem PATH ('the static host filesystem'); WHICH host serves it (GitHub Pages public path, or an enterprise mirror) is a deploy choice, never baked in. Fully local + offline. The LIVE GitHub Pages publish is the ATTENDED boundary event and is DEFERRED (DW-G2)."
+cmd = "python -m pyforge.atlas.publish"
+env = { PYTHONPATH = "src/shared/packages/pyforge-atlas/src:src/shared/packages/pyforge-warden/src" }
+
+[feature.local-recipes.tasks.publish-range]
+description = "Wave G verify gate (Story G2, FR-14 / AD-2 / AD-21): publish-range — prove the emitted static-host layout is consumed via HTTP RANGE. Emits the chunked Parquet + manifest to a tmp dir, serves it over a Range-capable loopback host, points a DuckDB httpfs client at it, and asserts (a) consumption is via 206 Partial Content reading STRICTLY FEWER bytes than the whole file (a whole-file 200 FAILS), (b) the chunk path is discovered FROM the manifest + matches its checksums, (c) host-agnostic (same dir, two bases), (d) the D1 ci_red result is correct over the range-served Parquet — plus determinism + edge cases (empty/multi-chunk/corruption/past-EOF/non-Range fallback). httpfs LOADed OFFLINE from cache (skips if unprovisioned locally, fails under CI). Live publish DEFERRED (DW-G2). --frozen."
+cmd = "python -m pytest src/shared/packages/pyforge-atlas/tests/publish -q"
+# PUBLISH_RANGE_REQUIRED: the AUTHORITATIVE gate must FAIL (not skip) if httpfs is
+# unprovisioned, so it can never exit 0 having proven nothing about HTTP Range — the
+# load-bearing G2 claim (Reviewer-A skip-to-green). Ad-hoc local runs use the bare pytest.
+env = { PYTHONPATH = "src/shared/packages/pyforge-atlas/src:src/shared/packages/pyforge-warden/src", PUBLISH_RANGE_REQUIRED = "1" }
 
 
 [feature.local-recipes.tasks.submit-pr]
@@ -1007,3 +1043,63 @@ cwd = "src/shared/packages/pyforge-warden"
 [feature.pyforge-warden.tasks.pyforge-warden-build]
 description = "Build all three artifacts: conda + wheel + sdist"
 depends-on = ["pyforge-warden-build-conda", "pyforge-warden-build-dist"]
+
+# --- pyforge-atlas (Atlas): pixi build workspace member (warden mirror, Story A1) -----
+# Source + package manifest live in ./src/shared/packages/pyforge-atlas (its
+# own [package] table, no [workspace]) — same src/shared/packages convention as
+# warden. One hatchling pyproject is the single Python build backend:
+#   * conda pkg  -> pixi-build-python wraps the hatchling wheel  (pyforge-atlas-build-conda)
+#   * wheel+sdist-> `python -m build` from the same pyproject     (pyforge-atlas-build-dist)
+# The path dependency below builds the CONDA package and installs it (plus
+# run-deps, incl. pyforge-warden — the [gate] extra default-installed in-repo,
+# AC-8) into the dedicated lean `pyforge-atlas` env.
+# Spec: docs/specs/cfe-atlas-datapipeline-kedro-migration.md § 9 Story A1.
+[feature.pyforge-atlas.dependencies]
+pyforge-atlas = { path = "src/shared/packages/pyforge-atlas" }  # -> built conda pkg
+pyforge-warden = { path = "src/shared/packages/pyforge-warden" }  # AC-8: the [gate] extra default-installed IN-REPO at feature level (A1-A5 alternative route) — NOT a pyforge-atlas package run-dep, so external conda installs stay warden-optional
+hatchling = "*"                    # Python build backend (drives both conda + wheel/sdist)
+python-build = "*"                 # PyPA `python -m build` frontend (wheel + sdist)
+pytest = "*"                       # test runner (kedro-test)
+
+[feature.pyforge-atlas.tasks.kedro-test]
+description = "Wave A deterministic gate: pyforge.atlas import smokes + Kedro namespace seam + scaffold layout (AD-11)"
+cmd = "pytest src/shared/packages/pyforge-atlas/tests -q"
+
+[feature.pyforge-atlas.tasks.kedro-catalog-check]
+description = "Wave A gate 2 (Story A2, AD-11): catalog resolves offline w/ stub creds + no-inline-IO + AD-1 import-direction meta-tests + naming/layer/TTL/path conventions + 20 override points + per-host credential scoping (FR-1)"
+cmd = "pytest src/shared/packages/pyforge-atlas/tests/catalog -q"
+
+[feature.pyforge-atlas.tasks.parity-diff]
+description = "Wave B verify gate (Story B1, AC-7): fixture-mode parity diff — each migrated node's output DataFrame vs its captured legacy snapshot (offline, non-credentialed, --frozen; B1 seeds Core/VCS fixtures, B4 consumes it at the attended credentialed event)"
+cmd = "pytest src/shared/packages/pyforge-atlas/tests/parity -q"
+
+[feature.pyforge-atlas.tasks.bsl-metric-check]
+description = "Wave D verify gate (Story D1, AC-4, FR-8 / AD-7): BSL metric-parity — each core metric (staleness / adoption stage / feedstock health / downloads / actionable + the first-class maintainer ⋈) declared ONCE as Ibis->DuckDB (AD-4) matches its legacy CLI formula, anchored by an INDEPENDENT re-implementation (DW-B1-1 honesty). Offline, --frozen."
+cmd = "pytest src/shared/packages/pyforge-atlas/tests/semantic -q"
+
+[feature.pyforge-atlas.tasks.dagster-dryrun]
+description = "Wave C verify gate (Story C1, AC-5, FR-6): kedro-dagster dryrun — build Dagster Definitions from KedroProjectTranslator, assert schedules enumerate + jobs resolve + each op carries its OWN timeout + Phase P admin-only + profile precedence. DEFINITIONS LOAD ONLY — NO live daemon/scheduled run (attended bring-up deferred, DW-C1). Offline, --frozen."
+cmd = "pytest src/shared/packages/pyforge-atlas/tests/orchestration -q"
+
+[feature.pyforge-atlas.tasks.duckdb-singularity]
+description = "Wave F verify gate (Story F1, FR-5 / AD-4): the DuckDB-singularity grep gate — NO sqlite3 read/write path anywhere in the migrated pyforge/atlas surface (DuckDB/Parquet is the sole engine); the one legacy-SQLite reader (the B4 credentialed parity comparator) is pinned to tests/, never src/. The cold-start/warm-incremental benchmark is the ATTENDED half (DW-F1-1). Offline, --frozen."
+cmd = "pytest src/shared/packages/pyforge-atlas/tests/singularity -q"
+
+[feature.pyforge-atlas.tasks.viz]
+description = "Wave C (Story C2, FR-6 / AC-3): launch Kedro-Viz on the migrated atlas DAG — inspect dataset schemas + data lineage in the browser instead of reading orchestrator source. Runs from the atlas project root (kedro CLI needs the project cwd). --no-browser so it works headless; open the printed localhost URL."
+cmd = "kedro viz run --no-browser"
+cwd = "src/shared/packages/pyforge-atlas"
+
+[feature.pyforge-atlas.tasks.pyforge-atlas-build-conda]
+description = "Build the conda package (.conda) via pixi-build-python -> dist-conda/"
+cmd = "pixi build --output-dir dist-conda"
+cwd = "src/shared/packages/pyforge-atlas"
+
+[feature.pyforge-atlas.tasks.pyforge-atlas-build-dist]
+description = "Build the pypi wheel (.whl) + sdist (.tar.gz) via hatchling"
+cmd = "python -m build --no-isolation --outdir dist"
+cwd = "src/shared/packages/pyforge-atlas"
+
+[feature.pyforge-atlas.tasks.pyforge-atlas-build]
+description = "Build all three artifacts: conda + wheel + sdist"
+depends-on = ["pyforge-atlas-build-conda", "pyforge-atlas-build-dist"]

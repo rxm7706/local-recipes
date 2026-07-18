@@ -1,0 +1,32 @@
+{
+  "phase": "E.5",
+  "node": "detect_archived_feedstocks",
+  "inputs": {
+    "vcs_github_api_raw": [
+      {
+        "feedstock_name": "a",
+        "archived": true
+      },
+      {
+        "feedstock_name": "b",
+        "archived": false
+      },
+      {
+        "feedstock_name": "c",
+        "archived": true
+      }
+    ]
+  },
+  "expected": {
+    "vcs_archived_feedstocks": [
+      {
+        "feedstock_name": "a",
+        "archived": true
+      },
+      {
+        "feedstock_name": "c",
+        "archived": true
+      }
+    ]
+  }
+}

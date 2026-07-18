@@ -1622,6 +1622,53 @@ the safety net.
 
 ---
 
+## 14. Injected IO + offline-first: testable phases without a network (pyforge-atlas migration)
+
+The 2026-07 Kedro/Dagster/DuckDB migration of the cf_atlas orchestrator (BMAD project
+`pyforge-atlas`, `docs/specs/cfe-atlas-datapipeline-kedro-migration.md`) validated two
+phase-construction patterns end-to-end across every ported phase. Both apply to the **current
+hand-rolled phases**, not only the migrated ones — reach for them the next time you write or
+refactor a phase. The migration is a separate parallel reimplementation (it has NOT replaced
+`conda_forge_atlas.py`); these are the transferable engineering lessons, not a directive to
+adopt Kedro.
+
+### 14.1 Make the network fetch an INJECTED callable that defaults to offline
+
+A phase that imports and calls an HTTP/DB client where it computes can only be exercised with a
+live network. Instead take the fetch as a `fetcher`/`refresher` parameter that defaults to an
+OFFLINE no-op — the phase's logic (parse → dedupe → derive → atomic-write, §§ 5–8) then runs and
+is tested with zero network, and the live client is supplied only at the attended/credentialed
+run. In the migration this is the dataset `refresher` (B5/B7/B8), the model backend (D3), the
+sensor `event_source`/`raw_lister` (G3/H4), and the CMS `opener` (H3) — every one defaults to
+offline and is injected live only at its deferred bring-up.
+
+Two rules the migration's `no-inline-IO` AST gate enforces — worth borrowing as a review check:
+
+- **No HTTP/DB/process client import in the phase body.** `requests`/`httpx`/`urllib`/`sqlite3`/
+  `subprocess` live behind the injected seam, never imported where the phase computes; the
+  concrete client is built OUTSIDE the phase (a script, a resource, the operator's run).
+- **The default must REFUSE, not guess.** An unconfigured seam raises a clear error naming what
+  to inject (or returns an empty offline result) — it never silently reaches for a public
+  endpoint. This is § 9's "no committed host" rule extended from the base-URL to the whole IO
+  surface.
+
+Payoff: the phase's unit/dry-run gate is genuinely offline (no network flake, no credential in
+CI — cf. § 12's dry-run preflight), and the live path is one documented injection point.
+
+### 14.2 Propagate staleness — republication never launders freshness (AD-13)
+
+When a phase DERIVES an output from a cached/last-good source that could be stale, carry the
+source's staleness marker FORWARD into the derived output — machine-readable
+(`{stale, reason, marked_at}`) and, on any human-facing surface, visibly. A derived card that
+reads "fresh" while its source was a skipped/last-good refresh is a silent correctness bug. The
+migration formalized this as a `StalenessMarker` sidecar threaded through every derived dataset,
+plus a lint that FAILS a derived page whose body dropped its stale banner. The live atlas already
+degrades an unavailable axis to `indeterminate` (Phase G KEV, the `detail-cf-atlas` cards); this
+states the same discipline as a rule — **degrade toward stale/indeterminate, never toward a false
+fresh** — and says to thread the marker through every derivation hop, not just the first.
+
+---
+
 ## Cross-references
 
 - `_http.py` — shared resolvers, auth, fetch-with-fallback, atomic-write helpers.

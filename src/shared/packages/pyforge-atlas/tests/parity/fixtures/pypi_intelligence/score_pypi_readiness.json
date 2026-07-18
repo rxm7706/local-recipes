@@ -1,0 +1,27 @@
+{
+  "phase": "score_pypi_readiness",
+  "node": "score_pypi_readiness",
+  "provenance": "shape-only-seed-B2-needs-B4-recapture",
+  "inputs": {
+    "pypi_intelligence_enriched": [
+      {
+        "pypi_name": "clean",
+        "packaging_shape": "pure-python",
+        "license_spdx": "MIT",
+        "license_raw": "MIT",
+        "notes": null
+      }
+    ]
+  },
+  "expected": {
+    "pypi_intelligence_scored": [
+      {
+        "pypi_name": "clean",
+        "packaging_shape": "pure-python",
+        "conda_forge_readiness": 100,
+        "recommended_template": "python/noarch-recipe.yaml",
+        "notes": null
+      }
+    ]
+  }
+}

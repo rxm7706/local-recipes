@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>pyforge-atlas — in-browser feedstock health (DuckDB-WASM)</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 2rem; }
+    table { border-collapse: collapse; margin-top: 1rem; }
+    th, td { border: 1px solid #ccc; padding: 0.3rem 0.6rem; text-align: left; }
+    .red { color: #b00; font-weight: 600; }
+    #status[data-state="error"] { color: #b00; }
+  </style>
+</head>
+<body>
+  <h1>Feedstock health — client-side (no backend)</h1>
+  <p>
+    This page runs entirely in the browser. It instantiates
+    <strong>DuckDB-WASM</strong>, loads a statically-hosted Parquet file, and runs
+    the Story&nbsp;D1 <code>feedstock-health</code> query
+    (<code>ci_red = ci_status IN ('failure','error')</code>) <em>client-side</em>.
+    There is no application server: the only HTTP traffic is fetching static assets
+    (the wasm module, the vendored <code>parquet</code> extension, and the Parquet file).
+  </p>
+
+  <!-- Stable DOM contract consumed by the wasm-smoke Playwright gate. -->
+  <div id="status" data-state="loading">loading…</div>
+  <div id="engine"></div>
+  <p>Feedstocks with red CI (<code>ci_red</code>): <span id="red-count"></span></p>
+  <table id="result">
+    <thead><tr><th>feedstock_name</th><th>ci_status</th><th>ci_red</th></tr></thead>
+    <tbody id="result-body"></tbody>
+  </table>
+
+  <script type="module">
+    import * as duckdb from "./duckdb/duckdb-bundle.mjs";
+
+    // DuckDB engine version — pins the vendored parquet-extension path
+    // (ext/<DUCKDB_VERSION>/wasm_mvp/parquet.duckdb_extension.wasm). Kept in
+    // lockstep with the pinned @duckdb/duckdb-wasm in package.json; build.py
+    // vendors the matching extension and fails loudly if it drifts.
+    const DUCKDB_VERSION = "v1.5.4";
+
+    function setStatus(state, text) {
+      const el = document.getElementById("status");
+      el.dataset.state = state;
+      el.textContent = text;
+    }
+
+    async function run() {
+      try {
+        const here = location.href;
+        const bundle = {
+          mainModule: new URL("./duckdb/duckdb-mvp.wasm", here).href,
+          mainWorker: new URL("./duckdb/duckdb-browser-mvp.worker.js", here).href,
+        };
+        const worker = new Worker(bundle.mainWorker);
+        const db = new duckdb.AsyncDuckDB(new duckdb.ConsoleLogger(), worker);
+        await db.instantiate(bundle.mainModule);
+        const conn = await db.connect();
+
+        // Load the parquet reader from the LOCAL vendored extension repo — never
+        // from extensions.duckdb.org — so the runtime touches no external network.
+        const extBase = new URL("./ext", here).href;
+        await conn.query("INSTALL parquet FROM '" + extBase + "'");
+        await conn.query("LOAD parquet");
+
+        // Register the statically-hosted Parquet file as an in-browser buffer and
+        // query it client-side (this is the "no backend" load-bearing step).
+        const resp = await fetch("./core_feedstock_health.parquet");
+        if (!resp.ok) throw new Error("parquet fetch failed: HTTP " + resp.status);
+        const buf = new Uint8Array(await resp.arrayBuffer());
+        await db.registerFileBuffer("fh.parquet", buf);
+
+        const rows = (await conn.query(
+          "SELECT feedstock_name, ci_status, " +
+          "(ci_status IN ('failure','error')) AS ci_red " +
+          "FROM read_parquet('fh.parquet') ORDER BY feedstock_name"
+        )).toArray().map((r) => r.toJSON());
+
+        if (rows.length === 0) throw new Error("query returned no rows");
+
+        const body = document.getElementById("result-body");
+        let redCount = 0;
+        for (const row of rows) {
+          const isRed = row.ci_red === true || row.ci_red === 1;
+          if (isRed) redCount += 1;
+          const tr = document.createElement("tr");
+          tr.dataset.feedstock = row.feedstock_name;
+          tr.dataset.ciRed = isRed ? "1" : "0";
+          tr.innerHTML =
+            '<td class="feedstock">' + row.feedstock_name + "</td>" +
+            '<td class="ci-status">' + row.ci_status + "</td>" +
+            '<td class="ci-red' + (isRed ? " red" : "") + '">' + (isRed ? "true" : "false") + "</td>";
+          body.appendChild(tr);
+        }
+
+        document.getElementById("red-count").textContent = String(redCount);
+        document.getElementById("engine").textContent = "DuckDB-WASM " + DUCKDB_VERSION;
+        setStatus("ready", "ready");
+      } catch (e) {
+        setStatus("error", "error: " + (e && e.message ? e.message : e));
+      }
+    }
+
+    run();
+  </script>
+</body>
+</html>

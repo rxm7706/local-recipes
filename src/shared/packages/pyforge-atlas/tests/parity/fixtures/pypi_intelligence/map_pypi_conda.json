@@ -1,0 +1,41 @@
+{
+  "phase": "map_pypi_conda",
+  "node": "map_pypi_conda",
+  "provenance": "shape-only-seed-B2-needs-B4-recapture",
+  "inputs": {
+    "pypi_parselmouth_mapping_raw": [
+      {
+        "pypi_name": "numpy",
+        "conda_name": "numpy",
+        "match_source": null
+      },
+      {
+        "pypi_name": "altk",
+        "conda_name": "altk-conda",
+        "match_source": "g10_spelling"
+      }
+    ],
+    "core_packages_enumerated": [
+      {
+        "conda_name": "numpy"
+      },
+      {
+        "conda_name": "altk-conda"
+      }
+    ]
+  },
+  "expected": {
+    "pypi_conda_mapping_base": [
+      {
+        "pypi_name": "numpy",
+        "conda_name": "numpy",
+        "match_source": "parselmouth"
+      },
+      {
+        "pypi_name": "altk",
+        "conda_name": "altk-conda",
+        "match_source": "g10_spelling"
+      }
+    ]
+  }
+}
