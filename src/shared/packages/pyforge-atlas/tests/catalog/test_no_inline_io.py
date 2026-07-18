@@ -293,6 +293,44 @@ def test_vizro_ai_only_in_nl_layer():
         ), f"nl/{mod} imports boring_semantic_layer directly — must go through semantic/"
 
 
+# AD-20 (Story E1): the ``a2a`` SDK is the inter-agent transport seam — only the
+# ``a2a/`` subpackage may import it, so the structured inter-agent channel (and its schema
+# source) stays contained to ONE subpackage (mirrors the D2 vizro / D3 vizro_ai containment).
+# ``_denylisted`` matches ``a2a`` or ``a2a.`` prefixes; our own ``pyforge.atlas.a2a`` imports
+# are ``pyforge.atlas.a2a[...]`` (never a bare ``a2a`` prefix) so they are NOT hits.
+A2A_SDK_DENYLIST = ("a2a",)
+A2A_PREFIX = "a2a/"
+
+
+def _a2a_sdk_violations() -> dict[str, list[str]]:
+    found: dict[str, list[str]] = {}
+    for path in _iter_scanned_files():
+        rel = str(path.relative_to(ATLAS_PKG))
+        if rel.startswith(A2A_PREFIX):
+            continue
+        hits = [n for n in sorted(_imported_names(path)) if _denylisted(n, A2A_SDK_DENYLIST)]
+        if hits:
+            found[str(path.relative_to(ATLAS_PKG.parents[2]))] = hits
+    return found
+
+
+def test_a2a_sdk_only_in_a2a_layer():
+    """AD-20 (Story E1): only ``pyforge/atlas/a2a/*`` may import the ``a2a`` SDK — the
+    structured inter-agent channel is the single seam, contained to one subpackage."""
+    violations = _a2a_sdk_violations()
+    assert not violations, (
+        "AD-20 violation — only the a2a/ subpackage may import the a2a SDK: "
+        f"{violations}"
+    )
+    # positive: the a2a transport module DOES import the a2a SDK (the seam genuinely lives
+    # there, not a dead exemption).
+    transport_mod = ATLAS_PKG / "a2a" / "transport.py"
+    assert transport_mod.is_file(), "a2a/transport.py missing"
+    assert any(_denylisted(n, A2A_SDK_DENYLIST) for n in _imported_names(transport_mod)), (
+        "a2a/transport.py does not import the a2a SDK"
+    )
+
+
 def test_dagster_only_in_glue():
     """Positive AD-1 assertion: the glue module DOES import the orchestration
     libs (so it is genuinely the seam) and NO OTHER package file does — the
