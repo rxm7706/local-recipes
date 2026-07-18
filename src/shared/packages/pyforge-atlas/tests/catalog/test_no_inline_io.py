@@ -382,6 +382,46 @@ def test_banned_validation_plugins_nowhere():
     )
 
 
+# AD-4 (Story F3): DuckDB is the SOLE compute/vector engine. The RAG similarity RANKING runs
+# IN DuckDB via the ``vss`` extension (``array_distance`` / HNSW) — never a rival vector
+# search / ANN engine. So the standalone vector engines are banned in EVERY package file
+# (whole-package, no exemption — mirrors the F2 plugin ban above). This is deliberately narrow:
+# it bans vector SEARCH/INDEX engines that would do the ranking outside DuckDB, NOT numpy
+# (legitimately used package-wide) and NOT ``sentence_transformers`` (a pure EMBEDDING model —
+# the DW-F3-1 deferred upgrade point — which only produces vectors that DuckDB still ranks).
+BANNED_VECTOR_ENGINES = (
+    "faiss",
+    "hnswlib",
+    "annoy",
+    "chromadb",
+    "qdrant_client",
+    "pinecone",
+    "weaviate",
+    "lancedb",
+    "usearch",
+    "pgvector",
+    "nmslib",
+    "scann",
+)
+
+
+def test_no_rival_vector_engine_anywhere():
+    """AD-4 (Story F3): no standalone vector-search / ANN engine may be imported anywhere in
+    the package — the similarity ranking is a DuckDB ``vss`` query (single engine), so faiss /
+    chromadb / hnswlib / qdrant / … can never sneak the ranking out of DuckDB."""
+    violations = _violations(BANNED_VECTOR_ENGINES)
+    assert not violations, (
+        "AD-4 violation — DuckDB (vss) is the sole vector engine; a rival vector-search / ANN "
+        f"engine was imported (the RAG ranking must run IN DuckDB): {violations}"
+    )
+    # positive: the RAG store genuinely lives on DuckDB (the seam is real, not a dead ban).
+    store_mod = ATLAS_PKG / "rag" / "store.py"
+    assert store_mod.is_file(), "rag/store.py missing (Story F3 module)"
+    assert any(_denylisted(n, ("duckdb",)) for n in _imported_names(store_mod)), (
+        "rag/store.py does not import duckdb — the vss ranking must run in DuckDB (AD-4)"
+    )
+
+
 def test_no_great_expectations_in_shipped_validation_path():
     """AD-9 (Story F2): the shipped validation module must NOT import ``great_expectations``
     — the in-env GX (1.19.0) can't be guaranteed to conda-forge-1.18.2-only features, so the
