@@ -31,10 +31,11 @@ def test_core_pipeline_has_seven_nodes():
     }
 
 
-def test_vcs_health_pipeline_has_six_nodes():
-    # B9 added derive_release_velocity (FR-20; NEW-SIGNAL, not parity-gated AD-14).
+def test_vcs_health_pipeline_has_seven_nodes():
+    # B9 added derive_release_velocity (FR-20); B10 added classify_migration_readiness
+    # (FR-21) — both NEW-SIGNAL, not parity-gated (AD-14).
     vcs = vcs_create()
-    assert len(vcs.nodes) == 6
+    assert len(vcs.nodes) == 7
     assert {n.name for n in vcs.nodes} == {
         "enrich_maintainers",
         "detect_archived_feedstocks",
@@ -42,6 +43,7 @@ def test_vcs_health_pipeline_has_six_nodes():
         "track_registry_versions",
         "fetch_live_health",
         "derive_release_velocity",
+        "classify_migration_readiness",
     }
 
 
@@ -56,10 +58,10 @@ def test_combined_dag_resolves_topologically_with_no_procedural_order():
     # derive_release_velocity reads the pypi_intelligence Phase H/Phase C datasets as
     # FREE inputs here (produced in the full 7-pipeline DAG) — Kedro allows free inputs.
     combined = core_create() + vcs_create()
-    assert len(combined.nodes) == 13
+    assert len(combined.nodes) == 14
     # grouped_nodes is the topological grouping the runner uses
     grouped = combined.grouped_nodes
-    assert sum(len(g) for g in grouped) == 13
+    assert sum(len(g) for g in grouped) == 14
 
 
 def test_phase_i_output_is_declared_by_name():
@@ -164,14 +166,15 @@ def test_combined_seven_pipeline_dag_resolves_topologically():
         + sbom_create()
         + derived_create()
     )
-    # 7 core + 6 vcs + 10 pypi + 9 vuln + 4 seed_gaps + 2 universal_sbom
-    # + 1 derived_artifacts = 39 nodes (B7 added the SBOM intake/match + universe
+    # 7 core + 7 vcs + 10 pypi + 9 vuln + 4 seed_gaps + 2 universal_sbom
+    # + 1 derived_artifacts = 40 nodes (B7 added the SBOM intake/match + universe
     # BOM; B8 added the two Basilisk ingestion nodes, FR-19; B9 added
-    # derive_release_velocity, FR-20). The runner orders them from declared
-    # inputs/outputs alone (no PHASES list driver, FR-2/AD-3).
-    assert len(combined.nodes) == 39
+    # derive_release_velocity, FR-20; B10 added classify_migration_readiness, FR-21).
+    # The runner orders them from declared inputs/outputs alone (no PHASES list driver,
+    # FR-2/AD-3).
+    assert len(combined.nodes) == 40
     grouped = combined.grouped_nodes
-    assert sum(len(g) for g in grouped) == 39
+    assert sum(len(g) for g in grouped) == 40
 
 
 def test_no_dataset_is_written_by_two_pipelines_b7():
