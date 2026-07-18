@@ -277,7 +277,7 @@ cmd = "kedro viz"
 cwd = "src/prototype/packages/pyforge-atlas-kedro-viz"
 
 [feature.local-recipes.tasks.kedro-run-proto]
-description = "Smoke-run the cf_atlas Kedro DAG prototype (all stub nodes, MemoryDatasets, <1 s). Proves the DAG resolves; companion to kedro-viz-proto."
+description = "Smoke-run the pyforge/atlas/pipelines Kedro DAG prototype (all stub nodes, MemoryDatasets, <1 s). Proves the DAG resolves; companion to kedro-viz-proto."
 cmd = "kedro run"
 cwd = "src/prototype/packages/pyforge-atlas-kedro-viz"
 
