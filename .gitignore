@@ -726,6 +726,10 @@ _bmad-output/projects/*/.bmad-config.user.toml
 
 # Junie: personal config (user-scoped) and per-developer artifacts.
 .junie/
+
+# kedro-viz session store / stats (prototypes/cf-atlas-kedro-viz; build/ is
+# already covered by the global build/ rule above)
+.viz/
 .bmad-loop/runs/
 .bmad-loop/cache/
 _bmad/_memory/
