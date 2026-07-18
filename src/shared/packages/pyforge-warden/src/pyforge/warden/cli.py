@@ -151,6 +151,23 @@ Ownership decisions recorded:
   stdout carries exactly one schema-valid document or nothing) — it is
   written to stderr instead, so the audit-trail affordance is never
   silently lost regardless of output format.
+* Waiver-expiry visibility + ``--warn-only`` (Story 3.3, FR23/FR25):
+  ``apply_waivers`` now returns a 3-tuple; the new ``expired_waivers`` list
+  is threaded into ``render_text`` unchanged in MEANING (a distinct
+  ``[waiver-expired]`` line per expired match — the already-correct
+  re-block fall-through itself is untouched, only its visibility is new).
+  ``--warn-only`` (``store_true``, next to ``--bypass``) calls
+  ``waiver.warn_blocking`` AFTER the existing ``apply_waivers``/
+  ``--bypass`` block, downgrading every still-blocking ``policy-
+  violation``/``indeterminate`` rung it sees to ``warn`` (never ``error``)
+  — the ``indeterminate:coverage-floor:<axis>`` rung ``report.
+  assemble_report`` computes internally is added strictly AFTER this
+  point, so it structurally survives ``--warn-only`` untouched (the FR19
+  guardrail). The downgraded-rung count feeds ``render_text``'s
+  graduate-to-enforcing nudge, gated on ALL of ``warn_only``,
+  ``status["value"] == "warn"``, and ``warn_only_downgraded > 0`` — see
+  ``report.py``'s own docstring for why ``status == "warn"`` alone is not
+  sufficient.
 """
 
 from __future__ import annotations
@@ -199,6 +216,7 @@ from .waiver import (
     bypass_blocking,
     emit_bypass_stanza,
     load_waivers,
+    warn_blocking,
 )
 
 # D2(c) empty-extraction (Story 1.9): one shared message stem for both the
@@ -324,6 +342,22 @@ def _build_parser() -> tuple[argparse.ArgumentParser, argparse.ArgumentParser]:
         help=(
             "the waiver reason recorded in the --bypass stanza (required "
             "alongside --bypass; no prompts, ever)"
+        ),
+    )
+    scan.add_argument(
+        "--warn-only",
+        action="store_true",
+        help=(
+            "downgrade every still-blocking rung ('policy-violation'/"
+            "'indeterminate') to 'warn' before the verdict composes -- "
+            "never a tool error -- a non-blocking on-ramp for adopting "
+            "the gate over a repo's pre-existing findings (FR23). The "
+            "composed status/exit code are unaffected by --fail-on while "
+            "this is set (only dropping --warn-only re-enables "
+            "enforcement); --fail-on still decides which findings compose "
+            "'policy-violation' before this downgrade runs, so the text "
+            "report's downgraded-finding count can still differ across "
+            "--fail-on values even when the final status/exit code do not"
         ),
     )
     return parser, scan
@@ -760,7 +794,7 @@ def _run_scan(args: argparse.Namespace) -> int:
             axis=AXIS_INGESTION,
         )
     now = datetime.now(UTC)
-    rungs, applied_waivers = apply_waivers(rungs, waivers, now=now)
+    rungs, applied_waivers, expired_waivers = apply_waivers(rungs, waivers, now=now)
     bypass_stanza: str | None = None
     if args.bypass:
         try:
@@ -777,6 +811,16 @@ def _run_scan(args: argparse.Namespace) -> int:
             expiry_days=config.waiver_default_expiry_days,
         )
         rungs = bypass_blocking(rungs)
+
+    # Story 3.3 (FR23/FR25): --warn-only runs AFTER apply_waivers/--bypass
+    # above -- a waiver still shows as bypassed distinctly, and warn-only
+    # only mops up whatever is still blocking (policy-violation/
+    # indeterminate, never error). warn_only_downgraded is threaded into
+    # render_text's nudge below -- the nudge's exact count, never the
+    # report's total finding count.
+    warn_only_downgraded = 0
+    if args.warn_only:
+        rungs, warn_only_downgraded = warn_blocking(rungs)
 
     # The first non-None vuln_data across engine results, in engine-
     # registration order (Story 1.5: OsvEngine populates it on a completed
@@ -822,7 +866,16 @@ def _run_scan(args: argparse.Namespace) -> int:
                 # into a committed .warden-waivers.yaml -- the tool never
                 # writes it into the scanned tree.
                 sys.stdout.write(bypass_stanza)
-            sys.stdout.write(render_text(report, applied_waivers=applied_waivers) + "\n")
+            sys.stdout.write(
+                render_text(
+                    report,
+                    applied_waivers=applied_waivers,
+                    expired_waivers=expired_waivers,
+                    warn_only=args.warn_only,
+                    warn_only_downgraded=warn_only_downgraded,
+                )
+                + "\n"
+            )
         # Flush INSIDE the guarded region: on a block-buffered pipe whose
         # consumer vanished, the BrokenPipeError must surface HERE (absorbed
         # below) — not at interpreter-exit flush (CPython exit 120).
