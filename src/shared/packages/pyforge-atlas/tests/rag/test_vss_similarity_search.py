@@ -327,11 +327,16 @@ def test_index_and_search_on_a_PERSISTENT_connection():
             path,
             config={"autoinstall_known_extensions": False, "autoload_known_extensions": False},
         )
-        store = DuckdbVssRagStore(embedder=HashingEmbedder(dim=32), connection=con)
-        n = store.index([("a", "conda-forge python recipe"), ("b", "rust cargo crate")])
-        assert n == 2
-        hits = store.similarity_search("python recipe", k=1)
-        assert len(hits) == 1 and hits[0]["id"] in {"a", "b"}
+        try:
+            store = DuckdbVssRagStore(embedder=HashingEmbedder(dim=32), connection=con)
+            n = store.index([("a", "conda-forge python recipe"), ("b", "rust cargo crate")])
+            assert n == 2
+            hits = store.similarity_search("python recipe", k=1)
+            assert len(hits) == 1 and hits[0]["id"] in {"a", "b"}
+        finally:
+            # close the file-backed connection so the TemporaryDirectory cleanup can't fail on a
+            # still-locked db file (Windows) — Gemini #94.
+            con.close()
 
 
 def test_malicious_table_or_metric_identifier_is_rejected():

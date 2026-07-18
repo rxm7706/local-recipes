@@ -38,15 +38,27 @@ def _sqlite_hits(path: Path) -> list[str]:
         if isinstance(node, ast.Import):
             hits += [a.name for a in node.names if a.name == "sqlite3" or a.name.startswith("sqlite3.")]
         elif isinstance(node, ast.ImportFrom):
-            if node.module == "sqlite3":
+            # submodule too: ``from sqlite3.dbapi2 import Connection`` → module "sqlite3.dbapi2".
+            if node.module and (node.module == "sqlite3" or node.module.startswith("sqlite3.")):
                 hits.append("sqlite3")
         elif isinstance(node, ast.Call):
             fn = node.func
             is_dyn = (isinstance(fn, ast.Name) and fn.id in ("__import__", "import_module")) or (
                 isinstance(fn, ast.Attribute) and fn.attr == "import_module"
             )
-            if is_dyn and node.args and isinstance(node.args[0], ast.Constant) and node.args[0].value == "sqlite3":
-                hits.append("sqlite3(dynamic)")
+            if is_dyn:
+                # resolve the module name from positional OR keyword (``name="sqlite3"``) form,
+                # and catch submodules — mirrors the test_no_inline_io.py dynamic-import scanner.
+                val = None
+                if node.args and isinstance(node.args[0], ast.Constant):
+                    val = node.args[0].value
+                else:
+                    for kw in node.keywords:
+                        if kw.arg == "name" and isinstance(kw.value, ast.Constant):
+                            val = kw.value.value
+                            break
+                if isinstance(val, str) and (val == "sqlite3" or val.startswith("sqlite3.")):
+                    hits.append("sqlite3(dynamic)")
     return hits
 
 
@@ -70,8 +82,10 @@ def test_the_only_legacy_sqlite_reader_is_the_parity_comparator_in_tests():
     This pins the boundary: retirement-verification tooling may read the OLD store; the
     migrated ENGINE never does."""
     # src/: zero sqlite readers (the assertion above); tests/parity: exactly the comparator.
-    # ATLAS_SRC = <member>/src/pyforge/atlas → parents[2] is the member root holding tests/.
-    member_root = ATLAS_SRC.parents[2]
+    # Locate the member root from THIS test file (tests/singularity/…), not from the installed
+    # package location — a non-editable install puts ATLAS_SRC under site-packages, where
+    # ATLAS_SRC.parents[2] would not hold tests/ (Gemini #92).
+    member_root = Path(__file__).resolve().parents[2]
     parity_runner = member_root / "tests" / "parity" / "parity_runner.py"
     assert parity_runner.is_file(), "the credentialed parity comparator is missing"
     assert _sqlite_hits(parity_runner), (

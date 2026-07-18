@@ -157,6 +157,7 @@ class _RangeServer:
 
     def __exit__(self, *exc):
         self._httpd.shutdown()
+        self._httpd.server_close()  # release the listening socket (Gemini #97 — no fd leak)
         self._thread.join(timeout=5)
 
     @property

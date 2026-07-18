@@ -57,7 +57,7 @@ def _iter_scanned_files():
     """Every .py in the package except the exempt root-level framework
     files — exempt + scanned = the whole package, by construction."""
     for path in sorted(ATLAS_PKG.rglob("*.py")):
-        if str(path.relative_to(ATLAS_PKG)) in NO_INLINE_IO_EXEMPT:
+        if path.relative_to(ATLAS_PKG).as_posix() in NO_INLINE_IO_EXEMPT:
             continue
         yield path
 
@@ -107,7 +107,7 @@ def _imported_names(path: Path) -> set[str]:
 def _violations(denylist, exempt: frozenset[str] = frozenset()) -> dict[str, list[str]]:
     found: dict[str, list[str]] = {}
     for path in _iter_scanned_files():
-        if str(path.relative_to(ATLAS_PKG)) in exempt:
+        if path.relative_to(ATLAS_PKG).as_posix() in exempt:
             continue
         hits = [
             name
@@ -122,8 +122,8 @@ def _violations(denylist, exempt: frozenset[str] = frozenset()) -> dict[str, lis
 def test_scan_covers_the_whole_package():
     """P3 coverage invariant: exempt + scanned == every .py in the package
     (trivially true with rglob — this pins the exempt set against growth)."""
-    all_files = {str(p.relative_to(ATLAS_PKG)) for p in ATLAS_PKG.rglob("*.py")}
-    scanned = {str(p.relative_to(ATLAS_PKG)) for p in _iter_scanned_files()}
+    all_files = {p.relative_to(ATLAS_PKG).as_posix() for p in ATLAS_PKG.rglob("*.py")}
+    scanned = {p.relative_to(ATLAS_PKG).as_posix() for p in _iter_scanned_files()}
     assert all_files == scanned | (NO_INLINE_IO_EXEMPT & all_files)
     # the exempt set must not silently exempt files that do not exist
     # at the root (e.g. a typo'd entry would exempt nothing forever)
@@ -178,7 +178,7 @@ BSL_SEMANTIC_PREFIX = "semantic/"
 def _bsl_violations() -> dict[str, list[str]]:
     found: dict[str, list[str]] = {}
     for path in _iter_scanned_files():
-        rel = str(path.relative_to(ATLAS_PKG))
+        rel = path.relative_to(ATLAS_PKG).as_posix()
         if rel.startswith(BSL_SEMANTIC_PREFIX):
             continue
         hits = [n for n in sorted(_imported_names(path)) if _denylisted(n, BSL_DENYLIST)]
@@ -217,7 +217,7 @@ DASHBOARD_PREFIX = "dashboard/"
 def _vizro_violations() -> dict[str, list[str]]:
     found: dict[str, list[str]] = {}
     for path in _iter_scanned_files():
-        rel = str(path.relative_to(ATLAS_PKG))
+        rel = path.relative_to(ATLAS_PKG).as_posix()
         if rel.startswith(DASHBOARD_PREFIX):
             continue
         hits = [n for n in sorted(_imported_names(path)) if _denylisted(n, VIZRO_DENYLIST)]
@@ -261,7 +261,7 @@ NL_PREFIX = "nl/"
 def _vizro_ai_violations() -> dict[str, list[str]]:
     found: dict[str, list[str]] = {}
     for path in _iter_scanned_files():
-        rel = str(path.relative_to(ATLAS_PKG))
+        rel = path.relative_to(ATLAS_PKG).as_posix()
         if rel.startswith(NL_PREFIX):
             continue
         hits = [n for n in sorted(_imported_names(path)) if _denylisted(n, VIZRO_AI_DENYLIST)]
@@ -305,7 +305,7 @@ A2A_PREFIX = "a2a/"
 def _a2a_sdk_violations() -> dict[str, list[str]]:
     found: dict[str, list[str]] = {}
     for path in _iter_scanned_files():
-        rel = str(path.relative_to(ATLAS_PKG))
+        rel = path.relative_to(ATLAS_PKG).as_posix()
         if rel.startswith(A2A_PREFIX):
             continue
         hits = [n for n in sorted(_imported_names(path)) if _denylisted(n, A2A_SDK_DENYLIST)]
@@ -454,7 +454,7 @@ def test_dagster_only_in_glue():
     assert not any(_denylisted(n, ("kedro_mcp",)) for n in glue_imports), "glue imports kedro_mcp"
     # every OTHER package file is dagster/kedro_dagster-free (scan minus the glue).
     for path in _iter_scanned_files():
-        if str(path.relative_to(ATLAS_PKG)) in AD1_GLUE_EXEMPT:
+        if path.relative_to(ATLAS_PKG).as_posix() in AD1_GLUE_EXEMPT:
             continue
         hits = [n for n in _imported_names(path) if _denylisted(n, ("dagster", "kedro_dagster"))]
         assert not hits, f"non-glue module imports orchestration libs: {path.name}: {hits}"

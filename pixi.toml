@@ -1060,6 +1060,7 @@ pyforge-warden = { path = "src/shared/packages/pyforge-warden" }  # AC-8: the [g
 hatchling = "*"                    # Python build backend (drives both conda + wheel/sdist)
 python-build = "*"                 # PyPA `python -m build` frontend (wheel + sdist)
 pytest = "*"                       # test runner (kedro-test)
+kedro-viz = ">=12.4.0"             # C2 `viz` task + test_viz_loadable smoke — NOT a pyforge-atlas run-dep so not pulled transitively; the lean no-default-feature env needs it explicitly (Gemini #85)
 
 [feature.pyforge-atlas.tasks.kedro-test]
 description = "Wave A deterministic gate: pyforge.atlas import smokes + Kedro namespace seam + scaffold layout (AD-11)"
