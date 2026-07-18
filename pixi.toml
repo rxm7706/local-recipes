@@ -190,6 +190,10 @@ cmd = "python scripts/bmad_drift_check.py --json"
 description = "Detector: report drift between docs/library-llms-full.md (the library catalog) and pixi.toml — undocumented deps, ghost entries, version-floor drift. Exits non-zero on drift. Reconciler = the regeneration prompt in the catalog header. Pass -- --json for machine output."
 cmd = "python scripts/llms_full_check.py"
 
+[feature.local-recipes.tasks.dashboard-gen]
+description = "Refresh docs/dashboard/data.js (the committed Warden+Atlas program console) from the live per-project sprint-status.yaml files — syncs each story's status + the snapshot timestamp. Local-only (the sprint-status sources are Tier-3 gitignored). Commit data.js + push to redeploy the GitHub Pages console. See docs/dashboard/README.md."
+cmd = "python docs/dashboard/generate.py"
+
 [feature.local-recipes.tasks.dashboard-dryrun]
 description = "Wave D verify gate (Story D2, FR-9 / AD-8 / AD-17 / NFR-8): dashboard-dryrun — build the BSL-driven Vizro Dashboard OBJECT offline (no server, no .run()), assert each expected page is present w/ a stable id+title (deterministic layout), pages are BSL-driven (loaders route through the D1 semantic models, proven vs an independent BSL query), the factory-status page reads the real sprint-status.yaml + carries a build timestamp (AD-17), and the agent-legibility structural props hold. Runs in local-recipes (the env carrying vizro + boring_semantic_layer). Full 28-page inventory is CIS-two-spine deferred (DW-D2). Offline, --frozen."
 cmd = "python -m pytest src/shared/packages/pyforge-atlas/tests/dashboard -q"
