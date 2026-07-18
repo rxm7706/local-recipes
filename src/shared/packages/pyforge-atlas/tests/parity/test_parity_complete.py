@@ -16,7 +16,7 @@ _EXPECTED_NODE_COUNTS = {
     "core": 7,
     "vcs_health": 5,
     "pypi_intelligence": 10,  # B5 added export_pypi_conda_map (§ 3.4 refresh asset)
-    "vulnerability": 7,  # B5 added refresh_vdb_store + refresh_osv_offline_store
+    "vulnerability": 9,  # B5 +refresh_vdb_store/+refresh_osv_offline_store; B8 +2 Basilisk (FR-19)
 }
 
 # Story B5 external-refresh assets (§ 3.4) — these write the three separately-built
@@ -27,6 +27,15 @@ _REFRESH_ASSETS = {
     "refresh_vdb_store",
     "refresh_osv_offline_store",
     "export_pypi_conda_map",
+}
+
+# Story B8 Basilisk ingestion nodes (FR-19) — ADDITIVE new-signal riders, NEVER
+# parity-gated (AD-14; the output `vulnerability_basilisk_advisories` is in B4's
+# EXCLUDED_NEW_SIGNAL_DATASETS). Out of the parity harness's NODE_REGISTRY exactly
+# like the § 3.4 refresh-asset boundary above.
+_NEW_SIGNAL_NODES = {
+    "ingest_basilisk_advisories",
+    "fetch_basilisk_details",
 }
 
 
@@ -45,8 +54,9 @@ def test_harness_build_completes_at_b3():
 
     all_nodes = set().union(*per_pipeline.values())
     # The parity SURFACE is the 26 Wave-B legacy-surface nodes; the 3 B5 refresh assets
-    # are the § 3.4 boundary and are not parity-diffed.
-    parity_surface = all_nodes - _REFRESH_ASSETS
+    # (§ 3.4 boundary) and the 2 B8 Basilisk new-signal nodes (AD-14 additive rider) are
+    # NOT parity-diffed.
+    parity_surface = all_nodes - _REFRESH_ASSETS - _NEW_SIGNAL_NODES
     assert len(parity_surface) == 26  # the 26 Wave-B parity-surface nodes
 
     missing = parity_surface - set(NODE_REGISTRY)
