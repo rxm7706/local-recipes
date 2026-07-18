@@ -1,0 +1,15 @@
+# dagster.yml — Kedro-Dagster orchestration config (Story C1, FR-6).
+# Single base job = the whole migrated DAG; the
+# pyforge.atlas.orchestration.definitions glue derives every cadence job
+# (op-subset) + schedule + profile config + the per-op timeouts / retry on top
+# of this. `dagster`/`kedro_dagster` are imported ONLY by that glue module
+# (AD-1); NEVER by pipeline/node/dataset/mcp code.
+executors:
+  in_process:
+    in_process: {}
+
+jobs:
+  __default__:
+    pipeline:
+      pipeline_name: __default__
+    executor: in_process
