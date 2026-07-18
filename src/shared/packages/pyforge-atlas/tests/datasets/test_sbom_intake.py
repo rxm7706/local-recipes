@@ -216,3 +216,28 @@ def test_resolver_dataset_is_read_only(tmp_path):
     ds = TransitiveResolverDataset(filepath=str(tmp_path / "x.txt"))
     with pytest.raises((NotImplementedError, DatasetError), match="read-only"):
         ds.save({})
+
+
+def test_requirements_extras_and_url_yield_no_garbage_version():
+    """Independent B7 review F1: _REQ_RE is verbatim-faithful to legacy — an
+    extras spec or a direct-URL ref must yield version=None, never a garbage
+    version that becomes an invalid purl (pkg:pypi/requests@[security]>=2.0)."""
+    from pyforge.atlas.datasets.sbom_intake import parse_requirements_txt
+    txt = "\n".join([
+        "requests[security]>=2.0",
+        "uvicorn[standard]",
+        "black[d]==23.1.0",
+        "foo @ https://example.com/foo.whl",
+        "numpy>=1.20,<2.0",
+        "plain==1.2.3",
+    ])
+    deps = {d["name"]: d.get("version") for d in parse_requirements_txt(txt, "requirements.txt")}
+    assert deps["requests"] is None          # extras, no valid version captured
+    assert deps["uvicorn"] is None
+    assert deps["black"] is None             # black[d]==... → extras before operator
+    assert deps["foo"] is None               # direct URL ref
+    assert deps["numpy"] == "1.20"           # legacy captures the first pin
+    assert deps["plain"] == "1.2.3"
+    # and no dep carries a version starting with a non-digit
+    for v in deps.values():
+        assert v is None or v[0].isdigit()

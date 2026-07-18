@@ -76,7 +76,11 @@ def _dep(
 
 # ── § 4.10 pure format parsers (ported from scan_project.py) ──────────────────
 
-_REQ_RE = re.compile(r"^([A-Za-z0-9][A-Za-z0-9._-]*)\s*(?:==|>=|<=|~=|!=|<|>)?\s*([^\s;,#]*)")
+# Verbatim-faithful to legacy scan_project.parse_requirements (inventory_match:202):
+# the operator is REQUIRED to capture a version and the version MUST start with a
+# digit — so an extras spec (`requests[security]>=2.0`) or a direct-URL ref
+# (`foo @ https://…`) yields version=None, never a garbage purl (Gemini/indep B7).
+_REQ_RE = re.compile(r"^([A-Za-z0-9][A-Za-z0-9._-]*)\s*(?:(?:==|>=|<=|~=|!=|<|>)\s*([0-9][^\s;,#]*))?")
 
 
 def parse_requirements_txt(text: str, manifest: str = "requirements.txt") -> list[dict[str, Any]]:
