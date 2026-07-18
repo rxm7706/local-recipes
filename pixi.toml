@@ -1041,6 +1041,10 @@ cmd = "pytest src/shared/packages/pyforge-atlas/tests/catalog -q"
 description = "Wave B verify gate (Story B1, AC-7): fixture-mode parity diff — each migrated node's output DataFrame vs its captured legacy snapshot (offline, non-credentialed, --frozen; B1 seeds Core/VCS fixtures, B4 consumes it at the attended credentialed event)"
 cmd = "pytest src/shared/packages/pyforge-atlas/tests/parity -q"
 
+[feature.pyforge-atlas.tasks.bsl-metric-check]
+description = "Wave D verify gate (Story D1, AC-4, FR-8 / AD-7): BSL metric-parity — each core metric (staleness / adoption stage / feedstock health / downloads / actionable + the first-class maintainer ⋈) declared ONCE as Ibis->DuckDB (AD-4) matches its legacy CLI formula, anchored by an INDEPENDENT re-implementation (DW-B1-1 honesty). Offline, --frozen."
+cmd = "pytest src/shared/packages/pyforge-atlas/tests/semantic -q"
+
 [feature.pyforge-atlas.tasks.dagster-dryrun]
 description = "Wave C verify gate (Story C1, AC-5, FR-6): kedro-dagster dryrun — build Dagster Definitions from KedroProjectTranslator, assert schedules enumerate + jobs resolve + each op carries its OWN timeout + Phase P admin-only + profile precedence. DEFINITIONS LOAD ONLY — NO live daemon/scheduled run (attended bring-up deferred, DW-C1). Offline, --frozen."
 cmd = "pytest src/shared/packages/pyforge-atlas/tests/orchestration -q"
