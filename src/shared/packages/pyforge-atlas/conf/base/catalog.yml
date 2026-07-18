@@ -589,6 +589,76 @@ vcs_release_velocity:
   metadata:
     layer: primary
 
+# --- Story B10 — conda-forge-bot-data migration-status sources (FR-21) --------
+# The data behind conda-forge.org/status/#migrations. AD-14 NEW-SIGNAL family:
+# NEVER parity-gated. All fetches route through the EXISTING GITHUB_RAW_BASE_URL
+# override point (no new resolve_*_urls helper; enterprise/JFrog mirror routing
+# inherited). IO is DATASET-owned via an INJECTED fetcher (default None == OFFLINE
+# -> keep last-good + mark stale, AD-13). DELIBERATELY EXCLUDED: version_status.v2.json
+# (the bot's version-update queue) — the atlas measures currency itself (Phases H/K).
+
+# Category-list sources — enumerate active/closed/paused migrations; regular +
+# longterm drive which per-migration detail partitions exist (so the surface
+# generalizes with zero code change: python314 today, python315 tomorrow).
+vcs_migration_regular_status_raw:
+  type: pyforge.atlas.datasets.MigrationCategoryDataset
+  url: ${globals:endpoint_bases.GITHUB_RAW_BASE_URL}/conda-forge/conda-forge-bot-data/main/status/regular_status.json
+  filepath: ${globals:paths.data_root}/raw/vcs_migration_regular_status_raw
+  metadata:
+    layer: raw
+
+vcs_migration_longterm_status_raw:
+  type: pyforge.atlas.datasets.MigrationCategoryDataset
+  url: ${globals:endpoint_bases.GITHUB_RAW_BASE_URL}/conda-forge/conda-forge-bot-data/main/status/longterm_status.json
+  filepath: ${globals:paths.data_root}/raw/vcs_migration_longterm_status_raw
+  metadata:
+    layer: raw
+
+vcs_migration_closed_status_raw:
+  type: pyforge.atlas.datasets.MigrationCategoryDataset
+  url: ${globals:endpoint_bases.GITHUB_RAW_BASE_URL}/conda-forge/conda-forge-bot-data/main/status/closed_status.json
+  filepath: ${globals:paths.data_root}/raw/vcs_migration_closed_status_raw
+  metadata:
+    layer: raw
+
+vcs_migration_paused_status_raw:
+  type: pyforge.atlas.datasets.MigrationCategoryDataset
+  url: ${globals:endpoint_bases.GITHUB_RAW_BASE_URL}/conda-forge/conda-forge-bot-data/main/status/paused_status.json
+  filepath: ${globals:paths.data_root}/raw/vcs_migration_paused_status_raw
+  metadata:
+    layer: raw
+
+# The summary category (total counts across all migrations).
+vcs_migration_total_status_raw:
+  type: pyforge.atlas.datasets.MigrationCategoryDataset
+  url: ${globals:endpoint_bases.GITHUB_RAW_BASE_URL}/conda-forge/conda-forge-bot-data/main/status/total_status.json
+  filepath: ${globals:paths.data_root}/raw/vcs_migration_total_status_raw
+  metadata:
+    layer: raw
+
+# Per-migration detail — PARTITIONED by active migration (mirrors the
+# partitions.PartitionedDataset shape with the AD-13 offline-safety a stock
+# PartitionedDataset cannot provide). The fetch appends /<name>.json to the url;
+# one <name>.json partition per active migration the category lists surfaced.
+# Consumed by the classify_migration_readiness node.
+vcs_migration_detail_raw:
+  type: pyforge.atlas.datasets.MigrationDetailDataset
+  url: ${globals:endpoint_bases.GITHUB_RAW_BASE_URL}/conda-forge/conda-forge-bot-data/main/status/migration_json
+  filepath: ${globals:paths.data_root}/raw/vcs_migration_detail_raw
+  metadata:
+    layer: raw
+
+# Story B10 output — the FR-21 readiness classification (four-way split +
+# blocker buckets + inferred not-in-tracker label + top-unmigrated-by-volume
+# rank). AD-14 new-signal PRIMARY: name aligned to B4's fixture-enforced
+# EXCLUDED_NEW_SIGNAL_DATASETS ("vcs_migration_readiness", parity/legacy_surface.py).
+# NEVER parity-gated (AD-14).
+vcs_migration_readiness:
+  type: pandas.ParquetDataset
+  filepath: data/primary/vcs_migration_readiness/vcs_migration_readiness.parquet
+  metadata:
+    layer: primary
+
 # =============================================================================
 # universal_sbom — user-inventory intake + matching (entry-scoped, § 3.4)
 # =============================================================================
