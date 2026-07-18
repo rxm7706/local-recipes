@@ -1,6 +1,6 @@
 ---
 status: ready
-spec_updated: 2026-06-20
+spec_updated: 2026-07-18
 ---
 # Tech Spec: `copilot-bridge` VS Code Extension
 
@@ -49,6 +49,22 @@ Today, setting up the bridge requires the developer to:
 Every step works, but the friction is real. **This extension wraps that
 flow into a self-installable, no-marketplace VS Code extension** so a
 developer can sideload one `.vsix`, click "Set up bridge", and be done.
+
+### Companion: the in-IDE `@bmad` adapter (different layer)
+
+This extension is the **headless / HTTP-bridge** layer: it manages a local
+`copilot-api` proxy so *standalone apps and headless runners* (including
+`bmad-loop` / `bmad-dev-auto`, added in § BMAD-specific stories below) can point
+an OpenAI/Anthropic-compatible `*_BASE_URL` at Copilot. It deliberately does
+**not** touch VS Code's Copilot Chat panel (see **NG5** / **G6**).
+
+The *in-IDE conversational* surface — a Copilot Chat participant `@bmad` that
+runs BMAD agents through Copilot's own model via the VS Code Language Model API
+— is a **separate, complementary** effort tracked in
+`docs/specs/bmad-copilot-adapter-upstream.md` (upstreamed from
+`bmad-code-org/bmad-method-ui#2`). Rule of thumb: **`@bmad` adapter for humans in
+the IDE; this HTTP bridge for headless loops.** The two coexist; neither
+replaces the other.
 
 ---
 
@@ -292,6 +308,63 @@ entries.
 
 ---
 
+## BMAD-specific stories (this repo's asks)
+
+These extend the generic bridge with the pieces `local-recipes` needs to run
+its **unattended `bmad-loop` / `bmad-dev-auto`** workflow (see
+`docs/bmad-setup-plan.md` Phase 9) against Copilot as the model backend. They are
+additive; the base extension (Stories 1–12) ships without them.
+
+### Story 13 — Configure headless BMAD runners (`bmad-loop` / `bmad-dev-auto`)
+**As** a maintainer running the unattended loop,
+**I want** a one-command way to point `bmad-loop` / `bmad-dev-auto` at the bridge,
+**so that** autonomous story execution uses my Copilot subscription as its LLM
+backend without hand-edited env vars.
+
+**Acceptance:**
+- Command-palette entry: *Copilot Bridge: Configure BMAD runners*.
+- Emits the wiring documented in `docs/copilot-to-api.md` § "Driving headless
+  BMAD through the bridge" — sets `ANTHROPIC_BASE_URL` (and/or the OpenAI-shaped
+  vars) to `http://127.0.0.1:<port>` for the loop's agent sessions.
+- Writes to the loop's environment surface (the `.bmad-loop/` run env or the
+  `pixi run -e local-recipes` activation), **not** a global shell rc, so it is
+  scoped to loop runs.
+- A "revert BMAD runners" path mirrors the Migration Assistant (Story 8).
+
+### Story 14 — Multiproject awareness
+**As** a maintainer of this repo's `_bmad-output/projects/<slug>/` layout,
+**I want** the bridge's BMAD wiring to follow the **active project**,
+**so that** a loop run for `pyforge-atlas` and one for `pyforge-warden` don't
+cross-wire the same backend config.
+
+**Acceptance:**
+- The BMAD-runner config (Story 13) resolves the active project via
+  `scripts/bmad-switch --current` / the `.active-project` marker (the resolver in
+  `CLAUDE.md`), and records config **per project** in extension state.
+- The status bar tooltip shows the active project alongside bridge state
+  (e.g. `🟢 Bridge: running · project: pyforge-atlas`).
+- Switching projects (`scripts/bmad-switch <slug>`) is detected (marker
+  file-watch) and the displayed project updates without a restart.
+- Degrades gracefully to single-project mode when no multiproject markers exist
+  (upstream BMAD's default) — this whole story is a no-op there.
+
+### Story 15 — TOS surface for unattended use
+**As** a maintainer about to leave a loop running for hours unattended,
+**I want** the TOS / abuse-detection implications of *sustained automated*
+Copilot traffic surfaced,
+**so that** I understand headless use is higher-risk than interactive use.
+
+**Acceptance:**
+- The *Configure BMAD runners* command (Story 13) shows a one-time modal noting
+  that **sustained, automated** requests carry more abuse-detection exposure than
+  interactive editor use (paraphrased from `docs/copilot-to-api.md` § TOS), and
+  that the sanctioned in-IDE alternative for interactive work is the `@bmad`
+  adapter (`docs/specs/bmad-copilot-adapter-upstream.md`).
+- Acknowledgement recorded in extension state (per major version), same pattern
+  as Story 10.
+
+---
+
 ## Functional Requirements
 
 ### FR-1: Cross-platform proxy lifecycle
@@ -325,6 +398,19 @@ entries.
 - Extension state (which apps have been configured, ack of TOS modal,
   uptime counters) MUST persist across VS Code restarts using VS Code's
   `globalState` / `workspaceState` APIs (no external file).
+
+### FR-7: BMAD-runner wiring is project-scoped (when multiproject)
+- When configuring `bmad-loop` / `bmad-dev-auto` (Story 13), the extension
+  MUST scope the emitted `*_BASE_URL` env to the loop's run environment, not a
+  global shell rc. When the `_bmad-output/projects/<slug>/` multiproject layout
+  is present, it MUST resolve and record config against the **active project**
+  (Story 14) and MUST NOT overwrite another project's recorded config.
+
+### FR-8: Headless use is opt-in and TOS-gated
+- The BMAD-runner configuration (Stories 13–15) MUST NOT activate as a side
+  effect of base setup; it requires the explicit *Configure BMAD runners*
+  action and a one-time acknowledgement of the sustained-automated-traffic TOS
+  note (Story 15).
 
 ---
 
@@ -577,10 +663,10 @@ Architecture → Stories → Implementation):
 
 ```
 # Phase 2 (Planning) — feed this spec as the brief input:
-bmad-create-prd --brief docs/specs/copilot-bridge-vscode-extension.md
+bmad-prd --brief docs/specs/copilot-bridge-vscode-extension.md
 
 # Phase 3 (Solutioning):
-bmad-create-architecture
+bmad-architecture
 bmad-create-epics-and-stories
 
 # Phase 4 (Implementation):

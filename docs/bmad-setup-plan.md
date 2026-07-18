@@ -50,10 +50,10 @@ the **project-context** emphasis (Phase 2), never the loop mechanics (Phase 9, i
 
 ## Phase 0 — Prerequisites
 
-**0.1 — Verify the pixi env provides `bmad-method`** (the `local-recipes` env ships `bmad-method` 6.6.0 with Node.js 20 + vendored `node_modules` as a conda dependency — no separate Node install or live npm registry required)
+**0.1 — Verify the pixi env provides `bmad-method`** (the `local-recipes` env ships `bmad-method` 6.10.0+ with Node.js as a conda dependency — no separate Node install or live npm registry required; 6.10 gains `bmad-dev-auto`)
 ```bash
 pixi list -e local-recipes | grep -E '^(bmad-method|nodejs)\s'
-pixi run -e local-recipes bmad-method --version   # should print 6.6.0+
+pixi run -e local-recipes bmad-method --version   # should print 6.10.0+
 ```
 If missing: `pixi install -e local-recipes`.
 
