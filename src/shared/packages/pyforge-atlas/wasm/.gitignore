@@ -1,0 +1,5 @@
+# Build output + installed deps are heavy (DuckDB-WASM ships a ~40 MB .wasm) and
+# reproducible from build.py — never commit them.
+build/
+node_modules/
+package-lock.json

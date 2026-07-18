@@ -1,0 +1,6 @@
+feedstock_name,ci_status,open_prs,open_issues
+alpha,failure,0,2
+beta,success,3,0
+gamma,error,1,0
+delta,success,0,0
+epsilon,failure,2,5

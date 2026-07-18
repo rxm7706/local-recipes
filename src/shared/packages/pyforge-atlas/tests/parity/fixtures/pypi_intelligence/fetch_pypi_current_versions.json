@@ -1,0 +1,38 @@
+{
+  "phase": "fetch_pypi_current_versions",
+  "node": "fetch_pypi_current_versions",
+  "provenance": "shape-only-seed-B2-needs-B4-recapture",
+  "inputs": {
+    "pypi_json_raw": [
+      {
+        "pypi_name": "mapped",
+        "version": "1.0",
+        "pypi_last_serial": 5,
+        "pypi_version_serial_at_fetch": null,
+        "fetched_at": null,
+        "upload_time_iso_8601": "2026-07-01T00:00:00Z"
+      }
+    ],
+    "pypi_universe": [
+      {
+        "pypi_name": "mapped",
+        "last_serial": 5
+      },
+      {
+        "pypi_name": "pypi-only",
+        "last_serial": 1
+      }
+    ]
+  },
+  "expected": {
+    "pypi_current_versions": [
+      {
+        "pypi_name": "mapped",
+        "version": "1.0",
+        "pypi_last_serial": 5,
+        "pypi_version_serial_at_fetch": 5,
+        "upload_time_iso_8601": "2026-07-01T00:00:00Z"
+      }
+    ]
+  }
+}

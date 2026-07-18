@@ -1,0 +1,11 @@
+{
+  "name": "pyforge-atlas-wasm",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Story G1 (FR-14) — the in-browser DuckDB-WASM read surface: build deps for the self-contained, backend-free client-side query artifact the wasm-smoke gate drives.",
+  "type": "module",
+  "dependencies": {
+    "@duckdb/duckdb-wasm": "1.33.1-dev57.0",
+    "esbuild": "0.28.1"
+  }
+}
