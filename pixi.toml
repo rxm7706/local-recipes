@@ -1059,6 +1059,10 @@ cmd = "pytest src/shared/packages/pyforge-atlas/tests/semantic -q"
 description = "Wave C verify gate (Story C1, AC-5, FR-6): kedro-dagster dryrun — build Dagster Definitions from KedroProjectTranslator, assert schedules enumerate + jobs resolve + each op carries its OWN timeout + Phase P admin-only + profile precedence. DEFINITIONS LOAD ONLY — NO live daemon/scheduled run (attended bring-up deferred, DW-C1). Offline, --frozen."
 cmd = "pytest src/shared/packages/pyforge-atlas/tests/orchestration -q"
 
+[feature.pyforge-atlas.tasks.duckdb-singularity]
+description = "Wave F verify gate (Story F1, FR-5 / AD-4): the DuckDB-singularity grep gate — NO sqlite3 read/write path anywhere in the migrated pyforge/atlas surface (DuckDB/Parquet is the sole engine); the one legacy-SQLite reader (the B4 credentialed parity comparator) is pinned to tests/, never src/. The cold-start/warm-incremental benchmark is the ATTENDED half (DW-F1-1). Offline, --frozen."
+cmd = "pytest src/shared/packages/pyforge-atlas/tests/singularity -q"
+
 [feature.pyforge-atlas.tasks.viz]
 description = "Wave C (Story C2, FR-6 / AC-3): launch Kedro-Viz on the migrated atlas DAG — inspect dataset schemas + data lineage in the browser instead of reading orchestrator source. Runs from the atlas project root (kedro CLI needs the project cwd). --no-browser so it works headless; open the printed localhost URL."
 cmd = "kedro viz run --no-browser"
