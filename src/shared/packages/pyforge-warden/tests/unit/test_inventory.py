@@ -118,6 +118,38 @@ def test_fold_never_upgrades_non_version_driven_confidence(component_factory):
         assert merged[0].indeterminate_reason is None
 
 
+@pytest.mark.parametrize("field", ["license_covered", "currency_covered"])
+def test_fold_ands_new_coverage_booleans_flip_false(component_factory, field):
+    """Story 6.1 flip-guard: ``_fold_bare`` builds via ``dataclasses.replace``
+    (no exhaustive-kwarg check), so a new coverage field omitted from the
+    ``replace()`` call would SILENTLY carry over ``concrete``'s value instead
+    of AND-folding. A True-concrete + False-bare pair MUST fold to False; if
+    the kwarg were dropped this would (wrongly) read True."""
+    concrete = component_factory(provenance=(("pixi.lock", "pypi"),), **{field: True})
+    bare = component_factory(
+        version=None,
+        provenance=(("environment.yml", "dependencies"),),
+        indeterminate_reason=WithholdReason.NO_VERSION,
+        **{field: False},
+    )
+    for feed in ([bare, concrete], [concrete, bare]):
+        merged = merge_components(feed)
+        assert len(merged) == 1
+        assert getattr(merged[0], field) is False
+
+
+@pytest.mark.parametrize("field", ["license_covered", "currency_covered"])
+def test_merge_ands_new_coverage_booleans(component_factory, field):
+    """Same-identity merge AND-folds the two new coverage booleans (mirrors
+    the shipped ``hygiene_covered`` AND-row)."""
+    covered = component_factory(**{field: True})
+    uncovered = component_factory(provenance=(("pixi.toml", "run"),), **{field: False})
+    for feed in ([covered, uncovered], [uncovered, covered]):
+        merged = merge_components(feed)
+        assert len(merged) == 1
+        assert getattr(merged[0], field) is False
+
+
 def test_fold_withholds_conflicting_bare_side_identity(component_factory):
     """A bare record carrying a DIFFERENT resolved pypi name conflicts with
     the concrete side exactly like a same-identity conflict — withheld,

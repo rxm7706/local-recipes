@@ -125,7 +125,9 @@ from . import __version__
 from .interfaces import EngineResult
 from .inventory import ResolvedInventory
 from .models import (
+    AXIS_CURRENCY,
     AXIS_HYGIENE,
+    AXIS_LICENSE,
     AXIS_VULNERABILITY,
     AxisCoverage,
     ComplianceReport,
@@ -135,17 +137,23 @@ from .models import (
     SeverityTier,
     Status,
     StatusDriver,
+    SuppressedFinding,
     VulnData,
 )
 from .verdict import compose, exit_code_for
 from .waiver import WaiverNotice
 
-REPORT_SCHEMA_VERSION = "1.0.0"
+# Story 6.1: the one sanctioned additive schema bump (1.0.0 -> 1.1.0, staying
+# inside _SCHEMA_VERSION_RE) admitting Epic 6's slots; behavior-neutral for
+# shipped scans (only schema_version + the two new coverage rows change).
+REPORT_SCHEMA_VERSION = "1.1.0"
 TOOL_NAME = "warden"
 
-# The two v1 axes every 1.2 report covers (an OPEN string mechanism — a
-# license/SAST axis lands additively later).
-_REPORT_AXES = (AXIS_HYGIENE, AXIS_VULNERABILITY)
+# The v1 axes every report covers (an OPEN string mechanism). Story 6.1 widens
+# this to four — license/currency register here so their coverage rows are
+# emitted (deps_assessed=0 until the 6.2/6.3 producers run); an assessed axis
+# NOT in this tuple is a hard error (F6), never silently dropped.
+_REPORT_AXES = (AXIS_HYGIENE, AXIS_VULNERABILITY, AXIS_LICENSE, AXIS_CURRENCY)
 
 
 @lru_cache(maxsize=1)
@@ -171,6 +179,7 @@ def assemble_report(
     allow_empty: bool = False,
     empty_extraction: bool = False,
     fail_under_coverage: float = 0.0,
+    suppressions: Sequence[SuppressedFinding] = (),
 ) -> ComplianceReport:
     """Assemble the ``ComplianceReport`` from the pipeline's outputs.
 
@@ -236,6 +245,17 @@ def assemble_report(
                 assessed_by_axis.get(engine_coverage.axis, 0),
                 engine_coverage.deps_assessed,
             )
+    # F6 (Story 6.1): a coverage claim for an axis NOT registered in
+    # _REPORT_AXES is a hard error — the pre-6.1 loop below silently dropped
+    # it (it only emits rows for registered axes), which would let a producer
+    # bug pass unnoticed.
+    unregistered = sorted(set(assessed_by_axis) - set(_REPORT_AXES))
+    if unregistered:
+        raise ValueError(
+            f"coverage claim for unregistered axis/axes {unregistered!r} — "
+            f"every assessed axis must be registered in _REPORT_AXES "
+            f"{list(_REPORT_AXES)!r} (F6: never silently dropped)"
+        )
     coverage = []
     for axis in _REPORT_AXES:
         # AC3: an inapplicable hygiene axis overrides deps_total/deps_assessed/
@@ -243,7 +263,17 @@ def assemble_report(
         # engine's own coverage claims (deps_assessed alone would still read
         # as "0 of N assessed" -- a coverage FAILURE -- rather than "0 total,
         # not applicable" -- an honest scope exclusion).
-        not_applicable = axis == AXIS_HYGIENE and not hygiene_applicable
+        #
+        # Story 6.1: license/currency register here so their rows are emitted,
+        # but they have no producer yet -- an axis with NO engine coverage
+        # claim is honestly not-applicable (deps_total=0), NOT "0 of N
+        # assessed" (which --fail-under-coverage would flag, an unsanctioned
+        # verdict change). Behavior-neutral, and forward-compatible: a 6.2/6.3
+        # producer registering an EngineResult coverage claim flips the axis
+        # applicable automatically (it enters assessed_by_axis).
+        not_applicable = (axis == AXIS_HYGIENE and not hygiene_applicable) or (
+            axis in (AXIS_LICENSE, AXIS_CURRENCY) and axis not in assessed_by_axis
+        )
         coverage.append(
             AxisCoverage(
                 axis=axis,
@@ -308,6 +338,7 @@ def assemble_report(
         inventory_count=inventory.count,
         resolved_scan_set=inventory.resolved_scan_set,
         errors=tuple(errors),
+        suppressions=tuple(suppressions),
     )
 
 

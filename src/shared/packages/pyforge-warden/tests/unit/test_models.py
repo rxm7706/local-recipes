@@ -1,34 +1,43 @@
 """Unit tests — the frozen enum tokens + report/finding types (Story 1.1).
 
 The freeze is testable, not aspirational: canonical string values, closed
-sets, frozen-dataclass immutability, the full 13-field ``Component`` shape,
-and the declared-but-unpopulated KEV/EPSS slots.
+sets, frozen-dataclass immutability, the full 15-field ``Component`` shape,
+and the declared-but-unpopulated KEV/EPSS/license/currency slots.
 """
 
 from __future__ import annotations
 
 import dataclasses
+import json
 
 import pytest
 
 from pyforge.warden.inventory import Component, Provenance, PypiIdentity
 from pyforge.warden.models import (
+    AXIS_CURRENCY,
     AXIS_HYGIENE,
+    AXIS_LICENSE,
     AXIS_VULNERABILITY,
     AxisCoverage,
     ComplianceReport,
+    CurrencyInfo,
+    CurrencyVerdict,
     CveMatchLevel,
     Ecosystem,
+    Epss,
     ErrorKind,
     ErrorRecord,
     ExtractionMode,
     Finding,
     IdentitySource,
+    LicenseInfo,
+    LicenseVerdict,
     ScannedManifest,
     Severity,
     SeverityTier,
     Status,
     StatusDriver,
+    SuppressedFinding,
     VulnData,
     WithholdReason,
 )
@@ -136,6 +145,8 @@ def _sample_component() -> Component:
         provenance=(Provenance(manifest="pyproject.toml", section="dependencies"),),
         hygiene_covered=True,
         vuln_matchable=True,
+        license_covered=True,
+        currency_covered=True,
         indeterminate_reason=None,
     )
 
@@ -192,7 +203,7 @@ def test_frozen_dataclasses_are_immutable(instance):
 
 
 def test_component_full_field_set_frozen():
-    """All 13 fields, with declared type/optionality — introspected, exact."""
+    """All 15 fields, with declared type/optionality — introspected, exact."""
     declared = {field.name: field.type for field in dataclasses.fields(Component)}
     assert declared == {
         "name": "str",
@@ -207,9 +218,11 @@ def test_component_full_field_set_frozen():
         "provenance": "tuple[Provenance, ...]",
         "hygiene_covered": "bool",
         "vuln_matchable": "bool",
+        "license_covered": "bool",
+        "currency_covered": "bool",
         "indeterminate_reason": "WithholdReason | None",
     }
-    assert len(declared) == 13
+    assert len(declared) == 15
 
 
 def test_finding_kev_epss_present_but_none_by_default():
@@ -221,9 +234,14 @@ def test_finding_kev_epss_present_but_none_by_default():
         severity=Severity(tier=SeverityTier.CRITICAL, raw="CRITICAL"),
     )
     field_names = {field.name for field in dataclasses.fields(Finding)}
-    assert {"kev", "epss"} <= field_names
+    # Story 6.1 reserved kev_date/license/currency alongside the shipped
+    # kev/epss slots; all default None and the v1 producer never sets them.
+    assert {"kev", "kev_date", "epss", "license", "currency"} <= field_names
     assert finding.kev is None
+    assert finding.kev_date is None
     assert finding.epss is None
+    assert finding.license is None
+    assert finding.currency is None
 
 
 def test_report_status_renders_value_plus_driver():
@@ -264,8 +282,19 @@ def test_malformed_finding_id_raises():
         )
 
 
-@pytest.mark.parametrize("epss", [float("nan"), 1.5], ids=["nan", "above-one"])
-def test_finding_invalid_epss_raises(epss):
+@pytest.mark.parametrize("bad", [float("nan"), 1.5, -0.1], ids=["nan", "above-one", "below-zero"])
+def test_epss_object_out_of_range_raises(bad):
+    """Story 6.1: epss moved from a bare float to an Epss{score, percentile}
+    object; both fields must be finite probabilities in [0, 1]."""
+    with pytest.raises(ValueError, match="epss"):
+        Epss(score=bad, percentile=0.5)
+    with pytest.raises(ValueError, match="epss"):
+        Epss(score=0.5, percentile=bad)
+
+
+def test_finding_epss_must_be_epss_object():
+    """A bare float (the pre-6.1 shape) is no longer a valid epss value —
+    Finding requires the Epss object, failing loud at construction."""
     with pytest.raises(ValueError, match="epss"):
         Finding(
             id="vuln:GHSA-abcd:requests@2.31.0",
@@ -273,8 +302,22 @@ def test_finding_invalid_epss_raises(epss):
             message="known vulnerability",
             subject=None,
             severity=None,
-            epss=epss,
+            epss=0.5,
         )
+
+
+def test_finding_accepts_epss_object():
+    finding = Finding(
+        id="vuln:GHSA-abcd:requests@2.31.0",
+        axis=AXIS_VULNERABILITY,
+        message="known vulnerability",
+        subject=None,
+        severity=None,
+        epss=Epss(score=0.42, percentile=0.9),
+    )
+    assert finding.epss.score == 0.42
+    assert finding.epss.percentile == 0.9
+
 
 
 def test_coverage_parsed_exceeding_found_raises():
@@ -507,14 +550,7 @@ def test_bool_rejected_by_numeric_guards():
     with pytest.raises(ValueError, match="inventory_count"):
         dataclasses.replace(_sample_report(), inventory_count=True)
     with pytest.raises(ValueError, match="epss"):
-        Finding(
-            id="vuln:GHSA-x:p@1.0",
-            axis=AXIS_VULNERABILITY,
-            message="m",
-            subject=None,
-            severity=None,
-            epss=True,
-        )
+        Epss(score=True, percentile=0.5)
     with pytest.raises(ValueError, match="manifests_found"):
         AxisCoverage(
             axis=AXIS_HYGIENE,
@@ -558,17 +594,13 @@ def test_trailing_and_embedded_newlines_rejected():
 
 
 def test_negative_zero_epss_canonicalizes():
-    finding = Finding(
-        id="vuln:GHSA-x:p@1.0",
-        axis=AXIS_VULNERABILITY,
-        message="m",
-        subject=None,
-        severity=None,
-        epss=-0.0,
-    )
+    epss = Epss(score=-0.0, percentile=-0.0)
     import math
 
-    assert math.copysign(1.0, finding.epss) == 1.0  # -0.0 became 0.0
+    # -0.0 became 0.0 on BOTH fields (equal under comparison but rendering
+    # differently, which would break byte-identical serialization).
+    assert math.copysign(1.0, epss.score) == 1.0
+    assert math.copysign(1.0, epss.percentile) == 1.0
 
 
 def test_resolution_depth_closed_vocabulary():
@@ -590,3 +622,271 @@ def test_resolution_depth_closed_vocabulary():
             deps_assessed=3,
             resolution_depth="locked-clsoure",
         )
+
+
+# --- Story 6.1 (P2): license/currency finding coherence at CONSTRUCTION -------
+# An incoherent license:/currency: finding can never be BUILT (the model's own
+# docstring promise), mirroring the schema's allOf coherence clauses.
+
+
+def test_license_finding_without_license_subobject_raises():
+    """(a) A license: id with license=None is incoherent — the sub-object
+    carrying the verdict/expression must be present."""
+    with pytest.raises(ValueError, match="license"):
+        Finding(
+            id="license:MIT:x@1",
+            axis=AXIS_LICENSE,
+            message="m",
+            subject=None,
+            severity=None,
+            license=None,
+        )
+
+
+def test_license_finding_with_allowed_verdict_raises():
+    """(b) A license: finding is only ever emitted for denied/unknown — an
+    'allowed' verdict on a license: id is incoherent (findings exist only for
+    problems)."""
+    with pytest.raises(ValueError, match="denied/unknown"):
+        Finding(
+            id="license:MIT:x@1",
+            axis=AXIS_LICENSE,
+            message="m",
+            subject=None,
+            severity=None,
+            license=LicenseInfo(
+                expression="MIT", family=None, verdict=LicenseVerdict.ALLOWED
+            ),
+        )
+
+
+def test_currency_finding_verdict_must_match_reason_token():
+    """(c) The id's reason token pins the verdict: currency:eol: -> EOL, so a
+    SUPPORTED verdict on an eol: id is incoherent."""
+    with pytest.raises(ValueError, match="verdict"):
+        Finding(
+            id="currency:eol:x@1",
+            axis=AXIS_CURRENCY,
+            message="m",
+            subject=None,
+            severity=None,
+            currency=CurrencyInfo(
+                verdict=CurrencyVerdict.SUPPORTED,
+                latest="2.0",
+                lag=3,
+                eol_date="2020-01-01",
+            ),
+        )
+
+
+def test_currency_finding_without_currency_subobject_raises():
+    with pytest.raises(ValueError, match="currency"):
+        Finding(
+            id="currency:eol:x@1",
+            axis=AXIS_CURRENCY,
+            message="m",
+            subject=None,
+            severity=None,
+            currency=None,
+        )
+
+
+@pytest.mark.parametrize(
+    ("finding_id", "verdict"),
+    [
+        ("currency:eol:x@1", CurrencyVerdict.EOL),
+        ("currency:over-lag:x@1", CurrencyVerdict.SUPPORTED),
+    ],
+    ids=["eol", "over-lag"],
+)
+def test_currency_eol_over_lag_finding_requires_non_null_provenance(
+    finding_id, verdict
+):
+    """(d) An eol/over-lag finding whose CurrencyInfo leaves latest/lag/
+    eol_date at their None defaults is incoherent — there is a problem to
+    explain, so its provenance must be stated."""
+    with pytest.raises(ValueError, match="latest/lag/eol_date"):
+        Finding(
+            id=finding_id,
+            axis=AXIS_CURRENCY,
+            message="m",
+            subject=None,
+            severity=None,
+            currency=CurrencyInfo(verdict=verdict),
+        )
+
+
+def test_currency_info_lag_rejects_non_int():
+    """(e) lag is an integer release count — a float or bool is rejected at
+    CurrencyInfo construction (matches AxisCoverage/Epss's numeric guard)."""
+    with pytest.raises(ValueError, match="lag"):
+        CurrencyInfo(verdict=CurrencyVerdict.EOL, lag=1.5)
+    with pytest.raises(ValueError, match="lag"):
+        CurrencyInfo(verdict=CurrencyVerdict.EOL, lag=True)
+
+
+def test_coherent_license_and_currency_findings_still_construct():
+    """The coherence guards NEVER block a well-formed finding: reason token,
+    verdict, and non-null provenance all consistent."""
+    denied = Finding(
+        id="license:GPL-3.0-only:numpy@1.26.4",
+        axis=AXIS_LICENSE,
+        message="denied",
+        subject="numpy",
+        severity=None,
+        license=LicenseInfo(
+            expression="GPL-3.0-only", family=None, verdict=LicenseVerdict.DENIED
+        ),
+    )
+    assert denied.license.verdict is LicenseVerdict.DENIED
+    eol = Finding(
+        id="currency:eol:django@1.11.29",
+        axis=AXIS_CURRENCY,
+        message="eol",
+        subject="django",
+        severity=None,
+        currency=CurrencyInfo(
+            verdict=CurrencyVerdict.EOL,
+            latest="5.0",
+            lag=9,
+            eol_date="2020-04-01",
+            tier="endoflife-date",
+        ),
+    )
+    assert eol.currency.verdict is CurrencyVerdict.EOL
+
+
+# --- Story 6.1 (P4): determinism (NFR-R3b) with the new fields POPULATED ------
+
+
+def _report_with_all_new_fields() -> ComplianceReport:
+    """A report exercising every new 6.1 field: two license: findings with
+    distinct LicenseInfo, two currency: findings with distinct CurrencyInfo, a
+    vuln: finding carrying kev_date + Epss(score, percentile), and a
+    multi-entry suppressions tuple (waiver + baseline)."""
+    findings = (
+        Finding(
+            id="license:GPL-3.0-only:numpy@1.26.4",
+            axis=AXIS_LICENSE,
+            message="denied license",
+            subject="numpy",
+            severity=None,
+            license=LicenseInfo(
+                expression="GPL-3.0-only", family=None, verdict=LicenseVerdict.DENIED
+            ),
+        ),
+        Finding(
+            id="license:unknown:mystery@0.1.0",
+            axis=AXIS_LICENSE,
+            message="unresolvable license",
+            subject="mystery",
+            severity=None,
+            license=LicenseInfo(
+                expression="unknown", family="permissive", verdict=LicenseVerdict.UNKNOWN
+            ),
+        ),
+        Finding(
+            id="currency:eol:django@1.11.29",
+            axis=AXIS_CURRENCY,
+            message="eol",
+            subject="django",
+            severity=None,
+            currency=CurrencyInfo(
+                verdict=CurrencyVerdict.EOL,
+                latest="5.0",
+                lag=9,
+                eol_date="2020-04-01",
+                tier="endoflife-date",
+            ),
+        ),
+        Finding(
+            id="currency:over-lag:requests@2.10.0",
+            axis=AXIS_CURRENCY,
+            message="behind latest",
+            subject="requests",
+            severity=None,
+            currency=CurrencyInfo(
+                verdict=CurrencyVerdict.SUPPORTED,
+                latest="2.31.0",
+                lag=5,
+                eol_date="2099-01-01",
+                tier="channel-n-n-1",
+            ),
+        ),
+        Finding(
+            id="vuln:GHSA-xxxx-yyyy:pkg@1.0.0",
+            axis=AXIS_VULNERABILITY,
+            message="known vuln",
+            subject="pkg",
+            severity=Severity(tier=SeverityTier.HIGH, raw="CVSS:3.1/AV:N"),
+            kev=True,
+            kev_date="2021-06-01",
+            epss=Epss(score=0.5, percentile=0.9),
+        ),
+    )
+    suppressions = (
+        SuppressedFinding(
+            finding_id="license:GPL-3.0-only:numpy@1.26.4",
+            origin="waiver",
+            reason="tracked in ticket",
+            authorized_by="alice",
+            expires_at="2027-01-01T00:00:00Z",
+        ),
+        SuppressedFinding(
+            finding_id="currency:eol:django@1.11.29",
+            origin="baseline",
+            reason="bulk-accepted",
+        ),
+    )
+    return dataclasses.replace(
+        _sample_report(),
+        status=Status.POLICY_VIOLATION,
+        status_driver=StatusDriver(
+            axis=AXIS_LICENSE, finding_id="license:GPL-3.0-only:numpy@1.26.4"
+        ),
+        exit_code=1,
+        findings=findings,
+        suppressions=suppressions,
+    )
+
+
+def test_report_with_new_fields_populated_is_twice_run_deterministic():
+    """NFR-R3b: two independent constructions of a report populating ALL the
+    new 6.1 fields serialize byte-identically. The heterogeneous finding set
+    (some license-only, some currency-only, one vuln-only) sorts without any
+    cross-type comparison error — a TypeError there would surface as this
+    call raising, not a mismatch."""
+    first = json.dumps(_report_with_all_new_fields().to_json_dict(), sort_keys=True)
+    second = json.dumps(_report_with_all_new_fields().to_json_dict(), sort_keys=True)
+    assert first.encode("utf-8") == second.encode("utf-8")
+
+
+def test_shipped_shape_report_renders_new_fields_null_and_empty():
+    """Backward-compat guard: a report that sets NONE of the new fields
+    serializes with epss/license/currency/kev_date null on every finding and
+    empty/null suppressions + feed sections (the epss-always-null,
+    behavior-neutral claim for shipped scans)."""
+    finding = Finding(
+        id="vuln:GHSA-abcd:requests@2.31.0",
+        axis=AXIS_VULNERABILITY,
+        message="known vulnerability",
+        subject="requests",
+        severity=None,
+    )
+    document = dataclasses.replace(
+        _sample_report(),
+        status=Status.WARN,
+        status_driver=StatusDriver(axis=AXIS_VULNERABILITY, finding_id=finding.id),
+        exit_code=0,
+        findings=(finding,),
+    ).to_json_dict()
+    (rendered,) = document["findings"]
+    assert rendered["epss"] is None
+    assert rendered["license"] is None
+    assert rendered["currency"] is None
+    assert rendered["kev_date"] is None
+    assert document["suppressions"] == []
+    assert document["license_data"] is None
+    assert document["currency_data"] is None
+    assert document["kev_data"] is None
+    assert document["epss_data"] is None

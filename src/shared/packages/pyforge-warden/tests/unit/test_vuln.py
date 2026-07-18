@@ -372,6 +372,8 @@ def test_synthesize_requirements_excludes_leading_dash_name():
         provenance=(Provenance(manifest="pyproject.toml", section="dependencies"),),
         hygiene_covered=True,
         vuln_matchable=True,
+        license_covered=True,
+        currency_covered=True,
         indeterminate_reason=None,
     )
     result = _synthesize_requirements([component])

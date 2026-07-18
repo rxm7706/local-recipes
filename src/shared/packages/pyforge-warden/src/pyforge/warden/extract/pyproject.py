@@ -147,6 +147,8 @@ class PyprojectExtractor:
                 provenance=provenance,
                 hygiene_covered=False,
                 vuln_matchable=False,
+                license_covered=True,
+                currency_covered=True,
                 indeterminate_reason=WithholdReason.NO_VERSION,
             )
         # The identity name is PEP-503-canonical (matches what the 1.1 merge
@@ -174,6 +176,8 @@ class PyprojectExtractor:
                 provenance=provenance,
                 hygiene_covered=True,
                 vuln_matchable=True,
+                license_covered=True,
+                currency_covered=True,
                 indeterminate_reason=None,
             )
         reason = (
@@ -194,6 +198,8 @@ class PyprojectExtractor:
             provenance=provenance,
             hygiene_covered=True,
             vuln_matchable=False,
+            license_covered=True,
+            currency_covered=True,
             indeterminate_reason=reason,
         )
 

@@ -33,8 +33,10 @@ from pyforge.warden.interfaces import (
 )
 from pyforge.warden.inventory import ResolvedInventory, merge_components
 from pyforge.warden.models import (
+    AXIS_CURRENCY,
     AXIS_HYGIENE,
     AXIS_INGESTION,
+    AXIS_LICENSE,
     AXIS_VULNERABILITY,
     CveMatchLevel,
     Ecosystem,
@@ -661,6 +663,79 @@ def test_doubly_deficient_component_derives_both_axis_findings(
     assert len(rungs) == 2
     assert all(status is Status.INDETERMINATE for status, _ in rungs)
     assert all(driver is not None for _, driver in rungs)
+
+
+# --- Story 6.1: license/currency coverage (axis-qualified tokens) --------------
+
+
+def test_license_uncovered_component_derives_axis_qualified_finding(
+    component_factory,
+):
+    """A license_covered=False component (producer path; inert in 6.1's own
+    fixtures where it defaults True) derives an axis-qualified
+    ``uncovered-license`` finding on AXIS_LICENSE."""
+    inventory = make_inventory(
+        component_factory(name="oddball", version="1.0.0", license_covered=False)
+    )
+    findings, rungs = DefaultPolicy().evaluate(inventory, [EMPTY_RESULT])
+    assert [f.id for f in findings] == ["indeterminate:uncovered-license:oddball"]
+    assert findings[0].axis == AXIS_LICENSE
+    ((status, driver),) = rungs
+    assert status is Status.INDETERMINATE
+    assert driver == StatusDriver(
+        axis=AXIS_LICENSE, finding_id="indeterminate:uncovered-license:oddball"
+    )
+
+
+def test_currency_uncovered_component_derives_axis_qualified_finding(
+    component_factory,
+):
+    inventory = make_inventory(
+        component_factory(name="oddball", version="1.0.0", currency_covered=False)
+    )
+    findings, rungs = DefaultPolicy().evaluate(inventory, [EMPTY_RESULT])
+    assert [f.id for f in findings] == ["indeterminate:uncovered-currency:oddball"]
+    assert findings[0].axis == AXIS_CURRENCY
+    ((status, driver),) = rungs
+    assert status is Status.INDETERMINATE
+    assert driver == StatusDriver(
+        axis=AXIS_CURRENCY, finding_id="indeterminate:uncovered-currency:oddball"
+    )
+
+
+def test_triple_uncovered_component_keeps_three_distinct_axis_ids(
+    component_factory,
+):
+    """The three uncovered tokens MUST stay distinct — a bare "uncovered"
+    for all three axes would collide onto one id and silently swallow two
+    axes via the id-dedupe. Axis-qualifying license/currency closes it."""
+    inventory = make_inventory(
+        component_factory(
+            name="oddball",
+            version="1.0.0",
+            hygiene_covered=False,
+            license_covered=False,
+            currency_covered=False,
+        )
+    )
+    findings, rungs = DefaultPolicy().evaluate(inventory, [EMPTY_RESULT])
+    by_id = {f.id: f.axis for f in findings}
+    assert by_id == {
+        "indeterminate:uncovered:oddball": AXIS_HYGIENE,
+        "indeterminate:uncovered-license:oddball": AXIS_LICENSE,
+        "indeterminate:uncovered-currency:oddball": AXIS_CURRENCY,
+    }
+    assert len(rungs) == 3
+    assert all(status is Status.INDETERMINATE for status, _ in rungs)
+
+
+def test_fully_covered_component_derives_no_uncovered_findings(component_factory):
+    """The default (6.1-era) component is license/currency-covered=True, so
+    the new blocks stay inert — behavior-neutral."""
+    inventory = make_inventory(component_factory(name="ok", version="1.0.0"))
+    findings, rungs = DefaultPolicy().evaluate(inventory, [EMPTY_RESULT])
+    assert findings == ()
+    assert rungs == ((Status.CLEAN, None),)
 
 
 # --- driver axis mirrors the referenced finding (P10) --------------------------
