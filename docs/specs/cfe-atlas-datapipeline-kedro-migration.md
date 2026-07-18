@@ -392,7 +392,7 @@ report artifacts only, and — like the `export-purls` / `universe-sbom`
 regeneration cadence — re-run after every rebuild so the freshness reports
 track the live universe. The four report-only suggesters are the dedicated
 **Seed-Gaps Pipeline** (§ 5.2 item 6, ported by Story B6); the kedro-viz
-prototype (`prototypes/cf-atlas-kedro-viz`) mirrors it as its `seed_gaps`
+prototype (`src/prototype/packages/pyforge-atlas-kedro-viz`) mirrors it as its `seed_gaps`
 pipeline. `mapping-gap` stays in the mapping / Phase-C layer (its writeback
 belongs with the mapping stage, not the report fan-out).
 
@@ -1276,7 +1276,7 @@ MCP · A2A · OpenLineage / OTel semantics.
 - `_bmad-output/projects/local-recipes/planning-artifacts/research/domain-cf-atlas-domain-triad-research-2026-07-16.md` — the live-sourced domain research (packaging / orchestration / supply-chain) behind the v5.2 fold: tool-bet verdicts, signal census + sustainability grades, regulatory timelines, and the evidence for the § 4.4/§ 4.5/§ 5.8 risk postures.
 - `_bmad-output/projects/local-recipes/planning-artifacts/research/technical-agentic-sdlc-kedro-migration-execution-research-2026-07-16.md` — the technical research behind the v5.3 fold: the § 2.5 graduated-autonomy execution architecture, the story-by-story drivability map (modes + gates; 32 stories), the verify-command growth plan, the worktree-seam and env-materialization risks, and the upstream bmad-loop feature requests (resume-on-timeout, retry-from-preserved-attempt, PR-lifecycle hook).
 - `_bmad-output/projects/local-recipes/planning-artifacts/research/market-cf-atlas-intelligence-surface-research-2026-07-16.md` — the demand-side market research behind the v5.6 fold (cross-ecosystem scope per user amendment): segment sizing + tool habits, scanner-tracker pain evidence, WTP/adoption triggers, and the three-scenario verdict (B > C > A) that discharged the MR-deferral trigger.
-- `prototypes/cf-atlas-kedro-viz/` — runnable kedro-viz stub model of the target-state DAG (§ 5.2 pipelines, § 3.3 surface); `pixi run -e local-recipes kedro-viz-proto` / `kedro-run-proto`.
+- `src/prototype/packages/pyforge-atlas-kedro-viz/` — runnable kedro-viz stub model of the target-state DAG (§ 5.2 pipelines, § 3.3 surface); `pixi run -e local-recipes kedro-viz-proto` / `kedro-run-proto`.
 
 ---
 
@@ -1326,7 +1326,7 @@ incl. F4 hygiene+policy gate, G WASM+sensors, H AI Software Factory).
 Resolve Q2/Q3/Q4 at the start of their gating wave; default to the
 recommendations in § 11.
 
-Note: the kedro-viz prototype (prototypes/cf-atlas-kedro-viz) predates the
+Note: the kedro-viz prototype (src/prototype/packages/pyforge-atlas-kedro-viz) predates the
 seven-pipeline decomposition and the FR-16..FR-21 nodes — refresh it as a
 follow-up, not as part of this spec's execution.
 

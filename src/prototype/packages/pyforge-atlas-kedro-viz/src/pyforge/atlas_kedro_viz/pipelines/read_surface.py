@@ -6,7 +6,7 @@ Vizro pages and MCP tools (FR-8 / FR-9 / FR-7).
 
 from kedro.pipeline import Pipeline, node, pipeline
 
-from cf_atlas_kedro.nodes import stub
+from pyforge.atlas_kedro_viz.nodes import stub
 
 
 def create_pipeline() -> Pipeline:

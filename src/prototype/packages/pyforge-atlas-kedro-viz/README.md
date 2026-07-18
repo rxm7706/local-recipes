@@ -1,4 +1,4 @@
-# cf-atlas-kedro-viz — target-state DAG prototype
+# pyforge-atlas-kedro-viz — target-state DAG prototype
 
 An **illustrative Kedro model of what the migrated cf_atlas pipeline will look
 like** after `docs/specs/cfe-atlas-datapipeline-kedro-migration.md` ships.

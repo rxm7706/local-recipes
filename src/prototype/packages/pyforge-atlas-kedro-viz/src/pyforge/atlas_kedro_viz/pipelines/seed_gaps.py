@@ -14,7 +14,7 @@ Suggesters: lts-registry-gap (v8.74.0), cwe-seed-gap + spdx-schema-gap
 
 from kedro.pipeline import Pipeline, node, pipeline
 
-from cf_atlas_kedro.nodes import stub
+from pyforge.atlas_kedro_viz.nodes import stub
 
 
 def create_pipeline() -> Pipeline:

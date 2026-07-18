@@ -7,7 +7,7 @@ Spec § 5.2 pipeline 2; Story B2 phases C, C.5, D, H, O-S plus the
 
 from kedro.pipeline import Pipeline, node, pipeline
 
-from cf_atlas_kedro.nodes import stub
+from pyforge.atlas_kedro_viz.nodes import stub
 
 
 def create_pipeline() -> Pipeline:
