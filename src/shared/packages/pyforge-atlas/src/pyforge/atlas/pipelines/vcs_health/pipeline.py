@@ -10,6 +10,7 @@ from __future__ import annotations
 from kedro.pipeline import Pipeline, node
 
 from .nodes import (
+    classify_migration_readiness,
     derive_release_velocity,
     detect_archived_feedstocks,
     enrich_maintainers,
@@ -79,6 +80,23 @@ def create_pipeline(**kwargs) -> Pipeline:
                 ],
                 outputs="vcs_release_velocity",
                 name="derive_release_velocity",
+            ),
+            # FR-21 (Story B10) — NEW-SIGNAL, NOT parity-gated (AD-14). Reads the
+            # partitioned conda-forge-bot-data status detail (`vcs_migration_detail_raw`)
+            # + the Phase B atlas feedstock set (`core_packages_enumerated`) + the Phase F
+            # downloads (`core_downloads`) by catalog name (cross-pipeline shared datasets,
+            # ownership=producer, AD-3). Four-way readiness split + inferred not-in-tracker
+            # label + top-unmigrated-by-volume ranking; the per-migration partitioning is
+            # driven by the category lists (zero code change per new migration).
+            node(
+                func=classify_migration_readiness,
+                inputs=[
+                    "vcs_migration_detail_raw",
+                    "core_packages_enumerated",
+                    "core_downloads",
+                ],
+                outputs="vcs_migration_readiness",
+                name="classify_migration_readiness",
             ),
         ]
     )

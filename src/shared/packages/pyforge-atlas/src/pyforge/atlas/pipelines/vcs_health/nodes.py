@@ -15,8 +15,11 @@ b18cbb5.
 from __future__ import annotations
 
 import time
+from typing import Any
 
 import pandas as pd
+
+from pyforge.atlas.datasets.migration_status import BLOCKER_BUCKETS
 
 # ms-vs-seconds magnitude split (mirrors core.nodes._MS_THRESHOLD +
 # IncrementalParquetDataset._MS_EPOCH_THRESHOLD — "convert once, at the boundary",
@@ -397,3 +400,220 @@ def derive_release_velocity(
     )
     out = out.drop_duplicates(subset=["pypi_name", "conda_name", "version"]).reset_index(drop=True)
     return out
+
+
+# ---------------------------------------------------------------------------
+# FR-21 — migration readiness classification  (Story B10; NEW-SIGNAL, AD-14 —
+#         NOT parity-gated. Lives HERE in vcs_health (AD-3). Reads the
+#         partitioned conda-forge-bot-data status detail + the atlas feedstock
+#         set (core_packages_enumerated) + the Phase F downloads (core_downloads),
+#         all by catalog NAME. Pure dict/DataFrame -> DataFrame; empty inputs ->
+#         typed empty frame, never raises.)
+# ---------------------------------------------------------------------------
+
+# The output readiness classes (spec § FR-21 four-way split).
+READINESS_NOARCH = "noarch"
+READINESS_REBUILD_DONE = "rebuild-done"
+READINESS_CONFIRMED_PENDING = "confirmed-pending"
+READINESS_NOT_IN_TRACKER = "not-in-tracker"
+
+_MIGRATION_READINESS_COLS = [
+    "migration",
+    "conda_name",
+    "readiness",
+    "blocker",
+    "not_in_tracker_inferred",
+    "downloads_total",
+    "unmigrated_volume_rank",
+]
+
+
+def _is_noarch(subdirs: Any) -> bool:
+    """DERIVE noarch-ness from the ``core_packages_enumerated.subdirs`` column — the
+    realization of the spec's "join against Phase B's ``conda_noarch`` column". Phase B (the
+    parity-gated ``enumerate_conda_packages``, B4) currently outputs only
+    ``conda_name``/``latest_version``/``subdirs`` with NO ``conda_noarch`` column and MUST NOT
+    be mutated, so B10 derives it here instead: a package is noarch iff ``"noarch"`` is one of
+    its ``subdirs``. A noarch package needs no rebuild for a python migration, so it lands in
+    the ``noarch`` readiness bucket.
+
+    ``subdirs`` may be a list/tuple/set, a **numpy array** (what a parquet round-trip of a
+    list column yields), a comma-string, or ``None``/NaN — all handled; noarch matches only
+    as an EXACT subdir token (``"noarch-extra"`` / ``"linux-64"`` never match). Anything else
+    defaults ``False`` (never raises).
+    """
+    if subdirs is None:
+        return False
+    if isinstance(subdirs, str):
+        # exact-token membership against the comma-split tokens (never a substring match).
+        return "noarch" in [s.strip() for s in subdirs.split(",")]
+    # a non-string scalar (float NaN, int, ...) is not a subdir sequence.
+    if pd.api.types.is_scalar(subdirs):
+        return False
+    # any non-scalar iterable: list / tuple / set / numpy array / pandas array.
+    try:
+        return any(str(s).strip() == "noarch" for s in subdirs)
+    except TypeError:
+        return False
+
+
+def _bucket_members(detail: Any, bucket: str) -> set[str]:
+    """The set of feedstock names in one bucket of a migration-detail payload. Robust to a
+    non-dict detail, a missing bucket, and a bucket whose value is a scalar/dict rather than a
+    list (AD-13 never-crash) — returns an empty set in every degenerate case."""
+    if not isinstance(detail, dict):
+        return set()
+    raw = detail.get(bucket)
+    if isinstance(raw, (list, tuple, set)):
+        return {str(x).strip() for x in raw if x is not None and str(x).strip()}
+    return set()
+
+
+def _empty_migration_readiness() -> pd.DataFrame:
+    """Typed empty frame matching the populated path's dtypes (so an empty return concats /
+    sinks cleanly): object name columns, a bool ``not_in_tracker_inferred``, a float
+    ``downloads_total``, and a nullable-Int ``unmigrated_volume_rank``."""
+    return pd.DataFrame(
+        {
+            "migration": pd.Series(dtype=object),
+            "conda_name": pd.Series(dtype=object),
+            "readiness": pd.Series(dtype=object),
+            "blocker": pd.Series(dtype=object),
+            "not_in_tracker_inferred": pd.Series(dtype=bool),
+            "downloads_total": pd.Series(dtype="float64"),
+            "unmigrated_volume_rank": pd.Series(dtype="Int64"),
+        }
+    )
+
+
+def classify_migration_readiness(
+    vcs_migration_detail_raw: dict,
+    core_packages_enumerated: pd.DataFrame,
+    core_downloads: pd.DataFrame,
+) -> pd.DataFrame:
+    # legacy: FR-21 migration readiness  (Story B10; spec § 5.2 item 4 / § FR-21 / § 9)
+    """Classify each atlas feedstock's readiness for every ACTIVE migration.
+
+    ``vcs_migration_detail_raw`` is the PARTITIONED conda-forge-bot-data status detail
+    (``{migration_name: detail}``, one partition per active migration the category lists
+    surfaced — see ``datasets/migration_status.py``). Iterating the partitions is what makes
+    the surface generalize with ZERO code change: a new migration upstream (python314 →
+    python315) becomes a new partition and classifies with no edit here — NO migration name is
+    hardcoded in this node.
+
+    For each (migration, atlas feedstock) the node emits a **four-way readiness split**
+    (precedence order — a feedstock gets exactly one class):
+
+    1. ``noarch`` — the package is noarch (DERIVED from ``subdirs`` via :func:`_is_noarch`, the
+       spec's ``conda_noarch``); it needs no rebuild for a python migration, so it is ready by
+       construction REGARDLESS of any tracker bucket (top precedence).
+    2. ``rebuild-done`` — in the migration's ``done`` bucket (the bot rebuilt it).
+    3. ``confirmed-pending`` — in one of the pending/blocker buckets (``in-pr``, ``awaiting-pr``,
+       ``awaiting-parents``, ``not-solvable``, ``bot-error``); the specific bucket is surfaced in
+       the ``blocker`` column (first match in :data:`BLOCKER_BUCKETS` precedence).
+    4. ``not-in-tracker`` — absent from EVERY bucket of the migration JSON.
+
+    **THE LOAD-BEARING SEMANTIC — ``not-in-tracker`` is an INFERENCE, never confirmed tracker
+    data.** A feedstock absent from the migration JSON is only *assumed* unmigrated (it may not
+    even need this migration). The ``not_in_tracker_inferred`` boolean column is ``True`` for
+    exactly the ``not-in-tracker`` rows and ``False`` everywhere else, so the report can never
+    present an inference as confirmed status (fixture-proven, spec AC).
+
+    The atlas feedstock set (``core_packages_enumerated``, keyed by ``conda_name`` — the
+    feedstock ≈ output name join the spec names) is the authoritative row universe: a feedstock
+    in the migration detail but NOT in the atlas set is out of scope (no row); a feedstock in the
+    atlas set but absent from the detail is ``not-in-tracker`` (inferred).
+
+    **Downloads join → top-unmigrated-by-volume ranking.** ``core_downloads`` (Phase F, the
+    ``compute_downloads`` output; ``conda_name`` + ``downloads_total``) is left-joined on
+    ``conda_name``. Within each migration the UNMIGRATED feedstocks (``confirmed-pending`` +
+    ``not-in-tracker``) are ranked by ``downloads_total`` descending (1 = highest volume);
+    ready rows (``noarch`` / ``rebuild-done``) carry a null rank. A feedstock with no download
+    row ranks as volume 0 (kept, never dropped).
+
+    Output ``vcs_migration_readiness``: ``migration``, ``conda_name``, ``readiness``,
+    ``blocker``, ``not_in_tracker_inferred``, ``downloads_total``, ``unmigrated_volume_rank``.
+    Empty / missing inputs → typed empty frame, never raises (AD-13).
+    """
+    detail_map = vcs_migration_detail_raw if isinstance(vcs_migration_detail_raw, dict) else {}
+    pkgs = core_packages_enumerated
+    if pkgs is None or pkgs.empty or "conda_name" not in getattr(pkgs, "columns", []):
+        return _empty_migration_readiness()
+    if not detail_map:
+        return _empty_migration_readiness()
+
+    # -- atlas feedstock set: one (conda_name -> is_noarch) per package (dedup defensively).
+    atlas = pkgs[["conda_name"] + (["subdirs"] if "subdirs" in pkgs.columns else [])].copy()
+    atlas["conda_name"] = atlas["conda_name"].map(_key)
+    atlas = atlas.dropna(subset=["conda_name"]).drop_duplicates("conda_name")
+    if atlas.empty:
+        return _empty_migration_readiness()
+    subdirs_lookup = (
+        dict(zip(atlas["conda_name"], atlas["subdirs"])) if "subdirs" in atlas.columns else {}
+    )
+    feedstocks = list(atlas["conda_name"])
+    noarch_flags = {name: _is_noarch(subdirs_lookup.get(name)) for name in feedstocks}
+
+    # -- downloads lookup (Phase F): conda_name -> downloads_total (dedup, max wins).
+    dl_lookup: dict[str, float] = {}
+    dl = core_downloads
+    if dl is not None and not dl.empty and {"conda_name", "downloads_total"} <= set(dl.columns):
+        d = dl[["conda_name", "downloads_total"]].copy()
+        d["conda_name"] = d["conda_name"].map(_key)
+        d["downloads_total"] = pd.to_numeric(d["downloads_total"], errors="coerce")
+        d = d.dropna(subset=["conda_name"])
+        # a feedstock can carry multiple download rows (defensive) — keep the max.
+        for name, val in zip(d["conda_name"], d["downloads_total"]):
+            if pd.notna(val):
+                prev = dl_lookup.get(name)
+                dl_lookup[name] = val if prev is None else max(prev, val)
+
+    rows: list[dict[str, Any]] = []
+    # Iterate migrations in a STABLE (sorted) order so the output is deterministic across the
+    # dict's insertion order; NO migration name is referenced literally.
+    for migration in sorted(detail_map):
+        detail = detail_map[migration]
+        done = _bucket_members(detail, "done")
+        blocker_members = {b: _bucket_members(detail, b) for b in BLOCKER_BUCKETS}
+        for name in feedstocks:
+            if noarch_flags[name]:
+                readiness, blocker, inferred = READINESS_NOARCH, "", False
+            elif name in done:
+                readiness, blocker, inferred = READINESS_REBUILD_DONE, "", False
+            else:
+                hit = next((b for b in BLOCKER_BUCKETS if name in blocker_members[b]), None)
+                if hit is not None:
+                    readiness, blocker, inferred = READINESS_CONFIRMED_PENDING, hit, False
+                else:
+                    # Absent from EVERY bucket → INFERRED unmigrated (never confirmed).
+                    readiness, blocker, inferred = READINESS_NOT_IN_TRACKER, "", True
+            rows.append(
+                {
+                    "migration": migration,
+                    "conda_name": name,
+                    "readiness": readiness,
+                    "blocker": blocker,
+                    "not_in_tracker_inferred": inferred,
+                    "downloads_total": float(dl_lookup.get(name)) if name in dl_lookup else float("nan"),
+                }
+            )
+
+    out = pd.DataFrame(rows, columns=_MIGRATION_READINESS_COLS[:-1])
+    out["not_in_tracker_inferred"] = out["not_in_tracker_inferred"].astype(bool)
+    out["downloads_total"] = pd.to_numeric(out["downloads_total"], errors="coerce")
+
+    # -- top-unmigrated-by-volume rank (per migration; ready rows carry a null rank).
+    unmigrated_mask = out["readiness"].isin([READINESS_CONFIRMED_PENDING, READINESS_NOT_IN_TRACKER])
+    rank = pd.Series(pd.NA, index=out.index, dtype="Int64")
+    if unmigrated_mask.any():
+        um = out.loc[unmigrated_mask, ["migration", "downloads_total"]].copy()
+        # a missing download row ranks as volume 0 (kept, never dropped).
+        um["_vol"] = um["downloads_total"].fillna(0.0)
+        ranked = (
+            um.groupby("migration")["_vol"]
+            .rank(method="first", ascending=False)
+            .astype("Int64")
+        )
+        rank.loc[ranked.index] = ranked
+    out["unmigrated_volume_rank"] = rank
+    return out[_MIGRATION_READINESS_COLS].reset_index(drop=True)
