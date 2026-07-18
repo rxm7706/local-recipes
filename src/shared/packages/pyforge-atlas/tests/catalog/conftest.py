@@ -119,10 +119,11 @@ FLIP_LIST = {
 # G-1(B2): pypi_bigquery_downloads_raw's marker is CORRECTED B3 -> B2 (Phase P
 # is a B2 pypi phase); it stays an interim (the credentialed GBQ materialization
 # is attended-only, NFR-2/AD-11) while B2 authored the cost gate + dataset class
-# + fixtures. vulnerability_vdb_store's read-only VDB dataset-class flip is B5's.
+# + fixtures. B5 LANDED vulnerability_vdb_store's flip (interim MemoryDataset ->
+# VDBStoreDataset, the read-only VDB store class that wraps refresh + coerce_cvss_score),
+# so its `# FLIP(B5)` marker is removed from catalog.yml and dropped here.
 EXPECTED_FLIP_MARKERS = {
     "pypi_bigquery_downloads_raw": "B2",
-    "vulnerability_vdb_store": "B5",
 }
 
 # AC-4 accounting (review-pass P7: pinned as 19 live + 1 reserved, not a

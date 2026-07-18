@@ -614,3 +614,61 @@ def v_pypi_intelligence_valid(pypi_intelligence_scored: pd.DataFrame) -> pd.Data
         return df.iloc[0:0].reset_index(drop=True)
     valid = df["packaging_shape"].notna() & (df["packaging_shape"] != "unknown") & df["conda_forge_readiness"].notna()
     return df[valid].reset_index(drop=True)
+
+
+# ---------------------------------------------------------------------------
+# update-mapping-cache — the Q6 flat-cache EXPORT shim (§ 3.4, Story B5)
+# ---------------------------------------------------------------------------
+
+# Provenance precedence for the flat-cache collapse (no-clobber): a protected tier
+# (the g10_spelling writeback + parselmouth/recipe_source_url) always wins over a
+# weaker/unknown match; g10_spelling is ranked highest so it provably SURVIVES a
+# collision (AC-4). Non-protected/unknown match_source -> rank 1.
+_MAP_PROVENANCE_RANK = {"g10_spelling": 3, "parselmouth": 2, "recipe_source_url": 2}
+
+
+def export_pypi_conda_map(pypi_conda_mapping: pd.DataFrame) -> dict:
+    # legacy: update-mapping-cache  (mapping_manager.py; Q6-consolidated onto Phase C)
+    """Q6 consolidation shim: export the migrated Phase C mapping (``pypi_conda_mapping``)
+    to the flat ``pypi_conda_map.json`` cache (``pypi_conda_map_store``). This REPLACES the
+    legacy ``update-mapping-cache`` fetch (regro/cf-graph + conda-forge-metadata API) with a
+    read of the already-built LOCAL Phase C dataset — so the mapping refresh is offline-safe
+    by construction (Q6 benefit; AD-13 trivially satisfied for the mapping store).
+
+    Single writer of ``pypi_conda_map_store``. **Preserves ``g10_spelling`` provenance +
+    no-clobber (AD-10):** collapsing to one ``conda_name`` per ``pypi_name``, the winning row
+    is the highest-provenance match — a protected tier (g10_spelling / parselmouth /
+    recipe_source_url) is NEVER clobbered by a weaker one, and g10_spelling survives a tie.
+
+    The re-point of ``name_resolver.py`` / ``recipe-generator.py`` at Phase C directly is a
+    read-only ``.claude/**`` follow-up (DW-B5-1); until then this flat file is the retained
+    compatibility shim, in the legacy ``{pypi_name: conda_name}`` format. The MERGE onto the
+    last-good cache (Phase C wins; old-only keys retained) + the keep-last-good-on-empty
+    discipline (AD-13) live in ``MappingCacheDataset.save`` — this node returns the export.
+    """
+    df = pypi_conda_mapping
+    if df is None or df.empty or not {"pypi_name", "conda_name"} <= set(df.columns):
+        return {}
+    has_source = "match_source" in df.columns
+    out: dict[str, str] = {}
+    ranks: dict[str, int] = {}
+    for row in df.itertuples(index=False):
+        pypi_name = getattr(row, "pypi_name", None)
+        conda_name = getattr(row, "conda_name", None)
+        if _is_missing(pypi_name) or _is_missing(conda_name) or not isinstance(conda_name, str):
+            continue
+        pypi_name = str(pypi_name)
+        match_source = getattr(row, "match_source", None) if has_source else None
+        # match_source may be a non-string / unhashable cell (malformed) — default rank 1.
+        rank = _MAP_PROVENANCE_RANK.get(match_source, 1) if isinstance(match_source, str) else 1
+        # no-clobber: replace on STRICTLY higher provenance; on an EQUAL-tier collision with
+        # a different conda_name, keep the lexicographically smaller name — a deterministic
+        # tie-break so the export is reproducible regardless of Phase C row order.
+        if (
+            pypi_name not in out
+            or rank > ranks[pypi_name]
+            or (rank == ranks[pypi_name] and conda_name < out[pypi_name])
+        ):
+            out[pypi_name] = conda_name
+            ranks[pypi_name] = rank
+    return out
