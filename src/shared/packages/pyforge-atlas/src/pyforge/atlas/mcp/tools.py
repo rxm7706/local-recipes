@@ -14,6 +14,7 @@ duckdb/sqlite/sqlalchemy/ibis/pyarrow, no aggregation arithmetic).
 from __future__ import annotations
 
 import datetime
+from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
 
@@ -105,7 +106,7 @@ def read_dataset(
     return result
 
 
-def query_vizro_ai(query: str, *, env: Any | None = None) -> dict[str, Any]:
+def query_vizro_ai(query: str, *, env: Mapping[str, str] | None = None) -> dict[str, Any]:
     """Natural-language -> Vizro chart/insight over the BSL knowledge graph (D3, FR-9).
 
     THIN delegation to the ``nl/`` seam (AD-7): the NL/LLM logic — backend resolution from

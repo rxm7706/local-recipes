@@ -28,7 +28,11 @@ def scan_raw_docs(raw_dir: str | Path) -> tuple[str, ...]:
     root = Path(raw_dir)
     if not root.is_dir():
         return ()
-    return tuple(sorted(str(p.relative_to(root)) for p in root.rglob("*.md")))
+    # Normalize to '/' so the cursor's seen-set keys are identical across platforms (on Windows
+    # ``relative_to`` yields backslashes, which would never match a '/'-keyed cursor).
+    return tuple(
+        sorted(str(p.relative_to(root)).replace(chr(92), "/") for p in root.rglob("*.md"))
+    )
 
 
 @dataclass(frozen=True)

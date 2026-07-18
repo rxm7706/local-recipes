@@ -56,9 +56,14 @@ def default_data_root() -> Path:
     env = os.environ.get("PYFORGE_ATLAS_DATA_ROOT")
     if env:
         return Path(env)
-    # data.py -> dashboard -> atlas -> pyforge -> src -> pyforge-atlas -> packages ->
-    # shared -> src -> <repo root>
-    return Path(__file__).resolve().parents[8] / "data"
+    # Walk up to the repo root so this resolves whether run from the source tree or an installed
+    # layout. Anchor on ``.git`` (a UNIQUE repo-root marker) — NOT ``pixi.toml``, which the
+    # pyforge-atlas member also ships, so a pixi.toml walk would stop at the member dir.
+    current = Path(__file__).resolve()
+    for parent in current.parents:
+        if (parent / ".git").exists() or (parent / "_bmad-output").is_dir():
+            return parent / "data"
+    return (current.parents[8] if len(current.parents) > 8 else current.parent) / "data"
 
 
 def _bsl_query_or_empty(

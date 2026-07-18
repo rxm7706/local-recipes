@@ -125,6 +125,10 @@ def emit_static_site(
     ``datasets`` maps ``dataset_name -> DataFrame``. Names are emitted in sorted order; an empty
     DataFrame emits a single schema-only chunk (row_count 0) so the layout stays uniform.
     """
+    if datasets is None:
+        raise TypeError("datasets must be a Mapping of name -> DataFrame, got None")
+    if target_dir is None:
+        raise TypeError("target_dir must be a str or Path, got None")
     if rows_per_chunk < 1:
         raise ValueError(f"rows_per_chunk must be >= 1, got {rows_per_chunk}")
     root = Path(target_dir)
@@ -221,6 +225,10 @@ def chunk_url(base_url: str, chunk_path: str) -> str:
     is supplied HERE at consume time. Trailing/leading slashes are normalized so a mirror base
     with or without a trailing ``/`` composes identically. An empty base yields the relative
     path unchanged (same-origin static host)."""
+    if chunk_path is None:
+        raise TypeError("chunk_path must be a string, got None")
+    if base_url is None:
+        raise TypeError("base_url must be a string, got None")
     path = chunk_path.lstrip("/")
     if base_url == "":
         return path

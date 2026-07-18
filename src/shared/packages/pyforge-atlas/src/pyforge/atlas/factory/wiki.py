@@ -72,12 +72,16 @@ class WikiLayout:
         base = self.stage_dir(stage)
         if not isinstance(relative, str) or not relative:
             raise ValueError(f"wiki path must be a non-empty string, got {relative!r}")
-        parts = Path(relative).parts
+        # Normalize Windows-style backslashes to '/' BEFORE splitting: on a POSIX host
+        # ``Path("a\\..\\b").parts`` keeps the backslashes in a single part, so a ``..`` traversal
+        # written with backslashes would slip past the per-part check (AD-22 write-boundary).
+        normalized = relative.replace(chr(92), "/")
+        parts = Path(normalized).parts
         if not parts:  # e.g. "." collapses to no parts — addresses the stage dir itself
             raise ValueError(f"wiki path {relative!r} does not name a file within the stage")
         for part in parts:
             _require_safe_segment(part)
-        return base / relative
+        return base / normalized
 
     def ensure(self) -> "WikiLayout":
         """Create ``root`` and each stage dir (idempotent); return self for chaining."""

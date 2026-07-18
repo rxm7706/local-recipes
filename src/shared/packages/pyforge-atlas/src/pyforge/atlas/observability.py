@@ -51,6 +51,7 @@ dataset internals.
 
 from __future__ import annotations
 
+import logging
 import time
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
@@ -99,6 +100,22 @@ class AtlasNodeMetricsRunFacet(RunFacet):
     cache_hits: int = 0
 
 
+class _CapturingTransport(Transport):
+    """In-memory OpenLineage transport that appends emitted events to a list. Defined at MODULE
+    level (not as a closure inside ``make_capturing_client``) so it stays picklable — a
+    closure-captured local class breaks under a process-based Kedro/Dagster runner (Gemini #91)."""
+
+    kind = "capture"
+    name = "capture"
+
+    def __init__(self, captured: list[RunEvent]) -> None:
+        self.captured = captured
+        super().__init__()
+
+    def emit(self, event: Any) -> None:
+        self.captured.append(event)
+
+
 def make_capturing_client() -> tuple[OpenLineageClient, list[RunEvent]]:
     """An OpenLineage client whose transport captures emitted events in a list.
 
@@ -107,18 +124,7 @@ def make_capturing_client() -> tuple[OpenLineageClient, list[RunEvent]]:
     network transport is constructed.
     """
     captured: list[RunEvent] = []
-
-    class _CapturingTransport(Transport):
-        kind = "capture"
-        name = "capture"
-
-        def __init__(self) -> None:  # noqa: D107 - trivial in-memory sink
-            pass
-
-        def emit(self, event: Any) -> None:
-            captured.append(event)
-
-    return OpenLineageClient(transport=_CapturingTransport()), captured
+    return OpenLineageClient(transport=_CapturingTransport(captured)), captured
 
 
 @dataclass
@@ -241,7 +247,14 @@ class AtlasObservabilityHooks:
 
     def _emit(self, event: RunEvent) -> None:
         if self._ol is not None:
-            self._ol.emit(event)
+            try:
+                self._ol.emit(event)
+            except Exception as exc:  # noqa: BLE001 — telemetry must fail-safe, never crash a run
+                # A down/misconfigured OpenLineage collector must not take the pipeline with it
+                # (observability is side-channel; the run's correctness does not depend on it).
+                logging.getLogger(__name__).warning(
+                    "OpenLineage emit failed (%s: %s); continuing", type(exc).__name__, exc
+                )
 
     def _input_datasets(self, node: Any) -> list[InputDataset]:
         return [InputDataset(namespace=self._namespace, name=n) for n in node.inputs]

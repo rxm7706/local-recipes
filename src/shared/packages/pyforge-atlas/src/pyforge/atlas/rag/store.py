@@ -97,13 +97,21 @@ def _as_artifacts(artifacts: Any) -> list[tuple[str, str]]:
     ``id`` and ``text`` are coerced to ``str`` — unicode passes through unchanged."""
     if artifacts is None:
         return []
+    if isinstance(artifacts, str):
+        # a bare str is iterable char-by-char — almost never the intent; fail loudly (Gemini #94).
+        raise TypeError("artifacts must be an iterable of (id, text) pairs or {id,text} dicts, not a str")
     out: list[tuple[str, str]] = []
     for item in artifacts:
         if isinstance(item, dict):
+            if "id" not in item or "text" not in item:
+                raise ValueError(f"artifact dict must have 'id' and 'text' keys, got {sorted(item)}")
             out.append((str(item["id"]), str(item["text"])))
+        elif isinstance(item, (list, tuple)):
+            if len(item) != 2:
+                raise ValueError(f"artifact pair must have exactly 2 elements (id, text), got {len(item)}")
+            out.append((str(item[0]), str(item[1])))
         else:
-            art_id, text = item
-            out.append((str(art_id), str(text)))
+            raise TypeError(f"artifact must be a dict or a 2-tuple/list, got {type(item).__name__}")
     return out
 
 
@@ -163,22 +171,33 @@ class DuckdbVssRagStore:
 
         An empty artifact set is valid (leaves an empty, queryable store — F3 edge case)."""
         rows = _as_artifacts(artifacts)
-        # Drop the index BEFORE mutating rows (HNSW does not support in-place row changes on a
-        # persisted table); rebuild it after the bulk insert.
-        self.con.execute(f"DROP INDEX IF EXISTS {self._index}")
-        self.con.execute(f"DELETE FROM {self._table}")
+        # Embed + dimension-validate everything FIRST, so a bad embedding aborts before any DB
+        # mutation (never a half-populated table with a dropped index — Gemini #94).
+        prepared = []
         for art_id, text in rows:
             emb = self.embedder.embed(text)
             self._require_dim(emb)
+            prepared.append((art_id, text, emb))
+        # Then do the DROP/DELETE/bulk-INSERT/CREATE-INDEX in ONE transaction: on any error the
+        # store rolls back to its prior contents+index instead of being left empty/index-less.
+        # ``executemany`` also avoids a per-row disk sync on a persistent connection.
+        self.con.execute("BEGIN TRANSACTION")
+        try:
+            self.con.execute(f"DROP INDEX IF EXISTS {self._index}")
+            self.con.execute(f"DELETE FROM {self._table}")
+            if prepared:
+                self.con.executemany(
+                    f"INSERT INTO {self._table} VALUES (?, ?, ?::FLOAT[{self.dim}])", prepared
+                )
+            # Build the HNSW index (requires vss — proves provisioning). Safe on an empty table.
             self.con.execute(
-                f"INSERT INTO {self._table} VALUES (?, ?, ?::FLOAT[{self.dim}])",
-                [art_id, text, emb],
+                f"CREATE INDEX {self._index} ON {self._table} "
+                f"USING HNSW (emb) WITH (metric = '{self._metric}')"
             )
-        # Build the HNSW index (requires vss — proves provisioning). Safe on an empty table.
-        self.con.execute(
-            f"CREATE INDEX {self._index} ON {self._table} "
-            f"USING HNSW (emb) WITH (metric = '{self._metric}')"
-        )
+            self.con.execute("COMMIT")
+        except Exception:
+            self.con.execute("ROLLBACK")
+            raise
         return len(rows)
 
     def similarity_search(self, query: str, k: int = 5) -> list[dict[str, Any]]:

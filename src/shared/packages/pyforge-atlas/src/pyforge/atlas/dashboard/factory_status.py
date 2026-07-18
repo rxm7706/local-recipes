@@ -29,10 +29,38 @@ import yaml
 FRAME_COLUMNS = ["source", "artifact", "key", "status"]
 
 
+class _StrictSafeLoader(yaml.SafeLoader):
+    """A SafeLoader that additionally rejects YAML aliases (billion-laughs / entity-expansion
+    resource exhaustion) and duplicate mapping keys — the BMAD artifacts are developer-owned but
+    the loader hardening is cheap defense-in-depth (Gemini #87)."""
+
+    def compose_node(self, parent, index):  # type: ignore[override]
+        if self.check_event(yaml.AliasEvent):
+            raise yaml.YAMLError("YAML aliases are not allowed")
+        return super().compose_node(parent, index)
+
+    def construct_mapping(self, node, deep=False):  # type: ignore[override]
+        seen: set = set()
+        for key_node, _ in node.value:
+            key = self.construct_object(key_node, deep=deep)
+            if key in seen:
+                raise yaml.YAMLError(f"duplicate key {key!r}")
+            seen.add(key)
+        return super().construct_mapping(node, deep=deep)
+
+
 def default_repo_root() -> Path:
-    # factory_status.py -> dashboard -> atlas -> pyforge -> src -> pyforge-atlas ->
-    # packages -> shared -> src -> <repo root>
-    return Path(__file__).resolve().parents[8]
+    # Walk up to the repo root so this resolves whether run from the source tree or an installed
+    # layout (a hardcoded parents[N] is fragile). Anchor on ``.git`` — a UNIQUE repo-root marker:
+    # ``pixi.toml`` is NOT unique (the pyforge-atlas member ships its own), so a pixi.toml walk
+    # would stop at the member dir and miss ``_bmad-output/`` (Gemini #87, corrected).
+    current = Path(__file__).resolve()
+    for parent in current.parents:
+        if (parent / ".git").exists() or (parent / "_bmad-output").is_dir():
+            return parent
+    # Fallback: the historical source-tree depth (dashboard→atlas→pyforge→src→member→packages
+    # →shared→src→root).
+    return current.parents[8] if len(current.parents) > 8 else current.parent
 
 
 def _default_paths() -> dict[str, Path]:
@@ -53,7 +81,7 @@ def _parse_frontmatter(text: str) -> dict[str, Any]:
     if len(parts) < 3:
         return {}
     try:
-        parsed = yaml.safe_load(parts[1])
+        parsed = yaml.load(parts[1], Loader=_StrictSafeLoader)
     except yaml.YAMLError:
         return {}
     return parsed if isinstance(parsed, dict) else {}
@@ -64,7 +92,7 @@ def read_sprint_status(path: str | Path | None) -> dict[str, Any]:
     if not path or not Path(path).exists():
         return {}
     try:
-        doc = yaml.safe_load(Path(path).read_text(encoding="utf-8"))
+        doc = yaml.load(Path(path).read_text(encoding="utf-8-sig"), Loader=_StrictSafeLoader)
     except yaml.YAMLError:
         return {}
     if not isinstance(doc, dict):
@@ -77,7 +105,7 @@ def read_epics_status(path: str | Path | None) -> str | None:
     """``epics.md`` frontmatter ``status``; None if missing/malformed/absent."""
     if not path or not Path(path).exists():
         return None
-    fm = _parse_frontmatter(Path(path).read_text(encoding="utf-8"))
+    fm = _parse_frontmatter(Path(path).read_text(encoding="utf-8-sig"))
     status = fm.get("status")
     return str(status) if status is not None else None
 
@@ -88,7 +116,7 @@ def read_spec_statuses(specs_dir: str | Path | None) -> dict[str, str]:
     if not specs_dir or not Path(specs_dir).exists():
         return out
     for md in sorted(Path(specs_dir).glob("*.md")):
-        fm = _parse_frontmatter(md.read_text(encoding="utf-8"))
+        fm = _parse_frontmatter(md.read_text(encoding="utf-8-sig"))
         status = fm.get("status")
         if status is not None:
             out[md.stem] = str(status)

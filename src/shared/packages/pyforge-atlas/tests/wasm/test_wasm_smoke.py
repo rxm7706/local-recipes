@@ -118,6 +118,7 @@ def static_server():
         yield f"http://127.0.0.1:{port}"
     finally:
         httpd.shutdown()
+        httpd.server_close()  # release the listening socket (Gemini #96 — no fd/socket leak)
         thread.join(timeout=5)
 
 

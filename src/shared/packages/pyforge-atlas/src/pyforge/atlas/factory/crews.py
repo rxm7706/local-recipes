@@ -45,6 +45,27 @@ from .wiki import WikiLayout
 
 _FRONTMATTER_RE = re.compile(r"\A---\n(.*?)\n---\n?(.*)\Z", re.DOTALL)
 
+
+class _StrictSafeLoader(yaml.SafeLoader):
+    """SafeLoader that additionally rejects YAML aliases (billion-laughs / entity-expansion
+    resource exhaustion) and duplicate mapping keys — raw wiki docs can be UNTRUSTED (the
+    Ingester reads incoming payloads), so hardening the frontmatter parser is warranted
+    (Gemini #100)."""
+
+    def compose_node(self, parent, index):  # type: ignore[override]
+        if self.check_event(yaml.AliasEvent):
+            raise yaml.YAMLError("YAML aliases are not allowed in wiki frontmatter")
+        return super().compose_node(parent, index)
+
+    def construct_mapping(self, node, deep=False):  # type: ignore[override]
+        seen: set = set()
+        for key_node, _ in node.value:
+            key = self.construct_object(key_node, deep=deep)
+            if key in seen:
+                raise yaml.YAMLError(f"duplicate key {key!r} in wiki frontmatter")
+            seen.add(key)
+        return super().construct_mapping(node, deep=deep)
+
 #: The visible stale banner stamped into a compiled body when the source is stale. LintCrew
 #: checks for this exact prefix so a stale page that drops the banner is a reported violation.
 STALE_BANNER_PREFIX = "> ⚠️ STALE"
@@ -57,7 +78,7 @@ def parse_frontmatter(text: str) -> tuple[dict[str, Any], str]:
     m = _FRONTMATTER_RE.match(text)
     if not m:
         return {}, text
-    meta = yaml.safe_load(m.group(1)) or {}
+    meta = yaml.load(m.group(1), Loader=_StrictSafeLoader) or {}
     if not isinstance(meta, dict):
         raise ValueError(f"frontmatter must be a mapping, got {type(meta).__name__}")
     return meta, m.group(2)
