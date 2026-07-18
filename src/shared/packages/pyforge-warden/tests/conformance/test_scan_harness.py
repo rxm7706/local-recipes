@@ -98,8 +98,10 @@ def test_clean_fixture_coverage_reflects_deptry_hygiene_assessment(capsys):
     _, out, _ = run_scan(capsys, CLEAN)
     document = parse_report(out)
     by_axis = {block["axis"]: block for block in document["coverage"]}
-    assert set(by_axis) == {"hygiene", "vulnerability"}
-    for block in by_axis.values():
+    # Story 6.1: license/currency register as producer axes.
+    assert set(by_axis) == {"hygiene", "vulnerability", "license", "currency"}
+    for axis in ("hygiene", "vulnerability"):
+        block = by_axis[axis]
         assert block["manifests_found"] == 1
         assert block["manifests_parsed"] == 1
         assert block["deps_total"] == 2
@@ -110,6 +112,16 @@ def test_clean_fixture_coverage_reflects_deptry_hygiene_assessment(capsys):
     # not the pre-1.5 "no engine ever consulted" stub 0.
     assert by_axis["hygiene"]["deps_assessed"] == 2
     assert by_axis["vulnerability"]["deps_assessed"] == 2
+    # Story 6.1: the new producer axes have no engine yet — honestly
+    # not-applicable (deps_total=0/deps_assessed=0/resolution_depth=None),
+    # NOT "0 of N assessed" (which --fail-under-coverage would flag).
+    for axis in ("license", "currency"):
+        block = by_axis[axis]
+        assert block["manifests_found"] == 1
+        assert block["manifests_parsed"] == 1
+        assert block["deps_total"] == 0
+        assert block["deps_assessed"] == 0
+        assert block["resolution_depth"] is None
 
 
 def test_sentinel_fixture_never_false_greens(capsys):
@@ -1059,7 +1071,7 @@ def test_recipe_common_is_the_combined_ac1_ac2_ac3_conformance_proof(capsys):
     assert rc == document["exit_code"]
     assert document["status"]["value"] == "indeterminate"
     by_axis = {block["axis"]: block for block in document["coverage"]}
-    assert set(by_axis) == {"hygiene", "vulnerability"}
+    assert set(by_axis) == {"hygiene", "vulnerability", "license", "currency"}
     # AC3: no adjacent .py source anywhere -- the hygiene axis is honestly
     # not-applicable, never a 100%-DEP002 noise wall.
     assert by_axis["hygiene"]["deps_total"] == 0

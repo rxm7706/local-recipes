@@ -83,7 +83,9 @@ from typing import Protocol, runtime_checkable
 from .config import EffectiveConfig
 from .inventory import Component, ResolvedInventory
 from .models import (
+    AXIS_CURRENCY,
     AXIS_HYGIENE,
+    AXIS_LICENSE,
     AXIS_VULNERABILITY,
     AxisCoverage,
     Ecosystem,
@@ -384,6 +386,32 @@ class DefaultPolicy:
                         AXIS_HYGIENE,
                         f"{component.name}: not hygiene-covered — "
                         "hygiene-axis cleanliness cannot be claimed",
+                    )
+                )
+            # Story 6.1: the license/currency coverage mechanism, landed inert
+            # (every 6.1-era component is license_covered/currency_covered=True;
+            # producers set False later). The reason tokens MUST be
+            # axis-qualified — a bare "uncovered" (hygiene's token) would
+            # collide all three onto one id ("indeterminate:uncovered:<name>")
+            # and silently swallow two axes via the id-dedupe below.
+            if not component.license_covered:
+                derived.append(
+                    (
+                        Status.INDETERMINATE,
+                        "uncovered-license",
+                        AXIS_LICENSE,
+                        f"{component.name}: not license-covered — "
+                        "license-axis cleanliness cannot be claimed",
+                    )
+                )
+            if not component.currency_covered:
+                derived.append(
+                    (
+                        Status.INDETERMINATE,
+                        "uncovered-currency",
+                        AXIS_CURRENCY,
+                        f"{component.name}: not currency-covered — "
+                        "currency-axis cleanliness cannot be claimed",
                     )
                 )
             if not derived:
