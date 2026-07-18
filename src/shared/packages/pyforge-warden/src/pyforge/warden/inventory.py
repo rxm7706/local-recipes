@@ -68,12 +68,19 @@ class Provenance:
 
 @dataclass(frozen=True)
 class Component:
-    """One dependency, frozen whole — the full 13-field contract.
+    """One dependency, frozen whole — the full 15-field contract.
 
     ``mapping_confidence`` carries the map's per-pair tier verbatim; the
     vocabulary is owned by Story 2.1, so it is a plain ``str | None`` here
     (only ``CveMatchLevel`` and ``WithholdReason`` are sanctioned growable
     enums).
+
+    ``license_covered``/``currency_covered`` (Story 6.1): plain binary "was
+    this axis even attempted" flags, mirroring ``hygiene_covered`` (a pure
+    AND under merge/fold, NOT ``vuln_matchable``'s identity-gated formula).
+    Defaultless like every other field — every construction site passes them
+    explicitly. Per-component verdict data (SPDX expression, tier, ``lag``,
+    ``eol_date``) lives on the ``Finding``, never here.
     """
 
     name: str
@@ -88,6 +95,8 @@ class Component:
     provenance: tuple[Provenance, ...]
     hygiene_covered: bool
     vuln_matchable: bool
+    license_covered: bool
+    currency_covered: bool
     indeterminate_reason: WithholdReason | None
 
     def __post_init__(self) -> None:
@@ -367,6 +376,8 @@ def _merge_group(group: list[Component]) -> Component:
         ),
         hygiene_covered=all(component.hygiene_covered for component in group),
         vuln_matchable=vuln_matchable,
+        license_covered=all(component.license_covered for component in group),
+        currency_covered=all(component.currency_covered for component in group),
         indeterminate_reason=reasons[0] if reasons else None,
     )
 
@@ -422,8 +433,8 @@ def _fold_bare(concrete: Component, bare: Component) -> Component:
     merge (C0: a fold never upgrades confidence):
 
     * ``provenance`` — union.
-    * ``hygiene_covered`` — AND (a bare record hygiene never covered stays
-      uncovered after the fold).
+    * ``hygiene_covered`` / ``license_covered`` / ``currency_covered`` — AND
+      (a bare record an axis never covered stays uncovered after the fold).
     * ``extraction_mode`` — the most degraded of the two.
     * ``pypi_identity`` — a bare-side identity whose canonical pypi NAME
       conflicts with the concrete side's is withheld exactly like a
@@ -436,6 +447,8 @@ def _fold_bare(concrete: Component, bare: Component) -> Component:
       token wins for determinism).
     """
     hygiene_covered = concrete.hygiene_covered and bare.hygiene_covered
+    license_covered = concrete.license_covered and bare.license_covered
+    currency_covered = concrete.currency_covered and bare.currency_covered
     extraction_mode = max(
         (concrete.extraction_mode, bare.extraction_mode),
         key=_EXTRACTION_DEGRADATION.__getitem__,
@@ -472,6 +485,8 @@ def _fold_bare(concrete: Component, bare: Component) -> Component:
         mapping_confidence=mapping_confidence,
         hygiene_covered=hygiene_covered,
         vuln_matchable=vuln_matchable,
+        license_covered=license_covered,
+        currency_covered=currency_covered,
         extraction_mode=extraction_mode,
         indeterminate_reason=min(reason_set, key=str) if reason_set else None,
         provenance=_union_provenance(concrete.provenance, bare.provenance),

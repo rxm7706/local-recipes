@@ -372,6 +372,8 @@ def test_synthesize_requirements_excludes_leading_dash_name():
         provenance=(Provenance(manifest="pyproject.toml", section="dependencies"),),
         hygiene_covered=True,
         vuln_matchable=True,
+        license_covered=True,
+        currency_covered=True,
         indeterminate_reason=None,
     )
     result = _synthesize_requirements([component])
@@ -716,6 +718,67 @@ def test_vuln_rung_for_each_severity_tier(tier, expected_status):
     assert driver == StatusDriver(
         axis=AXIS_VULNERABILITY, finding_id="vuln:GHSA-xxxx:foo@1.0.0"
     )
+
+
+def test_default_vuln_severity_policy_is_immutable():
+    """Story 3.1 (deferred-work.md): MappingProxyType-wrapped -- an
+    in-process mutation attempt fails loud instead of silently altering the
+    effective policy for the remainder of the run."""
+    with pytest.raises(TypeError):
+        DEFAULT_VULN_SEVERITY_POLICY[SeverityTier.CRITICAL] = Status.WARN
+
+
+def test_status_for_severity_tier_with_a_custom_policy_overrides_the_default():
+    custom_policy = {SeverityTier.HIGH: Status.POLICY_VIOLATION}
+    assert (
+        status_for_severity_tier(SeverityTier.HIGH, policy=custom_policy)
+        is Status.POLICY_VIOLATION
+    )
+    # A tier absent from the custom policy still degrades to indeterminate
+    # (the same .get(tier, Status.INDETERMINATE) fallback as the default).
+    assert (
+        status_for_severity_tier(SeverityTier.CRITICAL, policy=custom_policy)
+        is Status.INDETERMINATE
+    )
+
+
+def test_status_for_severity_tier_policy_none_falls_back_to_the_default_table():
+    assert (
+        status_for_severity_tier(SeverityTier.CRITICAL, policy=None)
+        is Status.POLICY_VIOLATION
+    )
+
+
+def test_vuln_rung_with_a_custom_policy_overrides_the_default():
+    finding = Finding(
+        id="vuln:GHSA-xxxx:foo@1.0.0",
+        axis=AXIS_VULNERABILITY,
+        message="foo: GHSA-xxxx",
+        subject="foo",
+        severity=Severity(tier=SeverityTier.HIGH, raw=None),
+    )
+    custom_policy = {SeverityTier.HIGH: Status.POLICY_VIOLATION}
+    status, driver = vuln_rung(finding, policy=custom_policy)
+    assert status is Status.POLICY_VIOLATION
+    assert driver == StatusDriver(
+        axis=AXIS_VULNERABILITY, finding_id="vuln:GHSA-xxxx:foo@1.0.0"
+    )
+
+
+def test_vuln_rung_with_no_severity_ignores_policy_and_stays_indeterminate():
+    """A severity-less finding (the axis's own indeterminate: withhold
+    findings) yields Status.INDETERMINATE regardless of policy -- the
+    policy table only governs a REAL severity lookup."""
+    finding = Finding(
+        id="indeterminate:no-version:leftpad",
+        axis=AXIS_VULNERABILITY,
+        message="withheld",
+        subject="leftpad",
+        severity=None,
+    )
+    custom_policy = {SeverityTier.CRITICAL: Status.WARN}
+    status, _ = vuln_rung(finding, policy=custom_policy)
+    assert status is Status.INDETERMINATE
 
 
 def test_vuln_rung_with_no_severity_is_indeterminate():
