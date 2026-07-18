@@ -42,10 +42,17 @@ from pathlib import Path
 import dagster as dg
 from kedro_dagster import KedroProjectTranslator
 
+from pyforge.atlas.factory.crews import CompileCrew, LintCrew
+from pyforge.atlas.factory.wiki import WikiLayout, scaffold_wiki
 from pyforge.atlas.orchestration.event_source import (
     EventSource,
     evaluate_events,
     offline_event_source,
+)
+from pyforge.atlas.orchestration.wiki_events import (
+    WikiScanDecision,
+    evaluate_raw_scan,
+    scan_raw_docs,
 )
 
 # --------------------------------------------------------------------------- #
@@ -274,6 +281,37 @@ UPSTREAM_SENSORS: tuple[tuple[str, str, str, str], ...] = (
 SENSOR_DEFAULT_STATUS = dg.DefaultSensorStatus.STOPPED
 
 # --------------------------------------------------------------------------- #
+# Wave-H factory layer (Story H4, FR-22(d)/FR-6): the agno wiki crews run on the
+# SAME Dagster plane as the data pipeline (AD-6/AD-23 — one execution plane, no
+# second scheduler). Crew ASSETS enumerate under one group; a SENSOR fires the
+# compile crew on a new raw doc; a weekly SCHEDULE fires the lint crew (§ 7.2).
+# The crews write ONLY the wiki tree (AD-22) — never an atlas dataset.
+# --------------------------------------------------------------------------- #
+# The wiki root is resolved from env (host-agnostic, AD-2), defaulting to a
+# ``wiki/`` dir beside the project. The crews are offline; the live wiki lives
+# wherever DW-H1 provisions it.
+WIKI_ROOT_ENV = "ATLAS_WIKI_ROOT"
+WIKI_ASSET_GROUP = "factory_wiki"
+WIKI_COMPILE_JOB_NAME = "wiki_compile_job"
+WIKI_LINT_JOB_NAME = "wiki_lint_job"
+WIKI_RAW_SENSOR_NAME = "wiki_raw_file_sensor"
+# Weekly linting cron (§ 7.2: "Weekly Schedule to fire the Linter/QA agents").
+WIKI_LINT_CRON = "0 6 * * 1"
+
+
+def resolve_wiki_root(env: Mapping[str, str] | None = None) -> Path:
+    """The wiki root (``ATLAS_WIKI_ROOT`` or ``<project>/wiki``) — env-driven, no host baked in."""
+    env_map: Mapping[str, str] = os.environ if env is None else env
+    override = (env_map.get(WIKI_ROOT_ENV) or "").strip()
+    return Path(override) if override else (PROJECT_PATH / "wiki")
+
+
+def _wiki_layout() -> WikiLayout:
+    # scaffold_wiki is idempotent + non-destructive — ensures the raw/compiled/outputs tree
+    # exists so a crew never fails on a missing dir (AD-22: only ever creates under the root).
+    return scaffold_wiki(resolve_wiki_root())
+
+# --------------------------------------------------------------------------- #
 # Bootstrap profiles (AC-2) — named run configs with the guide's override
 # precedence. The profiles set per-phase scoping; the BINDING contract the gate
 # checks is the precedence: explicit run-config/env beats profile defaults.
@@ -457,10 +495,101 @@ def build_upstream_sensor(
     return _sensor
 
 
+# --------------------------------------------------------------------------- #
+# Wave-H crew assets + factory sensor (Story H4).
+# --------------------------------------------------------------------------- #
+
+
+@dg.asset(
+    name="compiled_wiki",
+    group_name=WIKI_ASSET_GROUP,
+    description="Run the Compiler+Linker crew: wiki/raw/*.md -> wiki/compiled/*.md, forwarding "
+    "source staleness (AD-13/AD-22). Writes ONLY the wiki tree.",
+)
+def compiled_wiki_asset(context) -> list[str]:
+    result = CompileCrew().run(_wiki_layout())
+    context.add_output_metadata(
+        {
+            "compiled": len(result.compiled),
+            "stale_forwarded": len(result.stale_forwarded),
+            "failed": len(result.failed),
+        }
+    )
+    return result.compiled
+
+
+@dg.asset(
+    name="wiki_lint_report",
+    deps=[compiled_wiki_asset],
+    group_name=WIKI_ASSET_GROUP,
+    description="Run the Linter/QA crew over wiki/compiled/, reporting violations "
+    "(missing-frontmatter / broken-link / laundered-staleness / …). Read-only over the wiki.",
+)
+def wiki_lint_report_asset(context) -> list[dict]:
+    report = LintCrew().run(_wiki_layout())
+    context.add_output_metadata({"violations": len(report.violations)})
+    return [{"doc": v.doc, "rule": v.rule, "detail": v.detail} for v in report.violations]
+
+
+WIKI_CREW_ASSETS = [compiled_wiki_asset, wiki_lint_report_asset]
+
+#: A raw-doc lister returns the current ``wiki/raw/`` doc names — the injectable seam for the
+#: compile sensor (mirrors G3's ``EventSource``). Default scans the resolved wiki root offline.
+RawLister = "Callable[[], Sequence[str]]"  # documented alias (typed loosely to avoid a new import)
+
+
+def _default_raw_lister() -> tuple[str, ...]:
+    return scan_raw_docs(resolve_wiki_root() / "raw")
+
+
+def build_wiki_compile_sensor(
+    *,
+    job: dg.JobDefinition,
+    raw_lister=_default_raw_lister,
+) -> dg.SensorDefinition:
+    """Build the new-raw-file sensor that fires the compile crew (Story H4, § 7.2, FR-6).
+
+    Each tick lists the raw docs (via the injectable ``raw_lister`` — offline scan by default),
+    dedupes against the Dagster cursor (:func:`evaluate_raw_scan`), and yields ONE
+    :class:`dagster.RunRequest` for ``job`` (the compile-asset job — SAME plane, AD-23) when a NEW
+    raw doc appeared, advancing the cursor; otherwise a :class:`dagster.SkipReason`. A failing
+    lister degrades to a skip (never crashes the daemon). Ships STOPPED — turning it RUNNING against
+    the live wiki store is the attended bring-up (DW-H4)."""
+
+    @dg.sensor(
+        name=WIKI_RAW_SENSOR_NAME,
+        job=job,
+        description="New raw wiki doc detected -> run the compile crew (compiled_wiki asset).",
+        default_status=SENSOR_DEFAULT_STATUS,
+    )
+    def _sensor(context: dg.SensorEvaluationContext):
+        try:
+            current = list(raw_lister())
+        except Exception as exc:  # noqa: BLE001 — degrade, never crash the daemon
+            yield dg.SkipReason(f"raw-doc lister error: {type(exc).__name__}: {exc}")
+            return
+        decision: WikiScanDecision = evaluate_raw_scan(current, context.cursor)
+        if decision.run:
+            context.update_cursor(decision.new_cursor)
+            yield dg.RunRequest(
+                run_key=decision.run_key,
+                tags={
+                    "pyforge/trigger": "sensor",
+                    "pyforge/sensor": WIKI_RAW_SENSOR_NAME,
+                    "pyforge/new_docs": str(len(decision.new_docs)),
+                },
+            )
+        else:
+            yield dg.SkipReason(decision.skip_reason)
+
+    return _sensor
+
+
 def build_definitions(
     env: str = DEFAULT_ENV,
     project_path: Path | None = None,
     event_sources: Mapping[str, EventSource] | None = None,
+    wiki_raw_lister=None,
 ) -> dg.Definitions:
     """Compile the Kedro project into Dagster ``Definitions`` (offline).
 
@@ -569,8 +698,34 @@ def build_definitions(
             )
         )
 
+    # Wave-H factory layer (Story H4): the crew ASSETS + their asset-jobs, a weekly LINT schedule,
+    # and the new-raw-file compile SENSOR — all on this same Dagster plane (AD-6/AD-23).
+    wiki_compile_job = dg.define_asset_job(
+        WIKI_COMPILE_JOB_NAME, selection=[compiled_wiki_asset]
+    )
+    wiki_lint_job = dg.define_asset_job(WIKI_LINT_JOB_NAME, selection=[wiki_lint_report_asset])
+    schedules.append(
+        dg.ScheduleDefinition(
+            name="wiki_lint_schedule",
+            job=wiki_lint_job,
+            cron_schedule=WIKI_LINT_CRON,
+            execution_timezone="UTC",
+            description="Weekly: fire the Linter/QA crew over the compiled wiki (§ 7.2).",
+        )
+    )
+    sensors.append(
+        build_wiki_compile_sensor(
+            job=wiki_compile_job,
+            raw_lister=wiki_raw_lister or _default_raw_lister,
+        )
+    )
+
     return dg.Definitions(
-        jobs=jobs, schedules=schedules, sensors=sensors, resources=resource_defs
+        assets=WIKI_CREW_ASSETS,
+        jobs=jobs + [wiki_compile_job, wiki_lint_job],
+        schedules=schedules,
+        sensors=sensors,
+        resources=resource_defs,
     )
 
 

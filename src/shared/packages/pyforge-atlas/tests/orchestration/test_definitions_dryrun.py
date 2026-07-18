@@ -33,6 +33,18 @@ def defs() -> dg.Definitions:
     return D.defs
 
 
+# The Wave-H factory crew jobs are ASSET jobs (define_asset_job), a different KIND of job from the
+# kedro op-graph jobs the C1/G3 invariants below govern (per-op timeouts, phase_state tags, Phase-P
+# scheduling). Scope those invariants to the kedro op-jobs so the factory jobs — which legitimately
+# carry neither kedro ops nor those tags — don't trip them (Story H4).
+FACTORY_JOB_NAMES = {D.WIKI_COMPILE_JOB_NAME, D.WIKI_LINT_JOB_NAME}
+
+
+def _kedro_jobs(defs):
+    """The op-graph kedro jobs (excludes the Wave-H factory asset jobs)."""
+    return [j for j in defs.jobs if j.name not in FACTORY_JOB_NAMES]
+
+
 # --------------------------------------------------------------------------- #
 # AC-5 (a) — definitions load, schedules enumerate, jobs resolve.
 # --------------------------------------------------------------------------- #
@@ -51,8 +63,8 @@ def test_jobs_resolve(defs):
         | {job_name for job_name, *_ in D.SCHEDULED_JOBS}
     )
     assert expected <= names, f"missing jobs: {expected - names}"
-    # each job actually resolves into a graph of ops (not empty).
-    for job in defs.jobs:
+    # each kedro op-job actually resolves into a graph of ops (not empty).
+    for job in _kedro_jobs(defs):
         assert list(job.graph.nodes), f"job {job.name} resolved to zero ops"
 
 
@@ -62,11 +74,12 @@ def test_schedules_enumerate(defs):
     assert f"{D.BOOTSTRAP_JOB_NAME}_schedule" in sched_names
     for job_name, *_ in D.SCHEDULED_JOBS:
         assert f"{job_name}_schedule" in sched_names, f"no schedule for {job_name}"
-    # Phase P is the only job WITHOUT a schedule.
+    # Phase P is the only KEDRO job WITHOUT a schedule (the Wave-H factory adds the weekly
+    # wiki_lint_schedule → wiki_lint_job, which is NOT a kedro data-pipeline job).
     scheduled_jobs = {s.job_name for s in defs.schedules}
     assert scheduled_jobs == {D.BOOTSTRAP_JOB_NAME} | {
         j for j, *_ in D.SCHEDULED_JOBS
-    }
+    } | {D.WIKI_LINT_JOB_NAME}
 
 
 def test_all_cron_strings_are_well_formed(defs):
@@ -114,8 +127,8 @@ def test_cadence_table_is_encoded(defs):
 
 
 def test_every_op_has_its_own_timeout(defs):
-    """Each op in every job carries an independent ``dagster/max_runtime`` tag."""
-    for job in defs.jobs:
+    """Each op in every kedro job carries an independent ``dagster/max_runtime`` tag."""
+    for job in _kedro_jobs(defs):
         for node in job.graph.nodes:
             assert node.tags.get(MAX_RUNTIME_TAG), (
                 f"op {node.name} in job {job.name} has no independent timeout"
@@ -127,12 +140,12 @@ def test_timeouts_are_not_a_single_monolith(defs):
     and live on the OPS, never as one job-level timeout wrapping the DAG."""
     values = {
         node.tags[MAX_RUNTIME_TAG]
-        for job in defs.jobs
+        for job in _kedro_jobs(defs)
         for node in job.graph.nodes
     }
     assert len(values) > 1, "all ops share one timeout — monolith not retired"
     # no job-level monolithic timeout tag.
-    for job in defs.jobs:
+    for job in _kedro_jobs(defs):
         assert MAX_RUNTIME_TAG not in job.tags, (
             f"job {job.name} carries a monolithic job-level timeout"
         )
@@ -143,7 +156,7 @@ def test_phase_r_overrun_cannot_abort_phase_f_k_n(defs):
     each carry a smaller, independent budget so an R overrun cannot abort them."""
     budgets = {
         node.name: int(node.tags[MAX_RUNTIME_TAG])
-        for job in defs.jobs
+        for job in _kedro_jobs(defs)
         for node in job.graph.nodes
     }
     r_budget = budgets["enrich_pypi_intelligence"]  # Phase R cold pull
@@ -171,7 +184,7 @@ def test_phase_p_op_is_in_no_scheduled_job(defs):
     """No SCHEDULED job's graph contains the Phase P op — including the weekly
     'everything' bootstrap, which excludes it by construction."""
     scheduled_job_names = {s.job_name for s in defs.schedules}
-    for job in defs.jobs:
+    for job in _kedro_jobs(defs):
         if job.name not in scheduled_job_names:
             continue
         ops = {n.name for n in job.graph.nodes}
@@ -231,7 +244,7 @@ def test_unknown_profile_raises():
 
 
 def test_ops_carry_retry_policy_for_observability(defs):
-    for job in defs.jobs:
+    for job in _kedro_jobs(defs):
         for node in job.graph.nodes:
             assert node.retry_policy is not None, (
                 f"op {node.name} in {job.name} has no retry policy"
@@ -239,7 +252,7 @@ def test_ops_carry_retry_policy_for_observability(defs):
 
 
 def test_jobs_carry_phase_state_observability_tags(defs):
-    for job in defs.jobs:
+    for job in _kedro_jobs(defs):
         assert job.tags.get("pyforge/phase_state") == "observable"
 
 
@@ -554,3 +567,129 @@ def test_none_and_none_id_items_are_dropped(defs):
     )
     results = list(sensor(dg.build_sensor_context()))
     assert all(isinstance(r, dg.SkipReason) for r in results)
+
+
+# --------------------------------------------------------------------------- #
+# Story H4 (FR-22(d)/FR-6, § 7.2) — orchestrate the Wave-H crews via Dagster.
+#
+# (a) the crew ASSETS enumerate; (b) the crew asset-jobs resolve; (c) a weekly
+#     LINT schedule fires the lint job; (d) a SIMULATED new-raw-file event →
+#     a ``RunRequest`` for the compile job (via an injected raw lister +
+#     ``build_sensor_context``); a no-new-file tick → ``SkipReason``. All on the
+#     SAME Dagster plane (AD-6/AD-23). No network. Live wiki store bring-up is
+#     deferred (DW-H4).
+# --------------------------------------------------------------------------- #
+
+
+def test_crew_assets_enumerate(defs):
+    """AC (H4): an asset dry-run enumerates the crew assets."""
+    keys = {s.key.to_user_string() for s in defs.resolve_all_asset_specs()}
+    assert {"compiled_wiki", "wiki_lint_report"} <= keys, f"missing crew assets: {keys}"
+
+
+def test_crew_asset_jobs_resolve(defs):
+    job_names = {j.name for j in defs.jobs}
+    assert {D.WIKI_COMPILE_JOB_NAME, D.WIKI_LINT_JOB_NAME} <= job_names
+
+
+def test_weekly_lint_schedule_fires_the_lint_job(defs):
+    sched = next(s for s in defs.schedules if s.name == "wiki_lint_schedule")
+    assert sched.job_name == D.WIKI_LINT_JOB_NAME
+    assert sched.cron_schedule == D.WIKI_LINT_CRON
+    # weekly = a specific day-of-week field (not '*').
+    assert sched.cron_schedule.split()[4] != "*"
+
+
+def test_compile_sensor_enumerates_and_targets_the_compile_job(defs):
+    names = {s.name for s in defs.sensors}
+    assert D.WIKI_RAW_SENSOR_NAME in names
+    sensor = next(s for s in defs.sensors if s.name == D.WIKI_RAW_SENSOR_NAME)
+    assert sensor.job_name == D.WIKI_COMPILE_JOB_NAME  # AD-23: SAME plane, existing job
+
+
+def _compile_job(defs):
+    return next(j for j in defs.jobs if j.name == D.WIKI_COMPILE_JOB_NAME)
+
+
+def test_simulated_new_raw_file_triggers_the_compile_crew(defs):
+    """AC (H4): a simulated new-raw-file event triggers the compile crew via the sensor."""
+    import dagster as dg
+
+    sensor = D.build_wiki_compile_sensor(
+        job=_compile_job(defs),
+        raw_lister=lambda: ["duckdb.md", "kedro.md"],  # two raw docs appear
+    )
+    ctx = dg.build_sensor_context()
+    results = list(sensor(ctx))
+    run_requests = [r for r in results if isinstance(r, dg.RunRequest)]
+    assert len(run_requests) == 1, results
+    assert run_requests[0].tags["pyforge/new_docs"] == "2"
+    assert sensor.job_name == D.WIKI_COMPILE_JOB_NAME
+    assert ctx.cursor  # advanced to the seen-set
+
+
+def test_no_new_raw_file_yields_skip(defs):
+    import dagster as dg
+
+    sensor = D.build_wiki_compile_sensor(job=_compile_job(defs), raw_lister=lambda: [])
+    results = list(sensor(dg.build_sensor_context(cursor="[]")))
+    assert results and all(isinstance(r, dg.SkipReason) for r in results)
+
+
+def test_already_seen_raw_files_are_deduped(defs):
+    import dagster as dg
+    import json as _json
+
+    sensor = D.build_wiki_compile_sensor(
+        job=_compile_job(defs), raw_lister=lambda: ["a.md"]
+    )
+    # cursor already records a.md as seen -> no re-trigger.
+    ctx = dg.build_sensor_context(cursor=_json.dumps(["a.md"]))
+    results = list(sensor(ctx))
+    assert all(isinstance(r, dg.SkipReason) for r in results)
+
+
+def test_raw_lister_error_degrades_to_skip(defs):
+    """A failing lister must NOT crash the sensor daemon — it degrades to a skip."""
+    import dagster as dg
+
+    def _boom():
+        raise RuntimeError("wiki store unreachable")
+
+    sensor = D.build_wiki_compile_sensor(job=_compile_job(defs), raw_lister=_boom)
+    results = list(sensor(dg.build_sensor_context()))
+    assert results and all(isinstance(r, dg.SkipReason) for r in results)
+
+
+def test_compile_sensor_ships_stopped(defs):
+    import dagster as dg
+
+    sensor = next(s for s in defs.sensors if s.name == D.WIKI_RAW_SENSOR_NAME)
+    assert sensor.default_status == dg.DefaultSensorStatus.STOPPED
+
+
+# --- wiki_events unit tests (dagster-free decision logic) ------------------------------
+
+
+def test_evaluate_raw_scan_new_docs_trigger_run():
+    from pyforge.atlas.orchestration.wiki_events import evaluate_raw_scan
+
+    d = evaluate_raw_scan(["a.md", "b.md"], None)
+    assert d.run and d.new_docs == ("a.md", "b.md") and d.run_key
+    # a second scan against the advanced cursor with nothing new -> no run.
+    d2 = evaluate_raw_scan(["a.md", "b.md"], d.new_cursor)
+    assert not d2.run and d2.new_cursor == d.new_cursor  # cursor unchanged on skip
+
+
+def test_evaluate_raw_scan_run_key_is_deterministic():
+    from pyforge.atlas.orchestration.wiki_events import evaluate_raw_scan
+
+    a = evaluate_raw_scan(["x.md"], None)
+    b = evaluate_raw_scan(["x.md"], None)
+    assert a.run_key == b.run_key  # same new set -> same key (Dagster idempotency)
+
+
+def test_scan_raw_docs_missing_dir_is_empty(tmp_path):
+    from pyforge.atlas.orchestration.wiki_events import scan_raw_docs
+
+    assert scan_raw_docs(tmp_path / "nope") == ()
