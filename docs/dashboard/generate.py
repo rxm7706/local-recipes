@@ -58,7 +58,7 @@ def parse_sprint_status(path: Path) -> dict[str, str]:
     """Return {sprint_key: status} from the `development_status:` block."""
     out: dict[str, str] = {}
     in_block = False
-    for line in path.read_text().splitlines():
+    for line in path.read_text(encoding="utf-8").splitlines():
         stripped = line.strip()
         if not in_block:
             if stripped == "development_status:":
@@ -160,15 +160,14 @@ def apply_git(projects: dict) -> None:
 # ---- shared ------------------------------------------------------------------
 
 def load_data() -> dict:
-    inner = DATA_JS.read_text().strip()
+    inner = DATA_JS.read_text(encoding="utf-8").strip()
     inner = re.sub(r"^window\.DASHBOARD_DATA\s*=\s*", "", inner).rstrip().rstrip(";")
     return json.loads(inner)
 
 
 def now_utc() -> str:
-    return subprocess.run(
-        ["date", "-u", "+%Y-%m-%d %H:%M UTC"], capture_output=True, text=True, check=True
-    ).stdout.strip()
+    from datetime import datetime, timezone
+    return datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
 
 
 def main() -> int:
@@ -188,7 +187,8 @@ def main() -> int:
     ts = now_utc()
     data["snapshot"] = _SNAP_TS.sub(ts, data["snapshot"], count=1)
     DATA_JS.write_text(
-        "window.DASHBOARD_DATA = " + json.dumps(data, indent=2, ensure_ascii=False) + ";\n"
+        "window.DASHBOARD_DATA = " + json.dumps(data, indent=2, ensure_ascii=False) + ";\n",
+        encoding="utf-8",
     )
     print(f"\nsnapshot -> {ts}  ·  source: {args.source}  ·  data.js rewritten")
     return 0
