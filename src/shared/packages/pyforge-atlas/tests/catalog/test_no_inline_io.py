@@ -331,6 +331,37 @@ def test_a2a_sdk_only_in_a2a_layer():
     )
 
 
+# AD-6/AD-23 (Story E2): ``openlineage`` / ``opentelemetry`` are REPLACEABLE
+# observability glue — only the single ``observability.py`` module may import them,
+# so ALL instrumentation lives in the one settings-registered hook seam and nothing
+# leaks into node bodies or other layers (mirrors the C1 dagster single-FILE
+# exemption). ``settings.py`` is exempt from the whole scan (it imports the hook
+# CLASS, not the observability libs, so it never trips this ban).
+OBS_DENYLIST = ("openlineage", "opentelemetry")
+OBS_GLUE_EXEMPT = frozenset({"observability.py"})
+
+
+def test_observability_libs_only_in_observability():
+    """AD-6/AD-23 (Story E2): only ``pyforge/atlas/observability.py`` may import
+    ``openlineage`` / ``opentelemetry`` — the observability instrumentation is one
+    settings-registered hook seam; no node body or other module touches the libs."""
+    violations = _violations(OBS_DENYLIST, exempt=OBS_GLUE_EXEMPT)
+    assert not violations, (
+        "AD-6/AD-23 violation — only observability.py may import "
+        f"openlineage/opentelemetry: {violations}"
+    )
+    # positive: the observability seam DOES import both libs (not a dead exemption).
+    obs_mod = ATLAS_PKG / "observability.py"
+    assert obs_mod.is_file(), "observability.py missing"
+    obs_imports = _imported_names(obs_mod)
+    assert any(_denylisted(n, ("openlineage",)) for n in obs_imports), (
+        "observability.py does not import openlineage"
+    )
+    assert any(_denylisted(n, ("opentelemetry",)) for n in obs_imports), (
+        "observability.py does not import opentelemetry"
+    )
+
+
 def test_dagster_only_in_glue():
     """Positive AD-1 assertion: the glue module DOES import the orchestration
     libs (so it is genuinely the seam) and NO OTHER package file does — the
