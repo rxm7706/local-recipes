@@ -40,7 +40,8 @@ _HNSW_METRIC = "l2sq"
 # The offline LOAD step. The connection type used to gate the vss loader.
 VssLoader = Callable[["duckdb.DuckDBPyConnection"], None]
 
-_IDENTIFIER_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+# \Z (not $) so a trailing newline can't slip through — $ also matches before a final \n.
+_IDENTIFIER_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*\Z")
 
 
 def _valid_identifier(value: str, what: str) -> str:
