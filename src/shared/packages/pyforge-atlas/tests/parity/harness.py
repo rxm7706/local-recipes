@@ -19,8 +19,8 @@ import json
 from pathlib import Path
 
 import pandas as pd
-from pandas.testing import assert_frame_equal
 
+from pyforge.atlas.parity import assert_frames_equal
 from pyforge.atlas.pipelines.core import nodes as core_nodes
 from pyforge.atlas.pipelines.pypi_intelligence import nodes as pypi_nodes
 from pyforge.atlas.pipelines.vcs_health import nodes as vcs_nodes
@@ -196,32 +196,6 @@ def _to_frame(records) -> pd.DataFrame:
     return pd.DataFrame(records)
 
 
-def _clean_null(v):
-    """Uniform null representation (None) so JSON ``null`` and pandas NaN/NA compare
-    equal — future-proof against pandas raising on mismatched null-likes. List cells
-    are passed through (``pd.isna`` on a list is ambiguous)."""
-    if isinstance(v, list):
-        return v
-    return None if v is None or pd.isna(v) else v
-
-
-def _normalize(df: pd.DataFrame, columns: list[str]) -> pd.DataFrame:
-    """Project to the expected columns, unify nulls, sort deterministically, reset
-    index — so the diff is order-independent (a parity diff is about content, not row
-    order). List-valued columns (e.g. ``subdirs``, ``maintainers``) are excluded from
-    the sort KEY (unhashable) but still compared."""
-    proj = df[[c for c in columns if c in df.columns]].copy()
-    proj = proj.map(_clean_null)
-    # Deterministic order independent of input row order — even when scalar columns
-    # tie and only a list column differs (B2-B4 reuse this on larger captures). Sort
-    # by a stringified key of EVERY column (list cells stringify to a stable form).
-    if len(proj.columns):
-        key = proj.map(lambda v: repr(v))
-        order = key.sort_values(list(proj.columns), kind="stable").index
-        proj = proj.loc[order]
-    return proj.reset_index(drop=True)
-
-
 def run_fixture(path: Path) -> None:
     """Run one fixture: build input frames, call the node, diff each declared output
     against its captured legacy snapshot. Raises ``AssertionError`` on a parity diff."""
@@ -243,10 +217,8 @@ def run_fixture(path: Path) -> None:
         )
         exp_records = expected[out_name]
         exp = _to_frame(exp_records)
-        cols = list(exp.columns) if not exp.empty else list(getattr(actual, "columns", []))
-        assert_frame_equal(
-            _normalize(actual, cols),
-            _normalize(exp, cols),
-            check_dtype=False,
-            check_like=False,
-        )
+        # B4 (DW-B1-1 part b): the TIGHTENED diff — column-SET equality both
+        # directions + dtype tightening — replaces the B1 inline
+        # assert_frame_equal(check_dtype=False, columns-from-expected-only) that
+        # let a spurious column or an int64->float64 regression pass silently.
+        assert_frames_equal(actual, exp)
