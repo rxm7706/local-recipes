@@ -2,7 +2,7 @@
 
 from kedro.pipeline import Pipeline
 
-from cf_atlas_kedro.pipelines import (
+from pyforge.atlas_kedro_viz.pipelines import (
     core,
     pypi_intelligence,
     read_surface,

@@ -272,14 +272,14 @@ description = "Propose lts-registry.yaml entries by diffing the endoflife.date p
 cmd = "python .claude/scripts/conda-forge-expert/lts_registry_gap.py"
 
 [feature.local-recipes.tasks.kedro-viz-proto]
-description = "Serve the kedro-viz DAG of the TARGET-STATE cf_atlas pipeline (prototypes/cf-atlas-kedro-viz — illustrative stub model for docs/specs/cfe-atlas-datapipeline-kedro-migration.md § 5.2 + § 3.4 seed-gap report nodes; 64 stub nodes / 67 datasets across 7 modular pipelines and 5 storage layers). Opens the interactive browser UI."
+description = "Serve the kedro-viz DAG of the TARGET-STATE cf_atlas pipeline (src/prototype/packages/pyforge-atlas-kedro-viz — illustrative stub model for docs/specs/cfe-atlas-datapipeline-kedro-migration.md § 5.2 + § 3.4 seed-gap report nodes; 64 stub nodes / 67 datasets across 7 modular pipelines and 5 storage layers). Opens the interactive browser UI."
 cmd = "kedro viz"
-cwd = "prototypes/cf-atlas-kedro-viz"
+cwd = "src/prototype/packages/pyforge-atlas-kedro-viz"
 
 [feature.local-recipes.tasks.kedro-run-proto]
 description = "Smoke-run the target-state cf_atlas Kedro DAG prototype (all stub nodes, MemoryDatasets, <1 s). Proves the DAG resolves; companion to kedro-viz-proto."
 cmd = "kedro run"
-cwd = "prototypes/cf-atlas-kedro-viz"
+cwd = "src/prototype/packages/pyforge-atlas-kedro-viz"
 
 [feature.local-recipes.tasks.fetch-cwe-catalog]
 description = "Refresh the MITRE CWE Research Concepts table in cf_atlas.db (v8.6.0 Wave B — AppThreat Deep Signals). Pulls ~640 KB zip from https://cwe.mitre.org/data/csv/1000.csv.zip (Research Concepts view — note: parent v8.6.0 spec incorrectly cited 2000.csv.zip which is the Architectural Concepts view). 944 CWEs. Applies a committed seed-mapping JSON at .claude/skills/conda-forge-expert/data/cwe_categories_seed.json (top-N well-known CWEs → 7 cf_atlas categories: RCE / DoS / Info-Disclosure / Auth-Bypass / Memory-Safety / Traversal / Injection). Anything not in the seed → 'Other'. Runs in seconds. Pass --dry-run / --json / --db / --timeout."
