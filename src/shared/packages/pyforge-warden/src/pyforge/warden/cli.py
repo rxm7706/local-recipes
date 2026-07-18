@@ -168,6 +168,19 @@ Ownership decisions recorded:
   ``status["value"] == "warn"``, and ``warn_only_downgraded > 0`` — see
   ``report.py``'s own docstring for why ``status == "warn"`` alone is not
   sufficient.
+* ``--sbom-output`` (Story 4.1): an independent sibling artifact, written
+  right after ``report = assemble_report(...)`` — the report is ALREADY
+  fully assembled by this point, so NO failure here (rendering OR writing)
+  may suppress its emission below or alter ``report.exit_code`` (review
+  finding, 2026-07-18: an earlier revision let a non-``(OSError, ValueError)``
+  rendering defect — e.g. ``sbom.SbomValidationError`` — escape uncaught to
+  ``main``'s last-resort net, which discarded the already-valid report
+  entirely and overrode the exit code; live-reproduced, now closed).
+  Rendering and writing are two separate ``try`` blocks so the stderr
+  diagnostic correctly names which phase failed; BOTH catch broadly
+  (``Exception``, not just ``OSError``/``ValueError``) — an unrelated
+  artifact's internal bug must degrade to a loud stderr line, never a
+  silent report loss.
 """
 
 from __future__ import annotations
@@ -208,6 +221,7 @@ from .models import (
 )
 from .report import TOOL_NAME, assemble_report, render_json, render_text
 from .routing import DefaultRouter
+from .sbom import render_cyclonedx
 from .verdict import EXIT_SIGINT, exit_code_for
 from .waiver import (
     WaiverParseError,
@@ -282,6 +296,18 @@ def _build_parser() -> tuple[argparse.ArgumentParser, argparse.ArgumentParser]:
             "output format: 'json' emits the ComplianceReport document "
             "(the contract) on stdout; 'text' emits one non-contract "
             "summary line (default: text)"
+        ),
+    )
+    scan.add_argument(
+        "--sbom-output",
+        metavar="PATH",
+        default=None,
+        help=(
+            "write a schema-valid CycloneDX 1.6 SBOM to PATH, as an "
+            "independent sibling artifact alongside the report -- a "
+            "rendering or write failure is a non-fatal stderr diagnostic "
+            "and never alters the scan's exit code or suppresses the "
+            "report"
         ),
     )
     scan.add_argument(
@@ -845,6 +871,29 @@ def _run_scan(args: argparse.Namespace) -> int:
         empty_extraction=empty_extraction,
         fail_under_coverage=config.fail_under_coverage,
     )
+    if args.sbom_output is not None:
+        # Story 4.1: an independent sibling artifact -- rendering and
+        # writing are separate try blocks (own module docstring) so
+        # NEITHER can suppress the already-assembled report below or
+        # alter report.exit_code; both catch broadly (Exception), not
+        # just OSError/ValueError -- a rendering defect must degrade to
+        # a loud stderr line, never a silent report loss.
+        try:
+            rendered_sbom = render_cyclonedx(inventory, report)
+        except Exception as exc:
+            _stderr(
+                f"{TOOL_NAME}: --sbom-output rendering failed "
+                f"({exc.__class__.__name__}): {exc}"
+            )
+        else:
+            try:
+                Path(args.sbom_output).write_text(rendered_sbom, encoding="utf-8")
+            except OSError as exc:
+                _stderr(
+                    f"{TOOL_NAME}: --sbom-output write to "
+                    f"{args.sbom_output!r} failed "
+                    f"({exc.__class__.__name__}): {exc}"
+                )
     try:
         if args.format == "json":
             # NFR-I3 (Story 1.2, unchanged by this story): json-format
