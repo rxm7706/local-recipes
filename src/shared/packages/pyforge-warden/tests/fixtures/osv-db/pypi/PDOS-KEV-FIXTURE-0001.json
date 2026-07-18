@@ -1,0 +1,38 @@
+{
+  "schema_version": "1.6.0",
+  "id": "PDOS-KEV-FIXTURE-0001",
+  "modified": "2026-01-01T00:00:00Z",
+  "published": "2026-01-01T00:00:00Z",
+  "aliases": ["CVE-1970-00001"],
+  "summary": "Synthetic MEDIUM-severity, CISA-KEV-listed vulnerability in pdos-kev-fixture 1.0.0 (test fixture).",
+  "details": "Deterministic, hermetic OSV advisory used only by the pyforge-warden (Warden) KEV enrichment test suite (Story 6.4). Its OWN id is deliberately NOT CVE-shaped (mirrors real-world PyPI advisories, which are usually GHSA-/PYSEC-scoped) -- the CVE cross-reference lives only in `aliases`, proving KEV matching consults aliases, not just the primary id. `CVE-1970-00001` is a reserved-looking, obviously-fake CVE id chosen to never collide with a real advisory. The CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:L/I:L/A:N vector empirically computes to base score 5.4 (osv-scanner 2.4.0, verified against the real binary) -- MEDIUM tier (warn by default), deliberately non-CRITICAL so a KEV match's forced policy-violation is provably independent of CVSS tier. Affects the synthetic PyPI package `pdos-kev-fixture` at the single explicit version 1.0.0. There is no such real package.",
+  "severity": [
+    {
+      "type": "CVSS_V3",
+      "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:L/I:L/A:N"
+    }
+  ],
+  "affected": [
+    {
+      "package": {
+        "ecosystem": "PyPI",
+        "name": "pdos-kev-fixture",
+        "purl": "pkg:pypi/pdos-kev-fixture"
+      },
+      "versions": ["1.0.0"],
+      "severity": [
+        {
+          "type": "CVSS_V3",
+          "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:L/I:L/A:N"
+        }
+      ],
+      "database_specific": {
+        "source": "pyforge-warden test fixture (Story 6.4); not a real advisory"
+      }
+    }
+  ],
+  "references": [],
+  "database_specific": {
+    "source": "pyforge-warden test fixture (Story 6.4); not a real advisory"
+  }
+}

@@ -82,6 +82,22 @@ Ownership decisions recorded:
   ``_cvss_score_to_tier`` as ``SeverityTier.UNKNOWN`` — never counted
   critical, the same conservative-degrade convention every other function
   in this module already follows.
+* Story 6.4 (FR36) finally stores what this docstring already documented
+  but no code path ever captured: ``group.get("aliases")``.
+  ``_findings_for_package`` now returns each ``Finding`` PAIRED with its
+  raw (unsanitized) KEV-match candidate set — the group's own
+  ``advisory_id`` plus every alias osv-scanner reported for that group
+  (empirically confirmed, osv-scanner 2.4.0: ``aliases`` includes the
+  primary id itself alongside any CVE cross-reference) — because CISA KEV
+  is CVE-keyed while a PyPI advisory's own primary id is frequently
+  GHSA-/PYSEC-shaped, with the CVE living only in ``aliases``. ``OsvParse``
+  carries this as ``kev_candidates`` (finding id -> candidate tuple),
+  consulted by ``engines.OsvEngine.run`` ONLY (never rendered into the
+  report itself — ``Finding`` has no aliases slot, by design: Story 6.1
+  froze the schema). ``kev_match``/``kev_stale_finding`` are this story's
+  KEV-specific vocabulary; ``feeds.py`` owns the feed's cache layout,
+  staleness math, and provenance shape (this module never reimplements
+  any of those).
 
 This module parses JSON and zip archives as DATA: no subprocess, no
 network, no exec.
@@ -99,6 +115,7 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from types import MappingProxyType
 
+from .feeds import DEFAULT_FEED_MAX_AGE_DAYS
 from .interfaces import _sanitize_id_segment
 from .inventory import Component, canonical_name
 from .models import (
@@ -696,11 +713,19 @@ def _own_severity_raw(vuln_record: object) -> str | None:
     return score if isinstance(score, str) and score else None
 
 
-def _findings_for_package(package_entry: object) -> list[Finding]:
-    """One ``vuln:<advisory-id>:<pkg>@<ver>`` ``Finding`` per
-    ``(group.ids[i], package)`` pair for one ``results[].packages[]``
+def _findings_for_package(
+    package_entry: object,
+) -> list[tuple[Finding, tuple[str, ...]]]:
+    """One ``(vuln:<advisory-id>:<pkg>@<ver> Finding, kev-match candidates)``
+    pair per ``(group.ids[i], package)`` for one ``results[].packages[]``
     entry. Defensive throughout: any shape mismatch at any level yields
-    fewer findings, never a crash."""
+    fewer findings, never a crash.
+
+    The candidate tuple (Story 6.4/FR36) is ``advisory_id`` followed by the
+    group's own ``aliases`` (RAW, unsanitized strings — deduplicated,
+    order-preserving) — the set ``vuln.kev_match`` checks against a CISA
+    KEV catalog. It is returned alongside the ``Finding``, never stored ON
+    it (``Finding`` has no aliases slot)."""
     if not isinstance(package_entry, dict):
         return []
     package = package_entry.get("package")
@@ -729,7 +754,7 @@ def _findings_for_package(package_entry: object) -> list[Finding]:
         else "unspecified"
     )
 
-    findings: list[Finding] = []
+    findings: list[tuple[Finding, tuple[str, ...]]] = []
     for group in groups:
         if not isinstance(group, dict):
             continue
@@ -737,6 +762,12 @@ def _findings_for_package(package_entry: object) -> list[Finding]:
         if not isinstance(ids, list):
             continue
         tier = _cvss_score_to_tier(group.get("max_severity"))
+        raw_aliases = group.get("aliases")
+        aliases = (
+            tuple(a for a in raw_aliases if isinstance(a, str) and a)
+            if isinstance(raw_aliases, list)
+            else ()
+        )
         for advisory_id in ids:
             if not isinstance(advisory_id, str) or not advisory_id:
                 continue
@@ -758,7 +789,8 @@ def _findings_for_package(package_entry: object) -> list[Finding]:
                 # grammar-valid id, but never let a Finding-invariant raise
                 # crash the parse — drop the single malformed entry.
                 continue
-            findings.append(finding)
+            candidates = tuple(dict.fromkeys((advisory_id, *aliases)))
+            findings.append((finding, candidates))
     return findings
 
 
@@ -770,10 +802,17 @@ class OsvParse:
     defensively so a malformed/unexpected document never crashes the scan.
     A wholly unparseable top-level document surfaces one ``errors`` record
     instead (``ENGINE_OUTPUT_UNPARSEABLE``, mirroring ``hygiene.py``'s own
-    convention) with empty findings."""
+    convention) with empty findings.
+
+    ``kev_candidates`` (Story 6.4/FR36, additive): ``finding.id ->
+    (advisory_id, *aliases)`` for every ``findings`` entry — the raw
+    (unsanitized) KEV-match candidate set ``engines.OsvEngine.run`` checks
+    against a CISA KEV catalog via ``kev_match``. Never rendered into the
+    report itself (``Finding`` carries no aliases slot)."""
 
     findings: tuple[Finding, ...]
     errors: tuple[ErrorRecord, ...]
+    kev_candidates: Mapping[str, tuple[str, ...]] = MappingProxyType({})
 
 
 def parse_osv_output(raw: str) -> OsvParse:
@@ -838,6 +877,7 @@ def parse_osv_output(raw: str) -> OsvParse:
         return OsvParse(findings=(), errors=())
 
     by_id: dict[str, Finding] = {}
+    candidates_by_id: dict[str, tuple[str, ...]] = {}
     for result in results:
         if not isinstance(result, dict):
             continue
@@ -845,10 +885,76 @@ def parse_osv_output(raw: str) -> OsvParse:
         if not isinstance(packages, list):
             continue
         for package_entry in packages:
-            for finding in _findings_for_package(package_entry):
-                by_id.setdefault(finding.id, finding)
+            for finding, candidates in _findings_for_package(package_entry):
+                if finding.id not in by_id:
+                    by_id[finding.id] = finding
+                    candidates_by_id[finding.id] = candidates
     ordered = tuple(sorted(by_id.values(), key=lambda f: f.id))
-    return OsvParse(findings=ordered, errors=())
+    return OsvParse(
+        findings=ordered,
+        errors=(),
+        kev_candidates=MappingProxyType(
+            {finding.id: candidates_by_id[finding.id] for finding in ordered}
+        ),
+    )
+
+
+# --- Story 6.4 (FR36): CISA KEV enrichment -----------------------------------
+
+
+def kev_match(candidates: Sequence[str], catalog: Mapping[str, str]) -> str | None:
+    """Return CISA's ``dateAdded`` for the first of ``candidates`` (a
+    finding's own ``advisory_id`` followed by its group's raw ``aliases`` —
+    ``OsvParse.kev_candidates``' shape) present in ``catalog`` (a
+    ``{cve_id: dateAdded}`` mapping, ``feeds.load_kev_catalog``'s shape) —
+    ``None`` when none match. Checked in ``candidates``' own order
+    (deterministic; membership is what matters — a KEV catalog is keyed by
+    literal CVE id, so at most one candidate can ever match in practice)."""
+    for candidate in candidates:
+        date_added = catalog.get(candidate)
+        if date_added is not None:
+            return date_added
+    return None
+
+
+def kev_stale_finding(*, unavailable: bool) -> Finding:
+    """The single whole-axis KEV-provenance ``indeterminate:`` finding —
+    mirrors ``stale_vuln_data_finding``'s role for the OSV DB one level up
+    (feed PROVENANCE, not advisory content): forces the ENTIRE
+    vulnerability axis to ``indeterminate`` when ``fail-on-kev`` is active
+    but the CISA KEV feed cannot be trusted this scan.
+
+    ``unavailable=True`` -> ``indeterminate:kev-data-unavailable:kev-feed``
+    (no usable feed at all — absent, unreadable, or content-corrupt);
+    ``unavailable=False`` -> ``indeterminate:kev-data-stale:kev-feed`` (a
+    real, loadable feed whose snapshot is too old). Either way: never a
+    trusted ``clean``/unqualified ``policy-violation`` off untrustworthy
+    KEV data, even when every underlying CVSS match would otherwise be
+    clean."""
+    if unavailable:
+        return Finding(
+            id="indeterminate:kev-data-unavailable:kev-feed",
+            axis=AXIS_VULNERABILITY,
+            message=(
+                "the CISA KEV feed is unavailable (absent, unreadable, or "
+                "content-corrupt) while fail-on-kev is active — the "
+                "vulnerability axis cannot be trusted for this scan"
+            ),
+            subject="kev-feed",
+            severity=None,
+        )
+    return Finding(
+        id="indeterminate:kev-data-stale:kev-feed",
+        axis=AXIS_VULNERABILITY,
+        message=(
+            "the CISA KEV feed is stale (its snapshot is older than "
+            f"{DEFAULT_FEED_MAX_AGE_DAYS} days) or future-dated while "
+            "fail-on-kev is active — the vulnerability axis cannot be "
+            "trusted for this scan"
+        ),
+        subject="kev-feed",
+        severity=None,
+    )
 
 
 # --- Story 1.6: severity -> rung composition ---------------------------------
@@ -892,7 +998,10 @@ def status_for_severity_tier(
 
 
 def vuln_rung(
-    finding: Finding, *, policy: Mapping[SeverityTier, Status] | None = None
+    finding: Finding,
+    *,
+    policy: Mapping[SeverityTier, Status] | None = None,
+    fail_on_kev: bool = False,
 ) -> tuple[Status, StatusDriver]:
     """Derive the ``(Status, StatusDriver)`` rung for one vulnerability-axis
     finding.
@@ -906,12 +1015,26 @@ def vuln_rung(
     ``Status.INDETERMINATE`` directly, exactly as it did under the pre-1.6
     backstop, regardless of ``policy``; this mirrors how ``hygiene_rung``
     already handles a stray ``indeterminate:`` id on the hygiene axis the
-    same way. The driver carries the finding's own axis and id."""
+    same way. The driver carries the finding's own axis and id.
+
+    ``fail_on_kev=True`` (Story 6.4, default ``False`` here — every
+    pre-6.4 direct caller is unaffected; ``interfaces.DefaultPolicy``
+    threads the configured value): when ``finding.kev is True``, the
+    status is forced to ``Status.POLICY_VIOLATION`` regardless of the
+    CVSS-derived status above — an actively-exploited (CISA KEV-listed)
+    advisory blocks independent of its own severity tier (FR36). This can
+    only ESCALATE (never downgrade an already-``POLICY_VIOLATION`` CVSS
+    status — forcing the same value is a no-op) and never fires for a
+    finding with ``kev`` ``None``/``False`` (every non-``vuln:`` finding,
+    and any ``vuln:`` finding the KEV feed was never consulted for or did
+    not match)."""
     status = (
         status_for_severity_tier(finding.severity.tier, policy=policy)
         if finding.severity is not None
         else Status.INDETERMINATE
     )
+    if fail_on_kev and finding.kev is True:
+        status = Status.POLICY_VIOLATION
     return (
         status,
         StatusDriver(axis=finding.axis, finding_id=finding.id),

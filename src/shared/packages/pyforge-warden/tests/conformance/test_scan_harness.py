@@ -17,8 +17,10 @@ stderr-only diagnostics, twice-run byte-identical stdout in default AND
 
 from __future__ import annotations
 
+import importlib.metadata
 import json
 import sys
+from email.message import Message
 from importlib import resources
 from pathlib import Path
 
@@ -79,6 +81,50 @@ def parse_report(stdout: str) -> dict:
     return document
 
 
+# --- Fix 9 (review finding, 2026-07-18): pin PyPI license metadata ----------
+#
+# LicenseEngine (Story 6.2) resolves a pypi component's license via
+# importlib.metadata.metadata() against WHATEVER version of requests/
+# packaging happens to be installed in this pixi env -- every
+# pyforge-warden dependency is unpinned ("*") in pixi.toml (see
+# docs/library-llms-full.md's regeneration header), so a routine relock
+# could silently flip these fixtures' license-axis outcome (e.g.
+# allowed -> unknown) with ZERO code change, breaking every assertion below
+# that expects a genuinely clean/finding-free scan of CLEAN/CONFIG_PRECEDENCE/
+# DEPTRY_IGNORE (all of which declare requests and/or packaging). Mirrors
+# tests/unit/test_license.py's own _fake_metadata/_patch_metadata
+# monkeypatch pattern: only "requests"/"packaging" get pinned, deterministic,
+# resolvable metadata; every other name (leftpad, pdos-vuln-fixture*,
+# totally_absent_pkg_xyz, argparse, ...) still goes through the REAL
+# importlib.metadata.metadata, preserving the genuine PackageNotFoundError
+# path those fixtures intentionally exercise.
+
+
+def _fake_metadata(*, license_expression: str) -> Message:
+    msg = Message()
+    msg["License-Expression"] = license_expression
+    return msg
+
+
+_PINNED_PYPI_LICENSE_METADATA: dict[str, Message] = {
+    "requests": _fake_metadata(license_expression="Apache-2.0"),
+    "packaging": _fake_metadata(license_expression="Apache-2.0 OR BSD-2-Clause"),
+}
+
+
+@pytest.fixture(autouse=True)
+def _pin_pypi_license_metadata(monkeypatch):
+    real_metadata = importlib.metadata.metadata
+
+    def fake_metadata(name, *args, **kwargs):
+        pinned = _PINNED_PYPI_LICENSE_METADATA.get(name)
+        if pinned is not None:
+            return pinned
+        return real_metadata(name, *args, **kwargs)
+
+    monkeypatch.setattr(importlib.metadata, "metadata", fake_metadata)
+
+
 def test_clean_fixture_is_green(capsys):
     rc, out, err = run_scan(capsys, CLEAN)
     document = parse_report(out)
@@ -100,7 +146,12 @@ def test_clean_fixture_coverage_reflects_deptry_hygiene_assessment(capsys):
     by_axis = {block["axis"]: block for block in document["coverage"]}
     # Story 6.1: license/currency register as producer axes.
     assert set(by_axis) == {"hygiene", "vulnerability", "license", "currency"}
-    for axis in ("hygiene", "vulnerability"):
+    # Story 6.2: license now has a real producer too (LicenseEngine) — both
+    # of the fixture's deps (requests, packaging) resolve to a deterministic,
+    # pinned Apache-2.0/dual license (Fix 9: _pin_pypi_license_metadata,
+    # never the ambient env's actual installed metadata), so the axis is
+    # applicable AND assesses both, exactly like hygiene/vulnerability.
+    for axis in ("hygiene", "vulnerability", "license"):
         block = by_axis[axis]
         assert block["manifests_found"] == 1
         assert block["manifests_parsed"] == 1
@@ -112,16 +163,16 @@ def test_clean_fixture_coverage_reflects_deptry_hygiene_assessment(capsys):
     # not the pre-1.5 "no engine ever consulted" stub 0.
     assert by_axis["hygiene"]["deps_assessed"] == 2
     assert by_axis["vulnerability"]["deps_assessed"] == 2
-    # Story 6.1: the new producer axes have no engine yet — honestly
-    # not-applicable (deps_total=0/deps_assessed=0/resolution_depth=None),
-    # NOT "0 of N assessed" (which --fail-under-coverage would flag).
-    for axis in ("license", "currency"):
-        block = by_axis[axis]
-        assert block["manifests_found"] == 1
-        assert block["manifests_parsed"] == 1
-        assert block["deps_total"] == 0
-        assert block["deps_assessed"] == 0
-        assert block["resolution_depth"] is None
+    assert by_axis["license"]["deps_assessed"] == 2
+    # Story 6.3 (currency) has no engine yet — honestly not-applicable
+    # (deps_total=0/deps_assessed=0/resolution_depth=None), NOT "0 of N
+    # assessed" (which --fail-under-coverage would flag).
+    block = by_axis["currency"]
+    assert block["manifests_found"] == 1
+    assert block["manifests_parsed"] == 1
+    assert block["deps_total"] == 0
+    assert block["deps_assessed"] == 0
+    assert block["resolution_depth"] is None
 
 
 def test_sentinel_fixture_never_false_greens(capsys):
@@ -133,12 +184,21 @@ def test_sentinel_fixture_never_false_greens(capsys):
     assert document["status"]["value"] == "indeterminate"
     assert document["status"]["driver"] is not None
     assert len(document["findings"]) >= 1
-    assert all(f["id"].startswith("indeterminate:") for f in document["findings"])
-    assert all(f["axis"] == "vulnerability" for f in document["findings"])
+    # Story 6.2: leftpad is not an installed package, so the license axis
+    # ALSO withholds it (verdict unknown) -- a real, warn-capped
+    # license:unknown: finding alongside the two vulnerability-axis
+    # withholds; indeterminate still wins the composed verdict either way.
+    vuln_findings = [f for f in document["findings"] if f["axis"] == "vulnerability"]
+    license_findings = [f for f in document["findings"] if f["axis"] == "license"]
+    assert all(f["id"].startswith("indeterminate:") for f in vuln_findings)
+    assert {f["id"] for f in license_findings} == {
+        "license:unknown:leftpad@unspecified"
+    }
+    assert len(vuln_findings) + len(license_findings) == len(document["findings"])
     assert document["errors"] == []
     assert err == ""
     # Both withhold reasons are exercised by the fixture's two deps.
-    reasons = {f["id"].split(":")[1] for f in document["findings"]}
+    reasons = {f["id"].split(":")[1] for f in vuln_findings}
     assert reasons == {"no-version", "range-only"}
 
 
@@ -1011,7 +1071,10 @@ def test_indeterminate_outranks_a_live_warn_end_to_end(capsys):
     """AC2: one project composing a real hygiene warn rung (DEP002 on
     requests) alongside a real vulnerability-axis indeterminate rung
     (no-version withhold on leftpad) -- indeterminate outranks warn in the
-    composed verdict, end to end."""
+    composed verdict, end to end. Story 6.2: leftpad is also unresolvable on
+    the license axis (a THIRD, independently-warn-capped rung) -- proving
+    indeterminate still outranks warn even with two distinct warn-tier
+    sources feeding the composition, not just hygiene's."""
     rc, out, err = run_scan(capsys, WARN_AND_INDETERMINATE)
     document = parse_report(out)
     assert rc == 1
@@ -1029,7 +1092,15 @@ def test_indeterminate_outranks_a_live_warn_end_to_end(capsys):
     ]
     assert len(matches) == 1
     assert matches[0]["axis"] == "vulnerability"
-    assert len(document["findings"]) == 3
+    # leftpad is not an installed package -> license axis withholds it too
+    # (requests resolves to a deterministic, pinned resolvable license --
+    # Fix 9 -- so it contributes no license finding).
+    license_matches = [
+        f for f in document["findings"] if f["id"] == "license:unknown:leftpad@unspecified"
+    ]
+    assert len(license_matches) == 1
+    assert license_matches[0]["axis"] == "license"
+    assert len(document["findings"]) == 4
     driver = document["status"]["driver"]
     assert driver is not None
     assert driver["finding_id"] == indeterminate_finding_id
@@ -1049,6 +1120,77 @@ def test_severity_gate_fixture_twice_run_is_byte_identical(capsys, fixture):
     rc_two, out_two, _ = run_scan(capsys, fixture)
     assert rc_one == rc_two
     assert out_one.encode("utf-8") == out_two.encode("utf-8")
+
+
+# --- Fix 8 (review finding, 2026-07-18): license gating tracks the engine ---
+
+
+def test_license_gating_is_false_when_the_axis_never_ran(capsys, tmp_path):
+    """--deny-licenses activates config.license_gating regardless of
+    whether anything was actually scanned -- an empty target
+    (manifests_parsed == 0) never runs LicenseEngine at all (cli.py's
+    engines_to_run is () there), so AXIS_LICENSE never enters
+    assessed_by_axis. Threading config.license_gating straight through
+    used to report gating=true alongside deps_total=0/deps_assessed=0 --
+    self-contradictory ("the gate is active" + "nothing was assessed")."""
+    rc, out, err = run_scan(capsys, tmp_path, "--deny-licenses", "GPL-3.0-only")
+    document = parse_report(out)
+    by_axis = {block["axis"]: block for block in document["coverage"]}
+    assert by_axis["license"]["deps_total"] == 0
+    assert by_axis["license"]["deps_assessed"] == 0
+    assert by_axis["license"]["gating"] is False
+
+
+def test_license_gating_is_true_when_the_axis_actually_ran(capsys):
+    """The contrasting case (never just a hardcoded False): a real scan
+    where the license engine DID run reports gating=true for the same
+    --deny-licenses flag."""
+    rc, out, err = run_scan(capsys, CLEAN, "--deny-licenses", "GPL-3.0-only")
+    document = parse_report(out)
+    by_axis = {block["axis"]: block for block in document["coverage"]}
+    assert by_axis["license"]["deps_total"] == 2
+    assert by_axis["license"]["deps_assessed"] == 2
+    assert by_axis["license"]["gating"] is True
+
+
+def test_blank_deny_licenses_flag_is_a_clean_config_error_not_a_crash(capsys):
+    """Fix 5 follow-up (review finding, 2026-07-18): an explicitly blank
+    --deny-licenses now raises ConfigValidationError inside
+    ConfigLoader.load -- cli.py's own error-recovery fallback
+    (EffectiveConfig.default_with_cli_overrides, meant to preserve a GOOD
+    CLI flag past an UNRELATED config-file failure) used to re-apply the
+    SAME bad flag value and raise a second, uncaught
+    ConfigValidationError, misprojecting as `internal error` + a traceback
+    (main's last-resort net) instead of a clean config-validation exit.
+    Must land as a normal error report: exit 2, one config-validation
+    error record, never a traceback on stderr."""
+    rc, out, err = run_scan(capsys, CLEAN, "--deny-licenses", "")
+    document = parse_report(out)
+    assert rc == 2
+    assert rc == document["exit_code"]
+    assert document["status"]["value"] == "error"
+    assert [e["kind"] for e in document["errors"]] == ["config-validation"]
+    assert "deny-licenses" in document["errors"][0]["message"]
+    assert "internal error" not in err
+    assert "Traceback" not in err
+
+
+def test_invalid_spdx_deny_licenses_flag_is_a_clean_config_error_not_a_crash(capsys):
+    """Follow-up review pass (2026-07-18): an entry that cannot normalize
+    as SPDX (the colloquial ``GPLv3``) could never match any resolved
+    license — a configured-but-structurally-inert gate. Config load now
+    rejects it; must land as a normal error report through cli.py's whole
+    recovery chain: exit 2, one config-validation record naming the entry,
+    never a traceback."""
+    rc, out, err = run_scan(capsys, CLEAN, "--deny-licenses", "GPLv3")
+    document = parse_report(out)
+    assert rc == 2
+    assert rc == document["exit_code"]
+    assert document["status"]["value"] == "error"
+    assert [e["kind"] for e in document["errors"]] == ["config-validation"]
+    assert "GPLv3" in document["errors"][0]["message"]
+    assert "internal error" not in err
+    assert "Traceback" not in err
 
 
 # --- Story 2.4: honest split coverage + the indeterminate producer (C0b) ----
@@ -1114,8 +1256,12 @@ def test_hygiene_not_applicable_fixture_is_clean_and_isolated(capsys):
         # ca-certificates is conda-map-unmapped -> indeterminate/exit 1.
         (PIXI_LOCK_BASIC, "indeterminate", 1),
         # numpy/requests are both exact-pinned and fully clean against the
-        # offline test DB -> genuinely clean/exit 0.
-        (CONDA_LOCK_BASIC, "clean", 0),
+        # offline test DB on the hygiene/vulnerability axes. Story 6.2:
+        # numpy's conda-lock.yml provenance carries no about:license (that
+        # field only exists on a recipe.yaml/meta.yaml), so the license axis
+        # honestly withholds it -> one warn-capped finding, composing "warn"
+        # (still exit 0 -- warn_is_error is never set by cli.py).
+        (CONDA_LOCK_BASIC, "warn", 0),
     ],
     ids=lambda v: v.name if isinstance(v, Path) else str(v),
 )
@@ -1134,7 +1280,9 @@ def test_lockfile_presence_marks_resolution_depth_locked_closure_for_a_real_cond
     a tautological self-consistency check (review finding, 2026-07-17) --
     each verified live via ``cli.main`` under this suite's own conftest
     fixtures (the two lockfiles genuinely differ: PIXI_LOCK_BASIC carries an
-    unmapped conda dep, CONDA_LOCK_BASIC's deps are fully clean)."""
+    unmapped conda dep; CONDA_LOCK_BASIC's deps are hygiene/vulnerability-
+    clean, but Story 6.2's license axis honestly withholds numpy -- a
+    lockfile carries no about:license -- composing 'warn')."""
     rc, out, err = run_scan(capsys, fixture)
     document = parse_report(out)
     by_axis = {block["axis"]: block for block in document["coverage"]}
