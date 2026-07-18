@@ -1,0 +1,6 @@
+[
+  "foo\u0000bar",
+  "</script><script>alert(1)</script>",
+  "foo#bar?baz@qux/quux",
+  "foo\u001b[31mred\u001b[0mnormal"
+]
