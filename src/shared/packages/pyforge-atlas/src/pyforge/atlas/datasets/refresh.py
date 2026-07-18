@@ -222,9 +222,14 @@ class ExternalRefreshDataset(AbstractDataset):
         if only_if_absent and self._staleness_path.is_file():
             return marker
         try:
-            path = self._staleness_path
-            path.parent.mkdir(parents=True, exist_ok=True)
-            path.write_text(json.dumps(marker.to_dict(), indent=2), encoding="utf-8")
+            # atomic (tmp + os.replace) so a crash/ENOSPC mid-write can't leave a
+            # truncated marker that a later is_stale() chokes on (B5 follow-up review)
+            self._atomic_write(
+                self._staleness_path,
+                lambda p: p.write_text(
+                    json.dumps(marker.to_dict(), indent=2), encoding="utf-8"
+                ),
+            )
         except OSError as exc:  # marker write must itself never take the run down
             logger.warning("could not write staleness marker for %s: %s", self._filepath, exc)
         return marker
@@ -244,7 +249,7 @@ class ExternalRefreshDataset(AbstractDataset):
             return None
         try:
             raw = json.loads(path.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError):
+        except (OSError, ValueError):  # ValueError covers JSONDecodeError AND UnicodeDecodeError (invalid-UTF-8 corrupt store) — AD-13 never-fail
             return None
         if not isinstance(raw, dict):
             return None
@@ -536,7 +541,7 @@ class OSVOfflineStoreDataset(ExternalRefreshDataset):
             return []
         try:
             data = json.loads(self._store_path.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError):
+        except (OSError, ValueError):  # ValueError covers JSONDecodeError AND UnicodeDecodeError (invalid-UTF-8 corrupt store) — AD-13 never-fail
             self._mark_stale("OSV offline store unreadable", only_if_absent=True)
             return []
         if not isinstance(data, list):
@@ -604,7 +609,7 @@ class MappingCacheDataset(ExternalRefreshDataset):
             return {}
         try:
             data = json.loads(self._cache_path.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError):
+        except (OSError, ValueError):  # ValueError covers JSONDecodeError AND UnicodeDecodeError (invalid-UTF-8 corrupt store) — AD-13 never-fail
             return {}
         return data if isinstance(data, dict) else {}
 
@@ -633,7 +638,7 @@ class MappingCacheDataset(ExternalRefreshDataset):
             return {}
         try:
             data = json.loads(self._cache_path.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError):
+        except (OSError, ValueError):  # ValueError covers JSONDecodeError AND UnicodeDecodeError (invalid-UTF-8 corrupt store) — AD-13 never-fail
             self._mark_stale("mapping cache unreadable", only_if_absent=True)
             return {}
         return data if isinstance(data, dict) else {}

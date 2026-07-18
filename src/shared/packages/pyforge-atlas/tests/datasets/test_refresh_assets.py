@@ -270,3 +270,44 @@ def test_mapping_missing_cache_load_returns_empty(tmp_path):
     ds = MappingCacheDataset(filepath=str(tmp_path / "never.json"))
     assert ds.load() == {}
     assert ds.is_stale() is True
+
+
+# -- B5 follow-up review (independent): invalid-UTF-8 bytes must degrade, not crash ----
+# The narrow `except (OSError, json.JSONDecodeError)` missed UnicodeDecodeError (a
+# ValueError subclass), so an invalid-UTF-8 corrupt JSON store/marker crashed
+# load()/save()/is_stale() — a real AD-13 never-fail violation the valid-UTF-8
+# corruption tests couldn't reach. Guards widened to (OSError, ValueError).
+_BAD_UTF8 = b"\xff\xfe\x00\x80not utf-8"
+
+
+def test_osv_load_degrades_on_invalid_utf8_store(tmp_path):
+    p = tmp_path / "cve"
+    OSVOfflineStoreDataset(
+        filepath=str(p), refresher=lambda: [{"id": "CVE-1"}]
+    ).save(RefreshRequest(store="o"))
+    (p / OSVOfflineStoreDataset.STORE_FILENAME).write_bytes(_BAD_UTF8)
+    ds = OSVOfflineStoreDataset(filepath=str(p))
+    assert ds.load() == []          # degrades, does not raise
+    assert ds.is_stale() is True
+
+
+def test_mapping_load_and_save_degrade_on_invalid_utf8_last_good(tmp_path):
+    p = tmp_path / "map.json"  # filepath IS the file for MappingCacheDataset
+    ds = MappingCacheDataset(filepath=str(p))
+    ds.save({"numpy": "numpy"})
+    p.write_bytes(_BAD_UTF8)  # corrupt the last-good cache with invalid UTF-8
+    assert ds.load() == {}    # corrupt last-good → empty, no crash
+    # save() must not raise even though last-good is unreadable (single-writer path);
+    # the unreadable last-good is treated as absent, so the new export lands.
+    ds.save({"pandas": "pandas"})
+    assert json.loads(p.read_text())["pandas"] == "pandas"
+
+
+def test_is_stale_survives_invalid_utf8_marker(tmp_path):
+    p = tmp_path / "vdb"
+    _seed_vdb(p)
+    ds = VDBStoreDataset(filepath=str(p))
+    ds._staleness_path.parent.mkdir(parents=True, exist_ok=True)
+    ds._staleness_path.write_bytes(_BAD_UTF8)
+    # is_stale() must not raise on a corrupt (invalid-UTF-8) marker
+    assert ds.is_stale() in (True, False)
