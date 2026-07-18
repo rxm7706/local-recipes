@@ -90,6 +90,7 @@ from .models import (
     AxisCoverage,
     Ecosystem,
     ErrorRecord,
+    FeedProvenance,
     Finding,
     ScannedManifest,
     Status,
@@ -158,13 +159,22 @@ class EngineResult:
     (``OsvEngine`` on a completed 0/1 osv-scanner run); ``None`` on every
     other engine result, including osv's own DB-unavailable/error paths.
     ``cli.py`` threads the first non-``None`` value across ``engine_results``
-    into ``report.assemble_report``."""
+    into ``report.assemble_report``.
+
+    ``kev_data`` (Story 6.4, additive/defaulted — mirrors ``vuln_data``'s
+    own shape and threading): populated ONLY by ``OsvEngine`` when
+    ``fail_on_kev`` is active AND the CISA KEV feed was actually consulted
+    (present, whether fresh or stale); ``None`` when KEV consultation is
+    disabled (``fail_on_kev=False``) or the feed is absent/unreadable.
+    ``cli.py`` threads the first non-``None`` value across
+    ``engine_results`` into ``report.assemble_report`` the same way."""
 
     findings: tuple[Finding, ...]
     errors: tuple[ErrorRecord, ...]
     coverage: tuple[AxisCoverage, ...]
     axis: str
     vuln_data: VulnData | None = None
+    kev_data: FeedProvenance | None = None
 
 
 @runtime_checkable
@@ -313,9 +323,15 @@ class DefaultPolicy:
                     # own fallback, unchanged from today. Story 3.1: the
                     # policy table is derived from self._config's fail_on
                     # (default reproduces DEFAULT_VULN_SEVERITY_POLICY
-                    # exactly).
+                    # exactly). Story 6.4: fail_on_kev threads the same way
+                    # -- a KEV-listed finding forces policy-violation
+                    # independent of the CVSS tier above.
                     rungs.append(
-                        vuln_rung(finding, policy=self._config.vuln_severity_policy)
+                        vuln_rung(
+                            finding,
+                            policy=self._config.vuln_severity_policy,
+                            fail_on_kev=self._config.fail_on_kev,
+                        )
                     )
                 else:
                     # The false-green backstop now only governs a
