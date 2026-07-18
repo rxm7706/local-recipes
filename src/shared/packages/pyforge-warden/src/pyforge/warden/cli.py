@@ -203,7 +203,7 @@ from .config import (
     EffectiveConfig,
 )
 from .discovery import CONDA_LOCK_KIND, PIXI_LOCK_KIND, discover
-from .engines import DeptryEngine, engine_factories
+from .engines import DeptryEngine, OsvEngine, engine_factories
 from .extract import UnparsableManifestError, extractor_for
 from .hygiene import has_adjacent_python_source
 from .interfaces import DefaultPolicy, EngineResult, _sanitize_id_segment
@@ -694,7 +694,16 @@ def _run_scan(args: argparse.Namespace) -> int:
     )
     for factory in engines_to_run:
         try:
-            engine = factory()
+            # Story 6.4: OsvEngine's fail_on_kev needs the resolved config
+            # value -- mirrors this same loop's pre-existing DeptryEngine
+            # special case (hygiene_applicable filter above), never widening
+            # the shared zero-arg Engine.run() seam every other factory
+            # still uses (config.py's Design Notes).
+            engine = (
+                OsvEngine(fail_on_kev=config.fail_on_kev)
+                if factory is OsvEngine
+                else factory()
+            )
         except (SystemExit, Exception) as exc:  # noqa: BLE001 —
             # instantiation is PART of the seam: a crashing constructor (a
             # misconfigured 1.3/1.5 runner) is the engine-unavailable
@@ -873,6 +882,15 @@ def _run_scan(args: argparse.Namespace) -> int:
         (result.vuln_data for result in engine_results if result.vuln_data is not None),
         VulnData(source=None, snapshot_at=None, max_age_ok=None),
     )
+    # Story 6.4: the same first-non-None-across-engine-results selection
+    # vuln_data already uses above -- OsvEngine populates kev_data only when
+    # fail_on_kev is active and the KEV feed was actually consulted; every
+    # other engine/path leaves it None (mirrors vuln_data's own None-when-
+    # never-consulted default).
+    kev_data = next(
+        (result.kev_data for result in engine_results if result.kev_data is not None),
+        None,
+    )
     report = assemble_report(
         inventory=inventory,
         findings=findings,
@@ -888,6 +906,7 @@ def _run_scan(args: argparse.Namespace) -> int:
         empty_extraction=empty_extraction,
         fail_under_coverage=config.fail_under_coverage,
         suppressions=suppressions,
+        kev_data=kev_data,
     )
     if args.sbom_output is not None:
         # Story 4.1: an independent sibling artifact -- rendering and
