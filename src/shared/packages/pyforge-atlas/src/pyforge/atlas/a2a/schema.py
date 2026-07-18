@@ -91,7 +91,12 @@ class _BasePayload(BaseModel):
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
-    schema_version: str = SCHEMA_VERSION
+    # ENFORCED on the wire (not free-form): typed to the single supported version so a
+    # payload stamped with any other version FAILS validation on decode -> A2ADecodeError,
+    # i.e. a receiver rejects an incompatible producer instead of mis-parsing it (the
+    # behavior the SCHEMA_VERSION docstring promises; E1 review). Bump this Literal in
+    # lockstep with SCHEMA_VERSION on a breaking change.
+    schema_version: Literal["1"] = SCHEMA_VERSION
     # AD-17: the pipeline build timestamp travels IN the payload. Required + injected —
     # never defaulted from datetime.now(), so authoring never consumes an unstamped payload.
     build_stamp: str
