@@ -76,9 +76,11 @@ Ownership decisions recorded:
   falls out of the branch order rather than needing a separate rule). A
   compound (``AND``/``OR``) resolved expression is matched by its FLAT set
   of leaf symbols, not a whole-string comparison (``_classify_verdict``): a
-  deny match on any symbol denies the whole expression; an allow-list
-  requires every symbol to be a member, else denied (an unlisted branch is
-  an unreviewed license). Configured allow/deny entries are normalized
+  deny match on any symbol — including the BASE license of a ``WITH``
+  grant (deny side only; see ``_with_base_symbols``) — denies the whole
+  expression; an allow-list requires every symbol to be a member, else
+  denied (an unlisted branch is an unreviewed license). Configured
+  allow/deny entries are normalized
   through the SAME SPDX parse/validate pass a resolved license goes through
   (so ``gpl-3.0-only`` and ``GPL-3.0-only`` compare equal) and likewise
   decomposed to their own leaf symbols; an entry that fails to parse as a
@@ -106,6 +108,7 @@ no Jinja engine.
 from __future__ import annotations
 
 import importlib.metadata
+import re
 from collections.abc import Iterator, Sequence
 from pathlib import Path
 from types import MappingProxyType
@@ -132,8 +135,42 @@ _LICENSING = license_expression.get_spdx_licensing()
 # A resolved/configured license candidate longer than this can never
 # plausibly BE a short SPDX expression (a legacy PyPI `License` field
 # commonly carries the FULL LICENSE TEXT, never a short expression) --
-# never attempt to feed that to the parser as one.
-_MAX_LICENSE_CANDIDATE_LENGTH = 200
+# never attempt to feed that to the parser as one. 1000, not the original
+# 200 (review finding, 2026-07-18 follow-up pass): a VALID many-clause
+# compound expression from a vendored-deps recipe (a 16-id `A AND B AND
+# ...` chain is ~220 chars) blew the old cap and misreported a perfectly
+# resolvable -- and possibly deny-matching -- license as `unknown`; full
+# license text is kilobytes, so 1000 still rejects what the cap exists to
+# reject.
+_MAX_LICENSE_CANDIDATE_LENGTH = 1000
+
+# license-expression's alias table confidently maps a small number of bare,
+# version-ambiguous family labels to a SPECIFIC id ("GPL"/"gpl" ->
+# "GPL-1.0-or-later" -- verified live; every other probed bare label --
+# LGPL/AGPL/BSD/Apache/MPL/GPLv3/... -- already fails validation and
+# degrades to unknown on its own). Following that guess would violate this
+# module's own unknown-over-wrong principle (Fix 6's rationale): a v0
+# ``meta.yaml`` carrying ``license: GPL`` (a real, common historic
+# conda-forge shape) does NOT say WHICH GPL, so it degrades to ``unknown``
+# instead (review finding, 2026-07-18 follow-up pass). Deprecated-but-
+# unambiguous ids keep license-expression's mapping ("GPL-2.0" ->
+# "GPL-2.0-only" is SPDX's own official deprecation resolution, not a
+# guess). Known residual: a bare "GPL" INSIDE a compound expression
+# ("MIT OR GPL") still rides the alias -- the bare-label case guarded here
+# is the dominant real-world shape.
+_AMBIGUOUS_BARE_LABELS = frozenset({"gpl"})
+
+# SPDX's own user-defined license-reference grammar (``LicenseRef-<id>``,
+# optionally ``DocumentRef-<id>:LicenseRef-<id>``): syntactically VALID
+# SPDX whose key is -- by definition -- absent from the registry, so
+# ``validate=True`` rejects it as an unknown key. Real conda-forge recipes
+# use these (LicenseRef-HDF5, LicenseRef-NVIDIA-...), so treating them as
+# unresolvable made every such license ``unknown`` AND made a
+# ``--deny-licenses LicenseRef-...`` entry structurally inert (review
+# finding, 2026-07-18 follow-up pass) -- see ``_license_ref_reparse``.
+_LICENSE_REF_RE = re.compile(
+    r"(?:DocumentRef-[A-Za-z0-9.\-]+:)?LicenseRef-[A-Za-z0-9.\-]+"
+)
 
 # A small, curated SPDX-id -> coarse "family" grouping (mirrors
 # conda-forge's own about.license_family convention) -- NOT the ScanCode
@@ -244,15 +281,32 @@ def _parse_spdx(candidate: str | None) -> tuple[str, str | None] | None:
     does) — a bare ``parsed.key`` access crashed the whole engine on any
     real WITH expression. ``getattr(parsed, "key", None)`` degrades that
     case to ``family=None`` (still a valid ``allowed``/``denied``/``unknown``
-    verdict) instead of raising."""
+    verdict) instead of raising.
+
+    Follow-up review pass (2026-07-18): three more hardenings. (a) the
+    parser leaks NON-``ExpressionError`` exceptions on grammar-degenerate
+    input — verified live: an empty parenthesis group ``"()"`` raises bare
+    ``IndexError``, which killed the whole axis — so ANY parser escape now
+    degrades to ``None``, honoring the never-raises contract. (b) the bare,
+    version-ambiguous ``"GPL"`` label (which the parser's alias table
+    confidently guesses as ``GPL-1.0-or-later``) degrades to ``None``
+    instead — see ``_AMBIGUOUS_BARE_LABELS``. (c) an expression whose only
+    unknown keys are ``LicenseRef-*`` references re-parses as valid opaque
+    SPDX — see ``_license_ref_reparse``."""
     if not candidate:
         return None
     text = candidate.strip()
     if not text or len(text) > _MAX_LICENSE_CANDIDATE_LENGTH:
         return None
+    if text.lower() in _AMBIGUOUS_BARE_LABELS:
+        return None
     try:
         parsed = _LICENSING.parse(text, validate=True, strict=False)
     except license_expression.ExpressionError:
+        parsed = _license_ref_reparse(text)
+    except Exception:  # noqa: BLE001 — the never-raises contract: the
+        # parser's non-ExpressionError escapes (verified live: IndexError
+        # on "()") must degrade to unknown, not crash the axis.
         return None
     if parsed is None:
         return None
@@ -261,6 +315,29 @@ def _parse_spdx(candidate: str | None) -> tuple[str, str | None] | None:
         _SPDX_FAMILY.get(getattr(parsed, "key", None)) if parsed.isliteral else None
     )
     return (expression, family)
+
+
+def _license_ref_reparse(text: str) -> object | None:
+    """Second-chance parse for an expression ``validate=True`` rejected
+    (review finding, 2026-07-18 follow-up pass): accepted iff EVERY unknown
+    key is ``LicenseRef-``-shaped (``_LICENSE_REF_RE`` — SPDX's own
+    user-defined-reference grammar, syntactically valid SPDX that is BY
+    DEFINITION absent from the registry), re-parsed with ``validate=False``
+    so the reference survives as an opaque, comparable leaf symbol. Any
+    other unknown key (a typo, a colloquial label like ``GPLv3``) returns
+    ``None`` (unknown) — this is NOT a general validate=False escape hatch.
+    Never raises (the same contract as ``_parse_spdx``; note
+    ``unknown_license_keys`` itself leaks ``IndexError`` on
+    grammar-degenerate input like ``"()"``)."""
+    try:
+        unknown = _LICENSING.unknown_license_keys(text)
+        if not unknown or not all(
+            _LICENSE_REF_RE.fullmatch(key) for key in unknown
+        ):
+            return None
+        return _LICENSING.parse(text, validate=False, strict=False)
+    except Exception:  # noqa: BLE001 — same never-raises contract as _parse_spdx
+        return None
 
 
 def _license_symbols(expression: str) -> frozenset[str]:
@@ -275,9 +352,36 @@ def _license_symbols(expression: str) -> frozenset[str]:
     string, e.g. both ``"Apache-2.0 OR BSD-2-Clause"`` and
     ``"Apache-2.0 AND BSD-2-Clause"`` yield ``{"Apache-2.0",
     "BSD-2-Clause"}`` — see ``_classify_verdict`` for why the boolean
-    operator itself is deliberately not distinguished here."""
-    parsed = _LICENSING.parse(expression, validate=True, strict=False)
+    operator itself is deliberately not distinguished here.
+    ``validate=False`` (follow-up review pass, 2026-07-18): the input is
+    always a prior ``_parse_spdx`` product, which may legitimately contain
+    ``LicenseRef-*`` keys absent from the registry — re-validating here
+    would reject exactly what ``_license_ref_reparse`` just accepted."""
+    parsed = _LICENSING.parse(expression, validate=False, strict=False)
     return frozenset(str(symbol) for symbol in parsed.symbols)
+
+
+def _with_base_symbols(expression: str) -> frozenset[str]:
+    """The BASE-license symbols of every ``WITH``-exception grant in an
+    already-validated ``expression`` — ``{"GPL-2.0-only"}`` for
+    ``"GPL-2.0-only WITH Classpath-exception-2.0"``, empty for an
+    expression carrying no WITH grant. Consumed by ``_classify_verdict``'s
+    DENY check ONLY (review finding, 2026-07-18 follow-up pass): denying a
+    base license must taint every exception-carrying variant of it (a WITH
+    grant still operates under the base license's obligations — the
+    pre-fix behavior let ``--deny-licenses GPL-2.0-only`` silently pass
+    ``GPL-2.0-only WITH Classpath-exception-2.0``, a fail-open asymmetry
+    against the module's otherwise conservative taint rule). The ALLOW
+    side deliberately keeps the indivisible-grant reading: allow-listing a
+    base license does NOT auto-allow its WITH variants — an unreviewed
+    exception grant stays denied under an allow-list."""
+    parsed = _LICENSING.parse(expression, validate=False, strict=False)
+    bases: set[str] = set()
+    for symbol in parsed.symbols:
+        base = getattr(symbol, "license_symbol", None)
+        if base is not None:
+            bases.add(str(base))
+    return frozenset(bases)
 
 
 def _normalize_tokens(raw: Sequence[str]) -> frozenset[str]:
@@ -295,8 +399,12 @@ def _normalize_tokens(raw: Sequence[str]) -> frozenset[str]:
     a plain ``str() == str()`` comparison could not give, since
     ``license_expression`` preserves syntactic operand order rather than
     canonicalizing it). An entry that fails to parse as a real SPDX id
-    falls back to its own stripped text as ONE opaque token — a config typo
-    must stay comparable, never silently dropped from the list."""
+    falls back to its own stripped text as ONE opaque token — a defensive
+    posture for DIRECT library callers only (follow-up review pass,
+    2026-07-18): the CLI/TOML surfaces now reject such an entry at config
+    load time (``config._coerce_license_list`` consults
+    ``is_valid_license_token``), because an unparsable entry could never
+    match any resolved license — a silently-dead policy gate."""
     tokens: set[str] = set()
     for entry in raw:
         stripped = entry.strip()
@@ -308,6 +416,22 @@ def _normalize_tokens(raw: Sequence[str]) -> frozenset[str]:
             continue
         tokens.update(_license_symbols(parsed[0]))
     return frozenset(tokens)
+
+
+def is_valid_license_token(text: str) -> bool:
+    """Whether ``text`` is usable as an ``--allow-licenses``/
+    ``--deny-licenses`` entry: it must normalize through the SAME
+    ``_parse_spdx`` pass a resolved component license goes through (valid
+    SPDX — single ids, compound expressions, ``WITH`` grants, and
+    ``LicenseRef-*`` references all normalize; colloquial labels like
+    ``GPLv3``/``BSD`` and grammar-degenerate strings like ``"()"`` do
+    not). ``config._coerce_license_list`` consults this at load time
+    (review finding, 2026-07-18 follow-up pass): a resolved license is
+    always a ``_parse_spdx`` product, so a configured entry that CANNOT
+    normalize the same way could never match anything — a configured-but-
+    ineffective gate, the same failure mode the zero-usable-entries check
+    already rejects."""
+    return _parse_spdx(text) is not None
 
 
 # --- conda: about: license: (pre-build, never a fresh Jinja/YAML pipeline) --
@@ -343,7 +467,13 @@ def _read_about_license(manifest_path: Path) -> str | None:
         return None
     try:
         document = yaml.safe_load(neutralized)
-    except yaml.YAMLError:
+    except (yaml.YAMLError, RecursionError):
+        # RecursionError (follow-up review pass, 2026-07-18): deeply nested
+        # flow collections blow the interpreter's recursion limit inside
+        # yaml's parser — not a YAMLError subclass, so it escaped the
+        # degrade-to-unknown contract (reachable only via a TOCTOU manifest
+        # rewrite between extract and this re-read, but the contract is
+        # never-a-crash regardless).
         return None
     if not isinstance(document, dict):
         return None
@@ -398,20 +528,52 @@ def _conda_about_license(
 # --- pypi: importlib.metadata (fully offline; never a subprocess/socket) ----
 
 
+# "License ::" trove classifiers that do NOT name a license — generic
+# approval/property markers whose presence alongside a mapped,
+# license-naming classifier is no conflict ("License :: OSI Approved" next
+# to "License :: OSI Approved :: MIT License" just repeats the parent).
+# Every OTHER "License ::" classifier names a license (or a license
+# situation, e.g. "License :: Other/Proprietary License") and therefore
+# participates in the ambiguity check below.
+_NON_NAMING_LICENSE_CLASSIFIERS = frozenset(
+    {
+        "License :: OSI Approved",
+        "License :: DFSG approved",
+        "License :: Freely Distributable",
+    }
+)
+
+
 def _classifier_license_candidate(meta: importlib.metadata.PackageMetadata) -> str | None:
     """The trove-classifier fallback tier's own single candidate (Fix 6b,
-    review finding 2026-07-18): every ``Classifier`` maps through
-    ``_CLASSIFIER_SPDX`` to its SPDX id, deduplicated to the DISTINCT set —
-    a lone agreeing id is the tier's one candidate; zero or MORE THAN ONE
-    distinct id (a package carrying two classifiers that map to different
-    licenses) yields ``None``, so resolution falls through to ``unknown``
-    (or an earlier, higher-priority tier) rather than silently picking
-    whichever classifier happened to be listed first."""
-    ids = {
-        spdx
-        for classifier in meta.get_all("Classifier") or ()
-        if (spdx := _CLASSIFIER_SPDX.get(classifier)) is not None
-    }
+    review finding 2026-07-18): every license-naming ``Classifier`` maps
+    through ``_CLASSIFIER_SPDX`` to its SPDX id, deduplicated to the
+    DISTINCT set — a lone agreeing id is the tier's one candidate; zero or
+    MORE THAN ONE distinct id yields ``None``, so resolution falls through
+    to ``unknown`` rather than silently picking whichever classifier
+    happened to be listed first.
+
+    Follow-up review pass (2026-07-18): the ambiguity check counts
+    UNMAPPED license-naming classifiers too, not just the mapped subset —
+    a package declaring the generic ``License :: OSI Approved :: BSD
+    License`` (deliberately absent from ``_CLASSIFIER_SPDX``, Fix 6)
+    alongside ``... :: MIT License`` used to resolve confidently to
+    ``MIT``, silently discarding the equally-declared-but-unidentifiable
+    BSD license — the exact one-of-two-declared-licenses pick Fix 6b was
+    written to prevent, resurfacing whenever one side of the conflict was
+    unmapped. Any unmapped license-NAMING classifier now degrades the
+    whole tier (generic non-naming approval markers are exempt — see
+    ``_NON_NAMING_LICENSE_CLASSIFIERS``)."""
+    ids: set[str] = set()
+    for classifier in meta.get_all("Classifier") or ():
+        if not classifier.startswith("License ::"):
+            continue
+        if classifier in _NON_NAMING_LICENSE_CLASSIFIERS:
+            continue
+        spdx = _CLASSIFIER_SPDX.get(classifier)
+        if spdx is None:
+            return None
+        ids.add(spdx)
     if len(ids) == 1:
         return next(iter(ids))
     return None
@@ -512,12 +674,21 @@ def _classify_verdict(
     permissive "any branch allowed is enough" — this is a real design
     call, not dictated by "denied wins on overlap" alone (the only rule
     Boundaries already established), so it is spelled out here explicitly.
+
+    Follow-up review pass (2026-07-18) — ``WITH``-grant deny expansion:
+    the DENY intersection additionally includes the BASE license of every
+    ``WITH``-exception grant (``_with_base_symbols``), so denying
+    ``GPL-2.0-only`` also taints ``GPL-2.0-only WITH
+    Classpath-exception-2.0`` (the grant still operates under the base
+    license's obligations). The ALLOW subset check deliberately does NOT
+    get the same expansion — allow-listing a base license does not
+    auto-allow its exception variants (an unreviewed grant stays denied).
     """
     if resolution is None:
         return LicenseVerdict.UNKNOWN
     expression, _family = resolution
     symbols = _license_symbols(expression)
-    if symbols & deny:
+    if (symbols | _with_base_symbols(expression)) & deny:
         return LicenseVerdict.DENIED
     if allow:
         return LicenseVerdict.ALLOWED if symbols <= allow else LicenseVerdict.DENIED

@@ -234,11 +234,16 @@ class EffectiveConfig:
             )
         for field_name in ("allow_licenses", "deny_licenses"):
             value = getattr(self, field_name)
+            # item.strip(), not bare item (follow-up review pass,
+            # 2026-07-18): a whitespace-only entry constructed fine and
+            # flipped license_gating True over a token _normalize_tokens
+            # silently empties — inconsistent with _coerce_license_list's
+            # own stripped-token guarantee for the CLI/TOML path.
             if not isinstance(value, tuple) or not all(
-                isinstance(item, str) and item for item in value
+                isinstance(item, str) and item.strip() for item in value
             ):
                 raise ValueError(
-                    f"{field_name} must be a tuple of non-empty strings, got "
+                    f"{field_name} must be a tuple of non-blank strings, got "
                     f"{value!r}"
                 )
 
@@ -473,7 +478,18 @@ def _coerce_license_list(value: object, *, key: str) -> tuple[str, ...]:
     stay ``False`` with no error, even though the user believed they had
     activated the license gate — a typed ``ConfigValidationError`` instead,
     the same "fail at construction" posture every other ``_coerce_*``
-    helper in this module already takes."""
+    helper in this module already takes.
+
+    Follow-up review pass (2026-07-18): every surviving entry must also
+    normalize as a real SPDX expression (``license.is_valid_license_token``
+    — single ids, compounds, ``WITH`` grants, and ``LicenseRef-*``
+    references all pass; colloquial labels like ``GPLv3``/``BSD`` do not).
+    A resolved component license is ALWAYS a normalized SPDX product, so an
+    entry that cannot normalize the same way could never match anything:
+    the gate reads as active (``license_gating=True``, ``gating: true`` in
+    the report) while being structurally unable to fire — the same
+    configured-but-ineffective fail-open the zero-usable-entries check
+    above already rejects, one level deeper."""
     if isinstance(value, str):
         candidates: list[str] = value.split(",")
     elif isinstance(value, list) and all(isinstance(item, str) for item in value):
@@ -490,7 +506,26 @@ def _coerce_license_list(value: object, *, key: str) -> tuple[str, ...]:
             f"(got {value!r}) — omit the key/flag entirely instead of "
             "setting an empty gate"
         )
+    invalid = [token for token in tokens if not _is_valid_license_token(token)]
+    if invalid:
+        raise ConfigValidationError(
+            f"'{key}' entries {invalid!r} are not valid SPDX license "
+            "expressions (nor LicenseRef-* references) — they could never "
+            "match any resolved license, leaving the configured gate "
+            "silently ineffective; use exact SPDX ids (e.g. 'GPL-3.0-only', "
+            "not 'GPLv3')"
+        )
     return tokens
+
+
+def _is_valid_license_token(text: str) -> bool:
+    # Lazy import (mirrors interfaces.py's own documented workaround):
+    # license.py imports interfaces.py at module top, and interfaces.py
+    # imports THIS module at module top — a top-level import here would
+    # open a config -> license -> interfaces -> config cycle.
+    from .license import is_valid_license_token
+
+    return is_valid_license_token(text)
 
 
 def _coerce_allow_licenses(value: object) -> tuple[str, ...]:
