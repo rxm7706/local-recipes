@@ -109,6 +109,34 @@ def test_conda_about_license_normalizes_via_license_expression(tmp_path, compone
     assert finding.id == "license:GPL-3.0-only:mypkg@1.0.0"
 
 
+def test_conda_about_license_alias_bomb_degrades_to_unknown_not_expanded(
+    tmp_path, component_factory
+):
+    # A YAML alias bomb ("billion laughs"): raw yaml.safe_load would expand the
+    # nested aliases into a huge structure (CPU/RSS exhaustion). license.py now
+    # loads via yaml_safe_load_strict, which REFUSES alias expansion, so this
+    # degrades to `unknown` instead of hanging or silently resolving. If the
+    # loader ever regressed to safe_load, this test would exhaust memory rather
+    # than pass. (Gemini review, PR #109 — security-high.)
+    (tmp_path / "recipe.yaml").write_text(
+        "a: &a [x, x, x, x, x, x, x, x, x]\n"
+        "b: &b [*a, *a, *a, *a, *a, *a, *a, *a, *a]\n"
+        "c: &c [*b, *b, *b, *b, *b, *b, *b, *b, *b]\n"
+        "about:\n"
+        "  license: *c\n",
+        encoding="utf-8",
+    )
+    component = component_factory(
+        name="bomb",
+        version="1.0.0",
+        ecosystem=Ecosystem.CONDA,
+        provenance=(("recipe.yaml", "requirements.host"),),
+    )
+    (finding,) = license_findings([component], tmp_path)
+    assert finding.id == "license:unknown:bomb@1.0.0"
+    assert finding.license.verdict.value == "unknown"
+
+
 def test_meta_yaml_v0_about_license_also_resolves(tmp_path, component_factory):
     (tmp_path / "meta.yaml").write_text(
         "about:\n  license: BSD-3-Clause\n", encoding="utf-8"
