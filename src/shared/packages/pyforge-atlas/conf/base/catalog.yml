@@ -556,9 +556,21 @@ vcs_live_health:
 # User-supplied manifests/locks/SBOMs/containers — per-invocation ENTRY
 # dataset, runtime-parameterized (§ 3.4 "modeled as such in the catalog"):
 # `kedro run --params sbom_intake_path=<file>`.
+# B7 LANDED the § 4.10 tiered-intake parser: interim json.JSONDataset ->
+# SbomIntakeDataset (dataset-owned file parsing, AD-2). No FLIP marker existed
+# on this entry, so EXPECTED_FLIP_MARKERS is unchanged (type change only).
 sbom_intake_entry:
-  type: json.JSONDataset
+  type: pyforge.atlas.datasets.SbomIntakeDataset
   filepath: ${runtime_params:sbom_intake_path,data/raw/sbom_intake_entry/intake.json}
+  metadata:
+    layer: raw
+
+# Transitive resolution of the intake manifest (FR-17). Dataset-owned IO via an
+# INJECTED resolver (pip --dry-run --report / py-rattler solve); default offline
+# -> `unresolved` marker (AD-13). NEVER imports subprocess (A2 denylist).
+sbom_resolution_entry:
+  type: pyforge.atlas.datasets.TransitiveResolverDataset
+  filepath: ${runtime_params:sbom_intake_path,data/raw/sbom_resolution_entry/intake.json}
   metadata:
     layer: raw
 

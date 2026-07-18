@@ -79,11 +79,11 @@ EXPECTED_PIPELINE_COUNTS = {
     "pypi_intelligence": 15,
     "vulnerability": 12,
     "vcs_health": 17,
-    "universal_sbom": 3,
+    "universal_sbom": 4,  # B7: + sbom_resolution_entry (TransitiveResolverDataset, FR-17)
     "seed_gaps": 8,
     "derived_artifacts": 2,
 }
-EXPECTED_TOTAL = 73
+EXPECTED_TOTAL = 74  # B7: 73 + sbom_resolution_entry
 
 # The A3 IncrementalParquetDataset flip list (TTL-gated persisted outputs).
 FLIP_LIST = {
