@@ -21,6 +21,12 @@ This is a multi-skill repo: conda-forge recipe work uses the `conda-forge-expert
 
 **Critical Rule**: Do not mix `meta.yaml` and `recipe.yaml` formats in the same build run. The tooling will reject mixed-mode runs.
 
+**Critical Rule — PR CI gates (ALWAYS-ON, every PR to `rxm7706/local-recipes`):** the inherited staged-recipes linter reds two ways that Claude must pre-empt at PR open/update time (do NOT wait for red CI):
+1. **Any change outside `recipes/`** (docs, `.github/`, `docs/specs/`, `src/`, `prototypes/`, `pixi.toml`, dashboards — anything but `recipes/**`) → **add the `maintenance` label**: `gh pr edit <n> --repo rxm7706/local-recipes --add-label maintenance`.
+2. **`pixi.toml` changed** → regenerate + commit `environment.yaml`: `pixi project export conda-environment -e build > environment.yaml` (this sync check is UNGATED — the `maintenance` label does not suppress it). Also fix `main` directly whenever a `pixi.toml` dep change lands there.
+
+Recipe-only PRs (touching only `recipes/**`) need neither.
+
 ## BMAD Method Documentation
 
 The BMAD Method is an AI-driven software development framework used in this project.
