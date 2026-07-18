@@ -58,6 +58,15 @@ Ownership decisions recorded:
   no CLI flag exists for it either; ``cli.py``'s ``--bypass`` path reads
   ``EffectiveConfig.waiver_default_expiry_days`` directly to compute a
   waiver's default expiry window.
+* ``fail-on-kev`` (Story 6.4, FR36/FR18's default-gate role) is likewise
+  TOML-only, no CLI flag — same treatment as ``dep001-block-confidence``
+  (epics.md's retired-flag-family note: only ``--fail-on``/
+  ``--fail-under-coverage`` ever get a CLI flag). Defaults ``true``: a
+  CISA-KEV-listed advisory blocks by default, matching every other v1
+  default-on gate. ``interfaces.DefaultPolicy.evaluate`` threads
+  ``self._config.fail_on_kev`` into ``vuln.vuln_rung``; ``cli.py``
+  constructs ``OsvEngine(fail_on_kev=config.fail_on_kev)`` the same way it
+  already special-cases ``DeptryEngine`` in its engine-construction loop.
 
 This module parses TOML as DATA: no I/O beyond reading the two candidate
 files, no subprocess, no network, no exec.
@@ -84,6 +93,7 @@ _RECOGNIZED_KEYS = frozenset(
         "fail-under-coverage",
         "dep001-block-confidence",
         "waiver-default-expiry-days",
+        "fail-on-kev",
     }
 )
 
@@ -162,6 +172,7 @@ class EffectiveConfig:
     fail_under_coverage: float = 0.0
     dep001_block_confidence: str = "verified"
     waiver_default_expiry_days: int = 14
+    fail_on_kev: bool = True
 
     def __post_init__(self) -> None:
         """Fail at construction, not at first use (review finding: without
@@ -199,6 +210,10 @@ class EffectiveConfig:
                 "waiver_default_expiry_days must be a positive int <= "
                 f"{_MAX_WAIVER_DEFAULT_EXPIRY_DAYS}, got "
                 f"{self.waiver_default_expiry_days!r}"
+            )
+        if not isinstance(self.fail_on_kev, bool):
+            raise ValueError(
+                f"fail_on_kev must be a bool, got {self.fail_on_kev!r}"
             )
 
     @classmethod
@@ -240,6 +255,7 @@ class EffectiveConfig:
             fail_under_coverage=fail_under_coverage,
             dep001_block_confidence=defaults.dep001_block_confidence,
             waiver_default_expiry_days=defaults.waiver_default_expiry_days,
+            fail_on_kev=defaults.fail_on_kev,
         )
 
     @property
@@ -357,6 +373,14 @@ def _coerce_waiver_default_expiry_days(value: object) -> int:
     return value
 
 
+def _coerce_fail_on_kev(value: object) -> bool:
+    if not isinstance(value, bool):
+        raise ConfigValidationError(
+            f"'fail-on-kev' must be a bool, got {value!r}"
+        )
+    return value
+
+
 class ConfigLoader:
     """Loads + merges ``[tool.pyforge-warden]`` from ``pyproject.toml``
     (primary) and ``pixi.toml`` (secondary) into one ``EffectiveConfig``
@@ -445,6 +469,11 @@ class ConfigLoader:
             if "waiver-default-expiry-days" in merged
             else defaults.waiver_default_expiry_days
         )
+        fail_on_kev = (
+            _coerce_fail_on_kev(merged["fail-on-kev"])
+            if "fail-on-kev" in merged
+            else defaults.fail_on_kev
+        )
 
         # CLI flags win over both files. Routed through the SAME _coerce_*
         # helpers the TOML-sourced values use (review finding: a bare
@@ -463,6 +492,7 @@ class ConfigLoader:
             fail_under_coverage=fail_under_coverage,
             dep001_block_confidence=dep001_block_confidence,
             waiver_default_expiry_days=waiver_default_expiry_days,
+            fail_on_kev=fail_on_kev,
         )
         return config, tuple(warnings)
 

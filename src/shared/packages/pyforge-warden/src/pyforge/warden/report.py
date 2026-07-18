@@ -132,6 +132,7 @@ from .models import (
     AxisCoverage,
     ComplianceReport,
     ErrorRecord,
+    FeedProvenance,
     Finding,
     ResolutionDepth,
     SeverityTier,
@@ -180,6 +181,7 @@ def assemble_report(
     empty_extraction: bool = False,
     fail_under_coverage: float = 0.0,
     suppressions: Sequence[SuppressedFinding] = (),
+    kev_data: FeedProvenance | None = None,
 ) -> ComplianceReport:
     """Assemble the ``ComplianceReport`` from the pipeline's outputs.
 
@@ -202,6 +204,12 @@ def assemble_report(
     non-``None`` ``EngineResult.vuln_data`` across ``engine_results``, else
     an all-``None`` ``VulnData``) — this function stores it verbatim, never
     hardcoding it.
+
+    ``kev_data`` (Story 6.4, additive/defaulted ``None`` — mirrors
+    ``vuln_data``'s own threading exactly): caller-derived too (``cli.py``
+    picks the first non-``None`` ``EngineResult.kev_data`` across
+    ``engine_results``) and stored verbatim into ``ComplianceReport.
+    kev_data``; this module never computes KEV provenance itself.
 
     ``hygiene_applicable=False`` (Story 2.4, AC3) overrides the hygiene
     axis's ``deps_total``/``deps_assessed``/``resolution_depth`` to the
@@ -339,6 +347,7 @@ def assemble_report(
         resolved_scan_set=inventory.resolved_scan_set,
         errors=tuple(errors),
         suppressions=tuple(suppressions),
+        kev_data=kev_data,
     )
 
 

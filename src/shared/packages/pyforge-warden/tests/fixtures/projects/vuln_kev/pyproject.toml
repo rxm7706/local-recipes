@@ -1,0 +1,20 @@
+# CISA KEV fixture (Story 6.4): pdos-kev-fixture==1.0.0 matches the seeded
+# OSV advisory PDOS-KEV-FIXTURE-0001 (CVSS MEDIUM, base score 5.4,
+# tests/fixtures/osv-db/pypi/PDOS-KEV-FIXTURE-0001.json -- auto-loaded into
+# every test's ambient offline OSV DB) via its `aliases` cross-reference
+# `CVE-1970-00001`, NOT its own primary id -- proving alias-based KEV
+# matching, not just an id-shaped coincidence. `fail-on-kev` is left unset
+# (default true): a test pointing PYFORGE_WARDEN_FEED_CACHE_DIR at a KEV
+# cache containing CVE-1970-00001 proves a MEDIUM-tier (normally warn)
+# finding is forced to policy-violation/exit 1 -- independent of CVSS tier
+# (AC1).
+#
+# The source imports nothing, so deptry also flags this fictitious
+# dependency as DEP002 (unused) -- harmless: policy-violation still
+# outranks warn in the composed verdict.
+[project]
+name = "vuln-kev-fixture"
+version = "1.0.0"
+dependencies = [
+    "pdos-kev-fixture==1.0.0",
+]
