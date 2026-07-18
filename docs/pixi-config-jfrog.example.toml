@@ -189,3 +189,10 @@ index-url = "https://artifactory.example.com/artifactory/api/pypi/pypi/simple"
 #     export UV_NATIVE_TLS=true
 #     export UV_KEYRING_PROVIDER=subprocess
 #   These take effect for the current shell only; pixi config persists.
+#
+# - TWO SEPARATE ROUTING LAYERS. This file configures the *resolver* layer
+#   (pixi/uv — dependency solves + `pixi install`, which run BEFORE any script).
+#   The conda-forge-expert *runtime* scripts route separately through `_http.py`
+#   via the `*_BASE_URL` env-var family and JFROG_API_KEY / JFROG_USERNAME+
+#   JFROG_PASSWORD auth. Set both if you need end-to-end coverage. See
+#   docs/enterprise-deployment.md § 6 for the runtime layer.

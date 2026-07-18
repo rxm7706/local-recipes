@@ -7,7 +7,7 @@
 >
 > Source of truth: `pixi.toml` (workspace "staged-recipes" v0.2.0). This file is a
 > derived catalog — regenerate it whenever `pixi.toml` changes.
-> Generated: 2026-07-12; incrementally updated 2026-07-17 (pyforge-atlas member env, Story A1). Channels: conda-forge + SelfExplainML.
+> Generated: 2026-07-12; incrementally updated 2026-07-18 (pyforge-atlas member env + kedro-viz; pyforge-warden + bmad-ui envs; pin corrections). Channels: conda-forge + SelfExplainML.
 > Platforms: linux-64, win-64, osx-arm64 (macOS >= 14.5 "Sonoma" floor, required by mlx).
 
 ## To regenerate (any session): ask Claude Code:
@@ -53,11 +53,14 @@ Everything runs through pixi environments. Nothing here is installed globally.
 | `conda-smithy` | python + conda-smithy + shellcheck                    | Recipe linting only (`lint` task) |
 | `vuln-db`      | python + vuln-db                                      | AppThreat multi-source CVE DB + SBOM work (kept out of local-recipes to stay lean) |
 | `gcloud`       | python + gcloud-sdk                                   | One-time `gcloud auth application-default login`; linux/macOS only |
-| `pyforge-atlas`| pyforge-atlas (no-default-feature)                    | Lean env for the `pyforge.atlas` Kedro pipeline member (`src/shared/packages/pyforge-atlas` path dep -> built conda pkg + kedro/kedro-datasets/kedro-dagster/pyforge-warden run-deps + pytest/hatchling/python-build). Loop worktrees materialize THIS env; gate: `kedro-test` |
+| `pyforge-warden`| pyforge-warden (no-default-feature)                  | Lean env for the built `pyforge-warden` package (`src/shared/packages/pyforge-warden` path dep -> conda pkg + run-deps + pytest; test-oracles py-rattler / py-rattler-build / conda-build). Multi-axis dependency-compliance gate; CLI `warden` (`warden-scan` task), gate `pyforge-warden-test`. Spec: `docs/specs/pyforge-warden.md` |
+| `pyforge-atlas`| pyforge-atlas (no-default-feature)                    | Lean env for the `pyforge.atlas` Kedro pipeline member (`src/shared/packages/pyforge-atlas` path dep -> built conda pkg + kedro/kedro-datasets/kedro-dagster/pyforge-warden run-deps + pytest/hatchling/python-build + **kedro-viz**). Loop worktrees materialize THIS env; gates: `kedro-test`, `kedro-catalog-check`, `dagster-dryrun`, `viz` |
+| `bmad-ui`      | bmad-ui (no-default-feature)                          | **linux-64 only.** BMad Method UI dashboards (`docs/specs/bmad-loop-adoption.md` W4). Consumes the locally-built consume-not-submit mirrors `bmad-dashboard` + `mybmad-dashboard` from `./build_artifacts/linux64` + conda-forge. Tasks: `bmad-dashboard-install` (wires the VS Code extension), `mybmad` (Next.js dashboard + local PostgreSQL on :3002) |
 
 ### Version pins agents must respect (don't fight the resolver)
 
-- `python = 3.14.*` everywhere — check 3.14 compat before suggesting new deps.
+- `python = ">=3.14.6,3.14.*"` at the workspace root (3.14.* in each feature) — check
+  3.14 compat before suggesting new deps.
 - `pandas >=1.5.3,<3` and `pyarrow >=13,<22` + `pyarrow-all >=21` → pandas 2.x, pyarrow 21.x.
 - `tomlkit <0.13.3` (dagster-dg-core pin), `structlog >24.2.0,<26` (xorq/BSL pin),
   `sqlglot >26.32.0,<28.7.0`.
@@ -72,7 +75,7 @@ Everything runs through pixi environments. Nothing here is installed globally.
 
 Available in every environment (the `python` feature + workspace `[dependencies]`).
 
-- **python** (3.14.*) — CPython interpreter. All Python libs below target 3.14.
+- **python** (>=3.14.6, 3.14.*) — CPython interpreter. All Python libs below target 3.14.
 - **pixi** (>=0.73.0) — the package/environment manager itself, available *inside*
   envs for nested workspace operations. `pixi-build` preview is enabled (unlocks
   `[package]`/build tables for workspace members like
@@ -91,7 +94,7 @@ Available in every environment (the `python` feature + workspace `[dependencies]
 - **truststore** (>=0.10.4) — `import truststore; truststore.inject_into_ssl()`; makes
   Python TLS use the OS trust store (corporate CAs, JFrog). Set `TRUSTSTORE=1` pattern
   used by the vuln-db tasks.
-- **bmad-method** (>=6.10.0,<7) — BMAD-METHOD CLI (`bmad`): AI-driven agile
+- **bmad-method** (>=6.10.0) — BMAD-METHOD CLI (`bmad`): AI-driven agile
   planning/dev framework (agents, workflows, story lifecycle). See § 12.
 - **spec-kit** (>=0.12.17) — GitHub Spec Kit (`specify` CLI) for spec-driven
   development scaffolding (constitution → specify → plan → tasks → implement).
@@ -468,10 +471,11 @@ Agent2Agent (A2A) & ACP:
 
 ## 12. BMAD Method suite (agentic SDLC)
 
-All in `local-recipes` (bmad-method also in the base `python` feature). These power
-the planning/dev workflow documented in `CLAUDE.md` and `_bmad-output/`.
+All in `local-recipes` unless noted (bmad-method also in the base `python` feature;
+`mybmad-dashboard` is `bmad-ui`-only). These power the planning/dev workflow documented
+in `CLAUDE.md` and `_bmad-output/`.
 
-- **bmad-method** (>=6.10.0,<7) — core installer/CLI: agents (PM, architect, dev, …),
+- **bmad-method** (>=6.10.0) — core installer/CLI: agents (PM, architect, dev, …),
   planning workflows (PRD → architecture → epics → stories), dev execution. 6.10+
   gains `bmad-dev-auto`.
 - **bmad-loop** (>=0.8.1) — deterministic "ralph-loop" orchestrator with TUI; spawns
@@ -487,7 +491,11 @@ the planning/dev workflow documented in `CLAUDE.md` and `_bmad-output/`.
 - **bmad-utility-skills** (>=2.0.0) — 10 maintainer utility skills.
 - **bmad-labs-skills** (>=1.0.0.dev0) — community skills marketplace (21 skills).
 - **bmad-dashboard** (>=1.2.2.dev0) — VS Code extension installer for the BMAD
-  dashboard UI.
+  dashboard UI. Also provisioned in the `bmad-ui` env (from the locally-built
+  consume-not-submit mirror); task `bmad-dashboard-install`.
+- **mybmad-dashboard** (>=0.1.0.dev0) — MyBMAD Next.js web dashboard + `mybmad`
+  launcher (local PostgreSQL on :3002). **`bmad-ui` env only, linux-64 only** —
+  commented out in `local-recipes` (line 681 of `pixi.toml`). Task: `mybmad`.
 - **tmux** (>=3.7b_) — terminal multiplexer; **linux-64 + osx-arm64 only**; required by
   bmad-loop session spawning.
 
@@ -614,8 +622,9 @@ depending on them without adding them first:
 - **cdxgen, oras-py, conda-tree, networkx (as direct dep)** — version conflicts.
 - **pixitainer, pixi-devenv, pixi-browse, nebi-desktop** — python>=3.13-only or
   glibc constraints.
-- **bmad-story-automator, bmalph, bmad-autopilot, mybmad-dashboard** — BMAD-adjacent
-  tools parked (unix-only or superseded by bmad-loop).
+- **bmad-story-automator, bmalph, bmad-autopilot** — BMAD-adjacent
+  tools parked (unix-only or superseded by bmad-loop). (`mybmad-dashboard` is NOT
+  parked — it is live in the `bmad-ui` env; see § 12.)
 - **claude-mem, caveman, headroom-ai, codegraph, ppt-master, aichat** — parked
   agent-tooling candidates.
 - **ffmpeg** — never listed; pydub/audio work beyond WAV needs it added first.
