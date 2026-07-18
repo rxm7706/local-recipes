@@ -153,8 +153,10 @@ def _coerce_json_native(obj: Any) -> Any:
         return {str(k): _coerce_json_native(v) for k, v in obj.items()}
     if isinstance(obj, (list, tuple, set)):
         return [_coerce_json_native(v) for v in obj]
-    # numpy scalar/array → native (then recurse in case it became a list/dict).
-    if type(obj).__module__.split(".")[0] == "numpy" and hasattr(obj, "tolist"):
+    # numpy scalar/array → native (then recurse in case it became a list/dict). ``__module__``
+    # can be None on some dynamically-created / C-extension types, so guard before splitting.
+    module = getattr(type(obj), "__module__", None)
+    if isinstance(module, str) and module.split(".")[0] == "numpy" and hasattr(obj, "tolist"):
         return _coerce_json_native(obj.tolist())
     # scalar pandas/numpy null → JSON null (guard is_scalar so a container doesn't raise).
     import pandas as pd
