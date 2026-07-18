@@ -277,9 +277,13 @@ cmd = "kedro viz"
 cwd = "src/prototype/packages/pyforge-atlas-kedro-viz"
 
 [feature.local-recipes.tasks.kedro-run-proto]
-description = "Smoke-run the target-state cf_atlas Kedro DAG prototype (all stub nodes, MemoryDatasets, <1 s). Proves the DAG resolves; companion to kedro-viz-proto."
+description = "Smoke-run the cf_atlas Kedro DAG prototype (all stub nodes, MemoryDatasets, <1 s). Proves the DAG resolves; companion to kedro-viz-proto."
 cmd = "kedro run"
 cwd = "src/prototype/packages/pyforge-atlas-kedro-viz"
+
+[feature.local-recipes.tasks.regenerate-kedro-viz-proto]
+description = "Regenerate the kedro-viz prototype's stub DAG from the REAL pyforge-atlas — static AST parse of each pipelines/<name>/pipeline.py into dependency-free stub pipelines + a MemoryDataset catalog (kedro-viz layers from the real catalog) + an explicit registry. Run after any pyforge-atlas pipeline change to keep the viz faithful; then kedro-run-proto to verify."
+cmd = "python src/prototype/packages/pyforge-atlas-kedro-viz/tools/regenerate_from_atlas.py"
 
 [feature.local-recipes.tasks.fetch-cwe-catalog]
 description = "Refresh the MITRE CWE Research Concepts table in cf_atlas.db (v8.6.0 Wave B — AppThreat Deep Signals). Pulls ~640 KB zip from https://cwe.mitre.org/data/csv/1000.csv.zip (Research Concepts view — note: parent v8.6.0 spec incorrectly cited 2000.csv.zip which is the Architectural Concepts view). 944 CWEs. Applies a committed seed-mapping JSON at .claude/skills/conda-forge-expert/data/cwe_categories_seed.json (top-N well-known CWEs → 7 cf_atlas categories: RCE / DoS / Info-Disclosure / Auth-Bypass / Memory-Safety / Traversal / Injection). Anything not in the seed → 'Other'. Runs in seconds. Pass --dry-run / --json / --db / --timeout."

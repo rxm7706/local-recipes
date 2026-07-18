@@ -1,72 +1,53 @@
-# pyforge-atlas-kedro-viz — target-state DAG prototype
+# pyforge-atlas-kedro-viz — kedro-viz DAG mirror of pyforge-atlas
 
-An **illustrative Kedro model of what the migrated cf_atlas pipeline will look
-like** after `docs/specs/cfe-atlas-datapipeline-kedro-migration.md` ships.
-Companion to the spec's § 3.3 live-surface snapshot and § 5.2 modular-pipeline
-decomposition — every node is a stub (pure passthrough), so the value is the
-**DAG shape**: dataset names, phase dependencies, pipeline grouping, and
-storage layers, rendered interactively by kedro-viz.
+A **dependency-free Kedro project that mirrors the _shape_ of the shipped
+`pyforge-atlas` DAG** (`src/shared/packages/pyforge-atlas`) so it can be explored
+with `kedro viz` and smoke-run with `kedro run` **without installing
+pyforge-atlas's heavy stack** (pandas, DuckDB, Dagster, Vizro, …). Every node is
+a stub passthrough and every dataset is a `MemoryDataset`; the value is the DAG
+structure — pipeline grouping, node names, dataset flow, and storage layers.
 
-## The DAG at a glance
+It is **generated, not hand-maintained**: `tools/regenerate_from_atlas.py`
+statically parses (AST — no imports, so none of pyforge-atlas's deps are needed)
+each real `pyforge-atlas/.../pipelines/<name>/pipeline.py` `create_pipeline()`
+and emits the matching stub pipelines + catalog + registry here. Re-run it
+whenever pyforge-atlas changes so the viz never drifts.
 
-![Target-state cf_atlas DAG in kedro-viz](docs/target-state-dag.png)
-
-High-resolution capture (7800×5400 — zoomable to node-label level) of the
-static `kedro viz build` render, showing the 5 storage layers top-to-bottom,
-sidebar node list + tag filters on the left. For actual navigation (pan, zoom,
-collapse pipelines, click-through metadata), run the interactive version below.
-
-> **Note:** the PNG captures below predate the `seed_gaps` pipeline (added for
-> spec § 3.4 — the read-only seed-freshness report nodes). The live DAG is now
-> **64 nodes / 67 datasets across 7 pipelines**; regenerate the captures with
-> `kedro viz build` to refresh them.
-
-Per-pipeline captures (each is the same viz with one registered pipeline
-selected — far less dense, labels readable at 100%+):
-
-| Pipeline | Capture |
-|---|---|
-| `core` | [docs/pipeline-core.png](docs/pipeline-core.png) |
-| `vcs_health` | [docs/pipeline-vcs_health.png](docs/pipeline-vcs_health.png) |
-| `pypi_intelligence` | [docs/pipeline-pypi_intelligence.png](docs/pipeline-pypi_intelligence.png) |
-| `vulnerability` | [docs/pipeline-vulnerability.png](docs/pipeline-vulnerability.png) |
-| `universal_sbom` | [docs/pipeline-universal_sbom.png](docs/pipeline-universal_sbom.png) |
-| `seed_gaps` | _(no capture yet — run `kedro viz`)_ |
-| `read_surface` | [docs/pipeline-read_surface.png](docs/pipeline-read_surface.png) |
-
-## Run it
-
-All dependencies (kedro, kedro-viz) are already in the `local-recipes` pixi
-environment:
+## Regenerate + run
 
 ```bash
-pixi run -e local-recipes kedro-viz-proto   # interactive DAG in the browser
-pixi run -e local-recipes kedro-run-proto   # <1 s smoke run (64 stub tasks)
+pixi run -e local-recipes regenerate-kedro-viz-proto   # re-mirror from pyforge-atlas
+pixi run -e local-recipes kedro-run-proto              # <1 s smoke run (77 stub tasks)
+pixi run -e local-recipes kedro-viz-proto              # interactive DAG in the browser
+# static SPA export: `cd` here, then `kedro viz build`  (build/ is gitignored)
 ```
 
-Or from this directory with any env that has kedro + kedro-viz: `kedro viz`.
+Both `kedro` and `kedro-viz` are already in the `local-recipes` pixi env.
 
-## What it models
+## The DAG (mirrors pyforge-atlas — 77 nodes across 7 pipelines)
 
-| Modular pipeline | Phases / nodes | Spec story |
+| Pipeline | Nodes | What it mirrors in pyforge-atlas |
 |---|---|---|
-| `core` | B, B.5, B.6, E, F, J, M + enriched views | B1 |
-| `vcs_health` | E.5, K, L, N | B1 |
-| `pypi_intelligence` | C, C.5, D, H, O→P→Q→R→S + add-handoff single-write-path | B2 |
-| `vulnerability` | KEV/EPSS/CWE fetchers, G, G' → `v_current_version_vulns` | B2 |
-| `universal_sbom` | export-purls, universe-sbom, inventory-match, library-futures, recommend-2027 | FR-13 + regen cadence |
-| `seed_gaps` | lts-registry-gap, cwe-seed-gap, spdx-schema-gap, license-map-gap → read-only seed-freshness reports | § 3.4 |
-| `read_surface` | BSL semantic model → Vizro dashboard + kedro-mcp tools | D1-D3, B3 |
+| `core` | 13 | conda-forge enumeration + dependency graph / feedstock health / downloads |
+| `vcs_health` | 19 | VCS & feedstock health signals |
+| `pypi_intelligence` | 15 | PyPI intelligence + the recommend chain |
+| `vulnerability` | 14 | KEV / EPSS / CWE feeds + advisory matching |
+| `seed_gaps` | 9 | read-only seed-freshness gap reports |
+| `universal_sbom` | 6 | purl export, universe SBOM, inventory-match |
+| `derived_artifacts` | 1 | regenerated downstream artifacts |
 
-Dataset **layers** (kedro-viz left rail) model the storage tiers: `raw`
-(the 18 `resolve_*_urls` API feeds) → `atlas` (today's cf_atlas.db tables,
-tomorrow's DuckDB parquet) → `views` (the 5 named views) → `derived`
-(regenerated artifacts) → `read_surface`. Node **tags** mark the `ttl-gated`
-set (F, G, G', H, K, L) and `credentialed` phases (P, E.5, K, N, G, G').
+Node counts include the zero-input **extraction** stubs the generator adds for
+each free/raw input so `kedro run` executes end-to-end on MemoryDatasets.
+
+Dataset **layers** (the kedro-viz left rail) are copied from the real
+`pyforge-atlas` catalog's `kedro-viz.layer` metadata (`raw` API feeds → `atlas`
+compute → `views` → `derived`), falling back to a dataset-name heuristic.
 
 ## What it is NOT
 
-- Not the migration itself — Waves A-B port real phase logic into these slots.
-- No IO: every dataset is a MemoryDataset; no cf_atlas.db, network, or DuckDB.
-- Grouping/edges are the spec's § 5.2 taxonomy (post-PR#40), simplified where
-  the real orchestrator has conditional paths (profiles, TTL skips).
+- **Not pyforge-atlas.** The real ported logic lives in
+  `src/shared/packages/pyforge-atlas`; this is only a viz/docs stub of its shape.
+- **No IO.** Every dataset is a `MemoryDataset` — no DB, network, or DuckDB.
+- **The outputs are machine-authored.** `pipelines/*.py`, `pipeline_registry.py`,
+  `conf/base/catalog.yml`, and `conf/base/parameters.yml` are emitted by the
+  generator — edit `tools/regenerate_from_atlas.py`, never the outputs.
