@@ -1,10 +1,10 @@
 {
-  "skill_version": "8.78.0",
+  "skill_version": "8.79.0",
   "schema_version": 29,
   "mcp_tools": 46,
   "atlas_phases": 23,
   "gotcha_max": 106,
-  "pixi_envs": 11,
+  "pixi_envs": 12,
   "phase_ids": [
     "B",
     "B.5",
@@ -29,5 +29,5 @@
     "M",
     "N"
   ],
-  "git_head": "5846834"
+  "git_head": "e0b21c0743"
 }
