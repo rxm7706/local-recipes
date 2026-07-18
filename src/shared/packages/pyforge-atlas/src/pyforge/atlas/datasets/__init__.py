@@ -54,6 +54,13 @@ from .request_datasets import (
     PyPIJsonRequestDataset,
 )
 from .vdb_boundary import coerce_cvss_score
+from .basilisk import (
+    BASILISK_QUERYBATCH_MAX,
+    BasiliskBatchDataset,
+    BasiliskDetailDataset,
+    build_conda_purl,
+    chunk_queries,
+)
 
 __all__ = [
     "IncrementalParquetDataset",
@@ -89,4 +96,10 @@ __all__ = [
     "parse_pip_list_text",
     "parse_conda_list_text",
     "parse_cyclonedx",
+    # Story B8 — Basilisk conda-native vulnerability source (FR-19)
+    "BasiliskBatchDataset",
+    "BasiliskDetailDataset",
+    "chunk_queries",
+    "build_conda_purl",
+    "BASILISK_QUERYBATCH_MAX",
 ]

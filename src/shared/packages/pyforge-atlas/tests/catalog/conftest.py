@@ -77,13 +77,13 @@ PREFIX_TO_PIPELINE = {
 EXPECTED_PIPELINE_COUNTS = {
     "core": 16,
     "pypi_intelligence": 15,
-    "vulnerability": 12,
+    "vulnerability": 14,  # B8: + vulnerability_basilisk_detail_raw + vulnerability_basilisk_details (FR-19)
     "vcs_health": 17,
     "universal_sbom": 4,  # B7: + sbom_resolution_entry (TransitiveResolverDataset, FR-17)
     "seed_gaps": 8,
     "derived_artifacts": 2,
 }
-EXPECTED_TOTAL = 74  # B7: 73 + sbom_resolution_entry
+EXPECTED_TOTAL = 76  # B8: 74 + basilisk detail source + basilisk details output
 
 # The A3 IncrementalParquetDataset flip list (TTL-gated persisted outputs).
 FLIP_LIST = {

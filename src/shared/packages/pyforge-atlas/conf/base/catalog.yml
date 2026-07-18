@@ -360,12 +360,27 @@ vulnerability_osv_offline_store:
   metadata:
     layer: raw
 
-# RESERVED (assumption A2-A2) — the 20th override point, BASILISK_BASE_URL
-# (FR-19). Story B8 lands the nodes + resolve_basilisk_urls semantics +
-# rate-limit discipline.
+# FLIP(B8) LANDED — Basilisk conda-native vulnerability source (FR-19). The 20th
+# override point BASILISK_BASE_URL (A2 reserved) is now consumed here. IO is
+# DATASET-owned: BasiliskBatchDataset owns the POST /v1/querybatch ≤1,000-query
+# chunking + an INJECTED fetcher (default None == OFFLINE -> keep last-good + mark
+# stale, AD-13). No `# FLIP` marker existed on it (RESERVED, not an interim FLIP),
+# so EXPECTED_FLIP_MARKERS is unchanged (type change only).
 vulnerability_basilisk_raw:
-  type: api.APIDataset
+  type: pyforge.atlas.datasets.BasiliskBatchDataset
   url: ${globals:endpoint_bases.BASILISK_BASE_URL}/v1/querybatch
+  filepath: ${globals:paths.data_root}/raw/vulnerability_basilisk_raw
+  metadata:
+    layer: raw
+
+# Story B8 — the bounded GET /v1/vulns/{id} detail source. BasiliskDetailDataset
+# binds the standard atlas rate-limit discipline (concurrency cap + Retry-After +
+# jittered backoff, RateLimitedScheduler) via an INJECTED fetcher (default None ==
+# OFFLINE, AD-13). Same BASILISK_BASE_URL override point (no new helper).
+vulnerability_basilisk_detail_raw:
+  type: pyforge.atlas.datasets.BasiliskDetailDataset
+  url: ${globals:endpoint_bases.BASILISK_BASE_URL}/v1/vulns
+  filepath: ${globals:paths.data_root}/raw/vulnerability_basilisk_detail_raw
   metadata:
     layer: raw
 
@@ -406,12 +421,25 @@ vulnerability_package_version_vulns:
   metadata:
     layer: primary
 
-# RESERVED output for Story B8 (keys (conda_name, advisory_id) per spine).
-vulnerability_basilisk_vulns:
+# Story B8 output — the AD-14 new-signal PRIMARY (batch shape: conda_name,
+# advisory_id, modified). Name aligned to B4's fixture-enforced
+# EXCLUDED_NEW_SIGNAL_DATASETS ("vulnerability_basilisk_advisories", parity/
+# legacy_surface.py; renamed from the A2/B2 placeholder vulnerability_basilisk_vulns).
+# Matched BY PACKAGE NAME (never the OSV ecosystem tag). NEVER parity-gated (AD-14).
+vulnerability_basilisk_advisories:
   type: pandas.ParquetDataset
-  filepath: data/primary/vulnerability_basilisk_vulns/vulnerability_basilisk_vulns.parquet
+  filepath: data/primary/vulnerability_basilisk_advisories/vulnerability_basilisk_advisories.parquet
   metadata:
     layer: primary
+
+# Story B8 — per-advisory tri-state fix_available (true/false/unknown; unknown NEVER
+# collapses to false). Intermediate (NOT a new-signal primary -> NOT in the EXCLUDED
+# set, which stays len==3). Consumed by the v_basilisk_advisories read-view transform.
+vulnerability_basilisk_details:
+  type: pandas.ParquetDataset
+  filepath: data/intermediate/vulnerability_basilisk_details/vulnerability_basilisk_details.parquet
+  metadata:
+    layer: intermediate
 
 # =============================================================================
 # vcs_health — VCS + registry health (Phases E / E.5 / K / L / N)
