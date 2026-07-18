@@ -21,11 +21,14 @@ Ownership decisions recorded here:
   findings-only engine result is reachable today, and a report carrying
   findings must never compose ``clean``/exit 0 (C0c). The finding→severity
   policy mapping (which findings escalate to ``policy-violation``) is now
-  real for BOTH v1 axes — Story 1.3's hygiene table and Story 1.6's
-  vulnerability table — each REPLACING the backstop for its own axis; both
-  may only tighten (toward ``policy-violation``), never loosen (toward
-  ``clean``). The backstop itself now only governs a hypothetical future
-  axis with no mapping of its own yet.
+  real for hygiene (Story 1.3) and vulnerability (Story 1.6) — each
+  REPLACING the backstop for its own axis; both may only tighten (toward
+  ``policy-violation``), never loosen (toward ``clean``). Story 6.2 also
+  replaces the backstop for the license axis, but with a HARD
+  ``Status.WARN`` cap (``license_rung``), not a real escalation table —
+  real ``denied``/``unknown`` escalation is Story 6.5's sole ownership. The
+  backstop itself now only governs a hypothetical future axis with no
+  mapping of its own yet.
 * ``DefaultPolicy`` is the fail-closed inventory→verdict bridge: a withheld
   component (``indeterminate_reason`` set) becomes an
   ``indeterminate:<reason>:<pkg>`` finding plus a driver-carrying
@@ -233,8 +236,9 @@ class DefaultPolicy:
       (driver = that finding) — the false-green backstop: a finding-carrying
       report never composes ``clean``. Story 1.3 (hygiene) and Story 1.6
       (vulnerability) have each replaced the backstop with their axis's real
-      severity mapping (tighten-only); the backstop itself now only fires
-      for a hypothetical future axis.
+      severity mapping (tighten-only); Story 6.2 (license) replaces it with
+      a hard ``Status.WARN`` cap instead (real escalation is Story 6.5's);
+      the backstop itself now only fires for a hypothetical future axis.
     * Engine ``ErrorRecord``s feed ``(error, driver)`` rungs: an engine
       failure must reach the verdict (composition yields status ``error`` →
       ``exit_code_for`` gives the error exit), while the report is still
@@ -270,9 +274,11 @@ class DefaultPolicy:
     def evaluate(
         self, inventory: ResolvedInventory, engine_results: Sequence[EngineResult]
     ) -> tuple[tuple[Finding, ...], tuple[tuple[Status, StatusDriver | None], ...]]:
-        # Lazy imports break the interfaces<->hygiene and interfaces<->vuln
-        # cycles; by the time evaluate() runs, all modules are fully loaded.
+        # Lazy imports break the interfaces<->hygiene, interfaces<->vuln, and
+        # interfaces<->license cycles; by the time evaluate() runs, all
+        # modules are fully loaded.
         from .hygiene import hygiene_rung
+        from .license import license_rung
         from .vuln import vuln_rung
 
         # Story 2.1, Gap-A: DEP001 is trusted (blocks) unless the inventory
@@ -333,6 +339,16 @@ class DefaultPolicy:
                             fail_on_kev=self._config.fail_on_kev,
                         )
                     )
+                elif finding.axis == AXIS_LICENSE:
+                    # Story 6.2: license-axis engine findings route through
+                    # license_rung, a HARD Status.WARN cap that never
+                    # consults self._config.license_policy and never
+                    # escalates (real denied->policy-violation / unknown->
+                    # indeterminate escalation is Story 6.5's sole
+                    # ownership). This REPLACES the 1.2 indeterminate
+                    # backstop for the license axis too — never mapping a
+                    # finding to clean (C0 preserved).
+                    rungs.append(license_rung(finding))
                 else:
                     # The false-green backstop now only governs a
                     # hypothetical future axis with no mapping of its own: a

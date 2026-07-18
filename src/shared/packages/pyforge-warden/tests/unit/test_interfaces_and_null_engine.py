@@ -69,10 +69,15 @@ def make_inventory(*components) -> ResolvedInventory:
 
 def test_registry_holds_the_null_deptry_and_osv_engines():
     """Story 1.3 registers the real deptry engine, Story 1.5 the osv-scanner
-    engine, alongside the retained no-op null engine, in deterministic
-    registration order."""
+    engine, Story 6.2 the license engine, alongside the retained no-op null
+    engine, in deterministic registration order."""
     engines = registered_engines()
-    assert [engine.name for engine in engines] == ["null", "deptry", "osv-scanner"]
+    assert [engine.name for engine in engines] == [
+        "null",
+        "deptry",
+        "osv-scanner",
+        "license",
+    ]
     assert isinstance(engines[0], NullEngine)
 
 
@@ -96,7 +101,7 @@ def test_register_engine_appends_in_deterministic_order(monkeypatch):
     returned = register_engine(DummyEngine)
     assert returned is DummyEngine  # decorator-friendly
     names = [engine.name for engine in registered_engines()]
-    assert names == ["null", "deptry", "osv-scanner", "dummy"]
+    assert names == ["null", "deptry", "osv-scanner", "license", "dummy"]
 
 
 def test_register_engine_is_idempotent_for_the_same_factory(monkeypatch):
@@ -403,26 +408,29 @@ def test_default_policy_default_confidence_threshold_downgrades_on_a_likely_comp
 
 
 def test_hypothetical_future_axis_still_hits_the_backstop(component_factory):
-    """Now that BOTH v1 axes (hygiene, vulnerability) have real mappings, the
-    generic backstop is reachable only by a finding whose axis is neither —
-    a hypothetical future axis with no mapping of its own yet. Without this
-    test that branch would be completely unexercised by the suite (a
-    regression there, e.g. mapping it to clean, would go undetected)."""
+    """Now that hygiene, vulnerability, AND license (Story 6.2) all have real
+    mappings, the generic backstop is reachable only by a finding whose axis
+    is none of the three — a hypothetical future axis (e.g. a SAST axis;
+    see ``report.py``'s own "a further SAST axis would still land
+    additively" precedent) with no mapping of its own yet. Without this test
+    that branch would be completely unexercised by the suite (a regression
+    there, e.g. mapping it to clean, would go undetected)."""
     engine_finding = Finding(
-        id="indeterminate:license-issue:foo",
-        axis="license",  # AXIS_HYGIENE/AXIS_VULNERABILITY is an OPEN string
-        # mechanism (see models.py) — a future axis lands additively.
+        id="indeterminate:sast-issue:foo",
+        axis="sast",  # AXIS_HYGIENE/AXIS_VULNERABILITY/AXIS_LICENSE is an
+        # OPEN string mechanism (see models.py) — a future axis lands
+        # additively.
         message="a hypothetical future axis",
         subject="foo",
         severity=None,
     )
-    result = EngineResult(findings=(engine_finding,), errors=(), coverage=(), axis="license")
+    result = EngineResult(findings=(engine_finding,), errors=(), coverage=(), axis="sast")
     inventory = make_inventory(component_factory(name="requests", version="2.31.0"))
     findings, rungs = DefaultPolicy().evaluate(inventory, [result])
     assert engine_finding in findings
     assert (
         Status.INDETERMINATE,
-        StatusDriver(axis="license", finding_id=engine_finding.id),
+        StatusDriver(axis="sast", finding_id=engine_finding.id),
     ) in rungs
 
 

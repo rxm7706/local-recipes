@@ -181,6 +181,16 @@ Ownership decisions recorded:
   (``Exception``, not just ``OSError``/``ValueError``) — an unrelated
   artifact's internal bug must degrade to a loud stderr line, never a
   silent report loss.
+* ``--allow-licenses``/``--deny-licenses`` (Story 6.2, FR33): threaded into
+  ``ConfigLoader().load(...)`` the SAME way ``--fail-on``/
+  ``--fail-under-coverage`` already are (CLI wins over either TOML file),
+  and into ``LicenseEngine(allow_licenses=..., deny_licenses=...)`` in the
+  engine-instantiation loop (mirrors this same loop's pre-existing
+  ``OsvEngine(fail_on_kev=...)`` special case). ``config.license_gating``
+  is threaded into ``assemble_report`` for the license axis's own
+  ``AxisCoverage.gating`` — findings themselves still cap at ``warn``
+  regardless (``license.license_rung``'s hard cap; real escalation is
+  Story 6.5's).
 """
 
 from __future__ import annotations
@@ -203,7 +213,7 @@ from .config import (
     EffectiveConfig,
 )
 from .discovery import CONDA_LOCK_KIND, PIXI_LOCK_KIND, discover
-from .engines import DeptryEngine, OsvEngine, engine_factories
+from .engines import DeptryEngine, LicenseEngine, OsvEngine, engine_factories
 from .extract import UnparsableManifestError, extractor_for
 from .hygiene import has_adjacent_python_source
 from .interfaces import DefaultPolicy, EngineResult, _sanitize_id_segment
@@ -351,6 +361,30 @@ def _build_parser() -> tuple[argparse.ArgumentParser, argparse.ArgumentParser]:
             "whose deps_assessed/deps_total*100 falls below this composes "
             "one 'indeterminate' rung (overrides any [tool.pyforge-warden] "
             "fail-under-coverage config value)"
+        ),
+    )
+    scan.add_argument(
+        "--allow-licenses",
+        default=None,
+        metavar="SPDX_IDS",
+        help=(
+            "comma-separated SPDX license id allow-list; a resolved "
+            "component license NOT in this list is denied (overrides any "
+            "[tool.pyforge-warden] allow-licenses config value) -- "
+            "activates license-axis gating (FR33); v1 findings still cap "
+            "at 'warn' regardless (real escalation is a later story)"
+        ),
+    )
+    scan.add_argument(
+        "--deny-licenses",
+        default=None,
+        metavar="SPDX_IDS",
+        help=(
+            "comma-separated SPDX license id deny-list; a resolved "
+            "component license IN this list is denied, taking priority "
+            "over --allow-licenses (overrides any [tool.pyforge-warden] "
+            "deny-licenses config value) -- activates license-axis gating "
+            "(FR33); v1 findings still cap at 'warn' regardless"
         ),
     )
     scan.add_argument(
@@ -502,16 +536,34 @@ def _run_scan(args: argparse.Namespace) -> int:
             target,
             cli_fail_on=args.fail_on,
             cli_fail_under_coverage=args.fail_under_coverage,
+            cli_allow_licenses=args.allow_licenses,
+            cli_deny_licenses=args.deny_licenses,
         )
     except (ConfigParseError, ConfigValidationError) as exc:
         # Review finding: an unrelated config-file error must not silently
         # discard an already-argparse-validated CLI flag the user
-        # explicitly passed (--fail-on/--fail-under-coverage are unrelated
-        # to WHY the TOML failed to load).
-        config = EffectiveConfig.default_with_cli_overrides(
-            cli_fail_on=args.fail_on,
-            cli_fail_under_coverage=args.fail_under_coverage,
-        )
+        # explicitly passed (--fail-on/--fail-under-coverage/
+        # --allow-licenses/--deny-licenses are unrelated to WHY the TOML
+        # failed to load).
+        try:
+            config = EffectiveConfig.default_with_cli_overrides(
+                cli_fail_on=args.fail_on,
+                cli_fail_under_coverage=args.fail_under_coverage,
+                cli_allow_licenses=args.allow_licenses,
+                cli_deny_licenses=args.deny_licenses,
+            )
+        except ConfigValidationError:
+            # Fix 5 follow-up (review finding, 2026-07-18): `exc` above may
+            # ITSELF be the bad CLI flag's own error (--allow-licenses/
+            # --deny-licenses have no argparse-level pre-validation, unlike
+            # --fail-on/--fail-under-coverage) -- re-applying the SAME bad
+            # value here raised a SECOND, uncaught ConfigValidationError,
+            # misprojecting as `internal error` + a traceback instead of the
+            # clean config-validation exit `exc` (recorded below, its
+            # message already names the exact bad flag/value) already
+            # provides. Fall back to the plain built-in default rather than
+            # re-attempting a reconstruction that is already known to fail.
+            config = EffectiveConfig.default()
         # Review finding: warnings gathered before the raise (e.g. a
         # malformed-but-non-fatal pixi.toml) must still reach stderr.
         for warning in exc.warnings:
@@ -698,10 +750,17 @@ def _run_scan(args: argparse.Namespace) -> int:
             # value -- mirrors this same loop's pre-existing DeptryEngine
             # special case (hygiene_applicable filter above), never widening
             # the shared zero-arg Engine.run() seam every other factory
-            # still uses (config.py's Design Notes).
+            # still uses (config.py's Design Notes). Story 6.2:
+            # LicenseEngine's allow_licenses/deny_licenses need the same
+            # treatment.
             engine = (
                 OsvEngine(fail_on_kev=config.fail_on_kev)
                 if factory is OsvEngine
+                else LicenseEngine(
+                    allow_licenses=config.allow_licenses,
+                    deny_licenses=config.deny_licenses,
+                )
+                if factory is LicenseEngine
                 else factory()
             )
         except (SystemExit, Exception) as exc:  # noqa: BLE001 —
@@ -907,6 +966,7 @@ def _run_scan(args: argparse.Namespace) -> int:
         fail_under_coverage=config.fail_under_coverage,
         suppressions=suppressions,
         kev_data=kev_data,
+        license_gating=config.license_gating,
     )
     if args.sbom_output is not None:
         # Story 4.1: an independent sibling artifact -- rendering and
