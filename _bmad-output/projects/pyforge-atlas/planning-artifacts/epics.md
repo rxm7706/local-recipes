@@ -935,6 +935,7 @@ So that humans read the factory's knowledge in the presentation layer.
 - **Gating question:** none.
 - **Verify gate:** mock-Wagtail round-trip fixture in `kedro-test`.
 - **Depends on:** H1, H2.
+- **DELIVERED (2026-07-18):** `factory/lasuite.py` — `LaSuiteClient` (create/update/get/list over the Wagtail/Django REST shape; clear `LaSuiteError` on non-2xx per § 2.1) + `WikiSyncer` (idempotent compiled→CMS push keyed by content sha: new→create, changed→update, unchanged→SKIP with NO remote call). Transport is the injected `opener` seam — package code holds no HTTP client (AC-2, no-inline-IO gate green); the default opener refuses with a clear "inject a transport" error. Mapping sidecar lives at the wiki ROOT (AD-22). Verified against an in-memory mock Wagtail (push/update/idempotent-re-push/mapping-resume). Live Wagtail server + httpx opener bring-up DEFERRED (DW-H3). Gate `tests/factory/test_lasuite.py`.
 
 ### Story H4 (9.4): Orchestrate Crews via Dagster
 

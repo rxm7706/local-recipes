@@ -26,6 +26,14 @@ from .crews import (
     QACrew,
     keyword_retriever,
 )
+from .lasuite import (
+    LaSuiteClient,
+    LaSuiteConfig,
+    LaSuiteError,
+    SyncReport,
+    WikiSyncer,
+    resolve_lasuite_config,
+)
 from .personas import (
     DEFAULT_PERSONAS,
     FACTORY_TOOLS,
@@ -56,4 +64,10 @@ __all__ = [
     "QAAnswer",
     "Grounding",
     "keyword_retriever",
+    "LaSuiteClient",
+    "LaSuiteConfig",
+    "LaSuiteError",
+    "WikiSyncer",
+    "SyncReport",
+    "resolve_lasuite_config",
 ]
