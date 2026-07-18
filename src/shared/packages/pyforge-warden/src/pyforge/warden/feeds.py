@@ -193,6 +193,14 @@ def write_kev_cache(cache_dir: str | Path, document: Mapping[str, object]) -> Pa
             fh.write("\n")
         os.replace(tmp_name, target)
     except BaseException:
+        # Close the raw fd only if os.fdopen never took ownership of it (it
+        # raised before the `with`); on the common path the `with` already
+        # closed it, so tolerate EBADF rather than double-close. Then unlink
+        # the temp file so a failed write never leaks it.
+        try:
+            os.close(handle)
+        except OSError:
+            pass
         try:
             os.unlink(tmp_name)
         except OSError:

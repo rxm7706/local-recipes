@@ -116,6 +116,7 @@ from types import MappingProxyType
 import license_expression
 import yaml
 
+from .extract._identity import yaml_safe_load_strict
 from .extract.meta_v0 import neutralize_unquoted_braces, strip_jinja_statements
 from .extract.recipe_v1 import neutralize_bare_braces, strip_jinja_comments
 from .interfaces import _sanitize_id_segment
@@ -466,7 +467,13 @@ def _read_about_license(manifest_path: Path) -> str | None:
     else:
         return None
     try:
-        document = yaml.safe_load(neutralized)
+        # yaml_safe_load_strict (not raw safe_load): refuses YAML alias
+        # expansion (billion-laughs CPU/RSS exhaustion) and rejects duplicate
+        # mapping keys — the same hardened loader the three extract/* YAML
+        # readers use, since this re-reads the same untrusted conda manifest.
+        # ComposerError/ConstructorError are yaml.YAMLError subclasses, so both
+        # still degrade to `unknown` via the existing except below.
+        document = yaml_safe_load_strict(neutralized)
     except (yaml.YAMLError, RecursionError):
         # RecursionError (follow-up review pass, 2026-07-18): deeply nested
         # flow collections blow the interpreter's recursion limit inside
