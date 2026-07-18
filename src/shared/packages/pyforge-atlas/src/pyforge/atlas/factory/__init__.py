@@ -15,6 +15,17 @@ This ``__init__`` re-exports the H1 surface; deeper layers import the submodules
 
 from __future__ import annotations
 
+from .crews import (
+    CompileCrew,
+    CompileResult,
+    Grounding,
+    LintCrew,
+    LintReport,
+    LintViolation,
+    QAAnswer,
+    QACrew,
+    keyword_retriever,
+)
 from .personas import (
     DEFAULT_PERSONAS,
     FACTORY_TOOLS,
@@ -36,4 +47,13 @@ __all__ = [
     "WIKI_STAGES",
     "WikiLayout",
     "scaffold_wiki",
+    "CompileCrew",
+    "CompileResult",
+    "LintCrew",
+    "LintReport",
+    "LintViolation",
+    "QACrew",
+    "QAAnswer",
+    "Grounding",
+    "keyword_retriever",
 ]
