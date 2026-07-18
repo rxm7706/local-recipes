@@ -204,6 +204,49 @@ def test_bsl_only_in_semantic_layer():
     )
 
 
+# AD-1/AD-6 (Story D2): ``vizro`` is REPLACEABLE visualization glue — only the
+# ``dashboard/`` subpackage may import it, so the read-surface UI stays contained to one
+# swappable layer (mirrors the C1 dagster-glue file exemption and the D1 BSL subtree
+# exemption above, scoped to the dashboard subtree). The dashboard consumes the BSL MODELS
+# (``pyforge.atlas.semantic``) — never ``boring_semantic_layer`` directly — so the AD-8 ban
+# above still covers it.
+VIZRO_DENYLIST = ("vizro",)
+DASHBOARD_PREFIX = "dashboard/"
+
+
+def _vizro_violations() -> dict[str, list[str]]:
+    found: dict[str, list[str]] = {}
+    for path in _iter_scanned_files():
+        rel = str(path.relative_to(ATLAS_PKG))
+        if rel.startswith(DASHBOARD_PREFIX):
+            continue
+        hits = [n for n in sorted(_imported_names(path)) if _denylisted(n, VIZRO_DENYLIST)]
+        if hits:
+            found[str(path.relative_to(ATLAS_PKG.parents[2]))] = hits
+    return found
+
+
+def test_vizro_only_in_dashboard_layer():
+    """AD-1/AD-6 (Story D2): only ``pyforge/atlas/dashboard/*`` may import ``vizro`` — the
+    Vizro read surface is replaceable glue confined to one subpackage."""
+    violations = _vizro_violations()
+    assert not violations, (
+        "AD-1 violation — only the dashboard/ subpackage may import vizro: "
+        f"{violations}"
+    )
+    # positive: the dashboard app factory DOES import vizro (the glue genuinely lives there).
+    app_mod = ATLAS_PKG / "dashboard" / "app.py"
+    assert app_mod.is_file(), "dashboard/app.py missing"
+    assert any(_denylisted(n, VIZRO_DENYLIST) for n in _imported_names(app_mod)), (
+        "dashboard/app.py does not import vizro"
+    )
+    # AD-8 crossover: the dashboard data layer consumes the semantic seam, not raw BSL.
+    data_mod = ATLAS_PKG / "dashboard" / "data.py"
+    assert not any(_denylisted(n, BSL_DENYLIST) for n in _imported_names(data_mod)), (
+        "dashboard/data.py imports boring_semantic_layer directly — must go through semantic/"
+    )
+
+
 def test_dagster_only_in_glue():
     """Positive AD-1 assertion: the glue module DOES import the orchestration
     libs (so it is genuinely the seam) and NO OTHER package file does — the
