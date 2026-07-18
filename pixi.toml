@@ -1045,6 +1045,11 @@ cmd = "pytest src/shared/packages/pyforge-atlas/tests/parity -q"
 description = "Wave C verify gate (Story C1, AC-5, FR-6): kedro-dagster dryrun — build Dagster Definitions from KedroProjectTranslator, assert schedules enumerate + jobs resolve + each op carries its OWN timeout + Phase P admin-only + profile precedence. DEFINITIONS LOAD ONLY — NO live daemon/scheduled run (attended bring-up deferred, DW-C1). Offline, --frozen."
 cmd = "pytest src/shared/packages/pyforge-atlas/tests/orchestration -q"
 
+[feature.pyforge-atlas.tasks.viz]
+description = "Wave C (Story C2, FR-6 / AC-3): launch Kedro-Viz on the migrated atlas DAG — inspect dataset schemas + data lineage in the browser instead of reading orchestrator source. Runs from the atlas project root (kedro CLI needs the project cwd). --no-browser so it works headless; open the printed localhost URL."
+cmd = "kedro viz run --no-browser"
+cwd = "src/shared/packages/pyforge-atlas"
+
 [feature.pyforge-atlas.tasks.pyforge-atlas-build-conda]
 description = "Build the conda package (.conda) via pixi-build-python -> dist-conda/"
 cmd = "pixi build --output-dir dist-conda"
