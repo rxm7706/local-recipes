@@ -77,6 +77,35 @@ Ownership decisions recorded:
   finding this run. Every notice's ``reason`` passes through
   ``_single_line`` first, same as every finding/error ``message``. The
   default ``()`` preserves every pre-3.2 caller/test byte-for-byte.
+* ``expired_waivers``/``warn_only``/``warn_only_downgraded`` (Story 3.3,
+  additive/defaulted) -- ``expired_waivers`` gets its own ``[waiver-
+  expired]`` line per notice (an exact id match whose ``expires_at`` had
+  already passed; ``apply_waivers`` left that rung's own re-block
+  untouched -- this line only makes the fall-through visible for review).
+  Its wording deliberately never asserts the finding is unconditionally
+  still re-blocked: a coincident ``--warn-only`` can downgrade that same
+  rung to ``warn``, so the status=/exit_code= summary line (already
+  correct) is what states the actual current outcome. Both the
+  pre-existing ``[waiver]`` loop and the new ``[waiver-expired]`` loop pass
+  ``authorized_by``/``expires_at`` through ``_single_line`` too (Story 3.3
+  review finding: previously only ``reason`` was sanitized in either loop
+  -- an embedded newline in ``authorized_by`` forged an extra report
+  line). ``warn_only``/``warn_only_downgraded`` gate a single
+  graduate-to-enforcing nudge line, added ONLY when ALL THREE of
+  ``warn_only``, ``status["value"] == "warn"``, and
+  ``warn_only_downgraded > 0`` hold -- ``status == "warn"`` ALONE is not
+  sufficient, since a report can compose ``warn`` for a reason
+  ``--warn-only`` had nothing to do with (a native hygiene ``warn``-tier
+  finding, or a finding a committed waiver already suppressed to some
+  other rung). The nudge names the exact, correctly-pluralized downgraded-
+  finding count (never ``len(report.findings)``, which would also count
+  findings ``--warn-only`` never touched) and states that DROPPING
+  ``--warn-only`` re-enables enforcement -- never implying ``--fail-on``
+  alone suffices, since ``warn_blocking`` downgrades unconditionally
+  regardless of the configured severity floor (only the COUNT of findings
+  it downgrades can vary with ``--fail-on``, not the final status/exit
+  code). The defaults (``()``/``False``/``0``) preserve every pre-3.3
+  caller/test byte-for-byte.
 
 Status/exit projection is delegated wholesale to ``verdict.py`` (the sole
 owner); this module feeds it the collected rungs and stores the result.
@@ -312,7 +341,12 @@ def _single_line(text: str) -> str:
 
 
 def render_text(
-    report: ComplianceReport, *, applied_waivers: Sequence[WaiverNotice] = ()
+    report: ComplianceReport,
+    *,
+    applied_waivers: Sequence[WaiverNotice] = (),
+    expired_waivers: Sequence[WaiverNotice] = (),
+    warn_only: bool = False,
+    warn_only_downgraded: int = 0,
 ) -> str:
     """Render the report as a human-readable, explicitly NON-CONTRACT summary.
 
@@ -323,9 +357,15 @@ def render_text(
     one line per finding (axis, severity tier, id, message) and one line
     per error (kind, owner, message), both in ``to_json_dict()``'s sorted
     order, then one line per ``applied_waivers`` notice (Story 3.2; id,
-    reason, authorized_by, expires_at) in caller-supplied order. Free-format
-    lines: unlike ``render_json``'s document, this output is never
-    schema-validated. Every ``message``/``reason`` is passed through
+    reason, authorized_by, expires_at) and one line per ``expired_waivers``
+    notice (Story 3.3; same four fields, ``[waiver-expired]`` marker,
+    non-"re-blocked" wording — see the module docstring), both in
+    caller-supplied order, then (Story 3.3) at most one graduate-to-
+    enforcing nudge line when ``warn_only`` is set, the composed status is
+    ``warn``, and ``warn_only_downgraded > 0`` (see the module docstring for
+    why all three are required). Free-format lines: unlike ``render_json``'s
+    document, this output is never schema-validated. Every ``message``/
+    ``reason``/``authorized_by``/``expires_at`` is passed through
     ``_single_line`` first — see its docstring."""
     # to_json_dict()'s declared return type is dict[str, object] (every
     # nested value equally untyped) -- it is JSON-primitive data, not a
@@ -350,8 +390,26 @@ def render_text(
         lines.append(f"  [error:{error['kind']}] {error['owner']} -- {message}")
     for notice in applied_waivers:
         reason = _single_line(notice.reason)
+        authorized_by = _single_line(notice.authorized_by)
+        expires_at = _single_line(notice.expires_at)
         lines.append(
             f"  [waiver] {notice.id} -- reason={reason} "
-            f"authorized_by={notice.authorized_by} expires_at={notice.expires_at}"
+            f"authorized_by={authorized_by} expires_at={expires_at}"
+        )
+    for notice in expired_waivers:
+        reason = _single_line(notice.reason)
+        authorized_by = _single_line(notice.authorized_by)
+        expires_at = _single_line(notice.expires_at)
+        lines.append(
+            f"  [waiver-expired] {notice.id} -- reason={reason} "
+            f"authorized_by={authorized_by} expires_at={expires_at} -- "
+            "expired, needs review/renewal"
+        )
+    if warn_only and status["value"] == "warn" and warn_only_downgraded > 0:
+        finding_word = "finding" if warn_only_downgraded == 1 else "findings"
+        lines.append(
+            f"  [warn-only] {warn_only_downgraded} {finding_word} not "
+            "enforced while --warn-only is set -- drop --warn-only to "
+            "re-enable enforcement"
         )
     return "\n".join(lines)

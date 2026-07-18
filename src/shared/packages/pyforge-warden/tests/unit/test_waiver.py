@@ -23,6 +23,7 @@ from pyforge.warden.waiver import (
     bypass_blocking,
     emit_bypass_stanza,
     load_waivers,
+    warn_blocking,
 )
 
 _ACCEPTED = "2026-01-01T00:00:00+00:00"
@@ -359,13 +360,14 @@ def test_exact_match_non_expired_bypasses_and_notices():
         expires_at=_EXPIRES,
     )
     rungs = [_rung(Status.WARN, "hygiene:DEP002:requests")]
-    updated, notices = apply_waivers(rungs, (waiver,), now=_NOW)
+    updated, notices, expired = apply_waivers(rungs, (waiver,), now=_NOW)
     assert updated == [(Status.BYPASSED, rungs[0][1])]
     assert len(notices) == 1
     assert notices[0].id == "hygiene:DEP002:requests"
     assert notices[0].reason == "tracked"
     assert notices[0].authorized_by == "alice"
     assert notices[0].expires_at == _EXPIRES
+    assert expired == []
 
 
 def test_no_match_leaves_the_rung_untouched():
@@ -377,12 +379,17 @@ def test_no_match_leaves_the_rung_untouched():
         expires_at=_EXPIRES,
     )
     rungs = [_rung(Status.WARN, "hygiene:DEP002:requests")]
-    updated, notices = apply_waivers(rungs, (waiver,), now=_NOW)
+    updated, notices, expired = apply_waivers(rungs, (waiver,), now=_NOW)
     assert updated == rungs
     assert notices == []
+    assert expired == []
 
 
 def test_expired_match_leaves_the_rung_untouched():
+    """Story 3.3: an expired exact-id match still leaves the rung's own
+    Status untouched (the already-correct re-block fall-through, unchanged
+    from pre-3.3) -- but now ALSO produces a populated expired_notices
+    entry, making that fall-through visible for review."""
     waiver = WaiverEntry(
         id="hygiene:DEP002:requests",
         reason="x",
@@ -391,9 +398,14 @@ def test_expired_match_leaves_the_rung_untouched():
         expires_at="2020-02-01T00:00:00+00:00",
     )
     rungs = [_rung(Status.WARN, "hygiene:DEP002:requests")]
-    updated, notices = apply_waivers(rungs, (waiver,), now=_NOW)
+    updated, notices, expired = apply_waivers(rungs, (waiver,), now=_NOW)
     assert updated == rungs
     assert notices == []
+    assert len(expired) == 1
+    assert expired[0].id == "hygiene:DEP002:requests"
+    assert expired[0].reason == "x"
+    assert expired[0].authorized_by == "alice"
+    assert expired[0].expires_at == "2020-02-01T00:00:00+00:00"
 
 
 @pytest.mark.parametrize("status", [Status.CLEAN, Status.NOT_APPLICABLE, Status.BYPASSED])
@@ -410,9 +422,10 @@ def test_non_blocking_status_is_never_rewritten_even_on_an_id_match(status):
         expires_at=_EXPIRES,
     )
     rungs = [_rung(status, "hygiene:DEP002:requests")]
-    updated, notices = apply_waivers(rungs, (waiver,), now=_NOW)
+    updated, notices, expired = apply_waivers(rungs, (waiver,), now=_NOW)
     assert updated == rungs
     assert notices == []
+    assert expired == []
 
 
 def test_expiry_boundary_exactly_now_is_not_expired():
@@ -426,8 +439,9 @@ def test_expiry_boundary_exactly_now_is_not_expired():
         expires_at=_NOW.isoformat(),
     )
     rungs = [_rung(Status.WARN, "hygiene:DEP002:requests")]
-    updated, _ = apply_waivers(rungs, (waiver,), now=_NOW)
+    updated, _, expired = apply_waivers(rungs, (waiver,), now=_NOW)
     assert updated[0][0] is Status.BYPASSED
+    assert expired == []
 
 
 def test_driverless_rung_is_never_matched():
@@ -439,9 +453,10 @@ def test_driverless_rung_is_never_matched():
         accepted_at=_ACCEPTED,
         expires_at=_EXPIRES,
     )
-    updated, notices = apply_waivers(rungs, (waiver,), now=_NOW)
+    updated, notices, expired = apply_waivers(rungs, (waiver,), now=_NOW)
     assert updated == rungs
     assert notices == []
+    assert expired == []
 
 
 def test_residual_unwaived_finding_alongside_a_waived_one():
@@ -458,10 +473,11 @@ def test_residual_unwaived_finding_alongside_a_waived_one():
         _rung(Status.WARN, "hygiene:DEP002:requests"),
         _rung(Status.POLICY_VIOLATION, "vuln:GHSA-xxxx:other@1.0.0", axis=AXIS_VULNERABILITY),
     ]
-    updated, notices = apply_waivers(rungs, (waiver,), now=_NOW)
+    updated, notices, expired = apply_waivers(rungs, (waiver,), now=_NOW)
     assert updated[0][0] is Status.BYPASSED
     assert updated[1] == rungs[1]
     assert len(notices) == 1
+    assert expired == []
 
 
 def test_two_rungs_sharing_one_waiver_id_produce_one_notice():
@@ -476,9 +492,28 @@ def test_two_rungs_sharing_one_waiver_id_produce_one_notice():
         _rung(Status.WARN, "hygiene:DEP002:requests"),
         _rung(Status.WARN, "hygiene:DEP002:requests"),
     ]
-    updated, notices = apply_waivers(rungs, (waiver,), now=_NOW)
+    updated, notices, expired = apply_waivers(rungs, (waiver,), now=_NOW)
     assert all(status is Status.BYPASSED for status, _ in updated)
     assert len(notices) == 1
+    assert expired == []
+
+
+def test_two_rungs_sharing_one_expired_waiver_id_produce_one_expired_notice():
+    waiver = WaiverEntry(
+        id="hygiene:DEP002:requests",
+        reason="x",
+        authorized_by="alice",
+        accepted_at="2020-01-01T00:00:00+00:00",
+        expires_at="2020-02-01T00:00:00+00:00",
+    )
+    rungs = [
+        _rung(Status.WARN, "hygiene:DEP002:requests"),
+        _rung(Status.WARN, "hygiene:DEP002:requests"),
+    ]
+    updated, notices, expired = apply_waivers(rungs, (waiver,), now=_NOW)
+    assert updated == rungs
+    assert notices == []
+    assert len(expired) == 1
 
 
 # --- bypass_blocking -----------------------------------------------------
@@ -512,6 +547,95 @@ def test_bypass_blocking_leaves_error_rungs_untouched():
 def test_bypass_blocking_leaves_driverless_rungs_untouched():
     rungs = [(Status.CLEAN, None)]
     assert bypass_blocking(rungs) == rungs
+
+
+# --- warn_blocking (Story 3.3, --warn-only) ------------------------------
+
+
+@pytest.mark.parametrize("status", [Status.POLICY_VIOLATION, Status.INDETERMINATE])
+def test_warn_blocking_downgrades_policy_violation_and_indeterminate(status):
+    driver = StatusDriver(
+        axis=AXIS_VULNERABILITY, finding_id="vuln:GHSA-xxxx:pkg@1.0.0"
+    )
+    rungs = [(status, driver)]
+    updated, downgraded = warn_blocking(rungs)
+    assert updated == [(Status.WARN, driver)]
+    assert downgraded == 1
+
+
+def test_warn_blocking_leaves_error_rungs_untouched():
+    """Status.ERROR is NEVER downgraded by --warn-only -- a tool
+    malfunction must always surface honestly regardless of adoption mode."""
+    rungs = [_rung(Status.ERROR, "error:config-parse:some-subject", axis=AXIS_INGESTION)]
+    updated, downgraded = warn_blocking(rungs)
+    assert updated == rungs
+    assert downgraded == 0
+
+
+@pytest.mark.parametrize(
+    "status", [Status.WARN, Status.BYPASSED, Status.CLEAN, Status.NOT_APPLICABLE]
+)
+def test_warn_blocking_leaves_already_non_blocking_or_warn_statuses_untouched(status):
+    rungs = [_rung(status, "hygiene:DEP002:requests")]
+    updated, downgraded = warn_blocking(rungs)
+    assert updated == rungs
+    assert downgraded == 0
+
+
+@pytest.mark.parametrize("status", [Status.POLICY_VIOLATION, Status.INDETERMINATE])
+def test_warn_blocking_leaves_driverless_rungs_untouched(status):
+    """Test-quality note (review-pass-2 finding): this MUST use a status
+    that _WARN_ONLY_DOWNGRADE_STATUSES membership alone would otherwise
+    downgrade (POLICY_VIOLATION/INDETERMINATE) -- a CLEAN/NOT_APPLICABLE
+    driverless rung is already excluded by the status-membership check
+    alone and never actually exercises the `driver is not None` guard."""
+    rungs = [(status, None)]
+    updated, downgraded = warn_blocking(rungs)
+    assert updated == rungs
+    assert downgraded == 0
+
+
+def test_warn_blocking_counts_only_the_rungs_it_actually_rewrites():
+    """The nudge's exact count depends on this -- a mixed set of rungs
+    where only some are downgradable must report only those."""
+    rungs = [
+        _rung(Status.WARN, "hygiene:DEP002:requests"),
+        _rung(Status.POLICY_VIOLATION, "vuln:GHSA-xxxx:pkg@1.0.0", axis=AXIS_VULNERABILITY),
+        _rung(Status.INDETERMINATE, "indeterminate:no-version:foo"),
+        _rung(Status.ERROR, "error:config-parse:x", axis=AXIS_INGESTION),
+    ]
+    updated, downgraded = warn_blocking(rungs)
+    assert downgraded == 2
+    assert updated[0] == rungs[0]
+    assert updated[1][0] is Status.WARN
+    assert updated[2][0] is Status.WARN
+    assert updated[3] == rungs[3]
+
+
+def test_warn_blocking_counts_distinct_findings_not_raw_rungs():
+    """Edge-case-hunter finding (review pass 3): interfaces.py's
+    indeterminate finding-id carries no version segment, so two components
+    sharing a name at different versions (inventory.py's documented
+    "distinct versions stay distinct" merge policy) landing on the same
+    indeterminate reason produce two rungs referencing the SAME one
+    Finding (already deduped by id upstream). The downgraded count must
+    dedupe by finding_id too, or it overcounts relative to
+    report.findings."""
+    rungs = [
+        _rung(Status.INDETERMINATE, "indeterminate:unmatchable:foo"),
+        _rung(Status.INDETERMINATE, "indeterminate:unmatchable:foo"),
+    ]
+    updated, downgraded = warn_blocking(rungs)
+    assert downgraded == 1
+    assert all(status is Status.WARN for status, _ in updated)
+
+
+def test_warn_blocking_preserves_driver_identity_on_a_downgraded_rung():
+    driver = StatusDriver(
+        axis=AXIS_VULNERABILITY, finding_id="vuln:GHSA-xxxx:pkg@1.0.0"
+    )
+    updated, _ = warn_blocking([(Status.POLICY_VIOLATION, driver)])
+    assert updated[0][1] is driver
 
 
 # --- emit_bypass_stanza --------------------------------------------------
