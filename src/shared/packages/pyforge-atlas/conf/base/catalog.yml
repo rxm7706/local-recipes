@@ -700,6 +700,23 @@ sbom_match_report_entry:
   metadata:
     layer: primary
 
+# F4 deptry dependency-hygiene node output (FR-16). Source-less intake ->
+# not-applicable (never a failure); source-bearing -> deptry hygiene findings.
+sbom_hygiene_entry:
+  type: json.JSONDataset
+  filepath: ${runtime_params:sbom_hygiene_out,data/intermediate/sbom_hygiene_entry/hygiene.json}
+  metadata:
+    layer: intermediate
+
+# F4 TERMINAL four-axis ComplianceReport (AD-12 single producer; FR-18). The
+# converged CI gate artifact — schema-validated against pyforge-warden's schema
+# (imported, never vendored) with the frozen exit code (verdict.exit_code_for).
+sbom_compliance_report_entry:
+  type: json.JSONDataset
+  filepath: ${runtime_params:sbom_compliance_report_out,data/derived/sbom_compliance_report_entry/compliance_report.json}
+  metadata:
+    layer: derived
+
 # =============================================================================
 # seed_gaps — hand-curated seeds (declared inputs) + gap-report outputs
 # =============================================================================
