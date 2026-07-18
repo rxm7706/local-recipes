@@ -249,7 +249,11 @@ class _StaleAwareBasiliskSource(AbstractDataset):
             return
         try:
             self._write_last_good(payload)
-        except OSError as exc:
+        except (OSError, TypeError, ValueError) as exc:
+            # OSError = disk/write failure; TypeError/ValueError = a non-JSON-serializable
+            # fetcher payload (datetime/set/numpy scalar) reaching json.dumps. Both are a
+            # write failure of the last-good store — degrade to keep-last-good + mark stale
+            # rather than propagate (AD-13 never-fail; module docstring keep-last-good contract).
             logger.warning("write of %s failed, keeping last-good: %s", self._filepath, exc)
             self._mark_stale(f"write failed: {type(exc).__name__}: {exc}")
             return

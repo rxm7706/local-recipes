@@ -155,6 +155,23 @@ def test_batch_empty_fetch_never_clobbers_last_good(tmp_path):
     assert ds._read_last_good() == good
 
 
+def test_batch_nonserializable_payload_keeps_last_good_no_propagate(tmp_path):
+    # AD-13 never-fail: a fetcher payload carrying a non-JSON scalar (datetime/set/numpy)
+    # reaches json.dumps in the last-good write. That TypeError/ValueError is a WRITE
+    # failure of the store -> degrade to keep-last-good + mark stale, never propagate.
+    import datetime as _dt
+
+    good = [{"conda_name": "libtiff", "advisories": []}]
+    ds = _batch(tmp_path, fetcher=lambda chunk: good)
+    ds.query_population([build_conda_purl("libtiff")])  # persist a good last-good first
+    # now a payload with an un-serializable datetime must NOT raise out of query_population
+    ds._fetcher = lambda chunk: [{"conda_name": "libtiff", "modified": _dt.datetime(2026, 1, 1)}]
+    out = ds.query_population([build_conda_purl("libtiff")])  # must NOT raise
+    assert out == [{"conda_name": "libtiff", "modified": _dt.datetime(2026, 1, 1)}]
+    assert ds.is_stale() is True  # write failed -> marked stale
+    assert ds._read_last_good() == good  # prior good store preserved (never clobbered)
+
+
 def test_batch_save_is_read_only(tmp_path):
     ds = _batch(tmp_path)
     with pytest.raises((NotImplementedError, DatasetError), match="read-only"):
@@ -248,6 +265,20 @@ def test_detail_offline_marks_stale(tmp_path):
     out = ds.load()
     assert out == []
     assert ds.is_stale() is True
+
+
+def test_detail_nonserializable_payload_keeps_last_good_no_propagate(tmp_path):
+    # AD-13 never-fail (detail fan-out): a detail record whose field is a `set` (routine in
+    # data payloads) is non-JSON -> the last-good write raises TypeError. It must degrade to
+    # keep-last-good + mark stale, never propagate out of fetch_details.
+    good = [{"advisory_id": "BAS-1", "affected": []}]
+    ds = _detail(tmp_path, fetcher=lambda aid: {"advisory_id": aid, "affected": []})
+    ds.fetch_details(["BAS-1"])  # persist a good last-good first
+    ds._fetcher = lambda aid: {"advisory_id": aid, "aliases": {"CVE-1", "CVE-2"}}
+    out = ds.fetch_details(["BAS-1"])  # must NOT raise
+    assert out == [{"advisory_id": "BAS-1", "aliases": {"CVE-1", "CVE-2"}}]
+    assert ds.is_stale() is True
+    assert ds._read_last_good() == good  # prior good store preserved
 
 
 def test_detail_concurrency_cap_default_single_worker(tmp_path, monkeypatch):
