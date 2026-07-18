@@ -102,6 +102,8 @@ def test_pipeline_trigger_tools_match_the_registered_pipelines():
         "run_pypi_intelligence_pipeline",
         "run_vulnerability_pipeline",
         "run_seed_gaps_pipeline",  # B6: the seed_gaps pipeline trigger
+        "run_universal_sbom_pipeline",  # B7: the universal_sbom pipeline trigger
+        "run_derived_artifacts_pipeline",  # B7: the derived_artifacts pipeline trigger
     )
     stems = tuple(
         name.removeprefix("run_").removesuffix("_pipeline")

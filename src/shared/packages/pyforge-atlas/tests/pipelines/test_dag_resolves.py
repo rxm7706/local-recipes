@@ -9,8 +9,10 @@ same invariants offline.
 from __future__ import annotations
 
 from pyforge.atlas.pipelines.core import create_pipeline as core_create
+from pyforge.atlas.pipelines.derived_artifacts import create_pipeline as derived_create
 from pyforge.atlas.pipelines.pypi_intelligence import create_pipeline as pypi_create
 from pyforge.atlas.pipelines.seed_gaps import create_pipeline as seed_create
+from pyforge.atlas.pipelines.universal_sbom import create_pipeline as sbom_create
 from pyforge.atlas.pipelines.vcs_health import create_pipeline as vcs_create
 from pyforge.atlas.pipelines.vulnerability import create_pipeline as vuln_create
 
@@ -128,17 +130,59 @@ def test_seed_gaps_pipeline_has_four_nodes():
     assert "mapping-gap" not in {n.name for n in seed.nodes}
 
 
-def test_combined_five_pipeline_dag_resolves_topologically():
+def test_universal_sbom_pipeline_has_two_nodes():
+    # B7: § 4.10 intake -> CycloneDX normalize -> six-bucket match. Node names FROZEN.
+    sbom = sbom_create()
+    assert len(sbom.nodes) == 2
+    assert {n.name for n in sbom.nodes} == {
+        "normalize_intake_to_cyclonedx",
+        "match_against_universe",
+    }
+
+
+def test_derived_artifacts_pipeline_has_one_node():
+    # B7: the full-universe CycloneDX BOM producer (AD-15 14-day freshness).
+    derived = derived_create()
+    assert len(derived.nodes) == 1
+    assert {n.name for n in derived.nodes} == {"build_universe_sbom"}
+
+
+def test_combined_seven_pipeline_dag_resolves_topologically():
     combined = (
-        core_create() + vcs_create() + pypi_create() + vuln_create() + seed_create()
+        core_create()
+        + vcs_create()
+        + pypi_create()
+        + vuln_create()
+        + seed_create()
+        + sbom_create()
+        + derived_create()
     )
-    # 7 core + 5 vcs + 10 pypi + 7 vuln + 4 seed_gaps = 33 nodes (B6 added the 4
-    # read-only suggesters); the runner orders them from declared inputs/outputs
-    # alone (no PHASES list driver, FR-2/AD-3). The seed_gaps report nodes resolve
-    # AFTER their rebuild-produced inputs (derived-layer, per-rebuild — AD-15).
-    assert len(combined.nodes) == 33
+    # 7 core + 5 vcs + 10 pypi + 7 vuln + 4 seed_gaps + 2 universal_sbom
+    # + 1 derived_artifacts = 36 nodes (B7 added the SBOM intake/match + universe
+    # BOM). The runner orders them from declared inputs/outputs alone (no PHASES
+    # list driver, FR-2/AD-3): the universe BOM (derived-layer, AD-15) and the
+    # entry-scoped SBOM nodes resolve after their rebuild-produced inputs.
+    assert len(combined.nodes) == 36
     grouped = combined.grouped_nodes
-    assert sum(len(g) for g in grouped) == 33
+    assert sum(len(g) for g in grouped) == 36
+
+
+def test_no_dataset_is_written_by_two_pipelines_b7():
+    # AD-3: derived_universe_sbom is produced ONLY by derived_artifacts; the
+    # entry-scoped sbom_* outputs ONLY by universal_sbom (no double-write).
+    pipes = {
+        "core": core_create(),
+        "vcs": vcs_create(),
+        "pypi": pypi_create(),
+        "vuln": vuln_create(),
+        "seed": seed_create(),
+        "sbom": sbom_create(),
+        "derived": derived_create(),
+    }
+    names = list(pipes)
+    for i, a in enumerate(names):
+        for b in names[i + 1 :]:
+            assert not (pipes[a].outputs() & pipes[b].outputs()), (a, b)
 
 
 def test_pypi_cross_pipeline_edges_resolve_by_name():

@@ -67,6 +67,8 @@ def test_all_registered_pipelines_are_accepted(monkeypatch):
         "pypi_intelligence",
         "vulnerability",
         "seed_gaps",  # B6: the READ-ONLY seed-freshness report pipeline
+        "universal_sbom",  # B7: § 4.10 intake -> CycloneDX -> six-bucket match
+        "derived_artifacts",  # B7: full-universe CycloneDX BOM
     )
     fake = FakeSession()
     _patch_session(monkeypatch, fake)
