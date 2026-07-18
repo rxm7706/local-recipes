@@ -15,7 +15,7 @@
 |---|---|
 | BMAD documentation | ✅ `.claude/docs/bmad-method-llms-full.txt` |
 | `bmad-method` CLI | ✅ **v6.10.0+** — pixi-managed (conda-forge) in `local-recipes`; gains `bmad-dev-auto` (was 6.6.0 npx-era) |
-| `bmad-loop` orchestrator | ✅ **v0.8.1+** in `pixi.toml` (`[pypi-dependencies]`, git-pinned) — env-resident, run via `pixi run -e local-recipes bmad-loop …` |
+| `bmad-loop` orchestrator | ✅ **v0.8.1+** in `pixi.toml` (`[feature.local-recipes.dependencies]` — conda, version floor `>=0.8.1`) — env-resident, run via `pixi run -e local-recipes bmad-loop …` |
 | `tmux` (loop spawns agent sessions in it) | ✅ v3.7b+ in the **linux-64 / osx-arm64** target tables (no win-64 — loop is Linux/macOS; Windows via WSL) |
 | `uv` (alt. install path for the tool) | ✅ v0.11.29+ (this repo prefers the pixi provisioning; uv-tool is the upstream default) |
 | Loop + dev-auto skills | ✅ `.claude/skills/{bmad-dev-auto, bmad-loop-setup, bmad-loop-resolve, bmad-loop-sweep}` |
