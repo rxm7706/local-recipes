@@ -143,23 +143,50 @@ def test_ad20_schema_family_is_defined_in_a2a_module():
     assert AtlasAlert.__module__ == "pyforge.atlas.a2a.schema"
 
 
+# The inter-agent-payload FIELD SIGNATURES — a class outside a2a/ carrying one of these
+# field sets is a competing dialect regardless of its NAME (the evasion the E1 review
+# demonstrated: `class AtlasSignal(BaseModel): subject; severity; rule` slips a name-only
+# guard). Kept in sync with a2a/schema.py's AtlasAlert / AtlasInsight fields.
+_ALERT_SIGNATURE = frozenset({"severity", "rule"})
+_INSIGHT_SIGNATURE = frozenset({"metric_id", "value"})
+
+
+def _class_field_names(node: ast.ClassDef) -> set[str]:
+    """Annotated (``x: T``) + plain (``x = ...``) class-body attribute names — the field
+    set of a pydantic model / dataclass, extracted statically (no import needed)."""
+    names: set[str] = set()
+    for stmt in node.body:
+        if isinstance(stmt, ast.AnnAssign) and isinstance(stmt.target, ast.Name):
+            names.add(stmt.target.id)
+        elif isinstance(stmt, ast.Assign):
+            names.update(t.id for t in stmt.targets if isinstance(t, ast.Name))
+    return names
+
+
 def test_ad20_no_competing_payload_schema_outside_a2a():
-    """No module outside ``a2a/`` may define a class named like an inter-agent payload
-    schema (``*Payload`` / ``*Alert`` / ``*Insight``) — that is the "second dialect" the
-    architecture review warned against. The single family lives in a2a/schema.py only."""
+    """No module outside ``a2a/`` may define a competing inter-agent payload dialect — the
+    "second dialect" the architecture review warned against. The single family lives in
+    a2a/schema.py only. Detected BY NAME (``*Payload`` / ``*Alert`` / ``*Insight``) AND, so
+    the guard is a real invariant rather than an evadable naming tripwire, BY FIELD
+    SIGNATURE (a class whose fields form the alert {severity, rule} or insight
+    {metric_id, value} shape — regardless of its name)."""
     offenders: dict[str, list[str]] = {}
     for path in sorted(ATLAS_PKG.rglob("*.py")):
         if str(path.relative_to(ATLAS_PKG)).startswith(A2A_PREFIX):
             continue
         tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
-        named = [
-            node.name
-            for node in ast.walk(tree)
-            if isinstance(node, ast.ClassDef)
-            and node.name.endswith(("Payload", "Alert", "Insight"))
-        ]
-        if named:
-            offenders[str(path.relative_to(ATLAS_PKG))] = named
+        hits: list[str] = []
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.ClassDef):
+                continue
+            if node.name.endswith(("Payload", "Alert", "Insight")):
+                hits.append(f"{node.name} (name)")
+                continue
+            fields = _class_field_names(node)
+            if _ALERT_SIGNATURE <= fields or _INSIGHT_SIGNATURE <= fields:
+                hits.append(f"{node.name} (field-signature)")
+        if hits:
+            offenders[str(path.relative_to(ATLAS_PKG))] = hits
     assert not offenders, (
         "AD-20 violation — a competing alert/insight payload schema exists outside the "
         f"a2a/ module (the single schema source): {offenders}"
@@ -244,3 +271,28 @@ def test_large_payload_round_trips(alert: AtlasAlert):
         build_stamp=STAMP,
     )
     assert from_message(to_message(big)) == big
+
+
+def test_incompatible_schema_version_is_rejected_on_decode(insight):
+    """schema_version is ENFORCED on the wire (typed Literal): a payload stamped with any
+    other version FAILS decode with A2ADecodeError — a receiver rejects an incompatible
+    producer instead of mis-parsing it (E1 review; the SCHEMA_VERSION docstring's promise)."""
+    import json
+
+    wire = json.loads(insight.model_dump_json())  # the canonical on-wire payload JSON
+    assert wire["schema_version"] == "1"
+    wire["schema_version"] = "999"
+    with pytest.raises(A2ADecodeError):
+        decode_payload(json.dumps(wire))
+
+
+def test_model_construct_bypass_is_caught_at_the_serialization_boundary():
+    """A payload built via pydantic's validator-skipping model_construct can carry a set/
+    int-key that model_dump_json() silently coerces — the round-trip would then MUTATE it
+    with no error. to_message's serialization self-check must reject it (Reviewer-B F1)."""
+    corrupt = AtlasInsight.model_construct(
+        build_stamp=STAMP, subject="numpy", metric_id="staleness_age_days",
+        value={1, 2, 3},  # a set — not JSON-native; validation was skipped
+    )
+    with pytest.raises(A2ATransportError):
+        to_message(corrupt)

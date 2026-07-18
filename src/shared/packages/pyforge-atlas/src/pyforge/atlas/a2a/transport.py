@@ -31,7 +31,7 @@ import a2a.types as a2a_types
 from google.protobuf import json_format, struct_pb2
 from pydantic_core import PydanticSerializationError
 
-from pyforge.atlas.a2a.schema import AtlasPayload, _BasePayload, decode_payload
+from pyforge.atlas.a2a.schema import A2ADecodeError, AtlasPayload, _BasePayload, decode_payload
 
 # The single DataPart field carrying the canonical payload JSON, and the metadata keys
 # that mirror the discriminator + stamp for envelope-level inspection (never the source of
@@ -68,6 +68,21 @@ def to_message(payload: AtlasPayload, *, message_id: str | None = None) -> a2a_t
         raise A2ATransportError(
             f"payload is not JSON-serializable (a field carries a non-JSON value): {exc}"
         ) from exc
+
+    # Serialization-boundary self-check: re-decode the canonical JSON and require it to
+    # reproduce the payload EXACTLY. This closes the `model_construct` bypass (pydantic's
+    # validator-skipping escape hatch) — a payload built that way can carry a set/int-key
+    # that model_dump_json() silently coerces to a list/str; the round-trip would then
+    # mutate it with no error. Any construction path that isn't round-trip-safe fails HERE
+    # instead of shipping a corrupted payload (E1 review, Reviewer-B finding 1).
+    try:
+        if decode_payload(payload_json) != payload:
+            raise A2ATransportError(
+                "payload failed the serialization self-check — it is not round-trip-safe "
+                "(likely built via model_construct, bypassing field validation)"
+            )
+    except A2ADecodeError as exc:
+        raise A2ATransportError(f"payload failed the serialization self-check: {exc}") from exc
 
     data_value = struct_pb2.Value()
     json_format.ParseDict({_PAYLOAD_KEY: payload_json}, data_value)
