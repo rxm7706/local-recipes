@@ -167,6 +167,43 @@ def test_ad1_import_direction():
     )
 
 
+# AD-8 (Story D1): boring_semantic_layer is the SINGLE metric-translation seam. Only
+# the semantic/ subpackage declares BSL dimensions/measures (Ibis→DuckDB metric
+# arithmetic, AD-4); every other module queries those models, never constructs its own.
+# Mirrors the C1 dagster-glue exemption, scoped to a subtree instead of one file.
+BSL_DENYLIST = ("boring_semantic_layer",)
+BSL_SEMANTIC_PREFIX = "semantic/"
+
+
+def _bsl_violations() -> dict[str, list[str]]:
+    found: dict[str, list[str]] = {}
+    for path in _iter_scanned_files():
+        rel = str(path.relative_to(ATLAS_PKG))
+        if rel.startswith(BSL_SEMANTIC_PREFIX):
+            continue
+        hits = [n for n in sorted(_imported_names(path)) if _denylisted(n, BSL_DENYLIST)]
+        if hits:
+            found[str(path.relative_to(ATLAS_PKG.parents[2]))] = hits
+    return found
+
+
+def test_bsl_only_in_semantic_layer():
+    """AD-8: only ``pyforge/atlas/semantic/*`` may import ``boring_semantic_layer`` —
+    the BSL models are the single metric-translation interface, so no other package
+    module re-declares metric semantics (Story D1, FR-8)."""
+    violations = _bsl_violations()
+    assert not violations, (
+        "AD-8 violation — only the semantic/ subpackage may import "
+        f"boring_semantic_layer: {violations}"
+    )
+    # positive: the semantic layer DOES import it (the seam genuinely lives there).
+    sem_models = ATLAS_PKG / "semantic" / "models.py"
+    assert sem_models.is_file(), "semantic/models.py missing"
+    assert any(_denylisted(n, BSL_DENYLIST) for n in _imported_names(sem_models)), (
+        "semantic/models.py does not import boring_semantic_layer"
+    )
+
+
 def test_dagster_only_in_glue():
     """Positive AD-1 assertion: the glue module DOES import the orchestration
     libs (so it is genuinely the seam) and NO OTHER package file does — the
