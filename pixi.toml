@@ -277,7 +277,7 @@ cmd = "kedro viz"
 cwd = "src/prototype/packages/pyforge-atlas-kedro-viz"
 
 [feature.local-recipes.tasks.capture-kedro-viz-proto]
-description = "Capture the ACTUAL kedro-viz UI of the prototype DAG to docs/kedro-viz-dag.png (kedro viz build → headless Chrome via playwright; feature-tour popup pre-suppressed, light theme). Pixel-faithful to `kedro viz`, unlike the Graphviz SVGs from regenerate-kedro-viz-proto."
+description = "Capture the ACTUAL kedro-viz UI of the prototype DAG (dark mode) — full + per-pipeline. Drives the live `kedro viz run` server (its API filters per pipeline; the static build can't) via headless Chrome (playwright), selecting each pipeline through the in-app dropdown. Emits docs/kedro-viz-dag.png + docs/kedro-viz-<pipeline>.png (8 total) + a self-contained docs/kedro-viz-gallery.html zoom/pan viewer. Pixel-faithful to `kedro viz`, unlike the Graphviz SVGs from regenerate-kedro-viz-proto."
 cmd = "python src/prototype/packages/pyforge-atlas-kedro-viz/tools/capture_kedro_viz.py"
 
 [feature.local-recipes.tasks.kedro-run-proto]

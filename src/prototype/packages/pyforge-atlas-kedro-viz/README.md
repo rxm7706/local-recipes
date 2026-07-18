@@ -19,7 +19,7 @@ whenever pyforge-atlas changes so the viz never drifts.
 pixi run -e local-recipes regenerate-kedro-viz-proto   # re-mirror + render docs/dag.svg + dag.drawio
 pixi run -e local-recipes kedro-run-proto              # <1 s smoke run (77 stub tasks)
 pixi run -e local-recipes kedro-viz-proto              # interactive DAG in the browser
-pixi run -e local-recipes capture-kedro-viz-proto      # snapshot the REAL kedro-viz UI → docs/kedro-viz-dag.png
+pixi run -e local-recipes capture-kedro-viz-proto      # snapshot the REAL kedro-viz UI (dark), full + per-pipeline → docs/kedro-viz-*.png + gallery.html
 # static SPA export: `cd` here, then `kedro viz build`  (build/ is gitignored)
 ```
 
@@ -44,16 +44,22 @@ each free/raw input so `kedro run` executes end-to-end on MemoryDatasets.
 
 Two flavors, both under `docs/`:
 
-**1. The actual kedro-viz UI** — `capture-kedro-viz-proto` runs `kedro viz build`
-and screenshots the real kedro-viz SPA in headless Chrome (playwright), so the
-image is pixel-faithful to what `kedro viz` shows in the browser:
+**1. The actual kedro-viz UI (dark, full + per-pipeline)** —
+`capture-kedro-viz-proto` drives the **live `kedro viz run` server** (its API can
+filter per pipeline; the static `kedro viz build` export can't route `?pid=`) and
+screenshots the real kedro-viz SPA in headless Chrome (playwright), selecting each
+pipeline through the in-app dropdown. Pixel-faithful to `kedro viz`; dark theme +
+feature-tour popup pre-seeded into kedro-viz's own localStorage:
 
-- **`docs/kedro-viz-dag.png`** — the full `__default__` DAG in the native
-  kedro-viz flowchart, with the node list + storage-layer rail. The first-run
-  feature-tour popup is pre-suppressed and the light theme forced. (The static
-  build can't route `?pipeline_id=`, so this is the full DAG only; for a single
-  pipeline, open `kedro-viz-proto` and pick it from the dropdown, or use the
-  per-pipeline Graphviz SVGs below.)
+- **`docs/kedro-viz-dag.png`** — the full `__default__` DAG (77 nodes / 81
+  datasets / 2 params). Dense at fit-to-view — use the gallery to zoom.
+- **`docs/kedro-viz-<pipeline>.png`** — one per pipeline (`core`, `vcs_health`,
+  `pypi_intelligence`, `vulnerability`, `seed_gaps`, `universal_sbom`,
+  `derived_artifacts`). Each auto-fits, so node names are legible.
+- **`docs/kedro-viz-gallery.html`** — a **self-contained** dark viewer (no CDN):
+  pipeline tabs + zoom buttons + scroll-to-zoom + drag-to-pan + double-click-reset,
+  so the large pipelines can be zoomed and panned to read every node name. Open it
+  directly in a browser.
 
 **2. Static Graphviz renders** — `regenerate-kedro-viz-proto` also renders
 always-accurate vector images (via Graphviz `dot` + `graphviz2drawio` — both in
