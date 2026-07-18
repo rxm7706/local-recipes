@@ -4,7 +4,7 @@ part_id: conda-forge-expert
 display_name: conda-forge-expert skill
 project_type_id: library
 date: 2026-06-20
-source_pin: 'conda-forge-expert v8.78.0'
+source_pin: 'conda-forge-expert v8.79.0'
 ---
 
 # Architecture: conda-forge-expert (Part 1)

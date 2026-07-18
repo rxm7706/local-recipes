@@ -2,23 +2,24 @@
 doc_type: implementation-readiness-report
 project_name: local-recipes
 date: 2026-07-06
-source_pin: 'conda-forge-expert v8.78.0'
+source_pin: 'conda-forge-expert v8.79.0'
 sync_note: 'Regenerated 2026-06-21 against current artifacts (PRD v1.6.0, epics v1.1.0, architecture set v1.0.0 — all pinned conda-forge-expert v8.73.1). Supersedes the 2026-05-12 v7.8.1-era gate. Fixed two stale internal defects carried from the prior report: the ~176/193-story baseline (now 232 stories / 14 epics) and the "12 XL remaining vs 0 XL remaining" contradiction (now 0 XL remaining, per epics.md frontmatter xl_stories_remaining: 0).'
 artifacts_under_review:
-  - planning-artifacts/PRD.md (v1.6.0, approved, pin v8.78.0)
-  - planning-artifacts/architecture.md (v1.0.0, draft, pin v8.78.0)
-  - planning-artifacts/architecture-conda-forge-expert.md (pin v8.78.0)
-  - planning-artifacts/architecture-cf-atlas.md (pin v8.78.0)
-  - planning-artifacts/architecture-mcp-server.md (pin v8.78.0)
-  - planning-artifacts/architecture-bmad-infra.md (pin v8.78.0)
-  - planning-artifacts/integration-architecture.md (pin v8.78.0)
-  - planning-artifacts/epics.md (v1.1.0, draft, pin v8.78.0 — 14 epics / 232 stories / 0 XL)
-  - project-context.md (last_synced_skill_version v8.78.0, 63 rules)
+  - planning-artifacts/PRD.md (v1.6.0, approved, pin v8.79.0)
+  - planning-artifacts/architecture.md (v1.0.0, draft, pin v8.79.0)
+  - planning-artifacts/architecture-conda-forge-expert.md (pin v8.79.0)
+  - planning-artifacts/architecture-cf-atlas.md (pin v8.79.0)
+  - planning-artifacts/architecture-mcp-server.md (pin v8.79.0)
+  - planning-artifacts/architecture-bmad-infra.md (pin v8.79.0)
+  - planning-artifacts/integration-architecture.md (pin v8.79.0)
+  - planning-artifacts/epics.md (v1.1.0, draft, pin v8.79.0 — 14 epics / 232 stories / 0 XL)
+  - project-context.md (last_synced_skill_version v8.79.0, 63 rules)
 validator: bmad-check-implementation-readiness (Path 3 hybrid)
-overall_verdict: CONDITIONAL_READY — capabilities coherently covered; SF1 CLOSED (FR-ID annotations landed 2026-06-21), SF2+SF3 persist (quality niceties, non-blocking); 0 blocking gaps (re-run 2026-07-16 @ v8.78.0)
+overall_verdict: CONDITIONAL_READY — capabilities coherently covered; SF1 CLOSED (FR-ID annotations landed 2026-06-21), SF2+SF3 persist (quality niceties, non-blocking); 0 blocking gaps (re-run 2026-07-18 @ v8.79.0)
 status: final
 verdict_history:
-  - { date: '2026-07-16', verdict: 'CONDITIONAL_READY', notes: 'Pin-forward per SYNC-RUNBOOK + the established 2026-07-07 convention after the out-of-band v8.77.0/v8.78.0 retros (recipe-wave gotchas G100–G106; no schema/phase/MCP/CLI change) and the pixi-env additions (pyforge-warden, bmad-ui → 11). Readiness inputs verified current: PRD/epics/architecture set all pinned v8.78.0 (re-grounded 2026-07-15); epics unchanged (14 epics / 232 stories / 0 XL per epics.md frontmatter); live groundtruth matches the artifact claims. Gate verdict unchanged: SF1 CLOSED; SF2 (PRD §6 metric→story map) + SF3 (intra-epic Depends-on annotations) persist as non-blocking quality niceties; 0 blocking gaps. Pins bumped v8.76.0 → v8.78.0.' }
+  - { date: '2026-07-18', verdict: 'CONDITIONAL_READY', notes: 'Pin-forward per SYNC-RUNBOOK + the established 2026-07-07 convention after the out-of-band v8.79.0 retro (pyforge-atlas Kedro-migration; no schema/phase/MCP/CLI/gotcha change) and the pyforge-atlas pixi-env addition (→ 12 envs). Readiness inputs verified current: PRD/epics/architecture set all pinned v8.79.0 (re-grounded 2026-07-18); epics unchanged (14 epics / 232 stories / 0 XL); live groundtruth matches the artifact claims. Gate verdict unchanged: SF1 CLOSED; SF2/SF3 persist as non-blocking quality niceties; 0 blocking gaps. Pins bumped v8.79.0 → v8.79.0.' }
+  - { date: '2026-07-16', verdict: 'CONDITIONAL_READY', notes: 'Pin-forward per SYNC-RUNBOOK + the established 2026-07-07 convention after the out-of-band v8.77.0/v8.79.0 retros (recipe-wave gotchas G100–G106; no schema/phase/MCP/CLI change) and the pixi-env additions (pyforge-warden, bmad-ui → 11). Readiness inputs verified current: PRD/epics/architecture set all pinned v8.79.0 (re-grounded 2026-07-15); epics unchanged (14 epics / 232 stories / 0 XL per epics.md frontmatter); live groundtruth matches the artifact claims. Gate verdict unchanged: SF1 CLOSED; SF2 (PRD §6 metric→story map) + SF3 (intra-epic Depends-on annotations) persist as non-blocking quality niceties; 0 blocking gaps. Pins bumped v8.76.0 → v8.79.0.' }
   - { date: '2026-07-07', verdict: 'CONDITIONAL_READY', notes: 'Pin-forward per SYNC-RUNBOOK after PR #45 (CFE v8.75.0 → v8.76.0). NO material change to the reviewed artifacts: the shipped surface (license-map-gap) is a fourth read-only seed-gap suggester, CLI/pixi-only, no MCP tool, no schema/phase/count change — readiness inputs unchanged, gate verdict unchanged (SF1 CLOSED; SF2/SF3 persist as non-blocking quality niceties). Fresh re-run confirms 0 blocking gaps. Pins bumped v8.75.0 → v8.76.0.' }
   - { date: '2026-07-07', verdict: 'CONDITIONAL_READY', notes: 'Pin-forward per SYNC-RUNBOOK after PRs #41–#43 (CFE v8.73.1 → v8.75.0). NO material change to the reviewed artifacts: the three shipped surfaces (lts-registry-gap, cwe-seed-gap, spdx-schema-gap) are read-only seed-gap suggesters, CLI/pixi-only, no MCP tool, no schema/phase/count change — so the readiness inputs are unchanged and the gate verdict is unchanged (SF1 CLOSED; SF2/SF3 persist as non-blocking quality niceties). Fresh re-run confirms 0 blocking gaps. Pins bumped v8.73.1 → v8.75.0.' }
   - { date: '2026-07-06', verdict: 'CONDITIONAL_READY', notes: 'Regenerated per SYNC-RUNBOOK after the shipped cyclonedx-universe-inventory effort. Artifact set re-grounded to v8.73.1 (living docs + context + plan + project-parts). SF1 (FR-ID citations in Epic 14/Epic 10 rows) verified CLOSED per the 2026-06-21 epics narrative re-sync; SF2 (explicit PRD §6 metric→story map) and SF3 (intra-epic Depends-on annotations) persist — quality niceties, non-blocking. NOTE: the shipped cyclonedx suite (7 CLIs / 4 MCP tools / schema v29) was delivered as a Tier-1 spec effort per the spec-first convention and is captured in the PRD/epics current-state re-ground, not as new epics — a future structural pass may retrofit an Epic 15 if the rebuild intent should cover it; recorded as informational, not a readiness gap.' }
