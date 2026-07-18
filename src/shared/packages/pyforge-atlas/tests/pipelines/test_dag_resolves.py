@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from pyforge.atlas.pipelines.core import create_pipeline as core_create
 from pyforge.atlas.pipelines.pypi_intelligence import create_pipeline as pypi_create
+from pyforge.atlas.pipelines.seed_gaps import create_pipeline as seed_create
 from pyforge.atlas.pipelines.vcs_health import create_pipeline as vcs_create
 from pyforge.atlas.pipelines.vulnerability import create_pipeline as vuln_create
 
@@ -113,15 +114,31 @@ def test_no_dataset_is_written_by_two_pipelines_b2():
             assert not (pipes[a].outputs() & pipes[b].outputs()), (a, b)
 
 
-def test_combined_four_pipeline_dag_resolves_topologically():
-    combined = core_create() + vcs_create() + pypi_create() + vuln_create()
-    # 7 core + 5 vcs + 10 pypi + 7 vuln = 29 nodes (B5 added 3 refresh assets); the
-    # runner orders them from declared inputs/outputs alone (no PHASES list driver,
-    # FR-2/AD-3). The vulnerability refresh assets resolve BEFORE the G/G' consumers
-    # (vulnerability_vdb_store: refresh -> consume) — a clean topological edge.
-    assert len(combined.nodes) == 29
+def test_seed_gaps_pipeline_has_four_nodes():
+    # B6: the four READ-ONLY seed-freshness suggesters; mapping-gap is NOT one of
+    # them (it is a writer, stays in pypi_intelligence — AC-4).
+    seed = seed_create()
+    assert len(seed.nodes) == 4
+    assert {n.name for n in seed.nodes} == {
+        "report_lts_registry_gap",
+        "report_cwe_seed_gap",
+        "report_spdx_schema_gap",
+        "report_license_map_gap",
+    }
+    assert "mapping-gap" not in {n.name for n in seed.nodes}
+
+
+def test_combined_five_pipeline_dag_resolves_topologically():
+    combined = (
+        core_create() + vcs_create() + pypi_create() + vuln_create() + seed_create()
+    )
+    # 7 core + 5 vcs + 10 pypi + 7 vuln + 4 seed_gaps = 33 nodes (B6 added the 4
+    # read-only suggesters); the runner orders them from declared inputs/outputs
+    # alone (no PHASES list driver, FR-2/AD-3). The seed_gaps report nodes resolve
+    # AFTER their rebuild-produced inputs (derived-layer, per-rebuild — AD-15).
+    assert len(combined.nodes) == 33
     grouped = combined.grouped_nodes
-    assert sum(len(g) for g in grouped) == 29
+    assert sum(len(g) for g in grouped) == 33
 
 
 def test_pypi_cross_pipeline_edges_resolve_by_name():
