@@ -4,8 +4,10 @@ part_id: cf-atlas-datapipeline
 display_name: cfe-atlas-datapipeline Kedro Migration Spec
 project_type_id: data
 date: 2026-06-20
-status: in-progress
-spec_updated: 2026-07-17
+status: shipped
+implemented_by: bmad-loop
+shipped_ref: "conda-forge-expert v8.79.0"
+spec_updated: 2026-07-18
 ---
 
 # Spec: cfe-atlas-datapipeline Kedro Migration
