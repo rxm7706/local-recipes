@@ -759,10 +759,10 @@ or, if full BMAD Method discipline is preferred (PRD → Architecture
 
 ```
 # Phase 2 (Planning) — feed this spec as the brief input:
-bmad-create-prd --brief docs/specs/conda-forge-tracker.md
+bmad-prd --brief docs/specs/conda-forge-tracker.md
 
 # Phase 3 (Solutioning):
-bmad-create-architecture
+bmad-architecture
 bmad-create-epics-and-stories
 
 # Phase 4 (Implementation):
