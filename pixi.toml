@@ -200,6 +200,15 @@ description = "Wave D verify gate (Story D3, FR-9 / AD-7 / AD-8 / Q3 §11): vizr
 cmd = "python -m pytest src/shared/packages/pyforge-atlas/tests/nl -q"
 env = { PYTHONPATH = "src/shared/packages/pyforge-atlas/src:src/shared/packages/pyforge-warden/src" }
 
+[feature.local-recipes.tasks.wasm-build]
+description = "Wave G build step (Story G1, FR-14): build the self-contained, backend-free DuckDB-WASM read-surface artifact into src/shared/packages/pyforge-atlas/wasm/build/ (gitignored). npm-installs @duckdb/duckdb-wasm + esbuild, bundles the browser ESM (inlining apache-arrow), copies the MVP wasm module + worker, VENDORS the matching parquet extension locally (so the runtime never hits extensions.duckdb.org), and materializes the demo Parquet from wasm/data/feedstock_health.csv. BUILD-TIME network is allowed (npm + the extension host); the artifact it produces runs fully OFFLINE. Run this once before wasm-smoke."
+cmd = "python src/shared/packages/pyforge-atlas/wasm/build.py"
+
+[feature.local-recipes.tasks.wasm-smoke]
+description = "Wave G verify gate (Story G1, FR-14 / AD-11 / AD-21): wasm-smoke — a Playwright HEADLESS Chromium load-and-query against the built wasm artifact (run `wasm-build` first). Proves the intelligence read surface loads and its query runs CLIENT-SIDE in the browser with NO backend: serves wasm/build/ over a loopback static host, drives the pre-provisioned Chromium, BLOCKS + asserts zero non-loopback requests (offline / no-CDN proof), waits for the in-browser DuckDB-WASM query to reach ready (an in-page error FAILS, never silently passes), and asserts the client-side ci_red result (D1 feedstock-health semantics). Full Vizro-in-Pyodide render is deferred (DW-G1). Offline at runtime, --frozen."
+cmd = "python -m pytest src/shared/packages/pyforge-atlas/tests/wasm -q"
+env = { PYTHONPATH = "src/shared/packages/pyforge-atlas/src:src/shared/packages/pyforge-warden/src" }
+
 
 [feature.local-recipes.tasks.submit-pr]
 description = "Submit a recipe PR to conda-forge/staged-recipes (use --dry-run first). Runs prepare-pr internally then opens the PR."
