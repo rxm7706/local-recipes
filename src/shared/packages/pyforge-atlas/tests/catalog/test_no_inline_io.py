@@ -40,8 +40,17 @@ IO_DENYLIST = (
     "google.cloud.bigquery",
 )
 
-# AD-1 import-direction denylist.
-AD1_DENYLIST = ("dagster", "kedro_mcp")
+# AD-1 import-direction denylist. ``kedro_dagster`` joins ``dagster`` /
+# ``kedro_mcp`` (Story C1): the orchestration glue is a replaceable dependency
+# that ONLY the glue module may touch.
+AD1_DENYLIST = ("dagster", "kedro_dagster", "kedro_mcp")
+
+# The SINGLE glue module (Story C1, AD-1/AD-6) allowed to import the
+# orchestration libs. Paths are relative to ATLAS_PKG. This is the AD-1-only
+# exemption — the glue is STILL covered by the no-inline-IO scan (it imports no
+# HTTP/DB client) and by ``test_scan_covers_the_whole_package`` (it is NOT in
+# ``NO_INLINE_IO_EXEMPT``). ``kedro_mcp`` stays banned everywhere, including here.
+AD1_GLUE_EXEMPT = frozenset({"orchestration/definitions.py"})
 
 
 def _iter_scanned_files():
@@ -95,9 +104,11 @@ def _imported_names(path: Path) -> set[str]:
     return names
 
 
-def _violations(denylist) -> dict[str, list[str]]:
+def _violations(denylist, exempt: frozenset[str] = frozenset()) -> dict[str, list[str]]:
     found: dict[str, list[str]] = {}
     for path in _iter_scanned_files():
+        if str(path.relative_to(ATLAS_PKG)) in exempt:
+            continue
         hits = [
             name
             for name in sorted(_imported_names(path))
@@ -128,9 +139,50 @@ def test_no_inline_io_in_package_code():
     )
 
 
+# The orchestration libs the glue IS the seam for (exempt in the glue only).
+AD1_GLUE_LIBS = ("dagster", "kedro_dagster")
+# Banned EVERYWHERE, glue included — the glue is an orchestration seam, never an
+# MCP seam (Reviewer-A F1: a whole-denylist exemption silently let kedro_mcp into
+# the glue, contradicting the AD-1 intent + this module's own comments).
+AD1_EVERYWHERE = ("kedro_mcp",)
+
+
 def test_ad1_import_direction():
-    violations = _violations(AD1_DENYLIST)
-    assert not violations, (
-        "AD-1 violation — pipeline code must not import the orchestration "
-        f"(dagster) or MCP layers: {violations}"
+    """AD-1: only the single ``orchestration/definitions.py`` glue module may
+    import the orchestration libs (dagster / kedro_dagster) — Story C1, AD-6 —
+    and ``kedro_mcp`` stays banned in EVERY package file, the glue included.
+
+    Two separate scans so the glue exemption can NOT widen to kedro_mcp: the
+    orchestration libs are checked with the glue exempt; kedro_mcp is checked
+    across the whole package with NO exemption."""
+    orch_violations = _violations(AD1_GLUE_LIBS, exempt=AD1_GLUE_EXEMPT)
+    assert not orch_violations, (
+        "AD-1 violation — only pyforge/atlas/orchestration/definitions.py may "
+        f"import dagster/kedro_dagster: {orch_violations}"
     )
+    # kedro_mcp: no exemption — banned everywhere, including the glue.
+    mcp_violations = _violations(AD1_EVERYWHERE)
+    assert not mcp_violations, (
+        f"AD-1 violation — kedro_mcp must not be imported by any package file: {mcp_violations}"
+    )
+
+
+def test_dagster_only_in_glue():
+    """Positive AD-1 assertion: the glue module DOES import the orchestration
+    libs (so it is genuinely the seam) and NO OTHER package file does — the
+    exemption is not masking a second importer, and the glue path really exists."""
+    # the exempt glue file exists (a typo would silently exempt nothing).
+    for rel in AD1_GLUE_EXEMPT:
+        assert (ATLAS_PKG / rel).is_file(), f"glue exempt path missing: {rel}"
+    # the glue actually imports dagster + kedro_dagster.
+    glue_imports = _imported_names(ATLAS_PKG / "orchestration" / "definitions.py")
+    assert any(_denylisted(n, ("dagster",)) for n in glue_imports), "glue does not import dagster"
+    assert any(_denylisted(n, ("kedro_dagster",)) for n in glue_imports), "glue does not import kedro_dagster"
+    # …but even the glue must NOT import kedro_mcp (orchestration seam, not MCP seam).
+    assert not any(_denylisted(n, ("kedro_mcp",)) for n in glue_imports), "glue imports kedro_mcp"
+    # every OTHER package file is dagster/kedro_dagster-free (scan minus the glue).
+    for path in _iter_scanned_files():
+        if str(path.relative_to(ATLAS_PKG)) in AD1_GLUE_EXEMPT:
+            continue
+        hits = [n for n in _imported_names(path) if _denylisted(n, ("dagster", "kedro_dagster"))]
+        assert not hits, f"non-glue module imports orchestration libs: {path.name}: {hits}"
