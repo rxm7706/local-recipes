@@ -29,18 +29,15 @@ cache_read_weight = 0.1      # cache reads bill at ~0.1x input on all vendors; 1
 # (deferred-work.md, story 1.1).
 commands = [
   "pixi run --frozen -e pyforge-warden pyforge-warden-test",
-  # Wave A gate (pyforge-atlas Story A1, AD-11): import smokes + Kedro namespace
-  # seam + scaffold layout in the LEAN pyforge-atlas env. Requires pixi.lock to
-  # carry the pyforge-atlas env (workstation re-lock; see Story A1 Dev Agent
-  # Record — the container stub channel blocks the bmad-ui co-solve).
-  "pixi run --frozen -e pyforge-atlas kedro-test",
-  # Wave A gate 2 (pyforge-atlas Story A2, AD-11): kedro-catalog-check — full
-  # catalog resolution offline w/ stub credentials + the AC-2 no-inline-IO and
-  # AD-1 import-direction meta-tests + convention/override-point/credential-
-  # scoping assertions. Same workstation-re-lock precondition as kedro-test
-  # (deferred-work entry 1: the lean env is lock-unproven in containers; run
-  # content via the fat-env PYTHONPATH interim until the re-lock lands).
-  "pixi run --frozen -e pyforge-atlas kedro-catalog-check",
+  # pyforge-atlas gates dropped from the active run policy 2026-07-18: the
+  # Kedro migration is COMPLETE (Waves 0–H shipped, PRs #69–#102, closed out by
+  # #103 / v8.79.0), and this branch drives pyforge-warden Epic-6 producers.
+  # Running the atlas gates during a pyforge-warden story's verify is both
+  # off-project and risky (the lean pyforge-atlas env is lock-unproven in
+  # containers per its own AD-11 note). Restore these two lines if pyforge-atlas
+  # bmad-loop work resumes:
+  #   "pixi run --frozen -e pyforge-atlas kedro-test",
+  #   "pixi run --frozen -e pyforge-atlas kedro-catalog-check",
 ]
 
 [notify]
