@@ -1,17 +1,50 @@
-# BMAD Brownfield Setup Plan — `local-recipes`
+# BMAD Setup Plan — `local-recipes` (greenfield + brownfield, multi-project, unattended loop)
 
-## Current State Assessment
+> **Scope.** This started as a brownfield install guide (Phases 0–8). It now also covers
+> **greenfield** projects (new subtrees with no existing code) and the **unattended
+> `bmad-loop` + `bmad-dev-auto` workflow** (Phases 9–10). Everything is **multi-project**:
+> one BMAD + one loop install drives every project under `_bmad-output/projects/<slug>/`.
+>
+> **Read this if you're:** adding a new project (greenfield *or* brownfield) to the repo, or
+> setting up autonomous story execution so effort runs through the real orchestrator (with
+> `.bmad-loop/runs/<id>/` journals) instead of an ad-hoc in-session agent loop.
+
+## Current State Assessment (2026-07-18)
 
 | Item | Status |
 |---|---|
 | BMAD documentation | ✅ `.claude/docs/bmad-method-llms-full.txt` |
-| `bmad-method` CLI (v6.6.0) | ✅ Pixi-managed in `local-recipes` env (bundles Node.js 20 + vendored deps) |
-| `CLAUDE.md` with project context | ✅ Detailed and current |
-| `.claude/` skills/tools/settings | ✅ conda-forge MCP server + skill library |
-| `docs/` directory | ✅ Exists but empty |
-| `_bmad/` (BMAD config) | ❌ Missing |
-| `_bmad-output/` (BMAD artifacts) | ❌ Missing |
-| Project context file | ❌ Missing |
+| `bmad-method` CLI | ✅ **v6.10.0+** — pixi-managed (conda-forge) in `local-recipes`; gains `bmad-dev-auto` (was 6.6.0 npx-era) |
+| `bmad-loop` orchestrator | ✅ **v0.8.1+** in `pixi.toml` (`[feature.local-recipes.dependencies]` — conda, version floor `>=0.8.1`) — env-resident, run via `pixi run -e local-recipes bmad-loop …` |
+| `tmux` (loop spawns agent sessions in it) | ✅ v3.7b+ in the **linux-64 / osx-arm64** target tables (no win-64 — loop is Linux/macOS; Windows via WSL) |
+| `uv` (alt. install path for the tool) | ✅ v0.11.29+ (this repo prefers the pixi provisioning; uv-tool is the upstream default) |
+| Loop + dev-auto skills | ✅ `.claude/skills/{bmad-dev-auto, bmad-loop-setup, bmad-loop-resolve, bmad-loop-sweep}` |
+| `.bmad-loop/` config | ⚠️ `policy.toml` + `bmad_loop_hook.py` exist, **but `.bmad-loop/runs/` was never created** — no `bmad-loop init` / no real run yet (see Phase 9) |
+| `_bmad/` + `_bmad-output/` | ✅ Installed; **6-layer resolver + multi-project layout** (Phase 8) |
+| Multi-project switcher | ✅ `scripts/bmad-switch <slug>` + `.active-project` marker + `_bmad-output/PROJECTS.md` |
+| `CLAUDE.md` project context | ✅ Detailed + current (incl. the two-layer symlink+marker switch warning) |
+| **Blocker for atlas loop runs** | ❌ `pyforge-atlas` env absent from `pixi.lock` (DW-A1) → the loop's `--frozen` VERIFY can't materialize it. Fix = workstation re-lock (Phase 9.6). |
+
+---
+
+## Greenfield vs Brownfield — pick the track (do this first)
+
+The BMAD **install** (Phases 0–1) is one-time and shared; you do it once for the whole repo.
+Per **project** you then pick a track — it changes only the **planning chain** (Phase 10) and
+the **project-context** emphasis (Phase 2), never the loop mechanics (Phase 9, identical for both).
+
+| | **Brownfield** (existing code) | **Greenfield** (new subtree) |
+|---|---|---|
+| Examples in this repo | `local-recipes` (the recipes), `pyforge-atlas` (migrating the legacy cf_atlas) | a brand-new package with no prior implementation |
+| Critical first step | **`bmad-document-project`** → living architecture/source-tree docs the agents must respect | **`bmad-prd` + `bmad-architecture`** → design the system from the spec, no legacy to honor |
+| `project-context.md` emphasis | *Preserve* conventions, invariants, existing gotchas (Phase 2.2) | *Establish* conventions + the target stack |
+| Planning chain | document → PRD/correct-course → epics/stories (Phase 10.B) | PRD → architecture → epics/stories → readiness (Phase 10.G) |
+| Spec-first (`docs/specs/`) | Same for both — a Tier-1 intake spec at `status: ready` before code (repo `AGENTS.md`) |
+| Loop execution | Same for both — Phase 9 |
+
+> **The install is project-type-agnostic.** The installer's one-time "Project type: Brownfield"
+> prompt (Phase 1) only seeds a default; each project chooses its own track at planning time.
+> A repo that hosts both (this one does) installs once and runs both tracks side by side.
 
 ---
 
@@ -329,6 +362,159 @@ Per-project `planning-artifacts/` remain **committed** as team artifacts.
 
 ---
 
+## Phase 9 — Unattended execution: `bmad-loop` + `bmad-dev-auto` (multi-project)
+
+This is the phase the earlier plan was missing. It turns the manual planning chain into an
+**autonomous, journaled** story-execution loop. It is **identical for greenfield and
+brownfield** — the only per-project difference is *what* it runs (the verify gate + story feed).
+
+### 9.0 — Mental model (two distinct tools)
+
+| Tool | What it is | Scope |
+|---|---|---|
+| **`bmad-dev-auto`** | The upstream *unattended DEV primitive* — one skill: clarify-route → plan → implement → **inline review**. Spec-driven ("Ready for Development" criteria). | Runs **one story** |
+| **`bmad-loop`** | The deterministic Python *orchestrator*. Spawns fresh **tmux** CLI sessions, each running `bmad-dev-auto` for the DEV pass, then re-invoking it on the `done` spec for a REVIEW pass; runs the **VERIFY** gates; **COMMITs** (squash, branch-per-story worktree). Resumable state machine; journals every run to `.bmad-loop/runs/<id>/`. | Drives the **whole sprint feed**, story by story |
+
+The whole point: replace the ad-hoc *in-session* agent loop (what the pyforge-atlas effort
+actually used — no journals) with a durable, gate-enforced orchestrator that **does** leave
+`.bmad-loop/runs/<id>/` journals.
+
+### 9.1 — Verify provisioning (already pinned in this repo)
+
+```bash
+pixi run -e local-recipes bmad-loop --version    # >= 0.8.1  (pixi-provisioned, git-pinned)
+pixi run -e local-recipes tmux -V                # >= 3.7b   (linux-64 / osx-arm64 only)
+pixi run -e local-recipes bmad-method --version  # >= 6.10.0 (gains bmad-dev-auto)
+```
+**Always invoke the loop through pixi** (`pixi run -e local-recipes bmad-loop …`) — it is
+env-resident. Do **not** `uv tool install bmad-loop` (the upstream default in the
+`bmad-loop-setup` skill): a uv-managed copy would shadow the lockfile-pinned one. The
+`bmad-loop-setup` skill is still the right tool for **config/skill** setup — just skip its
+"Install the Orchestrator Tool" step on this repo.
+
+### 9.2 — One-time `bmad-loop init` (the step never run here)
+
+```bash
+scripts/bmad-switch <slug>                        # pick the active project FIRST
+pixi run -e local-recipes bmad-loop init          # lays down Stop hooks + bundled loop skills, reconciles policy.toml, creates .bmad-loop/ runtime dirs
+```
+**Gate:** `.bmad-loop/` gains its runtime scaffolding (`runs/` appears on first run);
+`bmad-loop --help` works; `bmad-loop tui` opens on a no-op.
+
+### 9.3 — Make the policy MULTI-PROJECT (the key change for this repo)
+
+`.bmad-loop/policy.toml` today is hardcoded to two projects. A worktree runs whatever the
+policy says regardless of which project you switched to, so **two blocks must track the active
+project** before each run:
+
+- **`[verify] commands`** → the **active project's** deterministic gate (its pixi test task).
+  Examples: warden → `pixi run --frozen -e pyforge-warden pyforge-warden-test`; atlas →
+  `pixi run --frozen -e pyforge-atlas kedro-test` (+ `kedro-catalog-check`). A greenfield
+  project supplies its own `-e <env> <test-task>`.
+- **`[scm] worktree_seed`** → the literal **gitignored** paths a fresh worktree lacks (a
+  worktree checks out tracked files only): the active project's
+  `_bmad-output/projects/<slug>/implementation-artifacts` (else the engine crashes reading
+  `sprint-status.yaml`) **and** `_bmad/custom/.active-project` (else BMAD config resolution in
+  the worktree loses the project layers). Literal paths only — **no globs**.
+
+> **Recommended (small build):** a `scripts/bmad-loop-project <slug>` helper that atomically
+> (a) runs `scripts/bmad-switch <slug>`, (b) rewrites `[verify].commands` from a per-project
+> table, and (c) rewrites `[scm].worktree_seed` to that slug's paths — so switching projects is
+> one command and can't desync. Until it exists, edit `policy.toml` by hand between projects and
+> **heed the CLAUDE.md symlink/marker desync warning** (marker + the two `_bmad-output` symlinks
+> must always agree — always switch via `scripts/bmad-switch`).
+
+### 9.4 — Graduated autonomy (`[gates] mode`)
+
+| Mode | Behavior | When |
+|---|---|---|
+| `per-story-spec-approval` | Loop **halts at each story's spec** for human approval | Pilot / contract-freeze / high-risk stories (the current default) |
+| `per-epic` | Approve **once per epic**; stories run unattended | Once the VERIFY gate reliably polices the loop |
+| `none` | Fully unattended | Only when a conformance harness + VERIFY make false-greens near-impossible |
+
+- **Escalation:** a CRITICAL contradiction pauses the loop → resolve with
+  `/bmad-loop-resolve <story-key>` (interactive), then the loop re-drives the corrected spec.
+- **Model tiering:** `[adapter.dev|review|triage]` set per-stage models; bump `[adapter.dev]`
+  to `opus`/`fable` for hard stories, revert to `sonnet` for mechanical batches.
+- **Review pass:** `[review] enabled=true, trigger="recommended"` runs a second-opinion review
+  only when dev-auto flags it (`"always"` to force it every story).
+
+### 9.5 — Prepare the story feed
+
+- The loop consumes `sprint-status.yaml` (`development_status` map). Generate it with
+  **`bmad-sprint-planning`** from the project's `epics.md`, or hand-author it.
+- **Multi-project caveat:** `bmad-dev-auto` upstream expects the standard `{output_folder}`,
+  but this repo resolves **per-project** (`planning_artifacts` path). Verify dev-auto honors the
+  multi-project path; if not, fix it in dev-auto's **`customize.toml`** layer — **never** by
+  forking the skill.
+
+### 9.6 — Known blocker: the atlas `--frozen` VERIFY (DW-A1)
+
+`pyforge-atlas` is **not in `pixi.lock`**, so `pixi run --frozen -e pyforge-atlas kedro-test`
+(its VERIFY gate) can't materialize the env inside a worktree → an atlas loop run fails at
+VERIFY. **Fix:** a workstation re-lock so `pixi.lock` carries the `pyforge-atlas` env, then the
+gate runs frozen. `pyforge-warden` runs work **today** (its env is already locked). Do **not**
+drop `--frozen` to work around it — an unfrozen re-solve in a worktree rewrites `pixi.lock` with
+worktree-absolute channel paths that the squash-merge would commit.
+
+### 9.7 — Run it
+
+```bash
+pixi run -e local-recipes bmad-loop run --story <story-key>   # one story
+pixi run -e local-recipes bmad-loop run                       # the whole sprint feed
+pixi run -e local-recipes bmad-loop tui                       # live dashboard
+```
+- **Journals:** `.bmad-loop/runs/<id>/` (gitignored; retention/trim/archive in `[cleanup]`).
+- **Isolation:** `[scm] isolation="worktree"`, `branch_per="story"`, `merge_strategy="squash"`
+  → each story is one squash commit on its own branch/worktree; a failed attempt is **kept**
+  (`keep_failed`) for inspection, main is never touched.
+- **Closeout:** wrap the merged stories in a **PR-per-wave**; run operator-invoked
+  **`bmad-loop-sweep`** at wave boundaries to triage the deferred-work ledger; a conda-forge
+  effort ends with the mandatory **CFE Rule-2 retro** (see `CLAUDE.md`).
+
+---
+
+## Phase 10 — Planning chains: greenfield vs brownfield (both feed Phase 9)
+
+Both tracks are **spec-first** and both **terminate at the loop**. They differ only in how the
+planning artifacts under `_bmad-output/projects/<slug>/planning-artifacts/` are produced.
+
+**10.A — Spec-first (mandatory, both tracks).** Before any non-trivial code, a Tier-1 intake
+spec must exist at `docs/specs/<name>.md` and reach `status: ready` (see repo `AGENTS.md` for the
+frontmatter contract). Create it with `spec-driven-development` or `bmad-create-*`.
+
+**10.B — Brownfield chain** (existing code to respect):
+
+```
+scripts/bmad-switch <slug>
+bmad-document-project            # → living architecture/source-tree/parts docs (agents MUST honor these)
+bmad-generate-project-context    # → project-context.md (preserve conventions + invariants)
+bmad-prd                         # (or bmad-correct-course if mid-effort) → PRD
+bmad-create-epics-and-stories    # → epics.md + stories
+bmad-check-implementation-readiness   # gate — iterate to pass
+bmad-sprint-planning             # → sprint-status.yaml (the loop's feed)
+# → Phase 9 (bmad-loop run)
+```
+
+**10.G — Greenfield chain** (no legacy to honor):
+
+```
+scripts/bmad-switch <slug>       # after adding the project subtree (Phase 8.5)
+bmad-prd                         # → PRD from the intake spec
+bmad-architecture                # → the architecture spine (invariants) — DESIGN the system
+bmad-create-epics-and-stories    # → epics.md + stories
+bmad-check-implementation-readiness   # gate — iterate to pass
+bmad-sprint-planning             # → sprint-status.yaml
+# → Phase 9 (bmad-loop run)
+```
+
+**Which did pyforge-atlas use?** Brownfield (it migrates the legacy `cf_atlas`), planned via the
+10.B chain — but then **executed via the in-session agent loop, not Phase 9**. That's the gap
+this update closes: future waves/projects run through Phase 9 and get real `.bmad-loop/runs/`
+journals.
+
+---
+
 ## Summary of Files to Create/Modify
 
 | File | Action |
@@ -344,6 +530,33 @@ Per-project `planning-artifacts/` remain **committed** as team artifacts.
 | `docs/developer-guide.md` | Provides local build and test instructions (Completed) |
 | `_bmad/custom/bmad-agent-pm.toml` | Create manually (Phase 4) |
 | `_bmad/custom/bmad-agent-pm.user.toml` | Create + add to `.gitignore` (Phase 4) |
-| `.gitignore` | Extended with BMAD multi-project patterns (Phases 5 + 8) |
+| `.gitignore` | Extended with BMAD multi-project patterns (Phases 5 + 8); `.bmad-loop/runs/` + `cache/` already ignored (Phase 9) |
 | `CLAUDE.md` § "Multi-Project Pattern" | Multi-project layout reference (Phase 8) |
 | `CHANGELOG.md` | Tracks BMAD multi-project introduction and other repo-level changes |
+| `.bmad-loop/policy.toml` | Loop policy — **make `[verify].commands` + `[scm].worktree_seed` track the active project** (Phase 9.3) |
+| `scripts/bmad-loop-project <slug>` | *(recommended, not yet built)* atomic per-project loop switch: `bmad-switch` + rewrite the two policy blocks (Phase 9.3) |
+| `docs/specs/<name>.md` | Tier-1 intake spec at `status: ready` before code — greenfield + brownfield (Phase 10.A) |
+| pixi env in `pixi.lock` | **Workstation re-lock** so each project's loop-VERIFY env is frozen-materializable (Phase 9.6 / DW-A1) |
+
+---
+
+## Quick reference — set up a new project end to end
+
+```bash
+# 0. one-time repo install (Phases 0–1) — already done here
+# 1. add the project subtree + config (Phase 8.5)
+mkdir -p _bmad-output/projects/<slug>/{planning-artifacts,implementation-artifacts}
+# … write .bmad-config.toml, add a PROJECTS.md row …
+scripts/bmad-switch <slug>
+
+# 2. plan  (Phase 10 — pick the track)
+#    brownfield: bmad-document-project → bmad-generate-project-context → bmad-prd → …
+#    greenfield: bmad-prd → bmad-architecture → …
+#    both end at:
+bmad-create-epics-and-stories → bmad-check-implementation-readiness → bmad-sprint-planning
+
+# 3. wire the loop for THIS project (Phase 9.3): point [verify].commands + [scm].worktree_seed at <slug>
+# 4. run unattended (Phase 9.7)
+pixi run -e local-recipes bmad-loop run            # or: run --story <key>
+pixi run -e local-recipes bmad-loop tui            # watch; journals land in .bmad-loop/runs/<id>/
+```

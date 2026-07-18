@@ -131,9 +131,9 @@ known Copilot-to-API pattern:
 | `recipes/litellm-proxy-extras/` | Sibling-package supplement (SQL migrations) for litellm proxy | conda-forge/staged-recipes |
 | `recipes/litellm-enterprise/` | **Local-only**, proprietary licence (BerriAI Enterprise) | **Do not submit** |
 
-Plus four supporting recipes (`recipes/rq/`, `recipes/prisma/`, `recipes/resend/`,
+Plus five supporting recipes (`recipes/rq/`, `recipes/prisma/`, `recipes/resend/`,
 `recipes/semantic-router/`, `recipes/aurelio-sdk/`) needed by the litellm
-constrains and downstream packages.
+constraints and downstream packages.
 
 ---
 
@@ -623,7 +623,7 @@ ecosystem just works. Tested clients:
 | **Continue (VS Code/JetBrains)** | ✅ | ✅ | ✅ | ✅ | ✅ |
 | **Aider** | ✅ | ✅ | ✅ | ✅ | ✅ |
 | **Open WebUI** | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **Embeddings clients** | ✅ | ✅ | ✅ | ❌ | depends on upstream |
+| **Embeddings clients** | ✅ | ✅ | ✅ | ✅ | depends on upstream |
 
 ### Generic OpenAI-compatible client config
 
@@ -1605,6 +1605,8 @@ base URL will work.
     the PyPI source-URL convention recipes here use
   - `docs/developer-guide.md` — local recipe development workflow
   - `docs/mcp-server-architecture.md` — FastMCP server + name-mapping subsystem
+  - `docs/specs/copilot-bridge-vscode-extension.md` — sideload-only VS Code
+    extension that wraps the copilot-api bridge pattern described here
 
 ---
 
