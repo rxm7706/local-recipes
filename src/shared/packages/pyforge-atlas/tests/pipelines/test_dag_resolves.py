@@ -71,9 +71,10 @@ def test_cross_pipeline_cf_graph_edge_resolves_by_name():
 
 # -- B2: pypi_intelligence (9 nodes) + vulnerability (5 nodes) ----------------
 
-def test_pypi_intelligence_pipeline_has_nine_nodes():
+def test_pypi_intelligence_pipeline_has_ten_nodes():
+    # B5 added export_pypi_conda_map (the § 3.4 update-mapping-cache Q6 export shim).
     pypi = pypi_create()
-    assert len(pypi.nodes) == 9
+    assert len(pypi.nodes) == 10
     assert {n.name for n in pypi.nodes} == {
         "map_pypi_conda",
         "match_source_urls",
@@ -84,13 +85,17 @@ def test_pypi_intelligence_pipeline_has_nine_nodes():
         "flag_cross_channel",
         "enrich_pypi_intelligence",
         "score_pypi_readiness",
+        "export_pypi_conda_map",
     }
 
 
-def test_vulnerability_pipeline_has_five_nodes():
+def test_vulnerability_pipeline_has_seven_nodes():
+    # B5 added refresh_vdb_store + refresh_osv_offline_store (§ 3.4 refresh assets).
     vuln = vuln_create()
-    assert len(vuln.nodes) == 5
+    assert len(vuln.nodes) == 7
     assert {n.name for n in vuln.nodes} == {
+        "refresh_vdb_store",
+        "refresh_osv_offline_store",
         "ingest_cisa_kev",
         "ingest_epss",
         "ingest_cwe_catalog",
@@ -110,11 +115,13 @@ def test_no_dataset_is_written_by_two_pipelines_b2():
 
 def test_combined_four_pipeline_dag_resolves_topologically():
     combined = core_create() + vcs_create() + pypi_create() + vuln_create()
-    # 7 core + 5 vcs + 9 pypi + 5 vuln = 26 nodes; the runner orders them from declared
-    # inputs/outputs alone (no PHASES list driver, FR-2/AD-3).
-    assert len(combined.nodes) == 26
+    # 7 core + 5 vcs + 10 pypi + 7 vuln = 29 nodes (B5 added 3 refresh assets); the
+    # runner orders them from declared inputs/outputs alone (no PHASES list driver,
+    # FR-2/AD-3). The vulnerability refresh assets resolve BEFORE the G/G' consumers
+    # (vulnerability_vdb_store: refresh -> consume) — a clean topological edge.
+    assert len(combined.nodes) == 29
     grouped = combined.grouped_nodes
-    assert sum(len(g) for g in grouped) == 26
+    assert sum(len(g) for g in grouped) == 29
 
 
 def test_pypi_cross_pipeline_edges_resolve_by_name():

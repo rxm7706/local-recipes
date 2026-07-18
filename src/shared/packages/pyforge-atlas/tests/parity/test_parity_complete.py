@@ -15,8 +15,18 @@ _PIPELINES = ("core", "vcs_health", "pypi_intelligence", "vulnerability")
 _EXPECTED_NODE_COUNTS = {
     "core": 7,
     "vcs_health": 5,
-    "pypi_intelligence": 9,
-    "vulnerability": 5,
+    "pypi_intelligence": 10,  # B5 added export_pypi_conda_map (§ 3.4 refresh asset)
+    "vulnerability": 7,  # B5 added refresh_vdb_store + refresh_osv_offline_store
+}
+
+# Story B5 external-refresh assets (§ 3.4) — these write the three separately-built
+# external stores (vdb / OSV / mapping cache), NOT the legacy-surface data outputs B4
+# parity-diffs. They are the § 3.4 MIGRATION BOUNDARY, so they are deliberately OUT of
+# the parity harness's NODE_REGISTRY (mirrors AD-14's "not parity-gated" discipline).
+_REFRESH_ASSETS = {
+    "refresh_vdb_store",
+    "refresh_osv_offline_store",
+    "export_pypi_conda_map",
 }
 
 
@@ -34,9 +44,12 @@ def test_harness_build_completes_at_b3():
         assert len(per_pipeline[pipeline]) == expected, pipeline
 
     all_nodes = set().union(*per_pipeline.values())
-    assert len(all_nodes) == 26  # the 26 Wave-B nodes
+    # The parity SURFACE is the 26 Wave-B legacy-surface nodes; the 3 B5 refresh assets
+    # are the § 3.4 boundary and are not parity-diffed.
+    parity_surface = all_nodes - _REFRESH_ASSETS
+    assert len(parity_surface) == 26  # the 26 Wave-B parity-surface nodes
 
-    missing = all_nodes - set(NODE_REGISTRY)
+    missing = parity_surface - set(NODE_REGISTRY)
     assert not missing, (
         f"parity harness NODE_REGISTRY is missing pipeline nodes: {missing}"
     )

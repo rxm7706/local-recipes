@@ -226,10 +226,20 @@ pypi_endoflife_raw:
   metadata:
     layer: raw
 
-# § 3.4 store 3 — flat conda<->PyPI mapping cache (pypi_conda_map.json).
-# Refreshed out-of-pipeline until Story B5 wraps it as a scheduled asset.
+# § 3.4 store 3 — flat conda<->PyPI mapping cache (pypi_conda_map.json). Story B5
+# LANDED the refresh wrap under the Q6 default (consolidate on Phase C): the
+# `export_pypi_conda_map` node (pypi_intelligence) is the SINGLE writer, exporting the
+# migrated Phase C mapping (`pypi_conda_mapping`) to this flat file — offline-safe (no
+# regro/cf-graph re-fetch) and preserving g10_spelling + no-clobber (AD-10). The
+# `{pypi_name: conda_name}` format stays byte-compatible with the legacy authoring-time
+# readers (name_resolver.py / recipe-generator.py); their re-point at Phase C directly is
+# DW-B5-1 (read-only .claude/**), so this file is retained as the compatibility shim.
+# B5 LANDED the flip to MappingCacheDataset: the export node passes the {pypi_name:
+# conda_name} map and the dataset MERGES it onto the last-good cache (Phase C wins on
+# conflict; old-only keys retained) + keeps-last-good on an empty export (AD-13
+# never-clobber-with-empty) — the same discipline the vdb/OSV stores carry.
 pypi_conda_map_store:
-  type: json.JSONDataset
+  type: pyforge.atlas.datasets.MappingCacheDataset
   filepath: ${globals:paths.pypi_conda_map}
   metadata:
     layer: raw
@@ -323,26 +333,30 @@ vulnerability_cwe_catalog_raw:
   metadata:
     layer: raw
 
-# § 3.4 store 1 — AppThreat vdb (~2.5 GB; READ-ONLY input for G/G').
-# Review-pass P2: the vdb ships its OWN file format — it is NOT pickle
-# (declaring pickle.PickleDataset both lied about the format and opened an
-# unpickle arbitrary-code-execution surface). Declared honestly as a
-# path-only reference until Story B5 — the consumer that wraps refresh
-# (vuln-db env) — lands a real read-only VDB dataset class that owns the
-# format; until then nodes receive the store PATH, never parsed content.
-# FLIP(B5): read-only VDB store dataset class (owns the vdb file format; wraps refresh)
+# § 3.4 store 1 — AppThreat vdb (~2.5 GB). Story B5 LANDED the flip (was
+# `# FLIP(B5)`): VDBStoreDataset is the read-only VDB store class that owns the
+# vdb file format (still NOT pickle — the A2 P2 honest-format fix) AND wraps the
+# refresh as the SINGLE writer. The vuln-db env is a DECLARED resource requirement
+# (AC-3), the fetch is dataset-owned IO via an injected refresher (no shell-out in
+# package code), and `coerce_cvss_score` is applied at the read boundary (DW-B2-2)
+# so Phases G / G' consume load() -> an already-parsed + coerced per-CVE frame.
+# AD-13: an air-gapped / never-refreshed load keeps last-good + surfaces a staleness
+# marker rather than crashing.
 vulnerability_vdb_store:
-  type: kedro.io.MemoryDataset
-  data: ${globals:paths.vdb_store}
+  type: pyforge.atlas.datasets.VDBStoreDataset
+  filepath: ${globals:paths.vdb_store}
   metadata:
     layer: raw
 
-# § 3.4 store 2 — offline OSV CVE store (`cve/`); refresh endpoint =
-# extra_overrides.OSV_VULNS_BUCKET_URL (Story B5 wraps it).
+# § 3.4 store 2 — offline OSV CVE store (`cve/`). Story B5 LANDED the refresh wrap:
+# OSVOfflineStoreDataset is the SINGLE writer (dataset-owned IO via the injected
+# fetcher + the OSV_VULNS_BUCKET_URL endpoint base — AD-2: no hardcoded host, no HTTP
+# client imported in package code). The offline vulnerability scanner / scan-project
+# consume load() read-only, air-gapped (AD-13 keep-last-good + staleness marker).
 vulnerability_osv_offline_store:
-  type: partitions.PartitionedDataset
-  path: ${globals:paths.osv_offline_store}
-  dataset: json.JSONDataset
+  type: pyforge.atlas.datasets.OSVOfflineStoreDataset
+  filepath: ${globals:paths.osv_offline_store}
+  bucket_url: ${globals:extra_overrides.OSV_VULNS_BUCKET_URL}
   metadata:
     layer: raw
 
