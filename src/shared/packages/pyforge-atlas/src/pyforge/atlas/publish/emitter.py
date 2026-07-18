@@ -65,6 +65,11 @@ _SAFE_NAME_RE = re.compile(r"^[^/\\]+$")
 def _require_safe_name(name: str) -> None:
     if not isinstance(name, str) or not name:
         raise ValueError(f"dataset name must be a non-empty string, got {name!r}")
+    if len(name.encode("utf-8")) > 255:
+        # An over-long name passes the char checks but fails at mkdir() mid-loop, leaving the
+        # site half-rewritten against a stale manifest — reject it UP FRONT so the atomicity
+        # property (validate-all-before-any-mutation) holds for it too (independent-review LOW).
+        raise ValueError(f"dataset name too long ({len(name.encode())} bytes > 255): {name[:40]!r}…")
     if name in (".", "..") or ".." in name or not _SAFE_NAME_RE.match(name):
         raise ValueError(
             f"unsafe dataset name {name!r}: must be a single path segment with no '/', '\\', "
