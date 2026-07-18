@@ -13,7 +13,15 @@ import os
 # Hooks are executed in a Last-In-First-Out (LIFO) order.
 from pyforge.atlas.hooks import ProjectHooks
 
-HOOKS = (ProjectHooks(),)
+# Story E2 (FR-12, AD-6/AD-23): observability instrumentation declared ONCE here
+# so EVERY entry point inherits it — a `kedro run` picks up settings HOOKS
+# natively, and a Dagster run picks them up too because C1's KedroProjectTranslator
+# runs each node through KedroSession.run (settings hooks included). Constructed
+# with no args → both backends default to no-op/offline (no network at import or
+# run); the gate injects in-memory captors. See pyforge.atlas.observability.
+from pyforge.atlas.observability import AtlasObservabilityHooks
+
+HOOKS = (ProjectHooks(), AtlasObservabilityHooks())
 
 # Installed plugins for which to disable hook auto-registration.
 # DISABLE_HOOKS_FOR_PLUGINS = ("kedro-viz",)
