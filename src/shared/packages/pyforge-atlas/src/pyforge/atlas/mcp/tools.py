@@ -23,8 +23,12 @@ from pyforge.atlas.mcp import session as _session
 # B1/B2 (`find_pipelines()` discovers them from the pipelines/ package).
 # Kept STATIC — not computed from a live registry — so list_pipelines()
 # stays offline/thin; tests/mcp/test_audit_mapping.py pins this tuple
-# against the real registry (the 4 create_pipeline modules).
-PIPELINE_NAMES = ("core", "vcs_health", "pypi_intelligence", "vulnerability")
+# against the real registry (the 5 create_pipeline modules). B6 added
+# `seed_gaps` (the four READ-ONLY seed-freshness report nodes). NB: this is
+# the generic per-PIPELINE trigger the registry-mirror invariant requires —
+# the four seed-gap SUGGESTERS themselves stay CLI-only (AD-7): no per-tool
+# MCP read surface is added for them.
+PIPELINE_NAMES = ("core", "vcs_health", "pypi_intelligence", "vulnerability", "seed_gaps")
 
 
 class AtlasMCPError(RuntimeError):

@@ -60,12 +60,13 @@ def test_run_pipeline_rejects_unknown_name(monkeypatch):
     assert fake.run_calls == []  # rejected BEFORE any session work
 
 
-def test_all_four_registered_pipelines_are_accepted(monkeypatch):
+def test_all_registered_pipelines_are_accepted(monkeypatch):
     assert tools.PIPELINE_NAMES == (
         "core",
         "vcs_health",
         "pypi_intelligence",
         "vulnerability",
+        "seed_gaps",  # B6: the READ-ONLY seed-freshness report pipeline
     )
     fake = FakeSession()
     _patch_session(monkeypatch, fake)

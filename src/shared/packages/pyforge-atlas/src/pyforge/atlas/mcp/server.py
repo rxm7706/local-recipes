@@ -46,6 +46,11 @@ def build_server(name: str = "pyforge-atlas-atlas"):
         return tools.run_pipeline("vulnerability")
 
     @mcp.tool()
+    def run_seed_gaps_pipeline() -> dict:
+        """Trigger the `seed_gaps` pipeline (READ-ONLY seed-freshness reports) run."""
+        return tools.run_pipeline("seed_gaps")
+
+    @mcp.tool()
     def read_atlas_dataset(name: str):
         """Read a catalog dataset natively — a thin catalog.load passthrough."""
         return tools.read_dataset(name)
