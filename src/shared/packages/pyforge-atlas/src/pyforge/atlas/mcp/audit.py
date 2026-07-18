@@ -70,6 +70,7 @@ PIPELINE_TRIGGER_TOOLS = (
     "run_vcs_health_pipeline",
     "run_pypi_intelligence_pipeline",
     "run_vulnerability_pipeline",
+    "run_seed_gaps_pipeline",
 )
 
 
