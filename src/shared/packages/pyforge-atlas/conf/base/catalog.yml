@@ -577,6 +577,18 @@ vcs_live_health:
   metadata:
     layer: primary
 
+# Story B9 output — the FR-20 release-to-availability velocity column pair
+# (release_lag_hours + release_lag_qualifies). AD-14 new-signal PRIMARY: name aligned
+# to B4's fixture-enforced EXCLUDED_NEW_SIGNAL_DATASETS ("vcs_release_velocity",
+# parity/legacy_surface.py). Lag = first availability of the matched version (MIN
+# per-build repodata timestamp), never latest_conda_upload; 90-day recency gate. NEVER
+# parity-gated (AD-14). Derived from already-fetched data (no new external source).
+vcs_release_velocity:
+  type: pandas.ParquetDataset
+  filepath: data/primary/vcs_release_velocity/vcs_release_velocity.parquet
+  metadata:
+    layer: primary
+
 # =============================================================================
 # universal_sbom — user-inventory intake + matching (entry-scoped, § 3.4)
 # =============================================================================
