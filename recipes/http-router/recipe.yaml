@@ -1,0 +1,121 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "6.0.0"
+
+package:
+  name: http-router
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/h/http-router/http_router-${{ version }}.tar.gz
+  sha256: 17d486280081c1f8c04583e37ffb242f02940a083feca26fe4649e11d2150e74
+
+build:
+  number: 0
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ stdlib('c') }}
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+        - cython
+  host:
+    - python
+    - pip
+    - setuptools
+    - wheel
+    - cython
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - http_router
+      pip_check: true
+
+about:
+  summary: A simple router system for HTTP applications
+  description: |
+    HTTP Router is a router for HTTP applications. It maps URL paths to
+    handlers, supporting static paths, dynamic path parameters with type
+    converters, and regular expressions. The performance-critical routing
+    core is implemented in Cython.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/klen/http-router
+  repository: https://github.com/klen/http-router
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: http-router
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: http-router
+  cfe-purls:
+    - pkg:conda/http-router@${{ version }}?channel=conda-forge
+    - pkg:pypi/http-router@${{ version }}
+  cfe-upstream-repo: https://github.com/klen/http-router
+  cfe-upstream-homepage: https://github.com/klen/http-router
+  cfe-import-names: [http_router]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: compiled
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: local-only-pending-submission-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - "upstream ships NO license file: absent from the PyPI sdist AND from the GitHub repo (develop branch, verified 2026-07-14 via the GitHub license API which returns no license). Only PyPI metadata + an OSI classifier declare MIT. conda-forge requires a packaged license file, so the vendored LICENSE here is a reconstruction, not an upstream artifact. File an upstream issue asking klen to add LICENSE before submitting."
+  cfe-last-checked: 2026-07-14T00:00:00Z
+  cfe-generated-by-version: 8.77.0
+  cfe-generated-at-datetime: 2026-07-14T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-07-14T19:01:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    Packaged as a prerequisite of the reactpy v2 chain:
+#    http-router -> asgi-tools -> reactpy-router 3.0.0b1 -> reactpy-django 6.0.0b1.
+#    reactpy-router 3.0.0b1 requires reactpy[asgi]; conda has no extras (G25), so
+#    that extra is flattened into reactpy-router's run deps, which drags in
+#    asgi-tools, which needs this package.
+# build:
+#    NOT noarch. The generator emitted `noarch: python` alongside `compiler('c')`
+#    -- contradictory. Verified compiled per G46/G48: the sdist ships
+#    http_router/{router,routes}.pyx + .pxd, setup.py cythonizes them, and PyPI
+#    publishes only per-Python cp3XX wheels (35 wheels, zero py3-none-any).
+#    setup.py honors HTTP_ROUTER_NO_EXTENSIONS to force a pure-Python build; not
+#    used here -- we match upstream's accelerated build.
+# requirements:
+#  build:
+#    stdlib('c') is mandatory alongside compiler('c') and was missing from the
+#    generated recipe (STD-001).
+#  host:
+#    setuptools + wheel + cython all appear in the sdist's
+#    [build-system].requires, so all three are kept (not the G8 belt-and-
+#    suspenders case). setup.py also carries a legacy setup_requires=["wheel"],
+#    which `wheel` in host satisfies without a build-time fetch (G55 addendum).
+# tests:
+#    No CFEP-25 cross-version python_version triad: this is a per-Python
+#    compiled artifact, so a .so built for one Python cannot be imported by
+#    another (G49). Simple imports + pip_check only.
+# about:
+#    license_file is the vendored LICENSE (canonical placement pattern 2) --
+#    upstream ships none anywhere. Copyright line reconstructed from the PyPI
+#    author (Kirill Klenov <horneds@gmail.com>) and the first release year
+#    (0.0.3, 2020-11-10); it matches verbatim the LICENSE that the SAME author
+#    ships in asgi-tools ("Copyright (c) 2020 Kirill Klenov"). See the blocker.
+#    The generator emitted homepage=pypi.org/project/... and a truncated RST
+#    header fragment as the description; both rewritten.
+####

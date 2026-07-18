@@ -49,6 +49,8 @@ loaded when an active project resolves.
 | `local-recipes`        | active | Primary project — conda-forge recipe authoring monorepo (this repo's main purpose).                                                                                                |
 | `presenton-pixi-image` | active | Air-gapped, conda-forge-native repackaging of the Presenton AI deck-generation app for OpenShift Container Platform deployment in regulated-enterprise environments.                |
 | `deckcraft`            | active | Air-gapped, conda-forge-native AI pipeline for generating editable PowerPoint, Marp markdown, infographics, and images. Multi-surface (Claude Skill, MCP for Copilot/MS365, CLI). Complements `presenton-pixi-image` (built from primitives, not a repackage).                |
+| `pyforge-warden`       | active | Unified dependency-hygiene + vulnerability scanner (deptry + osv-scanner) over Python/Conda/Pixi manifests — schema-validated ComplianceReport + strict CI exit-code gate. In-repo pixi build workspace member at `src/shared/packages/pyforge-warden/` (conda+wheel+sdist). Spec: `docs/specs/pyforge-warden.md`. |
+| `pyforge-atlas` | active | Kedro/Dagster/DuckDB migration of the cf_atlas orchestrator (~10k LOC, 23 cataloged phases) with a Vizro/Vizro-AI read surface, Boring Semantic Layer, and MCP/A2A agent interface. 22 FRs, 32 stories across waves 0 + A–H, graduated-autonomy execution via bmad-loop. Spec: `docs/specs/cfe-atlas-datapipeline-kedro-migration.md` (v5.6). |
 
 ## Adding a new project
 

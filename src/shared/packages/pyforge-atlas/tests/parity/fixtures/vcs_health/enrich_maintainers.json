@@ -1,0 +1,47 @@
+{
+  "phase": "E",
+  "node": "enrich_maintainers",
+  "inputs": {
+    "core_cf_graph_raw": [
+      {
+        "feedstock_name": "numpy",
+        "conda_name": "numpy",
+        "maintainers": [
+          "alice",
+          "bob"
+        ]
+      },
+      {
+        "feedstock_name": "pandas",
+        "conda_name": "pandas",
+        "maintainers": [
+          "bob"
+        ]
+      }
+    ]
+  },
+  "expected": {
+    "vcs_maintainers": [
+      {
+        "maintainer": "alice"
+      },
+      {
+        "maintainer": "bob"
+      }
+    ],
+    "vcs_package_maintainers": [
+      {
+        "conda_name": "numpy",
+        "maintainer": "alice"
+      },
+      {
+        "conda_name": "numpy",
+        "maintainer": "bob"
+      },
+      {
+        "conda_name": "pandas",
+        "maintainer": "bob"
+      }
+    ]
+  }
+}

@@ -1,0 +1,18 @@
+# Review-finding regression fixture (Story 2.4, AC3, 2026-07-17): a
+# RAW_MALFORMED dependency (an unresolvable Jinja expression -- no filter
+# support in the neutralize pass) degrades to hygiene_covered=False at
+# extraction time, independent of any engine ever running. With zero
+# adjacent .py files, DeptryEngine is filtered out and the hygiene axis
+# claims deps_total=0 (not-applicable) -- this fixture proves that claim
+# stays honest: no hygiene-axis finding leaks in despite the malformed
+# component, and the verdict still correctly lands indeterminate (driven by
+# the SAME component's own vulnerability-axis withhold, not a false clean).
+context:
+  name: mypkg
+  version: "1.2.3"
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+requirements:
+  run:
+    - ${{ some_undefined_filter | replace("a", "b") }}

@@ -59,9 +59,24 @@ local-recipes/
 
 ### Prerequisites
 
-- [Pixi](https://pixi.sh) >= 0.59.0 (recommended)
+- [Pixi](https://pixi.sh) >= 0.72.2 (the workspace's `requires-pixi` floor; pixi 0.73+ is pinned in-env)
 - Or: Conda/Mamba with conda-build and rattler-build
 - For Linux builds on Windows: WSL2 with Ubuntu or Docker Desktop
+
+> **Which env builds recipes?** `rattler-build` (the v1 / `recipe.yaml` engine) lives in
+> the **`local-recipes`** env, not the minimal `build` env — the `build` env carries only
+> `conda-build` for legacy `meta.yaml`. For everyday recipe builds prefer the purpose-built
+> pixi tasks over `test-recipes.py`:
+>
+> ```bash
+> pixi run -e local-recipes recipe-build recipes/<name>          # native rattler-build (fast, no Docker)
+> pixi run -e local-recipes recipe-build-docker linux64          # full conda-forge CI fidelity (alma9)
+> pixi run -e local-recipes recipe-build-cross recipes/<name> osx-arm64   # cross-platform .conda artifact
+> ```
+>
+> `test-recipes.py` (below) remains available for batch/random sweeps and for `meta.yaml`
+> builds via the `build` env. See also the authoritative `conda-forge-expert` skill
+> (`.claude/skills/conda-forge-expert/`) whose recipe lifecycle loop drives these tasks.
 
 ### Installation
 
@@ -104,6 +119,7 @@ The `test-recipes.py` script provides direct recipe testing without the CI workf
 |--------|-------------|---------|
 | `--recipe NAME` | Build a specific recipe | `--recipe pandas` |
 | `--random N` | Build N random recipes | `--random 10` |
+| `--list` | List discovered recipes (no build) | `--list` |
 | `--all` | Build on all available platforms | `--all` |
 | `--platform PLAT` | Target specific platform | `--platform win-64` |
 | `--type TYPE` | Filter by recipe type | `--type recipe.yaml` |
@@ -147,11 +163,11 @@ pixi run -e build python test-recipes.py --filter "aws-*" --platform linux-64
 # Install pixi in WSL
 wsl bash -c "curl -fsSL https://pixi.sh/install.sh | bash"
 
-# Install the build environment in WSL
-wsl bash -c "cd /mnt/c/path/to/local-recipes && ~/.pixi/bin/pixi install -e build"
+# Install the local-recipes environment in WSL (rattler-build lives here, not in `build`)
+wsl bash -c "cd /mnt/c/path/to/local-recipes && ~/.pixi/bin/pixi install -e local-recipes"
 
 # Verify rattler-build works
-wsl bash -c "cd /mnt/c/path/to/local-recipes && ~/.pixi/bin/pixi run -e build rattler-build --version"
+wsl bash -c "cd /mnt/c/path/to/local-recipes && ~/.pixi/bin/pixi run -e local-recipes rattler-build --version"
 ```
 
 **Note:** `conda-build` has compatibility issues when the project is on a Windows filesystem accessed via WSL. For `meta.yaml` recipes on Linux, use Docker instead.
@@ -187,7 +203,7 @@ All workflows run **on-demand only** to preserve GitHub Actions quota. No automa
 gh workflow run test-all.yml -f recipes="pandas,numpy" -f platforms="all"
 
 # Test Linux only with CUDA
-gh workflow run test-linux.yml -f recipes="pytorch" -f cuda_version="12.6"
+gh workflow run test-linux.yml -f recipes="pytorch" -f cuda_version="12.9"
 
 # Test macOS with custom deployment target
 gh workflow run test-macos.yml -f recipes="scipy" -f osx_arm64_deployment_target="12.0"
@@ -328,7 +344,7 @@ extra:
 |----------|--------------|--------------|--------------|
 | linux-64 | Docker | `quay.io/condaforge/linux-anvil-x86_64:alma9` | x86_64 |
 | linux-aarch64 | Docker + QEMU | `quay.io/condaforge/linux-anvil-aarch64:alma9` | ARM64 |
-| linux-64-cuda | Docker | `quay.io/condaforge/linux-anvil-cuda:12.6` | x86_64 + CUDA |
+| linux-64-cuda | Docker | `quay.io/condaforge/linux-anvil-cuda:12.9` | x86_64 + CUDA |
 | win-64 | Native | N/A | x86_64 |
 | osx-64 | Native | N/A | x86_64 (Intel) |
 | osx-arm64 | Native | N/A | ARM64 (Apple Silicon) |
@@ -344,30 +360,31 @@ Global pinning configuration derived from conda-forge-pinning.
 Key settings:
 
 ```yaml
-# Python versions
+# Python versions (zip_keys: python, is_python_min; win-arm64 only supports 3.14+)
 python:
-  - 3.10.* *_cpython
-  - 3.11.* *_cpython
-  - 3.12.* *_cpython
-  - 3.13.* *_cp313
+  - 3.10.* *_cpython   # [not (win and arm64)]
+  - 3.11.* *_cpython   # [not (win and arm64)]
+  - 3.12.* *_cpython   # [not (win and arm64)]
+  - 3.13.* *_cp313     # [not (win and arm64)]
+  - 3.14.* *_cp314     # [win and arm64]
 
 python_min:
-  - '3.10'  # CFEP-25 minimum
+  - '3.10'             # CFEP-25 minimum [not (win and arm64)]
+  - '3.14'             # [win and arm64]
 
 # Compilers
 c_compiler_version:
   - 14          # [linux]
   - 19          # [osx]
 
-# macOS targets
-MACOSX_DEPLOYMENT_TARGET:
-  - 11.0        # [osx and arm64]
-  - 10.13       # [osx and x86_64]
+# macOS targets — the explicit override is commented out in this repo; the
+# conda-forge-pinning defaults apply unless you uncomment it.
+#MACOSX_DEPLOYMENT_TARGET:      # [osx]
 
-# CUDA
+# CUDA (gated on CF_CUDA_ENABLED=True)
 cuda_compiler_version:
   - None
-  - 12.6        # [linux or win64]
+  - 12.9        # [((linux and not ppc64le) or win64) and CF_CUDA_ENABLED]
 ```
 
 ### .ci_support/*.yaml
@@ -383,11 +400,21 @@ Platform-specific variant configurations:
 
 | Environment | Purpose | Features |
 |-------------|---------|----------|
-| `build` | Build recipes | conda-build, rattler-build |
-| `linux` | Linux builds via Docker | Python only |
-| `win` | Windows builds | Full build stack |
-| `osx` | macOS builds | Full build stack |
-| `local-recipes` | Full development | All tools |
+| `build` | Minimal `meta.yaml` builds | python + build (`conda-build` only — **no** rattler-build) |
+| `linux` | Linux builds via Docker | linux + python |
+| `win` | Windows builds | win + python + build |
+| `osx` | macOS builds | osx + python + build |
+| `local-recipes` | **Default / full development** | python + build + grayskull + conda-smithy + local-recipes (incl. rattler-build, recipe-build tasks, data/ML/agent stack) |
+| `grayskull` | Recipe generation only | python + grayskull (`pypi`, `cran` tasks) |
+| `conda-smithy` | Recipe linting only | python + conda-smithy + shellcheck (`lint` task) |
+| `vuln-db` | CVE DB / SBOM work | python + vuln-db (AppThreat multi-source; `vdb-refresh`, `build-cf-atlas`, `atlas-phase`) |
+| `gcloud` | One-time GCP auth | python + gcloud-sdk (linux/macOS only) |
+| `pyforge-warden` | Warden compliance gate | pyforge-warden member (`warden` CLI, `pyforge-warden-test`) |
+| `pyforge-atlas` | Kedro atlas pipeline | pyforge-atlas member (kedro/kedro-dagster/kedro-viz; `kedro-test`, `dagster-dryrun`, `viz`) |
+| `bmad-ui` | BMad Method UI dashboards | bmad-ui member (**linux-64 only**; `bmad-dashboard-install`, `mybmad`) |
+
+> The full per-library breakdown of every environment lives in
+> `docs/library-llms-full.md`.
 
 ---
 
@@ -398,11 +425,11 @@ Platform-specific variant configurations:
 #### "rattler-build not found"
 
 ```bash
-# Ensure you're in the build environment
-pixi run -e build rattler-build --version
+# rattler-build ships in the local-recipes env (NOT the minimal `build` env)
+pixi run -e local-recipes rattler-build --version
 
 # Or activate manually
-pixi shell -e build
+pixi shell -e local-recipes
 rattler-build --version
 ```
 

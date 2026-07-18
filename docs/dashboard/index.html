@@ -1,0 +1,525 @@
+<title>pyforge — Build Program Console</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    --ground: #eaeef2;
+    --panel: #ffffff;
+    --panel-2: #f3f6f9;
+    --line: #d3dbe3;
+    --line-soft: #e2e8ee;
+    --ink: #16202b;
+    --ink-soft: #43535f;
+    --slate: #6a7885;
+    --slate-faint: #98a5b1;
+    /* per-project accent (structural) — defaults to warden steel; atlas overrides */
+    --accent: #1a8fa6;
+    --accent-dim: #4bacc0;
+    --warden: #1a8fa6;
+    --atlas: #5b54d6;
+    /* semantic verdict states — shared program language */
+    --done: #1f9d63;
+    --done-ground: rgba(31,157,99,0.10);
+    --active: #c9821a;
+    --active-ground: rgba(201,130,26,0.12);
+    --pending: #7d8b98;
+    --pending-ground: rgba(125,139,152,0.09);
+    --gate: #c1574f;
+    --gate-ground: rgba(193,87,79,0.09);
+    --radius: 9px;
+    --mono: ui-monospace, 'JetBrains Mono', 'SF Mono', 'Cascadia Code', Menlo, Consolas, monospace;
+    --sans: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ground: #080b0f; --panel: #10161d; --panel-2: #0c1218; --line: #202b35; --line-soft: #1a232c;
+      --ink: #dbe4ec; --ink-soft: #a4b1bd; --slate: #7c8a97; --slate-faint: #56646f;
+      --accent: #4bc2d8; --accent-dim: #2b8296; --warden: #4bc2d8; --atlas: #8b86f5;
+      --done: #3fbf7f; --done-ground: rgba(63,191,127,0.13);
+      --active: #e6a943; --active-ground: rgba(230,169,67,0.14);
+      --pending: #64717d; --pending-ground: rgba(100,113,125,0.12);
+      --gate: #db6f66; --gate-ground: rgba(219,111,102,0.13);
+    }
+  }
+  :root[data-theme="light"] {
+    color-scheme: light;
+    --ground: #eaeef2; --panel: #ffffff; --panel-2: #f3f6f9; --line: #d3dbe3; --line-soft: #e2e8ee;
+    --ink: #16202b; --ink-soft: #43535f; --slate: #6a7885; --slate-faint: #98a5b1;
+    --accent: #1a8fa6; --accent-dim: #4bacc0; --warden: #1a8fa6; --atlas: #5b54d6;
+    --done: #1f9d63; --done-ground: rgba(31,157,99,0.10);
+    --active: #c9821a; --active-ground: rgba(201,130,26,0.12);
+    --pending: #7d8b98; --pending-ground: rgba(125,139,152,0.09);
+    --gate: #c1574f; --gate-ground: rgba(193,87,79,0.09);
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --ground: #080b0f; --panel: #10161d; --panel-2: #0c1218; --line: #202b35; --line-soft: #1a232c;
+    --ink: #dbe4ec; --ink-soft: #a4b1bd; --slate: #7c8a97; --slate-faint: #56646f;
+    --accent: #4bc2d8; --accent-dim: #2b8296; --warden: #4bc2d8; --atlas: #8b86f5;
+    --done: #3fbf7f; --done-ground: rgba(63,191,127,0.13);
+    --active: #e6a943; --active-ground: rgba(230,169,67,0.14);
+    --pending: #64717d; --pending-ground: rgba(100,113,125,0.12);
+    --gate: #db6f66; --gate-ground: rgba(219,111,102,0.13);
+  }
+  /* project accent binds structural color */
+  :root[data-project="atlas"] { --accent: var(--atlas); }
+  :root[data-project="warden"] { --accent: var(--warden); }
+
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { margin: 0; background: var(--ground); color: var(--ink); font-family: var(--sans);
+    line-height: 1.5; font-size: 15px; -webkit-font-smoothing: antialiased; }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: clamp(20px,4vw,48px) clamp(16px,4vw,40px) 64px; }
+
+  .statusline { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap;
+    font-family: var(--mono); font-size: 12.5px; letter-spacing: 0.02em; color: var(--slate); margin-bottom: 22px; }
+  .statusline .prompt { color: var(--accent); transition: color .3s; }
+  .statusline .branch { color: var(--ink-soft); }
+  .theme-toggle { margin-left: auto; font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.04em;
+    background: var(--panel); color: var(--slate); border: 1px solid var(--line); border-radius: 6px;
+    padding: 5px 11px; cursor: pointer; text-transform: uppercase; }
+  .theme-toggle:hover { color: var(--ink); border-color: var(--accent-dim); }
+  .theme-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  h1 { font-family: var(--mono); font-weight: 600; letter-spacing: -0.01em;
+    font-size: clamp(24px,4vw,34px); line-height: 1.05; margin: 0 0 4px; text-wrap: balance; }
+  h1 .sep { color: var(--accent); font-weight: 400; transition: color .3s; }
+  .subtitle { color: var(--ink-soft); font-size: 15px; max-width: 64ch; margin: 0 0 26px; }
+  .subtitle code { font-family: var(--mono); font-size: 0.86em; color: var(--accent); background: var(--panel-2);
+    padding: 1px 5px; border-radius: 4px; transition: color .3s; }
+
+  /* ---- program strip: both projects at a glance ---- */
+  .program { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 18px 22px 20px; margin-bottom: 12px;
+    box-shadow: 0 1px 0 var(--line-soft), 0 12px 30px -22px rgba(0,0,0,0.4); }
+  .program-h { font-family: var(--mono); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.16em;
+    color: var(--slate); margin-bottom: 14px; }
+  .prow { display: grid; grid-template-columns: 92px 1fr auto; align-items: center; gap: 16px; padding: 9px 0; }
+  .prow + .prow { border-top: 1px solid var(--line-soft); }
+  .pname { font-family: var(--mono); font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+  .pname .pdot { width: 9px; height: 9px; border-radius: 3px; flex: none; }
+  .pw .pdot { background: var(--warden); } .pa .pdot { background: var(--atlas); }
+  .pbar { height: 12px; border-radius: 4px; background: var(--pending-ground); border: 1px solid var(--line);
+    overflow: hidden; position: relative; }
+  .pbar-fill { height: 100%; border-radius: 3px 0 0 3px; }
+  .pw .pbar-fill { background: linear-gradient(90deg, var(--warden), var(--accent-dim)); }
+  .pa .pbar-fill { background: linear-gradient(90deg, var(--atlas), #9a95f8); }
+  .pfrac { font-family: var(--mono); font-size: 13px; font-variant-numeric: tabular-nums; color: var(--ink-soft);
+    white-space: nowrap; }
+  .pfrac b { font-weight: 600; } .pfrac .pct { color: var(--slate); }
+  .edge { margin-top: 14px; padding-top: 13px; border-top: 1px dashed var(--line);
+    font-family: var(--mono); font-size: 11px; color: var(--slate); line-height: 1.55; }
+  .edge b { color: var(--ink-soft); font-weight: 600; }
+  .edge .w { color: var(--warden); } .edge .a { color: var(--atlas); }
+
+  /* ---- toggle ---- */
+  .toggle { display: inline-flex; background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px;
+    padding: 3px; gap: 3px; margin: 22px 0 20px; }
+  .toggle button { font-family: var(--mono); font-size: 12.5px; font-weight: 600; letter-spacing: 0.06em;
+    text-transform: uppercase; border: none; background: transparent; color: var(--slate); cursor: pointer;
+    padding: 8px 18px; border-radius: 6px; display: inline-flex; align-items: center; gap: 8px; }
+  .toggle button .td { width: 8px; height: 8px; border-radius: 2px; }
+  .toggle button[data-p="warden"] .td { background: var(--warden); }
+  .toggle button[data-p="atlas"] .td { background: var(--atlas); }
+  .toggle button[aria-selected="true"] { background: var(--panel); color: var(--ink);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.14); }
+  .toggle button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .toggle .cnt { font-size: 11px; color: var(--slate); font-weight: 400; }
+
+  /* ---- selected-project header + segbar ---- */
+  .phead { display: flex; align-items: flex-end; gap: 24px; flex-wrap: wrap; margin-bottom: 16px; }
+  .bignum { font-family: var(--mono); font-weight: 600; line-height: 0.9; font-size: clamp(38px,7vw,58px);
+    letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+  .bignum .of { color: var(--slate-faint); font-size: 0.42em; letter-spacing: 0; }
+  .bignum-label { font-family: var(--mono); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.13em;
+    color: var(--slate); margin-top: 7px; }
+  .metrics { display: flex; gap: 24px; flex-wrap: wrap; margin-left: auto; align-self: flex-end; }
+  .metric { display: flex; flex-direction: column; gap: 2px; }
+  .metric .v { font-family: var(--mono); font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1; }
+  .metric .k { font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--slate); }
+  .metric.done .v { color: var(--done); } .metric.active .v { color: var(--active); } .metric.pending .v { color: var(--slate); }
+
+  .segbar { display: flex; gap: 3px; margin: 2px 0 8px; }
+  .seg { flex: 1 1 0; height: 20px; border-radius: 3px; position: relative; min-width: 0; }
+  .seg.done { background: var(--done); }
+  .seg.active { background: var(--active); }
+  .seg.pending { background: var(--pending-ground); border: 1px solid var(--line); }
+  .seg.active::after { content: ""; position: absolute; inset: 0; border-radius: 3px;
+    box-shadow: 0 0 0 2px var(--active); animation: pulse 1.8s ease-in-out infinite; }
+  @keyframes pulse { 0%,100% { opacity: .35; } 50% { opacity: 1; } }
+  .seglabels { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 10px;
+    color: var(--slate); letter-spacing: 0.03em; margin-bottom: 26px; }
+
+  .legend { display: flex; gap: 18px; flex-wrap: wrap; margin: 0 2px 22px; font-family: var(--mono);
+    font-size: 11.5px; color: var(--slate); }
+  .legend span { display: inline-flex; align-items: center; gap: 7px; }
+  .dot { width: 10px; height: 10px; border-radius: 3px; flex: none; }
+  .dot.done { background: var(--done); }
+  .dot.active { background: var(--active); box-shadow: 0 0 0 2px var(--active-ground); }
+  .dot.pending { background: var(--pending-ground); border: 1px solid var(--slate-faint); }
+  .dot.gate { background: repeating-linear-gradient(45deg,var(--gate) 0 3px,transparent 3px 6px); border: 1px solid var(--gate); }
+
+  /* ---- epics ---- */
+  .epic { margin-bottom: 12px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); overflow: hidden; }
+  .epic-head { display: flex; align-items: center; gap: 14px; padding: 15px 20px; border-bottom: 1px solid var(--line-soft); }
+  .epic-num { font-family: var(--mono); font-size: 12px; font-weight: 600; letter-spacing: 0.04em; color: var(--panel);
+    background: var(--ink); border-radius: 5px; padding: 4px 9px; flex: none; min-width: 34px; text-align: center; }
+  .epic.state-done .epic-num { background: var(--done); color: #fff; }
+  .epic.state-active .epic-num { background: var(--active); color: #1a130a; }
+  .epic.state-pending .epic-num { background: var(--pending); color: var(--panel); }
+  .epic-title { font-family: var(--mono); font-size: 14px; font-weight: 600; letter-spacing: -0.005em; color: var(--ink); }
+  .epic-meta { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+  .epic-count { font-family: var(--mono); font-size: 12px; color: var(--slate); font-variant-numeric: tabular-nums; }
+  .chip { font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em;
+    padding: 3px 8px; border-radius: 999px; border: 1px solid transparent; white-space: nowrap; }
+  .chip.done { color: var(--done); background: var(--done-ground); border-color: color-mix(in srgb,var(--done) 30%,transparent); }
+  .chip.active { color: var(--active); background: var(--active-ground); border-color: color-mix(in srgb,var(--active) 34%,transparent); }
+  .chip.pending { color: var(--slate); background: var(--pending-ground); border-color: var(--line); }
+
+  .stories { display: grid; grid-template-columns: repeat(auto-fill, minmax(248px,1fr)); gap: 1px; background: var(--line-soft); }
+  .story { background: var(--panel); padding: 13px 15px 13px 17px; position: relative; display: flex; flex-direction: column; gap: 3px; }
+  .story::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; }
+  .story.s-done::before { background: var(--done); }
+  .story.s-active::before { background: var(--active); }
+  .story.s-pending::before { background: var(--pending-ground); }
+  .story.s-gated::before { background: repeating-linear-gradient(180deg,var(--gate) 0 5px,transparent 5px 10px); }
+  .story.s-pending, .story.s-gated { background: var(--panel-2); }
+  .story-key { font-family: var(--mono); font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums;
+    display: flex; align-items: center; gap: 7px; }
+  .story.s-done .story-key { color: var(--done); }
+  .story.s-active .story-key { color: var(--active); }
+  .story.s-pending .story-key, .story.s-gated .story-key { color: var(--slate); }
+  .glyph { font-size: 11px; }
+  .runchip { font-family: var(--mono); font-size: 9px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--active);
+    border: 1px solid color-mix(in srgb,var(--active) 40%,transparent); border-radius: 4px; padding: 1px 5px; margin-left: auto;
+    display: inline-flex; align-items: center; gap: 5px; }
+  .live { width: 6px; height: 6px; border-radius: 50%; background: var(--active); animation: pulse 1.4s ease-in-out infinite; }
+  .gatetag { font-family: var(--mono); font-size: 9px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--gate); margin-left: auto; }
+  .story-title { font-size: 13px; color: var(--ink-soft); line-height: 1.34; }
+  .story.s-pending .story-title, .story.s-gated .story-title { color: var(--slate); }
+
+  .gatenote { font-family: var(--mono); font-size: 11px; color: var(--slate); padding: 11px 20px;
+    border-top: 1px solid var(--line-soft); background: var(--gate-ground); line-height: 1.5; }
+  .gatenote b { color: var(--gate); font-weight: 600; } .gatenote code { color: var(--ink-soft); }
+
+  /* ---- in-flight card ---- */
+  .inflight { border: 1px solid color-mix(in srgb, var(--active) 45%, var(--line)); border-radius: var(--radius);
+    background: linear-gradient(180deg, var(--active-ground), transparent 70%), var(--panel); padding: 16px 20px 18px;
+    margin: 0 0 22px; position: relative; overflow: hidden; }
+  .inflight-h { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+  .inflight-key { font-family: var(--mono); font-size: 14px; font-weight: 600; color: var(--active); display: flex; align-items: center; gap: 8px; }
+  .inflight-key .live { width: 8px; height: 8px; border-radius: 50%; background: var(--active); box-shadow: 0 0 0 3px var(--active-ground); animation: pulse 1.4s ease-in-out infinite; }
+  .inflight-title { font-size: 13.5px; color: var(--ink-soft); }
+  .phasechip { font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--active);
+    background: var(--active-ground); border: 1px solid color-mix(in srgb, var(--active) 38%, transparent); border-radius: 999px; padding: 3px 9px; margin-left: auto; }
+  .inflight-grid { display: grid; grid-template-columns: auto 1fr auto; gap: 14px 22px; align-items: center; }
+  .clock { font-family: var(--mono); font-variant-numeric: tabular-nums; font-weight: 600; font-size: clamp(28px, 5vw, 40px);
+    letter-spacing: -0.02em; line-height: 1; color: var(--ink); }
+  .clock-label { font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.11em; color: var(--slate); margin-top: 6px; }
+  .prog-wrap { min-width: 0; }
+  .prog-top { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 11px; color: var(--slate); margin-bottom: 5px; }
+  .prog-top b { color: var(--ink-soft); font-weight: 600; }
+  .prog { height: 12px; border-radius: 4px; background: var(--pending-ground); border: 1px solid var(--line); position: relative; overflow: hidden; }
+  .prog-fill { height: 100%; background: linear-gradient(90deg, var(--active), color-mix(in srgb, var(--active) 55%, #d8b060)); border-radius: 3px 0 0 3px; transition: width .5s ease; }
+  .prog-median { position: absolute; top: -3px; bottom: -3px; width: 2px; background: var(--ink-soft); opacity: 0.55; }
+  .prog-scale { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 9.5px; color: var(--slate-faint); margin-top: 4px; }
+  .eta { text-align: right; }
+  .eta .v { font-family: var(--mono); font-size: 17px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--active); line-height: 1; white-space: nowrap; }
+  .eta .k { font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.09em; color: var(--slate); margin-top: 4px; }
+  .inflight-note { font-family: var(--mono); font-size: 10.5px; color: var(--slate); line-height: 1.5; margin-top: 13px; padding-top: 11px; border-top: 1px dashed var(--line); }
+  .inflight-note .stale { color: var(--gate); }
+  @media (max-width: 560px) { .inflight-grid { grid-template-columns: 1fr; text-align: left; } .eta { text-align: left; } }
+
+  /* ---- bottom panel (velocity / roadmap) ---- */
+  .panel { margin-top: 30px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); padding: 20px 24px 22px; }
+  .panel h2 { font-family: var(--mono); font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.12em;
+    color: var(--slate); margin: 0 0 4px; }
+  .panel .sub { font-size: 12.5px; color: var(--slate); margin: 0 0 18px; }
+  .bars { display: flex; align-items: flex-end; gap: 10px; height: 122px; }
+  .bar-col { flex: 1 1 0; display: flex; flex-direction: column; align-items: center; gap: 6px; height: 100%; justify-content: flex-end; min-width: 0; }
+  .bar { width: 100%; max-width: 34px; border-radius: 4px 4px 0 0; position: relative; transition: height .6s cubic-bezier(.2,.7,.2,1); }
+  .bar .mm { position: absolute; top: -17px; left: 50%; transform: translateX(-50%); font-family: var(--mono);
+    font-size: 10px; color: var(--slate); font-variant-numeric: tabular-nums; }
+  .bar-key { font-family: var(--mono); font-size: 10.5px; color: var(--slate); font-variant-numeric: tabular-nums; }
+  .foot { display: flex; gap: 26px; flex-wrap: wrap; margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--line-soft); }
+  .foot .m { display: flex; flex-direction: column; gap: 1px; }
+  .foot .m .v { font-family: var(--mono); font-size: 17px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .foot .m .k { font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.09em; color: var(--slate); }
+
+  /* atlas roadmap rail */
+  .rail { display: flex; gap: 6px; flex-wrap: wrap; }
+  .stop { flex: 1 1 90px; border: 1px solid var(--line); border-radius: 7px; padding: 10px 11px; background: var(--panel-2); position: relative; }
+  .stop.done { background: var(--done-ground); border-color: color-mix(in srgb,var(--done) 34%,transparent); }
+  .stop.wip { background: var(--active-ground); border-color: color-mix(in srgb,var(--active) 38%,transparent); }
+  .stop-w { font-family: var(--mono); font-size: 12px; font-weight: 600; color: var(--slate); display: flex; align-items: center; gap: 6px; }
+  .stop.done .stop-w { color: var(--done); }
+  .stop.wip .stop-w { color: var(--active); }
+  .stop-n { font-size: 11px; color: var(--slate); margin-top: 3px; line-height: 1.3; }
+  .stop-c { font-family: var(--mono); font-size: 10px; color: var(--slate-faint); margin-top: 5px; }
+
+  footer { margin-top: 30px; font-family: var(--mono); font-size: 11px; color: var(--slate-faint); line-height: 1.7; letter-spacing: 0.02em; }
+  footer b { color: var(--slate); font-weight: 600; }
+
+  @media (prefers-reduced-motion: reduce) { .seg.active::after,.live,.bar { animation: none; transition: none; } }
+  @media (max-width: 560px) {
+    .stories { grid-template-columns: 1fr; }
+    .metrics { margin-left: 0; width: 100%; }
+    .bars { gap: 5px; } .bar .mm { display: none; }
+    .prow { grid-template-columns: 76px 1fr; } .pfrac { grid-column: 2; text-align: right; }
+  }
+
+  /* delivery-timing metrics */
+  .tstrip { display: flex; flex-wrap: wrap; align-items: baseline; gap: 7px 14px; margin: 15px 0 2px;
+            padding: 11px 16px; border: 1px solid var(--line); border-left: 3px solid var(--active);
+            border-radius: var(--radius); font-family: var(--mono); }
+  .tstrip-total { font-size: 15px; font-weight: 700; color: var(--active); letter-spacing: 0.02em; font-variant-numeric: tabular-nums; }
+  .tstrip-metric { font-size: 11px; color: var(--slate); }
+  .tstrip-note { flex-basis: 100%; font-size: 10.5px; color: var(--slate-faint); line-height: 1.55; }
+  .etime { font-family: var(--mono); font-size: 10.5px; color: var(--slate); margin-right: 10px; font-variant-numeric: tabular-nums; }
+  .stime { float: right; font-family: var(--mono); font-size: 10.5px; color: var(--slate); font-variant-numeric: tabular-nums; padding-left: 8px; }
+</style>
+
+<div class="wrap">
+  <div class="statusline">
+    <span><span class="prompt">pyforge ❯</span> status --program</span>
+    <span class="branch" id="branch">branch: pyforge-warden-epic3-policy</span>
+    <button class="theme-toggle" id="tt" type="button" aria-label="Toggle theme">◐ theme</button>
+  </div>
+
+  <h1>pyforge <span class="sep">·</span> Build Program</h1>
+  <p class="subtitle">Two conda-native, <code>bmad-loop</code>-driven tools built story-by-story. <b>Warden</b> is a fail-closed dependency compliance gate; <b>Atlas</b> is the Kedro/DuckDB migration of the conda-forge intelligence pipeline. They share one contract edge — Atlas provides the data, Warden defines the schema.</p>
+
+  <div class="program">
+    <div class="program-h">Program · both tools</div>
+    <div id="prows"></div>
+    <div class="edge">
+      <b>Relationship:</b> <span class="a">atlas</span> provides the data · <span class="w">warden</span> defines the schema — one optional code edge (<code>pyforge-atlas[gate]</code> imports Warden's <code>ComplianceReport</code> at Atlas story <b>F4</b>); zero edges the other way; both independently installable.
+    </div>
+  </div>
+
+  <div class="toggle" id="toggle" role="tablist" aria-label="Select project"></div>
+
+  <div id="view"></div>
+
+  <div class="panel" id="panel"></div>
+
+  <footer id="footer"></footer>
+</div>
+
+<script src="data.js"></script>
+<script>
+  const glyphFor = { done:"✔", active:"▶", pending:"○", gated:"⧖" };
+  const fmtMin = m => m == null ? "" : (m < 60 ? m + "m" : (m/60).toFixed(1) + "h");
+
+  const PROJECTS = window.DASHBOARD_DATA.projects;
+
+  const norm = s => (s === "gated" ? "pending" : s);
+  const countOf = p => {
+    const all = p.epics.flatMap(e => e.stories);
+    return { total: all.length, done: all.filter(s => s[1]==="done").length,
+             active: all.filter(s => s[1]==="active").length, all };
+  };
+
+  // ---- program strip (always both) ----
+  const prows = document.getElementById("prows");
+  Object.entries(PROJECTS).forEach(([id, p]) => {
+    const c = countOf(p);
+    const pct = Math.round((c.done / c.total) * 100);
+    const row = document.createElement("div");
+    row.className = "prow " + (id === "warden" ? "pw" : "pa");
+    row.innerHTML =
+      '<div class="pname"><span class="pdot"></span>' + p.label + '</div>' +
+      '<div class="pbar"><div class="pbar-fill" style="width:' + Math.max(pct,2) + '%"></div></div>' +
+      '<div class="pfrac"><b>' + c.done + '</b> / ' + c.total + ' <span class="pct">· ' + pct + '%</span></div>';
+    prows.appendChild(row);
+  });
+
+  // ---- toggle ----
+  const toggleEl = document.getElementById("toggle");
+  Object.entries(PROJECTS).forEach(([id, p], i) => {
+    const c = countOf(p);
+    const b = document.createElement("button");
+    b.setAttribute("role","tab");
+    b.dataset.p = id;
+    b.setAttribute("aria-selected", i === 0 ? "true" : "false");
+    b.innerHTML = '<span class="td"></span>' + p.label + ' <span class="cnt">' + c.done + '/' + c.total + '</span>';
+    b.addEventListener("click", () => select(id));
+    toggleEl.appendChild(b);
+  });
+
+  const viewEl = document.getElementById("view");
+  const panelEl = document.getElementById("panel");
+  const footerEl = document.getElementById("footer");
+  const branchEl = document.getElementById("branch");
+  const root = document.documentElement;
+
+  function select(id) {
+    const p = PROJECTS[id];
+    root.setAttribute("data-project", id);
+    branchEl.textContent = "branch: " + p.branch;
+    [...toggleEl.children].forEach(b => b.setAttribute("aria-selected", b.dataset.p === id ? "true" : "false"));
+
+    const c = countOf(p);
+    const nPend = c.total - c.done - c.active;
+
+    // header + segbar
+    let html =
+      '<div class="phead">' +
+        '<div><div class="bignum">' + c.done + '<span class="of"> / ' + c.total + '</span></div>' +
+        '<div class="bignum-label">stories complete · ' + p.label + '</div></div>' +
+        '<div class="metrics">' +
+          '<div class="metric done"><span class="v">' + c.done + '</span><span class="k">done</span></div>' +
+          '<div class="metric active"><span class="v">' + c.active + '</span><span class="k">in&nbsp;flight</span></div>' +
+          '<div class="metric pending"><span class="v">' + nPend + '</span><span class="k">backlog</span></div>' +
+        '</div>' +
+      '</div>';
+    html += '<div class="segbar">' + c.all.map(s => {
+      const st = s[1]==="done" ? "done" : s[1]==="active" ? "active" : "pending";
+      return '<div class="seg ' + st + '" title="' + s[0] + '"></div>';
+    }).join("") + '</div>';
+    html += '<div class="seglabels">' + p.seglabels.map(l => '<span>' + l + '</span>').join("") + '</div>';
+    html += '<div class="legend">' +
+      '<span><span class="dot done"></span> done &amp; merged</span>' +
+      '<span><span class="dot active"></span> in flight (bmad-loop)</span>' +
+      '<span><span class="dot pending"></span> backlog</span>' +
+      (id === "warden" ? '<span><span class="dot gate"></span> hard-gated (blocked-by)</span>' : '') +
+      '</div>';
+
+    // delivery-timing strip (total + metric + caveat)
+    if (p.timing) {
+      html += '<div class="tstrip">' +
+        '<span class="tstrip-total">⏱ ' + p.timing.totalLabel + '</span>' +
+        '<span class="tstrip-metric">' + p.timing.metric + '</span>' +
+        '<span class="tstrip-note">' + p.timing.note + '</span>' +
+      '</div>';
+    }
+
+    // in-flight card (only when a story is actively running)
+    if (p.inflight) {
+      const f = p.inflight;
+      html += '<div class="inflight" data-start="' + f.startEpoch + '" data-median="' + f.median +
+        '" data-lo="' + f.lo + '" data-hi="' + f.hi + '">' +
+        '<div class="inflight-h">' +
+          '<span class="inflight-key"><span class="live"></span>' + f.key + '</span>' +
+          '<span class="inflight-title">' + f.title + '</span>' +
+          '<span class="phasechip">' + f.phase + ' · attempt ' + f.attempt + '</span>' +
+        '</div>' +
+        '<div class="inflight-grid">' +
+          '<div><div class="clock" data-clock>—:—:—</div><div class="clock-label">elapsed · live</div></div>' +
+          '<div class="prog-wrap">' +
+            '<div class="prog-top"><span data-progpct>—</span><span>median <b>' + f.median + 'm</b> dev</span></div>' +
+            '<div class="prog"><div class="prog-fill" data-progfill style="width:0%"></div><div class="prog-median" data-progmedian style="left:' + Math.round(f.median / f.hi * 100) + '%"></div></div>' +
+            '<div class="prog-scale"><span>0</span><span>median ' + f.median + 'm</span><span>heaviest ' + f.hi + 'm</span></div>' +
+          '</div>' +
+          '<div class="eta"><div class="v" data-eta>—</div><div class="k">est. to typical finish</div></div>' +
+        '</div>' +
+        '<div class="inflight-note" data-note>Phase as of ' + f.phaseAsOf + ' (last redeploy). Elapsed ticks live from the story’s start; the estimate is vs. past-story medians (not a live probe). A story parked at the approval gate is waiting on a human, not compute.</div>' +
+      '</div>';
+    }
+
+    // epics
+    p.epics.forEach(e => {
+      const sts = e.stories.map(s => s[1]);
+      const allDone = sts.every(x => x==="done");
+      const state = allDone ? "done" : (sts.some(x => x==="active"||x==="done") ? "active" : "pending");
+      const doneCount = sts.filter(x => x==="done").length;
+      const chipTxt = allDone ? "complete" : (state==="active" ? "in-progress" : "backlog");
+      const etm = p.timing && p.timing.epicMin[e.badge];
+      const etchip = etm ? '<span class="etime" title="time in this epic">⏱ ' + fmtMin(etm) + '</span>' : '';
+      html += '<div class="epic state-' + state + '">' +
+        '<div class="epic-head"><span class="epic-num">' + e.badge + '</span>' +
+        '<span class="epic-title">' + e.title + '</span>' +
+        '<span class="epic-meta">' + etchip + '<span class="epic-count">' + doneCount + '/' + sts.length + '</span>' +
+        '<span class="chip ' + state + '">' + chipTxt + '</span></span></div><div class="stories">';
+      e.stories.forEach(([key, st, title, chip]) => {
+        let tag = "";
+        if (st === "active") tag = '<span class="runchip"><span class="live"></span>' + (chip || "dev-running") + '</span>';
+        else if (st === "gated") tag = '<span class="gatetag">blocked-by</span>';
+        const stm = p.timing && p.timing.perStory[key];
+        const stchip = stm != null ? '<span class="stime" title="time for this story">' + fmtMin(stm) + '</span>' : '';
+        html += '<div class="story s-' + st + '">' +
+          '<div class="story-key"><span class="glyph">' + glyphFor[st] + '</span>' + key + tag + '</div>' +
+          '<div class="story-title">' + title + stchip + '</div></div>';
+      });
+      html += '</div>';
+      if (e.gatenote) html += '<div class="gatenote">' + e.gatenote + '</div>';
+      html += '</div>';
+    });
+    viewEl.innerHTML = html;
+
+    // bottom panel
+    if (p.velocity) {
+      const v = p.velocity, maxV = Math.max(...v.bars.map(b => b[1]));
+      let ph = '<h2>Velocity</h2><p class="sub">' + v.sub + '</p><div class="bars">';
+      v.bars.forEach(([k, m]) => {
+        const heavy = m > 110;
+        ph += '<div class="bar-col"><div class="bar" style="height:' + Math.round((m/maxV)*100) + '%;background:' +
+          (heavy ? 'var(--active)' : 'var(--done)') + '"><span class="mm">' + m + '</span></div><span class="bar-key">' + k + '</span></div>';
+      });
+      ph += '</div><div class="foot">' + v.foot.map(([val,k,col]) =>
+        '<div class="m"><span class="v"' + (col ? ' style="color:' + col + '"' : '') + '>' + val + '</span><span class="k">' + k + '</span></div>').join("") + '</div>';
+      panelEl.innerHTML = ph;
+    } else if (p.roadmap) {
+      const r = p.roadmap;
+      let ph = '<h2>Wave roadmap</h2><p class="sub">' + r.sub + '</p><div class="rail">';
+      r.stops.forEach(([w, name, st]) => {
+        const cls = st==="done" ? "done" : st==="wip" ? "wip" : "";
+        const glyph = st==="done" ? "✔ " : st==="wip" ? "▶ " : "";
+        const cap = st==="done" ? "done" : st==="wip" ? "underway" : "queued";
+        ph += '<div class="stop ' + cls + '"><div class="stop-w">' + glyph + 'Wave ' + w + '</div>' +
+          '<div class="stop-n">' + name + '</div><div class="stop-c">' + cap + '</div></div>';
+      });
+      ph += '</div>';
+      panelEl.innerHTML = ph;
+    }
+
+    footerEl.innerHTML =
+      '<b>' + p.label + ':</b> ' + p.contract + '<br>' +
+      '<b>Snapshot:</b> ' + window.DASHBOARD_DATA.snapshot;
+
+    tickInflight();
+  }
+
+  // live in-flight clock + progress + ETA (ticks in the viewer's browser)
+  function fmtDur(s) {
+    s = Math.max(0, Math.floor(s));
+    const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = s % 60;
+    const pad = n => String(n).padStart(2, "0");
+    return (h > 0 ? h + ":" + pad(m) : m + "") + ":" + pad(sec);
+  }
+  function tickInflight() {
+    const el = document.querySelector(".inflight[data-start]");
+    if (!el) return;
+    const start = +el.dataset.start, median = +el.dataset.median, hi = +el.dataset.hi;
+    const elapsedS = Date.now() / 1000 - start;
+    const elapsedM = elapsedS / 60;
+    el.querySelector("[data-clock]").textContent = fmtDur(elapsedS);
+    // progress bar scaled 0..heaviest, with the median marker fixed
+    const fill = el.querySelector("[data-progfill]");
+    if (fill) fill.style.width = Math.min(elapsedM / hi * 100, 100).toFixed(1) + "%";
+    const pctEl = el.querySelector("[data-progpct]");
+    if (pctEl) pctEl.innerHTML = "<b>" + Math.round(elapsedM / median * 100) + "%</b> of median";
+    // ETA window
+    const etaEl = el.querySelector("[data-eta]");
+    const remain = median - elapsedM;
+    if (etaEl) {
+      if (remain > 0) etaEl.textContent = "~" + Math.ceil(remain) + "m";
+      else etaEl.innerHTML = "+" + Math.ceil(-remain) + "m <span style='font-size:11px;color:var(--slate)'>over median</span>";
+    }
+    // stale guard: a static snapshot can't know if it already finished
+    const note = el.querySelector("[data-note]");
+    if (note && elapsedM > hi * 2 && !note.dataset.stale) {
+      note.dataset.stale = "1";
+      note.innerHTML = '<span class="stale">This snapshot may be stale — elapsed exceeds 2× the heaviest observed story, so ' +
+        el.querySelector(".inflight-key").textContent.trim() + ' has likely already landed. Ask Claude to refresh.</span>';
+    }
+  }
+  setInterval(tickInflight, 1000);
+
+  select(window.DASHBOARD_DATA.defaultProject || "warden");
+
+  document.getElementById("tt").addEventListener("click", () => {
+    const cur = root.getAttribute("data-theme");
+    const isDark = cur ? cur === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+    root.setAttribute("data-theme", isDark ? "light" : "dark");
+  });
+</script>

@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=Archivo+Expanded:wght@700;800;900&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  body { margin:0; background:#cfcccb; }
+</style>
+</helmet>
+<x-import component-from-global-scope="deck-stage" from="./deck-stage.js" width="1920" height="1080" hint-size="100%,100%">
+
+  <!-- 01 · COVER -->
+  <section data-label="Cover" data-speaker-notes="Warden. The thesis in three words: never false-green. A green check must mean something — that the dependencies were actually assessed and found safe. Warden is a CI gate for BOTH Python ecosystems: pip/PyPI apps and the conda/conda-forge scientific and ML/AI world." style="box-sizing:border-box; width:100%; height:100%; background:#f3f2f2; color:#201e1d; font-family:'Archivo',sans-serif; padding:96px 120px; display:flex; flex-direction:column; justify-content:space-between;">
+    <div style="display:flex; justify-content:space-between; align-items:baseline; font-family:'IBM Plex Mono',monospace; font-size:16px; letter-spacing:0.08em; text-transform:uppercase;">
+      <span style="color:#c22a10; font-weight:600;">Dependency-trust gate</span>
+      <span style="color:rgba(32,30,29,.55);">BMAD Tech Spec · pyforge-warden</span>
+    </div>
+    <div>
+      <div style="font-family:'IBM Plex Mono',monospace; font-size:22px; letter-spacing:0.34em; text-transform:uppercase; color:#c22a10; font-weight:600; margin-bottom:26px;">Warden</div>
+      <h1 style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:150px; line-height:0.88; letter-spacing:-0.03em; margin:0;">never<br>false-green</h1>
+      <p style="font-size:34px; line-height:1.35; font-weight:500; margin:40px 0 0; max-width:1220px;">A CI dependency-trust gate for <b>both Python ecosystems</b> — PyPI applications and the conda / conda-forge world of scientific, analytics &amp; ML/AI computing.</p>
+    </div>
+    <div style="display:grid; grid-template-columns:repeat(4,1fr); border-top:3px solid #201e1d;">
+      <div style="padding:24px 24px 0 0; border-right:2px solid #d3d0cf;"><div style="font-family:'IBM Plex Mono',monospace; font-size:14px; letter-spacing:0.06em; text-transform:uppercase; color:rgba(32,30,29,.55);">Brand</div><div style="font-size:26px; font-weight:800; margin-top:8px;">Warden</div></div>
+      <div style="padding:24px; border-right:2px solid #d3d0cf;"><div style="font-family:'IBM Plex Mono',monospace; font-size:14px; letter-spacing:0.06em; text-transform:uppercase; color:rgba(32,30,29,.55);">Distribution</div><div style="font-family:'IBM Plex Mono',monospace; font-size:24px; font-weight:600; margin-top:8px;">pyforge-warden</div></div>
+      <div style="padding:24px; border-right:2px solid #d3d0cf;"><div style="font-family:'IBM Plex Mono',monospace; font-size:14px; letter-spacing:0.06em; text-transform:uppercase; color:rgba(32,30,29,.55);">Import</div><div style="font-family:'IBM Plex Mono',monospace; font-size:24px; font-weight:600; margin-top:8px;">pyforge.warden</div></div>
+      <div style="padding:24px 0 0 24px;"><div style="font-family:'IBM Plex Mono',monospace; font-size:14px; letter-spacing:0.06em; text-transform:uppercase; color:rgba(32,30,29,.55);">CLI</div><div style="font-family:'IBM Plex Mono',monospace; font-size:24px; font-weight:600; margin-top:8px;">warden</div></div>
+    </div>
+  </section>
+
+  <!-- 02 · ACT I DIVIDER -->
+  <section data-label="Act I" data-speaker-notes="Act I frames the problem. A CI gate's whole job is to answer one question honestly: is this safe to merge? The danger isn't a red X — it's a green check that never actually looked." style="box-sizing:border-box; width:100%; height:100%; background:#ec3013; color:#f3f2f2; font-family:'Archivo',sans-serif; padding:96px 120px; display:flex; flex-direction:column; justify-content:space-between; position:relative; overflow:hidden;">
+    <div style="position:absolute; right:40px; top:-140px; font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:720px; line-height:1; color:rgba(243,242,242,0.13); pointer-events:none;">I</div>
+    <div style="font-family:'IBM Plex Mono',monospace; font-size:22px; letter-spacing:0.16em; text-transform:uppercase; font-weight:600; position:relative;">Act I</div>
+    <div style="position:relative;">
+      <h2 style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:118px; line-height:0.96; letter-spacing:-0.02em; margin:0;">The green check<br>that lies</h2>
+      <p style="font-size:34px; line-height:1.35; font-weight:500; margin:36px 0 0; max-width:1120px; opacity:0.94;">An exit-code gate can pass while your dependencies are unassessed, unparsed, or unsafe. That's the failure Warden exists to end.</p>
+    </div>
+    <div style="display:flex; justify-content:space-between; align-items:center; border-top:2px solid rgba(243,242,242,.45); padding-top:20px; font-family:'IBM Plex Mono',monospace; font-size:15px; letter-spacing:0.05em; position:relative;">
+      <span style="font-weight:600;">WARDEN</span><span style="opacity:.85;">never false-green</span><span style="opacity:.85;">ACT I · 02</span>
+    </div>
+  </section>
+
+  <!-- 03 -->
+  <section data-label="Exit 0 ≠ safe" data-speaker-notes="Every CI gate reduces to an exit code. 0 merges, non-zero blocks. But exit 0 conflates two very different states: 'I checked and it's clean' and 'I didn't really check.' A scanner that finds nothing returns 0 whether it looked hard or not at all." style="box-sizing:border-box; width:100%; height:100%; background:#f3f2f2; color:#201e1d; font-family:'Archivo',sans-serif; padding:88px 120px 68px; display:flex; flex-direction:column;">
+    <div style="display:flex; align-items:baseline; gap:24px; border-bottom:3px solid #201e1d; padding-bottom:18px;">
+      <span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:30px; color:#ec3013;">01</span>
+      <h2 style="font-size:46px; margin:0; letter-spacing:-0.02em; font-weight:800;">Exit 0 is not a promise</h2>
+    </div>
+    <div style="flex:1; display:grid; grid-template-columns:1fr 1fr; gap:64px; align-items:center;">
+      <div>
+        <p style="font-size:30px; line-height:1.45; font-weight:500; margin:0;">A gate reduces to one number. <b>0 merges, non-zero blocks.</b> But exit 0 quietly conflates two very different states —</p>
+        <div style="display:flex; flex-direction:column; gap:20px; margin-top:40px;">
+          <div style="border:2px solid #201e1d; padding:24px 28px;"><div style="font-family:'IBM Plex Mono',monospace; font-size:22px; color:#1a7a3c; font-weight:600;">exit 0 — assessed &amp; clean</div><div style="font-size:22px; margin-top:8px; color:rgba(32,30,29,.7);">The tool looked hard and found nothing.</div></div>
+          <div style="border:2px solid #ec3013; padding:24px 28px; background:#fce4de;"><div style="font-family:'IBM Plex Mono',monospace; font-size:22px; color:#c22a10; font-weight:600;">exit 0 — never looked</div><div style="font-size:22px; margin-top:8px; color:rgba(32,30,29,.7);">The tool found nothing because it couldn't check.</div></div>
+        </div>
+      </div>
+      <div>
+        <div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:150px; line-height:0.9; color:#ec3013;">0</div>
+        <p style="font-size:26px; line-height:1.45; margin:20px 0 0; max-width:520px;">Traditional gates can't tell these apart. Warden refuses to collapse them — an unproven result is <b>never</b> reported as clean.</p>
+      </div>
+    </div>
+    <div style="display:flex; justify-content:space-between; align-items:center; border-top:2px solid #d3d0cf; padding-top:16px; font-family:'IBM Plex Mono',monospace; font-size:15px; letter-spacing:0.04em; color:rgba(32,30,29,.55);">
+      <span style="font-weight:600; color:#201e1d;">WARDEN</span><span>never false-green</span><span>ACT I · 03</span>
+    </div>
+  </section>
+
+  <!-- 04 -->
+  <section data-label="False-green: empty DB" data-speaker-notes="First false-green mode: the empty or corrupt vulnerability database. If the OSV database failed to download, is empty, or is stale, a naive scanner queries it, gets zero hits, and reports clean. You get a green check that means the opposite of safe." style="box-sizing:border-box; width:100%; height:100%; background:#f3f2f2; color:#201e1d; font-family:'Archivo',sans-serif; padding:88px 120px 68px; display:flex; flex-direction:column;">
+    <div style="display:flex; align-items:baseline; gap:24px; border-bottom:3px solid #201e1d; padding-bottom:18px;">
+      <span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:30px; color:#ec3013;">02</span>
+      <h2 style="font-size:46px; margin:0; letter-spacing:-0.02em; font-weight:800;">False-green #1 — the empty database</h2>
+    </div>
+    <div style="flex:1; display:flex; flex-direction:column; justify-content:center; gap:44px;">
+      <p style="font-size:32px; line-height:1.45; font-weight:500; margin:0; max-width:1500px;">A vulnerability scanner is only as honest as its database. If the OSV feed is <b>missing, empty, corrupt, or stale</b>, a naïve scanner queries it, gets zero hits, and reports <span style="color:#1a7a3c; font-weight:700;">clean</span>.</p>
+      <div style="display:flex; align-items:stretch; gap:0; font-family:'IBM Plex Mono',monospace;">
+        <div style="flex:1; border:2px solid #201e1d; padding:28px 30px;"><div style="font-size:16px; letter-spacing:0.06em; text-transform:uppercase; color:rgba(32,30,29,.55);">Input</div><div style="font-size:26px; font-weight:600; margin-top:10px;">db.records = 0</div></div>
+        <div style="display:flex; align-items:center; padding:0 24px; font-size:36px; color:#ec3013; font-weight:800;">→</div>
+        <div style="flex:1; border:2px solid #201e1d; padding:28px 30px;"><div style="font-size:16px; letter-spacing:0.06em; text-transform:uppercase; color:rgba(32,30,29,.55);">Naïve scanner</div><div style="font-size:26px; font-weight:600; margin-top:10px; color:#1a7a3c;">verdict: clean ✓</div></div>
+        <div style="display:flex; align-items:center; padding:0 24px; font-size:36px; color:#ec3013; font-weight:800;">→</div>
+        <div style="flex:1; border:2px solid #ec3013; background:#ec3013; color:#f3f2f2; padding:28px 30px;"><div style="font-size:16px; letter-spacing:0.06em; text-transform:uppercase; opacity:.8;">Warden</div><div style="font-size:26px; font-weight:600; margin-top:10px;">verdict: indeterminate</div></div>
+      </div>
+      <p style="font-size:26px; line-height:1.45; margin:0; max-width:1500px; color:rgba(32,30,29,.72);">Warden <b>content-pre-flights the database</b> — record count, freshness, and integrity — before it trusts a single result. No proof of assessment, no green.</p>
+    </div>
+    <div style="display:flex; justify-content:space-between; align-items:center; border-top:2px solid #d3d0cf; padding-top:16px; font-family:'IBM Plex Mono',monospace; font-size:15px; letter-spacing:0.04em; color:rgba(32,30,29,.55);">
+      <span style="font-weight:600; color:#201e1d;">WARDEN</span><span>never false-green</span><span>ACT I · 04</span>
+    </div>
+  </section>
+
+  <!-- 05 -->
+  <section data-label="False-green: unassessable" data-speaker-notes="Second false-green mode: the unassessable dependency. deptry and osv-scanner don't parse conda meta.yaml, recipe.yaml, environment.yml, or pixi.toml. A naive pipeline silently skips what it can't read — so a conda-heavy ML repo scans 'clean' while most of its dependencies were never seen." style="box-sizing:border-box; width:100%; height:100%; background:#f3f2f2; color:#201e1d; font-family:'Archivo',sans-serif; padding:88px 120px 68px; display:flex; flex-direction:column;">
+    <div style="display:flex; align-items:baseline; gap:24px; border-bottom:3px solid #201e1d; padding-bottom:18px;">
+      <span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:30px; color:#ec3013;">03</span>
+      <h2 style="font-size:46px; margin:0; letter-spacing:-0.02em; font-weight:800;">False-green #2 — the unassessable dependency</h2>
+    </div>
+    <div style="flex:1; display:grid; grid-template-columns:1.1fr 1fr; gap:64px; align-items:center;">
+      <div>
+        <p style="font-size:30px; line-height:1.45; font-weight:500; margin:0;">The stock engines don't parse conda &amp; pixi manifests. A naïve pipeline <b>silently skips what it can't read</b> — and silence scores as clean.</p>
+        <p style="font-size:26px; line-height:1.45; margin:28px 0 0; color:rgba(32,30,29,.72);">A conda-heavy ML repo passes while most of its dependency graph was <b>never seen</b>. Warden's manifest engine reads all six formats — and marks anything it genuinely can't resolve <span style="font-family:'IBM Plex Mono',monospace; color:#c22a10;">indeterminate</span>, not clean.</p>
+      </div>
+      <div style="font-family:'IBM Plex Mono',monospace; border:2px solid #201e1d;">
+        <div style="display:flex; justify-content:space-between; padding:20px 26px; border-bottom:2px solid #d3d0cf; font-size:24px;"><span>pyproject.toml</span><span style="color:#1a7a3c; font-weight:600;">seen</span></div>
+        <div style="display:flex; justify-content:space-between; padding:20px 26px; border-bottom:2px solid #d3d0cf; font-size:24px;"><span>requirements.txt</span><span style="color:#1a7a3c; font-weight:600;">seen</span></div>
+        <div style="display:flex; justify-content:space-between; padding:20px 26px; border-bottom:2px solid #d3d0cf; font-size:24px; background:#fce4de;"><span>environment.yml</span><span style="color:#c22a10; font-weight:600;">skipped</span></div>
+        <div style="display:flex; justify-content:space-between; padding:20px 26px; border-bottom:2px solid #d3d0cf; font-size:24px; background:#fce4de;"><span>meta.yaml</span><span style="color:#c22a10; font-weight:600;">skipped</span></div>
+        <div style="display:flex; justify-content:space-between; padding:20px 26px; font-size:24px; background:#fce4de;"><span>pixi.toml</span><span style="color:#c22a10; font-weight:600;">skipped</span></div>
+      </div>
+    </div>
+    <div style="display:flex; justify-content:space-between; align-items:center; border-top:2px solid #d3d0cf; padding-top:16px; font-family:'IBM Plex Mono',monospace; font-size:15px; letter-spacing:0.04em; color:rgba(32,30,29,.55);">
+      <span style="font-weight:600; color:#201e1d;">WARDEN</span><span>never false-green</span><span>ACT I · 05</span>
+    </div>
+  </section>
+
+  <!-- 06 -->
+  <section data-label="Two ecosystems" data-speaker-notes="The blind spot has structure. Python is really two ecosystems: PyPI — 850K packages, open upload, any license — and conda-forge — 30K curated, FOSS-only feedstocks. Applications are 20% of the enterprise footprint; the ML/AI/data stack is a tiny slice of apps but 80% of the distinct libraries. Warden covers both." style="box-sizing:border-box; width:100%; height:100%; background:#f3f2f2; color:#201e1d; font-family:'Archivo',sans-serif; padding:88px 120px 68px; display:flex; flex-direction:column;">
+    <div style="display:flex; align-items:baseline; gap:24px; border-bottom:3px solid #201e1d; padding-bottom:18px;">
+      <span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:30px; color:#ec3013;">04</span>
+      <h2 style="font-size:46px; margin:0; letter-spacing:-0.02em; font-weight:800;">Two ecosystems, one blind spot</h2>
+    </div>
+    <div style="flex:1; display:grid; grid-template-columns:1fr 1fr; gap:40px; align-items:stretch; padding:8px 0;">
+      <div style="border:2px solid #201e1d; padding:40px 44px; display:flex; flex-direction:column;">
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:18px; letter-spacing:0.08em; text-transform:uppercase; color:#c22a10; font-weight:600;">Ecosystem 1 · PyPI</div>
+        <div style="font-size:40px; font-weight:800; margin-top:14px; letter-spacing:-0.01em;">Application Python</div>
+        <div style="font-size:23px; margin-top:12px; color:rgba(32,30,29,.6);">~850K packages · open upload · any license</div>
+        <div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:96px; line-height:1; color:#ec3013; margin-top:auto;">20%</div>
+        <div style="font-size:24px; color:rgba(32,30,29,.72);">of footprint — ~400 shipped apps ≈ 2–3K libraries</div>
+      </div>
+      <div style="border:2px solid #ec3013; padding:40px 44px; display:flex; flex-direction:column; background:#fce4de;">
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:18px; letter-spacing:0.08em; text-transform:uppercase; color:#c22a10; font-weight:600;">Ecosystem 2 · conda-forge</div>
+        <div style="font-size:40px; font-weight:800; margin-top:14px; letter-spacing:-0.01em;">Scientific &amp; Data Python</div>
+        <div style="font-size:23px; margin-top:12px; color:rgba(32,30,29,.6);">~30K feedstocks · curated · FOSS-only</div>
+        <div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:96px; line-height:1; color:#ec3013; margin-top:auto;">80%</div>
+        <div style="font-size:24px; color:rgba(32,30,29,.72);">of footprint — ~1% of apps ≈ 7–8K libraries</div>
+      </div>
+    </div>
+    <div style="display:flex; justify-content:space-between; align-items:center; border-top:2px solid #d3d0cf; padding-top:16px; font-family:'IBM Plex Mono',monospace; font-size:15px; letter-spacing:0.04em; color:rgba(32,30,29,.55);">
+      <span style="font-weight:600; color:#201e1d;">WARDEN</span><span>never false-green</span><span>ACT I · 06</span>
+    </div>
+  </section>
+
+  <!-- 07 · ACT II DIVIDER -->
+  <section data-label="Act II" data-speaker-notes="Act II: the contract. Warden's answer to false-green is a single, frozen, machine-readable contract — one report schema, one verdict lattice, one exit enum. Nothing downstream has to guess." style="box-sizing:border-box; width:100%; height:100%; background:#ec3013; color:#f3f2f2; font-family:'Archivo',sans-serif; padding:96px 120px; display:flex; flex-direction:column; justify-content:space-between; position:relative; overflow:hidden;">
+    <div style="position:absolute; right:40px; top:-140px; font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:720px; line-height:1; color:rgba(243,242,242,0.13); pointer-events:none;">II</div>
+    <div style="font-family:'IBM Plex Mono',monospace; font-size:22px; letter-spacing:0.16em; text-transform:uppercase; font-weight:600; position:relative;">Act II</div>
+    <div style="position:relative;">
+      <h2 style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:118px; line-height:0.96; letter-spacing:-0.02em; margin:0;">The frozen<br>contract</h2>
+      <p style="font-size:34px; line-height:1.35; font-weight:500; margin:36px 0 0; max-width:1120px; opacity:0.94;">One report schema. One verdict lattice. One exit enum. Honesty encoded as a data structure.</p>
+    </div>
+    <div style="display:flex; justify-content:space-between; align-items:center; border-top:2px solid rgba(243,242,242,.45); padding-top:20px; font-family:'IBM Plex Mono',monospace; font-size:15px; letter-spacing:0.05em; position:relative;">
+      <span style="font-weight:600;">WARDEN</span><span style="opacity:.85;">never false-green</span><span style="opacity:.85;">ACT II · 07</span>
+    </div>
+  </section>
+
+  <!-- 08 -->
+  <section data-label="One report" data-speaker-notes="Everything flows into one artifact: the ComplianceReport, validated against a committed JSON Schema. Both engines, all axes, coverage, and provenance merge here. It's producer-agnostic and the single source of truth — the human summary is just a rendering of it." style="box-sizing:border-box; width:100%; height:100%; background:#f3f2f2; color:#201e1d; font-family:'Archivo',sans-serif; padding:88px 120px 68px; display:flex; flex-direction:column;">
+    <div style="display:flex; align-items:baseline; gap:24px; border-bottom:3px solid #201e1d; padding-bottom:18px;">
+      <span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:30px; color:#ec3013;">05</span>
+      <h2 style="font-size:46px; margin:0; letter-spacing:-0.02em; font-weight:800;">One report, one schema</h2>
+    </div>
+    <div style="flex:1; display:grid; grid-template-columns:1fr 1.15fr; gap:56px; align-items:center;">
+      <div>
+        <p style="font-size:30px; line-height:1.45; font-weight:500; margin:0;">Every engine and axis merges into one <b>ComplianceReport</b>, schema-validated against a committed contract.</p>
+        <div style="display:flex; flex-direction:column; gap:18px; margin-top:36px; font-size:25px;">
+          <div style="display:flex; gap:16px; align-items:baseline;"><span style="color:#ec3013; font-weight:800;">→</span><span>Producer-agnostic — the source of truth, not the log</span></div>
+          <div style="display:flex; gap:16px; align-items:baseline;"><span style="color:#ec3013; font-weight:800;">→</span><span>Carries <b>coverage</b> &amp; <b>provenance</b> per axis</span></div>
+          <div style="display:flex; gap:16px; align-items:baseline;"><span style="color:#ec3013; font-weight:800;">→</span><span>Versioned schema — the contract can't silently drift</span></div>
+        </div>
+      </div>
+      <div style="background:#1a1918; color:#e8e6e4; font-family:'IBM Plex Mono',monospace; font-size:21px; line-height:1.65; border:2px solid #201e1d;">
+        <div style="display:flex; gap:9px; align-items:center; padding:16px 22px; border-bottom:1px solid #3a3836;"><span style="width:13px; height:13px; border-radius:50%; background:#ec3013; display:inline-block;"></span><span style="width:13px; height:13px; border-radius:50%; background:#4a4846; display:inline-block;"></span><span style="width:13px; height:13px; border-radius:50%; background:#4a4846; display:inline-block;"></span><span style="margin-left:12px; color:#8a8785; font-size:16px;">compliance-report.json</span></div>
+        <div style="padding:26px 30px;"><span style="color:#8a8785;">{</span><br>&nbsp;&nbsp;"schema_version": <span style="color:#7fd6a0;">"1.0.0"</span>,<br>&nbsp;&nbsp;"verdict": <span style="color:#ff7a5e;">"policy-violation"</span>,<br>&nbsp;&nbsp;"exit_code": <span style="color:#ff7a5e;">1</span>,<br>&nbsp;&nbsp;"axes": {<br>&nbsp;&nbsp;&nbsp;&nbsp;"hygiene": <span style="color:#7fd6a0;">"clean"</span>,<br>&nbsp;&nbsp;&nbsp;&nbsp;"security": <span style="color:#ff7a5e;">"policy-violation"</span>,<br>&nbsp;&nbsp;&nbsp;&nbsp;"license": <span style="color:#ffd27f;">"indeterminate"</span><br>&nbsp;&nbsp;},<br>&nbsp;&nbsp;"coverage": { "manifests": <span style="color:#7fd6a0;">6</span>, "resolved": <span style="color:#7fd6a0;">312</span> }<br><span style="color:#8a8785;">}</span></div>
+      </div>
+    </div>
+    <div style="display:flex; justify-content:space-between; align-items:center; border-top:2px solid #d3d0cf; padding-top:16px; font-family:'IBM Plex Mono',monospace; font-size:15px; letter-spacing:0.04em; color:rgba(32,30,29,.55);">
+      <span style="font-weight:600; color:#201e1d;">WARDEN</span><span>never false-green</span><span>ACT II · 08</span>
+    </div>
+  </section>
+
+  <!-- 09 -->
+  <section data-label="Verdict lattice" data-speaker-notes="The verdict lattice — seven rungs, highest wins. error and policy-violation and indeterminate all block; warn, bypassed, clean, not-applicable all pass. The key design move: indeterminate sits ABOVE the pass line. An unproven result blocks, it never slides to clean." style="box-sizing:border-box; width:100%; height:100%; background:#f3f2f2; color:#201e1d; font-family:'Archivo',sans-serif; padding:88px 120px 68px; display:flex; flex-direction:column;">
+    <div style="display:flex; align-items:baseline; gap:24px; border-bottom:3px solid #201e1d; padding-bottom:18px;">
+      <span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:30px; color:#ec3013;">06</span>
+      <h2 style="font-size:46px; margin:0; letter-spacing:-0.02em; font-weight:800;">The verdict lattice — highest wins</h2>
+    </div>
+    <div style="flex:1; display:grid; grid-template-columns:1.4fr 1fr; gap:56px; align-items:center;">
+      <div style="border:2px solid #201e1d; font-family:'IBM Plex Mono',monospace;">
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:16px 26px; background:#ec3013; color:#f3f2f2;"><span style="font-weight:600; font-size:26px;">error</span><span style="font-size:20px;">exit 2 · operational</span></div>
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:16px 26px; background:#f8cabf; border-top:2px solid #201e1d;"><span style="font-weight:600; font-size:26px;">policy-violation</span><span style="font-size:20px;">exit 1 · blocks</span></div>
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:16px 26px; background:#f8cabf; border-top:2px solid #d3d0cf;"><span style="font-weight:600; font-size:26px;">indeterminate</span><span style="font-size:20px;">exit 1 · unproven</span></div>
+        <div style="height:0; border-top:3px dashed #ec3013;"></div>
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:16px 26px;"><span style="font-weight:600; font-size:26px;">warn</span><span style="font-size:20px;">exit 0</span></div>
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:16px 26px; border-top:2px solid #d3d0cf;"><span style="font-weight:600; font-size:26px;">bypassed</span><span style="font-size:20px;">exit 0 · waiver</span></div>
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:16px 26px; border-top:2px solid #d3d0cf;"><span style="font-weight:600; font-size:26px;">clean</span><span style="font-size:20px;">exit 0</span></div>
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:16px 26px; border-top:2px solid #d3d0cf; color:rgba(32,30,29,.6);"><span style="font-weight:600; font-size:26px;">not-applicable</span><span style="font-size:20px;">exit 0</span></div>
+      </div>
+      <div>
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:20px; letter-spacing:0.06em; text-transform:uppercase; color:#c22a10; font-weight:600;">The dashed line</div>
+        <p style="font-size:29px; line-height:1.45; font-weight:500; margin:18px 0 0;">Everything above it <b>blocks the merge</b>. The whole design turns on one placement:</p>
+        <p style="font-size:29px; line-height:1.45; margin:28px 0 0; color:rgba(32,30,29,.72);"><span style="font-family:'IBM Plex Mono',monospace; color:#c22a10; font-weight:600;">indeterminate</span> sits <b>above</b> the pass line. An unproven axis fails the gate — it never slides down to clean.</p>
+      </div>
+    </div>
+    <div style="display:flex; justify-content:space-between; align-items:center; border-top:2px solid #d3d0cf; padding-top:16px; font-family:'IBM Plex Mono',monospace; font-size:15px; letter-spacing:0.04em; color:rgba(32,30,29,.55);">
+      <span style="font-weight:600; color:#201e1d;">WARDEN</span><span>never false-green</span><span>ACT II · 09</span>
+    </div>
+  </section>
+
+  <!-- 10 -->
+  <section data-label="Exit enum" data-speaker-notes="The exit enum is frozen: 0 success, 1 policy violation or indeterminate, 2 operational error, 130 interrupted. Four values, no drift. CI wires against these forever. And every operational failure is a typed error with a named owner — unparsable-manifest, engine-unavailable, engine-crash, internal-error — so a failure routes to whoever can fix it." style="box-sizing:border-box; width:100%; height:100%; background:#f3f2f2; color:#201e1d; font-family:'Archivo',sans-serif; padding:88px 120px 68px; display:flex; flex-direction:column;">
+    <div style="display:flex; align-items:baseline; gap:24px; border-bottom:3px solid #201e1d; padding-bottom:18px;">
+      <span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:30px; color:#ec3013;">07</span>
+      <h2 style="font-size:46px; margin:0; letter-spacing:-0.02em; font-weight:800;">A frozen exit enum &amp; typed errors</h2>
+    </div>
+    <div style="flex:1; display:flex; flex-direction:column; justify-content:center; gap:48px;">
+      <div style="display:grid; grid-template-columns:repeat(4,1fr); border-left:2px solid #d3d0cf; font-family:'IBM Plex Mono',monospace;">
+        <div style="border-right:2px solid #d3d0cf; padding:0 28px;"><div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:88px; color:#1a7a3c; line-height:1;">0</div><div style="font-size:22px; margin-top:10px;">success · clean / warn</div></div>
+        <div style="border-right:2px solid #d3d0cf; padding:0 28px;"><div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:88px; color:#ec3013; line-height:1;">1</div><div style="font-size:22px; margin-top:10px;">policy-violation / indeterminate</div></div>
+        <div style="border-right:2px solid #d3d0cf; padding:0 28px;"><div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:88px; color:#ec3013; line-height:1;">2</div><div style="font-size:22px; margin-top:10px;">operational error</div></div>
+        <div style="padding:0 28px;"><div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:88px; color:rgba(32,30,29,.5); line-height:1;">130</div><div style="font-size:22px; margin-top:10px;">interrupted (SIGINT)</div></div>
+      </div>
+      <div>
+        <div style="font-size:24px; color:rgba(32,30,29,.6); margin-bottom:18px;">Every operational failure is a <b style="color:#201e1d;">typed error with a named owner</b> —</div>
+        <div style="display:flex; flex-wrap:wrap; gap:14px; font-family:'IBM Plex Mono',monospace;">
+          <span style="border:2px solid #201e1d; padding:12px 20px; font-size:24px;">unparsable-manifest</span>
+          <span style="border:2px solid #201e1d; padding:12px 20px; font-size:24px;">engine-unavailable</span>
+          <span style="border:2px solid #201e1d; padding:12px 20px; font-size:24px;">engine-crash</span>
+          <span style="border:2px solid #201e1d; padding:12px 20px; font-size:24px;">internal-error</span>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex; justify-content:space-between; align-items:center; border-top:2px solid #d3d0cf; padding-top:16px; font-family:'IBM Plex Mono',monospace; font-size:15px; letter-spacing:0.04em; color:rgba(32,30,29,.55);">
+      <span style="font-weight:600; color:#201e1d;">WARDEN</span><span>never false-green</span><span>ACT II · 10</span>
+    </div>
+  </section>
+
+  <!-- 11 · ACT III DIVIDER -->
+  <section data-label="Act III" data-speaker-notes="Act III: the engines and how they run. Warden orchestrates deptry and osv-scanner behind one report, reads six manifest formats natively, isolates each engine behind a hardened subprocess seam, and scans at three concentric rings of the supply chain." style="box-sizing:border-box; width:100%; height:100%; background:#ec3013; color:#f3f2f2; font-family:'Archivo',sans-serif; padding:96px 120px; display:flex; flex-direction:column; justify-content:space-between; position:relative; overflow:hidden;">
+    <div style="position:absolute; right:40px; top:-140px; font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:720px; line-height:1; color:rgba(243,242,242,0.13); pointer-events:none;">III</div>
+    <div style="font-family:'IBM Plex Mono',monospace; font-size:22px; letter-spacing:0.16em; text-transform:uppercase; font-weight:600; position:relative;">Act III</div>
+    <div style="position:relative;">
+      <h2 style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:118px; line-height:0.96; letter-spacing:-0.02em; margin:0;">The engines,<br>orchestrated</h2>
+      <p style="font-size:34px; line-height:1.35; font-weight:500; margin:36px 0 0; max-width:1120px; opacity:0.94;">Pluggable engines behind one report — six manifests read natively, isolated behind a hardened seam, across three supply-chain rings.</p>
+    </div>
+    <div style="display:flex; justify-content:space-between; align-items:center; border-top:2px solid rgba(243,242,242,.45); padding-top:20px; font-family:'IBM Plex Mono',monospace; font-size:15px; letter-spacing:0.05em; position:relative;">
+      <span style="font-weight:600;">WARDEN</span><span style="opacity:.85;">never false-green</span><span style="opacity:.85;">ACT III · 11</span>
+    </div>
+  </section>
+
+  <!-- 12 -->
+  <section data-label="deptry — hygiene" data-speaker-notes="Axis 1, hygiene, ships in v1 with deptry. It does AST import analysis and cross-checks against declared dependencies, emitting DEP001 through DEP005: missing, unused, transitive, misplaced-dev, and duplicate. It honors existing tool.deptry ignore config so teams keep their tuning." style="box-sizing:border-box; width:100%; height:100%; background:#f3f2f2; color:#201e1d; font-family:'Archivo',sans-serif; padding:88px 120px 68px; display:flex; flex-direction:column;">
+    <div style="display:flex; align-items:baseline; gap:24px; border-bottom:3px solid #201e1d; padding-bottom:18px;">
+      <span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:30px; color:#ec3013;">08</span>
+      <h2 style="font-size:46px; margin:0; letter-spacing:-0.02em; font-weight:800;">deptry — the hygiene axis <span style="font-family:'IBM Plex Mono',monospace; font-size:24px; color:#f3f2f2; background:#ec3013; padding:4px 14px; font-weight:600; vertical-align:middle;">v1</span></h2>
+    </div>
+    <div style="flex:1; display:grid; grid-template-columns:1fr 1.1fr; gap:56px; align-items:center;">
+      <div>
+        <p style="font-size:30px; line-height:1.45; font-weight:500; margin:0;">AST import analysis over the source tree, cross-checked against declared dependencies. Honors your existing <span style="font-family:'IBM Plex Mono',monospace; color:#c22a10;">[tool.deptry]</span> config.</p>
+      </div>
+      <div style="font-family:'IBM Plex Mono',monospace; border:2px solid #201e1d;">
+        <div style="display:flex; gap:22px; padding:18px 26px; border-bottom:2px solid #d3d0cf; font-size:24px;"><span style="color:#c22a10; font-weight:600; min-width:110px;">DEP001</span><span>missing — imported, not declared</span></div>
+        <div style="display:flex; gap:22px; padding:18px 26px; border-bottom:2px solid #d3d0cf; font-size:24px;"><span style="color:#c22a10; font-weight:600; min-width:110px;">DEP002</span><span>unused — declared, not imported</span></div>
+        <div style="display:flex; gap:22px; padding:18px 26px; border-bottom:2px solid #d3d0cf; font-size:24px;"><span style="color:#c22a10; font-weight:600; min-width:110px;">DEP003</span><span>transitive — used, not declared</span></div>
+        <div style="display:flex; gap:22px; padding:18px 26px; border-bottom:2px solid #d3d0cf; font-size:24px;"><span style="color:#c22a10; font-weight:600; min-width:110px;">DEP004</span><span>misplaced dev dependency</span></div>
+        <div style="display:flex; gap:22px; padding:18px 26px; font-size:24px;"><span style="color:#c22a10; font-weight:600; min-width:110px;">DEP005</span><span>duplicate declaration</span></div>
+      </div>
+    </div>
+    <div style="display:flex; justify-content:space-between; align-items:center; border-top:2px solid #d3d0cf; padding-top:16px; font-family:'IBM Plex Mono',monospace; font-size:15px; letter-spacing:0.04em; color:rgba(32,30,29,.55);">
+      <span style="font-weight:600; color:#201e1d;">WARDEN</span><span>never false-green</span><span>ACT III · 12</span>
+    </div>
+  </section>
+
+  <!-- 13 -->
+  <section data-label="osv-scanner — security" data-speaker-notes="Axis 2, security, ships in v1 with Google's osv-scanner checked against the OSV database. Crucially the database is provisioned as a declared conda/pixi dependency — never a runtime curl — and Warden pre-flights it for freshness and integrity before trusting a result. That's the fix for false-green #1." style="box-sizing:border-box; width:100%; height:100%; background:#f3f2f2; color:#201e1d; font-family:'Archivo',sans-serif; padding:88px 120px 68px; display:flex; flex-direction:column;">
+    <div style="display:flex; align-items:baseline; gap:24px; border-bottom:3px solid #201e1d; padding-bottom:18px;">
+      <span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:30px; color:#ec3013;">09</span>
+      <h2 style="font-size:46px; margin:0; letter-spacing:-0.02em; font-weight:800;">osv-scanner — the security axis <span style="font-family:'IBM Plex Mono',monospace; font-size:24px; color:#f3f2f2; background:#ec3013; padding:4px 14px; font-weight:600; vertical-align:middle;">v1</span></h2>
+    </div>
+    <div style="flex:1; display:flex; flex-direction:column; justify-content:center; gap:40px;">
+      <p style="font-size:32px; line-height:1.45; font-weight:500; margin:0; max-width:1520px;">Google's OSV database checked against the resolved dependency set. The database is a <b>declared conda / pixi dependency</b> — never a runtime <span style="font-family:'IBM Plex Mono',monospace; color:#c22a10;">curl</span>.</p>
+      <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:0; border-left:2px solid #d3d0cf;">
+        <div style="border-right:2px solid #d3d0cf; padding:0 32px;"><div style="font-family:'IBM Plex Mono',monospace; font-size:18px; letter-spacing:0.06em; text-transform:uppercase; color:#c22a10; font-weight:600;">Provisioned</div><p style="font-size:25px; line-height:1.4; margin:14px 0 0;">DB ships as a pinned, declared dependency — reproducible &amp; offline.</p></div>
+        <div style="border-right:2px solid #d3d0cf; padding:0 32px;"><div style="font-family:'IBM Plex Mono',monospace; font-size:18px; letter-spacing:0.06em; text-transform:uppercase; color:#c22a10; font-weight:600;">Pre-flighted</div><p style="font-size:25px; line-height:1.4; margin:14px 0 0;">Record count, freshness &amp; integrity verified <b>before</b> any result is trusted.</p></div>
+        <div style="padding:0 32px;"><div style="font-family:'IBM Plex Mono',monospace; font-size:18px; letter-spacing:0.06em; text-transform:uppercase; color:#c22a10; font-weight:600;">Fails honest</div><p style="font-size:25px; line-height:1.4; margin:14px 0 0;">A bad DB yields <span style="font-family:'IBM Plex Mono',monospace;">indeterminate</span>, not a false clean.</p></div>
+      </div>
+    </div>
+    <div style="display:flex; justify-content:space-between; align-items:center; border-top:2px solid #d3d0cf; padding-top:16px; font-family:'IBM Plex Mono',monospace; font-size:15px; letter-spacing:0.04em; color:rgba(32,30,29,.55);">
+      <span style="font-weight:600; color:#201e1d;">WARDEN</span><span>never false-green</span><span>ACT III · 13</span>
+    </div>
+  </section>
+
+  <!-- 14 -->
+  <section data-label="Subprocess seam" data-speaker-notes="The engines are external binaries, so Warden isolates each behind a hardened subprocess seam: no shell, explicit argv, timeouts and resource caps, captured stdout/stderr, and a distinction between an engine that's unavailable versus one that crashed. A misbehaving engine becomes a typed error and exit 2 — never a silent pass." style="box-sizing:border-box; width:100%; height:100%; background:#f3f2f2; color:#201e1d; font-family:'Archivo',sans-serif; padding:88px 120px 68px; display:flex; flex-direction:column;">
+    <div style="display:flex; align-items:baseline; gap:24px; border-bottom:3px solid #201e1d; padding-bottom:18px;">
+      <span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:30px; color:#ec3013;">10</span>
+      <h2 style="font-size:46px; margin:0; letter-spacing:-0.02em; font-weight:800;">The hardened subprocess seam</h2>
+    </div>
+    <div style="flex:1; display:grid; grid-template-columns:1fr 1fr; gap:56px; align-items:center;">
+      <div>
+        <p style="font-size:30px; line-height:1.45; font-weight:500; margin:0;">Engines are external binaries. Warden runs each behind a strict seam so a misbehaving engine can't corrupt a verdict.</p>
+        <p style="font-size:26px; line-height:1.45; margin:28px 0 0; color:rgba(32,30,29,.72);">Unavailable ≠ crashed ≠ clean. Each maps to a distinct typed error and <span style="font-family:'IBM Plex Mono',monospace; color:#c22a10;">exit 2</span> — never a silent pass.</p>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:16px; font-family:'IBM Plex Mono',monospace;">
+        <div style="border:2px solid #201e1d; padding:20px 26px; font-size:24px;">no shell — explicit <b>argv</b></div>
+        <div style="border:2px solid #201e1d; padding:20px 26px; font-size:24px;">timeouts + resource caps</div>
+        <div style="border:2px solid #201e1d; padding:20px 26px; font-size:24px;">captured stdout / stderr</div>
+        <div style="border:2px solid #ec3013; background:#fce4de; padding:20px 26px; font-size:24px;">unavailable ≠ crash ≠ clean</div>
+      </div>
+    </div>
+    <div style="display:flex; justify-content:space-between; align-items:center; border-top:2px solid #d3d0cf; padding-top:16px; font-family:'IBM Plex Mono',monospace; font-size:15px; letter-spacing:0.04em; color:rgba(32,30,29,.55);">
+      <span style="font-weight:600; color:#201e1d;">WARDEN</span><span>never false-green</span><span>ACT III · 14</span>
+    </div>
+  </section>
+
+  <!-- 15 -->
+  <section data-label="Six manifests" data-speaker-notes="The manifest engine is the wedge: neither stock engine parses conda or pixi. Warden reads all six formats — pyproject.toml and pixi.toml via tomllib, requirements.txt by line-parse, environment.yml, meta.yaml v0 with jinja/selector neutralization, and recipe.yaml v1 — all via yaml.safe_load. No untrusted input is ever executed." style="box-sizing:border-box; width:100%; height:100%; background:#f3f2f2; color:#201e1d; font-family:'Archivo',sans-serif; padding:88px 120px 68px; display:flex; flex-direction:column;">
+    <div style="display:flex; align-items:baseline; gap:24px; border-bottom:3px solid #201e1d; padding-bottom:18px;">
+      <span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:30px; color:#ec3013;">11</span>
+      <h2 style="font-size:46px; margin:0; letter-spacing:-0.02em; font-weight:800;">Six manifest formats — read natively</h2>
+    </div>
+    <div style="flex:1; display:flex; flex-direction:column; justify-content:center;">
+      <p style="font-size:26px; line-height:1.4; margin:0 0 28px; color:rgba(32,30,29,.7); max-width:1500px;">The manifest engine is the wedge — no engine parses conda / pixi. No untrusted input is executed: <span style="font-family:'IBM Plex Mono',monospace; color:#c22a10;">yaml.safe_load</span> only.</p>
+      <div style="display:grid; grid-template-columns:repeat(3,1fr); border-top:2px solid #201e1d; border-left:2px solid #d3d0cf; font-family:'IBM Plex Mono',monospace;">
+        <div style="border-right:2px solid #d3d0cf; border-bottom:2px solid #d3d0cf; padding:26px 30px;"><div style="font-size:26px; font-weight:600;">pyproject.toml</div><div style="font-size:20px; margin-top:10px; color:rgba(32,30,29,.6);">PEP 621 · Poetry · PDM</div><div style="font-size:18px; margin-top:14px; color:#c22a10;">tomllib</div></div>
+        <div style="border-right:2px solid #d3d0cf; border-bottom:2px solid #d3d0cf; padding:26px 30px;"><div style="font-size:26px; font-weight:600;">pixi.toml</div><div style="font-size:20px; margin-top:10px; color:rgba(32,30,29,.6);">deps · pypi-deps · features</div><div style="font-size:18px; margin-top:14px; color:#c22a10;">tomllib</div></div>
+        <div style="border-right:2px solid #d3d0cf; border-bottom:2px solid #d3d0cf; padding:26px 30px;"><div style="font-size:26px; font-weight:600;">requirements.txt</div><div style="font-size:20px; margin-top:10px; color:rgba(32,30,29,.6);">one requirement per line</div><div style="font-size:18px; margin-top:14px; color:#c22a10;">line-parse</div></div>
+        <div style="border-right:2px solid #d3d0cf; border-bottom:2px solid #d3d0cf; padding:26px 30px;"><div style="font-size:26px; font-weight:600;">environment.yml</div><div style="font-size:20px; margin-top:10px; color:rgba(32,30,29,.6);">deps + nested pip:</div><div style="font-size:18px; margin-top:14px; color:#c22a10;">safe_load</div></div>
+        <div style="border-right:2px solid #d3d0cf; border-bottom:2px solid #d3d0cf; padding:26px 30px; background:#fce4de;"><div style="font-size:26px; font-weight:600;">meta.yaml <span style="color:#c22a10;">v0</span></div><div style="font-size:20px; margin-top:10px; color:rgba(32,30,29,.6);">jinja + # [selector]</div><div style="font-size:18px; margin-top:14px; color:#c22a10;">neutralize → safe_load</div></div>
+        <div style="border-right:2px solid #d3d0cf; border-bottom:2px solid #d3d0cf; padding:26px 30px;"><div style="font-size:26px; font-weight:600;">recipe.yaml <span style="color:#c22a10;">v1</span></div><div style="font-size:20px; margin-top:10px; color:rgba(32,30,29,.6);">requirements: run:</div><div style="font-size:18px; margin-top:14px; color:#c22a10;">safe_load</div></div>
+      </div>
+    </div>
+    <div style="display:flex; justify-content:space-between; align-items:center; border-top:2px solid #d3d0cf; padding-top:16px; font-family:'IBM Plex Mono',monospace; font-size:15px; letter-spacing:0.04em; color:rgba(32,30,29,.55);">
+      <span style="font-weight:600; color:#201e1d;">WARDEN</span><span>never false-green</span><span>ACT III · 15</span>
+    </div>
+  </section>
+
+  <!-- 16 -->
+  <section data-label="Three rings" data-speaker-notes="Warden runs at three depths, and the further out it scans, the more it prevents rather than reports. Consumption edge — repos, desktops, CI — is today. Registry perimeter — block/allow lists on Artifactory/JFrog — is v1.x and the star: a census of everything that enters. Public upstream — scanning PyPI and conda-forge for malicious and typosquat packages — is the vision." style="box-sizing:border-box; width:100%; height:100%; background:#f3f2f2; color:#201e1d; font-family:'Archivo',sans-serif; padding:88px 120px 68px; display:flex; flex-direction:column;">
+    <div style="display:flex; align-items:baseline; gap:24px; border-bottom:3px solid #201e1d; padding-bottom:18px;">
+      <span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:30px; color:#ec3013;">12</span>
+      <h2 style="font-size:46px; margin:0; letter-spacing:-0.02em; font-weight:800;">Three rings — scan the whole supply chain</h2>
+    </div>
+    <div style="flex:1; display:flex; flex-direction:column; justify-content:center; gap:32px;">
+      <p style="font-size:28px; line-height:1.4; margin:0; color:rgba(32,30,29,.72); max-width:1520px;">The further out Warden scans, the more it <b style="color:#201e1d;">prevents</b> rather than reports.</p>
+      <div style="display:flex; align-items:stretch; gap:0;">
+        <div style="flex:1; border:2px solid #b6b3b2; display:flex; flex-direction:column;">
+          <div style="background:#dedbda; padding:22px 26px;"><div style="display:flex; justify-content:space-between; font-family:'IBM Plex Mono',monospace; font-size:15px; text-transform:uppercase; letter-spacing:.05em;"><span style="color:rgba(32,30,29,.6);">Outside firewall</span><span style="font-weight:700;">vision</span></div><div style="font-size:30px; font-weight:800; margin-top:8px;">Public upstream</div></div>
+          <div style="padding:24px 26px; font-size:22px; line-height:1.4; flex:1;">Scan <b>PyPI &amp; conda-forge</b> — malicious, typosquat, name-squat &amp; stale feedstocks.</div>
+        </div>
+        <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding:0 16px;"><span style="font-size:34px; color:#ec3013; font-weight:800;">→</span><span style="font-family:'IBM Plex Mono',monospace; font-size:14px; color:#c22a10; text-transform:uppercase; margin-top:6px;">blocklists</span></div>
+        <div style="flex:1; border:2px solid #ec3013; display:flex; flex-direction:column;">
+          <div style="background:#ec3013; color:#f3f2f2; padding:22px 26px;"><div style="display:flex; justify-content:space-between; font-family:'IBM Plex Mono',monospace; font-size:15px; text-transform:uppercase; letter-spacing:.05em;"><span style="opacity:.85;">The firewall</span><span style="font-weight:700; background:#f3f2f2; color:#ec3013; padding:1px 8px;">v1.x</span></div><div style="font-size:30px; font-weight:800; margin-top:8px;">Registry perimeter</div></div>
+          <div style="padding:24px 26px; font-size:22px; line-height:1.4; flex:1; background:#fce4de;">Block / allow lists on <b>Artifactory / JFrog</b> — a census of everything that enters.</div>
+        </div>
+        <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding:0 16px;"><span style="font-size:34px; color:#ec3013; font-weight:800;">→</span><span style="font-family:'IBM Plex Mono',monospace; font-size:14px; color:#c22a10; text-transform:uppercase; margin-top:6px;">clean pulls</span></div>
+        <div style="flex:1; border:2px solid #201e1d; display:flex; flex-direction:column;">
+          <div style="background:#201e1d; color:#f3f2f2; padding:22px 26px;"><div style="display:flex; justify-content:space-between; font-family:'IBM Plex Mono',monospace; font-size:15px; text-transform:uppercase; letter-spacing:.05em;"><span style="opacity:.7;">Inside</span><span style="font-weight:700; background:#ec3013; padding:1px 8px;">today</span></div><div style="font-size:30px; font-weight:800; margin-top:8px;">Consumption edge</div></div>
+          <div style="padding:24px 26px; font-size:22px; line-height:1.4; flex:1;">Scan <b>repos, desktops &amp; CI</b> — the axes on what apps actually pull.</div>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex; justify-content:space-between; align-items:center; border-top:2px solid #d3d0cf; padding-top:16px; font-family:'IBM Plex Mono',monospace; font-size:15px; letter-spacing:0.04em; color:rgba(32,30,29,.55);">
+      <span style="font-weight:600; color:#201e1d;">WARDEN</span><span>never false-green</span><span>ACT III · 16</span>
+    </div>
+  </section>
+
+  <!-- 17 · ACT IV DIVIDER -->
+  <section data-label="Act IV" data-speaker-notes="Act IV: offline and air-gap trust. Enterprise Python often runs where the internet doesn't reach. Warden is built for that: deny-by-default egress, deterministic runs, and a database it verifies before it trusts." style="box-sizing:border-box; width:100%; height:100%; background:#ec3013; color:#f3f2f2; font-family:'Archivo',sans-serif; padding:96px 120px; display:flex; flex-direction:column; justify-content:space-between; position:relative; overflow:hidden;">
+    <div style="position:absolute; right:40px; top:-140px; font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:720px; line-height:1; color:rgba(243,242,242,0.13); pointer-events:none;">IV</div>
+    <div style="font-family:'IBM Plex Mono',monospace; font-size:22px; letter-spacing:0.16em; text-transform:uppercase; font-weight:600; position:relative;">Act IV</div>
+    <div style="position:relative;">
+      <h2 style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:118px; line-height:0.96; letter-spacing:-0.02em; margin:0;">Offline by<br>default</h2>
+      <p style="font-size:34px; line-height:1.35; font-weight:500; margin:36px 0 0; max-width:1120px; opacity:0.94;">Deny-by-default egress, deterministic runs, a pre-flighted database. Trust that survives the air gap.</p>
+    </div>
+    <div style="display:flex; justify-content:space-between; align-items:center; border-top:2px solid rgba(243,242,242,.45); padding-top:20px; font-family:'IBM Plex Mono',monospace; font-size:15px; letter-spacing:0.05em; position:relative;">
+      <span style="font-weight:600;">WARDEN</span><span style="opacity:.85;">never false-green</span><span style="opacity:.85;">ACT IV · 17</span>
+    </div>
+  </section>
+
+  <!-- 18 -->
+  <section data-label="Deny-by-default egress" data-speaker-notes="Warden makes no network calls during a scan by default. The database and engines are provisioned ahead of time as declared dependencies. Any online behavior is opt-in and explicit, never silent. That's what makes runs safe in regulated and air-gapped environments." style="box-sizing:border-box; width:100%; height:100%; background:#f3f2f2; color:#201e1d; font-family:'Archivo',sans-serif; padding:88px 120px 68px; display:flex; flex-direction:column;">
+    <div style="display:flex; align-items:baseline; gap:24px; border-bottom:3px solid #201e1d; padding-bottom:18px;">
+      <span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:30px; color:#ec3013;">13</span>
+      <h2 style="font-size:46px; margin:0; letter-spacing:-0.02em; font-weight:800;">Deny-by-default egress</h2>
+    </div>
+    <div style="flex:1; display:grid; grid-template-columns:1fr 1fr; gap:56px; align-items:center;">
+      <div>
+        <p style="font-size:30px; line-height:1.45; font-weight:500; margin:0;">A scan makes <b>no network calls</b>. Database and engines are provisioned ahead of time as declared dependencies.</p>
+        <p style="font-size:26px; line-height:1.45; margin:28px 0 0; color:rgba(32,30,29,.72);">Any online behavior is <b>opt-in and explicit</b> — never silent. Safe by construction in regulated and air-gapped estates.</p>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:18px; font-family:'IBM Plex Mono',monospace;">
+        <div style="border:2px solid #201e1d; padding:24px 28px; display:flex; justify-content:space-between; align-items:center; font-size:25px;"><span>network egress</span><span style="color:#c22a10; font-weight:600;">DENY</span></div>
+        <div style="border:2px solid #201e1d; padding:24px 28px; display:flex; justify-content:space-between; align-items:center; font-size:25px;"><span>OSV database</span><span style="color:#1a7a3c; font-weight:600;">LOCAL</span></div>
+        <div style="border:2px solid #201e1d; padding:24px 28px; display:flex; justify-content:space-between; align-items:center; font-size:25px;"><span>engines</span><span style="color:#1a7a3c; font-weight:600;">DECLARED</span></div>
+        <div style="border:2px solid #ec3013; background:#fce4de; padding:24px 28px; display:flex; justify-content:space-between; align-items:center; font-size:25px;"><span>online enrichment</span><span style="color:#c22a10; font-weight:600;">OPT-IN</span></div>
+      </div>
+    </div>
+    <div style="display:flex; justify-content:space-between; align-items:center; border-top:2px solid #d3d0cf; padding-top:16px; font-family:'IBM Plex Mono',monospace; font-size:15px; letter-spacing:0.04em; color:rgba(32,30,29,.55);">
+      <span style="font-weight:600; color:#201e1d;">WARDEN</span><span>never false-green</span><span>ACT IV · 18</span>
+    </div>
+  </section>
+
+  <!-- 19 -->
+  <section data-label="Deterministic runs" data-speaker-notes="Two properties make Warden auditable. Determinism: pinned engines and a pinned database mean the same inputs give the same verdict, every time, on any machine. And the pre-flight: Warden verifies the database's record count, freshness, and integrity before trusting it. Together these turn a scan into evidence you can defend in an audit." style="box-sizing:border-box; width:100%; height:100%; background:#f3f2f2; color:#201e1d; font-family:'Archivo',sans-serif; padding:88px 120px 68px; display:flex; flex-direction:column;">
+    <div style="display:flex; align-items:baseline; gap:24px; border-bottom:3px solid #201e1d; padding-bottom:18px;">
+      <span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:30px; color:#ec3013;">14</span>
+      <h2 style="font-size:46px; margin:0; letter-spacing:-0.02em; font-weight:800;">Deterministic &amp; pre-flighted</h2>
+    </div>
+    <div style="flex:1; display:grid; grid-template-columns:1fr 1fr; gap:40px; align-items:stretch; padding:8px 0;">
+      <div style="border:2px solid #201e1d; padding:44px 48px; display:flex; flex-direction:column;">
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:18px; letter-spacing:0.08em; text-transform:uppercase; color:#c22a10; font-weight:600;">Determinism</div>
+        <div style="font-size:38px; font-weight:800; margin-top:14px; line-height:1.1;">Same inputs,<br>same verdict</div>
+        <p style="font-size:25px; line-height:1.45; margin:24px 0 0; color:rgba(32,30,29,.72);">Pinned engines + pinned database. Reproducible on any machine, on any day — including one with no internet.</p>
+      </div>
+      <div style="border:2px solid #ec3013; background:#fce4de; padding:44px 48px; display:flex; flex-direction:column;">
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:18px; letter-spacing:0.08em; text-transform:uppercase; color:#c22a10; font-weight:600;">Pre-flight</div>
+        <div style="font-size:38px; font-weight:800; margin-top:14px; line-height:1.1;">Verify before<br>you trust</div>
+        <p style="font-size:25px; line-height:1.45; margin:24px 0 0; color:rgba(32,30,29,.72);">Record count, freshness &amp; integrity checked first. A scan becomes <b>evidence you can defend</b> in an audit.</p>
+      </div>
+    </div>
+    <div style="display:flex; justify-content:space-between; align-items:center; border-top:2px solid #d3d0cf; padding-top:16px; font-family:'IBM Plex Mono',monospace; font-size:15px; letter-spacing:0.04em; color:rgba(32,30,29,.55);">
+      <span style="font-weight:600; color:#201e1d;">WARDEN</span><span>never false-green</span><span>ACT IV · 19</span>
+    </div>
+  </section>
+
+  <!-- 20 -->
+  <section data-label="First contact" data-speaker-notes="Adoption starts at a terminal, not a pipeline. warden scan . --warn-only runs locally, shows real findings, and exits 0 so nobody is blocked on day one. This is the on-ramp — see it work on your own machine before you ever touch CI." style="box-sizing:border-box; width:100%; height:100%; background:#f3f2f2; color:#201e1d; font-family:'Archivo',sans-serif; padding:88px 120px 68px; display:flex; flex-direction:column;">
+    <div style="display:flex; align-items:baseline; gap:24px; border-bottom:3px solid #201e1d; padding-bottom:18px;">
+      <span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:30px; color:#ec3013;">15</span>
+      <h2 style="font-size:46px; margin:0; letter-spacing:-0.02em; font-weight:800;">First contact — at your terminal</h2>
+    </div>
+    <div style="flex:1; display:flex; align-items:center;">
+      <div style="width:100%; background:#1a1918; color:#e8e6e4; font-family:'IBM Plex Mono',monospace; font-size:24px; line-height:1.7; border:2px solid #201e1d;">
+        <div style="display:flex; gap:9px; align-items:center; padding:18px 24px; border-bottom:1px solid #3a3836;"><span style="width:14px; height:14px; border-radius:50%; background:#ec3013; display:inline-block;"></span><span style="width:14px; height:14px; border-radius:50%; background:#4a4846; display:inline-block;"></span><span style="width:14px; height:14px; border-radius:50%; background:#4a4846; display:inline-block;"></span><span style="margin-left:14px; color:#8a8785; font-size:18px;">bash — warden</span></div>
+        <div style="padding:30px 36px;">
+          <div><span style="color:#7fd6a0;">$</span> warden scan . --warn-only</div>
+          <div style="color:#8a8785; margin-top:16px;">Warden 1.0  ·  offline  ·  OSV db 2026-07-10 (312,004 records ✓)</div>
+          <div style="margin-top:16px;">discovered <span style="color:#ffd27f;">6</span> manifests · resolved <span style="color:#ffd27f;">312</span> packages</div>
+          <div style="margin-top:16px;"><span style="color:#7fd6a0;">✓ hygiene</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;clean</div>
+          <div><span style="color:#ff7a5e;">✗ security</span>&nbsp;&nbsp;&nbsp;&nbsp;1 critical — <span style="color:#e8e6e4;">numpy 1.22.0 · GHSA-xxxx</span></div>
+          <div><span style="color:#ffd27f;">? license</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;2 unknown — indeterminate</div>
+          <div style="margin-top:20px; color:#8a8785;">verdict <span style="color:#ffd27f;">policy-violation</span> — reported, not enforced (--warn-only)</div>
+          <div style="margin-top:6px;">exit <span style="color:#7fd6a0;">0</span><span style="background:#e8e6e4; color:#1a1918; margin-left:6px;">&nbsp;</span></div>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex; justify-content:space-between; align-items:center; border-top:2px solid #d3d0cf; padding-top:16px; font-family:'IBM Plex Mono',monospace; font-size:15px; letter-spacing:0.04em; color:rgba(32,30,29,.55);">
+      <span style="font-weight:600; color:#201e1d;">WARDEN</span><span>never false-green</span><span>ACT IV · 20</span>
+    </div>
+  </section>
+
+  <!-- 21 · ACT V DIVIDER -->
+  <section data-label="Act V" data-speaker-notes="Act V: from a gate to a governance platform. The same contract extends across six axes of dependency trust — and the engines are pluggable, so new signals slot in behind the same report and the same lattice." style="box-sizing:border-box; width:100%; height:100%; background:#ec3013; color:#f3f2f2; font-family:'Archivo',sans-serif; padding:96px 120px; display:flex; flex-direction:column; justify-content:space-between; position:relative; overflow:hidden;">
+    <div style="position:absolute; right:40px; top:-140px; font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:720px; line-height:1; color:rgba(243,242,242,0.13); pointer-events:none;">V</div>
+    <div style="font-family:'IBM Plex Mono',monospace; font-size:22px; letter-spacing:0.16em; text-transform:uppercase; font-weight:600; position:relative;">Act V</div>
+    <div style="position:relative;">
+      <h2 style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:118px; line-height:0.96; letter-spacing:-0.02em; margin:0;">From a gate to<br>governance</h2>
+      <p style="font-size:34px; line-height:1.35; font-weight:500; margin:36px 0 0; max-width:1120px; opacity:0.94;">Six axes of dependency trust, pluggable behind one report — hygiene &amp; security today, four more on the roadmap.</p>
+    </div>
+    <div style="display:flex; justify-content:space-between; align-items:center; border-top:2px solid rgba(243,242,242,.45); padding-top:20px; font-family:'IBM Plex Mono',monospace; font-size:15px; letter-spacing:0.05em; position:relative;">
+      <span style="font-weight:600;">WARDEN</span><span style="opacity:.85;">never false-green</span><span style="opacity:.85;">ACT V · 21</span>
+    </div>
+  </section>
+
+  <!-- 22 -->
+  <section data-label="Six axes" data-speaker-notes="Six axes, each a different question. Hygiene: is it used? Security: is it vulnerable? These ship in v1. License: is it allowed? Currency: is it patchable / supported? These complete the v1.x gate. Provenance: is it authentic? Maintenance: is it maintained? These are the vision. All behind one report, one lattice." style="box-sizing:border-box; width:100%; height:100%; background:#f3f2f2; color:#201e1d; font-family:'Archivo',sans-serif; padding:88px 120px 68px; display:flex; flex-direction:column;">
+    <div style="display:flex; align-items:baseline; gap:24px; border-bottom:3px solid #201e1d; padding-bottom:18px;">
+      <span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:30px; color:#ec3013;">16</span>
+      <h2 style="font-size:46px; margin:0; letter-spacing:-0.02em; font-weight:800;">Six axes of dependency trust</h2>
+    </div>
+    <div style="flex:1; display:grid; grid-template-columns:repeat(3,1fr); grid-template-rows:1fr 1fr; gap:0; border-top:2px solid #201e1d; border-left:2px solid #d3d0cf;">
+      <div style="border-right:2px solid #d3d0cf; border-bottom:2px solid #d3d0cf; padding:30px 34px; display:flex; flex-direction:column;"><div style="display:flex; justify-content:space-between; align-items:baseline;"><span style="font-family:'IBM Plex Mono',monospace; font-size:17px; letter-spacing:.06em; text-transform:uppercase; color:#c22a10; font-weight:600;">Axis 1 · Hygiene</span><span style="font-family:'IBM Plex Mono',monospace; font-size:16px; background:#ec3013; color:#f3f2f2; padding:2px 10px; font-weight:600;">v1</span></div><div style="font-size:32px; font-weight:800; margin-top:12px;">Is it used?</div><div style="font-size:21px; margin-top:auto; color:rgba(32,30,29,.6);">deptry</div></div>
+      <div style="border-right:2px solid #d3d0cf; border-bottom:2px solid #d3d0cf; padding:30px 34px; display:flex; flex-direction:column;"><div style="display:flex; justify-content:space-between; align-items:baseline;"><span style="font-family:'IBM Plex Mono',monospace; font-size:17px; letter-spacing:.06em; text-transform:uppercase; color:#c22a10; font-weight:600;">Axis 2 · Security</span><span style="font-family:'IBM Plex Mono',monospace; font-size:16px; background:#ec3013; color:#f3f2f2; padding:2px 10px; font-weight:600;">v1</span></div><div style="font-size:32px; font-weight:800; margin-top:12px;">Is it vulnerable?</div><div style="font-size:21px; margin-top:auto; color:rgba(32,30,29,.6);">osv-scanner + KEV/EPSS</div></div>
+      <div style="border-right:2px solid #d3d0cf; border-bottom:2px solid #d3d0cf; padding:30px 34px; display:flex; flex-direction:column;"><div style="display:flex; justify-content:space-between; align-items:baseline;"><span style="font-family:'IBM Plex Mono',monospace; font-size:17px; letter-spacing:.06em; text-transform:uppercase; color:#c22a10; font-weight:600;">Axis 3 · License</span><span style="font-family:'IBM Plex Mono',monospace; font-size:16px; background:#201e1d; color:#f3f2f2; padding:2px 10px; font-weight:600;">v1.x</span></div><div style="font-size:32px; font-weight:800; margin-top:12px;">Is it allowed?</div><div style="font-size:21px; margin-top:auto; color:rgba(32,30,29,.6);">license-expression</div></div>
+      <div style="border-right:2px solid #d3d0cf; border-bottom:2px solid #d3d0cf; padding:30px 34px; display:flex; flex-direction:column;"><div style="display:flex; justify-content:space-between; align-items:baseline;"><span style="font-family:'IBM Plex Mono',monospace; font-size:17px; letter-spacing:.06em; text-transform:uppercase; color:#c22a10; font-weight:600;">Axis 4 · Currency</span><span style="font-family:'IBM Plex Mono',monospace; font-size:16px; background:#201e1d; color:#f3f2f2; padding:2px 10px; font-weight:600;">v1.x</span></div><div style="font-size:32px; font-weight:800; margin-top:12px;">Is it patchable?</div><div style="font-size:21px; margin-top:auto; color:rgba(32,30,29,.6);">endoflife.date</div></div>
+      <div style="border-right:2px solid #d3d0cf; border-bottom:2px solid #d3d0cf; padding:30px 34px; display:flex; flex-direction:column;"><div style="display:flex; justify-content:space-between; align-items:baseline;"><span style="font-family:'IBM Plex Mono',monospace; font-size:17px; letter-spacing:.06em; text-transform:uppercase; color:rgba(32,30,29,.5); font-weight:600;">Axis 5 · Provenance</span><span style="font-family:'IBM Plex Mono',monospace; font-size:16px; border:1.5px solid #b6b3b2; color:rgba(32,30,29,.5); padding:2px 10px; font-weight:600;">vision</span></div><div style="font-size:32px; font-weight:800; margin-top:12px; color:rgba(32,30,29,.72);">Is it authentic?</div><div style="font-size:21px; margin-top:auto; color:rgba(32,30,29,.5);">Sigstore / SLSA</div></div>
+      <div style="border-right:2px solid #d3d0cf; border-bottom:2px solid #d3d0cf; padding:30px 34px; display:flex; flex-direction:column;"><div style="display:flex; justify-content:space-between; align-items:baseline;"><span style="font-family:'IBM Plex Mono',monospace; font-size:17px; letter-spacing:.06em; text-transform:uppercase; color:rgba(32,30,29,.5); font-weight:600;">Axis 6 · Maintenance</span><span style="font-family:'IBM Plex Mono',monospace; font-size:16px; border:1.5px solid #b6b3b2; color:rgba(32,30,29,.5); padding:2px 10px; font-weight:600;">vision</span></div><div style="font-size:32px; font-weight:800; margin-top:12px; color:rgba(32,30,29,.72);">Is it maintained?</div><div style="font-size:21px; margin-top:auto; color:rgba(32,30,29,.5);">OpenSSF Scorecard</div></div>
+    </div>
+    <div style="display:flex; justify-content:space-between; align-items:center; border-top:2px solid #d3d0cf; padding-top:16px; font-family:'IBM Plex Mono',monospace; font-size:15px; letter-spacing:0.04em; color:rgba(32,30,29,.55);">
+      <span style="font-weight:600; color:#201e1d;">WARDEN</span><span>never false-green</span><span>ACT V · 22</span>
+    </div>
+  </section>
+
+  <!-- 23 -->
+  <section data-label="KEV / EPSS" data-speaker-notes="v1.x enriches the security axis to prioritize by real-world exploitability. Not every CVE matters equally. CISA KEV tells you it's being exploited in the wild right now. FIRST EPSS gives a probability it will be. Together they let the gate block on what's actually dangerous — critical, KEV-listed, or high-EPSS — instead of drowning teams in theoretical findings." style="box-sizing:border-box; width:100%; height:100%; background:#f3f2f2; color:#201e1d; font-family:'Archivo',sans-serif; padding:88px 120px 68px; display:flex; flex-direction:column;">
+    <div style="display:flex; align-items:baseline; gap:24px; border-bottom:3px solid #201e1d; padding-bottom:18px;">
+      <span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:30px; color:#ec3013;">17</span>
+      <h2 style="font-size:46px; margin:0; letter-spacing:-0.02em; font-weight:800;">KEV + EPSS — prioritize by exploitability <span style="font-family:'IBM Plex Mono',monospace; font-size:24px; color:#f3f2f2; background:#201e1d; padding:4px 14px; font-weight:600; vertical-align:middle;">v1.x</span></h2>
+    </div>
+    <div style="flex:1; display:flex; flex-direction:column; justify-content:center; gap:40px;">
+      <p style="font-size:30px; line-height:1.45; font-weight:500; margin:0; max-width:1520px;">Not every CVE matters equally. Warden enriches each finding so the gate blocks on <b>what's actually dangerous</b> — not theoretical noise.</p>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:40px;">
+        <div style="border:2px solid #201e1d; padding:36px 40px;"><div style="font-family:'IBM Plex Mono',monospace; font-size:20px; letter-spacing:.06em; text-transform:uppercase; color:#c22a10; font-weight:600;">CISA KEV</div><div style="font-size:32px; font-weight:800; margin-top:12px;">Exploited in the wild</div><p style="font-size:23px; line-height:1.4; margin:16px 0 0; color:rgba(32,30,29,.72);">The known-exploited catalog — a boolean that outranks a raw severity score.</p></div>
+        <div style="border:2px solid #201e1d; padding:36px 40px;"><div style="font-family:'IBM Plex Mono',monospace; font-size:20px; letter-spacing:.06em; text-transform:uppercase; color:#c22a10; font-weight:600;">FIRST EPSS</div><div style="font-size:32px; font-weight:800; margin-top:12px;">Probability it will be</div><p style="font-size:23px; line-height:1.4; margin:16px 0 0; color:rgba(32,30,29,.72);">A 0–1 exploit-prediction score for triage — gate with <span style="font-family:'IBM Plex Mono',monospace;">--min-epss</span>.</p></div>
+      </div>
+      <div style="border:2px solid #ec3013; background:#fce4de; padding:22px 30px; font-size:24px; line-height:1.4; font-family:'IBM Plex Mono',monospace;"><span style="color:#c22a10; font-weight:600;">--fail-on-kev</span> &nbsp;·&nbsp; <span style="color:#c22a10; font-weight:600;">--min-epss 0.5</span> &nbsp;—&nbsp; block on real-world risk, warn on the rest.</div>
+    </div>
+    <div style="display:flex; justify-content:space-between; align-items:center; border-top:2px solid #d3d0cf; padding-top:16px; font-family:'IBM Plex Mono',monospace; font-size:15px; letter-spacing:0.04em; color:rgba(32,30,29,.55);">
+      <span style="font-weight:600; color:#201e1d;">WARDEN</span><span>never false-green</span><span>ACT V · 23</span>
+    </div>
+  </section>
+
+  <!-- 24 -->
+  <section data-label="License & currency" data-speaker-notes="Two more axes complete the v1.x gate. License: read SPDX expressions from PyPI metadata and conda recipe about-license via license-expression, and gate on allow/deny lists — an unreadable license is indeterminate, not clean. Currency: use endoflife.date plus version-lag to flag EOL and out-of-date dependencies, and the Python runtime itself against LTS / N / N-1. Only current things get patched." style="box-sizing:border-box; width:100%; height:100%; background:#f3f2f2; color:#201e1d; font-family:'Archivo',sans-serif; padding:88px 120px 68px; display:flex; flex-direction:column;">
+    <div style="display:flex; align-items:baseline; gap:24px; border-bottom:3px solid #201e1d; padding-bottom:18px;">
+      <span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:30px; color:#ec3013;">18</span>
+      <h2 style="font-size:46px; margin:0; letter-spacing:-0.02em; font-weight:800;">License &amp; currency complete the gate <span style="font-family:'IBM Plex Mono',monospace; font-size:24px; color:#f3f2f2; background:#201e1d; padding:4px 14px; font-weight:600; vertical-align:middle;">v1.x</span></h2>
+    </div>
+    <div style="flex:1; display:grid; grid-template-columns:1fr 1fr; gap:40px; align-items:stretch; padding:8px 0;">
+      <div style="border:2px solid #201e1d; padding:40px 44px; display:flex; flex-direction:column;">
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:18px; letter-spacing:0.08em; text-transform:uppercase; color:#c22a10; font-weight:600;">Axis 3 · License</div>
+        <div style="font-size:36px; font-weight:800; margin-top:14px; line-height:1.05;">Is it allowed?</div>
+        <p style="font-size:24px; line-height:1.45; margin:22px 0 0; color:rgba(32,30,29,.72);">SPDX from PyPI metadata + conda <span style="font-family:'IBM Plex Mono',monospace; color:#c22a10;">about: license</span>, normalized via <b>license-expression</b>. Gate on allow / deny lists.</p>
+        <div style="margin-top:auto; padding-top:24px; font-family:'IBM Plex Mono',monospace; font-size:21px; color:#c22a10;">--allow-licenses · --deny-licenses</div>
+      </div>
+      <div style="border:2px solid #201e1d; padding:40px 44px; display:flex; flex-direction:column;">
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:18px; letter-spacing:0.08em; text-transform:uppercase; color:#c22a10; font-weight:600;">Axis 4 · Currency</div>
+        <div style="font-size:36px; font-weight:800; margin-top:14px; line-height:1.05;">Is it patchable?</div>
+        <p style="font-size:24px; line-height:1.45; margin:22px 0 0; color:rgba(32,30,29,.72);"><b>endoflife.date</b> + version-lag flag EOL &amp; stale deps — and the Python runtime against LTS / N / N-1. Only current things get patched.</p>
+        <div style="margin-top:auto; padding-top:24px; font-family:'IBM Plex Mono',monospace; font-size:21px; color:#c22a10;">--max-lag · --require-lts · --fail-on-eol</div>
+      </div>
+    </div>
+    <div style="display:flex; justify-content:space-between; align-items:center; border-top:2px solid #d3d0cf; padding-top:16px; font-family:'IBM Plex Mono',monospace; font-size:15px; letter-spacing:0.04em; color:rgba(32,30,29,.55);">
+      <span style="font-weight:600; color:#201e1d;">WARDEN</span><span>never false-green</span><span>ACT V · 24</span>
+    </div>
+  </section>
+
+  <!-- 25 · ACT VI DIVIDER -->
+  <section data-label="Act VI" data-speaker-notes="Act VI: the payoff. Everything reduces to one command with one trustworthy exit code. Wire it into CI and the same honest verdict runs fleet-wide." style="box-sizing:border-box; width:100%; height:100%; background:#ec3013; color:#f3f2f2; font-family:'Archivo',sans-serif; padding:96px 120px; display:flex; flex-direction:column; justify-content:space-between; position:relative; overflow:hidden;">
+    <div style="position:absolute; right:40px; top:-140px; font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:720px; line-height:1; color:rgba(243,242,242,0.13); pointer-events:none;">VI</div>
+    <div style="font-family:'IBM Plex Mono',monospace; font-size:22px; letter-spacing:0.16em; text-transform:uppercase; font-weight:600; position:relative;">Act VI</div>
+    <div style="position:relative;">
+      <h2 style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:118px; line-height:0.96; letter-spacing:-0.02em; margin:0;">One command,<br>one honest gate</h2>
+      <p style="font-size:34px; line-height:1.35; font-weight:500; margin:36px 0 0; max-width:1120px; opacity:0.94;">The same command you ran locally becomes the merge gate — fleet-wide, and it never lies.</p>
+    </div>
+    <div style="display:flex; justify-content:space-between; align-items:center; border-top:2px solid rgba(243,242,242,.45); padding-top:20px; font-family:'IBM Plex Mono',monospace; font-size:15px; letter-spacing:0.05em; position:relative;">
+      <span style="font-weight:600;">WARDEN</span><span style="opacity:.85;">never false-green</span><span style="opacity:.85;">ACT VI · 25</span>
+    </div>
+  </section>
+
+  <!-- 26 -->
+  <section data-label="Gate in CI" data-speaker-notes="Here's the same command as a CI check. It blocks the merge with exit 1 on a KEV-listed critical, and the check surfaces the exact finding and the report artifact. Green is earned — by locking, waiving with an expiring reason, or fixing — never faked." style="box-sizing:border-box; width:100%; height:100%; background:#f3f2f2; color:#201e1d; font-family:'Archivo',sans-serif; padding:88px 120px 68px; display:flex; flex-direction:column;">
+    <div style="display:flex; align-items:baseline; gap:24px; border-bottom:3px solid #201e1d; padding-bottom:18px;">
+      <span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:30px; color:#ec3013;">19</span>
+      <h2 style="font-size:46px; margin:0; letter-spacing:-0.02em; font-weight:800;">The gate, in CI</h2>
+    </div>
+    <div style="flex:1; display:grid; grid-template-columns:1.05fr 1fr; gap:56px; align-items:center;">
+      <div style="border:2px solid #201e1d; font-family:'IBM Plex Mono',monospace;">
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:22px 28px; border-bottom:2px solid #d3d0cf; background:#eae9e9;"><span style="font-size:22px; font-weight:600;">warden / dependency-gate</span><span style="font-size:20px; color:#c22a10; font-weight:600;">✗ failing</span></div>
+        <div style="padding:24px 28px; font-size:21px; line-height:1.7;">
+          <div><span style="color:#1a7a3c;">✓</span> hygiene — clean</div>
+          <div><span style="color:#c22a10;">✗</span> security — 1 critical · <b>KEV-listed</b></div>
+          <div style="color:rgba(32,30,29,.6); padding-left:28px;">numpy 1.22.0 · GHSA-xxxx · EPSS 0.83</div>
+          <div><span style="color:#1a7a3c;">✓</span> license — clean</div>
+          <div style="margin-top:14px; border-top:2px solid #d3d0cf; padding-top:14px;">verdict <span style="color:#c22a10; font-weight:600;">policy-violation</span> · exit <span style="color:#c22a10; font-weight:600;">1</span></div>
+          <div style="color:rgba(32,30,29,.6); font-size:18px; margin-top:6px;">↳ report artifact: compliance-report.json</div>
+        </div>
+      </div>
+      <div>
+        <p style="font-size:30px; line-height:1.45; font-weight:500; margin:0;">Exit 1 <b>blocks the merge</b> — and the check shows exactly why, with the report attached.</p>
+        <p style="font-size:26px; line-height:1.45; margin:28px 0 0; color:rgba(32,30,29,.72);">Green is <b>earned</b> — lock the environment, file an <b>expiring waiver</b> with a reason, or fix the finding. Never faked.</p>
+      </div>
+    </div>
+    <div style="display:flex; justify-content:space-between; align-items:center; border-top:2px solid #d3d0cf; padding-top:16px; font-family:'IBM Plex Mono',monospace; font-size:15px; letter-spacing:0.04em; color:rgba(32,30,29,.55);">
+      <span style="font-weight:600; color:#201e1d;">WARDEN</span><span>never false-green</span><span>ACT VI · 26</span>
+    </div>
+  </section>
+
+  <!-- 27 · CLOSING POSTER -->
+  <section data-label="Never false-green" data-speaker-notes="The close. A bare recipe.yaml scan exits non-zero by design until you lock, waive, or run warn-only. That's the lock-nudge working, not a bug. Warden's promise is simple: a green check means it was actually checked." style="box-sizing:border-box; width:100%; height:100%; background:#ec3013; color:#f3f2f2; font-family:'Archivo',sans-serif; padding:96px 120px; display:flex; flex-direction:column; justify-content:space-between;">
+    <div style="font-family:'IBM Plex Mono',monospace; font-size:20px; letter-spacing:0.14em; text-transform:uppercase; font-weight:600; opacity:0.88;">The honest-adoption posture</div>
+    <div>
+      <h2 style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:88px; line-height:1.04; letter-spacing:-0.02em; margin:0; max-width:1560px;">A green check should mean it was <span style="text-decoration:underline; text-decoration-thickness:6px; text-underline-offset:12px;">actually checked</span>. No empty database, no skipped manifest, no false green.</h2>
+      <p style="font-size:30px; line-height:1.4; font-weight:500; margin:40px 0 0; max-width:1400px; opacity:0.94;">A bare <span style="font-family:'IBM Plex Mono',monospace; font-weight:600;">recipe.yaml</span> scan exits non-zero by design — until you lock, waive, or run <span style="font-family:'IBM Plex Mono',monospace; font-weight:600;">--warn-only</span>. That's the lock-nudge working, not a bug.</p>
+    </div>
+    <div style="display:flex; justify-content:space-between; align-items:baseline; border-top:2px solid #f3f2f2; padding-top:24px; font-family:'IBM Plex Mono',monospace; font-size:16px; font-weight:500;">
+      <span>Warden · pyforge-warden · pyforge.warden</span>
+      <span>rxm7706 / local-recipes · docs/specs/pyforge-warden.md</span>
+    </div>
+  </section>
+
+  <!-- 28 · APPENDIX — PERSONAS -->
+  <section data-label="Appendix · Personas" data-speaker-notes="Appendix: who Warden serves at the executive level. The CISO gets exploitability-prioritized risk and audit evidence. The Chief Developer Experience Officer gets a gate that runs locally first and doesn't cry wolf. The CIO gets fleet-wide standardization and offline compliance. The Chief Data & Analytics Officer gets coverage of the conda/ML footprint that stock tools miss." style="box-sizing:border-box; width:100%; height:100%; background:#f3f2f2; color:#201e1d; font-family:'Archivo',sans-serif; padding:88px 120px 68px; display:flex; flex-direction:column;">
+    <div style="display:flex; align-items:baseline; gap:24px; border-bottom:3px solid #201e1d; padding-bottom:18px;">
+      <span style="font-family:'IBM Plex Mono',monospace; font-weight:600; font-size:22px; color:#ec3013; letter-spacing:0.08em;">APPENDIX</span>
+      <h2 style="font-size:46px; margin:0; letter-spacing:-0.02em; font-weight:800;">Who Warden serves</h2>
+    </div>
+    <div style="flex:1; display:grid; grid-template-columns:repeat(4,1fr); gap:0; border-left:2px solid #d3d0cf;">
+      <div style="border-right:2px solid #d3d0cf; padding:32px 30px; display:flex; flex-direction:column;"><div style="font-family:'IBM Plex Mono',monospace; font-size:17px; letter-spacing:.05em; text-transform:uppercase; color:#c22a10; font-weight:600;">CISO</div><div style="font-size:29px; font-weight:800; margin-top:14px; line-height:1.1;">Provable risk posture</div><p style="font-size:22px; line-height:1.45; margin:18px 0 0; color:rgba(32,30,29,.72);">Exploitability-prioritized findings (KEV/EPSS) and audit-grade, reproducible evidence.</p></div>
+      <div style="border-right:2px solid #d3d0cf; padding:32px 30px; display:flex; flex-direction:column;"><div style="font-family:'IBM Plex Mono',monospace; font-size:17px; letter-spacing:.05em; text-transform:uppercase; color:#c22a10; font-weight:600;">Chief Dev Experience</div><div style="font-size:29px; font-weight:800; margin-top:14px; line-height:1.1;">A gate devs trust</div><p style="font-size:22px; line-height:1.45; margin:18px 0 0; color:rgba(32,30,29,.72);">Runs locally first, one command, no false alarms — so it doesn't cry wolf.</p></div>
+      <div style="border-right:2px solid #d3d0cf; padding:32px 30px; display:flex; flex-direction:column;"><div style="font-family:'IBM Plex Mono',monospace; font-size:17px; letter-spacing:.05em; text-transform:uppercase; color:#c22a10; font-weight:600;">CIO</div><div style="font-size:29px; font-weight:800; margin-top:14px; line-height:1.1;">Standardized &amp; offline</div><p style="font-size:22px; line-height:1.45; margin:18px 0 0; color:rgba(32,30,29,.72);">One gate fleet-wide, deterministic and air-gap-ready for regulated estates.</p></div>
+      <div style="padding:32px 30px; display:flex; flex-direction:column;"><div style="font-family:'IBM Plex Mono',monospace; font-size:17px; letter-spacing:.05em; text-transform:uppercase; color:#c22a10; font-weight:600;">Chief Data &amp; Analytics</div><div style="font-size:29px; font-weight:800; margin-top:14px; line-height:1.1;">The ML footprint, covered</div><p style="font-size:22px; line-height:1.45; margin:18px 0 0; color:rgba(32,30,29,.72);">conda / conda-forge coverage — the 80% of libraries stock tools never see.</p></div>
+    </div>
+    <div style="display:flex; justify-content:space-between; align-items:center; border-top:2px solid #d3d0cf; padding-top:16px; font-family:'IBM Plex Mono',monospace; font-size:15px; letter-spacing:0.04em; color:rgba(32,30,29,.55);">
+      <span style="font-weight:600; color:#201e1d;">WARDEN</span><span>never false-green</span><span>APPENDIX · 28</span>
+    </div>
+  </section>
+
+</x-import>
+</x-dc>
+</body>
+</html>

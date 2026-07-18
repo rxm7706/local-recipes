@@ -1,0 +1,59 @@
+# DO NOT EDIT -- overwritten on every update.
+#
+# Workflow customization surface for skf-verify-stack.
+# Team overrides:     _bmad/custom/skf-verify-stack.toml under {project-root}
+# Personal overrides: _bmad/custom/skf-verify-stack.user.toml under {project-root}
+
+[workflow]
+
+# --- Configurable below. Overrides merge per BMad structural rules: ---
+#   scalars: override wins • arrays (persistent_facts, activation_steps_*): append
+#   arrays-of-tables with `code`/`id`: replace matching items, append new ones.
+
+# Steps to run before the standard activation (uv probe, config load).
+# Overrides append. Use for org-wide pre-flight checks (auth, network,
+# compliance) that must precede any verification work.
+
+activation_steps_prepend = []
+
+# Steps to run after activation but before the first stage executes.
+# Overrides append. Use for context loads or banner customization that
+# should run once activation completes successfully.
+
+activation_steps_append = []
+
+# Persistent facts the workflow keeps in mind for the whole run
+# (verification standards, evidence-citation rules, house-style verdict
+# language). Overrides append.
+#
+# Each entry is either:
+#   - a literal sentence, e.g. "Verdict citations must include file:line spans."
+#   - a file reference prefixed with `file:`, e.g.
+#     "file:{project-root}/docs/verify-policy.md" (globs supported; file
+#     contents are loaded and treated as facts).
+
+persistent_facts = [
+  "file:{project-root}/**/project-context.md",
+]
+
+# Instruction executed when the workflow reaches its terminal stage (after the
+# feasibility report + result JSON are written). Empty = no-op. Use to route
+# the verdict onward or trigger a downstream step without forking the skill.
+
+on_complete = ""
+
+# --- Optional asset overrides ---
+#
+# Lift the canonical asset paths so orgs can substitute house-style copies
+# without forking the skill. Empty string = use the bundled default.
+
+report_template_path = ""
+integration_rules_path = ""
+coverage_patterns_path = ""
+
+# Override the destination directory for the feasibility report only. Empty =
+# use {forge_data_folder} from config.yaml. The result-contract JSON
+# (verify-stack-result-*.json) always stays in {forge_data_folder} as a stable
+# path for pipeline consumers, so redirecting this does not relocate it.
+
+output_folder_path = ""

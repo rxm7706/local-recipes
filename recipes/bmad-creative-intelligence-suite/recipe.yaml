@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: bmad-creative-intelligence-suite
-  version: "0.2.0"
+  version: "0.2.1"
 
 package:
   name: ${{ name }}
@@ -11,7 +11,7 @@ package:
 
 source:
   url: https://github.com/bmad-code-org/bmad-module-creative-intelligence-suite/archive/refs/tags/v${{ version }}.tar.gz
-  sha256: 9a22fabb318f8f7d875341087954dd545bf755bdf073626f5a45a3670078702f
+  sha256: 2e85ce42e0a98e135694f89e678c9949498708759e13ff525f34216cc4fe1cde
 
 build:
   number: 0
@@ -61,3 +61,36 @@ about:
 extra:
   recipe-maintainers:
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: bmad-creative-intelligence-suite
+  cfe-upstream-registry: github
+  cfe-upstream-name: bmad-code-org/bmad-module-creative-intelligence-suite
+  cfe-purls:
+    - pkg:conda/bmad-creative-intelligence-suite@${{ version }}?channel=conda-forge
+    - pkg:github/bmad-code-org/bmad-module-creative-intelligence-suite@v${{ version }}
+  cfe-upstream-repo: https://github.com/bmad-code-org/bmad-module-creative-intelligence-suite
+  cfe-upstream-homepage: https://github.com/bmad-code-org/bmad-module-creative-intelligence-suite
+  cfe-import-names: []
+  cfe-source-kind: github-tag
+  cfe-noarch: generic
+  cfe-pip-check: "false:not-a-python-package"
+  cfe-on-conda-forge-status: pending-approval-on-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-submission-pr: https://github.com/conda-forge/staged-recipes/pull/33124
+  cfe-last-checked: "2026-07-12T14:52:00Z"
+  cfe-generated-by-version: 8.76.0
+  cfe-generated-at-datetime: "2026-07-12T14:52:00Z"
+  cfe-local-build-status: success
+  cfe-local-build-datetime: "2026-07-12T15:59:29Z"
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # Version bumped 0.2.0 -> 0.2.1 (latest upstream tag) in the
+#    # 2026-07-12 BMAD-recipe sweep.
+####

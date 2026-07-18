@@ -1,0 +1,36 @@
+version: 1
+metadata:
+  content_hash:
+    linux-64: 0cc175b9c0f1b6a831c399e269772661d5b4a5e6f7a8b9c0d1e2f3a4b5c6d7e8
+  channels:
+  - url: conda-forge
+    used_env_vars: []
+  platforms:
+  - linux-64
+  sources:
+  - environment.yml
+package:
+- name: numpy
+  version: 1.26.0
+  manager: conda
+  platform: linux-64
+  dependencies:
+    python: '>=3.11,<3.12'
+  url: https://conda.anaconda.org/conda-forge/linux-64/numpy-1.26.0-py311h64a7726_0.conda
+  hash:
+    md5: 0cc175b9c0f1b6a831c399e269772661
+    sha256: 5410855f3681ae84abbb67f1da9f351c45cd3546ba196032a26914b2b25b0123
+  category: main
+  optional: false
+- name: requests
+  version: 2.31.0
+  manager: pip
+  platform: linux-64
+  dependencies:
+    charset-normalizer: '>=2,<4'
+    idna: '>=2.5,<4'
+  url: https://files.pythonhosted.org/packages/aa/bb/requests-2.31.0-py3-none-any.whl
+  hash:
+    sha256: 632d9bba56d3cebe4b078e9957f38945bf6200a4f78950cf5d4814690b492539
+  category: main
+  optional: false

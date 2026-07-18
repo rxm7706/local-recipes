@@ -1,0 +1,55 @@
+{
+  "phase": "B",
+  "node": "enumerate_conda_packages",
+  "inputs": {
+    "core_repodata_raw": [
+      {
+        "conda_name": "numpy",
+        "version": "1.0",
+        "timestamp": 1600000000000
+      },
+      {
+        "conda_name": "numpy",
+        "version": "2.0",
+        "timestamp": 1700000000000
+      },
+      {
+        "conda_name": "pandas",
+        "version": "3.0",
+        "timestamp": 1650000000000
+      }
+    ],
+    "core_channeldata_raw": [
+      {
+        "conda_name": "numpy",
+        "subdirs": [
+          "noarch"
+        ]
+      },
+      {
+        "conda_name": "pandas",
+        "subdirs": [
+          "linux-64"
+        ]
+      }
+    ]
+  },
+  "expected": {
+    "core_packages_enumerated": [
+      {
+        "conda_name": "numpy",
+        "latest_version": "2.0",
+        "subdirs": [
+          "noarch"
+        ]
+      },
+      {
+        "conda_name": "pandas",
+        "latest_version": "3.0",
+        "subdirs": [
+          "linux-64"
+        ]
+      }
+    ]
+  }
+}

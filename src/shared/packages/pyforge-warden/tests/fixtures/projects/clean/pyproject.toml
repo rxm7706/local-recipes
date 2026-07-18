@@ -1,0 +1,9 @@
+# Regression-harness fixture (Story 1.2): every dependency is ==-pinned, so
+# the scan is fully decidable -> status clean, exit 0, zero findings.
+[project]
+name = "clean-fixture"
+version = "1.0.0"
+dependencies = [
+    "requests==2.31.0",
+    "packaging==24.0",
+]

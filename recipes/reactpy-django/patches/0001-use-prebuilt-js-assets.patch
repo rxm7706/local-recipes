@@ -1,0 +1,18 @@
+--- a/pyproject.toml
++++ b/pyproject.toml
+@@ -72,15 +72,6 @@
+ [tool.hatch.envs.default]
+ installer = "uv"
+ 
+-[[tool.hatch.build.hooks.build-scripts.scripts]]
+-commands = [
+-  "bun install --cwd src/js",
+-  'bun build src/js/src/index.ts --outdir="src/reactpy_django/static/reactpy_django/" --minify --sourcemap=linked',
+-  'cd src/scripts && python copy_dir.py "src/js/node_modules/@pyscript/core/dist" "src/reactpy_django/static/reactpy_django/pyscript"',
+-  'cd src/scripts && python copy_dir.py "src/js/node_modules/morphdom/dist" "src/reactpy_django/static/reactpy_django/morphdom"',
+-]
+-artifacts = []
+-
+ #############################
+ # >>> Hatch Test Runner <<< #
+ #############################

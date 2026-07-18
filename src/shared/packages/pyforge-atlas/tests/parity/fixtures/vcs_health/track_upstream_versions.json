@@ -1,0 +1,48 @@
+{
+  "phase": "K",
+  "node": "track_upstream_versions",
+  "inputs": {
+    "vcs_github_api_raw": [
+      {
+        "conda_name": "numpy",
+        "upstream_version": "2.0",
+        "last_error": null
+      }
+    ],
+    "vcs_gitlab_api_raw": [
+      {
+        "conda_name": "rustpkg",
+        "upstream_version": "9.9"
+      }
+    ],
+    "vcs_codeberg_api_raw": [
+      {
+        "conda_name": "gitea-pkg",
+        "upstream_version": null,
+        "last_error": "HTTP 403"
+      }
+    ]
+  },
+  "expected": {
+    "vcs_upstream_versions": [
+      {
+        "conda_name": "numpy",
+        "host": "github",
+        "upstream_version": "2.0",
+        "last_error": null
+      },
+      {
+        "conda_name": "rustpkg",
+        "host": "gitlab",
+        "upstream_version": "9.9",
+        "last_error": null
+      },
+      {
+        "conda_name": "gitea-pkg",
+        "host": "codeberg",
+        "upstream_version": null,
+        "last_error": "HTTP 403"
+      }
+    ]
+  }
+}

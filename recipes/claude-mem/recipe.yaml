@@ -1,0 +1,117 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "13.10.2"
+
+package:
+  name: claude-mem
+  version: ${{ version }}
+
+source:
+  - url: https://registry.npmjs.org/claude-mem/-/claude-mem-${{ version }}.tgz
+    sha256: 1dbb3e6ed01df88d83a2eb486100b689df17bcb6c37b58e99cf52ac5f9fff5f9
+  # The npm tarball ships no LICENSE; take Apache-2.0 from the repo tag.
+  - url: https://raw.githubusercontent.com/thedotmack/claude-mem/v${{ version }}/LICENSE
+    sha256: cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30
+    file_name: LICENSE
+
+build:
+  number: 1
+  # Per-arch (NOT noarch), following the openspec/bmalph pattern: each
+  # platform's npm global install lays down its native bin shims (symlinks
+  # on unix, .cmd on win), which a single noarch artifact cannot provide.
+  script:
+    - if: unix
+      then:
+        - export npm_config_prefix="${PREFIX}"
+        - pnpm install --ignore-scripts --prod
+        - npm pack --ignore-scripts
+        - npm install -g ./claude-mem-${{ version }}.tgz
+        - pnpm-licenses generate-disclaimer --prod --output-file=third-party-licenses.txt
+      else:
+        - call npm config set prefix "%PREFIX%"
+        - if %ERRORLEVEL% neq 0 exit 1
+        - call pnpm install --ignore-scripts --prod
+        - if %ERRORLEVEL% neq 0 exit 1
+        - call npm pack --ignore-scripts
+        - if %ERRORLEVEL% neq 0 exit 1
+        - call npm install --userconfig nonexistentrc -g claude-mem-${{ version }}.tgz
+        - if %ERRORLEVEL% neq 0 exit 1
+        - call pnpm-licenses generate-disclaimer --prod --output-file=third-party-licenses.txt
+        - if %ERRORLEVEL% neq 0 exit 1
+
+requirements:
+  build:
+    - pnpm
+    - pnpm-licenses
+  host:
+    - nodejs >=20.12.0
+  run:
+    - nodejs >=20.12.0
+
+tests:
+  - script:
+      - claude-mem --version
+      - claude-mem --help
+  - if: unix
+    then:
+      script:
+        - test -f "${PREFIX}/lib/node_modules/claude-mem/package.json"
+
+about:
+  summary: Persistent context across sessions for coding agents - captures, compresses, and re-injects session memory
+  description: |
+    claude-mem gives coding agents persistent memory: it captures
+    everything the agent does during a session, compresses it with AI, and
+    injects the relevant context back into future sessions. Works with
+    Claude Code, OpenClaw, Codex, Gemini, Hermes, Copilot, OpenCode, and
+    more.
+  homepage: https://github.com/thedotmack/claude-mem
+  repository: https://github.com/thedotmack/claude-mem
+  documentation: https://github.com/thedotmack/claude-mem#readme
+  license: Apache-2.0
+  license_file:
+    - LICENSE
+    - third-party-licenses.txt
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: claude-mem
+  cfe-upstream-registry: npm
+  cfe-upstream-name: claude-mem
+  cfe-purls:
+    - pkg:conda/claude-mem@${{ version }}?channel=conda-forge
+    - pkg:npm/claude-mem@${{ version }}
+  cfe-upstream-repo: https://github.com/thedotmack/claude-mem
+  cfe-upstream-homepage: https://github.com/thedotmack/claude-mem
+  cfe-import-names: []
+  cfe-source-kind: npm-registry-tarball
+  cfe-noarch: compiled
+  cfe-pip-check: "false:not-a-python-package"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: "2026-07-12T17:15:00Z"
+  cfe-generated-by-version: 8.76.0
+  cfe-generated-at-datetime: "2026-07-12T17:15:00Z"
+  cfe-local-build-status: success
+  cfe-local-build-datetime: "2026-07-12T16:46:36Z"
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # Packaged 2026-07-12 (user request: agent session-memory tooling).
+#    # npm engines also lists bun >=1.0.0, but the published bin
+#    # (dist/npx-cli/index.js) runs under node — bun is not required for
+#    # the packaged CLI (and is not on conda-forge).
+# build:
+#    # Two runtime npm deps (better-auth, @better-auth/api-key) are
+#    # bundled at build time; third-party-licenses.txt covers them.
+####

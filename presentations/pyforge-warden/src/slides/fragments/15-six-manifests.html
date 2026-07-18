@@ -1,0 +1,18 @@
+<div style="display:flex; align-items:baseline; gap:24px; border-bottom:3px solid #201e1d; padding-bottom:18px;">
+      <span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:30px; color:#ec3013;">11</span>
+      <h2 style="font-size:46px; margin:0; letter-spacing:-0.02em; font-weight:800;">Six manifest formats — read natively</h2>
+    </div>
+    <div style="flex:1; display:flex; flex-direction:column; justify-content:center;">
+      <p style="font-size:26px; line-height:1.4; margin:0 0 28px; color:rgba(32,30,29,.7); max-width:1500px;">The manifest engine is the wedge — no engine parses conda / pixi. No untrusted input is executed: <span style="font-family:'IBM Plex Mono',monospace; color:#c22a10;">yaml.safe_load</span> only.</p>
+      <div style="display:grid; grid-template-columns:repeat(3,1fr); border-top:2px solid #201e1d; border-left:2px solid #d3d0cf; font-family:'IBM Plex Mono',monospace;">
+        <div style="border-right:2px solid #d3d0cf; border-bottom:2px solid #d3d0cf; padding:26px 30px;"><div style="font-size:26px; font-weight:600;">pyproject.toml</div><div style="font-size:20px; margin-top:10px; color:rgba(32,30,29,.6);">PEP 621 · Poetry · PDM</div><div style="font-size:18px; margin-top:14px; color:#c22a10;">tomllib</div></div>
+        <div style="border-right:2px solid #d3d0cf; border-bottom:2px solid #d3d0cf; padding:26px 30px;"><div style="font-size:26px; font-weight:600;">pixi.toml</div><div style="font-size:20px; margin-top:10px; color:rgba(32,30,29,.6);">deps · pypi-deps · features</div><div style="font-size:18px; margin-top:14px; color:#c22a10;">tomllib</div></div>
+        <div style="border-right:2px solid #d3d0cf; border-bottom:2px solid #d3d0cf; padding:26px 30px;"><div style="font-size:26px; font-weight:600;">requirements.txt</div><div style="font-size:20px; margin-top:10px; color:rgba(32,30,29,.6);">one requirement per line</div><div style="font-size:18px; margin-top:14px; color:#c22a10;">line-parse</div></div>
+        <div style="border-right:2px solid #d3d0cf; border-bottom:2px solid #d3d0cf; padding:26px 30px;"><div style="font-size:26px; font-weight:600;">environment.yml</div><div style="font-size:20px; margin-top:10px; color:rgba(32,30,29,.6);">deps + nested pip:</div><div style="font-size:18px; margin-top:14px; color:#c22a10;">safe_load</div></div>
+        <div style="border-right:2px solid #d3d0cf; border-bottom:2px solid #d3d0cf; padding:26px 30px; background:#fce4de;"><div style="font-size:26px; font-weight:600;">meta.yaml <span style="color:#c22a10;">v0</span></div><div style="font-size:20px; margin-top:10px; color:rgba(32,30,29,.6);">jinja + # [selector]</div><div style="font-size:18px; margin-top:14px; color:#c22a10;">neutralize → safe_load</div></div>
+        <div style="border-right:2px solid #d3d0cf; border-bottom:2px solid #d3d0cf; padding:26px 30px;"><div style="font-size:26px; font-weight:600;">recipe.yaml <span style="color:#c22a10;">v1</span></div><div style="font-size:20px; margin-top:10px; color:rgba(32,30,29,.6);">requirements: run:</div><div style="font-size:18px; margin-top:14px; color:#c22a10;">safe_load</div></div>
+      </div>
+    </div>
+    <div style="display:flex; justify-content:space-between; align-items:center; border-top:2px solid #d3d0cf; padding-top:16px; font-family:'IBM Plex Mono',monospace; font-size:15px; letter-spacing:0.04em; color:rgba(32,30,29,.55);">
+      <span style="font-weight:600; color:#201e1d;">WARDEN</span><span>never false-green</span><span>ACT III · 15</span>
+    </div>

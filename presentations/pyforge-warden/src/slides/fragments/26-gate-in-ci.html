@@ -1,0 +1,24 @@
+<div style="display:flex; align-items:baseline; gap:24px; border-bottom:3px solid #201e1d; padding-bottom:18px;">
+      <span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:30px; color:#ec3013;">19</span>
+      <h2 style="font-size:46px; margin:0; letter-spacing:-0.02em; font-weight:800;">The gate, in CI</h2>
+    </div>
+    <div style="flex:1; display:grid; grid-template-columns:1.05fr 1fr; gap:56px; align-items:center;">
+      <div style="border:2px solid #201e1d; font-family:'IBM Plex Mono',monospace;">
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:22px 28px; border-bottom:2px solid #d3d0cf; background:#eae9e9;"><span style="font-size:22px; font-weight:600;">warden / dependency-gate</span><span style="font-size:20px; color:#c22a10; font-weight:600;">✗ failing</span></div>
+        <div style="padding:24px 28px; font-size:21px; line-height:1.7;">
+          <div><span style="color:#1a7a3c;">✓</span> hygiene — clean</div>
+          <div><span style="color:#c22a10;">✗</span> security — 1 critical · <b>KEV-listed</b></div>
+          <div style="color:rgba(32,30,29,.6); padding-left:28px;">numpy 1.22.0 · GHSA-xxxx · EPSS 0.83</div>
+          <div><span style="color:#1a7a3c;">✓</span> license — clean</div>
+          <div style="margin-top:14px; border-top:2px solid #d3d0cf; padding-top:14px;">verdict <span style="color:#c22a10; font-weight:600;">policy-violation</span> · exit <span style="color:#c22a10; font-weight:600;">1</span></div>
+          <div style="color:rgba(32,30,29,.6); font-size:18px; margin-top:6px;">↳ report artifact: compliance-report.json</div>
+        </div>
+      </div>
+      <div>
+        <p style="font-size:30px; line-height:1.45; font-weight:500; margin:0;">Exit 1 <b>blocks the merge</b> — and the check shows exactly why, with the report attached.</p>
+        <p style="font-size:26px; line-height:1.45; margin:28px 0 0; color:rgba(32,30,29,.72);">Green is <b>earned</b> — lock the environment, file an <b>expiring waiver</b> with a reason, or fix the finding. Never faked.</p>
+      </div>
+    </div>
+    <div style="display:flex; justify-content:space-between; align-items:center; border-top:2px solid #d3d0cf; padding-top:16px; font-family:'IBM Plex Mono',monospace; font-size:15px; letter-spacing:0.04em; color:rgba(32,30,29,.55);">
+      <span style="font-weight:600; color:#201e1d;">WARDEN</span><span>never false-green</span><span>ACT VI · 26</span>
+    </div>

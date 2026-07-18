@@ -1,0 +1,55 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.5.17"
+
+package:
+  name: moksha.hub
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/m/moksha.hub/moksha.hub-${{ version }}.tar.gz
+  sha256: 7b175aed1976e08e1ae9b49216b0b72871cd690c400566ee5f755997abfd61f2
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - moksha-hub = moksha.hub:main
+
+requirements:
+  host:
+    - python
+    - pip
+  run:
+    - python
+    - moksha.common >=1.0.6
+    - twisted
+    - pyzmq
+    - txzmq
+    - txws
+
+tests:
+  - python:
+      imports:
+        - moksha
+      pip_check: true
+  - requirements:
+      run:
+        - pip
+        - python
+    script:
+      - moksha-hub --help
+
+about:
+  summary: Hub components for Moksha.
+  license: Apache-2.0
+  license_file: COPYING
+  homepage: https://mokshaproject.net
+
+extra:
+  recipe-maintainers:
+    - rxm7706

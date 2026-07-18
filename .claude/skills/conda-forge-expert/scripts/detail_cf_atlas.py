@@ -292,6 +292,32 @@ _CVSS_KEYS_TO_VERSION = {
 }
 
 
+def _coerce_cvss_score(val: Any) -> float | None:
+    """Coerce a CVSS baseScore to a float, or None.
+
+    appthreat-vulnerability-db 6.6.2's partial ``model_dump`` (the source of
+    the ``PydanticSerializationUnexpectedValue`` warnings) can leave the score
+    as a ``{'root': <float>}`` dict (serialized ``RootModel[float]``), a raw
+    pydantic ``RootModel`` object (``.root``), or a ``ScoreType`` Enum
+    (``.value``) rather than a plain number. ``float()`` on those throws
+    ``TypeError``, which crashed the ``--vdb-all`` CVE-list sort. Unwrap all
+    forms (plus plain str/float/None) before coercing.
+    """
+    if val is None:
+        return None
+    if isinstance(val, dict):
+        val = val.get("root", val)
+    val = getattr(val, "root", val)   # RootModel[float] -> float
+    val = getattr(val, "value", val)  # Enum -> its value
+    try:
+        return float(val)
+    except (TypeError, ValueError):
+        try:
+            return float(str(val))
+        except (TypeError, ValueError):
+            return None
+
+
 def _walk_for_cvss(obj: Any, depth: int = 0) -> dict[str, Any] | None:
     """Recursively walk a dict/list looking for CVSS metric blocks.
 
@@ -433,7 +459,7 @@ def _extract_vuln_fields(record: dict[str, Any]) -> dict[str, Any]:
 
     cvss = _walk_for_cvss(d)
     if cvss:
-        out["cvss_score"] = cvss["score"]
+        out["cvss_score"] = _coerce_cvss_score(cvss["score"])
         out["cvss_version"] = cvss["version"]
         out["cvss_vector"] = cvss.get("vector")
         if cvss["severity"]:
@@ -444,6 +470,30 @@ def _extract_vuln_fields(record: dict[str, Any]) -> dict[str, Any]:
     out["kev"] = _walk_for_kev(d)
 
     return out
+
+
+def _load_kev_cves() -> set[str]:
+    """Return the set of CISA KEV CVE IDs from the atlas ``cisa_kev`` table.
+
+    Empty set when the DB or table is missing (older atlas / air-gapped).
+    Mirrors ``conda_forge_atlas._load_kev_cves`` — the same catalog Phase G
+    overlays onto vdb output — so the ``--vdb-all`` list agrees with the
+    cached per-package card. vdb's own aqua source ignores ``kevc/`` (CISA
+    KEV) by default, so without this overlay the list reports 0 KEV.
+    """
+    try:
+        conn = sqlite3.connect(f"file:{DB_PATH}?mode=ro", uri=True)
+    except sqlite3.OperationalError:
+        return set()
+    try:
+        has = conn.execute(
+            "SELECT 1 FROM sqlite_master WHERE type='table' AND name='cisa_kev'"
+        ).fetchone()
+        if not has:
+            return set()
+        return {row[0] for row in conn.execute("SELECT cve_id FROM cisa_kev")}
+    finally:
+        conn.close()
 
 
 def fetch_vdb_data(record: dict[str, Any],
@@ -514,6 +564,17 @@ def fetch_vdb_data(record: dict[str, Any],
                 affecting_ids.add(vid)
     affecting_latest: list[dict[str, Any]] = [all_seen[vid] for vid in affecting_ids if vid in all_seen]
 
+    # Align KEV with the authoritative CISA catalog (cf_atlas `cisa_kev`) —
+    # the same overlay Phase G applies. vdb's own kev flags are ~always False
+    # (aqua ignores `kevc/`), so OR the catalog onto each vuln's flag. Never
+    # clears a vdb-set flag. affecting_latest shares these dict objects, so the
+    # per-CVE " KEV" markers pick this up too.
+    kev_ids = _load_kev_cves()
+    if kev_ids:
+        for v in all_vulns:
+            if not v["kev"] and v["id"] in kev_ids:
+                v["kev"] = True
+
     by_severity: dict[str, int] = {"Critical": 0, "High": 0, "Medium": 0, "Low": 0, "Unknown": 0}
     kev_count = 0
     for v in all_vulns:
@@ -521,6 +582,9 @@ def fetch_vdb_data(record: dict[str, Any],
         by_severity[sev] += 1
         if v["kev"]:
             kev_count += 1
+    # KEV affecting the CURRENT version — matches Phase G's
+    # `vuln_kev_affecting_current` (the cached card's KEV count).
+    kev_affecting_count = sum(1 for v in affecting_latest if v["kev"])
 
     return (
         {
@@ -528,6 +592,7 @@ def fetch_vdb_data(record: dict[str, Any],
             "all_vulns": all_vulns,
             "by_severity": by_severity,
             "kev_count": kev_count,
+            "kev_affecting_count": kev_affecting_count,
             "affecting_latest_version": affecting_latest,
         },
         None,
@@ -875,12 +940,13 @@ def render(record: dict[str, Any] | None,
         version_label = "queried_version" if queried_version else "latest_conda_version"
         affecting = vdb_data.get("affecting_latest_version", [])
         sev = vdb_data.get("by_severity", {})
-        kev = vdb_data.get("kev_count", 0)
+        kev = vdb_data.get("kev_count", 0)                      # total across all versions
+        kev_aff = vdb_data.get("kev_affecting_count", 0)        # affecting current (matches Phase G)
         total = len(vdb_data.get("all_vulns", []))
         # Section 1: Risk header
         crit_aff = sum(1 for v in affecting if v["severity"] == "Critical")
         high_aff = sum(1 for v in affecting if v["severity"] == "High")
-        if crit_aff or kev:
+        if crit_aff or kev_aff:
             risk = "CRITICAL" if crit_aff else "HIGH"
         elif high_aff:
             risk = "HIGH"
@@ -889,7 +955,7 @@ def render(record: dict[str, Any] | None,
         else:
             risk = "LOW (no vulns indexed)"
         p(f"  RISK: {risk} — {crit_aff} Critical-affecting-current, {high_aff} High-affecting-current, "
-          f"{kev} KEV-listed")
+          f"{kev_aff} KEV-affecting-current")
         p(f"        {version_label} {latest_v} → {len(affecting)} of {total} vulns affect it")
         p("")
         # Section 2: Severity counts

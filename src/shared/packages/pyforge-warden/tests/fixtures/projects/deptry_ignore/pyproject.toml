@@ -1,0 +1,14 @@
+# deptry [tool.deptry] ignore fixture (Story 1.3, FR9): requests is declared
+# but never imported (an otherwise-DEP002 project), and [tool.deptry] ignore
+# suppresses DEP002 NATIVELY -> deptry emits no findings and the scan is
+# clean (exit 0). Proves we honor the project's own deptry config rather than
+# re-implementing ignore logic.
+[project]
+name = "deptry-ignore-fixture"
+version = "1.0.0"
+dependencies = [
+    "requests==2.31.0",
+]
+
+[tool.deptry]
+ignore = ["DEP002"]

@@ -1,0 +1,17 @@
+# High-severity (non-critical) fixture (Story 1.6): pdos-vuln-fixture-high==1.0.0
+# matches the seeded OSV advisory PDOS-FIXTURE-0002 (CVSS HIGH, base score 8.8,
+# tests/fixtures/osv-db/pypi/PDOS-FIXTURE-0002.json), auto-loaded into every
+# test's ambient offline OSV DB (tests/conftest.py's autouse _osv_ambient_db_env
+# fixture) -- so a real cli.main() scan of this fixture produces a genuine
+# non-critical vuln: finding through the real osv-scanner subprocess, proving
+# the severity gate's warn/exit-0 default (FR18: block on critical only) end
+# to end, not just via a hand-built Finding in the unit tests.
+#
+# The source imports nothing, so deptry also flags this fictitious dependency
+# as DEP002 (unused) -- harmless alongside the warn-tier vuln: finding.
+[project]
+name = "vuln-high-fixture"
+version = "1.0.0"
+dependencies = [
+    "pdos-vuln-fixture-high==1.0.0",
+]

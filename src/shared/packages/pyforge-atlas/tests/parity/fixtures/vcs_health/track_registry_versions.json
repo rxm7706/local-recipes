@@ -1,0 +1,32 @@
+{
+  "phase": "L",
+  "node": "track_registry_versions",
+  "inputs": {
+    "vcs_registry_npm_raw": [
+      {
+        "conda_name": "left-pad",
+        "upstream_version": "1.3.0"
+      }
+    ],
+    "vcs_registry_crates_raw": [
+      {
+        "conda_name": "serde",
+        "upstream_version": "1.0"
+      }
+    ]
+  },
+  "expected": {
+    "vcs_registry_versions": [
+      {
+        "conda_name": "left-pad",
+        "registry": "npm",
+        "upstream_version": "1.3.0"
+      },
+      {
+        "conda_name": "serde",
+        "registry": "crates",
+        "upstream_version": "1.0"
+      }
+    ]
+  }
+}

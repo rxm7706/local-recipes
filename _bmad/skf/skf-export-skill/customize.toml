@@ -1,0 +1,53 @@
+# DO NOT EDIT -- overwritten on every update.
+#
+# Workflow customization surface for skf-export-skill.
+# Team overrides:     _bmad/custom/skf-export-skill.toml (under {project-root})
+# Personal overrides: _bmad/custom/skf-export-skill.user.toml (under {project-root})
+
+[workflow]
+
+# --- Configurable below. Overrides merge per BMad structural rules: ---
+#   scalars: override wins • arrays (persistent_facts, activation_steps_*): append
+#   arrays-of-tables with `code`/`id`: replace matching items, append new ones.
+
+# Steps to run before the standard activation (uv probe, config load).
+# Overrides append. Use for org-wide pre-flight checks (auth, network,
+# compliance) that must precede any export work.
+
+activation_steps_prepend = []
+
+# Steps to run after activation but before the first stage executes.
+# Overrides append. Use for context loads or banner customization that
+# should run once activation completes successfully.
+
+activation_steps_append = []
+
+# Persistent facts the workflow keeps in mind for the whole run
+# (publishing standards, distribution-instruction house style, snippet
+# token-budget guardrails). Overrides append.
+#
+# Each entry is either:
+#   - a literal sentence, e.g. "All exported skills must include a CHANGELOG entry."
+#   - a file reference prefixed with `file:`, e.g.
+#     "file:{project-root}/docs/export-policy.md" (globs supported; file
+#     contents are loaded and treated as facts).
+
+persistent_facts = [
+  "file:{project-root}/**/project-context.md",
+]
+
+# Optional post-export hook. When non-empty, invoked with
+# `--result-path=<path>` after step 6 finalizes the per-run result JSON
+# (before the terminal health-check step). Useful for downstream
+# distribution, notification, or pipeline chaining. Failures are logged to
+# workflow_warnings[] but never fail the workflow. Empty = no-op (default).
+
+on_complete = ""
+
+# --- Optional asset overrides ---
+#
+# Lift the canonical asset paths so orgs can substitute house-style copies
+# without forking the skill. Empty string = use the bundled default.
+
+managed_section_format_path = ""
+snippet_format_path = ""

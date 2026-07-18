@@ -1,0 +1,49 @@
+name: Dashboard (GitHub Pages)
+
+# Publishes the Warden+Atlas program console (docs/dashboard/) to GitHub Pages,
+# FULLY HANDS-OFF: it regenerates data.js from git history at deploy time
+# (`generate.py --source git`) — no bot commit-back, no loop. The published site
+# refreshes on every push to main + a daily cron, so DONE stories appear as soon
+# as their merge/story commit lands on main. The committed data.js is only the
+# local seed (it also carries in-flight/gated state, which git can't derive).
+#
+# Why generate-at-deploy and not commit-back: committing the regenerated data.js
+# would push to main, which would re-trigger this workflow — an infinite loop.
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '17 6 * * *'   # daily ~06:17 UTC — backstop refresh
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0            # full history — generate.py --source git reads git log
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Regenerate data.js from git history (done-detection)
+        run: python docs/dashboard/generate.py --source git
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs/dashboard
+      - id: deployment
+        uses: actions/deploy-pages@v4

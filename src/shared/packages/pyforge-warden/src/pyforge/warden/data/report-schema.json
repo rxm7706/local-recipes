@@ -1,0 +1,575 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:local-recipes:pyforge-warden:report-schema",
+  "title": "ComplianceReport",
+  "description": "The frozen, producer-agnostic report contract for pyforge-warden (Warden) (the atlas FR-16/FR-18 gate is this schema's second producer). Closed sets: status.value (7-rung lattice), exit_code {0,1,2,130}, errors[].kind. additionalProperties is deliberately left open everywhere: additive growth (a new axis, KEV/EPSS population, new optional fields) is never a schema break. Finding-ID scheme (stable + deterministic): vuln:<advisory-id>:<pkg>@<ver> | hygiene:<DEP-code>:<module-or-pkg> | indeterminate:<reason>:<pkg> | license:<spdx-or-unknown>:<pkg>@<ver> | currency:<reason>:<subject>@<ver> (Story 6.1 added the last two; currency's reason is a CLOSED 3-value set eol|over-lag|unknown). Waiver-scope decision (recorded): all five finding families are waivable-with-expiry — an auditable, time-boxed acceptance; the graduated path for unscannable deps.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "tool",
+    "status",
+    "exit_code",
+    "findings",
+    "coverage",
+    "vuln_data",
+    "inventory_count",
+    "resolved_scan_set",
+    "errors"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "pattern": "^1\\.\\d+\\.\\d+$",
+      "description": "Core semver of the v1 report contract (no prerelease/build tags; decoupled from the tool version and the SBOM spec version)."
+    },
+    "tool": {
+      "type": "object",
+      "required": ["name", "version"],
+      "properties": {
+        "name": { "type": "string" },
+        "version": { "type": "string" }
+      }
+    },
+    "status": {
+      "type": "object",
+      "required": ["value", "driver"],
+      "properties": {
+        "value": {
+          "enum": [
+            "error",
+            "policy-violation",
+            "indeterminate",
+            "warn",
+            "bypassed",
+            "clean",
+            "not-applicable"
+          ],
+          "description": "The 7-rung verdict lattice (canonical token is 'warn', not 'warnings')."
+        },
+        "driver": {
+          "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/statusDriver" }],
+          "description": "Why the verdict is what it is — an exit that can't say why is an incoherent contract."
+        }
+      },
+      "if": {
+        "required": ["value"],
+        "properties": {
+          "value": {
+            "enum": ["warn", "bypassed", "policy-violation", "indeterminate", "error"]
+          }
+        }
+      },
+      "then": {
+        "required": ["driver"],
+        "properties": {
+          "driver": { "$ref": "#/$defs/statusDriver" }
+        }
+      },
+      "description": "driver must be non-null for every non-clean status; null is permitted only for 'clean' and 'not-applicable' (no finding exists to point at, by definition)."
+    },
+    "exit_code": {
+      "enum": [0, 1, 2, 130],
+      "description": "The frozen, closed exit-code set — adding a code is a breaking change. 130 is the SIGINT signal-path constant, not a lattice rung."
+    },
+    "findings": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/finding" }
+    },
+    "coverage": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/axisCoverage" },
+      "description": "Keyed by the OPEN axis string. Four rows are now always emitted: 'hygiene'/'vulnerability' (assessed by their v1 engines) plus 'license'/'currency' (Story 6.1 registers them as producer axes — always emitted, as honestly not-applicable until their Epic 6 producers land; a further SAST axis would still land additively)."
+    },
+    "vuln_data": {
+      "type": "object",
+      "required": ["source", "snapshot_at", "max_age_ok"],
+      "properties": {
+        "source": { "type": ["string", "null"] },
+        "snapshot_at": { "type": ["string", "null"] },
+        "max_age_ok": { "type": ["boolean", "null"] }
+      },
+      "if": {
+        "required": ["max_age_ok"],
+        "properties": { "max_age_ok": { "type": "boolean" } }
+      },
+      "then": {
+        "properties": {
+          "source": { "type": "string" },
+          "snapshot_at": { "type": "string" }
+        },
+        "description": "A concrete max_age_ok verdict (true/false) implies vuln data WAS consulted, so its provenance (source + snapshot_at) must be stated."
+      },
+      "description": "Vulnerability-data provenance — generic names ONLY (never engine-named fields); nullable when no vuln data was consulted."
+    },
+    "inventory_count": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Post-merge component count; the root project is excluded."
+    },
+    "resolved_scan_set": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["path", "kind"],
+        "properties": {
+          "path": { "type": "string" },
+          "kind": {
+            "type": "string",
+            "description": "Manifest-kind token; the vocabulary is owned by the discovery story (1.9) and is deliberately open here."
+          }
+        }
+      }
+    },
+    "errors": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["kind", "owner", "message"],
+        "properties": {
+          "kind": {
+            "enum": [
+              "unparsable-manifest",
+              "engine-unavailable",
+              "engine-output-unrecognized",
+              "engine-output-unparseable",
+              "engine-execution-failed",
+              "engine-timeout",
+              "config-parse",
+              "config-validation",
+              "internal-error"
+            ]
+          },
+          "owner": { "type": "string" },
+          "message": { "type": "string" }
+        }
+      }
+    },
+    "suppressions": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/suppressedFinding" },
+      "description": "Optional (Story 6.1, additive): findings suppressed by a waiver (origin='waiver') or baseline (origin='baseline'). Story 6.1 populates only the waiver half; absent/[] on a scan with no applied waivers."
+    },
+    "license_data": {
+      "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/feedProvenance" }],
+      "description": "Optional license-feed provenance (Story 6.2/6.3 populate); null until then."
+    },
+    "currency_data": {
+      "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/feedProvenance" }],
+      "description": "Optional currency/endoflife-feed provenance (Story 6.3 populates); null until then."
+    },
+    "kev_data": {
+      "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/feedProvenance" }],
+      "description": "Optional CISA-KEV-feed provenance (Story 6.4 populates); null until then."
+    },
+    "epss_data": {
+      "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/feedProvenance" }],
+      "description": "Optional EPSS-feed provenance (Story 6.7 populates); null until then."
+    },
+    "actuation": {
+      "type": ["object", "null"],
+      "description": "Optional, reserved open slot for the fix-PR actuator section (Story 6.9 populates); always null in Story 6.1."
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "required": ["status"],
+        "properties": {
+          "status": {
+            "required": ["value"],
+            "properties": { "value": { "const": "error" } }
+          }
+        }
+      },
+      "then": {
+        "properties": { "exit_code": { "enum": [2, 130] } },
+        "description": "status/exit coherence: error exits 2 (or 130 if interrupted)."
+      }
+    },
+    {
+      "if": {
+        "required": ["status"],
+        "properties": {
+          "status": {
+            "required": ["value"],
+            "properties": { "value": { "const": "policy-violation" } }
+          }
+        }
+      },
+      "then": {
+        "properties": { "exit_code": { "enum": [1, 130] } },
+        "description": "status/exit coherence: policy-violation exits 1 (or 130 if interrupted)."
+      }
+    },
+    {
+      "if": {
+        "required": ["status"],
+        "properties": {
+          "status": {
+            "required": ["value", "driver"],
+            "properties": {
+              "value": { "const": "indeterminate" },
+              "driver": {
+                "type": "object",
+                "required": ["finding_id"],
+                "properties": {
+                  "finding_id": { "const": "indeterminate:empty-extraction:scan" }
+                }
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": { "exit_code": { "enum": [0, 1, 130] } },
+        "description": "status/exit coherence: indeterminate WITH the D2(c) empty-extraction driver (Story 1.9, exact finding_id match) exits 1 by default, 0 under the one sanctioned --allow-empty exception, or 130 if interrupted. Status stays indeterminate, never clean."
+      }
+    },
+    {
+      "if": {
+        "required": ["status"],
+        "properties": {
+          "status": {
+            "required": ["value"],
+            "properties": { "value": { "const": "indeterminate" } },
+            "not": {
+              "required": ["driver"],
+              "properties": {
+                "driver": {
+                  "type": "object",
+                  "required": ["finding_id"],
+                  "properties": {
+                    "finding_id": { "const": "indeterminate:empty-extraction:scan" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": { "exit_code": { "enum": [1, 130] } },
+        "description": "status/exit coherence: indeterminate WITHOUT the D2(c) empty-extraction driver exits 1 (or 130 if interrupted) — exit 0 is reserved for that one sanctioned exception (Story 1.9 review pass 2: the exit-0 branch above must not leak to every indeterminate cause)."
+      }
+    },
+    {
+      "if": {
+        "required": ["status"],
+        "properties": {
+          "status": {
+            "required": ["value"],
+            "properties": { "value": { "const": "warn" } }
+          }
+        }
+      },
+      "then": {
+        "properties": { "exit_code": { "enum": [0, 1, 130] } },
+        "description": "status/exit coherence: warn exits 0, or 1 under the warn_is_error knob (or 130 if interrupted)."
+      }
+    },
+    {
+      "if": {
+        "required": ["status"],
+        "properties": {
+          "status": {
+            "required": ["value"],
+            "properties": {
+              "value": { "enum": ["clean", "not-applicable", "bypassed"] }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": { "exit_code": { "enum": [0, 130] } },
+        "description": "status/exit coherence: the clean family exits 0 (or 130 if interrupted)."
+      }
+    }
+  ],
+  "$defs": {
+    "statusDriver": {
+      "type": "object",
+      "required": ["axis", "finding_id"],
+      "properties": {
+        "axis": { "type": "string" },
+        "finding_id": {
+          "type": "string",
+          "description": "References a findings[].id when the verdict is finding-driven. For operational-error verdicts the driver-ID grammar is owned by the typed-errors story (1.7), so this field is deliberately unconstrained here."
+        }
+      }
+    },
+    "finding": {
+      "type": "object",
+      "required": ["id", "axis", "message"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "anyOf": [
+            { "pattern": "^vuln:[^:\\n]+:[^\\n]+@[^\\n]+$" },
+            { "pattern": "^hygiene:[^:\\n]+:[^\\n]+$" },
+            { "pattern": "^indeterminate:[^:\\n]+:[^\\n]+$" },
+            { "pattern": "^license:[^:\\n]+:[^\\n]+@[^\\n]+$" },
+            { "pattern": "^currency:(eol|over-lag|unknown):[^\\n]+@[^\\n]+$" }
+          ],
+          "description": "Stable, deterministic finding ID — one of the families: vuln:<advisory-id>:<pkg>@<ver> | hygiene:<DEP-code>:<module-or-pkg> | indeterminate:<reason>:<pkg> | license:<spdx-or-unknown>:<pkg>@<ver> | currency:<reason>:<subject>@<ver> (reason is a CLOSED 3-value set). Waiver matching across runs depends on it; every family is waivable-with-expiry."
+        },
+        "axis": { "type": "string" },
+        "message": { "type": "string" },
+        "subject": { "type": ["string", "null"] },
+        "severity": {
+          "oneOf": [
+            { "type": "null" },
+            {
+              "type": "object",
+              "required": ["tier", "raw"],
+              "properties": {
+                "tier": {
+                  "enum": ["critical", "high", "medium", "low", "none", "unknown"]
+                },
+                "raw": {
+                  "type": ["string", "null"],
+                  "description": "Raw evidence: a CVSS vector string or a database severity label."
+                }
+              }
+            }
+          ]
+        },
+        "kev": {
+          "type": ["boolean", "null"],
+          "description": "Known-Exploited-Vulnerabilities slot — declared now, populated by Story 6.4."
+        },
+        "kev_date": {
+          "type": ["string", "null"],
+          "description": "CISA-KEV date-added slot — declared now, populated by Story 6.4."
+        },
+        "epss": {
+          "oneOf": [
+            { "type": "null" },
+            {
+              "type": "object",
+              "required": ["score", "percentile"],
+              "properties": {
+                "score": { "type": "number", "minimum": 0, "maximum": 1 },
+                "percentile": { "type": "number", "minimum": 0, "maximum": 1 }
+              }
+            }
+          ],
+          "description": "EPSS {score, percentile} slot (both probabilities in [0, 1]) — declared now, populated by Story 6.7. The {score, percentile} object shape is a 1.1.0-sanctioned additive narrowing of the former number|null."
+        },
+        "license": {
+          "oneOf": [
+            { "type": "null" },
+            {
+              "type": "object",
+              "required": ["expression", "verdict"],
+              "properties": {
+                "expression": { "type": "string" },
+                "family": { "type": ["string", "null"] },
+                "verdict": { "enum": ["allowed", "denied", "unknown"] }
+              }
+            }
+          ],
+          "description": "Per-component SPDX license verdict (Story 6.2 populates); no 'source' field — that name is section-level provenance elsewhere."
+        },
+        "currency": {
+          "oneOf": [
+            { "type": "null" },
+            {
+              "type": "object",
+              "required": ["verdict"],
+              "properties": {
+                "verdict": { "enum": ["supported", "eol", "unknown"] },
+                "latest": { "type": ["string", "null"] },
+                "lag": { "type": ["integer", "null"], "minimum": 0 },
+                "eol_date": { "type": ["string", "null"] },
+                "tier": {
+                  "enum": ["lts-registry", "endoflife-date", "channel-n-n-1", "unknown", null],
+                  "description": "Which rung of the FR34 tier ladder resolved this verdict (NFR-S9 provenance)."
+                }
+              }
+            }
+          ],
+          "description": "Per-component currency verdict + tier-ladder provenance (Story 6.3 populates)."
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "required": ["id"],
+            "properties": { "id": { "pattern": "^vuln:" } }
+          },
+          "then": {
+            "properties": { "axis": { "const": "vulnerability" } }
+          }
+        },
+        {
+          "if": {
+            "required": ["id"],
+            "properties": { "id": { "pattern": "^hygiene:" } }
+          },
+          "then": {
+            "properties": { "axis": { "const": "hygiene" } }
+          }
+        },
+        {
+          "if": {
+            "required": ["id"],
+            "properties": { "id": { "pattern": "^license:" } }
+          },
+          "then": {
+            "properties": { "axis": { "const": "license" } }
+          }
+        },
+        {
+          "if": {
+            "required": ["id"],
+            "properties": { "id": { "pattern": "^currency:" } }
+          },
+          "then": {
+            "properties": { "axis": { "const": "currency" } }
+          }
+        },
+        {
+          "if": {
+            "required": ["id"],
+            "properties": { "id": { "pattern": "^license:" } }
+          },
+          "then": {
+            "required": ["license"],
+            "properties": {
+              "license": {
+                "type": "object",
+                "properties": { "verdict": { "enum": ["denied", "unknown"] } }
+              }
+            },
+            "description": "A license: finding is emitted only for denied/unknown (never allowed), and MUST carry the license sub-object (properties is vacuous on an absent key)."
+          }
+        },
+        {
+          "if": {
+            "required": ["id"],
+            "properties": { "id": { "pattern": "^currency:eol:" } }
+          },
+          "then": {
+            "required": ["currency"],
+            "properties": {
+              "currency": {
+                "type": "object",
+                "properties": { "verdict": { "const": "eol" } }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": ["id"],
+            "properties": { "id": { "pattern": "^currency:over-lag:" } }
+          },
+          "then": {
+            "required": ["currency"],
+            "properties": {
+              "currency": {
+                "type": "object",
+                "properties": { "verdict": { "const": "supported" } }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": ["id"],
+            "properties": { "id": { "pattern": "^currency:unknown:" } }
+          },
+          "then": {
+            "required": ["currency"],
+            "properties": {
+              "currency": {
+                "type": "object",
+                "properties": { "verdict": { "const": "unknown" } }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": ["id"],
+            "properties": { "id": { "pattern": "^currency:(eol|over-lag):" } }
+          },
+          "then": {
+            "required": ["currency"],
+            "properties": {
+              "currency": {
+                "type": "object",
+                "required": ["latest", "lag", "eol_date"],
+                "properties": {
+                  "latest": { "type": "string" },
+                  "lag": { "type": "integer" },
+                  "eol_date": { "type": "string" }
+                }
+              }
+            },
+            "description": "Currency-provenance completeness: for an eol/over-lag finding, the currency sub-object MUST be present (required:['currency'] — self-standing, not merely rescued by the verdict-const clause) with latest/lag/eol_date present AND non-null (types narrowed to exclude null, mirroring vuln_data.max_age_ok's if/then)."
+          }
+        }
+      ]
+    },
+    "axisCoverage": {
+      "type": "object",
+      "required": [
+        "axis",
+        "manifests_found",
+        "manifests_parsed",
+        "deps_total",
+        "deps_assessed"
+      ],
+      "properties": {
+        "axis": { "type": "string" },
+        "manifests_found": { "type": "integer", "minimum": 0 },
+        "manifests_parsed": { "type": "integer", "minimum": 0 },
+        "deps_total": { "type": "integer", "minimum": 0 },
+        "deps_assessed": { "type": "integer", "minimum": 0 },
+        "resolution_depth": {
+          "enum": ["direct-only", "locked-closure", null],
+          "description": "The resolution-depth honesty claim: 'direct-only' vs 'locked-closure' (null when no claim is made)."
+        },
+        "gating": {
+          "type": "boolean",
+          "description": "Whether this axis's gate is active this run (Story 6.1 reserves the slot, default false; config.py is the sole writer — Story 6.2/6.3/6.5 compute it)."
+        }
+      },
+      "description": "Coverage arithmetic (manifests_parsed <= manifests_found; deps_assessed <= deps_total) is enforced at the model layer (AxisCoverage.__post_init__) because JSON Schema cannot cross-compare sibling fields."
+    },
+    "suppressedFinding": {
+      "type": "object",
+      "required": ["finding_id", "origin", "reason"],
+      "properties": {
+        "finding_id": { "type": "string" },
+        "origin": { "enum": ["baseline", "waiver"] },
+        "reason": { "type": "string" },
+        "authorized_by": { "type": ["string", "null"] },
+        "expires_at": { "type": ["string", "null"] }
+      },
+      "description": "One suppressed finding echoed once (Story 6.1 wires the waiver half; Story 6.8 the baseline half). The discriminator is 'origin', NOT 'source'. authorized_by/expires_at are nullable because baseline entries are bulk-accepted. At-most-one-per-finding_id + finding_id references an existing findings[].id are enforced at the model layer (Draft 2020-12 has no cross-array uniqueness-by-key keyword)."
+    },
+    "feedProvenance": {
+      "type": "object",
+      "required": ["source", "snapshot_at", "max_age_ok"],
+      "properties": {
+        "source": { "type": ["string", "null"] },
+        "snapshot_at": { "type": ["string", "null"] },
+        "max_age_ok": { "type": ["boolean", "null"] }
+      },
+      "if": {
+        "required": ["max_age_ok"],
+        "properties": { "max_age_ok": { "type": "boolean" } }
+      },
+      "then": {
+        "properties": {
+          "source": { "type": "string" },
+          "snapshot_at": { "type": "string" }
+        },
+        "description": "A concrete max_age_ok verdict (true/false) implies the feed WAS consulted, so its provenance (source + snapshot_at) must be stated — mirrors vuln_data's own if/then."
+      },
+      "description": "Per-feed provenance for the license/currency/KEV/EPSS report sections (generic names ONLY), reusing vuln_data's shape + coherence rule."
+    }
+  }
+}

@@ -1,0 +1,121 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.4.4"
+
+package:
+  name: openkb
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/o/openkb/openkb-${{ version }}.tar.gz
+  sha256: 4c2e7bb183780718b8852339850621c0b16464e5d09fd0cfed4fcfe49277b7c8
+
+build:
+  number: 0
+  noarch: python
+  script: python -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - openkb = openkb.cli:cli
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - pageindex ==0.3.0.dev3
+    - markitdown >=0.1.5
+    # markitdown [docx,pptx,xlsx,xls] extras, expanded (conda has no extras):
+    - lxml
+    - mammoth >=1.11.0
+    - python-pptx
+    - pandas
+    - openpyxl
+    - xlrd
+    - trafilatura >=2.0.0
+    - click >=8.1.0
+    - watchdog >=6.0.0
+    - litellm >=1.87.2
+    - openai-agents >=0.17.3
+    - pyyaml >=6.0
+    - python-dotenv >=1.2.0
+    - json-repair >=0.59.0
+    - prompt-toolkit >=3.0.52
+    - rich >=13.0.0
+    - portalocker >=3.2.0
+
+tests:
+  - python:
+      imports:
+        - openkb
+      # pip_check stays off: the wheel METADATA carries upstream's exact
+      # == pins (markitdown==0.1.5 etc.) which the loosened conda deps
+      # legitimately violate — see cfe-pip-check reason code.
+      pip_check: false
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+  - script:
+      - openkb --help
+
+about:
+  summary: "OpenKB: Open LLM Knowledge Base, powered by PageIndex"
+  description: |
+    OpenKB is an open, local-first LLM knowledge base: ingest PDFs, Office
+    documents, and web pages; index them with PageIndex's reasoning-based
+    (vectorless) hierarchical tree retrieval; and query them with LLM
+    agents — no embeddings or vector database required.
+  homepage: https://github.com/VectifyAI/OpenKB
+  repository: https://github.com/VectifyAI/OpenKB
+  documentation: https://github.com/VectifyAI/OpenKB#readme
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: openkb
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: openkb
+  cfe-purls:
+    - pkg:conda/openkb@${{ version }}?channel=conda-forge
+    - pkg:pypi/openkb@${{ version }}
+  cfe-upstream-repo: https://github.com/VectifyAI/OpenKB
+  cfe-upstream-homepage: https://github.com/VectifyAI/OpenKB
+  cfe-import-names: [openkb]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "false:upstream-exact-pins-loosened-in-conda-deps"
+  cfe-on-conda-forge-status: blocked-pending-prerequisites
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - pageindex not on conda-forge (local recipes/pageindex/ provides it; submit pageindex first)
+  cfe-last-checked: "2026-07-12T17:10:00Z"
+  cfe-generated-by-version: 8.76.0
+  cfe-generated-at-datetime: "2026-07-12T17:10:00Z"
+  cfe-local-build-status: success
+  cfe-local-build-datetime: "2026-07-12T16:01:33Z"
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # Packaged 2026-07-12 (user request). Prerequisite pageindex
+#    # 0.3.0.dev3 is packaged alongside (recipes/pageindex/).
+# run:
+#    # Upstream pins EVERY dep exactly (==); loosened to >= floors per the
+#    # pin-loosening convention EXCEPT pageindex, kept exact — OpenKB is
+#    # version-coupled to its retrieval engine. pip check cannot pass
+#    # against the loosened set (wheel METADATA still carries the == pins
+#    # + the markitdown extras marker), hence pip_check off.
+#    # markitdown[docx,pptx,xlsx,xls] extras expanded inline: lxml+mammoth
+#    # (docx), python-pptx (pptx), openpyxl+pandas (xlsx), pandas+xlrd (xls).
+####
