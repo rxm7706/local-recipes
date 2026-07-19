@@ -9,12 +9,13 @@ class LaSuiteClient:
     All content is written by agents — humans just read and browse.
     """
 
-    def __init__(self, base_url: str, api_token: str):
+    def __init__(self, base_url: str, api_token: str, timeout: float = 10.0):
         self.base_url = base_url.rstrip("/")
         self.headers = {
             "Authorization": f"Bearer {api_token}",
             "Content-Type": "application/json",
         }
+        self.timeout = timeout
 
     def create_document(self, title: str, content: str, parent_id: str | None = None) -> dict:
         """Create a new wiki article in La Suite Docs."""
@@ -29,6 +30,7 @@ class LaSuiteClient:
             f"{self.base_url}/api/v1/documents/",
             json=payload,
             headers=self.headers,
+            timeout=self.timeout,
         )
         response.raise_for_status()
         return response.json()
@@ -39,6 +41,7 @@ class LaSuiteClient:
             f"{self.base_url}/api/v1/documents/{doc_id}/",
             json={"title": title, "content": content},
             headers=self.headers,
+            timeout=self.timeout,
         )
         response.raise_for_status()
         return response.json()
@@ -48,6 +51,7 @@ class LaSuiteClient:
         response = httpx.get(
             f"{self.base_url}/api/v1/documents/all/",
             headers=self.headers,
+            timeout=self.timeout,
         )
         response.raise_for_status()
         return response.json()
@@ -57,6 +61,7 @@ class LaSuiteClient:
         response = httpx.get(
             f"{self.base_url}/api/v1/documents/{doc_id}/",
             headers=self.headers,
+            timeout=self.timeout,
         )
         response.raise_for_status()
         return response.json()
