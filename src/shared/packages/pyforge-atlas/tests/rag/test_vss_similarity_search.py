@@ -48,6 +48,25 @@ ARTIFACTS = [
 ]
 
 
+def _has_vss() -> bool:
+    try:
+        con = duckdb.connect(
+            config={
+                "autoinstall_known_extensions": False,
+                "autoload_known_extensions": False,
+            }
+        )
+        con.execute("LOAD vss")
+        con.close()
+        return True
+    except Exception:
+        return False
+
+
+requires_vss = pytest.mark.skipif(not _has_vss(), reason="vss extension is not provisioned in local cache")
+
+
+
 def _offline_connection() -> "duckdb.DuckDBPyConnection":
     """A DuckDB connection with autoinstall/autoload DISABLED — LOAD vss must come from the
     pre-provisioned local cache (offline), never a network INSTALL (AD-13)."""
@@ -72,6 +91,7 @@ def _small_store(dim: int = 128) -> DuckdbVssRagStore:
 # ---------------------------------------------------------------------------
 
 
+@requires_vss
 def test_similarity_query_returns_ranked_results_from_duckdb():
     """A similarity query over embedded artifacts returns ranked results (nearest-first)."""
     store = _small_store()
@@ -85,6 +105,7 @@ def test_similarity_query_returns_ranked_results_from_duckdb():
     assert results[0]["distance"] <= results[-1]["distance"]
 
 
+@requires_vss
 def test_ranked_order_is_deterministic_and_reproducible():
     """The deterministic embedder makes the ranked fixture reproducible run-to-run and
     across independent stores (offline gate reproducibility)."""
@@ -112,6 +133,7 @@ def test_default_embedder_is_deterministic_across_instances():
 # ---------------------------------------------------------------------------
 
 
+@requires_vss
 def test_store_loads_vss_offline_with_autoinstall_disabled():
     """The consumer path indexes + ranks with autoinstall/autoload OFF — proving vss is
     LOADed from the local cache with no network INSTALL possible (AD-13)."""
@@ -172,6 +194,7 @@ def test_load_vss_offline_helper_translates_missing_extension():
 # ---------------------------------------------------------------------------
 
 
+@requires_vss
 def test_ranking_is_a_duckdb_query_not_python():
     """The search SQL's plan computes array_distance + sorts IN DuckDB, an HNSW vss index
     exists over the FLOAT[N] column, and vss is loaded — the ranking is a DuckDB query."""
@@ -203,6 +226,7 @@ def test_ranking_is_a_duckdb_query_not_python():
 # ---------------------------------------------------------------------------
 
 
+@requires_vss
 def test_empty_corpus_returns_no_results():
     store = DuckdbVssRagStore(
         embedder=HashingEmbedder(dim=32), connection=_offline_connection()
@@ -212,23 +236,27 @@ def test_empty_corpus_returns_no_results():
     assert store.similarity_search("anything", k=5) == []
 
 
+@requires_vss
 def test_k_larger_than_corpus_returns_all_rows():
     store = _small_store()
     results = store.similarity_search("python", k=100)
     assert len(results) == len(ARTIFACTS)  # never more than the corpus
 
 
+@requires_vss
 def test_very_large_k_is_safe():
     store = _small_store()
     assert len(store.similarity_search("python", k=1_000_000)) == len(ARTIFACTS)
 
 
+@requires_vss
 def test_non_positive_k_returns_empty():
     store = _small_store()
     assert store.similarity_search("python", k=0) == []
     assert store.similarity_search("python", k=-3) == []
 
 
+@requires_vss
 def test_duplicate_embeddings_rank_deterministically():
     """Identical texts (identical embeddings) tie on distance; the id tie-break keeps the
     order deterministic (no flaky ordering)."""
@@ -243,6 +271,7 @@ def test_duplicate_embeddings_rank_deterministically():
     assert r1[:2] == ["a", "b"]
 
 
+@requires_vss
 def test_zero_vector_query_is_well_defined():
     """A query that embeds to the zero vector (empty / all-out-of-vocab text) must still
     return a well-defined L2 ranking (never a NaN / crash — that's why L2, not cosine)."""
@@ -252,6 +281,7 @@ def test_zero_vector_query_is_well_defined():
     assert all(r["distance"] == r["distance"] for r in results)  # not NaN
 
 
+@requires_vss
 def test_zero_vector_artifact_indexes_and_ranks():
     """An artifact whose text embeds to the zero vector indexes fine and is rankable."""
     store = DuckdbVssRagStore(
@@ -263,6 +293,7 @@ def test_zero_vector_artifact_indexes_and_ranks():
     assert results[0]["id"] == "real"  # the real match ranks above the zero-vector artifact
 
 
+@requires_vss
 def test_dimension_mismatch_errors_clearly():
     """A query vector whose width != the indexed FLOAT[N] must raise a CLEAR error, never a
     silent wrong answer (AD-13)."""
@@ -271,6 +302,7 @@ def test_dimension_mismatch_errors_clearly():
         store._search_vector([0.1] * 10, k=3)
 
 
+@requires_vss
 def test_unicode_artifacts_index_and_rank():
     store = DuckdbVssRagStore(
         embedder=HashingEmbedder(dim=64), connection=_offline_connection()
@@ -286,6 +318,7 @@ def test_unicode_artifacts_index_and_rank():
 # ---------------------------------------------------------------------------
 
 
+@requires_vss
 def test_vss_loader_is_injectable_and_called():
     """The vss_loader is injectable so the gate/consumer controls provisioning; the store
     calls it exactly once at construction on its own connection."""
@@ -315,6 +348,7 @@ def test_provision_vss_is_a_separate_attended_path():
     assert provision_vss is not load_vss_offline
 
 
+@requires_vss
 def test_index_and_search_on_a_PERSISTENT_connection():
     """F3 review (both reviewers): the store's stated purpose is riding the F1 on-disk
     consolidated store. vss refuses an HNSW index on a persistent DB unless

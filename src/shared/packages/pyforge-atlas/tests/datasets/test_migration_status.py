@@ -246,6 +246,21 @@ def test_detail_save_is_read_only(tmp_path):
         ds.save({"x": 1})
 
 
+def test_detail_load_includes_orphaned_partitions(tmp_path):
+    """Demonstrates that unlisted partition JSON files left on disk
+
+    are still loaded by the glob pattern (the orphaned partition observation).
+    """
+    ds = _detail(tmp_path)
+    (tmp_path / "detail").mkdir(parents=True, exist_ok=True)
+    (tmp_path / "detail" / "python314.json").write_text('{"done": ["numpy"]}', encoding="utf-8")
+    (tmp_path / "detail" / "orphaned_old.json").write_text('{"done": ["boost"]}', encoding="utf-8")
+
+    loaded = ds.load()
+    assert "python314" in loaded
+    assert "orphaned_old" in loaded
+
+
 # --- offline construction (kedro-catalog-check parity) ----------------------
 
 def test_datasets_construct_offline_no_network():
