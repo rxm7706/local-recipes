@@ -12,7 +12,7 @@
 
 ## To regenerate (any session): ask Claude Code:
 
-> Regenerate `docs/library-llms-full.md` from `pixi.toml`. Read all of `pixi.toml`, then rewrite the catalog keeping the same 18-section structure: envs table, version pins, per-category library entries with version floors + capabilities + platform caveats, the "explicitly NOT available" section from the commented-out deps, the import-name gotchas table, and the quick capability index. Update the Generated date. Verify with `pixi run -e local-recipes llms-full-check`.
+> Regenerate `docs/reference/library-llms-full.md` from `pixi.toml`. Read all of `pixi.toml`, then rewrite the catalog keeping the same 18-section structure: envs table, version pins, per-category library entries with version floors + capabilities + platform caveats, the "explicitly NOT available" section from the commented-out deps, the import-name gotchas table, and the quick capability index. Update the Generated date. Verify with `pixi run -e local-recipes llms-full-check`.
 
 **Staleness detector:** `pixi run -e local-recipes llms-full-check` (script:
 `scripts/llms_full_check.py`) exits non-zero when this catalog drifts from `pixi.toml` —
@@ -440,7 +440,7 @@ Provider SDKs:
   prompt caching.
 - **google-genai** (>=2.12.1) — `from google import genai`; Gemini API client.
 - **github-copilot-sdk** (>=1.0.7) — drive GitHub Copilot programmatically from
-  Python (see `docs/copilot-to-api.md` for the bridge patterns).
+  Python (see `docs/reference/copilot-to-api.md` for the bridge patterns).
 - **langchain-anthropic** (>=1.3.1) — LangChain chat-model integration for Claude.
 - **lumen-ai-anthropic** (>=1.2.1) — Anthropic backend for HoloViz Lumen AI
   (chat-with-your-data on top of Panel).
@@ -615,7 +615,7 @@ depending on them without adding them first:
 - **dbt-core / dbt-duckdb / dbt-postgres, dlt** — dbt pinned out by a click conflict;
   dlt blocked on dlt-pendulum platform coverage / py3.14.
 - **crewai** — agent framework, not resolvable here yet.
-- **litellm** — LLM router/proxy; deliberately not added (see `docs/copilot-to-api.md`
+- **litellm** — LLM router/proxy; deliberately not added (see `docs/reference/copilot-to-api.md`
   for when it would be).
 - **crawl4ai, whisper.cpp, imaginairy** — outdated on conda-forge.
 - **cibuildwheel** — bashlex fails on linux-aarch64.

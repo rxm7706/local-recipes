@@ -29,7 +29,7 @@ verified against the same oracle.
 
 ## What is real
 
-- **`docs/copilot-to-api.md`** — the complete decision tree, auth flows, and
+- **`docs/reference/copilot-to-api.md`** — the complete decision tree, auth flows, and
   configuration reference for all five bridge patterns.
 - Specs ready: `copilot-bridge-vscode-extension.md` (incl. stories 13–15),
   `bmad-copilot-adapter-upstream.md` (draft — contribution-path decision open).
@@ -41,4 +41,4 @@ verified against the same oracle.
 - **2026-07** — copilot-to-api research consolidated; extension spec waved.
 - **2026-07-23** — Dream retro-seeded; named as Herald's "BMAD everywhere"
   responsibility in [[ecosystem-crew]].
-- **2026-07-23 (gist audit)** — grounding: `docs/specs/gists/awesome-bmad-…/` (the curated BMAD ecosystem list) + `run-bmad-in-microsoft-copilot/` (declarative-agent setup for the 6 web bundles).
+- **2026-07-23 (gist audit)** — grounding: `docs/intake/gists/awesome-bmad-…/` (the curated BMAD ecosystem list) + `run-bmad-in-microsoft-copilot/` (declarative-agent setup for the 6 web bundles).

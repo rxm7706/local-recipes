@@ -29,7 +29,7 @@ spec_updated: 2026-07-18
 
 ## Background and Context
 
-`docs/copilot-to-api.md` documents a "bridge pattern" that lets an
+`docs/reference/copilot-to-api.md` documents a "bridge pattern" that lets an
 individual developer use their GitHub Copilot subscription as a stand-in
 for direct OpenAI / Anthropic / Gemini API access while procurement of
 those keys is in flight. The bridge runs a local proxy (default:
@@ -37,7 +37,7 @@ those keys is in flight. The bridge runs a local proxy (default:
 
 Today, setting up the bridge requires the developer to:
 
-1. Read the long `docs/copilot-to-api.md` doc.
+1. Read the long `docs/reference/copilot-to-api.md` doc.
 2. Install `copilot-api` from conda or `npx`.
 3. Run a one-time GitHub OAuth device flow on the CLI.
 4. Hand-write a systemd user unit (Mac/Windows: a launchd plist /
@@ -84,7 +84,7 @@ replaces the other.
   `.env`-style snippet to clipboard or to a chosen file).
 - **G5.** Provide a *Migration Assistant* that walks the developer
   through reverting each app from the bridge to direct provider URLs
-  when real keys arrive (per § Migration Path in `docs/copilot-to-api.md`).
+  when real keys arrive (per § Migration Path in `docs/reference/copilot-to-api.md`).
 - **G6.** Reuse — not replace — the existing IDE Copilot Chat extension.
   The bridge extension is **purely** for the standalone-app side; it
   must not interfere with VS Code's official Copilot integration.
@@ -95,7 +95,7 @@ replaces the other.
 - **NG2.** No multi-user / team-shared deployment support. The bridge
   serves one developer on one machine. Team-shared sharing of an
   Individual Copilot subscription is a TOS violation and explicitly
-  out of scope (see `docs/copilot-to-api.md` § TOS).
+  out of scope (see `docs/reference/copilot-to-api.md` § TOS).
 - **NG3.** No telemetry, analytics, error reporting to a remote server,
   or auto-update. The extension is local-first.
 - **NG4.** No bundled LLM proxy. The extension *manages* an external
@@ -219,7 +219,7 @@ settings,
   - *Copilot Bridge: Configure custom Anthropic-compatible app*
 - Each command opens a quick-pick: "Copy to clipboard" or "Append to
   ~/.bashrc / ~/.zshrc / $PROFILE.ps1".
-- The snippet content matches `docs/copilot-to-api.md` § Per-app wiring.
+- The snippet content matches `docs/reference/copilot-to-api.md` § Per-app wiring.
 
 ### Story 7 — Smoke-test command
 **As** a developer,
@@ -269,7 +269,7 @@ entries.
 
 **Acceptance:**
 - First time the user runs *Set Up*, a modal shows the four-line TOS
-  summary (paraphrased from `docs/copilot-to-api.md` § TOS) and
+  summary (paraphrased from `docs/reference/copilot-to-api.md` § TOS) and
   requires explicit acknowledgement to proceed.
 - The acknowledgement is recorded in extension state; subsequent
   setups don't re-prompt for the same major version.
@@ -323,7 +323,7 @@ backend without hand-edited env vars.
 
 **Acceptance:**
 - Command-palette entry: *Copilot Bridge: Configure BMAD runners*.
-- Emits the wiring documented in `docs/copilot-to-api.md` § "Driving headless
+- Emits the wiring documented in `docs/reference/copilot-to-api.md` § "Driving headless
   BMAD through the bridge" — sets `ANTHROPIC_BASE_URL` (and/or the OpenAI-shaped
   vars) to `http://127.0.0.1:<port>` for the loop's agent sessions.
 - Writes to the loop's environment surface (the `.bmad-loop/` run env or the
@@ -357,7 +357,7 @@ Copilot traffic surfaced,
 **Acceptance:**
 - The *Configure BMAD runners* command (Story 13) shows a one-time modal noting
   that **sustained, automated** requests carry more abuse-detection exposure than
-  interactive editor use (paraphrased from `docs/copilot-to-api.md` § TOS), and
+  interactive editor use (paraphrased from `docs/reference/copilot-to-api.md` § TOS), and
   that the sanctioned in-IDE alternative for interactive work is the `@bmad`
   adapter (`docs/specs/bmad-copilot-adapter-upstream.md`).
 - Acknowledgement recorded in extension state (per major version), same pattern
@@ -558,7 +558,7 @@ distribution.
   developer action.
 - **AC-3.** A developer can configure `presenton`, `wuphf`, and
   `tolaria` via three command-palette actions; each produces a snippet
-  that matches `docs/copilot-to-api.md` § Per-app wiring exactly.
+  that matches `docs/reference/copilot-to-api.md` § Per-app wiring exactly.
 - **AC-4.** When the developer obtains a real Anthropic key, the
   Migration Assistant can switch every previously-configured app to
   the direct API in a single workflow.
@@ -603,7 +603,7 @@ before/during implementation.
 ## Dependencies and Constraints
 
 - **D-1.** Requires `copilot-api` upstream to remain functional.
-  (Maturity assessment: see `docs/copilot-to-api.md` § Upstream
+  (Maturity assessment: see `docs/reference/copilot-to-api.md` § Upstream
   Stability Snapshot — "stable but lightly maintained".)
 - **D-2.** Requires Node.js 20+ on the developer's machine (VS Code
   extension host runs Node, but `copilot-api` itself needs a runtime).
@@ -632,9 +632,9 @@ before/during implementation.
 
 ## References
 
-- **`docs/copilot-to-api.md`** — full bridge-pattern reference; this
+- **`docs/reference/copilot-to-api.md`** — full bridge-pattern reference; this
   spec implements the developer-experience layer of that doc.
-- **`docs/enterprise-deployment.md`** — Artifactory-backed conda channel
+- **`docs/reference/enterprise-deployment.md`** — Artifactory-backed conda channel
   setup (informs the conda-vs-npx choice in Story 3 / FR-2).
 - **VS Code extension docs** —
   <https://code.visualstudio.com/api/get-started/your-first-extension>

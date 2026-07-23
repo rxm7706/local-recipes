@@ -5,28 +5,30 @@
 A **Dream** is the raw, unconstrained human aspiration that seeds a deliverable —
 the BMAD mission itself: **B**uild **M**ore **A**rchitect **D**reams. It is
 **Tier 0** of the framework-neutral layout (see
-[`AGENTS.md` → the tiers](../../AGENTS.md)), upstream of the Tier-1 intake spec in
-[`docs/specs/`](../specs/).
+[`AGENTS.md` → the tiers](../../AGENTS.md)), upstream of the spec BMAD produces
+in `_bmad-output/projects/<slug>/planning-artifacts/` (legacy hand-authored
+specs remain in [`docs/specs/`](../specs/)).
 
 `docs/dreams/` is the home for the **starting point of each deliverable**. Going
 forward, a deliverable **begins as a Dream here** — a vision, unconstrained by
-syntax or technical debt — and is only then solidified into a Tier-1 intake spec
-(`docs/specs/<slug>.md`), the "what to build" contract. (Historically these
+syntax or technical debt — and is only then solidified by BMAD (`bmad-spec` or
+the planning chain) into the "what to build" contract in its project's
+planning-artifacts. (Historically these
 starting points were folded into `docs/specs/`; we are separating them: the Dream
 holds the *why*, the spec holds the *what*.)
 
 ## How a Dream flows through the crew
 
 ```
-Dream            Deck        Spec              build · audit · ship        proclaim
-docs/dreams/  →  (visual) →  docs/specs/  →    Atlas · Warden · Mason  →   (release)
-   the vision     Herald      Marshal                                        Herald
+Dream            Deck        Spec                  build · audit · ship        proclaim
+docs/dreams/  →  (visual) →  bmad-spec →           Atlas · Warden · Mason  →   (release)
+   the vision     Herald      planning-artifacts/                              Herald
 ```
 
 - **Herald** reads the Dream and renders the **decks & infographics** — the visual
   alignment assets (`presentations/<slug>/`).
-- **Marshal** solidifies the same Dream into a Tier-1 **intake spec**
-  (`docs/specs/<slug>.md`), then drives the code with the **BMAD Method** — bmad
+- **Marshal** solidifies the same Dream into the **spec** (`bmad-spec` →
+  `_bmad-output/projects/<slug>/planning-artifacts/`), then drives the code with the **BMAD Method** — bmad
   skills + phases run autonomously via **bmad-loop** and **bmad-dev-auto**.
 - **Atlas / Warden / Mason** map dependencies, guard the perimeter, and ship.
 - **Doctor** runs pre-flight diagnostics before the build and monitors fleet &
@@ -37,14 +39,14 @@ docs/dreams/  →  (visual) →  docs/specs/  →    Atlas · Warden · Mason  �
   from there. *(Today the orchestrator — Marshal — owns this run lifecycle; in the
   persona ideal it is Herald who proclaims the release.)*
 
-A Dream **motivates** an intake spec; it never replaces it. The spec remains the
-build contract; the Dream is the "why" behind it.
+A Dream **motivates** a spec; it never replaces it. The spec remains the build
+contract; the Dream is the "why" behind it.
 
 ## Convention
 
 - One Dream per file: `docs/dreams/<slug>.md`, plain markdown, tracked in git.
-- The Dream's `<slug>` should match its eventual `docs/specs/<slug>.md` intake
-  spec, so the pair is easy to trace.
+- The Dream's `<slug>` should match its eventual BMAD project slug
+  (`_bmad-output/projects/<slug>/`), so the pair is easy to trace.
 - Light frontmatter identifies it:
 
   ```yaml
@@ -59,9 +61,9 @@ build contract; the Dream is the "why" behind it.
 
 ## Dreams
 
-23 Dreams as of 2026-07-23 (2 born Dream-first; 16 retro-seeded from a complete
+22 Dreams as of 2026-07-23 (2 born Dream-first; 16 retro-seeded from a complete
 repo + Design-workspace audit; 2 persona dreams added when the ownership audit
-grew the crew 6 → 8; 3 recovered from the gist audit). **No-straggler policy:** every BMAD project, deck, Design
+grew the crew 6 → 8; 2 recovered from the gist audit (a third, local-ai hardware, was judged out-of-repo scope and archived)). **No-straggler policy:** every BMAD project, deck, Design
 project, and spec maps to exactly one Dream; the herald CLI's status capability
 (CAP-3) flags any unlinked Design project permanently.
 
@@ -69,8 +71,8 @@ project, and spec maps to exactly one Dream; the herald CLI's status capability
 
 | Dream | Status | What it is |
 |---|---|---|
-| [`ecosystem-crew.md`](ecosystem-crew.md) | in-deck | **The founding Dream** — six personas, one "Dream to Code" pipeline. Master vision deck: `presentations/pyforge-genesis/`. |
-| [`pyforge-genesis.md`](pyforge-genesis.md) | in-deck | Genesis as master idea + **the seed**: init a new repo / adopt brownfield with the whole operating model (origin: `docs/bmad-setup-plan.md`). |
+| [`ecosystem-crew.md`](ecosystem-crew.md) | in-deck | **The founding Dream** — eight personas, one "Dream to Code" pipeline. Master vision deck: `presentations/pyforge-genesis/`. |
+| [`pyforge-genesis.md`](pyforge-genesis.md) | in-deck | Genesis as master idea + **the seed**: init a new repo / adopt brownfield with the whole operating model (origin: `archive/docs/bmad-setup-plan.md`). |
 | [`sentinel.md`](sentinel.md) | seeded | **The ancestor** (2026-04): the AI Software Factory — "the graph is the product"; unbuilt core, stranded artifacts to repatriate; descendants credited. |
 | [`design-code-bridge.md`](design-code-bridge.md) | realized | Design + Code as one surface — seed/design/pull, zero downloads; herald CLI specced (5 CAPs). |
 
@@ -110,5 +112,4 @@ project, and spec maps to exactly one Dream; the herald CLI's status capability
 | [`deckcraft.md`](deckcraft.md) | seeded | Air-gapped editable-PPTX/Marp/infographic pipeline from primitives — the family's designated PPTX engine. |
 | [`presenton-pixi-image.md`](presenton-pixi-image.md) | seeded | Presenton repackaged conda-native + air-gapped for OpenShift in regulated enterprises. |
 | [`unity-data-stack.md`](unity-data-stack.md) | seeded | The enterprise innersource platform — a python-first shared monorepo (Constitution + working pixi root recovered from gists). |
-| [`local-ai.md`](local-ai.md) | seeded | The factory's own compute — dual-GPU local AI workstation + local model backends (vLLM tiers, offline planning). |
 | [`wasm-analytics-stack.md`](wasm-analytics-stack.md) | seeded | Wasm-first analytical data stack on OpenShift — WASI-sandboxed Python, dlt+dbt, OTel/OL, Restricted-SCC hardened. |

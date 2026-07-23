@@ -59,4 +59,4 @@ That remains this Dream's open claim — **owned, as of 2026-07-23, by the Scrib
   `docs/dreams/sentinel/` with a provenance README recording etags for every
   deferred artifact (the 764-line Build-Spec pulls byte-exact on activation;
   decks stay Design-native; tokens pipeline lands with deckcraft's intake).
-- **2026-07-23 (gist audit)** — the origin essay surfaced: `docs/specs/gists/llm-powered-knowledge-bases-by-andrej-karpathy/` (the Karpathy piece the 2026-04-18 deck was built from).
+- **2026-07-23 (gist audit)** — the origin essay surfaced: `docs/intake/gists/llm-powered-knowledge-bases-by-andrej-karpathy/` (the Karpathy piece the 2026-04-18 deck was built from).

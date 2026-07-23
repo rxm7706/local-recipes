@@ -46,4 +46,4 @@ And **the seed**: the bootstrapper that installs the operating model anywhere �
   `archive/docs/bmad-setup-plan.md`.
 - **2026-07-23** — the Dream-first governance landed repo-wide; the master deck
   seeded; named `pyforge-genesis` (the origin-story deck of the family).
-- **2026-07-23 (gist audit)** — grounding: `docs/specs/gists/how-we-operate/` ("documentation as programmable infrastructure" — the operating philosophy in embryo).
+- **2026-07-23 (gist audit)** — grounding: `docs/intake/gists/how-we-operate/` ("documentation as programmable infrastructure" — the operating philosophy in embryo).

@@ -40,4 +40,4 @@ the host or the source.
   resume at 6.3.
 - **2026-07-23** — Dream retro-seeded; chapter deck `presentations/pyforge-warden/`
   (the deck-family exemplar). Registry-perimeter ring links to [[enterprise-airgap]].
-- **2026-07-23 (gist audit)** — grounding: the Phase-0 deep review (47 KB), the Python Dependency Policy sketch, and the Enterprise Python Manifest (Assured-OSS lists → the vetted-base row) all pre-figure v1 (`docs/specs/gists/`).
+- **2026-07-23 (gist audit)** — grounding: the Phase-0 deep review (47 KB), the Python Dependency Policy sketch, and the Enterprise Python Manifest (Assured-OSS lists → the vetted-base row) all pre-figure v1 (`docs/intake/gists/`).
