@@ -663,9 +663,167 @@ window.DASHBOARD_DATA = {
         },
         "total": 1502
       }
+    },
+    "regen": {
+      "label": "Regen",
+      "accentVar": "--regen",
+      "branch": "main · in-session Marshal execution",
+      "contract": "spec-regenerable-factory · 4 CAPs (surface manifests, backfill waves, spec_surface_check, regeneration drill) · checker never false-greens · Rule 1/2 bound on Wave 4",
+      "seglabels": [
+        "W0",
+        "W1",
+        "W2",
+        "W3",
+        "W4",
+        "W5"
+      ],
+      "epics": [
+        {
+          "badge": "W0",
+          "title": "Foundations — harness + program spec",
+          "stories": [
+            [
+              "0.1",
+              "done",
+              "Multi-loop isolation harness (worktree loop homes)"
+            ],
+            [
+              "0.2",
+              "done",
+              "Program spec + waves companion (bmad-spec kernel)"
+            ]
+          ]
+        },
+        {
+          "badge": "W1",
+          "title": "Surface-manifest convention + checker",
+          "stories": [
+            [
+              "1.1",
+              "pending",
+              "Retrofit surface: onto existing kernels"
+            ],
+            [
+              "1.2",
+              "pending",
+              "spec_surface_check v1 — coverage + allowlist + drift"
+            ]
+          ]
+        },
+        {
+          "badge": "W2",
+          "title": "Pilot — factory-console under contract",
+          "stories": [
+            [
+              "2.1",
+              "pending",
+              "Factory-console backfill kernel (docs/dashboard)"
+            ],
+            [
+              "2.2",
+              "pending",
+              "Regeneration drill on generate.py (clean-room rebuild)"
+            ]
+          ]
+        },
+        {
+          "badge": "W3",
+          "title": "Mid backfills",
+          "stories": [
+            [
+              "3.1",
+              "pending",
+              "Enterprise-airgap kernel (_http routing + reference)"
+            ],
+            [
+              "3.2",
+              "pending",
+              "Modernist-identity kernel (DS + deck engine)"
+            ]
+          ]
+        },
+        {
+          "badge": "W4",
+          "title": "Deep backfills — CFE territory (Rule 1/2)",
+          "stories": [
+            [
+              "4.1",
+              "pending",
+              "Packaging-factory kernel over the CFE surface"
+            ],
+            [
+              "4.2",
+              "pending",
+              "Fleet-stewardship kernel (absorbs 3 legacy workflows)"
+            ],
+            [
+              "4.R",
+              "pending",
+              "Rule-2 retro against the conda-forge-expert skill"
+            ]
+          ]
+        },
+        {
+          "badge": "W5",
+          "title": "Closure — verify, gate, drill-through",
+          "stories": [
+            [
+              "5.1",
+              "pending",
+              "Chain-verify + manifests (atlas / bridge / marshal)"
+            ],
+            [
+              "5.2",
+              "pending",
+              "Checker joins the detector test suite"
+            ],
+            [
+              "5.3",
+              "pending",
+              "Dreamscape drill-through links"
+            ]
+          ]
+        }
+      ],
+      "inflight": null,
+      "roadmap": {
+        "sub": "Backfill waves per spec-regenerable-factory/waves.md — every realized surface gains a regenerable spec chain; drift checks bind code to contract.",
+        "stops": [
+          [
+            "0",
+            "Harness + spec",
+            "done"
+          ],
+          [
+            "1",
+            "Convention + checker",
+            "wip"
+          ],
+          [
+            "2",
+            "Pilot + drill",
+            ""
+          ],
+          [
+            "3",
+            "Mid backfills",
+            ""
+          ],
+          [
+            "4",
+            "CFE deep + retro",
+            ""
+          ],
+          [
+            "5",
+            "Gate + drill-through",
+            ""
+          ]
+        ]
+      }
     }
   },
-  "snapshot": "<span>2026-07-23 23:09 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-07-23 23:15 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
