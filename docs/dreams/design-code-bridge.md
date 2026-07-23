@@ -46,10 +46,11 @@ first shipped organ.
 ## Beyond the pilot (the fuller dream)
 
 - A `herald` CLI that wraps the loop (`herald deck seed <slug>`,
-  `herald deck pull <slug>`), watch-mode sync, and stale-mirror detection.
-- The same bridge pattern for infographics and Marp sources (authored in Design,
-  pulled to `src/marp/`).
-- Retiring hand-mirror projects entirely.
+  `herald deck pull <slug>`), watch-mode sync, and stale-mirror detection —
+  **specced 2026-07-23** as `SPEC-design-code-bridge` (CAP-1..4), incl.
+  **Marp-source pull in v1** (authored in Design, pulled to `src/marp/`;
+  seeding + derived artifacts stay out).
+- Retiring hand-mirror projects entirely (the CLI detects; humans retire).
 
 ## Realization log
 
@@ -75,6 +76,10 @@ first shipped organ.
   project **`pyforge-herald`**, landing in
   `_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-design-code-bridge/`
   per the Dream-first tier model. No legacy `docs/specs/` file was created.
-  Self-validate: coherence PASS, preservation PASS; 3 open questions (standalone
-  MCP auth/transport; watch cadence; marp-source scope) await answers before
-  implementation.
+  Self-validate: coherence PASS, preservation PASS.
+- **2026-07-23 — all 3 open questions resolved** (user-approved recommendations):
+  transport = dual-path (pure MCP client, spike-proven, with a headless
+  Claude-Code/Agent-SDK fallback) under a new **deterministic — no LLM in the
+  loop** constraint; watch = 60 s etag poll + quiescence debounce + idle backoff;
+  **Marp-source pull joins v1** (CAP-2). Spec re-derived; zero open questions
+  remain — ready for `bmad-create-epics-and-stories`.

@@ -23,6 +23,25 @@ are the `claude-design` MCP surface's.
 4. Re-derive: `npm run extract` → `npm run build` → `pixi run -e local-recipes deck-export <slug>`.
 5. Commit is the operator's (or `--commit`'s) move — never implicit.
 
+## Marp-source pull (v1 scope, per OQ-3 resolution)
+
+Same read/etag/decode loop as the prototype pull; different landing path and no
+extract/build — `deck-export` regenerates the derived set instead:
+
+- Design-side files: the deck's Marp sources (e.g. `warden-deck.md`,
+  `warden-executive-summary.md`, `warden-infographic.md` in the Warden Design
+  project — the evidence that Marp authoring happens in Design).
+- Landing path: `presentations/<slug>/src/marp/<slug>-{deck,executive-summary,infographic}-<date>.md`.
+- After landing: `pixi run -e local-recipes deck-export <slug>`.
+- Never crosses: the derived standalone HTML / PPTX (repo-generated).
+
+## Watch parameters (CAP-4 defaults)
+
+- Poll: etag-only `read_file` per watched deck, **60 s** default, hard floor 30 s, jittered.
+- Debounce: pull only after the etag is **stable for one full interval** (Design saves continuously mid-edit).
+- Idle backoff: double after ~10 unchanged polls, cap 10 min, reset on any change.
+- Halt on auth error — never retry a 401.
+
 ## Conventions (pilot-established)
 
 - Design project name: `PyForge <Persona> deck`; prototype file: `PyForge <Persona>.dc.html` (spaces kept — the Design export convention).
