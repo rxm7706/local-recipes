@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=Archivo+Expanded:wght@700;800;900&display=swap" rel="stylesheet">
+</helmet>
+<x-import component-from-global-scope="deck-stage" from="./deck-stage.js" width="1920" height="1080" hint-size="100%,100%">
+
+  <section data-label="Cover" data-speaker-notes="One line: Steward runs the estate the factory stands on — Mason ships artifacts and stops at the registry, Doctor observes and prescribes, Steward deploys, provisions, and operates. Adopted 2026-07-23 when the ownership audit found Deployment and Operations orphaned between stations." style="background:#f3f2f2">
+    <div style="width:100%; height:100%; box-sizing:border-box; padding:96px; display:flex; flex-direction:column; justify-content:space-between; font-family:'Archivo',sans-serif; color:#201e1d;">
+      <div style="display:flex; justify-content:space-between; align-items:baseline; font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; letter-spacing:0.08em; text-transform:uppercase;">
+        <span style="color:#c22a10; font-weight:600;">pyforge · Dream to Code · the Ecosystem Crew</span>
+        <span style="color:rgba(32,30,29,.55);">founding Dream · docs/dreams/ecosystem-crew.md</span>
+      </div>
+      <div>
+        <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:22px; letter-spacing:0.34em; text-transform:uppercase; color:#c22a10; font-weight:600; margin-bottom:26px;">Steward · the Provisioner</div>
+        <h1 style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:140px; line-height:0.9; letter-spacing:-0.03em; margin:0;">provision the line.<br>hold the keys.</h1>
+        <p style="font-size:34px; line-height:1.35; font-weight:500; margin:40px 0 0; max-width:1360px;">The estate the factory stands on: environments and runners <b>provisioned</b>, services <b>deployed</b>, credentials <b>scoped and rotated</b>, budgets <b>enforced</b> — and the pager answered when it goes off.</p>
+      </div>
+      <div style="display:grid; grid-template-columns:repeat(4,1fr); border-top:3px solid #201e1d;">
+        <div style="padding:24px 24px 0 0; border-right:2px solid #d3d0cf;"><div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:14px; letter-spacing:0.06em; text-transform:uppercase; color:rgba(32,30,29,.55);">Module</div><div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:24px; font-weight:600; margin-top:8px;">pyforge.steward</div></div>
+        <div style="padding:24px; border-right:2px solid #d3d0cf;"><div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:14px; letter-spacing:0.06em; text-transform:uppercase; color:rgba(32,30,29,.55);">Owns</div><div style="font-size:24px; font-weight:800; margin-top:8px;">deploy · keys · budgets</div></div>
+        <div style="padding:24px; border-right:2px solid #d3d0cf;"><div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:14px; letter-spacing:0.06em; text-transform:uppercase; color:rgba(32,30,29,.55);">Answers</div><div style="font-size:24px; font-weight:800; margin-top:8px;">Privilege Drift</div></div>
+        <div style="padding:24px 0 0 24px;"><div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:14px; letter-spacing:0.06em; text-transform:uppercase; color:rgba(32,30,29,.55);">Between</div><div style="font-size:24px; font-weight:800; margin-top:8px;">Mason ships · Doctor watches</div></div>
+      </div>
+    </div>
+  </section>
+
+  <section data-label="Act I — The Provisioner" data-speaker-notes="Act I: the orphaned stage. The Implementation view names Deployment and Operations as a first-class SDLC stage — in the crew it fell between two chairs until the Steward sat down." style="background:#201e1d">
+    <div style="position:relative; width:100%; height:100%; box-sizing:border-box; padding:96px; overflow:hidden; display:flex; flex-direction:column; justify-content:space-between; font-family:'Archivo',sans-serif; color:#f3f2f2;">
+      <div style="position:absolute; right:60px; top:-160px; font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:760px; line-height:1; color:rgba(243,242,242,0.10); pointer-events:none;">I</div>
+      <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:22px; letter-spacing:0.16em; text-transform:uppercase; font-weight:600; position:relative;">Act I</div>
+      <div style="position:relative;">
+        <h2 style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:110px; line-height:0.95; letter-spacing:-0.02em; margin:0;">The Provisioner</h2>
+        <p style="font-size:32px; line-height:1.4; font-weight:500; margin:36px 0 0; max-width:1300px;">Mason ships artifacts and stops at the registry. Doctor observes and prescribes. <b>Somebody has to run the place.</b></p>
+      </div>
+      <div style="display:flex; justify-content:space-between; align-items:baseline; border-top:2px solid rgba(243,242,242,.35); padding-top:22px; font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; font-weight:600;"><span>Steward · the Provisioner</span><span>02 / 10</span></div>
+    </div>
+  </section>
+
+  <section data-label="Privilege drift" data-speaker-notes="Mindset one: no privilege outlives its deployment. The live case on the desk: the JFROG API key that attaches to every outbound request regardless of host — Doctor finds it, Steward remediates it and owns the key lifecycle from then on." style="background:#f3f2f2">
+    <div style="width:100%; height:100%; box-sizing:border-box; padding:96px; display:flex; flex-direction:column; font-family:'Archivo',sans-serif; color:#201e1d;">
+      <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:18px; letter-spacing:0.16em; text-transform:uppercase; color:#c22a10; font-weight:600; margin-bottom:34px;">Mindset 01</div>
+      <h2 style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:84px; line-height:0.98; letter-spacing:-0.02em; margin:0 0 48px;">No privilege outlives its deployment</h2>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:0; border-top:3px solid #201e1d; flex:1;">
+        <div style="padding:40px 40px 0 0; border-right:2px solid #d3d0cf;">
+          <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; letter-spacing:0.08em; text-transform:uppercase; color:rgba(32,30,29,.55); margin-bottom:18px;">Privilege drift, unchecked</div>
+          <p style="font-size:29px; line-height:1.45; font-weight:500; margin:0;">Agents and services keep broad access long after the job ends. The live case: a registry API key that attaches to <b>every outbound request, regardless of host.</b></p>
+        </div>
+        <div style="padding:40px 0 0 40px;">
+          <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; letter-spacing:0.08em; text-transform:uppercase; color:rgba(32,30,29,.55); margin-bottom:18px;">Steward's key lifecycle</div>
+          <p style="font-size:29px; line-height:1.45; font-weight:500; margin:0;">Issue <b>scoped</b>, rotate on schedule, <b style="color:#c22a10;">revoke on teardown</b> — audited for drift. Doctor finds; Steward remediates and owns the keys from then on.</p>
+        </div>
+      </div>
+      <div style="display:flex; justify-content:space-between; align-items:baseline; border-top:2px solid #d3d0cf; padding-top:22px; font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; font-weight:600;"><span>Steward · the Provisioner</span><span>03 / 10</span></div>
+    </div>
+  </section>
+
+  <section data-label="Budgets are governance" data-speaker-notes="Mindset two: the Taxonomy view's resource governance made real — machine-readable ceilings, like locking infrastructure at 1500 dollars a month, enforced with alerts, not hoped about in a wiki." style="background:#f3f2f2">
+    <div style="width:100%; height:100%; box-sizing:border-box; padding:96px; display:flex; flex-direction:column; font-family:'Archivo',sans-serif; color:#201e1d;">
+      <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:18px; letter-spacing:0.16em; text-transform:uppercase; color:#c22a10; font-weight:600; margin-bottom:34px;">Mindset 02</div>
+      <h2 style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:84px; line-height:0.98; letter-spacing:-0.02em; margin:0 0 48px;">Budgets are governance</h2>
+      <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:0; border-top:3px solid #201e1d; flex:1;">
+        <div style="padding:40px 32px 0 0; border-right:2px solid #d3d0cf;">
+          <div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:52px; margin-bottom:16px;">Ceilings</div>
+          <p style="font-size:26px; line-height:1.45; font-weight:500; margin:0;">Machine-readable resource limits — "infra locked at <b>$1,500/month</b>" is a rule the system enforces, not a wish.</p>
+        </div>
+        <div style="padding:40px 32px 0 32px; border-right:2px solid #d3d0cf;">
+          <div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:52px; margin-bottom:16px;">Alerts</div>
+          <p style="font-size:26px; line-height:1.45; font-weight:500; margin:0;">Breaches surface before the invoice does — budget state is telemetry, feeding the same dashboards.</p>
+        </div>
+        <div style="padding:40px 0 0 32px;">
+          <div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:52px; margin-bottom:16px;">Autonomy-safe</div>
+          <p style="font-size:26px; line-height:1.45; font-weight:500; margin:0;">Unattended loops spend inside the ceiling by construction — the Taxonomy view's resource governance, operationalized.</p>
+        </div>
+      </div>
+      <div style="display:flex; justify-content:space-between; align-items:baseline; border-top:2px solid #d3d0cf; padding-top:22px; font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; font-weight:600;"><span>Steward · the Provisioner</span><span>04 / 10</span></div>
+    </div>
+  </section>
+
+  <section data-label="Act II — The duties" data-speaker-notes="Act II: the four duties and the CLI they will grow." style="background:#201e1d">
+    <div style="position:relative; width:100%; height:100%; box-sizing:border-box; padding:96px; overflow:hidden; display:flex; flex-direction:column; justify-content:space-between; font-family:'Archivo',sans-serif; color:#f3f2f2;">
+      <div style="position:absolute; right:60px; top:-160px; font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:760px; line-height:1; color:rgba(243,242,242,0.10); pointer-events:none;">II</div>
+      <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:22px; letter-spacing:0.16em; text-transform:uppercase; font-weight:600; position:relative;">Act II</div>
+      <div style="position:relative;">
+        <h2 style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:110px; line-height:0.95; letter-spacing:-0.02em; margin:0;">The duties</h2>
+        <p style="font-size:32px; line-height:1.4; font-weight:500; margin:36px 0 0; max-width:1300px;">Provision. Deploy. Hold the keys. <b>Enforce the ceiling.</b></p>
+      </div>
+      <div style="display:flex; justify-content:space-between; align-items:baseline; border-top:2px solid rgba(243,242,242,.35); padding-top:22px; font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; font-weight:600;"><span>Steward · the Provisioner</span><span>05 / 10</span></div>
+    </div>
+  </section>
+
+  <section data-label="The four duties" data-speaker-notes="The duties and the CLI: provision runners and environments before Doctor's pre-flight ever runs; deploy services, not just artifacts; audit, rotate, and revoke keys; enforce resource ceilings. Incident response rides on all four." style="background:#f3f2f2">
+    <div style="width:100%; height:100%; box-sizing:border-box; padding:96px; display:flex; flex-direction:column; font-family:'Archivo',sans-serif; color:#201e1d;">
+      <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:18px; letter-spacing:0.16em; text-transform:uppercase; color:#c22a10; font-weight:600; margin-bottom:34px;">The station</div>
+      <h2 style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:76px; line-height:0.98; letter-spacing:-0.02em; margin:0 0 44px;">The four duties</h2>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:48px; flex:1;">
+        <div style="display:flex; flex-direction:column; border-top:3px solid #201e1d;">
+          <div style="padding:24px 0; border-bottom:2px solid #d3d0cf;"><div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; color:#c22a10; font-weight:600; margin-bottom:6px;">01 · Provision</div><p style="font-size:24px; line-height:1.4; font-weight:500; margin:0;">Runners, CI images, pixi environments — engines present <b>before</b> Doctor's pre-flight ever runs.</p></div>
+          <div style="padding:24px 0; border-bottom:2px solid #d3d0cf;"><div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; color:#c22a10; font-weight:600; margin-bottom:6px;">02 · Deploy</div><p style="font-size:24px; line-height:1.4; font-weight:500; margin:0;">Services, not just artifacts — the Pages console, Presenton on OpenShift, air-gap bundle installs.</p></div>
+          <div style="padding:24px 0; border-bottom:2px solid #d3d0cf;"><div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; color:#c22a10; font-weight:600; margin-bottom:6px;">03 · Hold the keys</div><p style="font-size:24px; line-height:1.4; font-weight:500; margin:0;">Issue scoped, rotate, revoke, audit for drift — the credential lifecycle, owned.</p></div>
+          <div style="padding:24px 0;"><div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; color:#c22a10; font-weight:600; margin-bottom:6px;">04 · Enforce budgets</div><p style="font-size:24px; line-height:1.4; font-weight:500; margin:0;">Machine-readable ceilings with alerts — autonomy spends inside the line.</p></div>
+        </div>
+        <div style="background:#201e1d; color:#f3f2f2; padding:44px; font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:23px; line-height:1.75; align-self:stretch; display:flex; flex-direction:column; justify-content:center;">
+          <div style="color:rgba(243,242,242,.5);"># provision a runner for the factory line</div>
+          <div>steward provision --runner bmad-loop</div>
+          <div style="margin-top:20px; color:rgba(243,242,242,.5);"># deploy a service to its platform</div>
+          <div>steward deploy presenton --target openshift</div>
+          <div style="margin-top:20px; color:rgba(243,242,242,.5);"># the key lifecycle</div>
+          <div>steward keys audit --drift</div>
+          <div>steward keys rotate --scope jfrog</div>
+          <div style="margin-top:20px; color:rgba(243,242,242,.5);"># the ceiling</div>
+          <div>steward budget enforce --cap 1500usd/month</div>
+        </div>
+      </div>
+      <div style="display:flex; justify-content:space-between; align-items:baseline; border-top:2px solid #d3d0cf; padding-top:22px; font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; font-weight:600;"><span>Steward · the Provisioner</span><span>06 / 10</span></div>
+    </div>
+  </section>
+
+  <section data-label="Act III — Already steward-shaped" data-speaker-notes="Act III: the duties are already being done — by hand, without a name." style="background:#201e1d">
+    <div style="position:relative; width:100%; height:100%; box-sizing:border-box; padding:96px; overflow:hidden; display:flex; flex-direction:column; justify-content:space-between; font-family:'Archivo',sans-serif; color:#f3f2f2;">
+      <div style="position:absolute; right:60px; top:-160px; font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:760px; line-height:1; color:rgba(243,242,242,0.10); pointer-events:none;">III</div>
+      <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:22px; letter-spacing:0.16em; text-transform:uppercase; font-weight:600; position:relative;">Act III</div>
+      <div style="position:relative;">
+        <h2 style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:100px; line-height:0.95; letter-spacing:-0.02em; margin:0;">Already steward-shaped</h2>
+        <p style="font-size:32px; line-height:1.4; font-weight:500; margin:36px 0 0; max-width:1300px;">The estate is being run <b>by hand</b> — the persona names the job so it can be automated.</p>
+      </div>
+      <div style="display:flex; justify-content:space-between; align-items:baseline; border-top:2px solid rgba(243,242,242,.35); padding-top:22px; font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; font-weight:600;"><span>Steward · the Provisioner</span><span>07 / 10</span></div>
+    </div>
+  </section>
+
+  <section data-label="The estate today" data-speaker-notes="Three working proofs: the Pages program console deploys — today a hand-run dashboard-gen plus push; the pixi environment estate with its environment.yaml sync discipline; and the air-gap routing machinery awaiting an operator. All Steward duties, done manually." style="background:#f3f2f2">
+    <div style="width:100%; height:100%; box-sizing:border-box; padding:96px; display:flex; flex-direction:column; font-family:'Archivo',sans-serif; color:#201e1d;">
+      <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:18px; letter-spacing:0.16em; text-transform:uppercase; color:#c22a10; font-weight:600; margin-bottom:34px;">Real grounding</div>
+      <h2 style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:84px; line-height:0.98; letter-spacing:-0.02em; margin:0 0 48px;">The estate today</h2>
+      <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:0; border-top:3px solid #201e1d; flex:1;">
+        <div style="padding:40px 32px 0 0; border-right:2px solid #d3d0cf;">
+          <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:19px; font-weight:600; color:#c22a10; margin-bottom:14px;">Pages console</div>
+          <p style="font-size:26px; line-height:1.45; font-weight:500; margin:0;">The program dashboard deploys via workflow — regenerated and pushed <b>by hand</b> today. A Steward duty, done manually.</p>
+        </div>
+        <div style="padding:40px 32px 0 32px; border-right:2px solid #d3d0cf;">
+          <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:19px; font-weight:600; color:#c22a10; margin-bottom:14px;">pixi estate</div>
+          <p style="font-size:26px; line-height:1.45; font-weight:500; margin:0;">The environment fleet + the `environment.yaml` sync discipline — provisioning with a paper trail.</p>
+        </div>
+        <div style="padding:40px 0 0 32px;">
+          <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:19px; font-weight:600; color:#c22a10; margin-bottom:14px;">air-gap routing</div>
+          <p style="font-size:26px; line-height:1.45; font-weight:500; margin:0;">The JFrog/truststore machinery — built, documented, <b>awaiting its operator.</b></p>
+        </div>
+      </div>
+      <div style="display:flex; justify-content:space-between; align-items:baseline; border-top:2px solid #d3d0cf; padding-top:22px; font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; font-weight:600;"><span>Steward · the Provisioner</span><span>08 / 10</span></div>
+    </div>
+  </section>
+
+  <section data-label="Deploy services, not artifacts" data-speaker-notes="The differentiator versus Mason: Mason's job ends when the artifact reaches the registry. The Steward's job starts there — the service on the platform, hardened, budgeted, keyed, observed, and answered-for when it breaks." style="background:#f3f2f2">
+    <div style="width:100%; height:100%; box-sizing:border-box; padding:96px; display:flex; flex-direction:column; font-family:'Archivo',sans-serif; color:#201e1d;">
+      <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:18px; letter-spacing:0.16em; text-transform:uppercase; color:#c22a10; font-weight:600; margin-bottom:34px;">The differentiator</div>
+      <h2 style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:84px; line-height:0.98; letter-spacing:-0.02em; margin:0 0 48px;">Deploy services, not artifacts</h2>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:0; border-top:3px solid #201e1d; flex:1;">
+        <div style="padding:40px 40px 0 0; border-right:2px solid #d3d0cf;">
+          <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; letter-spacing:0.08em; text-transform:uppercase; color:rgba(32,30,29,.55); margin-bottom:18px;">Mason's finish line</div>
+          <p style="font-size:29px; line-height:1.45; font-weight:500; margin:0;">The artifact lands in the registry — built deterministically, shipped to both worlds. <b>Then Mason's job is done.</b></p>
+        </div>
+        <div style="padding:40px 0 0 40px;">
+          <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; letter-spacing:0.08em; text-transform:uppercase; color:rgba(32,30,29,.55); margin-bottom:18px;">Steward's starting line</div>
+          <p style="font-size:29px; line-height:1.45; font-weight:500; margin:0;">The <b style="color:#c22a10;">running service</b> — on OpenShift or Pages or an air-gapped mirror — hardened, budgeted, keyed, observed, and answered-for when it breaks.</p>
+        </div>
+      </div>
+      <div style="display:flex; justify-content:space-between; align-items:baseline; border-top:2px solid #d3d0cf; padding-top:22px; font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; font-weight:600;"><span>Steward · the Provisioner</span><span>09 / 10</span></div>
+    </div>
+  </section>
+
+  <section data-label="Keep the lights on" data-speaker-notes="Close on the motto: nothing the factory needs is missing, and nothing it no longer needs stays privileged. Provision the line, hold the keys, keep the lights on." style="background:#ec3013">
+    <div style="width:100%; height:100%; box-sizing:border-box; padding:96px; display:flex; flex-direction:column; justify-content:space-between; font-family:'Archivo',sans-serif; color:#f3f2f2;">
+      <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:20px; letter-spacing:0.1em; text-transform:uppercase; font-weight:600; opacity:0.9;">Provision the line · hold the keys · keep the lights on</div>
+      <p style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:72px; line-height:1.08; letter-spacing:-0.02em; margin:0; max-width:1560px;">Nothing the factory needs is missing. Nothing it no longer needs <span style="opacity:0.72;">stays privileged.</span></p>
+      <div style="display:flex; justify-content:space-between; align-items:baseline; border-top:2px solid #f3f2f2; padding-top:22px; font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; font-weight:600;"><span>Steward · module pyforge.steward · dist pyforge-steward</span><span>docs/dreams/pyforge-steward.md</span></div>
+    </div>
+  </section>
+
+</x-import>
+</x-dc>
+</body>
+</html>

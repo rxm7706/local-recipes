@@ -2,7 +2,7 @@
   {
     "id": "01-cover",
     "label": "Cover",
-    "notes": "The master vision deck. One line: pyforge is a Dream-to-Code factory — everything starts with a raw human aspiration, and a six-persona crew carries it to shipped, validated code. This deck is the founding story; each persona has its own chapter deck.",
+    "notes": "The master vision deck. One line: pyforge is a Dream-to-Code factory — everything starts with a raw human aspiration, and an eight-persona crew carries it to shipped, validated code. This deck is the founding story; each persona has its own chapter deck.",
     "bg": "#f3f2f2"
   },
   {
@@ -26,12 +26,12 @@
   {
     "id": "05-act-ii-the-crew",
     "label": "Act II — The Crew",
-    "notes": "Act II: who carries the Dream. Six personas, each with its own chapter deck in this same design system.",
+    "notes": "Act II: who carries the Dream. Eight personas, each with its own chapter deck in this same design system.",
     "bg": "#201e1d"
   },
   {
-    "id": "06-six-personas-six-mottos",
-    "label": "Six personas, six mottos",
+    "id": "06-eight-personas-eight-mottos",
+    "label": "Eight personas, eight mottos",
     "notes": "",
     "bg": "#0B1626"
   },
@@ -54,9 +54,9 @@
     "bg": "#f3f2f2"
   },
   {
-    "id": "10-one-dream-seven-decks",
-    "label": "One Dream, seven decks",
-    "notes": "How the deck family hangs together: this Genesis deck is the parent narrative; the six persona decks are its chapters, all in the shared Modernist Archivo system so they present side by side; agentic-sdlc is the origin engine the family was forked from. Every deck round-trips through Claude Design via the bridge.",
+    "id": "10-one-dream-nine-decks",
+    "label": "One Dream, nine decks",
+    "notes": "How the deck family hangs together: this Genesis deck is the parent narrative; the eight persona decks are its chapters, all in the shared Modernist Archivo system so they present side by side; agentic-sdlc is the origin engine the family was forked from. Every deck round-trips through Claude Design via the bridge.",
     "bg": "#f3f2f2"
   },
   {
