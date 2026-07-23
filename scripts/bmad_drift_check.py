@@ -452,6 +452,10 @@ def classify(path: Path) -> str:
         return "archive:retros"
     if rel == "implementation-artifacts/deferred-work.md":
         return "tracked:deferred"
+    if rel == "implementation-artifacts/sprint-status.yaml":
+        # Tier-3 sprint feed (gitignored, local-only) — the program console's
+        # dashboard-gen reads it; no pin gating.
+        return "local:sprint-feed"
     if re.fullmatch(r"implementation-artifacts/spec-.*\.md", rel):
         return "tracked:spec"
     return "UNKNOWN"

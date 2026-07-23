@@ -54,9 +54,15 @@ def glob_to_re(pattern: str) -> re.Pattern:
     return re.compile("^" + "".join(out) + "$")
 
 
-def parse_surface(spec_md: Path) -> list[str]:
-    """`surface:` list entries from SPEC.md frontmatter (inline comments stripped)."""
-    globs, in_fm, in_surface = [], False, False
+def parse_surface(spec_md: Path) -> tuple[list[str], str]:
+    """(`surface:` globs, drift mode) from SPEC.md frontmatter.
+
+    Drift modes (`surface-drift:`): "memlog" (default — governed change must
+    move .memlog.md), "sentinel:<path>" (…or the named repo file, e.g. a
+    CHANGELOG the surface's own process maintains), "exempt" (coverage-only;
+    for product-churn surfaces — always printed, never silent).
+    """
+    globs, drift, in_fm, in_surface = [], "memlog", False, False
     for line in spec_md.read_text(encoding="utf-8").splitlines():
         if line.strip() == "---":
             if in_fm:
@@ -72,7 +78,9 @@ def parse_surface(spec_md: Path) -> list[str]:
             in_surface = False
         if line.startswith("surface:"):
             in_surface = True
-    return globs
+        elif line.startswith("surface-drift:"):
+            drift = line.split(":", 1)[1].split("#", 1)[0].strip()
+    return globs, drift
 
 
 def load_allowlist() -> list[tuple[str, str]]:
@@ -106,10 +114,11 @@ def main() -> int:
     specs: dict[str, dict] = {}
     for spec_md in sorted(REPO_ROOT.glob(SPEC_GLOB)):
         name = spec_md.parent.name
-        globs = parse_surface(spec_md)
+        globs, drift = parse_surface(spec_md)
         specs[name] = {
             "spec": spec_md,
             "globs": globs,
+            "drift": drift,
             "res": [glob_to_re(g) for g in globs],
             "memlog": spec_md.parent / ".memlog.md",
         }
@@ -141,11 +150,22 @@ def main() -> int:
         if n == 0:
             findings.append(f"[stale-allowlist] {pat!r} matches nothing — remove or fix")
 
-    # drift: governed content moved while the spec's memlog did not
+    # drift: governed content moved while the spec's contract did not.
+    # The contract hash is the memlog, plus any sentinel file (a repo file
+    # whose movement counts as the contract moving — e.g. a CHANGELOG the
+    # surface's own process maintains). Exempt specs record no file hashes.
+    def contract_hash(s: dict) -> str:
+        h = sha1(s["memlog"]) if s["memlog"].exists() else ""
+        if s["drift"].startswith("sentinel:"):
+            sentinel = REPO_ROOT / s["drift"].split(":", 1)[1].strip()
+            h += "+" + (sha1(sentinel) if sentinel.is_file() else "missing")
+        return h
+
     current = {
         name: {
-            "memlog": sha1(s["memlog"]) if s["memlog"].exists() else "",
-            "files": {f: sha1(REPO_ROOT / f) for f in sorted(governed.get(name, []))
+            "memlog": contract_hash(s),
+            "files": {} if s["drift"] == "exempt" else
+                     {f: sha1(REPO_ROOT / f) for f in sorted(governed.get(name, []))
                       if (REPO_ROOT / f).is_file()},
         }
         for name, s in specs.items()
@@ -186,8 +206,9 @@ def main() -> int:
           f"governed: {sum(len(v) for v in governed.values())}  ·  "
           f"allowlisted: {sum(allow_hits.values())}")
     for name, s in sorted(specs.items()):
+        mode = "" if s["drift"] == "memlog" else f"  [drift: {s['drift']}]"
         print(f"  {name}: {len(governed.get(name, []))} file(s) "
-              f"via {len(s['globs'])} surface glob(s)")
+              f"via {len(s['globs'])} surface glob(s){mode}")
     print("  allowlist (explicit, reason-tagged):")
     for pat, reason in allow:
         print(f"    {allow_hits[pat]:>5}  {pat}  # {reason}")
