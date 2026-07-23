@@ -169,7 +169,7 @@ local-recipes/
 This repository's primary purpose is conda-forge recipe authoring, but it also hosts other projects driven by [BMAD Method](https://docs.bmad-method.org/) under a single shared installation. Each BMAD project has its own subtree at `_bmad-output/projects/<slug>/`. The full layout, config-resolution order, and "adding a new project" guide live in:
 
 - **`_bmad-output/PROJECTS.md`** — project index and operational reference.
-- **`docs/bmad-setup-plan.md`** — installation history + multi-project setup plan (Phase 8).
+- **`archive/docs/bmad-setup-plan.md`** — installation history + multi-project setup plan (Phase 8).
 - **`CLAUDE.md` § "Multi-Project Pattern"** — quick-reference for AI agents and human contributors.
 
 Quick commands:
@@ -249,7 +249,7 @@ On-demand CI workflows for all platforms (manual trigger only to preserve quota)
 | Test Windows | `gh workflow run test-windows.yml -f recipes="NAME"` | Native builds |
 | Test macOS | `gh workflow run test-macos.yml -f recipes="NAME"` | x86_64 + ARM64 |
 
-For detailed documentation on local testing, see the [Developer Guide](docs/developer-guide.md). For AI tooling details, see [MCP Server Architecture](docs/mcp-server-architecture.md). For driving a GitHub Copilot subscription as a local OpenAI/Anthropic-compatible model backend through any of the proxies in `recipes/copilot-*/` or `recipes/litellm-proxy/`, see [Copilot-to-API](docs/copilot-to-api.md).
+For detailed documentation on local testing, see the [Developer Guide](docs/reference/developer-guide.md). For AI tooling details, see [MCP Server Architecture](docs/reference/mcp-server-architecture.md). For driving a GitHub Copilot subscription as a local OpenAI/Anthropic-compatible model backend through any of the proxies in `recipes/copilot-*/` or `recipes/litellm-proxy/`, see [Copilot-to-API](docs/reference/copilot-to-api.md).
 
 ## Pixi tasks
 
@@ -342,7 +342,7 @@ custom). Atlas tasks run in `local-recipes`; vuln-DB tasks run in `vuln-db`.
 > `GITHUB_API_BASE`). The shared `_http.py` helper picks them up at runtime
 > alongside system trust roots and `~/.netrc`. **No enterprise URLs live in
 > the committed `pixi.toml`** — the same checkout works externally and
-> internally. See `docs/enterprise-deployment.md` for the full air-gapped
+> internally. See `docs/reference/enterprise-deployment.md` for the full air-gapped
 > setup.
 
 ## Known limitations and tips
