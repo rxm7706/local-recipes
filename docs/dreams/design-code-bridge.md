@@ -83,3 +83,9 @@ first shipped organ.
   loop** constraint; watch = 60 s etag poll + quiescence debounce + idle backoff;
   **Marp-source pull joins v1** (CAP-2). Spec re-derived; zero open questions
   remain — ready for `bmad-create-epics-and-stories`.
+- **2026-07-23 — export decisions revisited** (user-directed): the bridge becomes
+  **two-way for exports** — **CAP-5** pushes the regenerated derived set back into
+  each Design project; the standalone HTML is preferentially the **Design-authored
+  bundle** (pulled, superseding marp renders); editable PPTX generation is
+  **deckcraft's** job (herald transports, never generates). Crossing rule is now
+  directional: authored sources inbound, seeds + derived exports outbound.

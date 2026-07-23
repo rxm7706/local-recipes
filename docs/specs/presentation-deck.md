@@ -347,12 +347,31 @@ in `src/marp/`:
 2. `<slug>-executive-summary-<YYYY-MM-DD>.md` — a short exec-summary deck
 3. `<slug>-infographic-<YYYY-MM-DD>.md` — a single/few-panel infographic
 
-**Derived** (generated with `marp`; **regenerate, never hand-edit**):
-4. `src/marp/<slug>-infographic-standalone-<YYYY-MM-DD>.html` — self-contained,
-   offline `marp --html` render of #3
-5. `src/pptx/<slug>-deck-<YYYY-MM-DD>.pptx` — `marp --pptx` of #1
-6. `src/pptx/<slug>_infographic_deck-<YYYY-MM-DD>.pptx` — `marp --pptx` of #3
-   (note the `_infographic_deck` underscore form, kept from Example 2)
+**Derived / companion** (**regenerate, never hand-edit** — engines revised by the
+2026-07-23 evening decisions below):
+4. `src/marp/<slug>-infographic-standalone-<YYYY-MM-DD>.html` — self-contained
+   offline poster. **Design-authored bundle preferred** (the richer Claude-Design
+   "bundled page", pulled via the Design↔Code bridge — warden's 411 KB poster is
+   the exemplar); `marp --html` render of #3 is the **fallback** when no
+   Design-authored bundle exists.
+5. `src/pptx/<slug>-deck-<YYYY-MM-DD>.pptx` — target: **editable PowerPoint** via
+   the **deckcraft** pipeline (python-pptx / pptxgenjs); `marp --pptx` is the
+   explicitly **interim** generator (it renders image-slides, not editable text).
+6. `src/pptx/<slug>_infographic_deck-<YYYY-MM-DD>.pptx` — same engine rule as #5
+   (underscore form kept from Example 2).
+
+**Export decisions revisited (2026-07-23 evening, user-directed):**
+1. **PPTX must become editable.** `marp --pptx` emits each slide as a rendered
+   image — fine for distribution, useless for editing. The designated engine is
+   the **`deckcraft`** BMAD project (editable PPTX + Marp + infographics,
+   air-gapped); `deck-export` grows a backend switch when deckcraft delivers.
+   Until then, marp-generated PPTX are **interim** artifacts.
+2. **Standalone HTML: Design-authored wins.** Visual quality over pure
+   regenerability — reverses the morning's warden regeneration; the Design bundle
+   is restored on the next warden pull. Marp render only where no bundle exists.
+3. **Derived exports cross the bridge outbound.** After `deck-export`, the herald
+   CLI pushes the regenerated set back into the deck's Design project
+   (`SPEC-design-code-bridge` CAP-5), so Design holds the complete set too.
 
 **Generation** — from repo root; the `local-recipes` pixi env carries `marp` 4.2.3
 and Chrome at `/usr/bin/google-chrome` (Chrome is required for `--pptx`/`--pdf`;
@@ -388,7 +407,10 @@ warden's standalone HTML from its `.md` via `marp` (it had been a one-off Claude
 Design "bundled page"), and brought `agentic-sdlc` — the origin deck, on its own
 Space-Grotesk theme — into the set by authoring its exec-summary + infographic and
 renaming its files to convention. Per-deck **content** still differs (theme, slide
-count, wording); the **shape** of the set does not.
+count, wording); the **shape** of the set does not. Under the evening revisit,
+the current PPTX and marp-rendered standalone HTML artifacts are **interim** —
+superseded per-deck as deckcraft (editable PPTX) and Design-authored bundles
+(standalone HTML) come online.
 
 ---
 
