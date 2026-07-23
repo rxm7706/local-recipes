@@ -443,6 +443,11 @@ def classify(path: Path) -> str:
         # backfilled distillations): dated point-in-time snapshots — never
         # re-grounded, so no pin gating.
         return "archive:research"
+    if re.fullmatch(r"planning-artifacts/specs/spec-[a-z0-9-]+/[A-Za-z0-9._-]+\.md", rel):
+        # bmad-spec output folders: SPEC.md kernel + append-only .memlog.md +
+        # companions. The memlog is the decision-of-record and SPEC.md re-derives
+        # from it (never hand-patched), so no pin gating here.
+        return "tracked:spec-kernel"
     if rel.startswith("implementation-artifacts/retros/"):
         return "archive:retros"
     if rel == "implementation-artifacts/deferred-work.md":
