@@ -59,10 +59,11 @@ build contract; the Dream is the "why" behind it.
 
 ## Dreams
 
-18 Dreams as of 2026-07-23 (2 born Dream-first; 16 retro-seeded from a complete
-repo + Design-workspace audit). **No-straggler policy:** every BMAD project,
-deck, Design project, and spec maps to exactly one Dream; the herald CLI's
-status capability (CAP-3) flags any unlinked Design project permanently.
+20 Dreams as of 2026-07-23 (2 born Dream-first; 16 retro-seeded from a complete
+repo + Design-workspace audit; 2 persona dreams added when the ownership audit
+grew the crew 6 → 8). **No-straggler policy:** every BMAD project, deck, Design
+project, and spec maps to exactly one Dream; the herald CLI's status capability
+(CAP-3) flags any unlinked Design project permanently.
 
 **Foundations**
 
@@ -82,6 +83,8 @@ status capability (CAP-3) flags any unlinked Design project permanently.
 | [`pyforge-warden.md`](pyforge-warden.md) | in-spec | The compliance gate that never false-greens — six axes of dependency trust (23/31 built). |
 | [`pyforge-marshal.md`](pyforge-marshal.md) | realized | Graduated autonomy a human can trust — bmad-loop/dev-auto + gates + escalation; proved on atlas + warden. |
 | [`pyforge-doctor.md`](pyforge-doctor.md) | seeded | One bedside manner over the fleet's vitals — pre-flight diagnostics + continuous monitoring + prescriptions (a consolidation of existing instruments). |
+| [`pyforge-scribe.md`](pyforge-scribe.md) | seeded | The inward voice — team knowledge captured, curated, compiled into the graph, answerable (owns team-memory + sentinel's core). |
+| [`pyforge-steward.md`](pyforge-steward.md) | seeded | The estate the factory stands on — provisioning, deployment, credential lifecycle, budgets, incident response. |
 
 **Practices**
 

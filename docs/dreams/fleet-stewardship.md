@@ -8,6 +8,10 @@ status: realized
 
 ## The Dream
 
+*(Naming: this practice Dream — feedstock tending under Mason + Doctor — is
+distinct from the **Steward persona**, the platform/ops station:
+[[pyforge-steward]].)*
+
 Maintainership as a *practice*, not a backlog: every feedstock this factory can
 modify is kept current with upstream, on the modern recipe format, built for
 every platform its users need — and when CI goes red anywhere in the fleet, a

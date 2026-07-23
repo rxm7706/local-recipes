@@ -32,8 +32,8 @@ spec_updated: 2026-07-23
 
 Every deck this spec produces is one persona's chapter of a larger story: the
 **pyforge** ecosystem's **"Dream to Code"** pipeline. Its genesis (**The Dream** —
-the BMAD mission, *Build More Architect Dreams*), its six-persona **Ecosystem
-Crew** (Herald · Marshal · Atlas · Warden · Mason · Doctor), and the Master
+the BMAD mission, *Build More Architect Dreams*), its eight-persona **Ecosystem
+Crew** (Herald · Marshal · Atlas · Warden · Mason · Doctor · Scribe · Steward), and the Master
 Pipeline Flow are defined **once**, in the founding Dream:
 **`docs/dreams/ecosystem-crew.md`**. Read the crew there — this spec deliberately
 does not duplicate it.
@@ -489,10 +489,10 @@ per-case reality below.
 parent narrative of the founding Dream (and its *seed*: it lays out the operating
 model well enough to initiate a new repo or adopt the model in a brownfield one).
 Each persona in the § *Genesis* Ecosystem Crew then gets its own chapter deck. **Atlas** and **Warden** have shipped decks (Examples 3 & 2);
-**Herald, Marshal, Mason, and Doctor** are the backlog, to be built from this spec
-as `pyforge-herald`, `pyforge-marshal`, `pyforge-mason`, and `pyforge-doctor` — the
-existing family convention (matching `pyforge-atlas` / `pyforge-warden`). All six
-persona decks
+**Herald, Marshal, Mason, and Doctor** have seeded starter decks; **Scribe and
+Steward** (adopted 2026-07-23) join the backlog as `pyforge-scribe` and
+`pyforge-steward` — the existing family convention (matching `pyforge-atlas` /
+`pyforge-warden`). All eight persona decks
 share one **Modernist / Archivo** design system (display **Archivo** / **Archivo
 Expanded**; light `#f3f2f2`, dark `#201e1d`, red `#ec3013` / `#c22a10`) so they
 present side-by-side as a family. `agentic-sdlc` (Example 1) is the **origin

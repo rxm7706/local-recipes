@@ -32,10 +32,13 @@ afterthought.**
   application expressions, both unbuilt.
 - **Warden's registry perimeter** ([[pyforge-warden]] ring 2): block/allow lists
   on Artifactory — quarantine before the firewall.
-- **Known health issue** (a [[pyforge-doctor]] case): `JFROG_API_KEY`
-  unconditional injection in `_http.py` — the header attaches to every outbound
-  request regardless of host. Cross-resolver credential leak; fix before wider
-  enterprise rollout.
+- **Known health issue**: `JFROG_API_KEY` unconditional injection in `_http.py`
+  — the header attaches to every outbound request regardless of host.
+  Cross-resolver credential leak; fix before wider enterprise rollout.
+  ([[pyforge-doctor]] finds; [[pyforge-steward]] remediates and owns the key
+  lifecycle.)
+- **Deployment & install operations** (bundles, OpenShift, mirrors) are the
+  **Steward's** station ([[pyforge-steward]], adopted 2026-07-23).
 - Offline bundle format for the whole operating model ([[pyforge-genesis]]
   behind a firewall) — kinship with [[sentinel]]'s §40 Airgap Bundle & Install.
 
