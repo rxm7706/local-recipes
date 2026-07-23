@@ -700,12 +700,12 @@ window.DASHBOARD_DATA = {
           "stories": [
             [
               "1.1",
-              "pending",
+              "done",
               "Retrofit surface: onto existing kernels"
             ],
             [
               "1.2",
-              "pending",
+              "done",
               "spec_surface_check v1 — coverage + allowlist + drift"
             ]
           ]
@@ -716,12 +716,12 @@ window.DASHBOARD_DATA = {
           "stories": [
             [
               "2.1",
-              "pending",
+              "done",
               "Factory-console backfill kernel (docs/dashboard)"
             ],
             [
               "2.2",
-              "pending",
+              "done",
               "Regeneration drill on generate.py (clean-room rebuild)"
             ]
           ]
@@ -823,7 +823,7 @@ window.DASHBOARD_DATA = {
       }
     }
   },
-  "snapshot": "<span>2026-07-23 23:15 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-07-23 23:23 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
