@@ -1,8 +1,7 @@
-# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
 schema_version: 1
 
 context:
-  version: "0.3.14"
+  version: "0.3.16"
   # python_min raised to 3.12: upstream slack.py uses PEP 701 f-string
   # syntax (backslash inside the expression part) which is a SyntaxError
   # on Python <3.12. Drop back to '3.10' once upstream guards that file.
@@ -14,7 +13,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/b/boring-semantic-layer/boring_semantic_layer-${{ version }}.tar.gz
-  sha256: bf365106dfa2b4c650eb21d385b0f128c69f3c2071dbb9c3022c417ac674078c
+  sha256: bba892de81aa7f41d4f78b79d22135fa8d3e1391d557399d3545a61eeb8a4fc0
   patches:
     - patches/0001-loosen-toolz-pin-for-conda-forge.patch
 
@@ -38,8 +37,9 @@ requirements:
     - packaging
     - pyyaml >=6.0
     - returns >=0.26.0
-    - toolz >=0.11
-    - xorq >=0.3.19  # TBD Conda-forge
+    - toolz >=1.0.0
+    - python-tzdata
+    #- xorq >=0.3.19  # TBD Conda-forge
     # bsl transitively imports pyarrow.flight via xorq.api → xorq.flight.
     # Listed defensively so the dep is visible at this layer too.
     - libarrow-flight >=13.0.0 #,<22
@@ -60,6 +60,7 @@ tests:
       run:
         - python ${{ python_min }}.*
         - pip
+        - python
     script:
       - bsl --help
 

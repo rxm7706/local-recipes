@@ -16,6 +16,5 @@ support drop, so the looser pin is API-compatible for bsl's usage.
      "returns>=0.26.0",
 -    "toolz>=1.0.0",
 +    "toolz>=0.11",
-     "xorq>=0.3.19",
  ]
  urls = { Homepage = "https://github.com/boringdata/boring-semantic-layer/tree/main" }
