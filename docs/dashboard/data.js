@@ -665,6 +665,123 @@ window.DASHBOARD_DATA = {
       }
     }
   },
-  "snapshot": "<span>2026-07-23 18:41 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
-  "defaultProject": "warden"
+  "snapshot": "<span>2026-07-23 22:22 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "defaultProject": "warden",
+  "dreams": [
+    {
+      "slug": "agent-portability",
+      "title": "Agent portability — BMAD on any agent, never vendor-locked",
+      "status": "seeded"
+    },
+    {
+      "slug": "agentic-sdlc-autonomy",
+      "title": "The Agentic SDLC — four views of autonomy, one governed factory",
+      "status": "in-deck"
+    },
+    {
+      "slug": "deckcraft",
+      "title": "Deckcraft — editable decks from primitives, air-gapped",
+      "status": "seeded"
+    },
+    {
+      "slug": "design-code-bridge",
+      "title": "The Design↔Code Bridge",
+      "status": "realized"
+    },
+    {
+      "slug": "ecosystem-crew",
+      "title": "The Ecosystem Crew",
+      "status": "in-deck"
+    },
+    {
+      "slug": "enterprise-airgap",
+      "title": "The factory behind the firewall",
+      "status": "realized"
+    },
+    {
+      "slug": "factory-console",
+      "title": "Factory console — the whole pipeline on one page",
+      "status": "realized"
+    },
+    {
+      "slug": "fleet-stewardship",
+      "title": "Fleet stewardship — tend every feedstock we can touch",
+      "status": "realized"
+    },
+    {
+      "slug": "modernist-identity",
+      "title": "Modernist identity — one visual language for everything pyforge",
+      "status": "realized"
+    },
+    {
+      "slug": "packaging-factory",
+      "title": "The Packaging Factory",
+      "status": "realized"
+    },
+    {
+      "slug": "presenton-pixi-image",
+      "title": "Presenton, conda-native — AI decks inside the regulated enterprise",
+      "status": "seeded"
+    },
+    {
+      "slug": "pyforge-atlas",
+      "title": "Atlas — the map that maintains itself",
+      "status": "realized"
+    },
+    {
+      "slug": "pyforge-doctor",
+      "title": "Doctor — one bedside manner for the whole fleet",
+      "status": "seeded"
+    },
+    {
+      "slug": "pyforge-genesis",
+      "title": "Genesis — the seed of the operating model",
+      "status": "in-deck"
+    },
+    {
+      "slug": "pyforge-marshal",
+      "title": "Marshal — autonomy a human can trust",
+      "status": "realized"
+    },
+    {
+      "slug": "pyforge-scribe",
+      "title": "Scribe — the inward voice",
+      "status": "seeded"
+    },
+    {
+      "slug": "pyforge-steward",
+      "title": "Steward — provision the line, hold the keys",
+      "status": "seeded"
+    },
+    {
+      "slug": "pyforge-warden",
+      "title": "Warden — the gate that never lies",
+      "status": "in-spec"
+    },
+    {
+      "slug": "sentinel",
+      "title": "Sentinel — the AI Software Factory (the ancestor)",
+      "status": "seeded"
+    },
+    {
+      "slug": "team-memory",
+      "title": "Team memory — what the team knows, the agents know",
+      "status": "seeded"
+    },
+    {
+      "slug": "unity-data-stack",
+      "title": "Unity Data Stack — the enterprise innersource platform",
+      "status": "seeded"
+    },
+    {
+      "slug": "upstream-discovery",
+      "title": "Upstream discovery — package it before it's asked for",
+      "status": "seeded"
+    },
+    {
+      "slug": "wasm-analytics-stack",
+      "title": "Wasm-first analytical data stack (OCP-ready)",
+      "status": "seeded"
+    }
+  ]
 };

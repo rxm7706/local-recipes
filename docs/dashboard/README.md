@@ -1,8 +1,11 @@
-# Program console — Warden + Atlas
+# Program console — Dreams + Warden + Atlas
 
-A single-page, self-contained status console for the bmad-loop build program:
-per-project story/epic progress, gates, velocity, and delivery-timing metrics,
-with a project toggle (Warden / Atlas). Theme-aware, no external assets.
+A single-page, self-contained status console for the whole "Dream to Code"
+pipeline: the **Dreamscape board** (every `docs/dreams/*.md` Dream in its
+lifecycle stage: seeded → in-deck → in-spec → realized) above per-project
+story/epic progress, gates, velocity, and delivery-timing metrics, with a
+project toggle (Warden / Atlas). Theme-aware, no external assets.
+Its own Dream: [`docs/dreams/factory-console.md`](../dreams/factory-console.md).
 
 This **complements — does not replace** the official BMad Method UI
 (`bmad-dashboard` VS Code extension + MyBMAD, packaged in the `bmad-ui` pixi
@@ -17,11 +20,13 @@ the official UI doesn't show — meant to be committed, hosted, and shared.
 |---|---|
 | `index.html` | Render **shell** — all CSS + render logic. Loads `data.js`, renders `window.DASHBOARD_DATA`. Never holds data. |
 | `data.js` | The **data** — `window.DASHBOARD_DATA = { projects, snapshot, defaultProject }`. Hand-curated narrative (titles, timing, gatenotes, roadmap) + per-story status. |
-| `generate.py` | Refreshes each story's **status** + the snapshot timestamp in `data.js` from the live `sprint-status.yaml` files. |
+| `generate.py` | Refreshes each story's **status** + the snapshot timestamp in `data.js` from the live `sprint-status.yaml` files, and rescans `docs/dreams/*.md` frontmatter into `data.dreams` (both modes; warns on unknown/missing `status:` — the de-facto Dream frontmatter detector). |
 | `../../.github/workflows/dashboard.yml` | Publishes this folder to GitHub Pages; regenerates data (git mode) at deploy time. |
 
-Everything except per-story status and the timestamp is authored by hand in
-`data.js` — the generator only syncs those two.
+Everything except per-story status, the Dreams list, and the timestamp is
+authored by hand in `data.js` — the generator only syncs those three. Dream
+chips link to the file in the (private) repo — collaborators drill through,
+the public sees titles only.
 
 ## Two refresh modes
 
