@@ -1,0 +1,75 @@
+# FILE: README.md
+# Wasm-First Analytical Data Stack (OCP Ready)
+
+A modern, Wasm-first analytical data stack designed for **Red Hat OpenShift (OCP)**. This project implements a secure, scalable, and observable data pipeline using **Python-to-Wasm** compilation, **dlt** for ingestion, and **dbt** for transformation.
+
+## 🚀 Key Features
+*   **Wasm-First Logic**: Python analytical logic compiled to WASI components for sandboxed, high-performance execution.
+*   **Standardized Observability**: Native integration with **OpenTelemetry (OTel)** for tracing and **OpenLineage (OL)** for data provenance.
+*   **OCP Hardened**: Built to comply with OpenShift **Restricted SCC** (Security Context Constraints), running as non-root (UID 1001) with a read-only root filesystem.
+*   **Unified Toolchain**: Managed by **Pixi**, bridging the gap between local development, Podman "Digital Twins," and production OCP clusters.
+
+## 🏗️ Core Architecture
+1.  **Ingest**: User-uploaded Excel files → FastAPI (OIDC Protected) → **dlt** → DuckDB (Bronze).
+2.  **Validate**: **Python-Wasm** module validates data quality via Apache Arrow in-memory buffers.
+3.  **Transform**: **dbt-duckdb** transforms data (Bronze → Silver → Gold) with column-level lineage.
+4.  **Observe**: Every operation emits telemetry to a **Vector** sidecar and lineage facets to **Marquez**.
+
+## 🛠️ Quick Start
+1.  **Install Pixi**: `curl -fsSL https://pixi.sh | bash`
+2.  **Setup Environment**: `pixi install`
+3.  **Build Components**: `pixi run build`
+4.  **Launch OCP Digital Twin**: `podman-compose up`
+
+---
+
+# FILE: BMAD_Specification.md
+# Specification: BMAD-Method 6.3+ (Spec-Kit Compatible)
+
+## 1. Metadata
+*   **Project ID**: WASM-DATA-STACK-001
+*   **Version**: 1.0.0
+*   **BMAD Compliance**: 6.3 (Vertical Slice Architecture)
+*   **Standards**: OpenTelemetry, OpenLineage, Apache Arrow, WASI
+*   **Runtime**: Python 3.11+, Wasmtime 16.0+, Red Hat OCP 4.x
+
+## 2. Capability Model (The "What")
+
+
+| ID | Capability | Standard | Description |
+| :--- | :--- | :--- | :--- |
+| C1 | Binary Interchange | Apache Arrow | High-speed, zero-copy data transport between Python and Wasm. |
+| C2 | Automated Ingest | dlt (Data Load Tool) | Schema inference and loading from Excel to DuckDB Bronze tables. |
+| C3 | Sandboxed Analytics | WASI / Wasm | Isolated execution of Python-based analytical and validation logic. |
+| C4 | Relational Models | dbt (Data Build Tool) | Declarative SQL transformations with integrated data testing. |
+| C5 | Identity Management | OIDC / OAuth2 | Role-based access control via OpenShift/Keycloak identity providers. |
+| C6 | End-to-End Tracing | OpenTelemetry | Distributed tracing of data operations from API to Storage. |
+| C7 | Column Lineage | OpenLineage | Granular tracking of field-level transformations for audit and trust. |
+
+## 3. Implementation Spec (The "How")
+
+### 3.1 Ingestion Vertical Slice
+*   **Entry Point**: FastAPI `POST /upload/excel`.
+*   **Validation**: Binary payload passed to `analytics.wasm`. Module returns JSON validation facet.
+*   **Persistence**: `dlt` appends validated rows to `local_warehouse.duckdb` on the `/app/data` PVC.
+
+### 3.2 Security Context
+*   **User**: Container must run as `User 1001`.
+*   **Filesystem**: `readOnlyRootFilesystem: true`.
+*   **Volume**: `/app/data` must be a `PersistentVolumeClaim` (PVC) with `ReadWriteOnce`.
+
+### 3.3 Observability Bridge
+*   **Trace Context**: W3C Trace Context must be propagated from the browser to the Wasm runtime.
+*   **Lineage Facets**: `dlt` and `dbt` must emit facets to `OPENLINEAGE_URL` upon task completion.
+
+## 4. Quality Gates & Testing
+*   **Digital Twin**: All features must be verified locally using `podman --read-only --user 1001`.
+*   **Data Quality**: `dbt test` must validate schema integrity on every transformation.
+*   **Security Scan**: CI/CD must include `anchore/scan-action` for OCI image vulnerability analysis.
+
+## 5. Deployment Pattern
+*   **Platform**: Red Hat OpenShift (OCP).
+*   **Method**: GitOps (ArgoCD) tracking the Helm Chart.
+*   **Storage**: DuckDB-on-PVC for gigabyte-scale analytical performance at the edge.
+
+---

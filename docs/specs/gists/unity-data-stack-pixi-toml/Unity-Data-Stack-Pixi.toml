@@ -1,0 +1,1726 @@
+# ============================================================================
+# Unity Data Stack - Pixi Configuration
+# ============================================================================
+# Monorepo workspace configuration following pixi best practices.
+# Individual packages have their own pixi.toml files with isolated environments.
+#
+# Quick Start:
+#   pixi install              - Install default environment
+#   pixi install --all        - Install all environments
+#   pixi run test             - Run all tests
+#   pixi run lint             - Lint all code
+#   pixi run check-all        - Run all quality checks (matches CI)
+#
+# Documentation:
+#   docs/development/pixi-package-management.md
+#   https://pixi.sh/latest/
+#   pixi upgrade --pinning-strategy latest-up --exclude coloredlogs --exclude pydantic --exclude typer --exclude tomlkit --exclude python --exclude django --exclude wagtail --exclude nodejs --exclude coderedcms --exclude dagster
+# ============================================================================
+
+[workspace]
+name = "unity-data-stack"
+version = "2025.11.0"
+description = "A comprehensive data orchestration platform built on Dagster, designed for enterprise-grade data engineering with reproducibility, observability, and developer experience"
+authors = ["rxm7706 <95496360+rxm7706@users.noreply.github.com>"]
+license = "MIT"
+license-file = "LICENSE"
+readme = "README.md"
+homepage = "https://github.com/rxm7706/unity-data-stack"
+repository = "https://github.com/rxm7706/unity-data-stack"
+documentation = "https://github.com/rxm7706/unity-data-stack/tree/develop/docs"
+channels = [
+  "conda-forge",   # Primary channel (preferred)
+  "SelfExplainML", # SelfExplainML packages (fallback)
+] # Override via CONDA_CHANNEL_ALIAS and SELFEXPLAINML_CHANNEL_URL for airgap
+
+
+platforms = ["linux-64", "osx-64", "osx-arm64", "win-64"]
+
+
+# conda-pypi-map
+requires-pixi = "==0.59.0"
+solve-strategy = "highest"
+channel-priority = "strict"
+
+
+# ============================================================================
+# Workspace Package Organization
+# ============================================================================
+# This monorepo contains multiple packages with individual pixi.toml files.
+# Root pixi.toml provides workspace-level tasks that delegate to packages.
+#
+# Package Inventory (Clearer Separation of Concerns):
+#
+#   === Shared Libraries (1 package) ===
+#   - src/shared/packages/common               # Core utilities
+#
+#   === Platform Infrastructure (10 active packages) ===
+#   Orchestration & ML:
+#   - src/platform/data-platform/infrastructure/dagster-server     # Dagster UI (port 3000)
+#   - src/platform/data-platform/infrastructure/mlflow-server      # MLflow tracking (port 5000)
+#   - src/platform/data-platform/infrastructure/nebari-server      # JupyterHub (K8s-based)
+#
+#   Data Storage:
+#   - src/platform/data-platform/infrastructure/duckdb-server      # DuckDB analytics (port 8082)
+#   - src/platform/data-platform/infrastructure/postgres-server    # PostgreSQL (port 5433)
+#   - src/platform/data-platform/infrastructure/mongodb-server     # MongoDB (port 27018)
+#   - src/platform/data-platform/infrastructure/redis-server       # Redis cache (port 6380)
+#
+#   Processing & Storage:
+#   - src/platform/data-platform/infrastructure/celery-server      # Celery workers (Flower: 5555)
+#   - src/platform/data-platform/infrastructure/minio-server       # MinIO S3 (ports 9000/9001)
+#
+#   Container Platform:
+#   - src/platform/data-platform/infrastructure/ocpk8s-server      # OCP Kubernetes
+#
+#   === Domain Services (2 packages) ===
+#   - src/tech-domains/customer/services/profile-service           # Profile API (port 8001)
+#   - src/tech-domains/customer/services/web-app                   # Web app (port 8000)
+#
+#   === Excluded Services (2 packages - NOT in active use) ===
+#   - src/platform/data-platform/infrastructure/airflow-server
+#     Reason: SQLAlchemy <2.0 conflict with Dagster
+#     Status: DEPRECATED - use Dagster instead
+#
+#   - src/platform/data-platform/infrastructure/sharepoint-mcp-server
+#     Reason: pyjwt version conflict
+#     Status: Excluded from default stack
+#
+#   To use excluded services: cd into directory and run pixi commands directly
+#
+#   === Empty Tech Domains (11 domains - scaffolding only) ===
+#   Future services will be added here:
+#   - src/tech-domains/ccibt/, cdo/, cdxo/, ct/, cto/, dti/, eft/,
+#     ics/, ohot/, tcoo/
+#
+# Benefits of This Organization:
+#   - Clear separation: shared libs vs platform vs domain services
+#   - Package isolation via individual pixi.toml files
+#   - Workspace-level tasks coordinate across packages
+#   - Explicit documentation of excluded packages and reasons
+
+
+# ============================================================================
+# Airgap and Enterprise Mirrors
+# ============================================================================
+# For airgap/enterprise deployments, set environment variables to override defaults.
+# All settings centralized in config/airgap.conf - no changes to pixi.toml needed!
+#
+# Package Mirrors:
+#   CONDA_CHANNEL_ALIAS       - Override conda-forge channel
+#                               (e.g., https://artifactory.example.com/api/conda/conda-forge)
+#   SELFEXPLAINML_CHANNEL_URL - Override SelfExplainML channel for airgap
+#                               (e.g., https://artifactory.example.com/api/conda/SelfExplainML)
+#   PIP_INDEX_URL             - Override PyPI index
+#                               (e.g., https://artifactory.example.com/api/pypi/pypi/simple)
+#   UV_INDEX_URL              - Override PyPI index for uv (same as PIP_INDEX_URL)
+#
+# GitHub Enterprise:
+#   GHE_HOST             - GitHub Enterprise Server host
+#                          (e.g., https://github.example.com)
+#   GHE_API_BASE         - Optional API base override
+#                          Sets GH_HOST for gh CLI automatically
+#
+# Apply all settings:
+#   source scripts/set-artifactory.sh --apply
+#
+# Configure in:
+#   config/airgap.conf - Single source of truth for all airgap/enterprise settings
+#
+# See: docs/config/airgap.md for complete airgap configuration guide
+#
+# Note: GitHub Actions workflows automatically use the GHE instance they run on.
+#       No workflow modifications are needed when switching between public/enterprise GitHub.
+
+
+# ============================================================================
+# System Requirements
+# ============================================================================
+# Document minimum system requirements for this project
+# Useful for airgap deployments and ensuring compatibility
+[system-requirements]
+linux = "3.10" # Minimum Linux kernel version (RHEL 7+, Ubuntu 18.04+)
+macos = "11.0" # Minimum macOS version (Big Sur+)
+
+
+# ============================================================================
+# PyPI Options
+# ============================================================================
+# Default PyPI configuration (overridden by PIP_INDEX_URL env var in airgap mode)
+# These settings apply when installing PyPI packages via [pypi-dependencies]
+[pypi-options]
+# index-url defaults to https://pypi.org/simple (can be overridden by PIP_INDEX_URL)
+# extra-index-url for additional package sources (use PIP_EXTRA_INDEX_URL in airgap mode)
+# Uncomment for local package development:
+# find-links = ["dist/"]  # For local wheel/sdist files
+
+
+# ============================================================================
+# Workspace Environment Variables
+# ============================================================================
+[activation.env]
+PYTHONUNBUFFERED = "1"
+PYTHONUTF8 = "1"
+# --- Agent-Critical Variables ---
+# Sets the default environment if direnv is not present or fails.
+UNITY_ENV = "local-dev"
+# Ensures Dagster commands work out-of-the-box.
+DAGSTER_HOME = ".dagster-home/local-dev"
+# Ensures Python can find source modules.
+PYTHONPATH = "src"
+
+
+# ============================================================================
+# Base Dependencies - MINIMAL
+# ============================================================================
+# Only dependencies required by ALL environments
+[dependencies]
+python = ">=3.12.12,<3.15"
+platformdirs = ">=4.5.1"
+pixi = "==0.59.0"
+pip = ">=25.3"
+gitpython = ">=3.1.46"     # Git integration
+hatch = ">=1.16.2"         # Modern Python packaging
+hatch-vcs = ">=0.5.0"
+hatchling = ">=1.28.0"
+pyyaml = ">=6.0.3,<7"      # Essential config parsing utility
+#
+act = ">=0.2.84"
+conda = ">=25.11.1"                # Package/environment management
+conda-build = ">=25.11.1"
+conda-index = ">=0.7.0"
+conda-lock = ">=4.0.0"
+conda-pack = ">=0.8.1"
+rattler-build = ">=0.55.0"
+rattler-index = ">=0.27.6"
+pixi-pack = ">=0.7.5"
+pixi-unpack = ">=0.7.5"
+direnv = ">=2.37.1"
+gh = ">=2.83.2"
+python-build = ">=1.3.0"
+setuptools = ">=80.9.0,<81"        # Setuptools version 81 introduces a significant breaking change by removing the pkg_resources
+setuptools-scm = ">=9.2.2"
+twine = ">=6.2.0"
+uv = ">=0.9.21"
+uv-build = ">=0.9.21"
+uv-dynamic-versioning = ">=0.11.2"
+wheel = ">=0.45.1"
+beautifulsoup4 = ">=4.14.3"
+requests = ">=2.32.5"
+
+
+# ============================================================================
+# Workspace Tasks
+# ============================================================================
+[tasks]
+# ============================================================================
+# Agent & Developer Public API
+# ============================================================================
+# These are the primary entry points for all development and CI.
+start = { depends-on = ["local-dev-up"], description = "Start all services for local development." }
+stop = { depends-on = ["local-dev-down"], description = "Stop all local development services." }
+status = { depends-on = ["local-dev-status-all"], description = "Check the status of all services." }
+verify = { depends-on = ["check-all"], description = "Run all verification gates (lint, test, format, etc.)." }
+
+# Composite quality checks - matches CI
+check-all = { depends-on = [
+  "pre-commit",
+  "lint",
+  "format-check",
+  "test",
+  "linkcheck",
+  "validate-packages",
+  "local-dev-check-services",
+], description = "Run all quality checks (matches CI)" }
+
+
+# Testing
+test = { cmd = "pytest src/", description = "Run all tests in workspace" }
+test-all = { cmd = "pytest src/", description = "Run all tests in workspace" }
+test-packages = { depends-on = [
+  "test-common",
+  "test-duckdb",
+  "test-minio",
+  "test-profile",
+  "test-webapp-all",
+], description = "Test all packages" }
+
+
+# BDD Tests (Behave)
+test-bdd = { cmd = "behave tests/features/ --format progress", description = "Run all BDD tests" }
+test-bdd-verbose = { cmd = "behave tests/features/ --no-capture", description = "Run BDD tests with verbose output" }
+test-bdd-smoke = { cmd = "behave tests/features/ --tags=@smoke --format progress", description = "Run smoke BDD tests" }
+test-bdd-integration = { cmd = "behave tests/features/ --tags=@integration --format progress", description = "Run integration BDD tests" }
+test-bdd-api = { cmd = "behave tests/features/api/ --format progress", description = "Run API BDD tests" }
+test-bdd-customer = { cmd = "behave tests/features/customer/ --format progress", description = "Run customer domain BDD tests" }
+
+
+# Linting and type checking
+lint = { cmd = "ruff check src/ && pyright src/ && taplo format --check **/*.toml && find . -name '*.yaml' -o -name '*.yml' | grep -v 'vendors/' | grep -v 'knowledgebase/' | grep -v '.pixi/' | grep -v 'node_modules/' | xargs yamllint && prettier --check '**/*.{yaml,yml}'", description = "Run all linting (Python, types, TOML, YAML)" }
+lint-all = { cmd = "ruff check src/", description = "Lint all source code" }
+lint-toml = { cmd = "taplo format --check **/*.toml", description = "Validate TOML files" }
+lint-yaml = { cmd = "find . -name '*.yaml' -o -name '*.yml' | grep -v 'vendors/' | grep -v 'knowledgebase/' | grep -v '.pixi/' | grep -v 'node_modules/' | xargs yamllint", description = "Validate YAML files (rules) - excludes vendors/" }
+lint-yaml-format = { cmd = "prettier --check '**/*.{yaml,yml}'", description = "Check YAML formatting (style)" }
+lint-packages = { depends-on = [
+  "lint-common",
+  "lint-duckdb",
+  "lint-profile",
+  "lint-webapp",
+  "lint-webapp-frontend",
+], description = "Lint all packages" }
+
+
+# Formatting
+format = { cmd = "ruff format src/ && taplo format **/*.toml && prettier --write '**/*.{yaml,yml}'", description = "Format all code (Python, TOML, YAML)" }
+format-all = { cmd = "ruff format src/", description = "Format all source code" }
+format-check = { cmd = "ruff format --check src/", description = "Check Python code formatting" }
+format-toml = { cmd = "taplo format **/*.toml", description = "Format TOML files" }
+format-yaml = { cmd = "prettier --write '**/*.{yaml,yml}'", description = "Format YAML files" }
+format-packages = { depends-on = [
+  "format-common",
+  "format-duckdb",
+  "format-profile",
+  "format-webapp",
+  "format-webapp-frontend",
+], description = "Format all packages" }
+
+
+# Pre-commit and link checking
+pre-commit = { cmd = "pre-commit run --all-files --show-diff-on-failure", description = "Run pre-commit hooks on all files" }
+linkcheck = { cmd = "sh scripts/test-links.sh || echo '⚠️  Linkcheck found errors (non-blocking - see issue #193)'", description = "Check documentation links (non-blocking)" }
+validate-packages = { cmd = """
+sh -c 'ROOT=$(pwd) \
+  && cd src/shared/packages/common && pixi install --locked \
+  && cd $ROOT && cd src/platform/data-platform/infrastructure/postgres-server && pixi install --locked \
+  && cd $ROOT && cd src/platform/data-platform/infrastructure/redis-server && pixi install --locked \
+  && cd $ROOT && cd src/platform/data-platform/infrastructure/mongodb-server && pixi install --locked \
+  && cd $ROOT && cd src/platform/data-platform/infrastructure/minio-server && pixi install --locked \
+  && cd $ROOT && cd src/platform/data-platform/infrastructure/duckdb-server && pixi install --locked \
+  && cd $ROOT && cd src/platform/data-platform/infrastructure/dagster-server && pixi install --locked \
+  && cd $ROOT && cd src/platform/data-platform/infrastructure/mlflow-server && pixi install --locked \
+  && cd $ROOT && cd src/platform/data-platform/infrastructure/celery-server && pixi install --locked \
+  && cd $ROOT && cd src/tech-domains/customer/services/profile-service && pixi install --locked'
+""", description = "Validate active package pixi.toml files (excludes ocpk8s, nebari, web-app)" }
+
+
+# ============================================================================
+# Package-specific tasks - delegate to package environments
+# ============================================================================
+# Common package
+test-common = { cmd = "sh -c 'cd src/shared/packages/common && SE=${PIXI_ENVIRONMENT_NAME:-default}; case $SE in dev|test) ;; *) SE=default;; esac && pixi run -e ${SE} test'", description = "Test common package" }
+lint-common = { cmd = "sh -c 'cd src/shared/packages/common && SE=${PIXI_ENVIRONMENT_NAME:-default}; case $SE in dev|test) ;; *) SE=default;; esac && pixi run -e ${SE} lint'", description = "Lint common package" }
+format-common = { cmd = "sh -c 'cd src/shared/packages/common && SE=${PIXI_ENVIRONMENT_NAME:-default}; case $SE in dev|test) ;; *) SE=default;; esac && pixi run -e ${SE} format'", description = "Format common package" }
+
+
+# DuckDB server (local-dev)
+test-duckdb = { cmd = "sh -c 'cd src/platform/data-platform/infrastructure/duckdb-server && SE=${PIXI_ENVIRONMENT_NAME:-default}; case $SE in dev|test) ;; *) SE=default;; esac && pixi run -e ${SE} test'", description = "Test DuckDB server" }
+lint-duckdb = { cmd = "sh -c 'cd src/platform/data-platform/infrastructure/duckdb-server && SE=${PIXI_ENVIRONMENT_NAME:-default}; case $SE in dev|test) ;; *) SE=default;; esac && pixi run -e ${SE} lint'", description = "Lint DuckDB server" }
+format-duckdb = { cmd = "sh -c 'cd src/platform/data-platform/infrastructure/duckdb-server && SE=${PIXI_ENVIRONMENT_NAME:-default}; case $SE in dev|test) ;; *) SE=default;; esac && pixi run -e ${SE} format'", description = "Format DuckDB server" }
+dev-duckdb = { cmd = "sh -c 'cd src/platform/data-platform/infrastructure/duckdb-server && SE=${PIXI_ENVIRONMENT_NAME:-default}; case $SE in dev|test) ;; *) SE=default;; esac && pixi run -e ${SE} dev'", description = "Run DuckDB server in dev mode" }
+local-dev-init-duckdb = { cmd = "sh -c 'cd src/platform/data-platform/infrastructure/duckdb-server && SE=${PIXI_ENVIRONMENT_NAME:-default}; case $SE in dev|test) ;; *) SE=default;; esac && pixi run -e ${SE} init-db'", description = "[local-dev] Initialize DuckDB data directories" }
+local-dev-start-duckdb-service = { cmd = "sh -c 'cd src/platform/data-platform/infrastructure/duckdb-server && SE=${PIXI_ENVIRONMENT_NAME:-default}; case $SE in dev|test) ;; *) SE=default;; esac && pixi run -e ${SE} start'", description = "[local-dev] Start DuckDB server (background)" }
+local-dev-stop-duckdb = { cmd = "sh -c 'cd src/platform/data-platform/infrastructure/duckdb-server && SE=${PIXI_ENVIRONMENT_NAME:-default}; case $SE in dev|test) ;; *) SE=default;; esac && pixi run -e ${SE} stop'", description = "[local-dev] Stop DuckDB server" }
+local-dev-status-duckdb = { cmd = "sh -c 'cd src/platform/data-platform/infrastructure/duckdb-server && SE=${PIXI_ENVIRONMENT_NAME:-default}; case $SE in dev|test) ;; *) SE=default;; esac && pixi run -e ${SE} status'", description = "[local-dev] Check DuckDB server status" }
+local-dev-test-duckdb = { depends-on = [
+  "test-duckdb",
+], description = "[local-dev] Test DuckDB server connectivity" }
+
+
+# PostgreSQL server (local-dev)
+test-postgres = { cmd = "sh -c 'cd src/platform/data-platform/infrastructure/postgres-server && SE=${PIXI_ENVIRONMENT_NAME:-default}; case $SE in dev|test) ;; *) SE=default;; esac && pixi run -e ${SE} test'", description = "Test PostgreSQL server connectivity" }
+local-dev-init-postgres = { cmd = "sh -c 'cd src/platform/data-platform/infrastructure/postgres-server && SE=${PIXI_ENVIRONMENT_NAME:-default}; case $SE in dev|test) ;; *) SE=default;; esac && pixi run -e ${SE} init-db'", description = "[local-dev] Initialize PostgreSQL database cluster" }
+local-dev-start-postgres = { cmd = "sh -c 'cd src/platform/data-platform/infrastructure/postgres-server && SE=${PIXI_ENVIRONMENT_NAME:-default}; case $SE in dev|test) ;; *) SE=default;; esac && pixi run -e ${SE} start'", description = "[local-dev] Start PostgreSQL server" }
+local-dev-stop-postgres = { cmd = "sh -c 'cd src/platform/data-platform/infrastructure/postgres-server && SE=${PIXI_ENVIRONMENT_NAME:-default}; case $SE in dev|test) ;; *) SE=default;; esac && pixi run -e ${SE} stop'", description = "[local-dev] Stop PostgreSQL server" }
+local-dev-status-postgres = { cmd = "sh -c 'cd src/platform/data-platform/infrastructure/postgres-server && SE=${PIXI_ENVIRONMENT_NAME:-default}; case $SE in dev|test) ;; *) SE=default;; esac && pixi run -e ${SE} status'", description = "[local-dev] Check PostgreSQL server status" }
+local-dev-dev-postgres = { cmd = "sh -c 'cd src/platform/data-platform/infrastructure/postgres-server && SE=${PIXI_ENVIRONMENT_NAME:-default}; case $SE in dev|test) ;; *) SE=default;; esac && pixi run -e ${SE} dev'", description = "[local-dev] Run PostgreSQL server in dev mode" }
+local-dev-test-postgres = { depends-on = [
+  "test-postgres",
+], description = "[local-dev] Test PostgreSQL server connectivity" }
+
+
+# MongoDB server (local-dev)
+test-mongodb = { cmd = "sh -c 'cd src/platform/data-platform/infrastructure/mongodb-server && SE=${PIXI_ENVIRONMENT_NAME:-default}; case $SE in dev|test) ;; *) SE=default;; esac && pixi run -e ${SE} test'", description = "Test MongoDB server connectivity" }
+local-dev-init-mongodb = { cmd = "sh -c 'cd src/platform/data-platform/infrastructure/mongodb-server && SE=${PIXI_ENVIRONMENT_NAME:-default}; case $SE in dev|test) ;; *) SE=default;; esac && pixi run -e ${SE} init-db'", description = "[local-dev] Initialize MongoDB data directories" }
+local-dev-start-mongodb = { cmd = "sh -c 'cd src/platform/data-platform/infrastructure/mongodb-server && SE=${PIXI_ENVIRONMENT_NAME:-default}; case $SE in dev|test) ;; *) SE=default;; esac && pixi run -e ${SE} start'", description = "[local-dev] Start MongoDB server" }
+local-dev-stop-mongodb = { cmd = "sh -c 'cd src/platform/data-platform/infrastructure/mongodb-server && SE=${PIXI_ENVIRONMENT_NAME:-default}; case $SE in dev|test) ;; *) SE=default;; esac && pixi run -e ${SE} stop'", description = "[local-dev] Stop MongoDB server" }
+local-dev-status-mongodb = { cmd = "sh -c 'cd src/platform/data-platform/infrastructure/mongodb-server && SE=${PIXI_ENVIRONMENT_NAME:-default}; case $SE in dev|test) ;; *) SE=default;; esac && pixi run -e ${SE} status'", description = "[local-dev] Check MongoDB server status" }
+local-dev-dev-mongodb = { cmd = "sh -c 'cd src/platform/data-platform/infrastructure/mongodb-server && SE=${PIXI_ENVIRONMENT_NAME:-default}; case $SE in dev|test) ;; *) SE=default;; esac && pixi run -e ${SE} dev'", description = "[local-dev] Run MongoDB server in dev mode" }
+local-dev-test-mongodb = { depends-on = [
+  "test-mongodb",
+], description = "[local-dev] Test MongoDB server connectivity" }
+
+
+# Redis server (local-dev)
+local-dev-init-redis = { cmd = "sh -c 'cd src/platform/data-platform/infrastructure/redis-server && SE=${PIXI_ENVIRONMENT_NAME:-default}; case $SE in dev|test) ;; *) SE=default;; esac && pixi run -e ${SE} init'", description = "[local-dev] Initialize Redis data/config directories" }
+local-dev-start-redis = { cmd = "sh -c 'cd src/platform/data-platform/infrastructure/redis-server && SE=${PIXI_ENVIRONMENT_NAME:-default}; case $SE in dev|test) ;; *) SE=default;; esac && pixi run -e ${SE} start'", description = "[local-dev] Start Redis server" }
+local-dev-stop-redis = { cmd = "sh -c 'cd src/platform/data-platform/infrastructure/redis-server && SE=${PIXI_ENVIRONMENT_NAME:-default}; case $SE in dev|test) ;; *) SE=default;; esac && pixi run -e ${SE} stop'", description = "[local-dev] Stop Redis server" }
+local-dev-status-redis = { cmd = "sh -c 'cd src/platform/data-platform/infrastructure/redis-server && SE=${PIXI_ENVIRONMENT_NAME:-default}; case $SE in dev|test) ;; *) SE=default;; esac && pixi run -e ${SE} status'", description = "[local-dev] Check Redis server status" }
+local-dev-dev-redis = { cmd = "sh -c 'cd src/platform/data-platform/infrastructure/redis-server && SE=${PIXI_ENVIRONMENT_NAME:-default}; case $SE in dev|test) ;; *) SE=default;; esac && pixi run -e ${SE} dev'", description = "[local-dev] Run Redis in dev mode" }
+local-dev-test-redis = { cmd = "sh -c 'cd src/platform/data-platform/infrastructure/redis-server && SE=${PIXI_ENVIRONMENT_NAME:-default}; case $SE in dev|test) ;; *) SE=default;; esac && pixi run -e ${SE} test'", description = "[local-dev] Test Redis server connectivity" }
+local-dev-cli-redis = { cmd = "sh -c 'cd src/platform/data-platform/infrastructure/redis-server && SE=${PIXI_ENVIRONMENT_NAME:-default}; case $SE in dev|test) ;; *) SE=default;; esac && pixi run -e ${SE} cli'", description = "[local-dev] Open Redis CLI" }
+
+
+# MLflow server (local-dev)
+test-mlflow = { cmd = "sh -c 'cd src/platform/data-platform/infrastructure/mlflow-server && SE=${PIXI_ENVIRONMENT_NAME:-default}; case $SE in dev|test) ;; *) SE=default;; esac && pixi run -e ${SE} test'", description = "Test MLflow server connectivity" }
+local-dev-init-mlflow = { cmd = "sh -c 'cd src/platform/data-platform/infrastructure/mlflow-server && SE=${PIXI_ENVIRONMENT_NAME:-default}; case $SE in dev|test) ;; *) SE=default;; esac && pixi run -e ${SE} init-db'", description = "[local-dev] Initialize MLflow backend database" }
+local-dev-start-mlflow = { cmd = "sh -c 'cd src/platform/data-platform/infrastructure/mlflow-server && SE=${PIXI_ENVIRONMENT_NAME:-default}; case $SE in dev|test) ;; *) SE=default;; esac && pixi run -e ${SE} start'", depends-on = [
+  "local-dev-start-postgres",
+], description = "[local-dev] Start MLflow tracking server (after Postgres)" }
+local-dev-stop-mlflow = { cmd = "sh -c 'cd src/platform/data-platform/infrastructure/mlflow-server && SE=${PIXI_ENVIRONMENT_NAME:-default}; case $SE in dev|test) ;; *) SE=default;; esac && pixi run -e ${SE} stop'", description = "[local-dev] Stop MLflow tracking server" }
+local-dev-status-mlflow = { cmd = "sh -c 'cd src/platform/data-platform/infrastructure/mlflow-server && SE=${PIXI_ENVIRONMENT_NAME:-default}; case $SE in dev|test) ;; *) SE=default;; esac && pixi run -e ${SE} status'", description = "[local-dev] Check MLflow server status" }
+local-dev-dev-mlflow = { cmd = "sh -c 'cd src/platform/data-platform/infrastructure/mlflow-server && SE=${PIXI_ENVIRONMENT_NAME:-default}; case $SE in dev|test) ;; *) SE=default;; esac && pixi run -e ${SE} dev'", description = "[local-dev] Run MLflow server in dev mode" }
+local-dev-test-mlflow = { depends-on = [
+  "test-mlflow",
+], description = "[local-dev] Test MLflow server connectivity" }
+
+
+# Dagster server (local-dev)
+test-dagster = { cmd = "sh -c 'cd src/platform/data-platform/infrastructure/dagster-server && SE=${PIXI_ENVIRONMENT_NAME:-default}; case $SE in dev|test) ;; *) SE=default;; esac && pixi run -e ${SE} test'", description = "Test Dagster connectivity" }
+local-dev-dagster-dev = { cmd = "sh -c 'cd src/platform/data-platform/infrastructure/dagster-server && SE=${PIXI_ENVIRONMENT_NAME:-default}; case $SE in dev|test) ;; *) SE=default;; esac && pixi run -e ${SE} dev'", description = "Run Dagster UI on port 3000 (auto-reload) [local-dev]" }
+local-dev-init-dagster-home = { cmd = "sh -c 'cd src/platform/data-platform/infrastructure/dagster-server && SE=${PIXI_ENVIRONMENT_NAME:-default}; case $SE in dev|test) ;; *) SE=default;; esac && pixi run -e ${SE} init-home'", description = "[local-dev] Initialize Dagster home directory" }
+local-dev-start-dagster = { cmd = "sh -c 'cd src/platform/data-platform/infrastructure/dagster-server && SE=${PIXI_ENVIRONMENT_NAME:-default}; case $SE in dev|test) ;; *) SE=default;; esac && pixi run -e ${SE} start'", depends-on = [
+  "local-dev-start-postgres",
+], description = "[local-dev] Start Dagster webserver and daemon (after Postgres)" }
+local-dev-stop-dagster = { cmd = "sh -c 'cd src/platform/data-platform/infrastructure/dagster-server && SE=${PIXI_ENVIRONMENT_NAME:-default}; case $SE in dev|test) ;; *) SE=default;; esac && pixi run -e ${SE} stop'", description = "[local-dev] Stop Dagster processes" }
+local-dev-status-dagster = { cmd = "sh -c 'cd src/platform/data-platform/infrastructure/dagster-server && SE=${PIXI_ENVIRONMENT_NAME:-default}; case $SE in dev|test) ;; *) SE=default;; esac && pixi run -e ${SE} status'", description = "[local-dev] Check Dagster status" }
+local-dev-test-dagster = { depends-on = [
+  "test-dagster",
+], description = "[local-dev] Test Dagster connectivity" }
+
+
+# MinIO server (local-dev)
+test-minio = { cmd = "sh -c 'cd src/platform/data-platform/infrastructure/minio-server && SE=${PIXI_ENVIRONMENT_NAME:-default}; case $SE in dev|test) ;; *) SE=default;; esac && pixi run -e ${SE} test'", description = "Test MinIO server connectivity" }
+local-dev-init-minio = { cmd = "sh -c 'cd src/platform/data-platform/infrastructure/minio-server && SE=${PIXI_ENVIRONMENT_NAME:-default}; case $SE in dev|test) ;; *) SE=default;; esac && pixi run -e ${SE} init'", description = "[local-dev] Initialize MinIO server directories" }
+local-dev-start-minio = { cmd = "sh -c 'cd src/platform/data-platform/infrastructure/minio-server && SE=${PIXI_ENVIRONMENT_NAME:-default}; case $SE in dev|test) ;; *) SE=default;; esac && pixi run -e ${SE} start'", description = "[local-dev] Start MinIO server" }
+local-dev-stop-minio = { cmd = "sh -c 'cd src/platform/data-platform/infrastructure/minio-server && SE=${PIXI_ENVIRONMENT_NAME:-default}; case $SE in dev|test) ;; *) SE=default;; esac && pixi run -e ${SE} stop'", description = "[local-dev] Stop MinIO server" }
+local-dev-status-minio = { cmd = "sh -c 'cd src/platform/data-platform/infrastructure/minio-server && SE=${PIXI_ENVIRONMENT_NAME:-default}; case $SE in dev|test) ;; *) SE=default;; esac && pixi run -e ${SE} status'", description = "[local-dev] Check MinIO server status" }
+local-dev-dev-minio = { cmd = "sh -c 'cd src/platform/data-platform/infrastructure/minio-server && SE=${PIXI_ENVIRONMENT_NAME:-default}; case $SE in dev|test) ;; *) SE=default;; esac && pixi run -e ${SE} dev'", description = "[local-dev] Run MinIO server in dev mode" }
+local-dev-test-minio = { depends-on = [
+  "test-minio",
+], description = "[local-dev] Test MinIO server connectivity" }
+
+
+# Celery server (local-dev)
+test-celery = { cmd = "sh -c 'cd src/platform/data-platform/infrastructure/celery-server && SE=${PIXI_ENVIRONMENT_NAME:-default}; case $SE in dev|test) ;; *) SE=default;; esac && pixi run -e ${SE} test'", description = "Test Celery worker connectivity" }
+local-dev-start-celery = { cmd = "sh -c 'cd src/platform/data-platform/infrastructure/celery-server && SE=${PIXI_ENVIRONMENT_NAME:-default}; case $SE in dev|test) ;; *) SE=default;; esac && pixi run -e ${SE} start'", depends-on = [
+  "local-dev-start-redis",
+], description = "[local-dev] Start Celery worker and beat scheduler (after Redis)" }
+local-dev-stop-celery = { cmd = "sh -c 'cd src/platform/data-platform/infrastructure/celery-server && SE=${PIXI_ENVIRONMENT_NAME:-default}; case $SE in dev|test) ;; *) SE=default;; esac && pixi run -e ${SE} stop'", description = "[local-dev] Stop Celery worker and beat scheduler" }
+local-dev-status-celery = { cmd = "sh -c 'cd src/platform/data-platform/infrastructure/celery-server && SE=${PIXI_ENVIRONMENT_NAME:-default}; case $SE in dev|test) ;; *) SE=default;; esac && pixi run -e ${SE} status'", description = "[local-dev] Check Celery worker and beat status" }
+local-dev-dev-celery = { cmd = "sh -c 'cd src/platform/data-platform/infrastructure/celery-server && SE=${PIXI_ENVIRONMENT_NAME:-default}; case $SE in dev|test) ;; *) SE=default;; esac && pixi run -e ${SE} dev'", description = "[local-dev] Run Celery in dev mode (foreground)" }
+local-dev-test-celery = { depends-on = [
+  "test-celery",
+], description = "[local-dev] Test Celery worker connectivity" }
+
+
+# MCP Servers (Model Context Protocol) - conda-forge, Dagster, Pixi
+test-conda-forge-mcp = { cmd = "sh -c 'cd src/platform/data-platform/infrastructure/mcp-server/conda-forge-mcp-server && SE=${PIXI_ENVIRONMENT_NAME:-default}; case $SE in dev|test) ;; *) SE=default;; esac && pixi run -e ${SE} test'", description = "Test conda-forge MCP server" }
+local-dev-start-conda-forge-mcp = { cmd = "sh -c 'cd src/platform/data-platform/infrastructure/mcp-server/conda-forge-mcp-server && bash scripts/start-server.sh'", description = "[local-dev] Start conda-forge MCP server" }
+local-dev-stop-conda-forge-mcp = { cmd = "sh -c 'cd src/platform/data-platform/infrastructure/mcp-server/conda-forge-mcp-server && bash scripts/stop-server.sh'", description = "[local-dev] Stop conda-forge MCP server" }
+local-dev-status-conda-forge-mcp = { cmd = "sh -c 'cd src/platform/data-platform/infrastructure/mcp-server/conda-forge-mcp-server && bash scripts/get-status.sh'", description = "[local-dev] Check conda-forge MCP server status" }
+local-dev-test-conda-forge-mcp = { depends-on = [
+  "test-conda-forge-mcp",
+], description = "[local-dev] Test conda-forge MCP server" }
+
+test-dagster-mcp = { cmd = "sh -c 'cd src/platform/data-platform/infrastructure/mcp-server/dagster-mcp-server && SE=${PIXI_ENVIRONMENT_NAME:-default}; case $SE in dev|test) ;; *) SE=default;; esac && pixi run -e ${SE} test'", description = "Test Dagster MCP server" }
+local-dev-start-dagster-mcp = { cmd = "sh -c 'cd src/platform/data-platform/infrastructure/mcp-server/dagster-mcp-server && bash scripts/start-server.sh'", description = "[local-dev] Start Dagster MCP server" }
+local-dev-stop-dagster-mcp = { cmd = "sh -c 'cd src/platform/data-platform/infrastructure/mcp-server/dagster-mcp-server && bash scripts/stop-server.sh'", description = "[local-dev] Stop Dagster MCP server" }
+local-dev-status-dagster-mcp = { cmd = "sh -c 'cd src/platform/data-platform/infrastructure/mcp-server/dagster-mcp-server && bash scripts/get-status.sh'", description = "[local-dev] Check Dagster MCP server status" }
+local-dev-test-dagster-mcp = { depends-on = [
+  "test-dagster-mcp",
+], description = "[local-dev] Test Dagster MCP server" }
+
+test-pixi-mcp = { cmd = "sh -c 'cd src/platform/data-platform/infrastructure/mcp-server/pixi-mcp-server && SE=${PIXI_ENVIRONMENT_NAME:-default}; case $SE in dev|test) ;; *) SE=default;; esac && pixi run -e ${SE} test'", description = "Test Pixi MCP server" }
+local-dev-start-pixi-mcp = { cmd = "sh -c 'cd src/platform/data-platform/infrastructure/mcp-server/pixi-mcp-server && bash scripts/start-server.sh'", description = "[local-dev] Start Pixi MCP server" }
+local-dev-stop-pixi-mcp = { cmd = "sh -c 'cd src/platform/data-platform/infrastructure/mcp-server/pixi-mcp-server && bash scripts/stop-server.sh'", description = "[local-dev] Stop Pixi MCP server" }
+local-dev-status-pixi-mcp = { cmd = "sh -c 'cd src/platform/data-platform/infrastructure/mcp-server/pixi-mcp-server && bash scripts/get-status.sh'", description = "[local-dev] Check Pixi MCP server status" }
+local-dev-test-pixi-mcp = { depends-on = [
+  "test-pixi-mcp",
+], description = "[local-dev] Test Pixi MCP server" }
+
+
+# OCP/K8s cluster management (dev/containerized)
+dev-start-ocpk8s = { cmd = "sh -c 'cd src/platform/data-platform/infrastructure/ocpk8s-server && SE=${PIXI_ENVIRONMENT_NAME:-default}; case $SE in dev|test) ;; *) SE=default;; esac && pixi run -e ${SE} start'", description = "[dev] Start local Kubernetes cluster (OCP/kind)" }
+dev-stop-ocpk8s = { cmd = "sh -c 'cd src/platform/data-platform/infrastructure/ocpk8s-server && SE=${PIXI_ENVIRONMENT_NAME:-default}; case $SE in dev|test) ;; *) SE=default;; esac && pixi run -e ${SE} stop'", description = "[dev] Stop local Kubernetes cluster" }
+dev-status-ocpk8s = { cmd = "sh -c 'cd src/platform/data-platform/infrastructure/ocpk8s-server && SE=${PIXI_ENVIRONMENT_NAME:-default}; case $SE in dev|test) ;; *) SE=default;; esac && pixi run -e ${SE} status'", description = "[dev] Check Kubernetes cluster status" }
+dev-test-ocpk8s = { cmd = "sh -c 'cd src/platform/data-platform/infrastructure/ocpk8s-server && SE=${PIXI_ENVIRONMENT_NAME:-default}; case $SE in dev|test) ;; *) SE=default;; esac && pixi run -e ${SE} test'", description = "[dev] Test Kubernetes cluster" }
+
+
+# Nebari server (data science platform on Kubernetes) [dev]
+dev-init-nebari = { cmd = "sh -c 'cd src/platform/data-platform/infrastructure/nebari-server && SE=${PIXI_ENVIRONMENT_NAME:-default}; case $SE in dev|test) ;; *) SE=default;; esac && pixi run -e ${SE} init'", description = "[dev] Initialize Nebari configuration for local K8s" }
+dev-deploy-nebari = { cmd = "sh -c 'cd src/platform/data-platform/infrastructure/nebari-server && SE=${PIXI_ENVIRONMENT_NAME:-default}; case $SE in dev|test) ;; *) SE=default;; esac && pixi run -e ${SE} deploy'", description = "[dev] Deploy Nebari to Kubernetes cluster" }
+dev-status-nebari = { cmd = "sh -c 'cd src/platform/data-platform/infrastructure/nebari-server && SE=${PIXI_ENVIRONMENT_NAME:-default}; case $SE in dev|test) ;; *) SE=default;; esac && pixi run -e ${SE} status'", description = "[dev] Check Nebari deployment status" }
+dev-undeploy-nebari = { cmd = "sh -c 'cd src/platform/data-platform/infrastructure/nebari-server && SE=${PIXI_ENVIRONMENT_NAME:-default}; case $SE in dev|test) ;; *) SE=default;; esac && pixi run -e ${SE} undeploy'", description = "[dev] Remove Nebari from Kubernetes" }
+dev-verify-nebari = { cmd = "sh -c 'cd src/platform/data-platform/infrastructure/nebari-server && SE=${PIXI_ENVIRONMENT_NAME:-default}; case $SE in dev|test) ;; *) SE=default;; esac && pixi run -e ${SE} verify'", description = "[dev] Verify Nebari deployment is healthy" }
+dev-access-jupyterhub = { cmd = "sh -c 'cd src/platform/data-platform/infrastructure/nebari-server && SE=${PIXI_ENVIRONMENT_NAME:-default}; case $SE in dev|test) ;; *) SE=default;; esac && pixi run -e ${SE} jupyterhub'", description = "[dev] Port forward to JupyterHub (localhost:8080)" }
+dev-test-nebari = { cmd = "sh -c 'cd src/platform/data-platform/infrastructure/nebari-server && SE=${PIXI_ENVIRONMENT_NAME:-default}; case $SE in dev|test) ;; *) SE=default;; esac && pixi run -e ${SE} test'", description = "[dev] Test Nebari deployment" }
+
+
+# Profile service
+test-profile = { cmd = "sh -c 'cd src/tech-domains/customer/services/profile-service && SE=${PIXI_ENVIRONMENT_NAME:-default}; case $SE in dev|test) ;; *) SE=default;; esac && pixi run -e ${SE} test'", description = "Test profile service" }
+lint-profile = { cmd = "sh -c 'cd src/tech-domains/customer/services/profile-service && SE=${PIXI_ENVIRONMENT_NAME:-default}; case $SE in dev|test) ;; *) SE=default;; esac && pixi run -e ${SE} lint'", description = "Lint profile service" }
+format-profile = { cmd = "sh -c 'cd src/tech-domains/customer/services/profile-service && SE=${PIXI_ENVIRONMENT_NAME:-default}; case $SE in dev|test) ;; *) SE=default;; esac && pixi run -e ${SE} format'", description = "Format profile service" }
+dev-profile = { cmd = "sh -c 'cd src/tech-domains/customer/services/profile-service && SE=${PIXI_ENVIRONMENT_NAME:-default}; case $SE in dev|test) ;; *) SE=default;; esac && pixi run -e ${SE} dev'", description = "Run profile service in dev mode" }
+
+
+# Web app (Django + React)
+install-webapp-frontend = { cmd = "sh -c 'cd src/tech-domains/customer/services/web-app && SE=${PIXI_ENVIRONMENT_NAME:-default}; case $SE in dev|test) ;; *) SE=default;; esac && pixi run -e ${SE} install-frontend'", description = "Install web app frontend dependencies" }
+test-webapp = { cmd = "sh -c 'cd src/tech-domains/customer/services/web-app && SE=${PIXI_ENVIRONMENT_NAME:-default}; case $SE in dev|test) ;; *) SE=default;; esac && pixi run -e ${SE} test'", description = "Test web app backend" }
+test-webapp-frontend = { cmd = "sh -c 'cd src/tech-domains/customer/services/web-app && SE=${PIXI_ENVIRONMENT_NAME:-default}; case $SE in dev|test) ;; *) SE=default;; esac && pixi run -e ${SE} test-frontend'", description = "Test web app frontend" }
+test-webapp-all = { cmd = "sh -c 'cd src/tech-domains/customer/services/web-app && SE=${PIXI_ENVIRONMENT_NAME:-default}; case $SE in dev|test) ;; *) SE=default;; esac && pixi run -e ${SE} test-all'", description = "Test web app (backend + frontend)" }
+lint-webapp = { cmd = "sh -c 'cd src/tech-domains/customer/services/web-app && SE=${PIXI_ENVIRONMENT_NAME:-default}; case $SE in dev|test) ;; *) SE=default;; esac && pixi run -e ${SE} lint'", description = "Lint web app backend" }
+lint-webapp-frontend = { cmd = "sh -c 'cd src/tech-domains/customer/services/web-app && SE=${PIXI_ENVIRONMENT_NAME:-default}; case $SE in dev|test) ;; *) SE=default;; esac && pixi run -e ${SE} lint-frontend'", description = "Lint web app frontend" }
+format-webapp = { cmd = "sh -c 'cd src/tech-domains/customer/services/web-app && SE=${PIXI_ENVIRONMENT_NAME:-default}; case $SE in dev|test) ;; *) SE=default;; esac && pixi run -e ${SE} format'", description = "Format web app backend" }
+format-webapp-frontend = { cmd = "sh -c 'cd src/tech-domains/customer/services/web-app && SE=${PIXI_ENVIRONMENT_NAME:-default}; case $SE in dev|test) ;; *) SE=default;; esac && pixi run -e ${SE} format-frontend'", description = "Format web app frontend" }
+dev-webapp-backend = { cmd = "sh -c 'cd src/tech-domains/customer/services/web-app && SE=${PIXI_ENVIRONMENT_NAME:-default}; case $SE in dev|test) ;; *) SE=default;; esac && pixi run -e ${SE} dev-backend'", description = "Start Django dev server (port 8000)" }
+dev-webapp-frontend = { cmd = "sh -c 'cd src/tech-domains/customer/services/web-app && SE=${PIXI_ENVIRONMENT_NAME:-default}; case $SE in dev|test) ;; *) SE=default;; esac && pixi run -e ${SE} dev-frontend'", description = "Start Vite dev server (port 5173)" }
+build-webapp-frontend = { cmd = "sh -c 'cd src/tech-domains/customer/services/web-app && SE=${PIXI_ENVIRONMENT_NAME:-default}; case $SE in dev|test) ;; *) SE=default;; esac && pixi run -e ${SE} build-frontend'", description = "Build web app frontend" }
+build-webapp = { cmd = "sh -c 'cd src/tech-domains/customer/services/web-app && SE=${PIXI_ENVIRONMENT_NAME:-default}; case $SE in dev|test) ;; *) SE=default;; esac && pixi run -e ${SE} build'", description = "Build web app (frontend + collect static)" }
+migrate-webapp = { cmd = "sh -c 'cd src/tech-domains/customer/services/web-app && SE=${PIXI_ENVIRONMENT_NAME:-default}; case $SE in dev|test) ;; *) SE=default;; esac && pixi run -e ${SE} migrate'", description = "Run Django database migrations" }
+
+
+# ============================================================================
+# Development and deployment tasks
+# ============================================================================
+# Scaffolding
+scaffold-domain = { cmd = "sh -c 'NAME=${NAME:?set NAME} TITLE=\"${TITLE:-$NAME}\" python tools/scripts/scaffold_domain.py'", description = "Scaffold a new tech domain" }
+scaffold-tech-domain = { cmd = "sh -c 'NAME=${NAME:?set NAME} TITLE=\"${TITLE:-$NAME}\" python tools/scripts/scaffold_domain.py'", description = "Scaffold a new tech domain (alias)" }
+
+
+# Container operations (engine-neutral)
+compose-cmd = "sh -c 'echo ${COMPOSE_CMD:-pixi exec podman-compose}'"
+dev = { cmd = "sh -c '$(pixi run -q compose-cmd) -f docker-compose.yml up --build'", description = "Start development stack" }
+deploy = { cmd = "sh -c '$(pixi run -q compose-cmd) -f docker-compose.yml up -d --build'", description = "Deploy stack in detached mode" }
+down = { cmd = "sh -c '$(pixi run -q compose-cmd) -f docker-compose.yml down'", description = "Tear down stack" }
+
+
+# Direct service startup (no containers) - local-dev convenience
+local-dev-start-duckdb = { cmd = "sh -c 'cd src/platform/data-platform/infrastructure/duckdb-server && uvicorn duckdb_server.api:app --reload --port 8082'", description = "Start DuckDB server with auto-reload [local-dev]" }
+local-dev-start-profile = { cmd = "sh -c 'cd src/tech-domains/customer/services/profile-service && SE=${PIXI_ENVIRONMENT_NAME:-default}; case $SE in dev|test) ;; *) SE=default;; esac && pixi run -e ${SE} start'", description = "[local-dev] Start profile service (background)" }
+
+
+# Aggregate local-dev services (no containers) with clear naming
+# Core datastores/object/cache
+local-dev-init-core = { depends-on = [
+  "local-dev-init-postgres",
+  "local-dev-init-redis",
+  "local-dev-init-mongodb",
+  "local-dev-init-minio",
+  "local-dev-init-duckdb",
+], description = "[local-dev] Initialize core data services (Postgres, Redis, MongoDB, MinIO, DuckDB)" }
+local-dev-start-core = { depends-on = [
+  "local-dev-start-postgres",
+  "local-dev-start-redis",
+  "local-dev-start-mongodb",
+  "local-dev-start-minio",
+  "local-dev-start-duckdb-service",
+], description = "[local-dev] Start core data services" }
+local-dev-status-core = { depends-on = [
+  "local-dev-status-postgres",
+  "local-dev-status-redis",
+  "local-dev-status-mongodb",
+  "local-dev-status-minio",
+  "local-dev-status-duckdb",
+], description = "[local-dev] Status for core data services" }
+local-dev-stop-core = { depends-on = [
+  "local-dev-stop-duckdb",
+  "local-dev-stop-minio",
+  "local-dev-stop-mongodb",
+  "local-dev-stop-redis",
+  "local-dev-stop-postgres",
+], description = "[local-dev] Stop core data services (reverse order)" }
+local-dev-check-core = { depends-on = [
+  "local-dev-test-postgres",
+  "local-dev-test-redis",
+  "local-dev-test-mongodb",
+  "local-dev-test-minio",
+  "local-dev-test-duckdb",
+], description = "[local-dev] Verify core services are healthy" }
+
+
+# App services (depend on PostgreSQL)
+local-dev-init-apps = { depends-on = [
+  "local-dev-init-dagster-home",
+  "local-dev-init-mlflow",
+], description = "[local-dev] Initialize app service prerequisites (Dagster, MLflow)" }
+
+
+# Ensure Postgres-first for dependent services via per-service dependencies (now embedded in the leaf tasks)
+local-dev-start-apps = { depends-on = [
+  "local-dev-start-dagster",
+  "local-dev-start-mlflow",
+  "local-dev-start-celery",
+  "local-dev-start-conda-forge-mcp",
+  "local-dev-start-dagster-mcp",
+  "local-dev-start-pixi-mcp",
+], description = "[local-dev] Start application services (Dagster, MLflow, Celery, MCP servers)" }
+local-dev-status-apps = { depends-on = [
+  "local-dev-status-dagster",
+  "local-dev-status-mlflow",
+  "local-dev-status-celery",
+  "local-dev-status-conda-forge-mcp",
+  "local-dev-status-dagster-mcp",
+  "local-dev-status-pixi-mcp",
+], description = "[local-dev] Status for application services (including MCP servers)" }
+local-dev-stop-apps = { depends-on = [
+  "local-dev-stop-pixi-mcp",
+  "local-dev-stop-dagster-mcp",
+  "local-dev-stop-conda-forge-mcp",
+  "local-dev-stop-celery",
+  "local-dev-stop-mlflow",
+  "local-dev-stop-dagster",
+], description = "[local-dev] Stop application services (reverse order, MCP servers first)" }
+local-dev-check-apps = { depends-on = [
+  "local-dev-test-dagster",
+  "local-dev-test-mlflow",
+  "local-dev-test-celery",
+], description = "[local-dev] Verify application services are healthy (MCP tests run in parallel CI job)" }
+
+
+# MCP tests run in parallel in CI via matrix job for 14min speedup
+local-dev-check-mcp = { depends-on = [
+  "local-dev-test-conda-forge-mcp",
+  "local-dev-test-dagster-mcp",
+  "local-dev-test-pixi-mcp",
+], description = "[local-dev] Verify MCP servers (sequential for local-dev, parallel in CI)" }
+
+
+# All local-dev services (core + apps)
+local-dev-init-services = { depends-on = [
+  "local-dev-init-core",
+  "local-dev-init-apps",
+], description = "[local-dev] Initialize all local services" }
+local-dev-start-services = { depends-on = [
+  "local-dev-start-core",
+  "local-dev-start-apps",
+], description = "[local-dev] Start all local services (core first, then apps)" }
+local-dev-status-services = { depends-on = [
+  "local-dev-status-core",
+  "local-dev-status-apps",
+], description = "[local-dev] Status for all local services" }
+local-dev-stop-services = { depends-on = [
+  "local-dev-stop-apps",
+  "local-dev-stop-core",
+], description = "[local-dev] Stop all local services (apps first, then core)" }
+local-dev-check-services = { depends-on = [
+  "local-dev-check-core",
+  "local-dev-check-apps",
+], description = "[local-dev] Verify all local services are healthy" }
+
+
+# Domain services (customer, portal, etc.)
+local-dev-stop-profile = { cmd = "sh -c 'cd src/tech-domains/customer/services/profile-service && SE=${PIXI_ENVIRONMENT_NAME:-default}; case $SE in dev|test) ;; *) SE=default;; esac && pixi run -e ${SE} stop || echo \"Profile service not running\"'", description = "[local-dev] Stop profile service" }
+local-dev-status-profile = { cmd = "sh -c 'cd src/tech-domains/customer/services/profile-service && SE=${PIXI_ENVIRONMENT_NAME:-default}; case $SE in dev|test) ;; *) SE=default;; esac && pixi run -e ${SE} status || echo \"Profile service not running\"'", description = "[local-dev] Check profile service status" }
+local-dev-test-profile = { cmd = "sh -c 'cd src/tech-domains/customer/services/profile-service && SE=${PIXI_ENVIRONMENT_NAME:-default}; case $SE in dev|test) ;; *) SE=default;; esac && pixi run -e ${SE} test'", description = "[local-dev] Test profile service" }
+
+# Domain service aggregates
+local-dev-start-domain-services = { depends-on = [
+  "local-dev-start-profile",
+], description = "[local-dev] Start domain services (profile-service, etc.)" }
+local-dev-stop-domain-services = { depends-on = [
+  "local-dev-stop-profile",
+], description = "[local-dev] Stop domain services" }
+local-dev-status-domain-services = { depends-on = [
+  "local-dev-status-profile",
+], description = "[local-dev] Check status of domain services" }
+local-dev-check-domain-services = { depends-on = [
+  "local-dev-test-profile",
+], description = "[local-dev] Verify health of domain services" }
+
+
+# ============================================================================
+# Local-Dev Lifecycle Commands - Complete Service Management
+# ============================================================================
+# Single-command startup - ALL eligible local-dev services
+local-dev-up = { depends-on = [
+  "local-dev-init-services",
+  "local-dev-start-services",
+  "local-dev-start-domain-services",
+  "local-dev-health-check",
+], description = "[local-dev] Initialize and start ALL services (databases + apps + domains)" }
+
+
+# Single-command shutdown - ALL services
+local-dev-down = { depends-on = [
+  "local-dev-stop-domain-services",
+  "local-dev-stop-services",
+], description = "[local-dev] Stop ALL services (reverse dependency order)" }
+
+
+# Restart all services
+local-dev-restart = { depends-on = [
+  "local-dev-down",
+  "local-dev-up",
+], description = "[local-dev] Restart ALL services" }
+
+
+# Unified status check - ALL services
+local-dev-status-all = { depends-on = [
+  "local-dev-status-services",
+  "local-dev-status-domain-services",
+], description = "[local-dev] Check status of ALL services" }
+
+
+# Health verification - ALL services
+local-dev-health-check = { depends-on = [
+  "local-dev-check-services",
+  "local-dev-check-domain-services",
+], description = "[local-dev] Verify health of ALL services (runs connectivity tests)" }
+
+
+# K8s/Nebari aggregates (dev/containerized) - optional
+dev-init-k8s = { depends-on = [
+  "dev-init-nebari",
+], description = "[dev] Initialize Nebari configuration" }
+dev-start-k8s = { depends-on = [
+  "dev-start-ocpk8s",
+  "dev-deploy-nebari",
+], description = "[dev] Start local K8s cluster and deploy Nebari" }
+dev-status-k8s = { depends-on = [
+  "dev-status-ocpk8s",
+  "dev-status-nebari",
+], description = "[dev] Status for K8s cluster and Nebari" }
+dev-check-k8s = { depends-on = [
+  "dev-verify-nebari",
+], description = "[dev] Verify Nebari deployment is healthy" }
+dev-stop-k8s = { depends-on = [
+  "dev-undeploy-nebari",
+  "dev-stop-ocpk8s",
+], description = "[dev] Stop Nebari and local K8s cluster" }
+
+
+# Build images
+build-domain-service = { cmd = "sh -c '${BUILD_CMD:-pixi exec podman} build -t ${DOMAIN}-${SERVICE} -f src/tech-domains/${DOMAIN}/services/${SERVICE}/Dockerfile .'", description = "Build a specific domain service image" }
+build-all = { cmd = "sh -c '${BUILD_CMD:-pixi exec podman} build -t duckdb-server -f src/platform/data-platform/infrastructure/duckdb-server/Dockerfile . && ${BUILD_CMD:-pixi exec podman} build -t postgres-server -f src/platform/data-platform/infrastructure/postgres-server/Dockerfile . && ${BUILD_CMD:-pixi exec podman} build -t minio-server -f src/platform/data-platform/infrastructure/minio-server/Dockerfile . && ${BUILD_CMD:-pixi exec podman} build -t customer-profile-service -f src/tech-domains/customer/services/profile-service/Dockerfile .'", description = "Build all service images" }
+
+
+# Environment-specific compose
+int-up = { cmd = "sh -c '$(pixi run -q compose-cmd) -f docker-compose.yml --profile integration up --build'", description = "Start integration environment" }
+int-down = { cmd = "sh -c '$(pixi run -q compose-cmd) -f docker-compose.yml --profile integration down'", description = "Stop integration environment" }
+qa-up = { cmd = "sh -c '$(pixi run -q compose-cmd) -f docker-compose.yml --profile testing up --build'", description = "Start QA environment" }
+qa-down = { cmd = "sh -c '$(pixi run -q compose-cmd) -f docker-compose.yml --profile testing down'", description = "Stop QA environment" }
+uat-up = { cmd = "sh -c '$(pixi run -q compose-cmd) -f docker-compose.yml --profile uat up --build'", description = "Start UAT environment" }
+uat-down = { cmd = "sh -c '$(pixi run -q compose-cmd) -f docker-compose.yml --profile uat down'", description = "Stop UAT environment" }
+
+
+# Container runtime checks
+check-container-runtime = { cmd = "bash scripts/check-container-runtime.sh", description = "Check for available container runtime" }
+dev-safe = { cmd = """
+  bash -c '
+    if bash scripts/check-container-runtime.sh >/dev/null 2>&1; then
+      echo "Starting services via containers..."
+      pixi run dev
+    else
+      echo "❌ Container runtime not available in this environment"
+      echo "   Use direct service startup instead:"
+      echo "     pixi run local-dev-start-duckdb (port 8082)"
+      echo "     pixi run local-dev-start-profile (port 8001)"
+      exit 1
+    fi
+  '
+""", description = "Start development stack (checks for container support first)" }
+dev-direct = { cmd = """
+  echo "Starting services directly (no containers)..."
+  echo "  - DuckDB server on http://localhost:8082"
+  echo "  - Profile service on http://localhost:8001"
+  echo ""
+  echo "Note: Services will run in foreground. Press Ctrl+C to stop."
+  echo "      For background processes, run each in a separate terminal."
+""", description = "Show instructions for starting services without containers" }
+check-tools = { cmd = "sh -c '(command -v podman >/dev/null 2>&1 || command -v docker >/dev/null 2>&1) && (command -v podman-compose >/dev/null 2>&1 || command -v docker >/dev/null 2>&1) && echo \"Container tools OK\" || (echo \"Missing Podman/Docker or compose support\"; exit 1)'", description = "Verify container tools are available" }
+smoke = { cmd = "sh -c 'curl -sf http://localhost:8082/health && curl -sf http://localhost:8001/health'", description = "Run smoke tests" }
+
+
+# GitHub Actions local testing (act)
+act-list = { cmd = "sh -c 'if command -v podman >/dev/null 2>&1; then act -l --container-daemon-socket unix://$XDG_RUNTIME_DIR/podman/podman.sock 2>/dev/null || act -l; elif command -v docker >/dev/null 2>&1; then act -l; else echo \"Error: Neither Podman nor Docker found. Install Podman Desktop or Docker Desktop.\"; exit 1; fi'", description = "List GitHub Actions workflows" }
+act-ci-shared = { cmd = "sh -c 'if command -v podman >/dev/null 2>&1; then act -W .github/workflows/ci-shared.yml --container-daemon-socket unix://$XDG_RUNTIME_DIR/podman/podman.sock 2>/dev/null || act -W .github/workflows/ci-shared.yml; elif command -v docker >/dev/null 2>&1; then act -W .github/workflows/ci-shared.yml; else echo \"Error: Neither Podman nor Docker found.\"; exit 1; fi'", description = "Run shared CI workflow locally" }
+act-ci-domains = { cmd = "sh -c 'if command -v podman >/dev/null 2>&1; then act -W .github/workflows/ci-domains.yml --container-daemon-socket unix://$XDG_RUNTIME_DIR/podman/podman.sock 2>/dev/null || act -W .github/workflows/ci-domains.yml; elif command -v docker >/dev/null 2>&1; then act -W .github/workflows/ci-domains.yml; else echo \"Error: Neither Podman nor Docker found.\"; exit 1; fi'", description = "Run domains CI workflow locally" }
+act-link-check = { cmd = "sh -c 'if command -v podman >/dev/null 2>&1; then act -W .github/workflows/link-check.yml --container-daemon-socket unix://$XDG_RUNTIME_DIR/podman/podman.sock 2>/dev/null || act -W .github/workflows/link-check.yml; elif command -v docker >/dev/null 2>&1; then act -W .github/workflows/link-check.yml; else echo \"Error: Neither Podman nor Docker found.\"; exit 1; fi'", description = "Run link check workflow locally" }
+act-constitutional = { cmd = "sh -c 'if command -v podman >/dev/null 2>&1; then act -W .github/workflows/constitutional-validation.yml --container-daemon-socket unix://$XDG_RUNTIME_DIR/podman/podman.sock 2>/dev/null || act -W .github/workflows/constitutional-validation.yml; elif command -v docker >/dev/null 2>&1; then act -W .github/workflows/constitutional-validation.yml; else echo \"Error: Neither Podman nor Docker found.\"; exit 1; fi'", description = "Run constitutional validation workflow locally" }
+act-ci-all = { cmd = "sh -c 'if command -v podman >/dev/null 2>&1; then (act -W .github/workflows/ci-shared.yml --container-daemon-socket unix://$XDG_RUNTIME_DIR/podman/podman.sock && act -W .github/workflows/ci-domains.yml --container-daemon-socket unix://$XDG_RUNTIME_DIR/podman/podman.sock) 2>/dev/null || (act -W .github/workflows/ci-shared.yml && act -W .github/workflows/ci-domains.yml); elif command -v docker >/dev/null 2>&1; then (act -W .github/workflows/ci-shared.yml && act -W .github/workflows/ci-domains.yml); else echo \"Error: Neither Podman nor Docker found.\"; exit 1; fi'", description = "Run package CI workflows locally (shared + domains)" }
+act-pr = { cmd = "sh -c 'if command -v podman >/dev/null 2>&1; then (act pull_request --container-daemon-socket unix://$XDG_RUNTIME_DIR/podman/podman.sock) 2>/dev/null || act pull_request; elif command -v docker >/dev/null 2>&1; then act pull_request; else echo \"Error: Neither Podman nor Docker found.\"; exit 1; fi'", description = "Run ALL PR workflows locally (constitutional, CI, configs, naming, etc.)" }
+act-dry-run = { cmd = "sh -c 'if command -v podman >/dev/null 2>&1; then act -n --container-daemon-socket unix://$XDG_RUNTIME_DIR/podman/podman.sock 2>/dev/null || act -n; elif command -v docker >/dev/null 2>&1; then act -n; else echo \"Error: Neither Podman nor Docker found.\"; exit 1; fi'", description = "Dry run of GitHub Actions" }
+validate-act = { cmd = "python scripts/validate_act_workflows.py", description = "Validate GitHub Actions compatibility" }
+validate-act-pr-sync = { cmd = "python scripts/validate-act-pr-sync.py", description = "Validate act-pr workflow coverage" }
+check-workflow-sync = { cmd = "python scripts/check_workflow_sync.py", description = "Check GitHub Actions / act sync status (lightweight)" }
+
+
+# Artifactory configuration
+configure-artifactory = { cmd = "sh scripts/set-artifactory.sh", description = "Configure Artifactory" }
+verify-artifactory = { cmd = "sh scripts/set-artifactory.sh --verify", description = "Verify Artifactory configuration" }
+show-artifactory = { cmd = "sh scripts/set-artifactory.sh --show", description = "Show Artifactory configuration" }
+
+# -- From Pyproject.toml (temporary)
+#printenv = { cmd = "env -0 | sort -z |tr '\\0' '\\n'", description = "Print environment variables" }
+#distls = { cmd = "ls dist", description = "List built distributions" }
+#distclean = { cmd = "rm -rf dist", description = "Clean built distributions" }
+#install_app = { cmd = "sh -c 'pip install -e .'", description = "Install app in editable mode" }
+#start_app = { cmd = "sh -c 'python manage.py runserver'", description = "Start Django app" }
+
+
+# ============================================================================
+# Feature: Base - Absolute Minimum (Python + Essential Utils)
+# ============================================================================
+# Full package taxonomy: docs/reference/package-taxonomy.md
+# This feature includes Category 1: Language Runtimes & Package Management (minimal subset)
+# See: docs/reference/package-taxonomy.md#1-language-runtimes--package-management
+#
+# Philosophy: Bare minimum - force explicit environment choice for development
+# Use case: Lightweight runtime-only deployments, minimal footprint (~150MB)
+#
+[feature.base.dependencies]
+# pyyaml = ">=6.0.3,<7" # Essential config parsing utility # Note: Already included in base dependencies
+
+
+# ============================================================================
+# Feature: Runtime Dependencies
+# ============================================================================
+# Full package taxonomy: docs/reference/package-taxonomy.md
+# This feature includes packages from Categories: 1-10 (all except Dev Tools & Testing)
+# Categories aligned with LFAI and CNCF landscapes
+#
+[feature.runtime.dependencies]
+# Category 1: Language Runtimes & Package Management
+# See: docs/reference/package-taxonomy.md#1-language-runtimes--package-management
+# python = ">=3.12.12,<3.15" # Note: Already included in base dependencies
+# pixi = "==0.59.0" # Package management # Note: Already included in base dependencies
+# pip = ">=25.3" # Package installer # Note: Already included in base dependencies
+# gitpython = ">=3.1.45" # Git integration # Note: Already included in base dependencies
+# hatch = ">=1.16.2" # Modern Python packaging # Note: Already included in base dependencies
+# hatchling = ">=1.27.0" # Hatch build backend # Note: Already included in base dependencies
+# hatch-vcs = ">=0.5.0" # VCS integration for Hatch # Note: Already included in base dependencies
+# pyyaml = ">=6.0.3,<7" # Essential config parsing utility # Note: Already included in base dependencies
+# requests = ">=2.32.5" # HTTP requests # Note: Already included in base dependencies
+# beautifulsoup4 = ">=4.14.3" # HTML/XML parsing # Note: Already included in base dependencies
+# platformdirs = ">=4.5.1" # Standard directory locations # Note: Already included in base dependencies
+# act = ">=0.2.84" # GitHub Actions runner # Note: Already included in base dependencies
+# gh = ">=2.83.2" # GitHub CLI # Note: Already included in base dependencies
+# direnv = ">=2.37.1" # Environment variable management # Note: Already included in base dependencies
+# conda = ">=25.11.1" # Package/environment management # Note: Already included in base dependencies
+# conda-build = ">=25.11.1" # Note: Already included in base dependencies
+# conda-index = ">=0.7.0" # Note: Already included in base dependencies
+# rattler-build = ">=0.55.0" # Conda package builder # Note: Already included in base dependencies
+# rattler-index = ">=0.27.6" # Note: Already included in base dependencies
+# python-build = ">=1.3.0" # Simple Python build tool # Note: Already included in base dependencies
+# setuptools = ">=80.9.0,<81" # Note: Already included in base dependencies
+# setuptools-scm = ">=9.2.2" # Note: Already included in base dependencies
+# twine = ">=6.2.0" # Note: Already included in base dependencies
+# uv = ">=0.9.21" # Fast Python package manager # Note: Already included in base dependencies
+# uv-build = ">=0.9.21" # Note: Already included in base dependencies
+# uv-dynamic-versioning = ">=0.11.2" # Note: Already included in base dependencies
+# wheel = ">=0.45.1" # Note: Already included in base dependencies
+#
+# Category 2: Web Frameworks & Application Servers
+# See: docs/reference/package-taxonomy.md#2-web-frameworks--application-servers
+django = ">=5.2.9,<6"                   # Django web framework Pinned to LTS 5.2
+django-mongodb-backend = ">=5.2.3,<6"   # MongoDB backend for Django Pinned to Django LTS 5.2
+wagtail = ">=7.2.1,<8"                  # Wagtail CMS Pinned to LTS 7.x
+coderedcms = ">=6.0.0,<7"               # Codered CMS Pinned to LTS 6.x
+nodejs = ">=24.10.0,<25.0.0"            # JavaScript runtime environment Pin to LTS version
+pnpm = ">=10.26.0"                      # JavaScript package manager
+channels = ">=4.3.2"                    # Django WebSocket support
+channels_redis = ">=4.3.0"              # Redis channel layer (note: underscore not hyphen)
+crispy-bootstrap5 = ">=2025.6"          # Django Crispy Forms Bootstrap 5
+daphne = ">=4.2.1"                      # ASGI server for Django Channels
+django-allauth = ">=65.13.1"            # Authentication
+django-bootstrap5 = ">=25.2"            # Bootstrap 5 integration
+django-cors-headers = ">=4.9.0"         # CORS support
+django-crispy-forms = ">=2.5"           # Form rendering
+django-environ = ">=0.12.0"             # Environment variable support
+django-filter = ">=25.2"                # API filtering
+django-health-check = ">=3.20.8"        # Health checks
+django-import-export = ">=4.3.14"       # Data import/export
+django-redis = ">=6.0.0"                # Redis cache backend
+django-structlog = ">=10.0.0"           # Structured logging
+django-vite = ">=3.1.0"                 # Vite integration
+djangorestframework = ">=3.16.1"        # REST API framework
+djangorestframework-jsonapi = ">=8.1.0" # JSON:API support
+drf-spectacular = ">=0.29.0"            # API documentation
+drf-spectacular-sidecar = ">=2026.1.1"  # Swagger UI and Redoc sidecar for drf-spectacular
+fastapi = ">=0.128.0"                   # FastAPI framework
+markdown-it-py = ">=4.0.0"              # Markdown parsing
+mdit-py-plugins = ">=0.5.0"             # Plugins for markdown-it-py
+odfpy = ">=1.4.1"                       # ODF OpenDocument files file handling
+openpyxl = ">=3.1.5"                    # Excel file handling
+psycopg = ">=3.2.10"                    # PostgreSQL driver
+pygments = ">=2.19.2"                   # Syntax highlighting
+sqlalchemy = ">=2.0.45"                 # SQL toolkit and ORM
+tablib = ">=3.9.0"                      # Tabular data handling
+tabulate = ">=0.9.0"                    # Pretty-print tabular data
+uvicorn = ">=0.40.0"                    # ASGI server for FastAPI
+websockets = ">=15.0.1"                 # WebSocket client/server (fastmcp requires >=15.0.1)
+whitenoise = ">=6.11.0"                 # Static file serving
+xlrd = ">=2.0.2"                        # Excel file reading
+xlwt = ">=1.3.0"                        # Excel file writing
+python-pptx = ">=1.0.2"                 # PowerPoint file handling
+
+
+# Category 4: Data Processing & Transformation + Category 5: Workflow Orchestration
+# See: docs/reference/package-taxonomy.md#4-data-processing--transformation
+# See: docs/reference/package-taxonomy.md#5-workflow-orchestration--pipelines
+pyarrow = ">=21.0.0"        # <22 was pinned only for streamlit compatibility streamlit==1.51.0 depends on pyarrow>=7.0,<22
+dask-core = ">=2025.12.0"
+ibis-framework = ">=11.0.0"
+# Dagster orchestration (migrated from PyPI - conda-forge now supports Python 3.12+)
+dagster = ">=1.12.8,<2"
+dagster-webserver = ">=1.12.8"
+dagster-pipes = ">=1.12.8"
+kedro-dagster = ">=0.5.2"
+gql = ">=4.0.0"                # GraphQL client (v4.0.0+ has no websockets dependency)
+# dlt requires dlt-pendulum which is only available on conda-forge for linux-64
+# pygwalker requires python-quickjs which is not available on conda-forge for osx-arm64
+# See platform-specific dependencies below for dlt and pygwalker installation
+dbt-core = ">=1.11.2"
+dbt-duckdb = ">=1.9.4"     # dbt DuckDB adapter
+dbt-postgres = ">=1.10.0"  # dbt PostgreSQL adapter
+duckdb = ">=1.4.3"
+getdaft = ">=0.6.13"
+kedro = ">=1.1.1"
+kedro-datasets = ">=9.1.1"
+numpy = ">=2.4.0"          # Numerical computing
+pandas = ">=2.3.3"
+polars = ">=1.36.1"
+
+
+# Category 3: Data Storage & Database Drivers + Category 9: Infrastructure & Deployment
+# See: docs/reference/package-taxonomy.md#3-data-storage--database-drivers
+# See: docs/reference/package-taxonomy.md#9-infrastructure--deployment
+celery = ">=5.5.3"
+redis-py = ">=7.1.0"
+pymongo = ">=4.15.5"
+python-kubernetes = ">=33.1.0" # Python Kubernetes client from conda-forge
+# apache-airflow removed - not part of unity-data-stack due to dependency conflicts
+minio = ">=7.2.20"
+boto3 = ">=1.40.70"
+s3fs = ">=2025.12.0"
+office365-rest-python-client = ">=2.6.2" # SharePoint/Office365 client (independent package)
+fastmcp = ">=2.14.0"                     # MCP framework for agentic workflows
+mcp = ">=1.25.0"                         # Model Context Protocol core
+
+
+# Utilities & Security
+# pyyaml = ">=6.0.3,<7" # Note: Already included in base dependencies
+pydantic-settings = ">=2.12.0" # Pydantic settings management
+pyjwt = ">=2.10.1"             # JWT tokens
+python-jose = ">=3.5.0"        # JOSE implementation
+passlib = ">=1.7.4"            # Password hashing
+argon2-cffi = ">=25.1.0"       # Argon2 password hashing
+ansi2html = ">=1.9.2"          # ANSI to HTML conversion
+traefik = ">=3.6.6"
+
+
+# Category 8: Visualization & Dashboards
+# See: docs/reference/package-taxonomy.md#8-visualization--dashboards
+vizro = ">=0.1.50"
+panel = ">=1.8.5"
+bokeh = ">=3.8.1"
+bokeh-django = ">=0.2.1"
+panel-graphic-walker = ">=0.6.5"
+streamlit = ">=1.52.2"
+kedro-viz = ">=12.2.0"
+vizro-ai = ">=0.3.7"
+#pygwalker = ">=0.4.9.15,<1"
+#django-pygwalker = ">=0.0.9,<1" # Needs Update, only supports django 4.2
+
+
+# Category 10: Observability & Telemetry
+# See: docs/reference/package-taxonomy.md#10-observability--telemetry
+# Migrated from PyPI - using conda-forge versions (dagster compatibility verified)
+#coloredlogs = ">=14.0"   # Required by dagster >=1.12.4 (conda-forge: 15.0.1)
+#pydantic = ">=2.12.4,<3" # Required by dagster >=1.12.4 (conda-forge: 2.12.5)
+#typer = ">=0.16.1"       # Required by dagster, dagster-dg-core>=1.12.4 (conda-forge: 0.21.0)
+#tomlkit = ">=0.13.2"     # Required by dagster, dagster-dg-core>=1.12.4 (conda-forge: 0.13.3)
+#django-structlog = ">=10.0.0"
+structlog = ">=25.5.0"
+opentelemetry-sdk = ">=1.38.0"
+splunk-opentelemetry = ">=2.8.0" # This always updates late, after the core opentelemetry-instrumentation
+#grafana-client = ">=4.0.0,<6.0.0"
+#nginx-otel = ">=0.1.0,<1.0.0"
+opentelemetry-instrumentation-django = ">=0.59b0"
+opentelemetry-instrumentation-fastapi = ">=0.59b0"
+opentelemetry-instrumentation-starlette = ">=0.59b0"
+opentelemetry-instrumentation-wsgi = ">=0.59b0"
+opentelemetry-instrumentation-asgi = ">=0.59b0"
+opentelemetry-instrumentation-logging = ">=0.59b0"
+opentelemetry-exporter-prometheus = ">=0.59b0"
+opentelemetry-exporter-otlp = ">=1.38.0"
+opentelemetry-exporter-otlp-proto-http = ">=1.38.0"
+
+
+# PyPI dependencies for cross-platform Python version support
+[feature.runtime.pypi-dependencies]
+# All packages migrated to conda-forge with platform-specific PyPI fallbacks where needed
+# See platform-specific pypi-dependencies sections below for exceptions
+
+
+# Platform-specific runtime dependencies
+[feature.runtime.target.linux-64.dependencies]
+nginx = ">=1.29.4"
+supervisor = ">=4.2.5"
+gunicorn = ">=23.0.0"       # Production WSGI server (UNIX-only)
+dlt = ">=1.20.0"            # Data loading tool (dlt-pendulum available on conda-forge for linux-64 only)
+python-quickjs = ">=1.19.4" # Required by pygwalker
+pygwalker = ">=0.5.0.0"     # Data visualization (conda-forge build_2+ supports numpy 2.x)
+
+
+[feature.runtime.target.linux-64.pypi-dependencies]
+# All dependencies migrated to conda-forge or removed
+
+
+[feature.runtime.target.osx-arm64.dependencies]
+nginx = ">=1.29.4"
+supervisor = ">=4.2.5"
+gunicorn = ">=23.0.0"  # Production WSGI server (UNIX-only)
+
+[feature.runtime.target.osx-arm64.pypi-dependencies]
+# dlt-pendulum not available on conda-forge for osx-arm64 (Apple Silicon)
+# python-quickjs not available on conda-forge for osx-arm64, and pygwalker requires it
+dlt = ">=1.20.0"
+pygwalker = ">=0.5.0.0"
+
+
+[feature.runtime.target.osx-64.dependencies]
+nginx = ">=1.29.4"
+supervisor = ">=4.2.5"
+gunicorn = ">=23.0.0"       # Production WSGI server (UNIX-only)
+dlt = ">=1.20.0"            # Data loading tool (dlt-pendulum available on conda-forge)
+python-quickjs = ">=1.19.4" # Required by pygwalker
+pygwalker = ">=0.5.0.0"     # Data visualization (conda-forge build_2+ supports numpy 2.x)
+
+
+[feature.runtime.target.osx-64.pypi-dependencies]
+# All dependencies migrated to conda-forge or removed
+
+
+[feature.runtime.target.win-64.dependencies]
+honcho = ">=2.0.0"          # Supervisor not available on Windows
+dlt = ">=1.20.0"            # Data loading tool (dlt-pendulum available on conda-forge)
+python-quickjs = ">=1.19.4" # Required by pygwalker
+pygwalker = ">=0.5.0.0"     # Data visualization (conda-forge build_2+ supports numpy 2.x)
+
+
+[feature.runtime.target.win-64.pypi-dependencies]
+# All dependencies migrated to conda-forge or removed
+
+
+# ============================================================================
+# Feature: Test Dependencies
+# ============================================================================
+# Full package taxonomy: docs/reference/package-taxonomy.md
+# This feature includes Category 12: Testing & Validation
+# See: docs/reference/package-taxonomy.md#12-testing--validation
+#
+[feature.test.dependencies]
+pytest = ">=9.0.2"
+pytest-cov = ">=7.0.0"
+pytest-django = ">=4.11.1"                 # Django testing utilities
+pytest-asyncio = ">=1.3.0"                 # Async/await support for pytest
+pytest-xdist = ">=3.8.0"                   # Parallel test execution
+pytest-mock = ">=3.15.1"                   # Mocking support for pytest
+behave = ">=1.3.3"
+playwright-python = ">=1.57.0"             # Browser automation testing
+selenium = ">=4.38.0"                      # Web browser automation
+robotframework = ">=7.4.1"                 # Test automation framework
+robotframework-seleniumlibrary = ">=6.8.0" # Robot Framework Selenium integration
+httpx = ">=0.28.1"
+psutil = ">=7.2.1"
+pyaml = ">=25.7.0"
+covdefaults = ">=2.3.0"
+factory_boy = ">=3.3.3"                    # Test fixtures and factories
+faker = ">=40.1.0"                         # Fake data generator for tests
+
+
+# -- From Pyproject.toml (temporary)
+pytest-sugar = ">=1.1.1"
+# requests = ">=2.32.5"  # Already defined in the base dependencies
+django_coverage_plugin = ">=3.2.0"
+django-debug-toolbar = ">=6.1.0"   # Should be moved to the feature.dev.dependencies later
+
+
+[feature.test.activation.env]
+COVERAGE_CORE = "sysmon"
+
+
+# ============================================================================
+# Feature: Lint and Formatting Dependencies
+# ============================================================================
+# Full package taxonomy: docs/reference/package-taxonomy.md
+# This feature includes Category 11: Development Tools & Quality (lint subset)
+# See: docs/reference/package-taxonomy.md#11-development-tools--quality
+#
+[feature.lint.dependencies]
+ruff = ">=0.14.10"
+pyright = ">=1.1.407"
+mypy = ">=1.19.1"
+ty = ">=0.0.8"
+pyrefly = ">=0.46.3"
+taplo = ">=0.10.0"
+yamllint = ">=1.37.1"
+prettier = ">=3.7.4"
+sqlfluff = ">=3.5.0"
+lychee = ">=0.22.0"
+pre-commit = ">=4.5.1"
+pre-commit-hooks = ">=5.0.0"
+
+# -- From Pyproject.toml (temporary)
+pylint = ">=4.0.4"
+pylint-django = ">=2.7.0"
+pylint-celery = ">=0.3"
+types-toml = ">=0.10.8.20240310"
+django-stubs = ">=5.2.8"
+djangorestframework-stubs = ">=3.16.6"
+
+
+# ============================================================================
+# Feature: Development Tools
+# ============================================================================
+# Full package taxonomy: docs/reference/package-taxonomy.md
+# This feature includes Category 11: Development Tools & Quality (dev subset)
+# See: docs/reference/package-taxonomy.md#11-development-tools--quality
+#
+[feature.dev.dependencies]
+pixi-pycharm = ">=0.0.10"
+# gh = ">=2.83.2" # GitHub CLI # Note: Already included in base dependencies
+# act = ">=0.2.84" # GitHub Actions runner # Note: Already included in base dependencies
+# direnv = ">=2.37.1" # Environment variable management # Note: Already included in base dependencies
+gitflow-studio = ">=1.0.4"
+# pre-commit = ">=4.5.1" # Note: Already included in lint dependencies
+# pre-commit-hooks = ">=5.0.0" # Note: Already included in lint dependencies
+atlassian-python-api = ">=4.0.7"
+jfrog-cli = ">=2.87.0"
+jira = ">=3.10.5"
+# office365-rest-python-client = ">=2.6.2" # SharePoint/Office365 client # Note: Already included in runtime dependencies
+copier = ">=9.11.0"
+networkx = ">=3.6.1"
+# prettier = ">=3.7.4" # Note: Already included in lint dependencies
+spec-kit = ">=0.0.90"
+truststore = ">=0.10.4"
+ipython = ">=8.37.0"    # Enhanced interactive Python shell
+jupyter = ">=1.1.1"     # Jupyter notebook system
+postgresql = ">=17.6"   # PostgreSQL client tools (psql) for local-dev services
+
+
+# PowerShell for testing .ps1 scripts (available for Linux, macOS ARM, and Windows)
+[feature.dev.target.linux-64.dependencies]
+powershell = ">=7.5.4"
+
+
+[feature.dev.target.osx-arm64.dependencies]
+powershell = ">=7.5.4"
+
+
+[feature.dev.target.win-64.dependencies]
+powershell = ">=7.5.4"
+
+# Note: osx-64 (Intel Mac) does not have PowerShell in conda-forge
+
+
+# ============================================================================
+# Feature: Container Tooling
+# ============================================================================
+[feature.container.dependencies]
+podman-compose = ">=1.5.0"
+podman-py = ">=5.4.0.1"
+docker-compose = ">=2.39.2"
+docker-py = ">=7.1.0"
+
+
+# ============================================================================
+# Feature: Local Kubernetes (FUTURE ENHANCEMENT - NOT IMPLEMENTED YET)
+# ============================================================================
+# INTENTIONAL EXCLUSION: This feature is a stub for future macOS/Linux support.
+#
+# RATIONALE FOR EXCLUSION:
+#   - Windows platform support: Podman is NOT available on Windows via conda-forge
+#   - kind (Kubernetes IN Docker) is NOT available on conda-forge (any platform)
+#   - Cross-platform parity: Unity Data Stack prioritizes Windows/macOS/Linux support
+#
+# CURRENT STATUS: K8s services (ocpk8s-server, nebari-server) are DEV-ONLY
+#   - Use 'dev' environment for K8s capabilities (requires manual Podman/Docker install)
+#   - See: docs/getting-started/LOCAL-DEV-QUICKSTART.md#dev-environment-optional
+#
+# FUTURE ENHANCEMENT (macOS/Linux only):
+#   - Enable optional K8s in local-dev for macOS/Linux users
+#   - Would require: podman (conda-forge), kubectl (conda-forge), kind (vendored binary)
+#   - Usage: pixi install -e local-dev-k8s
+#
+# See research: docs/reference/COMPLETE-SERVICE-INVENTORY.md#kubernetes-services
+#
+[feature.k8s.target.linux-64.dependencies]
+# Podman available on Linux via conda-forge
+podman = ">=5.6.2"
+# kubernetes-client (kubectl) available on all platforms via conda-forge
+kubernetes-client = ">=1.34.3"
+kubernetes = ">=1.34.3"
+
+# Note: macOS (osx-arm64, osx-64) and Windows (win-64) intentionally excluded
+# - Podman binary (podman) NOT available on macOS via conda-forge (only podman-compose)
+# - Podman NOT available on Windows via conda-forge
+# - macOS/Windows users must use 'dev' environment with manually installed Podman/Docker
+
+
+# ============================================================================
+# Feature: Creating and Maintaining Local Recipes like conda-forge/staged-recipes
+# ============================================================================
+[feature.local-recipes.dependencies]
+#[feature.python.dependencies]
+python = ">=3.12.12,<3.13"
+##[feature.build.dependencies]
+#conda = ">=25.11.1" # Package/environment management # Note: Already included in base dependencies
+conda-libmamba-solver = ">=25.11.0"
+#conda-build = ">=25.11.1" # Note: Already included in base dependencies
+#conda-index = ">=0.7.0" # Note: Already included in base dependencies
+conda-forge-ci-setup = ">=4.24.0"
+conda-forge-pinning = ">=2025.12.30.19.55.26"
+frozendict = ">=2.4.7"
+#networkx = ">=2.4" # Conda-forge is pinning to networkx 2.4, but we allow >2.4 for compatibility with kedro-viz
+rattler-build-conda-compat = ">=1.4.10"
+##[feature.grayskull.dependencies]
+grayskull = ">=2.9.2"
+##[feature.conda-smithy.dependencies]
+conda-smithy = ">=3.54.1"
+shellcheck = ">=0.10.0"
+#### Unleash Pixi - Added to ensure single a build pack with pixi will work for cookiecutters, plain python, conda, nodejs, rust, c, c++ code.
+## For use with CookieCutters
+cookiecutter = ">=2.6.0"
+cruft = ">=2.16.0"
+jinja2-ospath = ">=0.3.0"
+## For Building Plain Python Projects
+# pip = ">=25.3" # Package installer # Note: Already included in base dependencies
+# setuptools = ">=80.9.0,<81" # Package discovery and resource management # Note: Already included in base dependencies
+# setuptools-scm = ">=9.2.2" # Versioning from VCS # Note: Already included in base dependencies
+# hatchling = ">=1.27.0" # Build backend # Note: Already included in base dependencies
+# python-build = ">=1.3.0" # Simple Python build tool # Note: Already included in base dependencies
+# twine = ">=6.2.0" # PyPI upload tool # Note: Already included in base dependencies
+# uv = ">=0.9.21" # Fast Python package manager # Note: Already included in base dependencies
+# uv-build = ">=0.9.21" # Note: Already included in base dependencies
+# uv-dynamic-versioning = ">=0.11.2" # Note: Already included in base dependencies
+# wheel = ">=0.45.1" # Wheel format support # Note: Already included in base dependencies
+# cibuildwheel = ">=3.2.1" # Dependency bashlex Failed for platform 'linux-aarch64'
+## For Building JavaScript and Node.js Projects
+# nodejs = ">=24.10.0" # Pin to LTS version # Note: Already included in runtime dependencies
+#pnpm = ">=10.26.0" # Note: Already included in runtime dependencies
+## Extensions for Conda and Conda-build Projects
+#conda-lock = ">=4.0.0" # Note: Already included in base dependencies
+#conda-pack = ">=0.8.1" # Note: Already included in base dependencies
+conda-tree = ">=1.1.2"
+feedrattler = ">=0.3.14"
+### Extensions Pixi - enabling all Python, C,C++, Rust, CMake Projects
+# pixi = "==0.59.0" # Package management # Note: Already included in base dependencies
+# rattler-build = ">=0.55.0" # Conda package builder # Note: Already included in base dependencies
+# rattler-index = ">=0.27.6" # Note: Already included in base dependencies
+pixi-build-rattler-build = ">=0.3.5"
+pixi-build-cmake = ">=0.3.6"
+pixi-build-python = ">=0.4.3"
+pixi-build-rust = ">=0.4.3"
+pixi-diff = ">=0.1.3"
+pixi-inject = ">=0.1.1"
+pixi-install-to-prefix = ">=0.1.2"
+pixi-kernel = ">=0.7.1"
+pixi-outdated = ">=0.2.1"
+# pixi-pycharm = ">=0.0.10" # Note: Already included in dev dependencies
+# pixi-pack = ">=0.7.5" # Note: Already included in base dependencies
+# pixi-unpack = ">=0.7.5" # Note: Already included in base dependencies
+py-rattler = ">=0.20.0"
+py-rattler-build = ">=0.47.0"
+# duckdb = ">=1.4.3" # Note: Already included in runtime dependencies
+# pandas = ">=2.3.3" # Note: Already included in runtime dependencies
+# polars = ">=1.36.1" # Note: Already included in runtime dependencies
+# pyarrow = ">=21.0.0" # Note: Already included in runtime dependencies
+pyarrow-all = ">=21.0.0"
+ibis-duckdb = ">=11.0.0"
+ibis-polars = ">=11.0.0"
+ibis-sqlite = ">=11.0.0"
+ibis-postgres = ">=11.0.0"
+ibis-mssql = ">=11.0.0"
+ibis-oracle = ">=11.0.0"
+#coloredlogs = "==14.0"               # Required by dagster >=1.12.3, Compatibility constraints for PyPI dagster requirements
+#pydantic = "==2.12.4"                # Required by dagster >=1.12.3, Compatibility constraints for PyPI dagster requirements
+#typer = "==0.16.1"                   # Required by dagster , dagster-dg-core>=1.12.3, Compatibility constraints for PyPI dagster requirements
+#tomlkit = "==0.13.2"                 # Required by dagster , dagster-dg-core>=1.12.3, Compatibility constraints for PyPI dagster requirements
+#ruff = ">=0.14.10" # Note: Already included in lint dependencies
+#pyright = ">=1.1.407" # Note: Already included in lint dependencies
+#mypy = ">=1.19.1" # Note: Already included in lint dependencies
+#pyrefly = ">=0.46.3" # Note: Already included in lint dependencies
+#pytest = ">=9.0.2" # Note: Already included in test dependencies
+#pytest-mock = ">=3.15.1" # Note: Already included in test dependencies
+#pytest-cov = ">=7.0.0" # Note: Already included in test dependencies
+#pytest-xdist = ">=3.8.0" # Note: Already included in test dependencies
+markitdown = ">=0.1.4"
+playwright = ">=1.57.0"
+# mcp = ">=1.25.0" # Note: Already included in runtime dependencies
+# a2a-sdk = ">=0.3.22" # Note: Already included in agentic dependencies
+# acp-mcp-server = ">=0.0.5" # Note: Already included in agentic dependencies
+# agntcy-acp = ">=1.5.2" # Note: Already included in agentic dependencies
+# django-mcp-server = ">=0.5.7" # Note: Already included in agentic dependencies
+# excel-mcp-server = ">=0.1.7" # Note: Already included in agentic dependencies
+# fastapi-mcp = ">=0.4.0" # Note: Already included in agentic dependencies
+# fastmcp = ">=2.13.3" # Note: Already included in runtime dependencies
+# jsonschema-path = ">=0.3.4" # Note: Already included in agentic dependencies
+#mcp-atlassian = ">=0.10.2"                   # Resolution Issue - fastmcp >=2.3.4,<2.4.0
+#mcp-django = ">=0.13.0" # Pending conda-forge merge
+#mcp-server-fetch = ">=2025.1.17"             # Resolution Issue - httpx <0.28.0
+# openapi-spec-validator = ">=0.7.2" # Note: Already included in agentic dependencies
+# pathable = ">=0.4.4" # Note: Already included in agentic dependencies
+# python-a2a = ">=0.5.10" # Note: Already included in agentic dependencies
+# fasta2a = ">=0.6.0" # Note: Already included in agentic dependencies
+#universal-mcp = ">=0.1.8"                    # Resolution Issue - fastapi >=0.109.1,<0.110.0 & httpx >=0.23.0,<0.28.0
+# vizro-ai = ">=0.3.7" # Note: Already included in runtime dependencies
+# vizro-mcp = ">=0.1.3" # Note: Already included in agentic dependencies
+# wagtail-ai = ">=3.0.0" # Note: Already included in agentic dependencies
+#acp-sdk  1.0.3 # NOT FOUND - Archived
+#django-mcp 0.3.1 # NOT FOUND - Archived
+#acp-mcp 0.4.2 # NOT FOUND - Archived
+# yamllint = ">=1.37.1" # Note: Already included in lint dependencies
+# taplo = ">=0.10.0" # Note: Already included in lint dependencies
+moto = ">=5.1.19"
+nbqa = ">=1.9.0"
+# sqlfluff = ">=3.5.0" # SQL linter # Note: Already included in lint dependencies
+go-sops = ">=3.11.0"
+age = ">=1.3.1"
+yarn = ">=4.12.0"
+
+
+[feature.local-recipes.activation]
+scripts = ["scripts/environment/Import-EnvironmentFile.sh"]
+
+
+# Platform-specific: Podman binary (Linux x86_64 only)
+# Mac/Windows/ARM users: Install Podman Desktop from https://podman-desktop.io
+[feature.container.target.linux-64.dependencies]
+podman = ">=5.6.2"
+
+# ============================================================================
+# Feature: Python Version Matrices (CI)
+# ============================================================================
+[feature.py312.dependencies]
+python = "3.12.*"
+
+[feature.py313.dependencies]
+python = "3.13.*"
+
+#[feature.py314.dependencies]
+#python = "3.14.*"
+
+
+# ============================================================================
+# Feature: Agentic AI (MCP/A2A/ACP)
+# ============================================================================
+# Full package taxonomy: docs/reference/package-taxonomy.md
+# This feature includes Category 7: Agentic AI & MCP
+# See: docs/reference/package-taxonomy.md#7-agentic-ai--mcp
+#
+# Conda dependencies to avoid version conflicts
+[feature.agentic.dependencies]
+referencing = ">=0.36.2"
+a2a-sdk = ">=0.3.22"
+acp-mcp-server = ">=0.0.5"
+agntcy-acp = ">=1.5.2"
+django-mcp-server = ">=0.5.7"
+excel-mcp-server = ">=0.1.7"
+fastapi-mcp = ">=0.4.0"
+jsonschema-path = ">=0.3.4"
+openapi-spec-validator = ">=0.7.2"
+pathable = ">=0.4.4"
+python-a2a = ">=0.5.10"
+fasta2a = ">=0.6.0"
+vizro-mcp = ">=0.1.3"
+wagtail-ai = ">=3.0.0"
+mcp-powerpoint = ">=1.0.0"
+#mcp-atlassian = ">=0.10.2"
+#mcp-django = ">=0.13.0"
+#mcp-server-fetch = ">=2025.1.17"
+#universal-mcp = ">=0.1.8"
+
+
+# Platform-specific agentic dependencies
+[feature.agentic.target.linux-64.pypi-dependencies]
+# All MCP packages migrated to conda-forge (see feature.runtime.dependencies)
+
+
+[feature.agentic.target.win-64.pypi-dependencies]
+# All MCP packages migrated to conda-forge (see feature.runtime.dependencies)
+
+
+[feature.agentic.target.osx-arm64.pypi-dependencies]
+# All MCP packages migrated to conda-forge (see feature.runtime.dependencies)
+
+
+[feature.agentic.target.osx-64.pypi-dependencies]
+# All MCP packages migrated to conda-forge (see feature.runtime.dependencies)
+
+
+# ============================================================================
+# Feature: MonoRepo Full Stack - Compatibility Testing
+# ============================================================================
+# This environment combines ALL major libraries used across the monorepo
+# to test for dependency conflicts and ensure full stack compatibility.
+# Use this to validate that the entire technology stack can coexist.
+#
+# Purpose:
+#   - Detect dependency conflicts early
+#   - Validate monorepo-wide compatibility
+#   - Test upgrades before applying to production
+#   - Ensure Django + Dagster + Kedro + dbt can coexist
+#
+# Note: pixi is NOT included as a dependency (it's the package manager itself,
+#       already enforced via requires-pixi = ">=0.59.0")
+#
+# IMPORTANT: Python 3.14 compatibility status:
+#   - Django 5.2.8: ✅ Compatible
+#   - Dagster 1.12.0+: ✅ Supports Python 3.9-3.13 (from PyPI)
+#   - Note: Conda-forge dagster builds limited to Python 3.10
+#   - See: https://github.com/dagster-io/dagster/issues/32577
+#   - Therefore: Constrained to Python >=3.12,<3.14 for compatibility testing
+
+
+[feature.monorepo-full-stack.dependencies]
+## **Runtime & Package Management**
+python = ">=3.12.12,<3.14" # Max 3.13 - testing Python 3.12-3.13 compatibility, limitation on dagster that doesnt support 3.14 yet.
+# pixi = "==0.59.0" # Package manager # Note: Already included in base dependencies
+# (Already enforced via requires-pixi = ">=0.59.0")
+# Node.js for frontend tooling
+# nodejs = ">=24.10.0,<25" # Pin to LTS version # Note: Already included in runtime dependencies
+## **Version Control & Development Tools**
+
+
+# Core web frameworks
+# django = ">=5.2.9,<6" # Note: Already included in runtime dependencies
+# fastapi = ">=0.128.0" # Note: Already included in runtime dependencies
+# wagtail = ">=7.2.1" # Note: Already included in runtime dependencies
+# coderedcms = ">=6.0.0" # Note: Already included in runtime dependencies
+# uvicorn = ">=0.40.0" # Note: Already included in runtime dependencies
+# Data processing, transformation, and analysis**
+# getdaft = ">=0.6.13" # Note: Already included in runtime dependencies
+# dbt-core = ">=1.11.2" # Note: Already included in runtime dependencies
+# polars = ">=1.36.1" # Note: Already included in runtime dependencies
+# pyspark = ">=3.5.1,<5" # NOTE: Excluded due to size and JVM dependencies
+# pandas = ">=2.3.3" # Note: Already included in runtime dependencies
+# dask-core = ">=2025.12.0" # Note: Already included in runtime dependencies
+# pyarrow = ">=21.0.0" # Note: Already included in runtime dependencies
+# ibis-framework = ">=11.0.0" # Note: Already included in runtime dependencies
+# Reproducible Data Science**
+# kedro = ">=1.1.1" # Note: Already included in runtime dependencies
+# Compatibility constraints for PyPI dagster requirements
+#coloredlogs = "==14.0" # Required by dagster >=1.12.3, Compatibility constraints for PyPI dagster requirements
+#pydantic = "==2.12.4"  # Required by dagster >=1.12.3, Compatibility constraints for PyPI dagster requirements
+#typer = "==0.16.1"     # Required by dagster, dagster-dg-core>=1.12.3, Compatibility constraints for PyPI dagster requirements
+#tomlkit = "==0.13.2"   # Required by dagster, dagster-dg-core>=1.12.3, Compatibility constraints for PyPI dagster requirements
+# Vizualization and dashboarding
+# streamlit = ">=1.52.2" # Note: Already included in runtime dependencies
+# kedro-viz = ">=12.2.0" # Note: Already included in runtime dependencies
+# vizro-ai = ">=0.3.7" # Note: Already included in runtime dependencies
+# panel = ">=1.8.5" # Note: Already included in runtime dependencies
+# bokeh = ">=3.8.1" # Note: Already included in runtime dependencies
+
+
+# Agentic AI (MCP/A2A/ACP)
+# mcp = ">=1.25.0" # Note: Already included in runtime dependencies
+# a2a-sdk = ">=0.3.22" # Note: Already included in agentic dependencies
+#acp-mcp-server = ">=0.0.5,<1" # NOTE Not available on conda-forge
+# agntcy-acp = ">=1.5.2" # Note: Already included in agentic dependencies
+# django-mcp-server = ">=0.5.7" # Note: Already included in agentic dependencies
+# excel-mcp-server = ">=0.1.7" # Note: Already included in agentic dependencies
+# mcp-powerpoint = ">=1.0.0" # Note: Already included in agentic dependencies
+#mcp-server-fetch = ">=2025.4.7,<2030" Limited currently to "httpx<0.28", https://github.com/modelcontextprotocol/servers/issues/1146
+#markdownify-mcp-server = ">=0.1.13" # Requires Python >=3.13, conflicts with local-recipes feature (Python <3.13)
+# fastapi-mcp = ">=0.4.0" # Note: Already included in agentic dependencies
+# fastmcp = ">=2.13.3" # Note: Already included in runtime dependencies
+
+
+# PyPI dependencies for cross-platform Python version support
+[feature.monorepo-full-stack.pypi-dependencies]
+# All packages migrated to conda-forge dependencies
+
+
+# ============================================================================
+# Scripts: conda-pypi - Package index building dependencies
+# ============================================================================
+# Dependencies for scripts in scripts/conda-pypi/
+# Used to build package indexes from PyPI, conda-forge, and S3 download stats
+[feature.scripts-conda-pypi.dependencies]
+# python = ">=3.12.12,<3.15" # Note: Already included in base dependencies
+# Data processing
+# pandas = ">=2.3.3" # Note: Already included in runtime dependencies
+# dask-core = ">=2025.12.0" # Note: Already included in runtime dependencies
+# pyarrow = ">=21.0.0" # Note: Already included in runtime dependencies
+# S3 access
+# boto3 = ">=1.40.70" # Note: Already included in runtime dependencies
+# s3fs = ">=2025.12.0" # S3 Filesystem interface # Note: Already included in runtime dependencies
+# HTTP and parsing
+# requests = ">=2.32.5" # Note: Already included in base dependencies
+# pyyaml = ">=6.0.3,<7" # Note: Already included in base dependencies
+# PyPI download statistics (migrated from PyPI - now available on conda-forge)
+pypistats = ">=1.12.0"
+
+[feature.scripts-conda-pypi.pypi-dependencies]
+# All dependencies migrated to conda-forge
+
+
+# ============================================================================
+# Local Packages (Editable Installs)
+# ============================================================================
+[pypi-dependencies]
+common = { path = "src/shared/packages/common", editable = true }
+duckdb-server = { path = "src/platform/data-platform/infrastructure/duckdb-server", editable = true }
+profile-service = { path = "src/tech-domains/customer/services/profile-service", editable = true }
+
+
+# ============================================================================
+# Environments - Compose features for different use cases
+# Aligned with 12-environment SDLC + Airgap + Data Classification dimensions
+# ============================================================================
+[environments]
+# Public environment - reference open source (public internet, public data)
+public = { features = [
+  "runtime",
+  "test",
+  "lint",
+  "dev",
+  "container",
+  "local-recipes",
+  "agentic",
+  "k8s",
+  "monorepo-full-stack",
+], solve-group = "default" }
+
+
+# Default environment - absolute minimum (Python + pyyaml only, ~150MB)
+# Philosophy: Force explicit environment choice - developers must choose local-dev or dev
+# For development, use 'local-dev' (lightweight, no containers) or 'dev' (full stack with containers)
+default = { features = ["base"], solve-group = "default" }
+
+
+# Agentic AI development environment (private air-gapped, deidentified data)
+agents = { features = [
+  "runtime",
+  "agentic",
+  "container",
+], solve-group = "default" }
+
+
+# Vendor evaluation environment (public internet, proprietary external data)
+vendor = { features = [
+  "runtime",
+  "test",
+  "lint",
+  "dev",
+  "container",
+], solve-group = "default" }
+
+
+# Full development environment with all tools (testing, linting, dev tools, private air-gapped, deidentified data)
+# Use this when you need to run tests, linting, or use development tools (gh, act, copier, etc.)
+dev = { features = [
+  "runtime",
+  "test",
+  "lint",
+  "dev",
+  "container",
+], solve-group = "default" }
+
+# Local development environment - same as dev but without container tools
+# Use this for lightweight local development without podman/docker dependencies
+local-dev = { features = [
+  "runtime",
+  "test",
+  "lint",
+  "dev",
+  "agentic",
+], solve-group = "default" }
+
+
+# ============================================================================
+# Local-Dev with Kubernetes (FUTURE ENHANCEMENT - NOT IMPLEMENTED)
+# ============================================================================
+# INTENTIONAL EXCLUSION: Stub for future macOS/Linux-only K8s support
+#
+# CURRENT STATUS: NOT USABLE
+#   - kind (Kubernetes IN Docker) is NOT on conda-forge
+#   - Windows platform excluded (Podman not available via conda-forge for win-64)
+#   - K8s currently supported in 'dev' environment only
+#
+# FUTURE ENHANCEMENT:
+#   - Would enable local K8s clusters on macOS/Linux via Podman + kind
+#   - Would require vendoring kind binary (not on conda-forge)
+#   - Would maintain pixi-first approach (Podman from conda-forge)
+#
+# USAGE (when implemented):
+#   pixi install -e local-dev-k8s  # macOS/Linux only
+#   pixi run local-dev-up           # Native services
+#   pixi run local-dev-start-ocpk8s # K8s cluster via Podman + kind
+#
+# See: docs/getting-started/LOCAL-DEV-QUICKSTART.md#dev-environment-optional
+#
+local-dev-k8s = { features = [
+  "runtime",
+  "test",
+  "lint",
+  "dev",
+  "k8s",     # Adds Podman + kubectl (macOS/Linux only)
+], solve-group = "default" }
+
+# CI environment - runtime, testing, and linting only (private air-gapped, deidentified data)
+ci = { features = ["runtime", "test", "lint"], solve-group = "default" }
+
+
+# Local recipes environment - conda-forge recipe development tools
+local-recipes = { features = [
+  "runtime",
+  "agentic",
+  "test",
+  "lint",
+  "local-recipes",
+], solve-group = "default" }
+
+
+# ============================================================================
+# SDLC Environments - Aligned with GitFlow branches and 12-stage lifecycle
+# ============================================================================
+# Integration environment - automated integration tests (develop branch, deidentified data)
+integration = { features = [
+  "runtime",
+  "test",
+  "lint",
+  "dev",
+  "container",
+], solve-group = "default" }
+
+
+# Testing environment - QA validation (release/* branches, deidentified data)
+testing = { features = [
+  "runtime",
+  "test",
+  "lint",
+  "dev",
+  "container",
+], solve-group = "default" }
+
+
+# UAT environment - user acceptance testing (release/* branches, restricted data)
+uat = { features = [
+  "runtime",
+  "test",
+  "lint",
+  "dev",
+  "container",
+], solve-group = "default" }
+
+
+# Production environment - live deployment (main branch, restricted data)
+# No dev tools, no test tools, no container build tools - minimal production footprint
+# Container runtime provided by Kubernetes/OpenShift (CRI-O/containerd)
+
+
+production = { features = ["runtime"], solve-group = "default" }
+
+
+# DR (Disaster Recovery) environment - parallel production (main branch, restricted data)
+# Mirrors production features but uses separate DR infrastructure
+# No dev tools, no test tools, no container build tools - minimal production footprint
+# Container runtime provided by Kubernetes/OpenShift (CRI-O/containerd)
+
+dr = { features = ["runtime"], solve-group = "default" }
+
+
+# OSS contribution environment - open source release (main/*, public data)
+# Production-like but for public release/contribution
+# No container build tools - images pre-built in CI/CD
+
+
+oss = { features = ["runtime"], solve-group = "default" }
+
+
+# Python version specific environments for CI matrix
+
+
+py312 = { features = [
+  "py312",
+  "runtime",
+  "test",
+  "lint",
+], solve-group = "py312" }
+
+
+py313 = { features = [
+  "py313",
+  "runtime",
+  "test",
+  "lint",
+], solve-group = "py313" }
+
+
+#py314 = { features = [
+#  "py314",
+#  "runtime",
+#  "test",
+#  "lint",
+#], solve-group = "py314" }
+
+
+# MonoRepo Full Stack - Compatibility testing environment
+# Combines all major libraries to detect dependency conflicts
+# DO NOT use for production - this is a testing/validation environment only
+monorepo-full-stack = { features = [
+  "runtime",
+  "agentic",
+  "monorepo-full-stack",
+], solve-group = "full-stack" }
+
+
+# Scripts: conda-pypi - Package index building scripts
+# Used by scripts in scripts/conda-pypi/ for downloading and analyzing package data
+
+
+scripts-conda-pypi = { features = [
+  "runtime",
+  "scripts-conda-pypi",
+], solve-group = "default" }
+
+
+# -- From Pyproject.toml (temporary)
+#build
+#lint
+#test
+#cicd
+
+
+# -- From Pyproject.toml (temporary)
+#[feature.build.dependencies]
+#pip
+#python-build
+#hatchling
+#hatch-vcs
+#packaging
+#rattler-build
+
+
+#[feature.build.tasks]
+#build-conda
+#build-pypi
+#build-all
+#inspect-conda
+#inspect-wheel
+#inspect-sdist
+#inspect-pypi
+#inspect-all
+
+#[feature.lint.tasks]
+#pixi-clean
+#mypy
+#pylint
+#ruff
+#ruff-format
+#ruff-cicd
+
+
+#[feature.test.tasks]
+#pytest = { cmd = "pytest", description = "Run pytest tests" }
+
+
+#[feature.cicd.tasks]
+#set-pixi-project-version
+#run-ci-worfklow
+
+
+#### THE END ####

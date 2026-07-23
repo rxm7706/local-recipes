@@ -1,0 +1,1658 @@
+# Django SLOCCount Design Document
+
+## Executive Summary
+
+This document outlines the architecture for **django-sloccount**, a reusable Django application that provides source code line counting and cost estimation functionality. The application replicates the functionality of [tools.simonwillison.net/sloccount](https://tools.simonwillison.net/sloccount) using a Django backend with a React frontend, managed via Vite and django-vite.
+
+### Key Features (Matching Original Tool)
+- **Three Input Modes**: Paste code, GitHub repository URL, ZIP file upload
+- **SLOC Analysis**: Count physical source lines of code across 25+ languages
+- **Cost Estimation**: Basic COCOMO model with configurable parameters
+- **Results Display**: Total lines, language breakdown, file count, estimated cost & person-years
+
+---
+
+## Source Analysis Summary
+
+### Original SLOCCount (David A. Wheeler, 2001)
+- **Purpose**: Count physical SLOC (non-blank, non-comment lines)
+- **Languages Supported**: Ada, Assembly, AWK, Bash, C, C++, C#, COBOL, Expect, Fortran, Haskell, Java, Lex, LISP, ML, Modula3, Objective-C, Pascal, Perl, PHP, Python, Ruby, Sed, SQL, TCL, Yacc
+- **Cost Model**: Basic COCOMO (Constructive Cost Model)
+  - Effort = Factor × (KSLOC)^Exponent person-months
+  - Default: Organic mode (Factor=2.4, Exponent=1.05)
+
+### Simon Willison's WebAssembly Implementation
+- Runs original Perl scripts via WebPerl (Perl → WebAssembly)
+- C utilities compiled to WebAssembly via Emscripten
+- Single-page HTML with JavaScript for UI
+- Client-side processing (no backend)
+
+### Our Approach: Django Backend
+- Server-side processing using Python implementations
+- REST API for analysis operations
+- React frontend for rich user experience
+- Reusable Django app architecture
+
+---
+
+## Architecture Overview
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                         Frontend (React + Vite)                  │
+├─────────────────────────────────────────────────────────────────┤
+│  Components:                                                     │
+│  ├── CodePasteTab      - Paste code with filename               │
+│  ├── GitHubRepoTab     - Fetch from GitHub repository           │
+│  ├── ZipUploadTab      - Upload ZIP file                        │
+│  ├── ResultsPanel      - Display analysis results               │
+│  ├── LanguageBreakdown - Per-language statistics                │
+│  └── CostEstimator     - COCOMO configuration & estimates       │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              │ REST API (JSON)
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                    Django Backend (django-sloccount)             │
+├─────────────────────────────────────────────────────────────────┤
+│  Views (API):                                                    │
+│  ├── AnalyzePastedCodeView   POST /api/analyze/paste/           │
+│  ├── AnalyzeGitHubRepoView   POST /api/analyze/github/          │
+│  ├── AnalyzeZipFileView      POST /api/analyze/upload/          │
+│  └── SupportedLanguagesView  GET  /api/languages/               │
+├─────────────────────────────────────────────────────────────────┤
+│  Core Services:                                                  │
+│  ├── SLOCCounter       - Main counting engine                   │
+│  ├── LanguageDetector  - File type detection                    │
+│  ├── COCOMOEstimator   - Cost/effort estimation                 │
+│  ├── GitHubFetcher     - Repository download                    │
+│  └── ZipProcessor      - ZIP extraction & analysis              │
+├─────────────────────────────────────────────────────────────────┤
+│  Language Counters:                                              │
+│  ├── PythonCounter, CCounter, JavaScriptCounter, ...            │
+│  └── GenericCounter (fallback for simple comment syntax)        │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Package Management: Pixi Configuration
+
+### `pixi.toml`
+
+```toml
+[project]
+name = "django-sloccount"
+version = "0.1.0"
+description = "Reusable Django app for counting source lines of code"
+channels = ["conda-forge"]
+platforms = ["linux-64", "osx-arm64", "osx-64", "win-64"]
+
+[tasks]
+dev = "python manage.py runserver"
+migrate = "python manage.py migrate"
+test = "pytest"
+lint = "ruff check ."
+format = "ruff format ."
+vite-dev = "npm run dev"
+vite-build = "npm run build"
+
+[dependencies]
+python = ">=3.11"
+django = ">=5.0"
+djangorestframework = ">=3.14"
+django-cors-headers = ">=4.0"
+requests = ">=2.31"
+pygments = ">=2.17"  # For language detection fallback
+chardet = ">=5.0"    # For encoding detection
+pytest = ">=7.0"
+pytest-django = ">=4.5"
+ruff = ">=0.1"
+
+[feature.node.dependencies]
+nodejs = ">=20"
+
+[feature.node.tasks]
+npm-install = "npm install"
+
+[environments]
+default = { features = ["node"], solve-group = "default" }
+```
+
+### Frontend Dependencies (`package.json`)
+
+```json
+{
+  "name": "django-sloccount-frontend",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "@vitejs/plugin-react": "^4.2.0",
+    "autoprefixer": "^10.4.0",
+    "postcss": "^8.4.0",
+    "tailwindcss": "^3.4.0",
+    "vite": "^5.0.0"
+  }
+}
+```
+
+---
+
+## Project Structure
+
+```
+django-sloccount/
+├── pixi.toml                      # Pixi package manager config
+├── pyproject.toml                 # Python project metadata
+├── manage.py                      # Django management script
+├── package.json                   # Node.js dependencies
+├── vite.config.js                 # Vite configuration
+├── tailwind.config.js             # Tailwind CSS config
+│
+├── config/                        # Django project settings
+│   ├── __init__.py
+│   ├── settings.py
+│   ├── urls.py
+│   └── wsgi.py
+│
+├── sloccount/                     # Reusable Django app
+│   ├── __init__.py
+│   ├── apps.py
+│   ├── urls.py
+│   ├── views.py                   # API views
+│   ├── serializers.py             # DRF serializers
+│   │
+│   ├── core/                      # Core business logic
+│   │   ├── __init__.py
+│   │   ├── counter.py             # SLOCCounter main class
+│   │   ├── detector.py            # LanguageDetector
+│   │   ├── cocomo.py              # COCOMOEstimator
+│   │   ├── github.py              # GitHubFetcher
+│   │   └── zip_processor.py       # ZipProcessor
+│   │
+│   ├── counters/                  # Language-specific counters
+│   │   ├── __init__.py
+│   │   ├── base.py                # BaseCounter abstract class
+│   │   ├── c_family.py            # C, C++, Java, JavaScript, C#
+│   │   ├── python_counter.py
+│   │   ├── shell_counter.py       # Bash, sh, zsh
+│   │   ├── ruby_counter.py
+│   │   ├── perl_counter.py
+│   │   ├── php_counter.py
+│   │   ├── sql_counter.py
+│   │   ├── haskell_counter.py
+│   │   ├── lisp_counter.py
+│   │   ├── fortran_counter.py
+│   │   └── generic_counter.py     # Fallback for simple syntax
+│   │
+│   └── tests/
+│       ├── __init__.py
+│       ├── test_counter.py
+│       ├── test_detector.py
+│       ├── test_cocomo.py
+│       └── test_views.py
+│
+├── frontend/                      # React frontend source
+│   ├── src/
+│   │   ├── main.jsx
+│   │   ├── App.jsx
+│   │   ├── index.css
+│   │   │
+│   │   ├── components/
+│   │   │   ├── TabContainer.jsx
+│   │   │   ├── CodePasteTab.jsx
+│   │   │   ├── GitHubRepoTab.jsx
+│   │   │   ├── ZipUploadTab.jsx
+│   │   │   ├── ResultsPanel.jsx
+│   │   │   ├── LanguageBreakdown.jsx
+│   │   │   ├── CostEstimator.jsx
+│   │   │   └── LoadingSpinner.jsx
+│   │   │
+│   │   ├── hooks/
+│   │   │   └── useAnalysis.js
+│   │   │
+│   │   └── api/
+│   │       └── sloccount.js
+│   │
+│   └── public/
+│       └── index.html
+│
+├── static/                        # Django static files (Vite output)
+│   └── dist/                      # Built frontend assets
+│
+└── templates/
+    └── sloccount/
+        └── index.html             # Django template with Vite integration
+```
+
+---
+
+## Core Components
+
+### 1. Language Detector (`sloccount/core/detector.py`)
+
+```python
+"""Language detection based on file extension and content analysis."""
+
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Optional
+import re
+
+
+@dataclass
+class DetectedLanguage:
+    name: str           # Human-readable name (e.g., "Python")
+    key: str            # Internal key (e.g., "python")
+    counter_class: str  # Counter class to use
+
+
+class LanguageDetector:
+    """Detects programming language from filename and content."""
+    
+    # Extension to language mapping
+    EXTENSION_MAP: dict[str, str] = {
+        # Python
+        ".py": "python",
+        ".pyw": "python",
+        ".pyx": "python",
+        
+        # JavaScript/TypeScript
+        ".js": "javascript",
+        ".jsx": "javascript",
+        ".ts": "typescript",
+        ".tsx": "typescript",
+        ".mjs": "javascript",
+        ".cjs": "javascript",
+        
+        # C family
+        ".c": "c",
+        ".h": "c_header",
+        ".cpp": "cpp",
+        ".cxx": "cpp",
+        ".cc": "cpp",
+        ".hpp": "cpp",
+        ".hxx": "cpp",
+        ".C": "cpp",
+        
+        # Java/Kotlin
+        ".java": "java",
+        ".kt": "kotlin",
+        ".kts": "kotlin",
+        
+        # C#
+        ".cs": "csharp",
+        
+        # Go
+        ".go": "go",
+        
+        # Rust
+        ".rs": "rust",
+        
+        # Ruby
+        ".rb": "ruby",
+        ".rake": "ruby",
+        
+        # PHP
+        ".php": "php",
+        ".php3": "php",
+        ".php4": "php",
+        ".php5": "php",
+        ".phtml": "php",
+        
+        # Shell
+        ".sh": "shell",
+        ".bash": "shell",
+        ".zsh": "shell",
+        ".ksh": "shell",
+        ".csh": "cshell",
+        ".tcsh": "cshell",
+        
+        # Perl
+        ".pl": "perl",
+        ".pm": "perl",
+        ".perl": "perl",
+        
+        # SQL
+        ".sql": "sql",
+        
+        # HTML/CSS
+        ".html": "html",
+        ".htm": "html",
+        ".css": "css",
+        ".scss": "scss",
+        ".sass": "sass",
+        ".less": "less",
+        
+        # Swift/Objective-C
+        ".swift": "swift",
+        ".m": "objc",
+        ".mm": "objc",
+        
+        # Haskell
+        ".hs": "haskell",
+        ".lhs": "haskell",
+        
+        # LISP family
+        ".lisp": "lisp",
+        ".lsp": "lisp",
+        ".cl": "lisp",
+        ".el": "elisp",
+        ".scm": "scheme",
+        ".clj": "clojure",
+        ".cljs": "clojure",
+        
+        # ML family
+        ".ml": "ocaml",
+        ".mli": "ocaml",
+        ".fs": "fsharp",
+        ".fsx": "fsharp",
+        
+        # Fortran
+        ".f": "fortran",
+        ".for": "fortran",
+        ".f77": "fortran",
+        ".f90": "fortran90",
+        ".f95": "fortran90",
+        
+        # Assembly
+        ".asm": "asm",
+        ".s": "asm",
+        ".S": "asm",
+        
+        # Makefile
+        "Makefile": "makefile",
+        "makefile": "makefile",
+        ".mk": "makefile",
+        
+        # Config/Data (usually not counted but detected)
+        ".json": "json",
+        ".yaml": "yaml",
+        ".yml": "yaml",
+        ".toml": "toml",
+        ".xml": "xml",
+        ".md": "markdown",
+        ".rst": "rst",
+    }
+    
+    # Files to skip
+    SKIP_PATTERNS: list[str] = [
+        r"\.git/",
+        r"__pycache__/",
+        r"node_modules/",
+        r"\.pyc$",
+        r"\.pyo$",
+        r"\.so$",
+        r"\.o$",
+        r"\.a$",
+        r"\.dll$",
+        r"\.exe$",
+        r"\.min\.js$",
+        r"\.min\.css$",
+        r"\.map$",
+        r"package-lock\.json$",
+        r"yarn\.lock$",
+        r"Pipfile\.lock$",
+        r"poetry\.lock$",
+    ]
+    
+    # Auto-generated file markers (in first 15 lines)
+    AUTOGEN_MARKERS: list[str] = [
+        "generated automatically",
+        "automatically generated",
+        "this is a generated file",
+        "do not edit",
+        "auto-generated",
+        "autogenerated",
+        "machine generated",
+    ]
+    
+    def detect(self, filepath: str, content: Optional[str] = None) -> Optional[DetectedLanguage]:
+        """Detect language from filepath and optionally content."""
+        path = Path(filepath)
+        
+        # Check skip patterns
+        for pattern in self.SKIP_PATTERNS:
+            if re.search(pattern, str(path)):
+                return None
+        
+        # Check extension
+        ext = path.suffix.lower()
+        name = path.name
+        
+        # Check by filename first (for Makefile, etc.)
+        if name in self.EXTENSION_MAP:
+            return self._create_detection(self.EXTENSION_MAP[name])
+        
+        # Check by extension
+        if ext in self.EXTENSION_MAP:
+            lang_key = self.EXTENSION_MAP[ext]
+            
+            # Special handling for .h files (could be C or C++)
+            if ext == ".h" and content:
+                lang_key = self._detect_header_language(content)
+            
+            return self._create_detection(lang_key)
+        
+        # Check shebang if content available
+        if content:
+            shebang_lang = self._detect_from_shebang(content)
+            if shebang_lang:
+                return self._create_detection(shebang_lang)
+        
+        return None
+    
+    def is_autogenerated(self, content: str) -> bool:
+        """Check if file content indicates auto-generation."""
+        # Check first 15 lines
+        lines = content.split('\n')[:15]
+        text = '\n'.join(lines).lower()
+        
+        return any(marker in text for marker in self.AUTOGEN_MARKERS)
+    
+    def _detect_header_language(self, content: str) -> str:
+        """Detect if .h file is C or C++ based on content."""
+        cpp_indicators = [
+            r'\bclass\s+\w+',
+            r'\btemplate\s*<',
+            r'\bnamespace\s+\w+',
+            r'\bprivate:',
+            r'\bpublic:',
+            r'\bprotected:',
+            r'\bvirtual\s+',
+            r'::\w+',
+        ]
+        
+        for pattern in cpp_indicators:
+            if re.search(pattern, content):
+                return "cpp"
+        
+        return "c"
+    
+    def _detect_from_shebang(self, content: str) -> Optional[str]:
+        """Detect language from shebang line."""
+        first_line = content.split('\n')[0].strip()
+        
+        if not first_line.startswith('#!'):
+            return None
+        
+        shebang_map = {
+            'python': 'python',
+            'python3': 'python',
+            'ruby': 'ruby',
+            'perl': 'perl',
+            'bash': 'shell',
+            'sh': 'shell',
+            'zsh': 'shell',
+            'node': 'javascript',
+            'php': 'php',
+        }
+        
+        for interpreter, lang in shebang_map.items():
+            if interpreter in first_line:
+                return lang
+        
+        return None
+    
+    def _create_detection(self, key: str) -> DetectedLanguage:
+        """Create DetectedLanguage from key."""
+        name_map = {
+            "python": "Python",
+            "javascript": "JavaScript",
+            "typescript": "TypeScript",
+            "c": "C",
+            "c_header": "C/C++ Header",
+            "cpp": "C++",
+            "java": "Java",
+            "kotlin": "Kotlin",
+            "csharp": "C#",
+            "go": "Go",
+            "rust": "Rust",
+            "ruby": "Ruby",
+            "php": "PHP",
+            "shell": "Shell",
+            "cshell": "C Shell",
+            "perl": "Perl",
+            "sql": "SQL",
+            "html": "HTML",
+            "css": "CSS",
+            "scss": "SCSS",
+            "sass": "Sass",
+            "less": "Less",
+            "swift": "Swift",
+            "objc": "Objective-C",
+            "haskell": "Haskell",
+            "lisp": "LISP",
+            "elisp": "Emacs Lisp",
+            "scheme": "Scheme",
+            "clojure": "Clojure",
+            "ocaml": "OCaml",
+            "fsharp": "F#",
+            "fortran": "Fortran",
+            "fortran90": "Fortran 90",
+            "asm": "Assembly",
+            "makefile": "Makefile",
+            "json": "JSON",
+            "yaml": "YAML",
+            "toml": "TOML",
+            "xml": "XML",
+            "markdown": "Markdown",
+            "rst": "reStructuredText",
+        }
+        
+        return DetectedLanguage(
+            name=name_map.get(key, key.title()),
+            key=key,
+            counter_class=f"{key}_counter"
+        )
+```
+
+### 2. Base Counter (`sloccount/counters/base.py`)
+
+```python
+"""Base class for language-specific SLOC counters."""
+
+from abc import ABC, abstractmethod
+from dataclasses import dataclass
+from typing import Optional
+
+
+@dataclass
+class CountResult:
+    """Result of counting SLOC for a single file."""
+    sloc: int
+    blank_lines: int
+    comment_lines: int
+    total_lines: int
+    language: str
+    filepath: str
+
+
+class BaseCounter(ABC):
+    """Abstract base class for SLOC counters."""
+    
+    # Override in subclasses
+    LANGUAGE_NAME: str = "Unknown"
+    LANGUAGE_KEY: str = "unknown"
+    
+    # Comment syntax - override in subclasses
+    LINE_COMMENT: Optional[str] = None      # e.g., "//" or "#"
+    BLOCK_COMMENT_START: Optional[str] = None  # e.g., "/*"
+    BLOCK_COMMENT_END: Optional[str] = None    # e.g., "*/"
+    
+    # String delimiters that might contain comment-like characters
+    STRING_DELIMITERS: list[str] = ['"', "'"]
+    
+    def count(self, content: str, filepath: str = "") -> CountResult:
+        """Count SLOC in the given content."""
+        lines = content.split('\n')
+        
+        sloc = 0
+        blank_lines = 0
+        comment_lines = 0
+        in_block_comment = False
+        in_string = False
+        string_char = None
+        
+        for line in lines:
+            stripped = line.strip()
+            
+            # Empty line
+            if not stripped:
+                blank_lines += 1
+                continue
+            
+            # Process the line
+            is_code, is_comment, in_block_comment = self._classify_line(
+                stripped, in_block_comment
+            )
+            
+            if is_code:
+                sloc += 1
+            elif is_comment:
+                comment_lines += 1
+            else:
+                blank_lines += 1
+        
+        return CountResult(
+            sloc=sloc,
+            blank_lines=blank_lines,
+            comment_lines=comment_lines,
+            total_lines=len(lines),
+            language=self.LANGUAGE_KEY,
+            filepath=filepath
+        )
+    
+    def _classify_line(
+        self, 
+        line: str, 
+        in_block_comment: bool
+    ) -> tuple[bool, bool, bool]:
+        """
+        Classify a line as code, comment, or blank.
+        
+        Returns:
+            (is_code, is_comment, still_in_block_comment)
+        """
+        # Handle block comment continuation
+        if in_block_comment:
+            if self.BLOCK_COMMENT_END and self.BLOCK_COMMENT_END in line:
+                # Block comment ends on this line
+                idx = line.index(self.BLOCK_COMMENT_END)
+                remaining = line[idx + len(self.BLOCK_COMMENT_END):].strip()
+                
+                if remaining:
+                    # There's code after the comment end
+                    return (True, False, False)
+                return (False, True, False)
+            return (False, True, True)
+        
+        # Check for line comment at start
+        if self.LINE_COMMENT and line.startswith(self.LINE_COMMENT):
+            return (False, True, False)
+        
+        # Check for block comment start
+        if self.BLOCK_COMMENT_START and self.BLOCK_COMMENT_START in line:
+            idx = line.index(self.BLOCK_COMMENT_START)
+            
+            # Check if it's inside a string
+            if not self._is_in_string(line, idx):
+                # Check if block comment ends on same line
+                after_start = line[idx + len(self.BLOCK_COMMENT_START):]
+                
+                if self.BLOCK_COMMENT_END and self.BLOCK_COMMENT_END in after_start:
+                    # Comment is fully contained in line
+                    before_comment = line[:idx].strip()
+                    end_idx = after_start.index(self.BLOCK_COMMENT_END)
+                    after_comment = after_start[end_idx + len(self.BLOCK_COMMENT_END):].strip()
+                    
+                    if before_comment or after_comment:
+                        return (True, False, False)
+                    return (False, True, False)
+                else:
+                    # Block comment starts, doesn't end
+                    before = line[:idx].strip()
+                    if before:
+                        return (True, False, True)
+                    return (False, True, True)
+        
+        # It's a code line
+        return (True, False, False)
+    
+    def _is_in_string(self, line: str, position: int) -> bool:
+        """Check if position is inside a string literal."""
+        in_string = False
+        string_char = None
+        escape_next = False
+        
+        for i, char in enumerate(line):
+            if i >= position:
+                return in_string
+            
+            if escape_next:
+                escape_next = False
+                continue
+            
+            if char == '\\':
+                escape_next = True
+                continue
+            
+            if char in self.STRING_DELIMITERS:
+                if not in_string:
+                    in_string = True
+                    string_char = char
+                elif char == string_char:
+                    in_string = False
+                    string_char = None
+        
+        return in_string
+```
+
+### 3. COCOMO Estimator (`sloccount/core/cocomo.py`)
+
+```python
+"""COCOMO (Constructive Cost Model) for effort and cost estimation."""
+
+from dataclasses import dataclass
+from enum import Enum
+from typing import Optional
+
+
+class ProjectMode(Enum):
+    """COCOMO project modes."""
+    ORGANIC = "organic"
+    SEMIDETACHED = "semidetached"
+    EMBEDDED = "embedded"
+
+
+@dataclass
+class COCOMOParams:
+    """COCOMO model parameters."""
+    # Effort: person-months = factor * (KSLOC ^ exponent)
+    effort_factor: float
+    effort_exponent: float
+    
+    # Schedule: months = factor * (person-months ^ exponent)
+    schedule_factor: float
+    schedule_exponent: float
+
+
+@dataclass
+class CostParams:
+    """Cost estimation parameters."""
+    annual_salary: float = 56286.0    # Original 2000 value
+    overhead_multiplier: float = 2.4   # Benefits, facilities, equipment
+
+
+@dataclass
+class EstimationResult:
+    """Result of COCOMO estimation."""
+    sloc: int
+    ksloc: float
+    
+    # Effort
+    person_months: float
+    person_years: float
+    
+    # Schedule
+    schedule_months: float
+    schedule_years: float
+    
+    # Team size
+    average_developers: float
+    
+    # Cost
+    estimated_cost: float
+    
+    # Parameters used
+    mode: str
+    params: COCOMOParams
+    cost_params: CostParams
+
+
+class COCOMOEstimator:
+    """Estimate development effort and cost using COCOMO model."""
+    
+    # Default parameters for each mode (Basic COCOMO)
+    MODE_PARAMS: dict[ProjectMode, COCOMOParams] = {
+        ProjectMode.ORGANIC: COCOMOParams(
+            effort_factor=2.4,
+            effort_exponent=1.05,
+            schedule_factor=2.5,
+            schedule_exponent=0.38,
+        ),
+        ProjectMode.SEMIDETACHED: COCOMOParams(
+            effort_factor=3.0,
+            effort_exponent=1.12,
+            schedule_factor=2.5,
+            schedule_exponent=0.35,
+        ),
+        ProjectMode.EMBEDDED: COCOMOParams(
+            effort_factor=3.6,
+            effort_exponent=1.20,
+            schedule_factor=2.5,
+            schedule_exponent=0.32,
+        ),
+    }
+    
+    # Year 2000 defaults (original SLOCCount)
+    DEFAULT_COST_PARAMS_2000 = CostParams(
+        annual_salary=56286.0,
+        overhead_multiplier=2.4,
+    )
+    
+    # Year 2025 estimates (with caveats - very rough)
+    DEFAULT_COST_PARAMS_2025 = CostParams(
+        annual_salary=120000.0,
+        overhead_multiplier=2.8,
+    )
+    
+    def __init__(
+        self,
+        mode: ProjectMode = ProjectMode.ORGANIC,
+        params: Optional[COCOMOParams] = None,
+        cost_params: Optional[CostParams] = None,
+    ):
+        self.mode = mode
+        self.params = params or self.MODE_PARAMS[mode]
+        self.cost_params = cost_params or self.DEFAULT_COST_PARAMS_2000
+    
+    def estimate(self, sloc: int) -> EstimationResult:
+        """Estimate effort and cost for given SLOC count."""
+        if sloc <= 0:
+            return EstimationResult(
+                sloc=0,
+                ksloc=0.0,
+                person_months=0.0,
+                person_years=0.0,
+                schedule_months=0.0,
+                schedule_years=0.0,
+                average_developers=0.0,
+                estimated_cost=0.0,
+                mode=self.mode.value,
+                params=self.params,
+                cost_params=self.cost_params,
+            )
+        
+        ksloc = sloc / 1000.0
+        
+        # Calculate effort (person-months)
+        person_months = (
+            self.params.effort_factor * 
+            (ksloc ** self.params.effort_exponent)
+        )
+        person_years = person_months / 12.0
+        
+        # Calculate schedule (months)
+        schedule_months = (
+            self.params.schedule_factor * 
+            (person_months ** self.params.schedule_exponent)
+        )
+        schedule_years = schedule_months / 12.0
+        
+        # Average team size
+        average_developers = person_months / schedule_months if schedule_months > 0 else 0.0
+        
+        # Cost estimation
+        # Annual cost per developer = salary * overhead
+        annual_cost_per_dev = (
+            self.cost_params.annual_salary * 
+            self.cost_params.overhead_multiplier
+        )
+        # Monthly cost per developer
+        monthly_cost_per_dev = annual_cost_per_dev / 12.0
+        # Total cost = person-months * monthly cost
+        estimated_cost = person_months * monthly_cost_per_dev
+        
+        return EstimationResult(
+            sloc=sloc,
+            ksloc=ksloc,
+            person_months=round(person_months, 2),
+            person_years=round(person_years, 2),
+            schedule_months=round(schedule_months, 2),
+            schedule_years=round(schedule_years, 2),
+            average_developers=round(average_developers, 2),
+            estimated_cost=round(estimated_cost, 2),
+            mode=self.mode.value,
+            params=self.params,
+            cost_params=self.cost_params,
+        )
+    
+    @classmethod
+    def with_custom_params(
+        cls,
+        effort_factor: float,
+        effort_exponent: float,
+        schedule_factor: float = 2.5,
+        schedule_exponent: float = 0.38,
+        annual_salary: float = 56286.0,
+        overhead_multiplier: float = 2.4,
+    ) -> "COCOMOEstimator":
+        """Create estimator with custom parameters."""
+        return cls(
+            params=COCOMOParams(
+                effort_factor=effort_factor,
+                effort_exponent=effort_exponent,
+                schedule_factor=schedule_factor,
+                schedule_exponent=schedule_exponent,
+            ),
+            cost_params=CostParams(
+                annual_salary=annual_salary,
+                overhead_multiplier=overhead_multiplier,
+            ),
+        )
+```
+
+### 4. Main SLOC Counter (`sloccount/core/counter.py`)
+
+```python
+"""Main SLOC counting engine."""
+
+from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Optional
+import hashlib
+
+from .detector import LanguageDetector, DetectedLanguage
+from .cocomo import COCOMOEstimator, EstimationResult
+from ..counters import get_counter_for_language
+
+
+@dataclass
+class FileResult:
+    """SLOC count for a single file."""
+    filepath: str
+    language: str
+    sloc: int
+    blank_lines: int
+    comment_lines: int
+    total_lines: int
+    is_duplicate: bool = False
+
+
+@dataclass
+class LanguageSummary:
+    """Summary for a single language."""
+    language: str
+    language_name: str
+    sloc: int
+    files: int
+    percentage: float = 0.0
+
+
+@dataclass
+class AnalysisResult:
+    """Complete analysis result."""
+    total_sloc: int
+    total_files: int
+    total_languages: int
+    
+    # Per-file details
+    files: list[FileResult] = field(default_factory=list)
+    
+    # Per-language breakdown
+    languages: list[LanguageSummary] = field(default_factory=list)
+    
+    # Cost estimation
+    estimation: Optional[EstimationResult] = None
+    
+    # Metadata
+    skipped_files: int = 0
+    duplicate_files: int = 0
+    autogenerated_files: int = 0
+
+
+class SLOCCounter:
+    """Main SLOC counting engine."""
+    
+    def __init__(
+        self,
+        detector: Optional[LanguageDetector] = None,
+        estimator: Optional[COCOMOEstimator] = None,
+        skip_duplicates: bool = True,
+        skip_autogenerated: bool = True,
+    ):
+        self.detector = detector or LanguageDetector()
+        self.estimator = estimator or COCOMOEstimator()
+        self.skip_duplicates = skip_duplicates
+        self.skip_autogenerated = skip_autogenerated
+        
+        # Track file hashes for duplicate detection
+        self._seen_hashes: set[str] = set()
+    
+    def analyze_files(
+        self, 
+        files: dict[str, str],  # {filepath: content}
+    ) -> AnalysisResult:
+        """
+        Analyze multiple files and return aggregated results.
+        
+        Args:
+            files: Dictionary mapping filepath to file content
+        """
+        file_results: list[FileResult] = []
+        language_counts: dict[str, dict] = {}  # {lang_key: {sloc, files, name}}
+        skipped = 0
+        duplicates = 0
+        autogen = 0
+        
+        for filepath, content in files.items():
+            # Detect language
+            detection = self.detector.detect(filepath, content)
+            
+            if detection is None:
+                skipped += 1
+                continue
+            
+            # Check for duplicates
+            if self.skip_duplicates:
+                file_hash = hashlib.md5(content.encode()).hexdigest()
+                if file_hash in self._seen_hashes:
+                    duplicates += 1
+                    file_results.append(FileResult(
+                        filepath=filepath,
+                        language=detection.key,
+                        sloc=0,
+                        blank_lines=0,
+                        comment_lines=0,
+                        total_lines=len(content.split('\n')),
+                        is_duplicate=True,
+                    ))
+                    continue
+                self._seen_hashes.add(file_hash)
+            
+            # Check for auto-generated
+            if self.skip_autogenerated and self.detector.is_autogenerated(content):
+                autogen += 1
+                skipped += 1
+                continue
+            
+            # Get appropriate counter
+            counter = get_counter_for_language(detection.key)
+            
+            # Count SLOC
+            result = counter.count(content, filepath)
+            
+            file_results.append(FileResult(
+                filepath=filepath,
+                language=detection.key,
+                sloc=result.sloc,
+                blank_lines=result.blank_lines,
+                comment_lines=result.comment_lines,
+                total_lines=result.total_lines,
+            ))
+            
+            # Aggregate by language
+            if detection.key not in language_counts:
+                language_counts[detection.key] = {
+                    "sloc": 0,
+                    "files": 0,
+                    "name": detection.name,
+                }
+            language_counts[detection.key]["sloc"] += result.sloc
+            language_counts[detection.key]["files"] += 1
+        
+        # Calculate totals
+        total_sloc = sum(f.sloc for f in file_results if not f.is_duplicate)
+        total_files = len([f for f in file_results if not f.is_duplicate])
+        
+        # Create language summaries with percentages
+        language_summaries = []
+        for lang_key, data in language_counts.items():
+            percentage = (data["sloc"] / total_sloc * 100) if total_sloc > 0 else 0
+            language_summaries.append(LanguageSummary(
+                language=lang_key,
+                language_name=data["name"],
+                sloc=data["sloc"],
+                files=data["files"],
+                percentage=round(percentage, 2),
+            ))
+        
+        # Sort by SLOC descending
+        language_summaries.sort(key=lambda x: x.sloc, reverse=True)
+        
+        # Cost estimation
+        estimation = self.estimator.estimate(total_sloc)
+        
+        return AnalysisResult(
+            total_sloc=total_sloc,
+            total_files=total_files,
+            total_languages=len(language_summaries),
+            files=file_results,
+            languages=language_summaries,
+            estimation=estimation,
+            skipped_files=skipped,
+            duplicate_files=duplicates,
+            autogenerated_files=autogen,
+        )
+    
+    def analyze_single_file(
+        self, 
+        content: str, 
+        filename: str,
+    ) -> AnalysisResult:
+        """Analyze a single pasted code file."""
+        return self.analyze_files({filename: content})
+    
+    def reset(self):
+        """Reset duplicate tracking for new analysis."""
+        self._seen_hashes.clear()
+```
+
+---
+
+## API Endpoints
+
+### Views (`sloccount/views.py`)
+
+```python
+"""REST API views for SLOC counting."""
+
+from rest_framework import status
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.parsers import MultiPartParser, JSONParser
+
+from .serializers import (
+    PastedCodeSerializer,
+    GitHubRepoSerializer,
+    AnalysisResultSerializer,
+    COCOMOParamsSerializer,
+)
+from .core.counter import SLOCCounter
+from .core.cocomo import COCOMOEstimator, CostParams, COCOMOParams
+from .core.github import GitHubFetcher
+from .core.zip_processor import ZipProcessor
+
+
+class AnalyzePastedCodeView(APIView):
+    """Analyze pasted source code."""
+    
+    parser_classes = [JSONParser]
+    
+    def post(self, request):
+        serializer = PastedCodeSerializer(data=request.data)
+        
+        if not serializer.is_valid():
+            return Response(
+                serializer.errors, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        code = serializer.validated_data['code']
+        filename = serializer.validated_data.get('filename', 'code.txt')
+        cocomo_params = serializer.validated_data.get('cocomo_params', {})
+        
+        # Create estimator with custom params if provided
+        estimator = self._create_estimator(cocomo_params)
+        counter = SLOCCounter(estimator=estimator)
+        
+        result = counter.analyze_single_file(code, filename)
+        
+        return Response(
+            AnalysisResultSerializer(result).data,
+            status=status.HTTP_200_OK
+        )
+    
+    def _create_estimator(self, params: dict) -> COCOMOEstimator:
+        """Create estimator from request parameters."""
+        if not params:
+            return COCOMOEstimator()
+        
+        return COCOMOEstimator.with_custom_params(
+            effort_factor=params.get('effort_factor', 2.4),
+            effort_exponent=params.get('effort_exponent', 1.05),
+            schedule_factor=params.get('schedule_factor', 2.5),
+            schedule_exponent=params.get('schedule_exponent', 0.38),
+            annual_salary=params.get('annual_salary', 56286.0),
+            overhead_multiplier=params.get('overhead_multiplier', 2.4),
+        )
+
+
+class AnalyzeGitHubRepoView(APIView):
+    """Analyze a GitHub repository."""
+    
+    parser_classes = [JSONParser]
+    
+    def post(self, request):
+        serializer = GitHubRepoSerializer(data=request.data)
+        
+        if not serializer.is_valid():
+            return Response(
+                serializer.errors,
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        repo_url = serializer.validated_data['repo_url']
+        branch = serializer.validated_data.get('branch', 'main')
+        cocomo_params = serializer.validated_data.get('cocomo_params', {})
+        
+        try:
+            # Fetch repository files
+            fetcher = GitHubFetcher()
+            files = fetcher.fetch_repository(repo_url, branch)
+            
+            # Analyze
+            estimator = self._create_estimator(cocomo_params)
+            counter = SLOCCounter(estimator=estimator)
+            result = counter.analyze_files(files)
+            
+            return Response(
+                AnalysisResultSerializer(result).data,
+                status=status.HTTP_200_OK
+            )
+        
+        except Exception as e:
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+    
+    def _create_estimator(self, params: dict) -> COCOMOEstimator:
+        if not params:
+            return COCOMOEstimator()
+        
+        return COCOMOEstimator.with_custom_params(
+            effort_factor=params.get('effort_factor', 2.4),
+            effort_exponent=params.get('effort_exponent', 1.05),
+            schedule_factor=params.get('schedule_factor', 2.5),
+            schedule_exponent=params.get('schedule_exponent', 0.38),
+            annual_salary=params.get('annual_salary', 56286.0),
+            overhead_multiplier=params.get('overhead_multiplier', 2.4),
+        )
+
+
+class AnalyzeZipFileView(APIView):
+    """Analyze an uploaded ZIP file."""
+    
+    parser_classes = [MultiPartParser]
+    
+    def post(self, request):
+        if 'file' not in request.FILES:
+            return Response(
+                {"error": "No file uploaded"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        uploaded_file = request.FILES['file']
+        
+        if not uploaded_file.name.endswith('.zip'):
+            return Response(
+                {"error": "File must be a ZIP archive"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Parse COCOMO params from form data
+        cocomo_params = {}
+        for key in ['effort_factor', 'effort_exponent', 'schedule_factor', 
+                    'schedule_exponent', 'annual_salary', 'overhead_multiplier']:
+            if key in request.data:
+                cocomo_params[key] = float(request.data[key])
+        
+        try:
+            # Process ZIP file
+            processor = ZipProcessor()
+            files = processor.extract_files(uploaded_file)
+            
+            # Analyze
+            estimator = self._create_estimator(cocomo_params)
+            counter = SLOCCounter(estimator=estimator)
+            result = counter.analyze_files(files)
+            
+            return Response(
+                AnalysisResultSerializer(result).data,
+                status=status.HTTP_200_OK
+            )
+        
+        except Exception as e:
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+    
+    def _create_estimator(self, params: dict) -> COCOMOEstimator:
+        if not params:
+            return COCOMOEstimator()
+        
+        return COCOMOEstimator.with_custom_params(
+            effort_factor=params.get('effort_factor', 2.4),
+            effort_exponent=params.get('effort_exponent', 1.05),
+            schedule_factor=params.get('schedule_factor', 2.5),
+            schedule_exponent=params.get('schedule_exponent', 0.38),
+            annual_salary=params.get('annual_salary', 56286.0),
+            overhead_multiplier=params.get('overhead_multiplier', 2.4),
+        )
+
+
+class SupportedLanguagesView(APIView):
+    """List supported programming languages."""
+    
+    def get(self, request):
+        from .core.detector import LanguageDetector
+        
+        detector = LanguageDetector()
+        
+        # Get unique languages
+        languages = set(detector.EXTENSION_MAP.values())
+        
+        # Create response with names
+        language_list = []
+        for lang_key in sorted(languages):
+            detection = detector._create_detection(lang_key)
+            language_list.append({
+                "key": lang_key,
+                "name": detection.name,
+            })
+        
+        return Response({"languages": language_list})
+```
+
+---
+
+## Frontend Components
+
+### Main App (`frontend/src/App.jsx`)
+
+```jsx
+import { useState } from 'react';
+import TabContainer from './components/TabContainer';
+import ResultsPanel from './components/ResultsPanel';
+import CostEstimator from './components/CostEstimator';
+
+function App() {
+  const [results, setResults] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  
+  // COCOMO parameters
+  const [cocomoParams, setCocomoParams] = useState({
+    effort_factor: 2.4,
+    effort_exponent: 1.05,
+    annual_salary: 56286,
+    overhead_multiplier: 2.4,
+    preset: '2000', // '2000' or '2025'
+  });
+
+  const handleAnalysisComplete = (data) => {
+    setResults(data);
+    setError(null);
+  };
+
+  const handleError = (err) => {
+    setError(err);
+    setResults(null);
+  };
+
+  const applyPreset = (preset) => {
+    if (preset === '2000') {
+      setCocomoParams({
+        effort_factor: 2.4,
+        effort_exponent: 1.05,
+        annual_salary: 56286,
+        overhead_multiplier: 2.4,
+        preset: '2000',
+      });
+    } else if (preset === '2025') {
+      setCocomoParams({
+        effort_factor: 2.4,
+        effort_exponent: 1.05,
+        annual_salary: 120000,
+        overhead_multiplier: 2.8,
+        preset: '2025',
+      });
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-4xl mx-auto px-4 py-8">
+        {/* Header */}
+        <header className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-gray-900">
+            SLOCCount - Count Lines of Code
+          </h1>
+          <p className="text-gray-600 mt-2">
+            Analyze source code to count physical Source Lines of Code (SLOC)
+          </p>
+          <p className="text-sm text-gray-500 mt-1">
+            Based on{' '}
+            <a 
+              href="https://dwheeler.com/sloccount/" 
+              className="text-blue-600 hover:underline"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              SLOCCount
+            </a>
+            {' '}by David A. Wheeler
+          </p>
+        </header>
+
+        {/* Tab Container */}
+        <TabContainer
+          loading={loading}
+          setLoading={setLoading}
+          cocomoParams={cocomoParams}
+          onComplete={handleAnalysisComplete}
+          onError={handleError}
+        />
+
+        {/* Error Display */}
+        {error && (
+          <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-red-700">{error}</p>
+          </div>
+        )}
+
+        {/* Results Panel */}
+        {results && (
+          <ResultsPanel results={results} />
+        )}
+
+        {/* Cost Estimator Configuration */}
+        <CostEstimator
+          params={cocomoParams}
+          setParams={setCocomoParams}
+          applyPreset={applyPreset}
+        />
+      </div>
+    </div>
+  );
+}
+
+export default App;
+```
+
+### Tab Container (`frontend/src/components/TabContainer.jsx`)
+
+```jsx
+import { useState } from 'react';
+import CodePasteTab from './CodePasteTab';
+import GitHubRepoTab from './GitHubRepoTab';
+import ZipUploadTab from './ZipUploadTab';
+
+const tabs = [
+  { id: 'paste', label: 'Paste Code' },
+  { id: 'github', label: 'GitHub Repository' },
+  { id: 'upload', label: 'Upload ZIP' },
+];
+
+function TabContainer({ loading, setLoading, cocomoParams, onComplete, onError }) {
+  const [activeTab, setActiveTab] = useState('paste');
+
+  return (
+    <div className="bg-white rounded-lg shadow-md overflow-hidden">
+      {/* Tab Headers */}
+      <div className="flex border-b">
+        {tabs.map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
+              activeTab === tab.id
+                ? 'bg-blue-50 text-blue-700 border-b-2 border-blue-500'
+                : 'text-gray-600 hover:bg-gray-50'
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Tab Content */}
+      <div className="p-4">
+        {activeTab === 'paste' && (
+          <CodePasteTab
+            loading={loading}
+            setLoading={setLoading}
+            cocomoParams={cocomoParams}
+            onComplete={onComplete}
+            onError={onError}
+          />
+        )}
+        {activeTab === 'github' && (
+          <GitHubRepoTab
+            loading={loading}
+            setLoading={setLoading}
+            cocomoParams={cocomoParams}
+            onComplete={onComplete}
+            onError={onError}
+          />
+        )}
+        {activeTab === 'upload' && (
+          <ZipUploadTab
+            loading={loading}
+            setLoading={setLoading}
+            cocomoParams={cocomoParams}
+            onComplete={onComplete}
+            onError={onError}
+          />
+        )}
+      </div>
+    </div>
+  );
+}
+
+export default TabContainer;
+```
+
+---
+
+## Django-Vite Integration
+
+### Vite Configuration (`vite.config.js`)
+
+```javascript
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import { resolve } from 'path';
+
+export default defineConfig({
+  plugins: [react()],
+  root: './frontend',
+  base: '/static/',
+  build: {
+    outDir: '../static/dist',
+    emptyOutDir: true,
+    manifest: true,
+    rollupOptions: {
+      input: {
+        main: resolve(__dirname, 'frontend/src/main.jsx'),
+      },
+    },
+  },
+  server: {
+    port: 5173,
+    origin: 'http://localhost:5173',
+  },
+});
+```
+
+### Django Settings (`config/settings.py` additions)
+
+```python
+# Django-Vite configuration
+DJANGO_VITE_DEV_MODE = DEBUG
+DJANGO_VITE_ASSETS_PATH = BASE_DIR / "static" / "dist"
+DJANGO_VITE_MANIFEST_PATH = DJANGO_VITE_ASSETS_PATH / "manifest.json"
+
+# Static files
+STATIC_URL = '/static/'
+STATICFILES_DIRS = [
+    BASE_DIR / "static",
+]
+
+# REST Framework
+REST_FRAMEWORK = {
+    'DEFAULT_PARSER_CLASSES': [
+        'rest_framework.parsers.JSONParser',
+        'rest_framework.parsers.MultiPartParser',
+    ],
+}
+
+# CORS (for development)
+if DEBUG:
+    CORS_ALLOW_ALL_ORIGINS = True
+else:
+    CORS_ALLOWED_ORIGINS = [
+        "https://your-domain.com",
+    ]
+```
+
+### Django Template (`templates/sloccount/index.html`)
+
+```html
+{% load django_vite %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SLOCCount - Count Lines of Code</title>
+    {% vite_hmr_client %}
+    {% vite_asset 'src/main.jsx' %}
+</head>
+<body>
+    <div id="root"></div>
+</body>
+</html>
+```
+
+---
+
+## Implementation Options
+
+Given the complexity, here are **three implementation approaches** for you to choose from:
+
+### Option A: Full Python Implementation (Recommended)
+- **Pros**: Pure Python, easier to maintain, fits your unity-data-stack patterns
+- **Cons**: Need to implement each language counter from scratch
+- **Effort**: Medium-High
+- **Approach**: Implement Python versions of all SLOC counters
+
+### Option B: Use External Tool (pygount, cloc, tokei)
+- **Pros**: Leverage existing well-tested tools
+- **Cons**: External dependency, may need packaging for conda-forge
+- **Best Tool**: `pygount` (pure Python, available on conda-forge)
+- **Effort**: Low-Medium
+- **Approach**: Wrap `pygount` as the counting backend
+
+```python
+# Example using pygount
+from pygount import SourceAnalysis
+
+def count_with_pygount(filepath: str) -> dict:
+    analysis = SourceAnalysis.from_file(filepath)
+    return {
+        "sloc": analysis.code_count,
+        "blank": analysis.empty_count,
+        "comments": analysis.documentation_count + analysis.string_count,
+        "language": analysis.language,
+    }
+```
+
+### Option C: Hybrid Approach
+- **Pros**: Best of both worlds
+- **Cons**: More complex architecture
+- **Approach**: Use `pygount` for counting, custom code for COCOMO estimation and UI
+
+---
+
+## Next Steps
+
+1. **Choose an implementation approach** (A, B, or C above)
+2. **Confirm conda-forge availability** for key dependencies
+3. **Scaffold the project** using cookiecutter-django or manual setup
+4. **Implement core components** in order:
+   - Language detector
+   - SLOC counters (or integrate pygount)
+   - COCOMO estimator
+   - REST API views
+5. **Build the React frontend**
+6. **Integrate with django-vite**
+7. **Write tests**
+8. **Package as reusable Django app**
+
+---
+
+## Questions for You
+
+Before proceeding with implementation, I need to know:
+
+1. **Which implementation approach do you prefer?** (A, B, or C)
+2. **Should this be a standalone project or part of unity-data-stack?**
+3. **Do you want the frontend to be SSR (Django templates) or full SPA (React only)?**
+4. **Any specific languages that are most important to support first?**
+5. **Should I check if `pygount` and `django-vite` are available on conda-forge?**

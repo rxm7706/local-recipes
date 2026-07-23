@@ -1,0 +1,59 @@
+LOCAL AI WORKSTATION BUILD LIST (DUAL-GPU READY) [1]
+ATTN BUILD TECHNICIAN: Please configure using the high-end 16-core 3D V-Cache processor. Kindly apply any active AM5 bundle promotions at the register. [1, 2]
+* Processor (CPU): AMD Ryzen 9 9950X3D 16-Core, 32-Thread AM5 Processor (SKU: 815944)
+* Motherboard: ASUS X870E-Creator ProArt WIFI AM5 ATX Motherboard (Required for PCIe Gen 5 x8/x8 split lanes and dual-GPU layouts)
+* Graphics Card: NVIDIA GeForce RTX 5080 16GB GDDR7 (Leave the secondary bifurcated x8 slot clear for an identical 5080 expansion later)
+* Power Supply (PSU): ASUS ROG Thor 1600 Watt 80-Plus Titanium Fully Modular ATX Power Supply(Must be 1600W to safely support two RTX 5080s simultaneously)
+* System Memory (RAM): G.Skill Trident Z5 Neo RGB 64GB (2 x 32GB) DDR5-6000 CL30 AMD Expo RAM
+* Storage (SSD): Crucial T500 2TB PCIe Gen 4 NVMe M.2 Internal SSD
+* Case: Lian Li O11 Dynamic EVO XL Full Tower Chassis
+* CPU Cooler: Lian Li HydroShift LCD 360 RGB All-in-One Liquid CPU Cooler
+* Assembly Service: Tier-1 Custom Computer PC Assembly & Testing Service + Windows 11 Pro Installation [1, 2, 3]
+
+In-Store Cost & Inventory Notes
+* The Processor Pricing: Individually, the Ryzen 9 9950X3D reflects an in-store price of $619.99 at Micro Center. [1, 2, 3]
+* The Bundle Discount Strategy: Ask the associate if they can group this chip into an X870E Creator Bundle. Micro Center routinely slashes roughly $100 to $200 off the combined price when purchasing a premium X870E motherboard and 64GB of DDR5 RAM alongside an enthusiast tier X3D chip. [1, 2, 3]
+* Estimated Base Total: Upgrading to this processor adjusts your upfront hardware total to approximately $4,310 (before any active bundle savings or local sales tax).
+When you pick up the system from the technician, would you like me to walk you through how to configure your software environment (like Python virtual environments and CUDA toolkits) so your AI programs properly recognize the hardware architecture?
+
+
+
+Open each link, confirm the right SKU on the result page, click Add to Cart. (Sign in first so your local store + saved address apply.)                                                                                                                                                                      
+                                                                  
+  ┌─────┬─────────────┬──────────────────────────────────────────────────────────────────────────────────────┬───────────────────────────────────────────────────────────────────────────────────────────────────────────┐                                                                                     
+  │  #  │  Component  │                                   Click to search                                    │                                                 Look for                                                  │
+  ├─────┼─────────────┼──────────────────────────────────────────────────────────────────────────────────────┼───────────────────────────────────────────────────────────────────────────────────────────────────────────┤                                                                                     
+  │ 1   │ CPU         │ https://www.microcenter.com/search/search_results.aspx?Ntt=815944                    │ "AMD Ryzen 9 9950X3D" — $619.99                                                                           │
+  ├─────┼─────────────┼──────────────────────────────────────────────────────────────────────────────────────┼───────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ 2   │ Motherboard │ https://www.microcenter.com/search/search_results.aspx?Ntt=ProArt+X870E-Creator+WiFi │ "ProArt X870E-Creator WiFi" (AM5, not Z890)                                                               │                                                                                     
+  ├─────┼─────────────┼──────────────────────────────────────────────────────────────────────────────────────┼───────────────────────────────────────────────────────────────────────────────────────────────────────────┤                                                                                     
+  │ 3   │ GPU         │ https://www.microcenter.com/search/search_results.aspx?Ntt=RTX+5090                  │ Prefer FE or 3-slot AIB; skip 4-slot Astral/Suprim                                                        │                                                                                     
+  ├─────┼─────────────┼──────────────────────────────────────────────────────────────────────────────────────┼───────────────────────────────────────────────────────────────────────────────────────────────────────────┤                                                                                     
+  │ 4   │ RAM         │ https://www.microcenter.com/search/search_results.aspx?Ntt=Trident+Z5+Neo+128GB+6000 │ 2×64 GB kit, not 4×32 GB; CL30 EXPO                                                                       │
+  ├─────┼─────────────┼──────────────────────────────────────────────────────────────────────────────────────┼───────────────────────────────────────────────────────────────────────────────────────────────────────────┤                                                                                     
+  │ 5   │ PSU         │ https://www.microcenter.com/search/search_results.aspx?Ntt=ROG+Thor+1200W+Platinum   │ 1200 W Platinum (NOT the 1600 W Titanium)                                                                 │
+  ├─────┼─────────────┼──────────────────────────────────────────────────────────────────────────────────────┼───────────────────────────────────────────────────────────────────────────────────────────────────────────┤                                                                                     
+  │ 6   │ SSD         │ https://www.microcenter.com/search/search_results.aspx?Ntt=Crucial+T705+4TB          │ T705 4 TB Gen 5; fallback: https://www.microcenter.com/search/search_results.aspx?Ntt=Samsung+990+Pro+4TB │
+  ├─────┼─────────────┼──────────────────────────────────────────────────────────────────────────────────────┼───────────────────────────────────────────────────────────────────────────────────────────────────────────┤                                                                                     
+  │ 7   │ Case        │ https://www.microcenter.com/search/search_results.aspx?Ntt=O11+Dynamic+EVO+XL        │ EVO XL (full-tower), not regular EVO                                                                      │
+  ├─────┼─────────────┼──────────────────────────────────────────────────────────────────────────────────────┼───────────────────────────────────────────────────────────────────────────────────────────────────────────┤                                                                                     
+  │ 8   │ CPU Cooler  │ https://www.microcenter.com/search/search_results.aspx?Ntt=HydroShift+LCD+360        │ 360 mm AIO                                                                                                │
+  ├─────┼─────────────┼──────────────────────────────────────────────────────────────────────────────────────┼───────────────────────────────────────────────────────────────────────────────────────────────────────────┤                                                                                     
+  │ 9   │ Service     │ At checkout, add Tier-1 Custom PC Assembly & Testing + Win 11 Pro install            │ Ask in-store about adding Ubuntu 24.04 dual-boot                                                          │
+  └─────┴─────────────┴──────────────────────────────────────────────────────────────────────────────────────┴───────────────────────────────────────────────────────────────────────────────────────────────────────────┘         
+
+https://andromedainsights.com/pages/custom-pc-builder/KXSK2F2E
+
+Here is the final anatomy of your $7,532 configuration:
+
+The Brains: AMD Ryzen 9 9950X3D2 paired with the ASUS ROG Crosshair X870E Hero (securing that crucial AI Cache Boost without the hassle of custom water-cooling blocks).
+
+The Muscle: NVIDIA GeForce RTX 5090 with 32GB of GDDR7 VRAM.
+
+The Memory & Storage: 64GB of fast CL30 DDR5 memory and a blazing fast 2TB Gen5 NVMe drive.
+
+The Lungs: ARCTIC Liquid Freezer III Pro 360 paired with seven of the legendary brown Noctua NF-A12x25 fans for unmatched, whisper-quiet thermal dissipation.
+
+The Heart: A 1300W ATX 3.1 Power Supply to safely handle the RTX 5090's massive transient power spikes.
+
+https://andromedainsights.com/pages/custom-pc-builder/GPSJS4QX

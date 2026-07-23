@@ -1,0 +1,448 @@
+
+@conda-forge-admin, please rerender
+
+@conda-forge/help-python, ready for review!
+@conda-forge/help-python-c, ready for review!
+@conda-forge-admin, please restart ci
+@conda-forge-admin, ready for review!
+@conda-forge-admin, please add user @rxm7706
+@conda-forge-admin, please add bot automerge
+@conda-forge-admin, please update team
+@conda-forge/staged-recipes  ready for review
+@conda-forge-admin, please update version
+
+@conda-forge/core - Can I be added as a maintainer - I am happy to help keep this feedstock updated. 
+                                                     
+script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+{% set python_min = "3.10" %}
+{% set python_min = python_min|default("3.10") %}
+    - python >={{ python_min }}
+    - python >={{ python_min }},<4.0
+
+=={{ version }}
+
+/conda-forge.yml
+conda_build:
+  pkg_format: '2'
+conda_forge_output_validation: true
+github:
+  branch_name: main
+  tooling_branch_name: main
+bot:
+  automerge: true
+  inspection: hint-all
+bot:
+  inspection: update-grayskull
+bot:
+  automerge: true
+  inspection: update-all
+  check_solvable: true
+  run_deps_from_wheel: true
+
+github:
+  branch_name: main
+  tooling_branch_name: main
+conda_build:
+  error_overlinking: true
+conda_forge_output_validation: true
+bot:
+  automerge: true
+  inspection: update-grayskull
+  check_solvable: true
+  run_deps_from_wheel: true
+conda_install_tool: pixi
+conda_build_tool: rattler-build
+
+conda_install_tool: pixi
+conda_build_tool: rattler-build
+
+# yaml-language-server: $schema=https://raw.githubusercontent.com/conda-forge/conda-smithy/main/conda_smithy/data/conda-forge.json
+github:
+  branch_name: main
+  tooling_branch_name: main
+conda_build:
+  error_overlinking: true
+  pkg_format: '2'
+conda_forge_output_validation: true
+workflow_settings:
+  store_build_artifacts:
+    - platform:
+        - linux_64
+        - linux_aarch64
+        - linux_ppc64le
+        - osx_64
+        - osx_arm64
+        - win_64
+      value: true
+noarch_platforms:
+  - linux_64
+  - win_64
+  - osx_64
+  - osx_arm64
+  - linux_ppc64le
+  - linux_aarch64
+build_platform:
+  linux_aarch64: linux_64
+  linux_ppc64le: linux_64
+  osx_arm64: osx_64
+provider:
+  linux_ppc64le: default
+  linux_aarch64: default
+test: native_and_emulated
+bot:
+  automerge: true
+  inspection: update-grayskull
+  check_solvable: true
+  run_deps_from_wheel: true
+conda_install_tool: pixi
+conda_build_tool: rattler-build
+shellcheck:
+  enabled: true
+
+
+context:
+  name: culsans
+  version: "0.11.0"
+  python_min: "3.10"
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - slick_reporting
+      pip_check: true
+      python_version:
+      - ${{ python_min }}.*
+      - "*"
+
+pixi clean cache
+rm -rf /mnt/c/Users/Reuben/Documents/Projects/Github/rxm7706/local-recipes/recipes/output/
+
+grayskull pypi dash-bootstrap-components=2.0.3 --use-v1-format
+rattler-build build -r dash-bootstrap-components/recipe.yaml
+
+grayskull pypi teradata-mcp-server==0.1.5
+rattler-build generate-recipe pypi teradata-mcp-server --version 0.1.5 -w
+
+grayskull pypi https://github.com/Teradata/teradata-mcp-server --tag v0.1.4 --use-v1-format
+rattler-build generate-recipe does not work with github urls and tags
+
+conda build teradata-mcp-server/meta.yaml
+rattler-build build -r teradata-mcp-server/recipe.yaml --allow-symlinks-on-windows
+
+claude authentication code- cnjaBhL3xzcmcqv4sZabECVE54N2zC7vlgp3tourFnvSSCdP#qJlSfGssQ8R3h_8WZOYhESXkvoQd3j_471iMcB9QGqA
+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
+
+The following packages will be DOWNGRADED:
+
+  libxml2                                 2.13.7-h81593ed_1 --> 2.13.7-h4bc477f_1
+
+noarch_platforms:
+  - win_64
+  - linux_64
+  - osx_64
+
+/c/Users/Reuben/Documents/Projects/Github/ResponsibleAIML/local-recipes/recipes
+ C:\Users\Reuben\Documents\Projects\Github\ResponsibleAIML\local-recipes\recipes
+vi /home/rxm/programs/miniconda3/envs/django-kedro/conda-meta/pinned
+sudo apt update && sudo apt upgrade -y
+sudo apt update && sudo apt full-upgrade && sudo apt autoremove --purge && sudo apt clean
+sudo sysctl -w fs.inotify.max_user_watches=1048576
+poetry update --dry-run
+conda-recipe-manager convert -d structlog-gcp/meta.yaml > structlog-gcp/recipe.yaml
+pixi shell --environment local-recipes
+rattler-build build -r structlog-gcp/recipe.yaml
+
+git --no-pager log --raw --numstat --oneline --all --reverse --date=iso-strict --pretty=format:"%ad>%aN>%aE>%s" > log.txt
+git reset --hard HEAD~5
+git push --force
+
+he-df81312f-2eb4-4576-9799-f7f445789b6a
+rm -rf /home/rxm/.cache/ /home/rxm/programs/miniconda3/conda-bld/
+conda env remove -n django-kedro-win -y && rd /s /q C:\Users\Reuben\Apps\mambaforge\envs\django-kedro-win &&  rd /s /q C:\Users\Reuben\Apps\mambaforge\pkgs\
+conda env remove -n django-kedro -y && conda env remove -n django-kedro-poetry -y 
+rm /mnt/c/Users/Reuben/Documents/Projects/Github/ResponsibleAIML/django-kedro/conda/django-kedro-linux64.conda-lock.yml && rm /mnt/c/Users/Reuben/Documents/Projects/Github/ResponsibleAIML/django-kedro/conda/django-kedro-win64.conda-lock.yml
+
+    - cshaley
+    - rxm7706
+    - millsks
+    - elanqo
+    - zaigner
+
+
+Checklist
+- [x] Title of this PR is meaningful: e.g. "Adding my_nifty_package", not "updated meta.yaml".
+- [x] License file is packaged (see [here](https://github.com/conda-forge/staged-recipes/blob/5eddbd7fc9d1502169089da06c3688d9759be978/recipes/example/meta.yaml#L64-L73) for an example).
+- [x] Source is from official source.
+- [x] Package does not vendor other packages. (If a package uses the source of another package, they should be separate packages or the licenses of all packages need to be packaged).
+- [x] If static libraries are linked in, the license of the static library is packaged.
+- [x] Package does not ship static libraries. If static libraries are needed, [follow CFEP-18](https://github.com/conda-forge/cfep/blob/main/cfep-18.md).
+- [x] Build number is 0.
+- [x] A tarball (`url`) rather than a repo (e.g. `git_url`) is used in your recipe (see [here](https://conda-forge.org/docs/maintainer/adding_pkgs.html#build-from-tarballs-not-repos) for more details).
+- [x] GitHub users listed in the maintainer section have posted a comment confirming they are willing to be listed there.
+- [x] When in trouble, please check our [knowledge base documentation](https://conda-forge.org/docs/maintainer/knowledge_base.html) before pinging a team.
+
+
+
+mamba mambabuild cookiecutter-django --no-remove-work-dir --keep-going --keep-old-work
+
+#### Update the django-kedro conda-env for Linux (Using Mamba)
+```
+mamba env update --prune --file /mnt/c/Users/Reuben/Documents/Projects/Github/ResponsibleAIML/django-kedro/conda/django-kedro-conda.yaml
+```
+#### Update the django-kedro-win conda-env for Windows (Using Mamba)
+```
+mamba env update --prune --file C:\Users\Reuben\Documents\Projects\Github\ResponsibleAIML\django-kedro\conda\django-kedro-conda-win.yaml
+```
+
+Removed  "llama-cpp-python >=0.2.20=cpu*" "llama.cpp >=0.0.1661=cpu*"  "ollama >= 0.1.17=cpu*" "odbc2parquet>=5.1.2,<7.0.0"
+
+virtualenv django-kedro-mCHaadRL-py3.10 in /home/rxm/.cache/pypoetry/virtualenvs
+Creating virtualenv django-kedro-mCHaadRL-py3.10 in /home/rxm/.cache/pypoetry/virtualenvs
+/home/rxm/programs/miniconda3/envs/django-kedro-poetry/bin/python  -m pip install --upgrade "pip>=24.1.2" "setuptools>=71.0.1" "filelock>=3.15.3" "virtualenv>=20.26.3"
+rm -rf /home/rxm/.local/share/virtualenv/
+    poetry env remove --all
+    poetry cache clear --all .
+    rm -rf $(poetry config cache-dir)/artifacts
+
+ 2000  conda update --all
+ cd ../../django-kedro
+ conda activate django-kedro-poetry
+ poetry update --dry-run --no-cache
+ poetry update --dry-run
+
+export SETUPTOOLS_USE_DISTUTILS=stdlib
+python3 -m venv .venv
+
+ "llvmlite>=0.43.0" "bcrypt>=4.2.0" "authlib>=1.3.0" -- only authlib, removed bcrypt, llmvlite
+
+mlforecast 1.0 toolz 1.0
+
+#### Generate the django-kedro lock file for conda-env for Linux (Using Conda-Lock) 2024-11-15
+
+time poetry lock -vvv > poetry-lock-2024-12-06-0.log && time poetry lock && conda create -n django-kedro-poetry python=3.12.7 "pip>=24.3.1" "setuptools>=75.3.0" "wheel>=0.45.0" "virtualenv>=20.27.1" "urllib3>=2.2.2" "truststore>=0.10.0" poetry gcc gxx libgcc-ng libstdcxx-ng gxx_impl_linux-64 unixodbc simdutf clang clangxx boost libboost-python libboost-devel libboost-headers make cmake cython libgcc-devel_linux-64 blas-devel libstdcxx-devel_linux-64 rust psycopg-c psycopg maturin pixi py-rattler rattler-build "llvmlite>=0.43.0" "fastapi>=0.110.2" "libpq>=14.0,<18.0" "minio>=7.2.10" "pandas>=2.2.3" "numpy>=1.26.4" "numba>=0.60" "polars>=1.12.0" "python-duckdb>=1.0.0" "duckdb-server>=0.11.0" "ibis-framework>=9.5.0" "ibis-duckdb>=9.5.0" "ibis-postgres>=9.5.0" "sqlmesh>=0.122.2" "sqlglotrs>=0.2.12" "sf-hamilton-ui>=0.0.15" "sf-hamilton-sdk>=0.7.3" "sf-hamilton>=1.83.1" "pyarrow-all>=18.0.0" "turbodbc>=5.0.2" "intake-odbc>=0.2.0" "intake-sql>=0.4.0" "connectorx>=0.4.0" "adbc-driver-postgresql>=1.3.0" "adbc-driver-flightsql>=1.3.0" "adbc-driver-sqlite>=1.3.0" "django>=4.2.16,<5.0" "wagtail>=6.3.0,<7.0" "coderedcms>=4.1.0,<5.0" "cookiecutter-django>=2024.10.25" -y && conda activate django-kedro-poetry && python -c "import pyarrow; pyarrow.create_library_symlinks()" && CFLAGS="-D_GLIBCXX_USE_CXX11_ABI=0" && CMAKE_ARGS="-DLLAMA_BLAS=ON -DLLAMA_BLAS_VENDOR=OpenBLAS" && pip install --no-cache-dir  "pip>=24.3.1" "setuptools>=75.3.0" "wheel>=0.45.0" "virtualenv>=20.27.1" "urllib3 >=2.2.2" "truststore>=0.10.0" "minio>=7.2.10" "pandas>=2.2.3" "numpy>=1.26.4" "numba>=0.60" "polars>=1.12.0" "duckdb>=1.0.0" "duckdb-server>=0.11.0" "ibis-framework>=9.5.0" "sqlmesh==0.122.2" "sqlglotrs>=0.2.12" "sf-hamilton-ui>=0.0.15" "sf-hamilton-sdk>=0.7.3"  "sf-hamilton>=1.83.1" "pyarrow>=18.0.0" "turbodbc>=5.0.2" "intake-odbc>=0.2.0" "intake-sql>=0.4.0" "connectorx>=0.4.0" "adbc-driver-postgresql>=1.3.0" "adbc-driver-flightsql>=1.3.0" "adbc-driver-sqlite>=1.3.0" "django>=4.2.16,<5.0" "wagtail>=6.3.0,<7.0" "coderedcms>=4.1.0,<5.0" && ( poetry install  ; poetry install --no-cache ;  poetry install ; poetry install --no-cache ; poetry show ; poetry install  ; poetry install --no-cache ; poetry show ) && conda deactivate && conda env export -n django-kedro-poetry --no-builds --ignore-channels --file /mnt/c/Users/Reuben/Documents/Projects/Github/ResponsibleAIML/django-kedro/conda/django-kedro-poetry-env-export.yaml && conda-lock -f /mnt/c/Users/Reuben/Documents/Projects/Github/ResponsibleAIML/django-kedro/conda/django-kedro-conda.yaml -p linux-64 --without-cuda --lockfile /mnt/c/Users/Reuben/Documents/Projects/Github/ResponsibleAIML/django-kedro/conda/django-kedro-linux64.conda-lock.yml && conda-lock install --name django-kedro /mnt/c/Users/Reuben/Documents/Projects/Github/ResponsibleAIML/django-kedro/conda/django-kedro-linux64.conda-lock.yml && conda env export -n django-kedro --no-builds --ignore-channels --file /mnt/c/Users/Reuben/Documents/Projects/Github/ResponsibleAIML/django-kedro/conda/django-kedro-env-export.yaml && conda-minify --name django-kedro -f /mnt/c/Users/Reuben/Documents/Projects/Github/ResponsibleAIML/django-kedro/conda/django-kedro-minify.yaml
+
+```
+```
+
+#### Create the django-kedro environment using the conda-lock for Windows (Using Conda-Lock) rm -rf /mnt/c/Users/Reuben/Apps/mambaforge/envs/django-kedro-win
+```
+conda env remove -n django-kedro-win -y && rd /s /q C:\Users\Reuben\Apps\mambaforge\envs\django-kedro-win && conda-lock -f C:\Users\Reuben\Documents\Projects\Github\ResponsibleAIML\django-kedro\conda\django-kedro-conda-win.yaml -p win-64 --without-cuda --lockfile C:\Users\Reuben\Documents\Projects\Github\ResponsibleAIML\django-kedro\conda\django-kedro-win64.conda-lock.yml && conda-lock install --name django-kedro-win C:\Users\Reuben\Documents\Projects\Github\ResponsibleAIML\django-kedro\conda\django-kedro-win64.conda-lock.yml && conda env export -n django-kedro-win --no-builds --ignore-channels --file C:\Users\Reuben\Documents\Projects\Github\ResponsibleAIML\django-kedro\conda\django-kedro-win-env-export.yaml && conda-minify --name django-kedro-win -f C:\Users\Reuben\Documents\Projects\Github\ResponsibleAIML\django-kedro\conda\django-kedro-win-minify.yaml
+```
+####  Update and Test PyProject.toml for Linux (Using poetry-Lock)
+time poetry lock  -vvv > poetry-lock-2024-01-31-0.log && time poetry lock && conda create -n django-kedro-poetry python=3.10 pip poetry gcc unixodbc boost libboost-python libboost-devel libboost-headers "libpq>=14.0,<17.0" make cmake cython libgcc-devel_linux-64 libgcc-ng blas-devel gxx libstdcxx-devel_linux-64 libstdcxx-ng gxx_impl_linux-64 mkl-devel tbb-devel numpy numba "pyarrow>=14.0.2" -y && conda activate django-kedro-poetry && poetry install  && poetry show && poetry install  && poetry show  && conda deactivate  && conda env export -n django-kedro-poetry --no-builds --ignore-channels --file /mnt/c/Users/Reuben/Documents/Projects/Github/ResponsibleAIML/django-kedro/requirements/condapipcomapre/django-kedro-poetry-env-export.yaml
+
+
+ conda env export -n django-kedro-poetry --no-builds --ignore-channels --file /mnt/c/Users/Reuben/Documents/Projects/Github/ResponsibleAIML/django-kedro/requirements/condapipcomapre/django-kedro-poetry-env-export.yaml &&  conda-minify --name django-kedro-poetry -f /mnt/c/Users/Reuben/Documents/Projects/Github/ResponsibleAIML/django-kedro/requirements/condapipcomapre/django-kedro-poetry-minify.yaml
+
+conda install pip poetry boost libboost-python libboost-devel libboost-headers make cmake cython libgcc-devel_linux-64 blas-devel libstdcxx-devel_linux-64 mkl-devel tbb-devel numpy numba rust psycopg-c psycopg "libpq>=14.0,<17.0" "odbc2parquet>=5.1.2,<6.0.0" "pyarrow>=15.0.0" "turbodbc>=4.11.0" "pandas==2.1.4" "intake-odbc>=0.2.0" clang clangxx
+mamba install python=3.10 pip poetry clang clangxx boost libboost-python libboost-devel libboost-headers make cmake cython libgcc-devel_linux-64 blas-devel mkl-devel tbb-devel numpy numba rust psycopg-c psycopg "libpq>=14.0,<17.0" "odbc2parquet>=5.1.2,<6.0.0" "pyarrow>=15.0.0" "turbodbc>=4.11.0" "pandas==2.1.4" "intake-odbc>=0.2.0" jupyterlab python-build pdm notebook ipython ipykernel jupyterlab-lsp
+
+time poetry lock -vvv > poetry-lock-2024-10-26-0.log && time poetry lock && conda create -n django-kedro-poetry python=3.12.7 "pip>=24.2" "setuptools>=75.1.0" "wheel>=0.44.0" "virtualenv>=20.26.6" "urllib3>=2.2.2" "truststore>=0.10.0" "python-multipart!=0.0.13" poetry gcc gxx libgcc-ng libstdcxx-ng gxx_impl_linux-64 unixodbc simdutf clang clangxx boost libboost-python libboost-devel libboost-headers make cmake cython libgcc-devel_linux-64 blas-devel libstdcxx-devel_linux-64 rust psycopg-c psycopg maturin pixi py-rattler rattler-build "llvmlite>=0.43.0" "fastapi>=0.115.0" "libpq>=14.0,<17.0" "minio>=7.2.9" "pandas>=2.2.3" "numpy>=2.0.2" "numba>=0.60" "polars>=1.9.0" "python-duckdb>=1.0.0" "duckdb-server>=0.11.0" "pyarrow-all>=17.0.0" "turbodbc>=5.0.2" "intake-odbc>=0.2.0" "intake-sql>=0.4.0" "connectorx>=0.3.3" "adbc-driver-postgresql>=1.2.0" "adbc-driver-flightsql>=1.2.0" "adbc-driver-sqlite>=1.2.0" "django>=4.2.16,<5.0" "wagtail>=6.2.2,<7.0" "coderedcms >=4.0.1,<5.0" -y && conda activate django-kedro-poetry && python -c "import pyarrow; pyarrow.create_library_symlinks()" && CFLAGS="-D_GLIBCXX_USE_CXX11_ABI=0" && CMAKE_ARGS="-DLLAMA_BLAS=ON -DLLAMA_BLAS_VENDOR=OpenBLAS" && pip install --no-cache-dir  "pip>=24.2" "setuptools>=75.1.0" "wheel>=0.44.0" "virtualenv>=20.26.6" "urllib3 >=2.2.2" "truststore>=0.10.0" "python-multipart!=0.0.13" "minio>=7.2.9" "pandas>=2.2.3" "numpy>=2.0.2" "numba>=0.60" "polars>=1.9.0" "duckdb>=1.1.2" "duckdb-server>=0.11.0" "pyarrow>=17.0.0" "turbodbc>=5.0.2" "intake-odbc>=0.2.0" "intake-sql>=0.4.0" "connectorx>=0.3.3" "adbc-driver-postgresql>=1.2.0" "adbc-driver-flightsql>=1.2.0" "adbc-driver-sqlite>=1.2.0" "django>=4.2.16,<5.0" "wagtail>=6.2.2,<7.0" "coderedcms >=4.0.1,<5.0" && ( poetry install  ; poetry install --no-cache ;  poetry install ; poetry install --no-cache ; poetry show ; poetry install  ; poetry install --no-cache ; poetry show ) && conda deactivate && conda env export -n django-kedro-poetry --no-builds --ignore-channels --file /mnt/c/Users/Reuben/Documents/Projects/Github/ResponsibleAIML/django-kedro/conda/django-kedro-poetry-env-export.yaml && conda-lock -f /mnt/c/Users/Reuben/Documents/Projects/Github/ResponsibleAIML/django-kedro/conda/django-kedro-conda.yaml -p linux-64 --without-cuda --lockfile /mnt/c/Users/Reuben/Documents/Projects/Github/ResponsibleAIML/django-kedro/conda/django-kedro-linux64.conda-lock.yml && conda-lock install --name django-kedro /mnt/c/Users/Reuben/Documents/Projects/Github/ResponsibleAIML/django-kedro/conda/django-kedro-linux64.conda-lock.yml && conda env export -n django-kedro --no-builds --ignore-channels --file /mnt/c/Users/Reuben/Documents/Projects/Github/ResponsibleAIML/django-kedro/conda/django-kedro-env-export.yaml && conda-minify --name django-kedro -f /mnt/c/Users/Reuben/Documents/Projects/Github/ResponsibleAIML/django-kedro/conda/django-kedro-minify.yaml
+
+
+with open('README.md', mode='r', encoding='utf8') as readme:
+
+Sharlene Selvaratnam is inviting you to a scheduled Zoom meeting.
+Join Zoom Meeting 
+https://us06web.zoom.us/j/89408692157?pwd=czVQcnBzbmM1TGxDNlJIZjRFSlZXdz09 
+Meeting ID: 894 0869 2157 
+Passcode: 288387 
+
+
+base) C:\Users\Reuben>mamba activate django-kedro-win
+critical libmamba Shell not initialized
+
+'mamba' is running as a subprocess and can't modify the parent shell.
+Thus you must initialize your shell before using activate and deactivate.
+
+
+To automatically initialize all future (cmd.exe) shells, run:
+    $ mamba shell init --shell cmd.exe --root-prefix=~/.local/share/mamba
+If your shell was already initialized, reinitialize your shell with:
+    $ mamba shell reinit --shell cmd.exe
+Otherwise, this may be an issue. In the meantime you can run commands. See:
+    $ mamba run --help
+
+Supported shells are {bash, zsh, csh, posix, xonsh, cmd.exe, powershell, fish, nu}.
+
+(base) C:\Users\Reuben>conda activate django-kedro-win
+
+EnvironmentNameNotFound: Could not find conda environment: django-kedro-win
+You can list all discoverable environments with `conda info --envs`.
+
+358041410980025
+
+https://github.com/conda-forge/nbpresent-feedstock/blob/master/recipe/build.sh
+https://github.com/conda-forge/configurable-http-proxy-feedstock/blob/main/recipe/meta.yaml
+https://github.com/conda-forge/staged-recipes/pull/17627/files
+
+June 14th - July 15th Half time
+
+July 15th - August 15th Taylor Rejoins work
+
+August 15th - Sept 15 Half Time
+
+Sep 15th Full time
+
+Septh 30th - PTO Complete
+
+Order Number:W1366089660
+Order Placed:August 12, 2023
+
+anaconda upload \
+    /home/rxm/programs/miniconda3/conda-bld/noarch/openlineage-sql-0.26.0-pyhf7b8be1_0.tar.bz2
+anaconda upload \
+    /home/rxm/programs/miniconda3/conda-bld/noarch/openlineage-airflow-0.26.0-pyhd8ed1ab_0.tar.bz2
+
+3038
+
+git stats
+https://github.com/arzzen/git-quick-stats
+https://github.com/pallets/flask/graphs/contributors?from=2010-04-04&to=2023-11-21&type=a
+https://stackoverflow.com/questions/1265040/how-to-count-total-lines-changed-by-a-specific-author-in-a-git-repository
+
+ mamba install ruff ansible ansible-lint ansible-runner invoke fabric ssh-ipykernel pyftpdlib aioftp smart-open-with-ssh
+
+Resolved dependencies, will be built in the following order:
+    amundsen-search-4.0.2-on-linux-64
+    amundsen-metadata-3.11.0-on-linux-64
+    amundsen-common-0.30.0-on-linux-64
+    amundsen-rds-0.0.7-on-linux-64
+    amundsen-databuilder-7.4.3-on-linux-64
+    amundsen-frontend-4.2.0-python_3.8.* *_cpython-on-linux-64
+    magic-trace
+    scalene
+    per4m
+    memray
+    taichi
+pydantic-sqlalchemy
+ipyaggrid
+django-json-widget
+django-stubs
+djangorestframework-stubs
+ydata-profiling
+sqlmodel
+
+6100.0 USD
+ Transfer initiated to
+Reuben Mathew
+Your Tracking Id is
+ M2E03779401
+
+conda-env-builder
+conda-project
+
+parallel-ssh
+sshutils
+
+sqlalchemy2-stubs
+sqlalchemy-stubs
+https://github.com/ydataai/ydata-profiling/blob/master/requirements-spark.txt
+ARROW_PRE_0_15_IPC_FORMAT=1
+
+sdv
+edgetest
+edgetest-pip-tools
+edgetest-conda
+synthetic-data
+copulas
+
+    - python >=3.7,<3.8
+@conda-forge/help-python could you help here, is this a knows issue with a workaround.
+
+git commit --amend --no-edit && git push --force
+
+mssql-django
+djangorestframework-jsonapi
+drf-spectacular[sidecard]
+opentelemetry-instrumentation-dbapi
+opentelemetry-instrumentation-sqlalchemy
+opentelemetry-instrumentation-logging
+
+acv-exp
+
+Signed-off-by: rxm7706 <95496360+rxm7706@users.noreply.github.com>
+
+
+grpc tooling
+
+cachetools = ">=3.0,<6.0"
+click = ">=8.0.4"
+fsspec = ">=2022.1"
+gcsfs = ">=2022.1"
+google-auth = "<3"
+google-cloud-iam = "<3"
+google-cloud-scheduler = "<3"
+google-cloud-storage = "<3.0.0"
+grpcio = ">=1.50.0,<2.0.0"
+grpcio-status = ">=1.50.0,<2.0.0"
+grpcio-tools = ">=1.50.0,<2.0.0"
+kfp = ">=1.4.0,<2.0"
+# kfp-pipeline-spec = "<3" Not installable
+kfp-server-api = ">=1.4.0,<2.0"
+protobuf = ">=3.9.0,<21.0"
+pydantic = ">=1.9.0,<2.0.0"
+semver = ">=2.10,<4.0.0"
+tabulate = ">=0.8.7"
+
+Unity-Data-Stack-Pixi.toml
+https://gist.github.com/rxm7706/16db36ebd9822592ee41315de9792db1
+
+# ============================================================================
+# Base Dependencies - MINIMAL
+# ============================================================================
+# Only dependencies required by ALL environments
+[dependencies]
+python = ">=3.12.12,<3.15"
+platformdirs = ">=4.5.0"
+pixi = "==0.59.0"
+pip = ">=25.1"
+hatchling = ">=1.27.0"
+hatch-vcs = ">=0.5.0"
+pyyaml = ">=6.0.3" # Essential config parsing utility
+#
+act = ">=0.2.83"
+#conda-build = ">=25.11.1"
+direnv = ">=2.37.1"
+gh = ">=2.83.2"
+python-build = ">=1.3.0"
+rattler-build = ">=0.55.0"
+setuptools = ">=80.9.0,<81" # Setuptools version 81 introduces a significant breaking change by removing the pkg_resources
+setuptools-scm = ">=9.2.2"
+twine = ">=6.2.0"
+uv = ">=0.9.18"
+wheel = ">=0.45.1"
+
+
+## Added askbot
+time poetry lock -vvv > poetry-lock-2024-03-23-0.log && time poetry lock && conda create -n django-kedro-poetry python=3.10 pip poetry gcc gxx libgcc-ng libstdcxx-ng gxx_impl_linux-64 unixodbc clang clangxx boost libboost-python libboost-devel libboost-headers make cmake cython libgcc-devel_linux-64 blas-devel libstdcxx-devel_linux-64 mkl-devel tbb-devel numpy numba rust psycopg-c psycopg "libpq>=14.0,<17.0" "odbc2parquet>=5.1.2,<6.0.0" "pyarrow>=15.0.0" "turbodbc>=4.11.0" "pandas==2.1.4" "intake-odbc>=0.2.0" "django>=4.2.8,<5.0" "wagtail>=5.2.3,<6.0" "askbot>=0.12.2,<1.0" "llama-cpp-python >=0.2.20=cpu*" "llama.cpp >=0.0.1661=cpu*" "ollama >= 0.1.17=cpu*" -y -c conda-forge -c selfexplainml && conda activate django-kedro-poetry && python -c "import pyarrow; pyarrow.create_library_symlinks()" && CFLAGS="-D_GLIBCXX_USE_CXX11_ABI=0" && CMAKE_ARGS="-DLLAMA_BLAS=ON -DLLAMA_BLAS_VENDOR=OpenBLAS" && pip install --no-cache-dir "pyarrow==15.0.0" "turbodbc==4.11.0" "pandas==2.1.4" "intake-odbc==0.2.0" && poetry install  && poetry show && poetry install  && poetry show  && conda deactivate  && conda env export -n django-kedro-poetry --no-builds --ignore-channels --file /mnt/c/Users/Reuben/Documents/Projects/Github/ResponsibleAIML/django-kedro/conda/django-kedro-poetry-env-export.yaml && conda-lock -f /mnt/c/Users/Reuben/Documents/Projects/Github/ResponsibleAIML/django-kedro/conda/django-kedro-conda.yaml -p linux-64 --without-cuda --lockfile /mnt/c/Users/Reuben/Documents/Projects/Github/ResponsibleAIML/django-kedro/conda/django-kedro-linux64.conda-lock.yml && conda-lock install --name django-kedro /mnt/c/Users/Reuben/Documents/Projects/Github/ResponsibleAIML/django-kedro/conda/django-kedro-linux64.conda-lock.yml && conda env export -n django-kedro --no-builds --ignore-channels --file /mnt/c/Users/Reuben/Documents/Projects/Github/ResponsibleAIML/django-kedro/conda/django-kedro-env-export.yaml && conda-minify --name django-kedro -f /mnt/c/Users/Reuben/Documents/Projects/Github/ResponsibleAIML/django-kedro/conda/django-kedro-minify.yaml 
+
+
+Ibis and bigquery updates 
+
+time poetry lock -vvv > poetry-lock-2024-05-10-0.log && time poetry lock && conda create -n django-kedro-poetry python=3.10.14 pip poetry gcc gxx libgcc-ng libstdcxx-ng gxx_impl_linux-64 unixodbc clang clangxx boost libboost-python libboost-devel libboost-headers make cmake cython libgcc-devel_linux-64 blas-devel libstdcxx-devel_linux-64 mkl-devel tbb-devel numpy numba rust psycopg-c psycopg maturin pixi py-rattler rattler-build "mkl>=2024.1.0" "fastapi>=0.110.3" "libpq>=14.0,<17.0"  "pyarrow-all>=16.0.0" "pandas>=2.2.2" "django>=4.2.13,<5.0" "wagtail>=5.2.3,<7.0" "coderedcms >=3.0.3,<5.0" -y && conda activate django-kedro-poetry && python -c "import pyarrow; pyarrow.create_library_symlinks()" && CFLAGS="-D_GLIBCXX_USE_CXX11_ABI=0" && CMAKE_ARGS="-DLLAMA_BLAS=ON -DLLAMA_BLAS_VENDOR=OpenBLAS" && pip install --no-cache-dir "pyarrow==16.0.0" "pandas==2.2.2" && poetry install  && poetry show && poetry install && poetry show  && conda deactivate  && conda env export -n django-kedro-poetry --no-builds --ignore-channels --file /mnt/c/Users/Reuben/Documents/Projects/Github/ResponsibleAIML/django-kedro/conda/django-kedro-poetry-env-export.yaml && conda-lock -f /mnt/c/Users/Reuben/Documents/Projects/Github/ResponsibleAIML/django-kedro/conda/django-kedro-conda.yaml -p linux-64 --without-cuda --lockfile /mnt/c/Users/Reuben/Documents/Projects/Github/ResponsibleAIML/django-kedro/conda/django-kedro-linux64.conda-lock.yml && conda-lock install --name django-kedro /mnt/c/Users/Reuben/Documents/Projects/Github/ResponsibleAIML/django-kedro/conda/django-kedro-linux64.conda-lock.yml && conda env export -n django-kedro --no-builds --ignore-channels --file /mnt/c/Users/Reuben/Documents/Projects/Github/ResponsibleAIML/django-kedro/conda/django-kedro-env-export.yaml && conda-minify --name django-kedro -f /mnt/c/Users/Reuben/Documents/Projects/Github/ResponsibleAIML/django-kedro/conda/django-kedro-minify.yaml
+
+update pyarrow 16..1.0 "libpq>=14.0,<17.0"
+
+time poetry lock -vvv > poetry-lock-2024-05-19-0.log && time poetry lock && conda create -n django-kedro-poetry python=3.10.14 pip poetry gcc gxx libgcc-ng libstdcxx-ng gxx_impl_linux-64 unixodbc clang clangxx boost libboost-python libboost-devel libboost-headers make cmake cython libgcc-devel_linux-64 blas-devel libstdcxx-devel_linux-64 mkl-devel tbb-devel numpy numba rust psycopg-c psycopg maturin pixi py-rattler rattler-build "mkl>=2024.1.0" "fastapi==0.110.3" "libpq>=14.0,<17.0" unixodbc simdutf "pyarrow-all>=16.1..0" "pandas>=2.2.2" "intake-odbc>=0.2.0" "django>=4.2.13,<5.0" "wagtail>=5.2.3,<7.0" "coderedcms >=3.0.3,<5.0" -y && conda activate django-kedro-poetry && python -c "import pyarrow; pyarrow.create_library_symlinks()" && CFLAGS="-D_GLIBCXX_USE_CXX11_ABI=0" && CMAKE_ARGS="-DLLAMA_BLAS=ON -DLLAMA_BLAS_VENDOR=OpenBLAS" && pip install --no-cache-dir "pyarrow>=16.1.0" "turbodbc>=4.12.0" "pandas==2.2.2" "intake-odbc==0.2.0" && poetry install  && poetry show && poetry install  && poetry show  && conda deactivate  && conda env export -n django-kedro-poetry --no-builds --ignore-channels --file /mnt/c/Users/Reuben/Documents/Projects/Github/ResponsibleAIML/django-kedro/conda/django-kedro-poetry-env-export.yaml && conda-lock -f /mnt/c/Users/Reuben/Documents/Projects/Github/ResponsibleAIML/django-kedro/conda/django-kedro-conda.yaml -p linux-64 --without-cuda --lockfile /mnt/c/Users/Reuben/Documents/Projects/Github/ResponsibleAIML/django-kedro/conda/django-kedro-linux64.conda-lock.yml && conda-lock install --name django-kedro /mnt/c/Users/Reuben/Documents/Projects/Github/ResponsibleAIML/django-kedro/conda/django-kedro-linux64.conda-lock.yml && conda env export -n django-kedro --no-builds --ignore-channels --file /mnt/c/Users/Reuben/Documents/Projects/Github/ResponsibleAIML/django-kedro/conda/django-kedro-env-export.yaml && conda-minify --name django-kedro -f /mnt/c/Users/Reuben/Documents/Projects/Github/ResponsibleAIML/django-kedro/conda/django-kedro-minify.yaml
+
+Remove turbodbc - 2024-05-19-0
+
+## No TurboODBC
+
+time poetry lock -vvv > poetry-lock-2024-08-08-0.log && time poetry lock && conda create -n django-kedro-poetry python=3.10.14 "pip>=24.2" "setuptools>=72.1" "filelock>=3.15.4" "virtualenv>=20.26.3" "urllib3 >=2.2.2" poetry gcc gxx libgcc-ng libstdcxx-ng gxx_impl_linux-64 unixodbc simdutf clang clangxx boost libboost-python libboost-devel libboost-headers make cmake cython libgcc-devel_linux-64 blas-devel libstdcxx-devel_linux-64 mkl-devel tbb-devel numpy numba rust psycopg-c psycopg maturin pixi py-rattler rattler-build "mkl>=2024.1.0" "llvmlite>=0.43.0" "fastapi>=0.112.0" "libpq>=14.0,<17.0" "pandas>=2.2.2" "numba>=0.60" "pyarrow-all>=17.0.0" "intake-sql>=0.4.0" "connectorx>=0.3.3" "adbc-driver-postgresql>=1.0.0" "adbc-driver-flightsql>=1.0.0" "adbc-driver-sqlite>=1.0.0" "django>=4.2.14,<5.0" "wagtail>=6.2,<7.0" "coderedcms >=4.0.1,<5.0" -y && conda activate django-kedro-poetry && python -c "import pyarrow; pyarrow.create_library_symlinks()" && CFLAGS="-D_GLIBCXX_USE_CXX11_ABI=0" && CMAKE_ARGS="-DLLAMA_BLAS=ON -DLLAMA_BLAS_VENDOR=OpenBLAS" && pip install --no-cache-dir "pip>=24.2" "setuptools>=72.1" "filelock>=3.15.4" "virtualenv>=20.26.3" "urllib3>=2.2.2" "pandas>=2.2.2" "numba>=0.60" "pyarrow>=17.0.0" "intake-sql>=0.4.0" "connectorx>=0.3.3" "adbc-driver-postgresql>=1.0.0" "adbc-driver-flightsql>=1.0.0" "adbc-driver-sqlite>=1.0.0" && ( poetry install  ; poetry install --no-cache ;  poetry install ; poetry install --no-cache ; poetry show ; poetry install  ; poetry install --no-cache ; poetry show ) && conda deactivate && conda env export -n django-kedro-poetry --no-builds --ignore-channels --file /mnt/c/Users/Reuben/Documents/Projects/Github/ResponsibleAIML/django-kedro/conda/django-kedro-poetry-env-export.yaml && conda-lock -f /mnt/c/Users/Reuben/Documents/Projects/Github/ResponsibleAIML/django-kedro/conda/django-kedro-conda.yaml -p linux-64 --without-cuda --lockfile /mnt/c/Users/Reuben/Documents/Projects/Github/ResponsibleAIML/django-kedro/conda/django-kedro-linux64.conda-lock.yml && conda-lock install --name django-kedro /mnt/c/Users/Reuben/Documents/Projects/Github/ResponsibleAIML/django-kedro/conda/django-kedro-linux64.conda-lock.yml && conda env export -n django-kedro --no-builds --ignore-channels --file /mnt/c/Users/Reuben/Documents/Projects/Github/ResponsibleAIML/django-kedro/conda/django-kedro-env-export.yaml && conda-minify --name django-kedro -f /mnt/c/Users/Reuben/Documents/Projects/Github/ResponsibleAIML/django-kedro/conda/django-kedro-minify.yaml
+
+time poetry lock -vvv > poetry-lock-2024-07-15-0.log && time poetry lock && conda create -n django-kedro-poetry python=3.10.14 "pip>=24.0" "setuptools>=70.1.0" "filelock>=3.15.3" "virtualenv>=20.26.2" "urllib3 >=2.2.2" poetry gcc gxx libgcc-ng libstdcxx-ng gxx_impl_linux-64 unixodbc simdutf clang clangxx boost libboost-python libboost-devel libboost-headers make cmake cython libgcc-devel_linux-64 blas-devel libstdcxx-devel_linux-64 mkl-devel tbb-devel numpy numba rust psycopg-c psycopg maturin pixi py-rattler rattler-build "mkl>=2024.1.0" "fastapi==0.110.3" "libpq>=14.0,<17.0" "pandas>=2.2.2" "pyarrow-all>=16.1.0" "numba >=0.60.0" "turbodbc>=4.12.1" "intake-odbc>=0.2.0" "intake-sql>=0.4.0" "connectorx>=0.3.3" "adbc-driver-postgresql>=1.0.0" "adbc-driver-flightsql>=1.0.0" "adbc-driver-sqlite>=1.0.0" "django>=4.2.13,<5.0" "wagtail>=6.1.2,<7.0" "coderedcms >=4.0.0,<5.0" -y && conda activate django-kedro-poetry && python -c "import pyarrow; pyarrow.create_library_symlinks()" && CFLAGS="-D_GLIBCXX_USE_CXX11_ABI=0" && CMAKE_ARGS="-DLLAMA_BLAS=ON -DLLAMA_BLAS_VENDOR=OpenBLAS" && pip install --no-cache-dir "pip>=24.0" "setuptools>=70.1.0" "filelock>=3.15.3" "virtualenv>=20.26.2"  "urllib3>=2.2.2" "pandas>=2.2.2" "pyarrow>=16.1.0" "numba>=0.60" "turbodbc>=4.12.1" "intake-odbc>=0.2.0" "intake-sql>=0.4.0" "connectorx>=0.3.3" "adbc-driver-postgresql>=1.0.0" "adbc-driver-flightsql>=1.0.0" "adbc-driver-sqlite>=1.0.0"
+
+github search
+org:conda-forge path:recipe/meta.yaml "[build_platform != target_platform]"
+
+package Qwen3-VL-Embedding for conda-forge now
