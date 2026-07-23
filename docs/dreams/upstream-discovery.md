@@ -1,6 +1,7 @@
 ---
 title: Upstream discovery — package it before it's asked for
 type: dream
+owner: atlas
 status: seeded
 ---
 

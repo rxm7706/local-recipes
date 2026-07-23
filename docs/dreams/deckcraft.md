@@ -1,6 +1,7 @@
 ---
 title: Deckcraft — editable decks from primitives, air-gapped
 type: dream
+owner: herald
 status: seeded
 ---
 

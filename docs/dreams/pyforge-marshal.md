@@ -1,6 +1,7 @@
 ---
 title: Marshal — autonomy a human can trust
 type: dream
+owner: marshal
 status: realized
 ---
 

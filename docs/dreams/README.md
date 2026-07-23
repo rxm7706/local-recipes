@@ -53,9 +53,16 @@ contract; the Dream is the "why" behind it.
   ---
   title: <Dream title>
   type: dream
+  owner: herald | marshal | atlas | warden | mason | doctor | scribe | steward | crew
   status: seeded | in-deck | in-spec | realized
   ---
   ```
+
+- **`owner:`** names the crew station accountable for the Dream (`crew` for
+  genesis-level and application Dreams the whole pipeline builds). Stamped
+  across all Dreams in the 2026-07-23 ownership review (which also re-scoped
+  Herald: BMAD multiproject machinery + agent portability → Marshal). The
+  Dreamscape board on the program console surfaces it.
 
 - Keep it aspirational and readable — a Dream is a narrative, not a task list.
 - **`realized` is not exempt from the chain.** Per
@@ -66,11 +73,11 @@ contract; the Dream is the "why" behind it.
 
 ## Dreams
 
-24 Dreams as of 2026-07-23 (3 born Dream-first — the regenerable factory among
+25 Dreams as of 2026-07-23 (3 born Dream-first — the regenerable factory among
 them; 17 retro-seeded from a complete
-repo + Design-workspace audit — the factory console among them; 2 persona
-dreams added when the ownership audit
-grew the crew 6 → 8; 2 recovered from the gist audit (a third, local-ai hardware, was judged out-of-repo scope and archived)). **No-straggler policy:** every BMAD project, deck, Design
+repo + Design-workspace audit — the factory console among them; 3 persona
+dreams added by ownership audits — Scribe + Steward when the crew grew 6 → 8,
+Herald's charter when the ownership review re-scoped it; 2 recovered from the gist audit (a third, local-ai hardware, was judged out-of-repo scope and archived)). **No-straggler policy:** every BMAD project, deck, Design
 project, and spec maps to exactly one Dream; the herald CLI's status capability
 (CAP-3) flags any unlinked Design project permanently.
 
@@ -92,6 +99,7 @@ project, and spec maps to exactly one Dream; the herald CLI's status capability
 | [`pyforge-warden.md`](pyforge-warden.md) | in-spec | The compliance gate that never false-greens — six axes of dependency trust (23/31 built). |
 | [`pyforge-marshal.md`](pyforge-marshal.md) | realized | Graduated autonomy a human can trust — bmad-loop/dev-auto + gates + escalation; proved on atlas + warden. |
 | [`pyforge-doctor.md`](pyforge-doctor.md) | seeded | One bedside manner over the fleet's vitals — pre-flight diagnostics + continuous monitoring + prescriptions (a consolidation of existing instruments). |
+| [`pyforge-herald.md`](pyforge-herald.md) | in-deck | The outward voice + design surface — decks, bridge, telemetry imagery, proclamations (charter re-scoped 2026-07-23: infrastructure → Marshal). |
 | [`pyforge-scribe.md`](pyforge-scribe.md) | seeded | The inward voice — team knowledge captured, curated, compiled into the graph, answerable (owns team-memory + sentinel's core). |
 | [`pyforge-steward.md`](pyforge-steward.md) | seeded | The estate the factory stands on — provisioning, deployment, credential lifecycle, budgets, incident response. |
 

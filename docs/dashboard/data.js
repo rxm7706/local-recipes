@@ -665,128 +665,158 @@ window.DASHBOARD_DATA = {
       }
     }
   },
-  "snapshot": "<span>2026-07-23 22:41 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-07-23 23:08 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
       "slug": "agent-portability",
       "title": "Agent portability — BMAD on any agent, never vendor-locked",
-      "status": "seeded"
+      "status": "seeded",
+      "owner": "marshal"
     },
     {
       "slug": "agentic-sdlc-autonomy",
       "title": "The Agentic SDLC — four views of autonomy, one governed factory",
-      "status": "in-deck"
+      "status": "in-deck",
+      "owner": "marshal"
     },
     {
       "slug": "deckcraft",
       "title": "Deckcraft — editable decks from primitives, air-gapped",
-      "status": "seeded"
+      "status": "seeded",
+      "owner": "herald"
     },
     {
       "slug": "design-code-bridge",
       "title": "The Design↔Code Bridge",
-      "status": "realized"
+      "status": "realized",
+      "owner": "herald"
     },
     {
       "slug": "ecosystem-crew",
       "title": "The Ecosystem Crew",
-      "status": "in-deck"
+      "status": "in-deck",
+      "owner": "crew"
     },
     {
       "slug": "enterprise-airgap",
       "title": "The factory behind the firewall",
-      "status": "realized"
+      "status": "realized",
+      "owner": "steward"
     },
     {
       "slug": "factory-console",
       "title": "Factory console — the whole pipeline on one page",
-      "status": "realized"
+      "status": "realized",
+      "owner": "marshal"
     },
     {
       "slug": "fleet-stewardship",
       "title": "Fleet stewardship — tend every feedstock we can touch",
-      "status": "realized"
+      "status": "realized",
+      "owner": "mason"
     },
     {
       "slug": "modernist-identity",
       "title": "Modernist identity — one visual language for everything pyforge",
-      "status": "realized"
+      "status": "realized",
+      "owner": "herald"
     },
     {
       "slug": "packaging-factory",
       "title": "The Packaging Factory",
-      "status": "realized"
+      "status": "realized",
+      "owner": "mason"
     },
     {
       "slug": "presenton-pixi-image",
       "title": "Presenton, conda-native — AI decks inside the regulated enterprise",
-      "status": "seeded"
+      "status": "seeded",
+      "owner": "mason"
     },
     {
       "slug": "pyforge-atlas",
       "title": "Atlas — the map that maintains itself",
-      "status": "realized"
+      "status": "realized",
+      "owner": "atlas"
     },
     {
       "slug": "pyforge-doctor",
       "title": "Doctor — one bedside manner for the whole fleet",
-      "status": "seeded"
+      "status": "seeded",
+      "owner": "doctor"
     },
     {
       "slug": "pyforge-genesis",
       "title": "Genesis — the seed of the operating model",
-      "status": "in-deck"
+      "status": "in-deck",
+      "owner": "crew"
+    },
+    {
+      "slug": "pyforge-herald",
+      "title": "Herald — capture the dream, illustrate the telemetry, proclaim the release",
+      "status": "in-deck",
+      "owner": "herald"
     },
     {
       "slug": "pyforge-marshal",
       "title": "Marshal — autonomy a human can trust",
-      "status": "realized"
+      "status": "realized",
+      "owner": "marshal"
     },
     {
       "slug": "pyforge-scribe",
       "title": "Scribe — the inward voice",
-      "status": "seeded"
+      "status": "seeded",
+      "owner": "scribe"
     },
     {
       "slug": "pyforge-steward",
       "title": "Steward — provision the line, hold the keys",
-      "status": "seeded"
+      "status": "seeded",
+      "owner": "steward"
     },
     {
       "slug": "pyforge-warden",
       "title": "Warden — the gate that never lies",
-      "status": "in-spec"
+      "status": "in-spec",
+      "owner": "warden"
     },
     {
       "slug": "regenerable-factory",
       "title": "Regenerable factory — every line of code under a spec it can be rebuilt from",
-      "status": "seeded"
+      "status": "seeded",
+      "owner": "marshal"
     },
     {
       "slug": "sentinel",
       "title": "Sentinel — the AI Software Factory (the ancestor)",
-      "status": "seeded"
+      "status": "seeded",
+      "owner": "scribe"
     },
     {
       "slug": "team-memory",
       "title": "Team memory — what the team knows, the agents know",
-      "status": "seeded"
+      "status": "seeded",
+      "owner": "scribe"
     },
     {
       "slug": "unity-data-stack",
       "title": "Unity Data Stack — the enterprise innersource platform",
-      "status": "seeded"
+      "status": "seeded",
+      "owner": "crew"
     },
     {
       "slug": "upstream-discovery",
       "title": "Upstream discovery — package it before it's asked for",
-      "status": "seeded"
+      "status": "seeded",
+      "owner": "atlas"
     },
     {
       "slug": "wasm-analytics-stack",
       "title": "Wasm-first analytical data stack (OCP-ready)",
-      "status": "seeded"
+      "status": "seeded",
+      "owner": "crew"
     }
   ]
 };

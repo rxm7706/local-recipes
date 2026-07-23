@@ -1,6 +1,7 @@
 ---
 title: Atlas — the map that maintains itself
 type: dream
+owner: atlas
 status: realized
 ---
 

@@ -1,6 +1,7 @@
 ---
 title: Presenton, conda-native — AI decks inside the regulated enterprise
 type: dream
+owner: mason
 status: seeded
 ---
 

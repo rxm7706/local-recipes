@@ -1,6 +1,7 @@
 ---
 title: The Ecosystem Crew
 type: dream
+owner: crew
 status: in-deck
 ---
 
@@ -46,9 +47,14 @@ factory successfully brought that dream to life.
 * **High-Impact Visibility:** The Herald believes that invisible engineering is failed engineering. He rejects dry, unreadable raw logs, choosing instead to distill pipeline telemetry into highly scannable, visually striking dashboards and briefings that reflect the original vision.
 * **Proactive Synthesis:** He acts as a story-driven synthesizer. He aggressively pulls data from the rest of the crew to stitch fragmented changelogs, audit metrics, and build statuses into a single, cohesive narrative tapestry.
 
+> **Scope correction (2026-07-23 ownership review):** BMAD multi-project /
+> monorepo machinery and cross-agent portability moved to **Marshal** — they
+> are execution-substrate concerns (the harness is the unit of governance).
+> Herald keeps their *communication face* (docs, briefs, adapters' outward
+> story) and stays the voice + design surface. Charter: [[pyforge-herald]].
+
 ### Key Responsibilities & Workflows
-* **BMAD Integration & Multi-Project Onboarding:** Shipping the CLI that wires BMAD into a repo and makes it run across **monorepos** and **multiple projects simultaneously** — project registration, switching, and per-project config / artifact isolation — so many Dreams can be in flight at once.
-* **Cross-Agent Portability:** Ensuring BMAD-Method runs on whichever LLM / agent the team uses — **Devin**, **GitHub Copilot** (incl. Copilot agents), **Claude**, **Cursor** — so the method is tool-agnostic, never locked to one vendor.
+* **Design↔Code Bridge:** Owning the `herald` CLI (seed / pull / watch / export) that makes Claude Design and the repo one surface — decks round-trip, no manual downloads ([[design-code-bridge]]).
 * **Presentation Generation:** Ingesting raw concepts from **The Dream** to auto-render slide layouts (**The Deck**) for stakeholders and developers alike.
 * **Telemetry Infographics:** Converting the output files of Atlas and Warden into intuitive, math-calculated vector graphics, timeline charts, and dependency charts.
 * **Update Compilation:** Aggregating commit deltas, pipeline milestones, and metadata into crisp weekly updates and executive highlights.
@@ -56,8 +62,8 @@ factory successfully brought that dream to life.
 
 ### CLI Cadence
 ```bash
-# Integrate BMAD into a (mono)repo and register multiple projects to run in parallel
-herald bmad init --monorepo --projects atlas,warden,mason,doctor
+# Seed a Dream's deck into Claude Design / pull the designed result back (the bridge)
+herald deck seed pyforge-genesis && herald deck pull pyforge-genesis
 
 # Capture a raw vision/dream and generate the initial strategic slide deck
 herald deck generate --prompt "Build More Architect Dreams: AI Platform Concept" --output ./docs/vision_deck.pptx
@@ -99,6 +105,8 @@ turning requirements into validated code without relying on "vibe coding."
 * **Spec Marshalling:** Ingesting markdown or YAML system specifications (**The Spec**, which solidifies **The Dream**) and breaking them down into highly targeted, isolated instruction blocks for sub-agents.
 * **Agent Mobilization:** Spawning and monitoring tactical sub-agents assigned to specialized roles (e.g., generating tests, drafting logic, or writing documentation).
 * **Defect Containment:** Intercepting errors, compiling stdout/stderr logs from failed test runs, and piping them back to sub-agents as explicit instructions for automated self-healing.
+* **Monorepo & Multi-Project Operation** *(moved from Herald, 2026-07-23)*: the machinery that runs many Dreams at once — project registration + switching (`scripts/bmad-switch`), per-project config/artifact isolation, and **concurrent loop homes** (`scripts/bmad-loop-worktree`: one worktree per loop, Tier-3 single-sourced).
+* **Cross-Agent Portability** *(moved from Herald, 2026-07-23)*: BMAD running on whichever agent the team uses — Devin, GitHub Copilot (incl. agents), Claude, Cursor — the method never vendor-locked ([[agent-portability]]); Herald keeps the comms face.
 
 ### CLI Cadence
 ```bash

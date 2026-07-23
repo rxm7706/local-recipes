@@ -175,7 +175,7 @@ def scan_dreams() -> list[dict]:
     for f in sorted(DREAMS_DIR.glob("*.md")):
         if f.name == "README.md":
             continue
-        title, status = None, None
+        title, status, owner = None, None, None
         lines = f.read_text(encoding="utf-8").splitlines()
         if lines and lines[0].strip() == "---":
             for line in lines[1:]:
@@ -185,10 +185,15 @@ def scan_dreams() -> list[dict]:
                     title = line.split(":", 1)[1].strip()
                 elif line.startswith("status:"):
                     status = line.split(":", 1)[1].strip()
+                elif line.startswith("owner:"):
+                    owner = line.split(":", 1)[1].strip()
         if status not in DREAM_STATUSES:
             print(f"[dreams] WARN {f.name}: status {status!r} not in {DREAM_STATUSES}"
                   " — passed through; board shows it under 'seeded'")
-        dreams.append({"slug": f.stem, "title": title or f.stem, "status": status or ""})
+        if not owner:
+            print(f"[dreams] WARN {f.name}: no owner: in frontmatter")
+        dreams.append({"slug": f.stem, "title": title or f.stem,
+                       "status": status or "", "owner": owner or ""})
     by_status = {s: sum(1 for d in dreams if d["status"] == s) for s in DREAM_STATUSES}
     print(f"[dreams] {len(dreams)} scanned: "
           + " / ".join(f"{n} {s}" for s, n in by_status.items()))

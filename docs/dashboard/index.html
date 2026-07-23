@@ -139,6 +139,8 @@
     padding: 5px 10px; display: inline-flex; align-items: center; gap: 7px; max-width: 100%; }
   .dchip:hover { color: var(--ink); border-color: var(--accent-dim); }
   .dchip .dt { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .dchip .down { font-size: 9px; text-transform: uppercase; letter-spacing: 0.07em;
+    color: var(--slate-faint); flex: none; }
   .drow.st-seeded .dchip { border-left-color: var(--slate-faint); }
   .drow.st-in-deck .dchip { border-left-color: var(--deck); background: var(--deck-ground); }
   .drow.st-in-spec .dchip { border-left-color: var(--active); background: var(--active-ground); }
@@ -390,9 +392,10 @@
         '<div class="dstage">' + label + ' <span class="dn">· ' + bucket.length + '</span></div>' +
         '<div class="dchips">' + bucket.map(d => {
           const head = esc(d.title.split(" — ")[0]);
+          const own = d.owner ? '<span class="down">' + esc(d.owner) + '</span>' : '';
           return '<a class="dchip" href="https://github.com/rxm7706/local-recipes/blob/main/docs/dreams/' +
             d.slug + '.md" title="' + esc(d.title) + ' · docs/dreams/' + d.slug + '.md"><span class="dt">' +
-            head + '</span></a>';
+            head + '</span>' + own + '</a>';
         }).join("") + '</div>';
       drows.appendChild(row);
     });

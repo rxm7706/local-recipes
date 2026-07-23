@@ -1,6 +1,7 @@
 ---
 title: Scribe — the inward voice
 type: dream
+owner: scribe
 status: seeded
 ---
 

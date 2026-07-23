@@ -1,6 +1,7 @@
 ---
 title: Sentinel — the AI Software Factory (the ancestor)
 type: dream
+owner: scribe
 status: seeded
 ---
 
