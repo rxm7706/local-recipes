@@ -92,7 +92,7 @@ export/copy a Design file. Dream: `docs/dreams/design-code-bridge.md`; full proc
 
 ## Library catalog (what's available to import/run)
 
-**`docs/library-llms-full.md`** is the llms-full-style catalog of every library, CLI, and
+**`docs/reference/library-llms-full.md`** is the llms-full-style catalog of every library, CLI, and
 framework available in this repo's pixi environments — per-library capabilities, version pins,
 import-name gotchas, environment membership, and what is deliberately NOT installed. It is
 derived from `pixi.toml` (the source of truth; regeneration prompt in its header). Consult it
