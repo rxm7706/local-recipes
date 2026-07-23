@@ -1,5 +1,8 @@
 ---
 id: SPEC-design-code-bridge
+surface:
+  - src/pyforge/herald/**      # the CLI this spec builds (not yet created)
+  - scripts/deck_export.py     # CAP-5 export path the CLI wraps
 companions:
   - bridge-protocol.md
   - ../../../../../../docs/specs/presentation-deck.md

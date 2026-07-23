@@ -3,6 +3,9 @@ spec: multi-loop-isolation
 status: shipped
 owner-dream: docs/dreams/pyforge-marshal.md
 program: regenerable-factory (Wave 0)
+surface:
+  - scripts/bmad-switch
+  - scripts/bmad-loop-worktree
 companions: []
 sources:
   - ../../../../../docs/dreams/pyforge-marshal.md
