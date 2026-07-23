@@ -665,7 +665,7 @@ window.DASHBOARD_DATA = {
       }
     }
   },
-  "snapshot": "<span>2026-07-23 23:08 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-07-23 23:09 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -785,7 +785,7 @@ window.DASHBOARD_DATA = {
     {
       "slug": "regenerable-factory",
       "title": "Regenerable factory — every line of code under a spec it can be rebuilt from",
-      "status": "seeded",
+      "status": "in-spec",
       "owner": "marshal"
     },
     {
