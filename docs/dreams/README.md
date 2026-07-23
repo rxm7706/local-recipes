@@ -59,9 +59,9 @@ build contract; the Dream is the "why" behind it.
 
 ## Dreams
 
-20 Dreams as of 2026-07-23 (2 born Dream-first; 16 retro-seeded from a complete
+23 Dreams as of 2026-07-23 (2 born Dream-first; 16 retro-seeded from a complete
 repo + Design-workspace audit; 2 persona dreams added when the ownership audit
-grew the crew 6 → 8). **No-straggler policy:** every BMAD project, deck, Design
+grew the crew 6 → 8; 3 recovered from the gist audit). **No-straggler policy:** every BMAD project, deck, Design
 project, and spec maps to exactly one Dream; the herald CLI's status capability
 (CAP-3) flags any unlinked Design project permanently.
 
@@ -109,3 +109,6 @@ project, and spec maps to exactly one Dream; the herald CLI's status capability
 |---|---|---|
 | [`deckcraft.md`](deckcraft.md) | seeded | Air-gapped editable-PPTX/Marp/infographic pipeline from primitives — the family's designated PPTX engine. |
 | [`presenton-pixi-image.md`](presenton-pixi-image.md) | seeded | Presenton repackaged conda-native + air-gapped for OpenShift in regulated enterprises. |
+| [`unity-data-stack.md`](unity-data-stack.md) | seeded | The enterprise innersource platform — a python-first shared monorepo (Constitution + working pixi root recovered from gists). |
+| [`local-ai.md`](local-ai.md) | seeded | The factory's own compute — dual-GPU local AI workstation + local model backends (vLLM tiers, offline planning). |
+| [`wasm-analytics-stack.md`](wasm-analytics-stack.md) | seeded | Wasm-first analytical data stack on OpenShift — WASI-sandboxed Python, dlt+dbt, OTel/OL, Restricted-SCC hardened. |

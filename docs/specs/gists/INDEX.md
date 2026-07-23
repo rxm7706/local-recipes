@@ -36,3 +36,13 @@ remains gist.github.com; re-download to refresh.
 | `unity-data-stack-pixi-toml/` | `16db36ebd9822592ee41315de9792db1` | Unity-Data-Stack-Pixi.toml | Unity-Data-Stack-Pixi.toml | secret | 2026-01-05 |
 | `wasm-first-analytical-data-stack-ocp-ready/` | `2b5f4e198011c5cbb5a0860b66393606` | Wasm-First Analytical Data Stack (OCP Ready) | gistfile1.txt | secret | 2026-04-19 |
 | `xcompile-mac-build-on-linux-machine/` | `73f82bd61fd4dfd46c90ccbd1b8e6e09` | Xcompile mac build on linux machine | gistfile1.txt | secret | 2026-04-16 |
+
+## Archived 2026-07-23 → `archive/docs/specs/gists/`
+
+13 snapshots judged discardable (superseded / duplicate / stale / dormant):
+git-flow comparison · docker one-liner · recreate-base-env · generate-lock-files
+(pixi superseded) · gist-index (this INDEX supersedes) · conda-forge-notes (CFE
+quickref supersedes) · claude-md-templates · health-report **v1** (v2 kept) ·
+conda-forge-expert-review + local-recipes-claude-review (absorbed transcripts) ·
+all-my-feedstocks (stale; atlas supersedes) · agentic-ai-sdlc (byte-dup of the
+dream companion) · django-sloccount (dormant; re-dream to revive).

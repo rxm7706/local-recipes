@@ -45,3 +45,4 @@ roadmap wishes: the unified DAG orchestrator and the interactive dashboard.
 - **2026-06-20 → 07-16** — spec authored and analyzed (v5.6).
 - **2026-07-17 → 07-18** — planned and BUILT via bmad-loop; shipped.
 - **2026-07-23** — Dream retro-seeded; chapter deck `presentations/pyforge-atlas/`.
+- **2026-07-23 (gist audit)** — grounding: the Ecosystem Health Report v2 (Basilisk §6) is atlas-intelligence output (`docs/specs/gists/conda-forge-python-ecosystem-health-report-v2-…/`); LF AI & Data landscape kept as reference.

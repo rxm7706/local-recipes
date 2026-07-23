@@ -26,7 +26,7 @@ And **the seed**: the bootstrapper that installs the operating model anywhere �
 - The **master vision deck** `presentations/pyforge-genesis/` (13 slides:
   Dream → Deck → Spec → Code, the crew, the Master Pipeline, proof, "Genesis is
   also the seed"), seeded into Claude Design via the bridge.
-- The **origin document**: `docs/bmad-setup-plan.md` — *"greenfield + brownfield,
+- The **origin document**: `archive/docs/bmad-setup-plan.md` — *"greenfield + brownfield,
   multi-project, unattended"* — the plan that set this repo up; Genesis is that
   plan, generalized beyond one repo.
 - The operating model itself, proven in production here: Tier 0 Dreams,
@@ -43,6 +43,7 @@ And **the seed**: the bootstrapper that installs the operating model anywhere �
 ## Realization log
 
 - **~2026-07 (setup plan)** — the model installed here, by hand, from
-  `docs/bmad-setup-plan.md`.
+  `archive/docs/bmad-setup-plan.md`.
 - **2026-07-23** — the Dream-first governance landed repo-wide; the master deck
   seeded; named `pyforge-genesis` (the origin-story deck of the family).
+- **2026-07-23 (gist audit)** — grounding: `docs/specs/gists/how-we-operate/` ("documentation as programmable infrastructure" — the operating philosophy in embryo).

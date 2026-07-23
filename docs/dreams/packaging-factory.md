@@ -49,3 +49,4 @@ This is a **perpetual** dream: realized as a running factory, never "done."
 - **2026-07-23** — Dream retro-seeded under the Dream-first model; roadmap
   aspirations folded in as the frontier. Chapters: [[pyforge-atlas]],
   [[pyforge-warden]], [[fleet-stewardship]], [[upstream-discovery]].
+- **2026-07-23 (gist audit)** — grounding: the SelfExplainML 36-package channel drop (third-party-channel publishing!) + the rattler-build macOS codesign-stub cross-compile trick (`docs/specs/gists/`).

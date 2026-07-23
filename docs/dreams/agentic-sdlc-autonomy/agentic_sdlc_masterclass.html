@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agentic SDLC: Enterprise Masterclass</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;600;700&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #0B1626;
+            --secondary: #2F86DD;
+            --accent-gold: #C8901A;
+            --accent-purple: #7c3aed;
+            --accent-teal: #0d9488;
+            --bg-light: #F6F4EE;
+            --text-dark: #0E1C30;
+        }
+        body { 
+            font-family: 'IBM Plex Sans', sans-serif; 
+            background-color: var(--bg-light); 
+            color: var(--text-dark); 
+            overflow-x: hidden; 
+            line-height: 1.6;
+        }
+        h1, h2, h3, .display-font { font-family: 'Space Grotesk', sans-serif; }
+        .mono { font-family: 'IBM Plex Mono', monospace; }
+        
+        .glass-card { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); border: 1px solid rgba(14, 28, 48, 0.1); border-radius: 1rem; box-shadow: 0 10px 30px -10px rgba(0,0,0,0.05); }
+        .dark-card { background: var(--primary); color: var(--bg-light); border-radius: 1rem; border: 1px solid rgba(255,255,255,0.1); }
+        .view-section { display: none; opacity: 0; transform: translateY(15px); transition: all 0.4s ease-out; }
+        .view-section.active { display: block; opacity: 1; transform: translateY(0); }
+        .chart-container { position: relative; width: 100%; max-width: 100%; height: 250px; }
+        
+        .nav-btn { position: relative; transition: all 0.3s ease; white-space: nowrap; }
+        .nav-btn::after { content: ''; position: absolute; bottom: -2px; left: 0; width: 0%; height: 2px; background: var(--secondary); transition: width 0.3s ease; }
+        .nav-btn.active::after { width: 100%; }
+        .nav-btn.active { color: var(--secondary); font-weight: 700; }
+
+        .layer-stack:hover { transform: scale(1.02) translateX(10px); }
+        .layer-stack { transition: all 0.3s ease; cursor: default; }
+        .persona-card { border-top: 4px solid var(--secondary); }
+        .connection-line { width: 2px; background: var(--secondary); margin: 0 auto; }
+        .tag { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; padding: 0.2rem 0.6rem; border-radius: 99px; }
+        
+        .gradient-text-gold { background: linear-gradient(135deg, var(--accent-gold), #f59e0b); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .gradient-text-blue { background: linear-gradient(135deg, var(--secondary), var(--accent-purple)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    </style>
+</head>
+<body class="antialiased selection:bg-blue-200">
+
+<header class="bg-[#0B1626] text-[#F6F4EE] py-16 px-6 border-b-4 border-[#C8901A]">
+    <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-12 gap-12 items-center">
+        <div class="md:col-span-8 space-y-6">
+            <div class="mono text-[#2F86DD] text-sm uppercase tracking-widest font-semibold flex gap-4">
+                <span>Enterprise Masterclass</span>
+                <span>//</span>
+                <span>1-Hour Session</span>
+            </div>
+            <h1 class="text-5xl md:text-7xl font-bold leading-tight tracking-tight">
+                The Agentic SDLC: <br>
+                <span class="gradient-text-gold">Engineering Autonomy</span>
+            </h1>
+            <p class="text-lg md:text-xl text-slate-300 max-w-3xl leading-relaxed">
+                Not autocomplete on steroids—a structured methodology to build software with AI agents as expert collaborators, from first idea to shipped code.
+            </p>
+        </div>
+        <div class="md:col-span-4 flex flex-col gap-4">
+            <div class="bg-white/10 p-6 rounded-xl border border-white/20 backdrop-blur">
+                <div class="text-xs uppercase tracking-widest text-[#C8901A] font-bold mb-1">SWE-Bench Verified</div>
+                <div class="text-4xl font-black text-white flex items-end gap-2">
+                    78.4% <span class="text-sm font-normal text-slate-400 mb-1">resolution rate</span>
+                </div>
+                <div class="text-sm text-slate-300 mt-2">Up from 1.96% in Oct 2023. A capability acceleration necessitating structural change.</div>
+            </div>
+        </div>
+    </div>
+</header>
+
+<nav class="sticky top-0 z-50 bg-[#F6F4EE]/90 backdrop-blur-md border-b border-slate-300 shadow-sm">
+    <div class="max-w-7xl mx-auto px-6 overflow-x-auto">
+        <div class="flex space-x-8 py-4 min-w-max text-sm mono font-medium">
+            <button onclick="switchView('paradigm')" id="btn-paradigm" class="nav-btn active text-slate-600 hover:text-[#2F86DD] uppercase tracking-wide pb-1">01. Paradigm Shift</button>
+            <button onclick="switchView('fourviews')" id="btn-fourviews" class="nav-btn text-slate-600 hover:text-[#2F86DD] uppercase tracking-wide pb-1">02. The Four Views</button>
+            <button onclick="switchView('architecture')" id="btn-architecture" class="nav-btn text-slate-600 hover:text-[#2F86DD] uppercase tracking-wide pb-1">03. 6-Layer Stack</button>
+            <button onclick="switchView('execution')" id="btn-execution" class="nav-btn text-slate-600 hover:text-[#2F86DD] uppercase tracking-wide pb-1">04. Execution</button>
+            <button onclick="switchView('governance')" id="btn-governance" class="nav-btn text-slate-600 hover:text-[#2F86DD] uppercase tracking-wide pb-1">05. Governance</button>
+            <button onclick="switchView('bmad')" id="btn-bmad" class="nav-btn text-slate-600 hover:text-[#2F86DD] uppercase tracking-wide pb-1">06. Synthesis</button>
+        </div>
+    </div>
+</nav>
+
+<main class="max-w-7xl mx-auto px-6 py-12">
+
+    <!-- 01. PARADIGM SHIFT -->
+    <section id="view-paradigm" class="view-section active space-y-16">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
+            <div>
+                <h2 class="text-4xl font-bold mb-6">From Vibe Coding to<br><span class="gradient-text-blue">Agentic Engineering</span></h2>
+                <p class="text-lg text-slate-700 mb-6">
+                    The cognitive contract is changing. We are moving away from chatting with a graphical interface and relying on the LLM's leaky memory, toward orchestrating complex, multi-agent systems via persistent documentation.
+                </p>
+                <div class="dark-card p-8">
+                    <h4 class="font-bold text-[#C8901A] mono text-sm uppercase tracking-widest mb-4">The Baseline Formula</h4>
+                    <div class="flex items-center gap-4 text-xl">
+                        <span class="text-slate-400 line-through">Prompt &rarr; Code &rarr; Hope</span>
+                    </div>
+                    <div class="my-4 border-t border-slate-700"></div>
+                    <div class="flex flex-wrap items-center gap-3 text-xl font-bold text-white">
+                        <span>Intent</span> <span class="text-[#2F86DD]">&rarr;</span> 
+                        <span>Spec</span> <span class="text-[#2F86DD]">&rarr;</span> 
+                        <span>Review</span> <span class="text-[#2F86DD]">&rarr;</span> 
+                        <span>Generate</span> <span class="text-[#2F86DD]">&rarr;</span> 
+                        <span>Validate</span>
+                    </div>
+                </div>
+            </div>
+            <div class="glass-card p-8">
+                <h3 class="text-xl font-bold mb-6 border-b border-slate-200 pb-2">Economics of Attention</h3>
+                <div class="space-y-4">
+                    <p class="text-sm text-slate-700">
+                        Because agents can produce plausible patches, execute complex scaffolding, and generate feature implementations at a rate that exponentially exceeds human capacity, the ultimate rate-limiting resource in software engineering becomes <strong>human review bandwidth</strong>.
+                    </p>
+                    <div class="flex gap-4 mt-6">
+                        <div class="w-1/2">
+                            <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Vibe Coding</h4>
+                            <p class="text-xs text-slate-600">Delegates code ownership entirely to AI. High speed, zero verification, technical debt explosion.</p>
+                        </div>
+                        <div class="w-1/2 border-l border-slate-200 pl-4">
+                            <h4 class="text-xs font-bold text-teal-700 uppercase tracking-wider mb-2">Agentic SDLC</h4>
+                            <p class="text-xs text-slate-700 font-medium">Human retains absolute responsibility for business constraints and architecture.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 02. THE FOUR VIEWS -->
+    <section id="view-fourviews" class="view-section space-y-12">
+        <div class="text-center max-w-4xl mx-auto mb-10">
+            <h2 class="text-4xl font-bold mb-4">The Four Views of Agentic Autonomy</h2>
+            <p class="text-lg text-slate-700">
+                "Autonomy" is an overloaded term. To build a cohesive, enterprise-ready Agentic SDLC, engineering leaders must define and manage autonomy across four distinct, interconnected lenses.
+            </p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Taxonomy View -->
+            <div class="glass-card p-8 border-t-4 border-indigo-600">
+                <div class="flex items-center gap-3 mb-4">
+                    <span class="w-8 h-8 rounded bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold">1</span>
+                    <h3 class="text-2xl font-bold">Taxonomy View</h3>
+                </div>
+                <p class="text-sm font-semibold text-slate-500 uppercase tracking-widest mb-4">Who holds the steering wheel?</p>
+                <p class="text-sm text-slate-700 mb-6">Focuses on governance, accountability, and risk (Inspired by SAE J3016). It measures autonomy by the human's proximity to the execution loop.</p>
+                
+                <div class="chart-container h-48 mb-4">
+                    <canvas id="taxonomyChart"></canvas>
+                </div>
+                
+                <div class="bg-indigo-50 p-4 rounded-lg border border-indigo-100">
+                    <h4 class="font-bold text-indigo-900 text-sm mb-1">The L3 Production Ceiling</h4>
+                    <p class="text-xs text-indigo-800">In a governed L3/L4 system, agents operate within strict limits—e.g., locking an infrastructure deployment budget at exactly $1500/month, requiring a human "Context Gate" for edge cases.</p>
+                </div>
+            </div>
+
+            <!-- Implementation View -->
+            <div class="glass-card p-8 border-t-4 border-teal-600">
+                <div class="flex items-center gap-3 mb-4">
+                    <span class="w-8 h-8 rounded bg-teal-100 text-teal-700 flex items-center justify-center font-bold">2</span>
+                    <h3 class="text-2xl font-bold">Implementation View</h3>
+                </div>
+                <p class="text-sm font-semibold text-slate-500 uppercase tracking-widest mb-4">Where in the pipeline is the AI?</p>
+                <p class="text-sm text-slate-700 mb-6">Focuses on the division of labor across agile stages. AI changes the primary actors and points of friction in the pipeline.</p>
+                
+                <ul class="space-y-4">
+                    <li class="flex items-start gap-3">
+                        <div class="mt-1 w-2 h-2 rounded-full bg-teal-500 flex-shrink-0"></div>
+                        <div>
+                            <strong class="text-sm text-slate-800 block">Planning & Capacity</strong>
+                            <span class="text-xs text-slate-600">Agents ingest baseline calculations (e.g., 150.0 working hours/mo = 1.0 FTE) to generate deterministic timelines.</span>
+                        </div>
+                    </li>
+                    <li class="flex items-start gap-3">
+                        <div class="mt-1 w-2 h-2 rounded-full bg-orange-500 flex-shrink-0"></div>
+                        <div>
+                            <strong class="text-sm text-slate-800 block">Coding & The Verification Debt</strong>
+                            <span class="text-xs text-slate-600">Agents write code so rapidly that manual human review becomes the ultimate bottleneck.</span>
+                        </div>
+                    </li>
+                    <li class="flex items-start gap-3">
+                        <div class="mt-1 w-2 h-2 rounded-full bg-red-500 flex-shrink-0"></div>
+                        <div>
+                            <strong class="text-sm text-slate-800 block">Operations & Privilege Drift</strong>
+                            <span class="text-xs text-slate-600">Risk of agents retaining broad system access long after deployment concludes.</span>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Architectural View -->
+            <div class="glass-card p-8 border-t-4 border-purple-600">
+                <div class="flex items-center gap-3 mb-4">
+                    <span class="w-8 h-8 rounded bg-purple-100 text-purple-700 flex items-center justify-center font-bold">3</span>
+                    <h3 class="text-2xl font-bold">Architectural View</h3>
+                </div>
+                <p class="text-sm font-semibold text-slate-500 uppercase tracking-widest mb-4">Who controls the logic flow?</p>
+                <p class="text-sm text-slate-700 mb-6">Defines autonomy by whether the execution path is hardcoded by a human or dynamically directed by a model.</p>
+                
+                <div class="grid grid-cols-2 gap-4 h-full">
+                    <div class="bg-slate-50 p-4 rounded-lg border border-slate-200 text-center flex flex-col justify-center">
+                        <h4 class="font-bold text-slate-800 text-sm mb-2">Workflows (Deterministic)</h4>
+                        <code class="text-xs text-slate-500 block mb-2">Prompt &rarr; Router &rarr; Output</code>
+                        <p class="text-xs text-slate-600">Code dictates the path. Fixed sequences engineered by humans.</p>
+                    </div>
+                    <div class="bg-purple-50 p-4 rounded-lg border border-purple-200 text-center flex flex-col justify-center">
+                        <h4 class="font-bold text-purple-900 text-sm mb-2">Agents (Dynamic)</h4>
+                        <code class="text-xs text-purple-600 block mb-2">Reflect &rarr; Tool Call &rarr; Act</code>
+                        <p class="text-xs text-purple-800">The LLM dictates the path. Dynamically orchestrates multi-agent collaboration (e.g., BMad Method).</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Environmental View -->
+            <div class="glass-card p-8 border-t-4 border-[#C8901A]">
+                <div class="flex items-center gap-3 mb-4">
+                    <span class="w-8 h-8 rounded bg-orange-100 text-[#C8901A] flex items-center justify-center font-bold">4</span>
+                    <h3 class="text-2xl font-bold">Environmental View</h3>
+                </div>
+                <p class="text-sm font-semibold text-slate-500 uppercase tracking-widest mb-4">What is the agent touching?</p>
+                <p class="text-sm text-slate-700 mb-2">Measures autonomy by the Agent-Computer Interface (ACI). How abstracted is the sandbox?</p>
+                
+                <div class="chart-container h-32 mb-2">
+                    <canvas id="envChart"></canvas>
+                </div>
+                
+                <p class="text-xs text-slate-600">
+                    <strong>API-Bounded (Low):</strong> Pushing JSON payloads.<br>
+                    <strong>Native Workspace (High):</strong> Operating a headless Linux terminal, managing complex dependencies via Conda-forge recipes, Grayskull, or Pixi.
+                </p>
+            </div>
+        </div>
+
+        <!-- Synthesis Bar -->
+        <div class="dark-card p-8 mt-8 flex flex-col md:flex-row items-center justify-between gap-6">
+            <div class="md:w-1/3">
+                <h3 class="text-2xl font-bold text-white mb-2">The Synthesis</h3>
+                <p class="text-sm text-slate-300">How to safely deploy a system across all four views.</p>
+            </div>
+            <div class="md:w-2/3 flex flex-col md:flex-row gap-4 w-full">
+                <div class="bg-white/10 p-4 rounded-lg flex-1 border border-white/20">
+                    <span class="text-[#C8901A] font-bold text-lg block mb-1">1. Unleash Capability</span>
+                    <p class="text-xs text-slate-300">Grant <strong>Architectural</strong> freedom & <strong>Environmental</strong> access so it can actually build.</p>
+                </div>
+                <div class="bg-white/10 p-4 rounded-lg flex-1 border border-white/20">
+                    <span class="text-[#2F86DD] font-bold text-lg block mb-1">2. Map to Process</span>
+                    <p class="text-xs text-slate-300">Logically bind it to an <strong>Implementation</strong> stage to fit agile rhythms.</p>
+                </div>
+                <div class="bg-white/10 p-4 rounded-lg flex-1 border border-white/20">
+                    <span class="text-emerald-400 font-bold text-lg block mb-1">3. Enforce Risk</span>
+                    <p class="text-xs text-slate-300">Wrap in a <strong>Taxonomy</strong> layer (L3 boundaries, API logging, budget caps).</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 03. THE 6-LAYER STACK -->
+    <section id="view-architecture" class="view-section space-y-12">
+        <div class="text-center max-w-3xl mx-auto">
+            <h2 class="text-4xl font-bold mb-4">Deconstructing the Agentic Stack</h2>
+            <p class="text-lg text-slate-700">
+                Transforming a non-deterministic LLM into a reliable autonomous system requires a structured 6-layer reference architecture. This resolves the conflict between AI stochasticity and enterprise determinism.
+            </p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start max-w-6xl mx-auto">
+            <div class="lg:col-span-5 space-y-3 flex flex-col-reverse mt-8">
+                <!-- Stack built bottom-up visually -->
+                <div class="layer-stack bg-[#0B1626] text-white p-4 rounded-lg shadow-lg border-l-4 border-slate-500">
+                    <div class="text-xs text-slate-400 mono mb-1">LAYER 01</div>
+                    <h4 class="font-bold">Models & Inference</h4>
+                    <p class="text-xs text-slate-300">Raw intelligence. Multi-model (heavy logic vs. rapid scanning).</p>
+                </div>
+                <div class="layer-stack bg-[#112240] text-white p-4 rounded-lg shadow-lg border-l-4 border-blue-500">
+                    <div class="text-xs text-blue-300 mono mb-1">LAYER 02</div>
+                    <h4 class="font-bold">Framework & Runtime</h4>
+                    <p class="text-xs text-blue-100">Stateful loops (LangGraph, CrewAI). Prevents context resets.</p>
+                </div>
+                <div class="layer-stack bg-[#1a365d] text-white p-4 rounded-lg shadow-lg border-l-4 border-teal-500">
+                    <div class="text-xs text-teal-300 mono mb-1">LAYER 03</div>
+                    <h4 class="font-bold">Tools & Protocols</h4>
+                    <p class="text-xs text-teal-100">Mechanical reach via MCP. Executes shell, queries DBs, hits APIs.</p>
+                </div>
+                <div class="layer-stack bg-[#2a4365] text-white p-4 rounded-lg shadow-lg border-l-4 border-purple-500">
+                    <div class="text-xs text-purple-300 mono mb-1">LAYER 04</div>
+                    <h4 class="font-bold">Memory</h4>
+                    <p class="text-xs text-purple-100">Working, episodic, semantic recall (Vector DBs). Prevents truncation.</p>
+                </div>
+                <div class="layer-stack bg-[#2c5282] text-white p-4 rounded-lg shadow-lg border-l-4 border-orange-500">
+                    <div class="text-xs text-orange-300 mono mb-1">LAYER 05</div>
+                    <h4 class="font-bold">The Context Layer</h4>
+                    <p class="text-xs text-orange-100">Encodes business intent & invariant rules. Prevents "Context Collapse".</p>
+                </div>
+                <div class="layer-stack bg-[#2b6cb0] text-white p-4 rounded-lg shadow-lg border-l-4 border-yellow-500">
+                    <div class="text-xs text-yellow-300 mono mb-1">LAYER 06</div>
+                    <h4 class="font-bold">Observability & Governance</h4>
+                    <p class="text-xs text-yellow-100">Guardrails, tracing, evaluation. Prevents infinite loops & leaks.</p>
+                </div>
+            </div>
+
+            <div class="lg:col-span-7 pl-0 lg:pl-12">
+                <div class="glass-card p-8">
+                    <h3 class="text-2xl font-bold mb-4">The Context Layer & The Knowledge Fabric</h3>
+                    <p class="text-sm text-slate-700 mb-6">
+                        Layers 1-3 provide execution capability, but Layers 4-6 provide <strong>safety and alignment</strong>. 
+                        Knowledge, not just context, must be engineered. The Context Layer evolves into an <strong>Agentic Knowledge Fabric</strong>.
+                    </p>
+
+                    <div class="bg-[#112240] text-white p-5 rounded-lg border-l-4 border-[#C8901A] mb-6 shadow-md">
+                        <h4 class="font-bold text-md mb-2 flex items-center gap-2"><span class="text-[#C8901A] text-lg">⚠</span> The L2 &rarr; L3 Chasm</h4>
+                        <p class="text-xs text-slate-300 leading-relaxed">
+                            The leap from L2 (Augmented) to L3 (Agentic) is not solved by smarter models. It is solved by the Knowledge Fabric. Until business context moves out of human chat prompts and into machine-readable, persistent infrastructure, true autonomy is impossible.
+                        </p>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                        <div class="bg-blue-50 border border-blue-200 p-4 rounded-lg">
+                            <h4 class="font-bold text-sm text-blue-900 mb-1">Minimum Viable Context (MVC)</h4>
+                            <p class="text-xs text-blue-800">Token budgeting is a runtime discipline. The fabric serves only exact policies and facts needed for a specific step, placing exclusions ahead of narrative.</p>
+                        </div>
+                        <div class="bg-purple-50 border border-purple-200 p-4 rounded-lg">
+                            <h4 class="font-bold text-sm text-purple-900 mb-1">Semantic Disambiguation</h4>
+                            <p class="text-xs text-purple-800">Enterprises lose meaning through handoffs. The fabric disambiguates terms using concept cards to establish clear decision boundaries.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 04. ADP & EXECUTION -->
+    <section id="view-execution" class="view-section space-y-12">
+        <div class="text-center max-w-3xl mx-auto mb-10">
+            <h2 class="text-4xl font-bold mb-4">Execution & Platform Engineering</h2>
+            <p class="text-lg text-slate-700">
+                AI completes sprint forecasts in days, not weeks. The sprint boundary stops protecting quality and begins throttling throughput. We must replace the sprint.
+            </p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
+            <!-- 3 Layer Pipeline -->
+            <div>
+                <h3 class="text-2xl font-bold mb-6">The Three-Layer Operating Model</h3>
+                <p class="text-sm text-slate-600 mb-6">We replace discrete batching with a continuously executing system (+One Framework):</p>
+                
+                <div class="space-y-4">
+                    <div class="flex gap-4 items-start p-4 bg-white rounded-lg shadow-sm border border-slate-200">
+                        <div class="w-8 h-8 rounded-full bg-[#0B1626] text-white flex items-center justify-center font-bold flex-shrink-0">1</div>
+                        <div>
+                            <h4 class="font-bold text-[#0B1626]">The Spec Layer</h4>
+                            <p class="text-xs text-slate-600 mt-1">Human intent engineers define exact, mathematically precise specifications continuously. The spec is the ultimate boundary for behavior.</p>
+                        </div>
+                    </div>
+                    <div class="connection-line h-4"></div>
+                    <div class="flex gap-4 items-start p-4 bg-white rounded-lg shadow-sm border border-slate-200">
+                        <div class="w-8 h-8 rounded-full bg-[#2F86DD] text-white flex items-center justify-center font-bold flex-shrink-0">2</div>
+                        <div>
+                            <h4 class="font-bold text-[#2F86DD]">The Harness Layer</h4>
+                            <p class="text-xs text-slate-600 mt-1">The immutable safety net (context map, pre-merge checks). It translates the spec into a secure environment so agents can operate at max velocity safely.</p>
+                        </div>
+                    </div>
+                    <div class="connection-line h-4"></div>
+                    <div class="flex gap-4 items-start p-4 bg-white rounded-lg shadow-sm border border-slate-200">
+                        <div class="w-8 h-8 rounded-full bg-[#C8901A] text-white flex items-center justify-center font-bold flex-shrink-0">3</div>
+                        <div>
+                            <h4 class="font-bold text-[#C8901A]">The Loop Layer</h4>
+                            <p class="text-xs text-slate-600 mt-1">Agents execute continuously against the backlog until mathematical convergence (tests pass, static analysis is clean).</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="space-y-6">
+                <!-- ADP -->
+                <div class="glass-card p-6 border-l-4 border-indigo-500">
+                    <h3 class="text-xl font-bold mb-2">Agentic Developer Platform (ADP)</h3>
+                    <p class="text-sm text-slate-700 mb-3">
+                        The evolution of the Internal Developer Portal. The ADP functions as the central control plane, preventing agentic chaos by establishing identity, zero-trust scoping, and unalterable audit trails.
+                    </p>
+                    <div class="bg-indigo-50 p-3 rounded text-sm text-indigo-900 border border-indigo-100">
+                        <strong>Agent Lifecycle Management (ALM):</strong> Safely transitions agents from ideation, to RAG pipeline construction, edge-case testing simulation, and safe production deployment.
+                    </div>
+                </div>
+
+                <!-- Verification Tax & TEA -->
+                <div class="dark-card p-6 bg-slate-900 relative overflow-hidden">
+                    <h3 class="text-xl font-bold text-white mb-2">The Verification Tax & TEA</h3>
+                    <p class="text-xs text-slate-300 mb-4">
+                        AI PRs average 10.83 issues vs 6.45 for humans. Manual review erases velocity. Verification must run at agentic speed using the <strong>Test Architect (TEA) module</strong> to prevent AI tests from rotting.
+                    </p>
+                    <div class="flex flex-col md:flex-row gap-4 items-center mt-4">
+                        <div class="w-full md:w-1/2">
+                            <ul class="text-xs text-slate-400 space-y-2 list-disc pl-4">
+                                <li><strong>Design First:</strong> Priority based (P0-P3).</li>
+                                <li><strong>Kill Flakiness:</strong> Network-first wait patterns.</li>
+                                <li><strong>Release Gates:</strong> PASS / CONCERNS / FAIL.</li>
+                            </ul>
+                        </div>
+                        <div class="w-full md:w-1/2 h-32">
+                            <canvas id="laborChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 05. GOVERNANCE & ROI -->
+    <section id="view-governance" class="view-section space-y-12">
+        <div class="text-center max-w-3xl mx-auto mb-10">
+            <h2 class="text-4xl font-bold mb-4">Governance, Risk, & ROI</h2>
+            <p class="text-lg text-slate-700">
+                The GAIE framework uses the Oversight Classification Model (OCM) to dynamically route tasks based on risk, preserving 91% of agentic velocity while ensuring compliance.
+            </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-10 items-start">
+            
+            <div class="space-y-6">
+                <div class="glass-card p-6">
+                    <h3 class="text-xl font-bold mb-4 text-center">OCM Oversight Tiers</h3>
+                    <div class="chart-container h-48">
+                        <canvas id="ocmChart"></canvas>
+                    </div>
+                    <div class="mt-4 space-y-2 text-xs">
+                        <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-[#e11d48]"></span> <strong>HITL (5-15%):</strong> Explicit manual review for core security/regulated logic.</div>
+                        <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-[#f59e0b]"></span> <strong>HOTL (15-25%):</strong> Human monitors async with veto power. Customer-facing.</div>
+                        <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-[#10b981]"></span> <strong>Auto-monitored (60-80%):</strong> Boilerplates governed by static analysis.</div>
+                    </div>
+                </div>
+
+                <div class="bg-red-50 p-5 rounded-xl border border-red-200">
+                    <h3 class="text-md font-bold text-red-800 mb-2">⚠ The Technical Debt Hypothesis</h3>
+                    <p class="text-xs text-red-700">
+                        Agents have a mathematically driven bias toward generating <em>new</em> code (cheap) rather than undertaking complex global redesigns (expensive/difficult). Without continuous deep static analysis, this bias inflates the maintenance burden and degrades structural integrity over time.
+                    </p>
+                </div>
+            </div>
+
+            <div class="space-y-6">
+                <div class="dark-card p-6">
+                    <h3 class="text-xl font-bold text-white mb-4">Empirical Business Outcomes</h3>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="bg-white/10 p-4 rounded text-center border border-white/10">
+                            <div class="text-3xl font-bold text-[#C8901A]">3.2x</div>
+                            <div class="text-xs text-slate-300 mt-1">Increase in PR Throughput</div>
+                        </div>
+                        <div class="bg-white/10 p-4 rounded text-center border border-white/10">
+                            <div class="text-3xl font-bold text-[#2F86DD]">4.8 hrs</div>
+                            <div class="text-xs text-slate-300 mt-1">Review Cycle (Down from 2.1d)</div>
+                        </div>
+                        <div class="bg-white/10 p-4 rounded text-center col-span-2 border border-white/10">
+                            <div class="text-2xl font-bold text-emerald-400">30-50%</div>
+                            <div class="text-xs text-slate-300 mt-1">Cost Savings in Advanced Industries</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass-card p-6 border-l-4 border-[#0B1626]">
+                    <h3 class="text-xl font-bold mb-4">The Talent Transformation</h3>
+                    <p class="text-sm text-slate-700 mb-4">
+                        The team shifts from syntax generators to system orchestrators. New specializations emerge:
+                    </p>
+                    <div class="space-y-3">
+                        <div class="bg-white p-3 border border-slate-200 rounded shadow-sm">
+                            <h4 class="font-bold text-sm text-[#0B1626]">Agent Reliability Engineer (ARE)</h4>
+                            <p class="text-xs text-slate-600">Monitors non-deterministic fleets, prevents failure loops.</p>
+                        </div>
+                        <div class="bg-white p-3 border border-slate-200 rounded shadow-sm">
+                            <h4 class="font-bold text-sm text-[#0B1626]">Knowledge Architect</h4>
+                            <p class="text-xs text-slate-600">Owns the Context Layer, structuring business logic into vector-searchable formats.</p>
+                        </div>
+                        <div class="bg-white p-3 border border-slate-200 rounded shadow-sm">
+                            <h4 class="font-bold text-sm text-[#0B1626]">Intelligence Engineer</h4>
+                            <p class="text-xs text-slate-600">Bridges human intent and AI execution, fine-tuning prompt structures.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 06. THE BMAD METHOD (SYNTHESIS) -->
+    <section id="view-bmad" class="view-section space-y-12">
+        <div class="text-center max-w-4xl mx-auto mb-10">
+            <h2 class="text-4xl font-bold mb-4">Synthesis: The BMad Method</h2>
+            <p class="text-lg text-slate-700">
+                The BMad Method is the practical implementation that incorporates the Paradigm Shift, Layered Architecture, Platform Execution, and Governance into a <strong>Spec-Driven Development (SDD)</strong> workflow.
+            </p>
+            <p class="text-sm text-slate-500 mt-4 italic font-medium">Specs are code. Documentation is programmable infrastructure.</p>
+        </div>
+
+        <!-- The Crew Personas (The 5 Phases Mapped) -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div class="glass-card p-6 persona-card border-purple-500">
+                <div class="tag bg-purple-100 text-purple-700 mb-4 inline-block">Phase 1: Analysis</div>
+                <h3 class="text-xl font-bold">Mary & Paige</h3>
+                <p class="text-xs text-slate-600 mt-2">Brainstorming, market research, Product Briefs, and PRFAQs to stress-test the idea before code.</p>
+                <code class="text-[10px] mt-4 block text-purple-600 bg-purple-50 p-2 rounded border border-purple-100">Output: brief.md</code>
+            </div>
+            <div class="glass-card p-6 persona-card border-blue-500">
+                <div class="tag bg-blue-100 text-blue-700 mb-4 inline-block">Phase 2: Planning</div>
+                <h3 class="text-xl font-bold">John & Sally</h3>
+                <p class="text-xs text-slate-600 mt-2">Define what to build and for whom. Human intent engineers translate raw ideas into agent-ready specs.</p>
+                <code class="text-[10px] mt-4 block text-blue-600 bg-blue-50 p-2 rounded border border-blue-100">Output: prd.md</code>
+            </div>
+            <div class="glass-card p-6 persona-card border-teal-500">
+                <div class="tag bg-teal-100 text-teal-700 mb-4 inline-block">Phase 3: Solutioning</div>
+                <h3 class="text-xl font-bold">Winston</h3>
+                <p class="text-xs text-slate-600 mt-2">Technical architecture, breaking epics into stories, executing the readiness gate (Pass/Fail).</p>
+                <code class="text-[10px] mt-4 block text-teal-600 bg-teal-50 p-2 rounded border border-teal-100">Output: architecture.md</code>
+            </div>
+            <div class="glass-card p-6 persona-card border-orange-500">
+                <div class="tag bg-orange-100 text-orange-700 mb-4 inline-block">Phases 4/5: Build & Ops</div>
+                <h3 class="text-xl font-bold">Amelia</h3>
+                <p class="text-xs text-slate-600 mt-2">Continuous execution loop: Dev -> Test -> Review -> Retro. Fixes own compile errors. Monitors telemetry.</p>
+                <code class="text-[10px] mt-4 block text-orange-600 bg-orange-50 p-2 rounded border border-orange-100">Output: code & tests</code>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-12">
+            <!-- The Constitution -->
+            <div class="dark-card p-8 bg-slate-900 border-l-4 border-[#C8901A]">
+                <h3 class="text-2xl font-bold text-white mb-4">The Enterprise "Constitution"</h3>
+                <p class="text-sm text-slate-300 mb-4">
+                    In SDD, the <code>project-context.md</code> acts as the product's memory. At enterprise scale, it hardens into a Constitution:
+                </p>
+                <ul class="text-sm text-slate-400 space-y-3 list-disc pl-5">
+                    <li><strong>Single Source of Truth:</strong> Supersedes ad-hoc human practice.</li>
+                    <li><strong>Agents Enforce It:</strong> Agents audit every PR and cite specific clauses violated.</li>
+                    <li><strong>Humans Amend It:</strong> Changes require ADRs and team consensus.</li>
+                    <li><strong>Simplicity Gate (YAGNI):</strong> Complexity requires documented justification.</li>
+                </ul>
+                <div class="mt-6 p-4 bg-white/5 border border-white/10 rounded">
+                    <p class="text-sm text-[#C8901A] font-bold">Fix the doc, not the code.</p>
+                    <p class="text-xs text-slate-400">Wrong output is an upstream spec flaw.</p>
+                </div>
+            </div>
+
+            <!-- Scale Adaptive Tracks -->
+            <div class="glass-card p-8 border-t-4 border-slate-300">
+                <h3 class="text-2xl font-bold mb-4">Scale-Adaptive Workflows</h3>
+                <p class="text-sm text-slate-700 mb-6">
+                    The framework sizes the ceremony to the work. It doesn't force a 4-phase PRD for a typo:
+                </p>
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center border-b border-slate-200 pb-3">
+                        <div>
+                            <span class="font-bold text-slate-800 block">Quick Flow / Quick Dev</span>
+                            <div class="text-xs text-slate-500">1-15 stories (Bug fixes, single features)</div>
+                        </div>
+                        <div class="text-xs mono bg-slate-100 px-3 py-1 rounded border border-slate-200">Tech-spec only</div>
+                    </div>
+                    <div class="flex justify-between items-center border-b border-slate-200 pb-3">
+                        <div>
+                            <span class="font-bold text-[#2F86DD] block">BMad Method</span>
+                            <div class="text-xs text-slate-500">10-50+ stories (Products & platforms)</div>
+                        </div>
+                        <div class="text-xs mono bg-blue-50 text-blue-700 px-3 py-1 rounded border border-blue-200">PRD + Arch + UX</div>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <span class="font-bold text-purple-700 block">Enterprise Track</span>
+                            <div class="text-xs text-slate-500">30+ stories (Compliance, multi-tenant)</div>
+                        </div>
+                        <div class="text-xs mono bg-purple-50 text-purple-700 px-3 py-1 rounded border border-purple-200">+ Security & DevOps</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+    </section>
+
+</main>
+
+<footer class="bg-[#0B1626] text-slate-400 py-12 px-6 mt-12 border-t border-slate-800">
+    <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
+        <div class="text-sm">
+            Based on <span class="mono text-slate-300">Agentic_SDLC_White_Paper.md</span> & <span class="mono text-slate-300">agenticaisdlc.marp.md</span>.<br>
+            <span class="text-xs mt-2 block">Enterprise Engineering Masterclass Module - Synthesis Edition</span>
+        </div>
+        <div class="flex flex-wrap gap-4 justify-center md:justify-end">
+            <span class="tag bg-white/10 text-slate-300">ADP Connected</span>
+            <span class="tag bg-white/10 text-slate-300">GAIE Governed</span>
+            <span class="tag bg-white/10 text-slate-300">BMad V6</span>
+        </div>
+    </div>
+</footer>
+
+<script>
+    // Navigation Logic
+    function switchView(viewId) {
+        document.querySelectorAll('.view-section').forEach(s => s.classList.remove('active'));
+        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+        
+        document.getElementById('view-' + viewId).classList.add('active');
+        document.getElementById('btn-' + viewId).classList.add('active');
+        
+        // Trigger resize for charts to render properly when unhidden
+        window.dispatchEvent(new Event('resize'));
+    }
+
+    // Chart Global Defaults
+    Chart.defaults.font.family = "'IBM Plex Sans', sans-serif";
+    Chart.defaults.color = '#64748b';
+
+    // 1. Taxonomy Chart (The Four Views)
+    const ctxTax = document.getElementById('taxonomyChart').getContext('2d');
+    new Chart(ctxTax, {
+        type: 'bar',
+        data: {
+            labels: ['L1', 'L2', 'L3 (Ceiling)', 'L4', 'L5'],
+            datasets: [
+                {
+                    label: 'Human Control (%)',
+                    data: [95, 80, 45, 15, 5],
+                    backgroundColor: '#0B1626',
+                    borderRadius: 4
+                },
+                {
+                    label: 'Agent Autonomy (%)',
+                    data: [5, 20, 55, 85, 95],
+                    backgroundColor: '#2F86DD',
+                    borderRadius: 4
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            indexAxis: 'y',
+            scales: { x: { stacked: true, max: 100, display: false }, y: { stacked: true } },
+            plugins: { 
+                legend: { position: 'bottom', labels: { boxWidth: 12 } } 
+            }
+        }
+    });
+
+    // 2. Environmental Plotly (The Four Views)
+    const trace = {
+        x: [1, 5],
+        y: [10, 95],
+        mode: 'markers+text',
+        text: ['API Bounded', 'Native Shell / Workspace'],
+        textposition: ['top center', 'bottom center'],
+        marker: {
+            size: [25, 50],
+            color: ['#0B1626', '#C8901A'],
+            opacity: 0.8
+        },
+        type: 'scatter'
+    };
+    const layout = {
+        margin: { t: 10, b: 10, l: 30, r: 30 },
+        xaxis: { title: '', showgrid: false, showticklabels: false, range: [0, 6] },
+        yaxis: { title: '', showgrid: false, showticklabels: false, range: [0, 110] },
+        paper_bgcolor: 'rgba(0,0,0,0)',
+        plot_bgcolor: 'rgba(0,0,0,0)',
+        font: { family: 'IBM Plex Sans' }
+    };
+    Plotly.newPlot('envChart', [trace], layout, {responsive: true, displayModeBar: false});
+
+    // 3. Labor/Verification Tax Chart (Execution)
+    const ctxLabor = document.getElementById('laborChart').getContext('2d');
+    new Chart(ctxLabor, {
+        type: 'doughnut',
+        data: {
+            labels: ['Planning', 'Code Gen', 'Verification Debt', 'Ops'],
+            datasets: [{
+                data: [15, 20, 55, 10], // Highlight verification debt
+                backgroundColor: ['#0B1626', '#2F86DD', '#ef4444', '#f59e0b'],
+                borderWidth: 0,
+                hoverOffset: 5
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '60%',
+            plugins: {
+                legend: { position: 'right', labels: { boxWidth: 10, font: {size: 10} } }
+            }
+        }
+    });
+
+    // 4. OCM Governance Chart (Governance)
+    const ctxOcm = document.getElementById('ocmChart').getContext('2d');
+    new Chart(ctxOcm, {
+        type: 'pie',
+        data: {
+            labels: ['HITL', 'HOTL', 'Automated'],
+            datasets: [{
+                data: [10, 20, 70],
+                backgroundColor: ['#e11d48', '#f59e0b', '#10b981'],
+                borderWidth: 2,
+                borderColor: '#ffffff'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false } // Legend is built in HTML for better styling
+            }
+        }
+    });
+
+</script>
+</body>
+</html>
