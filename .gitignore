@@ -733,3 +733,6 @@ _bmad-output/projects/*/.bmad-config.user.toml
 .bmad-loop/runs/
 .bmad-loop/cache/
 _bmad/_memory/
+
+# Parked artifact-fork evidence dirs (local-only Tier-3 copies; see each dir's README)
+_bmad-output/projects/*/_root-fallback-fork-*/
