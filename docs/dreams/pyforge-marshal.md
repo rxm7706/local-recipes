@@ -58,6 +58,18 @@ visible. Anti-vibe, by construction.
 - **W4**: BMad Method UI dashboards (`bmad-ui` env, consume-not-submit mirrors).
 - Formal L-level labeling of story modes; fleet-level resource budgets.
 - The `marshal` CLI as a named product (today the capability runs as bmad-loop).
+- **Many lines, one floor — concurrent loop isolation.** Today only one loop can
+  run per checkout: the active-project symlinks + marker are per-working-tree
+  global state, and two loops would also thrash the working tree's HEAD. The
+  design that removes the ceiling: one **git worktree per loop** (own HEAD; own
+  gitignored symlinks/marker via `bmad-switch` run inside it), a **shared
+  Tier-3 store** (a worktree's `implementation-artifacts` symlinks back to the
+  main checkout's — no migration, same repo-relative path for every consumer),
+  `BMAD_ACTIVE_PROJECT` exported per-loop as belt-and-suspenders, and
+  rebase-before-merge at `main`. Root-cause fix (the hard-coded
+  `planning_artifacts` key composing with project config) belongs upstream in
+  bmad-method. First live proof: the [[regenerable-factory]] backfill loop and
+  the [[pyforge-warden]] 6.3 resume running concurrently.
 
 ## Realization log
 
