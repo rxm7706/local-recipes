@@ -23,17 +23,29 @@ are the `claude-design` MCP surface's.
 4. Re-derive: `npm run extract` → `npm run build` → `pixi run -e local-recipes deck-export <slug>`.
 5. Commit is the operator's (or `--commit`'s) move — never implicit.
 
-## Marp-source pull (v1 scope, per OQ-3 resolution)
+## Authored-source pull (v1 scope, per OQ-3 + export-revisit resolutions)
 
-Same read/etag/decode loop as the prototype pull; different landing path and no
+Same read/etag/decode loop as the prototype pull; different landing paths and no
 extract/build — `deck-export` regenerates the derived set instead:
 
-- Design-side files: the deck's Marp sources (e.g. `warden-deck.md`,
-  `warden-executive-summary.md`, `warden-infographic.md` in the Warden Design
-  project — the evidence that Marp authoring happens in Design).
-- Landing path: `presentations/<slug>/src/marp/<slug>-{deck,executive-summary,infographic}-<date>.md`.
+- Design-side Marp sources (e.g. `warden-deck.md`, `warden-executive-summary.md`,
+  `warden-infographic.md` in the Warden Design project — the evidence that Marp
+  authoring happens in Design) → land at
+  `presentations/<slug>/src/marp/<slug>-{deck,executive-summary,infographic}-<date>.md`.
+- Design-authored **standalone bundle** (e.g. `Warden Infographic standalone.html`,
+  411,764 B — the richer "bundled page" poster) → lands at the export path
+  `src/marp/<slug>-infographic-standalone-<date>.html`, **superseding** any marp
+  `--html` render (fallback only when no bundle exists).
 - After landing: `pixi run -e local-recipes deck-export <slug>`.
-- Never crosses: the derived standalone HTML / PPTX (repo-generated).
+
+## Export push-back (CAP-5, per export-revisit resolution)
+
+After `deck-export` regenerates, push the derived set into the Design project so
+Design holds the complete set: `finalize_plan` declaring the export filenames →
+`write_files` each with its last-known etag (`"0"` for first push). Unchanged
+files are skipped (compare local hash vs last-pushed etag record); any conflict
+is refused structurally — no partial clobber. Design-side names mirror the repo
+filenames verbatim.
 
 ## Watch parameters (CAP-4 defaults)
 

@@ -21,18 +21,21 @@ A vision to realize, grounded in a pain already solved once by hand: deck protot
   - **intent:** An operator can seed a deck slug into Claude Design — a design-system-bound project carrying the deck runtime and a contract-compliant starter prototype — ready for visual iteration.
   - **success:** From a clean state, `herald deck seed <slug>` yields a Design project whose prototype, read back, passes the repo's `extract` (expected slide count, no lost sections) and `build`; seeding over existing Design-side edits is refused with a structured conflict and writes nothing.
 - **CAP-2**
-  - **intent:** An operator can pull a deck's prototype and its Marp sources from Claude Design into the repo and have the deck re-derived end to end.
-  - **success:** After a Design-side edit, `herald deck pull <slug>` lands the prototype in `presentations/<slug>/project/` (re-running extract → build green) and any Marp sources in `src/marp/`, then regenerates the derived export set; when Design is unchanged, pull is a no-op that transfers no file body and reports "unchanged" distinctly (exit 0).
+  - **intent:** An operator can pull a deck's authored sources — prototype, Marp sources, and any Design-authored standalone bundle — from Claude Design into the repo and have the deck re-derived end to end.
+  - **success:** After a Design-side edit, `herald deck pull <slug>` lands the prototype in `presentations/<slug>/project/` (re-running extract → build green), Marp sources in `src/marp/`, and a Design-authored standalone bundle at its export path, then regenerates the derived export set; when Design is unchanged, pull is a no-op that transfers no file body and reports "unchanged" distinctly (exit 0).
 - **CAP-3**
   - **intent:** An operator can see the bridge state of every deck — linked project, sync freshness, and hazards — without touching either surface.
   - **success:** `herald deck status` emits machine-readable per-deck state (linked/unlinked, unchanged/changed/conflict via etags, last pull) and flags a stale hand-mirror (a Design project holding a repo app-tree copy) in a fixture where one is planted.
 - **CAP-4**
   - **intent:** An operator can leave the bridge in watch mode so Design-side edits land in the repo continuously.
   - **success:** With defaults — 60 s etag-only poll (hard floor 30 s, jittered), pull deferred until the etag has been stable for one interval, idle backoff doubling to a 10-minute cap and resetting on change, halt on auth error — an edit appearing in Design lands via CAP-2 within poll + debounce; consecutive unchanged polls perform zero writes on both surfaces.
+- **CAP-5**
+  - **intent:** An operator can push a deck's regenerated derived exports back into its Design project, so Design holds the complete export set alongside the sources.
+  - **success:** After a pull + `deck-export` cycle, the Design project contains the current derived set (verified by returned etags); an unchanged re-push writes nothing; a Design-side conflict on any export file is refused structurally with no partial clobber.
 
 ## Constraints
 
-- Only **authored sources** cross the bridge — the prototype and Marp `.md` sources; never a mirrored app tree, never derived artifacts.
+- **Directional crossing rule:** inbound (Design → repo) carries only **authored sources** — the prototype, Marp `.md` sources, and a Design-authored standalone bundle; outbound (repo → Design) carries only **seeds and regenerated derived exports**. Never a mirrored app tree, in either direction.
 - **Bridge operations are deterministic — no LLM in the loop** for seed/pull/status/watch, regardless of transport.
 - **Prove-before-cross:** a prototype must pass local `extract` + `build` before any seed write reaches Design.
 - **Etag discipline both directions:** every cross-surface read/write carries `if_none_match`/`if_match`; unconditional writes are forbidden; a conflict surfaces structurally and clobbers nothing.
@@ -48,7 +51,8 @@ A vision to realize, grounded in a pain already solved once by hand: deck protot
 - BMAD monorepo/multi-project integration (`herald bmad init`) — a separate effort.
 - Programmatic editing of Design-side content beyond the initial seed — design stays human.
 - Replacing the deck pipeline — the CLI wraps `extract`/`build`/`deck-export` (contract: the adopted `presentation-deck.md` companion) as black boxes.
-- **Marp-source seeding** (authoring stays wherever it happens) and **bridging derived artifacts** (standalone HTML / PPTX — generated repo-side by `deck-export`).
+- **Marp-source seeding** — authoring stays wherever it happens; only pull is in scope for Marp.
+- **Generating exports** — editable PPTX is the `deck-export`/deckcraft pipeline's job (see `presentation-deck.md` § Export decisions revisited); herald **transports** exports (CAP-5), never generates them.
 - Automatic retirement of legacy hand-mirror projects — CAP-3 detects; humans retire.
 
 ## Success signal
