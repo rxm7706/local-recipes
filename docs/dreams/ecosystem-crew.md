@@ -254,6 +254,21 @@ doctor diagnose --target ./build-artifacts --prescribe
 
 ---
 
+## The Execution Doctrine
+
+**Execution has one owner: Marshal.** Skills — existing bmad-method, community,
+and newly forged (BMB / skill-forge / the retro loop) — are the **unit of
+execution**; the deterministic harness (bmad-loop, sandbox and permission gates,
+CI verify gates, no-LLM tools) is the **unit of governance** and is deliberately
+not a skill; every other persona owns its **station's verdict** independently —
+the hand that builds is never the gate that judges. Two persona layers: this
+Crew are the factory's *stations*; the BMAD team (Mary · John · Winston · Sally ·
+Amelia · Paige) are Marshal's *sub-agents on the floor*. This triad — one owner,
+skills as execution, harness as governance — carries the agentic SDLC at every
+autonomy level, up to fully autonomous when a human so chooses.
+
+---
+
 ## The Ultimate Master Pipeline Flow
 
 When integrated into a complete automation loop, the crew hands configurations and
