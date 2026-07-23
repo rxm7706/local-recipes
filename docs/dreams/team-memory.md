@@ -6,6 +6,8 @@ status: seeded
 
 # Team memory — memory that belongs to the team, not one session
 
+**Owning station: the Scribe** ([[pyforge-scribe]], adopted 2026-07-23).
+
 ## The Dream
 
 Today's memory is personal: each operator's auto-memory lives outside the repo,

@@ -10,9 +10,11 @@ This is the founding **Dream** of the **pyforge** ecosystem — the raw vision f
 **"Dream to Code"**, a dual-ecosystem (Python / PyPI + Conda / conda-forge)
 autonomous agentic build pipeline engineered on the **BMAD Method**. It is told
 through the identities, mindsets, responsibilities, and terminal cadences of its
-crew — **Herald · Marshal · Atlas · Warden · Mason · Doctor**. Herald renders the
-Dream into decks (`presentations/`); Marshal — the BMAD orchestrator — solidifies
-its parts into Tier-1 specs (`docs/specs/`) and drives the build.
+crew — **Herald · Marshal · Atlas · Warden · Mason · Doctor · Scribe · Steward**
+(the crew grew 6 → 8 on 2026-07-23 when the ownership audit found two unowned
+stations: knowledge and operations). Herald renders the Dream into decks
+(`presentations/`); Marshal — the BMAD orchestrator — solidifies its parts into
+specs and drives the build.
 
 ---
 
@@ -250,6 +252,83 @@ doctor monitor --fleet --watch staleness,cve,abandonment
 
 # Diagnose a specific failure and prescribe the remediation worklist
 doctor diagnose --target ./build-artifacts --prescribe
+```
+
+---
+
+## 7. The Scribe (The Chronicler)
+
+The **Scribe** is the inward voice of the ecosystem — where Herald tells the
+world, Scribe tells the *team*. It owns what the team knows: every decision,
+rejected tradeoff, and 3am runbook captured into a living knowledge graph that
+any agent or human can answer from. The Scribe is the cure for the disease
+[Sentinel] diagnosed: *knowledge is lossy; the graph is there; nobody writes it
+down.*
+
+### Core Identity
+* **Role:** Knowledge Curator & Team Memory Keeper
+* **Motto:** *"Capture the decision. Keep the graph. Answer from memory."*
+* **Core Function:** Team-shared memory, the knowledge graph compiled from the tools the team already uses, doc/ADR/index curation, and recall surfaces for agents and humans.
+* **Primary Tooling:** Memory layers (`.claude/memory/`), graph compilers, wikis and indexes, embedding/RAG retrieval, memlogs and changelogs.
+
+### Key Responsibilities & Workflows
+* **Capture:** every load-bearing decision lands in the record as it happens — memlogs, ADRs, retros, Dream realization logs.
+* **Curate:** dedup, supersede, and link — memory that stays true, not a landfill.
+* **Compile the graph:** artifacts as nodes, references as edges, built nightly from real tools (the [Sentinel] core, inherited).
+* **Answer:** recall surfaces so every session starts already knowing what the team knows ([team-memory]).
+
+### CLI Cadence
+```bash
+# Capture a decision into the team record
+scribe capture --type decision --text "ADR-005b: in-house gateway replaces LiteLLM"
+
+# Compile the knowledge graph from the team's real tools
+scribe graph compile --nightly
+
+# Answer from memory
+scribe recall "why did we drop Kùzu?"
+```
+
+---
+
+## 8. The Steward (The Provisioner)
+
+The **Steward** runs the estate the factory stands on. Mason ships artifacts and
+stops at the registry; Doctor observes and prescribes; the Steward **deploys,
+provisions, and operates** — environments, runners, credentials, budgets, and
+the incident response when the pager goes off. The Steward is the answer to the
+Implementation view's orphaned stage: Deployment & Operations, and the cure for
+Privilege Drift.
+
+*(Naming note: distinct from the `fleet-stewardship` practice Dream — that is
+feedstock tending under Mason + Doctor; the Steward persona is platform/ops.)*
+
+### Core Identity
+* **Role:** Platform, Deployment & Operations Officer
+* **Motto:** *"Provision the line. Hold the keys. Keep the lights on."*
+* **Core Function:** Environment and runner provisioning, deployment (OpenShift, Pages, bundles), credential and privilege lifecycle, resource budgets, incident response.
+* **Primary Tooling:** Container platforms and deployers, air-gap bundle installers, secret managers and rotation, budget enforcers, runbooks.
+
+### Key Responsibilities & Workflows
+* **Provision:** runners and environments for Marshal's line (bmad-loop runners, CI images, pixi envs) — engines present before Doctor's pre-flight ever runs.
+* **Deploy:** ship *services*, not just artifacts — the dashboards, [presenton-pixi-image] on OpenShift, [enterprise-airgap] bundle installs.
+* **Hold the keys:** credential issuance, scoping, rotation, and revocation — no privilege outlives its deployment (the `JFROG_API_KEY` unconditional-injection leak is a Steward remediation, on a Doctor finding).
+* **Enforce budgets:** machine-readable resource ceilings (the "$1500/month locked" doctrine) and their alerts.
+
+### CLI Cadence
+```bash
+# Provision a runner for the factory line
+steward provision --runner bmad-loop --env local-recipes
+
+# Deploy a service to its platform
+steward deploy presenton --target openshift --airgap
+
+# Privilege lifecycle: audit for drift, rotate, revoke
+steward keys audit --drift
+steward keys rotate --scope jfrog
+
+# Enforce the resource ceiling
+steward budget enforce --cap 1500usd/month
 ```
 
 ---

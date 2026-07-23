@@ -22,6 +22,8 @@ as an internal platform service.
   routing, offline bundles).
 - Division of labor with [[deckcraft]]: presenton = the repackaged *app*;
   deckcraft = the from-primitives *pipeline*. Complementary, not competing.
+- Stations: [[packaging-factory]] (Mason) repackages; **[[pyforge-steward]]
+  deploys and operates** the OpenShift service.
 
 ## What is real
 

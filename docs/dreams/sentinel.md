@@ -46,7 +46,8 @@ realization step.
   **[[deckcraft]]**.
 
 **The unbuilt core**: the team knowledge graph compiled nightly from real tools.
-That remains this Dream's open claim.
+That remains this Dream's open claim — **owned, as of 2026-07-23, by the Scribe**
+([[pyforge-scribe]]), the persona the crew adopted to carry it.
 
 ## Realization log
 
