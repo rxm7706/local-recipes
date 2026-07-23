@@ -40,3 +40,4 @@ over all of them:
 - **2026-07-23** — persona defined in [[ecosystem-crew]]; chapter deck seeded
   (`presentations/pyforge-doctor/`). CLI awaits its `bmad-spec` run — the ideal
   small consolidative candidate.
+- **2026-07-23 (gist audit)** — grounding: the fleet health reports (v2 kept in the gist snapshot) are Doctor-shaped output — the monitor's voice before the persona had a name.

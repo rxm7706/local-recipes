@@ -38,3 +38,4 @@ and every family deck's PPTX becomes real, editable slides.
 - **2026-07-23** — designated the family PPTX engine; token-pipeline assets
   discovered and claimed. Awaits its `bmad-spec` run; air-gap posture per
   [[enterprise-airgap]].
+- **2026-07-23 (gist audit)** — its intake brief already exists: `docs/specs/gists/open-source-powerpoint-agent-skills/` — a BMAD-ready Project Intent for MIT/Apache pptx agent skills.

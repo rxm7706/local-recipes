@@ -41,3 +41,4 @@ verified against the same oracle.
 - **2026-07** — copilot-to-api research consolidated; extension spec waved.
 - **2026-07-23** — Dream retro-seeded; named as Herald's "BMAD everywhere"
   responsibility in [[ecosystem-crew]].
+- **2026-07-23 (gist audit)** — grounding: `docs/specs/gists/awesome-bmad-…/` (the curated BMAD ecosystem list) + `run-bmad-in-microsoft-copilot/` (declarative-agent setup for the 6 web bundles).
