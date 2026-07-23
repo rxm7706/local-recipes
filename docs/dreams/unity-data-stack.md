@@ -16,7 +16,7 @@ enterprise. Chosen standards, shared toolchain, faster delivery, consistency by
 construction. Where [[pyforge-genesis]] installs the *operating model*, Unity
 Data Stack is the *platform* an enterprise runs on it.
 
-## What exists (stranded across three gists, now snapshot in `docs/specs/gists/`)
+## What exists (stranded across three gists, now snapshot in `docs/intake/gists/`)
 
 - **The Constitution** (`spec-kit/`, 37 KB) — the spec-kit-format founding
   document: preamble, principles, standards for the innersource monorepo.

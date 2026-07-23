@@ -24,7 +24,7 @@ This is a **perpetual** dream: realized as a running factory, never "done."
   effort improve the skill (CLAUDE.md Rule 2).
 - **769 feedstocks** under maintenance; the staged-recipes campaign machinery
   (langflow suite, db-gpt, flyte, mindroom chains).
-- The **FastMCP tool surface** (30+ tools; `docs/mcp-server-architecture.md`) and
+- The **FastMCP tool surface** (30+ tools; `docs/reference/mcp-server-architecture.md`) and
   the atlas intelligence layer feeding it ([[pyforge-atlas]]).
 - Shipped intelligence releases: `lts-registry-gap`, `seed-gap-suggesters`,
   `cyclonedx-universe-inventory`, the `cfe-shipped-releases` archive.
@@ -49,4 +49,4 @@ This is a **perpetual** dream: realized as a running factory, never "done."
 - **2026-07-23** — Dream retro-seeded under the Dream-first model; roadmap
   aspirations folded in as the frontier. Chapters: [[pyforge-atlas]],
   [[pyforge-warden]], [[fleet-stewardship]], [[upstream-discovery]].
-- **2026-07-23 (gist audit)** — grounding: the SelfExplainML 36-package channel drop (third-party-channel publishing!) + the rattler-build macOS codesign-stub cross-compile trick (`docs/specs/gists/`).
+- **2026-07-23 (gist audit)** — grounding: the SelfExplainML 36-package channel drop (third-party-channel publishing!) + the rattler-build macOS codesign-stub cross-compile trick (`docs/intake/gists/`).

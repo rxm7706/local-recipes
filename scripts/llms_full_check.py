@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""llms-full-check — detect drift between pixi.toml and docs/library-llms-full.md.
+"""llms-full-check — detect drift between pixi.toml and docs/reference/library-llms-full.md.
 
-The catalog (docs/library-llms-full.md) is an LLM-authored derivative of
+The catalog (docs/reference/library-llms-full.md) is an LLM-authored derivative of
 pixi.toml. This detector is the cheap, deterministic half of the
 detector/reconciler loop (same pattern as bmad_drift_check.py):
 
@@ -29,7 +29,7 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 MANIFEST = REPO_ROOT / "pixi.toml"
-CATALOG = REPO_ROOT / "docs" / "library-llms-full.md"
+CATALOG = REPO_ROOT / "docs" / "reference" / "library-llms-full.md"
 
 # A catalog entry is "- **name** (spec)" on a bullet line; "a / b" name lists
 # share one spec. Prose bolds like "**pandera** (schemas)" are excluded by
@@ -135,7 +135,7 @@ def run() -> tuple[list[dict], dict]:
 def main() -> int:
     parser = argparse.ArgumentParser(
         prog="llms-full-check",
-        description="Detect drift between pixi.toml and docs/library-llms-full.md "
+        description="Detect drift between pixi.toml and docs/reference/library-llms-full.md "
                     "(the library catalog). Exits 1 on drift.")
     parser.add_argument("--json", action="store_true", help="machine-readable output")
     args = parser.parse_args()

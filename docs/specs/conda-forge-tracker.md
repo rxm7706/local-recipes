@@ -70,7 +70,7 @@ conda-forge packages across many feedstocks. Without a tracker:
 ### What's been ruled out
 
 - **Direct GitHub Issues.** Requires online access for every interaction;
-  not air-gap-friendly per `docs/enterprise-deployment.md` philosophy.
+  not air-gap-friendly per `docs/reference/enterprise-deployment.md` philosophy.
   Migration *to* GitHub Issues remains a deliberate future option.
 - **Existing community tools.** Survey of `conda-forge/`, `regro/`,
   `prefix-dev/`, and `conda-incubator/` orgs found no personal-tracker
@@ -728,7 +728,7 @@ explicit answers before implementation.
   source of `update_recipe`, `update_recipe_from_github`,
   `check_github_version`, `scan_for_vulnerabilities`, and
   `analyze_build_failure`. Bridged via `_cf_tools.py`.
-- **`docs/enterprise-deployment.md`** — air-gapped/Artifactory pattern;
+- **`docs/reference/enterprise-deployment.md`** — air-gapped/Artifactory pattern;
   informs the offline-friendly design.
 - **`docs/specs/copilot-bridge-vscode-extension.md`** — sibling BMAD
   spec; format reference.

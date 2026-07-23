@@ -193,7 +193,7 @@ this section instead of inline literals; re-verify with
     credential (`X-JFrog-Art-Api`) on every outbound request regardless of
     destination host — the documented workaround today is
     `unset JFROG_API_KEY` for non-JFrog commands
-    (`docs/enterprise-deployment.md`); the Kedro catalog scopes credentials
+    (`docs/reference/enterprise-deployment.md`); the Kedro catalog scopes credentials
     per host.
 *   **Data files** — runtime (gitignored, `.claude/data/conda-forge-expert/`):
     `cf_atlas.db`, `purl-export/`, `universe-sbom/`, `eol_cache.json`
@@ -647,7 +647,7 @@ The Vizro-AI dashboard and BSL layer compile to `duckdb-wasm`/Pyodide; Parquet a
 
 Every component (Kedro, Dagster, DuckDB, Ibis, …) is sourced from conda-forge and managed in a single `pixi.toml`, scaffolded by `nebi`. No standalone binaries or JVM. (§ 2.3, § 4.9.)
 
-The target stack is **already resolved in the `local-recipes` env** (`docs/library-llms-full.md` §§ 7–8): kedro ≥1.5 / kedro-datasets / kedro-dagster ≥0.7.0 / kedro-viz / kedro-mcp ≥0.1.2 (in-env; a wrapped sidecar per FR-7 — Candidate, not committed), dagster ≥1.13.13, duckdb ≥1.5.4, ibis ≥12 (+duckdb backend), boring-semantic-layer ≥0.3.15, vizro / vizro-ai / vizro-mcp — adoption is wiring, not dependency addition. The governing gates: the repo-wide **Python 3.14 floor** (every env; litellm is excluded for exactly this), the known pins (`tomlkit <0.13.3` for dagster-dg-core, the `structlog`/`sqlglot` BSL pins, the kedro-on-3.14 `PYTHONWARNINGS` suppression), and the **`llms-full-check` drift gate** — any dependency change updates `docs/library-llms-full.md` in the same PR or CI fails. Air-gapped provisioning covers **both routing layers**: `_http.py` for pipeline data AND the pixi/uv resolver via `.pixi/config.toml` `[pypi-config]` (JFrog index, `tls-root-certs`, sharded-repodata disable, the `files.pythonhosted.org` bypass — `docs/enterprise-deployment.md` § 4).
+The target stack is **already resolved in the `local-recipes` env** (`docs/reference/library-llms-full.md` §§ 7–8): kedro ≥1.5 / kedro-datasets / kedro-dagster ≥0.7.0 / kedro-viz / kedro-mcp ≥0.1.2 (in-env; a wrapped sidecar per FR-7 — Candidate, not committed), dagster ≥1.13.13, duckdb ≥1.5.4, ibis ≥12 (+duckdb backend), boring-semantic-layer ≥0.3.15, vizro / vizro-ai / vizro-mcp — adoption is wiring, not dependency addition. The governing gates: the repo-wide **Python 3.14 floor** (every env; litellm is excluded for exactly this), the known pins (`tomlkit <0.13.3` for dagster-dg-core, the `structlog`/`sqlglot` BSL pins, the kedro-on-3.14 `PYTHONWARNINGS` suppression), and the **`llms-full-check` drift gate** — any dependency change updates `docs/reference/library-llms-full.md` in the same PR or CI fails. Air-gapped provisioning covers **both routing layers**: `_http.py` for pipeline data AND the pixi/uv resolver via `.pixi/config.toml` `[pypi-config]` (JFrog index, `tls-root-certs`, sharded-repodata disable, the `files.pythonhosted.org` bypass — `docs/reference/enterprise-deployment.md` § 4).
 
 ### FR-16. Dependency-hygiene scan node (deptry) in the Universal SBOM pipeline
 
@@ -1090,7 +1090,7 @@ Added dimension (2026-07-16): **re-verify the Dagster bet itself at Wave C start
 
 Which model backend powers Vizro-AI's NL→pandas compilation, and does it respect the repo's enterprise / air-gapped routing (JFrog, internal mirrors) per `_http.py`?
 
-Known bounds (docs corpus): `vizro-ai` ≥0.4.1 is already in-env; `litellm` is deliberately absent (its proxy stack breaks on the repo's Python 3.14 floor); the copilot-api bridge (`docs/copilot-to-api.md`) is single-developer / TOS-bound — **not eligible** as a shared or enterprise backend; in-env local OpenAI-compatible options are llama.cpp (`llama-server`), ollama, and mlx-lm. No LLM analog of the `_http.py` routing chain exists yet — defining one is the actual work behind this question.
+Known bounds (docs corpus): `vizro-ai` ≥0.4.1 is already in-env; `litellm` is deliberately absent (its proxy stack breaks on the repo's Python 3.14 floor); the copilot-api bridge (`docs/reference/copilot-to-api.md`) is single-developer / TOS-bound — **not eligible** as a shared or enterprise backend; in-env local OpenAI-compatible options are llama.cpp (`llama-server`), ollama, and mlx-lm. No LLM analog of the `_http.py` routing chain exists yet — defining one is the actual work behind this question.
 
 **Default**: route through the existing repo model-backend configuration; do not hardcode a public LLM endpoint.
 
@@ -1243,7 +1243,7 @@ deliberately not ingested (reason in § 12 or the row).
 | `spec-kit` | Agent framework | — (rejected, § 7.3) | Excluded |
 
 The Committed pipeline stack above is **already resolved in the
-`local-recipes` env** (`docs/library-llms-full.md` §§ 7–8) — adoption is
+`local-recipes` env** (`docs/reference/library-llms-full.md` §§ 7–8) — adoption is
 wiring, not dependency addition; the `llms-full-check` drift gate and the
 Python 3.14 floor govern any change (FR-15).
 
@@ -1267,9 +1267,9 @@ MCP · A2A · OpenLineage / OTel semantics.
 - `docs/specs/cyclonedx-universe-inventory.md` (shipped) — the 7-CLI suite, purl conventions, freshness gate, and bucket semantics FR-13/FR-17 preserve.
 - `docs/specs/pyforge-warden.md` (in-progress) — the `pyforge.warden` v1 build whose `ComplianceReport` schema + exit-code gate FR-16/FR-18 anticipate.
 - `CLAUDE.md` § "BMAD ↔ conda-forge-expert integration" — Rule 1 + Rule 2 governing this BMAD effort.
-- `docs/library-llms-full.md` — the env catalog + `llms-full-check` drift gate governing FR-15 / Story A1.
-- `docs/enterprise-deployment.md` — JFrog / air-gap procedures, incl. the pixi/uv `[pypi-config]` routing layer (FR-15) and the `_http.py` routing tables + credential-scoping defect FR-1 fixes.
-- `docs/mcp-server-architecture.md` — the FastMCP server + PyPI↔conda name-mapping cache subsystem (FR-7, Q6).
+- `docs/reference/library-llms-full.md` — the env catalog + `llms-full-check` drift gate governing FR-15 / Story A1.
+- `docs/reference/enterprise-deployment.md` — JFrog / air-gap procedures, incl. the pixi/uv `[pypi-config]` routing layer (FR-15) and the `_http.py` routing tables + credential-scoping defect FR-1 fixes.
+- `docs/reference/mcp-server-architecture.md` — the FastMCP server + PyPI↔conda name-mapping cache subsystem (FR-7, Q6).
 - `docs/specs/bmad-loop-adoption.md` — the adopted execution stack § 2.5 runs on.
 - `docs/specs/trendshift-conda-forge.md` — the conditional Phase T surface (§ 3.3).
 - `presentations/pyforge-warden/src/marp/pyforge-warden-infographic-2026-07-15.md` — the integration-surface slot/status matrix pattern §§ 13.1–13.3 adopt.

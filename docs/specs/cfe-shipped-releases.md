@@ -5355,7 +5355,7 @@ ALTER TABLE package_version_downloads ADD COLUMN source TEXT;
   — Phase F row gets the new aggregate tables and CLIs.
 - `.claude/skills/conda-forge-expert/quickref/commands-cheatsheet.md`
   — env-var matrix lands here.
-- `docs/enterprise-deployment.md` — JFrog routing context; the air-gap
+- `docs/reference/enterprise-deployment.md` — JFrog routing context; the air-gap
   case study this spec resolves.
 
 ### External
