@@ -38,6 +38,7 @@ from pathlib import Path
 PROJECT_SOURCES = {
     "warden": "_bmad-output/projects/pyforge-warden/implementation-artifacts/sprint-status.yaml",
     "atlas": "_bmad-output/projects/pyforge-atlas/implementation-artifacts/sprint-status.yaml",
+    "regen": "_bmad-output/projects/local-recipes/implementation-artifacts/sprint-status.yaml",
 }
 
 # git-history DONE detection (used by --source git). Verified against main's subjects.
@@ -49,6 +50,8 @@ _WARDEN_DONE = re.compile(r"Merge bmad-loop/[^/]+/(\d+-\d+)-")
 # G/H tail uses bare `GN:` / `HN:` subjects instead.
 _ATLAS_STORY = re.compile(r"story\((\w[\w.]*)\)")
 _ATLAS_GH = re.compile(r"\b([GH]\d+):")
+# Regenerable-factory program: per-story commits `rf(<id>): …` on main.
+_RF_STORY = re.compile(r"\brf\((\d+\.\w+)\):")
 
 HERE = Path(__file__).resolve().parent
 DATA_JS = HERE / "data.js"
@@ -143,6 +146,8 @@ def done_ids_from_git(branch: str) -> set[str]:
             done.add(a.group(1))  # A1, B10, 0.1, F4 ...
         for a in _ATLAS_GH.finditer(line):
             done.add(a.group(1))  # G3, H1, H2 ...
+        for a in _RF_STORY.finditer(line):
+            done.add(a.group(1))  # 1.1, 4.R ...
     return done
 
 
