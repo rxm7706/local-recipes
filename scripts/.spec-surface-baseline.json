@@ -1,0 +1,19 @@
+{
+ "spec-design-code-bridge": {
+  "files": {
+   "scripts/deck_export.py": "dca2ed6dfd8cdd2a576b1ee56da9d6ff9b2645df"
+  },
+  "memlog": "f64ecd4351c32336480ac064257c6bf716c75126"
+ },
+ "spec-multi-loop-isolation": {
+  "files": {
+   "scripts/bmad-loop-worktree": "071066e03f89aac6e0f63c58de938092d3c2ddc7",
+   "scripts/bmad-switch": "11a7733cd109ee6c0d940e11e6ef2c412b68613c"
+  },
+  "memlog": "2a8f29421ec3cd921e2f45bd480b31f5ad270720"
+ },
+ "spec-regenerable-factory": {
+  "files": {},
+  "memlog": "fb58b9190954661df18eec973868640b239baa0d"
+ }
+}
