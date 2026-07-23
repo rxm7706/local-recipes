@@ -9,3 +9,8 @@ contract → never here (BMAD planning-artifacts).
 
 - `gists/` — the 2026-07-23 snapshot of @rxm7706's gists (see its `INDEX.md`;
   13 of 30 already archived, the rest cited as Dream grounding).
+- `sentinel/` — repatriated Sentinel evidence (never-shipped COMMIT_MSG + PR_BODY
+  + provenance/etag map), staged for Sentinel's activation (`docs/dreams/sentinel.md`).
+- `agentic-sdlc/` — the four-views white paper, infographic + masterclass HTMLs,
+  and updated Marp draft, staged for the `presentations/agentic-sdlc` four-views
+  refresh (`docs/dreams/agentic-sdlc-autonomy.md`).

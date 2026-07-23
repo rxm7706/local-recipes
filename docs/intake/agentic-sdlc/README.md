@@ -1,6 +1,6 @@
 # agentic-sdlc-autonomy — companion source material
 
-Companions for the [`agentic-sdlc-autonomy`](../agentic-sdlc-autonomy.md) Dream,
+Companions for the [`agentic-sdlc-autonomy`](../../dreams/agentic-sdlc-autonomy.md) Dream,
 dropped 2026-07-23 (relocated from `docs/specs/` flat where they redded the spec
 detector):
 

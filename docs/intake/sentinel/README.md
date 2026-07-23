@@ -1,6 +1,6 @@
 # Sentinel — repatriated evidence & provenance map
 
-Companion assets for the [`sentinel`](../sentinel.md) Dream. On 2026-04-19 the
+Companion assets for the [`sentinel`](../../dreams/sentinel.md) Dream. On 2026-04-19 the
 Sentinel v2.1 effort produced a complete, reviewer-ready release — and never
 landed in any repository. These files are the recovered evidence, pulled through
 the Design↔Code bridge on 2026-07-23.
@@ -24,7 +24,7 @@ Design project **"LLM Knowledge Bases"** (`fca0375d-4244-41e5-afae-fb59992ce346`
 | `Sentinel-Stakeholder-Deck-v2026-04-19-2.html` (12 slides) | 19,017 B | `1776605110286489` | ditto |
 | `LLM Knowledge Bases.html` (origin essay deck) | 113,016 B | `1776608402058367` | ditto |
 | `archive/` (6 superseded docs + index) | ~260 KB | — | Superseded by v2.1 (its header folds them in) |
-| `tokens/` + `scripts/` (design-tokens pipeline) | ~45 KB | — | Claimed by [`modernist-identity`](../modernist-identity.md) / [`deckcraft`](../deckcraft.md) — lands with deckcraft's intake |
+| `tokens/` + `scripts/` (design-tokens pipeline) | ~45 KB | — | Claimed by [`modernist-identity`](../../dreams/modernist-identity.md) / [`deckcraft`](../../dreams/deckcraft.md) — lands with deckcraft's intake |
 | `screenshots/`, `uploads/` (incl. 6.7 MB PNG) | ~8 MB | — | Binaries; regenerable/reference only |
 
 ## Provenance
@@ -32,4 +32,4 @@ Design project **"LLM Knowledge Bases"** (`fca0375d-4244-41e5-afae-fb59992ce346`
 Origin: a 2026-04-18 essay on LLM-powered personal knowledge bases → deck
 ("dark terminal" aesthetic) → 24 hours later, the consolidated v2.1 build spec
 (BMAD-METHOD v6.3.x, spec-kit format, "Ready for Implementation"). Methodology
-and full lineage: the [`sentinel`](../sentinel.md) Dream.
+and full lineage: the [`sentinel`](../../dreams/sentinel.md) Dream.
