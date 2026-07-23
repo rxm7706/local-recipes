@@ -1,1 +1,62 @@
-[]
+[
+  {
+    "id": "01-cover",
+    "label": "Cover",
+    "notes": "One line: Herald is the visual media and communications engine of the pyforge Dream-to-Code factory — the first to touch the Dream and the last voice in the pipeline. Its first organ, the Design↔Code bridge, is already real.",
+    "bg": "#f3f2f2"
+  },
+  {
+    "id": "02-act-i-the-proclaimer",
+    "label": "Act I — The Proclaimer",
+    "notes": "Act I: who Herald is. Herald bookends the pipeline — it renders the Dream into The Deck before the factory spins, and returns as the megaphone after the crew ships.",
+    "bg": "#201e1d"
+  },
+  {
+    "id": "03-invisible-engineering-is-failed-engineering",
+    "label": "Invisible engineering is failed engineering",
+    "notes": "Mindset one: high-impact visibility. Herald rejects dry, unreadable raw logs and distills pipeline telemetry into scannable, visually striking dashboards and briefings that reflect the original vision.",
+    "bg": "#f3f2f2"
+  },
+  {
+    "id": "04-proactive-synthesis",
+    "label": "Proactive synthesis",
+    "notes": "Mindset two: Herald is a story-driven synthesizer. It aggressively pulls data from the rest of the crew and stitches fragmented changelogs, audit metrics and build statuses into one cohesive narrative.",
+    "bg": "#f3f2f2"
+  },
+  {
+    "id": "05-act-ii-the-organs",
+    "label": "Act II — The organs",
+    "notes": "Act II: the working machinery. Herald is not all aspiration — its first organ, the Design↔Code bridge, is already realized and documented.",
+    "bg": "#201e1d"
+  },
+  {
+    "id": "06-the-design-code-bridge-realized",
+    "label": "The Design–Code bridge — realized",
+    "notes": "The first organ, realized 2026-07-23: Claude Design and Claude Code as one continuous surface. Seed a Design project from the repo, design visually, pull the prototype back — extract, build, export. Zero downloads; etags catch conflicts. Piloted with the Marshal deck.",
+    "bg": "#f3f2f2"
+  },
+  {
+    "id": "07-act-iii-the-reach",
+    "label": "Act III — The reach",
+    "notes": "Act III: Herald's reach — one method carried to every surface, every agent, every audience.",
+    "bg": "#201e1d"
+  },
+  {
+    "id": "08-bmad-everywhere",
+    "label": "BMAD everywhere",
+    "notes": "Herald ships the CLI that wires BMAD into monorepos and runs multiple projects simultaneously — registration, switching, per-project isolation. And it keeps the method tool-agnostic: Devin, GitHub Copilot and its agents, Claude, Cursor — never vendor-locked.",
+    "bg": "#f3f2f2"
+  },
+  {
+    "id": "09-the-megaphone",
+    "label": "The megaphone",
+    "notes": "Step 6: after the crew ships, Herald harvests the telemetry — Atlas and Warden outputs become infographics, commit deltas become weekly briefs, and the notables broadcast to every channel: Slack, email, wikis.",
+    "bg": "#f3f2f2"
+  },
+  {
+    "id": "10-make-the-factory-seen",
+    "label": "Make the factory seen",
+    "notes": "Close: invisible engineering is failed engineering. Herald exists so the dream is illustrated before the work, and the work is proclaimed after the ship.",
+    "bg": "#ec3013"
+  }
+]

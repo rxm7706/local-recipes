@@ -45,3 +45,10 @@ mirrors to the URL hash (`#/12`).
 Display brand **Marshal** on the slides; distribution slug `pyforge-marshal` in paths.
 Engine files must stay **byte-identical** across every deck — apply any engine fix
 to all decks in the same change (`diff -q` to prove it).
+
+## Design project (the bridge's far end)
+
+Prototype lives in Claude Design project **"PyForge Marshal deck"** (`ad84d4f6-c292-42c8-98bf-ede78a567773`):
+https://claude.ai/design/p/ad84d4f6-c292-42c8-98bf-ede78a567773?file=PyForge+Marshal.dc.html
+Pull it into this deck with the MCP bridge ("pull marshal") — see
+`docs/specs/presentation-deck.md` § *The MCP bridge*.

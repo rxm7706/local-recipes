@@ -45,3 +45,10 @@ mirrors to the URL hash (`#/12`).
 Display brand **Doctor** on the slides; distribution slug `pyforge-doctor` in paths.
 Engine files must stay **byte-identical** across every deck — apply any engine fix
 to all decks in the same change (`diff -q` to prove it).
+
+## Design project (the bridge's far end)
+
+Prototype lives in Claude Design project **"PyForge Doctor deck"** (`46dbbdea-6f8d-45c6-9309-15d1f297beeb`):
+https://claude.ai/design/p/46dbbdea-6f8d-45c6-9309-15d1f297beeb?file=PyForge+Doctor.dc.html
+Pull it into this deck with the MCP bridge ("pull doctor") — see
+`docs/specs/presentation-deck.md` § *The MCP bridge*.
