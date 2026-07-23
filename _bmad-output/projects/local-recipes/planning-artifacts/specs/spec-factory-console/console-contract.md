@@ -71,7 +71,11 @@ the module docstring.
   missing → print a WARN naming the file (value passed through raw; the
   front-end buckets unknowns under seeded). Missing owner → WARN.
 - Output: `data["dreams"] = [{"slug": stem, "title": title or stem,
-  "status": status or "", "owner": owner or ""}, ...]` in filename order.
+  "status": status or "", "owner": owner or "", "chain": <chain>}, ...]` in
+  filename order, where `<chain>` is a dict of exact-slug drill-through links
+  (keys present only when the path exists): `deck` → `presentations/<slug>`,
+  `spec` → the first `_bmad-output/projects/*/planning-artifacts/specs/spec-<slug>`
+  match (repo-relative), `project` → `_bmad-output/projects/<slug>`.
 - Print a summary: count + per-status tallies.
 
 ## Snapshot stamp

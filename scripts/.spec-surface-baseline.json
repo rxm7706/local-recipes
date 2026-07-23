@@ -15,11 +15,10 @@
  "spec-factory-console": {
   "files": {
    "docs/dashboard/README.md": "0825c973586fc6c811a3f28f94b58dc84bb0d81b",
-   "docs/dashboard/data.js": "ba90b35131ed012e1a1b7bdc7e273f012d72c4df",
-   "docs/dashboard/generate.py": "51d14da53c11e6ee6191484cc79fadca1a92d230",
-   "docs/dashboard/index.html": "8db429822871c3e50c4aee8fb9db2f8d5f49eb6f"
+   "docs/dashboard/generate.py": "6f6bedf7aa4f89cd75182453bdcf026840f08b6e",
+   "docs/dashboard/index.html": "bef851b9fb2c5e46de3be424f89a42b6597d03c2"
   },
-  "memlog": "133236e486246001380a8f510093dadf578fcac9"
+  "memlog": "9ba5cc272f5ac97e54a4574ae4465e9413ea9ec0"
  },
  "spec-fleet-stewardship": {
   "files": {},
@@ -745,6 +744,7 @@
    ".claude/skills/conda-forge-expert/tests/meta/test_recipe_yaml_parse_audit.py": "0eed377f4c1d1d49727d2d44e9271c08b8d47891",
    ".claude/skills/conda-forge-expert/tests/meta/test_recipe_yaml_schema_header.py": "54b57ab14b4e154515b2a3c0e1cd8e66256d197d",
    ".claude/skills/conda-forge-expert/tests/meta/test_skill_md_consistency.py": "d4485259a2d1ae9c83e6016681e1187a26a8eb6f",
+   ".claude/skills/conda-forge-expert/tests/meta/test_spec_surface_check.py": "d44047c079df04ef690c1897dcfada51466071a7",
    ".claude/skills/conda-forge-expert/tests/pytest.ini": "6253aa543e8c7a2b1fd6e13cea99c64767d48b4c",
    ".claude/skills/conda-forge-expert/tests/run_skill_suite.py": "78de5e37d17b36cb46a6a58d2542836faccd4c44",
    ".claude/skills/conda-forge-expert/tests/unit/test_add_handoff.py": "e0326684cea99d3c57139a43d117e33af89efcbd",
@@ -1239,8 +1239,8 @@
  },
  "spec-regenerable-factory": {
   "files": {
-   "scripts/spec_surface_check.py": "895f00796f81bffc24791ccbf5564dde2022d7dc"
+   "scripts/spec_surface_check.py": "fb8f602817c5af01ca7e9a9c0725c78485d96f93"
   },
-  "memlog": "32579102c2cea58be021ee2ca942cbbabc34f06d"
+  "memlog": "8f8933dafeb4bcca23000d96527d23b71ed2cbd5"
  }
 }

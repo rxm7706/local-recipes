@@ -1,6 +1,6 @@
 ---
 spec: regenerable-factory
-status: ready
+status: shipped
 owner-dream: docs/dreams/regenerable-factory.md
 companions:
   - waves.md

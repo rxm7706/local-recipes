@@ -5,6 +5,8 @@ owner-dream: docs/dreams/factory-console.md
 program: regenerable-factory (Wave 2)
 surface:
   - docs/dashboard/**
+surface-drift-exclude:
+  - docs/dashboard/data.js   # generated on every dashboard-gen run (regenerate-at-will)
 companions:
   - console-contract.md
 sources:

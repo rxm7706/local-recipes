@@ -62,7 +62,8 @@ def parse_surface(spec_md: Path) -> tuple[list[str], str]:
     CHANGELOG the surface's own process maintains), "exempt" (coverage-only;
     for product-churn surfaces — always printed, never silent).
     """
-    globs, drift, in_fm, in_surface = [], "memlog", False, False
+    globs, excludes, drift = [], [], "memlog"
+    in_fm, section = False, None
     for line in spec_md.read_text(encoding="utf-8").splitlines():
         if line.strip() == "---":
             if in_fm:
@@ -71,16 +72,20 @@ def parse_surface(spec_md: Path) -> tuple[list[str], str]:
             continue
         if not in_fm:
             continue
-        if in_surface:
-            if line.startswith("  - "):
-                globs.append(line[4:].split("#", 1)[0].strip())
-                continue
-            in_surface = False
+        if section and line.startswith("  - "):
+            (globs if section == "surface" else excludes).append(
+                line[4:].split("#", 1)[0].strip())
+            continue
+        section = None
         if line.startswith("surface:"):
-            in_surface = True
+            section = "surface"
+        elif line.startswith("surface-drift-exclude:"):
+            # generated artifacts inside a governed surface: still covered,
+            # but excluded from the drift hash (regenerate-at-will).
+            section = "exclude"
         elif line.startswith("surface-drift:"):
             drift = line.split(":", 1)[1].split("#", 1)[0].strip()
-    return globs, drift
+    return globs, excludes, drift
 
 
 def load_allowlist() -> list[tuple[str, str]]:
@@ -114,11 +119,12 @@ def main() -> int:
     specs: dict[str, dict] = {}
     for spec_md in sorted(REPO_ROOT.glob(SPEC_GLOB)):
         name = spec_md.parent.name
-        globs, drift = parse_surface(spec_md)
+        globs, excludes, drift = parse_surface(spec_md)
         specs[name] = {
             "spec": spec_md,
             "globs": globs,
             "drift": drift,
+            "exclude": set(excludes),
             "res": [glob_to_re(g) for g in globs],
             "memlog": spec_md.parent / ".memlog.md",
         }
@@ -166,7 +172,7 @@ def main() -> int:
             "memlog": contract_hash(s),
             "files": {} if s["drift"] == "exempt" else
                      {f: sha1(REPO_ROOT / f) for f in sorted(governed.get(name, []))
-                      if (REPO_ROOT / f).is_file()},
+                      if f not in s["exclude"] and (REPO_ROOT / f).is_file()},
         }
         for name, s in specs.items()
     }
