@@ -58,10 +58,16 @@ contract; the Dream is the "why" behind it.
   ```
 
 - Keep it aspirational and readable — a Dream is a narrative, not a task list.
+- **`realized` is not exempt from the chain.** Per
+  [`regenerable-factory.md`](regenerable-factory.md), a Dream that shipped
+  before the model existed gets its PRD/spec **backfilled** (BMAD brownfield
+  flow), so future change flows idea → spec → BMAD and drift checks can bind
+  the code to its contract. The Realization log records the evidence either way.
 
 ## Dreams
 
-23 Dreams as of 2026-07-23 (2 born Dream-first; 17 retro-seeded from a complete
+24 Dreams as of 2026-07-23 (3 born Dream-first — the regenerable factory among
+them; 17 retro-seeded from a complete
 repo + Design-workspace audit — the factory console among them; 2 persona
 dreams added when the ownership audit
 grew the crew 6 → 8; 2 recovered from the gist audit (a third, local-ai hardware, was judged out-of-repo scope and archived)). **No-straggler policy:** every BMAD project, deck, Design
@@ -95,6 +101,7 @@ project, and spec maps to exactly one Dream; the herald CLI's status capability
 |---|---|---|
 | [`fleet-stewardship.md`](fleet-stewardship.md) | realized · perpetual | Tend every touchable feedstock: refresh tracks, platform expansion, failure remediation — recurring waves, never finished. |
 | [`upstream-discovery.md`](upstream-discovery.md) | seeded | Sense what the world is building (trending + org audits, atlas Phase T) and package it before it's asked for. |
+| [`regenerable-factory.md`](regenerable-factory.md) | seeded | Backfill Dream→PRD→spec chains under every realized surface (BMAD brownfield) so the factory can change any code through the pipeline; drift checks on all code; the regeneration drill as proof. |
 
 **Capabilities**
 
