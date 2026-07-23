@@ -1,6 +1,6 @@
 ---
 spec: multi-loop-isolation
-status: ready
+status: shipped
 owner-dream: docs/dreams/pyforge-marshal.md
 program: regenerable-factory (Wave 0)
 companions: []

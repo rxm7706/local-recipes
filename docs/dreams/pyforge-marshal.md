@@ -78,3 +78,8 @@ visible. Anti-vibe, by construction.
 - **2026-07-17/18** — atlas proven: a full system shipped unattended-with-gates.
 - **2026-07-23** — Dream retro-seeded; chapter deck seeded; origin plan
   `docs/bmad-setup-plan.md` (also the seed of [[pyforge-genesis]]).
+- **2026-07-23 (later)** — concurrent-loop isolation SHIPPED as
+  [[regenerable-factory]] Wave 0: worktree-aware `bmad-switch` (Tier-3
+  backlink) + `scripts/bmad-loop-worktree` (provision / --verify / --remove);
+  live proof `--verify pyforge-warden deckcraft` → ISOLATION OK. Spec:
+  `spec-multi-loop-isolation` (local-recipes planning-artifacts).
