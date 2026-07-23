@@ -74,9 +74,41 @@ a deck about the deck engine.
 
 ## Claude Design ↔ repo handoff (operating playbook)
 
-The friction in this workflow is the boundary between a **Claude Design** session
-(where slides are authored) and the **local repo** (where they're wired, built,
-and shipped). This is the concrete hand-off, learned across Worked Examples 1–3.
+The boundary in this workflow is between a **Claude Design** session (where
+slides are authored visually) and the **local repo** (where they're wired,
+built, and shipped).
+
+### The MCP bridge (canonical since 2026-07-23 — no manual downloads)
+
+When a Claude Code session has the **`claude-design` MCP server** connected
+(`/design-login`), the boundary is crossed by tools, not downloads — the Dream
+behind this: **`docs/dreams/design-code-bridge.md`** (piloted with the Marshal
+deck). The loop:
+
+1. **Seed (repo → Design):** author or update the contract-compliant starter
+   `.dc.html` locally; **prove it** (`npm run extract` + `npm run build`); then
+   `create_project` (bind `design_system_id` = **Modernist**,
+   `fbc1d6c8-b35f-4df6-9044-a64d2675427b`), `finalize_plan` the write paths,
+   `create_support_js` at root, `copy_files` a `deck-stage.js` from an existing
+   deck project, and `write_files` the prototype (`if_match: "0"` for new).
+   Share only the `claude.ai/design/...?file=` link.
+2. **Design (human):** the user iterates visually in Claude Design.
+3. **Pull (Design → repo):** on "pull <persona>", `read_file` the prototype with
+   `if_none_match` = the last-seen etag — `{unchanged:true}` means the repo is
+   already current; otherwise **decode the HTML-entity-escaped body**
+   (`&amp; &lt; &gt;` → `& < >`), write it to
+   `presentations/<slug>/project/<Deck>.dc.html`, re-run
+   `extract` → `build` → `deck-export`, and commit.
+
+Discipline: thread **etags** through every read/write (`if_match` /
+`if_none_match`) so a concurrent Design edit conflicts instead of being
+clobbered; only the **prototype** crosses the bridge — never a mirrored app tree
+(the retired *"Local recipes repository connection"* project is the cautionary
+tale); `get_claude_design_prompt` is mandatory before any `write_files`.
+
+### Manual handoff (fallback — no MCP bridge in the session)
+
+This is the original hand-off, learned across Worked Examples 1–3.
 
 **What a Claude Design session hands off (per deck):**
 - **One `.dc.html` prototype** — the React deck's source of truth and the *only*

@@ -155,6 +155,7 @@ For extended architectural context, please reference the centralized `docs/` fol
 - **`docs/enterprise-deployment.md`** — Air-gapped environments and JFrog Artifactory integration.
 - **`docs/developer-guide.md`** — Local testing and general recipe development guidelines.
 - **`docs/copilot-to-api.md`** — Five ways to drive a GitHub Copilot subscription as a local model backend (`copilot-api`, `litellm`, `copilot-openai-api`, `copilot-api-proxy`, `c2p`); decision tree, auth flows, configuration reference.
+- **`docs/dreams/design-code-bridge.md`** + **`docs/specs/presentation-deck.md`** § *The MCP bridge* — decks/prototypes round-trip between Claude Design and the repo via the `claude-design` MCP tools (seed → design visually → pull → extract/build/`deck-export`); no manual downloads. Piloted 2026-07-23 (Marshal deck).
 - **`docs/library-llms-full.md`** — LLM/agent-facing catalog of every library and CLI in the pixi environments: capabilities, version pins, import-name gotchas, env membership, and what is deliberately NOT installed. Derived from `pixi.toml` (regeneration prompt in its header) — consult before importing a library or proposing a new dependency. Drift detector: `pixi run -e local-recipes llms-full-check` (exits non-zero when the catalog is stale; reconcile by regenerating).
 
 ### Intake specs (`docs/specs/` — LEGACY Tier 1, being phased out)

@@ -62,3 +62,4 @@ build contract; the Dream is the "why" behind it.
 | Dream | What it is |
 |---|---|
 | [`ecosystem-crew.md`](ecosystem-crew.md) | **The founding Dream** — the Ecosystem Crew: the six personas (Herald · Marshal · Atlas · Warden · Mason · Doctor) that run the pyforge "Dream to Code" factory, and the pipeline that carries a Dream from vision to shipped release. |
+| [`design-code-bridge.md`](design-code-bridge.md) | **The Design↔Code Bridge** — Claude Design and Claude Code as one continuous surface: seed a Design project from the repo, design visually, pull the prototype back, extract → build → ship. Herald's first organ; piloted 2026-07-23 with the Marshal deck. |
