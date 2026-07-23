@@ -74,6 +74,22 @@ Keeping the Dream → spec handoff portable across agents is **Herald's** job.
   legacy `docs/specs/` file for an existing effort.
 - `implementation-artifacts/` is gitignored/local-only — **nothing there should be git-tracked.**
 
+## Claude Design ↔ repo bridge (decks, prototypes)
+
+When the session has the **`claude-design` MCP server** connected (`/design-login` in Claude
+Code), visual artifacts round-trip by **tools, not downloads** — never ask the user to manually
+export/copy a Design file. Dream: `docs/dreams/design-code-bridge.md`; full procedure:
+`docs/specs/presentation-deck.md` § *The MCP bridge*. In short:
+
+- **Seed:** prove the prototype locally (`extract` + `build`), then `create_project` (bind the
+  **Modernist** design system for pyforge persona decks), `finalize_plan`, `create_support_js`,
+  `copy_files` a `deck-stage.js`, `write_files` the `.dc.html`.
+- **Pull:** `read_file` with `if_none_match` (unchanged → repo already current); decode the
+  entity-escaped body; land it in `presentations/<slug>/project/`; re-extract, rebuild,
+  `deck-export`, commit.
+- **Discipline:** etags on every read/write; only the prototype crosses (never a mirrored app
+  tree); `get_claude_design_prompt` before any write; share only `claude.ai/design/...` links.
+
 ## Library catalog (what's available to import/run)
 
 **`docs/library-llms-full.md`** is the llms-full-style catalog of every library, CLI, and
