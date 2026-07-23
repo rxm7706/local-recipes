@@ -1,1 +1,62 @@
-[]
+[
+  {
+    "id": "01-cover",
+    "label": "Cover",
+    "notes": "One line: Mason is the practical builder of the pyforge factory — once Atlas has mapped the landscape and Warden has cleared the perimeter, Mason binds raw software ingredients into concrete, production-ready structures. Behind the persona stands a working forge: 769 feedstocks.",
+    "bg": "#f3f2f2"
+  },
+  {
+    "id": "02-act-i-the-artisan",
+    "label": "Act I — The Artisan",
+    "notes": "Act I: who Mason is. The practical builder — after the map and the perimeter comes the binding: raw ingredients into unyielding structures.",
+    "bg": "#201e1d"
+  },
+  {
+    "id": "03-dual-ecosystem-mastery",
+    "label": "Dual-ecosystem mastery",
+    "notes": "Mindset one: PyPI and Conda are complementary building blocks, not rivals. PyPI for fast pure-Python agility; Conda for heavy analytics, compiled C-extensions, and hardware-accelerated platforms.",
+    "bg": "#f3f2f2"
+  },
+  {
+    "id": "04-structural-integrity",
+    "label": "Structural integrity",
+    "notes": "Mindset two: Mason rejects brittle runtime environments. Everything is deterministic, binary-compatible, and reproducible — developer needs converted into unyielding cross-platform structures.",
+    "bg": "#f3f2f2"
+  },
+  {
+    "id": "05-act-ii-the-craft",
+    "label": "Act II — The craft",
+    "notes": "Act II: the craft itself — recipes, releases, and environment binding.",
+    "bg": "#201e1d"
+  },
+  {
+    "id": "06-the-three-crafts",
+    "label": "The three crafts",
+    "notes": "The three crafts and their CLI: recipe crafting (v1 recipe.yaml — selectors, multi-outputs, skips), library distribution (simultaneous wheel + conda release), environment binding (unified lockfiles across pip and conda).",
+    "bg": "#f3f2f2"
+  },
+  {
+    "id": "07-act-iii-the-forge-today",
+    "label": "Act III — The forge today",
+    "notes": "Act III: unlike most visions, Mason's forge is already running at scale — the AI-assisted conda-forge packaging factory behind this repo.",
+    "bg": "#201e1d"
+  },
+  {
+    "id": "08-a-working-forge",
+    "label": "A working forge",
+    "notes": "Mason's real grounding: the AI-assisted packaging factory — 769 maintained feedstocks, the full staged-recipes lifecycle from generation to PR submission, and the modern rattler-build + pixi toolchain.",
+    "bg": "#f3f2f2"
+  },
+  {
+    "id": "09-ship-to-both-worlds",
+    "label": "Ship to both worlds",
+    "notes": "The payoff: one release, two registries — the same library lands as wheel and conda package from one synchronized pipeline; one lockfile serves every platform. Downstream usability maximized.",
+    "bg": "#f3f2f2"
+  },
+  {
+    "id": "10-we-ship-the-structure",
+    "label": "We ship the structure",
+    "notes": "Close on the motto: we forge the blocks, we bind the environment, we ship the structure. Hand the pristine artifacts to Herald for the proclamation.",
+    "bg": "#ec3013"
+  }
+]

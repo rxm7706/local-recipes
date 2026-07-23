@@ -1,1 +1,62 @@
-[]
+[
+  {
+    "id": "01-cover",
+    "label": "Cover",
+    "notes": "One line: Doctor is the health and diagnostics authority of the pyforge factory — sound machinery before the run, a finger on the fleet's pulse after the ship. Its instruments already exist across atlas and warden; Doctor is the consolidation.",
+    "bg": "#f3f2f2"
+  },
+  {
+    "id": "02-act-i-the-physician",
+    "label": "Act I — The Physician",
+    "notes": "Act I: who Doctor is. It verifies the machinery is sound before the factory runs, and keeps monitoring the shipped estate afterward — diagnosing faults early, prescribing the fix before an outage.",
+    "bg": "#201e1d"
+  },
+  {
+    "id": "03-preventive-vigilance",
+    "label": "Preventive vigilance",
+    "notes": "Mindset one: a fault caught in triage is cheaper than one caught in production. The self-check runs before the factory spins — a missing engine or broken config fails fast, never mid-build.",
+    "bg": "#f3f2f2"
+  },
+  {
+    "id": "04-continuous-pulse",
+    "label": "Continuous pulse",
+    "notes": "Mindset two: never one-and-done. Once packages ship, Doctor keeps watching — freshness and drift, new advisories, abandonment signals — surfacing regressions the moment they appear.",
+    "bg": "#f3f2f2"
+  },
+  {
+    "id": "05-act-ii-the-practice",
+    "label": "Act II — The practice",
+    "notes": "Act II: the practice — the three duties and their CLI.",
+    "bg": "#201e1d"
+  },
+  {
+    "id": "06-the-three-duties",
+    "label": "The three duties",
+    "notes": "The three duties and their CLI: pre-flight diagnostics before Marshal spins the factory; continuous fleet monitoring across the shipped estate; and remediation guidance — findings translated into prioritized worklists.",
+    "bg": "#f3f2f2"
+  },
+  {
+    "id": "07-act-iii-organs-that-already-beat",
+    "label": "Act III — Organs that already beat",
+    "notes": "Act III: Doctor is the consolidation of instruments the factory already runs — not an invention from scratch.",
+    "bg": "#201e1d"
+  },
+  {
+    "id": "08-existing-instruments",
+    "label": "Existing instruments",
+    "notes": "The instruments Doctor unifies: the atlas health surface (feedstock-health, staleness-report, behind-upstream), the atlas advisory watch (cve-watcher, release-cadence, adoption signals), and the engine self-check pattern from Warden. One bedside manner over all of them.",
+    "bg": "#f3f2f2"
+  },
+  {
+    "id": "09-prescriptions-not-reports",
+    "label": "Prescriptions, not reports",
+    "notes": "The differentiator: Doctor never stops at a finding. Every diagnosis names the root cause and comes with an ordered remediation plan — what to patch, upgrade or retire, in what order.",
+    "bg": "#f3f2f2"
+  },
+  {
+    "id": "10-keep-the-ecosystem-alive",
+    "label": "Keep the ecosystem alive",
+    "notes": "Close on the motto: check the vitals, diagnose the fault, keep the ecosystem alive. The factory only stays autonomous if something is always watching its health.",
+    "bg": "#ec3013"
+  }
+]

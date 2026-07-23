@@ -45,3 +45,10 @@ mirrors to the URL hash (`#/12`).
 Display brand **Herald** on the slides; distribution slug `pyforge-herald` in paths.
 Engine files must stay **byte-identical** across every deck — apply any engine fix
 to all decks in the same change (`diff -q` to prove it).
+
+## Design project (the bridge's far end)
+
+Prototype lives in Claude Design project **"PyForge Herald deck"** (`ff879a32-9741-4cf5-948f-d67040481d24`):
+https://claude.ai/design/p/ff879a32-9741-4cf5-948f-d67040481d24?file=PyForge+Herald.dc.html
+Pull it into this deck with the MCP bridge ("pull herald") — see
+`docs/specs/presentation-deck.md` § *The MCP bridge*.
