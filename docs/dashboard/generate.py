@@ -16,6 +16,12 @@ Two sources (`--source`):
   time against a full-history checkout, so the published site auto-updates as
   stories merge to `main` — no bot commit-back needed.
 
+Both modes ALSO rescan `docs/dreams/*.md` frontmatter into `data["dreams"]`
+(slug/title/status) — the Dreamscape lifecycle board. Unknown or missing
+`status:` values are warned about here (this scan doubles as the Dream
+frontmatter detector) and passed through raw; the front-end buckets them
+under `seeded`.
+
 Local refresh:  python docs/dashboard/generate.py            (or: pixi run dashboard-gen)
 CI (in-workflow): python docs/dashboard/generate.py --source git
 """
@@ -157,6 +163,38 @@ def apply_git(projects: dict) -> None:
               f"baseline dones preserved, never downgraded)")
 
 
+# ---- dreams (both modes) -----------------------------------------------------
+
+DREAMS_DIR = REPO_ROOT / "docs" / "dreams"
+DREAM_STATUSES = ("seeded", "in-deck", "in-spec", "realized")
+
+
+def scan_dreams() -> list[dict]:
+    """[{slug, title, status}] from docs/dreams/*.md frontmatter (README skipped)."""
+    dreams: list[dict] = []
+    for f in sorted(DREAMS_DIR.glob("*.md")):
+        if f.name == "README.md":
+            continue
+        title, status = None, None
+        lines = f.read_text(encoding="utf-8").splitlines()
+        if lines and lines[0].strip() == "---":
+            for line in lines[1:]:
+                if line.strip() == "---":
+                    break
+                if line.startswith("title:"):
+                    title = line.split(":", 1)[1].strip()
+                elif line.startswith("status:"):
+                    status = line.split(":", 1)[1].strip()
+        if status not in DREAM_STATUSES:
+            print(f"[dreams] WARN {f.name}: status {status!r} not in {DREAM_STATUSES}"
+                  " — passed through; board shows it under 'seeded'")
+        dreams.append({"slug": f.stem, "title": title or f.stem, "status": status or ""})
+    by_status = {s: sum(1 for d in dreams if d["status"] == s) for s in DREAM_STATUSES}
+    print(f"[dreams] {len(dreams)} scanned: "
+          + " / ".join(f"{n} {s}" for s, n in by_status.items()))
+    return dreams
+
+
 # ---- shared ------------------------------------------------------------------
 
 def load_data() -> dict:
@@ -183,6 +221,7 @@ def main() -> int:
         apply_git(data["projects"])
     else:
         apply_sprint_status(data["projects"])
+    data["dreams"] = scan_dreams()
 
     ts = now_utc()
     data["snapshot"] = _SNAP_TS.sub(ts, data["snapshot"], count=1)

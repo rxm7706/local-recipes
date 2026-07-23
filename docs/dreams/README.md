@@ -61,8 +61,9 @@ contract; the Dream is the "why" behind it.
 
 ## Dreams
 
-22 Dreams as of 2026-07-23 (2 born Dream-first; 16 retro-seeded from a complete
-repo + Design-workspace audit; 2 persona dreams added when the ownership audit
+23 Dreams as of 2026-07-23 (2 born Dream-first; 17 retro-seeded from a complete
+repo + Design-workspace audit — the factory console among them; 2 persona
+dreams added when the ownership audit
 grew the crew 6 → 8; 2 recovered from the gist audit (a third, local-ai hardware, was judged out-of-repo scope and archived)). **No-straggler policy:** every BMAD project, deck, Design
 project, and spec maps to exactly one Dream; the herald CLI's status capability
 (CAP-3) flags any unlinked Design project permanently.
@@ -104,6 +105,7 @@ project, and spec maps to exactly one Dream; the herald CLI's status capability
 | [`enterprise-airgap.md`](enterprise-airgap.md) | realized | The factory behind the firewall — JFrog routing + air-gap-by-design; frontier: presenton, deckcraft, warden's registry perimeter. |
 | [`modernist-identity.md`](modernist-identity.md) | realized | One visual language for everything pyforge — the Modernist DS across 7 decks; frontier: the design-tokens round-trip (Figma↔JSON↔POTX). |
 | [`agentic-sdlc-autonomy.md`](agentic-sdlc-autonomy.md) | in-deck | The four views of agentic autonomy (taxonomy/process/architecture/environment) — the white paper + the 45-slide deck + our live L3 evidence. |
+| [`factory-console.md`](factory-console.md) | realized | The whole pipeline on one public page — every Dream + lifecycle stage (Dreamscape board), live epic/story progress, nothing hand-maintained (GitHub Pages). |
 
 **Applications**
 
