@@ -37,6 +37,7 @@ project directory `_bmad-output/projects/<slug>/` must exist.
 import argparse
 import os
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -57,6 +58,52 @@ def repo_root() -> Path:
         f"error: could not locate repo root (no ancestor with _bmad/ and _bmad-output/) from {here}\n"
     )
     sys.exit(1)
+
+
+def main_checkout_root(root: Path) -> Path | None:
+    """The main checkout's root when `root` is a linked git worktree, else None.
+
+    In a linked worktree `.git` is a file (a `gitdir:` pointer), not a
+    directory; the common dir resolves to `<main-checkout>/.git`.
+    """
+    if not (root / ".git").is_file():
+        return None
+    common = subprocess.run(
+        ["git", "-C", str(root), "rev-parse", "--path-format=absolute", "--git-common-dir"],
+        capture_output=True, text=True, check=True,
+    ).stdout.strip()
+    return Path(common).parent
+
+
+def ensure_tier3_backlink(root: Path, slug: str, main_root: Path) -> int:
+    """Point a worktree's gitignored Tier-3 dir at the main checkout's canonical one.
+
+    `projects/<slug>/implementation-artifacts` is gitignored, so a linked
+    worktree starts without it — and a per-worktree copy would fork the
+    sprint feed / journals. A symlink back to the main checkout keeps ONE
+    canonical Tier-3 store at the same repo-relative path everywhere.
+    Refuses to replace a real non-empty directory (that would orphan state).
+    """
+    local = root / "_bmad-output" / "projects" / slug / "implementation-artifacts"
+    canonical = main_root / "_bmad-output" / "projects" / slug / "implementation-artifacts"
+    canonical.mkdir(parents=True, exist_ok=True)
+    if local.is_symlink():
+        if local.resolve() == canonical.resolve():
+            return 0
+        local.unlink()
+    elif local.is_dir():
+        if any(local.iterdir()):
+            sys.stderr.write(
+                f"error: {local} is a real non-empty directory — refusing to replace it "
+                f"with a backlink to {canonical}.\nMerge its contents into the main "
+                f"checkout's copy manually, then re-run.\n"
+            )
+            return 7
+        local.rmdir()
+    local.parent.mkdir(parents=True, exist_ok=True)
+    os.symlink(canonical, local)
+    print(f"tier-3 backlink: {local.relative_to(root)} -> {canonical}")
+    return 0
 
 
 def marker_path(root: Path) -> Path:
@@ -219,6 +266,15 @@ def cmd_switch(root: Path, slug: str) -> int:
             f"or run with --list to see known projects.\n"
         )
         return 3
+    # Inside a linked worktree, provision the gitignored Tier-3 dir as a
+    # backlink to the main checkout's canonical store before the symlink
+    # check would fail on it.
+    main_root = main_checkout_root(root)
+    if main_root is not None:
+        status = ensure_tier3_backlink(root, slug, main_root)
+        if status:
+            sys.stderr.write("aborted: marker and symlinks left unchanged.\n")
+            return status
     # Re-point the symlinks FIRST: they are the failure-prone half, and the
     # marker must never advance past them (that desync is the bug this guards).
     status = repoint_links(root, slug)

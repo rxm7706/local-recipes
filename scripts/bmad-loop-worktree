@@ -1,0 +1,215 @@
+#!/usr/bin/env python3
+"""
+Provision an isolated git worktree as a bmad-loop "loop home".
+
+Only one bmad-loop can run per checkout: the gitignored active-project marker
++ `_bmad-output` symlinks are per-working-tree state, and two loop homes would
+also fight over the tree's HEAD. bmad-loop already isolates each *story* in a
+worktree; this script adds the missing layer — one worktree per *loop home* —
+so loops for different BMAD projects run concurrently on one machine.
+
+Spec: _bmad-output/projects/local-recipes/planning-artifacts/specs/spec-multi-loop-isolation/
+Owner Dream: docs/dreams/pyforge-marshal.md (regenerable-factory Wave 0).
+
+What provisioning does:
+  1. `git worktree add` at `../<repo>-loop-<slug>` on branch `loop/<slug>`
+     (created from `main` on first use; reused thereafter).
+  2. Runs the worktree's own `scripts/bmad-switch <slug>` inside it — the
+     worktree gets its OWN marker + planning symlinks, and its gitignored
+     Tier-3 dir is auto-provisioned as a backlink to the main checkout's
+     canonical `implementation-artifacts` (see bmad-switch), so sprint feeds
+     and journals stay single-sourced.
+  3. Prints the launch line. Loops publish results with
+     `git push origin HEAD:main` (rebase/retry on non-FF) — `main` is never
+     checked out twice.
+
+Usage:
+    bmad-loop-worktree <slug>              # provision (idempotent) + launch line
+    bmad-loop-worktree --remove <slug>     # remove worktree (branch kept unless --force)
+    bmad-loop-worktree --verify <a> <b>    # provision both, assert isolation
+    bmad-loop-worktree --list              # loop-home worktrees + their active project
+
+Note: each loop home resolves its own `.pixi/` on first `pixi run` (gitignored,
+so not shared with the main checkout) — first launch pays a one-time solve.
+"""
+
+import argparse
+import re
+import subprocess
+import sys
+from pathlib import Path
+
+_SLUG_PATTERN = re.compile(r"^[a-z0-9][a-z0-9_-]*$")
+
+
+def run(args: list[str], cwd: Path | None = None) -> subprocess.CompletedProcess:
+    return subprocess.run(args, cwd=cwd, capture_output=True, text=True)
+
+
+def repo_root() -> Path:
+    """Main-checkout root (this script may itself be invoked from a worktree)."""
+    here = Path(__file__).resolve().parent
+    common = run(["git", "-C", str(here), "rev-parse", "--path-format=absolute",
+                  "--git-common-dir"])
+    if common.returncode != 0:
+        sys.stderr.write(f"error: not inside a git repository: {here}\n")
+        sys.exit(1)
+    return Path(common.stdout.strip()).parent
+
+
+def home_path(root: Path, slug: str) -> Path:
+    return root.parent / f"{root.name}-loop-{slug}"
+
+
+def active_project(tree: Path) -> str | None:
+    marker = tree / "_bmad" / "custom" / ".active-project"
+    if marker.exists():
+        return marker.read_text(encoding="utf-8").strip() or None
+    return None
+
+
+def provision(root: Path, slug: str) -> Path | None:
+    if not _SLUG_PATTERN.match(slug):
+        sys.stderr.write(f"error: invalid slug {slug!r}\n")
+        return None
+    if not (root / "_bmad-output" / "projects" / slug).is_dir():
+        sys.stderr.write(f"error: no such BMAD project: {slug} (see bmad-switch --list)\n")
+        return None
+    home = home_path(root, slug)
+    branch = f"loop/{slug}"
+    if not home.exists():
+        has_branch = run(["git", "-C", str(root), "rev-parse", "--verify", "--quiet",
+                          branch]).returncode == 0
+        add = (["git", "-C", str(root), "worktree", "add", str(home), branch]
+               if has_branch else
+               ["git", "-C", str(root), "worktree", "add", "-b", branch, str(home), "main"])
+        result = run(add)
+        if result.returncode != 0:
+            sys.stderr.write(f"error: worktree add failed:\n{result.stderr}")
+            return None
+        print(f"worktree: {home} [{branch}]")
+    else:
+        print(f"worktree: {home} (reused)")
+    # The WORKTREE's own bmad-switch, so its repo_root is the worktree:
+    # per-worktree marker + planning symlinks, Tier-3 backlinked to canonical.
+    switch = run([sys.executable, str(home / "scripts" / "bmad-switch"), slug])
+    sys.stdout.write(switch.stdout)
+    if switch.returncode != 0:
+        sys.stderr.write(f"error: bmad-switch inside {home} failed:\n{switch.stderr}")
+        return None
+    return home
+
+
+def cmd_provision(root: Path, slug: str) -> int:
+    home = provision(root, slug)
+    if home is None:
+        return 1
+    print(f"\nlaunch:  cd {home} && BMAD_ACTIVE_PROJECT={slug} <bmad-loop command>")
+    print("publish: git push origin HEAD:main   (rebase & retry on non-FF)")
+    return 0
+
+
+def cmd_verify(root: Path, slug_a: str, slug_b: str) -> int:
+    """CAP-3: two loop homes are isolated from each other AND the main checkout."""
+    main_active = active_project(root)
+    homes = {}
+    for slug in (slug_a, slug_b):
+        home = provision(root, slug)
+        if home is None:
+            return 1
+        homes[slug] = home
+    findings = []
+    for slug, home in homes.items():
+        got = active_project(home)
+        if got != slug:
+            findings.append(f"{home.name}: marker says {got!r}, expected {slug!r}")
+        link = home / "_bmad-output" / "planning-artifacts"
+        if not link.is_symlink() or slug not in str(link.readlink()):
+            findings.append(f"{home.name}: planning-artifacts symlink not on {slug}")
+        tier3 = home / "_bmad-output" / "projects" / slug / "implementation-artifacts"
+        canonical = root / "_bmad-output" / "projects" / slug / "implementation-artifacts"
+        if tier3.resolve() != canonical.resolve():
+            findings.append(f"{home.name}: Tier-3 not backlinked to canonical store")
+    if active_project(root) != main_active:
+        findings.append(f"main checkout active project changed: {main_active!r} -> "
+                        f"{active_project(root)!r}")
+    if findings:
+        print("ISOLATION FAILED:")
+        for f in findings:
+            print(f"  ✗ {f}")
+        return 2
+    print(f"ISOLATION OK: {slug_a} + {slug_b} independent; Tier-3 single-sourced; "
+          f"main checkout untouched (active: {main_active or '(none)'})")
+    return 0
+
+
+def cmd_remove(root: Path, slug: str, force: bool) -> int:
+    home = home_path(root, slug)
+    if not home.exists():
+        sys.stderr.write(f"error: no loop home at {home}\n")
+        return 1
+    args = ["git", "-C", str(root), "worktree", "remove", str(home)]
+    if force:
+        args.append("--force")
+    result = run(args)
+    if result.returncode != 0:
+        sys.stderr.write(f"error: worktree remove failed:\n{result.stderr}")
+        return 1
+    print(f"removed: {home}")
+    if force:
+        run(["git", "-C", str(root), "branch", "-D", f"loop/{slug}"])
+        print(f"deleted branch: loop/{slug}")
+    else:
+        print(f"branch loop/{slug} kept (unmerged loop work may live there; "
+              f"--force removes it too)")
+    return 0
+
+
+def cmd_list(root: Path) -> int:
+    result = run(["git", "-C", str(root), "worktree", "list", "--porcelain"])
+    prefix = f"{root.name}-loop-"
+    found = False
+    for block in result.stdout.split("\n\n"):
+        lines = dict(line.split(" ", 1) for line in block.splitlines() if " " in line)
+        path = Path(lines.get("worktree", ""))
+        if path.name.startswith(prefix):
+            found = True
+            slug = path.name[len(prefix):]
+            print(f"  {path}  [active: {active_project(path) or '(unswitched)'}]"
+                  + ("" if active_project(path) == slug else "  ⚠ marker≠slug"))
+    if not found:
+        print("no loop-home worktrees")
+    return 0
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(
+        description="Provision isolated bmad-loop loop-home worktrees.")
+    parser.add_argument("slugs", nargs="*", help="BMAD project slug(s)")
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument("--remove", action="store_true", help="Remove a loop home")
+    group.add_argument("--verify", action="store_true",
+                       help="Provision two homes and assert isolation")
+    group.add_argument("--list", action="store_true", help="List loop homes")
+    parser.add_argument("--force", action="store_true",
+                        help="With --remove: also delete the loop/<slug> branch")
+    args = parser.parse_args()
+
+    root = repo_root()
+    if args.list:
+        return cmd_list(root)
+    if args.verify:
+        if len(args.slugs) != 2:
+            sys.stderr.write("error: --verify needs exactly two slugs\n")
+            return 1
+        return cmd_verify(root, *args.slugs)
+    if len(args.slugs) != 1:
+        parser.print_help(sys.stderr)
+        return 1
+    if args.remove:
+        return cmd_remove(root, args.slugs[0], args.force)
+    return cmd_provision(root, args.slugs[0])
+
+
+if __name__ == "__main__":
+    sys.exit(main())
