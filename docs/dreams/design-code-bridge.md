@@ -67,4 +67,14 @@ first shipped organ.
     `CLAUDE.md`, and `docs/specs/presentation-deck.md` (§ The MCP bridge —
     canonical; manual export demoted to fallback).
   - The fuller herald-CLI automation (`herald deck seed/pull`, watch mode)
-    remains future work and awaits its `bmad-spec` run.
+    remains future work.
+- **2026-07-23 — first Dream-first `bmad-spec` run (Genesis step 2 dogfood):**
+  this Dream was distilled into the herald CLI contract —
+  **`SPEC-design-code-bridge`** (4 capabilities: seed / pull / status+stale-mirror
+  / watch; + `bridge-protocol.md` carrying the proven tool loop) — under BMAD
+  project **`pyforge-herald`**, landing in
+  `_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-design-code-bridge/`
+  per the Dream-first tier model. No legacy `docs/specs/` file was created.
+  Self-validate: coherence PASS, preservation PASS; 3 open questions (standalone
+  MCP auth/transport; watch cadence; marp-source scope) await answers before
+  implementation.

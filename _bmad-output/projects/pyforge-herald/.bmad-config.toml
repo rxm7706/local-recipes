@@ -1,0 +1,6 @@
+output_folder = "_bmad-output/projects/pyforge-herald"
+
+[project]
+slug = "pyforge-herald"
+description = "Herald — the pyforge Ecosystem Crew's visual media & communications engine. First deliverable: the herald CLI formalizing the realized Design↔Code bridge (seed/pull, watch mode). Dream: docs/dreams/design-code-bridge.md."
+status = "active"
