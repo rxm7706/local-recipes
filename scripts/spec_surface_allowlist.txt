@@ -8,8 +8,7 @@ docs/specs/**            # LEGACY Tier-1 specs (frozen; drift-check --specs gove
 archive/**               # discarded material, retained for history
 _bmad/**                 # BMAD installer tree (vendor-managed, regenerated)
 _bmad-output/**          # the contracts themselves (bmad-drift-check governs)
-src/**                   # future pyforge packages arrive with their own kernels
-scripts/**               # Wave 5.1: factory harness scripts get manifests/kernels
+scripts/**               # sync-loop detectors (bmad_drift_check, llms_full_check: SYNC-RUNBOOK reconciler loop governs) + misc harness
 tests/**                 # inherited staged-recipes lint tests (upstream-owned shape)
 _skf-learn/**            # vendored skill-forge learning corpus (upstream module docs)
 azure-pipelines.yml      # inherited staged-recipes CI entry (upstream-owned shape)
@@ -18,7 +17,6 @@ test-recipes.py          # inherited staged-recipes test entry (upstream-owned)
 conda-forge.yml          # inherited staged-recipes config (upstream-owned)
 conda_build_config.yaml  # inherited staged-recipes pinning shim (upstream-owned)
 pre-commit-config.yaml   # inherited staged-recipes hooks config (upstream-owned)
-conf/base/knowledge.yml  # atlas Kedro conf — pyforge-atlas chain (W5.1 chain-verify)
 helm/lasuite-docs/values.yaml  # stray inherited file — archive candidate, flagged 2026-07-23
 .github/**               # CI: inherited staged-recipes + dashboard workflow
 .cursor/**               # thin per-tool pointer files (AGENTS.md family)
