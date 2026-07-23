@@ -32,6 +32,27 @@ visible. Anti-vibe, by construction.
   policy (sonnet default, opus for hard stories); this maps directly onto the
   L1–L5 taxonomy in [[agentic-sdlc-autonomy]].
 
+## The execution doctrine (affirmed 2026-07-23)
+
+> **Execution has one owner (Marshal). Skills — existing, community, and forged —
+> are the unit of execution; the deterministic harness is the unit of governance;
+> station verdicts stay independent. That triad is the whole agentic SDLC, at
+> every autonomy level.**
+
+- **One owner:** all execution — any story, any autonomy level up to unattended —
+  runs on Marshal's line. Other personas own their *stations' verdicts*, never
+  the loop: the hand that builds must not be the gate that judges it.
+- **Skills are the unit of execution:** BMM's 34+ workflows, community plugins,
+  and newly forged skills (BMB, the `skf-*` forge, the Rule-2 retro loop that
+  continuously re-forges domain skills). Everything agentic ships as a skill.
+- **The harness is the unit of governance — and is deliberately NOT a skill:**
+  bmad-loop itself, sandbox/permission gates, CI verify gates, and no-LLM
+  deterministic tools sit outside the skill layer, because the thing that
+  governs the agent cannot be a thing the agent authors.
+- **Two persona layers:** the Ecosystem Crew are the factory's *stations*; the
+  BMAD team (Mary · John · Winston · Sally · Amelia · Paige) are Marshal's
+  *sub-agents on the floor* — the inner workforce his line mobilizes.
+
 ## The frontier
 
 - **W4**: BMad Method UI dashboards (`bmad-ui` env, consume-not-submit mirrors).
