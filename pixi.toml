@@ -33,10 +33,10 @@ platforms = [
 python = ">=3.14.6,3.14.*"        # Python language interpreter
 pixi = ">=0.73.0"                 # Pixi package & environment manager
 gh = ">=2.96.0"                   # GitHub CLI for PR / issue / repo automation
-gitpython = ">=3.1.52"            # Pythonic Git wrapper for complex repo interactions
+gitpython = ">=3.1.53"            # Pythonic Git wrapper for complex repo interactions
 nodejs = ">=24.16.0,24.*,<25.0"   # Pin to LTS version
 bmad-method = ">=6.10.0"           # BMAD agent-driven dev framework (planning + dev skills)
-spec-kit = ">=0.13.0"             # Spec-kit for spec-driven development
+spec-kit = ">=0.13.2"             # Spec-kit for spec-driven development
 truststore = ">=0.10.4"           # OS trust store for corporate CA / JFrog TLS
 # pixi upgrade --pinning-strategy latest-up --exclude conda-libmamba-solver --exclude conda-build --exclude conda-index --exclude conda-forge-ci-setup --exclude conda-forge-pinning --exclude frozendict --exclude networkx --exclude rattler-build-conda-compat --exclude grayskull --exclude conda-recipe-manager --exclude conda-smithy --exclude shellcheck --exclude python --exclude django --exclude wagtail --exclude nodejs --exclude coderedcms
 # Additional Pins for Dependency resolution
@@ -119,7 +119,7 @@ dependencies.shellcheck = ">=0.10.0"
 # want to refresh creds or switch projects.
 # Linux + macOS only — google-cloud-sdk isn't on conda-forge for win-64.
 platforms = ["linux-64", "osx-arm64-min"]
-dependencies.google-cloud-sdk = ">=575.0.0"
+dependencies.google-cloud-sdk = ">=577.0.0"
 
 [environments]
 # default-env: local-recipes
@@ -645,14 +645,14 @@ pip-audit = ">=2.10.1"            # Audit Python environments for known vulnerab
 bandit = ">=1.9.4"                # Security linter for Python code
 pip = ">=26.1.2"                  # Python package installer
 setuptools = ">=81.0.0"           # Python build backend (setup.py / pyproject.toml)
-setuptools-scm = ">=10.2.0"       # Version metadata from VCS tags
+setuptools-scm = ">=10.2.1"       # Version metadata from VCS tags
 hatchling = ">=1.31.0"            # Hatch build backend (PEP 517)
 python-build = ">=1.5.0"          # PEP 517 build frontend (`python -m build`)
 twine = ">=6.2.0"                 # PyPI artifact uploader
-uv = ">=0.11.29"                  # Fast Rust-based Python package installer / resolver
+uv = ">=0.11.31"                  # Fast Rust-based Python package installer / resolver
 wheel = ">=0.47.0"                # PEP 427 wheel format utilities
 ## For Building Javsscript and nodejs Projects
-pnpm = ">=11.15.0"                # Fast disk-efficient Node package manager
+pnpm = ">=11.15.1"                # Fast disk-efficient Node package manager
 ## Extensions for Conda and Conda-build Projects
 conda-lock = ">=4.0.2"            # Generate cross-platform lockfiles for conda envs
 conda-pack = ">=0.9.2"            # Bundle a conda env into a relocatable archive
@@ -694,8 +694,8 @@ bmad-method = ">=6.10.0"       # BMAD Method installer/CLI (upgrade from the 6.6
 bmad-builder = ">=2.1.0"          # BMAD module builder # PR #33123 # https://github.com/bmad-code-org/bmad-builder
 bmad-creative-intelligence-suite = ">=0.2.1"  # CIS module  bumped; PR #33124 # https://github.com/bmad-code-org/bmad-module-creative-intelligence-suite
 bmad-dashboard = ">=1.2.2.dev0"   # VS Code extension installer # PR #33513 # https://github.com/bmad-code-org/bmad-method-ui
-bmad-loop = ">=0.8.1"             # deterministic ralph-loop orchestrator (+TUI) # https://github.com/bmad-code-org/bmad-loop
-bmad-method-test-architecture-enterprise = ">=1.19.0"  # TEA module  external PR #33292 # https://github.com/bmad-code-org/bmad-method-test-architecture-enterprise
+bmad-loop = ">=0.9.0"             # deterministic ralph-loop orchestrator (+TUI) # https://github.com/bmad-code-org/bmad-loop
+bmad-method-test-architecture-enterprise = ">=1.19.1"  # TEA module  external PR #33292 # https://github.com/bmad-code-org/bmad-method-test-architecture-enterprise
 bmad-method-wds-expansion = ">=0.4.3"  # Whiteport Design Studio # PR #33126 # https://github.com/bmad-code-org/bmad-method-wds-expansion
 bmad-module-template = ">=0.1.0"  # module scaffold # PR #33127 # https://github.com/bmad-code-org/bmad-module-template
 #bmad-story-automator = ">=1.15.0" # story orchestration skill + helper runtime  bumped + build fixed for upstream restructure; unix-only (skip: win) # PR #33128 # https://github.com/bmad-code-org/bmad-automator
@@ -735,7 +735,7 @@ kedro-datasets = ">=9.5.0"        # Kedro-Datasets is where you can find all of 
 graphviz = ">=14.1.2"             # Graph layout engine (the `dot` binary) — drives the kedro-viz prototype's regenerate-kedro-viz-proto DAG-image (SVG) emitter
 python-graphviz = ">=0.21"        # Python interface to graphviz (imports as `graphviz`) — used by the prototype's DAG-image generator
 numpy = ">=2.5.1"                 # Numerical computing
-polars = ">=1.42.1"               # Rust-backed columnar DataFrame library
+polars = ">=1.43.0"               # Rust-backed columnar DataFrame library
 tablib = ">=3.9.0"                # Tabular data handling
 tabulate = ">=0.10.0"             # Pretty-print tabular data
 # Category 8: Visualization & Dashboards
@@ -763,10 +763,10 @@ lxml = ">=6.1.1"                  # Fast XML / HTML parser (libxml2 bindings)
 mammoth = ">=1.12.0"              # Focused .docx → Markdown converter (used in markitdown's Word loader)
 markitdown = ">=0.1.6"            # Microsoft's document → Markdown converter
 marp-cli = ">=4.2.3"              # Marp CLI for Markdown → slide-deck rendering
-matplotlib = ">=3.11.0"           # General-purpose 2D plotting library
+matplotlib = ">=3.11.1"           # General-purpose 2D plotting library
 mermaid-py= ">=0.8.4"             # Python wrapper around the Mermaid diagram renderer
 markdown = ">=3.10.2"             # Markdown parser (used in markitdown)
-markdownify = ">=1.2.2"           # Markdown converter (used in markitdown)
+markdownify = ">=1.2.3"           # Markdown converter (used in markitdown)
 beautifulsoup4 = ">=4.15.0"       # HTML parser (used in markitdown)
 rank-bm25 = ">=0.2.2"             # Various BM25 algorithms for document ranking
 dbgpt = ">=0.8.1"                 # An open-source AI native data app development framework with AWEL and agents (DB-GPT)
@@ -798,7 +798,7 @@ tesseract = ">=5.5.2"             # Google's OCR engine (binary; pairs with pyte
 transformers = ">=5.14.1"         # Hugging Face transformers (model hub + pipelines)
 xlrd = ">=2.0.2"                  # Excel .xls reader (used in markitdown's Excel loader)
 cocoindex = ">=1.0.17"            # Incremental engine for long horizon agents
-graphifyy = ">=0.9.19"            # AI coding assistant skill that turns any folder of code, docs, papers, images, or videos into a queryable knowledge graph.
+graphifyy = ">=0.9.23"            # AI coding assistant skill that turns any folder of code, docs, papers, images, or videos into a queryable knowledge graph.
 ## Data processing & conversion (ibis + adjacent ecosystem)
 google-cloud-bigquery = ">=3.42.2" # BigQuery client — cf_atlas Phase P (opt-in via PHASE_P_ENABLED=1; needs ADC creds via the `gcloud` env)
 ibis-duckdb = ">=12.0.0"          # Ibis backend for DuckDB
@@ -821,9 +821,9 @@ playwright = ">=1.61.1"           # Node binary for browser automation (CLI)
 #aichat = ">=0.30.0"
 agno = ">=2.6.22"                 # Agno is a lightweight framework for building multi-modal Agents. It supports any model provider, native multi-modal I/O, multi-agent teams, memory management, knowledge stores, structured outputs, and real-time monitoring.
 a2a-sdk = ">=1.1.1"               # Official Python SDK for the Agent2Agent (A2A) Protocol
-google-genai = ">=2.12.1"          # Google GenAI API client library
+google-genai = ">=2.13.0"          # Google GenAI API client library
 anthropic = ">=0.76.0"            # Anthropic Claude API SDK
-claude-agent-acp = ">=0.59.0"     # bridges the Claude Agent SDK to the Agent Client Protocol (ACP)
+claude-agent-acp = ">=0.60.0"     # bridges the Claude Agent SDK to the Agent Client Protocol (ACP)
 diffusers = ">=0.39.0"            # Hugging Face diffusion model library
 django-mcp-server = ">=0.5.7"     # Django integration for the Model Context Protocol
 fasta2a = ">=0.6.1"               # FastAPI-style implementation of the A2A protocol
@@ -835,7 +835,7 @@ langchain-mcp-adapters = ">=0.3.0"  # LangChain ↔ MCP tool/resource adapters
 lumen-ai-anthropic = ">=1.2.1"    # Lumen AI's Anthropic backend integration
 mcp = ">=1.28.1"                  # Official Model Context Protocol Python SDK
 ollama = ">=0.24.0"               # Ollama Go server (local LLM runtime)
-pydantic-ai = ">=2.13.0"         # Pydantic-AI agent framework
+pydantic-ai = ">=2.15.0"         # Pydantic-AI agent framework
 "llama.cpp" = ">=10003"            # llama.cpp local LLM inference engine
 #crawl4ai = ">=0.8.5"              # Open-source LLM Friendly Web Crawler & Scraper framework
 #"whisper.cpp" = ">=1.8.3"         # NOT ADDED - Outdated on Conda-forge
@@ -885,7 +885,7 @@ watchdog = ">=6.0.0"              # File system event monitoring (used for live-
 ## Visual Studio Code Extensions (npm yo and adjacent ecosystem)
 #generator-code = "*"              # Visual Studio Code extension generator for yo https://www.npmjs.com/package/generator-code
 yo = ">=7.0.1"                     # CLI tool for running Yeoman generators
-graphviz2drawio = ">=1.2.0,<2"
+graphviz2drawio = ">=1.2.0"
 
 ## MLX (Apple's array framework) and mlx-lm (LLM runner).
 ## mlx-lm is noarch python; the native mlx C++ lib builds for linux-64 + osx-arm64
@@ -931,7 +931,7 @@ description = "MyBMAD web dashboard launcher: `up` starts (local PostgreSQL + we
 cmd = "mybmad"
 
 [feature.local-recipes.pypi-dependencies]
-boring-semantic-layer = ">=0.3.15" # The Boring Semantic Layer (BSL) is a lightweight semantic layer based on Ibis.
+boring-semantic-layer = ">=0.3.16" # The Boring Semantic Layer (BSL) is a lightweight semantic layer based on Ibis.
 kedro-mcp = ">=0.1.2"              # MCP server with Kedro prompts and tools
 #crewai = ">=1.14.7"                # Cutting-edge framework for orchestrating role-playing, autonomous AI agents. By fostering collaborative intelligence, CrewAI empowers agents to work together seamlessly, tackling complex tasks.
 
@@ -941,7 +941,7 @@ python = "3.14.*"                 # Python language interpreter
 pixi = ">=0.73.0"                 # Pixi package & environment manager
 conda = ">=26.5.0"                # conda package manager
 pip = ">=26.1.2"                  # Python package installer
-uv = ">=0.11.29"                  # fast Rust-based Python package installer / resolver
+uv = ">=0.11.31"                  # fast Rust-based Python package installer / resolver
 
 #[pypi-dependencies]
 #daft = ">=0.6.8"

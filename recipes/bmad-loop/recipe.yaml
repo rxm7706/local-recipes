@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "0.8.1"
+  version: "0.9.0"
   python_min: "3.11"
 
 package:
@@ -11,7 +11,7 @@ package:
 
 source:
   url: https://github.com/bmad-code-org/bmad-loop/archive/refs/tags/v${{ version }}.tar.gz
-  sha256: b9aceb3feb1cc4251d309312cd2b93cc77e4cd33dfdb768f11b56bb7c6029ca8
+  sha256: a309068cd21518222003054eaa5d11a6f28cf319d435e3ce6064374dfb89ec6d
 
 build:
   noarch: python

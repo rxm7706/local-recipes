@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: bmad-method-test-architecture-enterprise
-  version: "1.19.0"
+  version: "1.19.1"
 
 package:
   name: ${{ name }}
@@ -11,7 +11,7 @@ package:
 
 source:
   url: https://github.com/bmad-code-org/bmad-method-test-architecture-enterprise/archive/refs/tags/v${{ version }}.tar.gz
-  sha256: 2384ede9c6855bf696a8e1635307156da5f02bb59b65ec6bbf5aae1696169eee
+  sha256: 9d3aaf09bba7ae31b7d0285729a3527cad4f6af018031b4f6b8faea6bc3c33d1
 
 build:
   number: 0
