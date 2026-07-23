@@ -1,0 +1,44 @@
+# Bridge protocol — the proven loop the herald CLI wraps
+
+Companion to `SPEC.md` (SPEC-design-code-bridge). This is the HOW-evidence: the exact
+tool sequence proven in the 2026-07-23 pilot, which CAP-1/CAP-2 formalize. Tool names
+are the `claude-design` MCP surface's.
+
+## Seed (repo → Design) — CAP-1
+
+1. Prove locally: `npm run extract` (expected slide count, no lost sections) + `npm run build` in `presentations/<slug>/`.
+2. `get_claude_design_prompt(design_system_id)` — mandatory gate before any write.
+3. `create_project(name: "PyForge <Persona> deck", design_system_id: Modernist)`.
+4. `finalize_plan(writes: ["support.js", "deck-stage.js", "<Deck>.dc.html"])` → `plan_token` + `base_etags` (all `"0"` for a fresh project).
+5. `create_support_js(path: "support.js", if_match: "0")` — server writes the runtime; never author it.
+6. `copy_files(deck-stage.js from an existing deck project, if_match: "0")` — server-side copy, exempt from the read cap.
+7. `write_files(prototype, if_match: "0")` — the exact bytes that passed step 1.
+8. Record the returned etags; register the project in the deck README § *Design project*.
+
+## Pull (Design → repo) — CAP-2
+
+1. `read_file(path, if_none_match: <last-seen etag>)`.
+2. `{unchanged: true}` → report "unchanged", exit 0, stop (no body transferred).
+3. Otherwise: decode the entity-escaped body (`&amp; &lt; &gt;` → `& < >`), write to `presentations/<slug>/project/<Deck>.dc.html`, store the new etag.
+4. Re-derive: `npm run extract` → `npm run build` → `pixi run -e local-recipes deck-export <slug>`.
+5. Commit is the operator's (or `--commit`'s) move — never implicit.
+
+## Conventions (pilot-established)
+
+- Design project name: `PyForge <Persona> deck`; prototype file: `PyForge <Persona>.dc.html` (spaces kept — the Design export convention).
+- Modernist design system id: `fbc1d6c8-b35f-4df6-9044-a64d2675427b`.
+- Per-deck registry: the deck README's § *Design project* records project name, id, and file URL — the durable link any session can pull from.
+- Deck engine + export contracts: `docs/specs/presentation-deck.md` (adopted companion) — § *The MCP bridge*, § *Standard export set*, the prototype contract.
+
+## Pilot evidence (2026-07-23 — ground truth for acceptance fixtures)
+
+| Deck | Design project id | Result |
+|---|---|---|
+| pyforge-marshal | `ad84d4f6-c292-42c8-98bf-ede78a567773` | seeded; pull returned `{unchanged: true}` (etag short-circuit) |
+| pyforge-herald | `ff879a32-9741-4cf5-948f-d67040481d24` | seeded; extract 10/10 + build green pre-seed |
+| pyforge-mason | `a7a2c3b1-5718-49fa-8c90-71d44d57eae9` | seeded; extract 10/10 + build green pre-seed |
+| pyforge-doctor | `46dbbdea-6f8d-45c6-9309-15d1f297beeb` | seeded; extract 10/10 + build green pre-seed |
+
+Cautionary fixture for CAP-3: Design project *"Local recipes repository connection"*
+(`e2a3ed13-7c0b-46ff-9d70-c41eeb93c2ea`) — a stale hand-mirrored copy of
+`presentations/pyforge-atlas/`, exactly the pattern stale-mirror detection must flag.
