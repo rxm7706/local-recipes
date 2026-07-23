@@ -190,6 +190,10 @@ cmd = "python scripts/bmad_drift_check.py --json"
 description = "Detector: report drift between docs/library-llms-full.md (the library catalog) and pixi.toml — undocumented deps, ghost entries, version-floor drift. Exits non-zero on drift. Reconciler = the regeneration prompt in the catalog header. Pass -- --json for machine output."
 cmd = "python scripts/llms_full_check.py"
 
+[feature.local-recipes.tasks.deck-export]
+description = "Regenerate a presentation deck's derived export artifacts (standalone infographic HTML + PPTX) from its Marp .md sources via marp — keeps the § Standard export set reproducible. Usage: pixi run -e local-recipes deck-export <slug> [html|deck-pptx|infographic-pptx ...] (default: all). PPTX needs Chrome. See docs/specs/presentation-deck.md."
+cmd = "python scripts/deck_export.py"
+
 [feature.local-recipes.tasks.dashboard-gen]
 description = "Refresh docs/dashboard/data.js (the committed Warden+Atlas program console) from the live per-project sprint-status.yaml files — syncs each story's status + the snapshot timestamp. Local-only (the sprint-status sources are Tier-3 gitignored). Commit data.js + push to redeploy the GitHub Pages console. See docs/dashboard/README.md."
 cmd = "python docs/dashboard/generate.py"
