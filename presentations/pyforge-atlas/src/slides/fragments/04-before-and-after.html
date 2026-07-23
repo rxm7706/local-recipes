@@ -1,0 +1,24 @@
+<div style="width:100%; height:100%; box-sizing:border-box; padding:88px 96px; display:flex; flex-direction:column; gap:32px; font-family:'Archivo',sans-serif; color:#201e1d;">
+      <div style="display:flex; align-items:baseline; gap:24px; border-bottom:3px solid #201e1d; padding-bottom:18px;"><span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:30px; color:#ec3013;">02</span><h2 style="font-size:46px; margin:0; letter-spacing:-0.02em; font-weight:800;">Declarative dataflow — before &amp; after</h2></div>
+      <div style="flex:1; display:flex; flex-direction:column; gap:26px;">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:28px;">
+          <div style="border:2px solid #b7b3b1; padding:26px 30px;">
+            <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:17px; letter-spacing:0.06em; text-transform:uppercase; font-weight:700; color:rgba(32,30,29,.55);">Legacy · procedural monolith</div>
+            <div style="display:flex; flex-direction:column; gap:10px; margin-top:16px; font-size:22px; line-height:1.4;"><div>~10k LOC; per-phase <span style="font-family:ui-monospace,'SF Mono',Menlo,monospace;">phase_state</span> table</div><div>One 1800 s cap silently dropped Phases F / K / N</div><div>JFrog credential injected on <b>every</b> request</div><div>SQLite store; order &amp; lineage implicit</div></div>
+          </div>
+          <div style="border:2px solid #ec3013; padding:26px 30px;">
+            <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:17px; letter-spacing:0.06em; text-transform:uppercase; font-weight:700; color:#c22a10;">Migrated · declared DAG</div>
+            <div style="display:flex; flex-direction:column; gap:10px; margin-top:16px; font-size:22px; line-height:1.4;"><div>Pure nodes — DataFrame in → DataFrame out</div><div>Catalog-owned IO; credentials scoped <b>per host</b></div><div>Per-node timeouts — the silent-drop class is gone</div><div><span style="font-family:ui-monospace,'SF Mono',Menlo,monospace;">IncrementalParquetDataset</span> TTL; DuckDB / Parquet</div></div>
+          </div>
+        </div>
+        <div style="display:grid; grid-template-columns:repeat(6,1fr); border:2px solid #201e1d;">
+          <div style="border-right:2px solid #201e1d; padding:16px 18px;"><div style="font-size:14px; letter-spacing:0.05em; text-transform:uppercase; font-weight:700; color:#c22a10;">Compute</div><div style="font-size:18px; font-weight:700; margin-top:6px;">Pure nodes</div></div>
+          <div style="border-right:2px solid #201e1d; padding:16px 18px;"><div style="font-size:14px; letter-spacing:0.05em; text-transform:uppercase; font-weight:700; color:#c22a10;">IO &amp; state</div><div style="font-size:18px; font-weight:700; margin-top:6px;">Catalog</div></div>
+          <div style="border-right:2px solid #201e1d; padding:16px 18px;"><div style="font-size:14px; letter-spacing:0.05em; text-transform:uppercase; font-weight:700; color:#c22a10;">Orchestrate</div><div style="font-size:18px; font-weight:700; margin-top:6px;">Dagster</div></div>
+          <div style="border-right:2px solid #201e1d; padding:16px 18px;"><div style="font-size:14px; letter-spacing:0.05em; text-transform:uppercase; font-weight:700; color:#c22a10;">Semantics</div><div style="font-size:18px; font-weight:700; margin-top:6px;">BSL</div></div>
+          <div style="border-right:2px solid #201e1d; padding:16px 18px;"><div style="font-size:14px; letter-spacing:0.05em; text-transform:uppercase; font-weight:700; color:#c22a10;">Surfaces</div><div style="font-size:18px; font-weight:700; margin-top:6px;">Vizro · MCP</div></div>
+          <div style="padding:16px 18px; background:#fbe4de;"><div style="font-size:14px; letter-spacing:0.05em; text-transform:uppercase; font-weight:700; color:#c22a10;">Factory · H</div><div style="font-size:18px; font-weight:700; margin-top:6px;">wiki + crews</div></div>
+        </div>
+      </div>
+      <div style="display:flex; justify-content:space-between; align-items:center; border-top:2px solid #d3d0cf; padding-top:18px; font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; letter-spacing:0.04em; color:rgba(32,30,29,.55);"><span style="font-weight:700; color:#201e1d;">PYFORGE-ATLAS</span><span>the Kedro DAG is the single source of truth</span><span>ACT I · 04</span></div>
+    </div>

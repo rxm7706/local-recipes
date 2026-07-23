@@ -1,0 +1,128 @@
+[
+  {
+    "id": "01-cover",
+    "label": "Cover",
+    "notes": "One line: cf_atlas is the intelligence layer of an AI-assisted conda-forge packaging factory. This deck is the migration plan — a 10k-LOC orchestrator becoming declarative dataflow so an agent workforce can maintain it.",
+    "bg": "#f3f2f2"
+  },
+  {
+    "id": "02-act-i-from-monolith-to-dag",
+    "label": "Act I — From monolith to DAG",
+    "notes": "Act I frames the problem and the paradigm: what the legacy orchestrator costs, and what declarative dataflow replaces it with.",
+    "bg": "#201e1d"
+  },
+  {
+    "id": "03-the-problem",
+    "label": "The problem",
+    "notes": "The legacy orchestrator ships — but the cost is chronic. Agents cannot safely extend a 10k-line procedural monolith. That is the load-bearing justification for the whole migration.",
+    "bg": "#f3f2f2"
+  },
+  {
+    "id": "04-before-and-after",
+    "label": "Before and after",
+    "notes": "Same factory, re-shaped: pipes-and-filters over a declared Data Catalog. Pure nodes, catalog-owned IO, per-node timeouts. The six layers below map every concern to one place.",
+    "bg": "#f3f2f2"
+  },
+  {
+    "id": "05-seven-domain-pipelines",
+    "label": "Seven domain pipelines",
+    "notes": "The 23 phases become nodes in exactly seven fixed pipelines. Producer owns the dataset — no two pipelines write one artifact. New signals join their assigned pipeline, never a new ad-hoc one.",
+    "bg": "#f3f2f2"
+  },
+  {
+    "id": "06-act-ii-node-shaped-agent-maintainable",
+    "label": "Act II — Node-shaped & agent-maintainable",
+    "notes": "Act II: why the node shape matters. Adding a node inherits all the machinery; what the migration buys; and the verify-first gate that keeps it honest.",
+    "bg": "#201e1d"
+  },
+  {
+    "id": "07-add-phase-24-without-hand-wiring",
+    "label": "Add phase 24 without hand-wiring",
+    "notes": "This is the load-bearing journey UJ-5. Declare, write the node, contract it — everything else is inherited. The new signals B8-B10 land through exactly this path with zero hand-written checkpoint code.",
+    "bg": "#f3f2f2"
+  },
+  {
+    "id": "08-what-the-migration-buys",
+    "label": "What the migration buys",
+    "notes": "The honest wins: incremental re-materialization (not cold-start speed), a DuckDB query surface, a universe SBOM, and agent-legible feeds. Feeds beat pages.",
+    "bg": "#f3f2f2"
+  },
+  {
+    "id": "09-the-verify-first-gate",
+    "label": "The verify-first gate",
+    "notes": "The frozen exit-code convention and the four-axis ComplianceReport, plus the six deterministic gates that are each a wave's first deliverable. Gates are never weakened to raise the autonomy share.",
+    "bg": "#f3f2f2"
+  },
+  {
+    "id": "10-act-iii-an-agent-workforce-builds-it",
+    "label": "Act III — An agent workforce builds it",
+    "notes": "Act III: who runs it, the graduated-autonomy execution model, the eight-wave plan, and which read surface answers which question.",
+    "bg": "#201e1d"
+  },
+  {
+    "id": "11-who-runs-it",
+    "label": "Who runs it",
+    "notes": "Four consumers: the operator, CFE authoring agents, BMAD execution agents, and CI. Internal and non-commercial — adoption means operator plus agent usage across a 19,726-feedstock population.",
+    "bg": "#f3f2f2"
+  },
+  {
+    "id": "12-graduated-autonomy",
+    "label": "Graduated autonomy",
+    "notes": "The execution model: 6 attended wave-boundary events, 4 dev-auto, 11 loop at per-story-spec approval, 11 loop at per-epic. ~21 of 32 are loop-drivable — but gates are never weakened to raise that share.",
+    "bg": "#f3f2f2"
+  },
+  {
+    "id": "13-eight-waves-32-stories",
+    "label": "Eight waves, 32 stories",
+    "notes": "Wave 0 builds the SKF skill; A the scaffold; B the node ports plus parity plus new signals; C orchestration; D the read surface; E agent plane; F DuckDB consolidation; G portability; H the AI factory. Legacy retires only after B4 parity.",
+    "bg": "#f3f2f2"
+  },
+  {
+    "id": "14-which-surface-when",
+    "label": "Which surface, when",
+    "notes": "The BSL is the single semantic interface — every read surface consumes it, never raw SQL. Vizro pages, Vizro-AI, MCP tools, A2A, and three CLI-first exceptions. Public page breadth stays at one factory-status page.",
+    "bg": "#f3f2f2"
+  },
+  {
+    "id": "15-act-iv-new-signals",
+    "label": "Act IV — New signals",
+    "notes": "Act IV: the three committed new signal sources — Basilisk, velocity, migration readiness — and the open questions gated by wave.",
+    "bg": "#201e1d"
+  },
+  {
+    "id": "16-three-new-signals",
+    "label": "Three new signals",
+    "notes": "Basilisk matches by package name, not the OSV tag, and fix_available is tri-state. Velocity restricts to releases under 90 days and computes against first availability. Readiness partitions by upstream category lists — new migrations need no code change.",
+    "bg": "#f3f2f2"
+  },
+  {
+    "id": "17-open-questions-gated",
+    "label": "Open questions, gated",
+    "notes": "Six open questions, each adopted at its spec default now and re-checked at its gating wave. None block earlier work. Q5 was resolved into the AI-factory scope.",
+    "bg": "#f3f2f2"
+  },
+  {
+    "id": "18-act-v-the-read-surface-inverts",
+    "label": "Act V — The read surface inverts",
+    "notes": "Act V: on top of the DAG, five surfaces — and the pyforge family relationship. Close on the real deliverable.",
+    "bg": "#201e1d"
+  },
+  {
+    "id": "19-five-surfaces",
+    "label": "Five surfaces",
+    "notes": "Semantic read via BSL, the agent plane over MCP/A2A, WASM portability, the Wave-H AI factory, and quality/lineage via pandera plus OpenLineage/OTel.",
+    "bg": "#f3f2f2"
+  },
+  {
+    "id": "20-the-pyforge-family",
+    "label": "The pyforge family",
+    "notes": "Two workspace members in one pyforge namespace. Atlas provides the data; warden uses it. Exactly one optional code edge; zero cycles; both install and run independently.",
+    "bg": "#f3f2f2"
+  },
+  {
+    "id": "21-never-hand-wire-story-33",
+    "label": "Never hand-wire story 33",
+    "notes": "Close: the real deliverable is not speed — the cold rebuild is network-bound. It is a DAG an autonomous agent can extend without hand-wiring a single checkpoint.",
+    "bg": "#ec3013"
+  }
+]
