@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=Archivo+Expanded:wght@700;800;900&display=swap" rel="stylesheet">
+</helmet>
+<x-import component-from-global-scope="deck-stage" from="./deck-stage.js" width="1920" height="1080" hint-size="100%,100%">
+
+  <section data-label="Cover" data-speaker-notes="One line: Scribe is the inward voice of the pyforge factory — where Herald tells the world, Scribe tells the team. It owns what the team knows: every decision captured, curated, compiled into a knowledge graph, and answerable from memory. Adopted 2026-07-23 when the ownership audit found the knowledge station unowned." style="background:#f3f2f2">
+    <div style="width:100%; height:100%; box-sizing:border-box; padding:96px; display:flex; flex-direction:column; justify-content:space-between; font-family:'Archivo',sans-serif; color:#201e1d;">
+      <div style="display:flex; justify-content:space-between; align-items:baseline; font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; letter-spacing:0.08em; text-transform:uppercase;">
+        <span style="color:#c22a10; font-weight:600;">pyforge · Dream to Code · the Ecosystem Crew</span>
+        <span style="color:rgba(32,30,29,.55);">founding Dream · docs/dreams/ecosystem-crew.md</span>
+      </div>
+      <div>
+        <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:22px; letter-spacing:0.34em; text-transform:uppercase; color:#c22a10; font-weight:600; margin-bottom:26px;">Scribe · the Chronicler</div>
+        <h1 style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:140px; line-height:0.9; letter-spacing:-0.03em; margin:0;">capture the decision.<br>answer from memory.</h1>
+        <p style="font-size:34px; line-height:1.35; font-weight:500; margin:40px 0 0; max-width:1360px;">The inward voice: where Herald tells the world, Scribe tells the <b>team</b> — every decision, rejected tradeoff, and 3am runbook kept in a <b>living knowledge graph</b> any agent or human can answer from.</p>
+      </div>
+      <div style="display:grid; grid-template-columns:repeat(4,1fr); border-top:3px solid #201e1d;">
+        <div style="padding:24px 24px 0 0; border-right:2px solid #d3d0cf;"><div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:14px; letter-spacing:0.06em; text-transform:uppercase; color:rgba(32,30,29,.55);">Module</div><div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:24px; font-weight:600; margin-top:8px;">pyforge.scribe</div></div>
+        <div style="padding:24px; border-right:2px solid #d3d0cf;"><div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:14px; letter-spacing:0.06em; text-transform:uppercase; color:rgba(32,30,29,.55);">Owns</div><div style="font-size:24px; font-weight:800; margin-top:8px;">team-memory · the graph</div></div>
+        <div style="padding:24px; border-right:2px solid #d3d0cf;"><div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:14px; letter-spacing:0.06em; text-transform:uppercase; color:rgba(32,30,29,.55);">Inherits</div><div style="font-size:24px; font-weight:800; margin-top:8px;">Sentinel's core</div></div>
+        <div style="padding:24px 0 0 24px;"><div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:14px; letter-spacing:0.06em; text-transform:uppercase; color:rgba(32,30,29,.55);">Twin</div><div style="font-size:24px; font-weight:800; margin-top:8px;">Herald · the outward voice</div></div>
+      </div>
+    </div>
+  </section>
+
+  <section data-label="Act I — The Chronicler" data-speaker-notes="Act I: who Scribe is. The eighth chair existed before anyone sat in it — the knowledge station was unowned until the 2026-07-23 audit." style="background:#201e1d">
+    <div style="position:relative; width:100%; height:100%; box-sizing:border-box; padding:96px; overflow:hidden; display:flex; flex-direction:column; justify-content:space-between; font-family:'Archivo',sans-serif; color:#f3f2f2;">
+      <div style="position:absolute; right:60px; top:-160px; font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:760px; line-height:1; color:rgba(243,242,242,0.10); pointer-events:none;">I</div>
+      <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:22px; letter-spacing:0.16em; text-transform:uppercase; font-weight:600; position:relative;">Act I</div>
+      <div style="position:relative;">
+        <h2 style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:110px; line-height:0.95; letter-spacing:-0.02em; margin:0;">The Chronicler</h2>
+        <p style="font-size:32px; line-height:1.4; font-weight:500; margin:36px 0 0; max-width:1300px;">Herald speaks <b>outward</b>. Scribe speaks <b>inward</b> — to the team, and to every agent that joins it.</p>
+      </div>
+      <div style="display:flex; justify-content:space-between; align-items:baseline; border-top:2px solid rgba(243,242,242,.35); padding-top:22px; font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; font-weight:600;"><span>Scribe · the Chronicler</span><span>02 / 10</span></div>
+    </div>
+  </section>
+
+  <section data-label="Knowledge is lossy" data-speaker-notes="The disease, diagnosed by the Sentinel ancestor in April 2026: an engineer touches six tools in the first hour; the knowledge the team runs on is scattered across them, a dozen threads, and whoever was on call. Every handoff drops context. AI without the graph hallucinates — hallucination is a context problem, not a model problem." style="background:#f3f2f2">
+    <div style="width:100%; height:100%; box-sizing:border-box; padding:96px; display:flex; flex-direction:column; font-family:'Archivo',sans-serif; color:#201e1d;">
+      <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:18px; letter-spacing:0.16em; text-transform:uppercase; color:#c22a10; font-weight:600; margin-bottom:34px;">The disease · diagnosed by Sentinel, 2026-04</div>
+      <h2 style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:84px; line-height:0.98; letter-spacing:-0.02em; margin:0 0 48px;">Knowledge is lossy</h2>
+      <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:0; border-top:3px solid #201e1d; flex:1;">
+        <div style="padding:40px 32px 0 0; border-right:2px solid #d3d0cf;">
+          <div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:52px; margin-bottom:16px;">Scattered</div>
+          <p style="font-size:26px; line-height:1.45; font-weight:500; margin:0;">Six tools in the first hour — the <i>why</i> of code X, the rejected tradeoffs, the 3am runbook live nowhere and everywhere.</p>
+        </div>
+        <div style="padding:40px 32px 0 32px; border-right:2px solid #d3d0cf;">
+          <div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:52px; margin-bottom:16px;">Dropped</div>
+          <p style="font-size:26px; line-height:1.45; font-weight:500; margin:0;">Every handoff loses context. The graph is there; <b>nobody writes it down.</b></p>
+        </div>
+        <div style="padding:40px 0 0 32px;">
+          <div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:52px; margin-bottom:16px;">Hallucinated</div>
+          <p style="font-size:26px; line-height:1.45; font-weight:500; margin:0;">An agent that can't see the graph makes it up. Hallucination is a <b>context</b> problem, not a model problem.</p>
+        </div>
+      </div>
+      <div style="display:flex; justify-content:space-between; align-items:baseline; border-top:2px solid #d3d0cf; padding-top:22px; font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; font-weight:600;"><span>Scribe · the Chronicler</span><span>03 / 10</span></div>
+    </div>
+  </section>
+
+  <section data-label="The compile loop" data-speaker-notes="The cure, in Karpathy's words: index sources into raw, then use an LLM to incrementally compile a wiki — markdown files with summaries, backlinks, concepts, articles. Scribe industrializes that personal loop for a team: capture, curate, compile, answer." style="background:#f3f2f2">
+    <div style="width:100%; height:100%; box-sizing:border-box; padding:96px; display:flex; flex-direction:column; font-family:'Archivo',sans-serif; color:#201e1d;">
+      <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:18px; letter-spacing:0.16em; text-transform:uppercase; color:#c22a10; font-weight:600; margin-bottom:34px;">The cure · the compile loop</div>
+      <h2 style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:84px; line-height:0.98; letter-spacing:-0.02em; margin:0 0 48px;">raw/ → wiki → answers</h2>
+      <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:0; border-top:3px solid #201e1d; flex:1;">
+        <div style="padding:40px 28px 0 0; border-right:2px solid #d3d0cf;"><div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:46px; margin-bottom:14px;">Capture</div><p style="font-size:25px; line-height:1.45; font-weight:500; margin:0;">Every load-bearing decision lands in the record <b>as it happens</b> — memlogs, ADRs, retros, realization logs.</p></div>
+        <div style="padding:40px 28px 0 28px; border-right:2px solid #d3d0cf;"><div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:46px; margin-bottom:14px;">Curate</div><p style="font-size:25px; line-height:1.45; font-weight:500; margin:0;">Dedup, supersede, link. Memory that stays <b>true</b> — not a landfill.</p></div>
+        <div style="padding:40px 28px 0 28px; border-right:2px solid #d3d0cf;"><div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:46px; margin-bottom:14px;">Compile</div><p style="font-size:25px; line-height:1.45; font-weight:500; margin:0;">Artifacts as nodes, references as edges — the graph built <b>nightly</b> from the tools the team already uses.</p></div>
+        <div style="padding:40px 0 0 28px;"><div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:46px; margin-bottom:14px;">Answer</div><p style="font-size:25px; line-height:1.45; font-weight:500; margin:0;">Recall surfaces so every session starts <b>already knowing</b> what the team knows.</p></div>
+      </div>
+      <div style="display:flex; justify-content:space-between; align-items:baseline; border-top:2px solid #d3d0cf; padding-top:22px; font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; font-weight:600;"><span>Scribe · the Chronicler</span><span>04 / 10</span></div>
+    </div>
+  </section>
+
+  <section data-label="Act II — The practice" data-speaker-notes="Act II: what the Scribe does, and the CLI it will grow." style="background:#201e1d">
+    <div style="position:relative; width:100%; height:100%; box-sizing:border-box; padding:96px; overflow:hidden; display:flex; flex-direction:column; justify-content:space-between; font-family:'Archivo',sans-serif; color:#f3f2f2;">
+      <div style="position:absolute; right:60px; top:-160px; font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:760px; line-height:1; color:rgba(243,242,242,0.10); pointer-events:none;">II</div>
+      <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:22px; letter-spacing:0.16em; text-transform:uppercase; font-weight:600; position:relative;">Act II</div>
+      <div style="position:relative;">
+        <h2 style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:110px; line-height:0.95; letter-spacing:-0.02em; margin:0;">The practice</h2>
+        <p style="font-size:32px; line-height:1.4; font-weight:500; margin:36px 0 0; max-width:1300px;">Capture. Curate. Compile. <b>Answer.</b></p>
+      </div>
+      <div style="display:flex; justify-content:space-between; align-items:baseline; border-top:2px solid rgba(243,242,242,.35); padding-top:22px; font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; font-weight:600;"><span>Scribe · the Chronicler</span><span>05 / 10</span></div>
+    </div>
+  </section>
+
+  <section data-label="What Scribe owns" data-speaker-notes="The two dreams in Scribe's care: team-memory — the shared .claude/memory layer so what the team knows, every agent knows — and Sentinel's unbuilt core, the knowledge graph compiled nightly from real tools. Plus the curation surfaces: the Dreams index, ADRs, wikis, catalogs. The CLI cadence shows the shape." style="background:#f3f2f2">
+    <div style="width:100%; height:100%; box-sizing:border-box; padding:96px; display:flex; flex-direction:column; font-family:'Archivo',sans-serif; color:#201e1d;">
+      <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:18px; letter-spacing:0.16em; text-transform:uppercase; color:#c22a10; font-weight:600; margin-bottom:34px;">The station</div>
+      <h2 style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:76px; line-height:0.98; letter-spacing:-0.02em; margin:0 0 44px;">What Scribe owns</h2>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:48px; flex:1;">
+        <div style="display:flex; flex-direction:column; border-top:3px solid #201e1d;">
+          <div style="padding:28px 0; border-bottom:2px solid #d3d0cf;"><div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; color:#c22a10; font-weight:600; margin-bottom:8px;">01 · team-memory</div><p style="font-size:25px; line-height:1.4; font-weight:500; margin:0;">The shared, version-controlled <b>.claude/memory/</b> layer — team truth, not per-operator silos.</p></div>
+          <div style="padding:28px 0; border-bottom:2px solid #d3d0cf;"><div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; color:#c22a10; font-weight:600; margin-bottom:8px;">02 · The knowledge graph</div><p style="font-size:25px; line-height:1.4; font-weight:500; margin:0;">Sentinel's unbuilt core, inherited: <b>the graph is the product</b> — compiled nightly from the team's real tools.</p></div>
+          <div style="padding:28px 0;"><div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; color:#c22a10; font-weight:600; margin-bottom:8px;">03 · Curation surfaces</div><p style="font-size:25px; line-height:1.4; font-weight:500; margin:0;">The Dreams index, ADR/doc hygiene, wikis, catalogs — kept true, deduped, linked.</p></div>
+        </div>
+        <div style="background:#201e1d; color:#f3f2f2; padding:44px; font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:24px; line-height:1.75; align-self:stretch; display:flex; flex-direction:column; justify-content:center;">
+          <div style="color:rgba(243,242,242,.5);"># capture a decision into the team record</div>
+          <div>scribe capture --type decision --text "…"</div>
+          <div style="margin-top:22px; color:rgba(243,242,242,.5);"># compile the graph from real tools</div>
+          <div>scribe graph compile --nightly</div>
+          <div style="margin-top:22px; color:rgba(243,242,242,.5);"># answer from memory</div>
+          <div>scribe recall "why did we drop Kùzu?"</div>
+        </div>
+      </div>
+      <div style="display:flex; justify-content:space-between; align-items:baseline; border-top:2px solid #d3d0cf; padding-top:22px; font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; font-weight:600;"><span>Scribe · the Chronicler</span><span>06 / 10</span></div>
+    </div>
+  </section>
+
+  <section data-label="Act III — Already beating" data-speaker-notes="Act III: the Scribe habit already exists in the factory — it just didn't have a name." style="background:#201e1d">
+    <div style="position:relative; width:100%; height:100%; box-sizing:border-box; padding:96px; overflow:hidden; display:flex; flex-direction:column; justify-content:space-between; font-family:'Archivo',sans-serif; color:#f3f2f2;">
+      <div style="position:absolute; right:60px; top:-160px; font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:760px; line-height:1; color:rgba(243,242,242,0.10); pointer-events:none;">III</div>
+      <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:22px; letter-spacing:0.16em; text-transform:uppercase; font-weight:600; position:relative;">Act III</div>
+      <div style="position:relative;">
+        <h2 style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:110px; line-height:0.95; letter-spacing:-0.02em; margin:0;">Already beating</h2>
+        <p style="font-size:32px; line-height:1.4; font-weight:500; margin:36px 0 0; max-width:1300px;">The capture habit exists — it just <b>didn't have a name.</b></p>
+      </div>
+      <div style="display:flex; justify-content:space-between; align-items:baseline; border-top:2px solid rgba(243,242,242,.35); padding-top:22px; font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; font-weight:600;"><span>Scribe · the Chronicler</span><span>07 / 10</span></div>
+    </div>
+  </section>
+
+  <section data-label="Scribe-shaped machinery" data-speaker-notes="Three working proofs: the append-only memlog discipline where derived artifacts re-render from the log; the personal auto-memory pipeline with thirty-plus curated entries — the single-operator prototype of team memory; and the Dream realization logs — decisions recorded where the aspiration lives. Plus the atlas Wave-H wiki crews as compile-loop machinery." style="background:#f3f2f2">
+    <div style="width:100%; height:100%; box-sizing:border-box; padding:96px; display:flex; flex-direction:column; font-family:'Archivo',sans-serif; color:#201e1d;">
+      <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:18px; letter-spacing:0.16em; text-transform:uppercase; color:#c22a10; font-weight:600; margin-bottom:34px;">Real grounding</div>
+      <h2 style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:84px; line-height:0.98; letter-spacing:-0.02em; margin:0 0 48px;">Scribe-shaped machinery</h2>
+      <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:0; border-top:3px solid #201e1d; flex:1;">
+        <div style="padding:40px 32px 0 0; border-right:2px solid #d3d0cf;">
+          <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:19px; font-weight:600; color:#c22a10; margin-bottom:14px;">memlogs</div>
+          <p style="font-size:26px; line-height:1.45; font-weight:500; margin:0;">Append-only decision records — the spec is <b>derived from the log</b>, never hand-patched. Canonical memory, in production.</p>
+        </div>
+        <div style="padding:40px 32px 0 32px; border-right:2px solid #d3d0cf;">
+          <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:19px; font-weight:600; color:#c22a10; margin-bottom:14px;">auto-memory</div>
+          <p style="font-size:26px; line-height:1.45; font-weight:500; margin:0;">30+ curated, indexed entries — the <b>single-operator prototype</b> of team memory, running for months.</p>
+        </div>
+        <div style="padding:40px 0 0 32px;">
+          <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:19px; font-weight:600; color:#c22a10; margin-bottom:14px;">wiki crews</div>
+          <p style="font-size:26px; line-height:1.45; font-weight:500; margin:0;">The atlas Wave-H Karpathy wiki + agno crews — <b>compile-loop machinery</b> already merged and running.</p>
+        </div>
+      </div>
+      <div style="display:flex; justify-content:space-between; align-items:baseline; border-top:2px solid #d3d0cf; padding-top:22px; font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; font-weight:600;"><span>Scribe · the Chronicler</span><span>08 / 10</span></div>
+    </div>
+  </section>
+
+  <section data-label="Memory that stays true" data-speaker-notes="The differentiator: curation. A memory that only accumulates becomes a landfill that misleads. Scribe supersedes, dedups, and links — and a wrong memory gets corrected at the source, the way the atlas sprint-status grep artifacts were." style="background:#f3f2f2">
+    <div style="width:100%; height:100%; box-sizing:border-box; padding:96px; display:flex; flex-direction:column; font-family:'Archivo',sans-serif; color:#201e1d;">
+      <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:18px; letter-spacing:0.16em; text-transform:uppercase; color:#c22a10; font-weight:600; margin-bottom:34px;">The differentiator</div>
+      <h2 style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:84px; line-height:0.98; letter-spacing:-0.02em; margin:0 0 48px;">Memory that stays true</h2>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:0; border-top:3px solid #201e1d; flex:1;">
+        <div style="padding:40px 40px 0 0; border-right:2px solid #d3d0cf;">
+          <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; letter-spacing:0.08em; text-transform:uppercase; color:rgba(32,30,29,.55); margin-bottom:18px;">Accumulation without curation</div>
+          <p style="font-size:29px; line-height:1.45; font-weight:500; margin:0;">A landfill that misleads — stale claims recalled as fact, superseded decisions steering new work wrong.</p>
+        </div>
+        <div style="padding:40px 0 0 40px;">
+          <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; letter-spacing:0.08em; text-transform:uppercase; color:rgba(32,30,29,.55); margin-bottom:18px;">Scribe's discipline</div>
+          <p style="font-size:29px; line-height:1.45; font-weight:500; margin:0;"><b style="color:#c22a10;">Supersede, dedup, link.</b> Corrections land at the source; every claim carries its date; recalled memories are point-in-time, verified before trusted.</p>
+        </div>
+      </div>
+      <div style="display:flex; justify-content:space-between; align-items:baseline; border-top:2px solid #d3d0cf; padding-top:22px; font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; font-weight:600;"><span>Scribe · the Chronicler</span><span>09 / 10</span></div>
+    </div>
+  </section>
+
+  <section data-label="What the team knows, every agent knows" data-speaker-notes="Close on the promise: what the team knows, every agent knows. The graph is the product; the Scribe keeps it." style="background:#ec3013">
+    <div style="width:100%; height:100%; box-sizing:border-box; padding:96px; display:flex; flex-direction:column; justify-content:space-between; font-family:'Archivo',sans-serif; color:#f3f2f2;">
+      <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:20px; letter-spacing:0.1em; text-transform:uppercase; font-weight:600; opacity:0.9;">Capture the decision · keep the graph · answer from memory</div>
+      <p style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:76px; line-height:1.06; letter-spacing:-0.02em; margin:0; max-width:1560px;">What the team knows, <span style="opacity:0.72;">every agent knows.</span></p>
+      <div style="display:flex; justify-content:space-between; align-items:baseline; border-top:2px solid #f3f2f2; padding-top:22px; font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; font-weight:600;"><span>Scribe · module pyforge.scribe · dist pyforge-scribe</span><span>docs/dreams/pyforge-scribe.md</span></div>
+    </div>
+  </section>
+
+</x-import>
+</x-dc>
+</body>
+</html>

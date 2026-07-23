@@ -1,0 +1,62 @@
+[
+  {
+    "id": "01-cover",
+    "label": "Cover",
+    "notes": "One line: Steward runs the estate the factory stands on — Mason ships artifacts and stops at the registry, Doctor observes and prescribes, Steward deploys, provisions, and operates. Adopted 2026-07-23 when the ownership audit found Deployment and Operations orphaned between stations.",
+    "bg": "#f3f2f2"
+  },
+  {
+    "id": "02-act-i-the-provisioner",
+    "label": "Act I — The Provisioner",
+    "notes": "Act I: the orphaned stage. The Implementation view names Deployment and Operations as a first-class SDLC stage — in the crew it fell between two chairs until the Steward sat down.",
+    "bg": "#201e1d"
+  },
+  {
+    "id": "03-privilege-drift",
+    "label": "Privilege drift",
+    "notes": "Mindset one: no privilege outlives its deployment. The live case on the desk: the JFROG API key that attaches to every outbound request regardless of host — Doctor finds it, Steward remediates it and owns the key lifecycle from then on.",
+    "bg": "#f3f2f2"
+  },
+  {
+    "id": "04-budgets-are-governance",
+    "label": "Budgets are governance",
+    "notes": "Mindset two: the Taxonomy view's resource governance made real — machine-readable ceilings, like locking infrastructure at 1500 dollars a month, enforced with alerts, not hoped about in a wiki.",
+    "bg": "#f3f2f2"
+  },
+  {
+    "id": "05-act-ii-the-duties",
+    "label": "Act II — The duties",
+    "notes": "Act II: the four duties and the CLI they will grow.",
+    "bg": "#201e1d"
+  },
+  {
+    "id": "06-the-four-duties",
+    "label": "The four duties",
+    "notes": "The duties and the CLI: provision runners and environments before Doctor's pre-flight ever runs; deploy services, not just artifacts; audit, rotate, and revoke keys; enforce resource ceilings. Incident response rides on all four.",
+    "bg": "#f3f2f2"
+  },
+  {
+    "id": "07-act-iii-already-steward-shaped",
+    "label": "Act III — Already steward-shaped",
+    "notes": "Act III: the duties are already being done — by hand, without a name.",
+    "bg": "#201e1d"
+  },
+  {
+    "id": "08-the-estate-today",
+    "label": "The estate today",
+    "notes": "Three working proofs: the Pages program console deploys — today a hand-run dashboard-gen plus push; the pixi environment estate with its environment.yaml sync discipline; and the air-gap routing machinery awaiting an operator. All Steward duties, done manually.",
+    "bg": "#f3f2f2"
+  },
+  {
+    "id": "09-deploy-services-not-artifacts",
+    "label": "Deploy services, not artifacts",
+    "notes": "The differentiator versus Mason: Mason's job ends when the artifact reaches the registry. The Steward's job starts there — the service on the platform, hardened, budgeted, keyed, observed, and answered-for when it breaks.",
+    "bg": "#f3f2f2"
+  },
+  {
+    "id": "10-keep-the-lights-on",
+    "label": "Keep the lights on",
+    "notes": "Close on the motto: nothing the factory needs is missing, and nothing it no longer needs stays privileged. Provision the line, hold the keys, keep the lights on.",
+    "bg": "#ec3013"
+  }
+]

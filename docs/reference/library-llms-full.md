@@ -55,6 +55,12 @@ Everything runs through pixi environments. Nothing here is installed globally.
 | `gcloud`       | python + gcloud-sdk                                   | One-time `gcloud auth application-default login`; linux/macOS only |
 | `pyforge-warden`| pyforge-warden (no-default-feature)                  | Lean env for the built `pyforge-warden` package (`src/shared/packages/pyforge-warden` path dep -> conda pkg + run-deps + pytest; test-oracles py-rattler / py-rattler-build / conda-build). Multi-axis dependency-compliance gate; CLI `warden` (`warden-scan` task), gate `pyforge-warden-test`. Spec: `docs/specs/pyforge-warden.md` |
 | `pyforge-atlas`| pyforge-atlas (no-default-feature)                    | Lean env for the `pyforge.atlas` Kedro pipeline member (`src/shared/packages/pyforge-atlas` path dep -> built conda pkg + kedro/kedro-datasets/kedro-dagster/pyforge-warden run-deps + pytest/hatchling/python-build + **kedro-viz**). Loop worktrees materialize THIS env; gates: `kedro-test`, `kedro-catalog-check`, `dagster-dryrun`, `viz` |
+- **graphviz** (>=14.1.2) — Graph layout engine (the `dot` binary); drives the
+  kedro-viz prototype's DAG-image (SVG) emitter.
+- **python-graphviz** (>=0.21) — Python interface to Graphviz — **imports as
+  `graphviz`**; used by the prototype DAG-image generator.
+- **graphviz2drawio** (>=1.2.0) — Convert Graphviz/DOT output into editable
+  draw.io (mxGraph) XML diagrams.
 | `bmad-ui`      | bmad-ui (no-default-feature)                          | **linux-64 only.** BMad Method UI dashboards (`docs/specs/bmad-loop-adoption.md` W4). Consumes the locally-built consume-not-submit mirrors `bmad-dashboard` + `mybmad-dashboard` from `./build_artifacts/linux64` + conda-forge. Tasks: `bmad-dashboard-install` (wires the VS Code extension), `mybmad` (Next.js dashboard + local PostgreSQL on :3002) |
 
 ### Version pins agents must respect (don't fight the resolver)
@@ -84,19 +90,19 @@ Available in every environment (the `python` feature + workspace `[dependencies]
 - **conda** (>=26.5.0) — classic conda package manager; needed by conda-build,
   conda-smithy 2026.x, and `conda pypi`.
 - **pip** (>=26.1.2) — standard Python installer (prefer `uv` for speed).
-- **uv** (>=0.11.29) — Rust-based, very fast pip/pip-tools replacement: `uv pip install`,
+- **uv** (>=0.11.31) — Rust-based, very fast pip/pip-tools replacement: `uv pip install`,
   `uv venv`, `uv pip compile` for lock-style resolution.
 - **nodejs** (24.x LTS) — `node` / `npm` / `npx`; runtime for the JS tools below.
 - **gh** (>=2.96.0) — GitHub CLI: PRs, issues, releases, `gh api` for raw REST/GraphQL,
   `gh pr checks`, workflow dispatch. The repo's primary GitHub automation surface.
-- **gitpython** (>=3.1.52) — `import git`; programmatic Git (repos, diffs, commits,
+- **gitpython** (>=3.1.53) — `import git`; programmatic Git (repos, diffs, commits,
   remotes) when shelling out to `git` is awkward.
 - **truststore** (>=0.10.4) — `import truststore; truststore.inject_into_ssl()`; makes
   Python TLS use the OS trust store (corporate CAs, JFrog). Set `TRUSTSTORE=1` pattern
   used by the vuln-db tasks.
 - **bmad-method** (>=6.10.0) — BMAD-METHOD CLI (`bmad`): AI-driven agile
   planning/dev framework (agents, workflows, story lifecycle). See § 12.
-- **spec-kit** (>=0.12.17) — GitHub Spec Kit (`specify` CLI) for spec-driven
+- **spec-kit** (>=0.13.2) — GitHub Spec Kit (`specify` CLI) for spec-driven
   development scaffolding (constitution → specify → plan → tasks → implement).
 
 ---
@@ -232,7 +238,7 @@ All in `local-recipes`.
 Core arrays/frames:
 - **numpy** (>=2.5.1) — n-dimensional arrays, the numeric foundation (NumPy 2.x API).
 - **pandas** (>=1.5.3,<3) — DataFrames for tabular data (2.x resolved).
-- **polars** (>=1.42.1) — Rust-backed columnar DataFrames; lazy queries, streaming;
+- **polars** (>=1.43.0) — Rust-backed columnar DataFrames; lazy queries, streaming;
   much faster than pandas for large data.
 - **pyarrow-all** (>=21) — `import pyarrow`; Apache Arrow with ALL extras: Parquet,
   Datasets, Flight RPC, ORC, ADBC-adjacent IO. The interchange layer between pandas,
@@ -261,7 +267,7 @@ Ibis — one dataframe API over many engines:
 - **ibis-duckdb / ibis-polars / ibis-sqlite / ibis-postgres / ibis-mssql /
   ibis-oracle** (>=12) — the installed execution backends. (BigQuery via
   google-cloud-bigquery is separate, § 11.)
-- **boring-semantic-layer** (>=0.3.15, PyPI) — lightweight semantic layer on Ibis:
+- **boring-semantic-layer** (>=0.3.16, PyPI) — lightweight semantic layer on Ibis:
   declare metrics/dimensions once, query them across backends.
 
 Small utilities:
@@ -281,10 +287,10 @@ Small utilities:
 
 All in `local-recipes`.
 
-- **dagster** (>=1.13.13) — asset-based data orchestrator: software-defined assets,
+- **dagster** (>=1.13.14) — asset-based data orchestrator: software-defined assets,
   schedules, sensors, partitions, type-checked IO.
-- **dagster-webserver** (>=1.13.13) — the Dagster UI (`dagster dev`).
-- **dagster-pipes** (>=1.13.13) — run external-process transform logic (scripts,
+- **dagster-webserver** (>=1.13.14) — the Dagster UI (`dagster dev`).
+- **dagster-pipes** (>=1.13.14) — run external-process transform logic (scripts,
   containers) with structured logging/metadata back into Dagster.
 - **kedro** (>=1.5.0) — opinionated pipeline framework: nodes, pipelines, data
   catalog, config environments. (A Kedro 3.14-compat warning is suppressed via
@@ -311,7 +317,7 @@ All in `local-recipes`.
 
 All in `local-recipes`.
 
-- **matplotlib** (>=3.11.0) — general-purpose static 2D plotting.
+- **matplotlib** (>=3.11.1) — general-purpose static 2D plotting.
 - **plotly** (>=6.9.0) — interactive web-based charts (JSON-serializable figures).
 - **bokeh** (>=3.9.1) — interactive HTML/JS plots and apps from Python; server mode
   for streaming.
@@ -340,7 +346,7 @@ Any-format → Markdown (LLM ingestion):
   images (w/ OCR), audio → clean Markdown for LLM pipelines. The loaders below back it.
 - **mammoth** (>=1.12.0) — focused, high-fidelity .docx → HTML/Markdown.
 - **markdown** (>=3.10.2) — Markdown → HTML parser.
-- **markdownify** (>=1.2.2) — HTML → Markdown.
+- **markdownify** (>=1.2.3) — HTML → Markdown.
 - **beautifulsoup4** (>=4.15.0) — `from bs4 import BeautifulSoup`; forgiving HTML
   parsing/scraping.
 - **lxml** (>=6.1.1) — fast C-backed XML/HTML parsing + XPath.
@@ -424,9 +430,9 @@ Local inference runtimes:
   preferred local runner on Apple Silicon. Same platform limits as mlx.
 
 Knowledge & indexing for agents:
-- **cocoindex** (>=1.0.16) — incremental indexing/transformation engine for
+- **cocoindex** (>=1.0.17) — incremental indexing/transformation engine for
   long-horizon agents (recompute only what changed).
-- **graphifyy** (>=0.9.17) — turn a folder of code/docs/papers/images into a
+- **graphifyy** (>=0.9.23) — turn a folder of code/docs/papers/images into a
   queryable knowledge graph for coding assistants.
 
 ---
@@ -438,7 +444,7 @@ All in `local-recipes`. This is the stack for *building* agents and agent server
 Provider SDKs:
 - **anthropic** (>=0.76.0) — official Claude SDK: Messages API, streaming, tool use,
   prompt caching.
-- **google-genai** (>=2.12.1) — `from google import genai`; Gemini API client.
+- **google-genai** (>=2.13.0) — `from google import genai`; Gemini API client.
 - **github-copilot-sdk** (>=1.0.7) — drive GitHub Copilot programmatically from
   Python (see `docs/reference/copilot-to-api.md` for the bridge patterns).
 - **langchain-anthropic** (>=1.3.1) — LangChain chat-model integration for Claude.
@@ -446,7 +452,7 @@ Provider SDKs:
   (chat-with-your-data on top of Panel).
 
 Agent frameworks:
-- **pydantic-ai** (>=2.12.0) — typed agent framework from the Pydantic team:
+- **pydantic-ai** (>=2.15.0) — typed agent framework from the Pydantic team:
   structured outputs, tools, dependency injection, model-agnostic.
 - **agno** (>=2.6.22) — lightweight multi-modal agent framework: any provider,
   multi-agent teams, memory, knowledge stores, structured outputs, monitoring.
@@ -464,7 +470,7 @@ Agent2Agent (A2A) & ACP:
 - **a2a-sdk** (>=1.1.1) — `import a2a`; official Python SDK for the Agent2Agent
   protocol (agent cards, task lifecycle, messaging).
 - **fasta2a** (>=0.6.1) — FastAPI-style A2A server implementation.
-- **claude-agent-acp** (>=0.59.0) — bridge the Claude Agent SDK to the Agent Client
+- **claude-agent-acp** (>=0.60.0) — bridge the Claude Agent SDK to the Agent Client
   Protocol (ACP) so editors/clients that speak ACP can drive Claude agents.
 
 ---
@@ -478,13 +484,13 @@ in `CLAUDE.md` and `_bmad-output/`.
 - **bmad-method** (>=6.10.0) — core installer/CLI: agents (PM, architect, dev, …),
   planning workflows (PRD → architecture → epics → stories), dev execution. 6.10+
   gains `bmad-dev-auto`.
-- **bmad-loop** (>=0.8.1) — deterministic "ralph-loop" orchestrator with TUI; spawns
+- **bmad-loop** (>=0.9.0) — deterministic "ralph-loop" orchestrator with TUI; spawns
   coding-agent sessions in tmux (hence tmux below; Linux/macOS only, Windows via WSL).
 - **bmad-builder** (>=2.1.0) — build custom BMAD modules.
 - **bmad-module-template** (>=0.1.0) — scaffold for new BMAD modules.
 - **bmad-creative-intelligence-suite** (>=0.2.1) — CIS expansion module (creative /
   ideation workflows).
-- **bmad-method-test-architecture-enterprise** (>=1.19.0) — TEA module: enterprise
+- **bmad-method-test-architecture-enterprise** (>=1.19.1) — TEA module: enterprise
   test-architecture workflows.
 - **bmad-method-wds-expansion** (>=0.4.3) — Whiteport Design Studio (UX/design)
   expansion.
@@ -520,7 +526,7 @@ Cloud / storage / identity:
 - **google-cloud-bigquery** (>=3.42.2) — `from google.cloud import bigquery`;
   BigQuery client. Used by cf_atlas Phase P (opt-in `PHASE_P_ENABLED=1`); auth via
   ADC creds cached by the `gcloud` env.
-- **google-cloud-sdk** (>=575.0.0) — the `gcloud` CLI. **`gcloud` env only,
+- **google-cloud-sdk** (>=577.0.0) — the `gcloud` CLI. **`gcloud` env only,
   linux/macOS only.** Used once for `gcloud auth application-default login`; after
   that the BigQuery lib picks up cached ADC automatically.
 - **azure-identity** (>=1.25.3) — Azure AD/Entra credential objects for all Azure
@@ -574,7 +580,7 @@ Terminal & CLI building:
 - **typer** (>=0.27.0) — build CLIs from type-hinted functions (click-based).
 
 Node package managers:
-- **pnpm** (>=11.13.1) — fast, disk-efficient npm alternative (default for JS builds
+- **pnpm** (>=11.15.1) — fast, disk-efficient npm alternative (default for JS builds
   here; in .bat scripts always `call pnpm`).
 - **yarn** (>=4.17.1) — Yarn Berry.
 

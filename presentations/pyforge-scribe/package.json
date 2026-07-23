@@ -1,0 +1,24 @@
+{
+  "name": "pyforge-scribe-deck",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "PyForge Scribe (pyforge.scribe) — a field-guide deck for the Ecosystem Crew's Chronicler: capture the decision, keep the graph, answer from memory.",
+  "scripts": {
+    "extract": "node scripts/extract-slides.mjs",
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.4",
+    "vite": "^5.4.11"
+  },
+  "allowScripts": {
+    "esbuild@0.21.5": true
+  }
+}

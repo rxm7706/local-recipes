@@ -1,0 +1,24 @@
+<div style="width:100%; height:100%; box-sizing:border-box; padding:96px; display:flex; flex-direction:column; font-family:'Archivo',sans-serif; color:#201e1d;">
+      <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:18px; letter-spacing:0.16em; text-transform:uppercase; color:#c22a10; font-weight:600; margin-bottom:34px;">The station</div>
+      <h2 style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:76px; line-height:0.98; letter-spacing:-0.02em; margin:0 0 44px;">The four duties</h2>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:48px; flex:1;">
+        <div style="display:flex; flex-direction:column; border-top:3px solid #201e1d;">
+          <div style="padding:24px 0; border-bottom:2px solid #d3d0cf;"><div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; color:#c22a10; font-weight:600; margin-bottom:6px;">01 · Provision</div><p style="font-size:24px; line-height:1.4; font-weight:500; margin:0;">Runners, CI images, pixi environments — engines present <b>before</b> Doctor's pre-flight ever runs.</p></div>
+          <div style="padding:24px 0; border-bottom:2px solid #d3d0cf;"><div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; color:#c22a10; font-weight:600; margin-bottom:6px;">02 · Deploy</div><p style="font-size:24px; line-height:1.4; font-weight:500; margin:0;">Services, not just artifacts — the Pages console, Presenton on OpenShift, air-gap bundle installs.</p></div>
+          <div style="padding:24px 0; border-bottom:2px solid #d3d0cf;"><div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; color:#c22a10; font-weight:600; margin-bottom:6px;">03 · Hold the keys</div><p style="font-size:24px; line-height:1.4; font-weight:500; margin:0;">Issue scoped, rotate, revoke, audit for drift — the credential lifecycle, owned.</p></div>
+          <div style="padding:24px 0;"><div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; color:#c22a10; font-weight:600; margin-bottom:6px;">04 · Enforce budgets</div><p style="font-size:24px; line-height:1.4; font-weight:500; margin:0;">Machine-readable ceilings with alerts — autonomy spends inside the line.</p></div>
+        </div>
+        <div style="background:#201e1d; color:#f3f2f2; padding:44px; font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:23px; line-height:1.75; align-self:stretch; display:flex; flex-direction:column; justify-content:center;">
+          <div style="color:rgba(243,242,242,.5);"># provision a runner for the factory line</div>
+          <div>steward provision --runner bmad-loop</div>
+          <div style="margin-top:20px; color:rgba(243,242,242,.5);"># deploy a service to its platform</div>
+          <div>steward deploy presenton --target openshift</div>
+          <div style="margin-top:20px; color:rgba(243,242,242,.5);"># the key lifecycle</div>
+          <div>steward keys audit --drift</div>
+          <div>steward keys rotate --scope jfrog</div>
+          <div style="margin-top:20px; color:rgba(243,242,242,.5);"># the ceiling</div>
+          <div>steward budget enforce --cap 1500usd/month</div>
+        </div>
+      </div>
+      <div style="display:flex; justify-content:space-between; align-items:baseline; border-top:2px solid #d3d0cf; padding-top:22px; font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; font-weight:600;"><span>Steward · the Provisioner</span><span>06 / 10</span></div>
+    </div>
