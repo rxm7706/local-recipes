@@ -1,1 +1,62 @@
-[]
+[
+  {
+    "id": "01-cover",
+    "label": "Cover",
+    "notes": "One line: Marshal is the commanding operational authority of the pyforge Dream-to-Code factory — the BMAD-method orchestrator that turns a solidified Dream into validated code without vibe coding. This deck introduces the Commander.",
+    "bg": "#f3f2f2"
+  },
+  {
+    "id": "02-act-i-the-commander",
+    "label": "Act I — The Commander",
+    "notes": "Act I: who Marshal is. While Atlas charts the map, Warden secures the perimeter, and Mason binds the packages, Marshal runs the heavy automated machinery of the factory floor.",
+    "bg": "#201e1d"
+  },
+  {
+    "id": "03-anti-vibe-pragmatism",
+    "label": "Anti-vibe pragmatism",
+    "notes": "The core mindset: Marshal operates entirely on strict structural inputs. Good intentions and close-enough do not exist. A sub-agent that deviates from the spec is flagged instantly and forced into a corrective iteration.",
+    "bg": "#f3f2f2"
+  },
+  {
+    "id": "04-ruthless-context-containment",
+    "label": "Ruthless context containment",
+    "notes": "Mindset two: context discipline. Each sub-agent receives only the exact context its task requires. Containment kills hallucination and keeps the line fast.",
+    "bg": "#f3f2f2"
+  },
+  {
+    "id": "05-act-ii-the-bmad-suite",
+    "label": "Act II — The bmad-suite",
+    "notes": "Act II: the toolkit. Marshal orchestrates the full BMAD stack — official modules, web bundles for flat-rate planning, community plugins, and the autonomy layer.",
+    "bg": "#201e1d"
+  },
+  {
+    "id": "06-one-method-five-modules",
+    "label": "One method, five modules",
+    "notes": "The official BMAD modules Marshal drives: BMM core with 34+ workflows, BMB for building custom agents, TEA for risk-based testing, BMGD for game dev, CIS for creative intelligence. Plus web bundles (Gemini Gems, Custom GPTs) for flat-rate planning, and community plugins like skill-forge.",
+    "bg": "#f3f2f2"
+  },
+  {
+    "id": "07-act-iii-running-the-line",
+    "label": "Act III — Running the line",
+    "notes": "Act III: the factory loop itself — how a spec becomes validated code, and how the whole run stays visible.",
+    "bg": "#201e1d"
+  },
+  {
+    "id": "08-the-factory-loop",
+    "label": "The factory loop",
+    "notes": "Three responsibilities, one loop. Spec marshalling: the Dream solidified into targeted instruction blocks. Agent mobilization: tactical sub-agents spawned per role. Defect containment: failed test output piped back as explicit self-healing instructions. The CLI cadence shows the shape of a run.",
+    "bg": "#f3f2f2"
+  },
+  {
+    "id": "09-every-run-stays-visible",
+    "label": "Every run stays visible",
+    "notes": "Visibility: as bmad-loop drives epics and stories, the program dashboard is kept current and published on GitHub Pages — deliveries, notables, roadmaps and updates are marshalled from the same run state. Nothing invisible ships.",
+    "bg": "#f3f2f2"
+  },
+  {
+    "id": "10-validated-code-not-vibes",
+    "label": "Validated code, not vibes",
+    "notes": "Close on the creed: the Dream deserves better than vibes. Marshal exists so that what ships is what was specified — enforced, contained, validated. Hand off to Atlas, Warden and Mason.",
+    "bg": "#ec3013"
+  }
+]

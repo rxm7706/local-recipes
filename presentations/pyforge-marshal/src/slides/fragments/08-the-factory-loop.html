@@ -1,0 +1,22 @@
+<div style="width:100%; height:100%; box-sizing:border-box; padding:96px; display:flex; flex-direction:column; font-family:'Archivo',sans-serif; color:#201e1d;">
+      <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:18px; letter-spacing:0.16em; text-transform:uppercase; color:#c22a10; font-weight:600; margin-bottom:34px;">Responsibilities</div>
+      <h2 style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:76px; line-height:0.98; letter-spacing:-0.02em; margin:0 0 44px;">The factory loop</h2>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:48px; flex:1;">
+        <div style="display:flex; flex-direction:column; border-top:3px solid #201e1d;">
+          <div style="padding:28px 0; border-bottom:2px solid #d3d0cf;"><div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; color:#c22a10; font-weight:600; margin-bottom:8px;">01 · Spec marshalling</div><p style="font-size:25px; line-height:1.4; font-weight:500; margin:0;">Ingest the Spec — the Dream solidified — and shard it into targeted, isolated instruction blocks per sub-agent.</p></div>
+          <div style="padding:28px 0; border-bottom:2px solid #d3d0cf;"><div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; color:#c22a10; font-weight:600; margin-bottom:8px;">02 · Agent mobilization</div><p style="font-size:25px; line-height:1.4; font-weight:500; margin:0;">Spawn and monitor tactical sub-agents per role — tests, logic, documentation — each on its own tight context.</p></div>
+          <div style="padding:28px 0;"><div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; color:#c22a10; font-weight:600; margin-bottom:8px;">03 · Defect containment</div><p style="font-size:25px; line-height:1.4; font-weight:500; margin:0;">Intercept errors, compile stdout/stderr from failed runs, and pipe them back as explicit instructions for automated self-healing.</p></div>
+        </div>
+        <div style="background:#201e1d; color:#f3f2f2; padding:44px; font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:24px; line-height:1.75; align-self:stretch; display:flex; flex-direction:column; justify-content:center;">
+          <div style="color:rgba(243,242,242,.5);"># initialize a blueprint from a specification</div>
+          <div>marshal init --spec ./docs/system_spec.md</div>
+          <div style="margin-top:22px; color:rgba(243,242,242,.5);"># spin the factory, assign sub-agents, iterate</div>
+          <div>marshal factory spin --pipeline standard</div>
+          <div style="margin-top:22px; color:rgba(243,242,242,.5);"># evaluate against tests; self-heal on failure</div>
+          <div>marshal gate evaluate --suite unit-tests</div>
+          <div style="margin-top:22px; color:rgba(243,242,242,.5);"># pass pristine artifacts to the crew</div>
+          <div>marshal deploy --output ./build-artifacts</div>
+        </div>
+      </div>
+      <div style="display:flex; justify-content:space-between; align-items:baseline; border-top:2px solid #d3d0cf; padding-top:22px; font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; font-weight:600;"><span>Marshal · the Commander</span><span>08 / 10</span></div>
+    </div>
