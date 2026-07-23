@@ -2,7 +2,6 @@
 # Shrinks as backfill waves land (spec-regenerable-factory CAP-2).
 recipes/**               # Wave 4.1: packaging-factory kernel takes this surface
 .claude/**               # Wave 4.1: CFE skill surface (kernel + Rule 1)
-docs/dashboard/**        # Wave 2.1: factory-console kernel takes this surface
 docs/dreams/**           # Tier-0 prose (Dream convention governs), not code
 docs/reference/**        # reference prose; catalog drift has its own detector (llms-full-check)
 docs/intake/**           # intake inbox (triage rules in its README), not code
