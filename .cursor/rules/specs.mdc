@@ -1,12 +1,15 @@
 ---
-description: Spec-driven workflow + repo tier model for this repo
+description: Dream-first workflow + repo tier model for this repo
 alwaysApply: true
 ---
 
 Read `AGENTS.md` at the repo root first.
 
-- **Specs live in `docs/specs/*.md`** — read the relevant spec before implementing.
-- Three tiers, do not cross them: Tier-1 intake = `docs/specs/`; Tier-2 planning =
+- **Everything starts with a Dream in `docs/dreams/*.md`** — the raw aspiration; BMAD-method
+  turns it into the spec (`bmad-spec`, or the planning chain for product scope).
+- **The active spec is a BMAD artifact** in `_bmad-output/projects/<slug>/planning-artifacts/`.
+- Tiers, do not cross them: Tier-0 Dream = `docs/dreams/`; Tier-1 = `docs/specs/`
+  (**LEGACY** — kept for in-flight efforts, author no new specs there); Tier-2 spec & planning =
   `_bmad-output/projects/<slug>/planning-artifacts/`; Tier-3 execution output =
   `_bmad-output/projects/<slug>/implementation-artifacts/` (gitignored/local-only).
-- Never put an intake spec into a Tier-3 output dir. Write your own working output under `.cursor/`.
+- Never put a spec into a Tier-3 output dir. Write your own working output under `.cursor/`.

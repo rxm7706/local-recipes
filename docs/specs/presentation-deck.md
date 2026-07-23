@@ -1,6 +1,6 @@
 ---
 status: workflow
-spec_updated: 2026-07-14
+spec_updated: 2026-07-23
 ---
 # Tech Spec: Design-to-Deck — reusable React/Vite presentation workflow (parameterized)
 
@@ -28,6 +28,30 @@ spec_updated: 2026-07-14
 
 ---
 
+## Genesis — The Dream & the Ecosystem Crew
+
+Every deck this spec produces is one persona's chapter of a larger story: the
+**pyforge** ecosystem's **"Dream to Code"** pipeline. Its genesis (**The Dream** —
+the BMAD mission, *Build More Architect Dreams*), its six-persona **Ecosystem
+Crew** (Herald · Marshal · Atlas · Warden · Mason · Doctor), and the Master
+Pipeline Flow are defined **once**, in the founding Dream:
+**`docs/dreams/ecosystem-crew.md`**. Read the crew there — this spec deliberately
+does not duplicate it.
+
+**Where a Dream lives:** `docs/dreams/` is **Tier 0** (per `AGENTS.md`) — the
+starting point of every deliverable. Herald reads the Dream to render *The Deck*;
+BMAD-method (`bmad-spec`, or the planning chain) turns the same Dream into the
+active spec in `_bmad-output/projects/<slug>/planning-artifacts/`. Everything
+starts with a Dream. (This file itself predates the model and remains in the
+legacy `docs/specs/` tier as a **timeless workflow** doc.)
+
+**Why this matters to this spec:** **Herald is the presentation persona** — the
+decks produced by this workflow *are* Herald's output. Each persona gets its own
+deck (see § *Worked Examples* → *The live deck family*); a Herald deck is, fittingly,
+a deck about the deck engine.
+
+---
+
 ## How to use this spec
 
 1. **Fill the Parameters block** with the new deck's real values (topic, title,
@@ -52,7 +76,7 @@ spec_updated: 2026-07-14
 
 The friction in this workflow is the boundary between a **Claude Design** session
 (where slides are authored) and the **local repo** (where they're wired, built,
-and shipped). This is the concrete hand-off, learned across Worked Examples 1–2.
+and shipped). This is the concrete hand-off, learned across Worked Examples 1–3.
 
 **What a Claude Design session hands off (per deck):**
 - **One `.dc.html` prototype** — the React deck's source of truth and the *only*
@@ -162,8 +186,8 @@ presentations/<slug>/
       fragments/*.html      one 1920×1080 slide body per file
       manifest.json         [{ id, label, notes, bg }]  per slide
       index.js              globs fragments (?raw) + manifest → slides[]  (topic-agnostic)
-    marp/                 distributable Marp export (mirrors project/*.marp.md)
-    pptx/                 PowerPoint export (dated: <slug>-YYYY-MM-DD.pptx)
+    marp/                 Marp sources + derived standalone HTML (see § Standard export set)
+    pptx/                 marp-derived PowerPoint (deck + infographic, dated)
 
   public/assets/banners/  remote images localized for offline/export safety
 ```
@@ -278,6 +302,64 @@ The reference theme (swap per topic):
 
 ---
 
+## Standard export set (the deck-family contract)
+
+Every deck in the family ships the **same six companion deliverables** so the set
+is uniform and every non-React format is **reproducible from a Marp source**, never
+hand-massaged. (The React deck — `prototype → fragments → dist/` — remains the
+*primary* artifact; these six are the portable, offline-friendly companions.)
+
+**Marp sources** (hand/Claude-Design-authored — the source of truth for exports),
+in `src/marp/`:
+1. `<slug>-deck-<YYYY-MM-DD>.md` — the full Marp deck (mirrors the prototype narrative)
+2. `<slug>-executive-summary-<YYYY-MM-DD>.md` — a short exec-summary deck
+3. `<slug>-infographic-<YYYY-MM-DD>.md` — a single/few-panel infographic
+
+**Derived** (generated with `marp`; **regenerate, never hand-edit**):
+4. `src/marp/<slug>-infographic-standalone-<YYYY-MM-DD>.html` — self-contained,
+   offline `marp --html` render of #3
+5. `src/pptx/<slug>-deck-<YYYY-MM-DD>.pptx` — `marp --pptx` of #1
+6. `src/pptx/<slug>_infographic_deck-<YYYY-MM-DD>.pptx` — `marp --pptx` of #3
+   (note the `_infographic_deck` underscore form, kept from Example 2)
+
+**Generation** — from repo root; the `local-recipes` pixi env carries `marp` 4.2.3
+and Chrome at `/usr/bin/google-chrome` (Chrome is required for `--pptx`/`--pdf`;
+`--html` is pure Node):
+
+```bash
+S=presentations/<slug>/src
+# 4. standalone infographic HTML (offline, self-contained)
+pixi run -e local-recipes marp --allow-local-files \
+  "$S/marp/<slug>-infographic-<date>.md" \
+  -o "$S/marp/<slug>-infographic-standalone-<date>.html"
+# 5 + 6. PPTX (Chrome-backed)
+CHROME_PATH=/usr/bin/google-chrome pixi run -e local-recipes marp --allow-local-files --pptx \
+  "$S/marp/<slug>-deck-<date>.md" -o "$S/pptx/<slug>-deck-<date>.pptx"
+CHROME_PATH=/usr/bin/google-chrome pixi run -e local-recipes marp --allow-local-files --pptx \
+  "$S/marp/<slug>-infographic-<date>.md" -o "$S/pptx/<slug>_infographic_deck-<date>.pptx"
+```
+
+Or run the **wrapped pixi task** — `scripts/deck_export.py` resolves each deck's
+dated `.md` sources and runs exactly the commands above (each output dated from its
+own source), so exports stay one command and never drift:
+
+```bash
+pixi run -e local-recipes deck-export <slug> [html | deck-pptx | infographic-pptx ...]
+```
+
+With no targets it regenerates all three derived artifacts.
+
+**Conformance (as of 2026-07-23):** all three live decks — `pyforge-warden`,
+`pyforge-atlas`, and `agentic-sdlc` — carry the full six. The 2026-07-23
+standardization pass generated atlas's + agentic's derived companions, regenerated
+warden's standalone HTML from its `.md` via `marp` (it had been a one-off Claude
+Design "bundled page"), and brought `agentic-sdlc` — the origin deck, on its own
+Space-Grotesk theme — into the set by authoring its exec-summary + infographic and
+renaming its files to convention. Per-deck **content** still differs (theme, slide
+count, wording); the **shape** of the set does not.
+
+---
+
 ## Acceptance criteria
 
 - [ ] `npm install && npm run dev` serves the deck at `localhost:5173` with all
@@ -288,7 +370,9 @@ The reference theme (swap per topic):
       `?` help, and `#/<n>` deep-links all work; nav is suppressed while typing.
 - [ ] `npm run build` produces a `dist/` that renders correctly opened as
       `file://` (offline) — banners load locally; fonts fall back gracefully.
-- [ ] Marp `.marp.md` and `.pptx` exports exist and open.
+- [ ] The **standard export set** (§ *Standard export set*) is complete — 3 Marp
+      sources + the marp-derived standalone infographic HTML + 2 PPTX — and every
+      derived artifact regenerates from its `.md` source (no hand edits).
 - [ ] The React app, static bundle, and exports are the same deck (content lives
       only in the prototype → fragments; no divergent hand edits).
 
@@ -311,6 +395,18 @@ The reference theme (swap per topic):
   `index.html` title, README, and generated slides. Because the copies are
   identical, any engine fix must be applied to **every** deck in the same change
   (see the handoff playbook) — `diff -q` the copies to prove they didn't drift.
+- **The `index.html` font `<link>` is per-deck — do NOT copy it verbatim.**
+  `index.html` is *mostly* boilerplate, but its Google-Fonts `<link>` must load
+  exactly the families the prototype/fragments use (`font-family:` declarations),
+  because `extract` copies only the `<section>` bodies — the prototype's own
+  `<head>` font link is design-time and never reaches the built app. Copying
+  `index.html` verbatim from the source deck ships the *wrong* fonts: the
+  **pyforge-warden** deck went out with `agentic-sdlc`'s Space Grotesk / IBM Plex
+  link while its slides request **Archivo**, so it silently rendered in a
+  sans-serif fallback until the 2026-07-23 alignment pass. Pull the `<link>`
+  straight from the deck's own prototype `<head>`, and remember it can differ
+  between siblings (warden needs `IBM Plex Mono`; atlas uses system mono, so their
+  links aren't identical even though both are Archivo decks).
 - **esbuild's install script is blocked by default (npm 11+).** After
   `npm install`, run `npm approve-scripts esbuild && npm rebuild esbuild`, then
   commit the `allowScripts` entry it writes to `package.json` (+ `package-lock.json`)
@@ -335,6 +431,19 @@ The reference theme (swap per topic):
 New decks append a subsection here. Do not modify the workflow above; record the
 per-case reality below.
 
+**The live deck family.** Each persona in the § *Genesis* Ecosystem Crew gets its
+own deck. **Atlas** and **Warden** have shipped decks (Examples 3 & 2);
+**Herald, Marshal, Mason, and Doctor** are the backlog, to be built from this spec
+as `pyforge-herald`, `pyforge-marshal`, `pyforge-mason`, and `pyforge-doctor` — the
+existing family convention (matching `pyforge-atlas` / `pyforge-warden`). All six
+persona decks
+share one **Modernist / Archivo** design system (display **Archivo** / **Archivo
+Expanded**; light `#f3f2f2`, dark `#201e1d`, red `#ec3013` / `#c22a10`) so they
+present side-by-side as a family. `agentic-sdlc` (Example 1) is the **origin
+engine** they were all forked from and keeps its own Space Grotesk / IBM Plex
+theme — so a new persona deck should scaffold from **`pyforge-atlas` or
+`pyforge-warden`** (already on the Archivo system), not from `agentic-sdlc`.
+
 ### Example 1 — Agentic AI across the SDLC (BMAD Method) · PR #50
 
 | Field | Value |
@@ -348,7 +457,7 @@ per-case reality below.
 | `screenshot_slots` | slide 40 "In action" — 3 placeholder panels awaiting real screenshots |
 | `fonts` / `palette` | Space Grotesk + IBM Plex Sans/Mono; `#0B1626` / `#F6F4EE` / `#F4C233` / blues |
 | `branch` / `PR` | `claude/add-agentic-sdlc-deck` / **PR #50** (merged 2026-07-11 → `main`, `4e7aabb0`) |
-| `exports` | `src/marp/agenticaisdlc.marp.md` · `src/pptx/agentic-ai-sdlc-2026-07-11.pptx` |
+| `exports` | **full standard set** (6, conformed 2026-07-23) — `src/marp/agentic-sdlc-deck-2026-07-11.md` + `-executive-summary-2026-07-23.md` + `-infographic-2026-07-23.md` + `-infographic-standalone-2026-07-23.html`; `src/pptx/agentic-sdlc-deck-2026-07-11.pptx` + `agentic-sdlc_infographic_deck-2026-07-23.pptx` |
 | `sources` | Built from a Claude Design prototype + a Claude Code web session; the prototype is committed as the design source of truth |
 
 **Notes / deltas from the generic workflow:**
@@ -364,6 +473,15 @@ per-case reality below.
   mismatched quotes.
 - `spec_updated` reflects when this workflow spec was back-filled (2026-07-11)
   from the shipped effort; the deck itself predates the spec.
+- **Export standardization (2026-07-23):** brought agentic into the § *Standard
+  export set*. Authored `agentic-sdlc-executive-summary-2026-07-23.md` +
+  `agentic-sdlc-infographic-2026-07-23.md` (Marp, in the deck's own Space-Grotesk
+  theme — distilled from the 45-slide deck), renamed the deck source + PPTX to
+  convention (`agentic-sdlc-deck-2026-07-11.*`), and generated the derived
+  standalone HTML + infographic PPTX via `pixi run -e local-recipes deck-export
+  agentic-sdlc html infographic-pptx`. The existing deck PPTX was **preserved**
+  (renamed, not re-rendered) — its theme differs from the persona decks, so it
+  stays the origin exception on Space Grotesk while sharing the set's *shape*.
 
 ### Example 2 — PyForge-Warden, the multi-axis dependency compliance gate · PRs #59, #60
 
@@ -377,7 +495,7 @@ per-case reality below.
 | `banners` | none — the prototype references **zero** remote images, so `BANNER_MAP = {}` and `dist/` is fully offline (bar Google Fonts) |
 | `fonts` / `palette` | **Archivo** display; light `#f3f2f2`, dark `#201e1d`, red accents `#c22a10` / `#ec3013` (from the prototype) |
 | `branches` / `PRs` | scaffold `claude/add-pyforge-warden-deck` → **PR #59** (`b90e3aab69`); wire `claude/wire-pyforge-warden-slides` → **PR #60** (`ef5fd000d0`) |
-| `exports` | **three standalone Marp decks** — `src/marp/pyforge-warden-deck.md`, `-executive-summary.md`, `-infographic.md` — plus `src/pptx/pyforge-warden-deck-2026-07-14.pptx` |
+| `exports` | **three Marp decks** — `src/marp/pyforge-warden-deck-2026-07-15.md`, `-executive-summary-2026-07-15.md`, `-infographic-2026-07-15.md` — a **standalone infographic** `-infographic-standalone-2026-07-15.html`, plus **two** PPTX (`src/pptx/pyforge-warden-deck-2026-07-15.pptx`, `pyforge-warden_infographic_deck-2026-07-15.pptx`) |
 | `sources` | Claude Design prototype + Marp exports; the prototype is committed as the design source of truth |
 
 **Notes / deltas from the generic workflow:**
@@ -404,3 +522,53 @@ per-case reality below.
   `setMode` added to the `useDeck` keyboard-effect deps, lazy `useRef` init for the
   presenter timer (Strict-Mode safe), and an explicit `Escape`-closes-help handler
   in `Deck.jsx`. Both decks rebuilt green (69 / 86 modules).
+
+### Example 3 — PyForge-Atlas, the cf_atlas Kedro/Dagster/DuckDB migration
+
+| Field | Value |
+|---|---|
+| `topic` | **Atlas** — the conda-forge intelligence layer, migrating a ~10,000-LOC hand-rolled orchestrator to declarative **Kedro + Dagster + DuckDB** dataflow (Boring Semantic Layer, Vizro / Vizro-AI read surface, MCP / A2A agent interfaces) |
+| `slug` / `output_dir` | `pyforge-atlas` / `presentations/pyforge-atlas/` |
+| `slide_count` | 21 |
+| `acts` | 5 — from monolith to DAG → node-shaped & agent-maintainable → an agent workforce builds it → new signals (Basilisk / velocity / readiness) → the read surface inverts; + cover & closing |
+| `prototype` | `project/PyForge Atlas.dc.html` (Claude Design handoff; **spaces in the name kept**) |
+| `banners` | none — `BANNER_MAP = {}`; `dist/` fully offline (bar Google Fonts) |
+| `fonts` / `palette` | **Archivo** + **Archivo Expanded** display, **system mono** (`ui-monospace`); Modernist light `#f3f2f2` / dark `#201e1d` / red `#ec3013` / `#c22a10` (matches `pyforge-warden`) |
+| `exports` | **full standard set** (6) — 3 Marp sources (`-deck-`, `-executive-summary-`, `-infographic-` `2026-07-23.md`) + the marp-derived standalone `-infographic-standalone-2026-07-23.html` + 2 PPTX (`-deck-`, `_infographic_deck-` `2026-07-23.pptx`) |
+| `sources` | Claude Design prototype + Marp exports; the prototype is committed as the design source of truth |
+
+**Notes / deltas from the generic workflow:**
+- **Engine + glue copied verbatim from `pyforge-warden`** (already on the Archivo
+  system) — only the prototype, `index.html` title + Archivo font link, README, and
+  the generated `fragments/` + `manifest.json` are Atlas-specific. Confirmed
+  byte-identical to warden + agentic-sdlc via `diff -q` (all 8 `src/deck/*` +
+  `src/slides/index.js` + config/glue).
+- **System mono, not IBM Plex Mono:** Atlas uses `ui-monospace, 'SF Mono', Menlo`
+  for code/labels, so its `index.html` font `<link>` loads only Archivo +
+  Archivo Expanded (unlike warden, which also loads IBM Plex Mono).
+- **2026-07-23 alignment pass (the change that added this Example).** Audited all
+  three live decks for artifact parity. The engine files were already byte-identical;
+  the drift was in the surrounding artifacts and was fixed in the same change:
+  1. **warden `index.html` fonts** — it loaded `agentic-sdlc`'s Space Grotesk /
+     IBM Plex link while its slides request Archivo, so it rendered in a sans-serif
+     fallback. Corrected to `Archivo + Archivo Expanded + IBM Plex Mono` (from
+     warden's own prototype). Rebuilt green; `dist/index.html` now loads Archivo.
+  2. **agentic-sdlc `package.json`** lacked the `allowScripts` `esbuild@0.21.5`
+     entry the other two carry (fresh npm-11 clones would fail `build`). Added.
+  3. **atlas reproducibility** — it had never been `npm install`ed, so no
+     committed `package-lock.json` and no `public/`. Ran `npm install` (→ committed
+     lockfile) and added `public/assets/banners/.gitkeep` to match warden. Verified
+     all three build green (agentic 69 / warden 69 / atlas 62 modules).
+  4. **Export-set divergence — then standardized:** at audit time only warden had
+     the full companion set (standalone HTML + 2 PPTX); atlas had the three Marp
+     sources only, and agentic-sdlc a single Marp mirror. Rather than leave it, the
+     family was standardized in a follow-on step the same day (user directive
+     "standardize the family") — see § *Standard export set* + Example 1's
+     standardization note. The `deck-export` pixi task was added to keep the derived
+     artifacts reproducible.
+- **Export standardization (same 2026-07-23 pass):** atlas already had the three
+  Marp sources but not the derived companions; generated
+  `pyforge-atlas-infographic-standalone-2026-07-23.html` (`marp --html`) and
+  `pyforge-atlas_infographic_deck-2026-07-23.pptx` (`marp --pptx`, Chrome-backed)
+  so it now carries the full **§ Standard export set** (6 companions), matching
+  `pyforge-warden`.

@@ -2,49 +2,76 @@
 
 This is the **framework-neutral** entry point for any coding agent or agentic framework
 (Claude Code, Cursor, GitHub Copilot, Gemini, Devin, Codex, Aider, BMAD, Agno, CrewAI, …).
-It is intentionally tool-agnostic: the **spec is the contract; the agent/framework is
-interchangeable.**
+It is intentionally tool-agnostic: **everything starts with a Dream; BMAD turns it into a
+spec; the spec drives the build — the agent/framework is interchangeable.**
 
-## Spec-driven: where specs live
+## Dream-driven: where work starts
 
-**All specs live in `docs/specs/*.md`** — plain markdown, version-controlled, neutral. Before
-implementing anything, read the relevant spec there. Specs are the durable source of truth; they
-do **not** live inside any framework's working tree.
+**Every deliverable starts as a Dream in `docs/dreams/*.md`** — the raw, pre-technical aspiration
+(the BMAD mission: *Build More Architect Dreams*). Plain markdown, version-controlled, neutral.
+From a Dream, **BMAD-method produces the spec**:
 
-## Spec-first workflow (MANDATORY — every agent, every framework)
+- **Small / clear scope** → **`bmad-spec`** distils the Dream into a SPEC kernel + companions.
+- **Product / platform scope** → the planning chain: `bmad-product-brief` → `bmad-prd` →
+  `bmad-architecture` → `bmad-create-epics-and-stories`.
 
-1. **No non-trivial work without a spec.** Before implementing a feature, migration, packaging
-   effort, or refactor, a spec MUST exist in `docs/specs/<name>.md`. If none exists, **create it
-   first** (use the `spec-driven-development` skill, `bmad-create-*`, or hand-author one matching the
-   existing specs) and get it to `status: ready` before writing code.
-2. **Keep the spec's `status:` current** — it is the framework-neutral source of truth for whether
-   work is a draft or implemented. Transition it as you go:
-   `draft → ready → in-progress → shipped` (set `implemented_by:` + `shipped_ref:` when shipped).
-   This applies **no matter who does the work** — Claude, Cursor, Gemini, Devin, Copilot, a human,
-   or any agentic framework (BMAD, Agno, CrewAI…). Don't leave a shipped feature marked `draft`, or
-   a draft marked `shipped`.
-3. **Frontmatter contract** for every `docs/specs/*.md`:
-   ```yaml
-   status: draft | ready | in-progress | shipped | workflow | superseded | abandoned
-   implemented_by: bmad-quick-dev | human | cursor | devin | …   # who did it (when in-progress/shipped)
-   shipped_ref: "conda-forge-expert v8.6.0" | "PR #33764" | "<commit>"   # evidence (when shipped)
-   spec_updated: YYYY-MM-DD
-   ```
-4. **Verify:** `pixi run -e local-recipes bmad-drift-check --specs` lists every spec's status +
-   whether it's indexed; `bmad-drift-check` HARD-fails on misfiled specs and flags un-indexed ones.
+The resulting spec + planning artifacts live in **BMAD's own folder** —
+`_bmad-output/projects/<slug>/planning-artifacts/` — not in a hand-maintained specs directory.
 
-## The three tiers (do not cross them)
+> **Legacy — `docs/specs/*.md`.** This was the former hand-authored intake-spec tier. It is
+> **kept for existing efforts** (folder retained; files still valid and still carry the `status:`
+> frontmatter that `bmad-drift-check --specs` reads) but is **superseded** — author no new specs
+> there. New work is Dream → `bmad-spec` → the BMAD planning folder.
+
+## Portability contract (why this stays framework-neutral)
+
+BMAD *produces* the spec, but the spec stays portable — you are **not locked to BMAD**. The
+neutral / framework-specific line runs *through* the spec:
+
+- **Shared, portable layers:** the **Dream** (`docs/dreams/`, the WHY) and the **neutral spec
+  kernel** (`bmad-spec`'s output — the WHAT + machine-checkable acceptance criteria, i.e. the
+  verification oracle). Both are framework-agnostic by construction.
+- **Per-framework layers:** decomposition (BMAD epics/stories vs. CrewAI crews vs. LangGraph
+  nodes) and execution (orchestration, sprints, run traces) belong to whichever framework runs —
+  BMAD, CrewAI, Agno, LangGraph, Devin, ….
+
+So another framework has **two entry points**: (1) start from the **Dream** and do everything its
+own way, or (2) consume the **neutral spec kernel** and diverge only at decomposition/execution —
+which also lets you verify (and compare) any framework's build against the *same* oracle.
+
+**The one property to protect:** the spec kernel's acceptance criteria must stay
+framework-agnostic and machine-checkable (behavior + oracle — never "BMAD story 3.2 passed").
+Keeping the Dream → spec handoff portable across agents is **Herald's** job.
+
+## Dream-first workflow (MANDATORY — every agent, every framework)
+
+1. **No non-trivial work without a Dream + spec.** Before implementing a feature, migration,
+   packaging effort, or refactor, a **Dream** must exist in `docs/dreams/<slug>.md`, and BMAD must
+   have produced its **spec** (via `bmad-spec` or the planning chain) in
+   `_bmad-output/projects/<slug>/planning-artifacts/`. Never code from a bare prompt.
+2. **Keep the spec's status current** as work proceeds (`draft → ready → in-progress → shipped`) —
+   no matter who does the work (Claude, Cursor, Gemini, Devin, Copilot, a human, or any agentic
+   framework). BMAD specs track status in the framework; legacy `docs/specs/*.md` track it in
+   `status:` frontmatter.
+3. **Autonomy.** Marshal (`bmad-loop` / `bmad-dev-auto`) can watch `docs/dreams/`, run `bmad-spec`
+   on a new Dream, and drive the build unattended — so "a Dream is written" can trigger "BMAD
+   creates the spec" with no human in the loop.
+
+## The tiers (do not cross them)
 
 | Tier | Location | Purpose | Git |
 |---|---|---|---|
-| **1 — Intake spec** | `docs/specs/*.md` | The "what to build" contract every tool reads | tracked, permanent |
-| **2 — Planning** | `_bmad-output/projects/<slug>/planning-artifacts/` | PRD, architecture, API/interface specs, epics+stories list, gate reports (BMAD-generated) | tracked, permanent |
-| **3 — Execution output** | `_bmad-output/projects/<slug>/implementation-artifacts/` (BMAD); your own tool dir for others | story files, sprint YAMLs, test outputs, retros, derived per-effort specs | **local-only / gitignored** |
+| **0 — Dream** | `docs/dreams/*.md` | The raw human aspiration / starting point (BMAD — *Build More Architect Dreams*); Herald renders it into a deck, and BMAD turns it into the spec | tracked, permanent |
+| **1 — Intake spec (LEGACY)** | `docs/specs/*.md` | Former hand-authored spec tier — kept for existing efforts, **superseded by Tier 2**; author no new files here | tracked, phasing out |
+| **2 — Spec & planning (BMAD)** | `_bmad-output/projects/<slug>/planning-artifacts/` | The `bmad-spec` output + PRD, architecture, API/interface specs, epics+stories, gate reports — produced from the Dream. **The active spec lives here.** | tracked, permanent |
+| **3 — Execution output** | `_bmad-output/projects/<slug>/implementation-artifacts/` (BMAD); your own tool dir for others | story files, sprint YAMLs, test outputs, retros | **local-only / gitignored** |
 
 **Rules:**
-- An **intake spec belongs in Tier 1 (`docs/specs/`)** — never drop it into a Tier-3 output dir.
+- The **active spec is a BMAD artifact in Tier 2** — produced from a Tier-0 Dream. Don't hand-author
+  a new spec in the legacy `docs/specs/` (Tier 1), and never drop one into a Tier-3 output dir.
 - Each tool writes its working output into **its own** area (BMAD → `implementation-artifacts/`;
-  Cursor → `.cursor/`; etc.) and **reads the spec from `docs/specs/`**.
+  Cursor → `.cursor/`; etc.) and **reads the spec from the BMAD planning folder** (Tier 2) — or a
+  legacy `docs/specs/` file for an existing effort.
 - `implementation-artifacts/` is gitignored/local-only — **nothing there should be git-tracked.**
 
 ## Library catalog (what's available to import/run)
@@ -59,14 +86,14 @@ exits non-zero when the catalog drifts from `pixi.toml`.
 
 ## How each tool discovers this
 
-| Tool | Entry file (thin pointer → this file + `docs/specs/`) |
+| Tool | Entry file (thin pointer → this file + `docs/dreams/` + the BMAD planning folder) |
 |---|---|
 | Claude Code | `CLAUDE.md` (full repo guidance) |
 | Cursor | `.cursor/rules/specs.mdc` |
 | GitHub Copilot | `.github/copilot-instructions.md` |
 | Gemini CLI | `GEMINI.md` |
 | Devin / Codex / Factory / Zed | this `AGENTS.md` |
-| Agentic frameworks (BMAD, Agno, CrewAI, LangGraph) | load the `docs/specs/<X>.md` markdown into the agent's task context programmatically (BMAD: `bmad-quick-dev` consumes it) |
+| Agentic frameworks (BMAD, Agno, CrewAI, LangGraph) | start from the Dream in `docs/dreams/`; BMAD's `bmad-spec` produces the spec the agent then consumes |
 
 ## Keeping the BMAD planning docs accurate
 

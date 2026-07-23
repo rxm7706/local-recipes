@@ -11,11 +11,14 @@ Before answering any questions, analyzing the codebase, writing any code, or tak
 
 You must adopt the persona and follow all the rules defined in `CLAUDE.md` for this session. Do not proceed without referencing it.
 
-## Spec-driven workflow (also read `AGENTS.md`)
+## Dream-first workflow (also read `AGENTS.md`)
 
-This repo is **spec-driven and framework-neutral** — see **`AGENTS.md`** at the repo root.
-- **Specs live in `docs/specs/*.md`** — read the relevant spec before implementing.
-- Tier model (do not cross): Tier-1 intake = `docs/specs/`; Tier-2 planning =
+This repo is **Dream-first and framework-neutral** — see **`AGENTS.md`** at the repo root.
+- **Everything starts with a Dream in `docs/dreams/*.md`** — the raw aspiration; BMAD-method
+  turns it into the spec (`bmad-spec`, or the planning chain for product scope).
+- **The active spec is a BMAD artifact** in `_bmad-output/projects/<slug>/planning-artifacts/`.
+- Tier model (do not cross): Tier-0 Dream = `docs/dreams/`; Tier-1 = `docs/specs/`
+  (**LEGACY** — kept for in-flight efforts, author no new specs there); Tier-2 spec & planning =
   `_bmad-output/projects/<slug>/planning-artifacts/`; Tier-3 execution output =
   `_bmad-output/projects/<slug>/implementation-artifacts/` (gitignored/local-only).
-- An intake spec always belongs in `docs/specs/`, never in a Tier-3 output dir.
+- A spec never belongs in a Tier-3 output dir.

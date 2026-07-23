@@ -72,19 +72,20 @@ Layers 5 and 6 only load when an active project resolves. To set the active proj
 
 **Adding a new project:** see `_bmad-output/PROJECTS.md` § "Adding a new project."
 
-### Spec-driven, framework-neutral layout (the three tiers)
+### Spec-driven, framework-neutral layout (the tiers)
 
-This repo is spec-driven and tool-agnostic — the spec is the contract; the agent/framework is interchangeable. **`AGENTS.md`** (repo root) is the cross-tool entry point (thin per-tool pointers: `CLAUDE.md`, `.cursor/rules/specs.mdc`, `GEMINI.md`, `.github/copilot-instructions.md`). Three tiers, never crossed:
+This repo is spec-driven and tool-agnostic — **everything starts with a Dream; BMAD turns it into the spec; the spec drives the build** — the agent/framework is interchangeable. **`AGENTS.md`** (repo root) is the cross-tool entry point (thin per-tool pointers: `CLAUDE.md`, `.cursor/rules/specs.mdc`, `GEMINI.md`, `.github/copilot-instructions.md`). Tiers, never crossed:
 
 | Tier | Location | Purpose | Git |
 |---|---|---|---|
-| **1 — Intake spec** | `docs/specs/*.md` | The "what to build" contract every tool/framework reads (the `bmad-quick-dev` entry point) | tracked, permanent |
-| **2 — Planning** | `_bmad-output/projects/<slug>/planning-artifacts/` | PRD, architecture/API specs, epics+stories list, gate reports | tracked, permanent |
+| **0 — Dream** | `docs/dreams/*.md` | The raw human aspiration / starting point (BMAD — *Build More Architect Dreams*); Herald renders it into a deck, and BMAD turns it into the spec | tracked, permanent |
+| **1 — Intake spec (LEGACY)** | `docs/specs/*.md` | Former hand-authored spec tier — kept for existing efforts, **superseded by Tier 2**; author no new files here | tracked, phasing out |
+| **2 — Spec & planning (BMAD)** | `_bmad-output/projects/<slug>/planning-artifacts/` | `bmad-spec` output + PRD, architecture/API specs, epics+stories, gate reports — produced from the Dream. **The active spec lives here.** | tracked, permanent |
 | **3 — Execution output** | `_bmad-output/projects/<slug>/implementation-artifacts/` | story files, sprint YAMLs, test outputs, retros, derived per-effort specs | **gitignored / local-only** |
 
-Rules: an **intake spec belongs in Tier 1 (`docs/specs/`)** — never a Tier-3 output dir; `implementation-artifacts/` is gitignored, so **nothing there may be git-tracked**. `bmad-drift-check` enforces both (HARD `tracked-impl-artifact` finding).
+Rules: the **active spec is a BMAD artifact in Tier 2** (produced from a Tier-0 Dream) — don't hand-author new specs in the legacy `docs/specs/`, and never drop one into a Tier-3 output dir; `implementation-artifacts/` is gitignored, so **nothing there may be git-tracked** (HARD `tracked-impl-artifact` finding).
 
-**Spec-first (MANDATORY, always-on):** before implementing any non-trivial effort, a spec MUST exist in `docs/specs/<name>.md` — if none exists, create it first (`spec-driven-development` skill or `bmad-spec`) and bring it to `status: ready` before writing code. **Keep the spec's `status:` frontmatter current** (`draft → ready → in-progress → shipped`, with `implemented_by:` + `shipped_ref:` when shipped) — it is the framework-neutral source of truth, updated regardless of which agent/tool/human did the work. Full convention + frontmatter contract: **`AGENTS.md`** (repo root). Check status anytime with `pixi run -e local-recipes bmad-drift-check --specs`.
+**Dream-first (MANDATORY, always-on):** before implementing any non-trivial effort, a **Dream** must exist in `docs/dreams/<slug>.md`, and BMAD must have produced its **spec** from it — run **`bmad-spec`** (small scope → a SPEC kernel) or the planning chain (`bmad-prd` / `bmad-architecture` / `bmad-create-epics-and-stories`), output landing in `_bmad-output/…/planning-artifacts/`. Marshal (`bmad-loop` / `bmad-dev-auto`) can do this unattended from a new Dream. **Keep the spec's status current** (`draft → ready → in-progress → shipped`) regardless of who did the work. Legacy `docs/specs/*.md` still carry `status:` frontmatter (read by `pixi run -e local-recipes bmad-drift-check --specs`) during the transition. Full convention: **`AGENTS.md`** (repo root).
 
 ### Keeping BMAD artifacts in sync with the live repo (always-on)
 
@@ -156,7 +157,12 @@ For extended architectural context, please reference the centralized `docs/` fol
 - **`docs/copilot-to-api.md`** — Five ways to drive a GitHub Copilot subscription as a local model backend (`copilot-api`, `litellm`, `copilot-openai-api`, `copilot-api-proxy`, `c2p`); decision tree, auth flows, configuration reference.
 - **`docs/library-llms-full.md`** — LLM/agent-facing catalog of every library and CLI in the pixi environments: capabilities, version pins, import-name gotchas, env membership, and what is deliberately NOT installed. Derived from `pixi.toml` (regeneration prompt in its header) — consult before importing a library or proposing a new dependency. Drift detector: `pixi run -e local-recipes llms-full-check` (exits non-zero when the catalog is stale; reconcile by regenerating).
 
-### Intake specs (`docs/specs/` — Tier 1)
+### Intake specs (`docs/specs/` — LEGACY Tier 1, being phased out)
+
+> **Legacy.** `docs/specs/` is the former hand-authored intake-spec tier — **superseded** by the
+> Dream → `bmad-spec` → `_bmad-output/…/planning-artifacts/` flow (see § *Spec-driven,
+> framework-neutral layout*). These files are **kept for existing efforts**; author no new specs
+> here. The index below remains the map of in-flight legacy specs during the transition.
 
 One table row per spec; the **spec file itself is the source of truth** (frontmatter contract + its
 `## Current State` block where present) — long-form status detail is deliberately not duplicated here.
