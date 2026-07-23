@@ -174,6 +174,21 @@ DREAMS_DIR = REPO_ROOT / "docs" / "dreams"
 DREAM_STATUSES = ("seeded", "in-deck", "in-spec", "realized")
 
 
+def dream_chain(slug: str) -> dict:
+    """Exact-slug chain links for the drill-through indicators (no-straggler
+    visibility): deck dir, spec-kernel folder, BMAD project dir."""
+    chain: dict[str, str] = {}
+    if (REPO_ROOT / "presentations" / slug).is_dir():
+        chain["deck"] = f"presentations/{slug}"
+    hits = sorted((REPO_ROOT / "_bmad-output" / "projects").glob(
+        f"*/planning-artifacts/specs/spec-{slug}"))
+    if hits:
+        chain["spec"] = str(hits[0].relative_to(REPO_ROOT))
+    if (REPO_ROOT / "_bmad-output" / "projects" / slug).is_dir():
+        chain["project"] = f"_bmad-output/projects/{slug}"
+    return chain
+
+
 def scan_dreams() -> list[dict]:
     """[{slug, title, status}] from docs/dreams/*.md frontmatter (README skipped)."""
     dreams: list[dict] = []
@@ -198,7 +213,8 @@ def scan_dreams() -> list[dict]:
         if not owner:
             print(f"[dreams] WARN {f.name}: no owner: in frontmatter")
         dreams.append({"slug": f.stem, "title": title or f.stem,
-                       "status": status or "", "owner": owner or ""})
+                       "status": status or "", "owner": owner or "",
+                       "chain": dream_chain(f.stem)})
     by_status = {s: sum(1 for d in dreams if d["status"] == s) for s in DREAM_STATUSES}
     print(f"[dreams] {len(dreams)} scanned: "
           + " / ".join(f"{n} {s}" for s, n in by_status.items()))

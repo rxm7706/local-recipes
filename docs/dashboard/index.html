@@ -148,6 +148,7 @@
   .dchip .dt { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .dchip .down { font-size: 9px; text-transform: uppercase; letter-spacing: 0.07em;
     color: var(--slate-faint); flex: none; }
+  .dchip .dmk { font-size: 9.5px; color: var(--slate); flex: none; letter-spacing: 1.5px; }
   .drow.st-seeded .dchip { border-left-color: var(--slate-faint); }
   .drow.st-in-deck .dchip { border-left-color: var(--deck); background: var(--deck-ground); }
   .drow.st-in-spec .dchip { border-left-color: var(--active); background: var(--active-ground); }
@@ -401,9 +402,14 @@
         '<div class="dchips">' + bucket.map(d => {
           const head = esc(d.title.split(" — ")[0]);
           const own = d.owner ? '<span class="down">' + esc(d.owner) + '</span>' : '';
+          const ch = d.chain || {};
+          const marks = (ch.deck ? "▤" : "") + (ch.spec ? "§" : "") + (ch.project ? "⚙" : "");
+          const mk = marks ? '<span class="dmk">' + marks + '</span>' : '';
+          const tip = Object.entries(ch).map(([k, v]) => k + ": " + v).join(" · ");
           return '<a class="dchip" href="https://github.com/rxm7706/local-recipes/blob/main/docs/dreams/' +
-            d.slug + '.md" title="' + esc(d.title) + ' · docs/dreams/' + d.slug + '.md"><span class="dt">' +
-            head + '</span>' + own + '</a>';
+            d.slug + '.md" title="' + esc(d.title) + ' · docs/dreams/' + d.slug + '.md' +
+            (tip ? ' · ' + esc(tip) : '') + '"><span class="dt">' +
+            head + '</span>' + own + mk + '</a>';
         }).join("") + '</div>';
       drows.appendChild(row);
     });
