@@ -314,7 +314,7 @@
 <div class="wrap">
   <div class="statusline">
     <span><span class="prompt">pyforge ❯</span> status --program</span>
-    <span class="branch" id="branch">branch: pyforge-warden-epic3-policy</span>
+    <span class="branch" id="branch">state: —</span>
     <button class="theme-toggle" id="tt" type="button" aria-label="Toggle theme">◐ theme</button>
   </div>
 
@@ -422,7 +422,7 @@
   function select(id) {
     const p = PROJECTS[id];
     root.setAttribute("data-project", id);
-    branchEl.textContent = "branch: " + p.branch;
+    branchEl.textContent = "state: " + p.branch;
     [...toggleEl.children].forEach(b => b.setAttribute("aria-selected", b.dataset.p === id ? "true" : "false"));
 
     const c = countOf(p);
