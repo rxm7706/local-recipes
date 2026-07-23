@@ -485,8 +485,10 @@ superseded per-deck as deckcraft (editable PPTX) and Design-authored bundles
 New decks append a subsection here. Do not modify the workflow above; record the
 per-case reality below.
 
-**The live deck family.** Each persona in the § *Genesis* Ecosystem Crew gets its
-own deck. **Atlas** and **Warden** have shipped decks (Examples 3 & 2);
+**The live deck family.** **`pyforge-genesis`** is the **master vision deck** — the
+parent narrative of the founding Dream (and its *seed*: it lays out the operating
+model well enough to initiate a new repo or adopt the model in a brownfield one).
+Each persona in the § *Genesis* Ecosystem Crew then gets its own chapter deck. **Atlas** and **Warden** have shipped decks (Examples 3 & 2);
 **Herald, Marshal, Mason, and Doctor** are the backlog, to be built from this spec
 as `pyforge-herald`, `pyforge-marshal`, `pyforge-mason`, and `pyforge-doctor` — the
 existing family convention (matching `pyforge-atlas` / `pyforge-warden`). All six
