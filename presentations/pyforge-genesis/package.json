@@ -1,0 +1,24 @@
+{
+  "name": "pyforge-genesis-deck",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "PyForge Genesis (pyforge.genesis) — the master vision deck for the founding Dream: everything starts with a Dream; six personas carry it from vision to shipped code.",
+  "scripts": {
+    "extract": "node scripts/extract-slides.mjs",
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.4",
+    "vite": "^5.4.11"
+  },
+  "allowScripts": {
+    "esbuild@0.21.5": true
+  }
+}

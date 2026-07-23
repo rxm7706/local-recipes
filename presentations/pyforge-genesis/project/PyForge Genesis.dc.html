@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=Archivo+Expanded:wght@700;800;900&display=swap" rel="stylesheet">
+</helmet>
+<x-import component-from-global-scope="deck-stage" from="./deck-stage.js" width="1920" height="1080" hint-size="100%,100%">
+
+  <section data-label="Cover" data-speaker-notes="The master vision deck. One line: pyforge is a Dream-to-Code factory — everything starts with a raw human aspiration, and a six-persona crew carries it to shipped, validated code. This deck is the founding story; each persona has its own chapter deck." style="background:#f3f2f2">
+    <div style="width:100%; height:100%; box-sizing:border-box; padding:96px; display:flex; flex-direction:column; justify-content:space-between; font-family:'Archivo',sans-serif; color:#201e1d;">
+      <div style="display:flex; justify-content:space-between; align-items:baseline; font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; letter-spacing:0.08em; text-transform:uppercase;">
+        <span style="color:#c22a10; font-weight:600;">pyforge · Dream to Code · the founding vision</span>
+        <span style="color:rgba(32,30,29,.55);">founding Dream · docs/dreams/ecosystem-crew.md</span>
+      </div>
+      <div>
+        <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:22px; letter-spacing:0.34em; text-transform:uppercase; color:#c22a10; font-weight:600; margin-bottom:26px;">Genesis</div>
+        <h1 style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:150px; line-height:0.88; letter-spacing:-0.03em; margin:0;">everything starts<br>with a dream.</h1>
+        <p style="font-size:34px; line-height:1.35; font-weight:500; margin:40px 0 0; max-width:1360px;">The mission of the factory is <b>Build More Architect Dreams</b>: turn a raw, inspired human aspiration — unconstrained by syntax or technical debt — into <b>deterministic, production-ready code.</b></p>
+      </div>
+      <div style="display:grid; grid-template-columns:repeat(4,1fr); border-top:3px solid #201e1d;">
+        <div style="padding:24px 24px 0 0; border-right:2px solid #d3d0cf;"><div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:14px; letter-spacing:0.06em; text-transform:uppercase; color:rgba(32,30,29,.55);">Genesis</div><div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:24px; font-weight:600; margin-top:8px;">docs/dreams/</div></div>
+        <div style="padding:24px; border-right:2px solid #d3d0cf;"><div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:14px; letter-spacing:0.06em; text-transform:uppercase; color:rgba(32,30,29,.55);">Crew</div><div style="font-size:24px; font-weight:800; margin-top:8px;">6 personas</div></div>
+        <div style="padding:24px; border-right:2px solid #d3d0cf;"><div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:14px; letter-spacing:0.06em; text-transform:uppercase; color:rgba(32,30,29,.55);">Method</div><div style="font-size:24px; font-weight:800; margin-top:8px;">BMAD · bmad-loop</div></div>
+        <div style="padding:24px 0 0 24px;"><div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:14px; letter-spacing:0.06em; text-transform:uppercase; color:rgba(32,30,29,.55);">Pipeline</div><div style="font-size:24px; font-weight:800; margin-top:8px;">Dream → Code</div></div>
+      </div>
+    </div>
+  </section>
+
+  <section data-label="Act I — The Dream" data-speaker-notes="Act I: the genesis. What a Dream is and why the whole model starts there rather than with a ticket or a spec." style="background:#201e1d">
+    <div style="position:relative; width:100%; height:100%; box-sizing:border-box; padding:96px; overflow:hidden; display:flex; flex-direction:column; justify-content:space-between; font-family:'Archivo',sans-serif; color:#f3f2f2;">
+      <div style="position:absolute; right:60px; top:-160px; font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:760px; line-height:1; color:rgba(243,242,242,0.10); pointer-events:none;">I</div>
+      <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:22px; letter-spacing:0.16em; text-transform:uppercase; font-weight:600; position:relative;">Act I</div>
+      <div style="position:relative;">
+        <h2 style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:110px; line-height:0.95; letter-spacing:-0.02em; margin:0;">The Dream</h2>
+        <p style="font-size:32px; line-height:1.4; font-weight:500; margin:36px 0 0; max-width:1300px;">Not a ticket. Not a spec. The <b>raw aspiration</b> — before syntax, before constraints.</p>
+      </div>
+      <div style="display:flex; justify-content:space-between; align-items:baseline; border-top:2px solid rgba(243,242,242,.35); padding-top:22px; font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; font-weight:600;"><span>Genesis · pyforge · Dream to Code</span><span>02 / 13</span></div>
+    </div>
+  </section>
+
+  <section data-label="Tier 0 — where work starts" data-speaker-notes="A Dream is a markdown doc in docs/dreams — Tier 0 of the layout, upstream of everything. It holds the WHY; BMAD turns it into the spec (the WHAT); code follows. The frontmatter tracks its lifecycle: seeded, in-deck, in-spec, realized." style="background:#f3f2f2">
+    <div style="width:100%; height:100%; box-sizing:border-box; padding:96px; display:flex; flex-direction:column; font-family:'Archivo',sans-serif; color:#201e1d;">
+      <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:18px; letter-spacing:0.16em; text-transform:uppercase; color:#c22a10; font-weight:600; margin-bottom:34px;">Tier 0</div>
+      <h2 style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:84px; line-height:0.98; letter-spacing:-0.02em; margin:0 0 48px;">Where work starts</h2>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:0; border-top:3px solid #201e1d; flex:1;">
+        <div style="padding:40px 40px 0 0; border-right:2px solid #d3d0cf;">
+          <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; letter-spacing:0.08em; text-transform:uppercase; color:rgba(32,30,29,.55); margin-bottom:18px;">A Dream is</div>
+          <p style="font-size:29px; line-height:1.45; font-weight:500; margin:0;">A markdown doc in <b>docs/dreams/</b> — the starting point of every deliverable. It holds the <b>why</b>: the problem to solve, the system to construct, the audience to empower. Aspirational, narrative, human.</p>
+        </div>
+        <div style="padding:40px 0 0 40px;">
+          <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; letter-spacing:0.08em; text-transform:uppercase; color:rgba(32,30,29,.55); margin-bottom:18px;">Its lifecycle</div>
+          <p style="font-size:29px; line-height:1.45; font-weight:500; margin:0;"><b style="color:#c22a10;">seeded</b> → written down · <b style="color:#c22a10;">in-deck</b> → Herald renders the vision · <b style="color:#c22a10;">in-spec</b> → BMAD distills the contract · <b style="color:#c22a10;">realized</b> → shipped and proclaimed.</p>
+        </div>
+      </div>
+      <div style="display:flex; justify-content:space-between; align-items:baseline; border-top:2px solid #d3d0cf; padding-top:22px; font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; font-weight:600;"><span>Genesis · pyforge · Dream to Code</span><span>03 / 13</span></div>
+    </div>
+  </section>
+
+  <section data-label="Dream → Deck → Spec → Code" data-speaker-notes="The cadence: Herald touches the Dream first and renders The Deck — cheap visual alignment before expensive commitment. Then Marshal solidifies the same Dream into the spec via bmad-spec or the planning chain, and the factory builds from the contract. Deck before spec; spec before code." style="background:#f3f2f2">
+    <div style="width:100%; height:100%; box-sizing:border-box; padding:96px; display:flex; flex-direction:column; font-family:'Archivo',sans-serif; color:#201e1d;">
+      <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:18px; letter-spacing:0.16em; text-transform:uppercase; color:#c22a10; font-weight:600; margin-bottom:34px;">The cadence</div>
+      <h2 style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:84px; line-height:0.98; letter-spacing:-0.02em; margin:0 0 48px;">Dream → Deck → Spec → Code</h2>
+      <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:0; border-top:3px solid #201e1d; flex:1;">
+        <div style="padding:40px 32px 0 0; border-right:2px solid #d3d0cf;">
+          <div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:52px; margin-bottom:16px;">Deck first</div>
+          <p style="font-size:26px; line-height:1.45; font-weight:500; margin:0;"><b>Herald</b> is the first to touch the Dream — the vision deck is cheap alignment before expensive commitment.</p>
+        </div>
+        <div style="padding:40px 32px 0 32px; border-right:2px solid #d3d0cf;">
+          <div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:52px; margin-bottom:16px;">Spec second</div>
+          <p style="font-size:26px; line-height:1.45; font-weight:500; margin:0;"><b>Marshal</b> solidifies the same Dream into the contract — <b>bmad-spec</b> distills it; the planning chain scales it.</p>
+        </div>
+        <div style="padding:40px 0 0 32px;">
+          <div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:52px; margin-bottom:16px;">Code third</div>
+          <p style="font-size:26px; line-height:1.45; font-weight:500; margin:0;">The factory builds <b>from the contract</b> — spec-driven, gated, never vibes. The crew maps, audits, binds, ships.</p>
+        </div>
+      </div>
+      <div style="display:flex; justify-content:space-between; align-items:baseline; border-top:2px solid #d3d0cf; padding-top:22px; font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; font-weight:600;"><span>Genesis · pyforge · Dream to Code</span><span>04 / 13</span></div>
+    </div>
+  </section>
+
+  <section data-label="Act II — The Crew" data-speaker-notes="Act II: who carries the Dream. Six personas, each with its own chapter deck in this same design system." style="background:#201e1d">
+    <div style="position:relative; width:100%; height:100%; box-sizing:border-box; padding:96px; overflow:hidden; display:flex; flex-direction:column; justify-content:space-between; font-family:'Archivo',sans-serif; color:#f3f2f2;">
+      <div style="position:absolute; right:60px; top:-160px; font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:760px; line-height:1; color:rgba(243,242,242,0.10); pointer-events:none;">II</div>
+      <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:22px; letter-spacing:0.16em; text-transform:uppercase; font-weight:600; position:relative;">Act II</div>
+      <div style="position:relative;">
+        <h2 style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:110px; line-height:0.95; letter-spacing:-0.02em; margin:0;">The Crew</h2>
+        <p style="font-size:32px; line-height:1.4; font-weight:500; margin:36px 0 0; max-width:1300px;">Six personas carry the Dream down one pipeline — <b>each has its own chapter deck.</b></p>
+      </div>
+      <div style="display:flex; justify-content:space-between; align-items:baseline; border-top:2px solid rgba(243,242,242,.35); padding-top:22px; font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; font-weight:600;"><span>Genesis · pyforge · Dream to Code</span><span>05 / 13</span></div>
+    </div>
+  </section>
+
+  <section data-label="Six personas, six mottos" data-speaker-notes="The crew at a glance, each with its motto. Herald the Proclaimer bookends the pipeline; Marshal the Commander runs the BMAD factory; Atlas the Navigator maps dependencies; Warden the Guardian audits six axes; Mason the Artisan binds and ships; Doctor the Physician keeps it all alive. Each persona's chapter deck lives at presentations/pyforge-<persona>." style="background:#f3f2f2">
+    <div style="width:100%; height:100%; box-sizing:border-box; padding:96px; display:flex; flex-direction:column; font-family:'Archivo',sans-serif; color:#201e1d;">
+      <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:18px; letter-spacing:0.16em; text-transform:uppercase; color:#c22a10; font-weight:600; margin-bottom:30px;">The Ecosystem Crew</div>
+      <h2 style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:76px; line-height:0.98; letter-spacing:-0.02em; margin:0 0 40px;">Six personas, six mottos</h2>
+      <div style="display:grid; grid-template-columns:repeat(3,1fr); grid-template-rows:1fr 1fr; gap:0; border-top:3px solid #201e1d; flex:1;">
+        <div style="padding:28px 28px 20px 0; border-right:2px solid #d3d0cf; border-bottom:2px solid #d3d0cf;"><div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:17px; color:#c22a10; font-weight:600; margin-bottom:10px;">Herald · the Proclaimer</div><p style="font-size:24px; line-height:1.35; font-weight:600; margin:0;">"Capture the dream. Illustrate the telemetry. Proclaim the release."</p></div>
+        <div style="padding:28px; border-right:2px solid #d3d0cf; border-bottom:2px solid #d3d0cf;"><div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:17px; color:#c22a10; font-weight:600; margin-bottom:10px;">Marshal · the Commander</div><p style="font-size:24px; line-height:1.35; font-weight:600; margin:0;">"Enforce the spec. Guard the boundaries. Run the line."</p></div>
+        <div style="padding:28px 0 20px 28px; border-bottom:2px solid #d3d0cf;"><div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:17px; color:#c22a10; font-weight:600; margin-bottom:10px;">Atlas · the Navigator</div><p style="font-size:24px; line-height:1.35; font-weight:600; margin:0;">"Chart the dependencies. Map the world. Define the floor."</p></div>
+        <div style="padding:28px 28px 0 0; border-right:2px solid #d3d0cf;"><div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:17px; color:#c22a10; font-weight:600; margin-bottom:10px;">Warden · the Guardian</div><p style="font-size:24px; line-height:1.35; font-weight:600; margin:0;">"Halt the threat. Clear the axes. Protect the perimeter."</p></div>
+        <div style="padding:28px; border-right:2px solid #d3d0cf;"><div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:17px; color:#c22a10; font-weight:600; margin-bottom:10px;">Mason · the Artisan</div><p style="font-size:24px; line-height:1.35; font-weight:600; margin:0;">"We forge the blocks. We bind the environment. We ship the structure."</p></div>
+        <div style="padding:28px 0 0 28px;"><div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:17px; color:#c22a10; font-weight:600; margin-bottom:10px;">Doctor · the Physician</div><p style="font-size:24px; line-height:1.35; font-weight:600; margin:0;">"Check the vitals. Diagnose the fault. Keep the ecosystem alive."</p></div>
+      </div>
+      <div style="display:flex; justify-content:space-between; align-items:baseline; border-top:2px solid #d3d0cf; padding-top:22px; font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; font-weight:600;"><span>Genesis · pyforge · Dream to Code</span><span>06 / 13</span></div>
+    </div>
+  </section>
+
+  <section data-label="The Master Pipeline" data-speaker-notes="The full automation loop: Doctor checks the machinery before the run; Herald captures the Dream into the vision deck; Marshal spins the BMAD factory from the spec; Atlas charts the dependency map; Warden audits; Mason binds and ships; Doctor keeps monitoring; Herald broadcasts the notables. Supervised end to end by Marshal, opened and closed by Herald." style="background:#f3f2f2">
+    <div style="width:100%; height:100%; box-sizing:border-box; padding:96px; display:flex; flex-direction:column; font-family:'Archivo',sans-serif; color:#201e1d;">
+      <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:18px; letter-spacing:0.16em; text-transform:uppercase; color:#c22a10; font-weight:600; margin-bottom:34px;">One loop, end to end</div>
+      <h2 style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:76px; line-height:0.98; letter-spacing:-0.02em; margin:0 0 44px;">The Master Pipeline</h2>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:48px; flex:1;">
+        <div style="display:flex; flex-direction:column; border-top:3px solid #201e1d; font-size:25px; line-height:1.5; font-weight:500;">
+          <div style="padding:22px 0; border-bottom:2px solid #d3d0cf;"><b style="color:#c22a10;">0 · Doctor</b> — pre-flight: verify the machinery is sound.</div>
+          <div style="padding:22px 0; border-bottom:2px solid #d3d0cf;"><b style="color:#c22a10;">1 · Herald</b> — capture the Dream → the vision deck.</div>
+          <div style="padding:22px 0; border-bottom:2px solid #d3d0cf;"><b style="color:#c22a10;">2 · Marshal</b> — spin the factory from the Spec contract.</div>
+          <div style="padding:22px 0; border-bottom:2px solid #d3d0cf;"><b style="color:#c22a10;">3–5 · Atlas · Warden · Mason</b> — map, audit, bind &amp; ship.</div>
+          <div style="padding:22px 0;"><b style="color:#c22a10;">6–7 · Doctor · Herald</b> — monitor the fleet; broadcast the notables.</div>
+        </div>
+        <div style="background:#201e1d; color:#f3f2f2; padding:44px; font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:22px; line-height:1.8; align-self:stretch; display:flex; flex-direction:column; justify-content:center;">
+          <div>doctor check --env --engines</div>
+          <div>herald deck generate --prompt "…"</div>
+          <div>marshal factory spin --spec … --method bmad</div>
+          <div>atlas map --ecosystem dual</div>
+          <div>warden audit --axes hygiene,security,license</div>
+          <div>mason package --ship conda-forge</div>
+          <div>doctor monitor --fleet</div>
+          <div>herald broadcast slack,email</div>
+        </div>
+      </div>
+      <div style="display:flex; justify-content:space-between; align-items:baseline; border-top:2px solid #d3d0cf; padding-top:22px; font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; font-weight:600;"><span>Genesis · pyforge · Dream to Code</span><span>07 / 13</span></div>
+    </div>
+  </section>
+
+  <section data-label="Act III — A running factory" data-speaker-notes="Act III: this is not a metaphor deck. The factory already runs — with shipped, verifiable results." style="background:#201e1d">
+    <div style="position:relative; width:100%; height:100%; box-sizing:border-box; padding:96px; overflow:hidden; display:flex; flex-direction:column; justify-content:space-between; font-family:'Archivo',sans-serif; color:#f3f2f2;">
+      <div style="position:absolute; right:60px; top:-160px; font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:760px; line-height:1; color:rgba(243,242,242,0.10); pointer-events:none;">III</div>
+      <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:22px; letter-spacing:0.16em; text-transform:uppercase; font-weight:600; position:relative;">Act III</div>
+      <div style="position:relative;">
+        <h2 style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:100px; line-height:0.95; letter-spacing:-0.02em; margin:0;">Not a metaphor —<br>a running factory</h2>
+      </div>
+      <div style="display:flex; justify-content:space-between; align-items:baseline; border-top:2px solid rgba(243,242,242,.35); padding-top:22px; font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; font-weight:600;"><span>Genesis · pyforge · Dream to Code</span><span>08 / 13</span></div>
+    </div>
+  </section>
+
+  <section data-label="Proof" data-speaker-notes="Three proofs the model runs. Atlas: 32 of 32 stories shipped across waves 0 through H, PRs 58 to 105, driven by bmad-loop. Warden: 23 of 31 mid-loop with an honest compliance gate that never false-greens. The Bridge: Design and Code became one continuous surface — five decks seeded with zero manual downloads, and the loop is specced as the herald CLI." style="background:#f3f2f2">
+    <div style="width:100%; height:100%; box-sizing:border-box; padding:96px; display:flex; flex-direction:column; font-family:'Archivo',sans-serif; color:#201e1d;">
+      <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:18px; letter-spacing:0.16em; text-transform:uppercase; color:#c22a10; font-weight:600; margin-bottom:34px;">Already shipped</div>
+      <h2 style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:84px; line-height:0.98; letter-spacing:-0.02em; margin:0 0 48px;">Proof</h2>
+      <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:0; border-top:3px solid #201e1d; flex:1;">
+        <div style="padding:40px 32px 0 0; border-right:2px solid #d3d0cf;">
+          <div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:64px; margin-bottom:14px;">32/32</div>
+          <p style="font-size:25px; line-height:1.45; font-weight:500; margin:0;"><b>Atlas</b> — the Kedro/Dagster/DuckDB migration: every story of waves 0–H shipped via bmad-loop (PRs #58–#105).</p>
+        </div>
+        <div style="padding:40px 32px 0 32px; border-right:2px solid #d3d0cf;">
+          <div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:64px; margin-bottom:14px;">23/31</div>
+          <p style="font-size:25px; line-height:1.45; font-weight:500; margin:0;"><b>Warden</b> — the compliance gate that never false-greens, mid-loop with epics 1–4 merged and an honest dashboard.</p>
+        </div>
+        <div style="padding:40px 0 0 32px;">
+          <div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:64px; margin-bottom:14px;">0</div>
+          <p style="font-size:25px; line-height:1.45; font-weight:500; margin:0;"><b>The Bridge</b> — manual downloads between Claude Design and the repo: zero. Five decks seeded through it; the loop is specced as the <b>herald</b> CLI.</p>
+        </div>
+      </div>
+      <div style="display:flex; justify-content:space-between; align-items:baseline; border-top:2px solid #d3d0cf; padding-top:22px; font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; font-weight:600;"><span>Genesis · pyforge · Dream to Code</span><span>09 / 13</span></div>
+    </div>
+  </section>
+
+  <section data-label="One Dream, seven decks" data-speaker-notes="How the deck family hangs together: this Genesis deck is the parent narrative; the six persona decks are its chapters, all in the shared Modernist Archivo system so they present side by side; agentic-sdlc is the origin engine the family was forked from. Every deck round-trips through Claude Design via the bridge." style="background:#f3f2f2">
+    <div style="width:100%; height:100%; box-sizing:border-box; padding:96px; display:flex; flex-direction:column; font-family:'Archivo',sans-serif; color:#201e1d;">
+      <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:18px; letter-spacing:0.16em; text-transform:uppercase; color:#c22a10; font-weight:600; margin-bottom:34px;">The deck family</div>
+      <h2 style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:84px; line-height:0.98; letter-spacing:-0.02em; margin:0 0 48px;">One Dream, seven decks</h2>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:0; border-top:3px solid #201e1d; flex:1;">
+        <div style="padding:40px 40px 0 0; border-right:2px solid #d3d0cf;">
+          <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; letter-spacing:0.08em; text-transform:uppercase; color:rgba(32,30,29,.55); margin-bottom:18px;">The parent + six chapters</div>
+          <p style="font-size:27px; line-height:1.5; font-weight:500; margin:0;"><b>pyforge-genesis</b> (this deck) tells the founding story; <b>pyforge-atlas · warden · marshal · herald · mason · doctor</b> each tell one persona's chapter — all in the shared <b>Modernist / Archivo</b> system, presenting side-by-side as one set.</p>
+        </div>
+        <div style="padding:40px 0 0 40px;">
+          <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; letter-spacing:0.08em; text-transform:uppercase; color:rgba(32,30,29,.55); margin-bottom:18px;">Authored in Design, shipped from the repo</div>
+          <p style="font-size:27px; line-height:1.5; font-weight:500; margin:0;">Every deck round-trips through <b>Claude Design</b> via the bridge — seeded from the repo, refined visually, pulled back, and shipped with its full export set. <b>Zero manual transfers.</b></p>
+        </div>
+      </div>
+      <div style="display:flex; justify-content:space-between; align-items:baseline; border-top:2px solid #d3d0cf; padding-top:22px; font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; font-weight:600;"><span>Genesis · pyforge · Dream to Code</span><span>10 / 13</span></div>
+    </div>
+  </section>
+
+  <section data-label="Portable by construction" data-speaker-notes="The portability contract: the Dream and the neutral spec kernel are the shared layers every framework can consume; decomposition and execution are per-framework. BMAD produces the spec, but CrewAI, Agno, LangGraph or Devin can start from the same Dream or the same kernel — and be verified against the same oracle. No vendor lock, by construction." style="background:#f3f2f2">
+    <div style="width:100%; height:100%; box-sizing:border-box; padding:96px; display:flex; flex-direction:column; font-family:'Archivo',sans-serif; color:#201e1d;">
+      <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:18px; letter-spacing:0.16em; text-transform:uppercase; color:#c22a10; font-weight:600; margin-bottom:34px;">The portability contract</div>
+      <h2 style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:84px; line-height:0.98; letter-spacing:-0.02em; margin:0 0 48px;">Portable by construction</h2>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:0; border-top:3px solid #201e1d; flex:1;">
+        <div style="padding:40px 40px 0 0; border-right:2px solid #d3d0cf;">
+          <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; letter-spacing:0.08em; text-transform:uppercase; color:rgba(32,30,29,.55); margin-bottom:18px;">Shared layers</div>
+          <p style="font-size:28px; line-height:1.5; font-weight:500; margin:0;">The <b>Dream</b> (the why) and the <b>neutral spec kernel</b> (the what + machine-checkable acceptance) — framework-agnostic by construction.</p>
+        </div>
+        <div style="padding:40px 0 0 40px;">
+          <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; letter-spacing:0.08em; text-transform:uppercase; color:rgba(32,30,29,.55); margin-bottom:18px;">Per-framework layers</div>
+          <p style="font-size:28px; line-height:1.5; font-weight:500; margin:0;">Decomposition and execution — BMAD epics today; <b>CrewAI, Agno, LangGraph, Devin</b> tomorrow — all verified against the <b>same oracle.</b> No vendor lock.</p>
+        </div>
+      </div>
+      <div style="display:flex; justify-content:space-between; align-items:baseline; border-top:2px solid #d3d0cf; padding-top:22px; font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; font-weight:600;"><span>Genesis · pyforge · Dream to Code</span><span>11 / 13</span></div>
+    </div>
+  </section>
+
+  <section data-label="Genesis is also the seed" data-speaker-notes="The reason this deck is named genesis: it doubles as the bootstrapper. Present it to align a team, then run genesis to install the operating model — a greenfield repo born Dream-first, or a brownfield repo adopting the tiers, the crew, and the bridge without disturbing what already runs. This very repo was the first brownfield adoption." style="background:#f3f2f2">
+    <div style="width:100%; height:100%; box-sizing:border-box; padding:96px; display:flex; flex-direction:column; font-family:'Archivo',sans-serif; color:#201e1d;">
+      <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:18px; letter-spacing:0.16em; text-transform:uppercase; color:#c22a10; font-weight:600; margin-bottom:34px;">More than a deck</div>
+      <h2 style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:84px; line-height:0.98; letter-spacing:-0.02em; margin:0 0 48px;">Genesis is also the seed</h2>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:0; border-top:3px solid #201e1d; flex:1;">
+        <div style="padding:40px 40px 0 0; border-right:2px solid #d3d0cf;">
+          <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; letter-spacing:0.08em; text-transform:uppercase; color:rgba(32,30,29,.55); margin-bottom:18px;">Greenfield · init a new repo</div>
+          <p style="font-size:28px; line-height:1.5; font-weight:500; margin:0;">A new repository born <b>Dream-first</b>: <span style="font-family:ui-monospace,'SF Mono',Menlo,monospace;">docs/dreams/</span>, the tier layout, the agent conventions, BMAD wiring, and the deck family — installed from day zero.</p>
+        </div>
+        <div style="padding:40px 0 0 40px;">
+          <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; letter-spacing:0.08em; text-transform:uppercase; color:rgba(32,30,29,.55); margin-bottom:18px;">Brownfield · adopt in place</div>
+          <p style="font-size:28px; line-height:1.5; font-weight:500; margin:0;">Layer the operating model onto an <b>existing</b> repo — tiers, crew, bridge — without disturbing what already runs. <b style="color:#c22a10;">This repo was the first brownfield adoption.</b></p>
+        </div>
+      </div>
+      <div style="display:flex; justify-content:space-between; align-items:baseline; border-top:2px solid #d3d0cf; padding-top:22px; font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; font-weight:600;"><span>Genesis · pyforge · Dream to Code</span><span>12 / 13</span></div>
+    </div>
+  </section>
+
+  <section data-label="Build More Architect Dreams" data-speaker-notes="Close: the factory exists so that more dreams get built — captured by Herald, enforced by Marshal, mapped by Atlas, guarded by Warden, bound by Mason, kept alive by Doctor. Everything starts with a Dream. Write yours in docs/dreams." style="background:#ec3013">
+    <div style="width:100%; height:100%; box-sizing:border-box; padding:96px; display:flex; flex-direction:column; justify-content:space-between; font-family:'Archivo',sans-serif; color:#f3f2f2;">
+      <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:20px; letter-spacing:0.1em; text-transform:uppercase; font-weight:600; opacity:0.9;">Build More Architect Dreams</div>
+      <p style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:76px; line-height:1.06; letter-spacing:-0.02em; margin:0; max-width:1560px;">Everything starts with a Dream. The factory exists <span style="opacity:0.72;">to build more of them.</span></p>
+      <div style="display:flex; justify-content:space-between; align-items:baseline; border-top:2px solid #f3f2f2; padding-top:22px; font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; font-weight:600;"><span>Genesis · pyforge · Dream to Code</span><span>docs/dreams/ · write yours</span></div>
+    </div>
+  </section>
+
+</x-import>
+</x-dc>
+</body>
+</html>
