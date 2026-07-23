@@ -56,7 +56,7 @@ That remains this Dream's open claim — **owned, as of 2026-07-23, by the Scrib
   descendants credited.
 - **2026-07-23 — evidence repatriated** via the bridge: the never-shipped
   `COMMIT_MSG.txt` (full 39-ADR ledger) + `PR_BODY.md` land in
-  `docs/dreams/sentinel/` with a provenance README recording etags for every
+  `docs/intake/sentinel/` with a provenance README recording etags for every
   deferred artifact (the 764-line Build-Spec pulls byte-exact on activation;
   decks stay Design-native; tokens pipeline lands with deckcraft's intake).
 - **2026-07-23 (gist audit)** — the origin essay surfaced: `docs/intake/gists/llm-powered-knowledge-bases-by-andrej-karpathy/` (the Karpathy piece the 2026-04-18 deck was built from).
