@@ -3,7 +3,7 @@
 Superseded, duplicate, stale, or dormant material moved out of `docs/` on
 2026-07-23, **retaining its original directory structure** (`archive/docs/X`
 was `docs/X`). Nothing here is load-bearing; each item's supersessor is noted
-in `archive/docs/specs/gists/` entries below or in `docs/specs/gists/INDEX.md`.
+in `archive/docs/specs/gists/` entries below or in `docs/intake/gists/INDEX.md`.
 
 - `bmad-setup-plan.md` — the plan that installed the operating model here;
   operationally superseded by the realized model. Historical grounding for

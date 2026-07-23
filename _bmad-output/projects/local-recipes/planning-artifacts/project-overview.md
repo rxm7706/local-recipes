@@ -267,8 +267,8 @@ This document set synthesizes the following existing sources. To rebuild faithfu
 - `.claude/skills/conda-forge-expert/reference/*.md` — 11 deep-reference files
 - `.claude/skills/conda-forge-expert/guides/*.md` — 8 workflow guides
 - `.claude/skills/conda-forge-expert/quickref/*.md` — 2 quick-reference files
-- `docs/mcp-server-architecture.md` — MCP server + name-mapping subsystem
-- `docs/enterprise-deployment.md` — air-gap + JFrog + JFROG_API_KEY cross-host leak
+- `docs/reference/mcp-server-architecture.md` — MCP server + name-mapping subsystem
+- `docs/reference/enterprise-deployment.md` — air-gap + JFrog + JFROG_API_KEY cross-host leak
 - `docs/developer-guide.md` — local testing + recipe development
 - `docs/copilot-to-api.md` — Copilot subscription as local model backend
 - `docs/specs/*.md` — 5 feature specs (db-gpt, conda-forge-tracker, copilot-bridge, atlas-phase-f-s3-backend, claude-team-memory)

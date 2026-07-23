@@ -575,5 +575,5 @@ Existing repo docs:
 - [project-context.md](../project-context.md)
 - [.claude/skills/conda-forge-expert/SKILL.md](../../../../.claude/skills/conda-forge-expert/SKILL.md)
 - [.claude/skills/conda-forge-expert/CHANGELOG.md](../../../../.claude/skills/conda-forge-expert/CHANGELOG.md)
-- [docs/mcp-server-architecture.md](../../../../docs/mcp-server-architecture.md)
-- [docs/enterprise-deployment.md](../../../../docs/enterprise-deployment.md)
+- [docs/reference/mcp-server-architecture.md](../../../../docs/reference/mcp-server-architecture.md)
+- [docs/reference/enterprise-deployment.md](../../../../docs/reference/enterprise-deployment.md)
