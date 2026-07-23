@@ -2,7 +2,7 @@
 title: Regenerable factory — every line of code under a spec it can be rebuilt from
 type: dream
 owner: marshal
-status: seeded
+status: in-spec
 ---
 
 # Regenerable factory — every line of code under a spec it can be rebuilt from
