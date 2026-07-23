@@ -1,0 +1,49 @@
+# spec_surface_check allowlist — every exemption explicit + reason-tagged.
+# Shrinks as backfill waves land (spec-regenerable-factory CAP-2).
+recipes/**               # Wave 4.1: packaging-factory kernel takes this surface
+.claude/**               # Wave 4.1: CFE skill surface (kernel + Rule 1)
+presentations/**         # Wave 3.2: modernist-identity kernel takes this surface
+docs/dashboard/**        # Wave 2.1: factory-console kernel takes this surface
+docs/dreams/**           # Tier-0 prose (Dream convention governs), not code
+docs/reference/**        # reference prose; catalog drift has its own detector (llms-full-check)
+docs/intake/**           # intake inbox (triage rules in its README), not code
+docs/specs/**            # LEGACY Tier-1 specs (frozen; drift-check --specs governs)
+archive/**               # discarded material, retained for history
+_bmad/**                 # BMAD installer tree (vendor-managed, regenerated)
+_bmad-output/**          # the contracts themselves (bmad-drift-check governs)
+src/**                   # future pyforge packages arrive with their own kernels
+scripts/**               # Wave 5.1: factory harness scripts get manifests/kernels
+tests/**                 # inherited staged-recipes lint tests (upstream-owned shape)
+_skf-learn/**            # vendored skill-forge learning corpus (upstream module docs)
+azure-pipelines.yml      # inherited staged-recipes CI entry (upstream-owned shape)
+build-locally.py         # inherited staged-recipes build entry (upstream-owned)
+test-recipes.py          # inherited staged-recipes test entry (upstream-owned)
+conda-forge.yml          # inherited staged-recipes config (upstream-owned)
+conda_build_config.yaml  # inherited staged-recipes pinning shim (upstream-owned)
+pre-commit-config.yaml   # inherited staged-recipes hooks config (upstream-owned)
+conf/base/knowledge.yml  # atlas Kedro conf — pyforge-atlas chain (W5.1 chain-verify)
+helm/lasuite-docs/values.yaml  # stray inherited file — archive candidate, flagged 2026-07-23
+.github/**               # CI: inherited staged-recipes + dashboard workflow
+.cursor/**               # thin per-tool pointer files (AGENTS.md family)
+.windsurfrules           # thin per-tool pointer (AGENTS.md family)
+.scripts/**              # inherited staged-recipes helper scripts (upstream-owned)
+AGENTS.md                # cross-tool entry point (governance doc, not code)
+CLAUDE.md                # per-tool pointer (governance doc)
+GEMINI.md                # per-tool pointer (governance doc)
+README.md                # repo front page
+CHANGELOG.md             # historical record
+LICENSE*                 # license
+pixi.toml                # env manifest; llms-full-check + env-sync CI govern it
+pixi.lock                # lockfile (derived from pixi.toml)
+environment.yaml         # derived export of pixi.toml (CI sync check governs)
+.gitignore               # repo plumbing
+.gitattributes           # repo plumbing
+.azure-pipelines/**      # inherited staged-recipes CI legs (upstream-owned)
+.ci_support/**           # inherited staged-recipes CI support (upstream-owned)
+.appveyor.yml.notused    # inherited staged-recipes remnant (upstream-owned)
+.bmad-loop/**            # bmad-loop harness config/hooks (bmad-loop-adoption spec governs)
+.idea/**                 # IDE metadata
+.junie/**                # per-tool pointer (AGENTS.md family)
+.cursorrules             # per-tool pointer (AGENTS.md family)
+.prettierignore          # repo plumbing
+.pixi/**                 # tracked pixi shim files (env itself is gitignored)
