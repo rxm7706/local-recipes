@@ -187,7 +187,7 @@ description = "Print the live ground-truth factory facts (skill version, schema,
 cmd = "python scripts/bmad_drift_check.py --json"
 
 [feature.local-recipes.tasks.llms-full-check]
-description = "Detector: report drift between docs/library-llms-full.md (the library catalog) and pixi.toml — undocumented deps, ghost entries, version-floor drift. Exits non-zero on drift. Reconciler = the regeneration prompt in the catalog header. Pass -- --json for machine output."
+description = "Detector: report drift between docs/reference/library-llms-full.md (the library catalog) and pixi.toml — undocumented deps, ghost entries, version-floor drift. Exits non-zero on drift. Reconciler = the regeneration prompt in the catalog header. Pass -- --json for machine output."
 cmd = "python scripts/llms_full_check.py"
 
 [feature.local-recipes.tasks.deck-export]

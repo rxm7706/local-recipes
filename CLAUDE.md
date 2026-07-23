@@ -151,12 +151,12 @@ If the effort produced no novel findings (rare — almost every effort surfaces 
 ## Project Documentation Reference
 
 For extended architectural context, please reference the centralized `docs/` folder:
-- **`docs/mcp-server-architecture.md`** — FastMCP server integration and PyPI name mapping subsystem.
-- **`docs/enterprise-deployment.md`** — Air-gapped environments and JFrog Artifactory integration.
-- **`docs/developer-guide.md`** — Local testing and general recipe development guidelines.
-- **`docs/copilot-to-api.md`** — Five ways to drive a GitHub Copilot subscription as a local model backend (`copilot-api`, `litellm`, `copilot-openai-api`, `copilot-api-proxy`, `c2p`); decision tree, auth flows, configuration reference.
+- **`docs/reference/mcp-server-architecture.md`** — FastMCP server integration and PyPI name mapping subsystem.
+- **`docs/reference/enterprise-deployment.md`** — Air-gapped environments and JFrog Artifactory integration.
+- **`docs/reference/developer-guide.md`** — Local testing and general recipe development guidelines.
+- **`docs/reference/copilot-to-api.md`** — Five ways to drive a GitHub Copilot subscription as a local model backend (`copilot-api`, `litellm`, `copilot-openai-api`, `copilot-api-proxy`, `c2p`); decision tree, auth flows, configuration reference.
 - **`docs/dreams/design-code-bridge.md`** + **`docs/specs/presentation-deck.md`** § *The MCP bridge* — decks/prototypes round-trip between Claude Design and the repo via the `claude-design` MCP tools (seed → design visually → pull → extract/build/`deck-export`); no manual downloads. Piloted 2026-07-23 (Marshal deck).
-- **`docs/library-llms-full.md`** — LLM/agent-facing catalog of every library and CLI in the pixi environments: capabilities, version pins, import-name gotchas, env membership, and what is deliberately NOT installed. Derived from `pixi.toml` (regeneration prompt in its header) — consult before importing a library or proposing a new dependency. Drift detector: `pixi run -e local-recipes llms-full-check` (exits non-zero when the catalog is stale; reconcile by regenerating).
+- **`docs/reference/library-llms-full.md`** — LLM/agent-facing catalog of every library and CLI in the pixi environments: capabilities, version pins, import-name gotchas, env membership, and what is deliberately NOT installed. Derived from `pixi.toml` (regeneration prompt in its header) — consult before importing a library or proposing a new dependency. Drift detector: `pixi run -e local-recipes llms-full-check` (exits non-zero when the catalog is stale; reconcile by regenerating).
 
 ### Intake specs (`docs/specs/` — LEGACY Tier 1, being phased out)
 
@@ -186,7 +186,7 @@ otherwise, run a spec via `bmad-quick-dev` with the spec path + parameters named
 |---|---|
 | `docs/specs/trendshift-conda-forge.md` | Two-track upstream-sweep packaging. Track A: cf_atlas **Phase T** GitHub-trending discovery engine (schema v29→v30, `trending-candidates` CLI/MCP tool) + tiered packaging workflow, first batch seeded by `cli-anything-hub` — resume at Wave A. Track B (absorbed `microsoft-conda-forge.md`): the June 2026 `github.com/microsoft/*` org audit — ~10–14 recipes in 3 waves, Q1–Q3 open. |
 | `docs/specs/claude-team-memory.md` | `.claude/memory/` team-shared memory layer + `team-memory` skill (10 waved stories). |
-| `docs/specs/copilot-bridge-vscode-extension.md` | Sideload-only VS Code extension wrapping the copilot-api bridge pattern (see `docs/copilot-to-api.md`). Headless/HTTP-bridge layer; now includes BMAD-runner + multiproject stories (13–15) to back the unattended `bmad-loop`/`bmad-dev-auto` workflow. |
+| `docs/specs/copilot-bridge-vscode-extension.md` | Sideload-only VS Code extension wrapping the copilot-api bridge pattern (see `docs/reference/copilot-to-api.md`). Headless/HTTP-bridge layer; now includes BMAD-runner + multiproject stories (13–15) to back the unattended `bmad-loop`/`bmad-dev-auto` workflow. |
 | `docs/specs/bmad-copilot-adapter-upstream.md` | **(draft)** Contribution brief to upstream the `@bmad` Copilot-Chat adapter (`bmad-code-org/bmad-method-ui#2`, unmerged) into the official `bmad-dashboard` extension — the in-IDE conversational companion to the headless copilot-bridge. Needs a contribution-path decision. |
 | `docs/specs/pyforge-warden.md` | **Warden** — pluggable multi-axis Python dependency compliance gate (v1 axes: hygiene `deptry`, security `osv-scanner`+CISA-KEV+EPSS gates, license + currency with **flag-activated gates**, baseline & grandfathering, opt-in fix-PR actuator) over Python/Conda/Pixi manifests; one schema-validated `ComplianceReport` + CI exit-code gate. Spec-first since 2026-07-15; v1 re-baselined 2026-07-16 (D12: the former v1.1 bucket is v1) — 6 epics / 31 stories, FR1–FR40. Stories 1.1–1.4 shipped. osv-scanner consumed from the existing conda-forge feedstock (no new recipe). |
 
