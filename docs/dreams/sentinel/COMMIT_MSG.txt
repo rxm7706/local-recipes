@@ -1,0 +1,68 @@
+spec(v2.1): consolidate license+airgap audit and WASM branch into vlatest
+
+Fold six side documents into a single Sentinel-Build-Spec-vlatest.md
+(revision v2026-04-19-2, a.k.a. v2.1). All six side documents are moved
+unchanged into archive/2026-04-19/ with an ARCHIVE_INDEX.md provenance
+map. Non-breaking for implementors who have not yet started — same five
+agents, eight epics, four-phase rollout.
+
+ADR deltas folded (audit):
+  - ADR-005 -> 005b  : replace LiteLLM with in-house sentinel.llm.gateway
+                       + Anthropic/OpenAI SDKs + vLLM (default, airgap+connected)
+  - ADR-006 -> 006b  : replace MinIO (archived Feb 2026) with SeaweedFS
+  - ADR-008b retired : analytical graph absorbed into PG via pg_duckdb
+                       (Kùzu archived 2025-10-10); kuzu_rebuild schedule removed
+  - ADR-009 -> 009b  : replace Langfuse with OTel GenAI semantic conventions
+  - ADR-023 -> 023b  : Impress unmodified, network-isolated, behind
+                       KnowledgeSurface protocol (single documented AGPL
+                       exception)
+  - ADR-034 NEW      : pg_duckdb for analytical graph queries
+  - ADR-035 NEW      : asyncpg (Apache-2.0) replaces psycopg[binary] (LGPL)
+  - ADR-036 NEW      : Perses + Jaeger + VictoriaLogs + VictoriaMetrics
+                       replaces Grafana/Loki/Tempo (AGPL since Apr 2024)
+
+ADR deltas folded (WASM branch, experimental):
+  - ADR-037 NEW      : WASM parallel branch; same contracts, different adapters
+  - ADR-038 NEW      : all-local airgap WASM build; SENTINEL_AIRGAP=1
+                       tree-shakes cloud SDKs; per-agent local model tiers
+  - ADR-039 NEW      : split airgap bundle (app ~50 MB + models 3–25 GB) with
+                       models.lock.json, cosign signing, internal mirror,
+                       four-point enforcement (build/publish/install/boot)
+
+Spec body edits:
+  - §11.4   L3 absorbs analytical graph into PG (pg_duckdb helpers)
+  - §14     topology swaps LiteLLM/Langfuse/MinIO/Kùzu/Grafana-stack
+  - §16     pixi.toml deltas (removed litellm/langfuse/kuzu/psycopg;
+            added asyncpg; vLLM promoted to default; new wasm-build feature)
+  - §23     gateway rewritten to in-house async router (~500 LOC)
+  - §24     observability rewritten to OTel GenAI -> Jaeger/VictoriaLogs/Perses
+  - §25     SeaweedFS buckets + PG 16 + pg_duckdb + asyncpg
+  - §29     JSON-Schema-canonical contracts; Pydantic + Zod generated;
+            registry verify --target=wasm|server|both
+  - §30     pins.yml accepts local-bundle shape (bundle_sha256 + set_id)
+  - §32     adds weight-provenance and airgap-integrity rows
+  - §34     adds wasm-build.yml, wasm-airgap-verify.yml, wasm-eval-local.yml
+  - §35     rollout phases unchanged; adds quarterly chaos drills from Q3
+  - Part VI §36-§41 added (WASM overview, modes, adapters, all-local,
+            airgap bundle + install, rollout phases W.0-W.3)
+
+License bar (hard, unchanged principle, explicit now):
+  Apache-2.0 / MIT / BSD / PostgreSQL-license only, with exactly one
+  documented AGPL exception (Impress, ADR-023b).
+
+Files moved (git mv):
+  Sentinel-Build-Spec-v2026-04-19-1.md          -> archive/2026-04-19/
+  Sentinel-License-Airgap-Audit-v2026-04-19-1.md -> archive/2026-04-19/
+  Sentinel-WASM-Analysis-v2026-04-19-1.md       -> archive/2026-04-19/
+  Sentinel-WASM-AllLocal-Addendum-v2026-04-19-1.md -> archive/2026-04-19/
+  Sentinel-WASM-Airgap-Install-v2026-04-19-1.md -> archive/2026-04-19/
+
+Files added:
+  Sentinel-Build-Spec-vlatest.md                 (consolidated spec)
+  archive/2026-04-19/ARCHIVE_INDEX.md            (provenance map)
+  Sentinel-Stakeholder-Deck-v2026-04-19-2.html   (12 slides)
+  Sentinel-Engineering-Deck-v2026-04-19-2.html   (18 slides)
+  deck-stage.js                                  (deck runtime)
+  COMMIT_MSG.txt  PR_BODY.md  scripts/commit_v2.1.sh
+
+Refs: #sentinel-v2.1 #license-audit #wasm-branch

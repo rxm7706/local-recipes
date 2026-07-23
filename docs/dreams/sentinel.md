@@ -52,4 +52,9 @@ That remains this Dream's open claim.
 
 - **2026-04-18/19** — essay → decks → Build-Spec v2.1; never landed in a repo.
 - **2026-07-23** — rediscovered during the Design-workspace audit; Dream seeded;
-  descendants credited; repatriation pending.
+  descendants credited.
+- **2026-07-23 — evidence repatriated** via the bridge: the never-shipped
+  `COMMIT_MSG.txt` (full 39-ADR ledger) + `PR_BODY.md` land in
+  `docs/dreams/sentinel/` with a provenance README recording etags for every
+  deferred artifact (the 764-line Build-Spec pulls byte-exact on activation;
+  decks stay Design-native; tokens pipeline lands with deckcraft's intake).
