@@ -40,8 +40,9 @@ synthesizes all four:
 
 ## The frontier
 
-- Fold the four-views white paper into the deck as a new act; bridge the
-  `agentic_sdlc_infographic.html` in from Downloads.
+- Fold the four-views white paper into the deck as a new act — all source
+  material is staged in `docs/intake/agentic-sdlc/` (white paper, infographic +
+  masterclass HTMLs, updated Marp draft) awaiting the refresh.
 - **Formal L-level adoption**: label story modes L1–L5; publish the mapping.
 - Fleet-level resource budgets; privilege-drift management ([[pyforge-doctor]]).
 
