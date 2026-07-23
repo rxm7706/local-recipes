@@ -1,6 +1,7 @@
 ---
 title: Genesis — the seed of the operating model
 type: dream
+owner: crew
 status: in-deck
 ---
 

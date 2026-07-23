@@ -1,6 +1,7 @@
 ---
 title: Factory console — the whole pipeline on one page
 type: dream
+owner: marshal
 status: realized
 ---
 

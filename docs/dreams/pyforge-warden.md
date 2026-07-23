@@ -1,6 +1,7 @@
 ---
 title: Warden — the gate that never lies
 type: dream
+owner: warden
 status: in-spec
 ---
 

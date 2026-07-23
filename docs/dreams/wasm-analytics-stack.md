@@ -1,6 +1,7 @@
 ---
 title: Wasm-first analytical data stack (OCP-ready)
 type: dream
+owner: crew
 status: seeded
 ---
 

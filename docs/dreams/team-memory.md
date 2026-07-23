@@ -1,6 +1,7 @@
 ---
 title: Team memory — what the team knows, the agents know
 type: dream
+owner: scribe
 status: seeded
 ---
 

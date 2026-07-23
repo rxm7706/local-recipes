@@ -1,6 +1,7 @@
 ---
 title: Agent portability — BMAD on any agent, never vendor-locked
 type: dream
+owner: marshal
 status: seeded
 ---
 
@@ -8,7 +9,9 @@ status: seeded
 
 ## The Dream
 
-Herald's reach: **the operating model runs on whichever agent the team uses** —
+Marshal's reach (re-scoped from Herald in the 2026-07-23 ownership review —
+Herald keeps the communication face): **the operating model runs on whichever
+agent the team uses** —
 Devin, GitHub Copilot (and its agents), Claude, Cursor, Gemini — and planning
 runs on flat-rate subscriptions instead of metered IDE tokens. The method is
 the asset; the agent is a socket. Corollary (the AGENTS.md Portability
@@ -42,3 +45,5 @@ verified against the same oracle.
 - **2026-07-23** — Dream retro-seeded; named as Herald's "BMAD everywhere"
   responsibility in [[ecosystem-crew]].
 - **2026-07-23 (gist audit)** — grounding: `docs/intake/gists/awesome-bmad-…/` (the curated BMAD ecosystem list) + `run-bmad-in-microsoft-copilot/` (declarative-agent setup for the 6 web bundles).
+- **2026-07-23 (ownership review)** — re-scoped to **Marshal** (alternate
+  agents = alternate lines on the same floor); Herald retains docs/comms.
