@@ -32,8 +32,9 @@ verified against the same oracle.
 
 ## What is real
 
-- **`docs/reference/copilot-to-api.md`** — the complete decision tree, auth flows, and
-  configuration reference for all five bridge patterns.
+- The copilot-api bridge patterns (`copilot-api`, `litellm`, `copilot-openai-api`,
+  `copilot-api-proxy`, `c2p`) — decision tree, auth flows, config. _(The standalone
+  reference doc was removed 2026-07-24; the patterns live on in the specs below.)_
 - Specs ready: `copilot-bridge-vscode-extension.md` (incl. stories 13–15),
   `bmad-copilot-adapter-upstream.md` (draft — contribution-path decision open).
 - The Portability contract landed in AGENTS.md (2026-07-23); the four-pointer

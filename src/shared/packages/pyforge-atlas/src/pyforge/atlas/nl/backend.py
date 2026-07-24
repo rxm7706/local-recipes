@@ -2,10 +2,9 @@
 
 The Q3 §11 default is BINDING: the NL interface's LLM backend is resolved from the repo's
 model-backend configuration — env-var driven — and NEVER from a hardcoded public endpoint.
-This module reads the OpenAI-compatible / Anthropic base-url + key convention documented in
-``docs/copilot-to-api.md`` (§ "Ad-hoc Python scripts": scripts read ``OPENAI_BASE_URL`` /
-``OPENAI_API_KEY`` and the Anthropic equivalents from the environment) and returns a resolved
-:class:`BackendConfig` or ``None``.
+This module reads the OpenAI-compatible / Anthropic base-url + key convention from the
+environment (scripts read ``OPENAI_BASE_URL`` / ``OPENAI_API_KEY`` and the Anthropic
+equivalents) and returns a resolved :class:`BackendConfig` or ``None``.
 
 Load-bearing invariant: there is NO literal provider host (no public LLM endpoint) anywhere
 in this file — the endpoint always comes from the environment. The ``vizro-ai-dryrun`` gate
@@ -19,7 +18,7 @@ from dataclasses import dataclass
 from typing import Mapping
 from urllib.parse import urlparse
 
-# The env-var convention (docs/copilot-to-api.md). Each provider needs BOTH a base-url and a
+# The env-var convention. Each provider needs BOTH a base-url and a
 # key to be considered configured — a partial config degrades to "unconfigured" (never a
 # guessed/public default). The optional model override is read but not required.
 _OPENAI_BASE = "OPENAI_BASE_URL"
@@ -55,7 +54,7 @@ def resolve_backend(env: Mapping[str, str] | None = None) -> BackendConfig | Non
     """Resolve the LLM backend from repo model-backend config (env), or ``None`` if unset.
 
     OpenAI-compatible config wins when present (the repo's bridge default — a local
-    OpenAI-compatible base-url, ``docs/copilot-to-api.md``); the Anthropic pair is the
+    OpenAI-compatible base-url); the Anthropic pair is the
     fallback. A provider is "configured" only when its base-url is a well-formed URL AND its
     key is non-empty; anything else (unset, partial, malformed) resolves to ``None`` so the
     caller degrades to the structured advisory rather than routing anywhere.

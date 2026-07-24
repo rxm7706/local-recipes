@@ -1090,7 +1090,7 @@ Added dimension (2026-07-16): **re-verify the Dagster bet itself at Wave C start
 
 Which model backend powers Vizro-AI's NL→pandas compilation, and does it respect the repo's enterprise / air-gapped routing (JFrog, internal mirrors) per `_http.py`?
 
-Known bounds (docs corpus): `vizro-ai` ≥0.4.1 is already in-env; `litellm` is deliberately absent (its proxy stack breaks on the repo's Python 3.14 floor); the copilot-api bridge (`docs/reference/copilot-to-api.md`) is single-developer / TOS-bound — **not eligible** as a shared or enterprise backend; in-env local OpenAI-compatible options are llama.cpp (`llama-server`), ollama, and mlx-lm. No LLM analog of the `_http.py` routing chain exists yet — defining one is the actual work behind this question.
+Known bounds (docs corpus): `vizro-ai` ≥0.4.1 is already in-env; `litellm` is deliberately absent (its proxy stack breaks on the repo's Python 3.14 floor); the copilot-api bridge is single-developer / TOS-bound — **not eligible** as a shared or enterprise backend; in-env local OpenAI-compatible options are llama.cpp (`llama-server`), ollama, and mlx-lm. No LLM analog of the `_http.py` routing chain exists yet — defining one is the actual work behind this question.
 
 **Default**: route through the existing repo model-backend configuration; do not hardcode a public LLM endpoint.
 

@@ -446,7 +446,7 @@ Provider SDKs:
   prompt caching.
 - **google-genai** (>=2.13.0) — `from google import genai`; Gemini API client.
 - **github-copilot-sdk** (>=1.0.7) — drive GitHub Copilot programmatically from
-  Python (see `docs/reference/copilot-to-api.md` for the bridge patterns).
+  Python.
 - **langchain-anthropic** (>=1.3.1) — LangChain chat-model integration for Claude.
 - **lumen-ai-anthropic** (>=1.2.1) — Anthropic backend for HoloViz Lumen AI
   (chat-with-your-data on top of Panel).
@@ -621,8 +621,8 @@ depending on them without adding them first:
 - **dbt-core / dbt-duckdb / dbt-postgres, dlt** — dbt pinned out by a click conflict;
   dlt blocked on dlt-pendulum platform coverage / py3.14.
 - **crewai** — agent framework, not resolvable here yet.
-- **litellm** — LLM router/proxy; deliberately not added (see `docs/reference/copilot-to-api.md`
-  for when it would be).
+- **litellm** — LLM router/proxy; deliberately not added (breaks on the repo's
+  Python 3.14 floor).
 - **crawl4ai, whisper.cpp, imaginairy** — outdated on conda-forge.
 - **cibuildwheel** — bashlex fails on linux-aarch64.
 - **cdxgen, oras-py, conda-tree, networkx (as direct dep)** — version conflicts.

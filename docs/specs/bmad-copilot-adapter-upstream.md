@@ -2,6 +2,8 @@
 status: draft
 spec_updated: 2026-07-18
 ---
+> **Note (2026-07-24):** the standalone reference doc `docs/reference/copilot-to-api.md` was removed from the repo. The copilot-api bridge-pattern details now live in the `recipes/copilot-*` / `recipes/litellm-proxy` proxy recipes and their upstream projects; section-specific citations below predate the removal.
+
 # Tech Spec: upstream the `@bmad` Copilot-Chat adapter into the official BMAD VS Code extension
 
 > **Contribution brief.** Unlike most `docs/specs/` intake specs, the implementation target
@@ -129,8 +131,7 @@ layers**; they do not overlap:
 The local bridge spec explicitly excludes the IDE chat panel (its **NG5** / **G6**); this
 spec fills exactly that excluded slot. Headless automation (`bmad-loop`/`bmad-dev-auto`)
 cannot use the `@bmad` adapter — those runners have no chat panel — so they route through the
-HTTP bridge instead (see `docs/reference/copilot-to-api.md` § "Driving headless BMAD through the
-bridge"). Net: **`@bmad` adapter for humans in the IDE; HTTP bridge for headless loops.**
+HTTP bridge instead (see the copilot-api bridge pattern). Net: **`@bmad` adapter for humans in the IDE; HTTP bridge for headless loops.**
 
 ## Open Questions
 
@@ -148,7 +149,7 @@ bridge"). Net: **`@bmad` adapter for humans in the IDE; HTTP bridge for headless
 - **`bmad-code-org/bmad-method-ui#2`** — the prior-art adapter PR (OPEN).
 - **`bmad-code-org/bmad-method-ui`** — ships `bmad-dashboard` + `mybmad`.
 - **`docs/specs/copilot-bridge-vscode-extension.md`** — the headless/HTTP-bridge companion.
-- **`docs/reference/copilot-to-api.md`** — the bridge-pattern reference + headless-BMAD wiring.
+- **the copilot-api bridge pattern** — the bridge-pattern reference + headless-BMAD wiring.
 - **VS Code Language Model & Chat Participant API** —
   <https://code.visualstudio.com/api/extension-guides/chat> and
   <https://code.visualstudio.com/api/extension-guides/language-model>.
