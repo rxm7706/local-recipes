@@ -87,8 +87,14 @@ Design-side (etags at last sync):
   pull PENDING** (herald CLI CAP-2 is the mechanized path)
 - `Warden - Infographic Deck.dc.html` (88461, `1784080724075247`) — **Design-only,
   pull PENDING**
-- `Warden Infographic standalone.html` (411764) — Design-side render; disk carries
-  its own regenerated standalone under `src/marp/`
+- `Warden Infographic standalone.html` (411764) — **user-designated BEST version
+  (2026-07-24)**: the golden exemplar for all family infographics. Design-only;
+  byte-exact pull PENDING (herald CLI — read_file caps at 256 KiB and the
+  serve-URL wraps the file in a preview harness, so no current tool retrieves it
+  raw). Copied server-side (byte-exact) into the genesis Design project as
+  `reference/Warden Infographic standalone.html` to seed the genesis infographic.
+  Disk's `src/marp/` standalone is a different, marp-regenerated render — NOT
+  this artifact.
 - engines: `deck-stage.js` 111060 / `support.js` 64222 (older pins than the current
   family 133230/66404 — the dc.html files were authored against these)
 - Marp: original `warden-*.md` trio + the refined disk trio uploaded whole as
