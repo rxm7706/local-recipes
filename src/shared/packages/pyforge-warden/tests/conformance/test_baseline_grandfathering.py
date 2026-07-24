@@ -144,6 +144,18 @@ def scan_text(capsys, target, extra_args: list[str] | None = None) -> tuple[int,
     return rc, captured.out, captured.err
 
 
+def stanza_lines(out: str) -> list[str]:
+    """The emitted stanza block: everything printed BEFORE the text report
+    itself (whose every line starts with ``TOOL_NAME:``). Review finding:
+    this scrape loop was copy-pasted per test -- factored once here."""
+    lines: list[str] = []
+    for line in out.splitlines():
+        if line.startswith(f"{TOOL_NAME}:"):
+            break
+        lines.append(line)
+    return lines
+
+
 # --- a matching, non-expired baseline entry suppresses the finding -------
 
 
@@ -240,13 +252,25 @@ def test_waiver_and_baseline_same_id_waiver_wins_end_to_end(capsys, tmp_path):
 # --- --baseline unset leaves pre-6.8 behavior byte-identical --------------
 
 
-def test_baseline_flag_omitted_is_identical_to_pre_6_8(capsys, tmp_path):
+def test_baseline_flag_omitted_leaves_no_baseline_trace(capsys, tmp_path):
+    """No flag -> no baseline artifact anywhere: no suppressions, no
+    errors, no stanza, no [baseline]/[baseline-expired] report lines.
+    (The full pre-6.8 byte-identity regression guarantee itself is proven
+    at the unit level -- apply_waivers' baseline parameter defaults to ()
+    and the waiver-only paths are untouched; an E2E test cannot literally
+    diff against a pre-6.8 binary, so this test's honest scope is
+    trace-absence, not byte-identity.)"""
     _blocking_fixture(tmp_path)
     rc, document, err = scan_json(capsys, tmp_path)
     assert document["status"]["value"] == "warn"
     assert document["suppressions"] == []
     assert document["errors"] == []
     assert "baseline" not in err
+    rc_text, out_text, _ = scan_text(capsys, tmp_path)
+    assert rc_text == rc
+    assert stanza_lines(out_text) == []  # no stanza precedes the report
+    assert "[baseline]" not in out_text
+    assert "[baseline-expired]" not in out_text
 
 
 # --- --baseline-emit: purely observational --------------------------------
@@ -257,12 +281,7 @@ def test_baseline_emit_prints_stanza_to_stdout_under_text_format(capsys, tmp_pat
     rc, out, _ = scan_text(capsys, tmp_path, ["--baseline-emit"])
     assert rc == 0
     assert "status=warn" in out  # --baseline-emit never itself suppresses
-    stanza_lines = []
-    for line in out.splitlines():
-        if line.startswith(f"{TOOL_NAME}:"):
-            break
-        stanza_lines.append(line)
-    document = yaml.safe_load("\n".join(stanza_lines))
+    document = yaml.safe_load("\n".join(stanza_lines(out)))
     assert document["version"] == 1
     assert len(document["baseline"]) == 1
     assert document["baseline"][0]["id"] == _BLOCKING_FINDING_ID
@@ -292,12 +311,7 @@ def test_baseline_emit_does_not_include_an_already_baselined_finding(capsys, tmp
     )
     assert rc == 0
     assert "status=bypassed" in out
-    stanza_lines = []
-    for line in out.splitlines():
-        if line.startswith(f"{TOOL_NAME}:"):
-            break
-        stanza_lines.append(line)
-    document = yaml.safe_load("\n".join(stanza_lines))
+    document = yaml.safe_load("\n".join(stanza_lines(out)))
     assert document["baseline"] == []
 
 
@@ -308,6 +322,43 @@ def test_baseline_emit_never_changes_the_exit_code_or_status(capsys, tmp_path):
     assert rc_without == rc_with
     assert doc_without["status"]["value"] == doc_with["status"]["value"]
     assert doc_without["findings"] == doc_with["findings"]
+
+
+def test_baseline_emit_never_proposes_the_empty_extraction_sentinel(capsys, tmp_path):
+    """Review finding: the D2(c) sentinel id is whole-scan-scoped and
+    invocation-stable -- baselining it once would suppress EVERY future
+    empty-extraction condition (an extraction regression false-greening
+    the gate). --baseline-emit must never propose it as a grandfathering
+    candidate; the run itself still gates indeterminate."""
+    write_pyproject(tmp_path, [])  # parses, zero components -> D2(c) sentinel
+    rc, out, _ = scan_text(capsys, tmp_path, ["--baseline-emit"])
+    assert rc == 1  # the sentinel still gates -- emit changed nothing
+    stanza = "\n".join(stanza_lines(out))
+    document = yaml.safe_load(stanza)
+    assert document["baseline"] == []
+    assert "empty-extraction" not in stanza
+
+
+def test_emitted_stanza_committed_and_reingested_suppresses_the_finding(
+    capsys, tmp_path
+):
+    """Review finding: the flag's whole workflow -- emit, human commits the
+    file, --baseline on a later run -- had no end-to-end proof; a future
+    emitter formatting change (timestamp quoting, key order) would break
+    re-ingestion with no guard."""
+    _blocking_fixture(tmp_path)
+    rc, out, _ = scan_text(capsys, tmp_path, ["--baseline-emit"])
+    assert rc == 0
+    stanza = "\n".join(stanza_lines(out)) + "\n"
+    baseline_path = tmp_path / "committed-baseline.yaml"
+    baseline_path.write_text(stanza, encoding="utf-8")  # the "human commit"
+    rc2, document, _ = scan_json(capsys, tmp_path, ["--baseline", str(baseline_path)])
+    assert rc2 == 0
+    assert document["status"]["value"] == "bypassed"
+    assert [s["finding_id"] for s in document["suppressions"]] == [
+        _BLOCKING_FINDING_ID
+    ]
+    assert document["suppressions"][0]["origin"] == "baseline"
 
 
 def test_bypass_and_baseline_emit_together_print_two_separated_stanzas(
@@ -322,15 +373,11 @@ def test_bypass_and_baseline_emit_together_print_two_separated_stanzas(
         capsys, tmp_path, ["--bypass", "--reason", "x", "--baseline-emit"]
     )
     assert rc == 0
-    stanza_lines = []
-    for line in out.splitlines():
-        if line.startswith(f"{TOOL_NAME}:"):
-            break
-        stanza_lines.append(line)
-    assert "---" in stanza_lines
-    separator = stanza_lines.index("---")
-    bypass_doc = yaml.safe_load("\n".join(stanza_lines[:separator]))
-    baseline_doc = yaml.safe_load("\n".join(stanza_lines[separator + 1 :]))
+    lines = stanza_lines(out)
+    assert "---" in lines
+    separator = lines.index("---")
+    bypass_doc = yaml.safe_load("\n".join(lines[:separator]))
+    baseline_doc = yaml.safe_load("\n".join(lines[separator + 1 :]))
     assert bypass_doc["waivers"][0]["id"] == _BLOCKING_FINDING_ID
     assert baseline_doc["baseline"][0]["id"] == _BLOCKING_FINDING_ID
 
@@ -338,14 +385,21 @@ def test_bypass_and_baseline_emit_together_print_two_separated_stanzas(
 def test_bypass_and_baseline_emit_together_under_json_format_use_stderr(
     capsys, tmp_path
 ):
+    """Both stanzas land on stderr (NFR-I3: json stdout stays pure), `---`
+    separated, and each side must still PARSE independently -- substring
+    checks alone would pass on any error text containing the words."""
     _blocking_fixture(tmp_path)
     rc, document, err = scan_json(
         capsys, tmp_path, ["--bypass", "--reason", "x", "--baseline-emit"]
     )
     assert rc == 0
-    assert "waivers" in err
-    assert "---" in err
-    assert "baseline" in err
+    err_lines = err.splitlines()
+    assert "---" in err_lines
+    separator = err_lines.index("---")
+    bypass_doc = yaml.safe_load("\n".join(err_lines[:separator]))
+    baseline_doc = yaml.safe_load("\n".join(err_lines[separator + 1 :]))
+    assert bypass_doc["waivers"][0]["id"] == _BLOCKING_FINDING_ID
+    assert baseline_doc["baseline"][0]["id"] == _BLOCKING_FINDING_ID
 
 
 # --- C0: baseline covering every blocking finding composes bypassed ------
