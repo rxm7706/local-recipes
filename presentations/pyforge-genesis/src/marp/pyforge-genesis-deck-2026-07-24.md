@@ -91,20 +91,52 @@ Eight personas carry the Dream down one pipeline — **each has its own chapter 
 
 ---
 
+## The SDLC, staffed — every phase has an owner
+
+| Phase | Owner | Skill today |
+| --- | --- | --- |
+| **Dream & Pitch** | Human · Herald | Dream files + the Design bridge |
+| **Plan & Spec** | Marshal + BMAD (Mary · John · Winston · Sally) | `bmad-spec` kernel; BMM planning |
+| **Build** | Marshal + BMAD (Amelia · Paige) | `bmad-loop` + `bmad-dev-auto` gated loops |
+| **Map** | Atlas | `atlas map` dual-ecosystem; DuckDB dataflow |
+| **Audit** | Warden | `warden audit` — six axes, one verdict |
+| **Package & Ship** | Mason | `mason package`; 769 conda-forge feedstocks |
+
+**Deployment & Operations** was the one orphaned stage — until **Steward** joined the crew.
+
+---
+
+## The autonomy gradient — how far the leash goes
+
+Autonomy is a **gradient, not a leap of faith**. **L3** is the production ceiling running here today.
+
+| Level | Mode · who drives |
+| --- | --- |
+| **L1** Assistive | AI support; the human drives |
+| **L2** Task-based | discrete tasks under approvals (per-story **ATTENDED**) |
+| **L3** Conditional · context gates | **today's ceiling** — unattended loops in machine-readable bounds; unsafe calls escalate instead of guessing |
+| **L4** High-level | human flips from driver to governance + policy setter |
+| **L5** Self-governance | full autonomy; the human governs intent alone |
+
+**Live L3 evidence:** 32/32 Atlas stories shipped unattended-with-gates · a real context-gate escalation 2026-07-23 · model-tier policy per story.
+
+---
+
 ## The Master Pipeline — one loop, end to end
 
-- **0 · Doctor** — pre-flight: verify the machinery is sound.
-- **1 · Herald** — capture the Dream → the vision deck.
-- **2 · Marshal** — spin the factory from the Spec contract.
-- **3–5 · Atlas · Warden · Mason** — map, audit, bind & ship.
-- **6–7 · Doctor · Herald** — monitor the fleet; broadcast the notables.
-- **Throughout · Scribe · Steward** — record every decision; provision the line and hold the keys.
+Supervised start to finish by **Marshal**, opened and closed by **Herald**:
 
-```
-doctor check --env --engines        atlas map --ecosystem dual
-herald deck generate --prompt "…"   warden audit --axes hygiene,security,license
-marshal factory spin --spec …       mason package --ship conda-forge
-```
+| # | Step | Persona | Command |
+| --- | --- | --- | --- |
+| ✓ | Pre-flight | Doctor | `doctor check --env --engines` |
+| 1 | Capture | Herald | `herald deck generate` |
+| 2 | Build | Marshal | `marshal factory spin --method bmad` |
+| 3 | Map | Atlas | `atlas map --ecosystem dual` |
+| 4 | Audit | Warden | `warden audit --axes …` |
+| 5 | Ship | Mason | `mason package --ship conda-forge` |
+| 6–7 | Watch · Proclaim | Doctor · Herald | `doctor monitor --fleet` · `herald updates broadcast` |
+
+**Throughout:** Scribe records every decision; Steward provisions the line and holds the keys.
 
 ---
 
