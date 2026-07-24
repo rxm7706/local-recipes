@@ -336,7 +336,7 @@
 
   <div class="dreams" id="dreams" hidden>
     <div class="program-h">Dreamscape · every Dream, its lifecycle stage</div>
-    <div class="dflow"><b>docs/dreams/</b> → deck (Herald) → spec (BMAD) → realized · the build programs below execute the in-spec stage</div>
+    <div class="dflow"><b>docs/dreams/</b> → deck (Herald) → spec (BMAD) → build (Marshal) → realized · each Dream shows at its FURTHEST stage — ▤ deck · § spec · ⚙ project · n/n live build carry its full chain</div>
     <div id="drows"></div>
   </div>
 
@@ -387,7 +387,7 @@
 
   // ---- dreamscape (every Dream, bucketed by lifecycle stage) ----
   const DREAMS = window.DASHBOARD_DATA.dreams || [];
-  const STAGES = [["seeded","seeded"], ["in-deck","in deck"], ["in-spec","in spec"], ["realized","realized"]];
+  const STAGES = [["seeded","seeded"], ["in-deck","in deck"], ["in-spec","in build"], ["realized","realized"]];
   const KNOWN = STAGES.map(s => s[0]);
   const esc = s => s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/"/g,"&quot;");
   if (DREAMS.length) {
