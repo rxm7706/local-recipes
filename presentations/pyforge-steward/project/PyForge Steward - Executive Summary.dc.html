@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&amp;family=Archivo+Expanded:wght@700;800;900&amp;display=swap" rel="stylesheet">
+<style>
+  body { margin: 0; background: #7c1405; }
+  .code { font-family: ui-monospace, "SF Mono", Menlo, monospace; }
+</style>
+</helmet>
+<div style="width:1920px; height:1080px; background:#201e1d; color:#f3f2f2; font-family:'Archivo',sans-serif; display:flex; flex-direction:column; box-sizing:border-box; padding:84px 96px 72px; overflow:hidden;">
+
+  <!-- top bar -->
+  <div style="display:flex; justify-content:space-between; align-items:center; padding-bottom:22px; border-bottom:3px solid #f3f2f2;">
+    <div style="display:flex; align-items:center; gap:16px;">
+      <div style="width:34px; height:34px; border:3px solid #ec3013; display:flex; align-items:center; justify-content:center;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ec3013" stroke-width="2.4" stroke-linecap="square"><path d="M14 7a4 4 0 1 1-4 4L4 17v3h3l6-6"></path><circle cx="16.5" cy="7.5" r="1"></circle></svg>
+      </div>
+      <div>
+        <div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-size:26px; font-weight:900; letter-spacing:0.01em; line-height:1;">STEWARD</div>
+        <div class="code" style="font-size:12px; opacity:0.82; margin-top:4px;">The Provisioner · pyforge crew</div>
+      </div>
+    </div>
+    <span style="font-size:14px; letter-spacing:0.12em; text-transform:uppercase; font-weight:700; opacity:0.85;">The estate the factory stands on</span>
+  </div>
+
+  <!-- headline -->
+  <div style="margin-top:52px;">
+    <div style="font-size:19px; letter-spacing:0.14em; text-transform:uppercase; font-weight:800; color:#ec3013;">Mason stops at the registry. Steward starts there.</div>
+    <h1 style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:100px; line-height:0.92; letter-spacing:-0.025em; margin:22px 0 0; max-width:1520px;">Provision the line. Keep the lights on.</h1>
+    <p style="font-size:27px; line-height:1.4; font-weight:500; margin:30px 0 0; max-width:1340px; color:rgba(243,242,242,.9);">Steward owns Deployment &amp; Operations — the SDLC stage that fell between chairs until the ownership audit. It <b>provisions</b> runners and environments before anything runs, <b>deploys services</b> (not just artifacts), owns the <b>credential lifecycle</b> end-to-end, and enforces <b>resource ceilings</b> as machine-readable governance.</p>
+  </div>
+
+  <!-- pillars -->
+  <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:28px; margin-top:auto;">
+    <div style="background:#f3f2f2; color:#201e1d; padding:34px 32px; display:flex; flex-direction:column;">
+      <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#ec3013" stroke-width="2.2" stroke-linecap="square"><rect x="3" y="4" width="18" height="7"></rect><rect x="3" y="13" width="18" height="7"></rect><path d="M7 7.5h.01M7 16.5h.01"></path></svg>
+      <div style="font-size:13px; letter-spacing:0.1em; text-transform:uppercase; font-weight:800; color:#c22a10; margin-top:22px;">Provision + deploy</div>
+      <div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-size:30px; font-weight:800; line-height:1.05; margin-top:8px;">Services, not artifacts</div>
+      <p style="font-size:17px; line-height:1.45; margin:14px 0 0; color:rgba(32,30,29,.78);">Runners and environments ready before Doctor's pre-flight; the console, the estate, the routing — deployed, hardened, and answered-for when they break.</p>
+    </div>
+    <div style="background:#f3f2f2; color:#201e1d; padding:34px 32px; display:flex; flex-direction:column;">
+      <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#ec3013" stroke-width="2.2" stroke-linecap="square"><path d="M14 7a4 4 0 1 1-4 4L4 17v3h3l6-6"></path></svg>
+      <div style="font-size:13px; letter-spacing:0.1em; text-transform:uppercase; font-weight:800; color:#c22a10; margin-top:22px;">The keys</div>
+      <div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-size:30px; font-weight:800; line-height:1.05; margin-top:8px;">No privilege outlives its deployment</div>
+      <p style="font-size:17px; line-height:1.45; margin:14px 0 0; color:rgba(32,30,29,.78);">Audit, rotate, revoke — the live case: the JFROG key attaching to every outbound request, found by Doctor, remediated and lifecycle-owned by Steward.</p>
+    </div>
+    <div style="background:#f3f2f2; color:#201e1d; padding:34px 32px; display:flex; flex-direction:column;">
+      <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#ec3013" stroke-width="2.2" stroke-linecap="square"><path d="M12 3v18M7 7h7a3 3 0 0 1 0 6H9a3 3 0 0 0 0 6h8"></path></svg>
+      <div style="font-size:13px; letter-spacing:0.1em; text-transform:uppercase; font-weight:800; color:#c22a10; margin-top:22px;">The budgets</div>
+      <div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-size:30px; font-weight:800; line-height:1.05; margin-top:8px;">Ceilings, not wiki numbers</div>
+      <p style="font-size:17px; line-height:1.45; margin:14px 0 0; color:rgba(32,30,29,.78);">Machine-readable resource governance enforced with alerts — locked at $1,500/month means locked, not hoped.</p>
+    </div>
+  </div>
+
+  <!-- outcome band -->
+  <div style="display:flex; align-items:stretch; border-top:3px solid #f3f2f2; margin-top:40px; padding-top:26px;">
+    <div style="flex:1; padding-right:32px;">
+      <div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-size:46px; font-weight:900; line-height:1; color:#ec3013;">4</div>
+      <div style="font-size:15px; font-weight:600; margin-top:6px; opacity:0.9;">duties, one owner (was: zero)</div>
+    </div>
+    <div style="flex:1; padding:0 32px; border-left:2px solid rgba(243,242,242,.4);">
+      <div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-size:46px; font-weight:900; line-height:1; color:#ec3013;">12</div>
+      <div style="font-size:15px; font-weight:600; margin-top:6px; opacity:0.9;">pixi environments in the estate</div>
+    </div>
+    <div style="flex:1; padding:0 32px; border-left:2px solid rgba(243,242,242,.4);">
+      <div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-size:46px; font-weight:900; line-height:1; color:#ec3013;">1</div>
+      <div style="font-size:15px; font-weight:600; margin-top:6px; opacity:0.9;">live key-leak case, remediation owned</div>
+    </div>
+    <div style="flex:1; padding:0 0 0 32px; border-left:2px solid rgba(243,242,242,.4);">
+      <div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-size:46px; font-weight:900; line-height:1; color:#ec3013;">0</div>
+      <div style="font-size:15px; font-weight:600; margin-top:6px; opacity:0.9;">privileges outliving their deployment</div>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1920,&quot;height&quot;:1080}}"></script>
+</body>
+</html>
