@@ -383,6 +383,18 @@
     text-transform: uppercase; letter-spacing: .08em; }
   details.pconsole > .cbody { padding-bottom: 20px; }
   @media (max-width: 560px) { details.pconsole > summary { grid-template-columns: 84px 1fr auto; } details.pconsole .disclose { display: none; } }
+
+  /* section-level collapse (consistent with Realized's consoles) */
+  .zsec > summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 10px; }
+  .zsec > summary::-webkit-details-marker { display: none; }
+  .zsec > summary .program-h { margin-bottom: 0; }
+  .zsec > summary .zone-h { margin: 0; }
+  .zsec.zone > summary { margin: 34px 0 10px; }
+  .zsec.zone { margin-top: 0; }
+  .zcaret { margin-left: auto; font-family: var(--mono); font-size: 11px; color: var(--slate-faint); transition: transform .15s; flex: none; }
+  .zsec[open] > summary .zcaret { transform: rotate(90deg); }
+  details.dreams[open] > summary { margin-bottom: 14px; }
+  .zsec > summary:hover .zcaret { color: var(--ink-soft); }
 </style>
 
 <div class="wrap">
@@ -395,32 +407,36 @@
   <h1>pyforge <span class="sep">·</span> Factory Console</h1>
   <p class="subtitle">The Dream-to-Code factory, end to end: <b>The Dreams</b> (the why) → <b>The Specs</b> (BMAD kernels, the machine contract) → <b>The Pitch</b> (the deck family) → what's <b>In Build</b>, <b>Realized</b>, and <b>Archived</b>. Data regenerates from the repo (<code>dashboard-gen</code>).</p>
 
-  <div class="dreams" id="dreams" hidden>
-    <div class="program-h">The Dreams</div>
+  <details class="dreams zsec" id="dreams" hidden>
+    <summary><span class="program-h">The Dreams</span><span class="zcaret">▸</span></summary>
     <div class="dflow"><b>docs/dreams/</b> → deck (Herald) → spec (BMAD) → build (Marshal) → realized · each Dream shows at its FURTHEST stage — ▤ deck · § spec · ⚙ project · n/n live build carry its full chain</div>
     <div id="drows"></div>
-  </div>
+  </details>
 
-  <div class="dreams" id="specsec" hidden>
-    <div class="program-h" id="spech">The Specs</div>
+  <details class="dreams zsec" id="specsec" hidden>
+    <summary><span class="program-h" id="spech">The Specs</span><span class="zcaret">▸</span></summary>
     <div class="dflow"><b>_bmad-output/projects/*/planning-artifacts/specs/</b> — every BMAD-Method kernel: five-field contract + companions, derived from its append-only memlog. Legacy <b>docs/specs/</b> is excluded.</div>
     <div id="specrows"></div>
-  </div>
+  </details>
 
-  <div class="dreams" id="pitchsec" hidden>
-    <div class="program-h" id="pitchh">The Pitch</div>
+  <details class="dreams zsec" id="pitchsec" hidden>
+    <summary><span class="program-h" id="pitchh">The Pitch</span><span class="zcaret">▸</span></summary>
     <div class="dflow"><b>presentations/&lt;slug&gt;/</b> — the deck family. Dots = the 6-artifact standard: prototype · exec summary · infographic trio · marp sources · standalone · pptx pair. Cards link to the repo.</div>
     <div id="pitchcards" class="pitchgrid"></div>
-  </div>
+  </details>
 
-  <h2 class="zone-h z-build" id="buildh">In Build</h2>
-  <div id="buildzone"></div>
+  <details class="zsec zone" id="buildsec" open>
+    <summary><h2 class="zone-h z-build" id="buildh">In Build</h2><span class="zcaret">▸</span></summary>
+    <div id="buildzone"></div>
+  </details>
 
   <h2 class="zone-h z-real" id="realh">Realized</h2>
   <div id="realzone"></div>
 
-  <h2 class="zone-h z-arch" id="archh">Archived</h2>
-  <div class="dreams" id="archsec"><div id="archrows"></div></div>
+  <details class="zsec zone" id="archwrap">
+    <summary><h2 class="zone-h z-arch" id="archh">Archived</h2><span class="zcaret">▸</span></summary>
+    <div class="dreams" id="archsec"><div id="archrows"></div></div>
+  </details>
 
   <footer id="footer"></footer>
 </div>
@@ -650,8 +666,12 @@
   });
 
   const buildzone = document.getElementById("buildzone");
+  const liveSummary = live.map(([id, p, c]) =>
+    p.label + ' ' + c.done + '/' + c.total +
+    (p.inflight ? ' · ' + p.inflight.key + ' in flight' : '')).join(' — ');
   document.getElementById("buildh").innerHTML =
-    'In Build <span class="zn">· ' + (live.length || "none") + ' live program' + (live.length === 1 ? "" : "s") + '</span>';
+    'In Build <span class="zn">· ' + (live.length || "none") + ' live program' + (live.length === 1 ? "" : "s") +
+    (liveSummary ? ' — ' + liveSummary : '') + '</span>';
   live.forEach(([id, p]) => {
     const div = document.createElement("div");
     div.className = "pconsole";
@@ -664,6 +684,7 @@
     'Realized <span class="zn">· ' + shipped.length + ' shipped program' + (shipped.length === 1 ? "" : "s") + ' · click to expand</span>';
   shipped.forEach(([id, p, c]) => {
     const det = document.createElement("details");
+    det.id = "real-" + id;
     det.className = "pconsole " + ({warden: "pw", atlas: "pa"}[id] || "pr");
     det.innerHTML =
       '<summary>' +
@@ -734,6 +755,17 @@
   }
   setInterval(tickInflight, 1000);
   tickInflight();
+
+  // remember each section's open/closed state per viewer (defaults: In Build open, rest closed)
+  document.querySelectorAll("details.zsec, details.pconsole").forEach(d => {
+    if (!d.id) return;
+    const k = "dashopen." + d.id;
+    try {
+      const saved = localStorage.getItem(k);
+      if (saved !== null) d.open = saved === "1";
+      d.addEventListener("toggle", () => localStorage.setItem(k, d.open ? "1" : "0"));
+    } catch (e) { /* storage unavailable — defaults stand */ }
+  });
 
   document.getElementById("tt").addEventListener("click", () => {
     const cur = root.getAttribute("data-theme");
