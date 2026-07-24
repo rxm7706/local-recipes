@@ -28,13 +28,20 @@ hatchling = "*"
 # existing conda-forge feedstocks. The library uses a lean, targeted dep set
 # (revised architecture): pyyaml, packaging, cyclonedx-python-lib, jsonschema.
 # license-expression (Story 6.2): SPDX license-expression parsing/
-# normalization for the license axis (license.py) — unpinned, matching
-# deptry/osv-scanner's existing "*" convention (range-pinning is Story 6.6's
-# job).
+# normalization for the license axis (license.py) — unpinned.
+#
+# deptry/osv-scanner (Story 6.6, this pixi.toml's recorded owner — closes
+# review-T-a's previously-unowned mitigation): range-pinned, not exact-pinned
+# (NFR-C1 — engines come from feedstocks), to the exact minor each already
+# has in-repo output-schema evidence for (deptry 0.25.1 — hygiene.py's
+# DEP005 docstring; osv-scanner 2.4.0 — vuln.py's "Empirically-verified
+# 2.4.0 shape" docstring). engines.py's DEPTRY_VERSION_RANGE/
+# OSV_SCANNER_VERSION_RANGE constants must stay in sync with these two
+# lines — enforced by tests/meta/test_engine_version_range_sync.py.
 [package.run-dependencies]
 python = ">=3.12"
-deptry = "*"
-osv-scanner = "*"
+deptry = ">=0.25.1,<0.26"
+osv-scanner = ">=2.4.0,<2.5"
 pyyaml = "*"
 packaging = "*"
 cyclonedx-python-lib = "*"
