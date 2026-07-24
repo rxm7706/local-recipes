@@ -188,25 +188,35 @@ Ownership decisions recorded:
   engine-instantiation loop (mirrors this same loop's pre-existing
   ``OsvEngine(fail_on_kev=...)`` special case). ``config.license_gating``
   is threaded into ``assemble_report`` for the license axis's own
-  ``AxisCoverage.gating`` — findings themselves still cap at ``warn``
-  regardless (``license.license_rung``'s hard cap; real escalation is
-  Story 6.5's).
+  ``AxisCoverage.gating``. Story 6.5 threads ``config.license_policy``
+  (the gating-aware table) through ``DefaultPolicy.evaluate`` into
+  ``license_rung`` too, so a set flag now escalates the RUNG
+  (denied->policy-violation / unknown->indeterminate) while
+  ``license_findings`` output stays identical.
 * ``--max-lag``/``--require-lts``/``--fail-on-eol`` (Story 6.3, FR35) mirror
-  the license flags' treatment exactly: threaded into ``ConfigLoader().
-  load(...)`` (CLI wins over either TOML file); ``CurrencyEngine`` needs no
-  constructor arguments (unlike ``OsvEngine``/``LicenseEngine`` — 6.3's
-  producer never reads these three flags at all this story, only ``config.
-  py`` does, to compute ``currency_gating``; see ``currency.py``'s module
-  docstring's schema-shape judgment call). ``config.currency_gating`` is
-  threaded into ``assemble_report`` for the currency axis's own
-  ``AxisCoverage.gating`` — findings themselves still cap at ``warn``
-  regardless (``currency.currency_rung``'s hard cap; real escalation is
-  Story 6.5's). ``--max-lag`` uses ``_max_lag_type`` (mirrors ``_coverage_
-  floor``'s argparse ``type=`` shape: a malformed CLI value is a usage
-  error, exit 2, never reaching ``ConfigLoader.load``); ``--require-lts``/
-  ``--fail-on-eol`` are ``store_true`` flags with ``default=None`` (tri-
-  state: unset defers to TOML/default, set always wins — mirrors ``config.
-  py``'s own ``cli_require_lts``/``cli_fail_on_eol`` tri-state design note).
+  the license flags' treatment: threaded into ``ConfigLoader().load(...)``
+  (CLI wins over either TOML file). ``config.currency_gating`` is threaded
+  into ``assemble_report`` for the currency axis's own ``AxisCoverage.
+  gating``, AND (Story 6.5) into ``CurrencyEngine(gating=...)`` in the
+  engine-instantiation loop (mirrors this same loop's ``OsvEngine
+  (fail_on_kev=...)``/``LicenseEngine(...)`` special cases) so the engine's
+  NFR-S9 freshness precondition fires only under an active gate. The rung
+  escalation itself is threaded through ``DefaultPolicy.evaluate``'s
+  ``currency_rung(finding, policy=config.currency_policy, max_lag=config.
+  max_lag)`` call — findings-generation is unchanged (the two-mode diff
+  runs identical fixtures, differing only in rungs/exit). ``--max-lag`` uses
+  ``_max_lag_type`` (mirrors ``_coverage_floor``'s argparse ``type=`` shape);
+  ``--require-lts``/``--fail-on-eol`` are ``store_true`` flags with
+  ``default=None`` (tri-state).
+* ``--warn-as-error`` (Story 6.5) is a ``store_true`` flag with
+  ``default=None`` (tri-state, mirrors ``--fail-on-eol``): threaded into
+  ``ConfigLoader().load(...)`` as ``cli_warn_as_error`` (CLI wins over the
+  ``[tool.pyforge-warden]`` ``warn-as-error`` TOML key), then ``config.
+  warn_as_error`` is threaded into ``assemble_report(warn_as_error=...)`` ->
+  ``verdict.exit_code_for(warn_is_error=...)``. A pure exit-projection knob:
+  a composed ``warn`` status exits non-zero while the status itself stays
+  ``warn`` (orthogonal to ``--warn-only``, which downgrades blocking rungs
+  BEFORE the verdict composes).
 """
 
 from __future__ import annotations
@@ -229,7 +239,13 @@ from .config import (
     EffectiveConfig,
 )
 from .discovery import CONDA_LOCK_KIND, PIXI_LOCK_KIND, discover
-from .engines import DeptryEngine, LicenseEngine, OsvEngine, engine_factories
+from .engines import (
+    CurrencyEngine,
+    DeptryEngine,
+    LicenseEngine,
+    OsvEngine,
+    engine_factories,
+)
 from .extract import UnparsableManifestError, extractor_for
 from .hygiene import has_adjacent_python_source
 from .interfaces import DefaultPolicy, EngineResult, _sanitize_id_segment
@@ -405,8 +421,9 @@ def _build_parser() -> tuple[argparse.ArgumentParser, argparse.ArgumentParser]:
             "comma-separated SPDX license id allow-list; a resolved "
             "component license NOT in this list is denied (overrides any "
             "[tool.pyforge-warden] allow-licenses config value) -- "
-            "activates license-axis gating (FR33); v1 findings still cap "
-            "at 'warn' regardless (real escalation is a later story)"
+            "activates license-axis gating (FR33): a denied verdict composes "
+            "'policy-violation' (exit 1) and an unresolvable license composes "
+            "'indeterminate' (Story 6.5)"
         ),
     )
     scan.add_argument(
@@ -418,7 +435,8 @@ def _build_parser() -> tuple[argparse.ArgumentParser, argparse.ArgumentParser]:
             "component license IN this list is denied, taking priority "
             "over --allow-licenses (overrides any [tool.pyforge-warden] "
             "deny-licenses config value) -- activates license-axis gating "
-            "(FR33); v1 findings still cap at 'warn' regardless"
+            "(FR33): a denied verdict composes 'policy-violation', an "
+            "unresolvable license composes 'indeterminate' (Story 6.5)"
         ),
     )
     scan.add_argument(
@@ -430,10 +448,11 @@ def _build_parser() -> tuple[argparse.ArgumentParser, argparse.ArgumentParser]:
             "the currency-axis releases-behind-latest threshold, a "
             "non-negative integer (overrides any [tool.pyforge-warden] "
             "max-lag config value) -- activates currency-axis gating "
-            "(FR35); v1 accepts the threshold but neither enforces it nor "
-            "echoes it into the report: over-lag findings appear for ANY "
-            "positive lag and still cap at 'warn' regardless of N (real "
-            "escalation is a later story)"
+            "(FR35). The gate now ENFORCES this threshold (Story 6.5): an "
+            "over-lag finding whose lag EXCEEDS N composes 'policy-violation' "
+            "(exit 1); an over-lag at or below N stays 'warn' (visible, not "
+            "blocking). An 'eol' verdict blocks regardless of N; 'unknown' "
+            "composes 'indeterminate'"
         ),
     )
     scan.add_argument(
@@ -443,8 +462,13 @@ def _build_parser() -> tuple[argparse.ArgumentParser, argparse.ArgumentParser]:
         help=(
             "require an LTS-policy currency resolution where one exists "
             "(overrides any [tool.pyforge-warden] require-lts config "
-            "value) -- activates currency-axis gating (FR35); v1 findings "
-            "still cap at 'warn' regardless"
+            "value) -- activates currency-axis gating (FR35): an 'eol' "
+            "verdict composes 'policy-violation', 'unknown' composes "
+            "'indeterminate' (Story 6.5). Note: this flag only ACTIVATES the "
+            "generic gate; it performs no LTS-specific enforcement -- the "
+            "frozen v1 schema carries no per-component LTS boolean, so "
+            "blocking on a non-LTS resolution is unexpressible (a documented "
+            "carried limitation)"
         ),
     )
     scan.add_argument(
@@ -454,8 +478,23 @@ def _build_parser() -> tuple[argparse.ArgumentParser, argparse.ArgumentParser]:
         help=(
             "block on an eol currency verdict (overrides any "
             "[tool.pyforge-warden] fail-on-eol config value) -- activates "
-            "currency-axis gating (FR35); v1 findings still cap at 'warn' "
-            "regardless"
+            "currency-axis gating (FR35): an 'eol' verdict composes "
+            "'policy-violation' (exit 1) and 'unknown' composes "
+            "'indeterminate' (Story 6.5)"
+        ),
+    )
+    scan.add_argument(
+        "--warn-as-error",
+        action="store_true",
+        default=None,
+        help=(
+            "make a composed 'warn' status exit non-zero (the strict-shop "
+            "on-ramp, Story 6.5) -- overrides any [tool.pyforge-warden] "
+            "warn-as-error config value. A pure exit-projection knob: it "
+            "never changes the composed status or any rung (status stays "
+            "'warn'), only its exit code. Orthogonal to --warn-only, which "
+            "instead DOWNGRADES blocking rungs to warn before the verdict "
+            "composes"
         ),
     )
     scan.add_argument(
@@ -489,7 +528,10 @@ def _build_parser() -> tuple[argparse.ArgumentParser, argparse.ArgumentParser]:
             "enforcement); --fail-on still decides which findings compose "
             "'policy-violation' before this downgrade runs, so the text "
             "report's downgraded-finding count can still differ across "
-            "--fail-on values even when the final status/exit code do not"
+            "--fail-on values even when the final status/exit code do not. "
+            "Composed with --warn-as-error (flag or TOML), the downgraded "
+            "'warn' still exits 1: warn-as-error projects ANY composed warn "
+            "non-zero"
         ),
     )
     return parser, scan
@@ -612,6 +654,7 @@ def _run_scan(args: argparse.Namespace) -> int:
             cli_max_lag=args.max_lag,
             cli_require_lts=args.require_lts,
             cli_fail_on_eol=args.fail_on_eol,
+            cli_warn_as_error=args.warn_as_error,
         )
     except (ConfigParseError, ConfigValidationError) as exc:
         # Review finding: an unrelated config-file error must not silently
@@ -628,6 +671,7 @@ def _run_scan(args: argparse.Namespace) -> int:
                 cli_max_lag=args.max_lag,
                 cli_require_lts=args.require_lts,
                 cli_fail_on_eol=args.fail_on_eol,
+                cli_warn_as_error=args.warn_as_error,
             )
         except ConfigValidationError:
             # Fix 5 follow-up (review finding, 2026-07-18): `exc` above may
@@ -829,11 +873,12 @@ def _run_scan(args: argparse.Namespace) -> int:
             # the shared zero-arg Engine.run() seam every other factory
             # still uses (config.py's Design Notes). Story 6.2:
             # LicenseEngine's allow_licenses/deny_licenses need the same
-            # treatment. Story 6.3: CurrencyEngine needs no constructor
-            # arguments at all this story (see currency.py's module
-            # docstring's schema-shape judgment call) -- it falls through to
-            # the plain factory() call below like every other zero-arg
-            # engine.
+            # treatment. Story 6.5: CurrencyEngine now takes gating=config.
+            # currency_gating so its NFR-S9 freshness precondition (emit a
+            # currency-registry-stale/unavailable finding when the bundled
+            # registry can't be trusted under an active gate) fires only when
+            # a currency gate is active -- gated exactly as OsvEngine's
+            # fail_on_kev gates the parallel KEV-provenance finding.
             engine = (
                 OsvEngine(fail_on_kev=config.fail_on_kev)
                 if factory is OsvEngine
@@ -842,6 +887,8 @@ def _run_scan(args: argparse.Namespace) -> int:
                     deny_licenses=config.deny_licenses,
                 )
                 if factory is LicenseEngine
+                else CurrencyEngine(gating=config.currency_gating)
+                if factory is CurrencyEngine
                 else factory()
             )
         except (SystemExit, Exception) as exc:  # noqa: BLE001 —
@@ -1071,6 +1118,7 @@ def _run_scan(args: argparse.Namespace) -> int:
         license_gating=config.license_gating,
         currency_data=currency_data,
         currency_gating=config.currency_gating,
+        warn_as_error=config.warn_as_error,
     )
     if args.sbom_output is not None:
         # Story 4.1: an independent sibling artifact -- rendering and

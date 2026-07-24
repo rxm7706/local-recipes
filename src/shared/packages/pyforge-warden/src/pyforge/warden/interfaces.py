@@ -24,12 +24,15 @@ Ownership decisions recorded here:
   real for hygiene (Story 1.3) and vulnerability (Story 1.6) — each
   REPLACING the backstop for its own axis; both may only tighten (toward
   ``policy-violation``), never loosen (toward ``clean``). Story 6.2 (license)
-  and Story 6.3 (currency) also replace the backstop for their own axes,
-  each with a HARD ``Status.WARN`` cap (``license_rung``/``currency_rung``),
-  not a real escalation table — real ``denied``/``unknown`` (license) and
-  ``eol``/``over-lag``/``unknown`` (currency) escalation is Story 6.5's sole
-  ownership. The backstop itself now only governs a hypothetical future axis
-  with no mapping of its own yet.
+  and Story 6.3 (currency) also replace the backstop for their own axes;
+  Story 6.5 made their rungs two-mode — ``license_rung``/``currency_rung``
+  now consult the gating-aware ``config.{license,currency}_policy`` this
+  method threads (plus ``config.max_lag`` for currency's numeric over-lag
+  check), escalating ``denied``/``unknown`` (license) and ``eol``/
+  ``over-lag``/``unknown`` (currency) when a gate is active while an
+  unconfigured axis still caps at ``warn`` (the module-default table). The
+  backstop itself now only governs a hypothetical future axis with no
+  mapping of its own yet.
 * ``DefaultPolicy`` is the fail-closed inventory→verdict bridge: a withheld
   component (``indeterminate_reason`` set) becomes an
   ``indeterminate:<reason>:<pkg>`` finding plus a driver-carrying
@@ -251,9 +254,10 @@ class DefaultPolicy:
       report never composes ``clean``. Story 1.3 (hygiene) and Story 1.6
       (vulnerability) have each replaced the backstop with their axis's real
       severity mapping (tighten-only); Story 6.2 (license) and Story 6.3
-      (currency) replace it with a hard ``Status.WARN`` cap instead (real
-      escalation is Story 6.5's); the backstop itself now only fires for a
-      hypothetical future axis.
+      (currency) replaced it with their own mappings too, made two-mode by
+      Story 6.5 (all-``warn`` when unconfigured, escalating under an active
+      gate via ``config.{license,currency}_policy``); the backstop itself
+      now only fires for a hypothetical future axis.
     * Engine ``ErrorRecord``s feed ``(error, driver)`` rungs: an engine
       failure must reach the verdict (composition yields status ``error`` →
       ``exit_code_for`` gives the error exit), while the report is still
@@ -356,25 +360,38 @@ class DefaultPolicy:
                         )
                     )
                 elif finding.axis == AXIS_LICENSE:
-                    # Story 6.2: license-axis engine findings route through
-                    # license_rung, a HARD Status.WARN cap that never
-                    # consults self._config.license_policy and never
-                    # escalates (real denied->policy-violation / unknown->
-                    # indeterminate escalation is Story 6.5's sole
-                    # ownership). This REPLACES the 1.2 indeterminate
-                    # backstop for the license axis too — never mapping a
-                    # finding to clean (C0 preserved).
-                    rungs.append(license_rung(finding))
+                    # Story 6.2/6.5: license-axis engine findings route
+                    # through license_rung with self._config.license_policy —
+                    # the gating-aware table (all-warn when the license axis
+                    # is unconfigured, escalating denied->policy-violation /
+                    # unknown->indeterminate when --allow/--deny-licenses is
+                    # set). config.py is the single writer of the two-mode
+                    # semantics; the rung only reads the table. Threaded
+                    # exactly as vuln_severity_policy is above. This REPLACES
+                    # the 1.2 indeterminate backstop for the license axis
+                    # too — never mapping a finding to clean (C0 preserved).
+                    rungs.append(
+                        license_rung(finding, policy=self._config.license_policy)
+                    )
                 elif finding.axis == AXIS_CURRENCY:
-                    # Story 6.3: currency-axis engine findings route through
-                    # currency_rung, a HARD Status.WARN cap that never
-                    # consults self._config.currency_policy and never
-                    # escalates (real eol/over-lag->policy-violation /
-                    # unknown->indeterminate escalation is Story 6.5's sole
-                    # ownership). This REPLACES the 1.2 indeterminate
+                    # Story 6.3/6.5: currency-axis engine findings route
+                    # through currency_rung with self._config.currency_policy
+                    # (the gating-aware table) AND self._config.max_lag (the
+                    # numeric over-lag threshold the rung applies to a
+                    # SUPPORTED-verdict over-lag finding). Unconfigured, the
+                    # table is all-warn and max_lag is None (no escalation);
+                    # a currency gate escalates eol->policy-violation /
+                    # unknown->indeterminate and an over-lag beyond --max-lag
+                    # ->policy-violation. This REPLACES the 1.2 indeterminate
                     # backstop for the currency axis too — never mapping a
                     # finding to clean (C0 preserved).
-                    rungs.append(currency_rung(finding))
+                    rungs.append(
+                        currency_rung(
+                            finding,
+                            policy=self._config.currency_policy,
+                            max_lag=self._config.max_lag,
+                        )
+                    )
                 else:
                     # The false-green backstop now only governs a
                     # hypothetical future axis with no mapping of its own: a

@@ -76,10 +76,15 @@ Ownership decisions recorded:
   last-applied precedence as ``fail-on``/``fail-under-coverage``.
   ``license_gating`` (``True`` iff either tuple is non-empty) and
   ``license_policy`` (a ``LicenseVerdict -> Status`` table, mirroring
-  ``vuln_severity_policy``'s shape) are both defined this story per the
-  architecture's ownership split — ``license_policy`` has no caller yet
-  (``license.license_rung`` is a hard warn-cap this story, oblivious to any
-  policy table; real escalation is Story 6.5's).
+  ``vuln_severity_policy``'s shape) are both defined per the architecture's
+  ownership split. Story 6.5 made ``license_policy`` GATING-AWARE and wired
+  it through: when ``license_gating`` is false every verdict maps to
+  ``WARN`` (byte-identical to ``license.DEFAULT_LICENSE_POLICY``); when true
+  it escalates (``denied`` -> ``policy-violation``, ``unknown`` ->
+  ``indeterminate``). ``interfaces.DefaultPolicy.evaluate`` threads it into
+  ``license.license_rung(finding, policy=…)`` exactly as
+  ``vuln_severity_policy`` is threaded into ``vuln_rung`` (config.py is the
+  single writer of the two-mode semantics; the rung only reads).
 * ``--max-lag``/``--require-lts``/``--fail-on-eol`` (Story 6.3, FR35's v1
   gate-activation rule) mirror ``--allow-licenses``/``--deny-licenses``'s
   treatment exactly: all three ARE part of epics.md's spelled-out v1 CLI
@@ -91,11 +96,25 @@ Ownership decisions recorded:
   — mirrors every other ``_coerce_*`` helper). ``currency_gating`` (``True``
   iff ``max_lag is not None`` or ``require_lts`` or ``fail_on_eol``) and
   ``currency_policy`` (a ``CurrencyVerdict -> Status`` table, mirroring
-  ``license_policy``'s shape) are both defined this story per the
-  architecture's ownership split — ``currency_policy`` has no caller yet
-  (``currency.currency_rung`` is a hard warn-cap this story, oblivious to
-  any policy table; real escalation, including the ``--max-lag``/
-  ``--require-lts`` numeric/boolean checks themselves, is Story 6.5's).
+  ``license_policy``'s shape) are both defined per the architecture's
+  ownership split. Story 6.5 made ``currency_policy`` GATING-AWARE and wired
+  it through (mirroring ``license_policy``): all-``WARN`` when
+  ``currency_gating`` is false, else ``eol`` -> ``policy-violation`` /
+  ``unknown`` -> ``indeterminate``. ``DefaultPolicy.evaluate`` threads it
+  (plus ``self.max_lag``, for currency's numeric over-lag check) into
+  ``currency.currency_rung``. The ``--max-lag`` over-lag threshold is a
+  numeric ``lag > max_lag`` check the RUNG applies (a ``SUPPORTED``-verdict
+  over-lag finding is not a table key), not part of this table.
+* ``warn-as-error`` (Story 6.5) is a pure exit-projection knob (FR: the
+  strict-shop on-ramp): it never changes the composed status or any rung —
+  it only makes ``verdict.exit_code_for(warn_is_error=True)`` project a
+  ``warn`` STATUS to a non-zero exit. It gets a CLI flag
+  (``--warn-as-error``, tri-state ``store_true`` with ``default=None`` —
+  mirrors ``--fail-on-eol``) AND a recognized ``[tool.pyforge-warden]``
+  ``warn-as-error`` key (hyphenated only, like every other key); CLI wins
+  over either TOML file, same last-applied precedence as ``fail-on``.
+  ``cli.py`` threads ``config.warn_as_error`` into ``report.assemble_report
+  (warn_as_error=…)`` -> ``exit_code_for(warn_is_error=…)``.
 
 This module parses TOML as DATA: no I/O beyond reading the two candidate
 files, no subprocess, no network, no exec.
@@ -113,7 +132,7 @@ from .models import CurrencyVerdict, LicenseVerdict, SeverityTier, Status
 _PYPROJECT_FILENAME = "pyproject.toml"
 _PIXI_FILENAME = "pixi.toml"
 
-# The 10 recognized [tool.pyforge-warden] keys (hyphenated only — an
+# The 11 recognized [tool.pyforge-warden] keys (hyphenated only — an
 # underscore-spelled variant of any of these is UNRECOGNIZED, never
 # silently accepted as an alias).
 _RECOGNIZED_KEYS = frozenset(
@@ -128,6 +147,7 @@ _RECOGNIZED_KEYS = frozenset(
         "max-lag",
         "require-lts",
         "fail-on-eol",
+        "warn-as-error",
     }
 )
 
@@ -212,6 +232,7 @@ class EffectiveConfig:
     max_lag: int | None = None
     require_lts: bool = False
     fail_on_eol: bool = False
+    warn_as_error: bool = False
 
     def __post_init__(self) -> None:
         """Fail at construction, not at first use (review finding: without
@@ -284,6 +305,10 @@ class EffectiveConfig:
             raise ValueError(
                 f"fail_on_eol must be a bool, got {self.fail_on_eol!r}"
             )
+        if not isinstance(self.warn_as_error, bool):
+            raise ValueError(
+                f"warn_as_error must be a bool, got {self.warn_as_error!r}"
+            )
 
     @classmethod
     def default(cls) -> EffectiveConfig:
@@ -304,6 +329,7 @@ class EffectiveConfig:
         cli_max_lag: int | None = None,
         cli_require_lts: bool | None = None,
         cli_fail_on_eol: bool | None = None,
+        cli_warn_as_error: bool | None = None,
     ) -> EffectiveConfig:
         """The built-in default, with any CLI-supplied overrides still
         applied (review finding: ``cli.py``'s config-load-failure fallback
@@ -355,6 +381,11 @@ class EffectiveConfig:
             if cli_fail_on_eol is not None
             else defaults.fail_on_eol
         )
+        warn_as_error = (
+            _coerce_warn_as_error(cli_warn_as_error)
+            if cli_warn_as_error is not None
+            else defaults.warn_as_error
+        )
         return cls(
             fail_on=fail_on,
             fail_under_coverage=fail_under_coverage,
@@ -366,6 +397,7 @@ class EffectiveConfig:
             max_lag=max_lag,
             require_lts=require_lts,
             fail_on_eol=fail_on_eol,
+            warn_as_error=warn_as_error,
         )
 
     @property
@@ -410,23 +442,35 @@ class EffectiveConfig:
         FR33's v1 gate-activation rule) — ``True`` iff ``allow_licenses`` or
         ``deny_licenses`` is non-empty. Threaded into the reported
         ``AxisCoverage.gating`` for the license axis
-        (``report.assemble_report``) — transparency of configuration state,
-        independent of the fact that real escalation itself is deferred to
-        Story 6.5."""
+        (``report.assemble_report``) — transparency of configuration state.
+        Also selects which mode ``license_policy`` returns (Story 6.5: the
+        escalating table when true, the all-``WARN`` table when false)."""
         return bool(self.allow_licenses or self.deny_licenses)
 
     @property
     def license_policy(self) -> dict[LicenseVerdict, Status]:
-        """The license-axis verdict->status table Story 6.5's real
-        escalation will consult — mirrors ``vuln_severity_policy``'s shape
-        (a plain dict, not the module-default ``MappingProxyType``, matching
-        that property's own return type). Defined THIS story per the
-        architecture's ownership split even though nothing consumes it yet:
-        ``license.license_rung`` is a hard ``Status.WARN`` cap, oblivious to
-        this table (see its own docstring). Every Finding-eligible verdict
-        (``denied``/``unknown`` — ``allowed`` never reaches a ``Finding``)
-        maps to ``Status.WARN``, matching ``license_rung``'s own cap
-        byte-for-byte."""
+        """The license-axis verdict->status table ``interfaces.DefaultPolicy.
+        evaluate`` threads into ``license.license_rung(finding, policy=…)``
+        (Story 6.5) — mirrors ``vuln_severity_policy``'s shape (a plain dict,
+        not the module-default ``MappingProxyType``, matching that property's
+        own return type). This property is the SINGLE WRITER of the license
+        axis's two-mode semantics (F7): when ``license_gating`` is false
+        every Finding-eligible verdict (``denied``/``unknown`` — ``allowed``
+        never reaches a ``Finding``) maps to ``Status.WARN``, byte-identical
+        to the module-default ``license.DEFAULT_LICENSE_POLICY`` used when the
+        rung is called with no policy (the unconfigured / ceiling-meta-test
+        path); when true it ESCALATES — ``denied`` -> ``policy-violation``,
+        ``unknown`` -> ``indeterminate`` (only ever moving a rung toward a
+        stronger, non-``clean`` status, the C0 bound). The
+        ``--allow/--deny-licenses`` flags flip ``license_gating`` (and this
+        table) without touching ``license_findings``' own output — the
+        two-mode diff runs the identical fixtures and differs only in
+        rungs/exit."""
+        if self.license_gating:
+            return {
+                LicenseVerdict.DENIED: Status.POLICY_VIOLATION,
+                LicenseVerdict.UNKNOWN: Status.INDETERMINATE,
+            }
         return {
             LicenseVerdict.DENIED: Status.WARN,
             LicenseVerdict.UNKNOWN: Status.WARN,
@@ -438,25 +482,36 @@ class EffectiveConfig:
         FR35's v1 gate-activation rule) — ``True`` iff ``max_lag is not
         None`` or ``require_lts`` or ``fail_on_eol``. Threaded into the
         reported ``AxisCoverage.gating`` for the currency axis
-        (``report.assemble_report``) — transparency of configuration state,
-        independent of the fact that real escalation itself is deferred to
-        Story 6.5."""
+        (``report.assemble_report``) — transparency of configuration state.
+        Also selects which mode ``currency_policy`` returns and activates the
+        engine's freshness precondition (Story 6.5)."""
         return self.max_lag is not None or self.require_lts or self.fail_on_eol
 
     @property
     def currency_policy(self) -> dict[CurrencyVerdict, Status]:
-        """The currency-axis verdict->status table Story 6.5's real
-        escalation will consult — mirrors ``license_policy``'s shape. Defined
-        THIS story per the architecture's ownership split even though
-        nothing consumes it yet: ``currency.currency_rung`` is a hard
-        ``Status.WARN`` cap, oblivious to this table (see its own
-        docstring). Only ``eol``/``unknown`` are keyed — ``supported`` is
-        deliberately absent, mirroring ``license_policy``'s omission of
-        ``allowed``: a ``supported`` verdict can mean either "fully current"
-        (no Finding at all) or "over-lag but not EOL" (a Finding DOES
-        exist), a distinction this table cannot make by verdict alone (see
-        ``currency.py``'s module docstring); Story 6.5's escalation reads
-        the id's reason segment / ``Finding.currency.lag`` for that."""
+        """The currency-axis verdict->status table ``DefaultPolicy.evaluate``
+        threads into ``currency.currency_rung(finding, policy=…, max_lag=…)``
+        (Story 6.5) — mirrors ``license_policy``'s two-mode shape and is the
+        SINGLE WRITER of the currency axis's two-mode semantics (F7):
+        all-``WARN`` (byte-identical to ``currency.DEFAULT_CURRENCY_POLICY``)
+        when ``currency_gating`` is false, else ``eol`` ->
+        ``policy-violation`` / ``unknown`` -> ``indeterminate`` (C0: only
+        toward a stronger status). Only ``eol``/``unknown`` are keyed —
+        ``supported`` is deliberately absent, mirroring ``license_policy``'s
+        omission of ``allowed``: a ``supported`` verdict can mean either
+        "fully current" (no Finding at all) or "over-lag but not EOL" (a
+        Finding DOES exist), a distinction this table cannot make by verdict
+        alone (see ``currency.py``'s module docstring). ``currency_rung``
+        handles the ``over-lag`` (``SUPPORTED``-verdict) finding by the
+        numeric ``lag > max_lag`` check ``DefaultPolicy`` feeds via
+        ``self.max_lag`` — an over-lag is escalated to ``policy-violation``
+        only when it exceeds the configured ``--max-lag`` threshold, never
+        by this table."""
+        if self.currency_gating:
+            return {
+                CurrencyVerdict.EOL: Status.POLICY_VIOLATION,
+                CurrencyVerdict.UNKNOWN: Status.INDETERMINATE,
+            }
         return {
             CurrencyVerdict.EOL: Status.WARN,
             CurrencyVerdict.UNKNOWN: Status.WARN,
@@ -529,6 +584,17 @@ def _coerce_fail_on_eol(value: object) -> bool:
     if not isinstance(value, bool):
         raise ConfigValidationError(
             f"'fail-on-eol' must be a bool, got {value!r}"
+        )
+    return value
+
+
+def _coerce_warn_as_error(value: object) -> bool:
+    """``'warn-as-error'`` (Story 6.5) mirrors ``_coerce_fail_on_eol``'s
+    shape exactly — a plain bool, malformed is a typed
+    ``ConfigValidationError``."""
+    if not isinstance(value, bool):
+        raise ConfigValidationError(
+            f"'warn-as-error' must be a bool, got {value!r}"
         )
     return value
 
@@ -675,6 +741,7 @@ class ConfigLoader:
         cli_max_lag: int | None = None,
         cli_require_lts: bool | None = None,
         cli_fail_on_eol: bool | None = None,
+        cli_warn_as_error: bool | None = None,
     ) -> tuple[EffectiveConfig, tuple[str, ...]]:
         """Resolve one scan's ``EffectiveConfig`` under ``target``. Returns
         ``(config, warnings)`` — ``warnings`` are stderr-destined diagnostic
@@ -700,6 +767,7 @@ class ConfigLoader:
                 cli_max_lag=cli_max_lag,
                 cli_require_lts=cli_require_lts,
                 cli_fail_on_eol=cli_fail_on_eol,
+                cli_warn_as_error=cli_warn_as_error,
                 warnings=warnings,
             )
         except (ConfigParseError, ConfigValidationError) as exc:
@@ -717,6 +785,7 @@ class ConfigLoader:
         cli_max_lag: int | None,
         cli_require_lts: bool | None,
         cli_fail_on_eol: bool | None,
+        cli_warn_as_error: bool | None,
         warnings: list[str],
     ) -> tuple[EffectiveConfig, tuple[str, ...]]:
         pyproject_table = self._read_table(
@@ -791,6 +860,11 @@ class ConfigLoader:
             if "fail-on-eol" in merged
             else defaults.fail_on_eol
         )
+        warn_as_error = (
+            _coerce_warn_as_error(merged["warn-as-error"])
+            if "warn-as-error" in merged
+            else defaults.warn_as_error
+        )
 
         # CLI flags win over both files. Routed through the SAME _coerce_*
         # helpers the TOML-sourced values use (review finding: a bare
@@ -813,6 +887,8 @@ class ConfigLoader:
             require_lts = _coerce_require_lts(cli_require_lts)
         if cli_fail_on_eol is not None:
             fail_on_eol = _coerce_fail_on_eol(cli_fail_on_eol)
+        if cli_warn_as_error is not None:
+            warn_as_error = _coerce_warn_as_error(cli_warn_as_error)
 
         config = EffectiveConfig(
             fail_on=fail_on,
@@ -825,6 +901,7 @@ class ConfigLoader:
             max_lag=max_lag,
             require_lts=require_lts,
             fail_on_eol=fail_on_eol,
+            warn_as_error=warn_as_error,
         )
         return config, tuple(warnings)
 
