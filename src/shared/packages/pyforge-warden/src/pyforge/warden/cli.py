@@ -191,6 +191,22 @@ Ownership decisions recorded:
   ``AxisCoverage.gating`` — findings themselves still cap at ``warn``
   regardless (``license.license_rung``'s hard cap; real escalation is
   Story 6.5's).
+* ``--max-lag``/``--require-lts``/``--fail-on-eol`` (Story 6.3, FR35) mirror
+  the license flags' treatment exactly: threaded into ``ConfigLoader().
+  load(...)`` (CLI wins over either TOML file); ``CurrencyEngine`` needs no
+  constructor arguments (unlike ``OsvEngine``/``LicenseEngine`` — 6.3's
+  producer never reads these three flags at all this story, only ``config.
+  py`` does, to compute ``currency_gating``; see ``currency.py``'s module
+  docstring's schema-shape judgment call). ``config.currency_gating`` is
+  threaded into ``assemble_report`` for the currency axis's own
+  ``AxisCoverage.gating`` — findings themselves still cap at ``warn``
+  regardless (``currency.currency_rung``'s hard cap; real escalation is
+  Story 6.5's). ``--max-lag`` uses ``_max_lag_type`` (mirrors ``_coverage_
+  floor``'s argparse ``type=`` shape: a malformed CLI value is a usage
+  error, exit 2, never reaching ``ConfigLoader.load``); ``--require-lts``/
+  ``--fail-on-eol`` are ``store_true`` flags with ``default=None`` (tri-
+  state: unset defers to TOML/default, set always wins — mirrors ``config.
+  py``'s own ``cli_require_lts``/``cli_fail_on_eol`` tri-state design note).
 """
 
 from __future__ import annotations
@@ -274,6 +290,24 @@ def _coverage_floor(value: str) -> float:
     if not (0.0 <= numeric <= 100.0):
         raise argparse.ArgumentTypeError(
             f"--fail-under-coverage must be in [0, 100], got {value!r}"
+        )
+    return numeric
+
+
+def _max_lag_type(value: str) -> int:
+    """``argparse`` ``type=`` for ``--max-lag`` (Story 6.3): a non-negative
+    int — mirrors ``_coverage_floor``'s shape exactly (an out-of-range or
+    unparsable value is a usage error, argparse's own exit 2, never
+    reaching ``ConfigLoader.load``/``ConfigValidationError``)."""
+    try:
+        numeric = int(value)
+    except ValueError:
+        raise argparse.ArgumentTypeError(
+            f"--max-lag must be a non-negative integer, got {value!r}"
+        ) from None
+    if numeric < 0:
+        raise argparse.ArgumentTypeError(
+            f"--max-lag must be a non-negative integer, got {value!r}"
         )
     return numeric
 
@@ -385,6 +419,41 @@ def _build_parser() -> tuple[argparse.ArgumentParser, argparse.ArgumentParser]:
             "over --allow-licenses (overrides any [tool.pyforge-warden] "
             "deny-licenses config value) -- activates license-axis gating "
             "(FR33); v1 findings still cap at 'warn' regardless"
+        ),
+    )
+    scan.add_argument(
+        "--max-lag",
+        type=_max_lag_type,
+        default=None,
+        metavar="N",
+        help=(
+            "the currency-axis releases-behind-latest threshold, a "
+            "non-negative integer (overrides any [tool.pyforge-warden] "
+            "max-lag config value) -- activates currency-axis gating "
+            "(FR35); v1 findings still cap at 'warn' regardless (real "
+            "escalation is a later story)"
+        ),
+    )
+    scan.add_argument(
+        "--require-lts",
+        action="store_true",
+        default=None,
+        help=(
+            "require an LTS-policy currency resolution where one exists "
+            "(overrides any [tool.pyforge-warden] require-lts config "
+            "value) -- activates currency-axis gating (FR35); v1 findings "
+            "still cap at 'warn' regardless"
+        ),
+    )
+    scan.add_argument(
+        "--fail-on-eol",
+        action="store_true",
+        default=None,
+        help=(
+            "block on an eol currency verdict (overrides any "
+            "[tool.pyforge-warden] fail-on-eol config value) -- activates "
+            "currency-axis gating (FR35); v1 findings still cap at 'warn' "
+            "regardless"
         ),
     )
     scan.add_argument(
@@ -538,19 +607,25 @@ def _run_scan(args: argparse.Namespace) -> int:
             cli_fail_under_coverage=args.fail_under_coverage,
             cli_allow_licenses=args.allow_licenses,
             cli_deny_licenses=args.deny_licenses,
+            cli_max_lag=args.max_lag,
+            cli_require_lts=args.require_lts,
+            cli_fail_on_eol=args.fail_on_eol,
         )
     except (ConfigParseError, ConfigValidationError) as exc:
         # Review finding: an unrelated config-file error must not silently
         # discard an already-argparse-validated CLI flag the user
         # explicitly passed (--fail-on/--fail-under-coverage/
-        # --allow-licenses/--deny-licenses are unrelated to WHY the TOML
-        # failed to load).
+        # --allow-licenses/--deny-licenses/--max-lag/--require-lts/
+        # --fail-on-eol are unrelated to WHY the TOML failed to load).
         try:
             config = EffectiveConfig.default_with_cli_overrides(
                 cli_fail_on=args.fail_on,
                 cli_fail_under_coverage=args.fail_under_coverage,
                 cli_allow_licenses=args.allow_licenses,
                 cli_deny_licenses=args.deny_licenses,
+                cli_max_lag=args.max_lag,
+                cli_require_lts=args.require_lts,
+                cli_fail_on_eol=args.fail_on_eol,
             )
         except ConfigValidationError:
             # Fix 5 follow-up (review finding, 2026-07-18): `exc` above may
@@ -752,7 +827,11 @@ def _run_scan(args: argparse.Namespace) -> int:
             # the shared zero-arg Engine.run() seam every other factory
             # still uses (config.py's Design Notes). Story 6.2:
             # LicenseEngine's allow_licenses/deny_licenses need the same
-            # treatment.
+            # treatment. Story 6.3: CurrencyEngine needs no constructor
+            # arguments at all this story (see currency.py's module
+            # docstring's schema-shape judgment call) -- it falls through to
+            # the plain factory() call below like every other zero-arg
+            # engine.
             engine = (
                 OsvEngine(fail_on_kev=config.fail_on_kev)
                 if factory is OsvEngine
@@ -950,6 +1029,27 @@ def _run_scan(args: argparse.Namespace) -> int:
         (result.kev_data for result in engine_results if result.kev_data is not None),
         None,
     )
+    # Story 6.3: the same first-non-None-across-engine-results selection
+    # kev_data/vuln_data already use -- no CLI/config gating flag disables
+    # CurrencyEngine's own attempt to populate currency_data (unlike
+    # kev_data's fail_on_kev gate above). That does NOT mean currency_data
+    # is always non-None, though: currency_findings() itself returns
+    # currency_data=None whenever the bundled registry can't yield a
+    # trustworthy FeedProvenance -- the registry file is absent/unreadable/
+    # unparsable YAML (_load_registry degrades to {}), OR it loads fine but
+    # its own `updated:` date is missing/unparsable (_registry_feed_
+    # provenance's own None return). A None currency_data here does not by
+    # itself distinguish "no currency policy is active" from "the shipped
+    # registry file has a problem" -- every other engine/path also leaves
+    # it None, so this slot alone can't tell the two apart.
+    currency_data = next(
+        (
+            result.currency_data
+            for result in engine_results
+            if result.currency_data is not None
+        ),
+        None,
+    )
     report = assemble_report(
         inventory=inventory,
         findings=findings,
@@ -967,6 +1067,8 @@ def _run_scan(args: argparse.Namespace) -> int:
         suppressions=suppressions,
         kev_data=kev_data,
         license_gating=config.license_gating,
+        currency_data=currency_data,
+        currency_gating=config.currency_gating,
     )
     if args.sbom_output is not None:
         # Story 4.1: an independent sibling artifact -- rendering and

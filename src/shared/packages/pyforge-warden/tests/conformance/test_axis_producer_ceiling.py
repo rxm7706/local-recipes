@@ -18,9 +18,13 @@ from __future__ import annotations
 
 import pytest
 
+from pyforge.warden.currency import currency_rung
 from pyforge.warden.license import license_rung
 from pyforge.warden.models import (
+    AXIS_CURRENCY,
     AXIS_LICENSE,
+    CurrencyInfo,
+    CurrencyVerdict,
     Finding,
     LicenseInfo,
     LicenseVerdict,
@@ -69,6 +73,48 @@ _CEILING_FIXTURES: tuple[tuple[str, object, tuple[Finding, ...]], ...] = (
             ),
         ),
     ),
+    (
+        "currency",
+        currency_rung,
+        (
+            Finding(
+                id="currency:eol:legacy-django@1.11.29",
+                axis=AXIS_CURRENCY,
+                message="legacy-django: reached end-of-life 2020-04-01",
+                subject="legacy-django",
+                severity=None,
+                currency=CurrencyInfo(
+                    verdict=CurrencyVerdict.EOL,
+                    latest="5.2",
+                    lag=9,
+                    eol_date="2020-04-01",
+                    tier="endoflife-date",
+                ),
+            ),
+            Finding(
+                id="currency:over-lag:requests@2.0.0",
+                axis=AXIS_CURRENCY,
+                message="requests: 1 release(s) behind latest '2.31.0'",
+                subject="requests",
+                severity=None,
+                currency=CurrencyInfo(
+                    verdict=CurrencyVerdict.SUPPORTED,
+                    latest="2.31.0",
+                    lag=1,
+                    eol_date="2099-01-01",
+                    tier="endoflife-date",
+                ),
+            ),
+            Finding(
+                id="currency:unknown:mystery-pkg@2.0.0",
+                axis=AXIS_CURRENCY,
+                message="mystery-pkg: currency could not be resolved",
+                subject="mystery-pkg",
+                severity=None,
+                currency=CurrencyInfo(verdict=CurrencyVerdict.UNKNOWN),
+            ),
+        ),
+    ),
 )
 
 
@@ -95,3 +141,14 @@ def test_ceiling_table_covers_every_finding_eligible_verdict():
     license_entry = next(e for e in _CEILING_FIXTURES if e[0] == "license")
     verdicts = {f.license.verdict for f in license_entry[2] if f.license is not None}
     assert verdicts == {LicenseVerdict.DENIED, LicenseVerdict.UNKNOWN}
+
+
+def test_currency_ceiling_table_covers_all_three_reason_eligible_verdicts():
+    """Story 6.3's own non-vacuous coverage check, mirroring the license one
+    above: the currency axis's fixture set exercises all THREE reason-
+    eligible id-prefixes (eol/over-lag/unknown) — a fully-current
+    (supported, zero-lag) resolution never reaches a Finding at all, so it
+    is never a candidate here."""
+    currency_entry = next(e for e in _CEILING_FIXTURES if e[0] == "currency")
+    reasons = {f.id.split(":")[1] for f in currency_entry[2]}
+    assert reasons == {"eol", "over-lag", "unknown"}

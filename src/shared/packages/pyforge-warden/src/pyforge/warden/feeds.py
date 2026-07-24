@@ -6,6 +6,19 @@ that resolves the KEV file's own on-disk path (``kev_cache_path``) — a
 later feed adds its own ``<feed>_cache_path`` sibling, never a rename of
 this module's generic surface.
 
+Story 6.3 adds the ``endoflife_cache_path``/``load_endoflife_snapshot``/
+``write_endoflife_cache`` trio, siblings of the KEV trio above — same shape,
+same reuse of ``resolve_cache_dir``/``is_feed_stale``/``feed_provenance``
+unchanged. The endoflife.date cache document is ``{product_slug: [cycle,
+...]}`` (one entry per bundled-registry product slug this deployment cares
+about, populated by ``scripts/refresh_endoflife_feed.py``) rather than KEV's
+single flat catalog — endoflife.date has no one-shot "everything" endpoint,
+so the provisioning script fetches per-product and aggregates. ``currency.py``
+is the sole in-package reader; this module still performs no per-cycle
+DOMAIN validation (EOL-date parsing, cycle/version matching) — that is
+``currency.py``'s job, mirroring ``load_kev_catalog``'s own shallow-shape-only
+contract.
+
 Ownership decisions recorded:
 
 * ``PYFORGE_WARDEN_FEED_CACHE_DIR`` is THIS project's OWN env var — unlike
@@ -73,6 +86,11 @@ DEFAULT_FEED_MAX_AGE_DAYS = 7
 _KEV_FEED_DIR_NAME = "kev"
 _KEV_FEED_FILENAME = "known_exploited_vulnerabilities.json"
 
+# The endoflife.date feed's own subdirectory + filename under the shared
+# cache root (Story 6.3): <cache_dir>/endoflife/endoflife_snapshot.json.
+_ENDOFLIFE_FEED_DIR_NAME = "endoflife"
+_ENDOFLIFE_FEED_FILENAME = "endoflife_snapshot.json"
+
 
 def resolve_cache_dir(*, env: Mapping[str, str] | None = None) -> str | None:
     """Resolve ``$PYFORGE_WARDEN_FEED_CACHE_DIR`` — ``None`` when unset or
@@ -91,6 +109,15 @@ def kev_cache_path(cache_dir: str | Path) -> Path:
     consultation (reader) resolve through this one helper, so the two
     never drift apart on layout."""
     return Path(cache_dir) / _KEV_FEED_DIR_NAME / _KEV_FEED_FILENAME
+
+
+def endoflife_cache_path(cache_dir: str | Path) -> Path:
+    """The on-disk endoflife.date cache path under ``cache_dir``:
+    ``<cache_dir>/endoflife/endoflife_snapshot.json`` — the endoflife sibling
+    of ``kev_cache_path`` (Story 6.3). Both ``scripts/refresh_endoflife_
+    feed.py`` (writer) and ``currency.py`` (reader) resolve through this one
+    helper."""
+    return Path(cache_dir) / _ENDOFLIFE_FEED_DIR_NAME / _ENDOFLIFE_FEED_FILENAME
 
 
 def feed_snapshot_at(path: Path) -> str:
@@ -197,6 +224,71 @@ def write_kev_cache(cache_dir: str | Path, document: Mapping[str, object]) -> Pa
         # raised before the `with`); on the common path the `with` already
         # closed it, so tolerate EBADF rather than double-close. Then unlink
         # the temp file so a failed write never leaks it.
+        try:
+            os.close(handle)
+        except OSError:
+            pass
+        try:
+            os.unlink(tmp_name)
+        except OSError:
+            pass
+        raise
+    return target
+
+
+def load_endoflife_snapshot(path: Path) -> dict[str, list[object]] | None:
+    """Load the endoflife.date snapshot JSON into a ``{product_slug:
+    [cycle-record, ...]}`` dict — a shallow, shape-only load mirroring
+    ``load_kev_catalog``'s own contract exactly.
+
+    ``None`` on anything that prevents a trustworthy read (missing file,
+    unreadable, not valid JSON, or a top level that is not a JSON object) —
+    distinct from a present-but-empty snapshot (``{}``, same present/fresh/
+    zero-entries distinction ``load_kev_catalog``'s own docstring
+    establishes). Per-slug tolerant: a slug whose value is not a JSON array
+    is dropped (never partially trusted, never aborts the load of the rest)
+    — this codebase's established tolerant-per-entry convention. Per-cycle
+    DOMAIN validation (is a cycle record shaped like ``{cycle, releaseDate,
+    eol, ...}``?) is deliberately NOT this module's job — ``currency.py``
+    (the sole in-package reader) does that, mirroring how ``load_kev_
+    catalog`` validates only ``cveID``/``dateAdded`` presence, never
+    CVSS-shape."""
+    try:
+        raw = path.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError):
+        return None
+    try:
+        document = json.loads(raw)
+    except (json.JSONDecodeError, ValueError):
+        return None
+    if not isinstance(document, dict):
+        return None
+    snapshot: dict[str, list[object]] = {}
+    for slug, cycles in document.items():
+        if isinstance(slug, str) and isinstance(cycles, list):
+            snapshot[slug] = cycles
+    return snapshot
+
+
+def write_endoflife_cache(cache_dir: str | Path, document: Mapping[str, object]) -> Path:
+    """Atomically write ``document`` (the full ``{product_slug: [cycle-
+    record, ...]}`` payload — the SAME on-disk shape ``load_endoflife_
+    snapshot`` reads back) to ``endoflife_cache_path(cache_dir)`` — the
+    endoflife sibling of ``write_kev_cache``, identical atomic write-to-temp-
+    then-``os.replace`` shape (see that function's docstring for the full
+    rationale; not repeated here). The sole writer both ``scripts/refresh_
+    endoflife_feed.py`` and the test suite's ambient fixture share."""
+    target = endoflife_cache_path(cache_dir)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    handle, tmp_name = tempfile.mkstemp(
+        dir=target.parent, prefix=f".{_ENDOFLIFE_FEED_FILENAME}-", suffix=".tmp"
+    )
+    try:
+        with os.fdopen(handle, "w", encoding="utf-8") as fh:
+            json.dump(document, fh, indent=2, sort_keys=True)
+            fh.write("\n")
+        os.replace(tmp_name, target)
+    except BaseException:
         try:
             os.close(handle)
         except OSError:

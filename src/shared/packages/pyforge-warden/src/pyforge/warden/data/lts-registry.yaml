@@ -1,0 +1,96 @@
+# lts-registry.yaml — conda-name → endoflife.date-slug map + manual LTS lines
+# (cyclonedx-universe-inventory Wave D / S7, decision 5(b)).
+#
+# Bundled copy (Story 6.3, FR34's tier-1 currency source), regenerated
+# verbatim from the canonical source of truth:
+# .claude/skills/conda-forge-expert/data/lts-registry.yaml -- loaded via
+# importlib.resources by src/pyforge/warden/currency.py. Re-copy this file
+# whenever the CFE source copy changes; never hand-edit the two out of sync.
+#
+# Purpose: a THIN slug map. endoflife.date API v1 is the authoritative LTS/EOL
+# source; this file only (1) maps conda/pypi package names to endoflife.date
+# product slugs where a bare-name lookup would miss, and (2) carries manual
+# LTS lines ONLY for LTS-policy projects endoflife.date does not cover.
+#
+# Every entry is dated (`added:`) and revisited at each retro; an expired
+# manual entry becomes `unknown`, never a silent support assertion. A project
+# back-porting patches is NOT the same as a published LTS policy.
+#
+# Per-entry schema:
+#   slug:       endoflife.date product slug (null only for source: manual)
+#   aliases:    other names that resolve to this product (case-insensitive)
+#   source:     endoflife | manual | heuristic-seed
+#   lts_policy: true if the project publishes an LTS policy
+#   added:      ISO date the entry was added/verified
+#   note:       optional human context
+#   lts_lines:  (manual only) list of {line, released, eol, lts}
+version: 1
+updated: 2026-07-06
+products:
+  # ── endoflife.date-covered, LTS-policy (slug map only) ──
+  django:
+    slug: django
+    aliases: [Django]
+    source: endoflife
+    lts_policy: true
+    added: 2026-07-06
+    note: "LTS lines every ~2y; endoflife-covered. 5.2 LTS→EOL 2028-04-30; 4.2 LTS→EOL 2026-04-07."
+  python:
+    slug: python
+    aliases: [cpython, python3]
+    source: endoflife
+    lts_policy: false
+    added: 2026-07-06
+    note: "Not LTS-policy, but authoritative per-line EOL (3.12→2028-10-31, 3.14→2030-10-31)."
+  nodejs:
+    slug: nodejs
+    aliases: [node, nodejs-official]
+    source: endoflife
+    lts_policy: true
+    added: 2026-07-06
+  postgresql:
+    slug: postgresql
+    aliases: [postgres, libpq]
+    source: endoflife
+    lts_policy: true
+    added: 2026-07-06
+  openssl:
+    slug: openssl
+    aliases: []
+    source: endoflife
+    lts_policy: true
+    added: 2026-07-06
+  numpy:
+    slug: numpy
+    aliases: []
+    source: endoflife
+    lts_policy: false
+    added: 2026-07-06
+    note: "endoflife covers numpy via the SPEC-0 support window."
+  pytorch:
+    slug: pytorch
+    aliases: [torch, libtorch]
+    source: endoflife
+    lts_policy: false
+    added: 2026-07-06
+
+  # ── manual: LTS-policy project endoflife.date lacks (exercises lts_lines) ──
+  spring-framework:
+    slug: null
+    aliases: [springframework, spring]
+    source: manual
+    lts_policy: true
+    added: 2026-07-06
+    note: "Placeholder for a JVM LTS-policy lib absent from endoflife.date; refresh dates at retro."
+    lts_lines:
+      - {line: "6.1", released: 2023-11-16, eol: 2028-12-31, lts: true}
+      - {line: "5.3", released: 2020-10-27, eol: 2024-12-31, lts: true}
+
+  # ── heuristic-seed: parallel-maintenance-branch signal (labeled, not policy) ──
+  some-backported-lib:
+    slug: null
+    aliases: [some_backported_lib]
+    source: heuristic-seed
+    lts_policy: false
+    added: 2026-07-06
+    note: "Observed patch releases on an older line after a newer line exists; lts-like, never presented as policy."
