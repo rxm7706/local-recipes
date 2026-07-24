@@ -183,6 +183,8 @@ def assemble_report(
     suppressions: Sequence[SuppressedFinding] = (),
     kev_data: FeedProvenance | None = None,
     license_gating: bool = False,
+    currency_data: FeedProvenance | None = None,
+    currency_gating: bool = False,
 ) -> ComplianceReport:
     """Assemble the ``ComplianceReport`` from the pipeline's outputs.
 
@@ -250,7 +252,17 @@ def assemble_report(
     the coverage-row loop below), so ``config.license_gating`` alone can
     never claim ``gating: true`` for a scan where the license engine never
     ran (e.g. ``manifests_parsed == 0``) — that combination was
-    self-contradictory (an active gate over zero assessed dependencies)."""
+    self-contradictory (an active gate over zero assessed dependencies).
+
+    ``currency_data``/``currency_gating`` (Story 6.3, additive/defaulted —
+    mirror ``kev_data``/``license_gating`` exactly): ``cli.py`` picks the
+    first non-``None`` ``EngineResult.currency_data`` across
+    ``engine_results`` (the bundled LTS registry's own ``FeedProvenance``,
+    see ``currency.py``'s module docstring) and passes ``config.
+    currency_gating`` (``True`` iff ``--max-lag``/``--require-lts``/
+    ``--fail-on-eol`` is set) into the currency axis's own ``AxisCoverage.
+    gating``, gated on axis applicability the SAME way ``license_gating`` is
+    (Fix 8's pattern, applied identically here)."""
     findings = list(findings)
     rungs = list(rungs)
     resolution_depth = (
@@ -322,10 +334,15 @@ def assemble_report(
                 # self-contradictory ("the gate is active" + "nothing was
                 # assessed"). `not not_applicable` for AXIS_LICENSE is exactly
                 # "AXIS_LICENSE in assessed_by_axis" per the not_applicable
-                # expression above.
-                gating=(license_gating and not not_applicable)
-                if axis == AXIS_LICENSE
-                else False,
+                # expression above. Story 6.3: the currency axis mirrors this
+                # identically via currency_gating.
+                gating=(
+                    (license_gating and not not_applicable)
+                    if axis == AXIS_LICENSE
+                    else (currency_gating and not not_applicable)
+                    if axis == AXIS_CURRENCY
+                    else False
+                ),
             )
         )
     coverage = tuple(coverage)
@@ -380,6 +397,7 @@ def assemble_report(
         errors=tuple(errors),
         suppressions=tuple(suppressions),
         kev_data=kev_data,
+        currency_data=currency_data,
     )
 
 

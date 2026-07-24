@@ -2,6 +2,10 @@
 cache path helper, staleness math, ``FeedProvenance`` construction, the KEV
 catalog loader, and the atomic cache writer. Mirrors ``test_vuln.py``'s
 style -- pure-logic coverage, no subprocess, no network.
+
+Story 6.3 adds the endoflife.date trio's own coverage (``endoflife_cache_
+path``/``load_endoflife_snapshot``/``write_endoflife_cache``), mirroring the
+KEV sections above one-for-one.
 """
 
 from __future__ import annotations
@@ -14,12 +18,15 @@ import pytest
 from pyforge.warden.feeds import (
     DEFAULT_FEED_MAX_AGE_DAYS,
     FEED_CACHE_DIR_ENV_VAR,
+    endoflife_cache_path,
     feed_provenance,
     feed_snapshot_at,
     is_feed_stale,
     kev_cache_path,
+    load_endoflife_snapshot,
     load_kev_catalog,
     resolve_cache_dir,
+    write_endoflife_cache,
     write_kev_cache,
 )
 from pyforge.warden.models import FeedProvenance
@@ -262,4 +269,115 @@ def test_write_kev_cache_is_atomic_replace_on_a_second_write(tmp_path):
     )
     assert load_kev_catalog(kev_cache_path(tmp_path)) == {
         "CVE-1970-00006": "2026-06-06"
+    }
+
+
+# --- endoflife_cache_path (Story 6.3) -----------------------------------------
+
+
+def test_endoflife_cache_path_layout(tmp_path):
+    assert endoflife_cache_path(tmp_path) == (
+        tmp_path / "endoflife" / "endoflife_snapshot.json"
+    )
+
+
+# --- load_endoflife_snapshot ---------------------------------------------------
+
+
+def test_load_endoflife_snapshot_missing_file_is_none(tmp_path):
+    assert load_endoflife_snapshot(tmp_path / "does-not-exist.json") is None
+
+
+def test_load_endoflife_snapshot_undecodable_bytes_is_none(tmp_path):
+    path = tmp_path / "feed.json"
+    path.write_bytes(b"\xff\xfe\x00not valid utf-8")
+    assert load_endoflife_snapshot(path) is None
+
+
+def test_load_endoflife_snapshot_invalid_json_is_none(tmp_path):
+    path = tmp_path / "feed.json"
+    path.write_text("{ not valid json ]", encoding="utf-8")
+    assert load_endoflife_snapshot(path) is None
+
+
+def test_load_endoflife_snapshot_non_object_top_level_is_none(tmp_path):
+    path = tmp_path / "feed.json"
+    path.write_text("[1, 2, 3]", encoding="utf-8")
+    assert load_endoflife_snapshot(path) is None
+
+
+def test_load_endoflife_snapshot_present_but_empty_is_an_empty_dict_not_none(tmp_path):
+    """The same present/fresh/zero-entries distinction ``load_kev_catalog``'s
+    own docstring establishes."""
+    path = tmp_path / "feed.json"
+    path.write_text(json.dumps({}), encoding="utf-8")
+    assert load_endoflife_snapshot(path) == {}
+
+
+def test_load_endoflife_snapshot_extracts_slug_to_cycle_array(tmp_path):
+    path = tmp_path / "feed.json"
+    path.write_text(
+        json.dumps(
+            {
+                "python": [{"cycle": "3.12", "eol": "2028-10-31"}],
+                "django": [{"cycle": "5.2", "eol": "2028-04-30"}],
+            }
+        ),
+        encoding="utf-8",
+    )
+    assert load_endoflife_snapshot(path) == {
+        "python": [{"cycle": "3.12", "eol": "2028-10-31"}],
+        "django": [{"cycle": "5.2", "eol": "2028-04-30"}],
+    }
+
+
+def test_load_endoflife_snapshot_drops_non_array_slug_values_without_aborting(
+    tmp_path,
+):
+    """A malformed per-slug value (not a JSON array) is skipped -- never
+    partially trusted, never aborts the load of the rest (mirrors
+    ``load_kev_catalog``'s own per-entry tolerance)."""
+    path = tmp_path / "feed.json"
+    path.write_text(
+        json.dumps(
+            {
+                "python": [{"cycle": "3.12", "eol": "2028-10-31"}],
+                "bogus": "not-a-list",
+                123: "non-string-key-impossible-in-real-json",  # json.dumps coerces
+            }
+        ),
+        encoding="utf-8",
+    )
+    assert load_endoflife_snapshot(path) == {
+        "python": [{"cycle": "3.12", "eol": "2028-10-31"}]
+    }
+
+
+# --- write_endoflife_cache ------------------------------------------------------
+
+
+def test_write_endoflife_cache_round_trips_through_load_endoflife_snapshot(tmp_path):
+    document = {"python": [{"cycle": "3.12", "eol": "2028-10-31"}]}
+    written_path = write_endoflife_cache(tmp_path, document)
+    assert written_path == endoflife_cache_path(tmp_path)
+    assert load_endoflife_snapshot(written_path) == document
+
+
+def test_write_endoflife_cache_creates_the_parent_directory(tmp_path):
+    cache_dir = tmp_path / "nested" / "cache"
+    write_endoflife_cache(cache_dir, {})
+    assert endoflife_cache_path(cache_dir).is_file()
+
+
+def test_write_endoflife_cache_leaves_no_temp_file_behind(tmp_path):
+    write_endoflife_cache(tmp_path, {})
+    entries = {p.name for p in endoflife_cache_path(tmp_path).parent.iterdir()}
+    assert entries == {"endoflife_snapshot.json"}
+
+
+def test_write_endoflife_cache_is_atomic_replace_on_a_second_write(tmp_path):
+    write_endoflife_cache(tmp_path, {"python": [{"cycle": "3.11"}]})
+    write_endoflife_cache(tmp_path, {"python": [{"cycle": "3.12"}]})
+    assert load_endoflife_snapshot(endoflife_cache_path(tmp_path)) == {
+        "python": [{"cycle": "3.12"}]
     }
