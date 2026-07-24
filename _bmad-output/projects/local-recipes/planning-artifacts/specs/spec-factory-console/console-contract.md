@@ -56,9 +56,11 @@ the module docstring.
   - Atlas: every match of `story\((\w[\w.]*)\)` → capture as-is; every match
     of `\b([GH]\d+):` → capture as-is.
   - Regen program: every match of `\brf\((\d+\.\w+)\):` → capture as-is.
-- Apply to EVERY project: a story whose id is in the set and isn't `done`
-  becomes `done`. UPGRADE ONLY — never downgrade (in-flight states aren't
-  derivable from history). Print the derived id list and per-project
+- Ids are PER-PROJECT sets — each project matches ONLY its own commit
+  convention (numeric ids collide across projects: the regen program's
+  rf(5.1) is NOT warden's 5.1). Apply each project's own set: a story whose
+  id is in ITS set and isn't `done` becomes `done`. UPGRADE ONLY — never
+  downgrade. Print each project's derived id list and per-project
   `[<key>] D/T done (+u upgraded …)`.
 
 ## Dreams scan (both modes, every run)

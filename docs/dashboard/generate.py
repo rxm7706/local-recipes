@@ -127,8 +127,13 @@ def apply_sprint_status(projects: dict) -> None:
 
 # ---- source: git (hands-off / CI) -------------------------------------------
 
-def done_ids_from_git(branch: str) -> set[str]:
-    """DONE dashboard-story ids derived from `branch`'s commit subjects."""
+def done_ids_from_git(branch: str) -> dict[str, set[str]]:
+    """PER-PROJECT done story ids from `branch`'s commit subjects.
+
+    Numeric story ids collide across projects (the regen program's rf(5.1)
+    is NOT warden's 5.1), so each project matches ONLY its own commit
+    convention — never a shared pool.
+    """
     ref = branch
     if subprocess.run(
         ["git", "rev-parse", "--verify", "--quiet", branch], capture_output=True
@@ -137,24 +142,26 @@ def done_ids_from_git(branch: str) -> set[str]:
     log = subprocess.run(
         ["git", "log", ref, "--format=%s"], capture_output=True, text=True, check=True
     ).stdout
-    done: set[str] = set()
+    done: dict[str, set[str]] = {"warden": set(), "atlas": set(), "regen": set()}
     for line in log.splitlines():
         m = _WARDEN_DONE.search(line)
         if m:
-            done.add(m.group(1).replace("-", "."))  # 6-1 -> 6.1
+            done["warden"].add(m.group(1).replace("-", "."))  # 6-1 -> 6.1
         for a in _ATLAS_STORY.finditer(line):
-            done.add(a.group(1))  # A1, B10, 0.1, F4 ...
+            done["atlas"].add(a.group(1))  # A1, B10, 0.1, F4 ...
         for a in _ATLAS_GH.finditer(line):
-            done.add(a.group(1))  # G3, H1, H2 ...
+            done["atlas"].add(a.group(1))  # G3, H1, H2 ...
         for a in _RF_STORY.finditer(line):
-            done.add(a.group(1))  # 1.1, 4.R ...
+            done["regen"].add(a.group(1))  # 1.1, 4.R ...
     return done
 
 
 def apply_git(projects: dict) -> None:
-    done_ids = done_ids_from_git(MAIN_BRANCH)
-    print(f"git-derived DONE ids ({len(done_ids)}): {', '.join(sorted(done_ids))}")
+    per_project = done_ids_from_git(MAIN_BRANCH)
+    for pkey, ids in per_project.items():
+        print(f"git-derived DONE ids [{pkey}] ({len(ids)}): {', '.join(sorted(ids))}")
     for pkey, proj in projects.items():
+        done_ids = per_project.get(pkey, set())
         upgraded = done = 0
         for epic in proj["epics"]:
             for story in epic["stories"]:
