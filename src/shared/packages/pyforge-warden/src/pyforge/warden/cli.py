@@ -267,6 +267,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from . import __version__
+from .actuator import run_actuator
 from .config import (
     ConfigLoader,
     ConfigParseError,
@@ -640,6 +641,31 @@ def _build_parser() -> tuple[argparse.ArgumentParser, argparse.ArgumentParser]:
             "itself suppresses anything or changes the exit code; a human "
             "must commit the printed file and pass --baseline on a later "
             "run for it to take effect"
+        ),
+    )
+    scan.add_argument(
+        "--open-fix-prs",
+        action="store_true",
+        help=(
+            "opt-in, post-verdict fix-PR actuator (Story 6.9/FR40): after the "
+            "verdict is fixed, open one remediation PR per actuatable finding "
+            "-- an upgrade PR per vuln: finding, a removal PR per hygiene:"
+            "DEP002: finding -- via the forge API (credentials/repo from the "
+            "environment: GITHUB_TOKEN or GH_TOKEN, GITHUB_REPOSITORY). NEVER "
+            "changes the status/exit code and NEVER writes the scanned tree "
+            "(all remediation content is created forge-side). A failed open "
+            "is recorded in the report's actuation section + a stderr line, "
+            "never a tool error. --fix-prs-dry-run wins if both are given"
+        ),
+    )
+    scan.add_argument(
+        "--fix-prs-dry-run",
+        action="store_true",
+        help=(
+            "plan the fix-PR actuator without opening anything: shares the "
+            "real code path up to the forge-egress seam, records the intended "
+            "proposals (status 'planned') in the report's actuation section, "
+            "and opens NO socket. Wins over --open-fix-prs when both are set"
         ),
     )
     return parser, scan
@@ -1235,6 +1261,32 @@ def _run_scan(args: argparse.Namespace) -> int:
     if args.warn_only:
         rungs, warn_only_downgraded = warn_blocking(rungs)
 
+    # Story 6.9 (FR40): the opt-in, post-verdict fix-PR actuator runs HERE --
+    # strictly after rungs/findings are final (the verdict is a pure
+    # projection of the frozen rungs the actuator never touches) and strictly
+    # before assemble_report. Its payload flows ONLY into the pass-through
+    # ComplianceReport.actuation slot: never a rung, the status, or the exit
+    # code. --fix-prs-dry-run shares the real path up to the egress seam and
+    # opens no socket (dry-run wins if both flags are set). A failed open is
+    # captured in the payload; here we additionally echo a one-line stderr
+    # summary, keeping stdout a single pure document (NFR-I3).
+    actuation_payload: dict[str, object] | None = None
+    if args.open_fix_prs or args.fix_prs_dry_run:
+        actuation = run_actuator(
+            findings,
+            dry_run=args.fix_prs_dry_run or not args.open_fix_prs,
+            env=os.environ,
+        )
+        actuation_payload = actuation.to_json_dict()
+        failed = [
+            outcome for outcome in actuation.outcomes if outcome.status == "failed"
+        ]
+        if failed:
+            _stderr(
+                f"{TOOL_NAME}: fix-pr actuator: {len(failed)} outcome(s) "
+                "failed; see the report's actuation section"
+            )
+
     # The first non-None vuln_data across engine results, in engine-
     # registration order (Story 1.5: OsvEngine populates it on a completed
     # 0/1 run; every other engine/path leaves it None) — else an all-None
@@ -1303,6 +1355,7 @@ def _run_scan(args: argparse.Namespace) -> int:
         currency_data=currency_data,
         currency_gating=config.currency_gating,
         warn_as_error=config.warn_as_error,
+        actuation=actuation_payload,
     )
     if args.sbom_output is not None:
         # Story 4.1: an independent sibling artifact -- rendering and
@@ -1379,6 +1432,7 @@ def _run_scan(args: argparse.Namespace) -> int:
                     expired_baseline=expired_baseline,
                     warn_only=args.warn_only,
                     warn_only_downgraded=warn_only_downgraded,
+                    actuation=actuation_payload,
                 )
                 + "\n"
             )
