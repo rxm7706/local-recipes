@@ -119,3 +119,20 @@ def test_denial_error_is_not_an_os_error(socket_deny_error):
     """The denial must not be swallowable by graceful socket-error handling
     (except OSError) in code under test — egress is a HARD failure."""
     assert not issubclass(socket_deny_error, OSError)
+
+
+def test_actuator_carveout_is_inert_without_the_marker(socket_deny_error):
+    """Story 6.9: the actuator-scoped carve-out (conftest) permits a loopback
+    connect ONLY while ``actuator._EGRESS_ACTIVE`` is set. Outside the
+    actuator's real egress the marker defaults False, so a loopback connect
+    stays denied — the carve-out is inert, never a global loosening (the
+    probe targets port 9 on 127.0.0.1, harmless even if the guard were
+    dead)."""
+    from pyforge.warden import actuator
+
+    assert actuator._EGRESS_ACTIVE.get() is False
+    with pytest.raises(socket_deny_error):
+        socket.create_connection(("127.0.0.1", 9))
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+        with pytest.raises(socket_deny_error):
+            sock.connect(("127.0.0.1", 9))
