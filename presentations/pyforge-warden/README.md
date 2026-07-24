@@ -91,9 +91,12 @@ Design-side (etags at last sync):
   its own regenerated standalone under `src/marp/`
 - engines: `deck-stage.js` 111060 / `support.js` 64222 (older pins than the current
   family 133230/66404 — the dc.html files were authored against these)
-- Marp: original `warden-*.md` trio + the refined disk trio now uploading as
-  `pyforge-warden-*-2026-07-15.md` (exec-summary ✓ `1784887337596364`;
-  deck + infographic **upload PENDING**)
+- Marp: original `warden-*.md` trio + the refined disk trio uploaded whole as
+  `src/marp/pyforge-warden-*-2026-07-15.md` ✓ (batch etag `1784893941350201`,
+  2026-07-24, via DesignSync `localPath` — byte-exact, zero context relay).
+  A stray root-level `pyforge-warden-executive-summary-2026-07-15.md`
+  (`1784887337596364`) remains from the earlier hand-relay upload; superseded
+  by the `src/marp/` copy, left in place (delete from the Design UI if unwanted).
 
 Disk-side only (stay git-side; too heavy for the MCP channel):
 - `src/pptx/*.pptx` (636KB + 719KB editable exports)
@@ -101,3 +104,9 @@ Disk-side only (stay git-side; too heavy for the MCP channel):
 
 Convention: Design project name ↔ this folder (`presentations/pyforge-warden`);
 Design keeps design sources, disk keeps the full artifact set incl. binaries.
+
+Transfer mechanics (2026-07-24): disk→Design uploads use the `DesignSync` tool's
+`write_files` with `localPath` — the file is read/encoded/uploaded server-side,
+byte-exact, never relayed through the agent context. Design→disk pulls still
+have no equivalent (MCP `read_file` relays through context, entity-escaped) —
+the two PENDING infographic pulls stay deferred to the herald CLI.

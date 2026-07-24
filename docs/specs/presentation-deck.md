@@ -106,6 +106,18 @@ clobbered; only the **prototype** crosses the bridge — never a mirrored app tr
 (the retired *"Local recipes repository connection"* project is the cautionary
 tale); `get_claude_design_prompt` is mandatory before any `write_files`.
 
+**Large-file uploads (verified 2026-07-24, atlas seed + 8-project family
+pass):** for any disk→Design transfer beyond a few KB, prefer the **`DesignSync`
+tool** (`finalize_plan` with `localDir`, then `write_files` with `localPath`)
+over the MCP `write_files` inline path — the file is read, encoded and uploaded
+server-side, **byte-exact, without ever entering the agent context** (the 75KB
+atlas prototype uploaded with a verified exact byte match; hand-relay had
+produced a 12-byte drift on a 7KB file). It writes to regular Design projects
+(`get_project` → `canEdit: true` suffices; the design-system typing only
+matters for design-system semantics). Design→disk **pulls have no equivalent**
+— `read_file` relays through context, entity-escaped — so bulk pulls remain the
+herald CLI's job.
+
 ### Manual handoff (fallback — no MCP bridge in the session)
 
 This is the original hand-off, learned across Worked Examples 1–3.

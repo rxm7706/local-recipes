@@ -87,3 +87,25 @@ inverts (five surfaces · the pyforge family) · closing statement.
 Design brand **Atlas** on the slides; distribution slug `pyforge-atlas` in paths.
 Palette is Modernist — light `#f3f2f2`, dark `#201e1d`, red `#ec3013` / `#c22a10`
 — matching the `pyforge-warden` deck so the two sit next to each other.
+
+## Design project (the bridge's far end)
+
+Claude Design project **"PyForge Atlas deck"**
+(`2acb0575-9997-442b-bb0e-6207d78f6648`) — created + seeded 2026-07-24 (the
+deck predates the pilot, so it had no Design project until now). Bound to the
+Modernist design system.
+
+### Artifact map + sync ledger (2026-07-24, disk → Design seed)
+
+- `PyForge Atlas.dc.html` (75448, `1784892835897059`) — **byte-identical to
+  disk** ✓ (uploaded via DesignSync `localPath`, no context relay)
+- `support.js` (66404, `1784890273511358`) — server-written current runtime,
+  matches disk byte count
+- `deck-stage.js` (133230, `1784890278864518`) — server-side copy from the
+  genesis project (byte count matches disk)
+- `PyForge Atlas - Executive Summary.dc.html` (7656) +
+  `src/marp/pyforge-atlas-{deck,executive-summary,infographic}-2026-07-24.md`
+  — batch etag `1784893549439075`
+
+Disk-side only (stay git-side): `src/pptx/*.pptx`, the infographic standalone,
+the built React deck. Convention: Design project name ↔ this folder.
