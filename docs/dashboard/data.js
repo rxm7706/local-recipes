@@ -3,7 +3,7 @@ window.DASHBOARD_DATA = {
     "warden": {
       "label": "Warden",
       "accentVar": "--warden",
-      "branch": "loop/pyforge-warden · wave running — 6.6 in flight (sonnet); then 5.1 → 5.2",
+      "branch": "loop/pyforge-warden · wave running — Epic 6 complete ✔ (29/31); 5.1 in flight (sonnet), then 5.2 closes it out",
       "contract": "FR1–FR40 · exit codes {0,1,2,130} · verdict lattice error &gt; policy-violation &gt; indeterminate &gt; warn &gt; bypassed &gt; clean &gt; not-applicable",
       "seglabels": [
         "E1 · spine",
@@ -150,7 +150,7 @@ window.DASHBOARD_DATA = {
         {
           "badge": "E6",
           "title": "Multi-axis expansion — license, currency, KEV / EPSS",
-          "gatenote": "<b>Both hard gates cleared ✔</b> — <code>6.10</code> (decision record) + <code>6.1</code> (schema <code>1.0.0→1.1.0</code>). Producers landed ✔: <code>6.2</code> (license) · <code>6.3</code> (currency) · <code>6.4</code> (KEV) · <code>6.5</code> (two-mode policy) · <code>6.7</code> (EPSS + <code>--min-epss</code>, <b>1731 green</b>). <code>6.8</code> (baseline &amp; grandfathering) ✔ <b>1800 green</b>; <code>6.9</code> (opt-in fix-PR actuator, FR40) ✔ recovered from a stalled run + adversarial-reviewed, <b>1840 green</b>. Only <code>6.6</code> (engine version-range pinning) remains.",
+          "gatenote": "<b>Epic 6 COMPLETE ✔ — all 10 stories merged.</b> Both hard gates (<code>6.10</code> decision record + <code>6.1</code> schema <code>1.0.0→1.1.0</code>) + 4 axes: <code>6.2</code> license · <code>6.3</code> currency · <code>6.4</code> KEV · <code>6.7</code> EPSS. Plus <code>6.5</code> two-mode policy, <code>6.8</code> baseline/grandfathering, <code>6.9</code> fix-PR actuator (recovered + adversarial-reviewed), and <code>6.6</code> engine version-range pinning (the distribution gate) — <b>1869 green</b>.",
           "stories": [
             [
               "6.10",
@@ -184,7 +184,7 @@ window.DASHBOARD_DATA = {
             ],
             [
               "6.6",
-              "pending",
+              "done",
               "Engine version-range pinning (the distribution gate)"
             ],
             [
@@ -206,15 +206,15 @@ window.DASHBOARD_DATA = {
         }
       ],
       "inflight": {
-        "key": "6.6",
-        "title": "Engine version-range pinning (the distribution gate)",
+        "key": "5.1",
+        "title": "Actionable diagnostics & safe-by-default posture",
         "phase": "dev (sonnet)",
         "attempt": 1,
-        "startEpoch": 1784923080,
+        "startEpoch": 1784928170,
         "median": 85,
         "lo": 35,
         "hi": 265,
-        "phaseAsOf": "2026-07-24 19:58 UTC"
+        "phaseAsOf": "2026-07-24 21:23 UTC"
       },
       "velocity": {
         "sub": "Active agent-compute time per completed story (dev + review; excludes gate-pause wait). Median holds near steady-state; the Epic-2 extraction stories (2.2–2.4) ran heavy.",
@@ -310,6 +310,10 @@ window.DASHBOARD_DATA = {
           [
             "6.9",
             60
+          ],
+          [
+            "6.6",
+            83
           ]
         ],
         "foot": [
@@ -324,12 +328,12 @@ window.DASHBOARD_DATA = {
             ""
           ],
           [
-            "3",
+            "2",
             "stories remaining",
             ""
           ],
           [
-            "~5–8 h",
+            "~3–5 h",
             "est. active compute left",
             ""
           ]
@@ -337,7 +341,7 @@ window.DASHBOARD_DATA = {
       },
       "timing": {
         "metric": "active agent-compute per story (dev + review; excludes gate-pause wait) — from bmad-loop run journals",
-        "totalLabel": "~36 h active compute",
+        "totalLabel": "~37 h active compute",
         "note": "Measured stories only. The earliest keystones 1.1 / 1.2, plus 2.6 and the recovered 6.10 spike, predate clean journaling and are excluded. 6.4’s bar is its delivered dev-2 pass (35m); a rolled-back dev-1 cost ~49m more that isn’t counted as delivery. 6.9’s bar (~60m) is the dev-to-commit span recovered from a stalled session (its 424-min journal span is mostly post-commit stall, not compute) + a manual adversarial review. Epic-6 note: 6.10 (design spike) + 6.2 have no journal record — bars show journal-backed stories only; 6.3 / 6.5 / 6.7 mined from loop-home run journals.",
         "perStory": {
           "1.3": 78,
@@ -362,16 +366,17 @@ window.DASHBOARD_DATA = {
           "6.5": 105,
           "6.7": 83,
           "6.8": 89,
-          "6.9": 60
+          "6.9": 60,
+          "6.6": 83
         },
         "epicMin": {
           "E1": 534,
           "E2": 617,
           "E3": 264,
           "E4": 96,
-          "E6": 718
+          "E6": 801
         },
-        "total": 1859
+        "total": 1942
       }
     },
     "atlas": {
@@ -862,7 +867,7 @@ window.DASHBOARD_DATA = {
       }
     }
   },
-  "snapshot": "<span>2026-07-24 20:47 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-07-24 21:24 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
