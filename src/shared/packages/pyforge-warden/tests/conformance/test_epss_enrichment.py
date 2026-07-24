@@ -47,6 +47,7 @@ OSV_RECORDS_DIR = FIXTURES / "osv-db" / "pypi"
 PROJECTS = FIXTURES / "projects"
 VULN_KEV_FAIL_ON_KEV_FALSE = PROJECTS / "vuln_kev_fail_on_kev_false"
 VULN_KEV = PROJECTS / "vuln_kev"
+VULN_MIN_EPSS_TOML = PROJECTS / "vuln_min_epss_toml"
 
 FIXTURE_ADVISORY_ID = "PDOS-KEV-FIXTURE-0001"
 FIXTURE_PACKAGE = "pdos-kev-fixture"
@@ -162,12 +163,13 @@ def test_no_epss_match_leaves_epss_none(
 def test_out_of_range_cached_score_degrades_instead_of_crashing(
     monkeypatch, tmp_path, offline_cache, component_factory
 ):
-    """Review finding: ``feeds.load_epss_scores`` validates only shape (a
-    non-bool number), never the ``[0, 1]`` domain ``models.Epss`` itself
-    enforces -- a corrupted cache entry (here, a score of 2.0, outside the
-    valid probability range) must degrade the SAME way a non-match already
-    does (``epss`` stays ``None``), never crash the whole scan with an
-    uncaught ``ValueError`` from deep inside ``dataclasses.replace``."""
+    """Review finding (two passes): a corrupted cache entry (here, a score
+    of 2.0, outside the valid probability range) must degrade the SAME way
+    a non-match already does (``epss`` stays ``None``), never crash the
+    whole scan. Since the follow-up pass, ``feeds.load_epss_scores`` filters
+    the entry out at LOAD time (domain check), so the corrupt entry never
+    even reaches ``_stamp_epss`` -- whose own ``try/except ValueError``
+    remains as a last-resort crash-guard behind it."""
     cache_dir = tmp_path / "epss-cache-out-of-range"
     feeds.write_epss_cache(
         cache_dir, {"scores": [{"cve": FIXTURE_CVE, "epss": 2.0, "percentile": 0.9}]}
@@ -285,9 +287,21 @@ def test_epss_feed_stale_forces_whole_axis_indeterminate_but_still_matches(
     assert finding.epss.score == 0.7
 
 
-def test_zero_vuln_matchable_candidates_never_consults_epss(tmp_path):
-    """Mirrors OsvEngine's own empty-candidate short-circuit -- no EPSS
-    consultation attempted at all."""
+def test_zero_vuln_matchable_candidates_never_consults_epss(monkeypatch, tmp_path):
+    """Mirrors OsvEngine's own empty-candidate short-circuit (engines.py's
+    empty-inventory return precedes ``_epss_enrichment``) -- no EPSS
+    consultation attempted at all. Review finding (follow-up pass): the
+    original version asserted only output shape, which an implementation
+    that DID open the cache but matched nothing would also satisfy -- the
+    fail-sentinel on the cache read makes "never consulted" the thing
+    actually proven."""
+
+    def _fail_if_consulted(*_args, **_kwargs):
+        pytest.fail("EPSS cache was consulted despite zero matchable candidates")
+
+    monkeypatch.setattr(
+        "pyforge.warden.engines.feeds.load_epss_scores", _fail_if_consulted
+    )
     inventory = ResolvedInventory(components=(), resolved_scan_set=(MANIFEST,))
     result = OsvEngine(fail_on_kev=False, min_epss=0.5).run(tmp_path, inventory)
     assert result.findings == ()
@@ -389,6 +403,68 @@ def test_epss_feed_absent_end_to_end_composes_indeterminate(
     finding_ids = {f["id"] for f in document["findings"]}
     assert "indeterminate:epss-data-unavailable:epss-feed" in finding_ids
     assert document["epss_data"] is None
+    assert err == ""
+
+
+def test_epss_feed_stale_end_to_end_never_composes_a_pass(
+    monkeypatch, tmp_path, capsys
+):
+    """Review finding (follow-up pass): the stale-feed path had only
+    engine-level coverage -- this pins the full composition. A loadable but
+    AGED cache while --min-epss is active raises the whole-axis
+    epss-data-stale finding (indeterminate rung) AND still matches
+    per-finding against the aged catalog, so the at/above-threshold score
+    escalates to policy-violation -- which outranks indeterminate in the
+    verdict ladder. Composed status: policy-violation, exit 1. Both
+    outcomes are non-pass: exactly the "never a silent pass" promise, with
+    the stale provenance visible in epss_data.max_age_ok."""
+    import os
+    import time
+
+    cache_dir = _epss_cache_with_match(tmp_path)
+    stale_mtime = time.time() - (feeds.DEFAULT_FEED_MAX_AGE_DAYS + 1) * 86400
+    epss_path = feeds.epss_cache_path(cache_dir)
+    os.utime(epss_path, (stale_mtime, stale_mtime))
+    monkeypatch.setenv(feeds.FEED_CACHE_DIR_ENV_VAR, str(cache_dir))
+
+    rc, out, err = run_scan(capsys, VULN_KEV_FAIL_ON_KEV_FALSE, "--min-epss", "0.5")
+    document = parse_report(out)
+
+    assert rc == 1
+    assert rc == document["exit_code"]
+    assert document["status"]["value"] == "policy-violation"
+    finding_ids = {f["id"] for f in document["findings"]}
+    assert "indeterminate:epss-data-stale:epss-feed" in finding_ids
+    matches = [f for f in document["findings"] if f["id"] == FIXTURE_FINDING_ID]
+    assert len(matches) == 1
+    assert matches[0]["epss"] == {"score": 0.7, "percentile": 0.9}
+    assert document["epss_data"] is not None
+    assert document["epss_data"]["max_age_ok"] is False
+    assert err == ""
+
+
+def test_toml_only_min_epss_drives_the_gate_end_to_end(monkeypatch, tmp_path, capsys):
+    """Review finding (follow-up pass): --min-epss is a real TWO-mode flag,
+    but every other E2E test in this suite activates it via the CLI --
+    leaving the TOML mode proven only down to ``ConfigLoader.load``. Here
+    ``min-epss = 0.5`` comes exclusively from the fixture project's own
+    ``[tool.pyforge-warden]`` (no --min-epss argument anywhere), proving
+    the TOML value alone drives consultation, stamping, and escalation to
+    policy-violation/exit 1 through the very same engine wiring."""
+    monkeypatch.setenv(
+        feeds.FEED_CACHE_DIR_ENV_VAR, str(_epss_cache_with_match(tmp_path))
+    )
+    rc, out, err = run_scan(capsys, VULN_MIN_EPSS_TOML)
+    document = parse_report(out)
+
+    assert rc == 1
+    assert rc == document["exit_code"]
+    assert document["status"]["value"] == "policy-violation"
+    matches = [f for f in document["findings"] if f["id"] == FIXTURE_FINDING_ID]
+    assert len(matches) == 1
+    assert matches[0]["epss"] == {"score": 0.7, "percentile": 0.9}
+    assert document["epss_data"] is not None
+    assert document["epss_data"]["max_age_ok"] is True
     assert err == ""
 
 

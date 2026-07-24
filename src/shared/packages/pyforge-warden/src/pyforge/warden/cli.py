@@ -540,7 +540,9 @@ def _build_parser() -> tuple[argparse.ArgumentParser, argparse.ArgumentParser]:
             "composes 'policy-violation' (exit 1), independent of its own "
             "CVSS tier; a score below N leaves CVSS/KEV-only gating "
             "untouched. An absent or stale EPSS feed while this is set "
-            "composes 'indeterminate' -- never a silent pass"
+            "composes at least 'indeterminate' (exit 1; a stale feed's "
+            "still-matchable scores may escalate further, to "
+            "'policy-violation') -- never a silent pass"
         ),
     )
     scan.add_argument(

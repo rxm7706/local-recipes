@@ -738,15 +738,15 @@ def _stamp_epss(
     at its existing ``None`` default (design note: ``finding.epss is None``
     IS the "no data" signal, never a separate flag).
 
-    Review finding: ``feeds.load_epss_scores`` deliberately validates only
-    shape (a non-bool number), never the ``[0, 1]`` domain ``models.Epss``
-    itself enforces — so a corrupted/out-of-range cache entry (e.g. a
-    negative score, or one exceeding ``1.0``) must degrade the SAME way a
-    non-match already does (skip the stamp), never raise past this
-    function and crash the whole scan. This is this codebase's established
-    tolerant-per-entry convention (mirrors every ``load_*`` function in
-    ``feeds.py``), applied at the one point domain validation actually
-    happens."""
+    Review finding (two passes): ``feeds.load_epss_scores`` now filters
+    non-finite/out-of-``[0, 1]`` entries at load time — a domain-corrupt
+    cache entry never reaches this function through the normal path, so a
+    matched entry is trustworthy by construction. The ``try/except
+    ValueError`` around ``models.Epss`` construction stays as a last-resort
+    crash-guard (e.g. against future drift between the load filter and
+    ``Epss.__post_init__``): if it ever fires, degrade the SAME way a
+    non-match already does (skip the stamp), never raise past this function
+    and crash the whole scan."""
     if scores is None:
         return findings
     stamped: list[Finding] = []

@@ -28,10 +28,11 @@ normalizes it into the SAME cached-JSON-document convention every other feed
 here uses (``{"scores": [{"cve": ..., "epss": ..., "percentile": ...},
 ...]}``) before ever calling ``write_epss_cache`` — this module stays feed-
 shape-agnostic and never sees raw CSV. ``load_epss_scores`` returns a
-``{cve_id: (score, percentile)}`` mapping (``vuln.py``'s sole in-package
-reader), mirroring ``load_kev_catalog``'s present-but-empty-is-``{}``-not-
-``None`` distinction and per-entry tolerance (a malformed score/percentile
-entry is skipped, never aborts the load of the rest).
+``{cve_id: (score, percentile)}`` mapping (``engines._epss_enrichment`` is
+its sole in-package reader), mirroring ``load_kev_catalog``'s
+present-but-empty-is-``{}``-not-``None`` distinction and per-entry tolerance
+(a malformed score/percentile entry is skipped, never aborts the load of
+the rest).
 
 Ownership decisions recorded:
 
@@ -79,6 +80,7 @@ point).
 from __future__ import annotations
 
 import json
+import math
 import os
 import tempfile
 from collections.abc import Mapping
@@ -143,7 +145,7 @@ def epss_cache_path(cache_dir: str | Path) -> Path:
     """The on-disk EPSS cache path under ``cache_dir``:
     ``<cache_dir>/epss/epss_scores.json`` — the EPSS sibling of
     ``kev_cache_path`` (Story 6.7). Both ``scripts/refresh_epss_feed.py``
-    (writer) and ``vuln.py``'s EPSS consultation (reader) resolve through
+    (writer) and ``engines._epss_enrichment`` (reader) resolve through
     this one helper."""
     return Path(cache_dir) / _EPSS_FEED_DIR_NAME / _EPSS_FEED_FILENAME
 
@@ -342,13 +344,16 @@ def load_epss_scores(path: Path) -> dict[str, tuple[float, float]] | None:
     catalog (``{}``, same present/fresh/zero-entries distinction
     ``load_kev_catalog``'s own docstring establishes). Per-entry tolerant: an
     entry missing a non-empty string ``cve``, or whose ``epss``/
-    ``percentile`` is not a finite number, is skipped (never partially
-    trusted, never aborts the load of the rest) — this codebase's
-    established tolerant-per-entry convention. Per-score DOMAIN validation
-    (the ``[0, 1]`` range ``models.Epss`` enforces) is deliberately NOT this
-    module's job — ``vuln.py`` (the sole in-package reader) does that,
-    mirroring how ``load_kev_catalog`` validates only ``cveID``/``dateAdded``
-    presence, never CVSS-shape."""
+    ``percentile`` is not a finite number in the ``[0, 1]`` probability
+    domain ``models.Epss`` enforces, is skipped (never partially trusted,
+    never aborts the load of the rest) — this codebase's established
+    tolerant-per-entry convention. The domain check lives HERE (review
+    finding), not only in ``models.Epss``: ``json.loads`` happily parses
+    ``NaN``/``Infinity`` tokens and out-of-range numbers, and a corrupt
+    entry surviving to ``engines._stamp_epss`` (the sole in-package
+    consumer) would otherwise be silently dropped at stamp time — filtering
+    at load keeps every catalog entry trustworthy by construction, exactly
+    like ``load_kev_catalog`` skipping a malformed ``cveID`` entry."""
     try:
         raw = path.read_text(encoding="utf-8")
     except (OSError, UnicodeDecodeError):
@@ -374,6 +379,10 @@ def load_epss_scores(path: Path) -> dict[str, tuple[float, float]] | None:
         if isinstance(score, bool) or not isinstance(score, (int, float)):
             continue
         if isinstance(percentile, bool) or not isinstance(percentile, (int, float)):
+            continue
+        if not (math.isfinite(score) and 0.0 <= score <= 1.0):
+            continue
+        if not (math.isfinite(percentile) and 0.0 <= percentile <= 1.0):
             continue
         catalog[cve] = (float(score), float(percentile))
     return catalog

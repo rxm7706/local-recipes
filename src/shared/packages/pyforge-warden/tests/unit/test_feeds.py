@@ -478,6 +478,38 @@ def test_load_epss_scores_skips_malformed_entries_without_aborting(tmp_path):
     assert load_epss_scores(path) == {"CVE-1970-00006": (0.4, 0.6)}
 
 
+def test_load_epss_scores_skips_non_finite_and_out_of_domain_entries(tmp_path):
+    """Review finding (follow-up pass): ``json.loads`` happily parses
+    ``NaN``/``Infinity`` tokens and out-of-range numbers, and a shape-only
+    load would hand such an entry to ``engines._stamp_epss``, whose
+    crash-guard silently drops the stamp -- turning a domain-corrupt cache
+    into a silent pass for that CVE. The load filter makes every surviving
+    catalog entry trustworthy by construction: non-finite or
+    outside-``[0, 1]`` ``epss``/``percentile`` entries are skipped exactly
+    like any other malformed entry."""
+    path = tmp_path / "feed.json"
+    # json.dumps emits bare NaN/Infinity tokens for these (allow_nan
+    # defaults True) -- the exact lenient-JSON shape json.loads reads back.
+    path.write_text(
+        json.dumps(
+            {
+                "scores": [
+                    {"cve": "CVE-1970-00010", "epss": float("nan"), "percentile": 0.5},
+                    {"cve": "CVE-1970-00011", "epss": float("inf"), "percentile": 0.5},
+                    {"cve": "CVE-1970-00012", "epss": 0.5, "percentile": float("-inf")},
+                    {"cve": "CVE-1970-00013", "epss": 2.0, "percentile": 0.9},
+                    {"cve": "CVE-1970-00014", "epss": -0.1, "percentile": 0.9},
+                    {"cve": "CVE-1970-00015", "epss": 0.9, "percentile": 1.5},
+                    {"cve": "CVE-1970-00016", "epss": 0.0, "percentile": 1.0},
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+    # Only the boundary-valid entry survives (0.0 and 1.0 are both legal).
+    assert load_epss_scores(path) == {"CVE-1970-00016": (0.0, 1.0)}
+
+
 # --- write_epss_cache --------------------------------------------------------
 
 

@@ -33,6 +33,7 @@ from __future__ import annotations
 import argparse
 import csv
 import gzip
+import math
 import os
 import sys
 import urllib.error
@@ -64,10 +65,14 @@ def fetch_epss_scores(*, timeout: int = 60) -> list[dict[str, object]]:
     on a response that does not decompress/parse into the expected shape --
     a parse-sanity check so a provisioning run never silently caches a
     malformed/truncated document. A single malformed CSV row (an empty
-    ``cve``, or an unparsable ``epss``/``percentile``) is skipped, never
-    aborting the parse of the rest -- this codebase's established
-    tolerant-per-entry convention (mirrors ``feeds.load_epss_scores``'s own
-    per-entry tolerance on the read side)."""
+    ``cve``, an unparsable ``epss``/``percentile``, or one outside the
+    finite ``[0, 1]`` probability domain -- ``float()`` happily accepts
+    ``"nan"``/``"inf"``/``"2.0"``, and a cached ``NaN`` would not even be
+    strict JSON) is skipped, never aborting the parse of the rest -- this
+    codebase's established tolerant-per-entry convention (mirrors
+    ``feeds.load_epss_scores``'s own per-entry shape AND domain tolerance
+    on the read side, so ``score_count`` only ever counts rows a scan could
+    actually use)."""
     request = urllib.request.Request(
         EPSS_FEED_URL, headers={"User-Agent": _USER_AGENT}
     )
@@ -81,8 +86,9 @@ def fetch_epss_scores(*, timeout: int = 60) -> list[dict[str, object]]:
             "CSV document"
         ) from exc
     # The real feed's first line is a `#model_version:...,score_date:...`
-    # metadata comment, not the CSV header -- skip any leading `#` lines
-    # before csv.DictReader ever sees the real `cve,epss,percentile` header.
+    # metadata comment, not the CSV header -- drop EVERY `#`-prefixed line
+    # (not just leading ones) before csv.DictReader ever sees the real
+    # `cve,epss,percentile` header; safe because no CVE id starts with `#`.
     lines = [line for line in raw_csv.splitlines() if not line.startswith("#")]
     reader = csv.DictReader(lines)
     # A subset check, not an exact-match: tolerates FIRST.org adding a new
@@ -102,15 +108,17 @@ def fetch_epss_scores(*, timeout: int = 60) -> list[dict[str, object]]:
         if not isinstance(cve, str) or not cve:
             continue
         try:
-            scores.append(
-                {
-                    "cve": cve,
-                    "epss": float(row["epss"]),
-                    "percentile": float(row["percentile"]),
-                }
-            )
+            epss_value = float(row["epss"])
+            percentile_value = float(row["percentile"])
         except (TypeError, ValueError):
             continue
+        if not (math.isfinite(epss_value) and 0.0 <= epss_value <= 1.0):
+            continue
+        if not (math.isfinite(percentile_value) and 0.0 <= percentile_value <= 1.0):
+            continue
+        scores.append(
+            {"cve": cve, "epss": epss_value, "percentile": percentile_value}
+        )
     if not scores:
         raise ValueError("FIRST.org EPSS response parsed to zero usable score rows")
     return scores
@@ -130,6 +138,24 @@ def refresh(cache_dir: str, *, timeout: int = 60) -> dict[str, object]:
     }
 
 
+def _positive_int(value: str) -> int:
+    """``argparse`` ``type=`` for ``--timeout``: a positive integer. A
+    non-positive value is a USAGE error (exit 2, argparse's own channel),
+    never a runtime ``ValueError`` dressed up as a failed refresh (exit 1)
+    -- the same usage-vs-runtime split ``cli._min_epss_type`` documents."""
+    try:
+        parsed = int(value)
+    except ValueError:
+        raise argparse.ArgumentTypeError(
+            f"--timeout must be a positive integer, got {value!r}"
+        ) from None
+    if parsed <= 0:
+        raise argparse.ArgumentTypeError(
+            f"--timeout must be a positive integer, got {value!r}"
+        )
+    return parsed
+
+
 def _build_argparser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -142,7 +168,7 @@ def _build_argparser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--timeout",
-        type=int,
+        type=_positive_int,
         default=60,
         help="HTTP timeout in seconds (default: 60)",
     )

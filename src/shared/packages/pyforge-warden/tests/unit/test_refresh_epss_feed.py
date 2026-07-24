@@ -154,6 +154,33 @@ def test_fetch_epss_scores_skips_a_row_with_an_empty_cve(monkeypatch, refresh_ep
     ]
 
 
+def test_fetch_epss_scores_skips_non_finite_and_out_of_domain_rows(
+    monkeypatch, refresh_epss_feed
+):
+    """Review finding (follow-up pass): ``float()`` happily parses
+    ``"nan"``/``"inf"``/out-of-range strings, so without a domain check the
+    provisioning script caches unusable rows (inflating ``score_count``) --
+    and a cached ``NaN`` would not even be strict JSON. Every row outside
+    the finite ``[0, 1]`` probability domain is skipped, mirroring
+    ``feeds.load_epss_scores``'s read-side domain filter."""
+    rows = [
+        {"cve": "CVE-1970-00010", "epss": "nan", "percentile": "0.5"},
+        {"cve": "CVE-1970-00011", "epss": "inf", "percentile": "0.5"},
+        {"cve": "CVE-1970-00012", "epss": "0.5", "percentile": "-inf"},
+        {"cve": "CVE-1970-00013", "epss": "2.0", "percentile": "0.9"},
+        {"cve": "CVE-1970-00014", "epss": "-0.1", "percentile": "0.9"},
+        {"cve": "CVE-1970-00015", "epss": "0.9", "percentile": "1.5"},
+        {"cve": "CVE-1970-00016", "epss": "0.0", "percentile": "1.0"},
+    ]
+    monkeypatch.setattr(
+        "urllib.request.urlopen", lambda *a, **k: _FakeResponse(_gzip_csv(rows))
+    )
+    # Only the boundary-valid row survives (0.0 and 1.0 are both legal).
+    assert refresh_epss_feed.fetch_epss_scores() == [
+        {"cve": "CVE-1970-00016", "epss": 0.0, "percentile": 1.0}
+    ]
+
+
 def test_fetch_epss_scores_rejects_a_zero_row_result(monkeypatch, refresh_epss_feed):
     rows = [{"cve": "CVE-1970-00005", "epss": "bad", "percentile": "bad"}]
     monkeypatch.setattr(
@@ -226,6 +253,31 @@ def test_main_exits_1_when_refresh_fails(monkeypatch, tmp_path, refresh_epss_fee
 
     assert exc_info.value.code == 1
     assert "refresh-epss-feed FAILED" in capsys.readouterr().err
+
+
+def test_main_rejects_a_non_positive_timeout_as_a_usage_error(
+    monkeypatch, tmp_path, refresh_epss_feed, capsys
+):
+    """Review finding (follow-up pass): ``--timeout -5`` must be a USAGE
+    error (exit 2, argparse's own channel), not a runtime ``ValueError``
+    dressed up as a failed refresh (exit 1) -- the same usage-vs-runtime
+    split ``cli._min_epss_type`` establishes for ``--min-epss``."""
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "refresh_epss_feed.py",
+            "--cache-dir",
+            str(tmp_path / "cache"),
+            "--timeout",
+            "-5",
+        ],
+    )
+
+    with pytest.raises(SystemExit) as exc_info:
+        refresh_epss_feed.main()
+
+    assert exc_info.value.code == 2
+    assert "--timeout" in capsys.readouterr().err
 
 
 def test_main_prints_stats_and_returns_on_success(
