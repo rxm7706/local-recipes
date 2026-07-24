@@ -23,7 +23,11 @@ import pytest
 
 from pyforge.warden.engines import (
     DEPTRY_TIMEOUT_SECONDS,
+    DEPTRY_VERSION_RANGE,
     DeptryEngine,
+    ENGINE_VERSION_CHECK_TIMEOUT_SECONDS,
+    _DEPTRY_VERSION_PATTERN,
+    _check_engine_version,
     _engine_env,
 )
 from pyforge.warden.inventory import ResolvedInventory, merge_components
@@ -49,9 +53,19 @@ def make_inventory(*components) -> ResolvedInventory:
 
 def _fake_run_writing(content, captured: dict, *, returncode: int = 1):
     """A ``subprocess.run`` stand-in that writes ``content`` (str or bytes) to
-    the ``-o`` path and records the call."""
+    the ``-o`` path and records the call. Story 6.6: ``DeptryEngine.run`` now
+    calls ``["deptry", "--version"]`` FIRST (the version pre-flight) -- this
+    fake transparently answers that call with a fixed in-range version so
+    every EXISTING ``DeptryEngine.run``-level test (which doesn't care about
+    the version gate) is unaffected; ``_engine_env``-level tests never
+    produce a ``--version`` argv in the first place, so this branch is a
+    no-op for them."""
 
     def fake_run(argv, **kwargs):
+        if argv[:2] == ["deptry", "--version"]:
+            return types.SimpleNamespace(
+                returncode=0, stdout=b"deptry 0.25.1\n", stderr=b""
+            )
         captured["argv"] = argv
         captured["kwargs"] = kwargs
         out_path = argv[argv.index("-o") + 1]
@@ -443,6 +457,10 @@ def test_deptry_engine_frontdoor_content_matches_synthesized_lines(
     captured: dict = {}
 
     def fake_run(argv, **kwargs):
+        if argv[:2] == ["deptry", "--version"]:
+            return types.SimpleNamespace(
+                returncode=0, stdout=b"deptry 0.25.1\n", stderr=b""
+            )
         captured["argv"] = argv
         input_path = argv[argv.index("--requirements-files") + 1]
         captured["frontdoor_content"] = Path(input_path).read_text(encoding="utf-8")
@@ -462,6 +480,10 @@ def test_deptry_engine_cleans_up_the_frontdoor_input_file(
     captured: dict = {}
 
     def fake_run(argv, **kwargs):
+        if argv[:2] == ["deptry", "--version"]:
+            return types.SimpleNamespace(
+                returncode=0, stdout=b"deptry 0.25.1\n", stderr=b""
+            )
         captured["argv"] = argv
         captured["input_path"] = argv[argv.index("--requirements-files") + 1]
         out_path = argv[argv.index("-o") + 1]
@@ -482,6 +504,10 @@ def test_deptry_engine_frontdoor_survives_an_empty_inventory(
     captured: dict = {}
 
     def fake_run(argv, **kwargs):
+        if argv[:2] == ["deptry", "--version"]:
+            return types.SimpleNamespace(
+                returncode=0, stdout=b"deptry 0.25.1\n", stderr=b""
+            )
         captured["argv"] = argv
         input_path = argv[argv.index("--requirements-files") + 1]
         captured["frontdoor_content"] = Path(input_path).read_text(encoding="utf-8")
@@ -526,6 +552,10 @@ def test_deptry_engine_surfaces_a_finding_for_an_unsafe_identity_component(
     captured: dict = {}
 
     def fake_run(argv, **kwargs):
+        if argv[:2] == ["deptry", "--version"]:
+            return types.SimpleNamespace(
+                returncode=0, stdout=b"deptry 0.25.1\n", stderr=b""
+            )
         captured["argv"] = argv
         input_path = argv[argv.index("--requirements-files") + 1]
         captured["frontdoor_content"] = Path(input_path).read_text(encoding="utf-8")
@@ -733,3 +763,333 @@ def test_deptry_engine_malformed_pyproject_degrades_to_the_default(
     value = argv[argv.index("--requirements-files") + 1]
     _synth, _, reappended = value.partition(",")
     assert reappended == "requirements.txt"
+
+
+# --- Story 6.6 (FR21): the `_check_engine_version` pre-flight helper --------
+
+
+def _fake_run_version(stdout: bytes, *, returncode: int = 0):
+    """A ``subprocess.run`` stand-in for a ``--version`` invocation: no
+    output file, just captured stdout bytes -- distinct from
+    ``_fake_run_writing`` (which writes to an ``-o``/``--output-file`` path)
+    because ``_check_engine_version`` never goes through ``_engine_env``."""
+
+    def fake_run(argv, **kwargs):
+        return types.SimpleNamespace(returncode=returncode, stdout=stdout, stderr=b"")
+
+    return fake_run
+
+
+def test_check_engine_version_in_range_passes(monkeypatch, tmp_path):
+    monkeypatch.setattr(subprocess, "run", _fake_run_version(b"deptry 0.25.1\n"))
+    result = _check_engine_version(
+        owner="deptry",
+        argv=["deptry", "--version"],
+        version_pattern=_DEPTRY_VERSION_PATTERN,
+        expected=DEPTRY_VERSION_RANGE,
+        cwd=tmp_path,
+    )
+    assert result is None
+
+
+def test_check_engine_version_patch_release_of_the_same_minor_passes(
+    monkeypatch, tmp_path
+):
+    """NFR-C1: a RANGE, not an exact pin -- a later patch of the SAME
+    evidence-backed minor is still trusted."""
+    monkeypatch.setattr(subprocess, "run", _fake_run_version(b"deptry 0.25.9\n"))
+    result = _check_engine_version(
+        owner="deptry",
+        argv=["deptry", "--version"],
+        version_pattern=_DEPTRY_VERSION_PATTERN,
+        expected=DEPTRY_VERSION_RANGE,
+        cwd=tmp_path,
+    )
+    assert result is None
+
+
+def test_check_engine_version_out_of_range_is_engine_unavailable(
+    monkeypatch, tmp_path
+):
+    """A newer, untested minor must fail loud, never silently pass (NFR-C1's
+    entire point) -- via the EXISTING ENGINE_UNAVAILABLE kind (no new
+    ErrorKind member)."""
+    monkeypatch.setattr(subprocess, "run", _fake_run_version(b"deptry 0.26.0\n"))
+    result = _check_engine_version(
+        owner="deptry",
+        argv=["deptry", "--version"],
+        version_pattern=_DEPTRY_VERSION_PATTERN,
+        expected=DEPTRY_VERSION_RANGE,
+        cwd=tmp_path,
+    )
+    assert result is not None
+    assert result.kind is ErrorKind.ENGINE_UNAVAILABLE
+    assert result.owner == "deptry"
+    assert "outside tested range" in result.message
+
+
+def test_check_engine_version_missing_binary_is_engine_unavailable(
+    monkeypatch, tmp_path
+):
+    def fake_run(argv, **kwargs):
+        raise FileNotFoundError("deptry")
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    result = _check_engine_version(
+        owner="deptry",
+        argv=["deptry", "--version"],
+        version_pattern=_DEPTRY_VERSION_PATTERN,
+        expected=DEPTRY_VERSION_RANGE,
+        cwd=tmp_path,
+    )
+    assert result is not None
+    assert result.kind is ErrorKind.ENGINE_UNAVAILABLE
+    assert "not found" in result.message
+
+
+def test_check_engine_version_vanished_cwd_is_distinguished_from_missing_binary(
+    monkeypatch, tmp_path
+):
+    """Review finding, 2026-07-24: FileNotFoundError is raised for BOTH a
+    missing executable AND a missing cwd -- a vanished scan target must not
+    be misreported as "engine not installed" (mirrors _engine_env's own
+    TOCTOU disambiguation)."""
+    vanished = tmp_path / "does-not-exist"
+
+    def fake_run(argv, **kwargs):
+        raise FileNotFoundError("deptry")
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    result = _check_engine_version(
+        owner="deptry",
+        argv=["deptry", "--version"],
+        version_pattern=_DEPTRY_VERSION_PATTERN,
+        expected=DEPTRY_VERSION_RANGE,
+        cwd=vanished,
+    )
+    assert result is not None
+    assert result.kind is ErrorKind.ENGINE_EXECUTION_FAILED
+    assert "not an existing directory" in result.message
+
+
+def test_check_engine_version_nonzero_exit_is_engine_unavailable_even_with_matching_stdout(
+    monkeypatch, tmp_path
+):
+    """Review finding, 2026-07-24: stdout content alone is never trusted -- a
+    broken/misconfigured install that exits non-zero but still prints a
+    matching (e.g. stale/cached) version banner must not pass the gate."""
+    monkeypatch.setattr(
+        subprocess, "run", _fake_run_version(b"deptry 0.25.1\n", returncode=1)
+    )
+    result = _check_engine_version(
+        owner="deptry",
+        argv=["deptry", "--version"],
+        version_pattern=_DEPTRY_VERSION_PATTERN,
+        expected=DEPTRY_VERSION_RANGE,
+        cwd=tmp_path,
+    )
+    assert result is not None
+    assert result.kind is ErrorKind.ENGINE_UNAVAILABLE
+    assert "exited 1" in result.message
+
+
+def test_check_engine_version_unparseable_output_is_engine_unavailable(
+    monkeypatch, tmp_path
+):
+    monkeypatch.setattr(
+        subprocess, "run", _fake_run_version(b"totally unexpected output\n")
+    )
+    result = _check_engine_version(
+        owner="deptry",
+        argv=["deptry", "--version"],
+        version_pattern=_DEPTRY_VERSION_PATTERN,
+        expected=DEPTRY_VERSION_RANGE,
+        cwd=tmp_path,
+    )
+    assert result is not None
+    assert result.kind is ErrorKind.ENGINE_UNAVAILABLE
+    assert "could not parse version" in result.message
+
+
+def test_check_engine_version_timeout_is_engine_timeout(monkeypatch, tmp_path):
+    def fake_run(argv, **kwargs):
+        raise subprocess.TimeoutExpired(cmd=argv, timeout=kwargs.get("timeout"))
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    result = _check_engine_version(
+        owner="deptry",
+        argv=["deptry", "--version"],
+        version_pattern=_DEPTRY_VERSION_PATTERN,
+        expected=DEPTRY_VERSION_RANGE,
+        cwd=tmp_path,
+    )
+    assert result is not None
+    assert result.kind is ErrorKind.ENGINE_TIMEOUT
+
+
+def test_check_engine_version_other_oserror_is_engine_execution_failed(
+    monkeypatch, tmp_path
+):
+    def fake_run(argv, **kwargs):
+        raise OSError("permission denied")
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    result = _check_engine_version(
+        owner="deptry",
+        argv=["deptry", "--version"],
+        version_pattern=_DEPTRY_VERSION_PATTERN,
+        expected=DEPTRY_VERSION_RANGE,
+        cwd=tmp_path,
+    )
+    assert result is not None
+    assert result.kind is ErrorKind.ENGINE_EXECUTION_FAILED
+
+
+def test_check_engine_version_passes_the_version_check_timeout(monkeypatch, tmp_path):
+    captured: dict = {}
+
+    def fake_run(argv, **kwargs):
+        captured["kwargs"] = kwargs
+        return types.SimpleNamespace(returncode=0, stdout=b"deptry 0.25.1\n", stderr=b"")
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    _check_engine_version(
+        owner="deptry",
+        argv=["deptry", "--version"],
+        version_pattern=_DEPTRY_VERSION_PATTERN,
+        expected=DEPTRY_VERSION_RANGE,
+        cwd=tmp_path,
+    )
+    assert captured["kwargs"]["timeout"] == ENGINE_VERSION_CHECK_TIMEOUT_SECONDS
+    assert captured["kwargs"]["stdin"] is subprocess.DEVNULL
+    assert captured["kwargs"]["check"] is False
+
+
+# --- Story 6.6: the version gate wired into DeptryEngine.run ----------------
+
+
+def _fake_run_deptry_version_and_scan(
+    version_stdout: bytes, scan_content: str, captured: dict, *, scan_returncode: int = 0
+):
+    """A combined ``subprocess.run`` stand-in that answers BOTH the
+    ``["deptry", "--version"]`` pre-flight call and the real
+    ``deptry . -o ...`` scan call, distinguished by argv."""
+
+    def fake_run(argv, **kwargs):
+        if argv[:2] == ["deptry", "--version"]:
+            captured["version_argv"] = argv
+            captured["version_kwargs"] = kwargs
+            return types.SimpleNamespace(
+                returncode=0, stdout=version_stdout, stderr=b""
+            )
+        captured["argv"] = argv
+        captured["kwargs"] = kwargs
+        out_path = argv[argv.index("-o") + 1]
+        Path(out_path).write_text(scan_content, encoding="utf-8")
+        return types.SimpleNamespace(
+            returncode=scan_returncode, stdout=b"", stderr=b""
+        )
+
+    return fake_run
+
+
+def test_deptry_engine_calls_the_version_check_before_the_real_scan(
+    monkeypatch, tmp_path
+):
+    captured: dict = {}
+    monkeypatch.setattr(
+        subprocess,
+        "run",
+        _fake_run_deptry_version_and_scan(b"deptry 0.25.1\n", "[]", captured),
+    )
+    result = DeptryEngine().run(tmp_path, make_inventory())
+    assert captured["version_argv"] == ["deptry", "--version"]
+    assert "argv" in captured  # the real scan DID run -- in-range passes through
+    assert result.errors == ()
+
+
+def test_deptry_engine_out_of_range_version_never_invokes_the_real_subprocess(
+    monkeypatch, tmp_path
+):
+    def fake_run(argv, **kwargs):
+        if argv[:2] == ["deptry", "--version"]:
+            return types.SimpleNamespace(
+                returncode=0, stdout=b"deptry 9.9.9\n", stderr=b""
+            )
+        pytest.fail(
+            "the real deptry subprocess must never be invoked when the "
+            "version gate fails"
+        )
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    result = DeptryEngine().run(tmp_path, make_inventory())
+    assert result.findings == ()
+    (error,) = result.errors
+    assert error.kind is ErrorKind.ENGINE_UNAVAILABLE
+    assert error.owner == "deptry"
+    assert result.coverage == ()
+
+
+def test_deptry_engine_missing_binary_version_never_invokes_the_real_subprocess(
+    monkeypatch, tmp_path
+):
+    def fake_run(argv, **kwargs):
+        if argv[:2] == ["deptry", "--version"]:
+            raise FileNotFoundError("deptry")
+        pytest.fail("the real deptry subprocess must never be invoked")
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    result = DeptryEngine().run(tmp_path, make_inventory())
+    (error,) = result.errors
+    assert error.kind is ErrorKind.ENGINE_UNAVAILABLE
+    assert result.coverage == ()
+
+
+def test_deptry_engine_version_gate_failure_preserves_excluded_findings(
+    monkeypatch, tmp_path, component_factory
+):
+    """Boundaries: a version-check failure must not drop the purity-guard
+    ``excluded_findings`` already computed before the gate -- mirrors the
+    adjacent ``mkstemp`` OSError branch's own never-silently-dropped
+    handling."""
+    from pyforge.warden.inventory import PypiIdentity
+
+    def fake_run(argv, **kwargs):
+        if argv[:2] == ["deptry", "--version"]:
+            return types.SimpleNamespace(
+                returncode=0, stdout=b"deptry 9.9.9\n", stderr=b""
+            )
+        pytest.fail("the real deptry subprocess must never be invoked")
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    unsafe = component_factory(
+        name="evil",
+        version="1.0.0",
+        pypi_identity=PypiIdentity(name="-rf /", version="1.0.0"),
+    )
+    inventory = make_inventory(unsafe)
+
+    result = DeptryEngine().run(tmp_path, inventory)
+
+    assert [f.id for f in result.findings] == [
+        "indeterminate:unsafe-identity-hygiene:evil@1.0.0"
+    ]
+    (error,) = result.errors
+    assert error.kind is ErrorKind.ENGINE_UNAVAILABLE
+
+
+def test_deptry_engine_unparseable_version_never_invokes_the_real_subprocess(
+    monkeypatch, tmp_path
+):
+    def fake_run(argv, **kwargs):
+        if argv[:2] == ["deptry", "--version"]:
+            return types.SimpleNamespace(
+                returncode=0, stdout=b"garbage output\n", stderr=b""
+            )
+        pytest.fail("the real deptry subprocess must never be invoked")
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    result = DeptryEngine().run(tmp_path, make_inventory())
+    (error,) = result.errors
+    assert error.kind is ErrorKind.ENGINE_UNAVAILABLE
+    assert "could not parse version" in error.message

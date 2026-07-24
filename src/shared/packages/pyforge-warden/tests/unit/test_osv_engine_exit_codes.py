@@ -71,9 +71,20 @@ def _fake_run_exit(returncode: int, content: str = ""):
     """A ``subprocess.run`` stand-in that writes ``content`` to the
     ``--output-file`` path (osv-scanner's own flag, distinct from deptry's
     ``-o``) and returns ``returncode`` -- mirrors
-    ``test_engine_env_deptry.py``'s ``_fake_run_writing`` helper."""
+    ``test_engine_env_deptry.py``'s ``_fake_run_writing`` helper. Story 6.6:
+    ``OsvEngine.run`` now calls ``["osv-scanner", "--version"]`` FIRST (the
+    version pre-flight) immediately before the real subprocess call this
+    fake answers -- transparently answered with a fixed in-range version so
+    every EXISTING exit-code test (which doesn't care about the version
+    gate) is unaffected."""
 
     def fake_run(argv, **kwargs):
+        if argv[:2] == ["osv-scanner", "--version"]:
+            return types.SimpleNamespace(
+                returncode=0,
+                stdout=b"osv-scanner version: 2.4.0\n",
+                stderr=b"",
+            )
         out_path = argv[argv.index("--output-file") + 1]
         Path(out_path).write_text(content, encoding="utf-8")
         return types.SimpleNamespace(returncode=returncode, stdout=b"", stderr=b"")

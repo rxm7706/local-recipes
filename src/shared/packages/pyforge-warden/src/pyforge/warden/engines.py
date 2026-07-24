@@ -11,6 +11,16 @@ seam (``extra_env`` param + a surfaced child exit code) rather than
 reimplementing it — see the osv-db-offline-provisioning decision record's
 "seam hand-off" section.
 
+Story 6.6 (FR21) adds a SECOND, narrowly-scoped subprocess call site —
+``_check_engine_version`` — a ``--version`` pre-flight run before either real
+engine subprocess trusts its output. It deliberately does NOT go through
+``_engine_env``: that seam's contract always writes to an
+``-o``/``--output``-style tempfile flag, which ``--version`` has no
+equivalent of, so this helper captures stdout directly via
+``subprocess.run(..., capture_output=True)`` instead. Still typed the same
+way (``ErrorRecord`` via the shared ``ErrorKind`` taxonomy), still bounded by
+a timeout, still no shell — just not funneled through the tempfile contract.
+
 Registry semantics: engines register via ``register_engine(factory)`` at
 module-import time; ``registered_engines()`` instantiates them in
 registration order — deterministic because module execution is. The registry
@@ -66,12 +76,16 @@ from __future__ import annotations
 
 import dataclasses
 import os
+import re
 import subprocess
 import tempfile
 import tomllib
 from collections.abc import Callable, Mapping
 from datetime import UTC, datetime
 from pathlib import Path
+
+from packaging.specifiers import SpecifierSet
+from packaging.version import InvalidVersion, Version
 
 from . import feeds
 from .currency import currency_findings, currency_stale_finding
@@ -124,6 +138,34 @@ from .vuln import (
 # {1, 2, 130}, so the sole-ownership exit-literal guard never mistakes it for
 # an exit code.
 DEPTRY_TIMEOUT_SECONDS = 120
+
+# Story 6.6 (FR21 — the distribution gate): the ``--version`` pre-flight's own
+# bounded timeout. A tiny, fixed default — ``--version`` never does real work
+# — distinct from ``DEPTRY_TIMEOUT_SECONDS``/``OSV_TIMEOUT_SECONDS`` (the real
+# scan's budget). Not in {1, 2, 130}, same sole-ownership guard rationale.
+ENGINE_VERSION_CHECK_TIMEOUT_SECONDS = 10
+
+# The tested version ranges (NFR-C1: a RANGE, not an exact pin — engines come
+# from feedstocks — open only to patch releases of the SAME evidence-backed
+# minor). Must byte-for-byte mirror ``pixi.toml``'s ``deptry``/``osv-scanner``
+# run-dependency pins — enforced by
+# ``tests/meta/test_engine_version_range_sync.py``. Evidence: deptry 0.25.1
+# (hygiene.py's DEP005 docstring), osv-scanner 2.4.0 (vuln.py's
+# "Empirically-verified 2.4.0 shape" docstring) — the exact minors this
+# codebase has verified output-schema evidence for; widening beyond them "to
+# be safe" defeats the whole point (an untested newer minor must fail loud,
+# not silently pass).
+DEPTRY_VERSION_RANGE = SpecifierSet(">=0.25.1,<0.26")
+OSV_SCANNER_VERSION_RANGE = SpecifierSet(">=2.4.0,<2.5")
+
+# ``deptry --version`` prints ``deptry 0.25.1``; ``osv-scanner --version``
+# prints a multi-line block starting ``osv-scanner version: 2.4.0`` — both
+# verified live against the currently-provisioned pixi environment during
+# this story's implementation (2026-07-24).
+_DEPTRY_VERSION_PATTERN = re.compile(r"^deptry\s+(\S+)", re.MULTILINE)
+_OSV_SCANNER_VERSION_PATTERN = re.compile(
+    r"^osv-scanner version:\s*(\S+)", re.MULTILINE
+)
 
 _ENGINE_FACTORIES: list[Callable[[], Engine]] = []
 
@@ -308,6 +350,129 @@ def _engine_env(
             pass
 
 
+def _check_engine_version(
+    *,
+    owner: str,
+    argv: list[str],
+    version_pattern: re.Pattern[str],
+    expected: SpecifierSet,
+    cwd: Path,
+) -> ErrorRecord | None:
+    """Story 6.6 (FR21): a ``--version`` pre-flight gate run BEFORE either
+    real engine subprocess trusts its output. A second, narrowly-scoped
+    exception to this module's sole ``_engine_env`` subprocess seam —
+    justified because ``_engine_env``'s contract always writes to an
+    ``-o``/``--output``-style tempfile flag that ``--version`` has no
+    equivalent of; capturing stdout directly is simpler and never touches
+    disk at all.
+
+    Mirrors ``_engine_env``'s own typed-error taxonomy for the spawn itself
+    (``FileNotFoundError`` -> ``ENGINE_UNAVAILABLE`` — disambiguated against a
+    vanished ``cwd`` exactly like ``_engine_env``'s own TOCTOU guard,
+    ``TimeoutExpired`` -> ``ENGINE_TIMEOUT``, any other ``OSError`` ->
+    ``ENGINE_EXECUTION_FAILED``) plus terminal cases unique to this check: a
+    non-zero exit (content alone is never trusted — a broken install could
+    still print a stale/cached version banner before failing), version text
+    that fails to match ``version_pattern``, fails to parse as a PEP 440
+    version, or parses but falls outside ``expected`` — ALL of which map to
+    the SAME existing ``ENGINE_UNAVAILABLE`` kind (no new ``ErrorKind``
+    member; FR21's "unavailable/incompatible" is one typed kind,
+    schema-frozen since Story 6.1). Returns ``None`` on a passing check —
+    the caller's real engine subprocess should proceed exactly as before
+    this story."""
+    try:
+        completed = subprocess.run(  # noqa: S603 — argv list, no shell
+            argv,
+            cwd=str(cwd),
+            env={**os.environ, "NO_COLOR": "1"},
+            stdin=subprocess.DEVNULL,
+            capture_output=True,
+            timeout=ENGINE_VERSION_CHECK_TIMEOUT_SECONDS,
+            check=False,
+        )
+    except FileNotFoundError:
+        # Mirrors _engine_env's own disambiguation (review finding,
+        # 2026-07-24): subprocess.run raises FileNotFoundError for BOTH a
+        # missing executable AND a missing cwd (the pre-exec chdir fails) --
+        # a target dir that vanished after discovery (TOCTOU) must not be
+        # misreported as "engine not installed".
+        if not os.path.isdir(cwd):
+            return ErrorRecord(
+                kind=ErrorKind.ENGINE_EXECUTION_FAILED,
+                owner=owner,
+                message=(
+                    f"scan target {str(cwd)!r} is not an existing directory "
+                    f"when the {owner!r} version check ran (vanished after "
+                    "discovery?)"
+                ),
+            )
+        return ErrorRecord(
+            kind=ErrorKind.ENGINE_UNAVAILABLE,
+            owner=owner,
+            message=f"engine binary for {owner!r} not found on PATH",
+        )
+    except subprocess.TimeoutExpired:
+        return ErrorRecord(
+            kind=ErrorKind.ENGINE_TIMEOUT,
+            owner=owner,
+            message=(
+                f"engine {owner!r} exceeded the "
+                f"{ENGINE_VERSION_CHECK_TIMEOUT_SECONDS}s version-check timeout"
+            ),
+        )
+    except OSError as exc:
+        return ErrorRecord(
+            kind=ErrorKind.ENGINE_EXECUTION_FAILED,
+            owner=owner,
+            message=f"engine {owner!r} could not be executed: {exc.__class__.__name__}",
+        )
+    if completed.returncode != 0:
+        # Review finding, 2026-07-24: a broken/misconfigured engine install
+        # that exits non-zero but still prints a matching version string
+        # (e.g. a stale cached banner before a real failure) must not pass
+        # the gate on stdout content alone.
+        return ErrorRecord(
+            kind=ErrorKind.ENGINE_UNAVAILABLE,
+            owner=owner,
+            message=(
+                f"{owner!r} --version exited {completed.returncode} "
+                "-- compatibility could not be confirmed"
+            ),
+        )
+    stdout_text = completed.stdout.decode("utf-8", errors="replace")
+    match = version_pattern.search(stdout_text)
+    if match is None:
+        return ErrorRecord(
+            kind=ErrorKind.ENGINE_UNAVAILABLE,
+            owner=owner,
+            message=(
+                f"could not parse version output from {owner!r} "
+                f"(--version produced no recognizable version string)"
+            ),
+        )
+    try:
+        version = Version(match.group(1))
+    except InvalidVersion:
+        return ErrorRecord(
+            kind=ErrorKind.ENGINE_UNAVAILABLE,
+            owner=owner,
+            message=(
+                f"could not parse version {match.group(1)!r} reported by "
+                f"{owner!r}"
+            ),
+        )
+    if version not in expected:
+        return ErrorRecord(
+            kind=ErrorKind.ENGINE_UNAVAILABLE,
+            owner=owner,
+            message=(
+                f"{owner!r} version {str(version)!r} is outside tested "
+                f"range {expected!s}"
+            ),
+        )
+    return None
+
+
 class NullEngine:
     """The no-op engine: assesses nothing, contributes nothing.
 
@@ -429,7 +594,14 @@ class DeptryEngine:
     vuln-axis twin's so the policy layer's id-keyed dedupe can never drop
     one axis's record) — computed up front and merged into EVERY return
     path below, mirroring ``OsvEngine.run``'s own never-silently-dropped
-    handling of its parallel-shaped ``excluded_findings``."""
+    handling of its parallel-shaped ``excluded_findings``.
+
+    Story 6.6 (FR21): a ``--version`` pre-flight (``_check_engine_version``)
+    gates the top of ``run()``, right after ``excluded_findings`` is
+    computed — deptry ALWAYS invokes the real subprocess below, so the gate
+    is unconditional. A failing check never invokes the real deptry
+    subprocess and preserves ``excluded_findings`` exactly like the
+    ``mkstemp`` ``OSError`` branch immediately below it."""
 
     name: str = "deptry"
     axis: str = AXIS_HYGIENE
@@ -445,6 +617,24 @@ class DeptryEngine:
                 key=lambda f: f.id,
             )
         )
+        # Story 6.6 (FR21): the version pre-flight gates EVERY run — deptry
+        # always invokes the real subprocess below, so the gate is
+        # unconditional. A failure never drops the purity guard's own
+        # findings, mirroring the mkstemp OSError branch immediately below.
+        version_error = _check_engine_version(
+            owner=self.name,
+            argv=["deptry", "--version"],
+            version_pattern=_DEPTRY_VERSION_PATTERN,
+            expected=DEPTRY_VERSION_RANGE,
+            cwd=target,
+        )
+        if version_error is not None:
+            return EngineResult(
+                findings=excluded_findings,
+                errors=(version_error,),
+                coverage=(),
+                axis=self.axis,
+            )
         try:
             handle, input_path = tempfile.mkstemp(
                 suffix=".txt", prefix="pdos-deptry-frontdoor-"
@@ -830,7 +1020,17 @@ class OsvEngine:
     same way. Every ``vuln:`` finding is stamped ``epss`` via ``_stamp_epss``
     BEFORE this method returns its ``EngineResult``, same hard positioning
     invariant — but unlike ``kev``/``kev_date``, ``epss`` is stamped ONLY on
-    an actual match (see ``_stamp_epss``'s own docstring)."""
+    an actual match (see ``_stamp_epss``'s own docstring).
+
+    Story 6.6 (FR21): a ``--version`` pre-flight (``_check_engine_version``)
+    gates the ONE branch that actually shells out to ``osv-scanner`` —
+    placed immediately after the ``if not synthesized.lines:`` early-return
+    (every early-return above it — no candidates, DB unavailable, purity
+    guard excludes everything — never invoked the real subprocess before
+    this story and still doesn't invoke the version check either). A
+    failing check returns the same excluded/name-level/stale/KEV/EPSS
+    findings tuple the adjacent ``mkstemp`` ``OSError`` branch already
+    assembles — never silently dropped."""
 
     name: str = "osv-scanner"
     axis: str = AXIS_VULNERABILITY
@@ -948,6 +1148,43 @@ class OsvEngine:
                 coverage=(),
                 axis=self.axis,
                 vuln_data=vuln_data,
+                kev_data=kev_data,
+                epss_data=epss_data,
+            )
+
+        # Story 6.6 (FR21): the version pre-flight sits immediately before
+        # the ONE branch that actually shells out to osv-scanner — every
+        # early-return above (no candidates, DB unavailable, name-level-only)
+        # never invoked the real subprocess before this story and must keep
+        # not invoking the version check either. A failure here returns the
+        # SAME merged findings tuple the adjacent mkstemp OSError branch
+        # below already assembles (NFR-S6/FR13 — never silently dropped).
+        version_error = _check_engine_version(
+            owner=self.name,
+            argv=["osv-scanner", "--version"],
+            version_pattern=_OSV_SCANNER_VERSION_PATTERN,
+            expected=OSV_SCANNER_VERSION_RANGE,
+            cwd=target,
+        )
+        if version_error is not None:
+            findings = tuple(
+                sorted(
+                    (
+                        *excluded_findings,
+                        *name_level_findings,
+                        *stale_findings,
+                        *kev_findings,
+                        *epss_findings,
+                    ),
+                    key=lambda f: f.id,
+                )
+            )
+            return EngineResult(
+                findings=findings,
+                errors=(version_error,),
+                coverage=(),
+                axis=self.axis,
+                vuln_data=None,
                 kev_data=kev_data,
                 epss_data=epss_data,
             )
