@@ -35,6 +35,7 @@ from pyforge.warden.models import (
     VulnData,
 )
 from pyforge.warden.report import assemble_report, render_json, render_text
+from pyforge.warden.waiver import BaselineNotice
 
 _NO_VULN_DATA = VulnData(source=None, snapshot_at=None, max_age_ok=None)
 
@@ -453,3 +454,92 @@ def test_render_text_neutralizes_embedded_newlines_in_finding_and_error_messages
         "fabricated second line"
     )
     assert sum(1 for line in lines if line.startswith("  driver: ")) == 1
+
+
+# --- render_text: [baseline]/[baseline-expired] lines (Story 6.8) --------
+
+
+_BASELINE_DRIVER = StatusDriver(axis=AXIS_HYGIENE, finding_id="hygiene:DEP002:requests")
+
+
+def test_render_text_applied_baseline_notice_renders_a_baseline_line():
+    report = _report(
+        status=Status.BYPASSED, status_driver=_BASELINE_DRIVER, exit_code=0
+    )
+    notice = BaselineNotice(
+        id="hygiene:DEP002:requests",
+        reason="grandfathered at adoption",
+        expires_at="2026-12-31T00:00:00+00:00",
+    )
+    rendered = render_text(report, applied_baseline=(notice,))
+    assert rendered == "\n".join(
+        [
+            "warden: status=bypassed exit_code=0 findings=0",
+            "  driver: axis=hygiene id=hygiene:DEP002:requests",
+            "  [baseline] hygiene:DEP002:requests -- reason=grandfathered "
+            "at adoption expires_at=2026-12-31T00:00:00+00:00",
+        ]
+    )
+
+
+def test_render_text_expired_baseline_notice_renders_a_baseline_expired_line():
+    report = _report(status=Status.WARN, status_driver=_BASELINE_DRIVER, exit_code=0)
+    notice = BaselineNotice(
+        id="hygiene:DEP002:requests",
+        reason="grandfathered at adoption",
+        expires_at="2000-01-01T00:00:00+00:00",
+    )
+    rendered = render_text(report, expired_baseline=(notice,))
+    assert rendered == "\n".join(
+        [
+            "warden: status=warn exit_code=0 findings=0",
+            "  driver: axis=hygiene id=hygiene:DEP002:requests",
+            "  [baseline-expired] hygiene:DEP002:requests -- reason="
+            "grandfathered at adoption "
+            "expires_at=2000-01-01T00:00:00+00:00 -- expired, needs "
+            "review/renewal",
+        ]
+    )
+
+
+def test_render_text_baseline_lines_never_carry_an_authorized_by_field():
+    """A baseline notice carries no authorized_by at all (bulk-accepted,
+    not individually signed) -- the rendered line must never claim one."""
+    report = _report(
+        status=Status.BYPASSED, status_driver=_BASELINE_DRIVER, exit_code=0
+    )
+    notice = BaselineNotice(
+        id="hygiene:DEP002:requests",
+        reason="x",
+        expires_at="2026-12-31T00:00:00+00:00",
+    )
+    rendered = render_text(report, applied_baseline=(notice,))
+    assert "authorized_by" not in rendered
+
+
+def test_render_text_baseline_notices_pass_through_single_line_sanitization():
+    """Mirrors the waiver-side embedded-newline forgery guard (Story 3.3
+    review finding) -- an embedded newline in reason/expires_at must never
+    fabricate an extra report line."""
+    report = _report(
+        status=Status.BYPASSED, status_driver=_BASELINE_DRIVER, exit_code=0
+    )
+    notice = BaselineNotice(
+        id="hygiene:DEP002:requests",
+        reason="tracked\n  [forged] fake extra line",
+        expires_at="2026-12-31T00:00:00+00:00",
+    )
+    rendered = render_text(report, applied_baseline=(notice,))
+    lines = rendered.splitlines()
+    assert len(lines) == 3
+    assert not any(line.strip() == "[forged] fake extra line" for line in lines)
+    assert "reason=tracked\\n  [forged] fake extra line" in rendered
+
+
+def test_render_text_default_omitted_baseline_params_is_byte_identical_to_pre_6_8():
+    """Regression guarantee: omitting applied_baseline/expired_baseline
+    entirely reproduces byte-identical output to the pre-6.8 signature."""
+    report = _report(status=Status.CLEAN, status_driver=None, exit_code=0)
+    assert render_text(report) == render_text(
+        report, applied_baseline=(), expired_baseline=()
+    )
