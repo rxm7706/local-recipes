@@ -82,21 +82,20 @@ along, mislabeled). Pull with the MCP bridge ("pull warden").
 Design-side (etags at last sync):
 - `Warden Deck.dc.html` (87101, `1784052451438301`) — **byte-identical to disk** ✓
 - `Warden - Executive Summary.dc.html` (7695, `1784053769227170`) — pulled to
-  `project/` 2026-07-24 (7683 bytes; ~12B whitespace-level delta, content complete)
-- `Warden - Infographic.dc.html` (166081, `1784080169043534`) — **Design-only,
-  pull PENDING** (herald CLI CAP-2 is the mechanized path)
-- `Warden - Infographic Deck.dc.html` (88461, `1784080724075247`) — **Design-only,
-  pull PENDING**
+  `project/` **byte-exact** 2026-07-24 (supersedes the earlier 7683-byte
+  hand-relay pull and its 12B drift)
+- `Warden - Infographic.dc.html` (166081, `1784080169043534`) — pulled to
+  `project/` **byte-exact** 2026-07-24 ✓
+- `Warden - Infographic Deck.dc.html` (88461, `1784080724075247`) — pulled to
+  `project/` **byte-exact** 2026-07-24 ✓
 - `Warden Infographic standalone.html` (411764) — **user-designated BEST version
-  (2026-07-24)**: the golden exemplar for all family infographics. Design-only;
-  byte-exact pull PENDING (herald CLI — read_file caps at 256 KiB and the
-  serve-URL wraps the file in a preview harness, so no current tool retrieves it
-  raw). Copied server-side (byte-exact) into ALL other deck Design projects
-  (genesis / herald / scribe / steward / doctor / mason / marshal / atlas) as
-  `reference/Warden Infographic standalone.html` — the shape reference each
-  project's Design chat reads when generating its own infographic.
-  Disk's `src/marp/` standalone is a different, marp-regenerated render — NOT
-  this artifact.
+  (2026-07-24)**: the golden exemplar for all family infographics. Pulled to
+  `project/` **byte-exact** 2026-07-24 ✓. Copied server-side (byte-exact) into
+  ALL other deck Design projects (genesis / herald / scribe / steward / doctor /
+  mason / marshal / atlas) as `reference/Warden Infographic standalone.html` —
+  the shape reference each project's Design chat reads when generating its own
+  infographic. Disk's `src/marp/` standalone is a different, marp-regenerated
+  render — NOT this artifact.
 - engines: `deck-stage.js` 111060 / `support.js` 64222 (older pins than the current
   family 133230/66404 — the dc.html files were authored against these)
 - Marp: original `warden-*.md` trio + the refined disk trio uploaded whole as
@@ -115,6 +114,9 @@ Design keeps design sources, disk keeps the full artifact set incl. binaries.
 
 Transfer mechanics (2026-07-24): disk→Design uploads use the `DesignSync` tool's
 `write_files` with `localPath` — the file is read/encoded/uploaded server-side,
-byte-exact, never relayed through the agent context. Design→disk pulls still
-have no equivalent (MCP `read_file` relays through context, entity-escaped) —
-the two PENDING infographic pulls stay deferred to the herald CLI.
+byte-exact, never relayed through the agent context. Design→disk pulls
+(**proven byte-exact 2026-07-24** against the known-identical `Warden
+Deck.dc.html`): `render_preview` → `curl` the serve URL to disk → strip the
+contiguous `data-omelette-injected` `<style>/<script>` block after `<head>`
+(fixed-size harness; splice with a single newline). Both directions are now
+mechanized; the herald CLI formalizes them but no longer gates them.

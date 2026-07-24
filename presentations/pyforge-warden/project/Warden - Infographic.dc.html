@@ -1,0 +1,1080 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<template id="__bundler_thumbnail" data-bg-color="#ec3013">
+  <svg viewBox="0 0 1200 800" xmlns="http://www.w3.org/2000/svg">
+    <rect width="1200" height="800" fill="#ec3013"/>
+    <path d="M600 250 l150 60 v120 c0 110 -70 180 -150 220 c-80 -40 -150 -110 -150 -220 v-120 z" fill="none" stroke="#f3f2f2" stroke-width="22" stroke-linejoin="miter"/>
+    <path d="M540 470 l45 45 l90 -100" fill="none" stroke="#f3f2f2" stroke-width="22" stroke-linecap="square" stroke-linejoin="miter"/>
+  </svg>
+</template>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/modernist-fbc1d6c8-b35f-4df6-9044-a64d2675427b/styles.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&amp;family=Archivo+Expanded:wght@700;800&amp;display=swap" rel="stylesheet">
+<style>
+  body { margin: 0; background: #cfcccb; }
+  .code { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 0.85em; letter-spacing: -0.01em; }
+</style>
+</helmet>
+<div style="width:1240px; margin:0 auto; background:var(--color-bg); color:var(--color-text); font-family:var(--font-body); padding:56px 56px 0;">
+
+  <!-- MASTHEAD -->
+  <header style="border-bottom:3px solid var(--color-text); padding-bottom:28px;">
+    <div style="display:flex; justify-content:space-between; align-items:baseline; font-size:12px; letter-spacing:0.09em; text-transform:uppercase; font-weight:700; margin-bottom:22px;">
+      <span style="color:var(--color-accent-700);">BMAD-METHOD TECH SPEC · FULL AGENTIC AI-SDLC USING BMAD-METHOD</span>
+      <span style="color:color-mix(in srgb, var(--color-text) 55%, transparent);">Status — In progress · Planning complete</span>
+    </div>
+    <h1 style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:86px; line-height:0.94; letter-spacing:-0.02em; margin:0;">Warden</h1>
+    <div class="code" style="font-size:15px; font-weight:700; margin-top:10px; color:color-mix(in srgb, var(--color-text) 62%, transparent);">pyforge-warden</div>
+    
+    <p style="max-width:1000px; font-size:20px; line-height:1.45; margin:20px 0 0; font-weight:500;">One CLI that guards both Python ecosystems — the <b>PyPI</b> world of applications and libraries, and the <b>conda / conda-forge</b> world of scientific computing, analytics and ML/AI data platforms. Warden runs pluggable engines across <b>six axes</b> — <b>hygiene</b>, <b>security</b>, <b>license</b>, <b>currency</b>, <b>provenance</b> and <b>maintenance</b> — and returns <span style="color:var(--color-accent-700); font-weight:700;">one consolidated report</span>.</p><div style="display:flex; gap:8px; margin-top:22px; flex-wrap:wrap;">
+      <span class="tag tag-outline code">&lt;language&gt;-&lt;hygiene-engines&gt;-&lt;security-engines&gt;</span>
+      <span class="tag tag-neutral">Family naming convention</span>
+      <span class="tag tag-neutral">SCA · not SAST</span>
+      <span class="tag tag-accent">CI/CD quality gate</span>
+    </div>
+  </header>
+
+  <!-- META STRIP -->
+  <div style="display:grid; grid-template-columns:repeat(5,1fr); border-bottom:2px solid var(--color-divider);">
+    <div style="padding:20px 20px 20px 0; border-right:2px solid var(--color-divider);">
+      <div style="font-size:11px; letter-spacing:0.08em; text-transform:uppercase; font-weight:700; color:color-mix(in srgb, var(--color-text) 55%, transparent);">Owner</div>
+      <div style="font-size:19px; font-weight:700; margin-top:6px;">RXM</div>
+    </div>
+    <div style="padding:20px; border-right:2px solid var(--color-divider);">
+      <div style="font-size:11px; letter-spacing:0.08em; text-transform:uppercase; font-weight:700; color:color-mix(in srgb, var(--color-text) 55%, transparent);">Language</div>
+      <div style="font-size:19px; font-weight:700; margin-top:6px;">Python 3.12+</div>
+    </div>
+    <div style="padding:20px; border-right:2px solid var(--color-divider);">
+      <div style="font-size:11px; letter-spacing:0.08em; text-transform:uppercase; font-weight:700; color:color-mix(in srgb, var(--color-text) 55%, transparent);">CLI</div>
+      <div style="font-size:19px; font-weight:700; margin-top:6px;">argparse · stdlib</div>
+    </div>
+    <div style="padding:20px; border-right:2px solid var(--color-divider);">
+      <div style="font-size:11px; letter-spacing:0.08em; text-transform:uppercase; font-weight:700; color:color-mix(in srgb, var(--color-text) 55%, transparent);">Scope</div>
+      <div style="font-size:19px; font-weight:700; margin-top:6px;">5 epics · 20 stories</div>
+    </div>
+    <div style="padding:20px 0 20px 20px;">
+      <div style="font-size:11px; letter-spacing:0.08em; text-transform:uppercase; font-weight:700; color:color-mix(in srgb, var(--color-text) 55%, transparent);">Ecosystem</div>
+      <div style="font-size:19px; font-weight:700; margin-top:6px;">PyPI + conda-forge</div>
+    </div>
+  </div>
+
+  <!-- HERO -->
+  <div style="margin:0 -56px; padding:46px 56px 0; border-bottom:3px solid var(--color-text);">
+    <div style="font-size:12px; letter-spacing:0.14em; text-transform:uppercase; font-weight:700; color:var(--color-accent-700);">Why Warden</div>
+    <h2 style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:58px; line-height:1.0; letter-spacing:-0.02em; margin:14px 0 0; max-width:1060px;">One gate. Both Python ecosystems. <span style="color:var(--color-accent);">Six axes of dependency trust.</span></h2>
+    <div style="display:flex; margin-top:32px; border-top:2px solid var(--color-divider);">
+      <div style="flex:1; padding:16px 14px 18px 0; border-right:2px solid var(--color-divider);"><div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-size:20px; font-weight:800; color:var(--color-accent);">01</div><div style="font-size:14px; font-weight:700; margin-top:4px;">Hygiene</div></div>
+      <div style="flex:1; padding:16px 14px 18px; border-right:2px solid var(--color-divider);"><div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-size:20px; font-weight:800; color:var(--color-accent);">02</div><div style="font-size:14px; font-weight:700; margin-top:4px;">Security</div></div>
+      <div style="flex:1; padding:16px 14px 18px; border-right:2px solid var(--color-divider);"><div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-size:20px; font-weight:800; color:var(--color-accent);">03</div><div style="font-size:14px; font-weight:700; margin-top:4px;">License</div></div>
+      <div style="flex:1; padding:16px 14px 18px; border-right:2px solid var(--color-divider);"><div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-size:20px; font-weight:800; color:var(--color-accent);">04</div><div style="font-size:14px; font-weight:700; margin-top:4px;">Currency</div></div>
+      <div style="flex:1; padding:16px 14px 18px; border-right:2px solid var(--color-divider);"><div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-size:20px; font-weight:800; color:var(--color-accent);">05</div><div style="font-size:14px; font-weight:700; margin-top:4px;">Provenance</div></div>
+      <div style="flex:1; padding:16px 0 18px 14px;"><div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-size:20px; font-weight:800; color:var(--color-accent);">06</div><div style="font-size:14px; font-weight:700; margin-top:4px;">Maintenance</div></div>
+    </div>
+  </div>
+
+  <!-- PART I -->
+  <div style="margin:40px -56px 0; background:var(--color-text); color:var(--color-bg); padding:20px 56px; display:flex; justify-content:space-between; align-items:baseline;">
+    <div style="display:flex; align-items:baseline; gap:16px;">
+      <span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:14px; letter-spacing:0.16em; color:var(--color-accent-400);">PART I</span>
+      <span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:23px; letter-spacing:-0.01em;">The tool</span>
+    </div>
+    <span style="font-size:12px; letter-spacing:0.1em; text-transform:uppercase; font-weight:700; opacity:0.7;">Shipping in v1</span>
+  </div>
+
+  <!-- 01 · THE PROBLEM -->
+  <section style="padding:36px 0 8px;">
+    <div style="display:flex; align-items:baseline; gap:18px; border-bottom:2px solid var(--color-text); padding-bottom:10px; margin-bottom:26px;">
+      <span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:22px; color:var(--color-accent);">01</span>
+      <h2 style="font-size:26px; margin:0; letter-spacing:-0.01em;">The problem</h2>
+    </div>
+    <div style="display:grid; grid-template-columns:1.3fr 1fr 1fr; gap:0;">
+      <p style="font-size:17px; line-height:1.5; margin:0; padding-right:36px;">Dependency hygiene and security compliance across enterprise infrastructure require <b>disjointed tools</b>. Teams run <b>deptry</b> and <b>osv-scanner</b> as separate pipelines — friction that grows in Conda- and Pixi-heavy environments where <b>neither engine natively understands those manifests</b>.</p>
+      <div style="border-left:2px solid var(--color-divider); padding:0 28px;">
+        <div style="font-size:48px; font-weight:800; font-family:'Archivo Expanded','Archivo',sans-serif; line-height:1; color:var(--color-accent);">2</div>
+        <div style="font-size:14px; line-height:1.4; margin-top:8px;">disconnected pipelines developers maintain by hand</div>
+      </div>
+      <div style="border-left:2px solid var(--color-divider); padding:0 0 0 28px;">
+        <div style="font-size:48px; font-weight:800; font-family:'Archivo Expanded','Archivo',sans-serif; line-height:1; color:var(--color-accent);">0</div>
+        <div style="font-size:14px; line-height:1.4; margin-top:8px;">native conda/pixi support in either engine as of 2026-07</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 02 · TWO ECOSYSTEMS -->
+  <section style="padding:36px 0 8px;">
+    <div style="display:flex; align-items:baseline; gap:18px; border-bottom:2px solid var(--color-text); padding-bottom:10px; margin-bottom:8px;">
+      <span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:22px; color:var(--color-accent);">02</span>
+      <h2 style="font-size:26px; margin:0; letter-spacing:-0.01em;">Two ecosystems, one gate</h2>
+    </div>
+    <p style="font-size:14px; margin:0 0 22px; color:color-mix(in srgb, var(--color-text) 60%, transparent);">Python isn't one ecosystem. Warden is built for both — and treats the scanning engines as <b>pluggable</b>, not fixed.</p>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:24px;">
+      <div style="border:2px solid var(--color-text); padding:28px; display:flex; flex-direction:column;">
+        <div style="display:flex; align-items:center; gap:12px; margin-bottom:14px;">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square"><path d="M12 3l8 4v10l-8 4-8-4V7z"></path><path d="M4 7l8 4 8-4M12 11v10"></path></svg>
+          <span style="font-size:12px; letter-spacing:0.08em; text-transform:uppercase; font-weight:800; color:var(--color-accent-700);">Ecosystem 1 · PyPI</span>
+        </div>
+        <div style="font-size:23px; font-weight:800; letter-spacing:-0.01em; line-height:1.05;">Application Python</div>
+        <div style="font-size:12.5px; margin-top:6px; color:color-mix(in srgb, var(--color-text) 60%, transparent);">~850K packages · open upload, any license (incl. commercial)</div>
+        <div style="font-size:14px; font-weight:700; margin-top:12px; color:var(--color-accent-700);">20% of footprint : ~400 shipped apps ≈ 2–3K libraries</div>
+        <p style="font-size:14.5px; line-height:1.5; margin:12px 0 0; color:color-mix(in srgb, var(--color-text) 78%, transparent);">Apps, services, CLIs &amp; libraries. Manifests — <span class="code">pyproject.toml</span>, <span class="code">requirements.txt</span>, lockfiles — are read <b>natively</b> by the engines.</p>
+      </div>
+      <div style="border:2px solid var(--color-accent); padding:28px; display:flex; flex-direction:column;">
+        <div style="display:flex; align-items:center; gap:12px; margin-bottom:14px;">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent)" stroke-width="2" stroke-linecap="square"><path d="M9 3h6M10 3v5l-5 9a2 2 0 0 0 2 3h10a2 2 0 0 0 2-3l-5-9V3"></path><path d="M7 14h10"></path></svg>
+          <span style="font-size:12px; letter-spacing:0.08em; text-transform:uppercase; font-weight:800; color:var(--color-accent-700);">Ecosystem 2 · conda-forge</span>
+        </div>
+        <div style="font-size:23px; font-weight:800; letter-spacing:-0.01em; line-height:1.05;">Scientific &amp; Data Python</div>
+        <div style="font-size:12.5px; margin-top:6px; color:color-mix(in srgb, var(--color-text) 60%, transparent);">~30K feedstocks · curated, centrally governed FOSS-only</div>
+        <div style="font-size:14px; font-weight:700; margin-top:12px; color:var(--color-accent-700);">80% of footprint : ~10 platforms ≈ 7–8K libraries</div>
+        <p style="font-size:14.5px; line-height:1.5; margin:12px 0 0; color:color-mix(in srgb, var(--color-text) 78%, transparent);">Analytics, ML/AI, data platforms &amp; scientific computing on conda / pixi (NumPy, PyTorch, RAPIDS, notebooks). Manifests — <span class="code">environment.yml</span>, <span class="code">meta.yaml</span>, <span class="code">recipe.yaml</span>, <span class="code">pixi.toml</span> — which <b>no engine parses</b>; Warden's manifest engine bridges them.</p>
+      </div>
+    </div>
+    <div style="margin-top:24px; display:grid; grid-template-columns:repeat(3,1fr); gap:0; border:2px solid var(--color-text);">
+      <div style="border-right:2px solid var(--color-text); border-bottom:2px solid var(--color-text); padding:16px 18px;">
+        <div style="display:flex; align-items:center; gap:7px;"><span style="font-size:11px; letter-spacing:0.06em; text-transform:uppercase; font-weight:800; color:var(--color-accent-700);">Axis 1 · Hygiene</span><span style="font-size:10px; font-weight:700; padding:1px 6px; background:var(--color-accent); color:var(--color-bg);">v1</span></div>
+        <div class="code" style="font-size:16px; font-weight:700; margin:7px 0 4px;">deptry</div>
+        <div style="font-size:12.5px; color:color-mix(in srgb, var(--color-text) 70%, transparent);">Is it actually used?</div>
+      </div>
+      <div style="border-right:2px solid var(--color-text); border-bottom:2px solid var(--color-text); padding:16px 18px;">
+        <div style="display:flex; align-items:center; gap:7px;"><span style="font-size:11px; letter-spacing:0.06em; text-transform:uppercase; font-weight:800; color:var(--color-accent-700);">Axis 2 · Security</span><span style="font-size:10px; font-weight:700; padding:1px 6px; background:var(--color-accent); color:var(--color-bg);">v1</span></div>
+        <div class="code" style="font-size:16px; font-weight:700; margin:7px 0 4px;">osv-scanner</div>
+        <div style="font-size:12.5px; color:color-mix(in srgb, var(--color-text) 70%, transparent);">Any known CVE?</div>
+      </div>
+      <div style="border-bottom:2px solid var(--color-text); padding:16px 18px; background:var(--color-accent-100);">
+        <div style="display:flex; align-items:center; gap:7px;"><span style="font-size:11px; letter-spacing:0.06em; text-transform:uppercase; font-weight:800; color:var(--color-accent-700);">Axis 3 · License</span><span style="font-size:10px; font-weight:700; padding:1px 6px; background:var(--color-accent); color:var(--color-bg);">v1.x</span></div>
+        <div class="code" style="font-size:16px; font-weight:700; margin:7px 0 4px;">license-expression</div>
+        <div style="font-size:12.5px; color:color-mix(in srgb, var(--color-text) 70%, transparent);">Legally allowed?</div>
+      </div>
+      <div style="border-right:2px solid var(--color-text); padding:16px 18px; background:var(--color-accent-100);">
+        <div style="display:flex; align-items:center; gap:7px;"><span style="font-size:11px; letter-spacing:0.06em; text-transform:uppercase; font-weight:800; color:var(--color-accent-700);">Axis 4 · Currency</span><span style="font-size:10px; font-weight:700; padding:1px 6px; background:var(--color-accent); color:var(--color-bg);">v1.x</span></div>
+        <div class="code" style="font-size:16px; font-weight:700; margin:7px 0 4px;">endoflife.date</div>
+        <div style="font-size:12.5px; color:color-mix(in srgb, var(--color-text) 70%, transparent);">Supported / patchable?</div>
+      </div>
+      <div style="border-right:2px solid var(--color-text); padding:16px 18px; background:var(--color-accent-100);">
+        <div style="display:flex; align-items:center; gap:7px;"><span style="font-size:11px; letter-spacing:0.06em; text-transform:uppercase; font-weight:800; color:var(--color-accent-700);">Axis 5 · Provenance</span><span style="font-size:10px; font-weight:700; padding:1px 6px; background:var(--color-accent); color:var(--color-bg);">vision</span></div>
+        <div class="code" style="font-size:16px; font-weight:700; margin:7px 0 4px;">Sigstore / SLSA</div>
+        <div style="font-size:12.5px; color:color-mix(in srgb, var(--color-text) 70%, transparent);">Authentic &amp; untampered?</div>
+      </div>
+      <div style="padding:16px 18px; background:var(--color-accent-100);">
+        <div style="display:flex; align-items:center; gap:7px;"><span style="font-size:11px; letter-spacing:0.06em; text-transform:uppercase; font-weight:800; color:var(--color-accent-700);">Axis 6 · Maintenance</span><span style="font-size:10px; font-weight:700; padding:1px 6px; background:var(--color-accent); color:var(--color-bg);">vision</span></div>
+        <div class="code" style="font-size:16px; font-weight:700; margin:7px 0 4px;">OpenSSF Scorecard</div>
+        <div style="font-size:12.5px; color:color-mix(in srgb, var(--color-text) 70%, transparent);">Alive, funded, resilient?</div>
+      </div>
+    </div>
+    <div style="font-size:13px; margin-top:12px; color:color-mix(in srgb, var(--color-text) 60%, transparent);">Engines are pluggable. <b>v1 ships hygiene + security</b>; <b>license &amp; currency</b> complete the v1.x gate; <b>provenance &amp; maintenance</b> extend it — each axis a different question (used? vulnerable? allowed? patchable? authentic? maintained?), all behind one report.</div>
+  </section>
+
+  <!-- 03 · SIX MANIFEST FORMATS -->
+  <section style="padding:36px 0 8px;">
+    <div style="display:flex; align-items:baseline; gap:18px; border-bottom:2px solid var(--color-text); padding-bottom:10px; margin-bottom:8px;">
+      <span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:22px; color:var(--color-accent);">03</span>
+      <h2 style="font-size:26px; margin:0; letter-spacing:-0.01em;">Six manifest formats — resolved natively</h2>
+    </div>
+    <p style="font-size:14px; margin:0 0 22px; color:color-mix(in srgb, var(--color-text) 60%, transparent);">The manifest engine is the wedge: neither scanning engine parses conda/pixi manifests. No untrusted input is ever executed — <span class="code">yaml.safe_load</span> only.</p>
+    <div style="display:grid; grid-template-columns:repeat(3,1fr); border-top:2px solid var(--color-divider); border-left:2px solid var(--color-divider);">
+      <div style="border-right:2px solid var(--color-divider); border-bottom:2px solid var(--color-divider); padding:20px;">
+        <div class="code" style="font-size:15px; font-weight:700;">pyproject.toml</div>
+        <div style="font-size:13px; margin-top:8px; color:color-mix(in srgb, var(--color-text) 62%, transparent);">PEP 621 · Poetry · PDM</div>
+        <span class="tag tag-neutral code" style="margin-top:12px;">tomllib</span>
+      </div>
+      <div style="border-right:2px solid var(--color-divider); border-bottom:2px solid var(--color-divider); padding:20px;">
+        <div class="code" style="font-size:15px; font-weight:700;">pixi.toml</div>
+        <div style="font-size:13px; margin-top:8px; color:color-mix(in srgb, var(--color-text) 62%, transparent);">deps · pypi-deps · features</div>
+        <span class="tag tag-neutral code" style="margin-top:12px;">tomllib</span>
+      </div>
+      <div style="border-right:2px solid var(--color-divider); border-bottom:2px solid var(--color-divider); padding:20px;">
+        <div class="code" style="font-size:15px; font-weight:700;">requirements.txt</div>
+        <div style="font-size:13px; margin-top:8px; color:color-mix(in srgb, var(--color-text) 62%, transparent);">one requirement per line</div>
+        <span class="tag tag-neutral code" style="margin-top:12px;">re / line-parse</span>
+      </div>
+      <div style="border-right:2px solid var(--color-divider); border-bottom:2px solid var(--color-divider); padding:20px;">
+        <div class="code" style="font-size:15px; font-weight:700;">environment.yml</div>
+        <div style="font-size:13px; margin-top:8px; color:color-mix(in srgb, var(--color-text) 62%, transparent);">dependencies: + nested pip:</div>
+        <span class="tag tag-neutral code" style="margin-top:12px;">safe_load</span>
+      </div>
+      <div style="border-right:2px solid var(--color-divider); border-bottom:2px solid var(--color-divider); padding:20px; position:relative;">
+        <div class="code" style="font-size:15px; font-weight:700;">meta.yaml <span style="color:var(--color-accent-700);">v0</span></div>
+        <div style="font-size:13px; margin-top:8px; color:color-mix(in srgb, var(--color-text) 62%, transparent);">Jinja + <span class="code"># [selector]</span> lines</div>
+        <span class="tag tag-neutral code" style="margin-top:12px;">neutralize → safe_load</span>
+      </div>
+      <div style="border-right:2px solid var(--color-divider); border-bottom:2px solid var(--color-divider); padding:20px;">
+        <div class="code" style="font-size:15px; font-weight:700;">recipe.yaml <span style="color:var(--color-accent-700);">v1</span></div>
+        <div style="font-size:13px; margin-top:8px; color:color-mix(in srgb, var(--color-text) 62%, transparent);">requirements: run: block</div>
+        <span class="tag tag-neutral code" style="margin-top:12px;">safe_load</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 04 · PIPELINE -->
+  <section style="padding:36px 0 8px;">
+    <div style="display:flex; align-items:baseline; gap:18px; border-bottom:2px solid var(--color-text); padding-bottom:10px; margin-bottom:26px;">
+      <span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:22px; color:var(--color-accent);">04</span>
+      <h2 style="font-size:26px; margin:0; letter-spacing:-0.01em;">One invocation, one pipeline</h2>
+    </div>
+    <div style="display:flex; align-items:stretch; gap:0;">
+      <div style="flex:1; border:2px solid var(--color-text); padding:18px 16px;">
+        <div style="font-size:11px; font-weight:700; color:var(--color-accent);">STEP 1</div>
+        <div style="font-size:16px; font-weight:700; margin:6px 0 8px;">Discovery</div>
+        <div style="font-size:12.5px; line-height:1.4;">Union coverage — every manifest found is scanned and reported per-manifest. No single winner.</div>
+      </div>
+      <div style="display:flex; align-items:center; padding:0 8px; font-size:22px; color:var(--color-accent); font-weight:800;">→</div>
+      <div style="flex:1; border:2px solid var(--color-text); padding:18px 16px;">
+        <div style="font-size:11px; font-weight:700; color:var(--color-accent);">STEP 2</div>
+        <div style="font-size:16px; font-weight:700; margin:6px 0 8px;">Extraction</div>
+        <div style="font-size:12.5px; line-height:1.4;">Flatten &amp; de-dup dependency names; filter base packages. No execution of untrusted input.</div>
+      </div>
+      <div style="display:flex; align-items:center; padding:0 8px; font-size:22px; color:var(--color-accent); font-weight:800;">→</div>
+      <div style="flex:1.5; border:2px solid var(--color-accent); padding:14px 16px; background:var(--color-accent-100);">
+        <div style="font-size:11px; font-weight:700; color:var(--color-accent-700);">STEP 3 · PARALLEL</div>
+        <div style="display:flex; flex-direction:column; gap:7px; margin-top:9px;">
+          <div style="border:1.5px solid var(--color-accent-700); padding:7px 10px; font-size:12.5px;"><b>A · Hygiene</b> — deptry</div>
+          <div style="border:1.5px solid var(--color-accent-700); padding:7px 10px; font-size:12.5px;"><b>B · Security</b> — osv-scanner</div>
+        </div>
+      </div>
+      <div style="display:flex; align-items:center; padding:0 8px; font-size:22px; color:var(--color-accent); font-weight:800;">→</div>
+      <div style="flex:1; border:2px solid var(--color-text); padding:18px 16px;">
+        <div style="font-size:11px; font-weight:700; color:var(--color-accent);">STEP 4</div>
+        <div style="font-size:16px; font-weight:700; margin:6px 0 8px;">Aggregation</div>
+        <div style="font-size:12.5px; line-height:1.4;">Both branches merge into one <span class="code">ComplianceReport</span> + human summary.</div>
+      </div>
+      <div style="display:flex; align-items:center; padding:0 8px; font-size:22px; color:var(--color-accent); font-weight:800;">→</div>
+      <div style="flex:1; border:2px solid var(--color-text); padding:18px 16px;">
+        <div style="font-size:11px; font-weight:700; color:var(--color-accent);">STEP 5</div>
+        <div style="font-size:16px; font-weight:700; margin:6px 0 8px;">Teardown</div>
+        <div style="font-size:12.5px; line-height:1.4;">Ephemeral files removed via <span class="code">try/finally</span> — never mutate host or source.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 05 · OUTPUTS -->
+  <section style="padding:36px 0 8px;">
+    <div style="display:flex; align-items:baseline; gap:18px; border-bottom:2px solid var(--color-text); padding-bottom:10px; margin-bottom:26px;">
+      <span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:22px; color:var(--color-accent);">05</span>
+      <h2 style="font-size:26px; margin:0; letter-spacing:-0.01em;">What comes out</h2>
+    </div>
+    <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:0; border-left:2px solid var(--color-divider);">
+      <div style="border-right:2px solid var(--color-divider); padding:0 22px;">
+        <div style="font-size:15px; font-weight:700; margin-bottom:8px;">ComplianceReport JSON</div>
+        <p style="font-size:13.5px; line-height:1.45; margin:0; color:color-mix(in srgb, var(--color-text) 72%, transparent);">The canonical artifact — schema-validated against a committed <span class="code">report-schema.json</span> (JSON Schema 2020-12).</p>
+      </div>
+      <div style="border-right:2px solid var(--color-divider); padding:0 22px;">
+        <div style="font-size:15px; font-weight:700; margin-bottom:8px;">Human summary</div>
+        <p style="font-size:13.5px; line-height:1.45; margin:0; color:color-mix(in srgb, var(--color-text) 72%, transparent);">A scannable stdout rollup for CI logs — the same data, never the source of truth.</p>
+      </div>
+      <div style="border-right:2px solid var(--color-divider); padding:0 22px;">
+        <div style="font-size:15px; font-weight:700; margin-bottom:8px;">CycloneDX SBOM</div>
+        <p style="font-size:13.5px; line-height:1.45; margin:0; color:color-mix(in srgb, var(--color-text) 72%, transparent);">Valid BOM with correct purls (<span class="code">pkg:pypi</span> / <span class="code">pkg:conda</span>) + honest per-manifest coverage.</p>
+      </div>
+      <div style="padding:0 22px;">
+        <div style="font-size:15px; font-weight:700; margin-bottom:8px;">Actionable findings only</div>
+        <p style="font-size:13.5px; line-height:1.45; margin:0; color:color-mix(in srgb, var(--color-text) 72%, transparent);">Package + location for hygiene; advisory ID + affected/fixed version for security. No theoretical noise.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 06 · VERDICT LATTICE + GATE -->
+  <section style="padding:36px 0 8px;">
+    <div style="display:flex; align-items:baseline; gap:18px; border-bottom:2px solid var(--color-text); padding-bottom:10px; margin-bottom:26px;">
+      <span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:22px; color:var(--color-accent);">06</span>
+      <h2 style="font-size:26px; margin:0; letter-spacing:-0.01em;">The severity-tiered gate</h2>
+    </div>
+    <div style="display:grid; grid-template-columns:1.15fr 1fr; gap:40px;">
+      <div>
+        <div style="font-size:12px; letter-spacing:0.08em; text-transform:uppercase; font-weight:700; color:color-mix(in srgb, var(--color-text) 55%, transparent); margin-bottom:14px;">Verdict lattice — highest wins</div>
+        <div style="display:flex; flex-direction:column; gap:0; border:2px solid var(--color-text);">
+          <div style="display:flex; justify-content:space-between; align-items:center; padding:11px 16px; background:var(--color-accent); color:var(--color-bg);"><span class="code" style="font-weight:700;">error</span><span style="font-size:12px; font-weight:700;">exit 2 · operational</span></div>
+          <div style="display:flex; justify-content:space-between; align-items:center; padding:11px 16px; background:var(--color-accent-200); border-top:2px solid var(--color-text);"><span class="code" style="font-weight:700;">policy-violation</span><span style="font-size:12px; font-weight:700;">exit 1 · blocks merge</span></div>
+          <div style="display:flex; justify-content:space-between; align-items:center; padding:11px 16px; background:var(--color-accent-200); border-top:2px solid var(--color-divider);"><span class="code" style="font-weight:700;">indeterminate</span><span style="font-size:12px; font-weight:700;">exit 1 · unproven</span></div>
+          <div style="display:flex; justify-content:space-between; align-items:center; padding:11px 16px; border-top:2px solid var(--color-text);"><span class="code" style="font-weight:700;">warn</span><span style="font-size:12px; font-weight:600;">exit 0 · non-blocking</span></div>
+          <div style="display:flex; justify-content:space-between; align-items:center; padding:11px 16px; border-top:2px solid var(--color-divider);"><span class="code" style="font-weight:700;">bypassed</span><span style="font-size:12px; font-weight:600;">exit 0 · audited waiver</span></div>
+          <div style="display:flex; justify-content:space-between; align-items:center; padding:11px 16px; border-top:2px solid var(--color-divider);"><span class="code" style="font-weight:700;">clean</span><span style="font-size:12px; font-weight:600;">exit 0</span></div>
+          <div style="display:flex; justify-content:space-between; align-items:center; padding:11px 16px; border-top:2px solid var(--color-divider); color:color-mix(in srgb, var(--color-text) 62%, transparent);"><span class="code" style="font-weight:700;">not-applicable</span><span style="font-size:12px; font-weight:600;">exit 0 · non-Python</span></div>
+        </div>
+        <div style="margin-top:14px; display:flex; gap:8px; align-items:center;">
+          <span style="font-size:12.5px; color:color-mix(in srgb, var(--color-text) 60%, transparent);">Frozen exit enum</span>
+          <span class="tag tag-outline code">0</span><span class="tag tag-outline code">1</span><span class="tag tag-outline code">2</span><span class="tag tag-outline code">130</span>
+        </div>
+      </div>
+      <div>
+        <div style="border-bottom:2px solid var(--color-divider); padding-bottom:18px; margin-bottom:18px;">
+          <div style="font-size:15px; font-weight:700;">Default policy</div>
+          <p style="font-size:14px; line-height:1.45; margin:8px 0 0;">v1 blocks on <b>CVSS-critical CVEs only</b>; high/medium/low + all hygiene warn. <b>v1.x adds a KEV tier</b> — any CISA-KEV-listed advisory affecting a pinned version blocks regardless of CVSS. Configurable via <span class="code">--fail-on</span>, <span class="code">max_critical</span>, <span class="code">--fail-on-kev</span>. Replaces the brittle "any finding blocks" gate.</p>
+        </div>
+        <div style="border-bottom:2px solid var(--color-divider); padding-bottom:18px; margin-bottom:18px;">
+          <div style="font-size:15px; font-weight:700;">Waivers as code</div>
+          <p style="font-size:14px; line-height:1.45; margin:8px 0 0;"><span class="code">--bypass --reason</span> emits an expiring waiver stanza (default <b>14 days</b>) the team commits. The tool <b>reads it, never writes the repo</b> — loud, recorded, and <span class="code">review_required</span>.</p>
+        </div>
+        <div>
+          <div style="font-size:15px; font-weight:700;">Typed errors — each with an owner</div>
+          <div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:10px;">
+            <span class="tag tag-outline code">unparsable-manifest</span>
+            <span class="tag tag-outline code">engine-unavailable</span>
+            <span class="tag tag-outline code">engine-crash</span>
+            <span class="tag tag-outline code">internal-error</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PART II -->
+  <div style="margin:40px -56px 0; background:var(--color-text); color:var(--color-bg); padding:20px 56px; display:flex; justify-content:space-between; align-items:baseline;">
+    <div style="display:flex; align-items:baseline; gap:16px;">
+      <span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:14px; letter-spacing:0.16em; color:var(--color-accent-400);">PART II</span>
+      <span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:23px; letter-spacing:-0.01em;">In practice</span>
+    </div>
+    <span style="font-size:12px; letter-spacing:0.1em; text-transform:uppercase; font-weight:700; opacity:0.7;">Running it today</span>
+  </div>
+
+  <!-- 07 · SCOPE & USERS -->
+  <section style="padding:36px 0 8px;">
+    <div style="display:flex; align-items:baseline; gap:18px; border-bottom:2px solid var(--color-text); padding-bottom:10px; margin-bottom:26px;">
+      <span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:22px; color:var(--color-accent);">07</span>
+      <h2 style="font-size:26px; margin:0; letter-spacing:-0.01em;">Who runs it, at what scale</h2>
+    </div>
+    <div style="display:grid; grid-template-columns:1fr 1fr 1fr auto; gap:0; border-left:2px solid var(--color-divider);">
+      <div style="border-right:2px solid var(--color-divider); padding:0 24px;">
+        <div style="font-size:15px; font-weight:700;">Platform Engineers</div>
+        <div style="font-size:13.5px; margin-top:6px; color:color-mix(in srgb, var(--color-text) 70%, transparent);">CI/CD pipelines</div>
+      </div>
+      <div style="border-right:2px solid var(--color-divider); padding:0 24px;">
+        <div style="font-size:15px; font-weight:700;">DevSecOps Engineers</div>
+        <div style="font-size:13.5px; margin-top:6px; color:color-mix(in srgb, var(--color-text) 70%, transparent);">Compliance &amp; SBOM data</div>
+      </div>
+      <div style="border-right:2px solid var(--color-divider); padding:0 24px;">
+        <div style="font-size:15px; font-weight:700;">Python developers</div>
+        <div style="font-size:13.5px; margin-top:6px; color:color-mix(in srgb, var(--color-text) 70%, transparent);">pip- + conda-sourced, any shape</div>
+      </div>
+      <div style="padding:0 0 0 28px; text-align:right;">
+        <div style="font-size:44px; font-weight:800; font-family:'Archivo Expanded','Archivo',sans-serif; line-height:1; color:var(--color-accent);">20k+</div>
+        <div style="font-size:13px; margin-top:6px; color:color-mix(in srgb, var(--color-text) 70%, transparent);">repo fleet, concurrent<br>(NFR1 scalability)</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- COVERAGE RINGS -->
+  <section style="padding:36px 0 8px;">
+    <div style="display:flex; align-items:baseline; gap:18px; border-bottom:2px solid var(--color-text); padding-bottom:10px; margin-bottom:8px;">
+      <span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:22px; color:var(--color-accent);">◎</span>
+      <h2 style="font-size:26px; margin:0; letter-spacing:-0.01em;">Three rings — scan the whole supply chain</h2>
+    </div>
+    <p style="font-size:14px; margin:0 0 26px; color:color-mix(in srgb, var(--color-text) 60%, transparent);">Warden runs at three depths. The further out it scans, the more it <b>prevents</b> rather than reports.</p>
+    <div style="display:flex; align-items:stretch; gap:0;">
+      <div style="flex:1; border:2px solid var(--color-neutral-400); display:flex; flex-direction:column;">
+        <div style="background:var(--color-neutral-300); color:var(--color-text); padding:14px 16px;">
+          <div style="display:flex; justify-content:space-between; align-items:center;"><span style="font-size:10px; letter-spacing:0.08em; text-transform:uppercase; font-weight:700; color:color-mix(in srgb, var(--color-text) 60%, transparent);">Outside the firewall</span><span style="font-size:10px; font-weight:700; padding:1px 6px; background:var(--color-neutral-400);">vision</span></div>
+          <div style="font-size:18px; font-weight:800; margin-top:4px;">Public upstream</div>
+        </div>
+        <div style="padding:18px 16px; font-size:13px; line-height:1.45; flex:1;">Scan <b>PyPI &amp; conda-forge</b> themselves — malicious packages, typosquats, name-squatting, stale or abandoned feedstocks. Threat intel on the open ecosystem.</div>
+      </div>
+      <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding:0 10px;"><span style="font-size:22px; color:var(--color-accent); font-weight:800;">→</span><span style="font-size:10px; font-weight:700; color:var(--color-accent-700); text-transform:uppercase; letter-spacing:0.06em; margin-top:4px;">blocklists</span></div>
+      <div style="flex:1; border:2px solid var(--color-accent); display:flex; flex-direction:column;">
+        <div style="background:var(--color-accent); color:var(--color-bg); padding:14px 16px;">
+          <div style="display:flex; justify-content:space-between; align-items:center;"><span style="font-size:10px; letter-spacing:0.08em; text-transform:uppercase; font-weight:700; opacity:0.85;">The firewall</span><span style="font-size:10px; font-weight:700; padding:1px 6px; background:var(--color-bg); color:var(--color-accent);">v1.x</span></div>
+          <div style="font-size:18px; font-weight:800; margin-top:4px;">Registry perimeter</div>
+        </div>
+        <div style="padding:18px 16px; font-size:13px; line-height:1.45; flex:1; background:var(--color-accent-100);">Turn that intel into <b>block / allow lists on Artifactory / JFrog</b> — quarantine bad packages so they never cross the firewall. A census of everything that enters.</div>
+      </div>
+      <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding:0 10px;"><span style="font-size:22px; color:var(--color-accent); font-weight:800;">→</span><span style="font-size:10px; font-weight:700; color:var(--color-accent-700); text-transform:uppercase; letter-spacing:0.06em; margin-top:4px;">clean pulls</span></div>
+      <div style="flex:1; border:2px solid var(--color-text); display:flex; flex-direction:column;">
+        <div style="background:var(--color-text); color:var(--color-bg); padding:14px 16px;">
+          <div style="display:flex; justify-content:space-between; align-items:center;"><span style="font-size:10px; letter-spacing:0.08em; text-transform:uppercase; font-weight:700; opacity:0.75;">Inside</span><span style="font-size:10px; font-weight:700; padding:1px 6px; background:var(--color-accent-400); color:var(--color-text);">today</span></div>
+          <div style="font-size:18px; font-weight:800; margin-top:4px;">Consumption edge</div>
+        </div>
+        <div style="padding:18px 16px; font-size:13px; line-height:1.45; flex:1;">Scan <b>repos, desktops &amp; CI</b> — the six axes on what apps actually pull. Precise per-project, but only sees what you scan.</div>
+      </div>
+    </div>
+    <div style="border:2px solid var(--color-text); padding:16px 22px; margin-top:24px; font-size:14px; line-height:1.5;">Scan the <b>edge</b> and you report what you found; scan the <b>supply</b> and you prevent what enters. <span style="color:color-mix(in srgb, var(--color-text) 62%, transparent);">The registry &amp; upstream rings are a security · license · provenance census — hygiene (unused deps) stays a repo-side axis.</span></div>
+  </section>
+
+  <!-- 08 · LOCAL MODE -->
+  <section style="padding:36px 0 8px;">
+    <div style="display:flex; align-items:baseline; gap:18px; border-bottom:2px solid var(--color-text); padding-bottom:10px; margin-bottom:8px;">
+      <span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:22px; color:var(--color-accent);">08</span>
+      <h2 style="font-size:26px; margin:0; letter-spacing:-0.01em;">Local &amp; workstation mode</h2>
+    </div>
+    <p style="font-size:14px; margin:0 0 24px; color:color-mix(in srgb, var(--color-text) 60%, transparent);">CI is the primary consumer — but the supported <b>first contact is a developer at a terminal</b>. Same CLI, same exit codes.</p>
+    <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:24px;">
+      <div style="border:2px solid var(--color-text); padding:24px 22px;">
+        <div style="font-size:12px; letter-spacing:0.08em; text-transform:uppercase; font-weight:800; color:var(--color-accent-700);">First contact</div>
+        <div style="font-size:18px; font-weight:800; margin:8px 0; line-height:1.1;"><span class="code">--warn-only</span> at a terminal</div>
+        <p style="font-size:13.5px; line-height:1.45; margin:0; color:color-mix(in srgb, var(--color-text) 74%, transparent);">Trial the gate and clear a finding before wiring CI — adoption realistically starts here, not in a pipeline.</p>
+      </div>
+      <div style="border:2px solid var(--color-text); padding:24px 22px;">
+        <div style="font-size:12px; letter-spacing:0.08em; text-transform:uppercase; font-weight:800; color:var(--color-accent-700);">Waiver authoring</div>
+        <div style="font-size:18px; font-weight:800; margin:8px 0; line-height:1.1;">Local-only by design</div>
+        <p style="font-size:13.5px; line-height:1.45; margin:0; color:color-mix(in srgb, var(--color-text) 74%, transparent);"><span class="code">--bypass</span> emits a waiver stanza <b>for the human to commit</b> — the tool never writes the repo, so CI can't do this.</p>
+      </div>
+      <div style="border:2px solid var(--color-text); padding:24px 22px;">
+        <div style="font-size:12px; letter-spacing:0.08em; text-transform:uppercase; font-weight:800; color:var(--color-accent-700);">Environment debugging</div>
+        <div style="font-size:18px; font-weight:800; margin:8px 0; line-height:1.1;">Reproduce runner failures</div>
+        <p style="font-size:13.5px; line-height:1.45; margin:0; color:color-mix(in srgb, var(--color-text) 74%, transparent);">Chase an <span class="code">engine-unavailable</span> exit 2 outside the runner image; a <span class="code">doctor</span> self-check verifies the engines are present.</p>
+      </div>
+    </div>
+    <div style="border:2px solid var(--color-accent); background:var(--color-accent-100); padding:16px 22px; margin-top:24px; font-size:14px; font-weight:600;">Local mode never softens the gate — same verdict lattice, same exit codes, TTY-colour auto-detect, zero prompts.</div>
+  </section>
+
+  <!-- 09 · FLOW PATHS -->
+  <section style="padding:36px 0 8px;">
+    <div style="display:flex; align-items:baseline; gap:18px; border-bottom:2px solid var(--color-text); padding-bottom:10px; margin-bottom:8px;">
+      <span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:22px; color:var(--color-accent);">09</span>
+      <h2 style="font-size:26px; margin:0; letter-spacing:-0.01em;">Three ways a repo flows through the scanner</h2>
+    </div>
+    <p style="font-size:14px; margin:0 0 26px; color:color-mix(in srgb, var(--color-text) 60%, transparent);">The same one invocation resolves differently by what it finds. Each discovered manifest travels one of these paths — reported per-manifest under union coverage.</p>
+    <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:24px; align-items:stretch;">
+
+      <!-- PATH A · PyPI -->
+      <div style="border:2px solid var(--color-text); display:flex; flex-direction:column;">
+        <div style="background:var(--color-text); color:var(--color-bg); padding:16px 18px;">
+          <div style="font-size:11px; letter-spacing:0.09em; text-transform:uppercase; font-weight:700; opacity:0.75;">Path A · native</div>
+          <div style="font-size:19px; font-weight:800; margin-top:4px;">PyPI project</div>
+        </div>
+        <div style="padding:20px; display:flex; flex-direction:column; flex:1;">
+          <div style="border:2px solid var(--color-divider); padding:12px 14px;">
+            <div style="font-size:11px; font-weight:700; letter-spacing:0.06em; color:var(--color-accent);">DETECT</div>
+            <div style="font-size:13px; line-height:1.4; margin-top:5px;"><span class="code">pyproject.toml</span> · <span class="code">requirements.txt</span> · <span class="code">*.lock</span></div>
+          </div>
+          <div style="text-align:center; font-size:18px; color:var(--color-accent); font-weight:800; line-height:1.9;">↓</div>
+          <div style="border:2px solid var(--color-divider); padding:12px 14px;">
+            <div style="font-size:11px; font-weight:700; letter-spacing:0.06em; color:var(--color-accent);">DELEGATE</div>
+            <div style="font-size:13px; line-height:1.4; margin-top:5px;"><b>deptry</b> reads the source tree natively · <b>osv-scanner</b> reads the native lockfile</div>
+          </div>
+          <div style="text-align:center; font-size:18px; color:var(--color-accent); font-weight:800; line-height:1.9;">↓</div>
+          <div style="border:2px solid var(--color-divider); padding:12px 14px;">
+            <div style="font-size:11px; font-weight:700; letter-spacing:0.06em; color:var(--color-accent);">UNIFY</div>
+            <div style="font-size:13px; line-height:1.4; margin-top:5px;">Both signals merge into one <span class="code">ComplianceReport</span></div>
+          </div>
+          <div style="text-align:center; font-size:18px; color:var(--color-accent); font-weight:800; line-height:1.9;">↓</div>
+          <div style="border:2px solid var(--color-text); background:var(--color-neutral-200); padding:12px 14px; margin-top:auto;">
+            <div style="font-size:11px; font-weight:700; letter-spacing:0.06em;">OUTCOME</div>
+            <div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:8px;">
+              <span class="tag tag-outline code">clean</span><span class="tag tag-outline code">warn</span><span class="tag tag-accent code">policy-violation</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PATH B · Conda/Pixi wedge -->
+      <div style="border:2px solid var(--color-accent); display:flex; flex-direction:column;">
+        <div style="background:var(--color-accent); color:var(--color-bg); padding:16px 18px;">
+          <div style="font-size:11px; letter-spacing:0.09em; text-transform:uppercase; font-weight:700; opacity:0.85;">Path B · the E1 wedge</div>
+          <div style="font-size:19px; font-weight:800; margin-top:4px;">Conda / Pixi project</div>
+        </div>
+        <div style="padding:20px; display:flex; flex-direction:column; flex:1;">
+          <div style="border:2px solid var(--color-accent-300); padding:12px 14px;">
+            <div style="font-size:11px; font-weight:700; letter-spacing:0.06em; color:var(--color-accent-700);">DETECT</div>
+            <div style="font-size:13px; line-height:1.4; margin-top:5px;"><span class="code">environment.yml</span> · <span class="code">meta.yaml</span> · <span class="code">recipe.yaml</span> · <span class="code">pixi.toml</span></div>
+          </div>
+          <div style="text-align:center; font-size:18px; color:var(--color-accent); font-weight:800; line-height:1.9;">↓</div>
+          <div style="border:2px solid var(--color-accent-300); padding:12px 14px;">
+            <div style="font-size:11px; font-weight:700; letter-spacing:0.06em; color:var(--color-accent-700);">BRIDGE</div>
+            <div style="font-size:13px; line-height:1.4; margin-top:5px;">Neither engine parses these — the manifest engine extracts deps &amp; synthesizes a version-pinned <span class="code">requirements.txt</span> from <span class="code">pixi.lock</span> / <span class="code">conda-lock</span></div>
+          </div>
+          <div style="text-align:center; font-size:18px; color:var(--color-accent); font-weight:800; line-height:1.9;">↓</div>
+          <div style="border:2px solid var(--color-accent-300); padding:12px 14px;">
+            <div style="font-size:11px; font-weight:700; letter-spacing:0.06em; color:var(--color-accent-700);">UNIFY</div>
+            <div style="font-size:13px; line-height:1.4; margin-top:5px;"><b>deptry</b> + <b>osv-scanner</b> run over the synthesized input</div>
+          </div>
+          <div style="text-align:center; font-size:18px; color:var(--color-accent); font-weight:800; line-height:1.9;">↓</div>
+          <div style="border:2px solid var(--color-accent); background:var(--color-accent-100); padding:12px 14px; margin-top:auto;">
+            <div style="font-size:11px; font-weight:700; letter-spacing:0.06em; color:var(--color-accent-700);">OUTCOME</div>
+            <div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:8px;">
+              <span class="tag tag-outline code">coverage-flagged</span><span class="tag tag-accent code">indeterminate</span>
+            </div>
+            <div style="font-size:12px; line-height:1.35; margin-top:8px; color:color-mix(in srgb, var(--color-text) 68%, transparent);">Name-only fallback records weaker coverage — routes to <span class="code">indeterminate</span>, never a silent pass.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PATH C · Non-Python -->
+      <div style="border:2px solid var(--color-neutral-400); display:flex; flex-direction:column;">
+        <div style="background:var(--color-neutral-300); color:var(--color-text); padding:16px 18px;">
+          <div style="font-size:11px; letter-spacing:0.09em; text-transform:uppercase; font-weight:700; color:color-mix(in srgb, var(--color-text) 60%, transparent);">Path C · out of scope</div>
+          <div style="font-size:19px; font-weight:800; margin-top:4px;">Non-Python repo</div>
+        </div>
+        <div style="padding:20px; display:flex; flex-direction:column; flex:1;">
+          <div style="border:2px solid var(--color-divider); padding:12px 14px;">
+            <div style="font-size:11px; font-weight:700; letter-spacing:0.06em; color:color-mix(in srgb, var(--color-text) 55%, transparent);">DETECT</div>
+            <div style="font-size:13px; line-height:1.4; margin-top:5px;">No supported Python / conda manifest at the root</div>
+          </div>
+          <div style="text-align:center; font-size:18px; color:var(--color-neutral-500); font-weight:800; line-height:1.9;">↓</div>
+          <div style="border:2px solid var(--color-divider); padding:12px 14px;">
+            <div style="font-size:11px; font-weight:700; letter-spacing:0.06em; color:color-mix(in srgb, var(--color-text) 55%, transparent);">SKIP</div>
+            <div style="font-size:13px; line-height:1.4; margin-top:5px;">Both engines bypassed — nothing to scan, nothing synthesized</div>
+          </div>
+          <div style="text-align:center; font-size:18px; color:var(--color-neutral-500); font-weight:800; line-height:1.9;">↓</div>
+          <div style="border:2px solid var(--color-divider); padding:12px 14px;">
+            <div style="font-size:11px; font-weight:700; letter-spacing:0.06em; color:color-mix(in srgb, var(--color-text) 55%, transparent);">REPORT</div>
+            <div style="font-size:13px; line-height:1.4; margin-top:5px;">Status recorded honestly so fleet dashboards don't see a failure</div>
+          </div>
+          <div style="text-align:center; font-size:18px; color:var(--color-neutral-500); font-weight:800; line-height:1.9;">↓</div>
+          <div style="border:2px solid var(--color-neutral-400); background:var(--color-neutral-200); padding:12px 14px; margin-top:auto;">
+            <div style="font-size:11px; font-weight:700; letter-spacing:0.06em; color:color-mix(in srgb, var(--color-text) 55%, transparent);">OUTCOME</div>
+            <div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:8px;">
+              <span class="tag tag-neutral code">not-applicable</span><span class="tag tag-neutral code">exit 0</span>
+            </div>
+            <div style="font-size:12px; line-height:1.35; margin-top:8px; color:color-mix(in srgb, var(--color-text) 68%, transparent);">Benign by design — a non-Python repo in the fleet never masquerades as a failure.</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- 10 · WHICH TOOL -->
+  <section style="padding:36px 0 8px;">
+    <div style="display:flex; align-items:baseline; gap:18px; border-bottom:2px solid var(--color-text); padding-bottom:10px; margin-bottom:8px;">
+      <span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:22px; color:var(--color-accent);">10</span>
+      <h2 style="font-size:26px; margin:0; letter-spacing:-0.01em;">Which tool, when</h2>
+    </div>
+    <p style="font-size:14px; margin:0 0 20px; color:color-mix(in srgb, var(--color-text) 60%, transparent);">Warden is the fleet edge — one of several scanning surfaces. It complements, not replaces, the atlas and container tooling.</p>
+    <table style="width:100%; border-collapse:collapse; font-size:14px;">
+      <thead>
+        <tr style="background:var(--color-text); color:var(--color-bg); text-align:left;">
+          <th style="padding:12px 16px; width:60%; font-size:11px; letter-spacing:0.08em; text-transform:uppercase; font-weight:700;">What you have</th>
+          <th style="padding:12px 16px; font-size:11px; letter-spacing:0.08em; text-transform:uppercase; font-weight:700;">Reach for</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="background:var(--color-accent-100); border-bottom:2px solid var(--color-text);"><td style="padding:12px 16px;">Any repo, any org, <b>no atlas</b> — a CI or terminal gate on your pinned deps (hygiene + CVEs)</td><td style="padding:12px 16px; font-weight:800;">Warden <span style="font-weight:400; color:color-mix(in srgb, var(--color-text) 60%, transparent);">(this tool)</span></td></tr>
+        <tr style="border-bottom:1px solid var(--color-divider);"><td style="padding:12px 16px;">The atlas host — gap / version-lag buckets, freshness-percentile policy, packaging worklists</td><td style="padding:12px 16px; font-weight:700;" class="code">inventory-match --policy</td></tr>
+        <tr style="border-bottom:1px solid var(--color-divider);"><td style="padding:12px 16px;">Anything exotic — containers, K8s, live envs, third-party SBOMs, non-Python ecosystems</td><td style="padding:12px 16px; font-weight:700;" class="code">scan-project</td></tr>
+        <tr style="border-bottom:2px solid var(--color-text);"><td style="padding:12px 16px;">The migrated Kedro pipeline (future)</td><td style="padding:12px 16px; font-weight:700;">the FR-18 unified gate <span style="font-weight:400; color:color-mix(in srgb, var(--color-text) 60%, transparent);">— assembles Warden's schema</span></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- PART III -->
+  <div style="margin:40px -56px 0; background:var(--color-text); color:var(--color-bg); padding:20px 56px;">
+    <div style="display:flex; justify-content:space-between; align-items:baseline;">
+      <div style="display:flex; align-items:baseline; gap:16px;">
+        <span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:14px; letter-spacing:0.16em; color:var(--color-accent-400);">PART III</span>
+        <span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:23px; letter-spacing:-0.01em;">Where it's going</span>
+      </div>
+      <span style="font-size:12px; letter-spacing:0.1em; text-transform:uppercase; font-weight:700; opacity:0.7;">Roadmap · not yet shipped</span>
+    </div>
+    <div style="font-size:13px; opacity:0.72; margin-top:8px;">Everything from here down is roadmap and vision — v1 is the gate described in Parts I–II.</div>
+  </div>
+
+  <!-- 11 · ROADMAP -->
+  <section style="padding:36px 0 8px;">
+    <div style="display:flex; align-items:baseline; gap:18px; border-bottom:2px solid var(--color-text); padding-bottom:10px; margin-bottom:8px;">
+      <span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:22px; color:var(--color-accent);">11</span>
+      <h2 style="font-size:26px; margin:0; letter-spacing:-0.01em;">Beyond v1 — now, next &amp; later</h2>
+    </div>
+    <p style="font-size:14px; margin:0 0 22px; color:color-mix(in srgb, var(--color-text) 60%, transparent);">v1 ships the hygiene + security gate. <b>License</b> and <b>currency</b> complete the four axes next; the same manifest engine and report contract then generalize into a full policy platform — sequenced by how soon each piece lands.</p>
+    <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:24px;">
+      <div style="grid-column:1 / -1; display:flex; align-items:center; gap:14px; margin-top:4px;">
+        <span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:13px; letter-spacing:0.1em; padding:5px 14px; background:var(--color-accent); color:var(--color-bg);">NOW</span>
+        <span style="font-size:14px; font-weight:700;">v1.x — completes the four axes</span>
+        <span style="flex:1; height:2px; background:var(--color-divider);"></span>
+      </div>
+      <div style="border:2px solid var(--color-text); border-top:5px solid var(--color-accent); padding:24px 22px; display:flex; flex-direction:column;">
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent)" stroke-width="2.1" stroke-linecap="square"><path d="M5 3h9l5 5v13H5z"></path><path d="M14 3v5h5"></path><path d="M9 13h6M9 17h6"></path></svg>
+        <div style="font-size:18px; font-weight:800; margin-top:14px; line-height:1.1;">License compliance</div>
+        <p style="font-size:13.5px; line-height:1.45; margin:8px 0 0; color:color-mix(in srgb, var(--color-text) 74%, transparent);">Metadata-based, no source scan — SPDX from the conda recipe <span class="code">about:</span> and PyPI package metadata, normalized with <span class="code">license-expression</span>, gated by allowed families; unknown → indeterminate, and written into the SBOM. <b>(Axis 3)</b></p>
+      </div>
+      <div style="border:2px solid var(--color-text); border-top:5px solid var(--color-accent); padding:24px 22px; display:flex; flex-direction:column;">
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent)" stroke-width="2.1" stroke-linecap="square"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg>
+        <div style="font-size:18px; font-weight:800; margin-top:14px; line-height:1.1;">Currency &amp; supportability</div>
+        <p style="font-size:13.5px; line-height:1.45; margin:8px 0 0; color:color-mix(in srgb, var(--color-text) 74%, transparent);">Is each dep — and the Python runtime — on a supported line: LTS · N / N-1 · not EOL? Only current versions receive security patches. <b>(Axis 4)</b></p>
+      </div>
+      <div style="border:2px solid var(--color-text); border-top:5px solid var(--color-accent); padding:24px 22px; display:flex; flex-direction:column;">
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent)" stroke-width="2.1" stroke-linecap="square"><path d="M4 4v16"></path><path d="M4 20h16"></path><path d="M8 20V13M13 20V9M18 20V15"></path></svg>
+        <div style="font-size:18px; font-weight:800; margin-top:14px; line-height:1.1;">Baseline &amp; grandfathering</div>
+        <p style="font-size:13.5px; line-height:1.45; margin:8px 0 0; color:color-mix(in srgb, var(--color-text) 74%, transparent);">Accept existing debt and gate only <b>new</b> findings — teams adopt without hitting a wall of red on day one.</p>
+      </div>
+      <div style="border:2px solid var(--color-text); border-top:5px solid var(--color-accent); padding:24px 22px; display:flex; flex-direction:column;">
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent)" stroke-width="2.1" stroke-linecap="square"><path d="M6 3v12"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="6" r="3"></circle><path d="M18 9v3a6 6 0 0 1-6 6H9"></path></svg>
+        <div style="font-size:18px; font-weight:800; margin-top:14px; line-height:1.1;">Automated fix PRs</div>
+        <p style="font-size:13.5px; line-height:1.45; margin:8px 0 0; color:color-mix(in srgb, var(--color-text) 74%, transparent);">Open remediation pull requests, not just findings — bump the fixed version and route it for review.</p>
+      </div>
+      <div style="grid-column:1 / -1; display:flex; align-items:center; gap:14px; margin-top:12px;">
+        <span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:13px; letter-spacing:0.1em; padding:5px 14px; border:2px solid var(--color-text);">NEXT</span>
+        <span style="font-size:14px; font-weight:700;">v2 — the governance layer</span>
+        <span style="flex:1; height:2px; background:var(--color-divider);"></span>
+      </div>
+      <div style="border:2px solid var(--color-text); border-top:5px solid var(--color-accent); padding:24px 22px; display:flex; flex-direction:column;">
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent)" stroke-width="2.1" stroke-linecap="square"><path d="M4 5h16M4 12h16M4 19h16"></path><path d="M8 5v14"></path></svg>
+        <div style="font-size:18px; font-weight:800; margin-top:14px; line-height:1.1;">Pluggable scanners</div>
+        <p style="font-size:13.5px; line-height:1.45; margin:8px 0 0; color:color-mix(in srgb, var(--color-text) 74%, transparent);">Run multiple security backends behind one report — corroborate findings across engines, not a single source.</p>
+      </div>
+      <div style="border:2px solid var(--color-text); border-top:5px solid var(--color-accent); padding:24px 22px; display:flex; flex-direction:column;">
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent)" stroke-width="2.1" stroke-linecap="square"><path d="M9 11l2 2 4-4"></path><path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3z"></path></svg>
+        <div style="font-size:18px; font-weight:800; margin-top:14px; line-height:1.1;">Allowlist enforcement</div>
+        <p style="font-size:13.5px; line-height:1.45; margin:8px 0 0; color:color-mix(in srgb, var(--color-text) 74%, transparent);">Check every dependency against an approved-library registry — anything off-list is flagged before it lands.</p>
+      </div>
+      <div style="border:2px solid var(--color-text); border-top:5px solid var(--color-accent); padding:24px 22px; display:flex; flex-direction:column;">
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent)" stroke-width="2.1" stroke-linecap="square"><path d="M3 12h4l2 6 4-14 2 8h6"></path></svg>
+        <div style="font-size:18px; font-weight:800; margin-top:14px; line-height:1.1;">Maintenance &amp; health</div>
+        <p style="font-size:13.5px; line-height:1.45; margin:8px 0 0; color:color-mix(in srgb, var(--color-text) 74%, transparent);">Is the upstream alive, funded and resilient? Scores cadence, bus-factor and abandonment risk — feeding the OSS give-back loop: fund it, contribute back, or fix at source. <b>(Axis 6)</b></p>
+      </div>
+      <div style="border:2px solid var(--color-text); border-top:5px solid var(--color-accent); padding:24px 22px; display:flex; flex-direction:column;">
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent)" stroke-width="2.1" stroke-linecap="square"><path d="M4 5h6M4 12h6M4 19h6"></path><path d="M14 6l2 2 4-4M14 17l2 2 4-4"></path></svg>
+        <div style="font-size:18px; font-weight:800; margin-top:14px; line-height:1.1;">Vendor-support backlog</div>
+        <p style="font-size:13.5px; line-height:1.45; margin:8px 0 0; color:color-mix(in srgb, var(--color-text) 74%, transparent);">Auto-generate a remediation backlog as tracked work items — fix CVE, upgrade to the 3.14 LTS, drop EOL deps.</p>
+      </div>
+      <div style="grid-column:1 / -1; display:flex; align-items:center; gap:14px; margin-top:12px;">
+        <span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:13px; letter-spacing:0.1em; padding:5px 14px; background:var(--color-neutral-300);">LATER</span>
+        <span style="font-size:14px; font-weight:700;">Vision — where it heads</span>
+        <span style="flex:1; height:2px; background:var(--color-divider);"></span>
+      </div>
+      <div style="border:2px solid var(--color-text); border-top:5px solid var(--color-accent); padding:24px 22px; display:flex; flex-direction:column;">
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent)" stroke-width="2.1" stroke-linecap="square"><circle cx="12" cy="12" r="8"></circle><circle cx="12" cy="12" r="3"></circle><path d="M12 1v4M12 19v4M1 12h4M19 12h4"></path></svg>
+        <div style="font-size:18px; font-weight:800; margin-top:14px; line-height:1.1;">Reachability analysis</div>
+        <p style="font-size:13.5px; line-height:1.45; margin:8px 0 0; color:color-mix(in srgb, var(--color-text) 74%, transparent);">Flag a CVE only when the vulnerable code is actually called — the single biggest cut to false positives at fleet scale.</p>
+      </div>
+      <div style="border:2px solid var(--color-text); border-top:5px solid var(--color-accent); padding:24px 22px; display:flex; flex-direction:column;">
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent)" stroke-width="2.1" stroke-linecap="square"><path d="M12 3l9 16H3z"></path><path d="M12 9v5M12 17h.01"></path></svg>
+        <div style="font-size:18px; font-weight:800; margin-top:14px; line-height:1.1;">Malicious-package detection</div>
+        <p style="font-size:13.5px; line-height:1.45; margin:8px 0 0; color:color-mix(in srgb, var(--color-text) 74%, transparent);">Install-script and behavior signals, signing and build attestation catch supply-chain attacks that known-CVE feeds miss entirely. <b>(Axis 5 · provenance)</b></p>
+      </div>
+      <div style="border:2px solid var(--color-text); border-top:5px solid var(--color-accent); padding:24px 22px; display:flex; flex-direction:column;">
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent)" stroke-width="2.1" stroke-linecap="square"><path d="M16 3h5v5"></path><path d="M4 20L21 3"></path><path d="M21 16v5h-5"></path><path d="M15 15l6 6"></path><path d="M4 4l5 5"></path></svg>
+        <div style="font-size:18px; font-weight:800; margin-top:14px; line-height:1.1;">Alternate-library suggestions</div>
+        <p style="font-size:13.5px; line-height:1.45; margin:8px 0 0; color:color-mix(in srgb, var(--color-text) 74%, transparent);">When a dep is unused, risky or unmaintained, suggest a vetted, better-supported replacement to migrate to.</p>
+      </div>
+      <div style="border:2px solid var(--color-text); border-top:5px solid var(--color-accent); padding:24px 22px; display:flex; flex-direction:column;">
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent)" stroke-width="2.1" stroke-linecap="square"><circle cx="6" cy="6" r="3"></circle><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="12" r="3"></circle><path d="M9 6h4a2 2 0 0 1 2 2v1M9 18h4a2 2 0 0 0 2-2v-1"></path></svg>
+        <div style="font-size:18px; font-weight:800; margin-top:14px; line-height:1.1;">Sibling ecosystems</div>
+        <p style="font-size:13.5px; line-height:1.45; margin:8px 0 0; color:color-mix(in srgb, var(--color-text) 74%, transparent);">The naming convention pays off — <span class="code">js-depcheck-osv</span>, <span class="code">go-&lt;tool&gt;-osv</span> siblings share osv-scanner + the report schema.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- PART IV -->
+  <div style="margin:40px -56px 0; background:var(--color-text); color:var(--color-bg); padding:20px 56px; display:flex; justify-content:space-between; align-items:baseline;">
+    <div style="display:flex; align-items:baseline; gap:16px;">
+      <span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:14px; letter-spacing:0.16em; color:var(--color-accent-400);">PART IV</span>
+      <span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:23px; letter-spacing:-0.01em;">At enterprise scale</span>
+    </div>
+    <span style="font-size:12px; letter-spacing:0.1em; text-transform:uppercase; font-weight:700; opacity:0.7;">Vision · fleet &amp; ecosystem</span>
+  </div>
+
+  <!-- 12 · ENTERPRISE SCALE -->
+  <section style="padding:36px 0 8px;">
+    <div style="display:flex; align-items:baseline; gap:18px; border-bottom:2px solid var(--color-text); padding-bottom:10px; margin-bottom:8px;">
+      <span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:22px; color:var(--color-accent);">12</span>
+      <h2 style="font-size:26px; margin:0; letter-spacing:-0.01em;">At enterprise scale — the control plane</h2>
+    </div>
+    <p style="font-size:14px; margin:0 0 24px; color:color-mix(in srgb, var(--color-text) 60%, transparent);">Governing a Python OSS footprint across thousands of repos needs more than a per-repo gate. Warden's report contract is the feed for a fleet-wide control plane.</p>
+    <div style="display:grid; grid-template-columns:repeat(5,1fr); gap:0; border-top:3px solid var(--color-text); border-left:2px solid var(--color-divider);">
+
+      <div style="border-right:2px solid var(--color-divider); padding:20px 16px;">
+        <div style="font-size:11.5px; letter-spacing:0.07em; text-transform:uppercase; font-weight:800; color:var(--color-accent-700);">Fleet intelligence</div>
+        <div style="display:flex; flex-direction:column; gap:11px; margin-top:15px;">
+          <div style="font-size:13px; line-height:1.4;"><b>Central estate dashboard</b> — every report in one queryable view</div>
+          <div style="font-size:13px; line-height:1.4;"><b>Cross-repo dependency graph</b> — instant blast-radius for any CVE</div>
+          <div style="font-size:13px; line-height:1.4;"><b>Risk trend tracking</b> — alert when a repo's posture regresses</div>
+          <div style="font-size:13px; line-height:1.4;"><b>KEV / EPSS enrichment</b> — prioritize by real-world exploitability</div>
+          <div style="font-size:13px; line-height:1.4;"><b>Peer benchmarking</b> — how your posture compares across the org</div>
+          <div style="font-size:13px; line-height:1.4;"><b>Historical SBOM diff</b> — what changed release to release</div>
+          <div style="font-size:13px; line-height:1.4;"><b>Fix-at-source ledger</b> — remediation traced to origin (fix → release → repackage), not a local pin</div>
+          <div style="font-size:13px; line-height:1.4;"><b>License-mix dashboard</b> — copyleft / unknown-license exposure across the fleet</div>
+          <div style="font-size:13px; line-height:1.4;"><b>Sponsorship candidates</b> — most-depended-on yet under-funded deps, surfaced</div>
+        </div>
+      </div>
+
+      <div style="border-right:2px solid var(--color-divider); padding:20px 16px;">
+        <div style="font-size:11.5px; letter-spacing:0.07em; text-transform:uppercase; font-weight:800; color:var(--color-accent-700);">Policy &amp; governance</div>
+        <div style="display:flex; flex-direction:column; gap:11px; margin-top:15px;">
+          <div style="font-size:13px; line-height:1.4;"><b>Policy-as-code, central</b> — org rules pushed to every repo, teams inherit</div>
+          <div style="font-size:13px; line-height:1.4;"><b>Golden-path catalog</b> — an approved, versioned library registry</div>
+          <div style="font-size:13px; line-height:1.4;"><b>Waiver governance</b> — approvals, expiry dashboards, audit trail</div>
+          <div style="font-size:13px; line-height:1.4;"><b>Typosquat detection</b> — catch lookalikes &amp; dependency confusion</div>
+          <div style="font-size:13px; line-height:1.4;"><b>GRC / risk-register sync</b> — findings flow to your governance tools</div>
+          <div style="font-size:13px; line-height:1.4;"><b>Deprecation &amp; EOL calendar</b> — Python versions, frameworks</div>
+          <div style="font-size:13px; line-height:1.4;"><b>Establish an OSPO</b> — a standing office to own OSS policy, review and stewardship</div>
+          <div style="font-size:13px; line-height:1.4;"><b>License allow/deny families</b> — permissive vs copyleft vs unknown, gated</div>
+          <div style="font-size:13px; line-height:1.4;"><b>Outbound-OSS / publishing policy</b> — what we may open-source, and how</div>
+        </div>
+      </div>
+
+      <div style="border-right:2px solid var(--color-divider); padding:20px 16px;">
+        <div style="font-size:11.5px; letter-spacing:0.07em; text-transform:uppercase; font-weight:800; color:var(--color-accent-700);">Supply-chain integrity</div>
+        <div style="display:flex; flex-direction:column; gap:11px; margin-top:15px;">
+          <div style="font-size:13px; line-height:1.4;"><b>SBOM registry + VEX</b> — serve CycloneDX, silence false positives</div>
+          <div style="font-size:13px; line-height:1.4;"><b>Provenance &amp; signing</b> — SLSA / Sigstore artifact verification</div>
+          <div style="font-size:13px; line-height:1.4;"><b>Private-index enforcement</b> — deps only from your mirror</div>
+          <div style="font-size:13px; line-height:1.4;"><b>Registry / Artifactory gate</b> — scan the pip + conda supply; a complete census, not a sample</div>
+          <div style="font-size:13px; line-height:1.4;"><b>Upstream intel → blocklists</b> — scan PyPI / conda-forge for malicious, typosquat &amp; stale; auto-build JFrog block/allow lists</div>
+          <div style="font-size:13px; line-height:1.4;"><b>Maintainer risk signals</b> — bus-factor, funding, abandonment</div>
+          <div style="font-size:13px; line-height:1.4;"><b>Auditor evidence packs</b> — attestation bundles on demand</div>
+          <div style="font-size:13px; line-height:1.4;"><b>Data residency</b> — regional / sovereign deployment</div>
+          <div style="font-size:13px; line-height:1.4;"><b>Repackaging patch provenance</b> — conda-forge build patches recorded as VEX (the PyPI↔conda delta)</div>
+          <div style="font-size:13px; line-height:1.4;"><b>Source-fix registry</b> — every patch we authored, typed: metadata · code · build · security</div>
+          <div style="font-size:13px; line-height:1.4;"><b>Patch attribution &amp; upstreaming</b> — each fix linked to its PR / release, ready to send upstream</div>
+        </div>
+      </div>
+
+      <div style="border-right:2px solid var(--color-divider); padding:20px 16px;">
+        <div style="font-size:11.5px; letter-spacing:0.07em; text-transform:uppercase; font-weight:800; color:var(--color-accent-700);">Scale &amp; operations</div>
+        <div style="display:flex; flex-direction:column; gap:11px; margin-top:15px;">
+          <div style="font-size:13px; line-height:1.4;"><b>Incremental PR-diff scans</b> — re-scan only what changed</div>
+          <div style="font-size:13px; line-height:1.4;"><b>Fleet-wide auto-remediation</b> — batch upgrade PRs, rollback-safe</div>
+          <div style="font-size:13px; line-height:1.4;"><b>SIEM / ticketing</b> — Jira, ServiceNow, Splunk, Slack</div>
+          <div style="font-size:13px; line-height:1.4;"><b>SSO / RBAC + evidence</b> — SOC 2 / ISO export; air-gapped DB</div>
+          <div style="font-size:13px; line-height:1.4;"><b>API + webhooks + Terraform</b> — policy as infrastructure</div>
+          <div style="font-size:13px; line-height:1.4;"><b>Notification routing</b> — on-call escalation policies</div>
+          <div style="font-size:13px; line-height:1.4;"><b>PyPI ↔ conda-forge tracking</b> — source release then feedstock bump, with lag</div>
+          <div style="font-size:13px; line-height:1.4;"><b>Auto NOTICE / attribution in CI</b> — license obligations satisfied every build</div>
+          <div style="font-size:13px; line-height:1.4;"><b>Contribute-back PR automation</b> — upstream fixes instead of carrying forks</div>
+        </div>
+      </div>
+
+      <div style="padding:20px 16px; background:var(--color-accent-100);">
+        <div style="font-size:11.5px; letter-spacing:0.07em; text-transform:uppercase; font-weight:800; color:var(--color-accent-700);">Program management</div>
+        <div style="display:flex; flex-direction:column; gap:11px; margin-top:15px;">
+          <div style="font-size:13px; line-height:1.4;"><b>Remediation SLAs &amp; MTTR</b> — time-to-fix targets, breach alerts</div>
+          <div style="font-size:13px; line-height:1.4;"><b>Ownership &amp; chargeback</b> — every repo/dep tied to an owning team</div>
+          <div style="font-size:13px; line-height:1.4;"><b>Campaign mode</b> — org-wide "eradicate X" drives with burn-down</div>
+          <div style="font-size:13px; line-height:1.4;"><b>Auto-enrollment</b> — new repos onboarded to policy, zero wiring</div>
+          <div style="font-size:13px; line-height:1.4;"><b>conda-forge onboarding</b> — feedstock submission → merge → channel availability</div>
+          <div style="font-size:13px; line-height:1.4;"><b>Python 3.14 support</b> — upstream + feedstock compat PRs, tracked per dep</div>
+          <div style="font-size:13px; line-height:1.4;"><b>Stewardship ownership</b> — a named accountable owner per dependency</div>
+          <div style="font-size:13px; line-height:1.4;"><b>Sponsorship &amp; funding budget</b> — OSS give-back tracked as a program metric</div>
+          <div style="font-size:13px; line-height:1.4;"><b>Contribution OKRs &amp; burn-down</b> — upstream work planned and measured</div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- 13 · OSS POLICY, GOVERNANCE & SUSTAINABILITY -->
+  <section style="padding:36px 0 8px;">
+    <div style="display:flex; align-items:baseline; gap:18px; border-bottom:2px solid var(--color-text); padding-bottom:10px; margin-bottom:8px;">
+      <span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:22px; color:var(--color-accent);">13</span>
+      <h2 style="font-size:26px; margin:0; letter-spacing:-0.01em;">Open-source policy, governance &amp; sustainability</h2>
+    </div>
+    <p style="font-size:14px; margin:0 0 24px; color:color-mix(in srgb, var(--color-text) 60%, transparent);">Consuming OSS at scale is a stewardship responsibility, not just a risk to gate. Warden feeds the OSPO's policy, obligation and sustainability practice.</p>
+    <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:24px;">
+
+      <div style="border:2px solid var(--color-text); display:flex; flex-direction:column;">
+        <div style="background:var(--color-text); color:var(--color-bg); padding:15px 20px;">
+          <div style="font-size:11px; letter-spacing:0.09em; text-transform:uppercase; font-weight:700; opacity:0.75;">OSPO</div>
+          <div style="font-size:19px; font-weight:800; margin-top:3px;">Policy</div>
+        </div>
+        <div style="padding:22px 20px; display:flex; flex-direction:column; gap:14px;">
+          <div style="font-size:13.5px; line-height:1.45;"><b>Usage &amp; contribution policy</b> — one codified standard for adopting, forking and publishing OSS.</div>
+          <div style="font-size:13.5px; line-height:1.45;"><b>License allow / deny families</b> — permissive vs copyleft vs unknown, enforced at the gate.</div>
+          <div style="font-size:13.5px; line-height:1.45;"><b>New-dependency intake</b> — a review &amp; approval path before a library enters the estate.</div>
+        </div>
+      </div>
+
+      <div style="border:2px solid var(--color-text); display:flex; flex-direction:column;">
+        <div style="background:var(--color-text); color:var(--color-bg); padding:15px 20px;">
+          <div style="font-size:11px; letter-spacing:0.09em; text-transform:uppercase; font-weight:700; opacity:0.75;">Compliance</div>
+          <div style="font-size:19px; font-weight:800; margin-top:3px;">Governance</div>
+        </div>
+        <div style="padding:22px 20px; display:flex; flex-direction:column; gap:14px;">
+          <div style="font-size:13.5px; line-height:1.45;"><b>License-obligation tracking</b> — attribution &amp; copyleft notices generated per release.</div>
+          <div style="font-size:13.5px; line-height:1.45;"><b>Stewardship ownership</b> — a named owner and accountable team for every dependency.</div>
+          <div style="font-size:13.5px; line-height:1.45;"><b>Export-control &amp; provenance</b> — origin, jurisdiction and compliance flags on record.</div>
+        </div>
+      </div>
+
+      <div style="border:2px solid var(--color-accent); display:flex; flex-direction:column;">
+        <div style="background:var(--color-accent); color:var(--color-bg); padding:15px 20px;">
+          <div style="font-size:11px; letter-spacing:0.09em; text-transform:uppercase; font-weight:700; opacity:0.85;">Give back</div>
+          <div style="font-size:19px; font-weight:800; margin-top:3px;">Sustainability</div>
+        </div>
+        <div style="padding:22px 20px; display:flex; flex-direction:column; gap:14px;">
+          <div style="font-size:13.5px; line-height:1.45;"><b>Upstream funding</b> — surface critical deps to sponsor (Tidelift, Sponsors, Open Collective).</div>
+          <div style="font-size:13.5px; line-height:1.45;"><b>Maintainer &amp; community health</b> — bus-factor, release cadence, abandonment risk.</div>
+          <div style="font-size:13.5px; line-height:1.45;"><b>Contribute-back tracking</b> — upstream your fixes instead of forking; retire internal patches.</div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- 14 · BY PERSONA -->
+  <section style="padding:36px 0 8px;">
+    <div style="display:flex; align-items:baseline; gap:18px; border-bottom:2px solid var(--color-text); padding-bottom:10px; margin-bottom:8px;">
+      <span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:22px; color:var(--color-accent);">14</span>
+      <h2 style="font-size:26px; margin:0; letter-spacing:-0.01em;">What each leader gets</h2>
+    </div>
+    <p style="font-size:14px; margin:0 0 24px; color:color-mix(in srgb, var(--color-text) 60%, transparent);">The same report feeds four executive scorecards — each measured on a different outcome.</p>
+    <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:24px;">
+
+      <div style="border:2px solid var(--color-text); display:flex; flex-direction:column;">
+        <div style="background:var(--color-text); color:var(--color-bg); padding:15px 18px;">
+          <div style="font-size:11px; letter-spacing:0.09em; text-transform:uppercase; font-weight:700; opacity:0.72;">Security &amp; risk</div>
+          <div style="font-size:20px; font-weight:800; margin-top:3px;">CISO</div>
+        </div>
+        <div style="padding:20px 18px; display:flex; flex-direction:column;">
+          <div style="font-size:14.5px; font-weight:800; color:var(--color-accent-700); line-height:1.2;">Provable, board-ready risk reduction</div>
+          <div style="display:flex; flex-direction:column; gap:11px; margin-top:14px;">
+            <div style="font-size:13px; line-height:1.4;"><b>Fleet risk score &amp; exposure heatmap</b> — trended by business unit</div>
+            <div style="font-size:13px; line-height:1.4;"><b>MTTR &amp; SLA compliance</b> — KEV / critical burn-down, breach alerts</div>
+            <div style="font-size:13px; line-height:1.4;"><b>Audit evidence on demand</b> — SOC 2 / ISO packs, SBOM + VEX, waiver trail</div>
+            <div style="font-size:13px; line-height:1.4;"><b>Zero-day readiness</b> — "who's exposed to X" in seconds</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="border:2px solid var(--color-text); display:flex; flex-direction:column;">
+        <div style="background:var(--color-text); color:var(--color-bg); padding:15px 18px;">
+          <div style="font-size:11px; letter-spacing:0.09em; text-transform:uppercase; font-weight:700; opacity:0.72;">Developer experience</div>
+          <div style="font-size:20px; font-weight:800; margin-top:3px;">CDXO</div>
+        </div>
+        <div style="padding:20px 18px; display:flex; flex-direction:column;">
+          <div style="font-size:14.5px; font-weight:800; color:var(--color-accent-700); line-height:1.2;">A gate developers don't route around</div>
+          <div style="display:flex; flex-direction:column; gap:11px; margin-top:14px;">
+            <div style="font-size:13px; line-height:1.4;"><b>Gate-friction metrics</b> — false-positive rate, PR-wait, override frequency</div>
+            <div style="font-size:13px; line-height:1.4;"><b>Shift-left ergonomics</b> — pre-commit / IDE hooks, <span class="code">--explain</span> fixes</div>
+            <div style="font-size:13px; line-height:1.4;"><b>Auto-fix throughput</b> — % resolved by bot PRs, engineer hours saved</div>
+            <div style="font-size:13px; line-height:1.4;"><b>Time-to-green</b> — golden-path adoption &amp; new-repo onboarding</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="border:2px solid var(--color-text); display:flex; flex-direction:column;">
+        <div style="background:var(--color-text); color:var(--color-bg); padding:15px 18px;">
+          <div style="font-size:11px; letter-spacing:0.09em; text-transform:uppercase; font-weight:700; opacity:0.72;">Portfolio &amp; cost</div>
+          <div style="font-size:20px; font-weight:800; margin-top:3px;">CIO</div>
+        </div>
+        <div style="padding:20px 18px; display:flex; flex-direction:column;">
+          <div style="font-size:14.5px; font-weight:800; color:var(--color-accent-700); line-height:1.2;">One view of the OSS portfolio</div>
+          <div style="display:flex; flex-direction:column; gap:11px; margin-top:14px;">
+            <div style="font-size:13px; line-height:1.4;"><b>Portfolio inventory</b> — versions, license mix, EOL exposure, org-wide</div>
+            <div style="font-size:13px; line-height:1.4;"><b>Modernization dashboard</b> — version-lag, Python 3.14 migration progress</div>
+            <div style="font-size:13px; line-height:1.4;"><b>Cost &amp; consolidation</b> — duplicate deps, license spend, tool savings</div>
+            <div style="font-size:13px; line-height:1.4;"><b>Policy conformance</b> — % repos meeting the org baseline, exceptions register</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="border:2px solid var(--color-accent); display:flex; flex-direction:column;">
+        <div style="background:var(--color-accent); color:var(--color-bg); padding:15px 18px;">
+          <div style="font-size:11px; letter-spacing:0.09em; text-transform:uppercase; font-weight:700; opacity:0.85;">Data &amp; analytics</div>
+          <div style="font-size:20px; font-weight:800; margin-top:3px;">CDAO</div>
+        </div>
+        <div style="padding:20px 18px; display:flex; flex-direction:column;">
+          <div style="font-size:14.5px; font-weight:800; color:var(--color-accent-700); line-height:1.2;">Governed, reproducible data stacks</div>
+          <div style="display:flex; flex-direction:column; gap:11px; margin-top:14px;">
+            <div style="font-size:13px; line-height:1.4;"><b>Data/ML dependency governance</b> — conda/pixi stacks, notebooks, pipelines</div>
+            <div style="font-size:13px; line-height:1.4;"><b>Model &amp; pipeline SBOM lineage</b> — which versions produced which dataset/model</div>
+            <div style="font-size:13px; line-height:1.4;"><b>Diffable env reports</b> — "did our env upgrade introduce CVEs?"</div>
+            <div style="font-size:13px; line-height:1.4;"><b>Report as a data product</b> — the estate, queryable for trends &amp; forecasts</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="border:2px solid var(--color-text); display:flex; flex-direction:column;">
+        <div style="background:var(--color-text); color:var(--color-bg); padding:15px 18px;">
+          <div style="font-size:11px; letter-spacing:0.09em; text-transform:uppercase; font-weight:700; opacity:0.72;">Platform &amp; operations</div>
+          <div style="font-size:20px; font-weight:800; margin-top:3px;">DevSecOps Lead</div>
+        </div>
+        <div style="padding:20px 18px; display:flex; flex-direction:column;">
+          <div style="font-size:14.5px; font-weight:800; color:var(--color-accent-700); line-height:1.2;">One gate to run across the fleet</div>
+          <div style="display:flex; flex-direction:column; gap:11px; margin-top:14px;">
+            <div style="font-size:13px; line-height:1.4;"><b>Runner provisioning</b> — engines as declared conda/pixi deps, no curl</div>
+            <div style="font-size:13px; line-height:1.4;"><b>Fleet rollout, config-as-code</b> — the same gate everywhere</div>
+            <div style="font-size:13px; line-height:1.4;"><b>Gate tuning</b> — thresholds, ignore lists, false-positive control</div>
+            <div style="font-size:13px; line-height:1.4;"><b>Engine upkeep</b> — version pinning &amp; drift alerts</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="border:2px solid var(--color-text); display:flex; flex-direction:column;">
+        <div style="background:var(--color-text); color:var(--color-bg); padding:15px 18px;">
+          <div style="font-size:11px; letter-spacing:0.09em; text-transform:uppercase; font-weight:700; opacity:0.72;">Legal &amp; compliance</div>
+          <div style="font-size:20px; font-weight:800; margin-top:3px;">General Counsel</div>
+        </div>
+        <div style="padding:20px 18px; display:flex; flex-direction:column;">
+          <div style="font-size:14.5px; font-weight:800; color:var(--color-accent-700); line-height:1.2;">License &amp; IP exposure under control</div>
+          <div style="display:flex; flex-direction:column; gap:11px; margin-top:14px;">
+            <div style="font-size:13px; line-height:1.4;"><b>License-obligation register</b> — attribution / NOTICE per release</div>
+            <div style="font-size:13px; line-height:1.4;"><b>Copyleft &amp; unknown-license exposure</b> — flagged before ship</div>
+            <div style="font-size:13px; line-height:1.4;"><b>Outbound-OSS clearance</b> — what we may publish, and how</div>
+            <div style="font-size:13px; line-height:1.4;"><b>Audit-ready compliance trail</b> — obligations satisfied, on record</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="border:2px solid var(--color-text); display:flex; flex-direction:column;">
+        <div style="background:var(--color-text); color:var(--color-bg); padding:15px 18px;">
+          <div style="font-size:11px; letter-spacing:0.09em; text-transform:uppercase; font-weight:700; opacity:0.72;">Enterprise risk &amp; GRC</div>
+          <div style="font-size:20px; font-weight:800; margin-top:3px;">CRO</div>
+        </div>
+        <div style="padding:20px 18px; display:flex; flex-direction:column;">
+          <div style="font-size:14.5px; font-weight:800; color:var(--color-accent-700); line-height:1.2;">OSS risk in the enterprise register</div>
+          <div style="display:flex; flex-direction:column; gap:11px; margin-top:14px;">
+            <div style="font-size:13px; line-height:1.4;"><b>Aggregated risk posture</b> — feeds the enterprise risk register</div>
+            <div style="font-size:13px; line-height:1.4;"><b>Third-party &amp; acquired-code risk</b> — vendored / M&amp;A codebases</div>
+            <div style="font-size:13px; line-height:1.4;"><b>Regulatory exposure mapping</b> — controls evidence per framework</div>
+            <div style="font-size:13px; line-height:1.4;"><b>Risk-acceptance governance</b> — waivers, expiry, accountability</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="border:2px solid var(--color-accent); display:flex; flex-direction:column;">
+        <div style="background:var(--color-accent); color:var(--color-bg); padding:15px 18px;">
+          <div style="font-size:11px; letter-spacing:0.09em; text-transform:uppercase; font-weight:700; opacity:0.85;">Open source program</div>
+          <div style="font-size:20px; font-weight:800; margin-top:3px;">OSPO Lead</div>
+        </div>
+        <div style="padding:20px 18px; display:flex; flex-direction:column;">
+          <div style="font-size:14.5px; font-weight:800; color:var(--color-accent-700); line-height:1.2;">Consume well, give back deliberately</div>
+          <div style="display:flex; flex-direction:column; gap:11px; margin-top:14px;">
+            <div style="font-size:13px; line-height:1.4;"><b>Stewardship ownership</b> — a named owner per dependency</div>
+            <div style="font-size:13px; line-height:1.4;"><b>Upstream funding &amp; contribute-back</b> — sponsorship + fix PRs</div>
+            <div style="font-size:13px; line-height:1.4;"><b>Source-fix ledger</b> — patches authored &amp; upstreamed, tracked</div>
+            <div style="font-size:13px; line-height:1.4;"><b>Community health signals</b> — bus-factor, cadence, sustainability</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- 15 · INTEGRATION MATRIX -->
+  <section style="padding:36px 0 8px;">
+    <div style="display:flex; align-items:baseline; gap:18px; border-bottom:2px solid var(--color-text); padding-bottom:10px; margin-bottom:8px;">
+      <span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:22px; color:var(--color-accent);">15</span>
+      <h2 style="font-size:26px; margin:0; letter-spacing:-0.01em;">Integration surface — the pluggable ecosystem</h2>
+    </div>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin:0 0 18px;">
+      <p style="font-size:14px; margin:0; color:color-mix(in srgb, var(--color-text) 60%, transparent); max-width:720px;">A producer-agnostic report contract lets tools slot in as an <b>engine</b>, an <b>enrichment feed</b>, or a downstream <b>consumer</b>. <span style="color:color-mix(in srgb, var(--color-text) 55%, transparent);">Ecosystem badges — <b>pip</b> · <b>conda</b> · <b>pixi</b> (filled = natively supported).</span></p>
+      <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+        <span style="font-size:11px; font-weight:700; padding:2px 8px; background:var(--color-accent); color:var(--color-bg);">Current</span>
+        <span style="font-size:11px; font-weight:700; padding:2px 8px; border:1.5px solid var(--color-text);">Candidate</span>
+        <span style="font-size:11px; font-weight:700; padding:2px 8px; background:var(--color-neutral-300);">Planned</span>
+        <span style="font-size:11px; font-weight:700; padding:2px 8px; background:var(--color-text); color:var(--color-bg);">Consumer</span>
+      </div>
+    </div>
+    <table style="width:100%; border-collapse:collapse; font-size:13px;">
+      <thead>
+        <tr style="background:var(--color-text); color:var(--color-bg); text-align:left;">
+          <th style="padding:10px 14px; font-size:11px; letter-spacing:0.08em; text-transform:uppercase; font-weight:700;">Tool / source</th>
+          <th style="padding:10px 14px; font-size:11px; letter-spacing:0.08em; text-transform:uppercase; font-weight:700;">Category</th>
+          <th style="padding:10px 14px; font-size:11px; letter-spacing:0.08em; text-transform:uppercase; font-weight:700;">Integration slot</th>
+          <th style="padding:10px 14px; font-size:11px; letter-spacing:0.08em; text-transform:uppercase; font-weight:700;">Status</th>
+          <th style="padding:10px 14px; font-size:11px; letter-spacing:0.08em; text-transform:uppercase; font-weight:700;">Ecosystem</th>
+        </tr>
+      </thead>
+      <tbody>
+<tr style="border-bottom:2px solid var(--color-text);"><td style="padding:8px 14px; font-weight:700;" class="code">deptry</td><td style="padding:8px 14px;">Dependency hygiene</td><td style="padding:8px 14px;">Hygiene engine</td><td style="padding:8px 14px;"><span style="font-size:11px; font-weight:700; padding:2px 8px; background:var(--color-accent); color:var(--color-bg);">Current</span></td><td style="padding:8px 14px; white-space:nowrap;"><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">pip</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; color:var(--color-neutral-400); border:1px solid var(--color-neutral-300);">conda</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; color:var(--color-neutral-400); border:1px solid var(--color-neutral-300);">pixi</span></td></tr>
+        <tr style="border-bottom:1px solid var(--color-divider);"><td style="padding:8px 14px; font-weight:700;" class="code">osv-scanner</td><td style="padding:8px 14px;">Vulnerability scanner</td><td style="padding:8px 14px;">Vuln engine</td><td style="padding:8px 14px;"><span style="font-size:11px; font-weight:700; padding:2px 8px; background:var(--color-accent); color:var(--color-bg);">Current</span></td><td style="padding:8px 14px; white-space:nowrap;"><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">pip</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; color:var(--color-neutral-400); border:1px solid var(--color-neutral-300);">conda</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">pixi</span></td></tr>
+        <tr style="border-bottom:1px solid var(--color-divider);"><td style="padding:8px 14px; font-weight:700;" class="code">OSV.dev</td><td style="padding:8px 14px;">Advisory database</td><td style="padding:8px 14px;">Vuln data source</td><td style="padding:8px 14px;"><span style="font-size:11px; font-weight:700; padding:2px 8px; background:var(--color-accent); color:var(--color-bg);">Current</span></td><td style="padding:8px 14px; white-space:nowrap;"><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">pip</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; color:var(--color-neutral-400); border:1px solid var(--color-neutral-300);">conda</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; color:var(--color-neutral-400); border:1px solid var(--color-neutral-300);">pixi</span></td></tr>
+        <tr style="background:var(--color-accent-100); border-bottom:1px solid var(--color-divider);"><td style="padding:8px 14px; font-weight:700;" class="code">Basilisk (prefix.dev)</td><td style="padding:8px 14px;">conda-forge advisory DB · OSV-compatible API</td><td style="padding:8px 14px;">Conda-native vuln source (E2) — clean / not-checked→indeterminate / malware</td><td style="padding:8px 14px;"><span style="font-size:11px; font-weight:700; padding:2px 8px; border:1.5px solid var(--color-text);">Candidate</span></td><td style="padding:8px 14px; white-space:nowrap;"><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; color:var(--color-neutral-400); border:1px solid var(--color-neutral-300);">pip</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">conda</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; color:var(--color-neutral-400); border:1px solid var(--color-neutral-300);">pixi</span></td></tr>
+        <tr style="border-bottom:1px solid var(--color-divider);"><td style="padding:8px 14px; font-weight:700;" class="code">parselmouth (prefix.dev)</td><td style="padding:8px 14px;">PyPI ↔ conda name mapping</td><td style="padding:8px 14px;">Conda purl-mapping bridge (unlocks OSV/vdb for E2)</td><td style="padding:8px 14px;"><span style="font-size:11px; font-weight:700; padding:2px 8px; border:1.5px solid var(--color-text);">Candidate</span></td><td style="padding:8px 14px; white-space:nowrap;"><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">pip</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">conda</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; color:var(--color-neutral-400); border:1px solid var(--color-neutral-300);">pixi</span></td></tr>
+        <tr style="background:var(--color-accent-100); border-bottom:1px solid var(--color-divider);"><td style="padding:8px 14px; font-weight:700;" class="code">rattler-build / rattler</td><td style="padding:8px 14px;">conda build + metadata (prefix.dev)</td><td style="padding:8px 14px;">Manifest &amp; metadata source (E2)</td><td style="padding:8px 14px;"><span style="font-size:11px; font-weight:700; padding:2px 8px; border:1.5px solid var(--color-text);">Candidate</span></td><td style="padding:8px 14px; white-space:nowrap;"><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; color:var(--color-neutral-400); border:1px solid var(--color-neutral-300);">pip</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">conda</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">pixi</span></td></tr>
+        <tr style="border-bottom:1px solid var(--color-divider);"><td style="padding:8px 14px; font-weight:700;" class="code">CycloneDX</td><td style="padding:8px 14px;">SBOM</td><td style="padding:8px 14px;">SBOM emission</td><td style="padding:8px 14px;"><span style="font-size:11px; font-weight:700; padding:2px 8px; background:var(--color-accent); color:var(--color-bg);">Current</span></td><td style="padding:8px 14px; white-space:nowrap;"><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">pip</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">conda</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">pixi</span></td></tr>
+        <tr style="border-bottom:1px solid var(--color-divider);"><td style="padding:8px 14px; font-weight:700;" class="code">fawltydeps</td><td style="padding:8px 14px;">Dependency hygiene</td><td style="padding:8px 14px;">Hygiene engine (<span class="code">--engine</span>)</td><td style="padding:8px 14px;"><span style="font-size:11px; font-weight:700; padding:2px 8px; border:1.5px solid var(--color-text);">Candidate</span></td><td style="padding:8px 14px; white-space:nowrap;"><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">pip</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; color:var(--color-neutral-400); border:1px solid var(--color-neutral-300);">conda</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; color:var(--color-neutral-400); border:1px solid var(--color-neutral-300);">pixi</span></td></tr>
+        <tr style="border-bottom:1px solid var(--color-divider);"><td style="padding:8px 14px; font-weight:700;" class="code">pip-check-reqs</td><td style="padding:8px 14px;">Dependency hygiene</td><td style="padding:8px 14px;">Hygiene engine (<span class="code">--engine</span>)</td><td style="padding:8px 14px;"><span style="font-size:11px; font-weight:700; padding:2px 8px; border:1.5px solid var(--color-text);">Candidate</span></td><td style="padding:8px 14px; white-space:nowrap;"><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">pip</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; color:var(--color-neutral-400); border:1px solid var(--color-neutral-300);">conda</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; color:var(--color-neutral-400); border:1px solid var(--color-neutral-300);">pixi</span></td></tr>
+        <tr style="border-bottom:1px solid var(--color-divider);"><td style="padding:8px 14px; font-weight:700;" class="code">vulture</td><td style="padding:8px 14px;">Dead-code / unused</td><td style="padding:8px 14px;">Hygiene engine (<span class="code">--engine</span>)</td><td style="padding:8px 14px;"><span style="font-size:11px; font-weight:700; padding:2px 8px; border:1.5px solid var(--color-text);">Candidate</span></td><td style="padding:8px 14px; white-space:nowrap;"><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">pip</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; color:var(--color-neutral-400); border:1px solid var(--color-neutral-300);">conda</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; color:var(--color-neutral-400); border:1px solid var(--color-neutral-300);">pixi</span></td></tr>
+        <tr style="border-bottom:1px solid var(--color-divider);"><td style="padding:8px 14px; font-weight:700;" class="code">uv (Astral)</td><td style="padding:8px 14px;">Resolver / lockfile</td><td style="padding:8px 14px;">Manifest &amp; lock source</td><td style="padding:8px 14px;"><span style="font-size:11px; font-weight:700; padding:2px 8px; border:1.5px solid var(--color-text);">Candidate</span></td><td style="padding:8px 14px; white-space:nowrap;"><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">pip</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; color:var(--color-neutral-400); border:1px solid var(--color-neutral-300);">conda</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; color:var(--color-neutral-400); border:1px solid var(--color-neutral-300);">pixi</span></td></tr>
+        <tr style="border-bottom:1px solid var(--color-divider);"><td style="padding:8px 14px; font-weight:700;" class="code">pip-audit</td><td style="padding:8px 14px;">Dep → advisory</td><td style="padding:8px 14px;">Corroborating vuln check</td><td style="padding:8px 14px;"><span style="font-size:11px; font-weight:700; padding:2px 8px; border:1.5px solid var(--color-text);">Candidate</span></td><td style="padding:8px 14px; white-space:nowrap;"><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">pip</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; color:var(--color-neutral-400); border:1px solid var(--color-neutral-300);">conda</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; color:var(--color-neutral-400); border:1px solid var(--color-neutral-300);">pixi</span></td></tr>
+        <tr style="border-bottom:1px solid var(--color-divider);"><td style="padding:8px 14px; font-weight:700;" class="code">Trivy</td><td style="padding:8px 14px;">Vulnerability scanner</td><td style="padding:8px 14px;">Pluggable vuln engine</td><td style="padding:8px 14px;"><span style="font-size:11px; font-weight:700; padding:2px 8px; border:1.5px solid var(--color-text);">Candidate</span></td><td style="padding:8px 14px; white-space:nowrap;"><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">pip</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; color:var(--color-neutral-400); border:1px solid var(--color-neutral-300);">conda</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; color:var(--color-neutral-400); border:1px solid var(--color-neutral-300);">pixi</span></td></tr>
+        <tr style="border-bottom:1px solid var(--color-divider);"><td style="padding:8px 14px; font-weight:700;" class="code">Grype</td><td style="padding:8px 14px;">Vulnerability scanner</td><td style="padding:8px 14px;">Pluggable vuln engine</td><td style="padding:8px 14px;"><span style="font-size:11px; font-weight:700; padding:2px 8px; border:1.5px solid var(--color-text);">Candidate</span></td><td style="padding:8px 14px; white-space:nowrap;"><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">pip</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; color:var(--color-neutral-400); border:1px solid var(--color-neutral-300);">conda</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; color:var(--color-neutral-400); border:1px solid var(--color-neutral-300);">pixi</span></td></tr>
+        <tr style="border-bottom:1px solid var(--color-divider);"><td style="padding:8px 14px; font-weight:700;" class="code">appthreat-vulnerability-db</td><td style="padding:8px 14px;">Offline multi-source vuln DB (OSV+NVD+GHSA)</td><td style="padding:8px 14px;">Pluggable vuln engine · conda-forge-installable</td><td style="padding:8px 14px;"><span style="font-size:11px; font-weight:700; padding:2px 8px; border:1.5px solid var(--color-text);">Candidate</span></td><td style="padding:8px 14px; white-space:nowrap;"><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">pip</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">conda</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; color:var(--color-neutral-400); border:1px solid var(--color-neutral-300);">pixi</span></td></tr>
+        <tr style="border-bottom:1px solid var(--color-divider);"><td style="padding:8px 14px; font-weight:700;" class="code">OWASP Dependency-Check</td><td style="padding:8px 14px;">Vulnerability scanner</td><td style="padding:8px 14px;">Pluggable vuln engine</td><td style="padding:8px 14px;"><span style="font-size:11px; font-weight:700; padding:2px 8px; border:1.5px solid var(--color-text);">Candidate</span></td><td style="padding:8px 14px; white-space:nowrap;"><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">pip</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; color:var(--color-neutral-400); border:1px solid var(--color-neutral-300);">conda</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; color:var(--color-neutral-400); border:1px solid var(--color-neutral-300);">pixi</span></td></tr>
+        <tr style="border-bottom:1px solid var(--color-divider);"><td style="padding:8px 14px; font-weight:700;" class="code">osv-scalibr</td><td style="padding:8px 14px;">Extraction / scan library (Google)</td><td style="padding:8px 14px;">Pluggable vuln engine + extractor</td><td style="padding:8px 14px;"><span style="font-size:11px; font-weight:700; padding:2px 8px; border:1.5px solid var(--color-text);">Candidate</span></td><td style="padding:8px 14px; white-space:nowrap;"><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">pip</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; color:var(--color-neutral-400); border:1px solid var(--color-neutral-300);">conda</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; color:var(--color-neutral-400); border:1px solid var(--color-neutral-300);">pixi</span></td></tr>
+        <tr style="border-bottom:1px solid var(--color-divider);"><td style="padding:8px 14px; font-weight:700;" class="code">Capslock (Google)</td><td style="padding:8px 14px;">Capability / reachability analysis</td><td style="padding:8px 14px;">Reachability enrichment (Go-first)</td><td style="padding:8px 14px;"><span style="font-size:11px; font-weight:700; padding:2px 8px; background:var(--color-neutral-300);">Planned</span></td><td style="padding:8px 14px; white-space:nowrap;"><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">pip</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; color:var(--color-neutral-400); border:1px solid var(--color-neutral-300);">conda</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; color:var(--color-neutral-400); border:1px solid var(--color-neutral-300);">pixi</span></td></tr>
+        <tr style="border-bottom:1px solid var(--color-divider);"><td style="padding:8px 14px; font-weight:700;" class="code">NVD / CVE (MITRE)</td><td style="padding:8px 14px;">Advisory database</td><td style="padding:8px 14px;">Enrichment feed</td><td style="padding:8px 14px;"><span style="font-size:11px; font-weight:700; padding:2px 8px; background:var(--color-neutral-300);">Planned</span></td><td style="padding:8px 14px; white-space:nowrap;"><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">pip</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">conda</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">pixi</span></td></tr>
+        <tr style="border-bottom:1px solid var(--color-divider);"><td style="padding:8px 14px; font-weight:700;" class="code">GitHub Advisory (GHSA)</td><td style="padding:8px 14px;">Advisory database</td><td style="padding:8px 14px;">Enrichment feed</td><td style="padding:8px 14px;"><span style="font-size:11px; font-weight:700; padding:2px 8px; background:var(--color-neutral-300);">Planned</span></td><td style="padding:8px 14px; white-space:nowrap;"><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">pip</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">conda</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">pixi</span></td></tr>
+        <tr style="border-bottom:1px solid var(--color-divider);"><td style="padding:8px 14px; font-weight:700;" class="code">CWE (MITRE)</td><td style="padding:8px 14px;">Weakness taxonomy</td><td style="padding:8px 14px;">Advisory categorization enrichment</td><td style="padding:8px 14px;"><span style="font-size:11px; font-weight:700; padding:2px 8px; border:1.5px solid var(--color-text);">Candidate</span></td><td style="padding:8px 14px; white-space:nowrap;"><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">pip</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">conda</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">pixi</span></td></tr>
+        <tr style="border-bottom:1px solid var(--color-divider);"><td style="padding:8px 14px; font-weight:700;" class="code">VulnerableCode (AboutCode)</td><td style="padding:8px 14px;">Open purl-native vuln DB</td><td style="padding:8px 14px;">Vuln data source (offline)</td><td style="padding:8px 14px;"><span style="font-size:11px; font-weight:700; padding:2px 8px; border:1.5px solid var(--color-text);">Candidate</span></td><td style="padding:8px 14px; white-space:nowrap;"><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">pip</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">conda</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; color:var(--color-neutral-400); border:1px solid var(--color-neutral-300);">pixi</span></td></tr>
+        <tr style="border-bottom:1px solid var(--color-divider);"><td style="padding:8px 14px; font-weight:700;" class="code">PyPA Advisory DB</td><td style="padding:8px 14px;">PyPI advisory source</td><td style="padding:8px 14px;">Enrichment feed (OSV-format)</td><td style="padding:8px 14px;"><span style="font-size:11px; font-weight:700; padding:2px 8px; border:1.5px solid var(--color-text);">Candidate</span></td><td style="padding:8px 14px; white-space:nowrap;"><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">pip</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; color:var(--color-neutral-400); border:1px solid var(--color-neutral-300);">conda</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; color:var(--color-neutral-400); border:1px solid var(--color-neutral-300);">pixi</span></td></tr>
+        <tr style="border-bottom:1px solid var(--color-divider);"><td style="padding:8px 14px; font-weight:700;" class="code">VulnCheck</td><td style="padding:8px 14px;">Exploit intelligence (KEV++)</td><td style="padding:8px 14px;">Prioritization enrichment</td><td style="padding:8px 14px;"><span style="font-size:11px; font-weight:700; padding:2px 8px; background:var(--color-neutral-300);">Planned</span></td><td style="padding:8px 14px; white-space:nowrap;"><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">pip</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">conda</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">pixi</span></td></tr>
+        <tr style="border-bottom:1px solid var(--color-divider);"><td style="padding:8px 14px; font-weight:700;" class="code">EUVD (ENISA)</td><td style="padding:8px 14px;">EU vulnerability database</td><td style="padding:8px 14px;">Enrichment feed</td><td style="padding:8px 14px;"><span style="font-size:11px; font-weight:700; padding:2px 8px; background:var(--color-neutral-300);">Planned</span></td><td style="padding:8px 14px; white-space:nowrap;"><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">pip</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">conda</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">pixi</span></td></tr>
+        <tr style="border-bottom:1px solid var(--color-divider);"><td style="padding:8px 14px; font-weight:700;" class="code">CISA KEV</td><td style="padding:8px 14px;">Exploit intelligence</td><td style="padding:8px 14px;">v1 gate tier + enrichment</td><td style="padding:8px 14px;"><span style="font-size:11px; font-weight:700; padding:2px 8px; border:1.5px solid var(--color-text);">Candidate</span></td><td style="padding:8px 14px; white-space:nowrap;"><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">pip</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">conda</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">pixi</span></td></tr>
+        <tr style="border-bottom:1px solid var(--color-divider);"><td style="padding:8px 14px; font-weight:700;" class="code">FIRST EPSS</td><td style="padding:8px 14px;">Exploit intelligence</td><td style="padding:8px 14px;">Prioritization enrichment</td><td style="padding:8px 14px;"><span style="font-size:11px; font-weight:700; padding:2px 8px; border:1.5px solid var(--color-text);">Candidate</span></td><td style="padding:8px 14px; white-space:nowrap;"><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">pip</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">conda</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">pixi</span></td></tr>
+        <tr style="border-bottom:1px solid var(--color-divider);"><td style="padding:8px 14px; font-weight:700;" class="code">Sonatype OSS Index</td><td style="padding:8px 14px;">Advisory database</td><td style="padding:8px 14px;">Enrichment feed</td><td style="padding:8px 14px;"><span style="font-size:11px; font-weight:700; padding:2px 8px; border:1.5px solid var(--color-text);">Candidate</span></td><td style="padding:8px 14px; white-space:nowrap;"><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">pip</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; color:var(--color-neutral-400); border:1px solid var(--color-neutral-300);">conda</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; color:var(--color-neutral-400); border:1px solid var(--color-neutral-300);">pixi</span></td></tr>
+        <tr style="border-bottom:1px solid var(--color-divider);"><td style="padding:8px 14px; font-weight:700;" class="code">deps.dev</td><td style="padding:8px 14px;">Package metadata</td><td style="padding:8px 14px;">Enrichment feed</td><td style="padding:8px 14px;"><span style="font-size:11px; font-weight:700; padding:2px 8px; border:1.5px solid var(--color-text);">Candidate</span></td><td style="padding:8px 14px; white-space:nowrap;"><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">pip</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">conda</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">pixi</span></td></tr>
+        <tr style="border-bottom:1px solid var(--color-divider);"><td style="padding:8px 14px; font-weight:700;" class="code">endoflife.date</td><td style="padding:8px 14px;">EOL data</td><td style="padding:8px 14px;">Deprecation feed</td><td style="padding:8px 14px;"><span style="font-size:11px; font-weight:700; padding:2px 8px; background:var(--color-neutral-300);">Planned</span></td><td style="padding:8px 14px; white-space:nowrap;"><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">pip</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">conda</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">pixi</span></td></tr>
+        <tr style="border-bottom:1px solid var(--color-divider);"><td style="padding:8px 14px; font-weight:700;" class="code">license-expression</td><td style="padding:8px 14px;">License (SPDX)</td><td style="padding:8px 14px;">v1 license engine — metadata normalize</td><td style="padding:8px 14px;"><span style="font-size:11px; font-weight:700; padding:2px 8px; border:1.5px solid var(--color-text);">Candidate</span></td><td style="padding:8px 14px; white-space:nowrap;"><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">pip</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">conda</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; color:var(--color-neutral-400); border:1px solid var(--color-neutral-300);">pixi</span></td></tr>
+        <tr style="border-bottom:1px solid var(--color-divider);"><td style="padding:8px 14px; font-weight:700;" class="code">conda about: + importlib.metadata</td><td style="padding:8px 14px;">License data source</td><td style="padding:8px 14px;">v1 license inputs (no scan)</td><td style="padding:8px 14px;"><span style="font-size:11px; font-weight:700; padding:2px 8px; border:1.5px solid var(--color-text);">Candidate</span></td><td style="padding:8px 14px; white-space:nowrap;"><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">pip</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">conda</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; color:var(--color-neutral-400); border:1px solid var(--color-neutral-300);">pixi</span></td></tr>
+        <tr style="border-bottom:1px solid var(--color-divider);"><td style="padding:8px 14px; font-weight:700;" class="code">ScanCode Toolkit</td><td style="padding:8px 14px;">License detection</td><td style="padding:8px 14px;">Deep source scan (later)</td><td style="padding:8px 14px;"><span style="font-size:11px; font-weight:700; padding:2px 8px; background:var(--color-neutral-300);">Planned</span></td><td style="padding:8px 14px; white-space:nowrap;"><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">pip</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">conda</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">pixi</span></td></tr>
+        <tr style="border-bottom:1px solid var(--color-divider);"><td style="padding:8px 14px; font-weight:700;" class="code">SPDX license list</td><td style="padding:8px 14px;">Canonical license IDs</td><td style="padding:8px 14px;">License data source</td><td style="padding:8px 14px;"><span style="font-size:11px; font-weight:700; padding:2px 8px; border:1.5px solid var(--color-text);">Candidate</span></td><td style="padding:8px 14px; white-space:nowrap;"><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">pip</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">conda</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">pixi</span></td></tr>
+        <tr style="border-bottom:1px solid var(--color-divider);"><td style="padding:8px 14px; font-weight:700;" class="code">OSS Review Toolkit (ORT)</td><td style="padding:8px 14px;">License + policy orchestration</td><td style="padding:8px 14px;">Engine or consumer</td><td style="padding:8px 14px;"><span style="font-size:11px; font-weight:700; padding:2px 8px; border:1.5px solid var(--color-text);">Candidate</span></td><td style="padding:8px 14px; white-space:nowrap;"><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">pip</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; color:var(--color-neutral-400); border:1px solid var(--color-neutral-300);">conda</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; color:var(--color-neutral-400); border:1px solid var(--color-neutral-300);">pixi</span></td></tr>
+        <tr style="border-bottom:1px solid var(--color-divider);"><td style="padding:8px 14px; font-weight:700;" class="code">ClearlyDefined</td><td style="padding:8px 14px;">Curated license / provenance</td><td style="padding:8px 14px;">Enrichment feed</td><td style="padding:8px 14px;"><span style="font-size:11px; font-weight:700; padding:2px 8px; background:var(--color-neutral-300);">Planned</span></td><td style="padding:8px 14px; white-space:nowrap;"><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">pip</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">conda</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; color:var(--color-neutral-400); border:1px solid var(--color-neutral-300);">pixi</span></td></tr>
+        <tr style="border-bottom:1px solid var(--color-divider);"><td style="padding:8px 14px; font-weight:700;" class="code">Syft</td><td style="padding:8px 14px;">SBOM</td><td style="padding:8px 14px;">SBOM generation</td><td style="padding:8px 14px;"><span style="font-size:11px; font-weight:700; padding:2px 8px; border:1.5px solid var(--color-text);">Candidate</span></td><td style="padding:8px 14px; white-space:nowrap;"><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">pip</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">conda</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; color:var(--color-neutral-400); border:1px solid var(--color-neutral-300);">pixi</span></td></tr>
+        <tr style="border-bottom:1px solid var(--color-divider);"><td style="padding:8px 14px; font-weight:700;" class="code">cdxgen</td><td style="padding:8px 14px;">SBOM + reachability (atom)</td><td style="padding:8px 14px;">SBOM engine · reachability · BOM signing</td><td style="padding:8px 14px;"><span style="font-size:11px; font-weight:700; padding:2px 8px; border:1.5px solid var(--color-text);">Candidate</span></td><td style="padding:8px 14px; white-space:nowrap;"><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">pip</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; color:var(--color-neutral-400); border:1px solid var(--color-neutral-300);">conda</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; color:var(--color-neutral-400); border:1px solid var(--color-neutral-300);">pixi</span></td></tr>
+        <tr style="border-bottom:1px solid var(--color-divider);"><td style="padding:8px 14px; font-weight:700;" class="code">OpenSSF Package Analysis</td><td style="padding:8px 14px;">Malware</td><td style="padding:8px 14px;">Malicious-pkg feed</td><td style="padding:8px 14px;"><span style="font-size:11px; font-weight:700; padding:2px 8px; background:var(--color-neutral-300);">Planned</span></td><td style="padding:8px 14px; white-space:nowrap;"><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">pip</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; color:var(--color-neutral-400); border:1px solid var(--color-neutral-300);">conda</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; color:var(--color-neutral-400); border:1px solid var(--color-neutral-300);">pixi</span></td></tr>
+        <tr style="border-bottom:1px solid var(--color-divider);"><td style="padding:8px 14px; font-weight:700;" class="code">GuardDog</td><td style="padding:8px 14px;">Malware</td><td style="padding:8px 14px;">Malicious-pkg engine</td><td style="padding:8px 14px;"><span style="font-size:11px; font-weight:700; padding:2px 8px; background:var(--color-neutral-300);">Planned</span></td><td style="padding:8px 14px; white-space:nowrap;"><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">pip</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; color:var(--color-neutral-400); border:1px solid var(--color-neutral-300);">conda</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; color:var(--color-neutral-400); border:1px solid var(--color-neutral-300);">pixi</span></td></tr>
+        <tr style="border-bottom:1px solid var(--color-divider);"><td style="padding:8px 14px; font-weight:700;" class="code">Sigstore / SLSA</td><td style="padding:8px 14px;">Provenance</td><td style="padding:8px 14px;">Signing &amp; provenance</td><td style="padding:8px 14px;"><span style="font-size:11px; font-weight:700; padding:2px 8px; background:var(--color-neutral-300);">Planned</span></td><td style="padding:8px 14px; white-space:nowrap;"><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">pip</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">conda</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">pixi</span></td></tr>
+        <tr style="border-bottom:1px solid var(--color-divider);"><td style="padding:8px 14px; font-weight:700;" class="code">in-toto / GUAC</td><td style="padding:8px 14px;">Attestation + supply-chain graph</td><td style="padding:8px 14px;">Provenance / aggregation</td><td style="padding:8px 14px;"><span style="font-size:11px; font-weight:700; padding:2px 8px; background:var(--color-neutral-300);">Planned</span></td><td style="padding:8px 14px; white-space:nowrap;"><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">pip</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">conda</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">pixi</span></td></tr>
+        <tr style="border-bottom:1px solid var(--color-divider);"><td style="padding:8px 14px; font-weight:700;" class="code">PyPI Trusted Publishing (PEP 740)</td><td style="padding:8px 14px;">Attestations</td><td style="padding:8px 14px;">Provenance source</td><td style="padding:8px 14px;"><span style="font-size:11px; font-weight:700; padding:2px 8px; background:var(--color-neutral-300);">Planned</span></td><td style="padding:8px 14px; white-space:nowrap;"><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">pip</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; color:var(--color-neutral-400); border:1px solid var(--color-neutral-300);">conda</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; color:var(--color-neutral-400); border:1px solid var(--color-neutral-300);">pixi</span></td></tr>
+        <tr style="border-bottom:1px solid var(--color-divider);"><td style="padding:8px 14px; font-weight:700;" class="code">model-transparency (Sigstore)</td><td style="padding:8px 14px;">ML model signing</td><td style="padding:8px 14px;">Provenance for ML artifacts (E2)</td><td style="padding:8px 14px;"><span style="font-size:11px; font-weight:700; padding:2px 8px; background:var(--color-neutral-300);">Planned</span></td><td style="padding:8px 14px; white-space:nowrap;"><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">pip</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">conda</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">pixi</span></td></tr>
+        <tr style="border-bottom:1px solid var(--color-divider);"><td style="padding:8px 14px; font-weight:700;">Google Assured OSS</td><td style="padding:8px 14px;">Vetted package base</td><td style="padding:8px 14px;">Trusted base + provenance</td><td style="padding:8px 14px;"><span style="font-size:11px; font-weight:700; padding:2px 8px; background:var(--color-neutral-300);">Planned</span></td><td style="padding:8px 14px; white-space:nowrap;"><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">pip</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; color:var(--color-neutral-400); border:1px solid var(--color-neutral-300);">conda</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; color:var(--color-neutral-400); border:1px solid var(--color-neutral-300);">pixi</span></td></tr>
+        <tr style="border-bottom:1px solid var(--color-divider);"><td style="padding:8px 14px; font-weight:700;">Anaconda Defaults</td><td style="padding:8px 14px;">Curated base channel</td><td style="padding:8px 14px;">Trusted base channel</td><td style="padding:8px 14px;"><span style="font-size:11px; font-weight:700; padding:2px 8px; background:var(--color-neutral-300);">Planned</span></td><td style="padding:8px 14px; white-space:nowrap;"><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; color:var(--color-neutral-400); border:1px solid var(--color-neutral-300);">pip</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">conda</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; color:var(--color-neutral-400); border:1px solid var(--color-neutral-300);">pixi</span></td></tr>
+        <tr style="border-bottom:1px solid var(--color-divider);"><td style="padding:8px 14px; font-weight:700;" class="code">cf_atlas (internal)</td><td style="padding:8px 14px;">Fleet intelligence layer</td><td style="padding:8px 14px;">Enrichment producer / consumer (CycloneDX + cfe:* purls)</td><td style="padding:8px 14px;"><span style="font-size:11px; font-weight:700; padding:2px 8px; background:var(--color-accent); color:var(--color-bg);">Current</span></td><td style="padding:8px 14px; white-space:nowrap;"><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">pip</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">conda</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; color:var(--color-neutral-400); border:1px solid var(--color-neutral-300);">pixi</span></td></tr>
+        <tr style="border-bottom:1px solid var(--color-divider);"><td style="padding:8px 14px; font-weight:700;" class="code">OpenSSF Scorecard</td><td style="padding:8px 14px;">Health / sustainability</td><td style="padding:8px 14px;">Health scoring feed</td><td style="padding:8px 14px;"><span style="font-size:11px; font-weight:700; padding:2px 8px; background:var(--color-neutral-300);">Planned</span></td><td style="padding:8px 14px; white-space:nowrap;"><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">pip</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">conda</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">pixi</span></td></tr>
+        <tr style="border-bottom:1px solid var(--color-divider);"><td style="padding:8px 14px; font-weight:700;" class="code">Libraries.io / Ecosyste.ms</td><td style="padding:8px 14px;">Metadata / health</td><td style="padding:8px 14px;">Health &amp; sponsorship feed</td><td style="padding:8px 14px;"><span style="font-size:11px; font-weight:700; padding:2px 8px; border:1.5px solid var(--color-text);">Candidate</span></td><td style="padding:8px 14px; white-space:nowrap;"><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">pip</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">conda</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">pixi</span></td></tr>
+        <tr style="border-bottom:1px solid var(--color-divider);"><td style="padding:8px 14px; font-weight:700;" class="code">Repology</td><td style="padding:8px 14px;">Cross-ecosystem versions</td><td style="padding:8px 14px;">Currency feed</td><td style="padding:8px 14px;"><span style="font-size:11px; font-weight:700; padding:2px 8px; background:var(--color-neutral-300);">Planned</span></td><td style="padding:8px 14px; white-space:nowrap;"><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">pip</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">conda</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">pixi</span></td></tr>
+        <tr style="border-bottom:1px solid var(--color-divider);"><td style="padding:8px 14px; font-weight:700;" class="code">OpenSSF criticality_score</td><td style="padding:8px 14px;">Criticality scoring</td><td style="padding:8px 14px;">Health feed (Axis 6)</td><td style="padding:8px 14px;"><span style="font-size:11px; font-weight:700; padding:2px 8px; background:var(--color-neutral-300);">Planned</span></td><td style="padding:8px 14px; white-space:nowrap;"><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">pip</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">conda</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">pixi</span></td></tr>
+        <tr style="border-bottom:1px solid var(--color-divider);"><td style="padding:8px 14px; font-weight:700;" class="code">Renovate</td><td style="padding:8px 14px;">Update automation</td><td style="padding:8px 14px;">Fix-PR actuator</td><td style="padding:8px 14px;"><span style="font-size:11px; font-weight:700; padding:2px 8px; background:var(--color-text); color:var(--color-bg);">Consumer</span></td><td style="padding:8px 14px; white-space:nowrap;"><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">pip</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; color:var(--color-neutral-400); border:1px solid var(--color-neutral-300);">conda</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">pixi</span></td></tr>
+        <tr style="border-bottom:1px solid var(--color-divider);"><td style="padding:8px 14px; font-weight:700;" class="code">Tidelift</td><td style="padding:8px 14px;">Funding</td><td style="padding:8px 14px;">Sponsorship integration</td><td style="padding:8px 14px;"><span style="font-size:11px; font-weight:700; padding:2px 8px; background:var(--color-neutral-300);">Planned</span></td><td style="padding:8px 14px; white-space:nowrap;"><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">pip</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; color:var(--color-neutral-400); border:1px solid var(--color-neutral-300);">conda</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; color:var(--color-neutral-400); border:1px solid var(--color-neutral-300);">pixi</span></td></tr>
+        <tr style="border-bottom:1px solid var(--color-divider);"><td style="padding:8px 14px; font-weight:700;">Black Duck</td><td style="padding:8px 14px;">Commercial SCA</td><td style="padding:8px 14px;">SBOM / VEX consumer</td><td style="padding:8px 14px;"><span style="font-size:11px; font-weight:700; padding:2px 8px; background:var(--color-text); color:var(--color-bg);">Consumer</span></td><td style="padding:8px 14px; white-space:nowrap;"><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">pip</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">conda</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">pixi</span></td></tr>
+        <tr style="border-bottom:1px solid var(--color-divider);"><td style="padding:8px 14px; font-weight:700;">Snyk</td><td style="padding:8px 14px;">Commercial SCA</td><td style="padding:8px 14px;">Engine or consumer</td><td style="padding:8px 14px;"><span style="font-size:11px; font-weight:700; padding:2px 8px; background:var(--color-text); color:var(--color-bg);">Consumer</span></td><td style="padding:8px 14px; white-space:nowrap;"><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">pip</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">conda</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">pixi</span></td></tr>
+        <tr style="border-bottom:1px solid var(--color-divider);"><td style="padding:8px 14px; font-weight:700;">Sonatype Nexus IQ</td><td style="padding:8px 14px;">Commercial SCA</td><td style="padding:8px 14px;">SBOM consumer</td><td style="padding:8px 14px;"><span style="font-size:11px; font-weight:700; padding:2px 8px; background:var(--color-text); color:var(--color-bg);">Consumer</span></td><td style="padding:8px 14px; white-space:nowrap;"><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">pip</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">conda</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">pixi</span></td></tr>
+        <tr style="border-bottom:1px solid var(--color-divider);"><td style="padding:8px 14px; font-weight:700;">Mend · JFrog Xray</td><td style="padding:8px 14px;">Commercial SCA</td><td style="padding:8px 14px;">SBOM consumer</td><td style="padding:8px 14px;"><span style="font-size:11px; font-weight:700; padding:2px 8px; background:var(--color-text); color:var(--color-bg);">Consumer</span></td><td style="padding:8px 14px; white-space:nowrap;"><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">pip</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">conda</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">pixi</span></td></tr>
+        <tr style="border-bottom:1px solid var(--color-divider);"><td style="padding:8px 14px; font-weight:700;">Wiz · Prisma Cloud</td><td style="padding:8px 14px;">CNAPP</td><td style="padding:8px 14px;">SBOM / finding consumer</td><td style="padding:8px 14px;"><span style="font-size:11px; font-weight:700; padding:2px 8px; background:var(--color-text); color:var(--color-bg);">Consumer</span></td><td style="padding:8px 14px; white-space:nowrap;"><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">pip</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">conda</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">pixi</span></td></tr>
+        <tr style="border-bottom:1px solid var(--color-divider);"><td style="padding:8px 14px; font-weight:700;">GitHub Adv. Security / Dependabot</td><td style="padding:8px 14px;">Platform-native</td><td style="padding:8px 14px;">SARIF / consumer</td><td style="padding:8px 14px;"><span style="font-size:11px; font-weight:700; padding:2px 8px; background:var(--color-text); color:var(--color-bg);">Consumer</span></td><td style="padding:8px 14px; white-space:nowrap;"><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">pip</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">conda</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">pixi</span></td></tr>
+        <tr style="border-bottom:1px solid var(--color-divider);"><td style="padding:8px 14px; font-weight:700;">OWASP Dependency-Track</td><td style="padding:8px 14px;">SBOM monitoring platform</td><td style="padding:8px 14px;">CycloneDX consumer</td><td style="padding:8px 14px;"><span style="font-size:11px; font-weight:700; padding:2px 8px; background:var(--color-text); color:var(--color-bg);">Consumer</span></td><td style="padding:8px 14px; white-space:nowrap;"><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">pip</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">conda</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">pixi</span></td></tr>
+        <tr style="border-bottom:1px solid var(--color-divider);"><td style="padding:8px 14px; font-weight:700;">DefectDojo</td><td style="padding:8px 14px;">Vuln management</td><td style="padding:8px 14px;">Finding consumer</td><td style="padding:8px 14px;"><span style="font-size:11px; font-weight:700; padding:2px 8px; background:var(--color-text); color:var(--color-bg);">Consumer</span></td><td style="padding:8px 14px; white-space:nowrap;"><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">pip</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">conda</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">pixi</span></td></tr>
+        <tr style="border-bottom:2px solid var(--color-text);"><td style="padding:8px 14px; font-weight:700;">Endor Labs · Semgrep Supply Chain</td><td style="padding:8px 14px;">Commercial SCA</td><td style="padding:8px 14px;">Engine or consumer</td><td style="padding:8px 14px;"><span style="font-size:11px; font-weight:700; padding:2px 8px; background:var(--color-text); color:var(--color-bg);">Consumer</span></td><td style="padding:8px 14px; white-space:nowrap;"><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">pip</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">conda</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">pixi</span></td></tr>
+      
+        <tr style="border-bottom:1px solid var(--color-divider);"><td style="padding:8px 14px; font-weight:700;" class="code">Allstar (OpenSSF)</td><td style="padding:8px 14px;">Org security-policy enforcement</td><td style="padding:8px 14px;">Policy-as-code actuator</td><td style="padding:8px 14px;"><span style="font-size:11px; font-weight:700; padding:2px 8px; border:1.5px solid var(--color-text);">Candidate</span></td><td style="padding:8px 14px; white-space:nowrap;"><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">pip</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">conda</span><span style="display:inline-block; font-size:9px; font-weight:700; padding:1px 5px; margin-right:3px; background:var(--color-accent); color:var(--color-bg);">pixi</span></td></tr>
+      </tbody>
+    </table>
+    <div style="margin-top:22px; border:2px solid var(--color-text); padding:18px 22px;">
+      <div style="font-size:12px; letter-spacing:0.08em; text-transform:uppercase; font-weight:800; color:var(--color-accent-700); margin-bottom:12px;">Standards Warden speaks — the contracts that make it pluggable</div>
+      <div style="display:flex; flex-wrap:wrap; gap:8px;">
+        <span class="tag tag-outline code">purl</span><span class="tag tag-outline code">vers</span><span class="tag tag-outline code">OSV schema</span><span class="tag tag-accent code">CycloneDX</span><span class="tag tag-outline code">SPDX</span><span class="tag tag-outline code">OpenVEX / CSAF</span><span class="tag tag-outline code">SARIF</span><span class="tag tag-outline code">CVE 5.x</span><span class="tag tag-outline code">CVSS</span><span class="tag tag-outline code">EPSS</span><span class="tag tag-outline code">PEP 740</span><span class="tag tag-outline code">PEP 639</span><span class="tag tag-outline code">SLSA</span><span class="tag tag-outline code">in-toto</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- START HERE -->
+  <section style="padding:36px 0 8px;">
+    <div style="display:flex; align-items:baseline; gap:18px; border-bottom:2px solid var(--color-text); padding-bottom:10px; margin-bottom:8px;">
+      <span style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:22px; color:var(--color-accent);">→</span>
+      <h2 style="font-size:26px; margin:0; letter-spacing:-0.01em;">Start here — the on-ramp</h2>
+    </div>
+    <p style="font-size:14px; margin:0 0 24px; color:color-mix(in srgb, var(--color-text) 60%, transparent);">Adoption starts at a terminal, not a pipeline. Three steps from first run to fleet gate.</p>
+    <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:24px;">
+      <div style="border:2px solid var(--color-text); padding:26px 24px; display:flex; flex-direction:column;">
+        <div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-size:44px; font-weight:900; line-height:1; color:var(--color-accent);">1</div>
+        <div style="font-size:19px; font-weight:800; margin:10px 0 8px;">Try it locally</div>
+        <p style="font-size:14px; line-height:1.5; margin:0; color:color-mix(in srgb, var(--color-text) 78%, transparent);">Run <span class="code">warden scan . --warn-only</span> at your terminal — see findings and clear one, no CI wiring needed.</p>
+      </div>
+      <div style="border:2px solid var(--color-text); padding:26px 24px; display:flex; flex-direction:column;">
+        <div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-size:44px; font-weight:900; line-height:1; color:var(--color-accent);">2</div>
+        <div style="font-size:19px; font-weight:800; margin:10px 0 8px;">Make it pass, honestly</div>
+        <p style="font-size:14px; line-height:1.5; margin:0; color:color-mix(in srgb, var(--color-text) 78%, transparent);">Lock (<span class="code">pixi.lock</span>), file an expiring waiver, or fix the finding. Green is <b>earned</b>, never faked.</p>
+      </div>
+      <div style="border:2px solid var(--color-accent); padding:26px 24px; display:flex; flex-direction:column; background:var(--color-accent-100);">
+        <div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-size:44px; font-weight:900; line-height:1; color:var(--color-accent);">3</div>
+        <div style="font-size:19px; font-weight:800; margin:10px 0 8px;">Gate in CI</div>
+        <p style="font-size:14px; line-height:1.5; margin:0; color:color-mix(in srgb, var(--color-text) 78%, transparent);">Wire the same command — its exit code blocks risky merges. Same lattice, now running fleet-wide.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- CLOSING POSTER -->
+  <section style="margin:40px -56px 0; background:var(--color-accent); color:var(--color-bg); padding:56px;">
+    <div style="font-size:12px; letter-spacing:0.1em; text-transform:uppercase; font-weight:700; opacity:0.85;">Honest by design — no false greens</div>
+    <p style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:34px; line-height:1.12; letter-spacing:-0.015em; margin:16px 0 0; max-width:1040px;">Warden refuses to fake a pass. If it can't prove your dependencies are safe, it fails — until you pin them, formally accept the risk, or explicitly run <span class="code" style="font-weight:800;">--warn-only</span>. An honest "not verified" beats a false "all clear."</p>
+    <div style="display:flex; justify-content:space-between; align-items:baseline; margin-top:36px; padding-top:20px; border-top:2px solid var(--color-bg); font-size:13px; font-weight:600;">
+      <span><b>Warden</b> · module <span class="code">pyforge.warden</span> · dist <span class="code">pyforge-warden</span></span>
+      <span>github/app-pyforge /&nbsp; · docs/specs/pyforge-warden.md</span>
+    </div>
+  </section>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1240,&quot;height&quot;:2200}}"></script>
+</body>
+</html>

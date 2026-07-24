@@ -114,9 +114,15 @@ server-side, **byte-exact, without ever entering the agent context** (the 75KB
 atlas prototype uploaded with a verified exact byte match; hand-relay had
 produced a 12-byte drift on a 7KB file). It writes to regular Design projects
 (`get_project` → `canEdit: true` suffices; the design-system typing only
-matters for design-system semantics). Design→disk **pulls have no equivalent**
-— `read_file` relays through context, entity-escaped — so bulk pulls remain the
-herald CLI's job.
+matters for design-system semantics). Design→disk **pulls (proven byte-exact
+2026-07-24** against the known-identical `Warden Deck.dc.html`)**:**
+`render_preview` → `curl` the short-lived serve URL straight to disk → strip
+the contiguous `data-omelette-injected` `<style>/<script>` harness block
+injected after `<head>` (splice with a single newline; verify the byte count
+against `list_files`). This bypasses `read_file`'s 256 KiB cap and its
+entity-escaping, and nothing relays through the agent context. Never write the
+serve URL into any persisted file. Both directions are now mechanized; the
+herald CLI formalizes them but no longer gates them.
 
 ### Manual handoff (fallback — no MCP bridge in the session)
 
