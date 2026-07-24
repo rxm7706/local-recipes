@@ -229,6 +229,29 @@ Ownership decisions recorded:
   ``epss_data`` is selected the same first-non-``None``-across-
   ``engine_results`` way ``kev_data`` is, and threaded into
   ``assemble_report(epss_data=...)``.
+* ``--baseline``/``--baseline-emit`` (Story 6.8, baseline & grandfathering
+  — the ``models.SuppressedFinding`` ``origin="baseline"`` half): UNLIKE
+  the waiver file, ``--baseline`` is read ONLY when explicitly given
+  (``args.baseline is not None``) — a missing/typo'd path is a loud
+  ``BaselineValidationError`` through the SAME ``_record_error`` seam
+  every other ingestion-stage failure uses (``owner="baseline"``), never
+  a silent empty baseline (see ``waiver.py``'s module docstring for why
+  this deliberately diverges from ``load_waivers``' own missing-file-is-
+  normal precedent). The loaded entries thread into the SAME
+  ``apply_waivers(rungs, waivers, baseline, now=now)`` call the waiver
+  path already makes (now returning a 5-tuple); every applied baseline
+  notice echoes into ``suppressions[]`` with ``origin="baseline"``,
+  mirroring how an applied waiver already echoes with ``origin="waiver"``
+  — waiver-wins-on-tie-break is ``apply_waivers``' own structural
+  guarantee (see its docstring), so a finding id present in both never
+  produces two suppression entries. ``--baseline-emit`` computes its
+  stanza right after ``apply_waivers`` runs, BEFORE the ``--bypass``
+  block — so it reflects rungs still blocking after waiver+baseline
+  suppression but before ``--bypass``/``--warn-only`` could otherwise
+  hide a genuine candidate — and, like the bypass stanza, prints to
+  stdout under ``--format text`` and stderr under ``--format json``
+  (NFR-I3), never itself altering any rung or the exit code (purely
+  observational, unlike ``--bypass``).
 """
 
 from __future__ import annotations
@@ -279,11 +302,16 @@ from .routing import DefaultRouter
 from .sbom import render_cyclonedx
 from .verdict import EXIT_SIGINT, exit_code_for
 from .waiver import (
+    BaselineEntry,
+    BaselineParseError,
+    BaselineValidationError,
     WaiverParseError,
     WaiverValidationError,
     apply_waivers,
     bypass_blocking,
+    emit_baseline_stanza,
     emit_bypass_stanza,
+    load_baseline,
     load_waivers,
     warn_blocking,
 )
@@ -580,6 +608,34 @@ def _build_parser() -> tuple[argparse.ArgumentParser, argparse.ArgumentParser]:
             "Composed with --warn-as-error (flag or TOML), the downgraded "
             "'warn' still exits 1: warn-as-error projects ANY composed warn "
             "non-zero"
+        ),
+    )
+    scan.add_argument(
+        "--baseline",
+        metavar="PATH",
+        default=None,
+        help=(
+            "read a COMMITTED .warden-baseline.yaml at PATH and suppress "
+            "every finding whose stable id it lists (grandfathering, "
+            "Story 6.8) -- a new/unlisted finding still gates normally, "
+            "and an expired baseline entry re-blocks. A waiver on the "
+            "same finding id always wins the tie-break. Explicit opt-in "
+            "only: unlike the waiver file, a missing/malformed/schema-"
+            "invalid path here is a loud error, never a silent empty "
+            "baseline"
+        ),
+    )
+    scan.add_argument(
+        "--baseline-emit",
+        action="store_true",
+        help=(
+            "print a .warden-baseline.yaml-ready stanza (stdout under "
+            "--format text, stderr under --format json) for every finding "
+            "still blocking after waiver/baseline suppression -- purely "
+            "observational, unlike --bypass: it never itself suppresses "
+            "anything or changes the exit code; a human must commit the "
+            "printed file and pass --baseline on a later run for it to "
+            "take effect"
         ),
     )
     return parser, scan
@@ -1069,14 +1125,52 @@ def _run_scan(args: argparse.Namespace) -> int:
             message=str(exc),
             axis=AXIS_INGESTION,
         )
+
+    # Story 6.8 (baseline & grandfathering): UNLIKE the waiver file above,
+    # --baseline is an explicit, opt-in flag naming a COMMITTED file, so it
+    # is read ONLY when the user actually passed it -- baseline stays ()
+    # (identical to pre-6.8) when the flag is absent. A missing/typo'd path
+    # or a malformed/schema-invalid file is fail-closed the SAME way a bad
+    # waiver file is: zero baseline entries apply, and a typed error rung/
+    # record surfaces via the SAME _record_error seam, owner="baseline"
+    # (see waiver.py's module docstring for why the missing-file stance
+    # itself deliberately diverges from load_waivers').
+    baseline: tuple[BaselineEntry, ...] = ()
+    if args.baseline is not None:
+        try:
+            baseline = load_baseline(Path(args.baseline))
+        except (BaselineParseError, BaselineValidationError) as exc:
+            _record_error(
+                errors,
+                rungs,
+                kind=(
+                    ErrorKind.CONFIG_PARSE
+                    if isinstance(exc, BaselineParseError)
+                    else ErrorKind.CONFIG_VALIDATION
+                ),
+                owner="baseline",
+                subject=args.baseline,
+                message=str(exc),
+                axis=AXIS_INGESTION,
+            )
+
     now = datetime.now(UTC)
-    rungs, applied_waivers, expired_waivers = apply_waivers(rungs, waivers, now=now)
+    (
+        rungs,
+        applied_waivers,
+        expired_waivers,
+        applied_baseline,
+        expired_baseline,
+    ) = apply_waivers(rungs, waivers, baseline, now=now)
     # Story 6.1: echo each applied waiver into the JSON contract's
     # suppressions[] (WaiverNotice -> SuppressedFinding, origin="waiver").
-    # Until now applied waivers echoed in --format text only; the baseline
-    # half (origin="baseline") is Story 6.8. Every notice.id exact-matched a
+    # Story 6.8 adds the baseline half (BaselineNotice -> SuppressedFinding,
+    # origin="baseline") the same way. Every notice.id exact-matched a
     # blocking rung's driver.finding_id, which references a real findings[]
-    # entry, so ComplianceReport's suppressions[]<->findings[] cross-check holds.
+    # entry, so ComplianceReport's suppressions[]<->findings[] cross-check
+    # holds; apply_waivers' own waiver-wins tie-break guarantees at most one
+    # suppression per finding_id across the two loops below (the model
+    # layer's own uniqueness invariant, Story 6.1, enforces it too).
     suppressions = tuple(
         SuppressedFinding(
             finding_id=notice.id,
@@ -1086,7 +1180,30 @@ def _run_scan(args: argparse.Namespace) -> int:
             expires_at=notice.expires_at,
         )
         for notice in applied_waivers
+    ) + tuple(
+        SuppressedFinding(
+            finding_id=notice.id,
+            origin="baseline",
+            reason=notice.reason,
+            authorized_by=None,
+            expires_at=notice.expires_at,
+        )
+        for notice in applied_baseline
     )
+
+    # Story 6.8: --baseline-emit is purely observational (never itself
+    # suppresses anything, unlike --bypass) -- computed from rungs still
+    # blocking AFTER waiver+baseline suppression already applied but
+    # BEFORE the --bypass/--warn-only block below (mirrors emit_bypass_
+    # stanza's own position), so an already-baselined finding never
+    # reappears in the stanza and --bypass/--warn-only can never hide a
+    # genuine candidate from it.
+    baseline_stanza: str | None = None
+    if args.baseline_emit:
+        baseline_stanza = emit_baseline_stanza(
+            rungs, now=now, expiry_days=config.waiver_default_expiry_days
+        )
+
     bypass_stanza: str | None = None
     if args.bypass:
         try:
@@ -1217,9 +1334,21 @@ def _run_scan(args: argparse.Namespace) -> int:
             # exit_code=0); the stanza text itself still goes to stderr
             # (review finding: silently dropping it entirely would leave a
             # json-consuming caller with no way to recover the waiver text
-            # to commit) -- stderr carries no such purity contract.
+            # to commit) -- stderr carries no such purity contract. Story
+            # 6.8's baseline_stanza (--baseline-emit) is the SAME human-
+            # facing affordance one axis over -- same stderr-under-json
+            # treatment.
             if bypass_stanza is not None:
                 _stderr(bypass_stanza.rstrip("\n"))
+            if baseline_stanza is not None:
+                # Review finding: with BOTH --bypass and --baseline-emit
+                # set, a `---` YAML document separator keeps the two
+                # distinct stanzas (a .warden-waivers.yaml candidate, a
+                # .warden-baseline.yaml candidate) visually unambiguous
+                # rather than two `version: 1` mappings running together.
+                if bypass_stanza is not None:
+                    _stderr("---")
+                _stderr(baseline_stanza.rstrip("\n"))
             sys.stdout.write(render_json(report) + "\n")
         else:
             if bypass_stanza is not None:
@@ -1227,11 +1356,23 @@ def _run_scan(args: argparse.Namespace) -> int:
                 # into a committed .warden-waivers.yaml -- the tool never
                 # writes it into the scanned tree.
                 sys.stdout.write(bypass_stanza)
+            if baseline_stanza is not None:
+                # Story 6.8: same "printed before the report, never
+                # written into the scanned tree" contract as bypass_stanza
+                # above, one axis over (--baseline-emit's own stanza). A
+                # `---` separator precedes it only when --bypass's own
+                # stanza already printed (review finding) -- otherwise this
+                # is the only stanza on stdout and needs no boundary marker.
+                if bypass_stanza is not None:
+                    sys.stdout.write("---\n")
+                sys.stdout.write(baseline_stanza)
             sys.stdout.write(
                 render_text(
                     report,
                     applied_waivers=applied_waivers,
                     expired_waivers=expired_waivers,
+                    applied_baseline=applied_baseline,
+                    expired_baseline=expired_baseline,
                     warn_only=args.warn_only,
                     warn_only_downgraded=warn_only_downgraded,
                 )

@@ -51,6 +51,33 @@ Ownership decisions recorded:
   actually rewrote -- ``cli.py`` threads that count into the text report's
   graduate-to-enforcing nudge (see ``report.py``'s own docstring for the
   nudge's precise gating rule).
+* Story 6.8 (baseline & grandfathering -- the ``models.SuppressedFinding``
+  ``origin="baseline"`` half): a SECOND, baseline-shaped input to the SAME
+  ``apply_waivers`` engine, not a parallel suppression mechanism --
+  baseline matching reuses ``_is_finding_family_id``/the SAME
+  ``_FINDING_ID_FAMILIES`` tuple and the SAME ``_NON_BLOCKING_STATUSES``
+  guard verbatim, so the C0 invariants (a baselined run can never render
+  ``clean``; the baseline can never mask an ``error``) fall out
+  structurally, exactly the way the waiver path's own invariants already
+  do -- no new invariant code. A baseline entry's shape is deliberately
+  looser than a waiver's: only ``id``/``expires_at`` are required
+  (``reason`` is optional, defaulting to ``_DEFAULT_BASELINE_REASON``);
+  there is no ``authorized_by``/``accepted_at`` at all (a baseline is
+  bulk-accepted at adoption time, not individually signed like a waiver).
+  ``apply_waivers``'s per-rung loop tries a waiver match FIRST and only
+  falls back to a baseline match when no waiver entry exists for that
+  finding id at all -- "waiver wins" is a structural short-circuit (an
+  early ``continue``), never a second pass over ``rungs``, and it holds
+  even when the matched waiver is itself expired (the expired-waiver
+  re-block fall-through still wins over a valid baseline entry on the
+  same id -- a deliberately conservative choice, see ``apply_waivers``'s
+  own docstring). ``load_baseline``'s missing-file behavior deliberately
+  DIVERGES from ``load_waivers``: ``--baseline`` is an explicit, opt-in
+  CLI flag naming a COMMITTED file (never a hidden convention file like
+  ``.warden-waivers.yaml``), so a missing/typo'd path is a loud
+  ``BaselineValidationError``, never a silent empty-baseline fallback
+  that would leave every grandfathered finding re-gating with no visible
+  signal why.
 """
 
 from __future__ import annotations
@@ -87,6 +114,12 @@ _MAX_REASON_LENGTH = 1000
 _MAX_AUTHORIZED_BY_LENGTH = 200
 _REQUIRED_ENTRY_FIELDS = ("id", "reason", "authorized_by", "accepted_at", "expires_at")
 
+# Story 6.8: a baseline entry's required-field set is deliberately looser
+# than a waiver's (see the module docstring) -- reason is optional, and
+# there is no authorized_by/accepted_at at all.
+_REQUIRED_BASELINE_ENTRY_FIELDS = ("id", "expires_at")
+_DEFAULT_BASELINE_REASON = "grandfathered via .warden-baseline.yaml"
+
 # Rungs already at or below "suppressed"/"inapplicable" have nothing left to
 # waive -- never rewritten by apply_waivers/bypass_blocking.
 _NON_BLOCKING_STATUSES = frozenset(
@@ -110,6 +143,27 @@ class WaiverValidationError(WaiverError):
     a non-family or duplicate id, an oversized ``reason``, ``expires_at <=
     accepted_at``, ...) -- ``cli.py`` maps this to ``ErrorKind.
     CONFIG_VALIDATION``, ``owner="waiver"``."""
+
+
+class BaselineError(ValueError):
+    """Base for this module's baseline-shaped typed errors (Story 6.8) --
+    mirrors ``WaiverError``'s shape: one common base, two subclasses
+    splitting a syntax failure from a shape/schema failure."""
+
+
+class BaselineParseError(BaselineError):
+    """Malformed/unreadable YAML in the ``--baseline`` file -- ``cli.py``
+    maps this to ``ErrorKind.CONFIG_PARSE``, ``owner="baseline"``."""
+
+
+class BaselineValidationError(BaselineError):
+    """A shape/schema-invalid baseline document (unknown/missing
+    ``version``, a non-family or duplicate id, an oversized ``reason``, an
+    unparsable/naive ``expires_at``, ...) -- OR the file does not exist at
+    all (see ``load_baseline``'s own docstring: unlike ``load_waivers``, a
+    missing ``--baseline`` file is a loud error, never a silent empty
+    baseline). ``cli.py`` maps this to ``ErrorKind.CONFIG_VALIDATION``,
+    ``owner="baseline"``."""
 
 
 @dataclass(frozen=True)
@@ -145,6 +199,41 @@ class WaiverNotice:
     expires_at: str
 
 
+@dataclass(frozen=True)
+class BaselineEntry:
+    """One baseline stanza entry (Story 6.8): ``id`` exact-matches a
+    ``Finding.id`` (the SAME three finding-id families ``WaiverEntry.id``
+    matches -- see the module docstring). Looser than ``WaiverEntry``:
+    only ``id``/``expires_at`` are required (``reason`` is optional,
+    defaulting to ``_DEFAULT_BASELINE_REASON``); there is no
+    ``authorized_by``/``accepted_at`` at all -- a baseline is bulk-
+    accepted at adoption time, not individually signed like a waiver."""
+
+    id: str
+    expires_at: str
+    reason: str
+
+
+@dataclass(frozen=True)
+class BaselineFile:
+    """The whole validated ``--baseline`` document -- top-level key
+    ``baseline:``, NOT ``waivers:`` (see the module docstring)."""
+
+    version: int
+    entries: tuple[BaselineEntry, ...]
+
+
+@dataclass(frozen=True)
+class BaselineNotice:
+    """One baseline entry that actually suppressed a finding THIS run --
+    echoed in ``--format text`` output. Mirrors ``WaiverNotice`` minus
+    ``authorized_by`` (a baseline notice carries none)."""
+
+    id: str
+    reason: str
+    expires_at: str
+
+
 def _is_finding_family_id(value: str) -> bool:
     """Whether ``value`` matches one of the three finding-id families --
     the SAME structural check that rejects a wildcard/glob/prefix id as
@@ -153,7 +242,13 @@ def _is_finding_family_id(value: str) -> bool:
 
 
 def _parse_timestamp(
-    value: object, *, path: Path, index: int, field: str
+    value: object,
+    *,
+    path: Path,
+    index: int,
+    field: str,
+    error_cls: type[ValueError] = WaiverValidationError,
+    label: str = "waivers",
 ) -> tuple[datetime, str]:
     """Returns ``(parsed, normalized_str)``. Review finding: PyYAML's own
     implicit timestamp resolver turns an UNQUOTED ISO-8601-looking scalar
@@ -162,7 +257,14 @@ def _parse_timestamp(
     confusing "got datetime.datetime(...)" message; ``normalized_str`` is
     what ``WaiverEntry``'s ``str``-typed field stores either way (a quoted
     string round-trips as itself, an unquoted one is re-rendered via
-    ``.isoformat()``)."""
+    ``.isoformat()``).
+
+    ``error_cls``/``label`` (Story 6.8, additive/defaulted -- every pre-6.8
+    caller preserved byte-for-byte): ``_validate_baseline_entry`` reuses
+    this SAME timestamp-parsing logic rather than duplicating it, passing
+    ``error_cls=BaselineValidationError``/``label="baseline"`` so a
+    baseline document's own errors are typed/worded correctly instead of
+    masquerading as a waiver error."""
     if isinstance(value, datetime):
         parsed = value
         normalized = value.isoformat()
@@ -170,19 +272,19 @@ def _parse_timestamp(
         try:
             parsed = datetime.fromisoformat(value)
         except ValueError as exc:
-            raise WaiverValidationError(
-                f"{path}: waivers[{index}].{field} is not a valid ISO-8601 "
+            raise error_cls(
+                f"{path}: {label}[{index}].{field} is not a valid ISO-8601 "
                 f"timestamp: {value!r}"
             ) from exc
         normalized = value
     else:
-        raise WaiverValidationError(
-            f"{path}: waivers[{index}].{field} must be a non-empty ISO-8601 "
+        raise error_cls(
+            f"{path}: {label}[{index}].{field} must be a non-empty ISO-8601 "
             f"string, got {value!r}"
         )
     if parsed.tzinfo is None:
-        raise WaiverValidationError(
-            f"{path}: waivers[{index}].{field} must carry a UTC offset (a "
+        raise error_cls(
+            f"{path}: {label}[{index}].{field} must carry a UTC offset (a "
             f"naive timestamp is unsafe to compare), got {value!r}"
         )
     return parsed, normalized
@@ -291,6 +393,112 @@ def _validate_document(document: object, *, path: Path) -> WaiverFile:
     return WaiverFile(version=version, waivers=tuple(entries))
 
 
+def _validate_baseline_entry(
+    raw_entry: object, *, path: Path, index: int
+) -> BaselineEntry:
+    """Mirrors ``_validate_entry`` with the looser, bulk-accepted baseline
+    shape: only ``id``/``expires_at`` are required, ``reason`` is optional
+    (defaults to ``_DEFAULT_BASELINE_REASON``), and there is no
+    ``authorized_by``/``accepted_at`` at all -- so no ``expires_at <=
+    accepted_at`` check either (there is no ``accepted_at`` to compare
+    against)."""
+    if not isinstance(raw_entry, dict):
+        raise BaselineValidationError(
+            f"{path}: baseline[{index}] must be a mapping, got "
+            f"{type(raw_entry).__name__}"
+        )
+    missing = [
+        field for field in _REQUIRED_BASELINE_ENTRY_FIELDS if field not in raw_entry
+    ]
+    if missing:
+        raise BaselineValidationError(
+            f"{path}: baseline[{index}] missing required field(s): {missing}"
+        )
+    entry_id = raw_entry["id"]
+    if not isinstance(entry_id, str) or not entry_id:
+        raise BaselineValidationError(
+            f"{path}: baseline[{index}].id must be a non-empty string, got "
+            f"{entry_id!r}"
+        )
+    if not _is_finding_family_id(entry_id):
+        raise BaselineValidationError(
+            f"{path}: baseline[{index}].id {entry_id!r} matches none of the "
+            "three finding-id families (no wildcard/glob/prefix matching, "
+            "ever)"
+        )
+    reason = raw_entry.get("reason", _DEFAULT_BASELINE_REASON)
+    if not isinstance(reason, str):
+        raise BaselineValidationError(
+            f"{path}: baseline[{index}].reason must be a string, got "
+            f"{type(reason).__name__}"
+        )
+    if len(reason) > _MAX_REASON_LENGTH:
+        raise BaselineValidationError(
+            f"{path}: baseline[{index}].reason exceeds {_MAX_REASON_LENGTH} "
+            "characters"
+        )
+    _, expires_at_str = _parse_timestamp(
+        raw_entry["expires_at"],
+        path=path,
+        index=index,
+        field="expires_at",
+        error_cls=BaselineValidationError,
+        label="baseline",
+    )
+    return BaselineEntry(id=entry_id, expires_at=expires_at_str, reason=reason)
+
+
+def _validate_baseline_document(document: object, *, path: Path) -> BaselineFile:
+    """Mirrors ``_validate_document`` exactly, except the top-level YAML
+    key is ``baseline:``, not ``waivers:`` (see the module docstring)."""
+    if document is None:
+        # An empty file (or one that is only comments) parses to None --
+        # treated identically to an empty mapping (still missing `version`,
+        # never guessed).
+        document = {}
+    if not isinstance(document, dict):
+        raise BaselineValidationError(
+            f"{path}: baseline file must be a mapping, got "
+            f"{type(document).__name__}"
+        )
+    version = document.get("version")
+    # Mirrors _validate_document's own literal-int-1 check (see its
+    # comment): `type(version) is not int` rejects both a bool and a
+    # float, either of which `!=`/`isinstance` alone would silently admit.
+    if type(version) is not int or version != _SUPPORTED_VERSION:
+        raise BaselineValidationError(
+            f"{path}: 'version' must be the literal int {_SUPPORTED_VERSION}, "
+            f"got {version!r}"
+        )
+    # Review finding: UNLIKE _validate_document's own `document.get("waivers",
+    # [])` (a missing `waivers:` key is fine there -- load_waivers' own
+    # missing-FILE-is-normal precedent already accepts "nothing configured"),
+    # a baseline document is reached only via the explicit, opt-in --baseline
+    # flag naming a COMMITTED file -- a present-but-key-less document (e.g. a
+    # user accidentally points --baseline at a `.warden-waivers.yaml`, which
+    # also has `version: 1` but a `waivers:` key instead) must never silently
+    # degrade to "zero baseline entries" (load_baseline's own docstring: "a
+    # loud error, never a silent empty baseline").
+    if "baseline" not in document:
+        raise BaselineValidationError(f"{path}: missing required key 'baseline'")
+    raw_entries = document["baseline"]
+    if not isinstance(raw_entries, list):
+        raise BaselineValidationError(
+            f"{path}: 'baseline' must be a list, got {type(raw_entries).__name__}"
+        )
+    entries: list[BaselineEntry] = []
+    seen_ids: set[str] = set()
+    for index, raw_entry in enumerate(raw_entries):
+        entry = _validate_baseline_entry(raw_entry, path=path, index=index)
+        if entry.id in seen_ids:
+            raise BaselineValidationError(
+                f"{path}: duplicate baseline id {entry.id!r} (baseline[{index}])"
+            )
+        seen_ids.add(entry.id)
+        entries.append(entry)
+    return BaselineFile(version=version, entries=tuple(entries))
+
+
 def load_waivers(path: Path) -> tuple[WaiverEntry, ...]:
     """Load + validate ``.warden-waivers.yaml`` at ``path``.
 
@@ -314,6 +522,43 @@ def load_waivers(path: Path) -> tuple[WaiverEntry, ...]:
     return _validate_document(document, path=path).waivers
 
 
+def load_baseline(path: Path) -> tuple[BaselineEntry, ...]:
+    """Load + validate the ``--baseline`` file at ``path`` (Story 6.8).
+
+    UNLIKE ``load_waivers``, a missing file is NOT normal here: ``
+    --baseline`` is an explicit, opt-in CLI argument naming a COMMITTED
+    file (the AC's own wording), never a hidden convention file like
+    ``.warden-waivers.yaml`` -- so a missing/typo'd path raises a loud
+    ``BaselineValidationError`` rather than silently degrading to an empty
+    baseline, which would leave every grandfathered finding re-gating with
+    no visible signal why. This is a deliberate, documented divergence
+    from the waiver precedent (see the module docstring), not an
+    oversight. Otherwise mirrors ``load_waivers`` exactly: raises
+    ``BaselineParseError`` for an unreadable/malformed-YAML file,
+    ``BaselineValidationError`` for a shape/schema problem.
+    ``yaml.safe_load`` only -- never ``yaml.load``/``yaml.unsafe_load``
+    (NFR-S4/D1)."""
+    if not path.exists():
+        raise BaselineValidationError(
+            f"{path}: --baseline file does not exist -- this is an "
+            "explicit, opt-in flag naming a committed file, never a "
+            "silent missing-file convention (unlike load_waivers' own "
+            ".warden-waivers.yaml handling)"
+        )
+    if not path.is_file():
+        # Review finding: path.is_file() alone is False for BOTH "nothing
+        # there" and "it's a directory" -- a distinct message for the
+        # latter (e.g. --baseline pointed at a repo root by mistake) is
+        # more honest than reusing the "does not exist" wording.
+        raise BaselineValidationError(f"{path}: --baseline path is not a file")
+    try:
+        with path.open("r", encoding="utf-8") as handle:
+            document = yaml.safe_load(handle)
+    except (yaml.YAMLError, UnicodeDecodeError, RecursionError, OSError) as exc:
+        raise BaselineParseError(f"{path}: cannot read or parse: {exc}") from exc
+    return _validate_baseline_document(document, path=path).entries
+
+
 def _is_expired(expires_at: str, *, now: datetime) -> bool:
     """Strict-inequality boundary (mirrors ``vuln.is_db_stale``): exactly
     at ``expires_at`` is NOT expired."""
@@ -331,30 +576,62 @@ def _waiver_notice(waiver: WaiverEntry) -> WaiverNotice:
     )
 
 
+def _baseline_notice(entry: BaselineEntry) -> BaselineNotice:
+    """Factor the ``BaselineNotice`` construction shared between
+    ``apply_waivers``'s applied and expired baseline branches (Story 6.8,
+    mirrors ``_waiver_notice``)."""
+    return BaselineNotice(
+        id=entry.id, reason=entry.reason, expires_at=entry.expires_at
+    )
+
+
 def apply_waivers(
     rungs: Sequence[tuple[Status, StatusDriver | None]],
     waivers: Sequence[WaiverEntry],
+    baseline: Sequence[BaselineEntry] = (),
     *,
     now: datetime,
 ) -> tuple[
     list[tuple[Status, StatusDriver | None]],
     list[WaiverNotice],
     list[WaiverNotice],
+    list[BaselineNotice],
+    list[BaselineNotice],
 ]:
-    """Exact finding-id match + not-expired -> rewrite that rung's
-    ``Status`` to ``BYPASSED`` and collect an applied notice; exact match +
-    expired -> the rung is left UNTOUCHED (the already-correct re-block
-    fall-through -- unchanged from pre-3.3) and an expired notice is
-    collected instead (Story 3.3 -- makes that fall-through visible for
-    review); no match at all -> untouched, no notice either way. Returns
-    ``(rungs, applied_notices, expired_notices)``; both notice lists are
-    deduplicated by waiver id and sorted by id."""
-    by_id = {waiver.id: waiver for waiver in waivers}
+    """The ONE suppression engine (Story 6.8's own framing): exact
+    finding-id match + not-expired -> rewrite that rung's ``Status`` to
+    ``BYPASSED`` and collect an applied notice; exact match + expired ->
+    the rung is left UNTOUCHED (the already-correct re-block fall-through
+    -- unchanged from pre-3.3) and an expired notice is collected instead
+    (Story 3.3 -- makes that fall-through visible for review); no match at
+    all -> untouched, no notice either way.
+
+    Story 6.8 adds ``baseline`` as a SECOND suppression input to this SAME
+    per-rung loop, not a second pass over ``rungs``: for each rung, a
+    waiver match is tried FIRST; a baseline match is only even attempted
+    when NO waiver entry exists for that finding id at all (an early
+    ``continue`` after the waiver branch runs). This makes "waiver wins"
+    a structural property, including the (deliberately conservative) case
+    where the matched waiver is itself expired -- the rung still takes the
+    waiver's re-block fall-through rather than falling through further to
+    a valid baseline entry on the same id.
+
+    Returns ``(rungs, applied_waiver_notices, expired_waiver_notices,
+    applied_baseline_notices, expired_baseline_notices)``; every notice
+    list is deduplicated by id and sorted by id. Passing ``baseline=()``
+    (the default) reproduces every pre-6.8 caller's ``rungs``/waiver-notice
+    output byte-for-byte -- the baseline branch below can never match
+    anything against an empty mapping."""
+    by_waiver_id = {waiver.id: waiver for waiver in waivers}
+    by_baseline_id = {entry.id: entry for entry in baseline}
     updated: list[tuple[Status, StatusDriver | None]] = []
     applied: dict[str, WaiverNotice] = {}
     expired: dict[str, WaiverNotice] = {}
+    applied_baseline: dict[str, BaselineNotice] = {}
+    expired_baseline: dict[str, BaselineNotice] = {}
     for status, driver in rungs:
-        waiver = by_id.get(driver.finding_id) if driver is not None else None
+        finding_id = driver.finding_id if driver is not None else None
+        waiver = by_waiver_id.get(finding_id) if finding_id is not None else None
         if waiver is not None and status not in _NON_BLOCKING_STATUSES:
             if _is_expired(waiver.expires_at, now=now):
                 updated.append((status, driver))
@@ -362,12 +639,23 @@ def apply_waivers(
             else:
                 updated.append((Status.BYPASSED, driver))
                 applied.setdefault(waiver.id, _waiver_notice(waiver))
-        else:
-            updated.append((status, driver))
+            continue
+        entry = by_baseline_id.get(finding_id) if finding_id is not None else None
+        if entry is not None and status not in _NON_BLOCKING_STATUSES:
+            if _is_expired(entry.expires_at, now=now):
+                updated.append((status, driver))
+                expired_baseline.setdefault(entry.id, _baseline_notice(entry))
+            else:
+                updated.append((Status.BYPASSED, driver))
+                applied_baseline.setdefault(entry.id, _baseline_notice(entry))
+            continue
+        updated.append((status, driver))
     return (
         updated,
         sorted(applied.values(), key=lambda notice: notice.id),
         sorted(expired.values(), key=lambda notice: notice.id),
+        sorted(applied_baseline.values(), key=lambda notice: notice.id),
+        sorted(expired_baseline.values(), key=lambda notice: notice.id),
     )
 
 
@@ -473,6 +761,48 @@ def emit_bypass_stanza(
                 "reason": reason,
                 "authorized_by": authorized_by,
                 "accepted_at": accepted_at.isoformat(),
+                "expires_at": expires_at.isoformat(),
+            }
+            for finding_id in ids
+        ],
+    }
+    return yaml.safe_dump(document, sort_keys=False)
+
+
+def emit_baseline_stanza(
+    rungs: Sequence[tuple[Status, StatusDriver | None]],
+    *,
+    now: datetime,
+    expiry_days: int,
+) -> str:
+    """One ``--baseline``-ready stanza entry per still-non-clean, Finding-
+    backed rung (Story 6.8) -- mirrors ``emit_bypass_stanza``'s shape (the
+    SAME still-blocking/finding-family selection, ``yaml.safe_dump`` only,
+    NFR-S4/D1) but the looser baseline entry shape has no ``reason``/
+    ``authorized_by`` params: the emitted ``reason`` is the fixed
+    ``_DEFAULT_BASELINE_REASON`` a human can edit before committing, and a
+    baseline entry carries no ``authorized_by``/``accepted_at`` at all (see
+    ``BaselineEntry``'s own docstring). Printed to stdout (or stderr under
+    ``--format json``) for a human to commit; this tool never writes it
+    into the scanned repository tree itself, and calling this function
+    never itself suppresses anything -- ``--baseline-emit`` is purely
+    observational (unlike ``--bypass``, which both bypasses AND emits)."""
+    ids = sorted(
+        {
+            driver.finding_id
+            for status, driver in rungs
+            if driver is not None
+            and status not in _NON_BLOCKING_STATUSES
+            and _is_finding_family_id(driver.finding_id)
+        }
+    )
+    expires_at = now + timedelta(days=expiry_days)
+    document = {
+        "version": _SUPPORTED_VERSION,
+        "baseline": [
+            {
+                "id": finding_id,
+                "reason": _DEFAULT_BASELINE_REASON,
                 "expires_at": expires_at.isoformat(),
             }
             for finding_id in ids

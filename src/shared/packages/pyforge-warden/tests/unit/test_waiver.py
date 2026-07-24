@@ -1,10 +1,14 @@
 """Unit tests -- the waiver suppression engine (Story 3.2): schema
 validation, exact finding-id matching + expiry-awareness, and the
-``--bypass`` stanza shape.
+``--bypass`` stanza shape. Story 6.8 adds the baseline & grandfathering
+half of the SAME engine (``BaselineEntry``/``load_baseline``/
+``emit_baseline_stanza`` + ``apply_waivers``'s ``baseline=`` parameter and
+its waiver-wins tie-break) at the bottom of this file.
 
-Every ``load_waivers`` test writes a real file to ``tmp_path`` and reads it
-back through the real ``yaml.safe_load`` path -- no mocking of the YAML
-layer (mirrors ``test_config.py``'s own convention).
+Every ``load_waivers``/``load_baseline`` test writes a real file to
+``tmp_path`` and reads it back through the real ``yaml.safe_load`` path --
+no mocking of the YAML layer (mirrors ``test_config.py``'s own
+convention).
 """
 
 from __future__ import annotations
@@ -16,12 +20,17 @@ import yaml
 
 from pyforge.warden.models import AXIS_HYGIENE, AXIS_INGESTION, AXIS_VULNERABILITY, Status, StatusDriver
 from pyforge.warden.waiver import (
+    BaselineEntry,
+    BaselineParseError,
+    BaselineValidationError,
     WaiverEntry,
     WaiverParseError,
     WaiverValidationError,
     apply_waivers,
     bypass_blocking,
+    emit_baseline_stanza,
     emit_bypass_stanza,
+    load_baseline,
     load_waivers,
     warn_blocking,
 )
@@ -360,7 +369,7 @@ def test_exact_match_non_expired_bypasses_and_notices():
         expires_at=_EXPIRES,
     )
     rungs = [_rung(Status.WARN, "hygiene:DEP002:requests")]
-    updated, notices, expired = apply_waivers(rungs, (waiver,), now=_NOW)
+    updated, notices, expired, _, _ = apply_waivers(rungs, (waiver,), now=_NOW)
     assert updated == [(Status.BYPASSED, rungs[0][1])]
     assert len(notices) == 1
     assert notices[0].id == "hygiene:DEP002:requests"
@@ -379,7 +388,7 @@ def test_no_match_leaves_the_rung_untouched():
         expires_at=_EXPIRES,
     )
     rungs = [_rung(Status.WARN, "hygiene:DEP002:requests")]
-    updated, notices, expired = apply_waivers(rungs, (waiver,), now=_NOW)
+    updated, notices, expired, _, _ = apply_waivers(rungs, (waiver,), now=_NOW)
     assert updated == rungs
     assert notices == []
     assert expired == []
@@ -398,7 +407,7 @@ def test_expired_match_leaves_the_rung_untouched():
         expires_at="2020-02-01T00:00:00+00:00",
     )
     rungs = [_rung(Status.WARN, "hygiene:DEP002:requests")]
-    updated, notices, expired = apply_waivers(rungs, (waiver,), now=_NOW)
+    updated, notices, expired, _, _ = apply_waivers(rungs, (waiver,), now=_NOW)
     assert updated == rungs
     assert notices == []
     assert len(expired) == 1
@@ -422,7 +431,7 @@ def test_non_blocking_status_is_never_rewritten_even_on_an_id_match(status):
         expires_at=_EXPIRES,
     )
     rungs = [_rung(status, "hygiene:DEP002:requests")]
-    updated, notices, expired = apply_waivers(rungs, (waiver,), now=_NOW)
+    updated, notices, expired, _, _ = apply_waivers(rungs, (waiver,), now=_NOW)
     assert updated == rungs
     assert notices == []
     assert expired == []
@@ -439,7 +448,7 @@ def test_expiry_boundary_exactly_now_is_not_expired():
         expires_at=_NOW.isoformat(),
     )
     rungs = [_rung(Status.WARN, "hygiene:DEP002:requests")]
-    updated, _, expired = apply_waivers(rungs, (waiver,), now=_NOW)
+    updated, _, expired, _, _ = apply_waivers(rungs, (waiver,), now=_NOW)
     assert updated[0][0] is Status.BYPASSED
     assert expired == []
 
@@ -453,7 +462,7 @@ def test_driverless_rung_is_never_matched():
         accepted_at=_ACCEPTED,
         expires_at=_EXPIRES,
     )
-    updated, notices, expired = apply_waivers(rungs, (waiver,), now=_NOW)
+    updated, notices, expired, _, _ = apply_waivers(rungs, (waiver,), now=_NOW)
     assert updated == rungs
     assert notices == []
     assert expired == []
@@ -473,7 +482,7 @@ def test_residual_unwaived_finding_alongside_a_waived_one():
         _rung(Status.WARN, "hygiene:DEP002:requests"),
         _rung(Status.POLICY_VIOLATION, "vuln:GHSA-xxxx:other@1.0.0", axis=AXIS_VULNERABILITY),
     ]
-    updated, notices, expired = apply_waivers(rungs, (waiver,), now=_NOW)
+    updated, notices, expired, _, _ = apply_waivers(rungs, (waiver,), now=_NOW)
     assert updated[0][0] is Status.BYPASSED
     assert updated[1] == rungs[1]
     assert len(notices) == 1
@@ -492,7 +501,7 @@ def test_two_rungs_sharing_one_waiver_id_produce_one_notice():
         _rung(Status.WARN, "hygiene:DEP002:requests"),
         _rung(Status.WARN, "hygiene:DEP002:requests"),
     ]
-    updated, notices, expired = apply_waivers(rungs, (waiver,), now=_NOW)
+    updated, notices, expired, _, _ = apply_waivers(rungs, (waiver,), now=_NOW)
     assert all(status is Status.BYPASSED for status, _ in updated)
     assert len(notices) == 1
     assert expired == []
@@ -510,7 +519,7 @@ def test_two_rungs_sharing_one_expired_waiver_id_produce_one_expired_notice():
         _rung(Status.WARN, "hygiene:DEP002:requests"),
         _rung(Status.WARN, "hygiene:DEP002:requests"),
     ]
-    updated, notices, expired = apply_waivers(rungs, (waiver,), now=_NOW)
+    updated, notices, expired, _, _ = apply_waivers(rungs, (waiver,), now=_NOW)
     assert updated == rungs
     assert notices == []
     assert len(expired) == 1
@@ -727,3 +736,444 @@ def test_reason_round_trips_byte_for_byte_through_the_stanza(reason):
     )
     document = yaml.safe_load(stanza)
     assert document["waivers"][0]["reason"] == reason
+
+
+# === Story 6.8: baseline & grandfathering =================================
+#
+# BaselineEntry/load_baseline/apply_waivers(baseline=...)/emit_baseline_
+# stanza -- a SECOND, baseline-shaped input to the SAME apply_waivers
+# engine (never a parallel mechanism). Looser required-field set than a
+# waiver's (id + expires_at only, reason optional); missing-file is a loud
+# error (diverges deliberately from load_waivers -- see waiver.py's module
+# docstring).
+
+
+def _valid_baseline_text(
+    entry_id: str = "hygiene:DEP002:requests",
+    expires_at: str = _EXPIRES,
+    reason: str | None = "grandfathered at adoption",
+) -> str:
+    reason_line = f"    reason: {reason!r}\n" if reason is not None else ""
+    return (
+        "version: 1\n"
+        "baseline:\n"
+        f"  - id: {entry_id!r}\n"
+        f"    expires_at: {expires_at!r}\n"
+        f"{reason_line}"
+    )
+
+
+# --- load_baseline: missing file (diverges from load_waivers) ------------
+
+
+def test_missing_baseline_file_raises_validation_error(tmp_path):
+    """UNLIKE load_waivers, a missing --baseline file is a loud error --
+    an explicit, opt-in flag naming a committed file, never a silent
+    empty-baseline fallback."""
+    with pytest.raises(BaselineValidationError, match="does not exist"):
+        load_baseline(tmp_path / ".warden-baseline.yaml")
+
+
+def test_baseline_path_pointing_at_a_directory_raises_a_distinct_error(tmp_path):
+    """Review finding: path.is_file() is False for both "nothing there"
+    and "it's a directory" -- the directory case gets its own, distinct
+    message rather than reusing the misleading "does not exist" wording."""
+    directory = tmp_path / "a-directory"
+    directory.mkdir()
+    with pytest.raises(BaselineValidationError, match="not a file"):
+        load_baseline(directory)
+
+
+# --- load_baseline: malformed YAML (BaselineParseError) -------------------
+
+
+def test_malformed_baseline_yaml_raises_baseline_parse_error(tmp_path):
+    path = tmp_path / ".warden-baseline.yaml"
+    _write(path, "version: 1\nbaseline:\n  - id: [unterminated\n")
+    with pytest.raises(BaselineParseError):
+        load_baseline(path)
+
+
+# --- load_baseline: version/shape validation -------------------------------
+
+
+def test_baseline_missing_version_raises_validation_error(tmp_path):
+    path = tmp_path / ".warden-baseline.yaml"
+    _write(path, "baseline: []\n")
+    with pytest.raises(BaselineValidationError):
+        load_baseline(path)
+
+
+def test_baseline_unknown_version_raises_validation_error(tmp_path):
+    path = tmp_path / ".warden-baseline.yaml"
+    _write(path, "version: 2\nbaseline: []\n")
+    with pytest.raises(BaselineValidationError):
+        load_baseline(path)
+
+
+def test_baseline_key_absent_raises_validation_error(tmp_path):
+    """Review finding: a document with `version: 1` but no `baseline:` key
+    at all (e.g. a user accidentally points --baseline at a
+    `.warden-waivers.yaml`, which shares the same `version: 1` convention
+    but a `waivers:` key instead) must never silently degrade to an empty
+    baseline -- it must fail loud, the same as every other shape problem
+    (mirrors load_baseline's own "never a silent empty baseline"
+    contract)."""
+    path = tmp_path / ".warden-baseline.yaml"
+    _write(path, "version: 1\n")
+    with pytest.raises(BaselineValidationError, match="missing required key 'baseline'"):
+        load_baseline(path)
+
+
+def test_baseline_key_present_but_empty_list_is_a_valid_empty_baseline(tmp_path):
+    """UNLIKE an absent `baseline:` key, an EXPLICIT `baseline: []` is a
+    legitimate, deliberately empty baseline -- only the key's absence is
+    ambiguous/error-worthy, not an empty list."""
+    path = tmp_path / ".warden-baseline.yaml"
+    _write(path, "version: 1\nbaseline: []\n")
+    assert load_baseline(path) == ()
+
+
+def test_pointing_baseline_at_a_waiver_shaped_file_raises_validation_error(tmp_path):
+    """The exact adversarial scenario the review finding named: a real
+    `.warden-waivers.yaml` (version: 1, `waivers:` key) passed to
+    --baseline must be rejected, never silently accepted as an empty
+    baseline."""
+    path = tmp_path / ".warden-waivers.yaml"
+    _write(
+        path,
+        "version: 1\n"
+        "waivers:\n"
+        "  - id: 'hygiene:DEP002:requests'\n"
+        "    reason: 'x'\n"
+        "    authorized_by: 'alice'\n"
+        "    accepted_at: '2000-01-01T00:00:00+00:00'\n"
+        f"    expires_at: {_EXPIRES!r}\n",
+    )
+    with pytest.raises(BaselineValidationError, match="missing required key 'baseline'"):
+        load_baseline(path)
+
+
+def test_baseline_key_not_a_list_raises_validation_error(tmp_path):
+    path = tmp_path / ".warden-baseline.yaml"
+    _write(path, "version: 1\nbaseline: 'not-a-list'\n")
+    with pytest.raises(BaselineValidationError):
+        load_baseline(path)
+
+
+def test_baseline_non_mapping_entry_raises_validation_error(tmp_path):
+    path = tmp_path / ".warden-baseline.yaml"
+    _write(path, "version: 1\nbaseline:\n  - just a string\n")
+    with pytest.raises(BaselineValidationError):
+        load_baseline(path)
+
+
+def test_baseline_missing_expires_at_raises_validation_error(tmp_path):
+    path = tmp_path / ".warden-baseline.yaml"
+    _write(path, "version: 1\nbaseline:\n  - id: 'hygiene:DEP002:requests'\n")
+    with pytest.raises(BaselineValidationError):
+        load_baseline(path)
+
+
+def test_baseline_missing_id_raises_validation_error(tmp_path):
+    path = tmp_path / ".warden-baseline.yaml"
+    _write(path, f"version: 1\nbaseline:\n  - expires_at: {_EXPIRES!r}\n")
+    with pytest.raises(BaselineValidationError):
+        load_baseline(path)
+
+
+@pytest.mark.parametrize(
+    "entry_id",
+    [
+        "vuln:*:*",
+        "not-a-family-id",
+        "hygiene",
+        "vuln:GHSA-xxxx:requests",
+        "error:config-parse:some-subject",  # C0: an error id can never be
+        # named in a valid baseline entry -- the whole file is rejected at
+        # load time, never silently accepted (see the module docstring).
+    ],
+)
+def test_baseline_wildcard_or_non_family_id_rejects_the_whole_file(tmp_path, entry_id):
+    path = tmp_path / ".warden-baseline.yaml"
+    _write(path, _valid_baseline_text(entry_id=entry_id))
+    with pytest.raises(BaselineValidationError):
+        load_baseline(path)
+
+
+def test_baseline_duplicate_id_raises_validation_error(tmp_path):
+    path = tmp_path / ".warden-baseline.yaml"
+    _write(
+        path,
+        "version: 1\n"
+        "baseline:\n"
+        "  - id: 'hygiene:DEP002:requests'\n"
+        f"    expires_at: {_EXPIRES!r}\n"
+        "  - id: 'hygiene:DEP002:requests'\n"
+        f"    expires_at: {_EXPIRES!r}\n",
+    )
+    with pytest.raises(BaselineValidationError):
+        load_baseline(path)
+
+
+def test_baseline_reason_over_1000_chars_is_rejected(tmp_path):
+    path = tmp_path / ".warden-baseline.yaml"
+    _write(path, _valid_baseline_text(reason="x" * 1001))
+    with pytest.raises(BaselineValidationError):
+        load_baseline(path)
+
+
+def test_baseline_naive_timestamp_is_rejected(tmp_path):
+    path = tmp_path / ".warden-baseline.yaml"
+    _write(path, _valid_baseline_text(expires_at="2026-01-01T00:00:00"))
+    with pytest.raises(BaselineValidationError):
+        load_baseline(path)
+
+
+def test_baseline_unparsable_timestamp_is_rejected(tmp_path):
+    path = tmp_path / ".warden-baseline.yaml"
+    _write(path, _valid_baseline_text(expires_at="not-a-timestamp"))
+    with pytest.raises(BaselineValidationError):
+        load_baseline(path)
+
+
+def test_baseline_unquoted_timestamp_parsed_as_native_datetime_is_accepted(tmp_path):
+    """Mirrors test_unquoted_timestamp_parsed_as_native_datetime_is_accepted
+    (the waiver-side test) -- _parse_timestamp is shared code (Story 6.8's
+    error_cls/label params), so this exact PyYAML-implicit-datetime gotcha
+    must be proven on the baseline side too, not just the waiver side."""
+    path = tmp_path / ".warden-baseline.yaml"
+    _write(
+        path,
+        "version: 1\n"
+        "baseline:\n"
+        "  - id: 'hygiene:DEP002:requests'\n"
+        "    expires_at: 2099-01-01T00:00:00+00:00\n",  # unquoted
+    )
+    (entry,) = load_baseline(path)
+    assert isinstance(entry.expires_at, str)
+    assert datetime.fromisoformat(entry.expires_at) == datetime(
+        2099, 1, 1, tzinfo=UTC
+    )
+
+
+# --- load_baseline: the valid round trip + optional reason defaulting ----
+
+
+def test_valid_baseline_file_round_trips_into_a_baseline_entry(tmp_path):
+    path = tmp_path / ".warden-baseline.yaml"
+    _write(path, _valid_baseline_text())
+    (entry,) = load_baseline(path)
+    assert entry == BaselineEntry(
+        id="hygiene:DEP002:requests",
+        expires_at=_EXPIRES,
+        reason="grandfathered at adoption",
+    )
+
+
+def test_baseline_reason_omitted_defaults_to_the_fixed_default_reason(tmp_path):
+    path = tmp_path / ".warden-baseline.yaml"
+    _write(path, _valid_baseline_text(reason=None))
+    (entry,) = load_baseline(path)
+    assert entry.reason
+    assert entry.expires_at == _EXPIRES
+
+
+# --- apply_waivers(baseline=...): matching + expiry ------------------------
+
+
+def test_apply_waivers_baseline_only_exact_match_non_expired_bypasses_and_notices():
+    entry = BaselineEntry(
+        id="hygiene:DEP002:requests", expires_at=_EXPIRES, reason="x"
+    )
+    rungs = [_rung(Status.WARN, "hygiene:DEP002:requests")]
+    updated, w_notices, w_expired, b_notices, b_expired = apply_waivers(
+        rungs, (), (entry,), now=_NOW
+    )
+    assert updated == [(Status.BYPASSED, rungs[0][1])]
+    assert w_notices == []
+    assert w_expired == []
+    assert len(b_notices) == 1
+    assert b_notices[0].id == "hygiene:DEP002:requests"
+    assert b_notices[0].reason == "x"
+    assert b_notices[0].expires_at == _EXPIRES
+    assert b_expired == []
+
+
+def test_apply_waivers_baseline_no_match_leaves_the_rung_untouched():
+    entry = BaselineEntry(
+        id="hygiene:DEP002:other", expires_at=_EXPIRES, reason="x"
+    )
+    rungs = [_rung(Status.WARN, "hygiene:DEP002:requests")]
+    updated, _, _, b_notices, b_expired = apply_waivers(
+        rungs, (), (entry,), now=_NOW
+    )
+    assert updated == rungs
+    assert b_notices == []
+    assert b_expired == []
+
+
+def test_apply_waivers_baseline_expired_match_leaves_the_rung_untouched():
+    entry = BaselineEntry(
+        id="hygiene:DEP002:requests",
+        expires_at="2020-02-01T00:00:00+00:00",
+        reason="x",
+    )
+    rungs = [_rung(Status.WARN, "hygiene:DEP002:requests")]
+    updated, _, _, b_notices, b_expired = apply_waivers(
+        rungs, (), (entry,), now=_NOW
+    )
+    assert updated == rungs
+    assert b_notices == []
+    assert len(b_expired) == 1
+    assert b_expired[0].id == "hygiene:DEP002:requests"
+    assert b_expired[0].expires_at == "2020-02-01T00:00:00+00:00"
+
+
+def test_apply_waivers_baseline_default_argument_is_empty_never_matches():
+    """Regression guarantee: omitting baseline= entirely (the pre-6.8
+    call shape) must still work and never suppress anything via baseline."""
+    rungs = [_rung(Status.WARN, "hygiene:DEP002:requests")]
+    updated, w_notices, w_expired, b_notices, b_expired = apply_waivers(
+        rungs, (), now=_NOW
+    )
+    assert updated == rungs
+    assert (w_notices, w_expired, b_notices, b_expired) == ([], [], [], [])
+
+
+# --- apply_waivers: waiver-wins tie-break (Story 6.8's own AC) ------------
+
+
+def test_waiver_wins_over_a_valid_baseline_entry_on_the_same_id():
+    waiver = WaiverEntry(
+        id="hygiene:DEP002:requests",
+        reason="waiver reason",
+        authorized_by="alice",
+        accepted_at=_ACCEPTED,
+        expires_at=_EXPIRES,
+    )
+    baseline_entry = BaselineEntry(
+        id="hygiene:DEP002:requests",
+        expires_at=_EXPIRES,
+        reason="baseline reason",
+    )
+    rungs = [_rung(Status.WARN, "hygiene:DEP002:requests")]
+    updated, w_notices, w_expired, b_notices, b_expired = apply_waivers(
+        rungs, (waiver,), (baseline_entry,), now=_NOW
+    )
+    assert updated == [(Status.BYPASSED, rungs[0][1])]
+    assert len(w_notices) == 1
+    assert w_notices[0].reason == "waiver reason"
+    assert b_notices == []
+    assert w_expired == []
+    assert b_expired == []
+
+
+def test_expired_waiver_still_wins_over_a_valid_baseline_entry_on_the_same_id():
+    """The deliberately conservative case: an EXPIRED waiver still wins
+    the tie-break over a valid baseline entry -- the rung takes the
+    waiver's re-block fall-through rather than falling through further to
+    the baseline entry."""
+    expired_waiver = WaiverEntry(
+        id="hygiene:DEP002:requests",
+        reason="waiver reason",
+        authorized_by="alice",
+        accepted_at="2020-01-01T00:00:00+00:00",
+        expires_at="2020-02-01T00:00:00+00:00",
+    )
+    baseline_entry = BaselineEntry(
+        id="hygiene:DEP002:requests",
+        expires_at=_EXPIRES,
+        reason="baseline reason",
+    )
+    rungs = [_rung(Status.WARN, "hygiene:DEP002:requests")]
+    updated, w_notices, w_expired, b_notices, b_expired = apply_waivers(
+        rungs, (expired_waiver,), (baseline_entry,), now=_NOW
+    )
+    assert updated == rungs  # untouched -- still WARN, never BYPASSED
+    assert w_notices == []
+    assert len(w_expired) == 1
+    assert w_expired[0].id == "hygiene:DEP002:requests"
+    # The baseline entry was never even consulted for this rung.
+    assert b_notices == []
+    assert b_expired == []
+
+
+@pytest.mark.parametrize("status", [Status.CLEAN, Status.NOT_APPLICABLE, Status.BYPASSED])
+def test_baseline_never_touches_non_blocking_statuses(status):
+    """Defense-in-depth guard, mirrors the waiver-side non-blocking-status
+    test: apply_waivers must actually enforce _NON_BLOCKING_STATUSES for
+    the baseline branch too, not merely by convention."""
+    entry = BaselineEntry(
+        id="hygiene:DEP002:requests", expires_at=_EXPIRES, reason="x"
+    )
+    rungs = [_rung(status, "hygiene:DEP002:requests")]
+    updated, _, _, b_notices, b_expired = apply_waivers(
+        rungs, (), (entry,), now=_NOW
+    )
+    assert updated == rungs
+    assert b_notices == []
+    assert b_expired == []
+
+
+def test_baseline_driverless_rung_is_never_matched():
+    rungs = [(Status.CLEAN, None)]
+    entry = BaselineEntry(
+        id="hygiene:DEP002:requests", expires_at=_EXPIRES, reason="x"
+    )
+    updated, _, _, b_notices, b_expired = apply_waivers(rungs, (), (entry,), now=_NOW)
+    assert updated == rungs
+    assert b_notices == []
+    assert b_expired == []
+
+
+# --- emit_baseline_stanza --------------------------------------------------
+
+
+def test_emit_baseline_stanza_shape_and_expiry():
+    rungs = [
+        _rung(Status.WARN, "hygiene:DEP002:requests"),
+        _rung(Status.POLICY_VIOLATION, "vuln:GHSA-xxxx:pkg@1.0.0", axis=AXIS_VULNERABILITY),
+        _rung(Status.CLEAN, None),
+        _rung(Status.ERROR, "error:config-parse:x", axis=AXIS_INGESTION),
+    ]
+    now = datetime(2026, 1, 1, tzinfo=UTC)
+    stanza = emit_baseline_stanza(rungs, now=now, expiry_days=14)
+    document = yaml.safe_load(stanza)
+    assert document["version"] == 1
+    ids = sorted(entry["id"] for entry in document["baseline"])
+    assert ids == ["hygiene:DEP002:requests", "vuln:GHSA-xxxx:pkg@1.0.0"]
+    for entry in document["baseline"]:
+        assert entry["reason"]
+        assert "authorized_by" not in entry
+        assert "accepted_at" not in entry
+        assert entry["expires_at"] == (now + timedelta(days=14)).isoformat()
+
+
+def test_emit_baseline_stanza_omits_clean_and_error_and_already_bypassed_rungs():
+    rungs = [
+        _rung(Status.CLEAN, None),
+        _rung(Status.ERROR, "error:config-parse:x", axis=AXIS_INGESTION),
+        _rung(Status.BYPASSED, "hygiene:DEP002:already-waived"),
+    ]
+    stanza = emit_baseline_stanza(
+        rungs, now=datetime(2026, 1, 1, tzinfo=UTC), expiry_days=14
+    )
+    document = yaml.safe_load(stanza)
+    assert document["baseline"] == []
+
+
+def test_emit_baseline_stanza_never_uses_unsafe_yaml_dump(monkeypatch):
+    """NFR-S4/D1: this function must call yaml.safe_dump, never yaml.dump."""
+    import pyforge.warden.waiver as waiver_module
+
+    def _forbidden(*args, **kwargs):
+        raise AssertionError("yaml.dump must never be called (NFR-S4/D1)")
+
+    monkeypatch.setattr(waiver_module.yaml, "dump", _forbidden)
+    stanza = emit_baseline_stanza(
+        [_rung(Status.WARN, "hygiene:DEP002:requests")],
+        now=datetime(2026, 1, 1, tzinfo=UTC),
+        expiry_days=14,
+    )
+    assert "hygiene:DEP002:requests" in stanza
