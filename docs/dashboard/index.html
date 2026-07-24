@@ -149,6 +149,8 @@
   .dchip .down { font-size: 9px; text-transform: uppercase; letter-spacing: 0.07em;
     color: var(--slate-faint); flex: none; }
   .dchip .dmk { font-size: 9.5px; color: var(--slate); flex: none; letter-spacing: 1.5px; }
+  .dchip .dpr { font-family: var(--mono); font-size: 9.5px; font-variant-numeric: tabular-nums;
+    flex: none; font-weight: 600; }
   .drow.st-seeded .dchip { border-left-color: var(--slate-faint); }
   .drow.st-in-deck .dchip { border-left-color: var(--deck); background: var(--deck-ground); }
   .drow.st-in-spec .dchip { border-left-color: var(--active); background: var(--active-ground); }
@@ -405,11 +407,18 @@
           const ch = d.chain || {};
           const marks = (ch.deck ? "▤" : "") + (ch.spec ? "§" : "") + (ch.project ? "⚙" : "");
           const mk = marks ? '<span class="dmk">' + marks + '</span>' : '';
+          let pr = '';
+          if (ch.program && PROJECTS[ch.program]) {
+            const pc = countOf(PROJECTS[ch.program]);
+            const full = pc.done === pc.total;
+            pr = '<span class="dpr" style="color:var(--' + (full ? 'done' : 'active') + ')">' +
+                 pc.done + '/' + pc.total + (full ? ' ✓' : '') + '</span>';
+          }
           const tip = Object.entries(ch).map(([k, v]) => k + ": " + v).join(" · ");
           return '<a class="dchip" href="https://github.com/rxm7706/local-recipes/blob/main/docs/dreams/' +
             d.slug + '.md" title="' + esc(d.title) + ' · docs/dreams/' + d.slug + '.md' +
             (tip ? ' · ' + esc(tip) : '') + '"><span class="dt">' +
-            head + '</span>' + own + mk + '</a>';
+            head + '</span>' + own + mk + pr + '</a>';
         }).join("") + '</div>';
       drows.appendChild(row);
     });

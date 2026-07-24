@@ -179,7 +179,7 @@ window.DASHBOARD_DATA = {
             ],
             [
               "6.5",
-              "pending",
+              "done",
               "Two-mode policy integration (visibility + flag-gating)"
             ],
             [
@@ -276,6 +276,14 @@ window.DASHBOARD_DATA = {
           [
             "6.1",
             81
+          ],
+          [
+            "6.4",
+            35
+          ],
+          [
+            "6.3",
+            265
           ]
         ],
         "foot": [
@@ -303,8 +311,8 @@ window.DASHBOARD_DATA = {
       },
       "timing": {
         "metric": "active agent-compute per story (dev + review; excludes gate-pause wait) — from bmad-loop run journals",
-        "totalLabel": "~27 h active compute",
-        "note": "Measured stories only. The earliest keystones 1.1 / 1.2, plus 2.6 and the recovered 6.10 spike, predate clean journaling and are excluded. 6.4’s bar is its delivered dev-2 pass (35m); a rolled-back dev-1 cost ~49m more that isn’t counted as delivery.",
+        "totalLabel": "~31 h active compute",
+        "note": "Measured stories only. The earliest keystones 1.1 / 1.2, plus 2.6 and the recovered 6.10 spike, predate clean journaling and are excluded. 6.4’s bar is its delivered dev-2 pass (35m); a rolled-back dev-1 cost ~49m more that isn’t counted as delivery. Epic-6 note: 6.10 (design spike) + 6.2 have no journal record (their run dirs predate journal capture) — bars show journal-backed stories only; 6.3 mined from the loop-home run journal.",
         "perStory": {
           "1.3": 78,
           "1.4": 95,
@@ -323,14 +331,15 @@ window.DASHBOARD_DATA = {
           "3.3": 127,
           "4.1": 96,
           "6.1": 81,
-          "6.4": 35
+          "6.4": 35,
+          "6.3": 265
         },
         "epicMin": {
           "E1": 534,
           "E2": 617,
           "E3": 264,
           "E4": 96,
-          "E6": 116
+          "E6": 381
         },
         "total": 1627
       }
@@ -823,7 +832,7 @@ window.DASHBOARD_DATA = {
       }
     }
   },
-  "snapshot": "<span>2026-07-24 07:43 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-07-24 09:12 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -838,7 +847,9 @@ window.DASHBOARD_DATA = {
       "title": "The Agentic SDLC — four views of autonomy, one governed factory",
       "status": "in-deck",
       "owner": "marshal",
-      "chain": {}
+      "chain": {
+        "deck": "presentations/agentic-sdlc"
+      }
     },
     {
       "slug": "deckcraft",
@@ -863,7 +874,9 @@ window.DASHBOARD_DATA = {
       "title": "The Ecosystem Crew",
       "status": "in-deck",
       "owner": "crew",
-      "chain": {}
+      "chain": {
+        "deck": "presentations/pyforge-genesis"
+      }
     },
     {
       "slug": "enterprise-airgap",
@@ -907,6 +920,7 @@ window.DASHBOARD_DATA = {
       "status": "realized",
       "owner": "mason",
       "chain": {
+        "deck": "presentations/pyforge-mason",
         "spec": "_bmad-output/projects/local-recipes/planning-artifacts/specs/spec-packaging-factory"
       }
     },
@@ -927,13 +941,14 @@ window.DASHBOARD_DATA = {
       "chain": {
         "deck": "presentations/pyforge-atlas",
         "spec": "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas",
-        "project": "_bmad-output/projects/pyforge-atlas"
+        "project": "_bmad-output/projects/pyforge-atlas",
+        "program": "atlas"
       }
     },
     {
       "slug": "pyforge-doctor",
       "title": "Doctor — one bedside manner for the whole fleet",
-      "status": "seeded",
+      "status": "in-deck",
       "owner": "doctor",
       "chain": {
         "deck": "presentations/pyforge-doctor"
@@ -970,7 +985,7 @@ window.DASHBOARD_DATA = {
     {
       "slug": "pyforge-scribe",
       "title": "Scribe — the inward voice",
-      "status": "seeded",
+      "status": "in-deck",
       "owner": "scribe",
       "chain": {
         "deck": "presentations/pyforge-scribe"
@@ -979,7 +994,7 @@ window.DASHBOARD_DATA = {
     {
       "slug": "pyforge-steward",
       "title": "Steward — provision the line, hold the keys",
-      "status": "seeded",
+      "status": "in-deck",
       "owner": "steward",
       "chain": {
         "deck": "presentations/pyforge-steward"
@@ -992,7 +1007,8 @@ window.DASHBOARD_DATA = {
       "owner": "warden",
       "chain": {
         "deck": "presentations/pyforge-warden",
-        "project": "_bmad-output/projects/pyforge-warden"
+        "project": "_bmad-output/projects/pyforge-warden",
+        "program": "warden"
       }
     },
     {
@@ -1001,7 +1017,8 @@ window.DASHBOARD_DATA = {
       "status": "realized",
       "owner": "marshal",
       "chain": {
-        "spec": "_bmad-output/projects/local-recipes/planning-artifacts/specs/spec-regenerable-factory"
+        "spec": "_bmad-output/projects/local-recipes/planning-artifacts/specs/spec-regenerable-factory",
+        "program": "regen"
       }
     },
     {

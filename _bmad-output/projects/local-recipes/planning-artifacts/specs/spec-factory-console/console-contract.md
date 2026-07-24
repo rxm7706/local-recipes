@@ -74,10 +74,16 @@ the module docstring.
   front-end buckets unknowns under seeded). Missing owner → WARN.
 - Output: `data["dreams"] = [{"slug": stem, "title": title or stem,
   "status": status or "", "owner": owner or "", "chain": <chain>}, ...]` in
-  filename order, where `<chain>` is a dict of exact-slug drill-through links
-  (keys present only when the path exists): `deck` → `presentations/<slug>`,
-  `spec` → the first `_bmad-output/projects/*/planning-artifacts/specs/spec-<slug>`
-  match (repo-relative), `project` → `_bmad-output/projects/<slug>`.
+  filename order, where `<chain>` is a dict of drill-through links (keys
+  present only when the target exists): `deck` → `presentations/<deck-dir>`
+  where deck-dir is the slug or its entry in `DREAM_DECK_ALIASES`
+  (packaging-factory→pyforge-mason, agentic-sdlc-autonomy→agentic-sdlc,
+  ecosystem-crew→pyforge-genesis); `spec` → the first
+  `_bmad-output/projects/*/planning-artifacts/specs/spec-<slug>` match
+  (repo-relative); `project` → `_bmad-output/projects/<slug>`; `program` →
+  the console project key from `DREAM_PROGRAM` (pyforge-warden→warden,
+  pyforge-atlas→atlas, regenerable-factory→regen), rendered by the shell as
+  a live done/total badge on the chip.
 - Print a summary: count + per-status tallies.
 
 ## Snapshot stamp

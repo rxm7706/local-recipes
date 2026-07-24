@@ -96,12 +96,12 @@ project, and spec maps to exactly one Dream; the herald CLI's status capability
 |---|---|---|
 | [`packaging-factory.md`](packaging-factory.md) | realized · perpetual | The origin dream: the AI-assisted conda-forge factory (Mason) — CFE skill, 769 feedstocks, campaigns; frontier: multi-ecosystem autotick, smart test extractor. |
 | [`pyforge-atlas.md`](pyforge-atlas.md) | realized | The intelligence layer reborn as Kedro/Dagster/DuckDB dataflow an agent workforce maintains (waves 0–H shipped, PRs #58–#105). |
-| [`pyforge-warden.md`](pyforge-warden.md) | in-spec | The compliance gate that never false-greens — six axes of dependency trust (23/31 built). |
+| [`pyforge-warden.md`](pyforge-warden.md) | in-spec | The compliance gate that never false-greens — six axes of dependency trust (25/31 built). |
 | [`pyforge-marshal.md`](pyforge-marshal.md) | realized | Graduated autonomy a human can trust — bmad-loop/dev-auto + gates + escalation; proved on atlas + warden. |
-| [`pyforge-doctor.md`](pyforge-doctor.md) | seeded | One bedside manner over the fleet's vitals — pre-flight diagnostics + continuous monitoring + prescriptions (a consolidation of existing instruments). |
+| [`pyforge-doctor.md`](pyforge-doctor.md) | in-deck | One bedside manner over the fleet's vitals — pre-flight diagnostics + continuous monitoring + prescriptions (a consolidation of existing instruments). |
 | [`pyforge-herald.md`](pyforge-herald.md) | in-deck | The outward voice + design surface — decks, bridge, telemetry imagery, proclamations (charter re-scoped 2026-07-23: infrastructure → Marshal). |
-| [`pyforge-scribe.md`](pyforge-scribe.md) | seeded | The inward voice — team knowledge captured, curated, compiled into the graph, answerable (owns team-memory + sentinel's core). |
-| [`pyforge-steward.md`](pyforge-steward.md) | seeded | The estate the factory stands on — provisioning, deployment, credential lifecycle, budgets, incident response. |
+| [`pyforge-scribe.md`](pyforge-scribe.md) | in-deck | The inward voice — team knowledge captured, curated, compiled into the graph, answerable (owns team-memory + sentinel's core). |
+| [`pyforge-steward.md`](pyforge-steward.md) | in-deck | The estate the factory stands on — provisioning, deployment, credential lifecycle, budgets, incident response. |
 
 **Practices**
 
@@ -109,7 +109,7 @@ project, and spec maps to exactly one Dream; the herald CLI's status capability
 |---|---|---|
 | [`fleet-stewardship.md`](fleet-stewardship.md) | realized · perpetual | Tend every touchable feedstock: refresh tracks, platform expansion, failure remediation — recurring waves, never finished. |
 | [`upstream-discovery.md`](upstream-discovery.md) | seeded | Sense what the world is building (trending + org audits, atlas Phase T) and package it before it's asked for. |
-| [`regenerable-factory.md`](regenerable-factory.md) | seeded | Backfill Dream→PRD→spec chains under every realized surface (BMAD brownfield) so the factory can change any code through the pipeline; drift checks on all code; the regeneration drill as proof. |
+| [`regenerable-factory.md`](regenerable-factory.md) | realized | Backfill Dream→PRD→spec chains under every realized surface (BMAD brownfield) so the factory can change any code through the pipeline; drift checks on all code; the regeneration drill as proof. |
 
 **Capabilities**
 

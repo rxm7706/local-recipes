@@ -181,18 +181,37 @@ DREAMS_DIR = REPO_ROOT / "docs" / "dreams"
 DREAM_STATUSES = ("seeded", "in-deck", "in-spec", "realized")
 
 
+# Deck dirs whose name differs from the dream slug (mason's chapter deck backs
+# the packaging-factory dream, etc.).
+DREAM_DECK_ALIASES = {
+    "packaging-factory": "pyforge-mason",
+    "agentic-sdlc-autonomy": "agentic-sdlc",
+    "ecosystem-crew": "pyforge-genesis",   # the master vision deck
+}
+# Dreams whose build runs as a console program (chip shows live done/total).
+DREAM_PROGRAM = {
+    "pyforge-warden": "warden",
+    "pyforge-atlas": "atlas",
+    "regenerable-factory": "regen",
+}
+
+
 def dream_chain(slug: str) -> dict:
-    """Exact-slug chain links for the drill-through indicators (no-straggler
-    visibility): deck dir, spec-kernel folder, BMAD project dir."""
+    """Chain links for the drill-through indicators (no-straggler visibility):
+    deck dir (exact slug or alias), spec-kernel folder, BMAD project dir,
+    console-program key."""
     chain: dict[str, str] = {}
-    if (REPO_ROOT / "presentations" / slug).is_dir():
-        chain["deck"] = f"presentations/{slug}"
+    deck = DREAM_DECK_ALIASES.get(slug, slug)
+    if (REPO_ROOT / "presentations" / deck).is_dir():
+        chain["deck"] = f"presentations/{deck}"
     hits = sorted((REPO_ROOT / "_bmad-output" / "projects").glob(
         f"*/planning-artifacts/specs/spec-{slug}"))
     if hits:
         chain["spec"] = str(hits[0].relative_to(REPO_ROOT))
     if (REPO_ROOT / "_bmad-output" / "projects" / slug).is_dir():
         chain["project"] = f"_bmad-output/projects/{slug}"
+    if slug in DREAM_PROGRAM:
+        chain["program"] = DREAM_PROGRAM[slug]
     return chain
 
 
