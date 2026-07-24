@@ -199,6 +199,7 @@ def assemble_report(
     currency_data: FeedProvenance | None = None,
     currency_gating: bool = False,
     warn_as_error: bool = False,
+    actuation: object | None = None,
 ) -> ComplianceReport:
     """Assemble the ``ComplianceReport`` from the pipeline's outputs.
 
@@ -294,7 +295,15 @@ def assemble_report(
     ``cli.py``'s ``--warn-as-error`` flag alongside the composed driver. It
     never changes the composed status or any rung; it only makes a ``warn``
     STATUS project to a non-zero exit (orthogonal to ``--warn-only``, which
-    downgrades blocking rungs pre-compose)."""
+    downgrades blocking rungs pre-compose).
+
+    ``actuation`` (Story 6.9, additive/defaulted ``None`` -- the frozen 6.1
+    ``ComplianceReport.actuation`` slot, populated not edited): ``cli.py``
+    passes the fix-PR actuator's ``Actuation.to_json_dict()`` payload (a
+    JSON-serializable dict) verbatim, or ``None`` when neither
+    ``--open-fix-prs``/``--fix-prs-dry-run`` is set. Stored pass-through into
+    ``ComplianceReport.actuation`` (models.py already serializes it verbatim);
+    it never touches any rung, the composed status, or the exit code."""
     findings = list(findings)
     rungs = list(rungs)
     resolution_depth = (
@@ -436,6 +445,7 @@ def assemble_report(
         kev_data=kev_data,
         epss_data=epss_data,
         currency_data=currency_data,
+        actuation=actuation,
     )
 
 
@@ -477,6 +487,7 @@ def render_text(
     expired_baseline: Sequence[BaselineNotice] = (),
     warn_only: bool = False,
     warn_only_downgraded: int = 0,
+    actuation: object | None = None,
 ) -> str:
     """Render the report as a human-readable, explicitly NON-CONTRACT summary.
 
@@ -497,9 +508,11 @@ def render_text(
     (Story 3.3) at most one graduate-to-enforcing nudge line when
     ``warn_only`` is set, the composed status is ``warn``, and
     ``warn_only_downgraded > 0`` (see the module docstring for why all
-    three are required). Free-format lines: unlike ``render_json``'s
-    document, this output is never schema-validated. Every ``message``/
-    ``reason``/``authorized_by``/``expires_at`` is passed through
+    three are required), then (Story 6.9) one ``[actuation]`` line per fix-PR
+    outcome (``<status> <action> <finding_id>[ -> <pr_url>]``) when
+    ``actuation`` is a non-``None`` payload dict. Free-format lines: unlike
+    ``render_json``'s document, this output is never schema-validated. Every
+    ``message``/``reason``/``authorized_by``/``expires_at`` is passed through
     ``_single_line`` first — see its docstring."""
     # to_json_dict()'s declared return type is dict[str, object] (every
     # nested value equally untyped) -- it is JSON-primitive data, not a
@@ -553,6 +566,25 @@ def render_text(
             f"  [baseline-expired] {baseline_notice.id} -- reason={reason} "
             f"expires_at={expires_at} -- expired, needs review/renewal"
         )
+    # Story 6.9: the fix-PR actuator's outcomes, one terse line each, present
+    # only when --open-fix-prs/--fix-prs-dry-run ran (actuation is not None).
+    # Built from the same JSON-serializable payload the report already carries
+    # (already sorted by finding id); pr_url is appended only when present.
+    if isinstance(actuation, dict):
+        outcomes = actuation.get("outcomes")
+        if isinstance(outcomes, list):
+            for outcome in outcomes:
+                if not isinstance(outcome, dict):
+                    continue
+                line = (
+                    f"  [actuation] {outcome.get('status')} "
+                    f"{outcome.get('action')} "
+                    f"{_single_line(str(outcome.get('finding_id')))}"
+                )
+                pr_url = outcome.get("pr_url")
+                if pr_url:
+                    line += f" -> {_single_line(str(pr_url))}"
+                lines.append(line)
     if warn_only and status["value"] == "warn" and warn_only_downgraded > 0:
         finding_word = "finding" if warn_only_downgraded == 1 else "findings"
         lines.append(
