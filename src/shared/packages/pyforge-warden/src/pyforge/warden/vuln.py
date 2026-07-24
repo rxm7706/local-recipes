@@ -95,6 +95,21 @@ Ownership decisions recorded:
   ``Status.POLICY_VIOLATION`` when ``finding.epss.score >= min_epss``, never
   fires when ``finding.epss is None``, never downgrades an
   already-``POLICY_VIOLATION`` status.
+* Story 5.1 (AC1, remediation content): ``_extract_fixed_version`` surfaces
+  osv-scanner's own discarded ``fixed`` version — read from the id-matching
+  vulnerability record's OWN ``affected[].ranges[].events[]`` (the SAME raw
+  record ``_own_severity_raw`` already reads its ``severity`` from), never
+  a second lookup. Per the decision record (Design Notes): the FIRST
+  well-formed ``fixed`` event found for that advisory wins, defensively —
+  this is deliberately NOT a semver-range resolver correlating the fixed
+  event against the scanned package's OWN version (out of scope); any
+  missing/malformed ``affected``/``ranges``/``events`` shape yields
+  ``None``, mirroring this module's "any shape mismatch yields fewer
+  findings, never a crash" ethos throughout. Returned alongside ``Finding``
+  the same way ``kev_candidates`` is (``OsvParse.fixed_versions``,
+  ``finding.id -> fixed version string`` — no entry when unknown, never
+  stored ON ``Finding``: Story 6.1 froze the schema, and fixed-version was
+  never a reserved slot).
 * Story 6.4 (FR36) finally stores what this docstring already documented
   but no code path ever captured: ``group.get("aliases")``.
   ``_findings_for_package`` now returns each ``Finding`` PAIRED with its
@@ -726,19 +741,82 @@ def _own_severity_raw(vuln_record: object) -> str | None:
     return score if isinstance(score, str) and score else None
 
 
+def _extract_fixed_version(
+    vuln_record: object, *, pkg_name: str, pkg_ecosystem: str | None
+) -> str | None:
+    """Story 5.1 (AC1): the FIRST well-formed ``fixed`` version event found
+    in ``vuln_record``'s own ``affected[].ranges[].events[]`` — walked in
+    document order (``affected`` entries, then each entry's ``ranges``,
+    then each range's ``events``), defensively (mirrors ``_own_severity_
+    raw``'s tolerant read of the SAME raw record one field over): ``None``
+    on any missing/wrong-typed ``affected``/``ranges``/``events``, or when
+    no event carries a non-empty string ``fixed``. Deliberately NOT a
+    semver-range resolver correlating the fixed event against the scanned
+    package's OWN version — see the module docstring / decision record.
+
+    Review finding (2026-07-24): an OSV/GHSA advisory can legitimately list
+    MULTIPLE affected packages (a monorepo-style advisory) under one id --
+    reading ``fixed`` from an ``affected[]`` entry that isn't actually the
+    package this Finding is about would attribute an unrelated package's
+    fixed version. Every ``affected[]`` entry is now matched against
+    ``pkg_name``/``pkg_ecosystem`` (this record's OWN embedded ``package``
+    sub-object, exact string match -- mirrors ``_advisory_targets_pypi_
+    name``'s tolerant per-entry shape, but without its cross-ecosystem
+    canonicalization: both sides originate from the SAME osv-scanner/DB
+    source here, never our own resolved identity) before its ranges/events
+    are read; an entry with no/malformed ``package`` sub-object, or one
+    that doesn't match, is skipped. ``pkg_ecosystem=None`` (an unparsable
+    top-level ecosystem) skips the ecosystem half of the match rather than
+    rejecting every entry outright -- name alone is still a meaningful
+    filter and never worse than the pre-fix unfiltered behavior."""
+    if not isinstance(vuln_record, dict):
+        return None
+    affected = vuln_record.get("affected")
+    if not isinstance(affected, list):
+        return None
+    for entry in affected:
+        if not isinstance(entry, dict):
+            continue
+        package = entry.get("package")
+        if not isinstance(package, dict):
+            continue
+        if package.get("name") != pkg_name:
+            continue
+        if pkg_ecosystem is not None and package.get("ecosystem") != pkg_ecosystem:
+            continue
+        ranges = entry.get("ranges")
+        if not isinstance(ranges, list):
+            continue
+        for one_range in ranges:
+            if not isinstance(one_range, dict):
+                continue
+            events = one_range.get("events")
+            if not isinstance(events, list):
+                continue
+            for event in events:
+                if not isinstance(event, dict):
+                    continue
+                fixed = event.get("fixed")
+                if isinstance(fixed, str) and fixed:
+                    return fixed
+    return None
+
+
 def _findings_for_package(
     package_entry: object,
-) -> list[tuple[Finding, tuple[str, ...]]]:
-    """One ``(vuln:<advisory-id>:<pkg>@<ver> Finding, kev-match candidates)``
-    pair per ``(group.ids[i], package)`` for one ``results[].packages[]``
-    entry. Defensive throughout: any shape mismatch at any level yields
-    fewer findings, never a crash.
+) -> list[tuple[Finding, tuple[str, ...], str | None]]:
+    """One ``(vuln:<advisory-id>:<pkg>@<ver> Finding, kev-match candidates,
+    fixed version)`` triple per ``(group.ids[i], package)`` for one
+    ``results[].packages[]`` entry. Defensive throughout: any shape
+    mismatch at any level yields fewer findings, never a crash.
 
     The candidate tuple (Story 6.4/FR36) is ``advisory_id`` followed by the
     group's own ``aliases`` (RAW, unsanitized strings — deduplicated,
     order-preserving) — the set ``vuln.kev_match`` checks against a CISA
-    KEV catalog. It is returned alongside the ``Finding``, never stored ON
-    it (``Finding`` has no aliases slot)."""
+    KEV catalog. The fixed version (Story 5.1, AC1) is the id-matching raw
+    vulnerability record's own ``_extract_fixed_version`` result, ``None``
+    when unknown. Both are returned alongside the ``Finding``, never stored
+    ON it (``Finding`` has no aliases or fixed-version slot)."""
     if not isinstance(package_entry, dict):
         return []
     package = package_entry.get("package")
@@ -748,6 +826,10 @@ def _findings_for_package(
     if not isinstance(pkg_name, str) or not pkg_name:
         return []
     pkg_version = package.get("version")
+    raw_pkg_ecosystem = package.get("ecosystem")
+    pkg_ecosystem = (
+        raw_pkg_ecosystem if isinstance(raw_pkg_ecosystem, str) else None
+    )
     groups = package_entry.get("groups")
     if not isinstance(groups, list):
         return []
@@ -767,7 +849,7 @@ def _findings_for_package(
         else "unspecified"
     )
 
-    findings: list[tuple[Finding, tuple[str, ...]]] = []
+    findings: list[tuple[Finding, tuple[str, ...], str | None]] = []
     for group in groups:
         if not isinstance(group, dict):
             continue
@@ -784,7 +866,8 @@ def _findings_for_package(
         for advisory_id in ids:
             if not isinstance(advisory_id, str) or not advisory_id:
                 continue
-            severity_raw = _own_severity_raw(vuln_by_id.get(advisory_id))
+            vuln_record = vuln_by_id.get(advisory_id)
+            severity_raw = _own_severity_raw(vuln_record)
             finding_id = (
                 f"vuln:{_sanitize_id_segment(advisory_id)}:"
                 f"{name_segment}@{version_segment}"
@@ -803,7 +886,10 @@ def _findings_for_package(
                 # crash the parse — drop the single malformed entry.
                 continue
             candidates = tuple(dict.fromkeys((advisory_id, *aliases)))
-            findings.append((finding, candidates))
+            fixed_version = _extract_fixed_version(
+                vuln_record, pkg_name=pkg_name, pkg_ecosystem=pkg_ecosystem
+            )
+            findings.append((finding, candidates, fixed_version))
     return findings
 
 
@@ -821,11 +907,23 @@ class OsvParse:
     (advisory_id, *aliases)`` for every ``findings`` entry — the raw
     (unsanitized) KEV-match candidate set ``engines.OsvEngine.run`` checks
     against a CISA KEV catalog via ``kev_match``. Never rendered into the
-    report itself (``Finding`` carries no aliases slot)."""
+    report itself (``Finding`` carries no aliases slot).
+
+    ``fixed_versions`` (Story 5.1, AC1, additive): ``finding.id -> fixed
+    version string`` for every ``findings`` entry whose id-matching raw
+    vulnerability record yielded a well-formed ``fixed`` event
+    (``_extract_fixed_version`` — see its docstring); an entry with an
+    unknown fixed version is simply ABSENT from this mapping (never a
+    ``None`` value, never a guess). Consulted by ``engines.OsvEngine.run``
+    (threaded into ``EngineResult.fixed_versions``) and, from there,
+    ``cli.py``'s ``render_text`` remediation lines — never stored ON
+    ``Finding`` (Story 6.1 froze the schema; fixed-version was never a
+    reserved slot)."""
 
     findings: tuple[Finding, ...]
     errors: tuple[ErrorRecord, ...]
     kev_candidates: Mapping[str, tuple[str, ...]] = MappingProxyType({})
+    fixed_versions: Mapping[str, str] = MappingProxyType({})
 
 
 def parse_osv_output(raw: str) -> OsvParse:
@@ -891,6 +989,7 @@ def parse_osv_output(raw: str) -> OsvParse:
 
     by_id: dict[str, Finding] = {}
     candidates_by_id: dict[str, tuple[str, ...]] = {}
+    fixed_version_by_id: dict[str, str] = {}
     for result in results:
         if not isinstance(result, dict):
             continue
@@ -898,16 +997,27 @@ def parse_osv_output(raw: str) -> OsvParse:
         if not isinstance(packages, list):
             continue
         for package_entry in packages:
-            for finding, candidates in _findings_for_package(package_entry):
+            for finding, candidates, fixed_version in _findings_for_package(
+                package_entry
+            ):
                 if finding.id not in by_id:
                     by_id[finding.id] = finding
                     candidates_by_id[finding.id] = candidates
+                    if fixed_version is not None:
+                        fixed_version_by_id[finding.id] = fixed_version
     ordered = tuple(sorted(by_id.values(), key=lambda f: f.id))
     return OsvParse(
         findings=ordered,
         errors=(),
         kev_candidates=MappingProxyType(
             {finding.id: candidates_by_id[finding.id] for finding in ordered}
+        ),
+        fixed_versions=MappingProxyType(
+            {
+                finding.id: fixed_version_by_id[finding.id]
+                for finding in ordered
+                if finding.id in fixed_version_by_id
+            }
         ),
     )
 

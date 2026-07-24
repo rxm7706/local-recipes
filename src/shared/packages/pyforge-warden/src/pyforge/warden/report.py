@@ -118,6 +118,26 @@ Ownership decisions recorded:
   domain), so the caller (``cli.py``) states which baseline entries
   actually suppressed a finding this run. The defaults preserve every
   pre-6.8 caller/test byte-for-byte.
+* ``manifest_locations``/``fixed_versions`` (Story 5.1, AC1, additive/
+  defaulted ``{}`` -- the render_text-only remediation-content side channel,
+  mirroring ``applied_waivers``/``applied_baseline``'s established caller-
+  supplied-param precedent exactly): ``render_text`` appends one remediation
+  line (``      -> fix: ...``) right after each rendered finding line,
+  templated per id-family/axis by the new private ``_remediation_line`` --
+  never for ``errors[]`` (AC1's "not a re-wrap of 1.7's typed errors" scopes
+  this to finding diagnostics only). This module has no manifest-provenance
+  or fixed-version vocabulary of its own (``inventory.Component.provenance``
+  and ``vuln.OsvParse.fixed_versions`` are -- respectively -- ``inventory.py``'s
+  and ``vuln.py``'s domains), so the caller (``cli.py``) states both: a
+  ``name -> tuple("<manifest> [<section>]", ...)`` lookup built once from the
+  post-merge inventory, and a ``finding.id -> fixed version string`` mapping
+  merged across every engine result. A finding whose ``subject`` has no
+  entry in ``manifest_locations`` (e.g. this module's own synthetic
+  ``indeterminate:coverage-floor:<axis>`` finding, whose ``subject`` is an
+  axis name, not a package) simply omits the manifest clause -- never
+  crashes, never fabricates a location. The composed remediation string
+  passes through ``_single_line`` too, same as every other free-text field.
+  The defaults preserve every pre-5.1 caller/test byte-for-byte.
 
 Status/exit projection is delegated wholesale to ``verdict.py`` (the sole
 owner); this module feeds it the collected rungs and stores the result.
@@ -126,9 +146,10 @@ owner); this module feeds it the collected rungs and stores the result.
 from __future__ import annotations
 
 import json
-from collections.abc import Iterable, Sequence
+from collections.abc import Iterable, Mapping, Sequence
 from functools import lru_cache
 from importlib import resources
+from types import MappingProxyType
 from typing import Any, cast
 
 import jsonschema
@@ -478,6 +499,156 @@ def _single_line(text: str) -> str:
     return text.replace("\r\n", "\\n").replace("\n", "\\n").replace("\r", "\\n")
 
 
+def _manifest_clause(
+    subject: str | None, manifest_locations: Mapping[str, tuple[str, ...]]
+) -> str:
+    """The ``" (declared in <manifest> [<section>]; ...)"`` clause a
+    remediation line appends when ``subject`` has a known declaration site
+    — empty string (never fabricated) when ``subject`` is ``None`` or has
+    no entry in ``manifest_locations`` (Story 5.1's own synthetic
+    ``indeterminate:coverage-floor:<axis>`` finding, whose ``subject`` is an
+    axis name, hits this path every time)."""
+    if subject is None:
+        return ""
+    locations = manifest_locations.get(subject)
+    if not locations:
+        return ""
+    return f" (declared in {'; '.join(locations)})"
+
+
+# Concrete next-action text per hygiene DEP-code (deptry's own semantics,
+# verified against the installed deptry 0.25.1 violation classes — mirrors
+# hygiene.py's own DEP005 docstring precedent of reading deptry's real
+# behavior rather than guessing): DEP001 = imported but not declared ->
+# declare it; DEP002 = declared but unused -> remove it; DEP003 = imported
+# but only a transitive dependency -> declare it directly; DEP004 = imported
+# in non-dev code but declared as a dev dependency -> move dependency
+# groups; DEP005 = declared but part of the standard library -> remove it,
+# redundant.
+_DEP_CODE_ACTIONS: Mapping[str, str] = MappingProxyType(
+    {
+        "DEP001": (
+            "declare {subject} as a dependency in the manifest -- it is "
+            "imported but not currently declared"
+        ),
+        "DEP002": (
+            "remove {subject} from the manifest -- it is declared but not "
+            "used in the codebase"
+        ),
+        "DEP003": (
+            "add {subject} as a direct dependency in the manifest -- it is "
+            "currently only available transitively"
+        ),
+        "DEP004": (
+            "move {subject} out of the dev-dependency group in the "
+            "manifest -- it is imported in non-dev code"
+        ),
+        "DEP005": (
+            "remove {subject} from the manifest -- it is part of the "
+            "Python standard library"
+        ),
+    }
+)
+
+
+def _dep_code_action(code: str, subject: str) -> str:
+    """The concrete next action for one hygiene DEP-code — an unrecognized
+    future code (never one of the five ``_DEP_CODE_ACTIONS`` keys) degrades
+    to a generic review action, never a crash."""
+    template = _DEP_CODE_ACTIONS.get(code)
+    if template is None:
+        return f"review the {code} finding for {subject} and update the manifest accordingly"
+    return template.format(subject=subject)
+
+
+def _remediation_line(
+    finding: dict[str, Any],
+    *,
+    manifest_locations: Mapping[str, tuple[str, ...]],
+    fixed_versions: Mapping[str, str],
+) -> str | None:
+    """One concrete remediation action per finding (AC1), templated per
+    id-family/axis — appended by ``render_text`` right after the finding's
+    own line. Never merely re-states ``finding['message']``: each family
+    names its own specific identity (advisory id + severity + fixed-version
+    for vuln, the DEP-code for hygiene, the SPDX expression for license, the
+    eol_date/lag for currency, the reason token for indeterminate:), the
+    declaring manifest(s)+section(s) when known (``_manifest_clause``), and
+    a concrete next action. Returns ``None`` only for a finding id matching
+    none of the five frozen id families (unreachable given ``Finding.
+    __post_init__``'s own grammar guard, but defensive per this module's
+    never-crash ethos — never a fabricated location, never a raise)."""
+    finding_id: str = finding["id"]
+    raw_subject = finding["subject"]
+    subject = raw_subject if raw_subject is not None else "the dependency"
+    manifest_clause = _manifest_clause(raw_subject, manifest_locations)
+
+    if finding_id.startswith("vuln:"):
+        _, advisory_id, _ = finding_id.split(":", 2)
+        fixed = fixed_versions.get(finding_id)
+        if fixed is not None:
+            action = f"upgrade {subject} to >= {fixed} to resolve {advisory_id}"
+        else:
+            action = (
+                f"no fixed version is published yet for {advisory_id} "
+                f"affecting {subject} -- consider a waiver or removing the "
+                "dependency"
+            )
+        return f"{action}{manifest_clause}"
+
+    if finding_id.startswith("hygiene:"):
+        _, code, _ = finding_id.split(":", 2)
+        return f"{_dep_code_action(code, subject)}{manifest_clause}"
+
+    if finding_id.startswith("license:"):
+        license_info = finding.get("license") or {}
+        if license_info.get("verdict") == "denied":
+            expression = license_info.get("expression") or "unknown"
+            action = (
+                f"{subject}: license {expression} is denied by policy -- "
+                "replace the dependency or add a waiver"
+            )
+        else:
+            action = (
+                f"{subject}: license could not be resolved -- verify "
+                "manually or add a waiver"
+            )
+        return f"{action}{manifest_clause}"
+
+    if finding_id.startswith("currency:"):
+        reason = finding_id.split(":", 2)[1]  # eol | over-lag | unknown
+        currency_info = finding.get("currency") or {}
+        if reason == "eol":
+            eol_date = currency_info.get("eol_date") or "unknown"
+            action = (
+                f"{subject}: reached end-of-life ({eol_date}) -- upgrade to "
+                "a supported release"
+            )
+        elif reason == "over-lag":
+            lag = currency_info.get("lag")
+            latest = currency_info.get("latest") or "the latest release"
+            action = (
+                f"{subject}: {lag} release(s) behind {latest} -- upgrade "
+                "to close the gap"
+            )
+        else:
+            action = (
+                f"{subject}: currency could not be resolved -- verify "
+                "manually or add a waiver"
+            )
+        return f"{action}{manifest_clause}"
+
+    if finding_id.startswith("indeterminate:"):
+        reason = finding_id.split(":", 2)[1]
+        action = (
+            f"{subject}: investigate the {reason!r} condition and resolve "
+            "it, or add a waiver"
+        )
+        return f"{action}{manifest_clause}"
+
+    return None
+
+
 def render_text(
     report: ComplianceReport,
     *,
@@ -488,6 +659,8 @@ def render_text(
     warn_only: bool = False,
     warn_only_downgraded: int = 0,
     actuation: object | None = None,
+    manifest_locations: Mapping[str, tuple[str, ...]] = MappingProxyType({}),
+    fixed_versions: Mapping[str, str] = MappingProxyType({}),
 ) -> str:
     """Render the report as a human-readable, explicitly NON-CONTRACT summary.
 
@@ -495,25 +668,30 @@ def render_text(
     shape ``render_json`` emits (see the module docstring) — never a second,
     independently-maintained sort. One verdict line (tool, status, exit
     code, finding count), a driver line when the status carries one, then
-    one line per finding (axis, severity tier, id, message) and one line
-    per error (kind, owner, message), both in ``to_json_dict()``'s sorted
-    order, then one line per ``applied_waivers`` notice (Story 3.2; id,
-    reason, authorized_by, expires_at) and one line per ``expired_waivers``
-    notice (Story 3.3; same four fields, ``[waiver-expired]`` marker,
-    non-"re-blocked" wording — see the module docstring), then one line
-    per ``applied_baseline`` notice (Story 6.8; id, reason, expires_at —
-    no ``authorized_by``) and one line per ``expired_baseline`` notice
-    (same three fields, ``[baseline-expired]`` marker, same non-
-    "re-blocked" wording), all four in caller-supplied order, then
-    (Story 3.3) at most one graduate-to-enforcing nudge line when
-    ``warn_only`` is set, the composed status is ``warn``, and
-    ``warn_only_downgraded > 0`` (see the module docstring for why all
-    three are required), then (Story 6.9) one ``[actuation]`` line per fix-PR
-    outcome (``<status> <action> <finding_id>[ -> <pr_url>]``) when
-    ``actuation`` is a non-``None`` payload dict. Free-format lines: unlike
-    ``render_json``'s document, this output is never schema-validated. Every
-    ``message``/``reason``/``authorized_by``/``expires_at`` is passed through
-    ``_single_line`` first — see its docstring."""
+    one line per finding (axis, severity tier, id, message) — immediately
+    followed by one remediation line (Story 5.1, AC1; ``      -> fix:
+    ...``, via the new private ``_remediation_line``, templated per
+    id-family/axis from ``manifest_locations``/``fixed_versions`` — see the
+    module docstring; ``None`` omits the line, never fabricates one) — and
+    one line per error (kind, owner, message; errors[] get NO remediation
+    line), both in ``to_json_dict()``'s sorted order, then one line per
+    ``applied_waivers`` notice (Story 3.2; id, reason, authorized_by,
+    expires_at) and one line per ``expired_waivers`` notice (Story 3.3;
+    same four fields, ``[waiver-expired]`` marker, non-"re-blocked" wording
+    — see the module docstring), then one line per ``applied_baseline``
+    notice (Story 6.8; id, reason, expires_at — no ``authorized_by``) and
+    one line per ``expired_baseline`` notice (same three fields,
+    ``[baseline-expired]`` marker, same non-"re-blocked" wording), all four
+    in caller-supplied order, then (Story 3.3) at most one graduate-to-
+    enforcing nudge line when ``warn_only`` is set, the composed status is
+    ``warn``, and ``warn_only_downgraded > 0`` (see the module docstring
+    for why all three are required), then (Story 6.9) one ``[actuation]``
+    line per fix-PR outcome (``<status> <action> <finding_id>[ ->
+    <pr_url>]``) when ``actuation`` is a non-``None`` payload dict.
+    Free-format lines: unlike ``render_json``'s document, this output is
+    never schema-validated. Every ``message``/``reason``/``authorized_by``/
+    ``expires_at``/remediation string is passed through ``_single_line``
+    first — see its docstring."""
     # to_json_dict()'s declared return type is dict[str, object] (every
     # nested value equally untyped) -- it is JSON-primitive data, not a
     # typed structure, so the cast is the honest boundary rather than
@@ -532,6 +710,13 @@ def render_text(
         tier = severity["tier"] if severity is not None else SeverityTier.NONE.value
         message = _single_line(finding["message"])
         lines.append(f"  [{finding['axis']}] {tier} {finding['id']} -- {message}")
+        remediation = _remediation_line(
+            finding,
+            manifest_locations=manifest_locations,
+            fixed_versions=fixed_versions,
+        )
+        if remediation is not None:
+            lines.append(f"      -> fix: {_single_line(remediation)}")
     for error in document["errors"]:
         message = _single_line(error["message"])
         lines.append(f"  [error:{error['kind']}] {error['owner']} -- {message}")

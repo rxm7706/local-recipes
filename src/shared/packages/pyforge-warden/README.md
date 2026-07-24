@@ -23,3 +23,36 @@ pixi run -e pyforge-warden pyforge-warden-test  # run the test suite
 The `pyforge-warden` environment is lean by design (`no-default-feature`): it
 carries only the built package plus its conda run-dependencies
 (`python`, `deptry`, `osv-scanner`) and a test runner.
+
+## Installing & adopting Warden
+
+Three distribution paths cover local, air-gapped, and team-environment
+adoption — pick the one matching your setup; none of them require network
+access at scan time (`osv-scanner` runs fully offline against a locally
+provisioned database, and KEV/EPSS enrichment is likewise cache-only).
+
+- **Local install** — `pixi global install pyforge-warden` once it ships to
+  a channel, or point at this repo's own local conda channel / internal
+  JFrog Artifactory mirror in the meantime (the same channel the rest of
+  this repo's feedstocks build against).
+- **Air-gapped bundle** — `pixi-pack`/`pixi-unpack` a single self-contained
+  archive for a host with no channel access at all: pack the
+  `pyforge-warden` environment once on a connected machine, `pixi-unpack` it
+  wherever the scan needs to run.
+- **Team/nebi environments (alpha)** — a [nebi](https://github.com/nebari-dev/nebi)-managed
+  team environment is itself a pixi workspace, so `nebi pull <ws>:<tag>` then
+  `warden scan .` works with no extra wiring; `nebi push`/`pull` over an OCI
+  registry is a candidate path for shipping the scanner env itself, not yet
+  the recommended primary one for a security gate.
+
+**First contact:** run `warden scan . --warn-only` in any project — it
+reports every finding without ever failing the run, the non-blocking on-ramp
+for trying the gate before wiring it into CI.
+
+**Environment self-check:** `warden scan --doctor` verifies the local
+install itself — engine versions, the offline OSV database, and the
+KEV/EPSS feed caches — without scanning a project at all (no discovery, no
+network). It exits `0` when everything checks out and `2` when something is
+missing or out of its tested range (naming the specific problem); it never
+exits `1` — `--doctor` reports on the environment's operability, never on a
+project's policy compliance.

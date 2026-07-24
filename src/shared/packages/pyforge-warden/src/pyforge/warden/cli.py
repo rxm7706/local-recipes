@@ -252,6 +252,32 @@ Ownership decisions recorded:
   stdout under ``--format text`` and stderr under ``--format json``
   (NFR-I3), never itself altering any rung or the exit code (purely
   observational, unlike ``--bypass``).
+* ``--doctor`` (Story 5.1, D8) is a ``store_true`` flag on the ``scan``
+  subparser (mirrors ``--warn-only``/``--bypass``'s shape) — NEVER a new
+  subcommand. Dispatched as a sibling branch inside ``main()`` (``if
+  args.doctor: return _run_doctor(args)``), strictly BEFORE ``return
+  _run_scan(args)``, so it shares the SAME SIGINT/SystemExit/last-resort
+  exception nets a scan does — never a parallel entrypoint. ``_run_doctor``
+  short-circuits BEFORE any discovery/extraction/policy/engine-scan (it
+  stats the target the same way ``_run_scan`` does, then delegates to
+  ``engines.run_doctor_checks`` — read-only local filesystem +
+  ``--version`` subprocess checks only, never a network call) and returns
+  either ``0`` (every check ``ok``) or ``exit_code_for(Status.ERROR)`` —
+  NEVER ``1`` (doctor reports operability, not policy). ``--format``
+  applies exactly as it does for a real scan; the JSON shape is a NEW,
+  small ad-hoc document, deliberately NOT ``ComplianceReport``-shaped or
+  schema-validated.
+* ``manifest_locations``/``fixed_versions`` (Story 5.1, AC1): threaded into
+  the existing ``render_text(...)`` call ONLY (never ``render_json``/
+  ``assemble_report`` — the frozen v1 contract stays untouched).
+  ``manifest_locations`` is built ONCE, right after ``inventory`` resolves,
+  from ``inventory.components`` (``name -> tuple(f"{p.manifest}
+  [{p.section}]" for p in component.provenance)``); ``fixed_versions``
+  merges ``EngineResult.fixed_versions`` across every ``engine_results``
+  entry (first engine-registration-order occurrence wins on a rare key
+  collision, mirroring ``interfaces.DefaultPolicy``'s own engine-vs-engine
+  finding dedupe) right alongside the ``vuln_data``/``kev_data``/
+  ``epss_data``/``currency_data`` selection above.
 """
 
 from __future__ import annotations
@@ -259,6 +285,7 @@ from __future__ import annotations
 import argparse
 import errno as errno_module
 import getpass
+import json
 import os
 import stat as stat_module
 import sys
@@ -281,6 +308,7 @@ from .engines import (
     LicenseEngine,
     OsvEngine,
     engine_factories,
+    run_doctor_checks,
 )
 from .extract import UnparsableManifestError, extractor_for
 from .hygiene import has_adjacent_python_source
@@ -612,6 +640,17 @@ def _build_parser() -> tuple[argparse.ArgumentParser, argparse.ArgumentParser]:
         ),
     )
     scan.add_argument(
+        "--doctor",
+        action="store_true",
+        help=(
+            "run an environment self-check instead of a project scan (D8) "
+            "-- engine/OSV-DB/KEV/EPSS-feed detection only, no discovery/"
+            "extraction/policy/engine-scan and no network. Exits 0 when "
+            "every check is healthy, else 2 (never 1 -- doctor reports "
+            "operability, not policy); --format applies as usual"
+        ),
+    )
+    scan.add_argument(
         "--baseline",
         metavar="PATH",
         default=None,
@@ -693,6 +732,8 @@ def main(argv: list[str] | None = None) -> int:
             if isinstance(exc.code, int):
                 return exc.code
             return exit_code_for(Status.ERROR)
+        if args.doctor:
+            return _run_doctor(args)
         return _run_scan(args)
     except KeyboardInterrupt:
         # This handler wraps ALL of main — parse_args included — so no
@@ -730,7 +771,15 @@ def main(argv: list[str] | None = None) -> int:
         return exit_code_for(Status.ERROR)
 
 
-def _run_scan(args: argparse.Namespace) -> int:
+def _resolve_scan_target(args: argparse.Namespace) -> Path | int:
+    """Stat + validate ``args.path`` as an existing directory, writing the
+    SAME stderr diagnostics ``_run_scan`` always has (empty/whitespace path,
+    not-found, embedded-NUL/unrepresentable path, other ``OSError``, exists-
+    but-not-a-directory). Returns the validated ``Path`` on success, or the
+    already-computed ``exit_code_for(Status.ERROR)`` int on failure (caller
+    returns it verbatim). Review finding (2026-07-24): ``_run_doctor``
+    originally duplicated this ~40-line block verbatim from ``_run_scan`` —
+    extracted here so the two boundary checks can never drift apart."""
     if not args.path.strip():
         # "" Path-normalizes to "." — an empty/whitespace target must be
         # early-fatal, never a silent scan of the CWD.
@@ -767,6 +816,71 @@ def _run_scan(args: argparse.Namespace) -> int:
             "directory"
         )
         return exit_code_for(Status.ERROR)
+    return target
+
+
+def _run_doctor(args: argparse.Namespace) -> int:
+    """Story 5.1 (D8): ``--doctor``'s environment self-check — NOT a project
+    scan. Stats the target the SAME way ``_run_scan`` does (no config load:
+    doctor is config-independent, via the shared ``_resolve_scan_target``)
+    and returns BEFORE any discovery/extraction/policy/engine-scan work.
+    ``engines.run_doctor_checks`` performs only read-only local filesystem +
+    ``--version`` subprocess checks — never a network call (the autouse
+    socket-deny harness governs this path too). Exit is ``0`` when every
+    check is ``ok``, else ``exit_code_for(Status.ERROR)`` — NEVER ``1``
+    (doctor reports operability, not policy)."""
+    target = _resolve_scan_target(args)
+    if isinstance(target, int):
+        return target
+
+    checks = run_doctor_checks(target)
+    healthy = all(check.ok for check in checks)
+    status_word = "ok" if healthy else "problem"
+    if args.format == "json":
+        # A NEW, small ad-hoc JSON document — deliberately NOT
+        # ComplianceReport-shaped/schema-validated (Boundaries). Sorted by
+        # name for a deterministic, canonical shape; the text branch below
+        # keeps run_doctor_checks' own fixed declaration order instead (the
+        # Design Notes' golden example).
+        document = {
+            "tool": TOOL_NAME,
+            "doctor": True,
+            "status": status_word,
+            "checks": [
+                {"name": c.name, "ok": c.ok, "message": c.message}
+                for c in sorted(checks, key=lambda c: c.name)
+            ],
+        }
+        rendered = json.dumps(document, sort_keys=True, indent=2) + "\n"
+    else:
+        lines = [
+            f"{TOOL_NAME}: doctor status={status_word} checks={len(checks)}"
+        ]
+        for check in checks:
+            outcome = "ok" if check.ok else "problem"
+            lines.append(f"  [doctor] {check.name} {outcome} -- {check.message}")
+        rendered = "\n".join(lines) + "\n"
+    try:
+        # Mirrors _run_scan's own stdout-emission guard (BrokenPipeError
+        # absorbed, any other stdout OSError/ValueError degrades to a
+        # stderr diagnostic with the already-computed exit code preserved).
+        sys.stdout.write(rendered)
+        sys.stdout.flush()
+    except BrokenPipeError:
+        _absorb_broken_pipe()
+    except (OSError, ValueError) as exc:
+        _stderr(
+            f"{TOOL_NAME}: stdout emission failed "
+            f"({exc.__class__.__name__}); any partial stdout must not be "
+            "consumed"
+        )
+    return 0 if healthy else exit_code_for(Status.ERROR)
+
+
+def _run_scan(args: argparse.Namespace) -> int:
+    target = _resolve_scan_target(args)
+    if isinstance(target, int):
+        return target
 
     components: list[Component] = []
     errors: list[ErrorRecord] = []
@@ -963,6 +1077,40 @@ def _run_scan(args: argparse.Namespace) -> int:
         components=merge_components(components),
         resolved_scan_set=manifests,
     )
+    # Story 5.1 (AC1): the manifest+location lookup render_text's
+    # remediation lines consult -- built ONCE, straight from the post-merge
+    # inventory (never re-derived per finding). A finding's own `subject` is
+    # the raw component name (e.g. vuln._indeterminate_finding, hygiene's/
+    # license's/currency's own producers), so this dict is keyed the same
+    # way; a subject with no entry here (e.g. report.py's own synthetic
+    # indeterminate:coverage-floor:<axis> finding, whose subject is an axis
+    # name) simply gets no manifest clause -- report.py handles that
+    # gracefully. Review finding (2026-07-24): two components can
+    # legitimately share one name at different versions post-merge
+    # (inventory.py's own docstring: "distinct versions ... stay distinct")
+    # -- a plain per-component dict build would let the LAST one silently
+    # clobber an earlier one's provenance, misattributing a finding's
+    # location. Every same-named component's provenance is unioned instead
+    # (sorted, deduplicated) -- an honest "every place this name is
+    # declared" rather than a wrong single guess. Also keyed additionally by
+    # `pypi_identity.name` when present: vuln findings' `subject` is
+    # osv-scanner's own echoed package name, which mirrors the SYNTHESIZED
+    # pypi identity (vuln._synthesize_requirements), not necessarily
+    # `component.name` for a conda-sourced component -- without this second
+    # key, a conda/PyPI name divergence would silently miss the lookup even
+    # though the location data is present.
+    manifest_locations: dict[str, tuple[str, ...]] = {}
+    for component in inventory.components:
+        locations = tuple(
+            f"{p.manifest} [{p.section}]" for p in component.provenance
+        )
+        keys = [component.name]
+        if component.pypi_identity is not None:
+            keys.append(component.pypi_identity.name)
+        for key in keys:
+            manifest_locations[key] = tuple(
+                sorted(set(manifest_locations.get(key, ())) | set(locations))
+            )
     if manifests and manifests_parsed > 0 and not inventory.components:
         # A parsed manifest with nothing extractable must be distinguishable
         # on stderr from the empty-dir case (the coverage block already
@@ -1356,6 +1504,18 @@ def _run_scan(args: argparse.Namespace) -> int:
         ),
         None,
     )
+    # Story 5.1 (AC1): fixed_versions merges PER-FINDING across
+    # engine_results -- unlike vuln_data/kev_data/epss_data/currency_data's
+    # first-non-None SELECTION above (per-feed provenance), this is
+    # per-finding data, so every result's mapping contributes. First
+    # engine-registration-order occurrence wins on a rare key collision,
+    # mirroring interfaces.DefaultPolicy's own engine-vs-engine finding
+    # dedupe convention. render_text-only: never threaded into
+    # assemble_report/the frozen ComplianceReport contract.
+    fixed_versions: dict[str, str] = {}
+    for result in engine_results:
+        for finding_id, fixed_version in result.fixed_versions.items():
+            fixed_versions.setdefault(finding_id, fixed_version)
     report = assemble_report(
         inventory=inventory,
         findings=findings,
@@ -1455,6 +1615,8 @@ def _run_scan(args: argparse.Namespace) -> int:
                     warn_only=args.warn_only,
                     warn_only_downgraded=warn_only_downgraded,
                     actuation=actuation_payload,
+                    manifest_locations=manifest_locations,
+                    fixed_versions=fixed_versions,
                 )
                 + "\n"
             )

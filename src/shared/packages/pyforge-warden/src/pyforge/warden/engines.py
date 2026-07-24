@@ -70,6 +70,16 @@ finding`` — ``vuln.py`` already exports an ``unsafe_identity_finding`` of
 its own into this module's namespace) — Fix 6 (2026-07-16): previously
 computed and silently discarded, unlike every other exclusion path in this
 module.
+
+Story 5.1 (D8) adds ``DoctorCheck``/``run_doctor_checks`` — the ``--doctor``
+self-check aggregation ``cli.py`` calls instead of a real project scan. It
+reuses ``_check_engine_version`` (deptry/osv-scanner) and the SAME OSV-DB/
+KEV/EPSS detection sequences ``OsvEngine.run`` already exercises, so
+``--doctor`` never carries a second, drift-prone copy of that logic. Also
+threads ``OsvEngine.run``'s own ``parse_osv_output(...).fixed_versions``
+(Story 5.1, AC1 — osv-scanner's discarded ``fixed`` version) into
+``EngineResult.fixed_versions`` at the real-parse success site, consumed
+ONLY by ``report.render_text``'s remediation lines.
 """
 
 from __future__ import annotations
@@ -113,6 +123,7 @@ from .models import (
 )
 from .vuln import (
     DB_MAX_AGE_DAYS,
+    OSV_DB_CACHE_ENV_VAR,
     _db_has_valid_advisory,
     _synthesize_requirements,
     db_snapshot_at,
@@ -471,6 +482,218 @@ def _check_engine_version(
             ),
         )
     return None
+
+
+# --- Story 5.1 (D8): the --doctor self-check aggregation ---------------------
+#
+# `--doctor` (cli.py) re-exposes this module's own engine-version/OSV-DB/KEV/
+# EPSS detection logic as a read-only, no-network environment self-check -- an
+# operability report, never a project scan (cli.py's `_run_doctor` never
+# builds an inventory or runs discovery/extraction/policy for this path).
+# `DoctorCheck` deliberately lives HERE, not in `models.py`: it is NOT part of
+# the frozen `ComplianceReport` v1 contract (Story 6.1 froze that schema
+# whole), so a new field here can never be mistaken for a sanctioned schema
+# amendment.
+
+
+@dataclasses.dataclass(frozen=True)
+class DoctorCheck:
+    """One ``--doctor`` self-check outcome. ``ok=True`` covers a healthy
+    check AND an ABSENT optional KEV/EPSS feed (v1's NFR-U2 air-gap framing
+    treats that as the expected default posture, never a failure);
+    ``ok=False`` is reserved for a genuine operability problem (an
+    unavailable/out-of-tested-range engine, or an unusable/stale offline
+    OSV DB). ``cli.py``'s ``_run_doctor`` is the ONLY place these compose
+    into an exit code (``0`` when every check is ``ok``, else
+    ``exit_code_for(Status.ERROR)`` — NEVER ``1``); this dataclass carries
+    no exit-code opinion of its own."""
+
+    name: str
+    ok: bool
+    message: str
+
+
+def _doctor_check_engine(
+    *,
+    name: str,
+    argv: list[str],
+    version_pattern: re.Pattern[str],
+    expected: SpecifierSet,
+    cwd: Path,
+) -> DoctorCheck:
+    """One engine's ``--version`` pre-flight, reusing ``_check_engine_
+    version`` verbatim (Story 6.6/FR21) — never a second, doctor-only
+    version-probing codepath. ``_check_engine_version`` already names the
+    specific problem (binary absent, timeout, out-of-range, unparsable
+    output, ...) via its own ``ErrorRecord.message``; this only re-shapes a
+    passing/failing result into a ``DoctorCheck``."""
+    error = _check_engine_version(
+        owner=name,
+        argv=argv,
+        version_pattern=version_pattern,
+        expected=expected,
+        cwd=cwd,
+    )
+    if error is None:
+        return DoctorCheck(
+            name=name, ok=True, message=f"within tested range {expected!s}"
+        )
+    return DoctorCheck(name=name, ok=False, message=error.message)
+
+
+def _doctor_check_osv_db() -> DoctorCheck:
+    """The offline OSV database pre-flight (decision record § 4), reusing
+    ``OsvEngine.run``'s own ``resolve_cache_dir`` -> ``db_zip_path`` ->
+    ``_db_has_valid_advisory`` -> ``db_snapshot_at`` -> ``is_db_stale``
+    sequence verbatim — a genuine operability problem (absent, unreadable,
+    content-corrupt, or stale/future-dated) is ``ok=False``, naming the
+    specific issue (this is read as an operational gap, never a policy
+    verdict — ``--doctor`` still never exits ``1`` for it; ``cli.py``
+    projects a failing check to exit ``2``)."""
+    cache_dir = resolve_cache_dir()
+    if cache_dir is None:
+        return DoctorCheck(
+            name="osv-db",
+            ok=False,
+            message=(
+                f"{OSV_DB_CACHE_ENV_VAR} is unset -- no offline OSV "
+                "database configured"
+            ),
+        )
+    zip_path = db_zip_path(cache_dir)
+    if zip_path is None or not _db_has_valid_advisory(zip_path):
+        return DoctorCheck(
+            name="osv-db",
+            ok=False,
+            message=(
+                f"no usable offline OSV database found under {cache_dir!r} "
+                "(absent, empty, or content-corrupt)"
+            ),
+        )
+    try:
+        snapshot_at = db_snapshot_at(zip_path)
+    except OSError:
+        # Review finding (2026-07-24): TOCTOU -- the db can vanish/become
+        # unreadable between _db_has_valid_advisory's own read above and
+        # this stat call. Left uncaught, this OSError would escape all the
+        # way to main()'s last-resort net, turning a --doctor health-check
+        # into a raw traceback instead of naming the osv-db problem
+        # (mirrors _doctor_check_feed's own identical TOCTOU guard below).
+        return DoctorCheck(
+            name="osv-db",
+            ok=False,
+            message=(
+                f"offline OSV database under {cache_dir!r} became unreadable "
+                "while checking its snapshot"
+            ),
+        )
+    if is_db_stale(snapshot_at, DB_MAX_AGE_DAYS, now=datetime.now(UTC)):
+        return DoctorCheck(
+            name="osv-db",
+            ok=False,
+            message=(
+                f"offline OSV database is stale or future-dated (snapshot "
+                f"{snapshot_at}, max age {DB_MAX_AGE_DAYS}d)"
+            ),
+        )
+    return DoctorCheck(
+        name="osv-db", ok=True, message=f"snapshot {snapshot_at} (fresh)"
+    )
+
+
+def _doctor_check_feed(
+    feed_name: str,
+    cache_path: Callable[[str | Path], Path],
+    loader: Callable[[Path], Mapping[str, object] | None],
+) -> DoctorCheck:
+    """One optional KEV/EPSS feed self-check, consulted UNCONDITIONALLY
+    (never gated on ``--fail-on-kev``/``--min-epss`` — ``--doctor`` reports
+    environment operability regardless of which gates a LATER real scan
+    might enable). An absent/unreadable/content-corrupt feed is ``ok=True``
+    with an explicit "operating air-gapped" message (NFR-U2's air-gap
+    framing: a missing OPTIONAL feed is the expected offline default, never
+    a doctor failure) — mirrors ``_kev_enrichment``'s/``_epss_
+    enrichment``'s own ``unavailable=True`` case one level up, but this
+    check NEVER reports ``ok=False``: the feed is optional by design."""
+    check_name = f"{feed_name}-feed"
+    air_gapped = DoctorCheck(
+        name=check_name,
+        ok=True,
+        message=(
+            f"operating air-gapped: {feed_name} feed not present, offline "
+            "default assumed"
+        ),
+    )
+    cache_dir = feeds.resolve_cache_dir()
+    if cache_dir is None:
+        return air_gapped
+    path = cache_path(cache_dir)
+    catalog = loader(path)
+    if catalog is None:
+        return air_gapped
+    try:
+        provenance = feeds.feed_provenance(
+            source=str(path),
+            path=path,
+            max_age_days=feeds.DEFAULT_FEED_MAX_AGE_DAYS,
+            now=datetime.now(UTC),
+        )
+    except OSError:
+        # TOCTOU: the cache vanished between the load above and this stat --
+        # treat exactly like "no usable feed" (mirrors _kev_enrichment's own
+        # TOCTOU handling).
+        return air_gapped
+    if not provenance.max_age_ok:
+        return DoctorCheck(
+            name=check_name,
+            ok=True,
+            message=(
+                f"{feed_name} feed present but stale (snapshot "
+                f"{provenance.snapshot_at}) -- offline default still applies"
+            ),
+        )
+    return DoctorCheck(
+        name=check_name,
+        ok=True,
+        message=(
+            f"{feed_name} feed present, snapshot {provenance.snapshot_at} "
+            "(fresh)"
+        ),
+    )
+
+
+def run_doctor_checks(target: Path) -> tuple[DoctorCheck, ...]:
+    """Story 5.1 (D8)'s ``--doctor`` aggregation: the deptry/osv-scanner
+    version pre-flight, the offline OSV-DB pre-flight, and the KEV/EPSS
+    feed checks — all read-only local filesystem + ``--version`` subprocess
+    work, NEVER a network call (the autouse socket-deny harness,
+    ``tests/meta/test_socket_deny_alive.py``, governs this path too). No
+    config parameter: every check below is constant-driven, never
+    policy-driven (mirrors ``_check_engine_version``'s own config-
+    independent shape) — ``cli.py``'s ``_run_doctor`` calls this BEFORE any
+    discovery/extraction/policy/engine-scan work happens. Order is fixed
+    (deptry, osv-scanner, osv-db, kev-feed, epss-feed) — ``--format text``
+    renders it verbatim; ``--format json`` sorts by ``name`` instead (its
+    own small ad-hoc, non-schema document)."""
+    return (
+        _doctor_check_engine(
+            name="deptry",
+            argv=["deptry", "--version"],
+            version_pattern=_DEPTRY_VERSION_PATTERN,
+            expected=DEPTRY_VERSION_RANGE,
+            cwd=target,
+        ),
+        _doctor_check_engine(
+            name="osv-scanner",
+            argv=["osv-scanner", "--version"],
+            version_pattern=_OSV_SCANNER_VERSION_PATTERN,
+            expected=OSV_SCANNER_VERSION_RANGE,
+            cwd=target,
+        ),
+        _doctor_check_osv_db(),
+        _doctor_check_feed("kev", feeds.kev_cache_path, feeds.load_kev_catalog),
+        _doctor_check_feed("epss", feeds.epss_cache_path, feeds.load_epss_scores),
+    )
 
 
 class NullEngine:
@@ -1342,6 +1565,10 @@ class OsvEngine:
                 vuln_data=vuln_data,
                 kev_data=kev_data,
                 epss_data=epss_data,
+                # Story 5.1 (AC1): threaded ONLY at this real-parse success
+                # site -- every other return path above/below keeps the
+                # default empty mapping (nothing was actually parsed there).
+                fixed_versions=parse.fixed_versions,
             )
 
         if exit_code == 127:
