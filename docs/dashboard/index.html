@@ -322,37 +322,105 @@
   .tstrip-note { flex-basis: 100%; font-size: 10.5px; color: var(--slate-faint); line-height: 1.55; }
   .etime { font-family: var(--mono); font-size: 10.5px; color: var(--slate); margin-right: 10px; font-variant-numeric: tabular-nums; }
   .stime { float: right; font-family: var(--mono); font-size: 10.5px; color: var(--slate); font-variant-numeric: tabular-nums; padding-left: 8px; }
+
+  /* ---- v2 zones (six-section IA) ---- */
+  .zone-h { font-family: var(--mono); font-size: 13px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.14em; color: var(--slate); margin: 34px 0 10px; display: flex; align-items: center; gap: 10px; }
+  .zone-h::before { content: ""; width: 10px; height: 10px; border-radius: 3px; background: var(--accent); flex: none; }
+  .zone-h.z-build::before { background: var(--active); }
+  .zone-h.z-real::before { background: var(--done); }
+  .zone-h.z-arch::before { background: var(--slate-faint); }
+  .zone-h .zn { color: var(--slate-faint); font-weight: 400; letter-spacing: 0.02em; }
+
+  /* specs roster */
+  .specrow { display: grid; grid-template-columns: minmax(150px,230px) auto 1fr auto; gap: 12px; padding: 9px 0; align-items: baseline; }
+  .specrow + .specrow { border-top: 1px solid var(--line-soft); }
+  .spec-slug { font-family: var(--mono); font-size: 12.5px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; }
+  .spec-slug a { color: var(--ink); text-decoration: none; }
+  .spec-slug a:hover { color: var(--accent); }
+  .spec-proj { font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: .05em; color: var(--slate);
+    background: var(--panel-2); border: 1px solid var(--line); border-radius: 4px; padding: 2px 7px; justify-self: start; white-space: nowrap; }
+  .spec-title { font-size: 12.5px; color: var(--ink-soft); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .spec-meta { font-family: var(--mono); font-size: 10.5px; color: var(--slate); white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .spec-meta .dr { color: var(--deck); }
+  @media (max-width: 640px) { .specrow { grid-template-columns: 1fr auto; } .spec-title, .spec-proj { display: none; } }
+
+  /* pitch cards */
+  .pitchgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(198px,1fr)); gap: 10px; }
+  .pcard { border: 1px solid var(--line); border-radius: 7px; background: var(--panel-2); padding: 12px 14px; text-decoration: none; display: block; }
+  .pcard:hover { border-color: var(--accent-dim); }
+  .pcard-t { font-family: var(--mono); font-size: 13px; font-weight: 600; color: var(--ink); }
+  .pcard-s { font-family: var(--mono); font-size: 10.5px; color: var(--slate-faint); margin-top: 1px; }
+  .pdots { display: flex; gap: 5px; margin-top: 9px; }
+  .pdotc { width: 9px; height: 9px; border-radius: 3px; background: var(--done); }
+  .pdotc.miss { background: var(--pending-ground); border: 1px solid var(--slate-faint); }
+  .pcard-m { font-family: var(--mono); font-size: 10px; color: var(--slate); margin-top: 8px; display: flex; justify-content: space-between; gap: 8px; }
+
+  /* archived roster */
+  .archrow { display: flex; gap: 12px; align-items: baseline; padding: 8px 0; flex-wrap: wrap; }
+  .archrow + .archrow { border-top: 1px solid var(--line-soft); }
+  .rbadge { font-family: var(--mono); font-size: 9.5px; text-transform: uppercase; letter-spacing: .08em;
+    border-radius: 4px; padding: 2px 8px; flex: none; border: 1px solid transparent; }
+  .rb-absorbed { color: var(--deck); background: var(--deck-ground); border-color: color-mix(in srgb,var(--deck) 30%,transparent); }
+  .rb-retired { color: var(--slate); background: var(--pending-ground); border-color: var(--line); }
+  .rb-terminal { color: var(--atlas); background: color-mix(in srgb,var(--atlas) 12%,transparent); border-color: color-mix(in srgb,var(--atlas) 30%,transparent); }
+  .rb-blocked { color: var(--gate); background: var(--gate-ground); border-color: color-mix(in srgb,var(--gate) 30%,transparent); }
+  .arch-name a { color: var(--ink-soft); font-size: 13px; text-decoration: none; font-weight: 600; }
+  .arch-name a:hover { color: var(--ink); }
+  .arch-note { font-size: 12px; color: var(--slate); }
+
+  /* console blocks inside zones */
+  .pconsole { margin-bottom: 16px; }
+  .pconsole .panel { margin-top: 22px; }
+  .pconsole .contractline { margin-top: 16px; font-family: var(--mono); font-size: 11px; color: var(--slate-faint); line-height: 1.7; }
+  .pconsole .contractline b { color: var(--slate); font-weight: 600; }
+  details.pconsole { border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); padding: 0 20px; }
+  details.pconsole > summary { list-style: none; cursor: pointer; padding: 14px 0;
+    display: grid; grid-template-columns: 100px 1fr auto auto; gap: 16px; align-items: center; }
+  details.pconsole > summary::-webkit-details-marker { display: none; }
+  details.pconsole[open] > summary { border-bottom: 1px solid var(--line-soft); margin-bottom: 18px; }
+  details.pconsole .disclose { font-family: var(--mono); font-size: 10px; color: var(--slate-faint);
+    text-transform: uppercase; letter-spacing: .08em; }
+  details.pconsole > .cbody { padding-bottom: 20px; }
+  @media (max-width: 560px) { details.pconsole > summary { grid-template-columns: 84px 1fr auto; } details.pconsole .disclose { display: none; } }
 </style>
 
 <div class="wrap">
   <div class="statusline">
-    <span><span class="prompt">pyforge ❯</span> status --program</span>
+    <span><span class="prompt">pyforge ❯</span> status --factory</span>
     <span class="branch" id="branch">state: —</span>
     <button class="theme-toggle" id="tt" type="button" aria-label="Toggle theme">◐ theme</button>
   </div>
 
-  <h1>pyforge <span class="sep">·</span> Build Program</h1>
-  <p class="subtitle">Two conda-native, <code>bmad-loop</code>-driven tools built story-by-story. <b>Warden</b> is a fail-closed dependency compliance gate; <b>Atlas</b> is the Kedro/DuckDB migration of the conda-forge intelligence pipeline. They share one contract edge — Atlas provides the data, Warden defines the schema.</p>
+  <h1>pyforge <span class="sep">·</span> Factory Console</h1>
+  <p class="subtitle">The Dream-to-Code factory, end to end: <b>The Dreams</b> (the why) → <b>The Specs</b> (BMAD kernels, the machine contract) → <b>The Pitch</b> (the deck family) → what's <b>In Build</b>, <b>Realized</b>, and <b>Archived</b>. Data regenerates from the repo (<code>dashboard-gen</code>).</p>
 
   <div class="dreams" id="dreams" hidden>
-    <div class="program-h">Dreamscape · every Dream, its lifecycle stage</div>
+    <div class="program-h">The Dreams</div>
     <div class="dflow"><b>docs/dreams/</b> → deck (Herald) → spec (BMAD) → build (Marshal) → realized · each Dream shows at its FURTHEST stage — ▤ deck · § spec · ⚙ project · n/n live build carry its full chain</div>
     <div id="drows"></div>
   </div>
 
-  <div class="program">
-    <div class="program-h">Program · both tools</div>
-    <div id="prows"></div>
-    <div class="edge">
-      <b>Relationship:</b> <span class="a">atlas</span> provides the data · <span class="w">warden</span> defines the schema — one optional code edge (<code>pyforge-atlas[gate]</code> imports Warden's <code>ComplianceReport</code> at Atlas story <b>F4</b>); zero edges the other way; both independently installable.
-    </div>
+  <div class="dreams" id="specsec" hidden>
+    <div class="program-h" id="spech">The Specs</div>
+    <div class="dflow"><b>_bmad-output/projects/*/planning-artifacts/specs/</b> — every BMAD-Method kernel: five-field contract + companions, derived from its append-only memlog. Legacy <b>docs/specs/</b> is excluded.</div>
+    <div id="specrows"></div>
   </div>
 
-  <div class="toggle" id="toggle" role="tablist" aria-label="Select project"></div>
+  <div class="dreams" id="pitchsec" hidden>
+    <div class="program-h" id="pitchh">The Pitch</div>
+    <div class="dflow"><b>presentations/&lt;slug&gt;/</b> — the deck family. Dots = the 6-artifact standard: prototype · exec summary · infographic trio · marp sources · standalone · pptx pair. Cards link to the repo.</div>
+    <div id="pitchcards" class="pitchgrid"></div>
+  </div>
 
-  <div id="view"></div>
+  <h2 class="zone-h z-build" id="buildh">In Build</h2>
+  <div id="buildzone"></div>
 
-  <div class="panel" id="panel"></div>
+  <h2 class="zone-h z-real" id="realh">Realized</h2>
+  <div id="realzone"></div>
+
+  <h2 class="zone-h z-arch" id="archh">Archived</h2>
+  <div class="dreams" id="archsec"><div id="archrows"></div></div>
 
   <footer id="footer"></footer>
 </div>
@@ -361,35 +429,21 @@
 <script>
   const glyphFor = { done:"✔", active:"▶", pending:"○", gated:"⧖" };
   const fmtMin = m => m == null ? "" : (m < 60 ? m + "m" : (m/60).toFixed(1) + "h");
+  const REPO = "https://github.com/rxm7706/local-recipes";
 
   const PROJECTS = window.DASHBOARD_DATA.projects;
 
-  const norm = s => (s === "gated" ? "pending" : s);
   const countOf = p => {
     const all = p.epics.flatMap(e => e.stories);
     return { total: all.length, done: all.filter(s => s[1]==="done").length,
              active: all.filter(s => s[1]==="active").length, all };
   };
+  const esc = s => s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/"/g,"&quot;");
 
-  // ---- program strip (always both) ----
-  const prows = document.getElementById("prows");
-  Object.entries(PROJECTS).forEach(([id, p]) => {
-    const c = countOf(p);
-    const pct = Math.round((c.done / c.total) * 100);
-    const row = document.createElement("div");
-    row.className = "prow " + ({warden: "pw", atlas: "pa"}[id] || "pr");
-    row.innerHTML =
-      '<div class="pname"><span class="pdot"></span>' + p.label + '</div>' +
-      '<div class="pbar"><div class="pbar-fill" style="width:' + Math.max(pct,2) + '%"></div></div>' +
-      '<div class="pfrac"><b>' + c.done + '</b> / ' + c.total + ' <span class="pct">· ' + pct + '%</span></div>';
-    prows.appendChild(row);
-  });
-
-  // ---- dreamscape (every Dream, bucketed by lifecycle stage) ----
+  // ---- 1 · The Dreams (every Dream, bucketed by lifecycle stage) ----
   const DREAMS = window.DASHBOARD_DATA.dreams || [];
   const STAGES = [["seeded","seeded"], ["in-deck","in deck"], ["in-spec","in build"], ["realized","realized"]];
-  const KNOWN = STAGES.map(s => s[0]);
-  const esc = s => s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/"/g,"&quot;");
+  const KNOWN = STAGES.map(s => s[0]).concat(["archived"]);
   if (DREAMS.length) {
     const dreamsEl = document.getElementById("dreams");
     dreamsEl.hidden = false;
@@ -415,7 +469,7 @@
                  pc.done + '/' + pc.total + (full ? ' ✓' : '') + '</span>';
           }
           const tip = Object.entries(ch).map(([k, v]) => k + ": " + v).join(" · ");
-          return '<a class="dchip" href="https://github.com/rxm7706/local-recipes/blob/main/docs/dreams/' +
+          return '<a class="dchip" href="' + REPO + '/blob/main/docs/dreams/' +
             d.slug + '.md" title="' + esc(d.title) + ' · docs/dreams/' + d.slug + '.md' +
             (tip ? ' · ' + esc(tip) : '') + '"><span class="dt">' +
             head + '</span>' + own + mk + pr + '</a>';
@@ -423,34 +477,55 @@
       drows.appendChild(row);
     });
     document.querySelector("#dreams .program-h").textContent =
-      "Dreamscape · " + DREAMS.length + " Dreams, by lifecycle stage";
+      "The Dreams · " + DREAMS.length + " on the board";
   }
 
-  // ---- toggle ----
-  const toggleEl = document.getElementById("toggle");
-  Object.entries(PROJECTS).forEach(([id, p], i) => {
-    const c = countOf(p);
-    const b = document.createElement("button");
-    b.setAttribute("role","tab");
-    b.dataset.p = id;
-    b.setAttribute("aria-selected", i === 0 ? "true" : "false");
-    b.innerHTML = '<span class="td"></span>' + p.label + ' <span class="cnt">' + c.done + '/' + c.total + '</span>';
-    b.addEventListener("click", () => select(id));
-    toggleEl.appendChild(b);
-  });
+  // ---- 2 · The Specs (every BMAD kernel) ----
+  const SPECS = window.DASHBOARD_DATA.specs || [];
+  if (SPECS.length) {
+    document.getElementById("specsec").hidden = false;
+    document.getElementById("spech").textContent = "The Specs · " + SPECS.length + " BMAD kernels";
+    document.getElementById("specrows").innerHTML = SPECS.map(s =>
+      '<div class="specrow">' +
+        '<span class="spec-slug"><a href="' + REPO + '/tree/main/' + esc(s.path) + '">' +
+          (s.dream ? '<span title="has a Dream">§ </span>' : '§ ') + esc(s.slug) + '</a></span>' +
+        '<span class="spec-proj">' + esc(s.project) + '</span>' +
+        '<span class="spec-title" title="' + esc(s.title) + '">' + esc(s.title) + '</span>' +
+        '<span class="spec-meta">' + (s.caps ? s.caps + ' caps · ' : '') +
+          (s.companions ? s.companions + ' comp · ' : '') +
+          (s.dream ? '<span class="dr" title="linked Dream">▲ dream</span> · ' : '') +
+          esc(s.updated || '') + '</span>' +
+      '</div>').join("");
+  }
 
-  const viewEl = document.getElementById("view");
-  const panelEl = document.getElementById("panel");
+  // ---- 3 · The Pitch (the deck family) ----
+  const PITCH = window.DASHBOARD_DATA.pitch || [];
+  const PITCH_KEYS = ["prototype","exec","infographic","marp","standalone","pptx"];
+  const PITCH_LABELS = {prototype:"prototype", exec:"exec summary", infographic:"infographic trio",
+                        marp:"marp sources", standalone:"standalone", pptx:"pptx pair"};
+  if (PITCH.length) {
+    document.getElementById("pitchsec").hidden = false;
+    const full = PITCH.filter(c => c.n === c.of).length;
+    document.getElementById("pitchh").textContent =
+      "The Pitch · " + PITCH.length + " decks (" + full + " full-family)";
+    document.getElementById("pitchcards").innerHTML = PITCH.map(c =>
+      '<a class="pcard" href="' + REPO + '/tree/main/' + esc(c.path) + '">' +
+        '<div class="pcard-t">' + esc(c.title) + '</div>' +
+        '<div class="pcard-s">' + esc(c.slug) + '</div>' +
+        '<div class="pdots">' + PITCH_KEYS.map(k =>
+          '<span class="pdotc' + (c.have[k] ? '' : ' miss') + '" title="' +
+          PITCH_LABELS[k] + (c.have[k] ? '' : ' — missing') + '"></span>').join("") + '</div>' +
+        '<div class="pcard-m"><span>' + c.n + '/' + c.of + ' artifacts</span>' +
+          (c.export ? '<span>exported ' + esc(c.export) + '</span>' : '') + '</div>' +
+      '</a>').join("");
+  }
+
+  // ---- 4+5 · consoles into In Build / Realized ----
   const footerEl = document.getElementById("footer");
   const branchEl = document.getElementById("branch");
   const root = document.documentElement;
 
-  function select(id) {
-    const p = PROJECTS[id];
-    root.setAttribute("data-project", id);
-    branchEl.textContent = "state: " + p.branch;
-    [...toggleEl.children].forEach(b => b.setAttribute("aria-selected", b.dataset.p === id ? "true" : "false"));
-
+  function consoleHTML(id, p) {
     const c = countOf(p);
     const nPend = c.total - c.done - c.active;
 
@@ -537,23 +612,21 @@
       if (e.gatenote) html += '<div class="gatenote">' + e.gatenote + '</div>';
       html += '</div>';
     });
-    viewEl.innerHTML = html;
-
-    // bottom panel
+    // bottom panel (velocity / roadmap), inlined per console
     if (p.velocity) {
       const v = p.velocity, maxV = Math.max(...v.bars.map(b => b[1]));
-      let ph = '<h2>Velocity</h2><p class="sub">' + v.sub + '</p><div class="bars">';
+      let ph = '<div class="panel"><h2>Velocity</h2><p class="sub">' + v.sub + '</p><div class="bars">';
       v.bars.forEach(([k, m]) => {
         const heavy = m > 110;
         ph += '<div class="bar-col"><div class="bar" style="height:' + Math.round((m/maxV)*100) + '%;background:' +
           (heavy ? 'var(--active)' : 'var(--done)') + '"><span class="mm">' + m + '</span></div><span class="bar-key">' + k + '</span></div>';
       });
       ph += '</div><div class="foot">' + v.foot.map(([val,k,col]) =>
-        '<div class="m"><span class="v"' + (col ? ' style="color:' + col + '"' : '') + '>' + val + '</span><span class="k">' + k + '</span></div>').join("") + '</div>';
-      panelEl.innerHTML = ph;
+        '<div class="m"><span class="v"' + (col ? ' style="color:' + col + '"' : '') + '>' + val + '</span><span class="k">' + k + '</span></div>').join("") + '</div></div>';
+      html += ph;
     } else if (p.roadmap) {
       const r = p.roadmap;
-      let ph = '<h2>Wave roadmap</h2><p class="sub">' + r.sub + '</p><div class="rail">';
+      let ph = '<div class="panel"><h2>Wave roadmap</h2><p class="sub">' + r.sub + '</p><div class="rail">';
       r.stops.forEach(([w, name, st]) => {
         const cls = st==="done" ? "done" : st==="wip" ? "wip" : "";
         const glyph = st==="done" ? "✔ " : st==="wip" ? "▶ " : "";
@@ -561,16 +634,68 @@
         ph += '<div class="stop ' + cls + '"><div class="stop-w">' + glyph + 'Wave ' + w + '</div>' +
           '<div class="stop-n">' + name + '</div><div class="stop-c">' + cap + '</div></div>';
       });
-      ph += '</div>';
-      panelEl.innerHTML = ph;
+      ph += '</div></div>';
+      html += ph;
     }
 
-    footerEl.innerHTML =
-      '<b>' + p.label + ':</b> ' + p.contract + '<br>' +
-      '<b>Snapshot:</b> ' + window.DASHBOARD_DATA.snapshot;
-
-    tickInflight();
+    html += '<div class="contractline"><b>' + p.label + ':</b> ' + p.contract + '</div>';
+    return html;
   }
+
+  // ---- zone assembly: live programs expand under In Build; shipped collapse under Realized ----
+  const live = [], shipped = [];
+  Object.entries(PROJECTS).forEach(([id, p]) => {
+    const c = countOf(p);
+    (c.done === c.total ? shipped : live).push([id, p, c]);
+  });
+
+  const buildzone = document.getElementById("buildzone");
+  document.getElementById("buildh").innerHTML =
+    'In Build <span class="zn">· ' + (live.length || "none") + ' live program' + (live.length === 1 ? "" : "s") + '</span>';
+  live.forEach(([id, p]) => {
+    const div = document.createElement("div");
+    div.className = "pconsole";
+    div.innerHTML = consoleHTML(id, p);
+    buildzone.appendChild(div);
+  });
+
+  const realzone = document.getElementById("realzone");
+  document.getElementById("realh").innerHTML =
+    'Realized <span class="zn">· ' + shipped.length + ' shipped program' + (shipped.length === 1 ? "" : "s") + ' · click to expand</span>';
+  shipped.forEach(([id, p, c]) => {
+    const det = document.createElement("details");
+    det.className = "pconsole " + ({warden: "pw", atlas: "pa"}[id] || "pr");
+    det.innerHTML =
+      '<summary>' +
+        '<div class="pname"><span class="pdot"></span>' + p.label + '</div>' +
+        '<div class="pbar"><div class="pbar-fill" style="width:100%"></div></div>' +
+        '<div class="pfrac"><b>' + c.done + '</b> / ' + c.total + ' <span class="pct">· 100%</span></div>' +
+        '<span class="disclose">▸ console</span>' +
+      '</summary>' +
+      '<div class="cbody">' + consoleHTML(id, p) + '</div>';
+    realzone.appendChild(det);
+  });
+
+  // ---- 6 · Archived ----
+  const ARCH = window.DASHBOARD_DATA.archived || [];
+  document.getElementById("archh").innerHTML =
+    'Archived <span class="zn">· ' + ARCH.length + ' — absorbed / retired / terminal / blocked</span>';
+  document.getElementById("archrows").innerHTML = ARCH.map(a =>
+    '<div class="archrow">' +
+      '<span class="rbadge rb-' + esc(a.reason) + '">' + esc(a.reason) + '</span>' +
+      '<span class="arch-name"><a href="' + REPO + '/tree/main/' + esc(a.link) + '">' + esc(a.name) + '</a></span>' +
+      '<span class="arch-note">' + esc(a.note) + '</span>' +
+    '</div>').join("");
+
+  // ---- statusline, accent, footer ----
+  const lead = live[0] || shipped[shipped.length - 1];
+  if (lead) {
+    root.setAttribute("data-project", lead[0]);
+    branchEl.textContent = "state: " + lead[1].branch;
+  }
+  footerEl.innerHTML = '<b>Snapshot:</b> ' + window.DASHBOARD_DATA.snapshot +
+    ' · Dreams ' + DREAMS.length + ' · Specs ' + SPECS.length + ' · Decks ' + PITCH.length +
+    ' · programs: ' + live.length + ' in build, ' + shipped.length + ' realized';
 
   // live in-flight clock + progress + ETA (ticks in the viewer's browser)
   function fmtDur(s) {
@@ -580,8 +705,9 @@
     return (h > 0 ? h + ":" + pad(m) : m + "") + ":" + pad(sec);
   }
   function tickInflight() {
-    const el = document.querySelector(".inflight[data-start]");
-    if (!el) return;
+    document.querySelectorAll(".inflight[data-start]").forEach(tickOne);
+  }
+  function tickOne(el) {
     const start = +el.dataset.start, median = +el.dataset.median, hi = +el.dataset.hi;
     const elapsedS = Date.now() / 1000 - start;
     const elapsedM = elapsedS / 60;
@@ -607,8 +733,7 @@
     }
   }
   setInterval(tickInflight, 1000);
-
-  select(window.DASHBOARD_DATA.defaultProject || "warden");
+  tickInflight();
 
   document.getElementById("tt").addEventListener("click", () => {
     const cur = root.getAttribute("data-theme");

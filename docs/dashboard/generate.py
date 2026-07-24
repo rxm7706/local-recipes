@@ -178,7 +178,7 @@ def apply_git(projects: dict) -> None:
 # ---- dreams (both modes) -----------------------------------------------------
 
 DREAMS_DIR = REPO_ROOT / "docs" / "dreams"
-DREAM_STATUSES = ("seeded", "in-deck", "in-spec", "realized")
+DREAM_STATUSES = ("seeded", "in-deck", "in-spec", "realized", "archived")
 
 
 # Deck dirs whose name differs from the dream slug (mason's chapter deck backs
@@ -221,7 +221,7 @@ def scan_dreams() -> list[dict]:
     for f in sorted(DREAMS_DIR.glob("*.md")):
         if f.name == "README.md":
             continue
-        title, status, owner = None, None, None
+        title, status, owner, archived_reason = None, None, None, None
         lines = f.read_text(encoding="utf-8").splitlines()
         if lines and lines[0].strip() == "---":
             for line in lines[1:]:
@@ -233,18 +233,140 @@ def scan_dreams() -> list[dict]:
                     status = line.split(":", 1)[1].strip()
                 elif line.startswith("owner:"):
                     owner = line.split(":", 1)[1].strip()
+                elif line.startswith("archived-reason:"):
+                    archived_reason = line.split(":", 1)[1].strip()
         if status not in DREAM_STATUSES:
             print(f"[dreams] WARN {f.name}: status {status!r} not in {DREAM_STATUSES}"
                   " — passed through; board shows it under 'seeded'")
         if not owner:
             print(f"[dreams] WARN {f.name}: no owner: in frontmatter")
-        dreams.append({"slug": f.stem, "title": title or f.stem,
-                       "status": status or "", "owner": owner or "",
-                       "chain": dream_chain(f.stem)})
+        dream = {"slug": f.stem, "title": title or f.stem,
+                 "status": status or "", "owner": owner or "",
+                 "chain": dream_chain(f.stem)}
+        if archived_reason:
+            dream["archived_reason"] = archived_reason
+        dreams.append(dream)
     by_status = {s: sum(1 for d in dreams if d["status"] == s) for s in DREAM_STATUSES}
     print(f"[dreams] {len(dreams)} scanned: "
           + " / ".join(f"{n} {s}" for s, n in by_status.items()))
     return dreams
+
+
+# ---- specs roster (all BMAD kernels; docs/specs legacy is deliberately out) --
+
+def _git_date(path: Path) -> str:
+    r = subprocess.run(
+        ["git", "log", "-1", "--format=%ad", "--date=format:%Y-%m-%d", "--",
+         str(path.relative_to(REPO_ROOT))],
+        capture_output=True, text=True, cwd=REPO_ROOT)
+    return r.stdout.strip()
+
+
+def scan_specs() -> list[dict]:
+    """Every _bmad-output/projects/*/planning-artifacts/specs/spec-*/SPEC.md."""
+    rows: list[dict] = []
+    for spec_dir in sorted((REPO_ROOT / "_bmad-output" / "projects").glob(
+            "*/planning-artifacts/specs/spec-*")):
+        smd = spec_dir / "SPEC.md"
+        if not smd.is_file():
+            continue
+        text = smd.read_text(encoding="utf-8")
+        slug = spec_dir.name.removeprefix("spec-")
+        project = spec_dir.relative_to(REPO_ROOT / "_bmad-output" / "projects").parts[0]
+        m = re.search(r"^#\s+(.+)$", text, re.M)
+        title = (m.group(1).strip() if m else slug)
+        title = re.sub(r"^SPEC\s*[—–-]\s*", "", title)
+        caps = len(set(re.findall(r"\bCAP-\d+\b", text)))
+        comp = 0
+        if text.startswith("---"):
+            fm = text.split("---", 2)[1]
+            cm = re.search(r"^companions:\s*\n((?:[ \t]*-[ \t].*\n)*)", fm, re.M)
+            if cm:
+                comp = len(re.findall(r"^[ \t]*-[ \t]", cm.group(1), re.M))
+            inline = re.search(r"^companions:\s*\[([^\]]*)\]", fm, re.M)
+            if inline and inline.group(1).strip():
+                comp = len(inline.group(1).split(","))
+        dream = slug if (DREAMS_DIR / f"{slug}.md").exists() else ""
+        rows.append({"slug": slug, "project": project, "title": title,
+                     "caps": caps, "companions": comp,
+                     "updated": _git_date(spec_dir), "dream": dream,
+                     "path": str(spec_dir.relative_to(REPO_ROOT))})
+    print(f"[specs] {len(rows)} kernels scanned "
+          f"({', '.join(sorted({r['project'] for r in rows}))})")
+    return rows
+
+
+# ---- pitch roster (the deck family) ------------------------------------------
+
+PITCH_TITLES = {"agentic-sdlc": "Agentic AI across the SDLC"}
+# the 6-artifact family standard, per docs/specs/presentation-deck.md
+_PITCH_CHECK = ("prototype", "exec", "infographic", "marp", "standalone", "pptx")
+
+
+def scan_pitch() -> list[dict]:
+    cards: list[dict] = []
+    for deck_dir in sorted((REPO_ROOT / "presentations").iterdir()):
+        if not deck_dir.is_dir():
+            continue
+        slug = deck_dir.name
+        proj, marp, pptx = deck_dir / "project", deck_dir / "src" / "marp", deck_dir / "src" / "pptx"
+        names = [f.name for f in proj.glob("*.html")] if proj.is_dir() else []
+        marp_md = list(marp.glob("*.md")) if marp.is_dir() else []
+        pptx_files = list(pptx.glob("*.pptx")) if pptx.is_dir() else []
+        have = {
+            "prototype": any(n.endswith(".dc.html") and "Executive Summary" not in n
+                             and "Infographic" not in n for n in names),
+            "exec": any("Executive Summary" in n for n in names),
+            "infographic": (any(n.endswith("- Infographic.dc.html") for n in names)
+                            and any("Infographic Deck" in n for n in names)
+                            and any("Infographic standalone" in n for n in names)),
+            "marp": len(marp_md) >= 3,
+            "standalone": bool(list(marp.glob("*standalone*.html"))) if marp.is_dir() else False,
+            "pptx": len(pptx_files) >= 2,
+        }
+        dates = re.findall(r"(\d{4}-\d{2}-\d{2})", " ".join(f.name for f in pptx_files))
+        title = PITCH_TITLES.get(slug) or "PyForge " + slug.removeprefix("pyforge-").capitalize()
+        cards.append({"slug": slug, "title": title, "have": have,
+                      "n": sum(have.values()), "of": len(_PITCH_CHECK),
+                      "export": max(dates) if dates else "",
+                      "path": f"presentations/{slug}"})
+    full = sum(1 for c in cards if c["n"] == c["of"])
+    print(f"[pitch] {len(cards)} decks scanned ({full} with the full family)")
+    return cards
+
+
+# ---- archived (absorbed / retired / terminal / blocked) ----------------------
+
+ARCHIVED_SEED = [
+    {"name": "Sentinel — knowledge-graph persona", "reason": "absorbed",
+     "note": "charter absorbed into Scribe ('the graph is the product')",
+     "link": "docs/dreams/pyforge-scribe.md"},
+    {"name": "microsoft-conda-forge sweep", "reason": "absorbed",
+     "note": "absorbed as trendshift Track B (the June 2026 org audit)",
+     "link": "docs/specs/trendshift-conda-forge.md"},
+    {"name": "claude.ai Artifact console", "reason": "retired",
+     "note": "replaced by this GitHub Pages console (2026-07)",
+     "link": "docs/dashboard"},
+    {"name": "DB-GPT conda-forge effort", "reason": "terminal",
+     "note": "delivered externally via staged-recipes #33883 (consume-not-submit, G58)",
+     "link": "docs/specs/db-gpt-conda-forge.md"},
+    {"name": "copilot-cli recipe", "reason": "blocked",
+     "note": "LICENSE §2 standalone-redistribution clause — staged-recipes #32522 rejected",
+     "link": "recipes/copilot-cli"},
+]
+
+
+def build_archived(dreams: list[dict]) -> list[dict]:
+    """Seeded cases + any Dream frontmatter-marked `status: archived`."""
+    out = [dict(e) for e in ARCHIVED_SEED]
+    for d in dreams:
+        if d["status"] == "archived":
+            out.append({"name": d["title"],
+                        "reason": d.get("archived_reason") or "retired",
+                        "note": "archived via docs/dreams frontmatter",
+                        "link": f"docs/dreams/{d['slug']}.md"})
+    print(f"[archived] {len(out)} entries ({len(out) - len(ARCHIVED_SEED)} from frontmatter)")
+    return out
 
 
 # ---- shared ------------------------------------------------------------------
@@ -274,6 +396,9 @@ def main() -> int:
     else:
         apply_sprint_status(data["projects"])
     data["dreams"] = scan_dreams()
+    data["specs"] = scan_specs()
+    data["pitch"] = scan_pitch()
+    data["archived"] = build_archived(data["dreams"])
 
     ts = now_utc()
     data["snapshot"] = _SNAP_TS.sub(ts, data["snapshot"], count=1)

@@ -857,7 +857,7 @@ window.DASHBOARD_DATA = {
       }
     }
   },
-  "snapshot": "<span>2026-07-24 12:28 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-07-24 14:46 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -1081,6 +1081,302 @@ window.DASHBOARD_DATA = {
       "status": "seeded",
       "owner": "crew",
       "chain": {}
+    }
+  ],
+  "specs": [
+    {
+      "slug": "enterprise-airgap",
+      "project": "local-recipes",
+      "title": "the factory behind the firewall",
+      "caps": 3,
+      "companions": 1,
+      "updated": "2026-07-23",
+      "dream": "enterprise-airgap",
+      "path": "_bmad-output/projects/local-recipes/planning-artifacts/specs/spec-enterprise-airgap"
+    },
+    {
+      "slug": "factory-console",
+      "project": "local-recipes",
+      "title": "factory console (program console + Dreamscape)",
+      "caps": 4,
+      "companions": 1,
+      "updated": "2026-07-24",
+      "dream": "factory-console",
+      "path": "_bmad-output/projects/local-recipes/planning-artifacts/specs/spec-factory-console"
+    },
+    {
+      "slug": "fleet-stewardship",
+      "project": "local-recipes",
+      "title": "fleet stewardship (the recipes/ fleet)",
+      "caps": 3,
+      "companions": 3,
+      "updated": "2026-07-23",
+      "dream": "fleet-stewardship",
+      "path": "_bmad-output/projects/local-recipes/planning-artifacts/specs/spec-fleet-stewardship"
+    },
+    {
+      "slug": "modernist-identity",
+      "project": "local-recipes",
+      "title": "one visual language for everything pyforge",
+      "caps": 3,
+      "companions": 1,
+      "updated": "2026-07-23",
+      "dream": "modernist-identity",
+      "path": "_bmad-output/projects/local-recipes/planning-artifacts/specs/spec-modernist-identity"
+    },
+    {
+      "slug": "multi-loop-isolation",
+      "project": "local-recipes",
+      "title": "multi-loop isolation harness",
+      "caps": 3,
+      "companions": 0,
+      "updated": "2026-07-23",
+      "dream": "",
+      "path": "_bmad-output/projects/local-recipes/planning-artifacts/specs/spec-multi-loop-isolation"
+    },
+    {
+      "slug": "packaging-factory",
+      "project": "local-recipes",
+      "title": "the packaging factory (conda-forge-expert machinery)",
+      "caps": 4,
+      "companions": 2,
+      "updated": "2026-07-23",
+      "dream": "packaging-factory",
+      "path": "_bmad-output/projects/local-recipes/planning-artifacts/specs/spec-packaging-factory"
+    },
+    {
+      "slug": "pyforge-marshal",
+      "project": "local-recipes",
+      "title": "Marshal (graduated-autonomy loop orchestration, as shipped)",
+      "caps": 4,
+      "companions": 3,
+      "updated": "2026-07-24",
+      "dream": "pyforge-marshal",
+      "path": "_bmad-output/projects/local-recipes/planning-artifacts/specs/spec-pyforge-marshal"
+    },
+    {
+      "slug": "regenerable-factory",
+      "project": "local-recipes",
+      "title": "regenerable-factory program",
+      "caps": 4,
+      "companions": 1,
+      "updated": "2026-07-23",
+      "dream": "regenerable-factory",
+      "path": "_bmad-output/projects/local-recipes/planning-artifacts/specs/spec-regenerable-factory"
+    },
+    {
+      "slug": "pyforge-atlas",
+      "project": "pyforge-atlas",
+      "title": "pyforge-atlas (chain-verify kernel)",
+      "caps": 1,
+      "companions": 3,
+      "updated": "2026-07-23",
+      "dream": "pyforge-atlas",
+      "path": "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas"
+    },
+    {
+      "slug": "design-code-bridge",
+      "project": "pyforge-herald",
+      "title": "herald CLI — the Design↔Code Bridge, formalized",
+      "caps": 5,
+      "companions": 2,
+      "updated": "2026-07-23",
+      "dream": "design-code-bridge",
+      "path": "_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-design-code-bridge"
+    }
+  ],
+  "pitch": [
+    {
+      "slug": "agentic-sdlc",
+      "title": "Agentic AI across the SDLC",
+      "have": {
+        "prototype": true,
+        "exec": false,
+        "infographic": false,
+        "marp": true,
+        "standalone": true,
+        "pptx": true
+      },
+      "n": 4,
+      "of": 6,
+      "export": "2026-07-23",
+      "path": "presentations/agentic-sdlc"
+    },
+    {
+      "slug": "pyforge-atlas",
+      "title": "PyForge Atlas",
+      "have": {
+        "prototype": true,
+        "exec": true,
+        "infographic": true,
+        "marp": true,
+        "standalone": true,
+        "pptx": true
+      },
+      "n": 6,
+      "of": 6,
+      "export": "2026-07-24",
+      "path": "presentations/pyforge-atlas"
+    },
+    {
+      "slug": "pyforge-doctor",
+      "title": "PyForge Doctor",
+      "have": {
+        "prototype": true,
+        "exec": true,
+        "infographic": true,
+        "marp": true,
+        "standalone": true,
+        "pptx": true
+      },
+      "n": 6,
+      "of": 6,
+      "export": "2026-07-24",
+      "path": "presentations/pyforge-doctor"
+    },
+    {
+      "slug": "pyforge-genesis",
+      "title": "PyForge Genesis",
+      "have": {
+        "prototype": true,
+        "exec": true,
+        "infographic": true,
+        "marp": true,
+        "standalone": true,
+        "pptx": true
+      },
+      "n": 6,
+      "of": 6,
+      "export": "2026-07-24",
+      "path": "presentations/pyforge-genesis"
+    },
+    {
+      "slug": "pyforge-herald",
+      "title": "PyForge Herald",
+      "have": {
+        "prototype": true,
+        "exec": true,
+        "infographic": true,
+        "marp": true,
+        "standalone": true,
+        "pptx": true
+      },
+      "n": 6,
+      "of": 6,
+      "export": "2026-07-24",
+      "path": "presentations/pyforge-herald"
+    },
+    {
+      "slug": "pyforge-marshal",
+      "title": "PyForge Marshal",
+      "have": {
+        "prototype": true,
+        "exec": true,
+        "infographic": true,
+        "marp": true,
+        "standalone": true,
+        "pptx": true
+      },
+      "n": 6,
+      "of": 6,
+      "export": "2026-07-24",
+      "path": "presentations/pyforge-marshal"
+    },
+    {
+      "slug": "pyforge-mason",
+      "title": "PyForge Mason",
+      "have": {
+        "prototype": true,
+        "exec": true,
+        "infographic": true,
+        "marp": true,
+        "standalone": true,
+        "pptx": true
+      },
+      "n": 6,
+      "of": 6,
+      "export": "2026-07-24",
+      "path": "presentations/pyforge-mason"
+    },
+    {
+      "slug": "pyforge-scribe",
+      "title": "PyForge Scribe",
+      "have": {
+        "prototype": true,
+        "exec": true,
+        "infographic": true,
+        "marp": true,
+        "standalone": true,
+        "pptx": true
+      },
+      "n": 6,
+      "of": 6,
+      "export": "2026-07-24",
+      "path": "presentations/pyforge-scribe"
+    },
+    {
+      "slug": "pyforge-steward",
+      "title": "PyForge Steward",
+      "have": {
+        "prototype": true,
+        "exec": true,
+        "infographic": true,
+        "marp": true,
+        "standalone": true,
+        "pptx": true
+      },
+      "n": 6,
+      "of": 6,
+      "export": "2026-07-24",
+      "path": "presentations/pyforge-steward"
+    },
+    {
+      "slug": "pyforge-warden",
+      "title": "PyForge Warden",
+      "have": {
+        "prototype": true,
+        "exec": true,
+        "infographic": true,
+        "marp": true,
+        "standalone": true,
+        "pptx": true
+      },
+      "n": 6,
+      "of": 6,
+      "export": "2026-07-15",
+      "path": "presentations/pyforge-warden"
+    }
+  ],
+  "archived": [
+    {
+      "name": "Sentinel — knowledge-graph persona",
+      "reason": "absorbed",
+      "note": "charter absorbed into Scribe ('the graph is the product')",
+      "link": "docs/dreams/pyforge-scribe.md"
+    },
+    {
+      "name": "microsoft-conda-forge sweep",
+      "reason": "absorbed",
+      "note": "absorbed as trendshift Track B (the June 2026 org audit)",
+      "link": "docs/specs/trendshift-conda-forge.md"
+    },
+    {
+      "name": "claude.ai Artifact console",
+      "reason": "retired",
+      "note": "replaced by this GitHub Pages console (2026-07)",
+      "link": "docs/dashboard"
+    },
+    {
+      "name": "DB-GPT conda-forge effort",
+      "reason": "terminal",
+      "note": "delivered externally via staged-recipes #33883 (consume-not-submit, G58)",
+      "link": "docs/specs/db-gpt-conda-forge.md"
+    },
+    {
+      "name": "copilot-cli recipe",
+      "reason": "blocked",
+      "note": "LICENSE §2 standalone-redistribution clause — staged-recipes #32522 rejected",
+      "link": "recipes/copilot-cli"
     }
   ]
 };
