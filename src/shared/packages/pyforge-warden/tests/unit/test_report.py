@@ -795,6 +795,34 @@ def test_remediation_line_currency_over_lag():
     )
 
 
+def test_manifest_clause_matches_canonicalized_subject_spelling():
+    """Review finding (2026-07-24): a manifest's non-normalized spelling
+    (``Foo_Bar``) and a finding subject's normalized echo (or vice versa)
+    must still resolve the clause — cli.py canonicalizes the keys and
+    ``_manifest_clause`` canonicalizes the lookup with the same PEP-503
+    collapse, so the two spellings meet."""
+    finding = Finding(
+        id="vuln:GHSA-zzzz:Foo_Bar@1.0.0",
+        axis=AXIS_VULNERABILITY,
+        message="Foo_Bar: GHSA-zzzz (severity high)",
+        subject="Foo_Bar",
+        severity=Severity(tier=SeverityTier.HIGH, raw=None),
+    )
+    report = _report(
+        status=Status.POLICY_VIOLATION,
+        status_driver=StatusDriver(axis=AXIS_VULNERABILITY, finding_id=finding.id),
+        exit_code=1,
+        findings=(finding,),
+    )
+    rendered = render_text(
+        report,
+        manifest_locations={"foo-bar": ("pyproject.toml [project.dependencies]",)},
+    )
+    assert "(declared in pyproject.toml [project.dependencies])" in (
+        rendered.splitlines()[-1]
+    )
+
+
 def test_remediation_line_currency_unknown():
     finding = Finding(
         id="currency:unknown:leftpad@unspecified",

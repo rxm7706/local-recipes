@@ -773,16 +773,54 @@ _MATCHING_PACKAGE = {"ecosystem": "PyPI", "name": "foo"}
         [],
         "not-a-list",
         [{"package": _MATCHING_PACKAGE, "ranges": "not-a-list"}],
-        [{"package": _MATCHING_PACKAGE, "ranges": [{"events": "not-a-list"}]}],
         [
             {
                 "package": _MATCHING_PACKAGE,
-                "ranges": [{"events": [{"introduced": "1.0.0"}]}],
+                "ranges": [{"type": "ECOSYSTEM", "events": "not-a-list"}],
             }
         ],
-        [{"package": _MATCHING_PACKAGE, "ranges": [{"events": [{"fixed": ""}]}]}],
-        [{"package": _MATCHING_PACKAGE, "ranges": [{"events": [{"fixed": 123}]}]}],
+        [
+            {
+                "package": _MATCHING_PACKAGE,
+                "ranges": [
+                    {"type": "ECOSYSTEM", "events": [{"introduced": "1.0.0"}]}
+                ],
+            }
+        ],
+        [
+            {
+                "package": _MATCHING_PACKAGE,
+                "ranges": [{"type": "ECOSYSTEM", "events": [{"fixed": ""}]}],
+            }
+        ],
+        [
+            {
+                "package": _MATCHING_PACKAGE,
+                "ranges": [{"type": "ECOSYSTEM", "events": [{"fixed": 123}]}],
+            }
+        ],
         [{"package": _MATCHING_PACKAGE, "ranges": [123, None]}],
+        [
+            {
+                "package": _MATCHING_PACKAGE,
+                "ranges": [{"events": [{"introduced": "0"}, {"fixed": "1.0.0"}]}],
+            }
+        ],
+        [
+            {
+                "package": _MATCHING_PACKAGE,
+                "ranges": [
+                    {
+                        "type": "GIT",
+                        "repo": "https://example.invalid/foo.git",
+                        "events": [
+                            {"introduced": "0"},
+                            {"fixed": "0123456789abcdef0123456789abcdef01234567"},
+                        ],
+                    }
+                ],
+            }
+        ],
         "totally-wrong-type",
     ],
     ids=[
@@ -794,6 +832,8 @@ _MATCHING_PACKAGE = {"ecosystem": "PyPI", "name": "foo"}
         "empty-string-fixed",
         "non-string-fixed",
         "malformed-range-entries",
+        "missing-range-type",
+        "git-only-range",
         "affected-wrong-type",
     ],
 )
@@ -829,8 +869,20 @@ def test_parse_osv_output_first_well_formed_fixed_event_wins():
                         {
                             "package": _MATCHING_PACKAGE,
                             "ranges": [
-                                {"events": [{"introduced": "0"}, {"fixed": "1.5.0"}]},
-                                {"events": [{"introduced": "0"}, {"fixed": "9.9.9"}]},
+                                {
+                                    "type": "ECOSYSTEM",
+                                    "events": [
+                                        {"introduced": "0"},
+                                        {"fixed": "1.5.0"},
+                                    ],
+                                },
+                                {
+                                    "type": "ECOSYSTEM",
+                                    "events": [
+                                        {"introduced": "0"},
+                                        {"fixed": "9.9.9"},
+                                    ],
+                                },
                             ]
                         }
                     ],
@@ -841,6 +893,56 @@ def test_parse_osv_output_first_well_formed_fixed_event_wins():
     parse = parse_osv_output(raw)
     (finding,) = parse.findings
     assert parse.fixed_versions[finding.id] == "1.5.0"
+
+
+def test_parse_osv_output_skips_git_range_commit_hashes_for_fixed_version():
+    """Review finding (2026-07-24): a GIT-typed range's ``fixed`` event is a
+    commit hash, not a version (PYSEC records routinely list the GIT range
+    FIRST) — the extraction must fall through to the ECOSYSTEM range's real
+    version rather than advising "upgrade to >= <40-hex sha>"."""
+    raw = _doc(
+        _package(
+            "foo",
+            "1.0.0",
+            ids=["PYSEC-x"],
+            max_severity="5.0",
+            vulnerabilities=[
+                {
+                    "id": "PYSEC-x",
+                    "affected": [
+                        {
+                            "package": _MATCHING_PACKAGE,
+                            "ranges": [
+                                {
+                                    "type": "GIT",
+                                    "repo": "https://example.invalid/foo.git",
+                                    "events": [
+                                        {"introduced": "0"},
+                                        {
+                                            "fixed": (
+                                                "0123456789abcdef0123456789"
+                                                "abcdef01234567"
+                                            )
+                                        },
+                                    ],
+                                },
+                                {
+                                    "type": "ECOSYSTEM",
+                                    "events": [
+                                        {"introduced": "0"},
+                                        {"fixed": "2.4.0"},
+                                    ],
+                                },
+                            ],
+                        }
+                    ],
+                }
+            ],
+        )
+    )
+    parse = parse_osv_output(raw)
+    (finding,) = parse.findings
+    assert parse.fixed_versions[finding.id] == "2.4.0"
 
 
 def test_parse_osv_output_ignores_fixed_version_from_an_unrelated_affected_package():
@@ -861,7 +963,13 @@ def test_parse_osv_output_ignores_fixed_version_from_an_unrelated_affected_packa
                         {
                             "package": {"ecosystem": "PyPI", "name": "some-other-pkg"},
                             "ranges": [
-                                {"events": [{"introduced": "0"}, {"fixed": "3.0.0"}]}
+                                {
+                                    "type": "ECOSYSTEM",
+                                    "events": [
+                                        {"introduced": "0"},
+                                        {"fixed": "3.0.0"},
+                                    ],
+                                }
                             ],
                         }
                     ],
@@ -891,13 +999,25 @@ def test_parse_osv_output_matches_fixed_version_by_ecosystem_too():
                         {
                             "package": {"ecosystem": "npm", "name": "foo"},
                             "ranges": [
-                                {"events": [{"introduced": "0"}, {"fixed": "3.0.0"}]}
+                                {
+                                    "type": "ECOSYSTEM",
+                                    "events": [
+                                        {"introduced": "0"},
+                                        {"fixed": "3.0.0"},
+                                    ],
+                                }
                             ],
                         },
                         {
                             "package": _MATCHING_PACKAGE,
                             "ranges": [
-                                {"events": [{"introduced": "0"}, {"fixed": "2.0.0"}]}
+                                {
+                                    "type": "ECOSYSTEM",
+                                    "events": [
+                                        {"introduced": "0"},
+                                        {"fixed": "2.0.0"},
+                                    ],
+                                }
                             ],
                         },
                     ],

@@ -130,8 +130,9 @@ Ownership decisions recorded:
   and ``vuln.OsvParse.fixed_versions`` are -- respectively -- ``inventory.py``'s
   and ``vuln.py``'s domains), so the caller (``cli.py``) states both: a
   ``name -> tuple("<manifest> [<section>]", ...)`` lookup built once from the
-  post-merge inventory, and a ``finding.id -> fixed version string`` mapping
-  merged across every engine result. A finding whose ``subject`` has no
+  post-merge inventory (keys canonicalized via ``_canonical_subject_key``;
+  the lookup canonicalizes the subject the same way), and a ``finding.id ->
+  fixed version string`` mapping merged across every engine result. A finding whose ``subject`` has no
   entry in ``manifest_locations`` (e.g. this module's own synthetic
   ``indeterminate:coverage-floor:<axis>`` finding, whose ``subject`` is an
   axis name, not a package) simply omits the manifest clause -- never
@@ -146,6 +147,7 @@ owner); this module feeds it the collected rungs and stores the result.
 from __future__ import annotations
 
 import json
+import re
 from collections.abc import Iterable, Mapping, Sequence
 from functools import lru_cache
 from importlib import resources
@@ -499,6 +501,21 @@ def _single_line(text: str) -> str:
     return text.replace("\r\n", "\\n").replace("\n", "\\n").replace("\r", "\\n")
 
 
+_CANONICAL_KEY_RUNS = re.compile(r"[-_.]+")
+
+
+def _canonical_subject_key(name: str) -> str:
+    """PEP-503-canonicalize a ``manifest_locations`` key / lookup subject
+    (``Foo_Bar``/``foo.bar``/``foo-bar`` collapse to ``foo-bar`` — the same
+    normalization ``inventory``'s identity merge already applies). Review
+    finding (2026-07-24): a manifest may declare a non-normalized spelling
+    while osv-scanner echoes the normalized one — without collapsing both
+    sides, the clause silently misses though the location data is present.
+    Two spellings that collapse together ARE the same PyPI package, so the
+    resulting union is correct, never a cross-attribution."""
+    return _CANONICAL_KEY_RUNS.sub("-", name).lower()
+
+
 def _manifest_clause(
     subject: str | None, manifest_locations: Mapping[str, tuple[str, ...]]
 ) -> str:
@@ -507,10 +524,12 @@ def _manifest_clause(
     — empty string (never fabricated) when ``subject`` is ``None`` or has
     no entry in ``manifest_locations`` (Story 5.1's own synthetic
     ``indeterminate:coverage-floor:<axis>`` finding, whose ``subject`` is an
-    axis name, hits this path every time)."""
+    axis name, hits this path every time). Keys are matched via
+    ``_canonical_subject_key`` — ``cli.py``'s build site canonicalizes the
+    keys with the same helper."""
     if subject is None:
         return ""
-    locations = manifest_locations.get(subject)
+    locations = manifest_locations.get(_canonical_subject_key(subject))
     if not locations:
         return ""
     return f" (declared in {'; '.join(locations)})"

@@ -326,7 +326,14 @@ from .models import (
     SuppressedFinding,
     VulnData,
 )
-from .report import TOOL_NAME, assemble_report, render_json, render_text
+from .report import (
+    TOOL_NAME,
+    _canonical_subject_key,
+    _single_line,
+    assemble_report,
+    render_json,
+    render_text,
+)
 from .routing import DefaultRouter
 from .sbom import render_cyclonedx
 from .verdict import EXIT_SIGINT, exit_code_for
@@ -833,6 +840,26 @@ def _run_doctor(args: argparse.Namespace) -> int:
     if isinstance(target, int):
         return target
 
+    # Review finding (2026-07-24): --doctor previously no-op'd every other
+    # scan/policy flag SILENTLY -- someone appending --doctor to an existing
+    # CI scan line would disable the gate with no trace. Diff the parsed
+    # args against the scan subparser's own defaults (drift-proof: any
+    # future flag is covered automatically) and name what is ignored on
+    # stderr; path/--format/--doctor are the only honored inputs.
+    scan_defaults = vars(_build_parser()[1].parse_args([]))
+    honored = {"path", "format", "doctor"}
+    ignored = sorted(
+        dest
+        for dest, default in scan_defaults.items()
+        if dest not in honored and getattr(args, dest, default) != default
+    )
+    if ignored:
+        flags = ", ".join("--" + dest.replace("_", "-") for dest in ignored)
+        _stderr(
+            f"{TOOL_NAME}: --doctor runs an environment self-check only -- "
+            f"ignoring scan/policy flags: {flags}"
+        )
+
     checks = run_doctor_checks(target)
     healthy = all(check.ok for check in checks)
     status_word = "ok" if healthy else "problem"
@@ -858,7 +885,14 @@ def _run_doctor(args: argparse.Namespace) -> int:
         ]
         for check in checks:
             outcome = "ok" if check.ok else "problem"
-            lines.append(f"  [doctor] {check.name} {outcome} -- {check.message}")
+            # _single_line (review finding 2026-07-24): a future check
+            # message embedding subprocess stderr or a raw path must never
+            # forge extra [doctor] lines under the checks=N header -- the
+            # same invariant render_text enforces on every free-text field.
+            lines.append(
+                f"  [doctor] {check.name} {outcome} -- "
+                f"{_single_line(check.message)}"
+            )
         rendered = "\n".join(lines) + "\n"
     try:
         # Mirrors _run_scan's own stdout-emission guard (BrokenPipeError
@@ -1104,9 +1138,13 @@ def _run_scan(args: argparse.Namespace) -> int:
         locations = tuple(
             f"{p.manifest} [{p.section}]" for p in component.provenance
         )
-        keys = [component.name]
+        # Keys canonicalized (review finding 2026-07-24) so a manifest's
+        # non-normalized spelling (Foo_Bar) still matches osv-scanner's
+        # normalized echo -- _manifest_clause canonicalizes its lookup with
+        # the same report._canonical_subject_key.
+        keys = [_canonical_subject_key(component.name)]
         if component.pypi_identity is not None:
-            keys.append(component.pypi_identity.name)
+            keys.append(_canonical_subject_key(component.pypi_identity.name))
         for key in keys:
             manifest_locations[key] = tuple(
                 sorted(set(manifest_locations.get(key, ())) | set(locations))

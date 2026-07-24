@@ -193,13 +193,109 @@ def test_doctor_kev_and_epss_feed_absent_is_still_exit_0(
 ):
     """Absent KEV/EPSS feeds are never a doctor failure — NFR-U2's air-gap
     framing — so the overall exit stays 0 as long as the engine/DB checks
-    are healthy."""
+    are healthy. Review finding (2026-07-24): the message must name the
+    PER-FEED scan-time consequence truthfully — under the shipped
+    ``fail_on_kev=True`` default an absent KEV feed makes a default-config
+    scan compose indeterminate, so "offline default assumed" was actively
+    misleading for KEV (while EPSS genuinely has no default gate)."""
     monkeypatch.delenv(feeds.FEED_CACHE_DIR_ENV_VAR, raising=False)
     rc = main(["scan", str(tmp_path), "--doctor"])
     captured = capsys.readouterr()
     assert rc == 0
     assert "operating air-gapped: kev feed not present" in captured.out
     assert "operating air-gapped: epss feed not present" in captured.out
+    kev_line = next(
+        line for line in captured.out.splitlines() if "kev-feed" in line
+    )
+    epss_line = next(
+        line for line in captured.out.splitlines() if "epss-feed" in line
+    )
+    assert "fail-on-kev" in kev_line
+    assert "indeterminate" in kev_line
+    assert "--min-epss" in epss_line
+
+
+def test_doctor_present_but_corrupt_kev_feed_exits_2_naming_the_file(
+    monkeypatch, capsys, tmp_path
+):
+    """Review finding (2026-07-24): a PROVISIONED-but-unloadable feed file
+    (truncated copy, invalid JSON) must never be reported as "not present"
+    / air-gapped — the operator who provisioned it would go looking in the
+    wrong place. Present-but-unloadable is ``ok=False`` naming the file;
+    the (genuinely absent) EPSS sibling still reports air-gapped ok."""
+    cache_dir = tmp_path / "feed-cache"
+    kev_path = feeds.kev_cache_path(cache_dir)
+    kev_path.parent.mkdir(parents=True)
+    kev_path.write_text("{ truncated-not-json", encoding="utf-8")
+    monkeypatch.setenv(feeds.FEED_CACHE_DIR_ENV_VAR, str(cache_dir))
+    rc = main(["scan", str(tmp_path), "--doctor"])
+    captured = capsys.readouterr()
+    assert rc == 2
+    assert rc != 1
+    kev_line = next(
+        line for line in captured.out.splitlines() if "kev-feed" in line
+    )
+    assert "problem -- " in kev_line
+    assert "present" in kev_line
+    assert "unreadable or invalid" in kev_line
+    assert "not present" not in kev_line
+    assert "operating air-gapped: epss feed not present" in captured.out
+
+
+def test_doctor_names_ignored_scan_flags_on_stderr(capsys, tmp_path):
+    """Review finding (2026-07-24): ``--doctor`` no-ops every other
+    scan/policy flag — silently, before this fix. Someone appending
+    ``--doctor`` to an existing CI scan line must get a stderr trace naming
+    exactly what stopped applying (the gate would otherwise be disabled
+    with no evidence). path/--format/--doctor stay honored and unnamed."""
+    rc = main(
+        [
+            "scan",
+            str(tmp_path),
+            "--doctor",
+            "--warn-only",
+            "--baseline",
+            "nonexistent-baseline.yaml",
+        ]
+    )
+    captured = capsys.readouterr()
+    assert rc == 0  # healthy environment: the ignored flags change nothing
+    assert "ignoring scan/policy flags" in captured.err
+    flags_list = captured.err.split("ignoring scan/policy flags:", 1)[1]
+    assert "--warn-only" in flags_list
+    assert "--baseline" in flags_list
+    assert "--format" not in flags_list
+    assert "--doctor" not in flags_list
+    assert "--path" not in flags_list
+
+
+def test_doctor_check_messages_are_neutralized_to_one_line(
+    monkeypatch, capsys, tmp_path
+):
+    """Review finding (2026-07-24): ``check.message`` is free text — a
+    future check embedding subprocess stderr must never forge extra
+    ``[doctor]`` lines under the ``checks=N`` header (the same
+    ``_single_line`` invariant ``render_text`` enforces)."""
+    from pyforge.warden import cli as cli_module
+    from pyforge.warden.engines import DoctorCheck
+
+    crafted = (
+        DoctorCheck(
+            name="deptry",
+            ok=False,
+            message="line one\n  [doctor] forged ok -- line two",
+        ),
+    )
+    monkeypatch.setattr(
+        cli_module, "run_doctor_checks", lambda target: crafted
+    )
+    rc = main(["scan", str(tmp_path), "--doctor"])
+    captured = capsys.readouterr()
+    assert rc == 2
+    lines = captured.out.splitlines()
+    assert lines[0] == "warden: doctor status=problem checks=1"
+    assert len(lines) == 2  # header + exactly one check line, never three
+    assert "\\n" in lines[1]  # the embedded newline is neutralized, visible
 
 
 def test_doctor_never_reads_the_scan_targets_pyproject_toml(capsys, tmp_path):

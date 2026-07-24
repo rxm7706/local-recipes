@@ -500,10 +500,11 @@ def _check_engine_version(
 class DoctorCheck:
     """One ``--doctor`` self-check outcome. ``ok=True`` covers a healthy
     check AND an ABSENT optional KEV/EPSS feed (v1's NFR-U2 air-gap framing
-    treats that as the expected default posture, never a failure);
-    ``ok=False`` is reserved for a genuine operability problem (an
-    unavailable/out-of-tested-range engine, or an unusable/stale offline
-    OSV DB). ``cli.py``'s ``_run_doctor`` is the ONLY place these compose
+    treats that as the expected default posture, never a failure — though
+    the message names the scan-time consequence per feed, see
+    ``_doctor_check_feed``); ``ok=False`` is reserved for a genuine
+    operability problem (an unavailable/out-of-tested-range engine, an
+    unusable/stale offline OSV DB, or a PRESENT-but-unloadable feed file). ``cli.py``'s ``_run_doctor`` is the ONLY place these compose
     into an exit code (``0`` when every check is ``ok``, else
     ``exit_code_for(Status.ERROR)`` — NEVER ``1``); this dataclass carries
     no exit-code opinion of its own."""
@@ -556,8 +557,8 @@ def _doctor_check_osv_db() -> DoctorCheck:
             name="osv-db",
             ok=False,
             message=(
-                f"{OSV_DB_CACHE_ENV_VAR} is unset -- no offline OSV "
-                "database configured"
+                f"{OSV_DB_CACHE_ENV_VAR} is unset or empty -- no offline "
+                "OSV database configured"
             ),
         )
     zip_path = db_zip_path(cache_dir)
@@ -605,23 +606,32 @@ def _doctor_check_feed(
     feed_name: str,
     cache_path: Callable[[str | Path], Path],
     loader: Callable[[Path], Mapping[str, object] | None],
+    *,
+    absent_hint: str,
+    stale_hint: str,
 ) -> DoctorCheck:
     """One optional KEV/EPSS feed self-check, consulted UNCONDITIONALLY
     (never gated on ``--fail-on-kev``/``--min-epss`` — ``--doctor`` reports
     environment operability regardless of which gates a LATER real scan
-    might enable). An absent/unreadable/content-corrupt feed is ``ok=True``
-    with an explicit "operating air-gapped" message (NFR-U2's air-gap
-    framing: a missing OPTIONAL feed is the expected offline default, never
-    a doctor failure) — mirrors ``_kev_enrichment``'s/``_epss_
-    enrichment``'s own ``unavailable=True`` case one level up, but this
-    check NEVER reports ``ok=False``: the feed is optional by design."""
+    might enable). An ABSENT feed is ``ok=True`` with an explicit
+    "operating air-gapped" message (NFR-U2's air-gap framing: a missing
+    OPTIONAL feed is the expected offline default, never a doctor failure);
+    a PRESENT-but-unloadable feed file (unreadable, invalid JSON, wrong
+    shape) is ``ok=False`` naming the file — an operator who provisioned
+    the feed must not be told it does not exist (review finding 2026-07-24;
+    mirrors ``_doctor_check_osv_db``'s own content-corrupt handling one
+    check up). ``absent_hint``/``stale_hint`` carry the PER-FEED scan-time
+    consequence (review finding 2026-07-24: KEV's absent-feed consequence
+    under the shipped ``fail_on_kev=True`` default is a whole-axis
+    ``indeterminate``/exit-1, not "offline default assumed" — the two feeds
+    genuinely differ here, since ``min_epss`` defaults to ``None``)."""
     check_name = f"{feed_name}-feed"
     air_gapped = DoctorCheck(
         name=check_name,
         ok=True,
         message=(
-            f"operating air-gapped: {feed_name} feed not present, offline "
-            "default assumed"
+            f"operating air-gapped: {feed_name} feed not present -- "
+            f"{absent_hint}"
         ),
     )
     cache_dir = feeds.resolve_cache_dir()
@@ -630,7 +640,22 @@ def _doctor_check_feed(
     path = cache_path(cache_dir)
     catalog = loader(path)
     if catalog is None:
-        return air_gapped
+        try:
+            feed_file_present = path.is_file()
+        except OSError:
+            feed_file_present = False
+        if not feed_file_present:
+            # Absent (or vanished mid-check — the same TOCTOU treatment as
+            # _kev_enrichment's): the expected air-gapped default.
+            return air_gapped
+        return DoctorCheck(
+            name=check_name,
+            ok=False,
+            message=(
+                f"{feed_name} feed file present at {path} but unreadable "
+                "or invalid -- refresh or remove it"
+            ),
+        )
     try:
         provenance = feeds.feed_provenance(
             source=str(path),
@@ -649,7 +674,7 @@ def _doctor_check_feed(
             ok=True,
             message=(
                 f"{feed_name} feed present but stale (snapshot "
-                f"{provenance.snapshot_at}) -- offline default still applies"
+                f"{provenance.snapshot_at}) -- {stale_hint}"
             ),
         )
     return DoctorCheck(
@@ -691,8 +716,37 @@ def run_doctor_checks(target: Path) -> tuple[DoctorCheck, ...]:
             cwd=target,
         ),
         _doctor_check_osv_db(),
-        _doctor_check_feed("kev", feeds.kev_cache_path, feeds.load_kev_catalog),
-        _doctor_check_feed("epss", feeds.epss_cache_path, feeds.load_epss_scores),
+        _doctor_check_feed(
+            "kev",
+            feeds.kev_cache_path,
+            feeds.load_kev_catalog,
+            # Truthful under the SHIPPED default (config.EffectiveConfig's
+            # fail_on_kev=True): without this feed, a default-config scan's
+            # vulnerability axis composes indeterminate (exit 1) — never
+            # "offline default assumed" (review finding 2026-07-24).
+            absent_hint=(
+                "the default fail-on-kev gate will compose indeterminate "
+                "on the vulnerability axis until the feed is provisioned "
+                "or the gate is explicitly disabled"
+            ),
+            stale_hint=(
+                "the default fail-on-kev gate will compose indeterminate "
+                "on the vulnerability axis until the feed is refreshed "
+                "or the gate is explicitly disabled"
+            ),
+        ),
+        _doctor_check_feed(
+            "epss",
+            feeds.epss_cache_path,
+            feeds.load_epss_scores,
+            # EPSS genuinely IS optional: min_epss defaults to None, so no
+            # scan consults this feed unless --min-epss is passed.
+            absent_hint="no EPSS gate is active unless --min-epss is passed",
+            stale_hint=(
+                "an EPSS gate (--min-epss) would compose indeterminate "
+                "off a stale feed; no gate is active without --min-epss"
+            ),
+        ),
     )
 
 

@@ -768,7 +768,14 @@ def _extract_fixed_version(
     that doesn't match, is skipped. ``pkg_ecosystem=None`` (an unparsable
     top-level ecosystem) skips the ecosystem half of the match rather than
     rejecting every entry outright -- name alone is still a meaningful
-    filter and never worse than the pre-fix unfiltered behavior."""
+    filter and never worse than the pre-fix unfiltered behavior.
+
+    Review finding (2026-07-24): only ``ECOSYSTEM``/``SEMVER``-typed ranges
+    are read -- a ``GIT``-typed range's ``fixed`` event is a COMMIT HASH,
+    not a version (PYSEC records routinely list the GIT range first), and
+    rendering "upgrade to >= <40-hex sha>" is nonsense advice. A range with
+    a missing/unrecognized ``type`` is skipped as malformed (OSV requires
+    ``type``; the module's "fewer findings, never a crash" ethos)."""
     if not isinstance(vuln_record, dict):
         return None
     affected = vuln_record.get("affected")
@@ -789,6 +796,8 @@ def _extract_fixed_version(
             continue
         for one_range in ranges:
             if not isinstance(one_range, dict):
+                continue
+            if one_range.get("type") not in ("ECOSYSTEM", "SEMVER"):
                 continue
             events = one_range.get("events")
             if not isinstance(events, list):

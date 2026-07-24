@@ -46,13 +46,21 @@ provisioned database, and KEV/EPSS enrichment is likewise cache-only).
   the recommended primary one for a security gate.
 
 **First contact:** run `warden scan . --warn-only` in any project — it
-reports every finding without ever failing the run, the non-blocking on-ramp
-for trying the gate before wiring it into CI.
+reports every finding without failing the run on any of them, the
+non-blocking on-ramp for trying the gate before wiring it into CI.
+(Operational errors are still loud: a missing engine or an unprovisioned
+offline OSV database exits `2` even under `--warn-only` — run `--doctor`
+first to check the environment.)
 
 **Environment self-check:** `warden scan --doctor` verifies the local
 install itself — engine versions, the offline OSV database, and the
 KEV/EPSS feed caches — without scanning a project at all (no discovery, no
-network). It exits `0` when everything checks out and `2` when something is
-missing or out of its tested range (naming the specific problem); it never
-exits `1` — `--doctor` reports on the environment's operability, never on a
-project's policy compliance.
+network). It exits `0` when everything checks out and `2` when an engine or
+the offline OSV database is missing, unreadable, or out of its tested range
+(naming the specific problem); it never exits `1` — `--doctor` reports on
+the environment's operability, never on a project's policy compliance. An
+*absent* KEV or EPSS feed is reported as an informational "operating
+air-gapped" line and does **not** fail the check — but note the default
+`fail-on-kev` gate: until the KEV feed is provisioned (or that gate is
+explicitly disabled), a default-config scan composes `indeterminate` on the
+vulnerability axis rather than a trusted verdict.
