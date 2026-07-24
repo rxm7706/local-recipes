@@ -43,13 +43,21 @@ Infographic (Marp) + `deck-export` outputs (standalone HTML + deck/infographic
 PPTX), all dated 2026-07-24. Design-project upload of the light artifacts
 (3 Marp + exec-summary dc.html) queued in the family-wide upload pass.
 
-**Infographic edited in Design + pulled 2026-07-24** — `PyForge Genesis -
-Infographic.dc.html` was hand-expanded in the Design project (17,574 → 40,257
-bytes; +2 sections: "The autonomy gradient" and "The SDLC, staffed — phase ×
-persona × skills") and pulled to disk **byte-exact** (etag `1784926528376406`,
-via render-preview → strip-harness). `PyForge Genesis Infographic
-standalone.html` was **mechanically re-derived from the edited dc.html** (same
-body, x-dc wrapper dropped, helmet hoisted to `<head>`) so the pair stays in
-step. NOT auto-synced: the `- Infographic Deck.dc.html` (slides) — a different
-layout that needs the 2 new sections re-laid as slides — and the Marp/pptx
-exports (they derive from the Marp `.md`, not the dc.html).
+**Infographic hand-expanded in Design + fully round-tripped 2026-07-24.** The
+one-pager `PyForge Genesis - Infographic.dc.html` was grown in the Design project
+(17,574 → **48,040** bytes; +3 sections: "The autonomy gradient — how far the
+leash goes" (L1–L5 ladder), "The SDLC, staffed — phase × persona × skills", and
+"The Master Pipeline relay") and pulled to disk **byte-exact** (etag
+`1784926929273012`, via render-preview → strip-harness). The whole infographic
+family was then refreshed to match and re-synced both ways:
+- `Infographic standalone.html` — mechanically re-derived from the edited dc.html
+  (x-dc wrapper dropped, helmet hoisted to `<head>`); pushed back to Design.
+- `src/marp/…-infographic-2026-07-24.md` — 3 condensed slides added (the ladder,
+  the phase×persona table, the relay); pushed back to Design.
+- `- Infographic Deck.dc.html` — 3 deck-stage slides added (badges 04–06), Proof
+  and seed renumbered to 07/08; pushed back to Design.
+- `deck-export` re-run → refreshed `…-infographic-standalone-*.html` +
+  `…_infographic_deck-*.pptx` + `…-deck-*.pptx`.
+
+NOT touched (separate branches, not affected by an infographic edit): the main
+deck (`PyForge Genesis.dc.html` / `…-deck-*.md`) and the Executive Summary.
