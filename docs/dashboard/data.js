@@ -3,7 +3,7 @@ window.DASHBOARD_DATA = {
     "warden": {
       "label": "Warden",
       "accentVar": "--warden",
-      "branch": "loop/pyforge-warden · wave paused — 6.9 recovered + merged (28/31); next 6.6 → 5.1 → 5.2",
+      "branch": "loop/pyforge-warden · wave running — 6.6 in flight (sonnet); then 5.1 → 5.2",
       "contract": "FR1–FR40 · exit codes {0,1,2,130} · verdict lattice error &gt; policy-violation &gt; indeterminate &gt; warn &gt; bypassed &gt; clean &gt; not-applicable",
       "seglabels": [
         "E1 · spine",
@@ -205,7 +205,17 @@ window.DASHBOARD_DATA = {
           ]
         }
       ],
-      "inflight": null,
+      "inflight": {
+        "key": "6.6",
+        "title": "Engine version-range pinning (the distribution gate)",
+        "phase": "dev (sonnet)",
+        "attempt": 1,
+        "startEpoch": 1784923080,
+        "median": 85,
+        "lo": 35,
+        "hi": 265,
+        "phaseAsOf": "2026-07-24 19:58 UTC"
+      },
       "velocity": {
         "sub": "Active agent-compute time per completed story (dev + review; excludes gate-pause wait). Median holds near steady-state; the Epic-2 extraction stories (2.2–2.4) ran heavy.",
         "bars": [
@@ -852,7 +862,7 @@ window.DASHBOARD_DATA = {
       }
     }
   },
-  "snapshot": "<span>2026-07-24 19:54 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-07-24 19:58 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
