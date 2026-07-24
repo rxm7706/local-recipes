@@ -692,6 +692,344 @@ def test_parse_osv_output_deduplicates_by_finding_id():
     assert len(parse.findings) == 1
 
 
+# --- Story 5.1 (AC1): OsvParse.fixed_versions --------------------------------
+
+
+def _fixture_0003_affected() -> list:
+    """The ``affected[]`` block from the real Story 5.1 osv-db fixture
+    record (``tests/fixtures/osv-db/pypi/PDOS-FIXTURE-0003.json``) — read
+    from disk (never hand-duplicated, mirrors ``_fixture_cvss_v3_vector``'s
+    own never-hand-duplicate-a-literal convention below) so this parse-level
+    test proves the extraction logic against the EXACT shape the real
+    fixture (and, by construction, the ambient real-osv-scanner-consulted
+    DB every test session builds) carries."""
+    record = json.loads((OSV_RECORDS_DIR / "PDOS-FIXTURE-0003.json").read_text())
+    return record["affected"]
+
+
+def test_parse_osv_output_extracts_the_fixed_version_from_ranges_events():
+    raw = _doc(
+        _package(
+            "pdos-vuln-fixture-fixed",
+            "1.0.0",
+            ids=["PDOS-FIXTURE-0003"],
+            max_severity="5.4",
+            vulnerabilities=[
+                {"id": "PDOS-FIXTURE-0003", "affected": _fixture_0003_affected()}
+            ],
+        )
+    )
+    parse = parse_osv_output(raw)
+    (finding,) = parse.findings
+    assert parse.fixed_versions[finding.id] == "2.0.0"
+
+
+def test_parse_osv_output_no_fixed_version_when_only_the_versions_form():
+    """Today's simpler ``versions:`` form (no ranges/events at all — e.g.
+    PDOS-FIXTURE-0001/0002) yields no ``fixed_versions`` entry: absence,
+    never a crash or a guessed value."""
+    raw = _doc(
+        _package(
+            "foo",
+            "1.0.0",
+            ids=["GHSA-x"],
+            max_severity="5.0",
+            vulnerabilities=[
+                {
+                    "id": "GHSA-x",
+                    "affected": [
+                        {
+                            "package": {"ecosystem": "PyPI", "name": "foo"},
+                            "versions": ["1.0.0"],
+                        }
+                    ],
+                }
+            ],
+        )
+    )
+    parse = parse_osv_output(raw)
+    (finding,) = parse.findings
+    assert finding.id not in parse.fixed_versions
+
+
+def test_parse_osv_output_no_fixed_version_when_no_vulnerability_record():
+    """A group id with no matching vulnerabilities[] record (an alias with
+    no sibling raw record — mirrors test_parse_osv_output_attributes_
+    group_max_severity_to_every_aliased_id) has no fixed version to
+    extract."""
+    raw = _doc(
+        _package("foo", "1.0", ids=["GHSA-primary", "CVE-alias"], max_severity="5.0")
+    )
+    parse = parse_osv_output(raw)
+    assert parse.fixed_versions == {}
+
+
+_MATCHING_PACKAGE = {"ecosystem": "PyPI", "name": "foo"}
+
+
+@pytest.mark.parametrize(
+    "affected",
+    [
+        [],
+        "not-a-list",
+        [{"package": _MATCHING_PACKAGE, "ranges": "not-a-list"}],
+        [
+            {
+                "package": _MATCHING_PACKAGE,
+                "ranges": [{"type": "ECOSYSTEM", "events": "not-a-list"}],
+            }
+        ],
+        [
+            {
+                "package": _MATCHING_PACKAGE,
+                "ranges": [
+                    {"type": "ECOSYSTEM", "events": [{"introduced": "1.0.0"}]}
+                ],
+            }
+        ],
+        [
+            {
+                "package": _MATCHING_PACKAGE,
+                "ranges": [{"type": "ECOSYSTEM", "events": [{"fixed": ""}]}],
+            }
+        ],
+        [
+            {
+                "package": _MATCHING_PACKAGE,
+                "ranges": [{"type": "ECOSYSTEM", "events": [{"fixed": 123}]}],
+            }
+        ],
+        [{"package": _MATCHING_PACKAGE, "ranges": [123, None]}],
+        [
+            {
+                "package": _MATCHING_PACKAGE,
+                "ranges": [{"events": [{"introduced": "0"}, {"fixed": "1.0.0"}]}],
+            }
+        ],
+        [
+            {
+                "package": _MATCHING_PACKAGE,
+                "ranges": [
+                    {
+                        "type": "GIT",
+                        "repo": "https://example.invalid/foo.git",
+                        "events": [
+                            {"introduced": "0"},
+                            {"fixed": "0123456789abcdef0123456789abcdef01234567"},
+                        ],
+                    }
+                ],
+            }
+        ],
+        "totally-wrong-type",
+    ],
+    ids=[
+        "empty-affected",
+        "affected-not-a-list",
+        "ranges-not-a-list",
+        "events-not-a-list",
+        "no-fixed-key",
+        "empty-string-fixed",
+        "non-string-fixed",
+        "malformed-range-entries",
+        "missing-range-type",
+        "git-only-range",
+        "affected-wrong-type",
+    ],
+)
+def test_parse_osv_output_malformed_fixed_shapes_yield_no_fixed_version(affected):
+    raw = _doc(
+        _package(
+            "foo",
+            "1.0.0",
+            ids=["GHSA-x"],
+            max_severity="5.0",
+            vulnerabilities=[{"id": "GHSA-x", "affected": affected}],
+        )
+    )
+    parse = parse_osv_output(raw)
+    (finding,) = parse.findings
+    assert finding.id not in parse.fixed_versions
+
+
+def test_parse_osv_output_first_well_formed_fixed_event_wins():
+    """Multiple ranges/events: the FIRST well-formed 'fixed' event found
+    wins (decision record, Design Notes) — never a full semver-range
+    resolver correlating against the scanned package's own version."""
+    raw = _doc(
+        _package(
+            "foo",
+            "1.0.0",
+            ids=["GHSA-x"],
+            max_severity="5.0",
+            vulnerabilities=[
+                {
+                    "id": "GHSA-x",
+                    "affected": [
+                        {
+                            "package": _MATCHING_PACKAGE,
+                            "ranges": [
+                                {
+                                    "type": "ECOSYSTEM",
+                                    "events": [
+                                        {"introduced": "0"},
+                                        {"fixed": "1.5.0"},
+                                    ],
+                                },
+                                {
+                                    "type": "ECOSYSTEM",
+                                    "events": [
+                                        {"introduced": "0"},
+                                        {"fixed": "9.9.9"},
+                                    ],
+                                },
+                            ]
+                        }
+                    ],
+                }
+            ],
+        )
+    )
+    parse = parse_osv_output(raw)
+    (finding,) = parse.findings
+    assert parse.fixed_versions[finding.id] == "1.5.0"
+
+
+def test_parse_osv_output_skips_git_range_commit_hashes_for_fixed_version():
+    """Review finding (2026-07-24): a GIT-typed range's ``fixed`` event is a
+    commit hash, not a version (PYSEC records routinely list the GIT range
+    FIRST) — the extraction must fall through to the ECOSYSTEM range's real
+    version rather than advising "upgrade to >= <40-hex sha>"."""
+    raw = _doc(
+        _package(
+            "foo",
+            "1.0.0",
+            ids=["PYSEC-x"],
+            max_severity="5.0",
+            vulnerabilities=[
+                {
+                    "id": "PYSEC-x",
+                    "affected": [
+                        {
+                            "package": _MATCHING_PACKAGE,
+                            "ranges": [
+                                {
+                                    "type": "GIT",
+                                    "repo": "https://example.invalid/foo.git",
+                                    "events": [
+                                        {"introduced": "0"},
+                                        {
+                                            "fixed": (
+                                                "0123456789abcdef0123456789"
+                                                "abcdef01234567"
+                                            )
+                                        },
+                                    ],
+                                },
+                                {
+                                    "type": "ECOSYSTEM",
+                                    "events": [
+                                        {"introduced": "0"},
+                                        {"fixed": "2.4.0"},
+                                    ],
+                                },
+                            ],
+                        }
+                    ],
+                }
+            ],
+        )
+    )
+    parse = parse_osv_output(raw)
+    (finding,) = parse.findings
+    assert parse.fixed_versions[finding.id] == "2.4.0"
+
+
+def test_parse_osv_output_ignores_fixed_version_from_an_unrelated_affected_package():
+    """Review finding (2026-07-24): a monorepo-style advisory can list
+    MULTIPLE affected packages under one id. A ``fixed`` event that belongs
+    to a DIFFERENT package (name mismatch) must never be attributed to the
+    package this Finding is actually about."""
+    raw = _doc(
+        _package(
+            "foo",
+            "1.0.0",
+            ids=["GHSA-x"],
+            max_severity="5.0",
+            vulnerabilities=[
+                {
+                    "id": "GHSA-x",
+                    "affected": [
+                        {
+                            "package": {"ecosystem": "PyPI", "name": "some-other-pkg"},
+                            "ranges": [
+                                {
+                                    "type": "ECOSYSTEM",
+                                    "events": [
+                                        {"introduced": "0"},
+                                        {"fixed": "3.0.0"},
+                                    ],
+                                }
+                            ],
+                        }
+                    ],
+                }
+            ],
+        )
+    )
+    parse = parse_osv_output(raw)
+    (finding,) = parse.findings
+    assert finding.id not in parse.fixed_versions
+
+
+def test_parse_osv_output_matches_fixed_version_by_ecosystem_too():
+    """A same-named package in a DIFFERENT ecosystem's ``affected[]`` entry
+    (e.g. an npm package sharing a PyPI package's name) must not leak its
+    fixed version either — name alone is not a sufficient match."""
+    raw = _doc(
+        _package(
+            "foo",
+            "1.0.0",
+            ids=["GHSA-x"],
+            max_severity="5.0",
+            vulnerabilities=[
+                {
+                    "id": "GHSA-x",
+                    "affected": [
+                        {
+                            "package": {"ecosystem": "npm", "name": "foo"},
+                            "ranges": [
+                                {
+                                    "type": "ECOSYSTEM",
+                                    "events": [
+                                        {"introduced": "0"},
+                                        {"fixed": "3.0.0"},
+                                    ],
+                                }
+                            ],
+                        },
+                        {
+                            "package": _MATCHING_PACKAGE,
+                            "ranges": [
+                                {
+                                    "type": "ECOSYSTEM",
+                                    "events": [
+                                        {"introduced": "0"},
+                                        {"fixed": "2.0.0"},
+                                    ],
+                                }
+                            ],
+                        },
+                    ],
+                }
+            ],
+        )
+    )
+    parse = parse_osv_output(raw)
+    (finding,) = parse.findings
+    assert parse.fixed_versions[finding.id] == "2.0.0"
+
+
 # --- Story 1.6: the default vuln-severity policy table -----------------------
 
 
