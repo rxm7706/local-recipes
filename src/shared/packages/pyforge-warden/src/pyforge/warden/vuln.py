@@ -82,6 +82,19 @@ Ownership decisions recorded:
   ``_cvss_score_to_tier`` as ``SeverityTier.UNKNOWN`` — never counted
   critical, the same conservative-degrade convention every other function
   in this module already follows.
+* Story 6.7 (FR: ``--min-epss``) reuses ``OsvParse.kev_candidates`` verbatim
+  for a SECOND, independent feed consultation: ``epss_match``/``epss_stale_
+  finding`` mirror ``kev_match``/``kev_stale_finding`` structurally (same
+  candidate-set shape, same feed-provenance-owned-by-``feeds.py`` posture),
+  but the enrichment itself is asymmetric with KEV's own: ``kev``/``kev_date``
+  are ALWAYS stamped (``True``/``False``) once a catalog loads (there is a
+  definite answer to "is this CVE KEV-listed?"), while ``epss`` has no
+  boolean equivalent for "no match" — a finding with no EPSS score simply
+  stays at ``Finding.epss``'s own ``None`` default. ``vuln_rung``'s
+  ``min_epss`` param mirrors ``fail_on_kev``'s escalate-only shape: forces
+  ``Status.POLICY_VIOLATION`` when ``finding.epss.score >= min_epss``, never
+  fires when ``finding.epss is None``, never downgrades an
+  already-``POLICY_VIOLATION`` status.
 * Story 6.4 (FR36) finally stores what this docstring already documented
   but no code path ever captured: ``group.get("aliases")``.
   ``_findings_for_package`` now returns each ``Finding`` PAIRED with its
@@ -957,6 +970,62 @@ def kev_stale_finding(*, unavailable: bool) -> Finding:
     )
 
 
+# --- Story 6.7 (FR: --min-epss): FIRST.org EPSS enrichment -------------------
+
+
+def epss_match(
+    candidates: Sequence[str], scores: Mapping[str, tuple[float, float]]
+) -> tuple[float, float] | None:
+    """Return the ``(score, percentile)`` pair for the first of
+    ``candidates`` (``OsvParse.kev_candidates``' SAME shape — a finding's own
+    ``advisory_id`` followed by its group's raw ``aliases``) present in
+    ``scores`` (a ``{cve_id: (score, percentile)}`` mapping,
+    ``feeds.load_epss_scores``'s shape) — ``None`` when none match. Mirrors
+    ``kev_match``'s first-hit-wins semantics exactly (checked in
+    ``candidates``' own order; membership is what matters — an EPSS catalog
+    is keyed by literal CVE id, so at most one candidate can ever match in
+    practice)."""
+    for candidate in candidates:
+        pair = scores.get(candidate)
+        if pair is not None:
+            return pair
+    return None
+
+
+def epss_stale_finding(*, unavailable: bool) -> Finding:
+    """The single whole-axis EPSS-provenance ``indeterminate:`` finding —
+    mirrors ``kev_stale_finding`` verbatim, one feed over: forces the ENTIRE
+    vulnerability axis to ``indeterminate`` when ``--min-epss`` is active but
+    the FIRST.org EPSS feed cannot be trusted this scan.
+
+    ``unavailable=True`` -> ``indeterminate:epss-data-unavailable:epss-feed``
+    (no usable feed at all — absent, unreadable, or content-corrupt);
+    ``unavailable=False`` -> ``indeterminate:epss-data-stale:epss-feed`` (a
+    real, loadable feed whose snapshot is too old). Either way: never a
+    trusted ``clean``/unqualified ``policy-violation`` off untrustworthy
+    EPSS data, even when every underlying CVSS/KEV match would otherwise be
+    clean."""
+    reason = "unavailable" if unavailable else "stale"
+    detail = (
+        "unavailable (absent, unreadable, or content-corrupt)"
+        if unavailable
+        else (
+            "stale (its snapshot is older than "
+            f"{DEFAULT_FEED_MAX_AGE_DAYS} days) or future-dated"
+        )
+    )
+    return Finding(
+        id=f"indeterminate:epss-data-{reason}:epss-feed",
+        axis=AXIS_VULNERABILITY,
+        message=(
+            f"the FIRST.org EPSS feed is {detail} while --min-epss is active — "
+            "the vulnerability axis cannot be trusted for this scan"
+        ),
+        subject="epss-feed",
+        severity=None,
+    )
+
+
 # --- Story 1.6: severity -> rung composition ---------------------------------
 
 # The default vuln policy: SeverityTier -> Status. Mirrors
@@ -1002,6 +1071,7 @@ def vuln_rung(
     *,
     policy: Mapping[SeverityTier, Status] | None = None,
     fail_on_kev: bool = False,
+    min_epss: float | None = None,
 ) -> tuple[Status, StatusDriver]:
     """Derive the ``(Status, StatusDriver)`` rung for one vulnerability-axis
     finding.
@@ -1027,13 +1097,27 @@ def vuln_rung(
     status — forcing the same value is a no-op) and never fires for a
     finding with ``kev`` ``None``/``False`` (every non-``vuln:`` finding,
     and any ``vuln:`` finding the KEV feed was never consulted for or did
-    not match)."""
+    not match).
+
+    ``min_epss`` (Story 6.7, default ``None`` here — every pre-6.7 direct
+    caller is unaffected): when ``finding.epss is not None`` and
+    ``finding.epss.score >= min_epss``, the status is forced to
+    ``Status.POLICY_VIOLATION`` — mirrors ``fail_on_kev``'s escalate-only
+    shape exactly (never downgrades an already-``POLICY_VIOLATION`` status,
+    never fires when ``finding.epss is None`` — no EPSS match, or the feed
+    was never consulted)."""
     status = (
         status_for_severity_tier(finding.severity.tier, policy=policy)
         if finding.severity is not None
         else Status.INDETERMINATE
     )
     if fail_on_kev and finding.kev is True:
+        status = Status.POLICY_VIOLATION
+    if (
+        min_epss is not None
+        and finding.epss is not None
+        and finding.epss.score >= min_epss
+    ):
         status = Status.POLICY_VIOLATION
     return (
         status,
