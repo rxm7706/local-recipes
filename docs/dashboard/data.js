@@ -3,7 +3,7 @@ window.DASHBOARD_DATA = {
     "warden": {
       "label": "Warden",
       "accentVar": "--warden",
-      "branch": "loop/pyforge-warden · wave running — resume order 6.7 → 6.8 → 6.9 → 6.6 → 5.1 → 5.2",
+      "branch": "loop/pyforge-warden · wave running — 6.8 in flight; then 6.9 → 6.6 → 5.1 → 5.2",
       "contract": "FR1–FR40 · exit codes {0,1,2,130} · verdict lattice error &gt; policy-violation &gt; indeterminate &gt; warn &gt; bypassed &gt; clean &gt; not-applicable",
       "seglabels": [
         "E1 · spine",
@@ -150,7 +150,7 @@ window.DASHBOARD_DATA = {
         {
           "badge": "E6",
           "title": "Multi-axis expansion — license, currency, KEV / EPSS",
-          "gatenote": "<b>Both hard gates cleared ✔</b> — <code>6.10</code> (decision record) + <code>6.1</code> (schema <code>1.0.0→1.1.0</code>). Producers underway: <code>6.4</code> (KEV feed — the <code>feeds.py</code> substrate 6.3/6.7 consume + <code>fail-on-kev</code>) is <b>landed ✔ (1334 green)</b>. <code>6.2</code> (license axis) is next; 7 producers remain.",
+          "gatenote": "<b>Both hard gates cleared ✔</b> — <code>6.10</code> (decision record) + <code>6.1</code> (schema <code>1.0.0→1.1.0</code>). Producers landed ✔: <code>6.2</code> (license) · <code>6.3</code> (currency) · <code>6.4</code> (KEV) · <code>6.5</code> (two-mode policy) · <code>6.7</code> (EPSS + <code>--min-epss</code>, <b>1731 green</b>). Remaining: <code>6.8</code> (in flight) · <code>6.9</code> · <code>6.6</code>.",
           "stories": [
             [
               "6.10",
@@ -189,7 +189,7 @@ window.DASHBOARD_DATA = {
             ],
             [
               "6.7",
-              "pending",
+              "done",
               "EPSS feed + the --min-epss gate"
             ],
             [
@@ -206,15 +206,15 @@ window.DASHBOARD_DATA = {
         }
       ],
       "inflight": {
-        "key": "6.7",
-        "title": "EPSS feed + the --min-epss gate (Axis 2 enrichment)",
+        "key": "6.8",
+        "title": "Baseline & grandfathering (gate new findings only)",
         "phase": "dev (sonnet)",
         "attempt": 1,
-        "startEpoch": 1784885295,
-        "median": 95,
+        "startEpoch": 1784890450,
+        "median": 83,
         "lo": 35,
         "hi": 265,
-        "phaseAsOf": "2026-07-24 09:28 UTC"
+        "phaseAsOf": "2026-07-24 10:54 UTC"
       },
       "velocity": {
         "sub": "Active agent-compute time per completed story (dev + review; excludes gate-pause wait). Median holds near steady-state; the Epic-2 extraction stories (2.2–2.4) ran heavy.",
@@ -298,26 +298,30 @@ window.DASHBOARD_DATA = {
           [
             "6.5",
             105
+          ],
+          [
+            "6.7",
+            83
           ]
         ],
         "foot": [
           [
-            "~80 min",
+            "~83 min",
             "median / story",
             "var(--done)"
           ],
           [
-            "35–194 min",
+            "35–265 min",
             "observed range",
             ""
           ],
           [
-            "9",
+            "5",
             "stories remaining",
             ""
           ],
           [
-            "~18–22 h",
+            "~8–12 h",
             "est. active compute left",
             ""
           ]
@@ -325,8 +329,8 @@ window.DASHBOARD_DATA = {
       },
       "timing": {
         "metric": "active agent-compute per story (dev + review; excludes gate-pause wait) — from bmad-loop run journals",
-        "totalLabel": "~33 h active compute",
-        "note": "Measured stories only. The earliest keystones 1.1 / 1.2, plus 2.6 and the recovered 6.10 spike, predate clean journaling and are excluded. 6.4’s bar is its delivered dev-2 pass (35m); a rolled-back dev-1 cost ~49m more that isn’t counted as delivery. Epic-6 note: 6.10 (design spike) + 6.2 have no journal record (their run dirs predate journal capture) — bars show journal-backed stories only; 6.3 mined from the loop-home run journal.",
+        "totalLabel": "~34 h active compute",
+        "note": "Measured stories only. The earliest keystones 1.1 / 1.2, plus 2.6 and the recovered 6.10 spike, predate clean journaling and are excluded. 6.4’s bar is its delivered dev-2 pass (35m); a rolled-back dev-1 cost ~49m more that isn’t counted as delivery. Epic-6 note: 6.10 (design spike) + 6.2 have no journal record (their run dirs predate journal capture) — bars show journal-backed stories only; 6.3 / 6.5 / 6.7 mined from loop-home run journals.",
         "perStory": {
           "1.3": 78,
           "1.4": 95,
@@ -347,16 +351,17 @@ window.DASHBOARD_DATA = {
           "6.1": 81,
           "6.4": 35,
           "6.3": 265,
-          "6.5": 105
+          "6.5": 105,
+          "6.7": 83
         },
         "epicMin": {
           "E1": 534,
           "E2": 617,
           "E3": 264,
           "E4": 96,
-          "E6": 486
+          "E6": 569
         },
-        "total": 1627
+        "total": 1710
       }
     },
     "atlas": {
@@ -847,7 +852,7 @@ window.DASHBOARD_DATA = {
       }
     }
   },
-  "snapshot": "<span>2026-07-24 09:33 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-07-24 10:55 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
