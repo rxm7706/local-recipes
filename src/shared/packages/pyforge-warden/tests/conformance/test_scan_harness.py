@@ -1276,21 +1276,34 @@ def test_currency_gating_is_true_when_the_axis_actually_ran(capsys, flag):
     "flag", [["--max-lag", "5"], ["--require-lts"], ["--fail-on-eol"]]
 )
 def test_currency_gate_flags_never_change_the_findings_themselves(capsys, flag):
-    """The story's own core AC: currency_findings()'s own output (ids,
-    verdicts, tiers) is identical -- compared as parsed, id-sorted finding
-    objects, not raw bytes -- whether or not any of the three gate flags is
-    set, proving this story adds no escalation logic. Only
-    ``currency.gating`` differs. (Raw-byte identity across the two runs is
-    neither claimed nor possible here: the gated report legitimately
-    differs in its ``coverage`` block.)"""
+    """The core AC that survives Story 6.5: the PRODUCER's output
+    (currency_findings()'s ids/verdicts/tiers) is identical -- compared as
+    parsed, id-sorted finding objects -- whether or not a gate flag is set.
+    6.5 adds escalation in the RUNG/config layer, NOT the producer, so the
+    findings themselves stay byte-identical here; the status/exit escalation
+    is proven separately (see test_currency_two_mode_diff_*). This fixture's
+    OVERALL status is already indeterminate (leftpad's no-version vuln
+    withhold) in BOTH modes, so it isolates the producer-invariance claim
+    without a confounding status change. Only ``currency.gating`` differs in
+    the coverage block."""
     _, out_unconfigured, _ = run_scan(capsys, WARN_AND_INDETERMINATE)
     document_unconfigured = parse_report(out_unconfigured)
     _, out_gated, _ = run_scan(capsys, WARN_AND_INDETERMINATE, *flag)
     document_gated = parse_report(out_gated)
 
     def _currency_findings(document: dict) -> list:
+        # Compare only PRODUCER findings (the `currency:` id family). The
+        # gate-only whole-axis freshness provenance finding
+        # (`indeterminate:currency-registry-*`, emitted only under an active
+        # gate once the bundled registry ages past its 180-day max-age) is NOT
+        # producer output, so excluding it keeps this producer-invariance
+        # assertion true regardless of the bundled registry's wall-clock age.
         return sorted(
-            (f for f in document["findings"] if f["axis"] == "currency"),
+            (
+                f
+                for f in document["findings"]
+                if f["axis"] == "currency" and f["id"].startswith("currency:")
+            ),
             key=lambda f: f["id"],
         )
 
@@ -1358,6 +1371,178 @@ def test_invalid_spdx_deny_licenses_flag_is_a_clean_config_error_not_a_crash(cap
     assert "GPLv3" in document["errors"][0]["message"]
     assert "internal error" not in err
     assert "Traceback" not in err
+
+
+# --- Story 6.5: two-mode escalation, --warn-as-error, freshness (E2E) --------
+
+
+def _clean_cycle(version: str) -> list[dict[str, str]]:
+    return [
+        {"cycle": version, "releaseDate": "2020-01-01", "eol": "2099-01-01", "latest": version}
+    ]
+
+
+def _eol_cycle(version: str) -> list[dict[str, str]]:
+    return [
+        {"cycle": version, "releaseDate": "2015-01-01", "eol": "2016-01-01", "latest": version}
+    ]
+
+
+def _currency_block(document: dict) -> list:
+    # Only PRODUCER findings (`currency:` id family). The gate-only whole-axis
+    # freshness provenance finding (`indeterminate:currency-registry-*`,
+    # emitted once the bundled registry ages past its 180-day max-age under an
+    # active gate) is not producer output, so excluding it keeps the two-mode
+    # producer-invariance assertion true regardless of wall-clock age.
+    return sorted(
+        (
+            f
+            for f in document["findings"]
+            if f["axis"] == "currency" and f["id"].startswith("currency:")
+        ),
+        key=lambda f: f["id"],
+    )
+
+
+def _license_block(document: dict) -> list:
+    return sorted(
+        (f for f in document["findings"] if f["axis"] == "license"),
+        key=lambda f: f["id"],
+    )
+
+
+def test_currency_two_mode_diff_escalates_status_and_exit(monkeypatch, tmp_path, capsys):
+    """Story 6.5 AC (currency): the SAME fixtures run unconfigured vs
+    --fail-on-eol emit BYTE-IDENTICAL currency findings (ids/verdicts/tiers),
+    but the gate escalates the composed status/exit (warn/exit-0 ->
+    policy-violation/exit-1). Seeds a python-runtime EOL cycle (keeping
+    CLEAN's requests/packaging clean) so the sole non-clean signal is the
+    escalatable currency finding -- the producer output does not change, only
+    the rung."""
+    runtime_version = ".".join(str(part) for part in sys.version_info[:3])
+    monkeypatch.setenv(feeds.FEED_CACHE_DIR_ENV_VAR, str(tmp_path))
+    feeds.write_kev_cache(tmp_path, {"vulnerabilities": []})
+    feeds.write_endoflife_cache(
+        tmp_path,
+        {
+            "requests": _clean_cycle("2.31.0"),
+            "packaging": _clean_cycle("24.0"),
+            "python": _eol_cycle(runtime_version),
+        },
+    )
+
+    rc_unconfigured, out_unconfigured, _ = run_scan(capsys, CLEAN)
+    doc_unconfigured = parse_report(out_unconfigured)
+    rc_gated, out_gated, _ = run_scan(capsys, CLEAN, "--fail-on-eol")
+    doc_gated = parse_report(out_gated)
+
+    # The producer's own output is identical across the two modes.
+    assert _currency_block(doc_unconfigured) == _currency_block(doc_gated)
+    assert {f["id"] for f in _currency_block(doc_unconfigured)} == {
+        f"currency:eol:!python-runtime@{runtime_version}"
+    }
+    # Only the rung/status/exit escalate.
+    assert doc_unconfigured["status"]["value"] == "warn"
+    assert rc_unconfigured == 0
+    assert doc_gated["status"]["value"] == "policy-violation"
+    assert rc_gated == 1
+
+
+def test_license_two_mode_diff_escalates_status_and_exit(monkeypatch, tmp_path, capsys):
+    """Story 6.5 AC (license): identical license findings (an unresolvable
+    ``license:unknown`` dep, byte-identical whether or not a gate is set)
+    escalate warn/exit-0 -> indeterminate/exit-1 under --deny-licenses. The
+    dep is currency- and vuln-clean and the project has no adjacent source
+    (hygiene not applicable), so the license finding is the sole signal."""
+    runtime_version = ".".join(str(part) for part in sys.version_info[:3])
+    project = tmp_path / "proj"
+    project.mkdir()
+    (project / "pyproject.toml").write_text(
+        '[project]\nname = "lic-fixture"\nversion = "1.0.0"\n'
+        'dependencies = ["mysterylib==1.0.0"]\n',
+        encoding="utf-8",
+    )
+    feed = tmp_path / "feed"
+    monkeypatch.setenv(feeds.FEED_CACHE_DIR_ENV_VAR, str(feed))
+    feeds.write_kev_cache(feed, {"vulnerabilities": []})
+    feeds.write_endoflife_cache(
+        feed,
+        {"mysterylib": _clean_cycle("1.0.0"), "python": _clean_cycle(runtime_version)},
+    )
+
+    rc_unconfigured, out_unconfigured, _ = run_scan(capsys, project)
+    doc_unconfigured = parse_report(out_unconfigured)
+    rc_gated, out_gated, _ = run_scan(capsys, project, "--deny-licenses", "GPL-3.0-only")
+    doc_gated = parse_report(out_gated)
+
+    assert _license_block(doc_unconfigured) == _license_block(doc_gated)
+    assert {f["id"] for f in _license_block(doc_unconfigured)} == {
+        "license:unknown:mysterylib@1.0.0"
+    }
+    assert doc_unconfigured["status"]["value"] == "warn"
+    assert rc_unconfigured == 0
+    assert doc_gated["status"]["value"] == "indeterminate"
+    assert rc_gated == 1
+
+
+def test_warn_as_error_makes_a_warn_scan_exit_nonzero(capsys):
+    """Story 6.5 AC (--warn-as-error): a scan that composes ``warn``
+    (DEPTRY_UNUSED's DEP002) exits 0 by default; --warn-as-error makes the
+    SAME run exit 1 with the status STILL ``warn`` (a pure exit-projection
+    knob) and the findings unchanged."""
+    rc_default, out_default, _ = run_scan(capsys, DEPTRY_UNUSED)
+    doc_default = parse_report(out_default)
+    assert doc_default["status"]["value"] == "warn"
+    assert rc_default == 0
+
+    rc_strict, out_strict, err_strict = run_scan(capsys, DEPTRY_UNUSED, "--warn-as-error")
+    doc_strict = parse_report(out_strict)
+    assert doc_strict["status"]["value"] == "warn"  # status unchanged
+    assert doc_strict["exit_code"] == 1
+    assert rc_strict == 1
+    assert doc_default["findings"] == doc_strict["findings"]
+    assert err_strict == ""
+
+
+def test_stale_bundled_registry_under_active_gate_forces_indeterminate(
+    monkeypatch, capsys
+):
+    """Story 6.5 AC (NFR-S9, E2E): a stale bundled LTS registry under an
+    active currency gate mints a whole-axis
+    ``indeterminate:currency-registry-stale`` finding forcing status
+    indeterminate / exit 1 -- never a pass -- mirroring
+    test_kev_enrichment.py::test_kev_feed_stale_forces_whole_axis_
+    indeterminate. Staleness is forced by handing CurrencyEngine a bundled
+    registry whose ``updated:`` snapshot is a decade old (the analog of the
+    KEV test's os.utime staleness)."""
+    monkeypatch.setattr(
+        "pyforge.warden.currency._load_registry",
+        lambda: {"updated": "2000-01-01", "products": {}},
+    )
+    rc, out, err = run_scan(capsys, CLEAN, "--fail-on-eol")
+    document = parse_report(out)
+    finding_ids = {f["id"] for f in document["findings"]}
+    assert "indeterminate:currency-registry-stale:lts-registry" in finding_ids
+    assert document["status"]["value"] == "indeterminate"
+    assert rc == 1
+    assert rc == document["exit_code"]
+
+
+def test_stale_bundled_registry_without_a_gate_changes_nothing(monkeypatch, capsys):
+    """The freshness precondition is gated: with no currency flag, the SAME
+    stale registry adds no provenance finding and CLEAN stays clean/exit 0."""
+    monkeypatch.setattr(
+        "pyforge.warden.currency._load_registry",
+        lambda: {"updated": "2000-01-01", "products": {}},
+    )
+    rc, out, err = run_scan(capsys, CLEAN)
+    document = parse_report(out)
+    finding_ids = {f["id"] for f in document["findings"]}
+    assert not any(
+        fid.startswith("indeterminate:currency-registry-") for fid in finding_ids
+    )
+    assert document["status"]["value"] == "clean"
+    assert rc == 0
 
 
 # --- Story 2.4: honest split coverage + the indeterminate producer (C0b) ----

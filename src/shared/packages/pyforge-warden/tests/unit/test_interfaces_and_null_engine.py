@@ -38,11 +38,15 @@ from pyforge.warden.models import (
     AXIS_INGESTION,
     AXIS_LICENSE,
     AXIS_VULNERABILITY,
+    CurrencyInfo,
+    CurrencyVerdict,
     CveMatchLevel,
     Ecosystem,
     ErrorKind,
     ErrorRecord,
     Finding,
+    LicenseInfo,
+    LicenseVerdict,
     ScannedManifest,
     Severity,
     SeverityTier,
@@ -360,6 +364,97 @@ def test_default_policy_with_fail_on_high_escalates_a_high_severity_finding(
     assert (
         Status.POLICY_VIOLATION,
         StatusDriver(axis=AXIS_VULNERABILITY, finding_id=engine_finding.id),
+    ) in rungs
+
+
+# --- Story 6.5: license/currency escalation threaded through evaluate --------
+
+
+def _license_denied_result():
+    finding = Finding(
+        id="license:GPL-3.0-only:foo@1.0.0",
+        axis=AXIS_LICENSE,
+        message="foo: license 'GPL-3.0-only' is denied",
+        subject="foo",
+        severity=None,
+        license=LicenseInfo(
+            expression="GPL-3.0-only", family="GPL3", verdict=LicenseVerdict.DENIED
+        ),
+    )
+    return finding, EngineResult(
+        findings=(finding,), errors=(), coverage=(), axis=AXIS_LICENSE
+    )
+
+
+def test_default_policy_with_deny_licenses_escalates_a_denied_finding(
+    component_factory,
+):
+    """Story 6.5: EffectiveConfig(deny_licenses=…) makes config.license_policy
+    escalate, and DefaultPolicy threads it into license_rung -- a denied
+    finding feeds policy-violation (default: warn)."""
+    finding, result = _license_denied_result()
+    inventory = make_inventory(component_factory(name="requests", version="2.31.0"))
+    config = EffectiveConfig(deny_licenses=("GPL-3.0-only",))
+    _, rungs = DefaultPolicy(config).evaluate(inventory, [result])
+    assert (
+        Status.POLICY_VIOLATION,
+        StatusDriver(axis=AXIS_LICENSE, finding_id=finding.id),
+    ) in rungs
+
+
+def test_default_policy_unconfigured_keeps_a_denied_finding_at_warn(component_factory):
+    """The two-mode contrast: with no license flag, the SAME denied finding
+    feeds warn (the axis is invisible-as-enforcement but honest)."""
+    finding, result = _license_denied_result()
+    inventory = make_inventory(component_factory(name="requests", version="2.31.0"))
+    _, rungs = DefaultPolicy().evaluate(inventory, [result])
+    assert (
+        Status.WARN,
+        StatusDriver(axis=AXIS_LICENSE, finding_id=finding.id),
+    ) in rungs
+
+
+def _currency_eol_result():
+    finding = Finding(
+        id="currency:eol:foo@1.0.0",
+        axis=AXIS_CURRENCY,
+        message="foo: reached end-of-life 2020-01-01 (endoflife-date)",
+        subject="foo",
+        severity=None,
+        currency=CurrencyInfo(
+            verdict=CurrencyVerdict.EOL,
+            latest="2.0",
+            lag=3,
+            eol_date="2020-01-01",
+            tier="endoflife-date",
+        ),
+    )
+    return finding, EngineResult(
+        findings=(finding,), errors=(), coverage=(), axis=AXIS_CURRENCY
+    )
+
+
+def test_default_policy_with_fail_on_eol_escalates_an_eol_finding(component_factory):
+    """Story 6.5: EffectiveConfig(fail_on_eol=True) makes config.
+    currency_policy escalate, threaded into currency_rung -- an eol finding
+    feeds policy-violation (default: warn)."""
+    finding, result = _currency_eol_result()
+    inventory = make_inventory(component_factory(name="requests", version="2.31.0"))
+    config = EffectiveConfig(fail_on_eol=True)
+    _, rungs = DefaultPolicy(config).evaluate(inventory, [result])
+    assert (
+        Status.POLICY_VIOLATION,
+        StatusDriver(axis=AXIS_CURRENCY, finding_id=finding.id),
+    ) in rungs
+
+
+def test_default_policy_unconfigured_keeps_an_eol_finding_at_warn(component_factory):
+    finding, result = _currency_eol_result()
+    inventory = make_inventory(component_factory(name="requests", version="2.31.0"))
+    _, rungs = DefaultPolicy().evaluate(inventory, [result])
+    assert (
+        Status.WARN,
+        StatusDriver(axis=AXIS_CURRENCY, finding_id=finding.id),
     ) in rungs
 
 

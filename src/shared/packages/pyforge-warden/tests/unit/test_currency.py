@@ -31,6 +31,7 @@ from pyforge.warden.currency import (
     _resolve_from_lines,
     currency_findings,
     currency_rung,
+    currency_stale_finding,
 )
 from pyforge.warden.engines import CurrencyEngine
 from pyforge.warden.inventory import ResolvedInventory, merge_components
@@ -96,11 +97,153 @@ def test_default_currency_policy_covers_only_finding_eligible_verdicts():
     """Mirrors ``DEFAULT_LICENSE_POLICY``'s omission of ``allowed`` --
     ``supported`` is deliberately absent (see ``currency.py``'s module
     docstring: it can mean either clean or over-lag, a distinction this
-    table can't make by verdict alone)."""
+    table can't make by verdict alone). It is the all-WARN fallback
+    ``currency_rung`` uses when called with ``policy=None`` (Story 6.5)."""
     assert dict(DEFAULT_CURRENCY_POLICY) == {
         CurrencyVerdict.EOL: Status.WARN,
         CurrencyVerdict.UNKNOWN: Status.WARN,
     }
+
+
+# --- currency_rung: Story 6.5 gating-policy + over-lag escalation ------------
+
+
+_GATING_CURRENCY_POLICY = {
+    CurrencyVerdict.EOL: Status.POLICY_VIOLATION,
+    CurrencyVerdict.UNKNOWN: Status.INDETERMINATE,
+}
+
+
+def _finding(reason, verdict, *, lag=0):
+    return Finding(
+        id=f"currency:{reason}:pkg@1.0.0",
+        axis=AXIS_CURRENCY,
+        message="m",
+        subject="pkg",
+        severity=None,
+        currency=CurrencyInfo(verdict=verdict, latest="1.0.0", lag=lag, eol_date="2099-01-01")
+        if reason != "unknown"
+        else CurrencyInfo(verdict=verdict),
+    )
+
+
+def test_currency_rung_eol_escalates_to_policy_violation_under_a_gating_policy():
+    status, driver = currency_rung(
+        _finding("eol", CurrencyVerdict.EOL), policy=_GATING_CURRENCY_POLICY
+    )
+    assert status is Status.POLICY_VIOLATION
+    assert driver == StatusDriver(
+        axis=AXIS_CURRENCY, finding_id="currency:eol:pkg@1.0.0"
+    )
+
+
+def test_currency_rung_unknown_escalates_to_indeterminate_under_a_gating_policy():
+    status, _driver = currency_rung(
+        _finding("unknown", CurrencyVerdict.UNKNOWN), policy=_GATING_CURRENCY_POLICY
+    )
+    assert status is Status.INDETERMINATE
+
+
+def test_currency_rung_over_lag_above_threshold_is_policy_violation():
+    """An over-lag (SUPPORTED verdict, positive lag) whose lag EXCEEDS
+    --max-lag composes policy-violation (a numeric check, not a table key)."""
+    finding = _finding("over-lag", CurrencyVerdict.SUPPORTED, lag=5)
+    status, _driver = currency_rung(
+        finding, policy=_GATING_CURRENCY_POLICY, max_lag=3
+    )
+    assert status is Status.POLICY_VIOLATION
+
+
+def test_currency_rung_over_lag_at_or_below_threshold_stays_warn():
+    """An over-lag within --max-lag is visible (warn) but never blocking."""
+    finding = _finding("over-lag", CurrencyVerdict.SUPPORTED, lag=2)
+    status, _driver = currency_rung(
+        finding, policy=_GATING_CURRENCY_POLICY, max_lag=3
+    )
+    assert status is Status.WARN
+    # lag == max_lag is the boundary: NOT over the threshold -> warn.
+    boundary = _finding("over-lag", CurrencyVerdict.SUPPORTED, lag=3)
+    status_boundary, _ = currency_rung(
+        boundary, policy=_GATING_CURRENCY_POLICY, max_lag=3
+    )
+    assert status_boundary is Status.WARN
+
+
+def test_currency_rung_over_lag_with_no_threshold_stays_warn():
+    """--fail-on-eol/--require-lts activate the gate WITHOUT a --max-lag: an
+    over-lag has no threshold to breach, so it stays warn (eol/unknown still
+    escalate via the table)."""
+    finding = _finding("over-lag", CurrencyVerdict.SUPPORTED, lag=99)
+    status, _driver = currency_rung(
+        finding, policy=_GATING_CURRENCY_POLICY, max_lag=None
+    )
+    assert status is Status.WARN
+
+
+def test_currency_rung_freshness_finding_currency_none_is_indeterminate():
+    """A provenance/freshness finding (currency=None) maps to indeterminate,
+    never toward clean -- regardless of policy/max_lag."""
+    finding = currency_stale_finding(unavailable=False)
+    assert finding.currency is None
+    status, driver = currency_rung(
+        finding, policy=_GATING_CURRENCY_POLICY, max_lag=3
+    )
+    assert status is Status.INDETERMINATE
+    assert driver == StatusDriver(axis=AXIS_CURRENCY, finding_id=finding.id)
+
+
+def test_currency_rung_still_warns_with_defaults():
+    """The ceiling holds for the no-policy call: policy=None falls back to
+    all-WARN DEFAULT_CURRENCY_POLICY, and an over-lag with no max_lag warns."""
+    assert currency_rung(_finding("eol", CurrencyVerdict.EOL))[0] is Status.WARN
+    assert (
+        currency_rung(_finding("unknown", CurrencyVerdict.UNKNOWN))[0] is Status.WARN
+    )
+    assert (
+        currency_rung(_finding("over-lag", CurrencyVerdict.SUPPORTED, lag=9))[0]
+        is Status.WARN
+    )
+
+
+def test_currency_rung_verdict_absent_from_policy_degrades_to_indeterminate():
+    """C0: a non-SUPPORTED verdict absent from a handed (non-empty) table
+    degrades to indeterminate, never toward clean."""
+    status, _driver = currency_rung(
+        _finding("eol", CurrencyVerdict.EOL),
+        policy={CurrencyVerdict.UNKNOWN: Status.INDETERMINATE},
+    )
+    assert status is Status.INDETERMINATE
+
+
+def test_currency_rung_empty_policy_table_fails_closed_not_to_warn():
+    """C0 hardening: an EMPTY (but not None) gating table must fail closed via
+    the `.get(..., INDETERMINATE)` fallback, never short-circuit back to the
+    all-WARN module default (`policy if not None`, not `policy or ...`). None
+    means 'no policy supplied' and legitimately warn-caps (see the defaults
+    test); {} means 'a gating table that happens to be empty' and must not
+    silently un-gate."""
+    status, _driver = currency_rung(_finding("eol", CurrencyVerdict.EOL), policy={})
+    assert status is Status.INDETERMINATE
+
+
+# --- currency_stale_finding (mirrors vuln.kev_stale_finding's shape) ---------
+
+
+def test_currency_stale_finding_stale_shape():
+    finding = currency_stale_finding(unavailable=False)
+    assert finding.id == "indeterminate:currency-registry-stale:lts-registry"
+    assert finding.axis == AXIS_CURRENCY
+    assert finding.severity is None
+    assert finding.currency is None
+    assert finding.subject == "lts-registry"
+
+
+def test_currency_stale_finding_unavailable_shape():
+    finding = currency_stale_finding(unavailable=True)
+    assert finding.id == "indeterminate:currency-registry-unavailable:lts-registry"
+    assert finding.axis == AXIS_CURRENCY
+    assert finding.severity is None
+    assert finding.currency is None
 
 
 # --- _normalize_name / _as_date / _best_match --------------------------------
@@ -848,3 +991,65 @@ def test_currency_engine_name_and_axis():
     engine = CurrencyEngine()
     assert engine.name == "currency"
     assert engine.axis == AXIS_CURRENCY
+
+
+def test_currency_engine_defaults_to_gating_off():
+    """The default constructor is non-gating -- pre-6.5 behavior (no
+    freshness finding) unless cli.py wires gating=config.currency_gating."""
+    assert CurrencyEngine()._gating is False
+
+
+def test_currency_engine_gated_stale_registry_emits_stale_finding(
+    tmp_path, component_factory, monkeypatch
+):
+    """NFR-S9: under an active gate, a stale bundled registry (max_age_ok
+    False) forces one whole-axis currency-registry-stale finding -- mirrors
+    OsvEngine's KEV-provenance stale finding."""
+    monkeypatch.setattr(
+        "pyforge.warden.currency._load_registry",
+        lambda: {"updated": "2000-01-01", "products": {}},
+    )
+    inventory = make_inventory(component_factory(name="requests", version="2.31.0"))
+    result = CurrencyEngine(gating=True).run(tmp_path, inventory)
+    ids = {f.id for f in result.findings}
+    assert "indeterminate:currency-registry-stale:lts-registry" in ids
+
+
+def test_currency_engine_gated_absent_registry_emits_unavailable_finding(
+    tmp_path, component_factory, monkeypatch
+):
+    """currency_data is None (registry absent/unparsable, no usable
+    provenance) under an active gate -> currency-registry-unavailable."""
+    monkeypatch.setattr("pyforge.warden.currency._load_registry", lambda: {})
+    inventory = make_inventory(component_factory(name="requests", version="2.31.0"))
+    result = CurrencyEngine(gating=True).run(tmp_path, inventory)
+    ids = {f.id for f in result.findings}
+    assert "indeterminate:currency-registry-unavailable:lts-registry" in ids
+
+
+def test_currency_engine_ungated_stale_registry_emits_no_stale_finding(
+    tmp_path, component_factory, monkeypatch
+):
+    """The freshness precondition is gated: with gating off, even a stale
+    registry adds nothing (pre-6.5 byte-identical)."""
+    monkeypatch.setattr(
+        "pyforge.warden.currency._load_registry",
+        lambda: {"updated": "2000-01-01", "products": {}},
+    )
+    inventory = make_inventory(component_factory(name="requests", version="2.31.0"))
+    result = CurrencyEngine(gating=False).run(tmp_path, inventory)
+    assert not any(
+        f.id.startswith("indeterminate:currency-registry-") for f in result.findings
+    )
+
+
+def test_currency_engine_gated_fresh_registry_emits_no_stale_finding(
+    tmp_path, component_factory
+):
+    """A fresh bundled registry under an active gate adds no provenance
+    finding -- the freshness precondition only fires on absent/stale."""
+    inventory = make_inventory(component_factory(name="requests", version="2.31.0"))
+    result = CurrencyEngine(gating=True).run(tmp_path, inventory)
+    assert not any(
+        f.id.startswith("indeterminate:currency-registry-") for f in result.findings
+    )

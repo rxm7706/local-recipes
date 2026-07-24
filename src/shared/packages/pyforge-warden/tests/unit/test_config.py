@@ -19,7 +19,12 @@ from pyforge.warden.config import (
     ConfigValidationError,
     EffectiveConfig,
 )
-from pyforge.warden.models import LicenseVerdict, SeverityTier, Status
+from pyforge.warden.models import (
+    CurrencyVerdict,
+    LicenseVerdict,
+    SeverityTier,
+    Status,
+)
 
 
 def _write(path, text: str) -> None:
@@ -833,6 +838,120 @@ def test_currency_policy_property_matches_module_default_table():
     from pyforge.warden.currency import DEFAULT_CURRENCY_POLICY
 
     assert EffectiveConfig().currency_policy == dict(DEFAULT_CURRENCY_POLICY)
+
+
+# --- Story 6.5: the gating-aware (two-mode) policy tables --------------------
+
+
+@pytest.mark.parametrize(
+    "kwargs",
+    [
+        {"allow_licenses": ("MIT",)},
+        {"deny_licenses": ("GPL-3.0-only",)},
+    ],
+)
+def test_license_policy_escalates_when_the_axis_gates(kwargs):
+    """The single writer of the two-mode semantics: when license_gating is
+    true (either list non-empty), the table escalates denied ->
+    policy-violation and unknown -> indeterminate."""
+    config = EffectiveConfig(**kwargs)
+    assert config.license_gating is True
+    assert config.license_policy == {
+        LicenseVerdict.DENIED: Status.POLICY_VIOLATION,
+        LicenseVerdict.UNKNOWN: Status.INDETERMINATE,
+    }
+
+
+def test_license_policy_stays_all_warn_when_the_axis_is_unconfigured():
+    config = EffectiveConfig()
+    assert config.license_gating is False
+    assert config.license_policy == {
+        LicenseVerdict.DENIED: Status.WARN,
+        LicenseVerdict.UNKNOWN: Status.WARN,
+    }
+
+
+@pytest.mark.parametrize(
+    "kwargs",
+    [
+        {"max_lag": 3},
+        {"max_lag": 0},
+        {"require_lts": True},
+        {"fail_on_eol": True},
+    ],
+)
+def test_currency_policy_escalates_when_the_axis_gates(kwargs):
+    config = EffectiveConfig(**kwargs)
+    assert config.currency_gating is True
+    assert config.currency_policy == {
+        CurrencyVerdict.EOL: Status.POLICY_VIOLATION,
+        CurrencyVerdict.UNKNOWN: Status.INDETERMINATE,
+    }
+
+
+def test_currency_policy_stays_all_warn_when_the_axis_is_unconfigured():
+    config = EffectiveConfig()
+    assert config.currency_gating is False
+    assert config.currency_policy == {
+        CurrencyVerdict.EOL: Status.WARN,
+        CurrencyVerdict.UNKNOWN: Status.WARN,
+    }
+
+
+# --- Story 6.5: warn-as-error (the strict-shop exit knob) --------------------
+
+
+def test_warn_as_error_defaults_false():
+    assert EffectiveConfig().warn_as_error is False
+
+
+def test_warn_as_error_default_via_loader(tmp_path):
+    config, _ = ConfigLoader().load(tmp_path)
+    assert config.warn_as_error is False
+
+
+def test_toml_warn_as_error_override(tmp_path):
+    _write(tmp_path / "pyproject.toml", "[tool.pyforge-warden]\nwarn-as-error = true\n")
+    config, _ = ConfigLoader().load(tmp_path)
+    assert config.warn_as_error is True
+
+
+def test_wrong_typed_warn_as_error_raises_config_validation_error(tmp_path):
+    _write(tmp_path / "pyproject.toml", '[tool.pyforge-warden]\nwarn-as-error = "yes"\n')
+    with pytest.raises(ConfigValidationError):
+        ConfigLoader().load(tmp_path)
+
+
+def test_underscore_spelled_warn_as_error_is_unrecognized(tmp_path):
+    """Hyphenated only -- warn_as_error (underscore) is UNRECOGNIZED, like
+    every other key."""
+    _write(tmp_path / "pyproject.toml", "[tool.pyforge-warden]\nwarn_as_error = true\n")
+    with pytest.raises(ConfigValidationError):
+        ConfigLoader().load(tmp_path)
+
+
+def test_cli_warn_as_error_overrides_toml(tmp_path):
+    """CLI wins over either TOML file (last-applied precedence), mirroring
+    fail-on-eol's tri-state."""
+    _write(tmp_path / "pyproject.toml", "[tool.pyforge-warden]\nwarn-as-error = false\n")
+    config, _ = ConfigLoader().load(tmp_path, cli_warn_as_error=True)
+    assert config.warn_as_error is True
+
+
+def test_cli_warn_as_error_none_defers_to_toml(tmp_path):
+    _write(tmp_path / "pyproject.toml", "[tool.pyforge-warden]\nwarn-as-error = true\n")
+    config, _ = ConfigLoader().load(tmp_path, cli_warn_as_error=None)
+    assert config.warn_as_error is True
+
+
+def test_default_with_cli_overrides_applies_warn_as_error():
+    config = EffectiveConfig.default_with_cli_overrides(cli_warn_as_error=True)
+    assert config.warn_as_error is True
+
+
+def test_effective_config_rejects_non_bool_warn_as_error_at_construction():
+    with pytest.raises(ValueError):
+        EffectiveConfig(warn_as_error="yes")
 
 
 def test_effective_config_rejects_negative_max_lag_at_construction():

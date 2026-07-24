@@ -38,19 +38,28 @@ tier — out of scope, Boundaries):
 
 Ownership decisions recorded:
 
-* ``currency_rung`` is a HARD ``Status.WARN`` cap — it NEVER consults
-  ``config.currency_policy`` and NEVER escalates. Real ``eol``/``over-lag``
-  -> ``policy-violation`` / ``unknown`` -> ``indeterminate`` escalation is
-  Story 6.5's sole ownership (Boundaries); ``tests/conformance/
-  test_axis_producer_ceiling.py`` mechanically pins this ceiling.
+* ``currency_rung`` looks up the finding's verdict in the ``policy`` table
+  it is HANDED (Story 6.5: ``config.currency_policy`` + ``config.max_lag``,
+  threaded by ``interfaces.DefaultPolicy.evaluate``); with NO policy
+  (``policy=None`` — the ceiling meta-test's no-arg call, every unconfigured
+  caller) it falls back to ``DEFAULT_CURRENCY_POLICY``, the all-``WARN``
+  module default, so a producer's rung never exceeds ``warn`` unless a
+  gating policy is passed. The escalation itself (``eol`` ->
+  ``policy-violation`` / ``unknown`` -> ``indeterminate``, and the numeric
+  ``over-lag`` ``lag > max_lag`` -> ``policy-violation`` check) is driven by
+  ``config.py`` (the single writer of the two-mode semantics) — the rung
+  only READS the table + threshold. ``tests/conformance/
+  test_axis_producer_ceiling.py`` mechanically pins the no-policy ceiling.
 * Reason-token precedence is the pinned 3-way total order (decision record
   § 2): ``eol`` > ``over-lag`` > ``unknown``. A resolution whose matched
   tier entry is past its EOL date always reports ``eol``, even when it is
   ALSO behind the latest entry (``lag`` still populated on the Finding for
   transparency). ``over-lag`` fires for a NOT-yet-EOL resolution with
-  ``lag > 0`` (behind the latest known entry by ANY positive count — this
-  story does no threshold comparison against ``--max-lag``; that numeric
-  gate is Story 6.5's additive escalation input, per the decision record
+  ``lag > 0`` (behind the latest known entry by ANY positive count — the
+  PRODUCER does no threshold comparison against ``--max-lag``; that numeric
+  ``lag > max_lag`` gate lives in ``currency_rung`` (Story 6.5), which
+  escalates an over-lag finding to ``policy-violation`` only when it exceeds
+  the configured threshold, per the decision record
   § 3). A resolution with ``lag == 0`` and not EOL is fully current — no
   ``Finding`` at all (mirrors ``license.py``'s ``allowed``-emits-nothing
   rule). ``unknown`` is the floor: nothing on the ladder resolved.
@@ -110,16 +119,27 @@ Ownership decisions recorded:
   slot of its own (there is exactly one ``currency_data`` field to fill).
   This is a considered design decision, not evidence the 6.1 schema is
   incomplete — see the story's Dev Notes for the full rationale.
-* ``DEFAULT_CURRENCY_POLICY`` is declared but UNUSED this story (mirrors
-  ``license.DEFAULT_LICENSE_POLICY``'s module-default-table precedent) —
-  reserved for Story 6.5's real escalation; ``currency_rung`` never reads
-  it. Only the two verdicts that can ANCHOR a Finding on their own
+* ``DEFAULT_CURRENCY_POLICY`` is the all-``WARN`` module-default table
+  ``currency_rung`` falls back to when called with ``policy=None`` (the
+  unconfigured / ceiling-meta-test path) — mirrors ``license.
+  DEFAULT_LICENSE_POLICY`` vs ``config.license_policy`` (the gating-aware
+  table `config.currency_policy` supplies when a gate is active, Story 6.5).
+  Only the two verdicts that can ANCHOR a Finding on their own
   (``eol``/``unknown``) are keyed — ``supported`` is deliberately absent
   (mirrors ``license``'s omission of ``allowed``): a ``supported`` verdict
   can mean either "fully current" (no Finding at all) or "over-lag but not
   EOL" (a Finding DOES exist), a distinction this table cannot itself make
-  by verdict alone — Story 6.5's escalation reads the id's reason segment
-  (or ``Finding.currency.lag``) for that, per the decision record § 3.
+  by verdict alone — ``currency_rung`` reads ``Finding.currency.lag`` vs
+  ``max_lag`` for the over-lag case, per the decision record § 3.
+* ``currency_stale_finding`` (Story 6.5, mirrors ``vuln.kev_stale_finding``)
+  is the whole-axis currency-provenance ``indeterminate:`` finding
+  ``engines.CurrencyEngine`` emits when a currency gate is active but the
+  bundled registry is absent/stale (NFR-S9) — a freshness PRECONDITION, so
+  even a scan that produced zero per-component currency findings (a stale
+  tier-1 but a clean tier-2) cannot pass under an active gate. Staleness is
+  computed by ``_registry_feed_provenance``/``feeds.py`` (F5 — the axis
+  never computes it itself); the engine only reads ``currency_data``'s
+  ``max_age_ok``.
 * This module opens no socket and spawns no subprocess: the bundled
   registry is a packaged resource read in-process, and the endoflife.date
   cache is a local file read in-process (populated OFFLINE by ``scripts/
@@ -178,10 +198,12 @@ _REGISTRY_MAX_AGE_DAYS = 180
 # constraints (NFR-R3b).
 _REGISTRY_SOURCE = "pyforge.warden/data/lts-registry.yaml"
 
-# The default currency policy: CurrencyVerdict -> Status. UNUSED this story
-# (currency_rung is a hard warn-cap, oblivious to this table) -- reserved
-# for Story 6.5's real escalation. MappingProxyType-wrapped, mirroring
-# DEFAULT_LICENSE_POLICY/DEFAULT_HYGIENE_POLICY/DEFAULT_VULN_SEVERITY_POLICY.
+# The default currency policy: CurrencyVerdict -> Status. The all-WARN
+# module default currency_rung falls back to when called with policy=None
+# (the unconfigured / ceiling-meta-test path, Story 6.5); the gating-aware
+# escalation table is config.currency_policy. MappingProxyType-wrapped,
+# mirroring DEFAULT_LICENSE_POLICY/DEFAULT_HYGIENE_POLICY/
+# DEFAULT_VULN_SEVERITY_POLICY.
 DEFAULT_CURRENCY_POLICY: MappingProxyType[CurrencyVerdict, Status] = MappingProxyType(
     {
         CurrencyVerdict.EOL: Status.WARN,
@@ -190,15 +212,104 @@ DEFAULT_CURRENCY_POLICY: MappingProxyType[CurrencyVerdict, Status] = MappingProx
 )
 
 
-def currency_rung(finding: Finding) -> tuple[Status, StatusDriver]:
+def currency_rung(
+    finding: Finding,
+    *,
+    policy: Mapping[CurrencyVerdict, Status] | None = None,
+    max_lag: int | None = None,
+) -> tuple[Status, StatusDriver]:
     """Derive the ``(Status, StatusDriver)`` rung for one currency-axis
-    finding — UNCONDITIONALLY ``Status.WARN`` (Boundaries: never consult
-    ``config.currency_policy``, never escalate — real escalation is Story
-    6.5's sole ownership). The driver carries the finding's own axis and
-    id."""
+    finding (Story 6.5: ``config.EffectiveConfig.currency_policy`` +
+    ``config.max_lag``, threaded by ``interfaces.DefaultPolicy.evaluate``
+    exactly as ``vuln_rung`` threads ``vuln_severity_policy``).
+
+    A finding with no ``CurrencyInfo`` (``finding.currency is None`` — a
+    whole-axis freshness/provenance finding like
+    ``currency_stale_finding``'s, or a defensive stray) yields
+    ``Status.INDETERMINATE`` directly (never toward ``clean`` — C0),
+    regardless of ``policy``. Otherwise:
+
+    * ``SUPPORTED`` verdict — this is the ``over-lag`` shape (a
+      fully-current, zero-lag ``SUPPORTED`` resolution never mints a
+      ``Finding`` at all, so any ``SUPPORTED``-verdict finding reaching here
+      is behind-latest). The numeric ``--max-lag`` threshold governs it: it
+      escalates to ``Status.POLICY_VIOLATION`` iff ``max_lag is not None``
+      AND the finding's ``lag`` exceeds it, else ``Status.WARN`` (visible,
+      not blocking). ``over-lag`` has no ``CurrencyVerdict`` member of its
+      own, so this is a numeric check, not a table lookup.
+    * every other verdict (``eol``/``unknown``) is looked up in ``policy`` —
+      ``policy=None`` (the ceiling meta-test's no-arg call, every
+      unconfigured caller) falls back to ``DEFAULT_CURRENCY_POLICY``, the
+      all-``WARN`` module default; a verdict absent from the table degrades
+      to ``Status.INDETERMINATE`` (C0).
+
+    The driver carries the finding's own axis and id."""
+    info = finding.currency
+    if info is None:
+        return (
+            Status.INDETERMINATE,
+            StatusDriver(axis=finding.axis, finding_id=finding.id),
+        )
+    # `policy if not None` (not `policy or ...`): an EMPTY gating table must
+    # fail closed via the `.get(..., INDETERMINATE)` below, never short-circuit
+    # back to the all-WARN module default (a false-green direction). `None`
+    # alone means "no policy supplied" -> module default.
+    table = policy if policy is not None else DEFAULT_CURRENCY_POLICY
+    if info.verdict is CurrencyVerdict.SUPPORTED:
+        over = max_lag is not None and info.lag is not None and info.lag > max_lag
+        status = Status.POLICY_VIOLATION if over else Status.WARN
+    else:
+        status = table.get(info.verdict, Status.INDETERMINATE)
     return (
-        Status.WARN,
+        status,
         StatusDriver(axis=finding.axis, finding_id=finding.id),
+    )
+
+
+def currency_stale_finding(*, unavailable: bool) -> Finding:
+    """The single whole-axis currency-provenance ``indeterminate:`` finding
+    — mirrors ``vuln.kev_stale_finding``'s role for the CISA KEV feed
+    (feed PROVENANCE, not per-component content): forces the ENTIRE currency
+    axis to ``indeterminate`` when a currency gate is active but the bundled
+    LTS registry cannot be trusted this scan (NFR-S9: a stale/absent registry
+    never silently reports ``supported``). Emitted by ``engines.
+    CurrencyEngine`` only when ``gating`` is active (exactly as ``engines.
+    _kev_enrichment`` gates on ``fail_on_kev``); ``currency_rung`` maps its
+    ``currency is None`` shape to ``indeterminate``.
+
+    ``unavailable=True`` ->
+    ``indeterminate:currency-registry-unavailable:lts-registry`` (no usable
+    registry provenance at all — the bundled file is absent/unreadable/
+    unparsable, or its own ``updated:`` date is missing/unparsable, so
+    ``currency_findings`` returned ``currency_data=None``);
+    ``unavailable=False`` ->
+    ``indeterminate:currency-registry-stale:lts-registry`` (a real, loadable
+    registry whose ``updated:`` snapshot is older than the 180-day max-age).
+    Either way: never a trusted ``clean`` off an untrustworthy registry."""
+    if unavailable:
+        return Finding(
+            id="indeterminate:currency-registry-unavailable:lts-registry",
+            axis=AXIS_CURRENCY,
+            message=(
+                "the bundled LTS registry is unavailable (absent, unreadable, "
+                "or carries no usable 'updated:' provenance) while a currency "
+                "gate is active — the currency axis cannot be trusted for "
+                "this scan"
+            ),
+            subject="lts-registry",
+            severity=None,
+        )
+    return Finding(
+        id="indeterminate:currency-registry-stale:lts-registry",
+        axis=AXIS_CURRENCY,
+        message=(
+            "the bundled LTS registry is stale (its 'updated:' snapshot is "
+            f"older than {_REGISTRY_MAX_AGE_DAYS} days) or future-dated while "
+            "a currency gate is active — the currency axis cannot be trusted "
+            "for this scan"
+        ),
+        subject="lts-registry",
+        severity=None,
     )
 
 

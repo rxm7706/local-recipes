@@ -185,6 +185,7 @@ def assemble_report(
     license_gating: bool = False,
     currency_data: FeedProvenance | None = None,
     currency_gating: bool = False,
+    warn_as_error: bool = False,
 ) -> ComplianceReport:
     """Assemble the ``ComplianceReport`` from the pipeline's outputs.
 
@@ -242,8 +243,10 @@ def assemble_report(
     license axis's OWN ``AxisCoverage.gating`` — every other axis's row
     keeps the field's own default (``False``). Transparency of
     configuration state (FR37's "gating: false is honesty, not
-    invisibility"), independent of the fact that real license-axis
-    escalation is deferred to Story 6.5.
+    invisibility"); the actual license-axis rung escalation this gate drives
+    is threaded separately through ``DefaultPolicy.evaluate`` ->
+    ``license_rung(policy=config.license_policy)`` (Story 6.5), not here —
+    this row only reports whether the gate is configured.
 
     Fix 8 (review finding, 2026-07-18): ``gating`` is additionally gated on
     the axis actually being applicable/assessed (``AXIS_LICENSE in
@@ -262,7 +265,17 @@ def assemble_report(
     currency_gating`` (``True`` iff ``--max-lag``/``--require-lts``/
     ``--fail-on-eol`` is set) into the currency axis's own ``AxisCoverage.
     gating``, gated on axis applicability the SAME way ``license_gating`` is
-    (Fix 8's pattern, applied identically here)."""
+    (Fix 8's pattern, applied identically here).
+
+    ``warn_as_error`` (Story 6.5, additive/defaulted ``False`` — the
+    strict-shop exit knob): threaded straight through into ``verdict.
+    exit_code_for(status, …, warn_is_error=warn_as_error)``, exactly like
+    ``allow_empty`` — this module owns no exit-projection logic of its own
+    (``verdict.py`` is the sole owner), so its only role here is plumbing
+    ``cli.py``'s ``--warn-as-error`` flag alongside the composed driver. It
+    never changes the composed status or any rung; it only makes a ``warn``
+    STATUS project to a non-zero exit (orthogonal to ``--warn-only``, which
+    downgrades blocking rungs pre-compose)."""
     findings = list(findings)
     rungs = list(rungs)
     resolution_depth = (
@@ -388,7 +401,12 @@ def assemble_report(
         tool_version=__version__,
         status=status,
         status_driver=driver,
-        exit_code=exit_code_for(status, driver=driver, allow_empty=allow_empty),
+        exit_code=exit_code_for(
+            status,
+            driver=driver,
+            allow_empty=allow_empty,
+            warn_is_error=warn_as_error,
+        ),
         findings=tuple(findings),
         coverage=coverage,
         vuln_data=vuln_data,
