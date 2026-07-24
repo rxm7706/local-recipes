@@ -1,6 +1,6 @@
 ---
 status: workflow
-spec_updated: 2026-07-23
+spec_updated: 2026-07-24
 ---
 # Tech Spec: Design-to-Deck — reusable React/Vite presentation workflow (parameterized)
 
