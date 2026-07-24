@@ -832,33 +832,45 @@ def _run_doctor(args: argparse.Namespace) -> int:
     doctor is config-independent, via the shared ``_resolve_scan_target``)
     and returns BEFORE any discovery/extraction/policy/engine-scan work.
     ``engines.run_doctor_checks`` performs only read-only local filesystem +
-    ``--version`` subprocess checks — never a network call (the autouse
-    socket-deny harness governs this path too). Exit is ``0`` when every
-    check is ``ok``, else ``exit_code_for(Status.ERROR)`` — NEVER ``1``
-    (doctor reports operability, not policy)."""
-    target = _resolve_scan_target(args)
-    if isinstance(target, int):
-        return target
-
+    ``--version`` subprocess checks — never a network call by design (the
+    autouse socket-deny harness enforces the in-process half; the
+    ``--version`` child processes run outside its reach). Exit is ``0``
+    when every check is ``ok``, else ``exit_code_for(Status.ERROR)`` —
+    NEVER ``1`` (doctor reports operability, not policy)."""
     # Review finding (2026-07-24): --doctor previously no-op'd every other
     # scan/policy flag SILENTLY -- someone appending --doctor to an existing
     # CI scan line would disable the gate with no trace. Diff the parsed
     # args against the scan subparser's own defaults (drift-proof: any
     # future flag is covered automatically) and name what is ignored on
-    # stderr; path/--format/--doctor are the only honored inputs.
-    scan_defaults = vars(_build_parser()[1].parse_args([]))
-    honored = {"path", "format", "doctor"}
-    ignored = sorted(
-        dest
-        for dest, default in scan_defaults.items()
-        if dest not in honored and getattr(args, dest, default) != default
-    )
-    if ignored:
-        flags = ", ".join("--" + dest.replace("_", "-") for dest in ignored)
-        _stderr(
-            f"{TOOL_NAME}: --doctor runs an environment self-check only -- "
-            f"ignoring scan/policy flags: {flags}"
+    # stderr; path/--format/--doctor are the only honored inputs. Emitted
+    # BEFORE target resolution (follow-up review finding 2026-07-24: a bad
+    # path must not suppress the very trace this exists to guarantee).
+    try:
+        scan_defaults = vars(_build_parser()[1].parse_args([]))
+    except SystemExit:
+        # Defensive (follow-up review finding 2026-07-24): a future
+        # required scan argument would make the empty-argv defaults probe
+        # abort argparse-style. Skip the trace rather than kill doctor.
+        scan_defaults = None
+    if scan_defaults is not None:
+        honored = {"path", "format", "doctor"}
+        ignored = sorted(
+            dest
+            for dest, default in scan_defaults.items()
+            if dest not in honored and getattr(args, dest, default) != default
         )
+        if ignored:
+            flags = ", ".join(
+                "--" + dest.replace("_", "-") for dest in ignored
+            )
+            _stderr(
+                f"{TOOL_NAME}: --doctor runs an environment self-check "
+                f"only -- ignoring scan/policy flags: {flags}"
+            )
+
+    target = _resolve_scan_target(args)
+    if isinstance(target, int):
+        return target
 
     checks = run_doctor_checks(target)
     healthy = all(check.ok for check in checks)

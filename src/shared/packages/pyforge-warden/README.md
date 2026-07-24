@@ -48,19 +48,26 @@ provisioned database, and KEV/EPSS enrichment is likewise cache-only).
 **First contact:** run `warden scan . --warn-only` in any project — it
 reports every finding without failing the run on any of them, the
 non-blocking on-ramp for trying the gate before wiring it into CI.
-(Operational errors are still loud: a missing engine or an unprovisioned
-offline OSV database exits `2` even under `--warn-only` — run `--doctor`
-first to check the environment.)
+(A missing or out-of-range engine is still loud: it exits `2` even under
+`--warn-only`. An unprovisioned offline OSV database is different — the
+vulnerability axis composes `indeterminate` *findings*, which block by
+default (exit `1`) but are downgraded like any other finding under
+`--warn-only`, leaving that axis silently unassessed — so run `--doctor`
+first to make sure the environment can assess what you think it is
+assessing.)
 
 **Environment self-check:** `warden scan --doctor` verifies the local
 install itself — engine versions, the offline OSV database, and the
-KEV/EPSS feed caches — without scanning a project at all (no discovery, no
-network). It exits `0` when everything checks out and `2` when an engine or
-the offline OSV database is missing, unreadable, or out of its tested range
-(naming the specific problem); it never exits `1` — `--doctor` reports on
-the environment's operability, never on a project's policy compliance. An
-*absent* KEV or EPSS feed is reported as an informational "operating
-air-gapped" line and does **not** fail the check — but note the default
-`fail-on-kev` gate: until the KEV feed is provisioned (or that gate is
-explicitly disabled), a default-config scan composes `indeterminate` on the
-vulnerability axis rather than a trusted verdict.
+KEV/EPSS/endoflife feed caches — without scanning a project at all (no
+discovery, no network). It exits `0` when everything checks out and `2`
+when an engine or the offline OSV database is missing, unreadable, stale,
+or out of its tested range, when a *provisioned* feed cache file is
+unreadable or invalid, or when the KEV feed is present but stale (its gate
+is on by default, so a stale KEV feed blocks every default scan's trusted
+verdict) — always naming the specific problem. It never exits `1` —
+`--doctor` reports on the environment's operability, never on a project's
+policy compliance. An *absent* feed is reported as an informational
+"operating air-gapped" line and does **not** fail the check — but note the
+default `fail-on-kev` gate: until the KEV feed is provisioned (or that gate
+is explicitly disabled), a default-config scan composes `indeterminate` on
+the vulnerability axis rather than a trusted verdict.

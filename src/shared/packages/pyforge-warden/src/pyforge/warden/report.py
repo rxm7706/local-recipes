@@ -138,7 +138,12 @@ Ownership decisions recorded:
   axis name, not a package) simply omits the manifest clause -- never
   crashes, never fabricates a location. The composed remediation string
   passes through ``_single_line`` too, same as every other free-text field.
-  The defaults preserve every pre-5.1 caller/test byte-for-byte.
+  The defaults keep every pre-5.1 call site signature-compatible, but they
+  do NOT reproduce pre-5.1 output (unlike the parameters above): AC1 makes
+  the remediation line unconditional per finding, so a defaulted call still
+  renders it — the defaults only omit the manifest-clause/fixed-version
+  enrichment (this story updated four pre-existing byte-exact tests for
+  exactly that reason).
 
 Status/exit projection is delegated wholesale to ``verdict.py`` (the sole
 owner); this module feeds it the collected rungs and stores the result.
@@ -543,24 +548,32 @@ def _manifest_clause(
 # but only a transitive dependency -> declare it directly; DEP004 = imported
 # in non-dev code but declared as a dev dependency -> move dependency
 # groups; DEP005 = declared but part of the standard library -> remove it,
-# redundant.
+# redundant. Review finding (2026-07-24): deptry's ``module`` field — the
+# finding ``subject`` — is an IMPORT name for the imported-side codes
+# (DEP001/DEP003/DEP004: ``cv2``/``yaml``/``PIL``, not the distribution
+# ``opencv-python``/``pyyaml``/``pillow``), so those templates say "the
+# distribution that provides {subject}" rather than presenting the import
+# name itself as manifest-declarable; the declared-side codes
+# (DEP002/DEP005) already carry the declared name and stay direct.
 _DEP_CODE_ACTIONS: Mapping[str, str] = MappingProxyType(
     {
         "DEP001": (
-            "declare {subject} as a dependency in the manifest -- it is "
-            "imported but not currently declared"
+            "declare the distribution that provides {subject} in the "
+            "manifest -- {subject} is imported but not currently declared"
         ),
         "DEP002": (
             "remove {subject} from the manifest -- it is declared but not "
             "used in the codebase"
         ),
         "DEP003": (
-            "add {subject} as a direct dependency in the manifest -- it is "
-            "currently only available transitively"
+            "add the distribution that provides {subject} as a direct "
+            "dependency in the manifest -- it is currently only available "
+            "transitively"
         ),
         "DEP004": (
-            "move {subject} out of the dev-dependency group in the "
-            "manifest -- it is imported in non-dev code"
+            "move the distribution that provides {subject} out of the "
+            "dev-dependency group in the manifest -- it is imported in "
+            "non-dev code"
         ),
         "DEP005": (
             "remove {subject} from the manifest -- it is part of the "
@@ -608,10 +621,16 @@ def _remediation_line(
         if fixed is not None:
             action = f"upgrade {subject} to >= {fixed} to resolve {advisory_id}"
         else:
+            # Review finding (2026-07-24): a missing fixed_versions entry
+            # means no fixed version was RECORDED in the advisory data we
+            # read (e.g. a versions:-only or GIT-ranges-only record) -- it
+            # does NOT prove no fix exists upstream. The line must not
+            # assert worldwide absence and steer a user toward a waiver
+            # when an upgrade may exist.
             action = (
-                f"no fixed version is published yet for {advisory_id} "
-                f"affecting {subject} -- consider a waiver or removing the "
-                "dependency"
+                f"no fixed version is recorded in the advisory data for "
+                f"{advisory_id} affecting {subject} -- check the advisory "
+                "upstream, or consider a waiver or removing the dependency"
             )
         return f"{action}{manifest_clause}"
 

@@ -4,7 +4,7 @@ The exit-code matrix (healthy=0; engine missing/out-of-range=2 via a
 monkeypatched ``subprocess.run`` — mirrors ``test_engine_env_deptry.py``'s
 own ``_fake_run_version`` convention; NEVER 1), ``--format json``'s ad-hoc
 (non-``ComplianceReport``) shape, the "operating air-gapped" wording when
-the KEV/EPSS feed cache is absent, and that ``--doctor`` short-circuits
+the KEV/EPSS/endoflife feed cache is absent, and that ``--doctor`` short-circuits
 BEFORE any discovery/extraction/policy work (a malformed manifest under the
 target is never even opened). SIGINT/argparse-usage-error paths are
 untouched by ``--doctor``'s addition — pinned here too.
@@ -83,8 +83,8 @@ def test_doctor_healthy_environment_exits_0_and_reports_every_check_ok(
     captured = capsys.readouterr()
     assert rc == 0
     lines = captured.out.splitlines()
-    assert lines[0] == "warden: doctor status=ok checks=5"
-    assert len(lines) == 6  # header + 5 checks
+    assert lines[0] == "warden: doctor status=ok checks=6"
+    assert len(lines) == 7  # header + 6 checks
     for line in lines[1:]:
         assert " ok -- " in line
     assert captured.err == ""
@@ -100,7 +100,7 @@ def test_doctor_healthy_environment_format_json_is_a_small_ad_hoc_document(
     assert document["tool"] == "warden"
     assert document["doctor"] is True
     assert document["status"] == "ok"
-    assert len(document["checks"]) == 5
+    assert len(document["checks"]) == 6
     assert all(check["ok"] is True for check in document["checks"])
     for check in document["checks"]:
         assert set(check) == {"name", "ok", "message"}
@@ -121,7 +121,7 @@ def test_doctor_missing_engine_exits_2_never_1_and_names_the_engine(
     captured = capsys.readouterr()
     assert rc == 2
     assert rc != 1
-    assert "warden: doctor status=problem checks=5" in captured.out
+    assert "warden: doctor status=problem checks=6" in captured.out
     matches = [
         line for line in captured.out.splitlines() if "osv-scanner" in line
     ]
@@ -139,13 +139,15 @@ def test_doctor_out_of_range_engine_exits_2_never_1(monkeypatch, capsys, tmp_pat
     assert "outside tested range" in captured.out
 
 
-def test_doctor_unreadable_osv_db_exits_2_naming_the_problem(
+def test_doctor_unconfigured_osv_db_env_exits_2_naming_the_problem(
     monkeypatch, capsys, tmp_path
 ):
     """No ``OSV_SCANNER_LOCAL_DB_CACHE_DIRECTORY`` at all — the ambient
     fixture's own ``setenv`` is overridden here (composes with, and wins
     over, the autouse fixture per ``tests/conftest.py``'s own documented
-    precedent)."""
+    precedent). Renamed from "unreadable" (review finding 2026-07-24): this
+    exercises the env-unset branch of ``_doctor_check_osv_db``, not the
+    present-but-unusable one — that branch has its own test below."""
     monkeypatch.delenv("OSV_SCANNER_LOCAL_DB_CACHE_DIRECTORY", raising=False)
     rc = main(["scan", str(tmp_path), "--doctor"])
     captured = capsys.readouterr()
@@ -154,7 +156,33 @@ def test_doctor_unreadable_osv_db_exits_2_naming_the_problem(
     problem_lines = [
         line for line in captured.out.splitlines() if "osv-db" in line
     ]
-    assert any("problem -- " in line for line in problem_lines)
+    assert any(
+        "problem -- " in line and "unset or empty" in line
+        for line in problem_lines
+    )
+
+
+def test_doctor_absent_osv_db_under_configured_dir_exits_2(
+    monkeypatch, capsys, tmp_path
+):
+    """The env var IS set, but the directory holds no usable database — the
+    distinct ``no usable offline OSV database found`` branch of
+    ``_doctor_check_osv_db`` (review finding 2026-07-24: only the env-unset
+    branch was covered at the doctor surface)."""
+    empty_cache = tmp_path / "empty-osv-cache"
+    empty_cache.mkdir()
+    monkeypatch.setenv(OSV_DB_CACHE_ENV_VAR, str(empty_cache))
+    rc = main(["scan", str(tmp_path), "--doctor"])
+    captured = capsys.readouterr()
+    assert rc == 2
+    assert rc != 1
+    problem_lines = [
+        line for line in captured.out.splitlines() if "osv-db" in line
+    ]
+    assert any(
+        "problem -- " in line and "no usable offline OSV database" in line
+        for line in problem_lines
+    )
 
 
 def test_doctor_stale_osv_db_exits_2_naming_the_problem(
@@ -204,15 +232,119 @@ def test_doctor_kev_and_epss_feed_absent_is_still_exit_0(
     assert rc == 0
     assert "operating air-gapped: kev feed not present" in captured.out
     assert "operating air-gapped: epss feed not present" in captured.out
+    assert "operating air-gapped: endoflife feed not present" in captured.out
     kev_line = next(
         line for line in captured.out.splitlines() if "kev-feed" in line
     )
     epss_line = next(
         line for line in captured.out.splitlines() if "epss-feed" in line
     )
+    endoflife_line = next(
+        line for line in captured.out.splitlines() if "endoflife-feed" in line
+    )
     assert "fail-on-kev" in kev_line
     assert "indeterminate" in kev_line
     assert "--min-epss" in epss_line
+    assert "no currency gate is active" in endoflife_line
+
+
+def test_doctor_stale_kev_feed_exits_2_naming_the_consequence(
+    monkeypatch, capsys, tmp_path
+):
+    """A PRESENT-but-stale KEV feed is a doctor PROBLEM, not an
+    informational line (review finding 2026-07-24): under the shipped
+    ``fail_on_kev=True`` default every scan composes indeterminate off it —
+    the same class of environment rot as a stale offline OSV DB, which
+    already exits 2 one check up. Doctor exit 0 here would machine-readably
+    green-light an environment whose default scan cannot produce a trusted
+    verdict."""
+    cache_dir = tmp_path / "feed-cache"
+    feeds.write_kev_cache(cache_dir, {"vulnerabilities": []})
+    kev_path = feeds.kev_cache_path(cache_dir)
+    stale_mtime = time.time() - (feeds.DEFAULT_FEED_MAX_AGE_DAYS + 1) * 86400
+    os.utime(kev_path, (stale_mtime, stale_mtime))
+    monkeypatch.setenv(feeds.FEED_CACHE_DIR_ENV_VAR, str(cache_dir))
+    rc = main(["scan", str(tmp_path), "--doctor"])
+    captured = capsys.readouterr()
+    assert rc == 2
+    assert rc != 1
+    kev_line = next(
+        line for line in captured.out.splitlines() if "kev-feed" in line
+    )
+    assert "problem -- " in kev_line
+    assert "stale" in kev_line
+    assert "fail-on-kev" in kev_line
+    assert "indeterminate" in kev_line
+
+
+def test_doctor_stale_epss_feed_stays_exit_0_with_informational_line(
+    monkeypatch, capsys, tmp_path
+):
+    """The EPSS sibling genuinely has no default gate (``min_epss`` defaults
+    ``None``), so its present-but-stale state stays ``ok``/exit-0 with the
+    informational per-feed hint — the per-feed stale asymmetry is
+    deliberate (review finding 2026-07-24)."""
+    cache_dir = tmp_path / "feed-cache"
+    epss_path = feeds.epss_cache_path(cache_dir)
+    epss_path.parent.mkdir(parents=True)
+    epss_path.write_text(json.dumps({"scores": []}), encoding="utf-8")
+    stale_mtime = time.time() - (feeds.DEFAULT_FEED_MAX_AGE_DAYS + 1) * 86400
+    os.utime(epss_path, (stale_mtime, stale_mtime))
+    monkeypatch.setenv(feeds.FEED_CACHE_DIR_ENV_VAR, str(cache_dir))
+    rc = main(["scan", str(tmp_path), "--doctor"])
+    captured = capsys.readouterr()
+    assert rc == 0
+    epss_line = next(
+        line for line in captured.out.splitlines() if "epss-feed" in line
+    )
+    assert " ok -- " in epss_line
+    assert "stale" in epss_line
+    assert "--min-epss" in epss_line
+
+
+def test_doctor_directory_at_feed_path_exits_2_never_air_gapped(
+    monkeypatch, capsys, tmp_path
+):
+    """A directory squatting on the feed path is present-but-unusable —
+    reporting it "not present"/air-gapped would call a provisioning mistake
+    healthy (review finding 2026-07-24: the present-check uses ``exists()``,
+    not ``is_file()``)."""
+    cache_dir = tmp_path / "feed-cache"
+    feeds.kev_cache_path(cache_dir).mkdir(parents=True)
+    monkeypatch.setenv(feeds.FEED_CACHE_DIR_ENV_VAR, str(cache_dir))
+    rc = main(["scan", str(tmp_path), "--doctor"])
+    captured = capsys.readouterr()
+    assert rc == 2
+    kev_line = next(
+        line for line in captured.out.splitlines() if "kev-feed" in line
+    )
+    assert "problem -- " in kev_line
+    assert "unreadable or invalid" in kev_line
+    assert "not present" not in kev_line
+
+
+def test_doctor_problem_state_format_json_shape(monkeypatch, capsys, tmp_path):
+    """The ``--format json`` document's shape under ``status="problem"``
+    (review finding 2026-07-24: only the healthy JSON shape was pinned):
+    same keys, sorted names, and exactly the failing check carries
+    ``ok=False``."""
+    cache_dir = tmp_path / "feed-cache"
+    feeds.write_kev_cache(cache_dir, {"vulnerabilities": []})
+    kev_path = feeds.kev_cache_path(cache_dir)
+    stale_mtime = time.time() - (feeds.DEFAULT_FEED_MAX_AGE_DAYS + 1) * 86400
+    os.utime(kev_path, (stale_mtime, stale_mtime))
+    monkeypatch.setenv(feeds.FEED_CACHE_DIR_ENV_VAR, str(cache_dir))
+    rc = main(["scan", str(tmp_path), "--doctor", "--format", "json"])
+    captured = capsys.readouterr()
+    assert rc == 2
+    document = json.loads(captured.out)
+    assert document["status"] == "problem"
+    for check in document["checks"]:
+        assert set(check) == {"name", "ok", "message"}
+    names = [check["name"] for check in document["checks"]]
+    assert names == sorted(names)
+    not_ok = [check["name"] for check in document["checks"] if not check["ok"]]
+    assert not_ok == ["kev-feed"]
 
 
 def test_doctor_present_but_corrupt_kev_feed_exits_2_naming_the_file(
@@ -267,6 +399,23 @@ def test_doctor_names_ignored_scan_flags_on_stderr(capsys, tmp_path):
     assert "--format" not in flags_list
     assert "--doctor" not in flags_list
     assert "--path" not in flags_list
+
+
+def test_doctor_ignored_flags_trace_survives_an_invalid_target(
+    capsys, tmp_path
+):
+    """The ignored-flags trace emits BEFORE target resolution (follow-up
+    review finding 2026-07-24): ``warden scan /typo --doctor --warn-only``
+    previously exited 2 with NO trace of the silently-dropped gate flags —
+    reintroducing exactly the silent swallowing the trace exists to
+    prevent."""
+    missing = tmp_path / "does-not-exist"
+    rc = main(["scan", str(missing), "--doctor", "--warn-only"])
+    captured = capsys.readouterr()
+    assert rc == 2
+    assert "ignoring scan/policy flags" in captured.err
+    assert "--warn-only" in captured.err
+    assert "not an existing directory" in captured.err
 
 
 def test_doctor_check_messages_are_neutralized_to_one_line(

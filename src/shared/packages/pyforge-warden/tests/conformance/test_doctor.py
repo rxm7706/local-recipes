@@ -22,15 +22,16 @@ def test_doctor_real_environment_is_healthy_end_to_end(capsys, tmp_path):
     deptry/osv-scanner binaries within their tested version ranges, the
     real ambient offline OSV DB ``tests/conftest.py`` builds once per
     session) — ``warden scan --doctor`` exits 0 and reports every check
-    ``ok``, with zero network (the autouse socket-deny harness would raise
-    otherwise — this is the same live proof ``test_scan_harness.py`` gives
-    a real scan, one level over)."""
+    ``ok``, with zero in-process network (the autouse socket-deny harness
+    would raise otherwise; the ``--version`` child processes run outside
+    its reach and are trusted local-only — review finding 2026-07-24: the
+    harness cannot vouch for subprocesses)."""
     rc = main(["scan", str(tmp_path), "--doctor"])
     captured = capsys.readouterr()
     assert rc == 0
     lines = captured.out.splitlines()
-    assert lines[0] == "warden: doctor status=ok checks=5"
-    assert len(lines) == 6  # header + 5 checks
+    assert lines[0] == "warden: doctor status=ok checks=6"
+    assert len(lines) == 7  # header + 6 checks
     for line in lines[1:]:
         assert " ok -- " in line
     assert captured.err == ""
@@ -42,7 +43,7 @@ def test_doctor_real_environment_format_json(capsys, tmp_path):
     assert rc == 0
     document = json.loads(captured.out)
     assert document["status"] == "ok"
-    assert len(document["checks"]) == 5
+    assert len(document["checks"]) == 6
     assert all(check["ok"] is True for check in document["checks"])
 
 

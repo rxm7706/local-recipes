@@ -606,8 +606,11 @@ def test_remediation_line_vuln_with_known_fixed_version():
 
 def test_remediation_line_vuln_without_a_fixed_version():
     """No fixed_versions entry for this finding id (osv record carried only
-    'versions:', no ranges/events) -- the line states no fix is published
-    yet and suggests a waiver/removal, never a guessed version."""
+    'versions:', no ranges/events) -- the line states no fix is RECORDED in
+    the advisory data (never "not published": extraction can miss a fix
+    that exists upstream, e.g. a GIT-ranges-only record -- review finding
+    2026-07-24) and suggests checking upstream or a waiver/removal, never a
+    guessed version."""
     finding = _vuln_finding()
     report = _report(
         status=Status.POLICY_VIOLATION,
@@ -617,8 +620,9 @@ def test_remediation_line_vuln_without_a_fixed_version():
     )
     rendered = render_text(report)
     assert rendered.splitlines()[-1] == (
-        "      -> fix: no fixed version is published yet for GHSA-xxxx-yyyy "
-        "affecting requests -- consider a waiver or removing the dependency"
+        "      -> fix: no fixed version is recorded in the advisory data "
+        "for GHSA-xxxx-yyyy affecting requests -- check the advisory "
+        "upstream, or consider a waiver or removing the dependency"
     )
 
 
@@ -627,8 +631,8 @@ def test_remediation_line_vuln_without_a_fixed_version():
     [
         (
             "DEP001",
-            "declare flask as a dependency in the manifest -- it is "
-            "imported but not currently declared",
+            "declare the distribution that provides flask in the manifest "
+            "-- flask is imported but not currently declared",
         ),
         (
             "DEP002",
@@ -637,13 +641,15 @@ def test_remediation_line_vuln_without_a_fixed_version():
         ),
         (
             "DEP003",
-            "add flask as a direct dependency in the manifest -- it is "
-            "currently only available transitively",
+            "add the distribution that provides flask as a direct "
+            "dependency in the manifest -- it is currently only available "
+            "transitively",
         ),
         (
             "DEP004",
-            "move flask out of the dev-dependency group in the manifest "
-            "-- it is imported in non-dev code",
+            "move the distribution that provides flask out of the "
+            "dev-dependency group in the manifest -- it is imported in "
+            "non-dev code",
         ),
         (
             "DEP005",

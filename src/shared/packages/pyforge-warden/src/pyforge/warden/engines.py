@@ -504,7 +504,9 @@ class DoctorCheck:
     the message names the scan-time consequence per feed, see
     ``_doctor_check_feed``); ``ok=False`` is reserved for a genuine
     operability problem (an unavailable/out-of-tested-range engine, an
-    unusable/stale offline OSV DB, or a PRESENT-but-unloadable feed file). ``cli.py``'s ``_run_doctor`` is the ONLY place these compose
+    unusable/stale offline OSV DB, a PRESENT-but-unloadable feed file, or a
+    PRESENT-but-stale feed whose gate is on by default — KEV, see
+    ``_doctor_check_feed``'s ``stale_is_problem``). ``cli.py``'s ``_run_doctor`` is the ONLY place these compose
     into an exit code (``0`` when every check is ``ok``, else
     ``exit_code_for(Status.ERROR)`` — NEVER ``1``); this dataclass carries
     no exit-code opinion of its own."""
@@ -609,22 +611,32 @@ def _doctor_check_feed(
     *,
     absent_hint: str,
     stale_hint: str,
+    stale_is_problem: bool = False,
 ) -> DoctorCheck:
-    """One optional KEV/EPSS feed self-check, consulted UNCONDITIONALLY
-    (never gated on ``--fail-on-kev``/``--min-epss`` — ``--doctor`` reports
-    environment operability regardless of which gates a LATER real scan
-    might enable). An ABSENT feed is ``ok=True`` with an explicit
+    """One optional feed self-check, consulted UNCONDITIONALLY (never gated
+    on ``--fail-on-kev``/``--min-epss``/currency flags — ``--doctor``
+    reports environment operability regardless of which gates a LATER real
+    scan might enable). An ABSENT feed is ``ok=True`` with an explicit
     "operating air-gapped" message (NFR-U2's air-gap framing: a missing
     OPTIONAL feed is the expected offline default, never a doctor failure);
     a PRESENT-but-unloadable feed file (unreadable, invalid JSON, wrong
-    shape) is ``ok=False`` naming the file — an operator who provisioned
-    the feed must not be told it does not exist (review finding 2026-07-24;
-    mirrors ``_doctor_check_osv_db``'s own content-corrupt handling one
-    check up). ``absent_hint``/``stale_hint`` carry the PER-FEED scan-time
-    consequence (review finding 2026-07-24: KEV's absent-feed consequence
-    under the shipped ``fail_on_kev=True`` default is a whole-axis
-    ``indeterminate``/exit-1, not "offline default assumed" — the two feeds
-    genuinely differ here, since ``min_epss`` defaults to ``None``)."""
+    shape, or a directory squatting on the path) is ``ok=False`` naming the
+    file — an operator who provisioned the feed must not be told it does
+    not exist (review finding 2026-07-24; mirrors ``_doctor_check_osv_db``'s
+    own content-corrupt handling one check up). ``absent_hint``/
+    ``stale_hint`` carry the PER-FEED scan-time consequence (review finding
+    2026-07-24: KEV's absent-feed consequence under the shipped
+    ``fail_on_kev=True`` default is a whole-axis ``indeterminate``/exit-1,
+    not "offline default assumed" — the feeds genuinely differ here, since
+    ``min_epss`` defaults to ``None``). ``stale_is_problem`` makes a
+    PRESENT-but-stale feed ``ok=False`` for the one feed whose gate is on
+    by default (KEV): a stale KEV feed makes every default-config scan
+    compose ``indeterminate`` — the same class of environment rot as a
+    stale offline OSV DB one check up, so reporting it ``ok``/exit-0 would
+    machine-readably green-light an environment whose default scan cannot
+    produce a trusted verdict (review finding 2026-07-24; the message-level
+    hint alone was not enough). Feeds with no default gate (EPSS,
+    endoflife) keep the informational ``ok=True`` stale treatment."""
     check_name = f"{feed_name}-feed"
     air_gapped = DoctorCheck(
         name=check_name,
@@ -641,7 +653,11 @@ def _doctor_check_feed(
     catalog = loader(path)
     if catalog is None:
         try:
-            feed_file_present = path.is_file()
+            # exists(), not is_file() (review finding 2026-07-24): a
+            # directory (or other non-file) squatting on the feed path is
+            # present-but-unusable -- classifying it "not present" would
+            # report a provisioning mistake as healthy air-gapped operation.
+            feed_file_present = path.exists()
         except OSError:
             feed_file_present = False
         if not feed_file_present:
@@ -671,7 +687,7 @@ def _doctor_check_feed(
     if not provenance.max_age_ok:
         return DoctorCheck(
             name=check_name,
-            ok=True,
+            ok=not stale_is_problem,
             message=(
                 f"{feed_name} feed present but stale (snapshot "
                 f"{provenance.snapshot_at}) -- {stale_hint}"
@@ -689,17 +705,20 @@ def _doctor_check_feed(
 
 def run_doctor_checks(target: Path) -> tuple[DoctorCheck, ...]:
     """Story 5.1 (D8)'s ``--doctor`` aggregation: the deptry/osv-scanner
-    version pre-flight, the offline OSV-DB pre-flight, and the KEV/EPSS
-    feed checks — all read-only local filesystem + ``--version`` subprocess
-    work, NEVER a network call (the autouse socket-deny harness,
-    ``tests/meta/test_socket_deny_alive.py``, governs this path too). No
+    version pre-flight, the offline OSV-DB pre-flight, and the
+    KEV/EPSS/endoflife feed checks — all read-only local filesystem +
+    ``--version`` subprocess work, NEVER a network call by design. (The
+    autouse socket-deny harness, ``tests/meta/test_socket_deny_alive.py``,
+    enforces that for the IN-PROCESS half only — the ``--version`` child
+    processes run outside its reach and are trusted to be local-only;
+    review finding 2026-07-24: don't overclaim the harness's coverage.) No
     config parameter: every check below is constant-driven, never
     policy-driven (mirrors ``_check_engine_version``'s own config-
     independent shape) — ``cli.py``'s ``_run_doctor`` calls this BEFORE any
     discovery/extraction/policy/engine-scan work happens. Order is fixed
-    (deptry, osv-scanner, osv-db, kev-feed, epss-feed) — ``--format text``
-    renders it verbatim; ``--format json`` sorts by ``name`` instead (its
-    own small ad-hoc, non-schema document)."""
+    (deptry, osv-scanner, osv-db, kev-feed, epss-feed, endoflife-feed) —
+    ``--format text`` renders it verbatim; ``--format json`` sorts by
+    ``name`` instead (its own small ad-hoc, non-schema document)."""
     return (
         _doctor_check_engine(
             name="deptry",
@@ -734,6 +753,11 @@ def run_doctor_checks(target: Path) -> tuple[DoctorCheck, ...]:
                 "on the vulnerability axis until the feed is refreshed "
                 "or the gate is explicitly disabled"
             ),
+            # Present-but-stale KEV is ok=False (review finding 2026-07-24):
+            # under the shipped fail_on_kev=True default, a stale feed
+            # blocks every scan's trusted verdict exactly like a stale OSV
+            # DB -- doctor must not exit 0 for it.
+            stale_is_problem=True,
         ),
         _doctor_check_feed(
             "epss",
@@ -745,6 +769,26 @@ def run_doctor_checks(target: Path) -> tuple[DoctorCheck, ...]:
             stale_hint=(
                 "an EPSS gate (--min-epss) would compose indeterminate "
                 "off a stale feed; no gate is active without --min-epss"
+            ),
+        ),
+        _doctor_check_feed(
+            "endoflife",
+            feeds.endoflife_cache_path,
+            feeds.load_endoflife_snapshot,
+            # The currency axis's tier-2 source (Story 6.3) -- the third
+            # sibling under the SAME feed-cache root (review finding
+            # 2026-07-24: doctor checked KEV/EPSS but skipped the one feed
+            # the currency axis actually reads). No default gate:
+            # currency_gating activates only via the flags named below.
+            absent_hint=(
+                "no currency gate is active unless --max-lag/--require-lts/"
+                "--fail-on-eol is passed"
+            ),
+            stale_hint=(
+                "an active currency gate (--max-lag/--require-lts/"
+                "--fail-on-eol) skips the stale snapshot and components "
+                "degrade to currency:unknown -- indeterminate under that "
+                "gate; no gate is active without those flags"
             ),
         ),
     )
