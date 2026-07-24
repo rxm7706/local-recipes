@@ -191,3 +191,13 @@ def test_gating_currency_policy_escalates_every_ceiling_fixture():
         # the numeric threshold check too -- none of the three stays warn.
         status, _driver = currency_rung(finding, policy=policy, max_lag=0)
         assert status is not Status.WARN
+        # Exact-status half, mirroring the license companion above: the
+        # ESCALATED semantics (not merely "not warn") are what exit
+        # projection rides on.
+        reason = finding.id.split(":")[1]
+        expected = {
+            "eol": Status.POLICY_VIOLATION,
+            "over-lag": Status.POLICY_VIOLATION,
+            "unknown": Status.INDETERMINATE,
+        }[reason]
+        assert status is expected

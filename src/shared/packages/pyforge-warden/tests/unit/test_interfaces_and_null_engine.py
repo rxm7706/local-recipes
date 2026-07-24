@@ -458,6 +458,59 @@ def test_default_policy_unconfigured_keeps_an_eol_finding_at_warn(component_fact
     ) in rungs
 
 
+def _currency_over_lag_result():
+    finding = Finding(
+        id="currency:over-lag:foo@1.0.0",
+        axis=AXIS_CURRENCY,
+        message="foo: 5 release(s) behind latest '6.0' (endoflife-date)",
+        subject="foo",
+        severity=None,
+        currency=CurrencyInfo(
+            verdict=CurrencyVerdict.SUPPORTED,
+            latest="6.0",
+            lag=5,
+            eol_date="2099-01-01",
+            tier="endoflife-date",
+        ),
+    )
+    return finding, EngineResult(
+        findings=(finding,), errors=(), coverage=(), axis=AXIS_CURRENCY
+    )
+
+
+def test_default_policy_with_max_lag_escalates_an_over_threshold_over_lag(
+    component_factory,
+):
+    """Story 6.5: EffectiveConfig(max_lag=…) threads config.max_lag into
+    currency_rung's numeric check -- an over-lag finding whose lag EXCEEDS
+    the threshold feeds policy-violation. Pins the max_lag=self._config.
+    max_lag threading itself (the table threading alone cannot prove it:
+    over-lag never consults the table)."""
+    finding, result = _currency_over_lag_result()
+    inventory = make_inventory(component_factory(name="requests", version="2.31.0"))
+    config = EffectiveConfig(max_lag=3)
+    _, rungs = DefaultPolicy(config).evaluate(inventory, [result])
+    assert (
+        Status.POLICY_VIOLATION,
+        StatusDriver(axis=AXIS_CURRENCY, finding_id=finding.id),
+    ) in rungs
+
+
+def test_default_policy_with_max_lag_keeps_an_under_threshold_over_lag_at_warn(
+    component_factory,
+):
+    """The contrasting half: lag at or below the configured threshold stays
+    warn (visible, not blocking) even though max_lag activates the gate."""
+    finding, result = _currency_over_lag_result()
+    inventory = make_inventory(component_factory(name="requests", version="2.31.0"))
+    config = EffectiveConfig(max_lag=8)
+    _, rungs = DefaultPolicy(config).evaluate(inventory, [result])
+    assert (
+        Status.WARN,
+        StatusDriver(axis=AXIS_CURRENCY, finding_id=finding.id),
+    ) in rungs
+
+
 def test_default_policy_with_dep001_block_confidence_likely_keeps_dep001_blocking(
     component_factory,
 ):

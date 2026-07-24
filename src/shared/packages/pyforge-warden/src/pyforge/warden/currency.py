@@ -44,7 +44,9 @@ Ownership decisions recorded:
   (``policy=None`` — the ceiling meta-test's no-arg call, every unconfigured
   caller) it falls back to ``DEFAULT_CURRENCY_POLICY``, the all-``WARN``
   module default, so a producer's rung never exceeds ``warn`` unless a
-  gating policy is passed. The escalation itself (``eol`` ->
+  gating policy table (or the numeric ``max_lag`` threshold — the one
+  no-policy path that can still escalate) is passed. The escalation itself
+  (``eol`` ->
   ``policy-violation`` / ``unknown`` -> ``indeterminate``, and the numeric
   ``over-lag`` ``lag > max_lag`` -> ``policy-violation`` check) is driven by
   ``config.py`` (the single writer of the two-mode semantics) — the rung
@@ -235,8 +237,12 @@ def currency_rung(
       is behind-latest). The numeric ``--max-lag`` threshold governs it: it
       escalates to ``Status.POLICY_VIOLATION`` iff ``max_lag is not None``
       AND the finding's ``lag`` exceeds it, else ``Status.WARN`` (visible,
-      not blocking). ``over-lag`` has no ``CurrencyVerdict`` member of its
-      own, so this is a numeric check, not a table lookup.
+      not blocking) — except a ``SUPPORTED`` finding with NO ``lag`` under
+      an active ``max_lag`` fails closed to ``Status.INDETERMINATE`` (the
+      threshold cannot be evaluated — C0; unreachable from the shipped
+      producer, which pins non-null ``lag`` on ``currency:over-lag`` ids).
+      ``over-lag`` has no ``CurrencyVerdict`` member of its own, so this is
+      a numeric check, not a table lookup.
     * every other verdict (``eol``/``unknown``) is looked up in ``policy`` —
       ``policy=None`` (the ceiling meta-test's no-arg call, every
       unconfigured caller) falls back to ``DEFAULT_CURRENCY_POLICY``, the
@@ -256,8 +262,17 @@ def currency_rung(
     # alone means "no policy supplied" -> module default.
     table = policy if policy is not None else DEFAULT_CURRENCY_POLICY
     if info.verdict is CurrencyVerdict.SUPPORTED:
-        over = max_lag is not None and info.lag is not None and info.lag > max_lag
-        status = Status.POLICY_VIOLATION if over else Status.WARN
+        if max_lag is None:
+            status = Status.WARN
+        elif info.lag is None:
+            # An active numeric threshold that cannot be evaluated (the
+            # finding carries no lag) fails closed -- never a fail-open
+            # warn (C0). Unreachable from the shipped producer (models.py
+            # pins non-null lag on currency:over-lag ids); guards the
+            # public rung seam against third-party engine shapes.
+            status = Status.INDETERMINATE
+        else:
+            status = Status.POLICY_VIOLATION if info.lag > max_lag else Status.WARN
     else:
         status = table.get(info.verdict, Status.INDETERMINATE)
     return (

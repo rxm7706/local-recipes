@@ -465,8 +465,9 @@ def _build_parser() -> tuple[argparse.ArgumentParser, argparse.ArgumentParser]:
             "value) -- activates currency-axis gating (FR35): an 'eol' "
             "verdict composes 'policy-violation', 'unknown' composes "
             "'indeterminate' (Story 6.5). Note: this flag only ACTIVATES the "
-            "gate; the frozen v1 schema carries no per-component LTS boolean, "
-            "so it adds no non-LTS-specific block beyond that (a documented "
+            "generic gate; it performs no LTS-specific enforcement -- the "
+            "frozen v1 schema carries no per-component LTS boolean, so "
+            "blocking on a non-LTS resolution is unexpressible (a documented "
             "carried limitation)"
         ),
     )
@@ -527,7 +528,10 @@ def _build_parser() -> tuple[argparse.ArgumentParser, argparse.ArgumentParser]:
             "enforcement); --fail-on still decides which findings compose "
             "'policy-violation' before this downgrade runs, so the text "
             "report's downgraded-finding count can still differ across "
-            "--fail-on values even when the final status/exit code do not"
+            "--fail-on values even when the final status/exit code do not. "
+            "Composed with --warn-as-error (flag or TOML), the downgraded "
+            "'warn' still exits 1: warn-as-error projects ANY composed warn "
+            "non-zero"
         ),
     )
     return parser, scan

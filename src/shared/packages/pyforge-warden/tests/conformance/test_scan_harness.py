@@ -20,6 +20,7 @@ from __future__ import annotations
 import importlib.metadata
 import json
 import sys
+from datetime import UTC, datetime, timedelta
 from email.message import Message
 from importlib import resources
 from pathlib import Path
@@ -1291,23 +1292,9 @@ def test_currency_gate_flags_never_change_the_findings_themselves(capsys, flag):
     _, out_gated, _ = run_scan(capsys, WARN_AND_INDETERMINATE, *flag)
     document_gated = parse_report(out_gated)
 
-    def _currency_findings(document: dict) -> list:
-        # Compare only PRODUCER findings (the `currency:` id family). The
-        # gate-only whole-axis freshness provenance finding
-        # (`indeterminate:currency-registry-*`, emitted only under an active
-        # gate once the bundled registry ages past its 180-day max-age) is NOT
-        # producer output, so excluding it keeps this producer-invariance
-        # assertion true regardless of the bundled registry's wall-clock age.
-        return sorted(
-            (
-                f
-                for f in document["findings"]
-                if f["axis"] == "currency" and f["id"].startswith("currency:")
-            ),
-            key=lambda f: f["id"],
-        )
-
-    assert _currency_findings(document_unconfigured) == _currency_findings(document_gated)
+    # _currency_block (module level, Story 6.5 section) owns the shared
+    # producer-findings filter + its wall-clock-robustness rationale.
+    assert _currency_block(document_unconfigured) == _currency_block(document_gated)
     by_axis_unconfigured = {
         block["axis"]: block for block in document_unconfigured["coverage"]
     }
@@ -1386,6 +1373,26 @@ def _eol_cycle(version: str) -> list[dict[str, str]]:
     return [
         {"cycle": version, "releaseDate": "2015-01-01", "eol": "2016-01-01", "latest": version}
     ]
+
+
+def _behind_cycles(version: str, *, behind: int) -> list[dict[str, str]]:
+    """A cycle array whose ``version`` cycle is ``behind`` releases behind
+    the newest entry, all still supported -- resolves to an over-lag
+    (SUPPORTED, lag=behind) finding."""
+    cycles = [
+        {"cycle": version, "releaseDate": "2020-01-01", "eol": "2099-01-01", "latest": version}
+    ]
+    for index in range(behind):
+        newer = f"999.{index}"
+        cycles.append(
+            {
+                "cycle": newer,
+                "releaseDate": f"2021-01-{index + 1:02d}",
+                "eol": "2099-01-01",
+                "latest": newer,
+            }
+        )
+    return cycles
 
 
 def _currency_block(document: dict) -> list:
@@ -1502,6 +1509,74 @@ def test_warn_as_error_makes_a_warn_scan_exit_nonzero(capsys):
     assert rc_strict == 1
     assert doc_default["findings"] == doc_strict["findings"]
     assert err_strict == ""
+
+
+def test_warn_only_with_warn_as_error_still_exits_nonzero(capsys):
+    """The two knobs COMPOSE to a red exit (review decision, 2026-07-24 --
+    the coherent, false-RED-safe reading of two orthogonal knobs, pinned so
+    any future precedence change is a deliberate product decision, not a
+    silent regression): --warn-only downgrades blocking rungs to warn BEFORE
+    the verdict composes; --warn-as-error then projects the composed warn to
+    exit 1. The on-ramp leg alone stays exit 0."""
+    rc_on_ramp, out_on_ramp, _ = run_scan(capsys, RECIPE_COMMON, "--warn-only")
+    doc_on_ramp = parse_report(out_on_ramp)
+    assert doc_on_ramp["status"]["value"] == "warn"
+    assert rc_on_ramp == 0
+
+    rc_both, out_both, _ = run_scan(
+        capsys, RECIPE_COMMON, "--warn-only", "--warn-as-error"
+    )
+    doc_both = parse_report(out_both)
+    assert doc_both["status"]["value"] == "warn"
+    assert doc_both["exit_code"] == 1
+    assert rc_both == 1
+
+
+def test_max_lag_two_mode_diff_enforces_the_numeric_threshold(
+    monkeypatch, tmp_path, capsys
+):
+    """Story 6.5 AC (--max-lag, E2E): the SAME over-lag runtime finding
+    composes policy-violation/exit 1 when its lag EXCEEDS N and stays
+    warn/exit 0 at N (visible, not blocking) -- proves the config ->
+    DefaultPolicy.evaluate -> currency_rung ``max_lag`` threading through
+    the real pipeline (the unit rung tests pass max_lag directly, so only
+    this pins the threading itself). The bundled registry is replaced by a
+    fresh, empty one so every resolution routes through the seeded tier-2
+    cache AND the gated runs stay wall-clock-robust (the LIVE registry
+    aging past its 180-day max-age would otherwise add a stale-provenance
+    finding to the at-threshold leg and flip its expected warn)."""
+    runtime_version = ".".join(str(part) for part in sys.version_info[:3])
+    yesterday = (datetime.now(UTC) - timedelta(days=1)).date().isoformat()
+    monkeypatch.setattr(
+        "pyforge.warden.currency._load_registry",
+        lambda: {"updated": yesterday, "products": {}},
+    )
+    monkeypatch.setenv(feeds.FEED_CACHE_DIR_ENV_VAR, str(tmp_path))
+    feeds.write_kev_cache(tmp_path, {"vulnerabilities": []})
+    feeds.write_endoflife_cache(
+        tmp_path,
+        {
+            "requests": _clean_cycle("2.31.0"),
+            "packaging": _clean_cycle("24.0"),
+            "python": _behind_cycles(runtime_version, behind=2),
+        },
+    )
+
+    rc_over, out_over, _ = run_scan(capsys, CLEAN, "--max-lag", "1")
+    doc_over = parse_report(out_over)
+    rc_at, out_at, _ = run_scan(capsys, CLEAN, "--max-lag", "2")
+    doc_at = parse_report(out_at)
+
+    # Identical producer output across both thresholds -- only rungs/exit
+    # differ (the two-mode invariant, now for the numeric gate).
+    assert _currency_block(doc_over) == _currency_block(doc_at)
+    assert {f["id"] for f in _currency_block(doc_over)} == {
+        f"currency:over-lag:!python-runtime@{runtime_version}"
+    }
+    assert doc_over["status"]["value"] == "policy-violation"  # lag 2 > 1
+    assert rc_over == 1
+    assert doc_at["status"]["value"] == "warn"  # lag 2 == 2: not over
+    assert rc_at == 0
 
 
 def test_stale_bundled_registry_under_active_gate_forces_indeterminate(

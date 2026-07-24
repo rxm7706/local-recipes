@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import os
 import re
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
@@ -178,6 +178,32 @@ def test_currency_rung_over_lag_with_no_threshold_stays_warn():
         finding, policy=_GATING_CURRENCY_POLICY, max_lag=None
     )
     assert status is Status.WARN
+
+
+def test_currency_rung_supported_with_no_lag_under_a_threshold_fails_closed():
+    """C0: a SUPPORTED-verdict finding carrying NO lag cannot be evaluated
+    against an active --max-lag threshold -- indeterminate, never a
+    fail-open warn. Unreachable from the shipped producer (models.py pins
+    non-null lag on currency:over-lag ids), so the fixture uses the open
+    ``indeterminate:`` id family -- the one grammar-legal way a third-party
+    currency-axis engine could hand the rung this shape. With no threshold
+    the same shape stays warn (nothing to evaluate)."""
+    finding = Finding(
+        id="indeterminate:thirdparty-currency:pkg@1.0.0",
+        axis=AXIS_CURRENCY,
+        message="m",
+        subject="pkg",
+        severity=None,
+        currency=CurrencyInfo(verdict=CurrencyVerdict.SUPPORTED, lag=None),
+    )
+    status, _driver = currency_rung(
+        finding, policy=_GATING_CURRENCY_POLICY, max_lag=3
+    )
+    assert status is Status.INDETERMINATE
+    status_no_gate, _ = currency_rung(
+        finding, policy=_GATING_CURRENCY_POLICY, max_lag=None
+    )
+    assert status_no_gate is Status.WARN
 
 
 def test_currency_rung_freshness_finding_currency_none_is_indeterminate():
@@ -993,10 +1019,22 @@ def test_currency_engine_name_and_axis():
     assert engine.axis == AXIS_CURRENCY
 
 
-def test_currency_engine_defaults_to_gating_off():
+def test_currency_engine_defaults_to_gating_off(
+    tmp_path, component_factory, monkeypatch
+):
     """The default constructor is non-gating -- pre-6.5 behavior (no
-    freshness finding) unless cli.py wires gating=config.currency_gating."""
-    assert CurrencyEngine()._gating is False
+    freshness finding even off a stale registry) unless cli.py wires
+    gating=config.currency_gating. Behavioral proof (a default-constructed
+    engine run), not a private-attribute peek."""
+    monkeypatch.setattr(
+        "pyforge.warden.currency._load_registry",
+        lambda: {"updated": "2000-01-01", "products": {}},
+    )
+    inventory = make_inventory(component_factory(name="requests", version="2.31.0"))
+    result = CurrencyEngine().run(tmp_path, inventory)
+    assert not any(
+        f.id.startswith("indeterminate:currency-registry-") for f in result.findings
+    )
 
 
 def test_currency_engine_gated_stale_registry_emits_stale_finding(
@@ -1044,10 +1082,20 @@ def test_currency_engine_ungated_stale_registry_emits_no_stale_finding(
 
 
 def test_currency_engine_gated_fresh_registry_emits_no_stale_finding(
-    tmp_path, component_factory
+    tmp_path, component_factory, monkeypatch
 ):
     """A fresh bundled registry under an active gate adds no provenance
-    finding -- the freshness precondition only fires on absent/stale."""
+    finding -- the freshness precondition only fires on absent/stale.
+    Freshness is FORCED by handing the engine a yesterday-dated registry
+    (wall-clock-robust: the LIVE bundled registry's fixed ``updated:`` date
+    would age past the 180-day max-age and flip this test with no code
+    change -- the same time-coupling the two-mode comparison tests already
+    guard against)."""
+    yesterday = (datetime.now(UTC) - timedelta(days=1)).date().isoformat()
+    monkeypatch.setattr(
+        "pyforge.warden.currency._load_registry",
+        lambda: {"updated": yesterday, "products": {}},
+    )
     inventory = make_inventory(component_factory(name="requests", version="2.31.0"))
     result = CurrencyEngine(gating=True).run(tmp_path, inventory)
     assert not any(
