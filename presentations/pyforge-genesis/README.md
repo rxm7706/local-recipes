@@ -34,3 +34,11 @@ Prototype lives in Claude Design project **"PyForge Genesis deck"** (`6af4c28d-d
 https://claude.ai/design/p/6af4c28d-d510-4e9b-b788-6c0e5d651183?file=PyForge+Genesis.dc.html
 Pull it into this deck with the MCP bridge ("pull genesis") — see
 `docs/specs/presentation-deck.md` § *The MCP bridge*.
+
+## Artifact family (2026-07-24 sweep)
+
+Full warden-style set on disk: derived Marp deck + authored Executive Summary
+(Marp + `project/PyForge Genesis - Executive Summary.dc.html`) + authored
+Infographic (Marp) + `deck-export` outputs (standalone HTML + deck/infographic
+PPTX), all dated 2026-07-24. Design-project upload of the light artifacts
+(3 Marp + exec-summary dc.html) queued in the family-wide upload pass.
