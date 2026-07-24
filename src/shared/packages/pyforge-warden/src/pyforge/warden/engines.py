@@ -74,7 +74,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from . import feeds
-from .currency import currency_findings
+from .currency import currency_findings, currency_stale_finding
 from .hygiene import (
     _synthesize_deptry_frontdoor,
     parse_deptry_output,
@@ -1120,15 +1120,39 @@ class CurrencyEngine:
     Coverage (mirrors ``LicenseEngine``'s Story 6.2 Boundaries): every
     component gets a real attempt this story — ``deps_assessed ==
     deps_total == inventory.count`` unconditionally (``currency_covered``
-    stays inert/``True`` per 6.1's landed design)."""
+    stays inert/``True`` per 6.1's landed design).
+
+    Story 6.5 (NFR-S9): ``gating`` (from ``config.currency_gating``, wired
+    in ``cli.py`` exactly as ``OsvEngine``'s ``fail_on_kev`` is) activates
+    the freshness precondition — when active AND the bundled LTS registry is
+    absent/stale (``currency_data is None`` or ``not currency_data.
+    max_age_ok``), one whole-axis ``currency_stale_finding`` is appended so
+    the axis lands ``indeterminate`` (never a silent pass off untrustworthy
+    curated data), mirroring how ``OsvEngine`` merges ``_kev_enrichment``'s
+    KEV-provenance finding. Gated on ``gating`` exactly as ``_kev_enrichment``
+    gates on ``fail_on_kev``; a scan with the gate OFF is byte-identical to
+    pre-6.5 (no finding appended, whatever the registry's freshness)."""
 
     name: str = "currency"
     axis: str = AXIS_CURRENCY
+
+    def __init__(self, *, gating: bool = False) -> None:
+        self._gating = gating
 
     def run(self, target: Path, inventory: ResolvedInventory) -> EngineResult:
         findings, currency_data = currency_findings(
             inventory.components, now=datetime.now(UTC)
         )
+        if self._gating and (currency_data is None or not currency_data.max_age_ok):
+            # NFR-S9: an absent/stale bundled registry under an active gate
+            # forces the WHOLE axis indeterminate -- one provenance finding
+            # merged in exactly the way OsvEngine spreads *kev_findings.
+            findings = tuple(
+                sorted(
+                    (*findings, currency_stale_finding(unavailable=currency_data is None)),
+                    key=lambda f: f.id,
+                )
+            )
         coverage = (
             AxisCoverage(
                 axis=AXIS_CURRENCY,

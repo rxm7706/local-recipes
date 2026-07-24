@@ -48,13 +48,17 @@ a confident (and possibly wrong) SPDX id.
 
 Ownership decisions recorded:
 
-* ``license_rung`` is a HARD ``Status.WARN`` cap — it NEVER consults
-  ``config.license_policy`` and NEVER escalates. Real ``denied``->
-  ``policy-violation`` / ``unknown``->``indeterminate`` escalation is Story
-  6.5's sole ownership (Boundaries); the parameterized
-  ``tests/conformance/test_axis_producer_ceiling.py`` this story also
-  delivers mechanically pins this ceiling so a future edit cannot regress it
-  silently.
+* ``license_rung`` looks up ``finding.license.verdict`` in the ``policy``
+  table it is HANDED (Story 6.5: ``config.license_policy``, threaded by
+  ``interfaces.DefaultPolicy.evaluate``); with NO policy (``policy=None`` —
+  the ceiling meta-test's no-arg call, every unconfigured caller) it falls
+  back to ``DEFAULT_LICENSE_POLICY``, the all-``WARN`` module default, so a
+  producer's rung never exceeds ``warn`` unless a gating policy is passed.
+  The escalation itself (``denied``->``policy-violation`` / ``unknown``->
+  ``indeterminate``) is computed by ``config.py`` (the single writer of the
+  two-mode semantics), NOT here — this function only READS the table.
+  ``tests/conformance/test_axis_producer_ceiling.py`` mechanically pins the
+  no-policy ceiling so a future edit cannot regress the default silently.
 * A ``license:`` ``Finding`` is emitted ONLY for ``denied``/``unknown``
   verdicts — never ``allowed`` (``Finding.__post_init__`` already enforces
   this at construction; ``license_findings`` never even attempts to build one
@@ -86,9 +90,12 @@ Ownership decisions recorded:
   decomposed to their own leaf symbols; an entry that fails to parse as a
   real SPDX id falls back to its own stripped text (a config typo must stay
   comparable, never silently dropped from the list).
-* ``DEFAULT_LICENSE_POLICY`` is declared but UNUSED this story (mirrors
-  ``vuln.DEFAULT_VULN_SEVERITY_POLICY``'s module-default-table precedent) —
-  reserved for Story 6.5's real escalation; ``license_rung`` never reads it.
+* ``DEFAULT_LICENSE_POLICY`` is the all-``WARN`` module-default table
+  ``license_rung`` falls back to when handed ``policy=None`` (the
+  unconfigured / ceiling-meta-test path) — mirrors ``vuln.
+  DEFAULT_VULN_SEVERITY_POLICY`` vs ``config.vuln_severity_policy`` (the
+  gating-aware escalation table ``config.license_policy`` supplies, Story
+  6.5).
 * ``family`` (``LicenseInfo.family``) is populated from a small, curated,
   LOCAL SPDX-id -> coarse-family table (mirrors conda-forge's own
   ``about.license_family`` convention) for a single (non-compound) resolved
@@ -109,7 +116,7 @@ from __future__ import annotations
 
 import importlib.metadata
 import re
-from collections.abc import Iterator, Sequence
+from collections.abc import Iterator, Mapping, Sequence
 from pathlib import Path
 from types import MappingProxyType
 
@@ -235,11 +242,13 @@ _CLASSIFIER_SPDX: dict[str, str] = {
     "License :: OSI Approved :: zlib/libpng License": "Zlib",
 }
 
-# The default license policy: LicenseVerdict -> Status. UNUSED this story
-# (license_rung is a hard warn-cap, oblivious to this table) -- reserved for
-# Story 6.5's real escalation, mirroring vuln.DEFAULT_VULN_SEVERITY_POLICY's
-# module-default-table precedent. MappingProxyType-wrapped for the same
-# ownership/immutability reason DEFAULT_HYGIENE_POLICY/
+# The default license policy: LicenseVerdict -> Status. The all-WARN
+# module-default table `license_rung` falls back to when called with
+# `policy=None` (the unconfigured / ceiling-meta-test path) -- mirrors
+# vuln.DEFAULT_VULN_SEVERITY_POLICY's module-default-table precedent vs
+# config.vuln_severity_policy (the gating-aware table `config.license_policy`
+# supplies when a gate is active, Story 6.5). MappingProxyType-wrapped for
+# the same ownership/immutability reason DEFAULT_HYGIENE_POLICY/
 # DEFAULT_VULN_SEVERITY_POLICY already are.
 DEFAULT_LICENSE_POLICY: MappingProxyType[LicenseVerdict, Status] = MappingProxyType(
     {
@@ -249,14 +258,40 @@ DEFAULT_LICENSE_POLICY: MappingProxyType[LicenseVerdict, Status] = MappingProxyT
 )
 
 
-def license_rung(finding: Finding) -> tuple[Status, StatusDriver]:
+def license_rung(
+    finding: Finding, *, policy: Mapping[LicenseVerdict, Status] | None = None
+) -> tuple[Status, StatusDriver]:
     """Derive the ``(Status, StatusDriver)`` rung for one license-axis
-    finding — UNCONDITIONALLY ``Status.WARN`` (Boundaries: never consult
-    ``config.license_policy``, never escalate — real escalation is Story
-    6.5's sole ownership). The driver carries the finding's own axis and
-    id."""
+    finding by looking up ``finding.license.verdict`` in ``policy`` (Story
+    6.5: ``config.EffectiveConfig.license_policy``, threaded by
+    ``interfaces.DefaultPolicy.evaluate`` exactly as ``vuln_rung`` threads
+    ``vuln_severity_policy``).
+
+    ``policy=None`` (the ceiling meta-test's no-arg call, and every
+    unconfigured caller) falls back to ``DEFAULT_LICENSE_POLICY`` — the
+    all-``WARN`` module default, so a producer's rung never exceeds ``warn``
+    unless a caller explicitly escalates via a gating policy table. A
+    verdict absent from the table degrades to ``Status.INDETERMINATE`` (never
+    toward ``clean`` — C0), the same fail-closed fallback ``vuln_rung`` uses.
+    A finding with no ``LicenseInfo`` at all (``finding.license is None`` —
+    defensive; a real ``license:`` engine finding always carries one) yields
+    ``Status.INDETERMINATE`` directly. The driver carries the finding's own
+    axis and id."""
+    info = finding.license
+    if info is None:
+        return (
+            Status.INDETERMINATE,
+            StatusDriver(axis=finding.axis, finding_id=finding.id),
+        )
+    # `policy if not None` (not `policy or ...`): an EMPTY gating table must
+    # fail closed via the `.get(..., INDETERMINATE)` fallback below, never
+    # short-circuit back to the all-WARN module default (a false-green
+    # direction). `None` alone means "no policy supplied" -> module default.
+    status = (
+        policy if policy is not None else DEFAULT_LICENSE_POLICY
+    ).get(info.verdict, Status.INDETERMINATE)
     return (
-        Status.WARN,
+        status,
         StatusDriver(axis=finding.axis, finding_id=finding.id),
     )
 
