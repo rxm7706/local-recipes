@@ -80,7 +80,7 @@ _CEILING_FIXTURES: tuple[tuple[str, object, tuple[Finding, ...]], ...] = (
             Finding(
                 id="currency:eol:legacy-django@1.11.29",
                 axis=AXIS_CURRENCY,
-                message="legacy-django: reached end-of-life 2020-04-01",
+                message="legacy-django: reached end-of-life 2020-04-01 (endoflife-date)",
                 subject="legacy-django",
                 severity=None,
                 currency=CurrencyInfo(
@@ -94,7 +94,7 @@ _CEILING_FIXTURES: tuple[tuple[str, object, tuple[Finding, ...]], ...] = (
             Finding(
                 id="currency:over-lag:requests@2.0.0",
                 axis=AXIS_CURRENCY,
-                message="requests: 1 release(s) behind latest '2.31.0'",
+                message="requests: 1 release(s) behind latest '2.31.0' (endoflife-date)",
                 subject="requests",
                 severity=None,
                 currency=CurrencyInfo(
@@ -108,7 +108,7 @@ _CEILING_FIXTURES: tuple[tuple[str, object, tuple[Finding, ...]], ...] = (
             Finding(
                 id="currency:unknown:mystery-pkg@2.0.0",
                 axis=AXIS_CURRENCY,
-                message="mystery-pkg: currency could not be resolved",
+                message="mystery-pkg: currency could not be resolved (no registry/feed match)",
                 subject="mystery-pkg",
                 severity=None,
                 currency=CurrencyInfo(verdict=CurrencyVerdict.UNKNOWN),

@@ -136,6 +136,39 @@ def test_fetch_product_cycles_url_escapes_the_slug(monkeypatch, refresh_endoflif
     assert captured["url"] == "https://endoflife.date/api/weird%2Fslug%20value.json"
 
 
+def test_fetch_product_cycles_rejects_an_empty_slug_without_a_request(
+    monkeypatch, refresh_endoflife_feed
+):
+    """An empty slug (e.g. an operator's ``--product ''``) is a usage
+    error, not a request worth making -- it would otherwise fetch the API
+    root's ``.json`` and surface as a baffling HTTP error (review finding,
+    2026-07-23). No socket call may even be attempted."""
+
+    def _never(*_a, **_k):
+        raise AssertionError("no request should be made for an empty slug")
+
+    monkeypatch.setattr("urllib.request.urlopen", _never)
+    with pytest.raises(ValueError, match="empty product slug"):
+        refresh_endoflife_feed.fetch_product_cycles("")
+
+
+def test_fetch_product_cycles_preserves_the_lexical_form_of_numeric_cycles(
+    monkeypatch, refresh_endoflife_feed
+):
+    """A bare-number ``cycle`` in the real API response keeps its LEXICAL
+    form through parsing (``3.10`` stays ``"3.10"``, never float-truncated
+    to ``"3.1"``) -- the writer-side fix for the ``str(3.10) == "3.1"``
+    misroute (review finding, 2026-07-23). Raw JSON is used deliberately:
+    ``json.dumps`` of a Python float would itself round-trip the value."""
+    raw = b'[{"cycle": 3.10, "releaseDate": "2021-10-04", "eol": "2026-10-31", "latest": 3.10}]'
+    monkeypatch.setattr(
+        "urllib.request.urlopen", lambda *a, **k: _FakeResponse(raw)
+    )
+    (cycle_record,) = refresh_endoflife_feed.fetch_product_cycles("python")
+    assert cycle_record["cycle"] == "3.10"
+    assert cycle_record["latest"] == "3.10"
+
+
 # --- refresh -----------------------------------------------------------------
 
 
@@ -264,36 +297,62 @@ def test_main_defaults_products_to_the_bundled_registry(
     assert "django" in out
 
 
-def test_main_warns_on_stderr_when_zero_default_products_resolve(
+def test_main_fails_loud_and_preserves_the_cache_when_zero_default_products_resolve(
     monkeypatch, tmp_path, refresh_endoflife_feed, capsys
 ):
     """No ``--product`` flags AND an unreadable/malformed bundled registry
     (``default_product_slugs()`` degrades to ``[]``, never raises) --
-    otherwise indistinguishable, on stdout alone, from a deliberate narrow
-    ``--product`` run of zero slugs. Must warn loudly on stderr; the run
-    still succeeds (exit code unchanged -- ``main()`` must not raise)."""
+    ``refresh()`` now REFUSES to write and raises before touching the
+    cache (review finding, 2026-07-23: the old warn-but-write-{} behavior
+    atomically clobbered a previously provisioned, still-good snapshot
+    with the most complete-looking partial snapshot possible). ``main()``
+    exits 1 with the FAILED banner; an existing cache file survives
+    byte-for-byte."""
+    from pyforge.warden.feeds import endoflife_cache_path, write_endoflife_cache
+
+    cache_dir = tmp_path / "cache"
+    write_endoflife_cache(cache_dir, {"python": _VALID_CYCLES})
+    provisioned = endoflife_cache_path(cache_dir).read_bytes()
+
     monkeypatch.setattr(
         refresh_endoflife_feed, "_REGISTRY_PATH", Path("/does/not/exist.yaml")
     )
     monkeypatch.setattr(
         "sys.argv",
-        ["refresh_endoflife_feed.py", "--cache-dir", str(tmp_path / "cache")],
+        ["refresh_endoflife_feed.py", "--cache-dir", str(cache_dir)],
     )
 
-    refresh_endoflife_feed.main()  # must not raise
+    with pytest.raises(SystemExit) as excinfo:
+        refresh_endoflife_feed.main()
 
+    assert excinfo.value.code == 1
     captured = capsys.readouterr()
-    assert "warning" in captured.err
-    assert "0 default products" in captured.err
-    assert "fetched 0 product(s)" in captured.out
+    assert "FAILED" in captured.err
+    assert "no product slugs to fetch" in captured.err
+    assert captured.out == ""
+    assert endoflife_cache_path(cache_dir).read_bytes() == provisioned
+
+
+def test_refresh_refuses_an_explicitly_empty_product_list(
+    tmp_path, refresh_endoflife_feed
+):
+    """``refresh(product_slugs=[])`` from a direct caller hits the same
+    zero-slug refusal BEFORE any write -- no cache file appears at all."""
+    from pyforge.warden.feeds import endoflife_cache_path
+
+    cache_dir = tmp_path / "cache"
+    with pytest.raises(ValueError, match="no product slugs to fetch"):
+        refresh_endoflife_feed.refresh(str(cache_dir), product_slugs=[])
+    assert not endoflife_cache_path(cache_dir).exists()
 
 
 def test_main_does_not_warn_when_product_is_explicitly_narrow(
     monkeypatch, tmp_path, refresh_endoflife_feed, capsys
 ):
-    """A deliberately narrow ``--product`` selection never triggers the
-    zero-default-products warning, even though the registry is unreadable
-    here too -- the warning is specifically about the DEFAULT path."""
+    """A deliberately narrow ``--product`` selection never hits the
+    zero-slug refusal, even though the registry is unreadable here too --
+    the refusal is specifically about the DEFAULT (no ``--product``) path;
+    stderr stays clean on a successful explicit run."""
     monkeypatch.setattr(
         refresh_endoflife_feed, "_REGISTRY_PATH", Path("/does/not/exist.yaml")
     )

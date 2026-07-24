@@ -176,10 +176,14 @@ class EngineResult:
     ``currency_data`` (Story 6.3, additive/defaulted — mirrors ``kev_data``'s
     own shape and threading): populated by ``CurrencyEngine`` with the
     bundled LTS registry's own ``FeedProvenance`` (``currency.
-    currency_findings``'s second return value) — ``None`` only when the
-    registry's own ``updated:`` date is unparsable (see ``currency.py``'s
-    module docstring). ``cli.py`` threads the first non-``None`` value
-    across ``engine_results`` into ``report.assemble_report`` the same way."""
+    currency_findings``'s second return value) — ``None`` whenever no
+    usable provenance can be derived: the bundled registry is absent,
+    unreadable, unparsable, not a mapping, or its ``updated:`` date is
+    missing/unparsable (``currency._load_registry`` degrades every read
+    failure to ``{}``, whose missing ``updated:`` then yields ``None`` —
+    see ``currency.py``'s module docstring). ``cli.py`` threads the first
+    non-``None`` value across ``engine_results`` into
+    ``report.assemble_report`` the same way."""
 
     findings: tuple[Finding, ...]
     errors: tuple[ErrorRecord, ...]

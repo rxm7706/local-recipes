@@ -1277,9 +1277,12 @@ def test_currency_gating_is_true_when_the_axis_actually_ran(capsys, flag):
 )
 def test_currency_gate_flags_never_change_the_findings_themselves(capsys, flag):
     """The story's own core AC: currency_findings()'s own output (ids,
-    verdicts, tiers) is BYTE-IDENTICAL whether or not any of the three gate
-    flags is set -- proving this story adds no escalation logic. Only
-    ``currency.gating`` differs."""
+    verdicts, tiers) is identical -- compared as parsed, id-sorted finding
+    objects, not raw bytes -- whether or not any of the three gate flags is
+    set, proving this story adds no escalation logic. Only
+    ``currency.gating`` differs. (Raw-byte identity across the two runs is
+    neither claimed nor possible here: the gated report legitimately
+    differs in its ``coverage`` block.)"""
     _, out_unconfigured, _ = run_scan(capsys, WARN_AND_INDETERMINATE)
     document_unconfigured = parse_report(out_unconfigured)
     _, out_gated, _ = run_scan(capsys, WARN_AND_INDETERMINATE, *flag)

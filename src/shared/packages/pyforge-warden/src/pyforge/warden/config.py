@@ -346,10 +346,14 @@ class EffectiveConfig:
             _coerce_max_lag(cli_max_lag) if cli_max_lag is not None else defaults.max_lag
         )
         require_lts = (
-            cli_require_lts if cli_require_lts is not None else defaults.require_lts
+            _coerce_require_lts(cli_require_lts)
+            if cli_require_lts is not None
+            else defaults.require_lts
         )
         fail_on_eol = (
-            cli_fail_on_eol if cli_fail_on_eol is not None else defaults.fail_on_eol
+            _coerce_fail_on_eol(cli_fail_on_eol)
+            if cli_fail_on_eol is not None
+            else defaults.fail_on_eol
         )
         return cls(
             fail_on=fail_on,

@@ -20,10 +20,13 @@ tier — out of scope, Boundaries):
 1. **``lts-registry``** — the bundled ``data/lts-registry.yaml`` (loaded
    ONCE per process via ``importlib.resources``, name/alias-indexed
    case-insensitively). Only a product entry carrying its own ``lts_lines``
-   (the ``source: manual``/``heuristic-seed`` shape) resolves fully offline
-   at this tier; a ``source: endoflife`` entry (slug map only, per the
-   registry's own header) has no per-version data of its own and routes to
-   tier 2 via its ``slug``.
+   (the ``source: manual`` shape — per the registry's own header,
+   ``lts_lines`` is manual-only) resolves fully offline at this tier; a
+   ``source: endoflife`` entry (slug map only, per the registry's own
+   header) has no per-version data of its own and routes to tier 2 via its
+   ``slug``, and a ``source: heuristic-seed`` entry is a labeled signal
+   that carries neither ``lts_lines`` nor (necessarily) a slug — it
+   resolves only as far as its (possibly null) slug can route it.
 2. **``endoflife-date``** — the cached endoflife.date snapshot
    (``feeds.py``'s ``endoflife_cache_path``/``load_endoflife_snapshot``,
    populated ONLY by ``scripts/refresh_endoflife_feed.py``, never fetched
@@ -118,14 +121,17 @@ Ownership decisions recorded:
   registry is a packaged resource read in-process, and the endoflife.date
   cache is a local file read in-process (populated OFFLINE by ``scripts/
   refresh_endoflife_feed.py`` only) — both fully offline.
-* Known residual gotcha (documented, not solved — out of this story's
-  simplicity mandate): endoflife.date's real API sometimes emits a cycle's
-  ``cycle`` value as a bare JSON NUMBER rather than a string (e.g. ``3.1``);
-  ``str(3.10)`` == ``"3.1"`` in Python (trailing-zero float truncation), so
-  a numeric cycle value can misrepresent a real "3.10" line. This module
-  coerces via ``str()`` for robustness but does not special-case the
-  ambiguity — the hermetic test fixtures this story ships use string cycle
-  values throughout, so it does not affect this story's own test coverage.
+* Known residual gotcha (bounded to FOREIGN caches): endoflife.date's real
+  API sometimes emits a cycle's ``cycle`` value as a bare JSON NUMBER
+  rather than a string (e.g. ``3.1``); ``str(3.10)`` == ``"3.1"`` in
+  Python (trailing-zero float truncation), so a numeric cycle value can
+  misrepresent a real "3.10" line. ``scripts/refresh_endoflife_feed.py``
+  parses API responses with ``parse_float=str``/``parse_int=str`` so a
+  snapshot IT provisions preserves the lexical form (``"3.10"`` stays
+  ``"3.10"``) — the truncation can therefore only reach this module via a
+  hand-built or third-party cache document. This module keeps the ``str()``
+  coercion for robustness against exactly those, without special-casing
+  the (now writer-side-solved) ambiguity.
 
 This module parses YAML/JSON as DATA: no subprocess, no network, no exec.
 """
@@ -238,9 +244,12 @@ def _registry_alias_index(products: Mapping[str, object]) -> dict[str, str]:
     Raises ``ValueError`` when two DIFFERENT products normalize to the same
     key/alias — a malformed bundled registry (a packaged-data integrity bug,
     never a runtime input problem) that would otherwise silently misroute
-    one product's lookups to the other's data. Fails loudly at first use
-    (``_load_registry`` is cached, so this fires once per process, the
-    first time any caller needs the alias index) rather than degrading."""
+    one product's lookups to the other's data. Fails loudly rather than
+    degrading — and fails on EVERY call: only the raw YAML load
+    (``_load_registry``) is cached, the index itself is rebuilt each
+    ``currency_findings`` run, so a collision surfaces as an
+    ``engine-execution-failed`` record on every scan until the packaged
+    data is fixed (cheap — the registry is small by design)."""
     index: dict[str, str] = {}
 
     def _add(normalized: str, key: str) -> None:
@@ -390,11 +399,24 @@ def _resolve_from_cycles(
 ) -> _Resolution | None:
     """Tier 2: resolve against a cached endoflife.date cycle array. ``None``
     when no cycle's identifier prefix-matches ``version``, the cycle list
-    carries no usable entry, or the matched cycle's own ``eol`` value is not
-    a usable date string (never guess a resolution the payload can't
-    honestly support — degrades this component to the next tier/unknown
-    rather than fabricating an eol_date)."""
-    parsed: list[tuple[str, date, str | None, str]] = []
+    carries no usable entry, or the matched cycle's own ``eol`` value is
+    unusable (never guess a resolution the payload can't honestly support —
+    degrades this component to the next tier/unknown rather than
+    fabricating an eol_date).
+
+    endoflife.date's documented BOOLEAN ``eol`` shapes (review finding,
+    2026-07-23) are honored as far as the frozen 6.1 schema permits:
+    ``eol: false`` on a FULLY CURRENT match (lag 0) is an explicit
+    still-supported assertion — resolves ``supported`` with
+    ``eol_date=None``, which is expressible because a fully-current
+    resolution emits no ``Finding`` at all (previously this noised into
+    ``unknown``). ``eol: true`` (already-EOL, no date published) and
+    ``eol: false`` on a BEHIND match would need a ``currency:eol``/
+    ``currency:over-lag`` ``Finding`` with ``eol_date=None`` — the frozen
+    6.1 model invariant requires non-null ``latest``/``lag``/``eol_date``
+    on both reasons, so those stay degraded to ``None``/unknown rather
+    than fabricating a date (schema-blocked; ledger entry 2026-07-23)."""
+    parsed: list[tuple[str, date, object, str]] = []
     for entry in cycles:
         if not isinstance(entry, dict):
             continue
@@ -408,35 +430,53 @@ def _resolve_from_cycles(
         if release_date is None:
             continue
         eol = entry.get("eol")
-        eol_str = eol if isinstance(eol, str) and eol else None
+        eol_value: object
+        if isinstance(eol, bool):
+            eol_value = eol
+        elif isinstance(eol, str) and eol:
+            eol_value = eol
+        else:
+            eol_value = None
         latest = entry.get("latest")
         latest_str = latest if isinstance(latest, str) and latest else cycle_str
-        parsed.append((cycle_str, release_date, eol_str, latest_str))
+        parsed.append((cycle_str, release_date, eol_value, latest_str))
     if not parsed:
         return None
     parsed.sort(key=lambda item: item[1])  # ascending by release date
     match_index = _best_match(parsed, version)
     if match_index is None:
         return None
-    _matched_cycle, matched_release, matched_eol_str, _matched_latest = parsed[match_index]
-    if matched_eol_str is None:
-        return None
-    matched_eol_date = _as_date(matched_eol_str)
-    if matched_eol_date is None:
+    _matched_cycle, matched_release, matched_eol, _matched_latest = parsed[match_index]
+    if matched_eol is None:
         return None
     newest_latest = parsed[-1][3]
     lag = sum(1 for _, release_date, _, _ in parsed if release_date > matched_release)
-    verdict = (
-        CurrencyVerdict.EOL
-        if matched_eol_date <= now.date()
-        else CurrencyVerdict.SUPPORTED
-    )
+    eol_date_iso: str | None
+    if isinstance(matched_eol, bool):
+        if matched_eol or lag:
+            # A dateless already-EOL (`eol: true`) or a dateless BEHIND
+            # match would need an eol/over-lag Finding with eol_date=None,
+            # which the frozen 6.1 model invariant forbids -- degrade to
+            # unknown rather than fabricate a date (see docstring).
+            return None
+        verdict = CurrencyVerdict.SUPPORTED
+        eol_date_iso = None
+    else:
+        matched_eol_date = _as_date(matched_eol)
+        if matched_eol_date is None:
+            return None
+        verdict = (
+            CurrencyVerdict.EOL
+            if matched_eol_date <= now.date()
+            else CurrencyVerdict.SUPPORTED
+        )
+        eol_date_iso = matched_eol_date.isoformat()
     return _Resolution(
         tier="endoflife-date",
         verdict=verdict,
         latest=newest_latest,
         lag=lag,
-        eol_date=matched_eol_date.isoformat(),
+        eol_date=eol_date_iso,
     )
 
 
@@ -570,9 +610,22 @@ def currency_findings(
         path = feeds.endoflife_cache_path(cache_dir)
         raw_snapshot = feeds.load_endoflife_snapshot(path)
         if raw_snapshot is not None:
-            endoflife_snapshot = {
-                _normalize_name(key): value for key, value in raw_snapshot.items()
-            }
+            # Two DIFFERENT snapshot keys normalizing to the same product
+            # key are ambiguous — drop the colliding key entirely (those
+            # lookups degrade to unknown) rather than letting dict order
+            # silently pick a winner. The cache is a runtime input, so this
+            # degrades honestly instead of raising (contrast the bundled
+            # registry's alias index, packaged data, which fails loud).
+            normalized_snapshot: dict[str, list] = {}
+            colliding: set[str] = set()
+            for key, value in raw_snapshot.items():
+                normalized_key = _normalize_name(key)
+                if normalized_key in normalized_snapshot or normalized_key in colliding:
+                    colliding.add(normalized_key)
+                    normalized_snapshot.pop(normalized_key, None)
+                    continue
+                normalized_snapshot[normalized_key] = value
+            endoflife_snapshot = normalized_snapshot
             try:
                 provenance = feeds.feed_provenance(
                     source=str(path),

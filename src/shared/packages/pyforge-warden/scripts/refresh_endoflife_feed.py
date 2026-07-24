@@ -25,10 +25,14 @@ Defaults ``--cache-dir`` to ``$PYFORGE_WARDEN_FEED_CACHE_DIR`` (the same env
 var ``feeds.resolve_cache_dir`` reads at scan time) -- pass ``--cache-dir``
 explicitly to provision a cache before that env var is even set. Defaults
 ``--product`` to every ``source: endoflife``/``source: heuristic-seed``
-product slug in the bundled ``data/lts-registry.yaml`` (the ``source:
-manual`` entries carry their own ``lts_lines`` and need no endoflife.date
-fetch at all) -- pass one or more ``--product`` flags to fetch a narrower
-(or a not-yet-registry-listed) set instead.
+product slug in the bundled ``data/lts-registry.yaml`` (a ``source: manual``
+entry carries its own ``lts_lines`` and a ``null`` slug per the registry's
+own header -- there is nothing to fetch for it) -- pass one or more
+``--product`` flags to fetch a narrower (or a not-yet-registry-listed) set
+instead. A run that resolves ZERO slugs (registry missing/malformed and no
+``--product`` given) refuses to write and exits non-zero -- an empty
+snapshot is the most complete-looking partial snapshot possible, and it
+must never clobber a previously provisioned cache.
 """
 
 from __future__ import annotations
@@ -68,11 +72,14 @@ _REGISTRY_PATH = _SRC_DIR / "pyforge" / "warden" / "data" / "lts-registry.yaml"
 
 def default_product_slugs() -> list[str]:
     """The bundled registry's own ``source: endoflife``/``source:
-    heuristic-seed`` product slugs, sorted -- ``source: manual`` entries
-    carry their own ``lts_lines`` and need no endoflife.date fetch at all
-    (``currency.py`` never consults the cache for them). Returns an empty
-    list (never raises) if the registry is unreadable/malformed -- the
-    caller's own ``--product`` flag is the fallback for that case."""
+    heuristic-seed`` product slugs, sorted -- a ``source: manual`` entry
+    carries its own ``lts_lines`` and a ``null`` slug (per the registry's
+    own header), so there is nothing to fetch for it; the ``!= "manual"``
+    filter below is belt-and-braces against a future manual entry that
+    grew a slug, not a claim ``currency.py`` would ignore one (its slug
+    routing is unconditional). Returns an empty list (never raises) if the
+    registry is unreadable/malformed -- the caller's own ``--product`` flag
+    is the fallback for that case."""
     try:
         document = yaml.safe_load(_REGISTRY_PATH.read_text(encoding="utf-8"))
     except (OSError, yaml.YAMLError):
@@ -94,21 +101,36 @@ def default_product_slugs() -> list[str]:
 
 def fetch_product_cycles(slug: str, *, timeout: int = 60) -> list[dict[str, object]]:
     """Fetch + parse one product's endoflife.date cycle-array JSON. Raises
-    ``urllib.error.URLError`` on a network failure or ``ValueError`` on a
-    response that is not a JSON array -- a parse-sanity check so a
-    provisioning run never silently caches a malformed/truncated document
-    (mirrors ``refresh_kev_feed.fetch_kev_document``'s own guard). ``slug``
-    is URL-escaped (``urllib.parse.quote(slug, safe="")``) before
+    ``ValueError`` on an empty slug (a usage error, not a request worth
+    making -- an empty slug would otherwise fetch the API root's
+    ``.json`` and surface as a baffling HTTP error), ``urllib.error.
+    URLError`` on a network failure, or ``ValueError`` on a response that
+    is not a JSON array -- a parse-sanity check so a provisioning run never
+    silently caches a malformed/truncated document (mirrors
+    ``refresh_kev_feed.fetch_kev_document``'s own guard). ``slug`` is
+    URL-escaped (``urllib.parse.quote(slug, safe="")``) before
     interpolation into the request URL -- even a ``/`` in a malformed/
     operator-typo'd slug is encoded rather than treated as a path
     separator -- so it can never produce a malformed or unintended request
     URL, whether it came from the bundled registry's own default list or an
-    operator-supplied ``--product`` value."""
+    operator-supplied ``--product`` value.
+
+    JSON numbers are parsed with ``parse_float=str``/``parse_int=str`` so a
+    bare-number ``cycle`` value keeps its LEXICAL form (``3.10`` stays
+    ``"3.10"``, never float-truncated to ``"3.1"``) -- the reader
+    (``currency._resolve_from_cycles``) treats cycle identifiers as
+    strings, and a ``"3.1"``/``"3.10"`` collapse would misroute a real
+    interpreter line (review finding, 2026-07-23). Only our reader's four
+    fields (``cycle``/``releaseDate``/``eol``/``latest``) matter and none
+    is legitimately numeric, so stringifying every numeral is lossless
+    where it counts."""
+    if not slug:
+        raise ValueError("empty product slug -- pass a real endoflife.date slug")
     url = ENDOFLIFE_URL_TEMPLATE.format(slug=urllib.parse.quote(slug, safe=""))
     request = urllib.request.Request(url, headers={"User-Agent": _USER_AGENT})
     with urllib.request.urlopen(request, timeout=timeout) as response:  # noqa: S310
         raw = response.read().decode("utf-8")
-    document = json.loads(raw)
+    document = json.loads(raw, parse_float=str, parse_int=str)
     if not isinstance(document, list):
         raise ValueError(
             f"endoflife.date response for {slug!r} is not the expected shape "
@@ -125,8 +147,20 @@ def refresh(
     via ``feeds.write_endoflife_cache``. Returns a small stats dict for the
     CLI's own human report -- never partially written (the write is atomic).
     A single product's fetch failure aborts the WHOLE refresh (fail loud,
-    never silently cache a partial snapshot that looks complete)."""
+    never silently cache a partial snapshot that looks complete). ZERO slugs
+    to fetch (registry missing/malformed with no ``--product`` given, or an
+    explicitly empty ``product_slugs`` list) raises ``ValueError`` BEFORE
+    any write -- an empty snapshot is the most complete-looking partial
+    snapshot possible, and writing it would clobber a previously
+    provisioned, still-good cache with a document that floods every later
+    scan with ``currency:unknown`` findings (review finding, 2026-07-23)."""
     slugs = product_slugs if product_slugs is not None else default_product_slugs()
+    if not slugs:
+        raise ValueError(
+            "no product slugs to fetch (the bundled registry is missing/"
+            "malformed and no --product was given) -- refusing to write an "
+            "empty snapshot over a possibly-good cache"
+        )
     document: dict[str, object] = {
         slug: fetch_product_cycles(slug, timeout=timeout) for slug in slugs
     }
@@ -186,19 +220,6 @@ def main() -> None:
             file=sys.stderr,
         )
         raise SystemExit(1) from exc
-    if args.products is None and result["product_count"] == 0:
-        # No --product was given AND the bundled registry resolved to zero
-        # default slugs -- indistinguishable, on stdout alone, from a
-        # deliberate narrow run. The registry is likely missing/malformed
-        # (default_product_slugs() degrades to [] rather than raising);
-        # still a successful no-op (exit code unchanged), but it must not
-        # be silent.
-        print(
-            "warning: 0 default products resolved from the bundled "
-            "registry -- it may be missing or malformed; pass --product "
-            "explicitly to override",
-            file=sys.stderr,
-        )
     print(f"fetched {result['product_count']} product(s): {', '.join(result['products'])}")
     print(f"  wrote: {result['cache_path']}")
 

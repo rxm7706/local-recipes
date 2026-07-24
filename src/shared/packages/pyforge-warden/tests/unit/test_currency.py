@@ -8,7 +8,10 @@ coverage-and-``EngineResult`` wrapper. Mirrors ``test_license.py``'s style.
 
 from __future__ import annotations
 
+import os
+import re
 from datetime import UTC, datetime
+from pathlib import Path
 
 import pytest
 
@@ -43,6 +46,18 @@ from pyforge.warden.models import (
 
 _NOW = datetime(2026, 7, 23, tzinfo=UTC)
 MANIFEST = ScannedManifest(path="pyproject.toml", kind="pyproject.toml")
+
+
+def _pin_cache_mtime_to_now(cache_dir) -> None:
+    """Pin a just-written endoflife cache file's mtime to ``_NOW`` so a
+    test that passes the fixed ``_NOW`` stays deterministic: ``feeds.
+    is_feed_stale`` treats a FUTURE-dated snapshot (a real wall-clock
+    mtime vs. the pinned ``now``) as stale, never fresh — without this,
+    the cache the test just provisioned would be silently skipped as
+    tier-2 input (review finding, 2026-07-23)."""
+    path = feeds.endoflife_cache_path(cache_dir)
+    timestamp = _NOW.timestamp()
+    os.utime(path, (timestamp, timestamp))
 
 
 # --- currency_rung (the hard warn-cap) ---------------------------------------
@@ -247,11 +262,45 @@ def test_resolve_from_cycles_no_match_is_none():
 
 
 def test_resolve_from_cycles_unusable_eol_degrades_to_none():
-    """A matched cycle whose own ``eol`` is not a usable date string (e.g.
-    the real API's boolean ``false``/``true`` shape) degrades the WHOLE
-    resolution to None rather than fabricating an eol_date -- never guess."""
-    cycles = [{"cycle": "2.31.0", "releaseDate": "2023-05-22", "eol": False}]
+    """A matched cycle whose own ``eol`` is truly unusable (absent, empty,
+    or junk -- NOT the real API's documented booleans, honored below)
+    degrades the WHOLE resolution to None rather than fabricating an
+    eol_date -- never guess."""
+    cycles = [{"cycle": "2.31.0", "releaseDate": "2023-05-22", "eol": None}]
     assert _resolve_from_cycles(cycles, "2.31.0", now=_NOW) is None
+    cycles = [{"cycle": "2.31.0", "releaseDate": "2023-05-22"}]
+    assert _resolve_from_cycles(cycles, "2.31.0", now=_NOW) is None
+
+
+def test_resolve_from_cycles_boolean_eol_false_current_is_supported():
+    """endoflife.date's boolean ``eol: false`` shape on a FULLY CURRENT
+    match is an explicit still-supported assertion -- resolves SUPPORTED
+    with ``eol_date=None`` (lag 0 -> no finding at the axis level, so the
+    null date never reaches the frozen 6.1 model invariant), never noised
+    into unknown (review finding, 2026-07-23)."""
+    cycles = [{"cycle": "2.31.0", "releaseDate": "2023-05-22", "eol": False}]
+    resolved = _resolve_from_cycles(cycles, "2.31.0", now=_NOW)
+    assert resolved is not None
+    assert resolved.verdict is CurrencyVerdict.SUPPORTED
+    assert resolved.eol_date is None
+    assert resolved.lag == 0
+
+
+def test_resolve_from_cycles_boolean_eol_shapes_that_would_need_a_dateless_finding_degrade():
+    """``eol: true`` (already-EOL, no date published) and ``eol: false``
+    on a BEHIND match would each need an eol/over-lag ``Finding`` with
+    ``eol_date=None`` -- the frozen 6.1 model invariant requires non-null
+    latest/lag/eol_date on both reasons, so these degrade to ``None``
+    (unknown) rather than fabricating a date. Schema-blocked, not a
+    producer choice -- see the deferred-work ledger (2026-07-23)."""
+    eol_true = [{"cycle": "1.0", "releaseDate": "2015-01-01", "eol": True}]
+    assert _resolve_from_cycles(eol_true, "1.0.9", now=_NOW) is None
+
+    eol_false_behind = [
+        {"cycle": "1.0", "releaseDate": "2015-01-01", "eol": False},
+        {"cycle": "2.0", "releaseDate": "2020-01-01", "eol": False},
+    ]
+    assert _resolve_from_cycles(eol_false_behind, "1.0.9", now=_NOW) is None
 
 
 def test_resolve_from_cycles_numeric_cycle_is_coerced_to_string():
@@ -462,10 +511,20 @@ def test_currency_findings_mixed_fixture_covers_all_three_reasons(
     """The story's own AC: a mixed fixture (an LTS-registry hit, an
     endoflife-only hit, an unresolvable component) -- every finding composes
     at warn and currency.gating stays false (gating is config.py's job, not
-    this function's -- currency_findings takes no gating parameter at all)."""
+    this function's -- currency_findings takes no gating parameter at all).
+
+    Uses the fixed ``_NOW`` like every other test here, NEVER the wall
+    clock: the tier-1 leg depends on ``registry_fresh``, which the real
+    bundled registry's ``updated:`` date only satisfies within its 180-day
+    max-age window -- a wall-clock ``now`` would flip this test red on a
+    fixed future calendar date with no code change (review finding,
+    2026-07-23). The cache file's mtime is pinned to ``_NOW`` too (see
+    ``_pin_cache_mtime_to_now``) so the tier-2 leg stays fresh under the
+    same fixed clock."""
     monkeypatch.setenv(feeds.FEED_CACHE_DIR_ENV_VAR, str(tmp_path))
     feeds.write_endoflife_cache(tmp_path, {"requests": _CYCLES})
-    now = datetime.now(UTC)
+    _pin_cache_mtime_to_now(tmp_path)
+    now = _NOW
 
     components = [
         component_factory(name="spring-framework", version="5.3.0"),  # tier 1, eol
@@ -548,6 +607,103 @@ def test_currency_findings_twice_run_is_byte_identical(component_factory):
     second, second_data = currency_findings(components, now=_NOW)
     assert first == second
     assert first_data == second_data
+
+
+def test_currency_findings_drops_colliding_snapshot_keys_entirely(
+    component_factory, monkeypatch, tmp_path
+):
+    """Two DIFFERENT snapshot keys normalizing to the same product key
+    (``Django``/``django``) are ambiguous -- BOTH are dropped (the lookup
+    degrades to unknown) rather than letting dict iteration order silently
+    pick a winner (review finding, 2026-07-23; contrast the bundled
+    registry's alias index, packaged data, which raises instead)."""
+    monkeypatch.setenv(feeds.FEED_CACHE_DIR_ENV_VAR, str(tmp_path))
+    feeds.write_endoflife_cache(
+        tmp_path,
+        {
+            "Django": [
+                {"cycle": "4.2", "releaseDate": "2023-04-03", "eol": "2026-04-07"}
+            ],
+            "django": [
+                {"cycle": "5.2", "releaseDate": "2025-04-02", "eol": "2028-04-30"}
+            ],
+        },
+    )
+    _pin_cache_mtime_to_now(tmp_path)
+    components = [component_factory(name="django", version="4.2.1")]
+    findings, _data = currency_findings(components, now=_NOW)
+    non_runtime = [f for f in findings if f.subject != "!python-runtime"]
+    assert len(non_runtime) == 1
+    assert non_runtime[0].id == "currency:unknown:django@4.2.1"
+
+
+def test_currency_findings_boolean_eol_false_current_emits_no_finding(
+    component_factory, monkeypatch, tmp_path
+):
+    """End-to-end proof for the expressible half of the boolean-``eol``
+    fix (review finding, 2026-07-23): a fully-current component whose
+    matched cycle carries ``eol: false`` emits NO finding at all --
+    previously it flooded ``currency:unknown`` warn noise on every scan
+    against a real provisioned endoflife.date snapshot."""
+    monkeypatch.setenv(feeds.FEED_CACHE_DIR_ENV_VAR, str(tmp_path))
+    feeds.write_endoflife_cache(
+        tmp_path,
+        {"leftpad": [{"cycle": "1.0", "releaseDate": "2015-01-01", "eol": False}]},
+    )
+    _pin_cache_mtime_to_now(tmp_path)
+    components = [component_factory(name="leftpad", version="1.0.2")]
+    findings, _data = currency_findings(components, now=_NOW)
+    non_runtime = [f for f in findings if f.subject != "!python-runtime"]
+    assert non_runtime == []
+
+
+def test_ambient_snapshot_keeps_every_pinned_fixture_dep_it_covers_fully_current():
+    """Cross-check for the hidden two-file invariant between ``tests/
+    conftest.py``'s session-scoped ambient endoflife snapshot and the
+    fixture manifests under ``tests/fixtures/projects/`` (review finding,
+    2026-07-23): every ``name==version`` pin whose name the ambient
+    snapshot covers must resolve fully current (supported, lag 0). Without
+    this guard, a routine fixture-pin bump (e.g. requests 2.31.0 ->
+    2.32.0) silently regresses a "must stay clean" fixture into
+    ``currency:unknown`` warn noise, and the resulting failure points at
+    the verdict -- this test fails HERE instead, naming the real fix:
+    update ``_currency_ambient_feed_env`` in tests/conftest.py alongside
+    the pin."""
+    fixtures_root = Path(__file__).resolve().parent.parent / "fixtures" / "projects"
+    assert fixtures_root.is_dir()
+    cache_dir = feeds.resolve_cache_dir()
+    assert cache_dir is not None, "ambient feed cache env var not set -- see conftest"
+    snapshot = feeds.load_endoflife_snapshot(feeds.endoflife_cache_path(cache_dir))
+    assert snapshot, "ambient endoflife snapshot missing -- see tests/conftest.py"
+    normalized_snapshot = {_normalize_name(key): value for key, value in snapshot.items()}
+
+    requirement_pin = re.compile(r"\b([A-Za-z0-9][A-Za-z0-9._-]*)==([0-9][A-Za-z0-9._+!-]*)")
+    toml_pin = re.compile(r'(?m)^\s*([A-Za-z0-9][A-Za-z0-9._-]*)\s*=\s*"\s*==\s*([0-9][^"]*)"')
+    stale: list[str] = []
+    for path in sorted(fixtures_root.rglob("*")):
+        if not path.is_file():
+            continue
+        try:
+            text = path.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError):
+            continue
+        for name, version in requirement_pin.findall(text) + toml_pin.findall(text):
+            cycles = normalized_snapshot.get(_normalize_name(name))
+            if cycles is None:
+                continue  # not an ambient-covered dep; cleanliness not claimed
+            resolution = _resolve_from_cycles(cycles, version, now=_NOW)
+            fully_current = (
+                resolution is not None
+                and resolution.verdict is CurrencyVerdict.SUPPORTED
+                and resolution.lag == 0
+            )
+            if not fully_current:
+                stale.append(f"{path.relative_to(fixtures_root)}: {name}=={version}")
+    assert not stale, (
+        "fixture pins drifted from tests/conftest.py's ambient endoflife "
+        "snapshot (they would now emit currency findings and regress "
+        "'must stay clean' fixtures): " + "; ".join(sorted(set(stale)))
+    )
 
 
 # --- CurrencyEngine (the thin coverage-and-EngineResult wrapper) ------------

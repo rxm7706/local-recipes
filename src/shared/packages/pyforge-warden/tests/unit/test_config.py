@@ -878,3 +878,15 @@ def test_default_with_cli_overrides_no_currency_flags_is_plain_default():
 def test_default_with_cli_overrides_rejects_invalid_max_lag():
     with pytest.raises(ConfigValidationError):
         EffectiveConfig.default_with_cli_overrides(cli_max_lag=-1)
+
+
+@pytest.mark.parametrize("field", ["cli_require_lts", "cli_fail_on_eol"])
+def test_default_with_cli_overrides_coerces_the_currency_bools_too(field):
+    """``cli_require_lts``/``cli_fail_on_eol`` go through the SAME typed
+    coercers as every sibling field (review finding, 2026-07-23: they were
+    assigned raw, so a non-bool from a direct caller surfaced as a bare
+    ``ValueError`` from ``__post_init__`` -- escaping ``cli.py``'s
+    ``except ConfigValidationError`` fallback -- instead of the module's
+    own typed error, contradicting this method's own docstring)."""
+    with pytest.raises(ConfigValidationError):
+        EffectiveConfig.default_with_cli_overrides(**{field: "yes"})
