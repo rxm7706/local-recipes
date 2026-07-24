@@ -465,10 +465,10 @@
  },
  "spec-multi-loop-isolation": {
   "files": {
-   "scripts/bmad-loop-worktree": "071066e03f89aac6e0f63c58de938092d3c2ddc7",
+   "scripts/bmad-loop-worktree": "15f416797b4048362a329c674fd85e206dd88289",
    "scripts/bmad-switch": "11a7733cd109ee6c0d940e11e6ef2c412b68613c"
   },
-  "memlog": "2a8f29421ec3cd921e2f45bd480b31f5ad270720"
+  "memlog": "b9dd0b1188c72557457875def5748309955bed97"
  },
  "spec-packaging-factory": {
   "files": {

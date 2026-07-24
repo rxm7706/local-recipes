@@ -31,6 +31,10 @@ Usage:
 
 Note: each loop home resolves its own `.pixi/` on first `pixi run` (gitignored,
 so not shared with the main checkout) — first launch pays a one-time solve.
+Note: the FIRST agent session in a new loop home hits the Claude CLI
+folder-trust prompt (a new directory root) and sits until accepted — attach
+to the loop's tmux and accept once; subsequent story worktrees under the
+same loop home inherit the trust. (Live: warden 6.3 resume stalled ~1h on it.)
 """
 
 import argparse
