@@ -105,6 +105,20 @@ Ownership decisions recorded:
   ``currency.currency_rung``. The ``--max-lag`` over-lag threshold is a
   numeric ``lag > max_lag`` check the RUNG applies (a ``SUPPORTED``-verdict
   over-lag finding is not a table key), not part of this table.
+* ``min-epss`` (Story 6.7) mirrors ``max-lag``'s treatment exactly: a real,
+  two-mode CLI flag (not TOML-only like ``fail-on-kev``), CLI-overriding
+  either TOML file (same last-applied precedence). ``min_epss`` goes through
+  ``cli._min_epss_type`` at the argparse layer (mirrors ``cli._max_lag_
+  type`` — a malformed CLI value is a usage error, exit 2, never reaching
+  ``ConfigLoader.load``) and ``_coerce_min_epss`` at the TOML layer (a typed
+  ``ConfigValidationError`` — mirrors ``_coerce_fail_under_coverage``'s
+  range-check shape, but over ``[0.0, 1.0]``). Unlike ``max_lag``, this gate
+  has no derived ``*_gating``/``*_policy`` property: ``interfaces.
+  DefaultPolicy.evaluate`` threads ``self._config.min_epss`` straight into
+  ``vuln.vuln_rung`` (mirrors ``fail_on_kev``'s own threading, not the
+  license/currency two-mode table pattern), and ``cli.py`` constructs
+  ``OsvEngine(fail_on_kev=config.fail_on_kev, min_epss=config.min_epss)``
+  the same way it already special-cases ``OsvEngine`` for ``fail_on_kev``.
 * ``warn-as-error`` (Story 6.5) is a pure exit-projection knob (FR: the
   strict-shop on-ramp): it never changes the composed status or any rung —
   it only makes ``verdict.exit_code_for(warn_is_error=True)`` project a
@@ -132,7 +146,7 @@ from .models import CurrencyVerdict, LicenseVerdict, SeverityTier, Status
 _PYPROJECT_FILENAME = "pyproject.toml"
 _PIXI_FILENAME = "pixi.toml"
 
-# The 11 recognized [tool.pyforge-warden] keys (hyphenated only — an
+# The 12 recognized [tool.pyforge-warden] keys (hyphenated only — an
 # underscore-spelled variant of any of these is UNRECOGNIZED, never
 # silently accepted as an alias).
 _RECOGNIZED_KEYS = frozenset(
@@ -148,6 +162,7 @@ _RECOGNIZED_KEYS = frozenset(
         "require-lts",
         "fail-on-eol",
         "warn-as-error",
+        "min-epss",
     }
 )
 
@@ -233,6 +248,7 @@ class EffectiveConfig:
     require_lts: bool = False
     fail_on_eol: bool = False
     warn_as_error: bool = False
+    min_epss: float | None = None
 
     def __post_init__(self) -> None:
         """Fail at construction, not at first use (review finding: without
@@ -309,6 +325,15 @@ class EffectiveConfig:
             raise ValueError(
                 f"warn_as_error must be a bool, got {self.warn_as_error!r}"
             )
+        if self.min_epss is not None and (
+            isinstance(self.min_epss, bool)
+            or not isinstance(self.min_epss, (int, float))
+            or not (0.0 <= self.min_epss <= 1.0)
+        ):
+            raise ValueError(
+                f"min_epss must be a number in [0, 1] or None, got "
+                f"{self.min_epss!r}"
+            )
 
     @classmethod
     def default(cls) -> EffectiveConfig:
@@ -330,6 +355,7 @@ class EffectiveConfig:
         cli_require_lts: bool | None = None,
         cli_fail_on_eol: bool | None = None,
         cli_warn_as_error: bool | None = None,
+        cli_min_epss: float | None = None,
     ) -> EffectiveConfig:
         """The built-in default, with any CLI-supplied overrides still
         applied (review finding: ``cli.py``'s config-load-failure fallback
@@ -348,7 +374,8 @@ class EffectiveConfig:
         tri-state (``None``/``True``) — argparse's own ``store_true`` action
         with ``default=None`` (mirrors ``cli_allow_licenses``'s "unset means
         defer to TOML" semantics for a flag with no CLI-expressible
-        "explicitly false")."""
+        "explicitly false"). ``cli_min_epss`` (Story 6.7) follows the SAME
+        pattern as ``cli_max_lag``."""
         defaults = cls.default()
         fail_on = (
             _coerce_fail_on(cli_fail_on) if cli_fail_on is not None else defaults.fail_on
@@ -386,6 +413,11 @@ class EffectiveConfig:
             if cli_warn_as_error is not None
             else defaults.warn_as_error
         )
+        min_epss = (
+            _coerce_min_epss(cli_min_epss)
+            if cli_min_epss is not None
+            else defaults.min_epss
+        )
         return cls(
             fail_on=fail_on,
             fail_under_coverage=fail_under_coverage,
@@ -398,6 +430,7 @@ class EffectiveConfig:
             require_lts=require_lts,
             fail_on_eol=fail_on_eol,
             warn_as_error=warn_as_error,
+            min_epss=min_epss,
         )
 
     @property
@@ -599,6 +632,25 @@ def _coerce_warn_as_error(value: object) -> bool:
     return value
 
 
+def _coerce_min_epss(value: object) -> float:
+    """``'min-epss'`` (Story 6.7) mirrors ``_coerce_fail_under_coverage``'s
+    shape: a non-bool number in ``[0.0, 1.0]``, malformed/out-of-range is a
+    typed ``ConfigValidationError`` — the TOML-path/direct-caller validator;
+    ``cli._min_epss_type`` is the argparse-layer ``type=`` callback for the
+    CLI flag itself (a malformed ``--min-epss`` is a usage error, exit 2,
+    never reaching this function)."""
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise ConfigValidationError(
+            f"'min-epss' must be a number in [0, 1], got {value!r}"
+        )
+    numeric = float(value)
+    if not (0.0 <= numeric <= 1.0):
+        raise ConfigValidationError(
+            f"'min-epss' must be in [0, 1], got {value!r}"
+        )
+    return numeric
+
+
 def _describe_read_failure(exc: Exception) -> str:
     """A deterministic, locale/path-independent description of a TOML
     read/parse failure — mirrors ``cli.py``'s own symbolic-errno convention
@@ -742,6 +794,7 @@ class ConfigLoader:
         cli_require_lts: bool | None = None,
         cli_fail_on_eol: bool | None = None,
         cli_warn_as_error: bool | None = None,
+        cli_min_epss: float | None = None,
     ) -> tuple[EffectiveConfig, tuple[str, ...]]:
         """Resolve one scan's ``EffectiveConfig`` under ``target``. Returns
         ``(config, warnings)`` — ``warnings`` are stderr-destined diagnostic
@@ -768,6 +821,7 @@ class ConfigLoader:
                 cli_require_lts=cli_require_lts,
                 cli_fail_on_eol=cli_fail_on_eol,
                 cli_warn_as_error=cli_warn_as_error,
+                cli_min_epss=cli_min_epss,
                 warnings=warnings,
             )
         except (ConfigParseError, ConfigValidationError) as exc:
@@ -786,6 +840,7 @@ class ConfigLoader:
         cli_require_lts: bool | None,
         cli_fail_on_eol: bool | None,
         cli_warn_as_error: bool | None,
+        cli_min_epss: float | None,
         warnings: list[str],
     ) -> tuple[EffectiveConfig, tuple[str, ...]]:
         pyproject_table = self._read_table(
@@ -865,6 +920,11 @@ class ConfigLoader:
             if "warn-as-error" in merged
             else defaults.warn_as_error
         )
+        min_epss = (
+            _coerce_min_epss(merged["min-epss"])
+            if "min-epss" in merged
+            else defaults.min_epss
+        )
 
         # CLI flags win over both files. Routed through the SAME _coerce_*
         # helpers the TOML-sourced values use (review finding: a bare
@@ -889,6 +949,8 @@ class ConfigLoader:
             fail_on_eol = _coerce_fail_on_eol(cli_fail_on_eol)
         if cli_warn_as_error is not None:
             warn_as_error = _coerce_warn_as_error(cli_warn_as_error)
+        if cli_min_epss is not None:
+            min_epss = _coerce_min_epss(cli_min_epss)
 
         config = EffectiveConfig(
             fail_on=fail_on,
@@ -902,6 +964,7 @@ class ConfigLoader:
             require_lts=require_lts,
             fail_on_eol=fail_on_eol,
             warn_as_error=warn_as_error,
+            min_epss=min_epss,
         )
         return config, tuple(warnings)
 

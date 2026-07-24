@@ -90,6 +90,7 @@ from .models import (
     AXIS_LICENSE,
     AXIS_VULNERABILITY,
     AxisCoverage,
+    Epss,
     ErrorKind,
     ErrorRecord,
     FeedProvenance,
@@ -102,6 +103,8 @@ from .vuln import (
     _synthesize_requirements,
     db_snapshot_at,
     db_zip_path,
+    epss_match,
+    epss_stale_finding,
     is_db_stale,
     kev_match,
     kev_stale_finding,
@@ -668,6 +671,103 @@ def _stamp_kev(
     return tuple(stamped)
 
 
+# --- Story 6.7 (FR: --min-epss): FIRST.org EPSS enrichment -------------------
+
+
+def _epss_enrichment(
+    min_epss: float | None,
+) -> tuple[dict[str, tuple[float, float]] | None, FeedProvenance | None, tuple[Finding, ...]]:
+    """Consult the EPSS feed (``feeds.py``) ONCE per ``OsvEngine.run`` call —
+    mirrors ``_kev_enrichment`` structurally, one feed over. Returns
+    ``(scores, epss_data, epss_axis_findings)``:
+
+    * ``min_epss is None`` -> ``(None, None, ())`` — the EPSS cache is never
+      even opened (gate off).
+    * The feed is absent/unreadable/content-corrupt -> ``(None, None,
+      (epss_stale_finding(unavailable=True),))`` — no catalog to match
+      against, so every ``vuln:`` finding's ``epss`` stays its default
+      ``None``.
+    * The feed loads but is stale -> ``(scores, epss_data, (epss_stale_
+      finding(unavailable=False),))`` — per-finding matching still runs
+      against the loaded (if aged) catalog; the whole axis is independently
+      forced ``indeterminate`` by the returned finding.
+    * The feed loads and is fresh -> ``(scores, epss_data, ())``."""
+    if min_epss is None:
+        return None, None, ()
+    cache_dir = feeds.resolve_cache_dir()
+    if cache_dir is None:
+        return None, None, (epss_stale_finding(unavailable=True),)
+    path = feeds.epss_cache_path(cache_dir)
+    scores = feeds.load_epss_scores(path)
+    if scores is None:
+        return None, None, (epss_stale_finding(unavailable=True),)
+    try:
+        epss_data = feeds.feed_provenance(
+            source=str(path),
+            path=path,
+            max_age_days=feeds.DEFAULT_FEED_MAX_AGE_DAYS,
+            now=datetime.now(UTC),
+        )
+    except OSError:
+        # The cache file vanished between the catalog read above and this
+        # provenance stat (TOCTOU) -- treat exactly like "no usable feed"
+        # rather than letting the race propagate as an engine crash (mirrors
+        # _kev_enrichment's own TOCTOU handling).
+        return None, None, (epss_stale_finding(unavailable=True),)
+    epss_findings = (
+        () if epss_data.max_age_ok else (epss_stale_finding(unavailable=False),)
+    )
+    return scores, epss_data, epss_findings
+
+
+def _stamp_epss(
+    findings: tuple[Finding, ...],
+    scores: Mapping[str, tuple[float, float]] | None,
+    kev_candidates: Mapping[str, tuple[str, ...]],
+) -> tuple[Finding, ...]:
+    """Stamp ``epss`` onto every ``vuln:`` finding via ``dataclasses.replace``
+    (called alongside ``_stamp_kev``, BEFORE ``EngineResult`` is returned —
+    the same hard positioning invariant). Every non-``vuln:`` finding passes
+    through unchanged. ``scores=None`` (EPSS never consulted, or
+    unavailable) is a no-op: every finding is returned as-is.
+
+    Unlike ``_stamp_kev``, which always stamps ``kev``/``kev_date`` (``True``
+    or ``False``) once a catalog loads, there is no boolean equivalent for
+    "no EPSS match" — only an actual match calls ``dataclasses.replace``;
+    a finding with no match is returned unchanged, leaving ``finding.epss``
+    at its existing ``None`` default (design note: ``finding.epss is None``
+    IS the "no data" signal, never a separate flag).
+
+    Review finding (two passes): ``feeds.load_epss_scores`` now filters
+    non-finite/out-of-``[0, 1]`` entries at load time — a domain-corrupt
+    cache entry never reaches this function through the normal path, so a
+    matched entry is trustworthy by construction. The ``try/except
+    ValueError`` around ``models.Epss`` construction stays as a last-resort
+    crash-guard (e.g. against future drift between the load filter and
+    ``Epss.__post_init__``): if it ever fires, degrade the SAME way a
+    non-match already does (skip the stamp), never raise past this function
+    and crash the whole scan."""
+    if scores is None:
+        return findings
+    stamped: list[Finding] = []
+    for finding in findings:
+        if not finding.id.startswith("vuln:"):
+            stamped.append(finding)
+            continue
+        pair = epss_match(kev_candidates.get(finding.id, ()), scores)
+        if pair is None:
+            stamped.append(finding)
+            continue
+        score, percentile = pair
+        try:
+            epss = Epss(score=score, percentile=percentile)
+        except ValueError:
+            stamped.append(finding)
+            continue
+        stamped.append(dataclasses.replace(finding, epss=epss))
+    return tuple(stamped)
+
+
 class OsvEngine:
     """The second real engine: vulnerability matching via ``osv-scanner``,
     fully offline (Story 1.5), widened with two honesty tiers (Story 2.5).
@@ -721,13 +821,23 @@ class OsvEngine:
     usable catalog, every ``vuln:`` finding is stamped ``kev``/``kev_date``
     via ``_stamp_kev`` BEFORE this method returns its ``EngineResult`` —
     a hard positioning invariant: ``interfaces.py``'s engine-dedup loop
-    must never see an un-stamped finding."""
+    must never see an un-stamped finding.
+
+    Story 6.7: ``min_epss`` (default ``None`` — gate off) gates a FOURTH,
+    independent consultation — the FIRST.org EPSS feed — computed ONCE per
+    run alongside KEV (``_epss_enrichment``, called right next to
+    ``_kev_enrichment``) and merged into every content-bearing result the
+    same way. Every ``vuln:`` finding is stamped ``epss`` via ``_stamp_epss``
+    BEFORE this method returns its ``EngineResult``, same hard positioning
+    invariant — but unlike ``kev``/``kev_date``, ``epss`` is stamped ONLY on
+    an actual match (see ``_stamp_epss``'s own docstring)."""
 
     name: str = "osv-scanner"
     axis: str = AXIS_VULNERABILITY
 
-    def __init__(self, *, fail_on_kev: bool = True) -> None:
+    def __init__(self, *, fail_on_kev: bool = True, min_epss: float | None = None) -> None:
         self.fail_on_kev = fail_on_kev
+        self.min_epss = min_epss
 
     def run(self, target: Path, inventory: ResolvedInventory) -> EngineResult:
         # Ecosystem-agnostic (Story 2.1): a resolved pypi_identity is the
@@ -769,13 +879,21 @@ class OsvEngine:
         # docstring). `catalog` feeds `_stamp_kev` below; `kev_findings` is
         # the 0-or-1 whole-axis KEV-provenance indeterminate finding.
         catalog, kev_data, kev_findings = _kev_enrichment(self.fail_on_kev)
+        # Story 6.7: the EPSS sibling consultation, same "computed ONCE,
+        # merged into every content-bearing result" treatment as KEV above.
+        scores, epss_data, epss_findings = _epss_enrichment(self.min_epss)
 
         if not candidates:
             # Name-level-only scan: osv-scanner has no "any version" query
             # mode, so this never invokes the subprocess at all.
             findings = tuple(
                 sorted(
-                    (*name_level_findings, *stale_findings, *kev_findings),
+                    (
+                        *name_level_findings,
+                        *stale_findings,
+                        *kev_findings,
+                        *epss_findings,
+                    ),
                     key=lambda f: f.id,
                 )
             )
@@ -789,6 +907,7 @@ class OsvEngine:
                 axis=self.axis,
                 vuln_data=vuln_data,
                 kev_data=kev_data,
+                epss_data=epss_data,
             )
 
         synthesized = _synthesize_requirements(candidates)
@@ -815,6 +934,7 @@ class OsvEngine:
                         *name_level_findings,
                         *stale_findings,
                         *kev_findings,
+                        *epss_findings,
                     ),
                     key=lambda f: f.id,
                 )
@@ -829,6 +949,7 @@ class OsvEngine:
                 axis=self.axis,
                 vuln_data=vuln_data,
                 kev_data=kev_data,
+                epss_data=epss_data,
             )
 
         try:
@@ -862,6 +983,7 @@ class OsvEngine:
                         *name_level_findings,
                         *stale_findings,
                         *kev_findings,
+                        *epss_findings,
                     ),
                     key=lambda f: f.id,
                 )
@@ -873,6 +995,7 @@ class OsvEngine:
                 axis=self.axis,
                 vuln_data=None,
                 kev_data=kev_data,
+                epss_data=epss_data,
             )
         try:
             os.close(handle)
@@ -916,6 +1039,7 @@ class OsvEngine:
                         *name_level_findings,
                         *stale_findings,
                         *kev_findings,
+                        *epss_findings,
                     ),
                     key=lambda f: f.id,
                 )
@@ -927,6 +1051,7 @@ class OsvEngine:
                 axis=self.axis,
                 vuln_data=None,
                 kev_data=kev_data,
+                epss_data=epss_data,
             )
 
         if exit_code in (0, 1):
@@ -946,12 +1071,18 @@ class OsvEngine:
                 snapshot_at=snapshot_at,
                 max_age_ok=not stale,
             )
-            # Story 6.4: the ONLY place real `vuln:` findings exist to stamp
-            # -- BEFORE they are merged into `findings` and this method
-            # returns (the hard positioning invariant: interfaces.py's
-            # engine-dedup loop must never see an un-stamped finding).
+            # Story 6.4/6.7: the ONLY place real `vuln:` findings exist to
+            # stamp -- BEFORE they are merged into `findings` and this
+            # method returns (the hard positioning invariant: interfaces.py's
+            # engine-dedup loop must never see an un-stamped finding). Both
+            # stamps read the SAME kev_candidates set (Story 6.7 reuses it
+            # verbatim, no new candidate-collection mechanism) and compose
+            # freely (either, both, or neither may fire per finding).
             stamped_parse_findings = _stamp_kev(
                 parse.findings, catalog, parse.kev_candidates
+            )
+            stamped_parse_findings = _stamp_epss(
+                stamped_parse_findings, scores, parse.kev_candidates
             )
             findings = tuple(
                 sorted(
@@ -961,6 +1092,7 @@ class OsvEngine:
                         *name_level_findings,
                         *stale_findings,
                         *kev_findings,
+                        *epss_findings,
                     ),
                     key=lambda f: f.id,
                 )
@@ -972,6 +1104,7 @@ class OsvEngine:
                 axis=self.axis,
                 vuln_data=vuln_data,
                 kev_data=kev_data,
+                epss_data=epss_data,
             )
 
         if exit_code == 127:
@@ -993,6 +1126,7 @@ class OsvEngine:
                         *name_level_findings,
                         *stale_findings,
                         *kev_findings,
+                        *epss_findings,
                     ),
                     key=lambda f: f.id,
                 )
@@ -1004,6 +1138,7 @@ class OsvEngine:
                 axis=self.axis,
                 vuln_data=None,
                 kev_data=kev_data,
+                epss_data=epss_data,
             )
 
         if exit_code == 128:
@@ -1021,6 +1156,7 @@ class OsvEngine:
                         *name_level_findings,
                         *stale_findings,
                         *kev_findings,
+                        *epss_findings,
                     ),
                     key=lambda f: f.id,
                 )
@@ -1032,6 +1168,7 @@ class OsvEngine:
                 axis=self.axis,
                 vuln_data=None,
                 kev_data=kev_data,
+                epss_data=epss_data,
             )
 
         error_record = ErrorRecord(
@@ -1046,6 +1183,7 @@ class OsvEngine:
                     *name_level_findings,
                     *stale_findings,
                     *kev_findings,
+                    *epss_findings,
                 ),
                 key=lambda f: f.id,
             )
@@ -1057,6 +1195,7 @@ class OsvEngine:
             axis=self.axis,
             vuln_data=None,
             kev_data=kev_data,
+            epss_data=epss_data,
         )
 
 

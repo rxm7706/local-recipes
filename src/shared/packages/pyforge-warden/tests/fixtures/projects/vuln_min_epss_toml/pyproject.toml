@@ -1,0 +1,17 @@
+# EPSS TOML-mode fixture (Story 6.7 follow-up review): same
+# pdos-kev-fixture==1.0.0 pin as ../vuln_kev/pyproject.toml, but the EPSS
+# gate activates from `min-epss = 0.5` in THIS file's [tool.pyforge-warden]
+# -- no --min-epss CLI flag anywhere -- proving the "real two-mode flag"
+# claim end to end (TOML alone drives consultation + escalation).
+# `fail-on-kev = false` isolates EPSS's effect from KEV's default-on gate,
+# exactly like ../vuln_kev_fail_on_kev_false/pyproject.toml.
+[project]
+name = "vuln-min-epss-toml-fixture"
+version = "1.0.0"
+dependencies = [
+    "pdos-kev-fixture==1.0.0",
+]
+
+[tool.pyforge-warden]
+fail-on-kev = false
+min-epss = 0.5

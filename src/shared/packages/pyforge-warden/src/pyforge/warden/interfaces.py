@@ -186,7 +186,15 @@ class EngineResult:
     failure to ``{}``, whose missing ``updated:`` then yields ``None`` —
     see ``currency.py``'s module docstring). ``cli.py`` threads the first
     non-``None`` value across ``engine_results`` into
-    ``report.assemble_report`` the same way."""
+    ``report.assemble_report`` the same way.
+
+    ``epss_data`` (Story 6.7, additive/defaulted — mirrors ``kev_data``'s own
+    shape and threading verbatim, one feed over): populated ONLY by
+    ``OsvEngine`` when ``min_epss`` is set AND the FIRST.org EPSS feed was
+    actually consulted (present, whether fresh or stale); ``None`` when EPSS
+    consultation is disabled (``min_epss=None``) or the feed is absent/
+    unreadable. ``cli.py`` threads the first non-``None`` value across
+    ``engine_results`` into ``report.assemble_report`` the same way."""
 
     findings: tuple[Finding, ...]
     errors: tuple[ErrorRecord, ...]
@@ -194,6 +202,7 @@ class EngineResult:
     axis: str
     vuln_data: VulnData | None = None
     kev_data: FeedProvenance | None = None
+    epss_data: FeedProvenance | None = None
     currency_data: FeedProvenance | None = None
 
 
@@ -351,12 +360,15 @@ class DefaultPolicy:
                     # (default reproduces DEFAULT_VULN_SEVERITY_POLICY
                     # exactly). Story 6.4: fail_on_kev threads the same way
                     # -- a KEV-listed finding forces policy-violation
-                    # independent of the CVSS tier above.
+                    # independent of the CVSS tier above. Story 6.7:
+                    # min_epss threads identically -- an at-or-above-
+                    # threshold EPSS score forces policy-violation too.
                     rungs.append(
                         vuln_rung(
                             finding,
                             policy=self._config.vuln_severity_policy,
                             fail_on_kev=self._config.fail_on_kev,
+                            min_epss=self._config.min_epss,
                         )
                     )
                 elif finding.axis == AXIS_LICENSE:
