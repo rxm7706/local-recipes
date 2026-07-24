@@ -688,15 +688,116 @@ def test_license_rung_is_always_warn_for_unknown():
     assert driver == StatusDriver(axis=AXIS_LICENSE, finding_id=finding.id)
 
 
-def test_default_license_policy_is_unused_but_declared():
-    """DEFAULT_LICENSE_POLICY is reserved data (Story 6.5) -- declared,
-    immutable, and never consulted by license_rung this story."""
+def test_default_license_policy_is_the_all_warn_none_fallback():
+    """DEFAULT_LICENSE_POLICY is the all-WARN module default license_rung
+    falls back to when called with policy=None (the unconfigured / ceiling
+    path, Story 6.5) -- declared, immutable, byte-identical to config.
+    license_policy's own unconfigured (non-gating) table."""
     assert DEFAULT_LICENSE_POLICY == {
         LicenseVerdict.DENIED: Status.WARN,
         LicenseVerdict.UNKNOWN: Status.WARN,
     }
     with pytest.raises(TypeError):
         DEFAULT_LICENSE_POLICY[LicenseVerdict.DENIED] = Status.POLICY_VIOLATION
+
+
+# --- license_rung: Story 6.5 gating-policy escalation ------------------------
+
+
+_GATING_LICENSE_POLICY = {
+    LicenseVerdict.DENIED: Status.POLICY_VIOLATION,
+    LicenseVerdict.UNKNOWN: Status.INDETERMINATE,
+}
+
+
+def test_license_rung_denied_escalates_to_policy_violation_under_a_gating_policy():
+    finding = Finding(
+        id="license:GPL-3.0-only:foo@1.0.0",
+        axis=AXIS_LICENSE,
+        message="denied",
+        subject="foo",
+        severity=None,
+        license=LicenseInfo(
+            expression="GPL-3.0-only", family="GPL3", verdict=LicenseVerdict.DENIED
+        ),
+    )
+    status, driver = license_rung(finding, policy=_GATING_LICENSE_POLICY)
+    assert status is Status.POLICY_VIOLATION
+    assert driver == StatusDriver(axis=AXIS_LICENSE, finding_id=finding.id)
+
+
+def test_license_rung_unknown_escalates_to_indeterminate_under_a_gating_policy():
+    finding = Finding(
+        id="license:unknown:foo@1.0.0",
+        axis=AXIS_LICENSE,
+        message="unresolvable",
+        subject="foo",
+        severity=None,
+        license=LicenseInfo(expression="unknown", family=None, verdict=LicenseVerdict.UNKNOWN),
+    )
+    status, driver = license_rung(finding, policy=_GATING_LICENSE_POLICY)
+    assert status is Status.INDETERMINATE
+    assert driver == StatusDriver(axis=AXIS_LICENSE, finding_id=finding.id)
+
+
+def test_license_rung_still_warns_with_policy_none():
+    """The ceiling still holds for the no-policy call (policy=None falls back
+    to the all-WARN DEFAULT_LICENSE_POLICY) even after 6.5 wired the gating
+    path -- the escalation only ever comes from a HANDED gating table."""
+    for verdict in (LicenseVerdict.DENIED, LicenseVerdict.UNKNOWN):
+        finding = Finding(
+            id=f"license:{'GPL-3.0-only' if verdict is LicenseVerdict.DENIED else 'unknown'}:foo@1.0.0",
+            axis=AXIS_LICENSE,
+            message="m",
+            subject="foo",
+            severity=None,
+            license=LicenseInfo(
+                expression="GPL-3.0-only" if verdict is LicenseVerdict.DENIED else "unknown",
+                family=None,
+                verdict=verdict,
+            ),
+        )
+        status, _driver = license_rung(finding, policy=None)
+        assert status is Status.WARN
+
+
+def test_license_rung_verdict_absent_from_policy_degrades_to_indeterminate():
+    """C0: a verdict not present in the handed (non-empty) table degrades to
+    indeterminate, never toward clean (mirrors vuln_rung's own fallback)."""
+    finding = Finding(
+        id="license:unknown:foo@1.0.0",
+        axis=AXIS_LICENSE,
+        message="m",
+        subject="foo",
+        severity=None,
+        license=LicenseInfo(expression="unknown", family=None, verdict=LicenseVerdict.UNKNOWN),
+    )
+    # A non-empty table that just lacks a mapping for UNKNOWN: it is used
+    # directly (a supplied table always wins over the module default).
+    status, _driver = license_rung(
+        finding, policy={LicenseVerdict.DENIED: Status.POLICY_VIOLATION}
+    )
+    assert status is Status.INDETERMINATE
+
+
+def test_license_rung_empty_policy_table_fails_closed_not_to_warn():
+    """C0 hardening: an EMPTY (but not None) gating table must fail closed via
+    the `.get(..., INDETERMINATE)` fallback, never short-circuit back to the
+    all-WARN module default (`policy if not None`, not `policy or ...`). None
+    means 'no policy supplied' and legitimately warn-caps; {} means 'a gating
+    table that happens to be empty' and must not silently un-gate."""
+    finding = Finding(
+        id="license:GPL-3.0-only:foo@1.0.0",
+        axis=AXIS_LICENSE,
+        message="m",
+        subject="foo",
+        severity=None,
+        license=LicenseInfo(
+            expression="GPL-3.0-only", family="GPL3", verdict=LicenseVerdict.DENIED
+        ),
+    )
+    status, _driver = license_rung(finding, policy={})
+    assert status is Status.INDETERMINATE
 
 
 # --- _parse_spdx: normalization + family ------------------------------------

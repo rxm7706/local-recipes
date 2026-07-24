@@ -152,3 +152,52 @@ def test_currency_ceiling_table_covers_all_three_reason_eligible_verdicts():
     currency_entry = next(e for e in _CEILING_FIXTURES if e[0] == "currency")
     reasons = {f.id.split(":")[1] for f in currency_entry[2]}
     assert reasons == {"eol", "over-lag", "unknown"}
+
+
+# --- Story 6.5: the ceiling guards ONLY the default (no-policy) call ---------
+#
+# The parametrized ceiling above proves the WARN cap for the no-arg
+# ``rung_fn(finding)`` call. These companions prove the OTHER half: a HANDED
+# gating policy DOES escalate the very same fixtures -- so the ceiling is
+# understood as "the unconfigured default never exceeds warn", NOT "the rung
+# can never escalate at all" (which Story 6.5 makes false).
+
+
+def test_gating_license_policy_escalates_every_ceiling_fixture():
+    license_entry = next(e for e in _CEILING_FIXTURES if e[0] == "license")
+    policy = {
+        LicenseVerdict.DENIED: Status.POLICY_VIOLATION,
+        LicenseVerdict.UNKNOWN: Status.INDETERMINATE,
+    }
+    for finding in license_entry[2]:
+        status, _driver = license_rung(finding, policy=policy)
+        assert status is not Status.WARN
+        expected = (
+            Status.POLICY_VIOLATION
+            if finding.license.verdict is LicenseVerdict.DENIED
+            else Status.INDETERMINATE
+        )
+        assert status is expected
+
+
+def test_gating_currency_policy_escalates_every_ceiling_fixture():
+    currency_entry = next(e for e in _CEILING_FIXTURES if e[0] == "currency")
+    policy = {
+        CurrencyVerdict.EOL: Status.POLICY_VIOLATION,
+        CurrencyVerdict.UNKNOWN: Status.INDETERMINATE,
+    }
+    for finding in currency_entry[2]:
+        # max_lag=0 so the over-lag fixture (SUPPORTED, lag=1) escalates via
+        # the numeric threshold check too -- none of the three stays warn.
+        status, _driver = currency_rung(finding, policy=policy, max_lag=0)
+        assert status is not Status.WARN
+        # Exact-status half, mirroring the license companion above: the
+        # ESCALATED semantics (not merely "not warn") are what exit
+        # projection rides on.
+        reason = finding.id.split(":")[1]
+        expected = {
+            "eol": Status.POLICY_VIOLATION,
+            "over-lag": Status.POLICY_VIOLATION,
+            "unknown": Status.INDETERMINATE,
+        }[reason]
+        assert status is expected
