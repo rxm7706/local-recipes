@@ -86,7 +86,7 @@ cleanup_session_on_finish = true  # kill the run's tmux session when it finishes
 # revert [adapter.dev] to "sonnet" for the mechanical batches: 1.5–1.9,
 # 2.4–2.6, 3.1–3.3, 4.1, 5.1–5.2, 6.2–6.4, 6.6–6.8.
 [adapter.dev]
-model = "opus"      # flipped sonnet→opus 2026-07-24 pre-6.9 (HARD: fix-PR actuator, egress carve-out). Revert to sonnet after 6.9 merges. Was: mechanical default for
+model = "sonnet"    # reverted opus→sonnet 2026-07-24 post-6.9 (6.9 recovered+merged). 6.6 is mechanical (engine version-range pinning). Mechanical default for
                     # 6.7/6.8/6.6 + Epic 5. Re-flip to "opus" before HARD story 6.9
                     # (actuator egress).
                     # Default DEV tier rationale: post-BMAD-refinement ACs are transcription-
