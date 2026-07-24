@@ -189,7 +189,7 @@ window.DASHBOARD_DATA = {
             ],
             [
               "6.7",
-              "active",
+              "pending",
               "EPSS feed + the --min-epss gate"
             ],
             [
@@ -847,7 +847,7 @@ window.DASHBOARD_DATA = {
       }
     }
   },
-  "snapshot": "<span>2026-07-24 09:28 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-07-24 09:33 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -994,7 +994,8 @@ window.DASHBOARD_DATA = {
       "status": "realized",
       "owner": "marshal",
       "chain": {
-        "deck": "presentations/pyforge-marshal"
+        "deck": "presentations/pyforge-marshal",
+        "spec": "_bmad-output/projects/local-recipes/planning-artifacts/specs/spec-pyforge-marshal"
       }
     },
     {

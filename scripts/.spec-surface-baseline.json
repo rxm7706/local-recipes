@@ -16,9 +16,9 @@
   "files": {
    "docs/dashboard/README.md": "0825c973586fc6c811a3f28f94b58dc84bb0d81b",
    "docs/dashboard/generate.py": "4540f33947e7ea4d9c9a1da0369fb51c9b9d0f06",
-   "docs/dashboard/index.html": "a3d40dc9a65e3244987d7e5b28a14a07373c0c85"
+   "docs/dashboard/index.html": "b8e8fade2bc4c0fcdd4ad12b4b65eb444142dcc3"
   },
-  "memlog": "ad647fd3023f1ee7d3ba3102097c9b8a60c54a43"
+  "memlog": "d4b878584a138de3c43a71e3cf77faef631360f8"
  },
  "spec-fleet-stewardship": {
   "files": {},
@@ -1236,6 +1236,10 @@
    "src/shared/packages/pyforge-warden/tests/unit/test_waiver.py": "e79d610546844fb26bfe7c0d6058be4b27014a18"
   },
   "memlog": "6c11c8887f3642e1a192e1b2b49021d8ddae2f71"
+ },
+ "spec-pyforge-marshal": {
+  "files": {},
+  "memlog": "dbc3138c11fdc19eb5b8bb2e0f22f08186b4f9d8"
  },
  "spec-regenerable-factory": {
   "files": {
