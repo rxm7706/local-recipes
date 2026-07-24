@@ -18,7 +18,14 @@ from datetime import UTC, datetime, timedelta
 import pytest
 import yaml
 
-from pyforge.warden.models import AXIS_HYGIENE, AXIS_INGESTION, AXIS_VULNERABILITY, Status, StatusDriver
+from pyforge.warden.models import (
+    AXIS_HYGIENE,
+    AXIS_INGESTION,
+    AXIS_VULNERABILITY,
+    EMPTY_EXTRACTION_DRIVER_ID,
+    Status,
+    StatusDriver,
+)
 from pyforge.warden.waiver import (
     BaselineEntry,
     BaselineParseError,
@@ -794,6 +801,44 @@ def test_malformed_baseline_yaml_raises_baseline_parse_error(tmp_path):
         load_baseline(path)
 
 
+def test_baseline_duplicate_top_level_key_raises_parse_error(tmp_path):
+    """Review finding: plain yaml.safe_load keeps the LAST of two
+    duplicate keys silently -- two `baseline:` sections (e.g. two emitted
+    stanzas concatenated without a `---` separator) would silently drop
+    the first section's entries. load_baseline's _UniqueKeySafeLoader
+    rejects the document loudly instead."""
+    path = tmp_path / ".warden-baseline.yaml"
+    _write(
+        path,
+        "version: 1\n"
+        "baseline:\n"
+        f"  - id: 'hygiene:DEP002:requests'\n"
+        f"    expires_at: {_EXPIRES!r}\n"
+        "baseline:\n"
+        f"  - id: 'hygiene:DEP002:flask'\n"
+        f"    expires_at: {_EXPIRES!r}\n",
+    )
+    with pytest.raises(BaselineParseError, match="duplicate key"):
+        load_baseline(path)
+
+
+def test_baseline_duplicate_key_inside_an_entry_raises_parse_error(tmp_path):
+    """The same duplicate-key rejection applies to EVERY mapping in the
+    document, an individual entry included -- two `id:` lines in one entry
+    must never silently resolve to the last one."""
+    path = tmp_path / ".warden-baseline.yaml"
+    _write(
+        path,
+        "version: 1\n"
+        "baseline:\n"
+        f"  - id: 'hygiene:DEP002:requests'\n"
+        f"    id: 'hygiene:DEP002:flask'\n"
+        f"    expires_at: {_EXPIRES!r}\n",
+    )
+    with pytest.raises(BaselineParseError, match="duplicate key"):
+        load_baseline(path)
+
+
 # --- load_baseline: version/shape validation -------------------------------
 
 
@@ -1161,6 +1206,48 @@ def test_emit_baseline_stanza_omits_clean_and_error_and_already_bypassed_rungs()
     )
     document = yaml.safe_load(stanza)
     assert document["baseline"] == []
+
+
+def test_emit_baseline_stanza_never_proposes_the_empty_extraction_sentinel():
+    """Review finding: EMPTY_EXTRACTION_DRIVER_ID is whole-scan-scoped and
+    invocation-stable -- unlike a real finding id, baselining it once would
+    suppress EVERY future empty-extraction condition (e.g. an extraction
+    regression false-greening the gate). emit_baseline_stanza never
+    proposes it; a deliberate hand-authored entry stays possible
+    (validation accepts the id -- only the accidental path is closed)."""
+    rungs = [
+        _rung(Status.INDETERMINATE, EMPTY_EXTRACTION_DRIVER_ID, axis=AXIS_INGESTION),
+        _rung(Status.WARN, "hygiene:DEP002:requests"),
+    ]
+    stanza = emit_baseline_stanza(
+        rungs, now=datetime(2026, 1, 1, tzinfo=UTC), expiry_days=14
+    )
+    document = yaml.safe_load(stanza)
+    ids = [entry["id"] for entry in document["baseline"]]
+    assert ids == ["hygiene:DEP002:requests"]
+    assert EMPTY_EXTRACTION_DRIVER_ID not in stanza
+
+
+def test_emit_baseline_stanza_round_trips_through_load_baseline(tmp_path):
+    """Review finding: the flag's whole workflow is emit -> human commits
+    -> --baseline on a later run, yet nothing proved the emitted stanza is
+    load_baseline-valid (safe_dump's timestamp quoting/format is exactly
+    the kind of emitter detail a future change could silently break)."""
+    rungs = [
+        _rung(Status.WARN, "hygiene:DEP002:requests"),
+        _rung(Status.POLICY_VIOLATION, "vuln:GHSA-xxxx:pkg@1.0.0", axis=AXIS_VULNERABILITY),
+    ]
+    now = datetime(2026, 1, 1, tzinfo=UTC)
+    stanza = emit_baseline_stanza(rungs, now=now, expiry_days=14)
+    path = tmp_path / ".warden-baseline.yaml"
+    _write(path, stanza)
+    entries = load_baseline(path)
+    assert sorted(entry.id for entry in entries) == [
+        "hygiene:DEP002:requests",
+        "vuln:GHSA-xxxx:pkg@1.0.0",
+    ]
+    for entry in entries:
+        assert entry.expires_at == (now + timedelta(days=14)).isoformat()
 
 
 def test_emit_baseline_stanza_never_uses_unsafe_yaml_dump(monkeypatch):

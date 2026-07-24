@@ -36,7 +36,9 @@ Ownership decisions recorded:
   (``tests/meta/test_verdict_sole_ownership.py`` enforces this for every
   non-``verdict.py`` module, this one included).
 * This module reads/writes YAML as DATA: ``yaml.safe_load``/``yaml.
-  safe_dump`` only, never ``yaml.load``/``yaml.unsafe_load``, never
+  safe_dump`` only (plus ``_UniqueKeySafeLoader``, a pure RESTRICTION of
+  ``SafeLoader`` that additionally rejects duplicate mapping keys for the
+  baseline file), never ``yaml.load``/``yaml.unsafe_load``, never
   string-concatenation (NFR-S4/D1) -- no I/O beyond reading the one
   candidate file, no subprocess, no network, no exec.
 * Story 3.3 (FR23/FR25 -- waiver-expiry visibility + the ``--warn-only``
@@ -64,10 +66,14 @@ Ownership decisions recorded:
   (``reason`` is optional, defaulting to ``_DEFAULT_BASELINE_REASON``);
   there is no ``authorized_by``/``accepted_at`` at all (a baseline is
   bulk-accepted at adoption time, not individually signed like a waiver).
-  ``apply_waivers``'s per-rung loop tries a waiver match FIRST and only
-  falls back to a baseline match when no waiver entry exists for that
-  finding id at all -- "waiver wins" is a structural short-circuit (an
-  early ``continue``), never a second pass over ``rungs``, and it holds
+  ``apply_waivers``'s per-rung loop tries a waiver match FIRST: on a
+  BLOCKING rung, a matching waiver entry short-circuits with an early
+  ``continue``, so a baseline entry can never suppress a rung whose
+  finding id also has a waiver entry (on an already-non-blocking rung the
+  waiver branch's status guard falls through to the baseline branch, whose
+  own identical status guard makes it a no-op -- neither branch ever
+  rewrites a non-blocking rung). "Waiver wins" is that structural
+  short-circuit, never a second pass over ``rungs``, and it holds
   even when the matched waiver is itself expired (the expired-waiver
   re-block fall-through still wins over a valid baseline entry on the
   same id -- a deliberately conservative choice, see ``apply_waivers``'s
@@ -90,7 +96,7 @@ from pathlib import Path
 
 import yaml
 
-from .models import Status, StatusDriver
+from .models import EMPTY_EXTRACTION_DRIVER_ID, Status, StatusDriver
 
 # The finding-ID families, mirrored verbatim from models.py's own copy
 # (locally re-declared per this module's docstring -- models.py must not be
@@ -522,6 +528,40 @@ def load_waivers(path: Path) -> tuple[WaiverEntry, ...]:
     return _validate_document(document, path=path).waivers
 
 
+class _UniqueKeySafeLoader(yaml.SafeLoader):
+    """A ``SafeLoader`` that REJECTS duplicate mapping keys (Story 6.8
+    review finding): plain ``yaml.safe_load`` silently keeps the LAST of
+    two identical keys, so a baseline file holding two ``baseline:``
+    sections (e.g. two ``--baseline-emit`` stanzas concatenated without a
+    ``---`` document separator) would silently drop the first section's
+    entries before ``_validate_baseline_document``'s duplicate-*id* check
+    could ever see them -- the exact silent degradation ``load_baseline``'s
+    "a loud error, never a silent empty baseline" contract forbids. A pure
+    restriction of ``SafeLoader`` (never a widening), used only by
+    ``load_baseline``: ``load_waivers`` deliberately keeps stock
+    ``yaml.safe_load`` (this story may not alter the waiver-only path)."""
+
+    def construct_mapping(self, node, deep=False):
+        seen = set()
+        for key_node, _value_node in node.value:
+            key = self.construct_object(key_node, deep=deep)
+            try:
+                duplicate = key in seen
+            except TypeError:
+                # Unhashable key: SafeLoader's own construct_mapping raises
+                # its canonical ConstructorError for this -- defer to it.
+                continue
+            if duplicate:
+                raise yaml.constructor.ConstructorError(
+                    "while constructing a mapping",
+                    node.start_mark,
+                    f"found duplicate key {key!r}",
+                    key_node.start_mark,
+                )
+            seen.add(key)
+        return super().construct_mapping(node, deep=deep)
+
+
 def load_baseline(path: Path) -> tuple[BaselineEntry, ...]:
     """Load + validate the ``--baseline`` file at ``path`` (Story 6.8).
 
@@ -534,9 +574,11 @@ def load_baseline(path: Path) -> tuple[BaselineEntry, ...]:
     no visible signal why. This is a deliberate, documented divergence
     from the waiver precedent (see the module docstring), not an
     oversight. Otherwise mirrors ``load_waivers`` exactly: raises
-    ``BaselineParseError`` for an unreadable/malformed-YAML file,
-    ``BaselineValidationError`` for a shape/schema problem.
-    ``yaml.safe_load`` only -- never ``yaml.load``/``yaml.unsafe_load``
+    ``BaselineParseError`` for an unreadable/malformed-YAML file (a
+    duplicate mapping key included -- see ``_UniqueKeySafeLoader``),
+    ``BaselineValidationError`` for a shape/schema problem. Safe loading
+    only (``_UniqueKeySafeLoader`` is a pure restriction of
+    ``yaml.SafeLoader``) -- never ``yaml.load``/``yaml.unsafe_load``
     (NFR-S4/D1)."""
     if not path.exists():
         raise BaselineValidationError(
@@ -553,7 +595,11 @@ def load_baseline(path: Path) -> tuple[BaselineEntry, ...]:
         raise BaselineValidationError(f"{path}: --baseline path is not a file")
     try:
         with path.open("r", encoding="utf-8") as handle:
-            document = yaml.safe_load(handle)
+            loader = _UniqueKeySafeLoader(handle)
+            try:
+                document = loader.get_single_data()
+            finally:
+                loader.dispose()
     except (yaml.YAMLError, UnicodeDecodeError, RecursionError, OSError) as exc:
         raise BaselineParseError(f"{path}: cannot read or parse: {exc}") from exc
     return _validate_baseline_document(document, path=path).entries
@@ -608,9 +654,13 @@ def apply_waivers(
 
     Story 6.8 adds ``baseline`` as a SECOND suppression input to this SAME
     per-rung loop, not a second pass over ``rungs``: for each rung, a
-    waiver match is tried FIRST; a baseline match is only even attempted
-    when NO waiver entry exists for that finding id at all (an early
-    ``continue`` after the waiver branch runs). This makes "waiver wins"
+    waiver match is tried FIRST; on a BLOCKING rung a matching waiver
+    entry short-circuits with an early ``continue``, so a baseline entry
+    can never suppress a rung whose finding id also has a waiver entry.
+    (On an already-non-blocking rung the waiver branch's status guard
+    falls through to the baseline branch, whose own identical status
+    guard makes it a no-op -- neither branch rewrites a non-blocking
+    rung.) This makes "waiver wins"
     a structural property, including the (deliberately conservative) case
     where the matched waiver is itself expired -- the rung still takes the
     waiver's re-block fall-through rather than falling through further to
@@ -786,7 +836,18 @@ def emit_baseline_stanza(
     ``--format json``) for a human to commit; this tool never writes it
     into the scanned repository tree itself, and calling this function
     never itself suppresses anything -- ``--baseline-emit`` is purely
-    observational (unlike ``--bypass``, which both bypasses AND emits)."""
+    observational (unlike ``--bypass``, which both bypasses AND emits).
+
+    One DELIBERATE divergence from ``emit_bypass_stanza``'s selection
+    (Story 6.8 review finding): the D2(c) empty-extraction sentinel
+    (``EMPTY_EXTRACTION_DRIVER_ID``) is NEVER proposed as a grandfathering
+    candidate. Its id is whole-scan-scoped and invocation-stable -- unlike
+    a real finding id (package@version-scoped, so a NEW problem gets a NEW
+    id), baselining it once would suppress EVERY future empty-extraction
+    condition, e.g. an extraction regression false-greening the gate. A
+    human who really wants to suppress it can still hand-author a waiver
+    or baseline entry (validation accepts the id -- the deliberate act
+    stays possible; only the accidental bulk-adoption path is closed)."""
     ids = sorted(
         {
             driver.finding_id
@@ -794,6 +855,7 @@ def emit_baseline_stanza(
             if driver is not None
             and status not in _NON_BLOCKING_STATUSES
             and _is_finding_family_id(driver.finding_id)
+            and driver.finding_id != EMPTY_EXTRACTION_DRIVER_ID
         }
     )
     expires_at = now + timedelta(days=expiry_days)

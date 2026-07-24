@@ -631,11 +631,15 @@ def _build_parser() -> tuple[argparse.ArgumentParser, argparse.ArgumentParser]:
         help=(
             "print a .warden-baseline.yaml-ready stanza (stdout under "
             "--format text, stderr under --format json) for every finding "
-            "still blocking after waiver/baseline suppression -- purely "
-            "observational, unlike --bypass: it never itself suppresses "
-            "anything or changes the exit code; a human must commit the "
-            "printed file and pass --baseline on a later run for it to "
-            "take effect"
+            "still failing OR warning after waiver/baseline suppression "
+            "(warn-level findings are included: a warn today becomes a "
+            "block the day its axis' gate flag activates). Entries are "
+            "stamped expires_at = now + waiver_default_expiry_days "
+            "(default 14) -- review/edit dates and reasons before "
+            "committing. Purely observational, unlike --bypass: it never "
+            "itself suppresses anything or changes the exit code; a human "
+            "must commit the printed file and pass --baseline on a later "
+            "run for it to take effect"
         ),
     )
     return parser, scan
