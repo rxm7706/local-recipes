@@ -3,7 +3,7 @@ window.DASHBOARD_DATA = {
     "warden": {
       "label": "Warden",
       "accentVar": "--warden",
-      "branch": "main · loop paused — resume at story 6.3",
+      "branch": "loop/pyforge-warden · wave running — resume order 6.7 → 6.8 → 6.9 → 6.6 → 5.1 → 5.2",
       "contract": "FR1–FR40 · exit codes {0,1,2,130} · verdict lattice error &gt; policy-violation &gt; indeterminate &gt; warn &gt; bypassed &gt; clean &gt; not-applicable",
       "seglabels": [
         "E1 · spine",
@@ -189,7 +189,7 @@ window.DASHBOARD_DATA = {
             ],
             [
               "6.7",
-              "pending",
+              "active",
               "EPSS feed + the --min-epss gate"
             ],
             [
@@ -205,7 +205,17 @@ window.DASHBOARD_DATA = {
           ]
         }
       ],
-      "inflight": null,
+      "inflight": {
+        "key": "6.7",
+        "title": "EPSS feed + the --min-epss gate (Axis 2 enrichment)",
+        "phase": "dev (sonnet)",
+        "attempt": 1,
+        "startEpoch": 1784885295,
+        "median": 95,
+        "lo": 35,
+        "hi": 265,
+        "phaseAsOf": "2026-07-24 09:28 UTC"
+      },
       "velocity": {
         "sub": "Active agent-compute time per completed story (dev + review; excludes gate-pause wait). Median holds near steady-state; the Epic-2 extraction stories (2.2–2.4) ran heavy.",
         "bars": [
@@ -284,6 +294,10 @@ window.DASHBOARD_DATA = {
           [
             "6.3",
             265
+          ],
+          [
+            "6.5",
+            105
           ]
         ],
         "foot": [
@@ -311,7 +325,7 @@ window.DASHBOARD_DATA = {
       },
       "timing": {
         "metric": "active agent-compute per story (dev + review; excludes gate-pause wait) — from bmad-loop run journals",
-        "totalLabel": "~31 h active compute",
+        "totalLabel": "~33 h active compute",
         "note": "Measured stories only. The earliest keystones 1.1 / 1.2, plus 2.6 and the recovered 6.10 spike, predate clean journaling and are excluded. 6.4’s bar is its delivered dev-2 pass (35m); a rolled-back dev-1 cost ~49m more that isn’t counted as delivery. Epic-6 note: 6.10 (design spike) + 6.2 have no journal record (their run dirs predate journal capture) — bars show journal-backed stories only; 6.3 mined from the loop-home run journal.",
         "perStory": {
           "1.3": 78,
@@ -332,14 +346,15 @@ window.DASHBOARD_DATA = {
           "4.1": 96,
           "6.1": 81,
           "6.4": 35,
-          "6.3": 265
+          "6.3": 265,
+          "6.5": 105
         },
         "epicMin": {
           "E1": 534,
           "E2": 617,
           "E3": 264,
           "E4": 96,
-          "E6": 381
+          "E6": 486
         },
         "total": 1627
       }
@@ -832,7 +847,7 @@ window.DASHBOARD_DATA = {
       }
     }
   },
-  "snapshot": "<span>2026-07-24 09:12 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-07-24 09:28 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
