@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&amp;family=Archivo+Expanded:wght@700;800;900&amp;display=swap" rel="stylesheet">
+<style>
+  body { margin: 0; background: #7c1405; }
+  .code { font-family: ui-monospace, "SF Mono", Menlo, monospace; }
+</style>
+</helmet>
+<div style="width:1920px; height:1080px; background:#f3f2f2; color:#201e1d; font-family:'Archivo',sans-serif; display:flex; flex-direction:column; box-sizing:border-box; padding:84px 96px 72px; overflow:hidden;">
+
+  <!-- top bar -->
+  <div style="display:flex; justify-content:space-between; align-items:center; padding-bottom:22px; border-bottom:3px solid #201e1d;">
+    <div style="display:flex; align-items:center; gap:16px;">
+      <div style="width:34px; height:34px; border:3px solid #ec3013; display:flex; align-items:center; justify-content:center;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ec3013" stroke-width="2.4" stroke-linecap="square"><path d="M3 12h4l2-5 4 10 2-5h6"></path></svg>
+      </div>
+      <div>
+        <div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-size:26px; font-weight:900; letter-spacing:0.01em; line-height:1;">DOCTOR</div>
+        <div class="code" style="font-size:12px; opacity:0.62; margin-top:4px;">The Physician · pyforge crew</div>
+      </div>
+    </div>
+    <span style="font-size:14px; letter-spacing:0.12em; text-transform:uppercase; font-weight:700; color:rgba(32,30,29,.65);">One bedside manner over the fleet's vitals</span>
+  </div>
+
+  <!-- headline -->
+  <div style="margin-top:52px;">
+    <div style="font-size:19px; letter-spacing:0.14em; text-transform:uppercase; font-weight:800; color:#c22a10;">Sound machinery before the run. A finger on the pulse after the ship.</div>
+    <h1 style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:96px; line-height:0.92; letter-spacing:-0.025em; margin:22px 0 0; max-width:1560px;">Check the vitals. Keep the ecosystem alive.</h1>
+    <p style="font-size:27px; line-height:1.4; font-weight:500; margin:30px 0 0; max-width:1340px; color:rgba(32,30,29,.85);">Doctor is the health and diagnostics authority of the factory: <b>pre-flight checks</b> so the loop never starts on broken machinery, <b>continuous monitoring</b> so shipped packages never rot silently, and <b>prescriptions</b> — not bare reports — so every finding arrives with its ordered fix.</p>
+  </div>
+
+  <!-- pillars -->
+  <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:28px; margin-top:auto;">
+    <div style="border:2px solid #201e1d; padding:34px 32px; display:flex; flex-direction:column;">
+      <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#ec3013" stroke-width="2.2" stroke-linecap="square"><path d="M9 12l2 2 4-4"></path><circle cx="12" cy="12" r="9"></circle></svg>
+      <div style="font-size:13px; letter-spacing:0.1em; text-transform:uppercase; font-weight:800; color:#c22a10; margin-top:22px;">Pre-flight</div>
+      <div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-size:30px; font-weight:800; line-height:1.05; margin-top:8px;">Fail fast, not mid-build</div>
+      <p style="font-size:17px; line-height:1.45; margin:14px 0 0; color:rgba(32,30,29,.78);">A missing engine or broken config is caught in triage — before Marshal spins the factory — where it costs seconds instead of a wasted run.</p>
+    </div>
+    <div style="border:2px solid #ec3013; background:#fce4de; padding:34px 32px; display:flex; flex-direction:column;">
+      <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#ec3013" stroke-width="2.2" stroke-linecap="square"><path d="M3 12h4l2-5 4 10 2-5h6"></path></svg>
+      <div style="font-size:13px; letter-spacing:0.1em; text-transform:uppercase; font-weight:800; color:#c22a10; margin-top:22px;">The pulse</div>
+      <div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-size:30px; font-weight:800; line-height:1.05; margin-top:8px;">Nothing rots silently</div>
+      <p style="font-size:17px; line-height:1.45; margin:14px 0 0; color:rgba(32,30,29,.78);">Freshness, drift, advisories, abandonment — watched continuously across 769 feedstocks with KEV/EPSS-ranked triage; regressions surface the moment they appear.</p>
+    </div>
+    <div style="border:2px solid #201e1d; padding:34px 32px; display:flex; flex-direction:column;">
+      <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#ec3013" stroke-width="2.2" stroke-linecap="square"><path d="M8 3h8M12 3v7M5 21c2-6 12-6 14 0"></path></svg>
+      <div style="font-size:13px; letter-spacing:0.1em; text-transform:uppercase; font-weight:800; color:#c22a10; margin-top:22px;">The differentiator</div>
+      <div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-size:30px; font-weight:800; line-height:1.05; margin-top:8px;">Prescriptions, not reports</div>
+      <p style="font-size:17px; line-height:1.45; margin:14px 0 0; color:rgba(32,30,29,.78);">Every diagnosis names the root cause and an ordered remediation plan — what to patch, upgrade or retire, in what order. Worklists, not noise.</p>
+    </div>
+  </div>
+
+  <!-- outcome band -->
+  <div style="display:flex; align-items:stretch; border-top:3px solid #201e1d; margin-top:40px; padding-top:26px;">
+    <div style="flex:1; padding-right:32px;">
+      <div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-size:46px; font-weight:900; line-height:1; color:#ec3013;">769</div>
+      <div style="font-size:15px; font-weight:600; margin-top:6px; color:rgba(32,30,29,.75);">feedstocks under continuous watch</div>
+    </div>
+    <div style="flex:1; padding:0 32px; border-left:2px solid #d3d0cf;">
+      <div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-size:46px; font-weight:900; line-height:1; color:#ec3013;">6+</div>
+      <div style="font-size:15px; font-weight:600; margin-top:6px; color:rgba(32,30,29,.75);">atlas instruments, one bedside manner</div>
+    </div>
+    <div style="flex:1; padding:0 32px; border-left:2px solid #d3d0cf;">
+      <div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-size:46px; font-weight:900; line-height:1; color:#ec3013;">3</div>
+      <div style="font-size:15px; font-weight:600; margin-top:6px; color:rgba(32,30,29,.75);">advisory overlays (KEV · EPSS · CWE)</div>
+    </div>
+    <div style="flex:1; padding:0 0 0 32px; border-left:2px solid #d3d0cf;">
+      <div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-size:46px; font-weight:900; line-height:1; color:#ec3013;">1st</div>
+      <div style="font-size:15px; font-weight:600; margin-top:6px; color:rgba(32,30,29,.75);">exploited-in-wild patched first, always</div>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1920,&quot;height&quot;:1080}}"></script>
+</body>
+</html>
