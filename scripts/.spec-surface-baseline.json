@@ -15,10 +15,10 @@
  "spec-factory-console": {
   "files": {
    "docs/dashboard/README.md": "0825c973586fc6c811a3f28f94b58dc84bb0d81b",
-   "docs/dashboard/generate.py": "b2c4a33c608b0ad604e66cc797e338bfc16169ab",
-   "docs/dashboard/index.html": "bef851b9fb2c5e46de3be424f89a42b6597d03c2"
+   "docs/dashboard/generate.py": "4540f33947e7ea4d9c9a1da0369fb51c9b9d0f06",
+   "docs/dashboard/index.html": "a3d40dc9a65e3244987d7e5b28a14a07373c0c85"
   },
-  "memlog": "f2da7d5f3ff8a02ce49f1fa6721c5096dd36fad1"
+  "memlog": "ad647fd3023f1ee7d3ba3102097c9b8a60c54a43"
  },
  "spec-fleet-stewardship": {
   "files": {},
