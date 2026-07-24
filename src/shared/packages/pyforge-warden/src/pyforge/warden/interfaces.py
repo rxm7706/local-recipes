@@ -82,9 +82,10 @@ This module is pure composition: no I/O, no subprocess, no network.
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
+from types import MappingProxyType
 from typing import Protocol, runtime_checkable
 
 from .config import EffectiveConfig
@@ -194,7 +195,21 @@ class EngineResult:
     actually consulted (present, whether fresh or stale); ``None`` when EPSS
     consultation is disabled (``min_epss=None``) or the feed is absent/
     unreadable. ``cli.py`` threads the first non-``None`` value across
-    ``engine_results`` into ``report.assemble_report`` the same way."""
+    ``engine_results`` into ``report.assemble_report`` the same way.
+
+    ``fixed_versions`` (Story 5.1, AC1, additive/defaulted — mirrors
+    ``kev_data``/``epss_data``'s threading precedent): populated by
+    ``OsvEngine`` from ``vuln.parse_osv_output(...).fixed_versions`` at its
+    real-parse success site only (``finding.id -> fixed version string``,
+    absent when unknown). Unlike ``vuln_data``/``kev_data``/``epss_data``
+    (per-FEED provenance, so ``cli.py`` picks the first non-``None`` value
+    across ``engine_results``), this is per-FINDING data — ``cli.py`` merges
+    it as a dict UNION across every result instead (first engine-
+    registration-order occurrence wins on a rare key collision, mirroring
+    ``DefaultPolicy``'s own engine-vs-engine finding dedupe convention).
+    Consumed ONLY by ``report.render_text``'s remediation lines (a caller-
+    supplied side channel, never threaded into ``assemble_report`` or the
+    frozen ``ComplianceReport`` contract)."""
 
     findings: tuple[Finding, ...]
     errors: tuple[ErrorRecord, ...]
@@ -204,6 +219,7 @@ class EngineResult:
     kev_data: FeedProvenance | None = None
     epss_data: FeedProvenance | None = None
     currency_data: FeedProvenance | None = None
+    fixed_versions: Mapping[str, str] = MappingProxyType({})
 
 
 @runtime_checkable

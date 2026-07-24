@@ -862,10 +862,18 @@ def test_text_format_emits_a_human_summary_with_driver_and_finding_lines(
     captured = capsys.readouterr()
     assert rc == 0
     lines = captured.out.splitlines()
-    assert len(lines) == 3
+    # Story 5.1 (AC1): the finding line now carries a trailing remediation
+    # line naming the manifest+section this synthesized pyproject.toml
+    # declares requests under.
+    assert len(lines) == 4
     assert lines[0] == "warden: status=warn exit_code=0 findings=1"
     assert lines[1] == "  driver: axis=hygiene id=hygiene:DEP002:requests"
     assert lines[2].startswith("  [hygiene] none hygiene:DEP002:requests -- ")
+    assert lines[3] == (
+        "      -> fix: remove requests from the manifest -- it is declared "
+        "but not used in the codebase (declared in pyproject.toml "
+        "[project.dependencies])"
+    )
 
 
 def test_text_format_on_empty_dir_reports_not_applicable(capsys, tmp_path):

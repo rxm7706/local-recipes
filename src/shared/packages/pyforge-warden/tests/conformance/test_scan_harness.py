@@ -1793,16 +1793,23 @@ def test_text_format_clean_fixture_is_a_single_header_line(capsys):
 def test_text_format_findings_fixture_emits_driver_and_finding_lines(capsys):
     """FR17: a real (non-clean) scan's text output carries the driver line
     plus one line per finding -- the human summary the AC actually asks
-    for, not the pre-1.8 single debug line."""
+    for, not the pre-1.8 single debug line. Story 5.1 (AC1): the finding
+    line is now followed by a remediation line naming the manifest+section
+    DEPTRY_UNUSED's own pyproject.toml declares requests under."""
     rc = main(["scan", str(DEPTRY_UNUSED)])
     captured = capsys.readouterr()
     assert rc == 0
     lines = captured.out.splitlines()
-    assert len(lines) == 3
+    assert len(lines) == 4
     assert lines[0] == "warden: status=warn exit_code=0 findings=1"
     assert lines[1] == "  driver: axis=hygiene id=hygiene:DEP002:requests"
     # line 2's message text is deptry's own; only the prefix is pinned here.
     assert lines[2].startswith("  [hygiene] none hygiene:DEP002:requests -- ")
+    assert lines[3] == (
+        "      -> fix: remove requests from the manifest -- it is declared "
+        "but not used in the codebase (declared in pyproject.toml "
+        "[project.dependencies])"
+    )
 
 
 def test_text_format_error_fixture_emits_driver_and_error_lines(capsys, tmp_path):
