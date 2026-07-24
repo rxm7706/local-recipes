@@ -175,6 +175,65 @@ after.
 otherwise reds the staged-recipes linter) and confirm `environment.yaml` is in
 sync with `pixi.toml`. See auto-memory `feedback_non_recipe_pr_linter_gates`.
 
+### Artifact dependency tree & editing surfaces (per deck — READ BEFORE EDITING)
+
+Every deck (`presentations/pyforge-<slug>/` ↔ Design project "PyForge <Name>
+deck") carries the same artifact family in three branches. **Edit at a branch's
+head; everything below it is derived and gets re-derived, never hand-patched.**
+
+```
+docs/dreams/<slug>.md                                    Tier 0 — the why
+        │
+        ▼
+PyForge <Name>.dc.html   (deck prototype, Design)        ── the DECK branch
+        │ extract → build (React deck: src/, dist/)
+        ├──► deck-export ──► src/pptx/pyforge-<slug>-deck-*.pptx
+        ▼
+src/marp/pyforge-<slug>-deck-*.md          (derived narrative)
+src/marp/…-executive-summary-*.md ──► PyForge <Name> - Executive Summary.dc.html  ── EXEC branch
+src/marp/…-infographic-*.md ──┬─ marp/deck-export ──► …infographic-standalone-*.html
+                              │                       + …_infographic_deck-*.pptx
+                              └─ content grounding ──► the INFOGRAPHIC trio
+                                        │
+                 ┌──────────────────────┼───────────────────────────┐
+                 ▼                      ▼                           ▼
+   ★ PyForge <Name> -         PyForge <Name> Infographic     PyForge <Name> -
+     Infographic.dc.html      standalone.html                Infographic Deck.dc.html
+     (HEAD — edit here)       (same body, no x-dc wrapper,   (same sections re-laid
+                              styles inlined in <head>)       as 1920×1080 slides)
+```
+
+**Where to edit WHAT:**
+
+| You want to change… | Edit surface | Propagates to |
+|---|---|---|
+| The deck's story / slides | `PyForge <Name>.dc.html` in Design | pull → extract → build → deck-export (React deck, deck pptx) |
+| Infographic content | ★ `PyForge <Name> - Infographic.dc.html` in Design (the trio's head) | standalone + Infographic Deck (Path A/B below); optionally the marp `.md` → infographic pptx |
+| Executive summary | `PyForge <Name> - Executive Summary.dc.html` in Design; keep its marp `.md` in step | exec pages both sides |
+| Exports only (pptx / marp standalone) | `src/marp/pyforge-<slug>-*.md` in git, then `pixi run -e local-recipes deck-export <slug>` | pptx + marp-rendered standalone |
+| Visual design / palette / tokens | the **Modernist design system** project (`fbc1d6c8`), NOT per-artifact; per-artifact layout tweaks in that artifact's dc.html | every Modernist-bound deck |
+
+**Propagating an infographic edit** (the trio must stay in lockstep):
+- **Path A — in Design:** append to the edit prompt: *"…then mirror the change
+  into `PyForge <Name> - Infographic Deck.dc.html` as a slide in the same style,
+  and update `PyForge <Name> Infographic standalone.html` so its body matches
+  the one-pager exactly (same markup, no x-dc wrapper, styles in `<head>`)."*
+- **Path B — via the repo:** edit only the head in Design, then ask the agent to
+  *"pull <slug> infographics"* — it pulls byte-exact (strip path above),
+  re-derives standalone + deck forms, parity-checks, and commits.
+
+**What never auto-flows:** the infographic **pptx** comes from the marp `.md`
+via `deck-export`, not from the dc.html — sync the marp after Design edits when
+the PowerPoint must match. The deck prototype and exec summary are separate
+branches; infographic edits never touch them.
+
+**Always finish with a pull.** Design is the editing surface; **git is the
+archive of record** — every Design-side edit session ends with a byte-exact
+pull to `presentations/<slug>/project/` and a commit (per-deck README ledgers
+track etags). Exemplar for form: the warden family; its designated-best
+`Warden Infographic standalone.html` is copied into every deck project as
+`reference/` for Design chats to read.
+
 ---
 
 ## Parameters (fill these per case)
