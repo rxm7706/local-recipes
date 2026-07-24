@@ -217,6 +217,18 @@ Ownership decisions recorded:
   a composed ``warn`` status exits non-zero while the status itself stays
   ``warn`` (orthogonal to ``--warn-only``, which downgrades blocking rungs
   BEFORE the verdict composes).
+* ``--min-epss`` (Story 6.7) mirrors ``--max-lag``'s treatment exactly: a
+  real, two-mode CLI flag, threaded into ``ConfigLoader().load(...)`` (CLI
+  wins over either TOML file) via ``_min_epss_type`` (mirrors
+  ``_max_lag_type``'s argparse ``type=`` shape). ``config.min_epss`` is
+  threaded into ``OsvEngine(min_epss=...)`` in the engine-instantiation loop
+  (mirrors this same loop's ``fail_on_kev=...`` special case) AND into
+  ``DefaultPolicy.evaluate``'s ``vuln_rung(min_epss=...)`` call (mirrors
+  ``fail_on_kev``'s own threading — an at-or-above-threshold EPSS score
+  forces policy-violation independent of the CVSS/KEV-derived status).
+  ``epss_data`` is selected the same first-non-``None``-across-
+  ``engine_results`` way ``kev_data`` is, and threaded into
+  ``assemble_report(epss_data=...)``.
 """
 
 from __future__ import annotations
@@ -324,6 +336,24 @@ def _max_lag_type(value: str) -> int:
     if numeric < 0:
         raise argparse.ArgumentTypeError(
             f"--max-lag must be a non-negative integer, got {value!r}"
+        )
+    return numeric
+
+
+def _min_epss_type(value: str) -> float:
+    """``argparse`` ``type=`` for ``--min-epss`` (Story 6.7): a number in
+    ``[0.0, 1.0]`` — mirrors ``_max_lag_type``'s shape exactly (an
+    out-of-range or unparsable value is a usage error, argparse's own exit
+    2, never reaching ``ConfigLoader.load``/``ConfigValidationError``)."""
+    try:
+        numeric = float(value)
+    except ValueError:
+        raise argparse.ArgumentTypeError(
+            f"--min-epss must be a number in [0, 1], got {value!r}"
+        ) from None
+    if not (0.0 <= numeric <= 1.0):
+        raise argparse.ArgumentTypeError(
+            f"--min-epss must be a number in [0, 1], got {value!r}"
         )
     return numeric
 
@@ -498,6 +528,22 @@ def _build_parser() -> tuple[argparse.ArgumentParser, argparse.ArgumentParser]:
         ),
     )
     scan.add_argument(
+        "--min-epss",
+        type=_min_epss_type,
+        default=None,
+        metavar="N",
+        help=(
+            "the FIRST.org EPSS exploit-probability threshold, a number in "
+            "[0, 1] (overrides any [tool.pyforge-warden] min-epss config "
+            "value) -- activates EPSS consultation (Story 6.7): a "
+            "vulnerability finding whose EPSS score is AT OR ABOVE N "
+            "composes 'policy-violation' (exit 1), independent of its own "
+            "CVSS tier; a score below N leaves CVSS/KEV-only gating "
+            "untouched. An absent or stale EPSS feed while this is set "
+            "composes 'indeterminate' -- never a silent pass"
+        ),
+    )
+    scan.add_argument(
         "--bypass",
         action="store_true",
         help=(
@@ -655,13 +701,15 @@ def _run_scan(args: argparse.Namespace) -> int:
             cli_require_lts=args.require_lts,
             cli_fail_on_eol=args.fail_on_eol,
             cli_warn_as_error=args.warn_as_error,
+            cli_min_epss=args.min_epss,
         )
     except (ConfigParseError, ConfigValidationError) as exc:
         # Review finding: an unrelated config-file error must not silently
         # discard an already-argparse-validated CLI flag the user
         # explicitly passed (--fail-on/--fail-under-coverage/
         # --allow-licenses/--deny-licenses/--max-lag/--require-lts/
-        # --fail-on-eol are unrelated to WHY the TOML failed to load).
+        # --fail-on-eol/--min-epss are unrelated to WHY the TOML failed to
+        # load).
         try:
             config = EffectiveConfig.default_with_cli_overrides(
                 cli_fail_on=args.fail_on,
@@ -672,6 +720,7 @@ def _run_scan(args: argparse.Namespace) -> int:
                 cli_require_lts=args.require_lts,
                 cli_fail_on_eol=args.fail_on_eol,
                 cli_warn_as_error=args.warn_as_error,
+                cli_min_epss=args.min_epss,
             )
         except ConfigValidationError:
             # Fix 5 follow-up (review finding, 2026-07-18): `exc` above may
@@ -878,9 +927,11 @@ def _run_scan(args: argparse.Namespace) -> int:
             # currency-registry-stale/unavailable finding when the bundled
             # registry can't be trusted under an active gate) fires only when
             # a currency gate is active -- gated exactly as OsvEngine's
-            # fail_on_kev gates the parallel KEV-provenance finding.
+            # fail_on_kev gates the parallel KEV-provenance finding. Story
+            # 6.7: OsvEngine also takes min_epss=config.min_epss, the same
+            # way -- consulted only when the gate is active.
             engine = (
-                OsvEngine(fail_on_kev=config.fail_on_kev)
+                OsvEngine(fail_on_kev=config.fail_on_kev, min_epss=config.min_epss)
                 if factory is OsvEngine
                 else LicenseEngine(
                     allow_licenses=config.allow_licenses,
@@ -1078,6 +1129,15 @@ def _run_scan(args: argparse.Namespace) -> int:
         (result.kev_data for result in engine_results if result.kev_data is not None),
         None,
     )
+    # Story 6.7: the same first-non-None-across-engine-results selection
+    # kev_data/vuln_data already use -- OsvEngine populates epss_data only
+    # when min_epss is set and the FIRST.org EPSS feed was actually
+    # consulted; every other engine/path leaves it None (mirrors kev_data's
+    # own fail_on_kev-gated default).
+    epss_data = next(
+        (result.epss_data for result in engine_results if result.epss_data is not None),
+        None,
+    )
     # Story 6.3: the same first-non-None-across-engine-results selection
     # kev_data/vuln_data already use -- no CLI/config gating flag disables
     # CurrencyEngine's own attempt to populate currency_data (unlike
@@ -1115,6 +1175,7 @@ def _run_scan(args: argparse.Namespace) -> int:
         fail_under_coverage=config.fail_under_coverage,
         suppressions=suppressions,
         kev_data=kev_data,
+        epss_data=epss_data,
         license_gating=config.license_gating,
         currency_data=currency_data,
         currency_gating=config.currency_gating,

@@ -1009,3 +1009,98 @@ def test_default_with_cli_overrides_coerces_the_currency_bools_too(field):
     own typed error, contradicting this method's own docstring)."""
     with pytest.raises(ConfigValidationError):
         EffectiveConfig.default_with_cli_overrides(**{field: "yes"})
+
+
+# --- ConfigLoader.load: min-epss (Story 6.7) ---------------------------------
+
+
+def test_min_epss_default_is_none(tmp_path):
+    config, _ = ConfigLoader().load(tmp_path)
+    assert config.min_epss is None
+
+
+def test_toml_min_epss_override(tmp_path):
+    _write(tmp_path / "pyproject.toml", "[tool.pyforge-warden]\nmin-epss = 0.5\n")
+    config, _ = ConfigLoader().load(tmp_path)
+    assert config.min_epss == 0.5
+
+
+def test_wrong_typed_min_epss_raises_config_validation_error(tmp_path):
+    _write(tmp_path / "pyproject.toml", '[tool.pyforge-warden]\nmin-epss = "half"\n')
+    with pytest.raises(ConfigValidationError):
+        ConfigLoader().load(tmp_path)
+
+
+def test_out_of_range_min_epss_raises_config_validation_error(tmp_path):
+    _write(tmp_path / "pyproject.toml", "[tool.pyforge-warden]\nmin-epss = 1.5\n")
+    with pytest.raises(ConfigValidationError):
+        ConfigLoader().load(tmp_path)
+
+
+def test_negative_min_epss_raises_config_validation_error(tmp_path):
+    _write(tmp_path / "pyproject.toml", "[tool.pyforge-warden]\nmin-epss = -0.1\n")
+    with pytest.raises(ConfigValidationError):
+        ConfigLoader().load(tmp_path)
+
+
+def test_bool_min_epss_raises_config_validation_error(tmp_path):
+    """A bool is technically an int subclass in Python -- must be rejected
+    explicitly, mirroring every other numeric _coerce_* helper's bool
+    guard."""
+    _write(tmp_path / "pyproject.toml", "[tool.pyforge-warden]\nmin-epss = true\n")
+    with pytest.raises(ConfigValidationError):
+        ConfigLoader().load(tmp_path)
+
+
+def test_cli_min_epss_overrides_both_files(tmp_path):
+    _write(tmp_path / "pyproject.toml", "[tool.pyforge-warden]\nmin-epss = 0.1\n")
+    _write(tmp_path / "pixi.toml", "[tool.pyforge-warden]\nmin-epss = 0.2\n")
+    config, _ = ConfigLoader().load(tmp_path, cli_min_epss=0.9)
+    assert config.min_epss == 0.9
+
+
+def test_cli_min_epss_none_defers_to_the_toml_value(tmp_path):
+    """The tri-state contract: cli_min_epss=None (flag not passed) never
+    overrides an explicitly-configured TOML value."""
+    _write(tmp_path / "pyproject.toml", "[tool.pyforge-warden]\nmin-epss = 0.3\n")
+    config, _ = ConfigLoader().load(tmp_path, cli_min_epss=None)
+    assert config.min_epss == 0.3
+
+
+def test_invalid_cli_min_epss_raises_config_validation_error(tmp_path):
+    with pytest.raises(ConfigValidationError):
+        ConfigLoader().load(tmp_path, cli_min_epss=1.5)
+
+
+def test_effective_config_rejects_out_of_range_min_epss_at_construction():
+    with pytest.raises(ValueError):
+        EffectiveConfig(min_epss=1.5)
+
+
+def test_effective_config_rejects_bool_min_epss_at_construction():
+    with pytest.raises(ValueError):
+        EffectiveConfig(min_epss=True)
+
+
+def test_effective_config_min_epss_none_is_valid():
+    EffectiveConfig(min_epss=None)  # must not raise
+
+
+def test_effective_config_min_epss_boundary_values_are_valid():
+    EffectiveConfig(min_epss=0.0)  # must not raise
+    EffectiveConfig(min_epss=1.0)  # must not raise
+
+
+def test_default_with_cli_overrides_applies_min_epss():
+    config = EffectiveConfig.default_with_cli_overrides(cli_min_epss=0.42)
+    assert config.min_epss == 0.42
+
+
+def test_default_with_cli_overrides_no_min_epss_is_plain_default():
+    config = EffectiveConfig.default_with_cli_overrides()
+    assert config.min_epss is None
+
+
+def test_default_with_cli_overrides_rejects_invalid_min_epss():
+    with pytest.raises(ConfigValidationError):
+        EffectiveConfig.default_with_cli_overrides(cli_min_epss=-1.0)

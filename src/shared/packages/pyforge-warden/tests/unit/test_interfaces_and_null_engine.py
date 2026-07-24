@@ -42,6 +42,7 @@ from pyforge.warden.models import (
     CurrencyVerdict,
     CveMatchLevel,
     Ecosystem,
+    Epss,
     ErrorKind,
     ErrorRecord,
     Finding,
@@ -508,6 +509,64 @@ def test_default_policy_with_max_lag_keeps_an_under_threshold_over_lag_at_warn(
     assert (
         Status.WARN,
         StatusDriver(axis=AXIS_CURRENCY, finding_id=finding.id),
+    ) in rungs
+
+
+def _vuln_epss_result(score: float) -> tuple[Finding, EngineResult]:
+    finding = Finding(
+        id="vuln:PDOS-KEV-FIXTURE-0001:pdos-kev-fixture@1.0.0",
+        axis=AXIS_VULNERABILITY,
+        message="pdos-kev-fixture: PDOS-KEV-FIXTURE-0001 (severity medium)",
+        subject="pdos-kev-fixture",
+        severity=Severity(tier=SeverityTier.MEDIUM, raw=None),
+        epss=Epss(score=score, percentile=0.9),
+    )
+    return finding, EngineResult(
+        findings=(finding,), errors=(), coverage=(), axis=AXIS_VULNERABILITY
+    )
+
+
+def test_default_policy_with_min_epss_escalates_an_at_or_above_threshold_finding(
+    component_factory,
+):
+    """Story 6.7: EffectiveConfig(min_epss=…) threads config.min_epss into
+    vuln_rung's threshold check -- a MEDIUM-tier (normally warn) finding
+    whose EPSS score is at or above the threshold feeds policy-violation.
+    Pins the min_epss=self._config.min_epss threading itself."""
+    finding, result = _vuln_epss_result(score=0.7)
+    inventory = make_inventory(component_factory(name="requests", version="2.31.0"))
+    config = EffectiveConfig(min_epss=0.5)
+    _, rungs = DefaultPolicy(config).evaluate(inventory, [result])
+    assert (
+        Status.POLICY_VIOLATION,
+        StatusDriver(axis=AXIS_VULNERABILITY, finding_id=finding.id),
+    ) in rungs
+
+
+def test_default_policy_with_min_epss_keeps_a_below_threshold_finding_at_warn(
+    component_factory,
+):
+    """The contrasting half: a score below the configured threshold stays
+    warn (visible, not blocking) even though min_epss activates the gate."""
+    finding, result = _vuln_epss_result(score=0.2)
+    inventory = make_inventory(component_factory(name="requests", version="2.31.0"))
+    config = EffectiveConfig(min_epss=0.5)
+    _, rungs = DefaultPolicy(config).evaluate(inventory, [result])
+    assert (
+        Status.WARN,
+        StatusDriver(axis=AXIS_VULNERABILITY, finding_id=finding.id),
+    ) in rungs
+
+
+def test_default_policy_unconfigured_min_epss_never_escalates(component_factory):
+    """The two-mode contrast: with no --min-epss flag, the SAME high-scoring
+    finding feeds warn (default config.min_epss is None)."""
+    finding, result = _vuln_epss_result(score=0.99)
+    inventory = make_inventory(component_factory(name="requests", version="2.31.0"))
+    _, rungs = DefaultPolicy().evaluate(inventory, [result])
+    assert (
+        Status.WARN,
+        StatusDriver(axis=AXIS_VULNERABILITY, finding_id=finding.id),
     ) in rungs
 
 
