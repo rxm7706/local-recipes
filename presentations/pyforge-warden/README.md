@@ -91,8 +91,10 @@ Design-side (etags at last sync):
   (2026-07-24)**: the golden exemplar for all family infographics. Design-only;
   byte-exact pull PENDING (herald CLI — read_file caps at 256 KiB and the
   serve-URL wraps the file in a preview harness, so no current tool retrieves it
-  raw). Copied server-side (byte-exact) into the genesis Design project as
-  `reference/Warden Infographic standalone.html` to seed the genesis infographic.
+  raw). Copied server-side (byte-exact) into ALL other deck Design projects
+  (genesis / herald / scribe / steward / doctor / mason / marshal / atlas) as
+  `reference/Warden Infographic standalone.html` — the shape reference each
+  project's Design chat reads when generating its own infographic.
   Disk's `src/marp/` standalone is a different, marp-regenerated render — NOT
   this artifact.
 - engines: `deck-stage.js` 111060 / `support.js` 64222 (older pins than the current
