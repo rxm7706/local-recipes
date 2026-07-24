@@ -182,6 +182,7 @@ def assemble_report(
     fail_under_coverage: float = 0.0,
     suppressions: Sequence[SuppressedFinding] = (),
     kev_data: FeedProvenance | None = None,
+    epss_data: FeedProvenance | None = None,
     license_gating: bool = False,
     currency_data: FeedProvenance | None = None,
     currency_gating: bool = False,
@@ -214,6 +215,12 @@ def assemble_report(
     picks the first non-``None`` ``EngineResult.kev_data`` across
     ``engine_results``) and stored verbatim into ``ComplianceReport.
     kev_data``; this module never computes KEV provenance itself.
+
+    ``epss_data`` (Story 6.7, additive/defaulted ``None`` — mirrors
+    ``kev_data``'s own threading exactly, one feed over): caller-derived too
+    (``cli.py`` picks the first non-``None`` ``EngineResult.epss_data``
+    across ``engine_results``) and stored verbatim into ``ComplianceReport.
+    epss_data``; this module never computes EPSS provenance itself.
 
     ``hygiene_applicable=False`` (Story 2.4, AC3) overrides the hygiene
     axis's ``deps_total``/``deps_assessed``/``resolution_depth`` to the
@@ -415,6 +422,7 @@ def assemble_report(
         errors=tuple(errors),
         suppressions=tuple(suppressions),
         kev_data=kev_data,
+        epss_data=epss_data,
         currency_data=currency_data,
     )
 
