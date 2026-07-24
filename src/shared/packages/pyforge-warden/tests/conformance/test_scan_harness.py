@@ -28,6 +28,7 @@ import jsonschema
 import pytest
 
 from pyforge.warden import engines as engines_module
+from pyforge.warden import feeds
 from pyforge.warden.cli import main
 from pyforge.warden.config import ConfigLoader
 from pyforge.warden.interfaces import EngineResult
@@ -151,7 +152,12 @@ def test_clean_fixture_coverage_reflects_deptry_hygiene_assessment(capsys):
     # pinned Apache-2.0/dual license (Fix 9: _pin_pypi_license_metadata,
     # never the ambient env's actual installed metadata), so the axis is
     # applicable AND assesses both, exactly like hygiene/vulnerability.
-    for axis in ("hygiene", "vulnerability", "license"):
+    # Story 6.3: currency now has a real producer too (CurrencyEngine) —
+    # requests/packaging (and the running interpreter) resolve currency-clean
+    # against the ambient endoflife.date snapshot (tests/conftest.py's
+    # autouse _currency_ambient_feed_env fixture, the currency-axis sibling
+    # of Fix 9), so the axis is applicable AND assesses both deps too.
+    for axis in ("hygiene", "vulnerability", "license", "currency"):
         block = by_axis[axis]
         assert block["manifests_found"] == 1
         assert block["manifests_parsed"] == 1
@@ -164,15 +170,7 @@ def test_clean_fixture_coverage_reflects_deptry_hygiene_assessment(capsys):
     assert by_axis["hygiene"]["deps_assessed"] == 2
     assert by_axis["vulnerability"]["deps_assessed"] == 2
     assert by_axis["license"]["deps_assessed"] == 2
-    # Story 6.3 (currency) has no engine yet — honestly not-applicable
-    # (deps_total=0/deps_assessed=0/resolution_depth=None), NOT "0 of N
-    # assessed" (which --fail-under-coverage would flag).
-    block = by_axis["currency"]
-    assert block["manifests_found"] == 1
-    assert block["manifests_parsed"] == 1
-    assert block["deps_total"] == 0
-    assert block["deps_assessed"] == 0
-    assert block["resolution_depth"] is None
+    assert by_axis["currency"]["deps_assessed"] == 2
 
 
 def test_sentinel_fixture_never_false_greens(capsys):
@@ -188,13 +186,24 @@ def test_sentinel_fixture_never_false_greens(capsys):
     # ALSO withholds it (verdict unknown) -- a real, warn-capped
     # license:unknown: finding alongside the two vulnerability-axis
     # withholds; indeterminate still wins the composed verdict either way.
+    # Story 6.3: neither dep has a resolved version (leftpad: no-version;
+    # requests>=2.0: range-only), so BOTH are currency:unknown: too --
+    # currency resolution needs a concrete version to match against any
+    # tier, unlike license's name-only importlib.metadata lookup.
     vuln_findings = [f for f in document["findings"] if f["axis"] == "vulnerability"]
     license_findings = [f for f in document["findings"] if f["axis"] == "license"]
+    currency_findings = [f for f in document["findings"] if f["axis"] == "currency"]
     assert all(f["id"].startswith("indeterminate:") for f in vuln_findings)
     assert {f["id"] for f in license_findings} == {
         "license:unknown:leftpad@unspecified"
     }
-    assert len(vuln_findings) + len(license_findings) == len(document["findings"])
+    assert {f["id"] for f in currency_findings} == {
+        "currency:unknown:leftpad@unspecified",
+        "currency:unknown:requests@unspecified",
+    }
+    assert len(vuln_findings) + len(license_findings) + len(currency_findings) == len(
+        document["findings"]
+    )
     assert document["errors"] == []
     assert err == ""
     # Both withhold reasons are exercised by the fixture's two deps.
@@ -979,15 +988,19 @@ def test_high_severity_vuln_fixture_composes_warn(capsys):
     finding = matches[0]
     assert finding["axis"] == "vulnerability"
     assert finding["severity"]["tier"] == "high"
-    # Two equal-rank warn rungs land here (this vuln: finding + deptry's own
-    # DEP002 on the same fictitious, never-imported dependency below) --
-    # verdict.compose's deterministic tie-break picks the smallest
-    # (axis, finding_id), and "hygiene" < "vulnerability" lexicographically.
+    # Three equal-rank warn rungs land here (this vuln: finding + deptry's
+    # own DEP002 on the same fictitious, never-imported dependency + Story
+    # 6.3's currency:unknown: -- pdos-vuln-fixture-high is not a bundled-
+    # registry/ambient-endoflife-covered name) -- verdict.compose's
+    # deterministic tie-break picks the smallest (axis, finding_id), and
+    # "currency" < "hygiene" < "vulnerability" lexicographically.
     _one_hygiene_finding(document, "hygiene:DEP002:pdos-vuln-fixture-high")
+    currency_finding_id = "currency:unknown:pdos-vuln-fixture-high@1.0.0"
+    assert currency_finding_id in {f["id"] for f in document["findings"]}
     driver = document["status"]["driver"]
     assert driver is not None
-    assert driver["finding_id"] == "hygiene:DEP002:pdos-vuln-fixture-high"
-    assert driver["axis"] == "hygiene"
+    assert driver["finding_id"] == currency_finding_id
+    assert driver["axis"] == "currency"
     assert err == ""
 
 
@@ -1100,7 +1113,19 @@ def test_indeterminate_outranks_a_live_warn_end_to_end(capsys):
     ]
     assert len(license_matches) == 1
     assert license_matches[0]["axis"] == "license"
-    assert len(document["findings"]) == 4
+    # Story 6.3: leftpad has no resolved version -> currency:unknown: too
+    # (requests==2.31.0 resolves currency-clean against the ambient
+    # endoflife.date snapshot -- tests/conftest.py's autouse
+    # _currency_ambient_feed_env fixture -- so it contributes no currency
+    # finding).
+    currency_matches = [
+        f
+        for f in document["findings"]
+        if f["id"] == "currency:unknown:leftpad@unspecified"
+    ]
+    assert len(currency_matches) == 1
+    assert currency_matches[0]["axis"] == "currency"
+    assert len(document["findings"]) == 5
     driver = document["status"]["driver"]
     assert driver is not None
     assert driver["finding_id"] == indeterminate_finding_id
@@ -1151,6 +1176,148 @@ def test_license_gating_is_true_when_the_axis_actually_ran(capsys):
     assert by_axis["license"]["deps_total"] == 2
     assert by_axis["license"]["deps_assessed"] == 2
     assert by_axis["license"]["gating"] is True
+
+
+# --- Story 6.3: the currency axis producer + its gate flags (FR34/FR35) ------
+
+
+def test_currency_axis_produces_a_real_warn_capped_finding_end_to_end(capsys):
+    """The E2E wiring proof: SENTINEL's two unresolvable-version deps
+    (leftpad, requests>=2.0) each produce a real currency:unknown: finding
+    via the live CurrencyEngine -- WARN-capped, never escalated (this
+    story's own producer never feeds a rung above warn -- see
+    tests/conformance/test_axis_producer_ceiling.py for the mechanical
+    proof)."""
+    rc, out, err = run_scan(capsys, SENTINEL)
+    document = parse_report(out)
+    currency_findings = [f for f in document["findings"] if f["axis"] == "currency"]
+    assert {f["id"] for f in currency_findings} == {
+        "currency:unknown:leftpad@unspecified",
+        "currency:unknown:requests@unspecified",
+    }
+    for finding in currency_findings:
+        assert finding["currency"]["verdict"] == "unknown"
+
+
+def test_currency_axis_python_runtime_eol_finding_round_trips_through_the_schema(
+    monkeypatch, capsys, tmp_path
+):
+    """The ``!``-prefixed Python-runtime ``currency:<reason>:!python-
+    runtime@<ver>`` finding shape was previously only exercised via direct
+    unit calls to ``currency_findings()`` (tests/unit/test_currency.py) --
+    this drives it through the REAL ``cli.main()`` pipeline (report.py's
+    serialization + schema validation) with a non-``unknown`` reason,
+    proving the sentinel subject and the finding round-trip correctly end
+    to end. Reuses the ambient endoflife-feed machinery ``tests/conftest.
+    py``'s ``_currency_ambient_feed_env`` fixture already provisions
+    session-wide (Fix-9's currency-axis sibling): this test overrides
+    ``$PYFORGE_WARDEN_FEED_CACHE_DIR`` to its OWN isolated ``tmp_path`` (the
+    same override pattern ``tests/unit/test_currency.py``'s ``test_
+    currency_findings_mixed_fixture_covers_all_three_reasons`` already
+    uses) so it can seed a ``python`` cycle whose ``eol`` is in the past --
+    the running interpreter then resolves ``eol``, not ``unknown``."""
+    runtime_version = ".".join(str(part) for part in sys.version_info[:3])
+    monkeypatch.setenv(feeds.FEED_CACHE_DIR_ENV_VAR, str(tmp_path))
+    feeds.write_kev_cache(tmp_path, {"vulnerabilities": []})
+    feeds.write_endoflife_cache(
+        tmp_path,
+        {
+            "python": [
+                {
+                    "cycle": runtime_version,
+                    "releaseDate": "2020-01-01",
+                    "eol": "2020-06-01",  # long past -- verdict EOL
+                    "latest": runtime_version,
+                }
+            ]
+        },
+    )
+
+    rc, out, err = run_scan(capsys, CLEAN)
+    document = parse_report(out)  # schema-valid, incl. the CurrencyInfo shape
+
+    finding_id = f"currency:eol:!python-runtime@{runtime_version}"
+    matches = [f for f in document["findings"] if f["id"] == finding_id]
+    assert len(matches) == 1
+    finding = matches[0]
+    assert finding["axis"] == "currency"
+    assert finding["subject"] == "!python-runtime"
+    assert finding["currency"]["verdict"] == "eol"
+    assert finding["currency"]["eol_date"] == "2020-06-01"
+
+
+def test_currency_gating_is_false_when_the_axis_never_ran(capsys, tmp_path):
+    """--max-lag activates config.currency_gating regardless of whether
+    anything was actually scanned -- mirrors Fix 8's license-axis
+    precedent exactly."""
+    rc, out, err = run_scan(capsys, tmp_path, "--max-lag", "5")
+    document = parse_report(out)
+    by_axis = {block["axis"]: block for block in document["coverage"]}
+    assert by_axis["currency"]["deps_total"] == 0
+    assert by_axis["currency"]["deps_assessed"] == 0
+    assert by_axis["currency"]["gating"] is False
+
+
+@pytest.mark.parametrize(
+    "flag", [["--max-lag", "5"], ["--require-lts"], ["--fail-on-eol"]]
+)
+def test_currency_gating_is_true_when_the_axis_actually_ran(capsys, flag):
+    """The contrasting case, parametrized over all three gate flags: a real
+    scan where the currency engine DID run reports gating=true."""
+    rc, out, err = run_scan(capsys, CLEAN, *flag)
+    document = parse_report(out)
+    by_axis = {block["axis"]: block for block in document["coverage"]}
+    assert by_axis["currency"]["deps_total"] == 2
+    assert by_axis["currency"]["deps_assessed"] == 2
+    assert by_axis["currency"]["gating"] is True
+
+
+@pytest.mark.parametrize(
+    "flag", [["--max-lag", "5"], ["--require-lts"], ["--fail-on-eol"]]
+)
+def test_currency_gate_flags_never_change_the_findings_themselves(capsys, flag):
+    """The story's own core AC: currency_findings()'s own output (ids,
+    verdicts, tiers) is identical -- compared as parsed, id-sorted finding
+    objects, not raw bytes -- whether or not any of the three gate flags is
+    set, proving this story adds no escalation logic. Only
+    ``currency.gating`` differs. (Raw-byte identity across the two runs is
+    neither claimed nor possible here: the gated report legitimately
+    differs in its ``coverage`` block.)"""
+    _, out_unconfigured, _ = run_scan(capsys, WARN_AND_INDETERMINATE)
+    document_unconfigured = parse_report(out_unconfigured)
+    _, out_gated, _ = run_scan(capsys, WARN_AND_INDETERMINATE, *flag)
+    document_gated = parse_report(out_gated)
+
+    def _currency_findings(document: dict) -> list:
+        return sorted(
+            (f for f in document["findings"] if f["axis"] == "currency"),
+            key=lambda f: f["id"],
+        )
+
+    assert _currency_findings(document_unconfigured) == _currency_findings(document_gated)
+    by_axis_unconfigured = {
+        block["axis"]: block for block in document_unconfigured["coverage"]
+    }
+    by_axis_gated = {block["axis"]: block for block in document_gated["coverage"]}
+    assert by_axis_unconfigured["currency"]["gating"] is False
+    assert by_axis_gated["currency"]["gating"] is True
+
+
+def test_max_lag_rejects_a_negative_value_as_a_usage_error(capsys):
+    """--max-lag's own argparse `type=` callback validates at parse time --
+    mirrors test_fail_under_coverage_rejects_out_of_range_value_as_a_usage_
+    error's proof for --fail-under-coverage."""
+    rc, out, err = run_scan(capsys, CLEAN, "--max-lag", "-1")
+    assert rc == 2
+    assert out == ""
+    assert "--max-lag" in err
+
+
+def test_max_lag_rejects_a_non_numeric_value_as_a_usage_error(capsys):
+    rc, out, err = run_scan(capsys, CLEAN, "--max-lag", "not-a-number")
+    assert rc == 2
+    assert out == ""
+    assert "--max-lag" in err
 
 
 def test_blank_deny_licenses_flag_is_a_clean_config_error_not_a_crash(capsys):

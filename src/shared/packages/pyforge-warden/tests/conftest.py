@@ -297,15 +297,81 @@ def _osv_ambient_db_env(
 # session-scoped fixture that still wants monkeypatch's own-value-restore
 # semantics -- the ordinary function-scoped ``monkeypatch`` fixture cannot be
 # depended on from a session-scoped fixture).
+#
+# Story 6.3 shares this SAME cache root (``_feed_cache_root`` below) for the
+# ambient endoflife.date snapshot too -- both feeds resolve under the ONE
+# ``PYFORGE_WARDEN_FEED_CACHE_DIR`` a real scan reads, so provisioning them
+# under two different roots would be untrue to the real seam.
+
+
+@pytest.fixture(scope="session")
+def _feed_cache_root(tmp_path_factory: pytest.TempPathFactory) -> Path:
+    root = tmp_path_factory.mktemp("feed-ambient-cache")
+    mp = pytest.MonkeyPatch()
+    from pyforge.warden.feeds import FEED_CACHE_DIR_ENV_VAR
+
+    mp.setenv(FEED_CACHE_DIR_ENV_VAR, str(root))
+    yield root
+    mp.undo()
 
 
 @pytest.fixture(scope="session", autouse=True)
-def _kev_ambient_feed_env(tmp_path_factory: pytest.TempPathFactory):
-    from pyforge.warden.feeds import FEED_CACHE_DIR_ENV_VAR, write_kev_cache
+def _kev_ambient_feed_env(_feed_cache_root: Path) -> None:
+    from pyforge.warden.feeds import write_kev_cache
 
-    cache_root = tmp_path_factory.mktemp("kev-ambient-cache")
-    write_kev_cache(cache_root, {"vulnerabilities": []})
-    mp = pytest.MonkeyPatch()
-    mp.setenv(FEED_CACHE_DIR_ENV_VAR, str(cache_root))
-    yield
-    mp.undo()
+    write_kev_cache(_feed_cache_root, {"vulnerabilities": []})
+
+
+# --- Story 6.3: ambient endoflife.date feed (keeps the currency-axis-landed
+# pre-6.3 suite green) -----------------------------------------------------
+#
+# ``CurrencyEngine`` is now live in the registry, so ANY test that invokes
+# ``cli.main()`` reaches Story 6.3's currency-axis assessment for EVERY
+# component AND the running Python interpreter. Unlike KEV's silent
+# "not-listed" default, an unresolvable currency lookup is a REAL,
+# WARN-capped ``currency:unknown:`` Finding (FR34/FR37: honest, never
+# silent) -- so without ambient data, every pre-6.3 "clean" fixture would
+# regress to "warn" purely from currency noise. Mirrors ``tests/
+# conformance/test_scan_harness.py``'s own Fix-9 precedent (pinned PyPI
+# license metadata) one level down the tier ladder: this ambient endoflife
+# snapshot carries entries for EXACTLY the package names + versions the
+# "must stay clean" fixtures declare (``requests==2.31.0``,
+# ``packaging==24.0``; adding a NEW pinned dep to a clean fixture means
+# extending this list too -- tests/unit/test_currency.py's ambient-snapshot
+# guard cross-checks only names already covered here, one direction only)
+# plus the ACTUAL running interpreter's own version
+# (computed dynamically -- the test session's Python version varies by
+# environment/CI) -- each a single, already-latest, far-future-EOL cycle so
+# the tier-2 resolution is SUPPORTED with zero lag (a fully clean, no-Finding
+# resolution). Every other package name in the fixture corpus (leftpad,
+# pdos-vuln-fixture, argparse, ...) is deliberately NOT covered here and
+# legitimately degrades to ``currency:unknown:`` -- those tests were updated
+# to expect it, the same way Story 6.2's license-axis landing updated tests
+# for ``license:unknown:`` findings.
+
+
+@pytest.fixture(scope="session", autouse=True)
+def _currency_ambient_feed_env(_feed_cache_root: Path) -> None:
+    import sys
+
+    from pyforge.warden.feeds import write_endoflife_cache
+
+    def _clean_cycle(version: str) -> list[dict[str, str]]:
+        return [
+            {
+                "cycle": version,
+                "releaseDate": "2020-01-01",
+                "eol": "2099-01-01",
+                "latest": version,
+            }
+        ]
+
+    runtime_version = ".".join(str(part) for part in sys.version_info[:3])
+    write_endoflife_cache(
+        _feed_cache_root,
+        {
+            "requests": _clean_cycle("2.31.0"),
+            "packaging": _clean_cycle("24.0"),
+            "python": _clean_cycle(runtime_version),
+        },
+    )
