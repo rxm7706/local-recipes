@@ -14,11 +14,12 @@ reimplementing it — see the osv-db-offline-provisioning decision record's
 Registry semantics: engines register via ``register_engine(factory)`` at
 module-import time; ``registered_engines()`` instantiates them in
 registration order — deterministic because module execution is. The registry
-is ``[NullEngine, DeptryEngine, OsvEngine, LicenseEngine]``: ``NullEngine``
-is a harmless no-op retained so its 1.2 unit contract is unchanged,
-``DeptryEngine`` is the hygiene-axis engine (1.3), ``OsvEngine`` is the
-vulnerability-axis engine (1.5), ``LicenseEngine`` is the license-axis
-engine (6.2) — the first engine that spawns no subprocess at all.
+is ``[NullEngine, DeptryEngine, OsvEngine, LicenseEngine, CurrencyEngine]``:
+``NullEngine`` is a harmless no-op retained so its 1.2 unit contract is
+unchanged, ``DeptryEngine`` is the hygiene-axis engine (1.3), ``OsvEngine``
+is the vulnerability-axis engine (1.5), ``LicenseEngine`` is the license-axis
+engine (6.2), ``CurrencyEngine`` is the currency-axis engine (6.3) — the
+second engine (after ``LicenseEngine``) that spawns no subprocess at all.
 
 ``NullEngine`` spawns no subprocess; ``DeptryEngine`` runs ``deptry`` via
 ``_engine_env`` (its exit code is CONTENT — exit 1 = issues found — never the
@@ -73,6 +74,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from . import feeds
+from .currency import currency_findings
 from .hygiene import (
     _synthesize_deptry_frontdoor,
     parse_deptry_output,
@@ -82,6 +84,7 @@ from .interfaces import Engine, EngineResult
 from .inventory import Component, ResolvedInventory
 from .license import license_findings
 from .models import (
+    AXIS_CURRENCY,
     AXIS_HYGIENE,
     AXIS_INGESTION,
     AXIS_LICENSE,
@@ -1106,7 +1109,47 @@ class LicenseEngine:
         )
 
 
+class CurrencyEngine:
+    """The fourth real engine: per-component + Python-runtime currency
+    verdicts (Story 6.3, axis ``"currency"``). Mirrors ``LicenseEngine``'s
+    shape exactly — ``currency.currency_findings`` owns the whole axis's
+    substantive logic (tier-ladder resolution, ``!python-runtime`` sentinel,
+    id/finding construction); this class is a thin coverage-and-
+    ``EngineResult`` wrapper, spawning no subprocess.
+
+    Coverage (mirrors ``LicenseEngine``'s Story 6.2 Boundaries): every
+    component gets a real attempt this story — ``deps_assessed ==
+    deps_total == inventory.count`` unconditionally (``currency_covered``
+    stays inert/``True`` per 6.1's landed design)."""
+
+    name: str = "currency"
+    axis: str = AXIS_CURRENCY
+
+    def run(self, target: Path, inventory: ResolvedInventory) -> EngineResult:
+        findings, currency_data = currency_findings(
+            inventory.components, now=datetime.now(UTC)
+        )
+        coverage = (
+            AxisCoverage(
+                axis=AXIS_CURRENCY,
+                manifests_found=0,
+                manifests_parsed=0,
+                deps_total=inventory.count,
+                deps_assessed=inventory.count,
+                resolution_depth=None,
+            ),
+        )
+        return EngineResult(
+            findings=findings,
+            errors=(),
+            coverage=coverage,
+            axis=self.axis,
+            currency_data=currency_data,
+        )
+
+
 register_engine(NullEngine)
 register_engine(DeptryEngine)
 register_engine(OsvEngine)
 register_engine(LicenseEngine)
+register_engine(CurrencyEngine)
