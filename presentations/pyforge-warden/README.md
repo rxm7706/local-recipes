@@ -69,3 +69,35 @@ deep-linkable and reload-stable.
 
 Reskin the palette in `src/index.css` (`--navy`/`--paper`/`--gold`/`--blue`/`--sky`)
 if PyForge-Warden gets its own colors.
+
+## Design project (the bridge's far end)
+
+Prototype lives in Claude Design project **"PyForge Warden deck"**
+(`100ca8cc-8daa-409a-8564-1f8d79c579d2`) — renamed 2026-07-24 from
+"Python deptry OSV scanner" (it was the original warden deck workspace all
+along, mislabeled). Pull with the MCP bridge ("pull warden").
+
+### Artifact map + sync ledger (2026-07-24)
+
+Design-side (etags at last sync):
+- `Warden Deck.dc.html` (87101, `1784052451438301`) — **byte-identical to disk** ✓
+- `Warden - Executive Summary.dc.html` (7695, `1784053769227170`) — pulled to
+  `project/` 2026-07-24 (7683 bytes; ~12B whitespace-level delta, content complete)
+- `Warden - Infographic.dc.html` (166081, `1784080169043534`) — **Design-only,
+  pull PENDING** (herald CLI CAP-2 is the mechanized path)
+- `Warden - Infographic Deck.dc.html` (88461, `1784080724075247`) — **Design-only,
+  pull PENDING**
+- `Warden Infographic standalone.html` (411764) — Design-side render; disk carries
+  its own regenerated standalone under `src/marp/`
+- engines: `deck-stage.js` 111060 / `support.js` 64222 (older pins than the current
+  family 133230/66404 — the dc.html files were authored against these)
+- Marp: original `warden-*.md` trio + the refined disk trio now uploading as
+  `pyforge-warden-*-2026-07-15.md` (exec-summary ✓ `1784887337596364`;
+  deck + infographic **upload PENDING**)
+
+Disk-side only (stay git-side; too heavy for the MCP channel):
+- `src/pptx/*.pptx` (636KB + 719KB editable exports)
+- the built React deck (`src/`, `dist/`), extracted slides, manifest
+
+Convention: Design project name ↔ this folder (`presentations/pyforge-warden`);
+Design keeps design sources, disk keeps the full artifact set incl. binaries.
