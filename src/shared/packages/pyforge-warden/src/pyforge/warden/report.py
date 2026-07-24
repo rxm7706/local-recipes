@@ -106,6 +106,18 @@ Ownership decisions recorded:
   it downgrades can vary with ``--fail-on``, not the final status/exit
   code). The defaults (``()``/``False``/``0``) preserve every pre-3.3
   caller/test byte-for-byte.
+* ``applied_baseline``/``expired_baseline`` (Story 6.8, additive/defaulted
+  ``()`` -- mirrors ``applied_waivers``/``expired_waivers`` exactly, one
+  feed over): ``render_text`` appends one ``[baseline]`` line per applied
+  ``waiver.BaselineNotice`` (id, reason, expires_at -- no
+  ``authorized_by``, since a baseline notice carries none) and one
+  ``[baseline-expired]`` line per expired one, both AFTER the existing
+  waiver loops. Every notice's ``reason``/``expires_at`` passes through
+  ``_single_line`` first, same as the waiver loops. This module has no
+  baseline-matching vocabulary of its own (that's ``waiver.py``'s
+  domain), so the caller (``cli.py``) states which baseline entries
+  actually suppressed a finding this run. The defaults preserve every
+  pre-6.8 caller/test byte-for-byte.
 
 Status/exit projection is delegated wholesale to ``verdict.py`` (the sole
 owner); this module feeds it the collected rungs and stores the result.
@@ -142,7 +154,7 @@ from .models import (
     VulnData,
 )
 from .verdict import compose, exit_code_for
-from .waiver import WaiverNotice
+from .waiver import BaselineNotice, WaiverNotice
 
 # Story 6.1: the one sanctioned additive schema bump (1.0.0 -> 1.1.0, staying
 # inside _SCHEMA_VERSION_RE) admitting Epic 6's slots; behavior-neutral for
@@ -461,6 +473,8 @@ def render_text(
     *,
     applied_waivers: Sequence[WaiverNotice] = (),
     expired_waivers: Sequence[WaiverNotice] = (),
+    applied_baseline: Sequence[BaselineNotice] = (),
+    expired_baseline: Sequence[BaselineNotice] = (),
     warn_only: bool = False,
     warn_only_downgraded: int = 0,
 ) -> str:
@@ -475,11 +489,15 @@ def render_text(
     order, then one line per ``applied_waivers`` notice (Story 3.2; id,
     reason, authorized_by, expires_at) and one line per ``expired_waivers``
     notice (Story 3.3; same four fields, ``[waiver-expired]`` marker,
-    non-"re-blocked" wording — see the module docstring), both in
-    caller-supplied order, then (Story 3.3) at most one graduate-to-
-    enforcing nudge line when ``warn_only`` is set, the composed status is
-    ``warn``, and ``warn_only_downgraded > 0`` (see the module docstring for
-    why all three are required). Free-format lines: unlike ``render_json``'s
+    non-"re-blocked" wording — see the module docstring), then one line
+    per ``applied_baseline`` notice (Story 6.8; id, reason, expires_at —
+    no ``authorized_by``) and one line per ``expired_baseline`` notice
+    (same three fields, ``[baseline-expired]`` marker, same non-
+    "re-blocked" wording), all four in caller-supplied order, then
+    (Story 3.3) at most one graduate-to-enforcing nudge line when
+    ``warn_only`` is set, the composed status is ``warn``, and
+    ``warn_only_downgraded > 0`` (see the module docstring for why all
+    three are required). Free-format lines: unlike ``render_json``'s
     document, this output is never schema-validated. Every ``message``/
     ``reason``/``authorized_by``/``expires_at`` is passed through
     ``_single_line`` first — see its docstring."""
@@ -520,6 +538,20 @@ def render_text(
             f"  [waiver-expired] {notice.id} -- reason={reason} "
             f"authorized_by={authorized_by} expires_at={expires_at} -- "
             "expired, needs review/renewal"
+        )
+    for notice in applied_baseline:
+        reason = _single_line(notice.reason)
+        expires_at = _single_line(notice.expires_at)
+        lines.append(
+            f"  [baseline] {notice.id} -- reason={reason} "
+            f"expires_at={expires_at}"
+        )
+    for notice in expired_baseline:
+        reason = _single_line(notice.reason)
+        expires_at = _single_line(notice.expires_at)
+        lines.append(
+            f"  [baseline-expired] {notice.id} -- reason={reason} "
+            f"expires_at={expires_at} -- expired, needs review/renewal"
         )
     if warn_only and status["value"] == "warn" and warn_only_downgraded > 0:
         finding_word = "finding" if warn_only_downgraded == 1 else "findings"
