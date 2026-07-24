@@ -108,7 +108,7 @@ _CEILING_FIXTURES: tuple[tuple[str, object, tuple[Finding, ...]], ...] = (
             Finding(
                 id="currency:unknown:mystery-pkg@2.0.0",
                 axis=AXIS_CURRENCY,
-                message="mystery-pkg: currency could not be resolved (no registry/feed match)",
+                message="mystery-pkg: currency could not be resolved (no usable registry/feed data)",
                 subject="mystery-pkg",
                 severity=None,
                 currency=CurrencyInfo(verdict=CurrencyVerdict.UNKNOWN),

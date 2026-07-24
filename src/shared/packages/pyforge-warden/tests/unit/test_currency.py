@@ -24,6 +24,7 @@ from pyforge.warden.currency import (
     _load_registry,
     _normalize_name,
     _registry_alias_index,
+    _registry_feed_provenance,
     _Resolution,
     _resolve,
     _resolve_from_cycles,
@@ -72,13 +73,17 @@ def _pin_cache_mtime_to_now(cache_dir) -> None:
     ],
 )
 def test_currency_rung_is_always_warn(reason, verdict):
+    # over-lag is only ever minted with a POSITIVE lag (_classify fires it
+    # on `resolution.lag` truthiness) -- keep the fixture producer-realistic
+    # (review finding, 2026-07-23).
+    lag = 1 if reason == "over-lag" else 0
     finding = Finding(
         id=f"currency:{reason}:pkg@1.0.0",
         axis=AXIS_CURRENCY,
         message="m",
         subject="pkg",
         severity=None,
-        currency=CurrencyInfo(verdict=verdict, latest="1.0.0", lag=0, eol_date="2099-01-01")
+        currency=CurrencyInfo(verdict=verdict, latest="1.0.0", lag=lag, eol_date="2099-01-01")
         if reason != "unknown"
         else CurrencyInfo(verdict=verdict),
     )
@@ -374,6 +379,27 @@ def _alias_index():
     return _registry_alias_index(_products())
 
 
+def test_load_registry_degrades_on_undecodable_bytes(monkeypatch):
+    """A corrupted install's invalid UTF-8 (``UnicodeDecodeError`` is a
+    ``ValueError``, not an ``OSError``) must hit ``_load_registry``'s
+    documented degrade-to-``{}`` path, never escape as a decode traceback
+    that errors the axis on every scan (review finding, 2026-07-23). Calls
+    the undecorated function -- the ``lru_cache`` keeps holding the real
+    registry for the rest of the suite."""
+
+    class _Undecodable:
+        def __truediv__(self, _other):
+            return self
+
+        def read_text(self, encoding="utf-8"):
+            raise UnicodeDecodeError("utf-8", b"\xff", 0, 1, "invalid start byte")
+
+    monkeypatch.setattr(
+        "pyforge.warden.currency.resources.files", lambda _pkg: _Undecodable()
+    )
+    assert _load_registry.__wrapped__() == {}
+
+
 def test_registry_alias_index_raises_on_a_cross_product_alias_collision():
     """A malformed bundled registry with two different products claiming
     the same normalized name/alias must raise loudly (a packaged-data
@@ -609,6 +635,94 @@ def test_currency_findings_twice_run_is_byte_identical(component_factory):
     assert first_data == second_data
 
 
+def test_currency_findings_dedupes_ecosystem_variant_duplicate_ids(
+    component_factory,
+):
+    """The same dep declared in manifests of two DIFFERENT ecosystems (a
+    pyproject + pixi pairing -- ``merge_components`` keeps (ecosystem, name,
+    version) identities distinct) must NOT mint two findings with one id:
+    resolution is ecosystem-agnostic, so the payloads are identical, and
+    duplicate ids would violate ``ComplianceReport``'s finding-id
+    uniqueness invariant and kill the WHOLE report as an internal error
+    (review finding, 2026-07-23). One finding honestly covers both."""
+    components = [
+        component_factory(
+            name="mystery-pkg", version="1.0.0", ecosystem=Ecosystem.PYPI
+        ),
+        component_factory(
+            name="mystery-pkg", version="1.0.0", ecosystem=Ecosystem.CONDA
+        ),
+    ]
+    findings, _data = currency_findings(components, now=_NOW)
+    ids = [f.id for f in findings]
+    assert len(ids) == len(set(ids))
+    non_runtime = [f for f in findings if f.subject != "!python-runtime"]
+    assert len(non_runtime) == 1
+    assert non_runtime[0].id == "currency:unknown:mystery-pkg@1.0.0"
+
+
+def test_bundled_registry_facts_the_suite_relies_on():
+    """Canary for the bundled-data coupling this module (and conftest's
+    ambient fixtures) relies on: a routine re-copy of
+    ``data/lts-registry.yaml`` from the CFE source can silently invalidate
+    fixture expectations -- a future-dated ``updated:`` alone flips
+    ``registry_fresh`` false under the frozen ``_NOW`` and reds the tier-1
+    legs with no code change (review finding, 2026-07-23). When THIS test
+    fails after a re-copy, update ``_NOW`` and the affected fixtures
+    alongside the new data instead of chasing downstream verdict failures
+    (see the registry header's NOTE)."""
+    registry = _load_registry()
+    provenance = _registry_feed_provenance(registry, now=_NOW)
+    assert provenance is not None and provenance.max_age_ok, (
+        "the bundled registry's updated: date is stale or future-dated "
+        "relative to this module's frozen _NOW -- bump _NOW alongside the "
+        "re-copy"
+    )
+    products = registry.get("products")
+    assert isinstance(products, dict)
+    spring = products.get("spring-framework")
+    assert isinstance(spring, dict) and spring.get("lts_lines"), (
+        "the tier-1 tests pin spring-framework's manual lts_lines entry"
+    )
+    resolved_eol = _resolve_from_lines(spring["lts_lines"], "5.3.0", now=_NOW)
+    assert resolved_eol is not None and resolved_eol.verdict is CurrencyVerdict.EOL, (
+        "the tier-1 fixtures pin spring-framework 5.3.0 as EOL at _NOW"
+    )
+    resolved_ok = _resolve_from_lines(spring["lts_lines"], "6.1.5", now=_NOW)
+    assert (
+        resolved_ok is not None
+        and resolved_ok.verdict is CurrencyVerdict.SUPPORTED
+        and resolved_ok.lag == 0
+    ), "the tier-1 fixtures pin spring-framework 6.1.5 as fully current at _NOW"
+    python_entry = products.get("python")
+    assert (
+        isinstance(python_entry, dict)
+        and python_entry.get("slug") == "python"
+        and not python_entry.get("lts_lines")
+    ), "the slug-routing tests pin python as a source:endoflife slug-map entry"
+
+
+def test_bundled_registry_matches_the_cfe_canonical_source_when_present():
+    """The bundled registry is regenerated from the CFE canonical source
+    (registry header contract): the parsed DATA must stay equal -- only the
+    bundled header comment block may differ (review finding, 2026-07-23).
+    Runs only in the monorepo checkout; the canonical file is not part of
+    the installed package."""
+    import yaml
+
+    canonical = Path(__file__).resolve().parents[6] / ".claude" / "skills" / (
+        "conda-forge-expert"
+    ) / "data" / "lts-registry.yaml"
+    if not canonical.is_file():
+        pytest.skip("CFE canonical registry not present (non-monorepo context)")
+    canonical_doc = yaml.safe_load(canonical.read_text(encoding="utf-8"))
+    assert canonical_doc == _load_registry(), (
+        "bundled data/lts-registry.yaml drifted from the CFE canonical "
+        "source -- re-copy it (data verbatim; keep the bundled header "
+        "comment block)"
+    )
+
+
 def test_currency_findings_drops_colliding_snapshot_keys_entirely(
     component_factory, monkeypatch, tmp_path
 ):
@@ -668,7 +782,15 @@ def test_ambient_snapshot_keeps_every_pinned_fixture_dep_it_covers_fully_current
     ``currency:unknown`` warn noise, and the resulting failure points at
     the verdict -- this test fails HERE instead, naming the real fix:
     update ``_currency_ambient_feed_env`` in tests/conftest.py alongside
-    the pin."""
+    the pin.
+
+    One-direction guard, by design (review finding, 2026-07-23): it
+    cross-checks only pins whose NAME the ambient snapshot already covers
+    (a version bump of a covered pin). A brand-NEW pinned dep added to a
+    "must stay clean" fixture under a name the snapshot does not carry is
+    out of its reach -- that dep degrades to ``currency:unknown`` and the
+    failure surfaces downstream in the fixture's own scan assertions;
+    extend ``_currency_ambient_feed_env`` when adding one."""
     fixtures_root = Path(__file__).resolve().parent.parent / "fixtures" / "projects"
     assert fixtures_root.is_dir()
     cache_dir = feeds.resolve_cache_dir()

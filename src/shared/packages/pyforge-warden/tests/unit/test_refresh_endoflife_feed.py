@@ -214,6 +214,161 @@ def test_refresh_aborts_the_whole_run_on_one_products_failure(
 # --- main ----------------------------------------------------------------------
 
 
+def test_refresh_reports_products_dropped_by_a_narrower_fetch_set(
+    monkeypatch, tmp_path, refresh_endoflife_feed
+):
+    """A narrower ``--product`` run REPLACES the whole cache document
+    (merge would re-stamp unfetched, possibly-stale products as fresh -- a
+    false-green vector), so previously provisioned products it drops are
+    reported in ``dropped_products`` rather than vanishing silently
+    (review finding, 2026-07-23)."""
+    from pyforge.warden.feeds import write_endoflife_cache
+
+    cache_dir = tmp_path / "cache"
+    write_endoflife_cache(
+        cache_dir, {"python": _VALID_CYCLES, "django": _VALID_CYCLES}
+    )
+    monkeypatch.setattr(
+        "urllib.request.urlopen",
+        lambda *a, **k: _FakeResponse(json.dumps(_VALID_CYCLES).encode("utf-8")),
+    )
+
+    result = refresh_endoflife_feed.refresh(str(cache_dir), product_slugs=["python"])
+
+    assert result["dropped_products"] == ["django"]
+    written = json.loads(Path(result["cache_path"]).read_text(encoding="utf-8"))
+    assert written == {"python": _VALID_CYCLES}
+
+
+def test_refresh_reports_no_drops_on_a_fresh_or_superset_run(
+    monkeypatch, tmp_path, refresh_endoflife_feed
+):
+    monkeypatch.setattr(
+        "urllib.request.urlopen",
+        lambda *a, **k: _FakeResponse(json.dumps(_VALID_CYCLES).encode("utf-8")),
+    )
+    cache_dir = tmp_path / "cache"
+
+    first = refresh_endoflife_feed.refresh(str(cache_dir), product_slugs=["python"])
+    assert first["dropped_products"] == []
+    second = refresh_endoflife_feed.refresh(
+        str(cache_dir), product_slugs=["python", "django"]
+    )
+    assert second["dropped_products"] == []
+
+
+def test_refresh_rejects_slugs_that_normalize_to_the_same_cache_key(
+    monkeypatch, tmp_path, refresh_endoflife_feed
+):
+    """Two case/separator variants of one slug (``Django``/``django``)
+    would write a snapshot whose keys the scan-time reader normalizes into
+    a collision and drops BOTH of -- a "successful" refresh no scan can
+    ever resolve. Refused loudly BEFORE any request (review finding,
+    2026-07-23); exact duplicates are merely deduped."""
+    from pyforge.warden.feeds import endoflife_cache_path
+
+    def _never(*_a, **_k):
+        raise AssertionError("no request should be made for a colliding slug list")
+
+    monkeypatch.setattr("urllib.request.urlopen", _never)
+    cache_dir = tmp_path / "cache"
+
+    with pytest.raises(ValueError, match="normalize to the same cache key"):
+        refresh_endoflife_feed.refresh(
+            str(cache_dir), product_slugs=["Django", "django"]
+        )
+    assert not endoflife_cache_path(cache_dir).exists()
+
+
+def test_refresh_dedupes_exact_duplicate_slugs(
+    monkeypatch, tmp_path, refresh_endoflife_feed
+):
+    calls: list[str] = []
+
+    def _counting(request, *a, **k):
+        calls.append(request.full_url)
+        return _FakeResponse(json.dumps(_VALID_CYCLES).encode("utf-8"))
+
+    monkeypatch.setattr("urllib.request.urlopen", _counting)
+
+    result = refresh_endoflife_feed.refresh(
+        str(tmp_path / "cache"), product_slugs=["python", "python"]
+    )
+
+    assert result["product_count"] == 1
+    assert len(calls) == 1
+
+
+def test_default_product_slugs_empty_on_an_undecodable_registry(
+    monkeypatch, tmp_path, refresh_endoflife_feed
+):
+    """Invalid UTF-8 in the registry (UnicodeDecodeError is a ValueError,
+    not an OSError) must hit the documented degrade-to-[] path -- and
+    thence the zero-slug refusal -- never escape as a decode traceback
+    (review finding, 2026-07-23)."""
+    corrupt = tmp_path / "registry.yaml"
+    corrupt.write_bytes(b"\xff\xfe invalid utf-8 \xff")
+    monkeypatch.setattr(refresh_endoflife_feed, "_REGISTRY_PATH", corrupt)
+    assert refresh_endoflife_feed.default_product_slugs() == []
+
+
+def test_timeout_flag_rejects_non_positive_values_as_usage_errors(
+    monkeypatch, tmp_path, refresh_endoflife_feed, capsys
+):
+    """``--timeout 0`` (a non-blocking socket) and negative values (a
+    baffling fetch-time failure) are usage errors: argparse exit 2, never
+    the FAILED-banner exit 1 (review finding, 2026-07-23)."""
+    for bad in ("0", "-5"):
+        monkeypatch.setattr(
+            "sys.argv",
+            [
+                "refresh_endoflife_feed.py",
+                "--cache-dir",
+                str(tmp_path / "cache"),
+                "--product",
+                "python",
+                "--timeout",
+                bad,
+            ],
+        )
+        with pytest.raises(SystemExit) as exc_info:
+            refresh_endoflife_feed.main()
+        assert exc_info.value.code == 2
+        assert "--timeout must be a positive integer" in capsys.readouterr().err
+
+
+def test_main_warns_on_stderr_when_a_narrower_run_drops_products(
+    monkeypatch, tmp_path, refresh_endoflife_feed, capsys
+):
+    from pyforge.warden.feeds import write_endoflife_cache
+
+    cache_dir = tmp_path / "cache"
+    write_endoflife_cache(
+        cache_dir, {"python": _VALID_CYCLES, "django": _VALID_CYCLES}
+    )
+    monkeypatch.setattr(
+        "urllib.request.urlopen",
+        lambda *a, **k: _FakeResponse(json.dumps(_VALID_CYCLES).encode("utf-8")),
+    )
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "refresh_endoflife_feed.py",
+            "--cache-dir",
+            str(cache_dir),
+            "--product",
+            "python",
+        ],
+    )
+
+    refresh_endoflife_feed.main()  # a warning, not a failure
+
+    captured = capsys.readouterr()
+    assert "warning:" in captured.err
+    assert "django" in captured.err
+    assert "fetched 1 product(s): python" in captured.out
+
+
 def test_main_exits_2_when_no_cache_dir_is_available(
     monkeypatch, refresh_endoflife_feed, capsys
 ):

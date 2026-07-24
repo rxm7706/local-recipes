@@ -336,7 +336,10 @@ def _kev_ambient_feed_env(_feed_cache_root: Path) -> None:
 # license metadata) one level down the tier ladder: this ambient endoflife
 # snapshot carries entries for EXACTLY the package names + versions the
 # "must stay clean" fixtures declare (``requests==2.31.0``,
-# ``packaging==24.0``) plus the ACTUAL running interpreter's own version
+# ``packaging==24.0``; adding a NEW pinned dep to a clean fixture means
+# extending this list too -- tests/unit/test_currency.py's ambient-snapshot
+# guard cross-checks only names already covered here, one direction only)
+# plus the ACTUAL running interpreter's own version
 # (computed dynamically -- the test session's Python version varies by
 # environment/CI) -- each a single, already-latest, far-future-EOL cycle so
 # the tier-2 resolution is SUPPORTED with zero lag (a fully clean, no-Finding

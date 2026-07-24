@@ -53,8 +53,15 @@ if str(_SRC_DIR) not in sys.path:
 
 import yaml  # noqa: E402
 
+# The reader's own normalizer -- imported (not duplicated) so writer and
+# reader can never drift apart on what "the same product key" means. This
+# direction of import is sanctioned: the SCRIPT imports the package; the
+# package never imports the script (NFR-S2).
+from pyforge.warden.currency import _normalize_name  # noqa: E402
 from pyforge.warden.feeds import (  # noqa: E402
     FEED_CACHE_DIR_ENV_VAR,
+    endoflife_cache_path,
+    load_endoflife_snapshot,
     write_endoflife_cache,
 )
 
@@ -82,7 +89,11 @@ def default_product_slugs() -> list[str]:
     is the fallback for that case."""
     try:
         document = yaml.safe_load(_REGISTRY_PATH.read_text(encoding="utf-8"))
-    except (OSError, yaml.YAMLError):
+    except (OSError, UnicodeDecodeError, yaml.YAMLError):
+        # UnicodeDecodeError is a ValueError, not an OSError -- a corrupted
+        # registry's invalid UTF-8 must hit the documented degrade-to-[]
+        # path (and thence the zero-slug refusal), never escape as a
+        # decode traceback.
         return []
     if not isinstance(document, dict):
         return []
@@ -153,7 +164,15 @@ def refresh(
     any write -- an empty snapshot is the most complete-looking partial
     snapshot possible, and writing it would clobber a previously
     provisioned, still-good cache with a document that floods every later
-    scan with ``currency:unknown`` findings (review finding, 2026-07-23)."""
+    scan with ``currency:unknown`` findings (review finding, 2026-07-23).
+
+    The write REPLACES the whole cache document, never merges into it:
+    merging would re-stamp every unfetched (possibly-stale) product as
+    fresh under the new file's mtime — a false-green vector for a
+    compliance gate. A narrower ``--product`` run that drops previously
+    provisioned products therefore reports them in the returned stats'
+    ``dropped_products`` (and ``main()`` warns on stderr) so the shrink is
+    loud, not silent (review finding, 2026-07-23)."""
     slugs = product_slugs if product_slugs is not None else default_product_slugs()
     if not slugs:
         raise ValueError(
@@ -161,15 +180,54 @@ def refresh(
             "malformed and no --product was given) -- refusing to write an "
             "empty snapshot over a possibly-good cache"
         )
+    # The scan-time reader (currency.py) normalizes snapshot keys and drops
+    # BOTH members of any normalized collision -- so two case/separator
+    # variants of one slug ("Django"/"django") would produce a "successful"
+    # refresh whose product no scan can ever resolve. Fail loud BEFORE any
+    # request instead (review finding, 2026-07-23); exact duplicates are
+    # merely deduped.
+    deduped_slugs = sorted(set(slugs))
+    by_normalized: dict[str, str] = {}
+    for slug in deduped_slugs:
+        normalized = _normalize_name(slug)
+        other = by_normalized.get(normalized)
+        if other is not None:
+            raise ValueError(
+                f"product slugs {other!r} and {slug!r} normalize to the "
+                f"same cache key {normalized!r} -- the scan-time reader "
+                "would treat them as ambiguous and drop BOTH; de-duplicate "
+                "the slug list"
+            )
+        by_normalized[normalized] = slug
+    existing = load_endoflife_snapshot(endoflife_cache_path(cache_dir))
+    previous_products = set(existing) if existing is not None else set()
     document: dict[str, object] = {
-        slug: fetch_product_cycles(slug, timeout=timeout) for slug in slugs
+        slug: fetch_product_cycles(slug, timeout=timeout) for slug in deduped_slugs
     }
     path = write_endoflife_cache(cache_dir, document)
     return {
         "cache_path": str(path),
         "product_count": len(document),
         "products": sorted(document),
+        "dropped_products": sorted(previous_products - set(document)),
     }
+
+
+def _timeout_type(value: str) -> int:
+    """Argparse type for ``--timeout``: a POSITIVE integer. Zero would set a
+    non-blocking socket and a negative value would only surface later as a
+    baffling fetch-time failure -- both are usage errors, rejected at parse
+    time with a usage exit (2), never a FAILED-banner exit (1) (review
+    finding, 2026-07-23)."""
+    try:
+        timeout = int(value)
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError(f"invalid int value: {value!r}") from exc
+    if timeout <= 0:
+        raise argparse.ArgumentTypeError(
+            f"--timeout must be a positive integer (seconds), got {value!r}"
+        )
+    return timeout
 
 
 def _build_argparser() -> argparse.ArgumentParser:
@@ -196,9 +254,9 @@ def _build_argparser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--timeout",
-        type=int,
+        type=_timeout_type,
         default=60,
-        help="per-product HTTP timeout in seconds (default: 60)",
+        help="per-product HTTP timeout in seconds, a positive integer (default: 60)",
     )
     return parser
 
@@ -220,6 +278,17 @@ def main() -> None:
             file=sys.stderr,
         )
         raise SystemExit(1) from exc
+    dropped = result["dropped_products"]
+    if dropped:
+        print(
+            f"warning: {len(dropped)} previously provisioned product(s) "
+            f"dropped by this narrower fetch set: {', '.join(dropped)} -- "
+            "the cache is a whole-document snapshot (replace, not merge: "
+            "merging would re-stamp unfetched, possibly-stale products as "
+            "fresh); rerun without --product to re-provision the full "
+            "registry set",
+            file=sys.stderr,
+        )
     print(f"fetched {result['product_count']} product(s): {', '.join(result['products'])}")
     print(f"  wrote: {result['cache_path']}")
 

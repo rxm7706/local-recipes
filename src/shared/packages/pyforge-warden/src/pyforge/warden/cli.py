@@ -430,10 +430,10 @@ def _build_parser() -> tuple[argparse.ArgumentParser, argparse.ArgumentParser]:
             "the currency-axis releases-behind-latest threshold, a "
             "non-negative integer (overrides any [tool.pyforge-warden] "
             "max-lag config value) -- activates currency-axis gating "
-            "(FR35); v1 records the threshold but does not yet enforce "
-            "it: over-lag findings appear for ANY positive lag and still "
-            "cap at 'warn' regardless of N (real escalation is a later "
-            "story)"
+            "(FR35); v1 accepts the threshold but neither enforces it nor "
+            "echoes it into the report: over-lag findings appear for ANY "
+            "positive lag and still cap at 'warn' regardless of N (real "
+            "escalation is a later story)"
         ),
     )
     scan.add_argument(

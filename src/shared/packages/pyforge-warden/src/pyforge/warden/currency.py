@@ -66,7 +66,10 @@ Ownership decisions recorded:
   subject ``version``, looked up as product name ``"python"``) — "always
   assessed" (FR34) means always RESOLVED, not always Finding-emitting: a
   fully-current runtime resolution emits nothing, exactly like any other
-  clean component (Boundaries: ``!python-runtime`` is the id `subject`
+  clean component. "Always" is scoped to the axis actually running: the
+  CLI's engine seam skips EVERY engine — this one included — when zero
+  manifests parse (such a scan is already indeterminate), so no currency
+  assessment happens at all then, runtime included (Boundaries: ``!python-runtime`` is the id `subject`
   segment, distinct from the report-section field name ``runtime_python``
   the frozen 6.1 schema does not actually carry — see the "schema
   Block-If" note below).
@@ -222,7 +225,10 @@ def _load_registry() -> dict[str, object]:
         raw = (
             resources.files("pyforge.warden") / "data" / "lts-registry.yaml"
         ).read_text(encoding="utf-8")
-    except OSError:
+    except (OSError, UnicodeDecodeError):
+        # UnicodeDecodeError is a ValueError, not an OSError -- a corrupted
+        # install's invalid UTF-8 must degrade like any other unreadable
+        # registry, per this docstring's own never-raises contract.
         return {}
     try:
         document = yaml.safe_load(raw)
@@ -553,7 +559,23 @@ def _currency_finding(
     subject_segment = _sanitize_id_segment(subject)
     if resolution is None:
         latest = lag = eol_date = tier = None
-        message = f"{name}: currency could not be resolved (no registry/feed match)"
+        # An unknown can arise from MORE than a plain lookup miss (a
+        # version-less component, a stale tier skipped, a matched-but-
+        # schema-inexpressible boolean eol, colliding snapshot keys
+        # dropped) -- the tail must stay true for every path, so it names
+        # the honest common denominator, not "no match" (review finding,
+        # 2026-07-23). The one cause knowable HERE (no version to look up)
+        # gets its own accurate tail.
+        if version:
+            message = (
+                f"{name}: currency could not be resolved "
+                "(no usable registry/feed data)"
+            )
+        else:
+            message = (
+                f"{name}: currency could not be resolved "
+                "(component has no version to assess)"
+            )
     else:
         latest, lag, eol_date, tier = (
             resolution.latest,
@@ -581,9 +603,11 @@ def currency_findings(
     components: Sequence[Component], *, now: datetime
 ) -> tuple[tuple[Finding, ...], FeedProvenance | None]:
     """Compute the WHOLE currency axis's findings for one scan — one
-    ``eol``/``over-lag``/``unknown``-reason ``Finding`` per component (a
-    fully-current resolution emits none) PLUS the Python runtime's own
-    finding (same rule), sorted by id — mirrors ``license_findings``'s "one
+    ``eol``/``over-lag``/``unknown``-reason ``Finding`` per DISTINCT finding
+    id (a fully-current resolution emits none; ecosystem-variant duplicates
+    of the same name+version collapse to one finding — see the dedupe note
+    at the bottom of this function) PLUS the Python runtime's own finding
+    (same rule), sorted by id — mirrors ``license_findings``'s "one
     function computes the whole axis's findings" shape. Returns
     ``(findings, currency_data)`` — ``currency_data`` is the bundled
     registry's own ``FeedProvenance`` (see module docstring's schema-shape
@@ -682,17 +706,38 @@ def currency_findings(
         now=now,
     )
     runtime_classification = _classify(runtime_resolution)
+    runtime_finding: Finding | None = None
     if runtime_classification is not None:
         reason, verdict = runtime_classification
-        findings.append(
-            _currency_finding(
-                name="python",
-                subject=_PYTHON_RUNTIME_SUBJECT,
-                version=runtime_version,
-                reason=reason,
-                verdict=verdict,
-                resolution=runtime_resolution,
-            )
+        runtime_finding = _currency_finding(
+            name="python",
+            subject=_PYTHON_RUNTIME_SUBJECT,
+            version=runtime_version,
+            reason=reason,
+            verdict=verdict,
+            resolution=runtime_resolution,
         )
 
-    return (tuple(sorted(findings, key=lambda f: f.id)), currency_data)
+    # Ecosystem-variant duplicates: ``merge_components`` keeps (ecosystem,
+    # name, version) identities DISTINCT, so the same dep declared in (say)
+    # both a pyproject and a pixi manifest reaches here twice -- and this
+    # axis's resolution is deliberately ecosystem-agnostic, so both mint
+    # the SAME finding id (the decision-record id grammar carries no
+    # ecosystem segment). Emitting both would violate ComplianceReport's
+    # finding-id uniqueness invariant and kill the WHOLE report (internal
+    # error, nothing emitted) -- dedupe by id instead: same normalized
+    # name + version -> same resolution -> byte-identical payload, so one
+    # finding honestly covers every ecosystem the dep appears in (review
+    # finding, 2026-07-23; the license axis's same latent pattern is
+    # ledgered, cross-axis). Keep-first is deterministic (component order
+    # is merge_components' deterministic output order); the runtime's
+    # RESERVED ``!python-runtime`` id is inserted last with overwrite so a
+    # degenerate component squatting on the sentinel can never mask the
+    # interpreter's own finding.
+    deduped: dict[str, Finding] = {}
+    for finding in findings:
+        deduped.setdefault(finding.id, finding)
+    if runtime_finding is not None:
+        deduped[runtime_finding.id] = runtime_finding
+
+    return (tuple(sorted(deduped.values(), key=lambda f: f.id)), currency_data)

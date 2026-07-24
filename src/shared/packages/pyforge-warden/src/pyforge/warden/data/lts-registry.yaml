@@ -1,11 +1,18 @@
 # lts-registry.yaml — conda-name → endoflife.date-slug map + manual LTS lines
 # (cyclonedx-universe-inventory Wave D / S7, decision 5(b)).
 #
-# Bundled copy (Story 6.3, FR34's tier-1 currency source), regenerated
-# verbatim from the canonical source of truth:
+# Bundled copy (Story 6.3, FR34's tier-1 currency source), regenerated from
+# the canonical source of truth (DATA verbatim -- this bundled header
+# comment block is the only sanctioned difference; a parity test compares
+# the parsed documents):
 # .claude/skills/conda-forge-expert/data/lts-registry.yaml -- loaded via
 # importlib.resources by src/pyforge/warden/currency.py. Re-copy this file
 # whenever the CFE source copy changes; never hand-edit the two out of sync.
+# NOTE: tests/unit/test_currency.py pins facts from this data (the updated:
+# date's freshness at the tests' frozen _NOW, spring-framework's lts_lines,
+# python's slug routing) -- see test_bundled_registry_facts_the_suite_relies_on
+# there; after a re-copy, run the suite and update _NOW / the affected
+# fixtures alongside the new data if that canary fails.
 #
 # Purpose: a THIN slug map. endoflife.date API v1 is the authoritative LTS/EOL
 # source; this file only (1) maps conda/pypi package names to endoflife.date
