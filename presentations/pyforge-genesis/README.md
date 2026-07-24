@@ -42,3 +42,14 @@ Full warden-style set on disk: derived Marp deck + authored Executive Summary
 Infographic (Marp) + `deck-export` outputs (standalone HTML + deck/infographic
 PPTX), all dated 2026-07-24. Design-project upload of the light artifacts
 (3 Marp + exec-summary dc.html) queued in the family-wide upload pass.
+
+**Infographic edited in Design + pulled 2026-07-24** — `PyForge Genesis -
+Infographic.dc.html` was hand-expanded in the Design project (17,574 → 40,257
+bytes; +2 sections: "The autonomy gradient" and "The SDLC, staffed — phase ×
+persona × skills") and pulled to disk **byte-exact** (etag `1784926528376406`,
+via render-preview → strip-harness). `PyForge Genesis Infographic
+standalone.html` was **mechanically re-derived from the edited dc.html** (same
+body, x-dc wrapper dropped, helmet hoisted to `<head>`) so the pair stays in
+step. NOT auto-synced: the `- Infographic Deck.dc.html` (slides) — a different
+layout that needs the 2 new sections re-laid as slides — and the Marp/pptx
+exports (they derive from the Marp `.md`, not the dc.html).
