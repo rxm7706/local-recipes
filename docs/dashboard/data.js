@@ -1169,7 +1169,7 @@ window.DASHBOARD_DATA = {
       "timing": null
     }
   },
-  "snapshot": "<span>2026-07-25 12:24 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-07-25 12:27 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -1712,284 +1712,296 @@ window.DASHBOARD_DATA = {
       "link": "recipes/copilot-cli"
     }
   ],
-  "campaign": {
-    "launched": "2026-07-25",
-    "chain": "research → brief → PRD → architecture → epics",
-    "rows": [
-      {
-        "wave": "1a",
-        "slug": "pyforge-doctor",
-        "model": "sonnet",
-        "depth": "epics",
-        "state": "running",
-        "have": {
-          "research": true,
-          "brief": true,
-          "prd": true,
-          "architecture": true,
-          "epics": true
+  "campaigns": [
+    {
+      "id": "spec-completion-2026-07-25",
+      "title": "Spec Completion",
+      "kind": "planning",
+      "status": "completed",
+      "completed": "2026-07-25",
+      "record": "_bmad-output/projects/local-recipes/planning-artifacts/campaign-spec-completion-2026-07-25.md",
+      "launched": "2026-07-25",
+      "chain": "research → brief → PRD → architecture → epics",
+      "rows": [
+        {
+          "wave": "1a",
+          "slug": "pyforge-doctor",
+          "model": "sonnet",
+          "depth": "epics",
+          "state": "running",
+          "have": {
+            "research": true,
+            "brief": true,
+            "prd": true,
+            "architecture": true,
+            "epics": true
+          },
+          "n": 5,
+          "of": 5,
+          "status": "landed"
         },
-        "n": 5,
-        "of": 5,
-        "status": "landed"
-      },
-      {
-        "wave": "1b",
-        "slug": "pyforge-steward",
-        "model": "sonnet",
-        "depth": "epics",
-        "state": "running",
-        "have": {
-          "research": true,
-          "brief": true,
-          "prd": true,
-          "architecture": true,
-          "epics": true
+        {
+          "wave": "1b",
+          "slug": "pyforge-steward",
+          "model": "sonnet",
+          "depth": "epics",
+          "state": "running",
+          "have": {
+            "research": true,
+            "brief": true,
+            "prd": true,
+            "architecture": true,
+            "epics": true
+          },
+          "n": 5,
+          "of": 5,
+          "status": "landed"
         },
-        "n": 5,
-        "of": 5,
-        "status": "landed"
-      },
-      {
-        "wave": "1c",
-        "slug": "pyforge-scribe",
-        "model": "sonnet",
-        "depth": "epics",
-        "state": "running",
-        "have": {
-          "research": true,
-          "brief": true,
-          "prd": true,
-          "architecture": true,
-          "epics": true
+        {
+          "wave": "1c",
+          "slug": "pyforge-scribe",
+          "model": "sonnet",
+          "depth": "epics",
+          "state": "running",
+          "have": {
+            "research": true,
+            "brief": true,
+            "prd": true,
+            "architecture": true,
+            "epics": true
+          },
+          "n": 5,
+          "of": 5,
+          "status": "landed"
         },
-        "n": 5,
-        "of": 5,
-        "status": "landed"
-      },
-      {
-        "wave": "1d",
-        "slug": "pyforge-herald",
-        "model": "sonnet",
-        "depth": "epics",
-        "state": "running",
-        "have": {
-          "research": true,
-          "brief": true,
-          "prd": true,
-          "architecture": true,
-          "epics": true
+        {
+          "wave": "1d",
+          "slug": "pyforge-herald",
+          "model": "sonnet",
+          "depth": "epics",
+          "state": "running",
+          "have": {
+            "research": true,
+            "brief": true,
+            "prd": true,
+            "architecture": true,
+            "epics": true
+          },
+          "n": 5,
+          "of": 5,
+          "status": "landed"
         },
-        "n": 5,
-        "of": 5,
-        "status": "landed"
-      },
-      {
-        "wave": "1e",
-        "slug": "pyforge-marshal",
-        "model": "opus",
-        "depth": "epics",
-        "state": "running",
-        "have": {
-          "research": true,
-          "brief": true,
-          "prd": true,
-          "architecture": true,
-          "epics": true
+        {
+          "wave": "1e",
+          "slug": "pyforge-marshal",
+          "model": "opus",
+          "depth": "epics",
+          "state": "running",
+          "have": {
+            "research": true,
+            "brief": true,
+            "prd": true,
+            "architecture": true,
+            "epics": true
+          },
+          "n": 5,
+          "of": 5,
+          "status": "landed"
         },
-        "n": 5,
-        "of": 5,
-        "status": "landed"
-      },
-      {
-        "wave": "1f",
-        "slug": "pyforge-mason",
-        "model": "opus",
-        "depth": "epics",
-        "state": "running",
-        "have": {
-          "research": true,
-          "brief": true,
-          "prd": true,
-          "architecture": true,
-          "epics": true
+        {
+          "wave": "1f",
+          "slug": "pyforge-mason",
+          "model": "opus",
+          "depth": "epics",
+          "state": "running",
+          "have": {
+            "research": true,
+            "brief": true,
+            "prd": true,
+            "architecture": true,
+            "epics": true
+          },
+          "n": 5,
+          "of": 5,
+          "status": "landed"
         },
-        "n": 5,
-        "of": 5,
-        "status": "landed"
-      },
-      {
-        "wave": "2a",
-        "slug": "presenton-pixi-image",
-        "model": "sonnet",
-        "depth": "epics",
-        "state": "running",
-        "have": {
-          "research": true,
-          "brief": true,
-          "prd": true,
-          "architecture": true,
-          "epics": true
+        {
+          "wave": "2a",
+          "slug": "presenton-pixi-image",
+          "model": "sonnet",
+          "depth": "epics",
+          "state": "running",
+          "have": {
+            "research": true,
+            "brief": true,
+            "prd": true,
+            "architecture": true,
+            "epics": true
+          },
+          "n": 5,
+          "of": 5,
+          "status": "landed"
         },
-        "n": 5,
-        "of": 5,
-        "status": "landed"
-      },
-      {
-        "wave": "2b",
-        "slug": "wasm-analytics-stack",
-        "model": "sonnet",
-        "depth": "prd+arch",
-        "state": "running",
-        "have": {
-          "research": true,
-          "brief": true,
-          "prd": true,
-          "architecture": true,
-          "epics": false
+        {
+          "wave": "2b",
+          "slug": "wasm-analytics-stack",
+          "model": "sonnet",
+          "depth": "prd+arch",
+          "state": "running",
+          "have": {
+            "research": true,
+            "brief": true,
+            "prd": true,
+            "architecture": true,
+            "epics": false
+          },
+          "n": 4,
+          "of": 4,
+          "status": "landed"
         },
-        "n": 4,
-        "of": 4,
-        "status": "landed"
-      },
-      {
-        "wave": "2c",
-        "slug": "unity-data-stack",
-        "model": "opus",
-        "depth": "prd+arch",
-        "state": "running",
-        "have": {
-          "research": true,
-          "brief": true,
-          "prd": true,
-          "architecture": true,
-          "epics": false
+        {
+          "wave": "2c",
+          "slug": "unity-data-stack",
+          "model": "opus",
+          "depth": "prd+arch",
+          "state": "running",
+          "have": {
+            "research": true,
+            "brief": true,
+            "prd": true,
+            "architecture": true,
+            "epics": false
+          },
+          "n": 4,
+          "of": 4,
+          "status": "landed"
         },
-        "n": 4,
-        "of": 4,
-        "status": "landed"
-      },
-      {
-        "wave": "2d",
-        "slug": "pyforge-genesis",
-        "model": "opus",
-        "depth": "epics",
-        "state": "queued",
-        "have": {
-          "research": true,
-          "brief": true,
-          "prd": true,
-          "architecture": true,
-          "epics": true
+        {
+          "wave": "2d",
+          "slug": "pyforge-genesis",
+          "model": "opus",
+          "depth": "epics",
+          "state": "queued",
+          "have": {
+            "research": true,
+            "brief": true,
+            "prd": true,
+            "architecture": true,
+            "epics": true
+          },
+          "n": 5,
+          "of": 5,
+          "status": "landed"
+        }
+      ]
+    },
+    {
+      "id": "build-2026-07-25",
+      "title": "The Build",
+      "kind": "build",
+      "status": "active",
+      "launched": "2026-07-25",
+      "rows": [
+        {
+          "slug": "pyforge-herald",
+          "pkey": "herald",
+          "stories": 17,
+          "state": "running",
+          "note": "line 1 — smallest full product, spec settled 0 OQs",
+          "done": 0,
+          "total": 17
         },
-        "n": 5,
-        "of": 5,
-        "status": "landed"
-      }
-    ]
-  },
-  "campaign2": {
-    "launched": "2026-07-25",
-    "rows": [
-      {
-        "slug": "pyforge-herald",
-        "pkey": "herald",
-        "stories": 17,
-        "state": "running",
-        "note": "line 1 — smallest full product, spec settled 0 OQs",
-        "done": 0,
-        "total": 17
-      },
-      {
-        "slug": "pyforge-doctor",
-        "pkey": "doctor",
-        "stories": 12,
-        "state": "running",
-        "note": "line 2 — consolidative wrap",
-        "done": 0,
-        "total": 12
-      },
-      {
-        "slug": "pyforge-scribe",
-        "pkey": "scribe",
-        "stories": 9,
-        "state": "running",
-        "note": "line 3 — team memory + graph",
-        "done": 0,
-        "total": 9
-      },
-      {
-        "slug": "pyforge-steward",
-        "pkey": null,
-        "stories": 18,
-        "state": "queued",
-        "note": "next free slot",
-        "done": 0,
-        "total": 18
-      },
-      {
-        "slug": "deckcraft",
-        "pkey": null,
-        "stories": 28,
-        "state": "queued",
-        "note": "planned pre-campaign (6 epics); research backfill advisable before launch",
-        "done": 0,
-        "total": 28
-      },
-      {
-        "slug": "pyforge-mason",
-        "pkey": null,
-        "stories": 38,
-        "state": "queued",
-        "note": "longest persona line; CFE Rule-2 retro at closeout",
-        "done": 0,
-        "total": 38
-      },
-      {
-        "slug": "presenton-pixi-image",
-        "pkey": null,
-        "stories": 30,
-        "state": "held",
-        "note": "operator Phase-0 gates: MS disconnected-stack check + memory-subsystem scope",
-        "done": 0,
-        "total": 30
-      },
-      {
-        "slug": "pyforge-marshal",
-        "pkey": null,
-        "stories": 40,
-        "state": "held",
-        "note": "AD-25–39 adversarial pass + floor quiescence (touches loop machinery)",
-        "done": 0,
-        "total": 40
-      },
-      {
-        "slug": "pyforge-genesis",
-        "pkey": null,
-        "stories": 36,
-        "state": "held",
-        "note": "last — model stability + consumes marshal-owned scripts",
-        "done": 0,
-        "total": 36
-      },
-      {
-        "slug": "wasm-analytics-stack",
-        "pkey": null,
-        "stories": 0,
-        "state": "future",
-        "note": "PRD+arch only by design; stories decompose when scheduled",
-        "done": 0,
-        "total": 0
-      },
-      {
-        "slug": "unity-data-stack",
-        "pkey": null,
-        "stories": 0,
-        "state": "future",
-        "note": "PRD+arch only by design; stories decompose when scheduled",
-        "done": 0,
-        "total": 0
-      }
-    ]
-  }
+        {
+          "slug": "pyforge-doctor",
+          "pkey": "doctor",
+          "stories": 12,
+          "state": "running",
+          "note": "line 2 — consolidative wrap",
+          "done": 0,
+          "total": 12
+        },
+        {
+          "slug": "pyforge-scribe",
+          "pkey": "scribe",
+          "stories": 9,
+          "state": "running",
+          "note": "line 3 — team memory + graph",
+          "done": 0,
+          "total": 9
+        },
+        {
+          "slug": "pyforge-steward",
+          "pkey": null,
+          "stories": 18,
+          "state": "queued",
+          "note": "next free slot",
+          "done": 0,
+          "total": 18
+        },
+        {
+          "slug": "deckcraft",
+          "pkey": null,
+          "stories": 28,
+          "state": "queued",
+          "note": "planned pre-campaign (6 epics); research backfill advisable before launch",
+          "done": 0,
+          "total": 28
+        },
+        {
+          "slug": "pyforge-mason",
+          "pkey": null,
+          "stories": 38,
+          "state": "queued",
+          "note": "longest persona line; CFE Rule-2 retro at closeout",
+          "done": 0,
+          "total": 38
+        },
+        {
+          "slug": "presenton-pixi-image",
+          "pkey": null,
+          "stories": 30,
+          "state": "held",
+          "note": "operator Phase-0 gates: MS disconnected-stack check + memory-subsystem scope",
+          "done": 0,
+          "total": 30
+        },
+        {
+          "slug": "pyforge-marshal",
+          "pkey": null,
+          "stories": 40,
+          "state": "held",
+          "note": "AD-25–39 adversarial pass + floor quiescence (touches loop machinery)",
+          "done": 0,
+          "total": 40
+        },
+        {
+          "slug": "pyforge-genesis",
+          "pkey": null,
+          "stories": 36,
+          "state": "held",
+          "note": "last — model stability + consumes marshal-owned scripts",
+          "done": 0,
+          "total": 36
+        },
+        {
+          "slug": "wasm-analytics-stack",
+          "pkey": null,
+          "stories": 0,
+          "state": "future",
+          "note": "PRD+arch only by design; stories decompose when scheduled",
+          "done": 0,
+          "total": 0
+        },
+        {
+          "slug": "unity-data-stack",
+          "pkey": null,
+          "stories": 0,
+          "state": "future",
+          "note": "PRD+arch only by design; stories decompose when scheduled",
+          "done": 0,
+          "total": 0
+        }
+      ]
+    }
+  ]
 };

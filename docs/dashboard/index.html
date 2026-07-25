@@ -370,6 +370,14 @@
   @keyframes camppulse { 0%,100% { opacity: 1; } 50% { opacity: .55; } }
   @media (max-width: 640px) { .camprow { grid-template-columns: 1fr auto auto; } .camp-wave, .camp-model, .camp-n { display: none; } }
 
+  .campblock { border: 1px solid var(--line); border-radius: 7px; background: var(--panel-2); padding: 0 14px; margin-bottom: 10px; }
+  .campblock > summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 10px; padding: 11px 0; }
+  .campblock > summary::-webkit-details-marker { display: none; }
+  .campblock[open] > summary { border-bottom: 1px solid var(--line-soft); }
+  .campblock-t { font-family: var(--mono); font-size: 13px; font-weight: 600; }
+  .campblock-m { font-family: var(--mono); font-size: 10.5px; color: var(--slate-faint); margin-left: auto; }
+  .campblock-body { padding: 4px 0 10px; }
+
   /* pitch cards */
   .pitchgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(198px,1fr)); gap: 10px; }
   .pcard { border: 1px solid var(--line); border-radius: 7px; background: var(--panel-2); padding: 12px 14px; text-decoration: none; display: block; }
@@ -444,16 +452,10 @@
     <div id="specrows"></div>
   </details>
 
-  <details class="dreams zsec" id="campsec" hidden open>
-    <summary><span class="program-h" id="camph">The Campaign</span><span class="zcaret">▸</span></summary>
-    <div class="dflow"><b>factory spec-completion</b> — every persona &amp; component through <b>research → brief → PRD → architecture → epics</b>, parallel worktree-isolated chains. Dots = stages landed on <code>main</code>; in-flight chains show as running until their branch merges.</div>
-    <div id="camprows"></div>
-  </details>
-
-  <details class="dreams zsec" id="campsec2" hidden open>
-    <summary><span class="program-h" id="camph2">The Build Campaign</span><span class="zcaret">▸</span></summary>
-    <div class="dflow"><b>implementation lines</b> — every specced project through parallel <b>bmad-loop</b> lines (unattended gates, per-story merges to <code>main</code>). Wired lines derive done/total live; held lines name their gate.</div>
-    <div id="camprows2"></div>
+  <details class="dreams zsec" id="campaignsec" hidden open>
+    <summary><span class="program-h" id="campaignh">Campaigns</span><span class="zcaret">▸</span></summary>
+    <div class="dflow"><b>program-scale efforts across the BMAD projects</b> — each campaign is a roster of parallel chains/lines with live per-row state. Completed campaigns collapse and keep their durable record; the active campaign leads.</div>
+    <div id="campaignblocks"></div>
   </details>
 
   <details class="dreams zsec" id="pitchsec" hidden>
@@ -551,52 +553,57 @@
       '</div>').join("");
   }
 
-  // ---- 2b · The Campaign (factory spec-completion) ----
-  const CAMP = window.DASHBOARD_DATA.campaign || null;
+  // ---- 2b · Campaigns (program-scale efforts; completed collapse, active leads) ----
+  const CAMPAIGNS = window.DASHBOARD_DATA.campaigns || [];
   const CAMP_STAGES = ["research","brief","prd","architecture","epics"];
-  if (CAMP && CAMP.rows && CAMP.rows.length) {
-    const el = document.getElementById("campsec");
-    el.hidden = false;
-    const landed = CAMP.rows.filter(r => r.status === "landed").length;
-    const running = CAMP.rows.filter(r => r.status === "running").length;
-    document.getElementById("camph").textContent =
-      "The Campaign · " + CAMP.rows.length + " chains (" + running + " running · " + landed + " landed)";
-    document.getElementById("camprows").innerHTML = CAMP.rows.map(r => {
-      const na = r.depth === "prd+arch" ? ["epics"] : [];
-      return '<div class="camprow">' +
-        '<span class="camp-wave">' + esc(r.wave) + '</span>' +
-        '<span class="camp-slug"><a href="' + REPO + '/tree/main/_bmad-output/projects/' + esc(r.slug) +
-          '/planning-artifacts">' + esc(r.slug) + '</a></span>' +
-        '<span class="camp-model">' + esc(r.model) + '</span>' +
-        '<span class="camp-stages">' + CAMP_STAGES.map(s =>
-          '<span class="campdot' + (na.includes(s) ? ' na' : (r.have[s] ? '' : ' miss')) +
-          '" title="' + s + (na.includes(s) ? ' — not in scope (prd+arch depth)' : (r.have[s] ? ' — landed' : ' — pending')) +
-          '"></span>').join("") + '</span>' +
-        '<span class="camp-n">' + r.n + '/' + r.of + '</span>' +
-        '<span class="cbadge cb-' + esc(r.status) + '">' + esc(r.status) + '</span>' +
-      '</div>';
+  const CBADGE = { running:"cb-running", queued:"cb-queued", held:"cb-partial", future:"cb-queued",
+                   done:"cb-landed", landed:"cb-landed", partial:"cb-partial",
+                   active:"cb-running", completed:"cb-landed" };
+  if (CAMPAIGNS.length) {
+    document.getElementById("campaignsec").hidden = false;
+    const nAct = CAMPAIGNS.filter(c => c.status === "active").length;
+    const nDone = CAMPAIGNS.filter(c => c.status === "completed").length;
+    document.getElementById("campaignh").textContent =
+      "Campaigns · " + CAMPAIGNS.length + " (" + nAct + " active · " + nDone + " completed)";
+    document.getElementById("campaignblocks").innerHTML = CAMPAIGNS.map(c => {
+      let rows = "";
+      if (c.kind === "planning") {
+        rows = c.rows.map(r => {
+          const na = r.depth === "prd+arch" ? ["epics"] : [];
+          return '<div class="camprow">' +
+            '<span class="camp-wave">' + esc(r.wave || "") + '</span>' +
+            '<span class="camp-slug"><a href="' + REPO + '/tree/main/_bmad-output/projects/' + esc(r.slug) +
+              '/planning-artifacts">' + esc(r.slug) + '</a></span>' +
+            '<span class="camp-model">' + esc(r.model || "") + '</span>' +
+            '<span class="camp-stages">' + CAMP_STAGES.map(s =>
+              '<span class="campdot' + (na.includes(s) ? ' na' : (r.have[s] ? '' : ' miss')) +
+              '" title="' + s + (na.includes(s) ? ' — not in scope' : (r.have[s] ? ' — landed' : ' — pending')) +
+              '"></span>').join("") + '</span>' +
+            '<span class="camp-n">' + r.n + '/' + r.of + '</span>' +
+            '<span class="cbadge ' + (CBADGE[r.status] || "cb-queued") + '">' + esc(r.status) + '</span>' +
+          '</div>';
+        }).join("");
+      } else {
+        rows = c.rows.map(r =>
+          '<div class="camprow">' +
+            '<span class="camp-wave"></span>' +
+            '<span class="camp-slug"><a href="' + REPO + '/blob/main/_bmad-output/projects/' + esc(r.slug) +
+              '/planning-artifacts/epics.md" title="' + esc(r.note || "") + '">' + esc(r.slug) + '</a></span>' +
+            '<span class="camp-model">' + (r.pkey ? "wired" : "—") + '</span>' +
+            '<span class="camp-stages" style="font-family:var(--mono);font-size:11px;color:var(--slate);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(r.note || "") + '</span>' +
+            '<span class="camp-n">' + (r.total ? r.done + "/" + r.total : "—") + '</span>' +
+            '<span class="cbadge ' + (CBADGE[r.state] || "cb-queued") + '">' + esc(r.state) + '</span>' +
+          '</div>').join("");
+      }
+      const meta = (c.status === "completed" ? "completed " + esc(c.completed || "") :
+                    "launched " + esc(c.launched || ""));
+      const rec = c.record ? ' · <a href="' + REPO + '/blob/main/' + esc(c.record) + '" style="color:var(--slate)">record</a>' : "";
+      return '<details class="campblock"' + (c.status === "active" ? " open" : "") + '>' +
+        '<summary><span class="campblock-t">' + esc(c.title) + '</span>' +
+        '<span class="cbadge ' + (CBADGE[c.status] || "cb-queued") + '">' + esc(c.status) + '</span>' +
+        '<span class="campblock-m">' + esc(c.kind) + ' · ' + c.rows.length + ' rows · ' + meta + rec + '</span>' +
+        '</summary><div class="campblock-body">' + rows + '</div></details>';
     }).join("");
-  }
-
-  // ---- 2c · The Build Campaign (implementation lines) ----
-  const CAMP2 = window.DASHBOARD_DATA.campaign2 || null;
-  const C2BADGE = { running:"cb-running", queued:"cb-queued", held:"cb-partial", future:"cb-queued", done:"cb-landed" };
-  if (CAMP2 && CAMP2.rows && CAMP2.rows.length) {
-    document.getElementById("campsec2").hidden = false;
-    const r2 = CAMP2.rows.filter(r => r.state === "running").length;
-    const d2 = CAMP2.rows.filter(r => r.state === "done").length;
-    document.getElementById("camph2").textContent =
-      "The Build Campaign · " + CAMP2.rows.length + " lines (" + r2 + " running · " + d2 + " done)";
-    document.getElementById("camprows2").innerHTML = CAMP2.rows.map(r =>
-      '<div class="camprow">' +
-        '<span class="camp-wave"></span>' +
-        '<span class="camp-slug"><a href="' + REPO + '/blob/main/_bmad-output/projects/' + esc(r.slug) +
-          '/planning-artifacts/epics.md" title="' + esc(r.note || '') + '">' + esc(r.slug) + '</a></span>' +
-        '<span class="camp-model">' + (r.pkey ? 'wired' : '—') + '</span>' +
-        '<span class="camp-stages" style="font-family:var(--mono);font-size:11px;color:var(--slate)">' + esc(r.note || '') + '</span>' +
-        '<span class="camp-n">' + (r.total ? r.done + '/' + r.total : '—') + '</span>' +
-        '<span class="cbadge ' + (C2BADGE[r.state] || 'cb-queued') + '">' + esc(r.state) + '</span>' +
-      '</div>').join("");
   }
 
   // ---- 3 · The Pitch (the deck family) ----

@@ -510,8 +510,18 @@ def main() -> int:
         apply_sprint_status(data["projects"])
     data["dreams"] = scan_dreams()
     data["specs"] = scan_specs()
-    data["campaign"] = scan_campaign()
-    data["campaign2"] = scan_impl_campaign(data["projects"])
+    data.pop("campaign", None)
+    data.pop("campaign2", None)
+    spec_c = scan_campaign()
+    build_c = scan_impl_campaign(data["projects"])
+    data["campaigns"] = [
+        {"id": "spec-completion-2026-07-25", "title": "Spec Completion",
+         "kind": "planning", "status": "completed", "completed": "2026-07-25",
+         "record": "_bmad-output/projects/local-recipes/planning-artifacts/campaign-spec-completion-2026-07-25.md",
+         **spec_c},
+        {"id": "build-2026-07-25", "title": "The Build", "kind": "build",
+         "status": "active", **build_c},
+    ]
     data["pitch"] = scan_pitch()
     data["archived"] = build_archived(data["dreams"])
 
