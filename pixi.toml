@@ -1183,6 +1183,7 @@ pytest = ">=9.1.1"                       # test runner
 # _bmad-output/projects/pyforge-herald/planning-artifacts/.
 [feature.pyforge-herald.dependencies]
 pyforge-herald = { path = "src/shared/packages/pyforge-herald" }  # -> built conda pkg
+mcp = ">=1.28.1"                         # MCP SDK -- the Story 1.2 primary transport (also a package run-dep)
 hatchling = ">=1.31.0"                    # Python build backend (drives both conda + wheel/sdist)
 python-build = ">=1.5.0"                 # PyPA `python -m build` frontend (wheel + sdist)
 pytest = ">=9.1.1"                       # test runner
