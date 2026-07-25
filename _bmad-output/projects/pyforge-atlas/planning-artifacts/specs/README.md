@@ -8,6 +8,10 @@ is that durable home. The pre-existing `spec-pyforge-atlas/` subdir is the Dream
 bmad-spec **kernel** (SPEC.md + memlog); the `spec-<story>.md` files here are the per-story
 specs.
 
+**Single-file view:** `COMPENDIUM.md` collects the kernel + all 32 story specs verbatim in
+wave order (with a provenance index). Compilation only — the individual files here stay
+canonical; regenerate the compendium if one changes.
+
 ## Provenance of the recovered set (2026-07-25)
 
 Atlas was **more degraded than warden**: by 2026-07-25 only **2 of 32 story specs survived
