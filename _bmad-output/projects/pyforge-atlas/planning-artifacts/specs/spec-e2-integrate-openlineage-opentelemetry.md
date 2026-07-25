@@ -4,18 +4,22 @@ type: 'feature'
 status: 'regenerated'
 regenerated: '2026-07-25'
 source: 'epics.md (authoritative intent + acceptance criteria) + shipped code on main'
-original_spec: 'lost to the Tier-3 paper-trail gap + the 2026-07-19 truncation incident; dev-notes / review-triage-log not recovered'
+original_spec: 'NEVER AUTHORED as a file — wave B9-H4 ran through the in-session agent loop, not bmad-create-story (which wrote files only for waves 0/A/B1-B8), confirmed by the migration session itself. Nothing was lost; there is no original to recover. Intent+ACs below are the real epics.md contract.'
 enriched: '2026-07-25 (merged PR #91 body + main commit log; dev narrative recovered, review-triage partial)'
 ---
 
-> **Regenerated contract-spec (2026-07-25).** The original per-story spec was lost when
-> its Tier-3 (gitignored) `implementation-artifacts/` copy was destroyed (worktree
-> teardown + the 2026-07-19 truncation incident — atlas story files were 0-byte or gone).
-> This file **recovers the load-bearing contract**: the Intent and Acceptance Criteria
-> below are lifted **verbatim** from the tracked, authoritative `planning-artifacts/epics.md`
-> (the source the original spec was derived from). What is **not** recovered: the original
-> implementation dev-notes and review-triage log. Ground truth for what shipped is the
-> merged PRs (#58–#105); behaviour is exercised by the migrated pipeline on `main`.
+> **Contract-spec — no original ever existed (corrected 2026-07-25).** This story
+> (wave B9–H4) was built by the atlas migration's **in-session agent loop**, which —
+> unlike `bmad-create-story` (used only for waves 0/A/B1–B8) — never emitted a per-story
+> spec file. The atlas migration session (`01FYyQvBJuXwySiaMUUYCqBZ`) confirmed this
+> exhaustively: no such file exists in `implementation-artifacts/`, `.bmad-loop/runs/`
+> (which never existed for atlas), any git worktree, git history, or anywhere on disk.
+> **Nothing was lost — there is no original to recover.** This file carries the
+> load-bearing contract (Intent + Acceptance Criteria **verbatim** from the tracked
+> `planning-artifacts/epics.md`) plus a dev narrative reconstructed from the merged record
+> (the "Dev narrative" section below). A fuller BMAD-story-format reconstruction (Dev
+> Agent Record + File List + Review Triage Log, built from the agent-loop transcripts) is
+> at `../../spec-archive/retro-story-files/6-2-e2.md` — the operator's web-session archive.
 
 ## Contract (from epics.md — verbatim, authoritative)
 
