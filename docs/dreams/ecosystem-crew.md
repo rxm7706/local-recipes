@@ -7,6 +7,15 @@ status: in-deck
 
 # The Ecosystem Crew: System Personas & CLI Framework
 
+> ### *"Forging the Autonomous Agentic SDLC: Humans Dream, Agents Deliver — Governed. Auditable. Production-ready."*
+>
+> **The pyforge mission** *(canonized 2026-07-25)*: pyforge exists to prove the whole
+> SDLC — not just coding — can be run by autonomous AI agents a human can trust. Every
+> lifecycle stage is owned by a named, accountable persona; every artifact traces to a
+> spec, and every spec to a human Dream; autonomy is a governed gradient, never a leap
+> of faith; and no station reports a green it didn't earn. The human's role rises from
+> writing software to architecting Dreams — and the forge makes them real.
+
 This is the founding **Dream** of the **pyforge** ecosystem — the raw vision for
 **"Dream to Code"**, a dual-ecosystem (Python / PyPI + Conda / conda-forge)
 autonomous agentic build pipeline engineered on the **BMAD Method**. It is told
@@ -388,3 +397,9 @@ doctor monitor --fleet --watch staleness,cve,abandonment
 herald updates compile --duration weekly --include notables,infographics
 herald broadcast slack,email --channel engineering-updates
 ```
+
+---
+
+## Realization log
+
+- **2026-07-25** — the pyforge mission + tagline canonized at the masthead (operator-wordsmithed through the register series); genesis deck opening-slide refresh queued to Herald's backlog.
