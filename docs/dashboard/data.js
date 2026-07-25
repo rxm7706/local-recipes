@@ -868,7 +868,7 @@ window.DASHBOARD_DATA = {
       }
     }
   },
-  "snapshot": "<span>2026-07-25 11:44 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-07-25 11:51 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -963,7 +963,7 @@ window.DASHBOARD_DATA = {
     {
       "slug": "presenton-pixi-image",
       "title": "Presenton, conda-native — AI decks inside the regulated enterprise",
-      "status": "seeded",
+      "status": "in-spec",
       "owner": "mason",
       "chain": {
         "project": "_bmad-output/projects/presenton-pixi-image"
@@ -1524,15 +1524,15 @@ window.DASHBOARD_DATA = {
         "depth": "epics",
         "state": "running",
         "have": {
-          "research": false,
-          "brief": false,
+          "research": true,
+          "brief": true,
           "prd": true,
-          "architecture": false,
-          "epics": false
+          "architecture": true,
+          "epics": true
         },
-        "n": 1,
+        "n": 5,
         "of": 5,
-        "status": "partial"
+        "status": "landed"
       },
       {
         "wave": "2b",
