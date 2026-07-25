@@ -137,6 +137,49 @@ def apply_sprint_status(projects: dict) -> None:
               f"(of {matched + len(unmatched)}){note}")
 
 
+# dashboard project-key -> its bmad-loop loop-home dir (sibling of the repo).
+# Local-mode enrichment ONLY: bmad-loop writes sprint-status at story COMPLETION,
+# not start — so a story being actively worked shows `backlog` in the feed. The
+# latest live run's story-worktree name carries the story key; mark it active.
+# CI has no sibling loop homes, so this is a structural no-op there.
+LOOP_HOMES = {
+    "herald": "local-recipes-loop-pyforge-herald",
+    "doctor": "local-recipes-loop-pyforge-doctor",
+    "scribe": "local-recipes-loop-pyforge-scribe",
+    "warden": "local-recipes-loop-pyforge-warden",
+}
+_WT_STORY = re.compile(r"^(\d+-\d+)-")
+_RUN_FRESH_SECS = 12 * 3600  # ignore concluded/stale runs
+
+
+def apply_loop_inflight(projects: dict) -> None:
+    import time
+    for pkey, home in LOOP_HOMES.items():
+        proj = projects.get(pkey)
+        runs_dir = REPO_ROOT.parent / home / ".bmad-loop" / "runs"
+        if proj is None or not runs_dir.is_dir():
+            continue
+        runs = sorted(runs_dir.iterdir(), key=lambda p: p.stat().st_mtime, reverse=True)
+        active_ids = set()
+        if runs and (time.time() - runs[0].stat().st_mtime) < _RUN_FRESH_SECS:
+            wts = runs[0] / "worktrees"
+            if wts.is_dir():
+                for wt in wts.iterdir():
+                    m = _WT_STORY.match(wt.name)
+                    if m:
+                        active_ids.add(m.group(1).replace("-", "."))
+        if not active_ids:
+            continue
+        marked = []
+        for epic in proj["epics"]:
+            for story in epic["stories"]:
+                if story[0] in active_ids and story[1] == "pending":
+                    story[1] = "active"
+                    marked.append(story[0])
+        if marked:
+            print(f"[{pkey}] loop-home in-flight: {', '.join(marked)} (run {runs[0].name})")
+
+
 # ---- source: git (hands-off / CI) -------------------------------------------
 
 def done_ids_from_git(branch: str) -> dict[str, set[str]]:
@@ -508,6 +551,7 @@ def main() -> int:
         apply_git(data["projects"])
     else:
         apply_sprint_status(data["projects"])
+        apply_loop_inflight(data["projects"])
     data["dreams"] = scan_dreams()
     data["specs"] = scan_specs()
     data.pop("campaign", None)

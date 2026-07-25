@@ -885,7 +885,7 @@ window.DASHBOARD_DATA = {
           "stories": [
             [
               "1.1",
-              "pending",
+              "active",
               "Package scaffold for pyforge-herald"
             ],
             [
@@ -1017,7 +1017,7 @@ window.DASHBOARD_DATA = {
           "stories": [
             [
               "1.1",
-              "pending",
+              "active",
               "Package scaffold, frozen Finding/DoctorReport contract & exit codes"
             ],
             [
@@ -1112,7 +1112,7 @@ window.DASHBOARD_DATA = {
           "stories": [
             [
               "1.1",
-              "pending",
+              "active",
               "Package scaffold + direct capture"
             ],
             [
@@ -1169,7 +1169,7 @@ window.DASHBOARD_DATA = {
       "timing": null
     }
   },
-  "snapshot": "<span>2026-07-25 12:47 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-07-25 12:59 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
