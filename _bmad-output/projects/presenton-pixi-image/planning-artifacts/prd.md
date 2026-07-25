@@ -1,8 +1,11 @@
 ---
-stepsCompleted: ['step-01-init', 'step-01b-rearchitecture', 'step-01b-continue', 'step-02-discovery', 'step-02b-vision', 'step-02c-executive-summary', 'step-03-success']
+stepsCompleted: ['step-01-init', 'step-01b-rearchitecture', 'step-01b-continue', 'step-02-discovery', 'step-02b-vision', 'step-02c-executive-summary', 'step-03-success', 'update-2026-07-25-research-revision']
 inputDocuments:
   - '{project-root}/_bmad-output/project-context.md'
   - '{project-root}/CLAUDE.md'
+  - '{project-root}/_bmad-output/projects/presenton-pixi-image/planning-artifacts/briefs/brief-presenton-pixi-image-2026-07-25/brief.md'
+  - '{project-root}/_bmad-output/projects/presenton-pixi-image/planning-artifacts/research/technical-presenton-stack-ocp-airgap-research-2026-07-25.md'
+  - '{project-root}/_bmad-output/projects/presenton-pixi-image/planning-artifacts/research/domain-regulated-enterprise-airgap-ai-deck-market-research-2026-07-25.md'
 externalResearchTargets:
   - 'https://github.com/presenton/presenton (the upstream repo we are repackaging — Next.js + FastAPI + Electron monorepo)'
   - 'https://github.com/presenton/presenton/blob/main/Dockerfile (current LibreOffice-based image we replace)'
@@ -33,10 +36,11 @@ deliverableArtifacts:
   - 'presenton-export-node (new Node.js package, ~200–500 LOC, Playwright-based; replaces opaque presenton-export/index.js bundle; vendored in this project, source-available)'
   - 'pptx-assembler (new Python package; python-pptx + Pillow; replaces opaque convert-linux-x64 PyInstaller binary; consumes the same JSON/images.zip contract as the upstream binary; produces image-overlay + extracted text shapes — fidelity option B, matches current upstream behavior)'
   - 'pptx-thumbnail-inject (small utility; injects docProps/thumbnail.jpeg + [Content_Types].xml Override into PPTX zip; addresses dealbreaker C2 — likely folded into pptx-assembler)'
-  - 'template-style-extractor (new Python package; ~600–800 LOC; format-detected dispatch over PPTX/DOCX/PDF inputs using python-pptx + python-docx + pymupdf + pytesseract; emits common JSON style shape consumed by the LLM; replaces current soffice→PDF→screenshots→vision-model pipeline; ODP/ODT via odfpy is a stretch goal pending usage signal; rejects legacy .ppt/.doc binaries with a clear "save as .pptx/.docx" error)'
+  - 'DROPPED 2026-07-25 (see Revision Log): template-style-extractor. Live upstream Presenton already does LibreOffice-free template import (stdlib zipfile+ElementTree for PPTX/DOCX/XLSX, native ODF, pdfplumber for PDF) with near-zero new dependencies, including the legacy .ppt/.doc rejection this PRD proposed inventing — no replacement component needed for v1.'
+  - 'NEW 2026-07-25, Phase-0-gated (see Phase 0 exit 6): mem0ai + fastembed-vectorstore conda-forge recipes — unconditional Presenton memory/RAG dependencies, neither on conda-forge today; OR a documented v1 feature-drop of the memory/chat-history subsystem, whichever Phase 0 decides.'
   - 'playwright-with-chromium (new conda-forge recipe; bundles chrome-headless-shell binary inside the conda artifact at build-time; models on pyppeteer-feedstock#3 pattern; enables fully air-gapped runtime)'
-  - 'presenton patches (replace presentation-export download with presenton-export-node package; replace convert-linux-x64 invocation with pptx-assembler; flip INSTALL_LIBREOFFICE=false; delegate template-import to template-style-extractor for PPTX/DOCX/PDF inputs; minor docker-compose.yml UX patch to forward OPENAI_BASE_URL / ANTHROPIC_BASE_URL explicitly — ~3 LOC; LLM provider config already supported via llmai==0.2.2 + LLM=custom mode, no source patches needed)'
-  - 'llmai conda-forge recipe (Apache-licensed unified LLM provider abstraction, version 0.2.2 on PyPI; transitive dep already in Presenton; needs conda-forge recipe submission if not already on the channel)'
+  - 'presenton patches (replace presentation-export download with presenton-export-node package; replace convert-linux-x64 invocation with pptx-assembler; template-import needs no patch — upstream template import is already LibreOffice-free and conda-forge-clean, see Revision Log; minor docker-compose.yml UX patch to forward OPENAI_BASE_URL / ANTHROPIC_BASE_URL explicitly — ~3 LOC; LLM provider config already supported via llmai==0.2.8 + LLM=custom mode, no source patches needed)'
+  - 'llmai conda-forge recipe (Apache-licensed unified LLM provider abstraction, version 0.2.8 on PyPI as of 2026-07-25 — exact-pinned by upstream, drifts fast, re-verify at submission time; transitive dep already in Presenton; needs conda-forge recipe submission if not already on the channel)'
   - 'copilot-bridge VSIX extension (existing spec at docs/specs/copilot-bridge-vscode-extension.md — reused for dev-path; verify Story 6 "Configure presenton" emits correct env-var names; package CI-built .vsix per Story 12)'
   - 'PyCharm/JetBrains dev-path docs (one-pager: how to point JetBrains AI Assistant or any OpenAI-compat client at the bridge daemon at localhost:4141; defers full JetBrains plugin to v2)'
   - 'OCP/OpenShift deployment manifests (Helm chart or kustomize overlays) supporting three-tier LLM provider config: Tier-1 internal endpoint, Tier-2 llama.cpp sidecar, Tier-3 init-container model fetch from internal registry'
@@ -94,14 +98,14 @@ classification:
     supplyChain: very-high
   complexityRationale: "Engineering axis splits into three sub-axes (Amelia): recipes=medium (boring conda-forge work, well-understood shape), cleanroom=high (presenton-export-node and pptx-thumbnail-inject are clean-room reimpls of opaque upstream binaries with weak test oracles), platform=high (Helm + 3-tier LLM provider topology with sidecar lifecycle, fallback logic, allowlist gating). Supply-chain axis is very-high (multi-week security-review SLA per recipe through JFrog mirror, allowlist gating, browser-binary vendoring). Schedule should be driven by supply-chain axis, not engineering axis."
   projectContext: greenfield-with-brownfield-constraints
-  projectContextRationale: "Work pattern is greenfield (designing new components from scratch — 6 recipes, fixture-capture phase, OCP manifests, fixture trees). Guardrails are brownfield (local-recipes monorepo conventions: pixi + rattler-build, v1 recipe.yaml, JFrog auth pattern via JFROG_API_KEY) and upstream Presenton API surface (llmai==0.2.2 integration, env-var contract, Puppeteer API surface for clean-room reimpl)."
+  projectContextRationale: "Work pattern is greenfield (designing new components from scratch — 5-7 recipes [revised 2026-07-25, was fixed at 6], fixture-capture phase, OCP manifests, fixture trees). Guardrails are brownfield (local-recipes monorepo conventions: pixi + rattler-build, v1 recipe.yaml, JFrog auth pattern via JFROG_API_KEY) and upstream Presenton API surface (llmai==0.2.8 integration [was 0.2.2], env-var contract, Puppeteer API surface for clean-room reimpl)."
   primaryUsers:
     - 'ocp-operator-day0 (platform engineer; day-0 install/configure/deploy; consumes Helm chart + manifests + JFrog mirror; preflight via tests/install/)'
     - 'ocp-operator-day2 (platform engineer; day-2 operate/patch/rotate-creds/respond-to-mark-broken; consumes tests/operational/ shipped inside the OCI image)'
     - 'recipe-maintainer (us, future-us, downstream conda-forge co-maintainer; verifies upstream drift, refreshes fixture set F when upstream Presenton ships new versions; ALSO wears "fixture maintainer" hat during online-capture phase)'
     - 'vscode-developer (in-scope for v1; installs sideload copilot-bridge VSIX; bridge daemon at localhost:4141 exposes OpenAI/Anthropic-compatible endpoints; Story 6 emits Presenton env vars)'
     - 'jetbrains-developer (out-of-scope for v1 packaging — explicit gap; v1 path = docs-only fallback pointing JetBrains AI Assistant or any OpenAI-compat client at localhost:4141; full JetBrains plugin deferred to v2)'
-    - 'conda-forge-staged-recipes-reviewer (gatekeeper persona with veto power; six recipes = six review cycles; classification surfaces this so PRD acceptance criteria can include lint-clean recipes, deterministic builds, rerender-survivability)'
+    - 'conda-forge-staged-recipes-reviewer (gatekeeper persona with veto power; five-to-seven recipes [revised 2026-07-25] = five-to-seven review cycles; classification surfaces this so PRD acceptance criteria can include lint-clean recipes, deterministic builds, rerender-survivability)'
     - 'end-web-user (OUT-OF-SCOPE — upstream Presenton owns this UX; we do not modify the React/Next.js UI)'
   buyer: "Platform/security team owning the OCP cluster — typically CISO + compliance officer + platform engineering director. Signs the PO; renews based on user-gate (output quality keeping ticket volume low)."
   referenceProductSubstituted: "Microsoft 365 Copilot for PowerPoint"
@@ -109,20 +113,35 @@ classification:
   supplyChainPosture: defensive-mirror-gated
   supplyChainPostureRationale: "Porter's-five lens: supplier power dominates because JFrog allowlist + Chromium binary + PyInstaller-replacement + clean-room reimpls = supply chain is simultaneously moat AND risk. Mary's strategic finding from Round 1."
   upstreamDriftRisk: high
-  upstreamDriftRiskRationale: "Six clean-room artifacts means six divergence vectors against upstream Presenton releases. tests/drift/ harness + path-watch on upstream presenton-export/ + auto-issue template are the mitigation. (John's flag, Round 1.)"
+  upstreamDriftRiskRationale: "Three clean-room reimpls (presenton-export-node, pptx-assembler, pptx-thumbnail-inject) means three divergence vectors against upstream Presenton releases; observed release cadence is faster than assumed (3 presenton-export tags in 6 days, sampled 2026-07-25 — see technical research report). tests/drift/ harness + path-watch on upstream presenton-export/ + auto-issue template are the mitigation. (John's flag, Round 1; cadence note added 2026-07-25.)"
 workflowType: 'prd'
+status: final
+updated: 2026-07-25
 ---
 
 # Product Requirements Document - presenton-pixi-image
 
 **Author:** rxm7706
-**Date:** 2026-04-30
+**Date:** 2026-04-30 (revised 2026-07-25)
+
+## Revision Log (2026-07-25)
+
+This PRD was revised against a technical research pass (`planning-artifacts/research/technical-presenton-stack-ocp-airgap-research-2026-07-25.md`) and a domain research pass (`planning-artifacts/research/domain-regulated-enterprise-airgap-ai-deck-market-research-2026-07-25.md`), distilled through `planning-artifacts/briefs/brief-presenton-pixi-image-2026-07-25/`. Full delta trail: `planning-artifacts/.memlog.md`. Six load-bearing deltas from the 2026-04-30 draft, all primary-sourced:
+
+1. **`template-style-extractor` dropped from v1.** Live upstream Presenton (`servers/fastapi/services/office_document_service.py`, fetched 2026-07-25) already does LibreOffice-free template import — stdlib `zipfile`+`ElementTree` for DOCX/PPTX/XLSX, native ODF, `pdfplumber` (MIT) for PDF — with the exact legacy-`.doc`/`.ppt` rejection behavior this PRD proposed inventing. Recipe count drops from a fixed six to **five confirmed**, pending item 2.
+2. **New Phase-0 gap: the memory/RAG subsystem.** `mem0ai` + `fastembed-vectorstore` are unconditional upstream dependencies, neither on conda-forge. New Phase-0 exit criterion 6 added (§ Phase 0 Exit Criteria) to decide: two more recipes, or a documented feature-drop.
+3. **Risk R3 rewritten.** The 2026-04-30 draft's trigger ("Microsoft Copilot reaches IL5 GA," 12-24mo window) already happened without collapsing the JTBD — IL5 remains Azure Government cloud, not air-gapped. The real trigger, Microsoft's own disconnected stack (Azure Local disconnected operations + Microsoft 365 Local + Foundry Local, GA worldwide 2026-02-24), is live now, and whether it includes a Copilot-for-PowerPoint-equivalent is unresolved — escalated to a Phase-0-blocking check, not a 12-24-month watch item.
+4. **Risk R7 resolved/replaced.** PyMuPDF/AGPL is moot (template-style-extractor dropped; `pdfplumber`, MIT, is upstream's real and sufficient choice). Replaced with a smaller flag: `psycopg` (LGPL-3.0-only) for buyer legal review.
+5. **`llmai` version corrected** 0.2.2 → 0.2.8 (PyPI-verified exact pin) throughout. Still Apache-2.0, still absent from conda-forge — the core claim was and remains correct.
+6. **OpenShift Restricted SCC grounded** with current specifics (`restricted-v2` default: capabilities dropped, `seccompProfile: runtime/default`, no privilege escalation; `restricted-v3` new-install default: adds pod-level user-namespace isolation) and a new risk (R9) naming the headless-Chromium-sandbox-vs-user-namespace-isolation interaction as an explicit Phase-0/architecture spike.
+
+Everything else — classification, the 9-persona model, the buyer-gate/user-gate JTBD, the M365-Copilot-for-PowerPoint reference product, Q1/Q3/Q4 decisions, the competitive table, MVP/Growth/Vision scope shape, the measurable-outcomes table, Phase-0 exits 1-5 — carries forward from the 2026-04-30 draft unchanged; this is a revision, not a rewrite.
 
 ## Executive Summary
 
 It's 11pm in a SCIF. The board deck is due at 8am. Microsoft Copilot is on the other side of the air gap. Today she builds it by hand. Tomorrow Presenton builds it for her.
 
-`presenton-pixi-image` repackages the open-source Presenton AI deck-generation web app as a fully air-gapped OCI image deployable on RedHat OpenShift Container Platform (OCP). Built from six conda-forge-native recipes plus a sideloadable VS Code extension; assembled via pixi + pixitainer; no LibreOffice in the runtime.
+`presenton-pixi-image` repackages the open-source Presenton AI deck-generation web app as a fully air-gapped OCI image deployable on RedHat OpenShift Container Platform (OCP). Built from five conda-forge-native recipes (plus up to two more, pending a Phase-0 memory-subsystem decision — see Revision Log) plus a sideloadable VS Code extension; assembled via pixi + pixitainer; no LibreOffice in the runtime — confirmed current as of 2026-07-25, upstream has none anywhere, not just on the output side.
 
 **Target users (buyer → end user):**
 
@@ -134,7 +153,7 @@ It's 11pm in a SCIF. The board deck is due at 8am. Microsoft Copilot is on the o
 6. **VS Code developer** — Installs sideload `copilot-bridge` VSIX (sideload-only, no Marketplace); bridge daemon at `localhost:4141` exposes OpenAI/Anthropic-compatible endpoints for local Presenton testing.
 7. **JetBrains developer** — In-scope for v1 via REST + OpenAPI spec + Postman collection; full JetBrains plugin deferred to v2.
 8. **End web user of upstream Presenton** — OUT-OF-SCOPE; upstream owns the React/Next.js UI.
-9. **Conda-forge staged-recipes reviewer** — Six recipes = six review cycles; PRD acceptance criteria include lint-clean recipes, deterministic builds, rerender-survivability.
+9. **Conda-forge staged-recipes reviewer** — Five-to-seven recipes = five-to-seven review cycles (revised 2026-07-25); PRD acceptance criteria include lint-clean recipes, deterministic builds, rerender-survivability.
 
 **The problem being solved:** Air-gapped enterprises whose data classification prohibits the FedRAMP-cloud version of Microsoft 365 Copilot are stuck producing decks by hand — slower than LLM-assisted tooling AND systematically lower in language and style quality. M365 Copilot for PowerPoint is the reference shape but unavailable on the wrong side of the cloud-vs-on-prem boundary. Boring substitutes (Marp, python-pptx + Jinja2) trivially clear the provenance bar but fail the capability bar — they don't summarize internal long-form documents into review-ready decks.
 
@@ -149,8 +168,8 @@ It's 11pm in a SCIF. The board deck is due at 8am. Microsoft Copilot is on the o
 
 - **Technical readiness:** Presenton OSS is mature enough to repackage; conda-forge ecosystem (Playwright + Chromium-bundled-recipe pattern, llama.cpp, pixi/rattler-build) finally lets us ship this air-gap-clean in 2026.
 - **Acute pain:** Hand-crafted decks are systematically inferior in speed AND in language/style quality versus LLM+Presenton output.
-- **Window of opportunity:** 12–24 months until Microsoft Arc-connected Copilot reaches IL5 GA. (Microsoft Copilot for Government IL5 GA late-2024 for unclassified; classified rollout phased; Azure Arc disconnected-scenarios path emerging via Modular Datacenter + Stack Hub lineage. Specific roadmap link `[VERIFY-PHASE-0]`.)
-- **Supply-chain math claim:** Six unsigned Python upstreams cannot pass an IL5 SBOM gate independently; one signed conda-forge OCI image with one SBOM can. The math only closes via repackaging.
+- **Window of opportunity (REVISED 2026-07-25 — see Revision Log item 3):** the 2026-04-30 draft's "12-24 months until IL5 GA" framing is falsified — GCC/GCC-High/DoD/IL5 Copilot GA already happened without collapsing this JTBD, because none of it is air-gapped. The real window is bounded by Microsoft's own disconnected stack (Azure Local disconnected operations + Microsoft 365 Local + Foundry Local), GA worldwide **2026-02-24** — whether it already includes Copilot-for-PowerPoint-equivalent deck generation is unconfirmed and is now a **Phase-0-blocking verification item** (exit criterion 6), not a 12-24-month monitoring assumption. Treat the window as unknown-and-urgent, not comfortable.
+- **Supply-chain math claim:** Five unsigned Python/Node/binary upstreams (revised from six — see Revision Log item 1) cannot pass an IL5 SBOM gate independently; one signed conda-forge OCI image with one SBOM can. The math only closes via repackaging.
 
 ### Differentiator
 
@@ -166,20 +185,23 @@ It's 11pm in a SCIF. The board deck is due at 8am. Microsoft Copilot is on the o
 | SlidesGPT / Gamma / Tome | SaaS, cloud-only — air-gap-incompatible. Shape end-user expectations but cannot be deployed. |
 | hugohe3/ppt-master | AI IDE skill (Claude Code, Cursor, Copilot); requires external LLM API; air-gap-incompatible by design. |
 
-**Customer-facing supply-chain framing:** *Today the customer integrates six unsigned upstream artifacts and owns the integration risk. With this, they integrate one signed artifact and we own the integration risk* — attested via the build-provenance section of this PRD. The six conda-forge recipes + Chromium-vendoring + clean-room reimpls + JFrog mirror integration are the price of admission to the capability-plus-defensibility intersection. Each artifact is a receipt proving the platform team is permitted to install Copilot-equivalent capability inside the perimeter.
+**Customer-facing supply-chain framing:** *Today the customer integrates five unsigned upstream artifacts (revised 2026-07-25, was six) and owns the integration risk. With this, they integrate one signed artifact and we own the integration risk* — attested via the build-provenance section of this PRD. The five conda-forge recipes (plus up to two more, pending the Phase-0 memory-subsystem decision) + Chromium-vendoring + clean-room reimpls + JFrog mirror integration are the price of admission to the capability-plus-defensibility intersection. Each artifact is a receipt proving the platform team is permitted to install Copilot-equivalent capability inside the perimeter.
 
 **Architecture cohesion:** The 6 recipes compose into a single OCI image; the image deploys as a standard Helm chart on OCP; the chart consumes a Tier 1/2/3 LLM endpoint as configuration, not as a bundled component.
 
 ### v1 Deliverables
 
-**Six conda-forge recipes (each gated on a 4-check validation pattern: build + validate + scan + optimize):**
+**Five conda-forge recipes confirmed (each gated on a 4-check validation pattern: build + validate + scan + optimize), plus up to two more pending a Phase-0 decision:**
 
 - `presenton-export-node` — Node + Playwright bundle; replaces opaque upstream `presenton-export/index.js`.
 - `pptx-assembler` — python-pptx + Pillow; replaces opaque upstream `convert-linux-x64`; produces image-overlay + extracted text shapes.
-- `template-style-extractor` — python-pptx + python-docx + pymupdf + pytesseract; PPTX/DOCX/PDF template style extraction.
 - `pptx-thumbnail-inject` — `docProps/thumbnail.jpeg` injection for AI-generated decks.
 - `playwright-with-chromium` — Playwright + bundled `chrome-headless-shell` for air-gap.
-- `llmai` — Apache-licensed unified-LLM-provider abstraction (used by upstream Presenton).
+- `llmai` — Apache-licensed unified-LLM-provider abstraction (used by upstream Presenton; pinned `0.2.8` as of 2026-07-25, upstream re-pins fast, re-verify at submission time).
+
+**DROPPED 2026-07-25:** `template-style-extractor` — live upstream Presenton already implements LibreOffice-free template import (stdlib `zipfile`+`ElementTree` for PPTX/DOCX/XLSX, native ODF, `pdfplumber` for PDF), including the legacy-`.doc`/`.ppt`-rejection behavior this recipe was going to (re)build. See Discovery & Re-Architecture and Decisions Log Q2 below.
+
+**Phase-0-gated (new 2026-07-25):** `mem0ai` + `fastembed-vectorstore` — unconditional Presenton memory/RAG dependencies, neither on conda-forge today. Phase 0 exit criterion 6 decides: add both as recipes 6-7, or ship v1 with the memory/chat-history subsystem disabled.
 
 **One VS Code extension:** `copilot-bridge` (sideload-only, no Marketplace; spec at `docs/specs/copilot-bridge-vscode-extension.md`).
 
@@ -239,7 +261,7 @@ Repackage Presenton as a conda-forge OCI image by vendoring `hnrobert/pptx2marp`
 3. **Code investigation** of `presenton/presenton` revealed:
    - Presenton does **not use Marp**. Slides are React/Next.js components rendered live in a running Next.js server.
    - The export pipeline is `Puppeteer chrome-headless-shell → Next.js URL → page.pdf() / page.screenshot() → JSON+images.zip handoff → convert-linux-x64 (PyInstaller binary) → final .pptx`.
-   - LibreOffice in the current image is on the **input side** (template import: uploaded PPTX/DOCX → soffice → PDF → screenshots → AI extraction), gated by `ARG INSTALL_LIBREOFFICE=true`.
+   - LibreOffice was, at the time of this discovery pass, on the **input side** (template import: uploaded PPTX/DOCX → soffice → PDF → screenshots → AI extraction), gated by `ARG INSTALL_LIBREOFFICE=true`. **CORRECTED 2026-07-25:** re-verified against current upstream `main` — LibreOffice is gone entirely, not even on the input side. No `ARG INSTALL_LIBREOFFICE`, zero `soffice` references anywhere in the repo (code search confirmed). Template import (`servers/fastapi/services/office_document_service.py`) now runs on pure stdlib (`zipfile`+`ElementTree`) for DOCX/PPTX/XLSX, native ODF support, and `pdfplumber` (MIT) for PDF text extraction — LibreOffice-free, near-zero new dependencies, and it already rejects legacy `.doc`/`.ppt`/`.xls`/`.rtf` with the same "save in a modern format" behavior this PRD independently proposed inventing (see Decisions Log Q2, revised). This upstream change happened sometime between this draft's original 2026-04-30 authoring and the 2026-07-25 revision pass — a reminder that Presenton moves fast and every "current state of upstream" claim in this document has a shelf life.
    - The export bundle (`index.js`, ~6 MB minified Node) and the PPTX assembler (`convert-linux-x64`, ~50 MB PyInstaller) are downloaded from `presenton/presenton-export` releases at build time. **Source for both is not published** — the repo contains only release artifacts.
 
 4. **Conda-forge ecosystem check**:
@@ -264,7 +286,7 @@ Plus Presenton patches: swap the upstream binary fetch for the new packages, fli
 ## Decisions Log
 
 - **Q1 — Editable PPTX fidelity bar:** Option **(b)** image-overlay + extracted text shapes. Matches upstream `convert-linux-x64` behavior. User retains visual fidelity to web preview AND ability to edit text (fix typos, change names, copy text out, screen-reader-readable, search works). Trades away: theme/master changes, element-level animations, native chart objects, length-tolerant text edits. Industry norm for AI-deck SaaS.
-- **Q2 — Template-import feature scope:** Reimplement on conda-forge-native libraries via a new `template-style-extractor` component. Supported inputs: `.pptx` (python-pptx), `.docx` (python-docx), `.pdf` text-based (pymupdf) and scanned (pdf2image + pytesseract OCR fallback). ODP/ODT (odfpy) deferred as stretch — add only if usage signal warrants. **Dropped:** legacy pre-2007 binary `.ppt` and `.doc` — no conda-forge library reads these without LibreOffice; affected users (estimated <1% in 2026) shown a clear "save as .pptx/.docx" error message. Pipeline simplifies from `soffice → PDF → screenshots → vision-model` to `parse → JSON → LLM` — faster, more accurate, no rendering, no browser needed for this path.
+- **Q2 — Template-import feature scope [SUPERSEDED 2026-07-25 — see Revision Log item 1].** Original 2026-04-30 decision: reimplement on conda-forge-native libraries via a new `template-style-extractor` component (`.pptx` via python-pptx, `.docx` via python-docx, `.pdf` via pymupdf text-based + pdf2image/pytesseract OCR fallback; ODP/ODT via odfpy deferred; legacy `.ppt`/`.doc` dropped with a clear error). **Revised decision:** build nothing — live upstream Presenton (`servers/fastapi/services/office_document_service.py` + `documents_loader.py`, verified 2026-07-25) already ships exactly this shape, LibreOffice-free, using only the Python standard library (`zipfile`+`ElementTree`) for DOCX/PPTX/XLSX, native ODF support (no `odfpy` needed), and `pdfplumber` (MIT, already conda-forge-available) for PDF text — plus the identical legacy-format rejection this PRD had independently proposed. No OCR fallback exists upstream (no `pytesseract`/`pdf2image` dependency), so scanned-PDF support remains a genuine gap, but it is a net-new capability question, not a "replace LibreOffice" one — if a buyer needs it, scope it separately in a later cycle, don't fold it into this repackaging effort. Net effect: `template-style-extractor` is dropped from v1 entirely; the pipeline Presenton already runs (`parse → JSON → LLM`, no rendering, no browser, no LibreOffice) is directly reusable as-is.
 - **Q3 — AI/LLM provider strategy (two paths):**
   - **Dev path:** Reuse the existing `copilot-bridge` VSIX (spec: `docs/specs/copilot-bridge-vscode-extension.md`). Developer with VS Code or PyCharm + GitHub Copilot subscription installs the sideload-only `.vsix`; bridge daemon (`copilot-api`, recipe in this repo) runs on `localhost:4141` and exposes OpenAI/Anthropic-compatible endpoints. Story 6 ("Configure presenton") emits Presenton env vars. PyCharm support: docs-only one-pager pointing JetBrains AI Assistant at the same daemon — no separate JetBrains plugin in v1 (defers v2).
   - **Production path:** Three-tier configurable LLM provider, all OpenAI-compatible, operator picks at deploy time:
@@ -288,7 +310,7 @@ The classification's `referenceProductSubstituted: M365 Copilot for PowerPoint` 
 
 Buyer signs because of gate 1. Buyer renews because of gate 2 — if user output is unusable, ticket volume rises, head-of-research calls CISO, deal dies. **Anchor user-gate quality at "better than writing it by hand at 2 a.m." NOT at "M365 Copilot quality"** — anchoring on M365 loses; anchoring on the by-hand baseline is achievable with Presenton's actual capabilities.
 
-The combined JTBD: **inference-at-the-edge of a security boundary** — long-form internal-document summarization into review-ready decks, where "at the edge" means: the boundary is the customer's air-gap, and our six recipes + Helm chart + clean-room reimpls + JFrog mirror integration are the receipts that prove the analyst is allowed to do this.
+The combined JTBD: **inference-at-the-edge of a security boundary** — long-form internal-document summarization into review-ready decks, where "at the edge" means: the boundary is the customer's air-gap, and our five-to-seven recipes (revised 2026-07-25) + Helm chart + clean-room reimpls + JFrog mirror integration are the receipts that prove the analyst is allowed to do this.
 
 ## Risk Register
 
@@ -296,12 +318,13 @@ The combined JTBD: **inference-at-the-edge of a security boundary** — long-for
 |---|---|---|---|---|
 | R1 | `pptx-thumbnail-inject` is the one novel recipe — python-pptx has no thumbnail support and no conda-forge recipe synthesizes OOXML thumbnails today | High | recipe-maintainer | Spike story before estimate; pick rendering method (LibreOffice headless? python-pptx slide render? Pillow synthesis from rendered HTML PNG?) before sprint planning — gates entire image generation path (Winston, Amelia) |
 | R2 | Upstream Presenton drift — 6 clean-room artifacts = 6 divergence vectors when upstream ships v2.0 | High | recipe-maintainer | `tests/drift/` online weekly cron + `.github/ISSUE_TEMPLATE/upstream-drift.md` auto-fired on breaking drift; path-watch on upstream `presenton-export/` triggers fixture-capture refresh (John, Sally) |
-| R3 | Microsoft ships on-prem Copilot SKU — JTBD collapses overnight | Existential (low probability, catastrophic impact) | strategic / steering | Quarterly scan of Microsoft on-prem Copilot announcements; competitive intel watchlist entry; pivot plan = harvest the conda-forge recipes as standalone tools, retire the OCI image (Mary) |
+| R3 | **[REVISED 2026-07-25]** Microsoft ships a disconnected/on-prem Copilot-equivalent — JTBD collapses. **Old trigger falsified:** GCC/GCC-High/DoD/IL5 Copilot GA already happened (2025-2026) without collapsing the JTBD — those tiers are Azure Government cloud, not air-gapped. **Real trigger, already live:** Microsoft's own disconnected stack — Azure Local disconnected operations + Microsoft 365 Local + Foundry Local — GA'd worldwide 2026-02-24, explicitly targeting "government, healthcare, and finance" sovereign/data-residency buyers. Whether the Copilot deck-generation application layer rides on this infrastructure today is **unconfirmed**. | Existential, and no longer low-probability-future — the infrastructure precondition already shipped | strategic / steering | **Phase-0-blocking** (new exit criterion 6, shared with the memory-subsystem decision — see § Phase 0 Exit Criteria): confirm or rule out Copilot-deck-generation inclusion in Microsoft 365 Local disconnected before further build investment. Audit the existing RSS/keyword-watch mechanism (`on-prem`/`sovereign`/`air-gap`/`disconnected` keywords) — it appears to have missed the 2026-02-24 announcement; fix its channel coverage. Pivot plan unchanged: harvest the conda-forge recipes as standalone tools, retire the OCI image (Mary). |
 | R4 | JFrog mirror security-review SLA blocks recipe submission for multi-week periods per recipe — 6 recipes × multi-week = months of supply-chain delay | High | platform-engineer + recipe-maintainer | Submit dependency manifest + air-gap build playbook as part of architecture sign-off (Q4 deliverable); parallelize submissions; pre-stage allowlist requests during step-03 |
 | R5 | Microsoft Playwright CDN not mirrored on JFrog — `playwright-with-chromium` recipe can't fetch chrome-headless-shell at conda-build time | Medium | platform-engineer | Sub-question (h) — investigate during step-02b; fallback options: vendor binary into recipe source, use already-mirrored Chromium binary, or pivot to ungoogled-chromium |
 | R6 | Fixture-capture phase boundary collapses — someone tries to refresh F from inside air-gap and discovers they can't | Medium | recipe-maintainer | Architectural-seam callout in test strategy; "fixture maintainer" role wears recipe-maintainer hat during online-capture phase (Sally); cadence policy = refresh on path-watch trigger, online-only |
-| R7 | PyMuPDF AGPL/Artifex dual-license blocks allowlist | Medium | platform-engineer + recipe-maintainer | Sub-question (j); `pdfplumber` (MIT) as primary fallback; `pymupdf` opt-in only if licensing cleared |
+| R7 | **[RESOLVED/REPLACED 2026-07-25]** PyMuPDF AGPL/Artifex dual-license blocks allowlist — **moot**: `template-style-extractor` is dropped (Decisions Log Q2, revised), and upstream Presenton's actual PDF dependency is `pdfplumber` (MIT), never PyMuPDF. New, smaller flag replacing this row: `psycopg` (LGPL-3.0-only) is a direct Presenton backend dependency, a different obligation class than the Apache/MIT-dominated rest of the stack. | Low | platform-engineer | Flag for buyer legal/compliance review alongside the JFrog allowlist gap analysis (Phase 0 exit 4); likely acceptable on most enterprise allowlists but not asserted without buyer confirmation. |
 | R8 | JetBrains developer population blocked — VSIX is VS Code only, no v1 plugin | Low (v1 acceptable gap) | PM | Explicit docs-only fallback path documented; revisit in v2 if pilot-customer JetBrains share warrants the plugin work |
+| R9 | **[NEW 2026-07-25]** Headless-Chromium sandbox model may conflict with OpenShift `restricted-v3`'s pod-level user-namespace isolation (`hostUsers: false`, default for new OCP installs). Chromium's conventional container workaround (`--no-sandbox`) may be required regardless, may be redundant-but-harmless under OCP's own isolation, or may need a different SCC (e.g. `nonroot-v2`) — not yet spiked against a real cluster. | Medium | platform-engineer | Named Phase-0/architecture-phase spike, not assumed away; `--no-sandbox` (if needed) must be an explicit, buyer-documented security decision, not a silent default. See technical research report § 2.2. |
 
 ## Test Strategy (4 Fixture Sets + Phase Boundary)
 
@@ -341,7 +364,7 @@ Fixture Set 1 is **captured online** by the recipe-maintainer wearing the "fixtu
 |---|---|
 | **Marp / Marpit** | Markdown-to-slides; no LLM; no long-form summarization. Gives provenance for free but fails capability gate. |
 | **python-pptx + Jinja2 templates** | Stamping templates; no AI generation; no long-form summarization. Same as Marp — boring path with provenance, fails capability. |
-| **Microsoft 365 Copilot for PowerPoint** | THE reference shape. Cloud-only, no on-prem SKU, no ATO path. Buyer can't have it, which is *why this product exists*. **Existential threat: Microsoft ships on-prem SKU** (Risk R3). |
+| **Microsoft 365 Copilot for PowerPoint** | THE reference shape. Cloud-only (incl. GCC/GCC-High/DoD/IL5 — all Azure Government cloud, none air-gapped), no disconnected/on-prem SKU confirmed for the Copilot application layer itself. Buyer can't have it, which is *why this product exists*. **Existential threat, status REVISED 2026-07-25: Microsoft's own disconnected infrastructure stack (Azure Local disconnected operations + Microsoft 365 Local + Foundry Local) already shipped 2026-02-24 — whether the Copilot deck-generation layer rides on it is unconfirmed** (Risk R3). |
 | **SlidesGPT / Gamma / Tome** | SaaS, cloud-only. Air-gap-incompatible. Shape end-user expectations though — anchoring user-gate at "M365 quality" loses; anchor at "better than 2am-by-hand" instead. |
 | **hugohe3/ppt-master** | AI IDE skill (Claude Code, Cursor, Copilot); requires external LLM API; air-gap-incompatible by design. Useful as architectural inspiration (SVG→DrawingML approach) but not a competitor in our deployment context. |
 
@@ -352,7 +375,7 @@ Fixture Set 1 is **captured online** by the recipe-maintainer wearing the "fixtu
 *All four gating questions resolved. Sub-questions a–j land during step-02b/03 (architecture/sprint planning). Items 5–12 below are tracking-only.*
 
 ### Sub-questions surfaced from Q3 (resolve during step-02b/03)
-- **a.** ✅ **Resolved (Verdict B+).** Presenton routes all LLM traffic through `llmai==0.2.2` (Apache-licensed unified provider abstraction). First-class `LLM=custom` mode with `CUSTOM_LLM_URL` + `CUSTOM_LLM_API_KEY` env vars covers Tier-1 (internal proxy), Tier-2 (llama.cpp sidecar), and dev path (Copilot bridge) without any source patches. Optional ~3 LOC docker-compose.yml UX polish to forward `OPENAI_BASE_URL`/`ANTHROPIC_BASE_URL` explicitly. New conda-forge dep: `llmai` (recipe submission may be needed; check current channel state). Evidence: `servers/fastapi/utils/llm_config.py`, `servers/fastapi/utils/get_env.py`, `servers/fastapi/pyproject.toml`.
+- **a.** ✅ **Resolved (Verdict B+), re-verified 2026-07-25.** Presenton routes all LLM traffic through `llmai` (Apache-licensed unified provider abstraction), now pinned `==0.2.8` (was `0.2.2` at original drafting — upstream re-pins fast, six releases in the interval; re-verify again at submission time). First-class `LLM=custom` mode with `CUSTOM_LLM_URL` + `CUSTOM_LLM_API_KEY` env vars covers Tier-1 (internal proxy), Tier-2 (llama.cpp sidecar), and dev path (Copilot bridge) without any source patches — confirmed still present in `utils/get_env.py` (`get_custom_llm_url_env`/`get_custom_llm_api_key_env`). Optional ~3 LOC docker-compose.yml UX polish to forward `OPENAI_BASE_URL`/`ANTHROPIC_BASE_URL` explicitly. New conda-forge dep: `llmai` (recipe submission needed — confirmed absent from conda-forge as of 2026-07-25 via `api.anaconda.org` lookup). Evidence: `servers/fastapi/utils/llm_config.py`, `servers/fastapi/utils/get_env.py`, `servers/fastapi/pyproject.toml`.
 - **b.** Existing `copilot-bridge` extension VSIX packaging — is Story 12 (CI builds `.vsix` on tag) implemented yet, or still TODO?
 - **c.** PyCharm support depth — confirmed docs-only for v1; full JetBrains plugin deferred to v2.
 - **d.** Tier-2 model pick — Qwen 2.5 7B Q4_K_M vs Llama 3.2 3B Q4 vs Phi-3.5 — needs a small bench-off against Presenton's actual prompt templates; ALSO subject to mirror allowlist (sub-question g).
@@ -362,12 +385,15 @@ Fixture Set 1 is **captured online** by the recipe-maintainer wearing the "fixtu
 - **f.** Internal JFrog npm registry mirror — full transitive coverage or curated? (Drives feasibility of `presenton-export-node` and the Node export bundle.)
 - **g.** Approved GGUF models on the HuggingFace mirror — what's the current allowlist? (Drives Tier-2 default pick; may force a different model than Qwen 2.5 7B if it's not approved.)
 - **h.** Microsoft Playwright CDN — mirrored on JFrog, or does `playwright-with-chromium` recipe need to vendor `chrome-headless-shell` into the recipe source / use an alternative Chromium binary?
-- **i.** Security-review SLA for newly-authored conda-forge recipes added to the internal mirror — drives delivery timeline for `presenton-export-node`, `pptx-assembler`, `template-style-extractor`, `pptx-thumbnail-inject`, `playwright-with-chromium`.
-- **j.** PyMuPDF licensing (AGPL/Artifex commercial dual-license) — compatible with this org's allowlist policy, or do we need an MIT-licensed alternative? `pdfplumber` (MIT) may be a safer primary; `pymupdf` as opt-in fallback. Decision affects `template-style-extractor` deps.
+- **i.** Security-review SLA for newly-authored conda-forge recipes added to the internal mirror — drives delivery timeline for `presenton-export-node`, `pptx-assembler`, `pptx-thumbnail-inject`, `playwright-with-chromium`, `llmai` (and `mem0ai`/`fastembed-vectorstore` if Phase 0 exit 6 adds them). **[REVISED 2026-07-25]** `template-style-extractor` removed from this list — dropped from scope, see Decisions Log Q2.
+- **j.** ✅ **Resolved/moot 2026-07-25.** PyMuPDF licensing question no longer applies — `template-style-extractor` is dropped, and upstream Presenton's actual PDF dependency is `pdfplumber` (MIT), confirmed via live code search, never PyMuPDF. See Risk R7 (revised).
+- **k. [NEW 2026-07-25]** Memory/RAG subsystem scope — does Phase 0 add `mem0ai` + `fastembed-vectorstore` as two more conda-forge recipes, or feature-drop the memory/chat-history subsystem for v1? Contingent on confirming whether the import graph can be cleanly disabled without a Presenton-side source patch (not yet verified — env-var accessors exist in `utils/get_env.py` but a full no-op path was not traced). This is Phase 0 exit criterion 6 (see below).
 
 ## Success Criteria
 
 > **Reader's note (v5, 2026-05-01):** Three phrases in the Executive Summary, Differentiator, and Risk Register R3 reference "Copilot-class capability" / "M365 parity." These framings are superseded by the v5 scope decision (long-form-document summarization into review-ready decks; M365 retained only for procurement-recognition). Final wording lands in step-11 polish; the substance below already reflects the v5 scope.
+>
+> **Reader's note (v6, 2026-07-25):** See the Revision Log at the top of this document for the full delta trail. In brief: `template-style-extractor` is dropped from v1 (Decisions Log Q2, superseded); Risk R3's trigger is corrected and escalated to a Phase-0-blocking check (new exit criterion 6); Risk R7 is resolved and replaced; `llmai` is re-pinned to `0.2.8`; a new Risk R9 names an OpenShift-Chromium-sandbox interaction spike; recipe count throughout this document is now "five confirmed, plus up to two pending Phase-0 exit 6," not a fixed six.
 
 The two-gate JTBD (buyer/user) drives a two-axis success model: one axis tracks "survives security review" (buyer-gate), the other tracks "long-form-document summarization into review-ready decks" capability (user-gate). Either axis collapsing kills the product. Phase 0 must close before v1 build is unblocked.
 
@@ -420,19 +446,19 @@ The buyer (CISO/platform/procurement) wins when:
   - **Phase 0 reset mechanics:** Default re-opens **exit 1** (build-complete-hold) if pilot's GRC model-source policy differs from initial assumption; **carry-forward exits** (sunk-cost-correct): exits 3 (fixture-capture v1) and 4 (JFrog allowlist gap analysis) remain valid unless explicitly invalidated by the new pilot's environment. **Re-entry criterion:** new pilot identified + Phase 0 re-scope timeline filed before Phase 1 work resumes.
 - **Second-pilot validation milestone (between MVP and Growth):** 2 pilots accepted under the full checklist, where pilot #2's parent organization is different from pilot #1's AND uses a different Tier-1 endpoint shape (e.g., #1 Gemini-on-prem, #2 Azure OpenAI disconnected or Claude on-prem). If pilot #2 not in production within 12 months of pilot #1's acceptance signoff, formally re-evaluate the procurement-driven adoption thesis (strategic-review milestone).
 - **Operational watch (yearly + gate-coupled + always-on RSS):**
-  - **Yearly cadence:** annual review of Microsoft Arc-connected/IL5/disconnected Copilot announcements; alert thresholds defined in Phase 0; auto-trigger Redmond-contingency review if any announcement crosses an alert threshold.
+  - **Yearly cadence:** annual review of Microsoft Arc-connected/IL5/disconnected Copilot announcements; alert thresholds defined in Phase 0; auto-trigger Redmond-contingency review if any announcement crosses an alert threshold. **[REVISED 2026-07-25]** This cadence appears to have missed the 2026-02-24 Azure Local disconnected operations / Microsoft 365 Local / Foundry Local GA announcement — channel coverage audit is part of Phase 0 exit criterion 6, not deferred to the next yearly review.
   - **At every exit-criteria gate event** (Phase 0 close, pilot #1 acceptance signoff, pilot #2 acceptance signoff, Pilot → GA reviews): auto-trigger Redmond-contingency review BEFORE signoff on any gate.
   - **Always-on lightweight trigger:** RSS/Atom subscription to Microsoft 365 roadmap + Copilot blog with keyword filter (`on-prem`, `sovereign`, `air-gap`, `disconnected`, `GCC-High` paired with `Copilot`). Hit → escalate to gate review out-of-cycle, regardless of yearly cadence. Closes the multi-month blindside window between gate events.
   - **Analyst-facing UX during gate review:** non-blocking editor banner *"Platform review in progress — your work is unaffected; signoff packet will note status."* Surfaces the operator concern at signoff time without blindsiding the analyst.
 - **Adoption ramp (Growth):** 100 pilot customers via procurement pipeline (procurement-driven, not sales-driven).
-- **Procurement gate (binary chain visible):** All six new recipes upstream-merged on conda-forge → six feedstocks producing artifacts → artifacts landed on customer's JFrog Artifactory mirror → OCI image landed on customer's image registry. Each link separately-trackable.
+- **Procurement gate (binary chain visible):** All confirmed recipes (five, plus up to two more pending Phase-0 exit 6 — revised 2026-07-25) upstream-merged on conda-forge → matching feedstocks producing artifacts → artifacts landed on customer's JFrog Artifactory mirror → OCI image landed on customer's image registry. Each link separately-trackable.
 - **Procurement SLA (measured-against, not owned):** Security-review cycle completion time, set by JFrog allowlist + customer GRC.
-- **Provenance simplification:** One signed OCI artifact + one SBOM + one cosign attestation replaces six unsigned upstream Python/Node packages.
-- **Window of opportunity:** Capture pilot adoption before Microsoft Arc-connected Copilot reaches IL5 GA (12–24 month window, `[VERIFY-PHASE-0]`).
+- **Provenance simplification:** One signed OCI artifact + one SBOM + one cosign attestation replaces five-to-seven unsigned upstream Python/Node packages (revised 2026-07-25, was six).
+- **Window of opportunity [REVISED 2026-07-25]:** Capture pilot adoption before Microsoft's disconnected stack (Azure Local disconnected operations + Microsoft 365 Local + Foundry Local, already GA 2026-02-24) ships Copilot-equivalent deck generation on top of it — status unconfirmed, Phase-0-blocking (exit criterion 6). The old "12-24mo to IL5 GA" framing is retired; IL5 GA already happened without ending this window, because IL5 is cloud, not air-gapped.
 
 ### Technical Success
 
-- **Recipe quality (all six):** Lint-clean (`conda-smithy` + `rattler-build lint`), deterministic builds, rerender-survivable across one full conda-forge global pinning bump.
+- **Recipe quality (all confirmed recipes — five, plus up to two more pending Phase-0 exit 6; revised 2026-07-25, was "all six"):** Lint-clean (`conda-smithy` + `rattler-build lint`), deterministic builds, rerender-survivable across one full conda-forge global pinning bump.
 - **Fixture acceptance (FIVE sets pass):**
   - `AC-FX-AUTHOR-01/02`: byte/structurally equivalent + SSIM ≥ 0.99.
   - `AC-FX-MAINT-01..03`: weekly drift detection runs, breaking-vs-benign categorization, auto-issues on breaking drift.
@@ -498,7 +524,7 @@ The buyer (CISO/platform/procurement) wins when:
 
 ### Phase 0 Exit Criteria (gates v1 build kickoff)
 
-Phase 0 has a critical-path long-pole (exit 1, "build-complete-hold"). Exits 2 and 3 are gated by exit 1. Exits 4 and 5 run independently. **5 exits total.**
+Phase 0 has a critical-path long-pole (exit 1, "build-complete-hold"). Exits 2 and 3 are gated by exit 1. Exits 4, 5, and 6 run independently. **6 exits total (revised 2026-07-25, was 5 — see exit 6 below).** Exit 6 is the highest-urgency of the independent exits: it resolves whether the product's core differentiator still holds (Risk R3, revised) and materially changes the recipe-count/scope math (Risk R2, revised) — start it first among the independents, don't let it queue behind exits 4-5.
 
 **Phase 0a (critical path — build-complete-hold):**
 
@@ -522,7 +548,7 @@ Phase 0 has a critical-path long-pole (exit 1, "build-complete-hold"). Exits 2 a
 
 **Phase 0c (independent — exit 4):**
 
-4. **JFrog allowlist gap analysis filed** — Per-dependency gap report (conda + npm + GGUF) covering: which packages already mirrored, which need allowlist requests, which have licensing blockers (e.g., PyMuPDF AGPL — Risk R7), expected security-review SLA per gap.
+4. **JFrog allowlist gap analysis filed** — Per-dependency gap report (conda + npm + GGUF) covering: which packages already mirrored, which need allowlist requests, which have licensing blockers (e.g., `psycopg` LGPL-3.0-only — Risk R7, revised 2026-07-25), expected security-review SLA per gap.
 
 **Phase 0d (independent — exit 5):**
 
@@ -530,13 +556,20 @@ Phase 0 has a critical-path long-pole (exit 1, "build-complete-hold"). Exits 2 a
    > *"Generates [artifact-class] at [public-bench-score] quality, fully on-prem, with [SLA]."*
    Bound to a content-review checkpoint that **explicitly forbids cloud-product comparisons** (no "Copilot-class," no parity numbers, no SaaS-equivalent framing). Required deliverable before Phase 0 close. Without it, every field conversation re-litigates positioning ad-hoc and competitors define us by negation.
 
+**Phase 0e (independent, highest-urgency — exit 6, NEW 2026-07-25):**
+
+6. **Microsoft disconnected-stack verification + memory-subsystem scope decision committed** — two coupled sub-items, both required:
+   - **(a) Redmond-contingency check.** Confirm or rule out whether Microsoft's disconnected stack (Azure Local disconnected operations + Microsoft 365 Local + Foundry Local, GA worldwide 2026-02-24) includes, or has an announced roadmap to include, Copilot-for-PowerPoint-equivalent deck generation. This directly determines Risk R3's status (materialized / partially materialized / infrastructure-only). Also audit the existing RSS/keyword-watch mechanism's channel coverage — it appears to have missed the 2026-02-24 announcement.
+   - **(b) Memory-subsystem scope decision.** Decide whether `mem0ai` + `fastembed-vectorstore` (unconditional Presenton dependencies, neither on conda-forge) become two additional v1 recipes, or the memory/chat-history feature is documented as dropped for v1 — contingent on confirming a clean no-op import path if dropped (not yet verified; may require a Presenton-side patch, which changes the maintenance-burden model this PRD doesn't currently carry for any other component).
+   Required before Phase 0 close, alongside exits 1-5. Given exit 6(a)'s bearing on whether the product's core differentiator still holds, this exit should be actioned first among the independent exits (4, 5, 6), not queued last because it's numbered last.
+
 ## Product Scope
 
 ### MVP — Minimum Viable Product
 
 Ships when ALL of the following are simultaneously true:
 
-- All six conda-forge recipes lint-clean and **upstream-merged**: `presenton-export-node`, `pptx-assembler`, `pptx-thumbnail-inject`, `template-style-extractor`, `playwright-with-chromium`, `llmai`.
+- All confirmed conda-forge recipes lint-clean and **upstream-merged** (revised 2026-07-25 — was "all six," now five confirmed plus the Phase-0 exit-6 decision): `presenton-export-node`, `pptx-assembler`, `pptx-thumbnail-inject`, `playwright-with-chromium`, `llmai` — plus `mem0ai` and `fastembed-vectorstore` if Phase 0 exit 6(b) decides to add them rather than feature-drop the memory subsystem. `template-style-extractor` is dropped (see Decisions Log Q2, revised) — not part of this gate.
 - OCI image builds reproducibly via pixi + pixitainer with zero external CDN access.
 - All FIVE fixture sets pass: `AC-FX-INSTALL/DAY2/AUTHOR/MAINT/DRIFT`.
 - `AC-PROXY-001a` (deterministic-output equivalence, hardware-class-scoped) passes in CI.
