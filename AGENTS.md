@@ -11,7 +11,7 @@ spec; the spec drives the build — the agent/framework is interchangeable.**
 (the BMAD mission: *Build More Architect Dreams*). Plain markdown, version-controlled, neutral.
 From a Dream, **BMAD-method produces the spec**:
 
-- **Small / clear scope** → **`bmad-spec`** distils the Dream into a SPEC kernel + companions.
+- **Small / clear scope** → **`bmad-spec`** distils the Dream into a **Spec** + companions.
 - **Product / platform scope** → the planning chain: `bmad-product-brief` → `bmad-prd` →
   `bmad-architecture` → `bmad-create-epics-and-stories`.
 
@@ -28,18 +28,18 @@ The resulting spec + planning artifacts live in **BMAD's own folder** —
 BMAD *produces* the spec, but the spec stays portable — you are **not locked to BMAD**. The
 neutral / framework-specific line runs *through* the spec:
 
-- **Shared, portable layers:** the **Dream** (`docs/dreams/`, the WHY) and the **neutral spec
-  kernel** (`bmad-spec`'s output — the WHAT + machine-checkable acceptance criteria, i.e. the
+- **Shared, portable layers:** the **Dream** (`docs/dreams/`, the WHY) and the **neutral
+  Spec** (`bmad-spec`'s output — the WHAT + machine-checkable acceptance criteria, i.e. the
   verification oracle). Both are framework-agnostic by construction.
 - **Per-framework layers:** decomposition (BMAD epics/stories vs. CrewAI crews vs. LangGraph
   nodes) and execution (orchestration, sprints, run traces) belong to whichever framework runs —
   BMAD, CrewAI, Agno, LangGraph, Devin, ….
 
 So another framework has **two entry points**: (1) start from the **Dream** and do everything its
-own way, or (2) consume the **neutral spec kernel** and diverge only at decomposition/execution —
+own way, or (2) consume the **neutral Spec** and diverge only at decomposition/execution —
 which also lets you verify (and compare) any framework's build against the *same* oracle.
 
-**The one property to protect:** the spec kernel's acceptance criteria must stay
+**The one property to protect:** the Spec's acceptance criteria must stay
 framework-agnostic and machine-checkable (behavior + oracle — never "BMAD story 3.2 passed").
 Keeping the Dream → spec handoff portable across agents is **Herald's** job.
 

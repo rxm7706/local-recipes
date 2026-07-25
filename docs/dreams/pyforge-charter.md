@@ -5,7 +5,7 @@ owner: crew
 status: in-deck
 ---
 
-# The PyForge Charter — the Guild, the Forgemasters, the Mission
+# The PyForge Charter — the Guild, the Smiths, the Mission
 
 > ## Forging the Agentic SDLC
 > ### *Humans Dream, Agents Deliver — Governed. Auditable. Production-ready.*
@@ -17,7 +17,7 @@ status: in-deck
 > of faith; and no station reports a green it didn't earn. The human's role rises from
 > writing software to architecting Dreams — and the forge makes them real.
 
-> **The PyForge Charter** constitutes **the PyForge Guild** — **eight Forgemasters**
+> **The PyForge Charter** constitutes **the PyForge Guild** — **eight Smiths**
 > (Herald · Marshal · Atlas · Warden · Mason · Doctor · Scribe · Steward), each holding
 > a **station** of the Agentic SDLC and wielding **Skills** — and **the Guildhall** is
 > where their work stands open.
@@ -365,19 +365,31 @@ steward budget enforce --cap 1500usd/month
   context. Never brand-cased; PEP 503 makes this non-negotiable.
 - **Products in prose**: full form on first mention per document (*PyForge Warden*),
   persona name thereafter (*Warden*); the package form only in code contexts.
-- **Forgemasters = agents = personas — wielding Skills.** One being, three registers:
-  **Forgemaster** is the brand term for the eight in written content; **agent** the
-  generic category (as the mission uses it: *Agents Deliver*); **persona** the
-  technical/BMAD term in specs and configs. **Skills are not what they are but what
-  they wield** — the unit of execution (per the Execution Doctrine below); the harness
-  is the unit of governance; the station is the unit of accountability. Never invent
-  a fourth register.
-- **The console keeps its terminal idiom**: masthead *PyForge · Factory Console*; the
+- **Smiths = agents = personas — wielding Skills.** One being, three registers:
+  **Smith** is the brand term for the eight in written content; **agent** the generic
+  category (as the mission uses it: *Agents Deliver*); **persona** the technical/BMAD
+  term in specs and configs. Everyone at the fire is a Smith, whatever they are
+  working — and each masters one craft, not all: Herald works communication, not code;
+  Warden works judgment, not building. Nobody is a generalist, which is exactly why
+  the verdicts mean something. Write the plural (*eight Smiths*); prefer "each Smith
+  holds one Station" over apposing it to a persona name. **Skills are not what they
+  are but what they wield** — the unit of execution (per the Execution Doctrine
+  below); the harness is the unit of governance; the station is the unit of
+  accountability. Never invent a fourth register.
+- **"Spec" has four senses — say which.** The word is overloaded; these are distinct:
+  **the Spec** (`planning-artifacts/specs/spec-<slug>/SPEC.md`, the five-field
+  contract — the primary sense, capital S); **the planning chain** (PRD → architecture
+  → epics, the Spec's *decomposition*); **story specs** (per-story intent contracts,
+  tracked and durable); **legacy intake specs** (`docs/specs/`, phasing out). Never
+  call the Spec a "kernel" — that is `bmad-spec`'s internal jargon for its five-field
+  shape, and it demotes the most load-bearing artifact in the ecosystem to a tool
+  detail.
+- **The console keeps its terminal idiom**: masthead *PyForge · Guildhall*; the
   `pyforge ❯` prompt stays lowercase (a prompt is a technical surface).
 
 ---
 
-## The Lexicon — six nouns, one operating system
+## The Lexicon — seven nouns, one operating system
 
 The identity system is a **constitutional model for autonomous software delivery**:
 each noun is a load-bearing separation of concerns, and the chain reads in both
@@ -393,7 +405,24 @@ law. It is Tier 0 of the Dream-first model: everything derives — Herald render
 into decks, BMAD distills it into specs, and no spec may contradict it. Constitutional
 documents change by **recorded amendment** (the Realization log), never by silent edit.
 
-### 2. The Guild — the unit of *body*
+### 2. The Spec — the unit of *contract*
+
+Where the Charter governs the **workers**, the Spec governs the **work**. It is the
+five-field contract (`SPEC.md`: Why · Capabilities · Constraints · Non-goals · Success
+signal) that BMAD distils from a Dream, and to which every downstream artifact is
+bound. It is the most load-bearing artifact in the ecosystem, because *spec-driven* is
+only true where a Spec exists to drive from — a plan without one is a plan, not a
+contract. It is derived from an append-only memlog and re-rendered, never hand-patched,
+so it stays a single writer's contract rather than a document anyone can quietly bend.
+
+The chain (PRD → architecture → epics) is the Spec's **decomposition**, not a
+substitute for it. Evidence for contract-before-decomposition: of thirteen projects
+only herald's Spec preceded its chain, and herald's decomposition is the cleanest in
+the portfolio — stories tracing 1:1 to capabilities, zero open questions at hand-off.
+Where a Spec is absent the work is still governed by its chain, but nothing holds the
+five fields still while the chain moves.
+
+### 3. The Guild — the unit of *body*
 
 The collective, chartered into existence, so the SDLC has **one accountable
 organization**, not eight freelancers. The Guild is what pauses, resumes, and owns the
@@ -402,18 +431,19 @@ its membership changed (six → eight in the 2026-07-23 ownership audit, when th
 knowledge and operations stations were found unowned). Bodies outlive rosters — that
 is what makes the model extensible without re-founding it.
 
-### 3. The Forgemasters — the unit of *identity*
+### 4. The Smiths — the unit of *identity*
 
-The eight, in three registers of one being: **Forgemaster** (brand, what a deck says)
-= **agent** (category, what the mission says: *Agents Deliver*) = **persona**
-(technical, what a BMAD config says). Each audience needs a different word for the
-*same* accountable thing — the moment the registers drift into different things,
-accountability blurs. "Master" is precise too: guild rank means **mastery of one
-craft, not all** — the division of labor *is* the SDLC decomposition. Herald masters
-communication, not code; Warden masters judgment, not building. Nobody is a
-generalist, which is exactly why the verdicts mean something.
+The eight, in three registers of one being: **Smith** (brand, what a deck says) =
+**agent** (category, what the mission says: *Agents Deliver*) = **persona** (technical,
+what a BMAD config says). Each audience needs a different word for the *same*
+accountable thing — the moment the registers drift into different things,
+accountability blurs. "Smith" carries the forge without spending the word: everyone at
+the fire is a Smith, whatever they are working. And each works **one craft, not all** —
+the division of labor *is* the SDLC decomposition. Herald works communication, not
+code; Warden works judgment, not building. Nobody is a generalist, which is exactly why
+the verdicts mean something.
 
-### 4. The Stations — the unit of *accountability*
+### 5. The Stations — the unit of *accountability*
 
 The subtlest separation: **the station is the post, not the person.** Each station is
 a lifecycle stage *plus its independent verdict*, under the doctrine's sharpest line:
@@ -429,7 +459,7 @@ for opus swaps the being at the station; the obligations do not move), and
 [[agent-portability]] is the property at framework scale. Offices outlive
 officeholders — that is why the system survives its own mortality.
 
-### 5. The Skills — the unit of *execution* (wielded, never worn)
+### 6. The Skills — the unit of *execution* (wielded, never worn)
 
 The armory (`.claude/skills/`): the conda-forge-expert craft with its ~90 hard-won
 gotchas, the BMAD suite, the forged retro-skills. The *wielding* distinction is
@@ -448,7 +478,7 @@ load-bearing, not poetic:
   Forgemaster wielding CFE v8 is the same one who wielded v6 — continuity of
   accountability across upgraded capability.
 
-### 6. The Guildhall — the unit of *visibility* (and the human's seat)
+### 7. The Guildhall — the unit of *visibility* (and the human's seat)
 
 The public console. Its conviction is Herald's — *invisible engineering is failed
 engineering* — but its deeper function is that **the Guildhall is how the human
@@ -461,18 +491,19 @@ trusted with autonomy; **the hall is the price of the autonomy, paid in public.*
 ### The chain, read both ways
 
 **Forward — authorization** (how anything is allowed to happen): the Charter
-*authorizes* the Guild → the Guild *seats* Forgemasters → Forgemasters *hold*
-stations → stations *wield* Skills → the work *stands open* in the Guildhall.
+*authorizes* the Guild → the Spec *binds* the work → the Guild *seats* Smiths →
+Smiths *hold* stations → stations *wield* Skills → the work *stands open* in the
+Guildhall.
 
 **Backward — audit** (how anything is explained): anything visible in the Guildhall
-traces to a station's independent verdict → rendered by a named Forgemaster → seated
-by the Guild → authorized by the Charter — and in parallel, every artifact traces to
-a spec, every spec to a Dream.
+traces to a station's independent verdict → rendered by a named Smith → seated by the
+Guild → bound by a Spec → authorized by the Charter — and every Spec traces, in turn,
+to a human Dream.
 
-Which is the mission, mapped onto nouns: **Governed** = Charter + stations (+ the
+Which is the mission, mapped onto nouns: **Governed** = Charter + Spec + stations (+ the
 harness beneath them) · **Auditable** = the Guildhall + the backward trace ·
 **Production-ready** = Skills + verdicts that never false-green. The mission is not
-decoration on the system — **the system is the mission, factored into six nouns where
+decoration on the system — **the system is the mission, factored into seven nouns where
 every noun does exactly one job, and every job has exactly one noun.** That property
 is the same discipline the architecture reviews enforce in code — sole ownership, one
 writer per contract, no dual homes — applied to the organization itself.
@@ -537,3 +568,10 @@ herald broadcast slack,email --channel engineering-updates
 - **2026-07-25** — the program console named: **PyForge · Guildhall** — the Charter constitutes the Guild; the Guildhall is where its work stands open.
 - **2026-07-25** — terminology sealed: **Forgemasters = agents = personas, wielding Skills** (brand · category · technical; Skills = unit of execution, not identity); constitutive line landed under the mission; H1 retitled.
 - **2026-07-25** — **§ The Lexicon** landed: the six-noun constitutional model (legitimacy · body · identity · accountability · execution · visibility), the authorization/audit chain, and the mission-to-noun mapping — refined from the operator-approved writeup.
+- **2026-07-25** — **the Spec named, the Smiths renamed** (operator correction): the
+  Lexicon gains **§2 The Spec — the unit of *contract***, closing a hole in a
+  spec-driven constitution that had six organizational nouns and no word for the
+  contract itself; "kernel" retired as `bmad-spec` tool-jargon, with the four senses of
+  "spec" disambiguated in § Branding. **Forgemasters → Smiths**: one syllable, carries
+  the forge without repeating it, no rank baggage. Seven nouns; the chain now reads
+  Charter → Spec → Guild → Smiths → Stations → Skills → Guildhall.

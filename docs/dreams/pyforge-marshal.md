@@ -85,6 +85,6 @@ visible. Anti-vibe, by construction.
   live proof `--verify pyforge-warden deckcraft` → ISOLATION OK. Spec:
   `spec-multi-loop-isolation` (local-recipes planning-artifacts).
 - **2026-07-24** — spec BACKFILLED (user-directed, closing the last realized-Dream
-  gap): `spec-pyforge-marshal` kernel (local-recipes planning-artifacts) binds
-  `.bmad-loop/**` into governance, adopting the multi-loop-isolation kernel +
+  gap): `spec-pyforge-marshal` Spec (local-recipes planning-artifacts) binds
+  `.bmad-loop/**` into governance, adopting the multi-loop-isolation Spec +
   the bmad-loop-adoption spec; grounded live by the warden 6.3/6.5 wave.

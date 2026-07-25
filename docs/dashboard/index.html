@@ -441,7 +441,7 @@
   </div>
 
   <h1>PyForge <span class="sep">·</span> Guildhall</h1>
-  <p class="subtitle"><b>Forging the Agentic SDLC</b><br><i>Humans Dream, Agents Deliver &mdash; Governed. Auditable. Production-ready.</i><br>The Dream-to-Code factory, end to end: <b>The Dreams</b> (the why) → <b>The Specs</b> (BMAD kernels, the machine contract) → <b>The Pitch</b> (the deck family) → what's <b>In Build</b>, <b>Realized</b>, and <b>Archived</b>. Data regenerates from the repo (<code>dashboard-gen</code>).</p>
+  <p class="subtitle"><b>Forging the Agentic SDLC</b><br><i>Humans Dream, Agents Deliver &mdash; Governed. Auditable. Production-ready.</i><br>The Dream-to-Code factory, end to end: <b>The Dreams</b> (the why) → <b>The Specs</b> (the five-field contracts) → <b>The Pitch</b> (the deck family) → what's <b>In Build</b>, <b>Realized</b>, and <b>Archived</b>. Data regenerates from the repo (<code>dashboard-gen</code>).</p>
 
   <details class="dreams zsec" id="dreams" hidden>
     <summary><span class="program-h">The Dreams</span><span class="zcaret">▸</span></summary>
@@ -451,7 +451,7 @@
 
   <details class="dreams zsec" id="specsec" hidden>
     <summary><span class="program-h" id="spech">The Specs</span><span class="zcaret">▸</span></summary>
-    <div class="dflow"><b>_bmad-output/projects/*/planning-artifacts/specs/</b> — every BMAD-Method kernel: five-field contract + companions, derived from its append-only memlog. Legacy <b>docs/specs/</b> is excluded.</div>
+    <div class="dflow"><b>_bmad-output/projects/*/planning-artifacts/specs/</b> — every BMAD-Method <b>Spec</b>: five-field contract + companions, derived from its append-only memlog. Legacy <b>docs/specs/</b> is excluded.</div>
     <div id="specrows"></div>
   </details>
 
@@ -540,11 +540,11 @@
       "The Dreams · " + DREAMS.length + " on the board";
   }
 
-  // ---- 2 · The Specs (every BMAD kernel) ----
+  // ---- 2 · The Specs (every BMAD Spec) ----
   const SPECS = window.DASHBOARD_DATA.specs || [];
   if (SPECS.length) {
     document.getElementById("specsec").hidden = false;
-    document.getElementById("spech").textContent = "The Specs · " + SPECS.length + " BMAD kernels";
+    document.getElementById("spech").textContent = "The Specs · " + SPECS.length + " five-field contracts";
     document.getElementById("specrows").innerHTML = SPECS.map(s =>
       '<div class="specrow">' +
         '<span class="spec-slug"><a href="' + REPO + '/tree/main/' + esc(s.path) + '">' +

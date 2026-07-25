@@ -5,7 +5,7 @@ Same spec-durability remediation as pyforge-warden (see the repo-wide convention
 Story specs are the per-story intent contract; they must survive worktree teardown and
 live in every clone. This directory (`planning-artifacts/specs/`, Tier-2, **git-tracked**)
 is that durable home. The pre-existing `spec-pyforge-atlas/` subdir is the Dream-level
-bmad-spec **kernel** (SPEC.md + memlog); the `spec-<story>.md` files here are the per-story
+**Spec** (SPEC.md + memlog); the `spec-<story>.md` files here are the per-story
 specs.
 
 ## Provenance of the set (final, 2026-07-25)

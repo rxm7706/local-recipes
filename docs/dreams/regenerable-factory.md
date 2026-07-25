@@ -34,7 +34,7 @@ repo-wide.
   `bmad-generate-project-context`, `bmad-correct-course`) + re-stamped
   baselines. This Dream is that loop, applied to everything.
 - **The transformer** — `bmad-spec` distills brownfield code + docs into the
-  five-field kernel with stable CAP-IDs and an append-only memlog; re-derives
+  five-field Spec with stable CAP-IDs and an append-only memlog; re-derives
   on update instead of hand-patching. Piloted on [[design-code-bridge]].
 - **The map** — 24 Dreams, no-straggler policy: every shipped surface already
   traces to a Dream; what's missing is the spec layer beneath the realized
@@ -63,7 +63,7 @@ repo-wide.
 [[pyforge-genesis]] (the operating model this completes — brownfield adoption
 implies backfill) · [[pyforge-marshal]] (BMAD executes every change) ·
 [[pyforge-warden]] (drift gate temperament: never false-green) ·
-[[agent-portability]] (the spec kernel is what makes regeneration
+[[agent-portability]] (the Spec is what makes regeneration
 framework-neutral) · [[pyforge-charter]].
 
 ## Realization log

@@ -15,7 +15,7 @@ agent the team uses** —
 Devin, GitHub Copilot (and its agents), Claude, Cursor, Gemini — and planning
 runs on flat-rate subscriptions instead of metered IDE tokens. The method is
 the asset; the agent is a socket. Corollary (the AGENTS.md Portability
-contract): the Dream and the neutral spec kernel are the shared layers; only
+contract): the Dream and the neutral Spec are the shared layers; only
 decomposition and execution are per-framework — so any framework's build can be
 verified against the same oracle.
 

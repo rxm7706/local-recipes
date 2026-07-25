@@ -257,7 +257,7 @@ DREAM_PROGRAM = {
 
 def dream_chain(slug: str) -> dict:
     """Chain links for the drill-through indicators (no-straggler visibility):
-    deck dir (exact slug or alias), spec-kernel folder, BMAD project dir,
+    deck dir (exact slug or alias), Spec folder, BMAD project dir,
     console-program key."""
     chain: dict[str, str] = {}
     deck = DREAM_DECK_ALIASES.get(slug, slug)
@@ -311,7 +311,7 @@ def scan_dreams() -> list[dict]:
     return dreams
 
 
-# ---- specs roster (all BMAD kernels; docs/specs legacy is deliberately out) --
+# ---- specs roster (all BMAD Specs; docs/specs legacy is deliberately out) --
 
 def _git_date(path: Path) -> str:
     r = subprocess.run(
@@ -350,7 +350,7 @@ def scan_specs() -> list[dict]:
                      "caps": caps, "companions": comp,
                      "updated": _git_date(spec_dir), "dream": dream,
                      "path": str(spec_dir.relative_to(REPO_ROOT))})
-    print(f"[specs] {len(rows)} kernels scanned "
+    print(f"[specs] {len(rows)} Specs scanned "
           f"({', '.join(sorted({r['project'] for r in rows}))})")
     return rows
 
