@@ -1064,7 +1064,7 @@ description = "Run the pyforge.warden test suite (fast default loop -- excludes 
 cmd = "pytest src/shared/packages/pyforge-warden/tests -q -m \"not slow\""
 
 [feature.pyforge-warden.tasks.pyforge-warden-test-corpus-oracle]
-description = "Run the slow, corpus-scale differential-oracle + full-corpus determinism proof (Story 5.2) -- not part of the default loop"
+description = "Run the slow, corpus-scale differential-oracle + full-corpus determinism + egress-counter proofs (Story 5.2) -- not part of the default loop"
 cmd = "pytest src/shared/packages/pyforge-warden/tests -q -m slow"
 
 [feature.pyforge-warden.tasks.pyforge-warden-dogfood]

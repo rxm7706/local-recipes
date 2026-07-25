@@ -40,6 +40,7 @@ Usage::
 from __future__ import annotations
 
 import argparse
+import http.client
 import shutil
 import sys
 import urllib.error
@@ -173,20 +174,55 @@ def harvest_recipes(repo_root: Path) -> list[Path]:
     recipes/`` into ``_RECIPES_OUT``, mirroring the source's relative
     layout. The output directory is wiped first (re-runnable "refresh the
     pin" convention) so a feedstock removed upstream also disappears from
-    the pinned corpus rather than accumulating stale entries."""
+    the pinned corpus rather than accumulating stale entries.
+
+    The source is enumerated BEFORE the wipe, and an empty enumeration
+    aborts (follow-up review finding: a bad ``--repo-root`` -- or an
+    empty ``recipes/`` -- previously rmtree'd the 1,979-file committed
+    corpus, copied zero files, and exited 0 printing "copied 0")."""
     source_root = repo_root / "recipes"
+    source_manifests = [
+        source_path
+        for manifest_name in _MANIFEST_NAMES
+        for source_path in sorted(source_root.rglob(manifest_name))
+    ]
+    if not source_manifests:
+        raise SystemExit(
+            f"harvest_corpus: no recipe.yaml/meta.yaml found under "
+            f"{source_root} -- refusing to wipe the committed corpus "
+            "against an empty source"
+        )
     if _RECIPES_OUT.exists():
         shutil.rmtree(_RECIPES_OUT)
     _RECIPES_OUT.mkdir(parents=True)
     copied: list[Path] = []
-    for manifest_name in _MANIFEST_NAMES:
-        for source_path in sorted(source_root.rglob(manifest_name)):
-            relative = source_path.relative_to(source_root)
-            dest_path = _RECIPES_OUT / relative
-            dest_path.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copyfile(source_path, dest_path)
-            copied.append(relative)
+    for source_path in source_manifests:
+        relative = source_path.relative_to(source_root)
+        dest_path = _RECIPES_OUT / relative
+        dest_path.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(source_path, dest_path)
+        copied.append(relative)
     return copied
+
+
+def prune_upstream_orphans() -> None:
+    """Removes any ON-DISK upstream subdirectory whose name is no longer
+    in ``_UPSTREAM_RECIPE_NAMES`` (review finding: without this, a name
+    removed from that tuple left its old directory orphaned on disk
+    forever, silently reported as still current by ``write_sources_md``'s
+    live directory listing). A directory whose name is STILL in the tuple
+    is never touched -- preserving ``fetch_upstream_adversarial_set``'s
+    documented partial-network-failure guarantee.
+
+    Runs UNCONDITIONALLY from ``main()`` (follow-up review finding: when
+    this prune lived inside ``fetch_upstream_adversarial_set``,
+    ``--skip-upstream-fetch`` skipped the prune too -- exactly the
+    orphan-staleness the original fix targeted)."""
+    if not _UPSTREAM_OUT.is_dir():
+        return
+    for existing in _UPSTREAM_OUT.iterdir():
+        if existing.is_dir() and existing.name not in _UPSTREAM_RECIPE_NAMES:
+            shutil.rmtree(existing)
 
 
 def fetch_upstream_adversarial_set() -> list[str]:
@@ -194,20 +230,10 @@ def fetch_upstream_adversarial_set() -> list[str]:
     parser-tests`` -- a SOFT dependency (see module docstring): a network
     failure on any single name is a printed warning, not an abort, and
     whatever names already succeeded/were previously committed are left in
-    place. Returns the list of names actually written this run.
-
-    Prunes any ON-DISK subdirectory whose name is no longer in
-    ``_UPSTREAM_RECIPE_NAMES`` (review finding: without this, a name
-    removed from that tuple left its old directory orphaned on disk
-    forever, silently reported as still current by ``write_sources_md``'s
-    live directory listing). Unlike ``harvest_recipes``'s unconditional
-    wipe, this deliberately does NOT touch a directory whose name is STILL
-    in ``_UPSTREAM_RECIPE_NAMES`` -- preserving this function's own
-    documented partial-network-failure guarantee above."""
+    place (orphan pruning is ``prune_upstream_orphans``'s job, run
+    unconditionally from ``main()``). Returns the list of names actually
+    written this run."""
     _UPSTREAM_OUT.mkdir(parents=True, exist_ok=True)
-    for existing in _UPSTREAM_OUT.iterdir():
-        if existing.is_dir() and existing.name not in _UPSTREAM_RECIPE_NAMES:
-            shutil.rmtree(existing)
     fetched: list[str] = []
     for name in _UPSTREAM_RECIPE_NAMES:
         url = _UPSTREAM_URL_TEMPLATE.format(sha=_UPSTREAM_COMMIT_SHA, name=name)
@@ -215,7 +241,19 @@ def fetch_upstream_adversarial_set() -> list[str]:
         try:
             with urllib.request.urlopen(request, timeout=30) as response:  # noqa: S310
                 content = response.read().decode("utf-8")
-        except (urllib.error.URLError, TimeoutError, OSError) as exc:
+        except (
+            urllib.error.URLError,
+            TimeoutError,
+            OSError,
+            # Follow-up review finding: a truncated 200 body raises
+            # http.client.IncompleteRead (an HTTPException, NOT an
+            # OSError), and a non-UTF-8 body raises UnicodeDecodeError --
+            # both previously aborted the whole harvest with a traceback,
+            # violating the documented warn-and-continue soft-dependency
+            # contract above.
+            http.client.HTTPException,
+            UnicodeDecodeError,
+        ) as exc:
             print(
                 f"harvest_corpus: WARNING: could not fetch {name!r} from "
                 f"prefix-dev/rattler-build-parser-tests@{_UPSTREAM_COMMIT_SHA}: "
@@ -331,10 +369,26 @@ def _build_argparser() -> argparse.ArgumentParser:
 
 def main() -> None:
     args = _build_argparser().parse_args()
-    repo_root = args.repo_root or _find_repo_root(_PACKAGE_ROOT)
+    if args.repo_root is not None:
+        repo_root = args.repo_root
+        # Follow-up review finding: only the auto-detect path enforced the
+        # help text's "must contain recipes/ + pixi.toml" -- a typo'd
+        # override sailed straight into harvest_recipes (whose own
+        # empty-source guard is the second line of defense; this one
+        # catches the mistake before any work happens, with the marker
+        # predicate _find_repo_root already uses).
+        if not ((repo_root / "pixi.toml").is_file() and (repo_root / "recipes").is_dir()):
+            raise SystemExit(
+                f"harvest_corpus: --repo-root {repo_root} does not look "
+                "like the repo root (needs recipes/ + pixi.toml)"
+            )
+    else:
+        repo_root = _find_repo_root(_PACKAGE_ROOT)
 
     copied = harvest_recipes(repo_root)
     print(f"harvest_corpus: copied {len(copied)} manifest(s) into {_RECIPES_OUT}")
+
+    prune_upstream_orphans()
 
     fetched_upstream: list[str] = []
     if args.skip_upstream_fetch:

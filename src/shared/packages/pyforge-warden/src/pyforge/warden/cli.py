@@ -1013,7 +1013,12 @@ def _instantiate_and_run_engine(
             "owner": engine_name,
             "subject": engine_name,
             "message": f"engine {engine_name!r} crashed: {exc!r}",
-            "axis": engine.axis,
+            # getattr (follow-up review finding): a protocol-violating
+            # engine lacking `axis` must not raise INSIDE this handler --
+            # that AttributeError would escape the typed-error contract
+            # through future.result() into main's last-resort net,
+            # discarding the whole report. Mirrors factory_axis above.
+            "axis": getattr(engine, "axis", AXIS_INGESTION),
         }
     if result is None:
         # A misbehaving Engine.run() returning None instead of raising or
@@ -1031,7 +1036,9 @@ def _instantiate_and_run_engine(
             "owner": engine_name,
             "subject": engine_name,
             "message": f"engine {engine_name!r} returned None instead of an EngineResult",
-            "axis": engine.axis,
+            # getattr: same handler-must-not-raise rationale as the
+            # crash branch above.
+            "axis": getattr(engine, "axis", AXIS_INGESTION),
         }
     return result, None
 
@@ -1319,9 +1326,14 @@ def _run_scan(args: argparse.Namespace) -> int:
         # (_instantiate_and_run_engine) touches NO shared state (it returns
         # its outcome rather than mutating errors/rungs/engine_results
         # itself), so the ONLY shared-mutable-state seam is the
-        # already-thread-safe lru_cache trio (currency.py/mapping.py/
-        # report.py — CPython's lru_cache is internally lock-guarded, no new
-        # locking needed here). Futures are collected in `engines_to_run`'s
+        # lru_cache trio (currency.py/mapping.py/report.py — CPython's
+        # lru_cache serializes its cache bookkeeping but NOT concurrent
+        # misses: two workers can both execute the loader before one
+        # result wins the cache slot. Safe here only because all three
+        # loaders are idempotent pure reads, so a duplicate load is
+        # wasted work, never corruption — no new locking needed, but
+        # don't extend this claim to a non-idempotent cache). Futures
+        # are collected in `engines_to_run`'s
         # OWN registration order (the list comprehension below iterates it
         # exactly once) and then drained in that SAME order — .result()
         # blocks on the future it's called on regardless of which one

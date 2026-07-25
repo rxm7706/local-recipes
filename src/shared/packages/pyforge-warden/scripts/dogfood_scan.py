@@ -33,6 +33,7 @@ harvest_corpus.py``'s dev-only-script convention)."""
 
 from __future__ import annotations
 
+import argparse
 import shutil
 import sys
 import tempfile
@@ -72,10 +73,29 @@ def stage_dogfood_copy(dest: Path) -> None:
     )
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--emit-baseline",
+        action="store_true",
+        help=(
+            "regenerate the .warden-baseline.yaml stanza: run the SAME "
+            "staged {pyproject.toml, src/} scan the gate uses, WITHOUT "
+            "--baseline (so every current finding appears in the stanza) "
+            "and WITH warden's --baseline-emit (follow-up review finding: "
+            "the previously-documented raw `warden scan <package-dir> "
+            "--baseline-emit` sweeps tests/ fixtures into the stanza -- "
+            "the very noise stage_dogfood_copy exists to exclude). Review "
+            "and re-stamp the printed expires_at dates before committing; "
+            "warden's emitted default is now + 14 days"
+        ),
+    )
+    args = parser.parse_args(argv)
     with tempfile.TemporaryDirectory(prefix="pyforge-warden-dogfood-") as tmp:
         dest = Path(tmp) / "pyforge-warden"
         stage_dogfood_copy(dest)
+        if args.emit_baseline:
+            return warden_main(["scan", str(dest), "--baseline-emit"])
         return warden_main(["scan", str(dest), "--baseline", str(BASELINE_PATH)])
 
 

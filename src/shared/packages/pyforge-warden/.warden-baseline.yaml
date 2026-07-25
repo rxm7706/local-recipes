@@ -19,8 +19,20 @@
 # import missing from dependencies) is UNAFFECTED by this file and still
 # gates normally (test_dogfood.py's seeded-violation half proves this).
 #
-# Regenerate via: warden scan src/shared/packages/pyforge-warden --baseline-emit
-# (review the printed stanza before replacing this file — never blind-copy).
+# Regenerate via (from src/shared/packages/pyforge-warden/):
+#   python scripts/dogfood_scan.py --emit-baseline
+# — the SAME staged {pyproject.toml, src/} copy the gate scans. (A raw
+# `warden scan <package-dir> --baseline-emit` would sweep the deliberately
+# adversarial tests/ fixtures into the stanza — never use it here.) The
+# emitted entries carry warden's 14-day default expires_at; the dates below
+# were deliberately extended to 1 year — review/re-stamp each before
+# replacing this file, never blind-copy.
+#
+# NOTE: every entry below expires 2027-07-24T00:00:00Z SIMULTANEOUSLY. On
+# that date the dogfood gate (test_dogfood.py's clean-state half + the
+# pyforge-warden-dogfood pixi task) goes red with expired-baseline notices
+# until the entries are re-reviewed and re-stamped via the command above —
+# a calendar-driven maintenance action, not a code regression.
 version: 1
 baseline:
   - id: "currency:unknown:!python-runtime@3.14.6"

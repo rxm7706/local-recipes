@@ -103,7 +103,7 @@ _NAME_TOKEN_RE = re.compile(r"^[^\s<>=!~]+")
 # a partial render regression from an unrelated environment change) and
 # passing vacuously. Measured this story: 228 recipe.yaml / 711 meta.yaml
 # files were eligible for the strict comparison, 0 violations either side
-# — these floors sit ~10-15% below that measurement (review finding: the
+# — these floors sit ~9-12% below that measurement (review finding: the
 # original floors were 150/400, wide enough to mask a genuine ~1/3 drop in
 # compared-file count as a pass; tightened, still with real slack for
 # legitimate corpus-composition drift across re-harvests).

@@ -77,9 +77,15 @@ ADVERSARIAL_DIR = CORPUS_DIR / "adversarial"
 _MINIMUM_EXPECTED_CORPUS_SIZE = 1900
 
 # NFR-R2 ratchet (see module docstring for the exact numerator this
-# measures): first value = what's empirically measured this story. May only
-# ever DECREASE -- a future PR raising it is a real regression, not a test
-# to "fix" by raising the number back.
+# measures): first value = what's empirically measured this story. For a
+# given committed corpus it may only ever DECREASE -- raising it to absorb
+# an extractor-code regression on an UNCHANGED corpus is the one forbidden
+# move. A DELIBERATE corpus change (re-running scripts/harvest_corpus.py,
+# growing the adversarial set) legitimately changes both sides of the
+# fraction: re-measure and update this constant in the SAME PR that
+# changes the corpus, citing the new measurement (follow-up review
+# finding: the committed slack over the measured rate is deliberately
+# ~0 files, so essentially ANY corpus change requires this re-measure).
 CORPUS_UNPARSEABLE_RATE_BASELINE = 0.4686
 
 _DEGRADED_MODES = (ExtractionMode.RAW_MALFORMED, ExtractionMode.NAME_ONLY)

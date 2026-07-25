@@ -53,11 +53,17 @@ def test_full_corpus_deterministic_twice_run_is_byte_identical(capsys):
     # isolation means this test does not actually depend on
     # test_corpus_recipes_dir_is_provisioned above running/passing first
     # (e.g. `pytest -k twice_run` alone) -- without its own check, a
-    # missing/empty corpus would scan a nonexistent directory twice and
-    # produce identical ERROR output both times, passing this test
+    # missing/empty corpus would scan a nonexistent/empty directory twice
+    # and produce identical output both times, passing this test
     # vacuously without proving anything about corpus-scale determinism.
+    # The non-empty half matters too (follow-up review finding: is_dir()
+    # alone still passed vacuously on an existing-but-emptied corpus,
+    # e.g. a wiped-then-failed harvest).
     assert CORPUS_RECIPES_DIR.is_dir(), (
         f"{CORPUS_RECIPES_DIR} missing -- run scripts/harvest_corpus.py"
+    )
+    assert next(CORPUS_RECIPES_DIR.rglob("recipe.yaml"), None) is not None, (
+        f"{CORPUS_RECIPES_DIR} contains no manifests -- run scripts/harvest_corpus.py"
     )
     rc_one, out_one, _err_one = _run_scan(capsys, "--deterministic")
     rc_two, out_two, _err_two = _run_scan(capsys, "--deterministic")
