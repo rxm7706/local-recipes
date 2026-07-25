@@ -106,6 +106,44 @@ Ownership decisions recorded:
   it downgrades can vary with ``--fail-on``, not the final status/exit
   code). The defaults (``()``/``False``/``0``) preserve every pre-3.3
   caller/test byte-for-byte.
+* ``applied_baseline``/``expired_baseline`` (Story 6.8, additive/defaulted
+  ``()`` -- mirrors ``applied_waivers``/``expired_waivers`` exactly, one
+  feed over): ``render_text`` appends one ``[baseline]`` line per applied
+  ``waiver.BaselineNotice`` (id, reason, expires_at -- no
+  ``authorized_by``, since a baseline notice carries none) and one
+  ``[baseline-expired]`` line per expired one, both AFTER the existing
+  waiver loops. Every notice's ``reason``/``expires_at`` passes through
+  ``_single_line`` first, same as the waiver loops. This module has no
+  baseline-matching vocabulary of its own (that's ``waiver.py``'s
+  domain), so the caller (``cli.py``) states which baseline entries
+  actually suppressed a finding this run. The defaults preserve every
+  pre-6.8 caller/test byte-for-byte.
+* ``manifest_locations``/``fixed_versions`` (Story 5.1, AC1, additive/
+  defaulted ``{}`` -- the render_text-only remediation-content side channel,
+  mirroring ``applied_waivers``/``applied_baseline``'s established caller-
+  supplied-param precedent exactly): ``render_text`` appends one remediation
+  line (``      -> fix: ...``) right after each rendered finding line,
+  templated per id-family/axis by the new private ``_remediation_line`` --
+  never for ``errors[]`` (AC1's "not a re-wrap of 1.7's typed errors" scopes
+  this to finding diagnostics only). This module has no manifest-provenance
+  or fixed-version vocabulary of its own (``inventory.Component.provenance``
+  and ``vuln.OsvParse.fixed_versions`` are -- respectively -- ``inventory.py``'s
+  and ``vuln.py``'s domains), so the caller (``cli.py``) states both: a
+  ``name -> tuple("<manifest> [<section>]", ...)`` lookup built once from the
+  post-merge inventory (keys canonicalized via ``_canonical_subject_key``;
+  the lookup canonicalizes the subject the same way), and a ``finding.id ->
+  fixed version string`` mapping merged across every engine result. A finding whose ``subject`` has no
+  entry in ``manifest_locations`` (e.g. this module's own synthetic
+  ``indeterminate:coverage-floor:<axis>`` finding, whose ``subject`` is an
+  axis name, not a package) simply omits the manifest clause -- never
+  crashes, never fabricates a location. The composed remediation string
+  passes through ``_single_line`` too, same as every other free-text field.
+  The defaults keep every pre-5.1 call site signature-compatible, but they
+  do NOT reproduce pre-5.1 output (unlike the parameters above): AC1 makes
+  the remediation line unconditional per finding, so a defaulted call still
+  renders it — the defaults only omit the manifest-clause/fixed-version
+  enrichment (this story updated four pre-existing byte-exact tests for
+  exactly that reason).
 
 Status/exit projection is delegated wholesale to ``verdict.py`` (the sole
 owner); this module feeds it the collected rungs and stores the result.
@@ -114,9 +152,11 @@ owner); this module feeds it the collected rungs and stores the result.
 from __future__ import annotations
 
 import json
-from collections.abc import Iterable, Sequence
+import re
+from collections.abc import Iterable, Mapping, Sequence
 from functools import lru_cache
 from importlib import resources
+from types import MappingProxyType
 from typing import Any, cast
 
 import jsonschema
@@ -142,7 +182,7 @@ from .models import (
     VulnData,
 )
 from .verdict import compose, exit_code_for
-from .waiver import WaiverNotice
+from .waiver import BaselineNotice, WaiverNotice
 
 # Story 6.1: the one sanctioned additive schema bump (1.0.0 -> 1.1.0, staying
 # inside _SCHEMA_VERSION_RE) admitting Epic 6's slots; behavior-neutral for
@@ -182,7 +222,12 @@ def assemble_report(
     fail_under_coverage: float = 0.0,
     suppressions: Sequence[SuppressedFinding] = (),
     kev_data: FeedProvenance | None = None,
+    epss_data: FeedProvenance | None = None,
     license_gating: bool = False,
+    currency_data: FeedProvenance | None = None,
+    currency_gating: bool = False,
+    warn_as_error: bool = False,
+    actuation: object | None = None,
 ) -> ComplianceReport:
     """Assemble the ``ComplianceReport`` from the pipeline's outputs.
 
@@ -212,6 +257,12 @@ def assemble_report(
     ``engine_results``) and stored verbatim into ``ComplianceReport.
     kev_data``; this module never computes KEV provenance itself.
 
+    ``epss_data`` (Story 6.7, additive/defaulted ``None`` — mirrors
+    ``kev_data``'s own threading exactly, one feed over): caller-derived too
+    (``cli.py`` picks the first non-``None`` ``EngineResult.epss_data``
+    across ``engine_results``) and stored verbatim into ``ComplianceReport.
+    epss_data``; this module never computes EPSS provenance itself.
+
     ``hygiene_applicable=False`` (Story 2.4, AC3) overrides the hygiene
     axis's ``deps_total``/``deps_assessed``/``resolution_depth`` to the
     not-applicable shape (``0``/``0``/``None``) regardless of what any
@@ -240,8 +291,10 @@ def assemble_report(
     license axis's OWN ``AxisCoverage.gating`` — every other axis's row
     keeps the field's own default (``False``). Transparency of
     configuration state (FR37's "gating: false is honesty, not
-    invisibility"), independent of the fact that real license-axis
-    escalation is deferred to Story 6.5.
+    invisibility"); the actual license-axis rung escalation this gate drives
+    is threaded separately through ``DefaultPolicy.evaluate`` ->
+    ``license_rung(policy=config.license_policy)`` (Story 6.5), not here —
+    this row only reports whether the gate is configured.
 
     Fix 8 (review finding, 2026-07-18): ``gating`` is additionally gated on
     the axis actually being applicable/assessed (``AXIS_LICENSE in
@@ -250,7 +303,35 @@ def assemble_report(
     the coverage-row loop below), so ``config.license_gating`` alone can
     never claim ``gating: true`` for a scan where the license engine never
     ran (e.g. ``manifests_parsed == 0``) — that combination was
-    self-contradictory (an active gate over zero assessed dependencies)."""
+    self-contradictory (an active gate over zero assessed dependencies).
+
+    ``currency_data``/``currency_gating`` (Story 6.3, additive/defaulted —
+    mirror ``kev_data``/``license_gating`` exactly): ``cli.py`` picks the
+    first non-``None`` ``EngineResult.currency_data`` across
+    ``engine_results`` (the bundled LTS registry's own ``FeedProvenance``,
+    see ``currency.py``'s module docstring) and passes ``config.
+    currency_gating`` (``True`` iff ``--max-lag``/``--require-lts``/
+    ``--fail-on-eol`` is set) into the currency axis's own ``AxisCoverage.
+    gating``, gated on axis applicability the SAME way ``license_gating`` is
+    (Fix 8's pattern, applied identically here).
+
+    ``warn_as_error`` (Story 6.5, additive/defaulted ``False`` — the
+    strict-shop exit knob): threaded straight through into ``verdict.
+    exit_code_for(status, …, warn_is_error=warn_as_error)``, exactly like
+    ``allow_empty`` — this module owns no exit-projection logic of its own
+    (``verdict.py`` is the sole owner), so its only role here is plumbing
+    ``cli.py``'s ``--warn-as-error`` flag alongside the composed driver. It
+    never changes the composed status or any rung; it only makes a ``warn``
+    STATUS project to a non-zero exit (orthogonal to ``--warn-only``, which
+    downgrades blocking rungs pre-compose).
+
+    ``actuation`` (Story 6.9, additive/defaulted ``None`` -- the frozen 6.1
+    ``ComplianceReport.actuation`` slot, populated not edited): ``cli.py``
+    passes the fix-PR actuator's ``Actuation.to_json_dict()`` payload (a
+    JSON-serializable dict) verbatim, or ``None`` when neither
+    ``--open-fix-prs``/``--fix-prs-dry-run`` is set. Stored pass-through into
+    ``ComplianceReport.actuation`` (models.py already serializes it verbatim);
+    it never touches any rung, the composed status, or the exit code."""
     findings = list(findings)
     rungs = list(rungs)
     resolution_depth = (
@@ -322,10 +403,15 @@ def assemble_report(
                 # self-contradictory ("the gate is active" + "nothing was
                 # assessed"). `not not_applicable` for AXIS_LICENSE is exactly
                 # "AXIS_LICENSE in assessed_by_axis" per the not_applicable
-                # expression above.
-                gating=(license_gating and not not_applicable)
-                if axis == AXIS_LICENSE
-                else False,
+                # expression above. Story 6.3: the currency axis mirrors this
+                # identically via currency_gating.
+                gating=(
+                    (license_gating and not not_applicable)
+                    if axis == AXIS_LICENSE
+                    else (currency_gating and not not_applicable)
+                    if axis == AXIS_CURRENCY
+                    else False
+                ),
             )
         )
     coverage = tuple(coverage)
@@ -371,7 +457,12 @@ def assemble_report(
         tool_version=__version__,
         status=status,
         status_driver=driver,
-        exit_code=exit_code_for(status, driver=driver, allow_empty=allow_empty),
+        exit_code=exit_code_for(
+            status,
+            driver=driver,
+            allow_empty=allow_empty,
+            warn_is_error=warn_as_error,
+        ),
         findings=tuple(findings),
         coverage=coverage,
         vuln_data=vuln_data,
@@ -380,6 +471,9 @@ def assemble_report(
         errors=tuple(errors),
         suppressions=tuple(suppressions),
         kev_data=kev_data,
+        epss_data=epss_data,
+        currency_data=currency_data,
+        actuation=actuation,
     )
 
 
@@ -412,13 +506,199 @@ def _single_line(text: str) -> str:
     return text.replace("\r\n", "\\n").replace("\n", "\\n").replace("\r", "\\n")
 
 
+_CANONICAL_KEY_RUNS = re.compile(r"[-_.]+")
+
+
+def _canonical_subject_key(name: str) -> str:
+    """PEP-503-canonicalize a ``manifest_locations`` key / lookup subject
+    (``Foo_Bar``/``foo.bar``/``foo-bar`` collapse to ``foo-bar`` — the same
+    normalization ``inventory``'s identity merge already applies). Review
+    finding (2026-07-24): a manifest may declare a non-normalized spelling
+    while osv-scanner echoes the normalized one — without collapsing both
+    sides, the clause silently misses though the location data is present.
+    Two spellings that collapse together ARE the same PyPI package, so the
+    resulting union is correct, never a cross-attribution."""
+    return _CANONICAL_KEY_RUNS.sub("-", name).lower()
+
+
+def _manifest_clause(
+    subject: str | None, manifest_locations: Mapping[str, tuple[str, ...]]
+) -> str:
+    """The ``" (declared in <manifest> [<section>]; ...)"`` clause a
+    remediation line appends when ``subject`` has a known declaration site
+    — empty string (never fabricated) when ``subject`` is ``None`` or has
+    no entry in ``manifest_locations`` (Story 5.1's own synthetic
+    ``indeterminate:coverage-floor:<axis>`` finding, whose ``subject`` is an
+    axis name, hits this path every time). Keys are matched via
+    ``_canonical_subject_key`` — ``cli.py``'s build site canonicalizes the
+    keys with the same helper."""
+    if subject is None:
+        return ""
+    locations = manifest_locations.get(_canonical_subject_key(subject))
+    if not locations:
+        return ""
+    return f" (declared in {'; '.join(locations)})"
+
+
+# Concrete next-action text per hygiene DEP-code (deptry's own semantics,
+# verified against the installed deptry 0.25.1 violation classes — mirrors
+# hygiene.py's own DEP005 docstring precedent of reading deptry's real
+# behavior rather than guessing): DEP001 = imported but not declared ->
+# declare it; DEP002 = declared but unused -> remove it; DEP003 = imported
+# but only a transitive dependency -> declare it directly; DEP004 = imported
+# in non-dev code but declared as a dev dependency -> move dependency
+# groups; DEP005 = declared but part of the standard library -> remove it,
+# redundant. Review finding (2026-07-24): deptry's ``module`` field — the
+# finding ``subject`` — is an IMPORT name for the imported-side codes
+# (DEP001/DEP003/DEP004: ``cv2``/``yaml``/``PIL``, not the distribution
+# ``opencv-python``/``pyyaml``/``pillow``), so those templates say "the
+# distribution that provides {subject}" rather than presenting the import
+# name itself as manifest-declarable; the declared-side codes
+# (DEP002/DEP005) already carry the declared name and stay direct.
+_DEP_CODE_ACTIONS: Mapping[str, str] = MappingProxyType(
+    {
+        "DEP001": (
+            "declare the distribution that provides {subject} in the "
+            "manifest -- {subject} is imported but not currently declared"
+        ),
+        "DEP002": (
+            "remove {subject} from the manifest -- it is declared but not "
+            "used in the codebase"
+        ),
+        "DEP003": (
+            "add the distribution that provides {subject} as a direct "
+            "dependency in the manifest -- it is currently only available "
+            "transitively"
+        ),
+        "DEP004": (
+            "move the distribution that provides {subject} out of the "
+            "dev-dependency group in the manifest -- it is imported in "
+            "non-dev code"
+        ),
+        "DEP005": (
+            "remove {subject} from the manifest -- it is part of the "
+            "Python standard library"
+        ),
+    }
+)
+
+
+def _dep_code_action(code: str, subject: str) -> str:
+    """The concrete next action for one hygiene DEP-code — an unrecognized
+    future code (never one of the five ``_DEP_CODE_ACTIONS`` keys) degrades
+    to a generic review action, never a crash."""
+    template = _DEP_CODE_ACTIONS.get(code)
+    if template is None:
+        return f"review the {code} finding for {subject} and update the manifest accordingly"
+    return template.format(subject=subject)
+
+
+def _remediation_line(
+    finding: dict[str, Any],
+    *,
+    manifest_locations: Mapping[str, tuple[str, ...]],
+    fixed_versions: Mapping[str, str],
+) -> str | None:
+    """One concrete remediation action per finding (AC1), templated per
+    id-family/axis — appended by ``render_text`` right after the finding's
+    own line. Never merely re-states ``finding['message']``: each family
+    names its own specific identity (advisory id + severity + fixed-version
+    for vuln, the DEP-code for hygiene, the SPDX expression for license, the
+    eol_date/lag for currency, the reason token for indeterminate:), the
+    declaring manifest(s)+section(s) when known (``_manifest_clause``), and
+    a concrete next action. Returns ``None`` only for a finding id matching
+    none of the five frozen id families (unreachable given ``Finding.
+    __post_init__``'s own grammar guard, but defensive per this module's
+    never-crash ethos — never a fabricated location, never a raise)."""
+    finding_id: str = finding["id"]
+    raw_subject = finding["subject"]
+    subject = raw_subject if raw_subject is not None else "the dependency"
+    manifest_clause = _manifest_clause(raw_subject, manifest_locations)
+
+    if finding_id.startswith("vuln:"):
+        _, advisory_id, _ = finding_id.split(":", 2)
+        fixed = fixed_versions.get(finding_id)
+        if fixed is not None:
+            action = f"upgrade {subject} to >= {fixed} to resolve {advisory_id}"
+        else:
+            # Review finding (2026-07-24): a missing fixed_versions entry
+            # means no fixed version was RECORDED in the advisory data we
+            # read (e.g. a versions:-only or GIT-ranges-only record) -- it
+            # does NOT prove no fix exists upstream. The line must not
+            # assert worldwide absence and steer a user toward a waiver
+            # when an upgrade may exist.
+            action = (
+                f"no fixed version is recorded in the advisory data for "
+                f"{advisory_id} affecting {subject} -- check the advisory "
+                "upstream, or consider a waiver or removing the dependency"
+            )
+        return f"{action}{manifest_clause}"
+
+    if finding_id.startswith("hygiene:"):
+        _, code, _ = finding_id.split(":", 2)
+        return f"{_dep_code_action(code, subject)}{manifest_clause}"
+
+    if finding_id.startswith("license:"):
+        license_info = finding.get("license") or {}
+        if license_info.get("verdict") == "denied":
+            expression = license_info.get("expression") or "unknown"
+            action = (
+                f"{subject}: license {expression} is denied by policy -- "
+                "replace the dependency or add a waiver"
+            )
+        else:
+            action = (
+                f"{subject}: license could not be resolved -- verify "
+                "manually or add a waiver"
+            )
+        return f"{action}{manifest_clause}"
+
+    if finding_id.startswith("currency:"):
+        reason = finding_id.split(":", 2)[1]  # eol | over-lag | unknown
+        currency_info = finding.get("currency") or {}
+        if reason == "eol":
+            eol_date = currency_info.get("eol_date") or "unknown"
+            action = (
+                f"{subject}: reached end-of-life ({eol_date}) -- upgrade to "
+                "a supported release"
+            )
+        elif reason == "over-lag":
+            lag = currency_info.get("lag")
+            latest = currency_info.get("latest") or "the latest release"
+            action = (
+                f"{subject}: {lag} release(s) behind {latest} -- upgrade "
+                "to close the gap"
+            )
+        else:
+            action = (
+                f"{subject}: currency could not be resolved -- verify "
+                "manually or add a waiver"
+            )
+        return f"{action}{manifest_clause}"
+
+    if finding_id.startswith("indeterminate:"):
+        reason = finding_id.split(":", 2)[1]
+        action = (
+            f"{subject}: investigate the {reason!r} condition and resolve "
+            "it, or add a waiver"
+        )
+        return f"{action}{manifest_clause}"
+
+    return None
+
+
 def render_text(
     report: ComplianceReport,
     *,
     applied_waivers: Sequence[WaiverNotice] = (),
     expired_waivers: Sequence[WaiverNotice] = (),
+    applied_baseline: Sequence[BaselineNotice] = (),
+    expired_baseline: Sequence[BaselineNotice] = (),
     warn_only: bool = False,
     warn_only_downgraded: int = 0,
+    actuation: object | None = None,
+    manifest_locations: Mapping[str, tuple[str, ...]] = MappingProxyType({}),
+    fixed_versions: Mapping[str, str] = MappingProxyType({}),
 ) -> str:
     """Render the report as a human-readable, explicitly NON-CONTRACT summary.
 
@@ -426,19 +706,30 @@ def render_text(
     shape ``render_json`` emits (see the module docstring) — never a second,
     independently-maintained sort. One verdict line (tool, status, exit
     code, finding count), a driver line when the status carries one, then
-    one line per finding (axis, severity tier, id, message) and one line
-    per error (kind, owner, message), both in ``to_json_dict()``'s sorted
-    order, then one line per ``applied_waivers`` notice (Story 3.2; id,
-    reason, authorized_by, expires_at) and one line per ``expired_waivers``
-    notice (Story 3.3; same four fields, ``[waiver-expired]`` marker,
-    non-"re-blocked" wording — see the module docstring), both in
-    caller-supplied order, then (Story 3.3) at most one graduate-to-
+    one line per finding (axis, severity tier, id, message) — immediately
+    followed by one remediation line (Story 5.1, AC1; ``      -> fix:
+    ...``, via the new private ``_remediation_line``, templated per
+    id-family/axis from ``manifest_locations``/``fixed_versions`` — see the
+    module docstring; ``None`` omits the line, never fabricates one) — and
+    one line per error (kind, owner, message; errors[] get NO remediation
+    line), both in ``to_json_dict()``'s sorted order, then one line per
+    ``applied_waivers`` notice (Story 3.2; id, reason, authorized_by,
+    expires_at) and one line per ``expired_waivers`` notice (Story 3.3;
+    same four fields, ``[waiver-expired]`` marker, non-"re-blocked" wording
+    — see the module docstring), then one line per ``applied_baseline``
+    notice (Story 6.8; id, reason, expires_at — no ``authorized_by``) and
+    one line per ``expired_baseline`` notice (same three fields,
+    ``[baseline-expired]`` marker, same non-"re-blocked" wording), all four
+    in caller-supplied order, then (Story 3.3) at most one graduate-to-
     enforcing nudge line when ``warn_only`` is set, the composed status is
-    ``warn``, and ``warn_only_downgraded > 0`` (see the module docstring for
-    why all three are required). Free-format lines: unlike ``render_json``'s
-    document, this output is never schema-validated. Every ``message``/
-    ``reason``/``authorized_by``/``expires_at`` is passed through
-    ``_single_line`` first — see its docstring."""
+    ``warn``, and ``warn_only_downgraded > 0`` (see the module docstring
+    for why all three are required), then (Story 6.9) one ``[actuation]``
+    line per fix-PR outcome (``<status> <action> <finding_id>[ ->
+    <pr_url>]``) when ``actuation`` is a non-``None`` payload dict.
+    Free-format lines: unlike ``render_json``'s document, this output is
+    never schema-validated. Every ``message``/``reason``/``authorized_by``/
+    ``expires_at``/remediation string is passed through ``_single_line``
+    first — see its docstring."""
     # to_json_dict()'s declared return type is dict[str, object] (every
     # nested value equally untyped) -- it is JSON-primitive data, not a
     # typed structure, so the cast is the honest boundary rather than
@@ -457,6 +748,13 @@ def render_text(
         tier = severity["tier"] if severity is not None else SeverityTier.NONE.value
         message = _single_line(finding["message"])
         lines.append(f"  [{finding['axis']}] {tier} {finding['id']} -- {message}")
+        remediation = _remediation_line(
+            finding,
+            manifest_locations=manifest_locations,
+            fixed_versions=fixed_versions,
+        )
+        if remediation is not None:
+            lines.append(f"      -> fix: {_single_line(remediation)}")
     for error in document["errors"]:
         message = _single_line(error["message"])
         lines.append(f"  [error:{error['kind']}] {error['owner']} -- {message}")
@@ -477,6 +775,39 @@ def render_text(
             f"authorized_by={authorized_by} expires_at={expires_at} -- "
             "expired, needs review/renewal"
         )
+    for baseline_notice in applied_baseline:
+        reason = _single_line(baseline_notice.reason)
+        expires_at = _single_line(baseline_notice.expires_at)
+        lines.append(
+            f"  [baseline] {baseline_notice.id} -- reason={reason} "
+            f"expires_at={expires_at}"
+        )
+    for baseline_notice in expired_baseline:
+        reason = _single_line(baseline_notice.reason)
+        expires_at = _single_line(baseline_notice.expires_at)
+        lines.append(
+            f"  [baseline-expired] {baseline_notice.id} -- reason={reason} "
+            f"expires_at={expires_at} -- expired, needs review/renewal"
+        )
+    # Story 6.9: the fix-PR actuator's outcomes, one terse line each, present
+    # only when --open-fix-prs/--fix-prs-dry-run ran (actuation is not None).
+    # Built from the same JSON-serializable payload the report already carries
+    # (already sorted by finding id); pr_url is appended only when present.
+    if isinstance(actuation, dict):
+        outcomes = actuation.get("outcomes")
+        if isinstance(outcomes, list):
+            for outcome in outcomes:
+                if not isinstance(outcome, dict):
+                    continue
+                line = (
+                    f"  [actuation] {outcome.get('status')} "
+                    f"{outcome.get('action')} "
+                    f"{_single_line(str(outcome.get('finding_id')))}"
+                )
+                pr_url = outcome.get("pr_url")
+                if pr_url:
+                    line += f" -> {_single_line(str(pr_url))}"
+                lines.append(line)
     if warn_only and status["value"] == "warn" and warn_only_downgraded > 0:
         finding_word = "finding" if warn_only_downgraded == 1 else "findings"
         lines.append(

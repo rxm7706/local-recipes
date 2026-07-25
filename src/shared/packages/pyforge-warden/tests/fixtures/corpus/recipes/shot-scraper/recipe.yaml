@@ -1,0 +1,83 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.10"
+
+package:
+  name: shot-scraper
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/s/shot-scraper/shot_scraper-${{ version }}.tar.gz
+  sha256: 571be6d721d1d3cbc47c703b1cd3314ed43457e2c3f5fa65fa217fdcdaf16679
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - uv-build
+  run:
+    - python >=${{ python_min }}
+    - click
+    - pyyaml
+    - pydantic
+    - playwright >=1.61.0
+    - click-default-group
+
+tests:
+  - python:
+      imports:
+        - shot_scraper
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://shot-scraper.datasette.io/
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: A CLI utility for taking screenshots of websites, recording video demos and scraping sites using JavaScript
+  description: |
+    A CLI utility for taking screenshots of websites, recording video demos and scraping sites using JavaScript
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: shot-scraper
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: shot-scraper
+  cfe-purls:
+    - pkg:conda/shot-scraper@${{ version }}?channel=conda-forge
+    - pkg:pypi/shot-scraper@${{ version }}
+  cfe-upstream-repo: https://shot-scraper.datasette.io/
+  cfe-upstream-homepage: https://shot-scraper.datasette.io/
+  cfe-import-names: [shot_scraper]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/shot-scraper-feedstock
+  cfe-forge-recipe-updates-needed: [version-bump-to-1.10, meta-yaml-to-recipe-yaml]
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-07-03T04:00:00Z
+  cfe-generated-by-version: 8.65.0
+  cfe-generated-at-datetime: 2026-07-03T04:00:00Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-07-03T04:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # 2026-07-03 punch-list full-gate pass (tracker issue -> local verification).
+####

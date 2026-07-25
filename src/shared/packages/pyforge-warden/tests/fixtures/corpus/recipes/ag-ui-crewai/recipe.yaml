@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: ag-ui-crewai
+  version: "0.2.0"
+
+package:
+  name: ${{ name | lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/ag_ui_crewai-${{ version }}.tar.gz
+  sha256: 090ce4d2b88689947510aa631c6d0177543ac0a79a94300ad7c0983d363f408b
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - ag-ui-protocol
+    - crewai
+    - fastapi
+    - uvicorn
+
+tests:
+  - python:
+      imports:
+        - ag_ui_crewai
+      pip_check: true
+      python_version:
+      - ${{ python_min }}.*
+      - "*"
+
+about:
+  homepage: https://pypi.org/project/ag-ui-crewai/
+  license: MIT
+  license_file: LICENSE
+  summary: Implementation of the AG-UI protocol for CrewAI.
+  repository: https://github.com/ag-ui-protocol/ag-ui/tree/main/integrations/crewai/python
+
+extra:
+  recipe-maintainers:
+    - rxm7706

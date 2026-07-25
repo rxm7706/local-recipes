@@ -1,0 +1,49 @@
+{% set version = "1.41.1" %}
+{% set python_min = "3.10" %}
+
+package:
+  name: opentelemetry-sdk
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/o/opentelemetry-sdk/opentelemetry_sdk-{{ version }}.tar.gz
+  sha256: 724b615e1215b5aeacda0abb8a6a8922c9a1853068948bd0bd225a56d0c792e6
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - hatchling
+    - pip
+  run:
+    - python >={{ python_min }}
+    - opentelemetry-api =={{ version }}
+    - opentelemetry-semantic-conventions ==0.62b1
+    - typing-extensions >=4.5.0
+
+test:
+  imports:
+    - opentelemetry.sdk
+    - opentelemetry.sdk.resources
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/open-telemetry/opentelemetry-python/tree/main/opentelemetry-sdk
+  summary: OpenTelemetry Python SDK
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+    - mariusvniekerk
+    - conda-forge/opentelemetry-api
+    - conda-forge/opentelemetry-semantic-conventions

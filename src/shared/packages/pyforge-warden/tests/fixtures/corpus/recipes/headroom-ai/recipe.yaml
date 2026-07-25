@@ -1,0 +1,132 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.31.0"
+
+package:
+  name: headroom-ai
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/h/headroom-ai/headroom_ai-${{ version }}.tar.gz
+  sha256: a13f9764be168e4d075fd80ff6ee5d47a9febe0152b82ad28bab0e949fcd9bd3
+
+build:
+  number: 0
+  script:
+    - cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
+    - python -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - headroom = headroom.cli:main
+
+requirements:
+  build:
+    - ${{ compiler("c") }}
+    - ${{ stdlib("c") }}
+    - ${{ compiler("rust") }}
+    - cargo-bundle-licenses
+  host:
+    - python
+    - maturin >=1.5,<2.0
+    - pip
+  run:
+    - python
+    - tiktoken >=0.5.0
+    - pydantic >=2.0.0
+    - if: match(python, "<3.14")
+      then:
+        - litellm >=1.86.2,<2.0
+    - click >=8.1.0
+    - rich >=13.0.0
+    - opentelemetry-api >=1.24.0
+    - ast-grep >=0.30.0
+    - if: match(python, "<3.11")
+      then:
+        - tomli >=2.0.0
+
+tests:
+  - python:
+      imports:
+        - headroom
+        - headroom._core
+      # ast-grep-cli is satisfied by the conda ast-grep binary package,
+      # which leaves no ast-grep-cli dist-info -> pip check cannot pass.
+      pip_check: false
+  - script:
+      - headroom --help
+
+about:
+  summary: The Context Optimization Layer for LLM Applications - Cut costs by 50-90%
+  description: |
+    Headroom compresses tool outputs, logs, files, and RAG chunks before
+    they reach the LLM — 60-95% fewer tokens, same answers. It ships as a
+    Python library (SmartCrusher, ContentRouter, CodeCompressor, CCR,
+    TOIN compressors with a Rust core), a transparent proxy, and an MCP
+    server.
+
+    This package provides the core library and CLI. Upstream optional
+    extras (proxy server, MCP, tree-sitter code compression, ML/Kompress,
+    memory/vector stacks, OCR, LangChain/Agno integrations) are not
+    included; install their dependencies separately as needed.
+  homepage: https://headroom-docs.vercel.app
+  repository: https://github.com/headroomlabs-ai/headroom
+  documentation: https://headroom-docs.vercel.app/docs
+  license: Apache-2.0
+  license_file:
+    - LICENSE
+    - NOTICE
+    - THIRDPARTY.yml
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: headroom-ai
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: headroom-ai
+  cfe-purls:
+    - pkg:conda/headroom-ai@${{ version }}?channel=conda-forge
+    - pkg:pypi/headroom-ai@${{ version }}
+  cfe-upstream-repo: https://github.com/headroomlabs-ai/headroom
+  cfe-upstream-homepage: https://headroom-docs.vercel.app
+  cfe-import-names: [headroom]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: compiled
+  cfe-pip-check: "false:ast-grep-cli-satisfied-by-conda-ast-grep-binary"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: "2026-07-12T16:05:00Z"
+  cfe-generated-by-version: 8.76.0
+  cfe-generated-at-datetime: "2026-07-12T16:05:00Z"
+  cfe-local-build-status: success
+  cfe-local-build-datetime: "2026-07-12T15:43:41Z"
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # Packaged 2026-07-12 (user request: token-usage reduction tooling,
+#    # alongside caveman). PyPI name headroom-ai (bare "headroom" on PyPI
+#    # is an unrelated CLI assistant). GitHub org renamed
+#    # chopratejas/headroom -> headroomlabs-ai/headroom; PyPI project_urls
+#    # still point at the old org (redirects).
+# build:
+#    # maturin/pyo3 (rust ext headroom._core, abi3 upstream wheels) ->
+#    # compiled per-python conda build; rust toolchain requires
+#    # compiler(c) + stdlib(c) per the compiled-recipe constraint.
+# run:
+#    # ast-grep-cli (PyPI binary-wheel distribution of the ast-grep CLI)
+#    # is not on conda-forge; the conda ast-grep package ships the same
+#    # binary, so it substitutes — but leaves no ast-grep-cli dist-info,
+#    # hence pip_check stays off (reason-coded in cfe-pip-check).
+#    # litellm gated to python <3.14 mirroring the upstream env marker
+#    # (lazily imported; core paths never touch it).
+#    # Only core deps are packaged; upstream [proxy]/[ml]/[code]/[memory]
+#    # etc. extras are deliberately omitted (Simplicity First).
+####

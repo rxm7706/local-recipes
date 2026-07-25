@@ -1,0 +1,88 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: collate-sqllineage
+  version: "2.1.4"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/collate_sqllineage-${{ version }}.tar.gz
+  sha256: 923327e2c2e3220c7359dbecc729243c73541ec55fc9c701e04d26b0a3ab8e77
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - sqllineage = collate_sqllineage.cli:main
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }},<4.0
+    - sqlparse ==0.5.4
+    - networkx >=2.4
+    - collate-sqlfluff >=3.3,<4.dev0
+    - sqlglot ==29.0.1
+
+tests:
+  - python:
+      imports:
+        - collate_sqllineage
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+  - requirements:
+      run:
+        - python ${{ python_min }}.*
+        - pip
+    script:
+      - sqllineage --help
+
+about:
+  homepage: https://pypi.org/project/collate-sqllineage/
+  license: MIT
+  license_file: LICENSE
+  summary: Collate SQL Lineage for Analysis Tool powered by Python and sqlfluff based on sqllineage.
+  repository: https://github.com/open-metadata/openmetadata-sqllineage
+  documentation: https://github.com/open-metadata/openmetadata-sqllineage#readme
+  description: |
+    collate-sqllineage is the OpenMetadata/Collate community fork of sqllineage,
+    a SQL lineage analysis tool powered by Python. Given a SQL command it reports
+    the source and target tables (and column-level lineage) without exposing the
+    underlying parser tokens. The fork swaps in sqlfluff as the parsing backend
+    (in addition to sqlparse) and is the lineage engine consumed by OpenMetadata.
+    The original upstream project lives at https://github.com/reata/sqllineage
+    with documentation at https://sqllineage.readthedocs.io.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: collate-sqllineage
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: collate-sqllineage
+  cfe-purls:
+    - pkg:conda/collate-sqllineage@${{ version }}?channel=conda-forge
+    - pkg:pypi/collate-sqllineage@${{ version }}
+  cfe-upstream-repo: https://github.com/open-metadata/openmetadata-sqllineage
+  cfe-upstream-homepage: https://open-metadata.org
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/collate-sqllineage-feedstock
+  cfe-forge-recipe-updates-needed: [version-bump-to-2.1.4]
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-07-03T22:07:06Z
+  cfe-generated-by-version: 8.30.1
+  cfe-generated-at-datetime: 2026-06-19T13:36:19Z
+####

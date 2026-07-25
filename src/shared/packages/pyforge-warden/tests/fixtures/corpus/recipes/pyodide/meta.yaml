@@ -1,0 +1,40 @@
+{% set name = "pyodide" %}
+{% set version = "0.29.3" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://github.com/pyodide/pyodide/archive/{{ version }}.tar.gz
+  sha256: ead5016755d8cba7922d350d40c77d6197e5e7377f9c7b1299766f500ab99076
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python
+    - pip
+  run:
+    - python
+
+test:
+  imports:
+    - test_buffer
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  license: MPL-2.0 AND MIT
+  license_file:
+    - LICENSE
+    - src/js/vendor/stackframe/LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

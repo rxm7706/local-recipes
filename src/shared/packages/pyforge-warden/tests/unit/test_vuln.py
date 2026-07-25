@@ -32,6 +32,7 @@ from pyforge.warden.inventory import PypiIdentity
 from pyforge.warden.models import (
     AXIS_VULNERABILITY,
     Ecosystem,
+    Epss,
     ErrorKind,
     Finding,
     Severity,
@@ -52,6 +53,8 @@ from pyforge.warden.vuln import (
     _synthesize_requirements,
     cvss_v31_base_score,
     db_zip_path,
+    epss_match,
+    epss_stale_finding,
     is_db_stale,
     kev_match,
     kev_stale_finding,
@@ -689,6 +692,344 @@ def test_parse_osv_output_deduplicates_by_finding_id():
     assert len(parse.findings) == 1
 
 
+# --- Story 5.1 (AC1): OsvParse.fixed_versions --------------------------------
+
+
+def _fixture_0003_affected() -> list:
+    """The ``affected[]`` block from the real Story 5.1 osv-db fixture
+    record (``tests/fixtures/osv-db/pypi/PDOS-FIXTURE-0003.json``) — read
+    from disk (never hand-duplicated, mirrors ``_fixture_cvss_v3_vector``'s
+    own never-hand-duplicate-a-literal convention below) so this parse-level
+    test proves the extraction logic against the EXACT shape the real
+    fixture (and, by construction, the ambient real-osv-scanner-consulted
+    DB every test session builds) carries."""
+    record = json.loads((OSV_RECORDS_DIR / "PDOS-FIXTURE-0003.json").read_text())
+    return record["affected"]
+
+
+def test_parse_osv_output_extracts_the_fixed_version_from_ranges_events():
+    raw = _doc(
+        _package(
+            "pdos-vuln-fixture-fixed",
+            "1.0.0",
+            ids=["PDOS-FIXTURE-0003"],
+            max_severity="5.4",
+            vulnerabilities=[
+                {"id": "PDOS-FIXTURE-0003", "affected": _fixture_0003_affected()}
+            ],
+        )
+    )
+    parse = parse_osv_output(raw)
+    (finding,) = parse.findings
+    assert parse.fixed_versions[finding.id] == "2.0.0"
+
+
+def test_parse_osv_output_no_fixed_version_when_only_the_versions_form():
+    """Today's simpler ``versions:`` form (no ranges/events at all — e.g.
+    PDOS-FIXTURE-0001/0002) yields no ``fixed_versions`` entry: absence,
+    never a crash or a guessed value."""
+    raw = _doc(
+        _package(
+            "foo",
+            "1.0.0",
+            ids=["GHSA-x"],
+            max_severity="5.0",
+            vulnerabilities=[
+                {
+                    "id": "GHSA-x",
+                    "affected": [
+                        {
+                            "package": {"ecosystem": "PyPI", "name": "foo"},
+                            "versions": ["1.0.0"],
+                        }
+                    ],
+                }
+            ],
+        )
+    )
+    parse = parse_osv_output(raw)
+    (finding,) = parse.findings
+    assert finding.id not in parse.fixed_versions
+
+
+def test_parse_osv_output_no_fixed_version_when_no_vulnerability_record():
+    """A group id with no matching vulnerabilities[] record (an alias with
+    no sibling raw record — mirrors test_parse_osv_output_attributes_
+    group_max_severity_to_every_aliased_id) has no fixed version to
+    extract."""
+    raw = _doc(
+        _package("foo", "1.0", ids=["GHSA-primary", "CVE-alias"], max_severity="5.0")
+    )
+    parse = parse_osv_output(raw)
+    assert parse.fixed_versions == {}
+
+
+_MATCHING_PACKAGE = {"ecosystem": "PyPI", "name": "foo"}
+
+
+@pytest.mark.parametrize(
+    "affected",
+    [
+        [],
+        "not-a-list",
+        [{"package": _MATCHING_PACKAGE, "ranges": "not-a-list"}],
+        [
+            {
+                "package": _MATCHING_PACKAGE,
+                "ranges": [{"type": "ECOSYSTEM", "events": "not-a-list"}],
+            }
+        ],
+        [
+            {
+                "package": _MATCHING_PACKAGE,
+                "ranges": [
+                    {"type": "ECOSYSTEM", "events": [{"introduced": "1.0.0"}]}
+                ],
+            }
+        ],
+        [
+            {
+                "package": _MATCHING_PACKAGE,
+                "ranges": [{"type": "ECOSYSTEM", "events": [{"fixed": ""}]}],
+            }
+        ],
+        [
+            {
+                "package": _MATCHING_PACKAGE,
+                "ranges": [{"type": "ECOSYSTEM", "events": [{"fixed": 123}]}],
+            }
+        ],
+        [{"package": _MATCHING_PACKAGE, "ranges": [123, None]}],
+        [
+            {
+                "package": _MATCHING_PACKAGE,
+                "ranges": [{"events": [{"introduced": "0"}, {"fixed": "1.0.0"}]}],
+            }
+        ],
+        [
+            {
+                "package": _MATCHING_PACKAGE,
+                "ranges": [
+                    {
+                        "type": "GIT",
+                        "repo": "https://example.invalid/foo.git",
+                        "events": [
+                            {"introduced": "0"},
+                            {"fixed": "0123456789abcdef0123456789abcdef01234567"},
+                        ],
+                    }
+                ],
+            }
+        ],
+        "totally-wrong-type",
+    ],
+    ids=[
+        "empty-affected",
+        "affected-not-a-list",
+        "ranges-not-a-list",
+        "events-not-a-list",
+        "no-fixed-key",
+        "empty-string-fixed",
+        "non-string-fixed",
+        "malformed-range-entries",
+        "missing-range-type",
+        "git-only-range",
+        "affected-wrong-type",
+    ],
+)
+def test_parse_osv_output_malformed_fixed_shapes_yield_no_fixed_version(affected):
+    raw = _doc(
+        _package(
+            "foo",
+            "1.0.0",
+            ids=["GHSA-x"],
+            max_severity="5.0",
+            vulnerabilities=[{"id": "GHSA-x", "affected": affected}],
+        )
+    )
+    parse = parse_osv_output(raw)
+    (finding,) = parse.findings
+    assert finding.id not in parse.fixed_versions
+
+
+def test_parse_osv_output_first_well_formed_fixed_event_wins():
+    """Multiple ranges/events: the FIRST well-formed 'fixed' event found
+    wins (decision record, Design Notes) — never a full semver-range
+    resolver correlating against the scanned package's own version."""
+    raw = _doc(
+        _package(
+            "foo",
+            "1.0.0",
+            ids=["GHSA-x"],
+            max_severity="5.0",
+            vulnerabilities=[
+                {
+                    "id": "GHSA-x",
+                    "affected": [
+                        {
+                            "package": _MATCHING_PACKAGE,
+                            "ranges": [
+                                {
+                                    "type": "ECOSYSTEM",
+                                    "events": [
+                                        {"introduced": "0"},
+                                        {"fixed": "1.5.0"},
+                                    ],
+                                },
+                                {
+                                    "type": "ECOSYSTEM",
+                                    "events": [
+                                        {"introduced": "0"},
+                                        {"fixed": "9.9.9"},
+                                    ],
+                                },
+                            ]
+                        }
+                    ],
+                }
+            ],
+        )
+    )
+    parse = parse_osv_output(raw)
+    (finding,) = parse.findings
+    assert parse.fixed_versions[finding.id] == "1.5.0"
+
+
+def test_parse_osv_output_skips_git_range_commit_hashes_for_fixed_version():
+    """Review finding (2026-07-24): a GIT-typed range's ``fixed`` event is a
+    commit hash, not a version (PYSEC records routinely list the GIT range
+    FIRST) — the extraction must fall through to the ECOSYSTEM range's real
+    version rather than advising "upgrade to >= <40-hex sha>"."""
+    raw = _doc(
+        _package(
+            "foo",
+            "1.0.0",
+            ids=["PYSEC-x"],
+            max_severity="5.0",
+            vulnerabilities=[
+                {
+                    "id": "PYSEC-x",
+                    "affected": [
+                        {
+                            "package": _MATCHING_PACKAGE,
+                            "ranges": [
+                                {
+                                    "type": "GIT",
+                                    "repo": "https://example.invalid/foo.git",
+                                    "events": [
+                                        {"introduced": "0"},
+                                        {
+                                            "fixed": (
+                                                "0123456789abcdef0123456789"
+                                                "abcdef01234567"
+                                            )
+                                        },
+                                    ],
+                                },
+                                {
+                                    "type": "ECOSYSTEM",
+                                    "events": [
+                                        {"introduced": "0"},
+                                        {"fixed": "2.4.0"},
+                                    ],
+                                },
+                            ],
+                        }
+                    ],
+                }
+            ],
+        )
+    )
+    parse = parse_osv_output(raw)
+    (finding,) = parse.findings
+    assert parse.fixed_versions[finding.id] == "2.4.0"
+
+
+def test_parse_osv_output_ignores_fixed_version_from_an_unrelated_affected_package():
+    """Review finding (2026-07-24): a monorepo-style advisory can list
+    MULTIPLE affected packages under one id. A ``fixed`` event that belongs
+    to a DIFFERENT package (name mismatch) must never be attributed to the
+    package this Finding is actually about."""
+    raw = _doc(
+        _package(
+            "foo",
+            "1.0.0",
+            ids=["GHSA-x"],
+            max_severity="5.0",
+            vulnerabilities=[
+                {
+                    "id": "GHSA-x",
+                    "affected": [
+                        {
+                            "package": {"ecosystem": "PyPI", "name": "some-other-pkg"},
+                            "ranges": [
+                                {
+                                    "type": "ECOSYSTEM",
+                                    "events": [
+                                        {"introduced": "0"},
+                                        {"fixed": "3.0.0"},
+                                    ],
+                                }
+                            ],
+                        }
+                    ],
+                }
+            ],
+        )
+    )
+    parse = parse_osv_output(raw)
+    (finding,) = parse.findings
+    assert finding.id not in parse.fixed_versions
+
+
+def test_parse_osv_output_matches_fixed_version_by_ecosystem_too():
+    """A same-named package in a DIFFERENT ecosystem's ``affected[]`` entry
+    (e.g. an npm package sharing a PyPI package's name) must not leak its
+    fixed version either — name alone is not a sufficient match."""
+    raw = _doc(
+        _package(
+            "foo",
+            "1.0.0",
+            ids=["GHSA-x"],
+            max_severity="5.0",
+            vulnerabilities=[
+                {
+                    "id": "GHSA-x",
+                    "affected": [
+                        {
+                            "package": {"ecosystem": "npm", "name": "foo"},
+                            "ranges": [
+                                {
+                                    "type": "ECOSYSTEM",
+                                    "events": [
+                                        {"introduced": "0"},
+                                        {"fixed": "3.0.0"},
+                                    ],
+                                }
+                            ],
+                        },
+                        {
+                            "package": _MATCHING_PACKAGE,
+                            "ranges": [
+                                {
+                                    "type": "ECOSYSTEM",
+                                    "events": [
+                                        {"introduced": "0"},
+                                        {"fixed": "2.0.0"},
+                                    ],
+                                }
+                            ],
+                        },
+                    ],
+                }
+            ],
+        )
+    )
+    parse = parse_osv_output(raw)
+    (finding,) = parse.findings
+    assert parse.fixed_versions[finding.id] == "2.0.0"
+
+
 # --- Story 1.6: the default vuln-severity policy table -----------------------
 
 
@@ -949,6 +1290,105 @@ def test_kev_stale_finding_stale():
     assert finding.id == "indeterminate:kev-data-stale:kev-feed"
     assert finding.axis == AXIS_VULNERABILITY
     assert finding.subject == "kev-feed"
+    assert finding.severity is None
+
+
+# --- Story 6.7 (--min-epss): vuln_rung's min_epss param -----------------------
+
+
+def _epss_finding(
+    *, epss: Epss | None, tier: SeverityTier = SeverityTier.MEDIUM
+) -> Finding:
+    return Finding(
+        id="vuln:PDOS-KEV-FIXTURE-0001:pdos-kev-fixture@1.0.0",
+        axis=AXIS_VULNERABILITY,
+        message="pdos-kev-fixture: PDOS-KEV-FIXTURE-0001",
+        subject="pdos-kev-fixture",
+        severity=Severity(tier=tier, raw=None),
+        epss=epss,
+    )
+
+
+def test_vuln_rung_min_epss_forces_policy_violation_at_the_threshold():
+    """AC: a score exactly AT the threshold escalates (inclusive, not
+    strictly-above)."""
+    finding = _epss_finding(epss=Epss(score=0.5, percentile=0.9), tier=SeverityTier.MEDIUM)
+    status, driver = vuln_rung(finding, min_epss=0.5)
+    assert status is Status.POLICY_VIOLATION
+    assert driver == StatusDriver(axis=AXIS_VULNERABILITY, finding_id=finding.id)
+
+
+def test_vuln_rung_min_epss_forces_policy_violation_above_the_threshold():
+    finding = _epss_finding(epss=Epss(score=0.7, percentile=0.9), tier=SeverityTier.MEDIUM)
+    status, _ = vuln_rung(finding, min_epss=0.5)
+    assert status is Status.POLICY_VIOLATION
+
+
+def test_vuln_rung_min_epss_below_threshold_leaves_cvss_only_gating():
+    finding = _epss_finding(epss=Epss(score=0.2, percentile=0.3), tier=SeverityTier.MEDIUM)
+    status, _ = vuln_rung(finding, min_epss=0.5)
+    assert status is Status.WARN
+
+
+def test_vuln_rung_min_epss_never_downgrades_an_already_critical_status():
+    finding = _epss_finding(
+        epss=Epss(score=0.7, percentile=0.9), tier=SeverityTier.CRITICAL
+    )
+    status, _ = vuln_rung(finding, min_epss=0.5)
+    assert status is Status.POLICY_VIOLATION
+
+
+def test_vuln_rung_min_epss_never_fires_when_epss_is_none():
+    finding = _epss_finding(epss=None, tier=SeverityTier.MEDIUM)
+    status, _ = vuln_rung(finding, min_epss=0.0)
+    assert status is Status.WARN
+
+
+def test_vuln_rung_default_min_epss_is_none():
+    """Every pre-6.7 direct caller (no min_epss kwarg at all) is unaffected:
+    a high-scoring finding does NOT force policy-violation unless the
+    caller explicitly opts in."""
+    finding = _epss_finding(epss=Epss(score=0.99, percentile=0.99), tier=SeverityTier.LOW)
+    status, _ = vuln_rung(finding)
+    assert status is Status.WARN
+
+
+def test_epss_match_finds_the_advisory_id_itself():
+    scores = {"PDOS-KEV-FIXTURE-0001": (0.7, 0.9)}
+    assert epss_match(("PDOS-KEV-FIXTURE-0001", "CVE-1970-00001"), scores) == (0.7, 0.9)
+
+
+def test_epss_match_finds_an_alias():
+    scores = {"CVE-1970-00001": (0.7, 0.9)}
+    assert epss_match(("PDOS-KEV-FIXTURE-0001", "CVE-1970-00001"), scores) == (0.7, 0.9)
+
+
+def test_epss_match_no_match_is_none():
+    scores = {"CVE-9999-99999": (0.7, 0.9)}
+    assert epss_match(("PDOS-KEV-FIXTURE-0001", "CVE-1970-00001"), scores) is None
+
+
+def test_epss_match_empty_candidates_is_none():
+    assert epss_match((), {"CVE-1970-00001": (0.7, 0.9)}) is None
+
+
+def test_epss_match_empty_scores_is_none():
+    assert epss_match(("CVE-1970-00001",), {}) is None
+
+
+def test_epss_stale_finding_unavailable():
+    finding = epss_stale_finding(unavailable=True)
+    assert finding.id == "indeterminate:epss-data-unavailable:epss-feed"
+    assert finding.axis == AXIS_VULNERABILITY
+    assert finding.subject == "epss-feed"
+    assert finding.severity is None
+
+
+def test_epss_stale_finding_stale():
+    finding = epss_stale_finding(unavailable=False)
+    assert finding.id == "indeterminate:epss-data-stale:epss-feed"
+    assert finding.axis == AXIS_VULNERABILITY
+    assert finding.subject == "epss-feed"
     assert finding.severity is None
 
 

@@ -1,0 +1,46 @@
+{% set name = "wagtailmedia" %}
+{% set version = "0.17.2" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/wagtailmedia-{{ version }}.tar.gz
+  sha256: 4457e267fc53d8db4c9eb9a48d27f4b47b0823a9f7d0820f2dd98f1ba5d58600
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - flit-core >=3.2,<4
+    - pip
+  run:
+    - django-taggit
+    - djangorestframework
+    - python >={{ python_min }}
+    - wagtail >=6.3
+    - django >=4.2
+
+test:
+  imports:
+    - wagtailmedia
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/torchbox/wagtailmedia
+  summary: A Wagtail module for audio and video files.
+  license: BSD-3-Clause
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

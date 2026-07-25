@@ -1,0 +1,44 @@
+{% set name = "clickclick" %}
+{% set version = "1.2.2" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/clickclick-{{ version }}.tar.gz
+  sha256: 4a890aaa9c3990cfabd446294eb34e3dc89701101ac7b41c1bff85fc210f6d23
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python
+    - six
+    - flake8
+    - pip
+  run:
+    - python
+    - click >=4.0
+    - pyyaml >=3.11
+
+test:
+  imports:
+    - clickclick
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/zalando/python-clickclick
+  summary: Click utility functions
+  license: NOASSERTION
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

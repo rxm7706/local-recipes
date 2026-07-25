@@ -1,0 +1,40 @@
+{% set name = "django-six" %}
+{% set version = "1.0.5" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/django-six-{{ version }}.tar.gz
+  sha256: 9ad505d101ac3ce5a59d22693fcf77b4b19764020e0c7edfe939d220cafbf3a9
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - pip
+  run:
+    - python >=3.8
+
+test:
+  imports:
+    - django_six
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/Brightcells/django-six
+  summary: Django-six —— Django Compatibility Library
+  license: UNLICENSE
+  license_file: Unlicense
+
+extra:
+  recipe-maintainers:
+    - rxm7706

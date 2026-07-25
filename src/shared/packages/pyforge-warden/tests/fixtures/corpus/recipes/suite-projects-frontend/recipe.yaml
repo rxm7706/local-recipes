@@ -1,0 +1,57 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+# ⚠️ LOCAL-ONLY RECIPE — NOT FOR conda-forge/staged-recipes SUBMISSION
+# Reason: suitenumerique/projects is a Next.js / React frontend application,
+# not a library. The npm package is declared `"private": true` (cannot be
+# published to npm). This conda recipe ships the SOURCE TREE under
+# ${PREFIX}/share/suite-projects/. Running the app additionally requires:
+#   - npm install  (pulls dev dependencies)
+#   - npm run build  (next build / vite build)
+#   - a backend service (the corresponding suite-projects Django app, if any)
+# conda-forge declines frontend-app recipes as a matter of policy.
+
+context:
+  version: "0.0.0"
+  commit: "5aa2996f64e736665068512df08c07cac8bf392e"
+
+package:
+  name: suite-projects
+  version: ${{ version }}
+
+source:
+  - url: https://github.com/suitenumerique/projects/archive/${{ commit }}.tar.gz
+    sha256: 1be13c1bf4e985f9345cc951a4688e876f109032deb2062f82adf88400ad87ac
+
+build:
+  number: 0
+  noarch: generic
+  script:
+    - if: unix
+      then:
+        - mkdir -p "${{ PREFIX }}/share/suite-projects"
+        - cp -R . "${{ PREFIX }}/share/suite-projects/"
+
+requirements:
+  run:
+    - nodejs >=20
+
+tests:
+  - package_contents:
+      files:
+        - share/suite-projects/package.json
+
+about:
+  homepage: https://github.com/suitenumerique/projects
+  repository: https://github.com/suitenumerique/projects
+  summary: Projects app for La Suite territoriale (frontend source)
+  description: |
+    Frontend source tree for suitenumerique/projects (Next.js app). Shipped
+    as a source-only package under ${PREFIX}/share/suite-projects/. To run:
+    cd into that directory, then `npm install && npm run build`.
+  license: AGPL-3.0-only
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

@@ -17,17 +17,25 @@ from __future__ import annotations
 
 import json
 
+import pytest
+
 from pyforge.warden.interfaces import EngineResult
 from pyforge.warden.inventory import ResolvedInventory
 from pyforge.warden.models import (
+    AXIS_CURRENCY,
     AXIS_HYGIENE,
     AXIS_INGESTION,
+    AXIS_LICENSE,
     AXIS_VULNERABILITY,
     AxisCoverage,
     ComplianceReport,
+    CurrencyInfo,
+    CurrencyVerdict,
     ErrorKind,
     ErrorRecord,
     Finding,
+    LicenseInfo,
+    LicenseVerdict,
     Severity,
     SeverityTier,
     Status,
@@ -35,6 +43,7 @@ from pyforge.warden.models import (
     VulnData,
 )
 from pyforge.warden.report import assemble_report, render_json, render_text
+from pyforge.warden.waiver import BaselineNotice
 
 _NO_VULN_DATA = VulnData(source=None, snapshot_at=None, max_age_ok=None)
 
@@ -368,12 +377,18 @@ def test_render_text_findings_render_in_to_json_dict_sorted_order_with_driver():
         findings=(finding_zzz, finding_aaa),
         inventory_count=2,
     )
+    # Story 5.1 (AC1): each finding line is now followed by a remediation
+    # line (no manifest_locations supplied, so no manifest clause).
     assert render_text(report) == "\n".join(
         [
             "warden: status=warn exit_code=0 findings=2",
             "  driver: axis=hygiene id=hygiene:DEP002:aaa",
             "  [hygiene] high hygiene:DEP002:aaa -- aaa unused",
+            "      -> fix: remove aaa from the manifest -- it is declared "
+            "but not used in the codebase",
             "  [hygiene] none hygiene:DEP002:zzz -- zzz unused",
+            "      -> fix: remove zzz from the manifest -- it is declared "
+            "but not used in the codebase",
         ]
     )
 
@@ -441,15 +456,517 @@ def test_render_text_neutralizes_embedded_newlines_in_finding_and_error_messages
     )
     rendered = render_text(report)
     lines = rendered.splitlines()
-    # One line per finding + one per error: the embedded \n/\r\n never grew
-    # the line count, and no fabricated "  driver: ..." line appears.
-    assert len(lines) == 4
+    # One line per finding (+ its Story 5.1 remediation line) + one per
+    # error: the embedded \n/\r\n never grew the line count beyond that,
+    # and no fabricated "  driver: ..." line appears.
+    assert len(lines) == 5
     assert lines[2] == (
         "  [hygiene] none hygiene:DEP002:zzz -- zzz unused\\n  driver: "
         "axis=vulnerability id=vuln:FAKE-0001:evil@1.0"
     )
     assert lines[3] == (
+        "      -> fix: remove zzz from the manifest -- it is declared but "
+        "not used in the codebase"
+    )
+    assert lines[4] == (
         "  [error:internal-error] discovery -- discovery failed\\nwith a "
         "fabricated second line"
     )
     assert sum(1 for line in lines if line.startswith("  driver: ")) == 1
+
+
+# --- render_text: [baseline]/[baseline-expired] lines (Story 6.8) --------
+
+
+_BASELINE_DRIVER = StatusDriver(axis=AXIS_HYGIENE, finding_id="hygiene:DEP002:requests")
+
+
+def test_render_text_applied_baseline_notice_renders_a_baseline_line():
+    report = _report(
+        status=Status.BYPASSED, status_driver=_BASELINE_DRIVER, exit_code=0
+    )
+    notice = BaselineNotice(
+        id="hygiene:DEP002:requests",
+        reason="grandfathered at adoption",
+        expires_at="2026-12-31T00:00:00+00:00",
+    )
+    rendered = render_text(report, applied_baseline=(notice,))
+    assert rendered == "\n".join(
+        [
+            "warden: status=bypassed exit_code=0 findings=0",
+            "  driver: axis=hygiene id=hygiene:DEP002:requests",
+            "  [baseline] hygiene:DEP002:requests -- reason=grandfathered "
+            "at adoption expires_at=2026-12-31T00:00:00+00:00",
+        ]
+    )
+
+
+def test_render_text_expired_baseline_notice_renders_a_baseline_expired_line():
+    report = _report(status=Status.WARN, status_driver=_BASELINE_DRIVER, exit_code=0)
+    notice = BaselineNotice(
+        id="hygiene:DEP002:requests",
+        reason="grandfathered at adoption",
+        expires_at="2000-01-01T00:00:00+00:00",
+    )
+    rendered = render_text(report, expired_baseline=(notice,))
+    assert rendered == "\n".join(
+        [
+            "warden: status=warn exit_code=0 findings=0",
+            "  driver: axis=hygiene id=hygiene:DEP002:requests",
+            "  [baseline-expired] hygiene:DEP002:requests -- reason="
+            "grandfathered at adoption "
+            "expires_at=2000-01-01T00:00:00+00:00 -- expired, needs "
+            "review/renewal",
+        ]
+    )
+
+
+def test_render_text_baseline_lines_never_carry_an_authorized_by_field():
+    """A baseline notice carries no authorized_by at all (bulk-accepted,
+    not individually signed) -- the rendered line must never claim one."""
+    report = _report(
+        status=Status.BYPASSED, status_driver=_BASELINE_DRIVER, exit_code=0
+    )
+    notice = BaselineNotice(
+        id="hygiene:DEP002:requests",
+        reason="x",
+        expires_at="2026-12-31T00:00:00+00:00",
+    )
+    rendered = render_text(report, applied_baseline=(notice,))
+    assert "authorized_by" not in rendered
+
+
+def test_render_text_baseline_notices_pass_through_single_line_sanitization():
+    """Mirrors the waiver-side embedded-newline forgery guard (Story 3.3
+    review finding) -- an embedded newline in reason/expires_at must never
+    fabricate an extra report line."""
+    report = _report(
+        status=Status.BYPASSED, status_driver=_BASELINE_DRIVER, exit_code=0
+    )
+    notice = BaselineNotice(
+        id="hygiene:DEP002:requests",
+        reason="tracked\n  [forged] fake extra line",
+        expires_at="2026-12-31T00:00:00+00:00",
+    )
+    rendered = render_text(report, applied_baseline=(notice,))
+    lines = rendered.splitlines()
+    assert len(lines) == 3
+    assert not any(line.strip() == "[forged] fake extra line" for line in lines)
+    assert "reason=tracked\\n  [forged] fake extra line" in rendered
+
+
+def test_render_text_default_omitted_baseline_params_is_byte_identical_to_pre_6_8():
+    """Regression guarantee: omitting applied_baseline/expired_baseline
+    entirely reproduces byte-identical output to the pre-6.8 signature."""
+    report = _report(status=Status.CLEAN, status_driver=None, exit_code=0)
+    assert render_text(report) == render_text(
+        report, applied_baseline=(), expired_baseline=()
+    )
+
+
+# --- Story 5.1 (AC1): remediation lines --------------------------------------
+
+
+def _vuln_finding(
+    *,
+    subject: str = "requests",
+    version: str = "2.25.0",
+    advisory: str = "GHSA-xxxx-yyyy",
+    tier: SeverityTier = SeverityTier.CRITICAL,
+) -> Finding:
+    return Finding(
+        id=f"vuln:{advisory}:{subject}@{version}",
+        axis=AXIS_VULNERABILITY,
+        message=f"{subject}: {advisory} (severity {tier.value})",
+        subject=subject,
+        severity=Severity(tier=tier, raw=None),
+    )
+
+
+def test_remediation_line_vuln_with_known_fixed_version():
+    """AC1's golden example: package, advisory id, fixed-version, and the
+    declaring manifest+section, never merely re-stating finding.message."""
+    finding = _vuln_finding()
+    report = _report(
+        status=Status.POLICY_VIOLATION,
+        status_driver=StatusDriver(axis=AXIS_VULNERABILITY, finding_id=finding.id),
+        exit_code=1,
+        findings=(finding,),
+    )
+    rendered = render_text(
+        report,
+        manifest_locations={"requests": ("pyproject.toml [project.dependencies]",)},
+        fixed_versions={finding.id: "2.31.0"},
+    )
+    assert rendered.splitlines()[-1] == (
+        "      -> fix: upgrade requests to >= 2.31.0 to resolve "
+        "GHSA-xxxx-yyyy (declared in pyproject.toml [project.dependencies])"
+    )
+
+
+def test_remediation_line_vuln_without_a_fixed_version():
+    """No fixed_versions entry for this finding id (osv record carried only
+    'versions:', no ranges/events) -- the line states no fix is RECORDED in
+    the advisory data (never "not published": extraction can miss a fix
+    that exists upstream, e.g. a GIT-ranges-only record -- review finding
+    2026-07-24) and suggests checking upstream or a waiver/removal, never a
+    guessed version."""
+    finding = _vuln_finding()
+    report = _report(
+        status=Status.POLICY_VIOLATION,
+        status_driver=StatusDriver(axis=AXIS_VULNERABILITY, finding_id=finding.id),
+        exit_code=1,
+        findings=(finding,),
+    )
+    rendered = render_text(report)
+    assert rendered.splitlines()[-1] == (
+        "      -> fix: no fixed version is recorded in the advisory data "
+        "for GHSA-xxxx-yyyy affecting requests -- check the advisory "
+        "upstream, or consider a waiver or removing the dependency"
+    )
+
+
+@pytest.mark.parametrize(
+    "code,expected_action",
+    [
+        (
+            "DEP001",
+            "declare the distribution that provides flask in the manifest "
+            "-- flask is imported but not currently declared",
+        ),
+        (
+            "DEP002",
+            "remove flask from the manifest -- it is declared but not "
+            "used in the codebase",
+        ),
+        (
+            "DEP003",
+            "add the distribution that provides flask as a direct "
+            "dependency in the manifest -- it is currently only available "
+            "transitively",
+        ),
+        (
+            "DEP004",
+            "move the distribution that provides flask out of the "
+            "dev-dependency group in the manifest -- it is imported in "
+            "non-dev code",
+        ),
+        (
+            "DEP005",
+            "remove flask from the manifest -- it is part of the Python "
+            "standard library",
+        ),
+    ],
+)
+def test_remediation_line_hygiene_dep_codes(code, expected_action):
+    finding = Finding(
+        id=f"hygiene:{code}:flask",
+        axis=AXIS_HYGIENE,
+        message=f"flask: ... ({code})",
+        subject="flask",
+        severity=None,
+    )
+    report = _report(
+        status=Status.WARN,
+        status_driver=StatusDriver(axis=AXIS_HYGIENE, finding_id=finding.id),
+        exit_code=0,
+        findings=(finding,),
+    )
+    rendered = render_text(report)
+    assert rendered.splitlines()[-1] == f"      -> fix: {expected_action}"
+
+
+def test_remediation_line_hygiene_unknown_dep_code_is_generic_never_a_crash():
+    finding = Finding(
+        id="hygiene:DEP999:flask",
+        axis=AXIS_HYGIENE,
+        message="flask: something (DEP999)",
+        subject="flask",
+        severity=None,
+    )
+    report = _report(
+        status=Status.INDETERMINATE,
+        status_driver=StatusDriver(axis=AXIS_HYGIENE, finding_id=finding.id),
+        exit_code=1,
+        findings=(finding,),
+    )
+    rendered = render_text(report)
+    assert rendered.splitlines()[-1] == (
+        "      -> fix: review the DEP999 finding for flask and update the "
+        "manifest accordingly"
+    )
+
+
+def test_remediation_line_license_denied():
+    finding = Finding(
+        id="license:GPL-3.0-only:evilpkg@1.0.0",
+        axis=AXIS_LICENSE,
+        message="evilpkg: license GPL-3.0-only is denied",
+        subject="evilpkg",
+        severity=None,
+        license=LicenseInfo(
+            expression="GPL-3.0-only", family=None, verdict=LicenseVerdict.DENIED
+        ),
+    )
+    report = _report(
+        status=Status.POLICY_VIOLATION,
+        status_driver=StatusDriver(axis=AXIS_LICENSE, finding_id=finding.id),
+        exit_code=1,
+        findings=(finding,),
+    )
+    rendered = render_text(report)
+    assert rendered.splitlines()[-1] == (
+        "      -> fix: evilpkg: license GPL-3.0-only is denied by policy "
+        "-- replace the dependency or add a waiver"
+    )
+
+
+def test_remediation_line_license_unknown():
+    finding = Finding(
+        id="license:unknown:leftpad@unspecified",
+        axis=AXIS_LICENSE,
+        message="leftpad: license unknown",
+        subject="leftpad",
+        severity=None,
+        license=LicenseInfo(
+            expression="unknown", family=None, verdict=LicenseVerdict.UNKNOWN
+        ),
+    )
+    report = _report(
+        status=Status.INDETERMINATE,
+        status_driver=StatusDriver(axis=AXIS_LICENSE, finding_id=finding.id),
+        exit_code=1,
+        findings=(finding,),
+    )
+    rendered = render_text(report)
+    assert rendered.splitlines()[-1] == (
+        "      -> fix: leftpad: license could not be resolved -- verify "
+        "manually or add a waiver"
+    )
+
+
+def test_remediation_line_currency_eol():
+    finding = Finding(
+        id="currency:eol:django@1.0.0",
+        axis=AXIS_CURRENCY,
+        message="django: eol",
+        subject="django",
+        severity=None,
+        currency=CurrencyInfo(
+            verdict=CurrencyVerdict.EOL,
+            latest="5.0.0",
+            lag=20,
+            eol_date="2020-01-01",
+            tier="lts",
+        ),
+    )
+    report = _report(
+        status=Status.POLICY_VIOLATION,
+        status_driver=StatusDriver(axis=AXIS_CURRENCY, finding_id=finding.id),
+        exit_code=1,
+        findings=(finding,),
+    )
+    rendered = render_text(report)
+    assert rendered.splitlines()[-1] == (
+        "      -> fix: django: reached end-of-life (2020-01-01) -- upgrade "
+        "to a supported release"
+    )
+
+
+def test_remediation_line_currency_over_lag():
+    finding = Finding(
+        id="currency:over-lag:django@1.0.0",
+        axis=AXIS_CURRENCY,
+        message="django: over-lag",
+        subject="django",
+        severity=None,
+        currency=CurrencyInfo(
+            verdict=CurrencyVerdict.SUPPORTED,
+            latest="5.0.0",
+            lag=12,
+            eol_date="2099-01-01",
+            tier="n",
+        ),
+    )
+    report = _report(
+        status=Status.POLICY_VIOLATION,
+        status_driver=StatusDriver(axis=AXIS_CURRENCY, finding_id=finding.id),
+        exit_code=1,
+        findings=(finding,),
+    )
+    rendered = render_text(report)
+    assert rendered.splitlines()[-1] == (
+        "      -> fix: django: 12 release(s) behind 5.0.0 -- upgrade to "
+        "close the gap"
+    )
+
+
+def test_manifest_clause_matches_canonicalized_subject_spelling():
+    """Review finding (2026-07-24): a manifest's non-normalized spelling
+    (``Foo_Bar``) and a finding subject's normalized echo (or vice versa)
+    must still resolve the clause — cli.py canonicalizes the keys and
+    ``_manifest_clause`` canonicalizes the lookup with the same PEP-503
+    collapse, so the two spellings meet."""
+    finding = Finding(
+        id="vuln:GHSA-zzzz:Foo_Bar@1.0.0",
+        axis=AXIS_VULNERABILITY,
+        message="Foo_Bar: GHSA-zzzz (severity high)",
+        subject="Foo_Bar",
+        severity=Severity(tier=SeverityTier.HIGH, raw=None),
+    )
+    report = _report(
+        status=Status.POLICY_VIOLATION,
+        status_driver=StatusDriver(axis=AXIS_VULNERABILITY, finding_id=finding.id),
+        exit_code=1,
+        findings=(finding,),
+    )
+    rendered = render_text(
+        report,
+        manifest_locations={"foo-bar": ("pyproject.toml [project.dependencies]",)},
+    )
+    assert "(declared in pyproject.toml [project.dependencies])" in (
+        rendered.splitlines()[-1]
+    )
+
+
+def test_remediation_line_currency_unknown():
+    finding = Finding(
+        id="currency:unknown:leftpad@unspecified",
+        axis=AXIS_CURRENCY,
+        message="leftpad: currency unknown",
+        subject="leftpad",
+        severity=None,
+        currency=CurrencyInfo(verdict=CurrencyVerdict.UNKNOWN),
+    )
+    report = _report(
+        status=Status.INDETERMINATE,
+        status_driver=StatusDriver(axis=AXIS_CURRENCY, finding_id=finding.id),
+        exit_code=1,
+        findings=(finding,),
+    )
+    rendered = render_text(report)
+    assert rendered.splitlines()[-1] == (
+        "      -> fix: leftpad: currency could not be resolved -- verify "
+        "manually or add a waiver"
+    )
+
+
+def test_remediation_line_indeterminate_generic_action():
+    finding = Finding(
+        id="indeterminate:no-version:leftpad",
+        axis=AXIS_VULNERABILITY,
+        message="leftpad: withheld",
+        subject="leftpad",
+        severity=None,
+    )
+    report = _report(
+        status=Status.INDETERMINATE,
+        status_driver=StatusDriver(axis=AXIS_VULNERABILITY, finding_id=finding.id),
+        exit_code=1,
+        findings=(finding,),
+    )
+    rendered = render_text(report)
+    assert rendered.splitlines()[-1] == (
+        "      -> fix: leftpad: investigate the 'no-version' condition and "
+        "resolve it, or add a waiver"
+    )
+
+
+def test_remediation_line_lookup_miss_omits_manifest_clause_gracefully():
+    """report.py's own synthetic indeterminate:coverage-floor:<axis> finding
+    has subject=<axis name>, never a package -- absent from
+    manifest_locations, so the remediation line must omit the manifest
+    clause gracefully: never crash, never fabricate a location."""
+    finding = Finding(
+        id="indeterminate:coverage-floor:hygiene",
+        axis=AXIS_HYGIENE,
+        message="hygiene: only 10.0% of 5 dependencies assessed",
+        subject="hygiene",
+        severity=None,
+    )
+    report = _report(
+        status=Status.INDETERMINATE,
+        status_driver=StatusDriver(axis=AXIS_HYGIENE, finding_id=finding.id),
+        exit_code=1,
+        findings=(finding,),
+    )
+    rendered = render_text(
+        report,
+        manifest_locations={
+            "requests": ("pyproject.toml [project.dependencies]",)
+        },
+    )
+    assert rendered.splitlines()[-1] == (
+        "      -> fix: hygiene: investigate the 'coverage-floor' condition "
+        "and resolve it, or add a waiver"
+    )
+    assert "declared in" not in rendered
+
+
+def test_remediation_lines_never_attached_to_errors():
+    """AC1's scope: remediation lines apply ONLY to findings[], never
+    errors[] (not a re-wrap of Story 1.7's typed errors)."""
+    error = ErrorRecord(
+        kind=ErrorKind.ENGINE_UNAVAILABLE, owner="deptry", message="not found"
+    )
+    report = _report(
+        status=Status.ERROR,
+        status_driver=StatusDriver(
+            axis=AXIS_INGESTION, finding_id="error:engine-unavailable:deptry"
+        ),
+        exit_code=2,
+        errors=(error,),
+    )
+    rendered = render_text(report)
+    assert "-> fix:" not in rendered
+
+
+def test_remediation_line_sanitizes_embedded_newlines_in_subject():
+    """Mirrors the waiver/baseline embedded-newline forgery guard: a
+    subject carrying a raw newline (Finding.subject is NOT id-grammar-
+    guarded, unlike Finding.id) must never fabricate an extra report line
+    via the remediation text."""
+    finding = Finding(
+        id="hygiene:DEP002:zzz",
+        axis=AXIS_HYGIENE,
+        message="zzz unused",
+        subject="zzz\n  [forged] fake extra line",
+        severity=None,
+    )
+    report = _report(
+        status=Status.WARN,
+        status_driver=StatusDriver(axis=AXIS_HYGIENE, finding_id=finding.id),
+        exit_code=0,
+        findings=(finding,),
+    )
+    rendered = render_text(report)
+    lines = rendered.splitlines()
+    # header + driver + finding + remediation -- no forged extra line.
+    assert len(lines) == 4
+    assert not any(line.strip() == "[forged] fake extra line" for line in lines)
+    assert "\\n  [forged] fake extra line" in lines[-1]
+
+
+def test_render_text_default_omitted_remediation_params_still_renders_an_action():
+    """Unlike applied_baseline/expired_waivers (whose omission means NO
+    extra content), manifest_locations/fixed_versions' defaults still
+    render an ACTION -- only the manifest clause/fixed-version specificity
+    is absent (the remediation line itself is unconditional per finding,
+    never gated behind supplying these params)."""
+    finding = Finding(
+        id="hygiene:DEP002:requests",
+        axis=AXIS_HYGIENE,
+        message="requests: unused",
+        subject="requests",
+        severity=None,
+    )
+    report = _report(
+        status=Status.WARN,
+        status_driver=StatusDriver(axis=AXIS_HYGIENE, finding_id=finding.id),
+        exit_code=0,
+        findings=(finding,),
+    )
+    assert render_text(report) == render_text(
+        report, manifest_locations={}, fixed_versions={}
+    )
+    assert "-> fix:" in render_text(report)

@@ -1,0 +1,154 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: open-webui
+  version: "0.6.26"
+  python_min: '3.11'
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/open_webui-${{ version }}.tar.gz
+  sha256: 18d8f19fa94754c1aad88028a831dc48b6e82e46b7b6a5f067a67e352425892e
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - open-webui = open_webui:app
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - hatchling
+    - fastapi
+    - sqlalchemy
+    - opentelemetry-exporter-otlp-proto-http  # opentelemetry.exporter.otlp.proto.http  # Need to find right library
+    #- opentelemetry-instrumentation-httpx  # May not be needed
+    - pip
+  run:
+    - python >=${{ python_min }},<4.0
+    - fastapi ==0.115.7
+    - uvicorn ==0.35.0
+    - pydantic ==2.11.7
+    - python-multipart ==0.0.20
+    - python-socketio ==5.13.0
+    - python-jose ==3.4.0
+    - passlib ==1.7.4
+    - cryptography
+    - bcrypt ==4.3.0
+    - argon2-cffi ==23.1.0
+    - pyjwt ==2.10.1
+    - authlib ==1.6.1
+    - requests ==2.32.4
+    - aiohttp ==3.12.15
+    - async-timeout
+    - aiocache
+    - aiofiles
+    #- starlette-compress ==1.6.0  # Not available on conda-forge
+    - httpx ==0.28.1
+    - sqlalchemy ==2.0.38
+    - alembic ==1.14.0
+    - peewee ==3.18.1
+    #- peewee-migrate ==1.12.2  # Not available on conda-forge
+    - pycrdt ==0.12.25
+    - redis-py
+    - pymysql ==1.1.1
+    - boto3 ==1.40.5
+    - apscheduler ==3.10.4
+    - restrictedpython ==8.0
+    - loguru ==0.7.3
+    - asgiref ==3.8.1
+    ## # AI libraries
+    - tiktoken
+    - openai
+    - anthropic
+    - google-genai ==1.32.0
+    - google-generativeai ==0.8.5
+    - langchain ==0.3.26
+    - langchain-community ==0.3.26
+    - fake-useragent ==2.2.0
+
+    - chromadb ==0.6.3
+    #- pymilvus ==2.5.0  # Conda Forge does not have pymilvus 2.5.0, only 1.1.2
+    #- qdrant-client ==1.14.3  # Conda Forge does not have drant-client 1.14.3, only 1.15.1
+    #- opensearch-py ==2.8.0  # Conda Forge does not have opensearch-py 2.8.0, only 2.5.0
+    - playwright ==1.49.1 # Caution: version must match docker-compose.playwright.yaml
+    #- elasticsearch ==9.0.1  # Conda Forge does not have elasticsearch 9.0.1, only 9.1.0
+    #- pinecone ==6.0.2 # conflict with googleapis-common-protos, only 7.3.0
+    - oracledb ==3.2.0
+    - transformers
+    - sentence-transformers ==4.1.0
+    - accelerate
+    - colbert-ai ==0.2.21
+    - pyarrow ==20.0.0
+    - einops ==0.8.1
+    - ftfy ==6.2.3
+    - pypdf ==4.3.1
+    - fpdf2 ==2.8.2
+    - pymdown-extensions ==10.14.2
+    - docx2txt ==0.8
+    - python-pptx ==1.0.2
+    - unstructured ==0.16.17
+    - nltk ==3.9.1
+    - markdown ==3.8.2
+    - pypandoc ==1.15
+    - pandas ==2.2.3
+    - openpyxl ==3.1.5
+    - pyxlsb ==1.0.10
+    - xlrd ==2.0.1
+    - validators ==0.35.0
+    - psutil
+    - sentencepiece
+    #- soundfile ==0.13.1  # Not available on conda-forge
+    #- azure-ai-documentintelligence ==1.0.2  # Conda Forge does not have azure-ai-documentintelligence 1.0.2, only 1.0.1
+    - pillow ==11.3.0
+    #- opencv ==4.11.0.86  # Conda Forge does not have opencv 4.11.0.86, only 4.12
+    #- rapidocr-onnxruntime ==1.4.4  # Not available on conda-forge, no sdist package
+    - rank-bm25 ==0.2.2
+    - onnxruntime ==1.20.1
+    #- faster-whisper ==1.1.1  # Not available on conda-forge, requires ctranslate2 which has no sdist package
+    - black ==25.1.0
+    - youtube-transcript-api ==1.1.0
+    - pytube ==15.0.0
+    - pydub
+    #- ddgs ==9.0.0  # Not available on conda-forge, requires primp >=0.15.0
+    - google-api-python-client
+    - google-auth-httplib2
+    - google-auth-oauthlib
+    - googleapis-common-protos ==1.63.2
+    - google-cloud-storage ==2.19.0
+    - azure-identity ==1.20.0
+    - azure-storage-blob ==12.24.1
+    - ldap3 ==2.9.1
+    #- firecrawl-py ==1.12.0  # Not available on conda-forge
+    #- tencentcloud-sdk-python ==3.0.1336  # Not available on conda-forge
+    - posthog ==5.4.0
+
+tests:
+  - python:
+      imports:
+        - open_webui
+      pip_check: false
+      python_version: ${{ python_min }}.*
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}.*
+    script:
+      - open-webui --help
+
+about:
+  summary: Open WebUI
+  homepage: https://github.com/open-webui/open-webui
+  license: BSD-3-Clause
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

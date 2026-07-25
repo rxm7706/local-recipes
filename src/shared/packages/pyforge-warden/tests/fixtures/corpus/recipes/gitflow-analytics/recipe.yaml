@@ -1,0 +1,114 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "4.0.0"
+
+package:
+  name: gitflow-analytics
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/g/gitflow-analytics/gitflow_analytics-${{ version }}.tar.gz
+  sha256: 003b0630511f0efa2caa80f26ab9d90adb954788969288213885b037f438228d
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - gitflow-analytics = gitflow_analytics.cli:main
+      - gfa = gitflow_analytics.cli:main
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - setuptools >=61
+    - wheel
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - click >=8.1
+    - gitpython >=3.1
+    - pygithub >=2.0
+    - tqdm >=4.65
+    - sqlalchemy >=2.0
+    - pandas >=2.0
+    - pyyaml >=6.0
+    - python-dateutil >=2.8
+    - python-dotenv >=1.0
+    - rich >=13.0.0
+    - tabulate >=0.9.0
+    - numpy >=1.24.0
+    - joblib >=1.5.3
+    - pytz >=2024.1
+    - requests >=2.28.0
+    - scipy
+    - toml
+    - urllib3
+    - httpx
+
+tests:
+  - python:
+      imports:
+        - gitflow_analytics
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}.*
+    script:
+      - gitflow-analytics --help
+      - gfa --help
+
+about:
+  summary: Analyze Git repositories for developer productivity insights
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/bobmatnyc/gitflow-analytics
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: gitflow-analytics
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: gitflow-analytics
+  cfe-purls:
+    - pkg:conda/gitflow-analytics@${{ version }}?channel=conda-forge
+    - pkg:pypi/gitflow-analytics@${{ version }}
+  cfe-upstream-repo: https://github.com/bobmatnyc/gitflow-analytics
+  cfe-upstream-homepage: https://github.com/bobmatnyc/gitflow-analytics
+  cfe-import-names: [gitflow_analytics]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/gitflow-analytics-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# requirements:
+#  run:
+#    # scipy / toml / urllib3 / httpx are hard top-level imports in the
+#    # 4.0.0 source (reports/*, security/*, integrations/*) that upstream
+#    # under-declares in pyproject [project.dependencies]; the deployed
+#    # feedstock (authoritative) carries them, so this recipe mirrors it.
+#    # spacy / scikit-learn / openai / tiktoken moved to upstream's
+#    # [project.optional-dependencies] ml/llm extras in 4.0.0 (lazy imports
+#    # only); dropped from base run: to match the deployed feedstock.
+####

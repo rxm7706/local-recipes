@@ -1,0 +1,53 @@
+{% set name = "graphene-django" %}
+{% set version = "3.1.4" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/graphene-django-{{ version }}.tar.gz
+  sha256: 9728b7c8b995d37a474d40344b6bd8db8175d6172550f978b2710c3e00110461
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python >=3.7
+    - pytest-runner
+    - pip
+  run:
+    - python >=3.7
+    - graphene >=3.0,<4
+    - graphql-core >=3.1.0,<4
+    - graphql-relay >=3.1.1,<4
+    - django >=3.2
+    - promise >=2.1
+    - text-unidecode
+
+test:
+  imports:
+    - graphene_django
+  commands:
+    - pip check
+  requires:
+    - pip
+
+
+about:
+  home: https://github.com/graphql-python/graphene-django
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: Graphene Django integration
+  description: Graphene-Django is built on top of Graphene. Graphene-Django provides some additional abstractions that make it easy to add GraphQL functionality to your Django project.
+  doc_url: https://docs.graphene-python.org/projects/django/en/latest/
+  dev_url: https://github.com/graphql-python/graphene-django
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+    - KingDarBoja

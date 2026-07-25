@@ -1,0 +1,49 @@
+{% set name = "anaconda-project" %}
+{% set version = "0.11.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://github.com/Anaconda-Platform/anaconda-project/archive/v{{ version }}.tar.gz
+  sha256: 87be4f0b3df3d920e210d68f485403ee0ec429d306efc220608d2b9549bfc092
+
+build:
+  entry_points:
+    - anaconda-project = anaconda_project.cli:main
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python
+    - pip
+  run:
+    - python
+    - anaconda-client
+    - conda-pack
+    - requests
+    - ruamel.yaml
+    - tornado >=4.2
+    - jinja2
+    - tqdm
+
+test:
+  imports:
+    - anaconda_project
+  commands:
+    - pip check
+    - anaconda-project --help
+  requires:
+    - pip
+
+about:
+  home: http://github.com/Anaconda-Server/anaconda-project
+  license: BSD-3-Clause
+  license_file: LICENSE.txt
+
+extra:
+  recipe-maintainers:
+    - rxm7706

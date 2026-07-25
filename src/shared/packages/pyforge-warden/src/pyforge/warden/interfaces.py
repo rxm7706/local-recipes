@@ -23,10 +23,14 @@ Ownership decisions recorded here:
   policy mapping (which findings escalate to ``policy-violation``) is now
   real for hygiene (Story 1.3) and vulnerability (Story 1.6) — each
   REPLACING the backstop for its own axis; both may only tighten (toward
-  ``policy-violation``), never loosen (toward ``clean``). Story 6.2 also
-  replaces the backstop for the license axis, but with a HARD
-  ``Status.WARN`` cap (``license_rung``), not a real escalation table —
-  real ``denied``/``unknown`` escalation is Story 6.5's sole ownership. The
+  ``policy-violation``), never loosen (toward ``clean``). Story 6.2 (license)
+  and Story 6.3 (currency) also replace the backstop for their own axes;
+  Story 6.5 made their rungs two-mode — ``license_rung``/``currency_rung``
+  now consult the gating-aware ``config.{license,currency}_policy`` this
+  method threads (plus ``config.max_lag`` for currency's numeric over-lag
+  check), escalating ``denied``/``unknown`` (license) and ``eol``/
+  ``over-lag``/``unknown`` (currency) when a gate is active while an
+  unconfigured axis still caps at ``warn`` (the module-default table). The
   backstop itself now only governs a hypothetical future axis with no
   mapping of its own yet.
 * ``DefaultPolicy`` is the fail-closed inventory→verdict bridge: a withheld
@@ -78,9 +82,10 @@ This module is pure composition: no I/O, no subprocess, no network.
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
+from types import MappingProxyType
 from typing import Protocol, runtime_checkable
 
 from .config import EffectiveConfig
@@ -170,7 +175,41 @@ class EngineResult:
     (present, whether fresh or stale); ``None`` when KEV consultation is
     disabled (``fail_on_kev=False``) or the feed is absent/unreadable.
     ``cli.py`` threads the first non-``None`` value across
-    ``engine_results`` into ``report.assemble_report`` the same way."""
+    ``engine_results`` into ``report.assemble_report`` the same way.
+
+    ``currency_data`` (Story 6.3, additive/defaulted — mirrors ``kev_data``'s
+    own shape and threading): populated by ``CurrencyEngine`` with the
+    bundled LTS registry's own ``FeedProvenance`` (``currency.
+    currency_findings``'s second return value) — ``None`` whenever no
+    usable provenance can be derived: the bundled registry is absent,
+    unreadable, unparsable, not a mapping, or its ``updated:`` date is
+    missing/unparsable (``currency._load_registry`` degrades every read
+    failure to ``{}``, whose missing ``updated:`` then yields ``None`` —
+    see ``currency.py``'s module docstring). ``cli.py`` threads the first
+    non-``None`` value across ``engine_results`` into
+    ``report.assemble_report`` the same way.
+
+    ``epss_data`` (Story 6.7, additive/defaulted — mirrors ``kev_data``'s own
+    shape and threading verbatim, one feed over): populated ONLY by
+    ``OsvEngine`` when ``min_epss`` is set AND the FIRST.org EPSS feed was
+    actually consulted (present, whether fresh or stale); ``None`` when EPSS
+    consultation is disabled (``min_epss=None``) or the feed is absent/
+    unreadable. ``cli.py`` threads the first non-``None`` value across
+    ``engine_results`` into ``report.assemble_report`` the same way.
+
+    ``fixed_versions`` (Story 5.1, AC1, additive/defaulted — mirrors
+    ``kev_data``/``epss_data``'s threading precedent): populated by
+    ``OsvEngine`` from ``vuln.parse_osv_output(...).fixed_versions`` at its
+    real-parse success site only (``finding.id -> fixed version string``,
+    absent when unknown). Unlike ``vuln_data``/``kev_data``/``epss_data``
+    (per-FEED provenance, so ``cli.py`` picks the first non-``None`` value
+    across ``engine_results``), this is per-FINDING data — ``cli.py`` merges
+    it as a dict UNION across every result instead (first engine-
+    registration-order occurrence wins on a rare key collision, mirroring
+    ``DefaultPolicy``'s own engine-vs-engine finding dedupe convention).
+    Consumed ONLY by ``report.render_text``'s remediation lines (a caller-
+    supplied side channel, never threaded into ``assemble_report`` or the
+    frozen ``ComplianceReport`` contract)."""
 
     findings: tuple[Finding, ...]
     errors: tuple[ErrorRecord, ...]
@@ -178,6 +217,9 @@ class EngineResult:
     axis: str
     vuln_data: VulnData | None = None
     kev_data: FeedProvenance | None = None
+    epss_data: FeedProvenance | None = None
+    currency_data: FeedProvenance | None = None
+    fixed_versions: Mapping[str, str] = MappingProxyType({})
 
 
 @runtime_checkable
@@ -236,9 +278,11 @@ class DefaultPolicy:
       (driver = that finding) — the false-green backstop: a finding-carrying
       report never composes ``clean``. Story 1.3 (hygiene) and Story 1.6
       (vulnerability) have each replaced the backstop with their axis's real
-      severity mapping (tighten-only); Story 6.2 (license) replaces it with
-      a hard ``Status.WARN`` cap instead (real escalation is Story 6.5's);
-      the backstop itself now only fires for a hypothetical future axis.
+      severity mapping (tighten-only); Story 6.2 (license) and Story 6.3
+      (currency) replaced it with their own mappings too, made two-mode by
+      Story 6.5 (all-``warn`` when unconfigured, escalating under an active
+      gate via ``config.{license,currency}_policy``); the backstop itself
+      now only fires for a hypothetical future axis.
     * Engine ``ErrorRecord``s feed ``(error, driver)`` rungs: an engine
       failure must reach the verdict (composition yields status ``error`` →
       ``exit_code_for`` gives the error exit), while the report is still
@@ -277,6 +321,7 @@ class DefaultPolicy:
         # Lazy imports break the interfaces<->hygiene, interfaces<->vuln, and
         # interfaces<->license cycles; by the time evaluate() runs, all
         # modules are fully loaded.
+        from .currency import currency_rung
         from .hygiene import hygiene_rung
         from .license import license_rung
         from .vuln import vuln_rung
@@ -331,24 +376,50 @@ class DefaultPolicy:
                     # (default reproduces DEFAULT_VULN_SEVERITY_POLICY
                     # exactly). Story 6.4: fail_on_kev threads the same way
                     # -- a KEV-listed finding forces policy-violation
-                    # independent of the CVSS tier above.
+                    # independent of the CVSS tier above. Story 6.7:
+                    # min_epss threads identically -- an at-or-above-
+                    # threshold EPSS score forces policy-violation too.
                     rungs.append(
                         vuln_rung(
                             finding,
                             policy=self._config.vuln_severity_policy,
                             fail_on_kev=self._config.fail_on_kev,
+                            min_epss=self._config.min_epss,
                         )
                     )
                 elif finding.axis == AXIS_LICENSE:
-                    # Story 6.2: license-axis engine findings route through
-                    # license_rung, a HARD Status.WARN cap that never
-                    # consults self._config.license_policy and never
-                    # escalates (real denied->policy-violation / unknown->
-                    # indeterminate escalation is Story 6.5's sole
-                    # ownership). This REPLACES the 1.2 indeterminate
-                    # backstop for the license axis too — never mapping a
+                    # Story 6.2/6.5: license-axis engine findings route
+                    # through license_rung with self._config.license_policy —
+                    # the gating-aware table (all-warn when the license axis
+                    # is unconfigured, escalating denied->policy-violation /
+                    # unknown->indeterminate when --allow/--deny-licenses is
+                    # set). config.py is the single writer of the two-mode
+                    # semantics; the rung only reads the table. Threaded
+                    # exactly as vuln_severity_policy is above. This REPLACES
+                    # the 1.2 indeterminate backstop for the license axis
+                    # too — never mapping a finding to clean (C0 preserved).
+                    rungs.append(
+                        license_rung(finding, policy=self._config.license_policy)
+                    )
+                elif finding.axis == AXIS_CURRENCY:
+                    # Story 6.3/6.5: currency-axis engine findings route
+                    # through currency_rung with self._config.currency_policy
+                    # (the gating-aware table) AND self._config.max_lag (the
+                    # numeric over-lag threshold the rung applies to a
+                    # SUPPORTED-verdict over-lag finding). Unconfigured, the
+                    # table is all-warn and max_lag is None (no escalation);
+                    # a currency gate escalates eol->policy-violation /
+                    # unknown->indeterminate and an over-lag beyond --max-lag
+                    # ->policy-violation. This REPLACES the 1.2 indeterminate
+                    # backstop for the currency axis too — never mapping a
                     # finding to clean (C0 preserved).
-                    rungs.append(license_rung(finding))
+                    rungs.append(
+                        currency_rung(
+                            finding,
+                            policy=self._config.currency_policy,
+                            max_lag=self._config.max_lag,
+                        )
+                    )
                 else:
                     # The false-green backstop now only governs a
                     # hypothetical future axis with no mapping of its own: a

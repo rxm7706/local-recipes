@@ -1,0 +1,41 @@
+{% set name = "linkify-it-py" %}
+{% set version = "2.0.2" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/linkify-it-py-{{ version }}.tar.gz
+  sha256: 19f3060727842c254c808e99d465c80c49d2c7306788140987a1a7a29b0d6ad2
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.7
+    - setuptools
+    - pip
+  run:
+    - python >=3.7
+    - uc-micro-py
+
+test:
+  imports:
+    - linkify_it_py
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  summary: Links recognition library with FULL unicode support.
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

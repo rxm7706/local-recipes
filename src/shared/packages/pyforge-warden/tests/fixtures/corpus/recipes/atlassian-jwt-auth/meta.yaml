@@ -1,0 +1,46 @@
+{% set name = "atlassian-jwt-auth" %}
+{% set version = "18.0.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/atlassian-jwt-auth-{{ version }}.tar.gz
+  sha256: c860fb4911daaa9530b8da51864768aac0e2d7775ce88419b52f6ba372c45e9d
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - pbr <=6.0.0
+    - pytest-runner
+    - pip
+  run:
+    - python >=3.8
+    - pyjwt <3.0.0,>=2.4.0
+    - requests <3.0.0,>=2.8.1
+    - cachecontrol ==0.13.1
+    - cryptography >=3.4.0
+
+test:
+  imports:
+    - atlassian_jwt_auth
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/atlassian/asap-authentication-python
+  summary: Python implementation of the Atlassian Service to Service Authentication specification.
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

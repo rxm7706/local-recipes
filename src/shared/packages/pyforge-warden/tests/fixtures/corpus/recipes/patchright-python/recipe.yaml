@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.59.0"
+  python_min: "3.11"
+
+package:
+  name: patchright-python
+  version: ${{ version }}
+
+source:
+  url: https://github.com/Kaliiiiiiiiii-Vinyzu/patchright-python/archive/v${{ version }}.tar.gz
+  sha256: 0ffe984fb6a85d6daf13aaf973510ea9fa7bfbfac7d5cb11eaea4e6fd5daf68b
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+  run:
+    - python >=${{ python_min }},<4
+    - playwright-python >=${{ version }}
+
+tests:
+  - python:
+      imports:
+        - playwright
+      pip_check: true
+      python_version:
+      - ${{ python_min }}.*
+      - "*"
+
+about:
+  summary: Undetected Python version of the Playwright testing and automation library.
+  homepage: https://pypi.org/project/patchright/
+  license: Apache-2.0
+  license_file: LICENSE
+  repository: https://github.com/Kaliiiiiiiiii-Vinyzu/patchright-python
+
+extra:
+  recipe-maintainers:
+    - rxm7706

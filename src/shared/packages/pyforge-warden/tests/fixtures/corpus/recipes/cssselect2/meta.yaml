@@ -1,0 +1,51 @@
+{% set name = "cssselect2" %}
+{% set version = "0.8.0" %}
+{% set python_min = "3.9" %}
+
+package:
+  name: '{{ name|lower }}'
+  version: '{{ version }}'
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 7674ffb954a3b46162392aee2a3a0aedb2e14ecf99fcc28644900f4e6e3e9d3a
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - flit-core >=3.2,<4
+    - pip
+  run:
+    - python >={{ python_min }}
+    - tinycss2
+    - webencodings
+
+test:
+  imports:
+    - cssselect2
+  commands:
+    - pip check
+  requires:
+    - python {{ python_min }}
+    - pip
+
+about:
+  home: https://github.com/Kozea/cssselect2
+  license: BSD-3-Clause
+  license_family: BSD
+  license_file: LICENSE
+  summary: CSS selectors for Python ElementTree
+  description: |
+    cssselect2 is a straightforward implementation of CSS3 Selectors for markup documents.
+  doc_url: http://cssselect2.readthedocs.io
+  dev_url: https://github.com/Kozea/cssselect2
+
+extra:
+  recipe-maintainers:
+    - johanneskoester
+    - rxm7706

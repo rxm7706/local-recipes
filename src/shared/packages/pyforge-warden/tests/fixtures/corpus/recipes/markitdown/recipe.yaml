@@ -1,0 +1,87 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: markitdown
+  version: "0.1.6"
+  python_max: '4.0'
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/markitdown-${{ version }}.tar.gz
+  sha256: e5bdbaffd971b29598c7c39ef0e9afce2f08c0751fbfa4e4257678ebaf8cfc7e
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
+  python:
+    entry_points:
+      - markitdown = markitdown.__main__:main
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - hatchling
+    - pip
+  run:
+    - python >=${{ python_min }},<${{ python_max }}
+    - beautifulsoup4
+    - requests
+    - markdownify
+    # magika 0.6.3's wheel caps onnxruntime<=1.20.1 on win32 (a one-version aberration;
+    # absent in 0.6.1/0.6.2 and 1.0+), which conda can't satisfy on Windows (onnxruntime
+    # 1.26) -> downstream pip check fails. Pin away from 0.6.3 (0.6.2 is clean).
+    - magika >=0.6.1,!=0.6.3,<0.7.0
+    - charset-normalizer
+    - defusedxml
+    # https://github.com/microsoft/markitdown/blob/main/packages/markitdown/pyproject.toml#L35
+  run_constraints:
+    #- onnxruntime <=1.20.1  # https://github.com/microsoft/markitdown/pull/1551/changes
+    - python-pptx
+    - mammoth >=1.11.0
+    - pandas
+    - openpyxl
+    - xlrd
+    - lxml
+    - pdfminer.six >=20251230
+    - pdfplumber >=0.11.9
+    - olefile
+    - pydub
+    - SpeechRecognition
+    - youtube-transcript-api >=1.0.0
+    - azure-ai-documentintelligence
+    #- azure-ai-contentunderstanding >=1.2.0b1   # TBD conda-forge
+    - azure-identity
+
+tests:
+  - python:
+      imports:
+        - markitdown
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}.*
+    script:
+      - markitdown --help
+
+about:
+  summary: Utility tool for converting various files to Markdown
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/microsoft/markitdown
+  description: |
+    Python tool for converting files and office documents to Markdown.
+  repository: https://github.com/microsoft/markitdown
+
+extra:
+  recipe-maintainers:
+    - johnhany97
+    - sarthakpati

@@ -1,0 +1,42 @@
+{% set name = "drf-spectacular-sidecar" %}
+{% set version = "2024.11.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/drf_spectacular_sidecar-{{ version }}.tar.gz
+  sha256: fcfccc72cbdbe41e93f8416fa0c712d14126b8d1629e65c09c07c8edea24aad0
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.6
+    - pip
+  run:
+    - python >=3.6
+    - django >=2.2
+
+test:
+  imports:
+    - drf_spectacular_sidecar
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/tfranzel/drf-spectacular-sidecar
+  summary: Serve self-contained distribution builds of Swagger UI and Redoc with Django
+  dev_url: https://github.com/tfranzel/drf-spectacular-sidecar
+  license: BSD-3-Clause
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

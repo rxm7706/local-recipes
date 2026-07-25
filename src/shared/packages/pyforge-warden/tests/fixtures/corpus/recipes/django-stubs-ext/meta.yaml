@@ -1,0 +1,43 @@
+{% set name = "django-stubs-ext" %}
+{% set version = "4.2.5" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/django-stubs-ext-{{ version }}.tar.gz
+  sha256: 8c4d1fb5f68419b3b2474c659681a189803e27d6a5e5abf5aa0da57601b58633
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - pip
+  run:
+    - python >=3.8
+    - django
+    - typing-extensions
+
+test:
+  imports:
+    - django_stubs_ext
+    - django_stubs_ext
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/typeddjango/django-stubs
+  summary: Monkey-patching and extensions for django-stubs
+  license: MIT
+  license_file: LICENSE.md
+
+extra:
+  recipe-maintainers:
+    - rxm7706

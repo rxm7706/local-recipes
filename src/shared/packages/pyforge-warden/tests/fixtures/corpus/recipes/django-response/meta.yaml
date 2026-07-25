@@ -1,0 +1,41 @@
+{% set name = "django-response" %}
+{% set version = "1.1.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/django-response-{{ version }}.tar.gz
+  sha256: fb8fd1f991cb020120a5cc5294c62fc45c6e550d839fcfbfbc90c796fd632e04
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python
+    - pip
+  run:
+    - python
+    - django-json-response
+
+test:
+  imports:
+    - django_response
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/django-xxx/django-response
+  summary: Django Response Relative
+  license: ''
+  license_file: PLEASE_ADD_LICENSE_FILE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

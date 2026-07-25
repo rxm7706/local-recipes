@@ -1,0 +1,92 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "6.28.0"
+
+package:
+  name: codechecker
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/c/codechecker/codechecker-${{ version }}.tar.gz
+  sha256: c3157efe1cec93b46bcd64d7373e47cb0798745148d6ea4d4b9d3c4113c279fa
+
+build:
+  number: 0
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - CodeChecker = codechecker_common.cli:main
+      - merge-clang-extdef-mappings = codechecker_merge_clang_extdef_mappings.cli:main
+      - post-process-stats = codechecker_statistics_collector.cli:main
+      - report-converter = codechecker_report_converter.cli:main
+      - tu_collector = tu_collector.tu_collector:main
+
+requirements:
+  build:
+    - ${{ compiler('cxx') }}
+    - ${{ compiler('c') }}
+    - ${{ stdlib('c') }}
+  host:
+    - python
+    - pip
+    - setuptools
+  run:
+    - python
+    - sarif-tools >=3.0,<4.0
+    - types-pyyaml >=6.0,<7.0
+    - alembic >=1.5,<2.0
+    - gitpython >=3.0,<4.0
+    - types-psutil >=7.0,<8.0
+    - lxml >=6.0,<7.0
+    - portalocker >=3.0,<4.0
+    - semver >=3.0,<4.0
+    - thrift >=0.22,<1.0
+    - setuptools >=80.0,<81.0
+    - multiprocess >=0.70,<1.0
+    - argcomplete >=3.0,<4.0
+    - requests >=2.0,<3.0
+    - sqlalchemy >=2.0,<3.0
+    - authlib >=1.6,<2.0
+    - psutil >=7.0,<8.0
+    - pyyaml >=6.0,<7.0
+
+tests:
+  - python:
+      imports:
+        - bazel_compile_commands
+        - codechecker_analyzer
+        - codechecker_api
+        - codechecker_api_shared
+        - codechecker_client
+        - codechecker_common
+        - codechecker_merge_clang_extdef_mappings
+        - codechecker_report_converter
+        - codechecker_server
+        - codechecker_statistics_collector
+        - codechecker_web
+        - tu_collector
+      pip_check: true
+  - requirements:
+      run:
+        - pip
+        - python
+    script:
+      - CodeChecker --help
+      - merge-clang-extdef-mappings --help
+      - post-process-stats --help
+      - report-converter --help
+      - tu_collector --help
+
+about:
+  summary: CodeChecker is an analyzer tooling, defect database and viewer extension
+  license: Apache-2.0
+  license_file: LICENSE.TXT
+  homepage: https://github.com/Ericsson/CodeChecker
+  documentation: http://codechecker.readthedocs.io
+
+extra:
+  recipe-maintainers:
+    - mwittgen
+    - rxm7706

@@ -1,0 +1,124 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.4.1"
+
+package:
+  name: codegraph
+  version: ${{ version }}
+
+source:
+  - url: https://registry.npmjs.org/@colbymchenry/codegraph/-/codegraph-${{ version }}.tgz
+    sha256: 8d34d4ef8ef3bc0b5236ca0ba17c3806eee3d9a681699cc76a0eb7552b0da047
+  # The npm tarball's `files` array omits the LICENSE; take it from the repo tag.
+  - url: https://raw.githubusercontent.com/colbymchenry/codegraph/v${{ version }}/LICENSE
+    sha256: e6d98f98c666bebe065ac2492a0a19232cc318d4d67bac3ca42ffb77bacc8809
+    file_name: LICENSE
+
+build:
+  number: 1
+  # NOT noarch: the published npm package delegates to per-platform native
+  # binary packages (@colbymchenry/codegraph-<os>-<arch>, Bun-compiled), so
+  # each platform build bundles its own binary.
+  script:
+    - if: unix
+      then:
+        - export npm_config_prefix="${PREFIX}"
+        - pnpm install --ignore-scripts --prod
+        - npm pack --ignore-scripts
+        - npm install -g ./colbymchenry-codegraph-${{ version }}.tgz
+        - pnpm-licenses generate-disclaimer --prod --output-file=third-party-licenses.txt
+      else:
+        - call npm config set prefix "%PREFIX%"
+        - if %ERRORLEVEL% neq 0 exit 1
+        - call pnpm install --ignore-scripts --prod
+        - if %ERRORLEVEL% neq 0 exit 1
+        - call npm pack --ignore-scripts
+        - if %ERRORLEVEL% neq 0 exit 1
+        - call npm install --userconfig nonexistentrc -g colbymchenry-codegraph-${{ version }}.tgz
+        - if %ERRORLEVEL% neq 0 exit 1
+        - call pnpm-licenses generate-disclaimer --prod --output-file=third-party-licenses.txt
+        - if %ERRORLEVEL% neq 0 exit 1
+
+requirements:
+  build:
+    - nodejs
+    - pnpm
+    - pnpm-licenses
+  host:
+    - nodejs
+  run:
+    # No explicit version pin: the host nodejs run-export supplies the
+    # constraint; upstream's engines cap (<25) conflicts with it and is
+    # advisory only.
+    - nodejs
+
+tests:
+  - script:
+      - codegraph --help
+      - test -f "${PREFIX}/lib/node_modules/@colbymchenry/codegraph/package.json"
+      - test -f "${PREFIX}/lib/node_modules/@colbymchenry/codegraph/npm-shim.js"
+
+about:
+  summary: Pre-indexed code knowledge graph for coding agents - fewer tokens, fewer tool calls, 100% local
+  description: |
+    codegraph builds a pre-indexed knowledge graph of your codebase and
+    keeps it synced on code changes, so coding agents (Claude Code, Codex,
+    Gemini, Cursor, OpenCode, AntiGravity, Kiro, Hermes) can answer
+    structure questions from the graph instead of re-reading files —
+    fewer tokens and fewer tool calls, fully local. Tree-sitter (WASM)
+    parsing, TypeScript CLI.
+
+    Run ``codegraph`` in a repository to index it and wire up the agent
+    integrations.
+  homepage: https://github.com/colbymchenry/codegraph
+  repository: https://github.com/colbymchenry/codegraph
+  documentation: https://github.com/colbymchenry/codegraph#readme
+  license: MIT
+  license_file:
+    - LICENSE
+    - third-party-licenses.txt
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: codegraph
+  cfe-upstream-registry: npm
+  cfe-upstream-name: "@colbymchenry/codegraph"
+  cfe-purls:
+    - pkg:conda/codegraph@${{ version }}?channel=conda-forge
+    - pkg:npm/%40colbymchenry/codegraph@${{ version }}
+  cfe-upstream-repo: https://github.com/colbymchenry/codegraph
+  cfe-upstream-homepage: https://github.com/colbymchenry/codegraph
+  cfe-import-names: []
+  cfe-source-kind: npm-registry-tarball
+  cfe-noarch: compiled
+  cfe-pip-check: "false:not-a-python-package"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: "2026-07-12T16:35:00Z"
+  cfe-generated-by-version: 8.76.0
+  cfe-generated-at-datetime: "2026-07-12T16:35:00Z"
+  cfe-local-build-status: success
+  cfe-local-build-datetime: "2026-07-12T16:49:10Z"
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # Packaged 2026-07-12 (user request: token-usage reduction tooling).
+#    # Conda name drops the npm scope (@colbymchenry/codegraph); note the
+#    # UNRELATED bare npm package "codegraph" (1.0.0) — this recipe is the
+#    # scoped one.
+#    # The PUBLISHED tarball differs from the repo source: bin is
+#    # npm-shim.js, regular deps are empty, and the runtime is delivered
+#    # via 6 optional per-platform native packages (Bun-compiled) — npm
+#    # install pulls the matching one, making this a per-arch recipe.
+#    # npm's bin symlink is kept as-is (allowed outside noarch).
+####

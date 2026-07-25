@@ -1,0 +1,82 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+context:
+  name: bmad-method-wds-expansion
+  version: "0.4.3"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/bmad-code-org/bmad-method-wds-expansion/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: 513f9653e25fd299de54dc794215e503e4879564a4b718783d8773ffc2e0d2a8
+
+build:
+  number: 0
+  noarch: generic
+
+requirements:
+  run:
+    - python >=3.10
+
+tests:
+  - script:
+      - if: not win
+        then:
+          - bmad-wds-install --help
+          - test -d "${CONDA_PREFIX}/share/bmad-method-wds-expansion/agents"
+          - test -d "${CONDA_PREFIX}/share/bmad-method-wds-expansion/agents/wds-agent-freya-ux"
+          - test -d "${CONDA_PREFIX}/share/bmad-method-wds-expansion/agents/wds-agent-saga-analyst"
+          - test -d "${CONDA_PREFIX}/share/bmad-method-wds-expansion/workflows"
+          - test -f "${CONDA_PREFIX}/share/bmad-method-wds-expansion/module.yaml"
+      - if: win
+        then:
+          - bmad-wds-install.bat --help
+          - if not exist "%CONDA_PREFIX%\share\bmad-method-wds-expansion\agents" exit 1
+          - if not exist "%CONDA_PREFIX%\share\bmad-method-wds-expansion\workflows" exit 1
+          - if not exist "%CONDA_PREFIX%\share\bmad-method-wds-expansion\module.yaml" exit 1
+
+about:
+  homepage: https://github.com/bmad-code-org/bmad-method-wds-expansion
+  repository: https://github.com/bmad-code-org/bmad-method-wds-expansion
+  license: MIT
+  license_file: LICENSE
+  summary: BMad Web Design System expansion module with UX and strategy agents
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: bmad-method-wds-expansion
+  cfe-upstream-registry: github
+  cfe-upstream-name: bmad-code-org/bmad-method-wds-expansion
+  cfe-purls:
+    - pkg:conda/bmad-method-wds-expansion@${{ version }}?channel=conda-forge
+    - pkg:github/bmad-code-org/bmad-method-wds-expansion@v${{ version }}
+  cfe-upstream-repo: https://github.com/bmad-code-org/bmad-method-wds-expansion
+  cfe-upstream-homepage: https://github.com/bmad-code-org/bmad-method-wds-expansion
+  cfe-import-names: []
+  cfe-source-kind: github-tag
+  cfe-noarch: generic
+  cfe-pip-check: "false:not-a-python-package"
+  cfe-on-conda-forge-status: pending-approval-on-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-submission-pr: https://github.com/conda-forge/staged-recipes/pull/33126
+  cfe-last-checked: "2026-07-12T14:52:00Z"
+  cfe-generated-by-version: 8.76.0
+  cfe-generated-at-datetime: "2026-07-12T14:52:00Z"
+  cfe-local-build-status: success
+  cfe-local-build-datetime: "2026-07-12T15:59:32Z"
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # Version bumped 0.3.1 -> 0.4.3 (latest upstream tag) in the
+#    # 2026-07-12 BMAD-recipe sweep.
+####

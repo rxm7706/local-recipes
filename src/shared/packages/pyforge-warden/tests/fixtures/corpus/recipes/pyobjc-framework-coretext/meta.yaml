@@ -1,0 +1,59 @@
+{% set name = "pyobjc-framework-CoreText" %}
+{% set version = "12.2.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name.replace('-', '_').lower() }}/{{ name.replace('-', '_').lower() }}-{{ version }}.tar.gz
+  sha256: af740e784d7c592c34025ec7165f4f6c1a69b5a2d9075f06e41e4f77c212aed2
+
+build:
+  number: 0
+  script:
+    # force pyobjc to use conda-forge's chosen SDK
+    - export CFLAGS="${CFLAGS} -isysroot ${SDKROOT:-$CONDA_BUILD_SYSROOT}"
+    # force ignoring invalid compiler flag (-Wl,-export-dynamic)
+    - export CFLAGS="${CFLAGS} -Wno-unused-command-line-argument"  # [py == 37 or py == 38]
+    - {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  skip: true  # [(not osx) or py2k or python_impl == 'pypy' or (arm64 and py < 39)]
+
+requirements:
+  build:
+    - python                                 # [build_platform != target_platform]
+    - cross-python_{{ target_platform }}     # [build_platform != target_platform]
+    - {{ compiler('c') }}
+    - {{ stdlib("c") }}
+  host:
+    - python
+    - setuptools
+    - wheel
+    - pip
+    #- libffi
+  run:
+    - python
+    - pyobjc-core >={{ version }}
+    - pyobjc-framework-cocoa >={{ version }}
+    - pyobjc-framework-quartz >={{ version }}
+
+test:
+  imports:
+    - PyObjCTools
+    - CoreText
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/ronaldoussoren/pyobjc
+  summary: Wrappers for the framework CoreText on macOS
+  doc_url: https://pythonhosted.org/pyobjc-framework-CoreText/
+  license: MIT
+  license_file: LICENSE.txt
+
+extra:
+  recipe-maintainers:
+    - Tobias-Fischer
+    - rxm7706

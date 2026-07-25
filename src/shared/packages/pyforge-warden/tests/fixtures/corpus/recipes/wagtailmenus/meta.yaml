@@ -1,0 +1,47 @@
+{% set name = "wagtailmenus" %}
+{% set version = "4.0.7" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://github.com/jazzband/wagtailmenus/archive/v{{ version }}.tar.gz
+  sha256: 9d14c5835bd0b0f1829ed9f8a3fb4931753f818dd27b522319546b9c65bdc9f1
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - requests
+    - django
+    - django-modelcluster
+    - python >={{ python_min }}
+    - wagtail >=6.3
+    - django-cogwheels ==0.3
+
+test:
+  imports:
+    - wagtailmenus
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/jazzband/wagtailmenus/tree/stable/3.1.x
+  summary: An app to help you manage menus in your Wagtail projects more consistently.
+  license: MIT
+  license_file: LICENSE.txt
+
+extra:
+  recipe-maintainers:
+    - rxm7706

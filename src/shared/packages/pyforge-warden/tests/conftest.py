@@ -133,6 +133,36 @@ def component_factory():
 
 import socket
 
+from pyforge.warden import actuator as _actuator
+
+# --- Story 6.9: the actuator-scoped egress carve-out ------------------------
+#
+# Captured BEFORE the deny-patches below reassign them: the REAL primitives the
+# carve-out delegates to when (and ONLY when) the fix-PR actuator's real
+# egress is authorized. The carve-out permits a connect/create_connection/
+# getaddrinfo ONLY while ``actuator._EGRESS_ACTIVE`` is set (the actuator sets
+# it around each real urllib call, and nowhere else -- inert on dry-run and
+# without the --open-fix-prs flag) AND the target host is loopback. Deny stays
+# the default for everything else (test_socket_deny_alive.py proves it), so
+# this is never a global loosening. All other denied primitives (connect_ex,
+# sendto, sendmsg, the resolver family bar getaddrinfo) have no carve-out.
+_REAL_CONNECT = socket.socket.connect
+_REAL_CREATE_CONNECTION = socket.create_connection
+_REAL_GETADDRINFO = socket.getaddrinfo
+
+_LOOPBACK_HOSTS = frozenset({"127.0.0.1", "::1", "localhost", "ip6-localhost"})
+
+
+def _actuator_carveout_permits(host: object) -> bool:
+    """True iff the actuator's real-egress marker is set AND ``host`` is
+    loopback -- the ONLY condition under which the deny harness yields."""
+    try:
+        if not _actuator._EGRESS_ACTIVE.get():
+            return False
+    except Exception:
+        return False
+    return host in _LOOPBACK_HOSTS
+
 
 class SocketDenyError(RuntimeError):
     """Raised when any test attempts outbound network egress (C0c/NFR-S2)."""
@@ -148,6 +178,9 @@ class SocketDenyError(RuntimeError):
 
 
 def _denied_connect(self, address, *args, **kwargs):
+    host = address[0] if isinstance(address, tuple) and address else None
+    if _actuator_carveout_permits(host):
+        return _REAL_CONNECT(self, address, *args, **kwargs)
     raise SocketDenyError("socket.socket.connect", address)
 
 
@@ -171,10 +204,15 @@ def _denied_sendmsg(self, *args, **kwargs):
 
 
 def _denied_create_connection(address, *args, **kwargs):
+    host = address[0] if isinstance(address, tuple) and address else None
+    if _actuator_carveout_permits(host):
+        return _REAL_CREATE_CONNECTION(address, *args, **kwargs)
     raise SocketDenyError("socket.create_connection", address)
 
 
 def _denied_getaddrinfo(host, port, *args, **kwargs):
+    if _actuator_carveout_permits(host):
+        return _REAL_GETADDRINFO(host, port, *args, **kwargs)
     raise SocketDenyError("socket.getaddrinfo", (host, port))
 
 
@@ -297,15 +335,81 @@ def _osv_ambient_db_env(
 # session-scoped fixture that still wants monkeypatch's own-value-restore
 # semantics -- the ordinary function-scoped ``monkeypatch`` fixture cannot be
 # depended on from a session-scoped fixture).
+#
+# Story 6.3 shares this SAME cache root (``_feed_cache_root`` below) for the
+# ambient endoflife.date snapshot too -- both feeds resolve under the ONE
+# ``PYFORGE_WARDEN_FEED_CACHE_DIR`` a real scan reads, so provisioning them
+# under two different roots would be untrue to the real seam.
+
+
+@pytest.fixture(scope="session")
+def _feed_cache_root(tmp_path_factory: pytest.TempPathFactory) -> Path:
+    root = tmp_path_factory.mktemp("feed-ambient-cache")
+    mp = pytest.MonkeyPatch()
+    from pyforge.warden.feeds import FEED_CACHE_DIR_ENV_VAR
+
+    mp.setenv(FEED_CACHE_DIR_ENV_VAR, str(root))
+    yield root
+    mp.undo()
 
 
 @pytest.fixture(scope="session", autouse=True)
-def _kev_ambient_feed_env(tmp_path_factory: pytest.TempPathFactory):
-    from pyforge.warden.feeds import FEED_CACHE_DIR_ENV_VAR, write_kev_cache
+def _kev_ambient_feed_env(_feed_cache_root: Path) -> None:
+    from pyforge.warden.feeds import write_kev_cache
 
-    cache_root = tmp_path_factory.mktemp("kev-ambient-cache")
-    write_kev_cache(cache_root, {"vulnerabilities": []})
-    mp = pytest.MonkeyPatch()
-    mp.setenv(FEED_CACHE_DIR_ENV_VAR, str(cache_root))
-    yield
-    mp.undo()
+    write_kev_cache(_feed_cache_root, {"vulnerabilities": []})
+
+
+# --- Story 6.3: ambient endoflife.date feed (keeps the currency-axis-landed
+# pre-6.3 suite green) -----------------------------------------------------
+#
+# ``CurrencyEngine`` is now live in the registry, so ANY test that invokes
+# ``cli.main()`` reaches Story 6.3's currency-axis assessment for EVERY
+# component AND the running Python interpreter. Unlike KEV's silent
+# "not-listed" default, an unresolvable currency lookup is a REAL,
+# WARN-capped ``currency:unknown:`` Finding (FR34/FR37: honest, never
+# silent) -- so without ambient data, every pre-6.3 "clean" fixture would
+# regress to "warn" purely from currency noise. Mirrors ``tests/
+# conformance/test_scan_harness.py``'s own Fix-9 precedent (pinned PyPI
+# license metadata) one level down the tier ladder: this ambient endoflife
+# snapshot carries entries for EXACTLY the package names + versions the
+# "must stay clean" fixtures declare (``requests==2.31.0``,
+# ``packaging==24.0``; adding a NEW pinned dep to a clean fixture means
+# extending this list too -- tests/unit/test_currency.py's ambient-snapshot
+# guard cross-checks only names already covered here, one direction only)
+# plus the ACTUAL running interpreter's own version
+# (computed dynamically -- the test session's Python version varies by
+# environment/CI) -- each a single, already-latest, far-future-EOL cycle so
+# the tier-2 resolution is SUPPORTED with zero lag (a fully clean, no-Finding
+# resolution). Every other package name in the fixture corpus (leftpad,
+# pdos-vuln-fixture, argparse, ...) is deliberately NOT covered here and
+# legitimately degrades to ``currency:unknown:`` -- those tests were updated
+# to expect it, the same way Story 6.2's license-axis landing updated tests
+# for ``license:unknown:`` findings.
+
+
+@pytest.fixture(scope="session", autouse=True)
+def _currency_ambient_feed_env(_feed_cache_root: Path) -> None:
+    import sys
+
+    from pyforge.warden.feeds import write_endoflife_cache
+
+    def _clean_cycle(version: str) -> list[dict[str, str]]:
+        return [
+            {
+                "cycle": version,
+                "releaseDate": "2020-01-01",
+                "eol": "2099-01-01",
+                "latest": version,
+            }
+        ]
+
+    runtime_version = ".".join(str(part) for part in sys.version_info[:3])
+    write_endoflife_cache(
+        _feed_cache_root,
+        {
+            "requests": _clean_cycle("2.31.0"),
+            "packaging": _clean_cycle("24.0"),
+            "python": _clean_cycle(runtime_version),
+        },
+    )

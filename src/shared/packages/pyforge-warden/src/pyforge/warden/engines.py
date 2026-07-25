@@ -11,14 +11,25 @@ seam (``extra_env`` param + a surfaced child exit code) rather than
 reimplementing it — see the osv-db-offline-provisioning decision record's
 "seam hand-off" section.
 
+Story 6.6 (FR21) adds a SECOND, narrowly-scoped subprocess call site —
+``_check_engine_version`` — a ``--version`` pre-flight run before either real
+engine subprocess trusts its output. It deliberately does NOT go through
+``_engine_env``: that seam's contract always writes to an
+``-o``/``--output``-style tempfile flag, which ``--version`` has no
+equivalent of, so this helper captures stdout directly via
+``subprocess.run(..., capture_output=True)`` instead. Still typed the same
+way (``ErrorRecord`` via the shared ``ErrorKind`` taxonomy), still bounded by
+a timeout, still no shell — just not funneled through the tempfile contract.
+
 Registry semantics: engines register via ``register_engine(factory)`` at
 module-import time; ``registered_engines()`` instantiates them in
 registration order — deterministic because module execution is. The registry
-is ``[NullEngine, DeptryEngine, OsvEngine, LicenseEngine]``: ``NullEngine``
-is a harmless no-op retained so its 1.2 unit contract is unchanged,
-``DeptryEngine`` is the hygiene-axis engine (1.3), ``OsvEngine`` is the
-vulnerability-axis engine (1.5), ``LicenseEngine`` is the license-axis
-engine (6.2) — the first engine that spawns no subprocess at all.
+is ``[NullEngine, DeptryEngine, OsvEngine, LicenseEngine, CurrencyEngine]``:
+``NullEngine`` is a harmless no-op retained so its 1.2 unit contract is
+unchanged, ``DeptryEngine`` is the hygiene-axis engine (1.3), ``OsvEngine``
+is the vulnerability-axis engine (1.5), ``LicenseEngine`` is the license-axis
+engine (6.2), ``CurrencyEngine`` is the currency-axis engine (6.3) — the
+second engine (after ``LicenseEngine``) that spawns no subprocess at all.
 
 ``NullEngine`` spawns no subprocess; ``DeptryEngine`` runs ``deptry`` via
 ``_engine_env`` (its exit code is CONTENT — exit 1 = issues found — never the
@@ -59,12 +70,23 @@ finding`` — ``vuln.py`` already exports an ``unsafe_identity_finding`` of
 its own into this module's namespace) — Fix 6 (2026-07-16): previously
 computed and silently discarded, unlike every other exclusion path in this
 module.
+
+Story 5.1 (D8) adds ``DoctorCheck``/``run_doctor_checks`` — the ``--doctor``
+self-check aggregation ``cli.py`` calls instead of a real project scan. It
+reuses ``_check_engine_version`` (deptry/osv-scanner) and the SAME OSV-DB/
+KEV/EPSS detection sequences ``OsvEngine.run`` already exercises, so
+``--doctor`` never carries a second, drift-prone copy of that logic. Also
+threads ``OsvEngine.run``'s own ``parse_osv_output(...).fixed_versions``
+(Story 5.1, AC1 — osv-scanner's discarded ``fixed`` version) into
+``EngineResult.fixed_versions`` at the real-parse success site, consumed
+ONLY by ``report.render_text``'s remediation lines.
 """
 
 from __future__ import annotations
 
 import dataclasses
 import os
+import re
 import subprocess
 import tempfile
 import tomllib
@@ -72,7 +94,11 @@ from collections.abc import Callable, Mapping
 from datetime import UTC, datetime
 from pathlib import Path
 
+from packaging.specifiers import SpecifierSet
+from packaging.version import InvalidVersion, Version
+
 from . import feeds
+from .currency import currency_findings, currency_stale_finding
 from .hygiene import (
     _synthesize_deptry_frontdoor,
     parse_deptry_output,
@@ -82,11 +108,13 @@ from .interfaces import Engine, EngineResult
 from .inventory import Component, ResolvedInventory
 from .license import license_findings
 from .models import (
+    AXIS_CURRENCY,
     AXIS_HYGIENE,
     AXIS_INGESTION,
     AXIS_LICENSE,
     AXIS_VULNERABILITY,
     AxisCoverage,
+    Epss,
     ErrorKind,
     ErrorRecord,
     FeedProvenance,
@@ -95,10 +123,13 @@ from .models import (
 )
 from .vuln import (
     DB_MAX_AGE_DAYS,
+    OSV_DB_CACHE_ENV_VAR,
     _db_has_valid_advisory,
     _synthesize_requirements,
     db_snapshot_at,
     db_zip_path,
+    epss_match,
+    epss_stale_finding,
     is_db_stale,
     kev_match,
     kev_stale_finding,
@@ -118,6 +149,34 @@ from .vuln import (
 # {1, 2, 130}, so the sole-ownership exit-literal guard never mistakes it for
 # an exit code.
 DEPTRY_TIMEOUT_SECONDS = 120
+
+# Story 6.6 (FR21 — the distribution gate): the ``--version`` pre-flight's own
+# bounded timeout. A tiny, fixed default — ``--version`` never does real work
+# — distinct from ``DEPTRY_TIMEOUT_SECONDS``/``OSV_TIMEOUT_SECONDS`` (the real
+# scan's budget). Not in {1, 2, 130}, same sole-ownership guard rationale.
+ENGINE_VERSION_CHECK_TIMEOUT_SECONDS = 10
+
+# The tested version ranges (NFR-C1: a RANGE, not an exact pin — engines come
+# from feedstocks — open only to patch releases of the SAME evidence-backed
+# minor). Must byte-for-byte mirror ``pixi.toml``'s ``deptry``/``osv-scanner``
+# run-dependency pins — enforced by
+# ``tests/meta/test_engine_version_range_sync.py``. Evidence: deptry 0.25.1
+# (hygiene.py's DEP005 docstring), osv-scanner 2.4.0 (vuln.py's
+# "Empirically-verified 2.4.0 shape" docstring) — the exact minors this
+# codebase has verified output-schema evidence for; widening beyond them "to
+# be safe" defeats the whole point (an untested newer minor must fail loud,
+# not silently pass).
+DEPTRY_VERSION_RANGE = SpecifierSet(">=0.25.1,<0.26")
+OSV_SCANNER_VERSION_RANGE = SpecifierSet(">=2.4.0,<2.5")
+
+# ``deptry --version`` prints ``deptry 0.25.1``; ``osv-scanner --version``
+# prints a multi-line block starting ``osv-scanner version: 2.4.0`` — both
+# verified live against the currently-provisioned pixi environment during
+# this story's implementation (2026-07-24).
+_DEPTRY_VERSION_PATTERN = re.compile(r"^deptry\s+(\S+)", re.MULTILINE)
+_OSV_SCANNER_VERSION_PATTERN = re.compile(
+    r"^osv-scanner version:\s*(\S+)", re.MULTILINE
+)
 
 _ENGINE_FACTORIES: list[Callable[[], Engine]] = []
 
@@ -302,6 +361,439 @@ def _engine_env(
             pass
 
 
+def _check_engine_version(
+    *,
+    owner: str,
+    argv: list[str],
+    version_pattern: re.Pattern[str],
+    expected: SpecifierSet,
+    cwd: Path,
+) -> ErrorRecord | None:
+    """Story 6.6 (FR21): a ``--version`` pre-flight gate run BEFORE either
+    real engine subprocess trusts its output. A second, narrowly-scoped
+    exception to this module's sole ``_engine_env`` subprocess seam —
+    justified because ``_engine_env``'s contract always writes to an
+    ``-o``/``--output``-style tempfile flag that ``--version`` has no
+    equivalent of; capturing stdout directly is simpler and never touches
+    disk at all.
+
+    Mirrors ``_engine_env``'s own typed-error taxonomy for the spawn itself
+    (``FileNotFoundError`` -> ``ENGINE_UNAVAILABLE`` — disambiguated against a
+    vanished ``cwd`` exactly like ``_engine_env``'s own TOCTOU guard,
+    ``TimeoutExpired`` -> ``ENGINE_TIMEOUT``, any other ``OSError`` ->
+    ``ENGINE_EXECUTION_FAILED``) plus terminal cases unique to this check: a
+    non-zero exit (content alone is never trusted — a broken install could
+    still print a stale/cached version banner before failing), version text
+    that fails to match ``version_pattern``, fails to parse as a PEP 440
+    version, or parses but falls outside ``expected`` — ALL of which map to
+    the SAME existing ``ENGINE_UNAVAILABLE`` kind (no new ``ErrorKind``
+    member; FR21's "unavailable/incompatible" is one typed kind,
+    schema-frozen since Story 6.1). Returns ``None`` on a passing check —
+    the caller's real engine subprocess should proceed exactly as before
+    this story."""
+    try:
+        completed = subprocess.run(  # noqa: S603 — argv list, no shell
+            argv,
+            cwd=str(cwd),
+            env={**os.environ, "NO_COLOR": "1"},
+            stdin=subprocess.DEVNULL,
+            capture_output=True,
+            timeout=ENGINE_VERSION_CHECK_TIMEOUT_SECONDS,
+            check=False,
+        )
+    except FileNotFoundError:
+        # Mirrors _engine_env's own disambiguation (review finding,
+        # 2026-07-24): subprocess.run raises FileNotFoundError for BOTH a
+        # missing executable AND a missing cwd (the pre-exec chdir fails) --
+        # a target dir that vanished after discovery (TOCTOU) must not be
+        # misreported as "engine not installed".
+        if not os.path.isdir(cwd):
+            return ErrorRecord(
+                kind=ErrorKind.ENGINE_EXECUTION_FAILED,
+                owner=owner,
+                message=(
+                    f"scan target {str(cwd)!r} is not an existing directory "
+                    f"when the {owner!r} version check ran (vanished after "
+                    "discovery?)"
+                ),
+            )
+        return ErrorRecord(
+            kind=ErrorKind.ENGINE_UNAVAILABLE,
+            owner=owner,
+            message=f"engine binary for {owner!r} not found on PATH",
+        )
+    except subprocess.TimeoutExpired:
+        return ErrorRecord(
+            kind=ErrorKind.ENGINE_TIMEOUT,
+            owner=owner,
+            message=(
+                f"engine {owner!r} exceeded the "
+                f"{ENGINE_VERSION_CHECK_TIMEOUT_SECONDS}s version-check timeout"
+            ),
+        )
+    except OSError as exc:
+        return ErrorRecord(
+            kind=ErrorKind.ENGINE_EXECUTION_FAILED,
+            owner=owner,
+            message=f"engine {owner!r} could not be executed: {exc.__class__.__name__}",
+        )
+    if completed.returncode != 0:
+        # Review finding, 2026-07-24: a broken/misconfigured engine install
+        # that exits non-zero but still prints a matching version string
+        # (e.g. a stale cached banner before a real failure) must not pass
+        # the gate on stdout content alone.
+        return ErrorRecord(
+            kind=ErrorKind.ENGINE_UNAVAILABLE,
+            owner=owner,
+            message=(
+                f"{owner!r} --version exited {completed.returncode} "
+                "-- compatibility could not be confirmed"
+            ),
+        )
+    stdout_text = completed.stdout.decode("utf-8", errors="replace")
+    match = version_pattern.search(stdout_text)
+    if match is None:
+        return ErrorRecord(
+            kind=ErrorKind.ENGINE_UNAVAILABLE,
+            owner=owner,
+            message=(
+                f"could not parse version output from {owner!r} "
+                f"(--version produced no recognizable version string)"
+            ),
+        )
+    try:
+        version = Version(match.group(1))
+    except InvalidVersion:
+        return ErrorRecord(
+            kind=ErrorKind.ENGINE_UNAVAILABLE,
+            owner=owner,
+            message=(
+                f"could not parse version {match.group(1)!r} reported by "
+                f"{owner!r}"
+            ),
+        )
+    if version not in expected:
+        return ErrorRecord(
+            kind=ErrorKind.ENGINE_UNAVAILABLE,
+            owner=owner,
+            message=(
+                f"{owner!r} version {str(version)!r} is outside tested "
+                f"range {expected!s}"
+            ),
+        )
+    return None
+
+
+# --- Story 5.1 (D8): the --doctor self-check aggregation ---------------------
+#
+# `--doctor` (cli.py) re-exposes this module's own engine-version/OSV-DB/KEV/
+# EPSS detection logic as a read-only, no-network environment self-check -- an
+# operability report, never a project scan (cli.py's `_run_doctor` never
+# builds an inventory or runs discovery/extraction/policy for this path).
+# `DoctorCheck` deliberately lives HERE, not in `models.py`: it is NOT part of
+# the frozen `ComplianceReport` v1 contract (Story 6.1 froze that schema
+# whole), so a new field here can never be mistaken for a sanctioned schema
+# amendment.
+
+
+@dataclasses.dataclass(frozen=True)
+class DoctorCheck:
+    """One ``--doctor`` self-check outcome. ``ok=True`` covers a healthy
+    check AND an ABSENT optional KEV/EPSS feed (v1's NFR-U2 air-gap framing
+    treats that as the expected default posture, never a failure — though
+    the message names the scan-time consequence per feed, see
+    ``_doctor_check_feed``); ``ok=False`` is reserved for a genuine
+    operability problem (an unavailable/out-of-tested-range engine, an
+    unusable/stale offline OSV DB, a PRESENT-but-unloadable feed file, or a
+    PRESENT-but-stale feed whose gate is on by default — KEV, see
+    ``_doctor_check_feed``'s ``stale_is_problem``). ``cli.py``'s ``_run_doctor`` is the ONLY place these compose
+    into an exit code (``0`` when every check is ``ok``, else
+    ``exit_code_for(Status.ERROR)`` — NEVER ``1``); this dataclass carries
+    no exit-code opinion of its own."""
+
+    name: str
+    ok: bool
+    message: str
+
+
+def _doctor_check_engine(
+    *,
+    name: str,
+    argv: list[str],
+    version_pattern: re.Pattern[str],
+    expected: SpecifierSet,
+    cwd: Path,
+) -> DoctorCheck:
+    """One engine's ``--version`` pre-flight, reusing ``_check_engine_
+    version`` verbatim (Story 6.6/FR21) — never a second, doctor-only
+    version-probing codepath. ``_check_engine_version`` already names the
+    specific problem (binary absent, timeout, out-of-range, unparsable
+    output, ...) via its own ``ErrorRecord.message``; this only re-shapes a
+    passing/failing result into a ``DoctorCheck``."""
+    error = _check_engine_version(
+        owner=name,
+        argv=argv,
+        version_pattern=version_pattern,
+        expected=expected,
+        cwd=cwd,
+    )
+    if error is None:
+        return DoctorCheck(
+            name=name, ok=True, message=f"within tested range {expected!s}"
+        )
+    return DoctorCheck(name=name, ok=False, message=error.message)
+
+
+def _doctor_check_osv_db() -> DoctorCheck:
+    """The offline OSV database pre-flight (decision record § 4), reusing
+    ``OsvEngine.run``'s own ``resolve_cache_dir`` -> ``db_zip_path`` ->
+    ``_db_has_valid_advisory`` -> ``db_snapshot_at`` -> ``is_db_stale``
+    sequence verbatim — a genuine operability problem (absent, unreadable,
+    content-corrupt, or stale/future-dated) is ``ok=False``, naming the
+    specific issue (this is read as an operational gap, never a policy
+    verdict — ``--doctor`` still never exits ``1`` for it; ``cli.py``
+    projects a failing check to exit ``2``)."""
+    cache_dir = resolve_cache_dir()
+    if cache_dir is None:
+        return DoctorCheck(
+            name="osv-db",
+            ok=False,
+            message=(
+                f"{OSV_DB_CACHE_ENV_VAR} is unset or empty -- no offline "
+                "OSV database configured"
+            ),
+        )
+    zip_path = db_zip_path(cache_dir)
+    if zip_path is None or not _db_has_valid_advisory(zip_path):
+        return DoctorCheck(
+            name="osv-db",
+            ok=False,
+            message=(
+                f"no usable offline OSV database found under {cache_dir!r} "
+                "(absent, empty, or content-corrupt)"
+            ),
+        )
+    try:
+        snapshot_at = db_snapshot_at(zip_path)
+    except OSError:
+        # Review finding (2026-07-24): TOCTOU -- the db can vanish/become
+        # unreadable between _db_has_valid_advisory's own read above and
+        # this stat call. Left uncaught, this OSError would escape all the
+        # way to main()'s last-resort net, turning a --doctor health-check
+        # into a raw traceback instead of naming the osv-db problem
+        # (mirrors _doctor_check_feed's own identical TOCTOU guard below).
+        return DoctorCheck(
+            name="osv-db",
+            ok=False,
+            message=(
+                f"offline OSV database under {cache_dir!r} became unreadable "
+                "while checking its snapshot"
+            ),
+        )
+    if is_db_stale(snapshot_at, DB_MAX_AGE_DAYS, now=datetime.now(UTC)):
+        return DoctorCheck(
+            name="osv-db",
+            ok=False,
+            message=(
+                f"offline OSV database is stale or future-dated (snapshot "
+                f"{snapshot_at}, max age {DB_MAX_AGE_DAYS}d)"
+            ),
+        )
+    return DoctorCheck(
+        name="osv-db", ok=True, message=f"snapshot {snapshot_at} (fresh)"
+    )
+
+
+def _doctor_check_feed(
+    feed_name: str,
+    cache_path: Callable[[str | Path], Path],
+    loader: Callable[[Path], Mapping[str, object] | None],
+    *,
+    absent_hint: str,
+    stale_hint: str,
+    stale_is_problem: bool = False,
+) -> DoctorCheck:
+    """One optional feed self-check, consulted UNCONDITIONALLY (never gated
+    on ``--fail-on-kev``/``--min-epss``/currency flags — ``--doctor``
+    reports environment operability regardless of which gates a LATER real
+    scan might enable). An ABSENT feed is ``ok=True`` with an explicit
+    "operating air-gapped" message (NFR-U2's air-gap framing: a missing
+    OPTIONAL feed is the expected offline default, never a doctor failure);
+    a PRESENT-but-unloadable feed file (unreadable, invalid JSON, wrong
+    shape, or a directory squatting on the path) is ``ok=False`` naming the
+    file — an operator who provisioned the feed must not be told it does
+    not exist (review finding 2026-07-24; mirrors ``_doctor_check_osv_db``'s
+    own content-corrupt handling one check up). ``absent_hint``/
+    ``stale_hint`` carry the PER-FEED scan-time consequence (review finding
+    2026-07-24: KEV's absent-feed consequence under the shipped
+    ``fail_on_kev=True`` default is a whole-axis ``indeterminate``/exit-1,
+    not "offline default assumed" — the feeds genuinely differ here, since
+    ``min_epss`` defaults to ``None``). ``stale_is_problem`` makes a
+    PRESENT-but-stale feed ``ok=False`` for the one feed whose gate is on
+    by default (KEV): a stale KEV feed makes every default-config scan
+    compose ``indeterminate`` — the same class of environment rot as a
+    stale offline OSV DB one check up, so reporting it ``ok``/exit-0 would
+    machine-readably green-light an environment whose default scan cannot
+    produce a trusted verdict (review finding 2026-07-24; the message-level
+    hint alone was not enough). Feeds with no default gate (EPSS,
+    endoflife) keep the informational ``ok=True`` stale treatment."""
+    check_name = f"{feed_name}-feed"
+    air_gapped = DoctorCheck(
+        name=check_name,
+        ok=True,
+        message=(
+            f"operating air-gapped: {feed_name} feed not present -- "
+            f"{absent_hint}"
+        ),
+    )
+    cache_dir = feeds.resolve_cache_dir()
+    if cache_dir is None:
+        return air_gapped
+    path = cache_path(cache_dir)
+    catalog = loader(path)
+    if catalog is None:
+        try:
+            # exists(), not is_file() (review finding 2026-07-24): a
+            # directory (or other non-file) squatting on the feed path is
+            # present-but-unusable -- classifying it "not present" would
+            # report a provisioning mistake as healthy air-gapped operation.
+            feed_file_present = path.exists()
+        except OSError:
+            feed_file_present = False
+        if not feed_file_present:
+            # Absent (or vanished mid-check — the same TOCTOU treatment as
+            # _kev_enrichment's): the expected air-gapped default.
+            return air_gapped
+        return DoctorCheck(
+            name=check_name,
+            ok=False,
+            message=(
+                f"{feed_name} feed file present at {path} but unreadable "
+                "or invalid -- refresh or remove it"
+            ),
+        )
+    try:
+        provenance = feeds.feed_provenance(
+            source=str(path),
+            path=path,
+            max_age_days=feeds.DEFAULT_FEED_MAX_AGE_DAYS,
+            now=datetime.now(UTC),
+        )
+    except OSError:
+        # TOCTOU: the cache vanished between the load above and this stat --
+        # treat exactly like "no usable feed" (mirrors _kev_enrichment's own
+        # TOCTOU handling).
+        return air_gapped
+    if not provenance.max_age_ok:
+        return DoctorCheck(
+            name=check_name,
+            ok=not stale_is_problem,
+            message=(
+                f"{feed_name} feed present but stale (snapshot "
+                f"{provenance.snapshot_at}) -- {stale_hint}"
+            ),
+        )
+    return DoctorCheck(
+        name=check_name,
+        ok=True,
+        message=(
+            f"{feed_name} feed present, snapshot {provenance.snapshot_at} "
+            "(fresh)"
+        ),
+    )
+
+
+def run_doctor_checks(target: Path) -> tuple[DoctorCheck, ...]:
+    """Story 5.1 (D8)'s ``--doctor`` aggregation: the deptry/osv-scanner
+    version pre-flight, the offline OSV-DB pre-flight, and the
+    KEV/EPSS/endoflife feed checks — all read-only local filesystem +
+    ``--version`` subprocess work, NEVER a network call by design. (The
+    autouse socket-deny harness, ``tests/meta/test_socket_deny_alive.py``,
+    enforces that for the IN-PROCESS half only — the ``--version`` child
+    processes run outside its reach and are trusted to be local-only;
+    review finding 2026-07-24: don't overclaim the harness's coverage.) No
+    config parameter: every check below is constant-driven, never
+    policy-driven (mirrors ``_check_engine_version``'s own config-
+    independent shape) — ``cli.py``'s ``_run_doctor`` calls this BEFORE any
+    discovery/extraction/policy/engine-scan work happens. Order is fixed
+    (deptry, osv-scanner, osv-db, kev-feed, epss-feed, endoflife-feed) —
+    ``--format text`` renders it verbatim; ``--format json`` sorts by
+    ``name`` instead (its own small ad-hoc, non-schema document)."""
+    return (
+        _doctor_check_engine(
+            name="deptry",
+            argv=["deptry", "--version"],
+            version_pattern=_DEPTRY_VERSION_PATTERN,
+            expected=DEPTRY_VERSION_RANGE,
+            cwd=target,
+        ),
+        _doctor_check_engine(
+            name="osv-scanner",
+            argv=["osv-scanner", "--version"],
+            version_pattern=_OSV_SCANNER_VERSION_PATTERN,
+            expected=OSV_SCANNER_VERSION_RANGE,
+            cwd=target,
+        ),
+        _doctor_check_osv_db(),
+        _doctor_check_feed(
+            "kev",
+            feeds.kev_cache_path,
+            feeds.load_kev_catalog,
+            # Truthful under the SHIPPED default (config.EffectiveConfig's
+            # fail_on_kev=True): without this feed, a default-config scan's
+            # vulnerability axis composes indeterminate (exit 1) — never
+            # "offline default assumed" (review finding 2026-07-24).
+            absent_hint=(
+                "the default fail-on-kev gate will compose indeterminate "
+                "on the vulnerability axis until the feed is provisioned "
+                "or the gate is explicitly disabled"
+            ),
+            stale_hint=(
+                "the default fail-on-kev gate will compose indeterminate "
+                "on the vulnerability axis until the feed is refreshed "
+                "or the gate is explicitly disabled"
+            ),
+            # Present-but-stale KEV is ok=False (review finding 2026-07-24):
+            # under the shipped fail_on_kev=True default, a stale feed
+            # blocks every scan's trusted verdict exactly like a stale OSV
+            # DB -- doctor must not exit 0 for it.
+            stale_is_problem=True,
+        ),
+        _doctor_check_feed(
+            "epss",
+            feeds.epss_cache_path,
+            feeds.load_epss_scores,
+            # EPSS genuinely IS optional: min_epss defaults to None, so no
+            # scan consults this feed unless --min-epss is passed.
+            absent_hint="no EPSS gate is active unless --min-epss is passed",
+            stale_hint=(
+                "an EPSS gate (--min-epss) would compose indeterminate "
+                "off a stale feed; no gate is active without --min-epss"
+            ),
+        ),
+        _doctor_check_feed(
+            "endoflife",
+            feeds.endoflife_cache_path,
+            feeds.load_endoflife_snapshot,
+            # The currency axis's tier-2 source (Story 6.3) -- the third
+            # sibling under the SAME feed-cache root (review finding
+            # 2026-07-24: doctor checked KEV/EPSS but skipped the one feed
+            # the currency axis actually reads). No default gate:
+            # currency_gating activates only via the flags named below.
+            absent_hint=(
+                "no currency gate is active unless --max-lag/--require-lts/"
+                "--fail-on-eol is passed"
+            ),
+            stale_hint=(
+                "an active currency gate (--max-lag/--require-lts/"
+                "--fail-on-eol) skips the stale snapshot and components "
+                "degrade to currency:unknown -- indeterminate under that "
+                "gate; no gate is active without those flags"
+            ),
+        ),
+    )
+
+
 class NullEngine:
     """The no-op engine: assesses nothing, contributes nothing.
 
@@ -423,7 +915,14 @@ class DeptryEngine:
     vuln-axis twin's so the policy layer's id-keyed dedupe can never drop
     one axis's record) — computed up front and merged into EVERY return
     path below, mirroring ``OsvEngine.run``'s own never-silently-dropped
-    handling of its parallel-shaped ``excluded_findings``."""
+    handling of its parallel-shaped ``excluded_findings``.
+
+    Story 6.6 (FR21): a ``--version`` pre-flight (``_check_engine_version``)
+    gates the top of ``run()``, right after ``excluded_findings`` is
+    computed — deptry ALWAYS invokes the real subprocess below, so the gate
+    is unconditional. A failing check never invokes the real deptry
+    subprocess and preserves ``excluded_findings`` exactly like the
+    ``mkstemp`` ``OSError`` branch immediately below it."""
 
     name: str = "deptry"
     axis: str = AXIS_HYGIENE
@@ -439,6 +938,24 @@ class DeptryEngine:
                 key=lambda f: f.id,
             )
         )
+        # Story 6.6 (FR21): the version pre-flight gates EVERY run — deptry
+        # always invokes the real subprocess below, so the gate is
+        # unconditional. A failure never drops the purity guard's own
+        # findings, mirroring the mkstemp OSError branch immediately below.
+        version_error = _check_engine_version(
+            owner=self.name,
+            argv=["deptry", "--version"],
+            version_pattern=_DEPTRY_VERSION_PATTERN,
+            expected=DEPTRY_VERSION_RANGE,
+            cwd=target,
+        )
+        if version_error is not None:
+            return EngineResult(
+                findings=excluded_findings,
+                errors=(version_error,),
+                coverage=(),
+                axis=self.axis,
+            )
         try:
             handle, input_path = tempfile.mkstemp(
                 suffix=".txt", prefix="pdos-deptry-frontdoor-"
@@ -665,6 +1182,103 @@ def _stamp_kev(
     return tuple(stamped)
 
 
+# --- Story 6.7 (FR: --min-epss): FIRST.org EPSS enrichment -------------------
+
+
+def _epss_enrichment(
+    min_epss: float | None,
+) -> tuple[dict[str, tuple[float, float]] | None, FeedProvenance | None, tuple[Finding, ...]]:
+    """Consult the EPSS feed (``feeds.py``) ONCE per ``OsvEngine.run`` call —
+    mirrors ``_kev_enrichment`` structurally, one feed over. Returns
+    ``(scores, epss_data, epss_axis_findings)``:
+
+    * ``min_epss is None`` -> ``(None, None, ())`` — the EPSS cache is never
+      even opened (gate off).
+    * The feed is absent/unreadable/content-corrupt -> ``(None, None,
+      (epss_stale_finding(unavailable=True),))`` — no catalog to match
+      against, so every ``vuln:`` finding's ``epss`` stays its default
+      ``None``.
+    * The feed loads but is stale -> ``(scores, epss_data, (epss_stale_
+      finding(unavailable=False),))`` — per-finding matching still runs
+      against the loaded (if aged) catalog; the whole axis is independently
+      forced ``indeterminate`` by the returned finding.
+    * The feed loads and is fresh -> ``(scores, epss_data, ())``."""
+    if min_epss is None:
+        return None, None, ()
+    cache_dir = feeds.resolve_cache_dir()
+    if cache_dir is None:
+        return None, None, (epss_stale_finding(unavailable=True),)
+    path = feeds.epss_cache_path(cache_dir)
+    scores = feeds.load_epss_scores(path)
+    if scores is None:
+        return None, None, (epss_stale_finding(unavailable=True),)
+    try:
+        epss_data = feeds.feed_provenance(
+            source=str(path),
+            path=path,
+            max_age_days=feeds.DEFAULT_FEED_MAX_AGE_DAYS,
+            now=datetime.now(UTC),
+        )
+    except OSError:
+        # The cache file vanished between the catalog read above and this
+        # provenance stat (TOCTOU) -- treat exactly like "no usable feed"
+        # rather than letting the race propagate as an engine crash (mirrors
+        # _kev_enrichment's own TOCTOU handling).
+        return None, None, (epss_stale_finding(unavailable=True),)
+    epss_findings = (
+        () if epss_data.max_age_ok else (epss_stale_finding(unavailable=False),)
+    )
+    return scores, epss_data, epss_findings
+
+
+def _stamp_epss(
+    findings: tuple[Finding, ...],
+    scores: Mapping[str, tuple[float, float]] | None,
+    kev_candidates: Mapping[str, tuple[str, ...]],
+) -> tuple[Finding, ...]:
+    """Stamp ``epss`` onto every ``vuln:`` finding via ``dataclasses.replace``
+    (called alongside ``_stamp_kev``, BEFORE ``EngineResult`` is returned —
+    the same hard positioning invariant). Every non-``vuln:`` finding passes
+    through unchanged. ``scores=None`` (EPSS never consulted, or
+    unavailable) is a no-op: every finding is returned as-is.
+
+    Unlike ``_stamp_kev``, which always stamps ``kev``/``kev_date`` (``True``
+    or ``False``) once a catalog loads, there is no boolean equivalent for
+    "no EPSS match" — only an actual match calls ``dataclasses.replace``;
+    a finding with no match is returned unchanged, leaving ``finding.epss``
+    at its existing ``None`` default (design note: ``finding.epss is None``
+    IS the "no data" signal, never a separate flag).
+
+    Review finding (two passes): ``feeds.load_epss_scores`` now filters
+    non-finite/out-of-``[0, 1]`` entries at load time — a domain-corrupt
+    cache entry never reaches this function through the normal path, so a
+    matched entry is trustworthy by construction. The ``try/except
+    ValueError`` around ``models.Epss`` construction stays as a last-resort
+    crash-guard (e.g. against future drift between the load filter and
+    ``Epss.__post_init__``): if it ever fires, degrade the SAME way a
+    non-match already does (skip the stamp), never raise past this function
+    and crash the whole scan."""
+    if scores is None:
+        return findings
+    stamped: list[Finding] = []
+    for finding in findings:
+        if not finding.id.startswith("vuln:"):
+            stamped.append(finding)
+            continue
+        pair = epss_match(kev_candidates.get(finding.id, ()), scores)
+        if pair is None:
+            stamped.append(finding)
+            continue
+        score, percentile = pair
+        try:
+            epss = Epss(score=score, percentile=percentile)
+        except ValueError:
+            stamped.append(finding)
+            continue
+        stamped.append(dataclasses.replace(finding, epss=epss))
+    return tuple(stamped)
+
+
 class OsvEngine:
     """The second real engine: vulnerability matching via ``osv-scanner``,
     fully offline (Story 1.5), widened with two honesty tiers (Story 2.5).
@@ -718,13 +1332,33 @@ class OsvEngine:
     usable catalog, every ``vuln:`` finding is stamped ``kev``/``kev_date``
     via ``_stamp_kev`` BEFORE this method returns its ``EngineResult`` —
     a hard positioning invariant: ``interfaces.py``'s engine-dedup loop
-    must never see an un-stamped finding."""
+    must never see an un-stamped finding.
+
+    Story 6.7: ``min_epss`` (default ``None`` — gate off) gates a FOURTH,
+    independent consultation — the FIRST.org EPSS feed — computed ONCE per
+    run alongside KEV (``_epss_enrichment``, called right next to
+    ``_kev_enrichment``) and merged into every content-bearing result the
+    same way. Every ``vuln:`` finding is stamped ``epss`` via ``_stamp_epss``
+    BEFORE this method returns its ``EngineResult``, same hard positioning
+    invariant — but unlike ``kev``/``kev_date``, ``epss`` is stamped ONLY on
+    an actual match (see ``_stamp_epss``'s own docstring).
+
+    Story 6.6 (FR21): a ``--version`` pre-flight (``_check_engine_version``)
+    gates the ONE branch that actually shells out to ``osv-scanner`` —
+    placed immediately after the ``if not synthesized.lines:`` early-return
+    (every early-return above it — no candidates, DB unavailable, purity
+    guard excludes everything — never invoked the real subprocess before
+    this story and still doesn't invoke the version check either). A
+    failing check returns the same excluded/name-level/stale/KEV/EPSS
+    findings tuple the adjacent ``mkstemp`` ``OSError`` branch already
+    assembles — never silently dropped."""
 
     name: str = "osv-scanner"
     axis: str = AXIS_VULNERABILITY
 
-    def __init__(self, *, fail_on_kev: bool = True) -> None:
+    def __init__(self, *, fail_on_kev: bool = True, min_epss: float | None = None) -> None:
         self.fail_on_kev = fail_on_kev
+        self.min_epss = min_epss
 
     def run(self, target: Path, inventory: ResolvedInventory) -> EngineResult:
         # Ecosystem-agnostic (Story 2.1): a resolved pypi_identity is the
@@ -766,13 +1400,21 @@ class OsvEngine:
         # docstring). `catalog` feeds `_stamp_kev` below; `kev_findings` is
         # the 0-or-1 whole-axis KEV-provenance indeterminate finding.
         catalog, kev_data, kev_findings = _kev_enrichment(self.fail_on_kev)
+        # Story 6.7: the EPSS sibling consultation, same "computed ONCE,
+        # merged into every content-bearing result" treatment as KEV above.
+        scores, epss_data, epss_findings = _epss_enrichment(self.min_epss)
 
         if not candidates:
             # Name-level-only scan: osv-scanner has no "any version" query
             # mode, so this never invokes the subprocess at all.
             findings = tuple(
                 sorted(
-                    (*name_level_findings, *stale_findings, *kev_findings),
+                    (
+                        *name_level_findings,
+                        *stale_findings,
+                        *kev_findings,
+                        *epss_findings,
+                    ),
                     key=lambda f: f.id,
                 )
             )
@@ -786,6 +1428,7 @@ class OsvEngine:
                 axis=self.axis,
                 vuln_data=vuln_data,
                 kev_data=kev_data,
+                epss_data=epss_data,
             )
 
         synthesized = _synthesize_requirements(candidates)
@@ -812,6 +1455,7 @@ class OsvEngine:
                         *name_level_findings,
                         *stale_findings,
                         *kev_findings,
+                        *epss_findings,
                     ),
                     key=lambda f: f.id,
                 )
@@ -826,6 +1470,44 @@ class OsvEngine:
                 axis=self.axis,
                 vuln_data=vuln_data,
                 kev_data=kev_data,
+                epss_data=epss_data,
+            )
+
+        # Story 6.6 (FR21): the version pre-flight sits immediately before
+        # the ONE branch that actually shells out to osv-scanner — every
+        # early-return above (no candidates, DB unavailable, name-level-only)
+        # never invoked the real subprocess before this story and must keep
+        # not invoking the version check either. A failure here returns the
+        # SAME merged findings tuple the adjacent mkstemp OSError branch
+        # below already assembles (NFR-S6/FR13 — never silently dropped).
+        version_error = _check_engine_version(
+            owner=self.name,
+            argv=["osv-scanner", "--version"],
+            version_pattern=_OSV_SCANNER_VERSION_PATTERN,
+            expected=OSV_SCANNER_VERSION_RANGE,
+            cwd=target,
+        )
+        if version_error is not None:
+            findings = tuple(
+                sorted(
+                    (
+                        *excluded_findings,
+                        *name_level_findings,
+                        *stale_findings,
+                        *kev_findings,
+                        *epss_findings,
+                    ),
+                    key=lambda f: f.id,
+                )
+            )
+            return EngineResult(
+                findings=findings,
+                errors=(version_error,),
+                coverage=(),
+                axis=self.axis,
+                vuln_data=None,
+                kev_data=kev_data,
+                epss_data=epss_data,
             )
 
         try:
@@ -859,6 +1541,7 @@ class OsvEngine:
                         *name_level_findings,
                         *stale_findings,
                         *kev_findings,
+                        *epss_findings,
                     ),
                     key=lambda f: f.id,
                 )
@@ -870,6 +1553,7 @@ class OsvEngine:
                 axis=self.axis,
                 vuln_data=None,
                 kev_data=kev_data,
+                epss_data=epss_data,
             )
         try:
             os.close(handle)
@@ -913,6 +1597,7 @@ class OsvEngine:
                         *name_level_findings,
                         *stale_findings,
                         *kev_findings,
+                        *epss_findings,
                     ),
                     key=lambda f: f.id,
                 )
@@ -924,6 +1609,7 @@ class OsvEngine:
                 axis=self.axis,
                 vuln_data=None,
                 kev_data=kev_data,
+                epss_data=epss_data,
             )
 
         if exit_code in (0, 1):
@@ -943,12 +1629,18 @@ class OsvEngine:
                 snapshot_at=snapshot_at,
                 max_age_ok=not stale,
             )
-            # Story 6.4: the ONLY place real `vuln:` findings exist to stamp
-            # -- BEFORE they are merged into `findings` and this method
-            # returns (the hard positioning invariant: interfaces.py's
-            # engine-dedup loop must never see an un-stamped finding).
+            # Story 6.4/6.7: the ONLY place real `vuln:` findings exist to
+            # stamp -- BEFORE they are merged into `findings` and this
+            # method returns (the hard positioning invariant: interfaces.py's
+            # engine-dedup loop must never see an un-stamped finding). Both
+            # stamps read the SAME kev_candidates set (Story 6.7 reuses it
+            # verbatim, no new candidate-collection mechanism) and compose
+            # freely (either, both, or neither may fire per finding).
             stamped_parse_findings = _stamp_kev(
                 parse.findings, catalog, parse.kev_candidates
+            )
+            stamped_parse_findings = _stamp_epss(
+                stamped_parse_findings, scores, parse.kev_candidates
             )
             findings = tuple(
                 sorted(
@@ -958,6 +1650,7 @@ class OsvEngine:
                         *name_level_findings,
                         *stale_findings,
                         *kev_findings,
+                        *epss_findings,
                     ),
                     key=lambda f: f.id,
                 )
@@ -969,6 +1662,11 @@ class OsvEngine:
                 axis=self.axis,
                 vuln_data=vuln_data,
                 kev_data=kev_data,
+                epss_data=epss_data,
+                # Story 5.1 (AC1): threaded ONLY at this real-parse success
+                # site -- every other return path above/below keeps the
+                # default empty mapping (nothing was actually parsed there).
+                fixed_versions=parse.fixed_versions,
             )
 
         if exit_code == 127:
@@ -990,6 +1688,7 @@ class OsvEngine:
                         *name_level_findings,
                         *stale_findings,
                         *kev_findings,
+                        *epss_findings,
                     ),
                     key=lambda f: f.id,
                 )
@@ -1001,6 +1700,7 @@ class OsvEngine:
                 axis=self.axis,
                 vuln_data=None,
                 kev_data=kev_data,
+                epss_data=epss_data,
             )
 
         if exit_code == 128:
@@ -1018,6 +1718,7 @@ class OsvEngine:
                         *name_level_findings,
                         *stale_findings,
                         *kev_findings,
+                        *epss_findings,
                     ),
                     key=lambda f: f.id,
                 )
@@ -1029,6 +1730,7 @@ class OsvEngine:
                 axis=self.axis,
                 vuln_data=None,
                 kev_data=kev_data,
+                epss_data=epss_data,
             )
 
         error_record = ErrorRecord(
@@ -1043,6 +1745,7 @@ class OsvEngine:
                     *name_level_findings,
                     *stale_findings,
                     *kev_findings,
+                    *epss_findings,
                 ),
                 key=lambda f: f.id,
             )
@@ -1054,6 +1757,7 @@ class OsvEngine:
             axis=self.axis,
             vuln_data=None,
             kev_data=kev_data,
+            epss_data=epss_data,
         )
 
 
@@ -1106,7 +1810,71 @@ class LicenseEngine:
         )
 
 
+class CurrencyEngine:
+    """The fourth real engine: per-component + Python-runtime currency
+    verdicts (Story 6.3, axis ``"currency"``). Mirrors ``LicenseEngine``'s
+    shape exactly — ``currency.currency_findings`` owns the whole axis's
+    substantive logic (tier-ladder resolution, ``!python-runtime`` sentinel,
+    id/finding construction); this class is a thin coverage-and-
+    ``EngineResult`` wrapper, spawning no subprocess.
+
+    Coverage (mirrors ``LicenseEngine``'s Story 6.2 Boundaries): every
+    component gets a real attempt this story — ``deps_assessed ==
+    deps_total == inventory.count`` unconditionally (``currency_covered``
+    stays inert/``True`` per 6.1's landed design).
+
+    Story 6.5 (NFR-S9): ``gating`` (from ``config.currency_gating``, wired
+    in ``cli.py`` exactly as ``OsvEngine``'s ``fail_on_kev`` is) activates
+    the freshness precondition — when active AND the bundled LTS registry is
+    absent/stale (``currency_data is None`` or ``not currency_data.
+    max_age_ok``), one whole-axis ``currency_stale_finding`` is appended so
+    the axis lands ``indeterminate`` (never a silent pass off untrustworthy
+    curated data), mirroring how ``OsvEngine`` merges ``_kev_enrichment``'s
+    KEV-provenance finding. Gated on ``gating`` exactly as ``_kev_enrichment``
+    gates on ``fail_on_kev``; a scan with the gate OFF is byte-identical to
+    pre-6.5 (no finding appended, whatever the registry's freshness)."""
+
+    name: str = "currency"
+    axis: str = AXIS_CURRENCY
+
+    def __init__(self, *, gating: bool = False) -> None:
+        self._gating = gating
+
+    def run(self, target: Path, inventory: ResolvedInventory) -> EngineResult:
+        findings, currency_data = currency_findings(
+            inventory.components, now=datetime.now(UTC)
+        )
+        if self._gating and (currency_data is None or not currency_data.max_age_ok):
+            # NFR-S9: an absent/stale bundled registry under an active gate
+            # forces the WHOLE axis indeterminate -- one provenance finding
+            # merged in exactly the way OsvEngine spreads *kev_findings.
+            findings = tuple(
+                sorted(
+                    (*findings, currency_stale_finding(unavailable=currency_data is None)),
+                    key=lambda f: f.id,
+                )
+            )
+        coverage = (
+            AxisCoverage(
+                axis=AXIS_CURRENCY,
+                manifests_found=0,
+                manifests_parsed=0,
+                deps_total=inventory.count,
+                deps_assessed=inventory.count,
+                resolution_depth=None,
+            ),
+        )
+        return EngineResult(
+            findings=findings,
+            errors=(),
+            coverage=coverage,
+            axis=self.axis,
+            currency_data=currency_data,
+        )
+
+
 register_engine(NullEngine)
 register_engine(DeptryEngine)
 register_engine(OsvEngine)
 register_engine(LicenseEngine)
+register_engine(CurrencyEngine)

@@ -1,0 +1,91 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.0.0"
+
+package:
+  name: pybase62
+  version: ${{ version }}
+
+source:
+  url: https://github.com/suminb/base62/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: 36ac9ef2bf547d1845aa48e3f5878251603904b0da881cdf92ccd011795c21cc
+
+build:
+  noarch: python
+  number: 0
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - base62
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/suminb/base62
+  license: BSD-2-Clause
+  license_file: LICENSE
+  summary: Python module for base62 encoding
+  repository: https://github.com/suminb/base62
+  documentation: https://github.com/suminb/base62
+  description: |
+    A Python module for base62 encoding. base62 is a binary-to-text
+    encoding scheme that represents binary data in an ASCII string
+    format using the 62 alphanumeric characters (0-9, A-Z, a-z).
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pybase62
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pybase62
+  cfe-name-aliases:
+    - base62
+  cfe-purls:
+    - pkg:conda/pybase62@${{ version }}?channel=conda-forge
+    - pkg:pypi/pybase62@${{ version }}
+  cfe-upstream-repo: https://github.com/suminb/base62
+  cfe-upstream-homepage: https://github.com/suminb/base62
+  cfe-import-names: [base62]
+  cfe-source-kind: github-tag:pypi-wheel-only-no-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pybase62-feedstock
+  cfe-submission-pr: https://github.com/conda-forge/staged-recipes/pull/33838
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-25T03:00:00Z
+  cfe-generated-by-version: 8.30.1
+  cfe-generated-at-datetime: 2026-06-19T13:36:19Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-19T16:19:53Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# source:
+#    # GitHub tag archive (G54 source preference): PyPI ships a wheel only (no
+#    # sdist), but the source IS on GitHub (base62.py + setup.py at the tag), so
+#    # conda-forge prefers building from source over repackaging the wheel.
+#    # setup.py sets version=base62.__version__ (read from base62.py — no G39).
+# about:
+#    # Upstream ships only a wheel (no sdist); the wheel's bundled LICENSE is
+#    # not reachable as a recipe-relative path, so it ships in the recipe dir.
+####

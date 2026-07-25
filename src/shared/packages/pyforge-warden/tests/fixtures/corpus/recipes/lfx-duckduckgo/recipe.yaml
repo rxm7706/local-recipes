@@ -1,0 +1,106 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.1.1"
+  # wheel-only on PyPI; source IS in the langflow monorepo (src/bundles/duckduckgo).
+  # conda-forge prefers source > wheel. monorepo tag != package version - bump BOTH.
+  monorepo_tag: "1.10.0"
+
+package:
+  name: lfx-duckduckgo
+  version: ${{ version }}
+
+source:
+  url: https://github.com/langflow-ai/langflow/archive/refs/tags/v${{ monorepo_tag }}.tar.gz
+  sha256: 45a317111a5d7cbc2709e683a72a80779801a658f61e506b612978588788ab71
+
+build:
+  noarch: python
+  number: 0
+  script: ${{ PYTHON }} -m pip install ./src/bundles/duckduckgo --no-deps --no-build-isolation -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - hatchling
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - ddgs >=9.0.0
+    - langchain-community >=0.4.1,<1.0.0
+    - lfx >=1.10.0.rc0,<2.0.0
+
+tests:
+  - python:
+      imports:
+        - lfx_duckduckgo
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/langflow-ai/langflow
+  repository: https://github.com/langflow-ai/langflow
+  documentation: https://docs.langflow.org/extensions
+  license: MIT
+  license_file: LICENSE
+  summary: DuckDuckGo Search component as a standalone Langflow Extension Bundle.
+  description: |
+    lfx-duckduckgo packages the DuckDuckGo Search component as a standalone
+    Langflow Extension Bundle (lfx plugin), exposing it as a reusable
+    component for Langflow flows.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: lfx-duckduckgo
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: lfx-duckduckgo
+  cfe-purls:
+    - pkg:conda/lfx-duckduckgo@${{ version }}?channel=conda-forge
+    - pkg:pypi/lfx-duckduckgo@${{ version }}
+  cfe-upstream-repo: https://github.com/langflow-ai/langflow
+  cfe-upstream-homepage: https://github.com/langflow-ai/langflow
+  cfe-import-names: [lfx_duckduckgo]
+  cfe-source-kind: github-tag
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: pending-approval-on-conda-forge
+  cfe-submission-pr: https://github.com/conda-forge/staged-recipes/pull/33979
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-07-04T22:21:00Z
+  cfe-generated-by-version: 8.34.0
+  cfe-generated-at-datetime: 2026-06-19T20:15:00Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-06-20T01:14:28Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # Wheel-only on PyPI (no sdist published); canonical wheel source.url
+#    # pattern (hyphenated path-2 segment, underscored filename stem).
+# source:
+#    # The wheel omits LICENSE from its dist-info (only METADATA/WHEEL/
+#    # entry_points.txt/RECORD), so LICENSE is shipped in-recipe per the
+#    # canonical license-file placement pattern (2). LICENSE is the
+#    # repo-wide MIT from langflow-ai/langflow.
+# context:
+#    # python_min omitted — upstream requires-python is <3.15,>=3.10; the
+#    # 3.10 floor is the conda-forge default, supplied by conda-forge-pinning.
+#  run:
+#    # Upstream Requires-Dist (mirrored incl. upper bounds — load-bearing
+#    # under pip_check: true):
+#    #   ddgs>=9.0.0
+#    #   langchain-community<1.0.0,>=0.4.1
+#    #   lfx<2.0.0,>=1.10.0.rc0
+#    # langchain-community is on conda-forge; lfx resolves from the local
+#    # channel; ddgs is NOT yet on conda-forge (need-authoring blocker).
+####

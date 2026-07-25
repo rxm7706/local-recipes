@@ -38,11 +38,16 @@ from pyforge.warden.models import (
     AXIS_INGESTION,
     AXIS_LICENSE,
     AXIS_VULNERABILITY,
+    CurrencyInfo,
+    CurrencyVerdict,
     CveMatchLevel,
     Ecosystem,
+    Epss,
     ErrorKind,
     ErrorRecord,
     Finding,
+    LicenseInfo,
+    LicenseVerdict,
     ScannedManifest,
     Severity,
     SeverityTier,
@@ -69,14 +74,16 @@ def make_inventory(*components) -> ResolvedInventory:
 
 def test_registry_holds_the_null_deptry_and_osv_engines():
     """Story 1.3 registers the real deptry engine, Story 1.5 the osv-scanner
-    engine, Story 6.2 the license engine, alongside the retained no-op null
-    engine, in deterministic registration order."""
+    engine, Story 6.2 the license engine, Story 6.3 the currency engine,
+    alongside the retained no-op null engine, in deterministic registration
+    order."""
     engines = registered_engines()
     assert [engine.name for engine in engines] == [
         "null",
         "deptry",
         "osv-scanner",
         "license",
+        "currency",
     ]
     assert isinstance(engines[0], NullEngine)
 
@@ -101,7 +108,14 @@ def test_register_engine_appends_in_deterministic_order(monkeypatch):
     returned = register_engine(DummyEngine)
     assert returned is DummyEngine  # decorator-friendly
     names = [engine.name for engine in registered_engines()]
-    assert names == ["null", "deptry", "osv-scanner", "license", "dummy"]
+    assert names == [
+        "null",
+        "deptry",
+        "osv-scanner",
+        "license",
+        "currency",
+        "dummy",
+    ]
 
 
 def test_register_engine_is_idempotent_for_the_same_factory(monkeypatch):
@@ -351,6 +365,208 @@ def test_default_policy_with_fail_on_high_escalates_a_high_severity_finding(
     assert (
         Status.POLICY_VIOLATION,
         StatusDriver(axis=AXIS_VULNERABILITY, finding_id=engine_finding.id),
+    ) in rungs
+
+
+# --- Story 6.5: license/currency escalation threaded through evaluate --------
+
+
+def _license_denied_result():
+    finding = Finding(
+        id="license:GPL-3.0-only:foo@1.0.0",
+        axis=AXIS_LICENSE,
+        message="foo: license 'GPL-3.0-only' is denied",
+        subject="foo",
+        severity=None,
+        license=LicenseInfo(
+            expression="GPL-3.0-only", family="GPL3", verdict=LicenseVerdict.DENIED
+        ),
+    )
+    return finding, EngineResult(
+        findings=(finding,), errors=(), coverage=(), axis=AXIS_LICENSE
+    )
+
+
+def test_default_policy_with_deny_licenses_escalates_a_denied_finding(
+    component_factory,
+):
+    """Story 6.5: EffectiveConfig(deny_licenses=…) makes config.license_policy
+    escalate, and DefaultPolicy threads it into license_rung -- a denied
+    finding feeds policy-violation (default: warn)."""
+    finding, result = _license_denied_result()
+    inventory = make_inventory(component_factory(name="requests", version="2.31.0"))
+    config = EffectiveConfig(deny_licenses=("GPL-3.0-only",))
+    _, rungs = DefaultPolicy(config).evaluate(inventory, [result])
+    assert (
+        Status.POLICY_VIOLATION,
+        StatusDriver(axis=AXIS_LICENSE, finding_id=finding.id),
+    ) in rungs
+
+
+def test_default_policy_unconfigured_keeps_a_denied_finding_at_warn(component_factory):
+    """The two-mode contrast: with no license flag, the SAME denied finding
+    feeds warn (the axis is invisible-as-enforcement but honest)."""
+    finding, result = _license_denied_result()
+    inventory = make_inventory(component_factory(name="requests", version="2.31.0"))
+    _, rungs = DefaultPolicy().evaluate(inventory, [result])
+    assert (
+        Status.WARN,
+        StatusDriver(axis=AXIS_LICENSE, finding_id=finding.id),
+    ) in rungs
+
+
+def _currency_eol_result():
+    finding = Finding(
+        id="currency:eol:foo@1.0.0",
+        axis=AXIS_CURRENCY,
+        message="foo: reached end-of-life 2020-01-01 (endoflife-date)",
+        subject="foo",
+        severity=None,
+        currency=CurrencyInfo(
+            verdict=CurrencyVerdict.EOL,
+            latest="2.0",
+            lag=3,
+            eol_date="2020-01-01",
+            tier="endoflife-date",
+        ),
+    )
+    return finding, EngineResult(
+        findings=(finding,), errors=(), coverage=(), axis=AXIS_CURRENCY
+    )
+
+
+def test_default_policy_with_fail_on_eol_escalates_an_eol_finding(component_factory):
+    """Story 6.5: EffectiveConfig(fail_on_eol=True) makes config.
+    currency_policy escalate, threaded into currency_rung -- an eol finding
+    feeds policy-violation (default: warn)."""
+    finding, result = _currency_eol_result()
+    inventory = make_inventory(component_factory(name="requests", version="2.31.0"))
+    config = EffectiveConfig(fail_on_eol=True)
+    _, rungs = DefaultPolicy(config).evaluate(inventory, [result])
+    assert (
+        Status.POLICY_VIOLATION,
+        StatusDriver(axis=AXIS_CURRENCY, finding_id=finding.id),
+    ) in rungs
+
+
+def test_default_policy_unconfigured_keeps_an_eol_finding_at_warn(component_factory):
+    finding, result = _currency_eol_result()
+    inventory = make_inventory(component_factory(name="requests", version="2.31.0"))
+    _, rungs = DefaultPolicy().evaluate(inventory, [result])
+    assert (
+        Status.WARN,
+        StatusDriver(axis=AXIS_CURRENCY, finding_id=finding.id),
+    ) in rungs
+
+
+def _currency_over_lag_result():
+    finding = Finding(
+        id="currency:over-lag:foo@1.0.0",
+        axis=AXIS_CURRENCY,
+        message="foo: 5 release(s) behind latest '6.0' (endoflife-date)",
+        subject="foo",
+        severity=None,
+        currency=CurrencyInfo(
+            verdict=CurrencyVerdict.SUPPORTED,
+            latest="6.0",
+            lag=5,
+            eol_date="2099-01-01",
+            tier="endoflife-date",
+        ),
+    )
+    return finding, EngineResult(
+        findings=(finding,), errors=(), coverage=(), axis=AXIS_CURRENCY
+    )
+
+
+def test_default_policy_with_max_lag_escalates_an_over_threshold_over_lag(
+    component_factory,
+):
+    """Story 6.5: EffectiveConfig(max_lag=…) threads config.max_lag into
+    currency_rung's numeric check -- an over-lag finding whose lag EXCEEDS
+    the threshold feeds policy-violation. Pins the max_lag=self._config.
+    max_lag threading itself (the table threading alone cannot prove it:
+    over-lag never consults the table)."""
+    finding, result = _currency_over_lag_result()
+    inventory = make_inventory(component_factory(name="requests", version="2.31.0"))
+    config = EffectiveConfig(max_lag=3)
+    _, rungs = DefaultPolicy(config).evaluate(inventory, [result])
+    assert (
+        Status.POLICY_VIOLATION,
+        StatusDriver(axis=AXIS_CURRENCY, finding_id=finding.id),
+    ) in rungs
+
+
+def test_default_policy_with_max_lag_keeps_an_under_threshold_over_lag_at_warn(
+    component_factory,
+):
+    """The contrasting half: lag at or below the configured threshold stays
+    warn (visible, not blocking) even though max_lag activates the gate."""
+    finding, result = _currency_over_lag_result()
+    inventory = make_inventory(component_factory(name="requests", version="2.31.0"))
+    config = EffectiveConfig(max_lag=8)
+    _, rungs = DefaultPolicy(config).evaluate(inventory, [result])
+    assert (
+        Status.WARN,
+        StatusDriver(axis=AXIS_CURRENCY, finding_id=finding.id),
+    ) in rungs
+
+
+def _vuln_epss_result(score: float) -> tuple[Finding, EngineResult]:
+    finding = Finding(
+        id="vuln:PDOS-KEV-FIXTURE-0001:pdos-kev-fixture@1.0.0",
+        axis=AXIS_VULNERABILITY,
+        message="pdos-kev-fixture: PDOS-KEV-FIXTURE-0001 (severity medium)",
+        subject="pdos-kev-fixture",
+        severity=Severity(tier=SeverityTier.MEDIUM, raw=None),
+        epss=Epss(score=score, percentile=0.9),
+    )
+    return finding, EngineResult(
+        findings=(finding,), errors=(), coverage=(), axis=AXIS_VULNERABILITY
+    )
+
+
+def test_default_policy_with_min_epss_escalates_an_at_or_above_threshold_finding(
+    component_factory,
+):
+    """Story 6.7: EffectiveConfig(min_epss=…) threads config.min_epss into
+    vuln_rung's threshold check -- a MEDIUM-tier (normally warn) finding
+    whose EPSS score is at or above the threshold feeds policy-violation.
+    Pins the min_epss=self._config.min_epss threading itself."""
+    finding, result = _vuln_epss_result(score=0.7)
+    inventory = make_inventory(component_factory(name="requests", version="2.31.0"))
+    config = EffectiveConfig(min_epss=0.5)
+    _, rungs = DefaultPolicy(config).evaluate(inventory, [result])
+    assert (
+        Status.POLICY_VIOLATION,
+        StatusDriver(axis=AXIS_VULNERABILITY, finding_id=finding.id),
+    ) in rungs
+
+
+def test_default_policy_with_min_epss_keeps_a_below_threshold_finding_at_warn(
+    component_factory,
+):
+    """The contrasting half: a score below the configured threshold stays
+    warn (visible, not blocking) even though min_epss activates the gate."""
+    finding, result = _vuln_epss_result(score=0.2)
+    inventory = make_inventory(component_factory(name="requests", version="2.31.0"))
+    config = EffectiveConfig(min_epss=0.5)
+    _, rungs = DefaultPolicy(config).evaluate(inventory, [result])
+    assert (
+        Status.WARN,
+        StatusDriver(axis=AXIS_VULNERABILITY, finding_id=finding.id),
+    ) in rungs
+
+
+def test_default_policy_unconfigured_min_epss_never_escalates(component_factory):
+    """The two-mode contrast: with no --min-epss flag, the SAME high-scoring
+    finding feeds warn (default config.min_epss is None)."""
+    finding, result = _vuln_epss_result(score=0.99)
+    inventory = make_inventory(component_factory(name="requests", version="2.31.0"))
+    _, rungs = DefaultPolicy().evaluate(inventory, [result])
+    assert (
+        Status.WARN,
+        StatusDriver(axis=AXIS_VULNERABILITY, finding_id=finding.id),
     ) in rungs
 
 

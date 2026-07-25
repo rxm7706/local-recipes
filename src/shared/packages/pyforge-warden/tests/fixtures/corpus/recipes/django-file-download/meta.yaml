@@ -1,0 +1,45 @@
+{% set name = "django-file-download" %}
+{% set version = "1.0.3" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/django-file-download-{{ version }}.tar.gz
+  sha256: 8729c0d7bc2125b066f000f80ee2907abbc16e57aad0b6740b373b5f5229ff80
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python
+    - pip
+  run:
+    - python
+    - timeconvert
+    - django-logit >=1.1.2
+    - django-response
+    - django-six
+    - requests
+
+test:
+  imports:
+    - django_file_download
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/django-xxx/django-file-download
+  summary: Django File Download
+  license: ''
+  license_file: PLEASE_ADD_LICENSE_FILE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

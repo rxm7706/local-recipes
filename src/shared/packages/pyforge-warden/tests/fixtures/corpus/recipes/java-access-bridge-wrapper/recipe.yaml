@@ -1,0 +1,58 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: java-access-bridge-wrapper
+  version: "2.0.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/java_access_bridge_wrapper-${{ version }}.tar.gz
+  sha256: eb7d067f5c9fe951110cc532ee6045fd204b31ab7294208eb1db2bbd31ea690e
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - java_tree_reader = JABWrapper.context_tree_reader:main
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - poetry-core
+    - pip
+  run:
+    - python >=${{ python_min }},<4.0
+    - pywin32-on-windows # >=300,<=311
+    - pywin32 >=300,<=311
+
+tests:
+  - python:
+      imports:
+        #- java_access_bridge_wrapper
+        - JABWrapper
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}.*
+    script:
+      #- JABWrapper --help
+      - pip check
+
+about:
+  summary: Python wrapper for the Windows Java Access Bridge
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/robocorp/java-access-bridge-wrapper.git
+
+extra:
+  recipe-maintainers:
+    - rxm7706

@@ -188,9 +188,96 @@ Ownership decisions recorded:
   engine-instantiation loop (mirrors this same loop's pre-existing
   ``OsvEngine(fail_on_kev=...)`` special case). ``config.license_gating``
   is threaded into ``assemble_report`` for the license axis's own
-  ``AxisCoverage.gating`` — findings themselves still cap at ``warn``
-  regardless (``license.license_rung``'s hard cap; real escalation is
-  Story 6.5's).
+  ``AxisCoverage.gating``. Story 6.5 threads ``config.license_policy``
+  (the gating-aware table) through ``DefaultPolicy.evaluate`` into
+  ``license_rung`` too, so a set flag now escalates the RUNG
+  (denied->policy-violation / unknown->indeterminate) while
+  ``license_findings`` output stays identical.
+* ``--max-lag``/``--require-lts``/``--fail-on-eol`` (Story 6.3, FR35) mirror
+  the license flags' treatment: threaded into ``ConfigLoader().load(...)``
+  (CLI wins over either TOML file). ``config.currency_gating`` is threaded
+  into ``assemble_report`` for the currency axis's own ``AxisCoverage.
+  gating``, AND (Story 6.5) into ``CurrencyEngine(gating=...)`` in the
+  engine-instantiation loop (mirrors this same loop's ``OsvEngine
+  (fail_on_kev=...)``/``LicenseEngine(...)`` special cases) so the engine's
+  NFR-S9 freshness precondition fires only under an active gate. The rung
+  escalation itself is threaded through ``DefaultPolicy.evaluate``'s
+  ``currency_rung(finding, policy=config.currency_policy, max_lag=config.
+  max_lag)`` call — findings-generation is unchanged (the two-mode diff
+  runs identical fixtures, differing only in rungs/exit). ``--max-lag`` uses
+  ``_max_lag_type`` (mirrors ``_coverage_floor``'s argparse ``type=`` shape);
+  ``--require-lts``/``--fail-on-eol`` are ``store_true`` flags with
+  ``default=None`` (tri-state).
+* ``--warn-as-error`` (Story 6.5) is a ``store_true`` flag with
+  ``default=None`` (tri-state, mirrors ``--fail-on-eol``): threaded into
+  ``ConfigLoader().load(...)`` as ``cli_warn_as_error`` (CLI wins over the
+  ``[tool.pyforge-warden]`` ``warn-as-error`` TOML key), then ``config.
+  warn_as_error`` is threaded into ``assemble_report(warn_as_error=...)`` ->
+  ``verdict.exit_code_for(warn_is_error=...)``. A pure exit-projection knob:
+  a composed ``warn`` status exits non-zero while the status itself stays
+  ``warn`` (orthogonal to ``--warn-only``, which downgrades blocking rungs
+  BEFORE the verdict composes).
+* ``--min-epss`` (Story 6.7) mirrors ``--max-lag``'s treatment exactly: a
+  real, two-mode CLI flag, threaded into ``ConfigLoader().load(...)`` (CLI
+  wins over either TOML file) via ``_min_epss_type`` (mirrors
+  ``_max_lag_type``'s argparse ``type=`` shape). ``config.min_epss`` is
+  threaded into ``OsvEngine(min_epss=...)`` in the engine-instantiation loop
+  (mirrors this same loop's ``fail_on_kev=...`` special case) AND into
+  ``DefaultPolicy.evaluate``'s ``vuln_rung(min_epss=...)`` call (mirrors
+  ``fail_on_kev``'s own threading — an at-or-above-threshold EPSS score
+  forces policy-violation independent of the CVSS/KEV-derived status).
+  ``epss_data`` is selected the same first-non-``None``-across-
+  ``engine_results`` way ``kev_data`` is, and threaded into
+  ``assemble_report(epss_data=...)``.
+* ``--baseline``/``--baseline-emit`` (Story 6.8, baseline & grandfathering
+  — the ``models.SuppressedFinding`` ``origin="baseline"`` half): UNLIKE
+  the waiver file, ``--baseline`` is read ONLY when explicitly given
+  (``args.baseline is not None``) — a missing/typo'd path is a loud
+  ``BaselineValidationError`` through the SAME ``_record_error`` seam
+  every other ingestion-stage failure uses (``owner="baseline"``), never
+  a silent empty baseline (see ``waiver.py``'s module docstring for why
+  this deliberately diverges from ``load_waivers``' own missing-file-is-
+  normal precedent). The loaded entries thread into the SAME
+  ``apply_waivers(rungs, waivers, baseline, now=now)`` call the waiver
+  path already makes (now returning a 5-tuple); every applied baseline
+  notice echoes into ``suppressions[]`` with ``origin="baseline"``,
+  mirroring how an applied waiver already echoes with ``origin="waiver"``
+  — waiver-wins-on-tie-break is ``apply_waivers``' own structural
+  guarantee (see its docstring), so a finding id present in both never
+  produces two suppression entries. ``--baseline-emit`` computes its
+  stanza right after ``apply_waivers`` runs, BEFORE the ``--bypass``
+  block — so it reflects rungs still blocking after waiver+baseline
+  suppression but before ``--bypass``/``--warn-only`` could otherwise
+  hide a genuine candidate — and, like the bypass stanza, prints to
+  stdout under ``--format text`` and stderr under ``--format json``
+  (NFR-I3), never itself altering any rung or the exit code (purely
+  observational, unlike ``--bypass``).
+* ``--doctor`` (Story 5.1, D8) is a ``store_true`` flag on the ``scan``
+  subparser (mirrors ``--warn-only``/``--bypass``'s shape) — NEVER a new
+  subcommand. Dispatched as a sibling branch inside ``main()`` (``if
+  args.doctor: return _run_doctor(args)``), strictly BEFORE ``return
+  _run_scan(args)``, so it shares the SAME SIGINT/SystemExit/last-resort
+  exception nets a scan does — never a parallel entrypoint. ``_run_doctor``
+  short-circuits BEFORE any discovery/extraction/policy/engine-scan (it
+  stats the target the same way ``_run_scan`` does, then delegates to
+  ``engines.run_doctor_checks`` — read-only local filesystem +
+  ``--version`` subprocess checks only, never a network call) and returns
+  either ``0`` (every check ``ok``) or ``exit_code_for(Status.ERROR)`` —
+  NEVER ``1`` (doctor reports operability, not policy). ``--format``
+  applies exactly as it does for a real scan; the JSON shape is a NEW,
+  small ad-hoc document, deliberately NOT ``ComplianceReport``-shaped or
+  schema-validated.
+* ``manifest_locations``/``fixed_versions`` (Story 5.1, AC1): threaded into
+  the existing ``render_text(...)`` call ONLY (never ``render_json``/
+  ``assemble_report`` — the frozen v1 contract stays untouched).
+  ``manifest_locations`` is built ONCE, right after ``inventory`` resolves,
+  from ``inventory.components`` (``name -> tuple(f"{p.manifest}
+  [{p.section}]" for p in component.provenance)``); ``fixed_versions``
+  merges ``EngineResult.fixed_versions`` across every ``engine_results``
+  entry (first engine-registration-order occurrence wins on a rare key
+  collision, mirroring ``interfaces.DefaultPolicy``'s own engine-vs-engine
+  finding dedupe) right alongside the ``vuln_data``/``kev_data``/
+  ``epss_data``/``currency_data`` selection above.
 """
 
 from __future__ import annotations
@@ -198,14 +285,18 @@ from __future__ import annotations
 import argparse
 import errno as errno_module
 import getpass
+import json
 import os
 import stat as stat_module
 import sys
 import traceback
+from collections.abc import Callable
+from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime
 from pathlib import Path
 
 from . import __version__
+from .actuator import run_actuator
 from .config import (
     ConfigLoader,
     ConfigParseError,
@@ -213,10 +304,17 @@ from .config import (
     EffectiveConfig,
 )
 from .discovery import CONDA_LOCK_KIND, PIXI_LOCK_KIND, discover
-from .engines import DeptryEngine, LicenseEngine, OsvEngine, engine_factories
+from .engines import (
+    CurrencyEngine,
+    DeptryEngine,
+    LicenseEngine,
+    OsvEngine,
+    engine_factories,
+    run_doctor_checks,
+)
 from .extract import UnparsableManifestError, extractor_for
 from .hygiene import has_adjacent_python_source
-from .interfaces import DefaultPolicy, EngineResult, _sanitize_id_segment
+from .interfaces import DefaultPolicy, Engine, EngineResult, _sanitize_id_segment
 from .inventory import Component, ResolvedInventory, merge_components
 from .models import (
     AXIS_HYGIENE,
@@ -230,16 +328,28 @@ from .models import (
     SuppressedFinding,
     VulnData,
 )
-from .report import TOOL_NAME, assemble_report, render_json, render_text
+from .report import (
+    TOOL_NAME,
+    _canonical_subject_key,
+    _single_line,
+    assemble_report,
+    render_json,
+    render_text,
+)
 from .routing import DefaultRouter
 from .sbom import render_cyclonedx
 from .verdict import EXIT_SIGINT, exit_code_for
 from .waiver import (
+    BaselineEntry,
+    BaselineParseError,
+    BaselineValidationError,
     WaiverParseError,
     WaiverValidationError,
     apply_waivers,
     bypass_blocking,
+    emit_baseline_stanza,
     emit_bypass_stanza,
+    load_baseline,
     load_waivers,
     warn_blocking,
 )
@@ -274,6 +384,42 @@ def _coverage_floor(value: str) -> float:
     if not (0.0 <= numeric <= 100.0):
         raise argparse.ArgumentTypeError(
             f"--fail-under-coverage must be in [0, 100], got {value!r}"
+        )
+    return numeric
+
+
+def _max_lag_type(value: str) -> int:
+    """``argparse`` ``type=`` for ``--max-lag`` (Story 6.3): a non-negative
+    int — mirrors ``_coverage_floor``'s shape exactly (an out-of-range or
+    unparsable value is a usage error, argparse's own exit 2, never
+    reaching ``ConfigLoader.load``/``ConfigValidationError``)."""
+    try:
+        numeric = int(value)
+    except ValueError:
+        raise argparse.ArgumentTypeError(
+            f"--max-lag must be a non-negative integer, got {value!r}"
+        ) from None
+    if numeric < 0:
+        raise argparse.ArgumentTypeError(
+            f"--max-lag must be a non-negative integer, got {value!r}"
+        )
+    return numeric
+
+
+def _min_epss_type(value: str) -> float:
+    """``argparse`` ``type=`` for ``--min-epss`` (Story 6.7): a number in
+    ``[0.0, 1.0]`` — mirrors ``_max_lag_type``'s shape exactly (an
+    out-of-range or unparsable value is a usage error, argparse's own exit
+    2, never reaching ``ConfigLoader.load``/``ConfigValidationError``)."""
+    try:
+        numeric = float(value)
+    except ValueError:
+        raise argparse.ArgumentTypeError(
+            f"--min-epss must be a number in [0, 1], got {value!r}"
+        ) from None
+    if not (0.0 <= numeric <= 1.0):
+        raise argparse.ArgumentTypeError(
+            f"--min-epss must be a number in [0, 1], got {value!r}"
         )
     return numeric
 
@@ -371,8 +517,9 @@ def _build_parser() -> tuple[argparse.ArgumentParser, argparse.ArgumentParser]:
             "comma-separated SPDX license id allow-list; a resolved "
             "component license NOT in this list is denied (overrides any "
             "[tool.pyforge-warden] allow-licenses config value) -- "
-            "activates license-axis gating (FR33); v1 findings still cap "
-            "at 'warn' regardless (real escalation is a later story)"
+            "activates license-axis gating (FR33): a denied verdict composes "
+            "'policy-violation' (exit 1) and an unresolvable license composes "
+            "'indeterminate' (Story 6.5)"
         ),
     )
     scan.add_argument(
@@ -384,7 +531,84 @@ def _build_parser() -> tuple[argparse.ArgumentParser, argparse.ArgumentParser]:
             "component license IN this list is denied, taking priority "
             "over --allow-licenses (overrides any [tool.pyforge-warden] "
             "deny-licenses config value) -- activates license-axis gating "
-            "(FR33); v1 findings still cap at 'warn' regardless"
+            "(FR33): a denied verdict composes 'policy-violation', an "
+            "unresolvable license composes 'indeterminate' (Story 6.5)"
+        ),
+    )
+    scan.add_argument(
+        "--max-lag",
+        type=_max_lag_type,
+        default=None,
+        metavar="N",
+        help=(
+            "the currency-axis releases-behind-latest threshold, a "
+            "non-negative integer (overrides any [tool.pyforge-warden] "
+            "max-lag config value) -- activates currency-axis gating "
+            "(FR35). The gate now ENFORCES this threshold (Story 6.5): an "
+            "over-lag finding whose lag EXCEEDS N composes 'policy-violation' "
+            "(exit 1); an over-lag at or below N stays 'warn' (visible, not "
+            "blocking). An 'eol' verdict blocks regardless of N; 'unknown' "
+            "composes 'indeterminate'"
+        ),
+    )
+    scan.add_argument(
+        "--require-lts",
+        action="store_true",
+        default=None,
+        help=(
+            "require an LTS-policy currency resolution where one exists "
+            "(overrides any [tool.pyforge-warden] require-lts config "
+            "value) -- activates currency-axis gating (FR35): an 'eol' "
+            "verdict composes 'policy-violation', 'unknown' composes "
+            "'indeterminate' (Story 6.5). Note: this flag only ACTIVATES the "
+            "generic gate; it performs no LTS-specific enforcement -- the "
+            "frozen v1 schema carries no per-component LTS boolean, so "
+            "blocking on a non-LTS resolution is unexpressible (a documented "
+            "carried limitation)"
+        ),
+    )
+    scan.add_argument(
+        "--fail-on-eol",
+        action="store_true",
+        default=None,
+        help=(
+            "block on an eol currency verdict (overrides any "
+            "[tool.pyforge-warden] fail-on-eol config value) -- activates "
+            "currency-axis gating (FR35): an 'eol' verdict composes "
+            "'policy-violation' (exit 1) and 'unknown' composes "
+            "'indeterminate' (Story 6.5)"
+        ),
+    )
+    scan.add_argument(
+        "--warn-as-error",
+        action="store_true",
+        default=None,
+        help=(
+            "make a composed 'warn' status exit non-zero (the strict-shop "
+            "on-ramp, Story 6.5) -- overrides any [tool.pyforge-warden] "
+            "warn-as-error config value. A pure exit-projection knob: it "
+            "never changes the composed status or any rung (status stays "
+            "'warn'), only its exit code. Orthogonal to --warn-only, which "
+            "instead DOWNGRADES blocking rungs to warn before the verdict "
+            "composes"
+        ),
+    )
+    scan.add_argument(
+        "--min-epss",
+        type=_min_epss_type,
+        default=None,
+        metavar="N",
+        help=(
+            "the FIRST.org EPSS exploit-probability threshold, a number in "
+            "[0, 1] (overrides any [tool.pyforge-warden] min-epss config "
+            "value) -- activates EPSS consultation (Story 6.7): a "
+            "vulnerability finding whose EPSS score is AT OR ABOVE N "
+            "composes 'policy-violation' (exit 1), independent of its own "
+            "CVSS tier; a score below N leaves CVSS/KEV-only gating "
+            "untouched. An absent or stale EPSS feed while this is set "
+            "composes at least 'indeterminate' (exit 1; a stale feed's "
+            "still-matchable scores may escalate further, to "
+            "'policy-violation') -- never a silent pass"
         ),
     )
     scan.add_argument(
@@ -418,7 +642,78 @@ def _build_parser() -> tuple[argparse.ArgumentParser, argparse.ArgumentParser]:
             "enforcement); --fail-on still decides which findings compose "
             "'policy-violation' before this downgrade runs, so the text "
             "report's downgraded-finding count can still differ across "
-            "--fail-on values even when the final status/exit code do not"
+            "--fail-on values even when the final status/exit code do not. "
+            "Composed with --warn-as-error (flag or TOML), the downgraded "
+            "'warn' still exits 1: warn-as-error projects ANY composed warn "
+            "non-zero"
+        ),
+    )
+    scan.add_argument(
+        "--doctor",
+        action="store_true",
+        help=(
+            "run an environment self-check instead of a project scan (D8) "
+            "-- engine/OSV-DB/KEV/EPSS-feed detection only, no discovery/"
+            "extraction/policy/engine-scan and no network. Exits 0 when "
+            "every check is healthy, else 2 (never 1 -- doctor reports "
+            "operability, not policy); --format applies as usual"
+        ),
+    )
+    scan.add_argument(
+        "--baseline",
+        metavar="PATH",
+        default=None,
+        help=(
+            "read a COMMITTED .warden-baseline.yaml at PATH and suppress "
+            "every finding whose stable id it lists (grandfathering, "
+            "Story 6.8) -- a new/unlisted finding still gates normally, "
+            "and an expired baseline entry re-blocks. A waiver on the "
+            "same finding id always wins the tie-break. Explicit opt-in "
+            "only: unlike the waiver file, a missing/malformed/schema-"
+            "invalid path here is a loud error, never a silent empty "
+            "baseline"
+        ),
+    )
+    scan.add_argument(
+        "--baseline-emit",
+        action="store_true",
+        help=(
+            "print a .warden-baseline.yaml-ready stanza (stdout under "
+            "--format text, stderr under --format json) for every finding "
+            "still failing OR warning after waiver/baseline suppression "
+            "(warn-level findings are included: a warn today becomes a "
+            "block the day its axis' gate flag activates). Entries are "
+            "stamped expires_at = now + waiver_default_expiry_days "
+            "(default 14) -- review/edit dates and reasons before "
+            "committing. Purely observational, unlike --bypass: it never "
+            "itself suppresses anything or changes the exit code; a human "
+            "must commit the printed file and pass --baseline on a later "
+            "run for it to take effect"
+        ),
+    )
+    scan.add_argument(
+        "--open-fix-prs",
+        action="store_true",
+        help=(
+            "opt-in, post-verdict fix-PR actuator (Story 6.9/FR40): after the "
+            "verdict is fixed, open one remediation PR per actuatable finding "
+            "-- an upgrade PR per vuln: finding, a removal PR per hygiene:"
+            "DEP002: finding -- via the forge API (credentials/repo from the "
+            "environment: GITHUB_TOKEN or GH_TOKEN, GITHUB_REPOSITORY). NEVER "
+            "changes the status/exit code and NEVER writes the scanned tree "
+            "(all remediation content is created forge-side). A failed open "
+            "is recorded in the report's actuation section + a stderr line, "
+            "never a tool error. --fix-prs-dry-run wins if both are given"
+        ),
+    )
+    scan.add_argument(
+        "--fix-prs-dry-run",
+        action="store_true",
+        help=(
+            "plan the fix-PR actuator without opening anything: shares the "
+            "real code path up to the forge-egress seam, records the intended "
+            "proposals (status 'planned') in the report's actuation section, "
+            "and opens NO socket. Wins over --open-fix-prs when both are set"
         ),
     )
     return parser, scan
@@ -446,6 +741,8 @@ def main(argv: list[str] | None = None) -> int:
             if isinstance(exc.code, int):
                 return exc.code
             return exit_code_for(Status.ERROR)
+        if args.doctor:
+            return _run_doctor(args)
         return _run_scan(args)
     except KeyboardInterrupt:
         # This handler wraps ALL of main — parse_args included — so no
@@ -483,7 +780,15 @@ def main(argv: list[str] | None = None) -> int:
         return exit_code_for(Status.ERROR)
 
 
-def _run_scan(args: argparse.Namespace) -> int:
+def _resolve_scan_target(args: argparse.Namespace) -> Path | int:
+    """Stat + validate ``args.path`` as an existing directory, writing the
+    SAME stderr diagnostics ``_run_scan`` always has (empty/whitespace path,
+    not-found, embedded-NUL/unrepresentable path, other ``OSError``, exists-
+    but-not-a-directory). Returns the validated ``Path`` on success, or the
+    already-computed ``exit_code_for(Status.ERROR)`` int on failure (caller
+    returns it verbatim). Review finding (2026-07-24): ``_run_doctor``
+    originally duplicated this ~40-line block verbatim from ``_run_scan`` —
+    extracted here so the two boundary checks can never drift apart."""
     if not args.path.strip():
         # "" Path-normalizes to "." — an empty/whitespace target must be
         # early-fatal, never a silent scan of the CWD.
@@ -520,6 +825,228 @@ def _run_scan(args: argparse.Namespace) -> int:
             "directory"
         )
         return exit_code_for(Status.ERROR)
+    return target
+
+
+def _run_doctor(args: argparse.Namespace) -> int:
+    """Story 5.1 (D8): ``--doctor``'s environment self-check — NOT a project
+    scan. Stats the target the SAME way ``_run_scan`` does (no config load:
+    doctor is config-independent, via the shared ``_resolve_scan_target``)
+    and returns BEFORE any discovery/extraction/policy/engine-scan work.
+    ``engines.run_doctor_checks`` performs only read-only local filesystem +
+    ``--version`` subprocess checks — never a network call by design (the
+    autouse socket-deny harness enforces the in-process half; the
+    ``--version`` child processes run outside its reach). Exit is ``0``
+    when every check is ``ok``, else ``exit_code_for(Status.ERROR)`` —
+    NEVER ``1`` (doctor reports operability, not policy)."""
+    # Review finding (2026-07-24): --doctor previously no-op'd every other
+    # scan/policy flag SILENTLY -- someone appending --doctor to an existing
+    # CI scan line would disable the gate with no trace. Diff the parsed
+    # args against the scan subparser's own defaults (drift-proof: any
+    # future flag is covered automatically) and name what is ignored on
+    # stderr; path/--format/--doctor are the only honored inputs. Emitted
+    # BEFORE target resolution (follow-up review finding 2026-07-24: a bad
+    # path must not suppress the very trace this exists to guarantee).
+    try:
+        scan_defaults = vars(_build_parser()[1].parse_args([]))
+    except SystemExit:
+        # Defensive (follow-up review finding 2026-07-24): a future
+        # required scan argument would make the empty-argv defaults probe
+        # abort argparse-style. Skip the trace rather than kill doctor.
+        scan_defaults = None
+    if scan_defaults is not None:
+        honored = {"path", "format", "doctor"}
+        ignored = sorted(
+            dest
+            for dest, default in scan_defaults.items()
+            if dest not in honored and getattr(args, dest, default) != default
+        )
+        if ignored:
+            flags = ", ".join(
+                "--" + dest.replace("_", "-") for dest in ignored
+            )
+            _stderr(
+                f"{TOOL_NAME}: --doctor runs an environment self-check "
+                f"only -- ignoring scan/policy flags: {flags}"
+            )
+
+    target = _resolve_scan_target(args)
+    if isinstance(target, int):
+        return target
+
+    checks = run_doctor_checks(target)
+    healthy = all(check.ok for check in checks)
+    status_word = "ok" if healthy else "problem"
+    if args.format == "json":
+        # A NEW, small ad-hoc JSON document — deliberately NOT
+        # ComplianceReport-shaped/schema-validated (Boundaries). Sorted by
+        # name for a deterministic, canonical shape; the text branch below
+        # keeps run_doctor_checks' own fixed declaration order instead (the
+        # Design Notes' golden example).
+        document = {
+            "tool": TOOL_NAME,
+            "doctor": True,
+            "status": status_word,
+            "checks": [
+                {"name": c.name, "ok": c.ok, "message": c.message}
+                for c in sorted(checks, key=lambda c: c.name)
+            ],
+        }
+        rendered = json.dumps(document, sort_keys=True, indent=2) + "\n"
+    else:
+        lines = [
+            f"{TOOL_NAME}: doctor status={status_word} checks={len(checks)}"
+        ]
+        for check in checks:
+            outcome = "ok" if check.ok else "problem"
+            # _single_line (review finding 2026-07-24): a future check
+            # message embedding subprocess stderr or a raw path must never
+            # forge extra [doctor] lines under the checks=N header -- the
+            # same invariant render_text enforces on every free-text field.
+            lines.append(
+                f"  [doctor] {check.name} {outcome} -- "
+                f"{_single_line(check.message)}"
+            )
+        rendered = "\n".join(lines) + "\n"
+    try:
+        # Mirrors _run_scan's own stdout-emission guard (BrokenPipeError
+        # absorbed, any other stdout OSError/ValueError degrades to a
+        # stderr diagnostic with the already-computed exit code preserved).
+        sys.stdout.write(rendered)
+        sys.stdout.flush()
+    except BrokenPipeError:
+        _absorb_broken_pipe()
+    except (OSError, ValueError) as exc:
+        _stderr(
+            f"{TOOL_NAME}: stdout emission failed "
+            f"({exc.__class__.__name__}); any partial stdout must not be "
+            "consumed"
+        )
+    return 0 if healthy else exit_code_for(Status.ERROR)
+
+
+def _instantiate_and_run_engine(
+    factory: Callable[[], Engine],
+    config: EffectiveConfig,
+    target: Path,
+    inventory: ResolvedInventory,
+) -> tuple[EngineResult, None] | tuple[None, dict[str, object]]:
+    """One engine's instantiate+run unit (Story 5.2) -- called from a
+    ``ThreadPoolExecutor`` worker thread, so this function must NOT mutate
+    any shared state (``errors``/``rungs``/stderr): it returns its outcome
+    instead, and the caller applies it back on the MAIN thread, in
+    ``engines_to_run``'s own registration order, so error/rung/
+    ``engine_results`` ordering (and ``_record_error``'s stderr diagnostic
+    ordering) stays exactly as deterministic as the pre-5.2 sequential loop
+    did (NFR-R3b) — never completion order.
+
+    Exactly one of the two return slots is populated: ``(EngineResult,
+    None)`` on success, or ``(None, <_record_error kwargs>)`` on either a
+    crashing constructor OR a crashing ``run`` — the SAME two-stage
+    try/except typed-error contract the pre-5.2 sequential loop had
+    (instantiation crash -> ``engine-unavailable``, ``run`` crash ->
+    ``engine-execution-failed``), unchanged in substance, just relocated
+    into a unit safe to call from a worker thread."""
+    try:
+        # Story 6.4: OsvEngine's fail_on_kev needs the resolved config
+        # value -- mirrors this same seam's pre-existing DeptryEngine
+        # special case (the hygiene_applicable filter in _run_scan), never
+        # widening the shared zero-arg Engine.run() seam every other
+        # factory still uses (config.py's Design Notes). Story 6.2:
+        # LicenseEngine's allow_licenses/deny_licenses need the same
+        # treatment. Story 6.5: CurrencyEngine now takes gating=config.
+        # currency_gating so its NFR-S9 freshness precondition (emit a
+        # currency-registry-stale/unavailable finding when the bundled
+        # registry can't be trusted under an active gate) fires only when
+        # a currency gate is active -- gated exactly as OsvEngine's
+        # fail_on_kev gates the parallel KEV-provenance finding. Story
+        # 6.7: OsvEngine also takes min_epss=config.min_epss, the same
+        # way -- consulted only when the gate is active.
+        engine = (
+            OsvEngine(fail_on_kev=config.fail_on_kev, min_epss=config.min_epss)
+            if factory is OsvEngine
+            else LicenseEngine(
+                allow_licenses=config.allow_licenses,
+                deny_licenses=config.deny_licenses,
+            )
+            if factory is LicenseEngine
+            else CurrencyEngine(gating=config.currency_gating)
+            if factory is CurrencyEngine
+            else factory()
+        )
+    except (SystemExit, Exception) as exc:  # noqa: BLE001 —
+        # instantiation is PART of the seam: a crashing constructor (a
+        # misconfigured 1.3/1.5 runner) is the engine-unavailable
+        # class — typed record + error rung, report STILL emitted,
+        # never a traceback with no report.
+        factory_name = getattr(factory, "__name__", repr(factory))
+        # `factory` is typed as Callable[[] , Engine] (the registry's
+        # shape), but every REAL factory is the engine class itself, so
+        # `axis` is readable as a class attribute without instantiating
+        # (mirrors `factory_name` above) — getattr, not a direct
+        # attribute access, keeps mypy honest about the narrower
+        # Callable type while still reading the real class attribute.
+        factory_axis = getattr(factory, "axis", AXIS_INGESTION)
+        return None, {
+            "kind": ErrorKind.ENGINE_UNAVAILABLE,
+            "owner": "engines",
+            "subject": factory_name,
+            "message": (
+                f"engine factory {factory_name!r} crashed at "
+                f"instantiation: {exc!r}"
+            ),
+            "axis": factory_axis,
+        }
+    engine_name = getattr(engine, "name", engine.__class__.__name__)
+    try:
+        result = engine.run(target, inventory)
+    except (SystemExit, Exception) as exc:  # noqa: BLE001 — the seam
+        # doctrine: a crashing engine must yield a typed ErrorRecord +
+        # error rung with the report STILL emitted, never a traceback
+        # with no report — and a sys.exit-calling engine must never
+        # dictate the process exit (sole ownership; SystemExit is
+        # caught HERE so the report survives). KeyboardInterrupt still
+        # propagates (out of the worker thread, surfacing from
+        # future.result() on the main thread — see _run_scan).
+        return None, {
+            "kind": ErrorKind.ENGINE_EXECUTION_FAILED,
+            "owner": engine_name,
+            "subject": engine_name,
+            "message": f"engine {engine_name!r} crashed: {exc!r}",
+            # getattr (follow-up review finding): a protocol-violating
+            # engine lacking `axis` must not raise INSIDE this handler --
+            # that AttributeError would escape the typed-error contract
+            # through future.result() into main's last-resort net,
+            # discarding the whole report. Mirrors factory_axis above.
+            "axis": getattr(engine, "axis", AXIS_INGESTION),
+        }
+    if result is None:
+        # A misbehaving Engine.run() returning None instead of raising or
+        # returning an EngineResult (violates the Engine protocol, but
+        # nothing enforces it at runtime) must not silently vanish through
+        # this function's two-slot return contract — (None, None) would
+        # match NEITHER branch the caller checks, dropping the engine's
+        # outcome with no result, no error, no rung (Story 5.2 review
+        # finding — the pre-parallelization sequential loop would have
+        # crashed loudly on this via `result.errors` later; converting it
+        # to the SAME typed engine-execution-failed path a crash takes
+        # keeps that "never silent" guarantee under the new fan-out).
+        return None, {
+            "kind": ErrorKind.ENGINE_EXECUTION_FAILED,
+            "owner": engine_name,
+            "subject": engine_name,
+            "message": f"engine {engine_name!r} returned None instead of an EngineResult",
+            # getattr: same handler-must-not-raise rationale as the
+            # crash branch above.
+            "axis": getattr(engine, "axis", AXIS_INGESTION),
+        }
+    return result, None
+
+
+def _run_scan(args: argparse.Namespace) -> int:
+    target = _resolve_scan_target(args)
+    if isinstance(target, int):
+        return target
 
     components: list[Component] = []
     errors: list[ErrorRecord] = []
@@ -538,19 +1065,30 @@ def _run_scan(args: argparse.Namespace) -> int:
             cli_fail_under_coverage=args.fail_under_coverage,
             cli_allow_licenses=args.allow_licenses,
             cli_deny_licenses=args.deny_licenses,
+            cli_max_lag=args.max_lag,
+            cli_require_lts=args.require_lts,
+            cli_fail_on_eol=args.fail_on_eol,
+            cli_warn_as_error=args.warn_as_error,
+            cli_min_epss=args.min_epss,
         )
     except (ConfigParseError, ConfigValidationError) as exc:
         # Review finding: an unrelated config-file error must not silently
         # discard an already-argparse-validated CLI flag the user
         # explicitly passed (--fail-on/--fail-under-coverage/
-        # --allow-licenses/--deny-licenses are unrelated to WHY the TOML
-        # failed to load).
+        # --allow-licenses/--deny-licenses/--max-lag/--require-lts/
+        # --fail-on-eol/--min-epss are unrelated to WHY the TOML failed to
+        # load).
         try:
             config = EffectiveConfig.default_with_cli_overrides(
                 cli_fail_on=args.fail_on,
                 cli_fail_under_coverage=args.fail_under_coverage,
                 cli_allow_licenses=args.allow_licenses,
                 cli_deny_licenses=args.deny_licenses,
+                cli_max_lag=args.max_lag,
+                cli_require_lts=args.require_lts,
+                cli_fail_on_eol=args.fail_on_eol,
+                cli_warn_as_error=args.warn_as_error,
+                cli_min_epss=args.min_epss,
             )
         except ConfigValidationError:
             # Fix 5 follow-up (review finding, 2026-07-18): `exc` above may
@@ -705,6 +1243,44 @@ def _run_scan(args: argparse.Namespace) -> int:
         components=merge_components(components),
         resolved_scan_set=manifests,
     )
+    # Story 5.1 (AC1): the manifest+location lookup render_text's
+    # remediation lines consult -- built ONCE, straight from the post-merge
+    # inventory (never re-derived per finding). A finding's own `subject` is
+    # the raw component name (e.g. vuln._indeterminate_finding, hygiene's/
+    # license's/currency's own producers), so this dict is keyed the same
+    # way; a subject with no entry here (e.g. report.py's own synthetic
+    # indeterminate:coverage-floor:<axis> finding, whose subject is an axis
+    # name) simply gets no manifest clause -- report.py handles that
+    # gracefully. Review finding (2026-07-24): two components can
+    # legitimately share one name at different versions post-merge
+    # (inventory.py's own docstring: "distinct versions ... stay distinct")
+    # -- a plain per-component dict build would let the LAST one silently
+    # clobber an earlier one's provenance, misattributing a finding's
+    # location. Every same-named component's provenance is unioned instead
+    # (sorted, deduplicated) -- an honest "every place this name is
+    # declared" rather than a wrong single guess. Also keyed additionally by
+    # `pypi_identity.name` when present: vuln findings' `subject` is
+    # osv-scanner's own echoed package name, which mirrors the SYNTHESIZED
+    # pypi identity (vuln._synthesize_requirements), not necessarily
+    # `component.name` for a conda-sourced component -- without this second
+    # key, a conda/PyPI name divergence would silently miss the lookup even
+    # though the location data is present.
+    manifest_locations: dict[str, tuple[str, ...]] = {}
+    for component in inventory.components:
+        locations = tuple(
+            f"{p.manifest} [{p.section}]" for p in component.provenance
+        )
+        # Keys canonicalized (review finding 2026-07-24) so a manifest's
+        # non-normalized spelling (Foo_Bar) still matches osv-scanner's
+        # normalized echo -- _manifest_clause canonicalizes its lookup with
+        # the same report._canonical_subject_key.
+        keys = [_canonical_subject_key(component.name)]
+        if component.pypi_identity is not None:
+            keys.append(_canonical_subject_key(component.pypi_identity.name))
+        for key in keys:
+            manifest_locations[key] = tuple(
+                sorted(set(manifest_locations.get(key, ())) | set(locations))
+            )
     if manifests and manifests_parsed > 0 and not inventory.components:
         # A parsed manifest with nothing extractable must be distinguishable
         # on stderr from the empty-dir case (the coverage block already
@@ -744,70 +1320,43 @@ def _run_scan(args: argparse.Namespace) -> int:
         if manifests_parsed > 0
         else ()
     )
-    for factory in engines_to_run:
-        try:
-            # Story 6.4: OsvEngine's fail_on_kev needs the resolved config
-            # value -- mirrors this same loop's pre-existing DeptryEngine
-            # special case (hygiene_applicable filter above), never widening
-            # the shared zero-arg Engine.run() seam every other factory
-            # still uses (config.py's Design Notes). Story 6.2:
-            # LicenseEngine's allow_licenses/deny_licenses need the same
-            # treatment.
-            engine = (
-                OsvEngine(fail_on_kev=config.fail_on_kev)
-                if factory is OsvEngine
-                else LicenseEngine(
-                    allow_licenses=config.allow_licenses,
-                    deny_licenses=config.deny_licenses,
+    if engines_to_run:
+        # Story 5.2 (NFR-P-concurrency): the 4-axis fan-out runs concurrently
+        # via a thread pool -- each worker's instantiate+run unit
+        # (_instantiate_and_run_engine) touches NO shared state (it returns
+        # its outcome rather than mutating errors/rungs/engine_results
+        # itself), so the ONLY shared-mutable-state seam is the
+        # lru_cache trio (currency.py/mapping.py/report.py — CPython's
+        # lru_cache serializes its cache bookkeeping but NOT concurrent
+        # misses: two workers can both execute the loader before one
+        # result wins the cache slot. Safe here only because all three
+        # loaders are idempotent pure reads, so a duplicate load is
+        # wasted work, never corruption — no new locking needed, but
+        # don't extend this claim to a non-idempotent cache). Futures
+        # are collected in `engines_to_run`'s
+        # OWN registration order (the list comprehension below iterates it
+        # exactly once) and then drained in that SAME order — .result()
+        # blocks on the future it's called on regardless of which one
+        # finished first — so engine_results/errors/rungs (and the
+        # _record_error-driven stderr diagnostics) are reassembled in
+        # deterministic registration order, never completion order (the
+        # existing first-registration-order-wins dedupe convention and
+        # NFR-R3b both depend on this).
+        with ThreadPoolExecutor(max_workers=len(engines_to_run)) as pool:
+            futures = [
+                pool.submit(
+                    _instantiate_and_run_engine, factory, config, target, inventory
                 )
-                if factory is LicenseEngine
-                else factory()
-            )
-        except (SystemExit, Exception) as exc:  # noqa: BLE001 —
-            # instantiation is PART of the seam: a crashing constructor (a
-            # misconfigured 1.3/1.5 runner) is the engine-unavailable
-            # class — typed record + error rung, report STILL emitted,
-            # never a traceback with no report.
-            factory_name = getattr(factory, "__name__", repr(factory))
-            # `factory` is typed as Callable[[] , Engine] (the registry's
-            # shape), but every REAL factory is the engine class itself, so
-            # `axis` is readable as a class attribute without instantiating
-            # (mirrors `factory_name` above) — getattr, not a direct
-            # attribute access, keeps mypy honest about the narrower
-            # Callable type while still reading the real class attribute.
-            factory_axis = getattr(factory, "axis", AXIS_INGESTION)
-            _record_error(
-                errors,
-                rungs,
-                kind=ErrorKind.ENGINE_UNAVAILABLE,
-                owner="engines",
-                subject=factory_name,
-                message=(
-                    f"engine factory {factory_name!r} crashed at "
-                    f"instantiation: {exc!r}"
-                ),
-                axis=factory_axis,
-            )
-            continue
-        try:
-            engine_results.append(engine.run(target, inventory))
-        except (SystemExit, Exception) as exc:  # noqa: BLE001 — the seam
-            # doctrine: a crashing engine must yield a typed ErrorRecord +
-            # error rung with the report STILL emitted, never a traceback
-            # with no report — and a sys.exit-calling engine must never
-            # dictate the process exit (sole ownership; SystemExit is
-            # caught HERE so the report survives). KeyboardInterrupt still
-            # propagates.
-            engine_name = getattr(engine, "name", engine.__class__.__name__)
-            _record_error(
-                errors,
-                rungs,
-                kind=ErrorKind.ENGINE_EXECUTION_FAILED,
-                owner=engine_name,
-                subject=engine_name,
-                message=f"engine {engine_name!r} crashed: {exc!r}",
-                axis=engine.axis,
-            )
+                for factory in engines_to_run
+            ]
+            for future in futures:
+                result, error_args = future.result()
+                if result is not None:
+                    engine_results.append(result)
+                elif error_args is not None:  # always true here — see the
+                    # helper's own docstring: exactly one of the two return
+                    # slots is populated
+                    _record_error(errors, rungs, **error_args)
     for result in engine_results:
         errors.extend(result.errors)
     findings, policy_rungs = DefaultPolicy(config).evaluate(inventory, engine_results)
@@ -888,14 +1437,52 @@ def _run_scan(args: argparse.Namespace) -> int:
             message=str(exc),
             axis=AXIS_INGESTION,
         )
+
+    # Story 6.8 (baseline & grandfathering): UNLIKE the waiver file above,
+    # --baseline is an explicit, opt-in flag naming a COMMITTED file, so it
+    # is read ONLY when the user actually passed it -- baseline stays ()
+    # (identical to pre-6.8) when the flag is absent. A missing/typo'd path
+    # or a malformed/schema-invalid file is fail-closed the SAME way a bad
+    # waiver file is: zero baseline entries apply, and a typed error rung/
+    # record surfaces via the SAME _record_error seam, owner="baseline"
+    # (see waiver.py's module docstring for why the missing-file stance
+    # itself deliberately diverges from load_waivers').
+    baseline: tuple[BaselineEntry, ...] = ()
+    if args.baseline is not None:
+        try:
+            baseline = load_baseline(Path(args.baseline))
+        except (BaselineParseError, BaselineValidationError) as exc:
+            _record_error(
+                errors,
+                rungs,
+                kind=(
+                    ErrorKind.CONFIG_PARSE
+                    if isinstance(exc, BaselineParseError)
+                    else ErrorKind.CONFIG_VALIDATION
+                ),
+                owner="baseline",
+                subject=args.baseline,
+                message=str(exc),
+                axis=AXIS_INGESTION,
+            )
+
     now = datetime.now(UTC)
-    rungs, applied_waivers, expired_waivers = apply_waivers(rungs, waivers, now=now)
+    (
+        rungs,
+        applied_waivers,
+        expired_waivers,
+        applied_baseline,
+        expired_baseline,
+    ) = apply_waivers(rungs, waivers, baseline, now=now)
     # Story 6.1: echo each applied waiver into the JSON contract's
     # suppressions[] (WaiverNotice -> SuppressedFinding, origin="waiver").
-    # Until now applied waivers echoed in --format text only; the baseline
-    # half (origin="baseline") is Story 6.8. Every notice.id exact-matched a
+    # Story 6.8 adds the baseline half (BaselineNotice -> SuppressedFinding,
+    # origin="baseline") the same way. Every notice.id exact-matched a
     # blocking rung's driver.finding_id, which references a real findings[]
-    # entry, so ComplianceReport's suppressions[]<->findings[] cross-check holds.
+    # entry, so ComplianceReport's suppressions[]<->findings[] cross-check
+    # holds; apply_waivers' own waiver-wins tie-break guarantees at most one
+    # suppression per finding_id across the two loops below (the model
+    # layer's own uniqueness invariant, Story 6.1, enforces it too).
     suppressions = tuple(
         SuppressedFinding(
             finding_id=notice.id,
@@ -905,7 +1492,30 @@ def _run_scan(args: argparse.Namespace) -> int:
             expires_at=notice.expires_at,
         )
         for notice in applied_waivers
+    ) + tuple(
+        SuppressedFinding(
+            finding_id=notice.id,
+            origin="baseline",
+            reason=notice.reason,
+            authorized_by=None,
+            expires_at=notice.expires_at,
+        )
+        for notice in applied_baseline
     )
+
+    # Story 6.8: --baseline-emit is purely observational (never itself
+    # suppresses anything, unlike --bypass) -- computed from rungs still
+    # blocking AFTER waiver+baseline suppression already applied but
+    # BEFORE the --bypass/--warn-only block below (mirrors emit_bypass_
+    # stanza's own position), so an already-baselined finding never
+    # reappears in the stanza and --bypass/--warn-only can never hide a
+    # genuine candidate from it.
+    baseline_stanza: str | None = None
+    if args.baseline_emit:
+        baseline_stanza = emit_baseline_stanza(
+            rungs, now=now, expiry_days=config.waiver_default_expiry_days
+        )
+
     bypass_stanza: str | None = None
     if args.bypass:
         try:
@@ -933,6 +1543,54 @@ def _run_scan(args: argparse.Namespace) -> int:
     if args.warn_only:
         rungs, warn_only_downgraded = warn_blocking(rungs)
 
+    # Story 6.9 (FR40): the opt-in, post-verdict fix-PR actuator runs HERE --
+    # strictly after rungs/findings are final (the verdict is a pure
+    # projection of the frozen rungs the actuator never touches) and strictly
+    # before assemble_report. Its payload flows ONLY into the pass-through
+    # ComplianceReport.actuation slot: never a rung, the status, or the exit
+    # code. --fix-prs-dry-run shares the real path up to the egress seam and
+    # opens no socket (dry-run wins if both flags are set). A failed open is
+    # captured in the payload; here we additionally echo a one-line stderr
+    # summary, keeping stdout a single pure document (NFR-I3).
+    actuation_payload: dict[str, object] | None = None
+    if args.open_fix_prs or args.fix_prs_dry_run:
+        # Never actuate a finding the operator already ACCEPTED: baseline
+        # (grandfathered debt -- auto-PRs for it would defeat the entire point
+        # of grandfathering) and waiver suppressions are excluded, keyed on the
+        # same echoed suppressions[] set the report surfaces.
+        suppressed_ids = {suppression.finding_id for suppression in suppressions}
+        actuatable = tuple(
+            finding for finding in findings if finding.id not in suppressed_ids
+        )
+        # Defense in depth for this story's central promise -- the actuator must
+        # NEVER change the status/exit code. run_actuator already captures a
+        # failed PR-open internally; any *unexpected* error outside that guard
+        # is swallowed here too, so the actuator can only ever ADD an actuation
+        # section, never alter the verdict or crash the scan.
+        try:
+            actuation = run_actuator(
+                actuatable,
+                dry_run=args.fix_prs_dry_run or not args.open_fix_prs,
+                env=os.environ,
+            )
+            actuation_payload = actuation.to_json_dict()
+            failed = [
+                outcome
+                for outcome in actuation.outcomes
+                if outcome.status == "failed"
+            ]
+            if failed:
+                _stderr(
+                    f"{TOOL_NAME}: fix-pr actuator: {len(failed)} outcome(s) "
+                    "failed; see the report's actuation section"
+                )
+        except Exception as exc:  # noqa: BLE001 -- never change the exit code
+            actuation_payload = None
+            _stderr(
+                f"{TOOL_NAME}: fix-pr actuator errored (ignored; status and "
+                f"exit code unchanged): {type(exc).__name__}: {exc}"
+            )
+
     # The first non-None vuln_data across engine results, in engine-
     # registration order (Story 1.5: OsvEngine populates it on a completed
     # 0/1 run; every other engine/path leaves it None) — else an all-None
@@ -950,6 +1608,48 @@ def _run_scan(args: argparse.Namespace) -> int:
         (result.kev_data for result in engine_results if result.kev_data is not None),
         None,
     )
+    # Story 6.7: the same first-non-None-across-engine-results selection
+    # kev_data/vuln_data already use -- OsvEngine populates epss_data only
+    # when min_epss is set and the FIRST.org EPSS feed was actually
+    # consulted; every other engine/path leaves it None (mirrors kev_data's
+    # own fail_on_kev-gated default).
+    epss_data = next(
+        (result.epss_data for result in engine_results if result.epss_data is not None),
+        None,
+    )
+    # Story 6.3: the same first-non-None-across-engine-results selection
+    # kev_data/vuln_data already use -- no CLI/config gating flag disables
+    # CurrencyEngine's own attempt to populate currency_data (unlike
+    # kev_data's fail_on_kev gate above). That does NOT mean currency_data
+    # is always non-None, though: currency_findings() itself returns
+    # currency_data=None whenever the bundled registry can't yield a
+    # trustworthy FeedProvenance -- the registry file is absent/unreadable/
+    # unparsable YAML (_load_registry degrades to {}), OR it loads fine but
+    # its own `updated:` date is missing/unparsable (_registry_feed_
+    # provenance's own None return). A None currency_data here does not by
+    # itself distinguish "no currency policy is active" from "the shipped
+    # registry file has a problem" -- every other engine/path also leaves
+    # it None, so this slot alone can't tell the two apart.
+    currency_data = next(
+        (
+            result.currency_data
+            for result in engine_results
+            if result.currency_data is not None
+        ),
+        None,
+    )
+    # Story 5.1 (AC1): fixed_versions merges PER-FINDING across
+    # engine_results -- unlike vuln_data/kev_data/epss_data/currency_data's
+    # first-non-None SELECTION above (per-feed provenance), this is
+    # per-finding data, so every result's mapping contributes. First
+    # engine-registration-order occurrence wins on a rare key collision,
+    # mirroring interfaces.DefaultPolicy's own engine-vs-engine finding
+    # dedupe convention. render_text-only: never threaded into
+    # assemble_report/the frozen ComplianceReport contract.
+    fixed_versions: dict[str, str] = {}
+    for result in engine_results:
+        for finding_id, fixed_version in result.fixed_versions.items():
+            fixed_versions.setdefault(finding_id, fixed_version)
     report = assemble_report(
         inventory=inventory,
         findings=findings,
@@ -966,7 +1666,12 @@ def _run_scan(args: argparse.Namespace) -> int:
         fail_under_coverage=config.fail_under_coverage,
         suppressions=suppressions,
         kev_data=kev_data,
+        epss_data=epss_data,
         license_gating=config.license_gating,
+        currency_data=currency_data,
+        currency_gating=config.currency_gating,
+        warn_as_error=config.warn_as_error,
+        actuation=actuation_payload,
     )
     if args.sbom_output is not None:
         # Story 4.1: an independent sibling artifact -- rendering and
@@ -1002,9 +1707,21 @@ def _run_scan(args: argparse.Namespace) -> int:
             # exit_code=0); the stanza text itself still goes to stderr
             # (review finding: silently dropping it entirely would leave a
             # json-consuming caller with no way to recover the waiver text
-            # to commit) -- stderr carries no such purity contract.
+            # to commit) -- stderr carries no such purity contract. Story
+            # 6.8's baseline_stanza (--baseline-emit) is the SAME human-
+            # facing affordance one axis over -- same stderr-under-json
+            # treatment.
             if bypass_stanza is not None:
                 _stderr(bypass_stanza.rstrip("\n"))
+            if baseline_stanza is not None:
+                # Review finding: with BOTH --bypass and --baseline-emit
+                # set, a `---` YAML document separator keeps the two
+                # distinct stanzas (a .warden-waivers.yaml candidate, a
+                # .warden-baseline.yaml candidate) visually unambiguous
+                # rather than two `version: 1` mappings running together.
+                if bypass_stanza is not None:
+                    _stderr("---")
+                _stderr(baseline_stanza.rstrip("\n"))
             sys.stdout.write(render_json(report) + "\n")
         else:
             if bypass_stanza is not None:
@@ -1012,13 +1729,28 @@ def _run_scan(args: argparse.Namespace) -> int:
                 # into a committed .warden-waivers.yaml -- the tool never
                 # writes it into the scanned tree.
                 sys.stdout.write(bypass_stanza)
+            if baseline_stanza is not None:
+                # Story 6.8: same "printed before the report, never
+                # written into the scanned tree" contract as bypass_stanza
+                # above, one axis over (--baseline-emit's own stanza). A
+                # `---` separator precedes it only when --bypass's own
+                # stanza already printed (review finding) -- otherwise this
+                # is the only stanza on stdout and needs no boundary marker.
+                if bypass_stanza is not None:
+                    sys.stdout.write("---\n")
+                sys.stdout.write(baseline_stanza)
             sys.stdout.write(
                 render_text(
                     report,
                     applied_waivers=applied_waivers,
                     expired_waivers=expired_waivers,
+                    applied_baseline=applied_baseline,
+                    expired_baseline=expired_baseline,
                     warn_only=args.warn_only,
                     warn_only_downgraded=warn_only_downgraded,
+                    actuation=actuation_payload,
+                    manifest_locations=manifest_locations,
+                    fixed_versions=fixed_versions,
                 )
                 + "\n"
             )

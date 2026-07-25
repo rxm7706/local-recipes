@@ -1,0 +1,45 @@
+{% set name = "django-eventstream" %}
+{% set version = "5.0.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/django-eventstream-{{ version }}.tar.gz
+  sha256: c0ff1c6ed78ef57485fe1f1801a7113b539cf14f9155c665a165b4d35632530b
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - pip
+  run:
+    - python >=3.8
+    - django >=5
+    - pyjwt >=1.5,<3
+    - gripcontrol >=4.0,<5
+    - django_grip >=3.0,<4
+    - six >=1.10,<2
+
+test:
+  imports:
+    - django_eventstream
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/fanout/django-eventstream
+  summary: Server-Sent Events for Django
+  license: MIT
+  license_file: COPYING
+
+extra:
+  recipe-maintainers:
+    - rxm7706

@@ -1,0 +1,42 @@
+{% set name = "dash-ag-grid" %}
+{% set version = "31.3.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/dash_ag_grid-{{ version }}.tar.gz
+  sha256: 90069c340d893841d4e405fd3759794260946428c9cefcf70a356431e68c5020
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.6
+    - pip
+  run:
+    - python >=3.6
+    - dash >=2
+
+test:
+  imports:
+    - dash_ag_grid
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://dash.plotly.com/dash-ag-grid
+  summary: Dash wrapper around AG Grid, the best interactive data grid for the web.
+  dev_url: https://github.com/plotly/dash-ag-grid
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

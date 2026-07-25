@@ -1,0 +1,70 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+# ⚠️ LOCAL-ONLY RECIPE — NOT FOR conda-forge/staged-recipes SUBMISSION
+# Reason: not published to PyPI; source-of-truth lives only at
+# suitenumerique/meet-whisperx HEAD. Project is actually a FastAPI service
+# (distribution name "whisper-openai-api"), not a library — it provides an
+# OpenAI-compatible Whisper transcription endpoint for Meet. Installing
+# yields an importable Python module but the service needs an upstream
+# WhisperX runtime (not pinned in deps; expected from outside the package).
+# Pinned to GitHub commit since no release tag exists.
+
+context:
+  version: "1.2.0"
+  commit: "320130b94f63210cd520d6f5d8d8e7a792d8ecaa"
+
+package:
+  name: meet-whisperx
+  version: ${{ version }}
+
+source:
+  url: https://github.com/suitenumerique/meet-whisperx/archive/${{ commit }}.tar.gz
+  sha256: 2a9f3501c1d63fab0b5c57552c00e2526fb11935e31f311268247c24f342cdaf
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - openai >=1.43.0
+    - uvicorn >=0.32.0
+    - fastapi >=0.115.3
+    - pydantic >=2.9.2
+    - python-multipart >=0.0.22
+    - pydantic-settings >=2.6.1
+
+# CFEP-25-justified: upstream uses a generic top-level "app" module name
+# (no namespace) — importing `app` would collide with anything else using
+# "app". Use a package_contents test for the upstream-installed file
+# footprint instead.
+tests:
+  - package_contents:
+      site_packages:
+        - app/__init__.py
+        - app/endpoints/__init__.py
+        - app/services/__init__.py
+
+about:
+  homepage: https://github.com/suitenumerique/meet-whisperx
+  repository: https://github.com/suitenumerique/meet-whisperx
+  summary: Whisper OpenAI-compatible transcription API server for La Suite Meet
+  description: |
+    meet-whisperx (PyPI name whisper-openai-api) is the OpenAI-compatible
+    transcription service backing La Suite Meet's live-transcript feature.
+    Wraps WhisperX with a FastAPI endpoint. This recipe installs the Python
+    module only — running the service additionally requires a WhisperX
+    runtime (not provided here) and GPU-capable PyTorch.
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

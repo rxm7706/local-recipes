@@ -1,0 +1,43 @@
+{% set name = "s3transfer" %}
+{% set version = "0.7.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/s3transfer-{{ version }}.tar.gz
+  sha256: fd3889a66f5fe17299fe75b82eae6cf722554edca744ca5d5fe308b104883d2e
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.7
+    - pip
+  run:
+    - python >=3.7
+    - botocore >=1.12.36,<2.0a.0
+
+test:
+  imports:
+    - s3transfer
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/boto/s3transfer
+  summary: An Amazon S3 Transfer Manager
+  license: Apache-2.0
+  license_file:
+    - NOTICE.txt
+    - LICENSE.txt
+
+extra:
+  recipe-maintainers:
+    - rxm7706

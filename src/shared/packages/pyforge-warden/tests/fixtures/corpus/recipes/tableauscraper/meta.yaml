@@ -1,0 +1,45 @@
+{% set name = "tableauscraper" %}
+{% set version = "0.1.29" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/TableauScraper-{{ version }}.tar.gz
+  sha256: 7fa031b9b4aacecb8b525ad1d5908623456c3975fc46bf88fb2b6fd13156288e
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 1
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >={{ python_min }}
+    - beautifulsoup4 >=4.0.0
+    - pandas
+    - requests >=2.14.0
+
+test:
+  imports:
+    - tableauscraper
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/bertrandmartel/tableau-scraping
+  summary: Library to get data from Tableau Viz
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

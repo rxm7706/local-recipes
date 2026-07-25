@@ -1,0 +1,45 @@
+context:
+  name: django-celery-results
+  url_name: django_celery_results
+  version: 2.5.1
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ url_name[0] }}/${{ url_name }}/${{ url_name }}-${{ version }}.tar.gz
+  sha256: 3ecb7147f773f34d0381bac6246337ce4cf88a2ea7b82774ed48e518b67bb8fd
+
+build:
+  number: 2
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}.*
+    - setuptools
+  run:
+    - celery >=5.2.3,<6.0
+    - python >=${{ python_min }}
+    - django >=3.2
+
+tests:
+  - python:
+      imports:
+        - django_celery_results
+      pip_check: true
+      python_version: ${{ python_min }}.*
+
+about:
+  summary: Celery result backends for Django.
+  license: BSD-3-Clause
+  license_file: LICENSE
+  homepage: https://github.com/celery/django-celery-results
+
+extra:
+  recipe-maintainers:
+    - MichelML
+    - hadim

@@ -1,0 +1,49 @@
+{% set name = "xlsconv" %}
+{% set version = "2.0.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/xlsconv-{{ version }}.tar.gz
+  sha256: cb77f903254d40fa7fa455a344245447783e20f7ba86c724a5962683b30f0d06
+
+build:
+  entry_points:
+    - xls2django = xlsconv.django:main
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.7
+    - setuptools
+    - setuptools-scm
+    - pip
+  run:
+    - python >=3.7
+    - pyxform
+    - astunparse
+    - black
+
+test:
+  imports:
+    - xlsconv
+  commands:
+    - pip check
+    #- xls2django --help
+  requires:
+    - pip
+
+about:
+  home: https://github.com/wq/xlsform-converter
+  summary: Tool to convert ODK-style XLSForms into Django models or use with wq (https://wq.io/)
+  dev_url: https://github.com/wq/xlsform-converter
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

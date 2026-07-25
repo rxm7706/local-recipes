@@ -1,0 +1,47 @@
+{% set name = "pytest-sugar" %}
+{% set version = "0.9.7" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/pytest-sugar-{{ version }}.tar.gz
+  sha256: f1e74c1abfa55f7241cf7088032b6e378566f16b938f3f08905e2cf4494edd46
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python
+    - setuptools >=40.6.0
+    - wheel
+    - poetry-core
+    - pip
+  run:
+    - python >=3.8.1,<4.0
+    - pytest >=6.2.0
+    - termcolor >=2.1.0
+    - packaging >=21.3
+
+test:
+  imports:
+    - pytest_sugar
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://pivotfinland.com/pytest-sugar/
+  summary: pytest-sugar is a plugin for pytest that changes the default look and feel of pytest (e.g. progressbar, show tests that fail instantly).
+  dev_url: https://github.com/Teemu/pytest-sugar/
+  license: BSD-3-Clause
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

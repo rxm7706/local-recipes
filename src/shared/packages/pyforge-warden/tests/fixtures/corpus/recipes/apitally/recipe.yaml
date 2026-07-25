@@ -1,0 +1,83 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.25.1"
+
+package:
+  name: apitally
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/a/apitally/apitally-${{ version }}.tar.gz
+  sha256: 2681e925deffbc94eb7fc65e1f0db397df58634ab1d90597be458d69b2185f7b
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - backoff >=2.0.0
+    - opentelemetry-sdk <2.0.0,>=1.39.1
+    - psutil >=5.9.6
+    - typing_extensions >=4.0.0
+
+tests:
+  - python:
+      imports:
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://apitally.io
+  license: MIT
+  license_file: LICENSE
+  summary: Simple API monitoring & analytics for REST APIs built with FastAPI, Flask, Django, Starlette, Litestar and BlackSheep.
+  description: |
+    Simple API monitoring & analytics for REST APIs built with FastAPI, Flask, Django, Starlette, Litestar and BlackSheep.
+  repository: https://github.com/apitally/apitally-py
+  documentation: https://docs.apitally.io
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: apitally
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: apitally
+  cfe-purls:
+    - pkg:conda/apitally@${{ version }}?channel=conda-forge
+    - pkg:pypi/apitally@${{ version }}
+  cfe-upstream-repo: https://github.com/apitally/apitally-py
+  cfe-upstream-homepage: https://github.com/apitally/apitally-py
+  cfe-import-names: [apitally]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/apitally-feedstock
+  cfe-forge-recipe-updates-needed: [version-bump-to-0.25.1]
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-07-03T04:00:00Z
+  cfe-generated-by-version: 8.65.0
+  cfe-generated-at-datetime: 2026-07-03T04:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-07-03T04:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # 2026-07-03 punch-list full-gate pass (tracker issue -> local verification).
+####

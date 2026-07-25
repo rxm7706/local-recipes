@@ -1,0 +1,44 @@
+{% set name = "rise" %}
+{% set version = "5.7.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/rise-{{ version }}.tar.gz
+  sha256: 641db777cb907bf5e6dc053098d7fd213813fa9a946542e52b900eb7095289a6
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python <4.0
+    - pip
+  run:
+    - python <4.0
+    - notebook >=6.0
+
+test:
+  imports:
+    - rise
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  summary: Reveal.js - Jupyter/IPython Slideshow Extension
+  license: BSD-3-Clause-LBNL AND MIT AND BSD-3-Clause
+  license_file:
+    - LICENSE.md
+    - rise/static/reveal.js/LICENSE
+    - rise/static/reveal.js/lib/font/source-sans-pro/LICENSE
+    - rise/static/reveal.js/lib/font/league-gothic/LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

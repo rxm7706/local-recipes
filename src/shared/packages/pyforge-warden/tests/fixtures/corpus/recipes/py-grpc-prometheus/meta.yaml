@@ -1,0 +1,43 @@
+{% set name = "py-grpc-prometheus" %}
+{% set version = "0.8.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/py_grpc_prometheus-{{ version }}.tar.gz
+  sha256: 364311dc88aaf4e74f8664e7f2bb8471f1822fd082e0aac174f72d35213bba6a
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python
+    - pip
+  run:
+    - python
+    - setuptools >=39.0.1
+    - grpcio >=1.10.0
+    - prometheus_client >=0.3.0
+
+test:
+  imports:
+    - py_grpc_prometheus
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/lchenn/py-grpc-prometheus
+  summary: Python gRPC Prometheus Interceptors
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

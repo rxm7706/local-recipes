@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.2.0"
+
+package:
+  name: filetype
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/f/filetype/filetype-${{ version }}.tar.gz
+  sha256: 66b56cd6474bf41d8c54660347d37afcc3f7d1970648de365c102ef77548aadb
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - filetype
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/h2non/filetype.py
+  repository: https://github.com/h2non/filetype.py
+  license: MIT
+  license_file: LICENSE
+  summary: Infer file type and MIME type of any file/buffer; no external dependencies
+  description: |
+    Small and dependency-free Python package to infer file type and MIME
+    type by checking the magic numbers signature of a file or buffer.
+
+extra:
+  recipe-maintainers:
+    - rxm7706

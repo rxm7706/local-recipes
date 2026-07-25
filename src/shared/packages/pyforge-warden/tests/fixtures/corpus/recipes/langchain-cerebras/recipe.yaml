@@ -1,0 +1,90 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.8.2"
+  python_min: "3.11"
+
+package:
+  name: langchain-cerebras
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/l/langchain-cerebras/langchain_cerebras-${{ version }}.tar.gz
+  sha256: 1594f87d08955a141269d48527d9a636827f6cb60167c447d8c5969eeaa9c8c7
+
+build:
+  number: 0
+  noarch: python
+  script: python -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - poetry-core
+  run:
+    - python >=${{ python_min }},<3.13
+    - langchain-core >=1.1.0,<2.0.0
+    - langchain-openai >=1.0.2,<2.0.0
+
+tests:
+  - python:
+      imports:
+        - langchain_cerebras
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: LangChain partner integration for the Cerebras inference API
+  description: |
+    langchain-cerebras provides the ChatCerebras integration for LangChain,
+    targeting Cerebras wafer-scale inference (OpenAI-compatible endpoint)
+    from langchain applications.
+  homepage: https://github.com/langchain-ai/langchain-cerebras
+  repository: https://github.com/langchain-ai/langchain-cerebras
+  documentation: https://python.langchain.com/docs/integrations/chat/cerebras/
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: langchain-cerebras
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: langchain-cerebras
+  cfe-purls:
+    - pkg:conda/langchain-cerebras@${{ version }}?channel=conda-forge
+    - pkg:pypi/langchain-cerebras@${{ version }}
+  cfe-upstream-repo: https://github.com/langchain-ai/langchain-cerebras
+  cfe-upstream-homepage: https://github.com/langchain-ai/langchain-cerebras
+  cfe-import-names: [langchain_cerebras]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: "2026-07-12T17:00:00Z"
+  cfe-generated-by-version: 8.76.0
+  cfe-generated-at-datetime: "2026-07-12T17:00:00Z"
+  cfe-local-build-status: success
+  cfe-local-build-datetime: "2026-07-12T15:43:51Z"
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # Packaged 2026-07-12 as a PREREQUISITE for the codeboarding recipe
+#    # (codeboarding requires langchain-cerebras>=0.8; not on conda-forge).
+# context:
+#    # python_min 3.11 + the <3.13 ceiling mirror upstream requires-python
+#    # (>=3.11,<3.13) — with codeboarding's >=3.12,<3.14 window the solver
+#    # lands on Python 3.12.
+####

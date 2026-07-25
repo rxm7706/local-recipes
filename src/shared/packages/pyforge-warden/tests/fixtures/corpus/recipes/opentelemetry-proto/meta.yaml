@@ -1,0 +1,45 @@
+{% set name = "opentelemetry-proto" %}
+{% set version = "1.29.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/opentelemetry_proto-{{ version }}.tar.gz
+  sha256: 3c136aa293782e9b44978c738fff72877a4b78b5d21a64e879898db7b2d93e5d
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - hatchling
+  run:
+    - python >={{ python_min }}
+    - protobuf <6.0,>=5.0
+
+test:
+  imports:
+    - opentelemetry
+    - opentelemetry.proto
+  commands:
+    - pip check
+  requires:
+    - python {{ python_min }}
+    - pip
+
+about:
+  home: https://github.com/open-telemetry/opentelemetry-python/tree/main/opentelemetry-proto
+  summary: OpenTelemetry Python Proto
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+    - mariusvniekerk

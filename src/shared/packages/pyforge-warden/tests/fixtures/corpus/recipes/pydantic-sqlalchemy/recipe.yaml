@@ -1,0 +1,80 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.0.10"
+
+package:
+  name: pydantic-sqlalchemy
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/pydantic-sqlalchemy/pydantic_sqlalchemy-${{ version }}.tar.gz
+  sha256: 4f44afbe6e38d601d325a8f74d9b9a0d3922634570378701e16019afa62f48a3
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - pdm-backend
+  run:
+    - python >=${{ python_min }}
+    - sqlalchemy <2.0.0,>=1.3.16
+    - pydantic <2.0.0,>=1.5.1
+
+tests:
+  - python:
+      imports:
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/tiangolo/pydantic-sqlalchemy
+  license: MIT
+  license_file: LICENSE
+  summary: Tools to convert SQLAlchemy models to Pydantic models
+  description: |
+    Tools to convert SQLAlchemy models to Pydantic models
+  repository: https://github.com/tiangolo/pydantic-sqlalchemy
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pydantic-sqlalchemy
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pydantic-sqlalchemy
+  cfe-purls:
+    - pkg:conda/pydantic-sqlalchemy@${{ version }}?channel=conda-forge
+    - pkg:pypi/pydantic-sqlalchemy@${{ version }}
+  cfe-upstream-repo: https://github.com/tiangolo/pydantic-sqlalchemy
+  cfe-upstream-homepage: https://github.com/tiangolo/pydantic-sqlalchemy
+  cfe-import-names: [pydantic_sqlalchemy]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pydantic-sqlalchemy-feedstock
+  cfe-forge-recipe-updates-needed: [version-bump-to-0.0.10]
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-07-03T04:00:00Z
+  cfe-generated-by-version: 8.65.0
+  cfe-generated-at-datetime: 2026-07-03T04:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-07-03T04:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # 2026-07-03 punch-list full-gate pass (tracker issue -> local verification).
+####

@@ -1,0 +1,21 @@
+{% set compilers = ["gcc", "clang"] %}
+{% set extras = ["alpha", "beta", "gamma"] %}
+package:
+  name: exotic-nested-loop-demo
+  version: "2.0"
+
+requirements:
+  build:
+    {% for c in compilers %}
+    - {{ c }}_{{ target_platform }}          # [not win]
+    {% endfor %}
+  host:
+    - python
+  run:
+    {% if is_unix %}
+    {% for extra in extras %}
+    - extra-{{ extra }}-pkg  # [unix]
+    {% endfor %}
+    {% endif %}
+    - requests >=2.0  # [not win]
+    - pywin32          # [win]

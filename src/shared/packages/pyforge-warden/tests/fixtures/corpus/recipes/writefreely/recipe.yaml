@@ -1,0 +1,90 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+#yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: writefreely
+  version: "0.16.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/writefreely/writefreely/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: 284fbd70908b7461f3ca4067823ee099bffb2098dc6c5958767d9a8dad810e15
+
+build:
+  number: 0
+  # Skip osx-64: Go crypto/x509 requires macOS 10.15+ symbols but conda-forge
+  # go-cgo compiler targets darwin13 (macOS 10.13)
+  skip:
+    - osx and x86_64
+  # Use external build scripts for reliability
+  script:
+    - if: unix
+      then: bash $RECIPE_DIR/build.sh
+    - if: win
+      then: call %RECIPE_DIR%\bld.bat
+
+requirements:
+  build:
+    # CGO is required for SQLite support
+    - ${{ compiler("go-cgo") }}
+    # Platform-specific C compilers for CGO
+    - if: unix
+      then:
+        - ${{ compiler("c") }}
+        - ${{ stdlib("c") }}
+    - if: win
+      then:
+        - ${{ compiler("m2w64_c") }}      # MinGW-w64 C compiler
+        - ${{ stdlib("m2w64_c") }}        # MinGW-w64 C stdlib
+        - m2-base                          # MSYS2 base utilities
+    # For collecting dependency licenses
+    - go-licenses
+  host:
+    - sqlite
+  run:
+    - sqlite
+
+tests:
+  - script:
+      - if: unix
+        then:
+          - writefreely --version
+          - writefreely --help
+      - if: win
+        then:
+          - writefreely.exe --version
+          - writefreely.exe --help
+  - package_contents:
+      bin:
+        - if: unix
+          then: writefreely
+        - if: win
+          then: writefreely.exe
+
+about:
+  homepage: https://writefreely.org
+  summary: A clean, Markdown-based publishing platform made for writers
+  description: |
+    WriteFreely is a clean, minimalist publishing platform made for writers.
+    Start a blog, share knowledge within your organization, or build a community
+    around the shared act of writing. Features include:
+    - Distraction-free writing with auto-save
+    - Markdown support
+    - ActivityPub federation (connect with Mastodon, etc.)
+    - SQLite or MySQL database support
+    - Multi-user/community support
+    - Customizable themes
+  license: AGPL-3.0-only
+  license_file:
+    - LICENSE
+    - library_licenses/
+  repository: https://github.com/writefreely/writefreely
+  documentation: https://writefreely.org/docs
+
+extra:
+  recipe-maintainers:
+    - rxm7706

@@ -1,0 +1,101 @@
+{% set name = "pymongoarrow" %}
+{% set version = "1.10.0" %}
+
+# just to be able to use libarrow in jinja below
+{% if libarrow is undefined %}
+{% set libarrow = "19" %}
+{% endif %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/pymongoarrow/pymongoarrow-{{ version }}.tar.gz
+  sha256: e0ed9f6ebdd9863d03dfce796730e047dfce5b1426b6a48991ab55eefad51398
+
+build:
+  number: 2
+  {% if libarrow.split(".")[0]|int < 18 %}
+  # py3.13 only supported from v18 onwards
+  skip: true  # [py>=313]
+  {% endif %}
+  {% if libarrow.split(".")[0]|int < 21 %}
+  # py3.14 only supported from v18 onwards
+  skip: true  # [py>=314]
+  {% endif %}
+  script:
+    - set eux  # [unix]
+    - export MONGO_NO_COPY_LIBARROW=1             # [unix]
+    - export MONGO_LIBARROW_DIR="${PREFIX}/lib"   # [unix]
+    - export MONGO_NO_COPY_LIBBSON=1              # [unix]
+    - export LIBBSON_INSTALL_DIR="${PREFIX}"      # [unix]
+    - export MONGO_CREATE_LIBARROW_SYMLINKS=""    # [unix]
+    - export MONGO_ADD_GLIBCXX_OVERRIDE=""        # [unix]
+    - set MONGO_NO_COPY_LIBARROW=1                # [win]
+    - set "MONGO_LIBARROW_DIR=%LIBRARY_LIB%"      # [win]
+    - set MONGO_NO_COPY_LIBBSON=1                 # [win]
+    - set "LIBBSON_INSTALL_DIR=%LIBRARY_PREFIX%"  # [win]
+    - {{ PYTHON }} -m pip install . --no-deps -vvv
+
+requirements:
+  build:
+    - python                                 # [build_platform != target_platform]
+    - cross-python_{{ target_platform }}     # [build_platform != target_platform]
+    - cython                                 # [build_platform != target_platform]
+    - libarrow                               # [build_platform != target_platform]
+    - pyarrow                                # [build_platform != target_platform]
+    - libbson                                # [build_platform != target_platform]
+    - pkg-config                             # [build_platform != target_platform]
+    - pip
+    - {{ compiler('c') }}
+    - {{ stdlib("c") }}
+    - {{ compiler('cxx') }}
+
+  host:
+    - python
+    - libarrow
+    - pyarrow
+    - cython >=0.29
+    - libbson >=1,<2
+    - numpy  # for headers
+    - pip
+    - pkg-config
+    - setuptools >=70,<72.2
+
+  run:
+    - pymongo >=3.11,<5
+    - pyarrow
+    - packaging
+    - python
+
+test:
+  source_files:
+    - .
+  files:
+    - run_the_tests.sh
+  requires:
+    - pip
+    - pandas
+    - numpy
+    - pytest
+    - polars
+    # TODO: replace with mongodb install once https://github.com/conda-forge/mongodb-feedstock/pull/72 is resolved
+    - icu
+    - yaml-cpp
+    - boost-cpp
+    - curl
+
+  commands:
+    - bash run_the_tests.sh  # [osx]
+
+about:
+  home: https://pypi.org/project/pymongoarrow/
+  summary: Tools for using NumPy, Pandas and PyArrow with MongoDB
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - blink1073
+    - ShaneHarvey

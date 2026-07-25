@@ -1,0 +1,44 @@
+{% set name = "wagtailmath" %}
+{% set version = "1.3.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/wagtailmath-{{ version }}.tar.gz
+  sha256: a4bc2bb3dd9ca0069b439a7315fd18685ccdffc38044f8027950b6fd42adecd3
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 1
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - flit-core >=3.2,<4
+    - pip
+  run:
+    - python >={{ python_min }}
+    - django >=4.2
+    - wagtail >=5.2
+
+test:
+  imports:
+    - wagtailmath
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/JamesRamm/wagtailmath
+  summary: Wagtail StreamField block for rendering mathematical equations
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

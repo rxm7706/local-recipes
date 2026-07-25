@@ -1,0 +1,57 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "6.5"
+
+package:
+  name: django-modelcluster
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/django-modelcluster/django_modelcluster-${{ version }}.tar.gz
+  sha256: 459cbf0fb3bbc8c15ea9a2a062abc0d1ef935a38e04aa8ac3cb241c826bbc6dd
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - setuptools >=71
+    - pip
+  run:
+    - python >=${{ python_min }}
+    #- pytz >=2022.4
+    - django >=4.2
+
+tests:
+  - python:
+      imports:
+        - modelcluster
+      pip_check: true
+      python_version:
+      - ${{ python_min }}.*
+      - "*"
+
+about:
+  homepage: https://github.com/wagtail/django-modelcluster
+  license: BSD-3-Clause
+  license_family: BSD
+  license_file: LICENSE
+  summary: Django extension to allow working with clusters of models as a single unit, independently of the database
+  description: |
+    django-modelcluster extends Django foreign key relations. It
+    introduces a new type of relation, ParentalKey, where the
+    related models are stored locally to the parent model until
+    the parent is explicitly saved.
+  documentation: https://github.com/wagtail/django-modelcluster
+  repository: https://github.com/wagtail/django-modelcluster
+
+extra:
+  recipe-maintainers:
+    - darynwhite
+    - cshaley
+    - sannykr

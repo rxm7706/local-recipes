@@ -1,0 +1,46 @@
+{% set name = "arrow-flight-client-examples" %}
+{% set version = "1.0.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: 
+    - https://github.com/dremio-hub/arrow-flight-client-examples/archive/dremio-flight-python-v{{ version }}.tar.gz
+  sha256: 208d7cf66bd206b9eeae1a547268e38d82c3e2f2db11fb7fc161ba09b209e316
+
+build:
+  noarch: python
+  script: 
+      - {{ PYTHON }} -m pip install ./python/dremio-flight -vv
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - pip
+  run:
+    - python >=3.8
+    - certifi
+    - pandas
+    - pyarrow
+
+test:
+  imports:
+    - dremio.arguments
+    - dremio.flight
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/dremio-hub/arrow-flight-client-examples/tree/main/python
+  summary: Python Arrow Flight Client Application Example to help you get started with Dremio Arrow Flight server endpoint.
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

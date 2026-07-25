@@ -1,0 +1,105 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.2.1"
+  # langflow-sdk is wheel-only on PyPI (no sdist), but its source IS in the langflow
+  # monorepo (src/sdk). conda-forge prefers source over wheel → source the GitHub tag
+  # archive + build the subdir. The monorepo tag (1.10.0) is INDEPENDENT of this
+  # package's version (0.2.0) — bump BOTH on update (autotick can't auto-bump this).
+  monorepo_tag: "1.10.1"
+
+package:
+  name: langflow-sdk
+  version: ${{ version }}
+
+source:
+  url: https://github.com/langflow-ai/langflow/archive/refs/tags/v${{ monorepo_tag }}.tar.gz
+  sha256: 807470ff4bc1283db9716e911af8755b4104847bb6dbba03fc2e610184598fdb
+
+build:
+  noarch: python
+  number: 0
+  # build the src/sdk subdir from the monorepo source (hatchling backend)
+  script: ${{ PYTHON }} -m pip install ./src/sdk --no-deps --no-build-isolation -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - hatchling
+    - pip
+  run:
+    - python >=${{ python_min }},<3.15
+    - httpx
+    - h2
+    - pydantic-settings >=2.10.1
+    - pydantic >=2.0.0
+    - tomli >=2.2.1
+    - typing_extensions >=4.14.0
+
+tests:
+  - python:
+      imports:
+        - langflow_sdk
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/langflow-sdk/
+  license: MIT
+  license_file: LICENSE
+  summary: Python SDK for the Langflow REST API
+  repository: https://github.com/langflow-ai/langflow
+  documentation: https://docs.langflow.org
+  description: |
+    langflow-sdk is the Python client SDK for the Langflow REST API. It provides
+    synchronous and asynchronous clients (Client / LangflowClient and
+    AsyncClient / AsyncLangflowClient), typed models for flows and projects,
+    environment-based configuration, and helpers for running flows and
+    streaming responses against a Langflow server.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: langflow-sdk
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: langflow-sdk
+  cfe-purls:
+    - pkg:conda/langflow-sdk@${{ version }}?channel=conda-forge
+    - pkg:pypi/langflow-sdk@${{ version }}
+  cfe-upstream-repo: https://github.com/langflow-ai/langflow
+  cfe-upstream-homepage: https://pypi.org/project/langflow-sdk/
+  cfe-import-names: [langflow_sdk]
+  cfe-source-kind: github-tag
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: pending-approval-on-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-submission-pr: https://github.com/conda-forge/staged-recipes/pull/33856
+  cfe-forge-recipe-updates-needed: bump submitted PR #33856 from 0.2.0 to 0.2.1 (lfx 1.10.1 requires langflow-sdk>=0.2.1)
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-27T00:00:00Z
+  cfe-generated-by-version: 8.30.1
+  cfe-generated-at-datetime: 2026-06-19T13:36:19Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-27T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# source:
+#    # langflow-sdk ships a wheel only (no sdist) on PyPI. py-tag "py3" is upstream-
+#    # specific and may change on a version bump — re-verify the wheel tag when bumping.
+# build:
+#    # langflow-sdk is wheel-only upstream (no sdist); install the wheel directly.
+# requirements:
+#  run:
+#    # upstream requires-python is <3.15,>=3.10; the <3.15 upper bound is
+#    # load-bearing with pip_check: true (mirrors the wheel METADATA).
+#    # flattened from httpx[http2] (G25: conda has no extras; http2 → h2)
+####

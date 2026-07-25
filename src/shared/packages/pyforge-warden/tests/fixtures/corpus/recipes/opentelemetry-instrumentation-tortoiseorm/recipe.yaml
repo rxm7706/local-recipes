@@ -1,0 +1,89 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.64b0"
+
+package:
+  name: opentelemetry-instrumentation-tortoiseorm
+  version: ${{ version }}
+
+source:
+  url: 
+    https://pypi.org/packages/source/o/opentelemetry-instrumentation-tortoiseorm/opentelemetry_instrumentation_tortoiseorm-${{
+    version }}.tar.gz
+  sha256: 9108539712c554a567171ace27572b4a6304bc76d4d70eee1f50e94bb500989c
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - opentelemetry-api >=1.12,<2.dev0
+    - opentelemetry-instrumentation ==${{ version }}
+    - opentelemetry-semantic-conventions ==${{ version }}
+    - tortoise-orm >=0.17.0
+    - pydantic >=1.10.2
+
+tests:
+  - python:
+      imports:
+        - opentelemetry
+        - opentelemetry.instrumentation.tortoiseorm
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: 
+    https://github.com/open-telemetry/opentelemetry-python-contrib/tree/main/instrumentation/opentelemetry-instrumentation-tortoiseorm
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: OpenTelemetry Instrumentation for Tortoise ORM
+  description: |
+    OpenTelemetry Instrumentation for Tortoise ORM
+  repository: https://github.com/open-telemetry/opentelemetry-python-contrib
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+    - conda-forge/opentelemetry-api
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: opentelemetry-instrumentation-tortoiseorm
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: opentelemetry-instrumentation-tortoiseorm
+  cfe-purls:
+    - pkg:conda/opentelemetry-instrumentation-tortoiseorm@${{ version }}?channel=conda-forge
+    - pkg:pypi/opentelemetry-instrumentation-tortoiseorm@${{ version }}
+  cfe-upstream-repo: https://github.com/open-telemetry/opentelemetry-python-contrib
+  cfe-upstream-homepage: https://github.com/open-telemetry/opentelemetry-python-contrib
+  cfe-import-names: [opentelemetry_instrumentation_tortoiseorm]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/opentelemetry-instrumentation-tortoiseorm-feedstock
+  cfe-forge-recipe-updates-needed: [version-bump-to-0.64b0]
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-07-03T04:00:00Z
+  cfe-generated-by-version: 8.65.0
+  cfe-generated-at-datetime: 2026-07-03T04:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-07-03T04:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # 2026-07-03 punch-list full-gate pass (tracker issue -> local verification).
+####

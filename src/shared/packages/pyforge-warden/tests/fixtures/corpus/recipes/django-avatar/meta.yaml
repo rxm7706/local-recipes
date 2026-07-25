@@ -1,0 +1,50 @@
+{% set name = "django-avatar" %}
+{% set version = "8.0.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/django-avatar-{{ version }}.tar.gz
+  sha256: 9e5fdea5c8b5749abc1e4d09ed2bba9ff43d8654b24fa277303097f808f027c3
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - setuptools >=65.6.3
+    - wheel
+    - pip
+  run:
+    - python >=3.8
+    - django >=3.2
+    - pillow >=10.0.1
+    - django-appconf >=1.0.5
+    - dnspython >=2.3.0
+
+test:
+  imports:
+    - avatar
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  summary: A Django app for handling user avatars
+  home: https://github.com/jazzband/django-avatar
+  license: BSD-3-Clause AND BSD-4-Clause
+  license_file:
+    - LICENSE.txt
+    - avatar/templates/notification/avatar_updated/notice.html
+    - avatar/templates/notification/avatar_friend_updated/notice.html
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+    - mxr-conda

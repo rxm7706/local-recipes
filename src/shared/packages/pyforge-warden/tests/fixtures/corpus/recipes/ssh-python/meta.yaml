@@ -1,0 +1,46 @@
+{% set name = "ssh-python" %}
+{% set version = "1.0.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/ssh-python-{{ version }}.tar.gz
+  sha256: 68bee3f5a657e657d6dcc94e1b6c9ec332fd5d59bf4976a54150b997a800bf68
+
+build:
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  build:
+    - {{ compiler('c') }}
+  host:
+    - python
+    - cython
+    - pip
+  run:
+    - python
+
+test:
+  imports:
+    - ssh
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/ParallelSSH/ssh-python
+  summary: libssh C library bindings for Python.
+  license: BSD-3-Clause AND LGPL-2.1
+  license_file:
+    - LICENSE
+    - COPYING
+    - libssh/COPYING
+    - libssh/cmake/Modules/COPYING-CMAKE-SCRIPTS
+
+extra:
+  recipe-maintainers:
+    - rxm7706

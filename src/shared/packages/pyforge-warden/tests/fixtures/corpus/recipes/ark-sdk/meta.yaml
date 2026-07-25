@@ -1,0 +1,80 @@
+{% set name = "ark-sdk" %}
+{% set version = "0.1.43" %}
+{% set python_min = "3.10" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://github.com/mckinsey/agents-at-scale-ark/archive/refs/tags/v{{ version }}.tar.gz
+  sha256: 3a06157d62b413adb1a71c4da1973ca5f0925aac0d7b9d6f9e8a940b79b1d906
+
+build:
+  number: 0
+  noarch: python
+  script: cd lib/ark-sdk/gen_sdk/overlay/python && {{ PYTHON }} -m pip install . --no-deps --no-build-isolation -vv
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - hatchling
+  run:
+    - python >={{ python_min }},<4.0
+    - urllib3 >=2.1.0,<3.0.0
+    - python-dateutil >=2.8.2
+    - pydantic >=2
+    - typing-extensions >=4.7.1
+    - python-kubernetes >=32.0.0
+    - kubernetes_asyncio >=24.2.0
+    - pytest >=8.0.0
+    - python-build >=1.0.0
+    - fastapi >=0.115.0
+    - httpx >=0.24.0
+    - python-jose ==3.5.0
+    - cryptography
+    - pydantic-settings >=2.0.0
+    - uvicorn >=0.24.0
+
+test:
+  imports:
+    - ark_sdk
+    - ark_sdk.auth
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/mckinsey/agents-at-scale-ark
+  license: Apache-2.0
+  license_family: Apache
+  license_file: LICENSE
+  summary: Python SDK for ARK - Agentic Runtime for Kubernetes
+  description: |
+    ARK (Agentic Runtime for Kubernetes) is a Kubernetes-based runtime environment
+    designed to host AI agents. The Python SDK provides a comprehensive interface
+    for building, deploying, and managing AI agents on Kubernetes.
+
+    Key Features:
+    - Kubernetes-native AI agent orchestration
+    - Custom Resource Definitions (CRDs) for agents, models, memory, tools, and evaluation
+    - Abstraction layers for agent operations
+    - FastAPI-based API server integration
+    - Async Kubernetes client support
+    - Authentication and authorization helpers
+    - Built-in testing infrastructure
+
+    ARK codifies patterns and practices developed across dozens of agentic
+    application projects, providing a production-ready platform for deploying
+    AI agents at scale.
+
+    Supported Python Versions: 3.9, 3.10, 3.11, 3.12
+  doc_url: https://mckinsey.github.io/agents-at-scale-ark
+  dev_url: https://github.com/mckinsey/agents-at-scale-ark
+
+extra:
+  recipe-maintainers:
+    - rxm7706

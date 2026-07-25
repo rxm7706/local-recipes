@@ -1,0 +1,94 @@
+{% set name = "textract" %}
+{% set version = "1.6.5" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/textract-{{ version }}.tar.gz
+  sha256: 68f0f09056885821e6c43d8538987518daa94057c306679f2857cc5ee66ad850
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - setuptools==71.0.4
+    - pip==23.2.1
+  build:
+    - python >=3.8
+    - setuptools==71.0.4
+    - pip==23.2.1
+  run:
+    - python >=3.8
+    - argcomplete >=1.10.0
+    - beautifulsoup4 >=4.8.0
+    - chardet
+    - docx2txt >=0.8
+    - ebooklib
+    - msg-extractor
+    - pdfminer.six >=20191110
+    - python-pptx >=0.6.18
+    - six >=1.12.0
+    - speechrecognition >=3.8.1
+    - xlrd >=1.2.0
+
+test:
+  imports:
+    - textract
+    - textract.cli
+    - textract.colors
+    - textract.exceptions
+    - textract.parsers
+    - textract.parsers.audio
+    - textract.parsers.csv_parser
+    - textract.parsers.doc_parser
+    - textract.parsers.docx_parser
+    - textract.parsers.eml_parser
+    - textract.parsers.epub_parser
+    - textract.parsers.gif_parser
+    - textract.parsers.html_parser
+    - textract.parsers.image
+    - textract.parsers.jpg_parser
+    - textract.parsers.json_parser
+    - textract.parsers.mp3_parser
+    - textract.parsers.msg_parser
+    - textract.parsers.odt_parser
+    - textract.parsers.ogg_parser
+    - textract.parsers.pdf_parser
+    - textract.parsers.png_parser
+    - textract.parsers.pptx_parser
+    - textract.parsers.ps_parser
+    - textract.parsers.rtf_parser
+    - textract.parsers.tiff_parser
+    - textract.parsers.txt_parser
+    - textract.parsers.utils
+    - textract.parsers.wav_parser
+    - textract.parsers.xls_parser
+    - textract.parsers.xlsx_parser
+  commands:
+    - textract -h
+    - pip check
+  requires:
+    - pip==23.2.1
+    - setuptools==71.0.4
+    - wheel >=0.41.1
+
+about:
+  home: https://github.com/deanmalmgren/textract
+  license_file: LICENSE
+  license: MIT
+  license_family: MIT
+  summary: Extract text from any document. no muss. no fuss.
+  doc_url: https://textract.readthedocs.io/en/latest/
+  dev_url: https://github.com/deanmalmgren/textract
+
+extra:
+  recipe-maintainers:
+    - pmlandwehr
+    - jan-janssen
+    - rxm7706

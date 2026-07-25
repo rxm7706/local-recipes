@@ -1,0 +1,58 @@
+{% set name = "cartopy" %}
+{% set version = "0.23.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/Cartopy-{{ version }}.tar.gz
+  sha256: 231f37b35701f2ba31d94959cca75e6da04c2eea3a7f14ce1c75ee3b0eae7676
+
+build:
+  skip: true  # [py<39]
+  entry_points:
+    - cartopy_feature_download = cartopy.feature.download.__main__:main
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  build:
+    - {{ compiler('cxx') }}
+    - {{ compiler('c') }}
+  host:
+    - python >=3.9
+    - wheel
+    - setuptools >=40.6.0
+    - cython >=0.29.24
+    - numpy >=2.0.0rc1
+    - setuptools-scm >=7.0.0
+    - pip
+  run:
+    - python >=3.9
+    - matplotlib-base >=3.5
+    - shapely >=1.7
+    - packaging >=20
+    - pyshp >=2.3
+    - pyproj >=3.3.1
+    - {{ pin_compatible('numpy') }}
+
+test:
+  imports:
+    - cartopy
+  commands:
+    - pip check
+    - cartopy_feature_download --help
+  requires:
+    - pip
+
+about:
+  summary: A Python library for cartographic visualizations with Matplotlib
+  license: BSD-3-Clause
+  license_file:
+    - LICENSE
+    - lib/cartopy/data/LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

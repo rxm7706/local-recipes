@@ -1,0 +1,48 @@
+{% set name = "django-countries" %}
+{% set version = "7.8" %}
+{% set python_min = "3.10" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/django_countries-{{ version }}.tar.gz
+  sha256: b8413065160bc93efe1293d746bbde32951d9a1fe7e44f1fe2add1bebbb6962f
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - uv-build >=0.9.6,<0.10.0
+    - pip
+  run:
+    - python >={{ python_min }},<4.0
+    - asgiref
+    - typing_extensions
+    - django >=3.2,<6.0
+
+test:
+  imports:
+    - django_countries
+    - django_countries.graphql
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/SmileyChris/django-countries/
+  summary: Provides a country field for Django models.
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - mxr-conda
+    - rxm7706

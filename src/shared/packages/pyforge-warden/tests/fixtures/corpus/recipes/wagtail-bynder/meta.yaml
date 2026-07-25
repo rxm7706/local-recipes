@@ -1,0 +1,44 @@
+{% set name = "wagtail-bynder" %}
+{% set version = "0.1.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/wagtail_bynder-{{ version }}.tar.gz
+  sha256: a8ff9d95bef43aa75a4a2893d238ed67b69ced4afa39e479d8fe643989c5a159
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.11
+    - flit-core >=3.2,<4
+    - pip
+  run:
+    - python >=3.11
+    - django >=3.2
+    - wagtail >=4.1
+    - bynder-sdk >=1.1.5,<2.0
+
+test:
+  imports:
+    - wagtail_bynder
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  summary: Wagtail integration with Bynder, a Digital Asset Management System
+  dev_url: https://github.com/torchbox/wagtail-bynder
+  license: BSD-3-Clause
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

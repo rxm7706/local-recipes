@@ -1,0 +1,196 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.10.0"
+  python_min: "3.11"
+
+package:
+  name: langflow
+  version: ${{ version }}
+
+source:
+  url: https://github.com/langflow-ai/langflow/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: 45a317111a5d7cbc2709e683a72a80779801a658f61e506b612978588788ab71
+  patches:
+    # Lean umbrella: depend only on langflow-base (not [complete]); the lfx-*
+    # component packs + all integrations are optional (run_constraints), not
+    # forced. Source patch instead of an in-build sed.
+    - patches/0001-lean-umbrella-deps.patch
+
+build:
+  noarch: python
+  number: 0
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }},<3.15
+    # Upstream langflow = langflow-base[complete] + 4 lfx-* extension packs.
+    # Lean: hard-dep only langflow-base (it provides the importable `langflow`);
+    # the lfx-* packs + all integrations are optional (run_constraints below).
+    - langflow-base ==0.10.0
+  run_constraints:
+    # langflow's own optional component deps (upstream extras), demoted from run:
+    - fastmcp
+    - lark
+    - sseclient-py
+    # Internal component packs (lfx-*)
+    - lfx-arxiv >=0.1
+    - lfx-docling >=0.1
+    - lfx-duckduckgo >=0.1
+    - lfx-ibm >=0.1
+    # Heavy multi-agent & specialized LLM framework interops
+    - ag2 >=0.1
+    - agent-lifecycle-toolkit >=0.1
+    - smolagents >=0.1
+    - litellm >=0.1
+    - openai >=0.1
+    - apify-client >=0.1
+    - assemblyai >=0.1
+    # LangChain provider integration matrix
+    - langchain-anthropic >=0.1
+    - langchain-astradb >=0.1
+    - langchain-aws >=0.1
+    - langchain-chroma >=0.1
+    - langchain-cohere >=0.1
+    - langchain-elasticsearch >=0.1
+    - langchain-experimental >=0.1
+    - langchain-google-calendar-tools >=0.1
+    - langchain-google-community >=0.1
+    - langchain-google-genai >=0.1
+    - langchain-google-vertexai >=0.1
+    - langchain-graph-retriever >=0.1
+    - langchain-groq >=0.1
+    - langchain-huggingface >=0.1
+    - langchain-ibm >=0.1
+    - langchain-mcp-adapters >=0.1
+    - langchain-milvus >=0.1
+    - langchain-mistralai >=0.1
+    - langchain-mongodb >=0.1
+    - langchain-nvidia-ai-endpoints >=0.1
+    - langchain-ollama >=0.1
+    - langchain-openai >=0.1
+    - langchain-perplexity >=0.1
+    - langchain-pinecone >=0.1
+    - langchain-qdrant >=0.1
+    - langchain-sambanova >=0.1
+    - langchain-unstructured >=0.1
+    - langchain-weaviate >=0.1
+    - langchainhub >=0.1
+    - langfuse-python >=0.1
+    - langgraph-checkpoint >=0.1
+    - langsmith >=0.1
+    - langwatch >=0.1
+    # Storage engines, vector DBs, data-access clients
+    - chromadb >=0.1
+    - qdrant-client >=0.1
+    - weaviate-client >=0.1
+    - opensearch-py >=0.1
+    - elasticsearch >=0.1
+    - clickhouse-connect >=0.1
+    - couchbase >=0.1
+    - pymongo >=0.1
+    - aiosqlite >=0.1
+    - pgvector >=0.1
+    - cassio >=0.1
+    - astrapy >=0.1
+    - duckdb >=0.1
+    - fastavro >=0.1
+    - fastparquet >=0.1
+    # Domain-specific SDK tools
+    - docling-core >=0.1
+    - docling-slim >=0.1
+    - firecrawl-py >=0.1
+    - scrapegraph-py >=0.1
+    - spider-client >=0.1
+    - cleanlab-tlm >=0.1
+    - composio >=0.1
+    - composio-langchain >=0.1
+    - needle-python >=0.1
+    - metal-sdk >=0.1
+    - mem0ai >=0.1
+    - upstash-vector >=0.1
+    - opik >=0.1
+    - traceloop-sdk >=0.1
+    - openinference-instrumentation-langchain >=0.1
+    - openlayer >=0.1
+
+tests:
+  - python:
+      imports:
+        - langflow
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+
+about:
+  homepage: https://pypi.org/project/langflow/
+  license: MIT
+  license_file: LICENSE
+  summary: A Python package with a built-in web application
+  repository: https://github.com/langflow-ai/langflow
+  documentation: https://docs.langflow.org
+  description: |
+    Langflow is a low-code app builder for RAG and multi-agent AI applications.
+    It is Python-based and agnostic to any model, API, or database. This
+    distribution is a thin umbrella meta-package: lean, it depends only on
+    langflow-base (which provides the importable `langflow`); the lfx-* component
+    packs and all provider integrations are optional run_constraints, not forced.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: langflow
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: langflow
+  cfe-purls:
+    - pkg:conda/langflow@${{ version }}?channel=conda-forge
+    - pkg:pypi/langflow@${{ version }}
+  cfe-upstream-repo: https://github.com/langflow-ai/langflow
+  cfe-upstream-homepage: https://pypi.org/project/langflow/
+  cfe-import-names: [langflow]
+  cfe-source-kind: github-tag:langflow-monorepo-root
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: blocked-pending-prerequisites
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - langflow-base
+    - lfx
+    - opendsstar
+  cfe-last-checked: 2026-06-24T09:58:17Z
+  cfe-generated-by-version: 8.42.2
+  cfe-generated-at-datetime: 2026-06-24T09:58:17Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-24T09:58:17Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# source:
+#    # GitHub monorepo tag archive (G54): langflow lives at the langflow-ai/
+#    # langflow monorepo root. version == the monorepo tag (1.10.0), so
+#    # v${{ version }} is the tag. hatchling backend (G55).
+# build:
+#    # LEAN re-architecture (mirrors the langflow-suite langflow output): the
+#    # umbrella's pyproject.toml [project.dependencies] is sed-patched to depend
+#    # on langflow-base (not langflow-base[complete]) and to drop the 4 lfx-*
+#    # hard-deps -> they + all integrations become optional run_constraints.
+#    # This drops ragstack-ai-knowledge-store (BUSL-1.1, non-OSI, never-submit)
+#    # from the hard-dep set entirely.
+# requirements:
+#  run:
+#    # Lean hard-dep: only langflow-base ==0.10.0 (the importable `langflow`).
+#    # Prerequisite chain blockers: langflow-base -> lfx -> opendsstar (not on cf).
+#    # The litellm/fastapi + otel-cluster external-cf skews now gate only the
+#    # OPTIONAL integrations (run_constraints), no longer langflow's core.
+####

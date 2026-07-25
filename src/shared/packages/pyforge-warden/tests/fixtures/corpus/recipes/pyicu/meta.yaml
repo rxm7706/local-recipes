@@ -1,0 +1,43 @@
+{% set name = "pyicu" %}
+{% set version = "2.13.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/PyICU-{{ version }}.tar.gz
+  sha256: d4919085eaa07da12bade8ee721e7bbf7ade0151ca0f82946a26c8f4b98cdceb
+
+build:
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  build:
+    - {{ compiler('c') }}
+  host:
+    - python
+    - setuptools
+    - wheel
+    - pip
+  run:
+    - python
+
+test:
+  imports:
+    - icu
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://gitlab.pyicu.org/main/pyicu
+  summary: Python extension wrapping the ICU C++ API
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

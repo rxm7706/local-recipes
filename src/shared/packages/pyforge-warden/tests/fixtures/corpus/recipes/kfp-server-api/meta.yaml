@@ -1,0 +1,46 @@
+{% set name = "kfp-server-api" %}
+{% set version = "1.8.5" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/kfp-server-api-{{ version }}.tar.gz
+  sha256: 482d71765ba57c003164dbb980a8cb1a18d234b578d064dc88dbeb3e4c7ab6de
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python >=3.7
+    - pip
+  run:
+    - python >=3.7
+    - urllib3 >=1.15
+    - six >=1.10
+    - certifi
+    - python-dateutil
+
+test:
+  imports:
+    - kfp_server_api
+
+about:
+  home: https://github.com/kubeflow/pipelines/tree/master/backend/api/python_http_client
+  license: Apache-2.0
+  license_family: Apache
+  license_file: LICENSE
+  summary: KF Pipelines API
+  description: Generated python client for the KF Pipelines server API
+
+extra:
+  recipe-maintainers:
+    - nicolas-geniteau
+    - maximerihouey
+    - ncolomer
+    - tanguycdls
+    - radcheb

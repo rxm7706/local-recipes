@@ -1,0 +1,42 @@
+{% set name = "django-redis" %}
+{% set version = "5.4.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/django-redis-{{ version }}.tar.gz
+  sha256: 6a02abaa34b0fea8bf9b707d2c363ab6adc7409950b2db93602e6cb292818c42
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.6
+    - pip
+  run:
+    - python >=3.6
+    - django >=3.2
+    - redis-py >=3,!=4.0.0,!=4.0.1
+
+test:
+  imports:
+    - django_redis
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/jazzband/django-redis
+  summary: Full featured redis cache backend for Django.
+  license: BSD-3-Clause
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

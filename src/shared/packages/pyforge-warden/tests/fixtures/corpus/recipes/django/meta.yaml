@@ -1,0 +1,59 @@
+{% set name = "django" %}
+{% set version = "4.2.15" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/Django-{{ version }}.tar.gz
+  sha256: c77f926b81129493961e19c0e02188f8d07c112a1162df69bfab178ae447f94a
+
+build:
+  skip: true  # [py<38]
+  entry_points:
+    - django-admin = django.core.management:execute_from_command_line
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python
+    - setuptools >=40.8.0
+    - pip
+  run:
+    - python
+    - asgiref >=3.6.0,<4
+    - backports.zoneinfo  # [py<39]
+    - sqlparse >=0.3.1
+    - tzdata  # [win]
+
+test:
+  imports:
+    - django
+  commands:
+    - pip check
+    - django-admin --help
+  requires:
+    - pip
+
+about:
+  home: https://www.djangoproject.com/
+  summary: A high-level Python web framework that encourages rapid development and clean, pragmatic design.
+  dev_url: https://github.com/django/django
+  license: BSD-3-Clause AND MIT AND EPL-2.0
+  license_file:
+    - LICENSE
+    - LICENSE.python
+    - django/contrib/admin/static/admin/css/vendor/select2/LICENSE-SELECT2.md
+    - django/contrib/admin/static/admin/js/vendor/select2/LICENSE.md
+    - django/contrib/admin/static/admin/js/vendor/jquery/LICENSE.txt
+    - django/contrib/admin/static/admin/js/vendor/xregexp/LICENSE.txt
+    - django/contrib/admin/static/admin/img/LICENSE
+    - django/contrib/gis/gdal/LICENSE
+    - django/contrib/gis/geos/LICENSE
+    - django/dispatch/license.txt
+
+extra:
+  recipe-maintainers:
+    - rxm7706

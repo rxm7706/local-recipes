@@ -1,0 +1,55 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: openlineage-sql
+  version: "1.42.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/openlineage_sql-${{ version }}.tar.gz
+  sha256: 92e91e4fda792913845204849ee99c5b87fd266a06eb7110345bf2f09b58cadc
+
+build:
+  number: 0
+  script:
+    - cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
+    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+        - maturin >=1,<2
+    - ${{ compiler("c") }}
+    #- ${{ stdlib("c") }}
+    - ${{ compiler("rust") }}
+    - cargo-bundle-licenses
+  host:
+    - python
+    - maturin >=1.0
+    - pip
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - openlineage_sql
+      pip_check: true
+
+about:
+  summary: Python interface for the Rust OpenLineage lineage extraction library
+  homepage: https://github.com/OpenLineage/OpenLineage
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+    - millsks

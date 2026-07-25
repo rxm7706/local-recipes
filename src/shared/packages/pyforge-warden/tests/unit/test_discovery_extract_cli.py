@@ -862,10 +862,18 @@ def test_text_format_emits_a_human_summary_with_driver_and_finding_lines(
     captured = capsys.readouterr()
     assert rc == 0
     lines = captured.out.splitlines()
-    assert len(lines) == 3
+    # Story 5.1 (AC1): the finding line now carries a trailing remediation
+    # line naming the manifest+section this synthesized pyproject.toml
+    # declares requests under.
+    assert len(lines) == 4
     assert lines[0] == "warden: status=warn exit_code=0 findings=1"
     assert lines[1] == "  driver: axis=hygiene id=hygiene:DEP002:requests"
     assert lines[2].startswith("  [hygiene] none hygiene:DEP002:requests -- ")
+    assert lines[3] == (
+        "      -> fix: remove requests from the manifest -- it is declared "
+        "but not used in the codebase (declared in pyproject.toml "
+        "[project.dependencies])"
+    )
 
 
 def test_text_format_on_empty_dir_reports_not_applicable(capsys, tmp_path):
@@ -1122,17 +1130,18 @@ def test_newline_in_dependency_name_still_completes_the_scan(capsys, tmp_path):
     """A dependency name embedding a newline (valid TOML) must not crash
     Finding construction: the scan completes with the escaped form in the
     finding ids and the raw name in the subjects. The raw-malformed entry
-    surfaces THREE deficiencies: withheld from vuln matching, not
-    hygiene-covered, AND (Story 6.2) unresolvable on the license axis --
+    surfaces FOUR deficiencies: withheld from vuln matching, not
+    hygiene-covered, unresolvable on the license axis (Story 6.2 --
     ``pypi_identity`` is None for a raw-malformed entry, so LicenseEngine
     falls back to the raw (newline-embedding) component name, which
-    ``importlib.metadata.metadata`` simply reports as not-found (never a
-    crash). deptry handles the odd name gracefully (no finding, no error),
-    so the extractor's indeterminate verdict stands. An adjacent .py module
-    keeps the hygiene axis applicable (Story 2.4, AC3) so all three
-    deficiencies stay observable in one scan -- without it, hygiene is
-    honestly not-applicable and its own uncovered finding is correctly
-    suppressed (see the Story 2.4 conformance tests)."""
+    ``importlib.metadata.metadata`` simply reports as not-found, never a
+    crash), AND unresolvable on the currency axis (Story 6.3 -- no resolved
+    version means no tier can ever match). deptry handles the odd name
+    gracefully (no finding, no error), so the extractor's indeterminate
+    verdict stands. An adjacent .py module keeps the hygiene axis applicable
+    (Story 2.4, AC3) so all four deficiencies stay observable in one scan --
+    without it, hygiene is honestly not-applicable and its own uncovered
+    finding is correctly suppressed (see the Story 2.4 conformance tests)."""
     write_pyproject(tmp_path, ["foo\nbar"])
     (tmp_path / "main.py").write_text("", encoding="utf-8")
     rc, document, _ = scan_json(capsys, tmp_path)
@@ -1140,6 +1149,7 @@ def test_newline_in_dependency_name_still_completes_the_scan(capsys, tmp_path):
     assert rc == document["exit_code"]
     assert document["status"]["value"] == "indeterminate"
     assert sorted(f["id"] for f in document["findings"]) == [
+        "currency:unknown:foo%0Abar@unspecified",
         "indeterminate:no-version:foo%0Abar",
         "indeterminate:uncovered:foo%0Abar",
         "license:unknown:foo%0Abar@unspecified",
@@ -1149,6 +1159,7 @@ def test_newline_in_dependency_name_still_completes_the_scan(capsys, tmp_path):
     assert axes["indeterminate:no-version:foo%0Abar"] == "vulnerability"
     assert axes["indeterminate:uncovered:foo%0Abar"] == "hygiene"
     assert axes["license:unknown:foo%0Abar@unspecified"] == "license"
+    assert axes["currency:unknown:foo%0Abar@unspecified"] == "currency"
 
 
 @pytest.mark.skipif(os.name != "posix", reason="POSIX permission semantics")

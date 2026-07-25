@@ -1,0 +1,53 @@
+{% set name = "djangocms-text-ckeditor" %}
+{% set version = "5.1.7" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name.replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: c729764cc5f3c856911b204392ef1fbbef831341bbd9c62ff00b2d3f07159c83
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >={{ python_min }}
+    - django-cms >=3.6
+    - html5lib >=1
+    - pillow
+    - packaging
+
+test:
+  imports:
+    - djangocms_text_ckeditor
+  commands:
+    - pip check
+  requires:
+    - python {{ python_min }}
+    - pip
+
+about:
+  home: https://github.com/django-cms/djangocms-text-ckeditor
+  summary: Text Plugin for django CMS with CKEditor support
+  license: BSD-3-Clause AND GPL-2.0-or-later AND MIT
+  license_file:
+    - LICENSE
+    - djangocms_text_ckeditor/static/djangocms_text_ckeditor/ckeditor/LICENSE.md
+    - djangocms_text_ckeditor/static/djangocms_text_ckeditor/ckeditor/plugins/wsc/LICENSE.md
+    - djangocms_text_ckeditor/static/djangocms_text_ckeditor/ckeditor/plugins/exportpdf/LICENSE.md
+    - djangocms_text_ckeditor/static/djangocms_text_ckeditor/ckeditor/plugins/scayt/LICENSE.md
+    - djangocms_text_ckeditor/static/djangocms_text_ckeditor/ckeditor/samples/toolbarconfigurator/font/LICENSE.txt
+    - djangocms_text_ckeditor/static/djangocms_text_ckeditor/ckeditor/samples/toolbarconfigurator/lib/codemirror/LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

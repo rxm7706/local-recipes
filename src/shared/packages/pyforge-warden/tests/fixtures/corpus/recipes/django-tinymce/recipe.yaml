@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "5.0.0"
+
+package:
+  name: django-tinymce
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/django-tinymce/django_tinymce-${{ version }}.tar.gz
+  sha256: 6257669ed596accf5fa967ff3061276b2c5352baac1bbc658fcd8252b12ca38a
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - django >=4.2
+
+tests:
+  - python:
+      imports:
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/jazzband/django-tinymce
+  license: MIT AND GPL-2.0-or-later
+  license_file: LICENSE
+  summary: A Django application that contains a widget to render a
+  description: |
+    A Django application that contains a widget to render a
+  documentation: https://django-tinymce.readthedocs.org/
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: django-tinymce
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: django-tinymce
+  cfe-purls:
+    - pkg:conda/django-tinymce@${{ version }}?channel=conda-forge
+    - pkg:pypi/django-tinymce@${{ version }}
+  cfe-upstream-repo: https://github.com/jazzband/django-tinymce
+  cfe-upstream-homepage: https://github.com/jazzband/django-tinymce
+  cfe-import-names: [django_tinymce]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django-tinymce-feedstock
+  cfe-forge-recipe-updates-needed: [version-bump-to-5.0.0]
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-07-04T22:24:52Z
+  cfe-generated-by-version: 8.65.0
+  cfe-generated-at-datetime: 2026-07-03T04:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-07-03T04:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # 2026-07-03 punch-list full-gate pass (tracker issue -> local verification).
+####

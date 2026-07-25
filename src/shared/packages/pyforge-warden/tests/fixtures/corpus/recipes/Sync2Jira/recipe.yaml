@@ -1,0 +1,57 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.7"
+
+package:
+  name: sync2jira
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/S/Sync2Jira/sync2jira-${{ version }}.tar.gz
+  sha256: dfaa2da70efd1d27cb28941b6714cb6d0901a1e924da32cf6edc4115c3d64f40
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - sync2jira=sync2jira.main:main
+      - sync2jira-list-managed-urls=sync2jira.main:list_managed
+      - sync2jira-close-duplicates=sync2jira.main:close_duplicates
+
+requirements:
+  host:
+    - python
+    - pip
+  run:
+    - python
+    - jira
+    - requests
+    #- fedmsg
+
+tests:
+  - python:
+      imports:
+        - sync2jira
+      pip_check: true
+  - requirements:
+      run:
+        - pip
+        - python
+    script:
+      - sync2jira --help
+      - sync2jira-list-managed-urls --help
+      - sync2jira-close-duplicates --help
+
+about:
+  summary: Sync pagure and github issues to jira, via fedmsg
+  license: LGPL-2.1-only
+  license_file: LICENSE
+  homepage: https://pagure.io/sync-to-jira
+
+extra:
+  recipe-maintainers:
+    - rxm7706

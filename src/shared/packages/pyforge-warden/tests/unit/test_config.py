@@ -19,7 +19,12 @@ from pyforge.warden.config import (
     ConfigValidationError,
     EffectiveConfig,
 )
-from pyforge.warden.models import LicenseVerdict, SeverityTier, Status
+from pyforge.warden.models import (
+    CurrencyVerdict,
+    LicenseVerdict,
+    SeverityTier,
+    Status,
+)
 
 
 def _write(path, text: str) -> None:
@@ -712,3 +717,390 @@ def test_license_policy_property_matches_module_default_table():
     from pyforge.warden.license import DEFAULT_LICENSE_POLICY
 
     assert EffectiveConfig().license_policy == dict(DEFAULT_LICENSE_POLICY)
+
+
+# --- ConfigLoader.load: max-lag/require-lts/fail-on-eol (Story 6.3, FR35) ---
+
+
+def test_max_lag_require_lts_fail_on_eol_default(tmp_path):
+    config, _ = ConfigLoader().load(tmp_path)
+    assert config.max_lag is None
+    assert config.require_lts is False
+    assert config.fail_on_eol is False
+    assert config.currency_gating is False
+
+
+def test_toml_max_lag_override(tmp_path):
+    _write(tmp_path / "pyproject.toml", "[tool.pyforge-warden]\nmax-lag = 3\n")
+    config, _ = ConfigLoader().load(tmp_path)
+    assert config.max_lag == 3
+    assert config.currency_gating is True
+
+
+def test_toml_require_lts_override(tmp_path):
+    _write(tmp_path / "pyproject.toml", "[tool.pyforge-warden]\nrequire-lts = true\n")
+    config, _ = ConfigLoader().load(tmp_path)
+    assert config.require_lts is True
+    assert config.currency_gating is True
+
+
+def test_toml_fail_on_eol_override(tmp_path):
+    _write(tmp_path / "pyproject.toml", "[tool.pyforge-warden]\nfail-on-eol = true\n")
+    config, _ = ConfigLoader().load(tmp_path)
+    assert config.fail_on_eol is True
+    assert config.currency_gating is True
+
+
+def test_wrong_typed_max_lag_raises_config_validation_error(tmp_path):
+    _write(tmp_path / "pyproject.toml", '[tool.pyforge-warden]\nmax-lag = "three"\n')
+    with pytest.raises(ConfigValidationError):
+        ConfigLoader().load(tmp_path)
+
+
+def test_negative_max_lag_raises_config_validation_error(tmp_path):
+    _write(tmp_path / "pyproject.toml", "[tool.pyforge-warden]\nmax-lag = -1\n")
+    with pytest.raises(ConfigValidationError):
+        ConfigLoader().load(tmp_path)
+
+
+def test_bool_max_lag_raises_config_validation_error(tmp_path):
+    """A bool is technically an int subclass in Python -- must be rejected
+    explicitly, mirroring every other numeric _coerce_* helper's bool
+    guard."""
+    _write(tmp_path / "pyproject.toml", "[tool.pyforge-warden]\nmax-lag = true\n")
+    with pytest.raises(ConfigValidationError):
+        ConfigLoader().load(tmp_path)
+
+
+def test_wrong_typed_require_lts_raises_config_validation_error(tmp_path):
+    _write(tmp_path / "pyproject.toml", '[tool.pyforge-warden]\nrequire-lts = "yes"\n')
+    with pytest.raises(ConfigValidationError):
+        ConfigLoader().load(tmp_path)
+
+
+def test_wrong_typed_fail_on_eol_raises_config_validation_error(tmp_path):
+    _write(tmp_path / "pyproject.toml", '[tool.pyforge-warden]\nfail-on-eol = "yes"\n')
+    with pytest.raises(ConfigValidationError):
+        ConfigLoader().load(tmp_path)
+
+
+def test_cli_max_lag_overrides_both_files(tmp_path):
+    _write(tmp_path / "pyproject.toml", "[tool.pyforge-warden]\nmax-lag = 1\n")
+    _write(tmp_path / "pixi.toml", "[tool.pyforge-warden]\nmax-lag = 2\n")
+    config, _ = ConfigLoader().load(tmp_path, cli_max_lag=9)
+    assert config.max_lag == 9
+
+
+def test_cli_require_lts_overrides_both_files(tmp_path):
+    _write(tmp_path / "pyproject.toml", "[tool.pyforge-warden]\nrequire-lts = false\n")
+    config, _ = ConfigLoader().load(tmp_path, cli_require_lts=True)
+    assert config.require_lts is True
+
+
+def test_cli_fail_on_eol_overrides_both_files(tmp_path):
+    _write(tmp_path / "pyproject.toml", "[tool.pyforge-warden]\nfail-on-eol = false\n")
+    config, _ = ConfigLoader().load(tmp_path, cli_fail_on_eol=True)
+    assert config.fail_on_eol is True
+
+
+def test_cli_max_lag_none_defers_to_the_toml_value(tmp_path):
+    """The tri-state contract: cli_max_lag=None (flag not passed) never
+    overrides an explicitly-configured TOML value."""
+    _write(tmp_path / "pyproject.toml", "[tool.pyforge-warden]\nmax-lag = 3\n")
+    config, _ = ConfigLoader().load(tmp_path, cli_max_lag=None)
+    assert config.max_lag == 3
+
+
+def test_invalid_cli_max_lag_raises_config_validation_error(tmp_path):
+    with pytest.raises(ConfigValidationError):
+        ConfigLoader().load(tmp_path, cli_max_lag=-1)
+
+
+def test_currency_gating_true_iff_any_of_the_three_flags_set():
+    assert EffectiveConfig().currency_gating is False
+    assert EffectiveConfig(max_lag=0).currency_gating is True
+    assert EffectiveConfig(require_lts=True).currency_gating is True
+    assert EffectiveConfig(fail_on_eol=True).currency_gating is True
+
+
+def test_currency_policy_maps_eol_and_unknown_to_warn():
+    from pyforge.warden.models import CurrencyVerdict
+
+    policy = EffectiveConfig().currency_policy
+    assert policy[CurrencyVerdict.EOL] is Status.WARN
+    assert policy[CurrencyVerdict.UNKNOWN] is Status.WARN
+    assert CurrencyVerdict.SUPPORTED not in policy
+
+
+def test_currency_policy_property_matches_module_default_table():
+    """Mirrors test_license_policy_property_matches_module_default_table's
+    cross-check for the currency-axis sibling table."""
+    from pyforge.warden.currency import DEFAULT_CURRENCY_POLICY
+
+    assert EffectiveConfig().currency_policy == dict(DEFAULT_CURRENCY_POLICY)
+
+
+# --- Story 6.5: the gating-aware (two-mode) policy tables --------------------
+
+
+@pytest.mark.parametrize(
+    "kwargs",
+    [
+        {"allow_licenses": ("MIT",)},
+        {"deny_licenses": ("GPL-3.0-only",)},
+    ],
+)
+def test_license_policy_escalates_when_the_axis_gates(kwargs):
+    """The single writer of the two-mode semantics: when license_gating is
+    true (either list non-empty), the table escalates denied ->
+    policy-violation and unknown -> indeterminate."""
+    config = EffectiveConfig(**kwargs)
+    assert config.license_gating is True
+    assert config.license_policy == {
+        LicenseVerdict.DENIED: Status.POLICY_VIOLATION,
+        LicenseVerdict.UNKNOWN: Status.INDETERMINATE,
+    }
+
+
+def test_license_policy_stays_all_warn_when_the_axis_is_unconfigured():
+    config = EffectiveConfig()
+    assert config.license_gating is False
+    assert config.license_policy == {
+        LicenseVerdict.DENIED: Status.WARN,
+        LicenseVerdict.UNKNOWN: Status.WARN,
+    }
+
+
+@pytest.mark.parametrize(
+    "kwargs",
+    [
+        {"max_lag": 3},
+        {"max_lag": 0},
+        {"require_lts": True},
+        {"fail_on_eol": True},
+    ],
+)
+def test_currency_policy_escalates_when_the_axis_gates(kwargs):
+    config = EffectiveConfig(**kwargs)
+    assert config.currency_gating is True
+    assert config.currency_policy == {
+        CurrencyVerdict.EOL: Status.POLICY_VIOLATION,
+        CurrencyVerdict.UNKNOWN: Status.INDETERMINATE,
+    }
+
+
+def test_currency_policy_stays_all_warn_when_the_axis_is_unconfigured():
+    config = EffectiveConfig()
+    assert config.currency_gating is False
+    assert config.currency_policy == {
+        CurrencyVerdict.EOL: Status.WARN,
+        CurrencyVerdict.UNKNOWN: Status.WARN,
+    }
+
+
+# --- Story 6.5: warn-as-error (the strict-shop exit knob) --------------------
+
+
+def test_warn_as_error_defaults_false():
+    assert EffectiveConfig().warn_as_error is False
+
+
+def test_warn_as_error_default_via_loader(tmp_path):
+    config, _ = ConfigLoader().load(tmp_path)
+    assert config.warn_as_error is False
+
+
+def test_toml_warn_as_error_override(tmp_path):
+    _write(tmp_path / "pyproject.toml", "[tool.pyforge-warden]\nwarn-as-error = true\n")
+    config, _ = ConfigLoader().load(tmp_path)
+    assert config.warn_as_error is True
+
+
+def test_wrong_typed_warn_as_error_raises_config_validation_error(tmp_path):
+    _write(tmp_path / "pyproject.toml", '[tool.pyforge-warden]\nwarn-as-error = "yes"\n')
+    with pytest.raises(ConfigValidationError):
+        ConfigLoader().load(tmp_path)
+
+
+def test_underscore_spelled_warn_as_error_is_unrecognized(tmp_path):
+    """Hyphenated only -- warn_as_error (underscore) is UNRECOGNIZED, like
+    every other key."""
+    _write(tmp_path / "pyproject.toml", "[tool.pyforge-warden]\nwarn_as_error = true\n")
+    with pytest.raises(ConfigValidationError):
+        ConfigLoader().load(tmp_path)
+
+
+def test_cli_warn_as_error_overrides_toml(tmp_path):
+    """CLI wins over either TOML file (last-applied precedence), mirroring
+    fail-on-eol's tri-state."""
+    _write(tmp_path / "pyproject.toml", "[tool.pyforge-warden]\nwarn-as-error = false\n")
+    config, _ = ConfigLoader().load(tmp_path, cli_warn_as_error=True)
+    assert config.warn_as_error is True
+
+
+def test_cli_warn_as_error_none_defers_to_toml(tmp_path):
+    _write(tmp_path / "pyproject.toml", "[tool.pyforge-warden]\nwarn-as-error = true\n")
+    config, _ = ConfigLoader().load(tmp_path, cli_warn_as_error=None)
+    assert config.warn_as_error is True
+
+
+def test_default_with_cli_overrides_applies_warn_as_error():
+    config = EffectiveConfig.default_with_cli_overrides(cli_warn_as_error=True)
+    assert config.warn_as_error is True
+
+
+def test_effective_config_rejects_non_bool_warn_as_error_at_construction():
+    with pytest.raises(ValueError):
+        EffectiveConfig(warn_as_error="yes")
+
+
+def test_effective_config_rejects_negative_max_lag_at_construction():
+    with pytest.raises(ValueError):
+        EffectiveConfig(max_lag=-1)
+
+
+def test_effective_config_rejects_bool_max_lag_at_construction():
+    with pytest.raises(ValueError):
+        EffectiveConfig(max_lag=True)
+
+
+def test_effective_config_rejects_non_bool_require_lts_at_construction():
+    with pytest.raises(ValueError):
+        EffectiveConfig(require_lts="yes")
+
+
+def test_effective_config_rejects_non_bool_fail_on_eol_at_construction():
+    with pytest.raises(ValueError):
+        EffectiveConfig(fail_on_eol="yes")
+
+
+def test_effective_config_max_lag_none_is_valid():
+    EffectiveConfig(max_lag=None)  # must not raise
+
+
+def test_default_with_cli_overrides_applies_currency_flags():
+    config = EffectiveConfig.default_with_cli_overrides(
+        cli_max_lag=5, cli_require_lts=True, cli_fail_on_eol=True
+    )
+    assert config.max_lag == 5
+    assert config.require_lts is True
+    assert config.fail_on_eol is True
+
+
+def test_default_with_cli_overrides_no_currency_flags_is_plain_default():
+    config = EffectiveConfig.default_with_cli_overrides()
+    assert config.max_lag is None
+    assert config.require_lts is False
+    assert config.fail_on_eol is False
+
+
+def test_default_with_cli_overrides_rejects_invalid_max_lag():
+    with pytest.raises(ConfigValidationError):
+        EffectiveConfig.default_with_cli_overrides(cli_max_lag=-1)
+
+
+@pytest.mark.parametrize("field", ["cli_require_lts", "cli_fail_on_eol"])
+def test_default_with_cli_overrides_coerces_the_currency_bools_too(field):
+    """``cli_require_lts``/``cli_fail_on_eol`` go through the SAME typed
+    coercers as every sibling field (review finding, 2026-07-23: they were
+    assigned raw, so a non-bool from a direct caller surfaced as a bare
+    ``ValueError`` from ``__post_init__`` -- escaping ``cli.py``'s
+    ``except ConfigValidationError`` fallback -- instead of the module's
+    own typed error, contradicting this method's own docstring)."""
+    with pytest.raises(ConfigValidationError):
+        EffectiveConfig.default_with_cli_overrides(**{field: "yes"})
+
+
+# --- ConfigLoader.load: min-epss (Story 6.7) ---------------------------------
+
+
+def test_min_epss_default_is_none(tmp_path):
+    config, _ = ConfigLoader().load(tmp_path)
+    assert config.min_epss is None
+
+
+def test_toml_min_epss_override(tmp_path):
+    _write(tmp_path / "pyproject.toml", "[tool.pyforge-warden]\nmin-epss = 0.5\n")
+    config, _ = ConfigLoader().load(tmp_path)
+    assert config.min_epss == 0.5
+
+
+def test_wrong_typed_min_epss_raises_config_validation_error(tmp_path):
+    _write(tmp_path / "pyproject.toml", '[tool.pyforge-warden]\nmin-epss = "half"\n')
+    with pytest.raises(ConfigValidationError):
+        ConfigLoader().load(tmp_path)
+
+
+def test_out_of_range_min_epss_raises_config_validation_error(tmp_path):
+    _write(tmp_path / "pyproject.toml", "[tool.pyforge-warden]\nmin-epss = 1.5\n")
+    with pytest.raises(ConfigValidationError):
+        ConfigLoader().load(tmp_path)
+
+
+def test_negative_min_epss_raises_config_validation_error(tmp_path):
+    _write(tmp_path / "pyproject.toml", "[tool.pyforge-warden]\nmin-epss = -0.1\n")
+    with pytest.raises(ConfigValidationError):
+        ConfigLoader().load(tmp_path)
+
+
+def test_bool_min_epss_raises_config_validation_error(tmp_path):
+    """A bool is technically an int subclass in Python -- must be rejected
+    explicitly, mirroring every other numeric _coerce_* helper's bool
+    guard."""
+    _write(tmp_path / "pyproject.toml", "[tool.pyforge-warden]\nmin-epss = true\n")
+    with pytest.raises(ConfigValidationError):
+        ConfigLoader().load(tmp_path)
+
+
+def test_cli_min_epss_overrides_both_files(tmp_path):
+    _write(tmp_path / "pyproject.toml", "[tool.pyforge-warden]\nmin-epss = 0.1\n")
+    _write(tmp_path / "pixi.toml", "[tool.pyforge-warden]\nmin-epss = 0.2\n")
+    config, _ = ConfigLoader().load(tmp_path, cli_min_epss=0.9)
+    assert config.min_epss == 0.9
+
+
+def test_cli_min_epss_none_defers_to_the_toml_value(tmp_path):
+    """The tri-state contract: cli_min_epss=None (flag not passed) never
+    overrides an explicitly-configured TOML value."""
+    _write(tmp_path / "pyproject.toml", "[tool.pyforge-warden]\nmin-epss = 0.3\n")
+    config, _ = ConfigLoader().load(tmp_path, cli_min_epss=None)
+    assert config.min_epss == 0.3
+
+
+def test_invalid_cli_min_epss_raises_config_validation_error(tmp_path):
+    with pytest.raises(ConfigValidationError):
+        ConfigLoader().load(tmp_path, cli_min_epss=1.5)
+
+
+def test_effective_config_rejects_out_of_range_min_epss_at_construction():
+    with pytest.raises(ValueError):
+        EffectiveConfig(min_epss=1.5)
+
+
+def test_effective_config_rejects_bool_min_epss_at_construction():
+    with pytest.raises(ValueError):
+        EffectiveConfig(min_epss=True)
+
+
+def test_effective_config_min_epss_none_is_valid():
+    EffectiveConfig(min_epss=None)  # must not raise
+
+
+def test_effective_config_min_epss_boundary_values_are_valid():
+    EffectiveConfig(min_epss=0.0)  # must not raise
+    EffectiveConfig(min_epss=1.0)  # must not raise
+
+
+def test_default_with_cli_overrides_applies_min_epss():
+    config = EffectiveConfig.default_with_cli_overrides(cli_min_epss=0.42)
+    assert config.min_epss == 0.42
+
+
+def test_default_with_cli_overrides_no_min_epss_is_plain_default():
+    config = EffectiveConfig.default_with_cli_overrides()
+    assert config.min_epss is None
+
+
+def test_default_with_cli_overrides_rejects_invalid_min_epss():
+    with pytest.raises(ConfigValidationError):
+        EffectiveConfig.default_with_cli_overrides(cli_min_epss=-1.0)

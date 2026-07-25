@@ -1,0 +1,122 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: ydata-profiling
+  version: 4.18.4
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: c19a0b3dec081da024d18800ffcee0160b076edecef66ca55c75e00e6ac15e21
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - ydata_profiling = ydata_profiling.controller.console:main
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - setuptools >=72.0.0,<80.0.0
+    - setuptools-scm >=8.0.0,<9.0.0
+    - wheel >=0.38.4,<1.0.0
+    - pip
+  run:
+    - setuptools <81
+    - python >=${{ python_min }},<4.0
+    - scipy >=1.8,<1.17
+    - pandas >1.5,<3.0,!=1.4.0
+    - matplotlib-base >=3.5,<=3.10
+    - pydantic >=2,<3
+    - pyyaml >=6.0.3,<6.1
+    - jinja2 >=3.1.6,<3.2
+    - visions >=0.7.5,<0.8.2
+    - numpy >=1.22,<2.4
+    - minify-html >=0.15.0
+    - filetype >=1.0.0
+    - phik >=0.12.5,<0.13
+    - requests >=2.32.0,<3
+    - tqdm >=4.66.3,<5
+    - seaborn >=0.10.1,<0.14
+    - multimethod >=1.4,<2
+    - statsmodels >=0.13.2,<1
+    - typeguard >=4,<5
+    - imagehash ==4.3.2
+    - wordcloud >=1.9.4
+    - dacite >=1.9,<2
+    - numba >=0.60,<0.63
+    - arm_pyart
+    - ipywidgets
+    - pyspark
+    - packaging
+    - markupsafe
+    - ipython
+    - networkx
+  run_constraints:
+    - jupyter-client >=5.3.4
+    - jupyter-core >=4.6.3
+    - ipywidgets >=7.5.1
+    - tangled-up-in-unicode ==0.2.0
+
+tests:
+  - python:
+      imports:
+        - ydata_profiling
+      pip_check: true
+      python_version: ${{ python_min }}.*
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}.*
+    script:
+      - pip check
+      - ydata_profiling --help
+
+about:
+  summary: Generate profile report for pandas DataFrame
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/ydataai/ydata-profiling
+  documentation: https://ydata-profiling.ydata.ai
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: ydata-profiling
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: ydata-profiling
+  cfe-purls:
+    - pkg:conda/ydata-profiling@${{ version }}?channel=conda-forge
+    - pkg:pypi/ydata-profiling@${{ version }}
+  cfe-upstream-repo: https://github.com/ydataai/ydata-profiling
+  cfe-upstream-homepage: https://github.com/ydataai/ydata-profiling
+  cfe-import-names: [src.ydata_profiling]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/ydata-profiling-feedstock
+  cfe-forge-recipe-updates-needed: [version-bump-to-4.18.4]
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-07-03T11:07:01Z
+  cfe-generated-by-version: 8.65.0
+  cfe-generated-at-datetime: 2026-07-03T04:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-07-03T11:07:01Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # 2026-07-03 punch-list full-gate pass (tracker issue -> local verification).
+####

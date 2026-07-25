@@ -1,0 +1,51 @@
+{% set name = "GetPyPiLatestVersion" %}
+{% set version = "0.1.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://github.com/SWHL/GetPyPiLatestVersion/archive/v{{ version }}.tar.gz
+  sha256: 0d5e6e24da56b627adaf7aa4051ba2dca77f5c5cd082b119b73002857b4e4bf2
+
+build:
+  entry_points:
+    - get_pypi_latest_version=get_pypi_latest_version.main:main
+  noarch: python
+  script: {{ PYTHON }} -m pip install -e . -vv  --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    #- get_pypi_latest_version
+    - pip
+    - setuptools
+    - requests >=2.28.1
+    - packaging
+    - wheel
+  run:
+    - python >={{ python_min }},<3.13
+    - requests >=2.28.1
+    - packaging
+
+test:
+  imports:
+    - get_pypi_latest_version
+  commands:
+    - pip check
+    - get_pypi_latest_version --help
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/SWHL/GetPyPiLatestVersion
+  summary: Get the latest version of the specified python package name in the pypi.
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

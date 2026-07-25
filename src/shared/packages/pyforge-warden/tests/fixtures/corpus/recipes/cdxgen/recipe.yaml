@@ -1,0 +1,135 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "12.7.1"
+
+package:
+  name: cdxgen
+  version: ${{ version }}
+
+source:
+  url: https://registry.npmjs.org/@cyclonedx/cdxgen/-/cdxgen-${{ version }}.tgz
+  sha256: 52061c32e7795bfe6f1133944e408af76c9d3e3a4a8fa6dc59bb0015cf440ef3
+
+build:
+  number: 1
+  # Per-arch (NOT noarch), following the openspec/bmalph pattern: each
+  # platform's npm global install lays down native shims for all 16 bin
+  # entries (symlinks on unix, .cmd on win), which a single noarch
+  # artifact cannot provide.
+  dynamic_linking:
+    binary_relocation: false
+  script:
+    - if: unix
+      then:
+        - export npm_config_prefix="${PREFIX}"
+        - pnpm install --ignore-scripts --prod
+        - npm pack --ignore-scripts
+        - npm install --omit=optional -g ./cyclonedx-cdxgen-${{ version }}.tgz
+        - rm -rf "${PREFIX}"/lib/node_modules/@cyclonedx/cdxgen/node_modules/@cdxgen/cdxgen-plugins-bin*
+        - pnpm-licenses generate-disclaimer --prod --output-file=third-party-licenses.txt
+      else:
+        - call npm config set prefix "%PREFIX%"
+        - if %ERRORLEVEL% neq 0 exit 1
+        - call pnpm install --ignore-scripts --prod
+        - if %ERRORLEVEL% neq 0 exit 1
+        - call npm pack --ignore-scripts
+        - if %ERRORLEVEL% neq 0 exit 1
+        - call npm install --userconfig nonexistentrc --omit=optional -g cyclonedx-cdxgen-${{ version }}.tgz
+        - if %ERRORLEVEL% neq 0 exit 1
+        - for /d %%D in ("%PREFIX%\node_modules\@cyclonedx\cdxgen\node_modules\@cdxgen\cdxgen-plugins-bin*") do rmdir /s /q "%%D"
+        - if %ERRORLEVEL% neq 0 exit 1
+        - call pnpm-licenses generate-disclaimer --prod --output-file=third-party-licenses.txt
+        - if %ERRORLEVEL% neq 0 exit 1
+
+requirements:
+  build:
+    - pnpm
+    - pnpm-licenses
+  host:
+    - nodejs >=20,<26
+  run:
+    - nodejs >=20,<26
+
+tests:
+  - script:
+      - cdxgen --version
+      - cdxgen --help
+      - cdx-validate --help
+  - if: unix
+    then:
+      script:
+        - test -f "${PREFIX}/lib/node_modules/@cyclonedx/cdxgen/package.json"
+        - if ls -d "${PREFIX}"/lib/node_modules/@cyclonedx/cdxgen/node_modules/@cdxgen/cdxgen-plugins-bin* >/dev/null 2>&1; then exit 1; fi
+
+about:
+  summary: Creates CycloneDX Bill of Materials (BOM) for projects and containers in 20+ languages and package managers
+  description: |
+    cdxgen is the official OWASP CycloneDX generator: it creates SBOMs
+    (software), CBOMs (cryptography), OBOMs (operations), and ML-BOMs for
+    source repositories, container images, and binaries across 20+
+    languages and package-manager ecosystems, emitting standards-compliant
+    CycloneDX. Ships the full CLI family: cdxgen, cdx-audit, cdx-convert,
+    cdx-validate, cdx-verify, cdx-sign, cdxi (REPL), evinse, hbom, obom,
+    cbom, aibom, saasbom, spdxgen, tracebom.
+  homepage: https://cyclonedx.github.io/cdxgen/
+  repository: https://github.com/cdxgen/cdxgen
+  documentation: https://cyclonedx.github.io/cdxgen/
+  license: Apache-2.0
+  license_file:
+    - LICENSE
+    - third-party-licenses.txt
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: cdxgen
+  cfe-upstream-registry: npm
+  cfe-upstream-name: "@cyclonedx/cdxgen"
+  cfe-purls:
+    - pkg:conda/cdxgen@${{ version }}?channel=conda-forge
+    - pkg:npm/%40cyclonedx/cdxgen@${{ version }}
+  cfe-upstream-repo: https://github.com/cdxgen/cdxgen
+  cfe-upstream-homepage: https://cyclonedx.github.io/cdxgen/
+  cfe-import-names: []
+  cfe-source-kind: npm-registry-tarball
+  cfe-noarch: compiled
+  cfe-pip-check: "false:not-a-python-package"
+  cfe-on-conda-forge-status: pending-approval-on-conda-forge
+  cfe-submission-pr: https://github.com/conda-forge/staged-recipes/pull/34178
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: "2026-07-12T21:58:13Z"
+  cfe-generated-by-version: 8.76.0
+  cfe-generated-at-datetime: "2026-07-12T17:10:00Z"
+  cfe-local-build-status: success
+  cfe-local-build-datetime: "2026-07-12T21:55:00Z"
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # Packaged 2026-07-12 (user request). Complements the CFE estate's
+#    # AppThreat integration (v8.6.0) and the cyclonedx-universe-inventory
+#    # tooling; NOT on conda-forge as of packaging.
+# build:
+#    # npm's --omit=optional is IGNORED by `npm install -g <tarball>` (npm 11.x):
+#    # the per-platform @cdxgen/cdxgen-plugins-bin-* optionalDependencies
+#    # (~237 MB unpacked; prebuilt trivy/osquery/sourcekitten/cdxui/rusi/...
+#    # binaries) install anyway — verified on PR #34178 CI (all 3 legs) despite
+#    # the flag. The explicit rm -rf (unix) / rmdir loop (win) enforces the
+#    # intended exclusion; cdxgen's binary-analysis features degrade gracefully.
+#    # dynamic_linking.binary_relocation: false — nothing in an npm global
+#    # install links against the conda prefix, and macOS install_name_tool
+#    # hard-fails on upstream's prebuilt headerpad-less Mach-Os (cdxui/rusi,
+#    # Azure buildId 1551507); relocation of vendored binaries (safer-exec-rt,
+#    # cparse.so/prism.so from other optional deps) is pure risk, so it is off.
+#    # Converted noarch->per-arch 2026-07-12 (win-64 buildability sweep):
+#    # npm lays down native shims for all 16 bin entries per platform
+#    # (openspec/bmalph precedent) instead of generated bash wrappers.
+####

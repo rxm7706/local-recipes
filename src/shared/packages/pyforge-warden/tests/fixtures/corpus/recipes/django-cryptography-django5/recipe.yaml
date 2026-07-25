@@ -1,0 +1,104 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: django-cryptography-django5
+  version: "2.2"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/chrisclark/django-cryptography/archive/${{ version }}.tar.gz
+  sha256: a250af91c6d7b01845caa14eda65255323d1d9900358fcdd53c24945c8b382e6
+  patches:
+    - patches/0001-mark-2.2-release-final.patch
+
+build:
+  number: 5
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - django
+    - setuptools >=40.8.0
+    - wheel
+    - pip
+  run:
+    - python >=${{ python_min }},<4.0
+    - django >=3.2
+    - cryptography >=42.0
+    - django-appconf
+
+tests:
+  - python:
+      imports:
+        - django_cryptography
+      python_version: ${{ python_min }}.*
+      pip_check: true
+  - script:
+      - python -c "from importlib.metadata import version; v = version('django-cryptography-django5'); assert v == '${{ version }}', v"
+
+about:
+  summary: Easily encrypt data in Django - Fork for Django 5 support
+  license: BSD-3-Clause
+  license_file: LICENSE
+  homepage: https://github.com/chrisclark/django-cryptography
+  repository: https://github.com/chrisclark/django-cryptography
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: django-cryptography-django5
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: django-cryptography-django5
+  cfe-purls:
+    - pkg:conda/django-cryptography-django5@${{ version }}?channel=conda-forge
+    - pkg:pypi/django-cryptography-django5@${{ version }}
+  cfe-upstream-repo: https://github.com/chrisclark/django-cryptography
+  cfe-upstream-homepage: https://github.com/chrisclark/django-cryptography
+  cfe-import-names: [django_cryptography]
+  cfe-source-kind: github-tag
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django-cryptography-django5-feedstock
+  cfe-forge-recipe-updates-needed:
+    - dist-info-version-fix-issue-6
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-07-04T22:50:00Z
+  cfe-generated-by-version: 8.67.0
+  cfe-generated-at-datetime: 2026-07-04T22:50:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-07-04T23:00:06Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # v1 mirror created 2026-07-04 (feedstock is already v1; the old local
+#    # meta.yaml was the stale v0 mirror and was dropped per the
+#    # keep-meta-until-migrated end-condition).
+# source:
+#  patches:
+#    # 0001-mark-2.2-release-final.patch: upstream's 2.2 tag declares
+#    # VERSION = (2, 2, 0, "alpha", 0); django.utils.version.get_version
+#    # renders alpha/sub-0 as 2.2.dev<timestamp>, so every from-source build
+#    # bakes a dev version into the wheel dist-info while the conda label is
+#    # 2.2. Downstream exact-pinners (django-sql-explorer ==2.2) then fail
+#    # pip check. Patch flips the release segment to "final" -> wheel
+#    # Version: 2.2. Tracking:
+#    # https://github.com/conda-forge/django-cryptography-django5-feedstock/issues/6
+# build:
+#    # number 5: same-version metadata rebuild superseding _0.._4 (all ship
+#    # the poisoned dev-version dist-info).
+# tests:
+#    # script test asserts importlib.metadata version == context.version to
+#    # guard against the dev-version regression on future bumps.
+####

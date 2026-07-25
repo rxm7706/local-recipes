@@ -76,10 +76,59 @@ Ownership decisions recorded:
   last-applied precedence as ``fail-on``/``fail-under-coverage``.
   ``license_gating`` (``True`` iff either tuple is non-empty) and
   ``license_policy`` (a ``LicenseVerdict -> Status`` table, mirroring
-  ``vuln_severity_policy``'s shape) are both defined this story per the
-  architecture's ownership split — ``license_policy`` has no caller yet
-  (``license.license_rung`` is a hard warn-cap this story, oblivious to any
-  policy table; real escalation is Story 6.5's).
+  ``vuln_severity_policy``'s shape) are both defined per the architecture's
+  ownership split. Story 6.5 made ``license_policy`` GATING-AWARE and wired
+  it through: when ``license_gating`` is false every verdict maps to
+  ``WARN`` (byte-identical to ``license.DEFAULT_LICENSE_POLICY``); when true
+  it escalates (``denied`` -> ``policy-violation``, ``unknown`` ->
+  ``indeterminate``). ``interfaces.DefaultPolicy.evaluate`` threads it into
+  ``license.license_rung(finding, policy=…)`` exactly as
+  ``vuln_severity_policy`` is threaded into ``vuln_rung`` (config.py is the
+  single writer of the two-mode semantics; the rung only reads).
+* ``--max-lag``/``--require-lts``/``--fail-on-eol`` (Story 6.3, FR35's v1
+  gate-activation rule) mirror ``--allow-licenses``/``--deny-licenses``'s
+  treatment exactly: all three ARE part of epics.md's spelled-out v1 CLI
+  surface, all three CLI-override either TOML file (same last-applied
+  precedence). ``max_lag`` goes through ``_max_lag_type`` at the argparse
+  layer (mirrors ``cli._coverage_floor``'s ``type=`` callback — a malformed
+  CLI value is a usage error, exit 2, never reaching ``ConfigLoader.load``)
+  and ``_coerce_max_lag`` at the TOML layer (a typed ``ConfigValidationError``
+  — mirrors every other ``_coerce_*`` helper). ``currency_gating`` (``True``
+  iff ``max_lag is not None`` or ``require_lts`` or ``fail_on_eol``) and
+  ``currency_policy`` (a ``CurrencyVerdict -> Status`` table, mirroring
+  ``license_policy``'s shape) are both defined per the architecture's
+  ownership split. Story 6.5 made ``currency_policy`` GATING-AWARE and wired
+  it through (mirroring ``license_policy``): all-``WARN`` when
+  ``currency_gating`` is false, else ``eol`` -> ``policy-violation`` /
+  ``unknown`` -> ``indeterminate``. ``DefaultPolicy.evaluate`` threads it
+  (plus ``self.max_lag``, for currency's numeric over-lag check) into
+  ``currency.currency_rung``. The ``--max-lag`` over-lag threshold is a
+  numeric ``lag > max_lag`` check the RUNG applies (a ``SUPPORTED``-verdict
+  over-lag finding is not a table key), not part of this table.
+* ``min-epss`` (Story 6.7) mirrors ``max-lag``'s treatment exactly: a real,
+  two-mode CLI flag (not TOML-only like ``fail-on-kev``), CLI-overriding
+  either TOML file (same last-applied precedence). ``min_epss`` goes through
+  ``cli._min_epss_type`` at the argparse layer (mirrors ``cli._max_lag_
+  type`` — a malformed CLI value is a usage error, exit 2, never reaching
+  ``ConfigLoader.load``) and ``_coerce_min_epss`` at the TOML layer (a typed
+  ``ConfigValidationError`` — mirrors ``_coerce_fail_under_coverage``'s
+  range-check shape, but over ``[0.0, 1.0]``). Unlike ``max_lag``, this gate
+  has no derived ``*_gating``/``*_policy`` property: ``interfaces.
+  DefaultPolicy.evaluate`` threads ``self._config.min_epss`` straight into
+  ``vuln.vuln_rung`` (mirrors ``fail_on_kev``'s own threading, not the
+  license/currency two-mode table pattern), and ``cli.py`` constructs
+  ``OsvEngine(fail_on_kev=config.fail_on_kev, min_epss=config.min_epss)``
+  the same way it already special-cases ``OsvEngine`` for ``fail_on_kev``.
+* ``warn-as-error`` (Story 6.5) is a pure exit-projection knob (FR: the
+  strict-shop on-ramp): it never changes the composed status or any rung —
+  it only makes ``verdict.exit_code_for(warn_is_error=True)`` project a
+  ``warn`` STATUS to a non-zero exit. It gets a CLI flag
+  (``--warn-as-error``, tri-state ``store_true`` with ``default=None`` —
+  mirrors ``--fail-on-eol``) AND a recognized ``[tool.pyforge-warden]``
+  ``warn-as-error`` key (hyphenated only, like every other key); CLI wins
+  over either TOML file, same last-applied precedence as ``fail-on``.
+  ``cli.py`` threads ``config.warn_as_error`` into ``report.assemble_report
+  (warn_as_error=…)`` -> ``exit_code_for(warn_is_error=…)``.
 
 This module parses TOML as DATA: no I/O beyond reading the two candidate
 files, no subprocess, no network, no exec.
@@ -92,12 +141,12 @@ import tomllib
 from dataclasses import dataclass
 from pathlib import Path
 
-from .models import LicenseVerdict, SeverityTier, Status
+from .models import CurrencyVerdict, LicenseVerdict, SeverityTier, Status
 
 _PYPROJECT_FILENAME = "pyproject.toml"
 _PIXI_FILENAME = "pixi.toml"
 
-# The 6 recognized [tool.pyforge-warden] keys (hyphenated only — an
+# The 12 recognized [tool.pyforge-warden] keys (hyphenated only — an
 # underscore-spelled variant of any of these is UNRECOGNIZED, never
 # silently accepted as an alias).
 _RECOGNIZED_KEYS = frozenset(
@@ -109,6 +158,11 @@ _RECOGNIZED_KEYS = frozenset(
         "fail-on-kev",
         "allow-licenses",
         "deny-licenses",
+        "max-lag",
+        "require-lts",
+        "fail-on-eol",
+        "warn-as-error",
+        "min-epss",
     }
 )
 
@@ -190,6 +244,11 @@ class EffectiveConfig:
     fail_on_kev: bool = True
     allow_licenses: tuple[str, ...] = ()
     deny_licenses: tuple[str, ...] = ()
+    max_lag: int | None = None
+    require_lts: bool = False
+    fail_on_eol: bool = False
+    warn_as_error: bool = False
+    min_epss: float | None = None
 
     def __post_init__(self) -> None:
         """Fail at construction, not at first use (review finding: without
@@ -246,6 +305,35 @@ class EffectiveConfig:
                     f"{field_name} must be a tuple of non-blank strings, got "
                     f"{value!r}"
                 )
+        if self.max_lag is not None and (
+            isinstance(self.max_lag, bool)
+            or not isinstance(self.max_lag, int)
+            or self.max_lag < 0
+        ):
+            raise ValueError(
+                f"max_lag must be an int >= 0 or None, got {self.max_lag!r}"
+            )
+        if not isinstance(self.require_lts, bool):
+            raise ValueError(
+                f"require_lts must be a bool, got {self.require_lts!r}"
+            )
+        if not isinstance(self.fail_on_eol, bool):
+            raise ValueError(
+                f"fail_on_eol must be a bool, got {self.fail_on_eol!r}"
+            )
+        if not isinstance(self.warn_as_error, bool):
+            raise ValueError(
+                f"warn_as_error must be a bool, got {self.warn_as_error!r}"
+            )
+        if self.min_epss is not None and (
+            isinstance(self.min_epss, bool)
+            or not isinstance(self.min_epss, (int, float))
+            or not (0.0 <= self.min_epss <= 1.0)
+        ):
+            raise ValueError(
+                f"min_epss must be a number in [0, 1] or None, got "
+                f"{self.min_epss!r}"
+            )
 
     @classmethod
     def default(cls) -> EffectiveConfig:
@@ -263,6 +351,11 @@ class EffectiveConfig:
         cli_fail_under_coverage: float | None = None,
         cli_allow_licenses: str | None = None,
         cli_deny_licenses: str | None = None,
+        cli_max_lag: int | None = None,
+        cli_require_lts: bool | None = None,
+        cli_fail_on_eol: bool | None = None,
+        cli_warn_as_error: bool | None = None,
+        cli_min_epss: float | None = None,
     ) -> EffectiveConfig:
         """The built-in default, with any CLI-supplied overrides still
         applied (review finding: ``cli.py``'s config-load-failure fallback
@@ -274,9 +367,15 @@ class EffectiveConfig:
         ``SeverityTier(...)`` call) so an invalid direct-caller value raises
         the module's own ``ConfigValidationError``, matching ``ConfigLoader.
         load``'s own CLI-override handling. ``cli_allow_licenses``/
-        ``cli_deny_licenses`` (Story 6.2) follow the SAME pattern: an
-        already-argparse-supplied ``--allow-licenses``/``--deny-licenses``
-        flag must survive an unrelated config-load failure too."""
+        ``cli_deny_licenses`` (Story 6.2) and ``cli_max_lag``/
+        ``cli_require_lts``/``cli_fail_on_eol`` (Story 6.3) follow the SAME
+        pattern: an already-argparse-supplied flag must survive an unrelated
+        config-load failure too. ``cli_require_lts``/``cli_fail_on_eol`` are
+        tri-state (``None``/``True``) — argparse's own ``store_true`` action
+        with ``default=None`` (mirrors ``cli_allow_licenses``'s "unset means
+        defer to TOML" semantics for a flag with no CLI-expressible
+        "explicitly false"). ``cli_min_epss`` (Story 6.7) follows the SAME
+        pattern as ``cli_max_lag``."""
         defaults = cls.default()
         fail_on = (
             _coerce_fail_on(cli_fail_on) if cli_fail_on is not None else defaults.fail_on
@@ -296,6 +395,29 @@ class EffectiveConfig:
             if cli_deny_licenses is not None
             else defaults.deny_licenses
         )
+        max_lag = (
+            _coerce_max_lag(cli_max_lag) if cli_max_lag is not None else defaults.max_lag
+        )
+        require_lts = (
+            _coerce_require_lts(cli_require_lts)
+            if cli_require_lts is not None
+            else defaults.require_lts
+        )
+        fail_on_eol = (
+            _coerce_fail_on_eol(cli_fail_on_eol)
+            if cli_fail_on_eol is not None
+            else defaults.fail_on_eol
+        )
+        warn_as_error = (
+            _coerce_warn_as_error(cli_warn_as_error)
+            if cli_warn_as_error is not None
+            else defaults.warn_as_error
+        )
+        min_epss = (
+            _coerce_min_epss(cli_min_epss)
+            if cli_min_epss is not None
+            else defaults.min_epss
+        )
         return cls(
             fail_on=fail_on,
             fail_under_coverage=fail_under_coverage,
@@ -304,6 +426,11 @@ class EffectiveConfig:
             fail_on_kev=defaults.fail_on_kev,
             allow_licenses=allow_licenses,
             deny_licenses=deny_licenses,
+            max_lag=max_lag,
+            require_lts=require_lts,
+            fail_on_eol=fail_on_eol,
+            warn_as_error=warn_as_error,
+            min_epss=min_epss,
         )
 
     @property
@@ -348,26 +475,79 @@ class EffectiveConfig:
         FR33's v1 gate-activation rule) — ``True`` iff ``allow_licenses`` or
         ``deny_licenses`` is non-empty. Threaded into the reported
         ``AxisCoverage.gating`` for the license axis
-        (``report.assemble_report``) — transparency of configuration state,
-        independent of the fact that real escalation itself is deferred to
-        Story 6.5."""
+        (``report.assemble_report``) — transparency of configuration state.
+        Also selects which mode ``license_policy`` returns (Story 6.5: the
+        escalating table when true, the all-``WARN`` table when false)."""
         return bool(self.allow_licenses or self.deny_licenses)
 
     @property
     def license_policy(self) -> dict[LicenseVerdict, Status]:
-        """The license-axis verdict->status table Story 6.5's real
-        escalation will consult — mirrors ``vuln_severity_policy``'s shape
-        (a plain dict, not the module-default ``MappingProxyType``, matching
-        that property's own return type). Defined THIS story per the
-        architecture's ownership split even though nothing consumes it yet:
-        ``license.license_rung`` is a hard ``Status.WARN`` cap, oblivious to
-        this table (see its own docstring). Every Finding-eligible verdict
-        (``denied``/``unknown`` — ``allowed`` never reaches a ``Finding``)
-        maps to ``Status.WARN``, matching ``license_rung``'s own cap
-        byte-for-byte."""
+        """The license-axis verdict->status table ``interfaces.DefaultPolicy.
+        evaluate`` threads into ``license.license_rung(finding, policy=…)``
+        (Story 6.5) — mirrors ``vuln_severity_policy``'s shape (a plain dict,
+        not the module-default ``MappingProxyType``, matching that property's
+        own return type). This property is the SINGLE WRITER of the license
+        axis's two-mode semantics (F7): when ``license_gating`` is false
+        every Finding-eligible verdict (``denied``/``unknown`` — ``allowed``
+        never reaches a ``Finding``) maps to ``Status.WARN``, byte-identical
+        to the module-default ``license.DEFAULT_LICENSE_POLICY`` used when the
+        rung is called with no policy (the unconfigured / ceiling-meta-test
+        path); when true it ESCALATES — ``denied`` -> ``policy-violation``,
+        ``unknown`` -> ``indeterminate`` (only ever moving a rung toward a
+        stronger, non-``clean`` status, the C0 bound). The
+        ``--allow/--deny-licenses`` flags flip ``license_gating`` (and this
+        table) without touching ``license_findings``' own output — the
+        two-mode diff runs the identical fixtures and differs only in
+        rungs/exit."""
+        if self.license_gating:
+            return {
+                LicenseVerdict.DENIED: Status.POLICY_VIOLATION,
+                LicenseVerdict.UNKNOWN: Status.INDETERMINATE,
+            }
         return {
             LicenseVerdict.DENIED: Status.WARN,
             LicenseVerdict.UNKNOWN: Status.WARN,
+        }
+
+    @property
+    def currency_gating(self) -> bool:
+        """Whether the currency axis's gate is active this scan (Story 6.3,
+        FR35's v1 gate-activation rule) — ``True`` iff ``max_lag is not
+        None`` or ``require_lts`` or ``fail_on_eol``. Threaded into the
+        reported ``AxisCoverage.gating`` for the currency axis
+        (``report.assemble_report``) — transparency of configuration state.
+        Also selects which mode ``currency_policy`` returns and activates the
+        engine's freshness precondition (Story 6.5)."""
+        return self.max_lag is not None or self.require_lts or self.fail_on_eol
+
+    @property
+    def currency_policy(self) -> dict[CurrencyVerdict, Status]:
+        """The currency-axis verdict->status table ``DefaultPolicy.evaluate``
+        threads into ``currency.currency_rung(finding, policy=…, max_lag=…)``
+        (Story 6.5) — mirrors ``license_policy``'s two-mode shape and is the
+        SINGLE WRITER of the currency axis's two-mode semantics (F7):
+        all-``WARN`` (byte-identical to ``currency.DEFAULT_CURRENCY_POLICY``)
+        when ``currency_gating`` is false, else ``eol`` ->
+        ``policy-violation`` / ``unknown`` -> ``indeterminate`` (C0: only
+        toward a stronger status). Only ``eol``/``unknown`` are keyed —
+        ``supported`` is deliberately absent, mirroring ``license_policy``'s
+        omission of ``allowed``: a ``supported`` verdict can mean either
+        "fully current" (no Finding at all) or "over-lag but not EOL" (a
+        Finding DOES exist), a distinction this table cannot make by verdict
+        alone (see ``currency.py``'s module docstring). ``currency_rung``
+        handles the ``over-lag`` (``SUPPORTED``-verdict) finding by the
+        numeric ``lag > max_lag`` check ``DefaultPolicy`` feeds via
+        ``self.max_lag`` — an over-lag is escalated to ``policy-violation``
+        only when it exceeds the configured ``--max-lag`` threshold, never
+        by this table."""
+        if self.currency_gating:
+            return {
+                CurrencyVerdict.EOL: Status.POLICY_VIOLATION,
+                CurrencyVerdict.UNKNOWN: Status.INDETERMINATE,
+            }
+        return {
+            CurrencyVerdict.EOL: Status.WARN,
+            CurrencyVerdict.UNKNOWN: Status.WARN,
         }
 
 
@@ -407,6 +587,66 @@ def _coerce_fail_under_coverage(value: object) -> float:
     if not (0.0 <= numeric <= 100.0):
         raise ConfigValidationError(
             f"'fail-under-coverage' must be in [0, 100], got {value!r}"
+        )
+    return numeric
+
+
+def _coerce_max_lag(value: object) -> int:
+    """``'max-lag'`` (Story 6.3) mirrors ``_coerce_fail_under_coverage``'s
+    shape: a non-negative int, malformed/negative is a typed
+    ``ConfigValidationError`` — the TOML-path/direct-caller validator;
+    ``cli._max_lag_type`` is the argparse-layer ``type=`` callback for the
+    CLI flag itself (a malformed ``--max-lag`` is a usage error, exit 2,
+    never reaching this function)."""
+    if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+        raise ConfigValidationError(
+            f"'max-lag' must be an int >= 0, got {value!r}"
+        )
+    return value
+
+
+def _coerce_require_lts(value: object) -> bool:
+    if not isinstance(value, bool):
+        raise ConfigValidationError(
+            f"'require-lts' must be a bool, got {value!r}"
+        )
+    return value
+
+
+def _coerce_fail_on_eol(value: object) -> bool:
+    if not isinstance(value, bool):
+        raise ConfigValidationError(
+            f"'fail-on-eol' must be a bool, got {value!r}"
+        )
+    return value
+
+
+def _coerce_warn_as_error(value: object) -> bool:
+    """``'warn-as-error'`` (Story 6.5) mirrors ``_coerce_fail_on_eol``'s
+    shape exactly — a plain bool, malformed is a typed
+    ``ConfigValidationError``."""
+    if not isinstance(value, bool):
+        raise ConfigValidationError(
+            f"'warn-as-error' must be a bool, got {value!r}"
+        )
+    return value
+
+
+def _coerce_min_epss(value: object) -> float:
+    """``'min-epss'`` (Story 6.7) mirrors ``_coerce_fail_under_coverage``'s
+    shape: a non-bool number in ``[0.0, 1.0]``, malformed/out-of-range is a
+    typed ``ConfigValidationError`` — the TOML-path/direct-caller validator;
+    ``cli._min_epss_type`` is the argparse-layer ``type=`` callback for the
+    CLI flag itself (a malformed ``--min-epss`` is a usage error, exit 2,
+    never reaching this function)."""
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise ConfigValidationError(
+            f"'min-epss' must be a number in [0, 1], got {value!r}"
+        )
+    numeric = float(value)
+    if not (0.0 <= numeric <= 1.0):
+        raise ConfigValidationError(
+            f"'min-epss' must be in [0, 1], got {value!r}"
         )
     return numeric
 
@@ -550,6 +790,11 @@ class ConfigLoader:
         cli_fail_under_coverage: float | None = None,
         cli_allow_licenses: str | None = None,
         cli_deny_licenses: str | None = None,
+        cli_max_lag: int | None = None,
+        cli_require_lts: bool | None = None,
+        cli_fail_on_eol: bool | None = None,
+        cli_warn_as_error: bool | None = None,
+        cli_min_epss: float | None = None,
     ) -> tuple[EffectiveConfig, tuple[str, ...]]:
         """Resolve one scan's ``EffectiveConfig`` under ``target``. Returns
         ``(config, warnings)`` — ``warnings`` are stderr-destined diagnostic
@@ -572,6 +817,11 @@ class ConfigLoader:
                 cli_fail_under_coverage=cli_fail_under_coverage,
                 cli_allow_licenses=cli_allow_licenses,
                 cli_deny_licenses=cli_deny_licenses,
+                cli_max_lag=cli_max_lag,
+                cli_require_lts=cli_require_lts,
+                cli_fail_on_eol=cli_fail_on_eol,
+                cli_warn_as_error=cli_warn_as_error,
+                cli_min_epss=cli_min_epss,
                 warnings=warnings,
             )
         except (ConfigParseError, ConfigValidationError) as exc:
@@ -586,6 +836,11 @@ class ConfigLoader:
         cli_fail_under_coverage: float | None,
         cli_allow_licenses: str | None,
         cli_deny_licenses: str | None,
+        cli_max_lag: int | None,
+        cli_require_lts: bool | None,
+        cli_fail_on_eol: bool | None,
+        cli_warn_as_error: bool | None,
+        cli_min_epss: float | None,
         warnings: list[str],
     ) -> tuple[EffectiveConfig, tuple[str, ...]]:
         pyproject_table = self._read_table(
@@ -645,6 +900,31 @@ class ConfigLoader:
             if "deny-licenses" in merged
             else defaults.deny_licenses
         )
+        max_lag = (
+            _coerce_max_lag(merged["max-lag"])
+            if "max-lag" in merged
+            else defaults.max_lag
+        )
+        require_lts = (
+            _coerce_require_lts(merged["require-lts"])
+            if "require-lts" in merged
+            else defaults.require_lts
+        )
+        fail_on_eol = (
+            _coerce_fail_on_eol(merged["fail-on-eol"])
+            if "fail-on-eol" in merged
+            else defaults.fail_on_eol
+        )
+        warn_as_error = (
+            _coerce_warn_as_error(merged["warn-as-error"])
+            if "warn-as-error" in merged
+            else defaults.warn_as_error
+        )
+        min_epss = (
+            _coerce_min_epss(merged["min-epss"])
+            if "min-epss" in merged
+            else defaults.min_epss
+        )
 
         # CLI flags win over both files. Routed through the SAME _coerce_*
         # helpers the TOML-sourced values use (review finding: a bare
@@ -661,6 +941,16 @@ class ConfigLoader:
             allow_licenses = _coerce_allow_licenses(cli_allow_licenses)
         if cli_deny_licenses is not None:
             deny_licenses = _coerce_deny_licenses(cli_deny_licenses)
+        if cli_max_lag is not None:
+            max_lag = _coerce_max_lag(cli_max_lag)
+        if cli_require_lts is not None:
+            require_lts = _coerce_require_lts(cli_require_lts)
+        if cli_fail_on_eol is not None:
+            fail_on_eol = _coerce_fail_on_eol(cli_fail_on_eol)
+        if cli_warn_as_error is not None:
+            warn_as_error = _coerce_warn_as_error(cli_warn_as_error)
+        if cli_min_epss is not None:
+            min_epss = _coerce_min_epss(cli_min_epss)
 
         config = EffectiveConfig(
             fail_on=fail_on,
@@ -670,6 +960,11 @@ class ConfigLoader:
             fail_on_kev=fail_on_kev,
             allow_licenses=allow_licenses,
             deny_licenses=deny_licenses,
+            max_lag=max_lag,
+            require_lts=require_lts,
+            fail_on_eol=fail_on_eol,
+            warn_as_error=warn_as_error,
+            min_epss=min_epss,
         )
         return config, tuple(warnings)
 

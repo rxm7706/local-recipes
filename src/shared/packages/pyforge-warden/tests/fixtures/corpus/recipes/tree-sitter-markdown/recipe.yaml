@@ -1,0 +1,74 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.5.3"
+
+package:
+  name: tree-sitter-markdown
+  version: ${{ version }}
+
+source:
+  # Upstream stopped publishing to PyPI after v0.5.1 (latest there is 0.5.1; v0.5.2 + v0.5.3
+  # were GitHub-release-only). Build from the GitHub tag tarball.
+  # Patch fixes setup.py to find parser.c + scanner.c in the dual-grammar subdirectory
+  # layout (tree-sitter-markdown/src/ + tree-sitter-markdown-inline/src/) — v0.5.3
+  # upstream restructured setup.py to expect a flat src/ layout that doesn't match
+  # what the tarball ships. Reported upstream.
+  url: https://github.com/tree-sitter-grammars/tree-sitter-markdown/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: df845b1ab7c7c163ec57d7fa17170c92b04be199bddab02523636efec5224ab6
+  patches:
+    - patches/0001-fix-setup-py-dual-grammar-paths.patch
+
+build:
+  number: 1
+  # abi3 packages build once at python_min and ship one artifact per platform.
+  skip: is_abi3 and not is_python_min
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    version_independent: ${{ is_abi3 }}
+
+requirements:
+  build:
+    - ${{ compiler("c") }}
+    - ${{ stdlib("c") }}
+  host:
+    - if: is_abi3
+      then: python-abi3
+    - python
+    - pip
+    - setuptools >=42
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - tree_sitter_markdown
+      # Verify the abi3 wheel works on the build-time Python AND the latest.
+      python_version:
+        - if: is_abi3
+          then: ${{ python_min }}.*
+        - "*"
+  - if: is_abi3
+    then:
+      requirements:
+        run:
+          - abi3audit
+      script:
+        - if: unix
+          then: abi3audit $SP_DIR/tree_sitter_markdown/_binding.abi3.so -s -v --assume-minimum-abi3 ${{ python_min }}
+          else: abi3audit %SP_DIR%/tree_sitter_markdown/_binding.pyd -s -v --assume-minimum-abi3 ${{ python_min }}
+
+about:
+  homepage: https://github.com/tree-sitter-grammars/tree-sitter-markdown
+  summary: Markdown grammar for tree-sitter
+  license: MIT
+  license_file: LICENSE
+  repository: https://github.com/tree-sitter-grammars/tree-sitter-markdown
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+    - killua156
+    - mgorny
