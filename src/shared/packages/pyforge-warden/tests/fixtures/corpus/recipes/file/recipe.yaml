@@ -1,0 +1,151 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+# Pinned to 5.44 across all platforms because that is the latest version with
+# a working MSVC port (julian-r/file-windows v5.44, Mar 2023). When julian-r
+# tags a newer release, bump version + win_rev together.
+context:
+  name: file
+  version: "5.44"
+  win_rev: "cddf42c5faf23c552b8c033680854b0c7bde0f10"
+
+recipe:
+  name: ${{ name }}-split
+  version: ${{ version }}
+
+source:
+  - if: unix
+    then:
+      url: https://astron.com/pub/file/file-${{ version }}.tar.gz
+      sha256: 3751c7fba8dbc831cb8d7cc8aff21035459b8ce5155ef8b0880a27d028475f3b
+    else:
+      git: https://github.com/julian-r/file-windows.git
+      rev: ${{ win_rev }}
+
+build:
+  number: 0
+
+# Staging output runs the build once per platform; downstream outputs `inherit:`
+# its requirements and pick artifacts via `files:` globs.
+outputs:
+  - staging:
+      name: ${{ name }}-split-build
+    requirements:
+      build:
+        - ${{ compiler('c') }}
+        - ${{ stdlib('c') }}
+        - if: unix
+          then:
+            - gnuconfig
+            - make
+          else:
+            - cmake
+            - ninja
+      host:
+        - if: unix
+          then:
+            - zlib
+
+  - package:
+      name: libmagic
+    inherit: ${{ name }}-split-build
+    build:
+      files:
+        - if: unix
+          then:
+            - include/magic.h
+            - lib/libmagic.*
+            - lib/pkgconfig/libmagic.pc
+            - share/misc/magic.mgc
+          else:
+            - Library/bin/libmagic.dll
+            - Library/lib/libmagic.lib
+            - Library/include/magic.h
+            - Library/share/misc/magic.mgc
+    requirements:
+      run_exports:
+        - ${{ pin_subpackage('libmagic', upper_bound='x') }}
+    tests:
+      - script:
+          - if: unix
+            then: test -r ${PREFIX}/lib/libmagic${SHLIB_EXT}
+            else: if not exist %LIBRARY_BIN%\libmagic.dll exit 1
+      - if: win
+        then:
+          package_contents:
+            bin:
+              - libmagic.dll
+            lib:
+              - libmagic.lib
+            include:
+              - magic.h
+    about:
+      summary: Implementation of the file(1) command (libmagic library)
+      license: BSD-2-Clause-Darwin
+      license_file:
+        - if: unix
+          then:
+            - COPYING
+          else:
+            - file/COPYING
+            - LICENSE
+            - pcre2/LICENCE
+      homepage: https://darwinsys.com/file
+      repository: https://github.com/file/file
+
+  - package:
+      name: file
+    inherit: ${{ name }}-split-build
+    build:
+      files:
+        - if: unix
+          then:
+            - bin/file
+            - share/man/man*/file*
+            - share/man/man*/magic*
+            - share/man/man*/libmagic*
+          else:
+            - Library/bin/file.exe
+    requirements:
+      run:
+        - ${{ pin_subpackage("libmagic", exact=true) }}
+    tests:
+      - script:
+          - file -v
+          - file --help
+    about:
+      summary: Fine Free File Command
+      description: |
+        The file command is "a file type guesser" — a command-line tool that
+        tells you in words what kind of data a file contains by examining its
+        contents (not its extension).
+      license: BSD-2-Clause-Darwin
+      license_file:
+        - if: unix
+          then:
+            - COPYING
+          else:
+            - file/COPYING
+            - LICENSE
+            - pcre2/LICENCE
+      homepage: https://darwinsys.com/file
+      repository: https://github.com/file/file
+
+about:
+  summary: Fine Free File Command
+  homepage: https://darwinsys.com/file
+  repository: https://github.com/file/file
+  license: BSD-2-Clause-Darwin
+  license_file:
+    - if: unix
+      then:
+        - COPYING
+      else:
+        - file/COPYING
+        - LICENSE
+        - pcre2/LICENCE
+
+extra:
+  feedstock-name: file
+  recipe-maintainers:
+    - rxm7706

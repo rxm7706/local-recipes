@@ -1,0 +1,90 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.30.0"
+  python_min: "3.11"
+
+package:
+  name: langgraph-runtime-inmem
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/l/langgraph-runtime-inmem/langgraph_runtime_inmem-${{ version }}.tar.gz
+  sha256: 31954e1de6cd43c284b425243d4faeae818f68b3daca4dbe4313e651b6f5e11d
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - blockbuster <2.0.0,>=1.5.24
+    - croniter >=1.0.1
+    - langgraph-checkpoint <5,>=3
+    - langgraph <2,>=0.4.10
+    - sse-starlette >=2
+    - starlette >=0.37
+    - structlog >23
+
+tests:
+  - python:
+      imports:
+        - langgraph_runtime_inmem
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/langgraph-runtime-inmem/
+  license: Elastic-2.0
+  license_file: LICENSE
+  summary: Inmem implementation for the LangGraph API server.
+  description: |
+    Inmem implementation for the LangGraph API server.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: langgraph-runtime-inmem
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: langgraph-runtime-inmem
+  cfe-purls:
+    - pkg:conda/langgraph-runtime-inmem@${{ version }}?channel=conda-forge
+    - pkg:pypi/langgraph-runtime-inmem@${{ version }}
+  cfe-upstream-repo: https://github.com/langchain-ai/langgraph-api
+  cfe-upstream-homepage: https://github.com/langchain-ai/langgraph-api
+  cfe-import-names: [langgraph_runtime_inmem]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-submission-pr: https://github.com/conda-forge/staged-recipes/pull/34051
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: ["staged-recipes #34051 held in draft until blockbuster #34048 merges; Elastic-2.0 license under cf policy review in the PR"]
+  cfe-last-checked: 2026-07-03T13:38:44Z
+  cfe-generated-by-version: 8.66.0
+  cfe-generated-at-datetime: 2026-07-03T13:27:24Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-07-03T13:27:24Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # 2026-07-03 langgraph-cli[inmem] chain for universal-mcp (blockbuster ->
+#    # langgraph-runtime-inmem -> langgraph-api -> langgraph-cli).
+#    # Elastic-2.0 (valid SPDX, redistribution permitted, NOT OSI) — cf license
+#    # review risk; LICENSE file fetched from SPDX (sdist ships none).
+####

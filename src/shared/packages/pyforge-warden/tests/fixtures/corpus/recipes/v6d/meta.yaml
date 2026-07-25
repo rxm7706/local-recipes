@@ -1,0 +1,67 @@
+{% set name = "v6d" %}
+{% set version = "16.0.6" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://github.com/v6d-io/v6d/archive/v{{ version }}.tar.gz
+  #url: file:///mnt/c/Users/v6d-0.16.2.tar.gz
+  sha256: 0110459bec3bf548bb8f7bfc158f0a147b18232523b135c7c079152888982b30
+
+build:
+  entry_points:
+    - vineyard-codegen=vineyard.core.codegen:main
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  build:
+    - {{ compiler('c') }}
+  host:
+    - python
+    - setuptools
+    - wheel
+    - libclang
+    - parsec # Missing on Conda Forge
+    - pip
+  run:
+    - python
+    - argcomplete
+    - click
+    - etcd-distro # Missing on Conda Forge
+    - lazy-imports # Missing on Conda Forge
+    - makefun
+    - numpy >=1.18.5
+    - pandas <1.0.0  # [py<36]
+    - pickle5  # [py<=37]
+    - psutil
+    - pyarrow
+    - setuptools
+    - shared-memory38  # [py<=37]
+    - sortedcontainers
+    - treelib
+    - vineyard-bdist ==0.16.2 # Missing on Conda Forge
+
+test:
+  imports:
+    - vineyard
+  commands:
+    - pip check
+    - vineyard-codegen --help
+  requires:
+    - pip
+
+about:
+  home: https://v6d.io
+  summary: 'Clang Python Bindings, mirrored from the official LLVM repo: https://github.com/llvm/llvm-project/tree/main/clang/bindings/python, to make the installation process easier.'
+  license: Apache-2.0
+  license_file:
+    - LICENSE
+    - NOTICE.txt
+    - python/vineyard/contrib/airflow/LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

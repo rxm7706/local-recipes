@@ -1,0 +1,78 @@
+schema_version: 1
+
+context:
+  version: "0.3.16"
+  # python_min raised to 3.12: upstream slack.py uses PEP 701 f-string
+  # syntax (backslash inside the expression part) which is a SyntaxError
+  # on Python <3.12. Drop back to '3.10' once upstream guards that file.
+  python_min: '3.12'
+
+package:
+  name: boring-semantic-layer
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/b/boring-semantic-layer/boring_semantic_layer-${{ version }}.tar.gz
+  sha256: bba892de81aa7f41d4f78b79d22135fa8d3e1391d557399d3545a61eeb8a4fc0
+  patches:
+    - patches/0001-loosen-toolz-pin-for-conda-forge.patch
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - bsl = boring_semantic_layer.agents.cli:main
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - hatchling
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - attrs >=25.3.0
+    - ibis-framework >=11.0.0
+    - packaging
+    - pyyaml >=6.0
+    - returns >=0.26.0
+    - toolz >=1.0.0
+    - python-tzdata
+    #- xorq >=0.3.19  # TBD Conda-forge
+    # bsl transitively imports pyarrow.flight via xorq.api → xorq.flight.
+    # Listed defensively so the dep is visible at this layer too.
+    - libarrow-flight >=13.0.0 #,<22
+    # python-dotenv is an upstream [agent] extra, but the `bsl` CLI entry
+    # point unconditionally imports it. Pull it into core so `bsl --help`
+    # works without installing the full extras stack (langchain etc.).
+    - python-dotenv >=1.0.0
+
+tests:
+  - python:
+      imports:
+        - boring_semantic_layer
+      pip_check: true
+      python_version:
+      - ${{ python_min }}.*
+      - "*"
+  - requirements:
+      run:
+        - python ${{ python_min }}.*
+        - pip
+        - python
+    script:
+      - bsl --help
+
+about:
+  summary: A boring semantic layer built with ibis
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/boringdata/boring-semantic-layer/tree/main
+
+extra:
+  recipe-maintainers:
+    - boringdata
+    - hachej
+    - hb1915
+    - rxm7706

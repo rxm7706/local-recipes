@@ -1,0 +1,46 @@
+{% set name = "dagster-teradata" %}
+{% set version = "0.0.7" %}
+{% set python_min = "3.10" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/dagster_teradata-{{ version }}.tar.gz
+  sha256: 55ff0c58affcf54ca7118269a11a39a4e80c54b48a6c8543fa850f0166e56164
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - setuptools >=42
+    - pip
+  run:
+    - python >={{ python_min }},<4.0
+    - dagster >=1.8.0
+    - teradatasql
+    - paramiko
+
+test:
+  imports:
+    - dagster_teradata
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  summary: A dagster module that provides integration with Teradata Vantage.
+  license: 'Apache-2.0'
+  license_file: LICENSE
+  home: https://github.com/dagster-io/community-integrations
+
+extra:
+  recipe-maintainers:
+    - rxm7706

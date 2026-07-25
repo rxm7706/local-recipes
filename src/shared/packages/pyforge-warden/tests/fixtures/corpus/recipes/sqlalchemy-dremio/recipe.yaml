@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: sqlalchemy-dremio
+  version: "3.0.5"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/sqlalchemy_dremio-${{ version }}.tar.gz
+  sha256: d45bb7a2d226a113981ddbf312e69a9c278534d73162d6a68731b5ce3e50839b
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }},<4.0
+    - sqlalchemy >=2.0.41,<2.1.0
+    - pyarrow-all >=20.0.0,<20.1.0
+
+tests:
+  - python:
+      imports:
+        - sqlalchemy_dremio
+      pip_check: true
+      python_version: ${{ python_min }}.*
+
+about:
+  summary: A SQLAlchemy dialect for Dremio via the Flight interface.
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/narendrans/sqlalchemy_dremio
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+    - cshaley

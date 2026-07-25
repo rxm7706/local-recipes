@@ -1,0 +1,44 @@
+{% set name = "wagtail-webstories" %}
+{% set version = "0.1.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/wagtail-webstories-{{ version }}.tar.gz
+  sha256: d7e71438d3628d4c4da4df28019079cc2dc99215b82187ab81aff5305df00f05
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - pip
+  run:
+    - python >=3.8
+    - wagtail >=4.1
+    - webstories >=0.0.1,<1
+    - requests >=2.24.0,<3
+    - beautifulsoup4 >=4.6,<5
+
+test:
+  imports:
+    - wagtail_webstories
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/torchbox/wagtail-webstories/
+  summary: AMP web story support for Wagtail
+  license: BSD-3-Clause
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

@@ -1,0 +1,50 @@
+{% set name = "djangocms-frontend" %}
+{% set version = "2.3.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name.replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: 85c4c85cd8c464a6f943d011a1c4aab6902829fd2aad36b9268b151fdb499f6b
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - djangocms-link >=5
+    - python >={{ python_min }}
+    - django >=2.2
+    - django-cms >=3.7
+    - django-filer >=1.7
+    - easy-thumbnails
+    - djangocms-attributes-field >=4
+    - djangocms-text-ckeditor >=3.1.0
+    - django-entangled >=0.6
+test:
+  imports:
+    - djangocms_frontend
+  commands:
+    - pip check
+  requires:
+    - python {{ python_min }}
+    - pip
+
+about:
+  home: https://github.com/django-cms/djangocms-frontend
+  summary: Adds abstract User Interface items as plugins to django CMS.
+  dev_url: https://github.com/django-cms/djangocms-frontend
+  license: BSD-3-Clause
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

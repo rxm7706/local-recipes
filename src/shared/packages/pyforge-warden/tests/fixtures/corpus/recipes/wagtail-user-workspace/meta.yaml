@@ -1,0 +1,44 @@
+{% set name = "wagtail-user-workspace" %}
+{% set version = "0.1.0.dev0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/wagtail-user-workspace-{{ version }}.tar.gz
+  sha256: 7bf1ec6d09bef31f2d3e53cc7f99d5c773fd4ded6da605329f747c681c188e12
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - setuptools >=61.0
+    - pip
+  run:
+    - python >=3.8
+    - wagtail ==4.*
+    - django-solo
+    - django-allauth
+
+test:
+  imports:
+    - wagtail_user_workspace
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/LESPROJEKT/wagtail-user-workspace
+  summary: Wagtail workspace page for every registred user.
+  license: BSD-3-Clause
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

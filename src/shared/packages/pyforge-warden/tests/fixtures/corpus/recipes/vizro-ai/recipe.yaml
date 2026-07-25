@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.4.0"
+
+package:
+  name: vizro-ai
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/v/vizro-ai/vizro_ai-${{ version }}.tar.gz
+  sha256: 32c2fe360b0ebe1fe92d7674c6dbb438413ab4fc7b4bb079f168cb4e8572b0e2
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - hatchling
+    - pip
+  run:
+    - python >=${{ python_min }},<4
+    - pandas
+    - plotly
+    - black
+    - autoflake
+    - pydantic-ai-slim >=1.39.0
+
+tests:
+  - python:
+      imports:
+        - vizro_ai
+      pip_check: true
+      python_version: ${{ python_min }}.*
+
+about:
+  summary: Vizro-AI provides pre-configured agents that help with data visualizations
+  license: Apache-2.0
+  license_file: LICENSE.txt
+  homepage: https://pypi.org/project/vizro-ai/
+  repository: https://github.com/mckinsey/vizro
+  documentation: https://vizro.readthedocs.io/en/stable/
+
+extra:
+  recipe-maintainers:
+    - rxm7706

@@ -1,0 +1,120 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+context:
+  version: "2.4.0"
+  # source
+  gh: github.com
+  rgh: raw.githubusercontent.com
+  go_mod: ${{ gh }}/google/osv-scanner
+  go_mod_localereader: ${{ gh }}/mattn/go-localereader
+  go_mod_mathutil: modernc.org/mathutil
+  go_mod_magic: ${{ gh }}/deitch/magic
+  # build
+  go_flags: -s${{ ' -w' if win }}
+  go_path: ${{ '${SRC_DIR}' if unix else '%SRC_DIR%' }}
+  go_bin: ${{ '%LIBRARY_BIN%\\osv-scanner.exe' if win else '${PREFIX}/bin/osv-scanner' }}
+  go_licenses_ignore: |-
+    --ignore=${{ go_mod }} --ignore=${{ go_mod_localereader }} --ignore=${{ go_mod_magic }} --ignore=${{ go_mod_mathutil }}
+  rm_rf: ${{ 'rm -rf' if unix else 'rd /s /q' }}
+  # test
+  grep: ${{ 'grep -iE' if unix else 'findstr /c' }}
+
+package:
+  name: osv-scanner
+  version: ${{ version }}
+
+source:
+  - url: https://${{ go_mod }}/archive/refs/tags/v${{ version }}.tar.gz
+    sha256: 407ceeb62b2a1f3fb8260bf527f2d61d1079f440e23c8c94a9796791d7edd565
+    target_directory: ${{ go_mod }}
+  # github.com/mattn/go-localereader is an unknown license but is MIT-licensed
+  - url: https://${{ go_mod_localereader | replace(gh, rgh) }}/refs/heads/master/LICENSE
+    target_directory: manual_licenses/${{ go_mod_localereader }}
+    sha256: dceede03550621e65ec7b79fcba87cf6dbb9d31132a8ae71a8fe8ceec0af7da3
+  # modernc.org/mathutil is a BSD-3-Clause license, but the license file is not present in the source code
+  - url: https://gitlab.com/cznic/mathutil/-/raw/master/LICENSE?ref_type=heads
+    target_directory: manual_licenses/${{ go_mod_mathutil }}
+    sha256: bfa9bf72a72ca009fd62a8f84fca3dca67e51d93af96352723646599898b6cf5
+  - url: https://${{ go_mod_magic | replace(gh, rgh) }}/refs/heads/main/LICENSE
+    target_directory: manual_licenses/${{ go_mod_magic }}
+    sha256: 2423c6eb9948e617a61f7a2d1cb463c69d60e599fbae5931551631d2a8730838
+
+build:
+  number: 0
+  script:
+    content:
+      - ${{ 'export' if unix else 'set' }} "GOPATH=${{ go_path }}"
+      - cd ${{ go_mod }}/cmd/osv-scanner
+      - go build -v -trimpath -o "${{ go_bin }}" -ldflags="${{ go_flags }}" .
+      - go-licenses save . --save_path="${{ go_path }}/library_licenses" ${{ go_licenses_ignore }}
+      # strip big subdirs of source and text fixtures, some long paths
+      - cd "${{ go_path }}/library_licenses/${{ gh }}"
+      - ${{ rm_rf }} cyphar/filepath-securejoin/*/
+      - ${{ rm_rf }} spdx/tools-golang/*/
+
+requirements:
+  build:
+    - ${{ compiler('go-nocgo') }}
+    - go-licenses
+
+tests:
+  - script:
+      - which osv-scanner || where osv-scanner
+      - osv-scanner --version
+      - osv-scanner --version | ${{ grep }} "${{ version | replace('.', '\\.') }}"
+
+about:
+  homepage: https://github.com/google/osv-scanner
+  summary: Vulnerability scanner written in Go which uses the data provided by https://osv.dev
+  license: Apache-2.0
+  license_file:
+    - ${{ go_mod }}/LICENSE
+    - library_licenses/
+    - manual_licenses/
+  repository: https://github.com/google/osv-scanner
+
+extra:
+  recipe-maintainers:
+    - delsner
+    - bollwyvl
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: osv-scanner
+  cfe-upstream-registry: golang
+  cfe-upstream-name: github.com/google/osv-scanner
+  cfe-purls:
+    - pkg:conda/osv-scanner@${{ version }}?channel=conda-forge
+    - pkg:golang/github.com/google/osv-scanner@${{ version }}
+  cfe-upstream-repo: https://github.com/google/osv-scanner
+  cfe-upstream-homepage: https://github.com/google/osv-scanner
+  cfe-import-names: []
+  cfe-source-kind: github-tag
+  cfe-noarch: compiled
+  cfe-pip-check: "false:not-a-python-package"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/osv-scanner-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-07-10T00:00:00Z
+  cfe-generated-by-version: 8.76.0
+  cfe-generated-at-datetime: 2026-07-10T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-07-10T11:26:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # Faithful mirror of conda-forge/osv-scanner-feedstock recipe/recipe.yaml (v2.4.0).
+#    # schema_version:1 added for the local-recipes repo convention (inert; absent upstream).
+#    # Pure-Go CLI: compiler('go-nocgo') => no stdlib('c') needed (documented exception).
+#    # Apache-2.0 is OSI-approved => cf-eligible; already shipped on conda-forge.
+# source:
+#    # manual_licenses/ fetches LICENSE files for three deps whose in-tree license
+#    # go-licenses can't detect (go-localereader MIT, mathutil BSD-3, magic); those
+#    # four modules are passed to go-licenses --ignore so the save step doesn't fatal (G79).
+# build:
+#    # go build from cmd/osv-scanner; go-licenses bundles dep licenses into library_licenses/.
+#    # Two oversized dep subdirs (filepath-securejoin, tools-golang) are pruned post-save.
+####

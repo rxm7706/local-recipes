@@ -1,0 +1,43 @@
+{% set name = "docx2python" %}
+{% set version = "2.8.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/docx2python-{{ version }}.tar.gz
+  sha256: b780a1775fd6ac7eebda482be3cd2e8e49f26a88476df09205862fb74376a581
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8.0
+    - setuptools
+    - setuptools-scm
+    - pip
+  run:
+    - python >=3.8.0
+    - lxml
+    - typing-extensions
+
+test:
+  imports:
+    - docx2python
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  summary: Extract content from docx files
+  license: MIT
+  license_file: LICENSE.txt
+
+extra:
+  recipe-maintainers:
+    - rxm7706

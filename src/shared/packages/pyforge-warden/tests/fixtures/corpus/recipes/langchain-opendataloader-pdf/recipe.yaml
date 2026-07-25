@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+
+context:
+  name: langchain-opendataloader-pdf
+  version: "2.0.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/langchain_opendataloader_pdf-${{ version }}.tar.gz
+  sha256: 14c83dc1df9f3ef0c1e5698da6d30db3a8af1151f5ae42f09bffca1156acdd47
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - hatchling
+    - pip
+  run:
+    - python >=${{ python_min }},<4.0
+    - langchain-core >=1.0,<2.0
+    - opendataloader-pdf >=2.0.0
+
+tests:
+  - python:
+      imports:
+        - langchain_opendataloader_pdf
+      pip_check: true
+      python_version:
+      - ${{ python_min }}.*
+      - "*"
+
+about:
+  summary: A LangChain integration for OpenDataLoader PDF
+  homepage: https://github.com/opendataloader-project/opendataloader-pdf
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

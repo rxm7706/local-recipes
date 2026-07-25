@@ -1,0 +1,76 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: sqlfluff-templater-dbt
+  version: "4.2.2"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/sqlfluff_templater_dbt-${{ version }}.tar.gz
+  sha256: 72f628eb632db4963ba05e00939bac5b45f49c96cf42a78a04ed3cd9bfae4b85
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools <81.0.0
+  run:
+    - python >=${{ python_min }},<4
+    - sqlfluff ==${{ version }}
+    - dbt-core >=1.4.1
+    - jinja2-simple-tags >=0.3.1
+
+tests:
+  - python:
+      imports:
+        - sqlfluff_templater_dbt
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+
+about:
+  summary: Lint your dbt project SQL
+  license: MIT
+  license_file: LICENSE.md
+  repository: https://github.com/sqlfluff/sqlfluff
+  homepage: https://github.com/sqlfluff/sqlfluff
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: sqlfluff-templater-dbt
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: sqlfluff-templater-dbt
+  cfe-purls:
+    - pkg:conda/sqlfluff-templater-dbt@${{ version }}?channel=conda-forge
+    - pkg:pypi/sqlfluff-templater-dbt@${{ version }}
+  cfe-upstream-repo: https://github.com/sqlfluff/sqlfluff
+  cfe-upstream-homepage: https://www.sqlfluff.com
+  cfe-import-names: [sqlfluff_templater_dbt]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/sqlfluff-templater-dbt-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T07:44:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####

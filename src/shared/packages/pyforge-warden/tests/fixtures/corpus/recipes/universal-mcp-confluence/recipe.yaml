@@ -1,0 +1,54 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: universal-mcp-confluence
+  version: "0.1.4"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/universal_mcp_confluence-${{ version }}.tar.gz
+  sha256: 86b669c19d02c75fa0a4c528d187e6cc18ccf706f6a52b34f8cb721ad833b998
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - universal_mcp_confluence = universal_mcp_confluence:main
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - hatchling
+    - pip
+  run:
+    - python >=${{ python_min }},<4.0
+    - universal-mcp >=0.1.11
+
+tests:
+  - python:
+      imports:
+        - universal_mcp_confluence
+      pip_check: true
+      python_version: ${{ python_min }}.*
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}.*
+    script:
+      - universal_mcp_confluence --help
+
+about:
+  summary: "A Universal MCP Application: universal_mcp_confluence"
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/universal-mcp/confluence
+
+extra:
+  recipe-maintainers:
+    - rxm7706

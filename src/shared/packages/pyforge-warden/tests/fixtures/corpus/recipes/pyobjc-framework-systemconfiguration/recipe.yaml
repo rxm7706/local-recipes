@@ -1,0 +1,94 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "12.2.1"
+
+package:
+  name: pyobjc-framework-systemconfiguration
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/pyobjc-framework-systemconfiguration/pyobjc_framework_systemconfiguration-${{ version }}.tar.gz
+  sha256: 877a90eafe3df72625e50d61fc9c6dbd40e8cdabab7c4101992090107bb71ddb
+
+build:
+  number: 0
+  skip: not osx
+  script:
+    # force pyobjc to use conda-forge's chosen SDK
+    - export CFLAGS="${CFLAGS} -isysroot ${SDKROOT:-$CONDA_BUILD_SYSROOT}"
+    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+    - ${{ compiler('c') }}
+    - ${{ stdlib('c') }}
+  host:
+    - python
+    - pip
+    - setuptools
+    - wheel
+  run:
+    - python
+    - pyobjc-core >=${{ version }}
+    - pyobjc-framework-cocoa >=${{ version }}
+
+tests:
+  - python:
+      imports:
+        - PyObjCTools
+        - SystemConfiguration
+      pip_check: true
+
+about:
+  summary: Wrappers for the framework SystemConfiguration on macOS
+  license: MIT
+  license_file: LICENSE.txt
+  homepage: https://github.com/ronaldoussoren/pyobjc
+  repository: https://github.com/ronaldoussoren/pyobjc
+  documentation: https://pyobjc.readthedocs.io/en/latest/
+  description: |
+    Wrappers for the SystemConfiguration framework on macOS. Part of the
+    PyObjC bridge, this package lets Python code call the Objective-C
+    SystemConfiguration APIs (network reachability, dynamic store, captive
+    network, and related configuration services).
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pyobjc-framework-systemconfiguration
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pyobjc-framework-systemconfiguration
+  cfe-purls:
+    - pkg:conda/pyobjc-framework-systemconfiguration@${{ version }}?channel=conda-forge
+    - pkg:pypi/pyobjc-framework-systemconfiguration@${{ version }}
+  cfe-upstream-repo: https://github.com/ronaldoussoren/pyobjc
+  cfe-upstream-homepage: https://github.com/ronaldoussoren/pyobjc
+  cfe-import-names: [PyObjCTools]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: compiled
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pyobjc-framework-systemconfiguration-feedstock
+  cfe-forge-recipe-updates-needed: [version-bump-to-12.2.1, meta-yaml-to-recipe-yaml]
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-07-03T04:00:00Z
+  cfe-generated-by-version: 8.65.0
+  cfe-generated-at-datetime: 2026-07-03T04:00:00Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # 2026-07-03 punch-list full-gate pass (tracker issue -> local verification).
+####

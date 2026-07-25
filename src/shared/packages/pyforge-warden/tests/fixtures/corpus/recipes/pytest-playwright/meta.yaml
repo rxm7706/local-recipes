@@ -1,0 +1,47 @@
+{% set name = "pytest-playwright" %}
+{% set version = "0.8.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/pytest_playwright-{{ version }}.tar.gz
+  sha256: 7888d4a2443160c82e0c506c437076679f86b36d1910427250d90fbf1843a981
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - setuptools-scm
+    - setuptools
+    - pip
+  run:
+    - python >={{ python_min }}
+    - playwright-python >=1.18
+    - pytest >=6.2.4,<10.0.0
+    - pytest-base-url >=1.0.0,<3.0.0
+    - python-slugify >=6.0.0,<9.0.0
+
+test:
+  imports:
+    - pytest_playwright
+  commands:
+    - pip check
+  requires:
+    - python {{ python_min }}
+    - pip
+
+about:
+  home: https://github.com/microsoft/playwright-pytest
+  summary: A pytest wrapper with fixtures for Playwright to automate web browsers
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

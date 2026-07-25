@@ -1,0 +1,53 @@
+{% set name = "opentelemetry-instrumentation-flask" %}
+{% set version = "0.57b0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/opentelemetry_instrumentation_flask-{{ version }}.tar.gz
+  sha256: c5244a40b03664db966d844a32f43c900181431b77929be62a68d4907e86ed25
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 1
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - hatchling
+    - pip
+  run:
+    - python >={{ python_min }}
+    - opentelemetry-api ~=1.12
+    - opentelemetry-instrumentation =={{ version }}
+    - opentelemetry-instrumentation-wsgi =={{ version }}
+    - opentelemetry-semantic-conventions =={{ version }}
+    - opentelemetry-util-http =={{ version }}
+    - packaging >=21.0
+    - flask >=1.0
+
+test:
+  imports:
+    - opentelemetry
+    - opentelemetry.instrumentation
+    - opentelemetry.instrumentation.flask
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/open-telemetry/opentelemetry-python-contrib/tree/main/instrumentation/opentelemetry-instrumentation-flask
+  summary: Flask instrumentation for OpenTelemetry
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+    - mariusvniekerk
+    - conda-forge/opentelemetry-api

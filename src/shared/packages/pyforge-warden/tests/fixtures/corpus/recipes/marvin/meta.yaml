@@ -1,0 +1,56 @@
+{% set name = "marvin" %}
+{% set version = "1.5.6" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/marvin-{{ version }}.tar.gz
+  sha256: d768a99cf2b3dcdf31d954b8bcd71b3070ab033fa921bb92c502a2fbb9272c5a
+
+build:
+  entry_points:
+    - marvin = marvin.cli:app
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.9
+    - setuptools >=45
+    - setuptools-scm >=6.2
+    - pip
+  run:
+    - python >=3.9
+    - beautifulsoup4 >=4.12.2
+    - fastapi >=0.98.0
+    - httpx >=0.24.1
+    - jinja2 >=3.1.2
+    - jsonpatch >=1.33
+    - openai >=0.27.8,<1.0.0
+    - pydantic >=1.10.7
+    - rich >=12
+    - tiktoken >=0.4.0
+    - typer >=0.9.0
+    - tzdata >=2023.3
+    - uvicorn >=0.22.0
+
+test:
+  imports:
+    - marvin
+  commands:
+    - pip check
+    - marvin --help
+  requires:
+    - pip
+
+about:
+  summary: A lightweight AI engineering framework for building natural language interfaces that are reliable, scalable, and easy to trust.
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

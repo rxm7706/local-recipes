@@ -1,0 +1,43 @@
+{% set name = "grpcio-status" %}
+{% set version = "1.44.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/grpcio-status-{{ version }}.tar.gz
+  sha256: ac613ab7a45380cbfa3e529022d0b37317d858f172ba6e65c188aa7355539398
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python >=3.6
+    - pip
+  run:
+    - python >=3.6
+    - protobuf >=3.6.0
+    - grpcio >=1.44.0
+    - googleapis-common-protos >=1.5.5
+
+test:
+  imports:
+    - grpc_status
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://grpc.io
+  summary: Status proto mapping for gRPC
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

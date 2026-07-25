@@ -1,0 +1,48 @@
+{% set name = "opentelemetry-resourcedetector-gcp" %}
+{% set version = "1.12.0a0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name.replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: d5e3f78283a272eb92547e00bbeff45b7332a34ae791a70ab4eba81af9bc3baf
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - typing_extensions >=4.0,<5.dev0
+    - python >={{ python_min }}
+    - opentelemetry-api >=1.30,<2.dev0
+    - opentelemetry-sdk >=1.30,<2.dev0
+    - requests ~=2.24
+    - typing-extensions >=4.0,<5.dev0
+    # - typing_extensions ~=4.0
+
+test:
+  imports:
+    - opentelemetry
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/GoogleCloudPlatform/opentelemetry-operations-python/tree/main/opentelemetry-resourcedetector-gcp
+  summary: Google Cloud resource detector for OpenTelemetry
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

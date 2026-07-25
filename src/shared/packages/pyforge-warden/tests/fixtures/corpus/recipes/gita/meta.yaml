@@ -1,0 +1,47 @@
+{% set name = "gita" %}
+{% set version = "0.16.8.2" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/gita-{{ version }}.tar.gz
+  sha256: 064e5cbcfa5df76409cfd8e70142f8153f6ecc40fb35d3a28a0a04054d5fb3fd
+
+build:
+  entry_points:
+    - gita = gita.__main__:main
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - packaging
+    - python >={{ python_min }}
+    - argcomplete
+
+test:
+  imports:
+    - gita
+  commands:
+    - pip check
+    - gita --help
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/nosarthur/gita
+  summary: Manage multiple git repos with sanity
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

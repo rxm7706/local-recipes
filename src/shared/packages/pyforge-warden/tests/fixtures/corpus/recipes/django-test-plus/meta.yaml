@@ -1,0 +1,44 @@
+{% set name = "django-test-plus" %}
+{% set version = "2.4.1" %}
+{% set python_min = "3.10" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/django_test_plus-{{ version }}.tar.gz
+  sha256: 5bc0e2248c25020f7056056c4173250213f93464b4ceb6a53ab79804a1968d0d
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - hatchling
+    - pip
+  run:
+    - python >={{ python_min }}
+    - packaging
+
+test:
+  imports:
+    - test_plus
+  commands:
+    - pip check
+  requires:
+    - python {{ python_min }}
+    - pip
+
+about:
+  home: https://github.com/revsys/django-test-plus/
+  summary: "django-test-plus provides useful additions to Django's default TestCase"
+  license: BSD-3-Clause
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

@@ -1,0 +1,40 @@
+{% set name = "flash-attention" %}
+{% set version = "2.5.8" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://github.com/Dao-AILab/flash-attention/archive/v{{ version }}.tar.gz
+  sha256: df213e8875c5214374dd4ae20ff047c6a29bad650ef67228ce6e35c7750eb120
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python
+    - pytorch
+    - wheel
+    - psutil
+    - packaging
+    - pip
+  run:
+    - python
+
+test:
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

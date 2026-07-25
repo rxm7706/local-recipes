@@ -1,0 +1,41 @@
+{% set name = "django-nonefield" %}
+{% set version = "0.4" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/django-nonefield-{{ version }}.tar.gz
+  sha256: e1dff8437d69aacff5fcb0ef09a1a5c61f4ff64c150cdb0d55f0933c148a323f
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python
+    - pip
+  run:
+    - python
+    - django-nine >=0.1.13
+
+test:
+  imports:
+    - nonefield
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/barseghyanartur/django-nonefield/
+  summary: A None field for Django.
+  license: GPL-2.0-or-later
+  license_file: PLEASE_ADD_LICENSE_FILE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

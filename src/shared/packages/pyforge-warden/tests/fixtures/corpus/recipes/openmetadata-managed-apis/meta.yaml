@@ -1,0 +1,51 @@
+{% set name = "openmetadata-managed-apis" %}
+{% set version = "1.13.0.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/openmetadata_managed_apis-{{ version }}.tar.gz
+  sha256: b7046eceddf1f02387de5fb0a04f3a2aeaaf215b930bc2a5aff4bb03211ff188
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - setuptools >=70.3.0,<70.4.dev0
+    - pip
+  run:
+    - apache-airflow-providers-fab >=1.0.0
+    - packaging >=20.0
+    - python >={{ python_min }}
+    - pendulum >=3.0,<4.dev0
+    - apache-airflow >=2.2.2
+    - flask ==3.1.3
+    - flask-admin ==1.6.0
+    - apache-airflow-core >=3.0.2,<3.1.0
+    # Pip Check Error cryptography 46.0.1 has requirement cffi>=2.0.0; python_full_version >= "3.9" and platform_python_implementation != "PyPy", but you have cffi 1.17.1.
+
+test:
+  imports:
+    - openmetadata_managed_apis
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://open-metadata.org/
+  summary: Airflow REST APIs to create and manage DAGS
+  dev_url: https://github.com/open-metadata/OpenMetadata
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

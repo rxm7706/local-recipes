@@ -1,0 +1,45 @@
+{% set name = "pyyaml" %}
+{% set version = "6.0.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/PyYAML-{{ version }}.tar.gz
+  sha256: bfdf460b1736c775f2ba9f6a92bca30bc2095067b8a9d77876d1fad6cc3b4a43
+
+build:
+  skip: true  # [py2k]
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  build:
+    - {{ compiler('c') }}
+  host:
+    - python
+    - setuptools
+    - wheel
+    - cython <3.0
+    - pip
+  run:
+    - python
+
+test:
+  imports:
+    - yaml
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://pyyaml.org/
+  summary: YAML parser and emitter for Python
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

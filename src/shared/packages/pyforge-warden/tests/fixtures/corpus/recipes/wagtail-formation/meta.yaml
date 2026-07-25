@@ -1,0 +1,42 @@
+{% set name = "wagtail-formation" %}
+{% set version = "0.1.9" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/wagtail_formation-{{ version }}.tar.gz
+  sha256: 18bfea80fbb7fbc4b3790c5464231ad9c3c15b0a6e780f74b6f8e12ee0866dd3
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.6
+    - pip
+  run:
+    - python >=3.6
+    - cryptography ==39.0.0
+    - wagtail-generic-chooser ==0.5.1
+
+test:
+  imports:
+    - formation
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/mwesterhof/wagtail_formation
+  summary: Build forms from wagtail blocks
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

@@ -1,0 +1,83 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+# ⚠️ LOCAL-ONLY RECIPE — NOT FOR conda-forge/staged-recipes SUBMISSION
+# Reason: not published to PyPI; distribution name is
+# "background-segmentation-benchmark" — a research/benchmark project, not a
+# library. Heavy ML deps include `mediapipe` which IS NOT ON conda-forge
+# (the dep is loosened to pull via pip at runtime via runtime-only install
+# of the wheel). Recipe builds locally for the source-only Python package
+# but is not redistributable.
+#
+# Blocked-on (missing from conda-forge):
+#   - mediapipe (no conda-forge package; install via pip in target env)
+#
+# Other deps verified on conda-forge: numpy, opencv, torch, torchvision,
+# onnxruntime, transformers, tqdm, fvcore, imageio, imageio-ffmpeg,
+# streamlit, pandas.
+
+context:
+  version: "1.0.0"
+  commit: "fa9f16aa709196d4cbe8057f787b6c62c662670a"
+  python_min: "3.11"  # upstream pyproject.toml requires-python = ">=3.11"
+
+package:
+  name: suite-meet-matting
+  version: ${{ version }}
+
+source:
+  # GitHub repo ships no LICENSE; pull org-level MIT from suitenumerique/.github.
+  - url: https://github.com/suitenumerique/meet-matting/archive/${{ commit }}.tar.gz
+    sha256: 571143813fb78c4e1899b3eead3691eeef5d411e1e266cd829c51aef7ea41729
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - numpy
+    - opencv
+    - tqdm
+    - pytorch
+    - torchvision
+    - onnxruntime
+    - transformers
+    # mediapipe >=0.10.0 — NOT ON conda-forge; install via pip in target env.
+    - fvcore
+    - imageio
+    - imageio-ffmpeg
+    - streamlit
+    - pandas
+
+# CFEP-25-justified: ML/benchmark project with heavy deps (torch,
+# mediapipe) that the test env can't resolve. site_packages absent
+# (no clean top-level module).
+tests:
+  - script:
+      - python -c "import sys; print('package contents only — see install dir')"
+
+about:
+  homepage: https://github.com/suitenumerique/meet-matting
+  repository: https://github.com/suitenumerique/meet-matting
+  summary: Background-segmentation benchmark suite for La Suite Meet
+  description: |
+    meet-matting is a benchmark harness that compares background
+    segmentation/matting models (MediaPipe, RVM, MobileNetV3, …) for the
+    La Suite Meet client. Not a library API — a Streamlit-driven research
+    tool. Built locally for inspection; downstream consumers should still
+    pip-install mediapipe inside the target environment.
+
+    Distribution name: background-segmentation-benchmark.
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

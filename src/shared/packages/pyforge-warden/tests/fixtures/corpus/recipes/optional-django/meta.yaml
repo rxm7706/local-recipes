@@ -1,0 +1,40 @@
+{% set name = "optional-django" %}
+{% set version = "0.3.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/optional-django-{{ version }}.tar.gz
+  sha256: 2cd56b864ecf88e420aa882209ca7849114f38bc7089344cc9e476ea91aeb010
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python
+    - pip
+  run:
+    - python
+
+test:
+  imports:
+    - optional_django
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/markfinger/optional-django
+  summary: Utils for providing optional support for django
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

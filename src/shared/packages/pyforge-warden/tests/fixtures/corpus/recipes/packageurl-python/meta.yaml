@@ -1,0 +1,40 @@
+{% set name = "packageurl-python" %}
+{% set version = "0.12.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/packageurl-python-{{ version }}.tar.gz
+  sha256: 5b3d6c476cc61503c9c37f8a001b4878fd635ee995b20cb3b2310447c18d6304
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.7
+    - pip
+  run:
+    - python >=3.7
+
+test:
+  imports:
+    - packageurl
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/package-url/packageurl-python
+  summary: A purl aka. Package URL parser and builder
+  license: MIT
+  license_file: mit.LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

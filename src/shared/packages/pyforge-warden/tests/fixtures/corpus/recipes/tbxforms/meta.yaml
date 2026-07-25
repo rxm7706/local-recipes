@@ -1,0 +1,43 @@
+{% set name = "tbxforms" %}
+{% set version = "3.0.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/tbxforms-{{ version }}.tar.gz
+  sha256: 2d00bc5188649c744ca9ec85541c39d2d02e7a0e2d91cfdd7e5e3adae0cd1c61
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8,<4.0
+    - poetry-core ==1.8.1
+    - pip
+  run:
+    - python >=3.8.1,<4.0
+    - django >=3.2
+    - django-crispy-forms >=2.1,<3.0
+
+test:
+  imports:
+    - tbxforms
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/torchbox/tbxforms/
+  summary: A Torchbox-flavoured template pack for django-crispy-forms, adapted from crispy-forms-gds
+  license: BSD-2-Clause
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

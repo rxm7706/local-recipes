@@ -1,0 +1,85 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "4.2.4"
+
+package:
+  name: django-fsm-2
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/django-fsm-2/django_fsm_2-${{ version }}.tar.gz
+  sha256: 0e395afd03ff504afd476e8568ca213aafc3324bd4e5427e5b3287f7b1e7d979
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - django-stubs-ext
+    - django >=4.2.29
+    - typing_extensions
+
+tests:
+  - python:
+      imports:
+        - django_fsm
+        - fsm_admin
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/django-commons/django-fsm-2
+  license: MIT
+  license_file: LICENSE
+  summary: Django friendly finite state machine support.
+  description: |
+    Django friendly finite state machine support.
+  repository: https://github.com/django-commons/django-fsm-2
+  documentation: https://github.com/django-commons/django-fsm-2
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: django-fsm-2
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: django-fsm-2
+  cfe-purls:
+    - pkg:conda/django-fsm-2@${{ version }}?channel=conda-forge
+    - pkg:pypi/django-fsm-2@${{ version }}
+  cfe-upstream-repo: https://github.com/django-commons/django-fsm-2
+  cfe-upstream-homepage: https://github.com/django-commons/django-fsm-2
+  cfe-import-names: [django_fsm, fsm_admin]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django-fsm-2-feedstock
+  cfe-submission-pr: https://github.com/conda-forge/staged-recipes/pull/34042
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-07-04T21:06:13Z
+  cfe-generated-by-version: 8.66.0
+  cfe-generated-at-datetime: 2026-07-03T12:05:45Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-07-03T12:05:45Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # 2026-07-03 net-new prerequisite for django-fsm-log 5.0.2 (tracker punch-list chain).
+####

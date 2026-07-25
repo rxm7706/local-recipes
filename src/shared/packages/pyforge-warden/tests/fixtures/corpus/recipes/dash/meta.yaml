@@ -1,0 +1,91 @@
+{% set name = "dash" %}
+{% set version = "3.0.4" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/dash-{{ version }}.tar.gz
+  sha256: 4f9e62e9d8c5cd1b42dc6d6dcf211fe9498195f73ef0edb62a26e2a1b952a368
+
+build:
+  entry_points:
+    - dash-generate-components = dash.development.component_generator:cli
+    - renderer = dash.development.build_process:renderer
+    - dash-update-components = dash.development.update_components:cli
+  noarch: python
+  script:
+    - sed -i.bak "s/Flask>=1.0.4,<3.1/flask>=1.0.4/g" requirements/install.txt
+    - sed -i.bak "s/Werkzeug<3.1/werkzeug/g" requirements/install.txt
+    - {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  build:
+    - sed     # [unix]
+    - m2-sed  # [win]
+  host:
+    - python {{ python_min }}
+    - setuptools
+    - pip
+  run:
+    - python >={{ python_min }}
+    # https://github.com/plotly/dash/blob/v2.18.2/requirements/install.txt
+    - flask >=1.0.4
+    - werkzeug
+    - plotly >=5.0.0
+    - importlib-metadata
+    - typing_extensions >=4.1.1
+    - requests
+    - retrying
+    - nest-asyncio
+    - setuptools
+  run_constrained:
+    - dash-html-components >=2.0.0
+    - dash-core-components >=2.0.0
+    - dash_table >=5.0.0
+
+test:
+  requires:
+    - pytest
+    - python {{ python_min }}
+    - pip
+    - coloredlogs >=15.0.1
+    - fire >=0.4.0
+    - pyyaml >=5.4.1
+  imports:
+    - dash
+    - dash.dash
+    - dash.dependencies
+    - dash.exceptions
+    - dash.resources
+    - dash.dcc
+    - dash.html
+    - dash.dash_table
+    - dash.testing
+  commands:
+    - pytest test_not_found.py
+    - conda install -c conda-forge dash-html-components dash-core-components dash-table -y
+    - pytest test_warnings.py
+    - pip check
+    - dash-generate-components --help
+    - renderer --help
+    - dash-update-components --help
+  files:
+    - test_not_found.py
+    - test_warnings.py
+
+about:
+  home: https://plotly.com/dash
+  summary: A Python framework for building reactive web-apps. Developed by Plotly.
+  dev_url: https://github.com/plotly/dash
+  doc_url: https://dash.plotly.com
+  license_family: MIT
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - bandersen23
+    - moorepants

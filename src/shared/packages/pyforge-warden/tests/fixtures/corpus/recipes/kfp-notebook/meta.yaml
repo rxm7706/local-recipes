@@ -1,0 +1,55 @@
+{% set name = "kfp-notebook" %}
+{% set version = "3.15.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 1a83bb699bba23e41cd80e3f2a72f309b9fab96c2956a704be5dd00f24e3ce64
+
+build:
+  number: 0
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python >=3.8
+    - setuptools
+    - jupyter-packaging
+    - pip
+  run:
+    - python >=3.8
+    - kfp >=1.6.3
+# Not in Grayskull    
+    - click >=6.0
+    - bumpversion >=0.5.3
+    - wheel >=0.30.0
+    - watchdog >=0.8.3
+    - flake8 >=3.5.0
+    - tox >=2.9.1
+    - coverage >=4.5.1
+    - twine >=1.10.0
+
+
+test:
+  imports:
+    - kfp_notebook
+
+about:
+  home: https://github.com/elyra-ai/kfp-notebook
+  dev_url: https://github.com/elyra-ai/kfp-notebook
+  doc_url: https://github.com/elyra-ai/kfp-notebook/blob/master/README.md
+  doc_source_url: https://github.com/elyra-ai/kfp-notebook/tree/master/docs
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: KFP-Notebook is an operator that enable running notebooks as part of a Kubeflow Pipeline
+  description: >
+    KFP-Notebook is an operator that enable running notebooks as part of a Kubeflow Pipeline
+
+extra:
+  recipe-maintainers:
+    - akchinSTC
+    - lresende

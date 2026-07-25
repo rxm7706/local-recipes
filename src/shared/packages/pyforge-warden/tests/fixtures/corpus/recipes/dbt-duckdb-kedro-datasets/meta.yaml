@@ -1,0 +1,45 @@
+{% set name = "dbt-duckdb-kedro-datasets" %}
+{% set version = "0.1.2" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/dbt_duckdb_kedro_datasets-{{ version }}.tar.gz
+  sha256: 83186b64b9fb7f7dba47fa04c465736416bd2a8abbd518a8bc1bbf8566498379
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.11,<4.0
+    - poetry-core
+    - pip
+  run:
+    - python >=3.11.0,<4.0.0
+    - dbt-duckdb >=1.8.0,<2.0.0
+    - kedro-datasets >=3.0.0,<4.0.0
+    - pandas >=2.2.2,<3.0.0
+    - fastparquet >=2024.2.0,<2025.0.0
+
+test:
+  imports:
+    - dbt_duckdb_kedro_datasets
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  summary: Combine duckdb-dbt and Kedro Dataset to easily read Kedro Dataset configs (yaml), enabling conversion of Kedro projects to dbt.
+  home: https://github.com/conradbez/dbt-duckdb-kedro-datasets
+  license: ''
+  license_file: PLEASE_ADD_LICENSE_FILE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

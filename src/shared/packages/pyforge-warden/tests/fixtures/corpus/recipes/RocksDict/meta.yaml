@@ -1,0 +1,50 @@
+{% set name = "rocksdict" %}
+{% set version = "0.3.27" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://github.com/Congyuwang/RocksDict/archive/v{{ version }}.tar.gz
+  sha256: 6bd591e61f3828edb8d62e8582f6494d0e7f4c30e44b9ee826b4c69794aab6e5
+
+build:
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+  script_env:
+    - LIBCLANG_PATH=$BUILD_PREFIX/lib  # [not win]
+
+requirements:
+  build:
+    - {{ stdlib('c') }}
+    - {{ compiler('c') }}
+    - {{ compiler('cxx') }}
+    - {{ compiler('rust') }}
+    - clangdev
+  host:
+    - python
+    - maturin >=1.0,<2.0
+    - pip
+  run:
+    - python
+
+test:
+  imports:
+    - rocksdict
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/Congyuwang/RocksDict
+  doc_url: https://congyuwang.github.io/RocksDict/rocksdict.html
+  summary: Python fast on-disk dictionary; RocksDB & SpeeDB Python binding
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - thewchan
+    - rxm7706

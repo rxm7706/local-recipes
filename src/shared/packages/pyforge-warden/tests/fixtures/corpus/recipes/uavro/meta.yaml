@@ -1,0 +1,47 @@
+{% set name = "uavro" %}
+{% set version = "0.1.2" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/uavro-{{ version }}.tar.gz
+  sha256: 4c26012b9218ae07e81573958331c24a77e8964556fc768223aae4f11b647cdf
+
+build:
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  build:
+    - {{ compiler('c') }}
+  host:
+    - python
+    - numpy
+    - cython
+    - pip
+  run:
+    - python
+    - pandas
+    - cython
+    - fastparquet
+    - {{ pin_compatible('numpy') }}
+
+test:
+  imports:
+    - uavro
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/martindurant/uavro/
+  summary: Cython-optimized reader for tabular Avro data
+  license: MIT
+  license_file: LICENSE.txt
+
+extra:
+  recipe-maintainers:
+    - rxm7706

@@ -1,0 +1,40 @@
+{% set name = "wagtail-localize-openai-translator" %}
+{% set version = "0.3.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/wagtail_localize_openai_translator-{{ version }}.tar.gz
+  sha256: 72c222d0fc9e4ff4d1805fc79826c31d89be69cd0270a6ab2478d0e66f54241a
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.11
+    - pdm-backend
+    - pip
+  run:
+    - python >=3.11
+    - openai >=1.3.3
+
+test:
+  imports:
+    - wagtail_localize_openai_translator
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

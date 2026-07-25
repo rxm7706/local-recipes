@@ -1,0 +1,43 @@
+{% set name = "python-openid2" %}
+{% set version = "3.2" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/python-openid2-{{ version }}.tar.gz
+  sha256: 1df7c142522199685d5673df9a2ad0d51d4bba83d6b7ef67dac092670f032f22
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - pip
+  run:
+    - python >=3.8
+    - six
+    - cryptography
+    - lxml
+
+test:
+  imports:
+    - openid
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/ziima/python-openid
+  summary: Python OpenID library - OpenID support for servers and consumers.
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

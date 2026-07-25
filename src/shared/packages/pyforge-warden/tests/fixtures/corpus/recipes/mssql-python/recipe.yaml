@@ -1,0 +1,55 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: mssql-python
+  version: "0.12.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/microsoft/mssql-python/archive/v${{ version }}-preview.tar.gz
+  sha256: 341bdd5465b5101f1282646c73a2779179f12716d89e2b8747ba7e574e24fdf5
+
+build:
+  number: 0
+  noarch: python
+  always_copy_files:
+    - 'ddbc.cp*.pyd'  # Include all PYD files
+    - 'ddbc*.so'  # Include all SO files
+    - 'libs/*'
+    - 'libs/**/*'
+    - '*.dll'
+    - '*.so'
+    - '*.pyd'
+    - 'ddbc*'
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - setuptools
+    - wheel
+    - pip
+  run:
+    - python >=${{ python_min }},<4.0
+    - azure-identity >=1.12.0
+
+tests:
+  - python:
+      imports:
+        - mssql_python
+      pip_check: true
+      python_version: ${{ python_min }}.*
+
+about:
+  summary: " Microsoft Python Driver for SQL Server"
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/microsoft/mssql-python
+
+extra:
+  recipe-maintainers:
+    - rxm7706

@@ -1,0 +1,196 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "6.0.0b1"
+  python_min: "3.11"
+
+package:
+  name: reactpy-django
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/r/reactpy-django/reactpy_django-${{ version }}.tar.gz
+  sha256: 3cdcb0d0a827aedb5002c63ae991995db05b7458336ecc973c65fc3939509501
+  patches:
+    - patches/0001-use-prebuilt-js-assets.patch
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - channels >=4.0.0
+    - django >=4.2.0
+    - reactpy >=2.0.0b13,<3.0.0
+    - reactpy-router >=3.0.0b1,<4.0.0
+    - dill >=0.3.5
+    - orjson >=3.6.0
+    - typing_extensions
+
+# CFEP-25-justified: Django app — a bare `import reactpy_django` raises
+# ImproperlyConfigured because reactpy_django.config reads settings.DEBUG at
+# module scope. The script tests below configure settings first and then import
+# for real, on python_min and on the newest Python, keeping pip check on both.
+tests:
+  - script:
+      - python -c "from django.conf import settings; settings.configure(DEBUG=False); import reactpy_django; print(reactpy_django.__version__)"
+      - pip check
+    requirements:
+      run:
+        - pip
+        - python ${{ python_min }}.*
+  - script:
+      - python -c "from django.conf import settings; settings.configure(DEBUG=False); import reactpy_django; print(reactpy_django.__version__)"
+      - pip check
+    requirements:
+      run:
+        - pip
+        - python
+  - package_contents:
+      site_packages:
+        - reactpy_django/static/reactpy_django/index.js
+        - reactpy_django/static/reactpy_django/morphdom/morphdom.js
+
+about:
+  summary: It's React, but in Python. Now with Django integration
+  description: |
+    ReactPy-Django integrates ReactPy into Django projects. It provides a
+    Django template tag for embedding ReactPy components in Django templates,
+    a websocket consumer, ORM-aware hooks for querying and mutating models,
+    per-component state, and optional client-side execution via PyScript.
+  license: MIT AND Apache-2.0
+  license_file:
+    - LICENSE.md
+    - src/js/node_modules/@reactpy/client/LICENSE
+    - src/js/node_modules/preact/LICENSE
+    - src/js/node_modules/event-to-object/LICENSE
+    - src/js/node_modules/json-pointer/LICENSE
+    - src/js/node_modules/morphdom/LICENSE
+    - src/js/node_modules/@pyscript/core/LICENSE
+    - src/js/node_modules/@pyscript/core/src/3rd-party-licenses/
+  repository: https://github.com/reactive-python/reactpy-django
+  homepage: https://reactive-python.github.io/reactpy-django/
+  documentation: https://reactive-python.github.io/reactpy-django/
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: reactpy-django
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: reactpy-django
+  cfe-purls:
+    - pkg:conda/reactpy-django@${{ version }}?channel=conda-forge
+    - pkg:pypi/reactpy-django@${{ version }}
+  cfe-upstream-repo: https://github.com/reactive-python/reactpy-django
+  cfe-upstream-homepage: https://reactive-python.github.io/reactpy-django/
+  cfe-import-names: [reactpy_django]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: local-only-pending-submission-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - "6.0.0b1 is a PRE-RELEASE whose whole dependency chain is also pre-release: it pins reactpy>=2.0.0b13 and reactpy-router>=3.0.0b1, neither of which is on the conda-forge channel. Not submittable until those go stable."
+    - "transitively blocked on asgi-tools + http-router, neither on conda-forge (http-router additionally ships no license file anywhere)."
+  cfe-last-checked: 2026-07-14T00:00:00Z
+  cfe-generated-by-version: 8.77.0
+  cfe-generated-at-datetime: 2026-07-14T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-07-14T20:35:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    LOCAL-ONLY, and the TARGET of the effort. Final link of the chain:
+#    http-router -> asgi-tools -> reactpy 2.0.0b13 -> reactpy-router 3.0.0b1 ->
+#    reactpy-django 6.0.0b1. Authored fresh; the prior local recipe was at 5.2.1
+#    (the v1 line: reactpy<2.0.0, reactpy-router<2.0.0, plus a nest-asyncio dep
+#    that 6.x dropped) and was ignored per operator direction.
+# context:
+#  python_min:
+#    3.11 -- and NOT the 3.9 that upstream's own requires-python declares. This
+#    is G41: the declared floor is aspirational, and the REAL floor is the max of
+#    the transitive hard floors. reactpy 2.0.0b13 and reactpy-router 3.0.0b1 both
+#    require >=3.11, so reactpy-django 6.0.0b1 cannot actually run on 3.9/3.10
+#    despite what its metadata says. Trusting >=3.9 would ship a package whose
+#    3.10 install can never solve.
+# source:
+#    PyPI sdist, verified usable per G54 (62 .py files). Note this sdist is
+#    unusual: it vendors the ENTIRE src/js/node_modules/ tree, which is why the
+#    license story below is non-trivial.
+#  patches:
+#    0001-use-prebuilt-js-assets.patch removes the build-scripts hook, whose
+#    commands are `bun install` + `bun build --minify` + two copy_dir.py steps
+#    that stage @pyscript/core/dist and morphdom/dist into the static tree.
+#    The sdist ALREADY ships that hook's complete output: 64 files under
+#    src/reactpy_django/static/, exactly matching the 64 under
+#    reactpy_django/static/ in upstream's own published wheel. So the hook would
+#    only regenerate what we already have, at the cost of a bun toolchain.
+#    Safe to remove because the hook declares `artifacts = []`: hatch-build-
+#    scripts' default clean_artifacts=True then matches nothing and deletes
+#    nothing (contrast the reactpy recipe, whose hook DOES declare artifacts and
+#    therefore deleted its prebuilt wheel). The static tree is gitignored, but the
+#    wheel target's artifacts=["/src/reactpy_django/static/"] un-excludes it.
+#    hatch-build-scripts is therefore NOT in host: hatchling never loads the
+#    plugin once the hook config is gone.
+# requirements:
+#  run:
+#    Exactly the 7 PEP 621 [project].dependencies. nest-asyncio, present in the
+#    5.2.1 recipe, is NOT a 6.x dependency -- do not carry it over.
+#    No extras flatten is needed here (G25): unlike reactpy-router, this package
+#    requests plain `reactpy`, not reactpy[asgi]. The asgi extra still reaches the
+#    environment transitively via reactpy-router's own flattened run deps.
+# tests:
+#    NOT the CFEP-25 python.imports triad -- this is the documented Django escape
+#    hatch. Verified empirically: a bare `import reactpy_django` fails with
+#    "ImproperlyConfigured: Requested setting DEBUG, but settings are not
+#    configured", because the import chain reaches reactpy_django/config.py which
+#    does `DJANGO_DEBUG = settings.DEBUG` at module scope.
+#    Rather than fall back to a package_contents-only test (the usual escape
+#    hatch, which verifies nothing about importability), the script tests probe
+#    the real thing: settings.configure(DEBUG=False) is sufficient to make the
+#    import succeed -- confirmed in the failed run's surviving test_env, where it
+#    returned 6.0.0b1. django.setup() with INSTALLED_APPS also works but needs a
+#    DATABASES dict and emits reactpy's "did not find any components" app-check
+#    warning, so the minimal configure() is used.
+#    Two script tests rather than one so the python_min and newest-Python legs are
+#    both covered (what the CFEP-25 triad would have given), and `pip check` runs
+#    on both -- which is what actually validates the reactpy / reactpy-router /
+#    flattened-asgi dep graph. The test reqs pin python explicitly; without it the
+#    solver would silently resolve only the newest interpreter.
+#    package_contents guards the built JS for the same reason as the siblings: the
+#    import and pip check both pass on an asset-less build (G73), but the Django
+#    integration is useless without index.js. index.js is the bun bundle;
+#    morphdom.js proves the copy_dir-staged vendor tree survived too.
+# about:
+#  license / license_file:
+#    Deliberately narrowed. The 5.2.1 recipe declared
+#    "BSD-2-Clause AND Apache-2.0 AND MIT AND EPL-2.0 AND BSD-3-Clause" and
+#    enumerated ~200 node_modules LICENSE files. That was over-broad: it swept in
+#    eslint / prettier / typescript / @types/* and their transitive deps, which
+#    are devDependencies and never reach the shipped artifact -- hence the
+#    spurious EPL-2.0 and BSD-* terms.
+#    What actually ships is src/js/package.json's 3 runtime dependencies plus
+#    what bun inlines into index.js. Verified from the built wheel + package.json:
+#      @pyscript/core (Apache-2.0)  -> staged as static/reactpy_django/pyscript/
+#      morphdom (MIT)               -> staged as static/reactpy_django/morphdom/
+#      @reactpy/client (MIT)        -> inlined into index.js, and it pulls in
+#        preact (MIT), event-to-object (MIT), json-pointer (MIT), also inlined.
+#    @pyscript/core's dist further bundles codemirror / xterm / toml (all MIT)
+#    and ships their texts in src/3rd-party-licenses/, so that directory is
+#    included wholesale.
+#    Net SPDX: MIT AND Apache-2.0 (Apache-2.0 solely from @pyscript/core).
+####

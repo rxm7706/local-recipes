@@ -1,0 +1,131 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.0.73"
+  python_min: "3.11"
+
+package:
+  name: opik
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/o/opik/opik-${{ version }}.tar.gz
+  sha256: c843f60719adfada1ece49dff51a3562ec28baa7ab7f4492d177b06b7e591b09
+  patches:
+    # opik's PyPI sdist is the comet-ml/opik monorepo sub-SDK; its setup.py reads
+    # ../../README.md (absent from the sdist). Patch long_description="" so
+    # metadata generation succeeds. (Version comes from the VERSION env below.)
+    - patches/0001-neutralize-out-of-tree-readme.patch
+
+build:
+  number: 0
+  noarch: python
+  script: |
+    export VERSION="${PKG_VERSION}"
+    ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - boto3-stubs >=1.34.110
+    - mypy-boto3-bedrock-runtime >=1.43.0,<1.44.0
+    - click
+    - httpx
+    - rapidfuzz >=3.0.0,<4.0.0
+    - litellm >=1.79.2,!=1.81.*,!=1.82.*,!=1.83.0,!=1.83.1,!=1.83.2,!=1.83.3,!=1.83.4,!=1.83.5,!=1.83.6
+    - openai
+    - pydantic-settings >=2.0.0,<3.0.0,!=2.9.0
+    - pydantic >=2.0.0,<3.0.0
+    - pytest
+    - rich
+    - sentry-sdk >=2.0.0
+    - tenacity
+    - tqdm
+    - uuid6
+    - jinja2
+    - watchfiles >=1.0.0,<2.0.0
+    - tree_sitter >=0.23,<1.0
+    - tree-sitter-javascript >=0.23,<1.0
+    - tree-sitter-typescript >=0.23,<1.0
+
+tests:
+  - python:
+      imports:
+        - opik
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/opik/
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Comet tool for logging and evaluating LLM traces
+  repository: https://github.com/comet-ml/opik
+  documentation: https://www.comet.com/docs/opik/
+  description: |
+    Opik is an open-source platform from Comet for evaluating, testing, and
+    monitoring LLM applications. This package provides the Python SDK for
+    logging and evaluating LLM traces, running evaluations, and integrating
+    Opik observability into LLM workflows.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: opik
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: opik
+  cfe-purls:
+    - pkg:conda/opik@${{ version }}?channel=conda-forge
+    - pkg:pypi/opik@${{ version }}
+  cfe-upstream-repo: https://github.com/comet-ml/opik
+  cfe-upstream-homepage: https://www.comet.com
+  cfe-import-names: [opik]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: pending-approval-on-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-submission-pr: https://github.com/conda-forge/staged-recipes/pull/33937
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []   # mypy-boto3-bedrock-runtime now on conda-forge (#33918 merged)
+  cfe-last-checked: 2026-06-26T12:00:00Z
+  cfe-generated-by-version: 8.30.1
+  cfe-generated-at-datetime: 2026-06-19T13:36:19Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-26T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# context:
+#    # python_min 3.11 (upstream declares >=3.10): on osx-64, conda-forge's
+#    # fastuuid (pulled via litellm) ships no py3.10 build, so this noarch
+#    # package can't install on osx-64 + py3.10 — 3.11 is the honest floor (G40).
+# source/build:
+#    # The standalone PyPI sdist is a sub-SDK of the comet-ml/opik monorepo
+#    # (sdks/python/); its setup.py reads ../../README.md and ../../version.txt
+#    # which are absent from the sdist. VERSION is pinned via env (setup.py reads
+#    # $VERSION); the out-of-tree README read is neutralized via
+#    # patches/0001-neutralize-out-of-tree-readme.patch (was a fragile inline
+#    # python re.sub — now a clean source patch per G59).
+# requirements:
+#  run:
+#    # boto3-stubs[bedrock-runtime] flattened per G25 (conda has no extras).
+#    # pytest is an upstream base install_requires dep, not dev-only:
+#    # opik registers a pytest11 plugin entry point (opik.plugins.pytest.hooks).
+#    # tree_sitter/-javascript/-typescript: upstream's PEP 508 marker excludes
+#    # them on linux-aarch64 (musllinux_aarch64 wheel gap), but conda-forge ships
+#    # all three on ALL platforms incl. linux-aarch64 — the per-platform selector
+#    # was a wheel-vs-conda artifact (G35), so they are listed UNCONDITIONALLY
+#    # (no noarch selector → no conda-forge.yml/noarch_platforms needed).
+####

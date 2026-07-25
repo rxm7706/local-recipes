@@ -1,0 +1,44 @@
+{% set name = "dbt-teradata" %}
+{% set version = "1.3.3.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/dbt-teradata-{{ version }}.tar.gz
+  sha256: 15e10b1f69bad969e08e96ed03f66916b612cf2ac5d387e29dbbf068937e2ba8
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+  run:
+    - python >={{ python_min }}
+    - dbt-core ==1.3.3
+    - teradatasql >=16.20.0.0
+
+test:
+  imports:
+    - dbt.adapters.teradata
+    - dbt.include.teradata
+  commands:
+    - pip check
+  requires:
+    - python {{ python_min }}
+    - pip
+
+about:
+  home: https://github.com/Teradata/dbt-teradata
+  summary: The Teradata adapter plugin for dbt (data build tool)
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

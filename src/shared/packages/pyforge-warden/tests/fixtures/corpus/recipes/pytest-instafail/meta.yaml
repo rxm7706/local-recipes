@@ -1,0 +1,41 @@
+{% set name = "pytest-instafail" %}
+{% set version = "0.5.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/pytest-instafail-{{ version }}.tar.gz
+  sha256: 33a606f7e0c8e646dc3bfee0d5e3a4b7b78ef7c36168cfa1f3d93af7ca706c9e
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.7
+    - pip
+  run:
+    - python >=3.7
+    - pytest >=5
+
+test:
+  imports:
+    - pytest_instafail
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/pytest-dev/pytest-instafail
+  summary: pytest plugin to show failures instantly
+  license: BSD-3-Clause
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

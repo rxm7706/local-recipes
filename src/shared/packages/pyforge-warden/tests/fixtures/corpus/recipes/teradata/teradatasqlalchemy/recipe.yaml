@@ -1,0 +1,68 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: teradatasqlalchemy
+  version: "20.0.0.6"
+  python_min: "3.10"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/py3/t/teradatasqlalchemy/teradatasqlalchemy-${{ version }}-py3-none-any.whl
+  sha256: 65cdabc1f1579a2adfbe6a08d1c35fc7bb4d5ad583c56bfc1423f10d1256bdd8
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install --find-links . --no-index --ignore-installed -vv --no-deps --no-build-isolation teradatasqlalchemy
+  python:
+      version_independent: true
+      entry_points:
+      - sqlalchemy.dialects = teradatasqlalchemy.dialect:TeradataDialect
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - setuptools >=38.0
+    - wheel
+    - pip
+  run:
+    - python >=${{ python_min }},<4.0
+    - sqlalchemy >=1.4.0
+    - pycryptodome
+    - teradatasql >=17.0.0.2
+
+tests:
+  - python:
+      imports:
+        - sqlalchemy
+        - teradatasql
+        - teradatasqlalchemy
+      pip_check: true
+      python_version: ${{ python_min }}.*
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}.*
+    script:
+      - pip check
+      - python -c "import teradatasql; print(teradatasql.__version__)"
+      - python -c "import sqlalchemy; print(sqlalchemy.__version__)"
+      - python -c "import teradatasqlalchemy; print(teradatasqlalchemy.__version__)"
+
+about:
+  summary: Teradata SQL Driver Dialect for SQLAlchemy
+  documentation: https://github.com/Teradata/python-driver
+  homepage: http://www.teradata.com
+  license: 'LicenseRef-Proprietary'
+  license_file:
+    - LICENSE
+
+extra:
+  recipe-maintainers:
+    - Teradata
+  copy_test_source_files: true
+  final: true

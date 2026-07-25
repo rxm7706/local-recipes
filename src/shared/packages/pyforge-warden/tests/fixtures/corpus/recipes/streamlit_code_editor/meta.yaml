@@ -1,0 +1,41 @@
+{% set name = "streamlit_code_editor" %}
+{% set version = "0.1.10" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/streamlit-code-editor-{{ version }}.tar.gz
+  sha256: 0d3036333ace39dd01ef44c02f1dfe86283d56e82a41c702d1f928f782dfb031
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.6
+    - pip
+  run:
+    - python >=3.6
+    - streamlit >=0.63
+
+test:
+  imports:
+    - code_editor
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/bouzidanas/streamlit-code-editor
+  summary: React-ace editor customized for Streamlit
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

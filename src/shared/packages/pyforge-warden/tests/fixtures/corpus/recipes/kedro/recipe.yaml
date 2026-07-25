@@ -1,0 +1,92 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.5.0"
+
+package:
+  name: kedro
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/k/kedro/kedro-${{ version }}.tar.gz
+  sha256: dc2d560279689fd5548abf620e330a1c4e7e4603e9543de8775efcd4e9c149b4
+
+build:
+  number: 0
+  python:
+    entry_points:
+      - kedro = kedro.framework.cli:main
+  noarch: python
+  script:
+    env:
+      WARNINGS: "ignore::kedro.KedroPythonVersionWarning"
+      PYTHONWARNINGS: "ignore::UserWarning"
+    content:
+      - "${{ PYTHON }} -m pip install -vv --use-pep517 --no-deps --no-build-isolation ."
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - setuptools >=65.5.1
+    - pip
+  run:
+    - python >=${{ python_min }},<4.0
+    - attrs >=21.3
+    - python-build >=0.7.0
+    - click >=8.2
+    - cookiecutter >=2.1.1,<3.0
+    - dynaconf >=3.1.2,<4.0
+    - fsspec >=2021.4
+    - gitpython >=3.0
+    - kedro-telemetry >=0.5.0
+    - more-itertools >=8.14.0  # Added for more_itertools
+    - omegaconf >=2.1.1
+    - parse >=1.19.0
+    - pluggy >=1.0
+    - pyyaml >=4.2,<7.0
+    - rich >=12.0,<16.0
+    - tomli >=1.1.0  #- toml >=0.10.0  # Added Manually Earlier
+    - tomli-w
+    - typing_extensions >=4.0
+
+tests:
+  - python:
+      imports:
+        - kedro
+        - kedro_benchmarks
+      pip_check: true
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}.*
+    script:
+      env:
+        WARNINGS: "ignore::kedro.KedroPythonVersionWarning"
+        PYTHONWARNINGS: "ignore::UserWarning"
+      interpreter: python
+      content: |
+        import kedro
+
+about:
+  summary: Kedro helps you build production-ready data and analytics pipelines.
+  homepage: https://kedro.org/
+  description: |
+    A Python framework for creating reproducible, maintainable and modular data science code.
+  repository: https://github.com/kedro-org/kedro
+  documentation: https://kedro.readthedocs.io/
+  license: Apache-2.0
+  license_file:
+    - LICENSE.md
+
+extra:
+  recipe-maintainers:
+    - marcelotrevisani
+    - yetudada
+    - idanov
+    - merelcht
+    - noklam
+    - SajidAlamQB
+    - lrcouto
+    - DimedS
+    - ElenaKhaustova

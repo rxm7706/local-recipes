@@ -1,0 +1,75 @@
+{% set name = "seldon-core" %}
+{% set version = "1.17.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/seldon-core-{{ version }}.tar.gz
+  sha256: d9e32a16a98b779be01868d307e824d4080c0da37ffd37439f048825899f8850
+
+build:
+  #skip: true  # [py2k]
+  noarch: python
+  entry_points:
+    - seldon-core-microservice = seldon_core.microservice:main
+    - seldon-core-tester = seldon_core.microservice_tester:main
+    - seldon-core-microservice-tester = seldon_core.microservice_tester:main
+    - seldon-core-api-tester = seldon_core.api_tester:main
+    - seldon-batch-processor = seldon_core.batch_processor:run_cli
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8,<4.0
+    - pip
+  run:
+    - python >=3.8,<4.0
+    - flask >=2.0.0,<3.0.0
+    - jsonschema <4.0.0
+    - flask-cors <4.0.0
+    - requests <3.0.0
+    - numpy <2.0.0
+    - protobuf >=3.20.2,<4.0.0
+    - grpcio <2.0.0
+    - flask-opentracing >=1.1.0,<1.2.0
+    - opentracing >=2.2.0,<2.5.0
+    - jaeger-client >=4.1.0,<4.5.0
+    - grpcio-opentracing >=1.1.4,<1.2.0
+    - grpcio-reflection <2.0.0
+    - gunicorn >=19.9.0,<20.2.0
+    - setuptools >=65.5.1
+    - prometheus_client >=0.7.1,<0.9.0
+    - werkzeug >=2.1.1,<2.3
+    - cryptography >=39.0.1,<41.1
+    - pyyaml >=5.4,<=6.0.1
+    - click >=8.0.0a1,<8.1
+    - urllib3 >=1.26.5,<1.27
+    #- importlib-metadata <5  # [py<38]
+
+test:
+  imports:
+    - seldon_core
+  commands:
+    - pip check
+    - seldon-core-microservice --help
+    - seldon-core-tester --help
+    - seldon-core-microservice-tester --help
+    - seldon-core-api-tester --help
+    - seldon-batch-processor --help
+  requires:
+    - pip
+
+about:
+  home: https://github.com/SeldonIO/seldon-core
+  summary: Seldon Core client and microservice wrapper
+  license: Apache-2.0
+  license_file:
+    - LICENSE
+    - licenses/license.txt
+
+extra:
+  recipe-maintainers:
+    - rxm7706

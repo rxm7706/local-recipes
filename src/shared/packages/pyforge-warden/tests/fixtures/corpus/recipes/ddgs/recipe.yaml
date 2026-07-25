@@ -1,0 +1,102 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "9.14.4"
+
+package:
+  name: ddgs
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/ddgs/ddgs-${{ version }}.tar.gz
+  sha256: f7b118a2b709a9e9c04a1dca6e96b98c25d4dfaca1a4b0a244d74454fcca48ef
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - ddgs = ddgs.cli:safe_entry_point
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - setuptools
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - click >=8.1.8
+    - primp >=1.2.3
+    - lxml >=4.9.4
+    - httpx >=0.28.1
+    - brotli
+    - h2 >=3,<5
+    - socksio
+    - fake-useragent >=2.2.0
+
+tests:
+  - python:
+      imports:
+        - ddgs
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}.*
+    script:
+      - ddgs --help
+
+about:
+  homepage: https://github.com/deedy5/ddgs
+  repository: https://github.com/deedy5/ddgs
+  documentation: https://github.com/deedy5/ddgs/blob/main/README.md
+  license: MIT
+  license_file: LICENSE.md
+  summary: Dux Distributed Global Search. A metasearch library that aggregates results from diverse web search services.
+  description: |
+    DDGS (Dux Distributed Global Search) is a metasearch library that
+    aggregates results from diverse web search services.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: ddgs
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: ddgs
+  cfe-purls:
+    - pkg:conda/ddgs@${{ version }}?channel=conda-forge
+    - pkg:pypi/ddgs@${{ version }}
+  cfe-upstream-repo: https://github.com/deedy5/ddgs
+  cfe-upstream-homepage: https://github.com/deedy5/ddgs
+  cfe-import-names: [ddgs]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/ddgs-feedstock
+  cfe-submission-pr: https://github.com/conda-forge/staged-recipes/pull/33896
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-07-04T21:06:13Z
+  cfe-generated-by-version: 8.34.0
+  cfe-generated-at-datetime: 2026-06-19T20:25:00Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-06-20T01:20:23Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# requirements:
+#  run:
+#    # httpx[brotli,http2,socks] extra flattened per G25: brotli (CPython
+#    # impl of httpx's brotli extra), h2 >=3,<5 (http2 extra), socksio
+#    # (socks extra). httpx base dep kept as-is.
+####

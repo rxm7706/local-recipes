@@ -1,0 +1,43 @@
+{% set name = "django-linear-migrations" %}
+{% set version = "2.19.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/django_linear_migrations-{{ version }}.tar.gz
+  sha256: 5436a7d980ceb65b936a87bac5461bcce68ea24e03cd804f284ea91565589e1b
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 1
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - setuptools
+    - pip
+  run:
+    - python >={{ python_min }}
+    - django >=3.2
+
+test:
+  imports:
+    - django_linear_migrations
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/adamchainz/django-linear-migrations
+  summary: Ensure your migrations are linear.
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

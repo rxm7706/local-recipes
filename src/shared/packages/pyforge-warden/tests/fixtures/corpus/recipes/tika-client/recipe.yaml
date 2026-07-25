@@ -1,0 +1,82 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.11.0"
+
+package:
+  name: tika-client
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/t/tika-client/tika_client-${{ version 
+    }}.tar.gz
+  sha256: c741caaca08bbd715a8db3fe6f0430a54d075fef3d59a441e8b8d810f58de4f0
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - anyio <5,>=4.12
+    - httpx <1,>=0.28
+    - typing_extensions
+
+tests:
+  - python:
+      imports:
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/tika-client/
+  license: MPL-2.0
+  license_file: LICENSE.txt
+  summary: A modern REST client for Apache Tika server
+  description: |
+    A modern REST client for Apache Tika server
+  repository: https://github.com/stumpylog/tika-client
+  documentation: https://github.com/stumpylog/tika-rest-client#readme
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: tika-client
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: tika-client
+  cfe-purls:
+    - pkg:conda/tika-client@${{ version }}?channel=conda-forge
+    - pkg:pypi/tika-client@${{ version }}
+  cfe-upstream-repo: https://github.com/stumpylog/tika-client
+  cfe-upstream-homepage: https://github.com/stumpylog/tika-client
+  cfe-import-names: [tika_client]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/tika-client-feedstock
+  cfe-forge-recipe-updates-needed: [version-bump-to-0.11.0]
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-07-03T04:00:00Z
+  cfe-generated-by-version: 8.65.0
+  cfe-generated-at-datetime: 2026-07-03T04:00:00Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-07-03T04:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # 2026-07-03 punch-list full-gate pass (tracker issue -> local verification).
+####

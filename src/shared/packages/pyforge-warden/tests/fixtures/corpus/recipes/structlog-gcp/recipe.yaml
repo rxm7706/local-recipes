@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: structlog-gcp
+  version: "0.5.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/structlog_gcp-${{ version }}.tar.gz
+  sha256: 361da96886023e6fb8fa49f60f5278aff666820c8987534ca61e091b32047592
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - hatchling
+    - pip
+  run:
+    - python >=${{ python_min }},<4.0
+    - structlog
+
+tests:
+  - python:
+      imports:
+        - structlog_gcp
+      pip_check: true
+      python_version: ${{ python_min }}.*
+
+about:
+  summary: A structlog set of processors to output as Google Cloud Logging format
+  license: MIT
+  license_file: LICENSE
+  repository: https://github.com/multani/structlog-gcp
+  homepage: https://github.com/multani/structlog-gcp
+
+extra:
+  recipe-maintainers:
+    - rxm7706

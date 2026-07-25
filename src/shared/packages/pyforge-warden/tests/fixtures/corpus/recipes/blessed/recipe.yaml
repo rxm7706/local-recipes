@@ -1,0 +1,78 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: blessed
+  version: "1.22.0"
+  python_check_max: 3.13
+  noarch_dep: |-
+    ${{ "python" if noarch_platform == "linux" }}
+    ${{ "python" if noarch_platform == "osx" }}
+    ${{ "jinxed >=1.1.0" if noarch_platform == "win" }}
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/blessed-${{ version }}.tar.gz
+  sha256: 1818efb7c10015478286f21a412fcdd31a3d8b94a18f6d926e733827da7a844b
+
+build:
+
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - __${{ noarch_platform }}
+    - python >=${{ python_min }}
+    - wcwidth >=0.1.4
+    - ${{ noarch_dep }}
+tests:
+  - python:
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - ${{ python_check_max }}.*
+      imports:
+        - blessed
+        - ${{ "jinxed" if noarch_platform == "win" }}
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}.*
+    script:
+      env:
+        DISPLAY: :1
+      content:
+        - pip check
+        - echo "Test Script Imports for unix and windows Started"
+        - if: noarch_platform  != "win"
+          then:
+            - echo "Test Script Importing blessed and terminal for unix and windows"
+            - python -c "from blessed import Terminal; assert Terminal"
+            - python -c "assert __import__('blessed').__version__ == '${{ version }}'"
+          else:
+            - echo "Test Script Importing jinxed, blessed and terminal for windows"
+            - python -c "from jinxed import setupterm; assert setupterm"
+            - python -c "from blessed import Terminal; assert Terminal"
+            - python -c "assert __import__('blessed').__version__ == '${{ version }}'"
+        - echo "Test Script Imports for unix and windows Completed"
+
+about:
+  summary: Easy, practical library for making terminal apps, by providing an elegant, well-documented interface to Colors, Keyboard input, and screen Positioning capabilities.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/jquast/blessed
+
+extra:
+  recipe-maintainers:
+    - mattip
+    - hadim
+    - rxm7706

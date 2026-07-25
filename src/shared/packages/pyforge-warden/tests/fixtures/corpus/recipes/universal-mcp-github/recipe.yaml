@@ -1,0 +1,54 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: universal-mcp-github
+  version: "0.1.2"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/universal_mcp_github-${{ version }}.tar.gz
+  sha256: 799d7b4ead70cb21c1edb8d4a09fb9749fd151363edc1ee76cc75fb330b251ff
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - universal_mcp_github = universal_mcp_github:main
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - hatchling
+    - pip
+  run:
+    - python >=${{ python_min }},<4.0
+    - universal-mcp >=0.1.20
+
+tests:
+  - python:
+      imports:
+        - universal_mcp_github
+      pip_check: true
+      python_version: ${{ python_min }}.*
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}.*
+    script:
+      - universal_mcp_github --help
+
+about:
+  summary: "A Universal MCP Application: universal_mcp_github"
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/universal-mcp/github
+
+extra:
+  recipe-maintainers:
+    - rxm7706

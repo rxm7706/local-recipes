@@ -1,0 +1,58 @@
+{% set name = "lupa" %}
+{% set version = "2.6" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/lupa-{{ version }}.tar.gz
+  sha256: 9a770a6e89576be3447668d7ced312cd6fd41d3c13c2462c9dc2c2ab570e45d9
+
+build:
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  build:
+    - cmake
+    - make
+    - {{ stdlib('c') }}
+    - {{ compiler('c') }}
+    - {{ compiler('cxx') }}
+    - gcc  # [linux]
+  host:
+    - python
+    - cython      # >=3.1.6
+    - setuptools
+    - wheel
+    - pip
+    - lua
+    - luajit
+  run:
+    - python
+
+test:
+  imports:
+    - lupa
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/scoder/lupa
+  summary: Python wrapper around Lua and LuaJIT
+  license: MIT
+  license_file:
+    - LICENSE.txt
+    - third-party/lua51/COPYRIGHT
+    - third-party/luajit20/COPYRIGHT
+    - third-party/luajit21/COPYRIGHT
+
+extra:
+  recipe-maintainers:
+    - lincrosenbach
+    - mv-per
+    - brnomendes
+    - mediocretech

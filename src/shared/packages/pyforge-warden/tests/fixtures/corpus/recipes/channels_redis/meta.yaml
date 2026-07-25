@@ -1,0 +1,44 @@
+{% set name = "channels_redis" %}
+{% set version = "4.2.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/channels_redis-{{ version }}.tar.gz
+  sha256: 01c26c4d5d3a203f104bba9e5585c0305a70df390d21792386586068162027fd
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - pip
+  run:
+    - python >=3.8
+    - redis-py >=4.6
+    - msgpack-python >=1.0,<2.dev0
+    - asgiref >=3.2.10,<4
+    - channels
+
+test:
+  imports:
+    - channels_redis
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: http://github.com/django/channels_redis/
+  summary: Redis-backed ASGI channel layer implementation
+  license: BSD-3-Clause
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

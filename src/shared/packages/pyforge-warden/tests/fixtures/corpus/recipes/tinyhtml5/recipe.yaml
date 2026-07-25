@@ -1,0 +1,78 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.1.0"
+
+package:
+  name: tinyhtml5
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/t/tinyhtml5/tinyhtml5-${{ version }}.tar.gz
+  sha256: 60a50ec3d938a37e491efa01af895853060943dcebb5627de5b10d188b338a67
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - flit-core >=3.2,<4
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - webencodings >=0.5.1
+
+tests:
+  - python:
+      imports:
+        - tinyhtml5
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: HTML parser based on the WHATWG HTML specification
+  homepage: https://github.com/CourtBouillon/tinyhtml5
+  repository: https://github.com/CourtBouillon/tinyhtml5
+  documentation: https://doc.courtbouillon.org/tinyhtml5/stable/
+  description: |
+    tinyhtml5 is a HTML5 parser that transforms a possibly malformed HTML
+    document into an ElementTree tree.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: tinyhtml5
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: tinyhtml5
+  cfe-purls:
+    - pkg:conda/tinyhtml5@${{ version }}?channel=conda-forge
+    - pkg:pypi/tinyhtml5@${{ version }}
+  cfe-upstream-repo: https://github.com/CourtBouillon/tinyhtml5
+  cfe-upstream-homepage: https://github.com/CourtBouillon/tinyhtml5
+  cfe-import-names: [tinyhtml5]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/tinyhtml5-feedstock
+  cfe-forge-recipe-updates-needed: recipe-regenerate
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####

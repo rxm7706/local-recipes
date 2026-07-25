@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "5.0.2"
+
+package:
+  name: mozilla-django-oidc
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/m/mozilla-django-oidc/mozilla_django_oidc-${{ version }}.tar.gz
+  sha256: 4e953dcd963c036daaa2ac42b5bb6ea89a1c6ea7be0387c2022a59aca2f83043
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - setuptools >=75.0.0
+    - wheel
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - django >=4.2
+    - pyjwt
+    - requests
+    - cryptography
+
+tests:
+  - python:
+      imports:
+        - mozilla_django_oidc
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: A lightweight authentication and access management library for integration with OpenID Connect enabled authentication services.
+  license: MPL-2.0
+  license_file: LICENSE
+  homepage: https://github.com/mozilla/mozilla-django-oidc
+  repository: https://github.com/mozilla/mozilla-django-oidc
+  documentation: https://mozilla-django-oidc.readthedocs.io
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: mozilla-django-oidc
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: mozilla-django-oidc
+  cfe-purls:
+    - pkg:conda/mozilla-django-oidc@${{ version }}?channel=conda-forge
+    - pkg:pypi/mozilla-django-oidc@${{ version }}
+  cfe-upstream-repo: https://github.com/mozilla/mozilla-django-oidc
+  cfe-upstream-homepage: https://github.com/mozilla/mozilla-django-oidc
+  cfe-import-names: [mozilla_django_oidc]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/mozilla-django-oidc-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####

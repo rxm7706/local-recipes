@@ -1,0 +1,53 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: robotframework-datadriver
+  version: "1.11.2"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/robotframework_datadriver-${{ version }}.tar.gz
+  sha256: c75a3b8856e141331e65a22a6bed1a8263221ee6dad821d526f932918576fffd
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }},<4.0
+    - robotframework >=4.0.2,<8.0
+    - docutils
+    - pygments
+
+tests:
+  - python:
+      imports:
+        - DataDriver
+        - DataDriver.csv_reader
+        - DataDriver.json_reader
+        - DataDriver.pict_reader
+      pip_check: true
+      python_version: ${{ python_min }}.*
+
+about:
+  summary: A library for Data-Driven Testing.
+  license: Apache-2.0
+  license_file:
+    - COPYRIGHT.txt
+    - LICENSE
+  homepage: https://github.com/Snooz82/robotframework-datadriver
+
+extra:
+  recipe-maintainers:
+    - bollwyvl
+    - rxm7706

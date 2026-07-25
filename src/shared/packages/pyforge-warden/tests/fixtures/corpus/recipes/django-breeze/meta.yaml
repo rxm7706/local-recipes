@@ -1,0 +1,46 @@
+{% set name = "django-breeze" %}
+{% set version = "1.1.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/django_breeze-{{ version }}.tar.gz
+  sha256: e0ba4245e7e16521b3e726f2823d6fef6eeb88ccb03eb22949112b7a420ce535
+
+build:
+  entry_points:
+    - django-breeze = django_breeze.scripts.django_breeze:run
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.10,<4.0
+    - poetry-core
+    - pip
+  run:
+    - python >=3.10.0,<4.0.0
+    - django-vite 3.0.5
+    - inertia-django 0.6.0
+
+test:
+  imports:
+    - django_breeze
+  commands:
+    - pip check
+    - django-breeze --help
+  requires:
+    - pip
+
+about:
+  home: https://github.com/Louxsdon/django-breeze
+  summary: Django Breeze provides a minimal and simple starting point for building a Django application with Inertia and Vite with minimal or no configuration. Styled with Tailwind CSS.
+  license: MIT
+  license_file: LICENSE.md
+
+extra:
+  recipe-maintainers:
+    - rxm7706

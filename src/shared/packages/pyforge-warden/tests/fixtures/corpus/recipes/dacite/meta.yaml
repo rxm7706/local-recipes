@@ -1,0 +1,41 @@
+{% set name = "dacite" %}
+{% set version = "1.9.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/dacite-{{ version }}.tar.gz
+  sha256: 50e97b408f9fdc5619f341c5415c4ad1cf771a3dbd85626cda44db78ee45df8c
+
+build:
+  skip: true  # [py<37]
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python
+    - pip
+  run:
+    - python
+    - dataclasses  # [py<37]
+
+test:
+  imports:
+    - dacite
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/konradhalas/dacite
+  summary: Simple creation of data classes from dictionaries.
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

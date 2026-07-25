@@ -1,0 +1,58 @@
+{% set version = "5.4.0.1" %}
+
+package:
+  name: podman-py
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/podman/podman-{{ version }}.tar.gz
+  sha256: ee537aaa44ba530fad7cd939d886a7632f9f7018064e7831e8cb614c54cb1789
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+    - pyxdg >=0.26
+    - requests >=2.24
+    - setuptools >=46.4
+    - sphinx
+    # tomli >=1.2.3  "python_version<'3.11'"
+    - tomli >=1.2.3
+    - urllib3 >=1.24.2
+    - wheel
+  run:
+    - python >={{ python_min }}
+    - pyxdg >=0.26
+    - requests >=2.24
+    # tomli >=1.2.3  "python_version<'3.11'"
+    - tomli >=1.2.3
+    - urllib3 >=1.24.2
+
+test:
+  imports:
+    - podman
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+    
+about:
+  home: https://github.com/containers/podman-py
+  license: Apache-2.0
+  license_family: APACHE
+  license_file: LICENSE
+  summary: Python bindings and code examples for using Varlink access to Podman Service
+  dev_url: https://github.com/containers/podman-py
+
+extra:
+  recipe-maintainers:
+    - alippai
+    - h-vetinari
+    - '4383'

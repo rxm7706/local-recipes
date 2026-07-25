@@ -1,0 +1,82 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2026.6.22"
+  python_min: "3.11"
+
+package:
+  name: kedro-light
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/k/kedro-light/kedro_light-${{ version }}.tar.gz
+  sha256: 325abbe1928c2b40980646fefcb6b3f260f5f7633466a7b5127c80f5cbeb762a
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - kedro
+    - kedro-viz
+
+tests:
+  - python:
+      imports:
+        - kedro_light
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/kedro-light/
+  license: MIT
+  license_file: LICENSE
+  summary: A lightweight interface to Kedro and Kedro-Viz
+  description: |
+    A lightweight interface to Kedro and Kedro-Viz
+  repository: https://github.com/ellwise/kedro-light
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: kedro-light
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: kedro-light
+  cfe-purls:
+    - pkg:conda/kedro-light@${{ version }}?channel=conda-forge
+    - pkg:pypi/kedro-light@${{ version }}
+  cfe-upstream-repo: https://github.com/ellwise/kedro-light
+  cfe-upstream-homepage: https://github.com/ellwise/kedro-light
+  cfe-import-names: [kedro_light]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/kedro-light-feedstock
+  cfe-forge-recipe-updates-needed: [version-bump-to-2026.6.22, meta-yaml-to-recipe-yaml]
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-07-03T04:00:00Z
+  cfe-generated-by-version: 8.65.0
+  cfe-generated-at-datetime: 2026-07-03T04:00:00Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-07-03T04:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # 2026-07-03 punch-list full-gate pass (tracker issue -> local verification).
+####

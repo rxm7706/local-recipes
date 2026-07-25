@@ -1,0 +1,47 @@
+{% set name = "pandasai" %}
+{% set version = "0.2.14" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/pandasai-{{ version }}.tar.gz
+  sha256: 0d18f8303fde0e890848d9bf5bdce117c7db5c550b55fdf6bbe8f10efa1f761f
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python >=3.9,<4.0
+    - poetry-core
+    - pip
+  run:
+    - python >=3.9.0,<4.0.0
+    - python-dotenv >=1.0.0,<2.0.0
+    - pandas >=2.0.1,<3.0.0
+    - astor >=0.8.1,<0.9.0
+    - openai >=0.27.5,<0.28.0
+    - ipython >=8.13.1,<9.0.0
+    - matplotlib-base >=3.7.1,<4.0.0
+    - google-generativeai >=0.1.0,<0.1.1
+
+test:
+  imports:
+    - pandasai
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  summary: Pandas AI is a Python library that integrates generative artificial intelligence capabilities into Pandas, making dataframes conversational.
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

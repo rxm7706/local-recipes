@@ -1,0 +1,99 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.11.0"
+  python_max: '4.0'
+  python_test_max: '3.14'
+  opentelemetry_api_version: '1.42.1'
+  opentelemetry_instrumentation_version: '0.63b1'
+
+package:
+  name: splunk-opentelemetry
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/s/splunk-opentelemetry/splunk_opentelemetry-${{ version }}.tar.gz
+  sha256: fc035d695512b841fa705d40aa76fcb94d64181f7be03f374b04ed3dd8bb6cd0
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - hatchling
+    - pip
+  run:
+    - python >=${{ python_min }},<${{ python_max }}
+    - opentelemetry-api ==${{ opentelemetry_api_version }}
+    - opentelemetry-sdk ==${{ opentelemetry_api_version }}
+    - opentelemetry-propagator-b3 ==${{ opentelemetry_api_version }}
+    - opentelemetry-exporter-otlp-proto-grpc ==${{ opentelemetry_api_version }}
+    - opentelemetry-exporter-otlp-proto-http ==${{ opentelemetry_api_version }}
+    - opentelemetry-instrumentation ==${{ opentelemetry_instrumentation_version }}
+    - opentelemetry-instrumentation-logging ==${{ opentelemetry_instrumentation_version }}
+    - opentelemetry-instrumentation-system-metrics ==${{ opentelemetry_instrumentation_version }}
+    - opentelemetry-semantic-conventions ==${{ opentelemetry_instrumentation_version }}
+    - protobuf >=6.33.5
+    - wrapt >=1.0.0
+
+tests:
+  - python:
+      imports:
+        - splunk_otel
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - ${{ python_test_max }}.*
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}.*
+    script:
+      - pip check
+
+about:
+  summary: The Splunk distribution of OpenTelemetry Python Instrumentation provides a Python agent that automatically instruments your Python application to capture and report distributed traces to SignalFx APM.
+  homepage: https://github.com/signalfx/splunk-otel-python
+  license: Apache-2.0
+  license_file:
+    - COPYRIGHT.txt
+    - LICENSE.txt
+  description: |
+    This package provides entrypoints to configure OpenTelemetry.
+  repository: https://github.com/signalfx/splunk-otel-python
+  documentation: https://docs.splunk.com/observability/en/gdi/get-data-in/application/python/get-started.html
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: splunk-opentelemetry
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: splunk-opentelemetry
+  cfe-purls:
+    - pkg:conda/splunk-opentelemetry@${{ version }}?channel=conda-forge
+    - pkg:pypi/splunk-opentelemetry@${{ version }}
+  cfe-upstream-repo: https://github.com/signalfx/splunk-otel-python
+  cfe-upstream-homepage: https://github.com/signalfx/splunk-otel-python
+  cfe-import-names: [splunk_otel]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/splunk-opentelemetry-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####

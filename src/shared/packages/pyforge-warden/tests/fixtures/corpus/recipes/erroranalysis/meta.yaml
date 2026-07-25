@@ -1,0 +1,46 @@
+{% set name = "erroranalysis" %}
+{% set version = "0.5.3" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/erroranalysis-{{ version }}.tar.gz
+  sha256: ff2c52a562e692c95046f52724dce65d92dd1a28bfc5d4848946c82744d32120
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.7
+    - pip
+  run:
+    - python >=3.7
+    - numpy >=1.17.2
+    - pandas <2.0.0,>=0.25.1
+    - scipy >=1.4.1
+    - scikit-learn >=0.22.1
+    - lightgbm >=2.0.11
+    - raiutils >=0.4.0
+
+test:
+  imports:
+    - erroranalysis
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/microsoft/responsible-ai-widgets
+  summary: Core error analysis APIs
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706
