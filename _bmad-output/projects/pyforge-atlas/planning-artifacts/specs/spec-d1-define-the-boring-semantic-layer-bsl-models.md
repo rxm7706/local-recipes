@@ -5,6 +5,7 @@ status: 'regenerated'
 regenerated: '2026-07-25'
 source: 'epics.md (authoritative intent + acceptance criteria) + shipped code on main'
 original_spec: 'lost to the Tier-3 paper-trail gap + the 2026-07-19 truncation incident; dev-notes / review-triage-log not recovered'
+enriched: '2026-07-25 (merged PR #86 body + main commit log; dev narrative recovered, review-triage partial)'
 ---
 
 > **Regenerated contract-spec (2026-07-25).** The original per-story spec was lost when
@@ -97,3 +98,38 @@ So that ad-hoc questions need no SQL and are callable from Claude Code.
 Recovered 2026-07-25 as part of the spec-durability remediation (see
 `planning-artifacts/specs/README.md`). Same root cause + fix as pyforge-warden: story specs
 now live tracked in `planning-artifacts/specs/`, not Tier-3 gitignored `implementation-artifacts/`.
+
+## Dev narrative — recovered from the merged record (2026-07-25)
+
+> The original spec's `## Dev Notes` / `## Review Triage Log` were lost with the Tier-3
+> worktree teardown (this story was built in claude.ai/code web session
+> `01FYyQvBJuXwySiaMUUYCqBZ`; see `README.md`). The narrative below is reconstructed from
+> the **authoritative merged record** — the story's PR body and its commits on `main` —
+> **not** a regeneration. If the verbatim original is recovered from the web session, it
+> supersedes this section.
+
+### Dev summary — merged PR #86: story(D1): Boring Semantic Layer models for the core atlas metrics (FR-8)
+
+## Summary
+
+Declares the metric/business logic embedded in the 28 read CLIs **once** as Boring Semantic Layer dimensions + measures over the migrated canonical Parquet store — **Ibis → DuckDB only** (AD-4) — as the single translation interface for every read surface (AD-8). First Wave-D story.
+
+- **`semantic/metrics.py`** — the core metrics as **pure Ibis expressions**: staleness (`(now-ts)//86400`, `ts` falsy → null), adoption_stage (verbatim port of `adoption_stage.py::_classify` incl. the `age or 99999` falsy-zero quirk + branch order + null-age & 0-versions → unknown), is_actionable (the 3-clause `v_actionable_packages` COALESCE predicate), feedstock-health filters (ci-red / open-prs / open-issues), downloads. `METRIC_PROVENANCE` separates real `legacy-formula` anchors from `migrated-node-derived` metrics **flagged for legacy recapture** (DW-B1-1 honesty; no fabricated legacy values).
+- **`semantic/models.py`** — BSL `SemanticModel`s binding the metrics to DuckDB tables read from Parquet. The **maintainer ⋈ is first-class** (AC-2): `build_package_maintainers_model` declares `maintainer` as a `Dimension` and `join_packages_by_maintainer` declares packages⋈maintainer as a BSL semantic join, so `staleness-report --maintainer X` / `feedstock-health --maintainer X` become **declared BSL queries** instead of raw-SQL JOINs.
+- **`bsl-metric-check` gate** (`tests/semantic`) — each metric's expected value is an **independent verbatim re-implementation** of the legacy formula (never the BSL expression under test), so a port-vs-legacy divergence fails the gate — the DW-B1-1 "both sides compute the same thing" trap is structurally excluded.
+- **AD-8 import-ban** — only the `semantic/` subtree imports `boring_semantic_layer` (AST guard extended in `tests/catalog/test_no_inline_io.py`).
+
+## Reviews
+
+Three independent reviews. Reviewer A's fixes applied by the author. Reviewer B (edge cases) confirmed the two real defects it found (adoption_stage NULL `total_versions` parity; empty-input typing) were already fixed on disk; its three test-coverage NITs are now closed (maintainer NULL-group asserted present-with-NULL; duplicate long-form rows guarded against double-count; empty-catalog SUM pinned as intended-NULL). The fresh-eyes reviewer diffed each `_legacy_*` anchor against the **real** legacy source (byte-identical) and probed negative-age/clock-skew boundaries against DuckDB floor-division — no must-fix.
+
+## Tests
+
+`531 passed` (+17 new).
+
+### Commits on `main`
+
+- `85f24feb71` story(D1): Boring Semantic Layer models for the core atlas metrics (FR-8)  _(dev-landing)_
+
+_This PR also carried an automated Gemini review; not reproduced here per repo policy ([[feedback_no_gemini_reviews]])._
+

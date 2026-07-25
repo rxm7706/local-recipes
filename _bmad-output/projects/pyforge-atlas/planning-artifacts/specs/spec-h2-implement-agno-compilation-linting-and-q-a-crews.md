@@ -5,6 +5,7 @@ status: 'regenerated'
 regenerated: '2026-07-25'
 source: 'epics.md (authoritative intent + acceptance criteria) + shipped code on main'
 original_spec: 'lost to the Tier-3 paper-trail gap + the 2026-07-19 truncation incident; dev-notes / review-triage-log not recovered'
+enriched: '2026-07-25 (merged PR #100 body + main commit log; dev narrative recovered, review-triage partial)'
 ---
 
 > **Regenerated contract-spec (2026-07-25).** The original per-story spec was lost when
@@ -93,3 +94,42 @@ So that the factory layer runs itself.
 Recovered 2026-07-25 as part of the spec-durability remediation (see
 `planning-artifacts/specs/README.md`). Same root cause + fix as pyforge-warden: story specs
 now live tracked in `planning-artifacts/specs/`, not Tier-3 gitignored `implementation-artifacts/`.
+
+## Dev narrative — recovered from the merged record (2026-07-25)
+
+> The original spec's `## Dev Notes` / `## Review Triage Log` were lost with the Tier-3
+> worktree teardown (this story was built in claude.ai/code web session
+> `01FYyQvBJuXwySiaMUUYCqBZ`; see `README.md`). The narrative below is reconstructed from
+> the **authoritative merged record** — the story's PR body and its commits on `main` —
+> **not** a regeneration. If the verbatim original is recovered from the web session, it
+> supersedes this section.
+
+### Dev summary — merged PR #100: H2: agno compile/lint/Q&A wiki crews (FR-22(b))
+
+## Story H2 — Agno Compilation, Linting, and Q&A Crews (FR-22(b), § 7.3)
+
+The three AI-Software-Factory crews that maintain the Karpathy wiki, offline-first on a fixture wiki. `factory/crews.py` imports `yaml` + stdlib only (AD-1 import-confinement preserved).
+
+### Crews
+- **`CompileCrew`** (Compiler + Linker): `wiki/raw/*.md` → `wiki/compiled/*.md`. Derives a title, carries the source ref, and **propagates source staleness forward** (AD-13/AD-22 — republication never launders freshness) from BOTH carriers (the raw doc's own `stale:` frontmatter AND the `.staleness.json` sidecar; either ⇒ stale), as a machine-readable frontmatter marker AND a visible body banner. Per-doc resilient (a malformed raw doc is recorded + skipped, never a half-written `compiled/`). Byte-stable output.
+- **`LintCrew`** (Linter/QA): reports `missing-frontmatter` / `missing-title` / `empty-body` / `broken-link` / `laundered-staleness` / `malformed-frontmatter`. Never raises. `broken-link` resolves targets relative to the doc's dir against the real recursive tree (no leaf-only false-neg/false-pos).
+- **`QACrew`** (Oracle + Ingester): grounded answers over compiled content; injectable retriever + synthesizer default to offline determinism (keyword-overlap + extractive). `grounded` ⇔ the answer is backed by ≥1 compiled snippet.
+
+### Deferred
+- The `agno`-Agent / LLM synthesis (`enricher`/`synthesizer`) and the F3-vss production retriever are injectable seams, offline by default; the live bring-up is attended → **DW-H2**.
+
+### Independent review
+An adversarial fresh-eyes review found **2 MUST-FIX** (a raw doc's inline `stale:` frontmatter was dropped → laundered; lint/QA raised on a malformed page instead of reporting/skipping) + **1 SHOULD-FIX** (leaf-only `broken-link` matching). All fixed and regression-tested in this PR.
+
+### Verification
+- `tests/factory/test_crews.py`: **26 passed** (incl. the 6 regression tests for the review findings).
+- Full atlas suite: **762 passed**. AD-1 import-ban green.
+
+Also folds in the H1 DELIVERED doc catch-up (epics + sprint-status) and the DW-H2 ledger entry.
+
+### Commits on `main`
+
+- `ea4a9a5b56` H2: agno compile/lint/Q&A wiki crews (FR-22(b)) (#100)  _(dev-landing)_
+
+_This PR also carried an automated Gemini review; not reproduced here per repo policy ([[feedback_no_gemini_reviews]])._
+

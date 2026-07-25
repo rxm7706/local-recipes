@@ -5,6 +5,7 @@ status: 'regenerated'
 regenerated: '2026-07-25'
 source: 'epics.md (authoritative intent + acceptance criteria) + shipped code on main'
 original_spec: 'lost to the Tier-3 paper-trail gap + the 2026-07-19 truncation incident; dev-notes / review-triage-log not recovered'
+enriched: '2026-07-25 (merged PR #102 body + main commit log; dev narrative recovered, review-triage partial)'
 ---
 
 > **Regenerated contract-spec (2026-07-25).** The original per-story spec was lost when
@@ -52,3 +53,43 @@ So that the factory layer runs itself.
 Recovered 2026-07-25 as part of the spec-durability remediation (see
 `planning-artifacts/specs/README.md`). Same root cause + fix as pyforge-warden: story specs
 now live tracked in `planning-artifacts/specs/`, not Tier-3 gitignored `implementation-artifacts/`.
+
+## Dev narrative — recovered from the merged record (2026-07-25)
+
+> The original spec's `## Dev Notes` / `## Review Triage Log` were lost with the Tier-3
+> worktree teardown (this story was built in claude.ai/code web session
+> `01FYyQvBJuXwySiaMUUYCqBZ`; see `README.md`). The narrative below is reconstructed from
+> the **authoritative merged record** — the story's PR body and its commits on `main` —
+> **not** a regeneration. If the verbatim original is recovered from the web session, it
+> supersedes this section.
+
+### Dev summary — merged PR #102: H4: orchestrate the Wave-H wiki crews via Dagster (FR-22(d)/FR-6)
+
+## Story H4 — Orchestrate Crews via Dagster (FR-22(d)/FR-6, § 7.2) · the FINAL story
+
+Wires the Wave-H agno wiki crews onto C1's **single** Dagster plane (AD-6/AD-23). Completing this closes Wave H and the entire 32-story Kedro migration.
+
+### Changes
+- **`orchestration/wiki_events.py` (NEW, dagster-free — AD-1 holds)** — the new-raw-file decision logic: `scan_raw_docs` (filesystem read) + `evaluate_raw_scan` (cursor-dedupe: the cursor stores the seen raw-doc name-set; new names → run with a deterministic `run_key` + advanced cursor; nothing new → skip, cursor untouched). Mirrors `event_source.py`.
+- **`orchestration/definitions.py`** (the AD-1 glue module):
+  - Crew **assets** — `compiled_wiki` (CompileCrew) + `wiki_lint_report` (LintCrew, `deps=[compiled_wiki]`); write only the wiki tree (AD-22); wiki root env-driven (`ATLAS_WIKI_ROOT`, AD-2).
+  - Crew asset-**jobs** `wiki_compile_job` / `wiki_lint_job`; a weekly LINT **schedule** (`wiki_lint_schedule`, `0 6 * * 1`); the new-raw-file compile **sensor** (`wiki_raw_file_sensor` → `wiki_compile_job`, AD-23 same plane, ships **STOPPED**). Injectable `raw_lister`; a failing lister degrades to `SkipReason`.
+- **Tests** — the C1/G3 op-level invariants are scoped to the kedro op-jobs via a new `_kedro_jobs` helper (the factory asset jobs legitimately carry no kedro ops/tags).
+
+### Independent review
+An adversarial fresh-eyes review found **1 SHOULD-FIX** — `_decode_cursor` crashed on a valid-JSON-but-nested cursor (`[{...}]`), breaking its "never a crash" contract and able to kill a sensor tick. **Fixed** (filter to str inside the guard) + 8 regression cases. The review separately **verified** the `_kedro_jobs` scoping did NOT weaken any C1/G3 guard, and AD-1 holds (`wiki_events.py` imports no dagster).
+
+### Deferred
+- Live daemon + wiki-store bring-up (sensor RUNNING, weekly lint firing, real store) → **DW-H4**.
+
+### Verification
+- `dagster definitions validate` — **passes** offline.
+- `test_definitions_dryrun.py` H4 section: assets enumerate, crew jobs resolve, weekly lint schedule, sensor targets the compile job, a **simulated new-raw-file event → RunRequest for the compile crew**, no-new-file/already-seen → SkipReason, lister-error degrades, ships STOPPED, + malformed-cursor regressions.
+- Full atlas suite: **795 passed**. AD-1 import-ban green.
+
+### Commits on `main`
+
+- `4710a8aec8` H4: orchestrate the Wave-H wiki crews via Dagster (FR-22(d)/FR-6) (#102)  _(dev-landing)_
+
+_This PR also carried an automated Gemini review; not reproduced here per repo policy ([[feedback_no_gemini_reviews]])._
+

@@ -5,6 +5,7 @@ status: 'regenerated'
 regenerated: '2026-07-25'
 source: 'epics.md (authoritative intent + acceptance criteria) + shipped code on main'
 original_spec: 'lost to the Tier-3 paper-trail gap + the 2026-07-19 truncation incident; dev-notes / review-triage-log not recovered'
+enriched: '2026-07-25 (merged PR #87 body + main commit log; dev narrative recovered, review-triage partial)'
 ---
 
 > **Regenerated contract-spec (2026-07-25).** The original per-story spec was lost when
@@ -75,3 +76,43 @@ So that ad-hoc questions need no SQL and are callable from Claude Code.
 Recovered 2026-07-25 as part of the spec-durability remediation (see
 `planning-artifacts/specs/README.md`). Same root cause + fix as pyforge-warden: story specs
 now live tracked in `planning-artifacts/specs/`, not Tier-3 gitignored `implementation-artifacts/`.
+
+## Dev narrative — recovered from the merged record (2026-07-25)
+
+> The original spec's `## Dev Notes` / `## Review Triage Log` were lost with the Tier-3
+> worktree teardown (this story was built in claude.ai/code web session
+> `01FYyQvBJuXwySiaMUUYCqBZ`; see `README.md`). The narrative below is reconstructed from
+> the **authoritative merged record** — the story's PR body and its commits on `main` —
+> **not** a regeneration. If the verbatim original is recovered from the web session, it
+> supersedes this section.
+
+### Dev summary — merged PR #87: story(D2): BSL-driven Vizro dashboard + core CLI-port pages (FR-9)
+
+## Summary
+
+Ships the buildable core of the read surface: a Vizro app assembled from the D1 semantic models (**AD-8** — the single metric-translation interface), the AC's live-confirmed-first pages, and the factory-status page.
+
+- **`dashboard/data.py`** — every page loader is a **pure BSL query** (`model.query(...).execute()`); no re-implemented metric and no raw SQL in the Vizro layer (AD-8). Pages over an existing single dataset are **live** (feedstock-health → `core_feedstock_health`; my-feedstocks → `vcs_package_maintainers`); pages whose composed store isn't materialized yet are honest **BSL-wired shells** (empty typed frame, never fabricated rows) flagged DW-D2.
+- **`dashboard/factory_status.py`** — reads the live BMAD artifact state (sprint-status.yaml + epics/spec frontmatter) into one deterministic semantic table carrying an **injected build timestamp** (AD-17; never `datetime.now()` at import). Missing/malformed artifacts degrade to typed-empty (a missing `epics.md` now contributes **zero** rows — no fabricated `"None"` status).
+- **`dashboard/app.py`** — assembles the Vizro Dashboard object; the gate builds it **offline** (no server / no `.run()`).
+- **`dashboard-dryrun` gate** — dashboard builds offline; each page has a stable id+title (deterministic layout, NFR-8 agent-legibility); loaders proven BSL-driven vs an independent query; factory-status reads the real sprint-status.yaml + carries its AD-17 stamp.
+- **AD-1/AD-6 import-ban** — only the `dashboard/` subpackage imports vizro (AST guard extended, beside the D1 BSL ban).
+
+## Scope (honest deferral)
+
+The **full 28-page inventory + detailed page designs** are **CIS-two-spine deferred** (`DESIGN.md` + `EXPERIENCE.md` not yet produced); the **DEV-AUTO visual verification** of the rendered UI is deferred (headless container). Recorded in `deferred-work.md` DW-D2-1/-2/-3.
+
+## Reviews
+
+Three independent reviews. Reviewer A + Reviewer B fixes applied: **S1** — a missing `epics.md` contributes zero rows (no fabricated `"None"` status, agent-legibility); **S2** — a present-but-untyped Parquet degrades to the declared-column empty frame instead of raising `IbisTypeError`.
+
+## Tests
+
+`550 passed` (+19 new).
+
+### Commits on `main`
+
+- `0c5ea3ef90` story(D2): BSL-driven Vizro dashboard + core CLI-port pages (FR-9)  _(dev-landing)_
+
+_This PR also carried an automated Gemini review; not reproduced here per repo policy ([[feedback_no_gemini_reviews]])._
+

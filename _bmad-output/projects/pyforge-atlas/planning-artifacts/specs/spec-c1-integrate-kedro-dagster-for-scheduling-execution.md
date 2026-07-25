@@ -5,6 +5,7 @@ status: 'regenerated'
 regenerated: '2026-07-25'
 source: 'epics.md (authoritative intent + acceptance criteria) + shipped code on main'
 original_spec: 'lost to the Tier-3 paper-trail gap + the 2026-07-19 truncation incident; dev-notes / review-triage-log not recovered'
+enriched: '2026-07-25 (merged PR #84 body + main commit log; dev narrative recovered, review-triage partial)'
 ---
 
 > **Regenerated contract-spec (2026-07-25).** The original per-story spec was lost when
@@ -75,3 +76,48 @@ So that I inspect dataset schemas and lineage in the browser instead of reading 
 Recovered 2026-07-25 as part of the spec-durability remediation (see
 `planning-artifacts/specs/README.md`). Same root cause + fix as pyforge-warden: story specs
 now live tracked in `planning-artifacts/specs/`, not Tier-3 gitignored `implementation-artifacts/`.
+
+## Dev narrative — recovered from the merged record (2026-07-25)
+
+> The original spec's `## Dev Notes` / `## Review Triage Log` were lost with the Tier-3
+> worktree teardown (this story was built in claude.ai/code web session
+> `01FYyQvBJuXwySiaMUUYCqBZ`; see `README.md`). The narrative below is reconstructed from
+> the **authoritative merged record** — the story's PR body and its commits on `main` —
+> **not** a regeneration. If the verbatim original is recovered from the web session, it
+> supersedes this section.
+
+### Dev summary — merged PR #84: story(C1): kedro-dagster orchestration glue + dagster-dryrun gate (FR-6)
+
+## Summary
+
+Compiles the migrated Kedro DAG into Dagster `Definitions` via `KedroProjectTranslator` (the single AD-1 glue seam, `orchestration/definitions.py`). Wave-C orchestration story.
+
+- **Schedules** encode the `atlas-operations.md` cadence table: bootstrap weekly; F/H/K/L/E.5 + G-after-vdb daily; E/J/M every 6h; N hourly; refresh assets weekly. Phase P deliberately gets **no** schedule.
+- **Three bootstrap profiles** (maintainer/admin/consumer) via `resolve_profile_config` with precedence **run-config > env > profile default**.
+- **Per-op timeouts** — each op carries its OWN `dagster/max_runtime` tag (no single job/run-level timeout): the structural retirement of the legacy 1800s `cf_atlas_core` monolith. Operative F/K/N-vs-Phase-R isolation comes from **job separation** (Phase R rides only the weekly `bootstrap_data` job; F/K/N are their own scheduled jobs).
+- **Phase P** admin-config-only, reachable ONLY via the unscheduled `phase_p_pypi_downloads` job (AC-6).
+- **`dagster-dryrun` gate** — definitions load + schedules enumerate + jobs resolve + per-op independent timeout + Phase-P-not-scheduled + profile precedence, all **offline, no live execution**. Ships as `tests/orchestration` (19) + a `dagster-dryrun` pixi task.
+
+## Invariants
+
+- **AD-1 / AD-6** — only the glue imports `dagster`/`kedro_dagster`; `kedro_mcp` banned everywhere including the glue (two-scan import-ban test + a positive glue-is-sole-importer test).
+- **AD-23** — one execution plane via the `kedro_run` resource.
+
+## ATTENDED scope (honest deferral)
+
+This is the offline-buildable half. The **live schedule bring-up** — Dagster daemon, RUNNING schedules, per-op runtime enforcement, profile run-config wiring — is DEFERRED to the attended Q2 event (recorded in `deferred-work.md` DW-C1-1/-2). The dryrun gate is never weakened to unattended-execute (NFR-12).
+
+## Reviews
+
+Three independent reviews (two adversarial + one fresh-eyes). Applied fixes: AD-1 exemption scoped so `kedro_mcp` stays banned in the glue (was whole-denylist exempt); hook-op detection switched to a stable name-prefix (not the fragile `_hook_` infix); timeout docstring no longer overclaims runtime enforcement. The fresh-eyes reviewer independently validated the AD-1 fix by injecting `import kedro_mcp` into the glue and confirming both guards fail as required.
+
+## Tests
+
+`512 passed` (+20 new); `dagster definitions validate -m pyforge.atlas.orchestration.definitions` passes offline ("All code locations passed validation").
+
+### Commits on `main`
+
+- `2737893c22` story(C1): kedro-dagster orchestration glue + dagster-dryrun gate (FR-6)  _(dev-landing)_
+
+_This PR also carried an automated Gemini review; not reproduced here per repo policy ([[feedback_no_gemini_reviews]])._
+

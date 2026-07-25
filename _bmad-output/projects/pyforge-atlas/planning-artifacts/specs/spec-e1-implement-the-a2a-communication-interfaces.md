@@ -5,6 +5,7 @@ status: 'regenerated'
 regenerated: '2026-07-25'
 source: 'epics.md (authoritative intent + acceptance criteria) + shipped code on main'
 original_spec: 'lost to the Tier-3 paper-trail gap + the 2026-07-19 truncation incident; dev-notes / review-triage-log not recovered'
+enriched: '2026-07-25 (merged PR #90 body + main commit log; dev narrative recovered, review-triage partial)'
 ---
 
 > **Regenerated contract-spec (2026-07-25).** The original per-story spec was lost when
@@ -73,3 +74,39 @@ So that lineage, per-node metrics, and end-to-end traces are observable down to 
 Recovered 2026-07-25 as part of the spec-durability remediation (see
 `planning-artifacts/specs/README.md`). Same root cause + fix as pyforge-warden: story specs
 now live tracked in `planning-artifacts/specs/`, not Tier-3 gitignored `implementation-artifacts/`.
+
+## Dev narrative — recovered from the merged record (2026-07-25)
+
+> The original spec's `## Dev Notes` / `## Review Triage Log` were lost with the Tier-3
+> worktree teardown (this story was built in claude.ai/code web session
+> `01FYyQvBJuXwySiaMUUYCqBZ`; see `README.md`). The narrative below is reconstructed from
+> the **authoritative merged record** — the story's PR body and its commits on `main` —
+> **not** a regeneration. If the verbatim original is recovered from the web session, it
+> supersedes this section.
+
+### Dev summary — merged PR #90: story(E1): A2A structured-payload surface between the two agents (FR-11)
+
+## Summary
+
+Opens Wave E. Adds the `a2a/` module as the **single schema source** (AD-20) for structured inter-agent payloads between the cf_atlas analytical agent and the conda-forge-expert authoring agent — insights and alerts are **one discriminated pydantic family** (`_BasePayload` → `AtlasInsight` `kind="insight"` / `AtlasAlert` `kind="alert"`), never two competing dialects (the risk the architecture review flagged).
+
+- **`schema.py`** — the payload family + canonical-JSON round-trip; unknown/absent `kind`, malformed JSON, or a validation failure raises the declared `A2ADecodeError` (never an uncaught crash). Every payload carries a **required, injected `build_stamp`** (AD-17) — a validator rejects an empty stamp.
+- **`builders.py`** — construct a payload **from a BSL insight** (referencing the D1 semantic metric by identifier, never re-implementing it — AD-8) and **from an alert condition** (contract violation / policy breach).
+- **`transport.py`** — resolves the transport decision as **direct in-process message-passing** (`hand_off` → `AuthoringInbox`): payload ↔ `a2a.types.Message` serde + a real, zero-network analytical→authoring hand-off. The **live cross-process wire is deferred** (DW-E1-1).
+- **AD-20 import-ban** — only the `a2a/` subpackage imports the a2a SDK (AST guard extended, beside the C1/D1/D2 bans); the no-second-dialect invariant is structural.
+
+## Scope
+
+Live cross-process transport (a running A2A server/broker) is deferred to DW-E1-1; the schema + round-trip + in-process hand-off is the AC's real, gated core.
+
+## Tests
+
+`599 passed` (+21 new) — payload round-trip + hand-off fixtures in `tests/a2a_surface` (no new named gate; Wave E verifies against existing gates + its fixtures).
+
+### Commits on `main`
+
+- `08a4e844f9` story(E1): harden AD-20 guard + enforce schema_version + close model_construct bypass (review)  _(review-fix)_
+- `32d28c5264` story(E1): A2A structured-payload surface between the two agents (FR-11)  _(dev-landing)_
+
+_This PR also carried an automated Gemini review; not reproduced here per repo policy ([[feedback_no_gemini_reviews]])._
+

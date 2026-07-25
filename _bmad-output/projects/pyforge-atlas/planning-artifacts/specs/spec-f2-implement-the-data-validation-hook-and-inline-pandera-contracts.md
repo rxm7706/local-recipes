@@ -5,6 +5,7 @@ status: 'regenerated'
 regenerated: '2026-07-25'
 source: 'epics.md (authoritative intent + acceptance criteria) + shipped code on main'
 original_spec: 'lost to the Tier-3 paper-trail gap + the 2026-07-19 truncation incident; dev-notes / review-triage-log not recovered'
+enriched: '2026-07-25 (merged PR #93 body + main commit log; dev narrative recovered, review-triage partial)'
 ---
 
 > **Regenerated contract-spec (2026-07-25).** The original per-story spec was lost when
@@ -96,3 +97,38 @@ So that one schema-validated `ComplianceReport` and one frozen exit code replace
 Recovered 2026-07-25 as part of the spec-durability remediation (see
 `planning-artifacts/specs/README.md`). Same root cause + fix as pyforge-warden: story specs
 now live tracked in `planning-artifacts/specs/`, not Tier-3 gitignored `implementation-artifacts/`.
+
+## Dev narrative — recovered from the merged record (2026-07-25)
+
+> The original spec's `## Dev Notes` / `## Review Triage Log` were lost with the Tier-3
+> worktree teardown (this story was built in claude.ai/code web session
+> `01FYyQvBJuXwySiaMUUYCqBZ`; see `README.md`). The narrative below is reconstructed from
+> the **authoritative merged record** — the story's PR body and its commits on `main` —
+> **not** a regeneration. If the verbatim original is recovered from the web session, it
+> supersedes this section.
+
+### Dev summary — merged PR #93: story(F2): data-validation hook + inline Pandera contracts (FR-10)
+
+## Summary
+
+Adds `validation.py` — a **validator-agnostic** AfterNodeRun validation hook. A node output that violates its declared **pandera** contract **halts the pipeline before any output persists**: the hook raises a native `DataContractViolation` from `after_node_run` (which runs *before* the runner's catalog-save loop — proven on a real `SequentialRunner` with a tracking dataset asserting `saves == []`), so the failure propagates to Dagster (halting the run) and, on its way out, **raises an A2A alert** (E1's `build_alert_payload` — AD-20, one channel / one schema source).
+
+- **Validator protocol** — pandera is the shipped default; a stub second validator (fixture) proves the seam is agnostic (a backend plugs in with **zero** node/hook edits). Contracts live in a per-dataset registry as data; **nodes stay pure**.
+- **AD-9** — the shipped hook does **not** import `great_expectations` at all (in-env GX 1.19.0 can't be statically guaranteed to conda-forge 1.18.2 features); GX is a documented boundary-adapter stub, replaced by a 1.18.2-feature-only adapter when GX is pinned. `kedro-great-expectations` / `kedro-pandera` plugins **banned** (import-ban).
+- **AD-23** — registered in `settings.HOOKS` so `kedro run` AND the C1 Dagster plane both validate; a halt cleanly triggers E2's `on_pipeline_error` (OL FAIL + span ERROR, no leak).
+- A sink failure never masks the halt (guarded emit, then unconditional raise).
+
+## Review fixes (both in-loop reviewers)
+
+`_halt` now builds the alert via a defensive `_build_alert` that coerces evidence JSON-native + falls back on an empty rule, so a **third-party backend** returning a set / numpy scalar / non-finite float / empty rule can no longer convert the FR-10 halt into a pydantic error or drop the alert. Regression test proves a hostile-evidence backend still raises `DataContractViolation` + delivers a round-trippable alert. Shipped `alert_sink` wiring (for F4's first real contract) recorded **DW-F2-2**.
+
+## Tests
+
+`645 passed` (+22 new).
+
+### Commits on `main`
+
+- `f4e1f19e53` story(F2): data-validation hook + inline Pandera contracts (FR-10)  _(dev-landing)_
+
+_This PR also carried an automated Gemini review; not reproduced here per repo policy ([[feedback_no_gemini_reviews]])._
+

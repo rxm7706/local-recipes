@@ -5,6 +5,7 @@ status: 'regenerated'
 regenerated: '2026-07-25'
 source: 'epics.md (authoritative intent + acceptance criteria) + shipped code on main'
 original_spec: 'lost to the Tier-3 paper-trail gap + the 2026-07-19 truncation incident; dev-notes / review-triage-log not recovered'
+enriched: '2026-07-25 (merged PR #95 body + main commit log; dev narrative recovered, review-triage partial)'
 ---
 
 > **Regenerated contract-spec (2026-07-25).** The original per-story spec was lost when
@@ -54,3 +55,40 @@ So that one schema-validated `ComplianceReport` and one frozen exit code replace
 Recovered 2026-07-25 as part of the spec-durability remediation (see
 `planning-artifacts/specs/README.md`). Same root cause + fix as pyforge-warden: story specs
 now live tracked in `planning-artifacts/specs/`, not Tier-3 gitignored `implementation-artifacts/`.
+
+## Dev narrative — recovered from the merged record (2026-07-25)
+
+> The original spec's `## Dev Notes` / `## Review Triage Log` were lost with the Tier-3
+> worktree teardown (this story was built in claude.ai/code web session
+> `01FYyQvBJuXwySiaMUUYCqBZ`; see `README.md`). The narrative below is reconstructed from
+> the **authoritative merged record** — the story's PR body and its commits on `main` —
+> **not** a regeneration. If the verbatim original is recovered from the web session, it
+> supersedes this section.
+
+### Dev summary — merged PR #95: story(F4): dependency-hygiene node + unified CI policy gate (FR-16/18/10)
+
+## Summary
+
+**Closes Wave F.** Adds the deptry dependency-hygiene node + the converged **four-axis policy gate** as the Universal SBOM pipeline's **terminal** stage — one schema-validated `ComplianceReport` + one frozen exit code replace CLI scraping.
+
+- **Schema BY IMPORT, never vendored (AD-12, the correct-course rule):** validates against `pyforge.warden.models.ComplianceReport` imported **lazily** via the `pyforge-atlas[gate]` extra. Absent the extra, the gate node fails with an explicit `GateDependencyMissing` install hint while the atlas package + every **other** pipeline import and run unaffected (independence — proven with warden blocked). No vendored `ComplianceReport`/`Status`/verdict anywhere.
+- **Exit codes sole-owned by warden's `verdict.exit_code_for`** (0 clean / 1 policy-fail / 2 error) — never a hand-rolled literal or `sys.exit`; the inventory-match one-release window **remaps** warden's frozen output (1↔2), never re-derives it.
+- **Four-axis assembly:** hygiene + security populated; license/currency from atlas-native data or `not-applicable`. Source-less inputs → `not-applicable`, **never failure** (FR-16). **Single producer** of the `ComplianceReport` (AD-12).
+- A policy breach **halts** with F2's `DataContractViolation` + an E1 A2A alert — identical failure semantics to an FR-10 violation.
+
+## Review fixes (both in-loop reviewers)
+
+- The WARN branch no longer `min()`s over an **empty sequence** when the security axis carries only warden's `indeterminate:*` ids (MUST-FIX crash) — it drives the WARN off the smallest real finding id (exit 0, no false halt).
+- An out-of-vocab severity tier (e.g. `"important"`) degrades to `unknown` instead of crashing `SeverityTier()`.
+- A whitespace-only `build_stamp` uses `.strip()` so it falls back to `"unknown-build"` instead of masking the breach with a stamp `ValueError`.
+
+## Tests
+
+`682 passed` (+22 new).
+
+### Commits on `main`
+
+- `8052a9857e` story(F4): dependency-hygiene node + unified CI policy gate (FR-16/18/10)  _(dev-landing)_
+
+_This PR also carried an automated Gemini review; not reproduced here per repo policy ([[feedback_no_gemini_reviews]])._
+

@@ -5,6 +5,7 @@ status: 'regenerated'
 regenerated: '2026-07-25'
 source: 'epics.md (authoritative intent + acceptance criteria) + shipped code on main'
 original_spec: 'lost to the Tier-3 paper-trail gap + the 2026-07-19 truncation incident; dev-notes / review-triage-log not recovered'
+enriched: '2026-07-25 (merged PR #96 body + main commit log; dev narrative recovered, review-triage partial)'
 ---
 
 > **Regenerated contract-spec (2026-07-25).** The original per-story spec was lost when
@@ -93,3 +94,41 @@ So that ingestion is near-real-time and incremental instead of purely scheduled.
 Recovered 2026-07-25 as part of the spec-durability remediation (see
 `planning-artifacts/specs/README.md`). Same root cause + fix as pyforge-warden: story specs
 now live tracked in `planning-artifacts/specs/`, not Tier-3 gitignored `implementation-artifacts/`.
+
+## Dev narrative — recovered from the merged record (2026-07-25)
+
+> The original spec's `## Dev Notes` / `## Review Triage Log` were lost with the Tier-3
+> worktree teardown (this story was built in claude.ai/code web session
+> `01FYyQvBJuXwySiaMUUYCqBZ`; see `README.md`). The narrative below is reconstructed from
+> the **authoritative merged record** — the story's PR body and its commits on `main` —
+> **not** a regeneration. If the verbatim original is recovered from the web session, it
+> supersedes this section.
+
+### Dev summary — merged PR #96: story(G1): DuckDB-WASM in-browser read surface + wasm-smoke gate (FR-14)
+
+## Summary
+
+Opens Wave G. The D-wave read surface's client-side **query runs in-browser with zero backend via genuine DuckDB-WASM** (AD-21). The `wasm/` artifact is a static page that fetches a Parquet file as bytes, registers it, and runs `read_parquet(...)` inside the WASM engine — no server-side query, no API.
+
+- **`wasm-smoke` gate** (`tests/wasm`, AD-11 wave-first deliverable): launches the pre-provisioned **headless Chromium**, loads the built artifact from a loopback static file host, and **proves the no-backend/offline claim** by blocking + asserting **zero non-loopback requests** — the offline proof genuinely covers Web-Worker traffic (both the `.wasm` module and the vendored parquet extension fetch are intercepted). It asserts the exact client-side query result, and is **non-hollow**: removing/malforming/emptying the Parquet flips `#status` to error and **fails** the gate.
+- The parquet extension is **vendored locally** so the runtime never reaches `extensions.duckdb.org`. `wasm-build` + `wasm-smoke` pixi tasks; `build/` + `node_modules/` (a ~41 MB `.wasm`) are gitignored + reproducible from `build.py`.
+
+## Review fixes (both in-loop reviewers)
+
+- **Skip-to-green closed:** under `WASM_SMOKE_REQUIRED`/`CI` a missing browser or unbuilt artifact **fails** instead of skipping (a misconfigured CI cannot pass having verified nothing).
+- The loopback allowlist parses the URL **host** (`127.0.0.1`/`localhost`/`::1`) instead of a substring match (`http://127.0.0.1.evil.example` no longer slips the offline guard).
+
+## Deferred
+
+The full Vizro/Pyodide dashboard **render** in-browser (**DW-G1-1** — the page renders a plain HTML table, not the Vizro UI) and the CI `wasm-build` step for the gitignored heavy assets (**DW-G1-2**).
+
+## Tests
+
+`683 passed` (+1 real headless-browser gate).
+
+### Commits on `main`
+
+- `d79d483618` story(G1): DuckDB-WASM in-browser read surface + wasm-smoke gate (FR-14)  _(dev-landing)_
+
+_This PR also carried an automated Gemini review; not reproduced here per repo policy ([[feedback_no_gemini_reviews]])._
+

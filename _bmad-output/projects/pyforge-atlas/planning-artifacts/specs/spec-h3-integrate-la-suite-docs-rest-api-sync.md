@@ -5,6 +5,7 @@ status: 'regenerated'
 regenerated: '2026-07-25'
 source: 'epics.md (authoritative intent + acceptance criteria) + shipped code on main'
 original_spec: 'lost to the Tier-3 paper-trail gap + the 2026-07-19 truncation incident; dev-notes / review-triage-log not recovered'
+enriched: '2026-07-25 (merged PR #101 body + main commit log; dev narrative recovered, review-triage partial)'
 ---
 
 > **Regenerated contract-spec (2026-07-25).** The original per-story spec was lost when
@@ -72,3 +73,39 @@ So that the factory layer runs itself.
 Recovered 2026-07-25 as part of the spec-durability remediation (see
 `planning-artifacts/specs/README.md`). Same root cause + fix as pyforge-warden: story specs
 now live tracked in `planning-artifacts/specs/`, not Tier-3 gitignored `implementation-artifacts/`.
+
+## Dev narrative — recovered from the merged record (2026-07-25)
+
+> The original spec's `## Dev Notes` / `## Review Triage Log` were lost with the Tier-3
+> worktree teardown (this story was built in claude.ai/code web session
+> `01FYyQvBJuXwySiaMUUYCqBZ`; see `README.md`). The narrative below is reconstructed from
+> the **authoritative merged record** — the story's PR body and its commits on `main` —
+> **not** a regeneration. If the verbatim original is recovered from the web session, it
+> supersedes this section.
+
+### Dev summary — merged PR #101: H3: La Suite / Wagtail REST wiki sync (FR-22(c))
+
+## Story H3 — Integrate La Suite Docs REST API Sync (FR-22(c), § 7.1)
+
+Pushes the Karpathy wiki's final report pages up to the Layer-1 Wagtail/La Suite CMS. `factory/lasuite.py` imports stdlib + `.crews`/`.wiki` only — no HTTP client in package code (AC-2 no-inline-IO gate green).
+
+### Changes
+- **`LaSuiteClient`** — create/update/get/list documents over the Wagtail/Django REST shape. Owns base URL + bearer auth; delegates the wire to an **injected `opener`** (the sole network seam, like the B5/B7/B8 dataset fetcher injection). Non-2xx **and** a malformed 2xx-without-`id` both become a clear `LaSuiteError` (§ 2.1). The default opener refuses (no transport injected) rather than importing httpx — the live opener is the attended bring-up (DW-H3).
+- **`WikiSyncer`** — idempotent `outputs/` → CMS push keyed by content digest. Reads `wiki/outputs/` by default (the Oracle's **final reports** for the human CMS, per the H1 layout contract + § 7.4 — not the internal `compiled/` stage; `source_stage` overrides). Mapping (`<wiki-root>/.lasuite_sync.json`) records CMS id + last-synced sha: new→create, changed→update (no duplicate create), unchanged→**skip with zero remote calls** (§ 2.1). Mapping lives at the wiki ROOT (AD-22), written **atomically** (tmp + `os.replace`), and a corrupt mapping fails **loudly** on load (never silently empty).
+
+### Independent review
+An adversarial fresh-eyes review found **3 SHOULD-FIX** (malformed-2xx `KeyError`; non-atomic sidecar write that could brick future syncs; `compiled`-vs-`outputs` contract contradiction vs H1/§ 7.4) + 2 NITs (missing-id update crash; empty title) — **all fixed and regression-tested** in this PR.
+
+### Deferred
+- Live Wagtail/La Suite server + credential + httpx opener bring-up → **DW-H3**.
+
+### Verification
+- `tests/factory/test_lasuite.py`: round-trip against an in-memory mock Wagtail (create / idempotent re-push asserting **0 remote calls** / update-no-duplicate / mapping-resume) + the 5 review-regression tests.
+- Full atlas suite: **775 passed**. AC-2 / AD-1 gates green.
+
+### Commits on `main`
+
+- `4d680b09c1` H3: La Suite / Wagtail REST wiki sync (FR-22(c)) (#101)  _(dev-landing)_
+
+_This PR also carried an automated Gemini review; not reproduced here per repo policy ([[feedback_no_gemini_reviews]])._
+

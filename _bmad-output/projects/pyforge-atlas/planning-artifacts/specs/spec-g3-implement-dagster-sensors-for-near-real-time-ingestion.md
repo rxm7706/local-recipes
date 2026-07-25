@@ -5,6 +5,7 @@ status: 'regenerated'
 regenerated: '2026-07-25'
 source: 'epics.md (authoritative intent + acceptance criteria) + shipped code on main'
 original_spec: 'lost to the Tier-3 paper-trail gap + the 2026-07-19 truncation incident; dev-notes / review-triage-log not recovered'
+enriched: '2026-07-25 (merged PR #98 body + main commit log; dev narrative recovered, review-triage partial)'
 ---
 
 > **Regenerated contract-spec (2026-07-25).** The original per-story spec was lost when
@@ -52,3 +53,39 @@ So that ingestion is near-real-time and incremental instead of purely scheduled.
 Recovered 2026-07-25 as part of the spec-durability remediation (see
 `planning-artifacts/specs/README.md`). Same root cause + fix as pyforge-warden: story specs
 now live tracked in `planning-artifacts/specs/`, not Tier-3 gitignored `implementation-artifacts/`.
+
+## Dev narrative — recovered from the merged record (2026-07-25)
+
+> The original spec's `## Dev Notes` / `## Review Triage Log` were lost with the Tier-3
+> worktree teardown (this story was built in claude.ai/code web session
+> `01FYyQvBJuXwySiaMUUYCqBZ`; see `README.md`). The narrative below is reconstructed from
+> the **authoritative merged record** — the story's PR body and its commits on `main` —
+> **not** a regeneration. If the verbatim original is recovered from the web session, it
+> supersedes this section.
+
+### Dev summary — merged PR #98: G3: Dagster sensors for near-real-time upstream ingestion (FR-6)
+
+## Story G3 — Dagster sensors for near-real-time ingestion (FR-6)
+
+Adds two Dagster sensors that trigger the **existing** incremental ingestion jobs when an upstream event source reports a new release, closing the latency gap between scheduled runs.
+
+### Changes
+- **`orchestration/event_source.py` (NEW, dagster-free)** — `UpstreamEvent` / `SensorDecision` / `EventSource` protocol + `offline_event_source` fixture. `evaluate_events()` dedupes by monotonic `seq` via cursor, so a tick never re-requests an already-seen release. Zero dagster imports preserves **AD-1** import-confinement (event modelling stays outside the orchestration glue plane).
+- **`orchestration/definitions.py`** — `UPSTREAM_SENSORS` table + `build_upstream_sensor()` factory yielding `dg.RunRequest(job=...)` for the existing jobs (`phase_h_pypi_versions`, `phase_k_vcs_upstream`) or `dg.SkipReason` when quiet / on event-source error (degrade, never crash the daemon). Sensors default **STOPPED** and are injectable via `event_sources` for dry-run tests. **No second execution plane** — sensors re-request the same jobs the schedules run (**AD-23**); **AD-5** incremental datasets do the TTL gating.
+- **`tests/orchestration/test_definitions_dryrun.py`** — sensor dry-run coverage (RunRequest on new event, SkipReason when quiet, dedupe across ticks, degrade-on-error). 33 → 50 tests.
+
+### Deferred
+- Live sensor daemon bring-up (`dagster-daemon` process + real RSS/webhook source) is attended/credentialed → **DW-G3**.
+
+### Verification
+- Sensor dry-run + AD-1 ban gate: **48 passed**.
+- Full atlas suite: **712 passed**.
+
+Both in-loop reviewers + an independent fresh-eyes review collected; all SHOULD-FIX / NIT applied.
+
+### Commits on `main`
+
+- `eff5e1be77` G3: Dagster sensors for near-real-time upstream ingestion (FR-6) (#98)  _(dev-landing)_
+
+_This PR also carried an automated Gemini review; not reproduced here per repo policy ([[feedback_no_gemini_reviews]])._
+

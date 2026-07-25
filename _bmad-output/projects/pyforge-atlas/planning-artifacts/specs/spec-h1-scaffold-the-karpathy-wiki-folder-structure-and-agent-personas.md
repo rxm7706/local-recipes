@@ -5,6 +5,7 @@ status: 'regenerated'
 regenerated: '2026-07-25'
 source: 'epics.md (authoritative intent + acceptance criteria) + shipped code on main'
 original_spec: 'lost to the Tier-3 paper-trail gap + the 2026-07-19 truncation incident; dev-notes / review-triage-log not recovered'
+enriched: '2026-07-25 (merged PR #99 body + main commit log; dev narrative recovered, review-triage partial)'
 ---
 
 > **Regenerated contract-spec (2026-07-25).** The original per-story spec was lost when
@@ -115,3 +116,39 @@ So that the factory layer runs itself.
 Recovered 2026-07-25 as part of the spec-durability remediation (see
 `planning-artifacts/specs/README.md`). Same root cause + fix as pyforge-warden: story specs
 now live tracked in `planning-artifacts/specs/`, not Tier-3 gitignored `implementation-artifacts/`.
+
+## Dev narrative — recovered from the merged record (2026-07-25)
+
+> The original spec's `## Dev Notes` / `## Review Triage Log` were lost with the Tier-3
+> worktree teardown (this story was built in claude.ai/code web session
+> `01FYyQvBJuXwySiaMUUYCqBZ`; see `README.md`). The narrative below is reconstructed from
+> the **authoritative merged record** — the story's PR body and its commits on `main` —
+> **not** a regeneration. If the verbatim original is recovered from the web session, it
+> supersedes this section.
+
+### Dev summary — merged PR #99: H1: scaffold the Karpathy wiki + the 5 factory personas (FR-22(a))
+
+## Story H1 — Scaffold the Karpathy Wiki + Agent Personas (FR-22(a), § 7 / § 9)
+
+Lands the buildable half of the AI Software Factory storage layer (Wave H), fully offline. New package `pyforge.atlas.factory` — the **AD-22 write-boundary** is its defining invariant: factory components *read* atlas datasets and *write* ONLY the wiki tree (and, in H3, the CMS).
+
+### Changes
+- **`factory/wiki.py`** — the SINGLE owner of the wiki layout contract: `WIKI_STAGES` (`raw`→`compiled`→`outputs`) + `WikiLayout` + `scaffold_wiki`. `stage_path()` safety-checks every path segment and refuses any relative that would escape the wiki root (traversal / absolute / empty) — the `emitter._require_safe_name` lesson applied so a crafted document name can't turn a wiki write into a write outside the tree. `scaffold_wiki` is idempotent + non-destructive.
+- **`factory/personas.py`** — the 5 § 2.2 personas (Ingester=Analyst, Compiler=Architect, Linker=Developer, Linter=QA/Reviewer, Oracle=Product Owner), each mapped to a wiki stage + governed tools. `resolve_personas(*overlays)` merges the BMAD customization layers highest-priority-last; an overlay may only **refine** an existing persona — unknown name raises (no silent sixth agent), a rename is rejected (name is identity), and the workforce always resolves exactly five. Frozen + `extra="forbid"`; merged personas re-validated; `DEFAULT_PERSONAS` never mutated.
+- **`factory/storage.py`** — env-driven storage resolver. Defaults to the **offline filesystem** backend (opens no connection); a MinIO/S3 backend is selected only when `ATLAS_WIKI_S3_ENDPOINT` is set (host-agnostic, AD-2 — no host hardcoded; empty env == unset).
+
+### Deferred
+- The MinIO/PostgreSQL **server** bring-up (only the SDKs are in-env) is the attended H1 precondition → **DW-H1**.
+
+### Verification
+- `tests/factory/` — scaffold-layout + persona-resolution + storage-resolution: **26 passed**.
+- AD-1 import-ban gate covers the new module (imports pydantic + stdlib only).
+- Full atlas suite: **737 passed**.
+- An independent adversarial review (path-traversal / persona-merge mutation / offline-storage) found no must-fix/should-fix; its one actionable NIT (overlay renaming a persona) is fixed in this PR.
+
+### Commits on `main`
+
+- `7183e1c30d` H1: scaffold the Karpathy wiki + the 5 factory personas (FR-22(a)) (#99)  _(dev-landing)_
+
+_This PR also carried an automated Gemini review; not reproduced here per repo policy ([[feedback_no_gemini_reviews]])._
+

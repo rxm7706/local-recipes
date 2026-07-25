@@ -5,6 +5,7 @@ status: 'regenerated'
 regenerated: '2026-07-25'
 source: 'epics.md (authoritative intent + acceptance criteria) + shipped code on main'
 original_spec: 'lost to the Tier-3 paper-trail gap + the 2026-07-19 truncation incident; dev-notes / review-triage-log not recovered'
+enriched: '2026-07-25 (merged PR #97 body + main commit log; dev narrative recovered, review-triage partial)'
 ---
 
 > **Regenerated contract-spec (2026-07-25).** The original per-story spec was lost when
@@ -73,3 +74,41 @@ So that ingestion is near-real-time and incremental instead of purely scheduled.
 Recovered 2026-07-25 as part of the spec-durability remediation (see
 `planning-artifacts/specs/README.md`). Same root cause + fix as pyforge-warden: story specs
 now live tracked in `planning-artifacts/specs/`, not Tier-3 gitignored `implementation-artifacts/`.
+
+## Dev narrative — recovered from the merged record (2026-07-25)
+
+> The original spec's `## Dev Notes` / `## Review Triage Log` were lost with the Tier-3
+> worktree teardown (this story was built in claude.ai/code web session
+> `01FYyQvBJuXwySiaMUUYCqBZ`; see `README.md`). The narrative below is reconstructed from
+> the **authoritative merged record** — the story's PR body and its commits on `main` —
+> **not** a regeneration. If the verbatim original is recovered from the web session, it
+> supersedes this section.
+
+### Dev summary — merged PR #97: story(G2): host-agnostic static-host Parquet emitter + HTTP-Range gate (FR-14)
+
+## Summary
+
+Adds `publish/` — the **single owner** of the published-artifact layout (chunked Parquet + a `manifest.json` contract, defined once). `emit_static_site` writes the layout to a target **directory** ("the static host filesystem"); **which host** serves it (GitHub Pages public path, or an enterprise/JFrog mirror) is a deploy/config choice — **no host URL / github.io is baked into the emit logic** (AD-2 mirror substitution; a consumer composes chunk URLs from a runtime base via `chunk_url`).
+
+- **`publish-range` gate** (`tests/publish`): emits the layout, serves it over a Range-capable loopback host, points a DuckDB httpfs client at it, and **proves consumption is via HTTP Range** — 206 Partial Content reading strictly **fewer** bytes than the whole file (measured ~2.9%); a whole-file 200 **fails** the gate (non-hollow). Also asserts the chunk path is discovered **from the manifest** + matches checksums, host-agnosticism (same dir, two bases), and the D1 `ci_red` result over the range-served Parquet. httpfs `LOAD`ed **offline** from cache.
+
+## Review fixes
+
+- **MUST-FIX (Reviewer B):** a dataset **name** is joined onto `target_dir` and `rmtree`'d on re-emit — an unsanitized `../x` / `a/b` / leading-slash name would delete a directory **outside** `target_dir`. `_require_safe_name` now rejects any traversal/separator, and **all names+types validate up front** before any filesystem mutation (also fixes the non-atomic partial-emit that destroyed a prior good site on a late failure). Regression tests for both.
+- **Reviewer A:** the `publish-range` pixi task sets `PUBLISH_RANGE_REQUIRED=1` so the authoritative gate **fails** (never skips-to-green) if httpfs is unprovisioned; the single-owner docstring corrected — G1's `wasm/` runtime is **not yet** a manifest consumer (it fetches a flat parquet), recorded **DW-G2-2**.
+
+## Deferred
+
+The live GitHub Pages publish (**DW-G2-1**, attended) + migrating G1 to consume the manifest (**DW-G2-2**).
+
+## Tests
+
+`695 passed` (+12 new).
+
+### Commits on `main`
+
+- `fc6f846c9f` story(G2): reject over-long dataset names up front (independent review, LOW)  _(review-fix)_
+- `ac63f3e751` story(G2): host-agnostic static-host Parquet emitter + HTTP-Range gate (FR-14)  _(dev-landing)_
+
+_This PR also carried an automated Gemini review; not reproduced here per repo policy ([[feedback_no_gemini_reviews]])._
+

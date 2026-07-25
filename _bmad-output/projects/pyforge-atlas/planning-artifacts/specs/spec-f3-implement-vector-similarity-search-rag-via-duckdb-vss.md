@@ -5,6 +5,7 @@ status: 'regenerated'
 regenerated: '2026-07-25'
 source: 'epics.md (authoritative intent + acceptance criteria) + shipped code on main'
 original_spec: 'lost to the Tier-3 paper-trail gap + the 2026-07-19 truncation incident; dev-notes / review-triage-log not recovered'
+enriched: '2026-07-25 (merged PR #94 body + main commit log; dev narrative recovered, review-triage partial)'
 ---
 
 > **Regenerated contract-spec (2026-07-25).** The original per-story spec was lost when
@@ -74,3 +75,38 @@ So that one schema-validated `ComplianceReport` and one frozen exit code replace
 Recovered 2026-07-25 as part of the spec-durability remediation (see
 `planning-artifacts/specs/README.md`). Same root cause + fix as pyforge-warden: story specs
 now live tracked in `planning-artifacts/specs/`, not Tier-3 gitignored `implementation-artifacts/`.
+
+## Dev narrative — recovered from the merged record (2026-07-25)
+
+> The original spec's `## Dev Notes` / `## Review Triage Log` were lost with the Tier-3
+> worktree teardown (this story was built in claude.ai/code web session
+> `01FYyQvBJuXwySiaMUUYCqBZ`; see `README.md`). The narrative below is reconstructed from
+> the **authoritative merged record** — the story's PR body and its commits on `main` —
+> **not** a regeneration. If the verbatim original is recovered from the web session, it
+> supersedes this section.
+
+### Dev summary — merged PR #94: story(F3): DuckDB vss vector similarity search (RAG) (FR-5)
+
+## Summary
+
+Adds `rag/` — semantic retrieval over embedded artifacts in the **same single engine** (AD-4). `similarity_search` embeds the query with an injectable, offline, deterministic feature-hash embedder (hashlib — stable across processes; a learned model is the **DW-F3-1** upgrade) and ranks with an **exact** DuckDB `ORDER BY array_distance(emb, ?) LIMIT k` — distance computed + sorted IN DuckDB, never numpy/faiss. AD-4 vector-engine import-ban (faiss/hnswlib/chroma/qdrant banned). The `vss` HNSW index is the scale structure whose *creation* requires the vss extension.
+
+**AD-13 offline provisioning resolved:** the consumer path only `LOAD`s vss from the pre-provisioned local cache via an injectable loader, raising a clear `VssNotProvisionedError` when absent — never a silent network `INSTALL` (that lives only in the explicit attended `provision_vss`, **DW-F3-2**).
+
+## Review fixes (both in-loop reviewers, substantive)
+
+- **Persistent-connection break:** the store now `SET`s `hnsw_enable_experimental_persistence` so `index()` + `similarity_search` work on a **persistent (on-disk) connection** — the F1 consolidated store F3 is designed to ride, which every prior test masked with in-memory (`CREATE INDEX ... HNSW` raised `BinderException` on-disk). Regression test on a file-backed connection.
+- **SQL identifier injection:** `table`/`metric` constructor args validated as bare SQL identifiers (interpolated into DDL by name; a value smuggling a second statement could DROP a table). Regression test proves injection is rejected pre-execution.
+- **Honest docstrings:** the shipped query is an **exact** seq-scan + top-n (the `id` tiebreak keeps it exact, so it does not use the HNSW index); vss is load-bearing at the store/index level, not the exact query — no false acceleration claim.
+
+## Tests
+
+`666 passed` (+21 new).
+
+### Commits on `main`
+
+- `b0f3b8613d` story(F3): tighten identifier regex $ -> \\Z (independent review, LOW defense-in-depth)  _(review-fix)_
+- `aa4d22118e` story(F3): DuckDB vss vector similarity search (RAG) (FR-5)  _(dev-landing)_
+
+_This PR also carried an automated Gemini review; not reproduced here per repo policy ([[feedback_no_gemini_reviews]])._
+

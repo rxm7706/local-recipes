@@ -5,6 +5,7 @@ status: 'regenerated'
 regenerated: '2026-07-25'
 source: 'epics.md (authoritative intent + acceptance criteria) + shipped code on main'
 original_spec: 'lost to the Tier-3 paper-trail gap + the 2026-07-19 truncation incident; dev-notes / review-triage-log not recovered'
+enriched: '2026-07-25 (merged PR #92 body + main commit log; dev narrative recovered, review-triage partial)'
 ---
 
 > **Regenerated contract-spec (2026-07-25).** The original per-story spec was lost when
@@ -117,3 +118,37 @@ So that one schema-validated `ComplianceReport` and one frozen exit code replace
 Recovered 2026-07-25 as part of the spec-durability remediation (see
 `planning-artifacts/specs/README.md`). Same root cause + fix as pyforge-warden: story specs
 now live tracked in `planning-artifacts/specs/`, not Tier-3 gitignored `implementation-artifacts/`.
+
+## Dev narrative — recovered from the merged record (2026-07-25)
+
+> The original spec's `## Dev Notes` / `## Review Triage Log` were lost with the Tier-3
+> worktree teardown (this story was built in claude.ai/code web session
+> `01FYyQvBJuXwySiaMUUYCqBZ`; see `README.md`). The narrative below is reconstructed from
+> the **authoritative merged record** — the story's PR body and its commits on `main` —
+> **not** a regeneration. If the verbatim original is recovered from the web session, it
+> supersedes this section.
+
+### Dev summary — merged PR #92: story(F1): the DuckDB-singularity gate + attended-benchmark deferral (FR-5)
+
+## Summary
+
+Opens Wave F. Makes **"DuckDB/Parquet is the sole store"** a first-class named gate (`tests/singularity`, pixi `duckdb-singularity`):
+
+- An AST scan asserts **no `sqlite3` read/write path anywhere in the migrated `pyforge/atlas` surface** (FR-5 / AD-4).
+- Pins the ONE legitimate legacy-SQLite reader — the B4 credentialed parity comparator that reads the *external* legacy `cf_atlas.db` to prove parity before retirement — to `tests/`, never the shipped `src` package (it reads the OLD store to retire it; it is not the migrated engine).
+- Asserts DuckDB is present as the engine.
+
+## Attended half (deferred)
+
+The **performance claim** — the warm-incremental refresh headline + the cold full-build wall-clock vs the legacy 3–4 h network-bound baseline — is the ATTENDED boundary event (threshold fixed in the story spec first per SM-3, operator sign-off per AD-19; do not chase cold-start per SM-C1). Deferred as **DW-F1-1** (precondition: B4 retirement sign-off, DW-B4-2).
+
+## Tests
+
+`623 passed` (+3 new).
+
+### Commits on `main`
+
+- `5ffe8492d7` story(F1): the DuckDB-singularity gate + attended-benchmark deferral (FR-5)  _(dev-landing)_
+
+_This PR also carried an automated Gemini review; not reproduced here per repo policy ([[feedback_no_gemini_reviews]])._
+

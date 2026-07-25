@@ -5,6 +5,7 @@ status: 'regenerated'
 regenerated: '2026-07-25'
 source: 'epics.md (authoritative intent + acceptance criteria) + shipped code on main'
 original_spec: 'lost to the Tier-3 paper-trail gap + the 2026-07-19 truncation incident; dev-notes / review-triage-log not recovered'
+enriched: '2026-07-25 (merged PR #82 body + main commit log; dev narrative recovered, review-triage partial)'
 ---
 
 > **Regenerated contract-spec (2026-07-25).** The original per-story spec was lost when
@@ -76,3 +77,44 @@ So that migration readiness (e.g. python314) is a queryable four-way split with 
 Recovered 2026-07-25 as part of the spec-durability remediation (see
 `planning-artifacts/specs/README.md`). Same root cause + fix as pyforge-warden: story specs
 now live tracked in `planning-artifacts/specs/`, not Tier-3 gitignored `implementation-artifacts/`.
+
+## Dev narrative — recovered from the merged record (2026-07-25)
+
+> The original spec's `## Dev Notes` / `## Review Triage Log` were lost with the Tier-3
+> worktree teardown (this story was built in claude.ai/code web session
+> `01FYyQvBJuXwySiaMUUYCqBZ`; see `README.md`). The narrative below is reconstructed from
+> the **authoritative merged record** — the story's PR body and its commits on `main` —
+> **not** a regeneration. If the verbatim original is recovered from the web session, it
+> supersedes this section.
+
+### Dev summary — merged PR #82: story(B9): release-to-availability velocity columns (FR-20)
+
+## Summary
+
+Adds the FR-20 release-to-availability velocity signal to the `vcs_health` pipeline — `release_lag_hours` + `release_lag_qualifies`, measuring how long conda-forge takes to publish a matching build after an upstream PyPI release.
+
+- **New node** `derive_release_velocity` (AD-3: lives in `vcs_health`, but READS the Phase H `pypi_current_versions` produced by `pypi_intelligence` — shared-by-catalog-name, ownership=producer). **No new external source**: reuses Phase H's retained `upload_time_iso_8601`, `core_repodata_raw` per-build timestamps, and the Phase C `pypi_conda_mapping`.
+- **Load-bearing rule — first availability = MIN per-build repodata `timestamp`**, never `latest_conda_upload`. conda-forge rebuilds long-stable version-unchanged packages, so a latest-upload delta reflects the most recent *rebuild*, not *first availability* (the naive delta produced the false "47% >10 days behind" headline). Using `MIN(timestamp)` means a rebuild landing **inside** the 90-day window can't shift the lag.
+- **90-day recency gate** (`release_lag_qualifies`) keys on upstream-release age — the rebuild-cadence-artifact guard.
+- Repodata `timestamp` (ms) is normalized **ms→s at the boundary** (same `_MS_THRESHOLD` convention as `core.nodes` / `IncrementalParquetDataset`).
+
+## Architecture alignment
+
+- **AD-14** (new-signal, NOT parity-gated): output `vcs_release_velocity` — name aligned to B4's frozen `EXCLUDED_NEW_SIGNAL_DATASETS` (len stays 3; no new entry).
+- **AD-13** (never-fail): pure DataFrame→DataFrame; malformed/empty inputs degrade to a typed empty frame, never raise.
+
+## Review hardening (two adversarial passes)
+
+- Malformed conda `timestamp` now yields `qualifies=False` — a qualifying row must carry a real lag, else a NaN pollutes downstream aggregation over the qualifying population.
+- Empty-frame columns typed `bool`/`float64` to match the non-empty path (schema-typed sink / concat safety).
+
+## Tests
+
+`452 passed` (+17 new), including both mandatory failure-mode fixtures: the 90-day guard (stale release → `qualifies=False`) and rebuild-inside-window invariance (`release_lag_hours` unchanged).
+
+### Commits on `main`
+
+- `ccf97103b8` story(B9): release-to-availability velocity columns (FR-20)  _(dev-landing)_
+
+_This PR also carried an automated Gemini review; not reproduced here per repo policy ([[feedback_no_gemini_reviews]])._
+
