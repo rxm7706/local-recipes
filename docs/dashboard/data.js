@@ -1462,14 +1462,14 @@ window.DASHBOARD_DATA = {
         "state": "running",
         "have": {
           "research": true,
-          "brief": false,
+          "brief": true,
           "prd": true,
           "architecture": true,
           "epics": true
         },
-        "n": 4,
+        "n": 5,
         "of": 5,
-        "status": "partial"
+        "status": "landed"
       },
       {
         "wave": "1e",

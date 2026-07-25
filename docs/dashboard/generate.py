@@ -327,7 +327,8 @@ def scan_campaign() -> dict:
         pa = REPO_ROOT / "_bmad-output" / "projects" / e["slug"] / "planning-artifacts"
         have = {
             "research": bool(list((pa / "research").glob("*.md"))) if (pa / "research").is_dir() else False,
-            "brief": bool(list(pa.glob("product-brief*")) or list(pa.glob("*/product-brief*"))),
+            "brief": bool(list(pa.glob("product-brief*")) or list(pa.glob("*/product-brief*"))
+                          or list(pa.glob("briefs/**/brief*.md"))),
             "prd": (pa / "prd.md").is_file() or bool(list(pa.glob("prds/*/prd.md"))),
             "architecture": ((pa / "architecture.md").is_file()
                              or bool(list(pa.glob("architecture/*/*.md")))),
