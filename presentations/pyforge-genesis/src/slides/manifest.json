@@ -26,12 +26,12 @@
   {
     "id": "05-act-ii-the-crew",
     "label": "Act II — The Crew",
-    "notes": "Act II: who carries the Dream. Eight Forgemasters, each with its own chapter deck in this same design system.",
+    "notes": "Act II: who carries the Dream. Eight Smiths, each with its own chapter deck in this same design system.",
     "bg": "#201e1d"
   },
   {
-    "id": "06-eight-forgemasters-eight-mottos",
-    "label": "Eight Forgemasters, eight mottos",
+    "id": "06-eight-smiths-eight-mottos",
+    "label": "Eight Smiths, eight mottos",
     "notes": "The crew at a glance, each with its motto. Herald proclaims and bookends the pipeline; Marshal commands the BMAD factory; Atlas maps; Warden guards; Mason binds and ships; Doctor keeps it alive; Scribe keeps what the team knows; Steward provisions, holds the keys, and keeps the lights on. Each persona's chapter deck lives at presentations/pyforge-…, one per persona.",
     "bg": "#f3f2f2"
   },

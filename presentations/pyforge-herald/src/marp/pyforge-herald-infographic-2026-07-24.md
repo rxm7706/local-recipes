@@ -46,7 +46,7 @@ Zero manual downloads. Conflicts caught by etags, never overwritten.
 
 ## The deck family Herald keeps
 
-**1 origin** (agentic-sdlc) + **1 master** (genesis) + **8 Forgemaster chapters** — all in the Modernist / Archivo system, each with a 6-artifact standard: prototype · slides · built deck · Marp · standalone infographic · editable PPTX.
+**1 origin** (agentic-sdlc) + **1 master** (genesis) + **8 Smith chapters** — all in the Modernist / Archivo system, each with a 6-artifact standard: prototype · slides · built deck · Marp · standalone infographic · editable PPTX.
 
 ---
 

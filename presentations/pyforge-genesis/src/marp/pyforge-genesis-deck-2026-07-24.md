@@ -73,11 +73,11 @@ Not a ticket. Not a spec. The **raw aspiration** — before syntax, before const
 
 # The Crew
 
-Eight Forgemasters carry the Dream down one pipeline — **each has its own chapter deck.**
+Eight Smiths carry the Dream down one pipeline — **each has its own chapter deck.**
 
 ---
 
-## Eight Forgemasters, eight mottos
+## Eight Smiths, eight mottos
 
 | Persona | Motto |
 | --- | --- |

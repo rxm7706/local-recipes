@@ -27,7 +27,7 @@ style: |
 ## PyForge · Genesis — at a glance
 
 One pipeline: **Dream → Deck → Spec → Code → Proclaim.**
-Eight Forgemasters. One design system. Zero vibes.
+Eight Smiths. One design system. Zero vibes.
 
 ---
 
