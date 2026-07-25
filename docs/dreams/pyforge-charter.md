@@ -450,7 +450,7 @@ a lifecycle stage *plus its independent verdict*, under the doctrine's sharpest 
 *the hand that builds is never the gate that judges.* Mason's build does not pass
 because Mason says so; it passes when Warden's gate says so.
 
-Station and Forgemaster separate because **the being can change while the post
+Station and Smith separate because **the being can change while the post
 persists**. Proven empirically (2026-07-25, the first build campaign): dev sessions
 died mid-story — the beings were literally killed — and the stations held: verdicts
 stayed valid, committed work was recoverable, the contracts (specs, exit codes,
@@ -465,17 +465,17 @@ The armory (`.claude/skills/`): the conda-forge-expert craft with its ~90 hard-w
 gotchas, the BMAD suite, the forged retro-skills. The *wielding* distinction is
 load-bearing, not poetic:
 
-- **Governance survives.** Forgemasters *author* skills (every Rule-2 retro re-forges
-  the craft). If a Forgemaster *were* its skills, the agent would author itself — and
+- **Governance survives.** Smiths *author* skills (every Rule-2 retro re-forges
+  the craft). If a Smith *were* its skills, the agent would author itself — and
   the harness, deliberately NOT a skill precisely so the thing that governs the agent
   is never a thing the agent writes, would have nothing outside the agent to stand on.
   "Wielded" keeps the sword issueable and confiscatable.
-- **The armory is shared.** Rule 1: any Forgemaster touching conda-forge wields the
+- **The armory is shared.** Rule 1: any Smith touching conda-forge wields the
   CFE craft — Marshal's dev sessions pick up Mason's knowledge without becoming Mason.
   Rule 2: a skill sharpened by one effort upgrades **every future wielder**. Identity
   cannot be shared; equipment can. That asymmetry is the compounding-knowledge engine.
 - **Blades version; beings don't.** Skills carry semver, changelogs, retros. The
-  Forgemaster wielding CFE v8 is the same one who wielded v6 — continuity of
+  Smith wielding CFE v8 is the same one who wielded v6 — continuity of
   accountability across upgraded capability.
 
 ### 7. The Guildhall — the unit of *visibility* (and the human's seat)

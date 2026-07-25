@@ -735,7 +735,7 @@ window.DASHBOARD_DATA = {
             [
               "0.2",
               "done",
-              "Program spec + waves companion (bmad-spec kernel)"
+              "Program spec + waves companion (bmad-spec Spec)"
             ]
           ]
         },
@@ -746,7 +746,7 @@ window.DASHBOARD_DATA = {
             [
               "1.1",
               "done",
-              "Retrofit surface: onto existing kernels"
+              "Retrofit surface: onto existing Specs"
             ],
             [
               "1.2",
@@ -762,7 +762,7 @@ window.DASHBOARD_DATA = {
             [
               "2.1",
               "done",
-              "Factory-console backfill kernel (docs/dashboard)"
+              "Factory-console backfill Spec (docs/dashboard)"
             ],
             [
               "2.2",
@@ -778,12 +778,12 @@ window.DASHBOARD_DATA = {
             [
               "3.1",
               "done",
-              "Enterprise-airgap kernel (_http routing + reference)"
+              "Enterprise-airgap Spec (_http routing + reference)"
             ],
             [
               "3.2",
               "done",
-              "Modernist-identity kernel (DS + deck engine)"
+              "Modernist-identity Spec (DS + deck engine)"
             ]
           ]
         },
@@ -794,12 +794,12 @@ window.DASHBOARD_DATA = {
             [
               "4.1",
               "done",
-              "Packaging-factory kernel over the CFE surface"
+              "Packaging-factory Spec over the CFE surface"
             ],
             [
               "4.2",
               "done",
-              "Fleet-stewardship kernel (absorbs 3 legacy workflows)"
+              "Fleet-stewardship Spec (absorbs 3 legacy workflows)"
             ],
             [
               "4.R",
@@ -1169,7 +1169,7 @@ window.DASHBOARD_DATA = {
       "timing": null
     }
   },
-  "snapshot": "<span>2026-07-25 18:02 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-07-25 18:05 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -1433,7 +1433,7 @@ window.DASHBOARD_DATA = {
       "title": "fleet stewardship (the recipes/ fleet)",
       "caps": 3,
       "companions": 3,
-      "updated": "2026-07-23",
+      "updated": "2026-07-25",
       "dream": "fleet-stewardship",
       "path": "_bmad-output/projects/local-recipes/planning-artifacts/specs/spec-fleet-stewardship"
     },
@@ -1463,7 +1463,7 @@ window.DASHBOARD_DATA = {
       "title": "the packaging factory (conda-forge-expert machinery)",
       "caps": 4,
       "companions": 2,
-      "updated": "2026-07-23",
+      "updated": "2026-07-25",
       "dream": "packaging-factory",
       "path": "_bmad-output/projects/local-recipes/planning-artifacts/specs/spec-packaging-factory"
     },
@@ -1473,7 +1473,7 @@ window.DASHBOARD_DATA = {
       "title": "Marshal (graduated-autonomy loop orchestration, as shipped)",
       "caps": 4,
       "companions": 3,
-      "updated": "2026-07-24",
+      "updated": "2026-07-25",
       "dream": "pyforge-marshal",
       "path": "_bmad-output/projects/local-recipes/planning-artifacts/specs/spec-pyforge-marshal"
     },
@@ -1483,7 +1483,7 @@ window.DASHBOARD_DATA = {
       "title": "regenerable-factory program",
       "caps": 4,
       "companions": 1,
-      "updated": "2026-07-23",
+      "updated": "2026-07-25",
       "dream": "regenerable-factory",
       "path": "_bmad-output/projects/local-recipes/planning-artifacts/specs/spec-regenerable-factory"
     },
@@ -1493,7 +1493,7 @@ window.DASHBOARD_DATA = {
       "title": "pyforge-atlas (chain-verify kernel)",
       "caps": 1,
       "companions": 3,
-      "updated": "2026-07-23",
+      "updated": "2026-07-25",
       "dream": "pyforge-atlas",
       "path": "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas"
     },
