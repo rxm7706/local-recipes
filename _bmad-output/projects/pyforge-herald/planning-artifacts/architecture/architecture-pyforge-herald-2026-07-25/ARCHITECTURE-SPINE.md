@@ -143,7 +143,7 @@ graph LR
 | State & errors | all writes go through `state.py`; all raised errors are `HeraldError` subclasses caught once at the CLI boundary (AD-6) |
 | Output streams | stdout = machine-readable success output only; stderr = every diagnostic, conflict, and error message (matches `pyforge-warden`'s NFR-I3 precedent) |
 | URLs in any output/file | `claude.ai/design/...` only — a raw `serve_url` never crosses the transport-adapter boundary outward (NFR-04) |
-| Etag headers | every `DesignTransport` call that reads or writes carries `if_none_match`/`if_match`; no adapter method may omit them |
+| Etag headers | every write carries a required etag precondition — `if_match` per entry (or `leaf_if_match` for a folder destination), with `"0"` asserting the path does not exist; no adapter may omit it (FR-24). `read_file`'s `if_none_match` is optional on a first read, which legitimately holds no prior etag, and required whenever a prior etag *is* held |
 | Subprocess adapters | `deck_pipeline.py` always sets `cwd` explicitly and never assumes the caller's working directory |
 
 ## Stack
@@ -199,9 +199,18 @@ src/shared/packages/pyforge-herald/
   shape is not committed by this spine and should not be assumed by V1 code.
 - **`herald deck generate`** (Dream→deck rendering) — PRD Open Question #4; not designed here.
   Not part of CAP-1..5.
-- **Exact `pyforge-herald` env run-dependency list for the MCP SDK** — whether `mcp` is a
+- ~~**Exact `pyforge-herald` env run-dependency list for the MCP SDK** — whether `mcp` is a
   `[package.run-dependencies]` entry or stays feature-level, pending the transport-spike
-  story's outcome (memlog `question` entry).
+  story's outcome (memlog `question` entry).~~ **CLOSED 2026-07-25 by Story 1.2 (the transport
+  spike) in favour of `[package.run-dependencies]`.** The spike proved FR-21's primary
+  pure-MCP-client path reaches `claude-design` from a plain non-interactive Python process, so
+  `McpTransport` is V1's shipped transport and `mcp >=1.28.1` is a genuine runtime dependency of
+  the shipped package, not a dev-only extra. Wired in all three manifests: the package's
+  `pixi.toml` `[package.run-dependencies]`, its `pyproject.toml` `[project] dependencies`, and
+  the root `pixi.toml` `[feature.pyforge-herald.dependencies]`. Verified in the built artifacts
+  (`.conda` `info/index.json` depends carries `mcp >=1.28.1`; the wheel's METADATA carries
+  `Requires-Dist: mcp>=1.28.1`). FR-22's Agent-SDK transport (Story 1.3) is therefore the
+  fallback, not V1's default.
 - **CI/deployment envelope** for the bridge CLI (who runs `herald deck watch` continuously, if
   anyone) — out of scope for a CLI tool invoked interactively by an operator or agent; revisit
   only if a persistent-watch deployment is ever proposed.

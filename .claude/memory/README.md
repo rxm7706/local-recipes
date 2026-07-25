@@ -1,0 +1,97 @@
+# `.claude/memory/` — Team Memory
+
+## Purpose
+
+Checked-in, version-controlled memory shared by every developer and every
+agent session working in this repo — the destination for decisions,
+project state, and reference material that would otherwise stay trapped in
+one person's user-local auto-memory
+(`~/.claude/projects/<encoded-path>/memory/`), invisible to anyone else who
+clones the repo. Written with the `scribe` CLI
+(`src/shared/packages/pyforge-scribe/`) and loaded into every session via
+root `CLAUDE.md`'s `@.claude/memory/MEMORY.md` import.
+
+## Relationship to user-local auto-memory
+
+This layer is **additive and selective**, never a replacement. User-local
+auto-memory keeps per-user nuance (tone/terseness preferences, personal
+working habits) exactly as it is today. `.claude/memory/` holds only what
+would benefit a brand-new contributor on their first session (see
+Team-relevance test below) — reusing the same frontmatter schema
+byte-compatibly so moving an entry between the two layers is mechanical,
+never a translation.
+
+## Schema
+
+Every `.claude/memory/<type>/*.md` file has YAML frontmatter:
+
+```yaml
+---
+name: kebab-case-slug
+description: "One-line description."
+metadata:
+  type: feedback   # feedback | project | reference
+---
+```
+
+This is the CURRENT live auto-memory frontmatter shape — `type` **nested**
+under a `metadata:` key, not a flat `type:` field — verified against
+on-disk auto-memory entries (not just the architecture doc's flatter
+shorthand). `pyforge.scribe.models.CaptureRecord` isolates the
+(de)serialization of this exact shape in one place
+(`to_frontmatter()`/`from_frontmatter()`), so a future upstream schema
+change only has to touch that one module.
+
+The body below the frontmatter is free-form markdown. For a direct
+`scribe capture` it is the raw `--text` verbatim — no team-voice rewrite,
+no `Why:`/`How-to-apply` structuring. A future *promoted* entry (Story
+1.3) is rewritten in team voice instead; direct capture is deliberately
+fast and unstructured.
+
+`type` selects the subdirectory the file lands in: `feedback/`,
+`project/`, or `reference/`.
+
+## `MEMORY.md` index
+
+One line per entry, appended under the matching `## Feedback` /
+`## Project` / `## Reference` heading:
+
+```markdown
+- [slug](type/slug.md) — one-line description
+```
+
+Keep `MEMORY.md` under 200 lines — Claude Code truncates context past that
+length. There is no automated TTL or decay; see When to prune below.
+
+## Team-relevance test
+
+Before anything lands here, it passes one heuristic: **"Would a
+brand-new contributor to this repo, on their first session, without ever
+having talked to me, benefit from this rule?"** Yes → belongs in
+`.claude/memory/`. No → stays in user-local memory only.
+
+## Promotion workflow (arrives Story 1.3)
+
+`scribe capture --type <type> --text "<text>"` (this story, 1.1) is a
+**direct** capture — verbatim, at the moment a decision is made, with no
+scan of existing memory. A future `scribe capture --promote` (Story 1.3)
+will scan user-local auto-memory, classify each entry (team-relevant /
+personal / already-promoted / stale) against the team-relevance test
+above, rewrite the team-relevant ones in team voice, and halt for human
+confirmation before writing anything — proposal-then-confirm, never
+auto-commit. Not yet implemented.
+
+## Pointer stubs (arrives Story 1.4)
+
+Once promotion (Story 1.3) ships, a promoted user-local entry will not be
+deleted — it will be rewritten to a one-line pointer stub (`Promoted to
+.claude/memory/<type>/<slug>.md`) so the original session context and
+traceability are preserved without duplicating content, and re-promotion
+is idempotent. Not yet implemented.
+
+## When to prune
+
+Humans decide. When a rule becomes obsolete (a skill changes, a project
+ships or gets retired), edit `MEMORY.md` to remove its index line and
+delete or archive the entry file — standard git workflow, no tooling
+required.

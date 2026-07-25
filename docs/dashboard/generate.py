@@ -40,6 +40,8 @@ PROJECT_SOURCES = {
     "atlas": "_bmad-output/projects/pyforge-atlas/implementation-artifacts/sprint-status.yaml",
     "regen": "_bmad-output/projects/local-recipes/implementation-artifacts/sprint-status.yaml",
     "herald": "_bmad-output/projects/pyforge-herald/implementation-artifacts/sprint-status.yaml",
+    "doctor": "_bmad-output/projects/pyforge-doctor/implementation-artifacts/sprint-status.yaml",
+    "scribe": "_bmad-output/projects/pyforge-scribe/implementation-artifacts/sprint-status.yaml",
 }
 
 # git-history DONE detection (used by --source git). Verified against main's subjects.
@@ -51,6 +53,8 @@ MAIN_BRANCH = "main"
 _LOOP_DONE = re.compile(r"Merge bmad-loop/[^/]+/(\d+-\d+)-\S*(?:\s+into\s+(\S+))?")
 _LOOP_TARGET_PROJECT = (
     ("pyforge-herald", "herald"),
+    ("pyforge-doctor", "doctor"),
+    ("pyforge-scribe", "scribe"),
     ("pyforge-warden", "warden"),
     ("warden-epic", "warden"),
 )
@@ -133,6 +137,49 @@ def apply_sprint_status(projects: dict) -> None:
               f"(of {matched + len(unmatched)}){note}")
 
 
+# dashboard project-key -> its bmad-loop loop-home dir (sibling of the repo).
+# Local-mode enrichment ONLY: bmad-loop writes sprint-status at story COMPLETION,
+# not start — so a story being actively worked shows `backlog` in the feed. The
+# latest live run's story-worktree name carries the story key; mark it active.
+# CI has no sibling loop homes, so this is a structural no-op there.
+LOOP_HOMES = {
+    "herald": "local-recipes-loop-pyforge-herald",
+    "doctor": "local-recipes-loop-pyforge-doctor",
+    "scribe": "local-recipes-loop-pyforge-scribe",
+    "warden": "local-recipes-loop-pyforge-warden",
+}
+_WT_STORY = re.compile(r"^(\d+-\d+)-")
+_RUN_FRESH_SECS = 12 * 3600  # ignore concluded/stale runs
+
+
+def apply_loop_inflight(projects: dict) -> None:
+    import time
+    for pkey, home in LOOP_HOMES.items():
+        proj = projects.get(pkey)
+        runs_dir = REPO_ROOT.parent / home / ".bmad-loop" / "runs"
+        if proj is None or not runs_dir.is_dir():
+            continue
+        runs = sorted(runs_dir.iterdir(), key=lambda p: p.stat().st_mtime, reverse=True)
+        active_ids = set()
+        if runs and (time.time() - runs[0].stat().st_mtime) < _RUN_FRESH_SECS:
+            wts = runs[0] / "worktrees"
+            if wts.is_dir():
+                for wt in wts.iterdir():
+                    m = _WT_STORY.match(wt.name)
+                    if m:
+                        active_ids.add(m.group(1).replace("-", "."))
+        if not active_ids:
+            continue
+        marked = []
+        for epic in proj["epics"]:
+            for story in epic["stories"]:
+                if story[0] in active_ids and story[1] == "pending":
+                    story[1] = "active"
+                    marked.append(story[0])
+        if marked:
+            print(f"[{pkey}] loop-home in-flight: {', '.join(marked)} (run {runs[0].name})")
+
+
 # ---- source: git (hands-off / CI) -------------------------------------------
 
 def done_ids_from_git(branch: str) -> dict[str, set[str]]:
@@ -151,7 +198,7 @@ def done_ids_from_git(branch: str) -> dict[str, set[str]]:
         ["git", "log", ref, "--format=%s"], capture_output=True, text=True, check=True
     ).stdout
     done: dict[str, set[str]] = {"warden": set(), "atlas": set(), "regen": set(),
-                                 "herald": set()}
+                                 "herald": set(), "doctor": set(), "scribe": set()}
     for line in log.splitlines():
         m = _LOOP_DONE.search(line)
         if m:
@@ -359,6 +406,52 @@ def scan_campaign() -> dict:
             "rows": rows}
 
 
+# ---- build campaign (implementation lines across all bmad-projects) ----------
+
+IMPL_CAMPAIGN = [
+    # pkey = data.js projects key when the line is dashboard-wired; stories = static count otherwise
+    {"slug": "pyforge-herald",       "pkey": "herald", "stories": 17, "state": "running",
+     "note": "line 1 — smallest full product, spec settled 0 OQs"},
+    {"slug": "pyforge-doctor",       "pkey": "doctor", "stories": 12, "state": "running",
+     "note": "line 2 — consolidative wrap"},
+    {"slug": "pyforge-scribe",       "pkey": "scribe", "stories": 9,  "state": "running",
+     "note": "line 3 — team memory + graph"},
+    {"slug": "pyforge-steward",      "pkey": None, "stories": 18, "state": "queued",
+     "note": "next free slot"},
+    {"slug": "deckcraft",            "pkey": None, "stories": 28, "state": "queued",
+     "note": "planned pre-campaign (6 epics); research backfill advisable before launch"},
+    {"slug": "pyforge-mason",        "pkey": None, "stories": 38, "state": "queued",
+     "note": "longest persona line; CFE Rule-2 retro at closeout"},
+    {"slug": "presenton-pixi-image", "pkey": None, "stories": 30, "state": "held",
+     "note": "operator Phase-0 gates: MS disconnected-stack check + memory-subsystem scope"},
+    {"slug": "pyforge-marshal",      "pkey": None, "stories": 40, "state": "held",
+     "note": "AD-25–39 adversarial pass + floor quiescence (touches loop machinery)"},
+    {"slug": "pyforge-genesis",      "pkey": None, "stories": 36, "state": "held",
+     "note": "last — model stability + consumes marshal-owned scripts"},
+    {"slug": "wasm-analytics-stack", "pkey": None, "stories": 0,  "state": "future",
+     "note": "PRD+arch only by design; stories decompose when scheduled"},
+    {"slug": "unity-data-stack",     "pkey": None, "stories": 0,  "state": "future",
+     "note": "PRD+arch only by design; stories decompose when scheduled"},
+]
+
+
+def scan_impl_campaign(projects: dict) -> dict:
+    """Build-campaign roster; wired lines derive done/total live from `projects`."""
+    rows: list[dict] = []
+    for e in IMPL_CAMPAIGN:
+        done, total = 0, e["stories"]
+        if e["pkey"] and e["pkey"] in projects:
+            stories = [s for ep in projects[e["pkey"]]["epics"] for s in ep["stories"]]
+            total = len(stories)
+            done = sum(1 for s in stories if s[1] == "done")
+        state = "done" if total and done == total else e["state"]
+        rows.append({**e, "done": done, "total": total, "state": state})
+    running = sum(1 for r in rows if r["state"] == "running")
+    dn = sum(1 for r in rows if r["state"] == "done")
+    print(f"[build-campaign] {len(rows)} lines · {running} running · {dn} done")
+    return {"launched": "2026-07-25", "rows": rows}
+
+
 # ---- pitch roster (the deck family) ------------------------------------------
 
 PITCH_TITLES = {"agentic-sdlc": "Agentic AI across the SDLC"}
@@ -458,9 +551,21 @@ def main() -> int:
         apply_git(data["projects"])
     else:
         apply_sprint_status(data["projects"])
+        apply_loop_inflight(data["projects"])
     data["dreams"] = scan_dreams()
     data["specs"] = scan_specs()
-    data["campaign"] = scan_campaign()
+    data.pop("campaign", None)
+    data.pop("campaign2", None)
+    spec_c = scan_campaign()
+    build_c = scan_impl_campaign(data["projects"])
+    data["campaigns"] = [
+        {"id": "spec-completion-2026-07-25", "title": "Spec Completion",
+         "kind": "planning", "status": "completed", "completed": "2026-07-25",
+         "record": "_bmad-output/projects/local-recipes/planning-artifacts/campaign-spec-completion-2026-07-25.md",
+         **spec_c},
+        {"id": "build-2026-07-25", "title": "The Build", "kind": "build",
+         "status": "active", **build_c},
+    ]
     data["pitch"] = scan_pitch()
     data["archived"] = build_archived(data["dreams"])
 
