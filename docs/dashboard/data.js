@@ -3,7 +3,7 @@ window.DASHBOARD_DATA = {
     "warden": {
       "label": "Warden",
       "accentVar": "--warden",
-      "branch": "loop/pyforge-warden · WARDEN COMPLETE ✔ 31/31 — all 6 epics shipped; batch-PR to main + closeout retro pending",
+      "branch": "main · WARDEN COMPLETE ✔ 31/31 — all 6 epics merged to main (PR #110); history purged, key rotated",
       "contract": "FR1–FR40 · exit codes {0,1,2,130} · verdict lattice error &gt; policy-violation &gt; indeterminate &gt; warn &gt; bypassed &gt; clean &gt; not-applicable",
       "seglabels": [
         "E1 · spine",
@@ -868,7 +868,7 @@ window.DASHBOARD_DATA = {
       }
     }
   },
-  "snapshot": "<span>2026-07-25 02:56 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-07-25 07:47 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
