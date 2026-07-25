@@ -39,13 +39,21 @@ PROJECT_SOURCES = {
     "warden": "_bmad-output/projects/pyforge-warden/implementation-artifacts/sprint-status.yaml",
     "atlas": "_bmad-output/projects/pyforge-atlas/implementation-artifacts/sprint-status.yaml",
     "regen": "_bmad-output/projects/local-recipes/implementation-artifacts/sprint-status.yaml",
+    "herald": "_bmad-output/projects/pyforge-herald/implementation-artifacts/sprint-status.yaml",
 }
 
 # git-history DONE detection (used by --source git). Verified against main's subjects.
 MAIN_BRANCH = "main"
-# Warden: per-story bmad-loop merge commits `Merge bmad-loop/<run-id>/<X-Y>-<slug>`.
-# The `[^/]+/` skips the run-id (2nd segment) so the capture is the story key (3rd).
-_WARDEN_DONE = re.compile(r"Merge bmad-loop/[^/]+/(\d+-\d+)-")
+# bmad-loop merge commits `Merge bmad-loop/<run-id>/<X-Y>-<slug> into <target> …`.
+# Numeric story keys COLLIDE across loop-driven projects (warden 1-1 vs herald 1-1),
+# so attribution is by the merge TARGET branch when present: loop/pyforge-herald ->
+# herald, etc. Bare/legacy matches (warden's epic-tail branches) default to warden.
+_LOOP_DONE = re.compile(r"Merge bmad-loop/[^/]+/(\d+-\d+)-\S*(?:\s+into\s+(\S+))?")
+_LOOP_TARGET_PROJECT = (
+    ("pyforge-herald", "herald"),
+    ("pyforge-warden", "warden"),
+    ("warden-epic", "warden"),
+)
 # Atlas: most stories land as `story(A1)` / `story(B10)` / `story(0.1)`; the Wave
 # G/H tail uses bare `GN:` / `HN:` subjects instead.
 _ATLAS_STORY = re.compile(r"story\((\w[\w.]*)\)")
@@ -142,11 +150,15 @@ def done_ids_from_git(branch: str) -> dict[str, set[str]]:
     log = subprocess.run(
         ["git", "log", ref, "--format=%s"], capture_output=True, text=True, check=True
     ).stdout
-    done: dict[str, set[str]] = {"warden": set(), "atlas": set(), "regen": set()}
+    done: dict[str, set[str]] = {"warden": set(), "atlas": set(), "regen": set(),
+                                 "herald": set()}
     for line in log.splitlines():
-        m = _WARDEN_DONE.search(line)
+        m = _LOOP_DONE.search(line)
         if m:
-            done["warden"].add(m.group(1).replace("-", "."))  # 6-1 -> 6.1
+            target = m.group(2) or ""
+            pkey = next((p for frag, p in _LOOP_TARGET_PROJECT if frag in target),
+                        "warden")  # legacy bare matches are warden's
+            done[pkey].add(m.group(1).replace("-", "."))  # 6-1 -> 6.1
         for a in _ATLAS_STORY.finditer(line):
             done["atlas"].add(a.group(1))  # A1, B10, 0.1, F4 ...
         for a in _ATLAS_GH.finditer(line):

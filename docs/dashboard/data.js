@@ -866,9 +866,141 @@ window.DASHBOARD_DATA = {
           ]
         ]
       }
+    },
+    "herald": {
+      "label": "Herald",
+      "accentVar": "--warden",
+      "branch": "loop/pyforge-herald",
+      "contract": "SPEC-design-code-bridge CAP-1..5 · FR-01–FR-26 · AD-1–AD-8 · deterministic no-LLM core · dist pyforge-herald / module pyforge.herald / CLI herald",
+      "seglabels": [
+        "E1 · spine",
+        "E2 · wedge",
+        "E3–E5",
+        "E6 · multi-axis"
+      ],
+      "epics": [
+        {
+          "badge": "E1",
+          "title": "Seed a deck into Claude Design",
+          "stories": [
+            [
+              "1.1",
+              "pending",
+              "Package scaffold for pyforge-herald"
+            ],
+            [
+              "1.2",
+              "pending",
+              "Transport port + primary MCP-client adapter (spike)"
+            ],
+            [
+              "1.3",
+              "pending",
+              "Fallback transport adapter"
+            ],
+            [
+              "1.4",
+              "pending",
+              "Bridge-core skeleton — state, errors, determinism boundary"
+            ],
+            [
+              "1.5",
+              "pending",
+              "Registry module — README § Design project"
+            ],
+            [
+              "1.6",
+              "pending",
+              "herald deck seed <slug>"
+            ]
+          ]
+        },
+        {
+          "badge": "E2",
+          "title": "Pull Design edits back into the repo",
+          "stories": [
+            [
+              "2.1",
+              "pending",
+              "deck pull — prototype with etag short-circuit"
+            ],
+            [
+              "2.2",
+              "pending",
+              "--commit opt-in"
+            ],
+            [
+              "2.3",
+              "pending",
+              "Marp-source pull"
+            ],
+            [
+              "2.4",
+              "pending",
+              "Standalone bundle pull"
+            ]
+          ]
+        },
+        {
+          "badge": "E3",
+          "title": "Bridge state at a glance",
+          "stories": [
+            [
+              "3.1",
+              "pending",
+              "herald deck status [<slug>]"
+            ],
+            [
+              "3.2",
+              "pending",
+              "Stale hand-mirror detection"
+            ]
+          ]
+        },
+        {
+          "badge": "E4",
+          "title": "Stay in sync automatically",
+          "stories": [
+            [
+              "4.1",
+              "pending",
+              "Poll loop with quiescence debounce"
+            ],
+            [
+              "4.2",
+              "pending",
+              "Idle backoff"
+            ],
+            [
+              "4.3",
+              "pending",
+              "Halt on auth error"
+            ]
+          ]
+        },
+        {
+          "badge": "E5",
+          "title": "Keep Design current with shipped exports",
+          "stories": [
+            [
+              "5.1",
+              "pending",
+              "Push regenerated exports with etag guard"
+            ],
+            [
+              "5.2",
+              "pending",
+              "Conflict refusal on export push"
+            ]
+          ]
+        }
+      ],
+      "inflight": null,
+      "velocity": null,
+      "timing": null
     }
   },
-  "snapshot": "<span>2026-07-25 12:04 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-07-25 12:19 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
