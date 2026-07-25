@@ -885,7 +885,7 @@ window.DASHBOARD_DATA = {
           "stories": [
             [
               "1.1",
-              "active",
+              "done",
               "Package scaffold for pyforge-herald"
             ],
             [
@@ -1112,7 +1112,7 @@ window.DASHBOARD_DATA = {
           "stories": [
             [
               "1.1",
-              "active",
+              "done",
               "Package scaffold + direct capture"
             ],
             [
@@ -1169,7 +1169,7 @@ window.DASHBOARD_DATA = {
       "timing": null
     }
   },
-  "snapshot": "<span>2026-07-25 12:59 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-07-25 13:44 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -1908,7 +1908,7 @@ window.DASHBOARD_DATA = {
           "stories": 17,
           "state": "running",
           "note": "line 1 — smallest full product, spec settled 0 OQs",
-          "done": 0,
+          "done": 1,
           "total": 17
         },
         {
@@ -1926,7 +1926,7 @@ window.DASHBOARD_DATA = {
           "stories": 9,
           "state": "running",
           "note": "line 3 — team memory + graph",
-          "done": 0,
+          "done": 1,
           "total": 9
         },
         {
