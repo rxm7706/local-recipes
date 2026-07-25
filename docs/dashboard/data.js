@@ -1169,7 +1169,7 @@ window.DASHBOARD_DATA = {
       "timing": null
     }
   },
-  "snapshot": "<span>2026-07-25 19:38 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-07-25 19:54 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -1194,6 +1194,7 @@ window.DASHBOARD_DATA = {
       "status": "seeded",
       "owner": "herald",
       "chain": {
+        "spec": "_bmad-output/projects/deckcraft/planning-artifacts/specs/spec-deckcraft",
         "project": "_bmad-output/projects/deckcraft"
       }
     },
@@ -1258,6 +1259,7 @@ window.DASHBOARD_DATA = {
       "status": "in-spec",
       "owner": "mason",
       "chain": {
+        "spec": "_bmad-output/projects/presenton-pixi-image/planning-artifacts/specs/spec-presenton-pixi-image",
         "project": "_bmad-output/projects/presenton-pixi-image"
       }
     },
@@ -1289,6 +1291,7 @@ window.DASHBOARD_DATA = {
       "owner": "doctor",
       "chain": {
         "deck": "presentations/pyforge-doctor",
+        "spec": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor",
         "project": "_bmad-output/projects/pyforge-doctor"
       }
     },
@@ -1299,6 +1302,7 @@ window.DASHBOARD_DATA = {
       "owner": "crew",
       "chain": {
         "deck": "presentations/pyforge-genesis",
+        "spec": "_bmad-output/projects/pyforge-genesis/planning-artifacts/specs/spec-pyforge-genesis",
         "project": "_bmad-output/projects/pyforge-genesis"
       }
     },
@@ -1330,6 +1334,7 @@ window.DASHBOARD_DATA = {
       "owner": "mason",
       "chain": {
         "deck": "presentations/pyforge-mason",
+        "spec": "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason",
         "project": "_bmad-output/projects/pyforge-mason"
       }
     },
@@ -1340,6 +1345,7 @@ window.DASHBOARD_DATA = {
       "owner": "scribe",
       "chain": {
         "deck": "presentations/pyforge-scribe",
+        "spec": "_bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-pyforge-scribe",
         "project": "_bmad-output/projects/pyforge-scribe"
       }
     },
@@ -1350,6 +1356,7 @@ window.DASHBOARD_DATA = {
       "owner": "steward",
       "chain": {
         "deck": "presentations/pyforge-steward",
+        "spec": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward",
         "project": "_bmad-output/projects/pyforge-steward"
       }
     },
@@ -1360,6 +1367,7 @@ window.DASHBOARD_DATA = {
       "owner": "warden",
       "chain": {
         "deck": "presentations/pyforge-warden",
+        "spec": "_bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-pyforge-warden",
         "project": "_bmad-output/projects/pyforge-warden",
         "program": "warden"
       }
@@ -1394,6 +1402,7 @@ window.DASHBOARD_DATA = {
       "status": "in-spec",
       "owner": "crew",
       "chain": {
+        "spec": "_bmad-output/projects/unity-data-stack/planning-artifacts/specs/spec-unity-data-stack",
         "project": "_bmad-output/projects/unity-data-stack"
       }
     },
@@ -1412,11 +1421,22 @@ window.DASHBOARD_DATA = {
       "status": "in-spec",
       "owner": "crew",
       "chain": {
+        "spec": "_bmad-output/projects/wasm-analytics-stack/planning-artifacts/specs/spec-wasm-analytics-stack",
         "project": "_bmad-output/projects/wasm-analytics-stack"
       }
     }
   ],
   "specs": [
+    {
+      "slug": "deckcraft",
+      "project": "deckcraft",
+      "title": "deckcraft — the air-gapped, conda-native editable-deck pipeline",
+      "caps": 9,
+      "companions": 0,
+      "updated": "2026-07-25",
+      "dream": "deckcraft",
+      "path": "_bmad-output/projects/deckcraft/planning-artifacts/specs/spec-deckcraft"
+    },
     {
       "slug": "enterprise-airgap",
       "project": "local-recipes",
@@ -1498,6 +1518,16 @@ window.DASHBOARD_DATA = {
       "path": "_bmad-output/projects/local-recipes/planning-artifacts/specs/spec-regenerable-factory"
     },
     {
+      "slug": "presenton-pixi-image",
+      "project": "presenton-pixi-image",
+      "title": "presenton-pixi-image — air-gapped conda-native Presenton for OpenShift",
+      "caps": 6,
+      "companions": 0,
+      "updated": "2026-07-25",
+      "dream": "presenton-pixi-image",
+      "path": "_bmad-output/projects/presenton-pixi-image/planning-artifacts/specs/spec-presenton-pixi-image"
+    },
+    {
       "slug": "pyforge-atlas",
       "project": "pyforge-atlas",
       "title": "pyforge-atlas (chain-verify kernel)",
@@ -1518,6 +1548,26 @@ window.DASHBOARD_DATA = {
       "path": "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-upstream-discovery"
     },
     {
+      "slug": "pyforge-doctor",
+      "project": "pyforge-doctor",
+      "title": "Doctor (pyforge-doctor) — one bedside manner for the whole fleet",
+      "caps": 4,
+      "companions": 1,
+      "updated": "2026-07-25",
+      "dream": "pyforge-doctor",
+      "path": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor"
+    },
+    {
+      "slug": "pyforge-genesis",
+      "project": "pyforge-genesis",
+      "title": "Genesis — the operating-model installer",
+      "caps": 9,
+      "companions": 1,
+      "updated": "2026-07-25",
+      "dream": "pyforge-genesis",
+      "path": "_bmad-output/projects/pyforge-genesis/planning-artifacts/specs/spec-pyforge-genesis"
+    },
+    {
       "slug": "design-code-bridge",
       "project": "pyforge-herald",
       "title": "herald CLI — the Design↔Code Bridge, formalized",
@@ -1526,6 +1576,76 @@ window.DASHBOARD_DATA = {
       "updated": "2026-07-25",
       "dream": "design-code-bridge",
       "path": "_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-design-code-bridge"
+    },
+    {
+      "slug": "pyforge-marshal",
+      "project": "pyforge-marshal",
+      "title": "marshal CLI — graduated autonomy, productized",
+      "caps": 8,
+      "companions": 5,
+      "updated": "2026-07-25",
+      "dream": "pyforge-marshal",
+      "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal"
+    },
+    {
+      "slug": "pyforge-mason",
+      "project": "pyforge-mason",
+      "title": "mason CLI — the packaging factory, made portable",
+      "caps": 7,
+      "companions": 5,
+      "updated": "2026-07-25",
+      "dream": "pyforge-mason",
+      "path": "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason"
+    },
+    {
+      "slug": "pyforge-scribe",
+      "project": "pyforge-scribe",
+      "title": "Scribe (pyforge-scribe) — the team's inward voice",
+      "caps": 4,
+      "companions": 1,
+      "updated": "2026-07-25",
+      "dream": "pyforge-scribe",
+      "path": "_bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-pyforge-scribe"
+    },
+    {
+      "slug": "pyforge-steward",
+      "project": "pyforge-steward",
+      "title": "Steward (pyforge-steward) — the estate the factory stands on",
+      "caps": 4,
+      "companions": 1,
+      "updated": "2026-07-25",
+      "dream": "pyforge-steward",
+      "path": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward"
+    },
+    {
+      "slug": "pyforge-warden",
+      "project": "pyforge-warden",
+      "title": "Warden — the compliance gate that never false-greens",
+      "caps": 12,
+      "companions": 3,
+      "updated": "2026-07-25",
+      "dream": "pyforge-warden",
+      "path": "_bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-pyforge-warden"
+    },
+    {
+      "slug": "unity-data-stack",
+      "project": "unity-data-stack",
+      "title": "Unity Data Stack — the enterprise innersource python-first platform",
+      "caps": 9,
+      "companions": 2,
+      "updated": "2026-07-25",
+      "dream": "unity-data-stack",
+      "path": "_bmad-output/projects/unity-data-stack/planning-artifacts/specs/spec-unity-data-stack"
+    },
+    {
+      "slug": "wasm-analytics-stack",
+      "project": "wasm-analytics-stack",
+      "title": "Wasm Analytics Stack — WASI-sandboxed upload validation, seed use case",
+      "caps": 5,
+      "companions": 1,
+      "updated": "2026-07-25",
+      "dream": "wasm-analytics-stack",
+      "path": "_bmad-output/projects/wasm-analytics-stack/planning-artifacts/specs/spec-wasm-analytics-stack"
     }
   ],
   "pitch": [
