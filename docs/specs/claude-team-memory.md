@@ -1,5 +1,6 @@
 ---
-status: ready
+status: superseded
+superseded_by: 'superseded 2026-07-25 by the pyforge-scribe planning chain (_bmad-output/projects/pyforge-scribe/planning-artifacts/ — all 10 stories folded into Epic 1; mapping in the PRD addendum)'
 spec_updated: 2026-06-20
 ---
 # Tech Spec: `claude-team-memory`

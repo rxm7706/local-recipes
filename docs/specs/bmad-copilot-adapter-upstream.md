@@ -1,5 +1,6 @@
 ---
-status: draft
+status: superseded
+superseded_by: 'superseded 2026-07-25 by the pyforge-marshal planning chain (deferred item, re-owned to Herald for the chat-adapter comms face)'
 spec_updated: 2026-07-18
 ---
 > **Note (2026-07-24):** the standalone reference doc `docs/reference/copilot-to-api.md` was removed from the repo. The copilot-api bridge-pattern details now live in the `recipes/copilot-*` / `recipes/litellm-proxy` proxy recipes and their upstream projects; section-specific citations below predate the removal.

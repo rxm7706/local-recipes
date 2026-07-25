@@ -868,7 +868,7 @@ window.DASHBOARD_DATA = {
       }
     }
   },
-  "snapshot": "<span>2026-07-25 11:52 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-07-25 11:59 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -1490,15 +1490,15 @@ window.DASHBOARD_DATA = {
         "depth": "epics",
         "state": "running",
         "have": {
-          "research": false,
-          "brief": false,
-          "prd": false,
-          "architecture": false,
-          "epics": false
+          "research": true,
+          "brief": true,
+          "prd": true,
+          "architecture": true,
+          "epics": true
         },
-        "n": 0,
+        "n": 5,
         "of": 5,
-        "status": "running"
+        "status": "landed"
       },
       {
         "wave": "1f",

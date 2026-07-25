@@ -1,5 +1,6 @@
 ---
-status: ready
+status: superseded
+superseded_by: 'superseded 2026-07-25 by spec-upstream-discovery (_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-upstream-discovery/ — Phase T reframed as Kedro-pipeline work; legacy schema/phase mechanics dropped)'
 spec_updated: 2026-07-05
 ---
 > **Consolidated 2026-07-02.** This file absorbed `microsoft-conda-forge.md` as

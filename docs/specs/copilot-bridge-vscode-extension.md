@@ -1,5 +1,6 @@
 ---
-status: ready
+status: superseded
+superseded_by: 'superseded 2026-07-25 by the pyforge-marshal planning chain (_bmad-output/projects/pyforge-marshal/planning-artifacts/ — stories 13-15 absorbed into v1; the copilot-api HTTP-bridge premise (stories 1-12) is obsolete: bmad-loop 0.9.0 ships a sanctioned copilot profile + copilot --acp)'
 spec_updated: 2026-07-18
 ---
 > **Note (2026-07-24):** the standalone reference doc `docs/reference/copilot-to-api.md` was removed from the repo. The copilot-api bridge-pattern details now live in the `recipes/copilot-*` / `recipes/litellm-proxy` proxy recipes and their upstream projects; section-specific citations below predate the removal.
