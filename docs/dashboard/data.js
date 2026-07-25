@@ -868,7 +868,7 @@ window.DASHBOARD_DATA = {
       }
     }
   },
-  "snapshot": "<span>2026-07-25 11:51 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-07-25 11:52 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -1098,7 +1098,7 @@ window.DASHBOARD_DATA = {
     {
       "slug": "wasm-analytics-stack",
       "title": "Wasm-first analytical data stack (OCP-ready)",
-      "status": "seeded",
+      "status": "in-spec",
       "owner": "crew",
       "chain": {
         "project": "_bmad-output/projects/wasm-analytics-stack"
@@ -1541,15 +1541,15 @@ window.DASHBOARD_DATA = {
         "depth": "prd+arch",
         "state": "running",
         "have": {
-          "research": false,
-          "brief": false,
-          "prd": false,
-          "architecture": false,
+          "research": true,
+          "brief": true,
+          "prd": true,
+          "architecture": true,
           "epics": false
         },
-        "n": 0,
+        "n": 4,
         "of": 4,
-        "status": "running"
+        "status": "landed"
       },
       {
         "wave": "2c",
