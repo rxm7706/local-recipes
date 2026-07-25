@@ -1,7 +1,7 @@
 # PyForge Genesis deck (`pyforge.genesis`)
 
 **Status: STARTER — awaiting the Design pass.** The **master vision deck** of the
-pyforge **"Dream to Code"** factory — the deck for the founding Dream itself
+PyForge **"Dream to Code"** factory — the deck for the founding Dream itself
 (`docs/dreams/pyforge-charter.md`): the Genesis, the six-persona PyForge Guild,
 the Master Pipeline, and the proof it already runs. Each persona deck
 (`pyforge-atlas` … `pyforge-doctor`) is one *chapter* of this Dream; Genesis is
@@ -25,7 +25,7 @@ npm run extract && npm run dev
 Keymap: `→`/`Space` next · `←` prev · `O` overview · `S` presenter · `F` fullscreen ·
 `?` help · URL hash (`#/n`) deep-links.
 
-Display brand **pyforge · Dream to Code** on the slides; slug `pyforge-genesis`
+Display brand **PyForge · Dream to Code** on the slides; slug `pyforge-genesis`
 in paths. Engine files stay **byte-identical** across every deck.
 
 ## Design project (the bridge's far end)

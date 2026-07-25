@@ -9,7 +9,7 @@ status: seeded
 
 ## The Dream
 
-The ancestor dream (2026-04-18/19, predating the pyforge model): **Sentinel,
+The ancestor dream (2026-04-18/19, predating the PyForge model): **Sentinel,
 the AI Software Factory.** Its diagnosis — an engineer touches six tools in the
 first hour; the knowledge the team runs on (the *why* of code X, rejected
 tradeoffs, the 3am runbook) is scattered and lossy; AI without the graph

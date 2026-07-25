@@ -82,7 +82,7 @@ export/copy a Design file. Dream: `docs/dreams/design-code-bridge.md`; full proc
 `docs/specs/presentation-deck.md` § *The MCP bridge*. In short:
 
 - **Seed:** prove the prototype locally (`extract` + `build`), then `create_project` (bind the
-  **Modernist** design system for pyforge persona decks), `finalize_plan`, `create_support_js`,
+  **Modernist** design system for PyForge persona decks), `finalize_plan`, `create_support_js`,
   `copy_files` a `deck-stage.js`, `write_files` the `.dc.html`.
 - **Pull:** `read_file` with `if_none_match` (unchanged → repo already current); decode the
   entity-escaped body; land it in `presentations/<slug>/project/`; re-extract, rebuild,

@@ -118,7 +118,7 @@ project, and spec maps to exactly one Dream; the herald CLI's status capability
 | [`agent-portability.md`](agent-portability.md) | seeded | BMAD on any agent (Devin/Copilot/Claude/Cursor); planning on flat-rate subscriptions; the Portability contract enforced. |
 | [`team-memory.md`](team-memory.md) | seeded | Shared, version-controlled team memory — what the team knows, every agent knows. |
 | [`enterprise-airgap.md`](enterprise-airgap.md) | realized | The factory behind the firewall — JFrog routing + air-gap-by-design; frontier: presenton, deckcraft, warden's registry perimeter. |
-| [`modernist-identity.md`](modernist-identity.md) | realized | One visual language for everything pyforge — the Modernist DS across 7 decks; frontier: the design-tokens round-trip (Figma↔JSON↔POTX). |
+| [`modernist-identity.md`](modernist-identity.md) | realized | One visual language for everything PyForge — the Modernist DS across 7 decks; frontier: the design-tokens round-trip (Figma↔JSON↔POTX). |
 | [`agentic-sdlc-autonomy.md`](agentic-sdlc-autonomy.md) | in-deck | The four views of agentic autonomy (taxonomy/process/architecture/environment) — the white paper + the 45-slide deck + our live L3 evidence. |
 | [`factory-console.md`](factory-console.md) | realized | The whole pipeline on one public page — every Dream + lifecycle stage (Dreamscape board), live epic/story progress, nothing hand-maintained (GitHub Pages). |
 

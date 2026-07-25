@@ -82,7 +82,7 @@ Cover · **Act I** From monolith to DAG (problem · before/after · seven pipeli
 verify-first gate) · **Act III** An agent workforce builds it (who runs it ·
 graduated autonomy · eight waves · which surface) · **Act IV** New signals
 (Basilisk / velocity / readiness · open questions) · **Act V** The read surface
-inverts (five surfaces · the pyforge family) · closing statement.
+inverts (five surfaces · the PyForge family) · closing statement.
 
 Design brand **Atlas** on the slides; distribution slug `pyforge-atlas` in paths.
 Palette is Modernist — light `#f3f2f2`, dark `#201e1d`, red `#ec3013` / `#c22a10`

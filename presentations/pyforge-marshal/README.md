@@ -5,7 +5,7 @@
 the Claude Design prototype has not been authored yet, so `src/slides/` holds an
 empty `manifest.json` and no fragments.
 
-A self-contained React + Vite slide deck for **PyForge-Marshal** — the Commander — autonomous build-factory supervisor & BMAD-method orchestrator of the pyforge
+A self-contained React + Vite slide deck for **PyForge-Marshal** — the Commander — autonomous build-factory supervisor & BMAD-method orchestrator of the PyForge
 **"Dream to Code"** PyForge Guild (founding Dream:
 `docs/dreams/pyforge-charter.md`). Motto: *"Enforce the spec. Guard the boundaries. Run the line."*
 

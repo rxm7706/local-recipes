@@ -1169,7 +1169,7 @@ window.DASHBOARD_DATA = {
       "timing": null
     }
   },
-  "snapshot": "<span>2026-07-25 16:17 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-07-25 16:31 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -1235,7 +1235,7 @@ window.DASHBOARD_DATA = {
     },
     {
       "slug": "modernist-identity",
-      "title": "Modernist identity — one visual language for everything pyforge",
+      "title": "Modernist identity — one visual language for everything PyForge",
       "status": "realized",
       "owner": "herald",
       "chain": {
@@ -1275,7 +1275,7 @@ window.DASHBOARD_DATA = {
     },
     {
       "slug": "pyforge-charter",
-      "title": "The pyforge Charter",
+      "title": "The PyForge Charter",
       "status": "in-deck",
       "owner": "crew",
       "chain": {
@@ -1423,7 +1423,7 @@ window.DASHBOARD_DATA = {
       "title": "factory console (program console + Dreamscape)",
       "caps": 4,
       "companions": 1,
-      "updated": "2026-07-24",
+      "updated": "2026-07-25",
       "dream": "factory-console",
       "path": "_bmad-output/projects/local-recipes/planning-artifacts/specs/spec-factory-console"
     },
@@ -1513,7 +1513,7 @@ window.DASHBOARD_DATA = {
       "title": "herald CLI — the Design↔Code Bridge, formalized",
       "caps": 5,
       "companions": 2,
-      "updated": "2026-07-23",
+      "updated": "2026-07-25",
       "dream": "design-code-bridge",
       "path": "_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-design-code-bridge"
     }

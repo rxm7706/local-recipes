@@ -1,5 +1,5 @@
 ---
-title: Modernist identity — one visual language for everything pyforge
+title: Modernist identity — one visual language for everything PyForge
 type: dream
 owner: herald
 status: realized
@@ -9,7 +9,7 @@ status: realized
 
 ## The Dream
 
-Everything pyforge presents — decks, dashboards, docs, wordmarks, exports —
+Everything PyForge presents — decks, dashboards, docs, wordmarks, exports —
 speaks **one visual language**: the Modernist system. Flat, architectural,
 Archivo throughout; light `#f3f2f2`, ink `#201e1d`, one red accent
 `#ec3013`/`#c22a10`; visible grid, 2px rules, zero corner radius, flush-left
@@ -35,7 +35,7 @@ they are unmistakably siblings.
   engine from one source.
 - Extend the language to the **program console** (`docs/dashboard/`) and doc
   surfaces so telemetry looks like the decks.
-- A Modernist wordmark/identity kit for the pyforge distributions themselves.
+- A Modernist wordmark/identity kit for the PyForge distributions themselves.
 
 ## Realization log
 

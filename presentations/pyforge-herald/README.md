@@ -5,7 +5,7 @@
 the Claude Design prototype has not been authored yet, so `src/slides/` holds an
 empty `manifest.json` and no fragments.
 
-A self-contained React + Vite slide deck for **PyForge-Herald** — the Proclaimer — visual media, presentation & communications engine of the pyforge
+A self-contained React + Vite slide deck for **PyForge-Herald** — the Proclaimer — visual media, presentation & communications engine of the PyForge
 **"Dream to Code"** PyForge Guild (founding Dream:
 `docs/dreams/pyforge-charter.md`). Motto: *"Capture the dream. Illustrate the telemetry. Proclaim the release."*
 

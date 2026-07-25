@@ -1,23 +1,23 @@
 ---
-title: The pyforge Charter
+title: The PyForge Charter
 type: dream
 owner: crew
 status: in-deck
 ---
 
-# The pyforge Charter: System Personas & CLI Framework
+# The PyForge Charter: System Personas & CLI Framework
 
 > ## Forging the Agentic SDLC
 > ### *Humans Dream, Agents Deliver — Governed. Auditable. Production-ready.*
 >
-> **The pyforge mission** *(canonized 2026-07-25)*: pyforge exists to prove the whole
+> **The PyForge mission** *(canonized 2026-07-25)*: PyForge exists to prove the whole
 > SDLC — not just coding — can be run by autonomous AI agents a human can trust. Every
 > lifecycle stage is owned by a named, accountable persona; every artifact traces to a
 > spec, and every spec to a human Dream; autonomy is a governed gradient, never a leap
 > of faith; and no station reports a green it didn't earn. The human's role rises from
 > writing software to architecting Dreams — and the forge makes them real.
 
-This is the founding **Dream** of the **pyforge** ecosystem — the raw vision for
+This is the founding **Dream** of the **PyForge** ecosystem — the raw vision for
 **"Dream to Code"**, a dual-ecosystem (Python / PyPI + Conda / conda-forge)
 autonomous agentic build pipeline engineered on the **BMAD Method**. It is told
 through the identities, mindsets, responsibilities, and terminal cadences of its
@@ -351,6 +351,20 @@ steward budget enforce --cap 1500usd/month
 
 ---
 
+## Branding (codified 2026-07-25)
+
+- **PyForge** is the brand in all written content — decks, docs prose, titles,
+  dashboards: *The PyForge Charter* · *the PyForge Guild* · *the PyForge factory*.
+- **`pyforge`** (lowercase) is the technical form — dists (`pyforge-warden`), modules
+  (`pyforge.warden`), slugs, filenames, envs, branches, CLIs, URLs, anything in code
+  context. Never brand-cased; PEP 503 makes this non-negotiable.
+- **Products in prose**: full form on first mention per document (*PyForge Warden*),
+  persona name thereafter (*Warden*); the package form only in code contexts.
+- **The console keeps its terminal idiom**: masthead *PyForge · Factory Console*; the
+  `pyforge ❯` prompt stays lowercase (a prompt is a technical surface).
+
+---
+
 ## The Execution Doctrine
 
 **Execution has one owner: Marshal.** Skills — existing bmad-method, community,
@@ -403,6 +417,6 @@ herald broadcast slack,email --channel engineering-updates
 
 ## Realization log
 
-- **2026-07-25** — the pyforge mission + tagline canonized at the masthead (operator-wordsmithed through the register series); genesis deck opening-slide refresh queued to Herald's backlog.
+- **2026-07-25** — the PyForge mission + tagline canonized at the masthead (operator-wordsmithed through the register series); genesis deck opening-slide refresh queued to Herald's backlog.
 - **2026-07-25** — Dream renamed `ecosystem-crew` → **`pyforge-charter`** (operator naming round): the document is the crew's constitutive charter — offices, mottos, doctrine, and now the canonized mission at its masthead. The crew keeps its name (the PyForge Guild); the Dream names the document.
 - **2026-07-25** — the crew renamed: **the Ecosystem Crew → the PyForge Guild** (slug form `pyforge-guild`). The Charter constitutes the Guild — eight offices, one Agentic SDLC. Deck copy updates ride Herald's queued refresh.

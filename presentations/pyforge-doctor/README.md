@@ -5,7 +5,7 @@
 the Claude Design prototype has not been authored yet, so `src/slides/` holds an
 empty `manifest.json` and no fragments.
 
-A self-contained React + Vite slide deck for **PyForge-Doctor** — the Physician — ecosystem health & diagnostics officer of the pyforge
+A self-contained React + Vite slide deck for **PyForge-Doctor** — the Physician — ecosystem health & diagnostics officer of the PyForge
 **"Dream to Code"** PyForge Guild (founding Dream:
 `docs/dreams/pyforge-charter.md`). Motto: *"Check the vitals. Diagnose the fault. Keep the ecosystem alive."*
 

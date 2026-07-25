@@ -31,7 +31,7 @@ spec_updated: 2026-07-24
 ## Genesis — The Dream & the PyForge Guild
 
 Every deck this spec produces is one persona's chapter of a larger story: the
-**pyforge** ecosystem's **"Dream to Code"** pipeline. Its genesis (**The Dream** —
+**PyForge** ecosystem's **"Dream to Code"** pipeline. Its genesis (**The Dream** —
 the BMAD mission, *Build More Architect Dreams*), its eight-persona **Ecosystem
 Crew** (Herald · Marshal · Atlas · Warden · Mason · Doctor · Scribe · Steward), and the Master
 Pipeline Flow are defined **once**, in the founding Dream:
