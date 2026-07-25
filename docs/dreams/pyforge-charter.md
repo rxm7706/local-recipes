@@ -420,3 +420,4 @@ herald broadcast slack,email --channel engineering-updates
 - **2026-07-25** — the PyForge mission + tagline canonized at the masthead (operator-wordsmithed through the register series); genesis deck opening-slide refresh queued to Herald's backlog.
 - **2026-07-25** — Dream renamed `ecosystem-crew` → **`pyforge-charter`** (operator naming round): the document is the crew's constitutive charter — offices, mottos, doctrine, and now the canonized mission at its masthead. The crew keeps its name (the PyForge Guild); the Dream names the document.
 - **2026-07-25** — the crew renamed: **the Ecosystem Crew → the PyForge Guild** (slug form `pyforge-guild`). The Charter constitutes the Guild — eight offices, one Agentic SDLC. Deck copy updates ride Herald's queued refresh.
+- **2026-07-25** — the program console named: **PyForge · Guildhall** — the Charter constitutes the Guild; the Guildhall is where its work stands open.
