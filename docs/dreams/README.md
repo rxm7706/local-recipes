@@ -85,7 +85,7 @@ project, and spec maps to exactly one Dream; the herald CLI's status capability
 
 | Dream | Status | What it is |
 |---|---|---|
-| [`pyforge-charter.md`](pyforge-charter.md) | in-deck | **The founding Dream** — eight personas, one "Dream to Code" pipeline. Master vision deck: `presentations/pyforge-genesis/`. |
+| [`pyforge-charter.md`](pyforge-charter.md) | in-deck | **The founding Dream** — the PyForge Guild: eight Forgemasters, one "Dream to Code" pipeline. Master vision deck: `presentations/pyforge-genesis/`. |
 | [`pyforge-genesis.md`](pyforge-genesis.md) | in-deck | Genesis as master idea + **the seed**: init a new repo / adopt brownfield with the whole operating model (origin: `archive/docs/bmad-setup-plan.md`). |
 | [`sentinel.md`](sentinel.md) | seeded | **The ancestor** (2026-04): the AI Software Factory — "the graph is the product"; unbuilt core, stranded artifacts to repatriate; descendants credited. |
 | [`design-code-bridge.md`](design-code-bridge.md) | realized | Design + Code as one surface — seed/design/pull, zero downloads; herald CLI specced (5 CAPs). |

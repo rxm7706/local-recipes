@@ -5,7 +5,7 @@ owner: crew
 status: in-deck
 ---
 
-# The PyForge Charter: System Personas & CLI Framework
+# The PyForge Charter — the Guild, the Forgemasters, the Mission
 
 > ## Forging the Agentic SDLC
 > ### *Humans Dream, Agents Deliver — Governed. Auditable. Production-ready.*
@@ -16,6 +16,11 @@ status: in-deck
 > spec, and every spec to a human Dream; autonomy is a governed gradient, never a leap
 > of faith; and no station reports a green it didn't earn. The human's role rises from
 > writing software to architecting Dreams — and the forge makes them real.
+
+> **The PyForge Charter** constitutes **the PyForge Guild** — **eight Forgemasters**
+> (Herald · Marshal · Atlas · Warden · Mason · Doctor · Scribe · Steward), each holding
+> a **station** of the Agentic SDLC and wielding **Skills** — and **the Guildhall** is
+> where their work stands open.
 
 This is the founding **Dream** of the **PyForge** ecosystem — the raw vision for
 **"Dream to Code"**, a dual-ecosystem (Python / PyPI + Conda / conda-forge)
@@ -360,6 +365,13 @@ steward budget enforce --cap 1500usd/month
   context. Never brand-cased; PEP 503 makes this non-negotiable.
 - **Products in prose**: full form on first mention per document (*PyForge Warden*),
   persona name thereafter (*Warden*); the package form only in code contexts.
+- **Forgemasters = agents = personas — wielding Skills.** One being, three registers:
+  **Forgemaster** is the brand term for the eight in written content; **agent** the
+  generic category (as the mission uses it: *Agents Deliver*); **persona** the
+  technical/BMAD term in specs and configs. **Skills are not what they are but what
+  they wield** — the unit of execution (per the Execution Doctrine below); the harness
+  is the unit of governance; the station is the unit of accountability. Never invent
+  a fourth register.
 - **The console keeps its terminal idiom**: masthead *PyForge · Factory Console*; the
   `pyforge ❯` prompt stays lowercase (a prompt is a technical surface).
 
@@ -421,3 +433,4 @@ herald broadcast slack,email --channel engineering-updates
 - **2026-07-25** — Dream renamed `ecosystem-crew` → **`pyforge-charter`** (operator naming round): the document is the crew's constitutive charter — offices, mottos, doctrine, and now the canonized mission at its masthead. The crew keeps its name (the PyForge Guild); the Dream names the document.
 - **2026-07-25** — the crew renamed: **the Ecosystem Crew → the PyForge Guild** (slug form `pyforge-guild`). The Charter constitutes the Guild — eight offices, one Agentic SDLC. Deck copy updates ride Herald's queued refresh.
 - **2026-07-25** — the program console named: **PyForge · Guildhall** — the Charter constitutes the Guild; the Guildhall is where its work stands open.
+- **2026-07-25** — terminology sealed: **Forgemasters = agents = personas, wielding Skills** (brand · category · technical; Skills = unit of execution, not identity); constitutive line landed under the mission; H1 retitled.
