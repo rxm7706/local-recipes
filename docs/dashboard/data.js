@@ -1556,7 +1556,7 @@ window.DASHBOARD_DATA = {
         "slug": "unity-data-stack",
         "model": "opus",
         "depth": "prd+arch",
-        "state": "queued",
+        "state": "running",
         "have": {
           "research": false,
           "brief": false,
@@ -1566,7 +1566,7 @@ window.DASHBOARD_DATA = {
         },
         "n": 0,
         "of": 4,
-        "status": "queued"
+        "status": "running"
       },
       {
         "wave": "2d",
