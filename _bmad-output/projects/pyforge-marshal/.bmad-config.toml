@@ -1,0 +1,6 @@
+output_folder = "_bmad-output/projects/pyforge-marshal"
+
+[project]
+slug = "pyforge-marshal"
+description = "Marshal — orchestration CLI productizing the bmad-loop capability (init, factory spin, gates, deploy); wrap-vs-build resolved in PRD. dist pyforge-marshal / module pyforge.marshal / CLI marshal"
+status = "active"

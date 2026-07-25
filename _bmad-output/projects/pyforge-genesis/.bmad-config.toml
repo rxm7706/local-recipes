@@ -1,0 +1,6 @@
+output_folder = "_bmad-output/projects/pyforge-genesis"
+
+[project]
+slug = "pyforge-genesis"
+description = "Genesis — the operating-model installer (genesis init greenfield / genesis adopt brownfield). dist pyforge-genesis / module pyforge.genesis / CLI genesis"
+status = "active"

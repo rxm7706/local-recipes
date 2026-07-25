@@ -1,0 +1,6 @@
+output_folder = "_bmad-output/projects/pyforge-doctor"
+
+[project]
+slug = "pyforge-doctor"
+description = "Doctor — ecosystem health & diagnostics CLI (pre-flight checks, fleet monitoring, prescriptions); consolidates atlas health/watch CLIs + warden self-check. dist pyforge-doctor / module pyforge.doctor / CLI doctor"
+status = "active"

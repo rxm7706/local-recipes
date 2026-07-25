@@ -1,0 +1,6 @@
+output_folder = "_bmad-output/projects/pyforge-mason"
+
+[project]
+slug = "pyforge-mason"
+description = "Mason — packaging CLI productizing the conda-forge-expert capability (recipe build, package ship, environment lock); wrap-vs-build resolved in PRD. dist pyforge-mason / module pyforge.mason / CLI mason"
+status = "active"

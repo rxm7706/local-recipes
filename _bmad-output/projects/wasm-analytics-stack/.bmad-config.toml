@@ -1,0 +1,6 @@
+output_folder = "_bmad-output/projects/wasm-analytics-stack"
+
+[project]
+slug = "wasm-analytics-stack"
+description = "Wasm-first analytical data stack — WASI-sandboxed dlt+dbt pipelines, OCP Restricted-SCC hardened, OTel/OL instrumented"
+status = "active"

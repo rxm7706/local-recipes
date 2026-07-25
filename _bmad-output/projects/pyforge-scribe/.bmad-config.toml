@@ -1,0 +1,6 @@
+output_folder = "_bmad-output/projects/pyforge-scribe"
+
+[project]
+slug = "pyforge-scribe"
+description = "Scribe — team knowledge CLI (capture, curate, graph compile, recall); adopts team-memory + sentinel knowledge-graph core. dist pyforge-scribe / module pyforge.scribe / CLI scribe"
+status = "active"

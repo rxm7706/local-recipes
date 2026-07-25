@@ -1,0 +1,6 @@
+output_folder = "_bmad-output/projects/pyforge-steward"
+
+[project]
+slug = "pyforge-steward"
+description = "Steward — platform/ops CLI (provision, deploy, keys, budgets, incident response). dist pyforge-steward / module pyforge.steward / CLI steward"
+status = "active"
