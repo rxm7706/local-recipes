@@ -1,0 +1,92 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:local-recipes:pyforge-doctor:report-schema",
+  "title": "DoctorReport",
+  "description": "The frozen envelope for pyforge-doctor (Story 1.1): one document per invocation, {schema_version, verb, generated_at, findings, prescriptions}. prescriptions is present (an array, possibly empty) ONLY when verb == 'diagnose'; for 'check'/'monitor' the key must be entirely absent (never null). additionalProperties is deliberately left open on findings/prescriptions sub-objects: additive growth (a new evidence shape, new rank_factors keys) is never a schema break.",
+  "type": "object",
+  "required": ["schema_version", "verb", "generated_at", "findings"],
+  "properties": {
+    "schema_version": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Envelope schema version; starts at 1 (carries warden's ComplianceReport precedent — schema-validated, versioned — forward)."
+    },
+    "verb": {
+      "enum": ["check", "monitor", "diagnose"],
+      "description": "The CLI verb that produced this report."
+    },
+    "generated_at": {
+      "type": "string",
+      "description": "ISO-8601 timestamp the report was generated at."
+    },
+    "findings": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/finding" }
+    },
+    "prescriptions": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/prescription" }
+    }
+  },
+  "if": {
+    "required": ["verb"],
+    "properties": { "verb": { "const": "diagnose" } }
+  },
+  "then": {
+    "required": ["prescriptions"]
+  },
+  "else": {
+    "not": { "required": ["prescriptions"] }
+  },
+  "$defs": {
+    "finding": {
+      "type": "object",
+      "required": ["source", "check", "status", "message", "evidence"],
+      "properties": {
+        "source": {
+          "enum": [
+            "warden-doctor",
+            "staleness-report",
+            "cve-watcher",
+            "behind-upstream",
+            "feedstock-health",
+            "release-cadence",
+            "env-hygiene"
+          ]
+        },
+        "check": { "type": "string" },
+        "status": { "enum": ["ok", "warn", "fail"] },
+        "message": { "type": "string" },
+        "evidence": {
+          "type": "object",
+          "description": "Source-specific object, opaque to this envelope."
+        }
+      }
+    },
+    "prescription": {
+      "type": "object",
+      "required": [
+        "finding_ref",
+        "partition",
+        "rank",
+        "rank_factors",
+        "action",
+        "root_cause"
+      ],
+      "properties": {
+        "finding_ref": { "type": "string" },
+        "partition": { "enum": ["actionable", "blocked", "accepted-risk"] },
+        "rank": {
+          "type": ["integer", "null"],
+          "description": "Populated by a later epic's ranking pass; null until then."
+        },
+        "rank_factors": {
+          "type": ["object", "null"],
+          "description": "Populated by a later epic's ranking pass; null until then."
+        },
+        "action": { "type": "string" },
+        "root_cause": { "type": "string" }
+      }
+    }
+  }
+}
