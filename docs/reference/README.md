@@ -10,3 +10,6 @@ what exists — never aspirations (those are `docs/dreams/`) and never contracts
 - `pixi-config-jfrog.example.toml` — the JFrog pixi config example.
 - `library-llms-full.md` — the generated library catalog (detector:
   `pixi run -e local-recipes llms-full-check`).
+- `atlas-spec-compendium.md` — point-in-time compilation of every BMAD
+  document that built the cf_atlas surface (Dream + Tier-2 contracts +
+  legacy intake specs); sources remain the truth.
