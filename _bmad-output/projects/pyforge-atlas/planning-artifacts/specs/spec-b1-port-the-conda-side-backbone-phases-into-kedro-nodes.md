@@ -1,0 +1,284 @@
+<!-- RECOVERED 2026-07-25: original spec, survived intact in implementation-artifacts/b1-port-the-conda-side-backbone-phases-into-kedro-nodes.md; promoted to tracked planning-artifacts/specs/ for durability. -->
+# Story B1: Port the conda-side backbone phases into Kedro nodes
+
+Status: done (closed by owner direction, 2026-07-17; DEV-AUTO + independent follow-up review; closer re-verified member tree 137/137, catalog-check 38, parity 14, drift 0 integrity)
+
+<!-- Frozen spec ID: B1 (epics.md D-2 — the spec § 9 ID is the primary key; the
+     Epic.Story alias "3.1" is informational only). Story key:
+     b1-port-the-conda-side-backbone-phases-into-kedro-nodes. -->
+
+## Story
+
+As a **BMAD execution agent**,
+I want **the conda-forge enumeration + graph-building + VCS/health phases (B, B.5, B.6, E, E.5, F, J, K, L, M, N per § 3.3) as pure-function Kedro nodes split across the `core` and `vcs_health` pipelines of § 5.2**,
+so that **the conda-side backbone resolves from the DAG (no procedural call order) with its shipped, fixture-guarded legacy behavioral contracts intact**.
+
+## Acceptance Criteria
+
+Restated from **epics.md § Story B1 (3.1)** and **spec § 9 Story B1 (binding)** — verbatim or tightened. Each phase→node→dataset→contract binding is in the **Port Map** (Dev Notes) and is load-bearing for these ACs.
+
+1. **Pure-function nodes + auto-resolving DAG.** Each of the 11 conda-side phases (B, B.5, B.6, E, E.5, F, J, K, L, M, N) is a pure-function node with **explicit declared inputs/outputs** (DataFrame in → DataFrame out; no data-access logic in the node body, AD-2). The DAG **resolves execution order automatically** from the declared input/output dataset names — no procedural call order, no `PHASES` list driver (FR-2, AD-3). The two pipelines are the `core` and `vcs_health` snake_case packages of § 5.2 (AD-3).
+2. **Phase B.5 `_pick_feedstock` attribution survives** with its umbrella-vs-dedicated semantics (split-out output → its dedicated feedstock, e.g. `dbt-bigquery` → the `dbt-bigquery` feedstock, not `dbt`); **its unit tests carry over as node tests** (AD-10).
+3. **Phase I becomes an explicit node** (`compute_version_download_history`) with **declared outputs** (`core_version_download_history`) — no longer an unregistered side-effect of Phase F's anaconda-api path (FR-2, AD-3).
+4. **The § 3.3 per-phase engineering contracts are fixture-tested in the node suite** (AD-10): **Phase K's single-worker 3-RPS token bucket** (secondary-rate-limit defense; `PHASE_K_AGGRESSIVE` opt-out) **and Phase F's provenance discipline** (`downloads_source` semantics; s3-only breakdown tables; DELETE-by-scope-key writes; calendar-month `downloads_30d` — **not** a rolling window; one consolidated pyarrow sweep; dirty `pkg_python` regex-filter). Fixtures are stubbed/injected — **never a live endpoint** (AD-11).
+5. **The Phase E maintainer-universe delta is reconciled or explicitly documented** — the ~44-feedstock disagreement between atlas `package_maintainers` (769 = 537 sole + 232 co) and cf-graph `node_attrs` discovery (813 = 558 + 255) (spec:287–292). Tightened disposition (this story): **DOCUMENT the delta with provenance in the `enrich_maintainers` node and the parity notes; defer full reconciliation to B4** (the AC's "or explicitly documents" branch; see Deferred-Item Dispositions).
+6. **Phase B.6 ports with its lite semantics** — presence-in-current-repodata → `latest_status` (all parity requires). Full per-version yanked detection is an **optional follow-on, explicitly NOT part of this story** (spec § 12; Spine Deferred "Phase B.6 full yanked detection").
+7. **`kedro-test` stays green** (verify gate, consumed — must remain green; A1/A2/A3's 74 + 38 tests must not regress). **The `parity-diff` gate BEGINS here** (B1 builds the harness skeleton + the Core/VCS parity fixtures for the 11 phases ported here; B2–B3 extend it; B4 consumes it at the attended event — see Parity-Diff Harness Scope).
+8. **Maps to FR-2.** Invariants: AD-3, AD-10, AD-4 (Parquet canonical from Wave A), AD-5 (no node-local checkpointing — the dataset owns TTL), AD-13 (offline degradation).
+
+## Tasks / Subtasks
+
+> Real repo root for the scaffold: `src/shared/packages/pyforge-atlas/` (the pixi-build workspace member; `pyforge.atlas` namespace package under `src/pyforge/atlas/`). Legacy source of every port: `.claude/skills/conda-forge-expert/scripts/conda_forge_atlas.py` (`CFA` below) at the cited lines (commit `b18cbb5`).
+
+- [x] **Task 0 — Create the two pipeline packages (they do NOT exist yet; see Gap G-1).** (AC: 1)
+  - [x] Create `src/pyforge/atlas/pipelines/core/` with `__init__.py` (exports `create_pipeline`), `nodes.py`, `pipeline.py`.
+  - [x] Create `src/pyforge/atlas/pipelines/vcs_health/` with the same three files.
+  - [x] `register_pipelines()` (`src/pyforge/atlas/pipeline_registry.py`) already uses `find_pipelines(raise_errors=True)` + an empty-`__default__` seed — **do not edit it**; `find_pipelines()` auto-discovers the new packages. Verify both register.
+  - [x] Every ported node carries a `# legacy: Phase <ID>` provenance comment (spine naming convention).
+
+- [x] **Task 1 — Core pipeline nodes (Phases B, B.5, B.6, F, I, J, M → 7 nodes).** (AC: 1, 2, 3, 4)
+  - [x] `enumerate_conda_packages` (**# legacy: Phase B**, `phase_b_conda_enumeration` CFA:1408): reads `core_repodata_raw` + `core_channeldata_raw` → writes `core_packages_enumerated`.
+  - [x] `attribute_feedstocks` (**# legacy: Phase B.5**, `phase_b5_feedstock_outputs` CFA:1593): reads `core_feedstock_outputs_raw` → writes `core_feedstock_attribution`. Port `_pick_feedstock` (CFA:1572; logic CFA:1586–1590; call site CFA:1632) as a pure helper; **carry over its unit tests as node tests** (AC-2). NOTE the catalog comment: the live route is `resolve_github_urls` (GITHUB_BASE_URL archive zip), not GITHUB_RAW (catalog.yml:52–58, corrected in A2's Dev Agent Record).
+  - [x] `detect_latest_status` (**# legacy: Phase B.6**, `phase_b6_yanked_detection` CFA:1665): reads `core_repodata_raw`/`core_channeldata_raw` → writes `core_latest_status`. **Lite semantics only** (presence-in-repodata → `latest_status`); no per-version yanked scan (AC-6).
+  - [x] `compute_downloads` (**# legacy: Phase F**, `phase_f_downloads` CFA:3560): reads `core_anaconda_downloads_raw` + `core_s3_download_stats_raw` → writes `core_downloads` + `core_downloads_platform_breakdown` + `core_downloads_pyver_breakdown` + `core_downloads_channel_breakdown`. **Provenance discipline fixture-tested** (AC-4): `downloads_source` ∈ {`anaconda-api`,`s3-parquet`,`merged`} correlated-but-distinct (CFA:188); breakdown tables written **only on the s3-parquet path** (CFA:538/549/572); DELETE-by-scope-key + INSERT in one transaction, chunked ≤500 for SQLite's 999-param limit → in Parquet this is a **replace-by-scope-key** write (CFA:3423–3450); `downloads_30d` = latest **calendar month**, not a rolling window (CFA:3162); one consolidated pyarrow sweep for all F+ metrics (do not split passes); regex-filter the dirty `pkg_python` column before aggregation.
+  - [x] `compute_version_download_history` (**# legacy: Phase I**, promoted from Phase F side-effect — anaconda-api site CFA:2931, s3 site CFA:3402; table schema CFA:312–316): reads `core_anaconda_downloads_raw` → writes **`core_version_download_history`** as a **declared output** (AC-3). Consumed downstream by Phase G' (CFA:6861), `version-downloads`, `release-cadence` — declare the output name so those consumers resolve by catalog name (AD-3).
+  - [x] `build_dependency_graph` (**# legacy: Phase J**, `phase_j_dependency_graph` CFA:6067): reads `core_cf_graph_raw` → writes `core_dependencies`. Preserve the **archived-feedstock skip-set filter at the write site** (v7.9.0 fix — Phase J builds an `inactive_feedstocks` skip-set before opening the cf-graph tarball; spec § 3.3 "Phases J + M archived-feedstock filter").
+  - [x] `compute_feedstock_health` (**# legacy: Phase M**, `phase_m_feedstock_health` CFA:6263): reads `core_cf_graph_raw` → writes `core_feedstock_health`. Same archived-feedstock scope filter at the write SELECT.
+  - [x] **Flip `core_anaconda_downloads_raw`** (catalog.yml:69–74, marked `# FLIP(B1)`): from the interim single-URL `api.APIDataset` to a factory/partitioned dataset expressing per-package `/package/<owner>/<name>` request parameterization — **nodes may NOT build request URLs** (AC-2). Fetch/parameterization is dataset-owned; the node consumes resolved DataFrames.
+
+- [x] **Task 2 — VCS & Health pipeline nodes (Phases E, E.5, K, L, N → 5 nodes).** (AC: 1, 4, 5)
+  - [x] `enrich_maintainers` (**# legacy: Phase E**, `phase_e_enrichment` CFA:2188): reads `core_cf_graph_raw` (**cross-pipeline — produced by `core`, referenced by catalog name per AD-3**) → writes `vcs_maintainers` + `vcs_package_maintainers`. **Document the maintainer-universe delta** in the node docstring + parity notes (AC-5; Deferred-Item Dispositions).
+  - [x] `detect_archived_feedstocks` (**# legacy: Phase E.5**, `phase_e5_archived_feedstocks` CFA:2504): reads `vcs_github_api_raw` → writes `vcs_archived_feedstocks`.
+  - [x] `track_upstream_versions` (**# legacy: Phase K**, `phase_k_vcs_versions` CFA:5039): reads `vcs_github_api_raw`/`vcs_gitlab_api_raw`/`vcs_codeberg_api_raw` → writes `vcs_upstream_versions`. **3-RPS token bucket fixture-tested** (AC-4): single-worker default (`_RateLimitedScheduler` CFA:1345; 3.0 RPS default CFA:1333/5117; refill CFA:1393); `PHASE_K_AGGRESSIVE=1` opt-out restores 8 workers, non-"1" does NOT re-arm burst (CFA:5114–5115/5132); 403 → `upstream_versions.last_error` + re-pick via TTL bypass; `Retry-After` via `_parse_retry_after` (CFA:2668). **Rate-limiting lives in the dataset/injected fetcher, NOT the node body** (see Pure-Node-vs-Fetching Resolution).
+  - [x] `track_registry_versions` (**# legacy: Phase L**, `phase_l_extra_registries` CFA:5841): reads the 8 `vcs_registry_*_raw` sources → writes `vcs_registry_versions`. Preserve per-registry concurrency caps + per-source TTL treatment (dataset-owned).
+  - [x] `fetch_live_health` (**# legacy: Phase N**, `phase_n_github_live` CFA:6525): reads `vcs_github_api_raw` → writes `vcs_live_health`.
+  - [x] **Resolve the GitHub-API request-dataset flip (Gap G-2).** `vcs_github_api_raw` (catalog.yml:411–420) is an interim single-URL POST placeholder whose comment says the per-query factory dataset "lands with the vcs port (B2)" — **that attribution is wrong: E.5/K/N are B1 phases** in `vcs_health`. Author the GitHub request-parameterized dataset (one dataset = one request body, POST GraphQL / REST) **in this story**, with the rate-limit discipline attached at dataset/resource level. Record the corrected attribution.
+
+- [x] **Task 3 — Wire both pipelines' DAGs.** (AC: 1)
+  - [x] `core/pipeline.py` + `vcs_health/pipeline.py` build `Pipeline([node(...), ...])` binding each node's `inputs=`/`outputs=` to the catalog names above; the cross-pipeline `core_cf_graph_raw` edge (core → vcs_health Phase E) resolves by name (AD-3).
+  - [x] Confirm `kedro run` resolves topological order with **no procedural sequencing** (AC-1) and no two pipelines writing one dataset (AD-3).
+
+- [x] **Task 4 — Node unit tests on `pandas.DataFrame` IO.** (AC: 1, 2, 4)
+  - [x] `tests/pipelines/core/` + `tests/pipelines/vcs_health/` — each node independently unit-tested on DataFrame in/out (no live network).
+  - [x] Carry over Phase B.5 `_pick_feedstock` unit tests as node tests (AC-2): empty→None; `len>1 and pkg_name in feedstocks`→`pkg_name`; else `feedstocks[0]` (CFA:1586–1590).
+  - [x] Fixture-test Phase K 3-RPS bucket + Phase F provenance discipline against a **stubbed/injected client** (AC-4, AD-11) — never a live endpoint.
+
+- [x] **Task 5 — Begin the `parity-diff` harness (see Parity-Diff Harness Scope).** (AC: 7)
+  - [x] Author the harness skeleton under `tests/parity/` + register the `parity-diff` pixi task (fixture-mode; `--frozen`, non-credentialed, AD-11).
+  - [x] Capture-once legacy output fixtures for the 11 Core/VCS phases (generated attended per AD-11 / spine "Tests & fixtures" row — committed to the tracked test tree, **never read from `.claude/data/` at gate time**). Diff each migrated node's output DataFrame against its legacy fixture snapshot.
+  - [x] Scope guard: B1 does NOT run the full B4 credentialed live-parity run (attended B4 event).
+
+- [x] **Task 6 — Resolve the 3 B1-bound deferred-work items (see Deferred-Item Dispositions).** (AC: 5, 8)
+  - [x] **DW-A3-P10 (epoch-ms guard):** guarantee node outputs stamp `fetched_at` in **epoch seconds**; normalize any ms-sourced timestamp (repodata per-build timestamps are ms) to seconds **at the dataset boundary** (spine Identity&formats: "convert once, at the dataset boundary"). Decide + record whether to add the magnitude guard to `IncrementalParquetDataset` (recommended: add it now — Phase F/I are the first real ms-source writers, so it is no longer dead code).
+  - [x] **DW-A3-P11 (kedro_datasets private-internal pin):** re-verify `IncrementalParquetDataset._inner._describe()`/`._exists()` against the in-env `kedro_datasets` version (was 9.5.0); B1 is the first story to exercise the flipped datasets through nodes — confirm, add a compat check or switch to a public accessor if a bump landed.
+  - [x] **DW-A3-TTL-parity (fresh-at-exactly-ttl):** confirm the intended boundary against legacy `_TTL_GATED` (`age >= ttl` = stale at exactly ttl) vs the new `stale_mask` (`fetched_at < now - ttl` = **fresh** at exactly `now-ttl`). Make the parity call deliberately; adjust `<`→`<=` in `stale_mask` (`datasets/incremental_parquet.py:269`) **iff** parity requires, and update `test_stale_mask_gates_old_stale_recent_fresh`.
+  - [x] (NOT B1: the A2-P4 dynamic-JFrog-credential item is assigned to **B5**, not this story.)
+
+- [x] **Task 7 — Gates green.** (AC: 7, 8)
+  - [x] `PYTHONPATH=src/shared/packages/pyforge-atlas/src:src/shared/packages/pyforge-warden/src pixi run --frozen -e local-recipes python -m pytest src/shared/packages/pyforge-atlas/tests -q` (fat-env interim, A1/A2/A3 pattern) — or `pixi run --frozen -e pyforge-atlas kedro-test` once the workstation re-lock lands the env (DW-A1 blocker below). Keep A1/A2/A3's suites green.
+  - [x] If dependencies change, update `docs/library-llms-full.md` in the same PR (`llms-full-check`, AD-16) — likely **no** dep change (all phase logic ports onto in-env pandas/kedro).
+
+## Dev Notes
+
+### The Port Map (the implementer's contract — follow this table)
+
+11 phases + the promoted Phase I = **12 nodes** across two pipelines. Every phase → target pipeline (§ 5.2 / AD-3) → node (`<verb>_<subject>`) → catalog datasets it reads/writes (from `conf/base/catalog.yml`, Story A2) → AD-10 contract(s) it must preserve → legacy `file:line` (`CFA` = `.claude/skills/conda-forge-expert/scripts/conda_forge_atlas.py` @ `b18cbb5`).
+
+| Phase | Pipeline | Node | Reads (catalog) | Writes (catalog) | AD-10 / § 3.3 contract to preserve | Legacy `CFA` line(s) |
+|---|---|---|---|---|---|---|
+| **B** | core | `enumerate_conda_packages` | `core_repodata_raw`, `core_channeldata_raw` | `core_packages_enumerated` | `v_actionable_packages` scope discipline (raw `packages` reads carry the persona-filter triplet or a `# scope:` note) | `phase_b_conda_enumeration` 1408; view 376 |
+| **B.5** | core | `attribute_feedstocks` | `core_feedstock_outputs_raw` | `core_feedstock_attribution` | `_pick_feedstock` umbrella-vs-dedicated attribution; unit tests carried over (AC-2) | `phase_b5_feedstock_outputs` 1593; `_pick_feedstock` 1572 (logic 1586–1590, call 1632) |
+| **B.6** | core | `detect_latest_status` | `core_repodata_raw`, `core_channeldata_raw` | `core_latest_status` | **lite** presence→`latest_status`; NO per-version yanked scan (AC-6) | `phase_b6_yanked_detection` 1665 |
+| **F** | core | `compute_downloads` | `core_anaconda_downloads_raw` (**FLIP B1**), `core_s3_download_stats_raw` | `core_downloads`, `core_downloads_platform_breakdown`, `core_downloads_pyver_breakdown`, `core_downloads_channel_breakdown` | provenance discipline: `downloads_source` distinct; s3-only breakdowns; replace-by-scope-key; calendar-month `downloads_30d`; single pyarrow sweep; `pkg_python` regex-filter | `phase_f_downloads` 3560; contracts 188/538/549/572/3162/3423–3450 |
+| **I** | core | `compute_version_download_history` | `core_anaconda_downloads_raw` | `core_version_download_history` | **promote to explicit node w/ declared output** (AC-3) | side-effect sites 2931 (api) / 3402 (s3); table 312–316; consumed by G' 6861 |
+| **J** | core | `build_dependency_graph` | `core_cf_graph_raw` | `core_dependencies` | archived-feedstock skip-set filter at the write site | `phase_j_dependency_graph` 6067 |
+| **M** | core | `compute_feedstock_health` | `core_cf_graph_raw` | `core_feedstock_health` | archived-feedstock scope filter at write SELECT | `phase_m_feedstock_health` 6263 |
+| **E** | vcs_health | `enrich_maintainers` | `core_cf_graph_raw` (cross-pipeline, core-produced) | `vcs_maintainers`, `vcs_package_maintainers` | **maintainer-universe ~44 delta documented** (AC-5) | `phase_e_enrichment` 2188; delta spec:287–292 |
+| **E.5** | vcs_health | `detect_archived_feedstocks` | `vcs_github_api_raw` | `vcs_archived_feedstocks` | — | `phase_e5_archived_feedstocks` 2504 |
+| **K** | vcs_health | `track_upstream_versions` | `vcs_github_api_raw`, `vcs_gitlab_api_raw`, `vcs_codeberg_api_raw` | `vcs_upstream_versions` | **3-RPS single-worker token bucket**; `PHASE_K_AGGRESSIVE` opt-out; 403→`last_error`+TTL bypass; `Retry-After` jitter | `phase_k_vcs_versions` 5039; `_RateLimitedScheduler` 1345 (rps 1333/5117; AGGRESSIVE 5132); `_parse_retry_after` 2668 |
+| **L** | vcs_health | `track_registry_versions` | `vcs_registry_{npm,cran,cpan,luarocks,crates,rubygems,maven,nuget}_raw` (8) | `vcs_registry_versions` | per-registry concurrency caps; per-source TTL | `phase_l_extra_registries` 5841 |
+| **N** | vcs_health | `fetch_live_health` | `vcs_github_api_raw` | `vcs_live_health` | rate-limit-stderr detection; live-signal 1 d TTL | `phase_n_github_live` 6525 |
+
+Catalog TTLs the flipped datasets consume (`conf/base/parameters.yml` `ttls:`): `core_downloads*` + `core_version_download_history` = 7 d; `core_cf_graph_raw` = 1 d cached tarball; `vcs_upstream_versions`/`vcs_registry_versions` = 7 d; `vcs_live_health` = 1 d. Injected at runtime by `pyforge.atlas.hooks.ProjectHooks` from `params:ttls.<name>` (nodes never read TTLs).
+
+### THE CRUX — Pure-node-vs-fetching resolution (get this right; it is the whole migration's thesis)
+
+Nodes are **pure functions**: `pandas.DataFrame` in → `pandas.DataFrame` out, no inline IO. A2's `test_no_inline_io.py` (part of `kedro-catalog-check`) structurally bans HTTP/DB clients inside `pipelines/`, `datasets/`, `hooks/`, `mcp/`.
+
+The **one tension** in porting these 11 phases is that Phase K's **3-RPS token bucket** and Phase F's HTTP fetches are, in the legacy monolith, imperative code *inside* the phase function. They cannot live in a pure node body. **Resolution (per AD-2 / AD-5 / AD-13 + the spine "State & errors" row — binding):**
+
+- **The fetching + rate-limiting is a DATASET/RESOURCE concern, not a node concern.** The HTTP request, the `_RateLimitedScheduler` token bucket, `Retry-After` + jittered backoff, per-registry concurrency caps, and the 403→`last_error`→TTL-bypass re-pick all move into the **catalog API dataset** (the flipped/factory datasets: `core_anaconda_downloads_raw`, the new `vcs_github_api_raw` request dataset, the `vcs_registry_*` datasets) **or an injected fetcher-client passed to the node as a catalog input**. The **node body stays pure** — it receives already-fetched DataFrames (or a client handle whose IO is dataset-owned) and does only transform/aggregate/attribute logic.
+- **The contract is fixture-tested against a stub/injected client, NEVER a live endpoint** (AD-11, AD-10). The 3-RPS bucket behavior, the `PHASE_K_AGGRESSIVE` toggle, and Phase F's provenance discipline are proven by fixtures that stub the client and assert the discipline — no network in any gate.
+- **TTL/checkpointing is `IncrementalParquetDataset`, never node-local** (AD-5): the node calls `stale_mask`/`fresh_mask` on the loaded frame to decide which rows to re-fetch, then hands the re-fetch set to the dataset — but the node implements no checkpoint, no `phase_state`, no backoff. `phase_state` is gone (FR-4).
+
+If any AC or convenience tempts an inline `requests`/`urllib` call in a node, **stop** — that is the exact failure the migration exists to remove. Route it through the catalog.
+
+### Parity-Diff Harness Scope (B1 begins it; B4 consumes it)
+
+`parity-diff` is the Wave-B verify gate; it is **built incrementally B1→B3 and consumed at the attended B4 event** (AD-11, epics.md § Epic 3). B1's contribution:
+
+- **Harness skeleton:** `tests/parity/` structure + a registered `parity-diff` pixi task that, in **fixture mode**, diffs a migrated node's output DataFrame against a captured-once legacy output snapshot. `--frozen`, non-credentialed, lives in the tracked test tree (AD-11).
+- **Core + VCS parity fixtures** for the **11 phases ported here only** — legacy output samples generated **attended, once, from operator runtime data** (spine "Tests & fixtures" row) and committed; the gate never reads `.claude/data/`.
+- **NOT in scope for B1:** the full B4 credentialed live-parity run (the exact row-count + value parity on the `v_actionable_packages`-family views under Q1 default — that is the attended B4 event, AD-19). B1 builds the machinery + seeds the conda-side fixtures; B2 adds PyPI/vuln fixtures; B3 completes the harness; B4 runs it credentialed with human sign-off.
+
+### AD-10 contract-preservation list (the 11 phases' binding contracts)
+
+Full detail: `cf-atlas-legacy` skill `references/engineering-contracts.md` (the shipped *how* behind each phase, all citations at `b18cbb5`). The B1-relevant subset:
+
+- **Phase K scheduler** — `_RateLimitedScheduler` single-worker 3.0-RPS default (~3× safety margin, CFA:1333); host-agnostic (GitHub/GitLab/Codeberg); `PHASE_K_AGGRESSIVE=1` → `ThreadPoolExecutor(max_workers=8)`, non-"1" values do NOT re-arm burst (CFA:5114–5115); 403 → `upstream_versions.last_error`, re-pick via TTL bypass; `_parse_retry_after` (CFA:2668) — note it is **in CFA, not `_http.py`**.
+- **Phase F provenance discipline** — `downloads_source` ∈ {`anaconda-api`,`s3-parquet`,`merged`} correlated-but-distinct (CFA:188); breakdown tables (`package_platform_downloads`/`package_python_downloads`/`package_channel_downloads`) written **only on the s3-parquet path** (CFA:538/549/572); DELETE-by-scope-key+INSERT one transaction, chunked ≤500 (CFA:3423–3450) → **replace-by-scope-key** in Parquet; `downloads_30d` = latest calendar month not rolling (CFA:3162); one consolidated pyarrow sweep; `pkg_python` regex-filtered before aggregation.
+- **Phase B.5 attribution** — `_pick_feedstock` (CFA:1572): empty→`None`; `len>1 and pkg_name in feedstocks`→`pkg_name`; else `feedstocks[0]` (CFA:1586–1590).
+- **View/scope discipline** — every raw `packages` read passes the `v_actionable_packages` scope meta-test (the canonical persona-filter triplet at CFA:379–381) or carries a `# scope:` justification. Post-**v25** schema shape only: never resurrect dropped tables (`package_hardening`, `vuln_total_active`, …).
+- **Archived-feedstock filter (J + M)** — build the `inactive_feedstocks` skip-set at the write site (v7.9.0 fix; spec § 3.3).
+- **Cross-phase invariants** — timestamps normalized to **epoch seconds** at the dataset boundary (repodata per-build timestamps are ms — convert once); join keys fixed (conda-side datasets key on `conda_name`, +`feedstock_name` where B.5 attribution applies).
+- **Two code-vs-spec divergences to follow the CODE on** (engineering-contracts.md § Code-vs-spec): **D1** — Phase P's `_PARTITIONDATE` is a spec-prose error (out of B1 scope, but the discipline applies: follow the code, not spec prose, on any divergence); **D2** — "AD-10" is the spine's label for the spec:250–286 contract list, not a spec term.
+
+### Deferred-Item Dispositions (the 3 B1-bound ledger entries + the Phase-E delta)
+
+From `implementation-artifacts/deferred-work.md` — B1 makes these calls:
+
+1. **DW-A3-P10 — epoch-ms magnitude guard (SPECULATIVE at A3; B1 owns the `fetched_at` unit).** Disposition: B1 nodes stamp `fetched_at` in **epoch seconds**; normalize any ms-sourced timestamp to seconds **at the dataset boundary** (Phase F/I are the first real ms-source writers — repodata per-build timestamps are ms). **Recommended:** add the cheap order-of-magnitude assertion to `IncrementalParquetDataset.save`/`stale_mask` now — it is no longer dead code once Phase F/I write these datasets. Record the decision in the Dev Agent Record.
+2. **DW-A3-P11 — `kedro_datasets` private-internal pin.** Disposition: B1 (first story to exercise the flipped datasets through nodes) re-verifies `self._inner._describe()`/`._exists()` against the in-env `kedro_datasets` (was 9.5.0); add a compat check or switch to a public accessor if a version bump landed. Non-blocking if 9.5.0 holds.
+3. **DW-A3-TTL-parity — fresh-at-exactly-ttl.** Disposition: B1 confirms the boundary against legacy `_TTL_GATED` (`age >= ttl` = stale at exactly ttl) vs the new `stale_mask` (`fetched_at < now - ttl` = fresh at exactly `now-ttl`, `incremental_parquet.py:269`). Make the parity call deliberately; flip `<`→`<=` **iff** parity evidence requires, and update `test_stale_mask_gates_old_stale_recent_fresh`.
+4. **Phase E maintainer-universe delta (AC-5) → DOCUMENTED (not fully reconciled).** Record the delta with provenance in the `enrich_maintainers` node docstring + parity notes: atlas `package_maintainers` = **769** (537 sole + 232 co, build 2026-06-19) vs cf-graph `node_attrs` discovery = **813** (558 + 255, `conda-forge-tracker.md`), Δ≈44 (spec:287–292). Full reconciliation is a data-quality investigation beyond one story — **defer to B4** (the AC explicitly allows "reconciles — or explicitly documents"; B1/B4 both named as owners in § 3.3).
+
+### Keystone budget note (loop-run concern for the workstation)
+
+This is a **KEYSTONE** story (largest yet — 12 nodes / 11 phases) run **LOOP-S** (`sprint-status.yaml` story_meta). Per **AD-18**, keystone stories (B1/B2/F1) get **pre-flight budget raises** — this DEV-AUTO-in-container drafting run does NOT set them; **the loop-run operator must raise the pre-flight budget on the workstation before driving B1** (and consider raising `dev_stall_grace_s` for the long node suite). REVIEW sessions are constrained to correctness-affecting findings only (AD-18 — the verified over-engineering failure mode of long unattended runs). Recommended split guidance is below.
+
+### What "done" hands to B2 / B3 / B4
+
+- **B2** (PyPI + Vulnerability port; `depends_on: [b1]`): consumes the `core` pipeline datasets (`core_packages_enumerated`, `core_feedstock_attribution`, etc.) by catalog name (AD-3); extends the `parity-diff` harness B1 skeleton with PyPI/vuln fixtures; **owns the Phase H port** (VCS&Health's velocity FR-20 consumes it — producer=PyPI Intelligence).
+- **B3** (MCP re-exposure; `depends_on: [b1,b2]`): reads the `core`/`vcs_health` datasets through Kedro-API-native MCP tools (passthrough only, AD-7); `parity-diff` **build completes at B3**.
+- **B4** (ATTENDED parity boundary; `depends_on: [b1,b2,b3]`): **consumes** the `parity-diff` harness B1 began; runs the credentialed live-parity comparison (Q1 default: exact row-count + value parity on `v_actionable_packages`-family views); human sign-off gates legacy-orchestrator retirement (AD-19). B4 also finalizes the Phase-E delta reconciliation B1 documented.
+
+### Gaps found during drafting (resolve during implementation)
+
+- **G-1 — Pipeline package stubs do NOT exist.** The task framing said "the seven pipeline package stubs from A1," but on disk `src/pyforge/atlas/pipelines/` contains only an empty `__init__.py`. B1 **creates** the `core/` and `vcs_health/` packages from scratch (Task 0). `find_pipelines()` in `pipeline_registry.py` auto-discovers them; `register_pipelines()` needs no edit.
+- **G-2 — `vcs_github_api_raw` FLIP is mis-attributed to B2.** `catalog.yml:408–410` says the GitHub request-parameterized factory dataset "lands with the vcs port (B2)" — but **B2 is the PyPI & Vulnerability port; the vcs_health phases (E.5/K/N) are B1.** The GitHub request dataset + its rate-limit discipline must be authored **in this story** (Task 2). (Two other FLIP labels — `pypi_bigquery_downloads_raw` says B3 though Phase P is a B2 pypi phase — are B2/B3's to reconcile, not B1's.)
+- **G-3 — `kedro-test` env not yet materializable under `--frozen`** (DW-A1 blocker): `pixi.lock` has zero `pyforge-atlas` entries until the workstation re-lock lands; the interim gate is the **fat-env** `PYTHONPATH=…/pyforge-atlas/src:…/pyforge-warden/src pixi run --frozen -e local-recipes python -m pytest …` pattern (A1/A2/A3). Do NOT weaken the gate (NFR-12).
+
+### Recommended split (assumption for the implementing session — but keep ONE story file)
+
+If the keystone proves too large for one clean LOOP-S story, the implementing session MAY split the **loop execution** into two sub-efforts along the pipeline boundary — **(a) Core phases** (B, B.5, B.6, F, I, J, M → 7 nodes) then **(b) VCS & Health phases** (E, E.5, K, L, N → 5 nodes) — landing them as sequential commits. This is a natural seam: Core produces `core_cf_graph_raw` and the enumeration/attribution datasets that VCS&Health's Phase E consumes cross-pipeline, so Core-first is the correct order. **This remains ONE story file** per the frozen spec ID B1 (epics.md D-2) — do not fork the story key. Record the split (if taken) in the Dev Agent Record.
+
+### Project Structure Notes
+
+- Scaffold root: `src/shared/packages/pyforge-atlas/` (pixi-build workspace member, `pyforge.atlas` namespace, hatchling; spine "Packaging & namespace" row). New code: `src/pyforge/atlas/pipelines/{core,vcs_health}/{__init__,nodes,pipeline}.py`; tests: `tests/pipelines/{core,vcs_health}/` + `tests/parity/`.
+- Naming (spine Consistency row): pipelines = snake_case packages (`core`, `vcs_health`); nodes = `<verb>_<subject>` pure functions with a `# legacy: Phase <ID>` comment; datasets = `<domain>_<entity>` (already declared in A2's catalog — B1 does not rename, only flips types on the FLIP-marked entries).
+- No conflict with unified structure; the seven-pipeline decomposition is spine-fixed (AD-3). The only catalog edits are the two FLIP-marked entries (`core_anaconda_downloads_raw`, `vcs_github_api_raw`) — additive, do not rename existing datasets (spine "Dataset schema evolution": additive-first).
+
+### References
+
+- [Source: _bmad-output/projects/pyforge-atlas/planning-artifacts/epics.md#Story B1 (3.1)] — the 11 phases, 6 AC clauses, FR-2, invariants, LOOP-S + keystone.
+- [Source: docs/specs/cfe-atlas-datapipeline-kedro-migration.md#9 Story B1] — binding ACs; #3.3 Live-Surface Snapshot (the authoritative phase registry + per-phase engineering contracts, spec:250–286); #5.2 modular pipelines; #5.3 checkpointing/idempotency; FR-2 (spec:590).
+- [Source: ARCHITECTURE-SPINE.md#AD-3] producer-owns-dataset / 7 snake_case pipelines; #AD-10 legacy-contract list; #AD-4 Parquet canonical; #AD-5 no node-local checkpointing; #AD-13 offline degradation; Consistency Conventions (naming, join keys, timestamps=epoch seconds); Structural Seed (core/vcs_health phase→pipeline mermaid).
+- [Source: .claude/skills/cf-atlas-legacy/8.78.0/cf-atlas-legacy/provenance-map.json] — every phase function's `file:line` (`conda_forge_atlas.py` @ b18cbb5).
+- [Source: .claude/skills/cf-atlas-legacy/8.78.0/cf-atlas-legacy/references/engineering-contracts.md] — the binding per-phase contract detail + code anchors + D1/D2 divergences.
+- [Source: src/shared/packages/pyforge-atlas/conf/base/catalog.yml] — every Core/VCS dataset name + the `FLIP(B1)`/FLIP markers (A2).
+- [Source: src/shared/packages/pyforge-atlas/conf/base/parameters.yml] — the `ttls:` the flipped datasets consume.
+- [Source: src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/incremental_parquet.py] — the `fetched_at`/`stale_mask` contract B1 nodes satisfy (AD-5).
+- [Source: _bmad-output/projects/pyforge-atlas/implementation-artifacts/deferred-work.md] — the 3 B1-bound A3 items + the A2-P4 (B5, not B1) item.
+- [Source: _bmad-output/projects/pyforge-atlas/implementation-artifacts/{a1,a2,a3}-*.md] — Wave-A Dev Agent Records (scaffold, catalog, IncrementalParquetDataset), all merged green at HEAD 14eac15.
+
+## Dev Agent Record
+
+### Context Reference
+
+- Rule 1 (CLAUDE.md): the `conda-forge-expert` skill + the `cf-atlas-legacy` provenance skill are the authoritative references for the legacy behavioral contracts; a BMAD story instruction never overrides an AD-10 contract (AD-10, CLAUDE.md Rule 1 authority).
+- Rule 2 (CLAUDE.md): this effort ends with a CFE Rule-2 retro at Wave-B/effort closeout (attended, non-deferrable, AD-18) — not this story.
+
+### Agent Model Used
+
+claude-fable-5 (DEV-AUTO, `bmad-dev-auto` unattended loop). Baseline `14eac15`.
+Fat-env interim gate: `PYTHONPATH=…/pyforge-atlas/src:…/pyforge-warden/src pixi run --frozen -e local-recipes python -m pytest …`.
+
+### Debug Log References
+
+- Legacy TTL semantics VERIFIED against code (not prose) — `conda_forge_atlas.py:2803` (Phase F) + `:5167` (Phase K): `COALESCE(fetched_at,0) < cutoff`, `cutoff = now - ttl` (strict `<`). See Review Triage Log.
+- DAG proof: `kedro registry list` → `__default__` / `core` / `vcs_health`; `find_pipelines()` auto-discovers with no `register_pipelines()` edit.
+
+### Completion Notes List
+
+**Nodes complete: 12 of 12** — Core (7): enumerate_conda_packages (B), attribute_feedstocks (B.5), detect_latest_status (B.6-lite), compute_downloads (F), compute_version_download_history (I), build_dependency_graph (J), compute_feedstock_health (M). VCS&Health (5): enrich_maintainers (E), detect_archived_feedstocks (E.5), track_upstream_versions (K), track_registry_versions (L), fetch_live_health (N). Each carries a `# legacy: Phase <ID>` comment.
+
+**Pure-node/dataset-IO boundary as built (THE CRUX):** node bodies are pure `DataFrame -> DataFrame`, zero denylist imports (`test_no_inline_io` green across the new modules). Rate-limit + fetch discipline lives in `datasets/rate_limit.py` (`RateLimitedScheduler` 3-RPS single-worker token bucket, `FetcherClient` Protocol, `StubFetcherClient`, `parse_retry_after`, `resolve_worker_count`) + `datasets/request_datasets.py` (`AnacondaDownloadsDataset` / `GitHubRequestDataset` own the per-{package,query} parameterization + carry the scheduler). The Phase K contract is fixture-tested against the STUB (never a live endpoint, AD-11).
+
+**Catalog FLIPs:** `core_anaconda_downloads_raw` flipped `api.APIDataset` → `AnacondaDownloadsDataset` (B1 landed it; `# FLIP(B1)` marker removed + dropped from `conftest.EXPECTED_FLIP_MARKERS`). `vcs_github_api_raw` flipped → `GitHubRequestDataset` with the **G-2 attribution corrected** (E.5/K/N are B1, not B2). Both kept `url`/`method`/`credentials` so the tightly-pinned `kedro-catalog-check` (38) stays green.
+
+**Judgment calls (recorded):**
+- J1: cross-pipeline `core_cf_graph_raw` is a shared RAW SOURCE (regro/cf-graph tarball), consumed by J/M (core) + E (vcs_health) — NOT a core-node output. No producer conflict, no inter-pipeline data edge; the story's "Core produces core_cf_graph_raw" is a naming/ownership statement (single declaration, AD-3). Core-first sequencing is therefore not load-bearing; still implemented Core first.
+- J2: the concrete per-{package,query} request FAN-OUT is dataset-owned + deferred (the node consumes already-fetched frames — story CRUX); B1 seeds the parameterization surface + rate-limit ownership.
+
+**Deferred-item dispositions (actioned):**
+- DW-A3-P10 (epoch-ms guard): ADDED to `IncrementalParquetDataset` (`_has_ms_magnitude`/`_to_epoch_seconds`; save + stale_mask normalize ms→s at the boundary — Phase F/I are the first real ms-writers, no longer dead code).
+- DW-A3-P11 (kedro_datasets private-internal pin): re-verified `_inner._describe()`/`_exists()` work on kedro_datasets 9.5.0 (they do); added public-first `_inner_describe()`/`_inner_exists()` accessors as future-proofing. Non-blocking.
+- DW-A3-TTL-parity: DELIBERATE call — **verified against the legacy CODE** (`CFA:2803/5167` strict `<`) that the disposition's `age >= ttl` PROSE was wrong; KEPT the original strict `<` (fresh at exactly `now-ttl`). The review's initial `<`→`<=` flip was reverted (see Triage Log).
+- Phase E maintainer delta (AC-5): DOCUMENTED (769 vs 813, Δ≈44) in `enrich_maintainers` docstring + `tests/parity/PARITY_NOTES.md`; full reconcile → B4.
+
+**Parity harness:** `tests/parity/` — `harness.py` (dispatch registry + fixture loader + order-independent frame-diff), 12 captured Core/VCS fixtures (representative legacy-shaped seeds encoding the per-phase contracts), `test_parity_{core,vcs_health}.py`, `PARITY_NOTES.md`. `parity-diff` pixi task registered (fixture-mode, offline, non-credentialed). B4 replaces the seeds with real operator snapshots + runs credentialed (AD-19).
+
+**Residual risk (declared, for B4):** the composed request datasets currently delegate `load()` to `APIDataset` (returns a `requests.Response`); the Response→DataFrame bridge for the concrete fetch fan-out is deliberately DEFERRED to B4 (B1 nodes consume already-fetched frames). The parameterization METHODS (`request_path`/`with_query`) are now unit-tested. The parity gate is self-certifying in B1 (seeds hand-authored) — real legacy equivalence is the attended B4 event; a green `parity-diff` here is NOT evidence of legacy parity.
+
+**Gates (all green):** full member tree 137 passed (A1/A2/A3's 74 kept green + 63 new) · kedro-catalog-check 38 · parity-diff 14 · `kedro registry list` (core + vcs_health) · llms-full-check clean (no dep changes) · bmad-drift-check 0 integrity (expected pixi_envs 11→12 currency finding only) · meta test_bmad_artifacts_in_sync pass.
+
+### File List
+
+New (src): `datasets/rate_limit.py`, `datasets/request_datasets.py`, `pipelines/core/{__init__,nodes,pipeline}.py`, `pipelines/vcs_health/{__init__,nodes,pipeline}.py`.
+Modified (src): `datasets/__init__.py` (exports), `datasets/incremental_parquet.py` (DW-A3-P10 ms-guard + DW-A3-P11 accessors + DW-A3-TTL strict-`<` parity comment).
+Modified (conf): `conf/base/catalog.yml` (2 FLIPs + G-2 comment fix).
+New (tests): `tests/pipelines/{__init__,test_dag_resolves}.py`, `tests/pipelines/core/{__init__,test_nodes}.py`, `tests/pipelines/vcs_health/{__init__,test_nodes,test_rate_limit_contract}.py`, `tests/parity/{__init__,harness,test_parity_core,test_parity_vcs_health,PARITY_NOTES}.md/.py`, `tests/parity/fixtures/{core,vcs_health}/*.json` (12), `tests/datasets/test_request_datasets.py`.
+Modified (tests): `tests/catalog/conftest.py` (EXPECTED_FLIP_MARKERS), `tests/datasets/test_incremental_parquet.py` (TTL boundary + ms-coercion regression).
+Modified (root): `pixi.toml` (`parity-diff` task).
+
+### Workstation remainder
+
+None — all 12 nodes complete + all gates green in the fat-env interim. The workstation must: (1) run the same gates under the real `pyforge-atlas` env once the `pixi.lock` re-lock lands (DW-A1 blocker G-3) — `pixi run --frozen -e pyforge-atlas kedro-test` / `kedro-catalog-check` / `parity-diff`; (2) commit/push (this DEV-AUTO run does NOT commit, per orchestrator ownership); (3) per AD-18, raise the keystone pre-flight budget was N/A for this container run. Follow-up independent review recommended (see Triage Log).
+
+## Review Triage Log
+
+### 2026-07-17 — Review pass (Blind Hunter + Edge Case Hunter, both completed; findings deduped)
+- intent_gap: 0
+- bad_spec: 0
+- patch: 13: (high 1, medium 4, low 8)
+- defer: 0
+- reject: 4: (low 4)
+- addressed_findings:
+  - `[high]` `[patch]` **TTL boundary comparator** — verified the DW-A3-TTL-parity disposition's `age >= ttl` prose against the legacy CODE (`CFA:2803` Phase F, `:5167` Phase K: `COALESCE(fetched_at,0) < now-ttl`, strict `<`); the prose was wrong. Per engineering-contracts D1/D2 ("follow the code"), REVERTED the interim `<`→`<=` flip back to strict `<` (would otherwise have shipped an off-by-one across all 15 flipped datasets). Boundary test restored.
+  - `[medium]` `[patch]` `IncrementalParquetDataset.save` — `needs_fill` computed pre-coercion; a non-numeric cell that `_to_epoch_seconds` coerces to NaN was persisted → perpetual re-fetch (P1). Re-check `isna()` AFTER coercion + fill. Regression test added.
+  - `[medium]` `[patch]` `_pick_feedstock` — a NaN feedstocks cell (truthy) fell through to `len(nan)` → TypeError; normalize non-sequence→None, bare-string→single-element list. Test added.
+  - `[medium]` `[patch]` `enrich_maintainers` — a NaN maintainers cell crashed `for m in nan`; iterate only real sequences. Test added.
+  - `[medium]` `[patch]` string-boolean archived flags — `.fillna(False).astype(bool)` turns `"false"`→True (silent inversion of the J/M/E.5 archived filter); added `_as_bool_series` robust coercion. Tests added.
+  - `[low]` `[patch]` `RateLimitedScheduler.acquire(n>capacity)` — infinite loop (tokens cap below n); guard raises ValueError. Test added.
+  - `[low]` `[patch]` `enumerate_conda_packages` NaN-timestamp ordering — `na_position="first"` so a missing timestamp can't win `latest_version`; reused the ms-threshold constant.
+  - `[low]` `[patch]` `parse_retry_after` naive HTTP-date — pin `tzinfo=UTC` so `.timestamp()` doesn't assume local time. Test added.
+  - `[low]` `[patch]` `fetch_live_health` — projected onto the full `base_cols` for a stable output schema.
+  - `[low]` `[patch]` missing-required-column guards across nodes (enumerate/attribute/compute_downloads/build_dependency_graph/compute_feedstock_health) — return a columned-empty frame instead of KeyError on mis-shaped input.
+  - `[low]` `[patch]` `track_upstream_versions`/`track_registry_versions` — consistent missing-column defaults.
+  - `[low]` `[patch]` parity `harness._normalize` — deterministic sort over a stringified key of ALL columns (list cells no longer leave ties input-order-dependent for B2-B4); `run_fixture` guards a missing expected-output key with a clear message.
+  - `[low]` `[patch]` request-dataset parameterization surface (`request_path`/`with_query`) was untested — added `tests/datasets/test_request_datasets.py`.
+- rejected (dropped, with rationale recorded in code comments where load-bearing):
+  - merged `downloads_total` prefers granular s3 (not additive — the two sources are correlated measurements of the same downloads; summing would double-count, CFA:188). Clarifying comment added; behavior kept.
+  - "parity fixtures are self-certifying in B1" — this is the intended scope (seeds now, real operator capture at B4 per AD-19); documented in PARITY_NOTES + residual risk, not a defect.
+  - J/M archived skip-set sources from `core_cf_graph_raw` (v7.9.0 fix "build the skip-set before opening the cf-graph tarball") — faithful to legacy; wiring it from E.5's `vcs_archived_feedstocks` would DEVIATE from the contract.
+  - `RateLimitedScheduler._refill` on a backwards clock — `_last` only advances when `elapsed>0`, safe for the monotonic-clock contract.
+
+followup_review_recommended: true (a shipped-off-by-one TTL comparator across the whole flip surface + two crash fixes + a re-fetch-loop regression + broad hardening — breadth and data-impact warrant an independent pass).
+
+### Independent follow-up review (2026-07-17, post-DEV-AUTO, owner-requested)
+Fresh-eyes adversarial review (repro-first) of commit c90a44e across 5 axes.
+Result: 1 CONFIRMED must-fix + 3 tracked mediums; everything else clean.
+- MUST-FIX (fixed, commit 8878ba4): compute_downloads wrote downloads_source=
+  'merged' per row vs legacy contract CFA:189-193 ({anaconda-api,s3-parquet}
+  only); the parity fixture endorsed it (so B4's gate was calibrated to the
+  bug). Node + docstring + test + fixture + PARITY_NOTES corrected; repro
+  confirms s3-parquet, zero 'merged'.
+- Tracked to ledger: DW-B1-1 (parity harness needs legacy-captured fixtures +
+  column/dtype tightening before B4), DW-B1-2 (scheduler unwired to fetch
+  path + fake-clock coupling), DW-B1-3 (enumerate tie-break, B.5 placeholders).
+- Verified CLEAN: pure-node/dataset-IO crux (all 12 nodes pure, no hidden IO,
+  no input mutation), AD-10 rate-limit parsing/worker-gate fidelity, and all
+  five prior-review fixes (TTL strict <, save() re-fetch fix, 2 NaN crashes,
+  string-'false' inversion).
+Gates after fix: member tree 137 passed, kedro-catalog-check 38, parity 14,
+drift 0 integrity. Story sound to close.

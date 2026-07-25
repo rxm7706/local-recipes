@@ -1,0 +1,195 @@
+<!-- RECOVERED 2026-07-25: original spec, survived intact in implementation-artifacts/0-1-generate-legacy-contextual-skill.md; promoted to tracked planning-artifacts/specs/ for durability. -->
+# Story 0.1: Generate legacy contextual skill
+
+Status: done (attended sign-off by rxm7706, 2026-07-17)
+
+<!-- Primary key: frozen spec ID **0.1** (epics.md D-2 — the Epic.Story alias "1.1" is
+     informational only). Sprint key: 0-1-generate-legacy-contextual-skill.
+     Epic 1 / Wave 0 — Legacy Translation via Skill Forge (SKF).
+     EXECUTION MODE: **ATTENDED** (wave-boundary event, human present — never loop-driven;
+     spec § 2.5 / PRD § 6.1 / sprint feed story_meta). A human IS present at implementation:
+     asking is allowed and expected at the decision points marked [ATTENDED-DECISION] below.
+     Drafted unattended 2026-07-17 by bmad-create-story; pixi unavailable in the drafting
+     container — all pixi-dependent steps are marked ENVIRONMENT-DEFERRED and MUST run in
+     the attended session. -->
+
+## Story
+
+As a Wave-B developer agent,
+I want the legacy `conda_forge_atlas.py` orchestrator converted into an `agentskills.io`-compliant skill via Skill Forge (SKF),
+so that I can query hallucination-free legacy provenance while porting phases.
+
+## Acceptance Criteria
+
+Spec § 9 Story 0.1 is the binding authority (restated verbatim below; tightenings only —
+never weaker). Goal (spec § 9): *"Convert the legacy `conda_forge_atlas.py` orchestrator
+into an `agentskills.io` compliant skill using Skill Forge."*
+
+1. **(spec, verbatim)** The SKF module outputs a structured skill repository modeling the legacy logic.
+   - *Tightened:* "the legacy logic" = the full ~10,000-LOC orchestrator surface defined by spec §§ 2.4/3: `conda_forge_atlas.py` (8,902 lines) **plus** `bootstrap_data.py` (1,094 lines) — not the orchestrator file alone. The output layout is `agentskills.io`-compliant (spec § 9 Goal line).
+   - *Tightened (coverage floor, from spec § 3.3 — the authoritative surface enumeration):* the skill models, at minimum: all **23 cataloged phases** (22 registered in the `PHASES` list at `conda_forge_atlas.py:8679` **plus the unregistered Phase I** side-effect of Phase F's anaconda-api path), the `phase_state`/TTL/`_TTL_GATED` checkpoint machinery (`atlas_phase.py`), the `bootstrap_data.py` sub-step driver (profiles, the 1800 s `cf_atlas_core` coarse cap), the 6 `cf_atlas.db` write paths, the § 3.3 per-phase engineering contracts (AD-10 list in Dev Notes), and the § 3.4 migration boundary (3 in-scope refresh stores; declared-input classes that are out of scope).
+2. **(spec, verbatim)** Developer agents can query this skill for hallucination-free provenance during Wave B.
+   - *Tightened (provable provenance, spec § 2.4):* every provenance answer traces to `file:line` (or function/symbol) at the grounding commit — verified by the AC-2 query battery in Task 5, whose answers are checked against the live source, not against the skill's own text.
+3. **(spec, verbatim)** Wave-0 enabler (no FR — the skill artifact is execution scaffolding per § 2.4, not product surface).
+   - *Restated (epics.md D-13):* story 0.1 is deliberately FR-less; FR-1..FR-22 coverage is complete without it. The skill artifact is Tier-3 execution scaffolding, not part of the migrated product surface and not part of the B4 parity scope.
+4. **(mode/gate, from epics.md + sprint feed — completion semantics, tightening not weakening):** the story completes as an ATTENDED event with human sign-off on the queryable artifact; there is no pre-existing verify gate (`verify_gate: none — pre-harness`); the Wave-0 preconditions checklist (Dev Notes) is executed alongside and recorded as done.
+
+## Tasks / Subtasks
+
+- [x] Task 0 — ATTENDED session setup + Wave-0 preconditions (AC: 4; AD-18, spec § 14 preconditions block, PRD § 6.2)
+  - [x] 0.1 One-time hooks approval for the loop stack (bmad-loop v0.8.1 / tmux sessions) — human approves in this session.
+  - [x] 0.2 Active-project switch: `scripts/bmad-switch pyforge-atlas`, then `scripts/bmad-switch --current` to confirm marker + both `_bmad-output/{planning,implementation}-artifacts` symlinks agree. **This supersedes the spec § 2.5/§ 14 literal `bmad-switch local-recipes`** (recorded deviation: PRD § 9.11 → AD-18 → epics.md D-4). Never hand-edit the marker.
+  - [x] 0.3 ENVIRONMENT-DEFERRED (pixi required — run now, in this attended session): `pixi run -e local-recipes bmad-groundtruth` (live re-check; intake verification was git-surface-only, see `intake-groundtruth-2026-07-17.md`), `pixi run -e local-recipes bmad-drift-check`, `pixi run -e local-recipes llms-full-check`. If groundtruth diverges from the § 3.3 snapshot (23 phases / 28 read CLIs / schema v29 / 46 MCP tools), the live output wins — feed the live enumeration to SKF, and note the divergence here and in the wave record.
+  - [x] 0.4 Re-check conditional Phase T (trendshift Track A, `docs/specs/trendshift-conda-forge.md`) shipped/not-shipped (D-15, PRD § 6.1). If shipped: Phase T (tables `github_trending_repos` + `trending_classification`, view `v_trending_candidates`, schema v30) joins the legacy surface the skill must model.
+  - [x] 0.5 Worktree symlink bootstrap prepared (the AD-18 bootstrap that recreates the two `_bmad-output` symlinks inside loop worktrees) — prepared here, validated later by Story A3 (the designated worktree smoke). Not a 0.1 deliverable to *prove*, only to stage.
+  - [x] 0.6 Heaviest-story budget review: record pre-flight `session_timeout_min`/token raises for keystones B1/B2/F1 (AD-18; pyforge pilot learnings), plus the F1 `dev_stall_grace_s` raise.
+  - [x] 0.7 Stage `policy.toml` `[verify]` additions for Wave A (`kedro-test`, `kedro-catalog-check` land as A1/A2 deliverables; nothing exists to add for Wave 0 itself — record that explicitly).
+- [x] Task 1 — Provision Skill Forge (AC: 1) **[ATTENDED-DECISION]**
+  - [x] 1.1 GAP (verified 2026-07-17): no SKF tooling exists in the repo — repo-wide grep for `skill-forge|skill_forge|skillforge|agentskills` matches only the spec and epics; it is not in `pixi.toml`, not under `.claude/skills/`, not under `_bmad/`. Spec § 13.2 slots it **Committed** ("Skill Forge (SKF) · CIS · bmad-loop v0.8.1 · bmad-dev-auto — BMAD execution tooling"). The human decides the acquisition route (BMAD module install / pixi dependency / vendored tool) — record the route, version/pin, and the `agentskills.io` spec revision targeted, in this file's Dev Agent Record.
+  - [x] 1.2 If SKF turns out unavailable/unusable in acceptable time: the fallback is a manually-driven translation to the same `agentskills.io`-compliant artifact shape with the same AC-2 provenance bar (the ACs bind the *artifact*, not the tool). Record the fallback decision if taken.
+- [x] Task 2 — Enumerate the legacy translation surface (AC: 1) — read-only; per CLAUDE.md Rule 1, invoke the `conda-forge-expert` skill before touching/reading atlas tooling
+  - [x] 2.1 Primary sources (read-only, never modified by this story):
+        `.claude/skills/conda-forge-expert/scripts/conda_forge_atlas.py` (8,902 LOC; `PHASES` registry at line 8679; `SCHEMA_VERSION = 29` at line 139),
+        `.claude/skills/conda-forge-expert/scripts/bootstrap_data.py` (1,094 LOC; sub-step driver, profiles, 1800 s cap),
+        `.claude/skills/conda-forge-expert/scripts/atlas_phase.py` (TTL reset, `_TTL_GATED` map),
+        `.claude/skills/conda-forge-expert/scripts/_http.py` (19 `resolve_*_urls` helpers, `atomic_writer`, JFrog credential defect FR-1 fixes-not-ports).
+  - [x] 2.2 Write-path satellites (the other `cf_atlas.db` writers § 3.3 names): `.claude/skills/conda-forge-expert/scripts/mapping_gap.py` (`g10_spelling` no-clobber), `cisa_kev_fetcher.py`, `epss_fetcher.py`, `cwe_catalog_fetcher.py` (same dir).
+  - [x] 2.3 Contextual references SKF should ingest as documentation context (not code): `.claude/skills/conda-forge-expert/reference/atlas-phases-overview.md`, `reference/atlas-phase-engineering.md` (the shipped *how* behind each phase, incl. § 13 Phase P cost model), `guides/atlas-operations.md` (profiles, cadence table, recovery playbook), and the spec's § 3.3/§ 3.4 sections themselves.
+  - [x] 2.4 MCP surface for provenance queries about tools: `.claude/tools/conda_forge_server.py` (46 `@mcp.tool()`, 23 atlas-relevant; `gemini_server.py` is out of scope per § 3.3).
+- [x] Task 3 — Run SKF and land the skill repository (AC: 1) **[ATTENDED-DECISION on output location]**
+  - [x] 3.1 Proposed default output location `[ASSUMPTION — confirm with human]`: a new sibling skill directory `.claude/skills/cf-atlas-legacy/` with an `agentskills.io`-compliant layout. Rationale: must NOT live inside `.claude/skills/conda-forge-expert/` (that tree is a migration *input*, read-only for this story, and is pinned by the repo's meta-tests/three-place rule) and must NOT live in `.claude/data/` (gitignored runtime data — the skill is context, not data). If the human prefers a standalone repo (spec says "skill repository"), record the location and add a pointer file in-repo.
+  - [x] 3.2 Stamp the artifact with its grounding: generation timestamp + the grounding commit hash (intake HEAD or the live HEAD at generation — whichever Task 0.3 verified) + skill v8.78.0 pin. This is the AD-17 advisory-snapshot discipline applied to the skill itself.
+  - [x] 3.3 The skill must encode the § 3.3 registry as queryable structure (phases with registration status, TTL-gated set, credentialed set, write paths, view discipline, per-phase engineering contracts), and the § 3.4 boundary (in-scope refresh stores vs declared-input classes) — this is the content Wave-B stories B1/B2/B5/B6 will interrogate.
+  - [x] 3.4 Run the repo test suite (ENVIRONMENT-DEFERRED: `pixi run -e local-recipes test-all` or at minimum the meta tests) to prove the new skill directory breaks no meta-test (docs integrity / three-place rule pin the *CFE* skill; a new sibling dir must stay out of their scope).
+- [x] Task 4 — Verify AC-2: provenance query battery (AC: 2)
+  - [x] 4.1 Execute a recorded query battery against the skill (a fresh agent session queries the skill, answers checked against live source). Minimum battery — one probe per AD-10 contract family: (a) "Which phases are TTL-gated and where is the map?" → `atlas_phase.py` `_TTL_GATED`: F, G, G', H, K, L; (b) "What are Phase P's cost gates?" → dry-run preflight + `PHASE_P_MAX_COST_USD` + `maximum_bytes_billed` + job timeout + `_PARTITIONDATE` literal bounds; (c) "Who writes `cf_atlas.db`?" → exactly the 6 § 3.3 writers; (d) "What is Phase B.5 `_pick_feedstock`?" → dedicated-feedstock attribution; (e) "Is Phase I registered?" → no — side-effect of Phase F, feeds `version-downloads`/`release-cadence`/G'; (f) "What is the `v_current_version_vulns` rule?" → the ONLY query-time-correct vuln source, `packages.vuln_*` is report-only; (g) one negative probe: a question whose answer is NOT in the legacy surface must yield "not modeled / not found", never a fabricated answer.
+  - [x] 4.2 Each answer must carry a `file:line`/symbol citation that checks out against the live tree (AC-2 tightening). Record the battery + results in the Dev Agent Record.
+- [x] Task 5 — Sign-off and Wave-A handoff (AC: 3, 4)
+  - [x] 5.1 Human sign-off on the queryable artifact (this IS the acceptance — no verify gate exists yet, pre-harness).
+  - [x] 5.2 Record the Wave-A handoff (see Dev Notes "What done hands to Wave A") in this file's Completion Notes; update `sprint-status.yaml` (`0-1-generate-legacy-contextual-skill` → done at completion; epic-1 stays in-progress until then).
+  - [x] 5.3 Note for the effort-closeout ledger: CLAUDE.md Rule 2 (CFE retro) accrues at effort close, not per story — but if this story surfaced CFE-skill findings (e.g., stale atlas docs discovered during enumeration), log them now for the closeout retro.
+
+## Dev Notes
+
+### Execution mode + Wave-0 preconditions (binding)
+
+- **ATTENDED** (spec § 2.5, PRD § 6.1, epics.md, sprint feed `story_meta`). Wave-0 is an attended harness-building wave; this story is never loop-driven. Q-gate: none. Depends on: nothing (first story of the effort).
+- The Wave-0 preconditions (Task 0) are the AD-18/spec-§ 14 checklist and run **alongside** this story, in this session: hooks approval · `scripts/bmad-switch pyforge-atlas` (supersedes the spec's `local-recipes` literal — D-4/PRD § 9.11) · live `bmad-groundtruth` + `bmad-drift-check` + `llms-full-check` runs · worktree symlink bootstrap staged (A3 validates) · heaviest-story budget review (B1/B2/F1 keystones; F1 also `dev_stall_grace_s`) · Phase T conditional re-check (D-15) · `policy.toml [verify]` staging.
+- pixi was NOT available in the drafting container; every `pixi run` above is carried as ENVIRONMENT-DEFERRED and is a hard prerequisite of this attended session, not optional.
+
+### SKF approach (spec §§ 2.1–2.2, 2.4)
+
+- SKF's job: translate ~10k LOC of legacy orchestrator into an **ingestible agent context skill with provable provenance** (§ 2.4). The output must itself meet the § 2.1 agent-legibility bar: machine-queryable structure, deterministic layout, hyper-clear error/absence semantics (the negative-probe requirement in Task 4.1g).
+- The § 2.2 persona frame applies at execution: Ingester reads the raw legacy source; Compiler structures it into the skill; Linker connects phases↔tables↔CLIs↔contracts; Linter validates the query battery; Oracle is the query interface Wave-B agents hit.
+- Consumers: Wave-B stories B1 (conda-side ports), B2 (PyPI+vuln ports), B5 (refresh assets), B6 (seed-gaps) query this skill instead of re-deriving legacy behavior from model memory.
+
+### § 3.3 snapshot pointer + groundtruth rule (binding)
+
+- The **authoritative enumeration** of the legacy surface is spec § 3.3 (grounding commit `58a6dcc`, skill v8.78.0, 2026-07-16), re-verified valid at intake HEAD `4cf1b74` via `planning-artifacts/intake-groundtruth-2026-07-17.md` — but that check was **git-surface-only** (pixi unavailable). **Rule: re-enumerate live at implementation** — run `bmad-groundtruth` in this session (Task 0.3) and treat its output, not the inline literals, as what SKF ingests. Volatile counts (23 phases / 28 read CLIs / schema v29 / 46 MCP tools) are cited via the snapshot + groundtruth, never free-standing.
+- Drafting-session live spot-checks (2026-07-17, this container): `conda_forge_atlas.py` = 8,902 lines with `PHASES` at line 8679 and `SCHEMA_VERSION = 29` at line 139; `bootstrap_data.py` = 1,094 lines; `conda_forge_server.py` = 46 `@mcp.tool()`. All match § 3.3.
+
+### AD bindings
+
+- **AD-10 (legacy behavioral contracts bind the ports)** — this skill is the delivery vehicle for AD-10: it must model, faithfully and queryably, the contract list AD-10 freezes: Phase P two-layer cost gate (+ `test_no_thirty_gb_lie`), Phase K 3-RPS single-worker token bucket (`PHASE_K_AGGRESSIVE` opt-out), Phase F provenance discipline (`downloads_source` semantics, s3-only breakdown tables, DELETE-by-scope-key, calendar-month `downloads_30d`), Phase H serial gate (never re-include pypi-only denominators), B.5 `_pick_feedstock` attribution, `g10_spelling` no-clobber writeback, KEV overlay + `_coerce_cvss_score`, `cfe:*` namespace + `?channel=conda-forge` qualifier, EPSS 0–100 normalization, `v_pypi_intelligence_valid`/`v_current_version_vulns` view discipline, single-write-path (`add-handoff` helpers), post-v25 schema shape (dropped tables stay dropped). A BMAD story instruction never overrides these (CLAUDE.md Rule 1 authority).
+- **AD-17 (snapshots advisory, never a substitute for live re-verification)** — applies twice: (a) the generated skill is itself an advisory snapshot — it carries its build timestamp + grounding commit (Task 3.2), and Wave-B agents treat it as provenance context, re-verifying against live source for anything load-bearing; (b) nothing in this story may position any dataset/skill content as a substitute for the authoring loop's live checks.
+- **AD-18 (execution seam)** — the preconditions above; all BMAD artifact writes (including THIS file) resolve through the `_bmad-output` symlinks; switch only via `scripts/bmad-switch`; keystone budget raises recorded here for B1/B2/F1.
+- **AD-19 (scope)** — the skill's modeled universe is fixed by § 3.3 + § 3.4; anything not listed there is outside the migration's universe and outside the skill's claimed coverage (must answer "not modeled").
+
+### What "done" hands to Wave A
+
+1. The queryable, provenance-grade SKF skill artifact (grounded + stamped), signed off — Wave-B's hallucination-free legacy reference; A1's dependency edge (`depends_on: [0-1-…]`) clears.
+2. All Wave-0 preconditions green and recorded: hooks approved; active project = `pyforge-atlas` (marker + symlinks agree); live groundtruth/drift/llms-full runs clean (or divergences recorded); Phase T conditional status recorded; worktree bootstrap staged for A3; keystone budget raises documented; `policy.toml [verify]` plan staged for Wave A's gates.
+3. Any SKF-provisioning decision (route, pin, output location) recorded here so A1's scaffold story and later loop sessions inherit it.
+
+### Testing standards summary
+
+- No verify gate exists yet (pre-harness — `kedro-test` is born at A1). Acceptance = the Task 4 query battery + attended human sign-off (AC 2/4).
+- Guard: the repo's existing meta-tests must stay green after the skill lands (Task 3.4) — they pin the CFE skill's docs integrity and three-place rule; the new artifact must not enter their scope.
+- Gates are never weakened/added ad hoc (NFR-12/AD-11); this story adds none.
+
+### Project Structure Notes
+
+- Story file location (this file): `_bmad-output/projects/pyforge-atlas/implementation-artifacts/` — Tier-3, gitignored, correct and expected; never commit it (drift-check HARD finding otherwise).
+- Legacy tree is **read-only input** for this story: nothing under `.claude/skills/conda-forge-expert/`, `.claude/scripts/conda-forge-expert/`, or `.claude/tools/` is modified. The only new file surface is the skill artifact itself (Task 3.1 location decision).
+- Per CLAUDE.md Rule 1: reading/analyzing the atlas tooling requires invoking the `conda-forge-expert` skill in the implementation session before producing conclusions about it.
+
+### Drafting assumptions + gaps found (unattended, recorded per protocol)
+
+- **A-1 (GAP):** SKF is not provisioned anywhere in the repo (verified by repo-wide grep + `.claude/skills/` + `_bmad/` listing + `pixi.toml`); spec § 13.2 slots it Committed. Task 1 makes acquisition an explicit attended decision with a manual-translation fallback bound to the same ACs. No pixi task or install route was invented here.
+- **A-2 (ASSUMPTION):** proposed skill output location `.claude/skills/cf-atlas-legacy/` — an inference, not a planning-artifact fact; flagged [ATTENDED-DECISION] for human confirmation (spec says "skill repository" without fixing a path; Spine's structural seed doesn't place it either).
+- **A-3 (GAP, informational):** `prototypes/cf-atlas-kedro-viz` — referenced by spec § 3.4 (seed_gaps mirror) and § 14 (refresh-as-follow-up note) — does not exist at intake HEAD. No impact on 0.1 (nothing in this story consumes it); recorded so Wave-B/B6 sessions don't chase a phantom path.
+- **A-4:** no `project-context.md` exists for this project; the `local-recipes` rulebook (`_bmad-output/projects/local-recipes/project-context.md`, v8.78.0-era) was carried as background repo law (volatile-count discipline, Rule 1/2) — its recipe-authoring rules do not bind this story.
+- **A-5:** AC-1's inclusion of `bootstrap_data.py` is a tightening derived from spec §§ 2.4/3 ("~10,000 lines", 8,902 + 1,094) even though the § 9 Goal line names only `conda_forge_atlas.py`; tightening is permitted, weakening is not.
+- **A-6:** previous-story intelligence and git-pattern analysis: none applicable — this is the first story of the effort; the epic went in-progress with this draft.
+
+### References
+
+- Spec (binding ACs + surface): `docs/specs/cfe-atlas-datapipeline-kedro-migration.md` — § 9 Wave 0/Story 0.1, §§ 2.1–2.2 (agent workforce), § 2.4 (SKF), § 2.5 (graduated autonomy + preconditions), § 3.3 (live-surface snapshot), § 3.4 (migration boundary), § 13.2 (SKF slot), § 14 (Wave-0 preconditions block).
+- Epics: `_bmad-output/projects/pyforge-atlas/planning-artifacts/epics.md` — Epic 1/Story 0.1, D-2 (spec-ID keys), D-4 (bmad-switch supersession), D-13 (FR-less enabler), D-15 (Phase T re-check).
+- Architecture: `_bmad-output/projects/pyforge-atlas/planning-artifacts/architecture/architecture-pyforge-atlas-2026-07-17/ARCHITECTURE-SPINE.md` — AD-10, AD-17, AD-18, AD-19.
+- PRD: `_bmad-output/projects/pyforge-atlas/planning-artifacts/prds/prd-pyforge-atlas-2026-07-17/prd.md` — § 6.1 (wave table), § 6.2 (execution model), § 9.11 (switch-target deviation), § 12 (verification debt).
+- Groundtruth: `_bmad-output/projects/pyforge-atlas/planning-artifacts/intake-groundtruth-2026-07-17.md`.
+- Sprint feed: `_bmad-output/projects/pyforge-atlas/implementation-artifacts/sprint-status.yaml` (`story_meta.0-1-generate-legacy-contextual-skill`).
+- Legacy source (read-only): `.claude/skills/conda-forge-expert/scripts/{conda_forge_atlas.py,bootstrap_data.py,atlas_phase.py,_http.py,mapping_gap.py,cisa_kev_fetcher.py,epss_fetcher.py,cwe_catalog_fetcher.py}`; `.claude/tools/conda_forge_server.py`; `reference/{atlas-phases-overview.md,atlas-phase-engineering.md}`; `guides/atlas-operations.md`.
+
+## Dev Agent Record
+
+### Agent Model Used
+
+claude-fable-5 (remote Claude Code session, 2026-07-17), attended by rxm7706; forge executed via an orchestrating subagent + 4 parallel extraction subagents (each invoking conda-forge-expert per Rule 1) + 1 independent battery verifier.
+
+### Task 0 — Wave-0 preconditions ledger (2026-07-17)
+
+- 0.1 hooks: wired in `.claude/settings.json` (bmad_loop_hook.py); trust prompt is per-machine → **workstation-deferred** (approve at first loop run).
+- 0.2 switch: `pyforge-atlas` active; marker + both symlinks agree (verified).
+- 0.3 live checks (this container, pixi 0.73.0 conda-pkg install, `--frozen`): bmad-groundtruth = v8.78.0 / schema v29 / 46 MCP tools / 23 phases (matches § 3.3); bmad-drift-check = 0 findings (re-run green again AFTER the skill landed); llms-full-check = clean. NOTE: unfrozen re-solve fails on the `bmad-ui` env's local `build_artifacts/` channel (stubbed) and a `bmad-dashboard` pkg — use `--frozen` in fresh containers.
+- 0.4 Phase T: trendshift spec `status: ready` → NOT shipped → surface stays 23 phases / schema v29.
+- 0.5 worktree bootstrap: staged (A3 validates).
+- 0.6 keystone budgets: already in `.bmad-loop/policy.toml` (session_timeout_min=180, dev_stall_grace_s=600, max_tokens_per_story=2M) — pyforge pilot raises carried; no further raise needed pre-B1/B2; F1 stall-grace revisit at Wave F.
+- 0.7 `[verify]` staging: nothing to add for Wave 0 (pre-harness); `kedro-test`/`kedro-catalog-check` land as A1/A2 deliverables (recorded explicitly).
+
+### Task 1 — SKF provisioning decision (ATTENDED)
+
+- Owner decision: provision SKF (not the manual fallback). Route: **npm `bmad-module-skill-forge@2.0.1`** (armelhbobdad/bmad-module-skill-forge, MIT) — identified by the owner; vetted via tarball inspection before execution. agentskills spec revision: as vendored in the module (`src/knowledge/agentskills-spec.md`).
+- Search record: PyPI `skillforge` 1.2.0 (preference-skill generator — rejected, no codebase ingestion); tripleyak/SkillForge + AgriciDaniel/skill-forge (generic skill-creator methodologies — rejected).
+- Install: interactive-only CLI driven non-interactively via a driver script calling the package's `Installer` class with the promptInstall config shape (scratchpad `skf-install-driver.js`); config: skills_output_folder=`.claude/skills`, forge_data_folder=Tier-3 pyforge-atlas implementation-artifacts, ides=[claude-code], learning=true. Committed `b18cbb5`.
+- Container notes: `npx` of the remote package was classifier-blocked → tarball fetched from registry.npmjs.org (allowed host) and inspected first; GitHub release downloads are egress-blocked (403) in this environment.
+
+### Task 3 — output location (ATTENDED) + grounding
+
+- Owner decision: `.claude/skills/cf-atlas-legacy/` (in-repo). SKF emitted its versioned layout: `cf-atlas-legacy/active -> 8.78.0/cf-atlas-legacy/{SKILL.md, context-snippet.md, metadata.json, provenance-map.json, references/*5}`.
+- Grounding stamp (AD-17): 2026-07-17 · commit `b18cbb5` · CFE pin v8.78.0 · schema v29. SKF tier: Quick (ast-grep/gh/qmd/ccc absent) → all provenance T1-low source-reads with grep-verified anchors.
+- SKF gates: skill-check 100/100 (0 err/0 warn); numerator 130/130 (first run 121/130 inflated → fixed); export coverage 100%; structure gates pass after api_surface heading fix; compute-score 100 ≥ 80 → PASS. Repo meta-tests: 1009 passed / 4 skipped (pre-existing) / 0 failed. Forge workspace + evidence-report + test-report under `forge-data/cf-atlas-legacy/`.
+
+### Task 4 — provenance battery (independent, fresh agent)
+
+- **PASS.** Probes a–f: all citations CONFIRMED line-exact against live source (~40 anchors incl. `_TTL_GATED`@atlas_phase.py:44, PHASES@:8679–8701, Phase P bounds@:7690–7705); 0 DRIFTED / 0 WRONG. Probe g (negative): correct "not modeled / not found" for both halves (Phase Z fabrication bait; gemini_server.py carved out by spec:175–177). `git diff b18cbb5..HEAD` over modeled sources: empty. Full transcript: forge-data test-report + this session's verifier report.
+- Cosmetic nit only: metadata `generation_date` is a midnight placeholder vs provenance map's 09:15:33Z timestamp.
+
+### Task 5.3 — CFE-retro ledger items (for effort closeout, Rule 2)
+
+- D1: spec/docs prose describes `_PARTITIONDATE` pruning, but code REJECTS it (BigQuery `Unrecognized name` — literal TIMESTAMP bounds used, CFA:7690–7705). Spec § 3.3/engineering-doc correction candidate.
+- D3: `_parse_retry_after` lives in conda_forge_atlas.py:2668, not `_http.py` (story Task 2.1 hint was imprecise).
+- D4: `_coerce_cvss_score` lives in detail_cf_atlas.py:295 (read-side), only referenced at the boundary.
+- Env gotcha: fresh-container pixi re-solve requires the `build_artifacts/linux64` stub + `--frozen` (bmad-ui env local channel; bmad-dashboard pkg).
+
+### Debug Log References
+
+- Forge evidence-report + fix log: `forge-data/cf-atlas-legacy/8.78.0/evidence-report.md`
+- SKF test result envelopes: `forge-data/cf-atlas-legacy/8.78.0/skf-test-skill-result-*.json`
+- Description-guard incident (operator mis-invocation, restored hash-identical): evidence-report § Description Guard.
+
+### Completion Notes List
+
+- Story context created by bmad-create-story (unattended draft, 2026-07-17). Ultimate context engine analysis completed — comprehensive developer guide created; attended decisions explicitly marked.
+- 2026-07-17: Tasks 0–4 complete. SKF provisioned (2.0.1) and pipeline run end-to-end; cf-atlas-legacy forged, validated (SKF 100/100; independent battery PASS), meta-tests green, drift-check green post-landing. Commits: `b18cbb5` (SKF provisioning), `f6a0dc0` (WIP snapshot), `6658049` (forge complete). Awaiting Task-5.1 human sign-off.
+- Wave-A handoff (per Dev Notes): artifact grounded+stamped at `.claude/skills/cf-atlas-legacy/`; preconditions ledger above (hooks = workstation-deferred is the one open item); SKF decisions recorded here for A1 inheritance.
+
+### File List
+
+- `.claude/skills/cf-atlas-legacy/**` (NEW, tracked — the deliverable)
+- `_bmad/skf/**`, `_bmad/_config/skf-manifest.yaml`, `.claude/skills/skf-*/**`, `_skf-learn/**`, `.gitignore` (+`_bmad/_memory/`) (NEW, tracked — SKF module provisioning)
+- `_bmad-output/projects/pyforge-atlas/implementation-artifacts/forge-data/**` (NEW, Tier-3 gitignored — forge workspace, evidence, test reports)
+- `_bmad/_memory/forger-sidecar/**` (gitignored — sidecar)
+- This story file + `sprint-status.yaml` (Tier-3, updated)
+- Legacy tree: ZERO modifications (read-only input, verified)

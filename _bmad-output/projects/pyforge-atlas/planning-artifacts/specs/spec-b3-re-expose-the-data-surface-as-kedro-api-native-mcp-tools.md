@@ -1,0 +1,214 @@
+---
+title: 'Story B3 (3.3): Re-expose the data surface as Kedro-API-native MCP tools'
+type: 'feature'
+status: 'regenerated'
+regenerated: '2026-07-25'
+source: 'epics.md (authoritative intent + acceptance criteria) + shipped code on main'
+original_spec: 'lost to the Tier-3 paper-trail gap + the 2026-07-19 truncation incident; dev-notes / review-triage-log not recovered'
+---
+
+> **Regenerated contract-spec (2026-07-25).** The original per-story spec was lost when
+> its Tier-3 (gitignored) `implementation-artifacts/` copy was destroyed (worktree
+> teardown + the 2026-07-19 truncation incident — atlas story files were 0-byte or gone).
+> This file **recovers the load-bearing contract**: the Intent and Acceptance Criteria
+> below are lifted **verbatim** from the tracked, authoritative `planning-artifacts/epics.md`
+> (the source the original spec was derived from). What is **not** recovered: the original
+> implementation dev-notes and review-triage log. Ground truth for what shipped is the
+> merged PRs (#58–#105); behaviour is exercised by the migrated pipeline on `main`.
+
+## Contract (from epics.md — verbatim, authoritative)
+
+### Story B3 (3.3): Re-expose the data surface as Kedro-API-native MCP tools
+
+As a CFE authoring agent,
+I want the 23 atlas-relevant MCP tools re-authored over Kedro session/catalog APIs with pipeline triggers and dataset reads,
+So that I can trigger named pipelines and read datasets via MCP with no load-bearing plugin dependency.
+
+**Acceptance Criteria:** (spec § 9 Story B3, binding)
+
+**Given** the 46 existing MCP tools (23 atlas-relevant) in `conda_forge_server.py`
+**When** the audit + re-authoring completes
+**Then** BMAD agents can trigger a named pipeline (e.g. `run_vulnerability_pipeline`) via MCP
+**And** BMAD agents can read a resulting dataset natively via MCP
+**And** `kedro-mcp` is not a load-bearing dependency of the trigger/read surface — the surface works with it absent
+**And** non-atlas recipe-authoring tools stay on the legacy FastMCP server; `library-futures` / `add-handoff` stay CLI-only
+**And** MCP tool bodies carry no metric/business logic (dataset passthrough + triggers only, AD-7); triggered runs ride the same Kedro job machinery (AD-23).
+
+- **FRs:** FR-7.
+- **Invariants:** AD-7, AD-23, AD-17 (payloads advisory + timestamped), AD-1.
+- **Mode:** LOOP-S.
+- **Gating question:** none.
+- **Verify gate:** `kedro-test` + `parity-diff` (build completes at B3).
+- **Depends on:** B1, B2 (datasets to expose).
+
+### Story B4 (3.4): Verify dataset parity against the legacy orchestrator
+
+As the operator,
+I want the Kedro pipeline run in parallel with legacy `bootstrap-data` and proven output-equivalent,
+So that the legacy orchestrator (and `phase_state`) can be retired on recorded evidence, not hope.
+
+**Acceptance Criteria:** (spec § 9 Story B4, binding)
+
+**Given** the `parity-diff` harness built through B1–B3
+**When** the full credentialed parity run executes as an attended wave-boundary event
+**Then** the parity check compares Kedro Parquet outputs against legacy `cf_atlas.db` tables and reports zero material drift per Q1's default (exact row-count + value parity on the `v_actionable_packages`-family views; timestamp/ordering-only diffs documented benign)
+**And** the harness itself is a fixture-based, loop-callable `parity-diff` pixi task
+**And** parity evidence is recorded with human sign-off; only then is the legacy orchestrator marked for retirement
+**And** B4 compares legacy-surface outputs only — B8/B9/B10 signals are out of parity scope (AD-14).
+
+- **FRs:** FR-4 (the `phase_state` table retires with the legacy orchestrator), whole-migration AC-1.
+- **Invariants:** AD-19 (retirement gate + abort ramp bounding sunk cost at Waves 0–B), AD-11 (attended event, credentialed run attended-only), AD-4.
+- **Mode:** ATTENDED (parity boundary event — one of the five § 2.5 attended events).
+- **Gating question:** **Q1** (parity tolerance) — § 11 default adopted: exact row-count + value parity on actionable views, benign-diff documentation. Comparison granularity beyond the Q1 views resolves in the B4 evidence record (Spine Deferred).
+- **Verify gate:** **consumes `parity-diff`** (fixture mode in-loop; credentialed full run at the event).
+- **Depends on:** B1, B2, B3.
+
+### Story B5 (3.5): Port the external-refresh assets (§ 3.4)
+
+As the operator,
+I want `vdb-refresh`, `update-cve-db`, and `update-mapping-cache` wrapped as scheduled external-refresh assets in their domain pipelines,
+So that the three separately-built stores refresh with retries and observability across all three bootstrap profiles.
+
+**Acceptance Criteria:** (spec § 9 Story B5, binding)
+
+**Given** the three § 3.4 separately-built local stores and the legacy tasks' TTLs
+**When** the refresh assets are ported
+**Then** each refresh runs as a Dagster-scheduled asset with retries + observability, cadence matching the legacy TTLs
+**And** Phases G / G' and `scan-project` offline mode consume the refreshed stores exactly as before — the pipeline never writes them outside the refresh assets
+**And** the vuln-db environment dependency is a declared resource requirement, not an implicit shell-out
+**And** Q6's decision is recorded **before** porting `update-mapping-cache` (consolidation may retire it instead); `g10_spelling` provenance + no-clobber survive regardless
+**And** the consumer profile keeps working air-gapped.
+
+- **FRs:** FR-2, FR-6.
+- **Invariants:** AD-6, AD-13, AD-10 (mapping contract), AD-3.
+- **Mode:** LOOP-S.
+- **Gating question:** **Q6** (mapping-source consolidation) — § 11 default adopted: consolidate on migrated Phase C (DuckDB), re-point `name_resolver.py`/`recipe-generator.py`; keep the flat-cache refresh only if authoring-time reads prove to need a standalone file. Must be recorded before this story's mapping asset work.
+- **Verify gate:** `kedro-test` (+ `dagster-dryrun` once C1 exists; schedule assertions land as fixtures here).
+- **Depends on:** B4 sequence position per § 14 (runs after parity; needs B1/B2 pipelines; Q6 drained first).
+
+### Story B6 (3.6): Port the Seed-Gaps pipeline
+
+As the operator,
+I want the four report-only gap suggesters as terminal report nodes of the Seed-Gaps pipeline,
+So that seed-freshness reports regenerate after every rebuild without ever mutating the curated seeds.
+
+**Acceptance Criteria:** (spec § 9 Story B6, binding)
+
+**Given** the external seed datasets and the § 3.4 Seed-freshness report nodes table
+**When** `lts-registry-gap`, `cwe-seed-gap`, `spdx-schema-gap`, `license-map-gap` are ported
+**Then** each suggester is a report node reading exactly the inputs in that table, emitting a `derived`-layer freshness report
+**And** the nodes are strictly read-only — the byte-identical-seed guarantee survives as a pipeline test
+**And** the pipeline re-runs after every rebuild, alongside the § 5.2 item 7 derived artifacts
+**And** `mapping-gap` stays in the PyPI Intelligence pipeline with its `g10_spelling` no-clobber writeback — it is not a Seed-Gaps node.
+
+- **FRs:** FR-2.
+- **Invariants:** AD-15, AD-3, AD-10.
+- **Mode:** LOOP-S.
+- **Gating question:** none.
+- **Verify gate:** `kedro-test` (byte-identical-seed fixture + report-node fixtures).
+- **Depends on:** B1, B2 (upstream datasets); § 14 position after B5.
+
+### Story B7 (3.7): Extend the Universal SBOM intake (resolver, formats, universe BOM, buckets)
+
+As a CI consumer,
+I want the transitive-resolver node, the widened tiered manifest intake, the universe-BOM catalog dataset, and the matching node with shipped bucket semantics,
+So that any manifest normalizes to CycloneDX and matches against the full conda-forge universe.
+
+**Acceptance Criteria:** (spec § 9 Story B7, binding)
+
+**Given** the § 4.10 tiered intake formats
+**When** the SBOM pipeline is extended
+**Then** a bare `requirements.txt` resolves to a full transitive dependency set with resolution depth + fan-out recorded (offline: `unresolved` marker, AD-13)
+**And** every § 4.10 format normalizes to CycloneDX preserving the `cfe:*` property namespace and the `?channel=conda-forge` qualifier
+**And** the full-universe CycloneDX BOM is a catalog dataset under the 14-day freshness contract; consumers refuse a stale atlas exactly as the legacy gate does
+**And** a matching run reproduces the legacy six-bucket classification (ADD / ADD-NONPYPI / UPDATE-FEEDSTOCK / UPDATE-PIN / CURRENT / UNKNOWN) on a fixture inventory
+**And** NBSP-padded pasted `conda list` / `pip list` text parses identically to its ASCII-space form (fixture).
+
+- **FRs:** FR-13, FR-17.
+- **Invariants:** AD-10 (`cfe:*` + qualifier never stripped), AD-12 (B7 produces security inputs, never assembles reports), AD-15, AD-13, AD-3.
+- **Mode:** LOOP-S.
+- **Gating question:** none.
+- **Verify gate:** `kedro-test` (format fixtures, six-bucket fixture, NBSP fixture).
+- **Depends on:** B1, B2; § 14 position after B6.
+
+### Story B8 (3.8): Basilisk conda-native vulnerability ingestion
+
+As a CFE authoring agent,
+I want the two Basilisk ingestion nodes in the Vulnerability pipeline with the tri-state `fix_available` join,
+So that conda-native advisories reach the read surface without conflating version currency with security currency.
+
+**Acceptance Criteria:** (spec § 9 Story B8, binding)
+
+**Given** Q7's landing decision recorded before implementation
+**When** the ingestion nodes land
+**Then** a batch run over the full Python population writes `basilisk_vulns` (`conda_name`, `advisory_id`, `modified`) via `POST /v1/querybatch` at ≤1,000 queries per request (plus the bounded `GET /v1/vulns/{id}` detail fetch under standard rate-limit discipline)
+**And** matching is by package name: a fixture proves an advisory whose `affected[]` ecosystem tag reads `PyPI` still matches its conda package
+**And** `fix_available` is tri-state: a fixture advisory carrying only an enumerated `versions` list yields `unknown`, never `false`
+**And** no read surface conflates version currency with security currency — a package can be `current` per `behind-upstream` AND carry a Basilisk advisory (fixture-proven)
+**And** `BASILISK_BASE_URL` routes the endpoint per the mirror-routing convention; offline (consumer profile) the nodes skip gracefully and mark the dataset stale rather than failing.
+
+- **FRs:** FR-19.
+- **Invariants:** AD-13 (offline-skip + last-good + staleness marker), AD-14 (additive rider, fixture-enforced guards, not parity-gated), AD-2 (one new override point: `resolve_basilisk_urls`), AD-3.
+- **Mode:** LOOP-S.
+- **Gating question:** **Q7** (Basilisk landing point) — § 11 default adopted: build once as Kedro nodes in Wave B; a legacy Phase U pulls forward only if trendshift's timeline leaves a pre-migration window that matters. Recorded before implementation.
+- **Verify gate:** `kedro-test` (the three binding-constraint fixtures + offline-skip fixture).
+- **Depends on:** B2 (Vulnerability pipeline exists); NOT gated on B4 parity.
+
+### Story B9 (3.9): Release-to-availability velocity columns
+
+As the operator,
+I want `release_lag_hours` + `release_lag_qualifies` derived on the Phase H join with the 90-day recency gate,
+So that packaging velocity is measurable without the false "47% behind" failure mode.
+
+**Acceptance Criteria:** (spec § 9 Story B9, binding)
+
+**Given** Phase H's retained per-release `upload_time_iso_8601`
+**When** the column pair is derived
+**Then** it exists on the Phase H join dataset with no new external fetch introduced
+**And** the rebuild-cadence guard is fixture-enforced: a version-unchanged package whose upstream release is >90 days old is excluded (`release_lag_qualifies = false`)
+**And** lag is computed against first availability of the matched version (minimum per-build repodata `timestamp`), fixture-enforced: a second build of the same version inside the window does not shift `release_lag_hours`
+**And** a population run reproduces the live baseline shape (median ≈ 9 h, ~72% within 24 h) within reasonable drift, recorded as a calibration reference (not a hard gate); the two coincident 83.7% measurements re-verify against the § 15 evidence gists.
+
+- **FRs:** FR-20.
+- **Invariants:** AD-14 (never `latest_conda_upload`; not parity-gated), AD-3 (lives in `vcs_health`), timestamp convention (epoch seconds at ingest — repodata ms converted at the dataset boundary).
+- **Mode:** LOOP-S.
+- **Gating question:** none.
+- **Verify gate:** `kedro-test` (both failure-mode fixtures).
+- **Depends on:** B2 (Phase H dataset); NOT gated on B4 parity.
+
+### Story B10 (3.10): Migration-readiness datasets + classification node
+
+As the operator,
+I want conda-forge-bot-data `status/` category lists and per-migration detail ingested with a readiness-classification node,
+So that migration readiness (e.g. python314) is a queryable four-way split with blocker labels and volume ranking.
+
+**Acceptance Criteria:** (spec § 9 Story B10, binding)
+
+**Given** the `status/` category lists and `migration_json/<name>.json` detail
+**When** the datasets + classification node land
+**Then** the category-list datasets enumerate active migrations and drive per-migration partitioning — a new migration upstream requires zero code change
+**And** for a live migration the classification node produces the four-way readiness split (noarch / rebuild-done / confirmed-pending / not-in-tracker) with the per-feedstock blocker buckets (`in-pr`, `awaiting-pr`, `awaiting-parents`, `not-solvable`, `bot-error`)
+**And** the `not-in-tracker` bucket is labeled as inferred, never confirmed tracker status (fixture-proven in the report output)
+**And** the downloads join yields a top-unmigrated-by-volume ranking
+**And** all fetches route through the existing `resolve_github_raw_urls` (no new override helper); offline the nodes skip gracefully and mark the datasets stale (`version_status.v2.json` excluded).
+
+- **FRs:** FR-21.
+- **Invariants:** AD-13, AD-14 (not parity-gated), AD-3.
+- **Mode:** LOOP-S.
+- **Gating question:** none.
+- **Verify gate:** `kedro-test` (zero-code-change partitioning fixture + inferred-label fixture).
+- **Depends on:** B1 (feedstock set + `conda_noarch`), B2 (downloads join); NOT gated on B4 parity.
+
+## Realized in
+
+- **Package:** `src/shared/packages/pyforge-atlas/` (import `pyforge.atlas`).
+- **Status:** done + shipped 2026-07-18 (atlas Kedro migration, 32/32; PRs #58–#105 merged to `main`).
+- **Verification:** behaviour is covered by the migrated pipeline's tests on `main`. For the
+  precise file-level Code Map, read the implementation on `main` — this regenerated spec
+  deliberately does not guess a per-file map it cannot verify from the lost original.
+
+## Provenance & recovery note
+
+Recovered 2026-07-25 as part of the spec-durability remediation (see
+`planning-artifacts/specs/README.md`). Same root cause + fix as pyforge-warden: story specs
+now live tracked in `planning-artifacts/specs/`, not Tier-3 gitignored `implementation-artifacts/`.
