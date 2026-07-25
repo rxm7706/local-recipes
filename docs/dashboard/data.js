@@ -1169,7 +1169,7 @@ window.DASHBOARD_DATA = {
       "timing": null
     }
   },
-  "snapshot": "<span>2026-07-25 23:34 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-07-25 23:53 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -1487,7 +1487,7 @@ window.DASHBOARD_DATA = {
       "title": "multi-loop isolation harness",
       "caps": 3,
       "companions": 0,
-      "updated": "2026-07-23",
+      "updated": "2026-07-25",
       "dream": "",
       "path": "_bmad-output/projects/local-recipes/planning-artifacts/specs/spec-multi-loop-isolation"
     },
@@ -1853,12 +1853,12 @@ window.DASHBOARD_DATA = {
         "exec": true,
         "infographic": true,
         "marp": true,
-        "standalone": false,
-        "pptx": false
+        "standalone": true,
+        "pptx": true
       },
-      "n": 4,
+      "n": 6,
       "of": 6,
-      "export": "",
+      "export": "2026-07-25",
       "path": "presentations/unity-data-stack"
     },
     {
@@ -1868,13 +1868,13 @@ window.DASHBOARD_DATA = {
         "prototype": true,
         "exec": true,
         "infographic": true,
-        "marp": false,
-        "standalone": false,
-        "pptx": false
+        "marp": true,
+        "standalone": true,
+        "pptx": true
       },
-      "n": 3,
+      "n": 6,
       "of": 6,
-      "export": "",
+      "export": "2026-07-25",
       "path": "presentations/wasm-analytics-stack"
     }
   ],
@@ -2447,7 +2447,7 @@ window.DASHBOARD_DATA = {
         "dream": "deckcraft",
         "stages": {
           "dream": "07-23",
-          "deck": "",
+          "deck": "07-25",
           "spec": "07-25",
           "research": "07-25",
           "brief": "05-10",
@@ -2463,7 +2463,7 @@ window.DASHBOARD_DATA = {
         "stale": false,
         "version": "",
         "progress": "",
-        "complete": 7,
+        "complete": 8,
         "of": 9
       },
       {
@@ -2472,7 +2472,7 @@ window.DASHBOARD_DATA = {
         "dream": "presenton-pixi-image",
         "stages": {
           "dream": "07-23",
-          "deck": "",
+          "deck": "07-25",
           "spec": "07-25",
           "research": "07-25",
           "brief": "07-25",
@@ -2488,7 +2488,7 @@ window.DASHBOARD_DATA = {
         "stale": false,
         "version": "",
         "progress": "",
-        "complete": 7,
+        "complete": 8,
         "of": 9
       },
       {
@@ -2497,7 +2497,7 @@ window.DASHBOARD_DATA = {
         "dream": "unity-data-stack",
         "stages": {
           "dream": "07-23",
-          "deck": "",
+          "deck": "07-25",
           "spec": "07-25",
           "research": "07-25",
           "brief": "07-25",
@@ -2515,7 +2515,7 @@ window.DASHBOARD_DATA = {
         "stale": false,
         "version": "",
         "progress": "",
-        "complete": 7,
+        "complete": 8,
         "of": 9
       },
       {
@@ -2524,7 +2524,7 @@ window.DASHBOARD_DATA = {
         "dream": "wasm-analytics-stack",
         "stages": {
           "dream": "07-23",
-          "deck": "",
+          "deck": "07-25",
           "spec": "07-25",
           "research": "07-25",
           "brief": "07-25",
@@ -2542,7 +2542,7 @@ window.DASHBOARD_DATA = {
         "stale": false,
         "version": "",
         "progress": "",
-        "complete": 7,
+        "complete": 8,
         "of": 9
       }
     ]
