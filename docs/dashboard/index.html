@@ -450,6 +450,12 @@
     <div id="camprows"></div>
   </details>
 
+  <details class="dreams zsec" id="campsec2" hidden open>
+    <summary><span class="program-h" id="camph2">The Build Campaign</span><span class="zcaret">▸</span></summary>
+    <div class="dflow"><b>implementation lines</b> — every specced project through parallel <b>bmad-loop</b> lines (unattended gates, per-story merges to <code>main</code>). Wired lines derive done/total live; held lines name their gate.</div>
+    <div id="camprows2"></div>
+  </details>
+
   <details class="dreams zsec" id="pitchsec" hidden>
     <summary><span class="program-h" id="pitchh">The Pitch</span><span class="zcaret">▸</span></summary>
     <div class="dflow"><b>presentations/&lt;slug&gt;/</b> — the deck family. Dots = the 6-artifact standard: prototype · exec summary · infographic trio · marp sources · standalone · pptx pair. Cards link to the repo.</div>
@@ -570,6 +576,27 @@
         '<span class="cbadge cb-' + esc(r.status) + '">' + esc(r.status) + '</span>' +
       '</div>';
     }).join("");
+  }
+
+  // ---- 2c · The Build Campaign (implementation lines) ----
+  const CAMP2 = window.DASHBOARD_DATA.campaign2 || null;
+  const C2BADGE = { running:"cb-running", queued:"cb-queued", held:"cb-partial", future:"cb-queued", done:"cb-landed" };
+  if (CAMP2 && CAMP2.rows && CAMP2.rows.length) {
+    document.getElementById("campsec2").hidden = false;
+    const r2 = CAMP2.rows.filter(r => r.state === "running").length;
+    const d2 = CAMP2.rows.filter(r => r.state === "done").length;
+    document.getElementById("camph2").textContent =
+      "The Build Campaign · " + CAMP2.rows.length + " lines (" + r2 + " running · " + d2 + " done)";
+    document.getElementById("camprows2").innerHTML = CAMP2.rows.map(r =>
+      '<div class="camprow">' +
+        '<span class="camp-wave"></span>' +
+        '<span class="camp-slug"><a href="' + REPO + '/blob/main/_bmad-output/projects/' + esc(r.slug) +
+          '/planning-artifacts/epics.md" title="' + esc(r.note || '') + '">' + esc(r.slug) + '</a></span>' +
+        '<span class="camp-model">' + (r.pkey ? 'wired' : '—') + '</span>' +
+        '<span class="camp-stages" style="font-family:var(--mono);font-size:11px;color:var(--slate)">' + esc(r.note || '') + '</span>' +
+        '<span class="camp-n">' + (r.total ? r.done + '/' + r.total : '—') + '</span>' +
+        '<span class="cbadge ' + (C2BADGE[r.state] || 'cb-queued') + '">' + esc(r.state) + '</span>' +
+      '</div>').join("");
   }
 
   // ---- 3 · The Pitch (the deck family) ----

@@ -998,9 +998,178 @@ window.DASHBOARD_DATA = {
       "inflight": null,
       "velocity": null,
       "timing": null
+    },
+    "doctor": {
+      "label": "Doctor",
+      "accentVar": "--warden",
+      "branch": "loop/pyforge-doctor",
+      "contract": "9 FRs · exit codes {0,2,130} strict subset of warden's · consolidative wrap of atlas/warden instruments · dist pyforge-doctor / CLI doctor",
+      "seglabels": [
+        "E1 · spine",
+        "E2 · wedge",
+        "E3–E5",
+        "E6 · multi-axis"
+      ],
+      "epics": [
+        {
+          "badge": "E1",
+          "title": "Walking-skeleton doctor check",
+          "stories": [
+            [
+              "1.1",
+              "pending",
+              "Package scaffold, frozen Finding/DoctorReport contract & exit codes"
+            ],
+            [
+              "1.2",
+              "pending",
+              "Wrap warden's engine-availability self-check"
+            ],
+            [
+              "1.3",
+              "pending",
+              "Tri-state, individually addressable checks"
+            ],
+            [
+              "1.4",
+              "pending",
+              "Credential/environment-hygiene check"
+            ],
+            [
+              "1.5",
+              "pending",
+              "doctor check CLI wiring, --json, speed budget"
+            ]
+          ]
+        },
+        {
+          "badge": "E2",
+          "title": "monitor --fleet",
+          "stories": [
+            [
+              "2.1",
+              "pending",
+              "Atlas gather filter — staleness axis, MCP-first"
+            ],
+            [
+              "2.2",
+              "pending",
+              "cve + abandonment watch axes"
+            ],
+            [
+              "2.3",
+              "pending",
+              "doctor monitor --fleet CLI wiring"
+            ]
+          ]
+        },
+        {
+          "badge": "E3",
+          "title": "diagnose --prescribe",
+          "stories": [
+            [
+              "3.1",
+              "pending",
+              "Partition findings by actionability"
+            ],
+            [
+              "3.2",
+              "pending",
+              "Rank the actionable partition"
+            ],
+            [
+              "3.3",
+              "pending",
+              "Root-cause naming"
+            ],
+            [
+              "3.4",
+              "pending",
+              "doctor diagnose --prescribe CLI wiring"
+            ]
+          ]
+        }
+      ],
+      "inflight": null,
+      "velocity": null,
+      "timing": null
+    },
+    "scribe": {
+      "label": "Scribe",
+      "accentVar": "--warden",
+      "branch": "loop/pyforge-scribe",
+      "contract": "15 FRs · event-sourced capture + rebuildable read-model · team memory + knowledge graph · dist pyforge-scribe / CLI scribe",
+      "seglabels": [
+        "E1 · spine",
+        "E2 · wedge",
+        "E3–E5",
+        "E6 · multi-axis"
+      ],
+      "epics": [
+        {
+          "badge": "E1",
+          "title": "Team Memory — capture & promotion",
+          "stories": [
+            [
+              "1.1",
+              "pending",
+              "Package scaffold + direct capture"
+            ],
+            [
+              "1.2",
+              "pending",
+              "CLAUDE.md wiring — team memory auto-loads"
+            ],
+            [
+              "1.3",
+              "pending",
+              "Promotion workflow — proposal-then-confirm"
+            ],
+            [
+              "1.4",
+              "pending",
+              "Pointer-stub write-back + idempotency"
+            ],
+            [
+              "1.5",
+              "pending",
+              "Seed promotion — end-to-end proof"
+            ]
+          ]
+        },
+        {
+          "badge": "E2",
+          "title": "Knowledge Graph — compile & recall",
+          "stories": [
+            [
+              "2.1",
+              "pending",
+              "GraphStore port + flat-file v1 adapter"
+            ],
+            [
+              "2.2",
+              "pending",
+              "Nightly compile from named tool surfaces"
+            ],
+            [
+              "2.3",
+              "pending",
+              "Fact supersession in the compiled graph"
+            ],
+            [
+              "2.4",
+              "pending",
+              "scribe recall — grounded, cited answers"
+            ]
+          ]
+        }
+      ],
+      "inflight": null,
+      "velocity": null,
+      "timing": null
     }
   },
-  "snapshot": "<span>2026-07-25 12:19 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-07-25 12:24 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -1716,6 +1885,110 @@ window.DASHBOARD_DATA = {
         "n": 5,
         "of": 5,
         "status": "landed"
+      }
+    ]
+  },
+  "campaign2": {
+    "launched": "2026-07-25",
+    "rows": [
+      {
+        "slug": "pyforge-herald",
+        "pkey": "herald",
+        "stories": 17,
+        "state": "running",
+        "note": "line 1 — smallest full product, spec settled 0 OQs",
+        "done": 0,
+        "total": 17
+      },
+      {
+        "slug": "pyforge-doctor",
+        "pkey": "doctor",
+        "stories": 12,
+        "state": "running",
+        "note": "line 2 — consolidative wrap",
+        "done": 0,
+        "total": 12
+      },
+      {
+        "slug": "pyforge-scribe",
+        "pkey": "scribe",
+        "stories": 9,
+        "state": "running",
+        "note": "line 3 — team memory + graph",
+        "done": 0,
+        "total": 9
+      },
+      {
+        "slug": "pyforge-steward",
+        "pkey": null,
+        "stories": 18,
+        "state": "queued",
+        "note": "next free slot",
+        "done": 0,
+        "total": 18
+      },
+      {
+        "slug": "deckcraft",
+        "pkey": null,
+        "stories": 28,
+        "state": "queued",
+        "note": "planned pre-campaign (6 epics); research backfill advisable before launch",
+        "done": 0,
+        "total": 28
+      },
+      {
+        "slug": "pyforge-mason",
+        "pkey": null,
+        "stories": 38,
+        "state": "queued",
+        "note": "longest persona line; CFE Rule-2 retro at closeout",
+        "done": 0,
+        "total": 38
+      },
+      {
+        "slug": "presenton-pixi-image",
+        "pkey": null,
+        "stories": 30,
+        "state": "held",
+        "note": "operator Phase-0 gates: MS disconnected-stack check + memory-subsystem scope",
+        "done": 0,
+        "total": 30
+      },
+      {
+        "slug": "pyforge-marshal",
+        "pkey": null,
+        "stories": 40,
+        "state": "held",
+        "note": "AD-25–39 adversarial pass + floor quiescence (touches loop machinery)",
+        "done": 0,
+        "total": 40
+      },
+      {
+        "slug": "pyforge-genesis",
+        "pkey": null,
+        "stories": 36,
+        "state": "held",
+        "note": "last — model stability + consumes marshal-owned scripts",
+        "done": 0,
+        "total": 36
+      },
+      {
+        "slug": "wasm-analytics-stack",
+        "pkey": null,
+        "stories": 0,
+        "state": "future",
+        "note": "PRD+arch only by design; stories decompose when scheduled",
+        "done": 0,
+        "total": 0
+      },
+      {
+        "slug": "unity-data-stack",
+        "pkey": null,
+        "stories": 0,
+        "state": "future",
+        "note": "PRD+arch only by design; stories decompose when scheduled",
+        "done": 0,
+        "total": 0
       }
     ]
   }

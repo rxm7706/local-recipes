@@ -40,6 +40,8 @@ PROJECT_SOURCES = {
     "atlas": "_bmad-output/projects/pyforge-atlas/implementation-artifacts/sprint-status.yaml",
     "regen": "_bmad-output/projects/local-recipes/implementation-artifacts/sprint-status.yaml",
     "herald": "_bmad-output/projects/pyforge-herald/implementation-artifacts/sprint-status.yaml",
+    "doctor": "_bmad-output/projects/pyforge-doctor/implementation-artifacts/sprint-status.yaml",
+    "scribe": "_bmad-output/projects/pyforge-scribe/implementation-artifacts/sprint-status.yaml",
 }
 
 # git-history DONE detection (used by --source git). Verified against main's subjects.
@@ -51,6 +53,8 @@ MAIN_BRANCH = "main"
 _LOOP_DONE = re.compile(r"Merge bmad-loop/[^/]+/(\d+-\d+)-\S*(?:\s+into\s+(\S+))?")
 _LOOP_TARGET_PROJECT = (
     ("pyforge-herald", "herald"),
+    ("pyforge-doctor", "doctor"),
+    ("pyforge-scribe", "scribe"),
     ("pyforge-warden", "warden"),
     ("warden-epic", "warden"),
 )
@@ -151,7 +155,7 @@ def done_ids_from_git(branch: str) -> dict[str, set[str]]:
         ["git", "log", ref, "--format=%s"], capture_output=True, text=True, check=True
     ).stdout
     done: dict[str, set[str]] = {"warden": set(), "atlas": set(), "regen": set(),
-                                 "herald": set()}
+                                 "herald": set(), "doctor": set(), "scribe": set()}
     for line in log.splitlines():
         m = _LOOP_DONE.search(line)
         if m:
@@ -359,6 +363,52 @@ def scan_campaign() -> dict:
             "rows": rows}
 
 
+# ---- build campaign (implementation lines across all bmad-projects) ----------
+
+IMPL_CAMPAIGN = [
+    # pkey = data.js projects key when the line is dashboard-wired; stories = static count otherwise
+    {"slug": "pyforge-herald",       "pkey": "herald", "stories": 17, "state": "running",
+     "note": "line 1 — smallest full product, spec settled 0 OQs"},
+    {"slug": "pyforge-doctor",       "pkey": "doctor", "stories": 12, "state": "running",
+     "note": "line 2 — consolidative wrap"},
+    {"slug": "pyforge-scribe",       "pkey": "scribe", "stories": 9,  "state": "running",
+     "note": "line 3 — team memory + graph"},
+    {"slug": "pyforge-steward",      "pkey": None, "stories": 18, "state": "queued",
+     "note": "next free slot"},
+    {"slug": "deckcraft",            "pkey": None, "stories": 28, "state": "queued",
+     "note": "planned pre-campaign (6 epics); research backfill advisable before launch"},
+    {"slug": "pyforge-mason",        "pkey": None, "stories": 38, "state": "queued",
+     "note": "longest persona line; CFE Rule-2 retro at closeout"},
+    {"slug": "presenton-pixi-image", "pkey": None, "stories": 30, "state": "held",
+     "note": "operator Phase-0 gates: MS disconnected-stack check + memory-subsystem scope"},
+    {"slug": "pyforge-marshal",      "pkey": None, "stories": 40, "state": "held",
+     "note": "AD-25–39 adversarial pass + floor quiescence (touches loop machinery)"},
+    {"slug": "pyforge-genesis",      "pkey": None, "stories": 36, "state": "held",
+     "note": "last — model stability + consumes marshal-owned scripts"},
+    {"slug": "wasm-analytics-stack", "pkey": None, "stories": 0,  "state": "future",
+     "note": "PRD+arch only by design; stories decompose when scheduled"},
+    {"slug": "unity-data-stack",     "pkey": None, "stories": 0,  "state": "future",
+     "note": "PRD+arch only by design; stories decompose when scheduled"},
+]
+
+
+def scan_impl_campaign(projects: dict) -> dict:
+    """Build-campaign roster; wired lines derive done/total live from `projects`."""
+    rows: list[dict] = []
+    for e in IMPL_CAMPAIGN:
+        done, total = 0, e["stories"]
+        if e["pkey"] and e["pkey"] in projects:
+            stories = [s for ep in projects[e["pkey"]]["epics"] for s in ep["stories"]]
+            total = len(stories)
+            done = sum(1 for s in stories if s[1] == "done")
+        state = "done" if total and done == total else e["state"]
+        rows.append({**e, "done": done, "total": total, "state": state})
+    running = sum(1 for r in rows if r["state"] == "running")
+    dn = sum(1 for r in rows if r["state"] == "done")
+    print(f"[build-campaign] {len(rows)} lines · {running} running · {dn} done")
+    return {"launched": "2026-07-25", "rows": rows}
+
+
 # ---- pitch roster (the deck family) ------------------------------------------
 
 PITCH_TITLES = {"agentic-sdlc": "Agentic AI across the SDLC"}
@@ -461,6 +511,7 @@ def main() -> int:
     data["dreams"] = scan_dreams()
     data["specs"] = scan_specs()
     data["campaign"] = scan_campaign()
+    data["campaign2"] = scan_impl_campaign(data["projects"])
     data["pitch"] = scan_pitch()
     data["archived"] = build_archived(data["dreams"])
 
