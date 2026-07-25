@@ -28,7 +28,18 @@ binding ACs the migration was built against (from `epics.md`), but not the per-s
 implementation narrative. Ground truth for what shipped is the merged PRs **#58–#105**; the
 migration is COMPLETE (32/32, shipped 2026-07-18).
 
-## Regenerating / re-recovering
+## Recovery attempts (2026-07-25)
 
-- **Regen from planning:** `epics.md` → per-story `### Story <ID> (<epic.story>): <title>` section (Intent + ACs).
-- **Recover an original:** search `**/.bmad-loop/runs/*/worktrees/*/**/pyforge-atlas/implementation-artifacts/*.md` (none survived as of 2026-07-25).
+Unlike warden — where 13 lost specs were recovered verbatim from the `Write`/`Edit` tool-calls in
+the local Claude Code session transcripts (`~/.claude/projects/**/*.jsonl`) — **atlas's dev-session
+transcripts are NOT in the local store.** A full scan found no atlas per-story spec `Write` calls
+(even `B1`, which survived on disk, has no transcript write). So the transcript path that saved
+warden does not apply here. Sources tried, all exhausted:
+
+1. **Session transcripts** — atlas spec writes absent from `~/.claude/projects/`.
+2. **Run worktree snapshots** — none survived (atlas run dirs gone; the 2026-07-19 truncation).
+3. **`epics.md` regeneration** — the fallback used for 30 of 32 (Intent + ACs only).
+
+If atlas's original dev sessions ran on `claude.ai/code` (web) rather than locally, their
+transcripts may still exist server-side — that is the only remaining place the atlas originals
+(and their dev/review narrative) could live.

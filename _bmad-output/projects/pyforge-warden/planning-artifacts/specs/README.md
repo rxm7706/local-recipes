@@ -24,15 +24,27 @@ file states its own provenance in its header:
 | Provenance | Count | What it is |
 |---|---|---|
 | **original (survived intact)** | 10 | the real spec, never lost (1-5, 1-6, 2-6, 5-1, 5-2, 6-3, 6-5, 6-6, 6-7, 6-8) |
-| **original (recovered from a run worktree)** | 8 | the real spec, recovered from a surviving bmad-loop worktree snapshot; header carries a `<!-- RECOVERED … -->` note (1-1, 1-2, 1-3, 1-4, 1-7, 2-2, 6-2, 6-10) |
-| **regenerated contract-spec** | 13 | the authoritative Intent + Acceptance Criteria lifted **verbatim** from the tracked `epics.md` (the source the original was derived from) + a realized-in pointer; the original dev-notes / review-triage-log were not recoverable. Marked `status: regenerated`. |
+| **original (recovered from a run worktree)** | 8 | recovered from a surviving bmad-loop worktree snapshot; header `<!-- RECOVERED … run worktree -->` (1-1, 1-2, 1-3, 1-4, 1-7, 2-2, 6-2, 6-10) |
+| **original (recovered from session transcript)** | 13 | recovered verbatim from the `Write`/`Edit` tool-calls in the **Claude Code session transcripts** (`~/.claude/projects/*.jsonl`); header `<!-- RECOVERED … session transcript -->` (1-8, 1-9, 2-1, 2-3, 2-4, 2-5, 3-1, 3-2, 3-3, 4-1, 6-1, 6-4, 6-9) |
 
-**The contract is intact for all 31 stories** — the regenerated ones carry the same
-Given/When/Then acceptance criteria + FR/NFR mappings the originals were built against
-(from `epics.md`); only the per-story implementation narrative is thinner where the
-original file was unrecoverable. Behaviour is verified by the current green suite on `main`.
+**All 31 warden story specs are the REAL originals — zero regenerations remain.** The
+transcript recovery (2026-07-25) closed the last gap: the bmad-loop dev sessions' `Write`
+calls that created each spec survive in the local session transcripts, so the original
+intent-contracts came back verbatim. Of the 13 transcript-recovered, **5 include the full
+dev/review triage log** (their final full-rewrite Write was captured); the other 8 are the
+dev's spec draft (intent + boundaries + I/O matrix + code map) — their late review-triage-log
+was likely appended by a later `Edit` and would need a Write+Edit replay to reassemble.
 
-## Regenerating / re-recovering
+## Recovery sources (in order of fidelity)
 
-- **Regen from planning:** `epics.md` → per-story Intent + ACs (see the regen used here).
-- **Recover an original:** search `**/.bmad-loop/runs/*/worktrees/*/**/implementation-artifacts/spec-<X-Y>-*.md` across the main repo and any loop home; the largest surviving copy is the richest.
+1. **Session transcripts** (`~/.claude/projects/**/*.jsonl`) — the richest source: they hold the
+   `Write`/`Edit` tool-calls that created every spec, so the original content (often incl. the
+   dev/review narrative) is recoverable verbatim. Scan each `.jsonl` for `tool_use` blocks named
+   `Write`/`Edit` whose `input.file_path` matches the spec; take the largest `content` (or replay
+   Write+Edits in timestamp order for the exact final state). This is how the 13 were recovered.
+2. **Run worktree snapshots** — `**/.bmad-loop/runs/*/worktrees/*/**/implementation-artifacts/spec-<X-Y>-*.md`; largest surviving copy is richest.
+3. **`epics.md` regeneration** — last resort: per-story Intent + ACs only (the contract, not the narrative).
+
+> Note (atlas): the same transcript recovery was attempted for pyforge-atlas but its dev-session
+> transcripts are **not** in the local `~/.claude/projects/` store, so atlas kept only 2 originals
+> + 30 `epics.md` contract-specs. See that project's `specs/README.md`.
