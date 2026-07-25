@@ -41,3 +41,5 @@ environment.yaml         # derived export of pixi.toml (CI sync check governs)
 .cursorrules             # per-tool pointer (AGENTS.md family)
 .prettierignore          # repo plumbing
 .pixi/**                 # tracked pixi shim files (env itself is gitignored)
+src/sentinel/**          # sentinel-lineage prototype (the knowledge-graph core [[pyforge-scribe]] inherited); not the scribe package spec-pyforge-scribe describes — govern it when Scribe absorbs it
+conf/base/knowledge.yml  # config for src/sentinel/knowledge/wiki (same lineage as above)

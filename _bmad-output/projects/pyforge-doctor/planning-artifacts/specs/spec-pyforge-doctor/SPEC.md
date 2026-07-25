@@ -1,4 +1,6 @@
 ---
+surface:
+  - src/shared/packages/pyforge-doctor/**   # the CLI this Spec builds
 id: SPEC-doctor
 companions:
   - ../../architecture/architecture-pyforge-doctor-2026-07-25/ARCHITECTURE-SPINE.md

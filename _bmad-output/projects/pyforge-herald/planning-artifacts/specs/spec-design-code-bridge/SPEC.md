@@ -1,7 +1,7 @@
 ---
 id: SPEC-design-code-bridge
 surface:
-  - src/pyforge/herald/**      # the CLI this spec builds (not yet created)
+  - src/shared/packages/pyforge-herald/**   # the herald CLI this Spec builds (workspace member; the earlier `src/pyforge/herald/**` was import-path shorthand — AD-1)
   - scripts/deck_export.py     # CAP-5 export path the CLI wraps
 companions:
   - bridge-protocol.md

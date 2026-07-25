@@ -1169,7 +1169,7 @@ window.DASHBOARD_DATA = {
       "timing": null
     }
   },
-  "snapshot": "<span>2026-07-25 23:11 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-07-25 23:34 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -1194,6 +1194,7 @@ window.DASHBOARD_DATA = {
       "status": "seeded",
       "owner": "herald",
       "chain": {
+        "deck": "presentations/deckcraft",
         "spec": "_bmad-output/projects/deckcraft/planning-artifacts/specs/spec-deckcraft",
         "project": "_bmad-output/projects/deckcraft"
       }
@@ -1259,6 +1260,7 @@ window.DASHBOARD_DATA = {
       "status": "in-spec",
       "owner": "mason",
       "chain": {
+        "deck": "presentations/presenton-pixi-image",
         "spec": "_bmad-output/projects/presenton-pixi-image/planning-artifacts/specs/spec-presenton-pixi-image",
         "project": "_bmad-output/projects/presenton-pixi-image"
       }
@@ -1402,6 +1404,7 @@ window.DASHBOARD_DATA = {
       "status": "in-spec",
       "owner": "crew",
       "chain": {
+        "deck": "presentations/unity-data-stack",
         "spec": "_bmad-output/projects/unity-data-stack/planning-artifacts/specs/spec-unity-data-stack",
         "project": "_bmad-output/projects/unity-data-stack"
       }
@@ -1421,6 +1424,7 @@ window.DASHBOARD_DATA = {
       "status": "in-spec",
       "owner": "crew",
       "chain": {
+        "deck": "presentations/wasm-analytics-stack",
         "spec": "_bmad-output/projects/wasm-analytics-stack/planning-artifacts/specs/spec-wasm-analytics-stack",
         "project": "_bmad-output/projects/wasm-analytics-stack"
       }
@@ -1530,9 +1534,9 @@ window.DASHBOARD_DATA = {
     {
       "slug": "pyforge-atlas",
       "project": "pyforge-atlas",
-      "title": "pyforge-atlas (chain-verify kernel)",
-      "caps": 1,
-      "companions": 3,
+      "title": "Atlas — the intelligence layer an agent workforce can extend",
+      "caps": 17,
+      "companions": 5,
       "updated": "2026-07-25",
       "dream": "pyforge-atlas",
       "path": "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas"
@@ -1664,6 +1668,38 @@ window.DASHBOARD_DATA = {
       "of": 6,
       "export": "2026-07-23",
       "path": "presentations/agentic-sdlc"
+    },
+    {
+      "slug": "deckcraft",
+      "title": "PyForge Deckcraft",
+      "have": {
+        "prototype": true,
+        "exec": true,
+        "infographic": true,
+        "marp": true,
+        "standalone": true,
+        "pptx": true
+      },
+      "n": 6,
+      "of": 6,
+      "export": "2026-07-25",
+      "path": "presentations/deckcraft"
+    },
+    {
+      "slug": "presenton-pixi-image",
+      "title": "PyForge Presenton-pixi-image",
+      "have": {
+        "prototype": true,
+        "exec": true,
+        "infographic": true,
+        "marp": true,
+        "standalone": true,
+        "pptx": true
+      },
+      "n": 6,
+      "of": 6,
+      "export": "2026-07-25",
+      "path": "presentations/presenton-pixi-image"
     },
     {
       "slug": "pyforge-atlas",
@@ -1808,6 +1844,38 @@ window.DASHBOARD_DATA = {
       "of": 6,
       "export": "2026-07-15",
       "path": "presentations/pyforge-warden"
+    },
+    {
+      "slug": "unity-data-stack",
+      "title": "PyForge Unity-data-stack",
+      "have": {
+        "prototype": true,
+        "exec": true,
+        "infographic": true,
+        "marp": true,
+        "standalone": false,
+        "pptx": false
+      },
+      "n": 4,
+      "of": 6,
+      "export": "",
+      "path": "presentations/unity-data-stack"
+    },
+    {
+      "slug": "wasm-analytics-stack",
+      "title": "PyForge Wasm-analytics-stack",
+      "have": {
+        "prototype": true,
+        "exec": true,
+        "infographic": true,
+        "marp": false,
+        "standalone": false,
+        "pptx": false
+      },
+      "n": 3,
+      "of": 6,
+      "export": "",
+      "path": "presentations/wasm-analytics-stack"
     }
   ],
   "archived": [

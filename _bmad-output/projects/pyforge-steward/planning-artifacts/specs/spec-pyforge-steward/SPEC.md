@@ -1,4 +1,6 @@
 ---
+surface:
+  - src/shared/packages/pyforge-steward/**  # the CLI this Spec builds (not yet created)
 id: SPEC-steward
 companions:
   - ../../architecture/architecture-pyforge-steward-2026-07-25/ARCHITECTURE-SPINE.md
