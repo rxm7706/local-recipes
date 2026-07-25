@@ -1171,6 +1171,9 @@ depends-on = ["pyforge-atlas-build-conda", "pyforge-atlas-build-dist"]
 # _bmad-output/projects/pyforge-doctor/planning-artifacts/.
 [feature.pyforge-doctor.dependencies]
 pyforge-doctor = { path = "src/shared/packages/pyforge-doctor" }  # -> built conda pkg
+hatchling = ">=1.31.0"                    # Python build backend (drives both conda + wheel/sdist)
+python-build = ">=1.5.0"                 # PyPA `python -m build` frontend (wheel + sdist)
+pytest = ">=9.1.1"                       # test runner
 # --- pyforge-scribe (Scribe): pixi build workspace member (warden mirror, Story 1.1) --
 # Source + package manifest live in ./src/shared/packages/pyforge-scribe (its
 # own [package] table, no [workspace]) — same src/shared/packages convention as
