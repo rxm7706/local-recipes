@@ -1169,7 +1169,7 @@ window.DASHBOARD_DATA = {
       "timing": null
     }
   },
-  "snapshot": "<span>2026-07-25 20:10 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-07-25 23:10 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -1473,7 +1473,7 @@ window.DASHBOARD_DATA = {
       "title": "one visual language for everything pyforge",
       "caps": 3,
       "companions": 1,
-      "updated": "2026-07-23",
+      "updated": "2026-07-25",
       "dream": "modernist-identity",
       "path": "_bmad-output/projects/local-recipes/planning-artifacts/specs/spec-modernist-identity"
     },
@@ -2133,5 +2133,350 @@ window.DASHBOARD_DATA = {
         }
       ]
     }
-  ]
+  ],
+  "fleet": {
+    "stages": [
+      "dream",
+      "deck",
+      "spec",
+      "research",
+      "brief",
+      "prd",
+      "arch",
+      "epics",
+      "code"
+    ],
+    "staleDays": 30,
+    "rows": [
+      {
+        "label": "herald",
+        "slug": "pyforge-herald",
+        "dream": "pyforge-herald",
+        "stages": {
+          "dream": "07-23",
+          "deck": "07-23",
+          "spec": "07-23",
+          "research": "07-25",
+          "brief": "07-25",
+          "prd": "07-25",
+          "arch": "07-25",
+          "epics": "07-25",
+          "code": "07-25"
+        },
+        "na": [],
+        "furthest": "code",
+        "updated": "2026-07-25",
+        "age": 0,
+        "stale": false,
+        "version": "0.1.0",
+        "progress": "2/17",
+        "complete": 9,
+        "of": 9
+      },
+      {
+        "label": "doctor",
+        "slug": "pyforge-doctor",
+        "dream": "pyforge-doctor",
+        "stages": {
+          "dream": "07-23",
+          "deck": "07-23",
+          "spec": "07-25",
+          "research": "07-25",
+          "brief": "07-25",
+          "prd": "07-25",
+          "arch": "07-25",
+          "epics": "07-25",
+          "code": "07-25"
+        },
+        "na": [],
+        "furthest": "code",
+        "updated": "2026-07-25",
+        "age": 0,
+        "stale": false,
+        "version": "0.1.0",
+        "progress": "1/12",
+        "complete": 9,
+        "of": 9
+      },
+      {
+        "label": "scribe",
+        "slug": "pyforge-scribe",
+        "dream": "pyforge-scribe",
+        "stages": {
+          "dream": "07-23",
+          "deck": "07-23",
+          "spec": "07-25",
+          "research": "07-25",
+          "brief": "07-25",
+          "prd": "07-25",
+          "arch": "07-25",
+          "epics": "07-25",
+          "code": "07-25"
+        },
+        "na": [],
+        "furthest": "code",
+        "updated": "2026-07-25",
+        "age": 0,
+        "stale": false,
+        "version": "0.1.0",
+        "progress": "1/9",
+        "complete": 9,
+        "of": 9
+      },
+      {
+        "label": "steward",
+        "slug": "pyforge-steward",
+        "dream": "pyforge-steward",
+        "stages": {
+          "dream": "07-23",
+          "deck": "07-23",
+          "spec": "07-25",
+          "research": "07-25",
+          "brief": "07-25",
+          "prd": "07-25",
+          "arch": "07-25",
+          "epics": "07-25",
+          "code": ""
+        },
+        "na": [],
+        "furthest": "epics",
+        "updated": "2026-07-25",
+        "age": 0,
+        "stale": false,
+        "version": "",
+        "progress": "",
+        "complete": 8,
+        "of": 9
+      },
+      {
+        "label": "marshal",
+        "slug": "pyforge-marshal",
+        "dream": "pyforge-marshal",
+        "stages": {
+          "dream": "07-23",
+          "deck": "07-23",
+          "spec": "07-25",
+          "research": "07-25",
+          "brief": "07-25",
+          "prd": "07-25",
+          "arch": "07-25",
+          "epics": "07-25",
+          "code": ""
+        },
+        "na": [],
+        "furthest": "epics",
+        "updated": "2026-07-25",
+        "age": 0,
+        "stale": false,
+        "version": "",
+        "progress": "",
+        "complete": 8,
+        "of": 9
+      },
+      {
+        "label": "mason",
+        "slug": "pyforge-mason",
+        "dream": "pyforge-mason",
+        "stages": {
+          "dream": "07-25",
+          "deck": "07-23",
+          "spec": "07-25",
+          "research": "07-25",
+          "brief": "07-25",
+          "prd": "07-25",
+          "arch": "07-25",
+          "epics": "07-25",
+          "code": ""
+        },
+        "na": [],
+        "furthest": "epics",
+        "updated": "2026-07-25",
+        "age": 0,
+        "stale": false,
+        "version": "",
+        "progress": "",
+        "complete": 8,
+        "of": 9
+      },
+      {
+        "label": "atlas",
+        "slug": "pyforge-atlas",
+        "dream": "pyforge-atlas",
+        "stages": {
+          "dream": "07-23",
+          "deck": "07-23",
+          "spec": "07-23",
+          "research": "07-25",
+          "brief": "07-25",
+          "prd": "07-17",
+          "arch": "07-17",
+          "epics": "07-17",
+          "code": "07-17"
+        },
+        "na": [],
+        "furthest": "code",
+        "updated": "2026-07-25",
+        "age": 0,
+        "stale": false,
+        "version": "0.1.0",
+        "progress": "32/32",
+        "complete": 9,
+        "of": 9
+      },
+      {
+        "label": "warden",
+        "slug": "pyforge-warden",
+        "dream": "pyforge-warden",
+        "stages": {
+          "dream": "07-23",
+          "deck": "07-14",
+          "spec": "07-25",
+          "research": "07-25",
+          "brief": "07-25",
+          "prd": "07-14",
+          "arch": "07-14",
+          "epics": "07-14",
+          "code": "07-14"
+        },
+        "na": [],
+        "furthest": "code",
+        "updated": "2026-07-25",
+        "age": 0,
+        "stale": false,
+        "version": "0.1.0",
+        "progress": "31/31",
+        "complete": 9,
+        "of": 9
+      },
+      {
+        "label": "genesis",
+        "slug": "pyforge-genesis",
+        "dream": "pyforge-genesis",
+        "stages": {
+          "dream": "07-23",
+          "deck": "07-23",
+          "spec": "07-25",
+          "research": "07-25",
+          "brief": "07-25",
+          "prd": "07-25",
+          "arch": "07-25",
+          "epics": "07-25",
+          "code": ""
+        },
+        "na": [],
+        "furthest": "epics",
+        "updated": "2026-07-25",
+        "age": 0,
+        "stale": false,
+        "version": "",
+        "progress": "",
+        "complete": 8,
+        "of": 9
+      },
+      {
+        "label": "deckcraft",
+        "slug": "deckcraft",
+        "dream": "deckcraft",
+        "stages": {
+          "dream": "07-23",
+          "deck": "",
+          "spec": "07-25",
+          "research": "07-25",
+          "brief": "05-10",
+          "prd": "05-10",
+          "arch": "05-10",
+          "epics": "05-10",
+          "code": ""
+        },
+        "na": [],
+        "furthest": "epics",
+        "updated": "2026-07-25",
+        "age": 0,
+        "stale": false,
+        "version": "",
+        "progress": "",
+        "complete": 7,
+        "of": 9
+      },
+      {
+        "label": "presenton",
+        "slug": "presenton-pixi-image",
+        "dream": "presenton-pixi-image",
+        "stages": {
+          "dream": "07-23",
+          "deck": "",
+          "spec": "07-25",
+          "research": "07-25",
+          "brief": "07-25",
+          "prd": "05-01",
+          "arch": "07-25",
+          "epics": "07-25",
+          "code": ""
+        },
+        "na": [],
+        "furthest": "epics",
+        "updated": "2026-07-25",
+        "age": 0,
+        "stale": false,
+        "version": "",
+        "progress": "",
+        "complete": 7,
+        "of": 9
+      },
+      {
+        "label": "unity",
+        "slug": "unity-data-stack",
+        "dream": "unity-data-stack",
+        "stages": {
+          "dream": "07-23",
+          "deck": "",
+          "spec": "07-25",
+          "research": "07-25",
+          "brief": "07-25",
+          "prd": "07-25",
+          "arch": "07-25",
+          "epics": "",
+          "code": ""
+        },
+        "na": [
+          "epics"
+        ],
+        "furthest": "arch",
+        "updated": "2026-07-25",
+        "age": 0,
+        "stale": false,
+        "version": "",
+        "progress": "",
+        "complete": 7,
+        "of": 9
+      },
+      {
+        "label": "wasm",
+        "slug": "wasm-analytics-stack",
+        "dream": "wasm-analytics-stack",
+        "stages": {
+          "dream": "07-23",
+          "deck": "",
+          "spec": "07-25",
+          "research": "07-25",
+          "brief": "07-25",
+          "prd": "07-25",
+          "arch": "07-25",
+          "epics": "",
+          "code": ""
+        },
+        "na": [
+          "epics"
+        ],
+        "furthest": "arch",
+        "updated": "2026-07-25",
+        "age": 0,
+        "stale": false,
+        "version": "",
+        "progress": "",
+        "complete": 7,
+        "of": 9
+      }
+    ]
+  }
 };

@@ -28,6 +28,7 @@ CI (in-workflow): python docs/dashboard/generate.py --source git
 from __future__ import annotations
 
 import argparse
+import glob
 import json
 import re
 import subprocess
@@ -452,6 +453,116 @@ def scan_impl_campaign(projects: dict) -> dict:
     return {"launched": "2026-07-25", "rows": rows}
 
 
+# ---- fleet view (Dream -> Code, per project: stage, recency, version) --------
+
+FLEET_PROJECTS = [
+    # (display label, project slug, dream slug — differs where the Dream predates the station)
+    ("herald", "pyforge-herald", "pyforge-herald"),
+    ("doctor", "pyforge-doctor", "pyforge-doctor"),
+    ("scribe", "pyforge-scribe", "pyforge-scribe"),
+    ("steward", "pyforge-steward", "pyforge-steward"),
+    ("marshal", "pyforge-marshal", "pyforge-marshal"),
+    ("mason", "pyforge-mason", "pyforge-mason"),
+    ("atlas", "pyforge-atlas", "pyforge-atlas"),
+    ("warden", "pyforge-warden", "pyforge-warden"),
+    ("genesis", "pyforge-genesis", "pyforge-genesis"),
+    ("deckcraft", "deckcraft", "deckcraft"),
+    ("presenton", "presenton-pixi-image", "presenton-pixi-image"),
+    ("unity", "unity-data-stack", "unity-data-stack"),
+    ("wasm", "wasm-analytics-stack", "wasm-analytics-stack"),
+]
+# lifecycle order — the Dream-to-Code chain, left to right
+FLEET_STAGES = ("dream", "deck", "spec", "research", "brief", "prd", "arch", "epics", "code")
+# stages a project legitimately does not have (depth chosen at planning time)
+FLEET_NA = {"unity-data-stack": {"epics"}, "wasm-analytics-stack": {"epics"}}
+_STALE_DAYS = 30
+
+
+def _added(patterns: list[str]) -> str:
+    """Earliest add-date across matching paths (MM-DD), '' when absent."""
+    best = ""
+    for pat in patterns:
+        for path in glob.glob(pat, recursive=True):
+            rel = str(Path(path).resolve().relative_to(REPO_ROOT))
+            r = subprocess.run(["git", "log", "--diff-filter=A", "--format=%ad",
+                                "--date=format:%m-%d", "--", rel],
+                               capture_output=True, text=True, cwd=REPO_ROOT)
+            dates = [d for d in r.stdout.strip().split("\n") if d]
+            if dates and (not best or dates[-1] < best):
+                best = dates[-1]
+    return best
+
+
+def _last_touched(paths: list[str]) -> str:
+    """Most recent commit date (ISO) across the given paths."""
+    existing = [p for p in paths if (REPO_ROOT / p).exists()]
+    if not existing:
+        return ""
+    r = subprocess.run(["git", "log", "-1", "--format=%ad", "--date=short", "--"] + existing,
+                       capture_output=True, text=True, cwd=REPO_ROOT)
+    return r.stdout.strip()
+
+
+def _pkg_version(slug: str) -> str:
+    f = REPO_ROOT / "src" / "shared" / "packages" / slug / "pyproject.toml"
+    if not f.is_file():
+        return ""
+    m = re.search(r'^version\s*=\s*"([^"]+)"', f.read_text(encoding="utf-8"), re.M)
+    return m.group(1) if m else ""
+
+
+def scan_fleet(projects: dict) -> dict:
+    """Per-project Dream-to-Code state: stage dates, furthest stage, recency, version."""
+    from datetime import date
+    today = date.today()
+    rows = []
+    for label, slug, dream in FLEET_PROJECTS:
+        pa = f"_bmad-output/projects/{slug}/planning-artifacts"
+        stages = {
+            "dream":    _added([f"docs/dreams/{dream}.md"]),
+            "deck":     _added([f"presentations/{slug}/project/*.dc.html"]),
+            "spec":     _added([f"{pa}/specs/spec-*/SPEC.md"]),
+            "research": _added([f"{pa}/research/*.md"]),
+            "brief":    _added([f"{pa}/product-brief*", f"{pa}/briefs/**/brief*.md"]),
+            "prd":      _added([f"{pa}/prd.md", f"{pa}/prds/*/prd.md"]),
+            "arch":     _added([f"{pa}/architecture.md", f"{pa}/architecture/*/*.md"]),
+            "epics":    _added([f"{pa}/epics.md"]),
+            "code":     _added([f"src/shared/packages/{slug}/pyproject.toml"]),
+        }
+        na = FLEET_NA.get(slug, set())
+        reached = [s for s in FLEET_STAGES if stages[s]]
+        furthest = reached[-1] if reached else "dream"
+        updated = _last_touched([f"docs/dreams/{dream}.md",
+                                 f"_bmad-output/projects/{slug}",
+                                 f"presentations/{slug}",
+                                 f"src/shared/packages/{slug}"])
+        age = ""
+        if updated:
+            try:
+                y, m, d = (int(x) for x in updated.split("-"))
+                age = (today - date(y, m, d)).days
+            except ValueError:
+                age = ""
+        # story progress when this project is a wired build line
+        prog = ""
+        pkey = {"pyforge-herald": "herald", "pyforge-doctor": "doctor",
+                "pyforge-scribe": "scribe", "pyforge-warden": "warden",
+                "pyforge-atlas": "atlas"}.get(slug)
+        if pkey and pkey in projects:
+            st = [s for e in projects[pkey]["epics"] for s in e["stories"]]
+            prog = f"{sum(1 for s in st if s[1] == 'done')}/{len(st)}"
+        rows.append({"label": label, "slug": slug, "dream": dream, "stages": stages,
+                     "na": sorted(na), "furthest": furthest, "updated": updated,
+                     "age": age, "stale": isinstance(age, int) and age > _STALE_DAYS,
+                     "version": _pkg_version(slug), "progress": prog,
+                     "complete": sum(1 for s in FLEET_STAGES if stages[s] or s in na),
+                     "of": len(FLEET_STAGES)})
+    full = sum(1 for r in rows if r["complete"] == r["of"])
+    print(f"[fleet] {len(rows)} projects · {full} complete chains · "
+          f"{sum(1 for r in rows if r['stale'])} stale (>{_STALE_DAYS}d)")
+    return {"stages": list(FLEET_STAGES), "staleDays": _STALE_DAYS, "rows": rows}
+
+
 # ---- pitch roster (the deck family) ------------------------------------------
 
 PITCH_TITLES = {"agentic-sdlc": "Agentic AI across the SDLC"}
@@ -558,6 +669,7 @@ def main() -> int:
     data.pop("campaign2", None)
     spec_c = scan_campaign()
     build_c = scan_impl_campaign(data["projects"])
+    data["fleet"] = scan_fleet(data["projects"])
     data["campaigns"] = [
         {"id": "spec-completion-2026-07-25", "title": "Spec Completion",
          "kind": "planning", "status": "completed", "completed": "2026-07-25",

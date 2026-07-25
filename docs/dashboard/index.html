@@ -348,6 +348,34 @@
   .spec-meta .dr { color: var(--deck); }
   @media (max-width: 640px) { .specrow { grid-template-columns: 1fr auto; } .spec-title, .spec-proj { display: none; } }
 
+  /* fleet view */
+  .fleetrow { border-bottom: 1px solid var(--line-soft); }
+  .fleetrow > summary { list-style: none; cursor: pointer; display: grid;
+    grid-template-columns: 96px auto 1fr 78px 96px 62px; gap: 12px; align-items: center; padding: 9px 0; }
+  .fleetrow > summary::-webkit-details-marker { display: none; }
+  .fleet-name { font-family: var(--mono); font-size: 13px; font-weight: 600; }
+  .fleet-name a { color: var(--ink); text-decoration: none; }
+  .fleet-name a:hover { color: var(--accent); }
+  .fdots { display: flex; gap: 5px; align-items: center; }
+  .fdot { width: 10px; height: 10px; border-radius: 3px; background: var(--done); }
+  .fdot.miss { background: var(--pending-ground); border: 1px solid var(--slate-faint); }
+  .fdot.na { background: transparent; border: 1px dashed var(--slate-faint); opacity: .45; }
+  .fleet-stage { font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: .06em;
+    color: var(--slate); background: var(--panel-2); border: 1px solid var(--line); border-radius: 4px;
+    padding: 2px 8px; justify-self: start; white-space: nowrap; }
+  .fleet-prog { font-family: var(--mono); font-size: 11.5px; color: var(--ink-soft); font-variant-numeric: tabular-nums; text-align: right; }
+  .fleet-upd { font-family: var(--mono); font-size: 11px; color: var(--slate); font-variant-numeric: tabular-nums; text-align: right; }
+  .fleet-upd.stale { color: var(--active); font-weight: 600; }
+  .fleet-ver { font-family: var(--mono); font-size: 11px; color: var(--slate-faint); text-align: right; }
+  .fleet-ver b { color: var(--done); font-weight: 600; }
+  .fledger { display: grid; grid-template-columns: repeat(auto-fill, minmax(112px,1fr)); gap: 6px 14px;
+    padding: 4px 0 14px 96px; }
+  .fledger span { font-family: var(--mono); font-size: 10.5px; color: var(--slate); }
+  .fledger b { color: var(--ink-soft); font-weight: 600; }
+  .fledger .none { color: var(--slate-faint); opacity: .7; }
+  @media (max-width: 720px) { .fleetrow > summary { grid-template-columns: 78px auto 1fr auto; }
+    .fleet-prog, .fleet-ver { display: none; } .fledger { padding-left: 0; } }
+
   /* campaign board */
   .camprow { display: grid; grid-template-columns: 34px minmax(150px,230px) auto 1fr auto auto; gap: 12px; padding: 9px 0; align-items: center; }
   .camprow + .camprow { border-top: 1px solid var(--line-soft); }
@@ -459,6 +487,12 @@
     <summary><span class="program-h" id="campaignh">Campaigns</span><span class="zcaret">▸</span></summary>
     <div class="dflow"><b>program-scale efforts across the BMAD projects</b> — each campaign is a roster of parallel chains/lines with live per-row state. Completed campaigns collapse and keep their durable record; the active campaign leads.</div>
     <div id="campaignblocks"></div>
+  </details>
+
+  <details class="dreams zsec" id="fleetsec" hidden open>
+    <summary><span class="program-h" id="fleeth">Fleet</span><span class="zcaret">▸</span></summary>
+    <div class="dflow"><b>Dream → Code, per project</b> — every stage of the chain, its furthest reach, when it last moved, and the shipped version. Dots left→right: <b>Dream · Deck · Spec · Rsch · Brief · PRD · Arch · Epics · Code</b>; hover a dot for its date, click a row for the full ledger.</div>
+    <div id="fleetrows"></div>
   </details>
 
   <details class="dreams zsec" id="pitchsec" hidden>
@@ -608,6 +642,41 @@
         '<span class="cbadge ' + (CBADGE[c.status] || "cb-queued") + '">' + esc(c.status) + '</span>' +
         '<span class="campblock-m">' + esc(c.kind) + ' · ' + c.rows.length + ' rows · ' + meta + rec + '</span>' +
         '</summary><div class="campblock-body">' + rows + '</div></details>';
+    }).join("");
+  }
+
+  // ---- 2d · Fleet (Dream -> Code state per project) ----
+  const FLEET = window.DASHBOARD_DATA.fleet || null;
+  const FLABEL = {dream:"Dream", deck:"Deck", spec:"Spec", research:"Research", brief:"Brief",
+                  prd:"PRD", arch:"Architecture", epics:"Epics", code:"Code"};
+  if (FLEET && FLEET.rows && FLEET.rows.length) {
+    document.getElementById("fleetsec").hidden = false;
+    const full = FLEET.rows.filter(r => r.complete === r.of).length;
+    const stale = FLEET.rows.filter(r => r.stale).length;
+    document.getElementById("fleeth").textContent =
+      "Fleet · " + FLEET.rows.length + " projects (" + full + " complete chains" +
+      (stale ? " · " + stale + " stale" : "") + ")";
+    document.getElementById("fleetrows").innerHTML = FLEET.rows.map(r => {
+      const dots = FLEET.stages.map(s => {
+        const na = (r.na || []).includes(s), has = !!r.stages[s];
+        const cls = na ? "na" : (has ? "" : "miss");
+        const tip = FLABEL[s] + (na ? " — not in scope" : (has ? " — " + r.stages[s] : " — missing"));
+        return '<span class="fdot ' + cls + '" title="' + tip + '"></span>';
+      }).join("");
+      const ledger = FLEET.stages.map(s => {
+        const na = (r.na || []).includes(s), v = r.stages[s];
+        return '<span><b>' + FLABEL[s] + '</b> ' +
+          (na ? '<span class="none">n/a</span>' : (v || '<span class="none">—</span>')) + '</span>';
+      }).join("");
+      return '<details class="fleetrow"><summary>' +
+        '<span class="fleet-name"><a href="' + REPO + '/blob/main/docs/dreams/' + esc(r.dream) + '.md">' + esc(r.label) + '</a></span>' +
+        '<span class="fdots">' + dots + '</span>' +
+        '<span class="fleet-stage">' + esc(FLABEL[r.furthest] || r.furthest) + '</span>' +
+        '<span class="fleet-prog">' + (r.progress || '') + '</span>' +
+        '<span class="fleet-upd' + (r.stale ? ' stale' : '') + '" title="last commit touching this project">' +
+          esc(r.updated || '—') + '</span>' +
+        '<span class="fleet-ver">' + (r.version ? '<b>' + esc(r.version) + '</b>' : '—') + '</span>' +
+        '</summary><div class="fledger">' + ledger + '</div></details>';
     }).join("");
   }
 
