@@ -38,6 +38,7 @@ same loop home inherit the trust. (Live: warden 6.3 resume stalled ~1h on it.)
 """
 
 import argparse
+import os
 import re
 import subprocess
 import sys
@@ -61,8 +62,29 @@ def repo_root() -> Path:
     return Path(common.stdout.strip()).parent
 
 
+# Loop homes default to a SHORT root (2026-07-25). Long worktree paths make
+# pixi-build-python 0.8.3 panic (byte-index underflow, tools.rs:461) on any
+# source-package build, which takes out every `[verify]` gate that touches a
+# workspace member. The sibling layout (`../<repo>-loop-<slug>`) put the eventual
+# build workDirectory at ~238 chars; `~/.bmad-loops/<slug>` brings it to ~197.
+# `--frozen` verify commands remain the primary mitigation — this removes the
+# trigger for the unfrozen paths too. Override with BMAD_LOOP_HOME_ROOT
+# (set it to the repo's parent to restore the old sibling layout).
+LOOP_HOME_ROOT_ENV = "BMAD_LOOP_HOME_ROOT"
+DEFAULT_LOOP_HOME_ROOT = Path.home() / ".bmad-loops"
+
+
+def loop_home_root(root: Path) -> Path:
+    override = os.environ.get(LOOP_HOME_ROOT_ENV)
+    return Path(override).expanduser() if override else DEFAULT_LOOP_HOME_ROOT
+
+
 def home_path(root: Path, slug: str) -> Path:
-    return root.parent / f"{root.name}-loop-{slug}"
+    base = loop_home_root(root)
+    if base == root.parent:          # legacy sibling layout, preserved on request
+        return base / f"{root.name}-loop-{slug}"
+    base.mkdir(parents=True, exist_ok=True)
+    return base / slug
 
 
 def active_project(tree: Path) -> str | None:
@@ -171,14 +193,19 @@ def cmd_remove(root: Path, slug: str, force: bool) -> int:
 
 def cmd_list(root: Path) -> int:
     result = run(["git", "-C", str(root), "worktree", "list", "--porcelain"])
-    prefix = f"{root.name}-loop-"
+    legacy_prefix = f"{root.name}-loop-"
     found = False
     for block in result.stdout.split("\n\n"):
         lines = dict(line.split(" ", 1) for line in block.splitlines() if " " in line)
         path = Path(lines.get("worktree", ""))
-        if path.name.startswith(prefix):
+        branch = lines.get("branch", "")            # e.g. refs/heads/loop/<slug>
+        slug = ""
+        if branch.startswith("refs/heads/loop/"):   # authoritative, path-independent
+            slug = branch[len("refs/heads/loop/"):]
+        elif path.name.startswith(legacy_prefix):   # legacy sibling layout
+            slug = path.name[len(legacy_prefix):]
+        if slug:
             found = True
-            slug = path.name[len(prefix):]
             print(f"  {path}  [active: {active_project(path) or '(unswitched)'}]"
                   + ("" if active_project(path) == slug else "  ⚠ marker≠slug"))
     if not found:
