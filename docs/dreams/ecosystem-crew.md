@@ -7,7 +7,8 @@ status: in-deck
 
 # The Ecosystem Crew: System Personas & CLI Framework
 
-> ### *"Forging the Autonomous Agentic SDLC: Humans Dream, Agents Deliver — Governed. Auditable. Production-ready."*
+> ## Forging the Agentic SDLC
+> ### *Humans Dream, Agents Deliver — Governed. Auditable. Production-ready.*
 >
 > **The pyforge mission** *(canonized 2026-07-25)*: pyforge exists to prove the whole
 > SDLC — not just coding — can be run by autonomous AI agents a human can trust. Every
