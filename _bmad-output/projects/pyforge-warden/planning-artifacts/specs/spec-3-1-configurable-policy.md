@@ -1,73 +1,112 @@
+<!-- RECOVERED 2026-07-25 from Claude Code session transcript 95b955d8-9b72-48e5-99a1-5af7b95e4035.jsonl (~/.claude/projects); this is the ORIGINAL spec incl. its dev/review narrative, not an epics.md regeneration. -->
 ---
 title: 'Story 3.1: Configurable policy (the ConfigLoader)'
 type: 'feature'
-status: 'regenerated'
-regenerated: '2026-07-25'
-source: 'epics.md (authoritative intent + acceptance criteria) + shipped code on main'
-original_spec: 'lost to the Tier-3 paper-trail gap; dev-notes / review-triage-log not recovered'
+created: '2026-07-17'
+status: 'draft'
+review_loop_iteration: 0
+followup_review_recommended: false
+context:
+  - '{project-root}/_bmad-output/projects/pyforge-warden/planning-artifacts/architecture.md'
+  - '{project-root}/_bmad-output/projects/pyforge-warden/planning-artifacts/epics.md'
+  - '{project-root}/_bmad-output/implementation-artifacts/epic-3-context.md'
+warnings: [oversized]
 ---
 
-> **Regenerated contract-spec (2026-07-25).** The original per-story spec file was
-> lost when its Tier-3 (gitignored) `implementation-artifacts/` copy was destroyed on
-> worktree teardown. This file **recovers the load-bearing contract** — the Intent and
-> Acceptance Criteria below are lifted **verbatim** from the tracked, authoritative
-> `planning-artifacts/epics.md` (the source the original spec was derived from), and the
-> Realized-in section maps it to the shipped implementation on `main`. What is **not**
-> recovered: the original implementation dev-notes and the review-triage log (those lived
-> only in the lost file). Behaviour is verified by the current green suite; the story is
-> done and merged.
+<intent-contract>
 
-## Contract (from epics.md — verbatim, authoritative)
+## Intent
 
-### Story 3.1: Configurable policy (the ConfigLoader)
+**Problem:** Every verdict-moving threshold is hardcoded with zero per-repo override surface: `DefaultPolicy.evaluate` (`interfaces.py`) computes DEP001's mapping-confidence trust as a fixed binary check, `vuln_rung` (`vuln.py`) always uses `DEFAULT_VULN_SEVERITY_POLICY` (block only on CRITICAL), and no coverage-floor gate exists at all — already-shipped code names this story by number as the owner: `vuln.py`'s own docstring ("Story 3.1 lifts this default into an overridable config table"), and `deferred-work.md`'s :24 entry ("left to a future coverage-floor gate (Story 3.1/FR19), which must not pass on zero real analysis") and :42 entry (both default-policy dicts are unprotected mutable module globals, "consider a `MappingProxyType` wrap ... when Story 3.1's `ConfigLoader` next touches this seam").
 
-As a **team lead**,
-I want to tune the gate per-repo without editing the tool,
-So that the gate fits our risk posture.
+**Approach:** Add `config.py`'s `ConfigLoader`/`EffectiveConfig` (dual `[tool.pyforge-warden]` TOML load from `pyproject.toml` + `pixi.toml`, per-key precedence, a `--fail-on`-derived vuln severity-threshold table, a `dep001-block-confidence` trust threshold); thread the resolved config into `DefaultPolicy`'s constructor and a new coverage-floor check inside `report.assemble_report`; add the two CLI flags epics.md names (`--fail-on`, `--fail-under-coverage`).
 
-**Acceptance Criteria:**
+## Boundaries & Constraints
 
-**Given** a `[tool.pyforge-warden]` table in `pyproject.toml` and/or `pixi.toml`, **When** loaded, **Then** config resolves with **per-key precedence** (pyproject wins; conflicts surfaced to stderr, never fail the build) and CLI flags override (FR30).
+**Always:**
+- Config keys are hyphenated only (`fail-on`, `fail-under-coverage`, `dep001-block-confidence`); an unrecognized key in `[tool.pyforge-warden]` — including any underscore-spelled variant of a real key — is a typed `config-validation` error, in either file.
+- Per-key precedence: `pyproject.toml` wins a same-key conflict against `pixi.toml`; the conflict is surfaced as one stderr warning naming the key + both values + the winner, never fails the build. CLI flags win over both files. A missing file is normal (skip that source).
+- `pyproject.toml` is the primary source: malformed TOML there is a typed `config-parse` error (exit 2, `AXIS_INGESTION`, owner `"config"`), and the rest of the scan still runs and the report still emits, using built-in defaults for the failed source. `pixi.toml` is the secondary source: malformed TOML there is a stderr warning only, treated as absent (not fatal). A wrong-typed or out-of-range value for a recognized key is a typed `config-validation` error (exit 2) regardless of which file it came from.
+- `--fail-on`/`fail-on` (choices `critical`/`high`/`medium`/`low`/`none`, default `critical`) sets the vuln-axis severity-tier threshold: tiers at-or-above it compose `policy-violation`, tiers below compose `warn`. `SeverityTier.UNKNOWN` is never part of this table and always composes `indeterminate`, unaffected by any config (C0 — an unassessable severity is never treated as safely non-blocking).
+- `dep001-block-confidence` (TOML-only key, no CLI flag — epics.md names none; values `verified` [default] | `likely`) sets the minimum conda↔pypi mapping-confidence tier trusted for DEP001's block-by-default; a scan carrying any component whose `mapping_confidence` ranks below the configured tier downgrades DEP001 to `warn` — the default reproduces today's exact behavior.
+- `--fail-under-coverage`/`fail-under-coverage` (0–100, default `0` = off) is a per-axis floor: `report.assemble_report` computes each axis's `deps_assessed/deps_total*100`; any axis with `deps_total > 0` below the floor composes one `indeterminate` rung (`indeterminate:coverage-floor:<axis>`) with a paired `Finding`. A `deps_total == 0` axis (not-applicable or a genuinely empty scan) is never flagged. At the default (`0`), this is a structural no-op — a percentage is never negative, so the comparison never fires.
+- `verdict.py` stays the sole projector: every new config-driven outcome feeds a rung, never constructs an exit code or calls `exit_code_for` itself.
+- `DefaultPolicy()` (no `config` argument) preserves today's exact behavior byte-for-byte — every existing caller/test stays green unchanged.
 
-**Given** config values, **When** applied, **Then** `--fail-on`, the CVSS thresholds, the DEP001-block confidence threshold, and the coverage-floor (`--fail-under-coverage`, default off) all move the verdict (FR18/FR19 — incl. FR19's repurposed roles: the under-`--warn-only` coverage guardrail and the ceiling on waived-away `indeterminate` surface); a config-key type error → typed `config-validation` error. **And** the hygiene→status + CVSS-threshold tables live in the `ConfigLoader`.
+**Block If:** Nothing here — every decision below resolves from the epics.md AC text, the PRD's FR19 repurposing note, and the two deferred-work.md entries this story is named against.
 
-### Story 3.2: Auditable expiring waivers
+**Never:**
+- Never make the CVSS v3.1 §5 score→tier bands (`vuln._CVSS_BANDS`) configurable — a fixed external spec, not a policy choice. "The CVSS thresholds" in the AC means the tier→status table, which `--fail-on` sets.
+- Never add a raw per-DEP-code or per-severity-tier TOML override table — no concrete schema for one exists anywhere in planning docs. `--fail-on` is the sole, threshold-shaped override for the vuln table; the hygiene table (`DEFAULT_HYGIENE_POLICY`) stays non-overridable in v1 (read-only-wrapped only, see Code Map).
+- Never implement `--warn-only` or waiver-suppression logic (Story 3.2/3.3) — FR19's other two repurposed roles (the warn-only guardrail, the ceiling on waived-away `indeterminate` surface) activate only once those modes exist. This story ships the general floor mechanism, which incidentally already closes the deferred-work:24 zero-real-analysis gap, and stops there.
+- Never import `vuln.DEFAULT_VULN_SEVERITY_POLICY` or `hygiene.DEFAULT_HYGIENE_POLICY` into `config.py` — `config.py` derives `vuln_severity_policy` purely from `fail_on` + an explicit `SeverityTier` order tuple (no cross-import), and never touches `hygiene.py`'s table. This avoids the `interfaces↔extract.lockfiles↔config` cycle risk documented in `interfaces.py`'s own module docstring and keeps `config.py`'s only internal dependency on `.models`.
 
-As a **developer under deadline**,
-I want to file an auditable, time-boxed exception for a finding,
-So that I can ship without lying about the risk.
+## I/O & Edge-Case Matrix
 
-**Acceptance Criteria:**
+| Scenario | Input / State | Expected Output / Behavior | Error Handling |
+|----------|--------------|---------------------------|----------------|
+| Both files set one key differently | pyproject `fail-on="high"`, pixi `fail-on="low"` | pyproject wins (`high`); one `config-conflict` stderr warning naming the key + both values | No error — warning only |
+| CLI overrides both files | `--fail-on=critical` + either/both files set `fail-on` | CLI value wins | No error |
+| `pyproject.toml` malformed TOML | unparsable `[tool.pyforge-warden]` section | typed `config-parse` error, exit 2; scan still runs and report still emits with defaults | typed, exit 2 |
+| `pixi.toml` malformed TOML | unparsable pixi.toml | stderr warning; pixi.toml treated as absent; pyproject/defaults still apply | No error — warning only |
+| Unrecognized or underscore-spelled key | `fail_on = "high"` in either file | typed `config-validation` error, exit 2 | typed, exit 2 |
+| Wrong-typed value | `fail-under-coverage = "50"` (string) | typed `config-validation` error, exit 2 | typed, exit 2 |
+| `dep001-block-confidence="likely"` + a `"likely"`-confidence conda component | one such component present | DEP001 still composes `policy-violation` (not downgraded to `warn`) | No error |
+| `--fail-on=high` on a HIGH-severity finding | vuln finding, `severity.tier="high"` | composes `policy-violation`, exit 1 (default: `warn`, exit 0) | No error |
+| `--fail-under-coverage=50`, hygiene axis assessed 0/10 | `deps_assessed=0, deps_total=10` | one `indeterminate` rung + `Finding` (`indeterminate:coverage-floor:hygiene`), exit 1 | No error — a real gate |
+| `--fail-under-coverage=50`, hygiene axis not-applicable | `deps_total=0` | never flagged (vacuous — nothing to assess) | No error |
 
-**Given** `--bypass --reason "<text>"`, **When** run, **Then** a `.warden-waivers.yaml` stanza (reason + authorizer + expiry — FR24) is emitted via `safe_dump` for the human to commit — the tool **never writes the repo** (NFR-S4); the reason round-trips safely (no YAML injection). **And** a valid waiver → status `bypassed`, exit 0, `review_required: true`.
+</intent-contract>
 
-**Given** a malformed or wildcard-over-broad waiver, **When** read, **Then** it is schema-validated and rejected (FR26); waivers are least-privilege (specific id+package+ecosystem) and every applied waiver is echoed in output (NFR-S3). **And** the waiver file carries an in-file **`version:`** key; an unknown/future version is rejected with a typed error, never guessed (added 2026-07-12 per PRD CLI § contract stability).
+## Code Map
 
-### Story 3.3: Waiver expiry + warn-only adoption on-ramp
+- `src/pyforge/warden/config.py` -- NEW: `EffectiveConfig` (frozen dataclass: `fail_on: SeverityTier = CRITICAL`, `fail_under_coverage: float = 0.0`, `dep001_block_confidence: str = "verified"`; `.default()` classmethod; `.vuln_severity_policy` property derived from an explicit `_SEVERITY_ORDER = (CRITICAL, HIGH, MEDIUM, LOW, NONE)` tuple + `fail_on`'s rank — tiers at-or-above the threshold rank map to `POLICY_VIOLATION`, below map to `WARN`; `.is_confidence_trusted(mapping_confidence: str | None) -> bool` using a local `_CONFIDENCE_RANK = {"likely": 0, "verified": 1}`, `None` always trusted); `ConfigParseError(ValueError)`/`ConfigValidationError(ValueError)`; `ConfigLoader` with `.load(target: Path, *, cli_fail_on: str | None = None, cli_fail_under_coverage: float | None = None) -> tuple[EffectiveConfig, tuple[str, ...]]` — reads `pyproject.toml` (primary, hard-fail on malformed TOML) then `pixi.toml` (secondary, warn-only on malformed TOML) via `tomllib.load` binary mode, extracts `data.get("tool", {}).get("pyforge-warden", {})` (typed `config-validation` if `tool`/the table itself isn't a dict), rejects unrecognized keys, per-key-merges with pyproject-wins + conflict warnings, validates each of the 3 recognized keys' type/range/enum membership (typed `config-validation` on failure), applies the two CLI overrides last, returns `(EffectiveConfig, warnings)`. Only imports `.models` (`SeverityTier`, `Status`) — no import from `hygiene.py`/`vuln.py`/`extract/` (see Never).
+- `src/pyforge/warden/interfaces.py` -- MODIFY: add `from .config import EffectiveConfig` to the top-level imports (:79-92 block; no cycle — `config.py` only imports `.models`). `DefaultPolicy` (:208) gains `def __init__(self, config: EffectiveConfig | None = None) -> None: self._config = config or EffectiveConfig.default()`. In `evaluate()` (:247-411): delete the lazy `from .extract.lockfiles import TRUSTED_MATCH_CONFIDENCE` (:254, now unused); replace the `dep001_trusted = all(component.mapping_confidence in (None, TRUSTED_MATCH_CONFIDENCE) for component in inventory.components)` body (:268-271) with `dep001_trusted = all(self._config.is_confidence_trusted(component.mapping_confidence) for component in inventory.components)`; change the `vuln_rung(finding)` call (:302) to `vuln_rung(finding, policy=self._config.vuln_severity_policy)`. Update the module docstring's ownership note (:11-13, "no policy stage module exists until Story 3.1's config/policy tables") to state Story 3.1 landed `config.py` and `DefaultPolicy` now consumes it.
+- `src/pyforge/warden/vuln.py` -- MODIFY: add `from types import MappingProxyType` to imports (`Mapping` is already imported at :91). Wrap `DEFAULT_VULN_SEVERITY_POLICY`'s literal (:856-862) in `MappingProxyType(...)` (closes deferred-work.md:42's vuln half); update its docstring to state `--fail-on`/`config.py` now derives the effective table for `DefaultPolicy`, and this dict remains the fallback default for direct callers (unit tests, and the `fail-on=critical` default case, which reproduces it exactly). `status_for_severity_tier` (:865-870) and `vuln_rung` (:873-893) each gain an optional `policy: Mapping[SeverityTier, Status] | None = None` keyword param, defaulting internally to `DEFAULT_VULN_SEVERITY_POLICY` when `None`; `status_for_severity_tier`'s lookup becomes `(policy or DEFAULT_VULN_SEVERITY_POLICY).get(tier, Status.INDETERMINATE)`.
+- `src/pyforge/warden/hygiene.py` -- MODIFY: add `from types import MappingProxyType` to imports. Wrap `DEFAULT_HYGIENE_POLICY`'s literal (:142-148) in `MappingProxyType(...)` (closes deferred-work.md:42's hygiene half) — no signature change to `status_for_code`/`hygiene_rung` (`.get()` works unchanged on a `MappingProxyType`); this table stays non-overridable per Never.
+- `src/pyforge/warden/report.py` -- MODIFY: `assemble_report` (:121-135) gains `fail_under_coverage: float = 0.0`. Body (:166-222): move the `resolution_depth` computation and the `assessed_by_axis`/`coverage`-building loop (currently :167-208, after `compose`) to BEFORE the `compose(rungs)` call (currently :166) — a pure reorder, neither block reads `status`/`driver`. Materialize `rungs = list(rungs)` and `findings = list(findings)` once. After `coverage` is built, for each `AxisCoverage` entry with `deps_total > 0`: compute `pct = deps_assessed / deps_total * 100`; if `pct < fail_under_coverage`, append a `Finding(id=f"indeterminate:coverage-floor:{axis}", axis=axis, message=<pct/floor/assessed/total detail>, subject=axis, severity=None)` to `findings` and `(Status.INDETERMINATE, StatusDriver(axis=axis, finding_id=<same id>))` to `rungs`. Then call `compose(rungs)` and construct `ComplianceReport` as today (using the now-extended `findings`/`rungs`). Docstring gains a paragraph on the new param, citing the deferred-work:24 zero-real-analysis case it closes (opt-in only — floor defaults to 0/off).
+- `src/pyforge/warden/cli.py` -- MODIFY: imports (:143-149 block) add `from .config import ConfigLoader, ConfigParseError, ConfigValidationError, EffectiveConfig`. `_build_parser()` (:174-225): add a module-level `_coverage_floor(value: str) -> float` helper (parses float, raises `argparse.ArgumentTypeError` outside `[0, 100]`) placed just above `_build_parser`; add `scan.add_argument("--fail-on", choices=("critical", "high", "medium", "low", "none"), default=None, help=...)` and `scan.add_argument("--fail-under-coverage", type=_coverage_floor, default=None, help=...)`. `_run_scan` (:283-642): insert config loading right after `parsed_kinds: set[str] = set()` (:325) and before `manifests = discover(target)` (:326) — call `ConfigLoader().load(target, cli_fail_on=args.fail_on, cli_fail_under_coverage=args.fail_under_coverage)` inside a `try`, catching `ConfigParseError`/`ConfigValidationError` into `_record_error(..., kind=ErrorKind.CONFIG_PARSE|CONFIG_VALIDATION, owner="config", subject=str(target), axis=AXIS_INGESTION)` and falling back to `EffectiveConfig.default()`; on success, `_stderr` each returned warning string. Change the `DefaultPolicy().evaluate(...)` call (:535) to `DefaultPolicy(config).evaluate(...)`. Change the `assemble_report(...)` call (~:599-612) to add `fail_under_coverage=config.fail_under_coverage`.
+- `_bmad-output/implementation-artifacts/deferred-work.md` -- MODIFY: mark the :42 entry (`DEFAULT_HYGIENE_POLICY`/`DEFAULT_VULN_SEVERITY_POLICY` unprotected mutable dicts) `**RESOLVED (was deferred from 1.6)**` — both now `MappingProxyType`-wrapped. Narrow the :24 entry's remaining half (the coverage-floor clause) to `**RESOLVED, opt-in (was deferred from 1.3/1.7)**` — `report.assemble_report`'s new `fail_under_coverage` check catches the zero-real-analysis case whenever a floor is configured (default off, matching the coverage-floor feature's own documented adoption posture).
+- `tests/unit/test_config.py` -- NEW: `EffectiveConfig` defaults + `.vuln_severity_policy` for each of the 5 known tiers (incl. `UNKNOWN` always absent) + `.is_confidence_trusted` for `None`/`"likely"`/`"verified"` under both threshold settings; `ConfigLoader.load` for pyproject-only, pixi-only, both-agreeing, both-conflicting (conflict warning + pyproject wins), both-missing (defaults), malformed pyproject (`ConfigParseError`), malformed pixi (warning only, not fatal), unrecognized/underscore key in either file (`ConfigValidationError`), wrong type / out-of-range for each of the 3 keys (`ConfigValidationError`), CLI overrides winning over both files.
+- `tests/unit/test_vuln.py` -- MODIFY: add coverage for `vuln_rung`/`status_for_severity_tier` with a custom `policy` dict overriding a tier's status, and a `DEFAULT_VULN_SEVERITY_POLICY` immutability test (`TypeError` on item assignment).
+- `tests/unit/test_hygiene.py` -- MODIFY: add a `DEFAULT_HYGIENE_POLICY` immutability test (`TypeError` on item assignment); no other change (behavior unchanged).
+- `tests/unit/test_interfaces_and_null_engine.py` -- MODIFY: add `DefaultPolicy(EffectiveConfig(fail_on=SeverityTier.HIGH))` escalating a HIGH-severity finding to `policy-violation` (default: `warn`); `DefaultPolicy(EffectiveConfig(dep001_block_confidence="likely"))` keeping DEP001 at `policy-violation` with a `"likely"`-confidence component present (default: downgrades to `warn`); confirm plain `DefaultPolicy()` (no arg) is unchanged.
+- `tests/unit/test_report.py` -- MODIFY: `assemble_report(..., fail_under_coverage=X)` — below-floor axis composes `indeterminate` + the paired finding, exit 1; at/above-floor unaffected; a `deps_total == 0` axis never flagged regardless of floor; omitting the param (default `0.0`) is byte-identical to every pre-3.1 call.
+- `tests/conformance/test_scan_harness.py` -- MODIFY: add `test_fail_on_high_escalates_vuln_high_fixture_to_policy_violation` reusing the existing `VULN_HIGH` fixture with `--fail-on=high` (policy-violation/exit 1, vs. the existing warn/exit-0 test without the flag); add `test_config_precedence_pyproject_wins_with_conflict_warning` and `test_config_cli_flag_overrides_both_files` against a new fixture.
+- `tests/fixtures/projects/config_precedence/` -- NEW: `pyproject.toml` (`[project]` deps matching `clean`'s exact-pinned shape + `[tool.pyforge-warden]` `fail-on = "high"`) and `pixi.toml` (`[tool.pyforge-warden]` `fail-on = "low"`, conflicting) — exercises precedence + conflict-warning + CLI-override-wins in one fixture.
 
-As a **conda/pixi maintainer adopting the gate**,
-I want expired waivers to re-block and a warn-only first-run mode,
-So that suppression can't rot silently and I can adopt without a day-one red wall.
+## Tasks & Acceptance
 
-**Acceptance Criteria:**
+**Execution:**
+- [ ] `config.py` -- add `EffectiveConfig`/`ConfigLoader`/`ConfigParseError`/`ConfigValidationError` -- the FR30 component named by architecture.md, owns dual-TOML load + precedence + the two derived policy knobs.
+- [ ] `interfaces.py` -- `DefaultPolicy.__init__(config=...)`; `evaluate()` consumes it for `dep001_trusted` + `vuln_rung`'s policy -- ratifies the module's own "arrives with Story 3.1" forward-reference.
+- [ ] `vuln.py` -- `policy` param on `status_for_severity_tier`/`vuln_rung`; `MappingProxyType` wrap -- makes the vuln table config-consumable; closes deferred-work:42's vuln half.
+- [ ] `hygiene.py` -- `MappingProxyType` wrap only -- closes deferred-work:42's hygiene half without inventing an override schema.
+- [ ] `report.py` -- `fail_under_coverage` param + reordered coverage-floor check -- the FR19 coverage-floor gate; closes deferred-work:24's remaining half (opt-in).
+- [ ] `cli.py` -- `--fail-on`/`--fail-under-coverage` flags; config loading + typed-error mapping; thread `config` into `DefaultPolicy`/`assemble_report` -- the CLI surface epics.md names.
+- [ ] `deferred-work.md` -- mark :42 resolved, narrow :24's coverage-floor clause resolved-opt-in.
+- [ ] `test_config.py`, `test_vuln.py`, `test_hygiene.py`, `test_interfaces_and_null_engine.py`, `test_report.py`, `test_scan_harness.py`, `config_precedence/` fixture -- regression + new-behavior coverage for every I/O-matrix row.
 
-**Given** a waiver past its `expires_at`, **When** the next scan runs, **Then** the finding **re-blocks** (exit 1) and applied/expired waivers are flagged for review (FR25). *(Waiver expiry changes the input rung; `verdict.py` still owns the projection.)*
+**Acceptance Criteria** *(from epics.md, story 3.1)*:
+- Given a `[tool.pyforge-warden]` table in `pyproject.toml` and/or `pixi.toml`, when loaded, then config resolves with per-key precedence (pyproject wins; conflicts surfaced to stderr, never fail the build) and CLI flags override (FR30).
+- Given config values, when applied, then `--fail-on`, the CVSS thresholds (the tier→status table `--fail-on` derives), the DEP001-block confidence threshold, and the coverage-floor (`--fail-under-coverage`, default off) all move the verdict (FR18/FR19 — FR19's coverage-floor role realized here is the opt-in floor-violation gate, which subsumes the deferred-work:24 zero-real-analysis case; the warn-only guardrail and waived-indeterminate-ceiling roles activate with Story 3.2/3.3); a config-key type error → typed `config-validation` error. And the hygiene→status + CVSS-threshold tables live in the `ConfigLoader`'s domain (hygiene: read-only-exposed default, non-overridable in v1; CVSS/vuln: derived from `fail-on`).
 
-**Given** `--warn-only`, **When** run on a repo with pre-existing findings, **Then** findings surface as `warn`, exit **0**, and the report nudges how to graduate to an enforcing gate (FR23); this defends the `gate-disabled = 0` anti-metric.
+## Design Notes
 
-## Realized in
+**Why `--fail-on` derives the whole vuln table instead of a raw per-tier TOML override:** epics.md's AC lists `--fail-on` and "the CVSS thresholds" as one clause, and no planning doc anywhere specifies a per-tier override schema — a single ordered threshold is the simplest construct that satisfies "moves the verdict" without inventing an unspecified table shape (Simplicity First).
 
-- **Package:** `src/shared/packages/pyforge-warden/` (import `pyforge.warden`).
-- **Status:** done + merged to `main`.
-- **Verification:** the shipped behaviour for this story is covered by the current
-  `pixi run --frozen -e pyforge-warden pyforge-warden-test` suite (green on `main`).
-  For the precise file-level Code Map, read the implementation on `main` — this
-  regenerated spec deliberately does not guess a per-file map it cannot verify from the
-  lost original.
+**Why hygiene gets no override surface but vuln does:** the AC only names concrete vuln-axis knobs (`--fail-on`, "CVSS thresholds", DEP001-confidence); no hygiene-axis knob is named beyond the ownership statement "the hygiene→status ... table lives in the ConfigLoader." Adding a `policy` parameter to `hygiene_rung` that would always be called with the one unchanging default is speculative flexibility with no real caller variance — `MappingProxyType`-wrapping (closing deferred-work:42) satisfies the ownership/immutability half honestly without fabricating an unrequested schema.
 
-## Provenance & recovery note
+**Why the coverage-floor check moved inside `report.assemble_report` rather than `cli.py`:** `AxisCoverage`'s `deps_assessed`/`deps_total` are already computed entirely inside `assemble_report` (the module's own docstring calls coverage "ORCHESTRATOR-derived HERE"); duplicating that computation in `cli.py` to gate before calling `assemble_report` would violate the existing ownership split. Reordering `resolution_depth`/`coverage` before `compose(rungs)` is a pure move — neither computation reads `status`/`driver`.
 
-Recovered 2026-07-25 as part of the spec-durability remediation (see
-`planning-artifacts/specs/README.md`). Root cause: story specs lived in Tier-3
-gitignored `implementation-artifacts/`; they are now tracked here in
-`planning-artifacts/specs/` so they survive worktree teardown and are in every clone.
+**Why `dep001-block-confidence` gets no CLI flag:** epics.md's AC text spells CLI flags for exactly two knobs (`` `--fail-on` ``, `` `--fail-under-coverage` ``) and names the DEP001 knob and the CVSS-threshold knob without a CLI spelling — read literally, not an oversight to fix.
+
+**Why `config.py` never imports from `vuln.py`/`hygiene.py`/`extract/`:** `extract/lockfiles.py` imports `interfaces.py` (`from ..interfaces import Router`); if `config.py` imported anything from `extract/` and `interfaces.py` imported `config.py` at module top, that would recreate the exact `interfaces↔extract.lockfiles` cycle the module docstring already documents working around via lazy imports. Since `config.py` only needs `SeverityTier`/`Status` (both in the cycle-free leaf `models.py`) and a locally-spelled 2-tier confidence rank (not the imported `TRUSTED_MATCH_CONFIDENCE` string), `interfaces.py` can import `config.py` normally at module top with zero lazy-import ceremony.
+
+## Verification
+
+**Commands:**
+- `pixi run --frozen -e pyforge-warden pyforge-warden-test` -- expected: all prior suites unchanged (945-test baseline) + new config/vuln/hygiene/interfaces/report/conformance tests green; sole-ownership / no-execution / socket-deny meta-guards stay green.
+- `pixi run --frozen -e local-recipes mypy src/shared/packages/pyforge-warden/src/pyforge/warden` -- expected: no new errors vs the story-1.7-recorded baseline (10 pre-existing, unrelated).
+- `pixi run --frozen -e local-recipes ruff check src/shared/packages/pyforge-warden/src/pyforge/warden` -- expected: no new issues.
+- Manual: `git diff --stat` shows zero changes to `verdict.py`, `models.py`'s `Status`/`ErrorKind` members, `_CVSS_BANDS`, `report-schema.json`.

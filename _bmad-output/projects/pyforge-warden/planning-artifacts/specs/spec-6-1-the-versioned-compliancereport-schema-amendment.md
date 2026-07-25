@@ -1,159 +1,112 @@
+<!-- RECOVERED 2026-07-25 from Claude Code session transcript e35cde46-7b89-45b5-b4c0-0a317a766344.jsonl (~/.claude/projects); this is the ORIGINAL spec incl. its dev/review narrative, not an epics.md regeneration. -->
 ---
-title: 'Story 6.1: The versioned `ComplianceReport` schema amendment'
+title: 'The versioned ComplianceReport schema amendment (Story 6.1)'
 type: 'feature'
-status: 'regenerated'
-regenerated: '2026-07-25'
-source: 'epics.md (authoritative intent + acceptance criteria) + shipped code on main'
-original_spec: 'lost to the Tier-3 paper-trail gap; dev-notes / review-triage-log not recovered'
+created: '2026-07-18'
+status: 'draft'
+review_loop_iteration: 0
+followup_review_recommended: false
+context:
+  - '{project-root}/_bmad-output/projects/pyforge-warden/planning-artifacts/finding-id-verdict-encoding-decision.md'
+  - '{project-root}/_bmad-output/projects/pyforge-warden/implementation-artifacts/epic-6-context.md'
+warnings: [oversized]
 ---
 
-> **Regenerated contract-spec (2026-07-25).** The original per-story spec file was
-> lost when its Tier-3 (gitignored) `implementation-artifacts/` copy was destroyed on
-> worktree teardown. This file **recovers the load-bearing contract** — the Intent and
-> Acceptance Criteria below are lifted **verbatim** from the tracked, authoritative
-> `planning-artifacts/epics.md` (the source the original spec was derived from), and the
-> Realized-in section maps it to the shipped implementation on `main`. What is **not**
-> recovered: the original implementation dev-notes and the review-triage log (those lived
-> only in the lost file). Behaviour is verified by the current green suite; the story is
-> done and merged.
+<intent-contract>
 
-## Contract (from epics.md — verbatim, authoritative)
+## Intent
 
-### Story 6.1: The versioned `ComplianceReport` schema amendment
+**Problem:** Epic 6 adds two new producer axes (license, currency) plus KEV/EPSS gates, baseline suppression, and a fix-PR actuator. Each needs a schema-validated place to write in the frozen v1 `ComplianceReport`, but the contract (`models.py` + `report-schema.json`) has no slots for them and no way to key policy/waiver/baseline matching on the new axes without smuggling through free-text `indeterminate:` tokens. Without one deliberate amendment, every producer story would drift the schema ad hoc.
 
-As the **owner of the frozen report contract**,
-I want the one deliberate, versioned amendment that admits the new axes,
-So that axes 3+4 and full KEV land without ad-hoc schema drift (FR38).
+**Approach:** Land the ONE sanctioned, additive `schema_version` bump (`1.0.0` → `1.1.0`, staying inside `_SCHEMA_VERSION_RE`) that admits everything Epic 6 needs — implementing story 6.10's decision record verbatim (no new design decisions on its four pinned questions) and mechanically adding the remaining AC-listed slots by mirroring shipped patterns (`vuln_data` provenance, `AxisCoverage`, the `kev`/`epss` Finding slots). 6.1 defines the slots and re-closes; the producers (6.2–6.9) populate them later. The amendment is behavior-neutral for shipped E1–E4 scans.
 
-**Acceptance Criteria:**
+## Boundaries & Constraints
 
-**Given** the frozen v1 contract (story 1.1), **When** the amendment lands, **Then** `schema_version` bumps additively (staying `1.x` — `models.py`'s `_SCHEMA_VERSION_RE` pattern is honored, not widened), adding: a per-axis `gating` bool (computed by `config.py`, the single writer); `license` + `currency` report sections each carrying per-section coverage + provenance (FR15's widened per-axis form) (`{source, snapshot_at, max_age_ok}` — the bundled-data age fields, NFR-S9); **the license/currency finding-ID families + typed verdict encoding** (schema-validated fields — policy tables, waivers, and baselines key ONLY on these, never on free-text `indeterminate:` reason tokens); **the post-verdict `actuation` section** (FR40's slot); **the suppression rung-discriminator** (waiver-vs-baseline echo); `kev_date` on findings; `epss` widened to `{score, percentile}`; and per-feed KEV/EPSS provenance. **And** `report.py`'s assembly fails loud on a coverage claim for an unregistered axis (never a silent drop). **And** this story is a **HARD sprint dependency: no 6.x producer story may start before 6.1 is DONE**, and **6.1 itself is HARD-gated on story 6.10's decision record being DONE** — both gates encoded mechanically in `sprint-status.yaml` at regeneration (not a recommendation; numeric key order does NOT express this). **And** the coordinated update set is exactly: `report-schema.json` · `models.py` (+ `to_json_dict` render + sort keys) · `report.py` runtime self-validation + `_REPORT_AXES` · the exact-13 `Component` test (widened deliberately, with Gap-B merge/fold semantics defined for every new `Component` field) · fixtures. **And** no other story widens the schema — the producer re-closes behind this amendment (asserted by the conformance suite).
+**Always:**
+- Additive-only. `additionalProperties` stays open everywhere (never add `additionalProperties: false`) so `test_additive_extra_fields_still_validate` keeps passing and a pre-amendment consumer keeps validating. `schema_version` stays `1.x` (`_SCHEMA_VERSION_RE` honored, not widened).
+- The two new `Component` fields (`license_covered`, `currency_covered`) are **defaultless** on the frozen dataclass (mirroring the existing 13 fields), so every construction site must pass them explicitly — a `_merge_group` omission is a loud `TypeError` by design. `_fold_bare` builds via `dataclasses.replace`, which has NO such guard: both new fields MUST appear in its `replace()` call or the bare record's value is silently dropped.
+- New-coverage fields are set to `True` (behavior-neutral: "not axis-uncovered") at every production and test construction site and default `True` in `conftest.make_component`, so shipped fixtures never flip and byte-determinism (twice-run identical) holds. Producers (6.2/6.3) set `False` later; 6.1's `DefaultPolicy` uncovered-license/currency blocks land INERT.
+- Policy/waiver/baseline matching keys ONLY on schema-validated typed fields (the closed verdict enums, the finding-ID families), never on free-text `indeterminate:` reason tokens.
+- `verdict.py` remains the sole owner of the composed `Status` lattice (the verdict-sole-ownership meta-test must still pass). `LicenseVerdict`/`CurrencyVerdict` are `Finding`-level inputs, NOT a second lattice, and are NOT added to the growable-enum list.
+- Every new finding-ID family and coherence rule lands in BOTH the Python model (`models.py` `__post_init__` + `waiver.py`'s mirror tuple) AND `report-schema.json`, matching the shipped `vuln:`/`hygiene:` pair exactly.
 
-**Given** a pre-amendment consumer reading a post-amendment report, **When** it validates, **Then** additive-only compatibility holds (the existing `test_additive_extra_fields_still_validate` property is preserved) and byte-identical determinism (`--deterministic`) still holds across the widened field set (NFR-R3b).
+**Block If:**
+- A shipped E1–E4 conformance fixture cannot be kept green by additive/mechanical means alone (would signal the amendment is not behavior-neutral — a real design conflict, not a mechanical edit).
+- The decision record's pinned shape (a grammar, enum, or coherence clause) cannot be applied as written because the live code has diverged from its cited anchors in a way that changes intent — surface it, do not improvise a producer-side workaround.
 
-### Story 6.2: License axis producer + gate flags (Axis 3)
+**Never:**
+- No producer logic. 6.1 emits no `license:`/`currency:` findings, populates no license/currency/KEV/EPSS provenance, computes no `gating` bool, adds no `config.py` policy property (`license_policy`/`currency_policy` are 6.2/6.3), designs no `baseline.py` (6.8), and opens no PRs (6.9). It only reserves and validates the slots.
+- No second suppression path — `suppressions[]` is the one echo channel; baseline's half (`origin: "baseline"`) is 6.8.
+- No `over-lag` as a 4th `CurrencyVerdict` member (it is an id-grammar reason token only, verdict `supported`; escalation is a separate numeric `lag` check owned by 6.5).
+- No `additionalProperties: false`; no renaming `vuln_data` or any shipped field.
 
-As a **compliance-conscious maintainer**,
-I want every resolved component to carry an honest SPDX license verdict, gateable the moment I configure a policy,
-So that license exposure is visible by default and blockable in v1 (FR32/FR33 — D12).
+## I/O & Edge-Case Matrix
 
-**Acceptance Criteria:**
+| Scenario | Input / State | Expected Output / Behavior | Error Handling |
+|----------|--------------|---------------------------|----------------|
+| Shipped scan, post-amendment | Any E1–E4 target, default flags | Same `status`/`exit_code`/`findings`; `coverage[]` now also carries `license` + `currency` rows (`deps_assessed=0`); `schema_version="1.1.0"`; new optional sections absent/null | No error |
+| Pre-amendment consumer reads post-amendment report | Old validator, new report | Validates (additive; `additionalProperties` open) | No error |
+| Mis-axed license/currency finding | `Finding(id="license:…", axis="hygiene")` | Rejected at `ComplianceReport.__post_init__` AND schema validation | `ValueError` (Python) / schema violation (`render_json`) |
+| Coverage claim for an unregistered axis | An `EngineResult.coverage` names an axis ∉ `_REPORT_AXES` | Hard fail (F6) — never silently dropped | `ValueError` in `assemble_report` |
+| `_fold_bare` AND-flip | `concrete.license_covered=True`, `bare.license_covered=False` | Folded result `license_covered is False` | Flip-detecting meta-test guards omission |
+| Applied waiver, JSON output | `--format json` with an applied waiver | `report.suppressions[]` carries one `{finding_id, origin:"waiver", …}`; `render_json` echoes it | No error |
+| Duplicate/dangling suppression | Two `suppressions[]` with same `finding_id`, or a `finding_id` ∉ `findings[]` | Rejected at `ComplianceReport.__post_init__` | `ValueError` |
+| `license:` finding without `license` sub-object | `id="license:…"` but no `license` key (a future producer bug) | Rejected by coherence clause `then.required:["license"]` | schema violation |
 
-**Given** a conda component with `about: license:` in its recipe, **When** the axis runs, **Then** the license normalizes to an SPDX expression via `license-expression` **pre-build** (no install), with `license_family` + `source` recorded and verdict `allowed | denied | unknown` (FR32). **And** the producer registers behind the existing `Engine` seam with `axis="license"` — no new interface. **And** the standing cross-cutting gates hold on the new surface (C0 on the story's fixtures; C0c socket-deny; NFR-S* on any parsing it adds).
+</intent-contract>
 
-**Given** a bare uninstalled PyPI manifest and no license policy flags, **When** the axis runs, **Then** every unresolvable component is `unknown` — surfaced per FR37 via the `warn` rung (never a silent clean, never an unconfigured red gate) — and the axis's `AxisCoverage` reports honest `deps_assessed`/`deps_total`. **And** an installed/locked env resolves PyPI licenses via `importlib.metadata` (PEP 639 `License-Expression`, legacy `License`, trove classifiers). **And** no source scanning occurs (ScanCode-class deep-scan stays deferred).
+## Code Map
 
-**Given** `--allow-licenses` and/or `--deny-licenses` (FR33 — v1, D12), **When** either flag is set, **Then** the flags **parse into the FR30 ConfigLoader policy tables** (CLI overrides config, per-key precedence) and `config.py` flips the license axis's `gating` bool — **this story's producer never feeds a rung above `warn`** — and 6.2 **delivers** the no-Status-above-warn producer meta-test as a parameterized suite over every registered axis producer (6.3 registers into it); the actual escalation (denied → `policy-violation`, unknown → `indeterminate`, never a silent clean) is **asserted end-to-end in story 6.5**, which solely owns it.
+- `src/shared/packages/pyforge-warden/src/pyforge/warden/models.py` -- the frozen contract: enums, `AXIS_*`, `_FINDING_ID_FAMILIES` (46-50), `Finding` (kev/epss slots), `ComplianceReport` + `__post_init__` coherence (371-441), `to_json_dict`/`_finding_dict`/`_finding_sort_key`/`_coverage_sort_key`. THE core edit.
+- `src/pyforge/warden/data/report-schema.json` -- the JSON-Schema mirror validated at `render_json`; `$defs.finding` (with `id.anyOf` + `allOf` coherence pair 320-339), top-level structure.
+- `src/pyforge/warden/inventory.py` -- `Component` (13-field defaultless frozen dataclass, 69-91); `_merge_group` (defaultless `Component(...)` call, 349-371); `_fold_bare` (`replace()`, 468-478).
+- `src/pyforge/warden/interfaces.py` -- `_sanitize_id_segment` (119-138); `DefaultPolicy.evaluate` per-component loop with the `hygiene_covered`→`uncovered` block (375-388) + the `indeterminate:{token}:{subject}` id builder/dedupe (404-424).
+- `src/pyforge/warden/report.py` -- `REPORT_SCHEMA_VERSION` (143), `_REPORT_AXES` (148), `assemble_report` coverage build (231-261), `render_json` validate (319-320).
+- `src/pyforge/warden/extract/_identity.py` (7 `Component(...)` sites: 171,228,253,268,292,481,501) + `extract/pyproject.py` (3 sites: 137,164,184) -- production constructors.
+- `src/pyforge/warden/waiver.py` -- local `_FINDING_ID_FAMILIES` mirror (72-76); `WaiverNotice` (133-141, the `SuppressedFinding` shape source); `apply_waivers` (exact-string match).
+- `src/pyforge/warden/cli.py` -- `apply_waivers` (823) → `assemble_report` (859) → `render_json(report)` (911, no waivers today) / `render_text(…, applied_waivers=…)` (918-927).
+- `tests/unit/test_models.py` (exact-13 meta-test 194-212; epss validation; `_sample_component` 126), `tests/unit/test_vuln.py` (inline `Component` 362), `tests/unit/test_inventory.py` (merge/fold), `tests/unit/test_interfaces_and_null_engine.py` (policy loop), `tests/conftest.py` (`make_component` 33-75), `tests/conformance/test_report_schema.py` (additive-fields 238; schema conformance), `tests/unit/test_report.py` + `tests/conformance/test_scan_harness.py` (coverage-row assertions).
 
-### Story 6.3: Currency axis producer + gate flags (Axis 4)
+## Tasks & Acceptance
 
-As a **platform owner tracking supportability**,
-I want tiered, age-honest currency verdicts for components and the Python runtime, gateable the moment I configure a policy,
-So that EOL exposure is visible by default and blockable in v1 (FR34/FR35 — D12).
+**Execution:** (dependency order — `models.py` first; the decision record's "How Story 6.1 applies this" § is the exact per-file map, cross-referenced below)
 
-**Acceptance Criteria:**
-
-**Given** the bundled LTS registry (`src/pyforge/warden/data/lts-registry.yaml`, loaded via `importlib.resources`, regenerated from the CFE source copy), **When** a verdict derives from bundled data, **Then** it carries the registry's build-time `snapshot_at` and a `max_age_ok` verdict against a configurable max-age (default 180 days) — a stale bundled registry can never silently report `supported` (NFR-S9).
-
-**Given** edge mode (no atlas, offline default), **When** the tier ladder runs (LTS registry → cached endoflife.date → N/N-1 from channel data → `unknown`), **Then** tiers whose data is absent degrade to a **visible** `unknown` (FR37 `warn` rung), the per-mode tier matrix is honored, and the **ADD/UPDATE availability-at-N/N-1 finding is omitted with a coverage note** (fleet-mode only — it requires the estate's policy tier via `inventory-match`). **And** `runtime_python` currency is a first-class field. **And** the endoflife.date fetch follows the `_http.py` mirror-override pattern: offline default, opt-in online, never silent (NFR-S2).
-
-**Given** `--max-lag` / `--require-lts` / `--fail-on-eol` (FR35 — v1, D12), **When** any flag is set, **Then** the flags **parse into the FR30 ConfigLoader tables** and `config.py` flips the currency axis's `gating` bool — **this story's producer never feeds a rung above `warn`** (producer meta-test); escalation (`eol`/over-lag → `policy-violation`, `unknown` → `indeterminate`, **freshness-preconditioned**: a stale bundled registry under an active currency policy → `indeterminate`, never a pass — NFR-S9) is **asserted end-to-end in story 6.5**. **And** this story consumes `feeds.py` (6.4's skeleton) for the endoflife cache — it builds no private cache and computes no staleness itself.
-
-### Story 6.4: KEV feed provisioning, enrichment & the `--fail-on-kev` gate
-
-As a **security engineer**,
-I want the gate to block known-exploited vulnerabilities with honest feed semantics,
-So that a KEV listing can never be silently missed (FR36).
-
-**Acceptance Criteria:**
-
-**Given** a provisioned KEV feed (cache layout, lifecycle, and max-age policy documented — the OSV-DB provisioning decision record `osv-db-offline-provisioning-decision.md` is the template), **When** a security finding matches a KEV-listed advisory on a pinned version, **Then** the finding carries `kev: true` (+ `kev_date` post-6.1) and the verdict blocks (`--fail-on-kev` is in the FR18 default) — exit 1. **And** this story delivers the **`feeds.py` skeleton** (ONE cache layout + ONE provenance shape + staleness/max-age defaults living in `feeds.py`, overridable only via the FR30 ConfigLoader) that 6.3 and 6.7 consume — axes never compute staleness. **And** KEV/EPSS enrichment mutates findings at exactly one pipeline position: inside the vuln producer, before policy dedup. **And** this story ships a **hermetic fixture KEV feed** (the 1.4 fixture-DB precedent) wired into the test harness, so the default-on `--fail-on-kev` policy never flips shipped E1/E2 fixtures to `indeterminate`. **And** the KEV tier's opt-out is named and testable: the FR30 config key `policy.fail_on_kev = false` (config/table-driven — the coarse `--no-fail-on-*` flag family stays retired), which makes the no-KEV-policy branch reachable.
-
-**Given** an absent or stale KEV snapshot **while a KEV-blocking policy is in effect**, **When** the scan runs, **Then** the verdict is **`indeterminate` with a KEV-provenance driver** — the gate never silently no-ops (the review-T1 fix). **And** with **no** KEV policy in effect, null slots gate on CVSS as before. **And** the report's per-feed KEV provenance (`{source, snapshot_at, max_age_ok}`) makes `kev: null` (feed absent) distinguishable from "assessed, not KEV-listed". **And** feed fetch is offline-default / opt-in-online / never silent (NFR-S2).
-
-### Story 6.5: Two-mode policy integration (unconfigured visibility + flag-activated gating)
-
-As the **owner of the never-false-green invariant**,
-I want unconfigured-axis verdicts visible without blocking AND configured axes gating in the same release,
-So that `gating: false` is honesty, not invisibility, and a configured policy actually blocks (FR37 + FR33/FR35 — D12).
-
-**Acceptance Criteria:**
-
-**Given** an axis with `gating: false` (unconfigured license/currency), **When** a component's verdict is `unknown`, `denied`, or `eol`, **Then** the policy feeds a **`warn` rung** whose driver names the axis + finding — status `warn` (not `clean`), exit 0 — and a clean run on gating axes with any non-gating unknowns can never render status `clean`. **And** `--warn-as-error` escalates these to non-zero for strict shops. **And** this story **solely owns the escalation mapping** for axes 3/4 (producers are meta-tested to never feed above `warn`; both modes proven by running the identical fixture set and diffing only rungs/exit). **And** the tighten-only rule is applied as redefined by the architecture (2026-07-16): the shipped 1.2 `indeterminate` backstop is a **placeholder, not a floor** — the axis's defined mapping (warn unconfigured / gate configured) supersedes it for that axis; the C0 bound (never toward `clean`) is the invariant; verdict.py sole-ownership guard passes.
-
-**Given** an axis whose policy flags are configured (FR33/FR35 — v1, D12), **When** `gating` flips true for that axis, **Then** the same outcomes escalate (`denied`/`eol` → `policy-violation`, `unknown` → `indeterminate`) **with no producer changes** — the escalation is a policy-table change only, proven by running the identical fixture set in both modes and diffing only the rungs/exit.
-
-### Story 6.6: Engine version-range pinning (the distribution gate)
-
-As the **release owner**,
-I want the engine run-deps constrained to tested version ranges,
-So that publishing can't ship the fleet-wide false-error the ranges exist to prevent (NFR-C1).
+- [ ] `models.py` -- Add `AXIS_LICENSE="license"` / `AXIS_CURRENCY="currency"` (mirror 35-37). Extend `_FINDING_ID_FAMILIES` (46-50) with `re.compile(r"license:[^:\n]+:.+@.+")` and `re.compile(r"currency:(eol|over-lag|unknown):.+@.+")` (§§1–2). Add two CLOSED `StrEnum`s `LicenseVerdict{allowed,denied,unknown}` / `CurrencyVerdict{supported,eol,unknown}` — NOT in the growable list (§3). Add `LicenseInfo{expression:str, family:str|None, verdict:LicenseVerdict}` and `CurrencyInfo{verdict:CurrencyVerdict, latest:str|None, lag:int|None, eol_date:str|None, tier:str|None}` Finding sub-object dataclasses; add optional `license: LicenseInfo|None=None`, `currency: CurrencyInfo|None=None`, `kev_date: str|None=None` to `Finding` and change `epss: float|None` → `epss: Epss|None=None` with new `Epss{score:float, percentile:float}` (both in [0,1]); update `Finding.__post_init__` to validate the object instead of the float. Add `SuppressedFinding{finding_id:str, origin:str, reason:str, authorized_by:str|None, expires_at:str|None}` (reuse `WaiverNotice`'s fields, `id`→`finding_id`; `origin` closed to `{"baseline","waiver"}`, validated in `__post_init__`; §5.1). Add optional `ComplianceReport` fields (all defaulted so `assemble_report` keeps working): `suppressions: tuple[SuppressedFinding,...]=()`, `license_data`/`currency_data`/`kev_data`/`epss_data: FeedProvenance|None=None` (new `FeedProvenance{source,snapshot_at,max_age_ok}` reusing `VulnData`'s shape+`__post_init__`; leave `vuln_data:VulnData` untouched), `gating` (see AxisCoverage below), `actuation: object|None=None` (reserved open slot, always `None` in 6.1). Extend `ComplianceReport.__post_init__` (371-441) with the two id-prefix↔axis clauses (§5.4a) and the `suppressions[]`↔`findings[]` cross-ref + uniqueness checks (§5.5). Add `gating: bool=False` to `AxisCoverage`. Extend `to_json_dict`/`_finding_dict`/`_coverage_dict` to render every new key; extend `_finding_sort_key` None-safe for the new fields; add `_suppressed_finding_sort_key` (mirror `_coverage_sort_key`) to order `suppressions[]`. -- Rationale: the contract core; all other edits mirror this.
+- [ ] `report-schema.json` -- Widen `$defs.finding.id.anyOf` with `^license:[^:\n]+:[^\n]+@[^\n]+$` and `^currency:(eol|over-lag|unknown):[^\n]+@[^\n]+$`; add the `license`/`currency` Finding sub-object schemas + `kev_date` + the `epss` object shape `{score,percentile}` (§5.3); add the FOUR coherence `allOf` entries — (a) id-prefix↔axis for license/currency, (b) id-reason↔verdict with `then.required:[<subobj>]`, (c) currency-provenance completeness narrowing `latest`/`lag`/`eol_date` to non-null for `eol`/`over-lag` (§5.4a/b/c); add `$defs.suppressedFinding` + top-level optional `suppressions` array; add top-level optional `license_data`/`currency_data`/`kev_data`/`epss_data` (each `oneOf[null, {source,snapshot_at,max_age_ok}]`, mirroring `vuln_data`'s if/then), optional `gating` on `$defs.axisCoverage`, and an optional open `actuation` object. Do NOT set `additionalProperties:false` anywhere. -- Rationale: the validator half; `render_json` raises if a rendered field isn't admitted.
+- [ ] `report.py` -- Bump `REPORT_SCHEMA_VERSION` `"1.0.0"`→`"1.1.0"` (143). Widen `_REPORT_AXES` (148) to `(AXIS_HYGIENE, AXIS_VULNERABILITY, AXIS_LICENSE, AXIS_CURRENCY)`. In `assemble_report`, after building `assessed_by_axis` (232-238), add the F6 guard: any axis in `assessed_by_axis` not in `_REPORT_AXES` raises `ValueError` (never silent-drop). -- Rationale: register the axes (else coverage is dropped) + close F6.
+- [ ] `inventory.py` -- Add `license_covered: bool` / `currency_covered: bool` to `Component` (defaultless, appended after `vuln_matchable`). Add both to `_merge_group`'s `Component(...)` call as pure `all(...)` ANDs (mirror `hygiene_covered`). Add `license_covered = concrete.license_covered and bare.license_covered` (+ currency) to `_fold_bare` and include both in its `replace()` call (§4). -- Rationale: the two new coverage fields + their Gap-B merge/fold rules.
+- [ ] `interfaces.py` -- Import `AXIS_LICENSE`/`AXIS_CURRENCY`. In `DefaultPolicy.evaluate`'s per-component loop, alongside the `hygiene_covered` block (375-388), add two blocks appending `(Status.INDETERMINATE, "uncovered-license", AXIS_LICENSE, <msg>)` / `("uncovered-currency", AXIS_CURRENCY, <msg>)` — tokens MUST be axis-qualified (NOT bare `"uncovered"`) to avoid the `indeterminate:{token}:{subject}` id collision at line 405 (§4). -- Rationale: lands the uncovered-finding mechanism (inert in 6.1; producers set the fields `False` later).
+- [ ] `extract/_identity.py` + `extract/pyproject.py` -- Add `license_covered=True, currency_covered=True` to all 10 `Component(...)` sites. -- Rationale: defaultless fields require explicit values; `True` = behavior-neutral pre-producer.
+- [ ] `waiver.py` -- Widen the local `_FINDING_ID_FAMILIES` (72-76) with the same two regexes as `models.py` (§5.6), so `license:`/`currency:` findings are waivable. -- Rationale: keep the mirror tuple in lockstep in the same commit.
+- [ ] `cli.py` -- Convert `applied_waivers` (823) → `tuple[SuppressedFinding{origin:"waiver"}]` and thread it into `assemble_report` (new defaulted `suppressions: Sequence[SuppressedFinding]=()` param on `assemble_report`) so `render_json` echoes them (§5.6). -- Rationale: today waivers echo in `render_text` only; wire the JSON half (baseline half is 6.8).
+- [ ] `tests/unit/test_models.py` + `tests/unit/test_vuln.py` + `tests/conftest.py` -- Update the exact-N meta-test (194-212): add the two field entries and bump `13`→`15` (and the "13-field" docstrings); add `license_covered=True, currency_covered=True` to `_sample_component` (126) and the inline `Component` (test_vuln.py:362); add the two params (default `True`) to `make_component` (33-75). Update the epss unit tests for the `{score,percentile}` object shape. -- Rationale: the meta-test uses `==` exact-dict + `len==15`; construction sites need the new fields.
+- [ ] `tests/unit/test_inventory.py` -- Add the flip-detecting fold meta-test: `concrete.license_covered=True` + `bare.license_covered=False` ⇒ folded `license_covered is False` (and the currency twin) — fails if the field is omitted from `_fold_bare`'s `replace()` (§4). -- Rationale: guards the silent-carry-over pitfall.
+- [ ] `tests/conformance/test_report_schema.py` + `tests/unit/test_report.py` + `tests/conformance/test_scan_harness.py` + `tests/unit/test_interfaces_and_null_engine.py` -- Update coverage-row assertions for the two new `_REPORT_AXES` entries; add positive/negative schema cases for the new families + coherence clauses (mis-axed reject; `license:` without `license` sub-object reject; `suppressions[]` round-trip); keep `test_additive_extra_fields_still_validate` unchanged and passing. -- Rationale: the amendment adds coverage rows + new validation surface.
 
 **Acceptance Criteria:**
+- Given a shipped E1–E4 target under default flags, when scanned post-amendment, then `status`, `exit_code`, and `findings` are byte-identical to pre-amendment except `schema_version` is `"1.1.0"` and `coverage[]` gains `license`/`currency` rows with `deps_assessed=0`; a second `--deterministic` run is byte-identical to the first (NFR-R3b).
+- Given a pre-amendment consumer, when it validates a post-amendment report, then validation passes (`test_additive_extra_fields_still_validate` preserved) — the amendment is additive-only.
+- Given a `Finding` whose id begins `license:`/`currency:` but whose `axis` disagrees, when the report is constructed or rendered, then both `ComplianceReport.__post_init__` and `render_json`'s schema validation reject it.
+- Given an `EngineResult` reporting coverage for an axis not in `_REPORT_AXES`, when `assemble_report` runs, then it raises rather than silently dropping the claim (F6).
+- Given `_fold_bare` with a `True` concrete and a `False` bare coverage field, when it folds, then the result is `False` (conservative AND); the flip-detecting meta-test fails if a new field is omitted from `replace()`.
+- Given an applied waiver and `--format json`, when the report is emitted, then `suppressions[]` carries one `{finding_id, origin:"waiver", reason, authorized_by, expires_at}` and `render_json` validates; a dangling or duplicate `suppressions[].finding_id` is rejected at construction.
+- Given the full suite, when `pixi run -e pyforge-warden pyforge-warden-test` runs, then it is green (the exact-N meta-test now asserts 15; the verdict-sole-ownership and socket-deny meta-tests still pass).
 
-**Given** `src/shared/packages/pyforge-warden/pixi.toml` (run-deps `deptry = "*"`, `osv-scanner = "*"` today), **When** this story lands, **Then** both engines carry a **tested version range** (per NFR-C1: a range, not an exact pin — the engines come from feedstocks), the range choice is recorded with its compatibility evidence (deptry output schema; osv `--format json` shape + exit-code contract), and an out-of-range engine at runtime fails loud via FR21's typed `engine-unavailable`/incompatible error. **And** internal JFrog v1 publish and public v1.x publish are both blocked until this story is DONE (the D6 gate) — encoded mechanically as a release-gate row in `sprint-status.yaml` and a checkbox in the spec DoD (its mechanical homes, not process prose). **And** the story is the recorded owner of `pixi.toml:32-33` — closing the review-T-a finding that no story owned the mitigation. **And** the standing cross-cutting gates hold (C0 fixtures unaffected by the range change; twice-run determinism NFR-R3b).
+## Design Notes
 
-### Story 6.7: EPSS feed + the `--min-epss` gate
+The 1068-line decision record (`finding-id-verdict-encoding-decision.md`, in `context:`) is the authoritative source for the four spike-pinned shapes and their verbatim regexes/JSON — implement it without new design decisions. This spec adds the remaining AC-listed slots by mirroring shipped patterns. Key non-obvious points:
 
-As a **security engineer prioritizing by exploit likelihood**,
-I want EPSS scores on findings and a probability-threshold gate with honest feed semantics,
-So that exploit-likely vulnerabilities block and a missing feed can never fake a pass (FR36 — D12).
+- **Behavior-neutrality is the whole game.** The amendment must not change any shipped verdict. That forces `license_covered`/`currency_covered=True` everywhere in 6.1 (nothing sets `False`), the uncovered blocks land inert, and the new report sections stay `None`/`()`/absent. The only visible deltas are `schema_version` and the two extra `coverage[]` rows.
+- **`epss` redefinition is safe only because it is unpopulated.** No shipped report sets `epss`, so changing `float|None`→`Epss{score,percentile}|None` breaks nothing at runtime; only the epss unit tests move to the object shape. This is the one non-purely-additive field change, and the AC mandates it.
+- **Axis-qualified uncovered tokens (§4).** `interfaces.py` builds `finding_id = f"indeterminate:{token}:{subject}"` and dedupes on that exact string. Bare `"uncovered"` for all three axes would collide onto one id and silently swallow two axes. Use `uncovered-license`/`uncovered-currency`; leave hygiene's bare `"uncovered"` unchanged.
+- **`_merge_group` vs `_fold_bare` asymmetry (§4).** `_merge_group` uses a full defaultless `Component(...)` (omission = loud `TypeError`); `_fold_bare` uses `replace()` (omission = silent carry-over). Both new fields go in the `replace()` call; the flip test proves it.
+- **`origin`, not `source` (§5.1).** The suppression discriminator is `origin` (`source` already means `VulnData.source` and feed-provenance elsewhere). `authorized_by`/`expires_at` are nullable on `SuppressedFinding` (baselines are bulk-accepted) even though `WaiverEntry` requires them.
+- **Coherence `then` must `require` the sub-object key.** JSON-Schema `properties` is vacuous on an absent key — clause (b)/(c) `then` branches must list `required:["license"]`/`["currency"]` and, for (c), narrow `latest`/`lag`/`eol_date` types to exclude `null`, mirroring `vuln_data.max_age_ok`'s existing if/then.
+- **Deferred by design (do not implement):** `config.py` `license_policy`/`currency_policy` + `gating` computation → 6.2/6.3/6.5; baseline `origin:"baseline"` echo + `baseline.py` → 6.8; producer emission of any `license:`/`currency:` finding or feed provenance → 6.2–6.7; `actuation` content → 6.9.
 
-**Acceptance Criteria:**
+## Verification
 
-**Given** a provisioned FIRST EPSS feed (cache layout, lifecycle, max-age policy — story 6.4's KEV feed work is the direct template, one shared `feeds.py` layer; this story builds no private cache and computes no staleness itself), **When** a security finding matches, **Then** it carries `epss {score, percentile}` (post-6.1 schema) with per-feed provenance `{source, snapshot_at, max_age_ok}`, and `--min-epss <0..1>` blocks at/above the threshold (`policy-violation`).
-
-**Given** an absent or stale EPSS snapshot **while `--min-epss` is set**, **When** the scan runs, **Then** the verdict is **`indeterminate`** with an EPSS-provenance driver — the mirrored FR-K1 absence rule: an active policy never silently no-ops. **And** with no `--min-epss` set, null `epss` slots change nothing (CVSS/KEV gate as before). **And** feed fetch is offline-default / opt-in-online / never silent (NFR-S2).
-
-### Story 6.8: Baseline & grandfathering (gate new findings only)
-
-As a **maintainer adopting the gate over existing debt**,
-I want to accept today's findings in a committed, expiring baseline and block only new ones,
-So that day-one debt doesn't force disabling the gate — and nothing is silently suppressed (FR39 — D12).
-
-**Acceptance Criteria:**
-
-**Given** `--baseline .warden-baseline.yaml` (committed, schema-validated — malformed → typed `config-validation` error, never a guess), **When** the scan runs, **Then** findings whose **stable finding IDs** (the full finding-ID grammar — 1.1's three families **plus 6.1's license/currency families**; the same key waiver matching uses) appear in the baseline do not block; **NEW findings gate normally**; every applied baseline entry is **echoed in the report** carrying the 6.1 **suppression rung-discriminator** marking it `baseline` (vs `waiver`) — loud, `bypassed`-style; C0 holds: a baselined run can never render `clean`, and the baseline can never mask an `error`.
-
-**Given** a baseline entry past its `expires_at` (waiver-identical semantics), **When** the scan runs, **Then** the finding **re-blocks** until fixed or re-accepted. **And** the tool only ever **reads** the baseline (NFR-R3a/S4); `--baseline-emit` prints a candidate stanza for the human to commit — the tool never writes the repo. **And** baseline entries are a **second input to 3.2's suppression engine** — one engine, no parallel suppression path; baseline + waiver interaction is deterministic (waiver wins where both match — one suppression, echoed once, discriminated per 6.1).
-
-### Story 6.9: Fix-PR actuator (opt-in remediation PRs)
-
-As a **platform engineer running the gate at fleet scale**,
-I want findings to open remediation PRs automatically when I opt in,
-So that the gate drives fixes, not just red builds (FR40 — D12).
-
-**Acceptance Criteria:**
-
-**Given** `--open-fix-prs` with forge credentials provided via environment (never flags), **When** the verdict has been composed (exit code fixed), **Then** `cli.py` — the sole invoker — runs the actuator, **then** assembles + emits the final report including the `actuation` section (6.1's slot; content in the NFR-R3b volatile-field set): order = compose verdict → actuate → assemble → emit. PRs open via the forge API — security findings → upgrade-to-fixed-version PRs; hygiene unused-dependency findings → removal PRs — with the finding ID + report excerpt in the PR body. **And** the scanned working tree is **never written** (NFR-R3a asserted by the harness); the actuator is the **only** component permitted forge egress, and the C0c socket-deny carve-out applies **only to the real path under the flag** (landed in this story, never a global loosening), inert without the flag.
-
-**Given** `--fix-prs-dry-run`, **When** the actuator runs, **Then** it shares the real code path up to the egress seam, writes its intent into the same `actuation` report section (stdout stays ONE pure document, NFR-I3), and **opens no sockets** (the carve-out does not apply to dry-run). **And** a failed PR-open is recorded in the `actuation` section + stderr — **never an FR20 rung**; verdict, status, and exit code unchanged. **And** duplicate protection: an existing open PR for the same finding ID is detected and skipped, never re-opened.
-
-### Story 6.10: Amendment design spike — finding-ID families, verdict encoding, rung-discriminator & fold semantics (decision record)
-
-As the **owner of the one sanctioned schema amendment**,
-I want the amendment's unspecified shapes pinned in a decision record before 6.1 freezes them,
-So that the HARD-gate story is a mechanical schema bump, not design work on the critical path (the story-1.4 spike precedent).
-
-**Acceptance Criteria:**
-
-**Given** the 6.1 scope list, **When** the spike completes, **Then** a committed decision record (planning-artifacts) pins: the **license/currency finding-ID family grammars** (single-line, colon-delimited, injective — same rules as the three shipped families) and the **typed verdict encoding** (schema-validated fields policy/waivers/baselines key on); the **suppression rung-discriminator** shape (a closed `baseline | waiver` marker on echoed suppressions); and the **Gap-B merge/fold table** for every new `Component` field (conservative C0 semantics per field, `_merge_group`/`_fold_bare` positions named).
-
-**Given** the decision record, **When** 6.1 executes, **Then** 6.1 implements it without new design decisions — 6.1 remains the sole schema writer and the HARD gate (one amendment, one bump; this spike changes no code and no schema).
-
-## Realized in
-
-- **Package:** `src/shared/packages/pyforge-warden/` (import `pyforge.warden`).
-- **Status:** done + merged to `main` — HARD gate CLEARED — schema 1.0.0→1.1.0 (additive), 1265 tests green (canonical --frozen gate, independently re-verified on main); merge 369bc43998. Unblocks ALL 6.x producers below
-- **Verification:** the shipped behaviour for this story is covered by the current
-  `pixi run --frozen -e pyforge-warden pyforge-warden-test` suite (green on `main`).
-  For the precise file-level Code Map, read the implementation on `main` — this
-  regenerated spec deliberately does not guess a per-file map it cannot verify from the
-  lost original.
-
-## Provenance & recovery note
-
-Recovered 2026-07-25 as part of the spec-durability remediation (see
-`planning-artifacts/specs/README.md`). Root cause: story specs lived in Tier-3
-gitignored `implementation-artifacts/`; they are now tracked here in
-`planning-artifacts/specs/` so they survive worktree teardown and are in every clone.
+**Commands:**
+- `pixi run -e pyforge-warden pyforge-warden-test` -- expected: full suite green; the exact-N `Component` meta-test passes at 15 fields; `test_additive_extra_fields_still_validate`, `test_verdict_sole_ownership`, and `test_socket_deny_alive` all pass.
+- `pixi run -e pyforge-warden python -c "import json,jsonschema; jsonschema.Draft202012Validator.check_schema(json.load(open('src/shared/packages/pyforge-warden/src/pyforge/warden/data/report-schema.json')))"` -- expected: the amended schema is itself a valid Draft 2020-12 document (no typos in the new `$defs`/`allOf`).
+- `pixi run -e pyforge-warden pytest src/shared/packages/pyforge-warden/tests/conformance/test_report_schema.py -q` -- expected: schema-conformance (additive-fields, new families, coherence rejects) green.

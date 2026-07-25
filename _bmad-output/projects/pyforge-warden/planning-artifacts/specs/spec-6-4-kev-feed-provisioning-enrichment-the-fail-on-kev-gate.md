@@ -1,119 +1,105 @@
+<!-- RECOVERED 2026-07-25 from Claude Code session transcript 5e5ffa32-3b61-4044-aead-0305c30c98ff.jsonl (~/.claude/projects); this is the ORIGINAL spec incl. its dev/review narrative, not an epics.md regeneration. -->
 ---
-title: 'Story 6.4: KEV feed provisioning, enrichment & the `--fail-on-kev` gate'
+title: 'Story 6.4: KEV feed provisioning, enrichment & the --fail-on-kev gate'
 type: 'feature'
-status: 'regenerated'
-regenerated: '2026-07-25'
-source: 'epics.md (authoritative intent + acceptance criteria) + shipped code on main'
-original_spec: 'lost to the Tier-3 paper-trail gap; dev-notes / review-triage-log not recovered'
+created: '2026-07-18'
+status: 'draft'
+review_loop_iteration: 0
+followup_review_recommended: false
+context: []
+warnings: [oversized]
 ---
 
-> **Regenerated contract-spec (2026-07-25).** The original per-story spec file was
-> lost when its Tier-3 (gitignored) `implementation-artifacts/` copy was destroyed on
-> worktree teardown. This file **recovers the load-bearing contract** — the Intent and
-> Acceptance Criteria below are lifted **verbatim** from the tracked, authoritative
-> `planning-artifacts/epics.md` (the source the original spec was derived from), and the
-> Realized-in section maps it to the shipped implementation on `main`. What is **not**
-> recovered: the original implementation dev-notes and the review-triage log (those lived
-> only in the lost file). Behaviour is verified by the current green suite; the story is
-> done and merged.
+<intent-contract>
 
-## Contract (from epics.md — verbatim, authoritative)
+## Intent
 
-### Story 6.4: KEV feed provisioning, enrichment & the `--fail-on-kev` gate
+**Problem:** The vulnerability axis gates only on CVSS severity today; a CISA-KEV-listed (actively exploited) advisory at a lower CVSS tier can pass silently, and the schema's `kev`/`kev_date`/`kev_data` slots (frozen in Story 6.1) are declared but never populated (FR36).
 
-As a **security engineer**,
-I want the gate to block known-exploited vulnerabilities with honest feed semantics,
-So that a KEV listing can never be silently missed (FR36).
+**Approach:** Add a `feeds.py` skeleton (cache layout + `FeedProvenance` construction + staleness, generic for 6.3/6.7 reuse), consult it from `OsvEngine.run()` to stamp `kev`/`kev_date` on each `vuln:` finding *before* `interfaces.py`'s engine-dedup step, and make a KEV match force `Status.POLICY_VIOLATION` via a new `fail-on-kev` config key (default on) — mirroring the existing stale-vuln-DB → `indeterminate` pattern for an absent/stale KEV feed.
 
-**Acceptance Criteria:**
+## Boundaries & Constraints
 
-**Given** a provisioned KEV feed (cache layout, lifecycle, and max-age policy documented — the OSV-DB provisioning decision record `osv-db-offline-provisioning-decision.md` is the template), **When** a security finding matches a KEV-listed advisory on a pinned version, **Then** the finding carries `kev: true` (+ `kev_date` post-6.1) and the verdict blocks (`--fail-on-kev` is in the FR18 default) — exit 1. **And** this story delivers the **`feeds.py` skeleton** (ONE cache layout + ONE provenance shape + staleness/max-age defaults living in `feeds.py`, overridable only via the FR30 ConfigLoader) that 6.3 and 6.7 consume — axes never compute staleness. **And** KEV/EPSS enrichment mutates findings at exactly one pipeline position: inside the vuln producer, before policy dedup. **And** this story ships a **hermetic fixture KEV feed** (the 1.4 fixture-DB precedent) wired into the test harness, so the default-on `--fail-on-kev` policy never flips shipped E1/E2 fixtures to `indeterminate`. **And** the KEV tier's opt-out is named and testable: the FR30 config key `policy.fail_on_kev = false` (config/table-driven — the coarse `--no-fail-on-*` flag family stays retired), which makes the no-KEV-policy branch reachable.
+**Always:**
+- Enrichment happens inside the vuln producer (`vuln.py`/`engines.py`), never in `interfaces.py` (which only does engine-dedup + rung composition) — F10/architecture.md:138.
+- `feeds.py` owns cache layout, `FeedProvenance` shape, and staleness math; no axis (this story's KEV, or the later currency/EPSS) computes its own staleness.
+- `fail-on-kev` defaults `true` (FR18 default gate); a KEV match with the policy active forces `POLICY_VIOLATION` regardless of the finding's own CVSS tier, and never *downgrades* an already-critical CVSS status.
+- Absent or stale KEV cache **while `fail-on-kev` is active** → one whole-axis `indeterminate:` finding with KEV provenance (mirrors `vuln.py:390` `stale_vuln_data_finding`); `fail-on-kev=false` → KEV consultation is skipped entirely (every finding's `kev` stays `None`, CVSS-only gating, matches AC6's "null slots" wording).
+- Ship a hermetic ambient KEV-feed fixture (empty, fresh) wired into `conftest.py` (mirrors `_osv_ambient_db_env`) so the 1265 pre-existing tests don't flip to `indeterminate` now that the KEV policy is on by default.
+- The `scan` runtime path opens no socket at any point (NFR-S2) — the "opt-in online" provisioning path lives entirely outside `scan`, in a separate script, never invoked automatically.
 
-**Given** an absent or stale KEV snapshot **while a KEV-blocking policy is in effect**, **When** the scan runs, **Then** the verdict is **`indeterminate` with a KEV-provenance driver** — the gate never silently no-ops (the review-T1 fix). **And** with **no** KEV policy in effect, null slots gate on CVSS as before. **And** the report's per-feed KEV provenance (`{source, snapshot_at, max_age_ok}`) makes `kev: null` (feed absent) distinguishable from "assessed, not KEV-listed". **And** feed fetch is offline-default / opt-in-online / never silent (NFR-S2).
+**Block If:** none identified — all shape decisions below (TOML key flatness, engine config-injection, provisioning entrypoint, CVE-alias matching) are resolved from established in-repo precedent (cited in Design Notes), not open product questions.
 
-### Story 6.5: Two-mode policy integration (unconfigured visibility + flag-activated gating)
+**Never:**
+- Never widen `report-schema.json`/`models.py` — Story 6.1 already froze `Finding.kev`/`kev_date`/`epss`, `ComplianceReport.kev_data`/`epss_data`, and `FeedProvenance`; this story populates them, it does not add fields.
+- Never build a bespoke online fetcher inside the `pyforge.warden` package or call it from `scan`/`OsvEngine` — the fetch lives in a dev/ops-only script outside the installed package (mirrors `scripts/generate_conda_pypi_map.py`).
+- Never add a `--fail-on-kev`/`--no-fail-on-kev` CLI flag — config-only (`fail-on-kev` TOML key), per epics.md:500's retired-flag-family note.
+- Never touch `verdict.py` (sole status→exit-code owner; unaffected — it already handles `POLICY_VIOLATION`) or Epic 5/`waiver.py` (out of scope).
 
-As the **owner of the never-false-green invariant**,
-I want unconfigured-axis verdicts visible without blocking AND configured axes gating in the same release,
-So that `gating: false` is honesty, not invisibility, and a configured policy actually blocks (FR37 + FR33/FR35 — D12).
+## I/O & Edge-Case Matrix
 
-**Acceptance Criteria:**
+| Scenario | Input / State | Expected Output / Behavior | Error Handling |
+|----------|--------------|---------------------------|----------------|
+| KEV match, policy on | Pinned dep with an OSV advisory whose id or alias is a CVE present in the KEV cache; `fail-on-kev` unset (default true) | Finding carries `kev: true`, `kev_date: <CISA dateAdded>`; status `policy-violation`, exit 1 — even if CVSS tier is MEDIUM/LOW | No error |
+| No match, feed fresh | Pinned dep, advisory's CVE not in KEV cache; policy on | `kev: false`; CVSS-tier gating applies as before | No error |
+| Policy off | Same as above, `fail-on-kev = false` in `[tool.pyforge-warden]` | `kev` stays `null` on every finding; KEV cache never even opened; CVSS-only gating (byte-identical to pre-6.4) | No error |
+| Feed absent, policy on | No file at the resolved KEV cache path; `fail-on-kev` true | Whole vuln axis → `indeterminate`, one `indeterminate:kev-data-unavailable:kev-feed` finding, `kev_data: null` in the report | Never a silent no-op |
+| Feed stale, policy on | KEV cache file older than the configured max-age; `fail-on-kev` true | Whole vuln axis → `indeterminate`, `indeterminate:kev-data-stale:kev-feed` finding, `kev_data.max_age_ok: false`; per-finding `kev` matching still runs (informational) | Never a silent no-op |
+| No vuln-matchable candidates | Empty/no-op scan | No KEV consultation attempted (mirrors today's empty-candidate short-circuit in `OsvEngine.run`) | No error |
 
-**Given** an axis with `gating: false` (unconfigured license/currency), **When** a component's verdict is `unknown`, `denied`, or `eol`, **Then** the policy feeds a **`warn` rung** whose driver names the axis + finding — status `warn` (not `clean`), exit 0 — and a clean run on gating axes with any non-gating unknowns can never render status `clean`. **And** `--warn-as-error` escalates these to non-zero for strict shops. **And** this story **solely owns the escalation mapping** for axes 3/4 (producers are meta-tested to never feed above `warn`; both modes proven by running the identical fixture set and diffing only rungs/exit). **And** the tighten-only rule is applied as redefined by the architecture (2026-07-16): the shipped 1.2 `indeterminate` backstop is a **placeholder, not a floor** — the axis's defined mapping (warn unconfigured / gate configured) supersedes it for that axis; the C0 bound (never toward `clean`) is the invariant; verdict.py sole-ownership guard passes.
+</intent-contract>
 
-**Given** an axis whose policy flags are configured (FR33/FR35 — v1, D12), **When** `gating` flips true for that axis, **Then** the same outcomes escalate (`denied`/`eol` → `policy-violation`, `unknown` → `indeterminate`) **with no producer changes** — the escalation is a policy-table change only, proven by running the identical fixture set in both modes and diffing only the rungs/exit.
+## Code Map
 
-### Story 6.6: Engine version-range pinning (the distribution gate)
+- `src/pyforge/warden/feeds.py` (NEW) — cache-dir resolution (`PYFORGE_WARDEN_FEED_CACHE_DIR` env var, no implicit default, mirrors `vuln.py:136` `resolve_cache_dir`), `<cache_dir>/kev/known_exploited_vulnerabilities.json` path helper, KEV JSON loader (cve_id → `dateAdded`), generic `is_feed_stale(snapshot_at, max_age_days, *, now)` (mirrors `vuln.py:365` `is_db_stale` logic, generalized), `DEFAULT_FEED_MAX_AGE_DAYS = 7`, `FeedProvenance` construction helper.
+- `src/pyforge/warden/vuln.py` — extend `_findings_for_package`/`parse_osv_output` (vuln.py:698-786) to also capture `group.get("aliases")` per finding (currently read into the docstring but never stored, vuln.py:784) — needed because CISA KEV is CVE-keyed while OSV's primary `ids` are often GHSA/PYSEC; add a KEV-matching helper (checks `{advisory_id, *aliases}` against the loaded catalog) and a `kev_stale_finding(*, unavailable: bool)` pair (mirrors `stale_vuln_data_finding`, vuln.py:390) for the two indeterminate ids in the matrix above; extend `vuln_rung` (vuln.py:894) with a `fail_on_kev: bool` param that forces `POLICY_VIOLATION` on `finding.kev is True`.
+- `src/pyforge/warden/engines.py` — `OsvEngine` (engines.py:583): add `__init__(self, *, fail_on_kev: bool = True)` (plain class today, no existing `__init__`); inside `run()`, after `name_level_findings`/`stale_findings` are computed (engines.py:660-663), consult `feeds.py` + `vuln.py`'s KEV helpers when `self.fail_on_kev` and stamp `kev`/`kev_date` on every `vuln:` finding via `dataclasses.replace` before returning `EngineResult`; carry the resulting `FeedProvenance` as a new `EngineResult.kev_data`.
+- `src/pyforge/warden/interfaces.py` — `EngineResult` (interfaces.py:144-167): add `kev_data: FeedProvenance | None = None` field (additive, mirrors `vuln_data`). `DefaultPolicy.evaluate`'s `vuln_rung` call (interfaces.py:303-305): thread `fail_on_kev=self._config.fail_on_kev`.
+- `src/pyforge/warden/config.py` — `_RECOGNIZED_KEYS` (config.py:81-88): add `"fail-on-kev"` (flat, hyphenated — matches every existing key's shape; see Design Notes). `EffectiveConfig` (config.py:151-279): add `fail_on_kev: bool = True` field + `_coerce_bool`-style validation (mirrors the existing coercion pattern, config.py:301-357) wired in `ConfigLoader._load` (config.py:398-467). TOML-only, no CLI flag (mirrors `dep001-block-confidence`).
+- `src/pyforge/warden/report.py` — `assemble_report` (report.py:166-186): add `kev_data: FeedProvenance | None = None` param, thread into `ComplianceReport(...)` (report.py:330-341, alongside the existing `vuln_data=vuln_data`).
+- `src/pyforge/warden/cli.py` — engine-construction loop (cli.py:695-696): special-case `OsvEngine` construction with `fail_on_kev=config.fail_on_kev` (mirrors the existing `factory is not DeptryEngine` conditional already in this loop). `assemble_report(...)` call (cli.py:884): pick the first non-`None` `EngineResult.kev_data` across `engine_results` (mirrors the existing `vuln_data` selection cli.py does today) and pass it through.
+- `scripts/refresh_kev_feed.py` (NEW) — dev/ops-only provisioning script (NOT part of the installed package, mirrors `scripts/generate_conda_pypi_map.py`'s docstring convention): fetches `https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json` (stdlib `urllib.request`, no new dependency; same URL as `.claude/skills/conda-forge-expert/scripts/cisa_kev_fetcher.py`, pattern-only reuse, no code coupling) and writes it via `feeds.py`'s cache-write helper. This is the entire "opt-in online" surface — never invoked by `scan`.
+- `src/shared/packages/pyforge-warden/tests/conftest.py` — new autouse session-scoped `_kev_ambient_feed_env` fixture (mirrors `_osv_ambient_db_env`, conftest.py:264-270): writes an empty-but-fresh KEV cache file and sets `PYFORGE_WARDEN_FEED_CACHE_DIR`.
+- `src/shared/packages/pyforge-warden/tests/unit/test_feeds.py` (NEW) — pure-logic coverage for `feeds.py` (cache resolution, staleness math, provenance construction) — mirrors `tests/unit/test_vuln.py`'s structure.
+- `src/shared/packages/pyforge-warden/tests/conformance/test_osv_engine.py` (extend) or a new `test_kev_enrichment.py` — end-to-end KEV match/no-match/absent/stale scenarios through `OsvEngine.run()`, using a hermetic OSV fixture advisory whose `id` (or an added `aliases` entry) is CVE-shaped, matched against a hermetic KEV fixture catalog containing that CVE — mirrors `test_osv_offline_db_spike.py`'s hermetic-fixture pattern.
 
-As the **release owner**,
-I want the engine run-deps constrained to tested version ranges,
-So that publishing can't ship the fleet-wide false-error the ranges exist to prevent (NFR-C1).
+## Tasks & Acceptance
 
-**Acceptance Criteria:**
-
-**Given** `src/shared/packages/pyforge-warden/pixi.toml` (run-deps `deptry = "*"`, `osv-scanner = "*"` today), **When** this story lands, **Then** both engines carry a **tested version range** (per NFR-C1: a range, not an exact pin — the engines come from feedstocks), the range choice is recorded with its compatibility evidence (deptry output schema; osv `--format json` shape + exit-code contract), and an out-of-range engine at runtime fails loud via FR21's typed `engine-unavailable`/incompatible error. **And** internal JFrog v1 publish and public v1.x publish are both blocked until this story is DONE (the D6 gate) — encoded mechanically as a release-gate row in `sprint-status.yaml` and a checkbox in the spec DoD (its mechanical homes, not process prose). **And** the story is the recorded owner of `pixi.toml:32-33` — closing the review-T-a finding that no story owned the mitigation. **And** the standing cross-cutting gates hold (C0 fixtures unaffected by the range change; twice-run determinism NFR-R3b).
-
-### Story 6.7: EPSS feed + the `--min-epss` gate
-
-As a **security engineer prioritizing by exploit likelihood**,
-I want EPSS scores on findings and a probability-threshold gate with honest feed semantics,
-So that exploit-likely vulnerabilities block and a missing feed can never fake a pass (FR36 — D12).
-
-**Acceptance Criteria:**
-
-**Given** a provisioned FIRST EPSS feed (cache layout, lifecycle, max-age policy — story 6.4's KEV feed work is the direct template, one shared `feeds.py` layer; this story builds no private cache and computes no staleness itself), **When** a security finding matches, **Then** it carries `epss {score, percentile}` (post-6.1 schema) with per-feed provenance `{source, snapshot_at, max_age_ok}`, and `--min-epss <0..1>` blocks at/above the threshold (`policy-violation`).
-
-**Given** an absent or stale EPSS snapshot **while `--min-epss` is set**, **When** the scan runs, **Then** the verdict is **`indeterminate`** with an EPSS-provenance driver — the mirrored FR-K1 absence rule: an active policy never silently no-ops. **And** with no `--min-epss` set, null `epss` slots change nothing (CVSS/KEV gate as before). **And** feed fetch is offline-default / opt-in-online / never silent (NFR-S2).
-
-### Story 6.8: Baseline & grandfathering (gate new findings only)
-
-As a **maintainer adopting the gate over existing debt**,
-I want to accept today's findings in a committed, expiring baseline and block only new ones,
-So that day-one debt doesn't force disabling the gate — and nothing is silently suppressed (FR39 — D12).
-
-**Acceptance Criteria:**
-
-**Given** `--baseline .warden-baseline.yaml` (committed, schema-validated — malformed → typed `config-validation` error, never a guess), **When** the scan runs, **Then** findings whose **stable finding IDs** (the full finding-ID grammar — 1.1's three families **plus 6.1's license/currency families**; the same key waiver matching uses) appear in the baseline do not block; **NEW findings gate normally**; every applied baseline entry is **echoed in the report** carrying the 6.1 **suppression rung-discriminator** marking it `baseline` (vs `waiver`) — loud, `bypassed`-style; C0 holds: a baselined run can never render `clean`, and the baseline can never mask an `error`.
-
-**Given** a baseline entry past its `expires_at` (waiver-identical semantics), **When** the scan runs, **Then** the finding **re-blocks** until fixed or re-accepted. **And** the tool only ever **reads** the baseline (NFR-R3a/S4); `--baseline-emit` prints a candidate stanza for the human to commit — the tool never writes the repo. **And** baseline entries are a **second input to 3.2's suppression engine** — one engine, no parallel suppression path; baseline + waiver interaction is deterministic (waiver wins where both match — one suppression, echoed once, discriminated per 6.1).
-
-### Story 6.9: Fix-PR actuator (opt-in remediation PRs)
-
-As a **platform engineer running the gate at fleet scale**,
-I want findings to open remediation PRs automatically when I opt in,
-So that the gate drives fixes, not just red builds (FR40 — D12).
+**Execution:**
+- [ ] `src/pyforge/warden/feeds.py` -- create the cache/provenance/staleness skeleton -- shared substrate for KEV now, currency/EPSS later (AC2)
+- [ ] `src/pyforge/warden/vuln.py` -- capture OSV `aliases`, add KEV-matching + stale/unavailable finding helpers, extend `vuln_rung` with `fail_on_kev` -- makes real-world CVE matching actually work and gates independent of CVSS tier (AC1, AC6)
+- [ ] `src/pyforge/warden/engines.py` -- `OsvEngine.__init__(fail_on_kev=True)`, enrich findings inside `run()` before returning `EngineResult` -- enrichment position invariant (AC1, AC3)
+- [ ] `src/pyforge/warden/interfaces.py` -- `EngineResult.kev_data` field, thread `fail_on_kev` into `vuln_rung` call -- config reaches the gating decision (AC1)
+- [ ] `src/pyforge/warden/config.py` -- `fail-on-kev` TOML key (default true), `EffectiveConfig.fail_on_kev` -- the named, testable opt-out (AC5)
+- [ ] `src/pyforge/warden/report.py` -- thread `kev_data` through `assemble_report` into `ComplianceReport` -- report-level KEV provenance (AC1, FR36)
+- [ ] `src/pyforge/warden/cli.py` -- construct `OsvEngine` with resolved `fail_on_kev`, select `kev_data` across engine results -- wires config → engine → report
+- [ ] `scripts/refresh_kev_feed.py` -- opt-in online provisioning, outside the installed package -- satisfies "opt-in online, never silent" without an in-process fetcher (AC1, NFR-S2)
+- [ ] `tests/conftest.py` -- ambient empty-fresh KEV fixture, autouse -- keeps the 1265 pre-existing tests green under the new default-on policy (AC4)
+- [ ] `tests/unit/test_feeds.py` -- unit-test `feeds.py`'s cache/staleness/provenance logic -- per template, unit-test every I/O-matrix edge case
+- [ ] `tests/conformance/test_kev_enrichment.py` -- end-to-end match/no-match/absent/stale through the real `OsvEngine` -- proves the wiring, not just the units
 
 **Acceptance Criteria:**
+- Given a pinned dependency whose advisory (by id or alias) is a CISA-KEV CVE and `fail-on-kev` is unset (default), when the scan runs, then the finding carries `kev: true` + `kev_date`, and the report's status is `policy-violation` with exit 1, regardless of the finding's own CVSS tier.
+- Given `fail-on-kev = false` in `[tool.pyforge-warden]`, when the scan runs, then no KEV cache is consulted, every finding's `kev` is `null`, and CVSS-tier gating is byte-identical to pre-6.4 behavior.
+- Given an absent or stale KEV cache while `fail-on-kev` is active, when the scan runs, then the vulnerability axis composes `indeterminate` with a KEV-provenance-named driver — never a silent pass, never a crash.
+- Given the full existing pyforge-warden test suite, when it runs after this story lands, then all 1265 pre-existing tests still pass unmodified (only the ambient conftest fixture changes globally), plus the new KEV-specific tests.
+- Given the report schema (unchanged since 6.1), when a post-6.4 report is validated, then `report-schema.json` still validates it with zero schema edits (this story is a producer, not a schema writer — F6/story 6.1 invariant).
 
-**Given** `--open-fix-prs` with forge credentials provided via environment (never flags), **When** the verdict has been composed (exit code fixed), **Then** `cli.py` — the sole invoker — runs the actuator, **then** assembles + emits the final report including the `actuation` section (6.1's slot; content in the NFR-R3b volatile-field set): order = compose verdict → actuate → assemble → emit. PRs open via the forge API — security findings → upgrade-to-fixed-version PRs; hygiene unused-dependency findings → removal PRs — with the finding ID + report excerpt in the PR body. **And** the scanned working tree is **never written** (NFR-R3a asserted by the harness); the actuator is the **only** component permitted forge egress, and the C0c socket-deny carve-out applies **only to the real path under the flag** (landed in this story, never a global loosening), inert without the flag.
+## Design Notes
 
-**Given** `--fix-prs-dry-run`, **When** the actuator runs, **Then** it shares the real code path up to the egress seam, writes its intent into the same `actuation` report section (stdout stays ONE pure document, NFR-I3), and **opens no sockets** (the carve-out does not apply to dry-run). **And** a failed PR-open is recorded in the `actuation` section + stderr — **never an FR20 rung**; verdict, status, and exit code unchanged. **And** duplicate protection: an existing open PR for the same finding ID is detected and skipped, never re-opened.
+**TOML key shape — flat, not nested.** Epics.md/PRD prose write `policy.fail_on_kev` as a dotted description of *which policy* it affects, not a literal TOML path. `config.py`'s `_RECOGNIZED_KEYS` (config.py:81-88) is 100% flat hyphenated keys today (`fail-on`, `dep001-block-confidence`, `waiver-default-expiry-days`) with an explicit "no underscore alias" rule; a first nested-table key would need new validation-loop shape work with zero precedent. Using `fail-on-kev` (flat) matches every existing key and the TOML-only/no-CLI-flag treatment `dep001-block-confidence` already established.
 
-### Story 6.10: Amendment design spike — finding-ID families, verdict encoding, rung-discriminator & fold semantics (decision record)
+**Config reaches `OsvEngine` via constructor, not a `Engine.run()` signature change.** `run(self, target, inventory) -> EngineResult` is a fixed 2-arg `Protocol` shared by `NullEngine`/`DeptryEngine`/`OsvEngine`; widening it would touch every engine. `cli.py`'s engine-construction loop (cli.py:695) already special-cases one engine type (`factory is not DeptryEngine`) — extending that same conditional to construct `OsvEngine(fail_on_kev=...)` only for that one factory keeps `NullEngine`/`DeptryEngine` and the `Engine` protocol untouched, and `OsvEngine()` (zero-arg) still works everywhere else since the new param defaults `True`.
 
-As the **owner of the one sanctioned schema amendment**,
-I want the amendment's unspecified shapes pinned in a decision record before 6.1 freezes them,
-So that the HARD-gate story is a mechanical schema bump, not design work on the critical path (the story-1.4 spike precedent).
+**Provisioning is a standalone script, not a `scan` flag or subcommand.** The OSV-DB decision record deferred *all* online fetching in v1 specifically because NFR-S2 (`scan`'s own process opens no socket`) is incompatible with any in-process default-path fetch; osv-scanner's own binary owns that job for OSV. CISA has no equivalent binary. Rather than build an in-process "opt-in online" branch inside `scan` (which would need careful exclusion from the socket-deny harness), `scripts/refresh_kev_feed.py` sits entirely outside the installed package and outside `scan`'s call graph — identical in spirit to `scripts/generate_conda_pypi_map.py`'s existing "dev-only maintenance script" convention, and it trivially satisfies "opt-in" (a human runs it) and "never silent" (it prints what it fetched) without touching the gate's runtime socket posture at all.
 
-**Acceptance Criteria:**
+**Why `aliases` capture is in-scope, not a follow-on.** `parse_osv_output`'s own docstring (vuln.py:784) already documents that OSV's `groups[]` carry `aliases` alongside `ids`, but no code path stores them. CISA KEV is CVE-keyed; OSV's primary PyPI advisory ids are frequently `PYSEC-*`/`GHSA-*` with the CVE cross-reference living only in `aliases`. Skipping alias capture would make KEV matching pass its hermetic fixture test (which can freely choose a CVE-shaped primary id) while silently failing to match the vast majority of real-world advisories — a false-green in spirit, not just in a fixture. This is a small, additive extension to an already-tolerant parser (same defensive shape-check style throughout `_findings_for_package`).
 
-**Given** the 6.1 scope list, **When** the spike completes, **Then** a committed decision record (planning-artifacts) pins: the **license/currency finding-ID family grammars** (single-line, colon-delimited, injective — same rules as the three shipped families) and the **typed verdict encoding** (schema-validated fields policy/waivers/baselines key on); the **suppression rung-discriminator** shape (a closed `baseline | waiver` marker on echoed suppressions); and the **Gap-B merge/fold table** for every new `Component` field (conservative C0 semantics per field, `_merge_group`/`_fold_bare` positions named).
+## Verification
 
-**Given** the decision record, **When** 6.1 executes, **Then** 6.1 implements it without new design decisions — 6.1 remains the sole schema writer and the HARD gate (one amendment, one bump; this spike changes no code and no schema).
+**Commands:**
+- `pixi run --frozen -e pyforge-warden pyforge-warden-test` -- expected: all pre-existing 1265 tests plus new KEV tests pass (plain `pixi run -e pyforge-warden` may try to re-solve an unrelated `bmad-ui` env in this repo; use `--frozen`)
+- `pixi run --frozen -e pyforge-warden python -m pyforge.warden.cli scan <fixture-dir> --fail-on-kev` (manual smoke, if a `--fail-on-kev` debug affordance is added) -- otherwise inspect a scan of a fixture with the ambient KEV feed swapped for one containing a seeded match, confirming exit 1 and `kev: true` in the JSON report
 
-## Realized in
-
-- **Package:** `src/shared/packages/pyforge-warden/` (import `pyforge.warden`).
-- **Status:** done + merged to `main` — feeds.py substrate + KEV enrichment + fail-on-kev gate; 1334 tests green (canonical --frozen, re-verified on branch); merge 3de107081e; dev×2 (dev-1 left spec status=in-review → benign rollback+retry)
-- **Verification:** the shipped behaviour for this story is covered by the current
-  `pixi run --frozen -e pyforge-warden pyforge-warden-test` suite (green on `main`).
-  For the precise file-level Code Map, read the implementation on `main` — this
-  regenerated spec deliberately does not guess a per-file map it cannot verify from the
-  lost original.
-
-## Provenance & recovery note
-
-Recovered 2026-07-25 as part of the spec-durability remediation (see
-`planning-artifacts/specs/README.md`). Root cause: story specs lived in Tier-3
-gitignored `implementation-artifacts/`; they are now tracked here in
-`planning-artifacts/specs/` so they survive worktree teardown and are in every clone.
+**Manual checks (if no CLI):**
+- Confirm `report-schema.json` is byte-identical after this story (no edits) via `git diff --stat` on that file.
