@@ -378,7 +378,7 @@ Gate evaluation involves no model call.
 #### FR-22: Frozen-surface scope check
 A story's changed surface is checked against its declared surface and against frozen surfaces.
 **Consequences:**
-- Declared surfaces come from the story spec; frozen surfaces accumulate from prior stories.
+- Declared surfaces come from the story spec and may only **narrow** the project-declared surface, never widen it — a story spec is machine-drafted, so it cannot author the allowlist it is judged against (architecture AD-27). Frozen surfaces accumulate from prior stories through the run record (AD-26).
 - A change to a frozen file is a hard failure naming the file and the story that froze it.
 - A change outside the declared surface is a failure naming each offending path.
 - *Motivating evidence: the operator performed this check manually on every producer story of a six-epic build.*
@@ -613,7 +613,7 @@ Effective run policy is composed from ordered layers with defined precedence.
 Project-specific values are supplied by the project layer, never by editing a shared file.
 **Consequences:**
 - The worktree-seed path list is generated from the active project, not literal.
-- Verify commands, frozen surfaces, and the merge-subject form come from the project layer.
+- Verify commands, the **initial** frozen-surface set, and the merge-subject form come from the project layer. Freezes declared *during* a run accumulate through the run record, not through policy (architecture AD-26).
 - Switching projects requires no edit to any shared file.
 
 #### FR-51: Per-story model tiering
