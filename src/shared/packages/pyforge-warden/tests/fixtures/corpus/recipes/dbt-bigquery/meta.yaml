@@ -1,0 +1,48 @@
+{% set name = "dbt-bigquery" %}
+{% set version = "1.8.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/dbt_bigquery-{{ version }}.tar.gz
+  sha256: 6f8cd7062df6a36a9a1c6ebe8081e748b159d38b083fa4079265026450ff2fc4
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+  run:
+    - python >={{ python_min }}
+    - dbt-common >=0.1.0a1,<2.0
+    - dbt-adapters >=0.1.0a1,<2.0
+    - google-cloud-bigquery-core >=3.0,<4.0
+    - google-cloud-storage >=2.4,<3.dev0
+    - google-cloud-dataproc >=5.0,<6.dev0
+    - google-api-core >=2.11.0
+    - dbt-core >=1.8.0a1
+
+test:
+  imports:
+    - dbt
+  commands:
+    - pip check
+  requires:
+    - python {{ python_min }}
+    - pip
+
+about:
+  home: https://github.com/dbt-labs/dbt-bigquery
+  summary: The Bigquery adapter plugin for dbt
+  license: Apache-2.0
+  license_file: LICENSE.md
+
+extra:
+  recipe-maintainers:
+    - rxm7706

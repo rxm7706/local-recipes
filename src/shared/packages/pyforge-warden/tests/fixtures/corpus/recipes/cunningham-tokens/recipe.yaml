@@ -1,0 +1,57 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+# ⚠️ LOCAL-ONLY RECIPE — NOT FOR conda-forge/staged-recipes SUBMISSION
+# Reason: scoped design-token package (@openfun/cunningham-tokens) — emits
+# CSS/SCSS/JS token files consumed by bundlers, not directly runnable. Useful
+# locally as a static asset dependency for the lasuite-ui-kit chain.
+
+context:
+  version: "3.0.0"
+
+package:
+  name: cunningham-tokens
+  version: ${{ version }}
+
+source:
+  # npm tarball ships no LICENSE; fetch openfun/cunningham's MIT.
+  - url: https://registry.npmjs.org/@openfun/cunningham-tokens/-/cunningham-tokens-${{ version }}.tgz
+    sha256: def96a2991238828143d8b7b9ad9df47758e5d0837b003006b1fc97e27d6cde7
+
+build:
+  number: 0
+  noarch: generic
+  script:
+    - if: unix
+      then:
+        - export npm_config_prefix="${PREFIX}"
+        - export NPM_CONFIG_USERCONFIG=/tmp/nonexistentrc
+        - npm pack --ignore-scripts
+        - npm install -ddd --global --no-bin-links openfun-cunningham-tokens-${{ version }}.tgz
+
+requirements:
+  build:
+    - nodejs >=20
+  run:
+    - nodejs >=20
+
+tests:
+  - package_contents:
+      files:
+        - lib/node_modules/@openfun/cunningham-tokens/package.json
+
+about:
+  homepage: https://github.com/openfun/cunningham
+  repository: https://github.com/suitenumerique/cunningham
+  summary: Design tokens for the Cunningham design system (OpenFUN / La Suite)
+  description: |
+    @openfun/cunningham-tokens exports the design tokens (color, spacing,
+    typography, motion) for the Cunningham design system as CSS custom
+    properties, SCSS variables, and TypeScript constants. Consumed by
+    @openfun/cunningham-react and downstream La Suite frontends.
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

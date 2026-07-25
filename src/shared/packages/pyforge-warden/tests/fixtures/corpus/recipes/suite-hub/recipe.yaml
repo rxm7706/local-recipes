@@ -1,0 +1,100 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+# ⚠️ LOCAL-ONLY RECIPE — NOT FOR conda-forge/staged-recipes SUBMISSION
+# Reason: suitenumerique/hub is a deployed Django web application, not
+# a library. `pip install` ships the importable backend module
+# (hub); running the service additionally requires Postgres,
+# Redis/Celery, OIDC provider, S3-compatible storage, SMTP, and frontend
+# build artifacts that this recipe does not install. conda-forge declines
+# web-application recipes as a matter of policy.
+#
+# Pinned to commit aacd11b18845 on suitenumerique/hub (no PyPI release).
+# Build context: src/backend/ subdirectory (this recipe pip-installs from
+# there).
+#
+
+context:
+  version: "0.0.1"
+  commit: "aacd11b18845fcbb1772198f3f655811cd9df2a4"
+  python_min: "3.12"
+
+package:
+  name: suite-hub
+  version: ${{ version }}
+
+source:
+  - url: https://github.com/suitenumerique/hub/archive/${{ commit }}.tar.gz
+    sha256: a919320e94f3137daf984a539e1629c22bfb71adfaeb3f0a12b65ab0cbb28636
+  # Org-level MIT LICENSE fallback for apps whose repo ships none directly.
+build:
+  number: 0
+  noarch: python
+  script:
+    - cd src/backend && ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - beautifulsoup4
+    - boto3
+    - brotli
+    - celery
+    - django-configurations
+    - django-cors-headers
+    - django-countries
+    - django-csp
+    - django-filter
+    - django-lasuite
+    - django-parler
+    - django-redis
+    - django-storages
+    - django-timezone-field
+    - django
+    - djangorestframework
+    - drf-spectacular
+    - dockerflow
+    - easy-thumbnails
+    - factory-boy
+    - gunicorn
+    - jsonschema
+    - lxml
+    - mozilla-django-oidc
+    - nested-multipart-parser
+    - psycopg
+    - pyjwt
+    - python-magic
+    - redis-py
+    - requests
+    - sentry-sdk
+    - whitenoise
+
+# CFEP-25-justified: Django web-app backend — `import <module>` raises
+# ImproperlyConfigured without DJANGO_SETTINGS_MODULE, and the test env
+# can't resolve the full transitive Django-plugin chain. site_packages
+# presence is the testable invariant.
+tests:
+  - package_contents:
+      site_packages:
+        - hub
+
+about:
+  homepage: https://github.com/suitenumerique/hub
+  repository: https://github.com/suitenumerique/hub
+  summary: La Suite numérique hub backend (Django web application — local-only)
+  description: |
+    suitenumerique/hub backend. Distribution name "hub".
+    This is a Django web service, not a library — installing this conda
+    package gives you the importable backend code; running the service
+    requires additional infrastructure (Postgres + Redis + Celery + OIDC +
+    S3 + SMTP + frontend).
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

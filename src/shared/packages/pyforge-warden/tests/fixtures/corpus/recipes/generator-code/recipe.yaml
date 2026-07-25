@@ -1,0 +1,52 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.11.18"
+
+package:
+  name: generator-code
+  version: ${{ version }}
+
+source:
+  url: https://registry.npmjs.org/generator-code/-/generator-code-1.11.18.tgz
+  sha256: 4845bc33c3642871b03968f957796aebba75236f4c8be2d2b5030807af40ed65
+
+build:
+  number: 0
+  noarch: generic
+
+requirements:
+  build:
+    - nodejs
+    - pnpm
+    - pnpm-licenses
+  run:
+    - nodejs
+    - yo
+
+tests:
+  - script:
+      - if: unix
+        then:
+          - test -d "${PREFIX}/lib/node_modules/generator-code"
+          - test -f "${PREFIX}/lib/node_modules/generator-code/package.json"
+      - if: win
+        then:
+          - if not exist "%PREFIX%\lib\node_modules\generator-code\package.json" exit 1
+
+about:
+  license: MIT
+  license_file:
+    - LICENSE
+    - third-party-licenses.txt
+  summary: Yeoman generator for Visual Studio Code extensions.
+  description: |
+    We have written a Yeoman generator to help get you started. We plan to add templates for most extension/customization types into this.
+  homepage: http://code.visualstudio.com
+  documentation: http://code.visualstudio.com
+  repository: https://github.com/Microsoft/vscode-generator-code
+
+extra:
+  recipe-maintainers:
+    - rxm7706

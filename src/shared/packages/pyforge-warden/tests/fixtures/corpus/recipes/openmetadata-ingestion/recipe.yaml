@@ -1,0 +1,145 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.13.1.1"
+
+package:
+  name: openmetadata-ingestion
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/o/openmetadata-ingestion/openmetadata_ingestion-${{ version }}.tar.gz
+  sha256: ef4d2e794b8b8e36e32f46bb8f66803f696346601c82a9fa03b3ec184ab5aa94
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - metadata = metadata.cmd:metadata
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - setuptools >=70.3.0,<70.4.0
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - google-cloud-secret-manager ==2.24.0  # Needs Equal
+    - requests >=2.23
+    - jinja2 >=2.11.3
+    - cachetools
+    - pydantic >=2.0,<3.dev0,>=2.7.0,<2.12
+    - pyyaml >=6.0,<7.dev0
+    - antlr4-python3-runtime ==4.9.2  # Needs Equal
+    - cryptography >=46.0.5
+    - importlib-metadata >=4.13.0
+      # typing_inspect is the conda-forge package name for typing-inspect pypi package
+    - typing_inspect
+    - requests-aws4auth >=1.1,<2.dev0
+    - httpx >=0.28.0,<0.29.dev0
+    - boto3 >=1.41.5,<1.42.dev0
+    - collate-sqllineage #>=2.1.3  # NOTE: collate-sqllineage >=2.1.3, for which no candidates were found.
+    # Manual Add of collate-sqlfluff
+    - collate-sqlfluff  # Needed for collate-sqllineage
+    - azure-keyvault-secrets
+    - python-kubernetes >=21.0.0,<36
+    # memory_profiler is the conda-forge package name for memory-profiler pypi package
+    - memory_profiler
+    - jsonpatch <2.0,>=1.24
+    - tenacity >=8.0,<10
+    - pymysql >=1.0,<2.dev0
+    - azure-identity >=1.12,<2.dev0
+    - email_validator >=2.0
+    - pydantic-settings >=2.0,<3.dev0,>=2.7.0
+    - jaraco.context >=6.1.0
+    - mistune >=3.2.1
+    - shapely
+    - idna >=3.15
+    - google-crc32c
+    - python-dotenv >=0.19.0
+    - cached-property ==1.5.2  # Needs Equal
+    - jaraco.functools <4.2.0
+    - mako >=1.3.12
+    - dbt-extractor >=0.5.0
+    - tabulate ==0.9.0  # Needs Equal
+    - chardet ==4.0.0  # Needs Equal
+    - python-dateutil >=2.8.1
+    - setuptools >=78.1.1,<81
+    - collate-data-diff >=0.11.11
+    # mypy_extensions is the conda-forge package name for mypy-extensions pypi package
+    - mypy_extensions >=0.4.3
+    - lxml >=6.1.0
+    - pyjwt >=2.12.0
+    - packaging
+    - sqlalchemy >=2.0.0,<3
+    - click >=8.3.3
+
+tests:
+  - python:
+      imports:
+        - airflow_provider_openmetadata
+        - metadata
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}.*
+    script:
+      - metadata --help #re.error: global flags not at the start of the expression at position 1
+      - pip check
+
+about:
+  homepage: https://open-metadata.org/
+  license: CC0-1.0
+  license_file: LICENSE
+  summary: Ingestion Framework for OpenMetadata
+  repository: https://github.com/open-metadata/OpenMetadata
+  documentation: https://docs.open-metadata.org/
+  description: |
+    Ingestion Framework for OpenMetadata
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: openmetadata-ingestion
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: openmetadata-ingestion
+  cfe-purls:
+    - pkg:conda/openmetadata-ingestion@${{ version }}?channel=conda-forge
+    - pkg:pypi/openmetadata-ingestion@${{ version }}
+  cfe-upstream-repo: https://github.com/open-metadata/OpenMetadata
+  cfe-upstream-homepage: https://open-metadata.org/
+  cfe-import-names: [airflow_provider_openmetadata, metadata]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/openmetadata-ingestion-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T13:00:21Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T13:00:21Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# run:
+#    # The run-dep base set is the DEPLOYED v1 feedstock's authoritative set
+#    # (openmetadata-ingestion has a large optional-extras matrix; the feedstock
+#    # decides the base). Local recipe was byte-identical to feedstock at
+#    # 1.11.5.0; refresh to 1.11.6.1 changed only version + sha256.
+# tests:
+#    # python_version modernized to the CFEP-25 dual-version list form.
+####

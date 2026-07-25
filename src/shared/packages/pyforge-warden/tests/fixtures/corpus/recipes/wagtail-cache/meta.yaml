@@ -1,0 +1,43 @@
+{% set name = "wagtail-cache" %}
+{% set version = "3.0.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://github.com/coderedcorp/wagtail-cache/archive/v{{ version }}.tar.gz
+  sha256: 3265216885459445531806d37fd6eadc899c56742cb3924094efbd037df37311
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >={{ python_min }}
+    - wagtail >=3.0,<8.0
+
+test:
+  imports:
+    - wagtailcache
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/coderedcorp/wagtail-cache
+  summary: A simple page cache for Wagtail based on the Django cache middleware.
+  license: BSD-3-Clause
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

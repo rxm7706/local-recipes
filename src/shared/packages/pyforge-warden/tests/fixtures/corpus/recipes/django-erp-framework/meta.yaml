@@ -1,0 +1,52 @@
+{% set name = "django-erp-framework" %}
+{% set version = "1.5.2" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/django-erp-framework-{{ version }}.tar.gz
+  sha256: be7cb85f922356b173d199b266d6f8656e640284c9781eec9cf5b079caf59092
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.6
+    - pip
+  run:
+    - python >=3.6
+    - pytz
+    - django >=3.2
+    - simplejson
+    - django-crequest >=2018.5.11
+    - django-tabular-permissions
+    - django-crispy-forms
+    - dateutils
+    - django-reversion >=3.0.5
+    - django-slick-reporting
+    - django-jazzmin >=2.5.0
+    - django-compressor >=2.3
+
+test:
+  imports:
+    - erp_framework
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/RamezIssac/django-erp-framework
+  summary: A light-weight effective Django based framework to create diverse business applications
+  dev_url: https://github.com/ra-systems/RA
+  license: AGPL-3.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

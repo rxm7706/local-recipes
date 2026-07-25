@@ -1,0 +1,47 @@
+{% set name = "opentelemetry-instrumentation-sqlalchemy" %}
+{% set version = "0.42b0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/opentelemetry_instrumentation_sqlalchemy-{{ version }}.tar.gz
+  sha256: a329a9c24f39267622a5157b23cda5b7fa22ddc762d5c3e41248ff508d7ff52a
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.7
+    - hatchling
+    - pip
+  run:
+    - python >=3.7
+    - opentelemetry-api >=1.12,<2.dev0
+    - opentelemetry-instrumentation =={{ version }}
+    - opentelemetry-semantic-conventions =={{ version }}
+    - packaging >=21.0
+    - wrapt >=1.11.2
+    - sqlalchemy
+
+test:
+  imports:
+    - opentelemetry.instrumentation.sqlalchemy
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  summary: OpenTelemetry SQLAlchemy instrumentation
+  home: https://github.com/open-telemetry/opentelemetry-python-contrib/tree/master/instrumentation/opentelemetry-instrumentation-sqlalchemy
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

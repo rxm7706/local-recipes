@@ -1,0 +1,52 @@
+{% set name = "opentelemetry-instrumentation-psycopg" %}
+{% set version = "0.49b2" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/opentelemetry_instrumentation_psycopg-{{ version }}.tar.gz
+  sha256: 961ae1c7667eb4f13f21812499ef846a437b3bd9ad985ecbbef385ab7d1f369e
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - hatchling
+    - pip
+  run:
+    - python >={{ python_min }}
+    - opentelemetry-api >=1.12,<2.dev0
+    - opentelemetry-instrumentation =={{ version }}
+    - opentelemetry-instrumentation-dbapi =={{ version }}
+
+test:
+  imports:
+    - opentelemetry
+    - opentelemetry.instrumentation
+    - opentelemetry.instrumentation.psycopg
+  commands:
+    - pip check
+  requires:
+    - pip
+    - psycopg >= 3.1.0
+    - python {{ python_min }}
+
+about:
+  summary: OpenTelemetry psycopg instrumentation
+  home: https://github.com/open-telemetry/opentelemetry-python-contrib/tree/main/instrumentation/opentelemetry-instrumentation-psycopg
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+    - conda-forge/opentelemetry-api
+    - conda-forge/opentelemetry-sdk
+    - conda-forge/opentelemetry-dbapi
+

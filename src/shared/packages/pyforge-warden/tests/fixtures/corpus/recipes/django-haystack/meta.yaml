@@ -1,0 +1,45 @@
+{% set name = "django-haystack" %}
+{% set version = "3.3.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/django_haystack-{{ version }}.tar.gz
+  sha256: e3ceed6b8000625da14d409eb4dac69894905e2ac8ac18f9bfdb59323ca02eab
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python
+    - setuptools >=61.2
+    - setuptools-scm >=3.4
+    - wheel
+    - pip
+  run:
+    - python
+    - django >=3.2
+    - packaging
+
+test:
+  imports:
+    - django_haystack
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  summary: Pluggable search for Django.
+  dev_url: https://github.com/django-haystack/django-haystack
+  license: BSD-3-Clause
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

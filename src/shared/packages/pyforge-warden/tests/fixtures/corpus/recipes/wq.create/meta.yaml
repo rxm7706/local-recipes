@@ -1,0 +1,47 @@
+{% set name = "wq.create" %}
+{% set version = "2.0.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/wq.create-{{ version }}.tar.gz
+  sha256: 4c8727f8ffd8923389bc322e547ea482186faa5a817d20a1ae081f340468a846
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.7
+    - setuptools
+    - setuptools-scm
+    - pip
+  run:
+    - python >=3.7
+    - wq.build >=2.0.0
+    - xlsconv >=2.0.0,<2.1.0
+    - psycopg2-binary
+    - django >=3.2
+
+test:
+  imports:
+    - wq.create
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/wq/wq.create
+  summary: Project scaffolding tools for creating a new application with the wq framework.
+  dev_url: https://github.com/wq/wq.create
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

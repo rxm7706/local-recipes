@@ -1,0 +1,117 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.64.0"
+
+package:
+  name: feast
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/f/feast/feast-${{ version }}.tar.gz
+  sha256: 0625750041dbabd05a722aa480a1713db3be85d50c551f4e8203385a594abc6a
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pybindgen >=0.22.0
+    - setuptools >=60,<81
+    - setuptools-scm >=6.2
+    - sphinx !=4.0.0
+    - wheel
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - click <9.0.0,>=7.0.0
+    - colorama <1,>=0.3.9
+    - dill >=0.3.0,<0.4
+    - protobuf >=4.24.0
+    - jinja2 <4,>=2
+    - jsonschema
+    - mmh3
+    - numpy <3,>=2.0.0
+    - pandas <3,>=1.4.3
+    - pyarrow >=21.0.0
+    - pydantic >=2.10.6
+    - pygments >=2.12.0,<3
+    - pyyaml >=5.4.0,<7
+    - requests
+    - sqlalchemy >1
+    - tabulate >=0.8.0,<1
+    - tenacity >=7,<9
+    - toml >=0.10.0,<1
+    - tqdm >=4,<5
+    - typeguard >=4.0.0
+    - fastapi >=0.68.0
+    - starlette >=1.0.1
+    - uvicorn >=0.30.6,<=0.34.0
+    - uvicorn-worker
+    - gunicorn
+    - dask-core >=2024.2.1
+    - prometheus_client >=0.20.0,<0.25.0
+    - psutil
+    - bigtree >=0.19.2
+    - pyjwt
+
+tests:
+  - python:
+      imports:
+        - feast
+      pip_check: true
+      # multiprocess 0.70.18 has requirement dill>=0.4.0, but you have dill 0.3.9.
+      python_version: ${{ python_min }}.*
+  - requirements:
+      run:
+        - python ${{ python_min }}.*
+        - pip
+    script:
+      - feast --help
+
+about:
+  homepage: https://github.com/feast-dev/feast
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Python SDK for Feast
+  description: |
+    Python SDK for Feast
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: feast
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: feast
+  cfe-purls:
+    - pkg:conda/feast@${{ version }}?channel=conda-forge
+    - pkg:pypi/feast@${{ version }}
+  cfe-upstream-repo: https://github.com/feast-dev/feast
+  cfe-upstream-homepage: https://github.com/feast-dev/feast
+  cfe-import-names: [go]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/feast-feedstock
+  cfe-forge-recipe-updates-needed: [version-bump-to-0.64.0]
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-07-03T04:00:00Z
+  cfe-generated-by-version: 8.65.0
+  cfe-generated-at-datetime: 2026-07-03T04:00:00Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-07-03T04:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # 2026-07-03 punch-list full-gate pass (tracker issue -> local verification).
+####

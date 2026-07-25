@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: wagtail-flags
+  version: "5.5.0"
+  python_min: "3.12"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/wagtail_flags-${{ version }}.tar.gz
+  sha256: db1bb45943d8c7180ce3447baf41e8ef4e62ba49764825a1c16eb1f50145635b
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - setuptools >=63
+    - setuptools-scm >=8
+    - pip
+  run:
+    - python >=${{ python_min }},<4.0
+    - wagtail >6
+    - django-flags >5
+
+tests:
+  - python:
+      imports:
+        - wagtailflags
+      pip_check: true
+      python_version:
+      - ${{ python_min }}.*
+      - "*"
+
+about:
+  summary: Feature flags for Wagtail sites
+  homepage: https://github.com/cfpb/wagtail-flags
+  license: CC0-1.0
+  license_file: LICENSE
+  repository: https://github.com/cfpb/wagtail-flags
+
+extra:
+  recipe-maintainers:
+    - rxm7706

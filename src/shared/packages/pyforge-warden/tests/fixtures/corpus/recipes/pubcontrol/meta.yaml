@@ -1,0 +1,41 @@
+{% set name = "pubcontrol" %}
+{% set version = "3.5.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/pubcontrol-{{ version }}.tar.gz
+  sha256: a5ec6b3f53edfd005675518e5e4cc23b34122776835ae7c6dbd1db173d1ff0cb
+
+build:
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - pip
+  run:
+    - python >=3.8
+    - pyjwt >=1.5,<3
+    - requests >=2.4,<3
+
+test:
+  imports:
+    - pubcontrol
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/fanout/pypubcontrol
+  summary: EPCP library
+  license: MIT
+  license_file: COPYING
+
+extra:
+  recipe-maintainers:
+    - rxm7706

@@ -1,0 +1,80 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.9.2"
+
+package:
+  name: dacite
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/dacite/dacite-${{ version }}.tar.gz
+  sha256: 6ccc3b299727c7aa17582f0021f6ae14d5de47c7227932c47fec4cdfefd26f09
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - dataclasses
+
+tests:
+  - python:
+      imports:
+        - dacite
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/konradhalas/dacite
+  license: MIT
+  license_file: LICENSE
+  summary: Simple creation of data classes from dictionaries.
+  description: |
+    Simple creation of data classes from dictionaries.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+    - mands
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: dacite
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: dacite
+  cfe-purls:
+    - pkg:conda/dacite@${{ version }}?channel=conda-forge
+    - pkg:pypi/dacite@${{ version }}
+  cfe-upstream-repo: https://github.com/konradhalas/dacite
+  cfe-upstream-homepage: https://github.com/konradhalas/dacite
+  cfe-import-names: [dacite]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/dacite-feedstock
+  cfe-forge-recipe-updates-needed: [version-bump-to-1.9.2-fix, meta-yaml-to-recipe-yaml]
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-07-03T04:00:00Z
+  cfe-generated-by-version: 8.65.0
+  cfe-generated-at-datetime: 2026-07-03T04:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-07-03T04:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # 2026-07-03 punch-list full-gate pass (tracker issue -> local verification).
+####

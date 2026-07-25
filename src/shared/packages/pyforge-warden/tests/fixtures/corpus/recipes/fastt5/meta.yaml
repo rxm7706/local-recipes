@@ -1,0 +1,47 @@
+{% set name = "fastt5" %}
+{% set version = "0.1.4" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/fastt5-{{ version }}.tar.gz
+  sha256: dc49e3669a788e12673c4de37eceae048f1daa72c302bf7aa891369e5ff064ff
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python >=3.5
+    - pip
+  run:
+    - python >=3.5
+    - pytorch >=1.7.0,!=1.8.0
+    - onnx
+    - onnxruntime ==1.10.0
+    - transformers >4.6.1
+    - progress >=1.5
+    - sentencepiece
+    - psutil
+
+test:
+  imports:
+    - fastT5
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/Ki6an/fastT5
+  summary: boost inference speed of T5 models by 5x & reduce the model size by 3x using fastT5.
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

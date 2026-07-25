@@ -1,0 +1,40 @@
+{% set name = "parse" %}
+{% set version = "1.20.2" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/parse-{{ version }}.tar.gz
+  sha256: b41d604d16503c79d81af5165155c0b20f6c8d6c559efa66b4b695c3e5a0a0ce
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python
+    - setuptools >=61.2
+    - pip
+  run:
+    - python
+
+test:
+  imports:
+    - parse
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  summary: parse() is the opposite of format()
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

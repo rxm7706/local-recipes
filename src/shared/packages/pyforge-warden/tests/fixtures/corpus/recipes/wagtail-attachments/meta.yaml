@@ -1,0 +1,45 @@
+{% set name = "wagtail-attachments" %}
+{% set version = "4.1.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/wagtail-attachments-{{ version }}.tar.gz
+  sha256: e6dc948f25ce9b1fc12adc3b23c42588b380d09fbebae4f58cd89b31026c926f
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - setuptools >=53.0.0
+    - wheel
+    - pip
+  run:
+    - python >=3.8
+    - django <4.2,>=4.1
+    - wagtail <4.2,>=4.1
+    - django-auxiliaries <4.2,>=4.1
+
+test:
+  imports:
+    - wagtail_attachments
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/high-dimensional/wagtail-attachments
+  summary: A Wagtail app for managing attachments to ClusterableModels.
+  license: BSD-3-Clause
+  license_file: LICENSE.txt
+
+extra:
+  recipe-maintainers:
+    - rxm7706

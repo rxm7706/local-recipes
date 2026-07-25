@@ -1,0 +1,190 @@
+{% set name = "open-webui" %}
+{% set version = "0.6.33" %}
+{% set python_min = "3.11" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://github.com/open-webui/open-webui/archive/refs/tags/v{{ version }}.tar.gz
+  sha256: a637578903c9d6ede88d9ccc1badaf3b08f617008069a5ce52a13ad6c16afd43
+
+build:
+  number: 0
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - open-webui = open_webui:app
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+    - wheel
+    - hatchling
+  run:
+    - python >={{ python_min }},<3.13
+    - fastapi >=0.115.7
+    - uvicorn-standard >=0.23.0
+    - python-multipart >=0.0.6
+    - httpx >=0.24.0
+    - jinja2 >=3.1.0
+    - pydantic >=2.11.7
+    - requests >=2.30.0
+    - starlette >=0.27.0
+    - typing-extensions >=4.7.0
+
+    - aiofiles >=23.0.0
+    - pydantic-settings >=2.0.0
+    - python-dotenv >=1.0.0
+    - watchdog >=3.0.0
+    - websockets >=12.0
+    - markdown-it-py >=3.0.0
+    - mdurl >=0.1.0
+    - beautifulsoup4 >=4.12.0
+    - lxml >=4.9.0
+
+    - sqlalchemy
+    - aiocache
+    - aiohttp >=3.12.15
+    - async-timeout
+    - redis-py
+    - starlette-compress
+    - itsdangerous
+    - starsessions
+    - loguru >=0.7.3
+    - opentelemetry-exporter-otlp-proto-http
+    - cryptography
+    - markdown >=3.8.2
+    - asgiref >=3.8.1
+    - pyjwt >=2.10.1
+    - bcrypt >=4.3.0
+    - pytz
+    - peewee >=3.18.1
+    - peewee-migrate >=1.12.2
+    - python-socketio >=5.13.0
+    - pycrdt >=0.12.25
+    - authlib >=1.6.1
+    - alembic >=1.14.0
+    - chromadb >=0.6.3
+    #- openai >=1.0.0
+    #- cohere >=5.0.0
+    #- anthropic >=0.10.0
+    #- huggingface-hub >=0.19.0
+    #- langchain >=0.1.0
+    #- chromadb >=0.4.0
+    #- pinecone-client >=2.2.0
+    #- weaviate-client >=3.20.0
+
+    - accelerate
+    - aiocache
+    - aiofiles
+    - aiohttp==3.12.15
+    - alembic==1.14.0
+    - anthropic
+    - APScheduler==3.10.4
+    - argon2-cffi==25.1.0
+    - asgiref==3.8.1
+    - async-timeout
+    - Authlib==1.6.3
+    #- azure-ai-documentintelligence==1.0.2
+    - azure-identity==1.25.0
+    - azure-storage-blob==12.24.1
+    - bcrypt==5.0.0
+    #- black==25.9.0
+    - boto3==1.40.5
+    - chromadb==1.0.20
+    - cryptography
+    #- ddgs==9.0.0
+    - docx2txt==0.8
+    - einops==0.8.1
+    - fake-useragent==2.2.0
+    #- fastapi==0.118.0
+    #- faster-whisper==1.1.1
+    - fpdf2==2.8.2
+    - ftfy==6.2.3
+    - google-api-python-client
+    - google-auth-httplib2
+    - google-auth-oauthlib
+    - google-cloud-storage==2.19.0
+    - google-genai==1.38.0
+    - google-generativeai==0.8.5
+    - googleapis-common-protos==1.70.0
+    - httpx==0.28.1
+    - itsdangerous==2.2.0
+    - langchain-community==0.3.29
+    - langchain==0.3.27
+    - ldap3==2.9.1
+    - loguru==0.7.3
+    - Markdown==3.9
+    - mcp==1.14.1
+    - nltk==3.9.1
+    - onnxruntime==1.20.1
+    - openai
+    #- opencv-python-headless #==4.11.0.86
+    - openpyxl==3.1.5
+    - opensearch-py #==2.8.0
+    - pandas==2.2.3
+    - peewee-migrate #==1.12.2
+    - peewee==3.18.1
+    - pillow==11.3.0
+    - psutil
+    - pyarrow==20.0.0
+    - pycrdt==0.12.25
+    - pydantic==2.11.9
+    - pydub
+    - PyJWT==2.10.1
+    - pymdown-extensions==10.14.2
+    - PyMySQL==1.1.1
+    - pypandoc==1.15
+    - pypdf==6.0.0
+    - python-jose==3.4.0
+    - python-multipart==0.0.20
+    - python-pptx==1.0.2
+    - python-socketio==5.13.0
+    - pytube==15.0.0
+    - pyxlsb==1.0.10
+    - rank-bm25==0.2.2
+    #- rapidocr-onnxruntime==1.4.4
+    - redis-py
+    - requests==2.32.5
+    - RestrictedPython==8.0
+    - sentence-transformers==5.1.1
+    - sentencepiece
+    - pysoundfile ==0.13.1
+    - SQLAlchemy==2.0.38
+    - starlette-compress #==1.6.0
+    - starsessions==2.2.1
+    - tiktoken
+    - transformers
+    - unstructured==0.16.17
+    - uvicorn==0.37.0
+    - validators==0.35.0
+    - xlrd==2.0.1
+    - youtube-transcript-api==1.2.2
+
+
+test:
+  imports:
+    - open_webui
+  commands:
+    - open-webui --help
+
+about:
+  home: https://github.com/open-webui/open-webui
+  summary: The best chat UI for LLMs
+  license: MIT
+  license_file: LICENSE
+  description: |
+    Open WebUI is a chat interface for LLMs that allows you to chat with 
+    various language models through a web interface. It supports multiple 
+    LLM providers and offers a clean, modern UI for interacting with AI models.
+  doc_url: https://github.com/open-webui/open-webui
+  dev_url: https://github.com/open-webui/open-webui
+
+extra:
+  recipe-maintainers:
+    - rxm7706

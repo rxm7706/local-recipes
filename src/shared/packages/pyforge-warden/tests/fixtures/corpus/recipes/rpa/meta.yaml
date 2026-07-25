@@ -1,0 +1,41 @@
+{% set name = "rpa" %}
+{% set version = "1.50.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/rpa-{{ version }}.tar.gz
+  sha256: 28090ab66b930b0c7a604586714bdc6f6efc7b4df70cf4aa6f4e9c66409dbd24
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python
+    - pip
+  run:
+    - python
+    - tagui >=1.50.0
+
+test:
+  imports:
+    - rpa
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/tebelorg/RPA-Python
+  summary: RPA for Python is a Python package for RPA (robotic process automation)
+  license: Apache-2.0
+  license_file: LICENSE.txt
+
+extra:
+  recipe-maintainers:
+    - rxm7706

@@ -1,0 +1,98 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.8.9"
+
+package:
+  name: azure-monitor-opentelemetry
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/a/azure-monitor-opentelemetry/azure_monitor_opentelemetry-${{ version }}.tar.gz
+  sha256: 9cda4481c52e02cb3e8e11a34d2491fb07000ed32ee655d75de0747e7d24fea7
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - azure-core <2.0.0,>=1.28.0
+    - azure-core-tracing-opentelemetry >=1.0.0b11,<1.1.dev0
+    - azure-monitor-opentelemetry-exporter >=1.0.0b52,<1.1.dev0
+    - opentelemetry-instrumentation-django ==0.64b0
+    - opentelemetry-instrumentation-fastapi ==0.64b0
+    - opentelemetry-instrumentation-flask ==0.64b0
+    - opentelemetry-instrumentation-logging ==0.64b0
+    - opentelemetry-instrumentation-psycopg2 ==0.64b0
+    - opentelemetry-instrumentation-requests ==0.64b0
+    - opentelemetry-instrumentation-urllib ==0.64b0
+    - opentelemetry-instrumentation-urllib3 ==0.64b0
+    - opentelemetry-resource-detector-azure >=0.1.5,<0.2.dev0
+    - opentelemetry-sdk ==1.43.0
+
+tests:
+  - python:
+      imports:
+        - azure
+        - azure.monitor.opentelemetry
+        - azure.monitor.opentelemetry._autoinstrumentation
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: Microsoft Azure Monitor Opentelemetry Distro Client Library for Python
+  homepage: https://github.com/Azure/azure-sdk-for-python/tree/main/sdk/monitor/azure-monitor-opentelemetry
+  description: |
+    Microsoft Azure Monitor Opentelemetry Distro Client Library for Python.
+  repository: https://github.com/Azure/azure-sdk-for-python/tree/main/sdk/monitor/azure-monitor-opentelemetry
+  documentation: https://github.com/Azure/azure-sdk-for-python/blob/main/sdk/monitor/azure-monitor-opentelemetry/README.md
+  license: Apache-2.0 AND MIT
+  license_file:
+    - LICENSE
+    - NOTICE.txt
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+    - conda-forge/opentelemetry-api
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: azure-monitor-opentelemetry
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: azure-monitor-opentelemetry
+  cfe-purls:
+    - pkg:conda/azure-monitor-opentelemetry@${{ version }}?channel=conda-forge
+    - pkg:pypi/azure-monitor-opentelemetry@${{ version }}
+  cfe-upstream-repo: https://github.com/Azure/azure-sdk-for-python/tree/main/sdk/monitor/azure-monitor-opentelemetry
+  cfe-upstream-homepage: https://github.com/Azure/azure-sdk-for-python/tree/main/sdk/monitor/azure-monitor-opentelemetry
+  cfe-import-names: [azure]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/azure-monitor-opentelemetry-feedstock
+  cfe-forge-recipe-updates-needed: [version-bump-to-1.8.9]
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-07-03T04:00:00Z
+  cfe-generated-by-version: 8.65.0
+  cfe-generated-at-datetime: 2026-07-03T04:00:00Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-07-03T04:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # 2026-07-03 punch-list full-gate pass (tracker issue -> local verification).
+####

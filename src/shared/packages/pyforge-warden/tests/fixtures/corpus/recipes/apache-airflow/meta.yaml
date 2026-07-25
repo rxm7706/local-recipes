@@ -1,0 +1,591 @@
+{% set name = "airflow" %}
+{% set version = "2.7.0" %}
+{% set sha256 = "d4010897f1daa0b4584c294893df799a56c8911dad11a1f139ce13fe41b39cec" %}
+
+package:
+  name: {{ name|lower }}-split
+  version: {{ version }}
+
+source:
+  fn: {{ name }}-{{ version }}.tar.gz
+  url: https://github.com/apache/{{ name }}/archive/{{ version }}.tar.gz
+  sha256: {{ sha256 }}
+
+build:
+  skip: true  # [win]
+  number: 0
+
+outputs:
+  - name: {{ name }}
+    script: install_airflow.sh
+    build:
+      entry_points:
+        - airflow=airflow.__main__:main
+    requirements:
+      build:
+        - python                                 # [build_platform != target_platform]
+        - cross-python_{{ target_platform }}     # [build_platform != target_platform]
+        # for md5sum, cksum, sha256sum
+        - coreutils
+        - yarn <2
+      host:
+        - python
+        - pip
+        - setuptools >=67.2.0,<68.0.0
+        - docutils
+        - gitpython
+      run:
+        - python
+        - alembic >=1.6.3,<2.0
+        - argcomplete >=1.10
+        - asgiref
+        - attrs >=22.1.0
+        - blinker
+        - cattrs >=22.1.0
+        - colorlog >=4.0.2,<5.0
+        - configupdater >=3.1.1
+        - connexion >=2.10.0
+
+        # connexion[flask] dependencies
+        - flask >=1.0.4,<3
+        - itsdangerous >=0.24
+
+        - cron-descriptor >=1.2.24
+        - croniter >=0.3.17
+        - cryptography >=0.9.3
+        - deprecated >=1.2.13
+        - dill >=0.2.2
+        - flask >=2.2,<2.3
+        - flask-appbuilder 4.3.3
+        - flask-caching >=1.5.0
+        - flask-login >=0.6.2
+        - flask-session >=0.4.0
+        - flask-wtf >=0.15
+        - google-re2 >=1.0
+        - python-graphviz >=0.12
+        - gunicorn >=20.1.0
+        - httpx
+        - importlib-metadata >=1.7,<5.0.0  # [py<39]
+        - importlib-resources >=5.2  # [py<39]
+        - itsdangerous >=2.0
+        - jinja2 >=3.0.0
+        - jsonschema >=4.18.0
+        - lazy-object-proxy
+        - linkify-it-py >=2.0.0
+        - lockfile >=0.12.2
+        - markdown >=3.0
+        - markdown-it-py >=2.1.0
+        - markupsafe >=1.1.1
+        - marshmallow-oneofschema >=2.0.1
+        - mdit-py-plugins >=0.3.0
+        # From upstream: Pip can not find a version that satisfies constraints if opentelemetry-api is not pinned.
+        - opentelemetry-api 1.15.0
+        - opentelemetry-exporter-otlp
+        - packaging >=14.0
+        - pathspec >=0.9.0
+        - pendulum >=2.0
+        - pluggy >=1.0
+        - psutil >=4.2.0
+        - pydantic >=1.10.0,<2.0.0
+        - pygments >=2.0.1
+        - pyjwt >=2.0.0
+        - python-daemon >=3.0.0
+        - python-dateutil >=2.3
+        - python-nvd3 >=0.15.0
+        - python-slugify >=5.0
+        - rfc3339-validator >=0.1.4
+        - rich >=12.4.4
+        - rich-argparse >=1.0.0
+        - setproctitle >=1.1.8
+        - sqlalchemy >=1.4,<2.0
+        - sqlalchemy-jsonfield >=1.0
+        - tabulate >=0.7.5
+        - tenacity >=6.2.0,!=8.2.0
+        - termcolor >=1.1.0
+        - typing-extensions >=4.0.0
+        - unicodecsv >=0.14.1
+        - werkzeug >=2.0
+        - apache-airflow-providers-common-sql
+        - apache-airflow-providers-ftp
+        - apache-airflow-providers-http
+        - apache-airflow-providers-imap
+        - apache-airflow-providers-sqlite
+
+    test:
+      commands:
+        - pip check
+        - airflow --help
+        # not working for linux emulation because passlib, a dependency of
+        # sqlalchemy ends up creating a bcrypt hash, which Ubuntu CI's glibc
+        # cannot handle.
+        # https://github.com/conda-forge/airflow-feedstock/pull/103#issuecomment-1468162070
+        - airflow db init  # [not linux-aarch64 and not linux-ppc64le]
+      imports:
+        - airflow
+        - airflow.api
+        - airflow.api.auth
+        - airflow.api.auth.backend
+        - airflow.api.client
+        - airflow.api.common
+        - airflow.api.common.experimental
+        - airflow.api_connexion
+        - airflow.cli
+        - airflow.cli.commands
+        - airflow.config_templates
+        - airflow.contrib
+        - airflow.contrib.hooks
+        - airflow.contrib.operators
+        - airflow.contrib.secrets
+        - airflow.contrib.sensors
+        - airflow.contrib.task_runner
+        - airflow.contrib.utils
+        - airflow.example_dags
+        - airflow.example_dags.subdags
+        - airflow.executors
+        - airflow.hooks
+        - airflow.jobs
+        - airflow.kubernetes
+        - airflow.lineage
+        - airflow.macros
+        - airflow.migrations
+        - airflow.migrations.versions
+        - airflow.models
+        - airflow.operators
+        - airflow.secrets
+        - airflow.security
+        - airflow.sensors
+        - airflow.serialization
+        - airflow.task
+        - airflow.task.task_runner
+        - airflow.ti_deps
+        - airflow.ti_deps.deps
+        - airflow.utils
+        - airflow.utils.log
+        - airflow.www
+        - airflow.www.api
+        - airflow.www.api.experimental
+      requires:
+        - pip
+
+  # alternative name for the core package
+  - name: apache-airflow
+    requirements:
+      host:
+        - python
+      run:
+        - python
+        - {{ pin_subpackage(name, max_pin='x.x.x.x.x.x') }}
+    test:
+      imports:
+        - airflow
+      commands:
+        - pip check
+      requires:
+        - pip
+
+  - name: {{ name }}-with-apache-atlas
+    requirements:
+      host:
+        - python
+      run:
+        - python
+        - {{ pin_subpackage(name, max_pin='x.x.x.x.x.x') }}
+        - atlasclient >=0.1.2
+    test:
+      imports:
+        - airflow.lineage
+        - airflow.lineage.entities
+      commands:
+        - pip check
+      requires:
+        - pip
+
+  - name: {{ name }}-with-apache-webhdfs
+    requirements:
+      host:
+        - python
+      run:
+        - python
+        - {{ pin_subpackage(name, max_pin='x.x.x.x.x.x') }}
+        - python-hdfs >=2.0.4
+        # avro extra
+        - fastavro >=0.21.19
+        # kerberos extra
+        - requests-kerberos >=0.7.0
+        # dataframe extra
+        - fastavro >=0.21.19
+        - pandas>=0.14.1
+    test:
+      imports:
+        - airflow
+        - hdfs
+        - airflow.hooks.webhdfs_hook
+      commands:
+        - pip check
+      requires:
+        - pip
+
+  - name: {{ name }}-with-async
+    requirements:
+      host:
+        - python
+      run:
+        - python
+        - {{ pin_subpackage(name, max_pin='x.x.x.x.x.x') }}
+        - eventlet >=0.33.3
+        - gevent >=0.13
+        - greenlet >=0.4.9
+    test:
+      imports:
+        - airflow
+        - eventlet
+        - gevent
+        - greenlet
+      commands:
+        - pip check
+      requires:
+        - pip
+
+  - name: {{ name }}-with-celery
+    build:
+      skip: True  # [arm64 or aarch64 or ppc64le]
+    requirements:
+      host:
+        - python
+      run:
+        - python
+        - {{ pin_subpackage(name, max_pin='x.x.x.x.x.x') }}
+        - celery >=5.2.3,<6
+        - flower >=1.0.0
+    test:
+      imports:
+        - airflow
+        - celery
+      commands:
+        - pip check
+      requires:
+        - pip
+
+  - name: {{ name }}-with-cgroups
+    requirements:
+      host:
+        - python
+      run:
+        - python
+        - {{ pin_subpackage(name, max_pin='x.x.x.x.x.x') }}
+        - cgroupspy >=0.2.2
+    test:
+      imports:
+        - airflow
+        - cgroupspy
+        - airflow.contrib.task_runner.cgroup_task_runner
+      commands:
+        - pip check
+      requires:
+        - pip
+
+  - name: {{ name }}-with-cncf-kubernetes
+    requirements:
+      host:
+        - python
+      run:
+        - python
+        - {{ pin_subpackage(name, max_pin='x.x.x.x.x.x') }}
+        - cryptography >=2.0.0
+        - python-kubernetes >=21.7.0,<24
+    test:
+      imports:
+        - airflow
+      commands:
+        - pip check
+      requires:
+        - pip
+
+  - name: {{ name }}-with-dask
+    requirements:
+      host:
+        - python
+      run:
+        - python
+        - {{ pin_subpackage(name, max_pin='x.x.x.x.x.x') }}
+        - cloudpickle >=1.4.1
+        - dask >=2.9.0,!=2022.10.1,!=2023.5.0
+        - distributed >=2.11.1,!=2023.5.0
+    test:
+      imports:
+        - airflow
+        - distributed
+        - airflow.executors.dask_executor
+      commands:
+        - pip check
+      requires:
+        - pip
+
+  - name: {{ name }}-with-deprecated-api
+    requirements:
+      host:
+        - python
+      run:
+        - python
+        - {{ pin_subpackage(name, max_pin='x.x.x.x.x.x') }}
+        - requests >=2.26.0
+    test:
+      imports:
+        - airflow
+      commands:
+        - pip check
+      requires:
+        - pip
+
+
+  - name: {{ name }}-with-github_enterprise
+    requirements:
+      host:
+        - python
+      run:
+        - python
+        - {{ pin_subpackage(name, max_pin='x.x.x.x.x.x') }}
+        - flask-appbuilder 4.3.3
+        # flask-appbuilder[oauth] for 4.3.3
+        - authlib >=0.14,<2.0.0
+    test:
+      imports:
+        - airflow
+        - authlib
+      commands:
+        - pip check
+      requires:
+        - pip
+
+  - name: {{ name }}-with-google_auth
+    requirements:
+      host:
+        - python
+      run:
+        - python
+        - {{ pin_subpackage(name, max_pin='x.x.x.x.x.x') }}
+        - flask-appbuilder 4.3.3
+        # flask-appbuilder[oauth] for 4.3.3
+        - authlib >=0.14,<2.0.0
+    test:
+      imports:
+        - airflow
+        - authlib
+      commands:
+        - pip check
+      requires:
+        - pip
+
+  - name: {{ name }}-with-kerberos
+    requirements:
+      host:
+        - python
+      run:
+        - python
+        - {{ pin_subpackage(name, max_pin='x.x.x.x.x.x') }}
+        - pykerberos >=1.1.13
+        - requests-kerberos >=0.10.0
+        - thrift_sasl >=0.2.0
+    test:
+      imports:
+        - airflow
+        - kerberos
+        # failing because of bcrypt issue in docker images, see:
+        # https://github.com/conda-forge/airflow-feedstock/pull/103#issuecomment-1468162070
+        - airflow.api.auth.backend.kerberos_auth  # [not aarch64 and not ppc64le]
+      commands:
+        - pip check
+      requires:
+        - pip
+
+  - name: {{ name }}-with-ldap
+    build:
+      skip: True  # [arm64 or aarch64 or ppc64le]
+    requirements:
+      host:
+        - python
+      run:
+        - python
+        - {{ pin_subpackage(name, max_pin='x.x.x.x.x.x') }}
+        - ldap3 >=2.5.1
+        - python-ldap
+    test:
+      imports:
+        - airflow
+        - ldap3
+      commands:
+        - pip check
+      requires:
+        - pip
+
+  - name: {{ name }}-with-leveldb
+    build:
+      skip: True  # [arm64 or aarch64 or ppc64le]
+    requirements:
+      host:
+        - python
+      run:
+        - python
+        - {{ pin_subpackage(name, max_pin='x.x.x.x.x.x') }}
+        - plyvel
+    test:
+      imports:
+        - airflow
+        - plyvel
+      commands:
+        - pip check
+      requires:
+        - pip
+
+  - name: {{ name }}-with-pandas
+    requirements:
+      host:
+        - python
+      run:
+        - python
+        - {{ pin_subpackage(name, max_pin='x.x.x.x.x.x') }}
+        - pandas >=0.17.1
+        - pyarrow >=9.0.0
+    test:
+      imports:
+        - airflow
+        - pandas
+      commands:
+        - pip check
+      requires:
+        - pip
+
+  - name: {{ name }}-with-password
+    requirements:
+      host:
+        - python
+      run:
+        - python
+        - {{ pin_subpackage(name, max_pin='x.x.x.x.x.x') }}
+        - bcrypt >=2.0.0
+        - flask-bcrypt >=0.7.1
+    test:
+      imports:
+        - airflow
+        - flask_bcrypt
+      commands:
+        - pip check
+      requires:
+        - pip
+
+  - name: {{ name }}-with-rabbitmq
+    requirements:
+      host:
+        - python
+      run:
+        - python
+        - {{ pin_subpackage(name, max_pin='x.x.x.x.x.x') }}
+        - amqp
+    test:
+      imports:
+        - airflow
+        - amqp
+      commands:
+        - pip check
+      requires:
+        - pip
+
+  - name: {{ name }}-with-sentry
+    requirements:
+      host:
+        - python
+      run:
+        - python
+        - {{ pin_subpackage(name, max_pin='x.x.x.x.x.x') }}
+        - blinker >=1.1
+        - sentry-sdk >=0.8.0
+    test:
+      imports:
+        - airflow
+        - sentry_sdk
+        - airflow.sentry
+      commands:
+        - pip check
+      requires:
+        - pip
+
+  - name: {{ name }}-with-statsd
+    requirements:
+      host:
+        - python
+      run:
+        - python
+        - {{ pin_subpackage(name, max_pin='x.x.x.x.x.x') }}
+        - statsd >=3.3.0
+    test:
+      imports:
+        - airflow
+        - statsd
+      commands:
+        - pip check
+      requires:
+        - pip
+
+  - name: {{ name }}-with-virtualenv
+    requirements:
+      host:
+        - python
+      run:
+        - python
+        - {{ pin_subpackage(name, max_pin='x.x.x.x.x.x') }}
+        - virtualenv
+    test:
+      imports:
+        - airflow
+        - virtualenv
+      commands:
+        - pip check
+      requires:
+        - pip
+
+about:
+  home: http://airflow.apache.org
+  license: Apache-2.0
+  license_file:
+    - LICENSE
+    - NOTICE
+    - licenses/LICENSE-bootstrap3-typeahead.txt
+    - licenses/LICENSE-bootstrap.txt
+    - licenses/LICENSE-d3js.txt
+    - licenses/LICENSE-d3-shape.txt
+    - licenses/LICENSE-d3-tip.txt
+    - licenses/LICENSE-dagre-d3.txt
+    - licenses/LICENSE-datatables.txt
+    - licenses/LICENSE-elasticmock.txt
+    - licenses/LICENSE-eonasdan-bootstrap-datetimepicker.txt
+    - licenses/LICENSE-flask-kerberos.txt
+    - licenses/LICENSE-hue.txt
+    - licenses/LICENSE-jqclock.txt
+    - licenses/LICENSE-jquery.txt
+    - licenses/LICENSE-moment.txt
+    - licenses/LICENSE-normalize.txt
+    - licenses/LICENSE-unicodecsv.txt
+  summary: |
+    Airflow is a platform to programmatically author, schedule and monitor
+    workflows
+
+  description: |
+    Use airflow to author workflows as directed acyclic graphs (DAGs)
+    of tasks. The airflow scheduler executes your tasks on an array of
+    workers while following the specified dependencies. Rich command
+    line utilities make performing complex surgeries on DAGs a snap.
+    The rich user interface makes it easy to visualize pipelines
+    running in production, monitor progress, and troubleshoot issues
+    when needed.
+
+    When workflows are defined as code, they become more maintainable,
+    versionable, testable, and collaborative.
+
+  doc_url: http://pythonhosted.org/airflow/profiling.html
+  dev_url: https://github.com/apache/airflow
+
+extra:
+  recipe-maintainers:
+    - sodre
+    - halldc
+    - xylar

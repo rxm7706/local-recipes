@@ -1,0 +1,67 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+context:
+  name: ppt-master
+  version: "3.1.0"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/hugohe3/ppt-master/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: 451dbe3fbc4e60e507d2d40564a5e496960d737546bf522c61679ffea25b5bab
+
+build:
+  number: 0
+  noarch: generic
+
+requirements:
+  run:
+    - python >=3.10
+    - python-pptx >=0.6.21
+    - pillow >=9.0.0
+    - requests >=2.31.0
+    - beautifulsoup4 >=4.12.0
+    - numpy >=1.20.0
+    - reportlab >=4.0.0
+    - svglib >=1.5.0
+    - pymupdf >=1.23.0
+    - google-genai >=1.0.0
+    # v3 additions (upstream marks all skill deps optional; edge-tts is
+    # omitted — not on conda-forge — so audio narration degrades gracefully)
+    - mammoth >=1.6.0
+    - markdownify >=0.11.6
+    # upstream wants >=0.18; conda-forge tops out at 0.17 — loosened,
+    # TODO tighten when conda-forge catches up
+    - ebooklib >=0.17
+    - nbconvert >=7.0.0
+    - openpyxl >=3.1.0
+    - curl-cffi >=0.7.0
+    - flask >=3.0.0
+
+tests:
+  - script:
+      - if: not win
+        then:
+          - ppt-master-install --help
+          - test -d "${CONDA_PREFIX}/share/ppt-master/skills/ppt-master"
+          - test -f "${CONDA_PREFIX}/share/ppt-master/skills/ppt-master/SKILL.md"
+          - test -d "${CONDA_PREFIX}/share/ppt-master/skills/ppt-master/scripts"
+          - test -d "${CONDA_PREFIX}/share/ppt-master/skills/ppt-master/templates"
+      - if: win
+        then:
+          - ppt-master-install.bat --help
+          - if not exist "%CONDA_PREFIX%\share\ppt-master\skills\ppt-master" exit 1
+          - if not exist "%CONDA_PREFIX%\share\ppt-master\skills\ppt-master\SKILL.md" exit 1
+
+about:
+  homepage: https://github.com/hugohe3/ppt-master
+  repository: https://github.com/hugohe3/ppt-master
+  license: MIT
+  license_file: LICENSE
+  summary: Claude skill for creating professional PowerPoint presentations using SVG-based templates
+
+extra:
+  recipe-maintainers:
+    - rxm7706

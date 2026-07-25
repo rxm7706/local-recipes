@@ -1,0 +1,96 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: bmad-creative-intelligence-suite
+  version: "0.2.1"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/bmad-code-org/bmad-module-creative-intelligence-suite/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: 2e85ce42e0a98e135694f89e678c9949498708759e13ff525f34216cc4fe1cde
+
+build:
+  number: 0
+  noarch: generic
+
+requirements:
+  run:
+    - python >=3.10
+
+tests:
+  - script:
+      - if: not win
+        then:
+          - bmad-cis-install --help
+          - test -d "${CONDA_PREFIX}/share/bmad-creative-intelligence-suite/skills"
+          - test -f "${CONDA_PREFIX}/share/bmad-creative-intelligence-suite/module.yaml"
+          - test -d "${CONDA_PREFIX}/share/bmad-creative-intelligence-suite/skills/bmad-cis-agent-brainstorming-coach"
+          - test -d "${CONDA_PREFIX}/share/bmad-creative-intelligence-suite/skills/bmad-cis-design-thinking"
+      - if: win
+        then:
+          - bmad-cis-install.bat --help
+          - if not exist "%CONDA_PREFIX%\share\bmad-creative-intelligence-suite\skills" exit 1
+          - if not exist "%CONDA_PREFIX%\share\bmad-creative-intelligence-suite\module.yaml" exit 1
+
+about:
+  homepage: https://github.com/bmad-code-org/bmad-module-creative-intelligence-suite
+  documentation: http://cis-docs.bmad-method.org
+  repository: https://github.com/bmad-code-org/bmad-module-creative-intelligence-suite
+  license: MIT
+  license_file: LICENSE
+  summary: BMad Method creative agent suite for innovation, design thinking, and storytelling
+  description: |
+    The Creative Intelligence Suite is a standalone BMad Method module offering agents
+    and workflows designed to cultivate creativity. It provides tools for innovation
+    strategy, design thinking, brainstorming, problem-solving, storytelling, and
+    presentation across the early conceptual phases of development.
+
+    It ships six agents (bmad-cis-agent-brainstorming-coach,
+    bmad-cis-agent-creative-problem-solver, bmad-cis-agent-design-thinking-coach,
+    bmad-cis-agent-innovation-strategist, bmad-cis-agent-presentation-master,
+    bmad-cis-agent-storyteller) and four workflows (bmad-cis-design-thinking,
+    bmad-cis-innovation-strategy, bmad-cis-problem-solving, bmad-cis-storytelling).
+
+    After installation, run ``bmad-cis-install`` in your project directory to copy
+    the skills into ``.claude/skills/`` so Claude Code can discover them.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: bmad-creative-intelligence-suite
+  cfe-upstream-registry: github
+  cfe-upstream-name: bmad-code-org/bmad-module-creative-intelligence-suite
+  cfe-purls:
+    - pkg:conda/bmad-creative-intelligence-suite@${{ version }}?channel=conda-forge
+    - pkg:github/bmad-code-org/bmad-module-creative-intelligence-suite@v${{ version }}
+  cfe-upstream-repo: https://github.com/bmad-code-org/bmad-module-creative-intelligence-suite
+  cfe-upstream-homepage: https://github.com/bmad-code-org/bmad-module-creative-intelligence-suite
+  cfe-import-names: []
+  cfe-source-kind: github-tag
+  cfe-noarch: generic
+  cfe-pip-check: "false:not-a-python-package"
+  cfe-on-conda-forge-status: pending-approval-on-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-submission-pr: https://github.com/conda-forge/staged-recipes/pull/33124
+  cfe-last-checked: "2026-07-12T14:52:00Z"
+  cfe-generated-by-version: 8.76.0
+  cfe-generated-at-datetime: "2026-07-12T14:52:00Z"
+  cfe-local-build-status: success
+  cfe-local-build-datetime: "2026-07-12T15:59:29Z"
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # Version bumped 0.2.0 -> 0.2.1 (latest upstream tag) in the
+#    # 2026-07-12 BMAD-recipe sweep.
+####

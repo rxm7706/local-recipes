@@ -1,0 +1,87 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.1.15"
+
+package:
+  name: redshift_connector
+  version: ${{ version }}
+
+source:
+  url: https://github.com/aws/amazon-redshift-python-driver/archive/v${{ version }}.tar.gz
+  sha256: 45bf54ad345a49c736d2d2e3c7ee8e68bc409b3c22ea6f474b300d31977e9539
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - scramp <1.5.0,>=1.2.0
+    - pytz >=2020.1
+    - beautifulsoup4 <5.0.0,>=4.13.5
+    - boto3 <2.0.0,>=1.42.22
+    - requests <3.0.0,>=2.23.0
+    - lxml <7.0.0,>=6.1.0
+    - botocore <2.0.0,>=1.12.201
+    - packaging
+    - setuptools
+
+tests:
+  - python:
+      imports:
+        - redshift_connector
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/aws/amazon-redshift-python-driver
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Redshift interface library
+  description: |
+    Redshift interface library
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: redshift_connector
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: redshift-connector
+  cfe-purls:
+    - pkg:conda/redshift_connector@${{ version }}?channel=conda-forge
+    - pkg:pypi/redshift-connector@${{ version }}
+  cfe-upstream-repo: https://github.com/aws/amazon-redshift-python-driver
+  cfe-upstream-homepage: https://github.com/aws/amazon-redshift-python-driver
+  cfe-import-names: [redshift_connector]
+  cfe-source-kind: github-tag:no-sdist-on-pypi-G54
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/redshift_connector-feedstock
+  cfe-forge-recipe-updates-needed: [version-bump-to-2.1.15, meta-yaml-to-recipe-yaml]
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-07-03T04:00:00Z
+  cfe-generated-by-version: 8.65.0
+  cfe-generated-at-datetime: 2026-07-03T04:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-07-03T04:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # 2026-07-03 punch-list full-gate pass (tracker issue -> local verification).
+####

@@ -1,0 +1,43 @@
+{% set name = "django-ipware" %}
+{% set version = "6.0.5" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/django-ipware-{{ version }}.tar.gz
+  sha256: b39e27403287d6beb0513e694024017dba58d129fd410a1014ac8a1584e73fce
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - setuptools >=42
+    - wheel
+    - pip
+  run:
+    - python >=3.8
+    - python-ipware >=2.0.3
+
+test:
+  imports:
+    - ipware
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/un33k/django-ipware
+  summary: A Django application to retrieve user's IP address
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

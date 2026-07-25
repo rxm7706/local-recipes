@@ -1,0 +1,78 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.1.0"
+
+package:
+  name: negspacy
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/n/negspacy/negspacy-${{ version }}.tar.gz
+  sha256: 13d8c4d7bd1b9f5c7e83bc1d7e4689ca70ace3232b8b0c38c22a3807fc0b9a1f
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - spacy <4.0,>=3.8
+
+tests:
+  - python:
+      imports:
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/jenojp/negspacy
+  license: MIT
+  license_file: LICENSE
+  summary: A spaCy pipeline component for negating concepts in text (NegEx).
+  description: |
+    A spaCy pipeline component for negating concepts in text (NegEx).
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: negspacy
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: negspacy
+  cfe-purls:
+    - pkg:conda/negspacy@${{ version }}?channel=conda-forge
+    - pkg:pypi/negspacy@${{ version }}
+  cfe-upstream-repo: https://github.com/jenojp/negspacy
+  cfe-upstream-homepage: https://github.com/jenojp/negspacy
+  cfe-import-names: [negspacy]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/negspacy-feedstock
+  cfe-forge-recipe-updates-needed: [version-bump-to-1.1.0]
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-07-04T22:24:52Z
+  cfe-generated-by-version: 8.65.0
+  cfe-generated-at-datetime: 2026-07-03T04:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-07-03T04:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # 2026-07-03 punch-list full-gate pass (tracker issue -> local verification).
+####

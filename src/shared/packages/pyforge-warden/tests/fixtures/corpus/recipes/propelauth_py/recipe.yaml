@@ -1,0 +1,82 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "4.4.0"
+
+package:
+  name: propelauth_py
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/propelauth-py/propelauth_py-${{ version }}.tar.gz
+  sha256: 0767ff4765db9eeb71a4097f3e92a890e6cd53422fcfa813e0ed03a8e048b5b4
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - httpx >=0.28.1
+    - pyjwt <3,>=2
+    - requests
+
+tests:
+  - python:
+      imports:
+        - propelauth_py
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/propelauth/propelauth-py
+  license: MIT
+  license_file: LICENSE
+  summary: A python authentication library
+  description: |
+    A python authentication library
+  repository: https://github.com/propelauth/propelauth-py
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: propelauth_py
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: propelauth_py
+  cfe-purls:
+    - pkg:conda/propelauth_py@${{ version }}?channel=conda-forge
+    - pkg:pypi/propelauth-py@${{ version }}
+  cfe-upstream-repo: https://github.com/propelauth/propelauth-py
+  cfe-upstream-homepage: https://github.com/propelauth/propelauth-py
+  cfe-import-names: [propelauth_py]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/propelauth_py-feedstock
+  cfe-forge-recipe-updates-needed: [version-bump-to-4.4.0]
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-07-04T22:24:52Z
+  cfe-generated-by-version: 8.65.0
+  cfe-generated-at-datetime: 2026-07-03T04:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-07-03T04:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # 2026-07-03 punch-list full-gate pass (tracker issue -> local verification).
+####

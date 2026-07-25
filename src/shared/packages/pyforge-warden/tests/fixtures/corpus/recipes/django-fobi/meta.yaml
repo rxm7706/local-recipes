@@ -1,0 +1,52 @@
+{% set name = "django-fobi" %}
+{% set version = "0.19.9" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/django-fobi-{{ version }}.tar.gz
+  sha256: 72964cf281aa53a8975ed1d05c58c4d4e981f3db0d86c2a7e90b9842d5307471
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python
+    - django
+    - pip
+  run:
+    - python
+    - bleach
+    - django-autoslug >=1.9.4
+    - django-formtools >=2.0
+    - django-nine >=0.2.3
+    - django-nonefield >=0.1
+    - pillow >=2.0.0
+    - requests >=1.0.0
+    - six >=1.9
+    - unidecode >=0.04.1
+    - vishap >=0.1.5,<2.0
+    - easy-thumbnails >=2.4.1
+
+test:
+  imports:
+    - fobi
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/barseghyanartur/django-fobi/
+  summary: 'Form generator/builder application for Django done right: customisable, modular, user- and developer- friendly.'
+  license: GPL-2.0-or-later
+  license_file: src/fobi/static/font-awesome/font/license.txt
+
+extra:
+  recipe-maintainers:
+    - rxm7706

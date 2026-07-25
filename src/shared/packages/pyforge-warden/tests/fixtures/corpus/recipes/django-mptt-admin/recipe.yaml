@@ -1,0 +1,83 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.9.0"
+
+package:
+  name: django-mptt-admin
+  version: ${{ version }}
+
+source:
+  url: https://github.com/mbraak/django-mptt-admin/archive/refs/tags/${{ version }}.tar.gz
+  sha256: f12cc4bb3a403637ae57508253304bf58389415eb59a7c00e6a8f56c4d3c5e43
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - django-mptt
+
+tests:
+  - python:
+      imports:
+        - django_mptt_admin
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/mbraak/django-mptt-admin
+  license: Apache-2.0
+  license_file: LICENSE.rst
+  summary: Django-mptt-admin provides a nice Django Admin interface for Mptt 
+    models
+  description: Django-mptt-admin provides a nice Django Admin interface for 
+    django-mptt models.
+  repository: https://github.com/mbraak/django-mptt-admin
+  documentation: https://mbraak.github.io/django-mptt-admin/
+extra:
+  recipe-maintainers:
+    - rxm7706
+    - cshaley
+    - sannykr
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: django-mptt-admin
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: django-mptt-admin
+  cfe-purls:
+    - pkg:conda/django-mptt-admin@${{ version }}?channel=conda-forge
+    - pkg:pypi/django-mptt-admin@${{ version }}
+  cfe-upstream-repo: https://github.com/mbraak/django-mptt-admin
+  cfe-upstream-homepage: https://github.com/mbraak/django-mptt-admin
+  cfe-import-names: [django_mptt_admin]
+  cfe-source-kind: github-tag:no-sdist-on-pypi-G54
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django-mptt-admin-feedstock
+  cfe-forge-recipe-updates-needed: [version-bump-to-2.9.0]
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-07-04T22:24:52Z
+  cfe-generated-by-version: 8.65.0
+  cfe-generated-at-datetime: 2026-07-03T04:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-07-03T04:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # 2026-07-03 punch-list full-gate pass (tracker issue -> local verification).
+####

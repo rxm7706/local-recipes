@@ -1,0 +1,51 @@
+{% set name = "duckdb-wasm" %}
+{% set version = "1.29.0" %}
+
+{% set PKG_NAME = "duckdb-wasm" %}
+{% set PKG_VERSION = "{{ version }}" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://github.com/duckdb/duckdb-wasm/archive/refs/tags/v{{ version }}.tar.gz
+  sha256: f1547245b0647a297d331684fa63905f62ff752df706fab6c8ce3da25ad790fd
+
+build:
+  number: 0
+  skip: true  # [win]
+
+requirements:
+  build:
+    #- {{ compiler('c') }}
+    #- {{ compiler('cxx') }}
+    #- {{ stdlib('c') }}
+    #- make
+    - nodejs
+    - yarn <2
+    #- pnpm
+    #- pnpm-licenses
+    - python
+  host:
+    - nodejs
+    - yarn <2
+  run:
+    - nodejs
+
+test:
+  commands:
+    - {{ name }} --help
+
+about:
+  home: https://github.com/duckdb/duckdb-wasm
+  license: MIT
+  license_file:
+    - LICENSE
+    - third-party-licenses.txt
+  summary: DuckDB-Wasm is an in-process analytical SQL database for the browser.
+  dev_url: https://github.com/duckdb/duckdb-wasm
+
+extra:
+  recipe-maintainers:
+    - rxm7706

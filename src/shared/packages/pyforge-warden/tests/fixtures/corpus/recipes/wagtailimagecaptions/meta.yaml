@@ -1,0 +1,44 @@
+{% set name = "wagtailimagecaptions" %}
+{% set version = "0.2.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/wagtailimagecaptions-{{ version }}.tar.gz
+  sha256: 5f62f04c2b78f1b68aa5d1b5335321f1572453520ecc5afee9d4a61a791e89ec
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - flit-core >=3.2,<4
+    - pip
+  run:
+    - python >=3.8
+    - django >=4.1
+    - wagtail >=5.0
+    - pillow >=9.5.0
+
+test:
+  imports:
+    - wagtailimagecaptions
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/newshour/wagtailimagecaptions/
+  summary: A Django app for extending the Wagtail Image model to add captions and alt fields as well as the extraction of IPTC image meta data.
+  license: BSD-3-Clause
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

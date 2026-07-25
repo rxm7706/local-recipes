@@ -1,0 +1,97 @@
+{% set name = "salt" %}
+{% set version = "3007.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/salt-{{ version }}.tar.gz
+  sha256: b933ac4cb3e4b1118b46dada55c9cc6bdc6f0f94b4c92877aec44b25c6a28c9a
+
+  #patches:
+    #- setup.py.patch  # [win]
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - wheel
+    - pyzmq
+    - requests
+    - pip
+    #- https://github.com/saltstack/salt/blob/master/requirements/constraints.txt
+    - setuptools >=65.6.3,<69.0
+    - setuptools-scm <8.0.0
+    - networkx >=3.0,<3.2
+    #- setup.py.patch
+  run:
+    - python >={{ python_min }},<3.13
+    #- https://github.com/conda-forge/salt-feedstock/blob/main/recipe/meta.yaml#L24
+    - openssl
+    - pycrypto
+    - pyzmq
+    - apache-libcloud
+    - pywin32
+    #- https://github.com/saltstack/salt/blob/master/requirements/base.txt
+    - jinja2 >=3.1.5
+    - jmespath
+    - msgpack-python >=1.0.0
+    - pyyaml
+    - markupsafe
+    - networkx
+    - requests >=2.32.3
+    - certifi >=2024.7.4
+    - distro >=1.0.1
+    - psutil >=5.0.0 
+    - packaging >=21.3
+    - looseversion
+    - tornado >=6.3.3
+    - aiohttp >=3.9.0
+    - urllib3 >=1.26.18
+
+    - cherrypy
+    - cryptography
+    - importlib-metadata
+    - pycryptodomex
+    - pyopenssl
+    - python-dateutil
+    - python-gnupg
+    - setproctitle
+    # PiP check failures are due to legacy packages
+    #- contextvars # contextvars is installable and it requires python >=3,<3.7 * Last update Version 2.4 Released: Apr 1, 2019
+    #- rpm-vercmp  # rpm-vercmp does not exist # Last update Version 0.1.2 Released: Oct 30, 2018
+    #- timelib  # timelib does not exist # Last update Version 00.3.0 Released: Mar 18, 2023
+
+test:
+  imports:
+    - salt
+  commands:
+    - salt --version
+    - salt-minion --version
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://saltproject.io
+  summary: Portable, distributed, remote execution and configuration management system
+  license: Apache-2.0
+  license_file:
+    - LICENSE
+    - NOTICE
+    - tests/pytests/unit/modules/sol10_pkg/bashs/SUNWbashS/install/copyright
+    - pkg/macos/pkg-resources/license.rtf
+    - pkg/debian/copyright
+    - pkg/windows/msi/pkg_resources/LICENSE.rtf
+    - pkg/windows/nsis/installer/LICENSE.txt
+
+extra:
+  recipe-maintainers:
+    - basepi
+    - nmadhok
+    - rxm7706

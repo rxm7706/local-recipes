@@ -1,0 +1,74 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.5.15"
+
+package:
+  name: ovld
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/o/ovld/ovld-${{ version }}.tar.gz
+  sha256: 36c445196c3017ad4de1d790d6b37804f11570533e567c268740aeb02dcf29a5
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - hatchling
+    - pip
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - ovld
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Overloading Python functions
+  homepage: https://ovld.readthedocs.io/en/latest/
+  repository: https://github.com/breuleux/ovld
+  documentation: https://ovld.readthedocs.io/en/latest/
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: ovld
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: ovld
+  cfe-purls:
+    - pkg:conda/ovld@${{ version }}?channel=conda-forge
+    - pkg:pypi/ovld@${{ version }}
+  cfe-upstream-repo: https://github.com/breuleux/ovld
+  cfe-upstream-homepage: https://ovld.readthedocs.io/en/latest/
+  cfe-import-names: [ovld]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/ovld-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####

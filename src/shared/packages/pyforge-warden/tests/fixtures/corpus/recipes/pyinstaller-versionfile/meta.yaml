@@ -1,0 +1,48 @@
+{% set name = "pyinstaller-versionfile" %}
+{% set version = "3.1.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/pyinstaller_versionfile-{{ version }}.tar.gz
+  sha256: 39547421bf64f8b4f651fbd2bb30f47b7258d356b52cbcc65b46b0deca7709ed
+
+build:
+  entry_points:
+    - create-version-file = pyinstaller_versionfile.__main__:create_version_file
+    - pyivf-make_version = pyinstaller_versionfile.__main__:make_version
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.10,<4.0
+    - poetry-core
+    - pip
+  run:
+    - python >=3.10.0,<4.0.0
+    - jinja2
+    - pyyaml
+    - packaging
+
+test:
+  imports:
+    - pyinstaller_versionfile
+  commands:
+    - pip check
+    - create-version-file --help
+    - pyivf-make_version --help
+  requires:
+    - pip
+
+about:
+  summary: Create a windows version-file from metadata stored in a simple self-written YAML file or obtained from an installed distribution.
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

@@ -1,0 +1,80 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.24.0"
+
+package:
+  name: django-treenode
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/django-treenode/django_treenode-${{ version }}.tar.gz
+  sha256: 7ad2198620c285ebaa9a75d0bdcb9164c5e88c084f4c3e8f765ed0fa44cbd0d6
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - setuptools
+    - pip
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - treenode
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  license: MIT
+  license_file: LICENSE.txt
+  homepage: https://github.com/fabiocaccamo/django-treenode
+  repository: https://github.com/fabiocaccamo/django-treenode
+  summary: probably the best abstract model/admin for your tree based stuff.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: django-treenode
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: django-treenode
+  cfe-purls:
+    - pkg:conda/django-treenode@${{ version }}?channel=conda-forge
+    - pkg:pypi/django-treenode@${{ version }}
+  cfe-upstream-repo: https://github.com/fabiocaccamo/django-treenode
+  cfe-upstream-homepage: https://github.com/fabiocaccamo/django-treenode
+  cfe-import-names: [treenode]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django-treenode-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# about:
+#    # Import name `treenode` diverges from distribution name
+#    # `django-treenode` (G7-verified from sdist top-level __init__.py).
+#    # Speculative `,<4` upper bound on python dropped (upstream declares
+#    # no requires-python); the deployed feedstock still carries it.
+####

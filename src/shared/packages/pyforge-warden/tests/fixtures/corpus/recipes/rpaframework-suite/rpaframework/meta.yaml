@@ -1,0 +1,94 @@
+{% set name = "rpaframework" %}
+{% set version = "26.1.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/rpaframework-{{ version }}.tar.gz
+  sha256: 7876f51d35b1d57dc196e3ebe09420ee6ed818e326e05a1f672273d5ad2d1373
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8,<4.0
+    - poetry-core >=1.0.0
+    - pip
+  run:
+    - python >=3.8.0,<4.0.0
+    - docutils
+    - rpaframework-core >=11.0.6,<12.0.0
+    - rpaframework-pdf >=7.2.0,<8.0.0
+    - rpaframework-windows >=7.4.0,<8.0.0
+    - java-access-bridge-wrapper 0.14.1
+    - robocorp-storage >=0.3.2,<0.4.0
+    - jsonpath-ng >=1.5.2,<2.0.0
+    - robotframework >=4.0.0,!=4.0.1,!=6.1.0,<7.0.0
+    - robotframework-sapguilibrary >=1.1.0,<2.0.0
+    - robotframework-seleniumlibrary >=6.0.0,<7.0.0
+    - robotframework-seleniumtestability >=2.0.0,<3.0.0
+    - robotframework-requests >=0.9.1,<0.10.0
+    - pywinauto >=0.6.8,<0.7.0
+    - pywin32-on-windows >=302,<304
+    - comtypes >=1.1.11,<2.0.0
+    - robotframework-pythonlibcore >=4.2.0,<5.0.0
+    - pynput-robocorp-fork >=5.0.0,<6.0.0
+    - python-xlib >=0.17
+    - psutil >=5.7.0,<6.0.0
+    - pyperclip >=1.8.0,<2.0.0
+    - exchangelib >=4.7.6,<5.0.0
+    - tzlocal >=4.2.0,<5.0.0
+    - xlrd >=2.0.1,<3.0.0
+    - xlwt >=1.3.0,<2.0.0
+    - xlutils >=2.0.0,<3.0.0
+    - openpyxl >=3.0.9,<4.0.0
+    - pillow >=9.1.1,<10.0.0
+    - simple-salesforce >=1.0.0,<2.0.0
+    - netsuitesdk >=1.1.0,<2.0.0
+    - tweepy >=3.8.0,<4.0.0
+    - python-graphviz >=0.13.2,<0.14.0
+    - notifiers >=1.3.3,<2.0.0
+    - cryptography >=41.0.3,<42.0.0
+    - python-mss >=6.0.0,<7.0.0
+    - chardet >=3.0.0,<4.0.0
+    - pysocks >=1.5.6,!=1.5.7,<2.0.0
+    - selenium 4.11.2
+    - click >=8.1.2,<9.0.0
+    - pyyaml >=5.4.1,<7.0.0
+    - tenacity >=8.0.1,<9.0.0
+    - htmldocx >=0.0.6,<0.0.7
+    - hubspot-api-client >=4.0.6,<5.0.0
+    - pyotp >=2.6.0,<3.0.0
+    - importlib-metadata >=4.13.0,<5.0.0
+    - o365 >=2.0.21,<2.0.27
+    - requests >=2.28.1,<3.0.0
+    - oauthlib >=3.2.2,<4.0.0
+    - requests-oauthlib >=1.3.1,<2.0.0
+    - pyjwt >=2.6.0,<3.0.0
+    - validators >=0.20.0,<0.21.0
+    - smartsheet-python-sdk >=3.0.0,<4.0.0
+    - pendulum >=2.1.2,<3.0.0
+    - holidays >=0.21.0,<0.22.0
+
+test:
+  imports:
+    - rpaframework
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://rpaframework.org/
+  summary: A collection of tools and libraries for RPA
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

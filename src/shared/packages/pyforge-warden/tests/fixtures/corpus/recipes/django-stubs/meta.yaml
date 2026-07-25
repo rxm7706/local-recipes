@@ -1,0 +1,50 @@
+{% set name = "django-stubs" %}
+{% set version = "4.2.5" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/django-stubs-{{ version }}.tar.gz
+  sha256: 5a23cf622f1426a0b0c48bd6e2ef709a66275d72073baf6fdf5ac36fc4cce736
+
+build:
+  skip: true  # [py<38]
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python
+    - setuptools
+    - wheel
+    - pip
+  run:
+    - python
+    - mypy >=1.0.0
+    - django
+    - django-stubs-ext >=4.2.5
+    - tomli  # [py<311]
+    - typing-extensions
+    - types-pytz
+    - types-pyyaml
+
+test:
+  imports:
+    - django-stubs
+    - mypy_django_plugin
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/typeddjango/django-stubs
+  summary: Mypy stubs for Django
+  license: MIT
+  license_file: LICENSE.md
+
+extra:
+  recipe-maintainers:
+    - rxm7706

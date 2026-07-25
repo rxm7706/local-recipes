@@ -1,0 +1,54 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+# ⚠️ LOCAL-ONLY RECIPE — NOT FOR conda-forge/staged-recipes SUBMISSION
+# Reason: suitenumerique/media-sdk is a fork of livekit/media-sdk. It is a
+# Go library (no `cmd/` binaries) consumed by other LiveKit Go projects.
+# Packaging it as a conda artifact is uncommon because Go libraries are
+# typically pulled via go.mod; this recipe ships the source tree under
+# ${PREFIX}/share/suite-media-sdk/ so downstream Go projects can vendor
+# from a local checkout.
+
+context:
+  version: "0.0.0"
+  commit: "ffc0902069a6a65f442d899a6d3c6704da586610"
+
+package:
+  name: suite-media-sdk
+  version: ${{ version }}
+
+source:
+  url: https://github.com/suitenumerique/media-sdk/archive/${{ commit }}.tar.gz
+  sha256: c290027651020b01c9894bec6e2ef6e931d868e7de6cf689e58bc902326f1432
+
+build:
+  number: 0
+  noarch: generic
+  script:
+    - if: unix
+      then:
+        - mkdir -p "${PREFIX}/share/suite-media-sdk"
+        - cp -R . "${PREFIX}/share/suite-media-sdk/"
+
+requirements: {}
+
+tests:
+  - package_contents:
+      files:
+        - share/suite-media-sdk/go.mod
+
+about:
+  homepage: https://github.com/livekit/media-sdk
+  repository: https://github.com/suitenumerique/media-sdk
+  summary: LiveKit media SDK (Go library — suitenumerique fork; source tree)
+  description: |
+    Source tree of suitenumerique/media-sdk (fork of livekit/media-sdk).
+    Shipped under ${PREFIX}/share/suite-media-sdk/. Use as a local vendor
+    target for downstream Go projects that need the suitenumerique-specific
+    fork tip.
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

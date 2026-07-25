@@ -1,0 +1,43 @@
+{% set name = "django-harlequin" %}
+{% set version = "1.1.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/django_harlequin-{{ version }}.tar.gz
+  sha256: 305a243a4dd4a32170aa376a628a559984fa20bad70468e4e24830197716a59f
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - setuptools
+    - pip
+  run:
+    - python >=3.8
+    - django >=3.2
+    - harlequin
+
+test:
+  imports:
+    - django_harlequin
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/adamchainz/django-harlequin
+  summary: Launch Harlequin, the SQL IDE for your Terminal, with your Django database configuration.
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

@@ -1,0 +1,106 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+# Metapackage equivalent of `pip install litellm[proxy]`.
+#
+# Pulls in `litellm` plus every dependency listed under the `proxy` extra in
+# litellm's PyPI metadata, with two intentional omissions:
+#
+#   * litellm-enterprise — proprietary licence (LicenseRef-Proprietary);
+#     conda-forge does not redistribute proprietary code. The OSS proxy
+#     works without enterprise features.
+#   * Hard PyPI version pins — converted to lower bounds so the conda-forge
+#     ecosystem can advance dependencies without re-cutting this metapackage.
+#
+# Version is tracked to litellm's release; bump in lockstep when the upstream
+# proxy extras change.
+
+context:
+  name: litellm-proxy
+  version: "1.83.14"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  # Metapackage — no source. Declared as an empty list so rattler-build skips
+  # the fetch step.
+  - path: .
+
+build:
+  number: 0
+  # Per-platform (not noarch) so we can apply unix-only selectors for
+  # `pyroscope-io` and `uvloop` — neither has win-64 builds on conda-forge,
+  # matching upstream's `sys_platform != "win32"` markers in the PyPI
+  # `proxy` extra.
+
+requirements:
+  run:
+    # `litellm` is the only pinned dep — keeping the metapackage version
+    # in lockstep with the upstream release whose `[proxy]` extra list we
+    # mirror. Everything else is unconstrained: conda-forge already pins
+    # transitive versions through its global pinning feedstock, and the
+    # `litellm` recipe itself enforces its own hard runtime requirements.
+    - litellm ==${{ version }}
+    - litellm-proxy-extras
+    - apscheduler
+    - azure-identity
+    - azure-storage-blob
+    - backoff
+    - boto3
+    - cryptography
+    - fastapi
+    - fastapi-sso
+    - gunicorn
+    - mcp
+    # orjson intentionally omitted: litellm 1.83.14 on conda-forge has a
+    # `constrains: orjson ==3.11.6` pin to a version that was never
+    # published on conda-forge (only 3.11.7 / 3.11.8 are available),
+    # making any solve that includes both packages unsatisfiable. Until
+    # the upstream litellm recipe drops or updates that constrain, orjson
+    # cannot be co-installed; litellm proxy falls back to stdlib `json`.
+    - polars
+    - pyjwt
+    - pynacl
+    - python-multipart
+    - pyyaml
+    - restrictedpython
+    - rich
+    - rq
+    - pysoundfile  # PyPI's `soundfile` is published as `pysoundfile` on conda-forge
+    - uvicorn
+    - websockets
+    - if: unix
+      then:
+        - pyroscope-io
+        - uvloop
+
+tests:
+  - script:
+      # Confirm the proxy entry point resolves and prints help. `litellm`
+      # ships a `litellm` console script whose --help works once the
+      # proxy extras are installed.
+      - litellm --help
+
+about:
+  homepage: https://litellm.ai
+  repository: https://github.com/BerriAI/litellm
+  documentation: https://docs.litellm.ai
+  summary: Metapackage installing litellm with all OSS proxy-mode dependencies
+  description: |
+    `litellm-proxy` is a conda-forge convenience metapackage that brings
+    in `litellm` plus the open-source dependencies listed under the
+    upstream `litellm[proxy]` extra. Installing this package gives you a
+    working `litellm --config <yaml>` proxy server without needing to
+    manually enumerate the long dependency list.
+
+    The proprietary `litellm-enterprise` package is intentionally not
+    pulled in (conda-forge only redistributes open-source software);
+    enterprise-only features are unavailable through this metapackage.
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

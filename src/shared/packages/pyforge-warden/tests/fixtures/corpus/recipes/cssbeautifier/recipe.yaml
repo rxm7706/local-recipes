@@ -1,0 +1,81 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.0.3"
+
+package:
+  name: cssbeautifier
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/c/cssbeautifier/cssbeautifier-${{ 
+    version }}.tar.gz
+  sha256: 2c2fd129342561029de86b1744efa231c9fafe26023dbc988a1deb0ca0f5c845
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - jsbeautifier
+    - editorconfig >=0.12.2
+
+tests:
+  - python:
+      imports:
+        - cssbeautifier
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://beautifier.io
+  license: MIT
+  license_file: LICENSE
+  summary: CSS unobfuscator and beautifier.
+  description: |
+    CSS unobfuscator and beautifier.
+  repository: https://github.com/beautify-web/js-beautify
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: cssbeautifier
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: cssbeautifier
+  cfe-purls:
+    - pkg:conda/cssbeautifier@${{ version }}?channel=conda-forge
+    - pkg:pypi/cssbeautifier@${{ version }}
+  cfe-upstream-repo: https://github.com/beautify-web/js-beautify
+  cfe-upstream-homepage: https://github.com/beautify-web/js-beautify
+  cfe-import-names: [cssbeautifier]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/cssbeautifier-feedstock
+  cfe-forge-recipe-updates-needed: [version-bump-to-2.0.3]
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-07-03T04:00:00Z
+  cfe-generated-by-version: 8.65.0
+  cfe-generated-at-datetime: 2026-07-03T04:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-07-03T04:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # 2026-07-03 punch-list full-gate pass (tracker issue -> local verification).
+####

@@ -1,0 +1,18 @@
+context:
+  version: "1.0.0"
+
+package:
+  name: unicode-café-demo
+  version: ${{ version }}
+
+requirements:
+  host:
+    - python
+  run:
+    - café-tools >=1.0
+    - 日本語パッケージ
+    - packagé-nâme==2.0
+    - emoji-📦-pkg
+    - café-tools≥1.0
+    - ${{ pin_compatible("café-tools", upper_bound="x.x") }}
+    - unresolved-${{ some_unicode_fn("日本語") }}-suffix

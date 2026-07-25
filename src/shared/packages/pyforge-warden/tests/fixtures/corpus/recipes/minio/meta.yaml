@@ -1,0 +1,47 @@
+{% set name = "minio" %}
+{% set version = "7.2.8" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/minio-{{ version }}.tar.gz
+  sha256: f8af2dafc22ebe1aef3ac181b8e217037011c430aa6da276ed627e55aaf7c815
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.9
+    - pip
+  run:
+    - python >=3.9
+    - certifi
+    - urllib3
+    - argon2-cffi
+    - pycryptodome
+    - typing-extensions
+
+test:
+  imports:
+    - minio
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/minio/minio-py
+  summary: MinIO Python SDK for Amazon S3 Compatible Cloud Storage
+  license: Apache-2.0
+  license_file:
+    - LICENSE
+    - NOTICE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

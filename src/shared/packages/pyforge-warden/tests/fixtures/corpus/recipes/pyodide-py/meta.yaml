@@ -1,0 +1,40 @@
+{% set name = "pyodide-py" %}
+{% set version = "0.22.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/pyodide-py-{{ version }}.tar.gz
+  sha256: b51e2b05ad6c1943e2a745be8d43948b50e83bb2beced4dc6c16bd41cd54b7d4
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python >=3.10
+    - pip
+  run:
+    - python >=3.10
+
+test:
+  imports:
+    - pyodide
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/pyodide/pyodide
+  summary: '"A Python package providing core interpreter functionality for Pyodide."'
+  license: MPL-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - yuvipanda

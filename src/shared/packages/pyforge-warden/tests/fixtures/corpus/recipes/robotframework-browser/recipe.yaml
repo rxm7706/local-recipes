@@ -1,0 +1,80 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: robotframework-browser
+  version: "19.9.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/MarketSquare/robotframework-browser/archive/v${{ version }}.tar.gz
+  sha256: 209bb37c939c1229e27009e6b8adae2a6429e300af96ecc9d06425743d8f9e96
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - rfbrowser = Browser.entry.__main__:cli
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - setuptools >=61.0
+    - pip
+    - nodejs  # for playwright
+    - playwright #>=1.55.0,<2.0.0
+  run:
+    - python >=${{ python_min }},<4.0
+    - nodejs  # for playwright
+    - playwright #>=1.55.0,<2.0.0
+    - grpcio #>=1.75.1
+    - grpcio-tools #>=1.75.1
+    - protobuf #>=6.32.1
+    - robotframework >=5.0.1,<8.0.0
+    - robotframework-pythonlibcore >=4.4.1,<5.0.0
+    - robotframework-assertion-engine >=3.0.3,<4.0.0
+    - wrapt >=1.17.2
+    - overrides >=7.7.0
+    - click >=8.1.8
+    - seedir >=0.5.1
+    - psutil >=3.3.11
+
+tests:
+#  - python:
+#      imports:
+#        - Browser
+#      pip_check: false
+#      # robotframework-browser 19.7.2 has requirement protobuf==6.32.0, but you have protobuf 6.31.1.
+#      python_version: ${{ python_min }}.*
+  - requirements:
+      run:
+        - python ${{ python_min }}.*
+        - pip
+    script:
+      #- pip check
+#      - rfbrowser init
+#      - python -c "import Browser;"
+      - rfbrowser --help
+
+about:
+  homepage: https://github.com/MarketSquare/robotframework-browser
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Robot Framework Browser library powered by Playwright.
+  description: |
+    Robot Framework Browser library powered by Playwright. Moving browser automation to year 2020 (or 2021)!
+    Aiming for speed, reliability and visibility.
+  documentation: https://marketsquare.github.io/robotframework-browser/Browser.html
+  repository: https://github.com/MarketSquare/robotframework-browser
+
+extra:
+  recipe-maintainers:
+    - martinRenou
+    - xylix
+    - rxm7706
+    - conda-forge/rpaframework-core

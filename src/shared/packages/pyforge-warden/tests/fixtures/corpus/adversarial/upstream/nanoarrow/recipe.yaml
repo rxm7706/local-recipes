@@ -1,0 +1,56 @@
+schema_version: 1
+
+context:
+  name: nanoarrow
+  version: 0.7.0
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/nanoarrow-${{ version }}.tar.gz
+  sha256: e333e639f02d97c01834c8e3fd25fb945ed53196bdfaeb129dd5a7b9f4233d39
+
+build:
+  number: 1
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+    - ${{ compiler('cxx') }}
+    - ninja
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+        - cython
+        - meson-python
+  host:
+    - python
+    - meson-python
+    - python-build
+    - cython
+    - pip
+    - zstd
+  run:
+    - python
+    - zstd
+
+tests:
+  - python:
+      pip_check: true
+      imports:
+        - nanoarrow
+
+about:
+  summary: Python bindings to the nanoarrow C library
+  license: Apache-2.0
+  license_file: LICENSE.txt
+  homepage: https://arrow.apache.org/nanoarrow/
+  repository: https://github.com/apache/arrow-nanoarrow
+
+extra:
+  recipe-maintainers:
+    - paleolimbot

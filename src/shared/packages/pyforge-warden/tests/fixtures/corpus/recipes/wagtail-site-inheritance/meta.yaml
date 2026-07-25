@@ -1,0 +1,44 @@
+{% set name = "wagtail-site-inheritance" %}
+{% set version = "1.1.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/wagtail-site-inheritance-{{ version }}.tar.gz
+  sha256: 14eb7844823e9e5c68ca9f6fa39266e4ccded8df855f94d924b3ad996b4408df
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - setuptools >=40.6.0
+    - wheel
+    - pip
+  run:
+    - python >=3.8
+    - django >=2.2
+    - wagtail >=2.16,<4.0
+
+test:
+  imports:
+    - wagtail_site_inheritance
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/labd/wagtail-site-inheritance
+  summary: Site Inheritance for Wagtail
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

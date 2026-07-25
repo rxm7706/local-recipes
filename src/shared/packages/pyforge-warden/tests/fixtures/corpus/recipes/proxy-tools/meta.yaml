@@ -1,0 +1,40 @@
+{% set name = "proxy-tools" %}
+{% set version = "0.1.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/proxy_tools-{{ version }}.tar.gz
+  sha256: ccb3751f529c047e2d8a58440d86b205303cf0fe8146f784d1cbcd94f0a28010
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python
+    - pip
+  run:
+    - python
+
+test:
+  imports:
+    - proxy_tools
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: http://github.com/jtushman/proxy_tools
+  summary: Proxy Implementation
+  license: MIT
+  license_file: PLEASE_ADD_LICENSE_FILE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

@@ -1,0 +1,109 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.11.0"
+  python_min: "3.11"
+
+package:
+  name: ibm-watsonx-orchestrate-clients
+  version: ${{ version }}
+
+source:
+  url: https://github.com/IBM/ibm-watsonx-orchestrate-adk/archive/refs/tags/${{ version }}.tar.gz
+  sha256: afb442be18de9452f3f0a00f420d74d81440287af436048c99e73468cc90cbbc
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install ./packages/clients -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }},<3.15
+    - ibm-cloud-sdk-core >=3.24.2
+    - ibm-watsonx-orchestrate-core ==2.11.0
+    - websocket-client >=1.8.0,<2.0.0
+
+tests:
+  - python:
+      imports:
+        - ibm_watsonx_orchestrate_clients
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/ibm-watsonx-orchestrate-clients/
+  license: MIT
+  license_file: LICENSE
+  summary: IBM watsonx Orchestrate ADK API Client Library
+  repository: https://github.com/IBM/ibm-watsonx-orchestrate-adk
+  documentation: https://developer.watson-orchestrate.ibm.com/
+  description: |
+    API client library for the IBM watsonx Orchestrate Agent Development
+    Kit (ADK). Provides typed HTTP and WebSocket clients for the watsonx
+    Orchestrate platform — agents, channels, connections, knowledge bases,
+    tools, threads, models and model policies, voice configurations, and
+    chat/run orchestration — built on the shared types in
+    ibm-watsonx-orchestrate-core.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: ibm-watsonx-orchestrate-clients
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: ibm-watsonx-orchestrate-clients
+  cfe-name-aliases:
+    - ibm_watsonx_orchestrate_clients
+  cfe-purls:
+    - pkg:conda/ibm-watsonx-orchestrate-clients@${{ version }}?channel=conda-forge
+    - pkg:pypi/ibm-watsonx-orchestrate-clients@${{ version }}
+  cfe-upstream-repo: https://github.com/IBM/ibm-watsonx-orchestrate-adk
+  cfe-upstream-homepage: https://pypi.org/project/ibm-watsonx-orchestrate-clients/
+  cfe-import-names: [ibm_watsonx_orchestrate_clients]
+  cfe-source-kind: github-tag:pypi-sdist-metadata-only-G54
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/ibm-watsonx-orchestrate-clients-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-07-04T21:06:13Z
+  cfe-generated-by-version: 8.30.1
+  cfe-generated-at-datetime: 2026-06-19T13:36:19Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-24T09:58:17Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# context:
+#    # Upstream requires-python is ">=3.11,<3.15"; override the conda-forge
+#    # default floor (3.10) upward to 3.11.
+# source:
+#    # GitHub monorepo tag archive (G54 source preference). The PyPI sdist is
+#    # metadata-only (.gitignore + hatch_build.py + pyproject.toml + PKG-INFO,
+#    # zero package .py) -> an sdist build yields an empty module. The ADK
+#    # monorepo ships the full source at packages/clients/, preferred over the
+#    # wheel. Build that subdir from the FULL extraction (version read from
+#    # ../../src/ibm_watsonx_orchestrate/__init__.py, no G39). hatchling backend
+#    # (G55) + the packages/clients hatch_build.py custom metadata hook injects
+#    # run deps (pins ibm-watsonx-orchestrate-core ==<version>). Unprefixed tags.
+# requirements:
+#  run:
+#    # Sibling ADK package; upstream pins ==2.11.0. Kept exact so the
+#    # installed graph matches the wheel-bundled METADATA (pip_check: true).
+# about:
+#    # Upstream declares license-files = ["LICENSE"] but ships no LICENSE in
+#    # either the sdist or the wheel; vendored from the ADK repo (SKILL.md
+#    # license-file placement pattern 2).
+####

@@ -1,0 +1,91 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "12.2.1"
+
+package:
+  name: pyobjc-framework-applicationservices
+  version: ${{ version }}
+
+source:
+  url: 
+    https://pypi.org/packages/source/p/pyobjc-framework-applicationservices/pyobjc_framework_applicationservices-${{
+    version }}.tar.gz
+  sha256: 048ea663c9ac75c44a15dc7d5b8d78cbb4c97bf1c76e83835e8d5498e184001f
+
+build:
+  number: 0
+  skip: not osx
+  script:
+    # force pyobjc to use conda-forge's chosen SDK
+    - export CFLAGS="${CFLAGS} -isysroot ${SDKROOT:-$CONDA_BUILD_SYSROOT}"
+    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+    - ${{ compiler('c') }}
+    - ${{ stdlib('c') }}
+  host:
+    - python
+    - pip
+    - setuptools
+    - wheel
+  run:
+    - python
+    - pyobjc-core >=${{ version }}
+    - pyobjc-framework-cocoa >=${{ version }}
+    - pyobjc-framework-quartz >=${{ version }}
+    - pyobjc-framework-coretext >=${{ version }}
+
+tests:
+  - python:
+      imports:
+        - ApplicationServices
+        - PyObjCTools
+      pip_check: true
+
+about:
+  summary: Wrappers for the framework ApplicationServices on macOS
+  license: MIT
+  license_file: License.txt
+  homepage: https://github.com/ronaldoussoren/pyobjc
+  repository: https://github.com/ronaldoussoren/pyobjc
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pyobjc-framework-applicationservices
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pyobjc-framework-applicationservices
+  cfe-purls:
+    - pkg:conda/pyobjc-framework-applicationservices@${{ version }}?channel=conda-forge
+    - pkg:pypi/pyobjc-framework-applicationservices@${{ version }}
+  cfe-upstream-repo: https://github.com/ronaldoussoren/pyobjc
+  cfe-upstream-homepage: https://github.com/ronaldoussoren/pyobjc
+  cfe-import-names: [ApplicationServices]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: compiled
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pyobjc-framework-applicationservices-feedstock
+  cfe-forge-recipe-updates-needed: [version-bump-to-12.2.1, meta-yaml-to-recipe-yaml]
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-07-03T04:00:00Z
+  cfe-generated-by-version: 8.65.0
+  cfe-generated-at-datetime: 2026-07-03T04:00:00Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # 2026-07-03 punch-list full-gate pass (tracker issue -> local verification).
+####

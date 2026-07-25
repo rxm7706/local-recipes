@@ -1,0 +1,63 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.81.13"
+  python_min: "3.11"
+
+package:
+  name: unclecode-litellm
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/u/unclecode-litellm/unclecode_litellm-${{ version }}.tar.gz
+  sha256: db70e34e3e859c0a07f02cb02eaa644f8fa4b4ecc5e2f3be9a58bd7d1c3feedc
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - setuptools >=64.0.0
+    - wheel
+    - pip
+  run:
+    - python >=${{ python_min }},<4
+    - fastuuid >=0.13.0
+    - httpx >=0.23.0
+    - openai >=2.8.0
+    - python-dotenv >=0.2.0
+    - tiktoken >=0.7.0
+    - importlib-metadata >=6.8.0
+    - tokenizers
+    - click
+    - jinja2 >=3.1.2
+    - aiohttp >=3.10
+    - pydantic >=2.5.0
+    - jsonschema >=4.23.0,<5.0.0
+
+tests:
+  - python:
+      imports:
+        - litellm
+        #- litellm-js
+        #- litellm-proxy-extras
+      pip_check: true
+      python_version:
+      - ${{ python_min }}.*
+      - "*"
+
+about:
+  summary: Pre-compromise fork of litellm - Library to easily interface with LLM API providers
+  license: MIT
+  license_file:
+    - LICENSE
+    - litellm/proxy/enterprise/LICENSE.md
+  homepage: https://github.com/unclecode/litellm
+
+extra:
+  recipe-maintainers:
+    - rxm7706
