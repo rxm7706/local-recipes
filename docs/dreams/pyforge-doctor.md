@@ -2,7 +2,7 @@
 title: Doctor — one bedside manner for the whole fleet
 type: dream
 owner: doctor
-status: in-deck
+status: in-spec
 ---
 
 # Doctor — check the vitals, keep the ecosystem alive

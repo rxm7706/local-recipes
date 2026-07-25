@@ -868,7 +868,7 @@ window.DASHBOARD_DATA = {
       }
     }
   },
-  "snapshot": "<span>2026-07-25 11:15 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-07-25 11:16 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -984,7 +984,7 @@ window.DASHBOARD_DATA = {
     {
       "slug": "pyforge-doctor",
       "title": "Doctor — one bedside manner for the whole fleet",
-      "status": "in-deck",
+      "status": "in-spec",
       "owner": "doctor",
       "chain": {
         "deck": "presentations/pyforge-doctor",
@@ -1410,15 +1410,15 @@ window.DASHBOARD_DATA = {
         "depth": "epics",
         "state": "running",
         "have": {
-          "research": false,
-          "brief": false,
-          "prd": false,
-          "architecture": false,
-          "epics": false
+          "research": true,
+          "brief": true,
+          "prd": true,
+          "architecture": true,
+          "epics": true
         },
-        "n": 0,
+        "n": 5,
         "of": 5,
-        "status": "running"
+        "status": "landed"
       },
       {
         "wave": "1b",
