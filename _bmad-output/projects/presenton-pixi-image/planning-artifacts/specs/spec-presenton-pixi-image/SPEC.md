@@ -1,11 +1,12 @@
 ---
 id: SPEC-presenton-pixi-image
 surface:
-  - helm/**                      # Helm chart (CAP-5), not yet created — exact repo path TBD (architecture "Deferred")
-  - pixi.toml                    # locked build env (CAP-1..4)
+  # NOTE (2026-07-25): globs that would claim THIS repo's shared root files
+  # (pixi.toml/pixi.lock/src/**/tests/**/helm/**) were removed — this project's
+  # code does not live here, and claiming them silently transferred governance of
+  # real pyforge files to an unbuilt project. Re-declare on first landing.
   - ci/build-airgapped.yml       # air-gapped build pipeline (CAP-1, CAP-4, CAP-6)
   - ci/online-capture.yml        # drift-defense CI (CAP-6)
-  - tests/**                     # 4+ fixture sets (CAP-2, CAP-5, CAP-6)
 companions: []
 sources:
   - ../../../../../../docs/dreams/presenton-pixi-image.md

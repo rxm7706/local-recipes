@@ -1,11 +1,12 @@
 ---
 id: SPEC-unity-data-stack
 surface:
-  - pixi.toml                    # Workspace root (not yet created for this project)
-  - pixi.lock                    # Workspace Lock — authoritative (AD-2)
+  # NOTE (2026-07-25): globs that would claim THIS repo's shared root files
+  # (pixi.toml/pixi.lock/src/**/tests/**/helm/**) were removed — this project's
+  # code does not live here, and claiming them silently transferred governance of
+  # real pyforge files to an unbuilt project. Re-declare on first landing.
   - constitution.md              # Mandates + machine-readable classification (AD-8)
   - config/**                    # Stages, air-gap, feature-flags, gitops overlays
-  - src/**                       # shared/, platform/, tech-domains/customer/ (reference Domain)
   - templates/**                 # scaffolding (FR-37)
 companions:
   - constitution-provenance.md

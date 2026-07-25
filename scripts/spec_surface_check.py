@@ -118,7 +118,12 @@ def main() -> int:
 
     specs: dict[str, dict] = {}
     for spec_md in sorted(REPO_ROOT.glob(SPEC_GLOB)):
-        name = spec_md.parent.name
+        # Key by <project>/<spec-dir>, never the bare dir name: the same slug can
+        # legitimately exist in two projects (e.g. the marshal governance Spec in
+        # local-recipes vs. the marshal CLI product Spec), and a bare-name key
+        # silently DROPS one surface — a governance hole with no finding emitted.
+        project = spec_md.relative_to(REPO_ROOT).parts[2]
+        name = f"{project}/{spec_md.parent.name}"
         globs, excludes, drift = parse_surface(spec_md)
         specs[name] = {
             "spec": spec_md,

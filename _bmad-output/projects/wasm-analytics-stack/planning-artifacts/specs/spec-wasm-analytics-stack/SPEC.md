@@ -1,13 +1,16 @@
 ---
 id: SPEC-wasm-analytics-stack
 surface:
+  # NOTE (2026-07-25): globs that would claim THIS repo's shared root files
+  # (pixi.toml/pixi.lock/src/**/tests/**/helm/**) were removed — this project's
+  # code does not live here, and claiming them silently transferred governance of
+  # real pyforge files to an unbuilt project. Re-declare on first landing.
   - apps/api/**                  # FastAPI ingress (not yet created)
   - apps/validate-component/**   # WIT interface + componentize-py WASI component
   - apps/ingest/**                # dlt pipeline -> DuckDB Bronze
   - apps/transform/**             # dbt-duckdb project
   - apps/observability/**         # OTel/OpenLineage/Vector wiring
   - deploy/**                     # security-context, helm, podman-compose
-  - pixi.toml
 companions:
   - ../../architecture/architecture-wasm-analytics-stack-2026-07-25/ARCHITECTURE-SPINE.md
 sources:
