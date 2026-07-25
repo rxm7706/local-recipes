@@ -439,7 +439,9 @@ Knowledge & indexing for agents:
 
 ## 11. LLM APIs, agent frameworks, MCP & A2A
 
-All in `local-recipes`. This is the stack for *building* agents and agent servers.
+All in `local-recipes`, except `mcp`, which is also a run-dependency of the
+`pyforge-herald` package and therefore a member of the lean `pyforge-herald` env.
+This is the stack for *building* agents and agent servers.
 
 Provider SDKs:
 - **anthropic** (>=0.76.0) — official Claude SDK: Messages API, streaming, tool use,
