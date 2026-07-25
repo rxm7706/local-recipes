@@ -39,7 +39,7 @@ Three substantial artifacts already exist and were never landed in a repository:
 Constitution** (spec-kit format — preamble, 14 articles, mandated standards), a **1,726-line
 working pixi root** (~20 environments, ~200 tasks, feature-composed, four platforms), and a
 **12 KB toolchain spec** (pixi orchestrator + PEP 751 `pylock.toml` + a five-role agent matrix).
-Together they are perhaps 60% of a platform definition — genuinely good work, authored
+Together they are a substantial but incomplete platform definition — genuinely good work, authored
 2026-01 → 2026-05, now measurably drifted. This effort's job is to **absorb, correct, and
 complete** them: keep what research confirms, fix what research falsifies, and supply what is
 missing — principally the human contribution model, the provenance chain, and a resolved answer
@@ -94,7 +94,8 @@ One opinionated shared monorepo, with the standards chosen *once*:
 - **Domain-owned data products.** Eleven tech domains own their assets under a
   Raw → Curated → Consumption layering with a fixed naming convention and declared data contracts,
   orchestrated by Dagster.
-- **Compliance as an artifact, not an activity.** Every build emits a versioned CycloneDX SBOM
+- **Compliance as an artifact, not an activity.** Every build emits a versioned CycloneDX
+  Software Bill of Materials (SBOM)
   (runtime-scoped and full), continuously gated against actively-exploited-vulnerability data.
 - **Contribution designed in.** A named trusted-committer role, a documented path for a team to
   contribute to code it does not own, and templates that make starting the right way easier than
@@ -111,19 +112,19 @@ the governance split, and the contribution model.
 
 ## What Makes This Different
 
-The wedge is a conjunction, and each qualifier removes an incumbent:
+The wedge is a conjunction; three qualifiers remove an incumbent, one aligns rather than competes:
 
 | Qualifier | Removes | Because |
 |---|---|---|
 | **conda-native** | Pants, Bazel, Nx | They own the build graph brilliantly — and resolve *wheels*. The native components a data platform is made of are outside their guarantee. |
 | **air-gap-first** | SaaS IDPs, Nx Cloud | A posture designed in, not a deployment mode bolted on. |
-| **spec-governed** | — (aligns rather than competes) | The Constitution is already in spec-kit format; spec-kit is at **123.7k stars**, ~3.6× Backstage's 33.9k. Format choice validated by adoption. |
+| **spec-governed** | — (aligns) | The Constitution is already in spec-kit format; spec-kit is at **123.7k stars** (2026-07-25), ~3.6× Backstage's 33.9k — an adoption signal for the format, not proof of fit. |
 | **monorepo *platform*** | Backstage | A portal *describes* an estate. Unity *builds* one. Unity should be catalog-**able**, not a catalog. |
 
-Research found nothing occupying all four simultaneously. **Honest caveat:** web-search discovery
-was unavailable during research (budget exhausted), so the comparable set was assembled from named
-sources. Completeness is not claimed — a 2026-launched competitor could exist and be absent
-(research OQ-M1).
+Research found no named competitor occupying all four simultaneously — but web-search discovery
+was unavailable (budget exhausted), so the comparable set was assembled from directly-fetched
+sources and completeness is **not** claimed. A 2026-launched competitor could exist and be absent
+(Open Question M1 — full list at the end of this document).
 
 **The honest moat is not technical novelty — it is accumulated integration.** Nothing here is
 individually impossible. What is hard to copy is that the conda-forge supply chain, the compliance
@@ -175,7 +176,8 @@ deferred to the PRD, where they can be set against a real baseline rather than i
 - **The Constitution, corrected and machine-checkable**, with a stated global-vs-local governance
   split.
 - **The contribution model**: trusted-committer role, review path, templates, onboarding docs.
-- **The compliance chain**: versioned CycloneDX (1.7 / ECMA-424), SLSA provenance, continuous
+- **The compliance chain**: versioned CycloneDX (1.7 / ECMA-424), SLSA (Supply-chain Levels for
+  Software Artifacts) provenance, continuous
   exploited-vulnerability gating — by **integrating pyforge-warden**, not reimplementing it.
 - **Air-gap posture**: env-var-only mirror routing, no credentials in URLs, offline bundle path.
 - **One reference domain, end to end** (`customer`), proving the domain pattern.
@@ -202,17 +204,15 @@ gists answer differently and neither notices the conflict: the working root is a
 (`pyproject.toml`, PEP 751 only, `apps/` + `libs/`) with a **Zero-State rule** that production
 must boot from `pylock.toml` *alone*.
 
-They cannot both hold. PEP 751 is a *Python package* lockfile — it cannot express DuckDB, Arrow's
-ABI, nginx, or Node. The spec's own Dockerfile resolves this silently by switching to a
-`python:3.11-slim` production base, i.e. abandoning conda at deploy time — which discards the
-exact property conda was mandated for.
+They cannot both hold: PEP 751 is a *Python package* lockfile and cannot express the native half
+of a data stack. (Mechanics — the layout conflict, the Dockerfile's silent switch away from conda
+at deploy time, the three candidate resolutions — are in `addendum.md` § D.2–D.3.)
 
 `[ASSUMPTION]` **pixi-primary**: `pixi.lock` is the source of truth, `pylock.toml` is a derived
-export for PEP 751 consumers (audit tooling, SBOM generation, non-pixi runtimes), and offline
-deployment uses `pixi-pack` / `pixi-unpack` — both already present in the working root. Rationale:
-conda-native is the differentiator, and the alternative discards it. **This is an architecture
-decision, not a brief decision** (research OQ-D8) — flagged here because everything downstream
-depends on it.
+export for PEP 751 consumers, and offline deployment uses `pixi-pack` / `pixi-unpack` — both
+already present in the working root. Rationale: conda-native is the differentiator, and the
+alternative discards it. **This is an architecture decision, not a brief decision** (OQ-D8) —
+flagged here because everything downstream depends on it.
 
 ## What Research Changed
 
@@ -222,13 +222,15 @@ load-bearing ones:
 | Finding | Grade | Consequence |
 |---|---|---|
 | `pdm export --override-platform` **does not exist**; the format token is `pylock.toml` | **WRONG** | The toolchain spec's flagship `lock-monorepo` task is unimplementable as written |
-| PEP 751 does **not** guarantee multi-platform lockfiles — it uses environment markers | **Scope error** | Multi-platform coverage must be *verified*, not assumed. Compounds with the above: the "Cryptographic Predictability" outcome currently has **no verified mechanism** |
-| pixi is **0.73.0**; the working root pins `==0.59.0` exactly | Stale | Nobody on current pixi can open the workspace. New `workspace = true` also removes the root's worst duplication smell |
-| pip's `pylock.toml` support is **experimental** (25.1 `pip lock`, 26.1 `-r pylock.toml`) | New + risk | The Zero-State rule rests on an experimental feature; needs a fallback |
-| Dagster 1.13.15 supports Python ≤3.14 | Stale | The `<3.14` ceiling's stated reason has expired — re-test |
-| Python 3.12 is **security-only**; 3.15 lands **2026-10-01** | Stale | The declared "legacy baseline" gets no further binaries; 3.15 is inside the horizon |
-| **SLSA provenance is entirely absent** from the intake set | Gap | SBOM says what is *in* the artifact; nothing says how it was built. L2 is cheap on hosted CI |
-| **No trusted-committer role**; three crew stations (Herald/Doctor/Scribe) unmapped in the role matrix | Gap | The intake set systematically under-specifies the human layer — converged from two independent angles |
+| PEP 751 does **not** guarantee multi-platform lockfiles — it uses environment markers | **Wrong** (scope) | Multi-platform coverage must be *verified*, not assumed. Compounds with the above: the "Cryptographic Predictability" outcome currently has **no verified mechanism** |
+| pip's `pylock.toml` support is **experimental** (25.1 `pip lock`, 26.1 `-r pylock.toml`) | **Risk** | The Zero-State rule rests on an experimental feature; needs a fallback |
+| **SLSA provenance is entirely absent** from the intake set | **Gap** | SBOM says what is *in* the artifact; nothing says how it was built. L2 is cheap on hosted CI |
+| **No trusted-committer role**; three crew stations (Herald/Doctor/Scribe) unmapped in the role matrix | **Gap** | The human layer is systematically under-specified — see *Who This Serves* |
+
+Three further staleness findings — pixi pinned at `==0.59.0` against a current 0.73.0; Dagster
+1.13.15 now supporting Python 3.14; Python 3.12 gone security-only with 3.15 landing 2026-10-01 —
+are supporting evidence rather than decision drivers. Detail in `addendum.md` § C.4 and the
+research reports.
 
 **Confirmed and kept:** PEP 751 is Final (2025-03-31); the pixi feature/environment model;
 the air-gap env-var override design; conda-native as the differentiator; the Constitution's
@@ -254,7 +256,7 @@ Beyond one enterprise: **pyforge-genesis** bootstraps Unity instances (`genesis 
 `genesis adopt`), so the platform is reproducible across organizations rather than a bespoke
 build each time; the **pyforge crew** (Herald · Marshal · Atlas · Warden · Mason · Doctor ·
 Scribe · Steward) operates it, mapping cleanly onto the toolchain spec's five roles and supplying
-the three feedback-loop stations the spec omitted. Unity becomes the reference answer to *"what
+the three feedback-loop stations the spec omitted. Unity becomes a reference answer to *"what
 does a Python data platform look like inside a regulated enterprise in 2027?"* — with the
 compliance chain, the air-gap posture, and the innersource contribution model as the parts other
 organizations copy.
@@ -265,29 +267,29 @@ organizations copy.
 
 Consolidated from both research reports; ordered by decision urgency.
 
-| ID | Question | Owner |
-|---|---|---|
-| **OQ-D8** | pixi-primary, pylock-primary, or split-by-tier? *Everything downstream depends on this* | Architecture — **resolve first** |
-| **OQ-M7** | `pdm lock --platform` + export, or `uv export --format pylock.toml`? | Architecture |
-| **OQ-M4** | Where is the boundary between spec-kit governance and BMAD planning? Both are active here | PRD |
-| **OQ-M5** | What is Unity's trusted-committer-equivalent role? | PRD |
-| **OQ-D7** | Which mandates are platform-wide invariants vs domain-overridable defaults? | PRD |
-| **OQ-D10** | Which of the 11 tech domains are real vs aspirational? *Order-of-magnitude sizing impact* | PRD |
-| **OQ-D4** | Warden integration boundary — library, CLI, CI action, or MCP tool? | Architecture |
-| **OQ-M8** | Preview `pixi-build` workspaces, or editable path installs? | Architecture |
-| **OQ-M11** | Should the 12-stage SDLC be pixi environments at all? (5 are byte-identical; 3 more are `["runtime"]`) | Architecture |
-| **OQ-D5** | Does `sbom4python --requirement pylock.toml` emit a dependency *graph* or a flat list? | Empirical test — cheap, do early |
-| **OQ-D6** | Target SLSA level for v1? (recommend L1 mandatory / L2 target) | PRD |
-| **OQ-D3** | Exact CRA Annex I wording — is SBOM actually required, or inferred? | Verify before citing CRA as authority |
-| **OQ-M10** | Is `linux-aarch64` in scope for v1? The two gists disagree on the platform matrix | PRD |
-| **OQ-D9** | Does the data-classification axis need enforcement (PII masking, access control) or is it documentation? | PRD |
-| **OQ-M9** | Is conda-forge's dagster built for Python 3.14? | Verify before pinning |
-| **OQ-D1** | Current OCP version / Kubernetes baseline / EUS lifecycle? (`docs.redhat.com` 403) | Verify before architecture pins |
-| **OQ-D2** | Does `osv-scanner` cover `pylock.toml` / `pixi.lock` / conda? | Verify at Warden integration |
-| **OQ-M1** | Is the comparable set complete? Web-search discovery was unavailable | Re-run when budget allows |
-| **OQ-M2** | Does *every* mandated component exist on conda-forge, on every target platform? | Bulk `cf_atlas` query when available |
-| **OQ-M3** | Express the role matrix as a spec-kit *bundle*? | Architecture |
-| **OQ-M6** | Independent 2025/26 innersource adoption data to ground the value claim? | Research follow-up |
+| ID | Question | Owner | Resolution path |
+|---|---|---|---|
+| **OQ-D8** | pixi-primary, pylock-primary, or split-by-tier? *Everything downstream depends on this* | Architecture | **Resolve first** |
+| **OQ-M7** | `pdm lock --platform` + export, or `uv export --format pylock.toml`? | Architecture | Trade-off study |
+| **OQ-M4** | Where is the boundary between spec-kit governance and BMAD planning? Both are active here | PRD | Decision |
+| **OQ-M5** | What is Unity's trusted-committer-equivalent role? *("-equivalent" is deliberate: whether Unity adopts the InnerSource Commons role as-is or adapts it is itself part of the question)* | PRD | Decision |
+| **OQ-D7** | Which mandates are platform-wide invariants vs domain-overridable defaults? | PRD | Decision |
+| **OQ-D10** | Which of the 11 tech domains are real vs aspirational? *Order-of-magnitude sizing impact* | PRD | Decision |
+| **OQ-D4** | Warden integration boundary — library, CLI, CI action, or MCP tool? | Architecture | Trade-off study |
+| **OQ-M8** | Preview `pixi-build` workspaces, or editable path installs? | Architecture | Trade-off study |
+| **OQ-M11** | Should the 12-stage SDLC be pixi environments at all? (5 are byte-identical; 3 more are `["runtime"]`) | Architecture | Decision |
+| **OQ-D5** | Does `sbom4python --requirement pylock.toml` emit a dependency *graph* or a flat list? | Architecture | Empirical test — cheap, do early |
+| **OQ-D6** | Target SLSA level for v1? (recommend L1 mandatory / L2 target) | PRD | Decision |
+| **OQ-D3** | Exact CRA Annex I wording — is SBOM actually required, or inferred? | Compliance | Verify before citing CRA as authority |
+| **OQ-M10** | Is `linux-aarch64` in scope for v1? The two gists disagree on the platform matrix | PRD | Decision |
+| **OQ-D9** | Does the data-classification axis need enforcement (PII masking, access control) or is it documentation? | PRD | Decision |
+| **OQ-M9** | Is conda-forge's dagster built for Python 3.14? | Architecture | Verify before pinning |
+| **OQ-D1** | Current OCP version / Kubernetes baseline / EUS lifecycle? (`docs.redhat.com` returned 403) | Architecture | Verify before pinning |
+| **OQ-D2** | Does `osv-scanner` cover `pylock.toml` / `pixi.lock` / conda? | Architecture | Verify at Warden integration |
+| **OQ-M1** | Is the comparable set complete? Web-search discovery was unavailable | Research | Re-run when budget allows |
+| **OQ-M2** | Does *every* mandated component exist on conda-forge, on every target platform? | Research | Bulk `cf_atlas` query when available |
+| **OQ-M3** | Express the role matrix as a spec-kit *bundle*? | Architecture | Trade-off study |
+| **OQ-M6** | Independent 2025/26 innersource adoption data to ground the value claim? | Research | Follow-up |
 
-**Companion artifacts:** `../../research/market-…-2026-07-25.md` ·
-`../../research/domain-…-2026-07-25.md` · `addendum.md` (detail deferred from this brief).
+**Companion artifacts:** the two research reports named in this brief's frontmatter `inputs:`,
+and `addendum.md` (intake inventory and detail deferred from this brief).
