@@ -1,0 +1,30 @@
+# pyforge-scribe (Scribe) — pixi build workspace member (warden mirror, Story 1.1).
+#
+# This is a MEMBER package of the parent `staged-recipes` workspace: there is
+# deliberately NO [workspace] table here. The root ../../../../pixi.toml owns
+# workspace config (channels, platforms, environments, the `preview = ["pixi-build"]`
+# flag) and pulls this package in via a path dependency in the
+# `[feature.pyforge-scribe.dependencies]` table. `pixi-build-python` builds
+# this into a conda package.
+#
+# Wave 1 (capture.py + the .claude/memory/ tree, this story) and Wave 2
+# (compile.py/recall.py, Epic 2) are delivered story-by-story against the
+# pyforge-scribe planning chain
+# (_bmad-output/projects/pyforge-scribe/planning-artifacts/).
+
+[package]
+name = "pyforge-scribe"
+version = "0.1.0"
+
+[package.build.backend]
+name = "pixi-build-python"
+version = "0.*"
+
+[package.host-dependencies]
+python = ">=3.12"          # matches pyforge-warden's floor (architecture Stack)
+hatchling = "*"
+
+[package.run-dependencies]
+python = ">=3.12"
+typer = ">=0.27.0"
+pydantic = ">=2.13.4"
