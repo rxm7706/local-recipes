@@ -119,6 +119,9 @@ re-verification from scratch.**
 
 ### 3.2 Non-Users (v1)
 
+`[ASSUMPTION]` These audience boundaries were inferred from the Dream and the intake artifacts,
+not confirmed with a stakeholder.
+
 - **Teams outside Python/data.** Unity is Python-first by mandate; a front-end-only or JVM team
   is not a v1 audience (Node tooling exists only in service of Python-backed applications).
 - **Organizations wanting a hosted SaaS platform.** Unity is a platform an enterprise runs.
@@ -220,7 +223,7 @@ Downstream artifacts must use these terms exactly.
 
 ## 5. Features
 
-Nine features, FR-1 through FR-58.
+Nine features, FR-1 through FR-60.
 
 ### 5.1 Workspace Substrate
 
@@ -993,21 +996,25 @@ The Workspace names a small set of tasks as its public developer API and keeps i
   design default, not a mode. Verified by FR-55.
 - **NFR-3 — Local/CI fidelity.** The Quality Gate is byte-identical locally and in CI. Verified
   by FR-18.
-- **NFR-4 — Feedback latency.** `[ASSUMPTION]` Commit-time checks complete fast enough not to be
-  bypassed; the full gate completes fast enough to run before every push. Specific budgets must be
-  set against a measured baseline — see OQ-12.
+- **NFR-4 — Feedback latency.** Commit-time checks complete within a budget low enough that they
+  are not routinely bypassed; the full gate completes within a budget low enough to run before
+  every push. Verified by FR-23 and counter-measured by SM-C3. `[ASSUMPTION]` Both budgets must be
+  set against a measured baseline rather than invented — see OQ-12. **Until OQ-12 resolves, this
+  NFR has no numeric bound and cannot be tested.**
 - **NFR-5 — Onboarding cost.** A new engineer reaches a working local stack using only written
-  documentation, with no tribal knowledge. Verified by SM-1.
+  documentation, with no tribal knowledge. Verified by FR-13, FR-37, FR-59; measured by SM-1.
 - **NFR-6 — Auditability.** Every gate decision, override, and exception is recorded with who,
-  when, and why, and is enumerable after the fact.
+  when, and why, and is enumerable after the fact. Verified by FR-8, FR-17, FR-27, FR-44, FR-45.
 - **NFR-7 — Diagnosability.** Failures name the cause: the unmet requirement, the conflicting
-  constraint, the violated clause. An opaque solver error is a defect.
+  constraint, the violated clause. An opaque solver error is a defect. Verified by FR-1, FR-2,
+  FR-19, FR-28, FR-46, FR-57.
 - **NFR-8 — Platform coverage.** Every capability works on every declared platform, or declares
-  its exception with a reason (FR-6).
+  its exception with a reason. Verified by FR-6, FR-11.
 - **NFR-9 — Extensibility without forking.** A Domain adds Packages, Environments, and Data
-  Products without modifying platform-owned files.
+  Products without modifying platform-owned files. Verified by FR-5, FR-27, FR-37; measured by
+  SM-8.
 - **NFR-10 — Supply-chain integrity.** Every dependency is hash-verified; every artifact carries
-  SBOM and Provenance.
+  SBOM and Provenance. Verified by FR-10, FR-39, FR-41, FR-42.
 
 ---
 
@@ -1333,7 +1340,12 @@ noted for traceability.
 
 ## 17. Assumptions Index
 
-Every `[ASSUMPTION]` in this document. **None is confirmed scope.**
+Every `[ASSUMPTION]` in **this document**. **None is confirmed scope.**
+
+`addendum.md` carries its own `[ASSUMPTION]` tags (in § A.3, § B.2, § C, § E, § F, § G) covering
+mechanism preferences rather than scope. They are deliberately not indexed here — this index is
+the complete list of *scope* assumptions; the addendum's are *implementation-option leanings* that
+the architecture stage resolves.
 
 | # | Section | Assumption | Resolve via |
 |---|---|---|---|
