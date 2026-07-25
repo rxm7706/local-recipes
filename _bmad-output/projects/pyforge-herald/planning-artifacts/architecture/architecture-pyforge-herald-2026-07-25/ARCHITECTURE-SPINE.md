@@ -199,9 +199,18 @@ src/shared/packages/pyforge-herald/
   shape is not committed by this spine and should not be assumed by V1 code.
 - **`herald deck generate`** (Dream→deck rendering) — PRD Open Question #4; not designed here.
   Not part of CAP-1..5.
-- **Exact `pyforge-herald` env run-dependency list for the MCP SDK** — whether `mcp` is a
+- ~~**Exact `pyforge-herald` env run-dependency list for the MCP SDK** — whether `mcp` is a
   `[package.run-dependencies]` entry or stays feature-level, pending the transport-spike
-  story's outcome (memlog `question` entry).
+  story's outcome (memlog `question` entry).~~ **CLOSED 2026-07-25 by Story 1.2 (the transport
+  spike) in favour of `[package.run-dependencies]`.** The spike proved FR-21's primary
+  pure-MCP-client path reaches `claude-design` from a plain non-interactive Python process, so
+  `McpTransport` is V1's shipped transport and `mcp >=1.28.1` is a genuine runtime dependency of
+  the shipped package, not a dev-only extra. Wired in all three manifests: the package's
+  `pixi.toml` `[package.run-dependencies]`, its `pyproject.toml` `[project] dependencies`, and
+  the root `pixi.toml` `[feature.pyforge-herald.dependencies]`. Verified in the built artifacts
+  (`.conda` `info/index.json` depends carries `mcp >=1.28.1`; the wheel's METADATA carries
+  `Requires-Dist: mcp>=1.28.1`). FR-22's Agent-SDK transport (Story 1.3) is therefore the
+  fallback, not V1's default.
 - **CI/deployment envelope** for the bridge CLI (who runs `herald deck watch` continuously, if
   anyone) — out of scope for a CLI tool invoked interactively by an operator or agent; revisit
   only if a persistent-watch deployment is ever proposed.
