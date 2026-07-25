@@ -377,6 +377,108 @@ steward budget enforce --cap 1500usd/month
 
 ---
 
+## The Lexicon — six nouns, one operating system
+
+The identity system is a **constitutional model for autonomous software delivery**:
+each noun is a load-bearing separation of concerns, and the chain reads in both
+directions — forward as *authorization*, backward as *audit*.
+
+### 1. The Charter — the unit of *legitimacy*
+
+A charter does no work; it **authorizes the workers**. This document holds what must
+exist before any agent acts: the mission (what "done well" ultimately means), the
+offices and their mottos (who is accountable for what), the doctrine (execution has
+one owner; verdicts stay independent; the harness is not a skill), and the branding
+law. It is Tier 0 of the Dream-first model: everything derives — Herald renders it
+into decks, BMAD distills it into specs, and no spec may contradict it. Constitutional
+documents change by **recorded amendment** (the Realization log), never by silent edit.
+
+### 2. The Guild — the unit of *body*
+
+The collective, chartered into existence, so the SDLC has **one accountable
+organization**, not eight freelancers. The Guild is what pauses, resumes, and owns the
+pipeline end to end. It is not redundant with its members: the Guild persisted while
+its membership changed (six → eight in the 2026-07-23 ownership audit, when the
+knowledge and operations stations were found unowned). Bodies outlive rosters — that
+is what makes the model extensible without re-founding it.
+
+### 3. The Forgemasters — the unit of *identity*
+
+The eight, in three registers of one being: **Forgemaster** (brand, what a deck says)
+= **agent** (category, what the mission says: *Agents Deliver*) = **persona**
+(technical, what a BMAD config says). Each audience needs a different word for the
+*same* accountable thing — the moment the registers drift into different things,
+accountability blurs. "Master" is precise too: guild rank means **mastery of one
+craft, not all** — the division of labor *is* the SDLC decomposition. Herald masters
+communication, not code; Warden masters judgment, not building. Nobody is a
+generalist, which is exactly why the verdicts mean something.
+
+### 4. The Stations — the unit of *accountability*
+
+The subtlest separation: **the station is the post, not the person.** Each station is
+a lifecycle stage *plus its independent verdict*, under the doctrine's sharpest line:
+*the hand that builds is never the gate that judges.* Mason's build does not pass
+because Mason says so; it passes when Warden's gate says so.
+
+Station and Forgemaster separate because **the being can change while the post
+persists**. Proven empirically (2026-07-25, the first build campaign): dev sessions
+died mid-story — the beings were literally killed — and the stations held: verdicts
+stayed valid, committed work was recoverable, the contracts (specs, exit codes,
+frozen schemas) did not blink. Model tiering is the same property (swapping sonnet
+for opus swaps the being at the station; the obligations do not move), and
+[[agent-portability]] is the property at framework scale. Offices outlive
+officeholders — that is why the system survives its own mortality.
+
+### 5. The Skills — the unit of *execution* (wielded, never worn)
+
+The armory (`.claude/skills/`): the conda-forge-expert craft with its ~90 hard-won
+gotchas, the BMAD suite, the forged retro-skills. The *wielding* distinction is
+load-bearing, not poetic:
+
+- **Governance survives.** Forgemasters *author* skills (every Rule-2 retro re-forges
+  the craft). If a Forgemaster *were* its skills, the agent would author itself — and
+  the harness, deliberately NOT a skill precisely so the thing that governs the agent
+  is never a thing the agent writes, would have nothing outside the agent to stand on.
+  "Wielded" keeps the sword issueable and confiscatable.
+- **The armory is shared.** Rule 1: any Forgemaster touching conda-forge wields the
+  CFE craft — Marshal's dev sessions pick up Mason's knowledge without becoming Mason.
+  Rule 2: a skill sharpened by one effort upgrades **every future wielder**. Identity
+  cannot be shared; equipment can. That asymmetry is the compounding-knowledge engine.
+- **Blades version; beings don't.** Skills carry semver, changelogs, retros. The
+  Forgemaster wielding CFE v8 is the same one who wielded v6 — continuity of
+  accountability across upgraded capability.
+
+### 6. The Guildhall — the unit of *visibility* (and the human's seat)
+
+The public console. Its conviction is Herald's — *invisible engineering is failed
+engineering* — but its deeper function is that **the Guildhall is how the human
+governs**. The mission says humans govern *intent*, not implementation; that is only
+real if intent can be exercised without reading logs. The hall is that interface:
+Dreams on the wall, Campaigns in motion, build lines forging, Realized works proven —
+all derived from ledgers, never hand-trusted. A guild that works in secret cannot be
+trusted with autonomy; **the hall is the price of the autonomy, paid in public.**
+
+### The chain, read both ways
+
+**Forward — authorization** (how anything is allowed to happen): the Charter
+*authorizes* the Guild → the Guild *seats* Forgemasters → Forgemasters *hold*
+stations → stations *wield* Skills → the work *stands open* in the Guildhall.
+
+**Backward — audit** (how anything is explained): anything visible in the Guildhall
+traces to a station's independent verdict → rendered by a named Forgemaster → seated
+by the Guild → authorized by the Charter — and in parallel, every artifact traces to
+a spec, every spec to a Dream.
+
+Which is the mission, mapped onto nouns: **Governed** = Charter + stations (+ the
+harness beneath them) · **Auditable** = the Guildhall + the backward trace ·
+**Production-ready** = Skills + verdicts that never false-green. The mission is not
+decoration on the system — **the system is the mission, factored into six nouns where
+every noun does exactly one job, and every job has exactly one noun.** That property
+is the same discipline the architecture reviews enforce in code — sole ownership, one
+writer per contract, no dual homes — applied to the organization itself.
+
+---
+
 ## The Execution Doctrine
 
 **Execution has one owner: Marshal.** Skills — existing bmad-method, community,
@@ -434,3 +536,4 @@ herald broadcast slack,email --channel engineering-updates
 - **2026-07-25** — the crew renamed: **the Ecosystem Crew → the PyForge Guild** (slug form `pyforge-guild`). The Charter constitutes the Guild — eight offices, one Agentic SDLC. Deck copy updates ride Herald's queued refresh.
 - **2026-07-25** — the program console named: **PyForge · Guildhall** — the Charter constitutes the Guild; the Guildhall is where its work stands open.
 - **2026-07-25** — terminology sealed: **Forgemasters = agents = personas, wielding Skills** (brand · category · technical; Skills = unit of execution, not identity); constitutive line landed under the mission; H1 retitled.
+- **2026-07-25** — **§ The Lexicon** landed: the six-noun constitutional model (legitimacy · body · identity · accountability · execution · visibility), the authorization/audit chain, and the mission-to-noun mapping — refined from the operator-approved writeup.
