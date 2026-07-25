@@ -868,7 +868,7 @@ window.DASHBOARD_DATA = {
       }
     }
   },
-  "snapshot": "<span>2026-07-25 11:19 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-07-25 11:29 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -1089,9 +1089,11 @@ window.DASHBOARD_DATA = {
     {
       "slug": "upstream-discovery",
       "title": "Upstream discovery — package it before it's asked for",
-      "status": "seeded",
+      "status": "in-spec",
       "owner": "atlas",
-      "chain": {}
+      "chain": {
+        "spec": "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-upstream-discovery"
+      }
     },
     {
       "slug": "wasm-analytics-stack",
@@ -1193,6 +1195,16 @@ window.DASHBOARD_DATA = {
       "updated": "2026-07-23",
       "dream": "pyforge-atlas",
       "path": "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas"
+    },
+    {
+      "slug": "upstream-discovery",
+      "project": "pyforge-atlas",
+      "title": "upstream discovery — sense what the world is building",
+      "caps": 5,
+      "companions": 2,
+      "updated": "2026-07-25",
+      "dream": "upstream-discovery",
+      "path": "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-upstream-discovery"
     },
     {
       "slug": "design-code-bridge",

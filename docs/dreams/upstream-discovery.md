@@ -2,7 +2,7 @@
 title: Upstream discovery — package it before it's asked for
 type: dream
 owner: atlas
-status: seeded
+status: in-spec
 ---
 
 # Upstream discovery — sense what the world is building
