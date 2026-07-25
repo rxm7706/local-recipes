@@ -2,7 +2,7 @@
 title: Genesis — the seed of the operating model
 type: dream
 owner: crew
-status: in-deck
+status: in-spec
 ---
 
 # Genesis — the master idea, and the seed that plants it

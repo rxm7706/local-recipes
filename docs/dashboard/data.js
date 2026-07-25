@@ -868,7 +868,7 @@ window.DASHBOARD_DATA = {
       }
     }
   },
-  "snapshot": "<span>2026-07-25 11:41 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-07-25 11:44 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -994,7 +994,7 @@ window.DASHBOARD_DATA = {
     {
       "slug": "pyforge-genesis",
       "title": "Genesis — the seed of the operating model",
-      "status": "in-deck",
+      "status": "in-spec",
       "owner": "crew",
       "chain": {
         "deck": "presentations/pyforge-genesis",
@@ -1575,15 +1575,15 @@ window.DASHBOARD_DATA = {
         "depth": "epics",
         "state": "queued",
         "have": {
-          "research": false,
-          "brief": false,
-          "prd": false,
-          "architecture": false,
-          "epics": false
+          "research": true,
+          "brief": true,
+          "prd": true,
+          "architecture": true,
+          "epics": true
         },
-        "n": 0,
+        "n": 5,
         "of": 5,
-        "status": "queued"
+        "status": "landed"
       }
     ]
   }
