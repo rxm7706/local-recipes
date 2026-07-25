@@ -169,6 +169,26 @@ def test_finalize_plan_refuses_project_scope_combined_with_paths(fake_caller, pa
     assert caller.calls == []
 
 
+def test_finalize_plan_refuses_a_paths_plan_declaring_nothing(fake_caller):
+    # The same hazard the unknown-scope guard prevents, reached the other
+    # way: an empty paths plan authorizes nothing, so the caller would get
+    # a valid-looking token and every later write would be refused
+    # server-side with no hint that the empty plan was the cause.
+    transport, caller = _transport(fake_caller)
+    with pytest.raises(TransportCallError, match="authorizes nothing"):
+        transport.finalize_plan(project_id="p-1")
+    assert caller.calls == []
+
+
+def test_finalize_plan_refuses_an_answer_carrying_no_plan_token(fake_caller):
+    # "" is not "absent": it is marshalled as an explicit plan_token on
+    # every later write rather than omitted.
+    payload = json.dumps({"base_etags": {"a.html": "0"}})
+    transport, _ = _transport(fake_caller, {"finalize_plan": payload})
+    with pytest.raises(TransportCallError, match="no plan_token"):
+        transport.finalize_plan(project_id="p-1", writes=["a.html"])
+
+
 def test_finalize_plan_refuses_a_non_mapping_base_etags(fake_caller):
     # Iterating a list of pairs would raise AttributeError straight past
     # AD-6's single HeraldError catch at the CLI boundary.
@@ -680,6 +700,79 @@ def test_a_stringified_status_is_enough_to_raise_an_auth_error(monkeypatch):
     )
     with pytest.raises(AuthError, match="/design-login"):
         transport.get_design_prompt()
+
+
+@pytest.mark.parametrize(
+    "message",
+    [
+        # An IPv6 literal, and a session id: both routinely carry the
+        # digits, neither says anything about a credential.
+        "[Errno 101] Network is unreachable: connect to 2607:f8b0:4003::401",
+        "stream closed unexpectedly; Mcp-Session-Id=8f403abc401d",
+        "read timed out after 401 seconds",
+    ],
+)
+def test_a_bare_401_in_an_address_is_not_read_as_a_rejected_credential(
+    monkeypatch, message
+):
+    # bridge-protocol.md § Watch parameters halts on an auth error and
+    # never retries, so a misfiled transient outage would stop `herald deck
+    # watch` for good and blame a credential that is perfectly valid.
+    transport = _transport_failing_with(monkeypatch, OSError(message))
+    with pytest.raises(TransportUnreachableError):
+        transport.get_design_prompt()
+
+
+@pytest.mark.parametrize(
+    "message",
+    [
+        "session terminated: HTTP 401 Unauthorized",
+        "server responded 403 Forbidden",
+        "status_code=401 while opening the stream",
+        "the request was unauthorized",
+    ],
+)
+def test_a_stringified_http_status_is_still_read_as_an_auth_error(monkeypatch, message):
+    transport = _transport_failing_with(monkeypatch, RuntimeError(message))
+    with pytest.raises(AuthError, match="/design-login"):
+        transport.get_design_prompt()
+
+
+def test_a_truncated_token_echo_is_still_scrubbed(monkeypatch):
+    # A library that elides a long Authorization header leaves a prefix
+    # behind, and a prefix is still credential material.
+    token = "herald-tests-fake-token-with-a-long-and-distinctive-body"
+    monkeypatch.setattr(
+        "pyforge.herald.transport.mcp_transport._call_tool_async",
+        _raises(OSError(f"connection refused (Authorization: Bearer {token[:34]}...)")),
+    )
+    transport = McpTransport(
+        credential=DesignCredential(access_token=token, expires_at_ms=None)
+    )
+    with pytest.raises(TransportUnreachableError) as excinfo:
+        transport.get_design_prompt()
+    message = str(excinfo.value)
+    assert token[:34] not in message
+    assert "<redacted>" in message
+
+
+def test_the_transport_refuses_a_non_https_endpoint():
+    # The endpoint is the one place the bearer token leaves the process.
+    with pytest.raises(TransportError, match="cleartext"):
+        McpTransport(url="http://localhost:8080/v1/design/mcp")
+
+
+def test_a_missing_mcp_sdk_is_not_reported_as_an_outage(monkeypatch):
+    # `mcp` is a declared runtime dependency, so an ImportError is a broken
+    # install; calling it "endpoint unreachable" sends the operator to look
+    # at the network instead.
+    transport = _transport_failing_with(
+        monkeypatch, ImportError("No module named 'mcp'")
+    )
+    with pytest.raises(TransportError) as excinfo:
+        transport.get_design_prompt()
+    assert not isinstance(excinfo.value, TransportUnreachableError)
+    assert "mcp SDK is not importable" in str(excinfo.value)
 
 
 def test_a_token_containing_an_auth_marker_does_not_fake_an_auth_error(monkeypatch):

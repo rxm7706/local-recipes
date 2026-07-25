@@ -133,10 +133,14 @@ class FileRead:
     def truncated(self) -> bool:
         """True unless the returned window provably covers the whole file.
 
-        A declared ``total_lines`` with no parsable window counts as
-        truncated: coverage that cannot be proven is not assumed."""
+        Coverage that cannot be proven is not assumed, and the rule is
+        symmetric: a declared ``total_lines`` with no parsable window is
+        truncated, and so is a declared ``lines`` window with no parsable
+        ``total_lines``. Only an answer that declared *no* window at all
+        counts as whole -- that is how the server answers a file below the
+        size cap."""
         if self.total_lines is None:
-            return False
+            return self.first_line is not None or self.last_line is not None
         if self.last_line is None:
             return True
         first = 1 if self.first_line is None else self.first_line
@@ -257,8 +261,11 @@ def sanitize_payload(payload: Any) -> Any:
 
     The host is matched case-insensitively, because DNS is: an answer
     naming ``ABC123.ClaudeUserContent.com`` resolves to the same tokenized
-    origin. Mapping *keys* are scrubbed as well as values -- a server that
-    ever keyed a map by URL would otherwise carry one straight through.
+    origin. String mapping *keys* are scrubbed as well as values -- a
+    server that ever keyed a map by URL would otherwise carry one straight
+    through. A non-string key is left alone: JSON cannot produce one, and
+    scrubbing it could return an unhashable list and raise a bare
+    ``TypeError`` out of a public function, escaping ``HeraldError``.
 
     Replacing the whole string is deliberate. A partially-scrubbed URL
     still reads as a URL and invites a paste; a wholly-redacted value
@@ -268,7 +275,9 @@ def sanitize_payload(payload: Any) -> Any:
     see ``McpTransport.read_file``."""
     if isinstance(payload, Mapping):
         return {
-            sanitize_payload(key): sanitize_payload(value)
+            (sanitize_payload(key) if isinstance(key, str) else key): sanitize_payload(
+                value
+            )
             for key, value in payload.items()
             if key != SERVE_URL_KEY
         }
@@ -342,9 +351,19 @@ def parse_read_response(text: str) -> FileRead:
                 "read_file returned a JSON answer that is not an "
                 "if_none_match short-circuit"
             )
+        etag = _as_text(payload.get("etag"))
+        if not etag:
+            # The etag is the whole point of the short-circuit: the caller
+            # stores it as the next poll's `if_none_match`. Accepting ""
+            # would silently turn `herald deck watch`'s cheap etag poll
+            # into a full download every cycle, with nothing to see.
+            raise TransportCallError(
+                "read_file answered an if_none_match short-circuit carrying "
+                "no etag; the wire contract moved"
+            )
         return FileRead(
             path=_as_text(payload.get("path")),
-            etag=_as_text(payload.get("etag")),
+            etag=etag,
             body=None,
             unchanged=True,
         )

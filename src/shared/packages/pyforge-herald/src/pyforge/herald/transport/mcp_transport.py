@@ -53,6 +53,7 @@ from __future__ import annotations
 import asyncio
 import json
 import os
+import re
 import time
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
@@ -97,9 +98,23 @@ DESIGN_OAUTH_KEY = "designOauth"
 _REMEDIATION = "run /design-login in Claude Code to refresh it"
 
 _AUTH_STATUS_CODES = frozenset({401, 403})
-_AUTH_TEXT_TOKENS = ("401", "403", "unauthorized")
+_AUTH_TEXT_RE = re.compile(
+    r"unauthorized"
+    r"|forbidden"
+    r"|(?:http|https|status|status_code|code|returned|response)\W{0,3}(?:401|403)\b"
+    r"|\b(?:401|403)\s+(?:unauthorized|forbidden)\b",
+    re.IGNORECASE,
+)
 """Fallback markers for an SDK that stringifies the status instead of
-carrying a response object (see ``_indicates_auth_failure``)."""
+carrying a response object (see ``_indicates_auth_failure``).
+
+A bare ``401``/``403`` is deliberately *not* enough. Those three digits
+occur in addresses and identifiers a failing connection routinely names
+(``[Errno 101] ... 2607:f8b0:4003::401``, ``Mcp-Session-Id=8f403abc``), and
+misreading one as a rejected credential is the expensive direction of the
+error: ``bridge-protocol.md`` § Watch parameters says halt on an auth error
+and never retry, so a transient outage would stop ``herald deck watch`` for
+good and blame a credential that is fine."""
 
 _PLAN_SCOPES = ("paths", "project")
 
@@ -223,20 +238,45 @@ def _describe(exc: BaseException) -> str:
     return f"{head} [{inner}]"
 
 
+_TOKEN_REDACTED = "<redacted>"
+_MIN_TOKEN_FRAGMENT = 12
+"""Shortest run of token characters worth scrubbing. Short enough to catch
+a truncated echo, long enough not to match ordinary prose."""
+
+
+def _scrub_token(detail: str, token: str) -> str:
+    """Remove the access token -- whole or truncated -- from an error text.
+
+    An exact-substring replace is not enough on its own: a library that
+    elides a long header (``Bearer sk-ant-oat01-AbCd...``) leaves a prefix
+    behind, and a prefix is still credential material. So the longest
+    prefix of at least ``_MIN_TOKEN_FRAGMENT`` characters that actually
+    appears is replaced too. The spec's rule is absolute -- no token value
+    is ever logged, returned, or written."""
+    if not token:
+        return detail
+    detail = detail.replace(token, _TOKEN_REDACTED)
+    for size in range(len(token) - 1, _MIN_TOKEN_FRAGMENT - 1, -1):
+        fragment = token[:size]
+        if fragment in detail:
+            return detail.replace(fragment, _TOKEN_REDACTED)
+    return detail
+
+
 def _indicates_auth_failure(leaves: Sequence[BaseException], detail: str) -> bool:
     """Whether a failed call was rejected rather than unreachable.
 
     Prefers an ``httpx``-style ``.response.status_code`` on a leaf, which is
-    unambiguous, and falls back to a token scan of the already-scrubbed
-    detail for SDKs that only stringify the status. Scanning the *scrubbed*
-    text matters: an access token that happened to contain "401" would
-    otherwise misfile a plain connection failure as an auth failure."""
+    unambiguous, and falls back to a *contextual* scan of the
+    already-scrubbed detail for SDKs that only stringify the status.
+    Scanning the scrubbed text matters: an access token that happened to
+    contain "401" would otherwise misfile a plain connection failure as an
+    auth failure."""
     for leaf in leaves:
         status = getattr(getattr(leaf, "response", None), "status_code", None)
         if isinstance(status, int) and status in _AUTH_STATUS_CODES:
             return True
-    lowered = detail.lower()
-    return any(token in lowered for token in _AUTH_TEXT_TOKENS)
+    return _AUTH_TEXT_RE.search(detail) is not None
 
 
 class McpTransport:
@@ -254,6 +294,16 @@ class McpTransport:
         credential: DesignCredential | None = None,
         url: str = DESIGN_MCP_URL,
     ) -> None:
+        # The endpoint is the one place the bearer token leaves this
+        # process, so it may not be downgraded to cleartext by a caller
+        # override -- an http:// endpoint would put the stored
+        # /design-login token on the wire in plain text.
+        if not url.lower().startswith("https://"):
+            raise TransportError(
+                f"the claude-design transport refuses the non-https endpoint "
+                f"{url!r}: the stored credential must never cross the wire "
+                f"in cleartext"
+            )
         self._caller = caller
         self._credential = credential
         self._url = url
@@ -309,6 +359,16 @@ class McpTransport:
                 )
             arguments["scope"] = "project"
         else:
+            if not writes and not deletes:
+                # Same failure the unknown-scope guard above prevents,
+                # reached the other way: a paths plan declaring no paths
+                # authorizes nothing, so the caller gets a valid-looking
+                # token and every later write is refused server-side with
+                # no hint that the empty plan was the cause.
+                raise TransportCallError(
+                    "finalize_plan: scope='paths' must declare at least one "
+                    "write or delete; an empty plan authorizes nothing"
+                )
             arguments["writes"] = list(writes)
             arguments["deletes"] = list(deletes)
         payload = self._call_json("finalize_plan", arguments)
@@ -321,8 +381,17 @@ class McpTransport:
                 f"{type(raw_etags).__name__}, expected an object"
             )
         etags = {str(key): _as_text(value) for key, value in raw_etags.items()}
+        plan_token = _as_text(payload.get("plan_token"))
+        if not plan_token:
+            # An empty token is not "no token": it is marshalled as an
+            # explicit `plan_token: ""` on every later write rather than
+            # omitted, so the grant fails at the server instead of falling
+            # back to the interactive path.
+            raise TransportCallError(
+                "claude-design finalize_plan returned no plan_token"
+            )
         return PlanHandle(
-            plan_token=_as_text(payload.get("plan_token")),
+            plan_token=plan_token,
             base_etags=MappingProxyType(etags),
         )
 
@@ -509,11 +578,17 @@ class McpTransport:
             return asyncio.run(
                 _call_tool_async(self._url, credential, tool, dict(arguments))
             )
+        except ImportError as exc:
+            # A broken install, not an outage. `mcp` is a declared runtime
+            # dependency, so reporting this as "endpoint unreachable" would
+            # send the operator to look at the network.
+            raise TransportError(
+                f"the mcp SDK is not importable ({exc}); pyforge-herald "
+                f"declares mcp>=1.28.1 as a runtime dependency -- reinstall "
+                f"the environment"
+            ) from None
         except Exception as exc:  # noqa: BLE001 - every SDK failure maps here
-            detail = _describe(exc)
-            token = credential.access_token
-            if token and token in detail:
-                detail = detail.replace(token, "<redacted>")
+            detail = _scrub_token(_describe(exc), credential.access_token)
             if _indicates_auth_failure(_flatten(exc), detail):
                 raise AuthError(
                     f"claude-design rejected the stored credential calling "

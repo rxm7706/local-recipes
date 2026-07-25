@@ -106,6 +106,14 @@ def test_sanitize_redacts_a_key_naming_the_tokenized_host():
     assert TOKENIZED_PREVIEW_HOST not in repr(sanitized)
 
 
+def test_sanitize_leaves_a_non_string_key_alone():
+    # Scrubbing a tuple key would return an unhashable list and raise a
+    # bare TypeError out of a function the package exports -- escaping the
+    # HeraldError hierarchy that AD-6's CLI boundary catches.
+    sanitized = sanitize_payload({("a", "b"): 1, 7: _SERVE_URL})
+    assert sanitized == {("a", "b"): 1, 7: REDACTED}
+
+
 def test_parse_read_response_full_form_decodes_and_strips_the_trailer():
     text = (
         '<untrusted-project-content path="Deck.dc.html" etag="E7">\n'
@@ -206,6 +214,29 @@ def test_a_later_page_of_a_file_is_truncated():
     assert read.truncated is True
 
 
+@pytest.mark.parametrize(
+    "attributes",
+    [
+        'lines="1-208"',  # a window, but no total to measure it against
+        'lines="1-208" total_lines=""',
+        'lines="1-208" total_lines="212 of 400"',  # not a bare integer
+    ],
+)
+def test_a_declared_window_with_no_parsable_total_fails_closed(attributes):
+    # The mirror image of the case below, and the dangerous direction: a
+    # window reported as whole would be written over the prototype, and its
+    # etag would then license a whole-file overwrite of the lines outside
+    # it. Coverage that cannot be proven is not assumed, either way round.
+    text = (
+        f'<untrusted-project-content path="p" etag="E" {attributes}>\n'
+        "body\n"
+        "</untrusted-project-content>"
+    )
+    read = parse_read_response(text)
+    assert read.total_lines is None
+    assert read.truncated is True
+
+
 def test_a_declared_total_with_no_parsable_window_fails_closed():
     # Coverage that cannot be proven is not assumed.
     text = (
@@ -231,8 +262,21 @@ def test_parse_read_response_unchanged_form():
 def test_parse_read_response_never_coerces_a_null_field_to_the_string_none():
     # str(None) is "None" -- a truthy four-character value that would sail
     # straight through FR-24's etag check.
-    read = parse_read_response('{"unchanged":true,"etag":null,"path":null}')
-    assert (read.path, read.etag) == ("", "")
+    read = parse_read_response('{"unchanged":true,"etag":"E7","path":null}')
+    assert (read.path, read.etag) == ("", "E7")
+
+
+def test_parse_read_response_refuses_an_unchanged_answer_with_no_etag():
+    # The etag is the whole point of the short-circuit: an empty one would
+    # be stored as the next poll's if_none_match and silently turn the
+    # cheap etag poll into a full download every cycle.
+    for text in (
+        '{"unchanged":true,"path":"Deck.dc.html"}',
+        '{"unchanged":true,"etag":null,"path":"Deck.dc.html"}',
+        '{"unchanged":true,"etag":"","path":"Deck.dc.html"}',
+    ):
+        with pytest.raises(TransportCallError, match="no etag"):
+            parse_read_response(text)
 
 
 @pytest.mark.parametrize(
