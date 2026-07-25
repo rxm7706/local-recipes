@@ -153,6 +153,11 @@ pyforge-scribe = { features = ["pyforge-scribe"], no-default-feature = true }
 # LOCALLY-BUILT bmad-dashboard + mybmad-dashboard packages (consume-not-submit
 # mirrors of conda-forge/staged-recipes#33513) from ./build_artifacts/linux64.
 bmad-ui = { features = ["bmad-ui"], no-default-feature = true }
+# Lean herald env (Story 1.1, warden/atlas mirror): no-default-feature
+# excludes the fat default [dependencies]; carries only the built
+# pyforge-herald package + pytest. Spec:
+# _bmad-output/projects/pyforge-herald/planning-artifacts/.
+pyforge-herald = { features = ["pyforge-herald"], no-default-feature = true }
 
 [feature.local-recipes.activation]
 scripts = ["scripts/load-env.sh"]
@@ -1162,6 +1167,19 @@ depends-on = ["pyforge-atlas-build-conda", "pyforge-atlas-build-dist"]
 # _bmad-output/projects/pyforge-scribe/planning-artifacts/.
 [feature.pyforge-scribe.dependencies]
 pyforge-scribe = { path = "src/shared/packages/pyforge-scribe" }  # -> built conda pkg
+# --- pyforge-herald (Herald): pixi build workspace member (warden/atlas mirror, Story 1.1) --
+# Source + package manifest live in ./src/shared/packages/pyforge-herald (its
+# own [package] table, no [workspace]) — same src/shared/packages convention as
+# warden/atlas. One hatchling pyproject is the single Python build backend:
+#   * conda pkg  -> pixi-build-python wraps the hatchling wheel  (pyforge-herald-build-conda)
+#   * wheel+sdist-> `python -m build` from the same pyproject     (pyforge-herald-build-dist)
+# The path dependency below builds the CONDA package and installs it (plus
+# run-deps) into the dedicated lean `pyforge-herald` env. This story delivers
+# the build-wiring skeleton only (argparse CLI + empty `deck` subcommand
+# group, no bridge logic). Spec:
+# _bmad-output/projects/pyforge-herald/planning-artifacts/.
+[feature.pyforge-herald.dependencies]
+pyforge-herald = { path = "src/shared/packages/pyforge-herald" }  # -> built conda pkg
 hatchling = ">=1.31.0"                    # Python build backend (drives both conda + wheel/sdist)
 python-build = ">=1.5.0"                 # PyPA `python -m build` frontend (wheel + sdist)
 pytest = ">=9.1.1"                       # test runner
@@ -1183,3 +1201,20 @@ cwd = "src/shared/packages/pyforge-scribe"
 [feature.pyforge-scribe.tasks.pyforge-scribe-build]
 description = "Build all three artifacts: conda + wheel + sdist"
 depends-on = ["pyforge-scribe-build-conda", "pyforge-scribe-build-dist"]
+[feature.pyforge-herald.tasks.pyforge-herald-test]
+description = "Run the pyforge.herald test suite"
+cmd = "pytest src/shared/packages/pyforge-herald/tests -q"
+
+[feature.pyforge-herald.tasks.pyforge-herald-build-conda]
+description = "Build the conda package (.conda) via pixi-build-python -> dist-conda/"
+cmd = "pixi build --output-dir dist-conda"
+cwd = "src/shared/packages/pyforge-herald"
+
+[feature.pyforge-herald.tasks.pyforge-herald-build-dist]
+description = "Build the pypi wheel (.whl) + sdist (.tar.gz) via hatchling"
+cmd = "python -m build --no-isolation --outdir dist"
+cwd = "src/shared/packages/pyforge-herald"
+
+[feature.pyforge-herald.tasks.pyforge-herald-build]
+description = "Build all three artifacts: conda + wheel + sdist"
+depends-on = ["pyforge-herald-build-conda", "pyforge-herald-build-dist"]
