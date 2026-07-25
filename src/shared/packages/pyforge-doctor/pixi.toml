@@ -1,0 +1,29 @@
+# pyforge-doctor (Doctor): pixi build workspace member (warden mirror, Story 1.1).
+#
+# This is a MEMBER package of the parent `staged-recipes` workspace: there is
+# deliberately NO [workspace] table here. The root ../../../../pixi.toml owns
+# workspace config (channels, platforms, environments, the `preview = ["pixi-build"]`
+# flag) and pulls this package in via a path dependency in the
+# `[feature.pyforge-doctor.dependencies]` table. `pixi-build-python` builds
+# this into a conda package.
+#
+# The check/monitor/diagnose implementation lands story-by-story against
+# _bmad-output/projects/pyforge-doctor/planning-artifacts/ -- Story 1.1 only
+# scaffolds the package layout, the frozen Finding/DoctorReport contract
+# (models.py), and Doctor's own sole-owned exit-code projection (verdict.py).
+
+[package]
+name = "pyforge-doctor"
+version = "0.1.0"
+
+[package.build.backend]
+name = "pixi-build-python"
+version = "0.*"
+
+[package.host-dependencies]
+python = ">=3.14"          # explicit build-time interpreter for pixi-build-python (matches pyforge-warden/pyforge-atlas)
+hatchling = "*"
+
+[package.run-dependencies]
+python = ">=3.14"
+jsonschema = "*"

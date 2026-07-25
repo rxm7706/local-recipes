@@ -1,0 +1,37 @@
+[build-system]
+build-backend = "hatchling.build"
+requires = ["hatchling"]
+
+[project]
+name = "pyforge-doctor"
+version = "0.1.0"
+description = "Pre-flight + fleet-watch diagnostics CLI (check/monitor/diagnose) consolidating pyforge-warden + cf_atlas signals into one schema-validated DoctorReport."
+readme = "README.md"
+requires-python = ">=3.14"
+license = { text = "MIT" }
+authors = [{ name = "rxm7706" }]
+# Lean, targeted dependency set (mirrors pyforge-warden's own doctrine):
+# jsonschema validates the packaged DoctorReport envelope against
+# data/report-schema.json. Nothing else is needed at scaffold stage.
+dependencies = [
+    "jsonschema",
+]
+
+[project.optional-dependencies]
+# AD-1 (architecture spine): the ONLY cross-package code edge -- doctor ->
+# warden (a library call into pyforge.warden.engines.run_doctor_checks, a
+# later story). Declared here now (scaffold stage, Story 1.1) per AD-1;
+# not yet wired into the root pixi.toml's [feature.pyforge-doctor.*] block
+# since no code imports pyforge.warden yet (that lands with Story 1.2,
+# which also wires this extra into the in-repo pixi env, mirroring
+# pyforge-atlas's identical [gate] extra). This is an in-repo path
+# dependency only -- pyforge-warden is not published to PyPI, so `pip
+# install pyforge-doctor[gate]` only resolves inside this monorepo. No
+# reverse warden -> doctor import may ever exist.
+gate = ["pyforge-warden"]
+
+[project.scripts]
+doctor = "pyforge.doctor.__main__:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/pyforge"]
