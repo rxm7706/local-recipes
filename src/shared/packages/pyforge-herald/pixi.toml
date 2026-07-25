@@ -24,7 +24,11 @@ version = "0.*"
 python = ">=3.12"          # explicit build-time interpreter for pixi-build-python (Gemini PR#49)
 hatchling = "*"
 
-# Runtime deps are minimal for this scaffold story: just the interpreter. The
-# MCP bridge / transport deps (Story 1.2+) land here once they exist.
+# Runtime deps: the interpreter plus the MCP SDK. Story 1.2's spike proved the
+# pure-MCP-client transport reaches `claude-design` from a plain process, so
+# `mcp` is a genuine run-dependency of the shipped package (this closes the
+# architecture spine's Deferred "run-dependency or feature-level?" question),
+# not a dev-only extra.
 [package.run-dependencies]
 python = ">=3.12"
+mcp = ">=1.28.1"
