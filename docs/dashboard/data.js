@@ -3,7 +3,7 @@ window.DASHBOARD_DATA = {
     "warden": {
       "label": "Warden",
       "accentVar": "--warden",
-      "branch": "loop/pyforge-warden · wave running — 30/31; 5.2 in flight (sonnet) — the LAST story, then Warden is complete",
+      "branch": "loop/pyforge-warden · WARDEN COMPLETE ✔ 31/31 — all 6 epics shipped; batch-PR to main + closeout retro pending",
       "contract": "FR1–FR40 · exit codes {0,1,2,130} · verdict lattice error &gt; policy-violation &gt; indeterminate &gt; warn &gt; bypassed &gt; clean &gt; not-applicable",
       "seglabels": [
         "E1 · spine",
@@ -142,7 +142,7 @@ window.DASHBOARD_DATA = {
             ],
             [
               "5.2",
-              "pending",
+              "done",
               "Fleet-scale validation + corpus / oracle maturation"
             ]
           ]
@@ -205,17 +205,7 @@ window.DASHBOARD_DATA = {
           ]
         }
       ],
-      "inflight": {
-        "key": "5.2",
-        "title": "Fleet-scale validation + corpus / oracle maturation",
-        "phase": "dev (sonnet)",
-        "attempt": 1,
-        "startEpoch": 1784937070,
-        "median": 90,
-        "lo": 35,
-        "hi": 265,
-        "phaseAsOf": "2026-07-24 23:51 UTC"
-      },
+      "inflight": null,
       "velocity": {
         "sub": "Active agent-compute time per completed story (dev + review; excludes gate-pause wait). Median holds near steady-state; the Epic-2 extraction stories (2.2–2.4) ran heavy.",
         "bars": [
@@ -318,6 +308,10 @@ window.DASHBOARD_DATA = {
           [
             "5.1",
             147
+          ],
+          [
+            "5.2",
+            175
           ]
         ],
         "foot": [
@@ -332,20 +326,20 @@ window.DASHBOARD_DATA = {
             ""
           ],
           [
-            "1",
-            "story remaining",
-            ""
+            "31/31",
+            "stories complete",
+            "var(--done)"
           ],
           [
-            "~1.5–2.5 h",
-            "est. active compute left",
+            "0",
+            "remaining — Warden done",
             ""
           ]
         ]
       },
       "timing": {
         "metric": "active agent-compute per story (dev + review; excludes gate-pause wait) — from bmad-loop run journals",
-        "totalLabel": "~39 h active compute",
+        "totalLabel": "~41 h active compute",
         "note": "Measured stories only. The earliest keystones 1.1 / 1.2, plus 2.6 and the recovered 6.10 spike, predate clean journaling and are excluded. 6.4’s bar is its delivered dev-2 pass (35m); a rolled-back dev-1 cost ~49m more that isn’t counted as delivery. 6.9’s bar (~60m) is the dev-to-commit span recovered from a stalled session + a manual adversarial review. 5.1’s bar (147m) is its full span across TWO adversarial review cycles (the followup-flagged security fixes re-reviewed until clean). Epic-6 note: 6.10 (design spike) + 6.2 have no journal record — bars show journal-backed stories only; 6.3 / 6.5 / 6.7 mined from loop-home run journals.",
         "perStory": {
           "1.3": 78,
@@ -372,17 +366,18 @@ window.DASHBOARD_DATA = {
           "6.8": 89,
           "6.9": 60,
           "6.6": 83,
-          "5.1": 147
+          "5.1": 147,
+          "5.2": 175
         },
         "epicMin": {
           "E1": 534,
           "E2": 617,
           "E3": 264,
           "E4": 96,
-          "E5": 147,
+          "E5": 322,
           "E6": 801
         },
-        "total": 2089
+        "total": 2264
       }
     },
     "atlas": {
@@ -873,7 +868,7 @@ window.DASHBOARD_DATA = {
       }
     }
   },
-  "snapshot": "<span>2026-07-24 23:52 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-07-25 02:56 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
