@@ -868,7 +868,7 @@ window.DASHBOARD_DATA = {
       }
     }
   },
-  "snapshot": "<span>2026-07-25 10:59 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-07-25 11:15 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -1004,7 +1004,7 @@ window.DASHBOARD_DATA = {
     {
       "slug": "pyforge-herald",
       "title": "Herald — capture the dream, illustrate the telemetry, proclaim the release",
-      "status": "in-deck",
+      "status": "in-spec",
       "owner": "herald",
       "chain": {
         "deck": "presentations/pyforge-herald",
@@ -1461,15 +1461,15 @@ window.DASHBOARD_DATA = {
         "depth": "epics",
         "state": "running",
         "have": {
-          "research": false,
+          "research": true,
           "brief": false,
-          "prd": false,
-          "architecture": false,
-          "epics": false
+          "prd": true,
+          "architecture": true,
+          "epics": true
         },
-        "n": 0,
+        "n": 4,
         "of": 5,
-        "status": "running"
+        "status": "partial"
       },
       {
         "wave": "1e",
