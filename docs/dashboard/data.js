@@ -895,7 +895,7 @@ window.DASHBOARD_DATA = {
             ],
             [
               "1.3",
-              "pending",
+              "active",
               "Fallback transport adapter"
             ],
             [
@@ -1017,7 +1017,7 @@ window.DASHBOARD_DATA = {
           "stories": [
             [
               "1.1",
-              "active",
+              "done",
               "Package scaffold, frozen Finding/DoctorReport contract & exit codes"
             ],
             [
@@ -1169,7 +1169,7 @@ window.DASHBOARD_DATA = {
       "timing": null
     }
   },
-  "snapshot": "<span>2026-07-25 15:05 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-07-25 15:44 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -1917,7 +1917,7 @@ window.DASHBOARD_DATA = {
           "stories": 12,
           "state": "running",
           "note": "line 2 — consolidative wrap",
-          "done": 0,
+          "done": 1,
           "total": 12
         },
         {
