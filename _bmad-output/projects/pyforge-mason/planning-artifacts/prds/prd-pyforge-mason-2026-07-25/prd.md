@@ -11,9 +11,11 @@ inputs:
   - ../../briefs/brief-pyforge-mason-2026-07-25/addendum.md
   - ../../research/domain-packaging-automation-tooling-research-2026-07-25.md
   - ../../research/technical-mason-cli-seam-research-2026-07-25.md
-frCount: 46
+frCount: 50
 nfrCount: 16
-decisionCount: 9
+decisionCount: 13
+revision: 2
+revisionNote: "r2 applied the adversarial-review findings — see review-adversarial.md. Added FR-47..FR-50 and D-10..D-13; resolved the FR-45/Rule-2 contradiction, the missing ship verb, the UJ-1/D-2 scope conflict, and the FR-23/FR-44 and FR-46/NFR-13 contradictions."
 ---
 
 # PRD: Mason
@@ -82,11 +84,15 @@ an unowned seam between two toolchains, not a missing feature in one product.
 Developer-product scope dial: lighter form, one to three beats each.
 
 - **UJ-1. Dana ships release 2.1 of her library to both ecosystems.**
-  Dana maintains a mid-sized analytics library used by both pip and conda users. She tags 2.1, runs
-  `mason package --target library --ship pypi,conda-forge --dry-run`, reads the plan, and re-runs it
-  for real. The wheel is on PyPI in under a minute. The conda half returns a **PR reference** — a
+  Dana maintains a mid-sized analytics library used by both pip and conda users. Her recipe lives in
+  a CFE-co-located packaging repo (D-2, D-10). She tags 2.1, runs
+  `mason package ship --target library --to pypi,conda-forge --dry-run`, reads the plan, and re-runs
+  it for real. The wheel is on PyPI in under a minute. The conda half returns a **PR reference** — a
   staged-recipes pull request is open and queued for human review. Dana knows the difference because
   Mason told her plainly, in the same output, rather than reporting a uniform "success."
+  **Boundary (D-10):** from a project with no CFE root and no `recipes/<name>/` source directory,
+  the `pypi` half of this journey works and the `conda-forge` half does not. Mason says so rather
+  than failing obscurely.
 
 - **UJ-2. Rae adds a package to conda-forge without knowing conda-forge.**
   Rae has never written a recipe. `mason recipe new --from-pypi some-lib` produces a v1
@@ -191,8 +197,12 @@ Every CFE invocation returns a structured result.
 
 **Consequences (testable):**
 - The result carries return code, stdout, stderr, and a parsed JSON body when one is present.
-- A configurable timeout is applied to every invocation; expiry produces a distinct timeout error
-  and leaves no orphaned process.
+- A timeout is applied to every invocation; expiry produces a distinct timeout error and leaves no
+  orphaned process.
+- The timeout is configured by `--cfe-timeout` → `MASON_CFE_TIMEOUT` → a per-operation default
+  (D-13 — there is no configuration file, so every knob is a flag plus an environment variable).
+- Long-running operations (`recipe build`) stream child stderr through to the user's stderr rather
+  than buffering it to completion; short JSON-returning operations capture stdout (FR-49).
 - Output parsing tolerates a leading non-JSON progress line before the JSON body.
 
 **Rationale on the last point:** the existing MCP server carries `_extract_json_from_stdout()` for
@@ -257,9 +267,14 @@ A user validates a recipe against conda-forge policy.
 A user builds a recipe on the host platform. Realizes UJ-2.
 
 **Consequences (testable):**
-- Native build is the default; a Docker/CI-parity build is available behind an explicit flag and is
-  never implicit.
+- Native build is the default.
+- A Docker / CI-parity build is available behind an explicit flag and is never implicit. It
+  delegates to CFE's Docker entry point, **not** to `local_builder.py`, which is Docker-less.
+  `[NOTE FOR PM]` If that entry point turns out not to be adapter-reachable, drop the Docker bullet
+  — it is the one part of FR-9 with no confirmed wrappable target (OQ-8).
 - Build output location and exit status are reported in both human and JSON forms.
+- Child build output streams to stderr as it is produced (FR-49); the user is not left with a silent
+  terminal for the duration of a multi-minute build.
 
 #### FR-10: `mason recipe diagnose`
 
@@ -323,16 +338,26 @@ A user builds distributable artifacts from a project.
 - Artifact paths are reported; nothing is uploaded.
 - Runs with the CFE root absent (FR-5).
 
-#### FR-16: Ship-target vocabulary
+#### FR-16: `mason package ship` and the target vocabulary
 
-`--ship` accepts exactly three target forms.
+A user ships built artifacts to one or more targets. **This is the verb that ships** — FR-15's
+`build` explicitly uploads nothing, so shipping needs its own verb under FR-30's noun-verb rule.
+Realizes UJ-1, SM-1.
 
 **Consequences (testable):**
-- `pypi` — synchronous upload.
-- `conda-forge` — asynchronous; opens a staged-recipes pull request.
-- `channel:<name>` — synchronous upload to a named conda channel.
+- The canonical form is `mason package ship --to <targets>`.
+- `mason package --ship <targets>` is accepted as a documented alias, so the crew charter's cadence
+  (`mason package --target library --ship pypi,conda-forge`) works verbatim. The alias is the sole
+  exception to FR-30's "bare noun exits non-zero" rule and is tested as such.
+- `--to` accepts exactly four target forms:
+  - `pypi` — synchronous upload.
+  - `pypi-test` — synchronous upload to TestPyPI (SM-1's rehearsal target; see FR-50).
+  - `conda-forge` — asynchronous; opens a staged-recipes pull request.
+  - `channel:<name>` — synchronous upload to a named conda channel.
 - Any other value is rejected with the valid set listed.
 - Multiple targets are comma-separated and each is honoured independently.
+- `ship` builds first if artifacts are absent, reusing FR-15's implementation rather than duplicating
+  it.
 
 #### FR-17: Asymmetric ship reporting
 
@@ -356,6 +381,14 @@ A multi-target ship handles per-target failure without corrupting the others.
 - One target's failure does not prevent the others from being attempted.
 - The receipt distinguishes not-attempted, failed, pending, and terminal.
 - Retrying is safe: an already-terminal target is skipped, not re-uploaded.
+- **Cross-invocation idempotence is achieved by interrogating the target, not by persisting state**
+  (D-11): `pypi` / `pypi-test` by querying the index for the version; `channel:<name>` by querying
+  the channel; `conda-forge` by searching the fork for an open pull request on the deterministic
+  `add-recipe-<name>` branch CFE's submission flow produces.
+- A second `ship --to conda-forge` for an already-open PR reports `pending` with the existing PR
+  reference and opens **no** second pull request. This case is explicitly tested.
+- A target that cannot be interrogated yields `pending` with the reason stated — never an assumption
+  in either direction.
 
 #### FR-19: Dry-run by default for shipping
 
@@ -394,22 +427,38 @@ Mason refuses to ship artifacts whose versions disagree.
 
 #### FR-23: Recipe sourcing for `conda-forge` shipping
 
-Shipping to `conda-forge` requires a recipe.
+Shipping to `conda-forge` requires a recipe **and** a CFE-co-located repository. Realizes UJ-1's
+conda half, within the D-10 boundary.
 
 **Consequences (testable):**
 - If a recipe path is given, it is used. If not, Mason offers to generate one via FR-7 and does not
   generate silently.
-- This is the one path in `mason package` that requires the CFE root; its absence produces the
-  FR-5 error for that target only, leaving `pypi` and `channel:` unaffected.
+- **This is the sole exception to FR-44.** It is the one target in `mason package` that requires the
+  CFE root, and it additionally requires the recipe to sit where CFE's submission flow expects it —
+  `<cfe-root>/recipes/<name>/`. CFE's `submit_pr.py` reads from that path and writes into a
+  staged-recipes fork clone; Mason may not change either behaviour (AD-15).
+- When either precondition is unmet, the `conda-forge` target alone fails with a message naming the
+  precondition, and every other target in the same invocation completes normally.
+- The preconditions are checked and reported by `mason doctor` (FR-34), so a user learns the boundary
+  before attempting a release rather than during one.
+
+**Out of Scope:** shipping to conda-forge from a project with no CFE root and no `recipes/<name>/`
+source directory. See D-10 — this is the honest v1 boundary, not a hidden failure.
 
 #### FR-24: Self-hosting
 
 Mason can ship Mason.
 
 **Consequences (testable):**
-- `mason package --ship pypi` executed against `src/shared/packages/pyforge-mason/` produces the same
-  artifacts the repository's existing hand-run build triad produces.
+- `mason package build` against `src/shared/packages/pyforge-mason/` produces the same artifacts the
+  repository's existing hand-run `pyforge-mason-build` triad produces.
+- `mason package ship --to pypi-test` publishes `pyforge-mason` to TestPyPI **first**. Only after
+  that rehearsal passes does `--to pypi` run (FR-50).
 - This is SM-1, the primary success metric.
+
+**Note:** what the repository dogfoods today is the dual-artifact **build**, not the ship — neither
+sibling package has a publish or upload task. FR-24 is therefore a genuine first, which is exactly
+why FR-50's rehearsal exists.
 
 ---
 
@@ -475,6 +524,9 @@ the workspace's lean-dependency doctrine for ergonomics alone.
 **Consequences (testable):**
 - Three nouns in v1: `recipe`, `package`, `environment`, plus top-level `doctor` and `--version`.
 - `mason <noun>` with no verb prints that noun's verbs and exits non-zero.
+- **One documented exception:** `mason package --ship <targets>` (FR-16's charter alias) is valid
+  without a verb and dispatches to `mason package ship`. It is the only bare-noun form that runs, and
+  a test asserts no other exists.
 
 #### FR-31: Dual output format
 
@@ -588,6 +640,16 @@ requirements are the mechanism that does.
   constant, no pin table, and no recipe-format field defaults.
 - The test fails on introduction of any such constant. **This is the single most valuable test in
   the product.**
+- **The decision procedure is enumerated, not left to judgement.** The deny-list is declared in one
+  reviewable module and must include, at minimum: the gotcha-identifier pattern (`G` followed by
+  1–3 digits, matched as a word); conda-forge policy nouns and check-code prefixes drawn from CFE's
+  own reference material; recipe-format field names from the v1 schema; and known pin/constraint
+  string shapes. Each entry cites the CFE artifact it derives from.
+- **The test proves itself.** It ships with positive fixtures — synthetic modules containing a
+  planted violation of each deny-list category — and fails if any planted violation goes undetected.
+  A deny-list that matches nothing is a failing test, not a passing one.
+- Weakening or removing a deny-list entry requires an accompanying rationale comment; a
+  companion test asserts every entry carries one.
 
 #### FR-43: Adapter is the sole CFE caller
 
@@ -598,20 +660,91 @@ requirements are the mechanism that does.
 
 **Consequences (testable):**
 - A meta-test runs every `mason package` and `mason environment` verb with the CFE root guaranteed
-  unresolvable and asserts each behaves normally.
+  unresolvable and asserts each behaves normally — **with exactly one enumerated exception, the
+  `conda-forge` ship target (FR-23).**
+- The exception is expressed as a named allow-list of one entry, not as a weakened assertion. Adding
+  a second entry requires changing the test, which is the review gate. A blanket "except where CFE is
+  needed" formulation is explicitly forbidden — that phrasing is the erosion this FR exists to stop.
+- The test asserts positively that the excepted target fails **for the right reason** (the FR-5
+  error), not merely that it fails.
 
-#### FR-45: No CFE surface modification
+#### FR-45: No CFE surface modification by implementation work
 
 **Consequences (testable):**
 - The repository's `spec_surface_check` remains green across the whole effort.
-- No commit in Mason's history touches `.claude/skills/conda-forge-expert/**`,
-  `.claude/scripts/conda-forge-expert/**`, or `.claude/tools/conda_forge_server.py`.
+- **No implementation commit** touches `.claude/skills/conda-forge-expert/**`,
+  `.claude/scripts/conda-forge-expert/**`, or `.claude/tools/conda_forge_server.py`. "Implementation
+  commit" means every commit in the effort except the one sanctioned exception below.
+- **The sanctioned exception:** the closing Rule-2 retrospective (FR-47) edits exactly those files —
+  because CLAUDE.md Rule 2 requires it. That commit is identified by convention (a `retro:` subject
+  and a CFE `CHANGELOG.md` entry in the same commit) and is excluded from the check.
+- The check asserts the exception is used **once**, by the retrospective, and carries a CHANGELOG
+  move — so it cannot be borrowed to sneak an implementation change through.
+
+**Rationale:** an earlier draft of this FR forbade *all* commits to the CFE surface, which directly
+contradicted §9 and made the effort impossible to close. Rule 2 is not optional; Mason's constraint
+is that it may not edit CFE *while implementing*, and must edit CFE *when retrospecting*.
 
 #### FR-46: Delegation-fidelity test
 
 **Consequences (testable):**
 - For a representative recipe operation, Mason's result matches the corresponding direct CFE
   invocation's result — proving Mason transforms presentation, not semantics.
+- This test is the **single declared exception to NFR-13**: it requires a real CFE installation. It
+  carries the `slow` marker, is excluded from the default test task, and **skips cleanly** (never
+  fails) when no CFE root resolves.
+
+#### FR-47: Closing Rule-2 retrospective
+
+The effort closes with a retrospective that improves the skill it wraps.
+
+**Consequences (testable):**
+- A retrospective runs at closeout, reviewing this effort against the conda-forge-expert skill.
+- Findings land as edits to the skill's files plus a dated `CHANGELOG.md` entry with a one-line
+  summary per finding, and the skill version is bumped per semver.
+- The CFE defects recorded during planning (13 duplicated `_get_data_dir()` copies, the
+  `parents[3/4/5]` repo-root divergence, the two scripts resolving to a divergent data directory,
+  the unconditional JFrog header injection) are each surfaced for triage.
+- If no novel findings emerge, a CHANGELOG entry still states that existing guidance held, naming
+  this effort.
+- The effort is not done until this lands. Not optional, not deferrable.
+
+#### FR-48: Configuration surface
+
+Every runtime knob is reachable without a configuration file.
+
+**Consequences (testable):**
+- Each knob is exposed as both a flag and an environment variable, resolved
+  flag → environment → default (D-13).
+- The v1 knob set is enumerated: `--cfe-root`/`MASON_CFE_ROOT`, `--cfe-python`/`MASON_CFE_PYTHON`,
+  `--cfe-timeout`/`MASON_CFE_TIMEOUT`, `--format`, `--verbose`, `--quiet`.
+- A test asserts every knob has both forms and that no code path reads a Mason-specific key from a
+  file.
+
+#### FR-49: Logging and child-output handling
+
+A user can see what a long operation is doing without losing the machine-readable contract.
+
+**Consequences (testable):**
+- Logging uses the stdlib `logging` module and writes to stderr only, at every verbosity.
+- `--verbose` raises the level; `--quiet` lowers it; neither affects what stdout carries.
+- **Delegated operations expected to exceed a few seconds (`recipe build`, `package build`) stream
+  child stderr through to the user's stderr as it is produced**; short JSON-returning operations
+  capture stdout for parsing.
+- Under `--format json`, streamed child output still goes to stderr, so the single-JSON-document
+  guarantee on stdout holds during a streaming operation. A test asserts this.
+- No log record at any level contains an environment-variable value (NFR-2).
+
+#### FR-50: Rehearsal before an irreversible publish
+
+A user can rehearse a PyPI publish before performing the one-way one.
+
+**Consequences (testable):**
+- The `pypi-test` target (FR-16) uploads to TestPyPI using the same code path as `pypi`, differing
+  only in repository configuration.
+- FR-24's self-hosting sequence runs `pypi-test` and requires it to pass before `pypi` runs.
+- A PyPI upload is recognized as irreversible: the dry-run plan (FR-19) states so explicitly for the
+  `pypi` target.
 
 ---
 
@@ -636,17 +769,21 @@ requirements are the mechanism that does.
 
 - The adapter and its resolution chains (FR-1 – FR-6)
 - `mason recipe`: new, validate, build, diagnose, optimize, scan, submit, update (FR-7 – FR-14)
-- `mason package`: build, ship to `pypi` / `conda-forge` / `channel:<name>` with asymmetric receipts
-  (FR-15 – FR-24)
+- `mason package`: build and ship to `pypi` / `pypi-test` / `conda-forge` / `channel:<name>` with
+  asymmetric receipts (FR-15 – FR-24)
 - `mason environment`: lock, check (FR-25 – FR-29)
 - CLI shell, dual output, exit codes, structured errors, `doctor` (FR-30 – FR-35)
 - Distribution as a workspace member with the dual-artifact build (FR-36 – FR-41)
-- The four enforcement meta-tests (FR-42 – FR-46)
+- The enforcement meta-tests and the closing retrospective (FR-42 – FR-47)
+- Configuration surface, logging/streaming, and publish rehearsal (FR-48 – FR-50)
 
 ### 6.2 Out of Scope for MVP
 
 - **Operation in a repository with no discoverable CFE root** — requires changes to a surface Mason
   may not edit (D-2).
+- **Shipping to conda-forge from a project with no `recipes/<name>/` source directory** — CFE's
+  submission flow reads from that path and Mason may not change it (D-10). The `pypi`,
+  `pypi-test`, and `channel:` targets have no such limit.
 - **A Mason MCP server** — deferred; `fastmcp` is already a root dependency, so it costs nothing to
   add later (D-8).
 - **OIDC / trusted publishing** — v1 is token-based (D-5).
@@ -662,23 +799,29 @@ requirements are the mechanism that does.
 
 **Primary**
 
-- **SM-1: Mason ships Mason.** `mason package --ship pypi` publishes `pyforge-mason` itself, and the
-  conda half produces the same `.conda` the hand-run build triad produces. Target: achieved before
-  v1 is declared done. Validates FR-15 – FR-24, FR-37.
-  *Until Mason can ship Mason, the dual-ship claim is unproven.* The repository already performs this
-  exact motion by hand for two sibling packages, so it is a near test, not an aspiration.
+- **SM-1: Mason ships Mason.** `mason package ship --to pypi-test` then `--to pypi` publishes
+  `pyforge-mason` itself, and `mason package build` produces the same `.conda` the hand-run build
+  triad produces. Target: achieved before v1 is declared done. Validates FR-15 – FR-24, FR-37, FR-50.
+  *Until Mason can ship Mason, the dual-ship claim is unproven.*
+  **Evidence caveat:** the repository dogfoods the dual-artifact **build** by hand for two sibling
+  packages — neither has a publish or upload task. The **ship** half is genuinely new, which is why
+  FR-50's TestPyPI rehearsal gates the irreversible upload.
 
 **Secondary**
 
-- **SM-2: Zero recipe knowledge in Mason.** FR-42's meta-test is green at every commit. Target: 100%.
+- **SM-2: Zero recipe knowledge in Mason.** FR-42's meta-test is green at every commit, **and its own
+  planted-violation fixtures prove it is not vacuous.** Target: 100%.
 - **SM-3: CFE-independence holds.** Every `mason package` / `mason environment` verb passes with the
-  CFE root absent. Validates FR-5, FR-44.
+  CFE root absent, except the single enumerated `conda-forge` ship target (FR-23/FR-44). Target: the
+  exception allow-list has exactly one entry. Validates FR-5, FR-44.
 - **SM-4: Free inheritance.** A CFE gotcha added after Mason ships changes Mason's behaviour with
   **no change to Mason**. Measured once against a real post-ship CFE MINOR bump. Validates FR-1.
 - **SM-5: Distribution parity.** `.conda` + wheel + sdist build green from one `pyproject.toml`.
   Validates FR-36 – FR-39.
-- **SM-6: Governance clean.** `spec_surface_check` green and zero commits touching the CFE surface.
-  Validates FR-45.
+- **SM-6: Governance clean.** `spec_surface_check` green; zero **implementation** commits touching the
+  CFE surface; exactly one sanctioned retrospective commit that does (FR-45, FR-47). Validates FR-45.
+- **SM-7: Rule-2 closed.** A dated CFE `CHANGELOG.md` entry exists naming this effort, with a semver
+  bump. Validates FR-47.
 
 **Counter-metrics (do not optimize)**
 
@@ -711,8 +854,9 @@ requirements are the mechanism that does.
 - **NFR-11 (Python floor).** `requires-python >= 3.12`, matching `pyforge-warden` (D-6).
 - **NFR-12 (Platform parity).** Mason's own logic works on linux-64, osx-arm64, win-64. Platform
   limits belong to the engines, not to Mason, and are reported as such.
-- **NFR-13 (Test coverage of the seam).** Every adapter code path has a test using a fake CFE root;
-  no test requires a real CFE installation.
+- **NFR-13 (Test coverage of the seam).** Every adapter code path has a test using a fake CFE root.
+  No test requires a real CFE installation, **with one declared exception: FR-46's fidelity test**,
+  which is `slow`-marked, excluded from the default task, and skips cleanly when CFE is absent.
 - **NFR-14 (Error actionability).** Every structured error names what failed and what to do next.
 - **NFR-15 (Backward compatibility).** Post-v1, the CLI surface and JSON schema follow semver; a
   breaking change requires a MAJOR bump.
@@ -847,6 +991,52 @@ meanwhile.
 **Rationale.** Matches `pyforge.warden.cli` and all 60 CFE scripts; zero new dependency; satisfies
 the lean-dependency doctrine. Cost — worse help-text ergonomics — is accepted.
 
+---
+
+*Decisions D-10 – D-13 were added in revision 2, resolving contradictions the adversarial review
+found in revision 1 (`review-adversarial.md`).*
+
+### D-10 — `--to conda-forge` requires a CFE-co-located recipe directory
+
+**Decision.** Shipping to conda-forge works only from a repository where the CFE root resolves
+**and** the recipe sits at `<cfe-root>/recipes/<name>/`. Shipping to `pypi`, `pypi-test`, and
+`channel:<name>` has no such requirement.
+**Rationale.** CFE's `submit_pr.py` reads from `REPO_ROOT/recipes/<name>` and writes into a
+staged-recipes fork clone. Mason cannot change either behaviour (AD-15), so from an arbitrary
+project there is no source directory and no fork. Revision 1's UJ-1 promised a journey the product
+could not deliver; this decision makes the boundary explicit rather than letting a user discover it
+mid-release.
+**Tradeoff.** The differentiator is fully executable only inside a CFE-co-located packaging repo in
+v1. `pypi` shipping — the half with no incumbent competitor for the combined motion — works
+everywhere. `mason doctor` reports the boundary before a user attempts a release.
+**Revisit when** CFE gains a recipe-path parameter through its own retro loop.
+
+### D-11 — Idempotence is achieved by interrogation; no ship state is persisted
+
+**Decision.** Cross-invocation idempotence (FR-18, NFR-8) is implemented by querying each target,
+including a fork search for an open PR on CFE's deterministic `add-recipe-<name>` branch. Mason
+persists no receipt cache.
+**Rationale.** A local cache is a second source of truth that goes stale and silently skips a real
+upload. The interrogation is feasible for all four targets because each has a queryable identity.
+**Tradeoff.** Every ship pays a query round-trip and is unavailable offline. Accepted: shipping is
+inherently a network operation.
+
+### D-12 — `ship` is a verb; the charter form is an alias
+
+**Decision.** The canonical command is `mason package ship --to <targets>`. `mason package --ship
+<targets>` is a documented alias, and the only bare-noun form that runs.
+**Rationale.** Revision 1 had no command that shipped: FR-30 mandates noun-verb and makes bare
+`mason package` exit non-zero, while `build` explicitly uploads nothing. The alias preserves the crew
+charter's cadence verbatim without abandoning the structural rule.
+
+### D-13 — No configuration file; every knob is flag plus environment variable
+
+**Decision.** Confirms and completes AD-13. Each runtime knob has both forms; the v1 set is
+enumerated in FR-48.
+**Rationale.** Revision 1 called FR-4's timeout "configurable" while providing no configuration
+mechanism anywhere. Rather than introduce a file — and with it a precedence question — every knob
+gets the flag/env pair the rest of the CLI already uses.
+
 ## 11. Public Surface and Versioning
 
 - **Public surface** = the CLI (`mason <noun> <verb>` + global flags), the JSON output schema, the
@@ -873,12 +1063,16 @@ the lean-dependency doctrine. Cost — worse help-text ergonomics — is accepte
 | R-6 | Lean env cannot run CFE (interpreter mismatch) | Medium | D-7 explicit selection + FR-3 floor probe + FR-34 doctor |
 | R-7 | Competitive blind spot — an unknown entrant already does dual-ship | Medium | OQ-6; the survey ran without a web-search budget |
 | R-8 | Credential leak through logs or receipts | High | NFR-2; FR-20 never logs values; FR-6 isolation |
+| R-9 | **FR-42 ships vacuous** — a deny-list that matches nothing passes forever and the seam is unguarded in practice | Fatal to D-1 | FR-42's planted-violation fixtures make an empty deny-list a failing test; SM-2 requires the fixtures |
+| R-10 | SM-1's first `--to pypi` is also its production one-way door | Medium | FR-50 TestPyPI rehearsal gates it |
+| R-11 | D-10's boundary makes the differentiator look narrower than the positioning claims | Medium | Stated in UJ-1, FR-23, §6.2, and reported by `doctor`; the `pypi` half is unrestricted |
 
 ## 13. Open Questions
 
 Resolved during this PRD (now D-records): deployment target → D-2; ship-target semantics → D-3;
 pixi-task coexistence → D-4; credential model → D-5; Python floor → D-6; interpreter resolution →
-D-7; MCP in v1 → D-8; CLI framework → D-9.
+D-7; MCP in v1 → D-8; CLI framework → D-9. Resolved in revision 2: conda-forge ship boundary →
+D-10; idempotence mechanism → D-11; the missing ship verb → D-12; configuration surface → D-13.
 
 Carried forward:
 
@@ -902,6 +1096,16 @@ Carried forward:
    positioning.*
 7. **OQ-7** — Does Mason declare a minimum CFE version once coupling fragility is observed?
    *Owner: architect. Revisit: on first adapter break.*
+8. **OQ-8** *(new in r2)* — Is CFE's Docker / CI-parity build reachable through an adapter at all?
+   The Docker path is a pixi task (`recipe-build-docker` → `build-locally.py`), not a canonical
+   script, and `local_builder.py` is explicitly Docker-less. If no adapter-reachable entry point
+   exists, drop FR-9's Docker bullet. *Owner: architect. Revisit: at S-2.6.*
+9. **OQ-9** *(new in r2)* — Can the FR-45 governance check inspect the effort's commit range
+   automatically in this repository's branching model, or must it be a documented manual gate?
+   *Owner: architect. Revisit: at S-5.2.*
+10. **OQ-10** *(new in r2)* — D-10 narrows the differentiator's reach in v1. Does that change the
+    product's positioning claim, or is "the `pypi` half works everywhere, the conda half works where
+    your recipes live" an acceptable public story? *Owner: PM. Revisit: before public positioning.*
 
 ## 14. Assumptions Index
 

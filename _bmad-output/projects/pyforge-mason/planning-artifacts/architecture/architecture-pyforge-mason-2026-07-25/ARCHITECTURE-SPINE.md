@@ -155,8 +155,10 @@ graph TD
 - **Prevents:** two owners of one truth — a local receipt cache that disagrees with the actual state
   of PyPI or an open pull request, producing a skipped upload that never happened.
 - **Rule:** Mason persists **no** state directory, no receipt cache, no lock file of its own. "Has
-  this already shipped?" is answered by asking the target (index query, PR lookup). If a target
-  cannot be interrogated, the result is `pending` with the reason, never an assumption.
+  this already shipped?" is answered by asking the target: `pypi`/`pypi-test` by index query,
+  `channel:<name>` by channel query, `conda-forge` by searching the fork for an open pull request on
+  the deterministic `add-recipe-<name>` branch CFE's submission flow produces. If a target cannot be
+  interrogated, the result is `pending` with the reason, never an assumption.
 
 ### AD-11 — One owner per operation; `package` ships conda-forge *through* the recipe port
 
@@ -206,10 +208,15 @@ graph TD
 - **Prevents:** a Mason story "fixing" CFE — which would break the `spec-packaging-factory`
   CHANGELOG sentinel, bypass the Rule-2 retro that owns that surface, and make Mason a fork by
   increments.
-- **Rule:** No commit in this effort writes to `.claude/skills/conda-forge-expert/**`,
+- **Rule:** No **implementation** commit writes to `.claude/skills/conda-forge-expert/**`,
   `.claude/scripts/conda-forge-expert/**`, or `.claude/tools/conda_forge_server.py`. Behaviour
   needed from CFE that CFE does not have is an **open question routed to a CFE retrospective**,
   never a local patch or a vendored copy. `spec_surface_check` stays green throughout.
+- **Sanctioned exception (exactly one):** the closing Rule-2 retrospective edits those files, because
+  CLAUDE.md Rule 2 mandates it. It is identified by a `retro:` commit subject plus a CFE
+  `CHANGELOG.md` entry in the same commit, and the governance check asserts it is used once. Rule 1
+  says Mason may not edit CFE *while implementing*; Rule 2 says Mason must edit CFE *when
+  retrospecting*. Both hold.
 
 ### AD-16 — Every test runs against a fake CFE root
 

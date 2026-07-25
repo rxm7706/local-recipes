@@ -13,16 +13,19 @@ inputDocuments:
   - "_bmad-output/projects/pyforge-mason/planning-artifacts/research/technical-mason-cli-seam-research-2026-07-25.md"
 project_name: pyforge-mason
 epicCount: 5
-storyCount: 36
+storyCount: 38
+frCount: 50
 status: complete
+revision: 2
+revisionNote: "r2 tracks PRD revision 2 (adversarial-review fixes). Added S-1.10 (config+logging), S-3.9 (ship verb + TestPyPI rehearsal), S-5.6 removed in favour of folding FR-47 into S-5.5; corrected S-3.6, S-5.1, S-5.2, S-2.2 for the D-10/D-12/FR-44/FR-45 resolutions."
 ---
 
 # pyforge-mason — Epic Breakdown
 
 ## Overview
 
-Decomposition of Mason's PRD (46 FRs / 16 NFRs / 9 D-records) and architecture spine (16 ADs,
-ports-and-adapters with a knowledge-free core) into **5 epics and 36 stories**.
+Decomposition of Mason's PRD (50 FRs / 16 NFRs / 13 D-records) and architecture spine (16 ADs,
+ports-and-adapters with a knowledge-free core) into **5 epics and 38 stories**.
 
 **dist** `pyforge-mason` · **module** `pyforge.mason` · **CLI** `mason`
 
@@ -37,13 +40,14 @@ to prevent a second implementation.
 
 ### Functional Requirements covered
 
-All 46 FRs (FR-1 through FR-46). No deferrals.
+All 50 FRs (FR-1 through FR-50). No deferrals.
 
 ### Non-Functional Requirements covered
 
 All 16 NFRs (NFR-1 through NFR-16). NFR enforcement is distributed: NFR-1/NFR-16 in S-2.1,
 NFR-2 in S-2.3 and S-3.4, NFR-3/NFR-4 in S-1.4, NFR-7/NFR-10 in S-3.1, NFR-8 in S-3.7,
-NFR-9 in S-3.3, NFR-11 in S-1.1, NFR-13 in S-1.9, NFR-14 in S-1.3, NFR-15 in S-1.2.
+NFR-9 in S-3.3, NFR-11 in S-1.1, NFR-13 in S-1.9, NFR-14 in S-1.3, NFR-15 in S-1.2,
+NFR-2 also in S-1.10 (logging).
 NFR-5/NFR-6/NFR-12 are cross-cutting constraints verified in S-5.1 and S-5.3.
 
 ### Architecture Decisions covered
@@ -64,7 +68,7 @@ All 16 ADs flow into specific stories:
 | AD-10 idempotence by interrogation | S-3.7 |
 | AD-11 one owner per operation | S-3.6 |
 | AD-12 engine protocol | S-3.1, S-4.1 |
-| AD-13 no config file | S-1.2 |
+| AD-13 no config file | S-1.2, S-1.10 |
 | AD-14 credential blindness | S-2.3, S-3.4 |
 | AD-15 CFE surface read-only | S-5.2 |
 | AD-16 fake CFE root | S-1.9 |
@@ -88,7 +92,7 @@ All 16 ADs flow into specific stories:
 | FR-13 | 2 | S-2.9 | `mason recipe submit` |
 | FR-14 | 2 | S-2.10 | `mason recipe update` |
 | FR-15 | 3 | S-3.2 | `mason package build` |
-| FR-16 | 3 | S-3.3 | Ship-target vocabulary |
+| FR-16 | 3 | S-3.3, S-3.9 | Ship verb + target vocabulary |
 | FR-17 | 3 | S-3.7 | Asymmetric ship reporting |
 | FR-18 | 3 | S-3.7 | Partial-failure semantics |
 | FR-19 | 3 | S-3.3 | Dry-run by default |
@@ -119,6 +123,10 @@ All 16 ADs flow into specific stories:
 | FR-44 | 5 | S-5.1 | Non-CFE verbs independent |
 | FR-45 | 5 | S-5.2 | No CFE surface modification |
 | FR-46 | 5 | S-5.3 | Delegation fidelity |
+| FR-47 | 5 | S-5.5 | Closing Rule-2 retrospective |
+| FR-48 | 1 | S-1.10 | Configuration surface |
+| FR-49 | 1 | S-1.10 | Logging and child-output streaming |
+| FR-50 | 3 | S-3.9 | Rehearsal before irreversible publish |
 
 ## Epic List
 
@@ -126,7 +134,7 @@ All 16 ADs flow into specific stories:
 A user can install `mason` as both a conda package and a wheel, run it, get consistent errors and
 machine-readable output, and ask it to diagnose its own environment — including telling them
 truthfully what it cannot do.
-**FRs covered:** FR-2, FR-3, FR-5, FR-30, FR-31, FR-32, FR-33, FR-34, FR-35, FR-36, FR-37, FR-38, FR-39, FR-41
+**FRs covered:** FR-2, FR-3, FR-5, FR-30 – FR-39, FR-41, FR-48, FR-49
 **Standalone:** delivers a real, installable, self-diagnosing tool with no dependency on later epics.
 
 ### Epic 2: Author, build, and submit recipes
@@ -141,7 +149,7 @@ story touches the same two core files (`cfe.py`, `recipe.py`).
 A user can build a library's artifacts and ship them to PyPI, a conda channel, and conda-forge in
 one command — with a receipt that tells the truth about which targets are done and which are merely
 queued.
-**FRs covered:** FR-15, FR-16, FR-17, FR-18, FR-19, FR-20, FR-21, FR-22, FR-23, FR-24, FR-40
+**FRs covered:** FR-15 – FR-24, FR-40, FR-50
 **Standalone:** the product's differentiator. Uses Epic 2's submission path for the conda-forge
 target but delivers `pypi` and `channel:` value without it.
 
@@ -155,7 +163,7 @@ CI whether that lockfile has gone stale.
 The product's central guarantee — that Mason wraps the conda-forge-expert capability and never forks
 it — is verified by tests rather than asserted by documentation, and the effort closes with the
 mandatory retrospective that keeps the wrapped skill improving.
-**FRs covered:** FR-44, FR-45, FR-46
+**FRs covered:** FR-44, FR-45, FR-46, FR-47
 **Standalone:** verification and closeout. The two most critical guards (FR-42, FR-43) deliberately
 ship early in Epic 2; this epic covers the guards that need the full product to exist.
 
@@ -165,7 +173,7 @@ ship early in Epic 2; this epic covers the guards that need the full product to 
 
 **Goal:** A user can install `mason`, run it, and trust its output and its self-report.
 
-**FRs covered:** FR-2, FR-3, FR-5, FR-30 – FR-39, FR-41
+**FRs covered:** FR-2, FR-3, FR-5, FR-30 – FR-39, FR-41, FR-48, FR-49
 **NFRs:** NFR-3, NFR-4, NFR-11, NFR-13, NFR-14, NFR-15
 **ADs:** AD-2, AD-5, AD-7, AD-8, AD-13, AD-16
 
@@ -435,6 +443,41 @@ excludes it
 
 *Effort: M. Realizes NFR-13; AD-16.*
 
+### Story 1.10: Configuration surface, logging, and child-output streaming
+
+As a **user running a multi-minute build**,
+I want **to see progress as it happens and to tune behaviour without a config file**,
+So that **I am not staring at a silent terminal wondering whether Mason is alive**.
+
+**Acceptance Criteria:**
+
+**Given** the v1 knob set
+**When** each is exercised
+**Then** `--cfe-root`/`MASON_CFE_ROOT`, `--cfe-python`/`MASON_CFE_PYTHON`,
+`--cfe-timeout`/`MASON_CFE_TIMEOUT`, `--format`, `--verbose`, and `--quiet` all work in both forms
+**And** precedence is flag → environment → default for every one
+
+**Given** AD-13
+**When** the codebase is scanned
+**Then** no code path reads a Mason-specific key from any file
+**And** a test asserts every knob has both a flag and an environment form
+
+**Given** the logging subsystem
+**When** any command runs at any verbosity
+**Then** all log records go to stderr via stdlib `logging`
+**And** no record contains an environment-variable value
+
+**Given** a delegated operation expected to exceed a few seconds
+**When** it runs
+**Then** child stderr streams through to the user's stderr as produced, not buffered to completion
+
+**Given** a streaming operation under `--format json`
+**When** it completes
+**Then** stdout still carries exactly one JSON document — streamed child output went to stderr
+**And** a test asserts this explicitly
+
+*Effort: M. Realizes FR-48, FR-49, NFR-2; AD-13.*
+
 ---
 
 ## Epic 2: Author, build, and submit recipes
@@ -498,6 +541,23 @@ So that **the product's central guarantee cannot erode one helper at a time**.
 **Then** it fails if any module contains a conda-forge gotcha identifier, policy constant, pin table,
 recipe-format field default, or selector/platform rule
 **And** the deny-list of patterns is declared in one reviewable place
+
+**Given** the deny-list
+**When** it is authored
+**Then** it enumerates, at minimum: the gotcha-identifier pattern (`G` + 1–3 digits, word-matched),
+conda-forge policy nouns and check-code prefixes drawn from CFE's reference material, v1
+recipe-format field names, and known pin/constraint string shapes
+**And** each entry cites the CFE artifact it derives from
+
+**Given** the test's own correctness
+**When** it runs
+**Then** it exercises positive fixtures — synthetic modules with a planted violation of **each**
+deny-list category — and fails if any planted violation goes undetected
+**And** a deny-list that matches nothing is therefore a failing test, not a passing one
+
+**Given** a deny-list entry being weakened or removed
+**When** the change is made
+**Then** a companion test fails unless the entry carries a rationale comment
 
 **Given** the deny-list
 **When** a developer adds a matching constant to any Mason module
@@ -722,7 +782,7 @@ So that **I never apply a change I have not read**.
 **Goal:** One command builds a library and ships it to PyPI, a conda channel, and conda-forge —
 reporting each target's true state.
 
-**FRs covered:** FR-15 – FR-24, FR-40
+**FRs covered:** FR-15 – FR-24, FR-40, FR-50
 **NFRs:** NFR-2, NFR-7, NFR-8, NFR-9, NFR-10
 **ADs:** AD-6, AD-9, AD-10, AD-11, AD-12, AD-14
 
@@ -889,12 +949,53 @@ So that **there is one implementation of staged-recipes submission, not two**.
 **When** the target runs
 **Then** Mason offers to generate one via `mason recipe new` and does **not** generate silently
 
-**Given** an unresolvable CFE root
-**When** `--ship pypi,conda-forge` runs
-**Then** the `conda-forge` target fails with the FR-5 error
+**Given** an unresolvable CFE root, **or** a recipe that is not at `<cfe-root>/recipes/<name>/`
+**When** `ship --to pypi,conda-forge` runs
+**Then** the `conda-forge` target alone fails, naming the unmet precondition
 **And** the `pypi` target completes normally
 
-*Effort: M. Realizes FR-23; AD-6, AD-11.*
+**Given** D-10's boundary
+**When** `mason doctor` runs
+**Then** it reports whether both conda-forge-ship preconditions are met
+**And** a user learns the boundary before attempting a release, not during one
+
+*Effort: M. Realizes FR-23, D-10; AD-6, AD-11.*
+
+### Story 3.9: The `ship` verb and TestPyPI rehearsal
+
+As a **library maintainer about to publish irreversibly**,
+I want **a real `ship` verb and a rehearsal target**,
+So that **the command exists at all and my first production upload is not my first attempt**.
+
+**Acceptance Criteria:**
+
+**Given** FR-30's noun-verb rule and FR-15's build-uploads-nothing rule
+**When** the command surface is built
+**Then** `mason package ship --to <targets>` exists as the canonical shipping command
+
+**Given** the crew charter's cadence
+**When** a user runs `mason package --target library --ship pypi,conda-forge`
+**Then** it works, dispatching to `mason package ship`
+**And** a test asserts this is the **only** bare-noun form that runs
+
+**Given** `ship` invoked with no artifacts present
+**When** it runs
+**Then** it builds first by calling FR-15's implementation, not a duplicate of it
+
+**Given** `--to pypi-test`
+**When** it runs
+**Then** the upload goes to TestPyPI through the same code path as `pypi`, differing only in
+repository configuration
+
+**Given** the FR-24 self-hosting sequence
+**When** it executes
+**Then** `pypi-test` runs first and must pass before `pypi` runs
+
+**Given** a dry-run plan naming the `pypi` target
+**When** it is printed
+**Then** it states explicitly that a PyPI upload is irreversible
+
+*Effort: M. Realizes FR-16 (verb form), FR-50, D-12; supports SM-1.*
 
 ### Story 3.7: Asymmetric receipts, partial failure, and idempotence
 
@@ -1084,7 +1185,7 @@ So that **a drifted lock fails the build instead of shipping**.
 **Goal:** The D-1 guarantee is verified by tests and the effort closes with the mandatory
 retrospective.
 
-**FRs covered:** FR-44, FR-45, FR-46
+**FRs covered:** FR-44, FR-45, FR-46, FR-47
 **NFRs:** NFR-5, NFR-6, NFR-12
 **ADs:** AD-6, AD-15
 
@@ -1102,14 +1203,23 @@ So that **the accepted D-1 tradeoff stays bounded to `mason recipe` alone**.
 guaranteed unresolvable
 **And** each behaves normally
 
+**Given** the one legitimate exception
+**When** the test is written
+**Then** the `conda-forge` ship target appears in a **named allow-list of exactly one entry**
+**And** a blanket "except where CFE is needed" formulation is not used — that phrasing is the erosion
+this test exists to stop
+**And** adding a second allow-list entry requires editing the test, which is the review gate
+
+**Given** the excepted target
+**When** it runs without CFE
+**Then** the test asserts positively that it fails **with the FR-5 error specifically**, not merely
+that it fails
+**And** every other target in the same invocation succeeds
+
 **Given** the same test
 **When** module imports are checked
 **Then** `pyforge.mason.package` and `pyforge.mason.environment` import successfully with no CFE on
 the filesystem
-
-**Given** the `conda-forge` ship target specifically
-**When** it runs without CFE
-**Then** it alone fails, with the FR-5 error, while the other targets in the same invocation succeed
 
 *Effort: S. Realizes FR-44; AD-6.*
 
@@ -1121,10 +1231,17 @@ So that **CLAUDE.md Rule 1 and the `spec-packaging-factory` sentinel are enforce
 
 **Acceptance Criteria:**
 
-**Given** the effort's full commit range
+**Given** the effort's commit range
 **When** it is scanned
-**Then** no commit touches `.claude/skills/conda-forge-expert/**`,
+**Then** no **implementation** commit touches `.claude/skills/conda-forge-expert/**`,
 `.claude/scripts/conda-forge-expert/**`, or `.claude/tools/conda_forge_server.py`
+
+**Given** the closing Rule-2 retrospective (S-5.5), which must edit exactly those files
+**When** the check runs
+**Then** that one commit is recognized as the sanctioned exception — identified by a `retro:` subject
+plus a CFE `CHANGELOG.md` entry in the same commit — and excluded
+**And** the check asserts the exception is used **exactly once** and carries a CHANGELOG move, so it
+cannot be borrowed to slip an implementation change through
 
 **Given** the repository
 **When** `scripts/spec_surface_check.py` runs
@@ -1212,7 +1329,13 @@ directory, and the unconditional JFrog header injection
 **When** it completes
 **Then** the effort is done. It is not optional and not deferrable.
 
-*Effort: M. Realizes CLAUDE.md Rule 2.*
+**Given** FR-45's governance check
+**When** this retrospective commits its skill edits
+**Then** the commit uses a `retro:` subject and includes the CFE `CHANGELOG.md` entry, so the
+sanctioned-exception rule recognizes it
+**And** it is the **only** commit in the effort touching the CFE surface
+
+*Effort: M. Realizes FR-47, SM-7, CLAUDE.md Rule 2.*
 
 ---
 
