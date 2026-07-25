@@ -1,8 +1,10 @@
 # bmad-loop orchestration policy. All keys optional; defaults shown.
 
 [gates]
-# pyforge-doctor posture: unattended, no gate.
-mode = "none" # none | per-epic | per-story-spec-approval
+# Pilot posture (docs/specs/bmad-loop-adoption.md W3): per-story spec approval for the
+# pyforge-warden contract-freeze stories (1.1/1.2); relax to per-epic
+# from Epic 2 once the conformance harness polices the loop, then consider none.
+mode = "per-story-spec-approval" # none | per-epic | per-story-spec-approval
 retrospective = "notify"     # never | notify | auto (auto unsupported in v1)
 
 [limits]
@@ -17,18 +19,25 @@ max_tokens_per_story = 2000000
 cache_read_weight = 0.1      # cache reads bill at ~0.1x input on all vendors; 1.0 = count raw
 
 [verify]
-# Deterministic gate run by the orchestrator after a clean review, before commit.
-# The pyforge-doctor env + test task do not exist until story 1.1 creates the
-# package scaffold — a failing verify before then is the loop's own correct
-# corrective signal (drives dev toward creating the env/task), not a policy bug.
-# --frozen (2026-07-25, post-mortem on the herald+scribe cluster): an unfrozen
-# re-solve in a bmad-loop worktree panics the pixi-build backend on unrelated
-# envs. Frozen mode requires the story's own dev pass to commit the pixi.lock
-# update as part of wiring the new env (same as herald/scribe) — a "not in
-# lockfile" / lock-mismatch verify failure is the correct corrective signal to
-# commit the lock, not a policy bug.
+# Deterministic gates run by the orchestrator after a clean review, before commit.
+# The scanner's own test suite is the gate (grows per story: conformance harness,
+# C0a/C0c, meta-tests land in 1.1/1.2 and police every later story).
+# --frozen: an unfrozen re-solve in a bmad-loop worktree panics pixi-build-python
+# 0.8.3 (path-length underflow at ~250-char workDirectory) and, when it does
+# succeed, rewrites pixi.lock with worktree-absolute file:// channel paths that
+# the squash-merge would commit. Frozen mode uses the tracked lock as-is
+# (deferred-work.md, story 1.1).
 commands = [
-  "pixi run --frozen -e pyforge-doctor pyforge-doctor-test",
+  "pixi run --frozen -e pyforge-warden pyforge-warden-test",
+  # pyforge-atlas gates dropped from the active run policy 2026-07-18: the
+  # Kedro migration is COMPLETE (Waves 0–H shipped, PRs #69–#102, closed out by
+  # #103 / v8.79.0), and this branch drives pyforge-warden Epic-6 producers.
+  # Running the atlas gates during a pyforge-warden story's verify is both
+  # off-project and risky (the lean pyforge-atlas env is lock-unproven in
+  # containers per its own AD-11 note). Restore these two lines if pyforge-atlas
+  # bmad-loop work resumes:
+  #   "pixi run --frozen -e pyforge-atlas kedro-test",
+  #   "pixi run --frozen -e pyforge-atlas kedro-catalog-check",
 ]
 
 [notify]
@@ -69,14 +78,20 @@ cleanup_session_on_finish = true  # kill the run's tmux session when it finishes
 # keys above.
 #
 # HARD-STORY BATCH PROCEDURE: the loop has no per-story model key (policy is
-# per-run) — escalate by editing this file between batches. No pyforge-doctor
-# story is pre-flagged HARD at run start; if a story's dev/review sessions
-# struggle to converge, flip [adapter.dev] model to "opus" (or "fable" when
-# headroom allows) for that batch, then revert to "sonnet" once past it.
+# per-run) — escalate by editing this file between batches. Before running any
+# of the hard stories — 6.10 (amendment design spike), 6.1 (5-surface schema
+# amendment, HARD gate), 2.2 + 2.3 (extraction construct matrix), 6.5 (two-mode
+# policy semantics), 6.9 (actuator egress carve-out) — flip [adapter.dev]
+# model to "opus" (or "fable" when headroom allows). After the hard batch,
+# revert [adapter.dev] to "sonnet" for the mechanical batches: 1.5–1.9,
+# 2.4–2.6, 3.1–3.3, 4.1, 5.1–5.2, 6.2–6.4, 6.6–6.8.
 [adapter.dev]
-model = "sonnet"    # Default DEV tier rationale: post-BMAD-refinement ACs are transcription-
-                    # precise, and VERIFY (pixi run -e pyforge-doctor
-                    # pyforge-doctor-test) is a deterministic, free backstop
+model = "sonnet"    # reverted opus→sonnet 2026-07-24 post-6.9 (6.9 recovered+merged). 6.6 is mechanical (engine version-range pinning). Mechanical default for
+                    # 6.7/6.8/6.6 + Epic 5. Re-flip to "opus" before HARD story 6.9
+                    # (actuator egress).
+                    # Default DEV tier rationale: post-BMAD-refinement ACs are transcription-
+                    # precise, and VERIFY (pixi run --frozen -e pyforge-warden
+                    # pyforge-warden-test) is a deterministic, free backstop
 
 [adapter.review]
 model = "fable"     # strongest model where it pays: review misses are what ship
@@ -137,7 +152,7 @@ seed_adapter_defaults = true # seed each loaded adapter's default gitignored con
 # marker BMAD config resolution in the worktree loses the project layers.
 # Literal paths only (no globs) — update the project slug on bmad-switch.
 worktree_seed = [
-  "_bmad-output/projects/pyforge-doctor/implementation-artifacts",
+  "_bmad-output/projects/pyforge-warden/implementation-artifacts",
   "_bmad/custom/.active-project",
 ]
 
