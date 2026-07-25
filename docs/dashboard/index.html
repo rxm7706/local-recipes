@@ -345,6 +345,31 @@
   .spec-meta .dr { color: var(--deck); }
   @media (max-width: 640px) { .specrow { grid-template-columns: 1fr auto; } .spec-title, .spec-proj { display: none; } }
 
+  /* campaign board */
+  .camprow { display: grid; grid-template-columns: 34px minmax(150px,230px) auto 1fr auto auto; gap: 12px; padding: 9px 0; align-items: center; }
+  .camprow + .camprow { border-top: 1px solid var(--line-soft); }
+  .camp-wave { font-family: var(--mono); font-size: 10.5px; color: var(--slate-faint); }
+  .camp-slug { font-family: var(--mono); font-size: 12.5px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; }
+  .camp-slug a { color: var(--ink); text-decoration: none; }
+  .camp-slug a:hover { color: var(--accent); }
+  .camp-model { font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: .05em; color: var(--slate);
+    background: var(--panel-2); border: 1px solid var(--line); border-radius: 4px; padding: 2px 7px; white-space: nowrap; justify-self: start; }
+  .camp-stages { display: flex; gap: 5px; align-items: center; }
+  .campdot { width: 9px; height: 9px; border-radius: 3px; background: var(--done); }
+  .campdot.miss { background: var(--pending-ground); border: 1px solid var(--slate-faint); }
+  .campdot.na { background: transparent; border: 1px dashed var(--slate-faint); opacity: .5; }
+  .camp-n { font-family: var(--mono); font-size: 10.5px; color: var(--slate); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .cbadge { font-family: var(--mono); font-size: 9.5px; text-transform: uppercase; letter-spacing: .08em;
+    border-radius: 4px; padding: 2px 8px; border: 1px solid transparent; white-space: nowrap; }
+  .cb-running { color: var(--active); background: color-mix(in srgb,var(--active) 12%,transparent);
+    border-color: color-mix(in srgb,var(--active) 30%,transparent); animation: camppulse 2.2s ease-in-out infinite; }
+  .cb-queued { color: var(--slate); background: var(--pending-ground); border-color: var(--line); }
+  .cb-partial { color: var(--gate); background: var(--gate-ground); border-color: color-mix(in srgb,var(--gate) 30%,transparent); }
+  .cb-landed { color: var(--done); background: color-mix(in srgb,var(--done) 12%,transparent);
+    border-color: color-mix(in srgb,var(--done) 30%,transparent); }
+  @keyframes camppulse { 0%,100% { opacity: 1; } 50% { opacity: .55; } }
+  @media (max-width: 640px) { .camprow { grid-template-columns: 1fr auto auto; } .camp-wave, .camp-model, .camp-n { display: none; } }
+
   /* pitch cards */
   .pitchgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(198px,1fr)); gap: 10px; }
   .pcard { border: 1px solid var(--line); border-radius: 7px; background: var(--panel-2); padding: 12px 14px; text-decoration: none; display: block; }
@@ -417,6 +442,12 @@
     <summary><span class="program-h" id="spech">The Specs</span><span class="zcaret">▸</span></summary>
     <div class="dflow"><b>_bmad-output/projects/*/planning-artifacts/specs/</b> — every BMAD-Method kernel: five-field contract + companions, derived from its append-only memlog. Legacy <b>docs/specs/</b> is excluded.</div>
     <div id="specrows"></div>
+  </details>
+
+  <details class="dreams zsec" id="campsec" hidden open>
+    <summary><span class="program-h" id="camph">The Campaign</span><span class="zcaret">▸</span></summary>
+    <div class="dflow"><b>factory spec-completion</b> — every persona &amp; component through <b>research → brief → PRD → architecture → epics</b>, parallel worktree-isolated chains. Dots = stages landed on <code>main</code>; in-flight chains show as running until their branch merges.</div>
+    <div id="camprows"></div>
   </details>
 
   <details class="dreams zsec" id="pitchsec" hidden>
@@ -512,6 +543,33 @@
           (s.dream ? '<span class="dr" title="linked Dream">▲ dream</span> · ' : '') +
           esc(s.updated || '') + '</span>' +
       '</div>').join("");
+  }
+
+  // ---- 2b · The Campaign (factory spec-completion) ----
+  const CAMP = window.DASHBOARD_DATA.campaign || null;
+  const CAMP_STAGES = ["research","brief","prd","architecture","epics"];
+  if (CAMP && CAMP.rows && CAMP.rows.length) {
+    const el = document.getElementById("campsec");
+    el.hidden = false;
+    const landed = CAMP.rows.filter(r => r.status === "landed").length;
+    const running = CAMP.rows.filter(r => r.status === "running").length;
+    document.getElementById("camph").textContent =
+      "The Campaign · " + CAMP.rows.length + " chains (" + running + " running · " + landed + " landed)";
+    document.getElementById("camprows").innerHTML = CAMP.rows.map(r => {
+      const na = r.depth === "prd+arch" ? ["epics"] : [];
+      return '<div class="camprow">' +
+        '<span class="camp-wave">' + esc(r.wave) + '</span>' +
+        '<span class="camp-slug"><a href="' + REPO + '/tree/main/_bmad-output/projects/' + esc(r.slug) +
+          '/planning-artifacts">' + esc(r.slug) + '</a></span>' +
+        '<span class="camp-model">' + esc(r.model) + '</span>' +
+        '<span class="camp-stages">' + CAMP_STAGES.map(s =>
+          '<span class="campdot' + (na.includes(s) ? ' na' : (r.have[s] ? '' : ' miss')) +
+          '" title="' + s + (na.includes(s) ? ' — not in scope (prd+arch depth)' : (r.have[s] ? ' — landed' : ' — pending')) +
+          '"></span>').join("") + '</span>' +
+        '<span class="camp-n">' + r.n + '/' + r.of + '</span>' +
+        '<span class="cbadge cb-' + esc(r.status) + '">' + esc(r.status) + '</span>' +
+      '</div>';
+    }).join("");
   }
 
   // ---- 3 · The Pitch (the deck family) ----

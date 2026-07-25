@@ -296,6 +296,56 @@ def scan_specs() -> list[dict]:
     return rows
 
 
+# ---- spec campaign (2026-07-25 factory spec-completion program) --------------
+
+CAMPAIGN_ROSTER = [
+    # wave · project · agent model · depth (epics = full chain; prd+arch stops early) · seed state
+    {"wave": "1a", "slug": "pyforge-doctor",       "model": "sonnet", "depth": "epics",    "state": "running"},
+    {"wave": "1b", "slug": "pyforge-steward",      "model": "sonnet", "depth": "epics",    "state": "running"},
+    {"wave": "1c", "slug": "pyforge-scribe",       "model": "sonnet", "depth": "epics",    "state": "running"},
+    {"wave": "1d", "slug": "pyforge-herald",       "model": "sonnet", "depth": "epics",    "state": "running"},
+    {"wave": "1e", "slug": "pyforge-marshal",      "model": "opus",   "depth": "epics",    "state": "running"},
+    {"wave": "1f", "slug": "pyforge-mason",        "model": "opus",   "depth": "epics",    "state": "running"},
+    {"wave": "2a", "slug": "presenton-pixi-image", "model": "sonnet", "depth": "epics",    "state": "queued"},
+    {"wave": "2b", "slug": "wasm-analytics-stack", "model": "sonnet", "depth": "prd+arch", "state": "queued"},
+    {"wave": "2c", "slug": "unity-data-stack",     "model": "opus",   "depth": "prd+arch", "state": "queued"},
+    {"wave": "2d", "slug": "pyforge-genesis",      "model": "opus",   "depth": "epics",    "state": "queued"},
+]
+
+CAMPAIGN_STAGES = ("research", "brief", "prd", "architecture", "epics")
+
+
+def scan_campaign() -> dict:
+    """Stage completion per chain, detected from planning-artifacts on main.
+
+    In-flight chains write in isolated loop worktrees, so main shows nothing
+    until a chain merges — roster `state` covers the gap (running/queued);
+    detection upgrades it to partial/landed automatically at each merge.
+    """
+    rows: list[dict] = []
+    for e in CAMPAIGN_ROSTER:
+        pa = REPO_ROOT / "_bmad-output" / "projects" / e["slug"] / "planning-artifacts"
+        have = {
+            "research": bool(list((pa / "research").glob("*.md"))) if (pa / "research").is_dir() else False,
+            "brief": bool(list(pa.glob("product-brief*")) or list(pa.glob("*/product-brief*"))),
+            "prd": (pa / "prd.md").is_file() or bool(list(pa.glob("prds/*/prd.md"))),
+            "architecture": ((pa / "architecture.md").is_file()
+                             or bool(list(pa.glob("architecture/*/*.md")))),
+            "epics": (pa / "epics.md").is_file(),
+        }
+        target = [s for s in CAMPAIGN_STAGES
+                  if not (s == "epics" and e["depth"] == "prd+arch")]
+        n = sum(have[s] for s in target)
+        status = "landed" if n == len(target) else ("partial" if n else e["state"])
+        rows.append({**e, "have": have, "n": n, "of": len(target), "status": status})
+    landed = sum(1 for r in rows if r["status"] == "landed")
+    running = sum(1 for r in rows if r["status"] == "running")
+    print(f"[campaign] {len(rows)} chains · {running} running · {landed} landed")
+    return {"launched": "2026-07-25",
+            "chain": "research → brief → PRD → architecture → epics",
+            "rows": rows}
+
+
 # ---- pitch roster (the deck family) ------------------------------------------
 
 PITCH_TITLES = {"agentic-sdlc": "Agentic AI across the SDLC"}
@@ -397,6 +447,7 @@ def main() -> int:
         apply_sprint_status(data["projects"])
     data["dreams"] = scan_dreams()
     data["specs"] = scan_specs()
+    data["campaign"] = scan_campaign()
     data["pitch"] = scan_pitch()
     data["archived"] = build_archived(data["dreams"])
 

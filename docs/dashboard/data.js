@@ -868,7 +868,7 @@ window.DASHBOARD_DATA = {
       }
     }
   },
-  "snapshot": "<span>2026-07-25 07:47 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-07-25 10:59 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -987,7 +987,8 @@ window.DASHBOARD_DATA = {
       "status": "in-deck",
       "owner": "doctor",
       "chain": {
-        "deck": "presentations/pyforge-doctor"
+        "deck": "presentations/pyforge-doctor",
+        "project": "_bmad-output/projects/pyforge-doctor"
       }
     },
     {
@@ -996,7 +997,8 @@ window.DASHBOARD_DATA = {
       "status": "in-deck",
       "owner": "crew",
       "chain": {
-        "deck": "presentations/pyforge-genesis"
+        "deck": "presentations/pyforge-genesis",
+        "project": "_bmad-output/projects/pyforge-genesis"
       }
     },
     {
@@ -1016,7 +1018,8 @@ window.DASHBOARD_DATA = {
       "owner": "marshal",
       "chain": {
         "deck": "presentations/pyforge-marshal",
-        "spec": "_bmad-output/projects/local-recipes/planning-artifacts/specs/spec-pyforge-marshal"
+        "spec": "_bmad-output/projects/local-recipes/planning-artifacts/specs/spec-pyforge-marshal",
+        "project": "_bmad-output/projects/pyforge-marshal"
       }
     },
     {
@@ -1025,7 +1028,8 @@ window.DASHBOARD_DATA = {
       "status": "in-deck",
       "owner": "scribe",
       "chain": {
-        "deck": "presentations/pyforge-scribe"
+        "deck": "presentations/pyforge-scribe",
+        "project": "_bmad-output/projects/pyforge-scribe"
       }
     },
     {
@@ -1034,7 +1038,8 @@ window.DASHBOARD_DATA = {
       "status": "in-deck",
       "owner": "steward",
       "chain": {
-        "deck": "presentations/pyforge-steward"
+        "deck": "presentations/pyforge-steward",
+        "project": "_bmad-output/projects/pyforge-steward"
       }
     },
     {
@@ -1077,7 +1082,9 @@ window.DASHBOARD_DATA = {
       "title": "Unity Data Stack — the enterprise innersource platform",
       "status": "seeded",
       "owner": "crew",
-      "chain": {}
+      "chain": {
+        "project": "_bmad-output/projects/unity-data-stack"
+      }
     },
     {
       "slug": "upstream-discovery",
@@ -1091,7 +1098,9 @@ window.DASHBOARD_DATA = {
       "title": "Wasm-first analytical data stack (OCP-ready)",
       "status": "seeded",
       "owner": "crew",
-      "chain": {}
+      "chain": {
+        "project": "_bmad-output/projects/wasm-analytics-stack"
+      }
     }
   ],
   "specs": [
@@ -1389,5 +1398,181 @@ window.DASHBOARD_DATA = {
       "note": "LICENSE §2 standalone-redistribution clause — staged-recipes #32522 rejected",
       "link": "recipes/copilot-cli"
     }
-  ]
+  ],
+  "campaign": {
+    "launched": "2026-07-25",
+    "chain": "research → brief → PRD → architecture → epics",
+    "rows": [
+      {
+        "wave": "1a",
+        "slug": "pyforge-doctor",
+        "model": "sonnet",
+        "depth": "epics",
+        "state": "running",
+        "have": {
+          "research": false,
+          "brief": false,
+          "prd": false,
+          "architecture": false,
+          "epics": false
+        },
+        "n": 0,
+        "of": 5,
+        "status": "running"
+      },
+      {
+        "wave": "1b",
+        "slug": "pyforge-steward",
+        "model": "sonnet",
+        "depth": "epics",
+        "state": "running",
+        "have": {
+          "research": false,
+          "brief": false,
+          "prd": false,
+          "architecture": false,
+          "epics": false
+        },
+        "n": 0,
+        "of": 5,
+        "status": "running"
+      },
+      {
+        "wave": "1c",
+        "slug": "pyforge-scribe",
+        "model": "sonnet",
+        "depth": "epics",
+        "state": "running",
+        "have": {
+          "research": false,
+          "brief": false,
+          "prd": false,
+          "architecture": false,
+          "epics": false
+        },
+        "n": 0,
+        "of": 5,
+        "status": "running"
+      },
+      {
+        "wave": "1d",
+        "slug": "pyforge-herald",
+        "model": "sonnet",
+        "depth": "epics",
+        "state": "running",
+        "have": {
+          "research": false,
+          "brief": false,
+          "prd": false,
+          "architecture": false,
+          "epics": false
+        },
+        "n": 0,
+        "of": 5,
+        "status": "running"
+      },
+      {
+        "wave": "1e",
+        "slug": "pyforge-marshal",
+        "model": "opus",
+        "depth": "epics",
+        "state": "running",
+        "have": {
+          "research": false,
+          "brief": false,
+          "prd": false,
+          "architecture": false,
+          "epics": false
+        },
+        "n": 0,
+        "of": 5,
+        "status": "running"
+      },
+      {
+        "wave": "1f",
+        "slug": "pyforge-mason",
+        "model": "opus",
+        "depth": "epics",
+        "state": "running",
+        "have": {
+          "research": false,
+          "brief": false,
+          "prd": false,
+          "architecture": false,
+          "epics": false
+        },
+        "n": 0,
+        "of": 5,
+        "status": "running"
+      },
+      {
+        "wave": "2a",
+        "slug": "presenton-pixi-image",
+        "model": "sonnet",
+        "depth": "epics",
+        "state": "queued",
+        "have": {
+          "research": false,
+          "brief": false,
+          "prd": true,
+          "architecture": false,
+          "epics": false
+        },
+        "n": 1,
+        "of": 5,
+        "status": "partial"
+      },
+      {
+        "wave": "2b",
+        "slug": "wasm-analytics-stack",
+        "model": "sonnet",
+        "depth": "prd+arch",
+        "state": "queued",
+        "have": {
+          "research": false,
+          "brief": false,
+          "prd": false,
+          "architecture": false,
+          "epics": false
+        },
+        "n": 0,
+        "of": 4,
+        "status": "queued"
+      },
+      {
+        "wave": "2c",
+        "slug": "unity-data-stack",
+        "model": "opus",
+        "depth": "prd+arch",
+        "state": "queued",
+        "have": {
+          "research": false,
+          "brief": false,
+          "prd": false,
+          "architecture": false,
+          "epics": false
+        },
+        "n": 0,
+        "of": 4,
+        "status": "queued"
+      },
+      {
+        "wave": "2d",
+        "slug": "pyforge-genesis",
+        "model": "opus",
+        "depth": "epics",
+        "state": "queued",
+        "have": {
+          "research": false,
+          "brief": false,
+          "prd": false,
+          "architecture": false,
+          "epics": false
+        },
+        "n": 0,
+        "of": 5,
+        "status": "queued"
+      }
+    ]
+  }
 };
