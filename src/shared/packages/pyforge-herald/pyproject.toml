@@ -10,9 +10,21 @@ readme = "README.md"
 requires-python = ">=3.12"
 license = { text = "MIT" }
 authors = [{ name = "rxm7706" }]
+# Story 1.2 closes the architecture spine's Deferred question in favour of a
+# genuine runtime dependency: `McpTransport` is the shipped V1 transport, so
+# the MCP SDK ships with the package rather than living feature-side only.
+dependencies = ["mcp>=1.28.1"]
 
 [project.scripts]
 herald = "pyforge.herald.cli:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/pyforge"]
+
+[tool.pytest.ini_options]
+# Story 1.2: the FR-21 transport spike (test_live_design_spike.py) is the
+# one test that reaches the real claude-design endpoint. The marker both
+# carves it out of tests/conftest.py's egress-deny fixture and keeps it
+# greppable; its own skipif on HERALD_LIVE_DESIGN is what keeps the default
+# pyforge-herald-test gate offline.
+markers = ["live: reaches the real claude-design MCP endpoint (opt in with HERALD_LIVE_DESIGN=1)"]
