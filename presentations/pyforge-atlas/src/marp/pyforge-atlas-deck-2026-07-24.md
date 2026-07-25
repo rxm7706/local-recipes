@@ -23,7 +23,7 @@ style: |
 
 <!-- 01 · Cover -->
 
-ATLAS · The intelligence layer · pyforge family · BMAD project: `pyforge-atlas`
+ATLAS · The intelligence layer · PyForge family · BMAD project: `pyforge-atlas`
 
 # from monolith<br>to DAG.
 
@@ -195,7 +195,7 @@ Q5 was resolved into the AI-factory scope.
 
 # The read surface inverts
 
-On top of the DAG: five surfaces — and the pyforge family relationship.
+On top of the DAG: five surfaces — and the PyForge family relationship.
 
 ---
 
@@ -205,7 +205,7 @@ On top of the DAG: five surfaces — and the pyforge family relationship.
 
 ---
 
-## The pyforge family
+## The PyForge family
 
 Two workspace members in one `pyforge` namespace: **Atlas provides the data; Warden uses it.**
 
@@ -221,4 +221,4 @@ Exactly **one optional code edge · zero cycles** — both install and run indep
 
 The real deliverable is not speed — the cold rebuild is network-bound. It is **a DAG an autonomous agent can extend without hand-wiring a single checkpoint.**
 
-Atlas · pyforge family · Dream to Code
+Atlas · PyForge family · Dream to Code

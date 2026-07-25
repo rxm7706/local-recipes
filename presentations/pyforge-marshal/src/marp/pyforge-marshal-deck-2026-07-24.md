@@ -23,7 +23,7 @@ style: |
 
 <!-- 01 · Cover -->
 
-MARSHAL · The Commander · pyforge crew chapter · Dream: `docs/dreams/pyforge-marshal.md`
+MARSHAL · The Commander · PyForge Guild chapter · Dream: `docs/dreams/pyforge-marshal.md`
 
 # enforce the spec.<br>run the line.
 
@@ -127,4 +127,4 @@ As bmad-loop drives epics and stories, the **program console** is kept current a
 
 The Dream deserves better than vibes. Marshal exists so that **what ships is what was specified** — enforced, contained, validated. Then the line hands off: Atlas maps, Warden guards, Mason ships.
 
-Marshal · pyforge crew · Dream to Code
+Marshal · PyForge Guild · Dream to Code

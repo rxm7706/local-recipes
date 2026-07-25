@@ -3,7 +3,7 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "description": "PyForge-Marshal (pyforge.marshal) — a field-guide deck for the Ecosystem Crew's Commander: the BMAD-method orchestrator that enforces the spec, guards the boundaries, and runs the line.",
+  "description": "PyForge-Marshal (pyforge.marshal) — a field-guide deck for the PyForge Guild's Commander: the BMAD-method orchestrator that enforces the spec, guards the boundaries, and runs the line.",
   "scripts": {
     "extract": "node scripts/extract-slides.mjs",
     "dev": "vite",

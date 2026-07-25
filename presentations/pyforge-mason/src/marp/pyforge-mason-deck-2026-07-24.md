@@ -23,7 +23,7 @@ style: |
 
 <!-- 01 · Cover -->
 
-MASON · The Artisan · pyforge crew chapter · Dream: `docs/dreams/packaging-factory.md`
+MASON · The Artisan · PyForge Guild chapter · Dream: `docs/dreams/packaging-factory.md`
 
 # we forge the blocks.<br>we ship the structure.
 
@@ -115,4 +115,4 @@ One release, two registries — the same library lands as **wheel and conda pack
 
 Then the pristine artifacts go to Herald — for the proclamation.
 
-Mason · pyforge crew · Dream to Code
+Mason · PyForge Guild · Dream to Code

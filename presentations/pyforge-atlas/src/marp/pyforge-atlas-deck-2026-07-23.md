@@ -267,7 +267,7 @@ None block earlier work. Q5 (AI-factory scope) was resolved → **FR-22 · Wave 
 
 Instead of 28 fixed questions, a semantic graph powers dashboards, natural language, agents, a zero-backend browser build, and a knowledge factory.
 
-<!-- Act V: on top of the DAG, five surfaces and the pyforge family. -->
+<!-- Act V: on top of the DAG, five surfaces and the PyForge family. -->
 
 ---
 
@@ -285,7 +285,7 @@ Every surface consumes the BSL.
 
 ---
 
-## 14 · The pyforge family — atlas provides, warden uses
+## 14 · The PyForge family — atlas provides, warden uses
 
 Two workspace members in one `pyforge` namespace; exactly one optional code edge, zero cycles, both independently installable.
 

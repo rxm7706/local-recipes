@@ -63,4 +63,4 @@ The real deliverable is not speed — it is a DAG an autonomous agent can extend
 
 **Declare the node. Inherit the machinery.**
 
-Atlas · pyforge family · Dream to Code
+Atlas · PyForge family · Dream to Code

@@ -23,7 +23,7 @@ style: |
 
 <!-- 01 · Cover -->
 
-HERALD · The Proclaimer · pyforge crew chapter · Dream: `docs/dreams/pyforge-herald.md`
+HERALD · The Proclaimer · PyForge Guild chapter · Dream: `docs/dreams/pyforge-herald.md`
 
 # capture the dream.<br>proclaim the release.
 
@@ -110,4 +110,4 @@ After the crew ships, Herald **harvests the telemetry** — Atlas and Warden out
 
 Invisible engineering is failed engineering. Herald exists so the dream is **illustrated before the work**, and the work is **proclaimed after the ship**.
 
-Herald · pyforge crew · Dream to Code
+Herald · PyForge Guild · Dream to Code

@@ -3,7 +3,7 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "description": "PyForge-Herald (pyforge.herald) — a field-guide deck for the Ecosystem Crew's Proclaimer: capture the dream, illustrate the telemetry, proclaim the release.",
+  "description": "PyForge-Herald (pyforge.herald) — a field-guide deck for the PyForge Guild's Proclaimer: capture the dream, illustrate the telemetry, proclaim the release.",
   "scripts": {
     "extract": "node scripts/extract-slides.mjs",
     "dev": "vite",

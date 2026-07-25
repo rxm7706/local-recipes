@@ -200,7 +200,7 @@ Instead of 28 fixed questions, a semantic graph powers dashboards, natural langu
 
 ---
 
-## The pyforge family — atlas provides, warden uses
+## The PyForge family — atlas provides, warden uses
 
 Two workspace members, one `pyforge` namespace; one optional code edge, zero cycles, both independently installable.
 

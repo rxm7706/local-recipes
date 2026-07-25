@@ -21,7 +21,7 @@ style: |
 
 <!-- _class: lead -->
 
-GENESIS · pyforge · Dream to Code
+GENESIS · PyForge · Dream to Code
 **The founding vision + the operating-model seed**
 
 # Everything starts with a dream.

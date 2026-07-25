@@ -63,4 +63,4 @@ Anything the crew needs — PyPI, npm, CRAN, a Go binary, a Rust CLI — becomes
 
 **We forge the blocks. We bind the environment. We ship the structure.**
 
-Mason · the packaging factory · pyforge crew
+Mason · the packaging factory · PyForge Guild

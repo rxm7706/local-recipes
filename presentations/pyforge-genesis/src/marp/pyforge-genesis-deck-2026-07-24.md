@@ -24,17 +24,18 @@ style: |
 
 <!-- 01 · Cover -->
 
-GENESIS · pyforge · Dream to Code · founding Dream: `docs/dreams/ecosystem-crew.md`
+GENESIS · PyForge · Dream to Code · founding Dream: `docs/dreams/pyforge-charter.md`
 
 # everything starts with a dream.
 
-The mission of the factory is **Build More Architect Dreams**: turn a raw, inspired human aspiration — unconstrained by syntax or technical debt — into **deterministic, production-ready code**.
+**Forging the Agentic SDLC**  
+Humans Dream, Agents Deliver — Governed. Auditable. Production-ready.
 
 | Genesis | Crew | Method | Pipeline |
 | --- | --- | --- | --- |
 | `docs/dreams/` | 8 personas | BMAD · bmad-loop | Dream → Code |
 
-<!-- The master vision deck. pyforge is a Dream-to-Code factory — an eight-persona crew carries a raw human aspiration to shipped, validated code. -->
+<!-- The master vision deck. PyForge is a Dream-to-Code factory — an eight-persona crew carries a raw human aspiration to shipped, validated code. -->
 
 ---
 
@@ -72,11 +73,11 @@ Not a ticket. Not a spec. The **raw aspiration** — before syntax, before const
 
 # The Crew
 
-Eight personas carry the Dream down one pipeline — **each has its own chapter deck.**
+Eight Forgemasters carry the Dream down one pipeline — **each has its own chapter deck.**
 
 ---
 
-## Eight personas, eight mottos
+## Eight Forgemasters, eight mottos
 
 | Persona | Motto |
 | --- | --- |
@@ -188,4 +189,4 @@ Supervised start to finish by **Marshal**, opened and closed by **Herald**:
 
 # Everything starts with a Dream. The factory exists to build more of them.
 
-Genesis · pyforge · Dream to Code — `docs/dreams/` · write yours
+Genesis · PyForge · Dream to Code — `docs/dreams/` · write yours

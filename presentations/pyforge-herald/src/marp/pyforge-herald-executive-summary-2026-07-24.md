@@ -63,4 +63,4 @@ Every Dream gets a face before it gets a budget — and every release gets a voi
 
 **Make the factory seen.**
 
-Herald · the bridge · pyforge crew
+Herald · the bridge · PyForge Guild

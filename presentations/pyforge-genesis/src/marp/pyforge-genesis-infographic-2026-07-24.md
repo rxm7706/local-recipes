@@ -24,10 +24,10 @@ style: |
 <!-- _class: lead -->
 
 # The Dream-to-Code factory
-## pyforge · Genesis — at a glance
+## PyForge · Genesis — at a glance
 
 One pipeline: **Dream → Deck → Spec → Code → Proclaim.**
-Eight personas. One design system. Zero vibes.
+Eight Forgemasters. One design system. Zero vibes.
 
 ---
 

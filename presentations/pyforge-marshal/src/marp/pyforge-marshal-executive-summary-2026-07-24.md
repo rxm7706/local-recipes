@@ -27,7 +27,7 @@ MARSHAL · The Commander · `docs/dreams/pyforge-marshal.md`
 
 ### Validated code, not vibes.
 
-Marshal is the BMAD-method orchestrator of the pyforge factory: specs in, validated code out, every run visible. Autonomy as a **gradient** — attended stories first, then unattended loops wrapped in verify gates and quality gates, with a hard rule that anything the agent cannot safely decide **escalates to a human** instead of being guessed.
+Marshal is the BMAD-method orchestrator of the PyForge factory: specs in, validated code out, every run visible. Autonomy as a **gradient** — attended stories first, then unattended loops wrapped in verify gates and quality gates, with a hard rule that anything the agent cannot safely decide **escalates to a human** instead of being guessed.
 
 ---
 
@@ -63,4 +63,4 @@ A story enters as an approved spec and leaves as merged, verified code — or it
 
 **The hand that builds must not be the gate that judges it.**
 
-Marshal · bmad-loop + bmad-dev-auto · pyforge crew
+Marshal · bmad-loop + bmad-dev-auto · PyForge Guild

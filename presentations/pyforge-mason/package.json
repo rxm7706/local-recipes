@@ -3,7 +3,7 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "description": "PyForge-Mason (pyforge.mason) — a field-guide deck for the Ecosystem Crew's Artisan Builder: forge the blocks, bind the environment, ship the structure.",
+  "description": "PyForge-Mason (pyforge.mason) — a field-guide deck for the PyForge Guild's Artisan Builder: forge the blocks, bind the environment, ship the structure.",
   "scripts": {
     "extract": "node scripts/extract-slides.mjs",
     "dev": "vite",
