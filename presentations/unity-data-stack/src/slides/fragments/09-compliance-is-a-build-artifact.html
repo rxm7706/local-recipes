@@ -1,0 +1,22 @@
+<div style="width:100%; height:100%; box-sizing:border-box; padding:96px; display:flex; flex-direction:column; font-family:'Archivo',sans-serif; color:#201e1d;">
+      <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:18px; letter-spacing:0.16em; text-transform:uppercase; color:#c22a10; font-weight:600; margin-bottom:30px;">CAP-6 · the evidence chain</div>
+      <h2 style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:84px; line-height:0.98; letter-spacing:-0.02em; margin:0 0 40px;">Compliance is a build artifact</h2>
+      <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:0; border-top:3px solid #201e1d; flex:1;">
+        <div style="padding:36px 32px 0 0; border-right:2px solid #d3d0cf;">
+          <div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:44px; margin-bottom:14px;">SBOM</div>
+          <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; color:#c22a10; font-weight:600; margin-bottom:14px;">AD-11 · from the artifact, not the lock</div>
+          <p style="font-size:24px; line-height:1.45; font-weight:500; margin:0;">Generated inside the built artifact with <b>populated dependency edges</b>. A flat inventory answers "do we ship X?" but never "what reaches X?" — and exploitability analysis needs the second. CycloneDX 1.7 is <b>ECMA-424</b>: the version is pinned, never implicit.</p>
+        </div>
+        <div style="padding:36px 32px 0 32px; border-right:2px solid #d3d0cf;">
+          <div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:44px; margin-bottom:14px;">Provenance</div>
+          <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; color:#c22a10; font-weight:600; margin-bottom:14px;">AD-12 · SLSA L1 floor, L2 goal</div>
+          <p style="font-size:24px; line-height:1.45; font-weight:500; margin:0;">Provenance was <b>entirely absent</b> from the intake set — the SBOM said what was in an artifact, nothing said how it came to be. An <b>unattested artifact does not deploy</b> to any Stage whose promotion policy requires approval.</p>
+        </div>
+        <div style="padding:36px 0 0 32px;">
+          <div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:44px; margin-bottom:14px;">The gate</div>
+          <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; color:#c22a10; font-weight:600; margin-bottom:14px;">AD-6 · Warden, by integration</div>
+          <p style="font-size:24px; line-height:1.45; font-weight:500; margin:0;">PyForge Warden already ships a strict superset — so Unity <b>consumes it as a CLI</b> in its own lean Environment. Never a library import, never CI-only. The exit code derives from the report <b>file.</b></p>
+        </div>
+      </div>
+      <div style="display:flex; justify-content:space-between; align-items:baseline; border-top:2px solid #d3d0cf; padding-top:22px; font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; font-weight:600;"><span>Unity Data Stack · innersource platform</span><span>09 / 10</span></div>
+    </div>

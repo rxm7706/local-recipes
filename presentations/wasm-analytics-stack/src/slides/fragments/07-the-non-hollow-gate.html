@@ -1,0 +1,24 @@
+<div style="width:100%; height:100%; box-sizing:border-box; padding:96px; display:flex; flex-direction:column; font-family:'Archivo',sans-serif; color:#201e1d;">
+      <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:18px; letter-spacing:0.16em; text-transform:uppercase; color:#c22a10; font-weight:600; margin-bottom:30px;">CAP-4 · FR-12 · FR-13</div>
+      <h2 style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:84px; line-height:0.98; letter-spacing:-0.02em; margin:0 0 14px;">The gate must be able to fail</h2>
+      <p style="font-size:26px; line-height:1.4; font-weight:500; margin:0 0 34px; max-width:1600px;">The isolation claim is <b>mechanically verified, not asserted</b> — and the proof that the verification is real is that it can be made to break on purpose.</p>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:0; border-top:3px solid #201e1d; flex:1;">
+        <div style="padding:36px 40px 0 0; border-right:2px solid #d3d0cf;">
+          <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; letter-spacing:0.08em; text-transform:uppercase; color:rgba(32,30,29,.55); margin-bottom:18px;">AD-4 · the meta-test, from version one</div>
+          <p style="font-size:26px; line-height:1.45; font-weight:500; margin:0 0 22px;">The gate runs the compiled component under a Wasmtime host granted <b>only its WIT-declared capabilities</b> and fails on any host interaction beyond them.</p>
+          <div style="border:2px solid #ec3013; background:#fbe4de; padding:24px;">
+            <p style="font-size:24px; line-height:1.45; font-weight:500; margin:0;">Then it proves itself: <b>widen the declared capability surface without a matching WIT change and the gate must fail.</b> A gate that always passes is not a gate.</p>
+          </div>
+        </div>
+        <div style="padding:36px 0 0 40px;">
+          <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; letter-spacing:0.08em; text-transform:uppercase; color:rgba(32,30,29,.55); margin-bottom:18px;">AD-2 · the denylist is a build gate</div>
+          <div style="background:#201e1d; color:#f3f2f2; padding:26px 30px; font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:22px; line-height:1.6; margin-bottom:22px;">
+            <div style="color:rgba(243,242,242,.5); font-size:18px;"># static import scan over source + resolved closure</div>
+            <div>pixi run build</div>
+            <div style="color:#ec3013;">✗ denylisted import: numpy · pandas · pyarrow · pydantic</div>
+          </div>
+          <p style="font-size:24px; line-height:1.45; font-weight:500; margin:0;">Direct <b>or transitive</b>. It fails the build, not a later runtime error — because violating it means shipping a component that either will not build under <span style="font-family:ui-monospace,'SF Mono',Menlo,monospace;">componentize-py</span> or depends on the unmaintained wheel project this project refuses to rely on.</p>
+        </div>
+      </div>
+      <div style="display:flex; justify-content:space-between; align-items:baseline; border-top:2px solid #d3d0cf; padding-top:22px; font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; font-weight:600;"><span>Wasm Analytics Stack · sandboxed pipelines</span><span>07 / 10</span></div>
+    </div>

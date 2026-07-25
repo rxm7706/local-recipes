@@ -1,0 +1,23 @@
+<div style="width:100%; height:100%; box-sizing:border-box; padding:96px; display:flex; flex-direction:column; font-family:'Archivo',sans-serif; color:#201e1d;">
+      <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:18px; letter-spacing:0.16em; text-transform:uppercase; color:#c22a10; font-weight:600; margin-bottom:30px;">AD-3 · the three-lane split</div>
+      <h2 style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:82px; line-height:0.98; letter-spacing:-0.02em; margin:0 0 14px;">Sandbox the one place it is buildable</h2>
+      <p style="font-size:26px; line-height:1.4; font-weight:500; margin:0 0 34px; max-width:1600px;">A smaller claim than the April 2026 gist made — and, per the research, the larger claim is <b>not buildable with today's ecosystem.</b></p>
+      <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:0; border-top:3px solid #201e1d; flex:1;">
+        <div style="padding:34px 32px 0 0; border-right:2px solid #d3d0cf;">
+          <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; letter-spacing:0.08em; text-transform:uppercase; color:rgba(32,30,29,.55); margin-bottom:12px;">Lane 1 · conventional</div>
+          <div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:38px; line-height:1.05; margin-bottom:16px;">dlt · dbt · DuckDB</div>
+          <p style="font-size:24px; line-height:1.45; font-weight:500; margin:0;">Restricted-SCC-hardened OS processes. <b>No wasm32-wasi build target</b> may be declared in either stage's runtime path without an ADR amendment citing new upstream evidence.</p>
+        </div>
+        <div style="padding:34px 32px 0 32px; border-right:2px solid #d3d0cf; background:#fbe4de; margin-top:-1px;">
+          <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; letter-spacing:0.08em; text-transform:uppercase; color:#c22a10; margin-bottom:12px; font-weight:600;">Lane 2 · the sandbox</div>
+          <div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:38px; line-height:1.05; margin-bottom:16px; color:#c22a10;">upload validation</div>
+          <p style="font-size:24px; line-height:1.45; font-weight:500; margin:0;">Pure Python only, compiled by <span style="font-family:ui-monospace,'SF Mono',Menlo,monospace;">componentize-py</span> into a genuine WASI Preview 2 component under Wasmtime. <b>The one place untrusted input first touches the system.</b></p>
+        </div>
+        <div style="padding:34px 0 0 32px;">
+          <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; letter-spacing:0.08em; text-transform:uppercase; color:rgba(32,30,29,.55); margin-bottom:12px;">Lane 3 · deferred to v2</div>
+          <div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:38px; line-height:1.05; margin-bottom:16px;">the read surface</div>
+          <p style="font-size:24px; line-height:1.45; font-weight:500; margin:0;">DuckDB-WASM + Pyodide in the browser — <b>Emscripten, a different target entirely.</b> Already shipped by PyForge Atlas story G1; reused directly, not reinvented.</p>
+        </div>
+      </div>
+      <div style="display:flex; justify-content:space-between; align-items:baseline; border-top:2px solid #d3d0cf; padding-top:22px; font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; font-weight:600;"><span>Wasm Analytics Stack · sandboxed pipelines</span><span>04 / 10</span></div>
+    </div>

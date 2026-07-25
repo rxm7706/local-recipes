@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=Archivo+Expanded:wght@700;800;900&display=swap" rel="stylesheet">
+</helmet>
+<x-import component-from-global-scope="deck-stage" from="./deck-stage.js" width="1920" height="1080" hint-size="100%,100%">
+
+  <section data-label="Cover" data-speaker-notes="Wasm Analytics Stack lets a hardened enterprise accept user-uploaded data into an analytical pipeline without widening the trust boundary of the pipeline's own code. It descends from an April 2026 architecture gist that claimed more than today's ecosystem can deliver — and this project corrects that claim rather than re-inheriting it. The honest, narrower scope is itself the differentiator." style="background:#f3f2f2">
+    <div style="width:100%; height:100%; box-sizing:border-box; padding:96px; display:flex; flex-direction:column; justify-content:space-between; font-family:'Archivo',sans-serif; color:#201e1d;">
+      <div style="display:flex; justify-content:space-between; align-items:baseline; font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; letter-spacing:0.08em; text-transform:uppercase;">
+        <span style="color:#c22a10; font-weight:600;">PyForge · Dream to Code · platform product</span>
+        <span style="color:rgba(32,30,29,.55);">Dream · docs/dreams/wasm-analytics-stack.md</span>
+      </div>
+      <div>
+        <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:22px; letter-spacing:0.34em; text-transform:uppercase; color:#c22a10; font-weight:600; margin-bottom:26px;">Wasm Analytics Stack · sandboxed pipelines</div>
+        <h1 style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:126px; line-height:0.9; letter-spacing:-0.03em; margin:0;">a second boundary,<br>where it counts.</h1>
+        <p style="font-size:34px; line-height:1.35; font-weight:500; margin:40px 0 0; max-width:1420px;">Excel upload → <b>WASI-sandboxed validation</b> → dlt into DuckDB Bronze → dbt Silver/Gold, every hop traced by OTel and lineaged by OpenLineage, on <b>one Pixi toolchain</b> from laptop to Podman twin to OpenShift Restricted SCC.</p>
+      </div>
+      <div style="display:grid; grid-template-columns:repeat(4,1fr); border-top:3px solid #201e1d;">
+        <div style="padding:24px 24px 0 0; border-right:2px solid #d3d0cf;"><div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:14px; letter-spacing:0.06em; text-transform:uppercase; color:rgba(32,30,29,.55);">Sandbox</div><div style="font-size:24px; font-weight:800; margin-top:8px;">WASI Preview 2 · Wasmtime</div></div>
+        <div style="padding:24px; border-right:2px solid #d3d0cf;"><div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:14px; letter-spacing:0.06em; text-transform:uppercase; color:rgba(32,30,29,.55);">Scope</div><div style="font-size:24px; font-weight:800; margin-top:8px;">upload validation only</div></div>
+        <div style="padding:24px; border-right:2px solid #d3d0cf;"><div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:14px; letter-spacing:0.06em; text-transform:uppercase; color:rgba(32,30,29,.55);">Contract</div><div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:24px; font-weight:600; margin-top:8px;">5 CAP · 17 FR · 10 AD</div></div>
+        <div style="padding:24px 0 0 24px;"><div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:14px; letter-spacing:0.06em; text-transform:uppercase; color:rgba(32,30,29,.55);">Depth</div><div style="font-size:24px; font-weight:800; margin-top:8px;">PRD + architecture</div></div>
+      </div>
+    </div>
+  </section>
+
+  <section data-label="The maturity verdict" data-speaker-notes="This is the most valuable slide in the deck, and it is a negative result. Verified against primary sources on 2026-07-25: DuckDB's native engine has no WASI build and no WASI roadmap — a search of duckdb slash duckdb for WASI returns zero issues, so the question has never even been asked upstream. dlt's DuckDB destination and dbt-duckdb both inherit that blocker. The only community source of WASI-cross-compiled wheels for this class of library, dicej slash wasi-wheels, is explicitly disclaimed by its own author as a proof of concept not to be relied on for anything serious, and its pandas build directory has not been touched since December 2024. It contains no pyarrow and no duckdb at all. So: dlt, dbt and DuckDB cannot run inside a genuine WASI component today." style="background:#201e1d">
+    <div style="width:100%; height:100%; box-sizing:border-box; padding:88px 96px; display:flex; flex-direction:column; font-family:'Archivo',sans-serif; color:#f3f2f2;">
+      <div style="display:flex; justify-content:space-between; align-items:baseline; font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:18px; letter-spacing:0.16em; text-transform:uppercase; font-weight:600; margin-bottom:26px;"><span style="color:#ec3013;">The maturity verdict</span><span style="opacity:.55;">verified 2026-07-25 · primary sources</span></div>
+      <h2 style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:82px; line-height:0.96; letter-spacing:-0.02em; margin:0 0 16px;">dlt, dbt and DuckDB cannot run in a WASI component today</h2>
+      <p style="font-size:26px; line-height:1.4; font-weight:500; margin:0 0 34px; max-width:1620px; opacity:.92;">Not a scoping preference — a blocked dependency. The seed use case's whole ingest → transform spine sits on DuckDB's native engine, and that engine has <b style="color:#ec3013;">no WASI build and no WASI roadmap.</b></p>
+      <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:0; border-top:3px solid #f3f2f2; flex:1;">
+        <div style="padding:32px 28px 0 0; border-right:2px solid rgba(243,242,242,.3);">
+          <div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-size:64px; font-weight:900; line-height:1; color:#ec3013;">0</div>
+          <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:15px; margin-top:14px; opacity:.6;">duckdb/duckdb</div>
+          <p style="font-size:22px; line-height:1.4; font-weight:500; margin:8px 0 0;">issues mentioning <b>WASI</b> — the question has never been asked upstream.</p>
+        </div>
+        <div style="padding:32px 28px 0 28px; border-right:2px solid rgba(243,242,242,.3);">
+          <div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-size:64px; font-weight:900; line-height:1; color:#ec3013;">2024-12</div>
+          <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:15px; margin-top:14px; opacity:.6;">dicej/wasi-wheels</div>
+          <p style="font-size:22px; line-height:1.4; font-weight:500; margin:8px 0 0;">last touched. The ecosystem's only WASI-wheel source for this class of library — <b>unmaintained, and disclaimed by its own author.</b></p>
+        </div>
+        <div style="padding:32px 28px 0 28px; border-right:2px solid rgba(243,242,242,.3);">
+          <div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-size:64px; font-weight:900; line-height:1; color:#ec3013;">none</div>
+          <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:15px; margin-top:14px; opacity:.6;">pyarrow · duckdb</div>
+          <p style="font-size:22px; line-height:1.4; font-weight:500; margin:8px 0 0;">WASI wheel attempt anywhere, maintained or not. No Arrow-maintained WASM interchange primitive either.</p>
+        </div>
+        <div style="padding:32px 0 0 28px;">
+          <div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-size:64px; font-weight:900; line-height:1; color:#ec3013;">1 of 3</div>
+          <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:15px; margin-top:14px; opacity:.6;">Spin · Fluvio · Shopify</div>
+          <p style="font-size:22px; line-height:1.4; font-weight:500; margin:8px 0 0;">production Wasm-sandboxing platforms offer Python at all. This is <b>frontier work</b>, not an established pattern.</p>
+        </div>
+      </div>
+      <div style="display:flex; justify-content:space-between; align-items:baseline; border-top:2px solid rgba(243,242,242,.35); padding-top:22px; margin-top:26px; font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; font-weight:600;"><span>Wasm Analytics Stack · sandboxed pipelines</span><span>02 / 10</span></div>
+    </div>
+  </section>
+
+  <section data-label="Act I — The gap that remains" data-speaker-notes="Act I: what the verdict does not remove. Restricted SCC gives process isolation, not code isolation — the Python process inside a hardened pod still has the full language surface available to anything running inside it. There is no second boundary between the pipeline's own trusted code and logic derived from an uploaded file. That gap is real whether or not DuckDB ever ships a WASI build." style="background:#201e1d">
+    <div style="position:relative; width:100%; height:100%; box-sizing:border-box; padding:96px; overflow:hidden; display:flex; flex-direction:column; justify-content:space-between; font-family:'Archivo',sans-serif; color:#f3f2f2;">
+      <div style="position:absolute; right:60px; top:-160px; font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:760px; line-height:1; color:rgba(243,242,242,0.10); pointer-events:none;">I</div>
+      <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:22px; letter-spacing:0.16em; text-transform:uppercase; font-weight:600; position:relative;">Act I</div>
+      <div style="position:relative;">
+        <h2 style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:106px; line-height:0.95; letter-spacing:-0.02em; margin:0;">The gap that remains</h2>
+        <p style="font-size:32px; line-height:1.4; font-weight:500; margin:36px 0 0; max-width:1420px;">Restricted SCC gives <b>process</b> isolation, not <b>code</b> isolation. The Python process inside a hardened pod still has the whole language surface available to anything running inside it — <b>and nothing separates the pipeline's own code from logic derived from an uploaded file.</b></p>
+      </div>
+      <div style="display:flex; justify-content:space-between; align-items:baseline; border-top:2px solid rgba(243,242,242,.35); padding-top:22px; font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; font-weight:600;"><span>Wasm Analytics Stack · sandboxed pipelines</span><span>03 / 10</span></div>
+    </div>
+  </section>
+
+  <section data-label="The scope that survives" data-speaker-notes="The scoping call the verdict forces: a three-lane split. Ordinary Restricted-SCC-hardened processes for the DuckDB-touching pipeline core; a real componentize-py-built WASI component only for the genuinely pure-Python validation step at the trust boundary; and DuckDB-WASM plus Pyodide in the browser for a future read surface, following pyforge-atlas story G1's shipped pattern. AD-3 makes the middle lane a rule, not a preference: no component in the ingest or transform runtime path may declare a wasm32-wasi build target without an ADR amendment citing new upstream evidence." style="background:#f3f2f2">
+    <div style="width:100%; height:100%; box-sizing:border-box; padding:96px; display:flex; flex-direction:column; font-family:'Archivo',sans-serif; color:#201e1d;">
+      <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:18px; letter-spacing:0.16em; text-transform:uppercase; color:#c22a10; font-weight:600; margin-bottom:30px;">AD-3 · the three-lane split</div>
+      <h2 style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:82px; line-height:0.98; letter-spacing:-0.02em; margin:0 0 14px;">Sandbox the one place it is buildable</h2>
+      <p style="font-size:26px; line-height:1.4; font-weight:500; margin:0 0 34px; max-width:1600px;">A smaller claim than the April 2026 gist made — and, per the research, the larger claim is <b>not buildable with today's ecosystem.</b></p>
+      <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:0; border-top:3px solid #201e1d; flex:1;">
+        <div style="padding:34px 32px 0 0; border-right:2px solid #d3d0cf;">
+          <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; letter-spacing:0.08em; text-transform:uppercase; color:rgba(32,30,29,.55); margin-bottom:12px;">Lane 1 · conventional</div>
+          <div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:38px; line-height:1.05; margin-bottom:16px;">dlt · dbt · DuckDB</div>
+          <p style="font-size:24px; line-height:1.45; font-weight:500; margin:0;">Restricted-SCC-hardened OS processes. <b>No wasm32-wasi build target</b> may be declared in either stage's runtime path without an ADR amendment citing new upstream evidence.</p>
+        </div>
+        <div style="padding:34px 32px 0 32px; border-right:2px solid #d3d0cf; background:#fbe4de; margin-top:-1px;">
+          <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; letter-spacing:0.08em; text-transform:uppercase; color:#c22a10; margin-bottom:12px; font-weight:600;">Lane 2 · the sandbox</div>
+          <div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:38px; line-height:1.05; margin-bottom:16px; color:#c22a10;">upload validation</div>
+          <p style="font-size:24px; line-height:1.45; font-weight:500; margin:0;">Pure Python only, compiled by <span style="font-family:ui-monospace,'SF Mono',Menlo,monospace;">componentize-py</span> into a genuine WASI Preview 2 component under Wasmtime. <b>The one place untrusted input first touches the system.</b></p>
+        </div>
+        <div style="padding:34px 0 0 32px;">
+          <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; letter-spacing:0.08em; text-transform:uppercase; color:rgba(32,30,29,.55); margin-bottom:12px;">Lane 3 · deferred to v2</div>
+          <div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:38px; line-height:1.05; margin-bottom:16px;">the read surface</div>
+          <p style="font-size:24px; line-height:1.45; font-weight:500; margin:0;">DuckDB-WASM + Pyodide in the browser — <b>Emscripten, a different target entirely.</b> Already shipped by PyForge Atlas story G1; reused directly, not reinvented.</p>
+        </div>
+      </div>
+      <div style="display:flex; justify-content:space-between; align-items:baseline; border-top:2px solid #d3d0cf; padding-top:22px; font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; font-weight:600;"><span>Wasm Analytics Stack · sandboxed pipelines</span><span>04 / 10</span></div>
+    </div>
+  </section>
+
+  <section data-label="Act II — The seed use case" data-speaker-notes="Act II: one concrete pipeline, end to end. Marcus uploads a weekly headcount-and-cost spreadsheet; three rows fail validation; he sees precise row-level errors within seconds; the file was never partially ingested and the valid rows queue separately from the rejected ones. That is the whole product surface in v1 — not a general ingestion platform." style="background:#201e1d">
+    <div style="position:relative; width:100%; height:100%; box-sizing:border-box; padding:96px; overflow:hidden; display:flex; flex-direction:column; justify-content:space-between; font-family:'Archivo',sans-serif; color:#f3f2f2;">
+      <div style="position:absolute; right:60px; top:-160px; font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:760px; line-height:1; color:rgba(243,242,242,0.10); pointer-events:none;">II</div>
+      <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:22px; letter-spacing:0.16em; text-transform:uppercase; font-weight:600; position:relative;">Act II</div>
+      <div style="position:relative;">
+        <h2 style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:110px; line-height:0.95; letter-spacing:-0.02em; margin:0;">The seed use case</h2>
+        <p style="font-size:32px; line-height:1.4; font-weight:500; margin:36px 0 0; max-width:1420px;">One spreadsheet, one trace ID, five stages. <b>Excel upload is the only ingestion path in v1</b> — and every architecture decision below is scoped to it.</p>
+      </div>
+      <div style="display:flex; justify-content:space-between; align-items:baseline; border-top:2px solid rgba(243,242,242,.35); padding-top:22px; font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; font-weight:600;"><span>Wasm Analytics Stack · sandboxed pipelines</span><span>05 / 10</span></div>
+    </div>
+  </section>
+
+  <section data-label="Upload to Gold" data-speaker-notes="The pipeline, stage by stage, with the decisions that keep two independent builders from composing it incompatibly. AD-10: OIDC is validated at a gateway boundary in front of the API, never embedded per-request. AD-1: Excel bytes are parsed into rows entirely outside the sandbox, and only primitive and record types cross the WIT boundary — no shared memory, no Arrow buffers. AD-9: the upload is synchronous, returning the full per-row result in the same HTTP response; the trace ID is a correlation handle, not a polling handle. AD-7: each validated upload triggers exactly one dlt load followed by exactly one dbt run scoped to that load, sequentially, from the same owning process, because DuckDB is single-writer." style="background:#f3f2f2">
+    <div style="width:100%; height:100%; box-sizing:border-box; padding:96px; display:flex; flex-direction:column; font-family:'Archivo',sans-serif; color:#201e1d;">
+      <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:18px; letter-spacing:0.16em; text-transform:uppercase; color:#c22a10; font-weight:600; margin-bottom:28px;">CAP-1 · CAP-2 · FR-1 … FR-7</div>
+      <h2 style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:80px; line-height:0.98; letter-spacing:-0.02em; margin:0 0 34px;">Upload → validate → Bronze → Gold</h2>
+      <div style="display:grid; grid-template-columns:repeat(5,1fr); gap:0; border-top:3px solid #201e1d; border-bottom:2px solid #201e1d; margin-bottom:34px;">
+        <div style="padding:26px 24px 26px 0; border-right:2px solid #d3d0cf;"><div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:15px; color:#c22a10; font-weight:600;">01 · ingress</div><div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-size:30px; font-weight:800; margin-top:10px; line-height:1.05;">FastAPI</div><p style="font-size:20px; line-height:1.4; font-weight:500; margin:10px 0 0;">OIDC at the gateway; unauthenticated requests get 401 <b>before the body is read.</b></p></div>
+        <div style="padding:26px 24px; border-right:2px solid #d3d0cf; background:#fbe4de;"><div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:15px; color:#c22a10; font-weight:600;">02 · sandbox</div><div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-size:30px; font-weight:800; margin-top:10px; line-height:1.05; color:#c22a10;">WASI validate</div><p style="font-size:20px; line-height:1.4; font-weight:500; margin:10px 0 0;">Structure + data quality. <b>Zero rows reach Bronze</b> from a structurally invalid file.</p></div>
+        <div style="padding:26px 24px; border-right:2px solid #d3d0cf;"><div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:15px; color:#c22a10; font-weight:600;">03 · ingest</div><div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-size:30px; font-weight:800; margin-top:10px; line-height:1.05;">dlt → Bronze</div><p style="font-size:20px; line-height:1.4; font-weight:500; margin:10px 0 0;">Only validated rows. Schema inferred and handed to the transform stage.</p></div>
+        <div style="padding:26px 24px; border-right:2px solid #d3d0cf;"><div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:15px; color:#c22a10; font-weight:600;">04 · transform</div><div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-size:30px; font-weight:800; margin-top:10px; line-height:1.05;">dbt-duckdb</div><p style="font-size:20px; line-height:1.4; font-weight:500; margin:10px 0 0;">Silver → Gold, declared schemas. A failing <span style="font-family:ui-monospace,'SF Mono',Menlo,monospace;">dbt test</span> leaves the prior good state queryable.</p></div>
+        <div style="padding:26px 0 26px 24px;"><div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:15px; color:#c22a10; font-weight:600;">05 · lineage</div><div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-size:30px; font-weight:800; margin-top:10px; line-height:1.05;">column-level</div><p style="font-size:20px; line-height:1.4; font-weight:500; margin:10px 0 0;">Any Gold column returns its <b>full upstream chain back to Bronze.</b></p></div>
+      </div>
+      <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:0; flex:1;">
+        <div style="padding-right:32px; border-right:2px solid #d3d0cf;"><div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:17px; font-weight:600; color:#c22a10; margin-bottom:10px;">AD-1 · what crosses the WIT boundary</div><p style="font-size:23px; line-height:1.45; font-weight:500; margin:0;">Primitives and records only — strings, numbers, booleans, lists. <b>No shared memory, no Arrow buffers, no raw Excel bytes.</b> Parsing happens outside the sandbox, before the call.</p></div>
+        <div style="padding:0 32px; border-right:2px solid #d3d0cf;"><div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:17px; font-weight:600; color:#c22a10; margin-bottom:10px;">AD-9 · synchronous by design</div><p style="font-size:23px; line-height:1.45; font-weight:500; margin:0;">The request blocks through parse, validate and the full per-row report. The returned trace ID <b>correlates; it does not poll</b> — there is no v1 polling endpoint.</p></div>
+        <div style="padding-left:32px;"><div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:17px; font-weight:600; color:#c22a10; margin-bottom:10px;">AD-7 · one writer, 1:1, never batched</div><p style="font-size:23px; line-height:1.45; font-weight:500; margin:0;">DuckDB is single-writer, so one upload triggers exactly one <span style="font-family:ui-monospace,'SF Mono',Menlo,monospace;">dlt</span> load then exactly one <span style="font-family:ui-monospace,'SF Mono',Menlo,monospace;">dbt run</span> — sequentially, from <b>the same owning process.</b></p></div>
+      </div>
+      <div style="display:flex; justify-content:space-between; align-items:baseline; border-top:2px solid #d3d0cf; padding-top:22px; margin-top:18px; font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; font-weight:600;"><span>Wasm Analytics Stack · sandboxed pipelines</span><span>06 / 10</span></div>
+    </div>
+  </section>
+
+  <section data-label="The non-hollow gate" data-speaker-notes="The differentiating claim, and the reason it is credible. A gate that only proves the component instantiates successfully proves nothing about the sandbox boundary. So AD-4 requires the gate to ship with a meta-test from its first version: deliberately widening the component's declared WIT capabilities without a matching interface change must make the gate fail. If it cannot fail, it is not checking anything. Alongside it, AD-2 makes the dependency denylist a build gate rather than a policy — adding numpy, pandas, pyarrow or pydantic fails pixi run build, not a later runtime error. The philosophy is borrowed from pyforge-atlas story G1's wasm-smoke gate; the mechanism is genuinely different, because G1 has no Wasmtime host, no WIT interface and no capability model." style="background:#f3f2f2">
+    <div style="width:100%; height:100%; box-sizing:border-box; padding:96px; display:flex; flex-direction:column; font-family:'Archivo',sans-serif; color:#201e1d;">
+      <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:18px; letter-spacing:0.16em; text-transform:uppercase; color:#c22a10; font-weight:600; margin-bottom:30px;">CAP-4 · FR-12 · FR-13</div>
+      <h2 style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:84px; line-height:0.98; letter-spacing:-0.02em; margin:0 0 14px;">The gate must be able to fail</h2>
+      <p style="font-size:26px; line-height:1.4; font-weight:500; margin:0 0 34px; max-width:1600px;">The isolation claim is <b>mechanically verified, not asserted</b> — and the proof that the verification is real is that it can be made to break on purpose.</p>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:0; border-top:3px solid #201e1d; flex:1;">
+        <div style="padding:36px 40px 0 0; border-right:2px solid #d3d0cf;">
+          <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; letter-spacing:0.08em; text-transform:uppercase; color:rgba(32,30,29,.55); margin-bottom:18px;">AD-4 · the meta-test, from version one</div>
+          <p style="font-size:26px; line-height:1.45; font-weight:500; margin:0 0 22px;">The gate runs the compiled component under a Wasmtime host granted <b>only its WIT-declared capabilities</b> and fails on any host interaction beyond them.</p>
+          <div style="border:2px solid #ec3013; background:#fbe4de; padding:24px;">
+            <p style="font-size:24px; line-height:1.45; font-weight:500; margin:0;">Then it proves itself: <b>widen the declared capability surface without a matching WIT change and the gate must fail.</b> A gate that always passes is not a gate.</p>
+          </div>
+        </div>
+        <div style="padding:36px 0 0 40px;">
+          <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; letter-spacing:0.08em; text-transform:uppercase; color:rgba(32,30,29,.55); margin-bottom:18px;">AD-2 · the denylist is a build gate</div>
+          <div style="background:#201e1d; color:#f3f2f2; padding:26px 30px; font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:22px; line-height:1.6; margin-bottom:22px;">
+            <div style="color:rgba(243,242,242,.5); font-size:18px;"># static import scan over source + resolved closure</div>
+            <div>pixi run build</div>
+            <div style="color:#ec3013;">✗ denylisted import: numpy · pandas · pyarrow · pydantic</div>
+          </div>
+          <p style="font-size:24px; line-height:1.45; font-weight:500; margin:0;">Direct <b>or transitive</b>. It fails the build, not a later runtime error — because violating it means shipping a component that either will not build under <span style="font-family:ui-monospace,'SF Mono',Menlo,monospace;">componentize-py</span> or depends on the unmaintained wheel project this project refuses to rely on.</p>
+        </div>
+      </div>
+      <div style="display:flex; justify-content:space-between; align-items:baseline; border-top:2px solid #d3d0cf; padding-top:22px; font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; font-weight:600;"><span>Wasm Analytics Stack · sandboxed pipelines</span><span>07 / 10</span></div>
+    </div>
+  </section>
+
+  <section data-label="One trace ID, one security context" data-speaker-notes="Two single-source-of-truth decisions that stop the system fragmenting. AD-5: the correlation key is always the bare 32-hex-character W3C trace id — never the full traceparent string, never a UUID, never dashed — minted once at ingress, stored in the dlt load package metadata, passed to dbt as a var, and attached as a custom OpenLineage facet. It is deliberately never conflated with OpenLineage's own runId. AD-6: one canonical security context is authored once under deploy slash, and both the Helm chart and the Podman compose file consume it through a generation step; neither hand-authors its own copy, because that drift is exactly what would silently defeat the parity claim." style="background:#f3f2f2">
+    <div style="width:100%; height:100%; box-sizing:border-box; padding:96px; display:flex; flex-direction:column; font-family:'Archivo',sans-serif; color:#201e1d;">
+      <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:18px; letter-spacing:0.16em; text-transform:uppercase; color:#c22a10; font-weight:600; margin-bottom:30px;">CAP-3 · one writer per contract</div>
+      <h2 style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:84px; line-height:0.98; letter-spacing:-0.02em; margin:0 0 40px;">One trace ID. One security context.</h2>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:0; border-top:3px solid #201e1d; flex:1;">
+        <div style="padding:36px 40px 0 0; border-right:2px solid #d3d0cf;">
+          <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; letter-spacing:0.08em; text-transform:uppercase; color:rgba(32,30,29,.55); margin-bottom:18px;">AD-5 · minted once, one wire format</div>
+          <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:26px; font-weight:600; color:#c22a10; margin-bottom:18px;">upload_trace_id</div>
+          <p style="font-size:24px; line-height:1.45; font-weight:500; margin:0 0 18px;">The <b>bare 32-hex W3C trace-id</b> — never the full <span style="font-family:ui-monospace,'SF Mono',Menlo,monospace;">traceparent</span>, never a UUID, never dashed. Minted at ingress, carried into the dlt load package, passed to dbt as a var, attached as a custom OpenLineage facet.</p>
+          <p style="font-size:24px; line-height:1.45; font-weight:500; margin:0;">Never conflated with OpenLineage's own <span style="font-family:ui-monospace,'SF Mono',Menlo,monospace;">runId</span>. One trace-ID lookup reconstructs upload → Gold <b>with no gaps</b> — and only the Vector sidecar holds an external telemetry egress path.</p>
+        </div>
+        <div style="padding:36px 0 0 40px;">
+          <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; letter-spacing:0.08em; text-transform:uppercase; color:rgba(32,30,29,.55); margin-bottom:18px;">AD-6 · one definition, two consumers</div>
+          <div style="display:flex; gap:18px; margin-bottom:20px;">
+            <div style="flex:1; border:2px solid #201e1d; padding:20px;"><div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:15px; font-weight:600; color:#c22a10;">Helm chart · OCP</div><p style="font-size:21px; line-height:1.4; font-weight:500; margin:10px 0 0;">Restricted SCC, no elevated binding requested.</p></div>
+            <div style="flex:1; border:2px solid #201e1d; padding:20px;"><div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:15px; font-weight:600; color:#c22a10;">Podman compose · twin</div><p style="font-size:21px; line-height:1.4; font-weight:500; margin:10px 0 0;"><span style="font-family:ui-monospace,'SF Mono',Menlo,monospace;">--read-only --user 1001</span></p></div>
+          </div>
+          <p style="font-size:24px; line-height:1.45; font-weight:500; margin:0;">Both <b>consume one canonical definition</b> authored under <span style="font-family:ui-monospace,'SF Mono',Menlo,monospace;">deploy/</span> through a generation step — neither hand-authors a copy. Two hand-maintained copies drifting apart is precisely what would silently defeat the parity claim.</p>
+        </div>
+      </div>
+      <div style="display:flex; justify-content:space-between; align-items:baseline; border-top:2px solid #d3d0cf; padding-top:22px; font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; font-weight:600;"><span>Wasm Analytics Stack · sandboxed pipelines</span><span>08 / 10</span></div>
+    </div>
+  </section>
+
+  <section data-label="One toolchain, three environments" data-speaker-notes="One Pixi toolchain builds every artifact the pipeline needs, including the compiled WASI component: a clean checkout plus pixi install and pixi run build produces a runnable digital twin with no manual steps outside Pixi. The same images and the same security context then run under Podman locally and under OpenShift Restricted SCC, with DuckDB state mounted at the same path from a ReadWriteOnce-shaped volume — only the backing implementation differs, never the mount contract. And AD-8 keeps every build-time fetch routable through a mirror: no build script hardcodes a public URL, mirroring the vendored-extension pattern Atlas G1 established." style="background:#f3f2f2">
+    <div style="width:100%; height:100%; box-sizing:border-box; padding:96px; display:flex; flex-direction:column; font-family:'Archivo',sans-serif; color:#201e1d;">
+      <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:18px; letter-spacing:0.16em; text-transform:uppercase; color:#c22a10; font-weight:600; margin-bottom:30px;">CAP-5 · FR-14 … FR-17</div>
+      <h2 style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:84px; line-height:0.98; letter-spacing:-0.02em; margin:0 0 40px;">One toolchain, three environments</h2>
+      <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:0; border-top:3px solid #201e1d; margin-bottom:34px;">
+        <div style="padding:32px 32px 32px 0; border-right:2px solid #d3d0cf;"><div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; color:#c22a10; font-weight:600; margin-bottom:12px;">Local dev</div><div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:24px; font-weight:600; margin-bottom:12px;">pixi install &amp;&amp; pixi run build</div><p style="font-size:22px; line-height:1.4; font-weight:500; margin:0;">Compiles the WASI component alongside everything else — <b>no manual steps outside Pixi.</b></p></div>
+        <div style="padding:32px; border-right:2px solid #d3d0cf;"><div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; color:#c22a10; font-weight:600; margin-bottom:12px;">Podman digital twin</div><div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:24px; font-weight:600; margin-bottom:12px;">--read-only --user 1001</div><p style="font-size:22px; line-height:1.4; font-weight:500; margin:0;">The same security context OCP enforces — so a Restricted-SCC-incompatible change is caught <b>locally, not in production.</b></p></div>
+        <div style="padding:32px 0 32px 32px;"><div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; color:#c22a10; font-weight:600; margin-bottom:12px;">OpenShift · Restricted SCC</div><div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:24px; font-weight:600; margin-bottom:12px;">zero SCC exceptions</div><p style="font-size:22px; line-height:1.4; font-weight:500; margin:0;">Non-root UID 1001, read-only rootfs, no privilege escalation — and <b>no anyuid binding requested.</b></p></div>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:0; border-top:2px solid #d3d0cf; flex:1;">
+        <div style="padding:30px 40px 0 0; border-right:2px solid #d3d0cf;"><div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:17px; font-weight:600; color:#c22a10; margin-bottom:10px;">FR-17 · the mount contract never differs</div><p style="font-size:24px; line-height:1.45; font-weight:500; margin:0;">DuckDB's Bronze/Silver/Gold state mounts at <b>the same path</b> from a <span style="font-family:ui-monospace,'SF Mono',Menlo,monospace;">ReadWriteOnce</span>-shaped volume in all three. Only the backing implementation changes — bind mount, Podman volume, OCP PVC.</p></div>
+        <div style="padding:30px 0 0 40px;"><div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:17px; font-weight:600; color:#c22a10; margin-bottom:10px;">AD-8 · air-gap-routable by construction</div><p style="font-size:24px; line-height:1.45; font-weight:500; margin:0;">Every build-time fetch — Pixi packages, DuckDB extensions, the <span style="font-family:ui-monospace,'SF Mono',Menlo,monospace;">componentize-py</span>/Wasmtime toolchain — routes through the configured mirror. <b>No build script hardcodes a public URL.</b></p></div>
+      </div>
+      <div style="display:flex; justify-content:space-between; align-items:baseline; border-top:2px solid #d3d0cf; padding-top:22px; margin-top:18px; font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; font-weight:600;"><span>Wasm Analytics Stack · sandboxed pipelines</span><span>09 / 10</span></div>
+    </div>
+  </section>
+
+  <section data-label="Ships no claim research did not verify" data-speaker-notes="Close on the discipline. The success signal is explicit that this project ships zero claims beyond what the technical research verified as buildable today — and two counter-metrics guard the primary ones. A growing denylist-workaround footprint is a signal to reconsider the WASI bet, not a target to minimize by weakening the boundary. And validation latency must never be improved by moving checks out of the sandbox back into the trusted process, which would satisfy a speed metric while quietly defeating the entire purpose. Planning ran to PRD and architecture depth only: there are no epics and no stories — a far-horizon effort whose stories decompose fresh when it is scheduled." style="background:#ec3013">
+    <div style="width:100%; height:100%; box-sizing:border-box; padding:96px; display:flex; flex-direction:column; justify-content:space-between; font-family:'Archivo',sans-serif; color:#f3f2f2;">
+      <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:20px; letter-spacing:0.1em; text-transform:uppercase; font-weight:600; opacity:0.9;">Verified, not asserted · scoped, not inherited</div>
+      <div>
+        <p style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:72px; line-height:1.06; letter-spacing:-0.02em; margin:0 0 44px; max-width:1620px;">This project ships zero claims beyond <span style="opacity:0.72;">what its own research verified as buildable today.</span></p>
+        <div style="display:grid; grid-template-columns:repeat(3,1fr); border-top:3px solid #f3f2f2; padding-top:26px;">
+          <div style="padding-right:32px; border-right:2px solid rgba(243,242,242,.4);"><div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; font-weight:600; opacity:.85; margin-bottom:10px;">SM-C1 · do not optimize</div><p style="font-size:23px; line-height:1.4; font-weight:600; margin:0;">A growing denylist-workaround footprint is a signal to <b>reconsider the bet</b> — never to weaken the boundary.</p></div>
+          <div style="padding:0 32px; border-right:2px solid rgba(243,242,242,.4);"><div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; font-weight:600; opacity:.85; margin-bottom:10px;">SM-C2 · do not optimize</div><p style="font-size:23px; line-height:1.4; font-weight:600; margin:0;">Latency must never improve by moving checks <b>out of the sandbox</b> — that satisfies a metric and defeats the purpose.</p></div>
+          <div style="padding-left:32px;"><div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; font-weight:600; opacity:.85; margin-bottom:10px;">Planning depth</div><p style="font-size:23px; line-height:1.4; font-weight:600; margin:0;"><b>PRD + architecture only.</b> No epics, no stories — a far-horizon effort whose stories decompose fresh when scheduled.</p></div>
+        </div>
+      </div>
+      <div style="display:flex; justify-content:space-between; align-items:baseline; border-top:2px solid #f3f2f2; padding-top:22px; font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; font-weight:600;"><span>Wasm Analytics Stack · SPEC-wasm-analytics-stack · 5 CAP · 17 FR · 10 AD</span><span>docs/dreams/wasm-analytics-stack.md</span></div>
+    </div>
+  </section>
+
+</x-import>
+</x-dc>
+</body>
+</html>

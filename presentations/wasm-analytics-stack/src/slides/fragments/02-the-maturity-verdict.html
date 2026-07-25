@@ -1,0 +1,28 @@
+<div style="width:100%; height:100%; box-sizing:border-box; padding:88px 96px; display:flex; flex-direction:column; font-family:'Archivo',sans-serif; color:#f3f2f2;">
+      <div style="display:flex; justify-content:space-between; align-items:baseline; font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:18px; letter-spacing:0.16em; text-transform:uppercase; font-weight:600; margin-bottom:26px;"><span style="color:#ec3013;">The maturity verdict</span><span style="opacity:.55;">verified 2026-07-25 · primary sources</span></div>
+      <h2 style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:82px; line-height:0.96; letter-spacing:-0.02em; margin:0 0 16px;">dlt, dbt and DuckDB cannot run in a WASI component today</h2>
+      <p style="font-size:26px; line-height:1.4; font-weight:500; margin:0 0 34px; max-width:1620px; opacity:.92;">Not a scoping preference — a blocked dependency. The seed use case's whole ingest → transform spine sits on DuckDB's native engine, and that engine has <b style="color:#ec3013;">no WASI build and no WASI roadmap.</b></p>
+      <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:0; border-top:3px solid #f3f2f2; flex:1;">
+        <div style="padding:32px 28px 0 0; border-right:2px solid rgba(243,242,242,.3);">
+          <div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-size:64px; font-weight:900; line-height:1; color:#ec3013;">0</div>
+          <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:15px; margin-top:14px; opacity:.6;">duckdb/duckdb</div>
+          <p style="font-size:22px; line-height:1.4; font-weight:500; margin:8px 0 0;">issues mentioning <b>WASI</b> — the question has never been asked upstream.</p>
+        </div>
+        <div style="padding:32px 28px 0 28px; border-right:2px solid rgba(243,242,242,.3);">
+          <div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-size:64px; font-weight:900; line-height:1; color:#ec3013;">2024-12</div>
+          <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:15px; margin-top:14px; opacity:.6;">dicej/wasi-wheels</div>
+          <p style="font-size:22px; line-height:1.4; font-weight:500; margin:8px 0 0;">last touched. The ecosystem's only WASI-wheel source for this class of library — <b>unmaintained, and disclaimed by its own author.</b></p>
+        </div>
+        <div style="padding:32px 28px 0 28px; border-right:2px solid rgba(243,242,242,.3);">
+          <div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-size:64px; font-weight:900; line-height:1; color:#ec3013;">none</div>
+          <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:15px; margin-top:14px; opacity:.6;">pyarrow · duckdb</div>
+          <p style="font-size:22px; line-height:1.4; font-weight:500; margin:8px 0 0;">WASI wheel attempt anywhere, maintained or not. No Arrow-maintained WASM interchange primitive either.</p>
+        </div>
+        <div style="padding:32px 0 0 28px;">
+          <div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-size:64px; font-weight:900; line-height:1; color:#ec3013;">1 of 3</div>
+          <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:15px; margin-top:14px; opacity:.6;">Spin · Fluvio · Shopify</div>
+          <p style="font-size:22px; line-height:1.4; font-weight:500; margin:8px 0 0;">production Wasm-sandboxing platforms offer Python at all. This is <b>frontier work</b>, not an established pattern.</p>
+        </div>
+      </div>
+      <div style="display:flex; justify-content:space-between; align-items:baseline; border-top:2px solid rgba(243,242,242,.35); padding-top:22px; margin-top:26px; font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; font-weight:600;"><span>Wasm Analytics Stack · sandboxed pipelines</span><span>02 / 10</span></div>
+    </div>
