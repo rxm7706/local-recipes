@@ -1169,7 +1169,7 @@ window.DASHBOARD_DATA = {
       "timing": null
     }
   },
-  "snapshot": "<span>2026-07-25 19:30 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-07-25 19:38 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -1321,6 +1321,16 @@ window.DASHBOARD_DATA = {
         "deck": "presentations/pyforge-marshal",
         "spec": "_bmad-output/projects/local-recipes/planning-artifacts/specs/spec-pyforge-marshal",
         "project": "_bmad-output/projects/pyforge-marshal"
+      }
+    },
+    {
+      "slug": "pyforge-mason",
+      "title": "Mason — forge the blocks, bind the environment, ship the structure",
+      "status": "in-spec",
+      "owner": "mason",
+      "chain": {
+        "deck": "presentations/pyforge-mason",
+        "project": "_bmad-output/projects/pyforge-mason"
       }
     },
     {

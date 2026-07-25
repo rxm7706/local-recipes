@@ -7,6 +7,10 @@ status: realized
 
 # The Packaging Factory — every library, packaged before you ask
 
+> **Scope note (2026-07-25):** this is the **practice** Dream — the perpetual
+> conda-forge factory and its craft-skill. Mason **the station** (the Smith and the
+> `mason` CLI) now has his own charter: [[pyforge-mason]].
+
 ## The Dream
 
 **The origin dream of this repository**: an AI-assisted, semi-autonomous packaging
