@@ -764,11 +764,22 @@
   document.getElementById("buildh").innerHTML =
     'In Build <span class="zn">· ' + (live.length || "none") + ' live program' + (live.length === 1 ? "" : "s") +
     (liveSummary ? ' — ' + liveSummary : '') + '</span>';
-  live.forEach(([id, p]) => {
-    const div = document.createElement("div");
-    div.className = "pconsole";
-    div.innerHTML = consoleHTML(id, p);
-    buildzone.appendChild(div);
+  live.forEach(([id, p, c]) => {
+    const det = document.createElement("details");
+    det.id = "build-" + id;
+    det.className = "pconsole " + ({warden: "pw", atlas: "pa"}[id] || "pr");
+    const pct = c.total ? Math.round(c.done / c.total * 100) : 0;
+    const act = p.epics.flatMap(e => e.stories).find(s => s[1] === "active");
+    const actChip = act ? '<span class="runchip"><span class="live"></span>' + act[0] + ' in flight</span>' : '';
+    det.innerHTML =
+      '<summary>' +
+        '<div class="pname"><span class="pdot"></span>' + p.label + actChip + '</div>' +
+        '<div class="pbar"><div class="pbar-fill" style="width:' + pct + '%"></div></div>' +
+        '<div class="pfrac"><b>' + c.done + '</b> / ' + c.total + ' <span class="pct">· ' + pct + '%</span></div>' +
+        '<span class="disclose">▸ console</span>' +
+      '</summary>' +
+      '<div class="cbody">' + consoleHTML(id, p) + '</div>';
+    buildzone.appendChild(det);
   });
 
   const realzone = document.getElementById("realzone");
