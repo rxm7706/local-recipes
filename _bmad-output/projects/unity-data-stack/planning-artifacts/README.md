@@ -17,11 +17,21 @@ decompose fresh when it is scheduled.
 | 1. Research | `research/domain-enterprise-python-platform-engineering-research-2026-07-25.md` | complete |
 | 2. Brief | `briefs/brief-unity-data-stack-2026-07-25/{brief.md, addendum.md}` | draft |
 | 3. PRD | `prds/prd-unity-data-stack-2026-07-25/{prd.md, addendum.md}` | draft — 60 FRs / 9 features |
-| 4. Architecture | `architecture/architecture-unity-data-stack-2026-07-25/ARCHITECTURE-SPINE.md` | draft — 20 ADs, initiative altitude |
+| 4. Architecture | `architecture/architecture-unity-data-stack-2026-07-25/ARCHITECTURE-SPINE.md` | **final** — 23 ADs, initiative altitude |
 | 5. Epics/stories | — | **intentionally not run** |
 
 Each run folder carries a `.memlog.md` (decisions, changes, overrides — the resume authority) and
 its reviewer outputs (`review-*.md`).
+
+### Reviews run
+
+| Artifact | Lens | Verdict |
+|---|---|---|
+| PRD | quality rubric | 24 PASS / 6 PARTIAL / 0 FAIL — fixes applied |
+| PRD | editorial (structure + prose + ID consistency) | conditional-pass, 15 findings — must-fixes applied |
+| Spine | `lint_spine.py` | clean, 0 findings |
+| Spine | technology currency | **PASS** — 14/14 Stack items verified live, 0 stale |
+| Spine | adversarial divergence hunt | changes-requested, 7 holes — **all 7 closed** (AD-21/22/23 added; AD-2/9/16/17 tightened) |
 
 ## Reading order
 

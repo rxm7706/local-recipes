@@ -148,27 +148,28 @@ value or failure is actually felt. Four carry the product.
 - **UJ-2. Marcus installs a library another domain published, and it just works.**
   Marcus works in `customer`; the `cdo` team published a shared analytics library that depends on
   DuckDB, PyArrow, and a PostgreSQL client. Entry state: an existing working environment.
-  Path: he adds the dependency, pixi re-solves the workspace, and the native components resolve
+  Path: he adds the dependency, the Workspace re-solves, and the native components resolve
   alongside the Python ones. Climax: `import` works first try; no ABI error, no manual system
-  package, no day lost. Resolution: he uses the shared library instead of writing a second one.
+  package, no day lost. Resolution: he uses the shared Package instead of writing a second one.
   **Edge case:** the solve genuinely conflicts — the platform reports which package and which
-  constraint, and the conflict-detection environment (§ 5.1) has usually caught it before he did.
+  constraint, and the compatibility-detection Environment (§ 5.1, FR-7) has usually caught it
+  before he did.
 
 - **UJ-3. Priya fixes a bug in code her team does not own.**
-  Priya finds a defect in a shared library owned by another domain. Entry state: she has the fix
-  in her head and no commit rights on that package. Path: she reads the package's declared
+  Priya finds a defect in a shared Package owned by another Domain. Entry state: she has the fix
+  in her head and no commit rights on that Package. Path: she reads the Package's declared
   ownership, opens a branch following the documented contribution path, writes the regression
-  test the standard requires, and opens a PR; the automated gates run; the **trusted committer**
-  for that package is auto-requested as reviewer. Climax: the trusted committer reviews and
-  merges — days, not quarters. Resolution: the fix is in the shared library; there is no fork.
-  **Edge case:** the trusted committer disagrees with the approach — the disagreement is resolved
-  in the PR against the Constitution's stated standards rather than by seniority.
+  test the standard requires, and opens a PR; the automated gates run; the **Trusted Committer**
+  for that Package is auto-requested as reviewer. Climax: the Trusted Committer reviews and
+  merges — days, not quarters. Resolution: the fix is in the shared Package; there is no fork.
+  **Edge case:** the Trusted Committer disagrees with the approach — the disagreement is resolved
+  in the PR against the Constitution's stated Mandates rather than by seniority.
 
 - **UJ-4. Sam answers the auditor before the meeting ends.**
   Sam owns compliance. Entry state: an auditor asks what open-source components are in the
   production estate, under what licences, and whether anything is being actively exploited.
-  Path: Sam retrieves the compliance report and SBOM produced by the most recent build of each
-  deployed artifact. Climax: the answer is a generated artifact with provenance, not a
+  Path: Sam retrieves the Compliance Report and SBOM produced by the most recent build of each
+  deployed artifact. Climax: the answer is a generated artifact carrying Provenance, not a
   three-week reconciliation exercise. Resolution: Sam files it. **Edge case:** a component *is*
   affected by an actively-exploited vulnerability — the platform already flagged it and the
   remediation PR is open.
@@ -1217,7 +1218,7 @@ other, and the mandated deployment target is Kubernetes, where ARM nodes are mai
 Every Constitution mandate traced to the requirement that carries it, or to its disposition.
 Source: `docs/intake/gists/spec-kit/constitution.md` v1.2.0 (ratified 2025-11-20).
 
-### 14.1 Article II mandate table
+### 14.1 The Article II mandate table (rows sourced from several Articles)
 
 | Mandate | Priority (as stated) | Carried by | Disposition |
 |---|---|---|---|
@@ -1333,7 +1334,7 @@ noted for traceability.
 | **OQ-19** | Is the mandated orchestrator built for Python 3.14 on the mandated channel? *(OQ-M9)* | § 8's ceiling | Verify before pinning |
 | **OQ-20** | Express the agent role matrix as an upstream governance-toolkit bundle? *(OQ-M3)* | § 9 | Architecture |
 | **OQ-21** | Does the vulnerability scanner cover the Workspace Lock and the Exported Lock formats? *(OQ-D2)* | FR-43 | Verify at integration |
-| **OQ-22** | Is the comparable set complete? Discovery search was unavailable during research *(OQ-M1)* | § 10's non-goals | Re-run when budget allows |
+| **OQ-22** | Is the comparable set complete? Discovery search was unavailable during research *(OQ-M1)* | § 10's non-goals — every "Unity is not X" statement assumes X is correctly identified | Re-run when budget allows |
 | **OQ-23** | Is there independent innersource adoption data to ground SM-2's target? *(OQ-M6)* | SM-2 | Research follow-up |
 
 ---

@@ -5,7 +5,7 @@ purpose: build-substrate
 altitude: initiative
 paradigm: 'Declarative Reconciliation across three planes (Workspace · Data · Delivery)'
 scope: 'The Unity platform: workspace substrate and lock architecture, governance enforcement, supply-chain compliance chain, the data plane, and the delivery plane. Governs PRD features 5.1–5.9 (FR-1…FR-60).'
-status: draft
+status: final
 created: '2026-07-25'
 updated: '2026-07-25'
 binds:
@@ -99,6 +99,11 @@ graph TD
   A drift check comparing each derived artifact against the Workspace Lock runs in the Quality
   Gate and fails on mismatch. No component may declare a dependency that is satisfiable only
   outside the Workspace Lock.
+  **Every derived artifact produced for a given release or Stage promotion — Exported Lock,
+  Offline Bundle, SBOM, provenance — is generated from one Workspace Lock commit SHA, and the
+  release record carries that SHA.** Each artifact's drift check asserts equality against that
+  pinned SHA, not against the Workspace Lock's state at the artifact's own generation time. Two
+  derived artifacts backing the same release that resolve to different SHAs fail the gate.
 
 ### AD-3 — Multi-platform coverage is proven by materialization, never inferred
 
@@ -151,9 +156,10 @@ graph TD
   local-versus-CI divergence that a CI-only integration would create.
 - **Rule:** the compliance capability is invoked as a command in its own Environment declared
   with no inherited default dependencies. It is never imported as a library by platform or
-  Package code, and never invoked only in CI. Its output is the Compliance Report **file**;
-  nothing consumes its internal APIs. The gate's exit code derives from the report, not from the
-  tool's incidental exit behaviour.
+  Package code, and never invoked only in CI. The command is itself wrapped as an AD-9 task like
+  every other check — "never invoked only in CI" constrains *where* it runs, not *how* it is
+  declared. Its output is the Compliance Report **file**; nothing consumes its internal APIs. The
+  gate's exit code derives from the report, not from the tool's incidental exit behaviour.
 
 ### AD-7 — Dependency direction is one-way and domains are peers, not dependencies
 
@@ -199,6 +205,11 @@ graph LR
   contain no inline tool invocation, no inline installation step, and no environment mutation. A
   parity check enumerates the tasks CI invokes against the tasks the aggregate gate runs, and
   fails on divergence. A check that cannot be expressed as a task does not enter the gate.
+  **Task names are globally unique across the Workspace**, and `<target>` in `<verb>-<target>` is
+  always a Package name — never a tag, never a Domain. Cross-cutting test-tag slices are expressed
+  as an argument on the public verb (`test --tag smoke`), never as a task name sharing the shape of
+  a Package-scoped task. A name-uniqueness check runs alongside the parity check and fails the gate
+  on collision.
 
 ### AD-10 — Credentials are host-scoped, store-resident, and never appear in a URL or an argument
 
@@ -250,6 +261,9 @@ graph LR
   inherited default dependency set and composes only what it names. Each Environment declares why
   it exists and what it deliberately excludes. Installed size for deployable Environments is
   measured, asserted against a recorded ceiling, and regressions fail the Quality Gate.
+  **Exempt:** the compatibility-detection Environment (FR-7), which deliberately composes the full
+  mandated stack and is explicitly non-deployable — leanness does not bind it, and its size is
+  reported rather than gated.
 
 ### AD-14 — A version is declared once
 
@@ -281,7 +295,12 @@ graph LR
   Domains copy data instead of consuming it, and the mesh degrades into silos.
 - **Rule:** a schema change is evaluated against every declared consumer before merge. A breaking
   change requires a version increment and a migration note; it cannot land as an in-place edit.
-  Consumers declare the contract version they depend on.
+  Consumers declare the contract version they depend on. **Every contract is expressed in one
+  platform-mandated schema description format, and every contract version is a SemVer string
+  compared by one platform-mandated compatibility rule (MAJOR = breaking).** A contract in a
+  different format, or versioned by a different scheme, fails the Quality Gate at publish time —
+  without this, two conformant contracts are structurally incomparable and the "evaluate against
+  every declared consumer" check cannot be written once.
 
 ### AD-17 — Every plane has one accountable crew station
 
@@ -297,6 +316,11 @@ graph LR
   **Doctor** (platform health and diagnostics), **Scribe** (decision records, team memory),
   **Herald** (reporting and the outward communication surface). A capability with no station, and
   a station claimed by two, are both defects.
+  **Station descriptions assign accountability for a *plane*, not for every capability whose
+  subject matter touches two remits.** Every machine-checkable capability in the Capability →
+  Architecture Map resolves to exactly **one** implementing station, recorded against that
+  capability rather than inferred from station prose. A capability two stations both build
+  independently is a defect at the same severity as an unowned one.
 
 ### AD-18 — Failures name their cause
 
@@ -307,6 +331,11 @@ graph LR
   conflicting constraint and the two packages that hold it, the violated Mandate identifier, or
   the uncovered platform. Every reconciler failure names the declaration that could not be
   materialized. An opaque failure is a defect with the same severity as the underlying bug.
+  **Enforcement:** a message-shape check over gate output asserts that every platform-owned
+  failure carries a cause identifier. **Residual scope:** a raw error surfaced verbatim by a
+  third-party tool is exempt from the shape check, but the task wrapping that tool must add the
+  cause identifier it can determine; an unwrapped third-party error reaching a developer is a
+  defect against this AD.
 
 ### AD-19 — Configuration is validated at load; secrets are validated at start
 
@@ -316,7 +345,9 @@ graph LR
 - **Rule:** every configuration record is schema-validated when loaded, and a service asserts the
   presence of every required secret at startup, failing fast with a diagnostic naming the missing
   secret. Configuration is supplied by environment override over file defaults; no environment
-  hostname, endpoint, or credential is hardcoded in code.
+  hostname, endpoint, or credential is hardcoded in code. **Enforcement:** one Quality Gate scan
+  covers both halves — the credential-pattern scan of AD-10 and a hardcoded hostname/endpoint scan
+  over source. A literal environment hostname or endpoint outside `config/` fails the gate.
 
 ### AD-20 — Restricted data is bounded by Stage configuration
 
@@ -328,6 +359,45 @@ graph LR
   data; Stages carrying restricted data have access logging enabled. Enforcement is at the
   configuration boundary — content inspection is out of scope for this altitude (see *Deferred*).
 
+### AD-21 — Stage-differentiating behaviour lives in the deploy-time overlay, never in the shared Environment
+
+- **Binds:** AD-4, AD-13, AD-20, FR-56, FR-58
+- **Prevents:** a control required by one Stage's Data Classification leaking into every other
+  Stage that happens to share the same Environment — which would silently defeat AD-4's saving by
+  reintroducing per-Stage variation through the Feature set, in a place AD-13's leanness rule does
+  not look.
+- **Rule:** any behaviour AD-20 requires as a function of a Stage's Data Classification — access
+  logging, network posture, data-access controls — is applied by that Stage's deploy-time overlay,
+  never composed into the Environment's Feature set. **An Environment's materialized behaviour is
+  Stage-agnostic by construction.** A Feature that branches on Stage identity fails the Quality
+  Gate.
+
+### AD-22 — One identity shape for every ownership field
+
+- **Binds:** FR-5, FR-33, FR-38, FR-51; AD-15, AD-17
+- **Prevents:** an ownership join across planes failing because the workspace plane and the data
+  plane independently chose incompatible representations for "owner" — after which "who owns this?"
+  is answerable per plane and unanswerable across them.
+- **Rule:** every `owner`, Trusted Committer, and decision-record accountability field — across
+  every Package, Asset, Stage record, and override — uses one platform-declared identity
+  representation: a Domain-scoped team identifier, resolvable to individuals through one directory.
+  A field declaring an owner in any other shape fails the Quality Gate. Cross-plane ownership views
+  are derived from this single representation.
+
+### AD-23 — An entity has one Domain of record per Layer; downstream Domains reference, they do not restate
+
+- **Binds:** AD-7, AD-15, AD-16; the data plane
+- **Prevents:** a second Domain republishing another Domain's owned fields as its own — which
+  reintroduces the second-registry-of-truth failure through a *lawful* consumption path, since
+  AD-7 governs the access path and AD-15 the metadata structure, but neither governs field-level
+  provenance.
+- **Rule:** the derived registry (AD-15) maps each entity to its owning Domain per Layer. A Data
+  Product that includes another Domain's owned fields expresses them as a **versioned reference**
+  to the source contract — join-at-query, or pass-through with source-contract-version lineage
+  recorded — never as a copied, independently-versioned restatement. A new Data Product whose
+  declared entity already has an owning Domain at that Layer fails the gate unless it *is* that
+  Domain, or its contract records the source reference instead of duplicating the fields.
+
 ---
 
 ## Consistency Conventions
@@ -338,7 +408,7 @@ graph LR
 | Asset naming | `<domain>_<layer>_<entity>_<verb>`, lowercase with underscores (AD-15) |
 | Environment naming | lowercase-hyphenated, named for the *composition's purpose* (`local-dev`, `ci`, `runtime`), never for a Stage (AD-4) |
 | Feature naming | lowercase-hyphenated, named for the capability it adds (`test`, `lint`, `container`, `agentic`) |
-| Task naming | `<verb>` for the public API (`start`, `stop`, `status`, `verify`, `test`, `lint`); `<verb>-<target>` for scoped tasks (`test-common`); public API set is small, enumerated, and stable (FR-60) |
+| Task naming | `<verb>` for the public API (`start`, `stop`, `status`, `verify`, `test`, `lint`); `<verb>-<target>` for scoped tasks, where **`<target>` is always a Package name** (`test-common`). Names are globally unique; tag slices are flags on the verb, not task names (AD-9). Public API set is small, enumerated, and stable (FR-60) |
 | Mandate identifiers | `CONST-<article>.<section>`, stable across amendments; never reused after retirement |
 | Stage identifiers | the twelve reserved names; a Stage is referenced by name, never by index |
 | Decision records | `ADR-<n>`, ascending, never renumbered; a superseded record is marked superseded, not deleted |
@@ -346,7 +416,10 @@ graph LR
 | Branch names | `<type>/<scope>` matching the declared branching model; type from the conventional-commit set |
 | Commit / PR titles | Conventional Commits `<type>(<scope>): <description>` (FR-35) |
 | Dates & times | ISO 8601, UTC, in every record, report, and log line |
-| Versions | SemVer for Packages and the Constitution; calendar version for the Workspace release train |
+| Versions | SemVer for Packages, Data Product contracts, and the Constitution; calendar version for the Workspace release train |
+| Ownership identity | one Domain-scoped team identifier everywhere an owner is named, resolvable through one directory (AD-22) |
+| Data Product contracts | one platform-mandated schema description format; SemVer with MAJOR = breaking (AD-16) |
+| Release identity | every release and Stage promotion carries the Workspace Lock commit SHA every derived artifact was built from (AD-2) |
 | Dependency version syntax | floor with a tested ceiling; **exact equality pins are prohibited** except with a recorded reason code (AD-14, FR-2) |
 | Error shape | every failure carries: cause identifier, human message, and the identifier of the rule or Mandate violated (AD-18) |
 | Report shape | every machine-readable report (compliance, coverage, drift, parity) is schema-validated and carries generator, timestamp, and the inputs it evaluated |
@@ -367,7 +440,7 @@ tested ceilings, per AD-14.
 | Python (primary targets) | 3.13, 3.14 |
 | Python (legacy consumers only — upstream security phase) | 3.12 |
 | pixi (workspace manager) | 0.73.0 |
-| uv (export / resolution utility) | 0.11.32 |
+| uv (export / resolution utility) | 0.11.32 *(conda channel lags at 0.11.31)* |
 | pip (Exported-Lock consumer side) | 26.1.2 |
 | PEP 751 `pylock.toml` | lock-version 1.0 |
 | Dagster (orchestrator) | 1.13.15 |
@@ -463,19 +536,24 @@ graph LR
 
 ## Capability → Architecture Map
 
-| Capability / Area | Lives in | Governed by |
-| --- | --- | --- |
-| Workspace substrate (FR-1…FR-9) | Workspace root, Package manifests | AD-1, AD-4, AD-5, AD-13, AD-14 |
-| Lock architecture (FR-10…FR-13) | Workspace Lock + derived artifacts | AD-2, AD-3 |
-| Mirror routing & credentials (FR-14…FR-17) | `config/airgap/`, credential store | AD-10, AD-14, AD-19 |
-| Quality Gate (FR-18…FR-25) | Task definitions + CI job templates | AD-9, AD-18 |
-| Governance enforcement (FR-26…FR-32) | `constitution.md` + classification, `docs/decisions/` | AD-8, AD-18 |
-| Contribution model (FR-33…FR-38) | Package ownership metadata, `templates/`, contribution docs | AD-7, AD-15, conventions |
-| Compliance chain (FR-39…FR-47) | Compliance Environment (CLI), build-time SBOM + provenance | AD-6, AD-11, AD-12 |
-| Data plane (FR-48…FR-54) | `src/tech-domains/`, Asset definitions | AD-7, AD-15, AD-16 |
-| Delivery & air-gap (FR-55…FR-58) | `config/gitops/`, `config/stages/`, Offline Bundle | AD-4, AD-12, AD-19, AD-20 |
-| Developer surface (FR-59…FR-60) | Task definitions | AD-9, conventions |
-| Station accountability | The operating model | AD-17 |
+Per AD-17, every machine-checkable capability names **exactly one** implementing station here.
+That column is the authority; station prose is not.
+
+| Capability / Area | Lives in | Governed by | Implementing station |
+| --- | --- | --- | --- |
+| Workspace substrate (FR-1…FR-9) | Workspace root, Package manifests | AD-1, AD-4, AD-5, AD-13, AD-14 | Marshal |
+| Lock architecture + drift checks (FR-10…FR-13) | Workspace Lock + derived artifacts | AD-2, AD-3 | Marshal |
+| Mirror routing & credentials (FR-14…FR-17) | `config/airgap/`, credential store | AD-10, AD-14, AD-19 | Steward |
+| Quality Gate + task parity (FR-18…FR-25) | Task definitions + CI job templates | AD-9, AD-18 | Marshal |
+| Governance enforcement (FR-26…FR-32) | `constitution.md` + classification, `docs/decisions/` | AD-8, AD-18 | Marshal (enforcement) · Scribe (decision records) |
+| Contribution model (FR-33…FR-38) | Package ownership metadata, `templates/`, contribution docs | AD-7, AD-15, AD-22 | Scribe |
+| Compliance chain (FR-39…FR-47) | Compliance Environment (CLI), build-time SBOM + provenance | AD-6, AD-11, AD-12 | Warden (gate) · Mason (SBOM + provenance production) |
+| Dependency graph & boundary mapping | Derived from manifests | AD-7 | Atlas |
+| Data plane (FR-48…FR-54) | `src/tech-domains/`, Asset definitions | AD-7, AD-15, AD-16, AD-23 | Atlas |
+| Delivery & air-gap (FR-55…FR-58) | `config/gitops/`, `config/stages/`, Offline Bundle | AD-4, AD-12, AD-19, AD-20, AD-21 | Steward |
+| Developer surface (FR-59…FR-60) | Task definitions | AD-9, conventions | Marshal |
+| Platform health & diagnostics | Gate output, drift reports | AD-18 | Doctor |
+| Derived reporting & ownership views | Generated from metadata | AD-15, AD-22 | Herald |
 
 ---
 
@@ -509,7 +587,7 @@ Not invented, not silently resolved. Each blocks something specific.
 | **AQ-5** | Which generation route produces the Exported Lock — the export utility already in the workspace, or the alternative compiler? | AD-3's mechanism | Trade-off test; the in-workspace utility is favoured |
 | **AQ-6** | Does the workspace manager support Environment aliasing, so Stage names can remain operator affordances without a distinct solve? | Whether AD-4 is implemented by aliasing or by collapse | Verify tooling support |
 | **AQ-7** | Is ARM64 Linux in the declared platform matrix? | AD-3's matrix; *Stack* | PRD decision (OQ-14) |
-| **AQ-8** | Is the mandated orchestrator built for Python 3.14 on the mandated channel? | The Python ceiling in *Stack* | Verify before pinning |
+| ~~**AQ-8**~~ | ~~Is the mandated orchestrator built for Python 3.14 on the mandated channel?~~ | — | **RESOLVED 2026-07-25** — a `python >=3.14` conda-forge build exists. The intake root's `<3.14` ceiling is confirmed stale and should be removed |
 
 ## Assumptions
 

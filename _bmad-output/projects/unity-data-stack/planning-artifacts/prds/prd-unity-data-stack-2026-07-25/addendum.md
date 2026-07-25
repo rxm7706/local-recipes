@@ -301,9 +301,11 @@ these floors more precisely.
 
 ---
 
-## I. FR → Constitution reverse index
+## I. Constitution locus → FR index (fine-grained)
 
-For readers coming from the Constitution rather than from the PRD. (Forward direction: PRD § 14.)
+Section-and-clause granularity, for readers working *from the Constitution*. PRD § 14.2 maps the
+same direction at Article granularity; this table is the drill-down, not a reverse view — use
+§ 14.2 to find the Article, this table to find the clause.
 
 | Constitution locus | FRs |
 |---|---|
