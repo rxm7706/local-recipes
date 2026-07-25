@@ -1,0 +1,62 @@
+[
+  {
+    "id": "01-cover",
+    "label": "Cover",
+    "notes": "One line: this repackages the open-source Presenton AI deck generator as a fully air-gapped, conda-forge-native OCI image for Red Hat OpenShift — every dependency from governed channels, every image reproducible, no call home. It is deckcraft's sibling and its complement: Presenton is the repackaged app, deckcraft is the from-primitives pipeline. Five confirmed recipes, possibly seven, pending a Phase-0 decision. Phase 0 gates the build.",
+    "bg": "#f3f2f2"
+  },
+  {
+    "id": "02-act-i-11pm-in-a-scif",
+    "label": "Act I — 11pm in a SCIF",
+    "notes": "Act I: the scene the PRD opens on. Eleven at night in a SCIF, the board deck is due at eight, and Microsoft Copilot is on the other side of the air gap. She builds it by hand — slower than her LLM-assisted peers elsewhere in the org, and systematically weaker in structure and language.",
+    "bg": "#201e1d"
+  },
+  {
+    "id": "03-two-gates-that-don-t-collapse",
+    "label": "Two gates that don't collapse",
+    "notes": "The buyer and the end user want different things from the same purchase, and both must hold or the deal doesn't renew. The buyer gate is binary and procurement-visible: recipes merged on conda-forge, landed on the customer's JFrog mirror, image on the customer's registry, with SBOM and a signed attestation and a versioned metrics schema. The user gate is behavioral: at least sixty percent of piloted decks show edit-not-rewrite behavior, thirty minutes P95 to first renderable slide, ten seconds P95 per refinement on Tier 1. Miss either within its window and the program returns to Phase-0 scoping rather than limping forward.",
+    "bg": "#f3f2f2"
+  },
+  {
+    "id": "04-the-supply-chain-math",
+    "label": "The supply-chain math",
+    "notes": "The honest version of the moat: it isn't a secret algorithm, it's the supply-chain work. Today the customer integrates five unsigned upstream artifacts — a closed-source export bundle, a closed-source PyInstaller converter, a browser binary nobody ships on conda-forge, an LLM abstraction library — and owns that integration risk. With this, they integrate one signed OCI image with one SBOM, and we own it. That is the actual product. Note what got smaller: template-style-extractor was dropped entirely, because upstream Presenton already does LibreOffice-free template import using nothing but the standard library and pdfplumber — and the PyMuPDF AGPL risk went with it.",
+    "bg": "#f3f2f2"
+  },
+  {
+    "id": "05-act-ii-two-planes",
+    "label": "Act II — Two planes",
+    "notes": "Act II: the architecture. Two independent planes, each with its own consistency discipline. Build time is pipes-and-filters — recipes into a pixi-locked environment, pixitainer into an image, syft and cosign into a signed attested artifact, each stage consuming only the previous stage's published output. Run time is a hexagon with exactly one true port.",
+    "bg": "#201e1d"
+  },
+  {
+    "id": "06-one-true-port",
+    "label": "One true port",
+    "notes": "The invariant that keeps this deployable everywhere. The LLM provider is the only swappable seam: Presenton and the Helm chart set only CUSTOM_LLM_URL and CUSTOM_LLM_API_KEY. Tier 1 is an operator-supplied external corporate proxy. Tier 2 is a llama.cpp service in the same namespace. Tier 3 is the same service with an init container that fetches the GGUF from an internal registry first. Three URLs, one contract, never a different code path. And the chart defaults to restricted-v2 on every cluster: all capabilities dropped, runtime-default seccomp, no privilege escalation, non-root arbitrary UID, no hardcoded UID or GID anywhere. Chromium runs --no-sandbox as an explicit documented decision, not a silent default.",
+    "bg": "#f3f2f2"
+  },
+  {
+    "id": "07-act-iii-phase-0-gates-the-build",
+    "label": "Act III — Phase 0 gates the build",
+    "notes": "Act III: nothing in Epics 2 through 7 starts production work ahead of Phase 0. Six exit criteria; exit 1 is the critical-path long pole; exits 4, 5 and 6 run independently. Two of them are named on the next slides because they are the ones that can still change the shape of the product.",
+    "bg": "#201e1d"
+  },
+  {
+    "id": "08-exit-6a-the-redmond-contingency",
+    "label": "Exit 6a — the Redmond contingency",
+    "notes": "The existential one, stated plainly. Microsoft shipped its own disconnected stack — Azure Local disconnected operations, Microsoft 365 Local, and Foundry Local — GA worldwide on 2026-02-24, five months before the brief was written. Every infrastructure primitive needed to run a disconnected Copilot-equivalent is now shipped by Microsoft directly. Whether the PowerPoint-generation application layer actually rides on top of it today is unconfirmed: the supported-services table lists infrastructure only, no Copilot, no M365 apps, no AI service. That single unknown determines whether Risk R3 is materialized, partially materialized, or infrastructure-only. Worse, the existing yearly-plus-RSS Microsoft watch appears to have missed the announcement outright — so Phase 0 also has to backtest the watch mechanism, not just answer the question. The window is unknown and urgent, not a comfortable 12-to-24-month runway.",
+    "bg": "#f3f2f2"
+  },
+  {
+    "id": "09-exit-6b-the-memory-subsystem-call",
+    "label": "Exit 6b — the memory-subsystem call",
+    "notes": "The scope one. mem0ai and fastembed-vectorstore are unconditional Presenton dependencies and neither is on conda-forge. So the recipe count is genuinely open between five and seven, not the fixed six the PRD used to say. Option A adds both as recipes six and seven — full upstream parity, at the price of two more staged-recipes review cycles, two more JFrog allowlist requests, two more drift-detection surfaces. Option B feature-drops memory and chat history for v1 — but that only stays a drop if the import graph no-ops cleanly via env var, which is not yet verified. If it needs a Presenton-side source patch, this stops being a feature drop and becomes carrying a fork, with a maintenance-burden model the PRD does not currently carry for anything else. The architecture pre-wires both branches with the pixi feature and the Helm value defaulting off, so build work is not blocked while the call is open.",
+    "bg": "#f3f2f2"
+  },
+  {
+    "id": "10-the-complement",
+    "label": "The complement",
+    "notes": "Close on the division of labor. Presenton is the repackaged app for people who want a deck-builder in their browser; deckcraft is the from-primitives pipeline for people who want deck-building inside their AI assistant. Complementary, not competing — Mason repackages, Steward deploys and operates the OpenShift service. And the whole bet reduces to one sentence: the buyer is paying for a deck generator they are allowed to install.",
+    "bg": "#ec3013"
+  }
+]

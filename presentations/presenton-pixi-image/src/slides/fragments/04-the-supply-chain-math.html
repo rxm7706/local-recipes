@@ -1,0 +1,23 @@
+<div style="width:100%; height:100%; box-sizing:border-box; padding:96px; display:flex; flex-direction:column; font-family:'Archivo',sans-serif; color:#201e1d;">
+      <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:18px; letter-spacing:0.16em; text-transform:uppercase; color:#c22a10; font-weight:600; margin-bottom:30px;">The actual product</div>
+      <h2 style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:80px; line-height:0.98; letter-spacing:-0.02em; margin:0 0 36px;">The supply-chain math</h2>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:0; border-top:3px solid #201e1d; margin-bottom:28px;">
+        <div style="padding:32px 40px 32px 0; border-right:2px solid #d3d0cf;">
+          <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; letter-spacing:0.08em; text-transform:uppercase; color:rgba(32,30,29,.55); margin-bottom:14px;">Without this</div>
+          <p style="font-size:28px; line-height:1.45; font-weight:500; margin:0;">The customer integrates <b>five unsigned upstream artifacts</b> — a closed-source export bundle, a closed-source PyInstaller converter, a browser binary nobody ships on conda-forge — and owns that integration risk themselves.</p>
+        </div>
+        <div style="padding:32px 0 32px 40px;">
+          <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; letter-spacing:0.08em; text-transform:uppercase; color:rgba(32,30,29,.55); margin-bottom:14px;">With it</div>
+          <p style="font-size:28px; line-height:1.45; font-weight:500; margin:0;">They integrate <b style="color:#c22a10;">one signed image, one SBOM</b> — and we own the integration risk. Five unsigned upstreams cannot pass an IL5 SBOM gate independently; one signed conda-forge image can.</p>
+        </div>
+      </div>
+      <div style="display:grid; grid-template-columns:repeat(5,1fr); border-top:2px solid #d3d0cf; flex:1;">
+        <div style="padding:28px 20px 0 0; border-right:2px solid #d3d0cf;"><div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:18px; font-weight:700; color:#c22a10; margin-bottom:10px;">presenton-<br>export-node</div><p style="font-size:20px; line-height:1.4; font-weight:500; margin:0;">Clean-room Playwright export runtime.</p></div>
+        <div style="padding:28px 20px 0 20px; border-right:2px solid #d3d0cf;"><div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:18px; font-weight:700; color:#c22a10; margin-bottom:10px;">pptx-<br>assembler</div><p style="font-size:20px; line-height:1.4; font-weight:500; margin:0;">Replaces the <span style="font-family:ui-monospace,'SF Mono',Menlo,monospace;">convert-linux-x64</span> binary.</p></div>
+        <div style="padding:28px 20px 0 20px; border-right:2px solid #d3d0cf;"><div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:18px; font-weight:700; color:#c22a10; margin-bottom:10px;">pptx-thumbnail-<br>inject</div><p style="font-size:20px; line-height:1.4; font-weight:500; margin:0;">Real <span style="font-family:ui-monospace,'SF Mono',Menlo,monospace;">docProps/<wbr>thumbnail.jpeg</span>.</p></div>
+        <div style="padding:28px 20px 0 20px; border-right:2px solid #d3d0cf;"><div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:18px; font-weight:700; color:#c22a10; margin-bottom:10px;">playwright-with-<br>chromium</div><p style="font-size:20px; line-height:1.4; font-weight:500; margin:0;">Bundled headless browser for the air gap.</p></div>
+        <div style="padding:28px 0 0 20px;"><div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:18px; font-weight:700; color:#c22a10; margin-bottom:10px;">llmai</div><p style="font-size:20px; line-height:1.4; font-weight:500; margin:0;">The provider abstraction upstream already uses.</p></div>
+      </div>
+      <div style="font-size:23px; font-weight:500; margin-top:22px; color:rgba(32,30,29,.75);"><b style="color:#c22a10;">Dropped 2026-07-25:</b> <span style="font-family:ui-monospace,'SF Mono',Menlo,monospace;">template-style-extractor</span> — upstream already does LibreOffice-free template import with the stdlib + <span style="font-family:ui-monospace,'SF Mono',Menlo,monospace;">pdfplumber</span>. The PyMuPDF/AGPL risk left with it.</div>
+      <div style="display:flex; justify-content:space-between; align-items:baseline; border-top:2px solid #d3d0cf; padding-top:20px; margin-top:20px; font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; font-weight:600;"><span>Presenton, Conda-Native</span><span>04 / 10</span></div>
+    </div>

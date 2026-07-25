@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=Archivo+Expanded:wght@700;800;900&display=swap" rel="stylesheet">
+</helmet>
+<x-import component-from-global-scope="deck-stage" from="./deck-stage.js" width="1920" height="1080" hint-size="100%,100%">
+
+  <section data-label="Cover" data-speaker-notes="One line: deckcraft turns a prompt or a document into an editable PowerPoint deck, built from conda-forge primitives rather than by repackaging someone's SaaS, and running with zero outbound calls by default. It is the PyForge deck family's designated editable-PPTX engine — the 2026-07-23 export revisit named it, because marp --pptx renders image-slides that nobody can edit. Spec'd, not started: 6 epics, 28 stories, 0 shipped." style="background:#f3f2f2">
+    <div style="width:100%; height:100%; box-sizing:border-box; padding:96px; display:flex; flex-direction:column; justify-content:space-between; font-family:'Archivo',sans-serif; color:#201e1d;">
+      <div style="display:flex; justify-content:space-between; align-items:baseline; font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; letter-spacing:0.08em; text-transform:uppercase;">
+        <span style="color:#c22a10; font-weight:600;">PyForge · Dream to Code · Herald's press</span>
+        <span style="color:rgba(32,30,29,.55);">Dream · docs/dreams/deckcraft.md</span>
+      </div>
+      <div>
+        <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:22px; letter-spacing:0.34em; text-transform:uppercase; color:#c22a10; font-weight:600; margin-bottom:26px;">Deckcraft · the deck pipeline</div>
+        <h1 style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:140px; line-height:0.9; letter-spacing:-0.03em; margin:0;">editable decks.<br>behind the firewall.</h1>
+        <p style="font-size:34px; line-height:1.35; font-weight:500; margin:40px 0 0; max-width:1400px;">A prompt or a document in; an <b>editable</b> <span style="font-family:ui-monospace,'SF Mono',Menlo,monospace;">.pptx</span> — native DrawingML, real charts, a round-trippable Marp sibling — out. Built <b>from conda-forge primitives</b>, not by repackaging a SaaS, and it makes <b style="color:#c22a10;">zero outbound calls</b> by default.</p>
+      </div>
+      <div style="display:grid; grid-template-columns:repeat(4,1fr); border-top:3px solid #201e1d;">
+        <div style="padding:24px 24px 0 0; border-right:2px solid #d3d0cf;"><div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:14px; letter-spacing:0.06em; text-transform:uppercase; color:rgba(32,30,29,.55);">Package</div><div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:24px; font-weight:600; margin-top:8px;">deckcraft</div></div>
+        <div style="padding:24px; border-right:2px solid #d3d0cf;"><div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:14px; letter-spacing:0.06em; text-transform:uppercase; color:rgba(32,30,29,.55);">Surfaces at V1</div><div style="font-size:24px; font-weight:800; margin-top:8px;">Skill · MCP · CLI</div></div>
+        <div style="padding:24px; border-right:2px solid #d3d0cf;"><div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:14px; letter-spacing:0.06em; text-transform:uppercase; color:rgba(32,30,29,.55);">Output bar</div><div style="font-size:24px; font-weight:800; margin-top:8px;">100% native DrawingML</div></div>
+        <div style="padding:24px 0 0 24px;"><div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:14px; letter-spacing:0.06em; text-transform:uppercase; color:rgba(32,30,29,.55);">Status</div><div style="font-size:24px; font-weight:800; margin-top:8px;">Spec'd · 0 of 28 stories</div></div>
+      </div>
+    </div>
+  </section>
+
+  <section data-label="Act I — The last mile" data-speaker-notes="Act I: the AI writes the prose and then drops the user before the file exists. The gap is small per deck and invisible in aggregate — it shows up as 'AI doesn't really help with slides' rather than as a fixable plumbing gap." style="background:#201e1d">
+    <div style="position:relative; width:100%; height:100%; box-sizing:border-box; padding:96px; overflow:hidden; display:flex; flex-direction:column; justify-content:space-between; font-family:'Archivo',sans-serif; color:#f3f2f2;">
+      <div style="position:absolute; right:60px; top:-160px; font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:760px; line-height:1; color:rgba(243,242,242,0.10); pointer-events:none;">I</div>
+      <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:22px; letter-spacing:0.16em; text-transform:uppercase; font-weight:600; position:relative;">Act I</div>
+      <div style="position:relative;">
+        <h2 style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:110px; line-height:0.95; letter-spacing:-0.02em; margin:0;">The last mile</h2>
+        <p style="font-size:32px; line-height:1.4; font-weight:500; margin:36px 0 0; max-width:1300px;">Every assistant on the desk can write the words. <b>None of them can hand you the file.</b></p>
+      </div>
+      <div style="display:flex; justify-content:space-between; align-items:baseline; border-top:2px solid rgba(243,242,242,.35); padding-top:22px; font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; font-weight:600;"><span>Deckcraft · the deck pipeline</span><span>02 / 10</span></div>
+    </div>
+  </section>
+
+  <section data-label="Three people, one gap" data-speaker-notes="Three concrete scenarios drive the product. The engineer with Claude Code and Copilot open who still pastes into PowerPoint for thirty to sixty minutes a deck. The air-gapped colleague who has Copilot and M365 but cannot reach any public AI API, so cloud tools are unusable by policy. And the technical author, for whom every tool rasterizes the diagram — editability is the thing everyone claims and almost nobody delivers." style="background:#f3f2f2">
+    <div style="width:100%; height:100%; box-sizing:border-box; padding:96px; display:flex; flex-direction:column; font-family:'Archivo',sans-serif; color:#201e1d;">
+      <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:18px; letter-spacing:0.16em; text-transform:uppercase; color:#c22a10; font-weight:600; margin-bottom:34px;">Who is stuck</div>
+      <h2 style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:84px; line-height:0.98; letter-spacing:-0.02em; margin:0 0 48px;">Three people, one gap</h2>
+      <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:0; border-top:3px solid #201e1d; flex:1;">
+        <div style="padding:40px 32px 0 0; border-right:2px solid #d3d0cf;">
+          <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:19px; font-weight:600; color:#c22a10; margin-bottom:14px;">the builder</div>
+          <p style="font-size:26px; line-height:1.45; font-weight:500; margin:0;">Claude Code and Copilot open, prose written — then <b>30–60 minutes</b> of paste-and-format per deck. The AI half-helps and drops the user.</p>
+        </div>
+        <div style="padding:40px 32px 0 32px; border-right:2px solid #d3d0cf;">
+          <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:19px; font-weight:600; color:#c22a10; margin-bottom:14px;">the air-gapped colleague</div>
+          <p style="font-size:26px; line-height:1.45; font-weight:500; margin:0;">Has Copilot and MS365. Cannot reach OpenAI, Anthropic, Google or fal.ai. Cloud deck tools are <b>unusable by policy</b> — and there is no local path from prose to file.</p>
+        </div>
+        <div style="padding:40px 0 0 32px;">
+          <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:19px; font-weight:600; color:#c22a10; margin-bottom:14px;">the technical author</div>
+          <p style="font-size:26px; line-height:1.45; font-weight:500; margin:0;">Mermaid comes out a PNG; the chart is a screenshot. It looks fine until you open it and <b>cannot edit a single thing.</b></p>
+        </div>
+      </div>
+      <div style="display:flex; justify-content:space-between; align-items:baseline; border-top:2px solid #d3d0cf; padding-top:22px; font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; font-weight:600;"><span>Deckcraft · the deck pipeline</span><span>03 / 10</span></div>
+    </div>
+  </section>
+
+  <section data-label="Never rasterized" data-speaker-notes="The non-negotiable, and it is machine-checkable, not a marketing adjective. SC-05: one hundred percent of text, shapes, charts and diagrams in the generated pptx are native DrawingML, zero rasterized content, verified by automated structural inspection of the file itself. Every pptx also ships a Marp markdown sibling you can hand-edit and re-render — and the round-trip flags lossy elements in a sidecar warning file rather than silently dropping them." style="background:#f3f2f2">
+    <div style="width:100%; height:100%; box-sizing:border-box; padding:96px; display:flex; flex-direction:column; font-family:'Archivo',sans-serif; color:#201e1d;">
+      <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:18px; letter-spacing:0.16em; text-transform:uppercase; color:#c22a10; font-weight:600; margin-bottom:34px;">The non-negotiable</div>
+      <h2 style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:84px; line-height:0.98; letter-spacing:-0.02em; margin:0 0 48px;">Never rasterized</h2>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:0; border-top:3px solid #201e1d; flex:1;">
+        <div style="padding:40px 40px 0 0; border-right:2px solid #d3d0cf;">
+          <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; letter-spacing:0.08em; text-transform:uppercase; color:rgba(32,30,29,.55); margin-bottom:18px;">SC-05 — checked, not claimed</div>
+          <p style="font-size:29px; line-height:1.45; font-weight:500; margin:0 0 22px;"><b>100%</b> of text, shapes, charts and diagrams are native DrawingML. <b style="color:#c22a10;">Zero rasterized content</b> — verified by automated structural inspection of the generated file.</p>
+          <p style="font-size:24px; line-height:1.45; font-weight:500; margin:0; color:rgba(32,30,29,.75);">Mermaid renders offline in ≤3s a diagram and converts to real shapes; charts embed as native PowerPoint charts wherever the data fits a standard type.</p>
+        </div>
+        <div style="padding:40px 0 0 40px;">
+          <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; letter-spacing:0.08em; text-transform:uppercase; color:rgba(32,30,29,.55); margin-bottom:18px;">And it goes back</div>
+          <p style="font-size:29px; line-height:1.45; font-weight:500; margin:0 0 22px;">Every <span style="font-family:ui-monospace,'SF Mono',Menlo,monospace;">.pptx</span> ships a <b>Marp markdown sibling</b>. Hand-edit the Markdown, regenerate the deck — or convert an existing deck back to Marp.</p>
+          <p style="font-size:24px; line-height:1.45; font-weight:500; margin:0; color:rgba(32,30,29,.75);">Lossy elements — custom animations, complex SmartArt — are <b>flagged in a sidecar warning file</b>, never silently dropped.</p>
+        </div>
+      </div>
+      <div style="display:flex; justify-content:space-between; align-items:baseline; border-top:2px solid #d3d0cf; padding-top:22px; font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; font-weight:600;"><span>Deckcraft · the deck pipeline</span><span>04 / 10</span></div>
+    </div>
+  </section>
+
+  <section data-label="Act II — From primitives" data-speaker-notes="Act II: the build. Deckcraft is not a wrapped web app — it is a small layered Python package over conda-forge primitives, with exactly three designed swap points, surfaced through every assistant the user already has." style="background:#201e1d">
+    <div style="position:relative; width:100%; height:100%; box-sizing:border-box; padding:96px; overflow:hidden; display:flex; flex-direction:column; justify-content:space-between; font-family:'Archivo',sans-serif; color:#f3f2f2;">
+      <div style="position:absolute; right:60px; top:-160px; font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:760px; line-height:1; color:rgba(243,242,242,0.10); pointer-events:none;">II</div>
+      <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:22px; letter-spacing:0.16em; text-transform:uppercase; font-weight:600; position:relative;">Act II</div>
+      <div style="position:relative;">
+        <h2 style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:110px; line-height:0.95; letter-spacing:-0.02em; margin:0;">From primitives</h2>
+        <p style="font-size:32px; line-height:1.4; font-weight:500; margin:36px 0 0; max-width:1300px;">No web app to host, no browser tab to switch to. <b>A package, three adapters, and the surfaces you are already in.</b></p>
+      </div>
+      <div style="display:flex; justify-content:space-between; align-items:baseline; border-top:2px solid rgba(243,242,242,.35); padding-top:22px; font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; font-weight:600;"><span>Deckcraft · the deck pipeline</span><span>05 / 10</span></div>
+    </div>
+  </section>
+
+  <section data-label="Three swap points" data-speaker-notes="The architecture in one slide. Surfaces consume the Pipeline API only; renderers consume engine adapters only. Three swap points and nothing else is a designed swap point: the LLM adapter, the pptx engine adapter, the platform adapter. Each one is the escape hatch for a known fragility — provider variability, python-pptx's dormancy, per-platform path and GPU differences. The pptx-engine-only rule is the discipline that keeps the vendor fallback clean: nothing outside deckcraft.engines.pptx_engine may import pptx at all." style="background:#f3f2f2">
+    <div style="width:100%; height:100%; box-sizing:border-box; padding:96px; display:flex; flex-direction:column; font-family:'Archivo',sans-serif; color:#201e1d;">
+      <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:18px; letter-spacing:0.16em; text-transform:uppercase; color:#c22a10; font-weight:600; margin-bottom:34px;">The shape</div>
+      <h2 style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:76px; line-height:0.98; letter-spacing:-0.02em; margin:0 0 44px;">Three layers, three swap points</h2>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:48px; flex:1;">
+        <div style="display:flex; flex-direction:column; border-top:3px solid #201e1d;">
+          <div style="padding:24px 0; border-bottom:2px solid #d3d0cf;"><div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; color:#c22a10; font-weight:600; margin-bottom:6px;">Surfaces</div><p style="font-size:24px; line-height:1.4; font-weight:500; margin:0;">Claude Skill · MCP server (stdio) · <span style="font-family:ui-monospace,'SF Mono',Menlo,monospace;">typer</span> CLI — <b>3 of 6 live at V1</b>, each consuming the <span style="font-family:ui-monospace,'SF Mono',Menlo,monospace;">Pipeline</span> API and nothing deeper.</p></div>
+          <div style="padding:24px 0; border-bottom:2px solid #d3d0cf;"><div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; color:#c22a10; font-weight:600; margin-bottom:6px;">Core</div><p style="font-size:24px; line-height:1.4; font-weight:500; margin:0;">Outline generator · style loader · asset pipeline, feeding six renderers. One immutable Pydantic model crosses every boundary.</p></div>
+          <div style="padding:24px 0;"><div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; color:#c22a10; font-weight:600; margin-bottom:6px;">Adapters — the only swap points</div><p style="font-size:24px; line-height:1.4; font-weight:500; margin:0;"><b>LLMAdapter</b> (llama-server default, Ollama, mlx-lm) · <b>PptxEngineAdapter</b> · <b>PlatformAdapter</b>. Outside the engine module, <b style="color:#c22a10;">nothing may import pptx.</b></p></div>
+        </div>
+        <div style="background:#201e1d; color:#f3f2f2; padding:44px; font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:23px; line-height:1.75; align-self:stretch; display:flex; flex-direction:column; justify-content:center;">
+          <div style="color:rgba(243,242,242,.5);"># detect the tier, pick the models</div>
+          <div>deckcraft init</div>
+          <div style="margin-top:20px; color:rgba(243,242,242,.5);"># a document in, an editable deck out</div>
+          <div>deckcraft generate --from prd.md \</div>
+          <div>&nbsp;&nbsp;--style brand.potx -o pitch.pptx</div>
+          <div style="margin-top:20px; color:rgba(243,242,242,.5);"># the Marp sibling, round-tripped</div>
+          <div>deckcraft convert pitch.pptx --to marp</div>
+          <div style="margin-top:20px; color:rgba(243,242,242,.5);"># same pipeline, inside the assistant</div>
+          <div>Skill: deck-builder &nbsp;|&nbsp; MCP: stdio</div>
+        </div>
+      </div>
+      <div style="display:flex; justify-content:space-between; align-items:baseline; border-top:2px solid #d3d0cf; padding-top:22px; font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; font-weight:600;"><span>Deckcraft · the deck pipeline</span><span>06 / 10</span></div>
+    </div>
+  </section>
+
+  <section data-label="Act III — The honest ledger" data-speaker-notes="Act III: what the 2026-07-25 research pass found, blockers included. Two findings landed: the moat moved, and a license landmine was sitting in an already-pinned dependency. Neither is hidden here — a never-false-green house cannot false-green its own plan." style="background:#201e1d">
+    <div style="position:relative; width:100%; height:100%; box-sizing:border-box; padding:96px; overflow:hidden; display:flex; flex-direction:column; justify-content:space-between; font-family:'Archivo',sans-serif; color:#f3f2f2;">
+      <div style="position:absolute; right:60px; top:-160px; font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:760px; line-height:1; color:rgba(243,242,242,0.10); pointer-events:none;">III</div>
+      <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:22px; letter-spacing:0.16em; text-transform:uppercase; font-weight:600; position:relative;">Act III</div>
+      <div style="position:relative;">
+        <h2 style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:110px; line-height:0.95; letter-spacing:-0.02em; margin:0;">The honest ledger</h2>
+        <p style="font-size:32px; line-height:1.4; font-weight:500; margin:36px 0 0; max-width:1300px;">The 2026-07-25 research pass moved the moat and found a landmine. <b>Both go on the slide.</b></p>
+      </div>
+      <div style="display:flex; justify-content:space-between; align-items:baseline; border-top:2px solid rgba(243,242,242,.35); padding-top:22px; font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; font-weight:600;"><span>Deckcraft · the deck pipeline</span><span>07 / 10</span></div>
+    </div>
+  </section>
+
+  <section data-label="The moat moved" data-speaker-notes="ppt-master was a minor Option C in the intake gist. Since then it has grown to forty-one thousand stars and three and a half thousand forks in under eight months, it is genuinely MIT, and it compiles constrained SVG into DrawingML — meeting or exceeding deckcraft's own editability bar. What it does not have is any documented local-LLM-first or offline mode: it depends on a cloud-hosted coding-agent model and recommends cloud models specifically for quality. So editability and from-primitives are no longer uniquely ours. Air-gap is — and it is the one claim we enforce in CI, under unshare -n." style="background:#f3f2f2">
+    <div style="width:100%; height:100%; box-sizing:border-box; padding:96px; display:flex; flex-direction:column; font-family:'Archivo',sans-serif; color:#201e1d;">
+      <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:18px; letter-spacing:0.16em; text-transform:uppercase; color:#c22a10; font-weight:600; margin-bottom:30px;">Finding 8 · domain research, 2026-07-25</div>
+      <h2 style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:80px; line-height:0.98; letter-spacing:-0.02em; margin:0 0 40px;">The moat moved</h2>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:0; border-top:3px solid #201e1d; flex:1;">
+        <div style="padding:36px 40px 0 0; border-right:2px solid #d3d0cf;">
+          <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; letter-spacing:0.08em; text-transform:uppercase; color:rgba(32,30,29,.55); margin-bottom:16px;">What eroded</div>
+          <div style="display:flex; align-items:baseline; gap:18px; margin-bottom:14px;"><div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:76px; line-height:0.9; color:#ec3013;">41,032</div><div style="font-size:22px; font-weight:600; line-height:1.3;">stars on <span style="font-family:ui-monospace,'SF Mono',Menlo,monospace;">ppt-master</span>,<br>MIT, in under 8 months</div></div>
+          <p style="font-size:26px; line-height:1.45; font-weight:500; margin:0;">It compiles constrained SVG into DrawingML and meets our editability bar. <b>Editable-native-PPTX is no longer our distinguishing claim</b>, and neither is from-primitives.</p>
+        </div>
+        <div style="padding:36px 0 0 40px;">
+          <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; letter-spacing:0.08em; text-transform:uppercase; color:rgba(32,30,29,.55); margin-bottom:16px;">What did not</div>
+          <p style="font-size:29px; line-height:1.45; font-weight:500; margin:0 0 22px;">It has <b>no documented local-LLM-first or offline mode</b> — it rides a cloud-hosted coding-agent model and recommends cloud models for quality. None of the four comparables match a CI-enforced default-offline posture.</p>
+          <div style="border:2px solid #ec3013; background:#fbe4de; padding:22px;"><p style="font-size:25px; line-height:1.4; font-weight:600; margin:0;">The claim is now: editable <b>and</b> air-gapped <b>and</b> embedded beyond coding-agent IDEs. Enforced by <span style="font-family:ui-monospace,'SF Mono',Menlo,monospace; color:#c22a10;">unshare -n</span> in CI.</p></div>
+        </div>
+      </div>
+      <div style="display:flex; justify-content:space-between; align-items:baseline; border-top:2px solid #d3d0cf; padding-top:22px; font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; font-weight:600;"><span>Deckcraft · the deck pipeline</span><span>08 / 10</span></div>
+    </div>
+  </section>
+
+  <section data-label="The blocker on the desk" data-speaker-notes="The unresolved item, stated plainly. pymupdf is the pinned primary library for PDF style extraction, and PyPI's own metadata says it is dual-licensed AGPL-3.0 or Artifex commercial. Deckcraft's founding acceptance criterion is MIT or Apache-2.0 only — that constraint is the reason the project exists at all, since its predecessor tool was rejected for being proprietary. AGPL is not proprietary, but many regulated organizations treat it as equally blocking to embed. Three named options, none chosen: accept it for this one opt-in path with documented rationale; substitute pdfplumber, already in the environment, MIT-family and requester-maintained, at a documented quality cost; or scope the OCR-fallback depth out. It is a human license call, it blocks before Story 3.2, and the risk is silence, not difficulty." style="background:#f3f2f2">
+    <div style="width:100%; height:100%; box-sizing:border-box; padding:96px; display:flex; flex-direction:column; font-family:'Archivo',sans-serif; color:#201e1d;">
+      <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:18px; letter-spacing:0.16em; text-transform:uppercase; color:#c22a10; font-weight:600; margin-bottom:30px;">Open question · blocks Story 3.2</div>
+      <h2 style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:80px; line-height:0.98; letter-spacing:-0.02em; margin:0 0 36px;">The blocker on the desk</h2>
+      <div style="border-top:3px solid #201e1d; padding-top:30px; margin-bottom:30px;">
+        <p style="font-size:30px; line-height:1.4; font-weight:500; margin:0; max-width:1660px;"><span style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-weight:600;">pymupdf</span> — pinned as the primary PDF style-extraction library — is <b style="color:#c22a10;">dual-licensed AGPL-3.0 / Artifex commercial.</b> The founding acceptance criterion is <b>MIT or Apache-2.0 only</b>, and that bar is why this project exists: its predecessor was rejected for being proprietary.</p>
+      </div>
+      <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:0; border-top:2px solid #d3d0cf; flex:1;">
+        <div style="padding:32px 30px 0 0; border-right:2px solid #d3d0cf;">
+          <div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:40px; margin-bottom:14px;">Accept</div>
+          <p style="font-size:24px; line-height:1.45; font-weight:500; margin:0;">Take AGPL for this one opt-in capability path, with the exception documented explicitly.</p>
+        </div>
+        <div style="padding:32px 30px 0 30px; border-right:2px solid #d3d0cf;">
+          <div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:40px; margin-bottom:14px;">Substitute</div>
+          <p style="font-size:24px; line-height:1.45; font-weight:500; margin:0;">Swap to <span style="font-family:ui-monospace,'SF Mono',Menlo,monospace;">pdfplumber</span> — already in the env, MIT-family, requester-maintained — at a documented quality cost.</p>
+        </div>
+        <div style="padding:32px 0 0 30px;">
+          <div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:40px; margin-bottom:14px;">Scope out</div>
+          <p style="font-size:24px; line-height:1.45; font-weight:500; margin:0;">Drop the OCR-fallback depth entirely and lose the scanned-PDF style source.</p>
+        </div>
+      </div>
+      <div style="font-size:26px; font-weight:600; margin-top:28px; color:#c22a10;">A human license call — undecided. <span style="color:rgba(32,30,29,.75); font-weight:500;">The risk is silence, not difficulty.</span></div>
+      <div style="display:flex; justify-content:space-between; align-items:baseline; border-top:2px solid #d3d0cf; padding-top:22px; margin-top:22px; font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; font-weight:600;"><span>Deckcraft · the deck pipeline</span><span>09 / 10</span></div>
+    </div>
+  </section>
+
+  <section data-label="The family's engine" data-speaker-notes="Close on the first consumer. The 2026-07-23 export revisit designated deckcraft the editable-PPTX engine for the deck family's Standard export set, because marp --pptx renders each slide as an image — fine for distribution, useless for editing. Until deckcraft lands, every family PPTX is an interim artifact. The master switch is dogfooding: one real ship-quality deck a week for four consecutive weeks, or the kill criteria fire." style="background:#ec3013">
+    <div style="width:100%; height:100%; box-sizing:border-box; padding:96px; display:flex; flex-direction:column; justify-content:space-between; font-family:'Archivo',sans-serif; color:#f3f2f2;">
+      <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:20px; letter-spacing:0.1em; text-transform:uppercase; font-weight:600; opacity:0.9;">Designated 2026-07-23 · the deck family's editable-PPTX engine</div>
+      <p style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:72px; line-height:1.08; letter-spacing:-0.02em; margin:0; max-width:1620px;">Every deck in this family currently exports a PowerPoint <span style="opacity:0.72;">nobody can edit.</span> Deckcraft is how that stops.</p>
+      <div style="display:grid; grid-template-columns:repeat(4,1fr); border-top:3px solid #f3f2f2; padding-top:26px;">
+        <div style="padding-right:24px;"><div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:52px; line-height:1;">28</div><div style="font-size:19px; font-weight:600; margin-top:8px; opacity:0.92;">stories · 6 epics · ~9.5 weeks</div></div>
+        <div style="padding:0 24px; border-left:2px solid rgba(243,242,242,.45);"><div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:52px; line-height:1;">1/wk</div><div style="font-size:19px; font-weight:600; margin-top:8px; opacity:0.92;">real decks × 4 weeks — the master switch</div></div>
+        <div style="padding:0 24px; border-left:2px solid rgba(243,242,242,.45);"><div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:52px; line-height:1;">0</div><div style="font-size:19px; font-weight:600; margin-top:8px; opacity:0.92;">outbound calls after first-run setup</div></div>
+        <div style="padding-left:24px; border-left:2px solid rgba(243,242,242,.45);"><div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:52px; line-height:1;">1</div><div style="font-size:19px; font-weight:600; margin-top:8px; opacity:0.92;">license call still open</div></div>
+      </div>
+      <div style="display:flex; justify-content:space-between; align-items:baseline; border-top:2px solid #f3f2f2; padding-top:22px; font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; font-weight:600;"><span>deckcraft · conda-forge-native · Claude Skill · MCP · CLI</span><span>docs/dreams/deckcraft.md</span></div>
+    </div>
+  </section>
+
+</x-import>
+</x-dc>
+</body>
+</html>

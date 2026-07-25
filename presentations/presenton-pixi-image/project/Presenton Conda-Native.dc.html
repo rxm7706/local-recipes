@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=Archivo+Expanded:wght@700;800;900&display=swap" rel="stylesheet">
+</helmet>
+<x-import component-from-global-scope="deck-stage" from="./deck-stage.js" width="1920" height="1080" hint-size="100%,100%">
+
+  <section data-label="Cover" data-speaker-notes="One line: this repackages the open-source Presenton AI deck generator as a fully air-gapped, conda-forge-native OCI image for Red Hat OpenShift — every dependency from governed channels, every image reproducible, no call home. It is deckcraft's sibling and its complement: Presenton is the repackaged app, deckcraft is the from-primitives pipeline. Five confirmed recipes, possibly seven, pending a Phase-0 decision. Phase 0 gates the build." style="background:#f3f2f2">
+    <div style="width:100%; height:100%; box-sizing:border-box; padding:96px; display:flex; flex-direction:column; justify-content:space-between; font-family:'Archivo',sans-serif; color:#201e1d;">
+      <div style="display:flex; justify-content:space-between; align-items:baseline; font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; letter-spacing:0.08em; text-transform:uppercase;">
+        <span style="color:#c22a10; font-weight:600;">PyForge · Dream to Code · Mason repackages · Steward operates</span>
+        <span style="color:rgba(32,30,29,.55);">Dream · docs/dreams/presenton-pixi-image.md</span>
+      </div>
+      <div>
+        <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:22px; letter-spacing:0.34em; text-transform:uppercase; color:#c22a10; font-weight:600; margin-bottom:26px;">Presenton, Conda-Native</div>
+        <h1 style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:140px; line-height:0.9; letter-spacing:-0.03em; margin:0;">AI decks where<br>SaaS cannot go.</h1>
+        <p style="font-size:34px; line-height:1.35; font-weight:500; margin:40px 0 0; max-width:1420px;">The open-source Presenton deck generator, repackaged as a <b>signed, air-gapped OCI image</b> for Red Hat OpenShift — built from conda-forge recipes, assembled with pixi + pixitainer. Zero LibreOffice, zero external CDN, <b style="color:#c22a10;">no call home.</b></p>
+      </div>
+      <div style="display:grid; grid-template-columns:repeat(4,1fr); border-top:3px solid #201e1d;">
+        <div style="padding:24px 24px 0 0; border-right:2px solid #d3d0cf;"><div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:14px; letter-spacing:0.06em; text-transform:uppercase; color:rgba(32,30,29,.55);">Project</div><div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:24px; font-weight:600; margin-top:8px;">presenton-pixi-image</div></div>
+        <div style="padding:24px; border-right:2px solid #d3d0cf;"><div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:14px; letter-spacing:0.06em; text-transform:uppercase; color:rgba(32,30,29,.55);">Recipes</div><div style="font-size:24px; font-weight:800; margin-top:8px;">5 confirmed · 5–7 for v1</div></div>
+        <div style="padding:24px; border-right:2px solid #d3d0cf;"><div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:14px; letter-spacing:0.06em; text-transform:uppercase; color:rgba(32,30,29,.55);">Platform</div><div style="font-size:24px; font-weight:800; margin-top:8px;">OpenShift · restricted-v2</div></div>
+        <div style="padding:24px 0 0 24px;"><div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:14px; letter-spacing:0.06em; text-transform:uppercase; color:rgba(32,30,29,.55);">Status</div><div style="font-size:24px; font-weight:800; margin-top:8px;">Phase 0 gates v1</div></div>
+      </div>
+    </div>
+  </section>
+
+  <section data-label="Act I — 11pm in a SCIF" data-speaker-notes="Act I: the scene the PRD opens on. Eleven at night in a SCIF, the board deck is due at eight, and Microsoft Copilot is on the other side of the air gap. She builds it by hand — slower than her LLM-assisted peers elsewhere in the org, and systematically weaker in structure and language." style="background:#201e1d">
+    <div style="position:relative; width:100%; height:100%; box-sizing:border-box; padding:96px; overflow:hidden; display:flex; flex-direction:column; justify-content:space-between; font-family:'Archivo',sans-serif; color:#f3f2f2;">
+      <div style="position:absolute; right:60px; top:-160px; font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:760px; line-height:1; color:rgba(243,242,242,0.10); pointer-events:none;">I</div>
+      <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:22px; letter-spacing:0.16em; text-transform:uppercase; font-weight:600; position:relative;">Act I</div>
+      <div style="position:relative;">
+        <h2 style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:110px; line-height:0.95; letter-spacing:-0.02em; margin:0;">11pm in a SCIF</h2>
+        <p style="font-size:32px; line-height:1.4; font-weight:500; margin:36px 0 0; max-width:1400px;">The board deck is due at 8am. Copilot is on the other side of the air gap. <b>Today she builds it by hand.</b></p>
+      </div>
+      <div style="display:flex; justify-content:space-between; align-items:baseline; border-top:2px solid rgba(243,242,242,.35); padding-top:22px; font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; font-weight:600;"><span>Presenton, Conda-Native</span><span>02 / 10</span></div>
+    </div>
+  </section>
+
+  <section data-label="Two gates that don't collapse" data-speaker-notes="The buyer and the end user want different things from the same purchase, and both must hold or the deal doesn't renew. The buyer gate is binary and procurement-visible: recipes merged on conda-forge, landed on the customer's JFrog mirror, image on the customer's registry, with SBOM and a signed attestation and a versioned metrics schema. The user gate is behavioral: at least sixty percent of piloted decks show edit-not-rewrite behavior, thirty minutes P95 to first renderable slide, ten seconds P95 per refinement on Tier 1. Miss either within its window and the program returns to Phase-0 scoping rather than limping forward." style="background:#f3f2f2">
+    <div style="width:100%; height:100%; box-sizing:border-box; padding:96px; display:flex; flex-direction:column; font-family:'Archivo',sans-serif; color:#201e1d;">
+      <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:18px; letter-spacing:0.16em; text-transform:uppercase; color:#c22a10; font-weight:600; margin-bottom:34px;">The success signal</div>
+      <h2 style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:84px; line-height:0.98; letter-spacing:-0.02em; margin:0 0 48px;">Two gates that don't collapse</h2>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:0; border-top:3px solid #201e1d; flex:1;">
+        <div style="padding:40px 40px 0 0; border-right:2px solid #d3d0cf;">
+          <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; letter-spacing:0.08em; text-transform:uppercase; color:rgba(32,30,29,.55); margin-bottom:18px;">Buyer gate — binary, procurement-visible</div>
+          <p style="font-size:28px; line-height:1.45; font-weight:500; margin:0 0 20px;">Recipes upstream-merged on conda-forge → landed on the customer's <b>JFrog Artifactory mirror</b> → image on the customer's registry.</p>
+          <p style="font-size:26px; line-height:1.45; font-weight:500; margin:0;">Every build ships an <b>SBOM</b> (CycloneDX primary, SPDX secondary), a <b>cosign</b> attestation, and a versioned <span style="font-family:ui-monospace,'SF Mono',Menlo,monospace;">/metrics</span> schema. <b style="color:#c22a10;">He signs once and forgets it.</b></p>
+        </div>
+        <div style="padding:40px 0 0 40px;">
+          <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; letter-spacing:0.08em; text-transform:uppercase; color:rgba(32,30,29,.55); margin-bottom:18px;">User gate — behavioral, renewal-driving</div>
+          <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:0; margin-bottom:20px;">
+            <div><div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:62px; line-height:0.9; color:#ec3013;">≥60%</div><div style="font-size:18px; font-weight:600; margin-top:8px; line-height:1.3;">decks edited,<br>not rewritten</div></div>
+            <div style="padding-left:20px; border-left:2px solid #d3d0cf;"><div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:62px; line-height:0.9; color:#ec3013;">≤30m</div><div style="font-size:18px; font-weight:600; margin-top:8px; line-height:1.3;">P95 to first<br>renderable slide</div></div>
+            <div style="padding-left:20px; border-left:2px solid #d3d0cf;"><div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:62px; line-height:0.9; color:#ec3013;">≤10s</div><div style="font-size:18px; font-weight:600; margin-top:8px; line-height:1.3;">P95 per refinement,<br>Tier 1</div></div>
+          </div>
+          <p style="font-size:24px; line-height:1.45; font-weight:500; margin:0; color:rgba(32,30,29,.78);">Quality bar is <b>"better than writing it by hand at 2am"</b> — explicitly not M365-Copilot parity. Three-signatory acceptance within 12 weeks of go-live, or the program resets to Phase 0.</p>
+        </div>
+      </div>
+      <div style="display:flex; justify-content:space-between; align-items:baseline; border-top:2px solid #d3d0cf; padding-top:22px; font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; font-weight:600;"><span>Presenton, Conda-Native</span><span>03 / 10</span></div>
+    </div>
+  </section>
+
+  <section data-label="The supply-chain math" data-speaker-notes="The honest version of the moat: it isn't a secret algorithm, it's the supply-chain work. Today the customer integrates five unsigned upstream artifacts — a closed-source export bundle, a closed-source PyInstaller converter, a browser binary nobody ships on conda-forge, an LLM abstraction library — and owns that integration risk. With this, they integrate one signed OCI image with one SBOM, and we own it. That is the actual product. Note what got smaller: template-style-extractor was dropped entirely, because upstream Presenton already does LibreOffice-free template import using nothing but the standard library and pdfplumber — and the PyMuPDF AGPL risk went with it." style="background:#f3f2f2">
+    <div style="width:100%; height:100%; box-sizing:border-box; padding:96px; display:flex; flex-direction:column; font-family:'Archivo',sans-serif; color:#201e1d;">
+      <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:18px; letter-spacing:0.16em; text-transform:uppercase; color:#c22a10; font-weight:600; margin-bottom:30px;">The actual product</div>
+      <h2 style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:80px; line-height:0.98; letter-spacing:-0.02em; margin:0 0 36px;">The supply-chain math</h2>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:0; border-top:3px solid #201e1d; margin-bottom:28px;">
+        <div style="padding:32px 40px 32px 0; border-right:2px solid #d3d0cf;">
+          <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; letter-spacing:0.08em; text-transform:uppercase; color:rgba(32,30,29,.55); margin-bottom:14px;">Without this</div>
+          <p style="font-size:28px; line-height:1.45; font-weight:500; margin:0;">The customer integrates <b>five unsigned upstream artifacts</b> — a closed-source export bundle, a closed-source PyInstaller converter, a browser binary nobody ships on conda-forge — and owns that integration risk themselves.</p>
+        </div>
+        <div style="padding:32px 0 32px 40px;">
+          <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; letter-spacing:0.08em; text-transform:uppercase; color:rgba(32,30,29,.55); margin-bottom:14px;">With it</div>
+          <p style="font-size:28px; line-height:1.45; font-weight:500; margin:0;">They integrate <b style="color:#c22a10;">one signed image, one SBOM</b> — and we own the integration risk. Five unsigned upstreams cannot pass an IL5 SBOM gate independently; one signed conda-forge image can.</p>
+        </div>
+      </div>
+      <div style="display:grid; grid-template-columns:repeat(5,1fr); border-top:2px solid #d3d0cf; flex:1;">
+        <div style="padding:28px 20px 0 0; border-right:2px solid #d3d0cf;"><div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:18px; font-weight:700; color:#c22a10; margin-bottom:10px;">presenton-<br>export-node</div><p style="font-size:20px; line-height:1.4; font-weight:500; margin:0;">Clean-room Playwright export runtime.</p></div>
+        <div style="padding:28px 20px 0 20px; border-right:2px solid #d3d0cf;"><div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:18px; font-weight:700; color:#c22a10; margin-bottom:10px;">pptx-<br>assembler</div><p style="font-size:20px; line-height:1.4; font-weight:500; margin:0;">Replaces the <span style="font-family:ui-monospace,'SF Mono',Menlo,monospace;">convert-linux-x64</span> binary.</p></div>
+        <div style="padding:28px 20px 0 20px; border-right:2px solid #d3d0cf;"><div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:18px; font-weight:700; color:#c22a10; margin-bottom:10px;">pptx-thumbnail-<br>inject</div><p style="font-size:20px; line-height:1.4; font-weight:500; margin:0;">Real <span style="font-family:ui-monospace,'SF Mono',Menlo,monospace;">docProps/<wbr>thumbnail.jpeg</span>.</p></div>
+        <div style="padding:28px 20px 0 20px; border-right:2px solid #d3d0cf;"><div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:18px; font-weight:700; color:#c22a10; margin-bottom:10px;">playwright-with-<br>chromium</div><p style="font-size:20px; line-height:1.4; font-weight:500; margin:0;">Bundled headless browser for the air gap.</p></div>
+        <div style="padding:28px 0 0 20px;"><div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:18px; font-weight:700; color:#c22a10; margin-bottom:10px;">llmai</div><p style="font-size:20px; line-height:1.4; font-weight:500; margin:0;">The provider abstraction upstream already uses.</p></div>
+      </div>
+      <div style="font-size:23px; font-weight:500; margin-top:22px; color:rgba(32,30,29,.75);"><b style="color:#c22a10;">Dropped 2026-07-25:</b> <span style="font-family:ui-monospace,'SF Mono',Menlo,monospace;">template-style-extractor</span> — upstream already does LibreOffice-free template import with the stdlib + <span style="font-family:ui-monospace,'SF Mono',Menlo,monospace;">pdfplumber</span>. The PyMuPDF/AGPL risk left with it.</div>
+      <div style="display:flex; justify-content:space-between; align-items:baseline; border-top:2px solid #d3d0cf; padding-top:20px; margin-top:20px; font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; font-weight:600;"><span>Presenton, Conda-Native</span><span>04 / 10</span></div>
+    </div>
+  </section>
+
+  <section data-label="Act II — Two planes" data-speaker-notes="Act II: the architecture. Two independent planes, each with its own consistency discipline. Build time is pipes-and-filters — recipes into a pixi-locked environment, pixitainer into an image, syft and cosign into a signed attested artifact, each stage consuming only the previous stage's published output. Run time is a hexagon with exactly one true port." style="background:#201e1d">
+    <div style="position:relative; width:100%; height:100%; box-sizing:border-box; padding:96px; overflow:hidden; display:flex; flex-direction:column; justify-content:space-between; font-family:'Archivo',sans-serif; color:#f3f2f2;">
+      <div style="position:absolute; right:60px; top:-160px; font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:760px; line-height:1; color:rgba(243,242,242,0.10); pointer-events:none;">II</div>
+      <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:22px; letter-spacing:0.16em; text-transform:uppercase; font-weight:600; position:relative;">Act II</div>
+      <div style="position:relative;">
+        <h2 style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:110px; line-height:0.95; letter-spacing:-0.02em; margin:0;">Two planes</h2>
+        <p style="font-size:32px; line-height:1.4; font-weight:500; margin:36px 0 0; max-width:1400px;">Build-time <b>pipes and filters</b>; run-time <b>hexagon with exactly one true port.</b> Nothing else in the running system branches on deployment topology.</p>
+      </div>
+      <div style="display:flex; justify-content:space-between; align-items:baseline; border-top:2px solid rgba(243,242,242,.35); padding-top:22px; font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; font-weight:600;"><span>Presenton, Conda-Native</span><span>05 / 10</span></div>
+    </div>
+  </section>
+
+  <section data-label="One true port" data-speaker-notes="The invariant that keeps this deployable everywhere. The LLM provider is the only swappable seam: Presenton and the Helm chart set only CUSTOM_LLM_URL and CUSTOM_LLM_API_KEY. Tier 1 is an operator-supplied external corporate proxy. Tier 2 is a llama.cpp service in the same namespace. Tier 3 is the same service with an init container that fetches the GGUF from an internal registry first. Three URLs, one contract, never a different code path. And the chart defaults to restricted-v2 on every cluster: all capabilities dropped, runtime-default seccomp, no privilege escalation, non-root arbitrary UID, no hardcoded UID or GID anywhere. Chromium runs --no-sandbox as an explicit documented decision, not a silent default." style="background:#f3f2f2">
+    <div style="width:100%; height:100%; box-sizing:border-box; padding:96px; display:flex; flex-direction:column; font-family:'Archivo',sans-serif; color:#201e1d;">
+      <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:18px; letter-spacing:0.16em; text-transform:uppercase; color:#c22a10; font-weight:600; margin-bottom:34px;">AD-2 · AD-8</div>
+      <h2 style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:76px; line-height:0.98; letter-spacing:-0.02em; margin:0 0 44px;">One true port, three tiers</h2>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:48px; flex:1;">
+        <div style="display:flex; flex-direction:column; border-top:3px solid #201e1d;">
+          <div style="padding:22px 0; border-bottom:2px solid #d3d0cf;"><div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; color:#c22a10; font-weight:600; margin-bottom:6px;">Tier 1 · external proxy</div><p style="font-size:23px; line-height:1.4; font-weight:500; margin:0;">An operator-supplied corporate endpoint. <b>No in-cluster resource.</b> All latency targets are measured here.</p></div>
+          <div style="padding:22px 0; border-bottom:2px solid #d3d0cf;"><div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; color:#c22a10; font-weight:600; margin-bottom:6px;">Tier 2 · in-cluster sidecar</div><p style="font-size:23px; line-height:1.4; font-weight:500; margin:0;">A <span style="font-family:ui-monospace,'SF Mono',Menlo,monospace;">llama.cpp</span> Service in the same namespace, OpenAI-compatible over HTTP.</p></div>
+          <div style="padding:22px 0; border-bottom:2px solid #d3d0cf;"><div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; color:#c22a10; font-weight:600; margin-bottom:6px;">Tier 3 · init-container fetch</div><p style="font-size:23px; line-height:1.4; font-weight:500; margin:0;">Same Service; its Pod pulls the GGUF from an internal registry before the main container starts.</p></div>
+          <div style="padding:22px 0;"><div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; color:#c22a10; font-weight:600; margin-bottom:6px;">restricted-v2 by default</div><p style="font-size:23px; line-height:1.4; font-weight:500; margin:0;">All capabilities dropped · <span style="font-family:ui-monospace,'SF Mono',Menlo,monospace;">seccomp: runtime/default</span> · no privilege escalation · non-root arbitrary UID · <b>no hardcoded UID/GID anywhere.</b></p></div>
+        </div>
+        <div style="background:#201e1d; color:#f3f2f2; padding:44px; font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:22px; line-height:1.7; align-self:stretch; display:flex; flex-direction:column; justify-content:center;">
+          <div style="color:rgba(243,242,242,.5);"># the only swappable seam</div>
+          <div>CUSTOM_LLM_URL=...</div>
+          <div>CUSTOM_LLM_API_KEY=...</div>
+          <div style="margin-top:20px; color:rgba(243,242,242,.5);"># one enum selects a values sub-block</div>
+          <div>values.llmProvider.tier: tier2</div>
+          <div style="margin-top:20px; color:rgba(243,242,242,.5);"># never a per-tier code fork</div>
+          <div>values.memory.enabled: false</div>
+          <div>chromiumSandboxMode: none</div>
+          <div style="margin-top:20px; color:rgba(243,242,242,.5);"># every build URL routes the mirror</div>
+          <div>*_BASE_URL &rarr; JFrog Artifactory</div>
+        </div>
+      </div>
+      <div style="display:flex; justify-content:space-between; align-items:baseline; border-top:2px solid #d3d0cf; padding-top:22px; font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; font-weight:600;"><span>Presenton, Conda-Native</span><span>06 / 10</span></div>
+    </div>
+  </section>
+
+  <section data-label="Act III — Phase 0 gates the build" data-speaker-notes="Act III: nothing in Epics 2 through 7 starts production work ahead of Phase 0. Six exit criteria; exit 1 is the critical-path long pole; exits 4, 5 and 6 run independently. Two of them are named on the next slides because they are the ones that can still change the shape of the product." style="background:#201e1d">
+    <div style="position:relative; width:100%; height:100%; box-sizing:border-box; padding:96px; overflow:hidden; display:flex; flex-direction:column; justify-content:space-between; font-family:'Archivo',sans-serif; color:#f3f2f2;">
+      <div style="position:absolute; right:60px; top:-160px; font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:760px; line-height:1; color:rgba(243,242,242,0.10); pointer-events:none;">III</div>
+      <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:22px; letter-spacing:0.16em; text-transform:uppercase; font-weight:600; position:relative;">Act III</div>
+      <div style="position:relative;">
+        <h2 style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:100px; line-height:0.95; letter-spacing:-0.02em; margin:0;">Phase 0 gates the build</h2>
+        <p style="font-size:32px; line-height:1.4; font-weight:500; margin:36px 0 0; max-width:1400px;"><b>Six exits</b> — 7 stories of the 30. Nothing in Epics 2–7 starts production work ahead of them. <b>Two exits can still change the product's shape.</b></p>
+      </div>
+      <div style="display:flex; justify-content:space-between; align-items:baseline; border-top:2px solid rgba(243,242,242,.35); padding-top:22px; font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; font-weight:600;"><span>Presenton, Conda-Native</span><span>07 / 10</span></div>
+    </div>
+  </section>
+
+  <section data-label="Exit 6a — the Redmond contingency" data-speaker-notes="The existential one, stated plainly. Microsoft shipped its own disconnected stack — Azure Local disconnected operations, Microsoft 365 Local, and Foundry Local — GA worldwide on 2026-02-24, five months before the brief was written. Every infrastructure primitive needed to run a disconnected Copilot-equivalent is now shipped by Microsoft directly. Whether the PowerPoint-generation application layer actually rides on top of it today is unconfirmed: the supported-services table lists infrastructure only, no Copilot, no M365 apps, no AI service. That single unknown determines whether Risk R3 is materialized, partially materialized, or infrastructure-only. Worse, the existing yearly-plus-RSS Microsoft watch appears to have missed the announcement outright — so Phase 0 also has to backtest the watch mechanism, not just answer the question. The window is unknown and urgent, not a comfortable 12-to-24-month runway." style="background:#f3f2f2">
+    <div style="width:100%; height:100%; box-sizing:border-box; padding:96px; display:flex; flex-direction:column; font-family:'Archivo',sans-serif; color:#201e1d;">
+      <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:18px; letter-spacing:0.16em; text-transform:uppercase; color:#c22a10; font-weight:600; margin-bottom:28px;">Phase-0 exit 6(a) · Risk R3, existential</div>
+      <h2 style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:80px; line-height:0.98; letter-spacing:-0.02em; margin:0 0 32px;">The Redmond contingency</h2>
+      <div style="border-top:3px solid #201e1d; padding-top:26px; margin-bottom:26px;">
+        <p style="font-size:29px; line-height:1.4; font-weight:500; margin:0; max-width:1680px;">Microsoft's own disconnected stack — <b>Azure Local disconnected operations + Microsoft 365 Local + Foundry Local</b> — went <b style="color:#c22a10;">GA worldwide 2026-02-24.</b> Every infrastructure primitive needed to run a disconnected Copilot-equivalent is now shipped by Microsoft directly.</p>
+      </div>
+      <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:0; border-top:2px solid #d3d0cf; flex:1;">
+        <div style="padding:32px 30px 0 0; border-right:2px solid #d3d0cf;">
+          <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; letter-spacing:0.08em; text-transform:uppercase; color:rgba(32,30,29,.55); margin-bottom:14px;">What is confirmed</div>
+          <p style="font-size:24px; line-height:1.45; font-weight:500; margin:0;">The supported-services table lists <b>infrastructure primitives only</b> — portal, ARM, RBAC, Arc-enabled VMs/AKS, registry, Key Vault. <b>No Copilot, no M365 apps, no AI service named.</b></p>
+        </div>
+        <div style="padding:32px 30px 0 30px; border-right:2px solid #d3d0cf;">
+          <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; letter-spacing:0.08em; text-transform:uppercase; color:rgba(32,30,29,.55); margin-bottom:14px;">What is unconfirmed</div>
+          <p style="font-size:24px; line-height:1.45; font-weight:500; margin:0;">Whether the <b>deck-generation application layer</b> is turned on in the disconnected SKU today, or roadmapped. This determines whether R3 is materialized, partially materialized, or infrastructure-only.</p>
+        </div>
+        <div style="padding:32px 0 0 30px;">
+          <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; letter-spacing:0.08em; text-transform:uppercase; color:rgba(32,30,29,.55); margin-bottom:14px;">What it cost us to learn</div>
+          <p style="font-size:24px; line-height:1.45; font-weight:500; margin:0;">The standing Microsoft watch — yearly + gate-coupled + always-on RSS on the words <span style="font-family:ui-monospace,'SF Mono',Menlo,monospace;">disconnected</span>, <span style="font-family:ui-monospace,'SF Mono',Menlo,monospace;">air-gap</span> — <b style="color:#c22a10;">missed it.</b> Phase 0 backtests the watch, not just the question.</p>
+        </div>
+      </div>
+      <div style="font-size:26px; font-weight:600; margin-top:26px; color:#c22a10;">Treat the window as <b>unknown and urgent</b> — <span style="color:rgba(32,30,29,.75); font-weight:500;">not the falsified 12–24-month runway. Resolve before further v1 build investment.</span></div>
+      <div style="display:flex; justify-content:space-between; align-items:baseline; border-top:2px solid #d3d0cf; padding-top:20px; margin-top:20px; font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; font-weight:600;"><span>Presenton, Conda-Native</span><span>08 / 10</span></div>
+    </div>
+  </section>
+
+  <section data-label="Exit 6b — the memory-subsystem call" data-speaker-notes="The scope one. mem0ai and fastembed-vectorstore are unconditional Presenton dependencies and neither is on conda-forge. So the recipe count is genuinely open between five and seven, not the fixed six the PRD used to say. Option A adds both as recipes six and seven — full upstream parity, at the price of two more staged-recipes review cycles, two more JFrog allowlist requests, two more drift-detection surfaces. Option B feature-drops memory and chat history for v1 — but that only stays a drop if the import graph no-ops cleanly via env var, which is not yet verified. If it needs a Presenton-side source patch, this stops being a feature drop and becomes carrying a fork, with a maintenance-burden model the PRD does not currently carry for anything else. The architecture pre-wires both branches with the pixi feature and the Helm value defaulting off, so build work is not blocked while the call is open." style="background:#f3f2f2">
+    <div style="width:100%; height:100%; box-sizing:border-box; padding:96px; display:flex; flex-direction:column; font-family:'Archivo',sans-serif; color:#201e1d;">
+      <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:18px; letter-spacing:0.16em; text-transform:uppercase; color:#c22a10; font-weight:600; margin-bottom:28px;">Phase-0 exit 6(b) · scope · AD-7 pre-wires both</div>
+      <h2 style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:80px; line-height:0.98; letter-spacing:-0.02em; margin:0 0 32px;">Five recipes, or seven</h2>
+      <div style="border-top:3px solid #201e1d; padding-top:26px; margin-bottom:28px;">
+        <p style="font-size:29px; line-height:1.4; font-weight:500; margin:0; max-width:1680px;"><span style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-weight:600;">mem0ai</span> and <span style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-weight:600;">fastembed-vectorstore</span> are <b>unconditional Presenton dependencies</b> and <b style="color:#c22a10;">neither is on conda-forge.</b> The recipe count is genuinely open — not the fixed "six" the plan used to say.</p>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; flex:1;">
+        <div style="border:2px solid #201e1d; padding:30px; display:flex; flex-direction:column;">
+          <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:14px; letter-spacing:0.09em; text-transform:uppercase; font-weight:800; color:#c22a10;">Option A — add them</div>
+          <div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:44px; margin:12px 0 16px;">Recipes 6 &amp; 7</div>
+          <p style="font-size:24px; line-height:1.45; font-weight:500; margin:0;">Full upstream parity — chat memory and presentation memory kept. The price: <b>two more staged-recipes review cycles</b>, two more JFrog allowlist requests, two more drift-detection surfaces.</p>
+        </div>
+        <div style="border:2px solid #ec3013; background:#fbe4de; padding:30px; display:flex; flex-direction:column;">
+          <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:14px; letter-spacing:0.09em; text-transform:uppercase; font-weight:800; color:#c22a10;">Option B — drop for v1</div>
+          <div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:44px; margin:12px 0 16px;">Documented feature-drop</div>
+          <p style="font-size:24px; line-height:1.45; font-weight:500; margin:0;">Only stays a "drop" if the import graph <b>no-ops cleanly via env var — not yet verified.</b> If it needs a Presenton source patch, this becomes <b style="color:#c22a10;">carrying a fork</b>, with a maintenance burden the plan models for nothing else.</p>
+        </div>
+      </div>
+      <div style="font-size:24px; font-weight:500; margin-top:24px; color:rgba(32,30,29,.8);">Build work is <b>not blocked</b> while it is open: the <span style="font-family:ui-monospace,'SF Mono',Menlo,monospace;">presenton-memory</span> pixi feature and <span style="font-family:ui-monospace,'SF Mono',Menlo,monospace;">values.memory.enabled</span> both default <b>off</b>, and either answer fits the same shape.</div>
+      <div style="display:flex; justify-content:space-between; align-items:baseline; border-top:2px solid #d3d0cf; padding-top:20px; margin-top:20px; font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; font-weight:600;"><span>Presenton, Conda-Native</span><span>09 / 10</span></div>
+    </div>
+  </section>
+
+  <section data-label="The complement" data-speaker-notes="Close on the division of labor. Presenton is the repackaged app for people who want a deck-builder in their browser; deckcraft is the from-primitives pipeline for people who want deck-building inside their AI assistant. Complementary, not competing — Mason repackages, Steward deploys and operates the OpenShift service. And the whole bet reduces to one sentence: the buyer is paying for a deck generator they are allowed to install." style="background:#ec3013">
+    <div style="width:100%; height:100%; box-sizing:border-box; padding:96px; display:flex; flex-direction:column; justify-content:space-between; font-family:'Archivo',sans-serif; color:#f3f2f2;">
+      <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:20px; letter-spacing:0.1em; text-transform:uppercase; font-weight:600; opacity:0.9;">The repackaged app · deckcraft is the from-primitives pipeline · complementary, not competing</div>
+      <p style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:76px; line-height:1.08; letter-spacing:-0.02em; margin:0; max-width:1620px;">The buyer is paying for a deck generator <span style="opacity:0.72;">they are allowed to install.</span></p>
+      <div style="display:grid; grid-template-columns:repeat(4,1fr); border-top:3px solid #f3f2f2; padding-top:26px;">
+        <div style="padding-right:24px;"><div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:52px; line-height:1;">30</div><div style="font-size:19px; font-weight:600; margin-top:8px; opacity:0.92;">stories · 7 epics · Phase 0 first</div></div>
+        <div style="padding:0 24px; border-left:2px solid rgba(243,242,242,.45);"><div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:52px; line-height:1;">1</div><div style="font-size:19px; font-weight:600; margin-top:8px; opacity:0.92;">signed image, one SBOM, one owner</div></div>
+        <div style="padding:0 24px; border-left:2px solid rgba(243,242,242,.45);"><div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:52px; line-height:1;">0</div><div style="font-size:19px; font-weight:600; margin-top:8px; opacity:0.92;">LibreOffice · external CDN · calls home</div></div>
+        <div style="padding-left:24px; border-left:2px solid rgba(243,242,242,.45);"><div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:52px; line-height:1;">2</div><div style="font-size:19px; font-weight:600; margin-top:8px; opacity:0.92;">Phase-0 calls still open</div></div>
+      </div>
+      <div style="display:flex; justify-content:space-between; align-items:baseline; border-top:2px solid #f3f2f2; padding-top:22px; font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; font-weight:600;"><span>presenton-pixi-image · conda-forge-native · OpenShift · air-gapped</span><span>docs/dreams/presenton-pixi-image.md</span></div>
+    </div>
+  </section>
+
+</x-import>
+</x-dc>
+</body>
+</html>

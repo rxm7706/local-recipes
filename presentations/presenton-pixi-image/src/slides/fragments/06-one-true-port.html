@@ -1,0 +1,25 @@
+<div style="width:100%; height:100%; box-sizing:border-box; padding:96px; display:flex; flex-direction:column; font-family:'Archivo',sans-serif; color:#201e1d;">
+      <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:18px; letter-spacing:0.16em; text-transform:uppercase; color:#c22a10; font-weight:600; margin-bottom:34px;">AD-2 · AD-8</div>
+      <h2 style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:76px; line-height:0.98; letter-spacing:-0.02em; margin:0 0 44px;">One true port, three tiers</h2>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:48px; flex:1;">
+        <div style="display:flex; flex-direction:column; border-top:3px solid #201e1d;">
+          <div style="padding:22px 0; border-bottom:2px solid #d3d0cf;"><div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; color:#c22a10; font-weight:600; margin-bottom:6px;">Tier 1 · external proxy</div><p style="font-size:23px; line-height:1.4; font-weight:500; margin:0;">An operator-supplied corporate endpoint. <b>No in-cluster resource.</b> All latency targets are measured here.</p></div>
+          <div style="padding:22px 0; border-bottom:2px solid #d3d0cf;"><div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; color:#c22a10; font-weight:600; margin-bottom:6px;">Tier 2 · in-cluster sidecar</div><p style="font-size:23px; line-height:1.4; font-weight:500; margin:0;">A <span style="font-family:ui-monospace,'SF Mono',Menlo,monospace;">llama.cpp</span> Service in the same namespace, OpenAI-compatible over HTTP.</p></div>
+          <div style="padding:22px 0; border-bottom:2px solid #d3d0cf;"><div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; color:#c22a10; font-weight:600; margin-bottom:6px;">Tier 3 · init-container fetch</div><p style="font-size:23px; line-height:1.4; font-weight:500; margin:0;">Same Service; its Pod pulls the GGUF from an internal registry before the main container starts.</p></div>
+          <div style="padding:22px 0;"><div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; color:#c22a10; font-weight:600; margin-bottom:6px;">restricted-v2 by default</div><p style="font-size:23px; line-height:1.4; font-weight:500; margin:0;">All capabilities dropped · <span style="font-family:ui-monospace,'SF Mono',Menlo,monospace;">seccomp: runtime/default</span> · no privilege escalation · non-root arbitrary UID · <b>no hardcoded UID/GID anywhere.</b></p></div>
+        </div>
+        <div style="background:#201e1d; color:#f3f2f2; padding:44px; font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:22px; line-height:1.7; align-self:stretch; display:flex; flex-direction:column; justify-content:center;">
+          <div style="color:rgba(243,242,242,.5);"># the only swappable seam</div>
+          <div>CUSTOM_LLM_URL=...</div>
+          <div>CUSTOM_LLM_API_KEY=...</div>
+          <div style="margin-top:20px; color:rgba(243,242,242,.5);"># one enum selects a values sub-block</div>
+          <div>values.llmProvider.tier: tier2</div>
+          <div style="margin-top:20px; color:rgba(243,242,242,.5);"># never a per-tier code fork</div>
+          <div>values.memory.enabled: false</div>
+          <div>chromiumSandboxMode: none</div>
+          <div style="margin-top:20px; color:rgba(243,242,242,.5);"># every build URL routes the mirror</div>
+          <div>*_BASE_URL &rarr; JFrog Artifactory</div>
+        </div>
+      </div>
+      <div style="display:flex; justify-content:space-between; align-items:baseline; border-top:2px solid #d3d0cf; padding-top:22px; font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; font-weight:600;"><span>Presenton, Conda-Native</span><span>06 / 10</span></div>
+    </div>

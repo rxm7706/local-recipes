@@ -1,0 +1,24 @@
+{
+  "name": "deckcraft-deck",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Deckcraft \u2014 the air-gapped, conda-native pipeline that generates editable PPTX, Marp and infographics from primitives; the deck family's designated PPTX engine.",
+  "scripts": {
+    "extract": "node scripts/extract-slides.mjs",
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.4",
+    "vite": "^5.4.11"
+  },
+  "allowScripts": {
+    "esbuild@0.21.5": true
+  }
+}

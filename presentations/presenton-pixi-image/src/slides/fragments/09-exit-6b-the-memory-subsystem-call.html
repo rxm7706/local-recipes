@@ -1,0 +1,21 @@
+<div style="width:100%; height:100%; box-sizing:border-box; padding:96px; display:flex; flex-direction:column; font-family:'Archivo',sans-serif; color:#201e1d;">
+      <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:18px; letter-spacing:0.16em; text-transform:uppercase; color:#c22a10; font-weight:600; margin-bottom:28px;">Phase-0 exit 6(b) · scope · AD-7 pre-wires both</div>
+      <h2 style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:900; font-size:80px; line-height:0.98; letter-spacing:-0.02em; margin:0 0 32px;">Five recipes, or seven</h2>
+      <div style="border-top:3px solid #201e1d; padding-top:26px; margin-bottom:28px;">
+        <p style="font-size:29px; line-height:1.4; font-weight:500; margin:0; max-width:1680px;"><span style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-weight:600;">mem0ai</span> and <span style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-weight:600;">fastembed-vectorstore</span> are <b>unconditional Presenton dependencies</b> and <b style="color:#c22a10;">neither is on conda-forge.</b> The recipe count is genuinely open — not the fixed "six" the plan used to say.</p>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; flex:1;">
+        <div style="border:2px solid #201e1d; padding:30px; display:flex; flex-direction:column;">
+          <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:14px; letter-spacing:0.09em; text-transform:uppercase; font-weight:800; color:#c22a10;">Option A — add them</div>
+          <div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:44px; margin:12px 0 16px;">Recipes 6 &amp; 7</div>
+          <p style="font-size:24px; line-height:1.45; font-weight:500; margin:0;">Full upstream parity — chat memory and presentation memory kept. The price: <b>two more staged-recipes review cycles</b>, two more JFrog allowlist requests, two more drift-detection surfaces.</p>
+        </div>
+        <div style="border:2px solid #ec3013; background:#fbe4de; padding:30px; display:flex; flex-direction:column;">
+          <div style="font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:14px; letter-spacing:0.09em; text-transform:uppercase; font-weight:800; color:#c22a10;">Option B — drop for v1</div>
+          <div style="font-family:'Archivo Expanded','Archivo',sans-serif; font-weight:800; font-size:44px; margin:12px 0 16px;">Documented feature-drop</div>
+          <p style="font-size:24px; line-height:1.45; font-weight:500; margin:0;">Only stays a "drop" if the import graph <b>no-ops cleanly via env var — not yet verified.</b> If it needs a Presenton source patch, this becomes <b style="color:#c22a10;">carrying a fork</b>, with a maintenance burden the plan models for nothing else.</p>
+        </div>
+      </div>
+      <div style="font-size:24px; font-weight:500; margin-top:24px; color:rgba(32,30,29,.8);">Build work is <b>not blocked</b> while it is open: the <span style="font-family:ui-monospace,'SF Mono',Menlo,monospace;">presenton-memory</span> pixi feature and <span style="font-family:ui-monospace,'SF Mono',Menlo,monospace;">values.memory.enabled</span> both default <b>off</b>, and either answer fits the same shape.</div>
+      <div style="display:flex; justify-content:space-between; align-items:baseline; border-top:2px solid #d3d0cf; padding-top:20px; margin-top:20px; font-family:ui-monospace,'SF Mono',Menlo,monospace; font-size:16px; font-weight:600;"><span>Presenton, Conda-Native</span><span>09 / 10</span></div>
+    </div>
