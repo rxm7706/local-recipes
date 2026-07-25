@@ -57,6 +57,14 @@ _bmad-output/implementation-artifacts -> projects/<slug>/implementation-artifact
 
 `_bmad/bmm/config.yaml` hard-codes `planning_artifacts: "{project-root}/_bmad-output/planning-artifacts"`, and that key does **NOT** compose with a project's `output_folder` override — so **every BMAD skill that writes planning artifacts resolves through these symlinks**, not through the marker. Marker and symlinks must always agree; when they disagree, a write-skill silently targets the *other* project. **Always switch with `scripts/bmad-switch <slug>`** (since 2026-07-14 it re-points the symlinks atomically and writes the marker last, so a failed re-point can't desync); never hand-edit the marker. `scripts/bmad-switch --current` / `--list` warn on a desync — heed it before running any BMAD write-skill. Live near-miss (2026-07-14): the symlinks sat on `pyforge-warden` while the marker said `local-recipes`, so a local-recipes doc re-sync would have overwritten pyforge-warden's PRD/epics/architecture.
 
+**PARALLEL AGENTS: never touch the switch — address projects by physical path (HARD, since 2026-07-25).** The marker *and* the symlinks are **per-working-tree global state**, so `scripts/bmad-switch` is a mutex nobody holds: two concurrent BMAD write-agents will silently re-point each other's target mid-write. When fanning out more than one agent that writes planning artifacts:
+
+- **Write to `_bmad-output/projects/<slug>/planning-artifacts/…` literally.** Never to `_bmad-output/planning-artifacts/…` (the symlink) and never via a skill that resolves through it without pinning.
+- **Do not call `scripts/bmad-switch`** from a parallel agent. If a skill needs the active project, pass **`BMAD_ACTIVE_PROJECT=<slug>` per invocation** — it takes precedence over the marker in `_bmad/scripts/resolve_config.py` and mutates nothing shared.
+- **Verify placement after writing** (`readlink -f`, or just check the file landed under the intended slug) — the failure is silent, never an error.
+
+Live incident (2026-07-25, the 11-Spec derivation fan-out): five concurrent agents each ran `bmad-switch`; the shared symlink was observed moving `pyforge-doctor → pyforge-marshal → pyforge-mason → deckcraft` mid-run, and one agent's 30-entry memlog landed under **pyforge-marshal's** tree instead of pyforge-doctor's. It was caught by `readlink -f` and recovered intact; the other four agents independently adopted physical paths after noticing the drift. Nothing was lost — but only because the agents checked.
+
 **Six-layer config merge** (highest priority last):
 
 | Layer | Path                                                         | Scope                                |
