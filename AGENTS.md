@@ -11,9 +11,12 @@ spec; the spec drives the build — the agent/framework is interchangeable.**
 (the BMAD mission: *Build More Architect Dreams*). Plain markdown, version-controlled, neutral.
 From a Dream, **BMAD-method produces the spec**:
 
-- **Small / clear scope** → **`bmad-spec`** distils the Dream into a **Spec** + companions.
-- **Product / platform scope** → the planning chain: `bmad-product-brief` → `bmad-prd` →
-  `bmad-architecture` → `bmad-create-epics-and-stories`.
+- **Always** → **`bmad-spec`** distils the Dream into **the Spec** (five fields + companions)
+  — the unit of contract; everything downstream binds to it.
+- **Product / platform scope** → the planning chain then **decomposes** that Spec:
+  `bmad-product-brief` → `bmad-prd` → `bmad-architecture` → `bmad-create-epics-and-stories`.
+  The chain is the Spec's decomposition, **not a substitute for it** (Charter § The Lexicon §2):
+  without a Spec there is a plan, but nothing holds the five fields still while the plan moves.
 
 The resulting spec + planning artifacts live in **BMAD's own folder** —
 `_bmad-output/projects/<slug>/planning-artifacts/` — not in a hand-maintained specs directory.
