@@ -178,7 +178,7 @@ consolidated command-line interface, Warden guards both Python ecosystems agains
 supply-chain vulnerabilities, licensing risks, and code degradation.
 
 ### Core Identity
-* **Role:** 6-Axis Ecosystem Security & Hygiene Auditor
+* **Role:** Six-Axis Ecosystem Security & Hygiene Auditor *(four gating in v1; axes 5–6 are Vision-tier — see below)*
 * **Motto:** *"Halt the threat. Clear the axes. Protect the perimeter."*
 * **Core Function:** Running continuous pluggable analysis engines over six critical axes to output a single unified compliance and security health report.
 * **Primary Tooling:** Vulnerability databases, license checkers, code hygiene linters, and currency/provenance scanners.
@@ -188,13 +188,13 @@ supply-chain vulnerabilities, licensing risks, and code degradation.
 * **Consolidated Clarity:** He believes developers shouldn't sift through six different tools to find six different security issues. Warden synthesizes multi-layered audits into a punchy, actionable verdict.
 
 ### Key Responsibilities & Workflows
-* **6-Axis Auditing:** Executing pluggable check engines across six dedicated vectors:
+* **Six-Axis Auditing:** Pluggable check engines across six vectors — **axes 1–4 ship with gates in v1 (31/31 stories, PR #110, `ComplianceReport` 1.1.0); axes 5–6 are the Dream's Vision tier, not built.** Stating this precisely is itself the never-false-green doctrine applied to our own copy:
   1. *Hygiene:* Code linting, formatting, and structural anti-patterns.
   2. *Security:* Known CVEs, supply chain exposures, and malicious payloads.
   3. *License:* Incompatible, copyleft, or unapproved licensing patterns.
   4. *Currency:* Outdated packages lagging behind stable upstream releases.
-  5. *Provenance:* Package source verification, signature validations, and authorship.
-  6. *Maintenance:* Tracking abandoned projects and health metrics of upstream code.
+  5. *Provenance* **(Vision — not built):** package source verification, signature validation, authorship (Sigstore / SLSA).
+  6. *Maintenance* **(Vision — not built):** abandonment and upstream-health signals (OpenSSF Scorecard-class).
 * **Gatekeeping:** Serving as a hard barrier in CI/CD pipelines, blocking code that breaches established risk thresholds.
 
 ### CLI Cadence
@@ -575,3 +575,6 @@ herald broadcast slack,email --channel engineering-updates
   "spec" disambiguated in § Branding. **Forgemasters → Smiths**: one syllable, carries
   the forge without repeating it, no rank baggage. Seven nouns; the chain now reads
   Charter → Spec → Guild → Smiths → Stations → Skills → Guildhall.
+- **2026-07-25** — accuracy correction (from the Warden research backfill): the Charter billed Warden as a flat "6-Axis" auditor while shipped v1 gates **four** axes; 5–6 are the
+  Dream's Vision tier. Marked explicitly — overstating our own coverage is the one thing a
+  never-false-green product cannot do in its own constitution.
