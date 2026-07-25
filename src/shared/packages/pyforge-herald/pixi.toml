@@ -1,0 +1,30 @@
+# pyforge-herald (Herald) — pixi build workspace member (Option B).
+#
+# This is a MEMBER package of the parent `staged-recipes` workspace: there is
+# deliberately NO [workspace] table here. The root ../../../../pixi.toml owns
+# workspace config (channels, platforms, environments, the `preview = ["pixi-build"]`
+# flag) and pulls this package in via a path dependency in the
+# `[feature.pyforge-herald.dependencies]` table. `pixi-build-python` builds
+# this into a conda package.
+#
+# Story 1.1 delivers the build-wiring skeleton only (argparse CLI + `deck`
+# subcommand group, no bridge logic). The transport/bridge-core/state/
+# error-hierarchy/registry implementation is delivered by later stories
+# against `_bmad-output/projects/pyforge-herald/planning-artifacts/`.
+
+[package]
+name = "pyforge-herald"
+version = "0.1.0"
+
+[package.build.backend]
+name = "pixi-build-python"
+version = "0.*"
+
+[package.host-dependencies]
+python = ">=3.12"          # explicit build-time interpreter for pixi-build-python (Gemini PR#49)
+hatchling = "*"
+
+# Runtime deps are minimal for this scaffold story: just the interpreter. The
+# MCP bridge / transport deps (Story 1.2+) land here once they exist.
+[package.run-dependencies]
+python = ">=3.12"
