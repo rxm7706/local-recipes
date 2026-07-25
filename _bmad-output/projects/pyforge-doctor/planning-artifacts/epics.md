@@ -15,7 +15,7 @@ inputDocuments:
 ## Overview
 
 Complete epic and story breakdown for **pyforge-doctor** (Doctor) — the pyforge
-Ecosystem Crew's health & diagnostics CLI. Decomposed from the completed PRD
+PyForge Guild's health & diagnostics CLI. Decomposed from the completed PRD
 (FR-1–FR-9) and the completed architecture spine (6 ADs, Capability → Architecture
 Map covering all 9 FRs). No UX design contract exists — Doctor is a non-interactive
 CLI, same as its nearest sibling `pyforge-warden`. Epics are **vertical slices, one

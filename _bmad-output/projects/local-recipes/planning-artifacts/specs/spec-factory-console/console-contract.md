@@ -78,7 +78,7 @@ the module docstring.
   present only when the target exists): `deck` → `presentations/<deck-dir>`
   where deck-dir is the slug or its entry in `DREAM_DECK_ALIASES`
   (packaging-factory→pyforge-mason, agentic-sdlc-autonomy→agentic-sdlc,
-  ecosystem-crew→pyforge-genesis); `spec` → the first
+  pyforge-charter→pyforge-genesis); `spec` → the first
   `_bmad-output/projects/*/planning-artifacts/specs/spec-<slug>` match
   (repo-relative); `project` → `_bmad-output/projects/<slug>`; `program` →
   the console project key from `DREAM_PROGRAM` (pyforge-warden→warden,
