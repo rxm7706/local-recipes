@@ -1,0 +1,47 @@
+{% set name = "django-grappelli" %}
+{% set version = "3.0.9" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/django-grappelli-{{ version }}.tar.gz
+  sha256: 377626f576a331d0ce3317d2f716cfa902c3c15fb87556479d241188330a71d6
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python
+    - pip
+  run:
+    - python
+
+test:
+  imports:
+    - grappelli
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: http://django-grappelli.readthedocs.org
+  summary: A jazzy skin for the Django Admin-Interface.
+  doc_url: https://pythonhosted.org/django-grappelli/
+  dev_url: https://github.com/sehmaschine/django-grappelli
+  license: LGPL-2.1 AND MIT AND BSD-3-Clause
+  license_file:
+    - LICENSE
+    - grappelli/static/grappelli/jquery/LICENSE-JQUERY.txt
+    - grappelli/static/grappelli/jquery/LICENSE.txt
+    - grappelli/static/grappelli/jquery/ui/LICENSE.txt
+    - grappelli/static/grappelli/tinymce/jscripts/tiny_mce/license.txt
+
+extra:
+  recipe-maintainers:
+    - rxm7706

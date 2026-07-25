@@ -1,0 +1,72 @@
+{% set name = "teradatamlwidgets" %}
+{% set version = "20.0.0.5" %}
+{% set python_min = "3.10" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  sha256: 2d77980d79b456a294836441db782fdbd58b361405f4c4f5162b2aeadb9f7556
+  url: https://pypi.org/packages/py3/t/teradatamlwidgets/teradatamlwidgets-{{ version }}-py3-none-any.whl
+
+build:
+  noarch: python
+  script:
+    - {{ PYTHON }} pip install --find-links . --no-index --ignore-installed --no-deps teradatamlwidgets
+  number: 0
+
+requirements:
+  build:
+    - {{ compiler('c') }}
+    - {{ stdlib('c') }}
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools >=38.0
+  run:
+    - cryptography>=42.0.5
+    - httpx >=0.22.0
+    - imbalanced-learn >=0.8.0
+    - ipython >=8.10.0
+    - lightgbm >=3.3.3
+    - pandas >=0.22
+    - psutil
+    - pyjwt >=2.8.0
+    - python-dotenv
+    - requests
+    - sqlalchemy >=2.0
+    - teradatasql >=20.0.0
+    - teradatasqlalchemy >=20.0.0
+    - teradataml >=20.0.0
+    - httpx >=0.22.0
+    - ipywidgets >=8.1.1
+    - nbconvert
+    - nbformat
+
+test:
+  imports:
+    - teradatamlwidgets
+    - teradataml
+    - teradatasql
+    - sqlalchemy
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  summary: Teradata SQL Driver for Python
+  doc_url: https://github.com/Teradata/python-driver
+  home: http://www.teradata.com
+  license: Proprietary
+  license_file: 
+    - LICENSE
+    - THIRDPARTYLICENSE
+    - LICENSE-3RD-PARTY.pdf
+    - LICENSE.pdf
+
+extra:
+    copy_test_source_files: true
+    final: true

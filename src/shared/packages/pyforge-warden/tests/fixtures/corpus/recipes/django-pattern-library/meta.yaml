@@ -1,0 +1,44 @@
+{% set name = "django-pattern-library" %}
+{% set version = "1.1.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/django_pattern_library-{{ version }}.tar.gz
+  sha256: beca4d9df9004cc3e46b14de20943bca919d5940b41d490f5be491533a51c459
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8,<4.0
+    - poetry-core
+    - pip
+  run:
+    - python >=3.8.0,<4.0.0
+    - django >=3.2,<5.0
+    - pyyaml >=5.1,<7.0
+    - markdown >=3.1.0,<4.0.0
+
+test:
+  imports:
+    - django_pattern_library
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/torchbox/django-pattern-library
+  summary: A module for Django that allows to build pattern libraries for your projects.
+  license: BSD-3-Clause
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

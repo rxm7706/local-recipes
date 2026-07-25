@@ -1,0 +1,45 @@
+{% set name = "easydict" %}
+{% set version = "1.13" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/easydict-{{ version }}.tar.gz
+  sha256: b1135dedbc41c8010e2bc1f77ec9744c7faa42bce1a1c87416791449d6c87780
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - pip
+    - setuptools
+  run:
+    - python >=3.8
+
+test:
+  imports:
+    - easydict
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  description: |
+    EasyDict allows to access dict values as attributes (works recursively). 
+    A Javascript-like properties dot notation for python dicts.
+  home: https://github.com/makinacorpus/easydict
+  summary: Access dict values as attributes (works recursively).
+  license: LGPL-3.0-only
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - zhaofeng-shu33
+    - rxm7706

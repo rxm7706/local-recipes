@@ -1,0 +1,53 @@
+{% set name = "supervisor" %}
+{% set version = "4.0.2" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://github.com/alexsilva/supervisor/archive/v{{ version }}.tar.gz
+  sha256: 8226ec3fff88efed771b63600c927f60e0e93ce1c0787b6b5f32f9baf9ecd728
+
+build:
+  entry_points:
+    - supervisord = supervisor.supervisord:main
+    - supervisorctl = supervisor.supervisorctl:main
+    - echo_supervisord_conf = supervisor.confecho:main
+    - pidproxy = supervisor.pidproxy:main
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python
+    - pip
+  run:
+    - python
+    - meld3 >=1.0.0
+    - pywin32-on-windows
+
+test:
+  imports:
+    - supervisor
+  commands:
+    - pip check
+    - supervisord --help
+    - supervisorctl --help
+    - echo_supervisord_conf --help
+    - pidproxy --help
+  requires:
+    - pip
+
+about:
+  home: http://supervisord.org/
+  license: MIT AND BSD-2-Clause AND 0BSD
+  license_file:
+    - COPYRIGHT.txt
+    - LICENSES.txt
+    - supervisor/medusa/LICENSE.txt
+
+extra:
+  recipe-maintainers:
+    - rxm7706

@@ -1,0 +1,58 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.0.26"
+
+package:
+  name: django-lasuite
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/django-lasuite/django_lasuite-${{ version }}.tar.gz
+  sha256: b4ffb15d3e56e366d71b527195d26198e2d26e28cc1ab1c11aefdc581db9c02b
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - django >=5.0
+    - djangorestframework >=3.15.2
+    - joserfc >=1.4.0
+    - mozilla-django-oidc >=4.0.1
+    - pyjwt >=2.8.0
+    - requests-toolbelt >=1.0.0
+    - requests >=2.32.3
+
+tests:
+  - python:
+      imports:
+        - lasuite
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/suitenumerique/django-lasuite
+  repository: https://github.com/suitenumerique/django-lasuite
+  license: MIT
+  license_file: LICENSE
+  summary: Common Django library for La Suite numérique projects
+  description: |
+    django-lasuite is the common Django library shared across La Suite
+    numérique (French government's open-source digital suite). It bundles
+    OIDC integration, DRF helpers, malware-detection utilities, and admin
+    customizations used by docs, meet, drive, messages, calc, and others.
+
+extra:
+  recipe-maintainers:
+    - rxm7706

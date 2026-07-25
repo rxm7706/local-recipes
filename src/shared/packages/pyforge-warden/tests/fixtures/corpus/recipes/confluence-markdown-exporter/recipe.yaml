@@ -1,0 +1,93 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "5.2.1"
+
+package:
+  name: confluence-markdown-exporter
+  version: ${{ version }}
+
+source:
+  url: 
+    https://pypi.org/packages/source/c/confluence-markdown-exporter/confluence_markdown_exporter-${{
+    version }}.tar.gz
+  sha256: ee270e5554dee01e466dd6c6d917a8f883a365aed1492af139efb3469267cb9a
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - atlassian-python-api
+    - jmespath
+    - lxml >=6.0.2
+    - markdownify
+    - pydantic-settings
+    - python-dateutil
+    - pyyaml
+    - questionary
+    - rich
+    - tabulate
+    - typer
+
+tests:
+  - python:
+      imports:
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/Spenhouet/confluence-markdown-exporter
+  license: MIT
+  license_file: LICENSE
+  summary: A tool to export Confluence pages to Markdown
+  description: "The confluence-markdown-exporter exports Confluence pages in Markdown
+    format. \nThis exporter helps in migrating content from Confluence to platforms
+    that support Markdown. \ne.g. Obsidian, Gollum, Azure DevOps (ADO), Foam, Dendron
+    and more.\n"
+  repository: https://github.com/Spenhouet/confluence-markdown-exporter
+  documentation: https://spenhouet.github.io/confluence-markdown-exporter/
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: confluence-markdown-exporter
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: confluence-markdown-exporter
+  cfe-purls:
+    - pkg:conda/confluence-markdown-exporter@${{ version }}?channel=conda-forge
+    - pkg:pypi/confluence-markdown-exporter@${{ version }}
+  cfe-upstream-repo: https://github.com/Spenhouet/confluence-markdown-exporter
+  cfe-upstream-homepage: https://github.com/Spenhouet/confluence-markdown-exporter
+  cfe-import-names: [confluence_markdown_exporter]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/confluence-markdown-exporter-feedstock
+  cfe-forge-recipe-updates-needed: [version-bump-to-5.2.1]
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-07-03T04:00:00Z
+  cfe-generated-by-version: 8.65.0
+  cfe-generated-at-datetime: 2026-07-03T04:00:00Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-07-03T04:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # 2026-07-03 punch-list full-gate pass (tracker issue -> local verification).
+####

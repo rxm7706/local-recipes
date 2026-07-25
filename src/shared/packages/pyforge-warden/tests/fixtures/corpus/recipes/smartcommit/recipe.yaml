@@ -1,0 +1,60 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: 0.0.1
+  commit: 77b11e02b44ffb29ee1b2ee794356ec26dab4136
+  basic_test: >-
+    test -x "$(command -v smartcommit)"
+
+recipe:
+  name: smartcommit
+  version: ${{ version }}
+
+source:
+  target_directory: src/github.com/arpxspace/smartcommit
+  url: https://github.com/arpxspace/smartcommit/archive/${{ commit }}.tar.gz
+  sha256: 31e74dd0586c0ca79c179c710b59bc0cfdea57d0113c73699444675c24afacc9
+
+build:
+  number: 0
+
+outputs:
+  - package:
+      name: smartcommit
+    build:
+      script:
+        - if: win
+          then: call "%RECIPE_DIR%/bld_smartcommit.bat"
+          else: bash "${RECIPE_DIR}/build_smartcommit.sh"
+    requirements:
+      build:
+        - ${{ compiler("c") }}
+        - go >=1.21
+        - if: linux
+          then: sysroot_linux-64 ==2.17
+        - go-licenses
+        - if: win
+          then: posix
+      run:
+        - git
+    tests:
+      - script: ${{ basic_test }}
+
+about:
+  homepage: https://github.com/arpxspace/smartcommit
+  license: MIT
+  license_file:
+    - license-files/
+  summary: AI-powered CLI tool for generating semantic Conventional Commits messages
+  description: |
+    smartcommit is an intelligent CLI tool that helps you write semantic,
+    Conventional Commits messages effortlessly. It analyzes staged Git changes,
+    poses clarifying questions about code context, and generates structured
+    commit messages using AI (OpenAI GPT-4o or local Ollama).
+  documentation: https://github.com/arpxspace/smartcommit
+
+extra:
+  feedstock-name: smartcommit
+  recipe-maintainers:
+    - arpxspace

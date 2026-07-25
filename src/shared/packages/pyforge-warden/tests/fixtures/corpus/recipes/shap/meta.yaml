@@ -1,0 +1,55 @@
+{% set name = "shap" %}
+{% set version = "0.45.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/shap-{{ version }}.tar.gz
+  sha256: be8ffc213ba3da1ce7950784571356e6ca77bee94446ddfa9c63eb2c72f7ce9e
+
+build:
+  skip: true  # [py<39]
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  build:
+    - {{ compiler('c') }}
+  host:
+    - python >=3.9
+    - setuptools >=61.0
+    - setuptools-scm >=8.0
+    - oldest-supported-numpy
+    - packaging >20.9
+    - numpy
+    - pip
+  run:
+    - python >=3.9
+    - scipy
+    - scikit-learn
+    - pandas
+    - tqdm >=4.27.0
+    - packaging >20.9
+    - slicer ==0.0.7
+    - numba
+    - cloudpickle
+    - {{ pin_compatible('numpy') }}
+
+test:
+  imports:
+    - shap
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  summary: A unified approach to explain the output of any machine learning model.
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

@@ -1,0 +1,90 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.3.0"
+  python_min: "3.11"
+
+package:
+  name: sema4ai-common
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/s/sema4ai-common/sema4ai_common-${{ version }}.tar.gz
+  sha256: d6ce3276c72fa18ca913e7dd1462e529dce01ddd92380b76d89bbcd41e49ec75
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - poetry-core
+    - pip
+  run:
+    - python >=${{ python_min }},<4
+    - psutil >=5.0,<7.0
+    - sema4ai-http-helper >=2.0.0,<3.0.0
+    - pyyaml >=6.0.0,<7.0.0
+    - msgspec >=0.18
+
+tests:
+  - python:
+      imports:
+        - sema4ai.common
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/Sema4AI/actions/
+  repository: https://github.com/Sema4AI/actions/
+  summary: Sema4AI Common
+  description: |
+    Sema4AI Common — shared utilities for the Sema4.ai actions ecosystem.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: sema4ai-common
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: sema4ai-common
+  cfe-purls:
+    - pkg:conda/sema4ai-common@${{ version }}?channel=conda-forge
+    - pkg:pypi/sema4ai-common@${{ version }}
+  cfe-upstream-repo: https://github.com/Sema4AI/actions/
+  cfe-upstream-homepage: https://github.com/Sema4AI/actions/
+  cfe-import-names: [sema4ai.common]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/sema4ai-common-feedstock
+  cfe-forge-recipe-updates-needed: recipe-regenerate
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# about:
+#    # description: short one-line placeholder — upstream PyPI summary is the
+#    #   terse "Sema4AI Common"; expand from upstream README if a human curates.
+# extra:
+#    # recipe-regenerate: deployed feedstock (0.3.0) still uses the legacy
+#    #   name-lower / name-first-letter jinja chain + summary-first about
+#    #   block; this local recipe modernizes to the 2026 canonical shape
+#    #   (literal package.name + source.url, description-last about order).
+####

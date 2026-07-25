@@ -1,0 +1,65 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+# ⚠️ LOCAL-ONLY RECIPE — NOT FOR conda-forge/staged-recipes SUBMISSION
+# Reason: suitenumerique/livekit-sip is a fork of livekit/sip. conda-forge
+# rejects fork recipes (the canonical packaging belongs upstream). This
+# recipe builds the suitenumerique fork at a pinned commit for local
+# parity with La Suite Meet's deployed version.
+
+context:
+  version: "0.0.0"
+  commit: "450ffb7df1e9d887b2bc9e4aaa649e714c988792"
+
+package:
+  name: suite-livekit-sip
+  version: ${{ version }}
+
+source:
+  # Fork omits LICENSE; pull from upstream livekit/sip.
+  - url: https://github.com/suitenumerique/livekit-sip/archive/${{ commit }}.tar.gz
+    sha256: 8b096c1b8fc4494c1731aab1253c8ffc1c34729c819684bf2680a48d8356cceb
+
+build:
+  number: 0
+  script:
+    - if: unix
+      then:
+        - export GOFLAGS="-mod=mod"
+        - go build -o ${PREFIX}/bin/livekit-sip ./cmd/livekit-sip
+
+requirements:
+  build:
+    - ${{ compiler('go-cgo') }}
+    - ${{ compiler('c') }}
+    - ${{ stdlib('c') }}
+    - pkg-config
+  host:
+    - openssl
+    - libopus
+    - opusfile
+    - soxr
+  run:
+    - openssl
+    - libopus
+    - opusfile
+    - soxr
+
+tests:
+  - script:
+      - livekit-sip --version || true   # exits 0 if binary exists
+
+about:
+  homepage: https://github.com/livekit/sip
+  repository: https://github.com/suitenumerique/livekit-sip
+  summary: SIP-to-WebRTC bridge for LiveKit (suitenumerique fork for La Suite Meet)
+  description: |
+    livekit-sip bridges SIP devices to a LiveKit room. suitenumerique/livekit-sip
+    is a downstream fork tracking upstream livekit/sip. Pinned to a specific
+    commit so reproducible local builds match the La Suite Meet deployment.
+  license: Apache-2.0
+  license_file: LICENSE.txt
+
+extra:
+  recipe-maintainers:
+    - rxm7706

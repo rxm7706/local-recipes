@@ -1,0 +1,44 @@
+{% set name = "datasette-graphql" %}
+{% set version = "2.2" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/datasette-graphql-{{ version }}.tar.gz
+  sha256: 3f7b1536975b8a2f995d7a68faea4282bd5ea936b83fbb99fd360f1567c70938
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python
+    - pip
+  run:
+    - python
+    - datasette >=0.58.1
+    - graphene >=3.1.0,<4.0
+    - graphql-core >=3.2.1
+    - sqlite-utils
+
+test:
+  imports:
+    - datasette_graphql
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/simonw/datasette-graphql
+  summary: Datasette plugin providing an automatic GraphQL API for your SQLite databases
+  license: OGC-1.0
+  license_file: LICENSES.md
+
+extra:
+  recipe-maintainers:
+    - rxm7706

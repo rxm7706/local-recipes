@@ -1,0 +1,41 @@
+{% set name = "wagtail-orderable" %}
+{% set version = "1.2.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/wagtail-orderable-{{ version }}.tar.gz
+  sha256: 3355f91d09cd711960a03d83d2783d35b38735da6cd51fc9ab28fdbf635da050
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python
+    - pip
+  run:
+    - python
+    - wagtail >=4.1
+
+test:
+  imports:
+    - wagtailorderable
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/elton2048/wagtail-orderable
+  summary: Orderable support for Wagtail
+  license: MIT
+  license_file: LICENSE.txt
+
+extra:
+  recipe-maintainers:
+    - rxm7706

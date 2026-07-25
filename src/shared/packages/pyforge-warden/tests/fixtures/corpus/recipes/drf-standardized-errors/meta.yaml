@@ -1,0 +1,46 @@
+{% set name = "drf-standardized-errors" %}
+{% set version = "0.16.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name.replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: 77b367955af7ed246db12d299a5a75a71eccef54dae4ef69ead29f5fb01be192
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - flit-core >=3.2,<4
+    - pip
+  run:
+    - drf-spectacular
+    - inflection
+    - python >={{ python_min }}
+    - django >=3.2
+    - djangorestframework >=3.12
+
+test:
+  imports:
+    - drf_standardized_errors
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/ghazi-git/drf-standardized-errors
+  summary: Standardize your API error responses.
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

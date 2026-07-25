@@ -20,6 +20,7 @@ dependencies = [
     "cyclonedx-python-lib",
     "jsonschema",
     "packageurl-python",
+    "license-expression",
 ]
 
 [project.scripts]
@@ -27,3 +28,14 @@ warden = "pyforge.warden.cli:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/pyforge"]
+
+[tool.pytest.ini_options]
+# Story 5.2: the render-based full-corpus differential-oracle
+# (test_extraction_oracle.py) and the full-corpus real-engine determinism
+# proof (test_corpus_determinism.py) are dominated by real
+# rattler-build/conda-build renders or a real osv-scanner subprocess over
+# ~1,979 recipes -- too slow for the default pyforge-warden-test task
+# (pixi.toml passes -m "not slow" there) to stay a sub-minute loop. They
+# still run, just via the separate pyforge-warden-test-corpus-oracle task
+# (-m slow).
+markers = ["slow: corpus-scale test dominated by real renders/subprocesses (pyforge-warden-test-corpus-oracle task, not the default suite)"]

@@ -1,0 +1,48 @@
+{% set name = "selenium" %}
+{% set version = "4.25.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/selenium-{{ version }}.tar.gz
+  sha256: 95d08d3b82fb353f3c474895154516604c7f0e6a9a565ae6498ef36c9bac6921
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - setuptools
+    - setuptools-rust
+    - pip
+  run:
+    - python >=3.8
+    - urllib3 >=1.26,<3
+    - trio >=0.17,<1.dev0
+    - trio-websocket >=0.9,<1.dev0
+    - certifi >=2021.10.8
+    - typing_extensions >=4.9,<5.dev0
+    - websocket-client >=1.8,<2.dev0
+
+test:
+  imports:
+    - selenium
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://www.selenium.dev
+  summary: Official Python bindings for Selenium WebDriver
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

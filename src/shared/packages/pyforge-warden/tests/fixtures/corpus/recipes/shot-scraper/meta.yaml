@@ -1,0 +1,48 @@
+{% set name = "shot-scraper" %}
+{% set version = "1.10" %}
+
+package:
+  name: {{ name|lower }}
+  version: "{{ version }}"
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/shot_scraper-{{ version }}.tar.gz
+  sha256: 571be6d721d1d3cbc47c703b1cd3314ed43457e2c3f5fa65fa217fdcdaf16679
+
+build:
+  entry_points:
+    - shot-scraper = shot_scraper.cli:cli
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - uv-build >=0.9.7,<0.10.0
+  run:
+    - pydantic
+    - playwright >=1.61.0
+    - python >={{ python_min }}
+    - click
+    - pyyaml
+    - playwright-python
+    - click-default-group
+
+test:
+  imports:
+    - shot_scraper
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/simonw/shot-scraper
+  summary: A command-line utility for taking automated screenshots of websites
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

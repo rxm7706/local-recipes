@@ -1,0 +1,90 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: langsmith-mcp-server
+  version: "0.1.1"
+  python_min: '3.11'
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/langsmith_mcp_server-${{ version }}.tar.gz
+  sha256: 1f15936b6e1ee0c54ab52099a08a42f969e441103c384acab427723ed6868ab3
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - langsmith-mcp-server = langsmith_mcp_server.server:main
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pdm-backend
+    - pip
+  run:
+    - python >=${{ python_min }},<4.0
+    - fastmcp ==3.0.2
+    - langsmith >=0.4.42
+    - langchain-core >=1.2.5
+    - uvicorn >=0.34.0
+
+tests:
+  - python:
+      imports:
+        - langsmith_mcp_server
+      pip_check: true
+      python_version: ${{ python_min }}.*
+  - requirements:
+      run:
+        - python ${{ python_min }}.*
+        - pip
+    script:
+      - langsmith-mcp-server --help
+
+about:
+  summary: MCP server for Langsmith SDK integration
+  homepage: https://github.com/langchain-ai/langsmith-mcp-server
+  description: "This package provides a server for the LangSmith SDK integration with the MCP (Managed Compute Platform)."
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: langsmith-mcp-server
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: langsmith-mcp-server
+  cfe-purls:
+    - pkg:conda/langsmith-mcp-server@${{ version }}?channel=conda-forge
+    - pkg:pypi/langsmith-mcp-server@${{ version }}
+  cfe-upstream-repo: https://github.com/langchain-ai/langsmith-mcp-server
+  cfe-upstream-homepage: https://github.com/langchain-ai/langsmith-mcp-server
+  cfe-import-names: [langsmith_mcp_server]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/langsmith-mcp-server-feedstock
+  cfe-forge-recipe-updates-needed: [version-bump-to-0.1.1]
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-07-03T04:00:00Z
+  cfe-generated-by-version: 8.65.0
+  cfe-generated-at-datetime: 2026-07-03T04:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-07-03T04:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # 2026-07-03 punch-list full-gate pass (tracker issue -> local verification).
+####

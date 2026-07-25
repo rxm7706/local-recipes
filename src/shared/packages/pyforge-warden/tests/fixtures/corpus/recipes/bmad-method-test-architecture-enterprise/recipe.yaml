@@ -1,0 +1,95 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: bmad-method-test-architecture-enterprise
+  version: "1.19.1"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/bmad-code-org/bmad-method-test-architecture-enterprise/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: 9d3aaf09bba7ae31b7d0285729a3527cad4f6af018031b4f6b8faea6bc3c33d1
+
+build:
+  number: 0
+  noarch: generic
+
+requirements:
+  run:
+    - python >=3.10
+
+tests:
+  - script:
+      - if: not win
+        then:
+          - bmad-tea-install --help
+          - test -d "${CONDA_PREFIX}/share/bmad-method-test-architecture-enterprise/agents/bmad-tea"
+          - test -f "${CONDA_PREFIX}/share/bmad-method-test-architecture-enterprise/agents/bmad-tea/SKILL.md"
+          - test -d "${CONDA_PREFIX}/share/bmad-method-test-architecture-enterprise/workflows"
+          - test -f "${CONDA_PREFIX}/share/bmad-method-test-architecture-enterprise/.claude-plugin/marketplace.json"
+      - if: win
+        then:
+          - bmad-tea-install.bat --help
+          - if not exist "%CONDA_PREFIX%\share\bmad-method-test-architecture-enterprise\agents\bmad-tea" exit 1
+          - if not exist "%CONDA_PREFIX%\share\bmad-method-test-architecture-enterprise\.claude-plugin\marketplace.json" exit 1
+
+about:
+  homepage: https://github.com/bmad-code-org/bmad-method-test-architecture-enterprise
+  documentation: https://bmad-code-org.github.io/bmad-method-test-architecture-enterprise/
+  repository: https://github.com/bmad-code-org/bmad-method-test-architecture-enterprise
+  license: MIT
+  license_file: LICENSE
+  summary: BMad Method TEA agent for quality strategy, test automation, and release gates
+  description: |
+    The BMad Method Test Architecture Enterprise (TEA) is a standalone testing module
+    providing risk-based test strategy, test automation guidance, and release gate decisions
+    through the TEA (Murat) expert agent persona. It delivers nine workflows covering
+    teaching, framework setup, test design, acceptance-driven development, automation
+    expansion, traceability mapping, non-functional requirements, CI pipeline configuration,
+    and quality review.
+
+    After installation, run ``bmad-tea-install`` in your project directory to copy the
+    agent and workflows into ``.claude/skills/`` so Claude Code can discover them.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: bmad-method-test-architecture-enterprise
+  cfe-upstream-registry: github
+  cfe-upstream-name: bmad-code-org/bmad-method-test-architecture-enterprise
+  cfe-purls:
+    - pkg:conda/bmad-method-test-architecture-enterprise@${{ version }}?channel=conda-forge
+    - pkg:github/bmad-code-org/bmad-method-test-architecture-enterprise@v${{ version }}
+  cfe-upstream-repo: https://github.com/bmad-code-org/bmad-method-test-architecture-enterprise
+  cfe-upstream-homepage: https://github.com/bmad-code-org/bmad-method-test-architecture-enterprise
+  cfe-import-names: []
+  cfe-source-kind: github-tag
+  cfe-noarch: generic
+  cfe-pip-check: "false:not-a-python-package"
+  cfe-on-conda-forge-status: pending-approval-on-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-submission-pr: https://github.com/conda-forge/staged-recipes/pull/33292
+  cfe-last-checked: "2026-07-12T14:52:00Z"
+  cfe-generated-by-version: 8.76.0
+  cfe-generated-at-datetime: "2026-07-12T14:52:00Z"
+  cfe-local-build-status: success
+  cfe-local-build-datetime: "2026-07-12T15:59:35Z"
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # The open staged-recipes PR #33292 is EXTERNAL (author killua156,
+#    # branch killua156:tea) — consume-not-submit; do not open a
+#    # competing PR (G58/db-gpt precedent).
+#    # Version bumped 1.15.1 -> 1.19.0 (latest upstream tag) in the
+#    # 2026-07-12 BMAD-recipe sweep.
+####

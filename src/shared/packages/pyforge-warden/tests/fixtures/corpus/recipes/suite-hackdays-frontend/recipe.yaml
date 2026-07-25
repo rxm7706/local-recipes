@@ -1,0 +1,57 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+# ⚠️ LOCAL-ONLY RECIPE — NOT FOR conda-forge/staged-recipes SUBMISSION
+# Reason: suitenumerique/hackdays is a Next.js / React frontend application,
+# not a library. The npm package is declared `"private": true` (cannot be
+# published to npm). This conda recipe ships the SOURCE TREE under
+# ${PREFIX}/share/suite-hackdays/. Running the app additionally requires:
+#   - npm install  (pulls dev dependencies)
+#   - npm run build  (next build / vite build)
+#   - a backend service (the corresponding suite-hackdays Django app, if any)
+# conda-forge declines frontend-app recipes as a matter of policy.
+
+context:
+  version: "0.0.0"
+  commit: "073c13188a209203dd874ac60b7faa3235932b6a"
+
+package:
+  name: suite-hackdays
+  version: ${{ version }}
+
+source:
+  - url: https://github.com/suitenumerique/hackdays/archive/${{ commit }}.tar.gz
+    sha256: 29bdfdcc03a16cae16e8550ec5519504ad6b0e16b0beac5ef2a67fc57dbc099a
+
+build:
+  number: 0
+  noarch: generic
+  script:
+    - if: unix
+      then:
+        - mkdir -p "${{ PREFIX }}/share/suite-hackdays"
+        - cp -R . "${{ PREFIX }}/share/suite-hackdays/"
+
+requirements:
+  run:
+    - nodejs >=20
+
+tests:
+  - package_contents:
+      files:
+        - share/suite-hackdays/package.json
+
+about:
+  homepage: https://github.com/suitenumerique/hackdays
+  repository: https://github.com/suitenumerique/hackdays
+  summary: Hackathon landing page for La Suite (Next.js source)
+  description: |
+    Frontend source tree for suitenumerique/hackdays (Next.js app). Shipped
+    as a source-only package under ${PREFIX}/share/suite-hackdays/. To run:
+    cd into that directory, then `npm install && npm run build`.
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

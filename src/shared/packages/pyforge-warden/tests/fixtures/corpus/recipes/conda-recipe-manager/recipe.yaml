@@ -1,0 +1,82 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.10.3"
+  python_min: '3.11'
+
+package:
+  name: conda-recipe-manager
+  version: ${{ version }}
+
+source:
+  url: https://github.com/conda/conda-recipe-manager/archive/v${{ version }}.tar.gz
+  sha256: 00e0702144881d75dbc087e96764dd20ec79647f24e5dec32f74c12fea725353
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - conda-recipe-manager = conda_recipe_manager.commands.conda_recipe_manager:conda_recipe_manager
+      - crm = conda_recipe_manager.commands.conda_recipe_manager:conda_recipe_manager
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - setuptools
+    - pip
+    - wheel
+  run:
+    - python >=${{ python_min }}
+    - click
+    - conda
+    - jinja2
+    - pyyaml
+    - jsonschema
+    - requests
+    - gitpython
+    - evalidate >=2.0.3,<3.0.0
+
+tests:
+  - python:
+      imports:
+        - conda_recipe_manager
+      pip_check: true
+      python_version:
+      - ${{ python_min }}.*
+      - "*"
+  - files:
+      source:
+        - .pytest.ini
+        - tests/
+    requirements:
+      run:
+        - pip
+        - python ${{ python_min }}.*
+        - pytest
+        - pytest-xdist
+        - pytest-socket >=0.7.0
+        - pyfakefs >=6.0.0
+        - git  # Required for `gitpython` tests
+    script:
+      - conda-recipe-manager --help
+      - pip check
+      - python -m pytest -n auto --ignore=tests/test_aux_files tests/
+
+about:
+  homepage: https://github.com/conda/conda-recipe-manager
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Helper tool for recipes on aggregate.
+  description: |
+    Renders local recipes, provides build orders, find outdated recipes.
+  documentation: https://conda.github.io/conda-recipe-manager/index.html
+  repository: https://github.com/conda/conda-recipe-manager
+
+extra:
+  recipe-maintainers:
+    - schuylermartin45
+    - msentissi
+    - leahsch

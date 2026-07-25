@@ -1,0 +1,53 @@
+{% set name = "crewai-tools" %}
+{% set version = "1.14.1" %}
+{% set python_min = "3.10" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/crewai_tools-{{ version }}.tar.gz
+  sha256: 2e24e062aa37acf93a7cdec6e514ecee08c7819a2f2f51c9ab85d172376fe691
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - hatchling
+    - pip
+  run:
+    - python >={{ python_min }}
+    - pytube >=15.0.0,<15.1.0
+    - requests >=2.32.5,<2.33.0
+    - crewai ==1.14.1
+    - tiktoken >=0.8.0,<0.9.0
+    - beautifulsoup4 >=4.13.4,<4.14.0
+    - python-docx >=1.2.0,<1.3.0
+    - youtube-transcript-api >=1.2.2,<1.3.0
+    - pymupdf >=1.26.0,<1.27.0
+    # pymupdf >=1.26.6,<1.27.dev0
+    # TODO: Update https://github.com/conda-forge/mupdf-feedstock to 1.26.7, and then update https://github.com/conda-forge/pymupdf-feedstock to 1.26.7
+
+test:
+  imports:
+    - crewai_tools
+  commands:
+    #- pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  summary: Set of tools for the crewAI framework
+  license: MIT
+  license_file: LICENSE
+  home: https://github.com/crewAIInc/crewAI
+
+extra:
+  recipe-maintainers:
+    - rxm7706

@@ -1,0 +1,64 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+# ⚠️ LOCAL-ONLY RECIPE — NOT FOR conda-forge/staged-recipes SUBMISSION
+# Reason: scoped npm React component library (@gouvfr-lasuite/ui-kit) intended
+# for bundler-driven (Vite/webpack/Next.js) consumption rather than node CLI
+# use. Ships precompiled dist/index.{cjs,js,d.ts}; useful locally for offline
+# frontend dev environments.
+
+context:
+  version: "0.23.1"
+
+package:
+  name: lasuite-ui-kit
+  version: ${{ version }}
+
+source:
+  url: https://registry.npmjs.org/@gouvfr-lasuite/ui-kit/-/ui-kit-${{ version }}.tgz
+  sha256: 4dc8810975edca52f07d79527169eff78029bc81ba3c2537021474763c6c6ab7
+
+build:
+  number: 0
+  noarch: generic
+  script:
+    - if: unix
+      then:
+        - export npm_config_prefix="${PREFIX}"
+        - export NPM_CONFIG_USERCONFIG=/tmp/nonexistentrc
+        - npm pack --ignore-scripts
+        - npm install -ddd --global --no-bin-links gouvfr-lasuite-ui-kit-${{ version }}.tgz
+        - pnpm install --prod --ignore-scripts
+        - pnpm-licenses generate-disclaimer --prod --output-file=third-party-licenses.txt
+        - find ${PREFIX}/lib/node_modules -type d -name .bin -exec rm -rf {} + || true
+
+requirements:
+  build:
+    - nodejs >=20
+    - pnpm
+    - pnpm-licenses
+  run:
+    - nodejs >=20
+
+tests:
+  - package_contents:
+      files:
+        - lib/node_modules/@gouvfr-lasuite/ui-kit/dist/index.cjs
+
+about:
+  homepage: https://github.com/suitenumerique/ui-kit
+  repository: https://github.com/suitenumerique/ui-kit
+  summary: Shared React component library for La Suite numérique frontends
+  description: |
+    @gouvfr-lasuite/ui-kit is the cross-cutting React component library used
+    across La Suite numérique frontends (docs, meet, drive, messages, …).
+    Built on top of @openfun/cunningham-react and the DSFR design system.
+    Ships precompiled ESM/CJS bundles plus TypeScript declarations.
+  license: MIT
+  license_file:
+    - LICENSE
+    - third-party-licenses.txt
+
+extra:
+  recipe-maintainers:
+    - rxm7706

@@ -1,0 +1,82 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.7.0"
+
+package:
+  name: django-orghierarchy
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/django-orghierarchy/django_orghierarchy-${{ version }}.tar.gz
+  sha256: 8cdaa2c2f6493ce95181f59d3cbb7ba6ad78c07919cb0f0290d98e179d92a8e5
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - django-mptt
+    - django >=5.2
+    - djangorestframework
+    - requests
+    - swapper
+
+tests:
+  - python:
+      imports:
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/City-of-Helsinki/django-orghierarchy
+  license: MIT
+  license_file: LICENSE
+  summary: Reusable Django application for hierarchical organizations.
+  description: |
+    Reusable Django application for hierarchical organizations.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: django-orghierarchy
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: django-orghierarchy
+  cfe-purls:
+    - pkg:conda/django-orghierarchy@${{ version }}?channel=conda-forge
+    - pkg:pypi/django-orghierarchy@${{ version }}
+  cfe-upstream-repo: https://github.com/City-of-Helsinki/django-orghierarchy
+  cfe-upstream-homepage: https://github.com/City-of-Helsinki/django-orghierarchy
+  cfe-import-names: [django_orghierarchy]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django-orghierarchy-feedstock
+  cfe-forge-recipe-updates-needed: [version-bump-to-0.7.0]
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-07-03T04:00:00Z
+  cfe-generated-by-version: 8.65.0
+  cfe-generated-at-datetime: 2026-07-03T04:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-07-03T04:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # 2026-07-03 punch-list full-gate pass (tracker issue -> local verification).
+####

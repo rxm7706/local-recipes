@@ -1,0 +1,45 @@
+{% set name = "wagtail-meta-preview" %}
+{% set version = "4.2.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name | replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: 327ac63c8f7ff19e53ed5bd7f68d46406d6442f3ad85dd76bb77a1b404e9fcfe
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - wheel
+    - pip
+    - setuptools
+  run:
+    - python >={{ python_min }}
+    - wagtail >=5.2
+
+test:
+  imports:
+    - wagtail_meta_preview
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/Frojd/wagtail-meta-preview
+  summary: Add preview panels for meta data to wagtail
+  dev_url: https://github.com/Frojd/wagtail-meta-preview/
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

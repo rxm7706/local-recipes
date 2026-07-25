@@ -1,0 +1,84 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.0.3"
+
+package:
+  name: djc-core-html-parser
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/djc-core-html-parser/djc_core_html_parser-${{ version }}.tar.gz
+  sha256: 735c556440d029739d82b6f69a4c152a2a352c9355166dd5778cc42e664d715f
+
+build:
+  number: 0
+  script:
+    - cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
+    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+        - crossenv
+        - maturin >=1,<2
+    - ${{ compiler("c") }}
+    - ${{ stdlib("c") }}
+    - ${{ compiler("rust") }}
+    - cargo-bundle-licenses
+  host:
+    - python
+    - pip
+    - maturin >=1,<2
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - djc_core_html_parser
+      pip_check: true
+
+about:
+  summary: HTML parser used by django-components written in Rust.
+  license: MIT
+  license_file:
+    - LICENSE
+    - THIRDPARTY.yml
+  homepage: https://github.com/django-components/djc-core-html-parser
+  repository: https://github.com/django-components/djc-core-html-parser
+  documentation: https://github.com/django-components/djc-core-html-parser/blob/main/README.md
+  description: |
+    HTML parser used by django-components written in Rust.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+  cfe-conda-name: djc-core-html-parser
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: djc-core-html-parser
+  cfe-purls:
+    - pkg:conda/djc-core-html-parser@${{ version }}?channel=conda-forge
+    - pkg:pypi/djc-core-html-parser@${{ version }}
+  cfe-upstream-repo: https://github.com/django-components/djc-core-html-parser
+  cfe-upstream-homepage: https://github.com/django-components/djc-core-html-parser
+  cfe-import-names: [djc_core_html_parser]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: compiled
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/djc-core-html-parser-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build

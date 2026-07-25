@@ -1,0 +1,51 @@
+{% set name = "robocorp-inspector-commons" %}
+{% set version = "0.10.2" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/robocorp_inspector_commons-{{ version }}.tar.gz
+  sha256: f0f019c2f6ce9eea35f7117bf0a6a3bc2f87d892c8fbdec62652271a10f40f64
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8,<3.11
+    - poetry >=1.1.4
+    - poetry-core
+    - pip
+  run:
+    - python >=3.8,<3.11
+    - rpaframework-core 11.0.6
+    - requests 2.28.1
+    - typing-extensions 4.4.0
+    - pynput-robocorp-fork 5.0.0
+    - pywin32-on-windows >=302,<304
+    - uiautomation 2.0.16
+    - psutil 5.9.4
+    - retry 0.9.2
+    - types-retry 0.9.9.2
+
+test:
+  imports:
+    - robocorp_inspector_commons
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/robocorp/inspector
+  summary: Robocorp Inspector Commons
+  license: EPL-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

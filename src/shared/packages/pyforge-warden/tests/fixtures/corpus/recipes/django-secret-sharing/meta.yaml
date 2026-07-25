@@ -1,0 +1,41 @@
+{% set name = "django-secret-sharing" %}
+{% set version = "0.7.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/django-secret-sharing-{{ version }}.tar.gz
+  sha256: e487a21b7cce561a649a3cd236495a5d982d6468933cf3923e6bf632f78a459f
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python
+    - pip
+  run:
+    - python
+    - cryptography >=38
+    - django >=3
+    - djangorestframework >=3
+
+test:
+  imports:
+    - django_secret_sharing
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

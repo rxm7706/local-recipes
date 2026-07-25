@@ -1,0 +1,105 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+# ⚠️ LOCAL-ONLY RECIPE — NOT FOR conda-forge/staged-recipes SUBMISSION
+# Reason: suitenumerique/calc is a deployed Django web application, not
+# a library. `pip install` ships the importable backend module
+# (impress); running the service additionally requires Postgres,
+# Redis/Celery, OIDC provider, S3-compatible storage, SMTP, and frontend
+# build artifacts that this recipe does not install. conda-forge declines
+# web-application recipes as a matter of policy.
+#
+# Pinned to commit 27a5a6d717a3 on suitenumerique/calc (no PyPI release).
+# Build context: src/backend/ subdirectory (this recipe pip-installs from
+# there).
+#
+
+context:
+  version: "3.3.0"
+  commit: "27a5a6d717a340e05f34533cc7457bb955bb741f"
+  python_min: "3.12"
+
+package:
+  name: suite-calc
+  version: ${{ version }}
+
+source:
+  - url: https://github.com/suitenumerique/calc/archive/${{ commit }}.tar.gz
+    sha256: 9941314e7db9dd2f46d6d359b1d02b82ef0c45eb05d915cd0d042f4a8387af9f
+  # Org-level MIT LICENSE fallback for apps whose repo ships none directly.
+build:
+  number: 0
+  noarch: python
+  script:
+    - cd src/backend && ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - beautifulsoup4
+    - boto3
+    - brotli
+    - celery
+    - dj-database-url
+    - django-configurations
+    - django-cors-headers
+    - django-countries
+    - django-filter
+    - django-lasuite
+    - django-parler
+    - django-redis
+    - django-storages
+    - django-timezone-field
+    - django
+    - django-treebeard
+    - djangorestframework
+    - drf-spectacular
+    - dockerflow
+    - easy-thumbnails
+    - factory-boy
+    - gunicorn
+    - ironcalc
+    - jsonschema
+    - lxml
+    - markdown
+    - mozilla-django-oidc
+    - nested-multipart-parser
+    - openai
+    - psycopg
+    - pycrdt
+    - pyjwt
+    - python-magic
+    - redis-py
+    - requests
+    - sentry-sdk
+    - whitenoise
+
+# CFEP-25-justified: Django web-app backend — `import <module>` raises
+# ImproperlyConfigured without DJANGO_SETTINGS_MODULE, and the test env
+# can't resolve the full transitive Django-plugin chain. site_packages
+# presence is the testable invariant.
+tests:
+  - package_contents:
+      site_packages:
+        - impress
+
+about:
+  homepage: https://github.com/suitenumerique/calc
+  repository: https://github.com/suitenumerique/calc
+  summary: La Suite numérique calc backend (Django web application — local-only)
+  description: |
+    suitenumerique/calc backend. Distribution name "impress".
+    This is a Django web service, not a library — installing this conda
+    package gives you the importable backend code; running the service
+    requires additional infrastructure (Postgres + Redis + Celery + OIDC +
+    S3 + SMTP + frontend).
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

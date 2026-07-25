@@ -1,0 +1,80 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+# BLOCKERS (as of 2025-12-25):
+# 1. Python >=3.14 - RESOLVED (3.14.2 now on conda-forge)
+# 2. textual >=6.11.0 - RESOLVED (recipe in this repo, built locally)
+# 3. tree-sitter >=0.24.0 - RESOLVED (conda-forge name: tree_sitter)
+# 4. xdg-base-dirs - NOT on conda-forge (recipe ready in this repo)
+# 5. textual-speedups - NOT on conda-forge (recipe ready in this repo)
+#
+# This recipe is ready for when blockers are resolved.
+
+context:
+  name: batrachian-toad
+  version: "0.5.6"
+  # CFEP-25: Override python_min since package requires Python 3.14+
+  python_min: "3.14"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/b/batrachian-toad/batrachian_toad-${{ version }}.tar.gz
+  sha256: f54d9c21d7a95a1d31e6673c6e33b9f89f2b7789c989e51a670ff2d94e092352
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - toad = toad.cli:main
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - bashlex >=0.18
+    - click >=8.2.1
+    - gitpython >=3.1.44
+    - httpx >=0.28.1
+    - packaging >=25.0
+    - pathspec >=0.12.1
+    - platformdirs >=4.3.8
+    - rich
+    - textual >=6.11.0
+    - textual-serve >=1.1.2
+    - textual-speedups ==0.2.1  # NOT on conda-forge yet
+    - tree_sitter >=0.24.0  # conda-forge name for PyPI package tree-sitter
+    - typeguard >=4.4.4
+    - xdg-base-dirs >=6.0.2  # NOT on conda-forge yet
+
+tests:
+  - python:
+      imports:
+        - toad
+        - toad.cli
+      pip_check: true
+      python_version: ${{ python_min }}.*
+  - script:
+      - toad --help
+
+about:
+  summary: A unified experience for AI in your terminal.
+  description: |
+    Toad is a unified terminal UI for running coding agents. It provides a single,
+    beautiful interface to discover, install, and launch various AI coding agents
+    using the Agent Client Protocol (ACP) standard.
+  homepage: https://github.com/batrachianai/toad
+  repository: https://github.com/batrachianai/toad
+  license: AGPL-3.0-only
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

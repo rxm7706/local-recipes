@@ -290,6 +290,8 @@ import os
 import stat as stat_module
 import sys
 import traceback
+from collections.abc import Callable
+from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -312,7 +314,7 @@ from .engines import (
 )
 from .extract import UnparsableManifestError, extractor_for
 from .hygiene import has_adjacent_python_source
-from .interfaces import DefaultPolicy, EngineResult, _sanitize_id_segment
+from .interfaces import DefaultPolicy, Engine, EngineResult, _sanitize_id_segment
 from .inventory import Component, ResolvedInventory, merge_components
 from .models import (
     AXIS_HYGIENE,
@@ -923,6 +925,124 @@ def _run_doctor(args: argparse.Namespace) -> int:
     return 0 if healthy else exit_code_for(Status.ERROR)
 
 
+def _instantiate_and_run_engine(
+    factory: Callable[[], Engine],
+    config: EffectiveConfig,
+    target: Path,
+    inventory: ResolvedInventory,
+) -> tuple[EngineResult, None] | tuple[None, dict[str, object]]:
+    """One engine's instantiate+run unit (Story 5.2) -- called from a
+    ``ThreadPoolExecutor`` worker thread, so this function must NOT mutate
+    any shared state (``errors``/``rungs``/stderr): it returns its outcome
+    instead, and the caller applies it back on the MAIN thread, in
+    ``engines_to_run``'s own registration order, so error/rung/
+    ``engine_results`` ordering (and ``_record_error``'s stderr diagnostic
+    ordering) stays exactly as deterministic as the pre-5.2 sequential loop
+    did (NFR-R3b) — never completion order.
+
+    Exactly one of the two return slots is populated: ``(EngineResult,
+    None)`` on success, or ``(None, <_record_error kwargs>)`` on either a
+    crashing constructor OR a crashing ``run`` — the SAME two-stage
+    try/except typed-error contract the pre-5.2 sequential loop had
+    (instantiation crash -> ``engine-unavailable``, ``run`` crash ->
+    ``engine-execution-failed``), unchanged in substance, just relocated
+    into a unit safe to call from a worker thread."""
+    try:
+        # Story 6.4: OsvEngine's fail_on_kev needs the resolved config
+        # value -- mirrors this same seam's pre-existing DeptryEngine
+        # special case (the hygiene_applicable filter in _run_scan), never
+        # widening the shared zero-arg Engine.run() seam every other
+        # factory still uses (config.py's Design Notes). Story 6.2:
+        # LicenseEngine's allow_licenses/deny_licenses need the same
+        # treatment. Story 6.5: CurrencyEngine now takes gating=config.
+        # currency_gating so its NFR-S9 freshness precondition (emit a
+        # currency-registry-stale/unavailable finding when the bundled
+        # registry can't be trusted under an active gate) fires only when
+        # a currency gate is active -- gated exactly as OsvEngine's
+        # fail_on_kev gates the parallel KEV-provenance finding. Story
+        # 6.7: OsvEngine also takes min_epss=config.min_epss, the same
+        # way -- consulted only when the gate is active.
+        engine = (
+            OsvEngine(fail_on_kev=config.fail_on_kev, min_epss=config.min_epss)
+            if factory is OsvEngine
+            else LicenseEngine(
+                allow_licenses=config.allow_licenses,
+                deny_licenses=config.deny_licenses,
+            )
+            if factory is LicenseEngine
+            else CurrencyEngine(gating=config.currency_gating)
+            if factory is CurrencyEngine
+            else factory()
+        )
+    except (SystemExit, Exception) as exc:  # noqa: BLE001 —
+        # instantiation is PART of the seam: a crashing constructor (a
+        # misconfigured 1.3/1.5 runner) is the engine-unavailable
+        # class — typed record + error rung, report STILL emitted,
+        # never a traceback with no report.
+        factory_name = getattr(factory, "__name__", repr(factory))
+        # `factory` is typed as Callable[[] , Engine] (the registry's
+        # shape), but every REAL factory is the engine class itself, so
+        # `axis` is readable as a class attribute without instantiating
+        # (mirrors `factory_name` above) — getattr, not a direct
+        # attribute access, keeps mypy honest about the narrower
+        # Callable type while still reading the real class attribute.
+        factory_axis = getattr(factory, "axis", AXIS_INGESTION)
+        return None, {
+            "kind": ErrorKind.ENGINE_UNAVAILABLE,
+            "owner": "engines",
+            "subject": factory_name,
+            "message": (
+                f"engine factory {factory_name!r} crashed at "
+                f"instantiation: {exc!r}"
+            ),
+            "axis": factory_axis,
+        }
+    engine_name = getattr(engine, "name", engine.__class__.__name__)
+    try:
+        result = engine.run(target, inventory)
+    except (SystemExit, Exception) as exc:  # noqa: BLE001 — the seam
+        # doctrine: a crashing engine must yield a typed ErrorRecord +
+        # error rung with the report STILL emitted, never a traceback
+        # with no report — and a sys.exit-calling engine must never
+        # dictate the process exit (sole ownership; SystemExit is
+        # caught HERE so the report survives). KeyboardInterrupt still
+        # propagates (out of the worker thread, surfacing from
+        # future.result() on the main thread — see _run_scan).
+        return None, {
+            "kind": ErrorKind.ENGINE_EXECUTION_FAILED,
+            "owner": engine_name,
+            "subject": engine_name,
+            "message": f"engine {engine_name!r} crashed: {exc!r}",
+            # getattr (follow-up review finding): a protocol-violating
+            # engine lacking `axis` must not raise INSIDE this handler --
+            # that AttributeError would escape the typed-error contract
+            # through future.result() into main's last-resort net,
+            # discarding the whole report. Mirrors factory_axis above.
+            "axis": getattr(engine, "axis", AXIS_INGESTION),
+        }
+    if result is None:
+        # A misbehaving Engine.run() returning None instead of raising or
+        # returning an EngineResult (violates the Engine protocol, but
+        # nothing enforces it at runtime) must not silently vanish through
+        # this function's two-slot return contract — (None, None) would
+        # match NEITHER branch the caller checks, dropping the engine's
+        # outcome with no result, no error, no rung (Story 5.2 review
+        # finding — the pre-parallelization sequential loop would have
+        # crashed loudly on this via `result.errors` later; converting it
+        # to the SAME typed engine-execution-failed path a crash takes
+        # keeps that "never silent" guarantee under the new fan-out).
+        return None, {
+            "kind": ErrorKind.ENGINE_EXECUTION_FAILED,
+            "owner": engine_name,
+            "subject": engine_name,
+            "message": f"engine {engine_name!r} returned None instead of an EngineResult",
+            # getattr: same handler-must-not-raise rationale as the
+            # crash branch above.
+            "axis": getattr(engine, "axis", AXIS_INGESTION),
+        }
+    return result, None
+
+
 def _run_scan(args: argparse.Namespace) -> int:
     target = _resolve_scan_target(args)
     if isinstance(target, int):
@@ -1200,79 +1320,43 @@ def _run_scan(args: argparse.Namespace) -> int:
         if manifests_parsed > 0
         else ()
     )
-    for factory in engines_to_run:
-        try:
-            # Story 6.4: OsvEngine's fail_on_kev needs the resolved config
-            # value -- mirrors this same loop's pre-existing DeptryEngine
-            # special case (hygiene_applicable filter above), never widening
-            # the shared zero-arg Engine.run() seam every other factory
-            # still uses (config.py's Design Notes). Story 6.2:
-            # LicenseEngine's allow_licenses/deny_licenses need the same
-            # treatment. Story 6.5: CurrencyEngine now takes gating=config.
-            # currency_gating so its NFR-S9 freshness precondition (emit a
-            # currency-registry-stale/unavailable finding when the bundled
-            # registry can't be trusted under an active gate) fires only when
-            # a currency gate is active -- gated exactly as OsvEngine's
-            # fail_on_kev gates the parallel KEV-provenance finding. Story
-            # 6.7: OsvEngine also takes min_epss=config.min_epss, the same
-            # way -- consulted only when the gate is active.
-            engine = (
-                OsvEngine(fail_on_kev=config.fail_on_kev, min_epss=config.min_epss)
-                if factory is OsvEngine
-                else LicenseEngine(
-                    allow_licenses=config.allow_licenses,
-                    deny_licenses=config.deny_licenses,
+    if engines_to_run:
+        # Story 5.2 (NFR-P-concurrency): the 4-axis fan-out runs concurrently
+        # via a thread pool -- each worker's instantiate+run unit
+        # (_instantiate_and_run_engine) touches NO shared state (it returns
+        # its outcome rather than mutating errors/rungs/engine_results
+        # itself), so the ONLY shared-mutable-state seam is the
+        # lru_cache trio (currency.py/mapping.py/report.py — CPython's
+        # lru_cache serializes its cache bookkeeping but NOT concurrent
+        # misses: two workers can both execute the loader before one
+        # result wins the cache slot. Safe here only because all three
+        # loaders are idempotent pure reads, so a duplicate load is
+        # wasted work, never corruption — no new locking needed, but
+        # don't extend this claim to a non-idempotent cache). Futures
+        # are collected in `engines_to_run`'s
+        # OWN registration order (the list comprehension below iterates it
+        # exactly once) and then drained in that SAME order — .result()
+        # blocks on the future it's called on regardless of which one
+        # finished first — so engine_results/errors/rungs (and the
+        # _record_error-driven stderr diagnostics) are reassembled in
+        # deterministic registration order, never completion order (the
+        # existing first-registration-order-wins dedupe convention and
+        # NFR-R3b both depend on this).
+        with ThreadPoolExecutor(max_workers=len(engines_to_run)) as pool:
+            futures = [
+                pool.submit(
+                    _instantiate_and_run_engine, factory, config, target, inventory
                 )
-                if factory is LicenseEngine
-                else CurrencyEngine(gating=config.currency_gating)
-                if factory is CurrencyEngine
-                else factory()
-            )
-        except (SystemExit, Exception) as exc:  # noqa: BLE001 —
-            # instantiation is PART of the seam: a crashing constructor (a
-            # misconfigured 1.3/1.5 runner) is the engine-unavailable
-            # class — typed record + error rung, report STILL emitted,
-            # never a traceback with no report.
-            factory_name = getattr(factory, "__name__", repr(factory))
-            # `factory` is typed as Callable[[] , Engine] (the registry's
-            # shape), but every REAL factory is the engine class itself, so
-            # `axis` is readable as a class attribute without instantiating
-            # (mirrors `factory_name` above) — getattr, not a direct
-            # attribute access, keeps mypy honest about the narrower
-            # Callable type while still reading the real class attribute.
-            factory_axis = getattr(factory, "axis", AXIS_INGESTION)
-            _record_error(
-                errors,
-                rungs,
-                kind=ErrorKind.ENGINE_UNAVAILABLE,
-                owner="engines",
-                subject=factory_name,
-                message=(
-                    f"engine factory {factory_name!r} crashed at "
-                    f"instantiation: {exc!r}"
-                ),
-                axis=factory_axis,
-            )
-            continue
-        try:
-            engine_results.append(engine.run(target, inventory))
-        except (SystemExit, Exception) as exc:  # noqa: BLE001 — the seam
-            # doctrine: a crashing engine must yield a typed ErrorRecord +
-            # error rung with the report STILL emitted, never a traceback
-            # with no report — and a sys.exit-calling engine must never
-            # dictate the process exit (sole ownership; SystemExit is
-            # caught HERE so the report survives). KeyboardInterrupt still
-            # propagates.
-            engine_name = getattr(engine, "name", engine.__class__.__name__)
-            _record_error(
-                errors,
-                rungs,
-                kind=ErrorKind.ENGINE_EXECUTION_FAILED,
-                owner=engine_name,
-                subject=engine_name,
-                message=f"engine {engine_name!r} crashed: {exc!r}",
-                axis=engine.axis,
-            )
+                for factory in engines_to_run
+            ]
+            for future in futures:
+                result, error_args = future.result()
+                if result is not None:
+                    engine_results.append(result)
+                elif error_args is not None:  # always true here — see the
+                    # helper's own docstring: exactly one of the two return
+                    # slots is populated
+                    _record_error(errors, rungs, **error_args)
     for result in engine_results:
         errors.extend(result.errors)
     findings, policy_rungs = DefaultPolicy(config).evaluate(inventory, engine_results)

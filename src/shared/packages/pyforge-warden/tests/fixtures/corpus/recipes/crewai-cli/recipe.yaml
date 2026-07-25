@@ -1,0 +1,72 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.14.7"
+
+package:
+  name: crewai-cli
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/c/crewai-cli/crewai_cli-${{ version }}.tar.gz
+  sha256: cb8f363a77cbe05f73bfda388f971d53b66bc3f37f84addafc1af0cdd43d6af4
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - crewai = crewai_cli.cli:crewai
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - hatchling
+    - pip
+  run:
+    - python >=${{ python_min }},<3.14
+    - crewai-core ==1.14.7
+    - click >=8.1.7,<9
+    - pydantic >=2.11.9,<2.13
+    - pydantic-settings >=2.10.1,<2.11.dev0
+    - appdirs >=1.4.4,<1.5.dev0
+    - cryptography >=42.0
+    - httpx >=0.28.1,<0.29.dev0
+    - pyjwt >=2.13.0,<3
+    - rich >=13.7.1
+    - tomli >=2.0.2,<2.1.dev0
+    - tomli-w >=1.1.0,<1.2.dev0
+    - packaging >=23.0
+    - python-dotenv >=1.2.2,<2
+    - uv >=0.11.6,<0.12.0
+    - python-uv # NOTE: Required to appease `pip check` for downstreams which (presently) might use `uv`
+    # NOTE: https://github.com/conda-forge/python-uv-feedstock/blob/main/recipe/recipe.yaml
+    - textual >=7.5.0
+    - certifi
+
+tests:
+  - python:
+      imports:
+        - crewai_cli
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+  - requirements:
+      run:
+        - pip
+        - python
+    script:
+      - crewai --help
+
+about:
+  summary: CLI for CrewAI — scaffold, run, deploy and manage AI agent crews.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/crewAIInc/crewAI
+
+extra:
+  recipe-maintainers:
+    - rxm7706

@@ -1,0 +1,45 @@
+{% set name = "wagtail-rangefilter" %}
+{% set version = "0.2.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/wagtail-rangefilter-{{ version }}.tar.gz
+  sha256: 74fde188e13e44766f1e106c91be540ca1cdf032251f233d6b3e4ea7ecd57ace
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 1
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - flit-core >=3.2,<4
+    - pip
+  run:
+    - python >={{ python_min }}
+    - django-admin-rangefilter
+    - django >=3.2
+    - wagtail >=4.1
+
+test:
+  imports:
+    - wagtail_rangefilter
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  summary: Integrates django-admin-rangefilter into Wagtail's ModelAdmin
+  home: https://github.com/wunderweiss/wagtail-rangefilter
+  license: BSD-3-Clause
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

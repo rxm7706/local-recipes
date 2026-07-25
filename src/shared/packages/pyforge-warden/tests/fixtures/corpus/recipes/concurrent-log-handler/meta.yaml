@@ -1,0 +1,46 @@
+{% set name = "concurrent-log-handler" %}
+{% set version = "0.9.24" %}
+
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 00f5646c6e5f6fc63654536f3b44aaa2b9b74b23245e14f5258ed91ce39d12e2
+
+build:
+  number: 1
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python {{ python_min }}
+    - setuptools
+  run:
+    # Add minimum run constraint since in py2 there is an upper bound on portalocker
+    - python >={{ python_min }}
+    - portalocker >=1.4.0
+
+test:
+  imports:
+    - concurrent_log_handler
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/Preston-Landers/concurrent-log-handler
+  summary: RotatingFileHandler replacement with concurrency, gzip and Windows support
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - mariusvniekerk
+    - rxm7706

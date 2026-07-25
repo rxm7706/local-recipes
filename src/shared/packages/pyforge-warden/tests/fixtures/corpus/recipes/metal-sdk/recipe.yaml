@@ -1,0 +1,82 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.5.1"
+
+package:
+  name: metal-sdk
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/m/metal-sdk/metal_sdk-${{ version }}.tar.gz
+  sha256: 97ac85e16669f256d2502b7c9606a5f0d4aa4cecc3938834b6064867ee47a34a
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - hatchling
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - httpx
+    - typing_extensions
+
+tests:
+  - python:
+      imports:
+        - metal_sdk
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/metal-sdk/
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: SDK for getmetal.io
+  repository: https://github.com/getmetal/metal-python
+  description: |
+    Metal Python SDK — the official client library for getmetal.io,
+    providing retrieval, indexing, and memory primitives for AI
+    applications.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: metal-sdk
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: metal-sdk
+  cfe-name-aliases:
+    - metal_sdk
+  cfe-purls:
+    - pkg:conda/metal-sdk@${{ version }}?channel=conda-forge
+    - pkg:pypi/metal-sdk@${{ version }}
+  cfe-upstream-repo: https://github.com/getmetal/metal-python
+  cfe-upstream-homepage: https://github.com/getmetal/metal-python
+  cfe-import-names: [metal_sdk]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: pending-approval-on-conda-forge
+  cfe-submission-pr: https://github.com/conda-forge/staged-recipes/pull/33953
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-27T11:57:49Z
+  cfe-generated-by-version: 8.30.1
+  cfe-generated-at-datetime: 2026-06-19T13:36:19Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-19T16:53:06Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####

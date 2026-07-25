@@ -1,0 +1,56 @@
+{% set name = "rcssmin" %}
+{% set version = "1.2.2" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/rcssmin-{{ version }}.tar.gz
+  sha256: 806986eaf7414545edc28a1d29523e9560e49e151ff4a337d9d1f0271d6e1cc4
+
+build:
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 1
+
+requirements:
+  build:
+    - {{ compiler('c') }}
+    - {{ stdlib('c') }}
+  host:
+    - python
+    - pip
+    - setuptools
+  run:
+    - python
+
+test:
+  imports:
+    - rcssmin
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/ndparker/rcssmin
+  license: Apache-2.0 AND BSD-3-Clause
+  license_file:
+    - LICENSE
+    - bench/LICENSE.cssmin
+  summary: 'Fast CSS minifier for Python'
+  description: |
+    RCSSmin is a CSS minifier written in python. The minifier is based on the semantics of the YUI compressor, 
+    which itself is based on the rule list by Isaac Schlueter. This module is a re-implementation aiming for 
+    speed instead of maximum compression, so it can be used at runtime (rather than during a preprocessing step). 
+    RCSSmin does syntactical compression only (removing spaces, comments and possibly semicolons). It does not 
+    provide semantic compression (like removing empty blocks, collapsing redundant properties etc). It does, 
+    however, support various CSS hacks (by keeping them working as intended).
+  doc_url: http://opensource.perlig.de/rcssmin/doc-1.0/index.html
+  dev_url: https://github.com/ndparker/rcssmin
+
+extra:
+  recipe-maintainers:
+    - cshaley
+    - sannykr
+    - rxm7706

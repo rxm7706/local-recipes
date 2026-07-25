@@ -1,0 +1,62 @@
+{% set name = "tastymap" %}
+{% set version = "0.4.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/tastymap-{{ version }}.tar.gz
+  sha256: c1ca63c4a0ac93147db8fde11d7aee79a4d4aa14dbe15287482bdf67dd63a76c
+
+build:
+  entry_points:
+    - tastymap = tastymap.cli:main
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 1
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - hatchling
+    - hatch-regex-commit
+    - pip
+  run:
+    - python >={{ python_min }}
+    - numpy
+    - matplotlib-base
+  run_constrained:
+    - panel
+    - param
+    - requests
+    - xarray
+    - netcdf4
+    - pooch
+
+test:
+  imports:
+    - tastymap
+  commands:
+    - pip check
+    - tastymap --help
+  requires:
+    - pip
+    - panel
+    - param
+    - requests
+    - xarray
+    - netcdf4
+    - pooch
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/ahuang11/tastymap
+  summary: Color palettes for your palate
+  dev_url: https://github.com/ahuang11/tastymap
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

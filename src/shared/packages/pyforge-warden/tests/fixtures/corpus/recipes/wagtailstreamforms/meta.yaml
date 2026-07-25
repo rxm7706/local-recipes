@@ -1,0 +1,50 @@
+{% set name = "wagtailstreamforms" %}
+{% set version = "5.2.6" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/wagtailstreamforms-{{ version }}.tar.gz
+  sha256: 2b8d8215a49f4e593d3ffc2465ca197d8d4818a4bdd05a65a44b9a7aae1679f6
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - django
+    - django-recaptcha >=4.0.0
+    - psycopg >=3.2.9
+    - tox >=4.26.0
+    - wagtail-modeladmin >=2.2.0
+    - python >={{ python_min }}
+    - wagtail >=6.0,<8.0
+    - unidecode >=0.04.14,<2.0
+    - wagtail-generic-chooser >=0.7.0
+
+test:
+  imports:
+    - wagtailstreamforms
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/AccentDesign/wagtailstreamforms/
+  summary: Wagtail forms in a streamfield
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

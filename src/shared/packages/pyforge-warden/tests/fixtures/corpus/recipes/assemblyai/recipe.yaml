@@ -1,0 +1,92 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.64.25"
+
+package:
+  name: assemblyai
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/a/assemblyai/assemblyai-${{ version }}.tar.gz
+  sha256: 4e5240b5732ba45748eee5853ac666bb3663e56b4c19b5cbc4a167e063c3bf75
+
+build:
+  noarch: python
+  number: 0
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - httpx >=0.19.0
+    - pydantic >=2.0
+    - pydantic-settings >=2.0
+    - typing_extensions >=3.7
+    - websockets >=11.0
+
+tests:
+  - python:
+      imports:
+        - assemblyai
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/assemblyai/
+  license: MIT
+  license_file: LICENSE
+  summary: AssemblyAI Python SDK
+  repository: https://github.com/AssemblyAI/assemblyai-python-sdk
+  documentation: https://github.com/AssemblyAI/assemblyai-python-sdk/blob/master/README.md
+  description: |
+    AssemblyAI's Python SDK provides access to speech-to-text,
+    audio intelligence, and LeMUR models for transcribing and
+    analyzing audio.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+    - pb01ka
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: assemblyai
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: assemblyai
+  cfe-purls:
+    - pkg:conda/assemblyai@${{ version }}?channel=conda-forge
+    - pkg:pypi/assemblyai@${{ version }}
+  cfe-upstream-repo: https://github.com/AssemblyAI/assemblyai-python-sdk
+  cfe-upstream-homepage: https://www.assemblyai.com/
+  cfe-import-names: [assemblyai]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-submission-pr: https://github.com/conda-forge/staged-recipes/pull/33960
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/assemblyai-feedstock
+  cfe-forge-recipe-updates-needed: [version-bump-to-0.64.25]
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-07-04T21:04:05Z
+  cfe-generated-by-version: 8.30.1
+  cfe-generated-at-datetime: 2026-06-19T13:36:19Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-07-03T19:42:40Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# requirements:
+#  run:
+#    # noarch single-build must satisfy the union of upstream's python-gated
+#    # pins: pydantic>=1.10.17 (<3.14) and pydantic>=2.0 + pydantic-settings>=2.0
+#    # (>=3.14). pydantic>=2.0 covers both; pydantic-settings is harmless on 3.10-3.13.
+####

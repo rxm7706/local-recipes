@@ -1,0 +1,63 @@
+{% set name = "myst-parser" %}
+{% set version = "2.0.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/myst_parser-{{ version }}.tar.gz
+  sha256: ea929a67a6a0b1683cdbe19b8d2e724cd7643f8aa3e7bb18dd65beac3483bead
+
+build:
+  entry_points:
+    - myst-anchors = myst_parser.cli:print_anchors
+    - myst-inv = myst_parser.inventory:inventory_cli
+    - myst-docutils-html = myst_parser.parsers.docutils_:cli_html
+    - myst-docutils-html5 = myst_parser.parsers.docutils_:cli_html5
+    - myst-docutils-demo = myst_parser.parsers.docutils_:cli_html5_demo
+    - myst-docutils-latex = myst_parser.parsers.docutils_:cli_latex
+    - myst-docutils-xml = myst_parser.parsers.docutils_:cli_xml
+    - myst-docutils-pseudoxml = myst_parser.parsers.docutils_:cli_pseudoxml
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - flit_core >=3.4,<4
+    - pip
+  run:
+    - python >=3.8
+    - docutils >=0.16,<0.21
+    - jinja2
+    - markdown-it-py >=3.0,<4.dev0
+    - mdit-py-plugins >=0.4,<1.dev0
+    - pyyaml
+    - sphinx >=6,<8
+
+test:
+  imports:
+    - myst_parser
+  commands:
+    - pip check
+    - myst-anchors --help
+    - myst-inv --help
+    - myst-docutils-html --help
+    - myst-docutils-html5 --help
+    - myst-docutils-demo --help
+    - myst-docutils-latex --help
+    - myst-docutils-xml --help
+    - myst-docutils-pseudoxml --help
+  requires:
+    - pip
+
+about:
+  summary: An extended [CommonMark](https://spec.commonmark.org/) compliant parser,
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

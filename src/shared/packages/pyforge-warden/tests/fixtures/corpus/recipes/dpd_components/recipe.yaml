@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: dpd_components
+  version: "0.2.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/dpd_components-${{ version }}.tar.gz
+  sha256: 5db0f68abf2f8d3b0219876b6bac78eca1e311ae71062ea7531508f10f28f6b5
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }},<4.0
+    - plotly
+    - dash >=3.0
+    - dash-bootstrap-components
+
+tests:
+  - python:
+      imports:
+        - dpd_components
+      pip_check: true
+      python_version: ${{ python_min }}.*
+
+about:
+  summary: React components for Django-Plotly-Dash
+  homepage: https://github.com/GibbsConsulting/dpd-components
+  license: MIT
+  license_file: LICENSE
+  documentation: https://dash.plotly.com/plugins
+  repository: https://github.com/GibbsConsulting/dpd-components
+
+extra:
+  recipe-maintainers:
+    - rxm7706

@@ -1,0 +1,43 @@
+{% set name = "django_coverage_plugin" %}
+{% set version = "3.1.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/django_coverage_plugin-{{ version }}.tar.gz
+  sha256: 223d34bf92bebadcb8b7b89932480e41c7bd98b44a8156934488fbe7f4a71f99
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python
+    - pip
+  run:
+    - python
+    - coverage
+
+test:
+  imports:
+    - django_coverage_plugin
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/nedbat/django_coverage_plugin
+  summary: Django template coverage.py plugin
+  license: Apache-2.0
+  license_file:
+    - NOTICE.txt
+    - LICENSE.txt
+
+extra:
+  recipe-maintainers:
+    - rxm7706

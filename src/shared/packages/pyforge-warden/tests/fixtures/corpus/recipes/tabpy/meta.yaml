@@ -1,0 +1,75 @@
+{% set name = "tabpy" %}
+{% set version = "2.14.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/tabpy-{{ version }}.tar.gz
+  sha256: 4cf07d46879026dffac1e39ed50e26f434f4cf73e630a47615af3a61d43a3d11
+
+build:
+  entry_points:
+    - tabpy=tabpy.tabpy:main
+    - tabpy-user=tabpy.utils.tabpy_user:main
+    - tabpy-deploy-models=tabpy.models.deploy_models:main
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pytest-runner
+    - pip
+    - setuptools
+  run:
+    - python >={{ python_min }}
+    - cloudpickle
+    - configparser
+    - coverage
+    - coveralls
+    - docopt
+    - future
+    - genson
+    - hypothesis
+    - jsonschema
+    - mock
+    - nltk
+    - numpy
+    - pandas
+    - pyopenssl
+    - pytest
+    - pytest-cov
+    - requests
+    - scipy
+    - simplejson
+    - scikit-learn
+    - textblob
+    - tornado
+    - twisted
+    - urllib3
+    - pyarrow
+    - libarrow-flight
+
+test:
+  imports:
+    - tabpy
+  commands:
+    - pip check
+    - tabpy --help
+    - tabpy-user --help
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/tableau/TabPy
+  summary: Web server Tableau uses to run Python scripts.
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

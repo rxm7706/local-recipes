@@ -1,0 +1,51 @@
+{% set name = "pydantic-yaml" %}
+{% set version = "1.6.0" %}
+{% set python_min = "3.10" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/pydantic_yaml-{{ version }}.tar.gz
+  sha256: ce5f10b65d95ca45846a36ea8dae54e550fa3058e7d6218e0179184d9bf6f660
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - setuptools >=61.0.0
+    - setuptools-scm >=6.2
+    - importlib-metadata >=4.2.0
+    - pip
+  run:
+    - ruamel
+    - typing_extensions >=4.5.0
+    - python >={{ python_min }}
+    - pydantic >=1.8
+    - ruamel.yaml >=0.17.0,<0.19.0
+    - importlib-metadata
+    - typing-extensions >=4.5.0
+
+test:
+  imports:
+    - pydantic_yaml
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  summary: Adds some YAML functionality to the excellent `pydantic` library.
+  home: https://github.com/NowanIlfideme/pydantic-yaml
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

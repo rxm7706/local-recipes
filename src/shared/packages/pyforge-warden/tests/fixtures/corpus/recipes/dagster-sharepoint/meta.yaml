@@ -1,0 +1,45 @@
+{% set name = "dagster-sharepoint" %}
+{% set version = "0.0.2" %}
+{% set python_min = "3.10" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/dagster_sharepoint-{{ version }}.tar.gz
+  sha256: 54d3608726e5077a30b901fa6b6009ffe1bb5eae9cae88907e9fd243bba78a90
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - setuptools >=42
+    - pip
+  run:
+    - python >={{ python_min }},<4.0
+    - dagster >=1.8.0
+    - requests >=2.31.0
+
+test:
+  imports:
+    - dagster_sharepoint
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  summary: Dagster integration for SharePoint document management using Microsoft Graph API
+  license: 'Apache-2.0'
+  license_file: LICENSE
+  home: https://github.com/dagster-io/community-integrations
+
+extra:
+  recipe-maintainers:
+    - rxm7706

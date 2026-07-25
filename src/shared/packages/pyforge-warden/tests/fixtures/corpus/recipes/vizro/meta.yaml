@@ -1,0 +1,60 @@
+{% set name = "vizro" %}
+{% set version = "0.1.59" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/vizro-{{ version }}.tar.gz
+  sha256: 043186ac698cd55f9f56ab965b408bf82ede3a9db87d7ac76b9c65ccd375c975
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - hatchling
+    - pip
+  run:
+    - vizro-dash-components >=0.1.1
+    - python >={{ python_min }}
+    - dash >=4,<5
+    - dash-bootstrap-components >=2
+    - dash-ag-grid ==33.3.3
+    - dash-mantine-components >=2.0.0
+    - pandas >=2
+    - plotly >=5.24.0
+    - pydantic >=2.7.0
+    - flask-caching >=2
+    - wrapt >=1
+    - black
+    - autoflake
+    - packaging
+    - python-box
+
+test:
+  imports:
+    - vizro
+  commands:
+    - pip check
+  requires:
+    - python {{ python_min }}
+    - pip
+
+about:
+  summary: Vizro is a low-code framework for building high-quality data visualization apps.
+  home: https://vizro.mckinsey.com/
+  dev_url: https://github.com/mckinsey/vizro
+  doc_url: https://vizro.readthedocs.io/en/stable/
+  license: MIT AND Apache-2.0
+  license_file:
+    - LICENSE.txt
+    - examples/visual-vocabulary/LICENSE.txt
+
+extra:
+  recipe-maintainers:
+    - rxm7706

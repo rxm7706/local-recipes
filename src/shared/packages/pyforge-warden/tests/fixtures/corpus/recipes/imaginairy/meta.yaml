@@ -1,0 +1,85 @@
+{% set name = "imaginairy" %}
+{% set version = "13.2.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://github.com/brycedrennan/imaginAIry/archive/{{ version }}.tar.gz
+  sha256: 133764733d1669d10fd9dbfab834266826a710e78f4a65533c0318d150dd4b1e
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+  entry_points:
+    - imagine = imaginairy.cli.main:imagine_cmd
+    - aimg = imaginairy.cli.main:aimg
+
+requirements:
+  host:
+    - python >=3.6,<3.11
+    - pip
+  run:
+    - python >=3.6,<3.11
+    - click >=8.0.0
+    - click-shell
+    - click-help-colors
+    - protobuf !=3.20.2, !=3.19.5
+    - facexlib
+    - fairscale >=0.4.4  # for vendored blip
+    - ftfy  # for vendored clip
+    - pytorch >=1.2.0
+    - numpy
+    - tqdm
+    - diffusers
+    - imageio >=2.9.0
+    - pillow >=8.0.0
+    - psutil
+    - pytorch-lightning <2.0.0,>=1.4.2
+    - omegaconf >=2.1.1
+    - open-clip-torch
+    - py-opencv
+    - requests
+    - einops >=0.3.0
+    - safetensors
+    - timm >=0.4.12  # for vendored blip
+    - torchdiffeq
+    - transformers >=4.19.2
+    - torchmetrics >=0.6.0
+    - torchvision >=0.13.1
+    - kornia >=0.6
+    - xformers
+    - fastapi
+    - pydantic
+    - uvicorn
+    - scipy <1.11
+    - huggingface_hub >=0.34.0,<2.0
+    - numpy >=1.19.0,<1.26.0
+
+test:
+  imports:
+    - imaginairy
+  requires:
+    - pip
+  commands:
+    - pip check
+    - imagine --help
+    - aimg --help
+
+about:
+  home: https://github.com/brycedrennan/imaginAIry
+  summary: AI imagined images. Pythonic generation of stable diffusion images.
+  description: |
+    AI imagined images. Pythonic generation of stable diffusion images.
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  doc_url: https://github.com/brycedrennan/imaginAIry
+  dev_url: https://github.com/brycedrennan/imaginAIry
+
+extra:
+  recipe-maintainers:
+    - brycedrennan
+    - jan-janssen

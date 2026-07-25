@@ -1,0 +1,73 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: curl-cffi
+  version: "0.15.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/curl_cffi-${{ version }}.tar.gz
+  sha256: ea0c67652bf6893d34ee0f82c944f37e488f6147e9421bef1771cc6545b02ded
+  patches:
+    - fix-symbol-not-found-on-macos.patch
+
+build:
+  number: 2
+  skip: win
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+
+    - ${{ stdlib('c') }}
+    - ${{ compiler('cxx') }}
+  host:
+    - python
+    - wheel
+    - setuptools
+    - cffi >=1.12.0
+    - pip
+  run:
+    - python
+    - cffi >=2.0.0
+    - certifi >=2024.2.2
+    - rich
+
+tests:
+  - python:
+      imports:
+        - curl_cffi
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+  - requirements:
+      run:
+        - pip
+        - openssl *
+    script:
+      - pip check
+
+about:
+  summary: libcurl ffi bindings for Python, with impersonation support.
+  homepage: https://github.com/lexiforest/curl_cffi
+  description: |
+    Python binding for curl-impersonate fork via cffi.
+    A http client that can impersonate browser tls/ja3/http2 fingerprints.
+  repository: https://github.com/lexiforest/curl_cffi
+  documentation: https://curl-cffi.readthedocs.io/en/latest/
+  license: MIT
+  license_file:
+    - LICENSE
+
+extra:
+  recipe-maintainers:
+    - jan-janssen

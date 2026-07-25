@@ -1,0 +1,43 @@
+{% set name = "wagtail-generic-chooser" %}
+{% set version = "0.8" %}
+
+package:
+  name: wagtail-generic-chooser
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/w/wagtail-generic-chooser/wagtail_generic_chooser-{{ version }}.tar.gz
+  sha256: 2a8f8391021ff30b00bb2654402b9be1c60c3e4d6ab5c06b416431b31dda6545
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >={{ python_min }}
+    - requests >=2.11.1,<3.0
+
+test:
+  imports:
+    - generic_chooser
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/wagtail/wagtail-generic-chooser
+  summary: A toolkit for custom chooser popups in Wagtail
+  license: BSD-3-Clause
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

@@ -1,0 +1,86 @@
+{% set name = "askbot" %}
+{% set version = "0.12.2" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/askbot-{{ version }}.tar.gz
+  sha256: 58ee584dccb2ecac0d81ea3d5cc9c4430c37bfa3948ab50370d4f53664d41a23
+
+build:
+  entry_points:
+    - askbot-setup = askbot.deployment:askbot_setup
+  noarch: python
+  number: 4
+
+requirements:
+  build:
+    - nodejs >=18
+    - pnpm
+    - pnpm-licenses
+  host:
+    - python >=3.8
+    - pip
+  run:
+    - python >=3.8
+    - aiohttp #<4.0
+    - django-appconf >=1.0.5 # was ==
+    - akismet >=1.0.1 # was ==
+    - django-avatar >=7.0
+    - bleach >=5.0.1 # was ==
+    - beautifulsoup4 >=4.7.1 # was <=
+    - django-compressor >=3.0 #,<=4.4
+    - celery >=5.2.7 # was ==
+    - django >=3.0,<5.0
+    - django-countries >=3.3
+    - django-jinja >=2.0
+    - django-followit >=0.6.0 # was ==
+    - html5lib >=1.1 # was ==
+    - jinja2 >=2.10 #,<3.1
+    - jsonfield >=2.0.0
+    - pyjwt >=1.7.1 # was <=
+    - django-keyedcache3 >=1.5.1
+    - django-livesettings3 >=1.6.3 # was ==
+    - markdown2 >=2.3.9 # was <=
+    - markupsafe
+    - mock >=3.0.5 # was ==
+    - oauth2 >=1.9.0.post1 # was <=
+    - python-openid2 >=3.0
+    - django-picklefield >=1.0.0 #,<=3.0.1
+    - django-recaptcha >=3.0.0 # was ==
+    - python-cas >=1.4.0,<1.7
+    - psycopg2-binary >=2.9.6
+    - okta-jwt-verifier >=0.2.3 # was ==
+    - responses >=0.9.0 #,<=0.23.1
+    - requests-oauthlib >=1.2.0
+    - requirements-parser >=0.2.0
+    - django-robots >=5.0 # was ==
+    - regex
+    - unidecode
+    - urllib3 >=1.21.1 #,<1.27
+
+test:
+  imports:
+    - askbot
+  commands:
+    - python -c "from django.conf import settings; settings.configure()"
+    - python -c "import importlib.util; assert importlib.util.find_spec('askbot')"
+    - askbot-setup --help
+
+about:
+  home: http://askbot.org
+  summary: Question and Answer forum, like StackOverflow, written in python and Django
+  doc_url: https://pythonhosted.org/askbot/
+  license: MIT AND LGPL-3.0-or-later AND BSD-3-Clause AND GPL-3.0-or-later AND Apache-2.0 AND BSD-2-Clause
+  license_file:
+    - LICENSE
+    - COPYING
+    - askbot/conf/license.py
+    - askbot/media/ThirdPartyLicenses.txt
+
+extra:
+  recipe-maintainers:
+    - mxr-conda
+    - rxm7706

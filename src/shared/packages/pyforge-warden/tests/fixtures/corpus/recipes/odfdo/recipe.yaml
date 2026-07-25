@@ -1,0 +1,104 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "3.22.11"
+
+package:
+  name: odfdo
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/o/odfdo/odfdo-${{ version }}.tar.gz
+  sha256: 308c14e98486be62d4269a583e49604d7daa64b2b74a90a0ced052be6b567c47
+  patches:
+    - patches/0001-loosen-lxml-py310-cap.patch
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - odfdo-diff = odfdo.scripts.diff:main
+      - odfdo-folder = odfdo.scripts.folder:main
+      - odfdo-flat = odfdo.scripts.flat:main
+      - odfdo-highlight = odfdo.scripts.highlight:main
+      - odfdo-show = odfdo.scripts.show:main
+      - odfdo-styles = odfdo.scripts.styles:main
+      - odfdo-replace = odfdo.scripts.replace:main
+      - odfdo-headers = odfdo.scripts.headers:main
+      - odfdo-table-shrink = odfdo.scripts.table_shrink:main
+      - odfdo-userfield = odfdo.scripts.userfield:main
+      - odfdo-markdown = odfdo.scripts.to_markdown:main
+      - odfdo-from-csv = odfdo.scripts.from_csv:main
+      - odfdo-to-csv = odfdo.scripts.to_csv:main
+      - odfdo-meta-print = odfdo.scripts.meta_print:main
+      - odfdo-meta-update = odfdo.scripts.meta_update:main
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - uv-build >=0.9.0,<0.12.0
+  run:
+    - python >=${{ python_min }}
+    - lxml >=4.8.0
+    - typing_extensions
+tests:
+  - python:
+      imports:
+        - odfdo
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+  - requirements:
+      run:
+        - pip
+        - python
+    script:
+      - odfdo-diff --help
+      - odfdo-folder --help
+      - odfdo-flat --help
+      - odfdo-highlight --help
+      - odfdo-show --help
+      - odfdo-styles --help
+      - odfdo-replace --help
+      - odfdo-headers --help
+      - odfdo-table-shrink --help
+      - odfdo-userfield --help
+      - odfdo-markdown --help
+      - odfdo-from-csv --help
+      - odfdo-to-csv --help
+      - odfdo-meta-print --help
+      - odfdo-meta-update --help
+
+about:
+  homepage: https://github.com/jdum/odfdo
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Python library for OpenDocument Format
+  description: |
+    Python library for OpenDocument Format
+  documentation: https://jdum.github.io/odfdo/
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE comments
+# Merged to conda-forge/odfdo-feedstock#4 (build number 1, 2026-07-12).
+# source:
+#  patches:
+#    # 0001-loosen-lxml-py310-cap.patch loosens odfdo's upstream py3.10 lxml
+#    # cap `<5.1.1` to `<7` (matching the >=3.11 bound). Without it, the wheel
+#    # METADATA on the python_min (3.10) test leg caps lxml <5.1.1 while the
+#    # loose `run: lxml >=4.8.0` (kept loose so py3.13+ can install lxml >=5.3.0)
+#    # resolves lxml 6.x -> pip_check fails on the 3.10 leg. Runtime-safe: odfdo
+#    # is pure-Python and already declares lxml <7 on every Python >=3.11.
+#    # This diverges from the deployed odfdo-feedstock (pip_check: false);
+#    # candidate to upstream to the feedstock.
+####

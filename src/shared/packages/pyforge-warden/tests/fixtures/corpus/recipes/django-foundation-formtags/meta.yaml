@@ -1,0 +1,51 @@
+{% set name = "django-foundation-formtags" %}
+{% set version = "0.1.0" %}
+{% set python_min = "3.10" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/django-foundation-formtags-{{ version }}.tar.gz
+  sha256: 22adc83b36a66c24e0e20df29bd2dc0d7b217e2cb40b39d9655aa9d0cd74ac3a
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools <81.0.0
+  run:
+    - python >={{ python_min }},<4.0
+    - django >=1.8
+
+test:
+  imports:
+    - foundation_formtags
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/chrisdev/django-foundation-formtags
+  license: BSD-3-Clause
+  license_family: BSD
+  license_file: LICENSE
+  summary: 'Template tags for woking with Zurb Foundation Forms in your Django projects '
+  description: |
+    Django template tags to work with Zurb Foundation forms
+  doc_url: https://django-foundation-formtags.readthedocs.io/en/latest/
+  dev_url: https://github.com/chrisdev/django-foundation-formtags
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+    - cshaley
+    - sannykr

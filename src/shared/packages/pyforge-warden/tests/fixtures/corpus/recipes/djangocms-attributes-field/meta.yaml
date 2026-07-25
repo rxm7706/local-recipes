@@ -1,0 +1,43 @@
+{% set name = "djangocms-attributes-field" %}
+{% set version = "4.1.2" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/djangocms_attributes_field-{{ version }}.tar.gz
+  sha256: ed7e9d78a47b30801fe6b411e1cb8aff3434ac594c2b6bb86c859d98aff59838
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >={{ python_min }}
+    - django-cms >=3.7
+
+test:
+  imports:
+    - djangocms_attributes_field
+  commands:
+    - pip check
+  requires:
+    - python {{ python_min }}
+    - pip
+
+about:
+  home: https://github.com/django-cms/djangocms-attributes-field/
+  summary: Adds attributes to Django models.
+  license: BSD-3-Clause
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

@@ -1,0 +1,52 @@
+{% set name = "textstat" %}
+{% set version = "0.7.7" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/textstat-{{ version }}.tar.gz
+  sha256: 290034cd7d3144f3b967b70fb70820bdc5531a7831baebfd7d0347d3422f48c7
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >={{ python_min }}
+    - cmudict
+    - pyphen
+    - setuptools
+
+test:
+  imports:
+    - textstat
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/textstat/textstat
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: Calculate statistical features from text
+  doc_url: https://pypi.org/project/textstat/
+  dev_url: https://github.com/textstat/textstat
+
+extra:
+  recipe-maintainers:
+    - mxr-conda
+    - mwilson8
+    - oblute
+    - benhuff
+    - rxm7706

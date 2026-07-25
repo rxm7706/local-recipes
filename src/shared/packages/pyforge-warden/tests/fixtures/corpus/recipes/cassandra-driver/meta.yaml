@@ -1,0 +1,72 @@
+{% set name = "cassandra-driver" %}
+{% set version = "3.29.3" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name | replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: ff6b82ee4533f6fd4474d833e693b44b984f58337173ee98ed76bce08721a636
+  patches:
+    # Add an asyncio reactor fallback so cassandra.cluster imports on
+    # platforms with neither the libev C-extension (Windows) nor asyncore
+    # (removed in Python 3.12+). Without it, `import cassandra.cluster`
+    # raises DependencyException on win + py3.12+.
+    - 0001-add-asyncio-reactor-fallback.patch
+
+build:
+  number: 1
+  script: python setup.py build build_ext -I${PREFIX}/include -L${PREFIX}/lib install --single-version-externally-managed --record record.txt  # [not win]
+  script: python setup.py install --no-cython --single-version-externally-managed --record record.txt  # [win]
+
+requirements:
+  build:
+    - python                                 # [build_platform != target_platform]
+    - cross-python_{{ target_platform }}     # [build_platform != target_platform]
+    - cython >=3.0                           # [build_platform != target_platform]
+    - {{ compiler('c') }}
+    - {{ stdlib("c") }}
+  host:
+    - python
+    - pip
+    - setuptools
+    - cython >=3.0
+    - libev  # [not win]
+
+  run:
+    - python
+    - geomet >=1.1
+    - numpy
+    - libev  # [not win]
+
+test:
+  requires:
+    - pip
+  imports:
+    - cassandra
+    - cassandra.cluster
+    - cassandra.cqlengine
+    - cassandra.io
+    - cassandra.numpy_parser  # [not win and python_impl == 'cpython']
+  commands:
+    - pip check
+
+about:
+  home: http://github.com/datastax/python-driver
+  license: Apache-2.0
+  license_family: Apache
+  license_file: LICENSE
+  summary: Python driver for Cassandra
+  description: |
+    A modern, feature-rich and highly-tunable Python client library for Apache Cassandra (2.1+)
+    using exclusively Cassandra’s binary protocol and Cassandra Query Language v3.
+  doc_url: http://datastax.github.io/python-driver/api/index.html
+  dev_url: http://github.com/datastax/python-driver
+
+extra:
+  recipe-maintainers:
+    - petercable
+    - anirrudh
+    - scopatz
+    - xylar

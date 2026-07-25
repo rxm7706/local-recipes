@@ -1,0 +1,43 @@
+{% set name = "ag-ui-protocol" %}
+{% set version = "0.1.19" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/ag_ui_protocol-{{ version }}.tar.gz
+  sha256: 43c27f60d41712dcad0e9e0a203cbdf1c8e248b22417374c5c68321c448af4ea
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - uv-build >=0.8.0,<0.9
+    - pip
+  run:
+    - python >={{ python_min }}
+    - pydantic >=2.11.2
+
+test:
+  imports:
+    - ag_ui.core
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  summary: 'AG-UI: the Agent-User Interaction Protocol. Bring Agents into Frontend Applications.'
+  license: MIT
+  license_file: LICENSE
+  home: https://github.com/ag-ui-protocol/ag-ui
+
+extra:
+  recipe-maintainers:
+    - rxm7706

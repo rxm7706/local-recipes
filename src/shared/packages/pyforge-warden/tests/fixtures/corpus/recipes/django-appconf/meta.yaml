@@ -1,0 +1,42 @@
+{% set name = "django-appconf" %}
+{% set version = "1.0.6" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/django-appconf-{{ version }}.tar.gz
+  sha256: cfe87ea827c4ee04b9a70fab90b86d704cb02f2981f89da8423cb0fabf88efbf
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.7
+    - pip
+  run:
+    - python >=3.7
+    - django
+
+test:
+  imports:
+    - appconf
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://django-appconf.readthedocs.io/
+  summary: A helper class for handling configuration defaults of packaged apps gracefully.
+  dev_url: https://github.com/django-compressor/django-appconf
+  license: BSD-3-Clause
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

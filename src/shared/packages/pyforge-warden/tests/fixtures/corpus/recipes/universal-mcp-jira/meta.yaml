@@ -1,0 +1,44 @@
+{% set name = "universal-mcp-jira" %}
+{% set version = "0.1.4" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/universal_mcp_jira-{{ version }}.tar.gz
+  sha256: 1565bdf9b285cf201a2f99fb577fa6f178322b991178bc5eadb0afd0839844bf
+
+build:
+  entry_points:
+    - universal_mcp_jira = universal_mcp_jira:main
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.11
+    - hatchling
+    - pip
+  run:
+    - python >=3.11
+    - universal-mcp >=0.1.11
+
+test:
+  imports:
+    - universal_mcp_jira
+  commands:
+    - pip check
+    - universal_mcp_jira --help
+  requires:
+    - pip
+
+about:
+  summary: 'A Universal MCP Application: universal_mcp_jira'
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

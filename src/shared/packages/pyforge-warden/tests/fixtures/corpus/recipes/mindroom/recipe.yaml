@@ -1,0 +1,135 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+# NOTE — recipe shape decision: upstream's `hatch_build.py` invokes
+# `bun install + tsc + vite build` to bundle the TypeScript dashboard
+# into `mindroom/_frontend/` inside the wheel. We pull `bun + nodejs`
+# into the host env to satisfy that. The PyPI sdist already ships
+# LFS-resolved PNG assets (verified at v2026.5.252), so `git-lfs` is
+# not needed and no source-switch is required.
+#
+# Reviewer note: running a JS bundling pipeline inside a Python recipe
+# is unusual. The alternative is a downstream patch that disables the
+# hook and ships a Python-only build (dashboard broken; CLI/server
+# still works). Documented in the PR description if reviewers push
+# back.
+
+context:
+  version: "2026.5.252"
+  python_min: "3.12"
+
+package:
+  name: mindroom
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/m/mindroom/mindroom-${{ version }}.tar.gz
+  sha256: f2c79aed43679a5d5e4e0f5d0c6b9467793524b8f10c6f0193c98e002ed99df1
+  patches:
+    # Loosen agno + fastapi pins in pyproject.toml so wheel METADATA
+    # matches what conda-forge actually ships. Required for pip_check
+    # to pass at test time.
+    - patches/0001-loosen-upstream-pins-for-conda-forge.patch
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - mindroom = mindroom.cli.main:main
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+    - hatch-vcs
+    # Required by the upstream `hatch_build.py` FrontendBuildHook which
+    # bundles the TypeScript dashboard into `mindroom/_frontend/`. The
+    # PyPI sdist already ships LFS-resolved PNGs so no git-lfs needed.
+    - bun
+    - nodejs
+  run:
+    - python >=${{ python_min }}
+    # TODO: upstream pins `agno==2.5.13` exactly but conda-forge only has
+    # 2.6.1; loosened pending an upstream bump or a 2.5.13 conda-forge
+    # build. The [anthropic,google,ollama,openai] extras' deps (anthropic,
+    # google-genai, ollama, openai) are listed explicitly below.
+    - agno >=2.5,<3
+    - aiohttp >=3.13,<4
+    - aiosqlite >=0.20
+    - anthropic >=0.70
+    - anyio >=4.10
+    - authlib >=1.6
+    - cerebras-cloud-sdk >=1.46
+    - chromadb >=1.0.15
+    - cron-descriptor >=1.4.5
+    - croniter >=6
+    - cryptography >=47
+    # TODO: tighten back to >=0.116.1 once conda-forge's chromadb stops
+    # pinning fastapi ==0.115.9 exactly. mindroom's upstream requires
+    # >=0.116.1, but 0.115.x → 0.116.x is non-breaking minor and the
+    # runtime should work fine.
+    - fastapi >=0.115,<1
+    - filetype >=1.2
+    - google-auth >=2.40.3
+    - google-genai
+    - groq >=0.31
+    - httpx >=0.27
+    - humanize >=4.12.3
+    - json5 >=0.13
+    - markdown-it-py >=4
+    - mcp >=1.12.4
+    - mdit-py-plugins >=0.5
+    - mem0ai >=0.1.115
+    - mindroom-nio >=0.25.2
+    - openai
+    - pydantic >=2
+    - pydantic-settings >=2.10.1
+    - pygments >=2.20
+    - pyjwt >=2.8
+    - python-dotenv >=1
+    - pyyaml >=6
+    - rich
+    - structlog >=24.1
+    - tenacity >=9.1.2
+    - typer >=0.24
+    - uvicorn >=0.35
+    - watchfiles >=1
+    # `fastapi[standard]` pulls in these extras
+    - python-multipart
+    - email-validator
+
+tests:
+  - python:
+      # src/mindroom/__init__.py (verified from sdist).
+      imports:
+        - mindroom
+        - mindroom.cli
+        - mindroom.api
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+  - script:
+      - mindroom --help
+
+about:
+  homepage: https://github.com/mindroom-ai/mindroom
+  repository: https://github.com/mindroom-ai/mindroom
+  documentation: https://docs.mindroom.chat
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: A universal interface for AI agents with persistent memory
+  description: |
+    MindRoom is a self-hostable platform that gives AI agents persistent
+    memory and the ability to follow you across communication platforms
+    (Slack, Telegram, Discord, WhatsApp, email) via Matrix bridges.
+    Agents live on a Matrix server and reach other platforms through
+    standard Matrix protocol bridges, retaining context across all
+    conversations.
+
+extra:
+  recipe-maintainers:
+    - rxm7706

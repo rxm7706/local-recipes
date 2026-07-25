@@ -1,0 +1,46 @@
+{% set name = "wagtail-markdown" %}
+{% set version = "0.14.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/wagtail_markdown-{{ version }}.tar.gz
+  sha256: f8685ca937b15c662be9eb972a477aebdbdd4a9aad60716b2a59f7bed898b165
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - flit-core >=3.2,<4
+    - pip
+  run:
+    - nh3 >=0.3.4
+    - python >={{ python_min }}
+    - wagtail >=7.0
+    - markdown >=3.3,<4
+    - bleach >=3.3,<5
+
+test:
+  imports:
+    - wagtailmarkdown
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/torchbox/wagtail-markdown
+  summary: Markdown support for Wagtail
+  license: Unlicense
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

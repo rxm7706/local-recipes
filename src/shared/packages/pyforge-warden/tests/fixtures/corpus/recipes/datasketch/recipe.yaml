@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.10.0"
+
+package:
+  name: datasketch
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/datasketch/datasketch-${{ version }}.tar.gz
+  sha256: d23aea80ce4c40790ca7a40795659848be92ecc43db80942be26f21e81d24714
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - hatchling
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - numpy >=1.11
+    - scipy >=1.0.0
+
+tests:
+  - python:
+      imports:
+        - datasketch
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: Probabilistic data structures for processing and searching very large datasets
+  license: MIT
+  license_file: LICENSE
+  homepage: https://ekzhu.github.io/datasketch
+  repository: https://github.com/ekzhu/datasketch
+  documentation: https://ekzhu.github.io/datasketch
+  description: |
+    datasketch gives you probabilistic data structures that can process and
+    search very large amount of data super fast, with little loss of accuracy.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: datasketch
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: datasketch
+  cfe-purls:
+    - pkg:conda/datasketch@${{ version }}?channel=conda-forge
+    - pkg:pypi/datasketch@${{ version }}
+  cfe-upstream-repo: https://github.com/ekzhu/datasketch
+  cfe-upstream-homepage: https://ekzhu.github.io/datasketch
+  cfe-import-names: [datasketch]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/datasketch-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-generated-by-version: 8.37.0
+  cfe-generated-at-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####

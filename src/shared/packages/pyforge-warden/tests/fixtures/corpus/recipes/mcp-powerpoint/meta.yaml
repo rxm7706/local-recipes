@@ -1,0 +1,64 @@
+{% set name = "mcp-powerpoint" %}
+{% set version = "1.0.3" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://github.com/CannonJunior/mcp-powerpoint/archive/v{{ version }}.tar.gz
+  sha256: 17b707285fae3ae642db54b8f29ebb50d230cf9a098f457e79afb9cfb715c434
+
+build:
+  entry_points:
+    - mcp-powerpoint = mcp_powerpoint.__main__:main
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >={{ python_min }},<4.0
+    - fastmcp >=2.12.2
+    - ollama >=0.5.3
+    - pillow >=11.3.0
+    - pydantic >=2.11.7
+    - python-pptx >=1.0.2
+    - pytorch >=2.8.0
+    - transformers >=4.56.1
+    - transformers >=4.56.1
+    # From https://github.com/CannonJunior/mcp-powerpoint/blob/main/pyproject.toml#L29-L38
+    - chromadb >=0.4.22
+    - sentence-transformers >=2.7.0
+    - nltk >=3.9.1
+    - PyPDF2 >=3.0.1
+    - python-docx >=1.1.0
+    - fastapi >=0.110.0
+    - uvicorn >=0.27.0
+    - aiofiles >=23.2.1
+    - jinja2 >=3.1.3
+    - python-multipart >=0.0.9
+
+test:
+  imports:
+    - mcp_powerpoint
+  commands:
+    - mcp-powerpoint --help
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/CannonJunior/mcp-powerpoint
+  summary: MCP server for PowerPoint file manipulation and shape naming using Ollama LLM
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

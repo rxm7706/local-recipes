@@ -1,0 +1,50 @@
+{% set name = "xformers" %}
+{% set version = "0.0.30" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/xformers-{{ version }}.tar.gz
+  sha256: a12bf3eb39e294cdbe8a7253ac9b665f41bac61d6d98df174e34ef7bdb6f2fc4
+
+build:
+  skip: true  # [py<39]
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  build:
+    - {{ compiler('cxx') }}
+    - {{ compiler('c') }}
+  host:
+    - python
+    - pytorch
+    - pip
+  run:
+    - python
+    - pytorch >=2.7
+    - numpy
+
+test:
+  imports:
+    - xformers
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://facebookresearch.github.io/xformers/
+  summary: 'XFormers: A collection of composable Transformer building blocks.'
+  license: BSD-3-Clause AND MIT AND Apache-2.0
+  license_file:
+    - LICENSE
+    - third_party/sputnik/LICENSE
+    - third_party/flash-attention/csrc/composable_kernel/LICENSE
+    - third_party/flash-attention/csrc/cutlass/LICENSE.txt
+
+extra:
+  recipe-maintainers:
+    - rxm7706
