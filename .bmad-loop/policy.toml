@@ -21,10 +21,14 @@ cache_read_weight = 0.1      # cache reads bill at ~0.1x input on all vendors; 1
 # The pyforge-doctor env + test task do not exist until story 1.1 creates the
 # package scaffold — a failing verify before then is the loop's own correct
 # corrective signal (drives dev toward creating the env/task), not a policy bug.
-# No --frozen: the env/task/lock entries this command depends on don't exist
-# yet at run start; revisit once story 1.1 lands and the lock is tracked.
+# --frozen (2026-07-25, post-mortem on the herald+scribe cluster): an unfrozen
+# re-solve in a bmad-loop worktree panics the pixi-build backend on unrelated
+# envs. Frozen mode requires the story's own dev pass to commit the pixi.lock
+# update as part of wiring the new env (same as herald/scribe) — a "not in
+# lockfile" / lock-mismatch verify failure is the correct corrective signal to
+# commit the lock, not a policy bug.
 commands = [
-  "pixi run -e pyforge-doctor pyforge-doctor-test",
+  "pixi run --frozen -e pyforge-doctor pyforge-doctor-test",
 ]
 
 [notify]
