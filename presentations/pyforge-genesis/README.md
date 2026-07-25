@@ -2,7 +2,7 @@
 
 **Status: STARTER — awaiting the Design pass.** The **master vision deck** of the
 pyforge **"Dream to Code"** factory — the deck for the founding Dream itself
-(`docs/dreams/ecosystem-crew.md`): the Genesis, the six-persona Ecosystem Crew,
+(`docs/dreams/pyforge-charter.md`): the Genesis, the six-persona Ecosystem Crew,
 the Master Pipeline, and the proof it already runs. Each persona deck
 (`pyforge-atlas` … `pyforge-doctor`) is one *chapter* of this Dream; Genesis is
 the parent narrative — **and the seed**: it lays out the big picture well enough

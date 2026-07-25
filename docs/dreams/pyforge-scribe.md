@@ -36,7 +36,7 @@ nobody writes it down.*
 
 ## Realization log
 
-- **2026-07-23** — persona adopted into [[ecosystem-crew]] (crew 6 → 8);
+- **2026-07-23** — persona adopted into [[pyforge-charter]] (crew 6 → 8);
   station assignments recorded in team-memory + sentinel. CLI and chapter deck
   await their turns.
 - **2026-07-23 (gist audit)** — the Karpathy knowledge-base method (raw/ → LLM-compiled wiki with backlinks) is the Scribe's compile loop, described: `docs/intake/gists/llm-powered-knowledge-bases-by-andrej-karpathy/`.

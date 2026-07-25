@@ -245,7 +245,7 @@ DREAM_STATUSES = ("seeded", "in-deck", "in-spec", "realized", "archived")
 DREAM_DECK_ALIASES = {
     "packaging-factory": "pyforge-mason",
     "agentic-sdlc-autonomy": "agentic-sdlc",
-    "ecosystem-crew": "pyforge-genesis",   # the master vision deck
+    "pyforge-charter": "pyforge-genesis",   # the master vision deck
 }
 # Dreams whose build runs as a console program (chip shows live done/total).
 DREAM_PROGRAM = {

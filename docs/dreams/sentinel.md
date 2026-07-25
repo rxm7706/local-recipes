@@ -37,7 +37,7 @@ realization step.
 
 ## Lineage — what the descendants took
 
-- Five agents → the six-persona **[[ecosystem-crew]]**.
+- Five agents → the six-persona **[[pyforge-charter]]**.
 - §19 Kedro · §20 Dagster · §27 BSL · §24 OTel/OpenLineage · §26 La Suite →
   **[[pyforge-atlas]]**'s shipped stack, to the letter.
 - Audit-as-contract → **[[pyforge-warden]]** + [[pyforge-marshal]]'s gates.

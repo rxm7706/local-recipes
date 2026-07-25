@@ -39,6 +39,6 @@ Drift — orphaned between stations.
 
 ## Realization log
 
-- **2026-07-23** — persona adopted into [[ecosystem-crew]] (crew 6 → 8);
+- **2026-07-23** — persona adopted into [[pyforge-charter]] (crew 6 → 8);
   naming disambiguated from the [[fleet-stewardship]] practice Dream. CLI and
   chapter deck await their turns.

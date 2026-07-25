@@ -2,7 +2,7 @@
 
 **Status: STARTER — awaiting the Design pass.** Engine + glue copied **verbatim**
 from `presentations/pyforge-atlas/` (Archivo / Modernist system). A chapter deck
-of the founding Dream (`docs/dreams/ecosystem-crew.md`); persona Dream:
+of the founding Dream (`docs/dreams/pyforge-charter.md`); persona Dream:
 `docs/dreams/pyforge-scribe.md`. Motto: *"Capture the decision. Keep the graph. Answer from memory."*
 
 Workflow: `docs/specs/presentation-deck.md` (prototype contract, § Standard

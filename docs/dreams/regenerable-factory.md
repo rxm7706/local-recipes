@@ -64,7 +64,7 @@ repo-wide.
 implies backfill) · [[pyforge-marshal]] (BMAD executes every change) ·
 [[pyforge-warden]] (drift gate temperament: never false-green) ·
 [[agent-portability]] (the spec kernel is what makes regeneration
-framework-neutral) · [[ecosystem-crew]].
+framework-neutral) · [[pyforge-charter]].
 
 ## Realization log
 

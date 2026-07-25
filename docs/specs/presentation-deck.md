@@ -35,7 +35,7 @@ Every deck this spec produces is one persona's chapter of a larger story: the
 the BMAD mission, *Build More Architect Dreams*), its eight-persona **Ecosystem
 Crew** (Herald · Marshal · Atlas · Warden · Mason · Doctor · Scribe · Steward), and the Master
 Pipeline Flow are defined **once**, in the founding Dream:
-**`docs/dreams/ecosystem-crew.md`**. Read the crew there — this spec deliberately
+**`docs/dreams/pyforge-charter.md`**. Read the crew there — this spec deliberately
 does not duplicate it.
 
 **Where a Dream lives:** `docs/dreams/` is **Tier 0** (per `AGENTS.md`) — the

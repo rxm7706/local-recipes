@@ -7,7 +7,7 @@ empty `manifest.json` and no fragments.
 
 A self-contained React + Vite slide deck for **PyForge-Herald** — the Proclaimer — visual media, presentation & communications engine of the pyforge
 **"Dream to Code"** Ecosystem Crew (founding Dream:
-`docs/dreams/ecosystem-crew.md`). Motto: *"Capture the dream. Illustrate the telemetry. Proclaim the release."*
+`docs/dreams/pyforge-charter.md`). Motto: *"Capture the dream. Illustrate the telemetry. Proclaim the release."*
 
 Built with the reusable **Design-to-Deck** workflow
 (`docs/specs/presentation-deck.md` — read it first; it defines the prototype

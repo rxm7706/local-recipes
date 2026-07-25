@@ -1,11 +1,11 @@
 ---
-title: The Ecosystem Crew
+title: The pyforge Charter
 type: dream
 owner: crew
 status: in-deck
 ---
 
-# The Ecosystem Crew: System Personas & CLI Framework
+# The pyforge Charter: System Personas & CLI Framework
 
 > ## Forging the Agentic SDLC
 > ### *Humans Dream, Agents Deliver — Governed. Auditable. Production-ready.*
@@ -404,3 +404,4 @@ herald broadcast slack,email --channel engineering-updates
 ## Realization log
 
 - **2026-07-25** — the pyforge mission + tagline canonized at the masthead (operator-wordsmithed through the register series); genesis deck opening-slide refresh queued to Herald's backlog.
+- **2026-07-25** — Dream renamed `ecosystem-crew` → **`pyforge-charter`** (operator naming round): the document is the crew's constitutive charter — offices, mottos, doctrine, and now the canonized mission at its masthead. The crew keeps its name (the Ecosystem Crew); the Dream names the document.

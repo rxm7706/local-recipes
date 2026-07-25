@@ -22,7 +22,7 @@ agent, any operator, any session starts already knowing what the team knows.
 - A `.claude/memory/` tree + a `team-memory` skill governing recall, writes,
   dedup, and hygiene (10 waved stories in the spec).
 - Clean division: personal memory for personal preference; team memory for team
-  truth; Dreams ([[ecosystem-crew]]) for aspirations; specs for contracts.
+  truth; Dreams ([[pyforge-charter]]) for aspirations; specs for contracts.
 - The distillation pipeline (retros, CHANGELOG, memories) feeding one shared
   brain instead of per-operator silos — the practical antidote to the
   "knowledge is lossy" problem [[sentinel]] diagnosed.

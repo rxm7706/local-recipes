@@ -45,7 +45,7 @@ unit of governance. Herald keeps their communication face only.
 
 ## Kinships
 
-[[ecosystem-crew]] (charter section) · [[design-code-bridge]] (flagship
+[[pyforge-charter]] (charter section) · [[design-code-bridge]] (flagship
 product) · [[modernist-identity]] (the language it speaks) ·
 [[pyforge-marshal]] (receives the re-scoped infrastructure) ·
 [[pyforge-scribe]] (the inward voice to Herald's outward).

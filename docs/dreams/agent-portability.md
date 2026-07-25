@@ -44,7 +44,7 @@ verified against the same oracle.
 
 - **2026-07** — copilot-to-api research consolidated; extension spec waved.
 - **2026-07-23** — Dream retro-seeded; named as Herald's "BMAD everywhere"
-  responsibility in [[ecosystem-crew]].
+  responsibility in [[pyforge-charter]].
 - **2026-07-23 (gist audit)** — grounding: `docs/intake/gists/awesome-bmad-…/` (the curated BMAD ecosystem list) + `run-bmad-in-microsoft-copilot/` (declarative-agent setup for the 6 web bundles).
 - **2026-07-23 (ownership review)** — re-scoped to **Marshal** (alternate
   agents = alternate lines on the same floor); Herald retains docs/comms.

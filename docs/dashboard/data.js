@@ -1169,7 +1169,7 @@ window.DASHBOARD_DATA = {
       "timing": null
     }
   },
-  "snapshot": "<span>2026-07-25 16:15 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-07-25 16:17 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -1204,15 +1204,6 @@ window.DASHBOARD_DATA = {
       "owner": "herald",
       "chain": {
         "spec": "_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-design-code-bridge"
-      }
-    },
-    {
-      "slug": "ecosystem-crew",
-      "title": "The Ecosystem Crew",
-      "status": "in-deck",
-      "owner": "crew",
-      "chain": {
-        "deck": "presentations/pyforge-genesis"
       }
     },
     {
@@ -1280,6 +1271,15 @@ window.DASHBOARD_DATA = {
         "spec": "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas",
         "project": "_bmad-output/projects/pyforge-atlas",
         "program": "atlas"
+      }
+    },
+    {
+      "slug": "pyforge-charter",
+      "title": "The pyforge Charter",
+      "status": "in-deck",
+      "owner": "crew",
+      "chain": {
+        "deck": "presentations/pyforge-genesis"
       }
     },
     {

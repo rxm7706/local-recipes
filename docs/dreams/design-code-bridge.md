@@ -23,7 +23,7 @@ Claude Code pulls the prototype straight into `presentations/<slug>/project/`,
 extracts, builds, and ships the § Standard export set — zero downloads, zero
 copy-paste, conflicts caught by etags instead of overwrites.
 
-This is **Herald's** capability (see [[ecosystem-crew]] — the Proclaimer owns the
+This is **Herald's** capability (see [[pyforge-charter]] — the Proclaimer owns the
 Dream→Deck rendering *and* cross-surface integration): the bridge is Herald's
 first shipped organ.
 

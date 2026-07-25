@@ -7,7 +7,7 @@ empty `manifest.json` and no fragments.
 
 A self-contained React + Vite slide deck for **PyForge-Marshal** — the Commander — autonomous build-factory supervisor & BMAD-method orchestrator of the pyforge
 **"Dream to Code"** Ecosystem Crew (founding Dream:
-`docs/dreams/ecosystem-crew.md`). Motto: *"Enforce the spec. Guard the boundaries. Run the line."*
+`docs/dreams/pyforge-charter.md`). Motto: *"Enforce the spec. Guard the boundaries. Run the line."*
 
 Built with the reusable **Design-to-Deck** workflow
 (`docs/specs/presentation-deck.md` — read it first; it defines the prototype

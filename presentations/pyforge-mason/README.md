@@ -7,7 +7,7 @@ empty `manifest.json` and no fragments.
 
 A self-contained React + Vite slide deck for **PyForge-Mason** — the Artisan Builder — dual-ecosystem package & release craftsman of the pyforge
 **"Dream to Code"** Ecosystem Crew (founding Dream:
-`docs/dreams/ecosystem-crew.md`). Motto: *"We forge the blocks. We bind the environment. We ship the structure."*
+`docs/dreams/pyforge-charter.md`). Motto: *"We forge the blocks. We bind the environment. We ship the structure."*
 
 Built with the reusable **Design-to-Deck** workflow
 (`docs/specs/presentation-deck.md` — read it first; it defines the prototype
