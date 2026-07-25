@@ -50,7 +50,7 @@ visible. Anti-vibe, by construction.
   bmad-loop itself, sandbox/permission gates, CI verify gates, and no-LLM
   deterministic tools sit outside the skill layer, because the thing that
   governs the agent cannot be a thing the agent authors.
-- **Two persona layers:** the Ecosystem Crew are the factory's *stations*; the
+- **Two persona layers:** the PyForge Guild are the factory's *stations*; the
   BMAD team (Mary · John · Winston · Sally · Amelia · Paige) are Marshal's
   *sub-agents on the floor* — the inner workforce his line mobilizes.
 

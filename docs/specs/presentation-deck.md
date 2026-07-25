@@ -28,7 +28,7 @@ spec_updated: 2026-07-24
 
 ---
 
-## Genesis — The Dream & the Ecosystem Crew
+## Genesis — The Dream & the PyForge Guild
 
 Every deck this spec produces is one persona's chapter of a larger story: the
 **pyforge** ecosystem's **"Dream to Code"** pipeline. Its genesis (**The Dream** —
@@ -565,7 +565,7 @@ per-case reality below.
 **The live deck family.** **`pyforge-genesis`** is the **master vision deck** — the
 parent narrative of the founding Dream (and its *seed*: it lays out the operating
 model well enough to initiate a new repo or adopt the model in a brownfield one).
-Each persona in the § *Genesis* Ecosystem Crew then gets its own chapter deck. **Atlas** and **Warden** have shipped decks (Examples 3 & 2);
+Each persona in the § *Genesis* PyForge Guild then gets its own chapter deck. **Atlas** and **Warden** have shipped decks (Examples 3 & 2);
 **Herald, Marshal, Mason, and Doctor** have seeded starter decks; **Scribe and
 Steward** (adopted 2026-07-23) join the backlog as `pyforge-scribe` and
 `pyforge-steward` — the existing family convention (matching `pyforge-atlas` /
