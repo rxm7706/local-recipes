@@ -2,7 +2,7 @@
 title: Team memory — what the team knows, the agents know
 type: dream
 owner: scribe
-status: seeded
+status: in-spec
 ---
 
 # Team memory — memory that belongs to the team, not one session

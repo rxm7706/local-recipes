@@ -2,7 +2,7 @@
 title: Scribe — the inward voice
 type: dream
 owner: scribe
-status: in-deck
+status: in-spec
 ---
 
 # Scribe — capture the decision, keep the graph, answer from memory

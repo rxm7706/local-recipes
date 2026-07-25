@@ -868,7 +868,7 @@ window.DASHBOARD_DATA = {
       }
     }
   },
-  "snapshot": "<span>2026-07-25 11:16 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-07-25 11:17 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -1025,7 +1025,7 @@ window.DASHBOARD_DATA = {
     {
       "slug": "pyforge-scribe",
       "title": "Scribe — the inward voice",
-      "status": "in-deck",
+      "status": "in-spec",
       "owner": "scribe",
       "chain": {
         "deck": "presentations/pyforge-scribe",
@@ -1073,7 +1073,7 @@ window.DASHBOARD_DATA = {
     {
       "slug": "team-memory",
       "title": "Team memory — what the team knows, the agents know",
-      "status": "seeded",
+      "status": "in-spec",
       "owner": "scribe",
       "chain": {}
     },
@@ -1444,15 +1444,15 @@ window.DASHBOARD_DATA = {
         "depth": "epics",
         "state": "running",
         "have": {
-          "research": false,
-          "brief": false,
-          "prd": false,
-          "architecture": false,
-          "epics": false
+          "research": true,
+          "brief": true,
+          "prd": true,
+          "architecture": true,
+          "epics": true
         },
-        "n": 0,
+        "n": 5,
         "of": 5,
-        "status": "running"
+        "status": "landed"
       },
       {
         "wave": "1d",
