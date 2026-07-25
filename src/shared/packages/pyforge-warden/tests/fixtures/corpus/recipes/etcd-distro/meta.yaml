@@ -1,0 +1,52 @@
+{% set name = "etcd-distro" %}
+{% set version = "3.5.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://github.com/sighingnow/etcd-distro/archive/v{{ version }}.tar.gz
+  sha256: 78e8cf121fa918094811639592f2ed4b0e7e63c8ffdfae187640295f3bfcbea5
+
+build:
+  entry_points:
+    - etcd=etcd_distro:etcd
+    - etcdctl=etcd_distro:etcdctl
+    - etcdutl=etcd_distro:etcddutl
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  build:
+  build:
+    - {{ compiler('c') }}
+    - cmake
+  host:
+    - python >=3.7
+    - wheel
+    - pip
+  run:
+    - python >=3.7
+
+test:
+  imports:
+    - etcd_distro
+  commands:
+    - pip check
+    - etcd --help
+    - etcdctl --help
+    - etcdutl --help
+  requires:
+    - pip
+
+about:
+  summary: Python distribution for etcd, making pip install etcd possible.
+  home: https://github.com/sighingnow/etcd-distro
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

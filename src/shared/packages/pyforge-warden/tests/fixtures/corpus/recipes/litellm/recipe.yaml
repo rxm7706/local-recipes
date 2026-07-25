@@ -1,0 +1,109 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.89.3"
+
+package:
+  name: litellm
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/l/litellm/litellm-${{ version }}.tar.gz
+  sha256: 8fcdb2b7a0ef3381d41adf164443842e31ef9f0cd5bcda6fc3c0bd8bc2959510
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - litellm = litellm:run_server
+      - litellm-proxy = litellm.proxy.client.cli:cli
+
+requirements:
+  host:
+    - python >=3.10,<3.14
+    - uv-build >=0.11.8,<0.12
+    - pip
+  run:
+    - python >=3.10,<3.14
+    - fastuuid >=0.14.0,<1.0
+    - httpx >=0.28.0,<1.0
+    - openai >=2.20.0,<3.0.0
+    - python-dotenv >=1.0.0,<2.0
+    - tiktoken >=0.8.0,<1.0
+    - importlib-metadata >=8.0.0,<9.0
+    - tokenizers >=0.21.0,<1.0
+    - click >=8.0.0,<9.0
+    - jinja2 >=3.1.6,<4.0
+    - aiohttp >=3.10,<4.0
+    - pydantic >=2.10.0,<3.0.0
+    - jsonschema >=4.0.0,<5.0
+
+tests:
+  - python:
+      imports:
+        - litellm
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+  # NOTE: the `litellm` / `litellm-proxy` CLI tests are intentionally omitted —
+  # this LOCAL-ONLY build strips the proxy / proxy-runtime extras (fastapi, etc.),
+  # so the proxy CLIs are non-functional here. The import test above covers the
+  # library (the only surface this skew-workaround build provides).
+
+about:
+  summary: Library to easily interface with LLM API providers
+  description: |
+    <h1 align="center">
+            🚅 LiteLLM
+        </h1>
+        <p align="center">
+            <p align="center">LiteLLM AI Gateway
+            </p>
+            <p align="center">Open Source AI Gateway for 100+ LLMs. Self-hosted. Enterprise-ready. Call any LLM in OpenAI format.</p>
+            <p align="center">
+            <a href="https://render.com/deploy?repo=https://github.com/BerriAI/litellm" target="_blank" rel="nofollow"><img src="https://render.com/images/deploy-to-render-button.svg" alt="Deploy to Render"></a>...
+  license: MIT
+  license_file: LICENSE
+  homepage: https://litellm.ai
+  repository: https://github.com/BerriAI/litellm
+  documentation: https://docs.litellm.ai
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: litellm
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: litellm
+  cfe-import-names: [litellm]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/litellm-feedstock
+  cfe-forge-recipe-updates-needed:
+    - do-not-flatten-proxy-and-proxy-runtime-extras-as-hard-deps
+  cfe-last-checked: 2026-06-23T15:48:01Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-06-23T15:48:01Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # LOCAL-ONLY SKEW WORKAROUND — do NOT submit (litellm is already on
+#    # conda-forge). This local build exists only to unblock the langflow-suite
+#    # local test-env solve (Skew 2/3). It uses the REAL upstream 1.89.3 BASE
+#    # deps and therefore OMITS the proxy / proxy-runtime EXTRAS (fastapi,
+#    # cryptography, opentelemetry-api==1.28.0) that the cf litellm-feedstock
+#    # flattens into HARD deps. Those extras' otel-api==1.28.0 conflicts with
+#    # langflow-base's otel-api>=1.30, and the fastapi pin with lfx's
+#    # fastapi>=0.135. Durable fix = litellm-feedstock not flattening the proxy
+#    # extras; then this local recipe can be deleted.
+####

@@ -1,0 +1,68 @@
+{% set name = "dremio-arrow" %}
+{% set version = "1.0.3" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/dremio_arrow-{{ version }}.tar.gz
+  sha256: 16298472d5e43b52d7f419d24476403d265d7fde0b5f487066ed784ce35fe52c
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python >=3.10,<3.12
+    - poetry-core >=1.0.0
+    - pip
+  run:
+    - python >=3.10,<3.12
+    - pyarrow >=12.0.1,<13.0.0
+    - pandas >=2.0.3,<3.0.0
+    - black >=23.3.0,<24.0.0
+    - flake8 5.0.4
+    - tornado >=6.3.2,<7.0.0
+    - mkdocs-include-markdown-plugin >=4.0.4,<5.0.0
+    - mkdocstrings-python >=1.1.2,<2.0.0
+    - mkdocs-material-extensions >=1.1.1,<2.0.0
+  run_constrained:
+    - isort >=5.12.0,<6.0.0
+    - flake8-docstrings >=1.7.0,<2.0.0
+    - mypy >=1.4.1,<2.0.0
+    - pytest >=7.4.0,<8.0.0
+    - pytest-cov >=4.1.0,<5.0.0
+    - pre-commit >=3.3.3,<4.0.0
+    - bump2version >=1.0.1,<2.0.0
+    - virtualenv 20.13.2
+    - requests >=2.31.0,<3.0.0
+    - types-requests >=2.31.0,<3.0.0
+    - mkdocs >=1.4.3,<2.0.0
+    - mkdocs-material >=9.1.18,<10.0.0
+    - mkdocstrings >=0.22.0,<0.23.0
+    - mkdocs-material-extensions >=1.1.1,<2.0.0
+    - mkdocs-git-revision-date-localized-plugin >=1.2.0,<2.0.0
+    - mkdocs-autorefs >=0.4.1,<0.5.0
+    - ipython >=8.14.0,<9.0.0
+    - jupyterlab >=4.0.2,<5.0.0
+
+test:
+  imports:
+    - dremio_arrow
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/jaysnm/dremio-arrow
+  summary: Dremio SQL Lakehouse Arrow Flight Client.
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

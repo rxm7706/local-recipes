@@ -1,0 +1,51 @@
+{% set name = "mlflavors" %}
+{% set version = "0.1.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/mlflavors-{{ version }}.tar.gz
+  sha256: 04560518e89bbd083506b72a77d01bccc124ccabed88970a02f19d6467860a9d
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python >=3.7
+    - setuptools >=66.0.0
+    - wheel
+    - pip
+  run:
+    - python >=3.7
+    - mlflow
+    - sktime
+    - statsforecast
+    - pyod
+    - sdv
+
+test:
+  imports:
+    - mlflavors
+  commands:
+    #- pip check
+    # Note pip check error :
+      #dash 2.11.1 has requirement Flask<2.3.0,>=1.0.4, but you have flask 2.3.2.
+      #dash 2.11.1 has requirement Werkzeug<2.3.0, but you have werkzeug 2.3.6.
+      #plotly-resampler 0.8.3.2 has requirement pandas<2.0.0,>=1.3.5, but you have pandas 2.0.3.    
+  requires:
+    - pip
+
+about:
+  home: https://github.com/ml-toolkits/mlflavors
+  summary: 'MLflavors: A collection of custom MLflow flavors.'
+  license: BSD-3-Clause
+  license_file: LICENSE.txt
+
+extra:
+  recipe-maintainers:
+    - rxm7706

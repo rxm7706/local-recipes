@@ -1060,8 +1060,17 @@ description = "Run the Warden multi-axis dependency gate (hygiene + security [+ 
 cmd = "warden"
 
 [feature.pyforge-warden.tasks.pyforge-warden-test]
-description = "Run the pyforge.warden test suite"
-cmd = "pytest src/shared/packages/pyforge-warden/tests -q"
+description = "Run the pyforge.warden test suite (fast default loop -- excludes @pytest.mark.slow)"
+cmd = "pytest src/shared/packages/pyforge-warden/tests -q -m \"not slow\""
+
+[feature.pyforge-warden.tasks.pyforge-warden-test-corpus-oracle]
+description = "Run the slow, corpus-scale differential-oracle + full-corpus determinism + egress-counter proofs (Story 5.2) -- not part of the default loop"
+cmd = "pytest src/shared/packages/pyforge-warden/tests -q -m slow"
+
+[feature.pyforge-warden.tasks.pyforge-warden-dogfood]
+description = "Warden scans its own package (pyproject.toml + src/, tests/ excluded) -- epics.md AC3's dogfood gate"
+cmd = "python scripts/dogfood_scan.py"
+cwd = "src/shared/packages/pyforge-warden"
 
 [feature.pyforge-warden.tasks.pyforge-warden-build-conda]
 description = "Build the conda package (.conda) via pixi-build-python -> dist-conda/"

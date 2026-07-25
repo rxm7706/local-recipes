@@ -1,0 +1,44 @@
+{% set name = "django-statusboard" %}
+{% set version = "0.13.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/django-statusboard-{{ version }}.tar.gz
+  sha256: 190d048865ca059f05ca840f2818593afb0f1049ebb23fb0506ca28c1ef6e061
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - pip
+  run:
+    - python >=3.8
+    - django >=2.2
+    - djangorestframework
+    - django-model-utils
+    - pytz
+
+test:
+  imports:
+    - statusboard
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: http://github.com/edigiacomo/django-statusboard
+  summary: Django app to show system status
+  license: GPL-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

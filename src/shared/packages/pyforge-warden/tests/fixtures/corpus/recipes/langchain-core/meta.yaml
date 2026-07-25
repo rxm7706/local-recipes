@@ -1,0 +1,63 @@
+{% set name = "langchain-core" %}
+{% set version = "0.3.76" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/langchain_core-{{ version }}.tar.gz
+  sha256: 71136a122dd1abae2c289c5809d035cf12b5f2bb682d8a4c1078cd94feae7419
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - pdm-backend
+  run:
+    - typing_extensions >=4.7
+    - python >={{ python_min }},<4.0
+    - pydantic >=2.7.4
+    - langsmith >=0.3.45
+    - tenacity !=8.4.0,<10.0.0,>=8.1.0
+    - jsonpatch <2.0,>=1.33
+    - pyyaml >=5.3
+    - packaging >=23.2
+  run_constrained:
+    - jinja2 >=3.0.0,<4.0.0
+
+test:
+  imports:
+    - langchain_core
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/langchain-ai/langchain
+  doc_url: https://api.python.langchain.com/en/stable/core_api_reference.html
+  dev_url: https://github.com/langchain-ai/langchain/tree/master/libs/core
+  summary: Core APIs for LangChain, the LLM framework for buildilng applications through composability
+  description: LangChain Core contains the core abstractions powering LangChain, including LangChain Expression Language.
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - agola11
+    - baskaryan
+    - ccurme
+    - dlqqq
+    - hinthornw
+    - hwchase17
+    - jan-janssen
+    - pavelzw
+    - rxm7706
+    - sydney-runkle

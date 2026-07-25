@@ -1,0 +1,112 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.7.0"
+
+package:
+  name: ironcalc
+  version: ${{ version }}
+
+source:
+  - url: https://pypi.org/packages/source/i/ironcalc/ironcalc-${{ version }}.tar.gz
+    sha256: c641746809c1bf8d67dcc7d1e16d0c13334a754c6f8360f97edfa610a3eb6490
+
+build:
+  number: 0
+  script:
+    env:
+      CARGO_PROFILE_RELEASE_STRIP: symbols
+      CARGO_PROFILE_RELEASE_LTO: fat
+    content:
+      - cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
+      - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+        - crossenv
+        - maturin >=1,<2
+    - ${{ compiler("c") }}
+    - ${{ stdlib("c") }}
+    - ${{ compiler("rust") }}
+    - cargo-bundle-licenses
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - maturin >=1.7,<2.0
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - ironcalc
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+
+about:
+  homepage: https://www.ironcalc.com/
+  license: Apache-2.0
+  license_file:
+    - bindings/python/LICENSE-Apache-2.0.md
+    - bindings/python/LICENSE-MIT.md
+    - THIRDPARTY.yml
+  summary: Create, edit and evaluate Excel spreadsheets
+  description: |
+    Create, edit and evaluate Excel spreadsheets
+  repository: https://github.com/ironcalc/ironcalc
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: ironcalc
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: ironcalc
+  cfe-purls:
+    - pkg:conda/ironcalc@${{ version }}?channel=conda-forge
+    - pkg:pypi/ironcalc@${{ version }}
+  cfe-upstream-repo: https://github.com/ironcalc/ironcalc
+  cfe-upstream-homepage: https://www.ironcalc.com/
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/ironcalc-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-06-19T13:36:19Z
+  cfe-generated-by-version: 8.30.1
+  cfe-generated-at-datetime: 2026-06-19T13:36:19Z
+####
+# CFE comments
+# Header:
+#    # Generated from python-maturin path; PyO3/maturin detected via sdist
+#    # pyproject.toml [build-system].requires. Modelled on phonors PR pattern
+#    # (modal 27-PR PyO3 sample, Mar 2020 – May 2026). Recipe shape follows the
+#    # 2026 grayskull / conda-forge convention: literal ``package.name``, literal
+#    # ``source.url`` (only ``${ version }`` templated), no ``name`` in context.
+# build:
+#  script:
+#    env:
+#      # Per conda-forge.org/docs/maintainer/example_recipes/rust/ — applies to
+#      # any Rust build (CLI binary OR maturin/PyO3 cdylib). maturin invokes
+#      # cargo build internally and inherits these env vars.
+# context:
+#    # upstream pyproject.toml: requires-python = ">=3.10"
+#  host:
+#    # Pin python to the variant version so rattler-build iterates the
+#    # staged-recipes python matrix (py3.10 / 3.11 / 3.12 / 3.13) instead of
+#    # producing a single artifact for whatever python is in the build env.
+#    # (Without this pin, buildId 1534063 produced only a py3.11 artifact;
+#    # the test stage then couldn't install across the matrix.)
+#  run:
+#    # No version constraint — the conda-smithy lint requires bare `python` in
+#    # run: for non-noarch packages; the variant config drives the matrix.
+####

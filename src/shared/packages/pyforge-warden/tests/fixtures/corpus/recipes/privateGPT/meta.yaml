@@ -1,0 +1,68 @@
+{% set name = "privategpt" %}
+{% set version = "0.1.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+# Local Build Test
+  path: ../
+
+# GitHub Source Main Test
+#  git_url: https://github.com/kedro-org/kedro-plugins.git
+#  git_tag: main
+#  git_depth: 1
+
+# GitHub Wheel Test
+  #url: https://files.pythonhosted.org/packages/1a/8c/6b00ecab80d9aea26f74d7a979953ddc1ca0a6f305fe25dd5d1aabe6803f/teradatasql-17.20.0.24-py3-none-any.whl
+  #sha256: 23675f19f3f16e53dd7375dc45b0304f448b99224ebd8eb561462ad0873565d1
+
+# Pypi Build Target
+#  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/kedro-datasets-{{ version }}.tar.gz
+#  sha256: a4ef6286e1b516f94faf84d8e896487011a9a7642882fc6c620bd3f837bd99a5
+
+build:
+  noarch: python
+  number: 0
+  string: py3_0
+
+# Local Build Test
+  #script: {{ PYTHON }} -m pip install . -vv
+
+# GitHub Source Main Test
+  #script: cd kedro-datasets && {{ PYTHON }} -m pip install . -vv
+
+# GitHub Wheel Test
+  #script: pip install teradatasql-17.20.0.24-py3-none-any.whl -vv
+
+# Pypi Build Target
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  build:
+    - setuptools >=61.2
+  host:
+    - python >=3.7,<3.11
+    - pip
+  run:
+    - python >=3.7,<3.11
+    - kedro >=0.18.4,<0.19.0
+
+test:
+  imports:
+    - kedro_datasets
+  #commands:
+  #  - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/kedro-org/kedro-plugins/tree/main/kedro-datasets
+  summary: Kedro-Datasets is where you can find all of Kedro's data connectors.
+  license: Apache-2.0
+  license_file: LICENSE.md
+
+extra:
+  recipe-maintainers:
+    - rxm7706

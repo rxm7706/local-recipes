@@ -1,0 +1,146 @@
+{% set name = "kedro-datasets" %}
+{% set version = "1.4.0" %}
+{% set build_number = "0" %}
+# https://github.com/conda-forge/junit-xml-feedstock/blob/main/recipe/meta.yaml
+{% set python_tag = "py3" %}
+{% set use_source = "whl" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  {% if use_source == "whl" %}
+  - url: https://pypi.org/packages/{{ python_tag }}/{{ name[0] }}/{{ name }}/{{ name | replace('-', '_') }}-{{ version }}-{{ python_tag }}-none-any.whl
+  #- url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name.replace('-', '_') }}-{{ version }}.tar.gz
+    sha256: "06793b4984b17b6d0b00a306c60580fd76b999e50fcbca296bf17c7ba8426827"
+  {% elif use_source == "tar" %}
+  - url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+    sha256: "dc99e8409667e3a8e73410c9c85f47075330197c9aa27eec7c9365a6a515bf37"
+  {% elif use_source == "src" %}
+  - git_url: https://github.com/kedro-org/kedro-plugins.git
+    git_tag: main
+    git_depth: 1
+  {% elif use_source == "lcl" %}
+  - path: ../
+  {% else %}
+  - url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+    sha256: "dc99e8409667e3a8e73410c9c85f47075330197c9aa27eec7c9365a6a515bf37"
+  {% endif %}
+
+# curl -sL https://github.com/kedro-org/kedro-viz/archive/refs/tags/v6.5.0.tar.gz | sha256sum
+# curl -sL https://files.pythonhosted.org/packages/48/6c/290d5496125ebcec6408100a89d0de3b625e031525d71a2904a8a9865a38/kedro_datasets-1.4.0-py3-none-any.whl | sha256sum
+# curl -sL https://files.pythonhosted.org/packages/48/62/ebaef885d6c26a6488dc382fe5c186864ab714a812d830f0d7ff1ac9ba44/kedro-datasets-1.4.0.tar.gz | sha256sum
+
+# Local Build Test
+  #path: ../
+
+# GitHub Source Main Test
+#  git_url: https://github.com/kedro-org/kedro-plugins.git
+#  git_tag: main
+#  git_depth: 1
+
+# Pypi Wheel Test
+  #url: https://files.pythonhosted.org/packages/48/6c/290d5496125ebcec6408100a89d0de3b625e031525d71a2904a8a9865a38/kedro_datasets-1.4.0-py3-none-any.whl
+  #sha256: 06793b4984b17b6d0b00a306c60580fd76b999e50fcbca296bf17c7ba8426827
+
+# Pypi Build Target
+  #url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/kedro-datasets-{{ version }}.tar.gz
+  #sha256: dc99e8409667e3a8e73410c9c85f47075330197c9aa27eec7c9365a6a515bf37
+
+build:
+  noarch: python
+  number: {{ build_number }}
+  string: py3_{{ use_source }}_{{ build_number }}
+#  error_overlinking: false
+#  skip: true  # [py>=39 or py2k or py<37]
+#  skip: true  # [win or osx]
+  {% if use_source == "whl" %}
+  script: "{{ PYTHON }} -m pip install --no-deps --ignore-installed --no-cache-dir -vvv *.whl"
+  {% elif use_source == "tar" %}
+  script: "{{ PYTHON }} -m pip install --no-deps --ignore-installed --no-cache-dir -vvv ."
+  {% elif use_source == "src" %}
+  script: "cd kedro-datasets && {{ PYTHON }} -m pip install --no-deps --ignore-installed --no-cache-dir -vvv ."
+  {% elif use_source == "lcl" %}
+  script: "{{ PYTHON }} -m pip install --no-deps --ignore-installed --no-cache-dir -vvv ."
+  {% else %}
+  script: "{{ PYTHON }} -m pip install --no-deps --ignore-installed --no-cache-dir -vvv ."
+  {% endif %}
+
+
+# Local Build Test
+  #script: {{ PYTHON }} -m pip install . -vv
+
+# GitHub Source Main Test
+  #script: cd kedro-datasets && {{ PYTHON }} -m pip install . -vv
+
+# Pypi Wheel Test
+  #script: {{ PYTHON }} -m pip install --no-deps --ignore-installed --no-cache-dir -vvv kedro_datasets-1.4.0-py3-none-any.whl
+
+# Pypi Build Target
+  #script:
+   #- cp -R {{ RECIPE_DIR }}/package.json {{ SRC_DIR }}/package.json
+   #- npm install -g sass
+   #- NODE_OPTIONS=--openssl-legacy-provider npm run build
+   #- cp -R build package/kedro_viz/html
+   #- {{ PYTHON }} -m pip install . -vv
+
+# copy missing files
+#build:
+#  noarch: python
+#  script: 
+#    - echo f | xcopy /f /y /S %RECIPE_DIR%\README.md %SRC_DIR%\README.md  # [win]
+#    - cp -R {{ RECIPE_DIR }}/README.md {{ SRC_DIR }}/README.md  # [unix]
+#    - {{ PYTHON }} -m pip install . -vv
+#  number: 0
+
+requirements:
+  build:
+    - setuptools >=61.2
+#    - {{ compiler('c') }}
+#    - {{ compiler('cxx') }}
+#    - {{ compiler('fortran') }}
+#    - {{ compiler('go') }}
+#    - {{ compiler('rust') }}
+#    - {{ stdlib("c") }}
+  host:
+    -  python >=3.8,<3.12
+    - pip
+#    - cmake
+#    - maturin >=0.12,<0.13
+  run:
+    - python >=3.8,<3.12
+    - kedro >=0.18.4,<0.19.0
+    - pyspark >=2.4,<4.0  # [not win]
+    #- matplotlib-base <3.4,>=3.0.3  # [py<39]
+    - apache-airflow >=2.4.0  # [linux or osx]
+    # Keep the package noarch but allow for the osx and linux only dep
+    # https://github.com/conda-forge/pypac-feedstock/blob/main/recipe/meta.yaml
+    # https://github.com/conda-forge/llm-feedstock/blob/main/conda-forge.yml
+    - __linux  # [linux]
+    - __osx    # [osx]
+    - __win    # [win]
+
+test:
+  imports:
+    - kedro_datasets
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/kedro-org/kedro-plugins/tree/main/kedro-datasets
+  summary: Kedro-Datasets is where you can find all of Kedro's data connectors.
+  license: Apache-2.0
+  license_file:
+    {% if use_source == "whl" %}
+    #- "{{ name | replace('-', '_') }}-{{ version }}.dist-info/LICENSE"
+    - LICENSE
+    {% else %}
+    - LICENSE
+    {% endif %}
+
+extra:
+  recipe-maintainers:
+    - rxm7706

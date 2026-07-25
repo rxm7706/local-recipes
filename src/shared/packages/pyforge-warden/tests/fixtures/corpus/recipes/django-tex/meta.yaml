@@ -1,0 +1,45 @@
+{% set name = "django-tex" %}
+{% set version = "1.1.12" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name | replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: e9075209847d629f956b4ba2645a99146aa4e35527b188cce0e47532ea88a170
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - setuptools-scm
+    - pip
+    - setuptools
+  run:
+    - python >={{ python_min }}
+    - django >=2.2
+    - jinja2 >=2.9
+
+test:
+  imports:
+    - django_tex
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/weinbusch/django-tex
+  summary: A simple Django app to render Latex templates and compile them into PDF files.
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

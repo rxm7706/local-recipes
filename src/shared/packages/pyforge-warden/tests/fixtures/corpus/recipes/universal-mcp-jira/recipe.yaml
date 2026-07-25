@@ -1,0 +1,54 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: universal-mcp-jira
+  version: "0.1.4"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/universal_mcp_jira-${{ version }}.tar.gz
+  sha256: 1565bdf9b285cf201a2f99fb577fa6f178322b991178bc5eadb0afd0839844bf
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - universal_mcp_jira = universal_mcp_jira:main
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - hatchling
+    - pip
+  run:
+    - python >=${{ python_min }},<4.0
+    - universal-mcp >=0.1.11
+
+tests:
+  - python:
+      imports:
+        - universal_mcp_jira
+      pip_check: true
+      python_version: ${{ python_min }}.*
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}.*
+    script:
+      - universal_mcp_jira --help
+
+about:
+  summary: "A Universal MCP Application: universal_mcp_jira"
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/universal-mcp/jira
+
+extra:
+  recipe-maintainers:
+    - rxm7706

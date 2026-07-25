@@ -1,0 +1,45 @@
+{% set name = "dbt-spark" %}
+{% set version = "1.8.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/dbt_spark-{{ version }}.tar.gz
+  sha256: 50ad423ba36617e52fe7539137fc17e5baeef63eb5561809fc4dea26a87dd2fc
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+  run:
+    - python >={{ python_min }}
+    - sqlparams >=3.0.0
+    - dbt-common >=0.1.0,<2.0
+    - dbt-adapters >=0.1.0,<2.0
+    - dbt-core >=1.8.0
+
+test:
+  imports:
+    - dbt
+  commands:
+    - pip check
+  requires:
+    - python {{ python_min }}
+    - pip
+
+about:
+  home: https://github.com/dbt-labs/dbt-spark
+  summary: The Apache Spark adapter plugin for dbt
+  license: Apache-2.0
+  license_file: License.md
+
+extra:
+  recipe-maintainers:
+    - rxm7706

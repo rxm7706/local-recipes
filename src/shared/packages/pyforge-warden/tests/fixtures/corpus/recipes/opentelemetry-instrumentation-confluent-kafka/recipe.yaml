@@ -1,0 +1,85 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.64b0"
+
+package:
+  name: opentelemetry-instrumentation-confluent-kafka
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/o/opentelemetry-instrumentation-confluent-kafka/opentelemetry_instrumentation_confluent_kafka-${{ version }}.tar.gz
+  sha256: 985cea8cd00881181eb330142a67d5bc1607a60bb0eba30a888fb5260a311e76
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - opentelemetry-instrumentation==${{ version }}
+    - opentelemetry-semantic-conventions==${{ version }}
+    - opentelemetry-api >=1.12,<2.dev0
+    - wrapt >=1.0.0,<3.0.0
+    - python-confluent-kafka >=1.8.2,<=2.11.0
+
+tests:
+  - python:
+      imports:
+        - opentelemetry.instrumentation.confluent_kafka
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/open-telemetry/opentelemetry-python-contrib/tree/main/instrumentation/opentelemetry-instrumentation-confluent-kafka
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: OpenTelemetry Confluent Kafka instrumentation
+  description: |
+    OpenTelemetry Confluent Kafka instrumentation
+  repository: https://github.com/open-telemetry/opentelemetry-python-contrib
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+    - conda-forge/opentelemetry-api
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: opentelemetry-instrumentation-confluent-kafka
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: opentelemetry-instrumentation-confluent-kafka
+  cfe-purls:
+    - pkg:conda/opentelemetry-instrumentation-confluent-kafka@${{ version }}?channel=conda-forge
+    - pkg:pypi/opentelemetry-instrumentation-confluent-kafka@${{ version }}
+  cfe-upstream-repo: https://github.com/open-telemetry/opentelemetry-python-contrib
+  cfe-upstream-homepage: https://github.com/open-telemetry/opentelemetry-python-contrib
+  cfe-import-names: [opentelemetry_instrumentation_confluent_kafka]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/opentelemetry-instrumentation-confluent-kafka-feedstock
+  cfe-forge-recipe-updates-needed: [version-bump-to-0.64b0]
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-07-03T04:00:00Z
+  cfe-generated-by-version: 8.65.0
+  cfe-generated-at-datetime: 2026-07-03T04:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-07-03T04:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # 2026-07-03 punch-list full-gate pass (tracker issue -> local verification).
+####

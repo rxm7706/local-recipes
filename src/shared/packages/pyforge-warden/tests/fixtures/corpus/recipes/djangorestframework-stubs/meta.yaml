@@ -1,0 +1,49 @@
+{% set name = "djangorestframework-stubs" %}
+{% set version = "3.14.4" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/djangorestframework-stubs-{{ version }}.tar.gz
+  sha256: 8ee8719bfeb647b92cc200e15b3cc9813d2e4468c8190777a55a121542a4b2d4
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - setuptools
+    - wheel
+    - pip
+  run:
+    - python >=3.8
+    - mypy >=0.991
+    - django-stubs >=4.2.5
+    - typing-extensions >=3.10.0
+    - requests >=2.0.0
+    - types-requests >=0.1.12
+    - types-pyyaml >=5.4.3
+
+test:
+  imports:
+    - mypy_drf_plugin
+    - rest_framework-stubs
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/typeddjango/djangorestframework-stubs
+  summary: PEP-484 stubs for django-rest-framework
+  license: MIT
+  license_file: LICENSE.txt
+
+extra:
+  recipe-maintainers:
+    - rxm7706

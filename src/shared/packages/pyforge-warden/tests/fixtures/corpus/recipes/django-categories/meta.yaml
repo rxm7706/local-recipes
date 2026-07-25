@@ -1,0 +1,44 @@
+{% set name = "django-categories" %}
+{% set version = "1.9.2" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/django-categories-{{ version }}.tar.gz
+  sha256: 1aa4b5ea27fd325eba2eb1b71e4574c35413c881c2eea151cd072bbfd57973c7
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - setuptools >=40.9.0
+    - wheel
+    - pip
+  run:
+    - python >=3.8
+    - django-mptt
+    - unicode-slugify
+
+test:
+  imports:
+    - categories
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: http://github.com/jazzband/django-categories
+  summary: A way to handle one or more hierarchical category trees in django.
+  license: Apache-2.0
+  license_file: LICENSE.txt
+
+extra:
+  recipe-maintainers:
+    - rxm7706

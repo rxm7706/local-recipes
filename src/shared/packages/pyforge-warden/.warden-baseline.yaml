@@ -1,0 +1,94 @@
+# pyforge-warden's own dogfood baseline (Story 5.2, epics.md AC3).
+#
+# This package's pyproject.toml deliberately declares its dependencies
+# WITHOUT exact version pins (a library convention, revised architecture's
+# "lean, targeted dependency set") and ships no lockfile of its own — so
+# Warden's vulnerability/currency axes cannot resolve a concrete version to
+# match against the offline OSV DB / endoflife.date snapshot for any of
+# them (indeterminate:no-version:/currency:unknown:), and the dogfood scan
+# runs with no ambient OSV DB provisioned either
+# (indeterminate:offline-db-unavailable:) — the same honest "we don't know"
+# signal any Warden-scanned project would get if it were also unpinned and
+# unprovisioned. These are grandfathered here, NOT suppressed via
+# --warn-only/--fail-under-coverage, so they stay individually visible
+# (report.render_text still lists every one) while letting the gate
+# proceed on this package's REAL signal: hygiene (deptry) and any
+# resolvable license/currency/vulnerability finding for a dependency that
+# DOES carry enough information to assess. A genuinely NEW finding (a
+# different id — e.g. a newly-added, actually-unused dependency, or an
+# import missing from dependencies) is UNAFFECTED by this file and still
+# gates normally (test_dogfood.py's seeded-violation half proves this).
+#
+# Regenerate via (from src/shared/packages/pyforge-warden/):
+#   python scripts/dogfood_scan.py --emit-baseline
+# — the SAME staged {pyproject.toml, src/} copy the gate scans. (A raw
+# `warden scan <package-dir> --baseline-emit` would sweep the deliberately
+# adversarial tests/ fixtures into the stanza — never use it here.) The
+# emitted entries carry warden's 14-day default expires_at; the dates below
+# were deliberately extended to 1 year — review/re-stamp each before
+# replacing this file, never blind-copy.
+#
+# NOTE: every entry below expires 2027-07-24T00:00:00Z SIMULTANEOUSLY. On
+# that date the dogfood gate (test_dogfood.py's clean-state half + the
+# pyforge-warden-dogfood pixi task) goes red with expired-baseline notices
+# until the entries are re-reviewed and re-stamped via the command above —
+# a calendar-driven maintenance action, not a code regression.
+version: 1
+baseline:
+  - id: "currency:unknown:!python-runtime@3.14.6"
+    expires_at: "2027-07-24T00:00:00+00:00"
+    reason: "pyforge-warden's own manifest carries no lockfile; the running interpreter's currency cannot be resolved against the bundled/ambient registry in a bare dogfood run"
+  - id: "currency:unknown:PyYAML@unspecified"
+    expires_at: "2027-07-24T00:00:00+00:00"
+    reason: "unpinned dependency (library convention) -- no concrete version to assess currency against"
+  - id: "currency:unknown:cyclonedx-python-lib@unspecified"
+    expires_at: "2027-07-24T00:00:00+00:00"
+    reason: "unpinned dependency (library convention) -- no concrete version to assess currency against"
+  - id: "currency:unknown:jsonschema@unspecified"
+    expires_at: "2027-07-24T00:00:00+00:00"
+    reason: "unpinned dependency (library convention) -- no concrete version to assess currency against"
+  - id: "currency:unknown:license-expression@unspecified"
+    expires_at: "2027-07-24T00:00:00+00:00"
+    reason: "unpinned dependency (library convention) -- no concrete version to assess currency against"
+  - id: "currency:unknown:packageurl-python@unspecified"
+    expires_at: "2027-07-24T00:00:00+00:00"
+    reason: "unpinned dependency (library convention) -- no concrete version to assess currency against"
+  - id: "currency:unknown:packaging@unspecified"
+    expires_at: "2027-07-24T00:00:00+00:00"
+    reason: "unpinned dependency (library convention) -- no concrete version to assess currency against"
+  - id: "indeterminate:no-version:PyYAML"
+    expires_at: "2027-07-24T00:00:00+00:00"
+    reason: "unpinned dependency (library convention) -- withheld from vulnerability matching, no concrete version"
+  - id: "indeterminate:no-version:cyclonedx-python-lib"
+    expires_at: "2027-07-24T00:00:00+00:00"
+    reason: "unpinned dependency (library convention) -- withheld from vulnerability matching, no concrete version"
+  - id: "indeterminate:no-version:jsonschema"
+    expires_at: "2027-07-24T00:00:00+00:00"
+    reason: "unpinned dependency (library convention) -- withheld from vulnerability matching, no concrete version"
+  - id: "indeterminate:no-version:license-expression"
+    expires_at: "2027-07-24T00:00:00+00:00"
+    reason: "unpinned dependency (library convention) -- withheld from vulnerability matching, no concrete version"
+  - id: "indeterminate:no-version:packageurl-python"
+    expires_at: "2027-07-24T00:00:00+00:00"
+    reason: "unpinned dependency (library convention) -- withheld from vulnerability matching, no concrete version"
+  - id: "indeterminate:no-version:packaging"
+    expires_at: "2027-07-24T00:00:00+00:00"
+    reason: "unpinned dependency (library convention) -- withheld from vulnerability matching, no concrete version"
+  - id: "indeterminate:offline-db-unavailable:PyYAML@unspecified"
+    expires_at: "2027-07-24T00:00:00+00:00"
+    reason: "no OSV DB is provisioned for the bare dogfood scan (NFR-S2: never fetch silently) -- see docs/reference for real-deployment DB provisioning"
+  - id: "indeterminate:offline-db-unavailable:cyclonedx-python-lib@unspecified"
+    expires_at: "2027-07-24T00:00:00+00:00"
+    reason: "no OSV DB is provisioned for the bare dogfood scan (NFR-S2: never fetch silently) -- see docs/reference for real-deployment DB provisioning"
+  - id: "indeterminate:offline-db-unavailable:jsonschema@unspecified"
+    expires_at: "2027-07-24T00:00:00+00:00"
+    reason: "no OSV DB is provisioned for the bare dogfood scan (NFR-S2: never fetch silently) -- see docs/reference for real-deployment DB provisioning"
+  - id: "indeterminate:offline-db-unavailable:license-expression@unspecified"
+    expires_at: "2027-07-24T00:00:00+00:00"
+    reason: "no OSV DB is provisioned for the bare dogfood scan (NFR-S2: never fetch silently) -- see docs/reference for real-deployment DB provisioning"
+  - id: "indeterminate:offline-db-unavailable:packageurl-python@unspecified"
+    expires_at: "2027-07-24T00:00:00+00:00"
+    reason: "no OSV DB is provisioned for the bare dogfood scan (NFR-S2: never fetch silently) -- see docs/reference for real-deployment DB provisioning"
+  - id: "indeterminate:offline-db-unavailable:packaging@unspecified"
+    expires_at: "2027-07-24T00:00:00+00:00"
+    reason: "no OSV DB is provisioned for the bare dogfood scan (NFR-S2: never fetch silently) -- see docs/reference for real-deployment DB provisioning"

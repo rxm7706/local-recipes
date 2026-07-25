@@ -1,0 +1,45 @@
+{% set name = "djangocms-icon" %}
+{% set version = "2.1.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name | replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: 77f7b4c697d652077113203049b54c32c27cf2d05cc45e7275520d1762569ad3
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - django
+    - python >={{ python_min }}
+    - django-cms >=3.10
+    - djangocms-attributes-field >=1
+
+test:
+  imports:
+    - djangocms_icon
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/django-cms/djangocms-icon
+  summary: Adds icon plugin to django CMS.
+  license: BSD-3-Clause
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

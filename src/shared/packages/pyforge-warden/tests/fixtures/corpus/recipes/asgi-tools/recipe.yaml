@@ -1,0 +1,135 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "3.0.0"
+
+package:
+  name: asgi-tools
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/a/asgi-tools/asgi_tools-${{ version }}.tar.gz
+  sha256: 631455eb982434ab6b6f609d59f81fd636f314c98f50c604db3977b5e1a7a985
+
+build:
+  number: 0
+  skip:
+    - match(python, "<3.11")
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ stdlib('c') }}
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+        - cython
+  host:
+    - python
+    - pip
+    - setuptools
+    - wheel
+    - cython
+  run:
+    - python
+    - http-router >=4.0.0
+    - multidict >=6.6.3
+    - sniffio
+    - yarl >=1.8.2
+
+tests:
+  - python:
+      imports:
+        - asgi_tools
+      pip_check: true
+
+about:
+  summary: ASGI Toolkit to build web applications
+  description: |
+    ASGI-Tools is a toolkit for building ASGI web applications and middleware.
+    It provides request/response abstractions, routing, middleware, a test
+    client, and multipart form parsing. The form-parsing and multipart hot
+    paths are implemented in Cython.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/klen/asgi-tools
+  repository: https://github.com/klen/asgi-tools
+  documentation: https://klen.github.io/asgi-tools
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: asgi-tools
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: asgi-tools
+  cfe-purls:
+    - pkg:conda/asgi-tools@${{ version }}?channel=conda-forge
+    - pkg:pypi/asgi-tools@${{ version }}
+  cfe-upstream-repo: https://github.com/klen/asgi-tools
+  cfe-upstream-homepage: https://github.com/klen/asgi-tools
+  cfe-import-names: [asgi_tools]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: compiled
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: local-only-pending-submission-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - "blocked on http-router, which is not on conda-forge and is not cleanly submittable yet (upstream ships no license file). asgi-tools itself is clean and stable; it only waits on its own prerequisite."
+  cfe-last-checked: 2026-07-14T00:00:00Z
+  cfe-generated-by-version: 8.77.0
+  cfe-generated-at-datetime: 2026-07-14T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-07-14T19:06:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    Packaged as a prerequisite of the reactpy v2 chain. reactpy-router 3.0.0b1
+#    requires reactpy[asgi]; conda has no extras (G25), so reactpy's asgi extra
+#    (asgi-tools + asgiref + orjson + servestatic) is flattened into
+#    reactpy-router's run deps -- which is the only reason this package is
+#    needed. Verified compiled per G46/G48: sdist ships asgi_tools/{forms,
+#    multipart}.pyx + .pxd, and PyPI publishes 28 per-Python cp3XX wheels with
+#    zero py3-none-any fallback.
+# build:
+#  skip:
+#    Upstream requires-python is ">=3.11,<4" but the conda-forge matrix starts
+#    at 3.10, so the 3.10 variant would fail at pip install. Skipped with the v1
+#    match() form -- the generator emitted `skip: py>=400`, a v0-style selector
+#    that v1 silently ignores (G3), so it was doing nothing at all.
+#    NOTE: this 3.11 floor is what forces the whole downstream chain to 3.11;
+#    it agrees with reactpy 2.x and reactpy-router 3.x, which also require 3.11.
+#    The upstream "<4" cap is not mirrored in run: -- the python_abi run_export
+#    already pins this per-Python artifact to one exact interpreter.
+# requirements:
+#  build:
+#    stdlib('c') is mandatory alongside compiler('c') and was missing from the
+#    generated recipe (STD-001). The generator also emitted `noarch: python`
+#    next to compiler('c') -- contradictory; dropped.
+#  host:
+#    setuptools + wheel + cython are all declared in the sdist's
+#    [build-system].requires, so all three stay (not the G8 case). The legacy
+#    setup_requires=["wheel"] in setup.py is satisfied by `wheel` in host, so no
+#    build-time fetch (G55 addendum). setup.py honors ASGI_TOOLS_NO_EXTENSIONS
+#    to force a pure-Python build; unused -- we match upstream's accelerated build.
+#  run:
+#    Exactly the 4 PEP 621 [project].dependencies. orjson is deliberately NOT
+#    listed: it appears only in the [tests] and [orjson] extras, which nothing
+#    in this chain activates (G25 says flatten activated extras, not all of them).
+# tests:
+#    No CFEP-25 cross-version triad -- per-Python compiled artifact (G49).
+# about:
+#    license_file: LICENSE ships in the sdist (canonical placement pattern 1).
+#    Its "Copyright (c) 2020 Kirill Klenov" independently corroborates the
+#    reconstructed LICENSE vendored into the sibling http-router recipe (same
+#    author, same year). The generator emitted homepage=pypi.org/project/... and
+#    an RST image directive as the description; both rewritten.
+####

@@ -1,0 +1,46 @@
+{% set name = "wagtail-font-awesome-svg" %}
+{% set version = "2.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name | replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: aac01b5ea8b0c3de3e363a91aa5067f514b9cd385224d6ba7153d9de47120493
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - wagtail
+    - python >={{ python_min }}
+
+test:
+  imports:
+    - wagtailfontawesomesvg
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/wagtail-nest/wagtail-font-awesome-svg
+  summary: Font Awesome icons as SVG for Wagtail
+  license: Unlicense AND MIT
+  license_file:
+    - LICENSE
+    - wagtailfontawesomesvg/templates/wagtailfontawesomesvg/regular/copyright.svg
+    - wagtailfontawesomesvg/templates/wagtailfontawesomesvg/solid/copyright.svg
+
+extra:
+  recipe-maintainers:
+    - rxm7706

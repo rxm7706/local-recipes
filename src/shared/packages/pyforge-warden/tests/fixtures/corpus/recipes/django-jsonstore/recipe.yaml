@@ -1,0 +1,80 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.5.1"
+
+package:
+  name: django-jsonstore
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/django-jsonstore/django-jsonstore-${{ version }}.tar.gz
+  sha256: fe49dd134b2c86ac434f77244be28102616783521c22de6d361879824b6d1a27
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - django
+    - six
+
+tests:
+  - python:
+      imports:
+        - jsonstore
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: http://github.com/viewflow/jsonstore
+  license: AGPL-3.0-only
+  license_file: LICENSE
+  summary: Expose JSONField data as a virtual django model fields.
+  description: |
+    Expose JSONField data as a virtual django model fields.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: django-jsonstore
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: django-jsonstore
+  cfe-purls:
+    - pkg:conda/django-jsonstore@${{ version }}?channel=conda-forge
+    - pkg:pypi/django-jsonstore@${{ version }}
+  cfe-upstream-repo: http://github.com/viewflow/jsonstore
+  cfe-upstream-homepage: http://github.com/viewflow/jsonstore
+  cfe-import-names: [jsonstore]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django-jsonstore-feedstock
+  cfe-forge-recipe-updates-needed: [version-bump-to-0.5.1]
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-07-03T04:00:00Z
+  cfe-generated-by-version: 8.65.0
+  cfe-generated-at-datetime: 2026-07-03T04:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-07-03T04:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # 2026-07-03 punch-list full-gate pass (tracker issue -> local verification).
+####

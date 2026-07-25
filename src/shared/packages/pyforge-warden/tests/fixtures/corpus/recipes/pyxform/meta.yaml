@@ -1,0 +1,48 @@
+{% set name = "pyxform" %}
+{% set version = "2.0.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/pyxform-{{ version }}.tar.gz
+  sha256: 0ed79df4b4a54466ec3e2c759b24746954a8fedc468a763909ec87918d3cbb69
+
+build:
+  entry_points:
+    - xls2xform=pyxform.xls2xform:main_cli
+    - pyxform_validator_update=pyxform.validators.updater:main_cli
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.7
+    - pip
+  run:
+    - python >=3.7
+    - xlrd ==2.0.1
+    - openpyxl ==3.0.9
+    - defusedxml ==0.7.1
+
+test:
+  imports:
+    - pyxform
+  commands:
+    - pip check
+    - xls2xform --help
+    - pyxform_validator_update --help
+  requires:
+    - pip
+
+about:
+  home: http://pypi.python.org/pypi/pyxform/
+  summary: A Python package to create XForms for ODK Collect.
+  license: BSD-2-Clause
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

@@ -1,0 +1,53 @@
+{% set name = "django-guardian" %}
+{% set version = "3.2.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name | replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: 9e18ecd2e211b665972690c2d03d27bce0ea4932b5efac24a4bb9d526950a69e
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - setuptools >=61
+    - wheel
+    - pip
+  run:
+    - typing_extensions >=4.12.0
+    - django-environ
+    - guardian
+    - python >={{ python_min }}
+    - django >=3.2
+
+test:
+  imports:
+    - guardian
+  commands:
+    - pip check
+    - DJANGO_SETTINGS_MODULE=guardian.testapp.testsettings pytest --pyargs guardian
+  requires:
+    - django-environ >=0.12.0
+    - pip
+    - pytest >=8.3.4
+    - pytest-django >=4.9.0
+    - python {{ python_min }}
+
+about:
+  home: http://github.com/django-guardian/django-guardian
+  summary: Implementation of per object permissions for Django.
+  license: BSD-3-Clause
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - cshaley
+    - sannykr
+    - abraha2d

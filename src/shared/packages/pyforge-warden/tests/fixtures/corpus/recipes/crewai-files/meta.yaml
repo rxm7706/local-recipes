@@ -1,0 +1,51 @@
+{% set name = "crewai-files" %}
+{% set version = "1.14.1" %}
+{% set python_min = "3.10" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/c/crewai-files/crewai_files-{{ version }}.tar.gz
+  sha256: e9b961642fa7647bf412dffc771625c3c88c1a0d2ec8b58e9a8e1adb269797c6
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - hatchling
+    - pip
+  run:
+    - python >={{ python_min }},<3.14
+    - pillow >=12.1.1,<12.2.0
+    - pypdf >=6.9.1,<6.10.0
+    - python-magic >=0.4.27
+    - aiocache >=0.12.3,<0.13.0
+    - aiofiles >=24.1.0,<24.2.0
+    - tinytag >=2.2.1,<2.3.0
+    - av >=13.0.0,<13.1.0
+    - pydantic-settings >=2.10.1,<2.11.0
+
+test:
+  imports:
+    - crewai_files
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://pypi.org/project/crewai-files/
+  summary: File handling utilities for CrewAI multimodal inputs
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

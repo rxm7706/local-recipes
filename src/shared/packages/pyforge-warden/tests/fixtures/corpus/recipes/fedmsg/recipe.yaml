@@ -1,0 +1,87 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.1.7"
+
+package:
+  name: fedmsg
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/f/fedmsg/fedmsg-${{ version }}.tar.gz
+  sha256: 70786f09dcfab43f5c8afa77278d3d0538bb7337475d70f207899d343e0be315
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - fedmsg-logger=fedmsg.commands.logger:logger
+      - fedmsg-tail=fedmsg.commands.tail:tail
+      - fedmsg-collectd=fedmsg.commands.collectd:collectd
+      - fedmsg-announce=fedmsg.commands.announce:announce
+      - fedmsg-trigger=fedmsg.commands.trigger:trigger
+      - fedmsg-dg-replay=fedmsg.commands.replay:replay
+      - fedmsg-check=fedmsg.commands.check:check
+      - fedmsg-hub=fedmsg.commands.hub:hub
+      - fedmsg-relay=fedmsg.commands.relay:relay
+      - fedmsg-signing-relay=fedmsg.commands.relay:signing_relay
+      - fedmsg-gateway=fedmsg.commands.gateway:gateway
+      - fedmsg-irc=fedmsg.commands.ircbot:ircbot
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - ez_setup
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - pyzmq
+    - kitchen
+    - requests
+    - six
+    - arrow
+    - setuptools
+    - pygments
+    - psutil
+    - click
+    - cryptography >=1.6
+    - pyOpenSSL >=16.1.0
+
+tests:
+  - python:
+      imports:
+        - fedmsg
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+  - requirements:
+      run:
+        - pip
+        - python
+    script:
+      - fedmsg-logger --help
+      - fedmsg-tail --help
+      - fedmsg-collectd --help
+      - fedmsg-announce --help
+      - fedmsg-trigger --help
+      - fedmsg-dg-replay --help
+      - fedmsg-check --help
+      - fedmsg-hub --help
+      - fedmsg-relay --help
+      - fedmsg-signing-relay --help
+      - fedmsg-gateway --help
+      - fedmsg-irc --help
+
+about:
+  summary: Fedora Messaging Client API
+  license: LGPL-2.1-only
+  license_file: LICENSE
+  homepage: https://github.com/fedora-infra/fedmsg/
+
+extra:
+  recipe-maintainers:
+    - rxm7706

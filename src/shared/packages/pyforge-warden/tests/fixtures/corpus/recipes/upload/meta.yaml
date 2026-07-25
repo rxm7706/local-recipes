@@ -1,0 +1,44 @@
+{% set name = "upload" %}
+{% set version = "0.1.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/upload-{{ version }}.tar.gz
+  sha256: 55bbe50501ee46d38deb178b6d5bf9091021bb10b25275d18133ba590f7222ae
+
+build:
+  entry_points:
+    - upload = upload.main:cli
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python
+    - pip
+  run:
+    - python
+    - qiniu
+
+test:
+  imports:
+    - upload
+  commands:
+    - pip check
+    - upload --help
+  requires:
+    - pip
+
+about:
+  home: https://gitlab.com/jacksao/upload
+  summary: 文档分享程序
+  license: ''
+  license_file: PLEASE_ADD_LICENSE_FILE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

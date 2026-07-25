@@ -1,0 +1,46 @@
+{% set name = "pdfminer-six" %}
+{% set version = "20251230" %}
+{% set python_min = "3.10" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/pdfminer_six-{{ version }}.tar.gz
+  sha256: e8f68a14c57e00c2d7276d26519ea64be1b48f91db1cdc776faa80528ca06c1e
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - setuptools >=61.0
+    - setuptools-scm >=8
+    - pip
+  run:
+    - python >={{ python_min }}
+    - charset-normalizer >=2.0.0
+    - cryptography >=36.0.0
+
+test:
+  imports:
+    - pdfminer
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/pdfminer/pdfminer.six
+  summary: PDF parser and analyzer
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - sarthakpati

@@ -1,0 +1,44 @@
+{% set name = "django-allauth" %}
+{% set version = "65.1.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/django_allauth-{{ version }}.tar.gz
+  sha256: ab2c32c51797bab1e7a334f37afa61ef4a88c6f13dfd7bd898a16e2b7e567ef0
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - setuptools >=40.8.0
+    - pip
+  run:
+    - python >=3.8
+    - django >=4.2
+    - asgiref >=3.8.1
+
+test:
+  imports:
+    - allauth
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://allauth.org
+  summary: Integrated set of Django applications addressing authentication, registration, account management as well as 3rd party (social) account authentication.
+  dev_url: https://codeberg.org/allauth/django-allauth
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

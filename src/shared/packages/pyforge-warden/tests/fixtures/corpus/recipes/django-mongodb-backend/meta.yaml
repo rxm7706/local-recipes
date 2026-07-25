@@ -1,0 +1,60 @@
+{% set name = "django-mongodb-backend" %}
+{% set version = "6.0.3" %}
+{% set python_min = "3.12" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/django_mongodb_backend-{{ version }}.tar.gz
+  sha256: d5bbe460c4f1d6366242993c8894d03752a789737ef9dcd09b496bb9135d360f
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - hatchling
+    - hatch-requirements-txt >=0.4.1
+    - pip
+  run:
+    - python >={{ python_min }}
+    - django <6.1,>=6.0
+    - pymongo <5.0,>=4.7
+    # - sphinx-copybutton
+    # - sphinx >=7
+    # - furo >=2025.7.19
+    # - sphinx-copybutton
+    # - sphinx >=7
+    # - furo >=2025.7.19
+    # - sphinx-copybutton
+    # - sphinx >=7
+    # - furo >=2025.7.19
+    # - sphinx-copybutton
+    # - sphinx >=7
+    # - furo >=2025.7.19
+
+test:
+  imports:
+    - django_mongodb_backend
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+
+about:
+  summary: Django MongoDB Backend
+  home: https://www.mongodb.com/docs/languages/python/django-mongodb/current/
+  dev_url: https://github.com/mongodb-labs/django-mongodb-backend
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

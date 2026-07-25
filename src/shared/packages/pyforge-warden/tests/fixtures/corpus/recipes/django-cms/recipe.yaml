@@ -1,0 +1,88 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "5.0.8"
+
+package:
+  name: django-cms
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/django-cms/django_cms-${{ version }}.tar.gz
+  sha256: ad3c640cfd784d93f0fb33fd3ba8ecfbd024c2e65b01a86a14379a0a5a895283
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - django >=2.2
+    - django-classy-tags >=0.7.2
+    - django-formtools >=2.1
+    - django-treebeard >=4.3
+    - django-sekizai >=0.7
+    - djangocms-admin-style >=1.2
+    - packaging
+    - setuptools
+
+tests:
+  - python:
+      imports:
+        - cms
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://www.django-cms.org/
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Lean enterprise content management powered by Django.
+  description: |
+    Lean enterprise content management powered by Django.
+  repository: https://github.com/django-cms/django-cms
+  documentation: https://docs.django-cms.org/
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: django-cms
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: django-cms
+  cfe-purls:
+    - pkg:conda/django-cms@${{ version }}?channel=conda-forge
+    - pkg:pypi/django-cms@${{ version }}
+  cfe-upstream-repo: https://github.com/django-cms/django-cms
+  cfe-upstream-homepage: https://github.com/django-cms/django-cms
+  cfe-import-names: [cms]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django-cms-feedstock
+  cfe-forge-recipe-updates-needed: [version-bump-to-5.0.8]
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-07-03T04:00:00Z
+  cfe-generated-by-version: 8.65.0
+  cfe-generated-at-datetime: 2026-07-03T04:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-07-03T04:00:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # 2026-07-03 punch-list full-gate pass (tracker issue -> local verification).
+####

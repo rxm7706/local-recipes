@@ -1,0 +1,40 @@
+{% set name = "django-json-ld" %}
+{% set version = "0.0.5" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/django-json-ld-{{ version }}.tar.gz
+  sha256: c5a33ccdcb697757c5affc88de16892e2d48c4a724e23c48fbf087b2caf0a8a5
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python
+    - pip
+  run:
+    - python
+
+test:
+  imports:
+    - django_json_ld
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/hiimdoublej/django-json-ld
+  summary: Django template tag for json-ld
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

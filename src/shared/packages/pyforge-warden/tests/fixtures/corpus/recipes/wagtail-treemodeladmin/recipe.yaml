@@ -1,0 +1,55 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: wagtail-treemodeladmin
+  version: "1.11.0"
+  python_min: "3.12"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/wagtail_treemodeladmin-${{ version }}.tar.gz
+  sha256: 357a619589168ee558a1d96249a46575d973a65c59a7f824ace04c0878e5d7d7
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - setuptools >=63
+    - setuptools-scm >=8
+    - pip
+  run:
+   - python >=${{ python_min }},<4.0
+    - wagtail >=6.3
+    - wagtail-modeladmin >=1.0
+
+tests:
+  - python:
+      imports:
+        - treemodeladmin
+      pip_check: true
+      python_version:
+      - ${{ python_min }}.*
+      - "*"
+  - requirements:
+      run:
+        - pip
+        - python {{ python_min }}
+
+about:
+  summary: TreeModelAdmin for Wagtail
+  homepage: https://github.com/cfpb/wagtail-treemodeladmin
+  license: CC0-1.0
+  license_file: LICENSE
+  repository: https://github.com/cfpb/wagtail-treemodeladmin
+
+extra:
+  recipe-maintainers:
+    - rxm7706

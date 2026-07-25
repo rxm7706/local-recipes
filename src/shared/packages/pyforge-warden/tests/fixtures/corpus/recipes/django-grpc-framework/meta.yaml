@@ -1,0 +1,44 @@
+{% set name = "django-grpc-framework" %}
+{% set version = "0.3.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/django-grpc-framework-{{ version }}.tar.gz
+  sha256: df09b29285f66b7f70d973a1cde5af3e2fa249070f2f932f498422dd9d05d02e
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - wheel
+    - pip
+  run:
+    - python >=3.8
+    - django >=2.1
+    - grpcio >=1.27.1
+    - grpcio-tools >=1.27.1
+
+test:
+  imports:
+    - grpc_framework
+  commands:
+    #- pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/itswcg/django-grpc-framework
+  summary: gRPC for Django
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

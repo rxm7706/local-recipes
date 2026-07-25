@@ -1,0 +1,40 @@
+{% set name = "wagtail-grafl" %}
+{% set version = "0.0.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/wagtail_grafl-{{ version }}.tar.gz
+  sha256: 08fe8421a907942b3bd043e2e2332eed2b9cc446766f7317957ca73dd0653cd7
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - pip
+  run:
+    - python >=3.8
+
+test:
+  imports:
+    - wagtail_grafl
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/cursive-works/wagtail-grafl
+  summary: grafl.io integration for Wagtail CMS
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

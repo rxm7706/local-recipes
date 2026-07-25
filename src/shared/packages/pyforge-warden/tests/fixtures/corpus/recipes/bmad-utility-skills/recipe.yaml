@@ -1,0 +1,105 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: bmad-utility-skills
+  version: "2.0.0"
+  # Upstream (bmad-code-org/bmad-utility-skills) has no release tags as of 2026-04-26.
+  # Pinned to the latest main commit; bump both `version` and `commit` together.
+  commit: 904e694573afcb76d554277f5137e94d578e5136
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/bmad-code-org/bmad-utility-skills/archive/${{ commit }}.tar.gz
+  sha256: fa50dc8fba0b0ce8fa6939463b7538dc1f0811488561845c7898166ef5bcc130
+
+build:
+  number: 0
+  noarch: generic
+
+requirements:
+  run:
+    - python >=3.10
+
+tests:
+  - script:
+      - if: not win
+        then:
+          - bmad-utility-skills-install --help
+          - test -d "${CONDA_PREFIX}/share/bmad-utility-skills/skills"
+          - test -d "${CONDA_PREFIX}/share/bmad-utility-skills/skills/bmad-os-gh-triage"
+          - test -d "${CONDA_PREFIX}/share/bmad-utility-skills/skills/bmad-os-review-pr"
+          - test -d "${CONDA_PREFIX}/share/bmad-utility-skills/skills/bmad-os-changelog"
+          - test -f "${CONDA_PREFIX}/share/bmad-utility-skills/.claude-plugin/marketplace.json"
+      - if: win
+        then:
+          - bmad-utility-skills-install.bat --help
+          - if not exist "%CONDA_PREFIX%\share\bmad-utility-skills\skills" exit 1
+          - if not exist "%CONDA_PREFIX%\share\bmad-utility-skills\.claude-plugin\marketplace.json" exit 1
+
+about:
+  homepage: https://github.com/bmad-code-org/bmad-utility-skills
+  repository: https://github.com/bmad-code-org/bmad-utility-skills
+  license: MIT
+  # Upstream repo does not yet ship a LICENSE file. The marketplace manifest and
+  # README both declare MIT; the vendored LICENSE is the same MIT text used by
+  # the sibling bmad-code-org/BMAD-METHOD project (v6.5.0). HOLD SUBMISSION until
+  # upstream adds its own LICENSE file.
+  license_file: LICENSE
+  summary: Utility skills for BMad Method contributors (PR review, triage, changelog, root-cause analysis)
+  description: |
+    bmad-utility-skills is a collection of open-source utility skills for the
+    BMad Code team and BMad Method contributors. It ships ten skills covering
+    GitHub issue triage, dual-layer adversarial PR review, findings triage,
+    changelog drafting, social-media changelog posts, editorial review
+    translation, file-reference convention checks, Diataxis style fixes,
+    root cause analysis, and skill-to-bundle packaging.
+
+    After installation, run ``bmad-utility-skills-install`` in your project
+    directory to copy the skills into ``.claude/skills/`` so Claude Code can
+    discover them.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: bmad-utility-skills
+  cfe-upstream-registry: github
+  cfe-upstream-name: bmad-code-org/bmad-utility-skills
+  cfe-purls:
+    - pkg:conda/bmad-utility-skills@${{ version }}?channel=conda-forge
+    - "pkg:github/bmad-code-org/bmad-utility-skills@904e694573afcb76d554277f5137e94d578e5136"
+  cfe-upstream-repo: https://github.com/bmad-code-org/bmad-utility-skills
+  cfe-upstream-homepage: https://github.com/bmad-code-org/bmad-utility-skills
+  cfe-import-names: []
+  cfe-source-kind: github-commit
+  cfe-noarch: generic
+  cfe-pip-check: "false:not-a-python-package"
+  cfe-on-conda-forge-status: pending-approval-on-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - upstream ships no LICENSE file (vendored MIT; hold merge until upstream adds one)
+  cfe-submission-pr: https://github.com/conda-forge/staged-recipes/pull/33129
+  cfe-last-checked: "2026-07-12T14:52:00Z"
+  cfe-generated-by-version: 8.76.0
+  cfe-generated-at-datetime: "2026-07-12T14:52:00Z"
+  cfe-local-build-status: success
+  cfe-local-build-datetime: "2026-07-12T15:59:41Z"
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # Version bumped 1.3.0 -> 2.0.0 (upstream has no release tags;
+#    # pinned to latest main commit) in the 2026-07-12 BMAD-recipe sweep.
+#    # v2.0.0 restructured the repo root to .claude-plugin/ + README.md +
+#    # skills/ only (AGENTS.md/CLAUDE.md removed; bmad-os-release-module
+#    # skill dropped, 10 skills now) — build.sh/build.bat copy lists,
+#    # tests, and about text updated to match.
+####

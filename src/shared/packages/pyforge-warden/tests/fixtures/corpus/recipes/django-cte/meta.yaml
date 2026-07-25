@@ -1,0 +1,41 @@
+{% set name = "django-cte" %}
+{% set version = "1.1.4" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/django-cte-{{ version }}.tar.gz
+  sha256: be29d81c6104138c19da7b994724a76e5436b9f36d1c880b3f0c5bf2d2e1b94a
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - pip
+  run:
+    - python >=3.8
+    - django >=3.2,<5.0
+
+test:
+  imports:
+    - django_cte
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/dimagi/django-cte
+  summary: Common Table Expressions (CTE) for Django
+  license: BSD-3-Clause-LBNL
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

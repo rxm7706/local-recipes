@@ -1,0 +1,48 @@
+{% set name = "robocorp-browser" %}
+{% set version = "2.1.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/robocorp_browser-{{ version }}.tar.gz
+  sha256: c8ec8c669815ef41ad9434caeda37643282e39f975b1970ca721a13aa264cc4b
+
+build:
+  noarch: python
+  script: 
+    - echo f | xcopy /f /y /S %RECIPE_DIR%\README.md %SRC_DIR%\README.md  # [win]
+    - cp -R {{ RECIPE_DIR }}/README.md {{ SRC_DIR }}/README.md  # [unix]
+    - {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python >=3.9,<4.0
+    - poetry-core
+    - pip
+  run:
+    - python >=3.9.0,<4.0.0
+    - playwright >=1.32.1,<2.0.0
+    - robocorp-tasks >=1,<3
+
+test:
+  imports:
+    - robocorp.browser
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  summary: Robocorp browser automation library
+  home: https://github.com/robocorp/robo/
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#  mamba create --force -c conda-forge -c microsoft -n robocorp "python=3.10" "robocorp>=0.10.0" "robocorp-excel>=0.4.0" "robocorp-http>=0.4.0" playwright pytest-playwright "robocorp-browser>=2.1.0"

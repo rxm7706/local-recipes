@@ -1,0 +1,53 @@
+{% set name = "multirun" %}
+{% set version = "0.2.2" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 118a25fa68164b183dd77f03c8fc77c29da5ca6902216ef6637723e5f39d1c2d
+
+build:
+  noarch: python
+  number: 0
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - poetry-core >=1.0.0
+  run:
+    - python >={{ python_min }}
+    - toml >=0.10.2,<0.11.0
+
+test:
+  imports:
+    - multirun
+  commands:
+    - pip check
+    - multirun --help
+  requires:
+    - python {{ python_min }}
+    - pip
+
+about:
+  home: https://github.com/rsayers/multirun
+  summary: A simple wrapper around tmux to allow running and monitoring multiple processes at once
+  description: |
+    Multirun is a development tool to run and monitor services needed in the
+    development process. It runs multiple commands simultaneously in separate
+    tmux panes, allowing you to monitor them all at once. Features include
+    individual pane selection, process restart functionality, and batch
+    termination.
+  dev_url: https://github.com/rsayers/multirun
+  license: LicenseRef-NoLicense
+  # NOTE: No license file found in upstream repository (https://github.com/rsayers/multirun/issues)
+  # This MUST be resolved before submitting to conda-forge
+  # Contact upstream to add a proper license file
+
+extra:
+  recipe-maintainers:
+    - rxm7706

@@ -1,0 +1,52 @@
+{% set name = "opentelemetry-instrumentation-psycopg2" %}
+{% set version = "0.61b0" %}
+{% set python_min = "3.10" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/opentelemetry_instrumentation_psycopg2-{{ version }}.tar.gz
+  sha256: 863ccf9687b71e73dd489c7bb117278768bdf26aa0dafe7dc974a2425e05b5d7
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - hatchling
+    - pip
+  run:
+    - python >={{ python_min }}
+    - opentelemetry-api >=1.12,<2.dev0
+    - opentelemetry-instrumentation =={{ version }}
+    - opentelemetry-instrumentation-dbapi =={{ version }}
+    - psycopg2-binary >=2.7.3.1
+
+test:
+  imports:
+    - opentelemetry
+    - opentelemetry.instrumentation
+    - opentelemetry.instrumentation.psycopg2
+  commands:
+    - pip check
+  requires:
+    - python {{ python_min }}
+    - pip
+    - psycopg2-binary >=2.7.3.1
+
+about:
+  summary: OpenTelemetry psycopg2 instrumentation
+  home: https://github.com/open-telemetry/opentelemetry-python-contrib/tree/main/instrumentation/opentelemetry-instrumentation-psycopg2
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - conda-forge/opentelemetry-api
+    - mariusvniekerk
+    - rxm7706

@@ -1,0 +1,42 @@
+{% set name = "wagtail-icon-chooser" %}
+{% set version = "0.0.6" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/wagtail-icon-chooser-{{ version }}.tar.gz
+  sha256: c4934634055d5583c27d874dc6446cf96446597c4215e5ba177aac47a7dca7fe
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.9
+    - setuptools
+    - pip
+  run:
+    - python >=3.9
+    - wagtail >=4.2.2
+
+test:
+  imports:
+    - wagtailiconchooser
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/wmo-raf/wagtail-icon-chooser
+  summary: Wagtail Icon Chooser
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

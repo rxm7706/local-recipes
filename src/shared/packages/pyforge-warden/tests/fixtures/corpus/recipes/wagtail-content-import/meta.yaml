@@ -1,0 +1,42 @@
+{% set name = "wagtail-content-import" %}
+{% set version = "0.8.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://github.com/torchbox/wagtail-content-import/archive/v{{ version }}.tar.gz
+  sha256: 19d1b626a64594196aa8ff08b85ac38241d7c764740a27d47c407a0b2f61f08f
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - pip
+  run:
+    - python >=3.8
+    - wagtail >=2.11
+    - python-docx >=0.8.10
+
+test:
+  imports:
+    - wagtail_content_import
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/torchbox/wagtail-content-import
+  summary: A module for importing page content into Wagtail from third-party sources.
+  license: FreeBSD-DOC
+  license_file: PLEASE_ADD_LICENSE_FILE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

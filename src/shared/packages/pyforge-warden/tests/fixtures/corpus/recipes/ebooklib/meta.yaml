@@ -1,0 +1,42 @@
+{% set name = "ebooklib" %}
+{% set version = "0.18" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/EbookLib-{{ version }}.tar.gz
+  sha256: 38562643a7bc94d9bf56e9930b4927e4e93b5d1d0917f697a6454db5a1c1a533
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python
+    - pip
+  run:
+    - python
+    - lxml
+    - six
+
+test:
+  imports:
+    - ebooklib
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/aerkalov/ebooklib
+  summary: Ebook library which can handle EPUB2/EPUB3 and Kindle format
+  license: AGPL-3.0
+  license_file: LICENSE.txt
+
+extra:
+  recipe-maintainers:
+    - rxm7706

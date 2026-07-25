@@ -1,0 +1,102 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.3.1"
+
+package:
+  name: quarkdown
+  version: ${{ version }}
+
+source:
+  - if: linux and x86_64
+    then:
+      url: https://github.com/iamgio/quarkdown/releases/download/v${{ version }}/quarkdown-linux-x64.zip
+      sha256: 57afec05945ae5d778319c6292e70c8a704770a41e41837689b8753c53995556
+  - if: osx and arm64
+    then:
+      url: https://github.com/iamgio/quarkdown/releases/download/v${{ version }}/quarkdown-macos-aarch64.zip
+      sha256: 92d43d59d4a02cf93d6a0cec620d44d0f1b3a59d95ff0557c9453ceff04c6503
+  - if: osx and x86_64
+    then:
+      url: https://github.com/iamgio/quarkdown/releases/download/v${{ version }}/quarkdown-macos-x64.zip
+      sha256: 83eb6a36d8da410897f6cd631732bffa981249ab252451c3d762acb04659ae0b
+  - if: win
+    then:
+      url: https://github.com/iamgio/quarkdown/releases/download/v${{ version }}/quarkdown-windows-x64.zip
+      sha256: 11624d3b337a325b7ee68585e79965becf480c1bfd3c10c7764aa4e396a75b68
+  # The release zips carry no project license; take GPL-3.0 from the repo tag.
+  - url: https://raw.githubusercontent.com/iamgio/quarkdown/v${{ version }}/LICENSE
+    sha256: dbd679f64dfda56f06e30dfd5674828c6eab0b0b688cdb54602d0bdef5a8d91a
+    file_name: LICENSE
+
+build:
+  number: 1
+  # No explicit script: rattler-build auto-selects build.sh (unix) or
+  # build.bat (win) from the recipe dir.
+  dynamic_linking:
+    binary_relocation: false
+
+tests:
+  - script:
+      - quarkdown --help
+
+about:
+  summary: Markdown with superpowers - typeset papers, presentations, websites, and books from Markdown
+  description: |
+    Quarkdown is a Markdown-based typesetting system: one source produces
+    papers, slide presentations (reveal.js), books, websites, and
+    knowledge bases, with a Turing-complete function/scripting layer,
+    themes, math, and live preview. JVM application; this package
+    repackages the official self-contained release bundle (launcher +
+    jars + bundled Java runtime), so no external Java is required.
+  homepage: https://quarkdown.com
+  repository: https://github.com/iamgio/quarkdown
+  documentation: https://github.com/iamgio/quarkdown/wiki
+  license: GPL-3.0-only
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: quarkdown
+  cfe-upstream-registry: github
+  cfe-upstream-name: iamgio/quarkdown
+  cfe-purls:
+    - pkg:conda/quarkdown@${{ version }}?channel=conda-forge
+    - pkg:github/iamgio/quarkdown@v${{ version }}
+  cfe-upstream-repo: https://github.com/iamgio/quarkdown
+  cfe-upstream-homepage: https://quarkdown.com
+  cfe-import-names: []
+  cfe-source-kind: github-release-binary
+  cfe-noarch: compiled
+  cfe-pip-check: "false:not-a-python-package"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: "2026-07-12T17:45:00Z"
+  cfe-generated-by-version: 8.76.0
+  cfe-generated-at-datetime: "2026-07-12T17:45:00Z"
+  cfe-local-build-status: success
+  cfe-local-build-datetime: "2026-07-12T16:49:34Z"
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # Packaged 2026-07-12 (user request). G44-style repackage of the
+#    # per-platform self-contained release bundles (Kotlin/JVM app +
+#    # jpackage-bundled Java runtime) — building from Kotlin source on
+#    # conda-forge would require a Gradle/Kotlin toolchain not worth the
+#    # complexity while upstream ships official binaries.
+# build:
+#    # binary_relocation off: the bundled JVM runtime's prebuilt binaries
+#    # use $ORIGIN-relative resolution and must not be patched.
+# tests:
+#    # --help only; `quarkdown --version` not verified across the CLI's
+#    # clikt surface.
+####

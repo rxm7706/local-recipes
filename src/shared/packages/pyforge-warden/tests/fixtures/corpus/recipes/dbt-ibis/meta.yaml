@@ -1,0 +1,47 @@
+{% set name = "dbt-ibis" %}
+{% set version = "0.9.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/dbt_ibis-{{ version }}.tar.gz
+  sha256: 1e3924e42a6809457f668c1ee01d358af5a74225e1d6c957858511f626b69e24
+
+build:
+  entry_points:
+    - dbt-ibis = dbt_ibis:main
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - hatchling
+    - pip
+  run:
+    - python >={{ python_min }}
+    - dbt-core >=1.5
+    - ibis-framework >=9
+    - click
+
+test:
+  imports:
+    - dbt_ibis
+  commands:
+    - pip check
+    - dbt-ibis --help
+  requires:
+    - python {{ python_min }}
+    - pip
+
+about:
+  dev_url: https://github.com/binste/dbt-ibis
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

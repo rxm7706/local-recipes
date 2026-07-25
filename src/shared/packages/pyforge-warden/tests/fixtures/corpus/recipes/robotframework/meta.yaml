@@ -1,0 +1,124 @@
+{% set version = "7.1.1" %}
+
+# handle undefined PYTHON in `noarch: generic` outputs
+{% if PYTHON is not defined %}{% set PYTHON = "$PYTHON" %}{% endif %}
+
+package:
+  name: robotframework
+  version: {{ version }}
+
+source:
+  - url: https://pypi.io/packages/source/r/robotframework/robotframework-{{ version }}.zip
+    sha256: f85919c68c4d0837006e5f09dde1ef689f082eba2e7e64d5758753f9ee8bfea9
+    folder: dist
+  - url: https://github.com/robotframework/robotframework/archive/v{{ version }}.tar.gz
+    sha256: 8abeb82324d6e476297ed7d43d7d89518399c2404a26702cf9cac23548bf8a86
+    folder: src
+
+build:
+  noarch: python
+  number: 0
+  script:
+    - cd dist
+    - {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  entry_points:
+    - robot = robot.run:run_cli
+    - rebot = robot.rebot:rebot_cli
+    - libdoc = robot.libdoc:libdoc_cli
+
+requirements:
+  host:
+    - pip
+    - python {{ python_min }}
+    - setuptools
+  run:
+    - python >={{ python_min }}
+
+test:
+  requires:
+    - python {{ python_min }}
+    - pip
+  imports:
+    - robot
+    - robot.api
+    - robot.conf
+    - robot.htmldata
+    - robot.libdocpkg
+    - robot.libraries
+    - robot.model
+    - robot.output
+    - robot.output.console
+    - robot.parsing
+    - robot.reporting
+    - robot.result
+    - robot.running
+    - robot.running.arguments
+    - robot.running.timeouts
+    - robot.utils
+    - robot.variables
+  commands:
+    - pip check
+    # the `--version` commands return rc 251
+    # - robot --version
+    # - rebot --version
+    # - libdoc --version
+    # generate simple test file (`echo` and `>>` are cross-platform)
+    - echo "*** Test Cases ***"                   >> test-{{ version }}.robot
+    - echo "Hello World"                          >> test-{{ version }}.robot
+    - echo "    Log   %{PKG_NAME} %{PKG_VERSION}" >> test-{{ version }}.robot
+    # smoke test
+    - robot test-{{ version }}.robot
+    - rebot output.xml
+    - libdoc test-{{ version }}.robot test.html
+
+outputs:
+  - name: robotframework
+
+  - name: _robotframework_tests
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - {{ pin_subpackage('robotframework', max_pin="x.x.x") }}
+    test:
+      requires:
+        - docutils
+        - jsonschema
+        - lxml
+        - pillow
+        - pip
+        - pygments
+        - pyyaml
+      source_files:
+        - src/utest
+        - src/atest
+        - src/doc/schema
+        - src/README.rst
+      commands:
+        - pip check
+        - cd src/utest && python run.py
+      about:
+        license: Apache-2.0
+        license_file:
+          - dist/LICENSE.txt
+          - dist/COPYRIGHT.txt
+        summary: >
+          A package for the tests assets of `robotframework`: should not normally be needed.
+
+about:
+  home: https://robotframework.org
+  license: Apache-2.0
+  license_file:
+    - dist/LICENSE.txt
+    - dist/COPYRIGHT.txt
+  summary: Generic automation framework for acceptance testing and robotic process automation (RPA)
+  doc_url: https://robotframework.org/robotframework/{{ version }}/RobotFrameworkUserGuide.html
+  dev_url: https://github.com/robotframework/robotframework
+  description: >
+    Robot Framework is a generic open source automation framework for acceptance testing, acceptance test driven development (ATDD), and robotic process automation (RPA). It has simple plain text syntax and it can be extended easily with libraries implemented using Python or Java.
+
+extra:
+  feedstock-name: robotframework
+  recipe-maintainers:
+    - abloemert
+    - bollwyvl

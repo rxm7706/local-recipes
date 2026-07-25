@@ -1,0 +1,45 @@
+{% set name = "pydantic-kedro" %}
+{% set version = "0.5.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/pydantic-kedro-{{ version }}.tar.gz
+  sha256: 2014f1d26ce06422cdfffb69348242ee0ad565d30bb236e73de344ccf3833bb6
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python >=3.9
+    - setuptools >=61.0.0
+    - setuptools-scm >=6.2
+    - pip
+  run:
+    - python >=3.9
+    - pydantic >=1.10.0,<2
+    - pydantic-yaml >=1.0.0a2
+    - kedro
+    - fsspec
+
+test:
+  imports:
+    - pydantic_kedro
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  summary: Kedro
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

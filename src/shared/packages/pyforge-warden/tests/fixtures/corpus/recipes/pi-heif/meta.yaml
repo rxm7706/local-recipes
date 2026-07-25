@@ -1,0 +1,60 @@
+{% set name = "pi-heif" %}
+{% set version = "1.1.1" %}
+{% set python_min = "3.10" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/pi_heif-{{ version }}.tar.gz
+  sha256: 42ece7c3b40569f295fd4d2b10f38d1cd5012ca548446a2ca33895f0d6900c4f
+
+build:
+  number: 0
+  script: |
+    {% if win %}
+    :: libheif on Windows ships heif.lib, but the build looks for libheif.lib
+    if not exist "%LIBRARY_LIB%\libheif.lib" (
+      copy "%LIBRARY_LIB%\heif.lib" "%LIBRARY_LIB%\libheif.lib"
+    )
+    {% endif %}
+    {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  skip: true  # [py<310]
+
+requirements:
+  build:
+    - cross-python_{{ target_platform }}     # [build_platform != target_platform]
+    - python                                 # [build_platform != target_platform]
+    - {{ compiler('c') }}
+    - { { stdlib("c") } }
+  host:
+    - python
+    - setuptools >=67.8
+    - wheel
+    - pip
+    - libheif
+  run:
+    - python
+    - pillow >=11.1.0
+
+test:
+  imports:
+    - pi_heif
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/bigcat88/pillow_heif
+  summary: Python interface for libheif library
+  dev_url: https://github.com/bigcat88/pillow_heif
+  license: BSD-3-Clause
+  license_file:
+    - LICENSE.txt
+    - tests/images/heif_other/nokia/COPYRIGHT.txt
+
+extra:
+  recipe-maintainers:
+    - rxm7706

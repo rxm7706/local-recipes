@@ -1,0 +1,49 @@
+{% set name = "safety" %}
+{% set version = "2.3.5" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/safety-{{ version }}.tar.gz
+  sha256: a60c11f8952f412cbb165d70cb1f673a3b43a2ba9a93ce11f97e6a4de834aa3a
+
+build:
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - setuptools >=42
+    - pip
+  run:
+    - python >=3.8
+    - setuptools >=19.3
+    - click >=8.0.2
+    - requests
+    - packaging <22.0,>=21.0
+    - dparse >=0.6.2
+    - ruamel.yaml >=0.17.21
+
+test:
+  imports:
+    - safety
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/pyupio/safety
+  summary: Checks installed dependencies for known vulnerabilities and licenses.
+  dev_url: https://github.com/pyupio/safety/
+  license: MIT
+  license_file:
+    - LICENSE
+    - tests/test_db/licenses.json
+
+extra:
+  recipe-maintainers:
+    - rxm7706

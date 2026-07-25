@@ -1,0 +1,83 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "4.6.0"
+
+package:
+  name: django-compressor
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/django-compressor/django_compressor-${{ version }}.tar.gz
+  sha256: c7478feab98f3368780591f9ee28a433350f5277dd28811f7f710f5bc6dff3c0
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - django >=4.2
+    - django-appconf >=1.0.3
+    - rcssmin >=1.2.1
+    - rjsmin >=1.2.4
+
+tests:
+  - python:
+      imports:
+        - compressor
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://django-compressor.readthedocs.io/en/latest/
+  license: MIT
+  license_file: LICENSE
+  summary: Compresses linked and inline JavaScript or CSS into single cached files.
+  description: |
+    Compresses linked and inline JavaScript or CSS into single cached files.
+  repository: https://github.com/django-compressor/django-compressor
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: django_compressor
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: django-compressor
+  cfe-purls:
+    - pkg:conda/django_compressor@${{ version }}?channel=conda-forge
+    - pkg:pypi/django-compressor@${{ version }}
+  cfe-upstream-repo: https://github.com/django-compressor/django-compressor
+  cfe-upstream-homepage: https://github.com/django-compressor/django-compressor
+  cfe-import-names: [compressor]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django_compressor-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-07-04T22:24:52Z
+  cfe-generated-by-version: 8.65.0
+  cfe-generated-at-datetime: 2026-07-03T04:00:00Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # 2026-07-03 punch-list full-gate pass (tracker issue -> local verification).
+####

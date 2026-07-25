@@ -1,0 +1,46 @@
+{% set version = "0.7.0" %}
+{% set python_min = "3.10" %}
+
+package:
+  name: lance-namespace-urllib3-client
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/l/lance-namespace-urllib3-client/lance_namespace_urllib3_client-{{ version }}.tar.gz
+  sha256: e1384d4d0c6b1de4b344bb709ea53bd9cef6f471b864b1ee8968aa89698a30c5
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - hatchling
+    - pip
+  run:
+    - python >={{ python_min }}
+    - urllib3 >=1.25.3,<3.0.0
+    - python-dateutil >=2.8.2
+    - pydantic >=2
+    - typing_extensions >=4.7.1
+
+test:
+  imports:
+    - lance_namespace_urllib3_client
+  commands:
+    - pip check
+  requires:
+    - python {{ python_min }}
+    - pip
+
+about:
+  home: https://pypi.org/project/lance-namespace-urllib3-client/
+  summary: Lance Namespace Specification
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

@@ -1,0 +1,58 @@
+{% set name = "google-cloud-ndb" %}
+{% set version = "2.5.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/google_cloud_ndb-{{ version }}.tar.gz
+  sha256: d7a9baa912a9d3c4d76d5084d1ef34dc91613beee1412d5ebdb688f9834d5b69
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - grpcio
+    - requests
+    - python >={{ python_min }}
+    - google-api-core <3.0.0,>=2.11.0
+    - google-cloud-datastore !=2.20.2,<3.0.0,>=2.16.0
+    - protobuf <8.0.0,>=4.25.8
+    - pymemcache <5.0.0,>=2.1.0
+    - pytz >=2022.1
+    - redis-py <8.0.0,>=3.0.0
+
+test:
+  imports:
+    - google
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://pypi.org/project/google-cloud-ndb
+  dev_url: https://github.com/googleapis/google-cloud-python/tree/main/packages/google-cloud-ndb
+  doc_url: https://googleapis.dev/python/python-ndb/latest/
+  description: |
+    This is an updated version of the ndb client library for use with Google Cloud Datastore.
+    Client Library Documentation - https://googleapis.dev/python/python-ndb/latest
+    Product Documentation - https://cloud.google.com/datastore/docs
+    The original Python 2 version of ndb was designed specifically for the Google App Engine python27 runtime and can be found at https://github.com/GoogleCloudPlatform/datastore-ndb-python.
+    This version of ndb is designed for the Google App Engine Python 3 runtime, and will run on other Python platforms as well.
+  summary: NDB library for Google Cloud Datastore
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

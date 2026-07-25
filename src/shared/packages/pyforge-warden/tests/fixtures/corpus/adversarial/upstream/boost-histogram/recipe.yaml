@@ -1,0 +1,73 @@
+schema_version: 1
+
+context:
+  name: boost-histogram
+  version: "1.6.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/b/boost_histogram/boost_histogram-${{ version }}.tar.gz
+  sha256: cbe67507f62063590395cc9fe177bf979f26a53c0574365f8241b883b9a6f756
+
+build:
+  number: 0
+  script:
+    - if: not (linux and ppc64le)
+      then: export CMAKE_BUILD_PARALLEL_LEVEL=${CPU_COUNT}
+    - ${{ PYTHON }} -m pip install . -v
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+    - ${{ compiler('cxx') }}
+    - ${{ stdlib("c") }}
+    - cmake
+    - if: not win
+      then: make
+  host:
+    - python
+    - pip >=18
+    - scikit-build-core
+    - setuptools_scm
+    - pybind11
+  run:
+    - python
+    - numpy
+
+tests:
+  - python:
+      imports:
+        - boost_histogram
+  - files:
+      source:
+        - tests/
+        - pyproject.toml
+    requirements:
+      run:
+        - pytest >=6
+        - pytest-benchmark
+    script:
+      - pytest --benchmark-disable
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: |
+    The official Boost.Histogram Python bindings. Provides fast, efficient
+    histogramming with a variety of different storages combined with dozens of
+    composable axes. Part of the [Scikit-HEP](https://scikit-hep.org) family.
+  homepage: https://github.com/scikit-hep/boost-histogram
+  repository: https://github.com/scikit-hep/boost-histogram
+  documentation: https://boost-histogram.readthedocs.io
+
+extra:
+  recipe-maintainers:
+    - chrisburr
+    - henryiii
+    - HDembinski

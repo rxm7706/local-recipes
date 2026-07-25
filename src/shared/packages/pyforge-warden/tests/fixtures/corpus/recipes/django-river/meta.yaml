@@ -1,0 +1,48 @@
+{% set name = "django-river" %}
+{% set version = "3.3.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/django-river-{{ version }}.tar.gz
+  sha256: f760739216bfe9456e5a3238b29b2015a0b1d62c79a1caee60c7be0b522520fb
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - pip
+  run:
+    - python >=3.8
+    - django >=3.2,<5.0
+    - django-mptt ==0.9.1
+    - django-cte ==1.1.4
+    - django-codemirror2 ==0.2
+
+test:
+  imports:
+    - features
+    - river
+    - rivertest
+    - settings
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/javrasya/django-river.git
+  summary: Django Workflow Library
+  doc_url: https://pythonhosted.org/django-river/
+  license: BSD-3-Clause
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

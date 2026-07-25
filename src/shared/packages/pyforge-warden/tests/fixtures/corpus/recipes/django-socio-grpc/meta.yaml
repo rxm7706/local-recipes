@@ -1,0 +1,49 @@
+{% set name = "django-socio-grpc" %}
+{% set version = "0.24.1" %}
+{% set python_min = "3.10" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/django_socio_grpc-{{ version }}.tar.gz
+  sha256: 6706ed6667341a1c962ff9a03a23638d00c28d1bf862be59330397a0d2da3265
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 1
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - poetry-core >=1.0.0,<2.0.0
+    - pip
+  run:
+    - lark >=1.0.0,<2.0.0
+    - python >={{ python_min }},<4.0
+    - django >=4.2
+    - djangorestframework
+    - grpcio-tools >=1.50.0,<2.0.0
+    - lark-parser >=0.12.0,<0.13.0
+    - grpcio-health-checking
+
+test:
+  imports:
+    - django_socio_grpc
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  summary: Fork of django-grpc-framework with more feature maintained by the socio team. Make GRPC with django easy.
+  home: https://github.com/socotecio/django-socio-grpc
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706
