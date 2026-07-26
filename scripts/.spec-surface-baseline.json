@@ -13,10 +13,10 @@
  "local-recipes/spec-factory-console": {
   "files": {
    "docs/dashboard/README.md": "970ed18c67aa61ca4a0e12e81d4cb3054f7ffaa1",
-   "docs/dashboard/generate.py": "5785dbb0ff4c6607fed1fb539898bbb6e88a2723",
-   "docs/dashboard/index.html": "a170e5374ef72f6ef7d689a158ca82f1ebd041df"
+   "docs/dashboard/generate.py": "6e060588775ea2b7503287a295de4ef355454983",
+   "docs/dashboard/index.html": "cb97970b766a1781045b23584e07ab573bfaa064"
   },
-  "memlog": "5cf1a69706be882e936de4e17ca44bccb6ac37d5"
+  "memlog": "fad9708b02b016e50c71d306f1c4e19ccc2fb664"
  },
  "local-recipes/spec-fleet-stewardship": {
   "files": {},
@@ -1385,7 +1385,7 @@
    "src/shared/packages/pyforge-atlas/wasm/index.html": "58d44155379ec640d36caf59b8c701ec8fcfce27",
    "src/shared/packages/pyforge-atlas/wasm/package.json": "e8ec7eef8dff664e2910f4fee67ada79e4105d93"
   },
-  "memlog": "500c300f36dbda1e08298325f0cbae42a367688e"
+  "memlog": "fcc0f525cac05a07f900d983305df47f756a3953"
  },
  "pyforge-atlas/spec-upstream-discovery": {
   "files": {},
@@ -1445,8 +1445,18 @@
   "memlog": "deeccf7f0aac379b913b65ad35896c7269e83b50"
  },
  "pyforge-mason/spec-pyforge-mason": {
-  "files": {},
-  "memlog": "81f0dc6a5950f924a1b753364e6eaab3de0f32a9"
+  "files": {
+   "src/shared/packages/pyforge-mason/.gitignore": "be289b476d44528c782051711aa069c09adb1255",
+   "src/shared/packages/pyforge-mason/README.md": "8a9cc0fb326807b0d689a97f0e9da67f2f078245",
+   "src/shared/packages/pyforge-mason/pixi.toml": "b14e434a4c05df90d5971eea773c72b6b9aae303",
+   "src/shared/packages/pyforge-mason/pyproject.toml": "dcda3030da0cc34a7dd870e82441427d9a4f0086",
+   "src/shared/packages/pyforge-mason/src/pyforge/mason/__init__.py": "46289309757de463f476b8b344a9bd546e9f52ad",
+   "src/shared/packages/pyforge-mason/src/pyforge/mason/__main__.py": "f75cd41517314410ead57735024c0d7b30ada248",
+   "src/shared/packages/pyforge-mason/src/pyforge/mason/cli.py": "e99f1ba3ba3718fa46c173a7396b0b6107baef49",
+   "src/shared/packages/pyforge-mason/tests/meta/test_namespace_is_implicit.py": "205e26648d2e06295eab87799d13c353aa7dd99d",
+   "src/shared/packages/pyforge-mason/tests/unit/test_cli.py": "cc8cf8a2ac9df0ed77f298297168510113ea1b7f"
+  },
+  "memlog": "b3efb8cf585ab20c9d57fc9638f7cbc76df87579"
  },
  "pyforge-scribe/spec-pyforge-scribe": {
   "files": {
@@ -1465,8 +1475,20 @@
   "memlog": "dda57f9fd8217697490ae654849d091283fa0205"
  },
  "pyforge-steward/spec-pyforge-steward": {
-  "files": {},
-  "memlog": "896a13897e15a396e629569a16baf9d2da2855a3"
+  "files": {
+   "src/shared/packages/pyforge-steward/.gitignore": "be289b476d44528c782051711aa069c09adb1255",
+   "src/shared/packages/pyforge-steward/README.md": "de2f3e39d6bcedb44c78bb12fe419971ea97103c",
+   "src/shared/packages/pyforge-steward/pixi.toml": "887185e69ca6ce701391e0033f90ebc0994d9383",
+   "src/shared/packages/pyforge-steward/pyproject.toml": "824c3e000da1a5f1124a71767851f495b2128375",
+   "src/shared/packages/pyforge-steward/src/pyforge/steward/__init__.py": "6662d5141eac5ccbe563b90e2a7e8c03c66df84c",
+   "src/shared/packages/pyforge-steward/src/pyforge/steward/__main__.py": "831c9ece8bedfce5c75f2d7e61a107beb1fdd15e",
+   "src/shared/packages/pyforge-steward/src/pyforge/steward/cli.py": "64d9c8c6fe30df01d4ef280dfd3ee5401b829336",
+   "src/shared/packages/pyforge-steward/src/pyforge/steward/interfaces.py": "58334410924556f3fd5ec6ac5e6f0e3d46ffeace",
+   "src/shared/packages/pyforge-steward/tests/conformance/test_duty_protocol.py": "47224c7f8eabcd1585b8c1eed5615c71e12a74da",
+   "src/shared/packages/pyforge-steward/tests/meta/test_invariants.py": "f3d0a1f2f3f877929b02f34f8f16a1670dc6daac",
+   "src/shared/packages/pyforge-steward/tests/unit/test_cli.py": "763e319e8d4b363413249db747b52e0b17db1a10"
+  },
+  "memlog": "bc74c3b2e05665d2d2907bb6e3871a7514dc5ba6"
  },
  "pyforge-warden/spec-pyforge-warden": {
   "files": {
