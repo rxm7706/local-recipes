@@ -3,7 +3,7 @@ title: Presenton, conda-native — AI decks inside the regulated enterprise
 type: dream
 owner: mason
 status: specified
-blocked-on: Phase-0 decision gate (Epic 1) — the PRD defines Phase 0 as blocking v1 build kickoff; needs operator decisions, not compute
+blocked-on: Phase-0 decision gate (Epic 1)
 ---
 
 # Presenton for the air-gapped enterprise

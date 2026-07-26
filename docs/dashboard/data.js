@@ -1205,7 +1205,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-07-26 02:06 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-07-26 02:07 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -1346,7 +1346,7 @@ window.DASHBOARD_DATA = {
         "spec": "_bmad-output/projects/presenton-pixi-image/planning-artifacts/specs/spec-presenton-pixi-image",
         "project": "_bmad-output/projects/presenton-pixi-image"
       },
-      "blockedOn": "Phase-0 decision gate (Epic 1) — the PRD defines Phase 0 as blocking v1 build kickoff; needs operator decisions, not compute"
+      "blockedOn": "Phase-0 decision gate (Epic 1)"
     },
     {
       "slug": "pyforge-atlas",
@@ -2694,9 +2694,9 @@ window.DASHBOARD_DATA = {
         "name": "spec-surface",
         "task": "spec-surface-check",
         "guards": "every tracked file under a Spec surface",
-        "state": "green",
-        "findings": 0,
-        "verdict": "OK: every tracked file governed or allowlisted; no drift.",
+        "state": "drift",
+        "findings": 1,
+        "verdict": "FINDINGS (1):",
         "runbook": ""
       },
       {
@@ -2823,7 +2823,7 @@ window.DASHBOARD_DATA = {
         "title": "Presenton, conda-native — AI decks inside the regulated enterprise",
         "status": "specified",
         "owner": "mason",
-        "blockedOn": "Phase-0 decision gate (Epic 1) — the PRD defines Phase 0 as blocking v1 build kickoff; needs operator decisions, not compute",
+        "blockedOn": "Phase-0 decision gate (Epic 1)",
         "chain": {
           "deck": "presentations/presenton-pixi-image",
           "spec": "_bmad-output/projects/presenton-pixi-image/planning-artifacts/specs/spec-presenton-pixi-image",
@@ -3119,7 +3119,7 @@ window.DASHBOARD_DATA = {
             "title": "Presenton, conda-native — AI decks inside the regulated enterprise",
             "status": "specified",
             "type": "dream",
-            "blockedOn": "Phase-0 decision gate (Epic 1) — the PRD defines Phase 0 as blocking v1 build kickoff; needs operator decisions, not compute"
+            "blockedOn": "Phase-0 decision gate (Epic 1)"
           },
           {
             "slug": "pyforge-mason",
