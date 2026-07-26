@@ -560,11 +560,23 @@ timeline).
 | **DC-5** | **agno LLM synthesis** — live synthesis in the NL/RAG path. | `SPEC.md` OQ-3 | deferred, unscheduled |
 | **DC-6** | **Production `vss` retriever** — the DuckDB VSS vector retriever at production settings. | `SPEC.md` OQ-3 | deferred, unscheduled |
 
-**Why DC-2…DC-6 are listed at all:** the Spec named these five live bring-ups as
-an open question, and **none of them appeared in any ledger** — the nine tracked
-`DW-*` rows are all B-wave implementation gaps. So the contract named work that
-nothing tracked, and the honest answer to *"what closes them?"* was *"nothing."*
-Listing them makes them owned and visible; it does not schedule them.
+**Why DC-2…DC-6 are listed at all — and a correction.** The first reading of this
+was that the five bring-ups appeared in no ledger. **That was wrong**, and it was
+an artifact of reading a truncated file. They *were* properly deferred at build
+time — `DW-C1-1` and `DW-G3` (live daemon), `DW-H1` (MinIO/PostgreSQL),
+`DW-H2` (agno LLM synthesis + the F3 `vss` retriever), `DW-H3` (live Wagtail),
+`DW-H4` (live crew daemon) — as recorded in the effort run log's index of **54**
+deferrals.
+
+The real finding is worse: **`implementation-artifacts/deferred-work.md` is
+truncated to 9 of those 54 entries**, stopping after `DW-B2-5` — collateral of
+the 2026-07-19 copy failure — and because it is **gitignored**, no tracked copy
+of the other 45 exists anywhere. The deferrals were made honestly; the record of
+them was lost.
+
+So DC-2…DC-6 are not "untracked work now tracked" — they are the **durable
+re-statement, in Tier 2, of deferrals whose Tier-3 ledger did not survive**. That
+is precisely why they belong here and not there.
 
 **Not deferred — resolved to an owner:** an OpenSSF-Scorecard-class maintenance
 signal (`SPEC.md` OQ-2) is a **Warden axis**, not an Atlas feed. `pyforge-warden`

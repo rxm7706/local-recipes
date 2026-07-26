@@ -366,9 +366,10 @@ close later.
 - **Live production bring-ups** — Dagster daemon, MinIO/PostgreSQL servers, live
   Wagtail, agno LLM synthesis, and the production `vss` retriever each ship a
   seam and run against local/embedded defaults. Tracked as **DC-2…DC-6** in the
-  PRD § 6.4. *(These five were named by the Spec but appeared in no ledger until
-  2026-07-25 — the nine `DW-*` rows are all B-wave implementation gaps — so the
-  contract named work that nothing tracked.)*
+  PRD § 6.4. *(Each was properly deferred at build time — `DW-C1-1`/`DW-G3`,
+  `DW-H1`…`DW-H4` — but `deferred-work.md` is truncated to 9 of 54 entries and is
+  gitignored, so DC-2…DC-6 are the durable Tier-2 re-statement of a Tier-3 record
+  that did not survive.)*
 
 - **A separate graph, vector, or dataframe engine** — one engine, by decision, not by omission.
 - **Continued SQLite and hand-rolled checkpoint-table orchestration.**
@@ -455,8 +456,11 @@ than deleted, so the disposition is auditable.
   Atlas feed. Resolved from the Warden contract itself; no operator decision was
   needed. Landed in § Constraints.
 - **What closes the deferred live bring-ups?** → **Tracked deferral.** The five
-  become **DC-2…DC-6** (PRD § 6.4). They are now owned and visible; they are not
-  scheduled. Landed in § Non-goals.
+  become **DC-2…DC-6** (PRD § 6.4) — owned and visible, not scheduled. Landed in
+  § Non-goals. *Correction on the record:* the first pass claimed they appeared in
+  no ledger. They did — `DW-C1-1`/`DW-G3`/`DW-H1`…`DW-H4`, per the run log's index
+  of 54 deferrals. The local ledger is **truncated to 9** and gitignored, so the
+  deferrals were honest and their record was lost.
 - **Do the 8 optional per-epic retrospectives run?** → **They run.** Not waived.
   Sprint-status carries 9 retro entries — 8 `optional`, 1 `done` (epic-9). The
   CFE Rule-2 retro landed separately as v8.79.0; these 8 are additive. Process
