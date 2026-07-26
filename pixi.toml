@@ -183,6 +183,40 @@ cmd = "pytest src/shared/packages/pyforge-steward/tests -q"
 description = "Steward dogfoods itself: run the CLI from the built env."
 cmd = "steward --version"
 
+# --- pyforge-marshal (Marshal): pixi build workspace member (doctor/warden mirror, Story 1.1) --
+# Task names mirror the sibling convention verbatim. Story 1.1 delivers the
+# package spine, the closed verdict lattice + finding-code registry
+# (core/model.py, core/findings.py, core/verdict.py), the one response
+# envelope (AD-14/AD-39), a --version/--help-only CLI, and the import-linter
+# AD-3/AD-4 contracts. Spec:
+# _bmad-output/projects/pyforge-marshal/planning-artifacts/.
+[feature.pyforge-marshal.dependencies]
+pyforge-marshal = { path = "src/shared/packages/pyforge-marshal" }  # -> built conda pkg
+hatchling = ">=1.31.0"                    # Python build backend (drives both conda + wheel/sdist)
+python-build = ">=1.5.0"                 # PyPA `python -m build` frontend (wheel + sdist)
+pytest = ">=9.1.1"                       # test runner
+import-linter = ">=2.13"                 # enforces the AD-3 seam + AD-4 purity contracts (pyproject.toml's [tool.importlinter])
+
+[feature.pyforge-marshal.tasks.pyforge-marshal-build-conda]
+description = "Build the pyforge-marshal conda package via pixi-build-python."
+# NOTE: the pyforge-steward block this mirrors uses `--manifest-path`, which
+# the installed pixi (0.73.0) rejects (`pixi build --help` names the flag
+# `--path`); steward's own build-conda task fails identically. Using the
+# correct flag here rather than propagating the same bug into a new task.
+cmd = "pixi build --path src/shared/packages/pyforge-marshal --output-dir dist-conda"
+
+[feature.pyforge-marshal.tasks.pyforge-marshal-build-dist]
+description = "Build the pyforge-marshal wheel + sdist from the same hatchling pyproject."
+cmd = "python -m build --outdir dist src/shared/packages/pyforge-marshal"
+
+[feature.pyforge-marshal.tasks.pyforge-marshal-build]
+description = "Build BOTH pyforge-marshal artifacts (conda + wheel/sdist) from one manifest."
+depends-on = ["pyforge-marshal-build-conda", "pyforge-marshal-build-dist"]
+
+[feature.pyforge-marshal.tasks.pyforge-marshal-test]
+description = "Run the pyforge-marshal test suite (unit + meta)."
+cmd = "pytest src/shared/packages/pyforge-marshal/tests -q"
+
 [environments]
 # default-env: local-recipes
 # ^ The "default-env:" directive above tells scripts/load-env.sh which environment
@@ -229,6 +263,10 @@ pyforge-herald = { features = ["pyforge-herald"], no-default-feature = true }
 pyforge-mason = { features = ["pyforge-mason"], no-default-feature = true }
 # Lean steward env (Story 1.1, pyforge-warden mirror): same lean shape.
 pyforge-steward = { features = ["pyforge-steward"], no-default-feature = true }
+# Lean marshal env (Story 1.1, pyforge-warden mirror): no-default-feature,
+# so it carries only the built pyforge-marshal package + its conda
+# run-deps + pytest + import-linter.
+pyforge-marshal = { features = ["pyforge-marshal"], no-default-feature = true }
 
 [feature.local-recipes.activation]
 scripts = ["scripts/load-env.sh"]

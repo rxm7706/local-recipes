@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:local-recipes:pyforge-marshal:envelope.v1",
+  "title": "MarshalEnvelope",
+  "description": "The one response envelope every marshal command emits (AD-14, AD-39): {schema_version, command, status, verdict, data, data_version, findings, assumptions}. status is a pure function of verdict (status_for) and is never set independently. additionalProperties is false at both the envelope and finding level -- an unrecognized/typo'd key is a schema violation; a genuinely new field is an envelope-schema change (AD-14), not a silent addition. 'data' stays open (type: object with no declared properties) since its shape is per-command and opaque to this envelope.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "command",
+    "status",
+    "verdict",
+    "data",
+    "data_version",
+    "findings",
+    "assumptions"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Envelope schema version; bumps only on a breaking change to the envelope KEYS. Additive fields do not bump it."
+    },
+    "command": {
+      "type": "string",
+      "description": "The marshal command that produced this envelope."
+    },
+    "status": {
+      "enum": ["ok", "error"],
+      "description": "status_for(verdict) -- {clean, warn} -> ok, else -> error (AD-39)."
+    },
+    "verdict": {
+      "enum": ["clean", "warn", "unevaluable", "scope-violation", "gate-failed", "error"],
+      "description": "The closed 6-member lattice, strongest first: error > gate-failed > scope-violation > unevaluable > warn > clean (AD-7, AD-31)."
+    },
+    "data": {
+      "type": "object",
+      "description": "Command-specific payload, opaque to this envelope."
+    },
+    "data_version": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "The data payload's own version, from a registry, bumped independently of schema_version (AD-39)."
+    },
+    "findings": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/finding" }
+    },
+    "assumptions": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  },
+  "$defs": {
+    "finding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "severity", "message"],
+      "properties": {
+        "code": {
+          "type": "string",
+          "pattern": "^MRS-[A-Z][A-Z0-9]*-\\d{3}$",
+          "description": "Stable machine code from the central registry (AD-15, core/findings.py)."
+        },
+        "severity": {
+          "enum": ["error", "warn", "info"],
+          "description": "Presentational only; the lattice member comes from verdict.classify(code) (AD-31)."
+        },
+        "message": { "type": "string" },
+        "path": { "type": "string" }
+      }
+    }
+  }
+}
