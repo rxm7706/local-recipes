@@ -2443,19 +2443,19 @@ window.DASHBOARD_DATA = {
           "prd": "07-25",
           "arch": "07-25",
           "epics": "07-25",
-          "code": ""
+          "code": "07-25"
         },
         "backfilled": false,
         "openQuestions": 0,
         "overtaken": false,
         "na": [],
-        "furthest": "epics",
+        "furthest": "code",
         "updated": "2026-07-25",
         "age": 0,
         "stale": false,
         "version": "0.1.0",
         "progress": "",
-        "complete": 8,
+        "complete": 9,
         "of": 9,
         "owner": "steward"
       },
@@ -2501,19 +2501,19 @@ window.DASHBOARD_DATA = {
           "prd": "07-25",
           "arch": "07-25",
           "epics": "07-25",
-          "code": ""
+          "code": "07-25"
         },
         "backfilled": true,
         "openQuestions": 0,
         "overtaken": false,
         "na": [],
-        "furthest": "epics",
+        "furthest": "code",
         "updated": "2026-07-25",
         "age": 0,
         "stale": false,
         "version": "0.1.0",
         "progress": "",
-        "complete": 8,
+        "complete": 9,
         "of": 9,
         "owner": "mason"
       },
@@ -2741,9 +2741,9 @@ window.DASHBOARD_DATA = {
         "name": "spec-surface",
         "task": "spec-surface-check",
         "guards": "every tracked file under a Spec surface",
-        "state": "green",
-        "findings": 0,
-        "verdict": "OK: every tracked file governed or allowlisted; no drift.",
+        "state": "drift",
+        "findings": 20,
+        "verdict": "FINDINGS (20):",
         "runbook": ""
       },
       {
