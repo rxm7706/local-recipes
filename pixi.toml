@@ -7,7 +7,7 @@ preview = ["pixi-build"]  # enable the pixi build backend for the ./src/shared/p
 # NOTE: Gemini PR#49 suggested a `[workspace] members = [...]` key, but pixi
 # (through 0.72.2) has no such key — workspace members are declared via path
 # dependencies (see [feature.pyforge-warden.dependencies]).
-requires-pixi = ">=0.72.2"  # matches installed pixi + the pixi-build preview backends. The [feature.local-recipes.system-requirements] macOS-14.5 table is the deprecated pre-0.71 form (pixi warns but still honors it); migrate to a virtual-package platform entry when convenient.
+requires-pixi = ">=0.73.0"  # single pixi floor for the workspace — matches feature.python/local-recipes `pixi = ">=0.73.0"`, environment.yaml, and the CI pixi-version pin in .github/workflows/dashboard.yml. Keep all four in step. 0.71+ is a hard floor regardless: the named platform entry `osx-arm64-min` ({ name, platform, macos }) replaced the deprecated [system-requirements] table and older pixi cannot read it.
 description = "The entry point to conda-forge"
 version = "0.2.0"
 license = "BSD-3-Clause"

@@ -18,7 +18,7 @@ How to set up, build, test, debug, and contribute to `local-recipes` locally. Th
 
 | Tool | Minimum version | Why |
 |---|---|---|
-| Pixi | `requires-pixi = ">=0.72.2"` (workspace gate); the `python` feature also installs `pixi >=0.73.0` into the env | Sole environment manager. No conda, no venv. |
+| Pixi | `>=0.73.0` everywhere — `requires-pixi` (workspace gate), the `python` + `local-recipes` features, `environment.yaml`, the linter workflow's env, and the `pixi-version` pin in `.github/workflows/dashboard.yml`. Keep all in step. | Sole environment manager. No conda, no venv. |
 | Python | `>=3.14.6,3.14.*` (pixi-managed, `feature.python`) | `_bmad/scripts/*.py` need 3.11+ for stdlib `tomllib`; the repo env pins 3.14. |
 | Git | any modern | Repo operations. |
 | Docker | any modern | Linux builds run inside Docker via `build-locally.py`. Not required for osx/win native. |
