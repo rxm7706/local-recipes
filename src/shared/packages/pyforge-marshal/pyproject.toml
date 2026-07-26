@@ -1,0 +1,64 @@
+[build-system]
+build-backend = "hatchling.build"
+requires = ["hatchling"]
+
+[project]
+name = "pyforge-marshal"
+version = "0.1.0"
+description = "Deterministic BMAD-loop supervisor: wraps bmad-loop with gates-as-objects, run supervision, landing, fleet status, and adapter portability."
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "MIT" }
+authors = [{ name = "rxm7706" }]
+# Marshal's own direct dependencies (architecture Stack table) -- declared
+# here rather than inherited transitively from bmad-loop, even though
+# PyYAML/tomlkit/psutil also happen to resolve in-environment via
+# bmad-loop's own flattened noarch recipe. jsonschema is entirely new
+# surface (envelope + journal schema validation). bmad-loop itself is not
+# yet a declared dependency: adapters/harness_bmadloop.py stays a
+# docstring-only seam this story (no code resolves or invokes it yet).
+dependencies = [
+    "PyYAML>=6.0",
+    # <0.13.3 matches this repo's own environment cap (root pixi.toml pins
+    # tomlkit "<0.13.3" for an unrelated dependency, dagster-dg-core) --
+    # architecture Stack table: "do not assume >=0.13.3 features" here either.
+    "tomlkit>=0.13,<0.13.3",
+    "psutil>=7.2.2",
+    "jsonschema>=4.25",
+]
+
+[project.scripts]
+marshal = "pyforge.marshal.cli.main:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/pyforge"]
+
+[tool.importlinter]
+root_packages = ["pyforge.marshal"]
+# subprocess/os/time and bmad_loop are all external to root_packages --
+# import-linter requires this flag before it will validate a forbidden
+# contract naming an external module.
+include_external_packages = true
+
+[[tool.importlinter.contracts]]
+name = "AD-4: core is pure -- no I/O, subprocess, clock, or adapters"
+type = "forbidden"
+source_modules = ["pyforge.marshal.core"]
+forbidden_modules = ["subprocess", "os", "time", "pyforge.marshal.adapters"]
+
+[[tool.importlinter.contracts]]
+name = "AD-3: only adapters/harness_bmadloop.py may reference bmad_loop"
+type = "forbidden"
+# Deliberately excludes pyforge.marshal.adapters as a whole package from
+# source_modules -- see architecture.md's "Import-linter contract scope
+# gap" design note: including it would also forbid harness_bmadloop.py
+# itself, the one module this contract must let import bmad_loop. A future
+# adapter module that wrongly imports bmad_loop is NOT caught by this
+# contract until that module's own story adds it to source_modules.
+source_modules = [
+    "pyforge.marshal.cli",
+    "pyforge.marshal.core",
+    "pyforge.marshal.ports",
+    "pyforge.marshal.supervisor",
+]
+forbidden_modules = ["bmad_loop"]

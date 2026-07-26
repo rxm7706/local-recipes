@@ -1,0 +1,36 @@
+# pyforge-marshal (Marshal): pixi build workspace member (doctor/warden mirror, Story 1.1).
+#
+# This is a MEMBER package of the parent `staged-recipes` workspace: there is
+# deliberately NO [workspace] table here. The root ../../../../pixi.toml owns
+# workspace config (channels, platforms, environments, the `preview = ["pixi-build"]`
+# flag) and pulls this package in via a path dependency in the
+# `[feature.pyforge-marshal.dependencies]` table. `pixi-build-python` builds
+# this into a conda package.
+#
+# Story 1.1 scaffolds the package layout, the closed verdict lattice + finding
+# registry (core/model.py, core/findings.py, core/verdict.py), and a
+# --version/--help-only CLI. bmad-loop wrapping, gates, supervision, and the
+# remaining ports/adapters land story-by-story against
+# _bmad-output/projects/pyforge-marshal/planning-artifacts/.
+
+[package]
+name = "pyforge-marshal"
+version = "0.1.0"
+
+[package.build.backend]
+name = "pixi-build-python"
+version = "0.*"
+
+[package.host-dependencies]
+python = ">=3.12"          # explicit build-time interpreter for pixi-build-python (matches pyforge-warden/pyforge-doctor)
+hatchling = "*"
+
+[package.run-dependencies]
+python = ">=3.12"
+pyyaml = ">=6.0"
+# <0.13.3 matches this repo's own environment cap (root pixi.toml pins
+# tomlkit "<0.13.3" for dagster-dg-core, an unrelated dependency) --
+# architecture Stack table: "do not assume >=0.13.3 features" here either.
+tomlkit = ">=0.13,<0.13.3"
+psutil = ">=7.2.2"
+jsonschema = ">=4.25"
