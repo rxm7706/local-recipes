@@ -44,7 +44,7 @@ A reader had no way to tell which number was live.
 | `PRD.md` | New § 0 (ownership), new § Part 5 (F5.1–F5.5), 12 count corrections, feature total 57 → 62 |
 | `epics.md` | New Epic 15 (delegating), Wave 6 row, Epic 10 corrections, 14 → 15 epics / 232 → 239 stories |
 | Five product projects | **None** — deliberately. Epic 15 cites them; it does not restate them. |
-| `architecture.md` | **Not modified** (re-grounded earlier the same day), but one defect **reported** — see § 5. |
+| `architecture.md` | **Not modified** — and correctly so: the one defect reported against it was **retracted**, see § 5. |
 | Any `SPEC.md` | **Not modified** — `bmad-spec` is their single writer. |
 
 ## 3. Recommended Approach — Direct Adjustment (chosen)
@@ -87,7 +87,7 @@ owns *the ability to rebuild the whole*, not the crafts that fill it.
 | 42-tool MCP API | **46** |
 | Parts 1-4 / "the four parts" | **Parts 1-5 / five** |
 | 9 envs, ~50 tasks | **15 envs / 17 features / 154 tasks** (106 in `local-recipes`) |
-| Part 1 "~44 scripts" | **66 Tier-1 / 60 Tier-2** |
+| Part 1 "~44 scripts" | **66 Tier-1 / 57 Tier-2** |
 | F1.7 G1-G87 | **G1-G106** |
 | F4.5 "64 real skills / 65 entries" | **89 real skills across 93 dirs**, BMAD **6.10.0** |
 | §6 metric 42 / 42 | **46 / 46** |
@@ -104,13 +104,31 @@ owns *the ability to rebuild the whole*, not the crafts that fill it.
 
 ## 5. Findings reported, NOT fixed (outside scope)
 
-1. **`architecture.md` says the `pyforge-atlas` MCP server has 11 tools. It has 12.**
-   Live: `src/shared/packages/pyforge-atlas/src/pyforge/atlas/mcp/server.py` →
-   12 `@mcp.tool()`. That doc was re-grounded earlier today and is now wrong on this
-   one number.
-2. Three operator-brief numbers were wrong and were corrected from live counts rather
-   than propagated: **Tier-2 wrappers 60** (brief said 57), **test files 98** (100),
-   **pixi tasks 154** (~152).
+1. ~~**`architecture.md` says the `pyforge-atlas` MCP server has 11 tools. It has 12.**~~
+   **RETRACTED the same day — this finding was WRONG, and `architecture.md`'s 11 is
+   correct.** The claim came from `grep -c '@mcp.tool()'` returning 12. One of those
+   12 is a **prose mention inside the module docstring** (`server.py` line 9:
+   *"matching the legacy server's ``@mcp.tool()``"*); the real decorators are lines
+   28–78, and exactly **11** functions carry them — `list_atlas_datasets`,
+   `list_atlas_pipelines`, `query_vizro_ai`, `read_atlas_dataset`, and the seven
+   `run_*_pipeline` tools.
+
+   Recording it rather than deleting it, because the failure mode matters more than
+   the number: this repo wrote down *"verify the detector, not just the artifact"*
+   earlier the **same day**, after two detector bugs propagated their own wrong
+   numbers into docs and baselines. Then a naive `grep -c` did it again — the bad
+   count reached this proposal, the PRD's `edit_history`, the epics' `sync_lineage`,
+   and a commit message before anyone re-derived it. **A count regex that does not
+   assert what it matched is not evidence.**
+2. ~~Three operator-brief numbers were wrong~~ — **also mostly retracted.** Only
+   **pixi tasks 154** (brief said ~152) held. The other two were my error, in the same
+   way as finding 1:
+   - **Tier-2 wrappers are 57, not 60.** `ls` counted every *file* in
+     `.claude/scripts/conda-forge-expert/`, which includes `README.md` and two `.sh`
+     build helpers. 57 `.py` wrappers.
+   - **Test files are 100, not 98.** `find -name 'test_*.py'` misses the two
+     `conftest.py` files. (`architecture.md` also cites *188* test files — a
+     different, equally correct scope: Part 5's product packages.)
 
 ## 6. Left alone deliberately
 
@@ -119,14 +137,17 @@ owns *the ability to rebuild the whole*, not the crafts that fill it.
   every prior sync; untouched here.
 - **§ 9 Deferred Work** — no DW row is demonstrably shipped in this span.
 - **All `SPEC.md` files** — `bmad-spec` is their single writer.
-- **`architecture.md`** — already re-grounded; see § 5 for the one defect found.
+- **`architecture.md`** — already re-grounded, and **verified correct** on every
+  count this run challenged it on (11 atlas tools · 57 Tier-2 wrappers · 100 Part-1
+  test files · 188 Part-5 test files). See § 5.
 
 ## 7. Handoff
 
 **Scope: Moderate.** No code change; no story rescoped; no epic removed. The five
 product projects are unaffected. Follow-ups for the operator:
 
-1. Correct the 11 → 12 tool count in `architecture.md` (one line).
+1. ~~Correct the 11 → 12 tool count in `architecture.md`.~~ **Void — no change
+   needed; 11 was correct.**
 2. Decide the **two-server** question now owned by `agent-tool-surface`: federate,
    merge, or stay split.
 3. Close the **zero-tools-on-fresh-clone** gap — the sharpest contradiction of
