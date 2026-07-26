@@ -2,9 +2,25 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "urn:local-recipes:pyforge-marshal:envelope.v1",
   "title": "MarshalEnvelope",
-  "description": "The one response envelope every marshal command emits (AD-14, AD-39): {schema_version, command, status, verdict, data, data_version, findings, assumptions}. status is a pure function of verdict (status_for) and is never set independently. additionalProperties is false at both the envelope and finding level -- an unrecognized/typo'd key is a schema violation; a genuinely new field is an envelope-schema change (AD-14), not a silent addition. 'data' stays open (type: object with no declared properties) since its shape is per-command and opaque to this envelope.",
+  "description": "The one response envelope every marshal command emits (AD-14, AD-39): {schema_version, command, status, verdict, data, data_version, findings, assumptions}. status is a pure function of verdict (status_for) and is never set independently -- the top-level oneOf encodes that partition so a wire-side validator rejects a mismatched pair, not just the producer's Envelope.__post_init__. additionalProperties is false at both the envelope and finding level -- an unrecognized/typo'd key is a schema violation; a genuinely new field is an envelope-schema change (AD-14), not a silent addition. 'data' stays open (type: object with no declared properties) since its shape is per-command and opaque to this envelope.",
   "type": "object",
   "additionalProperties": false,
+  "oneOf": [
+    {
+      "description": "AD-39: status 'ok' pairs only with verdicts {clean, warn}.",
+      "properties": {
+        "status": { "const": "ok" },
+        "verdict": { "enum": ["clean", "warn"] }
+      }
+    },
+    {
+      "description": "AD-39: status 'error' pairs only with verdicts {unevaluable, scope-violation, gate-failed, error}.",
+      "properties": {
+        "status": { "const": "error" },
+        "verdict": { "enum": ["unevaluable", "scope-violation", "gate-failed", "error"] }
+      }
+    }
+  ],
   "required": [
     "schema_version",
     "command",
@@ -18,8 +34,8 @@
   "properties": {
     "schema_version": {
       "type": "integer",
-      "minimum": 1,
-      "description": "Envelope schema version; bumps only on a breaking change to the envelope KEYS. Additive fields do not bump it."
+      "const": 1,
+      "description": "Envelope schema version; bumps only on a breaking change to the envelope KEYS. Additive fields do not bump it. const 1: this file IS the v1 schema -- a document claiming any other version must not validate against it."
     },
     "command": {
       "type": "string",
@@ -59,8 +75,8 @@
       "properties": {
         "code": {
           "type": "string",
-          "pattern": "^MRS-[A-Z][A-Z0-9]*-\\d{3}$",
-          "description": "Stable machine code from the central registry (AD-15, core/findings.py)."
+          "pattern": "^MRS-[A-Z][A-Z0-9]*-[0-9]{3}$",
+          "description": "Stable machine code from the central registry (AD-15, core/findings.py). [0-9] spelled explicitly so the pattern reads identically under ECMA-262 and Python re (Python's \\d is Unicode-wide)."
         },
         "severity": {
           "enum": ["error", "warn", "info"],

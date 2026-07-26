@@ -14,14 +14,12 @@ pass the live check.
 from __future__ import annotations
 
 import re
+import shutil
 import subprocess
-import sys
+import tomllib
 from pathlib import Path
 
-if sys.version_info >= (3, 11):
-    import tomllib
-else:  # pragma: no cover -- this package requires-python >=3.12
-    import tomli as tomllib
+import pytest
 
 _PACKAGE_ROOT = Path(__file__).resolve().parents[2]
 _PYPROJECT = _PACKAGE_ROOT / "pyproject.toml"
@@ -38,8 +36,11 @@ def _contracts() -> list[dict]:
 
 
 def _contract_forbidding(forbidden_module: str) -> dict:
+    # .get: a future contract of another import-linter type (e.g. "layers")
+    # has no forbidden_modules key -- skip it instead of KeyError-ing and
+    # masking the real assertion.
     for contract in _contracts():
-        if forbidden_module in contract["forbidden_modules"]:
+        if forbidden_module in contract.get("forbidden_modules", []):
             return contract
     raise AssertionError(f"no contract forbids {forbidden_module!r}")
 
@@ -77,11 +78,41 @@ def test_ad3_harness_seam_contract_shape():
     assert "pyforge.marshal.adapters" not in contract["source_modules"]
 
 
+def test_ad3_source_modules_cover_every_subpackage_except_adapters():
+    """The AD-3 contract is enumerative, so a NEW subpackage added without
+    extending ``source_modules`` would silently sit outside the ``bmad_loop``
+    prohibition with every gate green. This complement check derives the
+    subpackage set from the installed package itself and makes the omission
+    build-breaking: every subpackage except ``adapters`` (the one deliberate
+    exclusion -- see test_ad3_harness_seam_contract_shape) must appear."""
+    import pyforge.marshal
+
+    package_file = pyforge.marshal.__file__
+    assert package_file is not None
+    package_dir = Path(package_file).resolve().parent
+    subpackages = {
+        f"pyforge.marshal.{entry.name}"
+        for entry in package_dir.iterdir()
+        if entry.is_dir() and (entry / "__init__.py").is_file()
+    }
+    contract = _contract_forbidding("bmad_loop")
+    assert set(contract["source_modules"]) == subpackages - {
+        "pyforge.marshal.adapters"
+    }
+
+
 def test_lint_imports_passes_against_the_installed_package():
+    if shutil.which("lint-imports") is None:
+        pytest.fail(
+            "lint-imports not on PATH -- run this suite via the env that "
+            "provisions import-linter: "
+            "`pixi run -e pyforge-marshal pyforge-marshal-test`"
+        )
     result = subprocess.run(
         ["lint-imports", "--config", str(_PYPROJECT), "--no-cache"],
         capture_output=True,
         text=True,
+        timeout=120,
     )
     stdout = _strip_ansi(result.stdout)
     assert result.returncode == 0, (

@@ -11,8 +11,11 @@ reasoning for why ``warn`` is a distinct rung from ``unevaluable`` only
 holds if ``warn`` exits 0, matching both ``pyforge-warden``'s and
 ``pyforge-doctor``'s existing exit-0 treatment of ``warn``),
 ``unevaluable=1``, ``scope-violation=2``, ``gate-failed=3``, ``error=4``.
-``EXIT_SIGINT = 130`` is the signal-path constant for the CLI boundary, not
-a lattice rung.
+``EXIT_SIGINT = 130``, ``EXIT_OK = 0``, and ``EXIT_USAGE = 2`` are
+CLI-boundary constants, not lattice rungs; ``GUARDED_EXIT_CODES`` is the
+computed frozen domain. AD-7 makes this module the only one permitted to
+embed a literal from that domain -- every other module (the CLI included)
+imports these names instead of spelling the integers.
 
 ``classify()`` is the SOLE owner of finding-code -> lattice-member
 classification (AD-31): no other module assigns a verdict directly.
@@ -56,6 +59,20 @@ _EXIT_BY_VERDICT: dict[Verdict, int] = {
     Verdict.SCOPE_VIOLATION: 2,
     Verdict.GATE_FAILED: 3,
     Verdict.ERROR: 4,
+}
+
+# CLI-boundary constants (like EXIT_SIGINT above, not lattice rungs).
+# EXIT_USAGE is argparse's usage-error convention; it numerically coincides
+# with scope-violation's exit code but is a distinct concern.
+EXIT_OK = 0
+EXIT_USAGE = 2
+
+# The full frozen exit-code domain (AD-7), computed -- never re-spelled --
+# from the lattice projection plus the boundary constants.
+GUARDED_EXIT_CODES: frozenset[int] = frozenset(_EXIT_BY_VERDICT.values()) | {
+    EXIT_OK,
+    EXIT_USAGE,
+    EXIT_SIGINT,
 }
 
 _CLASSIFY_TABLE: dict[str, Verdict] = {}

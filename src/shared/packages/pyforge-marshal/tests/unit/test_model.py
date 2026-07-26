@@ -76,6 +76,16 @@ def test_finding_malformed_code_rejected_before_membership_check():
         Finding(code="not-a-code", severity=Severity.WARN, message="m")
 
 
+def test_finding_rejects_non_str_message(registered_code):
+    with pytest.raises(ValueError):
+        Finding(code=registered_code, severity=Severity.WARN, message=None)
+
+
+def test_finding_rejects_non_str_path(registered_code):
+    with pytest.raises(ValueError):
+        Finding(code=registered_code, severity=Severity.WARN, message="m", path=1)
+
+
 def test_finding_to_json_dict_omits_path_when_none(registered_code):
     assert _finding(registered_code).to_json_dict() == {
         "code": registered_code,
@@ -151,6 +161,53 @@ def test_envelope_ok_status_with_error_finding_rejected(registered_code):
         )
 
 
+@pytest.mark.parametrize(
+    "status,verdict",
+    [(Status.ERROR, Verdict.ERROR), (Status.OK, Verdict.CLEAN)],
+)
+def test_envelope_rejects_non_finding_elements(status, verdict):
+    """Regression: a non-Finding element used to construct successfully on
+    the error-status path (crashing only later, inside ``to_json_dict``) but
+    crash with a raw ``AttributeError`` on the ok path -- validation
+    strictness must not depend on the verdict, so both now raise
+    ``ValueError`` at construction."""
+    with pytest.raises(ValueError):
+        Envelope(
+            schema_version=1,
+            command="x",
+            status=status,
+            verdict=verdict,
+            data={},
+            data_version=1,
+            findings=("not-a-finding",),
+        )
+
+
+def test_envelope_rejects_non_str_assumption_elements():
+    with pytest.raises(ValueError):
+        Envelope(
+            schema_version=1,
+            command="x",
+            status=Status.OK,
+            verdict=Verdict.CLEAN,
+            data={},
+            data_version=1,
+            assumptions=(1,),
+        )
+
+
+def test_envelope_rejects_non_str_command():
+    with pytest.raises(ValueError):
+        Envelope(
+            schema_version=1,
+            command=None,
+            status=Status.OK,
+            verdict=Verdict.CLEAN,
+            data={},
+            data_version=1,
+        )
+
+
 def test_envelope_data_is_defensively_copied(registered_code):
     data = {"k": "v"}
     envelope = build_envelope(command="x", verdict=Verdict.CLEAN, data=data)
@@ -185,6 +242,22 @@ def test_envelope_rejects_wrong_schema_version(registered_code):
             data={},
             data_version=1,
             findings=(),
+        )
+
+
+def test_envelope_rejects_bool_schema_version():
+    """``True == 1`` in Python -- without an explicit bool check a
+    ``schema_version=True`` envelope would construct successfully and then
+    emit JSON the packaged schema rejects (JSON Schema's ``integer`` type
+    excludes booleans)."""
+    with pytest.raises(ValueError):
+        Envelope(
+            schema_version=True,
+            command="x",
+            status=Status.OK,
+            verdict=Verdict.CLEAN,
+            data={},
+            data_version=1,
         )
 
 
@@ -252,6 +325,45 @@ def test_envelope_json_dict_validates_against_schema_for_every_verdict(
         jsonschema.validate(envelope.to_json_dict(), schema)
 
 
+def test_schema_rejects_mismatched_status_verdict_pair():
+    """AD-39 on the wire: the schema's top-level ``oneOf`` must reject a
+    document whose status/verdict pair the producer-side ``Envelope`` could
+    never construct -- a wire-side validator gets the same invariant."""
+    document = {
+        "schema_version": 1,
+        "command": "x",
+        "status": "ok",
+        "verdict": "error",
+        "data": {},
+        "data_version": 1,
+        "findings": [],
+        "assumptions": [],
+    }
+    with pytest.raises(jsonschema.ValidationError):
+        jsonschema.validate(document, _schema())
+    document["status"] = "error"
+    document["verdict"] = "warn"
+    with pytest.raises(jsonschema.ValidationError):
+        jsonschema.validate(document, _schema())
+
+
+def test_schema_rejects_foreign_schema_version():
+    """``schema_version`` is ``const: 1``: this file IS the v1 schema, so a
+    document claiming any other version must not validate against it."""
+    document = {
+        "schema_version": 2,
+        "command": "x",
+        "status": "ok",
+        "verdict": "clean",
+        "data": {},
+        "data_version": 1,
+        "findings": [],
+        "assumptions": [],
+    }
+    with pytest.raises(jsonschema.ValidationError):
+        jsonschema.validate(document, _schema())
+
+
 def test_envelope_missing_key_fails_schema():
     document = {
         "schema_version": 1,
@@ -306,6 +418,10 @@ def test_findings_code_pattern_matches_the_packaged_schema_pattern():
         "MRS-gate-001",
         "MRS-GATE-01",
         "MRS-GATE-001\n",
+        # Unicode digits: both patterns spell [0-9] (never \d) precisely so
+        # Python's Unicode-wide \d cannot diverge from the schema's ECMA
+        # reading -- this probe keeps that from regressing.
+        "MRS-GATE-١٢٣",
     ]
     for probe in probes:
         assert bool(findings.CODE_PATTERN.fullmatch(probe)) == bool(

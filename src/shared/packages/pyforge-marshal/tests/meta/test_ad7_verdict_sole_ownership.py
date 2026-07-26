@@ -66,12 +66,22 @@ LATTICE_ORDER = (
 LATTICE_REVERSED = tuple(reversed(LATTICE_ORDER))
 
 
+_VERDICT_MODULE = PACKAGE_DIR / "core" / "verdict.py"
+
+
 def _package_modules() -> list[Path]:
     return sorted(PACKAGE_DIR.rglob("*.py"))
 
 
 def _non_verdict_modules() -> list[Path]:
-    return [path for path in _package_modules() if path.name != "verdict.py"]
+    # Full-path comparison, not basename: only core/verdict.py is the sole
+    # owner -- a future adapters/verdict.py (or any other same-named file)
+    # must NOT inherit the exemption.
+    return [path for path in _package_modules() if path != _VERDICT_MODULE]
+
+
+def _module_id(path: Path) -> str:
+    return str(path.relative_to(PACKAGE_DIR))
 
 
 def _parse(path: Path) -> ast.Module:
@@ -282,7 +292,7 @@ def test_package_scan_surface_is_not_empty():
 
 
 @pytest.mark.parametrize(
-    "module_path", _non_verdict_modules(), ids=lambda p: p.name
+    "module_path", _non_verdict_modules(), ids=_module_id
 )
 def test_no_exit_literal_projection_outside_verdict(module_path: Path):
     violations = _exit_literal_violations(_parse(module_path))
@@ -294,7 +304,7 @@ def test_no_exit_literal_projection_outside_verdict(module_path: Path):
 
 
 @pytest.mark.parametrize(
-    "module_path", _non_verdict_modules(), ids=lambda p: p.name
+    "module_path", _non_verdict_modules(), ids=_module_id
 )
 def test_no_private_verdict_import_outside_verdict(module_path: Path):
     references = _private_verdict_references(_parse(module_path))
@@ -304,7 +314,7 @@ def test_no_private_verdict_import_outside_verdict(module_path: Path):
 
 
 @pytest.mark.parametrize(
-    "module_path", _non_verdict_modules(), ids=lambda p: p.name
+    "module_path", _non_verdict_modules(), ids=_module_id
 )
 def test_no_lattice_ordering_outside_verdict(module_path: Path):
     violations = _lattice_ordering_literals(_parse(module_path))

@@ -30,6 +30,9 @@ def test_code_pattern_matches_well_formed_code():
         "",
         "MRS-GATE-001\n",  # the `$`-before-trailing-newline `re` pitfall
         "MRS-GATE-001 ",
+        "MRS-GATE-١٢٣",  # Arabic-Indic digits: Python's \d
+        # would accept these; [0-9] (matching the schema's ECMA reading)
+        # must not.
     ],
 )
 def test_code_pattern_rejects_malformed_codes(code):

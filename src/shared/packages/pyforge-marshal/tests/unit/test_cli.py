@@ -5,7 +5,7 @@ always returns an int and never raises ``SystemExit`` itself.
 
 from __future__ import annotations
 
-import sys
+import tomllib
 from pathlib import Path
 from unittest.mock import patch
 
@@ -13,11 +13,6 @@ import pytest
 
 from pyforge.marshal.cli.main import __version__, main
 from pyforge.marshal.core.verdict import EXIT_SIGINT
-
-if sys.version_info >= (3, 11):
-    import tomllib
-else:  # pragma: no cover -- this package requires-python >=3.12
-    import tomli as tomllib
 
 _PYPROJECT = Path(__file__).resolve().parents[2] / "pyproject.toml"
 

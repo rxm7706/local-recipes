@@ -101,6 +101,10 @@ class Finding:
     def __post_init__(self) -> None:
         object.__setattr__(self, "code", require_registered(self.code))
         object.__setattr__(self, "severity", Severity(self.severity))
+        if not isinstance(self.message, str):
+            raise ValueError(f"message must be a str, got {self.message!r}")
+        if self.path is not None and not isinstance(self.path, str):
+            raise ValueError(f"path must be a str or None, got {self.path!r}")
 
     def to_json_dict(self) -> dict[str, object]:
         document: dict[str, object] = {
@@ -119,7 +123,10 @@ class Envelope:
 
     ``__post_init__`` enforces AD-39's two named invariants: ``status`` must
     equal ``status_for(verdict)``, and an ``ok`` envelope may carry no
-    error-severity finding.
+    error-severity finding. It also validates every payload field's shape
+    (``schema_version``/``command``/``data``/``data_version`` plus the
+    ``findings``/``assumptions`` member types) so a successfully constructed
+    envelope always serializes to schema-valid JSON.
     """
 
     schema_version: int
@@ -132,11 +139,13 @@ class Envelope:
     assumptions: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
-        if self.schema_version != SCHEMA_VERSION:
+        if isinstance(self.schema_version, bool) or self.schema_version != SCHEMA_VERSION:
             raise ValueError(
                 f"schema_version must be {SCHEMA_VERSION}, got "
                 f"{self.schema_version!r}"
             )
+        if not isinstance(self.command, str):
+            raise ValueError(f"command must be a str, got {self.command!r}")
         if (
             isinstance(self.data_version, bool)
             or not isinstance(self.data_version, int)
@@ -151,6 +160,20 @@ class Envelope:
         object.__setattr__(self, "status", Status(self.status))
         object.__setattr__(self, "findings", tuple(self.findings))
         object.__setattr__(self, "assumptions", tuple(self.assumptions))
+        # Member-type checks BEFORE any invariant that touches the elements:
+        # without them, a non-Finding element crashed with AttributeError at
+        # construction on the ok path but survived to to_json_dict() on the
+        # error path -- validation strictness must not depend on the verdict.
+        for finding in self.findings:
+            if not isinstance(finding, Finding):
+                raise ValueError(
+                    f"findings must contain only Finding instances, got {finding!r}"
+                )
+        for assumption in self.assumptions:
+            if not isinstance(assumption, str):
+                raise ValueError(
+                    f"assumptions must contain only str, got {assumption!r}"
+                )
         # Deep copy -- frozen=True only blocks attribute reassignment, not
         # mutation of a referenced mutable value (same rationale as
         # pyforge-doctor's Finding.evidence, extended to nested structures

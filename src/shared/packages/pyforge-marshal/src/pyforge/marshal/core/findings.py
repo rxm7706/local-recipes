@@ -25,7 +25,10 @@ import re
 # newline can never sneak a malformed code past the check (a known Python
 # `re` pitfall: `$` alone matches immediately before a trailing "\n"; see
 # pyforge-warden's models.py docstring, which calls out this exact gotcha).
-CODE_PATTERN = re.compile(r"MRS-[A-Z][A-Z0-9]*-\d{3}")
+# [0-9], never \d: Python's \d matches any Unicode decimal digit, while the
+# packaged JSON schema's ECMA-262 pattern treats \d as [0-9] -- spelling
+# [0-9] in both keeps the two independent copies behaviorally identical.
+CODE_PATTERN = re.compile(r"MRS-[A-Z][A-Z0-9]*-[0-9]{3}")
 
 REGISTERED_CODES: frozenset[str] = frozenset()
 

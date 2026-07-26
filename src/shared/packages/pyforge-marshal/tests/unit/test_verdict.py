@@ -50,6 +50,16 @@ def test_exit_sigint_constant():
     assert verdict.EXIT_SIGINT == 130
 
 
+def test_cli_boundary_constants_and_guarded_domain():
+    """verdict.py is the sole owner of every guarded exit-code literal
+    (AD-7): the CLI imports these names instead of spelling the integers.
+    The literal expectations live HERE (a test, not an installed module) on
+    purpose -- an independent copy that catches the domain drifting."""
+    assert verdict.EXIT_OK == 0
+    assert verdict.EXIT_USAGE == 2
+    assert verdict.GUARDED_EXIT_CODES == frozenset({0, 1, 2, 3, 4, 130})
+
+
 @pytest.mark.parametrize(
     "member,expected_exit",
     [

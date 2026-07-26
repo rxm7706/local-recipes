@@ -3,11 +3,14 @@
 Only ``--version``/``--help`` are wired -- no real command exists yet (that
 lands story-by-story against the Structural Seed's ``cli/`` package). Not
 wired through the envelope/finding machinery: mirrors
-``pyforge-doctor``'s ``__main__.py`` exit-relay pattern exactly. ``main``
-always RETURNS an int; it never embeds a literal guarded exit-code integer
-itself (``core/verdict.py`` is the sole module permitted to do that -- the
-sole-ownership meta-test's AST scan enforces it by flagging exit-primitive
-calls carrying a literal from Marshal's guarded domain). The
+``pyforge-doctor``'s ``__main__.py`` exit-relay pattern (structure: return
+an int, never raise, relay argparse's own code, clamp anything foreign).
+``main`` always RETURNS an int and embeds NO guarded exit-code literal
+itself: ``EXIT_OK``/``EXIT_USAGE``/``EXIT_SIGINT``/``GUARDED_EXIT_CODES``
+are imported from ``core/verdict.py``, the sole module permitted to spell
+those integers (AD-7 -- the sole-ownership meta-test's AST scan enforces
+the exit-call cases; the import discipline here keeps even non-call
+literals out, one step stricter than the doctor file this mirrors). The
 ``if __name__ == "__main__": raise SystemExit(main())`` guard below calls
 ``SystemExit`` with the RESULT of ``main()`` -- a call expression, never a
 literal -- which is why the meta-test does not flag it; it relays an
@@ -19,7 +22,7 @@ from __future__ import annotations
 import argparse
 import sys
 
-from ..core.verdict import EXIT_SIGINT
+from ..core.verdict import EXIT_OK, EXIT_SIGINT, EXIT_USAGE, GUARDED_EXIT_CODES
 
 # Scaffold stage (Story 1.1): __init__.py stays empty (no __version__
 # constant), so the version string duplicates pyproject.toml's version
@@ -60,16 +63,16 @@ def main(argv: list[str] | None = None) -> int:
         # a non-int code (argparse never produces one under this parser
         # config) falls back to 2, still inside the guarded domain.
         if exc.code is None:
-            return 0
-        if isinstance(exc.code, int) and exc.code in {0, 1, 2, 3, 4, 130}:
+            return EXIT_OK
+        if isinstance(exc.code, int) and exc.code in GUARDED_EXIT_CODES:
             return exc.code
-        # Any other int (or non-int, e.g. a message string) is clamped to 2
-        # -- defense in depth for a future argparse action that might exit
-        # with something outside Marshal's frozen domain (AD-7).
-        return 2
+        # Any other int (or non-int, e.g. a message string) is clamped to
+        # EXIT_USAGE -- defense in depth for a future argparse action that
+        # might exit with something outside Marshal's frozen domain (AD-7).
+        return EXIT_USAGE
     except KeyboardInterrupt:
         return EXIT_SIGINT
-    return 0
+    return EXIT_OK
 
 
 if __name__ == "__main__":
