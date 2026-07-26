@@ -879,10 +879,11 @@ bmad-loop = ">=0.9.0"             # deterministic ralph-loop orchestrator (+TUI)
 bmad-method-test-architecture-enterprise = ">=1.19.1"  # TEA module  external PR #33292 # https://github.com/bmad-code-org/bmad-method-test-architecture-enterprise
 bmad-method-wds-expansion = ">=0.4.3"  # Whiteport Design Studio # PR #33126 # https://github.com/bmad-code-org/bmad-method-wds-expansion
 bmad-module-template = ">=0.1.0"  # module scaffold # PR #33127 # https://github.com/bmad-code-org/bmad-module-template
-#bmad-story-automator = ">=1.15.0" # story orchestration skill + helper runtime  bumped + build fixed for upstream restructure; unix-only (skip: win) # PR #33128 # https://github.com/bmad-code-org/bmad-automator
 bmad-utility-skills = ">=2.0.0"   # 10 maintainer skills  bumped + v2.0.0 restructure fixes # PR #33129 # https://github.com/bmad-code-org/bmad-utility-skills
 #mybmad-dashboard = ">=0.1.0.dev0" # Next.js web dashboard + Postgres launcher # mirror of PR #33513 # linux/osx only #  https://github.com/bmad-code-org/bmad-method-ui/tree/main/web
 bmad-labs-skills = ">=1.0.0.dev0" # community skills marketplace (21 skills) # https://github.com/bmad-labs/skills
+bmad-manticore = ">=2.0.0.dev0"   # From brain dump to a rendered, graphics-rich video, in your own words
+#bmad-story-automator = ">=1.15.0" # ARCHIVED story orchestration skill + helper runtime  bumped + build fixed for upstream restructure; unix-only (skip: win) # PR #33128 # https://github.com/bmad-code-org/bmad-automator
 #bmalph = ">=2.11.0"               # BMAD phases + Ralph loop CLI  current # PR #33557 # https://github.com/LarsCowe/bmalph
 #bmad-autopilot = ">=0.1.0"        # community precursor loop w/ PR-lifecycle automation # unix-only (skip: win) # https://github.com/martin-janci/autopilot
 #claude-mem = "*"                  # Persistent context across sessions for coding agents - captures, compresses, and re-injects session memory.
@@ -900,10 +901,30 @@ dagster = ">=1.13.15"             # The data orchestration platform built for pr
 dagster-pipes = ">=1.13.15"       # Toolkit for Dagster integrations with transform logic outside of Dagster
 dagster-webserver = ">=1.13.15"   # Web UI for dagster.
 dask-core = ">=2026.7.1"          # Parallel computing with task scheduling (pandas-on-Dask, delayed, distributed)
+# --- dbt / dlt: blocked, root causes verified 2026-07-26 -----------------------
+# dbt trio: NOT blocked by python 3.14 (they solve fine on 3.14 in isolation).
+# Blocked by a `click` conflict inside THIS env: dbt-core >=1.11.11 requires
+# click >=8.3.0,<9.0, but conda-recipe-manager 0.10.5 (line ~809) pins
+# `click ==8.2.1` exactly, so the two can never coexist.
+# That exact pin is a FEEDSTOCK BUG, not upstream intent: conda/conda-recipe-manager
+# v0.10.5's pyproject.toml declares plain `"click"` (unpinned) — the ==8.2.1 was
+# copied from their DEV environment.yaml into the recipe's run deps. Fix path:
+# one-line conda-recipe-manager-feedstock PR relaxing `click ==8.2.1` -> `click`,
+# then uncomment these three.
 #dbt-core = ">=1.11.11"            # With dbt, data analysts and engineers can build analytics the way engineers build applications.
 #dbt-duckdb = ">=1.9.4"            # dbt DuckDB adapter
 #dbt-postgres = ">=1.10.0"         # dbt PostgreSQL adapter
-#dlt = ">=1.28.1"                  # dlt requires dlt-pendulum which is only available on conda-forge for linux-64 dlt is an open-source python-first scalable data loading library that does not require any backend to run. # TODO PY314 conda-forge compat check;
+# dlt: genuinely blocked on python 3.14, in two stages.
+# (1) conda-forge dlt is 1.28.2, which caps `python >=3.10,<3.14`. Upstream dlt
+#     1.29.1 already declares requires-python `<3.15,>=3.10`, so a feedstock bump
+#     to 1.29.1 lifts the cap.
+# (2) On py3.14 dlt needs `pendulum>=3.0.0` (its own marker: python_version > "3.13").
+#     conda-forge dlt-pendulum 3.0.2 is compiled and tops out at py313 — no py314
+#     build exists, so it needs the python314 migration first.
+# NOTE: the old "dlt-pendulum is linux-64 only" comment here was STALE — dlt-pendulum
+# now ships linux-64, linux-aarch64, osx-64, osx-arm64 and win-64. Platform is no
+# longer the issue; the py314 gap is.
+#dlt = ">=1.28.1"                  # dlt is an open-source python-first scalable data loading library that does not require any backend to run.
 great-expectations = ">=1.19.1"   # GE data contracts in Kedro nodes
 pandera = ">=0.32.1"              # Statistical data validation for Pandas, Dask, and Spark
 duckdb = ">=1.5.5"                # Embedded analytical SQL database
@@ -951,9 +972,11 @@ markdownify = ">=1.2.3"           # Markdown converter (used in markitdown)
 beautifulsoup4 = ">=4.15.0"       # HTML parser (used in markitdown)
 rank-bm25 = ">=0.2.2"             # Various BM25 algorithms for document ranking
 dbgpt = ">=0.8.1"                 # An open-source AI native data app development framework with AWEL and agents (DB-GPT)
-#ocrmypdf = ">=17.8.1"             # OCRmyPDF adds an OCR text layer to scanned PDF files, allowing them to be searched
+# ocrmypdf is target-gated below — it is noarch, but hard-deps pngquant, which
+# conda-forge ships only on linux-64/osx-64. A shared dep here is unsolvable.
 odfpy = ">=1.4.1"                 # ODP/ODT style extraction (stretch goal in FR-46d); OpenDocument Apache-2.0 noarch lib
-#office2pdf = ">=0.6.0"            # Convert Microsoft Office documents DOCX, XLSX, and PPTX files to PDF using pure Rust.
+# office2pdf is target-gated below — conda-forge ships it on linux-64/osx-64/win-64
+# but NOT osx-arm64, so a shared dep here makes the workspace lock unsolvable.
 olefile = ">=0.47"                # OLE2 / old-style Microsoft Office file parser (used for legacy .doc loader in markitdown)
 ollama-python = ">=0.6.2"         # Python client (the existing 'ollama' is the Go server binary)
 openpyxl = ">=3.1.5"              # Read / write Office Open XML .xlsx files
@@ -1080,6 +1103,15 @@ graphviz2drawio = ">=1.2.0"       # Convert Graphviz .dot files to draw.io .draw
 mlx = ">=0.32.0"                  # Apple's array framework (Linux build via libblas/lapack)
 mlx-lm = ">=0.31.3"               # noarch — opt-in alternative LLM runner on Linux, parity with macOS dep set
 tmux = ">=3.7b_"                  # terminal multiplexer — bmad-loop spawns coding-agent sessions in tmux (docs/specs/bmad-loop-adoption.md)
+office2pdf = ">=0.6.0"            # DOCX/XLSX/PPTX -> PDF (pure Rust). Target-gated: conda-forge has
+                                  # linux-64/osx-64/win-64 only — no osx-arm64 build, so it cannot be a
+                                  # shared dep. Lift the gate once office2pdf-feedstock is platform-expanded.
+ocrmypdf = ">=17.8.1"             # OCR text layer for scanned PDFs. linux-64 only here: ocrmypdf itself is
+                                  # noarch, but hard-deps pngquant, which conda-forge ships only on
+                                  # linux-64/osx-64 (no osx-arm64, no win-64).
+
+[feature.local-recipes.target.win-64.dependencies]
+office2pdf = ">=0.6.0"            # see the linux-64 note above
 
 [feature.local-recipes.target.osx-arm64.dependencies]
 mlx = ">=0.32.0"                  # Apple's array framework (Metal-accelerated on M-series)
