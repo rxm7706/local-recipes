@@ -71,7 +71,32 @@ _LOOP_DONE = re.compile(r"Merge bmad-loop/[^/]+/(\d+-\d+)-\S*(?:\s+into\s+(\S+))
 # whole tail, matched no project, and silently dropped 10 real warden stories.
 _LOOP_TARGET_SLUG = re.compile(r"pyforge-([a-z0-9]+)")
 # Legacy subjects that predate the loop/pyforge-<slug> convention.
-_LOOP_TARGET_LEGACY = (("warden-epic", "warden"),)
+# `claude/pdos-*` is warden's pre-rename Epic-1 branch family (pdos = the project's
+# earlier name); its stories are warden's.
+_LOOP_TARGET_LEGACY = (("warden-epic", "warden"), ("claude/pdos", "warden"))
+# A story can also land as a plain PR MERGE rather than a bmad-loop merge — those
+# subjects never match _LOOP_DONE, which is why warden 1.2/1.3/1.4 read pending on
+# the published board while reading done locally. Two shapes exist on main:
+#   Merge pull request #53 from rxm7706/claude/pdos-1-2-interfaces-null-engine
+#   Merge pull request #115 from rxm7706/build/pyforge-doctor-1-1
+_PR_BUILD_DONE = re.compile(r"Merge pull request #\d+ from \S+/build/pyforge-([a-z0-9]+)-(\d+)-(\d+)")
+_PR_PDOS_DONE = re.compile(r"Merge pull request #\d+ from \S+/claude/pdos-(\d+)-(\d+)")
+# RETIRED convention, warden-only: warden's Epic-1 landed as bare `story N.N: …`
+# subjects before any loop/PR branch convention existed. All six such subjects on
+# main are warden's (1.1–1.4); nothing else has ever used the form, and current
+# work uses the loop/build shapes above. Anchored to start-of-subject so it cannot
+# match prose mid-line. Distinct from _ATLAS_STORY, which requires parens: story(A1).
+# If a future project adopts a bare `story N.N:` subject it WILL be miscredited to
+# warden — the durable fix is a tracked done-manifest, not another regex.
+_WARDEN_LEGACY_STORY = re.compile(r"^story (\d+\.\d+):")
+# PROJECT-QUALIFIED story subjects — the safe form, because the prefix names its
+# own project(s) and every token is validated against the LIVE project set, so an
+# unknown prefix is ignored rather than misattributed. Covers both shapes on main:
+#   pyforge-warden: story 6.10 decision record — …      (single, optional prefix)
+#   mason + steward: Story 1.1 — two stations reach code (MULTI-project, `+`-joined)
+# The multi form is why mason and steward read 0 on the published board: their only
+# completion signal names two projects at once and matched no single-project regex.
+_QUALIFIED_STORY = re.compile(r"^([a-z0-9 +\-]+?):\s*story\s+(\d+\.\d+)\b", re.I)
 # Atlas: most stories land as `story(A1)` / `story(B10)` / `story(0.1)`; the Wave
 # G/H tail uses bare `GN:` / `HN:` subjects instead.
 _ATLAS_STORY = re.compile(r"story\((\w[\w.]*)\)")
@@ -376,6 +401,24 @@ def done_ids_from_git(branch: str, project_keys: tuple[str, ...] = ()) -> dict[s
             done["atlas"].add(a.group(1))  # A1, B10, 0.1, F4 ...
         for a in _ATLAS_GH.finditer(line):
             done["atlas"].add(a.group(1))  # G3, H1, H2 ...
+        pm = _PR_BUILD_DONE.search(line)
+        if pm and pm.group(1) in done:
+            done[pm.group(1)].add(f"{pm.group(2)}.{pm.group(3)}")
+        pm = _PR_PDOS_DONE.search(line)
+        if pm:
+            done["warden"].add(f"{pm.group(1)}.{pm.group(2)}")
+        pm = _WARDEN_LEGACY_STORY.match(line)
+        if pm:
+            done["warden"].add(pm.group(1))
+        qm = _QUALIFIED_STORY.match(line)
+        if qm:
+            sid = qm.group(2)
+            for tok in qm.group(1).split("+"):
+                key = tok.strip().lower()
+                if key.startswith("pyforge-"):
+                    key = key[len("pyforge-"):]
+                if key in done:          # validated against the live project set
+                    done[key].add(sid)
         for a in _RF_STORY.finditer(line):
             done["regen"].add(a.group(1))  # 1.1, 4.R ...
     if unattributed:
