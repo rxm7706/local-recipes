@@ -40,7 +40,7 @@ jobs:
       - name: rerun linter
         run: |
           python .github/workflows/scripts/linter_issue_comment.py \
-            --owner=${{ github.repository_owner }} \
+            --repo=${{ github.repository }} \
             --pr-num=${{ github.event.issue.number  }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

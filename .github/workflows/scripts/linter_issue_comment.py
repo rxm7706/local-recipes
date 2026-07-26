@@ -10,13 +10,18 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Rerun the staged-recipe's linter on PR comments."
     )
-    parser.add_argument("--owner", type=str, required=True, help="the repo owner")
+    # NOTE: upstream staged-recipes takes --owner and hardcodes `<owner>/staged-recipes`.
+    # This fork is named local-recipes, so that lookup resolved to the WRONG repo and
+    # every get_pull() 404'd. Take the full slug from ${{ github.repository }} instead.
+    parser.add_argument(
+        "--repo", type=str, required=True, help="the full repo slug, e.g. owner/name"
+    )
     parser.add_argument("--pr-num", type=int, required=True, help="the PR number")
 
     args = parser.parse_args()
 
     gh = github.Github(auth=github.Auth.Token(os.getenv("GH_TOKEN")))
-    repo = gh.get_repo(f"{args.owner}/staged-recipes")
+    repo = gh.get_repo(args.repo)
     pr = repo.get_pull(args.pr_num)
 
     if pr.state == "closed" or pr.merged == True:
