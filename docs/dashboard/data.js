@@ -2702,7 +2702,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-07-26 10:35 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-07-26 11:30 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -3860,8 +3860,8 @@ window.DASHBOARD_DATA = {
         "overtaken": false,
         "na": [],
         "furthest": "code",
-        "updated": "2026-07-25",
-        "age": 1,
+        "updated": "2026-07-26",
+        "age": 0,
         "stale": false,
         "version": "0.1.0",
         "progress": "2/17",
@@ -3889,8 +3889,8 @@ window.DASHBOARD_DATA = {
         "overtaken": false,
         "na": [],
         "furthest": "code",
-        "updated": "2026-07-25",
-        "age": 1,
+        "updated": "2026-07-26",
+        "age": 0,
         "stale": false,
         "version": "0.1.0",
         "progress": "1/12",
@@ -3918,8 +3918,8 @@ window.DASHBOARD_DATA = {
         "overtaken": false,
         "na": [],
         "furthest": "code",
-        "updated": "2026-07-25",
-        "age": 1,
+        "updated": "2026-07-26",
+        "age": 0,
         "stale": false,
         "version": "0.1.0",
         "progress": "1/9",
