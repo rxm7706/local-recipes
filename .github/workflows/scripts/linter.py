@@ -85,6 +85,12 @@ def _lint_recipes(gh, pr):
             (not fname.startswith("recipes/"))
             or (not fname.endswith(".yaml"))
             or fname in example_recipes
+            # A PR that DELETES a recipe file (e.g. dropping meta.yaml once its
+            # feedstock has migrated to recipe.yaml v1) still lists that path in
+            # the changed-files set, but there is nothing left to open. Without
+            # this guard the linter dies with FileNotFoundError instead of
+            # linting the PR.
+            or not os.path.exists(fname)
         ):
             continue
 
