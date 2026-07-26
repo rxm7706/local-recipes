@@ -1084,17 +1084,28 @@ mlx-lm = ">=0.31.3"               # Apple-native LLM runner; deckcraft prefers t
 tmux = ">=3.7b_"                    # terminal multiplexer — bmad-loop spawns coding-agent sessions in tmux (docs/specs/bmad-loop-adoption.md)
 
 # --- bmad-ui: BMad Method UI dashboards (bmad-loop-adoption W4) ---------------
-# Consumes the locally-built consume-not-submit mirrors of staged-recipes#33513
-# (recipes/bmad-dashboard + recipes/mybmad-dashboard) from the local channel.
-# Rebuild via: pixi run -e local-recipes recipe-build recipes/<name>
+# Consumes the consume-not-submit mirrors of staged-recipes#33513
+# (recipes/bmad-dashboard + recipes/mybmad-dashboard) from the SelfExplainML
+# channel on anaconda.org.
 # One-time after install: `pixi run bmad-dashboard-install` wires the VS Code
 # extension into your editor; `pixi run mybmad up` starts the web dashboard
 # (provisions a per-user PostgreSQL; default http://localhost:3002).
 [feature.bmad-ui]
-# linux-64 only: the local channel holds linux-64 builds (mybmad-dashboard skips
-# win upstream; osx would need a Mac build). Widen when #33513 merges to cf.
+# linux-64 only: mybmad-dashboard skips win upstream and osx would need a Mac
+# build. Widen when #33513 merges to conda-forge.
+#
+# NO local ./build_artifacts channel. It was carried here from the original
+# build-it-yourself bootstrap, but both packages have long resolved from the
+# remote SelfExplainML channel — the lock proved it, with zero packages served
+# from file://. Its only remaining effect was harm: pixi records a channel as an
+# ABSOLUTE path, so pixi.lock carried a machine-specific
+# file:///home/<user>/…/build_artifacts/linux64/ that exists on exactly one
+# machine. Any `pixi …  --locked` on a clean checkout then died with
+#   could not find subdir 'noarch' in channel 'file:///…/build_artifacts/linux64/'
+# reported as the misleading `lock file not up-to-date with the workspace`,
+# which broke two Pages deploys on 2026-07-26.
 platforms = ["linux-64"]
-channels = ["conda-forge", "SelfExplainML", "./build_artifacts/linux64"]
+channels = ["conda-forge", "SelfExplainML"]
 
 [feature.bmad-ui.dependencies]
 bmad-dashboard = ">=1.2.2.dev0"               # VS Code extension bundle + bmad-dashboard-install CLI
