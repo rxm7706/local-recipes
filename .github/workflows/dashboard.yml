@@ -48,8 +48,16 @@ jobs:
       # out to `git` alone, so generate.py runs them directly (see _run_detector).
       # Without that the published board reported every detector "could not run
       # here" while they read green locally.
+      # pixi-version is PINNED to the version that produced pixi.lock. Without it
+      # the action uses whatever pixi the runner image already ships ("Using
+      # pre-installed pixi at /home/runner/.pixi/bin/pixi"), and a mismatched pixi
+      # rejects the lock with `lock file not up-to-date with the workspace` even
+      # though `pixi install -e pyforge-ci --locked` succeeds locally. This
+      # workspace also uses the pixi 0.71+ NAMED platform entry osx-arm64-min,
+      # which older pixi cannot read at all. Bump this in step with pixi.lock.
       - uses: prefix-dev/setup-pixi@v0.10.0
         with:
+          pixi-version: v0.73.0
           environments: pyforge-ci
           locked: true
           cache: true
