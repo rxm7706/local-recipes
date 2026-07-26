@@ -1061,6 +1061,80 @@ def scan_backlog(dreams: list[dict], projects: dict) -> dict:
     return {"rows": rows, "blocked": blocked, "byOwner": by_owner, "practices": practices}
 
 
+# ---- delivery timing / velocity (derived from bmad-loop run journals) -------
+
+def scan_timing(projects: dict) -> None:
+    """Per-story active agent-compute, derived from every loop home's journals.
+
+    In Build showed no clock and no velocity while Realized did, because warden's
+    and atlas's numbers were computed once from these same journals and then
+    hand-pasted into data.js. Any line without that manual step rendered bare.
+
+    Active compute = the sum of `session-end.ts - session-start.ts` per story
+    (dev + review). Gate-pause wait falls out for free: a pause happens BETWEEN
+    sessions, so it is never inside a summed span — which is exactly warden's
+    stated metric.
+
+    Hand-authored `timing`/`velocity` are PRESERVED, never overwritten. Warden's
+    carry human judgement no derivation can reproduce (6.4's bar is its delivered
+    dev-2 pass, excluding a rolled-back dev-1; 6.9's is recovered from a stalled
+    session). Derivation fills the gap for lines that have none; it does not
+    second-guess a curated number.
+    """
+    for pkey, home in LOOP_HOMES.items():
+        proj = projects.get(pkey)
+        if proj is None or proj.get("velocity") or proj.get("timing"):
+            continue                      # absent line, or curated — leave alone
+        runs = Path(home) / ".bmad-loop" / "runs"
+        if not runs.is_dir():
+            continue
+        spans: dict[str, float] = {}
+        for jf in sorted(runs.glob("*/journal.jsonl")):
+            # `session-end` carries ONLY task_id — no story_key (verified against
+            # live journals). Pairing on story_key silently closed nothing and
+            # every line derived zero. The story is carried on session-START and
+            # looked up by task_id when the session ends.
+            open_at: dict[str, tuple[float, str]] = {}
+            for line in jf.read_text(encoding="utf-8", errors="replace").splitlines():
+                try:
+                    e = json.loads(line)
+                except Exception:
+                    continue
+                kind, ts, task = e.get("kind"), e.get("ts"), e.get("task_id")
+                if not task or not isinstance(ts, (int, float)):
+                    continue
+                if kind == "session-start" and e.get("story_key"):
+                    open_at[task] = (ts, e["story_key"])
+                elif kind == "session-end" and task in open_at:
+                    started, key = open_at.pop(task)
+                    spans[key] = spans.get(key, 0.0) + max(0.0, ts - started)
+        if not spans:
+            continue
+        bars = []
+        for key, secs in spans.items():
+            m = re.match(r"^(\d+)-(\d+)", key)
+            bars.append([f"{m.group(1)}.{m.group(2)}" if m else key, round(secs / 60)])
+        bars.sort(key=lambda b: [int(x) if x.isdigit() else 0 for x in b[0].split(".")])
+        total_h = sum(b[1] for b in bars) / 60
+        proj["velocity"] = {
+            "sub": "Active agent-compute per story (dev + review; excludes "
+                   "gate-pause wait) — derived from this line's bmad-loop journals.",
+            "bars": bars,
+        }
+        proj["timing"] = {
+            "metric": "active agent-compute per story (dev + review; excludes "
+                      "gate-pause wait) — from bmad-loop run journals",
+            "totalLabel": (f"~{total_h:.1f} h active compute" if total_h >= 1
+                           else f"~{sum(b[1] for b in bars)} min active compute"),
+            "note": f"Derived from {len(bars)} measured "
+                    f"stor{'y' if len(bars) == 1 else 'ies'}; a story still in "
+                    f"flight contributes only its closed sessions.",
+            "epicMin": {},
+        }
+        print(f"[{pkey}] timing derived: {len(bars)} stories, "
+              f"{sum(b[1] for b in bars)} min active compute")
+
+
 # ---- station ownership (the Dream -> code through-line) ----------------------
 
 # Console program key -> the Dream whose owner is accountable for that build line.
@@ -1176,6 +1250,7 @@ def main() -> int:
     # earlier run) and reported every NEW line as idle — caught when marshal /
     # mason / steward / genesis were added 2026-07-25.
     apply_owner(data)
+    scan_timing(data["projects"])
     data["backlog"] = scan_backlog(data["dreams"], data["projects"])
     data["guild"] = scan_guild(data["dreams"], data["projects"], data["backlog"])
 

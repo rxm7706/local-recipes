@@ -604,8 +604,21 @@ window.DASHBOARD_DATA = {
         "E6 · multi-axis"
       ],
       "inflight": null,
-      "velocity": null,
-      "timing": null,
+      "velocity": {
+        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals.",
+        "bars": [
+          [
+            "1.1",
+            101
+          ]
+        ]
+      },
+      "timing": {
+        "metric": "active agent-compute per story (dev + review; excludes gate-pause wait) — from bmad-loop run journals",
+        "totalLabel": "~1.7 h active compute",
+        "note": "Derived from 1 measured story; a story still in flight contributes only its closed sessions.",
+        "epicMin": {}
+      },
       "lineState": {
         "state": "paused",
         "at": "1.2"
@@ -946,8 +959,29 @@ window.DASHBOARD_DATA = {
         "E6 · multi-axis"
       ],
       "inflight": null,
-      "velocity": null,
-      "timing": null,
+      "velocity": {
+        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals.",
+        "bars": [
+          [
+            "1.1",
+            60
+          ],
+          [
+            "1.2",
+            98
+          ],
+          [
+            "1.3",
+            16
+          ]
+        ]
+      },
+      "timing": {
+        "metric": "active agent-compute per story (dev + review; excludes gate-pause wait) — from bmad-loop run journals",
+        "totalLabel": "~2.9 h active compute",
+        "note": "Derived from 3 measured stories; a story still in flight contributes only its closed sessions.",
+        "epicMin": {}
+      },
       "lineState": {
         "state": "paused",
         "at": "1.3"
@@ -1086,8 +1120,21 @@ window.DASHBOARD_DATA = {
         "E6"
       ],
       "inflight": null,
-      "velocity": "",
-      "timing": "",
+      "velocity": {
+        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals.",
+        "bars": [
+          [
+            "1.1",
+            139
+          ]
+        ]
+      },
+      "timing": {
+        "metric": "active agent-compute per story (dev + review; excludes gate-pause wait) — from bmad-loop run journals",
+        "totalLabel": "~2.3 h active compute",
+        "note": "Derived from 1 measured story; a story still in flight contributes only its closed sessions.",
+        "epicMin": {}
+      },
       "lineState": {
         "state": "paused",
         "at": "1.2"
@@ -1594,8 +1641,21 @@ window.DASHBOARD_DATA = {
         "E6 · multi-axis"
       ],
       "inflight": null,
-      "velocity": null,
-      "timing": null,
+      "velocity": {
+        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals.",
+        "bars": [
+          [
+            "1.1",
+            70
+          ]
+        ]
+      },
+      "timing": {
+        "metric": "active agent-compute per story (dev + review; excludes gate-pause wait) — from bmad-loop run journals",
+        "totalLabel": "~1.2 h active compute",
+        "note": "Derived from 1 measured story; a story still in flight contributes only its closed sessions.",
+        "epicMin": {}
+      },
       "lineState": {
         "state": "paused",
         "at": "1.2"
@@ -2520,7 +2580,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-07-26 06:42 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-07-26 09:47 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -4056,9 +4116,9 @@ window.DASHBOARD_DATA = {
         "name": "spec-surface",
         "task": "spec-surface-check",
         "guards": "every tracked file under a Spec surface",
-        "state": "green",
-        "findings": 0,
-        "verdict": "OK: every tracked file governed or allowlisted; no drift.",
+        "state": "drift",
+        "findings": 1,
+        "verdict": "FINDINGS (1):",
         "runbook": ""
       },
       {
