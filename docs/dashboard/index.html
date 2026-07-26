@@ -472,6 +472,10 @@
   .zsec > summary .program-h { margin-bottom: 0; }
   .zsec > summary .zone-h { margin: 0; }
   .zsec.zone > summary { margin: 34px 0 10px; }
+  .dreams.zone > summary { margin: 0 0 4px; }          /* panelled: padding supplies the gap */
+  .dreams.zone[open] > summary { margin-bottom: 14px; }
+  .dreams.zone .pconsole { background: var(--panel-2); }  /* nested card, one step back */
+  .dreams.zone details.pconsole > summary { padding: 12px 0; }
   .zsec.zone { margin-top: 0; }
   .zcaret { margin-left: auto; font-family: var(--mono); font-size: 11px; color: var(--slate-faint); transition: transform .15s; flex: none; }
   .zsec[open] > summary .zcaret { transform: rotate(90deg); }
@@ -525,19 +529,19 @@
     <div id="pitchcards" class="pitchgrid"></div>
   </details>
 
-  <details class="zsec zone" id="buildsec" open>
+  <details class="dreams zsec zone" id="buildsec" open>
     <summary><h2 class="zone-h z-build" id="buildh">In Build</h2><span class="zcaret">▸</span></summary>
     <div id="buildzone"></div>
   </details>
 
-  <details class="zsec zone" id="realsec" open>
+  <details class="dreams zsec zone" id="realsec" open>
     <summary><h2 class="zone-h z-real" id="realh">Realized</h2><span class="zcaret">▸</span></summary>
     <div id="realzone"></div>
   </details>
 
-  <details class="zsec zone" id="archwrap">
+  <details class="dreams zsec zone" id="archwrap">
     <summary><h2 class="zone-h z-arch" id="archh">Archived</h2><span class="zcaret">▸</span></summary>
-    <div class="dreams" id="archsec"><div id="archrows"></div></div>
+    <div id="archsec"><div id="archrows"></div></div>
   </details>
 
   <footer id="footer"></footer>
