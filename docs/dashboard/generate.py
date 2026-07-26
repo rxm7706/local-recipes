@@ -57,13 +57,21 @@ MAIN_BRANCH = "main"
 # so attribution is by the merge TARGET branch when present: loop/pyforge-herald ->
 # herald, etc. Bare/legacy matches (warden's epic-tail branches) default to warden.
 _LOOP_DONE = re.compile(r"Merge bmad-loop/[^/]+/(\d+-\d+)-\S*(?:\s+into\s+(\S+))?")
-_LOOP_TARGET_PROJECT = (
-    ("pyforge-herald", "herald"),
-    ("pyforge-doctor", "doctor"),
-    ("pyforge-scribe", "scribe"),
-    ("pyforge-warden", "warden"),
-    ("warden-epic", "warden"),
-)
+# Attribution is DERIVED from the merge target: `loop/pyforge-<slug>` -> `<slug>`.
+# It used to be a hardcoded 5-entry tuple with a blanket `warden` fallback, which
+# failed the moment a new smith existed: marshal's Story 1.1 merged into
+# loop/pyforge-marshal, matched nothing, and was silently CREDITED TO WARDEN —
+# so marshal read 0/41 on the published board while reading 1/41 locally.
+# A stray `claude/pdos-1-3-…` branch was being credited to warden the same way.
+# Deriving the slug means a new loop home needs no edit here; an unrecognised
+# target now WARNS and is skipped rather than being charged to warden.
+# Deliberately `[a-z0-9]+` (NO hyphen): project slugs are single words, and the
+# target may carry a suffix — `loop/pyforge-marshal` -> marshal, but also
+# `pyforge-warden-loop-policy-tiering` -> warden. Allowing hyphens captured the
+# whole tail, matched no project, and silently dropped 10 real warden stories.
+_LOOP_TARGET_SLUG = re.compile(r"pyforge-([a-z0-9]+)")
+# Legacy subjects that predate the loop/pyforge-<slug> convention.
+_LOOP_TARGET_LEGACY = (("warden-epic", "warden"),)
 # Atlas: most stories land as `story(A1)` / `story(B10)` / `story(0.1)`; the Wave
 # G/H tail uses bare `GN:` / `HN:` subjects instead.
 _ATLAS_STORY = re.compile(r"story\((\w[\w.]*)\)")
@@ -323,12 +331,15 @@ def apply_loop_inflight(projects: dict) -> None:
 
 # ---- source: git (hands-off / CI) -------------------------------------------
 
-def done_ids_from_git(branch: str) -> dict[str, set[str]]:
+def done_ids_from_git(branch: str, project_keys: tuple[str, ...] = ()) -> dict[str, set[str]]:
     """PER-PROJECT done story ids from `branch`'s commit subjects.
 
     Numeric story ids collide across projects (the regen program's rf(5.1)
     is NOT warden's 5.1), so each project matches ONLY its own commit
     convention — never a shared pool.
+
+    `project_keys` seeds the buckets from the LIVE project set rather than a
+    literal, so a newly provisioned smith is never missing one.
     """
     ref = branch
     if subprocess.run(
@@ -338,14 +349,28 @@ def done_ids_from_git(branch: str) -> dict[str, set[str]]:
     log = subprocess.run(
         ["git", "log", ref, "--format=%s"], capture_output=True, text=True, check=True
     ).stdout
-    done: dict[str, set[str]] = {"warden": set(), "atlas": set(), "regen": set(),
-                                 "herald": set(), "doctor": set(), "scribe": set()}
+    done: dict[str, set[str]] = {k: set() for k in project_keys}
+    for fixed in ("warden", "atlas", "regen", "herald", "doctor", "scribe"):
+        done.setdefault(fixed, set())  # always present, even pre-scan
+    unattributed: set[str] = set()
     for line in log.splitlines():
         m = _LOOP_DONE.search(line)
         if m:
             target = m.group(2) or ""
-            pkey = next((p for frag, p in _LOOP_TARGET_PROJECT if frag in target),
-                        "warden")  # legacy bare matches are warden's
+            slug = _LOOP_TARGET_SLUG.search(target)
+            if slug and slug.group(1) in done:
+                pkey = slug.group(1)
+            else:
+                pkey = next((p for frag, p in _LOOP_TARGET_LEGACY if frag in target), None)
+            if pkey is None:
+                # No target at all = pre-convention subject, historically warden's.
+                # A target that exists but resolves to no known project is NOT
+                # warden's — charging it there is how marshal's story vanished.
+                if not target:
+                    pkey = "warden"
+                else:
+                    unattributed.add(target)
+                    continue
             done[pkey].add(m.group(1).replace("-", "."))  # 6-1 -> 6.1
         for a in _ATLAS_STORY.finditer(line):
             done["atlas"].add(a.group(1))  # A1, B10, 0.1, F4 ...
@@ -353,11 +378,15 @@ def done_ids_from_git(branch: str) -> dict[str, set[str]]:
             done["atlas"].add(a.group(1))  # G3, H1, H2 ...
         for a in _RF_STORY.finditer(line):
             done["regen"].add(a.group(1))  # 1.1, 4.R ...
+    if unattributed:
+        print(f"[git] WARN {len(unattributed)} bmad-loop merge target(s) matched no "
+              f"known project — their stories are NOT counted (previously they were "
+              f"silently credited to warden): {', '.join(sorted(unattributed))}")
     return done
 
 
 def apply_git(projects: dict) -> None:
-    per_project = done_ids_from_git(MAIN_BRANCH)
+    per_project = done_ids_from_git(MAIN_BRANCH, tuple(projects))
     for pkey, ids in per_project.items():
         print(f"git-derived DONE ids [{pkey}] ({len(ids)}): {', '.join(sorted(ids))}")
     for pkey, proj in projects.items():
