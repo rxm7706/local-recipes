@@ -68,8 +68,13 @@ contract level.
 
 54 deferrals were recorded rather than faked — genuinely good practice under
 unattended execution. But `implementation-artifacts/deferred-work.md` is
-**truncated to 9 of 54**, and the directory is **gitignored**, so no tracked copy
-of the other 45 exists. *The judgment survived; the record did not.*
+**truncated to 9 of 54**, and the directory is **gitignored**.
+
+*Updated 2026-07-25:* the record was **recovered**, not lost — 52 of 54 survive
+with full bodies in the tracked `spec-archive/`, now consolidated into
+`../deferred-work-ledger.md`. Only `DW-A2-P4` and `DW-D2` are unrecovered. The
+finding stands in weaker form: **a Tier-3 ledger is one accident from
+unreadable, and it took a deliberate hunt to learn the copy existed.**
 
 This is why these retros and the `DC-*` entries live in Tier-2
 `planning-artifacts/`. It is the same failure that cost pyforge-warden 13 story
@@ -102,5 +107,18 @@ the scaffold wave would have pre-empted all three.
 | A6 | Split keystone stories; cap diff size per review | Marshal |
 | A7 | Settle cross-platform path handling once, in the scaffold wave | Mason / Atlas |
 
-**A5 is already done.** A1, A4 and A6 are `bmad-loop` policy and belong to
-Marshal. A2, A3 and A7 are Atlas-side engineering.
+**Landed 2026-07-25 — A1, A4, A5 all done.**
+
+- **A1 ENFORCED** — `.bmad-loop/policy.toml` `review.trigger` flipped
+  `"recommended"` → `"always"`. The independent pass is now standing on every
+  story, on every line, for every Smith.
+- **A4, A6 documented** in the same file as **conventions, not config keys** —
+  bmad-loop reads neither, and a dead key that silently does nothing is worse
+  than an honest comment. A6 binds at authoring time
+  (`bmad-create-epics-and-stories`), not at review time.
+- **A5 done** — these retros, the `DC-*` rows, and the restored
+  `../deferred-work-ledger.md` all live in tracked Tier-2.
+- **A2, A3, A7 remain open** — Atlas-side engineering, unscheduled.
+
+Recorded in `docs/dreams/pyforge-marshal.md`. This is the first time a completed
+effort's retrospective changed the harness that runs the next one.

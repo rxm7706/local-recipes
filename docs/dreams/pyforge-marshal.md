@@ -74,6 +74,26 @@ visible. Anti-vibe, by construction.
 
 ## Realization log
 
+- **2026-07-25** — **three loop-policy actions adopted from the pyforge-atlas
+  retro**, the first time a completed effort's retrospective changed the harness
+  that runs the next one:
+  - **A1 (enforced):** the independent review pass is now *standing*
+    (`review.trigger = "always"`), not self-flagged. Atlas's evidence is that the
+    **context-free** reviewer caught B5/B7 HIGH, B8 MED, a G2 MUST-FIX path
+    traversal and both keystone contract violations — all past two full-context
+    reviewers. `"recommended"` was the wrong gate because it asks the pass that
+    just missed a defect whether a second opinion is needed.
+  - **A4 (convention):** a deferral repeated in a **second** wave is promoted to
+    contract level. Atlas deferred live-daemon bring-up three times without an
+    owning item; it resurfaced as an unanswered Spec question a week later.
+  - **A6 (convention):** cap story size and split keystones at authoring time.
+    Atlas's two keystone stories each shipped a contract violation past two
+    reviewers; the small ones did not. Size predicted escapes better than
+    difficulty.
+  A4 and A6 are recorded in `.bmad-loop/policy.toml` as **conventions, not config
+  keys** — bmad-loop reads neither, and a dead key that silently does nothing
+  would be worse than an honest comment.
+
 - **2026-07 (bmad-loop-adoption spec)** — 6.6.0→6.10.0 upgrade, loop adoption
   W1–W3 done (validate 9/9, sprint feed 20/20).
 - **2026-07-17/18** — atlas proven: a full system shipped unattended-with-gates.

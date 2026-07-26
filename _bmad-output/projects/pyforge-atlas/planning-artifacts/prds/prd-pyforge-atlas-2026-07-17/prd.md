@@ -568,11 +568,13 @@ time — `DW-C1-1` and `DW-G3` (live daemon), `DW-H1` (MinIO/PostgreSQL),
 `DW-H4` (live crew daemon) — as recorded in the effort run log's index of **54**
 deferrals.
 
-The real finding is worse: **`implementation-artifacts/deferred-work.md` is
-truncated to 9 of those 54 entries**, stopping after `DW-B2-5` — collateral of
-the 2026-07-19 copy failure — and because it is **gitignored**, no tracked copy
-of the other 45 exists anywhere. The deferrals were made honestly; the record of
-them was lost.
+The real finding is narrower than first stated: **`implementation-artifacts/deferred-work.md`
+is truncated to 9 of those 54 entries**, stopping after `DW-B2-5` — collateral of
+the 2026-07-19 copy failure — and it is **gitignored**. It was briefly believed
+the other 45 were lost. **They were not**: 52 of 54 survive with full bodies in
+the tracked `spec-archive/ATLAS-BMAD-SPECS-CONSOLIDATED.md`, and are now
+consolidated into `planning-artifacts/deferred-work-ledger.md` (tracked). Only
+**`DW-A2-P4` and `DW-D2`** are genuinely unrecovered.
 
 So DC-2…DC-6 are not "untracked work now tracked" — they are the **durable
 re-statement, in Tier 2, of deferrals whose Tier-3 ledger did not survive**. That

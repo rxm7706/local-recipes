@@ -367,9 +367,10 @@ close later.
   Wagtail, agno LLM synthesis, and the production `vss` retriever each ship a
   seam and run against local/embedded defaults. Tracked as **DC-2…DC-6** in the
   PRD § 6.4. *(Each was properly deferred at build time — `DW-C1-1`/`DW-G3`,
-  `DW-H1`…`DW-H4` — but `deferred-work.md` is truncated to 9 of 54 entries and is
-  gitignored, so DC-2…DC-6 are the durable Tier-2 re-statement of a Tier-3 record
-  that did not survive.)*
+  `DW-H1`…`DW-H4`. The live ledger is truncated to 9 of 54 and gitignored, but 52
+  survive in the tracked spec-archive and are consolidated at
+  `planning-artifacts/deferred-work-ledger.md`; DC-2…DC-6 are the contract-level
+  re-statement of the six that outlived the migration.)*
 
 - **A separate graph, vector, or dataframe engine** — one engine, by decision, not by omission.
 - **Continued SQLite and hand-rolled checkpoint-table orchestration.**

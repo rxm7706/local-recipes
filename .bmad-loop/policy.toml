@@ -7,6 +7,31 @@
 mode = "per-story-spec-approval" # none | per-epic | per-story-spec-approval
 retrospective = "notify"     # never | notify | auto (auto unsupported in v1)
 
+# ---------------------------------------------------------------------------
+# Authoring conventions from the pyforge-atlas retro (2026-07-25).
+# These are NOT bmad-loop config keys — the tool reads none of them. They are
+# recorded here because this is where a loop operator looks, and inventing dead
+# config keys that silently do nothing would be worse than documenting honestly.
+#
+# A4 — PROMOTE A DEFERRAL ON ITS SECOND CROSS-WAVE REPEAT.
+#   Atlas deferred live-daemon bring-up three times — C1 (DW-C1-1), G3 (DW-G3),
+#   H4 (DW-H4) — each an honest story-level deferral, none of them owned at
+#   contract level. A week after ship it resurfaced as an unanswered question in
+#   SPEC.md. Rule: the SECOND time the same deferral appears in a different wave,
+#   it stops being story-level and becomes a contract-level item (a DC-* row in
+#   the PRD, or a Spec non-goal). Story-level deferrals are for things one story
+#   chose not to do; a thing three stories keep not doing is scope.
+#
+# A6 — CAP STORY SIZE; SPLIT KEYSTONES.
+#   Atlas's two keystone stories — B1 (12 phases ported) and B2 (14 nodes + a
+#   cost gate + a scheduler) — EACH shipped a contract violation past two
+#   adversarial reviewers. The small stories did not. Story SIZE predicted
+#   escaped defects better than story difficulty. Review quality degrades with
+#   diff size faster than implementation quality does, so a story that ports a
+#   dozen of anything should be split at authoring time, in
+#   bmad-create-epics-and-stories — not rescued at review time.
+# ---------------------------------------------------------------------------
+
 [limits]
 max_review_cycles = 3
 max_dev_attempts = 2
@@ -56,7 +81,22 @@ enabled = true
 #                    and flags this when its changes warrant an independent pass).
 #   "always"      -> run the second-opinion review on every story.
 # The loop is bounded by limits.max_review_cycles either way.
-trigger = "recommended"
+#
+# 2026-07-25 — "recommended" -> "always" (pyforge-atlas retro action A1).
+# Evidence: atlas ran three reviewers per story — two IN-LOOP (full context) and
+# one INDEPENDENT (given only the spec + files). The independent pass repeatedly
+# caught what the in-loop pair missed, and the misses were substantive:
+#   B5  HIGH      AD-13 UnicodeDecodeError guard hole
+#   B7  HIGH      _REQ_RE extras / URL garbage-version
+#   B8  MED       AD-13 never-fail gap in _persist
+#   G2  MUST-FIX  path traversal in the static-host emitter
+#   B1 / B2       contract violations in both keystone stories
+# CONTEXT is what made the in-loop reviewers miss them: having watched the code
+# being written, they inherited its assumptions. That is also why "recommended"
+# is the wrong gate — it asks the pass that just missed the defect to decide
+# whether a second opinion is warranted. A context-poisoned reviewer cannot
+# reliably self-flag. Cost is bounded by limits.max_review_cycles.
+trigger = "always"
 
 [adapter]
 name = "claude"              # claude | codex | gemini | <custom .bmad-loop/profiles/*.toml>
