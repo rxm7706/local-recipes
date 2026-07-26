@@ -34,6 +34,7 @@ import os
 import re
 import subprocess
 import sys
+import tomllib
 from pathlib import Path
 
 # dashboard project-key -> its sprint-status.yaml (repo-root-relative)
@@ -760,13 +761,59 @@ _FINDING_RE = re.compile(r"(\d+)\s+(?:integrity|currency|finding)")
 _FINDINGS_HDR = re.compile(r"^FINDINGS \((\d+)\)")   # spec-surface-check's form
 
 
+def _task_cmd(task: str) -> list[str] | None:
+    """This task's own `cmd` from pixi.toml, retargeted at the running interpreter.
+
+    DERIVED, never declared twice: a task's command is written down in exactly one
+    place, so the direct runner below cannot drift away from what `pixi run` does.
+    Only plain `python script.py` tasks are returned — anything else must go
+    through pixi, which is what the fallback in _run_detector is for.
+    """
+    try:
+        cfg = tomllib.loads((REPO_ROOT / "pixi.toml").read_text(encoding="utf-8"))
+    except Exception:
+        return None
+    for feat in cfg.get("feature", {}).values():
+        spec = (feat.get("tasks") or {}).get(task)
+        cmd = spec.get("cmd") if isinstance(spec, dict) else spec
+        if isinstance(cmd, str) and cmd.split() and cmd.split()[0] == "python":
+            return [sys.executable, *cmd.split()[1:]]
+    return None
+
+
+def _run_detector(task: str):
+    """Run a detector DIRECTLY where possible, falling back to `pixi run`.
+
+    Direct-first is deliberate. All three detectors are stdlib-only and shell out
+    to `git` alone — nothing in them needs the pixi environment, so requiring one
+    bought nothing and cost everything: `pixi run -e local-recipes` is unavailable
+    on the Pages runner, so the published board reported every detector as
+    "could not run here" while they read green locally. Materialising that env in
+    CI to satisfy the launcher would mean a ~9.8 GB download per deploy against a
+    10 GB cache ceiling. The environment was never the requirement.
+
+    pixi remains the fallback for any detector whose task is not a plain
+    `python script.py` invocation.
+    """
+    for cmd in (_task_cmd(task), ["pixi", "run", "--frozen", "-e", "local-recipes", task]):
+        if not cmd:
+            continue
+        try:
+            return subprocess.run(cmd, capture_output=True, text=True,
+                                  cwd=REPO_ROOT, timeout=120)
+        except Exception:                      # interpreter/pixi absent, timeout, anything
+            continue
+    return None
+
+
 def scan_health() -> dict:
     """Run the standing detectors; capture verdict + finding count + remedy."""
     rows = []
     for name, task, guards, runbook in DETECTORS:
-        try:
-            r = subprocess.run(["pixi", "run", "--frozen", "-e", "local-recipes", task],
-                               capture_output=True, text=True, cwd=REPO_ROOT, timeout=120)
+        r = _run_detector(task)
+        if r is None:
+            state, verdict_line, n = "unknown", "detector could not run here", 0
+        else:
             out = (r.stdout + r.stderr).strip().splitlines()
             verdict_line = next((l.strip() for l in reversed(out)
                                  if l.strip().startswith(("OK:", "DRIFT:", "FAIL:", "FINDINGS ("))), "")
@@ -774,8 +821,6 @@ def scan_health() -> dict:
             hdr = _FINDINGS_HDR.match(verdict_line)
             n = int(hdr.group(1)) if hdr else (
                 sum(int(m) for m in _FINDING_RE.findall(verdict_line)) if verdict_line else 0)
-        except Exception:                      # pixi absent (CI), timeout, anything
-            state, verdict_line, n = "unknown", "detector could not run here", 0
         rows.append({"name": name, "task": task, "guards": guards, "state": state,
                      "findings": n, "verdict": verdict_line[:120], "runbook": runbook})
 
@@ -789,9 +834,8 @@ def scan_health() -> dict:
         try:
             base = json.loads(bp.read_text(encoding="utf-8"))
             live = {}
-            g = subprocess.run(["pixi", "run", "--frozen", "-e", "local-recipes", "bmad-groundtruth"],
-                               capture_output=True, text=True, cwd=REPO_ROOT, timeout=120)
-            if g.returncode == 0:
+            g = _run_detector("bmad-groundtruth")   # direct-first, same as the detectors
+            if g is not None and g.returncode == 0:
                 s = g.stdout[g.stdout.find("{"):g.stdout.rfind("}") + 1]
                 live = json.loads(s) if s else {}
             for key, label in (("skill_version", "skill"), ("pixi_envs", "pixi envs"),
