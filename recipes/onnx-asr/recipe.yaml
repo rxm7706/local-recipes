@@ -1,0 +1,132 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.12.0"
+
+package:
+  name: onnx-asr
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/o/onnx-asr/onnx_asr-${{ version }}.tar.gz
+  sha256: c1fcacddbced392f9f769ed5c6223f4ce739a6e4549346de33b9b520d4ead713
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - onnx-asr = onnx_asr.cli:main
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - hatchling >=1.28.0
+    - hatch-vcs >=0.5.0
+    # pyproject declares a CUSTOM build hook
+    # ([tool.hatch.build.targets.wheel.hooks.custom] -> hatch_build.py) that
+    # GENERATES the ONNX/NumPy preprocessor artifacts by running
+    # preprocessors.build at build time. These are real payload, not optional:
+    # the sdist ships 0 of them while upstream's wheel ships 30
+    # (src/onnx_asr/preprocessors/data/*.onnx|*.npz), so the hook must run.
+    # Its requirements are pyproject's [dependency-groups].build -- mirrored
+    # here, or metadata generation dies on the first missing import.
+    # NOTE ml_dtypes is the conda-forge spelling (underscore), not ml-dtypes.
+    - ml_dtypes >=0.5.4
+    - numpy >=2.2.6
+    - onnxscript >=0.6.2
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - numpy >=1.22.4
+    # Flattened from upstream's [cpu] extra (conda has no extras, G25): the
+    # package cannot run inference without an ONNX runtime.
+    #
+    # Upstream excludes 1.24.1, 1.25.* and 1.26.0. conda-forge's LATEST is
+    # exactly 1.26.0, so an unbounded `onnxruntime` dep would resolve to a
+    # version upstream rejects. `<1.25` also covers the 1.25.*/1.26.0
+    # exclusions, leaving 1.18.1 - 1.24.4 minus 1.24.1 (8 versions on cf).
+    - onnxruntime >=1.18.1,!=1.24.1,<1.25
+    - if: match(python, "<3.11")
+      then:
+        - typing_extensions >=4.6.0
+
+tests:
+  - python:
+      imports:
+        - onnx_asr
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+  - requirements:
+      run:
+        - python ${{ python_min }}.*
+    script:
+      - onnx-asr --help
+
+about:
+  homepage: https://github.com/istupakov/onnx-asr
+  repository: https://github.com/istupakov/onnx-asr
+  documentation: https://istupakov.github.io/onnx-asr/
+  license: MIT
+  license_file: LICENSE
+  summary: Automatic speech recognition in Python using ONNX models
+  description: |
+    onnx-asr runs automatic speech recognition with ONNX models, with no
+    heavyweight ML framework required — only onnxruntime and numpy. It
+    supports several published ASR model families (including Parakeet,
+    Whisper, and GigaAM), handles the audio preprocessing itself, and offers
+    both a Python API and an ``onnx-asr`` command line entry point.
+
+    Model weights are downloaded on first use; install ``huggingface_hub`` if
+    you want to pull models from the Hugging Face Hub (upstream's ``hub``
+    extra), which is not required for locally supplied model files.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: onnx-asr
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: onnx-asr
+  cfe-purls:
+    - pkg:conda/onnx-asr@${{ version }}?channel=conda-forge
+    - pkg:pypi/onnx-asr@${{ version }}
+  cfe-upstream-repo: https://github.com/istupakov/onnx-asr
+  cfe-upstream-homepage: https://github.com/istupakov/onnx-asr
+  cfe-import-names: [onnx_asr]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: "2026-07-26T00:00:00Z"
+  cfe-generated-by-version: 8.79.1
+  cfe-generated-at-datetime: "2026-07-26T00:00:00Z"
+  cfe-local-build-status: success
+  cfe-local-build-datetime: "2026-07-26T16:29:11Z"
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # Authored 2026-07-26 to close bmad-manticore's highest-value dependency
+#    # gap. mc-setup's check_deps.py and the 2.0.0 CHANGELOG make onnx-asr the
+#    # CROSS-PLATFORM transcription lane ("the reference parakeet weights via
+#    # parakeet-mlx on Apple Silicon and onnx-asr (same weights) on Windows,
+#    # Linux, and Intel Macs"). Without it, manticore transcription is
+#    # Apple-Silicon-only.
+# requirements:
+#    # The onnxruntime range is the load-bearing detail -- see the inline note.
+#    # Verified against live cf repodata: 1.18.1/1.19.2/1.20.1/1.21.1/1.22.0/
+#    # 1.22.2/1.24.2/1.24.4 satisfy it; cf's latest 1.26.0 does NOT.
+#    # hatch-vcs is in host because the build backend needs it (G91); the sdist
+#    # carries PKG-INFO so no git metadata is required at build time.
+####

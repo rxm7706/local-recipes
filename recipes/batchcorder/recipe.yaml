@@ -1,0 +1,148 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.1.3"
+
+package:
+  name: batchcorder
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/b/batchcorder/batchcorder-${{ version }}.tar.gz
+  sha256: bd74b90c83d146bf1bbf4582c1e7e04b312fe17df8bf1b034c0ba90532bf2b14
+
+build:
+  number: 0
+  script:
+    env:
+      # conda-forge canonical Rust env block (example_recipes/rust). STRIP is
+      # the documented default; PYTHONUTF8 guards the Windows cp1252 decode
+      # trap (G19). LTO left at Cargo.toml's default — this dep graph is small
+      # (arrow-rs + pyo3 + tokio), so fat LTO buys little against its cost.
+      CARGO_PROFILE_RELEASE_STRIP: symbols
+      PYTHONUTF8: "1"
+    content:
+      # Single multi-line entry so env state persists into pip install (G1).
+      - if: unix
+        then: |
+          cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
+          ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+        else: |
+          cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
+          %PYTHON% -m pip install . -vv --no-deps --no-build-isolation
+  # abi3 matrix collapse. Cargo.toml declares pyo3 features
+  # ["extension-module", "abi3", "abi3-py310"]; abi3-py310 equals
+  # conda-forge-pinning's python_min default, so Variant A applies
+  # (see reference/abi3-matrix-collapse.md). One stable-ABI artifact per
+  # platform covers every Python >= python_min.
+  skip: is_abi3 and not is_python_min
+  python:
+    version_independent: ${{ is_abi3 }}
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+        - maturin >=1.7,<2.0
+    - ${{ compiler("c") }}
+    - ${{ stdlib("c") }}
+    - ${{ compiler("rust") }}
+    - cargo-bundle-licenses
+  host:
+    - python
+    - maturin >=1.7,<2.0
+    - pip
+    - if: is_abi3
+      then: python-abi3
+  run:
+    - python
+    - pyarrow >=18
+
+tests:
+  - python:
+      imports:
+        - batchcorder
+      pip_check: true
+      python_version:
+        - if: is_abi3
+          then: ${{ python_min }}.*
+        - "*"
+  - if: is_abi3
+    then:
+      requirements:
+        run:
+          - abi3audit
+      script:
+        - if: unix
+          then: abi3audit $SP_DIR/batchcorder/_batchcorder.abi3.so -s -v --assume-minimum-abi3 ${{ python_min }}
+          else: abi3audit %SP_DIR%\batchcorder\_batchcorder.pyd -s -v --assume-minimum-abi3 ${{ python_min }}
+
+about:
+  summary: Rust-backed caching of Arrow record-batch streams for repeated replay
+  description: |
+    batchcorder caches an Arrow record-batch stream so it can be replayed
+    multiple times. Arrow streams are single-pass by nature; batchcorder
+    records the batches once and hands out fresh readers over the recorded
+    data, so a stream that would otherwise be consumed by its first reader
+    can be iterated repeatedly.
+
+    The recording layer is implemented in Rust (arrow-rs + PyO3) and exposed
+    as a CPython stable-ABI extension.
+  homepage: https://github.com/mesejo/batchcorder
+  repository: https://github.com/mesejo/batchcorder
+  documentation: https://batchcorder.readthedocs.io
+  license: Apache-2.0
+  license_file:
+    - LICENSE
+    - THIRDPARTY.yml
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: batchcorder
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: batchcorder
+  cfe-purls:
+    - pkg:conda/batchcorder@${{ version }}?channel=conda-forge
+    - pkg:pypi/batchcorder@${{ version }}
+  cfe-upstream-repo: https://github.com/mesejo/batchcorder
+  cfe-upstream-homepage: https://github.com/mesejo/batchcorder
+  cfe-import-names: [batchcorder]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: compiled
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: "2026-07-26T00:00:00Z"
+  cfe-generated-by-version: 8.79.1
+  cfe-generated-at-datetime: "2026-07-26T00:00:00Z"
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # Authored 2026-07-26 as a NEW PREREQUISITE for xorq 0.3.36, which adds a
+#    # hard `batchcorder==0.1.3` dependency that is absent from conda-forge.
+#    # Same author as xorq-datafusion (mesejo); recipe intentionally mirrors
+#    # that recipe's shape so the pair stays consistent.
+# build:
+#    # abi3-py310 == the conda-forge python_min default, so the Variant A skip
+#    # (is_abi3 and not is_python_min) collapses the matrix to one artifact per
+#    # platform. Verified from Cargo.toml, not assumed (G49).
+#    # LTO deliberately left at Cargo.toml's default rather than forced to fat:
+#    # unlike xorq-datafusion (~600 crates), this graph is small enough that
+#    # fat LTO is not worth the build time, and it avoids the linux-aarch64 OOM
+#    # / osx-64 ICE that forced xorq-datafusion's per-platform LTO expression.
+# run:
+#    # pyarrow >=18 mirrors upstream's only declared dependency.
+####

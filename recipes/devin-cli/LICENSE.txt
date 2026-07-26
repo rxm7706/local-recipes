@@ -1,0 +1,32 @@
+Devin CLI — proprietary software notice
+=======================================
+
+The Devin CLI ("the Software") is proprietary, closed-source software owned by
+Cognition. It is NOT open source and is NOT distributed under any OSI-approved
+license.
+
+Cognition ships no license file inside the release bundle and publishes no
+license text for the Software. This file is therefore a NOTICE written by the
+maintainer of this conda recipe to record the Software's licensing status; it
+is NOT Cognition's license and does not reproduce Cognition's terms.
+
+The governing terms are Cognition's Terms of Service:
+
+    https://cognition.com/pages/terms-of-service
+
+As of 2026-07-26 those terms grant only a "non-exclusive, non-sublicensable,
+non-transferable right to access and use the Services" for "your internal
+business purposes only", prohibit "copy, reproduce, modify, translate, or
+create derivative works of the Services or Documentation", and reserve all
+rights not expressly granted.
+
+Consequences for this package:
+
+  * No redistribution right is granted. This conda package MUST NOT be
+    uploaded to conda-forge, to anaconda.org, or to any other channel.
+  * This recipe builds the package for local installation only, by and for a
+    user who already holds their own Devin entitlement.
+  * Installing this package conveys NO license to the Software. Your right to
+    use the Devin CLI comes solely from your own agreement with Cognition.
+
+Copyright in the Software is retained by Cognition and its licensors.

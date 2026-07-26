@@ -1,0 +1,180 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+#
+# ==============================================================================
+#  DO NOT SUBMIT — AND DO NOT PUBLISH TO ANY CHANNEL
+# ==============================================================================
+#  The Devin CLI is PROPRIETARY, closed-source software from Cognition. Its
+#  terms of service (https://cognition.com/pages/terms-of-service) grant only a
+#  "non-exclusive, non-sublicensable, non-transferable right to access and use
+#  the Services" for "your internal business purposes only", and expressly
+#  prohibit "copy, reproduce, modify, translate, or create derivative works of
+#  the Services or Documentation". No redistribution license is granted; all
+#  rights not expressly granted are reserved.
+#
+#  Consequences:
+#    - conda-forge is INELIGIBLE (non-OSI, no public source) — never open a
+#      staged-recipes PR for this.
+#    - Do NOT upload the built artifact to SelfExplainML or any other
+#      anaconda.org channel: that is redistribution to third parties, which
+#      the ToS forbids.
+#    - This recipe exists ONLY to build the package locally, for the operator's
+#      own already-licensed use, as a convenience over the curl installer.
+#
+#  This is a STRICTER blocker than recipes/copilot-cli: GitHub's Copilot CLI
+#  license does grant a limited redistribution right (Section 2, conditioned on
+#  not being standalone); Cognition's grants none at all.
+#
+#  See ./DO_NOT_SUBMIT.md for the full rationale.
+# ==============================================================================
+
+schema_version: 1
+
+context:
+  # Cognition publishes no git tags and no changelog feed; the version of record
+  # is the promoted build in https://static.devin.ai/cli/current/manifest.json.
+  # Bump `version` and all five sha256 values together from that manifest.
+  version: "3000.2.17"
+
+package:
+  name: devin-cli
+  version: ${{ version }}
+
+source:
+  - if: target_platform == "linux-64"
+    then:
+      url: https://static.devin.ai/cli/${{ version }}/devin-${{ version }}-x86_64-unknown-linux.tar.gz
+      sha256: f0e1e9363afc6ee68c4ef87bab4aeb7ff5cc08a5fa838350ef3ceefdbb2a2be2
+
+  - if: target_platform == "linux-aarch64"
+    then:
+      url: https://static.devin.ai/cli/${{ version }}/devin-${{ version }}-aarch64-unknown-linux.tar.gz
+      sha256: 116dc71ef085a922bc3ff0ea0377d4b26c529a431d58246e36572913e2d25624
+
+  - if: target_platform == "osx-64"
+    then:
+      url: https://static.devin.ai/cli/${{ version }}/devin-${{ version }}-x86_64-apple-darwin.tar.gz
+      sha256: 8d4d9d627b9344898442e14fff87003b376dd9a1abf524372206f1727b21cd28
+
+  - if: target_platform == "osx-arm64"
+    then:
+      url: https://static.devin.ai/cli/${{ version }}/devin-${{ version }}-aarch64-apple-darwin.tar.gz
+      sha256: 60e2edd321f5cd5e1cfdf3d6d5e12064f25326ca8e36a8ad71f43d000745dff8
+
+  - if: target_platform == "win-64"
+    then:
+      url: https://static.devin.ai/cli/${{ version }}/devin-${{ version }}-x86_64-pc-windows.zip
+      sha256: dab924834d7254f98cc85410bc800cf23774714e90779e43a9b13c6fe5f97d01
+
+build:
+  number: 0
+  dynamic_linking:
+    # MUST stay false. `devin` is a ~133 MB stripped static-PIE Rust executable
+    # with no dynamic conda deps. Conda's default post-build binary relocation
+    # (RPATH patching / prefix rewriting) CORRUPTS it: the installed file came
+    # out 142,456,305 bytes against upstream's 138,593,160 (+3.8 MB, different
+    # sha256) and then segfaulted on any invocation, including `--version`,
+    # even under `env -i`. The unmodified upstream binary runs fine. There is
+    # nothing to relocate here, so turning it off is both correct and required.
+    binary_relocation: false
+
+tests:
+  - if: unix
+    then:
+      - requirements:
+          run:
+            - ripgrep
+        script:
+          content: |
+            set -euxo pipefail
+            devin --version | rg '${{ version }}'
+            test -f "${PREFIX}/share/devin/docs/index.mdx"
+    else:
+      - requirements:
+          run:
+            - ripgrep
+        script:
+          content: |
+            devin --version | rg "${{ version }}"
+            if errorlevel 1 exit /b 1
+
+about:
+  homepage: https://devin.ai/cli/
+  documentation: https://docs.devin.ai
+  license: LicenseRef-Cognition-Devin-CLI-Proprietary
+  license_file: LICENSE.txt
+  summary: Devin CLI — Cognition's agent in your terminal (PROPRIETARY, local build only, not redistributable)
+  description: |
+    The Devin CLI is a terminal client for Cognition's Devin coding agent. It
+    authenticates against Cognition's service and runs agent sessions locally
+    against your codebase.
+
+    PROPRIETARY SOFTWARE. This recipe repackages Cognition's published,
+    prebuilt release binary (a self-contained static Rust executable) for local
+    installation only. It is NOT open source, NOT eligible for conda-forge, and
+    the built artifact MUST NOT be uploaded to any channel — Cognition's terms
+    of service grant no redistribution right. Using the CLI requires your own
+    Devin account and entitlement; this package conveys no license to the
+    Software.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: devin-cli
+  cfe-upstream-registry: github
+  cfe-upstream-name: devin-cli
+  cfe-purls:
+    - pkg:generic/devin-cli@${{ version }}?download_url=https://static.devin.ai/cli/
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://devin.ai/cli/
+  cfe-import-names: []
+  cfe-source-kind: github-release-binary
+  cfe-noarch: compiled
+  cfe-pip-check: "false:not-a-python-package"
+  cfe-on-conda-forge-status: blocked-pending-prerequisites
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - "PERMANENT license blocker: proprietary, non-OSI, no public source. Cognition ToS grants a non-sublicensable, non-transferable right for internal use only and prohibits copy/reproduce/derivative works. conda-forge ineligible; also must not be published to any personal channel."
+  cfe-last-checked: "2026-07-26T00:00:00Z"
+  cfe-generated-by-version: 8.79.1
+  cfe-generated-at-datetime: "2026-07-26T00:00:00Z"
+  cfe-local-build-status: success
+  cfe-local-build-datetime: "2026-07-26T12:59:23Z"
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # Authored 2026-07-26 at operator request AFTER the license review was
+#    # raised and the operator confirmed "we will not distribute". Kept
+#    # local-build-only; the banner above is the enforcement.
+# context:
+#    # There is no git tag, no public repo and no release feed. The only
+#    # version-of-record is static.devin.ai/cli/current/manifest.json, which
+#    # also carries the per-target sha256 values — read them straight from it
+#    # rather than re-hashing 5 x ~42 MB bundles.
+# source:
+#    # The manifest lists 10 targets, but several are aliases of the same
+#    # artifact (the *-musl entries reuse the glibc tarball byte-for-byte, and
+#    # the windows-gnu / gnullvm entries reuse the MSVC zip). Only the 5 with a
+#    # standard conda subdir are mapped. win-arm64 is dropped: the manifest has
+#    # aarch64-pc-windows, but conda-forge has no standard win-arm64 subdir here.
+# build:
+#    # Straight binary repackage (G44): the bundle is already bin/devin +
+#    # share/devin/docs, so the build just relocates it into $PREFIX. No
+#    # compiler, no stdlib — nothing is built from source. The binary is a
+#    # 133 MB stripped static-PIE ELF, so it carries its own runtime and needs
+#    # no run deps.
+# about:
+#    # No LICENSE ships in the bundle and Cognition publishes no license file,
+#    # so LICENSE.txt in this recipe dir is OUR OWN notice recording the
+#    # proprietary status and linking the ToS — it deliberately does NOT
+#    # reproduce Cognition's ToS text.
+# tests:
+#    # `devin --version` runs fully offline (verified: prints
+#    # "devin 3000.2.17 (2c489dfc)", exit 0) so it is a safe test that does not
+#    # require auth or network.
+####

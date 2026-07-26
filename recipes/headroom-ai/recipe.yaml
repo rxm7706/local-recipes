@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "0.31.0"
+  version: "0.32.1"
 
 package:
   name: headroom-ai
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/h/headroom-ai/headroom_ai-${{ version }}.tar.gz
-  sha256: a13f9764be168e4d075fd80ff6ee5d47a9febe0152b82ad28bab0e949fcd9bd3
+  sha256: 329dda3328f0fb45ec7128353f7fc9108f08e9676c9dc1873b4841c5c00c94bd
 
 build:
   number: 0
@@ -25,6 +25,13 @@ requirements:
   build:
     - ${{ compiler("c") }}
     - ${{ stdlib("c") }}
+    # esaxx-rs (pulled in transitively via tokenizers) compiles C++ sources in
+    # its build script, so a C++ toolchain is required. Without it the build
+    # fails hermetically -- 'failed to find tool "c++"' on linux and
+    # "src/esaxx.cpp: fatal error: 'cstdint' file not found" on osx -- even
+    # though a local build can pass by picking up a c++ that leaked from the
+    # host (SKILL.md G30).
+    - ${{ compiler("cxx") }}
     - ${{ compiler("rust") }}
     - cargo-bundle-licenses
   host:
@@ -38,10 +45,18 @@ requirements:
     - if: match(python, "<3.14")
       then:
         - litellm >=1.86.2,<2.0
-    - click >=8.1.0
+    - click >=8.3.3
     - rich >=13.0.0
     - opentelemetry-api >=1.24.0
     - ast-grep >=0.30.0
+    - pyyaml >=6.0
+    - tomlkit >=0.13.0,<1.0
+    # 0.32.x: the CLI eagerly imports headroom.providers.aider ->
+    # headroom.proxy.request_scope -> fastapi at module scope, so `headroom
+    # --help` hard-requires fastapi even though upstream still declares it
+    # only under the [proxy] extra. Verified by import-closure probe: fastapi
+    # is the ONLY module missing from the headroom.cli closure.
+    - fastapi
     - if: match(python, "<3.11")
       then:
         - tomli >=2.0.0
@@ -101,11 +116,11 @@ extra:
   cfe-on-conda-forge-feedstock: none
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
-  cfe-last-checked: "2026-07-12T16:05:00Z"
+  cfe-last-checked: "2026-07-26T12:44:16Z"
   cfe-generated-by-version: 8.76.0
   cfe-generated-at-datetime: "2026-07-12T16:05:00Z"
   cfe-local-build-status: success
-  cfe-local-build-datetime: "2026-07-12T15:43:41Z"
+  cfe-local-build-datetime: "2026-07-26T12:44:16Z"
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####

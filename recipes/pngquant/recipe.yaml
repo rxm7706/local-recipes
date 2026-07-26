@@ -1,0 +1,146 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "3.0.3"
+
+package:
+  name: pngquant
+  version: ${{ version }}
+
+source:
+  # crates.io, NOT the GitHub tag archive. Upstream keeps imagequant-sys as a
+  # git SUBMODULE at lib/imagequant-sys and Cargo.toml declares it as a path
+  # dependency; GitHub archives exclude submodules, so a tag-archive build dies
+  # with "failed to read $SRC_DIR/lib/imagequant-sys/Cargo.toml (No such file
+  # or directory)". The published crate has the path stripped to the registry
+  # version and ships Cargo.lock, so --locked works.
+  url: https://static.crates.io/crates/pngquant/pngquant-${{ version }}.crate
+  sha256: 68a12bdd8825f9989f4ee9a6ab0b42727dae57728b939ef63453366697a07232
+  file_name: pngquant-${{ version }}.tar.gz
+
+build:
+  number: 0
+  script:
+    env:
+      CARGO_PROFILE_RELEASE_STRIP: symbols
+      PYTHONUTF8: "1"
+    content:
+      # Canonical conda-forge Rust CLI pattern: cargo auditable install with
+      # --locked --no-track --bins, split install root per platform.
+      # The .crate is dropped in as a file (file_name above), not auto-extracted,
+      # so unpack it and build from the unpacked directory.
+      - if: unix
+        then: |
+          tar xzf pngquant-${{ version }}.tar.gz
+          cd pngquant-${{ version }}
+          cargo auditable install --locked --no-track --bins --root "${PREFIX}" --path .
+          cargo-bundle-licenses --format yaml --output ../THIRDPARTY.yml
+          cp COPYRIGHT ..
+        else: |
+          tar xzf pngquant-${{ version }}.tar.gz
+          cd pngquant-${{ version }}
+          cargo auditable install --locked --no-track --bins --root %LIBRARY_PREFIX% --path .
+          cargo-bundle-licenses --format yaml --output ..\THIRDPARTY.yml
+          copy COPYRIGHT ..
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ stdlib('c') }}
+    - ${{ compiler('rust') }}
+    - cargo-bundle-licenses
+    - cargo-auditable
+    - pkg-config
+  host:
+    # libpng-sys and lcms2-sys link the system libraries via pkg-config;
+    # the `lcms2` feature is on by default.
+    - libpng
+    - lcms2
+    - zlib
+
+tests:
+  - script:
+      - pngquant --version
+      - if: unix
+        then:
+          - test -x "${PREFIX}/bin/pngquant"
+        else:
+          - if not exist "%LIBRARY_BIN%\pngquant.exe" exit 1
+
+about:
+  homepage: https://pngquant.org/
+  repository: https://github.com/kornelski/pngquant
+  license: GPL-3.0-or-later
+  license_file:
+    - COPYRIGHT
+    - THIRDPARTY.yml
+  summary: Lossy PNG compressor — converts 24/32-bit PNGs to efficient 8-bit palette images with alpha
+  description: |
+    pngquant converts 24/32-bit RGBA PNG images to 8-bit palette images with
+    an alpha channel, typically reducing file size by 60-80% while remaining
+    fully standards-compliant and readable by every PNG decoder. Quantization
+    is performed by libimagequant.
+
+    As of pngquant 3.x the command-line tool is built with Rust (the image
+    quantization core and PNG I/O remain C, linked in via imagequant-sys and
+    libpng-sys).
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pngquant
+  cfe-upstream-registry: github
+  cfe-upstream-name: kornelski/pngquant
+  cfe-purls:
+    - pkg:conda/pngquant@${{ version }}?channel=conda-forge
+    - pkg:cargo/pngquant@${{ version }}
+  cfe-upstream-repo: https://github.com/kornelski/pngquant
+  cfe-upstream-homepage: https://pngquant.org/
+  cfe-import-names: []
+  cfe-source-kind: crates-io
+  cfe-noarch: compiled
+  cfe-pip-check: "false:not-a-python-package"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pngquant-feedstock
+  cfe-forge-recipe-updates-needed:
+    - "version bump 2.17.0 -> 3.0.3 (C autotools -> Rust)"
+    - "platform expansion: cf ships linux-64 + osx-64 only; no osx-arm64, and win is explicitly skipped"
+    - "missing stdlib('c') in the deployed v0 recipe (STD-001)"
+  cfe-forge-blocker-list: []
+  cfe-last-checked: "2026-07-26T00:00:00Z"
+  cfe-generated-by-version: 8.79.1
+  cfe-generated-at-datetime: "2026-07-26T00:00:00Z"
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # Authored 2026-07-26 to unblock ocrmypdf. ocrmypdf is noarch but HARD-DEPS
+#    # pngquant, and conda-forge's pngquant 2.17.0 ships linux-64 + osx-64 only
+#    # (its v0 recipe carries `skip: true  # [win]`), which is what forces
+#    # ocrmypdf to be linux-64-only in this repo's pixi.toml.
+#    #
+#    # Upstream moved to Rust at 3.0.0, so the Windows skip is no longer
+#    # inherent: a Rust CLI builds on win-64 like any other. This recipe adopts
+#    # the canonical conda-forge Rust CLI pattern and drops the win skip.
+#    #
+#    # SCOPE LIMIT: only linux-64 can be verified on this host. osx-arm64 and
+#    # win-64 cannot be cross-built from Linux (SKILL.md G82), so shipping them
+#    # needs either a build on those machines or a conda-forge feedstock PR --
+#    # the latter is out of scope while the operator has asked for local-only,
+#    # no PRs. Until one of those happens, the ocrmypdf target-gate in pixi.toml
+#    # stays.
+# build:
+#    # The deployed cf v0 recipe is missing stdlib('c') (STD-001) -- included
+#    # here. pkg-config is required: libpng-sys / lcms2-sys locate their C
+#    # libraries through it.
+# about:
+#    # License file is COPYRIGHT (not LICENSE); GPL-3.0-or-later, unchanged
+#    # from the 2.x line.
+####

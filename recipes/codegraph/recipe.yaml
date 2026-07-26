@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "1.4.1"
+  version: "1.5.0"
 
 package:
   name: codegraph
@@ -10,14 +10,14 @@ package:
 
 source:
   - url: https://registry.npmjs.org/@colbymchenry/codegraph/-/codegraph-${{ version }}.tgz
-    sha256: 8d34d4ef8ef3bc0b5236ca0ba17c3806eee3d9a681699cc76a0eb7552b0da047
+    sha256: 57549a4e130b4281a70fb7b4a263e99d1c258a54d3c10044625f40af632eb167
   # The npm tarball's `files` array omits the LICENSE; take it from the repo tag.
   - url: https://raw.githubusercontent.com/colbymchenry/codegraph/v${{ version }}/LICENSE
     sha256: e6d98f98c666bebe065ac2492a0a19232cc318d4d67bac3ca42ffb77bacc8809
     file_name: LICENSE
 
 build:
-  number: 1
+  number: 0
   # NOT noarch: the published npm package delegates to per-platform native
   # binary packages (@colbymchenry/codegraph-<os>-<arch>, Bun-compiled), so
   # each platform build bundles its own binary.
@@ -102,11 +102,11 @@ extra:
   cfe-on-conda-forge-feedstock: none
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
-  cfe-last-checked: "2026-07-12T16:35:00Z"
+  cfe-last-checked: "2026-07-26T00:00:00Z"
   cfe-generated-by-version: 8.76.0
   cfe-generated-at-datetime: "2026-07-12T16:35:00Z"
   cfe-local-build-status: success
-  cfe-local-build-datetime: "2026-07-12T16:49:10Z"
+  cfe-local-build-datetime: "2026-07-26T12:45:50Z"
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####

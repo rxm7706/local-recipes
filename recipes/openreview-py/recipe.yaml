@@ -1,0 +1,108 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.3.1"
+
+package:
+  name: openreview-py
+  version: ${{ version }}
+
+source:
+  # GitHub tag archive, NOT the PyPI artifact: openreview-py publishes a wheel
+  # only (no sdist), and conda-forge prefers building from source. The v2.3.1
+  # tag carries the full source tree incl. LICENSE (SKILL.md G54 step 2).
+  url: https://github.com/openreview/openreview-py/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: 7ff67817ea92b79791a314d99568f04a964eeb2c054b0e41cc43825772f1c746
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - setuptools >=65.5.1,<81
+    - wheel >=0.40,<1
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - pycryptodome >=3.20,<4
+    - requests >=2.32,<3
+    - urllib3 >=2,<3
+    - future >=1.0.0,<2
+    - tqdm >=4.60,<5
+    - deprecated >=1.2.0,<2
+    - pylatexenc >=2.10,<3
+    - tld >=0.12,<1
+    - pyjwt >=2.0,<3
+    - editdistance >=0.8.1,<1
+
+tests:
+  - python:
+      imports:
+        - openreview
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/openreview/openreview-py
+  repository: https://github.com/openreview/openreview-py
+  license: MIT
+  license_file: LICENSE
+  summary: OpenReview API Python client library
+  description: |
+    openreview-py is the official Python client for the OpenReview API. It
+    wraps the REST endpoints for notes, profiles, groups, invitations and
+    venue configuration, so conference tooling and research scripts can read
+    and write OpenReview data programmatically.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: openreview-py
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: openreview-py
+  cfe-purls:
+    - pkg:conda/openreview-py@${{ version }}?channel=conda-forge
+    - pkg:pypi/openreview-py@${{ version }}
+  cfe-upstream-repo: https://github.com/openreview/openreview-py
+  cfe-upstream-homepage: https://github.com/openreview/openreview-py
+  cfe-import-names: [openreview]
+  cfe-source-kind: github-tag:no-sdist-on-pypi-G54
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: "2026-07-26T00:00:00Z"
+  cfe-generated-by-version: 8.79.1
+  cfe-generated-at-datetime: "2026-07-26T00:00:00Z"
+  cfe-local-build-status: success
+  cfe-local-build-datetime: "2026-07-26T16:27:29Z"
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # Authored 2026-07-26 to close ResearchStudio's Idea-bundle gap: it is in
+#    # install.sh's IDEA_PKGS ("openreview-py>=2.2.3  # idea-spark +
+#    # paper-search: OpenReview connector") and was the only missing Idea dep.
+# source:
+#    # PyPI ships a wheel and NO sdist, so cfe-source-kind is stamped
+#    # github-tag:no-sdist-on-pypi-G54 to stop a regen silently falling back to
+#    # the wheel.
+# requirements:
+#    # 10 runtime deps, ALL verified present on conda-forge. Note two of them
+#    # were not visible in the PyPI JSON summary and came from the repo's
+#    # pyproject.toml: pyjwt and editdistance.
+#    # setuptools is upper-capped (<81) by upstream's own build-system
+#    # requires, so it is mirrored here rather than loosened.
+####

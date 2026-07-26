@@ -1,0 +1,82 @@
+context:
+  name: perspective
+  version: "4.5.2"
+  python_min: "3.11"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/finos/perspective/releases/download/v${{ version }}/perspective_python-${{ version }}.tar.gz
+  sha256: d209cff1bc746f44fd811a80e039d1a79d30841f3f6c20c73e648e633f82dca8
+
+build:
+  number: 0
+  python:
+    version_independent: true
+  skip: is_abi3 and not is_python_min or win
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }} >=${{ python_min }},<3.12
+        - maturin >=1.4,<2.0
+    - ${{ compiler('c') }}
+    - ${{ stdlib('c') }}
+    - ${{ compiler('cxx') }}
+    - ${{ compiler('rust') }}
+    - cargo-bundle-licenses
+    - git
+    - cmake
+    - make
+    - pkg-config
+  host:
+    - python >=3.11
+    - pip
+    - maturin >=1.4,<2.0
+    - if: is_abi3
+      then:
+        - python-abi3 ==${{ python_min }}
+  run:
+    - python
+  ignore_run_exports:
+    from_package:
+      - cross-python_${{ target_platform }}
+
+tests:
+  - python:
+      imports:
+        - perspective
+      pip_check: true
+      python_version: ${{ python_min }}.*
+  - if: is_abi3
+    then:
+      script:
+        - if: win
+          then: abi3audit %PREFIX%/Lib/site-packages/perspective/perspective.pyd -s -v --assume-minimum-abi3 ${{ python_min }}
+          else:
+            - export SP_DIR=$(python -c "import site; print(site.getsitepackages()[0])")
+            - abi3audit $SP_DIR/perspective/perspective.abi3.so -s -v --assume-minimum-abi3 ${{ python_min }}
+      requirements:
+        run:
+          - abi3audit
+
+about:
+  license: Apache-2.0
+  license_family: Apache
+  license_file:
+    - LICENSE.md
+    - LICENSE_THIRDPARTY_cargo.yml
+    - THIRDPARTY.yml
+  summary: Streaming pivot visualization via WebAssembly
+  homepage: https://perspective-dev.github.io
+  repository: http://github.com/perspective-dev/perspective
+
+extra:
+  recipe-maintainers:
+    - timkpaine
+    - texodus
+    - sc1f
