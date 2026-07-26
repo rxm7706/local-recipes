@@ -13,10 +13,10 @@
  "local-recipes/spec-factory-console": {
   "files": {
    "docs/dashboard/README.md": "970ed18c67aa61ca4a0e12e81d4cb3054f7ffaa1",
-   "docs/dashboard/generate.py": "6e060588775ea2b7503287a295de4ef355454983",
-   "docs/dashboard/index.html": "cb97970b766a1781045b23584e07ab573bfaa064"
+   "docs/dashboard/generate.py": "66a5c089d57b5bee7e43050eaabad93312ad243d",
+   "docs/dashboard/index.html": "8799698803311e52d6cd748e1d120f3f5f694bbf"
   },
-  "memlog": "fad9708b02b016e50c71d306f1c4e19ccc2fb664"
+  "memlog": "7a3aac3f7faef610a7137cff1974814ba8fdc6b7"
  },
  "local-recipes/spec-fleet-stewardship": {
   "files": {},
@@ -1442,7 +1442,7 @@
  },
  "pyforge-marshal/spec-pyforge-marshal": {
   "files": {},
-  "memlog": "deeccf7f0aac379b913b65ad35896c7269e83b50"
+  "memlog": "39751dc81793bddb7ec9567507f0404605353329"
  },
  "pyforge-mason/spec-pyforge-mason": {
   "files": {

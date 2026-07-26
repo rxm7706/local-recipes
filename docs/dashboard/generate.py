@@ -117,6 +117,107 @@ def sprint_to_dashboard_status(sprint_status: str, current: str) -> str:
     return "pending"
 
 
+# Editorial metadata only. Everything STRUCTURAL (epics, stories, titles) is
+# derived from epics.md by scan_projects() — see its docstring for why.
+_EDITORIAL = ("label", "accentVar", "branch", "contract", "seglabels",
+              "inflight", "velocity", "timing", "lineState")
+
+# Dashboard key -> BMAD project slug, where they differ.
+_KEY_SLUG_OVERRIDE = {"regen": "local-recipes"}
+# Lines whose story set is NOT its project's epics.md. `regen` renders the
+# regenerable-factory PRACTICE (4 CAPs / 14 stories from its own Spec), while
+# local-recipes/epics.md is the 15-epic factory REBUILD spec — different things.
+# Deriving it would replace 14 stories with 239.
+_DERIVE_EXCLUDE = {"regen"}
+
+
+def scan_projects(existing: dict) -> dict:
+    """One build line per BMAD project that has an `epics.md` — DERIVED.
+
+    Previously `data.projects` was hand-maintained: the epic/story skeleton was
+    copied into data.js by hand, so it could drift from epics.md silently, and a
+    project with no entry simply did not exist on the board. That is exactly what
+    happened on 2026-07-25 — marshal, mason, steward and genesis all had epics
+    (and two had shipped code) while In Build showed nothing, because nobody had
+    hand-added them.
+
+    Now the structure is derived and only *editorial* fields (label, contract
+    blurb, accent, segment labels) are carried forward from the previous run. A
+    new project appears on the board the moment it has an `epics.md`; a renamed
+    or re-scoped epic follows automatically. `check_project_coverage()` turns the
+    remaining "should this have a line at all?" judgement into a loud failure
+    rather than a silent omission.
+    """
+    out: dict = {}
+    for ep in sorted((REPO_ROOT / "_bmad-output" / "projects").glob(
+            "*/planning-artifacts/epics.md")):
+        slug = ep.relative_to(REPO_ROOT / "_bmad-output" / "projects").parts[0]
+        key = next((k for k, s in _KEY_SLUG_OVERRIDE.items() if s == slug),
+                   slug.removeprefix("pyforge-"))
+        prev = existing.get(key, {})
+        if key in _DERIVE_EXCLUDE:
+            if prev:
+                out[key] = prev
+            continue
+        epics, cur = [], None
+        for line in ep.read_text(encoding="utf-8").splitlines():
+            m = re.match(r"^## Epic (\d+)\s*[:—-]\s*(.+)$", line)
+            if m:
+                cur = {"badge": f"E{m.group(1)}", "title": m.group(2).strip(), "stories": []}
+                epics.append(cur)
+                continue
+            m = re.match(r"^### Story (\d+)\.(\d+)\s*[:—-]\s*(.+)$", line)
+            if m and cur and m.group(1) == cur["badge"][1:]:
+                epics[-1]["stories"].append(
+                    [f"{m.group(1)}.{m.group(2)}", "pending", m.group(3).strip()])
+        # Guard on STORIES, not just epics. pyforge-atlas parses to 9 epics with
+        # ZERO stories because its story headings are `A1`/`B1`/`0.1`, not
+        # `Story 1.1` — and a naive `if not epics` guard let that through and
+        # silently overwrote 32 real stories. A project whose epics.md uses a
+        # different convention keeps its previous entry and says so loudly.
+        if sum(len(e["stories"]) for e in epics) == 0:
+            if prev:
+                print(f"[projects] WARN {slug}: epics.md parsed {len(epics)} epic(s) "
+                      f"but NO stories (unrecognised story-heading convention) — "
+                      f"keeping the existing hand-authored line, NOT overwriting it")
+            continue
+        row = {k: prev[k] for k in _EDITORIAL if k in prev}
+        row.setdefault("label", key.capitalize())
+        row.setdefault("accentVar", "--accent")
+        row.setdefault("branch", "not started")
+        row.setdefault("contract", f"spec-{slug}")
+        row.setdefault("seglabels", [e["badge"] for e in epics][:6])
+        row.setdefault("inflight", None)
+        row.setdefault("velocity", "")
+        row.setdefault("timing", "")
+        row.setdefault("lineState", {"state": "ready", "at": ""})
+        row["epics"] = epics
+        out[key] = row
+    for key, row in existing.items():          # keep anything not epics-backed
+        out.setdefault(key, row)
+    added = [k for k in out if k not in existing]
+    print(f"[projects] {len(out)} lines derived from epics.md"
+          + (f" · NEW: {', '.join(added)}" if added else ""))
+    return out
+
+
+def check_project_coverage(projects: dict) -> None:
+    """Every BMAD project with an epics.md must have a line, or say why not.
+
+    The silent-omission guard. Without it, "this project is missing from In
+    Build" is invisible — which is how four lines went unrendered.
+    """
+    slugs = {p.relative_to(REPO_ROOT / "_bmad-output" / "projects").parts[0]
+             for p in (REPO_ROOT / "_bmad-output" / "projects").glob(
+                 "*/planning-artifacts/epics.md")}
+    covered = {_KEY_SLUG_OVERRIDE.get(k, f"pyforge-{k}" if f"pyforge-{k}" in slugs else k)
+               for k in projects}
+    missing = sorted(slugs - covered)
+    if missing:
+        print(f"[projects] WARN {len(missing)} project(s) have epics.md but NO "
+              f"build line: {', '.join(missing)}")
+
+
 def apply_sprint_status(projects: dict) -> None:
     for pkey, rel in PROJECT_SOURCES.items():
         proj = projects.get(pkey)
@@ -1021,6 +1122,8 @@ def main() -> int:
     args = ap.parse_args()
 
     data = load_data()
+    data["projects"] = scan_projects(data["projects"])
+    check_project_coverage(data["projects"])
     if args.source == "git":
         apply_git(data["projects"])
     else:

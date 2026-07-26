@@ -1,5 +1,1804 @@
 window.DASHBOARD_DATA = {
   "projects": {
+    "deckcraft": {
+      "label": "Deckcraft",
+      "accentVar": "--accent",
+      "branch": "not started",
+      "contract": "spec-deckcraft",
+      "seglabels": [
+        "E1",
+        "E2",
+        "E3",
+        "E4",
+        "E5",
+        "E6"
+      ],
+      "inflight": null,
+      "velocity": "",
+      "timing": "",
+      "lineState": {
+        "state": "ready",
+        "at": "1.1"
+      },
+      "epics": [
+        {
+          "badge": "E1",
+          "title": "Foundation",
+          "stories": [
+            [
+              "1.1",
+              "pending",
+              "Project scaffolding and pyproject.toml"
+            ],
+            [
+              "1.2",
+              "pending",
+              "Platform adapter (paths, RAM, GPU detection)"
+            ],
+            [
+              "1.3",
+              "pending",
+              "LLM adapter layer (pydantic-ai + 4 backends)"
+            ],
+            [
+              "1.4",
+              "pending",
+              "Document extractor (markitdown wrapper)"
+            ],
+            [
+              "1.5",
+              "pending",
+              "Pydantic data model (types.py)"
+            ]
+          ]
+        },
+        {
+          "badge": "E2",
+          "title": "Renderers",
+          "stories": [
+            [
+              "2.1",
+              "pending",
+              "PPTX engine adapter (wraps python-pptx with vendor-fallback hooks)"
+            ],
+            [
+              "2.2",
+              "pending",
+              "Marp engine (subprocess to marp-cli)"
+            ],
+            [
+              "2.3",
+              "pending",
+              "Chart renderer (matplotlib + plotly)"
+            ],
+            [
+              "2.4",
+              "pending",
+              "Mermaid renderer (mermaid-py + playwright headless, fully offline)"
+            ],
+            [
+              "2.5",
+              "pending",
+              "Asset pipeline with caching + graceful degradation"
+            ]
+          ]
+        },
+        {
+          "badge": "E3",
+          "title": "Style + AI",
+          "stories": [
+            [
+              "3.1",
+              "pending",
+              "Style loader — PPTX (.potx + .pptx including --as-sample mode) + DOCX"
+            ],
+            [
+              "3.2",
+              "pending",
+              "Style loader — PDF with OCR fallback (FR-46c)"
+            ],
+            [
+              "3.3",
+              "pending",
+              "Retrieval module — sentence-transformers RAG + slide dedup"
+            ],
+            [
+              "3.4",
+              "pending",
+              "LLM outline generator (prompts + JSON-schema-validated output)"
+            ],
+            [
+              "3.5",
+              "pending",
+              "Image understander (Ollama qwen2.5vl + llama.cpp mmproj fallback)"
+            ],
+            [
+              "3.6",
+              "pending",
+              "Image generator (diffusers + SDXL-Turbo, opt-in default-off, lazy-load)"
+            ],
+            [
+              "3.7",
+              "pending",
+              "Layout mapper + bundled templates (default-professional + bmad-prd-pitch)"
+            ]
+          ]
+        },
+        {
+          "badge": "E4",
+          "title": "Surfaces",
+          "stories": [
+            [
+              "4.1",
+              "pending",
+              "Pipeline class (high-level public API)"
+            ],
+            [
+              "4.2",
+              "pending",
+              "CLI (typer-based, deckcraft generate / init / describe-image / convert)"
+            ],
+            [
+              "4.3",
+              "pending",
+              "MCP server (fastmcp stdio transport)"
+            ],
+            [
+              "4.4",
+              "pending",
+              "Claude Skill (.claude/skills/deck-builder/)"
+            ]
+          ]
+        },
+        {
+          "badge": "E5",
+          "title": "Distribution",
+          "stories": [
+            [
+              "5.1",
+              "pending",
+              "conda-forge recipe at `recipes/deckcraft/`"
+            ],
+            [
+              "5.2",
+              "pending",
+              "Default templates (default-professional.potx + bmad-prd-pitch.potx)"
+            ],
+            [
+              "5.3",
+              "pending",
+              "README + air-gapped deployment guide + BYO style guide"
+            ]
+          ]
+        },
+        {
+          "badge": "E6",
+          "title": "Polish",
+          "stories": [
+            [
+              "6.1",
+              "pending",
+              "Spike-0 benchmark on Framework laptop (CRITICAL PATH)"
+            ],
+            [
+              "6.2",
+              "pending",
+              "Spike-1 (full-deck) and Spike-2 (per-machine) benchmarks"
+            ],
+            [
+              "6.3",
+              "pending",
+              "Pattern enforcement test suite (P-01 through P-10)"
+            ],
+            [
+              "6.4",
+              "pending",
+              "Cross-platform CI matrix (linux-64 + osx-arm64 + win-64)"
+            ],
+            [
+              "6.5",
+              "pending",
+              "Air-gapped CI under unshare -n (Linux)"
+            ],
+            [
+              "6.6",
+              "pending",
+              "Golden-path test fixtures (5 prompts → expected pptx structure)"
+            ]
+          ]
+        }
+      ],
+      "owner": "",
+      "practice": false
+    },
+    "regen": {
+      "label": "Regen",
+      "accentVar": "--regen",
+      "branch": "main · in-session Marshal execution",
+      "contract": "spec-regenerable-factory · 4 CAPs (surface manifests, backfill waves, spec_surface_check, regeneration drill) · checker never false-greens · Rule 1/2 bound on Wave 4",
+      "seglabels": [
+        "W0",
+        "W1",
+        "W2",
+        "W3",
+        "W4",
+        "W5"
+      ],
+      "epics": [
+        {
+          "badge": "W0",
+          "title": "Foundations — harness + program spec",
+          "stories": [
+            [
+              "0.1",
+              "done",
+              "Multi-loop isolation harness (worktree loop homes)"
+            ],
+            [
+              "0.2",
+              "done",
+              "Program spec + waves companion (bmad-spec Spec)"
+            ]
+          ]
+        },
+        {
+          "badge": "W1",
+          "title": "Surface-manifest convention + checker",
+          "stories": [
+            [
+              "1.1",
+              "done",
+              "Retrofit surface: onto existing Specs"
+            ],
+            [
+              "1.2",
+              "done",
+              "spec_surface_check v1 — coverage + allowlist + drift"
+            ]
+          ]
+        },
+        {
+          "badge": "W2",
+          "title": "Pilot — factory-console under contract",
+          "stories": [
+            [
+              "2.1",
+              "done",
+              "Factory-console backfill Spec (docs/dashboard)"
+            ],
+            [
+              "2.2",
+              "done",
+              "Regeneration drill on generate.py (clean-room rebuild)"
+            ]
+          ]
+        },
+        {
+          "badge": "W3",
+          "title": "Mid backfills",
+          "stories": [
+            [
+              "3.1",
+              "done",
+              "Enterprise-airgap Spec (_http routing + reference)"
+            ],
+            [
+              "3.2",
+              "done",
+              "Modernist-identity Spec (DS + deck engine)"
+            ]
+          ]
+        },
+        {
+          "badge": "W4",
+          "title": "Deep backfills — CFE territory (Rule 1/2)",
+          "stories": [
+            [
+              "4.1",
+              "done",
+              "Packaging-factory Spec over the CFE surface"
+            ],
+            [
+              "4.2",
+              "done",
+              "Fleet-stewardship Spec (absorbs 3 legacy workflows)"
+            ],
+            [
+              "4.R",
+              "done",
+              "Rule-2 retro against the conda-forge-expert skill"
+            ]
+          ]
+        },
+        {
+          "badge": "W5",
+          "title": "Closure — verify, gate, drill-through",
+          "stories": [
+            [
+              "5.1",
+              "done",
+              "Chain-verify + manifests (atlas / bridge / marshal)"
+            ],
+            [
+              "5.2",
+              "done",
+              "Checker joins the detector test suite"
+            ],
+            [
+              "5.3",
+              "done",
+              "Dreamscape drill-through links"
+            ]
+          ]
+        }
+      ],
+      "inflight": null,
+      "roadmap": {
+        "sub": "Backfill waves per spec-regenerable-factory/waves.md — every realized surface gains a regenerable spec chain; drift checks bind code to contract.",
+        "stops": [
+          [
+            "0",
+            "Harness + spec",
+            "done"
+          ],
+          [
+            "1",
+            "Convention + checker",
+            "wip"
+          ],
+          [
+            "2",
+            "Pilot + drill",
+            ""
+          ],
+          [
+            "3",
+            "Mid backfills",
+            ""
+          ],
+          [
+            "4",
+            "CFE deep + retro",
+            ""
+          ],
+          [
+            "5",
+            "Gate + drill-through",
+            ""
+          ]
+        ]
+      },
+      "lineState": {
+        "state": "complete",
+        "at": ""
+      },
+      "owner": "marshal",
+      "practice": true
+    },
+    "presenton-pixi-image": {
+      "label": "Presenton-pixi-image",
+      "accentVar": "--accent",
+      "branch": "not started",
+      "contract": "spec-presenton-pixi-image",
+      "seglabels": [
+        "E1",
+        "E2",
+        "E3",
+        "E4",
+        "E5",
+        "E6"
+      ],
+      "inflight": null,
+      "velocity": "",
+      "timing": "",
+      "lineState": {
+        "state": "ready",
+        "at": "1.1"
+      },
+      "epics": [
+        {
+          "badge": "E1",
+          "title": "Phase-0 Decision Readiness",
+          "stories": [
+            [
+              "1.1",
+              "pending",
+              "GGUF model and quantization tier selection"
+            ],
+            [
+              "1.2",
+              "pending",
+              "Tier-1 reference LLM class commitment"
+            ],
+            [
+              "1.3",
+              "pending",
+              "Fixture-capture v1 baseline (one-time, manual)"
+            ],
+            [
+              "1.4",
+              "pending",
+              "JFrog allowlist gap analysis"
+            ],
+            [
+              "1.5",
+              "pending",
+              "Capability Claim Statement committed"
+            ],
+            [
+              "1.6",
+              "pending",
+              "Microsoft disconnected-stack verification (Redmond-contingency check)"
+            ],
+            [
+              "1.7",
+              "pending",
+              "Memory-subsystem scope decision"
+            ]
+          ]
+        },
+        {
+          "badge": "E2",
+          "title": "Air-Gapped Browser Rendering Capability",
+          "stories": [
+            [
+              "2.1",
+              "pending",
+              "Build, validate, scan, and optimize `playwright-with-chromium`"
+            ],
+            [
+              "2.2",
+              "pending",
+              "Submit `playwright-with-chromium` to staged-recipes and land the merge"
+            ]
+          ]
+        },
+        {
+          "badge": "E3",
+          "title": "Clean-Room Deck Export Pipeline",
+          "stories": [
+            [
+              "3.1",
+              "pending",
+              "Build, validate, scan, and optimize `presenton-export-node`"
+            ],
+            [
+              "3.2",
+              "pending",
+              "Build, validate, scan, and optimize `pptx-assembler`"
+            ],
+            [
+              "3.3",
+              "pending",
+              "Spike, build, validate, scan, and optimize `pptx-thumbnail-inject`"
+            ],
+            [
+              "3.4",
+              "pending",
+              "Submit the three export-pipeline recipes and land the merges"
+            ],
+            [
+              "3.5",
+              "pending",
+              "Wire the clean-room pipeline into Presenton via patches"
+            ]
+          ]
+        },
+        {
+          "badge": "E4",
+          "title": "LLM Provider Abstraction & Tiering",
+          "stories": [
+            [
+              "4.1",
+              "pending",
+              "Build, validate, scan, and optimize `llmai`"
+            ],
+            [
+              "4.2",
+              "pending",
+              "Submit `llmai` to staged-recipes and land the merge"
+            ],
+            [
+              "4.3",
+              "pending",
+              "Wire the three-tier LLM provider model into the Helm chart"
+            ],
+            [
+              "4.4",
+              "pending",
+              "Verify the `copilot-bridge` dev-path integration"
+            ]
+          ]
+        },
+        {
+          "badge": "E5",
+          "title": "Signed Air-Gapped Image Assembly",
+          "stories": [
+            [
+              "5.1",
+              "pending",
+              "Assemble the pixi-locked build environment"
+            ],
+            [
+              "5.2",
+              "pending",
+              "Assemble the OCI image via pixitainer"
+            ],
+            [
+              "5.3",
+              "pending",
+              "Wire the memory-subsystem feature-flag fork"
+            ],
+            [
+              "5.4",
+              "pending",
+              "Generate SBOM and sign the image"
+            ]
+          ]
+        },
+        {
+          "badge": "E6",
+          "title": "OCP Deployment & Operations",
+          "stories": [
+            [
+              "6.1",
+              "pending",
+              "Helm chart with Restricted-SCC-compatible SecurityContext"
+            ],
+            [
+              "6.2",
+              "pending",
+              "Wire the Chromium sandbox default and escape hatch"
+            ],
+            [
+              "6.3",
+              "pending",
+              "Ship the versioned `/metrics` schema artifact"
+            ],
+            [
+              "6.4",
+              "pending",
+              "Day-0 install preflight fixtures"
+            ],
+            [
+              "6.5",
+              "pending",
+              "Day-2 operational fixtures shipped inside the image"
+            ]
+          ]
+        },
+        {
+          "badge": "E7",
+          "title": "Upstream Drift Defense",
+          "stories": [
+            [
+              "7.1",
+              "pending",
+              "Reusable online-capture CI workflow"
+            ],
+            [
+              "7.2",
+              "pending",
+              "Enforce the air-gapped/online CI-topology split"
+            ],
+            [
+              "7.3",
+              "pending",
+              "Weekly drift-detection harness with auto-issue filing"
+            ]
+          ]
+        }
+      ],
+      "owner": "",
+      "practice": false
+    },
+    "doctor": {
+      "label": "Doctor",
+      "accentVar": "--warden",
+      "branch": "loop/pyforge-doctor",
+      "contract": "9 FRs · exit codes {0,2,130} strict subset of warden's · consolidative wrap of atlas/warden instruments · dist pyforge-doctor / CLI doctor",
+      "seglabels": [
+        "E1 · spine",
+        "E2 · wedge",
+        "E3–E5",
+        "E6 · multi-axis"
+      ],
+      "inflight": null,
+      "velocity": null,
+      "timing": null,
+      "lineState": {
+        "state": "paused",
+        "at": "1.2"
+      },
+      "epics": [
+        {
+          "badge": "E1",
+          "title": "Pre-flight Check (walking skeleton)",
+          "stories": [
+            [
+              "1.1",
+              "done",
+              "Package scaffold, frozen Finding/DoctorReport contract & exit-code module"
+            ],
+            [
+              "1.2",
+              "pending",
+              "Wrap warden's engine-availability self-check (FR-1)"
+            ],
+            [
+              "1.3",
+              "pending",
+              "Tri-state, individually addressable checks (FR-2)"
+            ],
+            [
+              "1.4",
+              "pending",
+              "Credential/environment-hygiene check (FR-3)"
+            ],
+            [
+              "1.5",
+              "pending",
+              "`doctor check` CLI wiring, `--json`, and the speed budget (FR-9, NFR-4)"
+            ]
+          ]
+        },
+        {
+          "badge": "E2",
+          "title": "Fleet Pulse (doctor monitor --fleet)",
+          "stories": [
+            [
+              "2.1",
+              "pending",
+              "Atlas gather filter — staleness axis, MCP-first with CLI fallback (FR-5, AD-6)"
+            ],
+            [
+              "2.2",
+              "pending",
+              "cve and abandonment watch axes (FR-4)"
+            ],
+            [
+              "2.3",
+              "pending",
+              "`doctor monitor --fleet` CLI wiring, default axis set, `--json` (FR-9)"
+            ]
+          ]
+        },
+        {
+          "badge": "E3",
+          "title": "Diagnose & Prescribe (doctor diagnose --prescribe)",
+          "stories": [
+            [
+              "3.1",
+              "pending",
+              "Partition findings by actionability (FR-6, AD-4)"
+            ],
+            [
+              "3.2",
+              "pending",
+              "Rank the actionable partition (FR-7, AD-4)"
+            ],
+            [
+              "3.3",
+              "pending",
+              "Root-cause naming (FR-8)"
+            ],
+            [
+              "3.4",
+              "pending",
+              "`doctor diagnose --target … --prescribe` CLI wiring, `--json` (FR-9)"
+            ]
+          ]
+        }
+      ],
+      "owner": "doctor",
+      "practice": false
+    },
+    "genesis": {
+      "label": "Genesis",
+      "accentVar": "--accent",
+      "branch": "not started",
+      "contract": "spec-pyforge-genesis · the seed: install the operating model anywhere (greenfield + brownfield)",
+      "seglabels": [
+        "E1",
+        "E2",
+        "E3",
+        "E4",
+        "E5",
+        "E6"
+      ],
+      "inflight": null,
+      "velocity": "",
+      "timing": "",
+      "lineState": {
+        "state": "ready",
+        "at": "1.1"
+      },
+      "epics": [
+        {
+          "badge": "E1",
+          "title": "Foundation & the Write Guard",
+          "stories": [
+            [
+              "1.1",
+              "pending",
+              "Package skeleton as a pixi workspace member"
+            ],
+            [
+              "1.2",
+              "pending",
+              "Error taxonomy and exit codes"
+            ],
+            [
+              "1.3",
+              "pending",
+              "The `fs` write primitive and the never-write guard"
+            ],
+            [
+              "1.4",
+              "pending",
+              "Manifest schema, loader, and model-version ranges"
+            ],
+            [
+              "1.5",
+              "pending",
+              "The V1 extraction manifest (the model, as data)"
+            ],
+            [
+              "1.6",
+              "pending",
+              "Spike-0 — Copier API fit (CRITICAL GATE)"
+            ]
+          ]
+        },
+        {
+          "badge": "E2",
+          "title": "The Managed-Region Engine",
+          "stories": [
+            [
+              "2.1",
+              "pending",
+              "Marker grammar and the per-format registry"
+            ],
+            [
+              "2.2",
+              "pending",
+              "Region parser — span discovery, nesting rejection, fence awareness"
+            ],
+            [
+              "2.3",
+              "pending",
+              "Span substitution — the update primitive"
+            ],
+            [
+              "2.4",
+              "pending",
+              "Anchor resolution and region insertion"
+            ],
+            [
+              "2.5",
+              "pending",
+              "Marker deletion as a sanctioned opt-out"
+            ]
+          ]
+        },
+        {
+          "badge": "E3",
+          "title": "Detect & Plan",
+          "stories": [
+            [
+              "3.1",
+              "pending",
+              "Findings model — severity, types, remedies"
+            ],
+            [
+              "3.2",
+              "pending",
+              "Repo inventory walker and artifact classification"
+            ],
+            [
+              "3.3",
+              "pending",
+              "Content hashing for managed files and regions"
+            ],
+            [
+              "3.4",
+              "pending",
+              "Legacy convention detection"
+            ],
+            [
+              "3.5",
+              "pending",
+              "Manifest coverage check"
+            ],
+            [
+              "3.6",
+              "pending",
+              "Plan and Action types, repo fingerprint, and the plan builder"
+            ]
+          ]
+        },
+        {
+          "badge": "E4",
+          "title": "Materialize & the Core Verbs",
+          "stories": [
+            [
+              "4.1",
+              "pending",
+              "Copier engine wrapper — the single seam"
+            ],
+            [
+              "4.2",
+              "pending",
+              "State schema and the atomic store"
+            ],
+            [
+              "4.3",
+              "pending",
+              "The apply runner — transactional, guarded"
+            ],
+            [
+              "4.4",
+              "pending",
+              "Preconditions, refusals, and skips"
+            ],
+            [
+              "4.5",
+              "pending",
+              "`genesis check`"
+            ],
+            [
+              "4.6",
+              "pending",
+              "`genesis adopt`"
+            ],
+            [
+              "4.7",
+              "pending",
+              "`genesis init`"
+            ]
+          ]
+        },
+        {
+          "badge": "E5",
+          "title": "Derive, Migrate & Update",
+          "stories": [
+            [
+              "5.1",
+              "pending",
+              "Neutral contract and agent-adapter fan-out"
+            ],
+            [
+              "5.2",
+              "pending",
+              "`PROJECTS.md` index and artifact-symlink derivation"
+            ],
+            [
+              "5.3",
+              "pending",
+              "Migration registry and runner"
+            ],
+            [
+              "5.4",
+              "pending",
+              "`genesis update` — two-phase"
+            ],
+            [
+              "5.5",
+              "pending",
+              "Referenced-dependency verification and Doctor delegation"
+            ],
+            [
+              "5.6",
+              "pending",
+              "`genesis explain` and `genesis version`"
+            ]
+          ]
+        },
+        {
+          "badge": "E6",
+          "title": "Packaging, Oracle & Hardening",
+          "stories": [
+            [
+              "6.1",
+              "pending",
+              "Full pixi wiring, distribution, and repo-gate compliance"
+            ],
+            [
+              "6.2",
+              "pending",
+              "The `local-recipes` empty-plan oracle (CRITICAL)"
+            ],
+            [
+              "6.3",
+              "pending",
+              "Offline operation and the egress counter"
+            ],
+            [
+              "6.4",
+              "pending",
+              "Pattern meta-tests and the never-write proof"
+            ],
+            [
+              "6.5",
+              "pending",
+              "CLI contract, idempotence harness, and performance gates"
+            ],
+            [
+              "6.6",
+              "pending",
+              "README, adoption guide, and the finding→remedy reference"
+            ]
+          ]
+        }
+      ],
+      "owner": "marshal",
+      "practice": false
+    },
+    "herald": {
+      "label": "Herald",
+      "accentVar": "--warden",
+      "branch": "loop/pyforge-herald",
+      "contract": "SPEC-design-code-bridge CAP-1..5 · FR-01–FR-26 · AD-1–AD-8 · deterministic no-LLM core · dist pyforge-herald / module pyforge.herald / CLI herald",
+      "seglabels": [
+        "E1 · spine",
+        "E2 · wedge",
+        "E3–E5",
+        "E6 · multi-axis"
+      ],
+      "inflight": null,
+      "velocity": null,
+      "timing": null,
+      "lineState": {
+        "state": "paused",
+        "at": "1.3"
+      },
+      "epics": [
+        {
+          "badge": "E1",
+          "title": "Seed a deck into Claude Design",
+          "stories": [
+            [
+              "1.1",
+              "done",
+              "Package scaffold for `pyforge-herald`"
+            ],
+            [
+              "1.2",
+              "done",
+              "Transport port + primary MCP-client adapter (the transport spike)"
+            ],
+            [
+              "1.3",
+              "pending",
+              "Fallback transport adapter"
+            ],
+            [
+              "1.4",
+              "pending",
+              "Bridge-core skeleton — state, errors, determinism boundary"
+            ],
+            [
+              "1.5",
+              "pending",
+              "Registry module — README § Design project"
+            ],
+            [
+              "1.6",
+              "pending",
+              "`herald deck seed <slug>`"
+            ]
+          ]
+        },
+        {
+          "badge": "E2",
+          "title": "Pull Design edits back into the repo",
+          "stories": [
+            [
+              "2.1",
+              "pending",
+              "`herald deck pull <slug>` — prototype pull with etag short-circuit"
+            ],
+            [
+              "2.2",
+              "pending",
+              "`--commit` opt-in"
+            ],
+            [
+              "2.3",
+              "pending",
+              "Marp-source pull"
+            ],
+            [
+              "2.4",
+              "pending",
+              "Standalone bundle pull"
+            ]
+          ]
+        },
+        {
+          "badge": "E3",
+          "title": "See the bridge's state at a glance",
+          "stories": [
+            [
+              "3.1",
+              "pending",
+              "`herald deck status [<slug>]`"
+            ],
+            [
+              "3.2",
+              "pending",
+              "Stale hand-mirror detection"
+            ]
+          ]
+        },
+        {
+          "badge": "E4",
+          "title": "Stay in sync automatically",
+          "stories": [
+            [
+              "4.1",
+              "pending",
+              "Poll loop with quiescence debounce"
+            ],
+            [
+              "4.2",
+              "pending",
+              "Idle backoff"
+            ],
+            [
+              "4.3",
+              "pending",
+              "Halt on auth error"
+            ]
+          ]
+        },
+        {
+          "badge": "E5",
+          "title": "Keep Design current with the shipped exports",
+          "stories": [
+            [
+              "5.1",
+              "pending",
+              "Push regenerated exports with etag guard"
+            ],
+            [
+              "5.2",
+              "pending",
+              "Conflict refusal on export push"
+            ]
+          ]
+        }
+      ],
+      "owner": "herald",
+      "practice": false
+    },
+    "marshal": {
+      "label": "Marshal",
+      "accentVar": "--accent",
+      "branch": "loop/pyforge-marshal · CRITICALS-RESOLVED — S-1.1 unblocked 2026-07-25",
+      "contract": "spec-pyforge-marshal · graduated autonomy on the factory floor · AD-25..39 6 CRITICALs resolved; 12 HIGH + 8 MED open · S-1.10 renders harness policy (closes the F-1 bleed)",
+      "seglabels": [
+        "E1",
+        "E2",
+        "E3",
+        "E4",
+        "E5",
+        "E6"
+      ],
+      "inflight": null,
+      "velocity": "",
+      "timing": "",
+      "lineState": {
+        "state": "ready",
+        "at": "1.1"
+      },
+      "epics": [
+        {
+          "badge": "E1",
+          "title": "Provisioned, verified loop homes",
+          "stories": [
+            [
+              "1.1",
+              "pending",
+              "Package spine, verdict lattice, findings registry, and the meta-tests that enforce them"
+            ],
+            [
+              "1.2",
+              "pending",
+              "Story identity, merge-subject rendering, and feed completeness"
+            ],
+            [
+              "1.3",
+              "pending",
+              "Layered policy composition with provenance and validation"
+            ],
+            [
+              "1.10",
+              "pending",
+              "Render the harness policy from the canonical EffectivePolicy"
+            ],
+            [
+              "1.4",
+              "pending",
+              "Provision a loop home"
+            ],
+            [
+              "1.5",
+              "pending",
+              "Single-sourced Tier-3 store via backlink"
+            ],
+            [
+              "1.6",
+              "pending",
+              "Isolation verification and home enumeration"
+            ],
+            [
+              "1.7",
+              "pending",
+              "Preflight, adapter config seeding, and first-run acknowledgement"
+            ],
+            [
+              "1.8",
+              "pending",
+              "Teardown that refuses to destroy work"
+            ],
+            [
+              "1.9",
+              "pending",
+              "Packaging, distribution, and version reporting"
+            ]
+          ]
+        },
+        {
+          "badge": "E2",
+          "title": "Gates you can run",
+          "stories": [
+            [
+              "2.1",
+              "pending",
+              "Standalone verify-command runner, project-scoped"
+            ],
+            [
+              "2.2",
+              "pending",
+              "Verdict aggregation that never false-greens"
+            ],
+            [
+              "2.3",
+              "pending",
+              "Frozen-surface scope check, narrowing only"
+            ],
+            [
+              "2.4",
+              "pending",
+              "Doc-only story classification"
+            ],
+            [
+              "2.5",
+              "pending",
+              "Gate mode ladder with autonomy labels"
+            ],
+            [
+              "2.6",
+              "pending",
+              "Gate evidence record with redaction at egress"
+            ]
+          ]
+        },
+        {
+          "badge": "E3",
+          "title": "Supervised unattended runs",
+          "stories": [
+            [
+              "3.1",
+              "pending",
+              "Run identity and the journal writer"
+            ],
+            [
+              "3.2",
+              "pending",
+              "The journal fold — one producer for accumulating run state"
+            ],
+            [
+              "3.3",
+              "pending",
+              "Detached launch with scoped story selection"
+            ],
+            [
+              "3.4",
+              "pending",
+              "Supervisor process lifecycle"
+            ],
+            [
+              "3.5",
+              "pending",
+              "Idle-strand detection"
+            ],
+            [
+              "3.6",
+              "pending",
+              "Budget ceilings and the heaviest-story advisory"
+            ],
+            [
+              "3.7",
+              "pending",
+              "Escalation, deferral, and resume"
+            ]
+          ]
+        },
+        {
+          "badge": "E4",
+          "title": "Landing with a durable paper trail",
+          "stories": [
+            [
+              "4.1",
+              "pending",
+              "Story-spec promotion with a durability predicate"
+            ],
+            [
+              "4.2",
+              "pending",
+              "Teardown reachability and spec-recovery assistance"
+            ],
+            [
+              "4.3",
+              "pending",
+              "Merge-subject conformance and review-cap landing"
+            ],
+            [
+              "4.4",
+              "pending",
+              "Batch pull request with hygiene preflight"
+            ],
+            [
+              "4.5",
+              "pending",
+              "Feed refresh with truth partitioned by domain"
+            ],
+            [
+              "4.6",
+              "pending",
+              "Deploy idempotence and reconciliation of open intents"
+            ]
+          ]
+        },
+        {
+          "badge": "E5",
+          "title": "Fleet visibility",
+          "stories": [
+            [
+              "5.1",
+              "pending",
+              "Fleet view"
+            ],
+            [
+              "5.2",
+              "pending",
+              "Per-run detail"
+            ],
+            [
+              "5.3",
+              "pending",
+              "Escalation queue"
+            ],
+            [
+              "5.4",
+              "pending",
+              "Ledger-vs-git reconciliation and the versioned status contract"
+            ]
+          ]
+        },
+        {
+          "badge": "E6",
+          "title": "Portability proven",
+          "stories": [
+            [
+              "6.1",
+              "pending",
+              "Profile-driven adapter selection, project-scoped"
+            ],
+            [
+              "6.2",
+              "pending",
+              "Skill-tree projection"
+            ],
+            [
+              "6.3",
+              "pending",
+              "Projection drift detection that can actually fail"
+            ],
+            [
+              "6.4",
+              "pending",
+              "Adapter probe with a machine-scoped record"
+            ],
+            [
+              "6.5",
+              "pending",
+              "Conformance smoke in an ephemeral home"
+            ],
+            [
+              "6.6",
+              "pending",
+              "The conformance matrix"
+            ],
+            [
+              "6.7",
+              "pending",
+              "Entry-file family drift check, detect-only"
+            ],
+            [
+              "6.8",
+              "pending",
+              "Upstream contribution register"
+            ]
+          ]
+        }
+      ],
+      "owner": "marshal",
+      "practice": false
+    },
+    "mason": {
+      "label": "Mason",
+      "accentVar": "--accent",
+      "branch": "main · S-1.1 landed outside the loop",
+      "contract": "spec-pyforge-mason · recipe / package / environment · `recipe` WRAPS the conda-forge-expert craft by subprocess, never forks it (D-1 Option C)",
+      "seglabels": [
+        "E1",
+        "E2",
+        "E3",
+        "E4",
+        "E5"
+      ],
+      "inflight": null,
+      "velocity": "",
+      "timing": "",
+      "lineState": {
+        "state": "paused",
+        "at": "1.2"
+      },
+      "epics": [
+        {
+          "badge": "E1",
+          "title": "Install, run, and diagnose Mason",
+          "stories": [
+            [
+              "1.1",
+              "done",
+              "Workspace member scaffold and dual-artifact build"
+            ],
+            [
+              "1.2",
+              "pending",
+              "CLI noun-verb structure and global flags"
+            ],
+            [
+              "1.3",
+              "pending",
+              "Error taxonomy and exit-code contract"
+            ],
+            [
+              "1.4",
+              "pending",
+              "Dual output format with stream discipline"
+            ],
+            [
+              "1.5",
+              "pending",
+              "CFE root resolution chain"
+            ],
+            [
+              "1.6",
+              "pending",
+              "Interpreter selection and CFE import-floor probe"
+            ],
+            [
+              "1.7",
+              "pending",
+              "Degradation when CFE is unavailable"
+            ],
+            [
+              "1.8",
+              "pending",
+              "`mason doctor`"
+            ],
+            [
+              "1.9",
+              "pending",
+              "Fake CFE root fixture and test harness"
+            ],
+            [
+              "1.10",
+              "pending",
+              "Configuration surface, logging, and child-output streaming"
+            ]
+          ]
+        },
+        {
+          "badge": "E2",
+          "title": "Author, build, and submit recipes",
+          "stories": [
+            [
+              "2.1",
+              "pending",
+              "The CFE port"
+            ],
+            [
+              "2.2",
+              "pending",
+              "The seam guard"
+            ],
+            [
+              "2.3",
+              "pending",
+              "Credential isolation"
+            ],
+            [
+              "2.4",
+              "pending",
+              "`mason recipe new`"
+            ],
+            [
+              "2.5",
+              "pending",
+              "`mason recipe validate`"
+            ],
+            [
+              "2.6",
+              "pending",
+              "`mason recipe build`"
+            ],
+            [
+              "2.7",
+              "pending",
+              "`mason recipe diagnose`"
+            ],
+            [
+              "2.8",
+              "pending",
+              "`mason recipe optimize` and `mason recipe scan`"
+            ],
+            [
+              "2.9",
+              "pending",
+              "`mason recipe submit`"
+            ],
+            [
+              "2.10",
+              "pending",
+              "`mason recipe update`"
+            ]
+          ]
+        },
+        {
+          "badge": "E3",
+          "title": "Ship a library to both ecosystems",
+          "stories": [
+            [
+              "3.1",
+              "pending",
+              "Engine protocol and provisioning"
+            ],
+            [
+              "3.2",
+              "pending",
+              "`mason package build`"
+            ],
+            [
+              "3.3",
+              "pending",
+              "Ship-target vocabulary and dry-run default"
+            ],
+            [
+              "3.4",
+              "pending",
+              "The `pypi` ship target"
+            ],
+            [
+              "3.5",
+              "pending",
+              "The `channel:<name>` ship target"
+            ],
+            [
+              "3.6",
+              "pending",
+              "The `conda-forge` ship target"
+            ],
+            [
+              "3.9",
+              "pending",
+              "The `ship` verb and TestPyPI rehearsal"
+            ],
+            [
+              "3.7",
+              "pending",
+              "Asymmetric receipts, partial failure, and idempotence"
+            ],
+            [
+              "3.8",
+              "pending",
+              "Mason ships Mason"
+            ]
+          ]
+        },
+        {
+          "badge": "E4",
+          "title": "Bind environments into lockfiles",
+          "stories": [
+            [
+              "4.1",
+              "pending",
+              "Lock engine adapter and provenance"
+            ],
+            [
+              "4.2",
+              "pending",
+              "Manifest discovery"
+            ],
+            [
+              "4.3",
+              "pending",
+              "`mason environment lock`"
+            ],
+            [
+              "4.4",
+              "pending",
+              "`mason environment check`"
+            ]
+          ]
+        },
+        {
+          "badge": "E5",
+          "title": "Prove the seam holds",
+          "stories": [
+            [
+              "5.1",
+              "pending",
+              "CFE-independence test"
+            ],
+            [
+              "5.2",
+              "pending",
+              "Governance test"
+            ],
+            [
+              "5.3",
+              "pending",
+              "Delegation-fidelity test"
+            ],
+            [
+              "5.4",
+              "pending",
+              "Free-inheritance verification"
+            ],
+            [
+              "5.5",
+              "pending",
+              "Rule-2 conda-forge-expert retrospective"
+            ]
+          ]
+        }
+      ],
+      "owner": "mason",
+      "practice": false
+    },
+    "scribe": {
+      "label": "Scribe",
+      "accentVar": "--warden",
+      "branch": "loop/pyforge-scribe",
+      "contract": "15 FRs · event-sourced capture + rebuildable read-model · team memory + knowledge graph · dist pyforge-scribe / CLI scribe",
+      "seglabels": [
+        "E1 · spine",
+        "E2 · wedge",
+        "E3–E5",
+        "E6 · multi-axis"
+      ],
+      "inflight": null,
+      "velocity": null,
+      "timing": null,
+      "lineState": {
+        "state": "paused",
+        "at": "1.2"
+      },
+      "epics": [
+        {
+          "badge": "E1",
+          "title": "Team Memory — Capture & Promotion",
+          "stories": [
+            [
+              "1.1",
+              "done",
+              "Package scaffold + direct capture into team memory"
+            ],
+            [
+              "1.2",
+              "pending",
+              "`CLAUDE.md` wiring — team memory loads automatically"
+            ],
+            [
+              "1.3",
+              "pending",
+              "Promotion workflow — proposal-then-confirm, team-voice rewrite"
+            ],
+            [
+              "1.4",
+              "pending",
+              "Pointer-stub write-back + idempotent re-invocation"
+            ],
+            [
+              "1.5",
+              "pending",
+              "Seed promotion — the end-to-end proof"
+            ]
+          ]
+        },
+        {
+          "badge": "E2",
+          "title": "Knowledge Graph — Compile & Recall",
+          "stories": [
+            [
+              "2.1",
+              "pending",
+              "`GraphStore` port + flat-file v1 adapter"
+            ],
+            [
+              "2.2",
+              "pending",
+              "Nightly compile from named tool surfaces"
+            ],
+            [
+              "2.3",
+              "pending",
+              "Fact supersession in the compiled graph"
+            ],
+            [
+              "2.4",
+              "pending",
+              "`scribe recall` — grounded, cited answers"
+            ]
+          ]
+        }
+      ],
+      "owner": "scribe",
+      "practice": false
+    },
+    "steward": {
+      "label": "Steward",
+      "accentVar": "--accent",
+      "branch": "main · S-1.1 landed outside the loop",
+      "contract": "spec-pyforge-steward · keys / deploy / provision / budget · Duty protocol (AD-7); main() sole owner of the exit code (AD-8)",
+      "seglabels": [
+        "E1",
+        "E2",
+        "E3",
+        "E4"
+      ],
+      "inflight": null,
+      "velocity": "",
+      "timing": "",
+      "lineState": {
+        "state": "paused",
+        "at": "1.2"
+      },
+      "epics": [
+        {
+          "badge": "E1",
+          "title": "Keys — Credential Lifecycle",
+          "stories": [
+            [
+              "1.1",
+              "done",
+              "Steward exists as an installable CLI"
+            ],
+            [
+              "1.2",
+              "pending",
+              "Credentials never attach outside their declared host, and the JFrog leak can never recur silently"
+            ],
+            [
+              "1.3",
+              "pending",
+              "Secrets Steward stores live encrypted in Git, never as plaintext"
+            ],
+            [
+              "1.4",
+              "pending",
+              "Rotating a key never breaks what already trusted it"
+            ],
+            [
+              "1.5",
+              "pending",
+              "The operator can see every credential Steward knows about, never a secret value"
+            ],
+            [
+              "1.6",
+              "pending",
+              "The operator can ask \"is anything host-unscoped right now?\" and get a real answer"
+            ],
+            [
+              "1.7",
+              "pending",
+              "Retiring a credential leaves a record, not a silent gap"
+            ]
+          ]
+        },
+        {
+          "badge": "E2",
+          "title": "Deploy — Reconciled Dashboard Publishing",
+          "stories": [
+            [
+              "2.1",
+              "pending",
+              "The dashboard builds through Steward, not a bare pixi task the operator has to remember"
+            ],
+            [
+              "2.2",
+              "pending",
+              "Nothing happens unless something actually changed"
+            ],
+            [
+              "2.3",
+              "pending",
+              "The operator can see what would change before it changes"
+            ],
+            [
+              "2.4",
+              "pending",
+              "The operator can ask \"when did the dashboard last actually deploy?\""
+            ]
+          ]
+        },
+        {
+          "badge": "E3",
+          "title": "Provision — Environment & Runner Access",
+          "stories": [
+            [
+              "3.1",
+              "pending",
+              "Any named pixi environment materializes with one command"
+            ],
+            [
+              "3.2",
+              "pending",
+              "A bmad-loop runner and its environment materialize together"
+            ],
+            [
+              "3.3",
+              "pending",
+              "The operator can see every environment that exists, before picking one"
+            ],
+            [
+              "3.4",
+              "pending",
+              "The environment.yaml sync gate is one command away, not a remembered incantation"
+            ]
+          ]
+        },
+        {
+          "badge": "E4",
+          "title": "Budget — Declared Resource Ceilings",
+          "stories": [
+            [
+              "4.1",
+              "pending",
+              "A ceiling can be declared, machine-readably"
+            ],
+            [
+              "4.2",
+              "pending",
+              "The declared ceiling is one command away"
+            ],
+            [
+              "4.3",
+              "pending",
+              "Asking \"am I under budget?\" never lies"
+            ]
+          ]
+        }
+      ],
+      "owner": "steward",
+      "practice": false
+    },
     "warden": {
       "label": "Warden",
       "accentVar": "--warden",
@@ -10,200 +1809,6 @@ window.DASHBOARD_DATA = {
         "E2 · wedge",
         "E3–E5",
         "E6 · multi-axis"
-      ],
-      "epics": [
-        {
-          "badge": "E1",
-          "title": "Spine + PyPI engine (walking skeleton)",
-          "stories": [
-            [
-              "1.1",
-              "done",
-              "Frozen contract, verdict lattice & projection-safety"
-            ],
-            [
-              "1.2",
-              "done",
-              "Interfaces, null engine, regression harness & socket-deny"
-            ],
-            [
-              "1.3",
-              "done",
-              "deptry as the first engine (hygiene findings)"
-            ],
-            [
-              "1.4",
-              "done",
-              "OSV-DB offline provisioning spike (decision + fixture DB)"
-            ],
-            [
-              "1.5",
-              "done",
-              "osv-scanner as the second engine (vulnerability findings)"
-            ],
-            [
-              "1.6",
-              "done",
-              "Severity gate + verdict composition end-to-end"
-            ],
-            [
-              "1.7",
-              "done",
-              "Typed errors & the no-scan guard (the fail-closed net)"
-            ],
-            [
-              "1.8",
-              "done",
-              "Human & machine report renderers"
-            ],
-            [
-              "1.9",
-              "done",
-              "Manifest discovery, deterministic selection & the resolved scan set"
-            ]
-          ]
-        },
-        {
-          "badge": "E2",
-          "title": "The conda / pixi source-manifest wedge",
-          "stories": [
-            [
-              "2.1",
-              "done",
-              "conda→pypi map + the ecosystem-identity predicate"
-            ],
-            [
-              "2.2",
-              "done",
-              "Non-rendering extraction + differential-oracle"
-            ],
-            [
-              "2.3",
-              "done",
-              "The full supported-construct matrix (ratcheted)"
-            ],
-            [
-              "2.4",
-              "done",
-              "Honest split coverage + the indeterminate producer"
-            ],
-            [
-              "2.5",
-              "done",
-              "Name-level CVE tier + stale-DB + cross-ecosystem non-merge"
-            ],
-            [
-              "2.6",
-              "done",
-              "Lockfile extraction — the locked-closure vuln hero path"
-            ]
-          ]
-        },
-        {
-          "badge": "E3",
-          "title": "Policy control + auditable waivers + warn-only",
-          "stories": [
-            [
-              "3.1",
-              "done",
-              "Configurable policy (the ConfigLoader)"
-            ],
-            [
-              "3.2",
-              "done",
-              "Auditable expiring waivers"
-            ],
-            [
-              "3.3",
-              "done",
-              "Waiver expiry + warn-only adoption on-ramp"
-            ]
-          ]
-        },
-        {
-          "badge": "E4",
-          "title": "Machine contract + CycloneDX SBOM",
-          "stories": [
-            [
-              "4.1",
-              "done",
-              "CycloneDX SBOM emission"
-            ]
-          ]
-        },
-        {
-          "badge": "E5",
-          "title": "Fleet-readiness & adoption on-ramp",
-          "stories": [
-            [
-              "5.1",
-              "done",
-              "Actionable diagnostics & safe-by-default posture"
-            ],
-            [
-              "5.2",
-              "done",
-              "Fleet-scale validation + corpus / oracle maturation"
-            ]
-          ]
-        },
-        {
-          "badge": "E6",
-          "title": "Multi-axis expansion — license, currency, KEV / EPSS",
-          "gatenote": "<b>Epic 6 COMPLETE ✔ — all 10 stories merged.</b> Both hard gates (<code>6.10</code> decision record + <code>6.1</code> schema <code>1.0.0→1.1.0</code>) + 4 axes: <code>6.2</code> license · <code>6.3</code> currency · <code>6.4</code> KEV · <code>6.7</code> EPSS. Plus <code>6.5</code> two-mode policy, <code>6.8</code> baseline/grandfathering, <code>6.9</code> fix-PR actuator (recovered + adversarial-reviewed), and <code>6.6</code> engine version-range pinning (the distribution gate) — <b>1869 green</b>.",
-          "stories": [
-            [
-              "6.10",
-              "done",
-              "Amendment design spike — ID families, verdict encoding, fold semantics (decision record)"
-            ],
-            [
-              "6.1",
-              "done",
-              "The versioned ComplianceReport schema amendment (1.0.0→1.1.0, additive)"
-            ],
-            [
-              "6.2",
-              "done",
-              "License axis producer + gate flags (Axis 3)"
-            ],
-            [
-              "6.3",
-              "done",
-              "Currency axis producer + gate flags (Axis 4)"
-            ],
-            [
-              "6.4",
-              "done",
-              "KEV feed provisioning + the fail-on-kev gate (feeds.py substrate)"
-            ],
-            [
-              "6.5",
-              "done",
-              "Two-mode policy integration (visibility + flag-gating)"
-            ],
-            [
-              "6.6",
-              "done",
-              "Engine version-range pinning (the distribution gate)"
-            ],
-            [
-              "6.7",
-              "done",
-              "EPSS feed + the --min-epss gate"
-            ],
-            [
-              "6.8",
-              "done",
-              "Baseline & grandfathering (gate new findings only)"
-            ],
-            [
-              "6.9",
-              "done",
-              "Fix-PR actuator (opt-in remediation PRs)"
-            ]
-          ]
-        }
       ],
       "inflight": null,
       "velocity": {
@@ -383,6 +1988,199 @@ window.DASHBOARD_DATA = {
         "state": "complete",
         "at": ""
       },
+      "epics": [
+        {
+          "badge": "E1",
+          "title": "Spine + PyPI engine (walking skeleton)",
+          "stories": [
+            [
+              "1.1",
+              "done",
+              "Frozen contract, verdict lattice & projection-safety (C0a)"
+            ],
+            [
+              "1.2",
+              "done",
+              "Interfaces, null engine, regression harness & socket-deny (C0c)"
+            ],
+            [
+              "1.3",
+              "done",
+              "deptry as the first engine (hygiene findings)"
+            ],
+            [
+              "1.4",
+              "done",
+              "OSV-DB offline provisioning spike (decision + fixture DB)"
+            ],
+            [
+              "1.5",
+              "done",
+              "osv-scanner as the second engine (vulnerability findings)"
+            ],
+            [
+              "1.6",
+              "done",
+              "Severity gate + verdict composition end-to-end"
+            ],
+            [
+              "1.7",
+              "done",
+              "Typed errors & the no-scan guard (the fail-closed net)"
+            ],
+            [
+              "1.8",
+              "done",
+              "Human & machine report renderers"
+            ],
+            [
+              "1.9",
+              "done",
+              "Manifest discovery, deterministic selection & the resolved scan set (FR1)"
+            ]
+          ]
+        },
+        {
+          "badge": "E2",
+          "title": "The conda/pixi source-manifest wedge",
+          "stories": [
+            [
+              "2.1",
+              "done",
+              "conda→pypi map + the ecosystem-identity predicate"
+            ],
+            [
+              "2.2",
+              "done",
+              "Non-rendering extraction (common case) + differential-oracle"
+            ],
+            [
+              "2.3",
+              "done",
+              "The full supported-construct matrix (ratcheted)"
+            ],
+            [
+              "2.4",
+              "done",
+              "Honest split coverage + the indeterminate producer (C0b)"
+            ],
+            [
+              "2.5",
+              "done",
+              "Name-level CVE tier + stale-DB + cross-ecosystem non-merge"
+            ],
+            [
+              "2.6",
+              "done",
+              "Lockfile extraction — the locked-closure vuln hero path (split from 2.1, 2026-07-16)"
+            ]
+          ]
+        },
+        {
+          "badge": "E3",
+          "title": "Policy control + auditable waivers + warn-only",
+          "stories": [
+            [
+              "3.1",
+              "done",
+              "Configurable policy (the ConfigLoader)"
+            ],
+            [
+              "3.2",
+              "done",
+              "Auditable expiring waivers"
+            ],
+            [
+              "3.3",
+              "done",
+              "Waiver expiry + warn-only adoption on-ramp"
+            ]
+          ]
+        },
+        {
+          "badge": "E4",
+          "title": "Machine contract + CycloneDX SBOM",
+          "stories": [
+            [
+              "4.1",
+              "done",
+              "CycloneDX SBOM emission"
+            ]
+          ]
+        },
+        {
+          "badge": "E5",
+          "title": "Fleet-readiness & adoption on-ramp",
+          "stories": [
+            [
+              "5.1",
+              "done",
+              "Actionable diagnostics & safe-by-default posture"
+            ],
+            [
+              "5.2",
+              "done",
+              "Fleet-scale validation + corpus/oracle maturation"
+            ]
+          ]
+        },
+        {
+          "badge": "E6",
+          "title": "Multi-axis expansion — license, currency, KEV/EPSS & adoption (added 2026-07-15; re-baselined 2026-07-16, D12)",
+          "stories": [
+            [
+              "6.1",
+              "done",
+              "The versioned `ComplianceReport` schema amendment"
+            ],
+            [
+              "6.2",
+              "done",
+              "License axis producer + gate flags (Axis 3)"
+            ],
+            [
+              "6.3",
+              "done",
+              "Currency axis producer + gate flags (Axis 4)"
+            ],
+            [
+              "6.4",
+              "done",
+              "KEV feed provisioning, enrichment & the `--fail-on-kev` gate"
+            ],
+            [
+              "6.5",
+              "done",
+              "Two-mode policy integration (unconfigured visibility + flag-activated gating)"
+            ],
+            [
+              "6.6",
+              "done",
+              "Engine version-range pinning (the distribution gate)"
+            ],
+            [
+              "6.7",
+              "done",
+              "EPSS feed + the `--min-epss` gate"
+            ],
+            [
+              "6.8",
+              "done",
+              "Baseline & grandfathering (gate new findings only)"
+            ],
+            [
+              "6.9",
+              "done",
+              "Fix-PR actuator (opt-in remediation PRs)"
+            ],
+            [
+              "6.10",
+              "done",
+              "Amendment design spike — finding-ID families, verdict encoding, rung-discriminator & fold semantics (decision record)"
+            ]
+          ]
+        }
+      ],
       "owner": "warden",
       "practice": false
     },
@@ -720,1380 +2518,9 @@ window.DASHBOARD_DATA = {
       },
       "owner": "atlas",
       "practice": false
-    },
-    "regen": {
-      "label": "Regen",
-      "accentVar": "--regen",
-      "branch": "main · in-session Marshal execution",
-      "contract": "spec-regenerable-factory · 4 CAPs (surface manifests, backfill waves, spec_surface_check, regeneration drill) · checker never false-greens · Rule 1/2 bound on Wave 4",
-      "seglabels": [
-        "W0",
-        "W1",
-        "W2",
-        "W3",
-        "W4",
-        "W5"
-      ],
-      "epics": [
-        {
-          "badge": "W0",
-          "title": "Foundations — harness + program spec",
-          "stories": [
-            [
-              "0.1",
-              "done",
-              "Multi-loop isolation harness (worktree loop homes)"
-            ],
-            [
-              "0.2",
-              "done",
-              "Program spec + waves companion (bmad-spec Spec)"
-            ]
-          ]
-        },
-        {
-          "badge": "W1",
-          "title": "Surface-manifest convention + checker",
-          "stories": [
-            [
-              "1.1",
-              "done",
-              "Retrofit surface: onto existing Specs"
-            ],
-            [
-              "1.2",
-              "done",
-              "spec_surface_check v1 — coverage + allowlist + drift"
-            ]
-          ]
-        },
-        {
-          "badge": "W2",
-          "title": "Pilot — factory-console under contract",
-          "stories": [
-            [
-              "2.1",
-              "done",
-              "Factory-console backfill Spec (docs/dashboard)"
-            ],
-            [
-              "2.2",
-              "done",
-              "Regeneration drill on generate.py (clean-room rebuild)"
-            ]
-          ]
-        },
-        {
-          "badge": "W3",
-          "title": "Mid backfills",
-          "stories": [
-            [
-              "3.1",
-              "done",
-              "Enterprise-airgap Spec (_http routing + reference)"
-            ],
-            [
-              "3.2",
-              "done",
-              "Modernist-identity Spec (DS + deck engine)"
-            ]
-          ]
-        },
-        {
-          "badge": "W4",
-          "title": "Deep backfills — CFE territory (Rule 1/2)",
-          "stories": [
-            [
-              "4.1",
-              "done",
-              "Packaging-factory Spec over the CFE surface"
-            ],
-            [
-              "4.2",
-              "done",
-              "Fleet-stewardship Spec (absorbs 3 legacy workflows)"
-            ],
-            [
-              "4.R",
-              "done",
-              "Rule-2 retro against the conda-forge-expert skill"
-            ]
-          ]
-        },
-        {
-          "badge": "W5",
-          "title": "Closure — verify, gate, drill-through",
-          "stories": [
-            [
-              "5.1",
-              "done",
-              "Chain-verify + manifests (atlas / bridge / marshal)"
-            ],
-            [
-              "5.2",
-              "done",
-              "Checker joins the detector test suite"
-            ],
-            [
-              "5.3",
-              "done",
-              "Dreamscape drill-through links"
-            ]
-          ]
-        }
-      ],
-      "inflight": null,
-      "roadmap": {
-        "sub": "Backfill waves per spec-regenerable-factory/waves.md — every realized surface gains a regenerable spec chain; drift checks bind code to contract.",
-        "stops": [
-          [
-            "0",
-            "Harness + spec",
-            "done"
-          ],
-          [
-            "1",
-            "Convention + checker",
-            "wip"
-          ],
-          [
-            "2",
-            "Pilot + drill",
-            ""
-          ],
-          [
-            "3",
-            "Mid backfills",
-            ""
-          ],
-          [
-            "4",
-            "CFE deep + retro",
-            ""
-          ],
-          [
-            "5",
-            "Gate + drill-through",
-            ""
-          ]
-        ]
-      },
-      "lineState": {
-        "state": "complete",
-        "at": ""
-      },
-      "owner": "marshal",
-      "practice": true
-    },
-    "herald": {
-      "label": "Herald",
-      "accentVar": "--warden",
-      "branch": "loop/pyforge-herald",
-      "contract": "SPEC-design-code-bridge CAP-1..5 · FR-01–FR-26 · AD-1–AD-8 · deterministic no-LLM core · dist pyforge-herald / module pyforge.herald / CLI herald",
-      "seglabels": [
-        "E1 · spine",
-        "E2 · wedge",
-        "E3–E5",
-        "E6 · multi-axis"
-      ],
-      "epics": [
-        {
-          "badge": "E1",
-          "title": "Seed a deck into Claude Design",
-          "stories": [
-            [
-              "1.1",
-              "done",
-              "Package scaffold for pyforge-herald"
-            ],
-            [
-              "1.2",
-              "done",
-              "Transport port + primary MCP-client adapter (spike)"
-            ],
-            [
-              "1.3",
-              "pending",
-              "Fallback transport adapter"
-            ],
-            [
-              "1.4",
-              "pending",
-              "Bridge-core skeleton — state, errors, determinism boundary"
-            ],
-            [
-              "1.5",
-              "pending",
-              "Registry module — README § Design project"
-            ],
-            [
-              "1.6",
-              "pending",
-              "herald deck seed <slug>"
-            ]
-          ]
-        },
-        {
-          "badge": "E2",
-          "title": "Pull Design edits back into the repo",
-          "stories": [
-            [
-              "2.1",
-              "pending",
-              "deck pull — prototype with etag short-circuit"
-            ],
-            [
-              "2.2",
-              "pending",
-              "--commit opt-in"
-            ],
-            [
-              "2.3",
-              "pending",
-              "Marp-source pull"
-            ],
-            [
-              "2.4",
-              "pending",
-              "Standalone bundle pull"
-            ]
-          ]
-        },
-        {
-          "badge": "E3",
-          "title": "Bridge state at a glance",
-          "stories": [
-            [
-              "3.1",
-              "pending",
-              "herald deck status [<slug>]"
-            ],
-            [
-              "3.2",
-              "pending",
-              "Stale hand-mirror detection"
-            ]
-          ]
-        },
-        {
-          "badge": "E4",
-          "title": "Stay in sync automatically",
-          "stories": [
-            [
-              "4.1",
-              "pending",
-              "Poll loop with quiescence debounce"
-            ],
-            [
-              "4.2",
-              "pending",
-              "Idle backoff"
-            ],
-            [
-              "4.3",
-              "pending",
-              "Halt on auth error"
-            ]
-          ]
-        },
-        {
-          "badge": "E5",
-          "title": "Keep Design current with shipped exports",
-          "stories": [
-            [
-              "5.1",
-              "pending",
-              "Push regenerated exports with etag guard"
-            ],
-            [
-              "5.2",
-              "pending",
-              "Conflict refusal on export push"
-            ]
-          ]
-        }
-      ],
-      "inflight": null,
-      "velocity": null,
-      "timing": null,
-      "lineState": {
-        "state": "paused",
-        "at": "1.3"
-      },
-      "owner": "herald",
-      "practice": false
-    },
-    "doctor": {
-      "label": "Doctor",
-      "accentVar": "--warden",
-      "branch": "loop/pyforge-doctor",
-      "contract": "9 FRs · exit codes {0,2,130} strict subset of warden's · consolidative wrap of atlas/warden instruments · dist pyforge-doctor / CLI doctor",
-      "seglabels": [
-        "E1 · spine",
-        "E2 · wedge",
-        "E3–E5",
-        "E6 · multi-axis"
-      ],
-      "epics": [
-        {
-          "badge": "E1",
-          "title": "Walking-skeleton doctor check",
-          "stories": [
-            [
-              "1.1",
-              "done",
-              "Package scaffold, frozen Finding/DoctorReport contract & exit codes"
-            ],
-            [
-              "1.2",
-              "pending",
-              "Wrap warden's engine-availability self-check"
-            ],
-            [
-              "1.3",
-              "pending",
-              "Tri-state, individually addressable checks"
-            ],
-            [
-              "1.4",
-              "pending",
-              "Credential/environment-hygiene check"
-            ],
-            [
-              "1.5",
-              "pending",
-              "doctor check CLI wiring, --json, speed budget"
-            ]
-          ]
-        },
-        {
-          "badge": "E2",
-          "title": "monitor --fleet",
-          "stories": [
-            [
-              "2.1",
-              "pending",
-              "Atlas gather filter — staleness axis, MCP-first"
-            ],
-            [
-              "2.2",
-              "pending",
-              "cve + abandonment watch axes"
-            ],
-            [
-              "2.3",
-              "pending",
-              "doctor monitor --fleet CLI wiring"
-            ]
-          ]
-        },
-        {
-          "badge": "E3",
-          "title": "diagnose --prescribe",
-          "stories": [
-            [
-              "3.1",
-              "pending",
-              "Partition findings by actionability"
-            ],
-            [
-              "3.2",
-              "pending",
-              "Rank the actionable partition"
-            ],
-            [
-              "3.3",
-              "pending",
-              "Root-cause naming"
-            ],
-            [
-              "3.4",
-              "pending",
-              "doctor diagnose --prescribe CLI wiring"
-            ]
-          ]
-        }
-      ],
-      "inflight": null,
-      "velocity": null,
-      "timing": null,
-      "lineState": {
-        "state": "paused",
-        "at": "1.2"
-      },
-      "owner": "doctor",
-      "practice": false
-    },
-    "scribe": {
-      "label": "Scribe",
-      "accentVar": "--warden",
-      "branch": "loop/pyforge-scribe",
-      "contract": "15 FRs · event-sourced capture + rebuildable read-model · team memory + knowledge graph · dist pyforge-scribe / CLI scribe",
-      "seglabels": [
-        "E1 · spine",
-        "E2 · wedge",
-        "E3–E5",
-        "E6 · multi-axis"
-      ],
-      "epics": [
-        {
-          "badge": "E1",
-          "title": "Team Memory — capture & promotion",
-          "stories": [
-            [
-              "1.1",
-              "done",
-              "Package scaffold + direct capture"
-            ],
-            [
-              "1.2",
-              "pending",
-              "CLAUDE.md wiring — team memory auto-loads"
-            ],
-            [
-              "1.3",
-              "pending",
-              "Promotion workflow — proposal-then-confirm"
-            ],
-            [
-              "1.4",
-              "pending",
-              "Pointer-stub write-back + idempotency"
-            ],
-            [
-              "1.5",
-              "pending",
-              "Seed promotion — end-to-end proof"
-            ]
-          ]
-        },
-        {
-          "badge": "E2",
-          "title": "Knowledge Graph — compile & recall",
-          "stories": [
-            [
-              "2.1",
-              "pending",
-              "GraphStore port + flat-file v1 adapter"
-            ],
-            [
-              "2.2",
-              "pending",
-              "Nightly compile from named tool surfaces"
-            ],
-            [
-              "2.3",
-              "pending",
-              "Fact supersession in the compiled graph"
-            ],
-            [
-              "2.4",
-              "pending",
-              "scribe recall — grounded, cited answers"
-            ]
-          ]
-        }
-      ],
-      "inflight": null,
-      "velocity": null,
-      "timing": null,
-      "lineState": {
-        "state": "paused",
-        "at": "1.2"
-      },
-      "owner": "scribe",
-      "practice": false
-    },
-    "marshal": {
-      "label": "Marshal",
-      "accentVar": "--accent",
-      "branch": "loop/pyforge-marshal · CRITICALS-RESOLVED — S-1.1 unblocked 2026-07-25",
-      "contract": "spec-pyforge-marshal · graduated autonomy on the factory floor · AD-25..39 6 CRITICALs resolved; 12 HIGH + 8 MED open · S-1.10 renders harness policy (closes the F-1 bleed)",
-      "seglabels": [
-        "E1",
-        "E2",
-        "E3",
-        "E4",
-        "E5",
-        "E6"
-      ],
-      "epics": [
-        {
-          "badge": "E1",
-          "title": "Provisioned, verified loop homes",
-          "stories": [
-            [
-              "1.1",
-              "pending",
-              "Package spine, verdict lattice, findings registry, and the meta-tests that enforce them"
-            ],
-            [
-              "1.2",
-              "pending",
-              "Story identity, merge-subject rendering, and feed completeness"
-            ],
-            [
-              "1.3",
-              "pending",
-              "Layered policy composition with provenance and validation"
-            ],
-            [
-              "1.10",
-              "pending",
-              "Render the harness policy from the canonical EffectivePolicy"
-            ],
-            [
-              "1.4",
-              "pending",
-              "Provision a loop home"
-            ],
-            [
-              "1.5",
-              "pending",
-              "Single-sourced Tier-3 store via backlink"
-            ],
-            [
-              "1.6",
-              "pending",
-              "Isolation verification and home enumeration"
-            ],
-            [
-              "1.7",
-              "pending",
-              "Preflight, adapter config seeding, and first-run acknowledgement"
-            ],
-            [
-              "1.8",
-              "pending",
-              "Teardown that refuses to destroy work"
-            ],
-            [
-              "1.9",
-              "pending",
-              "Packaging, distribution, and version reporting"
-            ]
-          ]
-        },
-        {
-          "badge": "E2",
-          "title": "Gates you can run",
-          "stories": [
-            [
-              "2.1",
-              "pending",
-              "Standalone verify-command runner, project-scoped"
-            ],
-            [
-              "2.2",
-              "pending",
-              "Verdict aggregation that never false-greens"
-            ],
-            [
-              "2.3",
-              "pending",
-              "Frozen-surface scope check, narrowing only"
-            ],
-            [
-              "2.4",
-              "pending",
-              "Doc-only story classification"
-            ],
-            [
-              "2.5",
-              "pending",
-              "Gate mode ladder with autonomy labels"
-            ],
-            [
-              "2.6",
-              "pending",
-              "Gate evidence record with redaction at egress"
-            ]
-          ]
-        },
-        {
-          "badge": "E3",
-          "title": "Supervised unattended runs",
-          "stories": [
-            [
-              "3.1",
-              "pending",
-              "Run identity and the journal writer"
-            ],
-            [
-              "3.2",
-              "pending",
-              "The journal fold — one producer for accumulating run state"
-            ],
-            [
-              "3.3",
-              "pending",
-              "Detached launch with scoped story selection"
-            ],
-            [
-              "3.4",
-              "pending",
-              "Supervisor process lifecycle"
-            ],
-            [
-              "3.5",
-              "pending",
-              "Idle-strand detection"
-            ],
-            [
-              "3.6",
-              "pending",
-              "Budget ceilings and the heaviest-story advisory"
-            ],
-            [
-              "3.7",
-              "pending",
-              "Escalation, deferral, and resume"
-            ]
-          ]
-        },
-        {
-          "badge": "E4",
-          "title": "Landing with a durable paper trail",
-          "stories": [
-            [
-              "4.1",
-              "pending",
-              "Story-spec promotion with a durability predicate"
-            ],
-            [
-              "4.2",
-              "pending",
-              "Teardown reachability and spec-recovery assistance"
-            ],
-            [
-              "4.3",
-              "pending",
-              "Merge-subject conformance and review-cap landing"
-            ],
-            [
-              "4.4",
-              "pending",
-              "Batch pull request with hygiene preflight"
-            ],
-            [
-              "4.5",
-              "pending",
-              "Feed refresh with truth partitioned by domain"
-            ],
-            [
-              "4.6",
-              "pending",
-              "Deploy idempotence and reconciliation of open intents"
-            ]
-          ]
-        },
-        {
-          "badge": "E5",
-          "title": "Fleet visibility",
-          "stories": [
-            [
-              "5.1",
-              "pending",
-              "Fleet view"
-            ],
-            [
-              "5.2",
-              "pending",
-              "Per-run detail"
-            ],
-            [
-              "5.3",
-              "pending",
-              "Escalation queue"
-            ],
-            [
-              "5.4",
-              "pending",
-              "Ledger-vs-git reconciliation and the versioned status contract"
-            ]
-          ]
-        },
-        {
-          "badge": "E6",
-          "title": "Portability proven",
-          "stories": [
-            [
-              "6.1",
-              "pending",
-              "Profile-driven adapter selection, project-scoped"
-            ],
-            [
-              "6.2",
-              "pending",
-              "Skill-tree projection"
-            ],
-            [
-              "6.3",
-              "pending",
-              "Projection drift detection that can actually fail"
-            ],
-            [
-              "6.4",
-              "pending",
-              "Adapter probe with a machine-scoped record"
-            ],
-            [
-              "6.5",
-              "pending",
-              "Conformance smoke in an ephemeral home"
-            ],
-            [
-              "6.6",
-              "pending",
-              "The conformance matrix"
-            ],
-            [
-              "6.7",
-              "pending",
-              "Entry-file family drift check, detect-only"
-            ],
-            [
-              "6.8",
-              "pending",
-              "Upstream contribution register"
-            ]
-          ]
-        }
-      ],
-      "inflight": null,
-      "velocity": "",
-      "timing": "",
-      "lineState": {
-        "state": "ready",
-        "at": "1.1"
-      },
-      "owner": "marshal",
-      "practice": false
-    },
-    "mason": {
-      "label": "Mason",
-      "accentVar": "--accent",
-      "branch": "main · S-1.1 landed outside the loop",
-      "contract": "spec-pyforge-mason · recipe / package / environment · `recipe` WRAPS the conda-forge-expert craft by subprocess, never forks it (D-1 Option C)",
-      "seglabels": [
-        "E1",
-        "E2",
-        "E3",
-        "E4",
-        "E5"
-      ],
-      "epics": [
-        {
-          "badge": "E1",
-          "title": "Install, run, and diagnose Mason",
-          "stories": [
-            [
-              "1.1",
-              "done",
-              "Workspace member scaffold and dual-artifact build"
-            ],
-            [
-              "1.2",
-              "pending",
-              "CLI noun-verb structure and global flags"
-            ],
-            [
-              "1.3",
-              "pending",
-              "Error taxonomy and exit-code contract"
-            ],
-            [
-              "1.4",
-              "pending",
-              "Dual output format with stream discipline"
-            ],
-            [
-              "1.5",
-              "pending",
-              "CFE root resolution chain"
-            ],
-            [
-              "1.6",
-              "pending",
-              "Interpreter selection and CFE import-floor probe"
-            ],
-            [
-              "1.7",
-              "pending",
-              "Degradation when CFE is unavailable"
-            ],
-            [
-              "1.8",
-              "pending",
-              "`mason doctor`"
-            ],
-            [
-              "1.9",
-              "pending",
-              "Fake CFE root fixture and test harness"
-            ],
-            [
-              "1.10",
-              "pending",
-              "Configuration surface, logging, and child-output streaming"
-            ]
-          ]
-        },
-        {
-          "badge": "E2",
-          "title": "Author, build, and submit recipes",
-          "stories": [
-            [
-              "2.1",
-              "pending",
-              "The CFE port"
-            ],
-            [
-              "2.2",
-              "pending",
-              "The seam guard"
-            ],
-            [
-              "2.3",
-              "pending",
-              "Credential isolation"
-            ],
-            [
-              "2.4",
-              "pending",
-              "`mason recipe new`"
-            ],
-            [
-              "2.5",
-              "pending",
-              "`mason recipe validate`"
-            ],
-            [
-              "2.6",
-              "pending",
-              "`mason recipe build`"
-            ],
-            [
-              "2.7",
-              "pending",
-              "`mason recipe diagnose`"
-            ],
-            [
-              "2.8",
-              "pending",
-              "`mason recipe optimize` and `mason recipe scan`"
-            ],
-            [
-              "2.9",
-              "pending",
-              "`mason recipe submit`"
-            ],
-            [
-              "2.10",
-              "pending",
-              "`mason recipe update`"
-            ]
-          ]
-        },
-        {
-          "badge": "E3",
-          "title": "Ship a library to both ecosystems",
-          "stories": [
-            [
-              "3.1",
-              "pending",
-              "Engine protocol and provisioning"
-            ],
-            [
-              "3.2",
-              "pending",
-              "`mason package build`"
-            ],
-            [
-              "3.3",
-              "pending",
-              "Ship-target vocabulary and dry-run default"
-            ],
-            [
-              "3.4",
-              "pending",
-              "The `pypi` ship target"
-            ],
-            [
-              "3.5",
-              "pending",
-              "The `channel:<name>` ship target"
-            ],
-            [
-              "3.6",
-              "pending",
-              "The `conda-forge` ship target"
-            ],
-            [
-              "3.9",
-              "pending",
-              "The `ship` verb and TestPyPI rehearsal"
-            ],
-            [
-              "3.7",
-              "pending",
-              "Asymmetric receipts, partial failure, and idempotence"
-            ],
-            [
-              "3.8",
-              "pending",
-              "Mason ships Mason"
-            ]
-          ]
-        },
-        {
-          "badge": "E4",
-          "title": "Bind environments into lockfiles",
-          "stories": [
-            [
-              "4.1",
-              "pending",
-              "Lock engine adapter and provenance"
-            ],
-            [
-              "4.2",
-              "pending",
-              "Manifest discovery"
-            ],
-            [
-              "4.3",
-              "pending",
-              "`mason environment lock`"
-            ],
-            [
-              "4.4",
-              "pending",
-              "`mason environment check`"
-            ]
-          ]
-        },
-        {
-          "badge": "E5",
-          "title": "Prove the seam holds",
-          "stories": [
-            [
-              "5.1",
-              "pending",
-              "CFE-independence test"
-            ],
-            [
-              "5.2",
-              "pending",
-              "Governance test"
-            ],
-            [
-              "5.3",
-              "pending",
-              "Delegation-fidelity test"
-            ],
-            [
-              "5.4",
-              "pending",
-              "Free-inheritance verification"
-            ],
-            [
-              "5.5",
-              "pending",
-              "Rule-2 conda-forge-expert retrospective"
-            ]
-          ]
-        }
-      ],
-      "inflight": null,
-      "velocity": "",
-      "timing": "",
-      "lineState": {
-        "state": "paused",
-        "at": "1.2"
-      },
-      "owner": "mason",
-      "practice": false
-    },
-    "steward": {
-      "label": "Steward",
-      "accentVar": "--accent",
-      "branch": "main · S-1.1 landed outside the loop",
-      "contract": "spec-pyforge-steward · keys / deploy / provision / budget · Duty protocol (AD-7); main() sole owner of the exit code (AD-8)",
-      "seglabels": [
-        "E1",
-        "E2",
-        "E3",
-        "E4"
-      ],
-      "epics": [
-        {
-          "badge": "E1",
-          "title": "Keys — Credential Lifecycle",
-          "stories": [
-            [
-              "1.1",
-              "done",
-              "Steward exists as an installable CLI"
-            ],
-            [
-              "1.2",
-              "pending",
-              "Credentials never attach outside their declared host, and the JFrog leak can never recur silently"
-            ],
-            [
-              "1.3",
-              "pending",
-              "Secrets Steward stores live encrypted in Git, never as plaintext"
-            ],
-            [
-              "1.4",
-              "pending",
-              "Rotating a key never breaks what already trusted it"
-            ],
-            [
-              "1.5",
-              "pending",
-              "The operator can see every credential Steward knows about, never a secret value"
-            ],
-            [
-              "1.6",
-              "pending",
-              "The operator can ask \"is anything host-unscoped right now?\" and get a real answer"
-            ],
-            [
-              "1.7",
-              "pending",
-              "Retiring a credential leaves a record, not a silent gap"
-            ]
-          ]
-        },
-        {
-          "badge": "E2",
-          "title": "Deploy — Reconciled Dashboard Publishing",
-          "stories": [
-            [
-              "2.1",
-              "pending",
-              "The dashboard builds through Steward, not a bare pixi task the operator has to remember"
-            ],
-            [
-              "2.2",
-              "pending",
-              "Nothing happens unless something actually changed"
-            ],
-            [
-              "2.3",
-              "pending",
-              "The operator can see what would change before it changes"
-            ],
-            [
-              "2.4",
-              "pending",
-              "The operator can ask \"when did the dashboard last actually deploy?\""
-            ]
-          ]
-        },
-        {
-          "badge": "E3",
-          "title": "Provision — Environment & Runner Access",
-          "stories": [
-            [
-              "3.1",
-              "pending",
-              "Any named pixi environment materializes with one command"
-            ],
-            [
-              "3.2",
-              "pending",
-              "A bmad-loop runner and its environment materialize together"
-            ],
-            [
-              "3.3",
-              "pending",
-              "The operator can see every environment that exists, before picking one"
-            ],
-            [
-              "3.4",
-              "pending",
-              "The environment.yaml sync gate is one command away, not a remembered incantation"
-            ]
-          ]
-        },
-        {
-          "badge": "E4",
-          "title": "Budget — Declared Resource Ceilings",
-          "stories": [
-            [
-              "4.1",
-              "pending",
-              "A ceiling can be declared, machine-readably"
-            ],
-            [
-              "4.2",
-              "pending",
-              "The declared ceiling is one command away"
-            ],
-            [
-              "4.3",
-              "pending",
-              "Asking \"am I under budget?\" never lies"
-            ]
-          ]
-        }
-      ],
-      "inflight": null,
-      "velocity": "",
-      "timing": "",
-      "lineState": {
-        "state": "paused",
-        "at": "1.2"
-      },
-      "owner": "steward",
-      "practice": false
-    },
-    "genesis": {
-      "label": "Genesis",
-      "accentVar": "--accent",
-      "branch": "not started",
-      "contract": "spec-pyforge-genesis · the seed: install the operating model anywhere (greenfield + brownfield)",
-      "seglabels": [
-        "E1",
-        "E2",
-        "E3",
-        "E4",
-        "E5",
-        "E6"
-      ],
-      "epics": [
-        {
-          "badge": "E1",
-          "title": "Foundation & the Write Guard",
-          "stories": [
-            [
-              "1.1",
-              "pending",
-              "Package skeleton as a pixi workspace member"
-            ],
-            [
-              "1.2",
-              "pending",
-              "Error taxonomy and exit codes"
-            ],
-            [
-              "1.3",
-              "pending",
-              "The `fs` write primitive and the never-write guard"
-            ],
-            [
-              "1.4",
-              "pending",
-              "Manifest schema, loader, and model-version ranges"
-            ],
-            [
-              "1.5",
-              "pending",
-              "The V1 extraction manifest (the model, as data)"
-            ],
-            [
-              "1.6",
-              "pending",
-              "Spike-0 — Copier API fit (CRITICAL GATE)"
-            ]
-          ]
-        },
-        {
-          "badge": "E2",
-          "title": "The Managed-Region Engine",
-          "stories": [
-            [
-              "2.1",
-              "pending",
-              "Marker grammar and the per-format registry"
-            ],
-            [
-              "2.2",
-              "pending",
-              "Region parser — span discovery, nesting rejection, fence awareness"
-            ],
-            [
-              "2.3",
-              "pending",
-              "Span substitution — the update primitive"
-            ],
-            [
-              "2.4",
-              "pending",
-              "Anchor resolution and region insertion"
-            ],
-            [
-              "2.5",
-              "pending",
-              "Marker deletion as a sanctioned opt-out"
-            ]
-          ]
-        },
-        {
-          "badge": "E3",
-          "title": "Detect & Plan",
-          "stories": [
-            [
-              "3.1",
-              "pending",
-              "Findings model — severity, types, remedies"
-            ],
-            [
-              "3.2",
-              "pending",
-              "Repo inventory walker and artifact classification"
-            ],
-            [
-              "3.3",
-              "pending",
-              "Content hashing for managed files and regions"
-            ],
-            [
-              "3.4",
-              "pending",
-              "Legacy convention detection"
-            ],
-            [
-              "3.5",
-              "pending",
-              "Manifest coverage check"
-            ],
-            [
-              "3.6",
-              "pending",
-              "Plan and Action types, repo fingerprint, and the plan builder"
-            ]
-          ]
-        },
-        {
-          "badge": "E4",
-          "title": "Materialize & the Core Verbs",
-          "stories": [
-            [
-              "4.1",
-              "pending",
-              "Copier engine wrapper — the single seam"
-            ],
-            [
-              "4.2",
-              "pending",
-              "State schema and the atomic store"
-            ],
-            [
-              "4.3",
-              "pending",
-              "The apply runner — transactional, guarded"
-            ],
-            [
-              "4.4",
-              "pending",
-              "Preconditions, refusals, and skips"
-            ],
-            [
-              "4.5",
-              "pending",
-              "`genesis check`"
-            ],
-            [
-              "4.6",
-              "pending",
-              "`genesis adopt`"
-            ],
-            [
-              "4.7",
-              "pending",
-              "`genesis init`"
-            ]
-          ]
-        },
-        {
-          "badge": "E5",
-          "title": "Derive, Migrate & Update",
-          "stories": [
-            [
-              "5.1",
-              "pending",
-              "Neutral contract and agent-adapter fan-out"
-            ],
-            [
-              "5.2",
-              "pending",
-              "`PROJECTS.md` index and artifact-symlink derivation"
-            ],
-            [
-              "5.3",
-              "pending",
-              "Migration registry and runner"
-            ],
-            [
-              "5.4",
-              "pending",
-              "`genesis update` — two-phase"
-            ],
-            [
-              "5.5",
-              "pending",
-              "Referenced-dependency verification and Doctor delegation"
-            ],
-            [
-              "5.6",
-              "pending",
-              "`genesis explain` and `genesis version`"
-            ]
-          ]
-        },
-        {
-          "badge": "E6",
-          "title": "Packaging, Oracle & Hardening",
-          "stories": [
-            [
-              "6.1",
-              "pending",
-              "Full pixi wiring, distribution, and repo-gate compliance"
-            ],
-            [
-              "6.2",
-              "pending",
-              "The `local-recipes` empty-plan oracle (CRITICAL)"
-            ],
-            [
-              "6.3",
-              "pending",
-              "Offline operation and the egress counter"
-            ],
-            [
-              "6.4",
-              "pending",
-              "Pattern meta-tests and the never-write proof"
-            ],
-            [
-              "6.5",
-              "pending",
-              "CLI contract, idempotence harness, and performance gates"
-            ],
-            [
-              "6.6",
-              "pending",
-              "README, adoption guide, and the finding→remedy reference"
-            ]
-          ]
-        }
-      ],
-      "inflight": null,
-      "velocity": "",
-      "timing": "",
-      "lineState": {
-        "state": "ready",
-        "at": "1.1"
-      },
-      "owner": "marshal",
-      "practice": false
     }
   },
-  "snapshot": "<span>2026-07-26 04:37 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-07-26 04:41 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -3630,8 +4057,8 @@ window.DASHBOARD_DATA = {
         "task": "spec-surface-check",
         "guards": "every tracked file under a Spec surface",
         "state": "drift",
-        "findings": 1,
-        "verdict": "FINDINGS (1):",
+        "findings": 2,
+        "verdict": "FINDINGS (2):",
         "runbook": ""
       },
       {

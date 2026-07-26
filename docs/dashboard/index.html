@@ -1022,6 +1022,15 @@
   Object.entries(PROJECTS).forEach(([id, p]) => {
     if (p.practice) return;   // a practice is tended, never shipped — see Standing practices
     const c = countOf(p);
+    if (c.total === 0) return;
+    // A line that has never started is BACKLOG, not In Build. Deriving lines from
+    // epics.md (2026-07-25) gave every specced project a line, which would
+    // otherwise show 0/N "ready" rows in In Build *and* the same Dream in
+    // Backlog — the same work counted twice, in two zones that mean opposite
+    // things. Started = a story is done, or the line is live/paused.
+    const state = (p.lineState || {}).state;
+    const started = c.done > 0 || state === "in flight" || state === "paused";
+    if (!started) return;
     (c.done === c.total ? shipped : live).push([id, p, c]);
   });
 
