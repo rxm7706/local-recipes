@@ -238,6 +238,13 @@
   .story.s-active .story-key { color: var(--active); }
   .story.s-pending .story-key, .story.s-gated .story-key { color: var(--slate); }
   .glyph { font-size: 11px; }
+  .statechip { font-family: var(--mono); font-size: 9px; text-transform: uppercase; letter-spacing: .07em;
+    border-radius: 4px; padding: 1px 6px; margin-left: 6px; flex: none; white-space: nowrap;
+    display: inline-flex; align-items: center; gap: 5px; border: 1px solid transparent; }
+  .sc-in-flight { color: var(--active); border-color: color-mix(in srgb,var(--active) 40%,transparent); background: var(--active-ground); }
+  .sc-paused    { color: var(--slate); border-color: var(--line); background: var(--pending-ground); }
+  .sc-ready     { color: var(--slate-faint); border-color: var(--line-soft); }
+  .sc-complete  { color: var(--done); border-color: color-mix(in srgb,var(--done) 35%,transparent); background: color-mix(in srgb,var(--done) 10%,transparent); }
   .pname .runchip { margin-left: 4px; flex: none; white-space: nowrap; }
   .runchip { font-family: var(--mono); font-size: 9px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--active);
     border: 1px solid color-mix(in srgb,var(--active) 40%,transparent); border-radius: 4px; padding: 1px 5px; margin-left: auto;
@@ -562,6 +569,23 @@
              active: all.filter(s => s[1]==="active").length, all };
   };
   const esc = s => s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/"/g,"&quot;");
+
+  // Every console row carries a state chip — the space is always reserved so the
+  // summary grid stays aligned whether or not a line is running. "in flight" is
+  // gated on a LIVE loop session, never on a stale run directory.
+  const STATE_TITLE = {
+    "in flight": "a loop session is running this story right now",
+    "paused":    "line stood down; resumes at this story with full context",
+    "ready":     "specced and queued; no stories started",
+    "complete":  "every story merged",
+  };
+  function stateChip(p) {
+    const ls = p.lineState || {state: "ready", at: ""};
+    const dot = ls.state === "in flight" ? '<span class="live"></span>' : '';
+    const at  = ls.at ? ' ' + esc(ls.at) : '';
+    return '<span class="statechip sc-' + ls.state.replace(" ", "-") + '" title="' +
+      esc(STATE_TITLE[ls.state] || "") + '">' + dot + esc(ls.state) + at + '</span>';
+  }
 
   // ---- 1 · The Dreams (every Dream, bucketed by lifecycle stage) ----
   const DREAMS = window.DASHBOARD_DATA.dreams || [];
@@ -897,8 +921,7 @@
     det.id = "build-" + id;
     det.className = "pconsole " + ({warden: "pw", atlas: "pa"}[id] || "pr");
     const pct = c.total ? Math.round(c.done / c.total * 100) : 0;
-    const act = p.epics.flatMap(e => e.stories).find(s => s[1] === "active");
-    const actChip = act ? '<span class="runchip"><span class="live"></span>' + act[0] + ' in flight</span>' : '';
+    const actChip = stateChip(p);
     det.innerHTML =
       '<summary>' +
         '<div class="pname"><span class="pdot"></span>' + p.label + actChip + '</div>' +
@@ -919,7 +942,7 @@
     det.className = "pconsole " + ({warden: "pw", atlas: "pa"}[id] || "pr");
     det.innerHTML =
       '<summary>' +
-        '<div class="pname"><span class="pdot"></span>' + p.label + '</div>' +
+        '<div class="pname"><span class="pdot"></span>' + p.label + stateChip(p) + '</div>' +
         '<div class="pbar"><div class="pbar-fill" style="width:100%"></div></div>' +
         '<div class="pfrac"><b>' + c.done + '</b> / ' + c.total + ' <span class="pct">· 100%</span></div>' +
         '<span class="disclose">▸ console</span>' +

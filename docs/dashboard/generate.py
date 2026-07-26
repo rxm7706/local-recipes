@@ -150,7 +150,18 @@ LOOP_HOMES = {
     "warden": "local-recipes-loop-pyforge-warden",
 }
 _WT_STORY = re.compile(r"^(\d+-\d+)-")
-_RUN_FRESH_SECS = 12 * 3600  # ignore concluded/stale runs
+_RUN_FRESH_SECS = 30 * 60   # a run dir older than this is NOT in flight (was 12h — a
+                            # 8.5h-dead run still read "in flight", i.e. the console
+                            # claimed motion it had not measured)
+
+
+def _live_loop_sessions() -> set[str]:
+    """Run ids with a live tmux session — the only positive proof a line is running."""
+    try:
+        r = subprocess.run(["tmux", "ls"], capture_output=True, text=True, timeout=10)
+        return {m for m in re.findall(r"bmad-loop-(\S+?):", r.stdout)} if r.returncode == 0 else set()
+    except Exception:
+        return set()
 
 
 def apply_loop_inflight(projects: dict) -> None:
@@ -162,7 +173,9 @@ def apply_loop_inflight(projects: dict) -> None:
             continue
         runs = sorted(runs_dir.iterdir(), key=lambda p: p.stat().st_mtime, reverse=True)
         active_ids = set()
-        if runs and (time.time() - runs[0].stat().st_mtime) < _RUN_FRESH_SECS:
+        live = _live_loop_sessions()
+        fresh = bool(runs) and (time.time() - runs[0].stat().st_mtime) < _RUN_FRESH_SECS
+        if runs and (runs[0].name in live or fresh):
             wts = runs[0] / "worktrees"
             if wts.is_dir():
                 for wt in wts.iterdir():
@@ -453,6 +466,46 @@ def scan_impl_campaign(projects: dict) -> dict:
     return {"launched": "2026-07-25", "rows": rows}
 
 
+# ---- build-line state (every In Build / Realized row carries a chip) ---------
+
+LINE_HOMES = {"herald": "pyforge-herald", "doctor": "pyforge-doctor",
+              "scribe": "pyforge-scribe", "warden": "pyforge-warden", "atlas": "pyforge-atlas"}
+_STORY_KEY = re.compile(r"^\s*(\d+-\d+-[a-z0-9-]+):\s*backlog", re.M)
+
+
+def apply_line_state(projects: dict) -> None:
+    """Attach {state, at} to each project: complete | in-flight | paused | ready."""
+    live = _live_loop_sessions()
+    for pkey, proj in projects.items():
+        stories = [s for e in proj["epics"] for s in e["stories"]]
+        done = sum(1 for s in stories if s[1] == "done")
+        active = next((s[0] for s in stories if s[1] == "active"), "")
+        slug = LINE_HOMES.get(pkey)
+        state, at = "ready", ""
+        if stories and done == len(stories):
+            state = "complete"
+        elif active:
+            state, at = "in flight", active
+        else:
+            # parked: name the resume point from the sprint feed, else the first pending story
+            nxt = ""
+            if slug:
+                feed = REPO_ROOT / f"_bmad-output/projects/{slug}/implementation-artifacts/sprint-status.yaml"
+                if feed.is_file():
+                    m = _STORY_KEY.search(feed.read_text(encoding="utf-8"))
+                    if m:
+                        nxt = ".".join(m.group(1).split("-")[:2])
+            if not nxt:
+                nxt = next((s[0] for s in stories if s[1] != "done"), "")
+            state, at = ("paused" if done else "ready"), nxt
+        proj["lineState"] = {"state": state, "at": at}
+    counts: dict[str, int] = {}
+    for proj in projects.values():
+        counts[proj["lineState"]["state"]] = counts.get(proj["lineState"]["state"], 0) + 1
+    print("[lines] " + " · ".join(f"{v} {k}" for k, v in sorted(counts.items()))
+          + (f" · live sessions: {len(live)}" if live else " · no live sessions"))
+
+
 # ---- sync & health (the standing detectors + reconciliation state) -----------
 # The factory-console Dream's frontier calls for a "fleet health strip"; these are
 # the three always-on detectors CLAUDE.md/SYNC-RUNBOOK.md define. Each runs in ~1s.
@@ -736,6 +789,7 @@ def main() -> int:
     data.pop("campaign2", None)
     spec_c = scan_campaign()
     build_c = scan_impl_campaign(data["projects"])
+    apply_line_state(data["projects"])
     data["health"] = scan_health()
     data["fleet"] = scan_fleet(data["projects"])
     data["campaigns"] = [

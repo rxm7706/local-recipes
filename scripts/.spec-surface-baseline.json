@@ -13,10 +13,10 @@
  "local-recipes/spec-factory-console": {
   "files": {
    "docs/dashboard/README.md": "0825c973586fc6c811a3f28f94b58dc84bb0d81b",
-   "docs/dashboard/generate.py": "87f5dc34fdc0407be4cfd3ab6b9545c1545bd84a",
-   "docs/dashboard/index.html": "db95d56f8cd340eea0ca8c407870ab5da08353f6"
+   "docs/dashboard/generate.py": "9bfacb3d8b09a8760c0dd36c48253a457354d288",
+   "docs/dashboard/index.html": "4c90820a2226ccfb473d3610e2cd9d1896dcf9a9"
   },
-  "memlog": "026c65f7abf3f12d6a1484b4ca83686d9b25caaa"
+  "memlog": "5cbf3660048caae666b10375deecea592b0aa560"
  },
  "local-recipes/spec-fleet-stewardship": {
   "files": {},

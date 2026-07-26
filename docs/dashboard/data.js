@@ -378,6 +378,10 @@ window.DASHBOARD_DATA = {
           "E6": 801
         },
         "total": 2264
+      },
+      "lineState": {
+        "state": "complete",
+        "at": ""
       }
     },
     "atlas": {
@@ -707,6 +711,10 @@ window.DASHBOARD_DATA = {
           "H": 56
         },
         "total": 1502
+      },
+      "lineState": {
+        "state": "complete",
+        "at": ""
       }
     },
     "regen": {
@@ -865,6 +873,10 @@ window.DASHBOARD_DATA = {
             ""
           ]
         ]
+      },
+      "lineState": {
+        "state": "complete",
+        "at": ""
       }
     },
     "herald": {
@@ -895,7 +907,7 @@ window.DASHBOARD_DATA = {
             ],
             [
               "1.3",
-              "active",
+              "pending",
               "Fallback transport adapter"
             ],
             [
@@ -997,7 +1009,11 @@ window.DASHBOARD_DATA = {
       ],
       "inflight": null,
       "velocity": null,
-      "timing": null
+      "timing": null,
+      "lineState": {
+        "state": "paused",
+        "at": "1.3"
+      }
     },
     "doctor": {
       "label": "Doctor",
@@ -1092,7 +1108,11 @@ window.DASHBOARD_DATA = {
       ],
       "inflight": null,
       "velocity": null,
-      "timing": null
+      "timing": null,
+      "lineState": {
+        "state": "paused",
+        "at": "1.2"
+      }
     },
     "scribe": {
       "label": "Scribe",
@@ -1166,10 +1186,14 @@ window.DASHBOARD_DATA = {
       ],
       "inflight": null,
       "velocity": null,
-      "timing": null
+      "timing": null,
+      "lineState": {
+        "state": "paused",
+        "at": "1.2"
+      }
     }
   },
-  "snapshot": "<span>2026-07-26 00:24 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-07-26 00:27 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -2562,9 +2586,9 @@ window.DASHBOARD_DATA = {
         "name": "spec-surface",
         "task": "spec-surface-check",
         "guards": "every tracked file under a Spec surface",
-        "state": "green",
-        "findings": 0,
-        "verdict": "OK: every tracked file governed or allowlisted; no drift.",
+        "state": "drift",
+        "findings": 2,
+        "verdict": "FINDINGS (2):",
         "runbook": ""
       },
       {
