@@ -30,6 +30,7 @@ from __future__ import annotations
 import argparse
 import glob
 import json
+import os
 import re
 import subprocess
 import sys
@@ -248,12 +249,33 @@ def apply_sprint_status(projects: dict) -> None:
 # not start — so a story being actively worked shows `backlog` in the feed. The
 # latest live run's story-worktree name carries the story key; mark it active.
 # CI has no sibling loop homes, so this is a structural no-op there.
-LOOP_HOMES = {
-    "herald": "local-recipes-loop-pyforge-herald",
-    "doctor": "local-recipes-loop-pyforge-doctor",
-    "scribe": "local-recipes-loop-pyforge-scribe",
-    "warden": "local-recipes-loop-pyforge-warden",
-}
+# DISCOVERED, not hardcoded. This was a fixed dict of four sibling directory
+# names, which missed a live run two ways at once: a project not in the list was
+# invisible, and loop homes moved to a SHORT root (~/.bmad-loops/<slug>, to keep
+# the pixi-build-python path-length panic unreachable) so the sibling paths no
+# longer resolve. Marshal's first run was live and unrendered for exactly this
+# reason (2026-07-25). Both roots are searched; legacy siblings still work.
+def _discover_loop_homes() -> dict[str, Path]:
+    roots = [Path(os.environ.get("BMAD_LOOP_HOME_ROOT", Path.home() / ".bmad-loops")),
+             REPO_ROOT.parent]
+    homes: dict[str, Path] = {}
+    for root in roots:
+        if not root.is_dir():
+            continue
+        for d in sorted(root.iterdir()):
+            if not (d / ".bmad-loop").is_dir():
+                continue
+            slug = d.name
+            for prefix in (f"{REPO_ROOT.name}-loop-", ""):
+                if prefix and slug.startswith(prefix):
+                    slug = slug[len(prefix):]
+                    break
+            key = slug.removeprefix("pyforge-")
+            homes.setdefault(key, d)      # short root wins over a legacy sibling
+    return homes
+
+
+LOOP_HOMES = _discover_loop_homes()
 _WT_STORY = re.compile(r"^(\d+-\d+)-")
 _RUN_FRESH_SECS = 30 * 60   # a run dir older than this is NOT in flight (was 12h — a
                             # 8.5h-dead run still read "in flight", i.e. the console
@@ -273,7 +295,7 @@ def apply_loop_inflight(projects: dict) -> None:
     import time
     for pkey, home in LOOP_HOMES.items():
         proj = projects.get(pkey)
-        runs_dir = REPO_ROOT.parent / home / ".bmad-loop" / "runs"
+        runs_dir = Path(home) / ".bmad-loop" / "runs"
         if proj is None or not runs_dir.is_dir():
             continue
         runs = sorted(runs_dir.iterdir(), key=lambda p: p.stat().st_mtime, reverse=True)

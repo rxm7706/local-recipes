@@ -1089,7 +1089,7 @@ window.DASHBOARD_DATA = {
       "velocity": "",
       "timing": "",
       "lineState": {
-        "state": "ready",
+        "state": "in flight",
         "at": "1.1"
       },
       "epics": [
@@ -1099,7 +1099,7 @@ window.DASHBOARD_DATA = {
           "stories": [
             [
               "1.1",
-              "pending",
+              "active",
               "Package spine, verdict lattice, findings registry, and the meta-tests that enforce them"
             ],
             [
@@ -2520,7 +2520,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-07-26 04:41 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-07-26 04:55 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -4057,8 +4057,8 @@ window.DASHBOARD_DATA = {
         "task": "spec-surface-check",
         "guards": "every tracked file under a Spec surface",
         "state": "drift",
-        "findings": 2,
-        "verdict": "FINDINGS (2):",
+        "findings": 1,
+        "verdict": "FINDINGS (1):",
         "runbook": ""
       },
       {
@@ -4292,7 +4292,7 @@ window.DASHBOARD_DATA = {
           "archived": 1,
           "practice": 2
         },
-        "line": "ready 1.1",
+        "line": "in flight 1.1",
         "load": 2,
         "blocked": 0,
         "dreams": [
