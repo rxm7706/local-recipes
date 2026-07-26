@@ -453,6 +453,73 @@ def scan_impl_campaign(projects: dict) -> dict:
     return {"launched": "2026-07-25", "rows": rows}
 
 
+# ---- sync & health (the standing detectors + reconciliation state) -----------
+# The factory-console Dream's frontier calls for a "fleet health strip"; these are
+# the three always-on detectors CLAUDE.md/SYNC-RUNBOOK.md define. Each runs in ~1s.
+# CI (--source git) may lack pixi/atlas, so a detector that cannot run reports
+# "unknown" — the strip never claims green it did not measure.
+
+DETECTORS = [
+    ("drift-check",  "bmad-drift-check",   "BMAD artifacts vs the live factory",
+     "_bmad-output/projects/local-recipes/SYNC-RUNBOOK.md"),
+    ("spec-surface", "spec-surface-check", "every tracked file under a Spec surface", ""),
+    ("llms-full",    "llms-full-check",    "library catalog freshness", ""),
+]
+_FINDING_RE = re.compile(r"(\d+)\s+(?:integrity|currency|finding)")
+_FINDINGS_HDR = re.compile(r"^FINDINGS \((\d+)\)")   # spec-surface-check's form
+
+
+def scan_health() -> dict:
+    """Run the standing detectors; capture verdict + finding count + remedy."""
+    rows = []
+    for name, task, guards, runbook in DETECTORS:
+        try:
+            r = subprocess.run(["pixi", "run", "--frozen", "-e", "local-recipes", task],
+                               capture_output=True, text=True, cwd=REPO_ROOT, timeout=120)
+            out = (r.stdout + r.stderr).strip().splitlines()
+            verdict_line = next((l.strip() for l in reversed(out)
+                                 if l.strip().startswith(("OK:", "DRIFT:", "FAIL:", "FINDINGS ("))), "")
+            state = "green" if r.returncode == 0 else ("fail" if verdict_line.startswith("FAIL") else "drift")
+            hdr = _FINDINGS_HDR.match(verdict_line)
+            n = int(hdr.group(1)) if hdr else (
+                sum(int(m) for m in _FINDING_RE.findall(verdict_line)) if verdict_line else 0)
+        except Exception:                      # pixi absent (CI), timeout, anything
+            state, verdict_line, n = "unknown", "detector could not run here", 0
+        rows.append({"name": name, "task": task, "guards": guards, "state": state,
+                     "findings": n, "verdict": verdict_line[:120], "runbook": runbook})
+
+    # Baseline state: compare the recorded FACTORY FINGERPRINT to live, not commit
+    # counts — the baseline commit often isn't on main's first-parent chain (this repo
+    # is a staged-recipes fork), so "N commits behind" is noise. The fingerprint is
+    # exactly what makes drift-check's `surface-changed` fire.
+    base, deltas = {}, []
+    bp = REPO_ROOT / "_bmad-output/projects/local-recipes/.sync-baseline.json"
+    if bp.is_file():
+        try:
+            base = json.loads(bp.read_text(encoding="utf-8"))
+            live = {}
+            g = subprocess.run(["pixi", "run", "--frozen", "-e", "local-recipes", "bmad-groundtruth"],
+                               capture_output=True, text=True, cwd=REPO_ROOT, timeout=120)
+            if g.returncode == 0:
+                s = g.stdout[g.stdout.find("{"):g.stdout.rfind("}") + 1]
+                live = json.loads(s) if s else {}
+            for key, label in (("skill_version", "skill"), ("pixi_envs", "pixi envs"),
+                               ("mcp_tools", "MCP tools"), ("atlas_phases", "phases"),
+                               ("schema_version", "schema")):
+                b, l = base.get(key), live.get(key)
+                if b is not None and l is not None and str(b) != str(l):
+                    deltas.append({"what": label, "baseline": str(b), "live": str(l)})
+        except Exception:
+            pass
+    green = sum(1 for r in rows if r["state"] == "green")
+    print(f"[health] {green}/{len(rows)} detectors green · "
+          + (f"{len(deltas)} fingerprint delta(s) vs baseline" if deltas else "fingerprint matches baseline"))
+    return {"detectors": rows,
+            "baseline": {"skill": base.get("skill_version", ""), "head": (base.get("git_head") or "")[:10],
+                         "deltas": deltas,
+                         "runbook": "_bmad-output/projects/local-recipes/SYNC-RUNBOOK.md"}}
+
+
 # ---- fleet view (Dream -> Code, per project: stage, recency, version) --------
 
 FLEET_PROJECTS = [
@@ -669,6 +736,7 @@ def main() -> int:
     data.pop("campaign2", None)
     spec_c = scan_campaign()
     build_c = scan_impl_campaign(data["projects"])
+    data["health"] = scan_health()
     data["fleet"] = scan_fleet(data["projects"])
     data["campaigns"] = [
         {"id": "spec-completion-2026-07-25", "title": "Spec Completion",

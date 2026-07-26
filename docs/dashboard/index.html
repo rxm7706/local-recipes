@@ -348,6 +348,24 @@
   .spec-meta .dr { color: var(--deck); }
   @media (max-width: 640px) { .specrow { grid-template-columns: 1fr auto; } .spec-title, .spec-proj { display: none; } }
 
+  /* sync & health */
+  .hrow { display: grid; grid-template-columns: 118px 1fr auto auto; gap: 12px; align-items: baseline; padding: 9px 0; }
+  .hrow + .hrow { border-top: 1px solid var(--line-soft); }
+  .h-name { font-family: var(--mono); font-size: 12.5px; font-weight: 600; }
+  .h-guards { font-size: 12.5px; color: var(--ink-soft); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .h-verdict { font-family: var(--mono); font-size: 10.5px; color: var(--slate); white-space: nowrap; }
+  .hbadge { font-family: var(--mono); font-size: 9.5px; text-transform: uppercase; letter-spacing: .08em;
+    border-radius: 4px; padding: 2px 8px; border: 1px solid transparent; white-space: nowrap; }
+  .hb-green { color: var(--done); background: color-mix(in srgb,var(--done) 12%,transparent); border-color: color-mix(in srgb,var(--done) 30%,transparent); }
+  .hb-drift { color: var(--active); background: var(--active-ground); border-color: color-mix(in srgb,var(--active) 30%,transparent); }
+  .hb-fail { color: var(--gate); background: var(--gate-ground); border-color: color-mix(in srgb,var(--gate) 30%,transparent); }
+  .hb-unknown { color: var(--slate); background: var(--pending-ground); border-color: var(--line); }
+  .hbase { margin-top: 12px; padding-top: 11px; border-top: 1px dashed var(--line);
+    font-family: var(--mono); font-size: 11px; color: var(--slate); line-height: 1.7; }
+  .hbase b { color: var(--ink-soft); font-weight: 600; }
+  .hbase .delta { color: var(--active); }
+  @media (max-width: 640px) { .hrow { grid-template-columns: 1fr auto; } .h-guards, .h-verdict { display: none; } }
+
   /* fleet view */
   .fleetrow { border-bottom: 1px solid var(--line-soft); }
   .fleetrow > summary { list-style: none; cursor: pointer; display: grid;
@@ -483,6 +501,12 @@
     <div id="specrows"></div>
   </details>
 
+  <details class="dreams zsec" id="healthsec" hidden open>
+    <summary><span class="program-h" id="healthh">Sync &amp; Health</span><span class="zcaret">▸</span></summary>
+    <div class="dflow"><b>the standing detectors</b> — each guards one contract and runs in ~1s. Red is not failure, it is the loop working: reconcile via the <b>SYNC-RUNBOOK</b>, then re-stamp the baseline. A detector that cannot run here reports <i>unknown</i> rather than claiming green.</div>
+    <div id="healthrows"></div>
+  </details>
+
   <details class="dreams zsec" id="campaignsec" hidden open>
     <summary><span class="program-h" id="campaignh">Campaigns</span><span class="zcaret">▸</span></summary>
     <div class="dflow"><b>program-scale efforts across the BMAD projects</b> — each campaign is a roster of parallel chains/lines with live per-row state. Completed campaigns collapse and keep their durable record; the active campaign leads.</div>
@@ -590,6 +614,31 @@
           (s.dream ? '<span class="dr" title="linked Dream">▲ dream</span> · ' : '') +
           esc(s.updated || '') + '</span>' +
       '</div>').join("");
+  }
+
+  // ---- 2a · Sync & Health (standing detectors + baseline fingerprint) ----
+  const HEALTH = window.DASHBOARD_DATA.health || null;
+  if (HEALTH && HEALTH.detectors && HEALTH.detectors.length) {
+    document.getElementById("healthsec").hidden = false;
+    const g = HEALTH.detectors.filter(d => d.state === "green").length;
+    document.getElementById("healthh").textContent =
+      "Sync & Health · " + g + "/" + HEALTH.detectors.length + " detectors green";
+    const rows = HEALTH.detectors.map(d =>
+      '<div class="hrow">' +
+        '<span class="h-name">' + esc(d.name) + '</span>' +
+        '<span class="h-guards">' + esc(d.guards) + '</span>' +
+        '<span class="h-verdict" title="' + esc(d.verdict || '') + '">' +
+          (d.findings ? d.findings + ' finding' + (d.findings === 1 ? '' : 's') : '') + '</span>' +
+        '<span class="hbadge hb-' + esc(d.state) + '">' + esc(d.state) + '</span>' +
+      '</div>').join("");
+    const b = HEALTH.baseline || {};
+    const deltas = (b.deltas || []).map(x =>
+      '<span class="delta">' + esc(x.what) + ' ' + esc(x.baseline) + ' → ' + esc(x.live) + '</span>').join(' · ');
+    const base = '<div class="hbase"><b>baseline</b> skill ' + esc(b.skill || '—') +
+      ' @ ' + esc(b.head || '—') +
+      ' — ' + (deltas ? 'live has moved: ' + deltas : 'fingerprint matches live') +
+      ' · <a href="' + REPO + '/blob/main/' + esc(b.runbook || '') + '">SYNC-RUNBOOK</a> to reconcile, then <code>--write-baseline</code></div>';
+    document.getElementById("healthrows").innerHTML = rows + base;
   }
 
   // ---- 2b · Campaigns (program-scale efforts; completed collapse, active leads) ----

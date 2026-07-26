@@ -1169,7 +1169,7 @@ window.DASHBOARD_DATA = {
       "timing": null
     }
   },
-  "snapshot": "<span>2026-07-25 23:53 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-07-26 00:15 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -2546,5 +2546,48 @@ window.DASHBOARD_DATA = {
         "of": 9
       }
     ]
+  },
+  "health": {
+    "detectors": [
+      {
+        "name": "drift-check",
+        "task": "bmad-drift-check",
+        "guards": "BMAD artifacts vs the live factory",
+        "state": "drift",
+        "findings": 1,
+        "verdict": "DRIFT: 0 integrity + 1 currency finding(s). Re-sync via _bmad-output/projects/local-recipes/SYNC-RUNBOOK.md.",
+        "runbook": "_bmad-output/projects/local-recipes/SYNC-RUNBOOK.md"
+      },
+      {
+        "name": "spec-surface",
+        "task": "spec-surface-check",
+        "guards": "every tracked file under a Spec surface",
+        "state": "green",
+        "findings": 0,
+        "verdict": "OK: every tracked file governed or allowlisted; no drift.",
+        "runbook": ""
+      },
+      {
+        "name": "llms-full",
+        "task": "llms-full-check",
+        "guards": "library catalog freshness",
+        "state": "drift",
+        "findings": 2,
+        "verdict": "DRIFT: 2 finding(s). Reconcile by regenerating the catalog (prompt in its header), then re-run.",
+        "runbook": ""
+      }
+    ],
+    "baseline": {
+      "skill": "8.79.1",
+      "head": "0ad8769ea4",
+      "deltas": [
+        {
+          "what": "pixi envs",
+          "baseline": "12",
+          "live": "15"
+        }
+      ],
+      "runbook": "_bmad-output/projects/local-recipes/SYNC-RUNBOOK.md"
+    }
   }
 };
