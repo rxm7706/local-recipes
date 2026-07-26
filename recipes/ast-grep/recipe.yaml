@@ -1,0 +1,51 @@
+schema_version: 1
+
+context:
+  version: "0.45.0"
+
+package:
+  name: ast-grep
+  version: ${{ version }}
+
+source:
+  url: https://github.com/ast-grep/ast-grep/archive/refs/tags/${{ version }}.tar.gz
+  sha256: 996e9d879f095d3ccef55754d3a32d61e1ae03cfaecdcff5e247bfa5b649b27a
+
+build:
+  number: 0
+  skip: ppc64le or win
+
+requirements:
+  build:
+    - ${{ compiler('cxx') }}
+    - ${{ compiler('rust') }}
+    - ${{ stdlib("c") }}
+    - cargo-bundle-licenses
+
+tests:
+  - script:
+      - sg --version
+      - ast-grep --version
+
+about:
+  summary: ast-grep(sg) is a CLI tool for code structural search, lint, and rewriting.
+  description: |
+    ast-grep is an AST-based tool to search code by pattern code. Think it as
+    your old-friend grep but it matches AST nodes instead of text. You can
+    write patterns as if you are writing ordinary code. It will match all code
+    that has the same syntactical structure. You can use $ sign + upper case
+    letters as wildcard, e.g. $MATCH, to match any single AST node. Think it as
+    REGEX dot ., except it is not textual.
+  license: MIT
+  license_file:
+    - THIRDPARTY.yml
+    - LICENSE
+  homepage: https://github.com/ast-grep/ast-grep
+  repository: https://github.com/ast-grep/ast-grep
+  documentation: https://ast-grep.github.io/
+
+extra:
+  recipe-maintainers:
+    - asford
+    - danielnachun
+    - moritzwilksch
