@@ -2702,7 +2702,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-07-26 14:01 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-07-26 14:32 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -4255,7 +4255,7 @@ window.DASHBOARD_DATA = {
     ],
     "baseline": {
       "skill": "8.79.1",
-      "head": "3b804eeb9d",
+      "head": "d68dad75ae",
       "deltas": [],
       "runbook": "_bmad-output/projects/local-recipes/SYNC-RUNBOOK.md"
     }

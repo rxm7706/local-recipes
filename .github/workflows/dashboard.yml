@@ -39,7 +39,20 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Regenerate data.js from git history (done-detection)
+      # pixi is available in CI, as it is locally. The LEAN `ci` env only
+      # (69 packages = feature.python: python, pixi, gh, gitpython, nodejs,
+      # bmad-method, spec-kit, truststore). NOT `local-recipes`, which is 1102
+      # packages / ~9.8 GB — a download per deploy against a 10 GB cache ceiling.
+      # The health detectors do not need it: they are stdlib-only and shell out to
+      # `git` alone, so generate.py runs them directly (see _run_detector). Without
+      # this the published board reported every detector "could not run here" while
+      # they read green locally.
+      - uses: prefix-dev/setup-pixi@v0.10.0
+        with:
+          environments: ci
+          locked: true
+          cache: true
+      - name: Regenerate data.js from git history (done-detection + live detectors)
         run: python docs/dashboard/generate.py --source git
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3

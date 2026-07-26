@@ -240,6 +240,18 @@ conda-smithy = ["python", "conda-smithy", "shellcheck"]
 local-recipes = ["python", "build", "grayskull", "conda-smithy", "local-recipes"]
 vuln-db = ["python", "vuln-db"]
 gcloud = ["python", "gcloud-sdk"]
+# Lean CI env: exactly [feature.python.dependencies] (python, pixi, gh, gitpython,
+# nodejs, bmad-method, spec-kit, truststore) and nothing else — no-default-feature
+# keeps the fat default [dependencies] out. Referenced BY FEATURE, never by copied
+# pins, so it tracks feature.python automatically.
+#
+# Why it exists: CI should always have pixi, but the detectors used to be reachable
+# only through `pixi run -e local-recipes`, and that env is ~9.8 GB — a download per
+# Pages deploy against a 10 GB cache ceiling, to run three stdlib scripts that shell
+# out to `git` alone. The dashboard now runs those scripts directly (see
+# _run_detector in docs/dashboard/generate.py); this env is what CI installs so pixi
+# is present for anything that genuinely needs it.
+ci = { features = ["python"], no-default-feature = true }
 # Lean standalone-tool env (NFR1/NFR2): no-default-feature excludes the fat
 # default [dependencies] (python 3.14 + pixi + conda + pip + uv), so this env
 # carries only the built pyforge-warden package + its conda run-deps + pytest.
