@@ -145,12 +145,24 @@ def _lint_recipes(gh, pr):
                     _test_and_raise_besides_file_not_exists(e)
                     feedstock_exists = False
 
+            # FORK DEVIATION (rxm7706/local-recipes): hint, not lint.
+            #
+            # In staged-recipes an existing feedstock is a genuine blocker --
+            # that repo is an intake queue for NEW packages. This repo is a
+            # local mirror and working area, where `recipes/<feedstock>/` is
+            # routinely a deliberate mirror of an already-published feedstock
+            # (see CLAUDE.md), used to refresh, test and stage feedstock PRs.
+            # Firing here would red every mirror PR by design.
+            #
+            # Still reported, so the information is not lost -- it just no
+            # longer fails the run.
             if feedstock_exists and existing_recipe_name == recipe_name:
-                lints[fname].append(
-                    "Feedstock with the same name exists in conda-forge."
+                hints[fname].append(
+                    "Feedstock with the same name exists in conda-forge. "
+                    "(hint only in this fork: mirroring published feedstocks is expected here)"
                 )
             elif feedstock_exists:
-                lints[fname].append(
+                hints[fname].append(
                     f"Feedstock with the name {existing_recipe_name} exists in conda-forge. "
                     f"Is it the same as this package ({recipe_name})?"
                 )
@@ -218,11 +230,22 @@ def _lint_recipes(gh, pr):
                 ):
                     non_participating_maintainers.add(orig_maintainer)
 
-            # Add a lint message if there are any non-participating maintainers
+            # FORK DEVIATION (rxm7706/local-recipes): hint, not lint.
+            #
+            # In staged-recipes this protects people from being listed as
+            # maintainers of a NEW feedstock without consenting. Here, a mirror
+            # recipe is REQUIRED to carry the deployed feedstock's full
+            # maintainer list -- dropping co-maintainers on refresh is a real
+            # defect the conda-forge-expert convention explicitly guards
+            # against -- so this fires precisely when the recipe is correct,
+            # for people who will never comment on a PR in this fork.
+            #
+            # Still reported, so the information is not lost.
             if non_participating_maintainers:
-                lints[fname].append(
+                hints[fname].append(
                     f"The following maintainers have not yet confirmed that they are willing to be listed here: "
-                    f"{', '.join(non_participating_maintainers)}. Please ask them to comment on this PR if they are."
+                    f"{', '.join(non_participating_maintainers)}. Please ask them to comment on this PR if they are. "
+                    f"(hint only in this fork: mirror recipes preserve the upstream feedstock's maintainer list)"
                 )
 
         # 6. Only conda-forge teams can be maintainers

@@ -51,13 +51,7 @@ tests:
       python:
         imports:
           - parakeet_mlx
-        # pip_check disabled for THIS package only: conda-forge's dacite 1.9.2
-        # ships a wheel whose dist-info reports 1.9.1 (the conda metadata is
-        # correct at 1.9.2). pip check reads the dist-info, so upstream's
-        # dacite>=1.9.2 false-fails. Verified this is the ONLY pip check
-        # failure in the graph. External feedstock bug (SKILL.md G24/G28) --
-        # re-enable once dacite-feedstock rebuilds with correct metadata.
-        pip_check: false
+        pip_check: true
         python_version:
           - ${{ python_min }}.*
           - "*"
@@ -103,7 +97,7 @@ extra:
   cfe-import-names: [parakeet_mlx]
   cfe-source-kind: pypi-sdist
   cfe-noarch: python
-  cfe-pip-check: "false:dacite-1.9.2-ships-1.9.1-dist-info-G24"
+  cfe-pip-check: "true"
   cfe-on-conda-forge-status: pending-submission-to-conda-forge
   cfe-on-conda-forge-feedstock: none
   cfe-forge-recipe-updates-needed: none
@@ -112,7 +106,7 @@ extra:
   cfe-generated-by-version: 8.79.1
   cfe-generated-at-datetime: "2026-07-26T00:00:00Z"
   cfe-local-build-status: success
-  cfe-local-build-datetime: "2026-07-26T16:35:43Z"
+  cfe-local-build-datetime: "2026-07-26T17:45:33Z"
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
