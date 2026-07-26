@@ -1,9 +1,8 @@
-# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
 schema_version: 1
 
 context:
   name: "getdaft"
-  version: "0.7.14"
+  version: "0.7.21"
 
 package:
   name: ${{ name | lower }}
@@ -11,23 +10,14 @@ package:
 
 source:
   url: https://github.com/Eventual-Inc/Daft/archive/refs/tags/v${{ version }}.tar.gz
-  sha256: abb04fed676ef0e1a9ece768220554ef8bb516ab1f668fb019e816804112f75c
-  patches:
-    # daft v0.7.14 pins nightly-2025-09-03 via rust-toolchain.toml; conda-forge's
-    # rust_dev label ships a much newer nightly where ArrayChunks::into_remainder
-    # was de-Option-wrapped. Patch drops the Some() unwrap so the crate builds
-    # against any current nightly. Drop on the next upstream daft bump that
-    # adopts the new API.
-    - patches/0001-fix-into_remainder-api.patch
+  sha256: 363dc26ecd0bcd1a679c1e4cc3fd69307c1ecb4c5e443d4a8c5358a77f9e9e29
 
 build:
   number: 0
-  # CARGO_PROFILE_RELEASE_STRIP=symbols is set inside build.sh / build.bat
-  # (the auto-discovered build scripts). LTO is DROPPED for getdaft —
-  # daft's 500+ Rust crate dep tree exceeds the ~7 GB RAM budget of
-  # conda-forge's Windows hosted runner during the fat-LTO final-link
-  # (verified: Azure build 1526273, all 10 Windows configs OOM/timed out
-  # after 32 min of silent linker activity).
+  skip:
+    # daft does not build cleanly on Windows for the 0.7.x series; Windows
+    # support is being handled separately (see feedstock PR #68).
+    - win
 
 requirements:
   build:
@@ -54,11 +44,10 @@ requirements:
     - xz-tools
   run:
     - python
-    # Upper caps match daft's pyproject.toml dependencies (v0.7.14).
-    # pip check fails if these aren't honored — upstream tests against
-    # these specific ranges; bump on the next daft version.
-    - pyarrow >=8.0.0,<24.0.0
-    - fsspec <2026.3.0
+    # Ranges match daft v0.7.19's pyproject.toml dependencies; pip check
+    # fails if the upper caps aren't honored. Revisit on the next daft bump.
+    - pyarrow >=16.0.0,<25.0.0
+    - fsspec <2026.5.0
     - tqdm <4.68.0
     - typing_extensions >=4.0.0
     - packaging
@@ -85,6 +74,6 @@ about:
 
 extra:
   recipe-maintainers:
-    - rxm7706
     - thewchan
     - whophil
+    - killua156
