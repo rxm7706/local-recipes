@@ -225,7 +225,7 @@ Surprising or non-obvious facts that AI agents and humans both get wrong.
 
 7. **The MCP server is NOT auto-discovered.** It is registered by hand in **`~/.claude.json`** under `mcpServers.conda_forge_server`, with machine-absolute paths into `.pixi/envs/local-recipes/`. There is no `.mcp.json` in the repo and this is deliberate, not deferred work. **Consequence: a fresh clone gets zero conda-forge MCP tools until someone edits `~/.claude.json`.**
 
-8. **The atlas pipeline is 22 executable phases: B/B.5/B.6/C/C.5/D/O/P/Q/R/S/E/E.5/F/G/G'/H/J/K/L/M/N.** Two traps: (a) **Phase T was CANCELLED** pre-implementation in v8.6.0 Wave C — any "B → T" framing is wrong; (b) `bmad-groundtruth` reports "23 phases" because its `phase_count()` regex catches `phase_r_upsert_one`, a per-row helper, and separately `atlas-phases-overview.md` catalogs a runner-less conceptual "Phase I" side-table. **22 executable, 23 cataloged.**
+8. **The atlas pipeline is 22 executable phases: B/B.5/B.6/C/C.5/D/O/P/Q/R/S/E/E.5/F/G/G'/H/J/K/L/M/N.** Two traps: (a) **Phase T was CANCELLED** pre-implementation in v8.6.0 Wave C — any "B → T" framing is wrong; (b) `atlas-phases-overview.md` catalogs **23** because it documents a runner-less conceptual "Phase I" side-table (no runner, no `PHASES` entry). **22 executable, 23 cataloged.** *(`bmad-groundtruth` also reported 23 until 2026-07-25, when `phase_count()` was fixed to read the `PHASES` registry instead of regexing `def phase_` — which had also matched `phase_r_upsert_one`, a per-row helper. It now reports 22.)*
 
 9. **15 pixi envs in two families.** Factory (9): `linux`, `osx`, `win`, `build`, `grayskull`, `conda-smithy`, `local-recipes` (default), `vuln-db`, `gcloud`. Product (6, all `no-default-feature`): `pyforge-warden`, `pyforge-atlas`, `pyforge-doctor`, `pyforge-scribe`, `pyforge-herald`, `bmad-ui`.
 
@@ -279,7 +279,6 @@ Not staleness — statements that were false when written or falsified by an eve
 - **25 vs 28 atlas read CLIs** — `SKILL.md`'s table has 25 rows; `pyforge-atlas/semantic/__init__.py` says 28. No single authority.
 - **9 vs 10 lifecycle steps** — `SKILL.md` documents 9 numbered steps + 3 lettered sub-steps; `CLAUDE.md` calls it "the 10-step loop".
 - **`docs/specs/cfe-atlas-datapipeline-kedro-migration.md`** — frontmatter says `status: shipped`, its § 1 table still says "Remaining: Waves E–H".
-- **`scripts/bmad_drift_check.py`** names its classification bucket `tracked:spec-kernel` — the retired term, inside a governance script.
 - **`scripts/bmad_drift_check.py`'s module docstring lists 7 finding kinds; the code emits 16.**
 
 ---

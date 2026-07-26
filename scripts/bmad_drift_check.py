@@ -142,15 +142,28 @@ def mcp_tool_count() -> int:
     return _read(REPO_ROOT / ".claude" / "tools" / "conda_forge_server.py").count("@mcp.tool")
 
 
-def phase_count() -> int:
-    return len(re.findall(r"^\s*def phase_", _read(SKILL / "scripts" / "conda_forge_atlas.py"), re.M))
-
-
 def phase_ids() -> list[str]:
     """Top-level + sub phase IDs from the PHASES registry, e.g. ['B','B.5',...,'O','P',...]."""
     text = _read(SKILL / "scripts" / "conda_forge_atlas.py")
     m = re.search(r"PHASES\s*[:=].*?\[(.*?)\n\]", text, re.S)
     return re.findall(r'\(\s*"([^"]+)"', m.group(1)) if m else []
+
+
+def phase_count() -> int:
+    """Executable pipeline phases — from the PHASES registry, the authoritative list.
+
+    Was `len(re.findall(r"^\\s*def phase_", ...))`, which also matched
+    `phase_r_upsert_one` — a PER-ROW HELPER inside Phase R — so ground truth
+    reported 23 where 22 phases actually run. That number is pinned in the
+    baseline fingerprint and restated by every living doc, so the off-by-one
+    propagated through each reconciliation (caught 2026-07-25 by the reconciler
+    agent, which refused to restate 23 without evidence).
+
+    The registry is self-maintaining: a new phase must be registered to run.
+    (Separately, `atlas-phases-overview.md` catalogs a runner-less conceptual
+    "Phase I" — hence 22 executable vs 23 cataloged; the docs now say both.)
+    """
+    return len(phase_ids())
 
 
 def max_single_phase() -> str:
@@ -449,10 +462,10 @@ def classify(path: Path) -> str:
         # re-grounded, so no pin gating.
         return "archive:research"
     if re.fullmatch(r"planning-artifacts/specs/spec-[a-z0-9-]+/[A-Za-z0-9._-]+\.md", rel):
-        # bmad-spec output folders: SPEC.md kernel + append-only .memlog.md +
-        # companions. The memlog is the decision-of-record and SPEC.md re-derives
+        # bmad-spec output folders: SPEC.md (the Spec) + append-only .memlog.md
+        # + companions. The memlog is the decision-of-record and SPEC.md re-derives
         # from it (never hand-patched), so no pin gating here.
-        return "tracked:spec-kernel"
+        return "tracked:spec"
     if rel.startswith("implementation-artifacts/retros/"):
         return "archive:retros"
     if rel == "implementation-artifacts/deferred-work.md":
