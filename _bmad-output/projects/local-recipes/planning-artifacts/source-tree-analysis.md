@@ -26,7 +26,7 @@ Gitignored runtime data is included where relevant (most under `.claude/data/`);
 ```
 local-recipes/                               # pixi monorepo root, default-env=local-recipes
 │
-├── pixi.toml                                # 15 envs + 17 features + 152 tasks (106 in local-recipes); the 5 pyforge-* envs are workspace members
+├── pixi.toml                                # 17 envs + 17 features + 152 tasks (106 in local-recipes); the 5 pyforge-* envs are workspace members
 ├── pixi.lock                                # locked deps (committed)
 ├── environment.yaml                         # exported conda-env mirror of the `build` env — MUST be regenerated whenever pixi.toml changes (ungated CI sync check)
 ├── conda-forge.yml                          # staged-recipes-style root config
@@ -692,7 +692,7 @@ These files are load-bearing — changing them affects the whole system, not jus
 | `CLAUDE.md` | all | Repo-wide AI agent guidance + BMAD↔CFE integration rules |
 | `AGENTS.md` | all | Cross-tool entry point; the tier model + Dream-first rule live here — the per-tool files are pointers |
 | `docs/dreams/pyforge-charter.md` | all | Binding identity: branding, the Lexicon, the eight Smiths. Governs wording in every artifact |
-| `pixi.toml` | all | Defines **15 envs / 17 features / 152 tasks**; the contract between human shell and tool surface. Changing it **requires** regenerating `environment.yaml` (ungated CI check) |
+| `pixi.toml` | all | Defines **17 envs / 17 features / 152 tasks**; the contract between human shell and tool surface. Changing it **requires** regenerating `environment.yaml` (ungated CI check) |
 | `environment.yaml` | all | Exported mirror of the `build` env — the linter reds if it drifts from `pixi.toml`, and the `maintenance` label does NOT suppress that check |
 | `.claude/skills/conda-forge-expert/SKILL.md` | Part 1 | Skill's primary spine (3,887 lines) — read by Claude Code on every conda-forge task |
 | `.claude/skills/conda-forge-expert/CHANGELOG.md` | Part 1 | Canonical drift-detection source — every MINOR bump triggers a project-context re-sync; also the **CHANGELOG sentinel** for `spec_surface_check.py` (a governed edit that moves neither it nor the Spec memlog is a finding) |

@@ -1205,7 +1205,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-07-26 04:04 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-07-26 04:14 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -2453,7 +2453,7 @@ window.DASHBOARD_DATA = {
         "updated": "2026-07-25",
         "age": 0,
         "stale": false,
-        "version": "",
+        "version": "0.1.0",
         "progress": "",
         "complete": 8,
         "of": 9,
@@ -2511,7 +2511,7 @@ window.DASHBOARD_DATA = {
         "updated": "2026-07-25",
         "age": 0,
         "stale": false,
-        "version": "",
+        "version": "0.1.0",
         "progress": "",
         "complete": 8,
         "of": 9,
@@ -2758,7 +2758,7 @@ window.DASHBOARD_DATA = {
     ],
     "baseline": {
       "skill": "8.79.1",
-      "head": "6e450669b7",
+      "head": "bd5fd343e1",
       "deltas": [],
       "runbook": "_bmad-output/projects/local-recipes/SYNC-RUNBOOK.md"
     }

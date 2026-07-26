@@ -121,6 +121,68 @@ dependencies.shellcheck = ">=0.10.0"
 platforms = ["linux-64", "osx-arm64-min"]
 dependencies.google-cloud-sdk = ">=577.0.0"
 
+# --- pyforge-mason (Mason): pixi build workspace member (warden/doctor mirror, Story 1.1) --
+# Source + package manifest live in ./src/shared/packages/pyforge-mason (its own
+# [package] table, no [workspace]). One hatchling pyproject is the single Python
+# build backend:
+#   * conda pkg   -> pixi-build-python wraps the hatchling wheel (pyforge-mason-build-conda)
+#   * wheel+sdist -> `python -m build` from the same pyproject    (pyforge-mason-build-dist)
+# Story 1.1 is build wiring only: dual-artifact manifest + PEP 420 namespace +
+# argparse dispatcher. FR-41 forbids a CLI framework, so there is deliberately no
+# click/typer here. Spec: _bmad-output/projects/pyforge-mason/planning-artifacts/.
+[feature.pyforge-mason.dependencies]
+pyforge-mason = { path = "src/shared/packages/pyforge-mason" }  # -> built conda pkg
+hatchling = ">=1.31.0"                    # Python build backend (drives both conda + wheel/sdist)
+python-build = ">=1.5.0"                 # PyPA `python -m build` frontend (wheel + sdist)
+pytest = ">=9.1.1"                       # test runner
+
+[feature.pyforge-mason.tasks.pyforge-mason-build-conda]
+description = "Build the pyforge-mason conda package via pixi-build-python."
+cmd = "pixi build --manifest-path src/shared/packages/pyforge-mason/pixi.toml --output-dir dist-conda"
+
+[feature.pyforge-mason.tasks.pyforge-mason-build-dist]
+description = "Build the pyforge-mason wheel + sdist from the same hatchling pyproject."
+cmd = "python -m build --outdir dist src/shared/packages/pyforge-mason"
+
+[feature.pyforge-mason.tasks.pyforge-mason-build]
+description = "Build BOTH pyforge-mason artifacts (conda + wheel/sdist) from one manifest."
+depends-on = ["pyforge-mason-build-conda", "pyforge-mason-build-dist"]
+
+[feature.pyforge-mason.tasks.pyforge-mason-test]
+description = "Run the pyforge-mason test suite (unit + meta)."
+cmd = "pytest src/shared/packages/pyforge-mason/tests -q"
+
+# --- pyforge-steward (Steward): pixi build workspace member (warden mirror, Story 1.1) --
+# Task names mirror pyforge-warden's verbatim, per the story's acceptance criteria.
+# Story 1.1 delivers the package, the CLI dispatcher and the Duty contract (AD-7);
+# main() is the sole owner of the exit code (AD-8). Spec:
+# _bmad-output/projects/pyforge-steward/planning-artifacts/.
+[feature.pyforge-steward.dependencies]
+pyforge-steward = { path = "src/shared/packages/pyforge-steward" }  # -> built conda pkg
+hatchling = ">=1.31.0"                    # Python build backend (drives both conda + wheel/sdist)
+python-build = ">=1.5.0"                 # PyPA `python -m build` frontend (wheel + sdist)
+pytest = ">=9.1.1"                       # test runner
+
+[feature.pyforge-steward.tasks.pyforge-steward-build-conda]
+description = "Build the pyforge-steward conda package via pixi-build-python."
+cmd = "pixi build --manifest-path src/shared/packages/pyforge-steward/pixi.toml --output-dir dist-conda"
+
+[feature.pyforge-steward.tasks.pyforge-steward-build-dist]
+description = "Build the pyforge-steward wheel + sdist from the same hatchling pyproject."
+cmd = "python -m build --outdir dist src/shared/packages/pyforge-steward"
+
+[feature.pyforge-steward.tasks.pyforge-steward-build]
+description = "Build BOTH pyforge-steward artifacts (conda + wheel/sdist) from one manifest."
+depends-on = ["pyforge-steward-build-conda", "pyforge-steward-build-dist"]
+
+[feature.pyforge-steward.tasks.pyforge-steward-test]
+description = "Run the pyforge-steward suite across all three tiers (unit + conformance + meta)."
+cmd = "pytest src/shared/packages/pyforge-steward/tests -q"
+
+[feature.pyforge-steward.tasks.pyforge-steward-dogfood]
+description = "Steward dogfoods itself: run the CLI from the built env."
+cmd = "steward --version"
+
 [environments]
 # default-env: local-recipes
 # ^ The "default-env:" directive above tells scripts/load-env.sh which environment
@@ -162,6 +224,11 @@ bmad-ui = { features = ["bmad-ui"], no-default-feature = true }
 # pyforge-herald package + pytest. Spec:
 # _bmad-output/projects/pyforge-herald/planning-artifacts/.
 pyforge-herald = { features = ["pyforge-herald"], no-default-feature = true }
+# Lean mason env (Story 1.1): no-default-feature, so it carries only the built
+# pyforge-mason package + pytest + the two build frontends.
+pyforge-mason = { features = ["pyforge-mason"], no-default-feature = true }
+# Lean steward env (Story 1.1, pyforge-warden mirror): same lean shape.
+pyforge-steward = { features = ["pyforge-steward"], no-default-feature = true }
 
 [feature.local-recipes.activation]
 scripts = ["scripts/load-env.sh"]

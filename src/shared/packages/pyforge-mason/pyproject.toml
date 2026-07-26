@@ -1,0 +1,23 @@
+[build-system]
+build-backend = "hatchling.build"
+requires = ["hatchling"]
+
+[project]
+name = "pyforge-mason"
+version = "0.1.0"
+description = "The Artisan Builder's CLI — author and build conda recipes, ship packages to PyPI + conda-forge, and resolve conflicting worlds into one lockfile."
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "MIT" }
+authors = [{ name = "rxm7706" }]
+# NFR-10 / FR-41: only what `pyforge.mason` actually imports. At scaffold stage
+# that is the standard library alone — argparse and importlib.metadata.
+# Deliberately NO CLI framework: click/typer are forbidden by FR-41, and the
+# dispatcher is argparse for the same reason its siblings' are.
+dependencies = []
+
+[project.scripts]
+mason = "pyforge.mason.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/pyforge"]

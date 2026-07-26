@@ -1,0 +1,22 @@
+[build-system]
+build-backend = "hatchling.build"
+requires = ["hatchling"]
+
+[project]
+name = "pyforge-steward"
+version = "0.1.0"
+description = "The Provisioner's CLI — credential lifecycle, deployment, provisioning and budget duties for the factory's platform layer."
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "MIT" }
+authors = [{ name = "rxm7706" }]
+# Only what pyforge.steward actually imports — the standard library at scaffold
+# stage (argparse, dataclasses, typing). No CLI framework, mirroring the sibling
+# stations' argparse dispatchers.
+dependencies = []
+
+[project.scripts]
+steward = "pyforge.steward.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/pyforge"]

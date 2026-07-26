@@ -7,7 +7,7 @@ source_pin: 'conda-forge-expert v8.79.1'
 
 # Development Guide
 
-> **Re-grounded 2026-07-25** (source_pin → v8.79.1). **Headline correction: the repo has 15 pixi environments and 17 features, not 9** — a factory family of 9 (`linux`, `osx`, `win`, `build`, `grayskull`, `conda-smithy`, `local-recipes`, `vuln-db`, `gcloud`) plus 6 `no-default-feature` **product** envs (`pyforge-warden`, `pyforge-atlas`, `pyforge-doctor`, `pyforge-scribe`, `pyforge-herald`, `bmad-ui`). Everything downstream of that changed: the **Pixi Tasks Cheatsheet was rebuilt from the live 111-task `local-recipes` surface** (106 own + 5 inherited from `grayskull`/`conda-smithy`), § *Project layout* now carries `src/shared/packages/` and the five PyForge workspace packages, § *Testing* now covers **all three** suites (top-level `tests/`, the skill suite, the five product suites) plus the mandatory `--frozen` rule inside loop worktrees, § *BMAD Workflows* was rewritten against the live skill set and the Dream → Spec flow, and a new § *PR CI gates* documents the two always-on staged-recipes-linter gates. Re-verified **unchanged**: cf_atlas schema **v29**, **46 MCP tools**, **23 cataloged atlas phases** (22 executable), gotchas through **G106**, the three-place rule for new scripts, and the no-mock-the-network test convention. Live detector output: `pixi run --frozen -e local-recipes bmad-groundtruth`.
+> **Re-grounded 2026-07-25** (source_pin → v8.79.1). **Headline correction: the repo has 17 pixi environments and 17 features, not 9** — a factory family of 9 (`linux`, `osx`, `win`, `build`, `grayskull`, `conda-smithy`, `local-recipes`, `vuln-db`, `gcloud`) plus 6 `no-default-feature` **product** envs (`pyforge-warden`, `pyforge-atlas`, `pyforge-doctor`, `pyforge-scribe`, `pyforge-herald`, `bmad-ui`). Everything downstream of that changed: the **Pixi Tasks Cheatsheet was rebuilt from the live 111-task `local-recipes` surface** (106 own + 5 inherited from `grayskull`/`conda-smithy`), § *Project layout* now carries `src/shared/packages/` and the five PyForge workspace packages, § *Testing* now covers **all three** suites (top-level `tests/`, the skill suite, the five product suites) plus the mandatory `--frozen` rule inside loop worktrees, § *BMAD Workflows* was rewritten against the live skill set and the Dream → Spec flow, and a new § *PR CI gates* documents the two always-on staged-recipes-linter gates. Re-verified **unchanged**: cf_atlas schema **v29**, **46 MCP tools**, **23 cataloged atlas phases** (22 executable), gotchas through **G106**, the three-place rule for new scripts, and the no-mock-the-network test convention. Live detector output: `pixi run --frozen -e local-recipes bmad-groundtruth`.
 
 
 How to set up, build, test, debug, and contribute to `local-recipes` locally. This guide is for **humans** operating the system — agents read `project-context.md` and `SKILL.md` instead. Air-gapped / enterprise setup lives in `deployment-guide.md`.
@@ -625,7 +625,7 @@ The server hasn't registered. Check:
 
 ### "pixi run X: command not found"
 
-The task doesn't exist or is in a different feature. With 15 envs and 17 features this is the most
+The task doesn't exist or is in a different feature. With 17 envs and 17 features this is the most
 common false alarm — `scan-project`, `inventory-channel`, `detail-cf-atlas-vdb`, `vdb-refresh`, and
 all 33 product tasks are **not** in `local-recipes`. Check:
 

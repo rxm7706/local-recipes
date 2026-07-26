@@ -1,0 +1,24 @@
+# pyforge-steward (Steward): pixi build workspace member (warden mirror, Story 1.1).
+#
+# MEMBER package — deliberately NO [workspace] table. The root
+# ../../../../pixi.toml owns workspace config and pulls this in via a path
+# dependency in [feature.pyforge-steward.dependencies].
+#
+# Story 1.1 delivers the package, the CLI dispatcher, and the Duty contract.
+# The four duties (keys / deploy / provision / budget) land epic-by-epic against
+# _bmad-output/projects/pyforge-steward/planning-artifacts/.
+
+[package]
+name = "pyforge-steward"
+version = "0.1.0"
+
+[package.build.backend]
+name = "pixi-build-python"
+version = "0.*"
+
+[package.host-dependencies]
+python = ">=3.12"
+hatchling = "*"
+
+[package.run-dependencies]
+python = ">=3.12"

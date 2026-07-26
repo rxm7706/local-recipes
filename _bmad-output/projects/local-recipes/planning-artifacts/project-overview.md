@@ -12,7 +12,7 @@ source_pin: 'conda-forge-expert v8.79.1'
 > **Re-grounded 2026-07-25** (source_pin → v8.79.1; reconciler loop per SYNC-RUNBOOK).
 > **What actually changed since the last pass:**
 > - **A fifth part.** `src/shared/packages/` is now a first-class part — five hatchling-built distributions (`pyforge-warden`, `pyforge-atlas`, `pyforge-herald`, `pyforge-scribe`, `pyforge-doctor`) sharing the PEP 420 implicit `pyforge` namespace. The repo is a **5-part monorepo**, not 4.
-> - **Pixi doubled.** 15 environments / 17 features — 9 factory envs plus 6 `no-default-feature` product envs. The `local-recipes` feature alone declares **106** tasks.
+> - **Pixi doubled.** 17 environments / 17 features — 9 factory envs plus 8 `no-default-feature` product envs. The `local-recipes` feature alone declares **106** tasks.
 > - **BMAD infra grew.** BMAD-METHOD **6.10.0** (+ a separately-managed SKF module v2.0.1); `.claude/skills/` holds **93 dirs = 89 real skills + 4 non-skill support dirs**; **14** BMAD projects; **22** Specs plus **63** tracked per-story specs; execution is driven by the external `bmad-loop` orchestrator.
 > - **Tier model formalised.** Dream (Tier 0) → legacy intake spec (Tier 1, phasing out) → **the Spec & planning artifacts (Tier 2 — the active contract)** → execution output (Tier 3, gitignored). Story specs are durable and tracked, *not* Tier 3.
 > - **A second MCP server.** `pyforge-atlas` ships its own FastMCP server (11 tools), separate from and additive to the legacy 46-tool server.
@@ -34,7 +34,7 @@ source_pin: 'conda-forge-expert v8.79.1'
 | Build engine | Pixi + rattler-build (NOT conda-build, except for legacy v0 maintenance); hatchling for the PyForge distributions |
 | Target platforms | linux-64, linux-aarch64, osx-64, osx-arm64, win-64 |
 | Default pixi env | `local-recipes` (declared via `# default-env:` directive in `pixi.toml`) |
-| Total pixi envs | 15 pixi envs across 17 features — **9 factory** (`linux`, `osx`, `win`, `build`, `grayskull`, `conda-smithy`, `local-recipes`, `vuln-db`, `gcloud`) + **6 product** (`pyforge-warden`, `pyforge-atlas`, `pyforge-doctor`, `pyforge-scribe`, `pyforge-herald`, `bmad-ui`, all `no-default-feature = true`) |
+| Total pixi envs | 17 pixi envs across 17 features — **9 factory** (`linux`, `osx`, `win`, `build`, `grayskull`, `conda-smithy`, `local-recipes`, `vuln-db`, `gcloud`) + **6 product** (`pyforge-warden`, `pyforge-atlas`, `pyforge-doctor`, `pyforge-scribe`, `pyforge-herald`, `bmad-ui`, all `no-default-feature = true`) |
 | Default channel | conda-forge |
 | License | BSD-3-Clause (LICENSE.txt) |
 | Maintainer of new recipes | `rxm7706` (in `extra.recipe-maintainers`) |
@@ -81,7 +81,7 @@ Correct phrasing everywhere: **22 executable phases, 23 cataloged.** Never write
 
 ```
 local-recipes/                                  # pixi monorepo root  (NOTE: no pyproject.toml at root)
-├── pixi.toml                                   # 15 envs / 17 features; local-recipes feature alone = 106 tasks
+├── pixi.toml                                   # 17 envs / 17 features; local-recipes feature alone = 106 tasks
 │                                               #   [workspace] exists but deliberately has NO `members` key
 ├── pixi.lock                                   # locked deps
 ├── environment.yaml                            # exported from pixi.toml; an UNGATED CI sync check compares them

@@ -1,0 +1,26 @@
+# pyforge-mason (Mason): pixi build workspace member (warden/doctor mirror, Story 1.1).
+#
+# MEMBER package of the parent workspace — there is deliberately NO [workspace]
+# table here. The root ../../../../pixi.toml owns workspace config (channels,
+# platforms, environments, `preview = ["pixi-build"]`) and pulls this package in
+# via a path dependency in [feature.pyforge-mason.dependencies].
+#
+# Story 1.1 delivers the build wiring only: the dual-artifact manifest, the PEP
+# 420 namespace, and a `mason` entry point that reports its version. The recipe /
+# package / environment verbs land story-by-story against
+# _bmad-output/projects/pyforge-mason/planning-artifacts/.
+
+[package]
+name = "pyforge-mason"
+version = "0.1.0"
+
+[package.build.backend]
+name = "pixi-build-python"
+version = "0.*"
+
+[package.host-dependencies]
+python = ">=3.12"          # AC: requires-python >=3.12 (Mason wraps the CFE craft, which runs on the factory interpreter)
+hatchling = "*"
+
+[package.run-dependencies]
+python = ">=3.12"

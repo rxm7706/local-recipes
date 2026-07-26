@@ -1,0 +1,85 @@
+"""Steward's dispatcher — and the sole owner of the process exit code (AD-8).
+
+``main()`` catches every way a duty can end and **projects** it to a documented
+code. It never trusts a ``SystemExit`` raised inside a duty verbatim, and it
+never lets an unexpected exception fall through to the interpreter's bare ``1``
+— an undocumented ``1`` is indistinguishable from a duty that legitimately
+failed, which is exactly the false signal a gate must not emit.
+"""
+
+from __future__ import annotations
+
+import argparse
+import sys
+from typing import Sequence
+
+from . import __version__
+from .interfaces import Duty, DutyResult, NullDuty
+
+EXIT_OK = 0
+EXIT_FAILED = 1          # a duty ran and reported ok=False — the ONLY legitimate 1
+EXIT_USAGE = 2           # argparse convention
+EXIT_INTERRUPTED = 130   # 128 + SIGINT
+EXIT_INTERNAL = 70       # EX_SOFTWARE — a crash, never conflated with EXIT_FAILED
+
+# The four duties. `keys` lands first (Epic 1); the rest accept no verbs yet, but
+# are declared so `steward --help` states the whole surface from the start.
+DUTIES: tuple[str, ...] = ("keys", "deploy", "provision", "budget")
+
+_HELP = {
+    "keys": "credential lifecycle — issue, rotate, revoke, audit",
+    "deploy": "deployment duties",
+    "provision": "environment and substrate provisioning",
+    "budget": "cost budgeting and enforcement",
+}
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        prog="steward",
+        description="Steward — the Provisioner's station.",
+    )
+    parser.add_argument("--version", action="version", version=f"steward {__version__}")
+    subs = parser.add_subparsers(dest="duty", metavar="{" + ",".join(DUTIES) + "}")
+    for name in DUTIES:
+        subs.add_parser(name, help=_HELP[name], description=_HELP[name])
+    return parser
+
+
+def resolve_duty(name: str) -> Duty:
+    """Return the duty implementation for *name*.
+
+    Every duty is a :class:`NullDuty` at Story 1.1; real implementations replace
+    them one epic at a time without changing this seam.
+    """
+    return NullDuty(name)
+
+
+def main(argv: Sequence[str] | None = None) -> int:
+    try:
+        parser = build_parser()
+        ns = parser.parse_args(argv)
+        if not ns.duty:
+            parser.print_help()
+            return EXIT_OK
+        result: DutyResult = resolve_duty(ns.duty).run(ns)
+        print(result.summary, file=sys.stderr if not result.ok else sys.stdout)
+        return EXIT_OK if result.ok else EXIT_FAILED
+    except KeyboardInterrupt:
+        print("steward: interrupted", file=sys.stderr)
+        return EXIT_INTERRUPTED
+    except SystemExit as exc:
+        # argparse raises this for --help/--version/usage. Legitimate codes pass
+        # through; anything non-int is projected rather than trusted.
+        code = exc.code
+        if code is None:
+            return EXIT_OK
+        return code if isinstance(code, int) else EXIT_USAGE
+    except Exception:                              # noqa: BLE001 — deliberate boundary
+        import traceback
+        traceback.print_exc()
+        return EXIT_INTERNAL
+
+
+if __name__ == "__main__":                          # pragma: no cover
+    raise SystemExit(main())
