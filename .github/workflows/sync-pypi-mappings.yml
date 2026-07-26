@@ -1,10 +1,15 @@
 name: Sync PyPI-Conda Mappings
 
-# Explicit-run only. The weekly cron and the custom.yaml push trigger were removed
-# after 32 consecutive failures (2026-06-24 .. 2026-07-26, zero successes): the
-# composite action at .github/actions/sync-pypi-mappings pins pixi v0.59.0, which
-# cannot parse this workspace's manifest (`expected a string, found table`) now that
-# the repo requires pixi >=0.73.0. Restore the schedule once that pin is raised.
+# Explicit-run only, FOR NOW. The weekly cron and the custom.yaml push trigger were
+# removed after 32 consecutive failures (2026-06-24 .. 2026-07-26, zero successes):
+# the composite action at .github/actions/sync-pypi-mappings pinned pixi v0.59.0,
+# which cannot parse this workspace's manifest ("expected a string, found table")
+# now that the repo requires pixi >=0.73.0.
+#
+# That pin is now raised to v0.73.0 / setup-pixi@v0.10.0. The schedule stays off
+# until ONE manual dispatch actually comes back green — the pin was the proven
+# cause of the failure, but it has never been observed succeeding, so re-arming a
+# weekly job on an untested fix would just resume failing quietly.
 on:
   # Manual trigger with optional parameters
   workflow_dispatch:
