@@ -606,7 +606,7 @@ ADR-001…012 are **historical records and are preserved as written**; where a s
 
 ### 7.0 Deployment reality (the constraint under everything below)
 
-**Exactly one thing deploys**: the **Guildhall** dashboard (`docs/dashboard/`) to GitHub Pages at https://rxm7706.github.io/local-recipes/ via `.github/workflows/dashboard.yml`, which regenerates `data.js` from git history at deploy time. There is **no production Dockerfile, no Helm chart** (`helm/lasuite-docs/values.yaml` is a values file with no chart and no apply step), and **no k8s manifests outside test fixtures**. `create_feedstocks.yml` is hard-gated to `github.repository == 'conda-forge/staged-recipes'` and is a permanent no-op on this fork.
+**Exactly one thing deploys**: the **Guildhall** dashboard (`docs/dashboard/`) to GitHub Pages at https://rxm7706.github.io/local-recipes/ via `.github/workflows/dashboard.yml`, which regenerates `data.js` from git history at deploy time. There is **no production Dockerfile, no Helm chart** (`helm/lasuite-docs/values.yaml` is a values file with no chart and no apply step), and **no k8s manifests outside test fixtures**. As of 2026-07-26 (PR #127) there is **no feedstock-creation workflow at all** — the inherited `create_feedstocks.yml` was hard-gated to `github.repository == 'conda-forge/staged-recipes'` (a permanent no-op here) and has been deleted, following upstream, which moved it to `conda-forge/admin-requests` in 2025.
 
 Everything else in this architecture is **operator-invoked local tooling**. Availability, performance and rollback targets below should be read in that light: there is no service to keep up.
 
@@ -767,8 +767,8 @@ Rebuild MUST follow this order:
                 ↓
 9. Tests + meta-tests + spec_surface_check run clean
                 ↓
-10. CI pipelines (.github/workflows/* — note create_feedstocks.yml is a permanent
-    no-op on this fork; dashboard.yml is the only deploy)
+10. CI pipelines (.github/workflows/* — 8 active; dashboard.yml is the only deploy,
+    and no workflow creates feedstocks or publishes packages)
                 ↓
 11. Air-gap deployment validation (full atlas build + recipe submission with JFrog endpoints)
 ```

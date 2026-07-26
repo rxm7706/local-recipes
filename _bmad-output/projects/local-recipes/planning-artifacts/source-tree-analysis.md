@@ -44,7 +44,7 @@ local-recipes/                               # pixi monorepo root, default-env=l
 ├── .azure-pipelines/                        # CI templates
 ├── .ci_support/                             # CI helper scripts
 ├── .scripts/                                # 5 build-step shell/bat helpers invoked by CI (build_steps.sh, run_docker_build.sh, run_osx_build.sh, run_win_build.bat, logging_utils.sh)
-├── .github/                                 # 12 workflows + 1 disabled + actions/ + issue templates + copilot-instructions.md
+├── .github/                                 # 8 workflows + actions/ + issue templates + copilot-instructions.md
 ├── .appveyor.yml.notused                    # legacy AppVeyor (disabled)
 ├── build-locally.py                         # ★ Docker-based local-build harness (Linux builds run here)
 ├── test-recipes.py                          # inherited staged-recipes recipe-test driver
@@ -607,12 +607,14 @@ presentations/                               # 14 deck dirs + README.md; 692 tra
     ├── src/ · public/ · scripts/            # exec summary, infographic trio, marp sources, pptx exports
     └── dist/ · node_modules/                # (gitignored build output + deps)
 
-.github/workflows/                           # 12 active workflows + tokens.yml.notused + scripts/ + README.md
+.github/workflows/                           # 8 active workflows + scripts/{linter,linter_issue_comment}.py
 ├── staged-recipes-linter.yml                # ★ the ALWAYS-ON PR gate (maintenance label + environment.yaml sync)
 ├── dashboard.yml                            # ★ publishes docs/dashboard/ (the Guildhall) to GitHub Pages
-├── test-{all,linux,macos,windows}.yml · create_feedstocks.yml · correct_directory.yml
-├── automate-review-labels.yml · linter_issue_comment.yml · sync-pypi-mappings.yml
-└── do_not_edit_example.yml
+├── test-{all,linux,macos,windows}.yml       # workflow_dispatch / workflow_call only
+├── linter_issue_comment.yml                 # gated: only on "please rerun linter" / "/rerun-linter"
+└── sync-pypi-mappings.yml                   # workflow_dispatch only (cron off pending a green run)
+   # 5 inherited files deleted 2026-07-26 (PR #127) — upstream had deleted all five.
+   # Inventory + provenance: docs/reference/github-workflows.md
 ```
 
 ---
@@ -786,7 +788,7 @@ Every row below was re-measured against the live checkout on 2026-07-25 — none
 | `docs/` | **83** files, all tracked — dreams 27 (**26 Dreams** + README), specs **19**, reference **6**, intake 27, dashboard 4; **no top-level `.md`** |
 | `presentations/` | **14** deck dirs + README.md — 692 tracked of 31,718 on disk |
 | `scripts/` | **14** tracked entries |
-| `.github/workflows/` | **12** active + `tokens.yml.notused` + `scripts/` + README.md |
+| `.github/workflows/` | **8** active + `scripts/{linter,linter_issue_comment}.py` (was 12 + 1 disabled before the 2026-07-26 audit, PR #127) |
 | `_skf-learn/` · `archive/` · `.scripts/` · `tests/` · `conf/` · `helm/` | 18 · 15 · 5 · 1 · 1 · 1 tracked files |
 | `SDKs/` | 30,811 files, **0 tracked** |
 | `.gitignore` | **738** lines |

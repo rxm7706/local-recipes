@@ -724,8 +724,8 @@ Every PR that changes any of the above touches files outside `recipes/` — see 
 The full picture (workflows, gates, what actually deploys) lives in `deployment-guide.md`
 § CI / CD Considerations. The short version for a developer:
 
-**GitHub Actions is where the action is** — 12 active workflows + 1 disabled
-(`tokens.yml.notused`). The three that matter day to day:
+**GitHub Actions is where the action is** — **8 active workflows** (re-audited
+2026-07-26, PR #127; was 12 + 1 disabled). The three that matter day to day:
 
 - **`staged-recipes-linter.yml`** — runs on every PR (`opened` / `synchronize` / `reopened` /
   `labeled` / `unlabeled`). The two gates are in § PR CI gates above. **This is the one that will
@@ -738,9 +738,15 @@ The full picture (workflows, gates, what actually deploys) lives in `deployment-
 - **`dashboard.yml`** — publishes the Guildhall console to GitHub Pages on every push to `main`
   plus a daily cron. The only thing this repo deploys.
 
-Also present: `linter_issue_comment`, `correct_directory`, `do_not_edit_example`,
-`automate-review-labels`, `create_feedstocks` (hard-gated to `conda-forge/staged-recipes` — a
-permanent **no-op** on this fork), and `sync-pypi-mappings`.
+Also present: `linter_issue_comment` (re-runs the linter, but **only** when a PR comment says
+`please rerun linter` or `/rerun-linter`) and `sync-pypi-mappings` (**dispatch-only**).
+
+Five inherited workflows were **deleted 2026-07-26** (PR #127) once the audit found upstream had
+already deleted all five — `correct_directory` and `do_not_edit_example` were folded into
+`scripts/linter.py` back in 2024 and had been dead duplicates here for ~2 years; `create_feedstocks`
+moved to `conda-forge/admin-requests`; `automate-review-labels` needs conda-forge review teams that
+do not apply to a fork; `tokens.yml.notused` was already disabled. Full inventory, provenance and
+"when to use": **`docs/reference/github-workflows.md`**.
 
 **`azure-pipelines.yml`** is inherited from upstream but heavily trimmed: branch builds are
 **fully disabled** (`trigger.branches.exclude: ["*"]`), PRs to `main` are allowed, and
