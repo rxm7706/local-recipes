@@ -1193,7 +1193,7 @@ window.DASHBOARD_DATA = {
       }
     }
   },
-  "snapshot": "<span>2026-07-26 00:50 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-07-26 00:58 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -2577,9 +2577,9 @@ window.DASHBOARD_DATA = {
         "name": "drift-check",
         "task": "bmad-drift-check",
         "guards": "BMAD artifacts vs the live factory",
-        "state": "drift",
-        "findings": 1,
-        "verdict": "DRIFT: 0 integrity + 1 currency finding(s). Re-sync via _bmad-output/projects/local-recipes/SYNC-RUNBOOK.md.",
+        "state": "green",
+        "findings": 0,
+        "verdict": "OK: all tracked BMAD artifacts are in sync with the live factory MINOR.",
         "runbook": "_bmad-output/projects/local-recipes/SYNC-RUNBOOK.md"
       },
       {
@@ -2595,22 +2595,16 @@ window.DASHBOARD_DATA = {
         "name": "llms-full",
         "task": "llms-full-check",
         "guards": "library catalog freshness",
-        "state": "drift",
-        "findings": 2,
-        "verdict": "DRIFT: 2 finding(s). Reconcile by regenerating the catalog (prompt in its header), then re-run.",
+        "state": "green",
+        "findings": 0,
+        "verdict": "",
         "runbook": ""
       }
     ],
     "baseline": {
       "skill": "8.79.1",
-      "head": "0ad8769ea4",
-      "deltas": [
-        {
-          "what": "pixi envs",
-          "baseline": "12",
-          "live": "15"
-        }
-      ],
+      "head": "6e450669b7",
+      "deltas": [],
       "runbook": "_bmad-output/projects/local-recipes/SYNC-RUNBOOK.md"
     }
   }

@@ -11,9 +11,7 @@ import pytest
 
 SKILL_DIR = Path(__file__).resolve().parent.parent.parent
 SKILL_MD = SKILL_DIR / "SKILL.md"
-PROJECT_ROOT = Path(
-    "/home/rxm7706/UserLocal/Projects/Github/rxm7706/local-recipes"
-)
+PROJECT_ROOT = SKILL_DIR.parents[2]  # .claude/skills/<skill> -> repo root
 PIXI_TOML = PROJECT_ROOT / "pixi.toml"
 
 
@@ -49,6 +47,12 @@ class TestSkillMdConsistency:
         # Tests are referenced from release notes / Version History entries;
         # they are not "scripts" but they are real files in the skill.
         existing |= {p.name for p in tests_dir.rglob("test_*.py")}
+        # Repo-root scripts/ — the governance/detector tier (bmad_drift_check.py,
+        # spec_surface_check.py, llms_full_check.py, ...). These are real scripts
+        # SKILL.md legitimately cites, so they belong here rather than in the
+        # `project_level` allowlist below, which is for EXTERNAL and illustrative
+        # filenames that have no file in this repo at all.
+        existing |= {p.name for p in (PROJECT_ROOT / "scripts").glob("*.py")}
 
         # Project-level scripts that SKILL.md is allowed to reference
         project_level = {
