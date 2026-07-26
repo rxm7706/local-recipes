@@ -245,10 +245,10 @@ All in `local-recipes`.
 
 Core arrays/frames:
 - **numpy** (>=2.5.1) — n-dimensional arrays, the numeric foundation (NumPy 2.x API).
-- **pandas** (>=1.5.3,<3) — DataFrames for tabular data (2.x resolved).
+- **pandas** (>=3.0.3) — DataFrames for tabular data (2.x resolved).
 - **polars** (>=1.43.0) — Rust-backed columnar DataFrames; lazy queries, streaming;
   much faster than pandas for large data.
-- **pyarrow-all** (>=21) — `import pyarrow`; Apache Arrow with ALL extras: Parquet,
+- **pyarrow-all** (>=24.0.0) — `import pyarrow`; Apache Arrow with ALL extras: Parquet,
   Datasets, Flight RPC, ORC, ADBC-adjacent IO. The interchange layer between pandas,
   polars, duckdb, dagster, daft.
 - **getdaft** (>=0.6.13) — `import daft`; distributed DataFrames for multimodal data
@@ -262,7 +262,7 @@ Core arrays/frames:
 SQL engines & tooling:
 - **duckdb** (>=1.5.5) — embedded analytical (OLAP) SQL database; reads/writes
   Parquet/CSV/Arrow natively; the default local analytics engine.
-- **sqlglot** (>26.32,<28.7) — parse, transpile, optimize SQL across ~30 dialects;
+- **sqlglot** (>=28.10.1) — parse, transpile, optimize SQL across ~30 dialects;
   build/rewrite SQL ASTs programmatically (used for feedstock analysis).
 - **sqlfluff** (>=4.2.2) — SQL linter/formatter, dialect-aware.
 - **psycopg2** (>=2.9.12) — real PostgreSQL driver (DB-API).
@@ -282,7 +282,7 @@ Small utilities:
 - **tablib** (>=3.9.0) — one API for tabular import/export: XLSX, CSV, JSON, YAML, ODS.
 - **tabulate** (>=0.10.0) — pretty-print tables as text/markdown/grid.
 - **tomlkit** (<0.13.3) — style-preserving TOML read/write (round-trips comments).
-- **structlog** (>24.2,<26) — structured (key-value/JSON) logging.
+- **structlog** (>=26.1.0) — structured (key-value/JSON) logging.
 - **ruamel.yaml** (>=0.18.17) — round-trip YAML that preserves comments and key order
   — the correct choice for editing `recipe.yaml`/`conda-forge.yml` in place.
 - **frozendict** — immutable mapping type.
