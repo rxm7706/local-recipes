@@ -7,10 +7,35 @@ target: planning-artifacts/architecture.md § Invariants & Rules (AD-25..AD-39)
 also-checked: planning-artifacts/prd.md (FR-22, FR-50 edits + adjacent FRs), planning-artifacts/epics.md (propagation)
 reviewer-posture: default-skeptical; findings are CONFIRMED-broken unless tagged otherwise
 created: 2026-07-25
-verdict: BLOCKED-ON
+verdict: CRITICALS-RESOLVED
 ---
 
 # Adversarial review — AD-25 through AD-39
+
+> ## Resolution — 2026-07-25
+>
+> **All 6 CRITICALs are resolved in `architecture.md`.** Verdict moves
+> `BLOCKED-ON` → `CRITICALS-RESOLVED`. The 12 HIGH and 8 MED findings remain open
+> and are **not** claimed closed by this pass.
+>
+> | # | Resolution |
+> |---|---|
+> | **F-1** | `.bmad-loop/policy.toml` declared a **derived artifact** (AD-12) rendered from the canonical `EffectivePolicy`; AD-10's closing sentence amended to except a governed derived artifact; the rendered file is gitignored with a meta-test asserting it is untracked; repo-wide defaults relocate to the canonical source. **New Story S-1.10** owns the conveyance — nothing did. |
+> | **F-2** | "Never unevaluable" replaced with **scoped unevaluability**: a quarantined line makes its own story key and decision domain `unevaluable`; unaffected records stay evaluable; unknown blast radius widens to the run rather than narrowing. Missing sidecar blob treated identically. |
+> | **F-3** | A standalone `gate evaluate` folds the **policy seed alone** and says so (`scope: policy-seed-only`), answering a bounded question and exiting 0 — restoring UJ-2 and FR-19. `EffectivePolicy.seed_view()` added as the whitelisted display/validation accessor (also closes **F-8**, which S-1.3 carried as two mutually-exclusive ACs). |
+> | **F-4** | The trust model is **declared, not mitigated**: tamper-**evident**, not tamper-proof. The agent is inside the trust boundary; `approver` is attribution, not authentication; every widening is a recorded `observation`; detection is after the fact via `marshal audit`. Process isolation is named as the precondition for anything stronger. |
+> | **F-5** | Freezes are split by **direction**: a freeze *narrows*, so a story spec may declare one in any gate mode; a freeze **removal** or gate-mode change *widens*, so it requires policy or an operator-attributed entry. UJ-2 is reachable again without reopening AD-27. |
+> | **F-6** | `id` becomes a composite **`(writer_id, counter)`** — monotonic per writer, not per run — since two uncoordinated writers cannot mint a per-run integer under AD-30's lock-free protocol. Total order restated as **`(ts, writer_id, counter)`**, explicitly not causal. Read-then-append closure declared safe by idempotence. `phase` gains a third value, **`observation`**, for the many entry kinds that are neither intent nor outcome. |
+>
+> **Live hazard confirmed, not yet closed.** F-1's cross-project bleed is real
+> *right now*: `loop-pyforge-herald` holds `.bmad-loop/policy.toml` dirty
+> (17+/27−, `mode = "none"`) on a **tracked** file, and its copy still reads
+> `trigger = "recommended"` — so if that line resumes and pushes to `main` it
+> would both publish herald-specific policy repo-wide and **silently revert the
+> standing independent-review policy adopted the same day**. Untracking is gated
+> on S-1.10 landing (a fresh loop home with no policy file is worse), so this
+> requires an operator decision in the interim.
+
 
 AD-25..39 were authored under reviewer pressure to close seven CRITICAL holes in AD-1..24.
 They close those holes. This review asks the next question: **what did they open?**

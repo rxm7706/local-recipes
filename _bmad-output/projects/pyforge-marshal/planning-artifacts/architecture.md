@@ -140,7 +140,7 @@ graph TD
 
 - **Binds:** FR-49, FR-50, FR-51, FR-53, FR-54, FR-10, FR-48
 - **Prevents:** two components resolving different effective values because one re-read a layer mid-run, and the hand-edited-shared-file pattern the current stack depends on.
-- **Rule:** composition happens once at `init`/`spin`, producing an immutable `EffectivePolicy` value that is materialized into the loop home and journaled with a content hash. Every consumer reads the materialized artifact. A mid-run change requires a new composition and lands as an explicit journal decision entry carrying the old and new hashes. **No Marshal code edits a shared repo-level file to express project-specific configuration.**
+- **Rule:** composition happens once at `init`/`spin`, producing an immutable `EffectivePolicy` value that is materialized into the loop home and journaled with a content hash. Every consumer reads the materialized artifact. A mid-run change requires a new composition and lands as an explicit journal decision entry carrying the old and new hashes. **No Marshal code edits a shared repo-level file to express project-specific configuration — **except a file declared a derived artifact under AD-12 and rendered from the canonical content-addressed policy** (today: `.bmad-loop/policy.toml`, per AD-35). A rendered artifact is not a hand-edit: its source is governed, it is reproducible from that source, and it is untracked so it cannot bleed across projects (amended 2026-07-25, F-1).**
 
 ### AD-11 — The loop home is the unit of isolation, and the write boundary
 
@@ -236,19 +236,58 @@ graph TD
 
 - **Binds:** FR-22, FR-16, FR-24, FR-51, AD-5, AD-10
 - **Prevents:** the frozen-surface set having two legal homes. Policy is immutable for the run (AD-10), so a policy-sourced frozen set cannot contain a freeze declared *during* the run — and a gate reading it would pass a change to a file frozen mid-run. That is a false green on the product's core invariant, produced by code obeying every other AD.
-- **Rule:** any value that changes during a run — frozen surfaces, attempt counts, deferrals, acknowledged escalations, effective gate mode — is produced **solely** by `core/journal`'s fold over registered entry kinds. Policy may seed an initial value; it is never the live value. Every `EffectivePolicy` field is tagged `static` or `seed`; reading a `seed` field outside `core/journal.fold` is a meta-test failure. *(Consequence for the PRD: FR-50's "frozen surfaces come from the project layer" means the **initial** set.)*
+- **Rule:** any value that changes during a run — frozen surfaces, attempt counts, deferrals, acknowledged escalations, effective gate mode — is produced **solely** by `core/journal`'s fold over registered entry kinds. Policy may seed an initial value; it is never the live value. Every `EffectivePolicy` field is tagged `static` or `seed`; reading a `seed` field outside `core/journal.fold` is a meta-test failure, **except through `EffectivePolicy.seed_view()`** — an explicit accessor for display and validation only (`marshal config`/FR-54 must print every effective key; FR-53 must validate every key, both in preflight, outside any fold). The meta-test whitelists that accessor and nothing else, so "read for display" never becomes "read as the live value."
+
+  **Standalone evaluation folds the session journal (F-3, resolved 2026-07-25).** AD-25 puts non-run invocations in the `sessions/` namespace; the earlier rule made the live frozen set *solely* a product of the run journal fold. A standalone `marshal gate evaluate --scope-check` therefore had **no** journal to fold, and AD-17 + AD-8 turned "no frozen set" into permanently `unevaluable` — non-zero forever. That killed **UJ-2** (the operator checking scope *before* approving, with no run in flight) and broke FR-19's "exit 0 = pass" contract.
+
+  Resolution: a standalone evaluation folds **the policy seed alone**, and says so in its output. It is a complete, legitimate answer to a bounded question — *"is this change within the surface the project declared?"* — and it exits 0 when the answer is yes. It carries an explicit `scope: policy-seed-only` marker and a `mid-run freezes not visible` note, so its answer is never mistaken for a run-scoped verdict. When a run **is** in flight and its id is supplied, the same command folds that run's journal and answers the run-scoped question instead.
+
+  This is the one place a `seed` field is legitimately the live value — because with no run, there is no accumulation to have missed. *(Consequence for the PRD: FR-50's "frozen surfaces come from the project layer" means the **initial** set.)*
 
 ### AD-27 — An allowlist may only be narrowed by the party it constrains
 
 - **Binds:** FR-22, FR-24, FR-50, AD-1, AD-17
 - **Prevents:** the governed agent authoring the allowlist it is judged against. Per-story specs are machine-drafted; under gate mode `per-epic` or `none` no human reads the declared surface, so an agent could widen `surface:` — or remove a freeze — and pass its own scope check while satisfying AD-1 and AD-17 verbatim.
-- **Rule:** a story-spec-declared surface is admissible only as a **subset** of the policy-declared surface for its epic; `core/gate` computes the effective surface as `policy_surface ∩ spec_surface` and a meta-test asserts no other combinator is used. Any declared path outside the policy surface is a hard finding, never an expansion. Freeze declarations, freeze removals, and gate-mode changes are **never** sourced from an agent-writable artifact — they enter through policy or through an operator-attributed journal entry carrying an approver identity.
+- **Rule:** a story-spec-declared surface is admissible only as a **subset** of the policy-declared surface for its epic; `core/gate` computes the effective surface as `policy_surface ∩ spec_surface` and a meta-test asserts no other combinator is used. Any declared path outside the policy surface is a hard finding, never an expansion. Freeze declarations, freeze removals, and gate-mode changes are **never** sourced from an agent-writable artifact — they enter through policy, or through an operator-attributed journal entry, under the trust model declared below.
+
+  **Marshal's trust model is tamper-evident, not tamper-proof (F-4, resolved 2026-07-25).** This is a *declaration*, not a mitigation, and it is stated here because the earlier rule implied a guarantee Marshal cannot deliver.
+
+  The governed agent session runs **inside** Marshal's trust boundary: C-10 states plainly that a worktree is not a sandbox, process isolation is Deferred, and Marshal defines no authentication primitive. The session therefore holds the operator's own shell, can invoke the `marshal` CLI, and can append to the run journal directly. An "operator-attributed" entry is consequently **attributable, not authenticated** — an agent that wanted to forge one could. Claiming otherwise would satisfy AD-27 to the letter while leaving the hole it exists to close fully open.
+
+  What Marshal *does* guarantee, and what the design must therefore deliver:
+
+  1. **Append-only, never rewritten** (AD-30). A forged entry can be added; existing entries cannot be altered or removed without detection.
+  2. **Every widening is a recorded event.** Freeze removals and gate-mode changes emit `observation` entries naming the actor, the prior value, and the new one. A widening that left no entry is itself a hard finding at fold time.
+  3. **Attribution is evidence, not authorization.** `approver` is a claim recorded for audit. No code path grants privilege because the field is present.
+  4. **Detection is after the fact.** `marshal audit` surfaces every widening in a run for operator review. Marshal detects tampering; it does not prevent it.
+
+  **Precondition for anything stronger:** process isolation (currently Deferred). Only once the governed session runs outside the operator's credential scope can an approval channel be authenticated rather than merely attributed. Until then, any FR that assumes *prevention* is mis-specified, and this rule is the ceiling.
+
+  **Mid-run freezes in unattended modes (F-5, resolved 2026-07-25).** AD-26 requires freezes declared *during* a run to accumulate through the journal; AD-27 restricts who may declare them. In gate mode `none` (the L4 rung, UJ-1's overnight wave) and `per-epic` (§7.3's production ceiling) **no operator is present**, so the earlier pairing described a mechanism with no writer in either production mode.
+
+  Resolution: a **story may declare a freeze, because a freeze is a NARROWING.** AD-27's principle is that an allowlist may only be narrowed by the party it constrains — and freezing a file removes it from the writable surface, constraining the agent further. The asymmetry is the rule:
+
+  | Operation | Effect on the agent's surface | Who may declare |
+  |---|---|---|
+  | **Freeze declaration** | narrows | the story spec, in any gate mode — recorded as an `observation` |
+  | **Freeze removal** | widens | policy, or an operator-attributed entry (per the trust model above) |
+  | **Gate-mode change** | widens | policy, or an operator-attributed entry |
+
+  This makes UJ-2's opening ("Story 6.1 amended a schema and froze three files") reachable again in every gate mode, without reopening the hole AD-27 closes: the agent can only ever tighten its own constraints.
 
 ### AD-28 — Every journal entry is addressable; reconciliation closes, never re-performs
 
 - **Binds:** FR-18, FR-34, AD-5, AD-6, AD-21
 - **Prevents:** two components pairing `intent`/`outcome` by heuristic (most-recent-unmatched versus ordinal) and disagreeing about which intents are orphaned — with the supervisor and the CLI both appending, they will. Also resolves the head-on AD-6 × AD-21 collision: AD-21 says re-run and converge to 0; AD-6 says a lone intent never auto-retries.
-- **Rule:** every entry carries `id` (unique, monotonic per run); every `phase: outcome` carries a mandatory `intent_id`. Pairing is by `intent_id` **only**; no positional or heuristic pairing exists. A lone `intent` is closed exclusively by a `reconciliation` outcome carrying observed external evidence (commit sha, worktree absence, PR number) and the reconciling command; absent evidence it stays open and is reported. **Precedence: AD-21 may observe and close an open intent; it may never re-perform the action without evidence the action did not occur.**
+- **Rule:** every entry carries a **composite id `(writer_id, counter)`** — `writer_id` is unique per appending process (supervisor, CLI invocation), `counter` is monotonic **within that writer**. Every `phase: outcome` carries a mandatory `intent_id` referencing a composite id. Pairing is by `intent_id` **only**; no positional or heuristic pairing exists.
+
+  **Why composite (F-6, resolved 2026-07-25).** The earlier rule required an id "unique, monotonic **per run**". AD-30 mandates a lock-free protocol — one `os.write()` on `O_APPEND`, no coordination primitive — with **two concurrent writers by design**. Two independent processes cannot mint a unique monotonic per-run integer without shared state, a lock, or a read-modify-write; AD-30 forecloses all three. The invariant was unachievable, and a concurrency test asserting "zero malformed lines" would have passed while it was violated — testing atomicity, not uniqueness.
+
+  **Total order is therefore `(ts, writer_id, counter)`**, not `(seq, ts)`: `ts` first (millisecond precision, AD-30), `writer_id` as a deterministic tie-break, `counter` last. This is a total order without cross-writer coordination. It is **not** a causal order, and no consumer may infer causality from adjacency.
+
+  **A supervisor closing a CLI-minted intent** must locate that `intent_id` by folding the journal, then append. That read-then-append is **not** atomic. It is safe because closure is idempotent: a duplicate `reconciliation` outcome for an already-closed intent is a no-op, and the fold takes the earliest. No lock is required, and none is permitted.
+
+  **`phase` is three-valued: `intent | outcome | observation`.** The earlier two-valued set forced gate verdicts, story transitions, budget samples, supervisor liveness, AD-10's policy-decision entry and AD-26's freeze declarations into `outcome`, which then required a mandatory `intent_id` that does not exist for any of them. `observation` records something true without claiming an action was attempted, and carries **no** `intent_id`. A lone `intent` is closed exclusively by a `reconciliation` outcome carrying observed external evidence (commit sha, worktree absence, PR number) and the reconciling command; absent evidence it stays open and is reported. **Precedence: AD-21 may observe and close an open intent; it may never re-perform the action without evidence the action did not occur.**
 
 ### AD-29 — Promotion is complete only when durable off the disposable ref
 
@@ -260,7 +299,13 @@ graph TD
 
 - **Binds:** FR-18, NFR-8, AD-5, AD-6
 - **Prevents:** a long-lived buffered supervisor writer interleaving a partial line with a short-lived CLI append, producing malformed JSONL in the artifact AD-5 declares the only source of truth — where AD-8 then turns one corrupt byte into a permanently red fleet view. Also prevents a buffered `intent` lost to a kill, which inverts AD-6 into "action happened, no record."
-- **Rule:** every append is a single `os.write()` of one complete newline-terminated line to a descriptor opened `O_APPEND|O_CREAT`, followed by `fsync` for `phase: intent`. No buffered stream is held open across appends. A line exceeding 4 KiB stores its payload in a sidecar blob under the run directory and carries a reference. Total order is `(seq, ts)` using AD-28's per-run monotonic id. The fold is resilient: an unparseable line is quarantined and surfaced as a registered finding **on that record**, and never makes the surrounding run state unevaluable.
+- **Rule:** every append is a single `os.write()` of one complete newline-terminated line to a descriptor opened `O_APPEND|O_CREAT`, followed by `fsync` for `phase: intent`. No buffered stream is held open across appends. A line exceeding 4 KiB stores its payload in a sidecar blob under the run directory and carries a reference. Total order is `(seq, writer_id, counter)` per AD-28 — **not** a global monotonic integer, which two uncoordinated writers cannot mint (see AD-28). The fold is resilient but **never silently green**: an unparseable line is quarantined and surfaced as a registered finding, and the records it could have carried become **scoped `unevaluable`**.
+
+  **Scoped unevaluability (F-2, resolved 2026-07-25).** The earlier rule said a corrupt line "never makes the surrounding run state unevaluable." That legislated a false green into the one artifact the product exists to protect: if the lost line was the `outcome` recording a gate failure, an escalation, or a freeze declaration, the fold omitted it and the run read clean — against NFR-3 and AD-8, and self-contradicting AD-31's max-over-findings fold. Correct expression: a quarantined line makes **its own story key and decision domain** `unevaluable`; records provably unaffected by it stay evaluable. When the quarantined line's `story` or `kind` cannot be recovered, the scope widens to the whole run — unknown blast radius is not a reason to narrow it. One corrupt byte still does not red the fleet; it reds exactly what it might have changed.
+
+  A reference to a **missing sidecar blob** is the same class and takes the same treatment: `unevaluable` for that record, never "quarantine and continue."
+
+  Marshal's journal is **tamper-evident, not tamper-proof** — see AD-27.
 
 ### AD-31 — The lattice is closed and its admission criteria have one owner
 
@@ -290,7 +335,16 @@ graph TD
 
 - **Binds:** FR-1, FR-49, FR-53, FR-54, AD-10, AD-21
 - **Prevents:** an idempotent `init` re-run with different flags rewriting the materialized policy while a live supervisor still holds the value it loaded at spawn — so `marshal config` prints one threshold and the supervisor enforces another, silently.
-- **Rule:** the materialized policy artifact is named by its content hash and never overwritten. A run pins its policy hash at spawn and every consumer resolves through that hash. Recomposition against a home with a live run either refuses or writes a new artifact, and the supervisor reports `policy-superseded` rather than switching.
+- **Rule:** the materialized policy artifact is named by its content hash and never overwritten. A run pins its policy hash at spawn and every consumer resolves through that hash. Recomposition against a home with a live run either refuses or writes a new artifact, and the supervisor reports `policy-superseded` rather than switching. A per-home **`current` pointer file** names the live hash; it is the only mutable part, it is rewritten atomically, and `marshal config` resolves through it. Without it, two artifacts on disk and no live run leave FR-54 and AD-21's convergence check with no defined answer.
+
+  **`.bmad-loop/policy.toml` is a DERIVED artifact (F-1, resolved 2026-07-25).** The harness pins the path: `bmad-loop 0.9.0` hard-codes `POLICY_FILE = .bmad-loop/policy.toml` and exposes no policy-path flag on `run`. A content-addressed, never-overwritten artifact therefore cannot be what the harness consumes, and three rules collided head-on: AD-35 forbade the fixed name, AD-10's closing sentence forbade Marshal editing a shared repo-level file, and FR-51's tier-batching *required* rewriting `[adapter.dev].model` between batches. No story owned the conveyance.
+
+  Resolution, in four parts:
+
+  1. **`.bmad-loop/policy.toml` is declared a derived artifact under AD-12**, rendered by `adapters/harness_bmadloop.py` from the canonical content-addressed `EffectivePolicy`. The canonical artifact stays content-addressed and write-once; the rendered file is a projection of it, exactly as AD-12 governs every other derived artifact.
+  2. **AD-10's closing sentence is amended** (see AD-10) to except a declared derived artifact rendered from the canonical policy. Marshal still never hand-edits a shared file to express project configuration — it *renders* one, from a source that is itself governed.
+  3. **The rendered file must never ride a loop commit to `main`.** It is `.gitignore`d, and a meta-test asserts it is untracked. This closes a **live cross-project bleed**: loop homes publish with `git push origin HEAD:main`, the file is currently git-tracked, and a hand-edited copy in one loop home lands on every other project — the precise failure AD-11 exists to prevent, observed dirty in `loop-pyforge-herald` at review time.
+  4. **Repo-wide defaults move to the canonical source.** Any setting intended for every project (e.g. the standing independent-review policy) is expressed in the tracked canonical policy that Marshal composes from, never by editing the rendered file.
 
 ### AD-36 — Projection mechanism is declared, and its detector must be non-trivial
 

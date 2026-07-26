@@ -158,10 +158,43 @@ So that project-specific configuration never requires hand-editing a shared file
 **Then** precedence is defaults → project → flags, last wins, with no fourth layer and no per-key reordering (AD-16)
 **And** the result is an immutable `EffectivePolicy` value; composition is pure and the same inputs produce the same output (AD-10)
 **And** every field carries its winning layer and raw source value, and `marshal config` prints key, effective value, and winning layer, with secrets redacted
-**And** **every field is tagged `static` or `seed`**; reading a `seed` field (frozen surfaces, gate mode, attempt counts) outside the journal fold fails a meta-test (AD-26)
+**And** **every field is tagged `static` or `seed`**; reading a `seed` field (frozen surfaces, gate mode, attempt counts) outside the journal fold fails a meta-test (AD-26) — **except through `EffectivePolicy.seed_view()`**, the display/validation accessor the meta-test whitelists, which is what lets this story's own `marshal config` AC and FR-53's preflight validation range over every key without contradiction (F-8)
 **And** the worktree-seed path list is **generated from the active project**, never literal — switching projects requires no edit to any shared file (FR-50)
 **And** unknown keys, unresolvable commands, and out-of-range values are rejected with a registered finding naming the layer that introduced them
 **And** the materialized artifact is named by its content hash and never overwritten (AD-35)
+
+### Story 1.10: Render the harness policy from the canonical EffectivePolicy
+
+As the operator,
+I want Marshal to **render** `.bmad-loop/policy.toml` from the composed policy rather than anyone hand-editing it,
+So that per-project and per-tier settings reach the harness without a shared tracked file bleeding one project's config onto every other.
+
+**Type:** feature • **Effort:** M • **Deps:** S-1.3 • **FR/AD:** FR-49, FR-50, FR-51; AD-10, AD-12, AD-35
+**Surface:** `adapters/harness_bmadloop.py`, `tests/unit/test_harness_policy_render.py`, `tests/meta/test_rendered_policy_untracked.py`, `.gitignore`
+
+> **Added 2026-07-25 to close F-1 (CRITICAL).** The review found the composed policy had **no path to the harness at all**: `bmad-loop 0.9.0` hard-codes `POLICY_FILE = .bmad-loop/policy.toml` with no policy-path flag, that file is git-tracked, AD-10 forbade Marshal editing it, and FR-51's tier-batching required exactly that edit. A grep of this file for `policy.toml` returned nothing — S-1.3 materializes an `EffectivePolicy` that nothing conveys to the engine it is composed for.
+
+**Acceptance Criteria:**
+
+**Given** a materialized `EffectivePolicy` (S-1.3) and a loop home
+**When** the harness adapter renders
+**Then** `.bmad-loop/policy.toml` is written **whole** from that policy — never patched, never merged with an existing file — and is byte-identical for identical input (AD-12 derived-artifact discipline)
+**And** the canonical artifact stays content-addressed and write-once; only this projection carries the harness's fixed name (AD-35)
+
+**Given** FR-51 tier-batching
+**When** stories are batched by model tier
+**Then** each batch renders its own `[adapter.dev].model` — automating the hand-edited `HARD-STORY BATCH PROCEDURE` block that FR-51 cites as its motivating evidence, with no human edit of a shared file
+
+**Given** the rendered file
+**When** the repository is inspected
+**Then** `.bmad-loop/policy.toml` is **untracked** (`.gitignore`d) and a meta-test asserts `git ls-files` does not list it
+**And** a loop home's `git push origin HEAD:main` cannot carry it — closing the live cross-project bleed observed at review time, where `loop-pyforge-herald` held 17+/27− of herald-specific policy on a tracked file shared with every project
+
+**Given** a repo-wide default (e.g. the standing independent-review trigger)
+**When** it is changed
+**Then** it is expressed in the **tracked canonical policy source**, never by editing the rendered file — and the change reaches every project through re-rendering
+
+> **SEQUENCING (hard).** Untracking must not precede rendering. Until this story lands, `.bmad-loop/policy.toml` stays tracked, because a fresh loop home cloned without it would leave `bmad-loop` with no policy at all. `git rm --cached` is the **last** step of this story, not a preparatory one.
 
 ### Story 1.4: Provision a loop home
 
