@@ -1,10 +1,16 @@
 # bmad-loop orchestration policy. All keys optional; defaults shown.
 
 [gates]
-# Pilot posture (docs/specs/bmad-loop-adoption.md W3): per-story spec approval for the
-# pyforge-warden contract-freeze stories (1.1/1.2); relax to per-epic
-# from Epic 2 once the conformance harness polices the loop, then consider none.
-mode = "per-story-spec-approval" # none | per-epic | per-story-spec-approval
+# 2026-07-26 — UNATTENDED (operator's direction): runs never pause for manual
+# approval. Supersedes the W3 pilot posture (per-story spec approval for the
+# pyforge-warden contract-freeze stories 1.1/1.2, relaxing to per-epic from
+# Epic 2), which was scoped to that pilot and has outlived it.
+#
+# This is the HUMAN approval gate ONLY. It is NOT the review knob: the
+# independent AI reviewer still runs on every story (review.trigger = "always",
+# pyforge-atlas retro A1). That pass is inside the loop and pauses nothing —
+# autonomy here buys unattended runs, not unreviewed ones.
+mode = "none" # none | per-epic | per-story-spec-approval
 retrospective = "notify"     # never | notify | auto (auto unsupported in v1)
 
 # ---------------------------------------------------------------------------
