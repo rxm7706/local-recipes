@@ -1,44 +1,56 @@
 From: conda-forge recipe maintainers
-Subject: [PATCH] Strip CLI-tool Requires-Dist entries + exclude sdist symlink
+Subject: [PATCH] Strip uv Requires-Dist, drop pyarrow cap, exclude sdist symlink
 
-(1) Upstream lists `uv` and `git-annex` as `Requires-Dist` so that
-`pip install xorq` bootstraps both CLI tools from PyPI. On conda-forge
-they are packaged separately as native binaries (Rust and Haskell
-respectively) and do not ship a Python `.dist-info/` directory, which
-makes `pip check` report them as missing even though `$PREFIX/bin/uv`
-and `$PREFIX/bin/git-annex` are present. Both are still declared in
-the recipe's `run:` block, so the conda solver still pulls them in.
+(1) Upstream lists `uv` as a `Requires-Dist` so that `pip install xorq`
+bootstraps the CLI from PyPI. On conda-forge uv is packaged separately as a
+native Rust binary and ships no Python `.dist-info/`, so `pip check` reports
+it missing even though `$PREFIX/bin/uv` is present. It is still declared in
+the recipe's `run:` block, so the conda solver pulls it in.
 
-(2) The xorq sdist ships a symlink at
-`python/xorq/common/utils/tests/conftest.py` →
+As of xorq 0.3.36 `git-annex` is NO LONGER a core dependency (upstream moved
+it to the optional `annex` extra), so it no longer needs stripping here.
+
+(2) Upstream caps pyarrow at <22 defensively. conda-forge currently ships
+pyarrow 25, and the global pyarrow pin already constrains the ABI, so the
+recipe's `run:` block deliberately carries no upper bound. Without this hunk
+the wheel METADATA keeps the <22 cap and `pip check` fails with
+"xorq 0.3.36 has requirement pyarrow<22,>=18.0.0, but you have pyarrow 25.0.0"
+(SKILL.md G26 — loosening a conda dep does not loosen the baked wheel
+metadata). This mirrors the same patch carried by
+conda-forge/xorq-datafusion-feedstock.
+
+(3) The xorq sdist ships a symlink at
+`python/xorq/common/utils/tests/conftest.py` ->
 `../../../backends/xorq_datafusion/tests/conftest.py`. On Windows the
-extracted symlink dangles or becomes a text stub (depending on whether
-the build agent holds SeCreateSymbolicLinkPrivilege), and hatchling's
-wheel builder fails the `os.stat` with `WinError 123` ("The filename,
-directory name, or volume label syntax is incorrect"). Exclude the
-symlinked path from the wheel build — the target file
-(`python/xorq/backends/xorq_datafusion/tests/conftest.py`) still
-ships, so `pytest` discovery against an installed xorq still finds a
-conftest for the xorq_datafusion backend tests.
+extracted symlink dangles or becomes a text stub, and hatchling's wheel
+builder fails `os.stat` with `WinError 123` (SKILL.md G11). Exclude the
+symlinked path; the target file still ships, so pytest discovery for the
+xorq_datafusion backend tests still finds a conftest.
 
 --- a/pyproject.toml
 +++ b/pyproject.toml
-@@ -8,6 +8,7 @@
+@@ -9,6 +9,7 @@
  # wheel ZIP).  By excluding here we ensure only force-include writes the files.
  exclude = [
      "python/xorq/env_templates/**",
 +    "python/xorq/common/utils/tests/conftest.py",
  ]
-
+ 
  # .gitignore contains `.env.*` which hatchling treats as an exclusion pattern
-@@ -54,10 +55,8 @@
+@@ -28,7 +29,7 @@
+ version = "0.3.36"
+ dependencies = [
+     "attrs>=24.1.0; python_version >= '3.10' and python_version < '4.0'",
+-    "pyarrow>=18.0.0,<22; python_version >= '3.10' and python_version < '4.0'",
++    "pyarrow>=18.0.0; python_version >= '3.10' and python_version < '4.0'",
+     "structlog>=24.2.0,<26; python_version >= '3.10' and python_version < '4.0'",
+     "pandas>=2.2.3,<3 ; python_version >= '3.10' and python_version < '4.0'",
+     "atpublic>=5.1",
+@@ -49,7 +50,6 @@
      "prometheus-client>=0.22.1",
      "cryptography>=45.0.3",
      "strenum>=0.4.15 ; python_version <= '3.10'",
 -    "uv>=0.7.20",
      "rich>=13.9.4",
      "click>=8.0",
--    "git-annex>=10.20250220",
      "gitpython>=3.1.46",
-     "textual>=1.0.0",
-     "filelock>=3.13",

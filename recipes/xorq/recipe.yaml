@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "0.3.26"
+  version: "0.3.36"
 
 package:
   name: xorq
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/x/xorq/xorq-${{ version }}.tar.gz
-  sha256: fc4dfce5d5037c7f0e35083fecaddc9997a191037acf0520b23a26356db204b3
+  sha256: ac00fedff1d95d63b3b44621936b25a27ea01b9c123bb9f16474b5083a9f8372
   patches:
     - patches/0001-strip-cli-tool-deps-for-conda-forge.patch
 
@@ -30,17 +30,13 @@ requirements:
   run:
     - python >=${{ python_min }},<=3.14
     - attrs >=24.1.0
-    - pyarrow >=13.0.0 #,<22
+    - pyarrow >=18.0.0 #,<22
     # xorq.flight.action imports pyarrow.flight unconditionally; conda-forge
     # splits the runtime out so pyarrow alone may land pyarrow-core without
     # libarrow_flight.so. Pin the runtime explicitly.
-    - libarrow-flight >=13.0.0 #,<22
+    - libarrow-flight >=18.0.0 #,<22
     - structlog >=24.2.0,<26
-    - python-cityhash >=0.4.7,<1
-    - pandas >=1.5.3,<3
-    - pyarrow-hotfix >=0.4,<1
-    - geoarrow-types >=0.2,<1
-    - pythran >=0.17.0
+    - pandas >=2.2.3,<3
     - setuptools
     - atpublic >=5.1
     - parsy >=2
@@ -52,8 +48,7 @@ requirements:
     - typing_extensions >=4.3.0
     - py-yaml12
     - cloudpickle >=3.1.1
-    - envyaml >=1.10.211231
-    - xorq-datafusion ==0.2.7
+    - xorq-datafusion ==0.2.10
     - opentelemetry-sdk >=1.32.1
     - opentelemetry-exporter-otlp >=1.32.1
     - opentelemetry-exporter-otlp-proto-grpc >=1.32.1
@@ -64,17 +59,13 @@ requirements:
     - uv >=0.7.20
     - rich >=13.9.4
     - click >=8.0
-    # git-annex is only packaged on linux-64 (no osx-*, win-*, linux-aarch64
-    # conda-forge builds). xorq's git-annex-backed data sources only work on
-    # Linux as a result. Gate the dep so the staged-recipes OSX + Windows
-    # test environments solve cleanly.
-    - if: linux
-      then:
-        - git-annex >=10.20250220
     - gitpython >=3.1.46
     - textual >=1.0.0
     - filelock >=3.13
-    - xorq-dasher >=0.1.0
+    - xorq-dasher >=0.1.1
+    # new hard dep in 0.3.36 (Rust/PyO3 Arrow record-batch cache);
+    # packaged alongside this bump as recipes/batchcorder.
+    - batchcorder ==0.1.3
 
 tests:
   - python:
