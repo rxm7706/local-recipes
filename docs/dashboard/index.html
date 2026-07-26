@@ -460,7 +460,7 @@
      station is visible rather than merely absent. The Charter is not a ninth
      row: it constitutes the Guild, so it sits above the roster. */
   .grow > summary { list-style: none; cursor: pointer; display: grid;
-    grid-template-columns: 92px repeat(6, 46px) 1fr auto; gap: 8px;
+    grid-template-columns: 92px repeat(6, minmax(46px, max-content)) 1fr auto; gap: 8px;
     align-items: center; padding: 9px 0; border-bottom: 1px solid var(--line-soft); }
   .grow > summary::-webkit-details-marker { display: none; }
   .g-st { font-family: var(--mono); font-size: 12.5px; font-weight: 600; color: var(--ink); text-transform: capitalize; }
@@ -468,10 +468,10 @@
   .g-n.zero { color: var(--slate-faint); opacity: .45; }
   .g-tot { font-family: var(--mono); font-size: 11.5px; color: var(--slate); text-align: right; }
   .g-thin { color: var(--active); }
-  .ghead { display: grid; grid-template-columns: 92px repeat(6, 46px) 1fr auto; gap: 8px;
+  .ghead { display: grid; grid-template-columns: 92px repeat(6, minmax(46px, max-content)) 1fr auto; gap: 8px;
     padding-bottom: 6px; border-bottom: 1px solid var(--line); }
-  .ghead span { font-family: var(--mono); font-size: 9px; text-transform: uppercase;
-    letter-spacing: .06em; color: var(--slate-faint); text-align: center; }
+  .ghead span { font-family: var(--mono); font-size: 8.5px; text-transform: uppercase;
+    letter-spacing: .04em; color: var(--slate-faint); text-align: center; white-space: nowrap; }
   .ghead span:first-child { text-align: left; }
   .gbody { padding: 6px 0 14px 92px; display: grid; gap: 5px; }
   .gd { font-size: 12.5px; color: var(--slate); display: flex; gap: 9px; align-items: baseline; }
@@ -605,7 +605,7 @@
 
   <details class="dreams zsec" id="guildsec" hidden open>
     <summary><span class="program-h" id="guildh">The Guild</span><span class="zcaret">▸</span></summary>
-    <div class="dflow"><b>Every station, everything it owns</b> — the accountability view the <code>owner:</code> through-line exists for. All eight Smiths render, including empty ones, so a thin station is visible rather than absent. Click a row for its Dreams.</div>
+    <div class="dflow"><b>Every station, everything it owns</b> — the accountability view the <code>owner:</code> through-line exists for. All eight Smiths render, including empty ones, so a thin station is visible rather than absent. Click a row for its Dreams.<br><b>Counts are Dream <em>states</em>, not chain stages</b> — this is a different axis from Fleet above, which tracks the 9-stage Dream→Code chain per project. A Dream sits in exactly one state; <em>practice</em> is outside the lifecycle (tended, never finished).</div>
     <div id="guildrows"></div>
   </details>
 
@@ -1060,8 +1060,13 @@
     const tot = GUILD.rows.reduce((n, r) => n + r.total, 0);
     document.getElementById("guildh").innerHTML =
       'The Guild <span class="zn">· ' + tot + ' dreams across ' + GUILD.rows.length + ' stations</span>';
-    const GL = {dreamt:"drmt", pitched:"ptch", specified:"spec", realized:"real",
-                archived:"arch", practice:"prac"};
+    // Full words, deliberately NOT abbreviated. The Fleet matrix already uses
+    // `spec` and `arch` for CHAIN STAGES (Spec authored / architecture authored);
+    // abbreviating these DREAM STATES to the same tokens made one board carry two
+    // meanings for `arch` — and made the Guild header read like a chain that had
+    // dropped research/brief/prd/epics/code.
+    const GL = {dreamt:"dreamt", pitched:"pitched", specified:"specified",
+                realized:"realized", archived:"archived", practice:"practice"};
     const head = '<div class="ghead"><span>station</span>' +
       GUILD.order.map(k => '<span>' + GL[k] + '</span>').join("") +
       '<span></span><span>total</span></div>';
