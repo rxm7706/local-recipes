@@ -13,10 +13,11 @@
  "local-recipes/spec-factory-console": {
   "files": {
    "docs/dashboard/README.md": "970ed18c67aa61ca4a0e12e81d4cb3054f7ffaa1",
-   "docs/dashboard/generate.py": "503a776e88952342f80aa5218b479d46b10d29f5",
+   "docs/dashboard/check_render.js": "17fedbfc1c3e52fef4dc4aec6fa6dbe39faa048e",
+   "docs/dashboard/generate.py": "7f462a136d679da04ce915f7dd60c892b82d2137",
    "docs/dashboard/index.html": "8799698803311e52d6cd748e1d120f3f5f694bbf"
   },
-  "memlog": "2a5844babe874825e5e0c94367a79b2697ce6bb2"
+  "memlog": "ddf8841c4e97a66cddd00f7aad8cc009b1e8c1b0"
  },
  "local-recipes/spec-fleet-stewardship": {
   "files": {},
@@ -722,7 +723,7 @@
  },
  "local-recipes/spec-multi-loop-isolation": {
   "files": {
-   "scripts/bmad-loop-worktree": "2b5c7c7b611c40ced5165ebd38c61206ee53d153",
+   "scripts/bmad-loop-worktree": "77fa15c301ea17b4452638923a67c99811989f92",
    "scripts/bmad-switch": "11a7733cd109ee6c0d940e11e6ef2c412b68613c"
   },
   "memlog": "2af19cae46ac22ba60fa39facfb2a6a2986be826"
@@ -1470,7 +1471,7 @@
    "src/shared/packages/pyforge-marshal/tests/unit/test_model.py": "3c3d698f6410a94844e558d63034cef995f6cec4",
    "src/shared/packages/pyforge-marshal/tests/unit/test_verdict.py": "24cd76c199411b3e726c993020d2527e822f306b"
   },
-  "memlog": "f2aa5466bd443e69c770806d40389d2fc251d255"
+  "memlog": "96f8e1cbd33e30f2cb518b3a9d055a9283312ad2"
  },
  "pyforge-mason/spec-pyforge-mason": {
   "files": {
