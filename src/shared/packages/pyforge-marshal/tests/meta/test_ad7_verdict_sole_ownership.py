@@ -6,13 +6,19 @@ adapted to Marshal's own 6-member lattice and exit-code domain.
 AST-scan every module in the installed package EXCEPT ``verdict.py`` and
 fail if any of them:
 
-(a) calls an exit primitive (``sys.exit`` / ``os._exit`` / ``SystemExit``,
-    including ``from sys import exit as <alias>`` / ``from os import _exit
-    as <alias>`` aliases, an aliased ``import sys as s`` / ``import os as
-    o`` module reference, positional or keyword args, or a bare string arg
-    -- ``sys.exit("msg")`` exits 1) with an int literal in Marshal's frozen
+(a) calls an exit primitive with an int literal in Marshal's frozen
     exit-code domain ``{0, 1, 2, 3, 4, 130}`` (AD-7) or with a simple
-    module-level ``NAME = <int literal>`` constant resolving to one;
+    module-level ``NAME = <int literal>`` constant resolving to one. "Exit
+    primitive" covers ``from sys import exit as <alias>`` / ``from os import
+    _exit as <alias>`` aliases, bare ``exit``/``SystemExit``, and ANY
+    attribute call named ``exit``/``_exit``/``SystemExit`` -- so ``sys.exit``
+    under any module alias (``import sys as s``) AND argparse's public
+    ``parser.exit(N)`` escape hatch both land here without module-binding
+    tracking (one step stricter than the warden guard this mirrors --
+    conservative on purpose: a future in-package method legitimately named
+    ``exit`` taking a guarded literal should stop for a human here anyway).
+    Positional, keyword, and bare-string args all count
+    (``sys.exit("msg")`` exits 1);
 (b) imports (or dereferences) a ``_``-private name from ``verdict`` --
     through ANY local name bound to the verdict module, not just the
     literal name ``verdict`` (``LATTICE_ORDER`` is deliberately PUBLIC --
@@ -51,6 +57,10 @@ if _PACKAGE_FILE is None:
 PACKAGE_DIR = Path(_PACKAGE_FILE).resolve().parent
 VERDICT_TOKENS = frozenset(member.value for member in Verdict)
 VERDICT_VALUE_BY_MEMBER = {member.name: member.value for member in Verdict}
+# An INDEPENDENT copy of the frozen domain on purpose (like test_verdict.py's
+# literal expectations): a test-local spelling that catches verdict.py's own
+# GUARDED_EXIT_CODES drifting -- importing it here would make this guard
+# vacuously agree with whatever verdict.py says.
 GUARDED_EXIT_LITERALS = frozenset({0, 1, 2, 3, 4, 130})
 
 # The lattice order, strongest first (the sequence the guard forbids outside
@@ -106,22 +116,6 @@ def _exit_call_aliases(tree: ast.Module) -> frozenset[str]:
     return frozenset(aliases)
 
 
-def _exit_module_aliases(tree: ast.Module) -> tuple[frozenset[str], frozenset[str]]:
-    """Names bound to the sys / os MODULES themselves -- ``import sys as s``
-    makes ``s.exit(2)`` an exit call the attribute check must see."""
-    sys_names = {"sys"}
-    os_names = {"os"}
-    for node in ast.walk(tree):
-        if not isinstance(node, ast.Import):
-            continue
-        for alias in node.names:
-            if alias.name == "sys":
-                sys_names.add(alias.asname or alias.name)
-            elif alias.name == "os":
-                os_names.add(alias.asname or alias.name)
-    return (frozenset(sys_names), frozenset(os_names))
-
-
 def _module_int_constants(tree: ast.Module) -> dict[str, int]:
     """Simple module-level ``NAME = <int literal>`` bindings (top level only
     -- a best-effort constant table, not a dataflow analysis)."""
@@ -146,30 +140,23 @@ def _module_int_constants(tree: ast.Module) -> dict[str, int]:
     return constants
 
 
-def _is_exit_callable(
-    func: ast.expr,
-    exit_aliases: frozenset[str],
-    sys_names: frozenset[str],
-    os_names: frozenset[str],
-) -> bool:
+def _is_exit_callable(func: ast.expr, exit_aliases: frozenset[str]) -> bool:
     if isinstance(func, ast.Attribute):
-        if isinstance(func.value, ast.Name):
-            if (func.value.id in sys_names and func.attr == "exit") or (
-                func.value.id in os_names and func.attr == "_exit"
-            ):
-                return True
-        return func.attr == "SystemExit"
+        # ANY attribute call named exit/_exit/SystemExit counts -- this sees
+        # `sys.exit` under any module alias (`import sys as s`) without
+        # binding-tracking, AND argparse's public `parser.exit(N)` escape
+        # hatch. Conservative on purpose (see the module docstring).
+        return func.attr in {"exit", "_exit", "SystemExit"}
     return isinstance(func, ast.Name) and func.id in exit_aliases
 
 
 def _exit_literal_violations(tree: ast.Module) -> list[int]:
     exit_aliases = _exit_call_aliases(tree)
-    sys_names, os_names = _exit_module_aliases(tree)
     constants = _module_int_constants(tree)
     violations: list[int] = []
     for node in ast.walk(tree):
         if not isinstance(node, ast.Call) or not _is_exit_callable(
-            node.func, exit_aliases, sys_names, os_names
+            node.func, exit_aliases
         ):
             continue
         arguments = [*node.args, *(keyword.value for keyword in node.keywords)]
@@ -390,6 +377,18 @@ def test_exit_detector_sees_module_aliases_and_string_args():
     assert _exit_literal_violations(ast.parse(string_arg)) == [2]
     none_arg = "import sys\nsys.exit(None)\nsys.exit()\n"
     assert _exit_literal_violations(ast.parse(none_arg)) == []
+
+
+def test_exit_detector_sees_attribute_exit_calls_like_parser_exit():
+    """argparse's public ``parser.exit(N)`` is an exit primitive available to
+    the very CLI module this guard most needs to watch -- the attribute
+    branch must catch ANY ``.exit(...)`` call, not only ``sys.exit``.
+    ``parser.error("msg")`` stays out of scope (no guarded arg -- its
+    internal exit-2 literal lives inside argparse, not this package)."""
+    parser_exit = "def f(parser):\n    parser.exit(3)\n"
+    assert _exit_literal_violations(ast.parse(parser_exit)) == [2]
+    parser_error = 'def f(parser):\n    parser.error("bad flag")\n'
+    assert _exit_literal_violations(ast.parse(parser_error)) == []
 
 
 def test_private_detector_sees_verdict_module_aliases():

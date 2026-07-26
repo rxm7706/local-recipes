@@ -20,7 +20,7 @@ Run from the repository root (the parent pixi workspace):
 ```bash
 pixi run -e pyforge-marshal pyforge-marshal-test         # run the test suite
 pixi run -e pyforge-marshal marshal --version             # console-script smoke test
-pixi run -e pyforge-marshal lint-imports --config src/shared/packages/pyforge-marshal/pyproject.toml  # AD-3/AD-4 contracts
+pixi run -e pyforge-marshal lint-imports --config src/shared/packages/pyforge-marshal/pyproject.toml --no-cache  # AD-3/AD-4 contracts (no .import_linter_cache/ litter)
 
 pixi run -e pyforge-marshal pyforge-marshal-build-conda   # .conda package via pixi-build-python
 pixi run -e pyforge-marshal pyforge-marshal-build-dist    # wheel + sdist via `python -m build`

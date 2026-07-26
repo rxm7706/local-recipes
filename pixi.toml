@@ -207,7 +207,10 @@ cmd = "pixi build --path src/shared/packages/pyforge-marshal --output-dir dist-c
 
 [feature.pyforge-marshal.tasks.pyforge-marshal-build-dist]
 description = "Build the pyforge-marshal wheel + sdist from the same hatchling pyproject."
-cmd = "python -m build --outdir dist src/shared/packages/pyforge-marshal"
+# --no-isolation (warden/doctor precedent): without it `python -m build`
+# creates an isolated venv and pip-fetches hatchling from PyPI -- dead weight
+# for the hatchling provisioned above, and a hard failure air-gapped.
+cmd = "python -m build --no-isolation --outdir dist src/shared/packages/pyforge-marshal"
 
 [feature.pyforge-marshal.tasks.pyforge-marshal-build]
 description = "Build BOTH pyforge-marshal artifacts (conda + wheel/sdist) from one manifest."

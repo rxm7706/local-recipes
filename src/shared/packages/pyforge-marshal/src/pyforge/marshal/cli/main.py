@@ -50,21 +50,31 @@ def main(argv: list[str] | None = None) -> int:
     itself. Exit codes stay inside Marshal's frozen ``{0, 1, 2, 3, 4, 130}``
     domain (AD-7): argparse's own ``--version``/``--help`` exits (``0``)
     and usage errors (``2``) are relayed as plain ints, and a
-    ``KeyboardInterrupt`` during parsing returns the SIGINT constant.
+    ``KeyboardInterrupt`` anywhere in parser construction or parsing returns
+    the SIGINT constant.
     """
     if argv is None:
         argv = sys.argv[1:]
-    parser = _build_parser()
     try:
+        # _build_parser() sits INSIDE the try: a KeyboardInterrupt landing
+        # during parser construction must return EXIT_SIGINT like one during
+        # parsing, or main() would raise in violation of its own contract.
+        parser = _build_parser()
         parser.parse_args(argv)
     except SystemExit as exc:
         # argparse exits itself: --version/--help -> 0, a usage error -> 2
         # (never 0). Surface its code as a return value, never re-raised --
         # a non-int code (argparse never produces one under this parser
-        # config) falls back to 2, still inside the guarded domain.
+        # config) falls back to 2, still inside the guarded domain. bool is
+        # excluded like everywhere else in this package: SystemExit(True)
+        # numerically equals 1 but is not an exit code -- clamp it.
         if exc.code is None:
             return EXIT_OK
-        if isinstance(exc.code, int) and exc.code in GUARDED_EXIT_CODES:
+        if (
+            isinstance(exc.code, int)
+            and not isinstance(exc.code, bool)
+            and exc.code in GUARDED_EXIT_CODES
+        ):
             return exc.code
         # Any other int (or non-int, e.g. a message string) is clamped to
         # EXIT_USAGE -- defense in depth for a future argparse action that

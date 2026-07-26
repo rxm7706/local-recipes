@@ -78,27 +78,66 @@ def test_ad3_harness_seam_contract_shape():
     assert "pyforge.marshal.adapters" not in contract["source_modules"]
 
 
-def test_ad3_source_modules_cover_every_subpackage_except_adapters():
-    """The AD-3 contract is enumerative, so a NEW subpackage added without
-    extending ``source_modules`` would silently sit outside the ``bmad_loop``
-    prohibition with every gate green. This complement check derives the
-    subpackage set from the installed package itself and makes the omission
-    build-breaking: every subpackage except ``adapters`` (the one deliberate
-    exclusion -- see test_ad3_harness_seam_contract_shape) must appear."""
+def _installed_package_dir() -> Path:
     import pyforge.marshal
 
     package_file = pyforge.marshal.__file__
     assert package_file is not None
-    package_dir = Path(package_file).resolve().parent
+    return Path(package_file).resolve().parent
+
+
+def test_ad3_source_modules_cover_every_submodule_except_adapters():
+    """The AD-3 contract is enumerative, so a NEW submodule added without
+    extending ``source_modules`` would silently sit outside the ``bmad_loop``
+    prohibition with every gate green. This complement check derives the
+    installed package's importable children itself and makes the omission
+    build-breaking: everything except ``adapters`` (the one deliberate
+    exclusion -- see test_ad3_harness_seam_contract_shape) must appear.
+
+    Children are ANY directory containing a ``*.py`` anywhere below it (a
+    PEP 420 namespace subpackage has no ``__init__.py`` yet still imports --
+    keying on ``__init__.py`` would let one slip the net) plus any top-level
+    ``*.py`` module beside ``__init__.py`` (e.g. a future
+    ``pyforge/marshal/util.py``)."""
+    package_dir = _installed_package_dir()
     subpackages = {
         f"pyforge.marshal.{entry.name}"
         for entry in package_dir.iterdir()
-        if entry.is_dir() and (entry / "__init__.py").is_file()
+        if entry.is_dir() and any(entry.rglob("*.py"))
+    }
+    top_level_modules = {
+        f"pyforge.marshal.{path.stem}"
+        for path in package_dir.glob("*.py")
+        if path.name != "__init__.py"
     }
     contract = _contract_forbidding("bmad_loop")
-    assert set(contract["source_modules"]) == subpackages - {
-        "pyforge.marshal.adapters"
-    }
+    assert set(contract["source_modules"]) == (
+        subpackages | top_level_modules
+    ) - {"pyforge.marshal.adapters"}
+
+
+def test_root_package_init_carries_no_imports():
+    """``pyforge/marshal/__init__.py`` is the one importable module the AD-3
+    complement check above cannot cover: listing ``pyforge.marshal`` itself
+    in ``source_modules`` would forbid ``bmad_loop`` for its descendants too,
+    ``adapters`` included. The sibling convention keeps the root
+    ``__init__.py`` empty -- this makes that convention build-breaking, so
+    code (and with it a ``bmad_loop`` import) can never quietly accumulate in
+    the seam contract's one blind file."""
+    import ast
+
+    init_path = _installed_package_dir() / "__init__.py"
+    tree = ast.parse(init_path.read_text(encoding="utf-8"), filename=str(init_path))
+    imports = [
+        node.lineno
+        for node in ast.walk(tree)
+        if isinstance(node, (ast.Import, ast.ImportFrom))
+    ]
+    assert not imports, (
+        f"pyforge/marshal/__init__.py imports at line(s) {imports} -- the "
+        "root __init__ sits outside the AD-3 contract's source_modules and "
+        "must stay empty (extend the contract before adding code here)"
+    )
 
 
 def test_lint_imports_passes_against_the_installed_package():

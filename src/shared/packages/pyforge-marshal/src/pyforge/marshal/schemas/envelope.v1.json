@@ -35,11 +35,12 @@
     "schema_version": {
       "type": "integer",
       "const": 1,
-      "description": "Envelope schema version; bumps only on a breaking change to the envelope KEYS. Additive fields do not bump it. const 1: this file IS the v1 schema -- a document claiming any other version must not validate against it."
+      "description": "Envelope schema version; bumps on ANY change to the envelope's key set -- additionalProperties is false, so even an additive key is a new schema version (a v1 validator would reject it), never a silent addition. const 1: this file IS the v1 schema -- a document claiming any other version must not validate against it."
     },
     "command": {
       "type": "string",
-      "description": "The marshal command that produced this envelope."
+      "minLength": 1,
+      "description": "The marshal command that produced this envelope -- never empty (matches Envelope.__post_init__'s non-empty check)."
     },
     "status": {
       "enum": ["ok", "error"],
@@ -75,8 +76,8 @@
       "properties": {
         "code": {
           "type": "string",
-          "pattern": "^MRS-[A-Z][A-Z0-9]*-[0-9]{3}$",
-          "description": "Stable machine code from the central registry (AD-15, core/findings.py). [0-9] spelled explicitly so the pattern reads identically under ECMA-262 and Python re (Python's \\d is Unicode-wide)."
+          "pattern": "^MRS-[A-Z][A-Z0-9]*-[0-9]{3}$(?!\\n)",
+          "description": "Stable machine code from the central registry (AD-15, core/findings.py). [0-9] spelled explicitly so the pattern reads identically under ECMA-262 and Python re (Python's \\d is Unicode-wide). The $(?!\\n) tail closes Python's other divergence: re-based validators (python-jsonschema applies pattern via re.search) let $ match before a trailing newline, so without the lookahead 'MRS-GATE-001\\n' would validate on the wire while the producer's fullmatch rejects it; under ECMA-262 the lookahead is inert ($ already means true end-of-string)."
         },
         "severity": {
           "enum": ["error", "warn", "info"],

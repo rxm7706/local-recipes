@@ -46,12 +46,8 @@ def test_code_pattern_is_matched_with_fullmatch_not_match():
     extra digit or newline as long as its PREFIX is well-formed."""
     assert findings.CODE_PATTERN.match("MRS-GATE-0001") is not None  # prefix matches
     assert findings.CODE_PATTERN.fullmatch("MRS-GATE-0001") is None  # but not fully
-
-    def require_registered_uses_fullmatch() -> None:
-        with pytest.raises(findings.UnregisteredFindingCodeError):
-            findings.require_registered("MRS-GATE-0001")
-
-    require_registered_uses_fullmatch()
+    with pytest.raises(findings.UnregisteredFindingCodeError):
+        findings.require_registered("MRS-GATE-0001")
 
 
 def test_require_registered_rejects_malformed_code_before_membership_check():

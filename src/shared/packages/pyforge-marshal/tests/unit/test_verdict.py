@@ -79,6 +79,11 @@ def test_exit_code_for_accepts_raw_string():
     assert verdict.exit_code_for("clean") == 0
 
 
+def test_exit_code_for_rejects_an_invalid_verdict():
+    with pytest.raises(ValueError):
+        verdict.exit_code_for("not-a-verdict")
+
+
 def test_warn_never_shares_unevaluables_nonzero_exit():
     """AD-31's own reasoning: warn is a distinct rung from unevaluable only
     because warn's exit stays 0 while unevaluable's does not."""
@@ -142,3 +147,11 @@ def test_compute_verdict_coerces_a_raw_string_floor():
 def test_compute_verdict_rejects_an_invalid_floor():
     with pytest.raises(ValueError):
         verdict.compute_verdict([], floor="not-a-verdict")
+
+
+def test_compute_verdict_rejects_non_finding_elements(synthetic_registry):
+    """Same member strictness as Envelope.__post_init__: a raw code string
+    (or anything else that isn't a Finding) is a fail-loud ValueError, not a
+    raw AttributeError from ``finding.code``."""
+    with pytest.raises(ValueError):
+        verdict.compute_verdict([_CODE_WARN])

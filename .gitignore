@@ -31,6 +31,9 @@ build/
 develop-eggs/
 dist/
 dist-conda/
+# import-linter writes its cache into the cwd (the repo root when running the
+# README's lint-imports command without --no-cache)
+.import_linter_cache/
 downloads/
 eggs/
 .eggs/

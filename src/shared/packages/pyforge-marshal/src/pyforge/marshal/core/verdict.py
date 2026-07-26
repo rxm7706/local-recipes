@@ -107,6 +107,13 @@ def compute_verdict(
     never silently returns an unregistered/invalid value."""
     winner = Verdict(floor)
     for finding in findings:
+        # Same member-strictness as Envelope.__post_init__: a non-Finding
+        # element is this module's fail-loud ValueError, not a raw
+        # AttributeError from deep inside the loop.
+        if not isinstance(finding, Finding):
+            raise ValueError(
+                f"findings must contain only Finding instances, got {finding!r}"
+            )
         candidate = classify(finding.code)
         if _RANK[candidate] < _RANK[winner]:
             winner = candidate

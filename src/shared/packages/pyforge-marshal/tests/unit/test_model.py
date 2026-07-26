@@ -124,6 +124,11 @@ def test_status_for_accepts_raw_string():
     assert status_for("error") is Status.ERROR
 
 
+def test_status_for_rejects_an_invalid_verdict():
+    with pytest.raises(ValueError):
+        status_for("not-a-verdict")
+
+
 # --- Envelope: construction, coercion, AD-39 raise scenarios ---------------
 
 
@@ -208,6 +213,23 @@ def test_envelope_rejects_non_str_command():
         )
 
 
+def test_envelope_rejects_empty_command():
+    """A nameless envelope is useless to any consumer -- ``command`` must be
+    non-empty, matching the schema's ``minLength: 1``."""
+    with pytest.raises(ValueError):
+        build_envelope(command="", verdict=Verdict.CLEAN)
+
+
+def test_envelope_rejects_bare_str_assumptions():
+    """``tuple("assumed x")`` is nine one-char strings, each individually
+    passing the str member check -- a bare str must be rejected at
+    construction, never silently exploded into characters."""
+    with pytest.raises(ValueError):
+        build_envelope(
+            command="x", verdict=Verdict.CLEAN, assumptions="assumed x"
+        )
+
+
 def test_envelope_data_is_defensively_copied(registered_code):
     data = {"k": "v"}
     envelope = build_envelope(command="x", verdict=Verdict.CLEAN, data=data)
@@ -258,6 +280,41 @@ def test_envelope_rejects_bool_schema_version():
             verdict=Verdict.CLEAN,
             data={},
             data_version=1,
+        )
+
+
+def test_envelope_rejects_float_schema_version():
+    """``1.0 == 1`` in Python too -- an equality-only check would let a
+    float ``schema_version`` construct and emit ``"schema_version": 1.0`` on
+    the wire, unlike ``data_version``'s full bool+int treatment one field
+    over."""
+    with pytest.raises(ValueError):
+        Envelope(
+            schema_version=1.0,
+            command="x",
+            status=Status.OK,
+            verdict=Verdict.CLEAN,
+            data={},
+            data_version=1,
+        )
+
+
+def test_envelope_rejects_json_unserializable_data():
+    """The class docstring promises to_json_dict() cannot fail on an
+    envelope that constructed -- so a payload json.dumps chokes on (a set,
+    an object()) must be rejected at construction, not discovered later and
+    far away."""
+    with pytest.raises(ValueError):
+        build_envelope(command="x", verdict=Verdict.CLEAN, data={"s": {1, 2}})
+
+
+def test_envelope_rejects_non_deepcopyable_data():
+    """The defensive deep copy is part of construction -- a non-copyable
+    value (generator, open file, lock) surfaces as this module's ValueError
+    convention, not a raw 'cannot pickle' TypeError from inside copy."""
+    with pytest.raises(ValueError):
+        build_envelope(
+            command="x", verdict=Verdict.CLEAN, data={"g": (i for i in ())}
         )
 
 
@@ -406,10 +463,42 @@ def test_finding_unknown_key_fails_schema():
         jsonschema.validate(document, _schema()["$defs"]["finding"])
 
 
+def test_schema_rejects_trailing_newline_finding_code():
+    """The real engine, not a re emulation: python-jsonschema applies
+    ``pattern`` via ``re.search``, where a bare ``$`` matches before a
+    trailing newline -- the schema pattern's ``$(?!\\n)`` tail must keep
+    ``"MRS-GATE-001\\n"`` from validating on the wire while the producer's
+    ``fullmatch`` rejects it."""
+    document = {"code": "MRS-GATE-001\n", "severity": "warn", "message": "m"}
+    with pytest.raises(jsonschema.ValidationError):
+        jsonschema.validate(document, _schema()["$defs"]["finding"])
+
+
+def test_schema_rejects_empty_command():
+    document = {
+        "schema_version": 1,
+        "command": "",
+        "status": "ok",
+        "verdict": "clean",
+        "data": {},
+        "data_version": 1,
+        "findings": [],
+        "assumptions": [],
+    }
+    with pytest.raises(jsonschema.ValidationError):
+        jsonschema.validate(document, _schema())
+
+
 def test_findings_code_pattern_matches_the_packaged_schema_pattern():
     """``core.findings.CODE_PATTERN`` and ``schemas/envelope.v1.json``'s
     ``finding.code`` pattern are independent copies of the same rule -- this
-    test is the tripwire that catches them drifting apart."""
+    test is the tripwire that catches them drifting apart.
+
+    The schema side is evaluated with ``re.search`` because that is how
+    python-jsonschema applies ``pattern`` -- a fullmatch-vs-fullmatch
+    comparison was structurally blind to ``$``'s before-a-trailing-newline
+    behavior under search, the exact divergence the newline probe exists to
+    catch."""
     schema_pattern = _schema()["$defs"]["finding"]["properties"]["code"]["pattern"]
     probes = [
         "MRS-GATE-001",
@@ -418,6 +507,7 @@ def test_findings_code_pattern_matches_the_packaged_schema_pattern():
         "MRS-gate-001",
         "MRS-GATE-01",
         "MRS-GATE-001\n",
+        "MRS-GATE-001 ",
         # Unicode digits: both patterns spell [0-9] (never \d) precisely so
         # Python's Unicode-wide \d cannot diverge from the schema's ECMA
         # reading -- this probe keeps that from regressing.
@@ -425,5 +515,5 @@ def test_findings_code_pattern_matches_the_packaged_schema_pattern():
     ]
     for probe in probes:
         assert bool(findings.CODE_PATTERN.fullmatch(probe)) == bool(
-            re.fullmatch(schema_pattern, probe)
+            re.search(schema_pattern, probe)
         ), f"CODE_PATTERN/schema pattern diverge on {probe!r}"

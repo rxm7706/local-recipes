@@ -36,6 +36,7 @@ This module is pure data: no I/O, no subprocess, no network, no clock
 from __future__ import annotations
 
 import copy
+import json
 from dataclasses import dataclass
 from enum import StrEnum
 
@@ -125,8 +126,10 @@ class Envelope:
     equal ``status_for(verdict)``, and an ``ok`` envelope may carry no
     error-severity finding. It also validates every payload field's shape
     (``schema_version``/``command``/``data``/``data_version`` plus the
-    ``findings``/``assumptions`` member types) so a successfully constructed
-    envelope always serializes to schema-valid JSON.
+    ``findings``/``assumptions`` member types) AND that ``data`` is
+    deep-copyable and JSON-serializable, so a successfully constructed
+    envelope always serializes to schema-valid JSON -- ``to_json_dict``
+    cannot fail on an envelope that constructed.
     """
 
     schema_version: int
@@ -139,13 +142,22 @@ class Envelope:
     assumptions: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
-        if isinstance(self.schema_version, bool) or self.schema_version != SCHEMA_VERSION:
+        # bool excluded (True == 1) AND a real int required (1.0 == 1 too --
+        # a float schema_version would otherwise construct and emit
+        # "schema_version": 1.0 on the wire).
+        if (
+            isinstance(self.schema_version, bool)
+            or not isinstance(self.schema_version, int)
+            or self.schema_version != SCHEMA_VERSION
+        ):
             raise ValueError(
                 f"schema_version must be {SCHEMA_VERSION}, got "
                 f"{self.schema_version!r}"
             )
-        if not isinstance(self.command, str):
-            raise ValueError(f"command must be a str, got {self.command!r}")
+        if not isinstance(self.command, str) or not self.command:
+            raise ValueError(
+                f"command must be a non-empty str, got {self.command!r}"
+            )
         if (
             isinstance(self.data_version, bool)
             or not isinstance(self.data_version, int)
@@ -158,6 +170,14 @@ class Envelope:
             raise ValueError(f"data must be a dict, got {self.data!r}")
         object.__setattr__(self, "verdict", Verdict(self.verdict))
         object.__setattr__(self, "status", Status(self.status))
+        # A bare str is iterable, so tuple("assumed x") would silently become
+        # nine one-char "assumptions" that each pass the str member check
+        # below -- reject it before the coercion.
+        if isinstance(self.assumptions, str):
+            raise ValueError(
+                "assumptions must be a sequence of str, not a bare str -- "
+                f"got {self.assumptions!r}"
+            )
         object.__setattr__(self, "findings", tuple(self.findings))
         object.__setattr__(self, "assumptions", tuple(self.assumptions))
         # Member-type checks BEFORE any invariant that touches the elements:
@@ -178,8 +198,20 @@ class Envelope:
         # mutation of a referenced mutable value (same rationale as
         # pyforge-doctor's Finding.evidence, extended to nested structures
         # since a shallow dict() copy still shares any nested list/dict with
-        # the caller).
-        object.__setattr__(self, "data", copy.deepcopy(self.data))
+        # the caller). Both failure modes surface as this module's ValueError
+        # convention, not a raw TypeError from deep inside copy/json.
+        try:
+            copied_data = copy.deepcopy(self.data)
+        except TypeError as exc:
+            raise ValueError(f"data is not deep-copyable: {exc}") from exc
+        # The docstring's contract -- to_json_dict() cannot fail on an
+        # envelope that constructed -- requires the payload's CONTENTS to be
+        # JSON-serializable, not just data's own dict shape.
+        try:
+            json.dumps(copied_data)
+        except (TypeError, ValueError) as exc:
+            raise ValueError(f"data is not JSON-serializable: {exc}") from exc
+        object.__setattr__(self, "data", copied_data)
 
         expected_status = status_for(self.verdict)
         if self.status is not expected_status:
@@ -220,13 +252,14 @@ def build_envelope(
     data_version: int = 1,
     findings: tuple[Finding, ...] = (),
     assumptions: tuple[str, ...] = (),
-    schema_version: int = SCHEMA_VERSION,
 ) -> Envelope:
     """Convenience constructor: derives ``status`` from ``verdict`` via
-    ``status_for`` so a caller can never set the two independently."""
+    ``status_for`` so a caller can never set the two independently, and pins
+    ``schema_version`` -- ``SCHEMA_VERSION`` is its only legal value, so a
+    parameter for it would just invite the one mistake it cannot survive."""
     resolved_verdict = Verdict(verdict)
     return Envelope(
-        schema_version=schema_version,
+        schema_version=SCHEMA_VERSION,
         command=command,
         status=status_for(resolved_verdict),
         verdict=resolved_verdict,
