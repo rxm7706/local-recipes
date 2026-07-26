@@ -1,0 +1,125 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.5.2"
+
+package:
+  name: parakeet-mlx
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/parakeet-mlx/parakeet_mlx-${{ version }}.tar.gz
+  sha256: 6c6ba3c4d42ebf015dde515e5a83858a516add3f5b2c6bd4a7be5c4ba8bd4d02
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - parakeet-mlx = parakeet_mlx.cli:app
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - setuptools >=42
+    - wheel
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - dacite >=1.9.2
+    # conda-forge spells this with an underscore (G10)
+    - huggingface_hub >=0.30.2
+    - librosa >=0.11.0
+    - mlx >=0.22.1
+    - numpy >=2.2.5
+    - typer >=0.15.3
+
+tests:
+  - python:
+      imports:
+        - parakeet_mlx
+      # pip_check disabled for THIS package only: conda-forge's dacite 1.9.2
+      # ships a wheel whose dist-info reports 1.9.1 (the conda metadata is
+      # correct at 1.9.2). pip check reads the dist-info, so upstream's
+      # dacite>=1.9.2 false-fails. Verified this is the ONLY pip check
+      # failure in the graph. External feedstock bug (SKILL.md G24/G28) --
+      # re-enable once dacite-feedstock rebuilds with correct wheel metadata.
+      pip_check: false
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+  - requirements:
+      run:
+        - python ${{ python_min }}.*
+    script:
+      - parakeet-mlx --help
+
+about:
+  homepage: https://github.com/senstella/parakeet-mlx
+  repository: https://github.com/senstella/parakeet-mlx
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: NVIDIA Parakeet speech-recognition models implemented on MLX
+  description: |
+    parakeet-mlx implements NVIDIA's Parakeet automatic-speech-recognition
+    models on top of MLX, Apple's array framework, giving Metal-accelerated
+    transcription on Apple Silicon. It provides a Python API and a
+    ``parakeet-mlx`` command line entry point, and can emit word-level
+    timestamps and subtitle output.
+
+    The package is pure Python; the acceleration comes from its ``mlx``
+    dependency. Because conda-forge's mlx has no Windows build, this package
+    is installable on Linux and macOS only.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: parakeet-mlx
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: parakeet-mlx
+  cfe-purls:
+    - pkg:conda/parakeet-mlx@${{ version }}?channel=conda-forge
+    - pkg:pypi/parakeet-mlx@${{ version }}
+  cfe-upstream-repo: https://github.com/senstella/parakeet-mlx
+  cfe-upstream-homepage: https://github.com/senstella/parakeet-mlx
+  cfe-import-names: [parakeet_mlx]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "false:dacite-1.9.2-ships-1.9.1-dist-info-G24"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: "2026-07-26T00:00:00Z"
+  cfe-generated-by-version: 8.79.1
+  cfe-generated-at-datetime: "2026-07-26T00:00:00Z"
+  cfe-local-build-status: success
+  cfe-local-build-datetime: "2026-07-26T16:35:43Z"
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # Authored 2026-07-26, last of the four gap-closers, as the Apple Silicon
+#    # half of bmad-manticore's transcription lane (its cross-platform sibling
+#    # is onnx-asr, packaged alongside). manticore's 2.0.0 CHANGELOG: "the
+#    # reference parakeet weights via parakeet-mlx on Apple Silicon and
+#    # onnx-asr (same weights) on Windows, Linux, and Intel Macs".
+# build:
+#    # Pure Python (setuptools, no compiled extension) -> noarch:python. The
+#    # Apple-Silicon association comes from the mlx DEPENDENCY, not from this
+#    # package having native code.
+# requirements:
+#    # All 6 deps verified on conda-forge. mlx itself covers linux-64,
+#    # linux-aarch64, osx-64 and osx-arm64 -- but NOT win-64, so this noarch
+#    # package simply will not solve on Windows. That is correct behaviour
+#    # rather than a defect: there is no mlx runtime there. A noarch package
+#    # cannot carry a platform-gated hard dep (G76), so this is left to the
+#    # solver instead of being papered over.
+#    # huggingface-hub -> huggingface_hub is the conda-forge spelling (G10).
+####

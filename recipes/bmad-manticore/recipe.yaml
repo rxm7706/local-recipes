@@ -1,0 +1,144 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  # Upstream's 2.0.0 is written up in CHANGELOG.md but NOT yet tagged (the
+  # section is headed "2.0.0 - Unreleased"), so this is a snapshot of main:
+  # .claude-plugin/marketplace.json metadata.version (2.0.0) + a .dev0
+  # marker, pinned to a commit — the bmad-labs-skills precedent. Bump
+  # `version` and `commit` together; switch to the tag archive once
+  # upstream cuts v2.0.0.
+  version: "2.0.0.dev0"
+  commit: 97ce6f15db343ce7a2433b81f5cbd562bab71aed
+
+package:
+  name: bmad-manticore
+  version: ${{ version }}
+
+source:
+  url: https://github.com/bmad-code-org/bmad-manticore/archive/${{ commit }}.tar.gz
+  sha256: 9e1db7a797c2159f51aa08ae8c6d2e658bbaefc55bc929a6a31761a53b0996aa
+
+build:
+  number: 0
+  noarch: generic
+
+requirements:
+  run:
+    - python >=3.10
+
+tests:
+  - script:
+      - if: not win
+        then:
+          - bmad-manticore-install --help
+          - test -d "${CONDA_PREFIX}/share/bmad-manticore/skills"
+          - test -d "${CONDA_PREFIX}/share/bmad-manticore/skills/mc-agent"
+          - test -d "${CONDA_PREFIX}/share/bmad-manticore/skills/mc-setup"
+          - test -d "${CONDA_PREFIX}/share/bmad-manticore/skills/mc-braindump"
+          - test -d "${CONDA_PREFIX}/share/bmad-manticore/skills/mc-cut"
+          - test -f "${CONDA_PREFIX}/share/bmad-manticore/skills/module.yaml"
+          - test -f "${CONDA_PREFIX}/share/bmad-manticore/.claude-plugin/marketplace.json"
+          - test -f "${CONDA_PREFIX}/share/bmad-manticore/docs/user-guide.md"
+      - if: win
+        then:
+          - bmad-manticore-install.bat --help
+          - if not exist "%CONDA_PREFIX%\share\bmad-manticore\skills" exit 1
+          - if not exist "%CONDA_PREFIX%\share\bmad-manticore\skills\mc-agent" exit 1
+          - if not exist "%CONDA_PREFIX%\share\bmad-manticore\.claude-plugin\marketplace.json" exit 1
+
+about:
+  homepage: https://github.com/bmad-code-org/bmad-manticore
+  repository: https://github.com/bmad-code-org/bmad-manticore
+  license: MIT
+  license_file: LICENSE
+  summary: BMad Manticore — AI video production pipeline packaged as an installable BMad Method module (16 mc-* skills)
+  description: |
+    BMad Manticore is an AI video production pipeline for content creators,
+    distributed as an installable BMad Method module / Claude Code plugin
+    marketplace. It orchestrates the path from a spoken brain dump to a
+    rendered, graphics-rich video: script drafting in the creator's own words
+    under a quote-or-cut contract, a word-level cut plan over raw footage,
+    preview renders at every stage, brand-themed motion-graphics overlays,
+    CTA placement, a title/thumbnail package, and an offered final-quality
+    render — with approval gates at every taste decision and an editor
+    timeline export written alongside at every step.
+
+    This package ships the module content: the 16 ``mc-*`` skills (mc-agent,
+    mc-setup, mc-new, mc-braindump, mc-outline, mc-script, mc-cut, mc-beats,
+    mc-graphics, mc-assets, mc-audio, mc-package, mc-pipeline, mc-ograf,
+    mc-retro, mc-stream-pack), the module manifest, the plugin marketplace
+    manifest, and the user guide.
+
+    After installation, run ``bmad-manticore-install`` in your project
+    directory to copy the skills into ``.claude/skills/`` so Claude Code can
+    discover them (or pass an explicit destination directory).
+
+    The skills orchestrate external tools that this package does NOT install:
+    the pipeline's own prerequisites are uv, ffmpeg, node, and git, plus
+    whichever optional transcription / generation / motion-graphics engines
+    you opt into during ``mc-setup``. Install those separately.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: bmad-manticore
+  cfe-upstream-registry: github
+  cfe-upstream-name: bmad-code-org/bmad-manticore
+  cfe-purls:
+    - pkg:conda/bmad-manticore@${{ version }}?channel=conda-forge
+    - "pkg:github/bmad-code-org/bmad-manticore@97ce6f15db343ce7a2433b81f5cbd562bab71aed"
+  cfe-upstream-repo: https://github.com/bmad-code-org/bmad-manticore
+  cfe-upstream-homepage: https://github.com/bmad-code-org/bmad-manticore
+  cfe-import-names: []
+  cfe-source-kind: github-commit
+  cfe-noarch: generic
+  cfe-pip-check: "false:not-a-python-package"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: "2026-07-26T00:00:00Z"
+  cfe-generated-by-version: 8.79.1
+  cfe-generated-at-datetime: "2026-07-26T00:00:00Z"
+  cfe-local-build-status: success
+  cfe-local-build-datetime: "2026-07-26T12:47:24Z"
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # Packaged in the 2026-07-26 agent-CLI wave alongside caveman / codegraph /
+#    # headroom-ai. Same shape as the sibling bmad-code-org content bundles
+#    # (bmad-utility-skills, bmad-labs-skills): a noarch:generic skills payload
+#    # under share/<name>/ plus a Python installer entry point.
+# context:
+#    # Snapshot of main at 97ce6f1 (2026-07-24, "Merge PR #8 from
+#    # drop-remotion"). CHANGELOG's 2.0.0 section is headed "Unreleased" and
+#    # no v2.0.0 tag exists, so the version is marketplace.json's 2.0.0 plus a
+#    # .dev0 marker and the source is a commit archive. 2.0.0 consolidates
+#    # motion graphics on HyperFrames (Remotion retired), makes the final
+#    # render incremental, and adds Windows/Linux/Intel-Mac support. Skills
+#    # set is unchanged at 16 mc-*. Switch to the tag archive when v2.0.0
+#    # is cut.
+# build:
+#    # Only skills/ + .claude-plugin/ + README.md + docs/user-guide.md are
+#    # packaged. docs/assets/ is 11 MB of marketing media (banner JPEGs and an
+#    # MP4) against 1.2 MB of actual skill content — ~10x package bloat for no
+#    # functional gain, so it is deliberately excluded.
+# about:
+#    # Upstream ships its own LICENSE (MIT, Copyright (c) 2026 Brian Madison),
+#    # so license_file resolves from the extracted archive — canonical
+#    # License-File pattern (1), no vendored copy needed. This is the
+#    # difference from bmad-utility-skills, which vendors LICENSE because
+#    # upstream has none (and is therefore submission-held).
+# requirements:
+#    # python is required only by the bmad-manticore-install entry point.
+#    # The pipeline's real runtime prerequisites (uv, ffmpeg, node, git) are
+#    # NOT declared: the skills are markdown instructions executed by a coding
+#    # agent, and the tool set is chosen per-project during mc-setup. Pinning
+#    # them here would force an 11-dep install on a documentation payload.
+####

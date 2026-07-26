@@ -1,0 +1,132 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  # Upstream ships no releases and no tags — only `main`. Version comes from
+  # package.json ("1.0.0") plus a .dev0 snapshot marker, pinned to a commit;
+  # the bmad-labs-skills precedent. Bump `version` and `commit` together.
+  version: "1.0.0.dev0"
+  commit: 6a2dfec7c6b08a1548b724178f60557d8d399f68
+
+package:
+  name: researchstudio
+  version: ${{ version }}
+
+source:
+  url: https://github.com/microsoft/ResearchStudio/archive/${{ commit }}.tar.gz
+  sha256: 33df5784e7ee7a73077a7fd2ba4e02e901b8841a1fec752a4df26f5bf34c51f3
+
+build:
+  number: 0
+  noarch: generic
+
+requirements:
+  run:
+    - python >=3.10
+
+tests:
+  - script:
+      - if: not win
+        then:
+          - researchstudio-install --help
+          - test -d "${CONDA_PREFIX}/share/researchstudio/ResearchStudio-Idea/skills/idea_spark"
+          - test -d "${CONDA_PREFIX}/share/researchstudio/ResearchStudio-Idea/skills/paper_search"
+          - test -d "${CONDA_PREFIX}/share/researchstudio/ResearchStudio-Idea/skills/scoop_check"
+          - test -d "${CONDA_PREFIX}/share/researchstudio/ResearchStudio-Reel/skills/paper2video"
+          - test -d "${CONDA_PREFIX}/share/researchstudio/ResearchStudio-Reel/skills/paper2poster"
+          - test -f "${CONDA_PREFIX}/share/researchstudio/ResearchStudio-Idea/.env.template"
+          - test -f "${CONDA_PREFIX}/share/researchstudio/LICENSE"
+      - if: win
+        then:
+          - researchstudio-install.bat --help
+          - if not exist "%CONDA_PREFIX%\share\researchstudio\ResearchStudio-Idea\skills\idea_spark" exit 1
+          - if not exist "%CONDA_PREFIX%\share\researchstudio\ResearchStudio-Reel\skills\paper2video" exit 1
+
+about:
+  homepage: https://github.com/microsoft/ResearchStudio
+  repository: https://github.com/microsoft/ResearchStudio
+  license: MIT
+  license_file: LICENSE
+  summary: ResearchStudio — Microsoft's AI co-author skill bundles, from research problem to final publication
+  description: |
+    ResearchStudio is a collection of Agent Skills for Claude Code and Codex
+    that assist the research lifecycle from problem selection through to
+    publication artifacts. It ships two bundles:
+
+    ResearchStudio-Idea (3 skills) — ``idea_spark`` for generating and
+    pressure-testing research ideas, ``paper_search`` for literature
+    retrieval, and ``scoop_check`` for checking whether an idea has already
+    been published.
+
+    ResearchStudio-Reel (5 skills) — ``paper2assets``, ``paper2blog``,
+    ``paper2poster``, ``paper2reel`` and ``paper2video``, which turn a
+    finished paper into presentation and dissemination artifacts.
+
+    After installation, run ``researchstudio-install`` in your project
+    directory to copy the skills into ``.claude/skills/`` (or pass
+    ``--codex`` for ``.codex/skills/``, or an explicit destination).
+
+    The skills orchestrate external tools this package does NOT install.
+    Individual Reel skills declare their own extras — paper2blog wants
+    python-docx / PyMuPDF / Pillow / numpy, and paper2poster wants edge-tts
+    (which is not on conda-forge) — plus an optional LaTeX engine for PDF
+    idea cards. Install those separately for the skills you actually use.
+    ResearchStudio-Idea additionally needs connector credentials; copy
+    ``share/researchstudio/ResearchStudio-Idea/.env.template`` and fill it in.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: researchstudio
+  cfe-upstream-registry: github
+  cfe-upstream-name: microsoft/ResearchStudio
+  cfe-purls:
+    - pkg:conda/researchstudio@${{ version }}?channel=conda-forge
+    - "pkg:github/microsoft/ResearchStudio@6a2dfec7c6b08a1548b724178f60557d8d399f68"
+  cfe-upstream-repo: https://github.com/microsoft/ResearchStudio
+  cfe-upstream-homepage: https://github.com/microsoft/ResearchStudio
+  cfe-import-names: []
+  cfe-source-kind: github-commit
+  cfe-noarch: generic
+  cfe-pip-check: "false:not-a-python-package"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: "2026-07-26T00:00:00Z"
+  cfe-generated-by-version: 8.79.1
+  cfe-generated-at-datetime: "2026-07-26T00:00:00Z"
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # Authored 2026-07-26 at operator request. Same shape as the bmad-code-org
+#    # content bundles (bmad-manticore / bmad-utility-skills / bmad-labs-skills):
+#    # a noarch:generic skills payload under share/<name>/ plus a Python
+#    # installer entry point.
+# context:
+#    # NOT on npm — package.json is only an installer stub invoked as
+#    # `npx github:microsoft/ResearchStudio` (registry lookup: 404), so the
+#    # npm generator path does not apply. No releases and no tags either, so
+#    # the source is a commit archive rather than a tag archive.
+# build:
+#    # Ships both skill bundles + docs + the Idea .env.template. bin/install.mjs
+#    # and install.sh are upstream's own installers, which symlink skills into a
+#    # repo's .claude/ or .codex/ dir and shell out to pip/apt; they are NOT
+#    # packaged. The conda entry point does the copy directly instead, so
+#    # nothing in this package writes outside the destination you name.
+# requirements:
+#    # python is required only by the researchstudio-install entry point.
+#    # Per-skill extras (python-docx, PyMuPDF, Pillow, numpy for paper2blog;
+#    # edge-tts for paper2poster — the latter is NOT on conda-forge) are
+#    # deliberately NOT declared: the skills are markdown instructions run by a
+#    # coding agent, only some are used in any given project, and pinning them
+#    # would force a heavy install on a documentation payload. Same call as
+#    # bmad-manticore.
+####
