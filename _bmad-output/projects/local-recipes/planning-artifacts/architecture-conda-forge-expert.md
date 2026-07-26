@@ -578,7 +578,7 @@ See `integration-architecture.md` for the cross-part contracts. Summary:
 
 To rebuild this part faithfully on a clean repo:
 
-1. **Bootstrap**: install pixi; create `pixi.toml`. The live repo defines **17 environments** — the six this part needs are `python`, `build`, `grayskull`, `conda-smithy`, `local-recipes`, `vuln-db`; the other nine (`linux`/`osx`/`win`, `gcloud`, `bmad-ui`, and the lean per-persona `pyforge-{warden,atlas,doctor,scribe,herald}` envs) belong to other parts.
+1. **Bootstrap**: install pixi; create `pixi.toml`. The live repo defines **18 environments** — the six this part needs are `python`, `build`, `grayskull`, `conda-smithy`, `local-recipes`, `vuln-db`; the other nine (`linux`/`osx`/`win`, `gcloud`, `bmad-ui`, and the lean per-persona `pyforge-{warden,atlas,doctor,scribe,herald}` envs) belong to other parts.
 2. **Skill scaffolding**: copy `.claude/skills/conda-forge-expert/` from this repo OR generate fresh from SKILL.md template.
 3. **Tier 1 scripts** (66 modules / 41,410 LOC): authored in dependency order — `_http.py` first (every other module imports it), then `name_resolver.py` + `mapping_manager.py` (foundational helpers), then recipe-lifecycle, then atlas-pipeline, then the purl/BOM/gap suite.
 4. **Tier 2 wrappers** (57 `.py` + 2 `.sh` + README = 60 entries): thin subprocess wrappers; auto-generatable from a manifest if all Tier 1 modules expose a `main()`.

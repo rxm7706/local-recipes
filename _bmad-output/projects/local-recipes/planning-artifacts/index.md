@@ -12,7 +12,7 @@ source_pin: 'conda-forge-expert v8.79.1'
 
 > **Re-grounded 2026-07-25** (`source_pin` → **v8.79.1**; full reconciler pass per [SYNC-RUNBOOK.md](../SYNC-RUNBOOK.md), triggered by `surface-changed` pixi_envs 12 → 15). Regenerated **last**, after every other living doc, per the runbook's ordering rule.
 >
-> **What moved** — all of it *around* the packaging factory, none of it *inside* it: the repo grew a **fifth part** (`pyforge-packages` — five shipping distributions under `src/shared/packages/`); **17 pixi envs** in two families (+3 product envs: `pyforge-doctor`, `pyforge-herald`, `pyforge-scribe`); BMAD went **6.6.0 → 6.10.0** with **93 skill dirs / 89 real skills** across **14 projects** carrying **22 Specs** + **63 tracked story specs**; the **PyForge identity system** landed and is now binding on prose; **26 Dreams**, **14 deck folders**; and a new governance layer (`spec_surface_check.py`, `bmad-loop-worktree`, the HARD parallel-agent rule).
+> **What moved** — all of it *around* the packaging factory, none of it *inside* it: the repo grew a **fifth part** (`pyforge-packages` — five shipping distributions under `src/shared/packages/`); **18 pixi envs** in two families (+3 product envs: `pyforge-doctor`, `pyforge-herald`, `pyforge-scribe`); BMAD went **6.6.0 → 6.10.0** with **93 skill dirs / 89 real skills** across **14 projects** carrying **22 Specs** + **63 tracked story specs**; the **PyForge identity system** landed and is now binding on prose; **26 Dreams**, **14 deck folders**; and a new governance layer (`spec_surface_check.py`, `bmad-loop-worktree`, the HARD parallel-agent rule).
 >
 > **Re-verified unchanged against live code:** cf_atlas **schema v29**, **46 MCP tools**, **22 executable atlas phases**, gotchas **G1–G106**, the autonomous lifecycle loop.
 >
@@ -25,7 +25,7 @@ source_pin: 'conda-forge-expert v8.79.1'
 - **Type:** monorepo with **5 logical parts**
 - **Primary language:** Python (factory 3.12; `pyforge-atlas` / `pyforge-doctor` require ≥3.14)
 - **Build engine:** Pixi + rattler-build
-- **Default pixi env:** `local-recipes` (**17 envs total** — 9 factory + 8 `no-default-feature` product envs)
+- **Default pixi env:** `local-recipes` (**18 envs total** — 9 factory + 8 `no-default-feature` product envs)
 - **Recipe corpus:** 1,664 recipe dirs (933 v1 `recipe.yaml` + 1,024 v0 `meta.yaml`; **300 dirs carry both**, the sanctioned transitional shape — outputs, NOT part of the rebuild target)
 - **Skill version:** conda-forge-expert **v8.79.1**
 
@@ -116,7 +116,7 @@ The tracked living set is **12 documents** (the detector's `tracked:living` clas
 - [`AGENTS.md`](../../../../AGENTS.md) — the cross-tool entry point and the canonical tier table
 - [`CLAUDE.md`](../../../../CLAUDE.md) — repo-wide AI agent guidance, BMAD↔CFE integration rules, PR CI gates
 - [`README.md`](../../../../README.md) — human-facing intro
-- [`pixi.toml`](../../../../pixi.toml) — 17 envs, 17 features, 152 task definitions
+- [`pixi.toml`](../../../../pixi.toml) — 18 envs, 17 features, 152 task definitions
 - [`docs/dreams/pyforge-charter.md`](../../../../docs/dreams/pyforge-charter.md) — **Tier 0, constitutional**: the mission, the eight Smiths, § Branding and § The Lexicon. No artifact may contradict it.
 
 ### Project-scoped (this project)
@@ -227,7 +227,7 @@ Surprising or non-obvious facts that AI agents and humans both get wrong.
 
 8. **The atlas pipeline is 22 executable phases: B/B.5/B.6/C/C.5/D/O/P/Q/R/S/E/E.5/F/G/G'/H/J/K/L/M/N.** Two traps: (a) **Phase T was CANCELLED** pre-implementation in v8.6.0 Wave C — any "B → T" framing is wrong; (b) `atlas-phases-overview.md` catalogs **23** because it documents a runner-less conceptual "Phase I" side-table (no runner, no `PHASES` entry). **22 executable, 23 cataloged.** *(`bmad-groundtruth` also reported 23 until 2026-07-25, when `phase_count()` was fixed to read the `PHASES` registry instead of regexing `def phase_` — which had also matched `phase_r_upsert_one`, a per-row helper. It now reports 22.)*
 
-9. **17 pixi envs in two families.** Factory (9): `linux`, `osx`, `win`, `build`, `grayskull`, `conda-smithy`, `local-recipes` (default), `vuln-db`, `gcloud`. Product (6, all `no-default-feature`): `pyforge-warden`, `pyforge-atlas`, `pyforge-doctor`, `pyforge-scribe`, `pyforge-herald`, `bmad-ui`.
+9. **18 pixi envs in two families.** Factory (9): `linux`, `osx`, `win`, `build`, `grayskull`, `conda-smithy`, `local-recipes` (default), `vuln-db`, `gcloud`. Product (6, all `no-default-feature`): `pyforge-warden`, `pyforge-atlas`, `pyforge-doctor`, `pyforge-scribe`, `pyforge-herald`, `bmad-ui`.
 
 10. **Two PR CI gates, both always-on.** Any change outside `recipes/` needs the **`maintenance`** label; any `pixi.toml` change needs a regenerated `environment.yaml` (`pixi project export conda-environment -e build > environment.yaml`) — and **that check is ungated by the label**. Also: `gh pr create` must pass `--repo rxm7706/local-recipes`.
 

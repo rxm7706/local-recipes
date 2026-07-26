@@ -208,7 +208,7 @@ window.DASHBOARD_DATA = {
           ]
         }
       ],
-      "owner": "",
+      "owner": "herald",
       "practice": false
     },
     "regen": {
@@ -589,7 +589,7 @@ window.DASHBOARD_DATA = {
           ]
         }
       ],
-      "owner": "",
+      "owner": "mason",
       "practice": false
     },
     "doctor": {
@@ -2580,7 +2580,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-07-26 09:47 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-07-26 09:57 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -2940,7 +2940,7 @@ window.DASHBOARD_DATA = {
       "title": "factory console (program console + Dreamscape)",
       "caps": 4,
       "companions": 1,
-      "updated": "2026-07-25",
+      "updated": "2026-07-26",
       "dream": "factory-console",
       "path": "_bmad-output/projects/local-recipes/planning-artifacts/specs/spec-factory-console"
     },
@@ -3847,19 +3847,19 @@ window.DASHBOARD_DATA = {
           "prd": "07-25",
           "arch": "07-25",
           "epics": "07-25",
-          "code": ""
+          "code": "07-26"
         },
         "backfilled": false,
         "openQuestions": 0,
         "overtaken": false,
         "na": [],
-        "furthest": "epics",
-        "updated": "2026-07-25",
-        "age": 1,
+        "furthest": "code",
+        "updated": "2026-07-26",
+        "age": 0,
         "stale": false,
-        "version": "",
+        "version": "0.1.0",
         "progress": "1/41",
-        "complete": 8,
+        "complete": 9,
         "of": 9,
         "owner": "marshal"
       },
@@ -4116,9 +4116,9 @@ window.DASHBOARD_DATA = {
         "name": "spec-surface",
         "task": "spec-surface-check",
         "guards": "every tracked file under a Spec surface",
-        "state": "drift",
-        "findings": 1,
-        "verdict": "FINDINGS (1):",
+        "state": "green",
+        "findings": 0,
+        "verdict": "OK: every tracked file governed or allowlisted; no drift.",
         "runbook": ""
       },
       {
@@ -4133,7 +4133,7 @@ window.DASHBOARD_DATA = {
     ],
     "baseline": {
       "skill": "8.79.1",
-      "head": "bd5fd343e1",
+      "head": "3b804eeb9d",
       "deltas": [],
       "runbook": "_bmad-output/projects/local-recipes/SYNC-RUNBOOK.md"
     }

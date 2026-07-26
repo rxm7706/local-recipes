@@ -1142,7 +1142,10 @@ PROGRAM_DREAM = {"warden": "pyforge-warden", "atlas": "pyforge-atlas",
                  "herald": "pyforge-herald", "doctor": "pyforge-doctor",
                  "scribe": "pyforge-scribe", "regen": "regenerable-factory",
                  "marshal": "pyforge-marshal", "mason": "pyforge-mason",
-                 "steward": "pyforge-steward", "genesis": "pyforge-genesis"}
+                 "steward": "pyforge-steward", "genesis": "pyforge-genesis",
+                 # auto-discovered lines whose Dream slug is NOT pyforge-prefixed
+                 "deckcraft": "deckcraft",
+                 "presenton-pixi-image": "presenton-pixi-image"}
 
 
 def apply_owner(data: dict) -> None:

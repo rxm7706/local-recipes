@@ -7,7 +7,7 @@
 >
 > Source of truth: `pixi.toml` (workspace "staged-recipes" v0.2.0). This file is a
 > derived catalog — regenerate it whenever `pixi.toml` changes.
-> Generated: 2026-07-12; incrementally updated 2026-07-18 (pyforge-atlas member env + kedro-viz; pyforge-warden + bmad-ui envs; pin corrections) and 2026-07-25 (the pyforge-herald / -doctor / -scribe member envs, then pyforge-mason / -steward at Story 1.1 — seven `pyforge` packages, 17 envs). Channels: conda-forge + SelfExplainML.
+> Generated: 2026-07-12; incrementally updated 2026-07-18 (pyforge-atlas member env + kedro-viz; pyforge-warden + bmad-ui envs; pin corrections) and 2026-07-25 (the pyforge-herald / -doctor / -scribe member envs, then pyforge-mason / -steward / -marshal at Story 1.1 — eight `pyforge` packages, 18 envs). Channels: conda-forge + SelfExplainML.
 > Platforms: linux-64, win-64, osx-arm64 (macOS >= 14.5 "Sonoma" floor, required by mlx).
 
 ## To regenerate (any session): ask Claude Code:
@@ -60,6 +60,7 @@ Everything runs through pixi environments. Nothing here is installed globally.
 | `pyforge-scribe`| pyforge-scribe (no-default-feature)                  | Lean env for the built `pyforge-scribe` package (`src/shared/packages/pyforge-scribe` path dep -> conda pkg + pytest/hatchling/python-build). Knowledge/narration station; inherits the `src/sentinel/` knowledge-graph lineage. Spec: `_bmad-output/projects/pyforge-scribe/planning-artifacts/specs/` |
 | `pyforge-mason`| pyforge-mason (no-default-feature)                    | Lean env for the built `pyforge-mason` package (`src/shared/packages/pyforge-mason` path dep -> conda pkg + pytest/hatchling/python-build). The Artisan Builder's CLI (`mason recipe`/`package`/`environment`); **no CLI-framework dep by contract** (FR-41 forbids click/typer — argparse only). Tasks: `pyforge-mason-build{,-conda,-dist}`, `pyforge-mason-test`. Spec: `_bmad-output/projects/pyforge-mason/planning-artifacts/` |
 | `pyforge-steward`| pyforge-steward (no-default-feature)                | Lean env for the built `pyforge-steward` package (`src/shared/packages/pyforge-steward` path dep -> conda pkg + pytest/hatchling/python-build). The Provisioner's CLI (`steward keys`/`deploy`/`provision`/`budget`); task names mirror `pyforge-warden`'s verbatim. Spec: `_bmad-output/projects/pyforge-steward/planning-artifacts/` |
+| `pyforge-marshal`| pyforge-marshal (no-default-feature)                | Lean env for the built `pyforge-marshal` package (`src/shared/packages/pyforge-marshal` path dep -> conda pkg + pytest/hatchling/python-build + **import-linter**). Marshal is the harness/orchestration station; `import-linter` is load-bearing, not incidental — it enforces AD-3 (only `adapters/harness_bmadloop.py` may import `bmad_loop`) and AD-4 (`core/**` imports no `subprocess`/`os`/`time`/`adapters`) as **build-breaking contracts** rather than conventions. Task: `pyforge-marshal-test`. Spec: `_bmad-output/projects/pyforge-marshal/planning-artifacts/` |
 - **graphviz** (>=14.1.2) — Graph layout engine (the `dot` binary); drives the
   kedro-viz prototype's DAG-image (SVG) emitter.
 - **python-graphviz** (>=0.21) — Python interface to Graphviz — **imports as
@@ -89,10 +90,10 @@ Available in every environment (the `python` feature + workspace `[dependencies]
 - **python** (>=3.14.6, 3.14.*) — CPython interpreter. All Python libs below target 3.14.
 - **pixi** (>=0.73.0) — the package/environment manager itself, available *inside*
   envs for nested workspace operations. `pixi-build` preview is enabled (unlocks
-  `[package]`/build tables for the **seven** `pyforge` workspace members under
+  `[package]`/build tables for the **eight** `pyforge` workspace members under
   `src/shared/packages/` — `pyforge-warden`, `pyforge-atlas`, `pyforge-herald`,
-  `pyforge-scribe`, `pyforge-doctor`, `pyforge-mason`, `pyforge-steward` — each
-  pulled in as a path dependency by its own lean `no-default-feature` env, and each sharing the one PEP 420 implicit
+  `pyforge-scribe`, `pyforge-doctor`, `pyforge-mason`, `pyforge-steward`,
+  `pyforge-marshal` — each pulled in as a path dependency by its own lean `no-default-feature` env, and each sharing the one PEP 420 implicit
   `pyforge` namespace).
 - **conda** (>=26.5.0) — classic conda package manager; needed by conda-build,
   conda-smithy 2026.x, and `conda pypi`.
