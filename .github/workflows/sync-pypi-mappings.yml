@@ -1,10 +1,11 @@
 name: Sync PyPI-Conda Mappings
 
+# Explicit-run only. The weekly cron and the custom.yaml push trigger were removed
+# after 32 consecutive failures (2026-06-24 .. 2026-07-26, zero successes): the
+# composite action at .github/actions/sync-pypi-mappings pins pixi v0.59.0, which
+# cannot parse this workspace's manifest (`expected a string, found table`) now that
+# the repo requires pixi >=0.73.0. Restore the schedule once that pin is raised.
 on:
-  # Weekly sync on Sunday at midnight UTC
-  schedule:
-    - cron: '0 0 * * 0'
-
   # Manual trigger with optional parameters
   workflow_dispatch:
     inputs:
@@ -18,13 +19,6 @@ on:
         required: false
         default: '.claude/skills/conda-forge-expert/pypi_conda_mappings'
         type: string
-
-  # Trigger on pushes to custom mappings file
-  push:
-    paths:
-      - '.claude/skills/conda-forge-expert/pypi_conda_mappings/custom.yaml'
-    branches:
-      - main
 
 permissions:
   contents: write

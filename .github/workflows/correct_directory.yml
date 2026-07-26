@@ -1,10 +1,17 @@
 name: directory_linter
 
+# Explicit-run only. Upstream fires this on pull_request_target when a recipe is
+# added directly under recipes/ instead of recipes/<pkg>/. That is contributor
+# education for a community repo; in this fork it has never fired once. Kept as a
+# manual tool rather than deleted, so it needs the PR number passed in —
+# context.issue.number is empty on a workflow_dispatch event.
 on:
-  pull_request_target:
-    paths:
-      - 'recipes/*.yml'
-      - 'recipes/*.yaml'
+  workflow_dispatch:
+    inputs:
+      pr-number:
+        description: 'PR number to comment on'
+        required: true
+        type: number
 
 jobs:
   comment:
@@ -18,7 +25,7 @@ jobs:
         with:
           script: |
             github.rest.issues.createComment({
-              issue_number: context.issue.number,
+              issue_number: ${{ inputs.pr-number }},
               owner: context.repo.owner,
               repo: context.repo.repo,
               body: 'Hi! Thanks for your contribution to conda-forge.' +

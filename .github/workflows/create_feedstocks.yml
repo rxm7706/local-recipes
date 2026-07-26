@@ -1,11 +1,11 @@
 name: Create feedstocks
 
+# Explicit-run only. The job is guarded by `if: github.repository ==
+# 'conda-forge/staged-recipes'` (below), so in this fork it can NEVER do anything —
+# yet the upstream '*/10 * * * *' cron queued and skipped it ~144x/day, burying real
+# runs in the Actions list. The guard is left in place deliberately: it is the thing
+# that makes an accidental dispatch here a no-op.
 on:
-  push:
-    branches:
-      - main
-  schedule:
-    - cron:  '*/10 * * * *'
   workflow_dispatch: null
 
 permissions: {}
