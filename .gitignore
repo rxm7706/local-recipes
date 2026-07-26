@@ -717,6 +717,13 @@ Thumbs.db
 _bmad/config.user.toml
 _bmad/custom/.active-project
 _bmad-output/projects/*/implementation-artifacts/
+# ...and the same path as a SYMLINK. The trailing-slash rule above matches only
+# real directories, so in a bmad-loop home — where `bmad-loop-worktree` creates
+# implementation-artifacts as a Tier-3 BACKLINK to the main checkout — the path
+# came back untracked, and `bmad-loop run` refuses to start on a dirty worktree.
+# Every new loop home hit this on its first launch (found provisioning marshal,
+# 2026-07-25). No trailing slash = matches the symlink too.
+_bmad-output/projects/*/implementation-artifacts
 
 # bmad-loop / upstream-tooling seam: root artifact dirs are LOCAL symlinks to the
 # active project's dirs (re-point on `bmad-switch`; see docs/specs/bmad-loop-adoption.md)
