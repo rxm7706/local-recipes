@@ -33,10 +33,10 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0            # full history — generate.py --source git reads git log
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.12'
       # pixi is available in CI, as it is locally — via the LEAN `pyforge-ci` env
@@ -69,9 +69,11 @@ jobs:
           cache: true
       - name: Regenerate data.js from git history (done-detection + live detectors)
         run: python docs/dashboard/generate.py --source git
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
+      # The three Pages actions are a matched set — upload-pages-artifact wraps
+      # upload-artifact, and deploy-pages consumes what it produced. Bump together.
+      - uses: actions/configure-pages@v6
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: docs/dashboard
       - id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
