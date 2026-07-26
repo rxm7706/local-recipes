@@ -1,0 +1,154 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.45.0"
+
+package:
+  name: ast-grep
+  version: ${{ version }}
+
+source:
+  url: https://github.com/ast-grep/ast-grep/archive/refs/tags/${{ version }}.tar.gz
+  sha256: 996e9d879f095d3ccef55754d3a32d61e1ae03cfaecdcff5e247bfa5b649b27a
+
+build:
+  number: 0
+  # ppc64le stays skipped. `win` is deliberately NOT skipped: upstream ships
+  # first-class Windows builds -- release assets include
+  # app-x86_64-pc-windows-msvc.zip and npm publishes
+  # @ast-grep/cli-win32-x64-msvc -- so there is no inherent blocker, and the
+  # missing win-64 conda package is what makes headroom-ai (and anything else
+  # depending on the ast-grep binary) uninstallable on Windows.
+  skip: ppc64le
+  script:
+    env:
+      # conda-forge canonical Rust env block (example_recipes/rust).
+      CARGO_PROFILE_RELEASE_STRIP: symbols
+      CARGO_PROFILE_RELEASE_LTO: fat
+      # PEP 540 -- guards the Windows cp1252 decode trap where cargo output
+      # containing non-ASCII bytes breaks rattler-build's UTF-8 reader (G19).
+      PYTHONUTF8: "1"
+    content:
+      # One multi-line entry per platform: CFLAGS needs shell expansion, and
+      # `script.env` does not shell-expand, nor do env vars carry across
+      # separate list entries (SKILL.md G1).
+      - if: unix
+        then: |
+          export CFLAGS="${CFLAGS} -D_BSD_SOURCE"
+          cargo auditable install --locked --no-track --bins --root "${PREFIX}" --path ./crates/cli
+          cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
+        else: |
+          cargo auditable install --locked --no-track --bins --root %LIBRARY_PREFIX% --path ./crates/cli
+          cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+    # tree-sitter grammars pulled from crates.io ship C++ external scanners
+    # (scanner.cc), so a C++ toolchain is required even though the ast-grep
+    # repo itself contains no C++ sources.
+    - ${{ compiler('cxx') }}
+    - ${{ compiler('rust') }}
+    - cargo-bundle-licenses
+    - cargo-auditable
+
+tests:
+  - script:
+      - sg --version
+      - ast-grep --version
+      - if: unix
+        then:
+          - test -x "${PREFIX}/bin/ast-grep"
+          - test -x "${PREFIX}/bin/sg"
+        else:
+          - if not exist "%LIBRARY_BIN%\ast-grep.exe" exit 1
+          - if not exist "%LIBRARY_BIN%\sg.exe" exit 1
+
+about:
+  summary: ast-grep(sg) is a CLI tool for code structural search, lint, and rewriting.
+  description: |
+    ast-grep is an AST-based tool to search code by pattern code. Think it as
+    your old-friend grep but it matches AST nodes instead of text. You can
+    write patterns as if you are writing ordinary code. It will match all code
+    that has the same syntactical structure. You can use $ sign + upper case
+    letters as wildcard, e.g. $MATCH, to match any single AST node. Think it as
+    REGEX dot ., except it is not textual.
+  license: MIT
+  license_file:
+    - THIRDPARTY.yml
+    - LICENSE
+  homepage: https://github.com/ast-grep/ast-grep
+  repository: https://github.com/ast-grep/ast-grep
+  documentation: https://ast-grep.github.io/
+
+extra:
+  recipe-maintainers:
+    - asford
+    - danielnachun
+    - moritzwilksch
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: ast-grep
+  cfe-upstream-registry: github
+  cfe-upstream-name: ast-grep/ast-grep
+  cfe-purls:
+    - pkg:conda/ast-grep@${{ version }}?channel=conda-forge
+    - pkg:cargo/ast-grep@${{ version }}
+  cfe-upstream-repo: https://github.com/ast-grep/ast-grep
+  cfe-upstream-homepage: https://ast-grep.github.io/
+  cfe-import-names: []
+  cfe-source-kind: github-tag
+  cfe-noarch: compiled
+  cfe-pip-check: "false:not-a-python-package"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/ast-grep-feedstock
+  cfe-forge-recipe-updates-needed:
+    - "enable win-64 (feedstock skips it with no stated reason; upstream ships MSVC builds)"
+    - "cargo auditable install (feedstock uses plain cargo install -- no SBOM embedded)"
+    - "add cargo-auditable to build deps"
+    - "add compiler('c') -- feedstock declares only cxx + rust + stdlib"
+    - "schema header + yaml-language-server line"
+  cfe-forge-blocker-list: []
+  cfe-last-checked: "2026-07-26T00:00:00Z"
+  cfe-generated-by-version: 8.79.1
+  cfe-generated-at-datetime: "2026-07-26T00:00:00Z"
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # Rewritten 2026-07-26 from the conda-forge feedstock recipe, which was
+#    # built GREEN locally first as a baseline
+#    # (ast-grep-0.45.0-hc3e3241_0.conda, 6.19 MiB).
+#    # Deltas against the feedstock, in order of value:
+#    #  1. win-64 ENABLED -- the whole point. ast-grep has no win-64 conda
+#    #     package, which is why headroom-ai must skip Windows entirely.
+#    #  2. cargo AUDITABLE install -- the canonical conda-forge Rust CLI
+#    #     pattern (17/17 in the sampled merged-CLI set); embeds a dependency
+#    #     SBOM in the binary. The feedstock uses plain `cargo install`.
+#    #  3. cargo-auditable added to build deps (required by #2).
+#    #  4. compiler('c') added -- the feedstock declares cxx + rust + stdlib
+#    #     but not c, though the tree-sitter grammars compile C.
+#    #  5. inline cross-platform script replacing the unix-only build.sh,
+#    #     with the %LIBRARY_PREFIX% install root on win.
+#    #  6. schema header + cfe metadata (repo convention).
+# build:
+#    # CFLAGS -D_BSD_SOURCE is preserved from the feedstock's build.sh: the
+#    # tree-sitter C sources need it under the glibc sysroot. It must live in
+#    # the content block, not script.env, because env values are not
+#    # shell-expanded (G1).
+#    # LTO left at fat to match the proven feedstock configuration. If the
+#    # Windows leg ever times out, gate it per-platform the way
+#    # xorq-datafusion does rather than dropping it everywhere.
+# tests:
+#    # VERIFICATION LIMIT: only linux-64 can be built on this host. The win-64
+#    # claim is reasoned from upstream shipping MSVC binaries, NOT verified --
+#    # Windows cannot be cross-built from Linux (G82), so the real proof is a
+#    # feedstock PR's CI.
+####

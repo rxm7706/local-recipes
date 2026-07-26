@@ -14,6 +14,20 @@ source:
 
 build:
   number: 0
+  skip:
+    # ast-grep has NO win-64 build on conda-forge (linux-64, linux-aarch64,
+    # linux-ppc64le, osx-64, osx-arm64 only). headroom's code-analysis path
+    # shells out to that binary, so the package cannot function on Windows --
+    # the test env fails with "ast-grep >=0.30.0, for which no candidates were
+    # found".
+    - win
+    # litellm pulls the compiled fastuuid, which ships py311+ on macOS while
+    # linux gets py310 too. So the py310 variant has no solvable test env on
+    # osx: litellm >=1.86.2,<2.0 -> fastuuid >=0.14.0,<1.0 -> no candidate.
+    # The floor is genuinely per-platform, so skip only the osx+py310 cell
+    # rather than raising python_min everywhere and losing linux py310.
+    # (Same dependency and shape as SKILL.md G40's langchain-litellm case.)
+    - osx and match(python, "<3.11")
   script:
     - cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
     - python -m pip install . -vv --no-deps --no-build-isolation
