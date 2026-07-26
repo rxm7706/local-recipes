@@ -28,9 +28,18 @@ passes through all of them:
 | **4** | **Operations** — the long tail nobody announces | fixes, updates, deprecations, **decommissions** | change + end-of-life notices |
 
 Moment 1 is simply the **first** time Herald has something to do — it is not the
-extent of the job. Moment 4 is the one the factory has never had at all: no Dream
-in this corpus mentions deprecation or decommission, so the end of a product's
-life is currently unproclaimed and unmodelled.
+extent of the job.
+
+**Moment 4 needs no new vocabulary at all.** Ending is one act, and it is
+**scale-invariant**: archiving a Dream, a package, an application or a whole
+platform is the same state (`archived`), with the same four reasons
+(absorbed / retired / terminal / blocked). "Decommission" is not a separate
+concept that maps onto archiving — it *is* archiving, at a larger scale.
+[[artifact-console]] is the worked example: built, run, superseded by the
+Guildhall, archived as `retired`.
+
+So the gap is not in the lifecycle — it is entirely in Herald's craft. **The
+board records that a thing ended; nobody is told it ended.**
 
 The corollary for the Guildhall: the Fleet's `deck` column marks Herald's *first*
 touch, not his contribution. Moments 2–4 produce artifacts the board does not yet
@@ -62,10 +71,10 @@ unit of governance. Herald keeps their communication face only.
 - `updates compile` / `broadcast` — release notables composed from run
   telemetry and delivered where the audience lives (**moment 2 + 3**; the only
   part of the continuous model with a specced surface today).
-- **Moment 4 has nothing at all** — no deprecation notice, no end-of-life
-  announcement, no decommission record anywhere in the Dream corpus. A product
-  that is retired currently just stops appearing. `archived` marks it on the
-  board; nobody is told.
+- **Moment 4 has no surface** — no deprecation notice, no end-of-life
+  announcement, no migration guidance. The *state* is fine (`archived` +
+  `archived-reason: retired`); what is absent is anyone being **told**. A retired
+  product currently just stops appearing.
 - [[deckcraft]] as the editable-PPTX engine under every export.
 
 ## Kinships
@@ -84,6 +93,9 @@ product) · [[modernist-identity]] (the language it speaks) ·
   was replaced with the four moments of proclamation. Prompted by the observation
   that the console was treating the pitch deck as Herald's whole job — a Dream
   must be pitched, its *progress* proclaimed, its *success* proclaimed, and its
-  *operational stages* (fixes, updates, decommissions) proclaimed too. Moment 4
-  was found to be entirely unmodelled: `decommission`/`deprecation` appear in
-  **zero** Dreams.
+  *operational stages* (fixes, updates, decommissions) proclaimed too.
+  **Corrected twice within the hour:** the first draft claimed moment 4 was
+  "unmodelled" (it is not — ending is `archived`), and the second still treated
+  decommission as a distinct concept *mapped onto* archiving. It is not distinct.
+  Ending is one scale-invariant act — Dream, package, application, platform, same
+  state and same four reasons. The lifecycle needs nothing; only Herald does.
