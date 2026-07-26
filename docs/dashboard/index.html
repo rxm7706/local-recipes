@@ -238,6 +238,7 @@
   .story.s-active .story-key { color: var(--active); }
   .story.s-pending .story-key, .story.s-gated .story-key { color: var(--slate); }
   .glyph { font-size: 11px; }
+  .pname .runchip { margin-left: 4px; flex: none; white-space: nowrap; }
   .runchip { font-family: var(--mono); font-size: 9px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--active);
     border: 1px solid color-mix(in srgb,var(--active) 40%,transparent); border-radius: 4px; padding: 1px 5px; margin-left: auto;
     display: inline-flex; align-items: center; gap: 5px; }
@@ -458,13 +459,13 @@
   .pconsole .contractline b { color: var(--slate); font-weight: 600; }
   details.pconsole { border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); padding: 0 20px; }
   details.pconsole > summary { list-style: none; cursor: pointer; padding: 14px 0;
-    display: grid; grid-template-columns: 100px 1fr auto auto; gap: 16px; align-items: center; }
+    display: grid; grid-template-columns: minmax(100px,max-content) 1fr auto auto; gap: 16px; align-items: center; }
   details.pconsole > summary::-webkit-details-marker { display: none; }
   details.pconsole[open] > summary { border-bottom: 1px solid var(--line-soft); margin-bottom: 18px; }
   details.pconsole .disclose { font-family: var(--mono); font-size: 10px; color: var(--slate-faint);
     text-transform: uppercase; letter-spacing: .08em; }
   details.pconsole > .cbody { padding-bottom: 20px; }
-  @media (max-width: 560px) { details.pconsole > summary { grid-template-columns: 84px 1fr auto; } details.pconsole .disclose { display: none; } }
+  @media (max-width: 560px) { details.pconsole > summary { grid-template-columns: minmax(84px,max-content) 1fr auto; } details.pconsole .disclose { display: none; } }
 
   /* section-level collapse (consistent with Realized's consoles) */
   .zsec > summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 10px; }
