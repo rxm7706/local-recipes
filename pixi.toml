@@ -311,6 +311,10 @@ cmd = "python scripts/bmad_drift_check.py"
 description = "Print the live ground-truth factory facts (skill version, schema, MCP tools, atlas phases, pixi envs, gotchas) as JSON — the source of truth the BMAD docs must portray."
 cmd = "python scripts/bmad_drift_check.py --json"
 
+[feature.local-recipes.tasks.dashboard-check]
+description = "Detector: execute the Guildhall's own JavaScript against the live data.js and fail on any runtime error. Catches a partial derived object (e.g. timing without perStory) that passes a truthiness guard then throws, blanking every section below it. The three doc detectors and the meta suite do NOT run this code."
+cmd = "node docs/dashboard/check_render.js"
+
 [feature.local-recipes.tasks.llms-full-check]
 description = "Detector: report drift between docs/reference/library-llms-full.md (the library catalog) and pixi.toml — undocumented deps, ghost entries, version-floor drift. Exits non-zero on drift. Reconciler = the regeneration prompt in the catalog header. Pass -- --json for machine output."
 cmd = "python scripts/llms_full_check.py"

@@ -1083,8 +1083,25 @@ def scan_timing(projects: dict) -> None:
     """
     for pkey, home in LOOP_HOMES.items():
         proj = projects.get(pkey)
-        if proj is None or proj.get("velocity") or proj.get("timing"):
-            continue                      # absent line, or curated — leave alone
+        # Skip CURATED timing only. Derived output carries `derived: true` so a
+        # later run can refresh (or repair) it — without that marker the first
+        # derivation became permanent, and a bug in it could never be fixed by
+        # re-running the generator.
+        if proj is None:
+            continue
+        existing_t, existing_v = proj.get("timing"), proj.get("velocity")
+        # A timing object WITHOUT `perStory` is broken by definition — the
+        # renderer does `p.timing && p.timing.perStory[key]`, so a partial object
+        # passes the truthiness guard and then throws, aborting the whole script.
+        # Treat it as stale and regenerate, whatever its `derived` marker says.
+        # (The marker alone was insufficient: output written before the marker
+        # existed looked curated and could never be repaired by re-running.)
+        broken = isinstance(existing_t, dict) and "perStory" not in existing_t
+        curated = (not broken) and (
+            (isinstance(existing_t, dict) and not existing_t.get("derived"))
+            or (isinstance(existing_v, dict) and not existing_v.get("derived")))
+        if curated:
+            continue
         runs = Path(home) / ".bmad-loop" / "runs"
         if not runs.is_dir():
             continue
@@ -1116,20 +1133,50 @@ def scan_timing(projects: dict) -> None:
             bars.append([f"{m.group(1)}.{m.group(2)}" if m else key, round(secs / 60)])
         bars.sort(key=lambda b: [int(x) if x.isdigit() else 0 for x in b[0].split(".")])
         total_h = sum(b[1] for b in bars) / 60
+        # The renderer reads v.{bars,sub,foot} — ALL of them. `foot` is not
+        # optional: `v.foot.map(...)` throws on a partial object exactly as
+        # `timing.perStory` did. Enumerated from the render rather than guessed,
+        # after fixing the same class of bug twice in a row.
+        mins = sorted(b[1] for b in bars)
+        median = mins[len(mins) // 2] if len(mins) % 2 else \
+            round((mins[len(mins) // 2 - 1] + mins[len(mins) // 2]) / 2)
+        st = [s for e in proj["epics"] for s in e["stories"]]
+        done_n = sum(1 for s in st if s[1] == "done")
         proj["velocity"] = {
+            "derived": True,
             "sub": "Active agent-compute per story (dev + review; excludes "
                    "gate-pause wait) — derived from this line's bmad-loop journals.",
             "bars": bars,
+            "foot": [
+                [f"~{median} min", "median / story", "var(--done)"],
+                [f"{mins[0]}–{mins[-1]} min" if len(mins) > 1 else f"{mins[0]} min",
+                 "observed range", ""],
+                [f"{done_n}/{len(st)}", "stories complete", "var(--done)"],
+                [f"{len(st) - done_n}", "remaining", ""],
+            ],
         }
+        # The renderer reads timing.{perStory,epicMin,metric,note,totalLabel} —
+        # ALL of them. Emitting a partial object is worse than emitting none:
+        # `p.timing && p.timing.perStory[key]` passes the truthiness guard and
+        # then throws on the missing key, which aborts the whole script and took
+        # In Build / Realized / Archived down with it (2026-07-26). Match the
+        # curated shape exactly.
+        per_story = {sid: mins for sid, mins in bars}
+        epic_min: dict[str, int] = {}
+        for sid, mins in bars:
+            epic_min[f"E{sid.split('.')[0]}"] = epic_min.get(f"E{sid.split('.')[0]}", 0) + mins
         proj["timing"] = {
+            "derived": True,
             "metric": "active agent-compute per story (dev + review; excludes "
                       "gate-pause wait) — from bmad-loop run journals",
+            "total": sum(b[1] for b in bars),
             "totalLabel": (f"~{total_h:.1f} h active compute" if total_h >= 1
                            else f"~{sum(b[1] for b in bars)} min active compute"),
             "note": f"Derived from {len(bars)} measured "
                     f"stor{'y' if len(bars) == 1 else 'ies'}; a story still in "
                     f"flight contributes only its closed sessions.",
-            "epicMin": {},
+            "perStory": per_story,
+            "epicMin": epic_min,
         }
         print(f"[{pkey}] timing derived: {len(bars)} stories, "
               f"{sum(b[1] for b in bars)} min active compute")

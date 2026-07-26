@@ -605,19 +605,49 @@ window.DASHBOARD_DATA = {
       ],
       "inflight": null,
       "velocity": {
+        "derived": true,
         "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals.",
         "bars": [
           [
             "1.1",
             101
           ]
+        ],
+        "foot": [
+          [
+            "~101 min",
+            "median / story",
+            "var(--done)"
+          ],
+          [
+            "101 min",
+            "observed range",
+            ""
+          ],
+          [
+            "1/12",
+            "stories complete",
+            "var(--done)"
+          ],
+          [
+            "11",
+            "remaining",
+            ""
+          ]
         ]
       },
       "timing": {
+        "derived": true,
         "metric": "active agent-compute per story (dev + review; excludes gate-pause wait) — from bmad-loop run journals",
+        "total": 101,
         "totalLabel": "~1.7 h active compute",
         "note": "Derived from 1 measured story; a story still in flight contributes only its closed sessions.",
-        "epicMin": {}
+        "perStory": {
+          "1.1": 101
+        },
+        "epicMin": {
+          "E1": 101
+        }
       },
       "lineState": {
         "state": "paused",
@@ -960,6 +990,7 @@ window.DASHBOARD_DATA = {
       ],
       "inflight": null,
       "velocity": {
+        "derived": true,
         "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals.",
         "bars": [
           [
@@ -974,13 +1005,44 @@ window.DASHBOARD_DATA = {
             "1.3",
             16
           ]
+        ],
+        "foot": [
+          [
+            "~60 min",
+            "median / story",
+            "var(--done)"
+          ],
+          [
+            "16–98 min",
+            "observed range",
+            ""
+          ],
+          [
+            "2/17",
+            "stories complete",
+            "var(--done)"
+          ],
+          [
+            "15",
+            "remaining",
+            ""
+          ]
         ]
       },
       "timing": {
+        "derived": true,
         "metric": "active agent-compute per story (dev + review; excludes gate-pause wait) — from bmad-loop run journals",
+        "total": 174,
         "totalLabel": "~2.9 h active compute",
         "note": "Derived from 3 measured stories; a story still in flight contributes only its closed sessions.",
-        "epicMin": {}
+        "perStory": {
+          "1.1": 60,
+          "1.2": 98,
+          "1.3": 16
+        },
+        "epicMin": {
+          "E1": 174
+        }
       },
       "lineState": {
         "state": "paused",
@@ -1121,19 +1183,49 @@ window.DASHBOARD_DATA = {
       ],
       "inflight": null,
       "velocity": {
+        "derived": true,
         "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals.",
         "bars": [
           [
             "1.1",
-            139
+            165
+          ]
+        ],
+        "foot": [
+          [
+            "~165 min",
+            "median / story",
+            "var(--done)"
+          ],
+          [
+            "165 min",
+            "observed range",
+            ""
+          ],
+          [
+            "1/41",
+            "stories complete",
+            "var(--done)"
+          ],
+          [
+            "40",
+            "remaining",
+            ""
           ]
         ]
       },
       "timing": {
+        "derived": true,
         "metric": "active agent-compute per story (dev + review; excludes gate-pause wait) — from bmad-loop run journals",
-        "totalLabel": "~2.3 h active compute",
+        "total": 165,
+        "totalLabel": "~2.8 h active compute",
         "note": "Derived from 1 measured story; a story still in flight contributes only its closed sessions.",
-        "epicMin": {}
+        "perStory": {
+          "1.1": 165
+        },
+        "epicMin": {
+          "E1": 165
+        }
       },
       "lineState": {
         "state": "paused",
@@ -1642,19 +1734,49 @@ window.DASHBOARD_DATA = {
       ],
       "inflight": null,
       "velocity": {
+        "derived": true,
         "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals.",
         "bars": [
           [
             "1.1",
             70
           ]
+        ],
+        "foot": [
+          [
+            "~70 min",
+            "median / story",
+            "var(--done)"
+          ],
+          [
+            "70 min",
+            "observed range",
+            ""
+          ],
+          [
+            "1/9",
+            "stories complete",
+            "var(--done)"
+          ],
+          [
+            "8",
+            "remaining",
+            ""
+          ]
         ]
       },
       "timing": {
+        "derived": true,
         "metric": "active agent-compute per story (dev + review; excludes gate-pause wait) — from bmad-loop run journals",
+        "total": 70,
         "totalLabel": "~1.2 h active compute",
         "note": "Derived from 1 measured story; a story still in flight contributes only its closed sessions.",
-        "epicMin": {}
+        "perStory": {
+          "1.1": 70
+        },
+        "epicMin": {
+          "E1": 70
+        }
       },
       "lineState": {
         "state": "paused",
@@ -2580,7 +2702,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-07-26 09:57 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-07-26 10:32 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -3070,7 +3192,7 @@ window.DASHBOARD_DATA = {
       "title": "marshal CLI — graduated autonomy, productized",
       "caps": 8,
       "companions": 5,
-      "updated": "2026-07-25",
+      "updated": "2026-07-26",
       "dream": "pyforge-marshal",
       "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal"
     },
