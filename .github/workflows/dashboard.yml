@@ -48,14 +48,16 @@ jobs:
       # out to `git` alone, so generate.py runs them directly (see _run_detector).
       # Without that the published board reported every detector "could not run
       # here" while they read green locally.
-      # frozen, NOT locked. `--locked` re-validates the WHOLE workspace against
-      # the manifest, and the bmad-ui env declares a local file:// channel at
-      # ./build_artifacts/linux64 (locally-built bmad-dashboard mirrors). That
-      # directory is gitignored, so on any clean checkout the check dies with
-      #   could not find subdir 'noarch' in channel 'file:///…/build_artifacts/linux64/'
-      # surfacing as the misleading `lock file not up-to-date with the workspace`.
-      # `--frozen` uses the tracked lock as-is and installs clean — which is also
-      # the repo-wide convention (`pixi run --frozen` everywhere).
+      # locked, NOT frozen. `--locked` re-validates the whole workspace against
+      # the manifest, so a manifest edit landed without a relock fails HERE, loudly,
+      # instead of publishing a silently stale board. `--frozen` would skip that
+      # check entirely.
+      # It was briefly --frozen: the bmad-ui env declared a local ./build_artifacts
+      # channel, which pixi records as an ABSOLUTE path, so the lock carried a
+      # file:///home/<user>/… that exists on one machine and `--locked` died on
+      # every clean checkout. That channel is gone (zero packages ever came from
+      # it) and both `pixi install --locked` and `pixi lock --check` now pass in a
+      # detached worktree, so the stricter mode is back.
       # pixi-version stays pinned to the lock's producer: good hygiene, and this
       # workspace uses the pixi 0.71+ NAMED platform entry osx-arm64-min that
       # older pixi cannot read. Bump it in step with pixi.lock.
@@ -63,7 +65,7 @@ jobs:
         with:
           pixi-version: v0.73.0
           environments: pyforge-ci
-          frozen: true
+          locked: true
           cache: true
       - name: Regenerate data.js from git history (done-detection + live detectors)
         run: python docs/dashboard/generate.py --source git
