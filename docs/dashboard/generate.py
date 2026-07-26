@@ -43,6 +43,10 @@ PROJECT_SOURCES = {
     "herald": "_bmad-output/projects/pyforge-herald/implementation-artifacts/sprint-status.yaml",
     "doctor": "_bmad-output/projects/pyforge-doctor/implementation-artifacts/sprint-status.yaml",
     "scribe": "_bmad-output/projects/pyforge-scribe/implementation-artifacts/sprint-status.yaml",
+    "marshal": "_bmad-output/projects/pyforge-marshal/implementation-artifacts/sprint-status.yaml",
+    "mason": "_bmad-output/projects/pyforge-mason/implementation-artifacts/sprint-status.yaml",
+    "steward": "_bmad-output/projects/pyforge-steward/implementation-artifacts/sprint-status.yaml",
+    "genesis": "_bmad-output/projects/pyforge-genesis/implementation-artifacts/sprint-status.yaml",
 }
 
 # git-history DONE detection (used by --source git). Verified against main's subjects.
@@ -724,7 +728,9 @@ def scan_fleet(projects: dict) -> dict:
         prog = ""
         pkey = {"pyforge-herald": "herald", "pyforge-doctor": "doctor",
                 "pyforge-scribe": "scribe", "pyforge-warden": "warden",
-                "pyforge-atlas": "atlas"}.get(slug)
+                "pyforge-atlas": "atlas", "pyforge-marshal": "marshal",
+                "pyforge-mason": "mason", "pyforge-steward": "steward",
+                "pyforge-genesis": "genesis"}.get(slug)
         if pkey and pkey in projects:
             st = [s for e in projects[pkey]["epics"] for s in e["stories"]]
             prog = f"{sum(1 for s in st if s[1] == 'done')}/{len(st)}"
@@ -937,7 +943,9 @@ def scan_backlog(dreams: list[dict], projects: dict) -> dict:
 # Console program key -> the Dream whose owner is accountable for that build line.
 PROGRAM_DREAM = {"warden": "pyforge-warden", "atlas": "pyforge-atlas",
                  "herald": "pyforge-herald", "doctor": "pyforge-doctor",
-                 "scribe": "pyforge-scribe", "regen": "regenerable-factory"}
+                 "scribe": "pyforge-scribe", "regen": "regenerable-factory",
+                 "marshal": "pyforge-marshal", "mason": "pyforge-mason",
+                 "steward": "pyforge-steward", "genesis": "pyforge-genesis"}
 
 
 def apply_owner(data: dict) -> None:
@@ -1037,9 +1045,14 @@ def main() -> int:
     ]
     data["pitch"] = scan_pitch()
     data["archived"] = build_archived(data["dreams"])
+    # apply_owner MUST precede scan_guild: the Guild's `building` column reads
+    # proj["owner"], which apply_owner sets. Ordered the other way it silently
+    # worked for pre-existing lines (their owner persisted in data.js from an
+    # earlier run) and reported every NEW line as idle — caught when marshal /
+    # mason / steward / genesis were added 2026-07-25.
+    apply_owner(data)
     data["backlog"] = scan_backlog(data["dreams"], data["projects"])
     data["guild"] = scan_guild(data["dreams"], data["projects"], data["backlog"])
-    apply_owner(data)
 
     ts = now_utc()
     data["snapshot"] = _SNAP_TS.sub(ts, data["snapshot"], count=1)
