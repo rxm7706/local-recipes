@@ -1,12 +1,12 @@
 ---
 doc_type: prd
 project_name: local-recipes
-date: 2026-06-20
-version: '1.6.1'
+date: 2026-07-25
+version: '1.7.0'
 status: approved
 tentative_decisions_applied: 2026-05-12
 decisions_confirmed: 2026-05-12
-source_pin: 'conda-forge-expert v8.79.0'
+source_pin: 'conda-forge-expert v8.79.1'
 re_validated: 2026-06-20
 input_docs:
   - planning-artifacts/index.md
@@ -30,6 +30,7 @@ edit_history:
   - { date: '2026-06-24', via: 'bmad-correct-course', delta: 'v8.41.0 → v8.42.1 pin bump (langflow-closure CFE retro). source_pin re-pinned v8.41.0 → v8.42.1. The v8.41.0 → v8.42.1 span (PATCH, additive — no FR/NFR scope shift, no code/test/CLI/schema change) added source-selection gotchas G54–G55 (v8.42.0: sdist > GitHub-source > wheel; build-backend-in-host) and a cfe-block convention clarification (v8.42.1: first build on a recipe with no cfe block → full canonical block). Body resync: F1.7 "Recipe Authoring Gotchas" range carried G1-G53 → G1-G55 (F1.7 row + glossary + Appendix C). Verified live: SCHEMA_VERSION=28; 42 @mcp.tool(); 22 phases; 9 environments; G1-G75 (SKILL.md + CHANGELOG v8.42.1).' }
   - { date: '2026-06-27', via: 'bmad-correct-course (drift-check reconcile)', delta: 'v8.42.1 → v8.52.1 pin bump + narrative re-sync (langflow-suite closure + submission). source_pin re-pinned v8.42.1 → v8.52.1. The span (additive — no FR/NFR scope shift, no code/test/CLI/schema change) added gotchas G56–G75: multi-output-win (G56)/win-unset-build-env (G57)/lookup-feedstock-before-submit (G58); submission-flow + run_constraints reconciliation (G59–G70); G71 win+py3.12 reactor gap; G72 fold-sibling-into-suite; G73 monorepo-tag-ships-no-frontend (cross-platform node-build); G74 atlas-membership-staleness (cross-check live channeldata.json); G75 lean-submission-clean. Body resync: F1.7 range carried G1-G55 → G1-G75. Verified live: SCHEMA_VERSION=28; 42 @mcp.tool(); 22 phases; 9 environments; G1-G75 (SKILL.md + CHANGELOG v8.52.1). PATCH bump (v1.6.0 → v1.6.1).' }
   - { date: '2026-06-28', via: 'bmad-correct-course (drift-check reconcile)', delta: 'v8.52.1 → v8.62.0 pin bump + narrative re-sync (v0→v1 feedstock-migration retro). source_pin re-pinned v8.52.1 → v8.62.0. The span (additive — no FR/NFR scope shift, no code/test/CLI/schema change) added gotchas G76–G87: langflow-win closeout (G76/G77), cfe-submission-pr-staleness (G78), go-licenses --ignore (G79), waived-bug-rebuild (G80), pnpm<11 (G81), staged-recipes-cannot-build-ARM-pre-merge (G82), conda-forge.yml-inert-in-PR (G83), and the v0→v1 feedstock-migration set G84–G87 (feedrattler-remote-only, native-build-summary false-crash, run_deps_from_wheel-patch-divergence, migration-verify-version-first). v8.61.0 also made the universal conda-forge.yml pre-seed the generator DEFAULT (new scripts/_cfy_template.py emits it on every path). Body resync: F1.7 range carried G1-G53 → G1-G87. Verified live: SCHEMA_VERSION=28; 42 @mcp.tool(); 22 phases; 9 environments; G1-G87 (SKILL.md + CHANGELOG v8.62.0). PATCH bump (v1.6.1 → v1.6.2).' }
+  - { date: '2026-07-25', via: 'bmad-correct-course (ownership decomposition + currency re-sync)', delta: 'v1.6.1 → v1.7.0. TWO changes: a STRUCTURAL reframe and a currency sweep. (1) STRUCTURAL — the system grew a FIFTH part and the document grew an owner. New § 0 Ownership states that this PRD is an INTEGRATION VIEW, not a claim over five crafts: local-recipes was the only BMAD project no station owned, which is exactly why it drifted (every other project is pulled forward by its owning station retro loop; this one had nothing pulling it, so SYNC-RUNBOOK substituted for the missing owner). Handing all five parts to one Smith would violate Charter § The Lexicon §4 (each works ONE craft, not all), so it is DECOMPOSED: Part 1 → packaging-factory [Mason]; Part 2 → pyforge-atlas [Atlas]; Part 3 → agent-tool-surface [Marshal, Dream AUTHORED 2026-07-25 — this part had NO Dream at all, surviving as one bullet inside packaging-factory, and was the single genuine gap the decomposition surfaced]; Part 4 → pyforge-marshal + pyforge-genesis + regenerable-factory + agent-portability [Marshal]; Part 5 → the five product Dreams [Warden/Atlas/Herald/Scribe/Doctor]. The DOCUMENT is owned by Marshal via the regenerable-factory practice, because what it IS, is the factory rebuild spec (every line of code under a spec it can be rebuilt from) — the only reading under which a cross-station artifact has a legitimate single owner: Marshal owns the ability to REBUILD the whole, not the crafts. New § Part 5 (F5.1–F5.5: five hatchling dists, PEP 420 implicit pyforge namespace with the load-bearing ABSENT src/pyforge/__init__.py, pixi workspace members via path deps with no [workspace] table and no root members key, six lean no-default-feature product envs, per-product gates). Part 5 DELEGATES its stories — each product has its own complete BMAD chain under _bmad-output/projects/pyforge-*/planning-artifacts/ (warden 31/31 + atlas 32/32 shipped; herald/doctor/scribe mid-build); duplicating ~100 product stories here would create two sources of truth. (2) CURRENCY — the doc was INTERNALLY INCONSISTENT, worse than uniformly stale, because a partial 2026-07-06 re-grounding updated some spots and not others: the rebuild-target blurb said 42-tool MCP API while §s 37 and 150 already said 46, and F3.2 said 42 registrations in a row whose own acceptance column asserted all 46. Corrected against LIVE verification (not against the operator brief): 42→46 MCP tools (46 @mcp.tool() in conda_forge_server.py); Parts 1-4→1-5 and four parts→five; 9 envs / ~50 tasks → 15 envs / 17 features / 154 tasks (106 in the local-recipes feature); Part 1 inventory ~44 scripts → 66 Tier-1 / 60 Tier-2; Part 2 schema shape named as 21 tables + 5 views (22 CREATE TABLE statements but pypi_universe is re-created by a migration — 21 DISTINCT); F1.7 G1-G87→G1-G106; F4.5 64 real skills / 65 entries → 89 real skills across 93 dirs, BMAD installer v6.10.0; §6 metric 42/42 → 46/46; goal G1 gains a Part-5 criterion; recipes ~1,600→~1,660 (1,664 dirs, churny — not gated). Part 3 now carries its open two-server question: the factory runs TWO FastMCP servers, this legacy 46-tool one plus pyforge-atlas own 12-tool server at src/shared/packages/pyforge-atlas/src/pyforge/atlas/mcp/server.py, additive by accident rather than design; and registration is manual in ~/.claude.json, so a FRESH CLONE GETS ZERO TOOLS — the sharpest gap between regenerable-factory promise and what a new machine gets. Feature total 57 → 62 (16+14+9+10+5 = 54 in parts + 8 cross-cutting FX.1–FX.8). CORRECTIONS TO THE OPERATOR BRIEF, caught by live re-verification: Tier-2 wrappers are 60 not 57; test files 98 not 100; pixi tasks 154 not ~152; the pyforge-atlas second MCP server has 12 tools not 11 (architecture.md says 11 — that doc is now WRONG and is reported, not fixed, per scope). LEFT ALONE deliberately: §7 architectural-gaps table (its G1-G6 is a DIFFERENT numbering for SYSTEM gaps, untouched by every prior sync); §9 Deferred Work rows (no DW demonstrably shipped in this span); all SPEC.md files (bmad-spec is their single writer); architecture.md (re-grounded earlier today). MINOR bump (additive part + additive features; no FR removed, no decision overridden). Verified live 2026-07-25: 46 @mcp.tool(); SCHEMA_VERSION=29; 21 tables + 5 views; 22 executable atlas phases (23 cataloged — the 23rd is the runner-less conceptual Phase I in reference/atlas-phases-overview.md; bmad-groundtruth itself over-reported 23 until phase_count() was fixed to read the PHASES registry earlier today); 15 envs / 17 features; 93 skill dirs / 89 SKILL.md; G1-G106; BMAD 6.10.0; 14 projects; 1,664 recipe dirs.' }
 ---
 
 # Product Requirements Document: `local-recipes` Rebuild
@@ -37,15 +38,59 @@ edit_history:
 > **Re-grounded 2026-07-06** (source_pin → v8.76.0 (2026-07-07 pin-forward); reconciler loop per SYNC-RUNBOOK after the shipped `cyclonedx-universe-inventory` effort, CFE v8.69.0→v8.73.1): cf_atlas schema **v29** (adds the `v_pypi_intelligence_valid` orphan-guard view), **46 MCP tools** (+4: `export_purls`, `universe_sbom`, `inventory_match`, `recommend_2027`), **7 new CLIs** (export-purls, mapping-gap, universe-sbom, inventory-match, add-handoff, library-futures, recommend-2027 — the purl/BOM/gap-matcher/2027–2030-scoring suite), S5a intake formats in `scan_project` (pixi.lock native, pip/conda list text, recipes-as-manifests, pdm.lock/pylock.toml), new skill data (`data/lts-registry.yaml`, vendored SPDX enum), gotchas through **G106**, and the v8.69/v8.70 recipe-generator emission fixes. Full narrative: skill CHANGELOG v8.69.0–v8.76.0 (v8.74–v8.76 add 4 read-only seed-gap suggesters — `lts-registry-gap`, `cwe-seed-gap`, `spdx-schema-gap`, `license-map-gap` — CLI/pixi-only, no MCP tool; schema v29 / 46 MCP tools / 23 phases / G99 / 9 envs all unchanged).
 
 
-> **Rebuild target:** the AI-assisted, semi-autonomous conda-forge packaging factory + offline-tolerant package-intelligence layer + 42-tool MCP API + BMAD multi-project planning infrastructure. **Not the ~1,600 existing recipes** — those are outputs.
+> **Rebuild target:** the AI-assisted, semi-autonomous conda-forge packaging factory + offline-tolerant package-intelligence layer + 46-tool MCP API + BMAD multi-project planning infrastructure. **Not the ~1,660 existing recipes** — those are outputs.
+
+---
+
+## 0. Ownership — what this document is, and what it is not
+
+> **Added 2026-07-25.** This PRD is an **integration view**, not a claim of ownership
+> over five crafts.
+
+`local-recipes` was for a long time the only BMAD project **no station owned** — and
+that is precisely why it drifted. Every other project is pulled forward by its owning
+station's retro loop; this one had nothing pulling it, so the SYNC-RUNBOOK had to
+substitute for the missing owner. Handing all five parts to a single Smith would have
+made it worse, not better: the Charter's § The Lexicon §4 holds that each Smith works
+**one craft, not all**, so one owner here would mean their retro loop grounding four
+other stations' work.
+
+It is therefore **decomposed**. Each part traces to the Dream whose craft it is; this
+document owns only the **rebuild contract for the whole**:
+
+| Part | Scope | Owning Dream | Station |
+|---|---|---|---|
+| **1** | conda-forge-expert skill | `docs/dreams/packaging-factory.md` *(practice)* | **Mason** |
+| **2** | cf_atlas data pipeline | `docs/dreams/pyforge-atlas.md` | **Atlas** |
+| **3** | FastMCP tool surface | `docs/dreams/agent-tool-surface.md` | **Marshal** |
+| **4** | BMAD infrastructure | `pyforge-marshal.md` · `pyforge-genesis.md` · `regenerable-factory.md` · `agent-portability.md` | **Marshal** |
+| **5** | pyforge-packages | the five product Dreams (`pyforge-{warden,atlas,herald,scribe,doctor}.md`) | **Warden · Atlas · Herald · Scribe · Doctor** |
+
+**The document itself is owned by Marshal, via the `regenerable-factory` practice** —
+because what this PRD *is*, is the factory's rebuild spec: *every line of code under a
+spec it can be rebuilt from*. That is Marshal's standing practice, and it is the only
+reading under which a cross-station artifact has a legitimate single owner: Marshal
+owns **the ability to rebuild the whole**, not the crafts that fill it.
+
+Two consequences that bind the rest of this document:
+
+- **Part 5 delegates.** Its features are stated here; its stories are **not**. Each of
+  the five products has a complete BMAD chain of its own under
+  `_bmad-output/projects/pyforge-*/planning-artifacts/` (warden 31/31 and atlas 32/32
+  shipped; herald, doctor and scribe mid-build). Duplicating ~100 product stories into
+  this doc would create two sources of truth for the same work.
+- **Part 3 got its Dream on 2026-07-25.** The FastMCP surface — 9 features, 46 tools —
+  had *no* Dream at all; it survived as a single bullet inside `packaging-factory`. It
+  was the one genuine gap this decomposition surfaced, and it now owns the open
+  two-server question (see § Part 3).
 
 ---
 
 ## 1. Vision
 
-**An AI agent — given an empty repo, pixi, and Claude Code — can stand up the full `local-recipes` system (Parts 1-4) and produce conda-forge-ready recipes on first authoring, in any network environment from open-internet to fully air-gapped.**
+**An AI agent — given an empty repo, pixi, and Claude Code — can stand up the full `local-recipes` system (Parts 1-5) and produce conda-forge-ready recipes on first authoring, in any network environment from open-internet to fully air-gapped.**
 
-The rebuild target is the **factory**, not its outputs. A successful rebuild reproduces the four parts faithfully enough that the next conda-forge recipe authored by the system passes review on first land — same as today.
+The rebuild target is the **factory**, not its outputs. A successful rebuild reproduces the five parts faithfully enough that the next conda-forge recipe authored by the system passes review on first land — same as today.
 
 ---
 
@@ -64,11 +109,12 @@ This PRD does not assume a destruction event. The rebuild target supports:
 
 | In scope | Out of scope |
 |---|---|
-| Pixi monorepo scaffolding (9 envs, ~50 tasks) | The ~1,600 recipes under `recipes/` |
-| conda-forge-expert skill (Part 1, ~44 scripts + docs) | Recipe-specific upstream patches |
-| cf_atlas data pipeline (Part 2, 22 phases, schema v29) | Historical CHANGELOG entries (only TL;DR + structure) |
+| Pixi monorepo scaffolding (15 envs / 17 features, 154 tasks — 106 in the `local-recipes` feature) | The ~1,660 recipes under `recipes/` |
+| conda-forge-expert skill (Part 1, 66 Tier-1 scripts / 60 Tier-2 wrappers + docs) | Recipe-specific upstream patches |
+| cf_atlas data pipeline (Part 2, 22 executable phases, schema v29 — 21 tables + 5 views) | Historical CHANGELOG entries (only TL;DR + structure) |
 | FastMCP server (Part 3, 46 tools) | Auxiliary `gemini_server.py` (optional) |
-| BMAD installer (Part 4, 65 skills, multi-project) | Personal `.envrc` files, IDE-specific config |
+| BMAD installer (Part 4, v6.10.0, 93 skill dirs / 89 real skills, 14 projects) | Personal `.envrc` files, IDE-specific config |
+| **pyforge-packages (Part 5, 5 hatchling dists, one PEP 420 `pyforge` namespace)** | Per-product planning (each has its own BMAD chain) |
 | Enterprise/air-gap layer (`_http.py`, JFrog) | Production JFrog mirror setup (operator's problem) |
 | Tests (41 files + meta-tests for invariants) | Recipe corpus tests (covered by conda-forge CI) |
 | Documentation (SKILL.md, reference, guides, quickref) | This repo's existing `docs/specs/` (preserved as inputs, not rebuilt) |
@@ -147,7 +193,7 @@ JTBD-5.1: Add a new MCP tool / pipeline phase / skill reference without breaking
 
 | ID | Goal | Measurable outcome |
 |---|---|---|
-| G1 | **Faithful rebuild of Parts 1-4** | All 46 MCP tools functional; all 22 atlas phases run; bmad-switch + 6-layer merge work; 64 real skills load (42 BMAD + 21 engineering + 1 CFE; the legacy stray `.claude/skills/data/` dir is not recreated) |
+| G1 | **Faithful rebuild of Parts 1-5** | All 46 MCP tools functional; all 22 executable atlas phases run; bmad-switch + 6-layer merge work; 89 real skills load across 93 dirs; all five `pyforge` distributions build and import-coexist under the shared PEP 420 namespace |
 | G2 | **First-pass recipe authoring success rate ≥90%** | First-pass conda-forge PR acceptance (no review-comment revisions on lint/policy issues) ≥9 of 10 recent recipes |
 | G3 | **Atlas refresh resilient to interrupts** | Mid-run kill of `bootstrap-data --fresh` resumes cleanly via `phase_state` cursor + TTL gates; ≤5% rework |
 | G4 | **Air-gap operation parity** | Full atlas build + recipe authoring + PR submission run with all `*_BASE_URL` set to JFrog endpoints + `JFROG_API_KEY` correctly scoped; zero cross-host leak |
@@ -183,7 +229,7 @@ Features are organized by Part. Each feature has an ID, priority (P0 = must-ship
 | F1.4 | 44 Tier 1 canonical scripts | P0 | All 44 scripts in `scripts/` accept `--json` and emit valid JSON on stdout |
 | F1.5 | 36 Tier 2 CLI wrappers + pixi tasks | P0 | All 36 wrappers in `.claude/scripts/conda-forge-expert/` delegate to Tier 1 via subprocess; each has a matching pixi task |
 | F1.6 | 17-lint-code recipe optimizer | P0 | `optimize_recipe` flags STD-001 through OPT-NNN with structured output |
-| F1.7 | 87 Recipe Authoring Gotchas (G1-G87) | P0 | SKILL.md § "Recipe Authoring Gotchas" enumerates G1-G87 with cause + fix |
+| F1.7 | 106 Recipe Authoring Gotchas (G1-G106) | P0 | SKILL.md § "Recipe Authoring Gotchas" enumerates G1-G106 with cause + fix |
 | F1.8 | 41 recipe templates across 13 ecosystems | P0 | `templates/` contains v1 + v0 variants for python, rust, go, c-cpp, r, java, ruby, dotnet, fortran, multi-output, nodejs, perl + conda-forge-yml config-template; verified 41 files (39 `.yaml` + 2 `.yml`) / 13 dirs at 2026-05-12 |
 | F1.9 | 11 reference docs + 8 guides + 2 quickrefs | P0 | All documentation files exist with content; `INDEX.md` task→tool navigator points correctly |
 | F1.10 | `MANIFEST.yaml` + `install.py` portability | P1 | The skill can be moved to another repo and `install.py` bootstraps the wrappers + pixi tasks |
@@ -215,10 +261,20 @@ Features are organized by Part. Each feature has an ID, priority (P0 = must-ship
 
 ### Part 3: FastMCP server (9 features)
 
+> **Owning Dream:** `docs/dreams/agent-tool-surface.md` (**Marshal**) — authored
+> 2026-07-25. Until then this part had no Dream at all, surviving as one bullet
+> inside `packaging-factory`. **Open question it now owns:** the factory runs
+> **two** FastMCP servers — this legacy 46-tool one plus `pyforge-atlas`'s own
+> **12-tool** server (`src/shared/packages/pyforge-atlas/src/pyforge/atlas/mcp/server.py`).
+> The second is additive by accident rather than by design; whether the surface
+> federates, merges, or stays split is undecided. Note also that registration is
+> manual (`~/.claude.json`), so **a fresh clone gets zero tools** — the sharpest
+> gap between `regenerable-factory`'s promise and what a new machine gets.
+
 | ID | Feature | Priority | Acceptance |
 |---|---|---|---|
 | F3.1 | `conda_forge_server.py` with `FastMCP("conda-forge-expert")` | P0 | Server starts via stdio transport; registers as `conda-forge-expert` |
-| F3.2 | 42 `@mcp.tool()` registrations (incl. `pypi_only_candidates` v7.9.0, `pypi_intelligence` v8.1.0, `env_inspect` 8-mode dispatcher v8.5.0/v8.5.1, extended `my_feedstocks` with triage v8.5.0, + the 7 net-new tools in F3.9) | P0 | All 46 tools enumerated in `architecture-mcp-server.md` § "The Tools by Surface" are present and functional |
+| F3.2 | 46 `@mcp.tool()` registrations (incl. `pypi_only_candidates` v7.9.0, `pypi_intelligence` v8.1.0, `env_inspect` 8-mode dispatcher v8.5.0/v8.5.1, extended `my_feedstocks` with triage v8.5.0, + the 7 net-new tools in F3.9) | P0 | All 46 tools enumerated in `architecture-mcp-server.md` § "The Tools by Surface" are present and functional |
 | F3.3 | Thin-subprocess wrapper pattern | P0 | Every tool body is ≤30 lines; delegates via `_run_script(SCRIPT_PATH, args)` |
 | F3.4 | `_run_script` helper with 3-tier error handling | P0 | Handles FileNotFoundError, JSONDecodeError, TimeoutExpired; returns structured error dict |
 | F3.5 | 2 async tools (`trigger_build`, `update_cve_database`) | P0 | Async tools use `Context` for progress reporting; fire-and-forget pattern for builds |
@@ -235,7 +291,7 @@ Features are organized by Part. Each feature has an ID, priority (P0 = must-ship
 | F4.2 | 6-layer config merge | P0 | `resolve_config.py` merges layers 1-6 in priority order; verified by per-layer override tests |
 | F4.3 | Active-project resolution (4 priorities) | P0 | `--project <slug>` > `BMAD_ACTIVE_PROJECT` env > `_bmad/custom/.active-project` > none |
 | F4.4 | `scripts/bmad-switch` CLI | P0 | `--list`, `--current`, `--clear`, `<slug>` all work; slug validation rejects bad inputs |
-| F4.5 | 64 real skills (target) / 65 entries in current repo | P0 | **42 BMAD-installer** (6 personas + 9 planning + 3 discovery + 3 research + 2 implementation + 4 sprint/retro + 5 review + 10 process/facilitation) + **21 engineering-practice** (separate from installer) + **1 repo-specific** (`conda-forge-expert`) = **64 real skills**. Current repo state shows 65 because `.claude/skills/data/` is a stray directory (no SKILL.md inside, contains old `conda-forge-expert/` subdir); the rebuild does NOT recreate this stray. All loadable via `Skill` tool. |
+| F4.5 | 89 real skills across 93 dirs (BMAD installer v6.10.0) | P0 | Formerly **42 BMAD-installer** (6 personas + 9 planning + 3 discovery + 3 research + 2 implementation + 4 sprint/retro + 5 review + 10 process/facilitation) + **21 engineering-practice** (separate from installer) + **1 repo-specific** (`conda-forge-expert`) = 64 real skills; the catalogue has since grown to **89 skills with a SKILL.md across 93 directories** (verified live 2026-07-25) as the 6.10.0 installer and the forged retro-skills landed. The rebuild does NOT recreate the legacy stray `.claude/skills/data/` directory (no SKILL.md inside). All loadable via `Skill` tool. |
 | F4.6 | `conda-forge-expert` repo-specific skill | P0 | Lives at `.claude/skills/conda-forge-expert/`; Parts 1-3 reference it |
 | F4.7 | Per-skill customization layer | P1 | `_bmad/custom/<skill>.toml` files merge with skill's `customize.toml` via `resolve_customization.py` |
 | F4.8 | Multi-project directory layout | P0 | `_bmad-output/projects/<slug>/` with `planning-artifacts/` + `implementation-artifacts/` per project |
@@ -255,7 +311,23 @@ Features are organized by Part. Each feature has an ID, priority (P0 = must-ship
 | FX.7 | `build-locally.py` Docker wrapper | P0 | Linux builds run in Docker; osx/win run on host; cross-compile via SDKs/ |
 | FX.8 | AI Provenance Tracking Hook | P1 | `.claude/hooks/post-tool-call.py` tracks file writes and edits from Claude Code, sending real-time provenance payloads over HTTP to a webserver |
 
-**Total features: 57** across the 4 parts + cross-cutting.
+### Part 5: pyforge-packages (5 features)
+
+> **Owning Dreams:** the five product Dreams — `pyforge-{warden,atlas,herald,scribe,doctor}.md`.
+> **This section states features, not stories.** Each product carries its own complete
+> BMAD chain under `_bmad-output/projects/pyforge-*/planning-artifacts/`; duplicating
+> them here would create two sources of truth. Rebuild scope is the *shape* — the
+> namespace, the workspace wiring, the envs — not the products' internals.
+
+| ID | Feature | Priority | Acceptance |
+|---|---|---|---|
+| F5.1 | Five hatchling-built distributions under `src/shared/packages/` | P0 | `pyforge-warden`, `pyforge-atlas`, `pyforge-herald`, `pyforge-scribe`, `pyforge-doctor` each build from their own `[package]` table |
+| F5.2 | One PEP 420 implicit `pyforge` namespace | P0 | **No** distribution ships `src/pyforge/__init__.py` — that absence is load-bearing; all five import-coexist when installed independently |
+| F5.3 | Pixi workspace members via path dependencies | P0 | Each is a member with its own `[package]` and **no** `[workspace]` table; root `[workspace]` sets `preview = ["pixi-build"]` and deliberately has no `members` key |
+| F5.4 | Six lean `no-default-feature` product envs | P0 | `pyforge-{warden,atlas,doctor,scribe,herald}` + `bmad-ui` resolve independently of the 9 factory envs (15 envs / 17 features total) |
+| F5.5 | Per-product gates wired as pixi tasks | P0 | Each product's test gate is invocable from the root workspace (e.g. `pyforge-warden-test`, `kedro-test`) |
+
+**Total features: 62** — 16 (Part 1) + 14 (Part 2) + 9 (Part 3) + 10 (Part 4) + 5 (Part 5) = 54 in the parts, plus 8 cross-cutting (FX.1–FX.8).
 
 ---
 
@@ -267,7 +339,7 @@ Quantitative measures that determine rebuild success. Measured post-deploy on a 
 
 | Metric | Target | How measured |
 |---|---|---|
-| MCP tools functional | 42 / 42 | `mcp_call.py <tool>` returns valid JSON for each |
+| MCP tools functional | 46 / 46 | `mcp_call.py <tool>` returns valid JSON for each |
 | Atlas phases run to completion | 22 / 22 | `atlas-phase <ID>` exits 0 for each on a non-fresh DB |
 | Pixi envs build cleanly | 9 / 9 | `pixi install -e <env>` succeeds for each |
 | Skills load via Skill tool | 65 / 65 | Each skill activatable via `Skill:` invocation |
@@ -580,7 +652,7 @@ This is a **personal-time rebuild effort with no firm calendar deadline**. The o
 
 - [x] **Q-PRD-01 through Q-PRD-07 confirmed (2026-05-12)** — operator (rxm7706) accepted all 7 recommendations
 - [x] **Operator (rxm7706) acknowledges scope** — confirmed via decision approval
-- [x] Architecture doc consolidating Parts 1-4 produced (`architecture.md`)
+- [x] Architecture doc consolidating Parts 1-5 produced (`architecture.md` — Part 5 added 2026-07-25)
 - [x] Epics + stories produced (`epics.md` — 193 stories, 0 XL after MF4 splits + Q-PRD-04 addition)
 - [x] Validation report (`validation-report-PRD.md`) — REVISE verdict superseded by MF2 + MF3 applications
 - [x] Implementation readiness report (`implementation-readiness-report.md`) — CONDITIONAL_READY → **READY** after MF1 confirmation
@@ -673,6 +745,9 @@ Maps each of the 57 features in §5 to its **primary JTBD** (the user job it mos
 | F3.9 (7 net-new MCP tools) | JTBD-1.3 | JTBD-1.2, JTBD-1.6 | PyPI-intelligence + download-breakdown + PR-artifact + env-audit surfaces for agents |
 
 ### Part 4: BMAD infrastructure (10 features)
+
+*(Part 5 · pyforge-packages — 5 features — is enumerated in § 5; it delegates its
+stories to the five product projects and adds no appendix rows of its own.)*
 
 | Feature | Primary JTBD | Secondary | Why this serves the JTBD |
 |---|---|---|---|

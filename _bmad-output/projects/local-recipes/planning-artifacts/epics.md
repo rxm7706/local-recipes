@@ -1,12 +1,12 @@
 ---
 doc_type: epics-and-stories
 project_name: local-recipes
-date: 2026-06-20
-version: '1.1.1'
+date: 2026-07-25
+version: '1.2.0'
 status: draft
-source_pin: 'conda-forge-expert v8.79.0'
-total_epics: 14
-total_stories: 232
+source_pin: 'conda-forge-expert v8.79.1'
+total_epics: 15
+total_stories: 239
 waves: 5
 xl_stories_remaining: 0
 tentative_decisions_applied: 7
@@ -28,6 +28,7 @@ sync_lineage:
   - { date: '2026-06-24', via: 'narrative re-sync (bmad-correct-course)', from: 'v8.41.0', to: 'v8.42.1', proposal: null, spec: 'docs/specs/langflow-conda-forge.md', retro: null, note: 'Body-text narrative sweep from the v8.41.0 pin to live v8.42.1 (langflow-closure CFE retro). The span added source-selection gotchas G54–G55 (v8.42.0: sdist > GitHub-source > wheel; build-backend-in-host) and a cfe-block convention clarification (v8.42.1: first build on a recipe with no cfe block → full canonical block); PATCH+MINOR, additive, no code/test/CLI/schema change. Epic 6 gotcha-authoring story text re-synced G7–G53 → G7–G55. Atlas surface unchanged (schema v28; 42 MCP tools; 22 phases; 9 pixi envs). No epic scope change; no new stories required. source_pin re-pinned v8.41.0 → v8.42.1.' }
   - { date: '2026-06-27', via: 'bmad-correct-course (drift-check reconcile)', from: 'v8.42.1', to: 'v8.52.1', proposal: null, spec: 'docs/specs/langflow-conda-forge.md', retro: null, note: 'Currency re-sync from v8.42.1 to live v8.52.1 (langflow-suite closure + submission). The span added gotchas G56–G75 (submission-flow, run_constraints reconciliation, G71 win+py3.12, G72 fold-into-suite, G73 frontend node-build cross-platform, G74 atlas-membership-staleness, G75 lean-submission-clean). No epic scope change; additive gotcha catalog only. No structural/count/phase/schema change (schema v28, 22 phases, 42 MCP tools, 9 envs).' }
   - { date: '2026-06-28', via: 'bmad-correct-course (drift-check reconcile)', from: 'v8.52.1', to: 'v8.62.0', proposal: null, spec: null, retro: null, note: 'Currency re-sync from v8.52.1 to live v8.62.0 (v0→v1 feedstock-migration retro — mailpit + dlt-pendulum feedstocks migrated to recipe.yaml + ARM, both PRs merged). The span added gotchas G76–G87 (langflow-win closeout, go-licenses, pnpm<11, staged-recipes-ARM, conda-forge.yml-inert, and the v0→v1 feedstock-migration set G84–G87) and made the universal conda-forge.yml pre-seed the generator default (new scripts/_cfy_template.py, v8.61.0). Epic 6 gotcha-authoring story text re-synced G7–G75 → G7–G87. No epic scope change; additive gotcha catalog + one new generator helper. No structural/count/phase/schema change (schema v28, 22 phases, 42 MCP tools, 9 envs).' }
+  - { date: '2026-07-25', via: 'bmad-correct-course (ownership decomposition + currency re-sync)', from: 'v8.79.0', to: 'v8.79.1', proposal: 'change-history/sprint-change-proposal-2026-07-25-ownership-decomposition.md', spec: null, retro: null, note: 'STRUCTURAL + currency. local-recipes was the only BMAD project no station owned — the reason it drifts, since every other project is pulled forward by its owning station retro loop. Now DECOMPOSED rather than handed to one Smith (one owner for five parts would violate Charter § The Lexicon §4, each works ONE craft): Part 1 → packaging-factory [Mason]; Part 2 → pyforge-atlas [Atlas]; Part 3 → agent-tool-surface [Marshal, Dream AUTHORED this date — Part 3 had NO Dream at all, surviving as one bullet inside packaging-factory]; Part 4 → pyforge-marshal + pyforge-genesis + regenerable-factory + agent-portability [Marshal]; Part 5 → the five product Dreams. The DOCUMENT SET is owned by Marshal via the regenerable-factory practice (what it IS, is the factory rebuild spec). NEW Epic 15 (Part 5, pyforge-packages) is DELIBERATELY DELEGATING and story-light: 7 stories covering only the integration contract (five [package] workspace members; the PEP 420 implicit pyforge namespace whose src/pyforge/__init__.py ABSENCE is the mechanism and whose regression is silent; six lean no-default-feature envs; root-invocable per-product gates), with E15.S5–S7 pointing at the five product projects as authoritative (warden 31/31 SHIPPED PR #110; atlas 32/32 SHIPPED PRs #58–#105; herald/doctor/scribe mid-build). ~100 product stories were NOT copied in — that would create two sources of truth. total_epics 14→15, total_stories 232→239, waves 5→6. CURRENCY: Epic 10 title and goal said 42 tools while its OWN acceptance line said 46 — corrected to 46 (live: 46 @mcp.tool()); its acceptance also claimed Claude Code auto-discovers the server, which is FALSE — registration is manual in ~/.claude.json, there is no .mcp.json, and a fresh clone has zero tools. Verified live 2026-07-25: 46 MCP tools; SCHEMA_VERSION=29; 21 distinct tables + 5 views; 22 executable atlas phases (23 cataloged — the 23rd is the runner-less conceptual Phase I; bmad-groundtruth over-reported 23 until phase_count() was fixed to read the PHASES registry this same day); 15 envs / 17 features / 154 tasks; 93 skill dirs / 89 SKILL.md; G1-G106; BMAD 6.10.0; 14 projects; 1,664 recipe dirs. Corrections to the operator brief caught by re-verification: Tier-2 wrappers 60 not 57; test files 98 not 100; pixi tasks 154 not ~152; pyforge-atlas second MCP server has 12 tools not 11 (architecture.md still says 11 — REPORTED, not fixed, per scope). MINOR bump (additive epic; no epic removed, no story rescoped).' }
 ---
 
 # Epics & Stories: `local-recipes` Rebuild
@@ -50,6 +51,7 @@ Build order follows `architecture.md` § 9 (Build Order). Wave 1 is foundational
 | **Wave 3** | Part 2: cf_atlas data pipeline (22 phases + schema + CLIs) | 4 epics | 76 stories | Most complex single component |
 | **Wave 4** | Parts 3+4 surfaces: MCP server + multi-project + integration | 2 epics | 28 stories | Smaller code but high-coupling |
 | **Wave 5** | Hardening: tests + docs + air-gap validation + deployment | 2 epics | 26 stories | Validation + readiness |
+| **Wave 6** | Part 5: pyforge-packages shape (namespace + workspace + envs) | 1 epic | 7 stories | **Delegating** — product internals live in the five product projects |
 
 **Total: 14 epics, 232 stories.** Estimates assume an experienced operator with Claude Code assistance.
 
@@ -63,7 +65,7 @@ Stories in Wave 1 establish the substrate every other Wave depends on. Until Wav
 
 ## Epic 1: Pixi Monorepo Bootstrap
 
-**Goal**: Establish the pixi-managed Python 3.12 monorepo with 9 envs and core dependencies. No code yet — just the substrate.
+**Goal**: Establish the pixi-managed Python 3.12 monorepo with the **9 factory envs** and core dependencies (the 6 lean `no-default-feature` product envs arrive with Epic 15 / Part 5 — **15 envs / 17 features** live today). No code yet — just the substrate.
 
 **Owner part**: cross-cutting (`pixi.toml`, `pyproject.toml`)
 
@@ -435,13 +437,13 @@ Wave 4 brings the MCP wire format online and finalizes BMAD integration.
 
 ---
 
-## Epic 10: Part 3 MCP Server + 42 Tools
+## Epic 10: Part 3 MCP Server + 46 Tools
 
-**Goal**: Author the FastMCP server with all 42 tool registrations; auxiliary servers; auto-discovery.
+**Goal**: Author the FastMCP server with all 46 tool registrations; auxiliary servers; registration.
 
 **Owner part**: Part 3 (FastMCP server)
 
-**Acceptance**: All 46 MCP tools callable via `mcp_call.py`; Claude Code auto-discovers the server; integration tests pass.
+**Acceptance**: All 46 MCP tools callable via `mcp_call.py`; the server is registered in `~/.claude.json` (there is NO auto-discovery and no `.mcp.json` — a fresh clone has zero tools until registration); integration tests pass.
 
 ### Stories
 
@@ -618,7 +620,7 @@ Stories with the highest risk-to-effort ratio:
 2. **E7.S2** (schema v1-v19 migrations) — bug here corrupts the atlas
 3. **E8.S2** (Phase F S3 parquet path) — bug here breaks air-gap operation
 4. **E8.S8** (Phase H cf-graph offline path) — bug here means `--fresh` hangs again
-5. **E10.S3+S4+S5b-S5h** (42 MCP tool registrations) — partial coverage breaks specific workflows silently
+5. **E10.S3+S4+S5b-S5h** (46 MCP tool registrations) — partial coverage breaks specific workflows silently
 6. **E11.S1+S2** (CLAUDE.md + project-context.md) — wrong rules here cascade across every BMAD effort
 7. **E13.S8** (air-gap deployment validation) — failure here means rebuild ships with broken enterprise support
 
@@ -641,6 +643,40 @@ All of:
 - [ ] Release candidate tagged (E13.S13)
 
 Until each box is checked, the rebuild is in-progress, not complete.
+
+---
+
+## Epic 15: Part 5 — pyforge-packages (DELEGATING epic)
+
+**Goal**: Reproduce the *shape* of the fifth part — the five-distribution `pyforge`
+namespace, its pixi workspace wiring, and its lean product envs — **without** owning
+the products' internals.
+
+**Owner part**: Part 5 (pyforge-packages)
+
+> **This epic delegates and is deliberately story-light.** Each of the five products
+> carries a complete BMAD chain of its own — Dream → Spec → research → brief → PRD →
+> architecture → epics — under `_bmad-output/projects/pyforge-*/planning-artifacts/`.
+> Restating ~100 product stories here would create two sources of truth for the same
+> work and guarantee drift. What this epic owns is the **integration contract**: that
+> five independently-specified distributions coexist in one namespace and one workspace.
+
+| Story | Deliverable | Acceptance | Owning project (authoritative) |
+|---|---|---|---|
+| E15.S1 | Five `[package]` workspace members under `src/shared/packages/` | Each builds standalone via `pixi-build-python`; none declares a `[workspace]` table | — (this epic) |
+| E15.S2 | PEP 420 implicit `pyforge` namespace | **No** distribution ships `src/pyforge/__init__.py`; all five import-coexist when installed independently — the absence is the mechanism, and a regression here is silent | — (this epic) |
+| E15.S3 | Six lean `no-default-feature` envs | `pyforge-{warden,atlas,doctor,scribe,herald}` + `bmad-ui` resolve without the 9 factory envs; 15 envs / 17 features total | — (this epic) |
+| E15.S4 | Per-product gates callable from the root workspace | `pyforge-warden-test`, `kedro-test`, `kedro-catalog-check`, `dagster-dryrun` invocable via `pixi run` | — (this epic) |
+| E15.S5 | **Warden** product build | 31/31 stories, 6 epics — **SHIPPED** (PR #110) | `projects/pyforge-warden/` |
+| E15.S6 | **Atlas** product build | 32/32 stories — **SHIPPED** (PRs #58–#105) | `projects/pyforge-atlas/` |
+| E15.S7 | **Herald / Doctor / Scribe** product builds | Each per its own epics; lines paused mid-build | `projects/pyforge-{herald,doctor,scribe}/` |
+
+**Acceptance**: A rebuild produces five distributions that import-coexist under one
+`pyforge` namespace, each with a resolving lean env and an invocable gate — and the
+per-product story detail is found in the five product projects, not here.
+
+**Dependencies**: Epic 1 (pixi monorepo + `preview = ["pixi-build"]`). Independent of
+Parts 1–4 at the shape level; Part 5's *products* consume Parts 1–3 at runtime.
 
 ---
 

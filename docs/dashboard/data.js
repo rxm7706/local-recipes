@@ -1205,7 +1205,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-07-26 02:07 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-07-26 02:23 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -1214,6 +1214,14 @@ window.DASHBOARD_DATA = {
       "status": "dreamt",
       "owner": "marshal",
       "type": "practice",
+      "chain": {}
+    },
+    {
+      "slug": "agent-tool-surface",
+      "title": "Agent tool surface — every craft reachable through one governed API",
+      "status": "realized",
+      "owner": "marshal",
+      "type": "dream",
       "chain": {}
     },
     {
@@ -2694,9 +2702,9 @@ window.DASHBOARD_DATA = {
         "name": "spec-surface",
         "task": "spec-surface-check",
         "guards": "every tracked file under a Spec surface",
-        "state": "drift",
-        "findings": 1,
-        "verdict": "FINDINGS (1):",
+        "state": "green",
+        "findings": 0,
+        "verdict": "OK: every tracked file governed or allowlisted; no drift.",
         "runbook": ""
       },
       {
@@ -2943,12 +2951,12 @@ window.DASHBOARD_DATA = {
       },
       {
         "station": "marshal",
-        "total": 7,
+        "total": 8,
         "counts": {
           "dreamt": 0,
           "pitched": 1,
           "specified": 1,
-          "realized": 2,
+          "realized": 3,
           "archived": 1,
           "practice": 2
         },
@@ -2971,6 +2979,13 @@ window.DASHBOARD_DATA = {
             "slug": "agentic-sdlc-autonomy",
             "title": "The Agentic SDLC — four views of autonomy, one governed factory",
             "status": "pitched",
+            "type": "dream",
+            "blockedOn": ""
+          },
+          {
+            "slug": "agent-tool-surface",
+            "title": "Agent tool surface — every craft reachable through one governed API",
+            "status": "realized",
             "type": "dream",
             "blockedOn": ""
           },
