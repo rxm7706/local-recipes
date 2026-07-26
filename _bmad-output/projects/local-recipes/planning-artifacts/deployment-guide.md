@@ -8,6 +8,8 @@ source_pin: 'conda-forge-expert v8.79.1'
 # Deployment Guide
 
 > **Re-grounded 2026-07-25** (source_pin → v8.79.1). **Headline corrections:** the repo has **19 pixi environments / 17 features**, not 9 (9 factory + 8 `no-default-feature` product envs — see `development-guide.md` § Environments); every `docs/…` path in this guide was wrong and now points at `docs/reference/…`; and the guide previously never said **what actually deploys**. It does now: exactly one thing — the **Guildhall** dashboard to GitHub Pages at `https://rxm7706.github.io/local-recipes/`. New in this pass: § *CI / CD Considerations* now enumerates all **12 active workflows** (+1 disabled), documents the **two always-on staged-recipes-linter gates** (`maintenance` label for anything outside `recipes/`; the **ungated** `environment.yaml`↔`pixi.toml` sync check), and records that `create_feedstocks.yml` is hard-gated to `conda-forge/staged-recipes` and is therefore a **permanent no-op on this fork** — **no package or feedstock is published from this repo by CI**. Re-verified **unchanged and still accurate**: the `_http.py` SSL + auth chain, the `<HOST>_BASE_URL` mirror-routing convention, the mirror-infrastructure checklist, the `vuln-db` / `files.pythonhosted.org` failure mode, and — prominently — **the JFROG_API_KEY cross-host leak, which is still unfixed**. Live facts: `pixi run --frozen -e local-recipes bmad-groundtruth` (schema **v29**, **46 MCP tools**, **22 executable atlas phases** — 23 cataloged, **G106**, **19 pixi envs**).
+>
+> **Amended 2026-07-26** (PR #127, full workflow audit): the workflow count above is superseded — **8 active, none disabled**. Five inherited files were deleted after the audit found upstream had already deleted all five, two of them (`correct_directory`, `do_not_edit_example`) back in 2024 when they were folded into `scripts/linter.py`, leaving us carrying dead duplicates for ~2 years. The claim that no package or feedstock is published by CI is now *stronger*, not weaker: there is no feedstock-creation workflow at all. Also fixed here: `linter_issue_comment.yml` had failed **139/139 runs since 2026-06-24** because `scripts/linter_issue_comment.py` hardcoded `{owner}/staged-recipes`, which on this fork resolves to a *different real repo*. Full inventory, provenance and per-workflow "when to use": **`docs/reference/github-workflows.md`**.
 
 
 How to deploy and operate `local-recipes` in enterprise, air-gapped, and JFrog Artifactory environments. This guide consolidates `docs/reference/enterprise-deployment.md` with the deployment-relevant rules from `project-context.md` and the integration architecture's auth chain.
@@ -27,7 +29,7 @@ shipping a running system. Verified 2026-07-25:
 | Thing | Deploys? | Detail |
 |---|---|---|
 | **Guildhall dashboard** (`docs/dashboard/`) | **Yes — the only one** | GitHub Pages, `https://rxm7706.github.io/local-recipes/`. See § GitHub Pages below |
-| Feedstocks / conda packages | **No** | `create_feedstocks.yml` is hard-gated `if: github.repository == 'conda-forge/staged-recipes'` — a permanent no-op on this fork. `publish`, `publish-range`, `submit-pr` are developer-invoked, never CI-invoked |
+| Feedstocks / conda packages | **No** | Since 2026-07-26 (PR #127) there is **no feedstock-creation workflow at all**: the inherited `create_feedstocks.yml` was hard-gated `if: github.repository == 'conda-forge/staged-recipes'` — a permanent no-op here — and was deleted, following upstream, which moved it to `conda-forge/admin-requests`. `publish`, `publish-range`, `submit-pr` are developer-invoked, never CI-invoked |
 | Containers | **No** | The only tracked `Dockerfile` is a **test fixture** under `.claude/skills/conda-forge-expert/tests/fixtures/manifest_samples/` |
 | Kubernetes | **No** | Likewise the only tracked k8s manifest is a test fixture. There is **no `Chart.yaml` anywhere** in the repo |
 | `helm/lasuite-docs/values.yaml` | **No** | A values override with **no chart and no apply step** — an air-gapped La Suite Docs design artifact, described in `docs/reference/enterprise-deployment.md`. Unreferenced by any in-repo code path |
@@ -451,20 +453,26 @@ be the PR author (exempt: `conda-forge/r`, `conda-forge/cuda`, and any `org/team
 Also: `gh pr create` **must** carry `--repo rxm7706/local-recipes`. This repo is a fork of
 `conda-forge/staged-recipes`, so `gh` otherwise defaults the base to `conda-forge:main`.
 
-### The 12 active workflows (+1 disabled)
+### The 8 active workflows
+
+> **Re-audited 2026-07-26** (PR #127). Was "12 active + 1 disabled"; five inherited
+> files were deleted after the audit found upstream had already deleted all five —
+> `correct_directory` and `do_not_edit_example` (2024-09-15, folded into
+> `scripts/linter.py` checks #2 and #1), `create_feedstocks` (2025-04-18, moved to
+> `conda-forge/admin-requests`), `automate-review-labels` (2026-04-14) and
+> `tokens.yml.notused`. Full inventory + provenance:
+> **`docs/reference/github-workflows.md`**.
 
 | Workflow | Trigger | Notes |
 |---|---|---|
 | `staged-recipes-linter.yml` | PR (incl. `labeled`/`unlabeled`) | The two gates above. Runs on `ubuntu-slim` via micromamba |
 | `dashboard.yml` | push to `main`, daily cron, dispatch | **The only deploy.** See § GitHub Pages |
 | `test-all.yml` | **`workflow_dispatch` only** | "to preserve GitHub Actions quota". Fans out to the three platform workflows via `workflow_call`; caps an `all` run at `head -20` changed recipes; excludes `example`, `example-new-recipe`, `broken-recipes` |
-| `test-linux.yml` | `workflow_call` | Docker-based, incl. an aarch64 QEMU leg and a CUDA leg |
-| `test-macos.yml` | `workflow_call` | `macos-15-large` (Intel) + `macos-14` (arm64) |
-| `test-windows.yml` | `workflow_call` | `windows-2022`, `CONDA_BLD_PATH=D:\bld` |
-| `create_feedstocks.yml` | — | **Hard-gated `if: github.repository == 'conda-forge/staged-recipes'` → permanent no-op on this fork** |
-| `sync-pypi-mappings.yml` | schedule + on mapping change | Refreshes the PyPI↔conda name mapping |
-| `linter_issue_comment.yml`, `correct_directory.yml`, `do_not_edit_example.yml`, `automate-review-labels.yml` | PR / issue events | Inherited staged-recipes review automation |
-| `tokens.yml.notused` | — | **Disabled** (extension renamed) |
+| `test-linux.yml` | `workflow_call` + dispatch | Docker-based, incl. an aarch64 QEMU leg and a CUDA leg |
+| `test-macos.yml` | `workflow_call` + dispatch | `macos-15-large` (Intel) + `macos-14` (arm64) |
+| `test-windows.yml` | `workflow_call` + dispatch | `windows-2022`, `CONDA_BLD_PATH=D:\bld` |
+| `sync-pypi-mappings.yml` | **`workflow_dispatch` only** | Refreshes the PyPI↔conda name mapping. Schedule + push triggers removed after 32/32 failures (its composite action pinned pixi v0.59.0, which cannot parse a `requires-pixi = ">=0.73.0"` manifest); pin raised, cron stays off until one dispatch is observed green |
+| `linter_issue_comment.yml` | `issue_comment` — **only** on `please rerun linter` / `/rerun-linter` | Re-requests the linter check suite. Failed **139/139** until PR #127: `scripts/linter_issue_comment.py` hardcoded `{owner}/staged-recipes`, which resolves to a *different real repo* on this fork |
 
 Platform test jobs branch on recipe type: `recipe.yaml` → **rattler-build**, `meta.yaml` →
 **conda-build**. Recipe builds are therefore **not automatic on push** — a human dispatches
@@ -574,7 +582,7 @@ equivalent, or serve `docs/dashboard/` as static files — it is a self-containe
 | `pixi run bmad-preflight` → "No such file or directory" | The task invokes `bash scripts/ensure-bmad-preflight.sh`, which does not exist | Use `pixi run verify-env` + `bmad-groundtruth`. Fixing/removing the task is open work |
 | `pixi run scan-project` / `inventory-channel` → task not found | Those tasks live only in the `vuln-db` env | `pixi run -e vuln-db <task>` |
 | `pixi.lock` diff shows worktree-absolute `file://` channel paths | An unfrozen re-solve ran inside a bmad-loop worktree | Revert the lock; re-run with `--frozen`. Loop homes now root at `~/.bmad-loops/<slug>` to shorten the path |
-| A feedstock never appeared after a merged recipe PR | `create_feedstocks.yml` is a no-op on this fork | Expected — this repo publishes nothing. Submit upstream via `pixi run submit-pr` |
+| A feedstock never appeared after a merged recipe PR | No workflow creates feedstocks here (`create_feedstocks.yml` was a permanent no-op and is gone as of PR #127) | Expected — this repo publishes nothing. Submit upstream via `pixi run submit-pr` |
 
 ---
 
