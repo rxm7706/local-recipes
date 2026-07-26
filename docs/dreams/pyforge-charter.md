@@ -2,7 +2,7 @@
 title: The PyForge Charter
 type: dream
 owner: guild
-status: in-deck
+status: pitched
 ---
 
 # The PyForge Charter — the Guild, the Smiths, the Mission

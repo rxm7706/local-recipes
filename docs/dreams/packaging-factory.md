@@ -1,6 +1,6 @@
 ---
 title: The Packaging Factory
-type: dream
+type: practice
 owner: mason
 status: realized
 ---

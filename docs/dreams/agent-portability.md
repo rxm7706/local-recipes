@@ -1,8 +1,8 @@
 ---
 title: Agent portability — BMAD on any agent, never vendor-locked
-type: dream
+type: practice
 owner: marshal
-status: seeded
+status: dreamt
 ---
 
 # Agent portability — the method outlives the tool

@@ -2,7 +2,7 @@
 title: Deckcraft — editable decks from primitives, air-gapped
 type: dream
 owner: herald
-status: seeded
+status: specified
 ---
 
 # Deckcraft — the deck pipeline that works behind the firewall

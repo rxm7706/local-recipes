@@ -2,7 +2,7 @@
 title: Steward — provision the line, hold the keys
 type: dream
 owner: steward
-status: in-spec
+status: specified
 ---
 
 # Steward — the estate the factory stands on

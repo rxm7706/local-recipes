@@ -539,8 +539,48 @@ def check_spec_indexed() -> list[Finding]:
 # station roster, mirrored in docs/dashboard/generate.py:STATIONS.
 STATIONS = ("herald", "marshal", "atlas", "warden",
             "mason", "doctor", "scribe", "steward")
-# Dreams that legitimately name no station because they PRECEDE the stations.
-GUILD_DREAMS = ("pyforge-charter", "pyforge-genesis")
+# The one Dream that may name no station because it CONSTITUTES them: the
+# Charter. `guild` is NOT a ninth station.
+GUILD_DREAMS = ("pyforge-charter",)
+
+
+# The Dream lifecycle — each state names the ACT THAT COMPLETED. Mirrored in
+# docs/dashboard/generate.py:DREAM_STATUSES. There is deliberately no `building`
+# state: status declares what EXISTS, the board derives what is HAPPENING.
+DREAM_STATUSES = ("dreamt", "pitched", "specified", "realized", "archived")
+DREAM_TYPES = ("dream", "practice")
+
+
+def check_dream_vocab() -> list[Finding]:
+    """Dream `status:`/`type:` must use the canonical vocabulary.
+
+    Statuses are hand-maintained and therefore rot: on 2026-07-25 pyforge-warden
+    read `in-spec` while shipped 31/31, and deckcraft read `dreamt` while holding
+    both a deck and a Spec. This catches the vocabulary half (a retired or
+    invented value); the consistency half — status vs what actually exists on
+    disk — is a separate check worth adding once the board settles.
+    """
+    out: list[Finding] = []
+    dreams_dir = REPO_ROOT / "docs" / "dreams"
+    if not dreams_dir.is_dir():
+        return out
+    for f in sorted(dreams_dir.glob("*.md")):
+        if f.name == "README.md":
+            continue
+        text = _read(f)
+        m = re.search(r"^status:\s*(\S+)\s*$", text, re.M)
+        if not m:
+            out.append(Finding(DRIFT, "dream-vocab", _rel(f), "no status: in frontmatter"))
+        elif m.group(1) not in DREAM_STATUSES:
+            out.append(Finding(DRIFT, "dream-vocab", _rel(f),
+                               f"status {m.group(1)!r} is not one of "
+                               f"{'/'.join(DREAM_STATUSES)}"))
+        m = re.search(r"^type:\s*(\S+)\s*$", text, re.M)
+        if m and m.group(1) not in DREAM_TYPES:
+            out.append(Finding(DRIFT, "dream-vocab", _rel(f),
+                               f"type {m.group(1)!r} is not one of "
+                               f"{'/'.join(DREAM_TYPES)}"))
+    return out
 
 
 def check_dream_owners() -> list[Finding]:
@@ -583,7 +623,8 @@ def run_checks() -> tuple[list[Finding], dict, dict[str, int]]:
     findings = (check_pins(live) + check_archive_hygiene() + check_spec_status()
                 + check_deferred_work(live) + check_counts(gt) + check_stale_rules()
                 + check_phase_lists() + check_baseline() + check_tier_alignment()
-                + check_spec_indexed() + check_dream_owners() + cov_findings)
+                + check_spec_indexed() + check_dream_owners()
+                + check_dream_vocab() + cov_findings)
     return findings, gt, coverage
 
 

@@ -2,7 +2,7 @@
 title: Unity Data Stack — the enterprise innersource platform
 type: dream
 owner: atlas
-status: in-spec
+status: specified
 ---
 
 # Unity Data Stack — a python-first innersource delivery model

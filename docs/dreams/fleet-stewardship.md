@@ -1,6 +1,6 @@
 ---
 title: Fleet stewardship — tend every feedstock we can touch
-type: dream
+type: practice
 owner: mason
 status: realized
 ---

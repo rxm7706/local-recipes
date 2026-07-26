@@ -53,16 +53,47 @@ contract; the Dream is the "why" behind it.
   ---
   title: <Dream title>
   type: dream
-  owner: herald | marshal | atlas | warden | mason | doctor | scribe | steward | crew
-  status: seeded | in-deck | in-spec | realized
+  type: dream | practice
+  owner: herald | marshal | atlas | warden | mason | doctor | scribe | steward | guild
+  status: dreamt | pitched | specified | realized | archived
+  blocked-on: <gate>          # optional; backlog qualifier only
   ---
   ```
 
-- **`owner:`** names the crew station accountable for the Dream (`crew` for
-  genesis-level and application Dreams the whole pipeline builds). Stamped
-  across all Dreams in the 2026-07-23 ownership review (which also re-scoped
-  Herald: BMAD multiproject machinery + agent portability → Marshal). The
-  Dreamscape board on the program console surfaces it.
+- **`status:`** — each state names the **act that completed**, never the
+  artifact that proves it: `dreamt` (a human captured it) → `pitched` (the case
+  was made; a deck exists) → `specified` (the contract exists; a Spec exists) →
+  `realized` (it runs) → `archived` (it ended). *(Renamed 2026-07-25 from
+  `seeded`/`in-deck`/`in-spec` — those three named a file or a place rather than
+  a state, and "in the deck" reads as *shuffled in, queued*, near the opposite of
+  "the case has been made".)*
+
+  **There is deliberately no `building` state.** Status declares what *exists*;
+  the console *derives* what is happening from live build lines. Hand-maintained
+  activity-tracking rots: `pyforge-warden` read `in-spec` while shipped 31/31,
+  and `deckcraft` read `dreamt` while holding both a deck and a Spec — both
+  found and fixed on 2026-07-25. `bmad-drift-check` now emits `dream-vocab` on a
+  retired or invented value.
+
+- **`owner:`** names the **station** accountable for carrying the Dream all the
+  way to code — the through-line, propagated by the console onto every
+  downstream row (Fleet, Backlog, In Build, Realized, Pitch, Archived). Owning
+  is **not** becoming: the station is the post, not the product, so Atlas owning
+  [`unity-data-stack.md`](unity-data-stack.md) does not mean it ships as
+  `pyforge-atlas`. `guild` is reserved for the two Dreams that *precede* the
+  stations ([`pyforge-charter.md`](pyforge-charter.md),
+  [`pyforge-genesis.md`](pyforge-genesis.md)); `bmad-drift-check` emits
+  `dream-unowned` for anything else claiming it. *(Replaces `crew`, which was
+  both retired vocabulary and a non-answer — "the Guild owns it" means no
+  station does.)*
+
+- **`type: practice`** marks a perpetual concern — tended, never finished. It
+  sits **outside** the lifecycle: excluded from Backlog (nobody can close it)
+  and from Realized (it is never done).
+
+- **`blocked-on:`** is a **backlog qualifier**, naming the external gate that
+  makes an otherwise-available Dream un-pickup-able. It applies only to
+  non-realized Dreams.
 
 - Keep it aspirational and readable — a Dream is a narrative, not a task list.
 - **`realized` is not exempt from the chain.** Per
@@ -85,9 +116,9 @@ project, and spec maps to exactly one Dream; the herald CLI's status capability
 
 | Dream | Status | What it is |
 |---|---|---|
-| [`pyforge-charter.md`](pyforge-charter.md) | in-deck | **The founding Dream** — the PyForge Guild: eight Smiths, one "Dream to Code" pipeline. Master vision deck: `presentations/pyforge-genesis/`. |
-| [`pyforge-genesis.md`](pyforge-genesis.md) | in-deck | Genesis as master idea + **the seed**: init a new repo / adopt brownfield with the whole operating model (origin: `archive/docs/bmad-setup-plan.md`). |
-| [`sentinel.md`](sentinel.md) | seeded | **The ancestor** (2026-04): the AI Software Factory — "the graph is the product"; unbuilt core, stranded artifacts to repatriate; descendants credited. |
+| [`pyforge-charter.md`](pyforge-charter.md) | pitched | **The founding Dream** — the PyForge Guild: eight Smiths, one "Dream to Code" pipeline. Master vision deck: `presentations/pyforge-genesis/`. |
+| [`pyforge-genesis.md`](pyforge-genesis.md) | pitched | Genesis as master idea + **the seed**: init a new repo / adopt brownfield with the whole operating model (origin: `archive/docs/bmad-setup-plan.md`). |
+| [`sentinel.md`](sentinel.md) | dreamt | **The ancestor** (2026-04): the AI Software Factory — "the graph is the product"; unbuilt core, stranded artifacts to repatriate; descendants credited. |
 | [`design-code-bridge.md`](design-code-bridge.md) | realized | Design + Code as one surface — seed/design/pull, zero downloads; herald CLI specced (5 CAPs). |
 
 **Persona products**
@@ -96,38 +127,38 @@ project, and spec maps to exactly one Dream; the herald CLI's status capability
 |---|---|---|
 | [`packaging-factory.md`](packaging-factory.md) | realized · perpetual | The origin dream: the AI-assisted conda-forge factory (Mason) — CFE skill, 769 feedstocks, campaigns; frontier: multi-ecosystem autotick, smart test extractor. |
 | [`pyforge-atlas.md`](pyforge-atlas.md) | realized | The intelligence layer reborn as Kedro/Dagster/DuckDB dataflow an agent workforce maintains (waves 0–H shipped, PRs #58–#105). |
-| [`pyforge-warden.md`](pyforge-warden.md) | in-spec | The compliance gate that never false-greens — six axes of dependency trust (25/31 built). |
+| [`pyforge-warden.md`](pyforge-warden.md) | specified | The compliance gate that never false-greens — six axes of dependency trust (25/31 built). |
 | [`pyforge-marshal.md`](pyforge-marshal.md) | realized | Graduated autonomy a human can trust — bmad-loop/dev-auto + gates + escalation; proved on atlas + warden. |
-| [`pyforge-mason.md`](pyforge-mason.md) | in-spec | **Mason** — the Artisan Builder's station: the `mason` CLI (recipe / package / environment), seam-by-capability over the CFE craft; distinct from [`packaging-factory.md`](packaging-factory.md), the practice he tends. |
-| [`pyforge-doctor.md`](pyforge-doctor.md) | in-deck | One bedside manner over the fleet's vitals — pre-flight diagnostics + continuous monitoring + prescriptions (a consolidation of existing instruments). |
-| [`pyforge-herald.md`](pyforge-herald.md) | in-deck | The outward voice + design surface — decks, bridge, telemetry imagery, proclamations (charter re-scoped 2026-07-23: infrastructure → Marshal). |
-| [`pyforge-scribe.md`](pyforge-scribe.md) | in-deck | The inward voice — team knowledge captured, curated, compiled into the graph, answerable (owns team-memory + sentinel's core). |
-| [`pyforge-steward.md`](pyforge-steward.md) | in-deck | The estate the factory stands on — provisioning, deployment, credential lifecycle, budgets, incident response. |
+| [`pyforge-mason.md`](pyforge-mason.md) | specified | **Mason** — the Artisan Builder's station: the `mason` CLI (recipe / package / environment), seam-by-capability over the CFE craft; distinct from [`packaging-factory.md`](packaging-factory.md), the practice he tends. |
+| [`pyforge-doctor.md`](pyforge-doctor.md) | pitched | One bedside manner over the fleet's vitals — pre-flight diagnostics + continuous monitoring + prescriptions (a consolidation of existing instruments). |
+| [`pyforge-herald.md`](pyforge-herald.md) | pitched | The outward voice + design surface — decks, bridge, telemetry imagery, proclamations (charter re-scoped 2026-07-23: infrastructure → Marshal). |
+| [`pyforge-scribe.md`](pyforge-scribe.md) | pitched | The inward voice — team knowledge captured, curated, compiled into the graph, answerable (owns team-memory + sentinel's core). |
+| [`pyforge-steward.md`](pyforge-steward.md) | pitched | The estate the factory stands on — provisioning, deployment, credential lifecycle, budgets, incident response. |
 
 **Practices**
 
 | Dream | Status | What it is |
 |---|---|---|
 | [`fleet-stewardship.md`](fleet-stewardship.md) | realized · perpetual | Tend every touchable feedstock: refresh tracks, platform expansion, failure remediation — recurring waves, never finished. |
-| [`upstream-discovery.md`](upstream-discovery.md) | seeded | Sense what the world is building (trending + org audits, atlas Phase T) and package it before it's asked for. |
+| [`upstream-discovery.md`](upstream-discovery.md) | dreamt | Sense what the world is building (trending + org audits, atlas Phase T) and package it before it's asked for. |
 | [`regenerable-factory.md`](regenerable-factory.md) | realized | Backfill Dream→PRD→spec chains under every realized surface (BMAD brownfield) so the factory can change any code through the pipeline; drift checks on all code; the regeneration drill as proof. |
 
 **Capabilities**
 
 | Dream | Status | What it is |
 |---|---|---|
-| [`agent-portability.md`](agent-portability.md) | seeded | BMAD on any agent (Devin/Copilot/Claude/Cursor); planning on flat-rate subscriptions; the Portability contract enforced. |
-| [`team-memory.md`](team-memory.md) | seeded | Shared, version-controlled team memory — what the team knows, every agent knows. |
+| [`agent-portability.md`](agent-portability.md) | dreamt | BMAD on any agent (Devin/Copilot/Claude/Cursor); planning on flat-rate subscriptions; the Portability contract enforced. |
+| [`team-memory.md`](team-memory.md) | dreamt | Shared, version-controlled team memory — what the team knows, every agent knows. |
 | [`enterprise-airgap.md`](enterprise-airgap.md) | realized | The factory behind the firewall — JFrog routing + air-gap-by-design; frontier: presenton, deckcraft, warden's registry perimeter. |
 | [`modernist-identity.md`](modernist-identity.md) | realized | One visual language for everything PyForge — the Modernist DS across 7 decks; frontier: the design-tokens round-trip (Figma↔JSON↔POTX). |
-| [`agentic-sdlc-autonomy.md`](agentic-sdlc-autonomy.md) | in-deck | The four views of agentic autonomy (taxonomy/process/architecture/environment) — the white paper + the 45-slide deck + our live L3 evidence. |
+| [`agentic-sdlc-autonomy.md`](agentic-sdlc-autonomy.md) | pitched | The four views of agentic autonomy (taxonomy/process/architecture/environment) — the white paper + the 45-slide deck + our live L3 evidence. |
 | [`factory-console.md`](factory-console.md) | realized | The whole pipeline on one public page — every Dream + lifecycle stage (Dreamscape board), live epic/story progress, nothing hand-maintained (GitHub Pages). |
 
 **Applications**
 
 | Dream | Status | What it is |
 |---|---|---|
-| [`deckcraft.md`](deckcraft.md) | seeded | Air-gapped editable-PPTX/Marp/infographic pipeline from primitives — the family's designated PPTX engine. |
-| [`presenton-pixi-image.md`](presenton-pixi-image.md) | seeded | Presenton repackaged conda-native + air-gapped for OpenShift in regulated enterprises. |
-| [`unity-data-stack.md`](unity-data-stack.md) | seeded | The enterprise innersource platform — a python-first shared monorepo (Constitution + working pixi root recovered from gists). |
-| [`wasm-analytics-stack.md`](wasm-analytics-stack.md) | seeded | Wasm-first analytical data stack on OpenShift — WASI-sandboxed Python, dlt+dbt, OTel/OL, Restricted-SCC hardened. |
+| [`deckcraft.md`](deckcraft.md) | dreamt | Air-gapped editable-PPTX/Marp/infographic pipeline from primitives — the family's designated PPTX engine. |
+| [`presenton-pixi-image.md`](presenton-pixi-image.md) | dreamt | Presenton repackaged conda-native + air-gapped for OpenShift in regulated enterprises. |
+| [`unity-data-stack.md`](unity-data-stack.md) | dreamt | The enterprise innersource platform — a python-first shared monorepo (Constitution + working pixi root recovered from gists). |
+| [`wasm-analytics-stack.md`](wasm-analytics-stack.md) | dreamt | Wasm-first analytical data stack on OpenShift — WASI-sandboxed Python, dlt+dbt, OTel/OL, Restricted-SCC hardened. |

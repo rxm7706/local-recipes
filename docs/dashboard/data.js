@@ -383,7 +383,8 @@ window.DASHBOARD_DATA = {
         "state": "complete",
         "at": ""
       },
-      "owner": "warden"
+      "owner": "warden",
+      "practice": false
     },
     "atlas": {
       "label": "Atlas",
@@ -717,7 +718,8 @@ window.DASHBOARD_DATA = {
         "state": "complete",
         "at": ""
       },
-      "owner": "atlas"
+      "owner": "atlas",
+      "practice": false
     },
     "regen": {
       "label": "Regen",
@@ -880,7 +882,8 @@ window.DASHBOARD_DATA = {
         "state": "complete",
         "at": ""
       },
-      "owner": "marshal"
+      "owner": "marshal",
+      "practice": true
     },
     "herald": {
       "label": "Herald",
@@ -1017,7 +1020,8 @@ window.DASHBOARD_DATA = {
         "state": "paused",
         "at": "1.3"
       },
-      "owner": "herald"
+      "owner": "herald",
+      "practice": false
     },
     "doctor": {
       "label": "Doctor",
@@ -1117,7 +1121,8 @@ window.DASHBOARD_DATA = {
         "state": "paused",
         "at": "1.2"
       },
-      "owner": "doctor"
+      "owner": "doctor",
+      "practice": false
     },
     "scribe": {
       "label": "Scribe",
@@ -1196,33 +1201,64 @@ window.DASHBOARD_DATA = {
         "state": "paused",
         "at": "1.2"
       },
-      "owner": "scribe"
+      "owner": "scribe",
+      "practice": false
     }
   },
-  "snapshot": "<span>2026-07-26 01:41 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-07-26 02:06 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
       "slug": "agent-portability",
       "title": "Agent portability — BMAD on any agent, never vendor-locked",
-      "status": "seeded",
+      "status": "dreamt",
       "owner": "marshal",
+      "type": "practice",
       "chain": {}
     },
     {
       "slug": "agentic-sdlc-autonomy",
       "title": "The Agentic SDLC — four views of autonomy, one governed factory",
-      "status": "in-deck",
+      "status": "pitched",
       "owner": "marshal",
+      "type": "dream",
       "chain": {
         "deck": "presentations/agentic-sdlc"
       }
     },
     {
+      "slug": "artifact-console",
+      "title": "Artifact console — the factory board, hosted as a chat artifact",
+      "status": "archived",
+      "owner": "marshal",
+      "type": "dream",
+      "chain": {},
+      "archived_reason": "retired"
+    },
+    {
+      "slug": "copilot-cli-packaging",
+      "title": "copilot-cli on conda-forge — blocked at the license",
+      "status": "archived",
+      "owner": "mason",
+      "type": "dream",
+      "chain": {},
+      "archived_reason": "blocked"
+    },
+    {
+      "slug": "db-gpt-packaging",
+      "title": "DB-GPT on conda-forge — the multi-output agent stack",
+      "status": "archived",
+      "owner": "mason",
+      "type": "dream",
+      "chain": {},
+      "archived_reason": "terminal"
+    },
+    {
       "slug": "deckcraft",
       "title": "Deckcraft — editable decks from primitives, air-gapped",
-      "status": "seeded",
+      "status": "specified",
       "owner": "herald",
+      "type": "dream",
       "chain": {
         "deck": "presentations/deckcraft",
         "spec": "_bmad-output/projects/deckcraft/planning-artifacts/specs/spec-deckcraft",
@@ -1234,6 +1270,7 @@ window.DASHBOARD_DATA = {
       "title": "The Design↔Code Bridge",
       "status": "realized",
       "owner": "herald",
+      "type": "dream",
       "chain": {
         "spec": "_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-design-code-bridge"
       }
@@ -1243,6 +1280,7 @@ window.DASHBOARD_DATA = {
       "title": "The factory behind the firewall",
       "status": "realized",
       "owner": "steward",
+      "type": "practice",
       "chain": {
         "spec": "_bmad-output/projects/local-recipes/planning-artifacts/specs/spec-enterprise-airgap"
       }
@@ -1252,6 +1290,7 @@ window.DASHBOARD_DATA = {
       "title": "Factory console — the whole pipeline on one page",
       "status": "realized",
       "owner": "marshal",
+      "type": "dream",
       "chain": {
         "spec": "_bmad-output/projects/local-recipes/planning-artifacts/specs/spec-factory-console"
       }
@@ -1261,15 +1300,26 @@ window.DASHBOARD_DATA = {
       "title": "Fleet stewardship — tend every feedstock we can touch",
       "status": "realized",
       "owner": "mason",
+      "type": "practice",
       "chain": {
         "spec": "_bmad-output/projects/local-recipes/planning-artifacts/specs/spec-fleet-stewardship"
       }
+    },
+    {
+      "slug": "microsoft-org-sweep",
+      "title": "Microsoft org sweep — audit one upstream org, package what is missing",
+      "status": "archived",
+      "owner": "atlas",
+      "type": "dream",
+      "chain": {},
+      "archived_reason": "absorbed"
     },
     {
       "slug": "modernist-identity",
       "title": "Modernist identity — one visual language for everything PyForge",
       "status": "realized",
       "owner": "herald",
+      "type": "practice",
       "chain": {
         "spec": "_bmad-output/projects/local-recipes/planning-artifacts/specs/spec-modernist-identity"
       }
@@ -1279,6 +1329,7 @@ window.DASHBOARD_DATA = {
       "title": "The Packaging Factory",
       "status": "realized",
       "owner": "mason",
+      "type": "practice",
       "chain": {
         "deck": "presentations/pyforge-mason",
         "spec": "_bmad-output/projects/local-recipes/planning-artifacts/specs/spec-packaging-factory"
@@ -1287,19 +1338,22 @@ window.DASHBOARD_DATA = {
     {
       "slug": "presenton-pixi-image",
       "title": "Presenton, conda-native — AI decks inside the regulated enterprise",
-      "status": "in-spec",
+      "status": "specified",
       "owner": "mason",
+      "type": "dream",
       "chain": {
         "deck": "presentations/presenton-pixi-image",
         "spec": "_bmad-output/projects/presenton-pixi-image/planning-artifacts/specs/spec-presenton-pixi-image",
         "project": "_bmad-output/projects/presenton-pixi-image"
-      }
+      },
+      "blockedOn": "Phase-0 decision gate (Epic 1) — the PRD defines Phase 0 as blocking v1 build kickoff; needs operator decisions, not compute"
     },
     {
       "slug": "pyforge-atlas",
       "title": "Atlas — the map that maintains itself",
       "status": "realized",
       "owner": "atlas",
+      "type": "dream",
       "chain": {
         "deck": "presentations/pyforge-atlas",
         "spec": "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas",
@@ -1310,8 +1364,9 @@ window.DASHBOARD_DATA = {
     {
       "slug": "pyforge-charter",
       "title": "The PyForge Charter",
-      "status": "in-deck",
+      "status": "pitched",
       "owner": "guild",
+      "type": "dream",
       "chain": {
         "deck": "presentations/pyforge-genesis"
       }
@@ -1319,8 +1374,9 @@ window.DASHBOARD_DATA = {
     {
       "slug": "pyforge-doctor",
       "title": "Doctor — one bedside manner for the whole fleet",
-      "status": "in-spec",
+      "status": "specified",
       "owner": "doctor",
+      "type": "dream",
       "chain": {
         "deck": "presentations/pyforge-doctor",
         "spec": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor",
@@ -1330,8 +1386,9 @@ window.DASHBOARD_DATA = {
     {
       "slug": "pyforge-genesis",
       "title": "Genesis — the seed of the operating model",
-      "status": "in-spec",
-      "owner": "guild",
+      "status": "specified",
+      "owner": "marshal",
+      "type": "dream",
       "chain": {
         "deck": "presentations/pyforge-genesis",
         "spec": "_bmad-output/projects/pyforge-genesis/planning-artifacts/specs/spec-pyforge-genesis",
@@ -1341,8 +1398,9 @@ window.DASHBOARD_DATA = {
     {
       "slug": "pyforge-herald",
       "title": "Herald — capture the dream, illustrate the telemetry, proclaim the release",
-      "status": "in-spec",
+      "status": "specified",
       "owner": "herald",
+      "type": "dream",
       "chain": {
         "deck": "presentations/pyforge-herald",
         "project": "_bmad-output/projects/pyforge-herald"
@@ -1353,6 +1411,7 @@ window.DASHBOARD_DATA = {
       "title": "Marshal — autonomy a human can trust",
       "status": "realized",
       "owner": "marshal",
+      "type": "dream",
       "chain": {
         "deck": "presentations/pyforge-marshal",
         "spec": "_bmad-output/projects/local-recipes/planning-artifacts/specs/spec-pyforge-marshal",
@@ -1362,8 +1421,9 @@ window.DASHBOARD_DATA = {
     {
       "slug": "pyforge-mason",
       "title": "Mason — forge the blocks, bind the environment, ship the structure",
-      "status": "in-spec",
+      "status": "specified",
       "owner": "mason",
+      "type": "dream",
       "chain": {
         "deck": "presentations/pyforge-mason",
         "spec": "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason",
@@ -1373,8 +1433,9 @@ window.DASHBOARD_DATA = {
     {
       "slug": "pyforge-scribe",
       "title": "Scribe — the inward voice",
-      "status": "in-spec",
+      "status": "specified",
       "owner": "scribe",
+      "type": "dream",
       "chain": {
         "deck": "presentations/pyforge-scribe",
         "spec": "_bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-pyforge-scribe",
@@ -1384,8 +1445,9 @@ window.DASHBOARD_DATA = {
     {
       "slug": "pyforge-steward",
       "title": "Steward — provision the line, hold the keys",
-      "status": "in-spec",
+      "status": "specified",
       "owner": "steward",
+      "type": "dream",
       "chain": {
         "deck": "presentations/pyforge-steward",
         "spec": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward",
@@ -1395,8 +1457,9 @@ window.DASHBOARD_DATA = {
     {
       "slug": "pyforge-warden",
       "title": "Warden — the gate that never lies",
-      "status": "in-spec",
+      "status": "realized",
       "owner": "warden",
+      "type": "dream",
       "chain": {
         "deck": "presentations/pyforge-warden",
         "spec": "_bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-pyforge-warden",
@@ -1409,6 +1472,7 @@ window.DASHBOARD_DATA = {
       "title": "Regenerable factory — every line of code under a spec it can be rebuilt from",
       "status": "realized",
       "owner": "marshal",
+      "type": "practice",
       "chain": {
         "spec": "_bmad-output/projects/local-recipes/planning-artifacts/specs/spec-regenerable-factory",
         "program": "regen"
@@ -1417,22 +1481,26 @@ window.DASHBOARD_DATA = {
     {
       "slug": "sentinel",
       "title": "Sentinel — the AI Software Factory (the ancestor)",
-      "status": "seeded",
+      "status": "archived",
       "owner": "scribe",
-      "chain": {}
+      "type": "dream",
+      "chain": {},
+      "archived_reason": "absorbed"
     },
     {
       "slug": "team-memory",
       "title": "Team memory — what the team knows, the agents know",
-      "status": "in-spec",
+      "status": "specified",
       "owner": "scribe",
+      "type": "dream",
       "chain": {}
     },
     {
       "slug": "unity-data-stack",
       "title": "Unity Data Stack — the enterprise innersource platform",
-      "status": "in-spec",
+      "status": "specified",
       "owner": "atlas",
+      "type": "dream",
       "chain": {
         "deck": "presentations/unity-data-stack",
         "spec": "_bmad-output/projects/unity-data-stack/planning-artifacts/specs/spec-unity-data-stack",
@@ -1442,8 +1510,9 @@ window.DASHBOARD_DATA = {
     {
       "slug": "upstream-discovery",
       "title": "Upstream discovery — package it before it's asked for",
-      "status": "in-spec",
+      "status": "specified",
       "owner": "atlas",
+      "type": "dream",
       "chain": {
         "spec": "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-upstream-discovery"
       }
@@ -1451,8 +1520,9 @@ window.DASHBOARD_DATA = {
     {
       "slug": "wasm-analytics-stack",
       "title": "Wasm-first analytical data stack (OCP-ready)",
-      "status": "in-spec",
+      "status": "specified",
       "owner": "atlas",
+      "type": "dream",
       "chain": {
         "deck": "presentations/wasm-analytics-stack",
         "spec": "_bmad-output/projects/wasm-analytics-stack/planning-artifacts/specs/spec-wasm-analytics-stack",
@@ -1783,7 +1853,7 @@ window.DASHBOARD_DATA = {
       "of": 6,
       "export": "2026-07-24",
       "path": "presentations/pyforge-genesis",
-      "owner": "guild"
+      "owner": "marshal"
     },
     {
       "slug": "pyforge-herald",
@@ -1924,39 +1994,39 @@ window.DASHBOARD_DATA = {
   ],
   "archived": [
     {
-      "name": "Sentinel — knowledge-graph persona",
-      "owner": "scribe",
-      "reason": "absorbed",
-      "note": "charter absorbed into Scribe ('the graph is the product')",
-      "link": "docs/dreams/pyforge-scribe.md"
-    },
-    {
-      "name": "microsoft-conda-forge sweep",
-      "owner": "mason",
-      "reason": "absorbed",
-      "note": "absorbed as trendshift Track B (the June 2026 org audit)",
-      "link": "docs/specs/trendshift-conda-forge.md"
-    },
-    {
-      "name": "claude.ai Artifact console",
-      "owner": "scribe",
+      "name": "Artifact console — the factory board, hosted as a chat artifact",
       "reason": "retired",
-      "note": "replaced by this GitHub Pages console (2026-07)",
-      "link": "docs/dashboard"
+      "owner": "marshal",
+      "note": "Artifact console — the factory board, hosted as a chat artifact",
+      "link": "docs/dreams/artifact-console.md"
     },
     {
-      "name": "DB-GPT conda-forge effort",
-      "owner": "mason",
-      "reason": "terminal",
-      "note": "delivered externally via staged-recipes #33883 (consume-not-submit, G58)",
-      "link": "docs/specs/db-gpt-conda-forge.md"
-    },
-    {
-      "name": "copilot-cli recipe",
-      "owner": "mason",
+      "name": "copilot-cli on conda-forge — blocked at the license",
       "reason": "blocked",
-      "note": "LICENSE §2 standalone-redistribution clause — staged-recipes #32522 rejected",
-      "link": "recipes/copilot-cli"
+      "owner": "mason",
+      "note": "copilot-cli on conda-forge — blocked at the license",
+      "link": "docs/dreams/copilot-cli-packaging.md"
+    },
+    {
+      "name": "DB-GPT on conda-forge — the multi-output agent stack",
+      "reason": "terminal",
+      "owner": "mason",
+      "note": "DB-GPT on conda-forge — the multi-output agent stack",
+      "link": "docs/dreams/db-gpt-packaging.md"
+    },
+    {
+      "name": "Microsoft org sweep — audit one upstream org, package what is missing",
+      "reason": "absorbed",
+      "owner": "atlas",
+      "note": "Microsoft org sweep — audit one upstream org, package what is missing",
+      "link": "docs/dreams/microsoft-org-sweep.md"
+    },
+    {
+      "name": "Sentinel — the AI Software Factory (the ancestor)",
+      "reason": "absorbed",
+      "owner": "scribe",
+      "note": "Sentinel — the AI Software Factory (the ancestor)",
+      "link": "docs/dreams/sentinel.md"
     }
   ],
   "campaigns": [
@@ -2497,7 +2567,7 @@ window.DASHBOARD_DATA = {
         "progress": "",
         "complete": 8,
         "of": 9,
-        "owner": "guild"
+        "owner": "marshal"
       },
       {
         "label": "deckcraft",
@@ -2624,9 +2694,9 @@ window.DASHBOARD_DATA = {
         "name": "spec-surface",
         "task": "spec-surface-check",
         "guards": "every tracked file under a Spec surface",
-        "state": "drift",
-        "findings": 2,
-        "verdict": "FINDINGS (2):",
+        "state": "green",
+        "findings": 0,
+        "verdict": "OK: every tracked file governed or allowlisted; no drift.",
         "runbook": ""
       },
       {
@@ -2645,5 +2715,512 @@ window.DASHBOARD_DATA = {
       "deltas": [],
       "runbook": "_bmad-output/projects/local-recipes/SYNC-RUNBOOK.md"
     }
+  },
+  "backlog": {
+    "rows": [
+      {
+        "slug": "agentic-sdlc-autonomy",
+        "title": "The Agentic SDLC — four views of autonomy, one governed factory",
+        "status": "pitched",
+        "owner": "marshal",
+        "blockedOn": "",
+        "chain": {
+          "deck": "presentations/agentic-sdlc"
+        }
+      },
+      {
+        "slug": "deckcraft",
+        "title": "Deckcraft — editable decks from primitives, air-gapped",
+        "status": "specified",
+        "owner": "herald",
+        "blockedOn": "",
+        "chain": {
+          "deck": "presentations/deckcraft",
+          "spec": "_bmad-output/projects/deckcraft/planning-artifacts/specs/spec-deckcraft",
+          "project": "_bmad-output/projects/deckcraft"
+        }
+      },
+      {
+        "slug": "pyforge-genesis",
+        "title": "Genesis — the seed of the operating model",
+        "status": "specified",
+        "owner": "marshal",
+        "blockedOn": "",
+        "chain": {
+          "deck": "presentations/pyforge-genesis",
+          "spec": "_bmad-output/projects/pyforge-genesis/planning-artifacts/specs/spec-pyforge-genesis",
+          "project": "_bmad-output/projects/pyforge-genesis"
+        }
+      },
+      {
+        "slug": "pyforge-mason",
+        "title": "Mason — forge the blocks, bind the environment, ship the structure",
+        "status": "specified",
+        "owner": "mason",
+        "blockedOn": "",
+        "chain": {
+          "deck": "presentations/pyforge-mason",
+          "spec": "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason",
+          "project": "_bmad-output/projects/pyforge-mason"
+        }
+      },
+      {
+        "slug": "pyforge-steward",
+        "title": "Steward — provision the line, hold the keys",
+        "status": "specified",
+        "owner": "steward",
+        "blockedOn": "",
+        "chain": {
+          "deck": "presentations/pyforge-steward",
+          "spec": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward",
+          "project": "_bmad-output/projects/pyforge-steward"
+        }
+      },
+      {
+        "slug": "team-memory",
+        "title": "Team memory — what the team knows, the agents know",
+        "status": "specified",
+        "owner": "scribe",
+        "blockedOn": "",
+        "chain": {}
+      },
+      {
+        "slug": "unity-data-stack",
+        "title": "Unity Data Stack — the enterprise innersource platform",
+        "status": "specified",
+        "owner": "atlas",
+        "blockedOn": "",
+        "chain": {
+          "deck": "presentations/unity-data-stack",
+          "spec": "_bmad-output/projects/unity-data-stack/planning-artifacts/specs/spec-unity-data-stack",
+          "project": "_bmad-output/projects/unity-data-stack"
+        }
+      },
+      {
+        "slug": "upstream-discovery",
+        "title": "Upstream discovery — package it before it's asked for",
+        "status": "specified",
+        "owner": "atlas",
+        "blockedOn": "",
+        "chain": {
+          "spec": "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-upstream-discovery"
+        }
+      },
+      {
+        "slug": "wasm-analytics-stack",
+        "title": "Wasm-first analytical data stack (OCP-ready)",
+        "status": "specified",
+        "owner": "atlas",
+        "blockedOn": "",
+        "chain": {
+          "deck": "presentations/wasm-analytics-stack",
+          "spec": "_bmad-output/projects/wasm-analytics-stack/planning-artifacts/specs/spec-wasm-analytics-stack",
+          "project": "_bmad-output/projects/wasm-analytics-stack"
+        }
+      },
+      {
+        "slug": "presenton-pixi-image",
+        "title": "Presenton, conda-native — AI decks inside the regulated enterprise",
+        "status": "specified",
+        "owner": "mason",
+        "blockedOn": "Phase-0 decision gate (Epic 1) — the PRD defines Phase 0 as blocking v1 build kickoff; needs operator decisions, not compute",
+        "chain": {
+          "deck": "presentations/presenton-pixi-image",
+          "spec": "_bmad-output/projects/presenton-pixi-image/planning-artifacts/specs/spec-presenton-pixi-image",
+          "project": "_bmad-output/projects/presenton-pixi-image"
+        }
+      }
+    ],
+    "blocked": 1,
+    "byOwner": {
+      "marshal": 2,
+      "herald": 1,
+      "mason": 2,
+      "steward": 1,
+      "scribe": 1,
+      "atlas": 3
+    },
+    "practices": [
+      {
+        "slug": "agent-portability",
+        "title": "Agent portability — BMAD on any agent, never vendor-locked",
+        "owner": "marshal",
+        "status": "dreamt"
+      },
+      {
+        "slug": "enterprise-airgap",
+        "title": "The factory behind the firewall",
+        "owner": "steward",
+        "status": "realized"
+      },
+      {
+        "slug": "fleet-stewardship",
+        "title": "Fleet stewardship — tend every feedstock we can touch",
+        "owner": "mason",
+        "status": "realized"
+      },
+      {
+        "slug": "modernist-identity",
+        "title": "Modernist identity — one visual language for everything PyForge",
+        "owner": "herald",
+        "status": "realized"
+      },
+      {
+        "slug": "packaging-factory",
+        "title": "The Packaging Factory",
+        "owner": "mason",
+        "status": "realized"
+      },
+      {
+        "slug": "regenerable-factory",
+        "title": "Regenerable factory — every line of code under a spec it can be rebuilt from",
+        "owner": "marshal",
+        "status": "realized"
+      }
+    ]
+  },
+  "guild": {
+    "stations": [
+      "herald",
+      "marshal",
+      "atlas",
+      "warden",
+      "mason",
+      "doctor",
+      "scribe",
+      "steward"
+    ],
+    "order": [
+      "dreamt",
+      "pitched",
+      "specified",
+      "realized",
+      "archived",
+      "practice"
+    ],
+    "rows": [
+      {
+        "station": "herald",
+        "total": 4,
+        "counts": {
+          "dreamt": 0,
+          "pitched": 0,
+          "specified": 2,
+          "realized": 1,
+          "archived": 0,
+          "practice": 1
+        },
+        "dreams": [
+          {
+            "slug": "design-code-bridge",
+            "title": "The Design↔Code Bridge",
+            "status": "realized",
+            "type": "dream",
+            "blockedOn": ""
+          },
+          {
+            "slug": "modernist-identity",
+            "title": "Modernist identity — one visual language for everything PyForge",
+            "status": "realized",
+            "type": "practice",
+            "blockedOn": ""
+          },
+          {
+            "slug": "deckcraft",
+            "title": "Deckcraft — editable decks from primitives, air-gapped",
+            "status": "specified",
+            "type": "dream",
+            "blockedOn": ""
+          },
+          {
+            "slug": "pyforge-herald",
+            "title": "Herald — capture the dream, illustrate the telemetry, proclaim the release",
+            "status": "specified",
+            "type": "dream",
+            "blockedOn": ""
+          }
+        ]
+      },
+      {
+        "station": "marshal",
+        "total": 7,
+        "counts": {
+          "dreamt": 0,
+          "pitched": 1,
+          "specified": 1,
+          "realized": 2,
+          "archived": 1,
+          "practice": 2
+        },
+        "dreams": [
+          {
+            "slug": "artifact-console",
+            "title": "Artifact console — the factory board, hosted as a chat artifact",
+            "status": "archived",
+            "type": "dream",
+            "blockedOn": ""
+          },
+          {
+            "slug": "agent-portability",
+            "title": "Agent portability — BMAD on any agent, never vendor-locked",
+            "status": "dreamt",
+            "type": "practice",
+            "blockedOn": ""
+          },
+          {
+            "slug": "agentic-sdlc-autonomy",
+            "title": "The Agentic SDLC — four views of autonomy, one governed factory",
+            "status": "pitched",
+            "type": "dream",
+            "blockedOn": ""
+          },
+          {
+            "slug": "factory-console",
+            "title": "Factory console — the whole pipeline on one page",
+            "status": "realized",
+            "type": "dream",
+            "blockedOn": ""
+          },
+          {
+            "slug": "pyforge-marshal",
+            "title": "Marshal — autonomy a human can trust",
+            "status": "realized",
+            "type": "dream",
+            "blockedOn": ""
+          },
+          {
+            "slug": "regenerable-factory",
+            "title": "Regenerable factory — every line of code under a spec it can be rebuilt from",
+            "status": "realized",
+            "type": "practice",
+            "blockedOn": ""
+          },
+          {
+            "slug": "pyforge-genesis",
+            "title": "Genesis — the seed of the operating model",
+            "status": "specified",
+            "type": "dream",
+            "blockedOn": ""
+          }
+        ]
+      },
+      {
+        "station": "atlas",
+        "total": 5,
+        "counts": {
+          "dreamt": 0,
+          "pitched": 0,
+          "specified": 3,
+          "realized": 1,
+          "archived": 1,
+          "practice": 0
+        },
+        "dreams": [
+          {
+            "slug": "microsoft-org-sweep",
+            "title": "Microsoft org sweep — audit one upstream org, package what is missing",
+            "status": "archived",
+            "type": "dream",
+            "blockedOn": ""
+          },
+          {
+            "slug": "pyforge-atlas",
+            "title": "Atlas — the map that maintains itself",
+            "status": "realized",
+            "type": "dream",
+            "blockedOn": ""
+          },
+          {
+            "slug": "unity-data-stack",
+            "title": "Unity Data Stack — the enterprise innersource platform",
+            "status": "specified",
+            "type": "dream",
+            "blockedOn": ""
+          },
+          {
+            "slug": "upstream-discovery",
+            "title": "Upstream discovery — package it before it's asked for",
+            "status": "specified",
+            "type": "dream",
+            "blockedOn": ""
+          },
+          {
+            "slug": "wasm-analytics-stack",
+            "title": "Wasm-first analytical data stack (OCP-ready)",
+            "status": "specified",
+            "type": "dream",
+            "blockedOn": ""
+          }
+        ]
+      },
+      {
+        "station": "warden",
+        "total": 1,
+        "counts": {
+          "dreamt": 0,
+          "pitched": 0,
+          "specified": 0,
+          "realized": 1,
+          "archived": 0,
+          "practice": 0
+        },
+        "dreams": [
+          {
+            "slug": "pyforge-warden",
+            "title": "Warden — the gate that never lies",
+            "status": "realized",
+            "type": "dream",
+            "blockedOn": ""
+          }
+        ]
+      },
+      {
+        "station": "mason",
+        "total": 6,
+        "counts": {
+          "dreamt": 0,
+          "pitched": 0,
+          "specified": 2,
+          "realized": 0,
+          "archived": 2,
+          "practice": 2
+        },
+        "dreams": [
+          {
+            "slug": "copilot-cli-packaging",
+            "title": "copilot-cli on conda-forge — blocked at the license",
+            "status": "archived",
+            "type": "dream",
+            "blockedOn": ""
+          },
+          {
+            "slug": "db-gpt-packaging",
+            "title": "DB-GPT on conda-forge — the multi-output agent stack",
+            "status": "archived",
+            "type": "dream",
+            "blockedOn": ""
+          },
+          {
+            "slug": "fleet-stewardship",
+            "title": "Fleet stewardship — tend every feedstock we can touch",
+            "status": "realized",
+            "type": "practice",
+            "blockedOn": ""
+          },
+          {
+            "slug": "packaging-factory",
+            "title": "The Packaging Factory",
+            "status": "realized",
+            "type": "practice",
+            "blockedOn": ""
+          },
+          {
+            "slug": "presenton-pixi-image",
+            "title": "Presenton, conda-native — AI decks inside the regulated enterprise",
+            "status": "specified",
+            "type": "dream",
+            "blockedOn": "Phase-0 decision gate (Epic 1) — the PRD defines Phase 0 as blocking v1 build kickoff; needs operator decisions, not compute"
+          },
+          {
+            "slug": "pyforge-mason",
+            "title": "Mason — forge the blocks, bind the environment, ship the structure",
+            "status": "specified",
+            "type": "dream",
+            "blockedOn": ""
+          }
+        ]
+      },
+      {
+        "station": "doctor",
+        "total": 1,
+        "counts": {
+          "dreamt": 0,
+          "pitched": 0,
+          "specified": 1,
+          "realized": 0,
+          "archived": 0,
+          "practice": 0
+        },
+        "dreams": [
+          {
+            "slug": "pyforge-doctor",
+            "title": "Doctor — one bedside manner for the whole fleet",
+            "status": "specified",
+            "type": "dream",
+            "blockedOn": ""
+          }
+        ]
+      },
+      {
+        "station": "scribe",
+        "total": 3,
+        "counts": {
+          "dreamt": 0,
+          "pitched": 0,
+          "specified": 2,
+          "realized": 0,
+          "archived": 1,
+          "practice": 0
+        },
+        "dreams": [
+          {
+            "slug": "sentinel",
+            "title": "Sentinel — the AI Software Factory (the ancestor)",
+            "status": "archived",
+            "type": "dream",
+            "blockedOn": ""
+          },
+          {
+            "slug": "pyforge-scribe",
+            "title": "Scribe — the inward voice",
+            "status": "specified",
+            "type": "dream",
+            "blockedOn": ""
+          },
+          {
+            "slug": "team-memory",
+            "title": "Team memory — what the team knows, the agents know",
+            "status": "specified",
+            "type": "dream",
+            "blockedOn": ""
+          }
+        ]
+      },
+      {
+        "station": "steward",
+        "total": 2,
+        "counts": {
+          "dreamt": 0,
+          "pitched": 0,
+          "specified": 1,
+          "realized": 0,
+          "archived": 0,
+          "practice": 1
+        },
+        "dreams": [
+          {
+            "slug": "enterprise-airgap",
+            "title": "The factory behind the firewall",
+            "status": "realized",
+            "type": "practice",
+            "blockedOn": ""
+          },
+          {
+            "slug": "pyforge-steward",
+            "title": "Steward — provision the line, hold the keys",
+            "status": "specified",
+            "type": "dream",
+            "blockedOn": ""
+          }
+        ]
+      }
+    ],
+    "constitutive": [
+      {
+        "slug": "pyforge-charter",
+        "title": "The PyForge Charter",
+        "status": "pitched"
+      }
+    ]
   }
 };

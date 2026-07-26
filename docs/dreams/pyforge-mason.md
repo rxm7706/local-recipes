@@ -2,7 +2,7 @@
 title: Mason — forge the blocks, bind the environment, ship the structure
 type: dream
 owner: mason
-status: in-spec
+status: specified
 ---
 
 # Mason — the craft of shipping, made a command

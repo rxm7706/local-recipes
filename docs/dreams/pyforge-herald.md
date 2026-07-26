@@ -2,7 +2,7 @@
 title: Herald — capture the dream, illustrate the telemetry, proclaim the release
 type: dream
 owner: herald
-status: in-spec
+status: specified
 ---
 
 # Herald — the outward voice and design surface

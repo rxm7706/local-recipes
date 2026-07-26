@@ -1,6 +1,6 @@
 ---
 title: The factory behind the firewall
-type: dream
+type: practice
 owner: steward
 status: realized
 ---

@@ -1,6 +1,6 @@
 ---
 title: Regenerable factory — every line of code under a spec it can be rebuilt from
-type: dream
+type: practice
 owner: marshal
 status: realized
 ---

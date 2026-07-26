@@ -20,7 +20,7 @@ Both modes ALSO rescan `docs/dreams/*.md` frontmatter into `data["dreams"]`
 (slug/title/status) — the Dreamscape lifecycle board. Unknown or missing
 `status:` values are warned about here (this scan doubles as the Dream
 frontmatter detector) and passed through raw; the front-end buckets them
-under `seeded`.
+under `dreamt`.
 
 Local refresh:  python docs/dashboard/generate.py            (or: pixi run dashboard-gen)
 CI (in-workflow): python docs/dashboard/generate.py --source git
@@ -251,7 +251,17 @@ def apply_git(projects: dict) -> None:
 # ---- dreams (both modes) -----------------------------------------------------
 
 DREAMS_DIR = REPO_ROOT / "docs" / "dreams"
-DREAM_STATUSES = ("seeded", "in-deck", "in-spec", "realized", "archived")
+# The lifecycle, each state named for the ACT THAT COMPLETED — never for the
+# artifact that proves it, and never for activity. Status declares what EXISTS
+# (stable, honestly hand-declarable); the board DERIVES what is happening from
+# live build lines. A `building` status was considered and rejected: it would go
+# stale the moment a line pauses or finishes — exactly how pyforge-warden came to
+# read `in-spec` while shipped 31/31, and deckcraft `dreamt` while holding a deck
+# AND a Spec (both found + fixed 2026-07-25).
+DREAM_STATUSES = ("dreamt", "pitched", "specified", "realized", "archived")
+# Perpetual concerns — tended, never finished. They sit OUTSIDE the lifecycle:
+# excluded from backlog (nobody can close them) and from realized (never done).
+DREAM_TYPES = ("dream", "practice")
 
 # The eight Smiths — the canonical station roster (docs/dreams/pyforge-charter.md
 # §§1-8). `owner:` on a Dream names the station accountable for carrying it all
@@ -259,10 +269,12 @@ DREAM_STATUSES = ("seeded", "in-deck", "in-spec", "realized", "archived")
 # Dream does not mean it becomes that Smith's package.
 STATIONS = ("herald", "marshal", "atlas", "warden",
             "mason", "doctor", "scribe", "steward")
-# The only Dreams that may name no station: they PRECEDE the stations. The
-# Charter constitutes the Guild; Genesis is the operating-model seed. Anything
-# else owned by "guild" is an unassigned Dream, not a constitutive one.
-GUILD_DREAMS = ("pyforge-charter", "pyforge-genesis")
+# The ONE Dream that may name no station, because it CONSTITUTES them: the
+# Charter. `guild` is NOT a ninth station and never renders as one — it marks a
+# Dream sitting above the roster, not beside it. (Genesis was briefly here and
+# was wrong: its origin doc is Marshal's own setup plan, and "the bootstrapper
+# that installs the operating model anywhere" is Marshal's craft.)
+GUILD_DREAMS = ("pyforge-charter",)
 
 
 # Deck dirs whose name differs from the dream slug (mason's chapter deck backs
@@ -306,6 +318,7 @@ def scan_dreams() -> list[dict]:
         if f.name == "README.md":
             continue
         title, status, owner, archived_reason = None, None, None, None
+        dtype, blocked_on = None, None
         lines = f.read_text(encoding="utf-8").splitlines()
         if lines and lines[0].strip() == "---":
             for line in lines[1:]:
@@ -319,9 +332,13 @@ def scan_dreams() -> list[dict]:
                     owner = line.split(":", 1)[1].strip()
                 elif line.startswith("archived-reason:"):
                     archived_reason = line.split(":", 1)[1].strip()
+                elif line.startswith("type:"):
+                    dtype = line.split(":", 1)[1].strip()
+                elif line.startswith("blocked-on:"):
+                    blocked_on = line.split(":", 1)[1].strip()
         if status not in DREAM_STATUSES:
             print(f"[dreams] WARN {f.name}: status {status!r} not in {DREAM_STATUSES}"
-                  " — passed through; board shows it under 'seeded'")
+                  " — passed through; board shows it under 'dreamt'")
         if not owner:
             print(f"[dreams] WARN {f.name}: no owner: in frontmatter")
         elif owner == "guild" and f.stem not in GUILD_DREAMS:
@@ -330,9 +347,14 @@ def scan_dreams() -> list[dict]:
         elif owner not in STATIONS and owner != "guild":
             print(f"[dreams] WARN {f.name}: owner {owner!r} is not one of the "
                   f"eight Smiths {STATIONS}")
+        if dtype and dtype not in DREAM_TYPES:
+            print(f"[dreams] WARN {f.name}: type {dtype!r} not in {DREAM_TYPES}")
         dream = {"slug": f.stem, "title": title or f.stem,
                  "status": status or "", "owner": owner or "",
+                 "type": dtype or "dream",
                  "chain": dream_chain(f.stem)}
+        if blocked_on:
+            dream["blockedOn"] = blocked_on
         if archived_reason:
             dream["archived_reason"] = archived_reason
         dreams.append(dream)
@@ -741,36 +763,113 @@ def scan_pitch() -> list[dict]:
 
 # ---- archived (absorbed / retired / terminal / blocked) ----------------------
 
-ARCHIVED_SEED = [
-    {"name": "Sentinel — knowledge-graph persona", "owner": "scribe", "reason": "absorbed",
-     "note": "charter absorbed into Scribe ('the graph is the product')",
-     "link": "docs/dreams/pyforge-scribe.md"},
-    {"name": "microsoft-conda-forge sweep", "owner": "mason", "reason": "absorbed",
-     "note": "absorbed as trendshift Track B (the June 2026 org audit)",
-     "link": "docs/specs/trendshift-conda-forge.md"},
-    {"name": "claude.ai Artifact console", "owner": "scribe", "reason": "retired",
-     "note": "replaced by this GitHub Pages console (2026-07)",
-     "link": "docs/dashboard"},
-    {"name": "DB-GPT conda-forge effort", "owner": "mason", "reason": "terminal",
-     "note": "delivered externally via staged-recipes #33883 (consume-not-submit, G58)",
-     "link": "docs/specs/db-gpt-conda-forge.md"},
-    {"name": "copilot-cli recipe", "owner": "mason", "reason": "blocked",
-     "note": "LICENSE §2 standalone-redistribution clause — staged-recipes #32522 rejected",
-     "link": "recipes/copilot-cli"},
-]
+# Archived is driven ENTIRELY by Dream frontmatter (`status: archived` +
+# `archived-reason:`) — the former hardcoded ARCHIVED_SEED list was retired
+# 2026-07-25 when its five entries became real archived Dreams. One source of
+# truth: a thing cannot be archived on the board without being archived in its
+# Dream, which is what let Sentinel render as a live backlog Dream AND an
+# archived entry simultaneously.
 
 
 def build_archived(dreams: list[dict]) -> list[dict]:
-    """Seeded cases + any Dream frontmatter-marked `status: archived`."""
-    out = [dict(e) for e in ARCHIVED_SEED]
+    """Every Dream frontmatter-marked `status: archived`."""
+    out: list[dict] = []
     for d in dreams:
         if d["status"] == "archived":
             out.append({"name": d["title"],
                         "reason": d.get("archived_reason") or "retired",
-                        "note": "archived via docs/dreams frontmatter",
+                        "owner": d.get("owner", ""),
+                        "note": d["title"],
                         "link": f"docs/dreams/{d['slug']}.md"})
-    print(f"[archived] {len(out)} entries ({len(out) - len(ARCHIVED_SEED)} from frontmatter)")
+    by_reason: dict[str, int] = {}
+    for e in out:
+        by_reason[e["reason"]] = by_reason.get(e["reason"], 0) + 1
+    print(f"[archived] {len(out)} entries — "
+          + " / ".join(f"{v} {k}" for k, v in sorted(by_reason.items())))
     return out
+
+
+# ---- the Guild (every station, every Dream it owns) -------------------------
+
+def scan_guild(dreams: list[dict]) -> dict:
+    """One row per Smith — all eight, always, including empty ones.
+
+    Grouping by station is the accountability view the `owner:` through-line
+    exists for: "what is Atlas answerable for, and where does each piece stand?"
+    Every station renders even at zero, so a thin station is VISIBLE rather than
+    merely absent (Warden and Doctor own one Dream each; Marshal owns six).
+
+    The Charter is NOT a ninth row. It constitutes the Guild, so it sits above
+    the roster, not beside it — `guild` is not a station.
+    """
+    rows = []
+    for st in STATIONS:
+        mine = [d for d in dreams if d.get("owner") == st]
+        counts = {s: sum(1 for d in mine if d["status"] == s and d.get("type") != "practice")
+                  for s in DREAM_STATUSES}
+        counts["practice"] = sum(1 for d in mine if d.get("type") == "practice")
+        rows.append({
+            "station": st, "total": len(mine), "counts": counts,
+            "dreams": [{"slug": d["slug"], "title": d["title"], "status": d["status"],
+                        "type": d.get("type", "dream"),
+                        "blockedOn": d.get("blockedOn", "")}
+                       for d in sorted(mine, key=lambda x: (x["status"], x["slug"]))],
+        })
+    constitutive = [{"slug": d["slug"], "title": d["title"], "status": d["status"]}
+                    for d in dreams if d.get("owner") == "guild"]
+    thin = [r["station"] for r in rows if r["total"] <= 1]
+    print(f"[guild] {sum(r['total'] for r in rows)} dreams across {len(rows)} stations"
+          f" · {len(constitutive)} constitutive"
+          + (f" · thinnest: {', '.join(thin)}" if thin else ""))
+    return {"stations": list(STATIONS), "order": list(DREAM_STATUSES) + ["practice"],
+            "rows": rows, "constitutive": constitutive}
+
+
+# ---- backlog (what a station owns that is not building and not done) --------
+
+def scan_backlog(dreams: list[dict], projects: dict) -> dict:
+    """Dreams a station owns that are neither building nor finished.
+
+    The naive definition — "not in Realized and not In Build" — does NOT hold,
+    because those two sections are driven by the 6 wired build lines, not by the
+    26 Dreams. It swept in 7 realized-but-never-a-build-line Dreams
+    (factory-console, modernist-identity, design-code-bridge, ...), every future
+    `archived` one, and the perpetual practices. Bucketing off the Dream's OWN
+    lifecycle is total and non-overlapping instead:
+
+      dreamt / pitched / specified  -> backlog, UNLESS a build line exists
+      realized                      -> Realized
+      archived                      -> Archived
+      type: practice                -> neither (tended, never finished)
+
+    `blocked-on:` splits backlog into WAITING vs AVAILABLE — backlog implies
+    pickup-ready, and work held on an external gate is not.
+    """
+    building = {PROGRAM_DREAM[k] for k, v in projects.items()
+                if k in PROGRAM_DREAM and (v.get("lineState") or {}).get("state")
+                in ("in flight", "paused")}
+    rows = []
+    for d in dreams:
+        if d.get("type") == "practice" or d["status"] in ("realized", "archived"):
+            continue
+        if d.get("owner") == "guild":
+            continue          # constitutive — not any station's pending work
+        if d["slug"] in building:
+            continue
+        rows.append({"slug": d["slug"], "title": d["title"], "status": d["status"],
+                     "owner": d["owner"], "blockedOn": d.get("blockedOn", ""),
+                     "chain": d.get("chain", {})})
+    order = {s: i for i, s in enumerate(DREAM_STATUSES)}
+    rows.sort(key=lambda r: (bool(r["blockedOn"]), order.get(r["status"], 9), r["slug"]))
+    blocked = sum(1 for r in rows if r["blockedOn"])
+    by_owner: dict[str, int] = {}
+    for r in rows:
+        by_owner[r["owner"]] = by_owner.get(r["owner"], 0) + 1
+    practices = [{"slug": d["slug"], "title": d["title"], "owner": d["owner"],
+                  "status": d["status"]} for d in dreams if d.get("type") == "practice"]
+    print(f"[backlog] {len(rows)} open ({len(rows) - blocked} available / {blocked} blocked)"
+          f" · {len(practices)} standing practices")
+    return {"rows": rows, "blocked": blocked, "byOwner": by_owner, "practices": practices}
 
 
 # ---- station ownership (the Dream -> code through-line) ----------------------
@@ -801,8 +900,16 @@ def apply_owner(data: dict) -> None:
         if not row["owner"]:
             missing.append(f"fleet:{row['slug']}")
 
+    by_type = {d["slug"]: d.get("type", "dream") for d in data["dreams"]}
     for key, proj in data["projects"].items():           # In Build / Realized
-        proj["owner"] = by_slug.get(PROGRAM_DREAM.get(key, ""), "")
+        dream = PROGRAM_DREAM.get(key, "")
+        proj["owner"] = by_slug.get(dream, "")
+        # A line whose Dream is a PRACTICE is not a product line: it is a
+        # standing property tended forever (regenerable-factory's surface
+        # manifests must claim every new file, permanently). It carries real
+        # story history, so the data stays — the zones just don't show it as
+        # something that shipped.
+        proj["practice"] = by_type.get(dream) == "practice"
         if not proj["owner"]:
             missing.append(f"projects:{key}")
 
@@ -870,6 +977,8 @@ def main() -> int:
     ]
     data["pitch"] = scan_pitch()
     data["archived"] = build_archived(data["dreams"])
+    data["guild"] = scan_guild(data["dreams"])
+    data["backlog"] = scan_backlog(data["dreams"], data["projects"])
     apply_owner(data)
 
     ts = now_utc()

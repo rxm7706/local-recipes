@@ -2,7 +2,8 @@
 title: Sentinel — the AI Software Factory (the ancestor)
 type: dream
 owner: scribe
-status: seeded
+status: archived
+archived-reason: absorbed
 ---
 
 # Sentinel — the graph is the product
@@ -51,6 +52,13 @@ That remains this Dream's open claim — **owned, as of 2026-07-23, by the Scrib
 ([[pyforge-scribe]]), the persona the crew adopted to carry it.
 
 ## Realization log
+
+- **2026-07-25** — **ARCHIVED (absorbed).** The persona's charter passed to
+  [[pyforge-scribe]] (*"the graph is the product"*), and the unbuilt
+  knowledge-graph core lives on as `src/sentinel/**`, allowlisted in
+  `spec_surface_check` until Scribe absorbs it. Archived here rather than left
+  in Backlog: it was appearing in **both** places at once — a live `dreamt`
+  Dream *and* a hardcoded Archived entry.
 
 - **2026-04-18/19** — essay → decks → Build-Spec v2.1; never landed in a repo.
 - **2026-07-23** — rediscovered during the Design-workspace audit; Dream seeded;

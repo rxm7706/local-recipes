@@ -12,11 +12,11 @@
  },
  "local-recipes/spec-factory-console": {
   "files": {
-   "docs/dashboard/README.md": "0825c973586fc6c811a3f28f94b58dc84bb0d81b",
-   "docs/dashboard/generate.py": "c5645a063bbc0405f0ad6278f87a90be37740a51",
-   "docs/dashboard/index.html": "f15c826d2c0e80b18656a485adbc6b64ff560185"
+   "docs/dashboard/README.md": "970ed18c67aa61ca4a0e12e81d4cb3054f7ffaa1",
+   "docs/dashboard/generate.py": "5785dbb0ff4c6607fed1fb539898bbb6e88a2723",
+   "docs/dashboard/index.html": "a170e5374ef72f6ef7d689a158ca82f1ebd041df"
   },
-  "memlog": "ea53c2374c6061a081fad58bb6ae1f304ef92f0c"
+  "memlog": "5cf1a69706be882e936de4e17ca44bccb6ac37d5"
  },
  "local-recipes/spec-fleet-stewardship": {
   "files": {},

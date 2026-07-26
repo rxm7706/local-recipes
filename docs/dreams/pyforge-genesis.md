@@ -1,8 +1,8 @@
 ---
 title: Genesis — the seed of the operating model
 type: dream
-owner: guild
-status: in-spec
+owner: marshal
+status: specified
 ---
 
 # Genesis — the master idea, and the seed that plants it

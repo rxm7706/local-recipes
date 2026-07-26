@@ -2,7 +2,7 @@
 title: Warden — the gate that never lies
 type: dream
 owner: warden
-status: in-spec
+status: realized
 ---
 
 # Warden — the compliance gate that never false-greens

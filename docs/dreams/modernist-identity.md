@@ -1,6 +1,6 @@
 ---
 title: Modernist identity — one visual language for everything PyForge
-type: dream
+type: practice
 owner: herald
 status: realized
 ---

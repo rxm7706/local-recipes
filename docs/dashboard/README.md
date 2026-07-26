@@ -2,7 +2,7 @@
 
 A single-page, self-contained status console for the whole "Dream to Code"
 pipeline: the **Dreamscape board** (every `docs/dreams/*.md` Dream in its
-lifecycle stage: seeded → in-deck → in-spec → realized) above per-project
+lifecycle stage: dreamt → pitched → specified → realized) above per-project
 story/epic progress, gates, velocity, and delivery-timing metrics, with a
 project toggle (Warden / Atlas). Theme-aware, no external assets.
 Its own Dream: [`docs/dreams/factory-console.md`](../dreams/factory-console.md).

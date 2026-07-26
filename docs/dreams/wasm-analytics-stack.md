@@ -2,7 +2,7 @@
 title: Wasm-first analytical data stack (OCP-ready)
 type: dream
 owner: atlas
-status: in-spec
+status: specified
 ---
 
 # Wasm-first analytics — sandboxed pipelines for the hardened enterprise
