@@ -23,7 +23,7 @@ source_pin: 'conda-forge-expert v8.79.1'
 > three-layer per-skill merge, the six BMAD agent personas and their descriptors in
 > `_bmad/config.toml`, the 21 engineering-practice skills, and both BMAD ↔ conda-forge-expert
 > integration rules. Live factory facts this doc leans on (`bmad-groundtruth`, 2026-07-25):
-> cf_atlas **schema v29**, **46 MCP tools**, 23 atlas phases, gotchas **G1–G106**, **18 pixi envs**.
+> cf_atlas **schema v29**, **46 MCP tools**, 23 atlas phases, gotchas **G1–G106**, **19 pixi envs**.
 
 BMAD-METHOD is an AI-driven software development framework that this repository hosts as a
 **multi-project installation**. A single BMAD installer (`_bmad/`) drives spec + planning + dev +

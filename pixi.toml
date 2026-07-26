@@ -224,6 +224,33 @@ depends-on = ["pyforge-marshal-build-conda", "pyforge-marshal-build-dist"]
 description = "Run the pyforge-marshal test suite (unit + meta)."
 cmd = "pytest src/shared/packages/pyforge-marshal/tests -q"
 
+# --- pyforge-ci: the CI build/publish surface, layered on feature.python --------
+# Deliberately its OWN feature rather than additions to feature.python: that one is
+# shared by build / grayskull / conda-smithy / local-recipes / vuln-db / gcloud /
+# linux / osx / win, so anything added there fattens all nine.
+#
+# Covers every artifact the pyforge packages publish, from one hatchling pyproject:
+#   wheel + sdist -> python-build (frontend) + hatchling (backend). The build tasks
+#                    pass --no-isolation, so the backend MUST be in the env; without
+#                    it `python -m build` fetches its own into a temp venv (network).
+#   .conda        -> pixi build via pixi-build-python / pixi-build-rattler-build.
+#                    hatchling alone does NOT emit .conda — pixi-build-python wraps
+#                    the hatchling wheel (see the pyforge-mason note above).
+#   PyPI          -> twine.
+#   GitHub release-> gh (already in feature.python).
+#   conda-forge   -> nothing needed: publishing there is a PR to staged-recipes /
+#                    the feedstock, and conda-forge's own CI builds and uploads.
+# Pins are the repo's existing ones, unchanged, so this adds no second source of
+# truth. STILL MISSING for JFrog conda uploads: anaconda-client or a jfrog CLI —
+# absent from every feature today, so that target is a real gap, not just here.
+[feature.pyforge-ci.dependencies]
+hatchling = ">=1.31.0"                    # Python build backend (conda + wheel/sdist)
+python-build = ">=1.5.0"                  # PyPA `python -m build` frontend
+pytest = ">=9.1.1"                        # test runner
+pixi-build-python = ">=0.8.3"             # pixi build backend -> .conda from the hatchling wheel
+pixi-build-rattler-build = ">=0.4.4"      # pixi build backend -> recipe-driven .conda
+twine = ">=6.2.0"                         # PyPI upload
+
 [environments]
 # default-env: local-recipes
 # ^ The "default-env:" directive above tells scripts/load-env.sh which environment
@@ -240,6 +267,20 @@ conda-smithy = ["python", "conda-smithy", "shellcheck"]
 local-recipes = ["python", "build", "grayskull", "conda-smithy", "local-recipes"]
 vuln-db = ["python", "vuln-db"]
 gcloud = ["python", "gcloud-sdk"]
+# pyforge-ci — the LEAN CI environment. feature.python gives pixi, bmad-method,
+# nodejs, gh, gitpython, spec-kit + truststore; feature.pyforge-ci adds everything
+# needed to BUILD and PUBLISH: wheel + sdist + .conda, to PyPI and conda-forge.
+# no-default-feature keeps the fat default [dependencies] out; both features are
+# referenced BY NAME, never by copied pins, so this tracks them automatically.
+#
+# Why it exists: CI should always have pixi, but the only env exposing the tooling
+# was local-recipes at 1102 packages / ~9.8 GB — a download per Pages deploy against
+# a 10 GB cache ceiling. The health detectors never needed it at all (stdlib + git;
+# generate.py now runs them directly — see _run_detector), so this env carries the
+# build/publish surface without the 9.8 GB.
+#
+# Named to match the eight sibling pyforge-* envs so it sorts with the family.
+pyforge-ci = { features = ["python", "pyforge-ci"], no-default-feature = true }
 # Lean standalone-tool env (NFR1/NFR2): no-default-feature excludes the fat
 # default [dependencies] (python 3.14 + pixi + conda + pip + uv), so this env
 # carries only the built pyforge-warden package + its conda run-deps + pytest.
