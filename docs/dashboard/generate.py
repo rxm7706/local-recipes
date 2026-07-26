@@ -670,6 +670,24 @@ def _pkg_version(slug: str) -> str:
     return m.group(1) if m else ""
 
 
+def _spec_open_questions(slug: str) -> int:
+    """Unresolved `open_questions[]` in this project's SPEC.md (0 when none)."""
+    for smd in sorted((REPO_ROOT / "_bmad-output" / "projects" / slug /
+                       "planning-artifacts" / "specs").glob("spec-*/SPEC.md")):
+        text = smd.read_text(encoding="utf-8")
+        if not text.startswith("---"):
+            continue
+        try:
+            import yaml
+            fm = yaml.safe_load(text.split("---")[1]) or {}
+        except Exception:
+            continue
+        q = fm.get("open_questions") or []
+        if q:
+            return len(q)
+    return 0
+
+
 def scan_fleet(projects: dict) -> dict:
     """Per-project Dream-to-Code state: stage dates, furthest stage, recency, version."""
     from datetime import date
@@ -710,15 +728,34 @@ def scan_fleet(projects: dict) -> dict:
         if pkey and pkey in projects:
             st = [s for e in projects[pkey]["epics"] for s in e["stories"]]
             prog = f"{sum(1 for s in st if s[1] == 'done')}/{len(st)}"
+        # F1 — a row whose stage dates do not ascend was BACKFILLED, not built out
+        # of order. docs/dreams/README.md mandates it: "realized is not exempt from
+        # the chain" — a Dream that shipped before the model existed gets its
+        # PRD/spec retro-fitted. warden shipped from a 07-14 PRD, then got its Dream
+        # 07-23 and its Spec 07-25. True history, previously invisible.
+        seq = [stages[s] for s in FLEET_STAGES if stages[s]]
+        backfilled = seq != sorted(seq)
+        # F3 — the contract has unanswered questions while its decomposition
+        # already exists. bmad-spec emits open_questions[] by design for gaps the
+        # Dream could not resolve; research/PRD are what resolve them. Non-empty
+        # here + PRD + architecture present = downstream has overtaken the Spec.
+        open_q = _spec_open_questions(slug)
+        overtaken = bool(open_q) and bool(stages["prd"]) and bool(stages["arch"])
         rows.append({"label": label, "slug": slug, "dream": dream, "stages": stages,
+                     "backfilled": backfilled, "openQuestions": open_q,
+                     "overtaken": overtaken,
                      "na": sorted(na), "furthest": furthest, "updated": updated,
                      "age": age, "stale": isinstance(age, int) and age > _STALE_DAYS,
                      "version": _pkg_version(slug), "progress": prog,
                      "complete": sum(1 for s in FLEET_STAGES if stages[s] or s in na),
                      "of": len(FLEET_STAGES)})
     full = sum(1 for r in rows if r["complete"] == r["of"])
+    bf = [r["slug"] for r in rows if r["backfilled"]]
+    ov = [f"{r['slug']}({r['openQuestions']})" for r in rows if r["overtaken"]]
     print(f"[fleet] {len(rows)} projects · {full} complete chains · "
-          f"{sum(1 for r in rows if r['stale'])} stale (>{_STALE_DAYS}d)")
+          f"{sum(1 for r in rows if r['stale'])} stale (>{_STALE_DAYS}d)"
+          + (f" · {len(bf)} backfilled: {', '.join(bf)}" if bf else "")
+          + (f" · overtaken: {', '.join(ov)}" if ov else ""))
     return {"stages": list(FLEET_STAGES), "staleDays": _STALE_DAYS, "rows": rows}
 
 
@@ -791,7 +828,8 @@ def build_archived(dreams: list[dict]) -> list[dict]:
 
 # ---- the Guild (every station, every Dream it owns) -------------------------
 
-def scan_guild(dreams: list[dict]) -> dict:
+def scan_guild(dreams: list[dict], projects: dict | None = None,
+               backlog: dict | None = None) -> dict:
     """One row per Smith — all eight, always, including empty ones.
 
     Grouping by station is the accountability view the `owner:` through-line
@@ -808,8 +846,27 @@ def scan_guild(dreams: list[dict]) -> dict:
         counts = {s: sum(1 for d in mine if d["status"] == s and d.get("type") != "practice")
                   for s in DREAM_STATUSES}
         counts["practice"] = sum(1 for d in mine if d.get("type") == "practice")
+        # G1 — what this station is actually DOING. The Guild counted Dreams and
+        # said nothing about activity: a station could own four Dreams and have
+        # nothing running. Derived from the build lines, never declared.
+        line = ""
+        for key, proj in (projects or {}).items():
+            if proj.get("owner") != st or proj.get("practice"):
+                continue
+            ls = proj.get("lineState") or {}
+            state, at = ls.get("state", ""), ls.get("at", "")
+            cand = f"{state} {at}".strip()
+            # a live/paused line outranks a complete one for display
+            if state in ("in flight", "paused") or not line:
+                line = cand
+        # G2 — backlog load. Makes a thin station meaningful: warden owns one
+        # Dream AND has zero pending, which is a different fact from being small.
+        load = ((backlog or {}).get("byOwner") or {}).get(st, 0)
+        blocked = sum(1 for r in (backlog or {}).get("rows", [])
+                      if r.get("owner") == st and r.get("blockedOn"))
         rows.append({
             "station": st, "total": len(mine), "counts": counts,
+            "line": line, "load": load, "blocked": blocked,
             "dreams": [{"slug": d["slug"], "title": d["title"], "status": d["status"],
                         "type": d.get("type", "dream"),
                         "blockedOn": d.get("blockedOn", "")}
@@ -817,11 +874,14 @@ def scan_guild(dreams: list[dict]) -> dict:
         })
     constitutive = [{"slug": d["slug"], "title": d["title"], "status": d["status"]}
                     for d in dreams if d.get("owner") == "guild"]
-    thin = [r["station"] for r in rows if r["total"] <= 1]
+    idle = [r["station"] for r in rows if not r["line"] and not r["load"]]
     print(f"[guild] {sum(r['total'] for r in rows)} dreams across {len(rows)} stations"
           f" · {len(constitutive)} constitutive"
-          + (f" · thinnest: {', '.join(thin)}" if thin else ""))
-    return {"stations": list(STATIONS), "order": list(DREAM_STATUSES) + ["practice"],
+          + (f" · idle (no line, no backlog): {', '.join(idle)}" if idle else ""))
+    # `practice` sits with the ACTIVE states, before `archived` — archived is the
+    # terminal state and belongs last. A practice is tended, not ended.
+    order = [s for s in DREAM_STATUSES if s != "archived"] + ["practice", "archived"]
+    return {"stations": list(STATIONS), "order": order,
             "rows": rows, "constitutive": constitutive}
 
 
@@ -977,8 +1037,8 @@ def main() -> int:
     ]
     data["pitch"] = scan_pitch()
     data["archived"] = build_archived(data["dreams"])
-    data["guild"] = scan_guild(data["dreams"])
     data["backlog"] = scan_backlog(data["dreams"], data["projects"])
+    data["guild"] = scan_guild(data["dreams"], data["projects"], data["backlog"])
     apply_owner(data)
 
     ts = now_utc()

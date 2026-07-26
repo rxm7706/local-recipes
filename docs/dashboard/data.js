@@ -1205,7 +1205,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-07-26 03:18 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-07-26 03:26 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -2358,6 +2358,9 @@ window.DASHBOARD_DATA = {
           "epics": "07-25",
           "code": "07-25"
         },
+        "backfilled": false,
+        "openQuestions": 0,
+        "overtaken": false,
         "na": [],
         "furthest": "code",
         "updated": "2026-07-25",
@@ -2384,6 +2387,9 @@ window.DASHBOARD_DATA = {
           "epics": "07-25",
           "code": "07-25"
         },
+        "backfilled": false,
+        "openQuestions": 0,
+        "overtaken": false,
         "na": [],
         "furthest": "code",
         "updated": "2026-07-25",
@@ -2410,6 +2416,9 @@ window.DASHBOARD_DATA = {
           "epics": "07-25",
           "code": "07-25"
         },
+        "backfilled": false,
+        "openQuestions": 0,
+        "overtaken": false,
         "na": [],
         "furthest": "code",
         "updated": "2026-07-25",
@@ -2436,6 +2445,9 @@ window.DASHBOARD_DATA = {
           "epics": "07-25",
           "code": ""
         },
+        "backfilled": false,
+        "openQuestions": 0,
+        "overtaken": false,
         "na": [],
         "furthest": "epics",
         "updated": "2026-07-25",
@@ -2462,6 +2474,9 @@ window.DASHBOARD_DATA = {
           "epics": "07-25",
           "code": ""
         },
+        "backfilled": false,
+        "openQuestions": 0,
+        "overtaken": false,
         "na": [],
         "furthest": "epics",
         "updated": "2026-07-25",
@@ -2488,6 +2503,9 @@ window.DASHBOARD_DATA = {
           "epics": "07-25",
           "code": ""
         },
+        "backfilled": true,
+        "openQuestions": 0,
+        "overtaken": false,
         "na": [],
         "furthest": "epics",
         "updated": "2026-07-25",
@@ -2514,6 +2532,9 @@ window.DASHBOARD_DATA = {
           "epics": "07-17",
           "code": "07-17"
         },
+        "backfilled": true,
+        "openQuestions": 4,
+        "overtaken": true,
         "na": [],
         "furthest": "code",
         "updated": "2026-07-25",
@@ -2540,6 +2561,9 @@ window.DASHBOARD_DATA = {
           "epics": "07-14",
           "code": "07-14"
         },
+        "backfilled": true,
+        "openQuestions": 0,
+        "overtaken": false,
         "na": [],
         "furthest": "code",
         "updated": "2026-07-25",
@@ -2566,6 +2590,9 @@ window.DASHBOARD_DATA = {
           "epics": "07-25",
           "code": ""
         },
+        "backfilled": false,
+        "openQuestions": 0,
+        "overtaken": false,
         "na": [],
         "furthest": "epics",
         "updated": "2026-07-25",
@@ -2592,6 +2619,9 @@ window.DASHBOARD_DATA = {
           "epics": "05-10",
           "code": ""
         },
+        "backfilled": true,
+        "openQuestions": 0,
+        "overtaken": false,
         "na": [],
         "furthest": "epics",
         "updated": "2026-07-25",
@@ -2618,6 +2648,9 @@ window.DASHBOARD_DATA = {
           "epics": "07-25",
           "code": ""
         },
+        "backfilled": true,
+        "openQuestions": 0,
+        "overtaken": false,
         "na": [],
         "furthest": "epics",
         "updated": "2026-07-25",
@@ -2644,6 +2677,9 @@ window.DASHBOARD_DATA = {
           "epics": "",
           "code": ""
         },
+        "backfilled": false,
+        "openQuestions": 0,
+        "overtaken": false,
         "na": [
           "epics"
         ],
@@ -2672,6 +2708,9 @@ window.DASHBOARD_DATA = {
           "epics": "",
           "code": ""
         },
+        "backfilled": false,
+        "openQuestions": 0,
+        "overtaken": false,
         "na": [
           "epics"
         ],
@@ -2903,8 +2942,8 @@ window.DASHBOARD_DATA = {
       "pitched",
       "specified",
       "realized",
-      "archived",
-      "practice"
+      "practice",
+      "archived"
     ],
     "rows": [
       {
@@ -2918,6 +2957,9 @@ window.DASHBOARD_DATA = {
           "archived": 0,
           "practice": 1
         },
+        "line": "paused 1.3",
+        "load": 1,
+        "blocked": 0,
         "dreams": [
           {
             "slug": "design-code-bridge",
@@ -2960,6 +3002,9 @@ window.DASHBOARD_DATA = {
           "archived": 1,
           "practice": 2
         },
+        "line": "",
+        "load": 2,
+        "blocked": 0,
         "dreams": [
           {
             "slug": "artifact-console",
@@ -3030,6 +3075,9 @@ window.DASHBOARD_DATA = {
           "archived": 1,
           "practice": 0
         },
+        "line": "complete",
+        "load": 3,
+        "blocked": 0,
         "dreams": [
           {
             "slug": "microsoft-org-sweep",
@@ -3079,6 +3127,9 @@ window.DASHBOARD_DATA = {
           "archived": 0,
           "practice": 0
         },
+        "line": "complete",
+        "load": 0,
+        "blocked": 0,
         "dreams": [
           {
             "slug": "pyforge-warden",
@@ -3100,6 +3151,9 @@ window.DASHBOARD_DATA = {
           "archived": 2,
           "practice": 2
         },
+        "line": "",
+        "load": 2,
+        "blocked": 1,
         "dreams": [
           {
             "slug": "copilot-cli-packaging",
@@ -3156,6 +3210,9 @@ window.DASHBOARD_DATA = {
           "archived": 0,
           "practice": 0
         },
+        "line": "paused 1.2",
+        "load": 0,
+        "blocked": 0,
         "dreams": [
           {
             "slug": "pyforge-doctor",
@@ -3177,6 +3234,9 @@ window.DASHBOARD_DATA = {
           "archived": 1,
           "practice": 0
         },
+        "line": "paused 1.2",
+        "load": 1,
+        "blocked": 0,
         "dreams": [
           {
             "slug": "sentinel",
@@ -3212,6 +3272,9 @@ window.DASHBOARD_DATA = {
           "archived": 0,
           "practice": 1
         },
+        "line": "",
+        "load": 1,
+        "blocked": 0,
         "dreams": [
           {
             "slug": "enterprise-airgap",
