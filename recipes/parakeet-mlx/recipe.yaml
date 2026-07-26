@@ -36,25 +36,38 @@ requirements:
     - numpy >=2.2.5
     - typer >=0.15.3
 
+# mlx is available on linux-64, linux-aarch64 and osx-arm64 only -- Intel Macs
+# were dropped upstream (conda-forge osx-64 mlx tops out at 0.7.0, below this
+# recipe's >=0.22.1 floor) and there is no Windows build at all. staged-recipes
+# builds osx-64 and win-64, so an ungated test env cannot solve there:
+#   "mlx >=0.22.1, for which no candidates were found"
+# A platform-conditional TEST block is lint-clean on a noarch:python recipe
+# (unlike a platform-conditional run dep, G12/G76), so the tests run only where
+# the dependency exists. The package itself stays noarch and simply will not
+# solve where mlx is absent, which is correct.
 tests:
-  - python:
-      imports:
-        - parakeet_mlx
-      # pip_check disabled for THIS package only: conda-forge's dacite 1.9.2
-      # ships a wheel whose dist-info reports 1.9.1 (the conda metadata is
-      # correct at 1.9.2). pip check reads the dist-info, so upstream's
-      # dacite>=1.9.2 false-fails. Verified this is the ONLY pip check
-      # failure in the graph. External feedstock bug (SKILL.md G24/G28) --
-      # re-enable once dacite-feedstock rebuilds with correct wheel metadata.
-      pip_check: false
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
-  - requirements:
-      run:
-        - python ${{ python_min }}.*
-    script:
-      - parakeet-mlx --help
+  - if: linux
+    then:
+      python:
+        imports:
+          - parakeet_mlx
+        # pip_check disabled for THIS package only: conda-forge's dacite 1.9.2
+        # ships a wheel whose dist-info reports 1.9.1 (the conda metadata is
+        # correct at 1.9.2). pip check reads the dist-info, so upstream's
+        # dacite>=1.9.2 false-fails. Verified this is the ONLY pip check
+        # failure in the graph. External feedstock bug (SKILL.md G24/G28) --
+        # re-enable once dacite-feedstock rebuilds with correct metadata.
+        pip_check: false
+        python_version:
+          - ${{ python_min }}.*
+          - "*"
+  - if: linux
+    then:
+      requirements:
+        run:
+          - python ${{ python_min }}.*
+      script:
+        - parakeet-mlx --help
 
 about:
   homepage: https://github.com/senstella/parakeet-mlx

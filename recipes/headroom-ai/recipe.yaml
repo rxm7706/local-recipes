@@ -25,6 +25,13 @@ requirements:
   build:
     - ${{ compiler("c") }}
     - ${{ stdlib("c") }}
+    # esaxx-rs (pulled in transitively via tokenizers) compiles C++ sources in
+    # its build script, so a C++ toolchain is required. Without it the build
+    # fails hermetically -- 'failed to find tool "c++"' on linux and
+    # "src/esaxx.cpp: fatal error: 'cstdint' file not found" on osx -- even
+    # though a local build can pass by picking up a c++ that leaked from the
+    # host (SKILL.md G30).
+    - ${{ compiler("cxx") }}
     - ${{ compiler("rust") }}
     - cargo-bundle-licenses
   host:
