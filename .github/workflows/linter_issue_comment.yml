@@ -16,7 +16,14 @@ jobs:
   rerun-linter:
     name: rerun-linter
     runs-on: ubuntu-slim
-    if: ${{ (github.event_name == 'issue_comment' && github.event.issue.pull_request) }}
+    # Only fire when a comment explicitly ASKS for a re-lint. Upstream runs on every
+    # PR comment; here that meant 139 runner jobs in a month with nothing requesting
+    # them. A push, or toggling any label, already re-triggers staged-recipes-linter.
+    if: >-
+      github.event_name == 'issue_comment'
+      && github.event.issue.pull_request
+      && (contains(github.event.comment.body, 'please rerun linter')
+          || contains(github.event.comment.body, '/rerun-linter'))
     defaults:
       run:
         shell: bash -leo pipefail {0}
