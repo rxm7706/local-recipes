@@ -542,6 +542,37 @@ follow-up, not this effort), and the three upstream bmad-loop feature requests
 (resume-on-timeout, retry-from-attempt, PR-lifecycle hook — upstream's
 timeline).
 
+### 6.4 Deferred capabilities (tracked, contract-level)
+
+> **Added 2026-07-25** when the four remaining `SPEC.md` `open_questions[]` were
+> resolved. These are **committed-but-unscheduled capabilities**, not defects and
+> not MVP scope. They live here — Tier-2 `planning-artifacts/`, git-tracked —
+> rather than in `implementation-artifacts/deferred-work.md`, which is
+> **gitignored** and would not survive a clone. Implementation-level gaps
+> (the nine `DW-*` rows) stay there; contract-level deferrals belong here.
+
+| ID | Deferred capability | Origin | Status |
+|---|---|---|---|
+| **DC-1** | **Public, versioned API tier** beyond agent-mediated access. Today: MCP (11 tools) + the `a2a` module, both agent-mediated; no HTTP surface exists (no FastAPI/APIRouter anywhere in the package). Operator decision 2026-07-25: this *is* intended eventually — deferred as a real capability, not closed as a non-goal. | `SPEC.md` OQ-1 | deferred, unscheduled |
+| **DC-2** | **Dagster daemon** — scheduled/sensor-driven runs against a live daemon rather than in-process execution. | `SPEC.md` OQ-3 | deferred, unscheduled |
+| **DC-3** | **MinIO / PostgreSQL servers** — object-store + relational substrates in place of the local/embedded defaults. | `SPEC.md` OQ-3 | deferred, unscheduled |
+| **DC-4** | **Live Wagtail** — the publish surface running against a real instance. | `SPEC.md` OQ-3 | deferred, unscheduled |
+| **DC-5** | **agno LLM synthesis** — live synthesis in the NL/RAG path. | `SPEC.md` OQ-3 | deferred, unscheduled |
+| **DC-6** | **Production `vss` retriever** — the DuckDB VSS vector retriever at production settings. | `SPEC.md` OQ-3 | deferred, unscheduled |
+
+**Why DC-2…DC-6 are listed at all:** the Spec named these five live bring-ups as
+an open question, and **none of them appeared in any ledger** — the nine tracked
+`DW-*` rows are all B-wave implementation gaps. So the contract named work that
+nothing tracked, and the honest answer to *"what closes them?"* was *"nothing."*
+Listing them makes them owned and visible; it does not schedule them.
+
+**Not deferred — resolved to an owner:** an OpenSSF-Scorecard-class maintenance
+signal (`SPEC.md` OQ-2) is a **Warden axis**, not an Atlas feed. `pyforge-warden`
+already names six axes (hygiene · security · license · currency · provenance ·
+**maintenance**), gating on the first four in v1. Atlas *measures*; Warden
+*judges* — the same separation the Charter states as *the hand that builds is
+never the gate that judges*.
+
 ## 7. Success Metrics
 
 Derived from the spec's whole-migration acceptance criteria (AC-1..AC-11) and

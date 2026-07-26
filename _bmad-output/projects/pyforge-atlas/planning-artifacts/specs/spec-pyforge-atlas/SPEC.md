@@ -20,11 +20,7 @@ sources:
   - ../../briefs/brief-pyforge-atlas-2026-07-25/brief.md
   - ../../research/domain-dependency-intelligence-ecosystem-observability-research-2026-07-25.md
   - ../../research/technical-kedro-dagster-duckdb-stack-currency-research-2026-07-25.md
-open_questions:
-  - Does Atlas ever expose a public, versioned API tier beyond MCP-mediated agent access?
-  - Where does an OpenSSF-Scorecard-class maintenance signal live — a joined Atlas feed or a Warden gate?
-  - What closes the deferred live bring-ups (Dagster daemon, MinIO/PostgreSQL servers, live Wagtail, agno LLM synthesis, production `vss` retriever)?
-  - Do the 8 optional per-epic retrospectives ever run, or are they formally waived?
+open_questions: []   # all four resolved 2026-07-25 — see § Resolved questions
 ---
 
 > **Canonical contract.** This SPEC and the files in `companions:` are the complete, preservation-validated contract for what to build, test, and validate. Source documents listed in frontmatter are for traceability only — consult them only if you need narrative rationale or prose color this contract intentionally omits.
@@ -225,6 +221,15 @@ close later.
 
 ## Constraints
 
+- **Atlas measures; Warden judges.** An upstream-maintenance signal
+  (OpenSSF-Scorecard class) is a **Warden axis**, never an Atlas gate — Atlas may
+  join and expose it as a feed, but the verdict is not Atlas's to render.
+  `pyforge-warden` already names six axes (hygiene · security · license ·
+  currency · provenance · **maintenance**), gating the first four in v1. This is
+  the Charter's *the hand that builds is never the gate that judges* applied to
+  signals: it rules out scoring or thresholding any maintenance metric here.
+  *(Resolved 2026-07-25 from the Warden contract; no operator decision required.)*
+
 - **The DAG is the single source of truth; every orchestration and surface plugin is
   replaceable glue.** Pipeline structure, node logic, and dataset declarations live only in the
   Kedro project. The Dagster binding, the MCP plugin, and the semantic-layer binding are thin
@@ -354,6 +359,17 @@ close later.
 
 ## Non-goals
 
+- **A public, versioned API tier** — access is agent-mediated (MCP + `a2a`) and
+  no HTTP surface exists. **Deferred, not refused**: it is committed as a real
+  future capability, tracked as **DC-1** in the PRD § 6.4. Non-goal *for this
+  scope*, not forever.
+- **Live production bring-ups** — Dagster daemon, MinIO/PostgreSQL servers, live
+  Wagtail, agno LLM synthesis, and the production `vss` retriever each ship a
+  seam and run against local/embedded defaults. Tracked as **DC-2…DC-6** in the
+  PRD § 6.4. *(These five were named by the Spec but appeared in no ledger until
+  2026-07-25 — the nine `DW-*` rows are all B-wave implementation gaps — so the
+  contract named work that nothing tracked.)*
+
 - **A separate graph, vector, or dataframe engine** — one engine, by decision, not by omission.
 - **Continued SQLite and hand-rolled checkpoint-table orchestration.**
 - **Standalone binaries or JVM dependencies**, and any non-conda-forge provisioning path
@@ -426,16 +442,23 @@ loop-driven story executed without a gate being removed to get there.
   only when the real pipeline structure moves, which is exactly when this contract should move
   too.
 
-## Open Questions
+## Resolved questions
 
-- **Does Atlas ever expose a public, versioned API tier** beyond today's MCP-mediated agent
-  access? Deferred — no evidence gates it, and the promotion discipline requires measured
-  evidence before any such requirement is written.
-- **Where does an upstream-maintenance signal live** — joined into Atlas as a feed, or scored in
-  Warden as a gate axis? Atlas's own precedent (enrichment feeds joined, never re-scored) answers
-  *how* it would be built; nothing yet answers *whether*.
-- **What closes the deferred live bring-ups?** The daemon, the storage servers, the live CMS, the
-  crew LLM backend, and the production retriever each ship a seam and a recorded deferral, but
-  none carries an owner or a trigger.
-- **Do the 8 optional per-epic retrospectives run, or are they formally waived?** They are the
-  only recorded open item against the shipped 32/32 scope, and have been "optional" since ship.
+All four closed **2026-07-25**; `open_questions[]` is empty. Recorded here rather
+than deleted, so the disposition is auditable.
+
+- **Does Atlas expose a public, versioned API tier?** → **Yes, eventually.**
+  Deferred as a real capability, *not* closed as a non-goal. Tracked **DC-1**
+  (PRD § 6.4). Today: MCP (11 tools) + `a2a`, both agent-mediated; no HTTP
+  surface exists. Landed in § Non-goals as a scope-bounded non-goal.
+- **Where does an upstream-maintenance signal live?** → **A Warden axis**, not an
+  Atlas feed. Resolved from the Warden contract itself; no operator decision was
+  needed. Landed in § Constraints.
+- **What closes the deferred live bring-ups?** → **Tracked deferral.** The five
+  become **DC-2…DC-6** (PRD § 6.4). They are now owned and visible; they are not
+  scheduled. Landed in § Non-goals.
+- **Do the 8 optional per-epic retrospectives run?** → **They run.** Not waived.
+  Sprint-status carries 9 retro entries — 8 `optional`, 1 `done` (epic-9). The
+  CFE Rule-2 retro landed separately as v8.79.0; these 8 are additive. Process
+  disposition only — bends no design decision, so it lands in no kernel field.
+

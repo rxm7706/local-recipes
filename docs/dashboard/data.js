@@ -1205,7 +1205,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-07-26 03:30 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-07-26 03:42 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -2533,8 +2533,8 @@ window.DASHBOARD_DATA = {
           "code": "07-17"
         },
         "backfilled": true,
-        "openQuestions": 4,
-        "overtaken": true,
+        "openQuestions": 0,
+        "overtaken": false,
         "na": [],
         "furthest": "code",
         "updated": "2026-07-25",
