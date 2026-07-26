@@ -375,9 +375,17 @@
   @media (max-width: 640px) { .hrow { grid-template-columns: 1fr auto; } .h-guards, .h-verdict { display: none; } }
 
   /* fleet view */
+  /* Station chip — the accountable Smith. Rendered on every row that represents
+     work, because a Dream becomes code THROUGH a station (Charter § The Lexicon
+     §5); a row with no station is work with no accountable post. */
+  .smith { font-family: var(--mono); font-size: 9px; text-transform: uppercase; letter-spacing: .07em;
+    color: var(--slate); border: 1px solid var(--line-soft); border-radius: 999px;
+    padding: 1px 7px; white-space: nowrap; justify-self: start; }
+  .smith.guild { color: var(--slate-faint); border-style: dashed; }
+  .smith.none  { color: var(--active); border-color: color-mix(in srgb,var(--active) 40%,transparent); }
   .fleetrow { border-bottom: 1px solid var(--line-soft); }
   .fleetrow > summary { list-style: none; cursor: pointer; display: grid;
-    grid-template-columns: 96px auto 1fr 78px 96px 62px; gap: 12px; align-items: center; padding: 9px 0; }
+    grid-template-columns: 96px 72px auto 1fr 78px 96px 62px; gap: 12px; align-items: center; padding: 9px 0; }
   .fleetrow > summary::-webkit-details-marker { display: none; }
   .fleet-name { font-family: var(--mono); font-size: 13px; font-weight: 600; }
   .fleet-name a { color: var(--ink); text-decoration: none; }
@@ -400,7 +408,7 @@
   .fledger b { color: var(--ink-soft); font-weight: 600; }
   .fledger .none { color: var(--slate-faint); opacity: .7; }
   @media (max-width: 720px) { .fleetrow > summary { grid-template-columns: 78px auto 1fr auto; }
-    .fleet-prog, .fleet-ver { display: none; } .fledger { padding-left: 0; } }
+    .fleet-prog, .fleet-ver, .fleetrow .smith { display: none; } .fledger { padding-left: 0; } }
 
   /* campaign board */
   .camprow { display: grid; grid-template-columns: 34px minmax(150px,230px) auto 1fr auto auto; gap: 12px; padding: 9px 0; align-items: center; }
@@ -587,6 +595,17 @@
       esc(STATE_TITLE[ls.state] || "") + '">' + dot + esc(ls.state) + at + '</span>';
   }
 
+  // The station accountable for carrying this work Dream -> code. "guild" is
+  // legitimate only on the two constitutive Dreams (Charter, Genesis) that
+  // precede the stations; anything blank is a real gap and shows as such.
+  function smithChip(owner) {
+    const o = owner || "";
+    const cls = o === "guild" ? "smith guild" : (o ? "smith" : "smith none");
+    const tip = o === "guild" ? "constitutive — precedes the stations"
+              : (o ? "accountable station: " + o : "NO STATION — unowned work");
+    return '<span class="' + cls + '" title="' + esc(tip) + '">' + esc(o || "unowned") + '</span>';
+  }
+
   // ---- 1 · The Dreams (every Dream, bucketed by lifecycle stage) ----
   const DREAMS = window.DASHBOARD_DATA.dreams || [];
   const STAGES = [["seeded","seeded"], ["in-deck","in deck"], ["in-spec","in build"], ["realized","realized"]];
@@ -748,6 +767,7 @@
       }).join("");
       return '<details class="fleetrow"><summary>' +
         '<span class="fleet-name"><a href="' + REPO + '/blob/main/docs/dreams/' + esc(r.dream) + '.md">' + esc(r.label) + '</a></span>' +
+        smithChip(r.owner) +
         '<span class="fdots">' + dots + '</span>' +
         '<span class="fleet-stage">' + esc(FLABEL[r.furthest] || r.furthest) + '</span>' +
         '<span class="fleet-prog">' + (r.progress || '') + '</span>' +
@@ -771,7 +791,7 @@
     document.getElementById("pitchcards").innerHTML = PITCH.map(c =>
       '<a class="pcard" href="' + REPO + '/tree/main/' + esc(c.path) + '">' +
         '<div class="pcard-t">' + esc(c.title) + '</div>' +
-        '<div class="pcard-s">' + esc(c.slug) + '</div>' +
+        '<div class="pcard-s">' + esc(c.slug) + ' ' + smithChip(c.owner) + '</div>' +
         '<div class="pdots">' + PITCH_KEYS.map(k =>
           '<span class="pdotc' + (c.have[k] ? '' : ' miss') + '" title="' +
           PITCH_LABELS[k] + (c.have[k] ? '' : ' — missing') + '"></span>').join("") + '</div>' +
@@ -924,7 +944,7 @@
     const actChip = stateChip(p);
     det.innerHTML =
       '<summary>' +
-        '<div class="pname"><span class="pdot"></span>' + p.label + actChip + '</div>' +
+        '<div class="pname"><span class="pdot"></span>' + p.label + actChip + smithChip(p.owner) + '</div>' +
         '<div class="pbar"><div class="pbar-fill" style="width:' + pct + '%"></div></div>' +
         '<div class="pfrac"><b>' + c.done + '</b> / ' + c.total + ' <span class="pct">· ' + pct + '%</span></div>' +
         '<span class="disclose">▸ console</span>' +
@@ -942,7 +962,7 @@
     det.className = "pconsole " + ({warden: "pw", atlas: "pa"}[id] || "pr");
     det.innerHTML =
       '<summary>' +
-        '<div class="pname"><span class="pdot"></span>' + p.label + stateChip(p) + '</div>' +
+        '<div class="pname"><span class="pdot"></span>' + p.label + stateChip(p) + smithChip(p.owner) + '</div>' +
         '<div class="pbar"><div class="pbar-fill" style="width:100%"></div></div>' +
         '<div class="pfrac"><b>' + c.done + '</b> / ' + c.total + ' <span class="pct">· 100%</span></div>' +
         '<span class="disclose">▸ console</span>' +
@@ -959,7 +979,7 @@
     '<div class="archrow">' +
       '<span class="rbadge rb-' + esc(a.reason) + '">' + esc(a.reason) + '</span>' +
       '<span class="arch-name"><a href="' + REPO + '/tree/main/' + esc(a.link) + '">' + esc(a.name) + '</a></span>' +
-      '<span class="arch-note">' + esc(a.note) + '</span>' +
+      '<span class="arch-note">' + smithChip(a.owner) + ' ' + esc(a.note) + '</span>' +
     '</div>').join("");
 
   // ---- statusline, accent, footer ----

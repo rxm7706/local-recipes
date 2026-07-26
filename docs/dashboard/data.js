@@ -382,7 +382,8 @@ window.DASHBOARD_DATA = {
       "lineState": {
         "state": "complete",
         "at": ""
-      }
+      },
+      "owner": "warden"
     },
     "atlas": {
       "label": "Atlas",
@@ -715,7 +716,8 @@ window.DASHBOARD_DATA = {
       "lineState": {
         "state": "complete",
         "at": ""
-      }
+      },
+      "owner": "atlas"
     },
     "regen": {
       "label": "Regen",
@@ -877,7 +879,8 @@ window.DASHBOARD_DATA = {
       "lineState": {
         "state": "complete",
         "at": ""
-      }
+      },
+      "owner": "marshal"
     },
     "herald": {
       "label": "Herald",
@@ -1013,7 +1016,8 @@ window.DASHBOARD_DATA = {
       "lineState": {
         "state": "paused",
         "at": "1.3"
-      }
+      },
+      "owner": "herald"
     },
     "doctor": {
       "label": "Doctor",
@@ -1112,7 +1116,8 @@ window.DASHBOARD_DATA = {
       "lineState": {
         "state": "paused",
         "at": "1.2"
-      }
+      },
+      "owner": "doctor"
     },
     "scribe": {
       "label": "Scribe",
@@ -1190,10 +1195,11 @@ window.DASHBOARD_DATA = {
       "lineState": {
         "state": "paused",
         "at": "1.2"
-      }
+      },
+      "owner": "scribe"
     }
   },
-  "snapshot": "<span>2026-07-26 00:58 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-07-26 01:41 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -1305,7 +1311,7 @@ window.DASHBOARD_DATA = {
       "slug": "pyforge-charter",
       "title": "The PyForge Charter",
       "status": "in-deck",
-      "owner": "crew",
+      "owner": "guild",
       "chain": {
         "deck": "presentations/pyforge-genesis"
       }
@@ -1325,7 +1331,7 @@ window.DASHBOARD_DATA = {
       "slug": "pyforge-genesis",
       "title": "Genesis — the seed of the operating model",
       "status": "in-spec",
-      "owner": "crew",
+      "owner": "guild",
       "chain": {
         "deck": "presentations/pyforge-genesis",
         "spec": "_bmad-output/projects/pyforge-genesis/planning-artifacts/specs/spec-pyforge-genesis",
@@ -1426,7 +1432,7 @@ window.DASHBOARD_DATA = {
       "slug": "unity-data-stack",
       "title": "Unity Data Stack — the enterprise innersource platform",
       "status": "in-spec",
-      "owner": "crew",
+      "owner": "atlas",
       "chain": {
         "deck": "presentations/unity-data-stack",
         "spec": "_bmad-output/projects/unity-data-stack/planning-artifacts/specs/spec-unity-data-stack",
@@ -1446,7 +1452,7 @@ window.DASHBOARD_DATA = {
       "slug": "wasm-analytics-stack",
       "title": "Wasm-first analytical data stack (OCP-ready)",
       "status": "in-spec",
-      "owner": "crew",
+      "owner": "atlas",
       "chain": {
         "deck": "presentations/wasm-analytics-stack",
         "spec": "_bmad-output/projects/wasm-analytics-stack/planning-artifacts/specs/spec-wasm-analytics-stack",
@@ -1691,7 +1697,8 @@ window.DASHBOARD_DATA = {
       "n": 4,
       "of": 6,
       "export": "2026-07-23",
-      "path": "presentations/agentic-sdlc"
+      "path": "presentations/agentic-sdlc",
+      "owner": "marshal"
     },
     {
       "slug": "deckcraft",
@@ -1707,7 +1714,8 @@ window.DASHBOARD_DATA = {
       "n": 6,
       "of": 6,
       "export": "2026-07-25",
-      "path": "presentations/deckcraft"
+      "path": "presentations/deckcraft",
+      "owner": "herald"
     },
     {
       "slug": "presenton-pixi-image",
@@ -1723,7 +1731,8 @@ window.DASHBOARD_DATA = {
       "n": 6,
       "of": 6,
       "export": "2026-07-25",
-      "path": "presentations/presenton-pixi-image"
+      "path": "presentations/presenton-pixi-image",
+      "owner": "mason"
     },
     {
       "slug": "pyforge-atlas",
@@ -1739,7 +1748,8 @@ window.DASHBOARD_DATA = {
       "n": 6,
       "of": 6,
       "export": "2026-07-24",
-      "path": "presentations/pyforge-atlas"
+      "path": "presentations/pyforge-atlas",
+      "owner": "atlas"
     },
     {
       "slug": "pyforge-doctor",
@@ -1755,7 +1765,8 @@ window.DASHBOARD_DATA = {
       "n": 6,
       "of": 6,
       "export": "2026-07-24",
-      "path": "presentations/pyforge-doctor"
+      "path": "presentations/pyforge-doctor",
+      "owner": "doctor"
     },
     {
       "slug": "pyforge-genesis",
@@ -1771,7 +1782,8 @@ window.DASHBOARD_DATA = {
       "n": 6,
       "of": 6,
       "export": "2026-07-24",
-      "path": "presentations/pyforge-genesis"
+      "path": "presentations/pyforge-genesis",
+      "owner": "guild"
     },
     {
       "slug": "pyforge-herald",
@@ -1787,7 +1799,8 @@ window.DASHBOARD_DATA = {
       "n": 6,
       "of": 6,
       "export": "2026-07-24",
-      "path": "presentations/pyforge-herald"
+      "path": "presentations/pyforge-herald",
+      "owner": "herald"
     },
     {
       "slug": "pyforge-marshal",
@@ -1803,7 +1816,8 @@ window.DASHBOARD_DATA = {
       "n": 6,
       "of": 6,
       "export": "2026-07-24",
-      "path": "presentations/pyforge-marshal"
+      "path": "presentations/pyforge-marshal",
+      "owner": "marshal"
     },
     {
       "slug": "pyforge-mason",
@@ -1819,7 +1833,8 @@ window.DASHBOARD_DATA = {
       "n": 6,
       "of": 6,
       "export": "2026-07-24",
-      "path": "presentations/pyforge-mason"
+      "path": "presentations/pyforge-mason",
+      "owner": "mason"
     },
     {
       "slug": "pyforge-scribe",
@@ -1835,7 +1850,8 @@ window.DASHBOARD_DATA = {
       "n": 6,
       "of": 6,
       "export": "2026-07-24",
-      "path": "presentations/pyforge-scribe"
+      "path": "presentations/pyforge-scribe",
+      "owner": "scribe"
     },
     {
       "slug": "pyforge-steward",
@@ -1851,7 +1867,8 @@ window.DASHBOARD_DATA = {
       "n": 6,
       "of": 6,
       "export": "2026-07-24",
-      "path": "presentations/pyforge-steward"
+      "path": "presentations/pyforge-steward",
+      "owner": "steward"
     },
     {
       "slug": "pyforge-warden",
@@ -1867,7 +1884,8 @@ window.DASHBOARD_DATA = {
       "n": 6,
       "of": 6,
       "export": "2026-07-15",
-      "path": "presentations/pyforge-warden"
+      "path": "presentations/pyforge-warden",
+      "owner": "warden"
     },
     {
       "slug": "unity-data-stack",
@@ -1883,7 +1901,8 @@ window.DASHBOARD_DATA = {
       "n": 6,
       "of": 6,
       "export": "2026-07-25",
-      "path": "presentations/unity-data-stack"
+      "path": "presentations/unity-data-stack",
+      "owner": "atlas"
     },
     {
       "slug": "wasm-analytics-stack",
@@ -1899,36 +1918,42 @@ window.DASHBOARD_DATA = {
       "n": 6,
       "of": 6,
       "export": "2026-07-25",
-      "path": "presentations/wasm-analytics-stack"
+      "path": "presentations/wasm-analytics-stack",
+      "owner": "atlas"
     }
   ],
   "archived": [
     {
       "name": "Sentinel — knowledge-graph persona",
+      "owner": "scribe",
       "reason": "absorbed",
       "note": "charter absorbed into Scribe ('the graph is the product')",
       "link": "docs/dreams/pyforge-scribe.md"
     },
     {
       "name": "microsoft-conda-forge sweep",
+      "owner": "mason",
       "reason": "absorbed",
       "note": "absorbed as trendshift Track B (the June 2026 org audit)",
       "link": "docs/specs/trendshift-conda-forge.md"
     },
     {
       "name": "claude.ai Artifact console",
+      "owner": "scribe",
       "reason": "retired",
       "note": "replaced by this GitHub Pages console (2026-07)",
       "link": "docs/dashboard"
     },
     {
       "name": "DB-GPT conda-forge effort",
+      "owner": "mason",
       "reason": "terminal",
       "note": "delivered externally via staged-recipes #33883 (consume-not-submit, G58)",
       "link": "docs/specs/db-gpt-conda-forge.md"
     },
     {
       "name": "copilot-cli recipe",
+      "owner": "mason",
       "reason": "blocked",
       "note": "LICENSE §2 standalone-redistribution clause — staged-recipes #32522 rejected",
       "link": "recipes/copilot-cli"
@@ -2263,7 +2288,8 @@ window.DASHBOARD_DATA = {
         "version": "0.1.0",
         "progress": "2/17",
         "complete": 9,
-        "of": 9
+        "of": 9,
+        "owner": "herald"
       },
       {
         "label": "doctor",
@@ -2288,7 +2314,8 @@ window.DASHBOARD_DATA = {
         "version": "0.1.0",
         "progress": "1/12",
         "complete": 9,
-        "of": 9
+        "of": 9,
+        "owner": "doctor"
       },
       {
         "label": "scribe",
@@ -2313,7 +2340,8 @@ window.DASHBOARD_DATA = {
         "version": "0.1.0",
         "progress": "1/9",
         "complete": 9,
-        "of": 9
+        "of": 9,
+        "owner": "scribe"
       },
       {
         "label": "steward",
@@ -2338,7 +2366,8 @@ window.DASHBOARD_DATA = {
         "version": "",
         "progress": "",
         "complete": 8,
-        "of": 9
+        "of": 9,
+        "owner": "steward"
       },
       {
         "label": "marshal",
@@ -2363,7 +2392,8 @@ window.DASHBOARD_DATA = {
         "version": "",
         "progress": "",
         "complete": 8,
-        "of": 9
+        "of": 9,
+        "owner": "marshal"
       },
       {
         "label": "mason",
@@ -2388,7 +2418,8 @@ window.DASHBOARD_DATA = {
         "version": "",
         "progress": "",
         "complete": 8,
-        "of": 9
+        "of": 9,
+        "owner": "mason"
       },
       {
         "label": "atlas",
@@ -2413,7 +2444,8 @@ window.DASHBOARD_DATA = {
         "version": "0.1.0",
         "progress": "32/32",
         "complete": 9,
-        "of": 9
+        "of": 9,
+        "owner": "atlas"
       },
       {
         "label": "warden",
@@ -2438,7 +2470,8 @@ window.DASHBOARD_DATA = {
         "version": "0.1.0",
         "progress": "31/31",
         "complete": 9,
-        "of": 9
+        "of": 9,
+        "owner": "warden"
       },
       {
         "label": "genesis",
@@ -2463,7 +2496,8 @@ window.DASHBOARD_DATA = {
         "version": "",
         "progress": "",
         "complete": 8,
-        "of": 9
+        "of": 9,
+        "owner": "guild"
       },
       {
         "label": "deckcraft",
@@ -2488,7 +2522,8 @@ window.DASHBOARD_DATA = {
         "version": "",
         "progress": "",
         "complete": 8,
-        "of": 9
+        "of": 9,
+        "owner": "herald"
       },
       {
         "label": "presenton",
@@ -2513,7 +2548,8 @@ window.DASHBOARD_DATA = {
         "version": "",
         "progress": "",
         "complete": 8,
-        "of": 9
+        "of": 9,
+        "owner": "mason"
       },
       {
         "label": "unity",
@@ -2540,7 +2576,8 @@ window.DASHBOARD_DATA = {
         "version": "",
         "progress": "",
         "complete": 8,
-        "of": 9
+        "of": 9,
+        "owner": "atlas"
       },
       {
         "label": "wasm",
@@ -2567,7 +2604,8 @@ window.DASHBOARD_DATA = {
         "version": "",
         "progress": "",
         "complete": 8,
-        "of": 9
+        "of": 9,
+        "owner": "atlas"
       }
     ]
   },
@@ -2586,9 +2624,9 @@ window.DASHBOARD_DATA = {
         "name": "spec-surface",
         "task": "spec-surface-check",
         "guards": "every tracked file under a Spec surface",
-        "state": "green",
-        "findings": 0,
-        "verdict": "OK: every tracked file governed or allowlisted; no drift.",
+        "state": "drift",
+        "findings": 2,
+        "verdict": "FINDINGS (2):",
         "runbook": ""
       },
       {

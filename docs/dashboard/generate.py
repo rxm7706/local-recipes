@@ -253,6 +253,17 @@ def apply_git(projects: dict) -> None:
 DREAMS_DIR = REPO_ROOT / "docs" / "dreams"
 DREAM_STATUSES = ("seeded", "in-deck", "in-spec", "realized", "archived")
 
+# The eight Smiths — the canonical station roster (docs/dreams/pyforge-charter.md
+# §§1-8). `owner:` on a Dream names the station accountable for carrying it all
+# the way Dream -> code; the station is the POST, not the product, so owning a
+# Dream does not mean it becomes that Smith's package.
+STATIONS = ("herald", "marshal", "atlas", "warden",
+            "mason", "doctor", "scribe", "steward")
+# The only Dreams that may name no station: they PRECEDE the stations. The
+# Charter constitutes the Guild; Genesis is the operating-model seed. Anything
+# else owned by "guild" is an unassigned Dream, not a constitutive one.
+GUILD_DREAMS = ("pyforge-charter", "pyforge-genesis")
+
 
 # Deck dirs whose name differs from the dream slug (mason's chapter deck backs
 # the packaging-factory dream, etc.).
@@ -313,6 +324,12 @@ def scan_dreams() -> list[dict]:
                   " — passed through; board shows it under 'seeded'")
         if not owner:
             print(f"[dreams] WARN {f.name}: no owner: in frontmatter")
+        elif owner == "guild" and f.stem not in GUILD_DREAMS:
+            print(f"[dreams] WARN {f.name}: owner 'guild' is reserved for "
+                  f"{GUILD_DREAMS} — every other Dream must name a station")
+        elif owner not in STATIONS and owner != "guild":
+            print(f"[dreams] WARN {f.name}: owner {owner!r} is not one of the "
+                  f"eight Smiths {STATIONS}")
         dream = {"slug": f.stem, "title": title or f.stem,
                  "status": status or "", "owner": owner or "",
                  "chain": dream_chain(f.stem)}
@@ -725,19 +742,19 @@ def scan_pitch() -> list[dict]:
 # ---- archived (absorbed / retired / terminal / blocked) ----------------------
 
 ARCHIVED_SEED = [
-    {"name": "Sentinel — knowledge-graph persona", "reason": "absorbed",
+    {"name": "Sentinel — knowledge-graph persona", "owner": "scribe", "reason": "absorbed",
      "note": "charter absorbed into Scribe ('the graph is the product')",
      "link": "docs/dreams/pyforge-scribe.md"},
-    {"name": "microsoft-conda-forge sweep", "reason": "absorbed",
+    {"name": "microsoft-conda-forge sweep", "owner": "mason", "reason": "absorbed",
      "note": "absorbed as trendshift Track B (the June 2026 org audit)",
      "link": "docs/specs/trendshift-conda-forge.md"},
-    {"name": "claude.ai Artifact console", "reason": "retired",
+    {"name": "claude.ai Artifact console", "owner": "scribe", "reason": "retired",
      "note": "replaced by this GitHub Pages console (2026-07)",
      "link": "docs/dashboard"},
-    {"name": "DB-GPT conda-forge effort", "reason": "terminal",
+    {"name": "DB-GPT conda-forge effort", "owner": "mason", "reason": "terminal",
      "note": "delivered externally via staged-recipes #33883 (consume-not-submit, G58)",
      "link": "docs/specs/db-gpt-conda-forge.md"},
-    {"name": "copilot-cli recipe", "reason": "blocked",
+    {"name": "copilot-cli recipe", "owner": "mason", "reason": "blocked",
      "note": "LICENSE §2 standalone-redistribution clause — staged-recipes #32522 rejected",
      "link": "recipes/copilot-cli"},
 ]
@@ -754,6 +771,57 @@ def build_archived(dreams: list[dict]) -> list[dict]:
                         "link": f"docs/dreams/{d['slug']}.md"})
     print(f"[archived] {len(out)} entries ({len(out) - len(ARCHIVED_SEED)} from frontmatter)")
     return out
+
+
+# ---- station ownership (the Dream -> code through-line) ----------------------
+
+# Console program key -> the Dream whose owner is accountable for that build line.
+PROGRAM_DREAM = {"warden": "pyforge-warden", "atlas": "pyforge-atlas",
+                 "herald": "pyforge-herald", "doctor": "pyforge-doctor",
+                 "scribe": "pyforge-scribe", "regen": "regenerable-factory"}
+
+
+def apply_owner(data: dict) -> None:
+    """Stamp `owner` (the accountable station) onto every downstream row.
+
+    The Charter's rule is that a Dream becomes code THROUGH a Smith, so the
+    owner is not a label on Tier 0 — it is the through-line. It was already
+    authored on all 26 Dreams and then dropped: Fleet, In Build / Realized,
+    Pitch and Archived each showed the same effort with no accountable post.
+    One pass resolves them all from the Dream index, so the mapping lives in
+    exactly one place (the Dream's frontmatter) and cannot drift per-section.
+    """
+    by_slug = {d["slug"]: d.get("owner", "") for d in data["dreams"]}
+    # deck dir -> dream slug (the alias table runs the other way)
+    deck_to_dream = {v: k for k, v in DREAM_DECK_ALIASES.items()}
+    missing: list[str] = []
+
+    for row in data["fleet"]["rows"]:                    # carries `dream` already
+        row["owner"] = by_slug.get(row["dream"], "")
+        if not row["owner"]:
+            missing.append(f"fleet:{row['slug']}")
+
+    for key, proj in data["projects"].items():           # In Build / Realized
+        proj["owner"] = by_slug.get(PROGRAM_DREAM.get(key, ""), "")
+        if not proj["owner"]:
+            missing.append(f"projects:{key}")
+
+    for card in data["pitch"]:
+        slug = card["slug"]
+        card["owner"] = by_slug.get(slug) or by_slug.get(deck_to_dream.get(slug, ""), "")
+        if not card["owner"]:
+            missing.append(f"pitch:{slug}")
+
+    for entry in data["archived"]:                       # seeds carry their own
+        entry.setdefault("owner", "")
+        if not entry["owner"]:
+            missing.append(f"archived:{entry['name']}")
+
+    # Campaigns are deliberately NOT owned: a campaign spans many stations
+    # (spec-completion touched all eight), so a single owner would be a lie.
+    owned = sum(1 for r in data["fleet"]["rows"] if r["owner"])
+    print(f"[owner] {owned}/{len(data['fleet']['rows'])} fleet rows attributed"
+          + (f" · UNOWNED: {', '.join(missing)}" if missing else " · all sections attributed"))
 
 
 # ---- shared ------------------------------------------------------------------
@@ -802,6 +870,7 @@ def main() -> int:
     ]
     data["pitch"] = scan_pitch()
     data["archived"] = build_archived(data["dreams"])
+    apply_owner(data)
 
     ts = now_utc()
     data["snapshot"] = _SNAP_TS.sub(ts, data["snapshot"], count=1)

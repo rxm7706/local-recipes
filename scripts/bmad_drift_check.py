@@ -116,10 +116,12 @@ def _read(path: Path) -> str:
 
 
 def _rel(path: Path) -> str:
-    try:
-        return path.relative_to(PROJ).as_posix()
-    except ValueError:
-        return str(path)
+    for base in (PROJ, REPO_ROOT):
+        try:
+            return path.relative_to(base).as_posix()
+        except ValueError:
+            continue
+    return str(path)
 
 
 def _parse_ver(s: str | None) -> Ver:
@@ -533,6 +535,47 @@ def check_spec_indexed() -> list[Finding]:
             for p in sorted(DOCS_SPECS.glob("*.md")) if p.name not in claude]
 
 
+# The eight Smiths (docs/dreams/pyforge-charter.md §§1-8) — the canonical
+# station roster, mirrored in docs/dashboard/generate.py:STATIONS.
+STATIONS = ("herald", "marshal", "atlas", "warden",
+            "mason", "doctor", "scribe", "steward")
+# Dreams that legitimately name no station because they PRECEDE the stations.
+GUILD_DREAMS = ("pyforge-charter", "pyforge-genesis")
+
+
+def check_dream_owners() -> list[Finding]:
+    """Every Dream must name the station accountable for carrying it to code.
+
+    The Charter's model is that a Dream becomes code THROUGH a Smith, so an
+    unowned Dream is work with no accountable post — and because the Guildhall
+    now propagates `owner:` onto every downstream row (Fleet, In Build,
+    Realized, Pitch, Archived), a missing or bogus owner silently blanks the
+    station on all of them. `guild` is reserved for the two constitutive
+    Dreams; using it elsewhere is how an unassigned Dream hides.
+    """
+    out: list[Finding] = []
+    dreams_dir = REPO_ROOT / "docs" / "dreams"
+    if not dreams_dir.is_dir():
+        return out
+    for f in sorted(dreams_dir.glob("*.md")):
+        if f.name == "README.md":
+            continue
+        m = re.search(r"^owner:\s*(\S+)\s*$", _read(f), re.M)
+        owner = m.group(1) if m else ""
+        if not owner:
+            out.append(Finding(DRIFT, "dream-unowned", _rel(f),
+                               "no owner: in frontmatter — name one of "
+                               f"{', '.join(STATIONS)}"))
+        elif owner == "guild" and f.stem not in GUILD_DREAMS:
+            out.append(Finding(DRIFT, "dream-unowned", _rel(f),
+                               "owner 'guild' is reserved for "
+                               f"{'/'.join(GUILD_DREAMS)} — assign a station"))
+        elif owner not in STATIONS and owner != "guild":
+            out.append(Finding(DRIFT, "dream-unowned", _rel(f),
+                               f"owner {owner!r} is not one of the eight Smiths"))
+    return out
+
+
 def run_checks() -> tuple[list[Finding], dict, dict[str, int]]:
     gt = ground_truth()
     live = _parse_ver(gt["skill_version"])
@@ -540,7 +583,7 @@ def run_checks() -> tuple[list[Finding], dict, dict[str, int]]:
     findings = (check_pins(live) + check_archive_hygiene() + check_spec_status()
                 + check_deferred_work(live) + check_counts(gt) + check_stale_rules()
                 + check_phase_lists() + check_baseline() + check_tier_alignment()
-                + check_spec_indexed() + cov_findings)
+                + check_spec_indexed() + check_dream_owners() + cov_findings)
     return findings, gt, coverage
 
 

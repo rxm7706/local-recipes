@@ -1,7 +1,7 @@
 ---
 title: The PyForge Charter
 type: dream
-owner: crew
+owner: guild
 status: in-deck
 ---
 
@@ -458,6 +458,30 @@ frozen schemas) did not blink. Model tiering is the same property (swapping sonn
 for opus swaps the being at the station; the obligations do not move), and
 [[agent-portability]] is the property at framework scale. Offices outlive
 officeholders — that is why the system survives its own mortality.
+
+**Every Dream is owned by exactly one station** (`owner:` in its frontmatter) —
+the corollary that makes the rest enforceable. A Dream becomes code *through* a
+Smith, so ownership is not a label on Tier 0: it is the **through-line** carried
+onto every downstream row — Spec, Fleet, In Build, Realized, Pitch, Archived. An
+unowned Dream is work with no accountable post, which is precisely the condition
+the station model exists to make impossible.
+
+Two clarifications, because both were live gaps until 2026-07-25:
+
+- **Owning is not becoming.** The station is the post, not the product. Atlas
+  owning [[unity-data-stack]] means Atlas is accountable for carrying it Dream →
+  code; it does not mean it ships as `pyforge-atlas`. This is what lets every
+  Dream map to a Smith without every Dream becoming a `pyforge-*` package.
+- **`owner: guild` is reserved** for the two Dreams that *precede* the stations —
+  this Charter, which constitutes the Guild, and [[pyforge-genesis]], the
+  operating-model seed. Nothing else may claim it; a third `guild` is an
+  unassigned Dream hiding behind a collective noun. (The retired `owner: crew`
+  was exactly that, on four Dreams.)
+
+Enforced, not merely asserted: `bmad-drift-check` emits a **`dream-unowned`**
+finding when a Dream names no station, names something outside the eight, or
+claims `guild` without being one of the two — and the Guildhall renders the
+station on every row, so an unowned one is visible rather than merely blank.
 
 ### 6. The Skills — the unit of *execution* (wielded, never worn)
 

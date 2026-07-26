@@ -1,7 +1,7 @@
 ---
 title: Wasm-first analytical data stack (OCP-ready)
 type: dream
-owner: crew
+owner: atlas
 status: in-spec
 ---
 
