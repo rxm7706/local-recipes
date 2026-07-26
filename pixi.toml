@@ -39,9 +39,9 @@ bmad-method = ">=6.10.0"          # BMAD agent-driven dev framework (planning + 
 spec-kit = ">=0.14.2"             # Spec-kit for spec-driven development
 truststore = ">=0.10.4"           # OS trust store for corporate CA / JFrog TLS
 # pixi upgrade --pinning-strategy latest-up --exclude conda-libmamba-solver --exclude conda-build --exclude conda-index --exclude conda-forge-ci-setup --exclude conda-forge-pinning --exclude frozendict --exclude networkx --exclude rattler-build-conda-compat --exclude grayskull --exclude conda-recipe-manager --exclude conda-smithy --exclude shellcheck --exclude python --exclude django --exclude wagtail --exclude nodejs --exclude coderedcms
-# Additional Pins for Dependency resolution
-# --exclude tomlkit --exclude pyarrow --exclude pandas
-# pixi upgrade --pinning-strategy latest-up --exclude conda-libmamba-solver --exclude conda-build --exclude conda-index --exclude conda-forge-ci-setup --exclude conda-forge-pinning --exclude frozendict --exclude networkx --exclude rattler-build-conda-compat --exclude grayskull --exclude conda-recipe-manager --exclude conda-smithy --exclude shellcheck --exclude nodejs --exclude python --exclude django --exclude channels --exclude daphne --exclude wagtail --exclude coderedcms --exclude tomlkit --exclude pyarrow --exclude pandas
+# Canonical upgrade command (19 excludes). tomlkit / structlog / sqlglot / pyarrow / pandas
+# no longer need excluding: their ceilings came from upstream package metadata, not from us.
+# pixi upgrade --pinning-strategy latest-up --exclude conda-libmamba-solver --exclude conda-build --exclude conda-index --exclude conda-forge-ci-setup --exclude conda-forge-pinning --exclude frozendict --exclude networkx --exclude rattler-build-conda-compat --exclude grayskull --exclude conda-recipe-manager --exclude conda-smithy --exclude shellcheck --exclude nodejs --exclude python --exclude django --exclude channels --exclude daphne --exclude wagtail --exclude coderedcms
 
 [feature.build.dependencies]
 conda = ">=26.5.0"                # conda package manager
@@ -777,8 +777,10 @@ cmd = "python .claude/scripts/conda-forge-expert/atlas_phase.py"
 #[feature.python.dependencies]
 python = "3.14.*"                 # Python language interpreter
 # kedro-dagster depenency pins
-# dagster-dg-core has a strict version pin requiring tomlkit = "<0.13.3"
-tomlkit = "<0.13.3"               # TOML parser and writer library (used by dagster-dg-core, which is a dagster-dg-core dependency)
+# The tomlkit <0.13.3 ceiling is enforced UPSTREAM, so we no longer restate it here:
+# dagster-dg-core 1.13.15 declares `tomlkit <0.13.3` and our own pyforge-marshal
+# declares `tomlkit >=0.13,<0.13.3`. The solver holds it at 0.13.2 on its own.
+tomlkit = ">=0.13.2"              # TOML parser and writer library (dagster-dg-core / pyforge-marshal cap it below 0.13.3)
 # boring-semantic-layer dependency pins
 # BSL v0.3.16 moved xorq to an OPTIONAL extra (`boring-semantic-layer[xorq]`); we install
 # it bare, so xorq's structlog<26 / sqlglot<28.7.0 ceilings no longer bind. Floors kept.

@@ -281,7 +281,8 @@ Ibis — one dataframe API over many engines:
 Small utilities:
 - **tablib** (>=3.9.0) — one API for tabular import/export: XLSX, CSV, JSON, YAML, ODS.
 - **tabulate** (>=0.10.0) — pretty-print tables as text/markdown/grid.
-- **tomlkit** (<0.13.3) — style-preserving TOML read/write (round-trips comments).
+- **tomlkit** (>=0.13.2) — style-preserving TOML read/write (round-trips comments).
+  Resolves to 0.13.2: dagster-dg-core and pyforge-marshal both cap it below 0.13.3.
 - **structlog** (>=26.1.0) — structured (key-value/JSON) logging.
 - **ruamel.yaml** (>=0.18.17) — round-trip YAML that preserves comments and key order
   — the correct choice for editing `recipe.yaml`/`conda-forge.yml` in place.
