@@ -1089,8 +1089,8 @@ window.DASHBOARD_DATA = {
       "velocity": "",
       "timing": "",
       "lineState": {
-        "state": "in flight",
-        "at": "1.1"
+        "state": "paused",
+        "at": "1.2"
       },
       "epics": [
         {
@@ -1099,7 +1099,7 @@ window.DASHBOARD_DATA = {
           "stories": [
             [
               "1.1",
-              "active",
+              "done",
               "Package spine, verdict lattice, findings registry, and the meta-tests that enforce them"
             ],
             [
@@ -2520,7 +2520,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-07-26 04:55 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-07-26 06:42 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -3679,7 +3679,7 @@ window.DASHBOARD_DATA = {
         "na": [],
         "furthest": "code",
         "updated": "2026-07-25",
-        "age": 0,
+        "age": 1,
         "stale": false,
         "version": "0.1.0",
         "progress": "2/17",
@@ -3708,7 +3708,7 @@ window.DASHBOARD_DATA = {
         "na": [],
         "furthest": "code",
         "updated": "2026-07-25",
-        "age": 0,
+        "age": 1,
         "stale": false,
         "version": "0.1.0",
         "progress": "1/12",
@@ -3737,7 +3737,7 @@ window.DASHBOARD_DATA = {
         "na": [],
         "furthest": "code",
         "updated": "2026-07-25",
-        "age": 0,
+        "age": 1,
         "stale": false,
         "version": "0.1.0",
         "progress": "1/9",
@@ -3766,7 +3766,7 @@ window.DASHBOARD_DATA = {
         "na": [],
         "furthest": "code",
         "updated": "2026-07-25",
-        "age": 0,
+        "age": 1,
         "stale": false,
         "version": "0.1.0",
         "progress": "1/18",
@@ -3795,10 +3795,10 @@ window.DASHBOARD_DATA = {
         "na": [],
         "furthest": "epics",
         "updated": "2026-07-25",
-        "age": 0,
+        "age": 1,
         "stale": false,
         "version": "",
-        "progress": "0/41",
+        "progress": "1/41",
         "complete": 8,
         "of": 9,
         "owner": "marshal"
@@ -3824,7 +3824,7 @@ window.DASHBOARD_DATA = {
         "na": [],
         "furthest": "code",
         "updated": "2026-07-25",
-        "age": 0,
+        "age": 1,
         "stale": false,
         "version": "0.1.0",
         "progress": "1/38",
@@ -3853,7 +3853,7 @@ window.DASHBOARD_DATA = {
         "na": [],
         "furthest": "code",
         "updated": "2026-07-25",
-        "age": 0,
+        "age": 1,
         "stale": false,
         "version": "0.1.0",
         "progress": "32/32",
@@ -3882,7 +3882,7 @@ window.DASHBOARD_DATA = {
         "na": [],
         "furthest": "code",
         "updated": "2026-07-25",
-        "age": 0,
+        "age": 1,
         "stale": false,
         "version": "0.1.0",
         "progress": "31/31",
@@ -3911,7 +3911,7 @@ window.DASHBOARD_DATA = {
         "na": [],
         "furthest": "epics",
         "updated": "2026-07-25",
-        "age": 0,
+        "age": 1,
         "stale": false,
         "version": "",
         "progress": "0/36",
@@ -3940,7 +3940,7 @@ window.DASHBOARD_DATA = {
         "na": [],
         "furthest": "epics",
         "updated": "2026-07-25",
-        "age": 0,
+        "age": 1,
         "stale": false,
         "version": "",
         "progress": "",
@@ -3969,7 +3969,7 @@ window.DASHBOARD_DATA = {
         "na": [],
         "furthest": "epics",
         "updated": "2026-07-25",
-        "age": 0,
+        "age": 1,
         "stale": false,
         "version": "",
         "progress": "",
@@ -4000,7 +4000,7 @@ window.DASHBOARD_DATA = {
         ],
         "furthest": "arch",
         "updated": "2026-07-25",
-        "age": 0,
+        "age": 1,
         "stale": false,
         "version": "",
         "progress": "",
@@ -4031,7 +4031,7 @@ window.DASHBOARD_DATA = {
         ],
         "furthest": "arch",
         "updated": "2026-07-25",
-        "age": 0,
+        "age": 1,
         "stale": false,
         "version": "",
         "progress": "",
@@ -4056,9 +4056,9 @@ window.DASHBOARD_DATA = {
         "name": "spec-surface",
         "task": "spec-surface-check",
         "guards": "every tracked file under a Spec surface",
-        "state": "drift",
-        "findings": 1,
-        "verdict": "FINDINGS (1):",
+        "state": "green",
+        "findings": 0,
+        "verdict": "OK: every tracked file governed or allowlisted; no drift.",
         "runbook": ""
       },
       {
@@ -4292,7 +4292,7 @@ window.DASHBOARD_DATA = {
           "archived": 1,
           "practice": 2
         },
-        "line": "in flight 1.1",
+        "line": "paused 1.2",
         "load": 2,
         "blocked": 0,
         "dreams": [

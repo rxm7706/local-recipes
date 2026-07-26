@@ -138,11 +138,13 @@ pytest = ">=9.1.1"                       # test runner
 
 [feature.pyforge-mason.tasks.pyforge-mason-build-conda]
 description = "Build the pyforge-mason conda package via pixi-build-python."
-cmd = "pixi build --manifest-path src/shared/packages/pyforge-mason/pixi.toml --output-dir dist-conda"
+cmd = "pixi build --output-dir dist-conda"
+cwd = "src/shared/packages/pyforge-mason"   # pixi build has NO --manifest-path flag (0.73.0); siblings target the member by cwd
 
 [feature.pyforge-mason.tasks.pyforge-mason-build-dist]
 description = "Build the pyforge-mason wheel + sdist from the same hatchling pyproject."
-cmd = "python -m build --outdir dist src/shared/packages/pyforge-mason"
+cmd = "python -m build --no-isolation --outdir dist"
+cwd = "src/shared/packages/pyforge-mason"
 
 [feature.pyforge-mason.tasks.pyforge-mason-build]
 description = "Build BOTH pyforge-mason artifacts (conda + wheel/sdist) from one manifest."
@@ -165,11 +167,13 @@ pytest = ">=9.1.1"                       # test runner
 
 [feature.pyforge-steward.tasks.pyforge-steward-build-conda]
 description = "Build the pyforge-steward conda package via pixi-build-python."
-cmd = "pixi build --manifest-path src/shared/packages/pyforge-steward/pixi.toml --output-dir dist-conda"
+cmd = "pixi build --output-dir dist-conda"
+cwd = "src/shared/packages/pyforge-steward"   # pixi build has NO --manifest-path flag (0.73.0); siblings target the member by cwd
 
 [feature.pyforge-steward.tasks.pyforge-steward-build-dist]
 description = "Build the pyforge-steward wheel + sdist from the same hatchling pyproject."
-cmd = "python -m build --outdir dist src/shared/packages/pyforge-steward"
+cmd = "python -m build --no-isolation --outdir dist"
+cwd = "src/shared/packages/pyforge-steward"
 
 [feature.pyforge-steward.tasks.pyforge-steward-build]
 description = "Build BOTH pyforge-steward artifacts (conda + wheel/sdist) from one manifest."
