@@ -51,6 +51,7 @@ from pyforge.warden.vuln import (
     _db_has_valid_advisory,
     _is_valid_osv_advisory,
     _synthesize_requirements,
+    build_name_level_critical_index,
     cvss_v31_base_score,
     db_zip_path,
     epss_match,
@@ -174,6 +175,26 @@ def test_preflight_passes_on_the_story_1_4_fixture_db(tmp_path):
     cache_root = builder.build_offline_db(OSV_RECORDS_DIR, tmp_path / "cache")
     zip_path = db_zip_path(cache_root, Ecosystem.PYPI)
     assert _db_has_valid_advisory(zip_path) is True
+
+
+def test_preflight_and_critical_index_share_one_zip_open(tmp_path, monkeypatch):
+    """AUD-WARDEN-023: pre-flight + index must not each open the zip anew."""
+    builder = _load_builder()
+    cache_root = builder.build_offline_db(OSV_RECORDS_DIR, tmp_path / "cache")
+    zip_path = db_zip_path(cache_root, Ecosystem.PYPI)
+    opens: list[Path] = []
+    real_zipfile = zipfile.ZipFile
+
+    class CountingZipFile(real_zipfile):
+        def __init__(self, file, *args, **kwargs):
+            opens.append(Path(file))
+            super().__init__(file, *args, **kwargs)
+
+    monkeypatch.setattr(zipfile, "ZipFile", CountingZipFile)
+    assert _db_has_valid_advisory(zip_path) is True
+    index = build_name_level_critical_index(zip_path)
+    assert isinstance(index, dict)
+    assert opens == [zip_path]
 
 
 def test_preflight_fails_on_an_absent_directory(tmp_path):
@@ -647,15 +668,48 @@ def test_parse_osv_output_non_object_top_level_is_unparseable():
     assert error.kind is ErrorKind.ENGINE_OUTPUT_UNPARSEABLE
 
 
-def test_parse_osv_output_missing_results_key_is_empty_not_an_error():
-    """A schema-drifted-but-still-JSON-object document with no 'results' key
-    is treated as nothing-to-report, not a parse failure."""
+def test_parse_osv_output_missing_results_key_is_unparseable():
+    """AUD-WARDEN-011: a schema-drifted document with no 'results' key is a
+    parse failure — never a clean nothing-to-report (that path composed
+    exit 0 with inventory CLEAN rungs)."""
     parse = parse_osv_output(json.dumps({"unexpected": "shape"}))
     assert parse.findings == ()
-    assert parse.errors == ()
+    (error,) = parse.errors
+    assert error.kind is ErrorKind.ENGINE_OUTPUT_UNPARSEABLE
 
 
-def test_parse_osv_output_malformed_package_entries_are_skipped_not_crashed():
+def test_parse_osv_output_results_not_a_list_is_unparseable():
+    parse = parse_osv_output(json.dumps({"results": {"packages": []}}))
+    assert parse.findings == ()
+    (error,) = parse.errors
+    assert error.kind is ErrorKind.ENGINE_OUTPUT_UNPARSEABLE
+
+
+def test_parse_osv_output_vulnerabilities_without_groups_is_unparseable():
+    """AUD-WARDEN-011/015: findings come from groups[]; a package that only
+    carries vulnerabilities[] must not parse as a silent empty success."""
+    raw = json.dumps(
+        {
+            "results": [
+                {
+                    "packages": [
+                        {
+                            "package": {"name": "flask", "version": "1.0"},
+                            "vulnerabilities": [{"id": "CVE-2024-9999"}],
+                        }
+                    ]
+                }
+            ]
+        }
+    )
+    parse = parse_osv_output(raw)
+    assert parse.findings == ()
+    (error,) = parse.errors
+    assert error.kind is ErrorKind.ENGINE_OUTPUT_UNPARSEABLE
+
+
+def test_parse_osv_output_malformed_package_entries_are_unparseable():
+    # AUD-WARDEN-015: shape-broken package entries are not a silent clean parse.
     raw = json.dumps(
         {
             "results": [
@@ -674,7 +728,9 @@ def test_parse_osv_output_malformed_package_entries_are_skipped_not_crashed():
     )
     parse = parse_osv_output(raw)
     assert parse.findings == ()
-    assert parse.errors == ()
+    (error,) = parse.errors
+    assert error.kind is ErrorKind.ENGINE_OUTPUT_UNPARSEABLE
+    assert "usable package/groups shape" in error.message
 
 
 def test_parse_osv_output_deduplicates_by_finding_id():
@@ -1156,7 +1212,7 @@ def test_vuln_rung_with_no_severity_ignores_policy_and_stays_indeterminate():
     findings) yields Status.INDETERMINATE regardless of policy -- the
     policy table only governs a REAL severity lookup."""
     finding = Finding(
-        id="indeterminate:no-version:leftpad",
+        id="indeterminate:no-version:leftpad@unspecified",
         axis=AXIS_VULNERABILITY,
         message="withheld",
         subject="leftpad",
@@ -1173,7 +1229,7 @@ def test_vuln_rung_with_no_severity_is_indeterminate():
     offline-db-unavailable) still routes to indeterminate, unchanged from
     the pre-1.6 backstop."""
     finding = Finding(
-        id="indeterminate:no-version:leftpad",
+        id="indeterminate:no-version:leftpad@unspecified",
         axis=AXIS_VULNERABILITY,
         message="withheld",
         subject="leftpad",
@@ -1182,7 +1238,7 @@ def test_vuln_rung_with_no_severity_is_indeterminate():
     status, driver = vuln_rung(finding)
     assert status is Status.INDETERMINATE
     assert driver == StatusDriver(
-        axis=AXIS_VULNERABILITY, finding_id="indeterminate:no-version:leftpad"
+        axis=AXIS_VULNERABILITY, finding_id="indeterminate:no-version:leftpad@unspecified"
     )
 
 
@@ -1501,7 +1557,6 @@ def test_cvss_v31_base_score_scope_changed_formula_branch():
         [],
         {},
         "not-a-vector-at-all",
-        "CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",  # wrong CVSS version
         "CVSS:2.0/AV:N/AC:L/Au:N/C:P/I:P/A:P",  # CVSS v2 shape entirely
         "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H",  # missing A
         "CVSS:3.1/AV:N/AV:L/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",  # duplicate AV
@@ -1516,7 +1571,6 @@ def test_cvss_v31_base_score_scope_changed_formula_branch():
         "list",
         "dict",
         "garbage-string",
-        "wrong-cvss-version",
         "cvss-v2-shape",
         "missing-metric",
         "duplicate-metric",
@@ -1526,6 +1580,13 @@ def test_cvss_v31_base_score_scope_changed_formula_branch():
 )
 def test_cvss_v31_base_score_unparsable_is_none(vector):
     assert cvss_v31_base_score(vector) is None
+
+
+def test_cvss_v30_vector_scores_same_as_v31():
+    # AUD-WARDEN-016: CVSS:3.0 base metrics/formula match 3.1.
+    v30 = "CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"
+    v31 = "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"
+    assert cvss_v31_base_score(v30) == cvss_v31_base_score(v31) == 9.8
 
 
 # --- Story 2.5 (FR13): name_level_critical_advisory_ids ----------------------

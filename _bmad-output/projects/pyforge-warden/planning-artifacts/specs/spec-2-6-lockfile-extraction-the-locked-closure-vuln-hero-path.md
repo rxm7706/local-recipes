@@ -2,7 +2,8 @@
 title: 'Story 2.6: Lockfile extraction — the locked-closure vuln hero path'
 type: 'feature'
 created: '2026-07-16'
-status: 'done'
+status: shipped
+updated: '2026-07-27 (AUD-WARDEN-030 status sync)'
 baseline_revision: 'fbd9c11b1ee55917303a9b5485b6039270a5cdcc'
 review_loop_iteration: 0
 followup_review_recommended: false

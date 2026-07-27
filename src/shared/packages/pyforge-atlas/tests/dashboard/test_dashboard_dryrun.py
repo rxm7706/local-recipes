@@ -226,7 +226,11 @@ def test_factory_status_reads_the_real_sprint_status():
     assert "d2-build-the-vizro-dashboard-port-the-28-clis-to-pages" in keyed
     # epics.md frontmatter + spec statuses are surfaced too.
     assert (frame["source"] == "epics.md").any()
-    assert (frame["source"] == "docs/specs").sum() >= 1
+    assert (frame["source"] == fs.SPEC_SOURCE).sum() >= 1
+    # BMAD Tier-2 contract specs for the shipped factory projects.
+    spec_artifacts = set(frame.loc[frame["source"] == fs.SPEC_SOURCE, "artifact"])
+    assert "pyforge-atlas/spec-pyforge-atlas" in spec_artifacts
+    assert "pyforge-warden/spec-pyforge-warden" in spec_artifacts
 
 
 def test_factory_status_carries_build_timestamp_ad17(dashboard):
@@ -239,6 +243,16 @@ def test_factory_status_carries_build_timestamp_ad17(dashboard):
     stamp_card = next(c for c in factory_page.components if isinstance(c, vm.Card))
     assert STAMP in stamp_card.text
     assert "AD-17" in stamp_card.text
+
+
+def test_every_data_and_shell_page_carries_build_timestamp_ad17(dashboard):
+    """AD-17: authoring-feeding pages (not only factory-status) carry the build stamp."""
+    for page in dashboard.pages:
+        if page.id == "factory-status":
+            continue
+        about = next(c for c in page.components if getattr(c, "id", None) == f"{page.id}--about")
+        assert STAMP in about.text
+        assert "AD-17" in about.text
 
 
 def test_factory_status_exposes_a_semantic_table(dashboard):
@@ -267,8 +281,8 @@ def test_factory_status_reads_injected_fixture_artifacts(bmad_fixture):
     assert frame.loc[frame["source"] == "epics.md", "status"].iloc[0] == "final"
     specs = dict(
         zip(
-            frame.loc[frame["source"] == "docs/specs", "artifact"],
-            frame.loc[frame["source"] == "docs/specs", "status"],
+            frame.loc[frame["source"] == fs.SPEC_SOURCE, "artifact"],
+            frame.loc[frame["source"] == fs.SPEC_SOURCE, "status"],
         )
     )
     # two.md/one.md have status; no-fm.md has no frontmatter → omitted (not fabricated).

@@ -318,14 +318,12 @@ def _osv_ambient_db_env(
 # ``PYFORGE_WARDEN_FEED_CACHE_DIR`` reads as "KEV feed unavailable", which
 # forces the WHOLE vulnerability axis to ``indeterminate`` (``vuln.
 # kev_stale_finding(unavailable=True)``) regardless of how clean the
-# underlying CVSS match actually is. This fixture provisions a real, EMPTY
-# KEV cache (present + fresh + zero entries -- never "absent", never
-# "stale") so an ordinary scan reads exactly as it did pre-6.4: the feed WAS
-# consulted, found no match, `kev: false` (or unchanged for a non-`vuln:`
-# finding). A test exercising the feed-absent/stale/matched paths overrides
-# the env var itself (``monkeypatch.setenv``/``delenv`` in the test body
-# composes with -- and wins over -- this fixture's own env var, exactly like
-# ``_osv_ambient_db_env`` above).
+# underlying CVSS match actually is. This fixture provisions a real,
+# non-hollow KEV cache (present + fresh + one synthetic CVE that will never
+# match a fixture package — AUD-WARDEN-012 closed the prior zero-entry
+# loophole that disarmed ``--fail-on-kev``). An ordinary scan still reads
+# "consulted, no match, kev: false". A test exercising the feed-absent/
+# stale/matched paths overrides the env var itself.
 #
 # Session-scoped + autouse (unlike ``_osv_ambient_db_env``, which is
 # function-scoped because it depends on the function-scoped ``monkeypatch``
@@ -357,7 +355,20 @@ def _feed_cache_root(tmp_path_factory: pytest.TempPathFactory) -> Path:
 def _kev_ambient_feed_env(_feed_cache_root: Path) -> None:
     from pyforge.warden.feeds import write_kev_cache
 
-    write_kev_cache(_feed_cache_root, {"vulnerabilities": []})
+    # Synthetic CVE that no fixture package will ever carry — keeps the
+    # catalog non-hollow (AUD-WARDEN-012) while preserving "no match" for
+    # ordinary clean scans.
+    write_kev_cache(
+        _feed_cache_root,
+        {
+            "vulnerabilities": [
+                {
+                    "cveID": "CVE-0000-WARDEN-AMBIENT",
+                    "dateAdded": "1970-01-01",
+                }
+            ]
+        },
+    )
 
 
 # --- Story 6.3: ambient endoflife.date feed (keeps the currency-axis-landed

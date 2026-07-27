@@ -199,6 +199,17 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
   summary: RESOLVED-IN-B7 (Blind HIGH-1): the ADD path now reads the FULL PyPI universe (`pypi_universe`, produced by `pypi_intelligence.enumerate_pypi_universe`, column `pypi_name`) as the authoritative membership signal — VERBATIM legacy `universe_lookup` — so a pypi name on PyPI-but-not-conda-forge correctly buckets ADD (was silently UNKNOWN when membership derived only from the conda mapping). The remaining widening: `build_universe_sbom` emits only conda components + `cfe:pypi_name` on mapped rows (not standalone `pkg:pypi/<name>` universe members), so the universe-BOM ARTIFACT is conda-centric; membership for matching comes from `pypi_universe` directly (correct), and the standalone-pypi-only universe-BOM completeness is a later artifact-shape widening, not a matcher correctness hole.
   evidence: `test_add_membership_comes_from_the_full_pypi_universe_not_the_mapping` (ADD via pypi_universe, unmatched-to-mapping) + `test_unmatched_pypi_not_in_universe_is_unknown_never_add`; `_build_indexes` reads `pypi_universe["pypi_name"]`. The G10 bare-match guard (Blind MEDIUM-3) is now PORTED using `pypi_conda_mapping` (`conda_to_pypifold`) — `test_g10_bare_match_guard_rejects_a_name_coincidence`.
 
+## DW-B7-4 — stream `build_universe_sbom` (no full in-memory `components[]`) — DEFERRED
+
+- source_spec: `b7-extend-the-universal-sbom-intake.md`; audit `AUD-ATLAS-032` (2026-07-27)
+  summary: `pipelines/derived_artifacts/nodes.py` builds the full-universe CycloneDX BOM
+    by materializing every component into one Python list/dict. Replacing `iterrows` with
+    column-`zip` is a micro-CPU win only — the load-bearing half is memory. A real fix needs
+    chunked/JSONL (or similar) emit + catalog/save shape change. Do not close AUD-ATLAS-032
+    with a CPU-only refactor.
+  evidence: `build_universe_sbom` holds `components: list[dict]` for the whole universe before
+    serialize; no streaming writer on the dataset path.
+
 ## DW-B8-1 — the concrete live Basilisk fetcher (querybatch / detail GET) is injected, not shipped in-package — DEFERRED
 
 - source_spec: `b8-basilisk-conda-native-vulnerability-ingestion.md`
@@ -279,6 +290,16 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
 - source_spec: `e2-integrate-openlineage-opentelemetry.md`
   summary: The AD-23 claim "the Dagster plane inherits the settings-registered observability hook, nested" is verified for the KEDRO plane (fixture gate) but NOT yet for the Dagster plane — the C1 live bring-up (DW-C1-1) is where a real kedro-dagster run confirms parent→node→dataset span nesting + cache_hits survive the translator's per-run hook deepcopy. The deepcopy asymmetry (a dropped OTel provider) is FIXED in E2 (`__deepcopy__` shares _provider + _ol by reference; regression test `test_deepcopy_preserves_injected_backends_no_otel_ol_asymmetry`), so a future injected exporter reaches both planes — but the end-to-end Dagster-plane assertion still rides on the deferred daemon bring-up. Also latent (Reviewer-B finding 2): `_nodes` is keyed by `node.name`; two in-flight runs of the same node name would overwrite/leak state — impossible under Kedro's unique-names-per-pipeline + DAG-ordered runners today, but a `(node.name, run_id)` key would remove the footgun if a future runner violated that. Not reachable now.
   evidence: E2 gate drives a SequentialRunner + manual before/after_pipeline_run; `dagster definitions validate` passes but does not RUN nodes. Thread-safety: `_nodes`/`produced` are unlocked — correct under SequentialRunner + C1 in_process executor (DAG-ordered), a ThreadRunner/ParallelRunner would need locking.
+
+## DW-AD23-1 — run-admission / single-writer serialization for concurrent MCP/CLI triggers — DEFERRED
+
+- source_spec: `ARCHITECTURE-SPINE.md#AD-23`; audit `AUD-ATLAS-046` (2026-07-27)
+  summary: AD-23's "one writing run at a time; concurrent trigger rejected/queued" clause is
+    **not implemented**. Shipped today is the shared Kedro execution plane (budgets/hooks/
+    profiles) only — **admission not started**. A file/DB lock (or Dagster run-queue) in
+    `mcp/session.py` + CLI entry is required before operators can rely on non-interleaved
+    writers. Spine rule demoted 2026-07-27 to match reality; this DW tracks the feature.
+  evidence: no lock/queue in `pyforge.atlas.mcp.session`; `dagster.yml` has no admission policy.
 
 ## DW-E2-3 — AtlasNodeMetricsRunFacet provenance stamp (cosmetic)
 
@@ -435,6 +456,8 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
 ## DW-G3 — the live Dagster sensor DAEMON bring-up (ATTENDED, Q2) — DEFERRED to the wave-boundary event
 
 - source_spec: `cfe-atlas-datapipeline-kedro-migration.md` (Story G3, § 5.9, FR-6)
+  audit_note: AUD-ATLAS-036 — late low-`seq` drop after cursor jump is **by design**
+    (`event_source.py` docstring + AD-5 TTL recovery); daemon bring-up must not “fix” it.
   summary: G3 shipped the BUILDABLE half of event-driven ingestion — the sensor DEFINITIONS +
     their eval logic, wired into C1's `defs`, all verified with NO live execution and NO network.
     `orchestration/event_source.py` (dagster-free event parse + monotonic-`seq` cursor dedupe +

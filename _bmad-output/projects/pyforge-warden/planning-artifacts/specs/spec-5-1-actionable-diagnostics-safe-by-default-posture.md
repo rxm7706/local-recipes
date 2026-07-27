@@ -2,7 +2,8 @@
 title: 'Story 5.1: Actionable diagnostics & safe-by-default posture'
 type: 'feature'
 created: '2026-07-24'
-status: 'done'
+status: shipped
+updated: '2026-07-27 (AUD-WARDEN-030 status sync)'
 review_loop_iteration: 0
 followup_review_recommended: true
 baseline_revision: 'f0c7d8d864fec49ba770da98c5f2ebac8ce53cba'

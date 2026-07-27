@@ -47,3 +47,9 @@ packaging = "*"
 cyclonedx-python-lib = "*"
 jsonschema = "*"
 license-expression = "*"
+# packageurl-python (dependency-completeness sweep 2026-07-26, AUD-WARDEN-010):
+# sbom.py does `from packageurl import PackageURL` directly. It was declared in
+# pyproject.toml but MISSING here, so the built .conda only got it transitively
+# via cyclonedx-python-lib's `packageurl-python (>=0.11,<2)` — an undeclared
+# direct dependency that breaks the moment cyclonedx drops or re-bounds it.
+packageurl-python = "*"

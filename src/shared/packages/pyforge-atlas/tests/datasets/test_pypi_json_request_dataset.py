@@ -32,6 +32,15 @@ def test_request_path_is_per_project():
     assert ds.request_path("/pandas/") == "https://pypi.org/pypi/pandas/json"
 
 
+def test_request_path_rejects_unsafe_project_names():
+    # AUD-ATLAS-022
+    ds = PyPIJsonRequestDataset(url="https://pypi.org")
+    with pytest.raises(ValueError, match="unsafe"):
+        ds.request_path("foo/bar")
+    with pytest.raises(ValueError, match="unsafe"):
+        ds.request_path("..")
+
+
 def test_constructs_offline_and_owns_scheduler():
     ds = PyPIJsonRequestDataset(url="https://pypi.org", metadata={"layer": "raw"})
     assert isinstance(ds.scheduler, RateLimitedScheduler)

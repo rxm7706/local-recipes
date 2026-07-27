@@ -22,16 +22,53 @@ version = "0.*"
 python = ">=3.14"          # atlas floor is 3.14 BY DESIGN (warden's is 3.12 — do not "fix")
 hatchling = "*"
 
-# Conda-forge run set: what the lean `pyforge-atlas` env needs so `kedro-test`
-# (import smokes + Kedro bootstrap seam) passes. Test-only tools (pytest,
-# python-build) live at FEATURE level in the root pixi.toml, mirroring warden's
-# split. pyforge-warden is deliberately NOT a package run-dep (review 2026-07-17,
+# Conda-forge run set — DEPENDENCY-COMPLETE (2026-07-26, AUD-ATLAS-010).
+#
+# This mirrors [project.dependencies] in ./pyproject.toml one-for-one (conda
+# names); keep the two in sync. It is the full set of libraries `pyforge.atlas`
+# imports AT MODULE LEVEL, so the built .conda is self-sufficient and the lean
+# `pyforge-atlas` env runs the WHOLE test suite on its own.
+#
+# Why this grew: the previous 3-package run set only covered the Kedro bootstrap
+# smoke. The rest of the package hard-imports ibis / duckdb / dagster / vizro /
+# pandera / a2a / opentelemetry, so `pixi run -e pyforge-atlas kedro-test` died
+# at COLLECTION on 17 modules and the suite silently depended on the fat
+# `local-recipes` env to supply them — a false CI signal (anyone trusting
+# `kedro-test` as the atlas gate was running zero tests).
+#
+# Test-only tools (pytest, numpy, playwright-python, kedro-viz, python-build)
+# stay at FEATURE level in the root pixi.toml, mirroring warden's split.
+# pyforge-warden is deliberately NOT a package run-dep (review 2026-07-17,
 # A1-A5 alternative route): baking it into the built .conda would make the
 # optional [gate] extra mandatory for external consumers (AC-8: both tools stay
 # independently installable). In-repo default install happens at FEATURE level
 # in the root pixi.toml instead.
 [package.run-dependencies]
 python = ">=3.14"
+# --- core Kedro pipeline surface ---
 kedro = ">=1.5.0"
 kedro-datasets = ">=9.5.0"
+pandas = ">=3.0.3"           # every pipelines/*/nodes.py + datasets/ + dashboard/
+pyarrow = ">=24.0.0"         # publish/emitter.py
+pyyaml = ">=6.0.3"           # dashboard/factory_status.py, factory/crews.py
+packaging = ">=26.2"         # pipelines/universal_sbom/nodes.py
+pandera = ">=0.32.1"         # validation.py (Kedro validation hook)
+# --- DuckDB/Ibis semantic engine (AD-4: the SOLE engine) ---
+duckdb = ">=1.5.5"                  # rag/store.py + semantic backend
+ibis-framework = ">=12.0.0"         # semantic/metrics.py, semantic/models.py
+boring-semantic-layer = ">=0.3.16"  # semantic/models.py (BSL over Ibis)
+# --- Dagster orchestration (AD-16) ---
+dagster = ">=1.13.15"        # orchestration/definitions.py
 kedro-dagster = ">=0.7.0"    # py3.14-unclassified glue — kedro-test import smoke target (AD-16)
+# --- dashboard ---
+vizro = ">=0.1.59"           # dashboard/app.py
+# --- A2A agent surface ---
+a2a-sdk = ">=1.1.2"          # a2a/transport.py (`import a2a.types`)
+protobuf = ">=6.33.5"        # a2a/transport.py (`from google.protobuf import ...`)
+pydantic = ">=2.13.4"        # a2a/schema.py, factory/personas.py, factory/storage.py
+pydantic-core = ">=2.46.4"   # a2a/transport.py (imported directly, not just via pydantic)
+# --- observability (FR-16) ---
+openlineage-python = ">=1.52.0"
+opentelemetry-api = ">=1.44.0"
+opentelemetry-sdk = ">=1.44.0"
+attrs = ">=26.1.0"           # observability.py (`import attr`)

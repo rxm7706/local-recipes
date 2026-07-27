@@ -144,8 +144,14 @@ def ci_red(t: Any) -> Any:
     ASSUMED identical ({'failure','error',...}) and FLAGGED for legacy recapture — the
     migrated node is a shape port (§ PARITY_NOTES B-seeds), so this is anchored to the
     migrated column, not a credentialed legacy capture.
+
+    ``fill_null(False)`` matches the legacy predicate's FILTER semantics (a NULL
+    ``ci_status`` does not match ``IN ('failure','error')``, so it is not ci-red) and
+    keeps this dimension a true two-valued boolean like its ``has_open_*`` siblings.
+    Without it an unknown CI status surfaces as NULL, which any truthiness check
+    downstream reads as ci-RED — reporting a red default branch we never observed.
     """
-    return t.ci_status.isin(_CI_RED_STATES)
+    return t.ci_status.isin(_CI_RED_STATES).fill_null(False)
 
 
 def has_open_prs(t: Any) -> Any:

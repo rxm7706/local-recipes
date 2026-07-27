@@ -3,7 +3,8 @@
 title: 'Story 1.1: Frozen contract, verdict lattice & projection-safety (C0a)'
 type: 'feature'
 created: '2026-07-12'
-status: 'done'
+status: shipped
+updated: '2026-07-27 (AUD-WARDEN-030 status sync)'
 baseline_revision: 'c2605ff18723c3b6df64fbc55d615301fa62dcc2'
 final_revision: 'afde40c0adef6a4bea716ee9dbd15c30ce905778'  # cherry-pick of 0a154c7a0e (original attempt commit, preserved on the bmad-loop run branch) onto the rebased mainline
 review_loop_iteration: 1

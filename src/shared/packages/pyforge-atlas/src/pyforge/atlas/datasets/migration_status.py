@@ -43,6 +43,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import re
 from pathlib import Path
 from typing import Any, Callable
 
@@ -92,9 +93,32 @@ ACTIVE_CATEGORIES = ("regular", "longterm")
 # measures version currency itself (Phases H/K). A fetch never routes through it.
 EXCLUDED_STATUS_FILES = frozenset({"version_status.v2.json"})
 
+# AUD-ATLAS-014: migration names become partition filenames and URL path
+# segments. Remotely-fetched keys must be plain slugs — reject traversal /
+# separators before any join or write (mirrors wiki._require_safe_segment).
+_MIGRATION_SLUG_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*\Z")
+
 # The status subtree under the conda-forge-bot-data repo (raw-content path prefix).
 STATUS_PATH = "status"
 MIGRATION_JSON_PATH = "status/migration_json"
+
+
+def _require_migration_slug(name: str) -> str | None:
+    """Return ``name`` if it is a safe migrator slug, else ``None``.
+
+    AUD-ATLAS-014: a key containing ``/``, ``..``, or other path junk would
+    escape the partitions directory on write and the status/ prefix on fetch.
+    """
+    if not isinstance(name, str):
+        return None
+    name = name.strip()
+    if not name or name.startswith("_") or name in EXCLUDED_STATUS_FILES:
+        return None
+    if name in (".", "..") or ".." in name or "/" in name or "\\" in name:
+        return None
+    if not _MIGRATION_SLUG_RE.match(name):
+        return None
+    return name
 
 
 def migration_names(payload: Any) -> list[str]:
@@ -107,6 +131,7 @@ def migration_names(payload: Any) -> list[str]:
     ``dict`` with a ``"migrations"`` sub-collection, or a plain ``list`` of names / of
     ``{"name": ...}`` dicts. Order preserved; duplicates and blanks dropped; a name
     matching :data:`EXCLUDED_STATUS_FILES` (defensive) is never surfaced.
+    Unsafe path-like names are dropped (AUD-ATLAS-014).
     """
     names: list[str] = []
     seen: set[str] = set()
@@ -116,11 +141,8 @@ def migration_names(payload: Any) -> list[str]:
             value = value.get("name")
         if value is None:
             return
-        name = str(value).strip()
-        # drop blanks, meta keys, the excluded queue, and the `.json` form of it.
-        if not name or name.startswith("_") or name in EXCLUDED_STATUS_FILES:
-            return
-        if name in seen:
+        name = _require_migration_slug(str(value))
+        if name is None or name in seen:
             return
         seen.add(name)
         names.append(name)
@@ -179,18 +201,37 @@ class _StaleAwareStatusSource(AbstractDataset):
 
     @staticmethod
     def _atomic_write(target: Path, text: str) -> None:
-        """Write via a sibling ``.tmp`` then ``os.replace`` — an interrupted write leaves
-        the last-good file untouched (AD-13 never-clobber)."""
+        """Write via a unique sibling temp then ``os.replace`` (AUD-ATLAS-029).
+
+        Fixed ``.tmp`` names race across concurrent writers; ``mkstemp`` gives
+        a unique path. ``fsync`` before replace; unlink the temp only on failure
+        (after a successful replace the temp path is gone).
+        """
+        import tempfile
+
         target.parent.mkdir(parents=True, exist_ok=True)
-        tmp = target.with_name(target.name + ".tmp")
+        fd, tmp_name = tempfile.mkstemp(
+            dir=str(target.parent), suffix=".tmp", prefix=f".{target.name}."
+        )
+        tmp = Path(tmp_name)
         try:
-            tmp.write_text(text, encoding="utf-8")
+            with os.fdopen(fd, "w", encoding="utf-8") as fh:
+                fd = -1  # ownership transferred
+                fh.write(text)
+                fh.flush()
+                os.fsync(fh.fileno())
             os.replace(tmp, target)
-        finally:
+        except Exception:
+            if fd >= 0:
+                try:
+                    os.close(fd)
+                except OSError:
+                    pass
             try:
                 tmp.unlink(missing_ok=True)
-            except OSError:  # pragma: no cover - best-effort cleanup
+            except OSError:
                 pass
+            raise
 
     def _mark_stale(self, reason: str, *, last_good_exists: bool) -> StalenessMarker:
         """Keep last-good; stamp a staleness marker. Never raises (AD-13 never-fail)."""
@@ -354,10 +395,17 @@ class MigrationDetailDataset(_StaleAwareStatusSource):
     def _partition_filename(name: str) -> str:
         # A migration name is a plain conda-forge migrator slug (e.g. python314); keep the
         # partition file basename == the name (mirrors PartitionedDataset partition ids).
-        return f"{name}.json"
+        # AUD-ATLAS-014: refuse any name that is not a safe slug before Path join.
+        safe = _require_migration_slug(name)
+        if safe is None:
+            raise ValueError(f"unsafe migration partition name: {name!r}")
+        return f"{safe}.json"
 
     def _detail_url(self, name: str) -> str:
-        return f"{self._url}/{name}.json"
+        safe = _require_migration_slug(name)
+        if safe is None:
+            raise ValueError(f"unsafe migration detail name: {name!r}")
+        return f"{self._url}/{safe}.json"
 
     def fetch_partitions(
         self,
@@ -376,7 +424,12 @@ class MigrationDetailDataset(_StaleAwareStatusSource):
         Returns the resolved ``{name: detail}`` map. The pure node consumes :meth:`load`.
         """
         fetcher = fetcher if fetcher is not None else self._fetcher
-        names = [n for n in _as_name_list(active_migrations) if n not in EXCLUDED_STATUS_FILES]
+        # AUD-ATLAS-014: re-validate even if a caller bypasses migration_names.
+        names = [
+            n
+            for n in (_require_migration_slug(x) for x in _as_name_list(active_migrations))
+            if n is not None
+        ]
         if fetcher is None:
             self._mark_stale(
                 "offline: no GitHub-raw fetcher wired (consumer profile)",
@@ -413,7 +466,7 @@ class MigrationDetailDataset(_StaleAwareStatusSource):
     def _load_partitions(self) -> dict[str, Any]:
         """Resolve every persisted ``<name>.json`` partition → ``{name: detail}``. Robust to a
         missing dir (returns ``{}``) and to a single unreadable partition (skipped, never
-        crashes the whole load — AD-13)."""
+        crashes the whole load — AD-13). Unsafe stems are skipped (AUD-ATLAS-014)."""
         out: dict[str, Any] = {}
         d = self._partitions_dir
         if not d.is_dir():
@@ -421,8 +474,12 @@ class MigrationDetailDataset(_StaleAwareStatusSource):
         for path in sorted(d.glob("*.json")):
             if path.name == self.STALENESS_FILENAME:  # defensive (marker is hidden)
                 continue
+            stem = _require_migration_slug(path.stem)
+            if stem is None:
+                logger.warning("migration detail partition has unsafe name, skipping: %s", path)
+                continue
             try:
-                out[path.stem] = json.loads(path.read_text(encoding="utf-8"))
+                out[stem] = json.loads(path.read_text(encoding="utf-8"))
             except (OSError, ValueError):  # a corrupt partition is skipped, not fatal (AD-13).
                 logger.warning("migration detail partition unreadable, skipping: %s", path)
                 continue

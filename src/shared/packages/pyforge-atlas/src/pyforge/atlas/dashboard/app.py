@@ -108,11 +108,13 @@ DASHBOARD_ID = "cf-atlas"
 DASHBOARD_TITLE = "cf_atlas Factory"
 
 
-def _legibility_card(page: PageDef, *, grounded: bool) -> vm.Card:
+def _legibility_card(page: PageDef, *, grounded: bool, build_stamp: str) -> vm.Card:
     """A semantic markdown Card carrying the page's provenance + any data-gap note
     (NFR-8 agent-legibility — a deterministic, agent-readable header)."""
     lines = [
         f"### {page.title}",
+        "",
+        f"**Build timestamp (AD-17):** `{build_stamp}`",
         "",
         f"Ports the `{page.cli}` read CLI. Data flows through the D1 BSL models (AD-8).",
     ]
@@ -125,7 +127,9 @@ def _legibility_card(page: PageDef, *, grounded: bool) -> vm.Card:
     return vm.Card(id=f"{page.id}--about", text="\n".join(lines))
 
 
-def _data_page(page: PageDef, loader: Callable[[], Any], *, grounded: bool) -> vm.Page:
+def _data_page(
+    page: PageDef, loader: Callable[[], Any], *, grounded: bool, build_stamp: str
+) -> vm.Page:
     """A page = a legibility Card + an AgGrid fed by a lazily-registered BSL data function."""
     key = f"data::{page.id}"
     data_manager[key] = loader
@@ -133,18 +137,18 @@ def _data_page(page: PageDef, loader: Callable[[], Any], *, grounded: bool) -> v
         id=page.id,
         title=page.title,
         components=[
-            _legibility_card(page, grounded=grounded),
+            _legibility_card(page, grounded=grounded, build_stamp=build_stamp),
             vm.AgGrid(id=f"{page.id}--grid", figure=dash_ag_grid(key)),
         ],
     )
 
 
-def _shell_page(page: PageDef) -> vm.Page:
+def _shell_page(page: PageDef, *, build_stamp: str) -> vm.Page:
     """A no-BSL-model shell: a Card stating the gap, no data function (no fabrication)."""
     return vm.Page(
         id=page.id,
         title=page.title,
-        components=[_legibility_card(page, grounded=False)],
+        components=[_legibility_card(page, grounded=False, build_stamp=build_stamp)],
     )
 
 
@@ -175,7 +179,8 @@ def _factory_page(
             f"### Factory Status\n\n"
             f"**Build timestamp (AD-17):** `{build_stamp}`\n\n"
             "Live BMAD artifact state — sprint-status.yaml `development_status`, "
-            "epics.md frontmatter, and each `docs/specs/*.md` status."
+            "epics.md frontmatter, and each BMAD Tier-2 spec under "
+            "`_bmad-output/projects/*/planning-artifacts/specs/`."
         ),
     )
     return vm.Page(
@@ -207,37 +212,45 @@ def build_dashboard(
         build_stamp = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     if now is None:
         now = int(time.time())
-    root = Path(data_root) if data_root is not None else _data.default_data_root()
+    root = Path(data_root).resolve() if data_root is not None else _data.default_data_root()
+
+    def _parquet(rel: str) -> Path:
+        return _data.resolve_under_data_root(rel, root=root)  # type: ignore[return-value]
 
     by_id = {p.id: p for p in PAGE_INVENTORY}
     pages: list[vm.Page] = [
         _data_page(
             by_id["feedstock-health"],
-            lambda: _data.load_feedstock_health(root / _data.FEEDSTOCK_HEALTH_PARQUET),
+            lambda: _data.load_feedstock_health(_parquet(_data.FEEDSTOCK_HEALTH_PARQUET)),
             grounded=True,
+            build_stamp=build_stamp,
         ),
         _data_page(
             by_id["my-feedstocks"],
-            lambda: _data.load_my_feedstocks(root / _data.PACKAGE_MAINTAINERS_PARQUET),
+            lambda: _data.load_my_feedstocks(_parquet(_data.PACKAGE_MAINTAINERS_PARQUET)),
             grounded=True,
+            build_stamp=build_stamp,
         ),
         _data_page(
             by_id["staleness-report"],
-            lambda: _data.load_staleness(root / _data.PACKAGES_PARQUET, now=now),
+            lambda: _data.load_staleness(_parquet(_data.PACKAGES_PARQUET), now=now),
             grounded=False,
+            build_stamp=build_stamp,
         ),
         _data_page(
             by_id["query-atlas"],
-            lambda: _data.load_query_atlas(root / _data.PACKAGES_PARQUET, now=now),
+            lambda: _data.load_query_atlas(_parquet(_data.PACKAGES_PARQUET), now=now),
             grounded=False,
+            build_stamp=build_stamp,
         ),
         _data_page(
             by_id["detail-cf-atlas"],
-            lambda: _data.load_detail(root / _data.PACKAGES_PARQUET, now=now),
+            lambda: _data.load_detail(_parquet(_data.PACKAGES_PARQUET), now=now),
             grounded=False,
+            build_stamp=build_stamp,
         ),
-        _shell_page(by_id["behind-upstream"]),
-        _shell_page(by_id["whodepends"]),
+        _shell_page(by_id["behind-upstream"], build_stamp=build_stamp),
+        _shell_page(by_id["whodepends"], build_stamp=build_stamp),
         _factory_page(
             by_id["factory-status"],
             build_stamp=build_stamp,

@@ -23,6 +23,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable, Mapping
@@ -37,6 +38,21 @@ from .wiki import WikiLayout
 LASUITE_BASE_URL_ENV = "LASUITE_BASE_URL"
 LASUITE_TOKEN_ENV = "LASUITE_API_TOKEN"
 
+# AUD-ATLAS-040: doc ids become URL path segments — reject traversal / separators.
+_DOC_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*\Z")
+
+
+def _require_doc_id(doc_id: str) -> str:
+    """Return a URL-safe document id, or raise :class:`LaSuiteError`."""
+    if not isinstance(doc_id, str):
+        raise LaSuiteError(f"invalid document id {doc_id!r}: must be a URL-safe slug")
+    cleaned = doc_id.strip()
+    if not cleaned or cleaned in (".", "..") or "/" in cleaned or "\\" in cleaned:
+        raise LaSuiteError(f"invalid document id {doc_id!r}: must be a URL-safe slug")
+    if not _DOC_ID_RE.match(cleaned):
+        raise LaSuiteError(f"invalid document id {doc_id!r}: must be a URL-safe slug")
+    return cleaned
+
 
 @dataclass(frozen=True)
 class LaSuiteConfig:
@@ -49,11 +65,21 @@ class LaSuiteConfig:
 def resolve_lasuite_config(env: Mapping[str, str] | None = None) -> LaSuiteConfig | None:
     """Resolve the CMS endpoint from env, or ``None`` if not configured (both a base URL AND a
     token are required — a partial config resolves to ``None`` so the caller degrades instead of
-    pushing at a half-configured or public endpoint). The live bring-up (DW-H3) supplies these."""
+    pushing at a half-configured or public endpoint). The live bring-up (DW-H3) supplies these.
+
+    AUD-ATLAS-021: ``LASUITE_BASE_URL`` must be a well-formed ``http(s)://`` URL with a host
+    (mirrors ``nl.backend._valid_base_url``) — reject ``file://``, bare schemes, and hostless
+    values so a typo cannot become an SSRF/open-relay target.
+    """
+    from urllib.parse import urlparse
+
     env = os.environ if env is None else env
     base = (env.get(LASUITE_BASE_URL_ENV) or "").strip()
     token = (env.get(LASUITE_TOKEN_ENV) or "").strip()
     if not base or not token:
+        return None
+    parsed = urlparse(base)
+    if parsed.scheme not in ("http", "https") or not parsed.netloc:
         return None
     return LaSuiteConfig(base_url=base.rstrip("/"), api_token=token)
 
@@ -134,16 +160,18 @@ class LaSuiteClient:
     def create_document(self, title: str, content: str, parent_id: str | None = None) -> dict:
         payload: dict[str, Any] = {"title": title, "content": content}
         if parent_id:
-            payload["parent"] = parent_id
+            payload["parent"] = _require_doc_id(parent_id)
         return self._call("POST", "/api/v1/documents/", payload)
 
     def update_document(self, doc_id: str, title: str, content: str) -> dict:
+        safe = _require_doc_id(doc_id)
         return self._call(
-            "PATCH", f"/api/v1/documents/{doc_id}/", {"title": title, "content": content}
+            "PATCH", f"/api/v1/documents/{safe}/", {"title": title, "content": content}
         )
 
     def get_document(self, doc_id: str) -> dict:
-        return self._call("GET", f"/api/v1/documents/{doc_id}/")
+        safe = _require_doc_id(doc_id)
+        return self._call("GET", f"/api/v1/documents/{safe}/")
 
     def list_documents(self) -> list:
         return self._call("GET", "/api/v1/documents/all/")

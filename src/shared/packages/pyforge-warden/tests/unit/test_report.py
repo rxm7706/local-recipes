@@ -853,7 +853,7 @@ def test_remediation_line_currency_unknown():
 
 def test_remediation_line_indeterminate_generic_action():
     finding = Finding(
-        id="indeterminate:no-version:leftpad",
+        id="indeterminate:no-version:leftpad@unspecified",
         axis=AXIS_VULNERABILITY,
         message="leftpad: withheld",
         subject="leftpad",

@@ -787,11 +787,14 @@ def license_findings(
     allow = _normalize_tokens(allow_licenses)
     deny = _normalize_tokens(deny_licenses)
     conda_cache: dict[str, str | None] = {}
-    findings: list[Finding] = []
+    # Ecosystem-variant duplicates mint the same id (no ecosystem segment in
+    # the license grammar) — dedupe like currency_findings (AUD-WARDEN-022).
+    deduped: dict[str, Finding] = {}
     for component in components:
         resolution = _resolve_license(component, target, conda_cache)
         verdict = _classify_verdict(resolution, allow=allow, deny=deny)
         if verdict is LicenseVerdict.ALLOWED:
             continue
-        findings.append(_license_finding(component, verdict, resolution))
-    return tuple(sorted(findings, key=lambda f: f.id))
+        finding = _license_finding(component, verdict, resolution)
+        deduped.setdefault(finding.id, finding)
+    return tuple(sorted(deduped.values(), key=lambda f: f.id))

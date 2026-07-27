@@ -10,17 +10,47 @@ readme = "README.md"
 requires-python = ">=3.14"
 license = { text = "MIT" }
 authors = [{ name = "rxm7706" }]
-# Lean runtime deps (A1-A2): only what the package imports after Story A1 —
-# the full FR-15 stack lives in the pixi envs (root [feature.pyforge-atlas] +
-# local-recipes), not in wheel metadata, until stories actually import each
-# library (Simplicity First; warden lean-dep doctrine).
+# DEPENDENCY-COMPLETE (2026-07-26, AUD-ATLAS-010): every library the package
+# imports AT MODULE LEVEL is declared here. The former "lean deps, the stack
+# lives in the pixi envs" split was a latent lie: `pyforge.atlas` hard-imports
+# ibis / duckdb / dagster / vizro / pandera / a2a / opentelemetry from its
+# submodules, so an install carrying only kedro raised ImportError the moment
+# you touched anything past the pipeline registry, and the test suite only
+# passed because the fat `local-recipes` env happened to supply the rest.
+# Keep this list in sync with [package.run-dependencies] in ./pixi.toml.
+# Only genuinely GUARDED imports (try/except or function-local) may be extras.
 dependencies = [
+    # --- core Kedro pipeline surface ---
     "kedro>=1.5.0",  # floor matches [tool.kedro] kedro_init_version + the conda run-dep
     # Story A2 (A2-A5): conf/base/catalog.yml declares kedro_datasets types
     # (api.APIDataset / pandas.ParquetDataset / partitions.PartitionedDataset /
     # json / yaml / text) — catalog resolution imports kedro_datasets, so it is
     # a real runtime dependency of the package, not just a pixi-env dep.
     "kedro-datasets>=9.5.0",  # floor matches the member pixi.toml run-dep
+    "pandas>=3.0.3",          # every pipelines/*/nodes.py + datasets/ + dashboard/
+    "pyarrow>=24.0.0",        # publish/emitter.py (Arrow/Parquet emission)
+    "pyyaml>=6.0.3",          # dashboard/factory_status.py, factory/crews.py
+    "packaging>=26.2",        # pipelines/universal_sbom/nodes.py (version compare)
+    "pandera>=0.32.1",        # validation.py (the Kedro validation hook)
+    # --- DuckDB/Ibis semantic engine (AD-4: the SOLE engine) ---
+    "duckdb>=1.5.5",                  # rag/store.py + the semantic layer's backend
+    "ibis-framework>=12.0.0",         # semantic/metrics.py, semantic/models.py
+    "boring-semantic-layer>=0.3.16",  # semantic/models.py (BSL over Ibis)
+    # --- Dagster orchestration (AD-16) ---
+    "dagster>=1.13.15",     # orchestration/definitions.py
+    "kedro-dagster>=0.7.0", # orchestration/definitions.py (the translator seam)
+    # --- dashboard ---
+    "vizro>=0.1.59",  # dashboard/app.py
+    # --- A2A agent surface ---
+    "a2a-sdk>=1.1.2",       # a2a/transport.py (`import a2a.types`)
+    "protobuf>=6.33.5",     # a2a/transport.py (`from google.protobuf import ...`)
+    "pydantic>=2.13.4",     # a2a/schema.py, factory/personas.py, factory/storage.py
+    "pydantic-core>=2.46.4",# a2a/transport.py (PydanticSerializationError, imported directly)
+    # --- observability (FR-16) ---
+    "openlineage-python>=1.52.0",  # observability.py
+    "opentelemetry-api>=1.44.0",   # observability.py
+    "opentelemetry-sdk>=1.44.0",   # observability.py
+    "attrs>=26.1.0",               # observability.py (`import attr`)
 ]
 
 [project.optional-dependencies]
@@ -30,6 +60,12 @@ dependencies = [
 # then fails with an install hint while everything else runs). No reverse
 # warden -> atlas import exists.
 gate = ["pyforge-warden"]
+# These two are the ONLY optional surfaces: both are imported behind a
+# try/except (or function-locally) and degrade with an install hint per AD-13,
+# so a base install stays functional without them.
+mcp = ["fastmcp>=3.4.4"]      # mcp/server.py — guarded import
+nl = ["vizro-ai>=0.4.1"]      # nl/query.py — guarded import
+all = ["pyforge-atlas[gate,mcp,nl]"]
 
 [project.scripts]
 pyforge-atlas = "pyforge.atlas.__main__:main"

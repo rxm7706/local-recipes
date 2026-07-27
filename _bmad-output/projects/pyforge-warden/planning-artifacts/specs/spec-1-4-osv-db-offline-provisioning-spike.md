@@ -3,7 +3,8 @@
 title: 'Story 1.4: OSV-DB offline provisioning spike (decision + fixture DB)'
 type: 'chore' # spike — decision record + hermetic test fixtures + one proof test; no production code
 created: '2026-07-14'
-status: 'in-review'
+status: shipped
+updated: '2026-07-27 (AUD-WARDEN-030 status sync)'
 baseline_revision: 'fcf6fc9e475890d6ab36bed3d1d265536f1d7ab3'
 final_revision: '5660b20901fd7ccf338626d71aeea791fda666a0'
 review_loop_iteration: 0

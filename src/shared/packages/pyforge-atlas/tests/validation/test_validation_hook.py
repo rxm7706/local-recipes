@@ -14,7 +14,8 @@ fire in the real order) and asserts the load-bearing F2 behaviours:
 - the banned ``kedro_great_expectations`` / ``kedro_pandera`` plugins are absent and the GX
   boundary is a version-capped deferred stub (AD-9 — see also
   ``tests/catalog/test_no_inline_io.py``);
-- edge cases: no contract → pass-through; a non-frame output skips gracefully; empty frames;
+- edge cases: no contract → pass-through; a non-frame output with a registered frame
+  contract halts (AUD-ATLAS-037); empty frames;
   a broken validator halts (never silently passes); the default no-op sink never crashes;
   multi-output nodes halt before ANY persist; the default hook is deepcopy-safe (the C1
   translator deep-copies ``settings.HOOKS``).
@@ -306,9 +307,9 @@ def test_no_registered_contract_is_passthrough():
     assert alerts == []
 
 
-def test_non_dataframe_output_skips_gracefully():
-    # a contract IS registered but the node emits a non-frame → the frame validator skips
-    # gracefully (no crash, no false halt).
+def test_non_dataframe_output_halts():
+    # AUD-ATLAS-037: a contract IS registered but the node emits a non-frame → halt
+    # (contract violation), do not persist.
     out = "not-a-frame"
     saves: list[str] = []
     pipe = Pipeline([node(lambda x: out, inputs="raw_in", outputs="pypi_current_versions", name="emit")])
@@ -317,8 +318,9 @@ def test_non_dataframe_output_skips_gracefully():
     )
     hm = _create_hook_manager()
     _register_hooks(hm, (DataValidationHooks([PanderaValidator({"pypi_current_versions": PYPI_SCHEMA})], build_stamp=STAMP),))
-    SequentialRunner().run(pipe, catalog, hook_manager=hm)  # must NOT raise
-    assert saves == ["pypi_current_versions"]  # persisted (skipped, not halted)
+    with pytest.raises(DataContractViolation):
+        SequentialRunner().run(pipe, catalog, hook_manager=hm)
+    assert saves == []
 
 
 def test_empty_frame_with_valid_columns_passes():

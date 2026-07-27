@@ -151,7 +151,7 @@
     },
     "license_data": {
       "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/feedProvenance" }],
-      "description": "Optional license-feed provenance (Story 6.2/6.3 populate); null until then."
+      "description": "Reserved nullable license-feed provenance slot (FR38). Always null in v1: the license axis is metadata-sourced (no remote feed), unlike currency_data/kev_data/epss_data. Populating would require a future license-feed producer."
     },
     "currency_data": {
       "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/feedProvenance" }],

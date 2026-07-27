@@ -145,7 +145,13 @@ def test_maintainer_with_no_packages_and_package_with_no_maintainer(parquet_tabl
     res = join.query(
         dimensions=["maintainer"], measures=["packages.downloads_total"]
     ).execute()
-    downloads = {r["maintainer"]: r["packages.downloads_total"] for _, r in res.iterrows()}
+    # The NULL-maintainer group's key returns as NaN under the pandas >=3 `str` dtype,
+    # so normalize it back to None — the assertions below are about that group's
+    # IDENTITY (present, with a NULL value), not about its dtype.
+    downloads = {
+        (None if pd.isna(r["maintainer"]) else r["maintainer"]): r["packages.downloads_total"]
+        for _, r in res.iterrows()
+    }
     assert int(downloads["alice"]) == 100  # alice ⋈ a(100) only, in this frame
     # zzz's package 'ghost' is not in packages → its downloads sum is NULL, not 100.
     assert pd.isna(downloads.get("zzz"))

@@ -196,7 +196,7 @@ def test_hygiene_rung_driver_carries_the_findings_axis():
     ``indeterminate:`` id) still routes: an unknown code -> indeterminate,
     and the driver mirrors the finding's axis."""
     finding = Finding(
-        id="indeterminate:no-version:leftpad",
+        id="indeterminate:no-version:leftpad@unspecified",
         axis=AXIS_HYGIENE,
         message="withheld",
         subject="leftpad",
@@ -205,7 +205,7 @@ def test_hygiene_rung_driver_carries_the_findings_axis():
     status, driver = hygiene_rung(finding)
     assert status is Status.INDETERMINATE
     assert driver.axis == AXIS_HYGIENE
-    assert driver.finding_id == "indeterminate:no-version:leftpad"
+    assert driver.finding_id == "indeterminate:no-version:leftpad@unspecified"
 
 
 # --- malformed records are counted, never dropped (C0) -----------------------
@@ -431,12 +431,14 @@ def test_frontdoor_writes_bare_name_when_version_unknown(component_factory):
 
 
 def test_frontdoor_excludes_components_with_no_pypi_identity(component_factory):
+    """AUD-WARDEN-018: hygiene-covered + no identity lands on ``excluded``
+    (previously a silent third-bucket ``continue``)."""
     component = component_factory(
         name="somepkg", version=None, pypi_identity=None, vuln_matchable=False
     )
     synthesized = _synthesize_deptry_frontdoor([component])
     assert synthesized.lines == ()
-    assert synthesized.excluded == ()  # never considered, not "excluded"
+    assert synthesized.excluded == (component,)
 
 
 def test_frontdoor_excludes_components_not_hygiene_covered(component_factory):
@@ -445,6 +447,7 @@ def test_frontdoor_excludes_components_not_hygiene_covered(component_factory):
     )
     synthesized = _synthesize_deptry_frontdoor([component])
     assert synthesized.lines == ()
+    assert synthesized.excluded == ()  # DefaultPolicy owns uncovered
 
 
 def test_frontdoor_deduplicates_and_sorts_lines(component_factory):

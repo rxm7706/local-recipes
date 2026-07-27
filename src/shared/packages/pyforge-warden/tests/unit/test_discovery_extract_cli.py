@@ -186,6 +186,34 @@ def test_discover_fails_closed_on_a_dangling_symlink(tmp_path):
         discover(tmp_path)
 
 
+@pytest.mark.skipif(os.name != "posix", reason="symlinks are POSIX-reliable")
+def test_discover_fails_closed_on_symlink_escaping_scan_root(tmp_path):
+    """AUD-WARDEN-013: a symlink to an existing file OUTSIDE the scan root
+    must fail closed — previously ``stat()`` followed it and the file was
+    parsed as a project manifest."""
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    secrets = outside / "secrets.yml"
+    secrets.write_text("name: super-secret-internal-pkg\ndependencies: []\n", encoding="utf-8")
+    scan = tmp_path / "scan"
+    scan.mkdir()
+    (scan / "environment.yml").symlink_to(secrets)
+    with pytest.raises(OSError, match="symlink escaping the scan root"):
+        discover(scan)
+
+
+@pytest.mark.skipif(os.name != "posix", reason="symlinks are POSIX-reliable")
+def test_discover_accepts_symlink_confined_under_scan_root(tmp_path):
+    """A symlink whose target stays under the scan root is still a regular
+    project layout (e.g. ``environment.yml -> configs/env.yml``)."""
+    real = tmp_path / "configs"
+    real.mkdir()
+    (real / "env.yml").write_text("name: ok\ndependencies: []\n", encoding="utf-8")
+    (tmp_path / "environment.yml").symlink_to(real / "env.yml")
+    manifests = discover(tmp_path)
+    assert any(m.path.endswith("environment.yml") for m in manifests)
+
+
 @pytest.mark.skipif(os.name != "posix", reason="POSIX permission semantics")
 def test_discover_propagates_unexpected_stat_errors(tmp_path):
     """Path.is_file() swallows OSError (permission-denied would read as "no
@@ -1150,14 +1178,14 @@ def test_newline_in_dependency_name_still_completes_the_scan(capsys, tmp_path):
     assert document["status"]["value"] == "indeterminate"
     assert sorted(f["id"] for f in document["findings"]) == [
         "currency:unknown:foo%0Abar@unspecified",
-        "indeterminate:no-version:foo%0Abar",
-        "indeterminate:uncovered:foo%0Abar",
+        "indeterminate:no-version:foo%0Abar@unspecified",
+        "indeterminate:uncovered:foo%0Abar@unspecified",
         "license:unknown:foo%0Abar@unspecified",
     ]
     assert all(f["subject"] == "foo\nbar" for f in document["findings"])
     axes = {f["id"]: f["axis"] for f in document["findings"]}
-    assert axes["indeterminate:no-version:foo%0Abar"] == "vulnerability"
-    assert axes["indeterminate:uncovered:foo%0Abar"] == "hygiene"
+    assert axes["indeterminate:no-version:foo%0Abar@unspecified"] == "vulnerability"
+    assert axes["indeterminate:uncovered:foo%0Abar@unspecified"] == "hygiene"
     assert axes["license:unknown:foo%0Abar@unspecified"] == "license"
     assert axes["currency:unknown:foo%0Abar@unspecified"] == "currency"
 

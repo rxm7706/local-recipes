@@ -273,9 +273,11 @@ pypi_conda_mapping:
 # (historical provenance only); the Parquet TTL stamp is the generic `fetched_at`
 # (A3 P2 — standardized across all flipped datasets; ttl from ttls.pypi_current_versions).
 # A3: IncrementalParquetDataset
+# AUD-ATLAS-015: merge_on upserts the eligible delta so fresh rows survive.
 pypi_current_versions:
   type: pyforge.atlas.datasets.IncrementalParquetDataset
   filepath: data/primary/pypi_current_versions/pypi_current_versions.parquet
+  merge_on: pypi_name
   metadata:
     layer: primary
 

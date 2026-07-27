@@ -30,6 +30,7 @@ verified nothing. See DW-G2-2.
 from __future__ import annotations
 
 import http.server
+import json
 import os
 import socketserver
 import threading
@@ -379,6 +380,17 @@ def test_verify_manifest_detects_corruption(emitted_site):
     data[len(data) // 2] ^= 0xFF
     (site / rel).write_bytes(bytes(data))
     with pytest.raises(ManifestChecksumError):
+        verify_manifest(site)
+
+
+def test_verify_manifest_rejects_path_traversal(emitted_site):
+    # AUD-ATLAS-019: chunk paths must stay under the site root.
+    site = emitted_site
+    manifest = json.loads((site / "manifest.json").read_text(encoding="utf-8"))
+    name = next(iter(manifest["datasets"]))
+    manifest["datasets"][name]["chunks"][0]["path"] = "../etc/passwd"
+    (site / "manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
+    with pytest.raises(ManifestChecksumError, match="unsafe chunk path|escapes"):
         verify_manifest(site)
 
 

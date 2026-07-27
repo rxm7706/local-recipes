@@ -54,6 +54,19 @@ def test_migration_names_robust_to_junk():
     assert migration_names(["a", "a", "b"]) == ["a", "b"]
 
 
+def test_migration_names_rejects_path_traversal_slugs():
+    # AUD-ATLAS-014: remotely-fetched keys must not become partition paths.
+    payload = {
+        "python314": {},
+        "../etc/passwd": {},
+        "foo/bar": {},
+        "..": {},
+        "evil\\win": {},
+        "ok-name_1.2": {},
+    }
+    assert migration_names(payload) == ["python314", "ok-name_1.2"]
+
+
 # --- MigrationCategoryDataset (fetch + AD-13) -------------------------------
 
 def _cat(tmp_path, **kw):
@@ -192,6 +205,17 @@ def test_detail_never_fetches_version_status_queue(tmp_path):
     # even if the excluded name is passed in, it is never fetched as a partition.
     ds.fetch_partitions(["python314", "version_status.v2.json"])
     assert all("version_status.v2.json" not in u for u in seen)
+
+
+def test_detail_fetch_rejects_path_traversal_names(tmp_path):
+    # AUD-ATLAS-014: traversal names must not be fetched or written.
+    seen = []
+    ds = _detail(tmp_path, fetcher=lambda url: (seen.append(url) or {"done": []}))
+    out = ds.fetch_partitions(["python314", "../escape", "foo/bar"])
+    assert set(out) == {"python314"}
+    assert all("../" not in u and "foo/bar" not in u for u in seen)
+    assert not (tmp_path / "escape.json").exists()
+    assert (tmp_path / "detail" / "python314.json").is_file()
 
 
 def test_detail_offline_marks_stale_keeps_last_good(tmp_path):

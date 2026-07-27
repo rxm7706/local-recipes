@@ -16,6 +16,12 @@ from typing import Dict, Any, List, Optional
 
 from fastmcp import FastMCP, Context
 
+sys.path.insert(0, str(Path(__file__).parent.parent / "skills" / "conda-forge-expert" / "scripts"))
+from _path_guard import (  # noqa: E402
+    resolve_under_recipes,
+    validate_recipe_file_path,
+)
+
 mcp = FastMCP("conda-forge-expert")
 
 # Paths to the scripts relative to this file
@@ -936,6 +942,13 @@ async def trigger_build(
                 return json.dumps({"error": f"No recipe.yaml or meta.yaml in {recipe_path}"})
         if not recipe_path.exists():
             return json.dumps({"error": f"Recipe not found: {recipe_path}"})
+        try:
+            if recipe_path.is_dir():
+                resolve_under_recipes(recipe_path)
+            else:
+                recipe_path = validate_recipe_file_path(recipe_path)
+        except ValueError as exc:
+            return json.dumps({"error": str(exc)})
 
         variant = repo_root / ".ci_support" / f"{config}.yaml"
         if not variant.exists():
@@ -2075,6 +2088,39 @@ def query_atlas(
     `package_version_downloads`, `package_version_vulns`,
     `upstream_versions_history` are also queryable via JOIN.
     """
+    _FORBIDDEN = (
+        ";", "--", "/*", "UNION", "ATTACH", "DETACH", "PRAGMA", "VACUUM",
+        "INSERT", "UPDATE", "DELETE", "DROP", "ALTER", "(", ")",
+    )
+    _SELECT_RE = re.compile(r"^[a-zA-Z_][\w., ]*$")
+    _ORDER_RE = re.compile(
+        r"^[a-zA-Z_][\w.]*(\s+(ASC|DESC))?"
+        r"(,\s*[a-zA-Z_][\w.]*(\s+(ASC|DESC))?)*$",
+        re.IGNORECASE,
+    )
+
+    def _reject_fragment(fragment: str, *, kind: str) -> str | None:
+        upper = fragment.upper()
+        for token in _FORBIDDEN:
+            if token in upper:
+                return f"disallowed token in {kind}"
+        if kind == "select" and not _SELECT_RE.match(fragment.strip()):
+            return "invalid select column list"
+        if kind == "order_by" and not _ORDER_RE.match(fragment.strip()):
+            return "invalid order_by clause"
+        return None
+
+    if where:
+        err = _reject_fragment(where, kind="where")
+        if err:
+            return json.dumps({"error": err})
+    err = _reject_fragment(select, kind="select")
+    if err:
+        return json.dumps({"error": err})
+    err = _reject_fragment(order_by, kind="order_by")
+    if err:
+        return json.dumps({"error": err})
+
     if any(kw in (where or "").upper() for kw in
            ("INSERT", "UPDATE", "DELETE", "DROP", "ALTER", "ATTACH",
             "DETACH", "PRAGMA", "VACUUM")):

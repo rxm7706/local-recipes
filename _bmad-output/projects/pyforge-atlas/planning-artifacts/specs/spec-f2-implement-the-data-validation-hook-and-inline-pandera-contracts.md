@@ -1,7 +1,7 @@
 ---
 title: 'Story F2 (7.2): Implement the data-validation hook and inline Pandera contracts'
 type: 'feature'
-status: 'regenerated'
+status: 'shipped'
 regenerated: '2026-07-25'
 source: 'epics.md (authoritative intent + acceptance criteria) + shipped code on main'
 original_spec: 'NEVER AUTHORED as a file — wave B9-H4 ran through the in-session agent loop, not bmad-create-story (which wrote files only for waves 0/A/B1-B8), confirmed by the migration session itself. Nothing was lost; there is no original to recover. Intent+ACs below are the real epics.md contract.'

@@ -266,6 +266,12 @@ def fetch_pypi_current_versions(
     ``upload_time_iso_8601``** per the current release — B9/FR-20 (``release_lag_hours``)
     consumes it downstream with NO new fetch (spec:680).
 
+    Returns the **eligible delta** only. The catalog sink
+    (``IncrementalParquetDataset`` with ``merge_on: pypi_name``) upserts that
+    delta into the prior store so fresh rows are not deleted (AUD-ATLAS-015).
+    Kedro forbids the same dataset as both node input and output, so the merge
+    lives at the dataset boundary.
+
     Input ``pypi_json_raw``: ``pypi_name``, ``version``, optional ``pypi_last_serial``,
     ``pypi_version_serial_at_fetch`` (prior), ``fetched_at`` (prior), ``upload_time_iso_8601``.
     ``pypi_universe``: ``pypi_name``, ``last_serial``. Output ``pypi_current_versions``:
@@ -510,10 +516,11 @@ def enrich_pypi_intelligence(pypi_json_raw: pd.DataFrame) -> pd.DataFrame:
     df = pypi_json_raw
     if df is None or df.empty or "pypi_name" not in getattr(df, "columns", []):
         return pd.DataFrame(columns=cols)
-    out = pd.DataFrame(columns=cols)
-    for _, r in df.iterrows():
-        enriched = phase_r_fetch_one(r.to_dict())
-        out = phase_r_upsert_one(out, enriched)
+    # AUD-ATLAS-028: collect then one concat — avoid O(N²) phase_r_upsert_one
+    # concat-in-loop. Last-wins per pypi_name matches upsert semantics.
+    rows = [phase_r_fetch_one(r.to_dict()) for _, r in df.iterrows()]
+    out = pd.DataFrame(rows, columns=cols)
+    out = out.drop_duplicates(subset=["pypi_name"], keep="last")
     return out.reset_index(drop=True)
 
 

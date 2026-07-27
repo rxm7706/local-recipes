@@ -98,6 +98,25 @@ import yaml
 
 from .models import EMPTY_EXTRACTION_DRIVER_ID, Status, StatusDriver
 
+# AUD-WARDEN-014: whole-scan provenance sentinels whose ids are
+# invocation-stable (not package@version-scoped). Baselining any of them
+# once would suppress EVERY future occurrence of that condition — the same
+# reasoning that already excluded EMPTY_EXTRACTION_DRIVER_ID. A human who
+# really wants to suppress one can still hand-author a waiver/baseline
+# entry; only the accidental bulk-adoption path is closed.
+_BASELINE_EXCLUDED_FINDING_IDS = frozenset(
+    {
+        EMPTY_EXTRACTION_DRIVER_ID,
+        "indeterminate:vuln-data-stale:vuln-database",
+        "indeterminate:kev-data-unavailable:kev-feed",
+        "indeterminate:kev-data-stale:kev-feed",
+        "indeterminate:epss-data-unavailable:epss-feed",
+        "indeterminate:epss-data-stale:epss-feed",
+        "indeterminate:currency-registry-unavailable:lts-registry",
+        "indeterminate:currency-registry-stale:lts-registry",
+    }
+)
+
 # The finding-ID families, mirrored verbatim from models.py's own copy
 # (locally re-declared per this module's docstring -- models.py must not be
 # imported across for this). Matched with .fullmatch; "[^:\n]" (not "[^:]")
@@ -522,7 +541,11 @@ def load_waivers(path: Path) -> tuple[WaiverEntry, ...]:
         return ()
     try:
         with path.open("r", encoding="utf-8") as handle:
-            document = yaml.safe_load(handle)
+            loader = _UniqueKeySafeLoader(handle)
+            try:
+                document = loader.get_single_data()
+            finally:
+                loader.dispose()
     except (yaml.YAMLError, UnicodeDecodeError, RecursionError, OSError) as exc:
         raise WaiverParseError(f"{path}: cannot read or parse: {exc}") from exc
     return _validate_document(document, path=path).waivers
@@ -537,9 +560,9 @@ class _UniqueKeySafeLoader(yaml.SafeLoader):
     entries before ``_validate_baseline_document``'s duplicate-*id* check
     could ever see them -- the exact silent degradation ``load_baseline``'s
     "a loud error, never a silent empty baseline" contract forbids. A pure
-    restriction of ``SafeLoader`` (never a widening), used only by
-    ``load_baseline``: ``load_waivers`` deliberately keeps stock
-    ``yaml.safe_load`` (this story may not alter the waiver-only path)."""
+    restriction of ``SafeLoader`` (never a widening). AUD-WARDEN-020: also
+    used by ``load_waivers`` so duplicate keys cannot silently disarm a
+    waiver section the same way."""
 
     def construct_mapping(self, node, deep=False):
         seen = set()
@@ -839,15 +862,16 @@ def emit_baseline_stanza(
     observational (unlike ``--bypass``, which both bypasses AND emits).
 
     One DELIBERATE divergence from ``emit_bypass_stanza``'s selection
-    (Story 6.8 review finding): the D2(c) empty-extraction sentinel
-    (``EMPTY_EXTRACTION_DRIVER_ID``) is NEVER proposed as a grandfathering
-    candidate. Its id is whole-scan-scoped and invocation-stable -- unlike
-    a real finding id (package@version-scoped, so a NEW problem gets a NEW
-    id), baselining it once would suppress EVERY future empty-extraction
-    condition, e.g. an extraction regression false-greening the gate. A
-    human who really wants to suppress it can still hand-author a waiver
-    or baseline entry (validation accepts the id -- the deliberate act
-    stays possible; only the accidental bulk-adoption path is closed)."""
+    (Story 6.8 review finding + AUD-WARDEN-014): whole-scan provenance
+    sentinels (empty-extraction, vuln-data-stale, kev/epss feed
+    unavailable/stale, currency-registry unavailable/stale) are NEVER
+    proposed as grandfathering candidates. Their ids are
+    invocation-stable — unlike a real finding id (package@version-scoped,
+    so a NEW problem gets a NEW id), baselining one once would suppress
+    EVERY future occurrence of that condition. A human who really wants to
+    suppress one can still hand-author a waiver or baseline entry
+    (validation accepts the id — the deliberate act stays possible; only
+    the accidental bulk-adoption path is closed)."""
     ids = sorted(
         {
             driver.finding_id
@@ -855,7 +879,7 @@ def emit_baseline_stanza(
             if driver is not None
             and status not in _NON_BLOCKING_STATUSES
             and _is_finding_family_id(driver.finding_id)
-            and driver.finding_id != EMPTY_EXTRACTION_DRIVER_ID
+            and driver.finding_id not in _BASELINE_EXCLUDED_FINDING_IDS
         }
     )
     expires_at = now + timedelta(days=expiry_days)

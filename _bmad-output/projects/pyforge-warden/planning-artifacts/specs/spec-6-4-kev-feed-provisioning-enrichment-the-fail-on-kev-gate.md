@@ -3,7 +3,8 @@
 title: 'Story 6.4: KEV feed provisioning, enrichment & the --fail-on-kev gate'
 type: 'feature'
 created: '2026-07-18'
-status: 'draft'
+status: shipped
+updated: '2026-07-27 (AUD-WARDEN-030 status sync)'
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []

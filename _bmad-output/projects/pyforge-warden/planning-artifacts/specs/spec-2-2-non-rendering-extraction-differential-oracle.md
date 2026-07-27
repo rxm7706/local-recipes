@@ -3,7 +3,8 @@
 title: 'Story 2.2: Non-rendering extraction (common case) + differential-oracle'
 type: 'feature'
 created: '2026-07-16'
-status: 'done'
+status: shipped
+updated: '2026-07-27 (AUD-WARDEN-030 status sync)'
 baseline_revision: 'ac2da5bff2617d320b2ad639074c2e7d3e1b8c0d'
 final_revision: '2eeaa7119c66d9522532986bbbea63eec457be05'
 review_loop_iteration: 0

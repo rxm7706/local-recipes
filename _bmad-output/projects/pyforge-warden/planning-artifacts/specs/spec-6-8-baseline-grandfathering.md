@@ -2,7 +2,8 @@
 title: 'Story 6.8: Baseline & grandfathering (gate new findings only)'
 type: 'feature'
 created: '2026-07-24'
-status: 'done'
+status: shipped
+updated: '2026-07-27 (AUD-WARDEN-030 status sync)'
 review_loop_iteration: 0
 followup_review_recommended: false
 baseline_revision: '9201b751eca0b588a3a978b9d5df985a5d038a52'

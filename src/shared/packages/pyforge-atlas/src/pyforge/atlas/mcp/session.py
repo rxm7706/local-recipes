@@ -33,6 +33,25 @@ assert (PROJECT_ROOT / "conf" / "base" / "catalog.yml").is_file(), (
 )
 
 
+def _resolve_mcp_project_root(project_path: Path | str | None) -> Path:
+    """Pin MCP sessions to this package's Kedro root (AUD-ATLAS-018).
+
+    ``project_path=None`` (the normal tool path) uses :data:`PROJECT_ROOT`.
+    An explicit override is accepted only when it resolves to the same root —
+    arbitrary Kedro trees are rejected so an unauthenticated MCP caller cannot
+    bootstrap someone else's project (amplifies AUD-ATLAS-003).
+    """
+    if project_path is None:
+        return PROJECT_ROOT
+    candidate = Path(project_path).expanduser().resolve()
+    if candidate != PROJECT_ROOT:
+        raise ValueError(
+            f"MCP project_path must be the atlas package root ({PROJECT_ROOT}); "
+            f"got {candidate}"
+        )
+    return PROJECT_ROOT
+
+
 @contextlib.contextmanager
 def bootstrapped_session(
     project_path: Path | str | None = None,
@@ -47,7 +66,7 @@ def bootstrapped_session(
     overrides; kedro 1.5.0's ``KedroSession.create`` calls them
     ``runtime_params`` — mapped here, in the single touch point.
     """
-    root = Path(project_path) if project_path is not None else PROJECT_ROOT
+    root = _resolve_mcp_project_root(project_path)
     bootstrap_project(root)
     with KedroSession.create(
         project_path=root,

@@ -99,4 +99,7 @@ def test_surface_reads_with_kedro_mcp_absent(kedro_mcp_unimportable, monkeypatch
 
     monkeypatch.setattr(session_mod, "bootstrapped_session", fake_bootstrapped_session)
 
-    assert tools.read_dataset("demo_ds") is sentinel
+    payload = tools.read_dataset("demo_ds")
+    assert payload["dataset"] == "demo_ds"
+    assert payload["build_stamp"]
+    assert payload["value"] is sentinel

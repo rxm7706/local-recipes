@@ -33,12 +33,29 @@ from __future__ import annotations
 
 import logging
 import os
+import re
 from typing import Any, Callable
 
 from kedro.io import AbstractDataset
 from kedro_datasets.api import APIDataset
 
 from .rate_limit import DEFAULT_RPS, RateLimitedScheduler
+
+# AUD-ATLAS-022: PyPI / anaconda path segments must be single safe names.
+_PROJECT_NAME_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._+-]*\Z")
+
+# AUD-ATLAS-020: BigQuery TIMESTAMP literals interpolated into the query template.
+_BQ_TIMESTAMP_RE = re.compile(
+    r"^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} UTC\Z"
+)
+
+
+def _require_project_path_segment(value: str, *, kind: str) -> str:
+    """Return a sanitized path segment or raise ``ValueError`` (AUD-ATLAS-022)."""
+    name = str(value).strip().strip("/")
+    if not name or "/" in name or "\\" in name or ".." in name or not _PROJECT_NAME_RE.match(name):
+        raise ValueError(f"unsafe {kind} name {value!r}: must be a single path segment")
+    return name
 
 logger = logging.getLogger(__name__)
 
@@ -147,9 +164,9 @@ class AnacondaDownloadsDataset(_RequestParameterizedAPIDataset):
     def request_path(self, owner: str, name: str) -> str:
         """Build the per-package request path — the parameterization a node may NOT
         perform (AC-2). ``owner`` defaults to ``conda-forge`` in the legacy path."""
-        owner = (owner or "conda-forge").strip("/")
-        name = name.strip("/")
-        return f"{self._base_url.rstrip('/')}/{owner}/{name}"
+        owner_seg = _require_project_path_segment(owner or "conda-forge", kind="owner")
+        name_seg = _require_project_path_segment(name, kind="package")
+        return f"{self._base_url.rstrip('/')}/{owner_seg}/{name_seg}"
 
 
 class GitHubRequestDataset(_RequestParameterizedAPIDataset):
@@ -190,10 +207,14 @@ class PyPIJsonRequestDataset(_RequestParameterizedAPIDataset):
     def request_path(self, name: str) -> str:
         """Build the per-project ``/pypi/<name>/json`` request path — the
         parameterization a node may NOT perform (AC-2). ``name`` is coerced to ``str``
-        so a stray non-string cell cannot crash the fan-out."""
+        so a stray non-string cell cannot crash the fan-out.
+
+        AUD-ATLAS-022: reject path-like / traversal names before URL composition.
+        """
         if name is None:
             raise ValueError("request_path requires a project name, got None")
-        return f"{self._base_url.rstrip('/')}/pypi/{str(name).strip('/')}/json"
+        safe = _require_project_path_segment(name, kind="pypi project")
+        return f"{self._base_url.rstrip('/')}/pypi/{safe}/json"
 
     def load(self) -> Any:
         """The per-project fan-out is NOT a single-URL load — the DAG must drive it via
@@ -375,13 +396,23 @@ class BigQueryDownloadsDataset(AbstractDataset):
     def build_query(self, start_ts: str, end_ts: str) -> str:
         """Render the query with **literal TIMESTAMP bounds on the ``timestamp``
         column** (D1 — the code REJECTS ``_PARTITIONDATE``). ``start_ts``/``end_ts``
-        are ISO-8601 UTC literals (e.g. ``2026-01-01 00:00:00 UTC``)."""
+        are ISO-8601 UTC literals (e.g. ``2026-01-01 00:00:00 UTC``).
+
+        AUD-ATLAS-020: bounds are validated before ``str.format`` interpolation so a
+        caller cannot inject SQL via the timestamp slots.
+        """
         if "_PARTITIONDATE" in self._query_template:
             raise ValueError(
                 "Phase P query must NOT reference _PARTITIONDATE (D1: the table is "
                 "column-partitioned on `timestamp`; _PARTITIONDATE raises "
                 "'Unrecognized name'). Use literal TIMESTAMP bounds on `timestamp`."
             )
+        for label, value in (("start_ts", start_ts), ("end_ts", end_ts)):
+            if not isinstance(value, str) or not _BQ_TIMESTAMP_RE.match(value):
+                raise ValueError(
+                    f"Phase P {label} must be an ISO-UTC literal "
+                    f"'YYYY-MM-DD HH:MM:SS UTC', got {value!r}"
+                )
         return self._query_template.format(start_ts=start_ts, end_ts=end_ts)
 
     def estimate_cost_usd(self, bytes_processed: int) -> float:

@@ -8,6 +8,11 @@ status: shipped
 implemented_by: bmad-loop
 shipped_ref: "conda-forge-expert v8.79.0"
 spec_updated: 2026-07-18
+shipped_scope_note: >-
+  AUD-ATLAS-047/049 (2026-07-27): `status: shipped` means Waves 0–H code + fixture gates
+  merged (PRs #58–#105). It does NOT mean credentialed B4 parity sign-off, legacy
+  orchestrator retirement (DW-B4-*), full 28-page dashboard (DW-D2), or F1 cold/warm
+  benchmark (DW-F1-1) are complete — those remain attended deferred work.
 ---
 
 # Spec: cfe-atlas-datapipeline Kedro Migration

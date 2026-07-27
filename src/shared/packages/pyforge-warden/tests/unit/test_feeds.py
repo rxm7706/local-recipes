@@ -192,13 +192,13 @@ def test_load_kev_catalog_missing_vulnerabilities_key_is_none(tmp_path):
     assert load_kev_catalog(path) is None
 
 
-def test_load_kev_catalog_present_but_empty_is_an_empty_dict_not_none(tmp_path):
-    """The distinction the Story 6.4 ambient test fixture depends on:
-    present + fresh + zero entries reads as ``{}``, never ``None`` (which
-    would mean "no usable feed at all")."""
+def test_load_kev_catalog_hollow_catalog_is_none(tmp_path):
+    """AUD-WARDEN-012: ``{"vulnerabilities": []}`` is unusable — identical
+    to an absent file for ``--fail-on-kev`` (would otherwise stamp every
+    CVE kev=False with no unavailable finding)."""
     path = tmp_path / "feed.json"
     path.write_text(json.dumps({"vulnerabilities": []}), encoding="utf-8")
-    assert load_kev_catalog(path) == {}
+    assert load_kev_catalog(path) is None
 
 
 def test_load_kev_catalog_extracts_cve_id_to_date_added(tmp_path):
@@ -428,12 +428,12 @@ def test_load_epss_scores_missing_scores_key_is_none(tmp_path):
     assert load_epss_scores(path) is None
 
 
-def test_load_epss_scores_present_but_empty_is_an_empty_dict_not_none(tmp_path):
-    """The same present/fresh/zero-entries distinction ``load_kev_catalog``'s
-    own docstring establishes."""
+def test_load_epss_scores_hollow_catalog_is_none(tmp_path):
+    """AUD-WARDEN-012: ``{"scores": []}`` is unusable — same content
+    pre-flight as ``load_kev_catalog``."""
     path = tmp_path / "feed.json"
     path.write_text(json.dumps({"scores": []}), encoding="utf-8")
-    assert load_epss_scores(path) == {}
+    assert load_epss_scores(path) is None
 
 
 def test_load_epss_scores_extracts_cve_to_score_percentile_tuple(tmp_path):

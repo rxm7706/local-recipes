@@ -185,7 +185,7 @@ def test_withheld_component_derives_the_indeterminate_finding(component_factory)
     findings, rungs = DefaultPolicy().evaluate(inventory, [EMPTY_RESULT])
     assert len(findings) == 1
     finding = findings[0]
-    assert finding.id == "indeterminate:no-version:leftpad"
+    assert finding.id == "indeterminate:no-version:leftpad@unspecified"
     assert finding.axis == AXIS_VULNERABILITY
     assert finding.subject == "leftpad"
     assert len(rungs) == 1
@@ -205,7 +205,7 @@ def test_range_only_reason_appears_in_the_finding_id(component_factory):
         )
     )
     findings, _ = DefaultPolicy().evaluate(inventory, [])
-    assert findings[0].id == "indeterminate:range-only:requests"
+    assert findings[0].id == "indeterminate:range-only:requests@unspecified"
 
 
 def test_engine_findings_pass_through(component_factory):
@@ -698,11 +698,11 @@ def test_assessable_weak_match_level_feeds_a_driver_carrying_rung(
     )
     findings, rungs = DefaultPolicy().evaluate(inventory, [EMPTY_RESULT])
     assert len(findings) == 1
-    assert findings[0].id == "indeterminate:name-only:weak"
+    assert findings[0].id == "indeterminate:name-only:weak@1.0"
     ((status, driver),) = rungs
     assert status is Status.INDETERMINATE
     assert driver is not None
-    assert driver.finding_id == "indeterminate:name-only:weak"
+    assert driver.finding_id == "indeterminate:name-only:weak@1.0"
 
 
 def test_every_non_clean_rung_carries_a_driver(component_factory):
@@ -731,7 +731,7 @@ def test_derived_id_colliding_with_an_engine_finding_is_not_duplicated(
     engine already emitted the id, the rung's driver references it by id
     instead of duplicating the finding."""
     engine_finding = Finding(
-        id="indeterminate:no-version:leftpad",
+        id="indeterminate:no-version:leftpad@unspecified",
         axis=AXIS_VULNERABILITY,
         message="engine-side withhold record",
         subject="leftpad",
@@ -746,7 +746,7 @@ def test_derived_id_colliding_with_an_engine_finding_is_not_duplicated(
         )
     )
     findings, rungs = DefaultPolicy().evaluate(inventory, [result])
-    assert [f.id for f in findings] == ["indeterminate:no-version:leftpad"]
+    assert [f.id for f in findings] == ["indeterminate:no-version:leftpad@unspecified"]
     assert findings[0].message == "engine-side withhold record"
     assert rungs[0][1].finding_id == engine_finding.id
 
@@ -843,12 +843,12 @@ def test_unmatchable_component_without_reason_never_feeds_clean(
         component_factory(name="oddball", version="1.0.0", vuln_matchable=False)
     )
     findings, rungs = DefaultPolicy().evaluate(inventory, [EMPTY_RESULT])
-    assert [f.id for f in findings] == ["indeterminate:unmatchable:oddball"]
+    assert [f.id for f in findings] == ["indeterminate:unmatchable:oddball@1.0.0"]
     assert findings[0].axis == AXIS_VULNERABILITY
     ((status, driver),) = rungs
     assert status is Status.INDETERMINATE
     assert driver == StatusDriver(
-        axis=AXIS_VULNERABILITY, finding_id="indeterminate:unmatchable:oddball"
+        axis=AXIS_VULNERABILITY, finding_id="indeterminate:unmatchable:oddball@1.0.0"
     )
 
 
@@ -859,12 +859,12 @@ def test_uncovered_component_without_reason_never_feeds_clean(
         component_factory(name="oddball", version="1.0.0", hygiene_covered=False)
     )
     findings, rungs = DefaultPolicy().evaluate(inventory, [EMPTY_RESULT])
-    assert [f.id for f in findings] == ["indeterminate:uncovered:oddball"]
+    assert [f.id for f in findings] == ["indeterminate:uncovered:oddball@1.0.0"]
     assert findings[0].axis == AXIS_HYGIENE
     ((status, driver),) = rungs
     assert status is Status.INDETERMINATE
     assert driver == StatusDriver(
-        axis=AXIS_HYGIENE, finding_id="indeterminate:uncovered:oddball"
+        axis=AXIS_HYGIENE, finding_id="indeterminate:uncovered:oddball@1.0.0"
     )
 
 
@@ -881,8 +881,8 @@ def test_doubly_deficient_component_derives_both_axis_findings(
     )
     findings, rungs = DefaultPolicy().evaluate(inventory, [EMPTY_RESULT])
     assert sorted(f.id for f in findings) == [
-        "indeterminate:uncovered:oddball",
-        "indeterminate:unmatchable:oddball",
+        "indeterminate:uncovered:oddball@1.0.0",
+        "indeterminate:unmatchable:oddball@1.0.0",
     ]
     assert len(rungs) == 2
     assert all(status is Status.INDETERMINATE for status, _ in rungs)
@@ -902,12 +902,12 @@ def test_license_uncovered_component_derives_axis_qualified_finding(
         component_factory(name="oddball", version="1.0.0", license_covered=False)
     )
     findings, rungs = DefaultPolicy().evaluate(inventory, [EMPTY_RESULT])
-    assert [f.id for f in findings] == ["indeterminate:uncovered-license:oddball"]
+    assert [f.id for f in findings] == ["indeterminate:uncovered-license:oddball@1.0.0"]
     assert findings[0].axis == AXIS_LICENSE
     ((status, driver),) = rungs
     assert status is Status.INDETERMINATE
     assert driver == StatusDriver(
-        axis=AXIS_LICENSE, finding_id="indeterminate:uncovered-license:oddball"
+        axis=AXIS_LICENSE, finding_id="indeterminate:uncovered-license:oddball@1.0.0"
     )
 
 
@@ -918,12 +918,12 @@ def test_currency_uncovered_component_derives_axis_qualified_finding(
         component_factory(name="oddball", version="1.0.0", currency_covered=False)
     )
     findings, rungs = DefaultPolicy().evaluate(inventory, [EMPTY_RESULT])
-    assert [f.id for f in findings] == ["indeterminate:uncovered-currency:oddball"]
+    assert [f.id for f in findings] == ["indeterminate:uncovered-currency:oddball@1.0.0"]
     assert findings[0].axis == AXIS_CURRENCY
     ((status, driver),) = rungs
     assert status is Status.INDETERMINATE
     assert driver == StatusDriver(
-        axis=AXIS_CURRENCY, finding_id="indeterminate:uncovered-currency:oddball"
+        axis=AXIS_CURRENCY, finding_id="indeterminate:uncovered-currency:oddball@1.0.0"
     )
 
 
@@ -945,9 +945,9 @@ def test_triple_uncovered_component_keeps_three_distinct_axis_ids(
     findings, rungs = DefaultPolicy().evaluate(inventory, [EMPTY_RESULT])
     by_id = {f.id: f.axis for f in findings}
     assert by_id == {
-        "indeterminate:uncovered:oddball": AXIS_HYGIENE,
-        "indeterminate:uncovered-license:oddball": AXIS_LICENSE,
-        "indeterminate:uncovered-currency:oddball": AXIS_CURRENCY,
+        "indeterminate:uncovered:oddball@1.0.0": AXIS_HYGIENE,
+        "indeterminate:uncovered-license:oddball@1.0.0": AXIS_LICENSE,
+        "indeterminate:uncovered-currency:oddball@1.0.0": AXIS_CURRENCY,
     }
     assert len(rungs) == 3
     assert all(status is Status.INDETERMINATE for status, _ in rungs)
@@ -969,7 +969,7 @@ def test_reused_engine_finding_id_keeps_that_findings_axis(component_factory):
     """When the derived id already exists among engine findings, the rung
     driver's axis is THAT finding's axis — never hardcoded vulnerability."""
     engine_finding = Finding(
-        id="indeterminate:no-version:leftpad",
+        id="indeterminate:no-version:leftpad@unspecified",
         axis=AXIS_HYGIENE,  # the indeterminate: id family is axis-free
         message="engine-side withhold record",
         subject="leftpad",
@@ -1008,9 +1008,9 @@ def test_component_name_with_newline_sanitizes_in_the_id(component_factory):
         )
     )
     findings, rungs = DefaultPolicy().evaluate(inventory, [EMPTY_RESULT])
-    assert findings[0].id == "indeterminate:no-version:foo%0Abar"
+    assert findings[0].id == "indeterminate:no-version:foo%0Abar@unspecified"
     assert findings[0].subject == "foo\nbar"
-    assert rungs[0][1].finding_id == "indeterminate:no-version:foo%0Abar"
+    assert rungs[0][1].finding_id == "indeterminate:no-version:foo%0Abar@unspecified"
 
 
 def test_component_name_with_crlf_sanitizes_deterministically(
@@ -1024,7 +1024,7 @@ def test_component_name_with_crlf_sanitizes_deterministically(
         )
     )
     findings, _ = DefaultPolicy().evaluate(inventory, [EMPTY_RESULT])
-    assert findings[0].id == "indeterminate:no-version:bad%0D%0Aname"
+    assert findings[0].id == "indeterminate:no-version:bad%0D%0Aname@unspecified"
     assert findings[0].subject == "bad\r\nname"
 
 
@@ -1051,8 +1051,8 @@ def test_sanitization_is_injective_for_literal_escape_sequences(
     )
     findings, rungs = DefaultPolicy().evaluate(inventory, [EMPTY_RESULT])
     assert sorted(f.id for f in findings) == [
-        "indeterminate:no-version:foo%0Abar",
-        "indeterminate:no-version:foo%250Abar",
+        "indeterminate:no-version:foo%0Abar@unspecified",
+        "indeterminate:no-version:foo%250Abar@unspecified",
     ]
     assert len(rungs) == 2
 
@@ -1069,7 +1069,7 @@ def test_colon_in_component_name_sanitizes_in_the_id(component_factory):
         )
     )
     findings, _ = DefaultPolicy().evaluate(inventory, [EMPTY_RESULT])
-    assert findings[0].id == "indeterminate:no-version:odd%3Aname"
+    assert findings[0].id == "indeterminate:no-version:odd%3Aname@unspecified"
     assert findings[0].subject == "odd:name"
 
 
@@ -1086,7 +1086,7 @@ def test_empty_growable_reason_token_degrades_never_crashes(component_factory):
         )
     )
     findings, rungs = DefaultPolicy().evaluate(inventory, [EMPTY_RESULT])
-    assert findings[0].id == "indeterminate:unspecified:oddball"
+    assert findings[0].id == "indeterminate:unspecified:oddball@unspecified"
     assert len(rungs) == 1
     assert rungs[0][0] is Status.INDETERMINATE
 
@@ -1113,11 +1113,11 @@ def test_withheld_and_uncovered_component_surfaces_both_axes(
     findings, rungs = DefaultPolicy().evaluate(inventory, [EMPTY_RESULT])
     by_id = {f.id: f for f in findings}
     assert sorted(by_id) == [
-        "indeterminate:no-version:junk",
-        "indeterminate:uncovered:junk",
+        "indeterminate:no-version:junk@unspecified",
+        "indeterminate:uncovered:junk@unspecified",
     ]
-    assert by_id["indeterminate:no-version:junk"].axis == AXIS_VULNERABILITY
-    assert by_id["indeterminate:uncovered:junk"].axis == AXIS_HYGIENE
+    assert by_id["indeterminate:no-version:junk@unspecified"].axis == AXIS_VULNERABILITY
+    assert by_id["indeterminate:uncovered:junk@unspecified"].axis == AXIS_HYGIENE
     assert len(rungs) == 2
     assert all(status is Status.INDETERMINATE for status, _ in rungs)
     assert all(driver is not None for _, driver in rungs)

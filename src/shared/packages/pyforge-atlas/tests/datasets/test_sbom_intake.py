@@ -134,7 +134,7 @@ def test_parse_conda_list_explicit_url_rows():
 def test_sbom_intake_dataset_loads_requirements(tmp_path):
     f = tmp_path / "requirements.txt"
     f.write_text("numpy==1.26.0\nflask\n", encoding="utf-8")
-    ds = SbomIntakeDataset(filepath=str(f))
+    ds = SbomIntakeDataset(filepath=str(f), allowed_root=str(tmp_path))
     out = ds.load()
     assert out["format"] == "requirements"
     assert {d["name"] for d in out["deps"]} == {"numpy", "flask"}
@@ -152,13 +152,42 @@ def test_sbom_intake_dataset_constructs_offline_without_touching_the_file():
     assert ds._describe()["filepath"] == "/nonexistent/intake.json"
 
 
+def test_sbom_intake_rejects_oversized_file(tmp_path, monkeypatch):
+    # AUD-ATLAS-038: hard size cap before parse.
+    f = tmp_path / "big.txt"
+    f.write_text("x" * 64, encoding="utf-8")
+    monkeypatch.setattr(
+        "pyforge.atlas.datasets.sbom_intake._MAX_INTAKE_BYTES", 16
+    )
+    ds = SbomIntakeDataset(filepath=str(f), allowed_root=str(tmp_path))
+    with pytest.raises(DatasetError, match="size cap"):
+        ds.load()
+
+
+def test_resolver_rejects_oversized_file(tmp_path, monkeypatch):
+    f = tmp_path / "big.txt"
+    f.write_text("x" * 64, encoding="utf-8")
+    monkeypatch.setattr(
+        "pyforge.atlas.datasets.sbom_intake._MAX_INTAKE_BYTES", 16
+    )
+
+    def stub(text):
+        raise AssertionError("resolver must not run on oversized intake")
+
+    ds = TransitiveResolverDataset(
+        filepath=str(f), resolver=stub, allowed_root=str(tmp_path)
+    )
+    with pytest.raises(DatasetError, match="size cap"):
+        ds.load()
+
+
 # ── AC-1: TransitiveResolverDataset (offline / resolved / raise) ──────────────
 
 
 def test_resolver_offline_returns_unresolved_marker(tmp_path):
     f = tmp_path / "requirements.txt"
     f.write_text("numpy\n", encoding="utf-8")
-    ds = TransitiveResolverDataset(filepath=str(f))  # resolver=None == offline
+    ds = TransitiveResolverDataset(filepath=str(f), allowed_root=str(tmp_path))  # resolver=None == offline
     out = ds.load()
     assert out["resolution"] == "unresolved"
     assert out["deps"] == []
@@ -181,7 +210,9 @@ def test_resolver_resolved_records_depth_and_fanout(tmp_path):
             "fanout": 3,
         }
 
-    ds = TransitiveResolverDataset(filepath=str(f), resolver=stub_resolver)
+    ds = TransitiveResolverDataset(
+        filepath=str(f), resolver=stub_resolver, allowed_root=str(tmp_path)
+    )
     out = ds.load()
     assert out["resolution"] == "resolved"
     assert out["depth"] == 2
@@ -196,7 +227,9 @@ def test_resolver_exception_degrades_to_unresolved_never_crashes(tmp_path):
     def broken_resolver(text):
         raise RuntimeError("solver blew up / network down")
 
-    ds = TransitiveResolverDataset(filepath=str(f), resolver=broken_resolver)
+    ds = TransitiveResolverDataset(
+        filepath=str(f), resolver=broken_resolver, allowed_root=str(tmp_path)
+    )
     out = ds.load()  # must NOT raise (AD-13)
     assert out["resolution"] == "unresolved"
     assert "resolver failed" in out["reason"]
@@ -207,9 +240,30 @@ def test_resolver_missing_file_degrades_to_unresolved(tmp_path):
     def stub(text):
         return {"deps": [], "depth": 0, "fanout": 0}
 
-    ds = TransitiveResolverDataset(filepath=str(tmp_path / "nope.txt"), resolver=stub)
+    ds = TransitiveResolverDataset(
+        filepath=str(tmp_path / "nope.txt"), resolver=stub, allowed_root=str(tmp_path)
+    )
     out = ds.load()
     assert out["resolution"] == "unresolved"
+
+
+def test_resolver_path_escape_raises_dataset_error(tmp_path):
+    # AUD-ATLAS-016 + 025: escape is a policy failure, not AD-13 offline.
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    secret = outside / "secret.txt"
+    secret.write_text("should-not-read\n", encoding="utf-8")
+    allowed = tmp_path / "allowed"
+    allowed.mkdir()
+
+    def stub(text):
+        raise AssertionError("resolver must not run on escaped path")
+
+    ds = TransitiveResolverDataset(
+        filepath=str(secret), resolver=stub, allowed_root=str(allowed)
+    )
+    with pytest.raises(DatasetError, match="must lie under"):
+        ds.load()
 
 
 def test_resolver_dataset_is_read_only(tmp_path):

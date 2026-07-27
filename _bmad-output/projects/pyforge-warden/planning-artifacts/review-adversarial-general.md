@@ -96,6 +96,7 @@ Method note: deliberately-marked history (the frontmatter `prioritizedRefinement
 - **Quote:** "The actuator … runs strictly post-verdict … A failed PR-open never alters the verdict or exit code (it surfaces as a **typed warning**)."
 - **Why it burns:** "Typed warning" is load-bearing vagueness. If the warning lands in the `ComplianceReport`/status channel, it can flip a `clean` run to `warn` — altering the verdict FR40 promises is untouchable, and mutating a report whose verdict was "computed before and independent of actuation." If it goes to stderr only, it's untyped by the PRD's own taxonomy (typed kinds live in the report per FR21). Neither reading satisfies the sentence.
 - **Fix:** Pin the channel: e.g., "a failed PR-open is recorded in a post-verdict `actuation` report section (outside status/exit composition, analogous to `review_required`) and echoed to stderr; it never feeds the FR20 lattice."
+- **Resolved (AUD-WARDEN-030):** live PRD FR40 uses the post-verdict `actuation` section + stderr; this finding is historical.
 
 ---
 

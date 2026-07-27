@@ -555,6 +555,7 @@ def classify_migration_readiness(
     noarch_flags = {name: _is_noarch(subdirs_lookup.get(name)) for name in feedstocks}
 
     # -- downloads lookup (Phase F): conda_name -> downloads_total (dedup, max wins).
+    # AUD-ATLAS-039: vectorized groupby.max (was a Python zip loop).
     dl_lookup: dict[str, float] = {}
     dl = core_downloads
     if dl is not None and not dl.empty and {"conda_name", "downloads_total"} <= set(dl.columns):
@@ -562,11 +563,9 @@ def classify_migration_readiness(
         d["conda_name"] = d["conda_name"].map(_key)
         d["downloads_total"] = pd.to_numeric(d["downloads_total"], errors="coerce")
         d = d.dropna(subset=["conda_name"])
-        # a feedstock can carry multiple download rows (defensive) — keep the max.
-        for name, val in zip(d["conda_name"], d["downloads_total"]):
-            if pd.notna(val):
-                prev = dl_lookup.get(name)
-                dl_lookup[name] = val if prev is None else max(prev, val)
+        dl_lookup = (
+            d.groupby("conda_name", sort=False)["downloads_total"].max().dropna().to_dict()
+        )
 
     rows: list[dict[str, Any]] = []
     # Iterate migrations in a STABLE (sorted) order so the output is deterministic across the

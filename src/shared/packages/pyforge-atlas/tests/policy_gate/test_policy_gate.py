@@ -115,6 +115,21 @@ def test_source_dir_without_python_is_not_applicable(tmp_path):
     assert hygiene["applicable"] is False  # no adjacent *.py -> deptry N/A, not a failure
 
 
+def test_hygiene_source_dir_escape_is_not_applicable():
+    # AUD-ATLAS-017: unconstrained absolute paths (e.g. /etc) must not reach deptry.
+    hygiene = run_dependency_hygiene(
+        {},
+        {
+            "gate": {
+                "hygiene_source_dir": "/etc",
+                "hygiene_allowed_root": "/tmp/atlas-hygiene-allow-none",
+            }
+        },
+    )
+    assert hygiene["applicable"] is False
+    assert "escapes the allowed root" in hygiene["reason"]
+
+
 # --------------------------------------------------------------------------- #
 # (c) policy breach -> frozen exit 1 + halt + A2A alert (identical to FR-10)
 # --------------------------------------------------------------------------- #

@@ -19,6 +19,7 @@ import pytest
 import yaml
 
 from pyforge.warden.models import (
+    AXIS_CURRENCY,
     AXIS_HYGIENE,
     AXIS_INGESTION,
     AXIS_VULNERABILITY,
@@ -538,7 +539,7 @@ def test_two_rungs_sharing_one_expired_waiver_id_produce_one_expired_notice():
 def test_bypass_blocking_converts_warn_indeterminate_and_policy_violation():
     rungs = [
         _rung(Status.WARN, "hygiene:DEP002:requests"),
-        _rung(Status.INDETERMINATE, "indeterminate:no-version:foo"),
+        _rung(Status.INDETERMINATE, "indeterminate:no-version:foo@unspecified"),
         _rung(Status.POLICY_VIOLATION, "vuln:GHSA-xxxx:pkg@1.0.0", axis=AXIS_VULNERABILITY),
     ]
     updated = bypass_blocking(rungs)
@@ -617,7 +618,7 @@ def test_warn_blocking_counts_only_the_rungs_it_actually_rewrites():
     rungs = [
         _rung(Status.WARN, "hygiene:DEP002:requests"),
         _rung(Status.POLICY_VIOLATION, "vuln:GHSA-xxxx:pkg@1.0.0", axis=AXIS_VULNERABILITY),
-        _rung(Status.INDETERMINATE, "indeterminate:no-version:foo"),
+        _rung(Status.INDETERMINATE, "indeterminate:no-version:foo@unspecified"),
         _rung(Status.ERROR, "error:config-parse:x", axis=AXIS_INGESTION),
     ]
     updated, downgraded = warn_blocking(rungs)
@@ -638,8 +639,8 @@ def test_warn_blocking_counts_distinct_findings_not_raw_rungs():
     dedupe by finding_id too, or it overcounts relative to
     report.findings."""
     rungs = [
-        _rung(Status.INDETERMINATE, "indeterminate:unmatchable:foo"),
-        _rung(Status.INDETERMINATE, "indeterminate:unmatchable:foo"),
+        _rung(Status.INDETERMINATE, "indeterminate:unmatchable:foo@unspecified"),
+        _rung(Status.INDETERMINATE, "indeterminate:unmatchable:foo@unspecified"),
     ]
     updated, downgraded = warn_blocking(rungs)
     assert downgraded == 1
@@ -837,6 +838,29 @@ def test_baseline_duplicate_key_inside_an_entry_raises_parse_error(tmp_path):
     )
     with pytest.raises(BaselineParseError, match="duplicate key"):
         load_baseline(path)
+
+
+def test_waiver_duplicate_top_level_key_raises_parse_error(tmp_path):
+    # AUD-WARDEN-020: waivers use the same unique-key loader as baseline.
+    path = tmp_path / ".warden-waivers.yaml"
+    _write(
+        path,
+        "version: 1\n"
+        "waivers:\n"
+        f"  - id: 'hygiene:DEP002:requests'\n"
+        f"    reason: 'a'\n"
+        f"    authorized_by: 'alice'\n"
+        f"    accepted_at: {_ACCEPTED!r}\n"
+        f"    expires_at: {_EXPIRES!r}\n"
+        "waivers:\n"
+        f"  - id: 'hygiene:DEP002:flask'\n"
+        f"    reason: 'b'\n"
+        f"    authorized_by: 'bob'\n"
+        f"    accepted_at: {_ACCEPTED!r}\n"
+        f"    expires_at: {_EXPIRES!r}\n",
+    )
+    with pytest.raises(WaiverParseError, match="duplicate key"):
+        load_waivers(path)
 
 
 # --- load_baseline: version/shape validation -------------------------------
@@ -1226,6 +1250,40 @@ def test_emit_baseline_stanza_never_proposes_the_empty_extraction_sentinel():
     ids = [entry["id"] for entry in document["baseline"]]
     assert ids == ["hygiene:DEP002:requests"]
     assert EMPTY_EXTRACTION_DRIVER_ID not in stanza
+
+
+def test_emit_baseline_stanza_never_proposes_whole_axis_provenance_sentinels():
+    """AUD-WARDEN-014: kev/epss/vuln-db/currency-registry sentinels are the
+    same class as empty-extraction — invocation-stable, whole-scan-scoped."""
+    rungs = [
+        _rung(
+            Status.INDETERMINATE,
+            "indeterminate:kev-data-unavailable:kev-feed",
+            axis=AXIS_VULNERABILITY,
+        ),
+        _rung(
+            Status.INDETERMINATE,
+            "indeterminate:vuln-data-stale:vuln-database",
+            axis=AXIS_VULNERABILITY,
+        ),
+        _rung(
+            Status.INDETERMINATE,
+            "indeterminate:epss-data-stale:epss-feed",
+            axis=AXIS_VULNERABILITY,
+        ),
+        _rung(
+            Status.INDETERMINATE,
+            "indeterminate:currency-registry-unavailable:lts-registry",
+            axis=AXIS_CURRENCY,
+        ),
+        _rung(Status.WARN, "hygiene:DEP002:requests"),
+    ]
+    stanza = emit_baseline_stanza(
+        rungs, now=datetime(2026, 1, 1, tzinfo=UTC), expiry_days=14
+    )
+    document = yaml.safe_load(stanza)
+    ids = [entry["id"] for entry in document["baseline"]]
+    assert ids == ["hygiene:DEP002:requests"]
 
 
 def test_emit_baseline_stanza_round_trips_through_load_baseline(tmp_path):

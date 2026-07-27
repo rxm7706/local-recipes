@@ -50,9 +50,11 @@ def real_catalog_session(monkeypatch):
 
 def test_read_dataset_is_a_catalog_load_passthrough(real_catalog_session):
     loaded = tools.read_dataset("demo_ds")
-    # identity: the exact sentinel object came back untouched — no transform
-    assert loaded is SENTINEL
-    assert loaded == {"rows": [{"package": "demo", "health": "green"}]}
+    assert loaded["dataset"] == "demo_ds"
+    assert "build_stamp" in loaded and loaded["build_stamp"]
+    # value is the exact sentinel object — load passthrough, AD-17 wraps the envelope
+    assert loaded["value"] is SENTINEL
+    assert loaded["value"] == {"rows": [{"package": "demo", "health": "green"}]}
 
 
 def test_read_dataset_unknown_name_raises_catalog_error(real_catalog_session):
@@ -90,8 +92,10 @@ def test_read_dataset_coerces_a_dataframe_to_json_serializable(monkeypatch):
     monkeypatch.setattr(_session_mod, "bootstrapped_session", fake_session)
 
     out = tools.read_dataset("df_ds")
+    assert out["dataset"] == "df_ds"
+    assert out["build_stamp"]
     # coerced to list[row-dict], not a raw DataFrame
-    assert out == [
+    assert out["value"] == [
         {"package": "numpy", "downloads": 10},
         {"package": "pandas", "downloads": 20},
     ]
@@ -123,8 +127,11 @@ def test_read_dataset_coerces_series_ndarray_set(monkeypatch):
 
     monkeypatch.setattr(_session_mod, "bootstrapped_session", fake_session)
 
-    assert tools.read_dataset("series_ds") == {"a": 1, "b": 2}
-    assert tools.read_dataset("arr_ds") == [1, 2, 3]
-    assert sorted(tools.read_dataset("set_ds")) == ["x", "y"]
+    assert tools.read_dataset("series_ds")["value"] == {"a": 1, "b": 2}
+    assert tools.read_dataset("arr_ds")["value"] == [1, 2, 3]
+    assert sorted(tools.read_dataset("set_ds")["value"]) == ["x", "y"]
     for ds in ("series_ds", "arr_ds", "set_ds"):
-        json.dumps(tools.read_dataset(ds))
+        payload = tools.read_dataset(ds)
+        assert payload["dataset"] == ds
+        assert payload["build_stamp"]
+        json.dumps(payload)

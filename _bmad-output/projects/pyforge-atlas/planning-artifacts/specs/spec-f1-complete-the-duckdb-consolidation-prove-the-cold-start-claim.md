@@ -1,11 +1,12 @@
 ---
 title: 'Story F1 (7.1): Complete the DuckDB consolidation + prove the cold-start claim'
 type: 'feature'
-status: 'regenerated'
+status: 'shipped'
 regenerated: '2026-07-25'
 source: 'epics.md (authoritative intent + acceptance criteria) + shipped code on main'
 original_spec: 'NEVER AUTHORED as a file — wave B9-H4 ran through the in-session agent loop, not bmad-create-story (which wrote files only for waves 0/A/B1-B8), confirmed by the migration session itself. Nothing was lost; there is no original to recover. Intent+ACs below are the real epics.md contract.'
 enriched: '2026-07-25 (merged PR #92 body + main commit log; dev narrative recovered, review-triage partial)'
+audit_note: 'AUD-ATLAS-049 (2026-07-27): shipped = DuckDB singularity / SQLite write-path gate; attended cold/warm benchmark remains DW-F1-1 (blocked on DW-B4-2). Do not read top-level shipped as benchmark-complete.'
 ---
 
 > **Contract-spec — no original ever existed (corrected 2026-07-25).** This story

@@ -12,6 +12,8 @@ from __future__ import annotations
 import json
 
 import pandas as pd
+import pytest
+from kedro.io.core import DatasetError
 
 from pyforge.atlas.datasets import (
     MappingCacheDataset,
@@ -177,14 +179,14 @@ def test_vdb_missing_store_load_returns_empty_and_marks_stale(tmp_path):
     assert ds.is_stale() is True
 
 
-def test_vdb_unreadable_store_degrades_to_empty(tmp_path):
+def test_vdb_unreadable_store_raises_dataset_error(tmp_path):
+    # AUD-ATLAS-024: corrupt ≠ absent — fail closed, do not return empty "no vulns".
     p = tmp_path / "vdb"
     _seed_vdb(p)
-    # Corrupt the parquet on disk — load() must degrade (not crash).
     (p / VDBStoreDataset.STORE_FILENAME).write_bytes(b"not a parquet")
     ds = VDBStoreDataset(filepath=str(p))
-    out = ds.load()
-    assert out.empty
+    with pytest.raises(DatasetError, match="unreadable"):
+        ds.load()
     assert ds.is_stale() is True
 
 

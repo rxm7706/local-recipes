@@ -59,7 +59,8 @@ _CHUNK_STEM = "{name}-{index:04d}.parquet"
 # single, safe path segment — never a traversal (``..``), a separator (``/`` or os.sep, which
 # would nest or escape), or a leading-slash/absolute (which would ignore target_dir). Reject
 # anything else BEFORE any filesystem mutation (Reviewer-B path-traversal MUST-FIX).
-_SAFE_NAME_RE = re.compile(r"^[^/\\]+$")
+_SAFE_NAME_RE = re.compile(r"^[^/\\]+\Z")
+
 
 
 def _require_safe_name(name: str) -> None:
@@ -199,18 +200,33 @@ def verify_manifest(target_dir: str | Path) -> dict[str, Any]:
     """Recompute every chunk's sha256 + byte size and assert it matches the manifest.
 
     Returns the manifest on success; raises :class:`ManifestChecksumError` on the first
-    missing / mismatched chunk (a truncated or corrupt artifact must fail loudly)."""
-    root = Path(target_dir)
+    missing / mismatched chunk (a truncated or corrupt artifact must fail loudly).
+
+    AUD-ATLAS-019: each ``chunk["path"]`` must resolve under ``target_dir`` — a
+    traversal in a hand-edited/corrupt manifest must not follow files outside the site.
+    """
+    root = Path(target_dir).resolve()
     manifest = load_manifest(root)
     for name, ds in manifest["datasets"].items():
         for chunk in ds["chunks"]:
-            path = root / chunk["path"]
+            rel = chunk["path"]
+            if not isinstance(rel, str) or not rel or rel.startswith("/") or ".." in Path(rel).parts:
+                raise ManifestChecksumError(
+                    f"{name}: unsafe chunk path {rel!r} (must be a relative path under the site root)"
+                )
+            path = (root / rel).resolve()
+            try:
+                path.relative_to(root)
+            except ValueError as exc:
+                raise ManifestChecksumError(
+                    f"{name}: chunk path {rel!r} escapes site root {root}"
+                ) from exc
             if not path.exists():
-                raise ManifestChecksumError(f"{name}: missing chunk {chunk['path']}")
+                raise ManifestChecksumError(f"{name}: missing chunk {rel}")
             sha, size = _sha256_and_size(path)
             if size != chunk["bytes"] or sha != chunk["sha256"]:
                 raise ManifestChecksumError(
-                    f"{name}: chunk {chunk['path']} does not match manifest "
+                    f"{name}: chunk {rel} does not match manifest "
                     f"(recorded bytes={chunk['bytes']} sha256={chunk['sha256'][:12]}…, "
                     f"actual bytes={size} sha256={sha[:12]}…)"
                 )

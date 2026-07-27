@@ -270,7 +270,14 @@ def _synthesize_deptry_frontdoor(components: Sequence[Component]) -> Synthesized
     lines: list[str] = []
     excluded: list[Component] = []
     for component in components:
-        if not component.hygiene_covered or component.pypi_identity is None:
+        # Uncovered deps stay invisible here — DefaultPolicy derives
+        # ``indeterminate:uncovered:<pkg>@…``. Covered-but-no-identity is the
+        # third bucket (AUD-WARDEN-018): must land on ``excluded`` so coverage
+        # and findings stay honest (never a silent ``continue``).
+        if not component.hygiene_covered:
+            continue
+        if component.pypi_identity is None:
+            excluded.append(component)
             continue
         identity = component.pypi_identity
         if not _is_safe_token(identity.name):
@@ -345,6 +352,22 @@ def unsafe_identity_finding(component: Component) -> Finding:
         f"{component.name}: excluded from the deptry front-door input — its "
         "resolved pypi identity is not a safely-writable requirements line "
         "(NFR-S6 safe-token purity guard / PEP 508 requirement grammar)",
+    )
+
+
+def no_identity_hygiene_finding(component: Component) -> Finding:
+    """Hygiene-covered component with no ``pypi_identity`` (AUD-WARDEN-018).
+
+    Previously dropped by a silent ``continue`` into neither ``lines`` nor
+    ``excluded``, so coverage over-claimed. Surfaces as indeterminate on the
+    hygiene axis with a distinct reason token so it never collides with
+    ``unsafe-identity-hygiene`` or DefaultPolicy's ``uncovered``.
+    """
+    return _indeterminate_finding(
+        "no-identity-hygiene",
+        component,
+        f"{component.name}: hygiene-covered but has no resolved pypi "
+        "identity — cannot synthesize a deptry front-door line",
     )
 
 

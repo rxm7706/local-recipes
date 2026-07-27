@@ -147,16 +147,25 @@ class DuckdbVssRagStore:
         self._owns_con = connection is None
         self.con = connection if connection is not None else duckdb.connect()
         self._index = f"{self._table}_hnsw"
-        # AD-13 gate: LOAD vss offline (or raise VssNotProvisionedError). No network INSTALL.
-        vss_loader(self.con)
-        # vss HNSW indexes are refused on a PERSISTENT (on-disk) DuckDB — the exact store F3 is
-        # designed to share with F1 — unless this flag is set. The HNSW index is DERIVED,
-        # rebuildable data (index() rebuilds it from the artifacts), so a crash-lost index is
-        # recoverable by re-indexing; enabling experimental persistence is safe for it and is
-        # what makes the documented "ride the F1 consolidated store" integration actually work
-        # (F3 review — every test used in-memory, masking the on-disk BinderException).
-        self.con.execute("SET hnsw_enable_experimental_persistence = true")
-        self._ensure_table()
+        try:
+            # AD-13 gate: LOAD vss offline (or raise VssNotProvisionedError). No network INSTALL.
+            vss_loader(self.con)
+            # vss HNSW indexes are refused on a PERSISTENT (on-disk) DuckDB — the exact store F3 is
+            # designed to share with F1 — unless this flag is set. The HNSW index is DERIVED,
+            # rebuildable data (index() rebuilds it from the artifacts), so a crash-lost index is
+            # recoverable by re-indexing; enabling experimental persistence is safe for it and is
+            # what makes the documented "ride the F1 consolidated store" integration actually work
+            # (F3 review — every test used in-memory, masking the on-disk BinderException).
+            self.con.execute("SET hnsw_enable_experimental_persistence = true")
+            self._ensure_table()
+        except Exception:
+            # AUD-ATLAS-034: close an owned connection if construction fails mid-way.
+            if self._owns_con:
+                try:
+                    self.close()
+                except Exception:  # pragma: no cover - best-effort
+                    pass
+            raise
 
     def _ensure_table(self) -> None:
         self.con.execute(

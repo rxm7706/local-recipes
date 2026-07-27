@@ -130,10 +130,17 @@ def attribute_feedstocks(core_feedstock_outputs_raw: pd.DataFrame) -> pd.DataFra
     if src is None or src.empty or not {"conda_name", "feedstocks"} <= set(src.columns):
         return pd.DataFrame(columns=["conda_name", "feedstock_name"])
     out = src.copy()
-    out["feedstock_name"] = [
-        _pick_feedstock(name, fs)
-        for name, fs in zip(out["conda_name"], out["feedstocks"])
-    ]
+    # dtype=object is load-bearing: pandas >=3 infers a bare list of strings as the
+    # `str` dtype, whose missing sentinel is NaN, so _pick_feedstock's None would be
+    # silently coerced to a TRUTHY NaN and `feedstock_name is None` would never fire.
+    out["feedstock_name"] = pd.Series(
+        [
+            _pick_feedstock(name, fs)
+            for name, fs in zip(out["conda_name"], out["feedstocks"])
+        ],
+        index=out.index,
+        dtype=object,
+    )
     return out[["conda_name", "feedstock_name"]].reset_index(drop=True)
 
 

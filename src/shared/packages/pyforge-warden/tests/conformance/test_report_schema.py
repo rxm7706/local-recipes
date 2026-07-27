@@ -25,6 +25,7 @@ from pyforge.warden.models import (
     ComplianceReport,
     CurrencyInfo,
     CurrencyVerdict,
+    EMPTY_EXTRACTION_DRIVER_ID,
     ErrorKind,
     ErrorRecord,
     Finding,
@@ -37,6 +38,7 @@ from pyforge.warden.models import (
     StatusDriver,
     SuppressedFinding,
     VulnData,
+    _LEGAL_EXITS_BY_STATUS,
 )
 
 NON_CLEAN_DRIVER_REQUIRED = [
@@ -120,7 +122,7 @@ THREE_FAMILY_FINDINGS = (
         severity=None,
     ),
     Finding(
-        id="indeterminate:no-version:numpy",
+        id="indeterminate:no-version:numpy@unspecified",
         axis=AXIS_VULNERABILITY,
         message="version unresolved; vuln match withheld",
         subject="numpy",
@@ -190,22 +192,43 @@ def test_exit_code_enum_is_closed():
         validate(document)
 
 
-@pytest.mark.parametrize(
-    ("status", "with_driver", "exit_code"),
-    [
-        (Status.CLEAN, False, 0),
-        (Status.POLICY_VIOLATION, True, 1),
-        (Status.ERROR, True, 2),
-        (Status.CLEAN, False, 130),
-    ],
-    ids=["clean-0", "policy-violation-1", "error-2", "sigint-130"],
-)
-def test_frozen_exit_codes_accepted_in_coherent_pairings(status, with_driver, exit_code):
-    driver = (
-        StatusDriver(axis=AXIS_HYGIENE, finding_id="hygiene:DEP001:missingmod")
-        if with_driver
-        else None
+def _driver_for_status_exit(status: Status, exit_code: int) -> StatusDriver | None:
+    """Pick a schema/model-legal driver for a status×exit pairing.
+
+    AUD-WARDEN-031: exit-matrix cases are generated from
+    ``_LEGAL_EXITS_BY_STATUS`` so schema tests cannot drift from the model.
+    """
+    if status in (Status.CLEAN, Status.NOT_APPLICABLE):
+        return None
+    if status is Status.INDETERMINATE and exit_code == 0:
+        return StatusDriver(
+            axis=AXIS_INGESTION, finding_id=EMPTY_EXTRACTION_DRIVER_ID
+        )
+    if status is Status.ERROR:
+        return StatusDriver(
+            axis=AXIS_VULNERABILITY,
+            finding_id="error:engine-timeout:osv-scanner",
+        )
+    return StatusDriver(
+        axis=AXIS_HYGIENE, finding_id="hygiene:DEP001:missingmod"
     )
+
+
+def _legal_status_exit_cases() -> list[tuple[Status, int]]:
+    cases: list[tuple[Status, int]] = []
+    for status, exits in _LEGAL_EXITS_BY_STATUS.items():
+        for exit_code in sorted(exits):
+            cases.append((status, exit_code))
+    return cases
+
+
+@pytest.mark.parametrize(
+    ("status", "exit_code"),
+    _legal_status_exit_cases(),
+    ids=lambda v: v.value if isinstance(v, Status) else str(v),
+)
+def test_frozen_exit_codes_accepted_in_coherent_pairings(status, exit_code):
+    driver = _driver_for_status_exit(status, exit_code)
     document = make_report(
         status=status, status_driver=driver, exit_code=exit_code
     ).to_json_dict()

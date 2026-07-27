@@ -172,18 +172,37 @@ class _StaleAwareBasiliskSource(AbstractDataset):
 
     @staticmethod
     def _atomic_write(target: Path, text: str) -> None:
-        """Write via a sibling ``.tmp`` then ``os.replace`` — an interrupted write leaves
-        the last-good file untouched (AD-13 never-clobber)."""
+        """Write via a unique sibling temp then ``os.replace`` (AUD-ATLAS-029).
+
+        Fixed ``.tmp`` names race across concurrent writers; ``mkstemp`` gives
+        a unique path. ``fsync`` before replace; unlink the temp only on failure
+        (after a successful replace the temp path is gone).
+        """
+        import tempfile
+
         target.parent.mkdir(parents=True, exist_ok=True)
-        tmp = target.with_name(target.name + ".tmp")
+        fd, tmp_name = tempfile.mkstemp(
+            dir=str(target.parent), suffix=".tmp", prefix=f".{target.name}."
+        )
+        tmp = Path(tmp_name)
         try:
-            tmp.write_text(text, encoding="utf-8")
+            with os.fdopen(fd, "w", encoding="utf-8") as fh:
+                fd = -1  # ownership transferred
+                fh.write(text)
+                fh.flush()
+                os.fsync(fh.fileno())
             os.replace(tmp, target)
-        finally:
+        except Exception:
+            if fd >= 0:
+                try:
+                    os.close(fd)
+                except OSError:
+                    pass
             try:
                 tmp.unlink(missing_ok=True)
-            except OSError:  # pragma: no cover - best-effort cleanup
+            except OSError:
                 pass
+            raise
 
     def _mark_stale(self, reason: str) -> StalenessMarker:
         """Keep last-good; stamp a staleness marker. Never raises (AD-13 never-fail)."""

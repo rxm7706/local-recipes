@@ -29,9 +29,9 @@ from typing import Any
 # Sibling helper — universal conda-forge.yml pre-seed (shared with recipe-generator.py).
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from _cfy_template import render_conda_forge_yml  # noqa: E402
+from _path_guard import RECIPES_ROOT, REPO_ROOT, validate_recipe_name, resolve_under_recipes  # noqa: E402
 
-# .claude/skills/conda-forge-expert/scripts/ -> repo root (4 levels up)
-REPO_ROOT = Path(__file__).resolve().parents[4]
+# REPO_ROOT imported from _path_guard (AUD-CFE-001)
 STAGED_RECIPES_FORK_PATH = REPO_ROOT.parent / "staged-recipes"
 UPSTREAM_REPO = "conda-forge/staged-recipes"
 UPSTREAM_URL = "https://github.com/conda-forge/staged-recipes.git"
@@ -115,7 +115,12 @@ def prepare_branch(
     the push is skipped (``pushed: false``). Force pushes use ``--force-with-lease``
     when ``force=True`` (the default).
     """
-    recipe_dir = REPO_ROOT / "recipes" / recipe_name
+    try:
+        validate_recipe_name(recipe_name)
+    except ValueError as e:
+        return {"success": False, "error": str(e)}
+
+    recipe_dir = resolve_under_recipes(REPO_ROOT / "recipes" / recipe_name)
     if not recipe_dir.exists():
         return {"success": False, "error": f"Recipe not found: {recipe_dir}"}
 

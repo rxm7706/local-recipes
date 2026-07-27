@@ -23,7 +23,7 @@ Design (Dev Notes "Kedro 1.5.0 dataset API", verified live):
   ``type``/``filepath``/``metadata`` (no ttl), so a required ttl arg would fail the
   gate. The runtime ttl is injected by ``pyforge.atlas.hooks.ProjectHooks`` from
   ``params:ttls.<dataset-name>`` (see hooks.py). With ``ttl_seconds is None`` the
-  dataset never reports a row as stale (documented below).
+  dataset treats every row as **stale** (AUD-ATLAS-031 fail-closed; documented below).
 
 Imports are restricted to ``pandas`` / ``kedro`` / ``kedro_datasets`` /
 ``pathlib`` / ``time`` / stdlib-non-IO — NO ``IO_DENYLIST`` HTTP/DB client and no
@@ -56,10 +56,11 @@ class IncrementalParquetDataset(AbstractVersionedDataset[pd.DataFrame, pd.DataFr
         Path to the Parquet payload (``data/<layer>/<name>/<name>.parquet``).
     ttl_seconds:
         Per-dataset time-to-live in seconds. OPTIONAL — when ``None`` the dataset
-        treats every persisted row as fresh (``stale_mask`` is all-``False``); a
-        runtime value is injected from ``params:ttls.<name>`` by the project hook.
-        A string like ``"3600"`` is coerced to ``int``; a non-numeric or negative
-        value raises ``ValueError`` (review-pass P3).
+        treats every persisted row as **stale** (``stale_mask`` is all-``True``,
+        AUD-ATLAS-031 fail-closed); a runtime value is injected from
+        ``params:ttls.<name>`` by the project hook. A string like ``"3600"`` is
+        coerced to ``int``; a non-numeric or negative value raises ``ValueError``
+        (review-pass P3).
     fetched_at_column:
         Name of the epoch-seconds fetch-timestamp column (default ``fetched_at``,
         the Spine timestamp convention). The generic ``fetched_at`` stamp is
@@ -73,6 +74,12 @@ class IncrementalParquetDataset(AbstractVersionedDataset[pd.DataFrame, pd.DataFr
         (a caller may pass a different column) but is unused by the 15 flips.
     load_args / save_args / credentials / fs_args / metadata:
         Forwarded verbatim to the composed ``pandas.ParquetDataset``.
+    merge_on:
+        Optional column name for upsert-on-save (AUD-ATLAS-015). When set and a
+        prior payload exists, rows in ``data`` replace matching keys in the
+        existing frame; other existing rows are retained. Used by Phase H
+        ``pypi_current_versions`` so the eligible delta does not wipe fresh rows
+        (Kedro forbids the same dataset as both node input and output).
     version:
         UNSUPPORTED — outer catalog versioning (``version:`` / ``versioned: true``)
         raises ``ValueError`` (review-pass P4). IO is delegated to a composed
@@ -97,6 +104,7 @@ class IncrementalParquetDataset(AbstractVersionedDataset[pd.DataFrame, pd.DataFr
         filepath: str,
         ttl_seconds: int | None = None,
         fetched_at_column: str = DEFAULT_FETCHED_AT_COLUMN,
+        merge_on: str | None = None,
         load_args: dict[str, Any] | None = None,
         save_args: dict[str, Any] | None = None,
         version: Any = None,
@@ -122,6 +130,7 @@ class IncrementalParquetDataset(AbstractVersionedDataset[pd.DataFrame, pd.DataFr
         # "no ttl yet" default used by the offline resolution path).
         self._ttl_seconds = self._coerce_ttl(ttl_seconds, warn_on_none=False)
         self._fetched_at_column = fetched_at_column
+        self._merge_on = str(merge_on) if merge_on else None
         self.metadata = metadata
 
         # Compose the physical Parquet IO (fsspec owned here). No version — see P4.
@@ -238,7 +247,14 @@ class IncrementalParquetDataset(AbstractVersionedDataset[pd.DataFrame, pd.DataFr
         an already-present column, and stamping only at column level would persist
         NaN forever → the row reads stale on every run → a perpetual re-fetch loop.
         The copy is taken only when a stamp must be written (review-pass P9 — avoid
-        deep-copying 800k-row frames that need no change)."""
+        deep-copying 800k-row frames that need no change).
+
+        When ``merge_on`` is configured (AUD-ATLAS-015), incoming rows upsert into
+        the prior payload by that key before stamping — fresh keys not present in
+        ``data`` are retained.
+        """
+        if self._merge_on and self._exists():
+            data = self._upsert_on_key(data)
         col = self._fetched_at_column
         now = int(time.time())
         # Shallow copy (Gemini PR-72): only the fetched_at column is written, so
@@ -270,10 +286,37 @@ class IncrementalParquetDataset(AbstractVersionedDataset[pd.DataFrame, pd.DataFr
                 df = data  # no stamping/normalization needed → no copy (P9)
         self._inner.save(df)
 
+    def _upsert_on_key(self, incoming: pd.DataFrame) -> pd.DataFrame:
+        """Merge ``incoming`` into the existing store by ``merge_on`` (AUD-ATLAS-015)."""
+        key = self._merge_on
+        assert key is not None
+        existing = self._inner.load()
+        if existing is None or existing.empty:
+            return incoming
+        if key not in existing.columns:
+            return incoming
+        if incoming is None or incoming.empty or key not in getattr(incoming, "columns", []):
+            return existing
+        keep = existing[~existing[key].isin(incoming[key])].copy()
+        delta = incoming.copy()
+        cols = list(dict.fromkeys([*existing.columns.tolist(), *delta.columns.tolist()]))
+        for frame in (keep, delta):
+            for c in cols:
+                if c not in frame.columns:
+                    frame[c] = pd.NA
+        return pd.concat([keep[cols], delta[cols]], ignore_index=True)
+
     def load(self) -> pd.DataFrame:
         """Read the persisted frame back with ``fetched_at`` intact (round-trip).
         A node combines this with :meth:`stale_mask` to re-fetch only stale rows
-        and skip fresh ones — the resumability primitive (FR-4/AD-5)."""
+        and skip fresh ones — the resumability primitive (FR-4/AD-5).
+
+        Cold start (AUD-ATLAS-015): a missing payload returns an empty DataFrame so
+        upsert nodes (e.g. Phase H ``fetch_pypi_current_versions``) can take the
+        dataset as both input and output without failing the first run.
+        """
+        if not self._exists():
+            return pd.DataFrame()
         return self._inner.load()
 
     def _exists(self) -> bool:
@@ -316,8 +359,9 @@ class IncrementalParquetDataset(AbstractVersionedDataset[pd.DataFrame, pd.DataFr
         re-fetch), ``False`` where it is FRESH (within the window → skipped).
 
         ``now`` defaults to the current epoch seconds. When ``ttl_seconds`` is
-        ``None`` (no runtime ttl injected) every row is treated as FRESH — an
-        all-``False`` mask — so an un-wired dataset never forces a re-fetch.
+        ``None`` (no runtime ttl injected) every row is treated as **STALE** —
+        an all-``True`` mask (AUD-ATLAS-031 fail-closed) — so an un-wired
+        dataset forces eligibility rather than silently skipping refresh.
         Rows whose ``fetched_at`` is missing/NaN are treated as STALE (they have
         no proof of freshness), matching the legacy NULL-gate-column semantics.
 
@@ -335,7 +379,7 @@ class IncrementalParquetDataset(AbstractVersionedDataset[pd.DataFrame, pd.DataFr
             now = int(time.time())
         col = self._fetched_at_column
         if self._ttl_seconds is None:
-            return pd.Series(False, index=df.index)
+            return pd.Series(True, index=df.index)
         if col not in df.columns:
             # No fetch timestamp at all → nothing can be proven fresh.
             return pd.Series(True, index=df.index)

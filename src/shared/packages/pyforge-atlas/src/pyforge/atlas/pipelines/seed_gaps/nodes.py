@@ -531,4 +531,11 @@ def report_license_map_gap(
         }
         for p in proposals
     ]
-    return pd.DataFrame(records, columns=_LICMAP_COLS).reset_index(drop=True)
+    df = pd.DataFrame(records, columns=_LICMAP_COLS).reset_index(drop=True)
+    # ``suggested_spdx`` is None for the 'report' tier (no single candidate). pandas
+    # >=3 would infer the `str` dtype and coerce that None to a TRUTHY NaN, so the
+    # "no suggestion" signal has to be pinned to object dtype to survive.
+    df["suggested_spdx"] = pd.Series(
+        [r["suggested_spdx"] for r in records], index=df.index, dtype=object
+    )
+    return df

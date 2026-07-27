@@ -2,7 +2,8 @@
 title: 'Story 1.5: osv-scanner as the second engine (vulnerability findings)'
 type: 'feature'
 created: '2026-07-16'
-status: 'done'
+status: shipped
+updated: '2026-07-27 (AUD-WARDEN-030 status sync)'
 baseline_revision: '28a0f9fb68ad10cc9c57e801ffe8cd8a56f39201'
 final_revision: '483a97e255e98c70483c2514de24344a5ff8b894'
 review_loop_iteration: 0

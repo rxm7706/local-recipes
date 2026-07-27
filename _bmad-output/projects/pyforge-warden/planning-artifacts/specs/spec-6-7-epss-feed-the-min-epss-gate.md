@@ -2,7 +2,8 @@
 title: 'Story 6.7: EPSS feed + the `--min-epss` gate'
 type: 'feature'
 created: '2026-07-24'
-status: 'done'
+status: shipped
+updated: '2026-07-27 (AUD-WARDEN-030 status sync)'
 review_loop_iteration: 0
 followup_review_recommended: false
 baseline_revision: 'd339757ff821e6aff0c09f3c9b08ee3749e3eede'

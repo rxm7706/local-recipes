@@ -453,7 +453,12 @@ class DefaultPolicy:
                 )
 
         for component in inventory.components:
-            subject = _sanitize_id_segment(component.name)
+            version_segment = (
+                _sanitize_id_segment(component.version)
+                if component.version
+                else "unspecified"
+            )
+            subject = f"{_sanitize_id_segment(component.name)}@{version_segment}"
             # (rung, id token, finding axis, message) per deficiency.
             derived: list[tuple[Status, str, str, str]] = []
             if component.indeterminate_reason is not None:

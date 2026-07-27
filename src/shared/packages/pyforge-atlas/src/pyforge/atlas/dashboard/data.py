@@ -52,18 +52,46 @@ def default_data_root() -> Path:
 
     Defaults to ``<repo>/data`` — the repo-root-relative default the catalog resolves
     against the process CWD (review-pass P9). ``PYFORGE_ATLAS_DATA_ROOT`` overrides it.
+
+    AUD-ATLAS-027: the env override is always ``resolve()``d so later joins cannot
+    escape via ``..`` segments in the env value itself.
     """
     env = os.environ.get("PYFORGE_ATLAS_DATA_ROOT")
     if env:
-        return Path(env)
+        return Path(env).expanduser().resolve()
     # Walk up to the repo root so this resolves whether run from the source tree or an installed
     # layout. Anchor on ``.git`` (a UNIQUE repo-root marker) — NOT ``pixi.toml``, which the
     # pyforge-atlas member also ships, so a pixi.toml walk would stop at the member dir.
     current = Path(__file__).resolve()
     for parent in current.parents:
         if (parent / ".git").exists() or (parent / "_bmad-output").is_dir():
-            return parent / "data"
-    return (current.parents[8] if len(current.parents) > 8 else current.parent) / "data"
+            return (parent / "data").resolve()
+    return ((current.parents[8] if len(current.parents) > 8 else current.parent) / "data").resolve()
+
+
+def resolve_under_data_root(
+    parquet: str | os.PathLike[str] | None,
+    *,
+    root: Path | None = None,
+) -> Path | None:
+    """Resolve a parquet path under ``root`` (AUD-ATLAS-027).
+
+    Absolute paths must still resolve under ``root``; relative paths join then
+    resolve. Returns ``None`` when ``parquet`` is None; raises ``ValueError``
+    when the resolved path escapes ``root``.
+    """
+    if parquet is None:
+        return None
+    base = (root if root is not None else default_data_root()).resolve()
+    candidate = Path(parquet)
+    resolved = candidate.resolve() if candidate.is_absolute() else (base / candidate).resolve()
+    try:
+        resolved.relative_to(base)
+    except ValueError as exc:
+        raise ValueError(
+            f"parquet path {parquet!r} escapes data root {str(base)!r}"
+        ) from exc
+    return resolved
 
 
 def _bsl_query_or_empty(
@@ -89,7 +117,11 @@ def _bsl_query_or_empty(
     model = build_model(table, **(model_kwargs or {}))
     try:
         return model.query(dimensions=dimensions, measures=measures).execute()
-    except TypeError:
+    except TypeError as exc:
+        # AUD-ATLAS-026: only degrade Ibis TypeError *subclasses* (e.g. IbisTypeError
+        # on untyped sparse stores). A bare TypeError is a real bug — re-raise.
+        if type(exc) is TypeError:
+            raise
         # A PRESENT but degenerate Parquet — e.g. a 0-row store whose column round-tripped
         # untyped/all-null, so a metric predicate like `latest_status.fill_null("active")`
         # raises IbisTypeError (an ibis TypeError subclass) on int-vs-string. Degrade to the

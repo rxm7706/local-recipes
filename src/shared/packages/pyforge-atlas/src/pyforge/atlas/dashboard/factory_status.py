@@ -4,7 +4,9 @@ Renders, as ONE deterministic semantic table, the live factory state from three 
 artifacts:
   * ``sprint-status.yaml`` ``development_status`` (epic/story → status),
   * ``epics.md`` frontmatter ``status``,
-  * each ``docs/specs/*.md`` frontmatter ``status``.
+  * each BMAD Tier-2 spec under ``_bmad-output/projects/<slug>/planning-artifacts/specs/``
+    (``spec-*.md`` at the specs root and ``spec-*/SPEC.md`` + companion ``*.md`` in
+    subfolders) → frontmatter ``status``.
 
 The table carries a **build timestamp** (AD-17 — authoring-feeding pages carry build
 stamps). The stamp is INJECTED (``build_stamp`` argument), never read from
@@ -27,6 +29,8 @@ import pandas as pd
 import yaml
 
 FRAME_COLUMNS = ["source", "artifact", "key", "status"]
+SPEC_SOURCE = "planning-artifacts/specs"
+_SKIP_SPEC_FILENAMES = frozenset({"README.md"})
 
 
 class _StrictSafeLoader(yaml.SafeLoader):
@@ -69,7 +73,7 @@ def _default_paths() -> dict[str, Path]:
     return {
         "sprint_status_path": proj / "implementation-artifacts" / "sprint-status.yaml",
         "epics_path": proj / "planning-artifacts" / "epics.md",
-        "specs_dir": root / "docs" / "specs",
+        "projects_root": root / "_bmad-output" / "projects",
     }
 
 
@@ -111,15 +115,68 @@ def read_epics_status(path: str | Path | None) -> str | None:
 
 
 def read_spec_statuses(specs_dir: str | Path | None) -> dict[str, str]:
-    """Each ``docs/specs/*.md`` (by stem) → its frontmatter ``status`` (sorted)."""
+    """Each ``*.md`` in a flat specs directory (by stem) → frontmatter ``status``.
+
+    Used when ``build_factory_status_frame(specs_dir=...)`` injects a fixture tree;
+    production defaults use :func:`read_bmad_spec_statuses` instead.
+    """
     out: dict[str, str] = {}
     if not specs_dir or not Path(specs_dir).exists():
         return out
     for md in sorted(Path(specs_dir).glob("*.md")):
+        if md.name in _SKIP_SPEC_FILENAMES:
+            continue
         fm = _parse_frontmatter(md.read_text(encoding="utf-8-sig"))
         status = fm.get("status")
         if status is not None:
             out[md.stem] = str(status)
+    return out
+
+
+def _collect_spec_md_files(specs_dir: Path) -> list[Path]:
+    """Markdown spec files under one project's ``planning-artifacts/specs/``."""
+    if not specs_dir.is_dir():
+        return []
+    files: list[Path] = []
+    for md in sorted(specs_dir.glob("*.md")):
+        if md.name not in _SKIP_SPEC_FILENAMES:
+            files.append(md)
+    for sub in sorted(specs_dir.iterdir()):
+        if not sub.is_dir() or not sub.name.startswith("spec-"):
+            continue
+        spec_md = sub / "SPEC.md"
+        if spec_md.is_file():
+            files.append(spec_md)
+            continue
+        for md in sorted(sub.glob("*.md")):
+            if md.name.startswith(".memlog"):
+                continue
+            files.append(md)
+            break
+    return files
+
+
+def _bmad_spec_key(project_slug: str, specs_dir: Path, md: Path) -> str:
+    rel = md.relative_to(specs_dir)
+    if rel.parent == Path("."):
+        return f"{project_slug}/{rel.stem}"
+    return f"{project_slug}/{rel.parent.name}"
+
+
+def read_bmad_spec_statuses(projects_root: str | Path | None) -> dict[str, str]:
+    """Each BMAD Tier-2 spec ``<project>/<artifact>`` → frontmatter ``status``."""
+    out: dict[str, str] = {}
+    if not projects_root or not Path(projects_root).is_dir():
+        return out
+    for proj_dir in sorted(Path(projects_root).iterdir()):
+        if not proj_dir.is_dir():
+            continue
+        specs_dir = proj_dir / "planning-artifacts" / "specs"
+        for md in _collect_spec_md_files(specs_dir):
+            fm = _parse_frontmatter(md.read_text(encoding="utf-8-sig"))
+            status = fm.get("status")
+            if status is not None:
+                out[_bmad_spec_key(proj_dir.name, specs_dir, md)] = str(status)
     return out
 
 
@@ -129,18 +186,26 @@ def build_factory_status_frame(
     sprint_status_path: str | Path | None = None,
     epics_path: str | Path | None = None,
     specs_dir: str | Path | None = None,
+    projects_root: str | Path | None = None,
 ) -> pd.DataFrame:
     """The deterministic factory-status table (AD-17 build stamp is row 0).
 
     ``build_stamp`` is injected (deterministic under test); the artifact paths default to
     the tracked repo locations but are injectable for the gate's fixtures.
+
+    Spec statuses default to BMAD Tier-2 under ``_bmad-output/projects/*/planning-artifacts/specs/``.
+    Pass ``specs_dir`` to override with a flat fixture directory (tests only).
     """
     defaults = _default_paths()
     sprint_status_path = (
         sprint_status_path if sprint_status_path is not None else defaults["sprint_status_path"]
     )
     epics_path = epics_path if epics_path is not None else defaults["epics_path"]
-    specs_dir = specs_dir if specs_dir is not None else defaults["specs_dir"]
+    if specs_dir is not None:
+        spec_statuses = read_spec_statuses(specs_dir)
+    else:
+        root = projects_root if projects_root is not None else defaults["projects_root"]
+        spec_statuses = read_bmad_spec_statuses(root)
 
     rows: list[dict[str, str]] = [
         # AD-17: the build timestamp travels IN the rendered surface, row 0.
@@ -152,14 +217,14 @@ def build_factory_status_frame(
         )
     epics_status = read_epics_status(epics_path)
     # Only contribute a row when epics.md actually yields a status — a missing/malformed
-    # epics.md contributes ZERO rows, exactly like sprint-status.yaml and docs/specs above.
+    # epics.md contributes ZERO rows, exactly like sprint-status.yaml and BMAD specs above.
     # (Reviewer-B S1: appending str(None) rendered a literal "None" status an agent could
     # not distinguish from a real None; the "never fabricated status" contract wins.)
     if epics_status is not None:
         rows.append(
             {"source": "epics.md", "artifact": "frontmatter", "key": "status", "status": str(epics_status)}
         )
-    for name, status in read_spec_statuses(specs_dir).items():
-        rows.append({"source": "docs/specs", "artifact": name, "key": "status", "status": status})
+    for name, status in spec_statuses.items():
+        rows.append({"source": SPEC_SOURCE, "artifact": name, "key": "status", "status": status})
 
     return pd.DataFrame(rows, columns=FRAME_COLUMNS)

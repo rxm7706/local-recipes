@@ -104,10 +104,19 @@ def _discover_one(target: Path, kind: str) -> ScannedManifest | None:
     """The stat-honesty check (see module docstring) for one manifest
     ``kind`` directly under ``target``. ``None`` means genuinely absent (the
     empty-dir case for this kind); every found-but-refused / undeterminable
-    state FAILS CLOSED via a raised ``OSError`` instead."""
+    state FAILS CLOSED via a raised ``OSError`` instead.
+
+    Symlinks are confined (AUD-WARDEN-013): a symlink whose resolved target
+    escapes ``target`` is refused — matching the deptry
+    ``requirements_files`` confinement. Only *dangling* symlinks used to
+    fail closed; a symlink to an existing file anywhere on the filesystem
+    was previously followed and parsed.
+    """
     candidate = target / kind
     try:
-        result = candidate.stat()
+        # lstat: do NOT follow — symlink-to-outside-root must be caught
+        # before any content read (AUD-WARDEN-013).
+        result = candidate.lstat()
     except NotADirectoryError as exc:
         # ``target`` (or a path component under it) is not a directory. The
         # CLI's gate proved a directory at scan start, so ENOTDIR here means
@@ -119,13 +128,6 @@ def _discover_one(target: Path, kind: str) -> ScannedManifest | None:
             "or a non-directory was passed); manifest state undeterminable"
         ) from exc
     except FileNotFoundError as exc:
-        if candidate.is_symlink():
-            # Visibly present but its target is missing: found-but-refused,
-            # never "nothing existed".
-            raise OSError(
-                f"{kind} in {target} is a dangling symlink; "
-                "manifest state undeterminable"
-            ) from exc
         try:
             target_result = target.stat()
         except FileNotFoundError:
@@ -142,6 +144,28 @@ def _discover_one(target: Path, kind: str) -> ScannedManifest | None:
                 "state undeterminable"
             ) from exc
         return None
+    if stat.S_ISLNK(result.st_mode):
+        try:
+            resolved = candidate.resolve(strict=True)
+        except OSError as exc:
+            raise OSError(
+                f"{kind} in {target} is a dangling symlink; "
+                "manifest state undeterminable"
+            ) from exc
+        try:
+            resolved.relative_to(target.resolve())
+        except ValueError as exc:
+            raise OSError(
+                f"{kind} in {target} is a symlink escaping the scan root "
+                f"(resolves to {resolved}); refusing to read it must never "
+                "read as a project manifest"
+            ) from exc
+        if not resolved.is_file():
+            raise OSError(
+                f"{kind} in {target} is a symlink whose target is not a "
+                "regular file; refusing to read it must never read as absent"
+            )
+        return ScannedManifest(path=kind, kind=kind)
     if not stat.S_ISREG(result.st_mode):
         raise OSError(
             f"{kind} in {target} exists but is not a regular "

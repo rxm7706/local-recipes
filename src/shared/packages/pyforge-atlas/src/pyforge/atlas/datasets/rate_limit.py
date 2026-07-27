@@ -31,6 +31,8 @@ scheduler", all citations @ b18cbb5):
 from __future__ import annotations
 
 import logging
+import math
+import threading
 import time
 from datetime import timezone
 from email.utils import parsedate_to_datetime
@@ -92,6 +94,8 @@ def parse_retry_after(value: str | int | float | None, *, now: float | None = No
     # delta-seconds form
     try:
         secs = float(value)
+        if math.isnan(secs) or math.isinf(secs):
+            return 0.0
         return max(0.0, min(secs, RETRY_AFTER_CAP_SECONDS))
     except (TypeError, ValueError):
         pass
@@ -150,10 +154,12 @@ class RateLimitedScheduler:
         # in (legacy default — the bucket begins at capacity, CFA:1352-1353).
         self._tokens = float(bucket_capacity)
         self._last = clock()
+        self._lock = threading.Lock()
 
     @property
     def tokens(self) -> float:
-        return self._tokens
+        with self._lock:
+            return self._tokens
 
     def _refill(self) -> None:
         now = self._clock()
@@ -176,12 +182,13 @@ class RateLimitedScheduler:
         slept = 0.0
         stalls = 0
         while True:
-            self._refill()
-            if self._tokens >= n:
-                self._tokens -= n
-                return slept
-            deficit = n - self._tokens
-            wait = deficit / self.rps
+            with self._lock:
+                self._refill()
+                if self._tokens >= n:
+                    self._tokens -= n
+                    return slept
+                deficit = n - self._tokens
+                wait = deficit / self.rps
             before = self._clock()
             self._sleep(wait)
             slept += wait

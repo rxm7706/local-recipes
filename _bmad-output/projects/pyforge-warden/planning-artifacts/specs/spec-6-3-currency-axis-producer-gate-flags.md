@@ -2,7 +2,8 @@
 title: 'Story 6.3: Currency axis producer + gate flags (Axis 4)'
 type: 'feature'
 created: '2026-07-23'
-status: 'done'
+status: shipped
+updated: '2026-07-27 (AUD-WARDEN-030 status sync)'
 baseline_revision: 'fba8410792f4287ce9576c53276093fd474e6835'
 final_revision: '18fb8e44a209d2fd760e5553ed60c4f55df9309f'
 review_loop_iteration: 0
@@ -23,7 +24,7 @@ warnings: ['oversized']
 
 **Always:**
 - `currency_rung` is unconditional `Status.WARN` — never reads `currency_policy`, never escalates.
-- Finding-id reason-token precedence is the pinned 3-way total order `eol` > `over-lag` > `unknown` (decision record §2); `<subject>` is `<pkg>` for a component and the reserved sentinel `!python-runtime` for the interpreter finding — distinct from the report-section field name `runtime_python` (underscore).
+- Finding-id reason-token precedence is the pinned 3-way total order `eol` > `over-lag` > `unknown` (decision record §2); `<subject>` is `<pkg>` for a component and the reserved sentinel `!python-runtime` for the interpreter finding. The historical report-section name `runtime_python` was **not shipped** (AUD-WARDEN-028) — the finding is the sole runtime signal.
 - `lag` is an integer count of releases-behind-latest, never calendar time; when derived from the endoflife.date (date-based) tier it is an approximation, from a release-position tier it would be exact.
 - Every bundled-registry-derived verdict carries `snapshot_at` (registry build time) + `max_age_ok` against a 180-day default max-age (NFR-S9); a stale registry never silently reports `supported`.
 - The endoflife.date cache reuses `feeds.py`'s `resolve_cache_dir`/`is_feed_stale`/`feed_provenance`/`DEFAULT_FEED_MAX_AGE_DAYS` verbatim — `currency.py` builds no private cache and computes no staleness itself.
@@ -46,7 +47,7 @@ warnings: ['oversized']
 | Bundled registry stale, no policy flag | `max_age_ok=False`, no `--fail-on-eol`/`--max-lag`/`--require-lts` | Finding still emitted honestly (`max_age_ok:false`); `currency_rung` still WARN (escalation is 6.5's) | No error |
 | Endoflife.date cache hit, no registry match | Cached snapshot present + fresh, component not in `lts-registry.yaml` | `tier="endoflife-date"`, `latest`/`eol_date` from the snapshot, `lag` approximated as a release count | No error |
 | No tier resolves | Edge mode: no registry match, endoflife cache absent/stale | `tier=unknown`, `verdict=UNKNOWN`, WARN-capped finding, honest `AxisCoverage` | No exception |
-| Python runtime, always assessed | Any scan | One finding with id `currency:<reason>:!python-runtime@<ver>`; report's `runtime_python` field holds the matching `CurrencyInfo` | No error |
+| Python runtime, always assessed | Any scan | One finding with id `currency:<reason>:!python-runtime@<ver>` (accepted finding-only shape; no top-level `runtime_python` report field — AUD-WARDEN-028 / FR34) | No error |
 | Gate flags set, no other change | `--max-lag 5` / `--require-lts` / `--fail-on-eol` any combination | `currency.gating=true` in the report; `currency_findings()` output otherwise byte-identical to the unconfigured run | No error |
 | Malformed `--max-lag` | e.g. `-1`, `"abc"` | Typed `ConfigValidationError` at parse time, mirrors `--fail-under-coverage`'s validator | Typed error, non-zero exit per FR21 |
 | `--deterministic`, same fixtures twice | Repeat run | Byte-identical currency section output (NFR-R3b) | No error |

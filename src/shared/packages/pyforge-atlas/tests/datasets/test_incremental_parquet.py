@@ -35,6 +35,30 @@ def test_save_stamps_fetched_at_and_load_round_trips(tmp_path):
     assert (back["fetched_at"] > 0).all()
 
 
+def test_load_missing_payload_returns_empty_dataframe(tmp_path):
+    # AUD-ATLAS-015: cold-start upsert nodes need an empty frame, not a raise.
+    ds = IncrementalParquetDataset(filepath=_fp(tmp_path, "missing_store"))
+    back = ds.load()
+    assert isinstance(back, pd.DataFrame)
+    assert back.empty
+
+
+def test_merge_on_upsert_retains_unmatched_existing_rows(tmp_path):
+    # AUD-ATLAS-015: eligible delta must not wipe fresh keys from the store.
+    ds = IncrementalParquetDataset(filepath=_fp(tmp_path, "pypi_current"), merge_on="pypi_name")
+    ds.save(
+        pd.DataFrame(
+            {
+                "pypi_name": ["fresh", "other"],
+                "version": ["4.0", "9.0"],
+            }
+        )
+    )
+    ds.save(pd.DataFrame({"pypi_name": ["never"], "version": ["1.1"]}))
+    back = ds.load().set_index("pypi_name")["version"].to_dict()
+    assert back == {"fresh": "4.0", "other": "9.0", "never": "1.1"}
+
+
 def test_save_preserves_caller_supplied_fetched_at(tmp_path):
     ds = IncrementalParquetDataset(filepath=_fp(tmp_path))
     df = pd.DataFrame({"conda_name": ["a", "b"], "fetched_at": [111, 222]})
@@ -134,12 +158,13 @@ def test_missing_fetched_at_is_treated_as_stale(tmp_path):
     assert ds.stale_mask(df2, now=now).tolist() == [True, True]
 
 
-def test_ttl_none_never_stale(tmp_path):
+def test_ttl_none_fail_closed_all_stale(tmp_path):
+    # AUD-ATLAS-031: unset TTL must not silently skip refresh.
     now = 1_000_000
     ds = IncrementalParquetDataset(filepath=_fp(tmp_path))  # ttl_seconds=None
     df = pd.DataFrame({"conda_name": ["ancient"], "fetched_at": [1]})
-    assert ds.stale_mask(df, now=now).tolist() == [False]
-    assert ds.is_stale(df, now=now) is False
+    assert ds.stale_mask(df, now=now).tolist() == [True]
+    assert ds.is_stale(df, now=now) is True
 
 
 # -- FR-3: per-dataset TTL differentiation --------------------------------
@@ -161,7 +186,7 @@ def test_ttl_settable_at_runtime_mirrors_hook_injection(tmp_path):
     df = pd.DataFrame({"conda_name": ["x"], "fetched_at": [now - 3600]})
     ds = IncrementalParquetDataset(filepath=_fp(tmp_path))
     assert ds.ttl_seconds is None
-    assert ds.stale_mask(df, now=now).tolist() == [False]
+    assert ds.stale_mask(df, now=now).tolist() == [True]
     ds.ttl_seconds = 60  # what ProjectHooks.after_catalog_created does
     assert ds.ttl_seconds == 60
     assert ds.stale_mask(df, now=now).tolist() == [True]

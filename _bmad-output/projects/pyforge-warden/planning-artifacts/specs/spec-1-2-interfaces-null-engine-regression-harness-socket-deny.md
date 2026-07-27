@@ -3,7 +3,8 @@
 title: 'Story 1.2: Interfaces, null engine, regression harness & socket-deny (C0c)'
 type: 'feature'
 created: '2026-07-13'
-status: 'done'
+status: shipped
+updated: '2026-07-27 (AUD-WARDEN-030 status sync)'
 baseline_revision: 'a559036bd1506f9a9fa785de8552e94b0be2c06e'
 final_revision: 'eadb002e83'  # dev (5d25a9d2ec) + loop review cycle 1 (517677f3dc, 24 patches) + cycle 2 (eadb002e83, 15 patches), recovered onto claude/pdos-1-2-interfaces-null-engine after a bmad-loop stop/resume restart discarded the branch (2026-07-13)
 review_loop_iteration: 3

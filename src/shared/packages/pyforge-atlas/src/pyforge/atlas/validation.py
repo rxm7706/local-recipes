@@ -201,10 +201,16 @@ class PanderaValidator:
         if schema is None:
             return []  # no contract registered → pass-through (never a false halt)
         if not _is_dataframe(data):
-            # a frame contract cannot validate a non-frame output; skip gracefully rather
-            # than crash (Reviewer-B). With an empty shipped registry this is gate-only.
-            logger.debug("pandera: %r output is not a DataFrame; skipping frame validation", dataset)
-            return []
+            # AUD-ATLAS-037: a registered frame contract against a non-frame
+            # output is a contract violation (not a silent pass).
+            return [
+                ContractViolation(
+                    dataset,
+                    self.name,
+                    PANDERA_RULE,
+                    {"error": f"expected DataFrame, got {type(data).__name__}"},
+                )
+            ]
         try:
             schema.validate(data, lazy=True)
         except pa.errors.SchemaErrors as exc:

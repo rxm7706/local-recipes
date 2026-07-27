@@ -2,7 +2,8 @@
 title: 'Story 1.6: Severity gate + verdict composition end-to-end'
 type: 'feature'
 created: '2026-07-16'
-status: 'done'
+status: shipped
+updated: '2026-07-27 (AUD-WARDEN-030 status sync)'
 baseline_revision: 'ce2ed97bc44fcd90d553077f6207fb4f50a5c5c7'
 final_revision: 'b2a032c7dc53063aa8351617d4b60697babb4a25'
 review_loop_iteration: 0

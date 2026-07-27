@@ -3,7 +3,8 @@
 title: 'Story 1.3: deptry as the first engine (hygiene findings)'
 type: 'feature'
 created: '2026-07-13'
-status: 'done'
+status: shipped
+updated: '2026-07-27 (AUD-WARDEN-030 status sync)'
 baseline_revision: 'cd65065a5143690ea4905bee981d45685ffafbeb'
 final_revision: 'c509c18fa3'  # dev 3e9f0bcf1e + independent Opus review cycle (c509c18fa3): DEP001->warn + 5 robustness/determinism patches
 review_loop_iteration: 1

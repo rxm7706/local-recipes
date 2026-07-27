@@ -3,7 +3,8 @@
 title: 'Story 1.7: Typed errors & the no-scan guard (the fail-closed net)'
 type: 'feature'
 created: '2026-07-17'
-status: 'done'
+status: shipped
+updated: '2026-07-27 (AUD-WARDEN-030 status sync)'
 baseline_revision: '478738ac25d9120da359a53584d9716da4312a78'
 final_revision: 'f27591f2d2'
 review_loop_iteration: 0

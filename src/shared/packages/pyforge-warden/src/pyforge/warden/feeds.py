@@ -54,15 +54,18 @@ Ownership decisions recorded:
   hardcoded ceiling shared by every feed this module resolves, until a
   config surface is asked for one (no Epic 6 story adds one yet).
 * ``load_kev_catalog`` distinguishes "no usable feed" (``None`` — missing
-  file, unreadable, not valid JSON, wrong top-level shape) from "feed
-  present but genuinely empty" (``{}`` — a freshly-provisioned catalog
-  with zero entries, e.g. the ambient test fixture) — collapsing the two
-  would make an empty-but-fresh feed indistinguishable from an absent one,
-  which is exactly the distinction Story 6.4's ambient conftest fixture
-  needs (present + fresh + zero entries, never "absent"). Per-entry
-  tolerant: a malformed vulnerability entry (missing/non-string
-  ``cveID``/``dateAdded``) is skipped, never aborts the load of the rest
-  (mirrors ``vuln.py``'s per-entry tolerance throughout).
+  file, unreadable, not valid JSON, wrong top-level shape, **OR a present
+  document whose ``vulnerabilities`` list yields zero usable entries**) from
+  a non-empty catalog. AUD-WARDEN-012 closed the prior hollow-cache loophole:
+  ``{"vulnerabilities": []}`` used to return ``{}`` (not ``None``), which
+  disarmed ``--fail-on-kev`` (no unavailable finding, every CVE stamped
+  ``kev=False``). A genuinely empty CISA catalog does not exist in
+  production; the ambient test fixture now seeds one synthetic non-matching
+  CVE so "present + fresh + consulted, zero matches" stays representable
+  without accepting a hollow file. Per-entry tolerant: a malformed
+  vulnerability entry (missing/non-string ``cveID``/``dateAdded``) is
+  skipped, never aborts the load of the rest (mirrors ``vuln.py``'s
+  per-entry tolerance throughout).
 * ``write_kev_cache`` is the ONE writer both ``scripts/refresh_kev_feed.py``
   (the real, opt-in-online provisioning path) and the test suite's ambient
   fixture (``conftest.py``) share — a second, hand-rolled writer in either
@@ -227,6 +230,12 @@ def load_kev_catalog(path: Path) -> dict[str, str] | None:
             and date_added
         ):
             catalog[cve_id] = date_added
+    # AUD-WARDEN-012: a zero-entry catalog is unusable — identical failure
+    # mode to an absent file for ``--fail-on-kev`` (every CVE would stamp
+    # kev=False with no unavailable finding). Mirror
+    # ``vuln._db_has_valid_advisory``'s content pre-flight.
+    if not catalog:
+        return None
     return catalog
 
 
@@ -339,10 +348,9 @@ def load_epss_scores(path: Path) -> dict[str, tuple[float, float]] | None:
     ``load_kev_catalog``'s own contract exactly.
 
     ``None`` on anything that prevents a trustworthy read (missing file,
-    unreadable, not valid JSON, a top level that is not a JSON object, or a
-    ``scores`` key that is not a list) — distinct from a present-but-empty
-    catalog (``{}``, same present/fresh/zero-entries distinction
-    ``load_kev_catalog``'s own docstring establishes). Per-entry tolerant: an
+    unreadable, not valid JSON, a top level that is not a JSON object, a
+    ``scores`` key that is not a list, **or a list that yields zero usable
+    entries** — AUD-WARDEN-012). Per-entry tolerant: an
     entry missing a non-empty string ``cve``, or whose ``epss``/
     ``percentile`` is not a finite number in the ``[0, 1]`` probability
     domain ``models.Epss`` enforces, is skipped (never partially trusted,
@@ -385,6 +393,10 @@ def load_epss_scores(path: Path) -> dict[str, tuple[float, float]] | None:
         if not (math.isfinite(percentile) and 0.0 <= percentile <= 1.0):
             continue
         catalog[cve] = (float(score), float(percentile))
+    # AUD-WARDEN-012: hollow EPSS cache (``{"scores": []}``) must not
+    # disarm ``--min-epss`` — same content pre-flight as ``load_kev_catalog``.
+    if not catalog:
+        return None
     return catalog
 
 

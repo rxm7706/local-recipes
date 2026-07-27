@@ -74,8 +74,8 @@ def read_dataset(
     *,
     project_path: Path | str | None = None,
     env: str | None = None,
-) -> Any:
-    """``catalog.load(<name>)`` + a JSON-serializable coercion (AD-7).
+) -> dict[str, Any]:
+    """``catalog.load(<name>)`` + JSON coercion + AD-17 advisory stamp envelope.
 
     The load is the passthrough; the coercion is TRANSPORT plumbing, not
     metric/business logic — most catalog datasets are Parquet-backed and load
@@ -83,8 +83,11 @@ def read_dataset(
     DataFrame return `TypeError`s at the MCP boundary). We coerce DataFrame /
     Series / ndarray / set to JSON-native shapes by DUCK-TYPING on the class
     name + public methods — never importing pandas/numpy — so the AD-7 no-
-    business-logic AST gate stays satisfied. Anything already JSON-native is
-    returned as-is.
+    business-logic AST gate stays satisfied.
+
+    Return shape (AD-17 — payloads feeding authoring carry a build timestamp)::
+
+        {"dataset": <name>, "build_stamp": <ISO-UTC>, "value": <coerced>}
 
     Raises whatever ``catalog.load`` raises on an unknown dataset name.
     """
@@ -94,16 +97,22 @@ def read_dataset(
     if cls_name == "DataFrame":
         # pandas: orient=records → list[row-dict]; polars: to_dicts().
         try:
-            return result.to_dict(orient="records")
+            value: Any = result.to_dict(orient="records")
         except TypeError:
-            return result.to_dicts()
-    if cls_name == "Series":
-        return result.to_dict()
-    if cls_name == "ndarray":
-        return result.tolist()
-    if cls_name == "set":
-        return list(result)
-    return result
+            value = result.to_dicts()
+    elif cls_name == "Series":
+        value = result.to_dict()
+    elif cls_name == "ndarray":
+        value = result.tolist()
+    elif cls_name == "set":
+        value = list(result)
+    else:
+        value = result
+    return {
+        "dataset": name,
+        "build_stamp": datetime.datetime.now(datetime.UTC).isoformat(),
+        "value": value,
+    }
 
 
 def query_vizro_ai(query: str, *, env: Mapping[str, str] | None = None) -> dict[str, Any]:

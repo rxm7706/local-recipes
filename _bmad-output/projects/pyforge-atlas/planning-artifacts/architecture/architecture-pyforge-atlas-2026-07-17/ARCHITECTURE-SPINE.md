@@ -109,7 +109,7 @@ graph TD
 
 - **Binds:** every node writing a persisted dataset; the FR-18 gate
 - **Prevents:** validator lock-in (GX ceiling: conda-forge 1.18.2, upstream `<3.14` at 1.19.0); bad data persisting silently
-- **Rule:** inline pandera contracts in nodes are the primary layer; Great Expectations participates only as a boundary layer behind the same custom `AfterNodeRunHook`; swapping/stubbing a validator requires no node changes; no story may depend on GX ≥ 1.19 features. A contract violation raises a native exception → Dagster halts → A2A alert — and the FR-18 policy gate fails with identical semantics. The `kedro-great-expectations`/`kedro-pandera` plugins are banned.
+- **Rule:** pandera schemas live in the `DEFAULT_CONTRACTS` registry (`validation.py`) as **DATA** — never inline in nodes (nodes stay pure). Great Expectations participates only as a boundary layer behind the same custom `AfterNodeRunHook`; swapping/stubbing a validator requires no node changes; no story may depend on GX ≥ 1.19 features. A contract violation raises a native exception → Dagster halts → A2A alert — and the FR-18 policy gate fails with identical semantics. The `kedro-great-expectations`/`kedro-pandera` plugins are banned. *(Shipped: registry seam is live; `DEFAULT_CONTRACTS` may be empty until contracts are registered — empty is deliberate, not a missing hook. AUD-ATLAS-042.)*
 
 ### AD-10 — Legacy behavioral contracts bind the ports `[ADOPTED]` (FR-2/FR-13)
 
@@ -193,7 +193,7 @@ graph TD
 
 - **Binds:** FR-6, FR-7, all pipeline triggers (Dagster schedules/sensors, MCP `run_*` tools, CLI)
 - **Prevents:** two concurrent writers to one dataset; MCP-triggered runs escaping per-node timeouts, contracts, profiles, and lineage
-- **Rule:** budgets (per-node timeout/retry), validation hooks, lineage/OTel instrumentation, and profile definitions are declared in Kedro run configuration — so every entry point (Dagster-compiled job, MCP trigger, CLI) executes the identical named pipeline with identical machinery; an MCP trigger names a profile explicitly or inherits the `maintainer` default. A dataset has one writing run at a time: run admission serializes on the target dataset set (concurrent trigger of an already-running pipeline is rejected/queued, never interleaved).
+- **Rule:** budgets (per-node timeout/retry), validation hooks, lineage/OTel instrumentation, and profile definitions are declared in Kedro run configuration — so every entry point (Dagster-compiled job, MCP trigger, CLI) executes the identical named pipeline with identical machinery; an MCP trigger names a profile explicitly or inherits the `maintainer` default. **Run-admission / single-writer serialization** (reject/queue a concurrent trigger of an already-running pipeline) is **deferred** (AUD-ATLAS-046 / DW-AD23-1) — shipped today is the shared Kedro plane only; operators must not assume interleaved MCP+CLI writers are blocked.
 
 ## Consistency Conventions
 
@@ -308,7 +308,7 @@ Deployment & environments (the operational envelope this altitude owns):
 | FR-6 Dagster orchestration | `dagster/` compile target | AD-1, AD-6, AD-23 |
 | FR-7 MCP surface | `src/<pkg>/mcp/` | AD-7, AD-23 |
 | FR-8 BSL | `src/<pkg>/bsl/` | AD-8 |
-| FR-9 Vizro read surface (28-CLI port, 3 exceptions, factory-status page) | `vizro_app/` | AD-8, AD-17 |
+| FR-9 Vizro read surface (honest-core pages + factory-status; full 28-CLI port → DW-D2) | `dashboard/` | AD-8, AD-17 |
 | FR-10 data-quality contracts | node contracts + `hooks/` | AD-9 |
 | FR-11 A2A | `src/<pkg>/a2a/` | AD-20 |
 | FR-12 lineage/observability | `hooks/` instrumentation | AD-20 |

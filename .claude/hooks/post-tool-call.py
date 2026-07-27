@@ -22,8 +22,9 @@ def http_request(method, host, port, location, *, body: Optional[bytes] = None, 
     with closing(HTTPConnection(host, port, timeout=timeout)) as connection:
         connection.request(method, location, body=body, headers=headers)
         if wait_for_response:
-          response = connection.getresponse()
-          responseText = response.read()
+            response = connection.getresponse()
+            return response.read()
+    return b""
 
 def get_server_port():
     claude_root = os.getenv("CLAUDE_PROJECT_DIR")
@@ -83,7 +84,7 @@ def main():
     tool_name = data.get('tool_name', 'unknown')
 
     p = argparse.ArgumentParser()
-    p.add_argument("--wait_for_response", default=False)
+    p.add_argument("--wait_for_response", action="store_true")
     args = p.parse_args()
 
     modification_tools = [
@@ -95,7 +96,12 @@ def main():
         file_path = extract_file_path(tool_name, tool_input)
         if file_path:
             timestamp_ms = int(datetime.now(timezone.utc).timestamp() * 1000)
-            send_diff_to_webserver(file_path, timestamp_ms, args.wait_for_response)
+            try:
+                send_diff_to_webserver(file_path, timestamp_ms, args.wait_for_response)
+            except ProvenanceHookError as exc:
+                print(str(exc), file=sys.stderr)
+                return 1
+    return 0
 
 if __name__ == "__main__":
     sys.excepthook = excepthook

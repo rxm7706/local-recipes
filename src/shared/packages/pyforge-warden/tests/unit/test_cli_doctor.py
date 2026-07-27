@@ -259,7 +259,14 @@ def test_doctor_stale_kev_feed_exits_2_naming_the_consequence(
     green-light an environment whose default scan cannot produce a trusted
     verdict."""
     cache_dir = tmp_path / "feed-cache"
-    feeds.write_kev_cache(cache_dir, {"vulnerabilities": []})
+    feeds.write_kev_cache(
+        cache_dir,
+        {
+            "vulnerabilities": [
+                {"cveID": "CVE-0000-WARDEN-AMBIENT", "dateAdded": "1970-01-01"}
+            ]
+        },
+    )
     kev_path = feeds.kev_cache_path(cache_dir)
     stale_mtime = time.time() - (feeds.DEFAULT_FEED_MAX_AGE_DAYS + 1) * 86400
     os.utime(kev_path, (stale_mtime, stale_mtime))
@@ -287,7 +294,20 @@ def test_doctor_stale_epss_feed_stays_exit_0_with_informational_line(
     cache_dir = tmp_path / "feed-cache"
     epss_path = feeds.epss_cache_path(cache_dir)
     epss_path.parent.mkdir(parents=True)
-    epss_path.write_text(json.dumps({"scores": []}), encoding="utf-8")
+    epss_path.write_text(
+        json.dumps(
+            {
+                "scores": [
+                    {
+                        "cve": "CVE-0000-WARDEN-AMBIENT",
+                        "epss": 0.0,
+                        "percentile": 0.0,
+                    }
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
     stale_mtime = time.time() - (feeds.DEFAULT_FEED_MAX_AGE_DAYS + 1) * 86400
     os.utime(epss_path, (stale_mtime, stale_mtime))
     monkeypatch.setenv(feeds.FEED_CACHE_DIR_ENV_VAR, str(cache_dir))
@@ -329,7 +349,14 @@ def test_doctor_problem_state_format_json_shape(monkeypatch, capsys, tmp_path):
     same keys, sorted names, and exactly the failing check carries
     ``ok=False``."""
     cache_dir = tmp_path / "feed-cache"
-    feeds.write_kev_cache(cache_dir, {"vulnerabilities": []})
+    feeds.write_kev_cache(
+        cache_dir,
+        {
+            "vulnerabilities": [
+                {"cveID": "CVE-0000-WARDEN-AMBIENT", "dateAdded": "1970-01-01"}
+            ]
+        },
+    )
     kev_path = feeds.kev_cache_path(cache_dir)
     stale_mtime = time.time() - (feeds.DEFAULT_FEED_MAX_AGE_DAYS + 1) * 86400
     os.utime(kev_path, (stale_mtime, stale_mtime))

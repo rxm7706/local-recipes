@@ -35,7 +35,7 @@ import unicodedata
 from pathlib import Path
 from typing import Any, Callable
 
-from kedro.io import AbstractDataset
+from kedro.io import AbstractDataset, DatasetError
 
 # ── pure whitespace normalization (AC-4b) ─────────────────────────────────────
 
@@ -368,6 +368,61 @@ def parse_intake(
 # ── the datasets (IO owners) ──────────────────────────────────────────────────
 
 
+def _kedro_data_root() -> Path:
+    """Locate the Kedro project ``data/`` directory (AUD-ATLAS-001)."""
+    current = Path(__file__).resolve()
+    for parent in current.parents:
+        if (parent / "conf" / "base" / "catalog.yml").is_file():
+            return (parent / "data").resolve()
+    raise DatasetError("SbomIntakeDataset: cannot locate Kedro project data/ root")
+
+
+def _resolve_intake_path(filepath: str, *, allowed_root: Path | None = None) -> Path:
+    """Resolve ``filepath`` and require it lies under ``allowed_root`` (default: ``data/``)."""
+    root = allowed_root or _kedro_data_root()
+    project_root = root.parent
+    path = Path(filepath)
+    if not path.is_absolute():
+        path = (project_root / path).resolve()
+    else:
+        path = path.resolve()
+    try:
+        path.relative_to(root)
+    except ValueError as exc:
+        raise DatasetError(
+            f"SbomIntakeDataset filepath must lie under {root}, got {path}"
+        ) from exc
+    return path
+
+
+# AUD-ATLAS-038: NFR-S5-style size cap — refuse unbounded intake reads (DoS /
+# OOM on a hostile or accidental multi-GB SBOM / lockfile).
+_MAX_INTAKE_BYTES = 10 * 1024 * 1024  # 10 MiB
+
+
+def _read_intake_text(path: Path, *, max_bytes: int | None = None) -> str:
+    """Read an intake file under a hard byte cap (dataset-owned IO).
+
+    ``FileNotFoundError`` / ``IsADirectoryError`` propagate unchanged so callers
+    can choose AD-13 degrade vs hard fail. Oversized payloads raise
+    :class:`DatasetError` (AUD-ATLAS-038).
+    """
+    limit = _MAX_INTAKE_BYTES if max_bytes is None else max_bytes
+    size = path.stat().st_size
+    if size > limit:
+        raise DatasetError(
+            f"SbomIntakeDataset: {path} exceeds the {limit}-byte size cap "
+            f"(AUD-ATLAS-038 / NFR-S5)"
+        )
+    raw = path.read_bytes()
+    if len(raw) > limit:
+        raise DatasetError(
+            f"SbomIntakeDataset: {path} exceeds the {limit}-byte size cap "
+            f"(AUD-ATLAS-038 / NFR-S5)"
+        )
+    return raw.decode("utf-8", errors="replace")
+
+
 class SbomIntakeDataset(AbstractDataset):
     """§ 4.10 tiered intake — dataset-owned file parsing (AD-2). Read-only.
 
@@ -381,17 +436,19 @@ class SbomIntakeDataset(AbstractDataset):
         *,
         filepath: str,
         format: str | None = None,  # noqa: A002 - catalog key name
+        allowed_root: str | None = None,
         load_args: dict[str, Any] | None = None,
         metadata: dict[str, Any] | None = None,
     ) -> None:
         self._filepath = filepath
         self._format = format
+        self._allowed_root = Path(allowed_root).resolve() if allowed_root else None
         self._load_args = dict(load_args or {})
         self.metadata = metadata
 
     def load(self) -> dict[str, Any]:
-        path = Path(self._filepath)
-        raw = path.read_text(encoding="utf-8", errors="replace")  # dataset-owned file IO (not denylisted)
+        path = _resolve_intake_path(self._filepath, allowed_root=self._allowed_root)
+        raw = _read_intake_text(path)  # dataset-owned file IO (not denylisted)
         return parse_intake(raw, filename=path.name, fmt=self._format)
 
     def save(self, data: Any) -> None:
@@ -409,6 +466,10 @@ class TransitiveResolverDataset(AbstractDataset):
     module NEVER imports ``subprocess``/HTTP (both on the A2 no-inline-IO denylist).
     Default ``resolver=None`` == OFFLINE → an explicit ``unresolved`` marker; any
     resolver exception is caught → ``unresolved``. It never crashes/hangs.
+
+    AUD-ATLAS-016: ``filepath`` is confined under ``allowed_root`` (default: Kedro
+    ``data/``) via the same :func:`_resolve_intake_path` helper as
+    :class:`SbomIntakeDataset`.
     """
 
     def __init__(
@@ -416,10 +477,12 @@ class TransitiveResolverDataset(AbstractDataset):
         *,
         filepath: str,
         resolver: Callable[[str], dict[str, Any]] | None = None,
+        allowed_root: str | None = None,
         metadata: dict[str, Any] | None = None,
     ) -> None:
         self._filepath = filepath
         self._resolver = resolver
+        self._allowed_root = Path(allowed_root).resolve() if allowed_root else None
         self.metadata = metadata
 
     def load(self) -> dict[str, Any]:
@@ -431,8 +494,12 @@ class TransitiveResolverDataset(AbstractDataset):
                 "depth": None,
                 "fanout": None,
             }
+        # AUD-ATLAS-025: path-confinement failures (DatasetError) must propagate —
+        # they are policy violations, not AD-13 offline/resolver degrade.
+        # AUD-ATLAS-038: the intake size cap likewise propagates as DatasetError.
+        path = _resolve_intake_path(self._filepath, allowed_root=self._allowed_root)
         try:
-            text = Path(self._filepath).read_text(encoding="utf-8", errors="replace")
+            text = _read_intake_text(path)
             result = self._resolver(text)
             deps = list(result.get("deps") or [])
             return {
@@ -441,6 +508,8 @@ class TransitiveResolverDataset(AbstractDataset):
                 "depth": result.get("depth"),
                 "fanout": result.get("fanout", len(deps)),
             }
+        except DatasetError:
+            raise
         except Exception as exc:  # AD-13: a resolver failure NEVER takes the run down
             return {
                 "resolution": "unresolved",

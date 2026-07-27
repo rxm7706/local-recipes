@@ -2,7 +2,8 @@
 title: 'Story 6.5: Two-mode policy integration (unconfigured visibility + flag-activated gating)'
 type: 'feature'
 created: '2026-07-24'
-status: 'done'
+status: shipped
+updated: '2026-07-27 (AUD-WARDEN-030 status sync)'
 review_loop_iteration: 0
 followup_review_recommended: false
 baseline_revision: 'c3c0e817f6fe2ae8ef1b5f41688427557a1c876b'

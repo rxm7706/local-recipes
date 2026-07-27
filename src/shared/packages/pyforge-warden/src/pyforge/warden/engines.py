@@ -103,6 +103,7 @@ from .hygiene import (
     _synthesize_deptry_frontdoor,
     parse_deptry_output,
     unsafe_identity_finding as hygiene_unsafe_identity_finding,
+    no_identity_hygiene_finding as hygiene_no_identity_finding,
 )
 from .interfaces import Engine, EngineResult
 from .inventory import Component, ResolvedInventory
@@ -133,6 +134,7 @@ from .vuln import (
     is_db_stale,
     kev_match,
     kev_stale_finding,
+    build_name_level_critical_index,
     name_level_critical_advisory_ids,
     name_level_critical_cve_finding,
     offline_db_unavailable_finding,
@@ -213,6 +215,31 @@ def registered_engines() -> tuple[Engine, ...]:
     through ``engine_factories()`` instead so a crashing constructor is
     contained per-factory."""
     return tuple(factory() for factory in _ENGINE_FACTORIES)
+
+
+# NFR-S5 (AUD-WARDEN-017): engine machine-output files are size-capped before
+# decode — mirrors lockfile/manifest bounded reads. Real deptry/osv JSON is
+# far smaller; an adversarial / runaway engine must not OOM the parent.
+_MAX_ENGINE_OUTPUT_BYTES = 20_000_000
+
+
+def _read_engine_output_text(output_path: str) -> str:
+    """Read engine stdout file under :data:`_MAX_ENGINE_OUTPUT_BYTES`.
+
+    Raises ``OSError`` subclasses for I/O failures and ``ValueError`` when the
+    file exceeds the size cap (mapped by the caller to
+    ``ENGINE_OUTPUT_UNPARSEABLE``).
+    """
+    path = Path(output_path)
+    size = path.stat().st_size
+    if size > _MAX_ENGINE_OUTPUT_BYTES:
+        raise ValueError(
+            f"engine output exceeds the {_MAX_ENGINE_OUTPUT_BYTES}-byte "
+            "size cap (NFR-S5)"
+        )
+    # utf-8-sig tolerates a leading BOM some tools prepend, then decodes as
+    # utf-8; genuinely non-utf-8 bytes still raise UnicodeDecodeError.
+    return path.read_bytes().decode("utf-8-sig")
 
 
 def _engine_env(
@@ -330,9 +357,7 @@ def _engine_env(
                 None,
             )
         try:
-            # utf-8-sig tolerates a leading BOM some tools prepend, then
-            # decodes as utf-8; genuinely non-utf-8 bytes still raise below.
-            text = Path(output_path).read_bytes().decode("utf-8-sig")
+            text = _read_engine_output_text(output_path)
         except UnicodeDecodeError:
             return (
                 None,
@@ -340,6 +365,16 @@ def _engine_env(
                     kind=ErrorKind.ENGINE_OUTPUT_UNPARSEABLE,
                     owner=owner,
                     message=f"engine {owner!r} produced non-utf-8 output",
+                ),
+                completed.returncode,
+            )
+        except ValueError as exc:
+            return (
+                None,
+                ErrorRecord(
+                    kind=ErrorKind.ENGINE_OUTPUT_UNPARSEABLE,
+                    owner=owner,
+                    message=f"engine {owner!r} output unreadable: {exc}",
                 ),
                 completed.returncode,
             )
@@ -854,12 +889,21 @@ def _deptry_requirements_sources(target: Path) -> list[str]:
         candidates = list(configured)
     else:
         candidates = ["requirements.txt"]
+    target_resolved = target.resolve()
     sources: list[str] = []
     for candidate in candidates:
         if not candidate or "," in candidate or "\n" in candidate:
             continue
+        raw = Path(candidate)
+        if raw.is_absolute() or ".." in raw.parts:
+            continue
+        resolved = (target_resolved / raw).resolve()
         try:
-            os.stat(target / candidate)
+            resolved.relative_to(target_resolved)
+        except ValueError:
+            continue
+        try:
+            os.stat(resolved)
         except (FileNotFoundError, NotADirectoryError):
             continue
         except OSError:
@@ -932,7 +976,11 @@ class DeptryEngine:
         excluded_findings = tuple(
             sorted(
                 (
-                    hygiene_unsafe_identity_finding(c)
+                    (
+                        hygiene_no_identity_finding(c)
+                        if c.pypi_identity is None
+                        else hygiene_unsafe_identity_finding(c)
+                    )
                     for c in synthesized.excluded
                 ),
                 key=lambda f: f.id,
@@ -1045,12 +1093,10 @@ class DeptryEngine:
                 deps_total=inventory.count,
                 # Counts ONLY what actually reached deptry's front-door —
                 # exactly OsvEngine.run's own deps_assessed=len(synthesized
-                # .lines) formula (Story 1.7). NOT inventory.count -
-                # len(excluded): _synthesize_deptry_frontdoor also silently
-                # `continue`s past hygiene_covered=False / no-identity
-                # components into neither `lines` nor `excluded`, so that
-                # subtraction over-counts them as assessed (review finding,
-                # 2026-07-17) — len(lines) sidesteps the bucket entirely.
+                # .lines) formula (Story 1.7). Covered-but-no-identity and
+                # NFR-S6 exclusions land on ``excluded`` (AUD-WARDEN-018);
+                # uncovered deps stay for DefaultPolicy — neither bucket is
+                # counted as assessed.
                 deps_assessed=len(synthesized.lines),
                 resolution_depth=None,
             ),
@@ -1094,11 +1140,12 @@ def _name_level_findings(
     ``DefaultPolicy`` already derives for it, never a replacement. Computed
     via a direct zip read, never a second ``osv-scanner`` subprocess."""
     findings: list[Finding] = []
+    index = build_name_level_critical_index(zip_path)
     for component in name_level_candidates:
         if component.pypi_identity is None:
             continue  # defensive: the caller's own filter already excludes this
         advisory_ids = name_level_critical_advisory_ids(
-            zip_path, component.pypi_identity.name
+            zip_path, component.pypi_identity.name, index=index
         )
         if advisory_ids:
             findings.append(name_level_critical_cve_finding(component, advisory_ids))
@@ -1614,16 +1661,43 @@ class OsvEngine:
 
         if exit_code in (0, 1):
             parse = parse_osv_output(text or "")
-            coverage = (
-                AxisCoverage(
-                    axis=AXIS_VULNERABILITY,
-                    manifests_found=0,
-                    manifests_parsed=0,
-                    deps_total=inventory.count,
-                    deps_assessed=len(synthesized.lines),
-                    resolution_depth=None,
-                ),
-            )
+            # AUD-WARDEN-011: osv exit 1 means "vulnerabilities were found".
+            # If the parse produced zero `vuln:` findings, the document was
+            # unusable (schema drift, truncated output, groups[] missing) —
+            # never a confident clean axis. Exit 0 + empty findings remains
+            # the genuine no-vulnerabilities path.
+            parse_errors = list(parse.errors)
+            if exit_code == 1 and not parse.findings:
+                if not any(
+                    err.kind is ErrorKind.ENGINE_OUTPUT_UNPARSEABLE
+                    for err in parse_errors
+                ):
+                    parse_errors.append(
+                        ErrorRecord(
+                            kind=ErrorKind.ENGINE_OUTPUT_UNPARSEABLE,
+                            owner=self.name,
+                            message=(
+                                "osv-scanner exited 1 (vulnerabilities "
+                                "reported) but no vuln: findings could be "
+                                "parsed from its JSON output"
+                            ),
+                        )
+                    )
+            # Coverage is only claimed when the parse is trustworthy. An
+            # unparseable document must not advertise deps_assessed == N
+            # while emitting zero findings (the false-green coverage lie).
+            coverage: tuple[AxisCoverage, ...] = ()
+            if not parse_errors:
+                coverage = (
+                    AxisCoverage(
+                        axis=AXIS_VULNERABILITY,
+                        manifests_found=0,
+                        manifests_parsed=0,
+                        deps_total=inventory.count,
+                        deps_assessed=len(synthesized.lines),
+                        resolution_depth=None,
+                    ),
+                )
             vuln_data = VulnData(
                 source=str(zip_path),
                 snapshot_at=snapshot_at,
@@ -1657,16 +1731,18 @@ class OsvEngine:
             )
             return EngineResult(
                 findings=findings,
-                errors=parse.errors,
+                errors=tuple(parse_errors),
                 coverage=coverage,
                 axis=self.axis,
+                # Preserve DB provenance even on parse failure (the zip was
+                # read); coverage empty + errors force non-clean composition.
                 vuln_data=vuln_data,
                 kev_data=kev_data,
                 epss_data=epss_data,
                 # Story 5.1 (AC1): threaded ONLY at this real-parse success
                 # site -- every other return path above/below keeps the
                 # default empty mapping (nothing was actually parsed there).
-                fixed_versions=parse.fixed_versions,
+                fixed_versions=parse.fixed_versions if not parse_errors else {},
             )
 
         if exit_code == 127:
@@ -1771,10 +1847,10 @@ class LicenseEngine:
     coverage-and-``EngineResult`` wrapper, mirroring ``DeptryEngine``'s/
     ``OsvEngine``'s producer-module/engine-class division of labor.
 
-    Coverage (Story 6.2's Boundaries): every component gets a real attempt
-    this story — ``deps_assessed == deps_total == inventory.count``
-    unconditionally (``license_covered`` stays inert/``True`` per 6.1's
-    landed design; no structural exclusion mechanism is activated yet)."""
+    Coverage: ``deps_assessed`` counts only components with
+    ``license_covered=True`` (AUD-WARDEN-019). Today producers leave the flag
+    inert/``True`` for every component, so assessed == total until a future
+    producer activates structural exclusion."""
 
     name: str = "license"
     axis: str = AXIS_LICENSE
@@ -1795,13 +1871,14 @@ class LicenseEngine:
             allow_licenses=self.allow_licenses,
             deny_licenses=self.deny_licenses,
         )
+        assessed = sum(1 for c in inventory.components if c.license_covered)
         coverage = (
             AxisCoverage(
                 axis=AXIS_LICENSE,
                 manifests_found=0,
                 manifests_parsed=0,
                 deps_total=inventory.count,
-                deps_assessed=inventory.count,
+                deps_assessed=assessed,
                 resolution_depth=None,
             ),
         )
@@ -1818,10 +1895,9 @@ class CurrencyEngine:
     id/finding construction); this class is a thin coverage-and-
     ``EngineResult`` wrapper, spawning no subprocess.
 
-    Coverage (mirrors ``LicenseEngine``'s Story 6.2 Boundaries): every
-    component gets a real attempt this story — ``deps_assessed ==
-    deps_total == inventory.count`` unconditionally (``currency_covered``
-    stays inert/``True`` per 6.1's landed design).
+    Coverage: ``deps_assessed`` counts only components with
+    ``currency_covered=True`` (AUD-WARDEN-019) — same honesty rule as
+    ``LicenseEngine``. Today the flag stays inert/``True``.
 
     Story 6.5 (NFR-S9): ``gating`` (from ``config.currency_gating``, wired
     in ``cli.py`` exactly as ``OsvEngine``'s ``fail_on_kev`` is) activates
@@ -1854,13 +1930,14 @@ class CurrencyEngine:
                     key=lambda f: f.id,
                 )
             )
+        assessed = sum(1 for c in inventory.components if c.currency_covered)
         coverage = (
             AxisCoverage(
                 axis=AXIS_CURRENCY,
                 manifests_found=0,
                 manifests_parsed=0,
                 deps_total=inventory.count,
-                deps_assessed=inventory.count,
+                deps_assessed=assessed,
                 resolution_depth=None,
             ),
         )

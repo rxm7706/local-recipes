@@ -3,7 +3,8 @@
 title: 'Story 6.10: Amendment design spike — finding-ID families, verdict encoding, rung-discriminator & fold semantics (decision record)'
 type: 'chore' # spike — decision record only; no production code, no schema edits
 created: '2026-07-18'
-status: 'done'
+status: shipped
+updated: '2026-07-27 (AUD-WARDEN-030 status sync)'
 baseline_revision: '5cd8964a45f55243dd1324624f7d29afc90cf1a2'
 final_revision: '2236553282f06f404691ce8ca99bd807691f409d'
 review_loop_iteration: 0

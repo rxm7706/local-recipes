@@ -165,8 +165,12 @@ def _severity_tier(finding: Finding) -> str:
 
 
 def _proposal_body(finding: Finding, action: str, advisory: str | None) -> str:
-    """The PR body: the finding id + a report excerpt (id, message, severity,
-    advisory) + the recommended action. No computed target version."""
+    """The PR body: finding id + severity + advisory + recommended action.
+
+    AUD-WARDEN-024: do **not** embed ``finding.message`` — engine messages
+    often contain absolute scan-tree paths that must not land in a public
+    GitHub PR body. Operators still have the finding id + subject.
+    """
     lines = [
         "Opened by warden's opt-in fix-PR actuator (post-verdict; the scan's "
         "status and exit code are unchanged).",
@@ -174,7 +178,7 @@ def _proposal_body(finding: Finding, action: str, advisory: str | None) -> str:
         f"Finding: {finding.id}",
         f"Axis: {finding.axis}",
         f"Severity: {_severity_tier(finding)}",
-        f"Message: {finding.message}",
+        f"Subject: {finding.subject or '(none)'}",
     ]
     if advisory is not None:
         lines.append(f"Advisory: {advisory}")

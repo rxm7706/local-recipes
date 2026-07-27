@@ -2666,9 +2666,8 @@ def enrich_with_atlas(deps: list[Dep]) -> dict[str, dict[str, Any]]:
     """For conda/pypi deps, look up atlas record by name. Returns {dep_key: atlas_record}."""
     if not ATLAS_DB.exists():
         return {}
-    conn = sqlite3.connect(ATLAS_DB)
-    conn.row_factory = sqlite3.Row
-    out: dict[str, dict[str, Any]] = {}
+    conda_names: list[str] = []
+    pypi_names: list[str] = []
     seen: set[str] = set()
     for dep in deps:
         if dep.ecosystem not in ("conda", "pypi"):
@@ -2677,14 +2676,33 @@ def enrich_with_atlas(deps: list[Dep]) -> dict[str, dict[str, Any]]:
         if key in seen:
             continue
         seen.add(key)
-        col = "conda_name" if dep.ecosystem == "conda" else "pypi_name"
-        row = conn.execute(
-            f"SELECT conda_name, pypi_name, latest_conda_version, conda_license, "
-            f"feedstock_archived, latest_status FROM packages WHERE {col} = ? LIMIT 1",
-            (dep.name,),
-        ).fetchone()
-        if row:
-            out[key] = dict(row)
+        if dep.ecosystem == "conda":
+            conda_names.append(dep.name)
+        else:
+            pypi_names.append(dep.name)
+    if not conda_names and not pypi_names:
+        return {}
+    out: dict[str, dict[str, Any]] = {}
+    with sqlite3.connect(ATLAS_DB) as conn:
+        conn.row_factory = sqlite3.Row
+        if conda_names:
+            placeholders = ",".join("?" * len(conda_names))
+            query = (
+                "SELECT conda_name, pypi_name, latest_conda_version, conda_license, "
+                "feedstock_archived, latest_status FROM packages "
+                f"WHERE conda_name IN ({placeholders})"
+            )
+            for row in conn.execute(query, conda_names):
+                out[f"conda:{row['conda_name']}"] = dict(row)
+        if pypi_names:
+            placeholders = ",".join("?" * len(pypi_names))
+            query = (
+                "SELECT conda_name, pypi_name, latest_conda_version, conda_license, "
+                "feedstock_archived, latest_status FROM packages "
+                f"WHERE pypi_name IN ({placeholders})"
+            )
+            for row in conn.execute(query, pypi_names):
+                out[f"pypi:{row['pypi_name']}"] = dict(row)
     return out
 
 

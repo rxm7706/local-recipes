@@ -75,6 +75,19 @@ def _legacy_ci_red(ci_status):
 NOW = 1_700_000_000  # pinned wall clock for deterministic staleness
 
 
+def _nullable_str(values):
+    """A nullable string column whose SQL NULLs stay ``None``.
+
+    pandas >=3 infers a bare list of strings as the ``str`` dtype, whose missing
+    sentinel is NaN — so a fixture's ``None`` would reach the legacy anchors below as a
+    TRUTHY NaN and the anchor would compute the WRONG expectation (its ``is not None``
+    guard passes, then ``nan == 'active'`` is False). The nullable integer columns here
+    are already explicit via ``pd.array(..., dtype='Int64')``; this is the string
+    equivalent.
+    """
+    return pd.Series(values, dtype=object)
+
+
 def _by_key(df, key, val):
     return {r[key]: r[val] for _, r in df.iterrows()}
 
@@ -187,8 +200,8 @@ def test_staleness_age_days_matches_legacy(parquet_table):
 def test_is_actionable_matches_legacy_view(parquet_table):
     df = pd.DataFrame(
         {
-            "conda_name": ["a", "b", "c", "d", "e"],
-            "latest_status": ["active", "archived", None, "active", "active"],
+                "conda_name": ["a", "b", "c", "d", "e"],
+                "latest_status": _nullable_str(["active", "archived", None, "active", "active"]),
             "feedstock_archived": pd.array([0, 0, 0, 1, None], dtype="Int64"),
             "downloads_total": pd.array([1, 1, 1, 1, 1], dtype="Int64"),
             "downloads_30d": pd.array([1, 1, 1, 1, 1], dtype="Int64"),
@@ -255,7 +268,9 @@ def test_feedstock_health_filters_match_legacy(parquet_table):
     df = pd.DataFrame(
         {
             "feedstock_name": ["red", "err", "green", "prs", "issues", "clean"],
-            "ci_status": ["failure", "error", "success", "success", "success", None],
+            "ci_status": _nullable_str(
+                ["failure", "error", "success", "success", "success", None]
+            ),
             "open_prs": pd.array([0, 0, 0, 3, 0, None], dtype="Int64"),
             "open_issues": pd.array([0, 0, 0, 0, 2, None], dtype="Int64"),
         }

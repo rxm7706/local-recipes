@@ -113,16 +113,18 @@ _PINNED_PYPI_LICENSE_METADATA: dict[str, Message] = {
     "packaging": _fake_metadata(license_expression="Apache-2.0 OR BSD-2-Clause"),
 }
 
+# Captured at import time so a single test can restore the real lookup
+# without fighting the autouse Fix-9 pin (AUD-WARDEN-031).
+_REAL_IMPORTLIB_METADATA = importlib.metadata.metadata
+
 
 @pytest.fixture(autouse=True)
 def _pin_pypi_license_metadata(monkeypatch):
-    real_metadata = importlib.metadata.metadata
-
     def fake_metadata(name, *args, **kwargs):
         pinned = _PINNED_PYPI_LICENSE_METADATA.get(name)
         if pinned is not None:
             return pinned
-        return real_metadata(name, *args, **kwargs)
+        return _REAL_IMPORTLIB_METADATA(name, *args, **kwargs)
 
     monkeypatch.setattr(importlib.metadata, "metadata", fake_metadata)
 
@@ -140,6 +142,47 @@ def test_clean_fixture_is_green(capsys):
     assert document["resolved_scan_set"] == [
         {"path": "pyproject.toml", "kind": "pyproject.toml"}
     ]
+
+
+def test_clean_without_ambient_feeds_is_not_clean_under_fail_on_kev(
+    monkeypatch, capsys, tmp_path
+):
+    """AUD-WARDEN-031: ambient KEV/OSV fixtures are a suite convenience —
+    without them, default ``fail_on_kev=True`` must not silently stay clean."""
+    monkeypatch.delenv(feeds.FEED_CACHE_DIR_ENV_VAR, raising=False)
+    monkeypatch.delenv("OSV_SCANNER_LOCAL_DB_CACHE_DIRECTORY", raising=False)
+    # Point feed cache at an empty dir so resolution is "absent", not
+    # "inherit whatever the process inherited from the session fixture".
+    monkeypatch.setenv(feeds.FEED_CACHE_DIR_ENV_VAR, str(tmp_path / "empty-feeds"))
+    rc, out, _err = run_scan(capsys, CLEAN)
+    document = parse_report(out)
+    assert document["status"]["value"] != "clean"
+    assert rc != 0
+    ids = {f["id"] for f in document["findings"]}
+    assert any(
+        "offline-db-unavailable" in fid or "kev" in fid or "unavailable" in fid
+        for fid in ids
+    ) or document["status"]["value"] == "indeterminate"
+
+
+def test_clean_fixture_license_uses_real_metadata_when_unpinned(monkeypatch, capsys):
+    """AUD-WARDEN-031: Fix 9's license pin stays for CLEAN green; this smoke
+    proves the real installed metadata path still resolves when unpinned."""
+    monkeypatch.setattr(importlib.metadata, "metadata", _REAL_IMPORTLIB_METADATA)
+    try:
+        _REAL_IMPORTLIB_METADATA("requests")
+        _REAL_IMPORTLIB_METADATA("packaging")
+    except importlib.metadata.PackageNotFoundError:
+        pytest.skip("requests/packaging not installed in this env")
+    rc, out, _err = run_scan(capsys, CLEAN)
+    document = parse_report(out)
+    # License axis must still assess (no crash); status may be clean or warn
+    # depending on ambient SPDX, but never error from metadata lookup.
+    assert document["status"]["value"] != "error"
+    by_axis = {block["axis"]: block for block in document["coverage"]}
+    assert "license" in by_axis
+    assert by_axis["license"]["deps_assessed"] >= 1
+    assert rc == document["exit_code"]
 
 
 def test_clean_fixture_coverage_reflects_deptry_hygiene_assessment(capsys):
@@ -1100,7 +1143,7 @@ def test_indeterminate_outranks_a_live_warn_end_to_end(capsys):
     # own hygiene:DEP002 finding independent of its vulnerability-axis
     # withhold -- both must coexist on the same package name.
     _one_hygiene_finding(document, "hygiene:DEP002:leftpad")
-    indeterminate_finding_id = "indeterminate:no-version:leftpad"
+    indeterminate_finding_id = "indeterminate:no-version:leftpad@unspecified"
     matches = [
         f for f in document["findings"] if f["id"] == indeterminate_finding_id
     ]
@@ -1219,7 +1262,14 @@ def test_currency_axis_python_runtime_eol_finding_round_trips_through_the_schema
     the running interpreter then resolves ``eol``, not ``unknown``."""
     runtime_version = ".".join(str(part) for part in sys.version_info[:3])
     monkeypatch.setenv(feeds.FEED_CACHE_DIR_ENV_VAR, str(tmp_path))
-    feeds.write_kev_cache(tmp_path, {"vulnerabilities": []})
+    feeds.write_kev_cache(
+        tmp_path,
+        {
+            "vulnerabilities": [
+                {"cveID": "CVE-0000-WARDEN-AMBIENT", "dateAdded": "1970-01-01"}
+            ]
+        },
+    )
     feeds.write_endoflife_cache(
         tmp_path,
         {
@@ -1428,7 +1478,14 @@ def test_currency_two_mode_diff_escalates_status_and_exit(monkeypatch, tmp_path,
     the rung."""
     runtime_version = ".".join(str(part) for part in sys.version_info[:3])
     monkeypatch.setenv(feeds.FEED_CACHE_DIR_ENV_VAR, str(tmp_path))
-    feeds.write_kev_cache(tmp_path, {"vulnerabilities": []})
+    feeds.write_kev_cache(
+        tmp_path,
+        {
+            "vulnerabilities": [
+                {"cveID": "CVE-0000-WARDEN-AMBIENT", "dateAdded": "1970-01-01"}
+            ]
+        },
+    )
     feeds.write_endoflife_cache(
         tmp_path,
         {
@@ -1471,7 +1528,14 @@ def test_license_two_mode_diff_escalates_status_and_exit(monkeypatch, tmp_path, 
     )
     feed = tmp_path / "feed"
     monkeypatch.setenv(feeds.FEED_CACHE_DIR_ENV_VAR, str(feed))
-    feeds.write_kev_cache(feed, {"vulnerabilities": []})
+    feeds.write_kev_cache(
+        feed,
+        {
+            "vulnerabilities": [
+                {"cveID": "CVE-0000-WARDEN-AMBIENT", "dateAdded": "1970-01-01"}
+            ]
+        },
+    )
     feeds.write_endoflife_cache(
         feed,
         {"mysterylib": _clean_cycle("1.0.0"), "python": _clean_cycle(runtime_version)},
@@ -1552,7 +1616,14 @@ def test_max_lag_two_mode_diff_enforces_the_numeric_threshold(
         lambda: {"updated": yesterday, "products": {}},
     )
     monkeypatch.setenv(feeds.FEED_CACHE_DIR_ENV_VAR, str(tmp_path))
-    feeds.write_kev_cache(tmp_path, {"vulnerabilities": []})
+    feeds.write_kev_cache(
+        tmp_path,
+        {
+            "vulnerabilities": [
+                {"cveID": "CVE-0000-WARDEN-AMBIENT", "dateAdded": "1970-01-01"}
+            ]
+        },
+    )
     feeds.write_endoflife_cache(
         tmp_path,
         {

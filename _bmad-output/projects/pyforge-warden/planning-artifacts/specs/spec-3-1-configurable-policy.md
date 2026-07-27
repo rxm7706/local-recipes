@@ -3,7 +3,8 @@
 title: 'Story 3.1: Configurable policy (the ConfigLoader)'
 type: 'feature'
 created: '2026-07-17'
-status: 'draft'
+status: shipped
+updated: '2026-07-27 (AUD-WARDEN-030 status sync)'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:

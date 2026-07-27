@@ -82,6 +82,15 @@ def test_config_resolves_only_from_env(monkeypatch):
     assert cfg is not None and cfg.base_url == "https://cms.example" and cfg.api_token == "tok"
 
 
+def test_config_rejects_non_http_base_url(monkeypatch):
+    # AUD-ATLAS-021: file:// / hostless schemes must not resolve as configured.
+    monkeypatch.setenv("LASUITE_API_TOKEN", "tok")
+    monkeypatch.setenv("LASUITE_BASE_URL", "file:///etc/passwd")
+    assert resolve_lasuite_config() is None
+    monkeypatch.setenv("LASUITE_BASE_URL", "http://")
+    assert resolve_lasuite_config() is None
+
+
 # --- client error clarity (§ 2.1) ------------------------------------------------------
 
 
@@ -113,6 +122,24 @@ def test_client_sends_bearer_auth_and_builds_url():
     LaSuiteClient(_cfg(), opener=opener).create_document("T", "b")
     assert seen["url"] == "https://cms.example/api/v1/documents/"
     assert seen["auth"] == "Bearer tok"
+
+
+def test_client_rejects_unsafe_doc_id():
+    # AUD-ATLAS-040: path-injection / traversal ids never reach the opener.
+    seen = []
+
+    def opener(req: Request) -> Response:
+        seen.append(req.url)
+        return Response(200, {"id": "1"})
+
+    client = LaSuiteClient(_cfg(), opener=opener)
+    with pytest.raises(LaSuiteError, match="invalid document id"):
+        client.update_document("../etc/passwd", "T", "b")
+    with pytest.raises(LaSuiteError, match="invalid document id"):
+        client.get_document("a/b")
+    with pytest.raises(LaSuiteError, match="invalid document id"):
+        client.create_document("T", "b", parent_id="..")
+    assert seen == []
 
 
 # --- the round-trip (push / update / idempotent re-push) -------------------------------

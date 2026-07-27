@@ -72,7 +72,7 @@ def test_exit_sigint_constant():
 def test_compose_indeterminate_outranks_warn():
     warn_driver = StatusDriver(axis=AXIS_HYGIENE, finding_id="hygiene:DEP002:leftpad")
     ind_driver = StatusDriver(
-        axis=AXIS_VULNERABILITY, finding_id="indeterminate:no-version:requests"
+        axis=AXIS_VULNERABILITY, finding_id="indeterminate:no-version:requests@unspecified"
     )
     rungs = [(Status.WARN, warn_driver), (Status.INDETERMINATE, ind_driver)]
     assert compose(rungs) == (Status.INDETERMINATE, ind_driver)
@@ -212,8 +212,8 @@ def test_allow_empty_with_no_driver_stays_at_one():
     [
         "indeterminate:vuln-data-stale:vuln-database",
         "indeterminate:offline-db-unavailable:requests",
-        "indeterminate:no-version:leftpad",
-        "indeterminate:unmatchable:somepkg",
+        "indeterminate:no-version:leftpad@unspecified",
+        "indeterminate:unmatchable:somepkg@unspecified",
     ],
     ids=str,
 )

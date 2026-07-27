@@ -1,11 +1,12 @@
 ---
 title: 'Story D2 (5.2): Build the Vizro dashboard + port the 28 CLIs to pages'
 type: 'feature'
-status: 'regenerated'
+status: 'shipped'
 regenerated: '2026-07-25'
 source: 'epics.md (authoritative intent + acceptance criteria) + shipped code on main'
 original_spec: 'NEVER AUTHORED as a file — wave B9-H4 ran through the in-session agent loop, not bmad-create-story (which wrote files only for waves 0/A/B1-B8), confirmed by the migration session itself. Nothing was lost; there is no original to recover. Intent+ACs below are the real epics.md contract.'
 enriched: '2026-07-25 (merged PR #87 body + main commit log; dev narrative recovered, review-triage partial)'
+audit_note: 'AUD-ATLAS-041 (2026-07-27): shipped honest-core = 8 pages in PAGE_INVENTORY + factory-status; full 28-CLI port remains DW-D2. Title/epics AC wording kept as historical contract; do not read as current page count.'
 ---
 
 > **Contract-spec — no original ever existed (corrected 2026-07-25).** This story

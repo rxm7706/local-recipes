@@ -52,6 +52,7 @@ only; ``pyforge.warden`` is imported lazily inside the nodes. ``dagster`` /
 from __future__ import annotations
 
 import os
+import tempfile
 from pathlib import Path
 from typing import Any, Callable
 
@@ -133,6 +134,42 @@ def _not_applicable_hygiene(reason: str) -> dict[str, Any]:
     }
 
 
+# gate.py → …/pipelines/universal_sbom/gate.py → parents[5] == pyforge-atlas member.
+_ATLAS_PACKAGE_ROOT = Path(__file__).resolve().parents[5]
+
+
+def _hygiene_allowed_roots(params: dict[str, Any]) -> list[Path]:
+    """Roots under which ``hygiene_source_dir`` may resolve (AUD-ATLAS-017).
+
+    Explicit ``params:gate.hygiene_allowed_root`` wins. Otherwise allow the atlas
+    package tree, the process cwd (normal Kedro runs), and the system temp dir
+    (pytest ``tmp_path`` fixtures).
+    """
+    explicit = _as_dict(params.get("gate")).get("hygiene_allowed_root")
+    if explicit:
+        return [Path(str(explicit)).expanduser().resolve()]
+    return [
+        _ATLAS_PACKAGE_ROOT,
+        Path.cwd().resolve(),
+        Path(tempfile.gettempdir()).resolve(),
+    ]
+
+
+def _resolve_hygiene_source(source_dir: str, params: dict[str, Any]) -> Path | None:
+    """Resolve ``source_dir`` and require it under an allowed root; else ``None``."""
+    try:
+        target = Path(str(source_dir)).expanduser().resolve()
+    except OSError:
+        return None
+    for root in _hygiene_allowed_roots(params):
+        try:
+            target.relative_to(root)
+            return target
+        except ValueError:
+            continue
+    return None
+
+
 def run_dependency_hygiene(
     sbom_intake_entry: dict[str, Any],
     parameters: dict[str, Any] | None = None,
@@ -160,12 +197,20 @@ def run_dependency_hygiene(
             "SBOM passthrough) — deptry's import analysis is not applicable (FR-16)"
         )
 
+    target = _resolve_hygiene_source(str(source_dir), params)
+    if target is None:
+        # AUD-ATLAS-017: fail closed — never invoke deptry on an escaped path.
+        return _not_applicable_hygiene(
+            f"hygiene_source_dir {source_dir!r} escapes the allowed root(s) "
+            f"{[str(r) for r in _hygiene_allowed_roots(params)]} — deptry not run "
+            "(AUD-ATLAS-017)"
+        )
+
     _load_warden()  # fail EARLY with the install hint if the [gate] extra is absent
     from pyforge.warden.engines import DeptryEngine
     from pyforge.warden.hygiene import has_adjacent_python_source
     from pyforge.warden.inventory import ResolvedInventory
 
-    target = Path(source_dir)
     if not target.is_dir() or not has_adjacent_python_source(target):
         return _not_applicable_hygiene(
             f"no adjacent Python source under {source_dir!r} — deptry's AST/import "

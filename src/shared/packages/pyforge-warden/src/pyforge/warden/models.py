@@ -588,7 +588,7 @@ class ComplianceReport:
     # working and every shipped scan renders them empty/null (Story 6.1
     # populates ONLY suppressions, from applied waivers, in cli.py).
     suppressions: tuple[SuppressedFinding, ...] = ()
-    license_data: FeedProvenance | None = None
+    license_data: FeedProvenance | None = None  # reserved; always None in v1 (metadata-sourced license axis)
     currency_data: FeedProvenance | None = None
     kev_data: FeedProvenance | None = None
     epss_data: FeedProvenance | None = None

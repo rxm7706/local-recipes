@@ -248,6 +248,119 @@ def _is_valid_osv_advisory(record: object, osv_ecosystem: str) -> bool:
     return False
 
 
+# NFR-S5 (AUD-WARDEN-017): refuse a single zip entry larger than this before
+# decompressing into memory. Real OSV advisories are far smaller; a zip-bomb
+# entry must not OOM the scan.
+_MAX_OSV_ZIP_ENTRY_BYTES = 5_000_000
+
+# AUD-WARDEN-023: one-entry cache for ``_scan_osv_zip`` (path + mtime + size).
+_OSV_ZIP_SCAN_CACHE: dict[
+    tuple[str, int, int, Ecosystem], tuple[bool, dict[str, tuple[str, ...]]]
+] = {}
+
+
+def _read_zip_json_capped(archive: zipfile.ZipFile, name: str) -> object | None:
+    """Load one zip JSON entry under :data:`_MAX_OSV_ZIP_ENTRY_BYTES`, or
+    ``None`` when the entry is missing / oversize / malformed. Never raises
+    for a single bad entry (callers tolerate per-entry failure)."""
+    try:
+        info = archive.getinfo(name)
+    except KeyError:
+        return None
+    if info.file_size > _MAX_OSV_ZIP_ENTRY_BYTES:
+        return None
+    try:
+        return json.loads(archive.read(name))
+    except (
+        KeyError,
+        OSError,
+        zipfile.BadZipFile,
+        json.JSONDecodeError,
+        UnicodeDecodeError,
+        # zipfile.ZipFile.read() raises RuntimeError for an encrypted entry
+        # and NotImplementedError for unsupported compression — one bad
+        # entry must not abort the rest of the archive.
+        RuntimeError,
+        NotImplementedError,
+    ):
+        return None
+
+
+def _scan_osv_zip(
+    zip_path: Path, ecosystem: Ecosystem = Ecosystem.PYPI
+) -> tuple[bool, dict[str, tuple[str, ...]]]:
+    """Single namelist walk: (has_valid_advisory, critical_index).
+
+    AUD-WARDEN-023: pre-flight and the name-level CRITICAL index used to
+    open the same zip twice per scan. Cache one scan per
+    ``(resolved path, mtime_ns, size)`` so doctor + ``OsvEngine.run`` share
+    the walk when the DB file is unchanged.
+    """
+    osv_ecosystem = _OSV_ECOSYSTEM_DIR.get(ecosystem)
+    if osv_ecosystem is None:
+        return False, {}
+    try:
+        st = zip_path.stat()
+        cache_key = (str(zip_path.resolve()), st.st_mtime_ns, st.st_size, ecosystem)
+    except OSError:
+        return False, {}
+    cached = _OSV_ZIP_SCAN_CACHE.get(cache_key)
+    if cached is not None:
+        return cached
+
+    has_valid = False
+    matches: dict[str, set[str]] = {}
+    try:
+        with zipfile.ZipFile(zip_path) as archive:
+            for name in archive.namelist():
+                if not name.endswith(".json"):
+                    continue
+                record = _read_zip_json_capped(archive, name)
+                if record is None:
+                    continue
+                if not has_valid and _is_valid_osv_advisory(record, osv_ecosystem):
+                    has_valid = True
+                if not isinstance(record, dict):
+                    continue
+                vector = _advisory_top_level_cvss_v3_vector(record)
+                if vector is None:
+                    continue
+                score = cvss_v31_base_score(vector)
+                if score is None:
+                    continue
+                if _cvss_score_to_tier(str(score)) is not SeverityTier.CRITICAL:
+                    continue
+                record_id = record.get("id")
+                if not isinstance(record_id, str) or not record_id:
+                    continue
+                affected = record.get("affected")
+                if not isinstance(affected, list):
+                    continue
+                for entry in affected:
+                    if not isinstance(entry, dict):
+                        continue
+                    package = entry.get("package")
+                    if not isinstance(package, dict):
+                        continue
+                    if package.get("ecosystem") != osv_ecosystem:
+                        continue
+                    pkg_name = package.get("name")
+                    if not isinstance(pkg_name, str) or not pkg_name:
+                        continue
+                    canonical = canonical_name(ecosystem, pkg_name)
+                    matches.setdefault(canonical, set()).add(record_id)
+    except (OSError, zipfile.BadZipFile):
+        result = (False, {})
+        _OSV_ZIP_SCAN_CACHE.clear()
+        _OSV_ZIP_SCAN_CACHE[cache_key] = result
+        return result
+
+    result = (has_valid, {name: tuple(sorted(ids)) for name, ids in matches.items()})
+    _OSV_ZIP_SCAN_CACHE.clear()  # keep one entry (mtime/size keyed)
+    _OSV_ZIP_SCAN_CACHE[cache_key] = result
+    return result
+
+
 def _db_has_valid_advisory(
     zip_path: Path, ecosystem: Ecosystem = Ecosystem.PYPI
 ) -> bool:
@@ -257,36 +370,7 @@ def _db_has_valid_advisory(
     per-entry decode/shape failure is tolerated (one malformed entry must
     not abort the check of the rest); any failure to even OPEN the zip
     (missing file/dir, ``BadZipFile``, ...) fails the whole pre-flight."""
-    osv_ecosystem = _OSV_ECOSYSTEM_DIR.get(ecosystem)
-    if osv_ecosystem is None:
-        return False
-    try:
-        with zipfile.ZipFile(zip_path) as archive:
-            for name in archive.namelist():
-                if not name.endswith(".json"):
-                    continue
-                try:
-                    record = json.loads(archive.read(name))
-                except (
-                    KeyError,
-                    OSError,
-                    zipfile.BadZipFile,
-                    json.JSONDecodeError,
-                    UnicodeDecodeError,
-                    # zipfile.ZipFile.read() raises RuntimeError for an
-                    # encrypted entry (wrong/no password) and
-                    # NotImplementedError for an unsupported compression
-                    # method — either way, one bad entry must not abort the
-                    # check of the rest of the archive.
-                    RuntimeError,
-                    NotImplementedError,
-                ):
-                    continue
-                if _is_valid_osv_advisory(record, osv_ecosystem):
-                    return True
-    except (OSError, zipfile.BadZipFile):
-        return False
-    return False
+    return _scan_osv_zip(zip_path, ecosystem)[0]
 
 
 @dataclass(frozen=True)
@@ -497,7 +581,7 @@ def _cvss_score_to_tier(raw_score: object) -> SeverityTier:
 # SCOPE and make the vector unparsable (-> None -> SeverityTier.UNKNOWN via
 # _cvss_score_to_tier, never counted critical).
 
-_CVSS_V31_PREFIX = "CVSS:3.1"
+_CVSS_V3_PREFIXES = frozenset({"CVSS:3.0", "CVSS:3.1"})
 
 _CVSS_AV_WEIGHTS = {"N": 0.85, "A": 0.62, "L": 0.55, "P": 0.2}
 _CVSS_AC_WEIGHTS = {"L": 0.77, "H": 0.44}
@@ -522,15 +606,20 @@ _CVSS_BASE_METRIC_VALUES: dict[str, frozenset[str]] = {
 
 
 def _parse_cvss_v31_base_metrics(vector: object) -> dict[str, str] | None:
-    """Parse a CVSS v3.1 vector string into its 8 BASE metrics — ``None`` on
-    anything unparsable: a non-``CVSS:3.1``-prefixed vector, a missing or
+    """Parse a CVSS v3.0/v3.1 vector string into its 8 BASE metrics — ``None`` on
+    anything unparsable: a non-``CVSS:3.x``-prefixed vector, a missing or
     duplicated BASE metric, an unrecognized metric key (a temporal/
     environmental metric, or a CVSS v2/v4 shape), or an unrecognized value
-    for a known metric. Tolerant by construction: never raises."""
+    for a known metric. Tolerant by construction: never raises.
+
+    AUD-WARDEN-016: CVSS v3.0 and v3.1 share the same 8 base metrics and
+    scoring formula — accepting only ``CVSS:3.1`` under-alerted FR13 when
+    advisories ship ``type: CVSS_V3`` with a ``CVSS:3.0/…`` vector.
+    """
     if not isinstance(vector, str) or not vector:
         return None
     parts = vector.split("/")
-    if parts[0] != _CVSS_V31_PREFIX:
+    if parts[0] not in _CVSS_V3_PREFIXES:
         return None
     metrics: dict[str, str] = {}
     for part in parts[1:]:
@@ -644,8 +733,23 @@ def _advisory_targets_pypi_name(
     return False
 
 
+def build_name_level_critical_index(
+    zip_path: Path, ecosystem: Ecosystem = Ecosystem.PYPI
+) -> dict[str, tuple[str, ...]]:
+    """One zip walk: canonical package name -> sorted CRITICAL advisory ids.
+
+    AUD-WARDEN-002 built the index; AUD-WARDEN-023 shares that walk with the
+    content pre-flight via :func:`_scan_osv_zip`.
+    """
+    return _scan_osv_zip(zip_path, ecosystem)[1]
+
+
 def name_level_critical_advisory_ids(
-    zip_path: Path, pypi_name: str, ecosystem: Ecosystem = Ecosystem.PYPI
+    zip_path: Path,
+    pypi_name: str,
+    ecosystem: Ecosystem = Ecosystem.PYPI,
+    *,
+    index: dict[str, tuple[str, ...]] | None = None,
 ) -> tuple[str, ...]:
     """FR13's name-level CVE tier: does ``pypi_name`` carry >=1 CRITICAL
     advisory in the offline OSV DB at ANY affected version? A direct,
@@ -660,6 +764,8 @@ def name_level_critical_advisory_ids(
     counted critical. Returns a SORTED, deduplicated tuple of matching
     advisory ids (empty when the zip cannot even be opened, or on no
     critical match)."""
+    if index is not None:
+        return index.get(canonical_name(ecosystem, pypi_name), ())
     osv_ecosystem = _OSV_ECOSYSTEM_DIR.get(ecosystem)
     if osv_ecosystem is None:
         return ()
@@ -670,21 +776,7 @@ def name_level_critical_advisory_ids(
             for name in archive.namelist():
                 if not name.endswith(".json"):
                     continue
-                try:
-                    record = json.loads(archive.read(name))
-                except (
-                    KeyError,
-                    OSError,
-                    zipfile.BadZipFile,
-                    json.JSONDecodeError,
-                    UnicodeDecodeError,
-                    # See _db_has_valid_advisory's own comment: an encrypted
-                    # or unsupported-compression entry must not abort the
-                    # scan of the rest of the archive either.
-                    RuntimeError,
-                    NotImplementedError,
-                ):
-                    continue
+                record = _read_zip_json_capped(archive, name)
                 if not isinstance(record, dict):
                     continue
                 if not _advisory_targets_pypi_name(
@@ -991,14 +1083,31 @@ def parse_osv_output(raw: str) -> OsvParse:
         )
     results = document.get("results")
     if not isinstance(results, list):
-        # A schema-drifted-but-still-JSON-object document (e.g. no "results"
-        # key at all): nothing to report, no findings — not a parse failure
-        # (osv's own "no vulnerabilities" body already omits nothing).
-        return OsvParse(findings=(), errors=())
+        # AUD-WARDEN-011: a schema-drifted document (no ``results`` key, or
+        # ``results`` not a list) is NOT "no vulnerabilities" — osv's genuine
+        # empty scan still carries ``"results": []``. Treating drift as a
+        # clean parse let inventory-level CLEAN rungs compose exit 0 while
+        # the scanner's output was unusable.
+        return OsvParse(
+            findings=(),
+            errors=(
+                ErrorRecord(
+                    kind=ErrorKind.ENGINE_OUTPUT_UNPARSEABLE,
+                    owner=_OWNER,
+                    message=(
+                        "osv-scanner JSON is missing a usable 'results' "
+                        "array (schema drift or truncated output)"
+                    ),
+                ),
+            ),
+        )
 
     by_id: dict[str, Finding] = {}
     candidates_by_id: dict[str, tuple[str, ...]] = {}
     fixed_version_by_id: dict[str, str] = {}
+    packages_with_orphaned_vulnerabilities = 0
+    packages_attempted = 0
+    packages_usable = 0
     for result in results:
         if not isinstance(result, dict):
             continue
@@ -1006,6 +1115,22 @@ def parse_osv_output(raw: str) -> OsvParse:
         if not isinstance(packages, list):
             continue
         for package_entry in packages:
+            packages_attempted += 1
+            usable = _package_entry_is_usable(package_entry)
+            if usable:
+                packages_usable += 1
+            if isinstance(package_entry, dict):
+                groups = package_entry.get("groups")
+                vulnerabilities = package_entry.get("vulnerabilities")
+                # AUD-WARDEN-011/015: findings live in ``groups[]``; a package
+                # that only carries ``vulnerabilities[]`` (or has a non-list
+                # ``groups``) would previously return [] with no error — exit
+                # 0/1 then composed CLEAN. Count those so the caller can fail
+                # closed when osv reported vulns we could not extract.
+                if not isinstance(groups, list) and isinstance(
+                    vulnerabilities, list
+                ) and any(isinstance(v, dict) for v in vulnerabilities):
+                    packages_with_orphaned_vulnerabilities += 1
             for finding, candidates, fixed_version in _findings_for_package(
                 package_entry
             ):
@@ -1015,9 +1140,34 @@ def parse_osv_output(raw: str) -> OsvParse:
                     if fixed_version is not None:
                         fixed_version_by_id[finding.id] = fixed_version
     ordered = tuple(sorted(by_id.values(), key=lambda f: f.id))
+    errors: tuple[ErrorRecord, ...] = ()
+    if packages_with_orphaned_vulnerabilities and not ordered:
+        errors = (
+            ErrorRecord(
+                kind=ErrorKind.ENGINE_OUTPUT_UNPARSEABLE,
+                owner=_OWNER,
+                message=(
+                    f"osv-scanner reported vulnerabilities on "
+                    f"{packages_with_orphaned_vulnerabilities} package "
+                    "entr(y/ies) but no usable groups[] could be parsed"
+                ),
+            ),
+        )
+    elif packages_attempted and not packages_usable and not ordered:
+        # AUD-WARDEN-015: every package entry was shape-broken — not a clean scan.
+        errors = (
+            ErrorRecord(
+                kind=ErrorKind.ENGINE_OUTPUT_UNPARSEABLE,
+                owner=_OWNER,
+                message=(
+                    f"osv-scanner results listed {packages_attempted} package "
+                    "entr(y/ies) but none had a usable package/groups shape"
+                ),
+            ),
+        )
     return OsvParse(
         findings=ordered,
-        errors=(),
+        errors=errors,
         kev_candidates=MappingProxyType(
             {finding.id: candidates_by_id[finding.id] for finding in ordered}
         ),
@@ -1029,6 +1179,30 @@ def parse_osv_output(raw: str) -> OsvParse:
             }
         ),
     )
+
+
+def _package_entry_is_usable(package_entry: object) -> bool:
+    """True when a ``results[].packages[]`` entry has the shape ``_findings_for_package``
+    can walk (AUD-WARDEN-015). Well-formed + empty ``groups`` counts as usable
+    (genuine zero-vuln package); a non-dict / missing name / non-list ``groups``
+    when the key is present does not."""
+    if not isinstance(package_entry, dict):
+        return False
+    package = package_entry.get("package")
+    if not isinstance(package, dict):
+        return False
+    pkg_name = package.get("name")
+    if not isinstance(pkg_name, str) or not pkg_name:
+        return False
+    if "groups" in package_entry and not isinstance(package_entry.get("groups"), list):
+        return False
+    # Absent groups with no orphaned vulns → treat as empty usable package.
+    if "groups" not in package_entry:
+        vulns = package_entry.get("vulnerabilities")
+        if isinstance(vulns, list) and any(isinstance(v, dict) for v in vulns):
+            return False  # orphaned vulns without groups — not usable for findings
+        return True
+    return True
 
 
 # --- Story 6.4 (FR36): CISA KEV enrichment -----------------------------------

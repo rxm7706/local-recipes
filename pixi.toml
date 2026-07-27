@@ -251,6 +251,21 @@ pixi-build-python = ">=0.8.3"             # pixi build backend -> .conda from th
 pixi-build-rattler-build = ">=0.4.4"      # pixi build backend -> recipe-driven .conda
 twine = ">=6.2.0"                         # PyPI upload
 
+# The dependency-completeness + manifest-parity gate for ALL `pyforge-*` packages
+# (AUD-ATLAS-010, AUD-WARDEN-010). It AST-scans each package's src/ for
+# unconditional module-level imports and proves every one is declared in
+# pyproject.toml AND mirrored into pixi.toml [package.run-dependencies].
+#
+# It lives in `pyforge-ci` on purpose: the check is pure stdlib (ast + tomllib),
+# so running it in the leanest env in the repo — which carries no runtime
+# libraries at all — is the standing proof that it never needs the very
+# dependencies it audits. It also discovers packages by glob, so a new
+# `pyforge-*` package is covered the day it lands, with nobody having to
+# remember. Runs in ~0.3s; safe to run on every change.
+[feature.pyforge-ci.tasks.pyforge-deps-test]
+description = "Dependency-completeness + wheel/.conda manifest parity for every pyforge-* package (pure stdlib; no runtime deps required)"
+cmd = "python -m pytest tests/packaging -q"
+
 [environments]
 # default-env: local-recipes
 # ^ The "default-env:" directive above tells scripts/load-env.sh which environment
@@ -1214,6 +1229,11 @@ cmd = "python -m sentinel.knowledge.crews.qa_crew"
 [feature.local-recipes.tasks.wiki-sync]
 cmd = "python -m sentinel.knowledge.lasuite.sync"
 
+[feature.local-recipes.tasks.wiki-test]
+description = "Test the sentinel knowledge base (config resolution + LaSuite client/sync timeout recovery). Lives at repo-level tests/sentinel/ because it covers `sentinel.*`, NOT pyforge.atlas — it was previously misfiled inside the atlas test tree, where it could not collect in any env (AUD-ATLAS-013)."
+cmd = "python -m pytest tests/sentinel -q"
+env = { PYTHONPATH = "src" }
+
 [feature.local-recipes.tasks.wiki-compile-all]
 description = "Compile all wiki pages into a single document"
 cmd = "python -m sentinel.knowledge.crews.compilation_crew --all"
@@ -1317,8 +1337,19 @@ pyforge-atlas = { path = "src/shared/packages/pyforge-atlas" }  # -> built conda
 pyforge-warden = { path = "src/shared/packages/pyforge-warden" }  # AC-8: the [gate] extra default-installed IN-REPO at feature level (A1-A5 alternative route) — NOT a pyforge-atlas package run-dep, so external conda installs stay warden-optional
 hatchling = ">=1.31.0"                    # Python build backend (drives both conda + wheel/sdist)
 python-build = ">=1.5.0"                 # PyPA `python -m build` frontend (wheel + sdist)
+# --- test-only tools (NEVER pyforge-atlas run-deps; warden's split) ----------
+# The package's own runtime stack is declared in
+# src/shared/packages/pyforge-atlas/pixi.toml [package.run-dependencies] and is
+# dependency-COMPLETE as of 2026-07-26 (AUD-ATLAS-010) — only test tooling
+# belongs here, so `kedro-test` runs in this lean env without local-recipes.
 pytest = ">=9.1.1"                       # test runner (kedro-test)
 kedro-viz = ">=12.4.0"             # C2 `viz` task + test_viz_loadable smoke — NOT a pyforge-atlas run-dep so not pulled transitively; the lean no-default-feature env needs it explicitly (Gemini #85)
+numpy = ">=2.5.1"                  # test-only: NaN/dtype fixtures (tests/mcp, tests/pipelines) — atlas src never imports numpy directly
+playwright-python = ">=1.61.0"     # test-only: tests/dashboard/test_dashboard_e2e.py drives the Dash app headless. Browser binary is NOT a conda artifact — provision once with `python -m playwright install chromium-headless-shell`
+# NOTE: kedro-mcp is deliberately NOT here. tests/mcp/test_kedro_mcp_absent.py
+# poisons it (`sys.modules["kedro_mcp"] = None`) to prove the surface never
+# depends on it, and tests/catalog/test_no_inline_io.py::test_ad1_import_direction
+# FORBIDS importing it anywhere in pyforge.atlas. Installing it would be pointless.
 
 [feature.pyforge-atlas.tasks.kedro-test]
 description = "Wave A deterministic gate: pyforge.atlas import smokes + Kedro namespace seam + scaffold layout (AD-11)"

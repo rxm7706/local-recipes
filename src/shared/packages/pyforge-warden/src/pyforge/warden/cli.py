@@ -1091,17 +1091,20 @@ def _run_scan(args: argparse.Namespace) -> int:
                 cli_min_epss=args.min_epss,
             )
         except ConfigValidationError:
-            # Fix 5 follow-up (review finding, 2026-07-18): `exc` above may
-            # ITSELF be the bad CLI flag's own error (--allow-licenses/
-            # --deny-licenses have no argparse-level pre-validation, unlike
-            # --fail-on/--fail-under-coverage) -- re-applying the SAME bad
-            # value here raised a SECOND, uncaught ConfigValidationError,
-            # misprojecting as `internal error` + a traceback instead of the
-            # clean config-validation exit `exc` (recorded below, its
-            # message already names the exact bad flag/value) already
-            # provides. Fall back to the plain built-in default rather than
-            # re-attempting a reconstruction that is already known to fail.
-            config = EffectiveConfig.default()
+            # Fix 5 follow-up (review finding, 2026-07-18) + AUD-WARDEN-025:
+            # `exc` may ITSELF be a bad CLI flag's error (--allow-licenses /
+            # --deny-licenses have no argparse pre-validation). Re-applying
+            # the SAME bad value raises again. Prefer re-applying only
+            # argparse-validated gate flags so a good `--fail-on` is not
+            # silently dropped under `EffectiveConfig.default()`.
+            try:
+                config = EffectiveConfig.default_with_cli_overrides(
+                    cli_fail_on=args.fail_on,
+                    cli_fail_under_coverage=args.fail_under_coverage,
+                    cli_warn_as_error=args.warn_as_error,
+                )
+            except ConfigValidationError:
+                config = EffectiveConfig.default()
         # Review finding: warnings gathered before the raise (e.g. a
         # malformed-but-non-fatal pixi.toml) must still reach stderr.
         for warning in exc.warnings:

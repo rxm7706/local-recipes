@@ -3,7 +3,8 @@
 title: 'Story 6.2: License axis producer + gate flags (Axis 3)'
 type: 'feature'
 created: '2026-07-18'
-status: 'in-review'
+status: shipped
+updated: '2026-07-27 (AUD-WARDEN-030 status sync)'
 review_loop_iteration: 0
 followup_review_recommended: true
 context: []

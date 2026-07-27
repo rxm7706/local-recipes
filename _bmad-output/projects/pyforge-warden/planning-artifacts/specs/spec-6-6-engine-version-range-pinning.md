@@ -2,7 +2,8 @@
 title: 'Story 6.6: Engine version-range pinning (the distribution gate)'
 type: 'feature'
 created: '2026-07-24'
-status: 'done'
+status: shipped
+updated: '2026-07-27 (AUD-WARDEN-030 status sync)'
 review_loop_iteration: 0
 followup_review_recommended: false
 baseline_revision: 'abbc90839f1da3797a47ced38d1c656a3e2f2952'

@@ -2,7 +2,8 @@
 title: 'Story 5.2: Fleet-scale validation + corpus/oracle maturation'
 type: 'feature'
 created: '2026-07-24'
-status: 'done'
+status: shipped
+updated: '2026-07-27 (AUD-WARDEN-030 status sync)'
 review_loop_iteration: 0
 followup_review_recommended: false
 baseline_revision: '3f7d5cb6e1c167d7f5db37854be4a1aa6c84faa7'

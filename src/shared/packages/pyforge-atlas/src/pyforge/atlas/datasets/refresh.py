@@ -57,6 +57,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import tempfile
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -324,18 +325,24 @@ class ExternalRefreshDataset(AbstractDataset):
 
     @staticmethod
     def _atomic_write(target: Path, write_fn: Callable[[Path], None]) -> None:
-        """Write via a sibling ``.tmp`` then ``os.replace`` — an interrupted/failed write
-        leaves the last-good file untouched (AD-13 never-clobber)."""
+        """Write via a unique sibling temp then ``os.replace`` (AUD-ATLAS-029)."""
         target.parent.mkdir(parents=True, exist_ok=True)
-        tmp = target.with_name(target.name + ".tmp")
+        fd, tmp_name = tempfile.mkstemp(
+            dir=str(target.parent), suffix=".tmp", prefix=f".{target.name}."
+        )
+        os.close(fd)
+        tmp = Path(tmp_name)
         try:
             write_fn(tmp)
+            with open(tmp, "rb") as fh:
+                os.fsync(fh.fileno())
             os.replace(tmp, target)
-        finally:
+        except Exception:
             try:
                 tmp.unlink(missing_ok=True)
-            except OSError:  # pragma: no cover - best-effort cleanup
+            except OSError:
                 pass
+            raise
 
     # -- subclass hooks ----------------------------------------------------
 
@@ -454,10 +461,17 @@ class VDBStoreDataset(ExternalRefreshDataset):
             return pd.DataFrame()
         try:
             frame = pd.read_parquet(self._store_path)
-        except Exception as exc:  # corrupt/truncated store must not crash the consumer.
-            logger.warning("vdb store unreadable (%s), degrading to empty: %s", self._store_path, exc)
+        except Exception as exc:
+            # AUD-ATLAS-024: a corrupt/unreadable store must NOT degrade to an empty
+            # frame that nodes treat as "no vulns". Absent (never refreshed) keeps the
+            # AD-13 empty+stale path above; corrupt fails closed.
+            logger.warning("vdb store unreadable (%s): %s", self._store_path, exc)
             self._mark_stale("vdb store unreadable", only_if_absent=True)
-            return pd.DataFrame()
+            from kedro.io.core import DatasetError
+
+            raise DatasetError(
+                f"vdb store unreadable at {self._store_path}: {exc}"
+            ) from exc
         # DW-B2-2: coerce the CVSS ScoreType at the read boundary — the node gets floats.
         # Assign as OBJECT dtype so an unknown score stays ``None`` (never re-coerced to NaN
         # by pandas float inference) — the coerce contract is "None for unknown, never NaN

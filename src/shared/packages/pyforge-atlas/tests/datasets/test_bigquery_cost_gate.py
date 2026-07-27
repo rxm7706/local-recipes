@@ -85,7 +85,16 @@ def test_build_query_rejects_partitiondate_template():
         make_job_config=_make_job_config,
     )
     with pytest.raises(ValueError, match="_PARTITIONDATE"):
-        ds.build_query("a", "b")
+        ds.build_query("2026-01-01 00:00:00 UTC", "2026-04-01 00:00:00 UTC")
+
+
+def test_build_query_rejects_injected_timestamp_literals():
+    # AUD-ATLAS-020: bounds must be strict ISO-UTC literals before .format().
+    ds = _dataset(None)
+    with pytest.raises(ValueError, match="start_ts"):
+        ds.build_query("2026-01-01'; DROP TABLE x; --", "2026-04-01 00:00:00 UTC")
+    with pytest.raises(ValueError, match="end_ts"):
+        ds.build_query("2026-01-01 00:00:00 UTC", "not-a-timestamp")
 
 
 # -- Layer 1: free dry-run preflight + cap abort -----------------------------
@@ -94,7 +103,9 @@ def test_preflight_estimate_comes_from_dry_run_bytes():
     # 1 TiB scanned -> $6.25 at 6.25 $/TiB
     client = _StubBQClient(dry_bytes=1_000_000_000_000, result_df=pd.DataFrame())
     ds = _dataset(client)
-    bytes_processed, est_usd = ds.preflight(ds.build_query("a", "b"))
+    bytes_processed, est_usd = ds.preflight(
+        ds.build_query("2026-01-01 00:00:00 UTC", "2026-04-01 00:00:00 UTC")
+    )
     assert bytes_processed == 1_000_000_000_000
     assert est_usd == pytest.approx(6.25)
     assert client.calls[0][1]["dry_run"] is True  # the preflight IS a dry run
@@ -138,7 +149,7 @@ def test_first_pull_uses_the_higher_cap():
     client = _StubBQClient(dry_bytes=9_500_000_000_000, result_df=result)
     ds = _dataset(client)
     try:
-        out = ds.run_gated("a", "b", first_pull=True)  # first pull -> $100 cap -> allowed
+        out = ds.run_gated("2026-01-01 00:00:00 UTC", "2026-04-01 00:00:00 UTC", first_pull=True)  # first pull -> $100 cap -> allowed
     finally:
         monkeypatch_env("PHASE_P_ENABLED", None)
     assert not out.empty
@@ -158,7 +169,7 @@ def test_run_gated_raises_when_disabled():
     monkeypatch_env("PHASE_P_ENABLED", None)
     ds = _dataset(_StubBQClient(1, pd.DataFrame()))
     with pytest.raises(RuntimeError, match="disabled"):
-        ds.run_gated("a", "b")
+        ds.run_gated("2026-01-01 00:00:00 UTC", "2026-04-01 00:00:00 UTC")
 
 
 def test_is_enabled_only_literal_one():
@@ -203,7 +214,7 @@ def test_dry_run_none_bytes_fails_closed():
 
     ds = _dataset(_NoBytesClient())
     with pytest.raises(RuntimeError, match="cannot estimate cost"):
-        ds.preflight(ds.build_query("a", "b"))
+        ds.preflight(ds.build_query("2026-01-01 00:00:00 UTC", "2026-04-01 00:00:00 UTC"))
 
 
 # small env helper (avoids a module-level monkeypatch fixture dependency)
