@@ -69,10 +69,13 @@ def _post_requests(path: str, payload: dict, timeout: int = 60) -> dict:
     key = _api_key()
     if not key:
         raise RuntimeError("GEMINI_API_KEY is not set")
-    url = f"{_BASE}/{path}?key={key}"
+    url = f"{_BASE}/{path}"
     assert requests is not None  # _post binds here only when requests is importable
     response = requests.post(
-        url, json=payload, headers={"Content-Type": "application/json"}, timeout=timeout
+        url,
+        json=payload,
+        headers={"Content-Type": "application/json", "x-goog-api-key": key},
+        timeout=timeout,
     )
     response.raise_for_status()
     return response.json()
@@ -81,9 +84,11 @@ def _get_requests(path: str, timeout: int = 30) -> dict:
     key = _api_key()
     if not key:
         raise RuntimeError("GEMINI_API_KEY is not set")
-    url = f"{_BASE}/{path}?key={key}"
+    url = f"{_BASE}/{path}"
     assert requests is not None  # _get binds here only when requests is importable
-    response = requests.get(url, timeout=timeout)
+    response = requests.get(
+        url, headers={"x-goog-api-key": key}, timeout=timeout
+    )
     response.raise_for_status()
     return response.json()
 
@@ -91,10 +96,13 @@ def _post_urllib(path: str, payload: dict, timeout: int = 60) -> dict:
     key = _api_key()
     if not key:
         raise RuntimeError("GEMINI_API_KEY is not set")
-    url = f"{_BASE}/{path}?key={key}"
+    url = f"{_BASE}/{path}"
     data = json.dumps(payload).encode()
     req = urllib.request.Request(
-        url, data=data, headers={"Content-Type": "application/json"}, method="POST"
+        url,
+        data=data,
+        headers={"Content-Type": "application/json", "x-goog-api-key": key},
+        method="POST",
     )
     with urllib.request.urlopen(req, timeout=timeout) as resp:
         return json.loads(resp.read())
@@ -103,8 +111,9 @@ def _get_urllib(path: str, timeout: int = 30) -> dict:
     key = _api_key()
     if not key:
         raise RuntimeError("GEMINI_API_KEY is not set")
-    url = f"{_BASE}/{path}?key={key}"
-    with urllib.request.urlopen(url, timeout=timeout) as resp:
+    url = f"{_BASE}/{path}"
+    req = urllib.request.Request(url, headers={"x-goog-api-key": key}, method="GET")
+    with urllib.request.urlopen(req, timeout=timeout) as resp:
         return json.loads(resp.read())
 
 # Choose implementation based on availability

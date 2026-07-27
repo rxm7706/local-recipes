@@ -35,7 +35,7 @@ import unicodedata
 from pathlib import Path
 from typing import Any, Callable
 
-from kedro.io import AbstractDataset
+from kedro.io import AbstractDataset, DatasetError
 
 # ── pure whitespace normalization (AC-4b) ─────────────────────────────────────
 
@@ -368,6 +368,33 @@ def parse_intake(
 # ── the datasets (IO owners) ──────────────────────────────────────────────────
 
 
+def _kedro_data_root() -> Path:
+    """Locate the Kedro project ``data/`` directory (AUD-ATLAS-001)."""
+    current = Path(__file__).resolve()
+    for parent in current.parents:
+        if (parent / "conf" / "base" / "catalog.yml").is_file():
+            return (parent / "data").resolve()
+    raise DatasetError("SbomIntakeDataset: cannot locate Kedro project data/ root")
+
+
+def _resolve_intake_path(filepath: str, *, allowed_root: Path | None = None) -> Path:
+    """Resolve ``filepath`` and require it lies under ``allowed_root`` (default: ``data/``)."""
+    root = allowed_root or _kedro_data_root()
+    project_root = root.parent
+    path = Path(filepath)
+    if not path.is_absolute():
+        path = (project_root / path).resolve()
+    else:
+        path = path.resolve()
+    try:
+        path.relative_to(root)
+    except ValueError as exc:
+        raise DatasetError(
+            f"SbomIntakeDataset filepath must lie under {root}, got {path}"
+        ) from exc
+    return path
+
+
 class SbomIntakeDataset(AbstractDataset):
     """§ 4.10 tiered intake — dataset-owned file parsing (AD-2). Read-only.
 
@@ -381,16 +408,18 @@ class SbomIntakeDataset(AbstractDataset):
         *,
         filepath: str,
         format: str | None = None,  # noqa: A002 - catalog key name
+        allowed_root: str | None = None,
         load_args: dict[str, Any] | None = None,
         metadata: dict[str, Any] | None = None,
     ) -> None:
         self._filepath = filepath
         self._format = format
+        self._allowed_root = Path(allowed_root).resolve() if allowed_root else None
         self._load_args = dict(load_args or {})
         self.metadata = metadata
 
     def load(self) -> dict[str, Any]:
-        path = Path(self._filepath)
+        path = _resolve_intake_path(self._filepath, allowed_root=self._allowed_root)
         raw = path.read_text(encoding="utf-8", errors="replace")  # dataset-owned file IO (not denylisted)
         return parse_intake(raw, filename=path.name, fmt=self._format)
 

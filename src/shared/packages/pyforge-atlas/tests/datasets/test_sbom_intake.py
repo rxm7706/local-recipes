@@ -134,7 +134,7 @@ def test_parse_conda_list_explicit_url_rows():
 def test_sbom_intake_dataset_loads_requirements(tmp_path):
     f = tmp_path / "requirements.txt"
     f.write_text("numpy==1.26.0\nflask\n", encoding="utf-8")
-    ds = SbomIntakeDataset(filepath=str(f))
+    ds = SbomIntakeDataset(filepath=str(f), allowed_root=str(tmp_path))
     out = ds.load()
     assert out["format"] == "requirements"
     assert {d["name"] for d in out["deps"]} == {"numpy", "flask"}

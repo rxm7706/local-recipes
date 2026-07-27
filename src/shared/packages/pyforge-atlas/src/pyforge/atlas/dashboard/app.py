@@ -175,7 +175,8 @@ def _factory_page(
             f"### Factory Status\n\n"
             f"**Build timestamp (AD-17):** `{build_stamp}`\n\n"
             "Live BMAD artifact state — sprint-status.yaml `development_status`, "
-            "epics.md frontmatter, and each `docs/specs/*.md` status."
+            "epics.md frontmatter, and each BMAD Tier-2 spec under "
+            "`_bmad-output/projects/*/planning-artifacts/specs/`."
         ),
     )
     return vm.Page(

@@ -644,8 +644,71 @@ def _advisory_targets_pypi_name(
     return False
 
 
+def build_name_level_critical_index(
+    zip_path: Path, ecosystem: Ecosystem = Ecosystem.PYPI
+) -> dict[str, tuple[str, ...]]:
+    """One zip walk: canonical package name -> sorted CRITICAL advisory ids (AUD-WARDEN-002)."""
+    osv_ecosystem = _OSV_ECOSYSTEM_DIR.get(ecosystem)
+    if osv_ecosystem is None:
+        return {}
+    matches: dict[str, set[str]] = {}
+    try:
+        with zipfile.ZipFile(zip_path) as archive:
+            for name in archive.namelist():
+                if not name.endswith(".json"):
+                    continue
+                try:
+                    record = json.loads(archive.read(name))
+                except (
+                    KeyError,
+                    OSError,
+                    zipfile.BadZipFile,
+                    json.JSONDecodeError,
+                    UnicodeDecodeError,
+                    RuntimeError,
+                    NotImplementedError,
+                ):
+                    continue
+                if not isinstance(record, dict):
+                    continue
+                vector = _advisory_top_level_cvss_v3_vector(record)
+                if vector is None:
+                    continue
+                score = cvss_v31_base_score(vector)
+                if score is None:
+                    continue
+                if _cvss_score_to_tier(str(score)) is not SeverityTier.CRITICAL:
+                    continue
+                record_id = record.get("id")
+                if not isinstance(record_id, str) or not record_id:
+                    continue
+                affected = record.get("affected")
+                if not isinstance(affected, list):
+                    continue
+                for entry in affected:
+                    if not isinstance(entry, dict):
+                        continue
+                    package = entry.get("package")
+                    if not isinstance(package, dict):
+                        continue
+                    if package.get("ecosystem") != osv_ecosystem:
+                        continue
+                    pkg_name = package.get("name")
+                    if not isinstance(pkg_name, str) or not pkg_name:
+                        continue
+                    canonical = canonical_name(ecosystem, pkg_name)
+                    matches.setdefault(canonical, set()).add(record_id)
+    except (OSError, zipfile.BadZipFile):
+        return {}
+    return {name: tuple(sorted(ids)) for name, ids in matches.items()}
+
+
 def name_level_critical_advisory_ids(
-    zip_path: Path, pypi_name: str, ecosystem: Ecosystem = Ecosystem.PYPI
+    zip_path: Path,
+    pypi_name: str,
+    ecosystem: Ecosystem = Ecosystem.PYPI,
+    *,
+    index: dict[str, tuple[str, ...]] | None = None,
 ) -> tuple[str, ...]:
     """FR13's name-level CVE tier: does ``pypi_name`` carry >=1 CRITICAL
     advisory in the offline OSV DB at ANY affected version? A direct,
@@ -660,6 +723,8 @@ def name_level_critical_advisory_ids(
     counted critical. Returns a SORTED, deduplicated tuple of matching
     advisory ids (empty when the zip cannot even be opened, or on no
     critical match)."""
+    if index is not None:
+        return index.get(canonical_name(ecosystem, pypi_name), ())
     osv_ecosystem = _OSV_ECOSYSTEM_DIR.get(ecosystem)
     if osv_ecosystem is None:
         return ()

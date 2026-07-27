@@ -133,6 +133,7 @@ from .vuln import (
     is_db_stale,
     kev_match,
     kev_stale_finding,
+    build_name_level_critical_index,
     name_level_critical_advisory_ids,
     name_level_critical_cve_finding,
     offline_db_unavailable_finding,
@@ -854,12 +855,21 @@ def _deptry_requirements_sources(target: Path) -> list[str]:
         candidates = list(configured)
     else:
         candidates = ["requirements.txt"]
+    target_resolved = target.resolve()
     sources: list[str] = []
     for candidate in candidates:
         if not candidate or "," in candidate or "\n" in candidate:
             continue
+        raw = Path(candidate)
+        if raw.is_absolute() or ".." in raw.parts:
+            continue
+        resolved = (target_resolved / raw).resolve()
         try:
-            os.stat(target / candidate)
+            resolved.relative_to(target_resolved)
+        except ValueError:
+            continue
+        try:
+            os.stat(resolved)
         except (FileNotFoundError, NotADirectoryError):
             continue
         except OSError:
@@ -1094,11 +1104,12 @@ def _name_level_findings(
     ``DefaultPolicy`` already derives for it, never a replacement. Computed
     via a direct zip read, never a second ``osv-scanner`` subprocess."""
     findings: list[Finding] = []
+    index = build_name_level_critical_index(zip_path)
     for component in name_level_candidates:
         if component.pypi_identity is None:
             continue  # defensive: the caller's own filter already excludes this
         advisory_ids = name_level_critical_advisory_ids(
-            zip_path, component.pypi_identity.name
+            zip_path, component.pypi_identity.name, index=index
         )
         if advisory_ids:
             findings.append(name_level_critical_cve_finding(component, advisory_ids))
