@@ -182,11 +182,22 @@ The intelligence surface runs in-browser with zero backend against statically-ho
 The knowledge-base factory layer compiles, lints, and publishes the wiki autonomously, triggered by Dagster, consuming (never writing) atlas data.
 **FRs covered:** FR-22, FR-6 (crew triggers).
 
+### Epic 10: Post-Audit Remediation — Round-3 Findings (6 stories: I0–I5)
+The independent Round-3 spec-to-code audit's verified atlas findings are closed at
+their source, so the shipped claims and the code agree. Added post-ship (2026-07-27)
+by `sprint-change-proposal-2026-07-27.md`; unlike Epics 1–9 it maps to no spec § 9
+wave, because it exists to repair what those waves left divergent.
+**FRs covered:** none new — the epic re-establishes FR-4, FR-13 and FR-21 claims that
+drifted from their implementations.
+
 **Epic dependency chain:** 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 (each wave
 depends on the prior wave's deliverables — spec § 9 preamble). Within-epic
 ordering is § 14's: B1/B2 → B3 → B4 → B5 → B6 → B7 → B8 → B9 → B10; B8/B9/B10
 are additive, not parity-gated; legacy retirement only after B4 proves parity
-per Q1.
+per Q1. **Epic 10 sits outside that chain** — it depends on the whole migration
+having shipped, and its stories are ordered by the verify gate rather than by
+wave (I3 first: `kedro-test` is red on main until it lands, so every later story
+would inherit a failing gate).
 
 ---
 
@@ -1011,6 +1022,180 @@ So that the factory layer runs itself.
 - **Verify gate:** `dagster-dryrun` (crew assets enumerate) + simulated-trigger fixture.
 - **Depends on:** H1, H2, H3; C1.
 - **DELIVERED (2026-07-18 — closes Wave H + the migration):** the Wave-H crews run on C1's single Dagster plane (AD-6/AD-23). `orchestration/definitions.py` gains crew ASSETS (`compiled_wiki` → CompileCrew, `wiki_lint_report` → LintCrew, `deps=[compiled_wiki]`), their asset-jobs (`wiki_compile_job`/`wiki_lint_job`), a weekly LINT schedule (`wiki_lint_schedule`, `0 6 * * 1`, § 7.2), and the new-raw-file compile SENSOR (`wiki_raw_file_sensor` → `wiki_compile_job`, ships STOPPED). The raw-scan + cursor-dedupe DECISION logic lives in `orchestration/wiki_events.py` (dagster-free — AD-1 holds; only definitions.py imports dagster). `dagster definitions validate` green; a simulated new-raw-file event (injected lister + `build_sensor_context`) → one `RunRequest` for the compile job. Live daemon + wiki-store bring-up DEFERRED (DW-H4). Gate `test_definitions_dryrun.py` H4 section (+12; C1/G3 invariants scoped to kedro op-jobs via `_kedro_jobs`). Independent review found 1 SHOULD-FIX (`_decode_cursor` crashed on a valid-JSON-but-nested cursor, breaking its "never a crash" contract) — fixed (filter to str inside the guard) + regression-tested; the `_kedro_jobs` scoping was verified NOT to weaken any C1/G3 guard.
+
+---
+
+## Epic 10: Post-Audit Remediation — Round-3 Findings
+
+Added 2026-07-27 by `sprint-change-proposal-2026-07-27.md`, after the migration
+shipped. An independent spec-to-code audit (a different model, run against main)
+raised 49 findings; the atlas-owned subset was re-verified claim by claim, and the
+survivors are closed here. The audit branch (PR #131) is abandoned and will never
+merge — `planning-artifacts/specs/spec-code-audit-remediation-2026-07-26.md` is the
+only record of what was incorporated, and its Incorporation record carries the
+disposition of all 49.
+
+Two conventions govern this epic:
+
+- **Verify-gate order, not wave order.** I3 runs first because `kedro-test` is red
+  on main until it lands (6 failures). Any other story would inherit a failing gate
+  and could not prove its own change.
+- **Findings are closed at their source.** A claim that drifted from its code is
+  fixed in whichever is wrong — the audit's value was in the disagreement, not in
+  assuming the code was right.
+
+### Story I0 (10.1): Restore atlas dependency-completeness so the suite can collect
+
+As the operator,
+I want the pyforge-atlas package to declare every module it imports,
+So that the test suite collects at all.
+
+**Acceptance Criteria:**
+
+**Given** a resolved `pyforge-atlas` environment
+**When** `kedro-test` runs
+**Then** collection completes with zero import errors.
+
+- **Findings:** AUD-ATLAS-010, AUD-ATLAS-013.
+- **Mode:** DEV (direct).
+- **Verify gate:** `kedro-test` collects.
+- **Depends on:** none (BLOCKER — everything else in the epic waits on it).
+- **DELIVERED (2026-07-27):** 15 runtime dependencies declared from an AST-derived
+  import inventory in `pixi.toml` + `pyproject.toml`. `boring_semantic_layer` was
+  deliberately EXCLUDED as PyPI-only (no conda-forge feedstock) and is carried as a
+  known gap rather than silently vendored. 17 collection errors → 781 passed.
+
+### Story I1 (10.2): Truth-up the Spec kernel and its companions
+
+As a reader of the Spec,
+I want its Constraints and Success signal to state what actually shipped,
+So that the contract is not overclaiming.
+
+**Acceptance Criteria:**
+
+**Given** the shipped code
+**When** the kernel's claims are checked one by one
+**Then** each is true, retracted, or scoped with a stated exception.
+
+- **Findings:** AUD-ATLAS-041, 046, 047, 049.
+- **Mode:** DEV (direct).
+- **Verify gate:** reference-integrity check; no broken links.
+- **Depends on:** I0.
+- **DELIVERED (2026-07-27):** the "One execution plane" run-admission claim RETRACTED
+  from Constraints (it asserted a cross-run safety property that `in_process` does not
+  provide — the real work is I5); CAP-8 corrected to the 8 shipped PageDefs; the
+  Success signal gained a scope note; `shipped_scope_note` added to frontmatter
+  recording that top-level `status: shipped` covers waves 0–H, not the F1 benchmark.
+
+### Story I2 (10.3): Uniform story-spec frontmatter, without laundering provenance
+
+As a maintainer,
+I want the story specs to carry consistent frontmatter,
+So that they are machine-readable — without rewriting recovered originals.
+
+**Acceptance Criteria:**
+
+**Given** 32 story specs, 12 of them verbatim recovered originals
+**When** frontmatter is applied
+**Then** the 20 authored specs are uniform
+**And** the 12 recovered originals keep their original form, with the exception documented.
+
+- **Findings:** AUD-ATLAS-045 (decision), AUD-ATLAS-048.
+- **Mode:** DEV (direct).
+- **Verify gate:** spec-surface check.
+- **Depends on:** I0.
+- **DELIVERED (2026-07-27):** the audit's blanket `status: shipped` stamp was REVERSED
+  for the 12 recovered originals — provenance over uniformity, per
+  `planning-artifacts/README.md`. Rewriting a verbatim recovered artifact to satisfy a
+  linter destroys the only evidence of what was actually written. Catalog-entry counts
+  corrected 73 → 86 in spec-a2/spec-b6.
+
+### Story I3 (10.4): Preserve NULL identity under pandas 3.0
+
+As a consumer of the semantic layer,
+I want a NULL group key to come back as `None`, not `NaN`,
+So that null groups remain identifiable and no value is mis-attributed.
+
+pandas 3.0 coerces `None` → `NaN` in `str`-dtype columns. Because `NaN != NaN`, a
+NaN group key cannot be looked up, compared, or used as a dict key — so a "null
+maintainer" group becomes unreachable rather than merely unnamed. Six tests
+reproduce this on main and are the ready-made regression set:
+
+```
+tests/pipelines/core/test_nodes.py::test_attribute_feedstocks_handles_nan_feedstocks_cell
+tests/pipelines/core/test_nodes.py::test_attribute_feedstocks_node
+tests/pipelines/seed_gaps/test_nodes.py::test_licmap_likely_and_report_tiers
+tests/semantic/test_bsl_metric_parity.py::test_is_actionable_matches_legacy_view
+tests/semantic/test_bsl_metric_parity.py::test_feedstock_health_filters_match_legacy
+tests/semantic/test_maintainer_dimension.py::test_maintainer_with_no_packages_and_package_with_no_maintainer
+```
+
+Observed: `assert None in {'alice': Decimal('100'), 'zzz': nan, nan: None}` — the
+null-maintainer group is present but keyed `nan`, so the assertion that it exists
+cannot pass.
+
+**Acceptance Criteria:**
+
+**Given** a frame with a genuine NULL in a grouping column
+**When** it flows through the affected nodes and the semantic layer
+**Then** the null group is keyed `None`, not `NaN`
+**And** no real row's measure is attributed to the null group
+**And** a NULL measure stays NULL rather than becoming a fabricated `0`
+**And** all six tests above pass with no assertion weakened to accommodate `NaN`.
+
+- **Findings:** AUD-ATLAS-011.
+- **Invariants:** the existing null-identity contracts in the listed tests are
+  BINDING — the fix goes in the production path, never in the assertions.
+- **Mode:** LOOP (bmad-loop).
+- **Verify gate:** `kedro-test` GREEN (781 → 787 passing), `kedro-catalog-check`.
+- **Depends on:** I0. **Blocks I4 and I5** — the gate is red until this lands.
+
+### Story I4 (10.5): Stamp advisory data with its build provenance (AD-17)
+
+As an agent reading atlas data,
+I want every advisory response to carry the build stamp of the data behind it,
+So that I can tell fresh data from stale.
+
+**Acceptance Criteria:**
+
+**Given** the MCP `read_dataset` surface
+**When** a dataset is read
+**Then** the response carries a `build_stamp` envelope
+**And** the dashboard pages carry the same stamp rather than only `factory-status`.
+
+- **Findings:** AUD-ATLAS-043, AUD-ATLAS-044.
+- **Invariants:** AD-17, AD-13 (republication never launders freshness).
+- **Mode:** LOOP (bmad-loop).
+- **Verify gate:** `kedro-test` + an envelope-presence test.
+- **Depends on:** I3 (gate).
+
+### Story I5 (10.6): Make run admission real, or stop claiming it
+
+As the operator,
+I want concurrent triggers on one dataset set to be genuinely serialized,
+So that two runs cannot write the same dataset at once.
+
+The Spec asserted this as a safety property and `definitions.py:26` documented it,
+but `dagster.yml` declares only the `in_process` executor — which serializes ops
+WITHIN a run and provides no cross-run or cross-process admission at all. I1 retracted
+the claim; this story decides whether to build the property or record its absence as
+a contract-level non-goal.
+
+**Acceptance Criteria:**
+
+**Given** two runs triggered concurrently against the same dataset set
+**When** admission is evaluated
+**Then** the second is rejected or queued — never admitted to write concurrently
+**Or** the absence is recorded as an explicit contract-level non-goal with its risk
+stated, and the code comment at `definitions.py:26` is corrected to match.
+
+- **Findings:** AUD-ATLAS-046, DW-AD23-1.
+- **Invariants:** AD-23.
+- **Mode:** LOOP (bmad-loop) — design-heavy; per the policy's HARD-STORY procedure,
+  flip `[adapter.dev] model` to `opus` before running this one.
+- **Verify gate:** `kedro-test` + a concurrent-admission test (or, if the non-goal
+  path is taken, the corrected comment plus the contract-level record).
+- **Depends on:** I3 (gate); informed by I1's retraction.
 
 ---
 
