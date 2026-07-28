@@ -5,6 +5,10 @@ project has its own subdirectory under `_bmad-output/projects/<slug>/` containin
 its planning artifacts, implementation artifacts, project context, and
 project-scoped BMAD config overrides.
 
+> **Planning-artifacts shape:** see **[`EXEMPLAR-STANDARD.md`](EXEMPLAR-STANDARD.md)** for the
+> conformance target (bmad-method ≥ 6.10 + bmad-loop) and the per-project conformance table.
+> The reference implementation is `projects/pyforge-atlas/planning-artifacts/`.
+
 ## Active project switching
 
 Three mechanisms, in resolution-priority order (highest first):

@@ -2,21 +2,31 @@
 id: SPEC-pyforge-atlas
 spec: pyforge-atlas
 status: shipped
+shipped_scope_note: |
+  `shipped` = the 32 stories merged (PRs #69-#102, 2026-07-17/18). It does NOT mean every
+  attended boundary event is discharged: the credentialed parity run + legacy retirement
+  (DW-B4-2), the F1 cold/warm benchmark (DW-F1-1), and the live Dagster daemon (DW-C1-1,
+  DW-G3, DW-H4) are all still outstanding. See § Success signal. Added 2026-07-27 per
+  AUD-ATLAS-047 / AUD-ATLAS-049.
 owner-dream: docs/dreams/pyforge-atlas.md
 program: regenerable-factory
 surface:
   - src/shared/packages/pyforge-atlas/**               # the shipped package: conf/, src/pyforge/atlas/, tests/, wasm/
   - src/prototype/packages/pyforge-atlas-kedro-viz/**  # the generated dependency-free DAG mirror (tools/regenerate_from_atlas.py) — moves only when the real DAG moves
 companions:
-  - ../../prds/prd-pyforge-atlas-2026-07-17/prd.md          # adopted (chain): FR-1..FR-22, SM-1..SM-12 + SM-C1..SM-C4, the § 5 non-goal boundary
-  - ../../prds/prd-pyforge-atlas-2026-07-17/addendum.md     # adopted (chain): intake reconciliations
-  - ../../architecture/architecture-pyforge-atlas-2026-07-17/ARCHITECTURE-SPINE.md  # adopted (chain): AD-1..AD-23, the conventions table, stack, structural seed
-  - ../../epics.md                                          # adopted (chain): 9 epics / 32 stories with their binding ACs and delivery records
-  - ../../../../pyforge-warden/planning-artifacts/specs/spec-pyforge-warden/SPEC.md  # adopted: owns the ComplianceReport contract this project's policy gate validates against by import
+  - signals.md               # the 23 ported phases -> nodes, the 3 additive riders, the Warden boundary on signals
+  - catalog-contract.md      # 7 pipelines x 86 datasets, every declared TTL, the two freshness clocks, identity + join keys
+  - degradation-contract.md  # the 3 markers, the fixed policy mapping, the frozen exit projection
+  - gate-contract.md         # the 7 gates, what each proves and what each refuses to do
 sources:
   - ../../../../../../docs/dreams/pyforge-atlas.md
   - ../../../../../../docs/dreams/pyforge-charter.md   # § 3 Atlas — the station's standing mandate
   - ../../../../../../docs/specs/cfe-atlas-datapipeline-kedro-migration.md   # LEGACY Tier-1 intake spec (v5.6, status: shipped) — the requirements contract this Spec distils; absorbed and superseded, not adopted
+  - ../../prds/prd-pyforge-atlas-2026-07-17/prd.md          # chain: FR-1..FR-22, SM-1..SM-12 + SM-C1..SM-C4, the § 5 non-goal boundary
+  - ../../prds/prd-pyforge-atlas-2026-07-17/addendum.md     # chain: intake reconciliations
+  - ../../architecture/architecture-pyforge-atlas-2026-07-17/ARCHITECTURE-SPINE.md  # chain: AD-1..AD-23, the conventions table, stack, structural seed
+  - ../../epics.md                                          # chain: 9 epics / 32 stories with their binding ACs and delivery records
+  - ../../../../pyforge-warden/planning-artifacts/specs/spec-pyforge-warden/SPEC.md  # cross-project: owns the ComplianceReport contract this project's policy gate validates against by import
   - ../../briefs/brief-pyforge-atlas-2026-07-25/brief.md
   - ../../research/domain-dependency-intelligence-ecosystem-observability-research-2026-07-25.md
   - ../../research/technical-kedro-dagster-duckdb-stack-currency-research-2026-07-25.md
@@ -129,9 +139,11 @@ close later.
     natural-language query, agent read — translates through it.
   - **success:** Staleness, adoption stage, feedstock health, and maintainer-role facts are
     declared as semantic-layer dimensions and measures over the catalog (Ibis → DuckDB), with a
-    metric-parity gate proving they answer as the legacy CLIs did; every read-only question the
-    28 CLIs answered is answerable from a dashboard page — for the three named exceptions, by
-    surfacing their latest report artifact read-only; a natural-language query returns a chart
+    metric-parity gate proving they answer as the legacy CLIs did; **8 dashboard pages ship**
+    (the live-confirmed core) plus factory-status, each honest about its state — grounded,
+    BSL-wired shell, or no-BSL-model shell — while the **full 28-CLI page inventory is
+    CIS-two-spine deferred** (`DW-D2-1`) *(corrected 2026-07-27, `AUD-ATLAS-041`: this clause
+    previously claimed all 28 were answerable)*; a natural-language query returns a chart
     grounded in declared metrics; and its language backend routes through repo model-backend
     configuration, never a hardcoded public endpoint.
 
@@ -241,9 +253,13 @@ close later.
   trace instrumentation, and profile definitions are declared in run configuration, so every
   entry point — scheduled job, sensor, MCP trigger, CLI — executes the identical named pipeline
   with identical machinery; an MCP trigger names a profile explicitly or inherits `maintainer`.
-  A dataset has **one writing run at a time**: run admission serializes on the target dataset
-  set, so a concurrent trigger of an already-running pipeline is rejected or queued, never
-  interleaved.
+  **Run admission is NOT implemented** *(corrected 2026-07-27, `AUD-ATLAS-046`)*. The
+  `in_process` executor declared in `conf/base/dagster.yml` serializes ops *within* a single
+  run; it provides no cross-run or cross-process admission. Two concurrent triggers of the same
+  dataset set — an MCP trigger racing a CLI run, or two MCP triggers — are **not** serialized,
+  rejected, or queued. The shipped guarantee is the shared plane and identical machinery,
+  **not** single-writer safety. Tracked as `DW-AD23-1`; **do not design against a serialization
+  guarantee that does not exist.** This clause previously asserted the opposite.
 - **No data-access logic in a node body, ever.** Sources, outputs, credentials, endpoints, and
   physical layout are catalog concerns; nodes are pure functions taking and returning
   dataframes. Credentials attach to a dataset's destination host only. Nodes carry no retries,
@@ -260,7 +276,7 @@ close later.
   compares legacy-surface outputs only; the conda-native vulnerability, velocity, and
   migration-readiness datasets are never parity-gated, and a parity delay does not block them.
   Their correctness is held instead by fixture-enforced binding guards — one per measured
-  failure mode.
+  failure mode. The three riders and their pinned failure modes: `signals.md`.
 - **Velocity qualifies on a 90-day window and computes against first availability.** A
   version-unchanged package whose upstream release is older than 90 days is excluded
   (`release_lag_qualifies = false`) — the guard against the false "half the channel is behind"
@@ -275,6 +291,7 @@ close later.
 - **Seven closed domain pipelines; the producer owns the dataset.** The pipeline set is fixed.
   Each dataset has exactly one producing pipeline; a new signal joins its assigned pipeline,
   never a new ad-hoc one. Two pipelines writing one dataset is the failure this rules out.
+  Allocation, every declared TTL, and the two freshness clocks: `catalog-contract.md`.
 - **One store, one engine.** Partitioned Parquet is canonical and DuckDB is the only compute,
   graph, and vector engine — no separate graph, vector, or dataframe engine is reintroduced,
   and no dual store survives. Performance claims stay honestly scoped: incremental
@@ -285,6 +302,7 @@ close later.
   attribution, no-clobber writeback, the KEV overlay and score-type unwrap, the `cfe:*`
   namespace and channel qualifier (never stripped), percentile normalization, view-validity
   discipline, and the single-write-path property. A story instruction never overrides these.
+  The per-phase port map and the four contracts most often misread: `signals.md`.
 - **The semantic layer is the single translation interface.** Metrics and dimensions are
   declared once; read surfaces consume them and never write raw SQL against the store. Catalog
   dataset passthrough for agent reads is not a metric surface and computes nothing. MCP tool
@@ -311,7 +329,8 @@ close later.
   frozen, and live in the tracked test tree, never in the gitignored runtime data directory.
   The verify set grows and never shrinks. Gates are never weakened, removed, or demoted from
   attended to unattended to raise the autonomy share — attended boundary events are features,
-  not friction. Credentialed runs are attended-only.
+  not friction. Credentialed runs are attended-only. The enumerated set — what each gate proves
+  and what each refuses to do: `gate-contract.md`.
 - **Pipeline snapshots are advisory, never authoritative for authoring.** Before acting, the
   recipe-authoring loop re-verifies live; no surface may position its datasets as a substitute
   for that check, and payloads feeding authoring decisions carry their build timestamp.
@@ -330,7 +349,7 @@ close later.
   dataset boundary** (millisecond repodata values convert once). Canonical join keys are
   `conda_name` (plus feedstock attribution where it applies), `pypi_name`, and
   `(conda_name, advisory_id)`; the name-mapping dataset is the only bridge; **purls are
-  interchange identity and never internal join keys**.
+  interchange identity and never internal join keys**. Full identity table: `catalog-contract.md`.
 - **Dataset schema evolution is additive-first.** New columns are nullable; a breaking change
   to a persisted dataset requires, in the same story, a catalog version note plus a migration
   node or re-materialization plus updated contracts and fixtures. No global schema-version
@@ -338,7 +357,7 @@ close later.
 - **Three degradation markers, never interchanged:** `stale` (dataset freshness) · `unresolved`
   (a resolver could not run) · `not-applicable` (nothing existed to assess). The policy mapping
   is fixed: `not-applicable` reports not-applicable; `unresolved` or stale-beyond-contract
-  routes to `indeterminate`.
+  routes to `indeterminate`. Full projection and the Warden boundary: `degradation-contract.md`.
 - **Conda-forge-only, pixi-managed, py3.14-floored provisioning.** Every component is
   conda-forge-sourced, pixi-managed, and scaffolded by the project generator; no standalone
   binaries and no JVM. Two PyPI-sourced components are **recorded exceptions** with packaging
@@ -367,8 +386,8 @@ close later.
   Wagtail, agno LLM synthesis, and the production `vss` retriever each ship a
   seam and run against local/embedded defaults. Tracked as **DC-2…DC-6** in the
   PRD § 6.4. *(Each was properly deferred at build time — `DW-C1-1`/`DW-G3`,
-  `DW-H1`…`DW-H4`. The live ledger is truncated to 9 of 54 and gitignored, but 52
-  survive in the tracked spec-archive and are consolidated at
+  `DW-H1`…`DW-H4`. The live Tier-3 ledger is truncated to 9 and gitignored, but the
+  complete set of **52** is consolidated and tracked at
   `planning-artifacts/deferred-work-ledger.md`; DC-2…DC-6 are the contract-level
   re-statement of the six that outlived the migration.)*
 
@@ -418,10 +437,26 @@ grep gate proving no SQLite path survives the migrated surface, exit-code and sc
 the policy gate, a byte-identical-seed test on the read-only suggesters, and one fixture per
 named measurement failure mode on the new signals.
 
-The shipped evidence: **32 of 32 stories across Waves 0 and A–H, merged through PRs #58–#105,
-2026-07-18** — parity recorded and signed before the legacy orchestrator retired, three new
+The shipped evidence: **32 of 32 stories across Waves 0 and A–H, merged through PRs #69–#102,
+2026-07-17/18** (#74 and #89 in that range belong to other efforts; #103 is the CFE Rule-2 retro
+closeout and #105 a follow-up review sweep) — the parity **harness** delivered and
+fixture-green, three new
 signals landed through declared machinery with zero hand-written checkpoint code, and every
 loop-driven story executed without a gate being removed to get there.
+
+**What `shipped` does and does not mean** *(added 2026-07-27, `AUD-ATLAS-047` / `AUD-ATLAS-049`)*.
+`status: shipped` means **the 32 stories merged** — not that every attended boundary event has
+been discharged. Three remain outstanding as of 2026-07-27:
+
+- **The credentialed parity run, operator sign-off, and legacy retirement have not occurred.**
+  `conda_forge_atlas.py` remains live at ~402 KB; the retirement gate refuses fixture mode by
+  design (`DW-B4-2`). This section previously read "parity recorded and signed before the legacy
+  orchestrator retired" — that was an overclaim.
+- **The F1 cold/warm benchmark was never run** (`DW-F1-1`). The DuckDB-singularity half of F1
+  shipped; the performance half did not. Per SM-3 the pass threshold must be fixed in the story
+  spec *before* the benchmark runs.
+- **The live Dagster daemon has never ticked** a schedule or sensor (`DW-C1-1`, `DW-G3`,
+  `DW-H4`); definitions build and validate offline only.
 
 ## Assumptions
 
@@ -459,9 +494,12 @@ than deleted, so the disposition is auditable.
 - **What closes the deferred live bring-ups?** → **Tracked deferral.** The five
   become **DC-2…DC-6** (PRD § 6.4) — owned and visible, not scheduled. Landed in
   § Non-goals. *Correction on the record:* the first pass claimed they appeared in
-  no ledger. They did — `DW-C1-1`/`DW-G3`/`DW-H1`…`DW-H4`, per the run log's index
-  of 54 deferrals. The local ledger is **truncated to 9** and gitignored, so the
-  deferrals were honest and their record was lost.
+  no ledger. They did — `DW-C1-1`/`DW-G3`/`DW-H1`…`DW-H4`. The Tier-3 ledger is
+  **truncated to 9** and gitignored, so the deferrals were honest and their *live*
+  record was lost — but the full set was recovered into Tier-2. *Second correction
+  (2026-07-27):* the run log's index of "54" double-counted two aliases
+  (`DW-A2-P4` → `DW-B5-3`, `DW-D2` → `DW-D2-2`). The true count is **52**, all
+  present in `planning-artifacts/deferred-work-ledger.md`. Nothing was lost.
 - **Do the 8 optional per-epic retrospectives run?** → **They run.** Not waived.
   Sprint-status carries 9 retro entries — 8 `optional`, 1 `done` (epic-9). The
   CFE Rule-2 retro landed separately as v8.79.0; these 8 are additive. Process

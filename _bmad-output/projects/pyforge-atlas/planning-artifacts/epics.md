@@ -197,6 +197,8 @@ Wave-B ports are grounded in fact, not model memory.
 
 ### Story 0.1 (1.1): Generate legacy contextual skill
 
+- **Delivered 2026-07-17 — PR #69.** Full record: `specs/spec-0-1-generate-legacy-contextual-skill.md`.
+
 As a Wave-B developer agent,
 I want the legacy `conda_forge_atlas.py` orchestrator converted into an `agentskills.io`-compliant skill via Skill Forge,
 So that I can query hallucination-free legacy provenance while porting phases.
@@ -225,6 +227,8 @@ first two verify gates the loop needs before it may run anything.
 
 ### Story A1 (2.1): Scaffold the Kedro + pixi project via `nebi`
 
+- **Delivered 2026-07-17 — PR #70.** Full record: `specs/spec-a1-scaffold-the-kedro-pixi-project-via-nebi.md`.
+
 As the operator,
 I want the Kedro project structure and pixi wiring initialized by `nebi` with its own lean env and `kedro-test` gate,
 So that every later story lands in a provisioned, verifiable, worktree-affordable project.
@@ -251,6 +255,8 @@ So that every later story lands in a provisioned, verifiable, worktree-affordabl
 
 ### Story A2 (2.2): Define the Data Catalog for all sources + outputs
 
+- **Delivered 2026-07-17 — PR #71.** Full record: `specs/spec-a2-define-the-data-catalog-for-all-sources-outputs.md`.
+
 As a pipeline node author,
 I want every API source and Parquet output declared as a Kedro dataset in `conf/base/catalog.yml`,
 So that no data-access logic ever lives in node functions and credentials scope per host.
@@ -272,6 +278,8 @@ So that no data-access logic ever lives in node functions and credentials scope 
 - **Depends on:** A1.
 
 ### Story A3 (2.3): Implement `IncrementalParquetDataset` for TTL gating
+
+- **Delivered 2026-07-17 — PR #72.** Full record: `specs/spec-a3-implement-incrementalparquetdataset-for-ttl-gating.md`.
 
 As a pipeline node author,
 I want the `*_fetched_at` TTL incremental logic encapsulated in one reusable dataset class with per-dataset TTLs,
@@ -303,6 +311,8 @@ attended B4 event. B8/B9/B10 are additive, never parity-gated.
 
 ### Story B1 (3.1): Port the conda-side backbone phases into Kedro nodes
 
+- **Delivered 2026-07-17 — PR #73.** Full record: `specs/spec-b1-port-the-conda-side-backbone-phases-into-kedro-nodes.md`.
+
 As a BMAD execution agent,
 I want the conda-forge enumeration + graph-building + VCS/health phases (B, B.5, B.6, E, E.5, F, J, K, L, M, N) as pure Kedro nodes in the Core and VCS & Health pipelines,
 So that the conda-side backbone resolves from the DAG with its legacy behavioral contracts intact.
@@ -327,6 +337,8 @@ So that the conda-side backbone resolves from the DAG with its legacy behavioral
 
 ### Story B2 (3.2): Port the PyPI & Vulnerability pipelines
 
+- **Delivered 2026-07-17 — PR #75.** Full record: `specs/spec-b2-port-the-pypi-vulnerability-pipelines.md`.
+
 As a BMAD execution agent,
 I want the PyPI intelligence phases (C, C.5, D, H, O–S incl. the shared single-write-path helpers) and vulnerability phases (G / G') ported into their domain pipelines,
 So that PyPI and vulnerability intelligence run as unit-testable DAG nodes with all shipped guards intact.
@@ -349,6 +361,8 @@ So that PyPI and vulnerability intelligence run as unit-testable DAG nodes with 
 - **Depends on:** B1 (Core pipeline datasets).
 
 ### Story B3 (3.3): Re-expose the data surface as Kedro-API-native MCP tools
+
+- **Delivered 2026-07-17 — PR #76.** Full record: `specs/spec-b3-re-expose-the-data-surface-as-kedro-api-native-mcp-tools.md`.
 
 As a CFE authoring agent,
 I want the 23 atlas-relevant MCP tools re-authored over Kedro session/catalog APIs with pipeline triggers and dataset reads,
@@ -373,6 +387,8 @@ So that I can trigger named pipelines and read datasets via MCP with no load-bea
 
 ### Story B4 (3.4): Verify dataset parity against the legacy orchestrator
 
+- **Delivered 2026-07-18 — PR #77.** Full record: `specs/spec-b4-verify-dataset-parity-against-the-legacy-orchestrator.md`.
+
 As the operator,
 I want the Kedro pipeline run in parallel with legacy `bootstrap-data` and proven output-equivalent,
 So that the legacy orchestrator (and `phase_state`) can be retired on recorded evidence, not hope.
@@ -394,6 +410,8 @@ So that the legacy orchestrator (and `phase_state`) can be retired on recorded e
 - **Depends on:** B1, B2, B3.
 
 ### Story B5 (3.5): Port the external-refresh assets (§ 3.4)
+
+- **Delivered 2026-07-18 — PR #78.** Full record: `specs/spec-b5-port-the-external-refresh-assets-3-4.md`.
 
 As the operator,
 I want `vdb-refresh`, `update-cve-db`, and `update-mapping-cache` wrapped as scheduled external-refresh assets in their domain pipelines,
@@ -418,6 +436,8 @@ So that the three separately-built stores refresh with retries and observability
 
 ### Story B6 (3.6): Port the Seed-Gaps pipeline
 
+- **Delivered 2026-07-18 — PR #79.** Full record: `specs/spec-b6-port-the-seed-gaps-pipeline.md`.
+
 As the operator,
 I want the four report-only gap suggesters as terminal report nodes of the Seed-Gaps pipeline,
 So that seed-freshness reports regenerate after every rebuild without ever mutating the curated seeds.
@@ -439,6 +459,8 @@ So that seed-freshness reports regenerate after every rebuild without ever mutat
 - **Depends on:** B1, B2 (upstream datasets); § 14 position after B5.
 
 ### Story B7 (3.7): Extend the Universal SBOM intake (resolver, formats, universe BOM, buckets)
+
+- **Delivered 2026-07-18 — PR #80.** Full record: `specs/spec-b7-extend-the-universal-sbom-intake-resolver-formats-universe-bom-buckets.md`.
 
 As a CI consumer,
 I want the transitive-resolver node, the widened tiered manifest intake, the universe-BOM catalog dataset, and the matching node with shipped bucket semantics,
@@ -463,6 +485,8 @@ So that any manifest normalizes to CycloneDX and matches against the full conda-
 
 ### Story B8 (3.8): Basilisk conda-native vulnerability ingestion
 
+- **Delivered 2026-07-18 — PR #81.** Full record: `specs/spec-b8-basilisk-conda-native-vulnerability-ingestion.md`.
+
 As a CFE authoring agent,
 I want the two Basilisk ingestion nodes in the Vulnerability pipeline with the tri-state `fix_available` join,
 So that conda-native advisories reach the read surface without conflating version currency with security currency.
@@ -486,6 +510,8 @@ So that conda-native advisories reach the read surface without conflating versio
 
 ### Story B9 (3.9): Release-to-availability velocity columns
 
+- **Delivered 2026-07-18 — PR #82.** Full record: `specs/spec-b9-release-to-availability-velocity-columns.md`.
+
 As the operator,
 I want `release_lag_hours` + `release_lag_qualifies` derived on the Phase H join with the 90-day recency gate,
 So that packaging velocity is measurable without the false "47% behind" failure mode.
@@ -507,6 +533,8 @@ So that packaging velocity is measurable without the false "47% behind" failure 
 - **Depends on:** B2 (Phase H dataset); NOT gated on B4 parity.
 
 ### Story B10 (3.10): Migration-readiness datasets + classification node
+
+- **Delivered 2026-07-18 — PR #83.** Full record: `specs/spec-b10-migration-readiness-datasets-classification-node.md`.
 
 As the operator,
 I want conda-forge-bot-data `status/` category lists and per-migration detail ingested with a readiness-classification node,
@@ -541,6 +569,8 @@ on concrete deterioration.
 
 ### Story C1 (4.1): Integrate `kedro-dagster` for scheduling + execution
 
+- **Delivered 2026-07-18 — PR #84.** Full record: `specs/spec-c1-integrate-kedro-dagster-for-scheduling-execution.md`.
+
 As the operator,
 I want the Kedro DAG compiled into a Dagster repository with schedules, retries, profiles, and per-node timeouts,
 So that I watch runs in the Dagster UI and the 1800 s silent-phase-drop defect is structurally retired.
@@ -557,13 +587,15 @@ So that I watch runs in the Dagster UI and the 1800 s silent-phase-drop defect i
 **And** Phase P stays `PHASE_P_ENABLED=1`, admin-config-only, never a default schedule.
 
 - **FRs:** FR-6.
-- **Invariants:** AD-6, AD-1 (`kedro-dagster` is replaceable glue; no upward imports), AD-23 (one execution plane; run admission serializes per dataset set).
+- **Invariants:** AD-6, AD-1 (`kedro-dagster` is replaceable glue; no upward imports), AD-23 (one execution plane; ~~run admission serializes per dataset set~~ — **admission clause RETRACTED 2026-07-27, `AUD-ATLAS-046`: never implemented; the `in_process` executor serializes ops within a run only. Tracked as `DW-AD23-1`**).
 - **Mode:** ATTENDED (bring-up boundary event — one of the five § 2.5 attended events; the `dagster-dryrun` gate it builds is loop-consumable thereafter).
 - **Gating question:** **Q2** — default adopted (above); re-verify the Dagster bet at wave start (release cadence under Prefect, `kedro-dagster` compatibility, Components/Prefect-deployer ramps).
 - **Verify gate:** **builds `dagster-dryrun`**.
 - **Depends on:** Epic 3 complete (nodes + refresh assets to schedule).
 
 ### Story C2 (4.2): Integrate `kedro-viz` + expose a pixi task
+
+- **Delivered 2026-07-18 — PR #85.** Full record: `specs/spec-c2-integrate-kedro-viz-expose-a-pixi-task.md`.
 
 As the operator,
 I want the topological DAG rendered by `kedro-viz` behind a dedicated pixi task,
@@ -593,6 +625,8 @@ one NL field. Frontend precondition: the CIS two-spine specs (`DESIGN.md` +
 
 ### Story D1 (5.1): Define the Boring Semantic Layer (BSL) models
 
+- **Delivered 2026-07-18 — PR #86.** Full record: `specs/spec-d1-define-the-boring-semantic-layer-bsl-models.md`.
+
 As a downstream consumer (page, MCP read, agent),
 I want the 28 read CLIs' metric logic declared once as BSL dimensions + measures over the catalog (Ibis → DuckDB),
 So that every read surface translates through one semantic interface with proven metric parity.
@@ -614,6 +648,8 @@ So that every read surface translates through one semantic interface with proven
 - **Depends on:** Epic 4 (stable orchestrated datasets); B4 (canonical Parquet store).
 
 ### Story D2 (5.2): Build the Vizro dashboard + port the 28 CLIs to pages
+
+- **Delivered 2026-07-18 — PR #87.** Full record: `specs/spec-d2-build-the-vizro-dashboard-port-the-28-clis-to-pages.md`.
 
 As the operator,
 I want a BSL-driven Vizro app reproducing the 28 read CLIs as pages, including a factory-status page,
@@ -637,6 +673,8 @@ So that every read-only question is answerable from a page meeting the agent-leg
 - **Depends on:** D1.
 
 ### Story D3 (5.3): Integrate Vizro-AI + expose the NL interface as an MCP tool
+
+- **Delivered 2026-07-18 — PR #88.** Full record: `specs/spec-d3-integrate-vizro-ai-expose-the-nl-interface-as-an-mcp-tool.md`.
 
 As a CFE authoring agent (and the operator),
 I want a Vizro-AI natural-language query field and a `query_vizro_ai` MCP tool over the BSL knowledge graph,
@@ -666,6 +704,8 @@ against the existing gates plus their own fixture assets.
 
 ### Story E1 (6.1): Implement the A2A communication interfaces
 
+- **Delivered 2026-07-18 — PR #90.** Full record: `specs/spec-e1-implement-the-a2a-communication-interfaces.md`.
+
 As a CFE authoring agent,
 I want a structured A2A surface between the cf_atlas analytical agent and the conda-forge execution agents,
 So that insights, contract violations, and policy breaches arrive as structured payloads, not prose.
@@ -686,6 +726,8 @@ So that insights, contract violations, and policy breaches arrive as structured 
 - **Depends on:** B3 (MCP surface), Epic 5 (BSL insights to carry).
 
 ### Story E2 (6.2): Integrate OpenLineage + OpenTelemetry
+
+- **Delivered 2026-07-18 — PR #91.** Full record: `specs/spec-e2-integrate-openlineage-opentelemetry.md`.
 
 As the operator,
 I want Kedro nodes, Dagster runs, and DuckDB queries instrumented with OpenLineage and OTel,
@@ -714,6 +756,8 @@ One engine, contracts that halt, the policy gate CI consumes.
 
 ### Story F1 (7.1): Complete the DuckDB consolidation + prove the cold-start claim
 
+- **Delivered 2026-07-18 — PR #92.** Full record: `specs/spec-f1-complete-the-duckdb-consolidation-prove-the-cold-start-claim.md`.
+
 As the operator,
 I want all legacy-`cf_atlas.db` residue migrated or deleted and the performance claims honestly benchmarked,
 So that DuckDB/Parquet is the sole store and AC-7's claims are evidence, not promises.
@@ -734,6 +778,8 @@ So that DuckDB/Parquet is the sole store and AC-7's claims are evidence, not pro
 - **Depends on:** B4 (retirement decided), Epics 4–6 (surfaces that might still read legacy).
 
 ### Story F2 (7.2): Implement the data-validation hook and inline Pandera contracts
+
+- **Delivered 2026-07-18 — PR #93.** Full record: `specs/spec-f2-implement-the-data-validation-hook-and-inline-pandera-contracts.md`.
 
 As the operator,
 I want inline pandera contracts behind a validator-agnostic `AfterNodeRunHook` with version-capped GX as boundary layer,
@@ -757,6 +803,8 @@ So that bad data halts the pipeline before persisting, with an A2A alert.
 
 ### Story F3 (7.3): Implement Vector Similarity Search (RAG) via DuckDB `vss`
 
+- **Delivered 2026-07-18 — PR #94.** Full record: `specs/spec-f3-implement-vector-similarity-search-rag-via-duckdb-vss.md`.
+
 As a CFE authoring agent,
 I want RAG embeddings + similarity search via DuckDB's `vss` extension,
 So that semantic retrieval over embedded artifacts runs in the same single engine.
@@ -776,6 +824,8 @@ So that semantic retrieval over embedded artifacts runs in the same single engin
 - **Depends on:** F1 (consolidated store).
 
 ### Story F4 (7.4): Dependency-hygiene node + unified CI policy gate
+
+- **Delivered 2026-07-18 — PR #95.** Full record: `specs/spec-f4-dependency-hygiene-node-unified-ci-policy-gate.md`.
 
 As CI,
 I want the deptry hygiene node and the converged four-axis policy gate as the Universal SBOM pipeline's terminal stage,
@@ -807,6 +857,8 @@ the daemon revisit (Q2 tension) resolve at G3.
 
 ### Story G1 (8.1): Compile the intelligence layer to Pyodide / DuckDB-WASM
 
+- **Delivered 2026-07-18 — PR #96.** Full record: `specs/spec-g1-compile-the-intelligence-layer-to-pyodide-duckdb-wasm.md`.
+
 As a dashboard consumer,
 I want the Vizro-AI dashboard + BSL layer running in-browser via Pyodide / DuckDB-WASM,
 So that the intelligence surface needs no backend at all.
@@ -826,6 +878,8 @@ So that the intelligence surface needs no backend at all.
 - **Depends on:** Epic 5 (dashboard + BSL), F1 (canonical store).
 
 ### Story G2 (8.2): Emit Parquet artifacts to a static web host
+
+- **Delivered 2026-07-18 — PR #97.** Full record: `specs/spec-g2-emit-parquet-artifacts-to-a-static-web-host.md`.
 
 As a dashboard consumer,
 I want Parquet artifacts published to a static host and pulled via HTTP Range,

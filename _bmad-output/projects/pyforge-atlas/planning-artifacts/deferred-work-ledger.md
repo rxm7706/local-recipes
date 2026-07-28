@@ -8,7 +8,9 @@ entries: 52
 
 # pyforge-atlas — deferred-work ledger (RESTORED, tracked)
 
-**52 of the 54 deferrals recorded during the Kedro migration, with full bodies.**
+**All 52 real deferrals recorded during the Kedro migration, with full bodies — the
+ledger is complete.** The run log's index of "54" double-counted two aliases; see
+§ Provenance.
 
 ## Why this file exists
 
@@ -26,9 +28,23 @@ Tier-2 `planning-artifacts/`, where it cannot be lost to a Tier-3 accident again
 - 43 entries recovered from `../spec-archive/ATLAS-BMAD-SPECS-CONSOLIDATED.md`
 - 9 entries from the surviving `implementation-artifacts/deferred-work.md`
   (where both had an entry, the longer body won)
-- **2 not recovered:** `DW-A2-P4` and `DW-D2`. Both are named in the effort run
-  log's index of 54 but have no body in any tracked source. They are the only
-  genuine loss.
+- **0 lost.** `DW-A2-P4` and `DW-D2` were previously recorded here as "the only
+  genuine loss." **That was wrong, and is corrected as of 2026-07-27: both are
+  aliases the run log's index counted a second time, and both bodies are present
+  in this ledger under their carried-forward IDs.**
+  - **`DW-A2-P4`** — the A2 review-pass P4 finding (dynamic per-host JFrog
+    credential attachment). It was *assigned to B5* and carried forward under a new
+    ID; its body is **`DW-B5-3`**, which opens with the alias in its own title
+    ("DW-A2-P4 JFrog dynamic per-host credential attachment …"). Never a separate
+    deferral.
+  - **`DW-D2`** — shorthand for **`DW-D2-2`** (shell pages awaiting composed-store
+    materialization), used as the in-code banner at
+    `src/pyforge/atlas/dashboard/data.py:126` — "BSL-wired SHELL pages (composed
+    store not yet materialized — DW-D2)". The index read that banner as a distinct
+    entry alongside `DW-D2-1/2/3`.
+
+  The real count is **52**, and 52 is what this file holds. Nothing from the
+  migration's deferred work is missing.
 
 Six of these are also re-stated as contract-level capabilities **DC-1…DC-6** in
 the PRD § 6.4, because they outlived the migration: `DW-C1-1`/`DW-G3`/`DW-H4`

@@ -23,7 +23,11 @@ AD-23 — ONE execution plane: the ops are kedro-dagster's translated ops, which
 run each Kedro node through the ``kedro_run`` resource (``KedroSession.run``);
 this glue only *wraps* that plane (subset, tag, schedule) — it never adds a
 second one. The base job uses the ``in_process`` executor declared in
-``conf/base/dagster.yml`` so run admission serializes per dataset set.
+``conf/base/dagster.yml``, which serializes ops *within* a single run. It is
+**NOT** cross-run admission: two concurrent triggers of the same dataset set are
+not serialized, rejected, or queued (``DW-AD23-1``; audit ``AUD-ATLAS-046``).
+This comment previously claimed "run admission serializes per dataset set" — it
+does not. Do not rely on single-writer safety here.
 
 **Offline / dryrun**: building these definitions performs NO network IO — the
 Kedro catalog datasets take injected fetchers that default to offline (Wave B),
