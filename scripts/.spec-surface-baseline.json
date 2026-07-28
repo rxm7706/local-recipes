@@ -1152,9 +1152,10 @@
  "pyforge-marshal/spec-regenerable-factory": {
   "files": {
    "scripts/bmad_drift_check.py": "985fd2a0a18e302553d6b2d5de5415c1a09f1c89",
+   "scripts/dream_chain_check.py": "360aa1b964a42543439408e95b6911b8072b2874",
    "scripts/spec_surface_check.py": "27a430fe7270bba2445bd665c411e10fbd5bf67a"
   },
-  "memlog": "081a3e77a9cb0320c004b3f6ff13abe7543a90f5"
+  "memlog": "7216426061461f37be9b54e9ffcdaf910b096fb9"
  },
  "pyforge-mason/spec-copilot-cli-packaging": {
   "files": {},
