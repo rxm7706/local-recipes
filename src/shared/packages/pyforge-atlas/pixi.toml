@@ -35,3 +35,43 @@ python = ">=3.14"
 kedro = ">=1.5.0"
 kedro-datasets = ">=9.5.0"
 kedro-dagster = ">=0.7.0"    # py3.14-unclassified glue — kedro-test import smoke target (AD-16)
+
+# --- AUD-ATLAS-010 (2026-07-27): dependency completeness -------------------
+# The package declared 3 run-deps while `pyforge.atlas` HARD-IMPORTS 19
+# third-party modules at MODULE level (derived by AST scan of src/pyforge/atlas,
+# not from the audit's list). The consequence was concrete: `kedro-test` could
+# not collect its own suite — 17 collection errors. An undeclared module-level
+# import is a runtime dependency whether or not the manifest says so.
+#
+# Floors are pinned to the versions resolved in the working `local-recipes` env
+# on 2026-07-27, so the declaration is evidence-based rather than aspirational.
+#
+# TENSION, recorded deliberately: the Spec calls for a LEAN package env so loop
+# worktrees never materialize the fat repo env. These are declared anyway
+# because they are imported unconditionally — a bare install doing
+# `from pyforge.atlas.semantic import metrics` would crash otherwise. Narrowing
+# this to optional extras + lazy imports is real work and belongs in its own
+# story, not smuggled into a dependency fix.
+pandas = ">=3.0.3"
+pyarrow = ">=24.0.0"
+pyyaml = ">=6.0.3"                    # imported as `yaml`
+pydantic = ">=2.13.4"                 # pydantic_core arrives with it
+attrs = ">=26.1.0"                    # imported as `attr` (observability.py)
+duckdb = ">=1.5.5"
+ibis-framework = ">=12.0.0"
+pandera = ">=0.32.1"
+vizro = ">=0.1.59"
+dagster = ">=1.13.15"
+# NOT declarable here: `boring_semantic_layer`. It is one of the Spec's two
+# recorded PyPI-only exceptions (with `kedro-mcp`) and has no conda-forge
+# candidate — the solve fails on osx-arm64-min. A conda package's run-deps must
+# be conda packages, so it is supplied to the ENV instead (root
+# [feature.pyforge-atlas.pypi-dependencies]).
+# RESIDUAL, recorded honestly: `semantic/models.py` hard-imports it at module
+# level, so a pure-conda install of pyforge-atlas cannot import that module.
+# Closing that needs a lazy/guarded import, not a dependency line. The audit did
+# not raise this; it surfaced while fixing AUD-ATLAS-010 (2026-07-27).
+openlineage-python = ">=1.52.0"       # imported as `openlineage`
+opentelemetry-api = ">=1.44.0"
+opentelemetry-sdk = ">=1.44.0"
+a2a-sdk = ">=1.1.2"                   # imported as `a2a`; brings the `google` namespace

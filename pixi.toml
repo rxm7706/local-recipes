@@ -1319,6 +1319,22 @@ hatchling = ">=1.31.0"                    # Python build backend (drives both co
 python-build = ">=1.5.0"                 # PyPA `python -m build` frontend (wheel + sdist)
 pytest = ">=9.1.1"                       # test runner (kedro-test)
 kedro-viz = ">=12.4.0"             # C2 `viz` task + test_viz_loadable smoke — NOT a pyforge-atlas run-dep so not pulled transitively; the lean no-default-feature env needs it explicitly (Gemini #85)
+# AUD-ATLAS-010 (2026-07-27): G1 `wasm-smoke` + the D2 dashboard e2e test drive headless
+# Chromium. TEST-ONLY — deliberately NOT package run-deps (the shipped package never drives
+# a browser), so they live here rather than in the member pixi.toml run-dependencies.
+# BOTH are required and they are different things: conda-forge `playwright` ships only the
+# CLI/browser driver (bin/playwright, no site-packages module), while the Python bindings
+# `import playwright` come from `playwright-python`. Declaring only the former resolves
+# cleanly and still fails at import — which is exactly how this was missed.
+playwright = ">=1.58.0"            # CLI + browser driver
+playwright-python = ">=1.61.0"     # the `import playwright` bindings
+
+[feature.pyforge-atlas.pypi-dependencies]
+# AUD-ATLAS-010 (2026-07-27): `semantic/models.py` imports boring_semantic_layer at
+# module level, but it is PyPI-only (one of the Spec's two recorded exceptions, with
+# kedro-mcp) so it cannot be a conda run-dep of the package. Supplied to the ENV here
+# so kedro-test can collect tests/semantic. Mirrors [feature.local-recipes.pypi-dependencies].
+boring-semantic-layer = ">=0.3.16"
 
 [feature.pyforge-atlas.tasks.kedro-test]
 description = "Wave A deterministic gate: pyforge.atlas import smokes + Kedro namespace seam + scaffold layout (AD-11)"
