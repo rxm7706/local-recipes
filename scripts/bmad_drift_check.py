@@ -468,6 +468,13 @@ def classify(path: Path) -> str:
         # + companions. The memlog is the decision-of-record and SPEC.md re-derives
         # from it (never hand-patched), so no pin gating here.
         return "tracked:spec"
+    if re.fullmatch(r"planning-artifacts/specs/spec-[a-z0-9-]+\.md", rel):
+        # FLAT spec files directly under specs/ — the rule above only matched spec
+        # FOLDERS, so a flat one fell through to UNKNOWN and failed coverage. Two
+        # real shapes live here: per-story specs (the durable Tier-2 home) and
+        # standalone effort specs such as the 2026-07-26 code-audit remediation
+        # record. Both are tracked, hand-authored, and not pin-gated.
+        return "tracked:spec"
     if rel.startswith("implementation-artifacts/retros/"):
         return "archive:retros"
     if rel == "implementation-artifacts/deferred-work.md":

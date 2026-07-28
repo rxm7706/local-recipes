@@ -58,17 +58,28 @@ cache_read_weight = 0.1      # cache reads bill at ~0.1x input on all vendors; 1
 # succeed, rewrites pixi.lock with worktree-absolute file:// channel paths that
 # the squash-merge would commit. Frozen mode uses the tracked lock as-is
 # (deferred-work.md, story 1.1).
+# 2026-07-28 — RESTORED for the atlas post-audit effort (Epic 10), exactly as the
+# note below anticipated. pyforge-atlas bmad-loop work HAS resumed: the Round-3
+# audit (PR #131, branch abandoned) left ~43 findings open on main, and they are
+# being re-derived as stories rather than recovered from the dead branch.
+#
+# The warden gate is commented out for the same reason it displaced these: running
+# an off-project suite during an atlas story's verify is noise at best. Swap the
+# active block back when the loop returns to pyforge-warden.
+#
+# PRECONDITION, now satisfied: until 2026-07-28 `kedro-test` could not COLLECT its
+# own suite on main (17 errors — AUD-ATLAS-010/013), so this gate would have failed
+# every atlas story regardless of content. Dependency-completeness landed first;
+# the suite now runs 781 passed / 6 failed / 19 skipped.
+#
+# The 6 failures are AUD-ATLAS-011 (pandas 3.0 coerces None -> NaN) reproducing on
+# main. They are a KNOWN-RED baseline, not flake. Until the AUD-ATLAS-011 story
+# lands, `kedro-test` will fail here — so the first atlas story through the loop
+# must be AUD-ATLAS-011 itself, or this gate blocks everything behind it.
 commands = [
-  "pixi run --frozen -e pyforge-warden pyforge-warden-test",
-  # pyforge-atlas gates dropped from the active run policy 2026-07-18: the
-  # Kedro migration is COMPLETE (Waves 0–H shipped, PRs #69–#102, closed out by
-  # #103 / v8.79.0), and this branch drives pyforge-warden Epic-6 producers.
-  # Running the atlas gates during a pyforge-warden story's verify is both
-  # off-project and risky (the lean pyforge-atlas env is lock-unproven in
-  # containers per its own AD-11 note). Restore these two lines if pyforge-atlas
-  # bmad-loop work resumes:
-  #   "pixi run --frozen -e pyforge-atlas kedro-test",
-  #   "pixi run --frozen -e pyforge-atlas kedro-catalog-check",
+  "pixi run --frozen -e pyforge-atlas kedro-test",
+  "pixi run --frozen -e pyforge-atlas kedro-catalog-check",
+  # "pixi run --frozen -e pyforge-warden pyforge-warden-test",
 ]
 
 [notify]
@@ -198,7 +209,12 @@ seed_adapter_defaults = true # seed each loaded adapter's default gitignored con
 # marker BMAD config resolution in the worktree loses the project layers.
 # Literal paths only (no globs) — update the project slug on bmad-switch.
 worktree_seed = [
-  "_bmad-output/projects/pyforge-warden/implementation-artifacts",
+  # 2026-07-28 — repointed pyforge-warden -> pyforge-atlas for the Epic-10 post-audit
+  # effort, per this block's own instruction ("update the project slug on bmad-switch").
+  # Without the ACTIVE project's Tier-3 dir, the engine's verify step crashes reading
+  # sprint-status.yaml in a fresh worktree — a seeded path for the WRONG project fails
+  # the same way, silently, so this line has to move with the switch.
+  "_bmad-output/projects/pyforge-atlas/implementation-artifacts",
   "_bmad/custom/.active-project",
 ]
 
