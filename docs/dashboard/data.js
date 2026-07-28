@@ -1,597 +1,5 @@
 window.DASHBOARD_DATA = {
   "projects": {
-    "deckcraft": {
-      "label": "Deckcraft",
-      "accentVar": "--accent",
-      "branch": "not started",
-      "contract": "spec-deckcraft",
-      "seglabels": [
-        "E1",
-        "E2",
-        "E3",
-        "E4",
-        "E5",
-        "E6"
-      ],
-      "inflight": null,
-      "velocity": "",
-      "timing": "",
-      "lineState": {
-        "state": "ready",
-        "at": "1.1"
-      },
-      "epics": [
-        {
-          "badge": "E1",
-          "title": "Foundation",
-          "stories": [
-            [
-              "1.1",
-              "pending",
-              "Project scaffolding and pyproject.toml"
-            ],
-            [
-              "1.2",
-              "pending",
-              "Platform adapter (paths, RAM, GPU detection)"
-            ],
-            [
-              "1.3",
-              "pending",
-              "LLM adapter layer (pydantic-ai + 4 backends)"
-            ],
-            [
-              "1.4",
-              "pending",
-              "Document extractor (markitdown wrapper)"
-            ],
-            [
-              "1.5",
-              "pending",
-              "Pydantic data model (types.py)"
-            ]
-          ]
-        },
-        {
-          "badge": "E2",
-          "title": "Renderers",
-          "stories": [
-            [
-              "2.1",
-              "pending",
-              "PPTX engine adapter (wraps python-pptx with vendor-fallback hooks)"
-            ],
-            [
-              "2.2",
-              "pending",
-              "Marp engine (subprocess to marp-cli)"
-            ],
-            [
-              "2.3",
-              "pending",
-              "Chart renderer (matplotlib + plotly)"
-            ],
-            [
-              "2.4",
-              "pending",
-              "Mermaid renderer (mermaid-py + playwright headless, fully offline)"
-            ],
-            [
-              "2.5",
-              "pending",
-              "Asset pipeline with caching + graceful degradation"
-            ]
-          ]
-        },
-        {
-          "badge": "E3",
-          "title": "Style + AI",
-          "stories": [
-            [
-              "3.1",
-              "pending",
-              "Style loader — PPTX (.potx + .pptx including --as-sample mode) + DOCX"
-            ],
-            [
-              "3.2",
-              "pending",
-              "Style loader — PDF with OCR fallback (FR-46c)"
-            ],
-            [
-              "3.3",
-              "pending",
-              "Retrieval module — sentence-transformers RAG + slide dedup"
-            ],
-            [
-              "3.4",
-              "pending",
-              "LLM outline generator (prompts + JSON-schema-validated output)"
-            ],
-            [
-              "3.5",
-              "pending",
-              "Image understander (Ollama qwen2.5vl + llama.cpp mmproj fallback)"
-            ],
-            [
-              "3.6",
-              "pending",
-              "Image generator (diffusers + SDXL-Turbo, opt-in default-off, lazy-load)"
-            ],
-            [
-              "3.7",
-              "pending",
-              "Layout mapper + bundled templates (default-professional + bmad-prd-pitch)"
-            ]
-          ]
-        },
-        {
-          "badge": "E4",
-          "title": "Surfaces",
-          "stories": [
-            [
-              "4.1",
-              "pending",
-              "Pipeline class (high-level public API)"
-            ],
-            [
-              "4.2",
-              "pending",
-              "CLI (typer-based, deckcraft generate / init / describe-image / convert)"
-            ],
-            [
-              "4.3",
-              "pending",
-              "MCP server (fastmcp stdio transport)"
-            ],
-            [
-              "4.4",
-              "pending",
-              "Claude Skill (.claude/skills/deck-builder/)"
-            ]
-          ]
-        },
-        {
-          "badge": "E5",
-          "title": "Distribution",
-          "stories": [
-            [
-              "5.1",
-              "pending",
-              "conda-forge recipe at `recipes/deckcraft/`"
-            ],
-            [
-              "5.2",
-              "pending",
-              "Default templates (default-professional.potx + bmad-prd-pitch.potx)"
-            ],
-            [
-              "5.3",
-              "pending",
-              "README + air-gapped deployment guide + BYO style guide"
-            ]
-          ]
-        },
-        {
-          "badge": "E6",
-          "title": "Polish",
-          "stories": [
-            [
-              "6.1",
-              "pending",
-              "Spike-0 benchmark on Framework laptop (CRITICAL PATH)"
-            ],
-            [
-              "6.2",
-              "pending",
-              "Spike-1 (full-deck) and Spike-2 (per-machine) benchmarks"
-            ],
-            [
-              "6.3",
-              "pending",
-              "Pattern enforcement test suite (P-01 through P-10)"
-            ],
-            [
-              "6.4",
-              "pending",
-              "Cross-platform CI matrix (linux-64 + osx-arm64 + win-64)"
-            ],
-            [
-              "6.5",
-              "pending",
-              "Air-gapped CI under unshare -n (Linux)"
-            ],
-            [
-              "6.6",
-              "pending",
-              "Golden-path test fixtures (5 prompts → expected pptx structure)"
-            ]
-          ]
-        }
-      ],
-      "owner": "herald",
-      "practice": false
-    },
-    "regen": {
-      "label": "Regen",
-      "accentVar": "--regen",
-      "branch": "main · in-session Marshal execution",
-      "contract": "spec-regenerable-factory · 4 CAPs (surface manifests, backfill waves, spec_surface_check, regeneration drill) · checker never false-greens · Rule 1/2 bound on Wave 4",
-      "seglabels": [
-        "W0",
-        "W1",
-        "W2",
-        "W3",
-        "W4",
-        "W5"
-      ],
-      "epics": [
-        {
-          "badge": "W0",
-          "title": "Foundations — harness + program spec",
-          "stories": [
-            [
-              "0.1",
-              "done",
-              "Multi-loop isolation harness (worktree loop homes)"
-            ],
-            [
-              "0.2",
-              "done",
-              "Program spec + waves companion (bmad-spec Spec)"
-            ]
-          ]
-        },
-        {
-          "badge": "W1",
-          "title": "Surface-manifest convention + checker",
-          "stories": [
-            [
-              "1.1",
-              "done",
-              "Retrofit surface: onto existing Specs"
-            ],
-            [
-              "1.2",
-              "done",
-              "spec_surface_check v1 — coverage + allowlist + drift"
-            ]
-          ]
-        },
-        {
-          "badge": "W2",
-          "title": "Pilot — factory-console under contract",
-          "stories": [
-            [
-              "2.1",
-              "done",
-              "Factory-console backfill Spec (docs/dashboard)"
-            ],
-            [
-              "2.2",
-              "done",
-              "Regeneration drill on generate.py (clean-room rebuild)"
-            ]
-          ]
-        },
-        {
-          "badge": "W3",
-          "title": "Mid backfills",
-          "stories": [
-            [
-              "3.1",
-              "done",
-              "Enterprise-airgap Spec (_http routing + reference)"
-            ],
-            [
-              "3.2",
-              "done",
-              "Modernist-identity Spec (DS + deck engine)"
-            ]
-          ]
-        },
-        {
-          "badge": "W4",
-          "title": "Deep backfills — CFE territory (Rule 1/2)",
-          "stories": [
-            [
-              "4.1",
-              "done",
-              "Packaging-factory Spec over the CFE surface"
-            ],
-            [
-              "4.2",
-              "done",
-              "Fleet-stewardship Spec (absorbs 3 legacy workflows)"
-            ],
-            [
-              "4.R",
-              "done",
-              "Rule-2 retro against the conda-forge-expert skill"
-            ]
-          ]
-        },
-        {
-          "badge": "W5",
-          "title": "Closure — verify, gate, drill-through",
-          "stories": [
-            [
-              "5.1",
-              "done",
-              "Chain-verify + manifests (atlas / bridge / marshal)"
-            ],
-            [
-              "5.2",
-              "done",
-              "Checker joins the detector test suite"
-            ],
-            [
-              "5.3",
-              "done",
-              "Dreamscape drill-through links"
-            ]
-          ]
-        }
-      ],
-      "inflight": null,
-      "roadmap": {
-        "sub": "Backfill waves per spec-regenerable-factory/waves.md — every realized surface gains a regenerable spec chain; drift checks bind code to contract.",
-        "stops": [
-          [
-            "0",
-            "Harness + spec",
-            "done"
-          ],
-          [
-            "1",
-            "Convention + checker",
-            "wip"
-          ],
-          [
-            "2",
-            "Pilot + drill",
-            ""
-          ],
-          [
-            "3",
-            "Mid backfills",
-            ""
-          ],
-          [
-            "4",
-            "CFE deep + retro",
-            ""
-          ],
-          [
-            "5",
-            "Gate + drill-through",
-            ""
-          ]
-        ]
-      },
-      "lineState": {
-        "state": "complete",
-        "at": ""
-      },
-      "owner": "marshal",
-      "practice": true
-    },
-    "presenton-pixi-image": {
-      "label": "Presenton-pixi-image",
-      "accentVar": "--accent",
-      "branch": "not started",
-      "contract": "spec-presenton-pixi-image",
-      "seglabels": [
-        "E1",
-        "E2",
-        "E3",
-        "E4",
-        "E5",
-        "E6"
-      ],
-      "inflight": null,
-      "velocity": "",
-      "timing": "",
-      "lineState": {
-        "state": "ready",
-        "at": "1.1"
-      },
-      "epics": [
-        {
-          "badge": "E1",
-          "title": "Phase-0 Decision Readiness",
-          "stories": [
-            [
-              "1.1",
-              "pending",
-              "GGUF model and quantization tier selection"
-            ],
-            [
-              "1.2",
-              "pending",
-              "Tier-1 reference LLM class commitment"
-            ],
-            [
-              "1.3",
-              "pending",
-              "Fixture-capture v1 baseline (one-time, manual)"
-            ],
-            [
-              "1.4",
-              "pending",
-              "JFrog allowlist gap analysis"
-            ],
-            [
-              "1.5",
-              "pending",
-              "Capability Claim Statement committed"
-            ],
-            [
-              "1.6",
-              "pending",
-              "Microsoft disconnected-stack verification (Redmond-contingency check)"
-            ],
-            [
-              "1.7",
-              "pending",
-              "Memory-subsystem scope decision"
-            ]
-          ]
-        },
-        {
-          "badge": "E2",
-          "title": "Air-Gapped Browser Rendering Capability",
-          "stories": [
-            [
-              "2.1",
-              "pending",
-              "Build, validate, scan, and optimize `playwright-with-chromium`"
-            ],
-            [
-              "2.2",
-              "pending",
-              "Submit `playwright-with-chromium` to staged-recipes and land the merge"
-            ]
-          ]
-        },
-        {
-          "badge": "E3",
-          "title": "Clean-Room Deck Export Pipeline",
-          "stories": [
-            [
-              "3.1",
-              "pending",
-              "Build, validate, scan, and optimize `presenton-export-node`"
-            ],
-            [
-              "3.2",
-              "pending",
-              "Build, validate, scan, and optimize `pptx-assembler`"
-            ],
-            [
-              "3.3",
-              "pending",
-              "Spike, build, validate, scan, and optimize `pptx-thumbnail-inject`"
-            ],
-            [
-              "3.4",
-              "pending",
-              "Submit the three export-pipeline recipes and land the merges"
-            ],
-            [
-              "3.5",
-              "pending",
-              "Wire the clean-room pipeline into Presenton via patches"
-            ]
-          ]
-        },
-        {
-          "badge": "E4",
-          "title": "LLM Provider Abstraction & Tiering",
-          "stories": [
-            [
-              "4.1",
-              "pending",
-              "Build, validate, scan, and optimize `llmai`"
-            ],
-            [
-              "4.2",
-              "pending",
-              "Submit `llmai` to staged-recipes and land the merge"
-            ],
-            [
-              "4.3",
-              "pending",
-              "Wire the three-tier LLM provider model into the Helm chart"
-            ],
-            [
-              "4.4",
-              "pending",
-              "Verify the `copilot-bridge` dev-path integration"
-            ]
-          ]
-        },
-        {
-          "badge": "E5",
-          "title": "Signed Air-Gapped Image Assembly",
-          "stories": [
-            [
-              "5.1",
-              "pending",
-              "Assemble the pixi-locked build environment"
-            ],
-            [
-              "5.2",
-              "pending",
-              "Assemble the OCI image via pixitainer"
-            ],
-            [
-              "5.3",
-              "pending",
-              "Wire the memory-subsystem feature-flag fork"
-            ],
-            [
-              "5.4",
-              "pending",
-              "Generate SBOM and sign the image"
-            ]
-          ]
-        },
-        {
-          "badge": "E6",
-          "title": "OCP Deployment & Operations",
-          "stories": [
-            [
-              "6.1",
-              "pending",
-              "Helm chart with Restricted-SCC-compatible SecurityContext"
-            ],
-            [
-              "6.2",
-              "pending",
-              "Wire the Chromium sandbox default and escape hatch"
-            ],
-            [
-              "6.3",
-              "pending",
-              "Ship the versioned `/metrics` schema artifact"
-            ],
-            [
-              "6.4",
-              "pending",
-              "Day-0 install preflight fixtures"
-            ],
-            [
-              "6.5",
-              "pending",
-              "Day-2 operational fixtures shipped inside the image"
-            ]
-          ]
-        },
-        {
-          "badge": "E7",
-          "title": "Upstream Drift Defense",
-          "stories": [
-            [
-              "7.1",
-              "pending",
-              "Reusable online-capture CI workflow"
-            ],
-            [
-              "7.2",
-              "pending",
-              "Enforce the air-gapped/online CI-topology split"
-            ],
-            [
-              "7.3",
-              "pending",
-              "Weekly drift-detection harness with auto-issue filing"
-            ]
-          ]
-        }
-      ],
-      "owner": "mason",
-      "practice": false
-    },
     "doctor": {
       "label": "Doctor",
       "accentVar": "--warden",
@@ -734,247 +142,6 @@ window.DASHBOARD_DATA = {
         }
       ],
       "owner": "doctor",
-      "practice": false
-    },
-    "genesis": {
-      "label": "Genesis",
-      "accentVar": "--accent",
-      "branch": "not started",
-      "contract": "spec-pyforge-genesis · the seed: install the operating model anywhere (greenfield + brownfield)",
-      "seglabels": [
-        "E1",
-        "E2",
-        "E3",
-        "E4",
-        "E5",
-        "E6"
-      ],
-      "inflight": null,
-      "velocity": "",
-      "timing": "",
-      "lineState": {
-        "state": "ready",
-        "at": "1.1"
-      },
-      "epics": [
-        {
-          "badge": "E1",
-          "title": "Foundation & the Write Guard",
-          "stories": [
-            [
-              "1.1",
-              "pending",
-              "Package skeleton as a pixi workspace member"
-            ],
-            [
-              "1.2",
-              "pending",
-              "Error taxonomy and exit codes"
-            ],
-            [
-              "1.3",
-              "pending",
-              "The `fs` write primitive and the never-write guard"
-            ],
-            [
-              "1.4",
-              "pending",
-              "Manifest schema, loader, and model-version ranges"
-            ],
-            [
-              "1.5",
-              "pending",
-              "The V1 extraction manifest (the model, as data)"
-            ],
-            [
-              "1.6",
-              "pending",
-              "Spike-0 — Copier API fit (CRITICAL GATE)"
-            ]
-          ]
-        },
-        {
-          "badge": "E2",
-          "title": "The Managed-Region Engine",
-          "stories": [
-            [
-              "2.1",
-              "pending",
-              "Marker grammar and the per-format registry"
-            ],
-            [
-              "2.2",
-              "pending",
-              "Region parser — span discovery, nesting rejection, fence awareness"
-            ],
-            [
-              "2.3",
-              "pending",
-              "Span substitution — the update primitive"
-            ],
-            [
-              "2.4",
-              "pending",
-              "Anchor resolution and region insertion"
-            ],
-            [
-              "2.5",
-              "pending",
-              "Marker deletion as a sanctioned opt-out"
-            ]
-          ]
-        },
-        {
-          "badge": "E3",
-          "title": "Detect & Plan",
-          "stories": [
-            [
-              "3.1",
-              "pending",
-              "Findings model — severity, types, remedies"
-            ],
-            [
-              "3.2",
-              "pending",
-              "Repo inventory walker and artifact classification"
-            ],
-            [
-              "3.3",
-              "pending",
-              "Content hashing for managed files and regions"
-            ],
-            [
-              "3.4",
-              "pending",
-              "Legacy convention detection"
-            ],
-            [
-              "3.5",
-              "pending",
-              "Manifest coverage check"
-            ],
-            [
-              "3.6",
-              "pending",
-              "Plan and Action types, repo fingerprint, and the plan builder"
-            ]
-          ]
-        },
-        {
-          "badge": "E4",
-          "title": "Materialize & the Core Verbs",
-          "stories": [
-            [
-              "4.1",
-              "pending",
-              "Copier engine wrapper — the single seam"
-            ],
-            [
-              "4.2",
-              "pending",
-              "State schema and the atomic store"
-            ],
-            [
-              "4.3",
-              "pending",
-              "The apply runner — transactional, guarded"
-            ],
-            [
-              "4.4",
-              "pending",
-              "Preconditions, refusals, and skips"
-            ],
-            [
-              "4.5",
-              "pending",
-              "`genesis check`"
-            ],
-            [
-              "4.6",
-              "pending",
-              "`genesis adopt`"
-            ],
-            [
-              "4.7",
-              "pending",
-              "`genesis init`"
-            ]
-          ]
-        },
-        {
-          "badge": "E5",
-          "title": "Derive, Migrate & Update",
-          "stories": [
-            [
-              "5.1",
-              "pending",
-              "Neutral contract and agent-adapter fan-out"
-            ],
-            [
-              "5.2",
-              "pending",
-              "`PROJECTS.md` index and artifact-symlink derivation"
-            ],
-            [
-              "5.3",
-              "pending",
-              "Migration registry and runner"
-            ],
-            [
-              "5.4",
-              "pending",
-              "`genesis update` — two-phase"
-            ],
-            [
-              "5.5",
-              "pending",
-              "Referenced-dependency verification and Doctor delegation"
-            ],
-            [
-              "5.6",
-              "pending",
-              "`genesis explain` and `genesis version`"
-            ]
-          ]
-        },
-        {
-          "badge": "E6",
-          "title": "Packaging, Oracle & Hardening",
-          "stories": [
-            [
-              "6.1",
-              "pending",
-              "Full pixi wiring, distribution, and repo-gate compliance"
-            ],
-            [
-              "6.2",
-              "pending",
-              "The `local-recipes` empty-plan oracle (CRITICAL)"
-            ],
-            [
-              "6.3",
-              "pending",
-              "Offline operation and the egress counter"
-            ],
-            [
-              "6.4",
-              "pending",
-              "Pattern meta-tests and the never-write proof"
-            ],
-            [
-              "6.5",
-              "pending",
-              "CLI contract, idempotence harness, and performance gates"
-            ],
-            [
-              "6.6",
-              "pending",
-              "README, adoption guide, and the finding→remedy reference"
-            ]
-          ]
-        }
-      ],
-      "owner": "marshal",
       "practice": false
     },
     "herald": {
@@ -2366,6 +1533,839 @@ window.DASHBOARD_DATA = {
       "owner": "warden",
       "practice": false
     },
+    "regen": {
+      "label": "Regen",
+      "accentVar": "--regen",
+      "branch": "main · in-session Marshal execution",
+      "contract": "spec-regenerable-factory · 4 CAPs (surface manifests, backfill waves, spec_surface_check, regeneration drill) · checker never false-greens · Rule 1/2 bound on Wave 4",
+      "seglabels": [
+        "W0",
+        "W1",
+        "W2",
+        "W3",
+        "W4",
+        "W5"
+      ],
+      "epics": [
+        {
+          "badge": "W0",
+          "title": "Foundations — harness + program spec",
+          "stories": [
+            [
+              "0.1",
+              "done",
+              "Multi-loop isolation harness (worktree loop homes)"
+            ],
+            [
+              "0.2",
+              "done",
+              "Program spec + waves companion (bmad-spec Spec)"
+            ]
+          ]
+        },
+        {
+          "badge": "W1",
+          "title": "Surface-manifest convention + checker",
+          "stories": [
+            [
+              "1.1",
+              "done",
+              "Retrofit surface: onto existing Specs"
+            ],
+            [
+              "1.2",
+              "done",
+              "spec_surface_check v1 — coverage + allowlist + drift"
+            ]
+          ]
+        },
+        {
+          "badge": "W2",
+          "title": "Pilot — factory-console under contract",
+          "stories": [
+            [
+              "2.1",
+              "done",
+              "Factory-console backfill Spec (docs/dashboard)"
+            ],
+            [
+              "2.2",
+              "done",
+              "Regeneration drill on generate.py (clean-room rebuild)"
+            ]
+          ]
+        },
+        {
+          "badge": "W3",
+          "title": "Mid backfills",
+          "stories": [
+            [
+              "3.1",
+              "done",
+              "Enterprise-airgap Spec (_http routing + reference)"
+            ],
+            [
+              "3.2",
+              "done",
+              "Modernist-identity Spec (DS + deck engine)"
+            ]
+          ]
+        },
+        {
+          "badge": "W4",
+          "title": "Deep backfills — CFE territory (Rule 1/2)",
+          "stories": [
+            [
+              "4.1",
+              "done",
+              "Packaging-factory Spec over the CFE surface"
+            ],
+            [
+              "4.2",
+              "done",
+              "Fleet-stewardship Spec (absorbs 3 legacy workflows)"
+            ],
+            [
+              "4.R",
+              "done",
+              "Rule-2 retro against the conda-forge-expert skill"
+            ]
+          ]
+        },
+        {
+          "badge": "W5",
+          "title": "Closure — verify, gate, drill-through",
+          "stories": [
+            [
+              "5.1",
+              "done",
+              "Chain-verify + manifests (atlas / bridge / marshal)"
+            ],
+            [
+              "5.2",
+              "done",
+              "Checker joins the detector test suite"
+            ],
+            [
+              "5.3",
+              "done",
+              "Dreamscape drill-through links"
+            ]
+          ]
+        }
+      ],
+      "inflight": null,
+      "roadmap": {
+        "sub": "Backfill waves per spec-regenerable-factory/waves.md — every realized surface gains a regenerable spec chain; drift checks bind code to contract.",
+        "stops": [
+          [
+            "0",
+            "Harness + spec",
+            "done"
+          ],
+          [
+            "1",
+            "Convention + checker",
+            "wip"
+          ],
+          [
+            "2",
+            "Pilot + drill",
+            ""
+          ],
+          [
+            "3",
+            "Mid backfills",
+            ""
+          ],
+          [
+            "4",
+            "CFE deep + retro",
+            ""
+          ],
+          [
+            "5",
+            "Gate + drill-through",
+            ""
+          ]
+        ]
+      },
+      "lineState": {
+        "state": "complete",
+        "at": ""
+      },
+      "owner": "marshal",
+      "practice": true
+    },
+    "genesis": {
+      "label": "Genesis",
+      "accentVar": "--accent",
+      "branch": "not started",
+      "contract": "spec-pyforge-genesis · the seed: install the operating model anywhere (greenfield + brownfield)",
+      "seglabels": [
+        "E1",
+        "E2",
+        "E3",
+        "E4",
+        "E5",
+        "E6"
+      ],
+      "inflight": null,
+      "velocity": "",
+      "timing": "",
+      "lineState": {
+        "state": "ready",
+        "at": "1.1"
+      },
+      "epics": [
+        {
+          "badge": "E1",
+          "title": "Foundation & the Write Guard",
+          "stories": [
+            [
+              "1.1",
+              "pending",
+              "Package skeleton as a pixi workspace member"
+            ],
+            [
+              "1.2",
+              "pending",
+              "Error taxonomy and exit codes"
+            ],
+            [
+              "1.3",
+              "pending",
+              "The `fs` write primitive and the never-write guard"
+            ],
+            [
+              "1.4",
+              "pending",
+              "Manifest schema, loader, and model-version ranges"
+            ],
+            [
+              "1.5",
+              "pending",
+              "The V1 extraction manifest (the model, as data)"
+            ],
+            [
+              "1.6",
+              "pending",
+              "Spike-0 — Copier API fit (CRITICAL GATE)"
+            ]
+          ]
+        },
+        {
+          "badge": "E2",
+          "title": "The Managed-Region Engine",
+          "stories": [
+            [
+              "2.1",
+              "pending",
+              "Marker grammar and the per-format registry"
+            ],
+            [
+              "2.2",
+              "pending",
+              "Region parser — span discovery, nesting rejection, fence awareness"
+            ],
+            [
+              "2.3",
+              "pending",
+              "Span substitution — the update primitive"
+            ],
+            [
+              "2.4",
+              "pending",
+              "Anchor resolution and region insertion"
+            ],
+            [
+              "2.5",
+              "pending",
+              "Marker deletion as a sanctioned opt-out"
+            ]
+          ]
+        },
+        {
+          "badge": "E3",
+          "title": "Detect & Plan",
+          "stories": [
+            [
+              "3.1",
+              "pending",
+              "Findings model — severity, types, remedies"
+            ],
+            [
+              "3.2",
+              "pending",
+              "Repo inventory walker and artifact classification"
+            ],
+            [
+              "3.3",
+              "pending",
+              "Content hashing for managed files and regions"
+            ],
+            [
+              "3.4",
+              "pending",
+              "Legacy convention detection"
+            ],
+            [
+              "3.5",
+              "pending",
+              "Manifest coverage check"
+            ],
+            [
+              "3.6",
+              "pending",
+              "Plan and Action types, repo fingerprint, and the plan builder"
+            ]
+          ]
+        },
+        {
+          "badge": "E4",
+          "title": "Materialize & the Core Verbs",
+          "stories": [
+            [
+              "4.1",
+              "pending",
+              "Copier engine wrapper — the single seam"
+            ],
+            [
+              "4.2",
+              "pending",
+              "State schema and the atomic store"
+            ],
+            [
+              "4.3",
+              "pending",
+              "The apply runner — transactional, guarded"
+            ],
+            [
+              "4.4",
+              "pending",
+              "Preconditions, refusals, and skips"
+            ],
+            [
+              "4.5",
+              "pending",
+              "`genesis check`"
+            ],
+            [
+              "4.6",
+              "pending",
+              "`genesis adopt`"
+            ],
+            [
+              "4.7",
+              "pending",
+              "`genesis init`"
+            ]
+          ]
+        },
+        {
+          "badge": "E5",
+          "title": "Derive, Migrate & Update",
+          "stories": [
+            [
+              "5.1",
+              "pending",
+              "Neutral contract and agent-adapter fan-out"
+            ],
+            [
+              "5.2",
+              "pending",
+              "`PROJECTS.md` index and artifact-symlink derivation"
+            ],
+            [
+              "5.3",
+              "pending",
+              "Migration registry and runner"
+            ],
+            [
+              "5.4",
+              "pending",
+              "`genesis update` — two-phase"
+            ],
+            [
+              "5.5",
+              "pending",
+              "Referenced-dependency verification and Doctor delegation"
+            ],
+            [
+              "5.6",
+              "pending",
+              "`genesis explain` and `genesis version`"
+            ]
+          ]
+        },
+        {
+          "badge": "E6",
+          "title": "Packaging, Oracle & Hardening",
+          "stories": [
+            [
+              "6.1",
+              "pending",
+              "Full pixi wiring, distribution, and repo-gate compliance"
+            ],
+            [
+              "6.2",
+              "pending",
+              "The `local-recipes` empty-plan oracle (CRITICAL)"
+            ],
+            [
+              "6.3",
+              "pending",
+              "Offline operation and the egress counter"
+            ],
+            [
+              "6.4",
+              "pending",
+              "Pattern meta-tests and the never-write proof"
+            ],
+            [
+              "6.5",
+              "pending",
+              "CLI contract, idempotence harness, and performance gates"
+            ],
+            [
+              "6.6",
+              "pending",
+              "README, adoption guide, and the finding→remedy reference"
+            ]
+          ]
+        }
+      ],
+      "owner": "guild",
+      "practice": false
+    },
+    "deckcraft": {
+      "label": "Deckcraft",
+      "accentVar": "--accent",
+      "branch": "not started",
+      "contract": "spec-deckcraft",
+      "seglabels": [
+        "E1",
+        "E2",
+        "E3",
+        "E4",
+        "E5",
+        "E6"
+      ],
+      "inflight": null,
+      "velocity": "",
+      "timing": "",
+      "lineState": {
+        "state": "ready",
+        "at": "1.1"
+      },
+      "epics": [
+        {
+          "badge": "E1",
+          "title": "Foundation",
+          "stories": [
+            [
+              "1.1",
+              "pending",
+              "Project scaffolding and pyproject.toml"
+            ],
+            [
+              "1.2",
+              "pending",
+              "Platform adapter (paths, RAM, GPU detection)"
+            ],
+            [
+              "1.3",
+              "pending",
+              "LLM adapter layer (pydantic-ai + 4 backends)"
+            ],
+            [
+              "1.4",
+              "pending",
+              "Document extractor (markitdown wrapper)"
+            ],
+            [
+              "1.5",
+              "pending",
+              "Pydantic data model (types.py)"
+            ]
+          ]
+        },
+        {
+          "badge": "E2",
+          "title": "Renderers",
+          "stories": [
+            [
+              "2.1",
+              "pending",
+              "PPTX engine adapter (wraps python-pptx with vendor-fallback hooks)"
+            ],
+            [
+              "2.2",
+              "pending",
+              "Marp engine (subprocess to marp-cli)"
+            ],
+            [
+              "2.3",
+              "pending",
+              "Chart renderer (matplotlib + plotly)"
+            ],
+            [
+              "2.4",
+              "pending",
+              "Mermaid renderer (mermaid-py + playwright headless, fully offline)"
+            ],
+            [
+              "2.5",
+              "pending",
+              "Asset pipeline with caching + graceful degradation"
+            ]
+          ]
+        },
+        {
+          "badge": "E3",
+          "title": "Style + AI",
+          "stories": [
+            [
+              "3.1",
+              "pending",
+              "Style loader — PPTX (.potx + .pptx including --as-sample mode) + DOCX"
+            ],
+            [
+              "3.2",
+              "pending",
+              "Style loader — PDF with OCR fallback (FR-46c)"
+            ],
+            [
+              "3.3",
+              "pending",
+              "Retrieval module — sentence-transformers RAG + slide dedup"
+            ],
+            [
+              "3.4",
+              "pending",
+              "LLM outline generator (prompts + JSON-schema-validated output)"
+            ],
+            [
+              "3.5",
+              "pending",
+              "Image understander (Ollama qwen2.5vl + llama.cpp mmproj fallback)"
+            ],
+            [
+              "3.6",
+              "pending",
+              "Image generator (diffusers + SDXL-Turbo, opt-in default-off, lazy-load)"
+            ],
+            [
+              "3.7",
+              "pending",
+              "Layout mapper + bundled templates (default-professional + bmad-prd-pitch)"
+            ]
+          ]
+        },
+        {
+          "badge": "E4",
+          "title": "Surfaces",
+          "stories": [
+            [
+              "4.1",
+              "pending",
+              "Pipeline class (high-level public API)"
+            ],
+            [
+              "4.2",
+              "pending",
+              "CLI (typer-based, deckcraft generate / init / describe-image / convert)"
+            ],
+            [
+              "4.3",
+              "pending",
+              "MCP server (fastmcp stdio transport)"
+            ],
+            [
+              "4.4",
+              "pending",
+              "Claude Skill (.claude/skills/deck-builder/)"
+            ]
+          ]
+        },
+        {
+          "badge": "E5",
+          "title": "Distribution",
+          "stories": [
+            [
+              "5.1",
+              "pending",
+              "conda-forge recipe at `recipes/deckcraft/`"
+            ],
+            [
+              "5.2",
+              "pending",
+              "Default templates (default-professional.potx + bmad-prd-pitch.potx)"
+            ],
+            [
+              "5.3",
+              "pending",
+              "README + air-gapped deployment guide + BYO style guide"
+            ]
+          ]
+        },
+        {
+          "badge": "E6",
+          "title": "Polish",
+          "stories": [
+            [
+              "6.1",
+              "pending",
+              "Spike-0 benchmark on Framework laptop (CRITICAL PATH)"
+            ],
+            [
+              "6.2",
+              "pending",
+              "Spike-1 (full-deck) and Spike-2 (per-machine) benchmarks"
+            ],
+            [
+              "6.3",
+              "pending",
+              "Pattern enforcement test suite (P-01 through P-10)"
+            ],
+            [
+              "6.4",
+              "pending",
+              "Cross-platform CI matrix (linux-64 + osx-arm64 + win-64)"
+            ],
+            [
+              "6.5",
+              "pending",
+              "Air-gapped CI under unshare -n (Linux)"
+            ],
+            [
+              "6.6",
+              "pending",
+              "Golden-path test fixtures (5 prompts → expected pptx structure)"
+            ]
+          ]
+        }
+      ],
+      "owner": "herald",
+      "practice": false
+    },
+    "presenton-pixi-image": {
+      "label": "Presenton-pixi-image",
+      "accentVar": "--accent",
+      "branch": "not started",
+      "contract": "spec-presenton-pixi-image",
+      "seglabels": [
+        "E1",
+        "E2",
+        "E3",
+        "E4",
+        "E5",
+        "E6"
+      ],
+      "inflight": null,
+      "velocity": "",
+      "timing": "",
+      "lineState": {
+        "state": "ready",
+        "at": "1.1"
+      },
+      "epics": [
+        {
+          "badge": "E1",
+          "title": "Phase-0 Decision Readiness",
+          "stories": [
+            [
+              "1.1",
+              "pending",
+              "GGUF model and quantization tier selection"
+            ],
+            [
+              "1.2",
+              "pending",
+              "Tier-1 reference LLM class commitment"
+            ],
+            [
+              "1.3",
+              "pending",
+              "Fixture-capture v1 baseline (one-time, manual)"
+            ],
+            [
+              "1.4",
+              "pending",
+              "JFrog allowlist gap analysis"
+            ],
+            [
+              "1.5",
+              "pending",
+              "Capability Claim Statement committed"
+            ],
+            [
+              "1.6",
+              "pending",
+              "Microsoft disconnected-stack verification (Redmond-contingency check)"
+            ],
+            [
+              "1.7",
+              "pending",
+              "Memory-subsystem scope decision"
+            ]
+          ]
+        },
+        {
+          "badge": "E2",
+          "title": "Air-Gapped Browser Rendering Capability",
+          "stories": [
+            [
+              "2.1",
+              "pending",
+              "Build, validate, scan, and optimize `playwright-with-chromium`"
+            ],
+            [
+              "2.2",
+              "pending",
+              "Submit `playwright-with-chromium` to staged-recipes and land the merge"
+            ]
+          ]
+        },
+        {
+          "badge": "E3",
+          "title": "Clean-Room Deck Export Pipeline",
+          "stories": [
+            [
+              "3.1",
+              "pending",
+              "Build, validate, scan, and optimize `presenton-export-node`"
+            ],
+            [
+              "3.2",
+              "pending",
+              "Build, validate, scan, and optimize `pptx-assembler`"
+            ],
+            [
+              "3.3",
+              "pending",
+              "Spike, build, validate, scan, and optimize `pptx-thumbnail-inject`"
+            ],
+            [
+              "3.4",
+              "pending",
+              "Submit the three export-pipeline recipes and land the merges"
+            ],
+            [
+              "3.5",
+              "pending",
+              "Wire the clean-room pipeline into Presenton via patches"
+            ]
+          ]
+        },
+        {
+          "badge": "E4",
+          "title": "LLM Provider Abstraction & Tiering",
+          "stories": [
+            [
+              "4.1",
+              "pending",
+              "Build, validate, scan, and optimize `llmai`"
+            ],
+            [
+              "4.2",
+              "pending",
+              "Submit `llmai` to staged-recipes and land the merge"
+            ],
+            [
+              "4.3",
+              "pending",
+              "Wire the three-tier LLM provider model into the Helm chart"
+            ],
+            [
+              "4.4",
+              "pending",
+              "Verify the `copilot-bridge` dev-path integration"
+            ]
+          ]
+        },
+        {
+          "badge": "E5",
+          "title": "Signed Air-Gapped Image Assembly",
+          "stories": [
+            [
+              "5.1",
+              "pending",
+              "Assemble the pixi-locked build environment"
+            ],
+            [
+              "5.2",
+              "pending",
+              "Assemble the OCI image via pixitainer"
+            ],
+            [
+              "5.3",
+              "pending",
+              "Wire the memory-subsystem feature-flag fork"
+            ],
+            [
+              "5.4",
+              "pending",
+              "Generate SBOM and sign the image"
+            ]
+          ]
+        },
+        {
+          "badge": "E6",
+          "title": "OCP Deployment & Operations",
+          "stories": [
+            [
+              "6.1",
+              "pending",
+              "Helm chart with Restricted-SCC-compatible SecurityContext"
+            ],
+            [
+              "6.2",
+              "pending",
+              "Wire the Chromium sandbox default and escape hatch"
+            ],
+            [
+              "6.3",
+              "pending",
+              "Ship the versioned `/metrics` schema artifact"
+            ],
+            [
+              "6.4",
+              "pending",
+              "Day-0 install preflight fixtures"
+            ],
+            [
+              "6.5",
+              "pending",
+              "Day-2 operational fixtures shipped inside the image"
+            ]
+          ]
+        },
+        {
+          "badge": "E7",
+          "title": "Upstream Drift Defense",
+          "stories": [
+            [
+              "7.1",
+              "pending",
+              "Reusable online-capture CI workflow"
+            ],
+            [
+              "7.2",
+              "pending",
+              "Enforce the air-gapped/online CI-topology split"
+            ],
+            [
+              "7.3",
+              "pending",
+              "Weekly drift-detection harness with auto-issue filing"
+            ]
+          ]
+        }
+      ],
+      "owner": "mason",
+      "practice": false
+    },
     "atlas": {
       "label": "Atlas",
       "accentVar": "--atlas",
@@ -2738,7 +2738,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-07-28 09:48 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-07-28 13:20 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -2747,24 +2747,29 @@ window.DASHBOARD_DATA = {
       "status": "dreamt",
       "owner": "marshal",
       "type": "practice",
-      "chain": {}
+      "chain": {
+        "spec": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-agent-portability"
+      }
     },
     {
       "slug": "agent-tool-surface",
       "title": "Agent tool surface — every craft reachable through one governed API",
       "status": "realized",
       "owner": "marshal",
-      "type": "dream",
-      "chain": {}
+      "type": "practice",
+      "chain": {
+        "spec": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-agent-tool-surface"
+      }
     },
     {
       "slug": "agentic-sdlc-autonomy",
       "title": "The Agentic SDLC — four views of autonomy, one governed factory",
       "status": "pitched",
       "owner": "marshal",
-      "type": "dream",
+      "type": "practice",
       "chain": {
-        "deck": "presentations/agentic-sdlc"
+        "deck": "presentations/agentic-sdlc",
+        "spec": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-agentic-sdlc-autonomy"
       }
     },
     {
@@ -2773,7 +2778,9 @@ window.DASHBOARD_DATA = {
       "status": "archived",
       "owner": "marshal",
       "type": "dream",
-      "chain": {},
+      "chain": {
+        "spec": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-artifact-console"
+      },
       "archived_reason": "retired"
     },
     {
@@ -2782,7 +2789,9 @@ window.DASHBOARD_DATA = {
       "status": "archived",
       "owner": "mason",
       "type": "dream",
-      "chain": {},
+      "chain": {
+        "spec": "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-copilot-cli-packaging"
+      },
       "archived_reason": "blocked"
     },
     {
@@ -2791,7 +2800,9 @@ window.DASHBOARD_DATA = {
       "status": "archived",
       "owner": "mason",
       "type": "dream",
-      "chain": {},
+      "chain": {
+        "spec": "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-db-gpt-packaging"
+      },
       "archived_reason": "terminal"
     },
     {
@@ -2802,8 +2813,7 @@ window.DASHBOARD_DATA = {
       "type": "dream",
       "chain": {
         "deck": "presentations/deckcraft",
-        "spec": "_bmad-output/projects/deckcraft/planning-artifacts/specs/spec-deckcraft",
-        "project": "_bmad-output/projects/deckcraft"
+        "spec": "_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-deckcraft"
       }
     },
     {
@@ -2823,7 +2833,7 @@ window.DASHBOARD_DATA = {
       "owner": "steward",
       "type": "practice",
       "chain": {
-        "spec": "_bmad-output/projects/local-recipes/planning-artifacts/specs/spec-enterprise-airgap"
+        "spec": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-enterprise-airgap"
       }
     },
     {
@@ -2833,7 +2843,7 @@ window.DASHBOARD_DATA = {
       "owner": "marshal",
       "type": "dream",
       "chain": {
-        "spec": "_bmad-output/projects/local-recipes/planning-artifacts/specs/spec-factory-console"
+        "spec": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-factory-console"
       }
     },
     {
@@ -2843,7 +2853,17 @@ window.DASHBOARD_DATA = {
       "owner": "mason",
       "type": "practice",
       "chain": {
-        "spec": "_bmad-output/projects/local-recipes/planning-artifacts/specs/spec-fleet-stewardship"
+        "spec": "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-fleet-stewardship"
+      }
+    },
+    {
+      "slug": "genesis-installer",
+      "title": "Genesis installer — the seed, made executable",
+      "status": "specified",
+      "owner": "marshal",
+      "type": "dream",
+      "chain": {
+        "spec": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-genesis-installer"
       }
     },
     {
@@ -2852,7 +2872,9 @@ window.DASHBOARD_DATA = {
       "status": "archived",
       "owner": "atlas",
       "type": "dream",
-      "chain": {},
+      "chain": {
+        "spec": "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-microsoft-org-sweep"
+      },
       "archived_reason": "absorbed"
     },
     {
@@ -2862,7 +2884,7 @@ window.DASHBOARD_DATA = {
       "owner": "herald",
       "type": "practice",
       "chain": {
-        "spec": "_bmad-output/projects/local-recipes/planning-artifacts/specs/spec-modernist-identity"
+        "spec": "_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-modernist-identity"
       }
     },
     {
@@ -2873,7 +2895,7 @@ window.DASHBOARD_DATA = {
       "type": "practice",
       "chain": {
         "deck": "presentations/pyforge-mason",
-        "spec": "_bmad-output/projects/local-recipes/planning-artifacts/specs/spec-packaging-factory"
+        "spec": "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-packaging-factory"
       }
     },
     {
@@ -2884,8 +2906,7 @@ window.DASHBOARD_DATA = {
       "type": "dream",
       "chain": {
         "deck": "presentations/presenton-pixi-image",
-        "spec": "_bmad-output/projects/presenton-pixi-image/planning-artifacts/specs/spec-presenton-pixi-image",
-        "project": "_bmad-output/projects/presenton-pixi-image"
+        "spec": "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-presenton-pixi-image"
       },
       "blockedOn": "Phase-0 decision gate (Epic 1)"
     },
@@ -2909,7 +2930,8 @@ window.DASHBOARD_DATA = {
       "owner": "guild",
       "type": "dream",
       "chain": {
-        "deck": "presentations/pyforge-genesis"
+        "deck": "presentations/pyforge-genesis",
+        "spec": "_bmad-output/projects/pyforge-genesis/planning-artifacts/specs/spec-pyforge-charter"
       }
     },
     {
@@ -2928,7 +2950,7 @@ window.DASHBOARD_DATA = {
       "slug": "pyforge-genesis",
       "title": "Genesis — the seed of the operating model",
       "status": "specified",
-      "owner": "marshal",
+      "owner": "guild",
       "type": "dream",
       "chain": {
         "deck": "presentations/pyforge-genesis",
@@ -2944,6 +2966,7 @@ window.DASHBOARD_DATA = {
       "type": "dream",
       "chain": {
         "deck": "presentations/pyforge-herald",
+        "spec": "_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald",
         "project": "_bmad-output/projects/pyforge-herald"
       }
     },
@@ -2955,7 +2978,7 @@ window.DASHBOARD_DATA = {
       "type": "dream",
       "chain": {
         "deck": "presentations/pyforge-marshal",
-        "spec": "_bmad-output/projects/local-recipes/planning-artifacts/specs/spec-pyforge-marshal",
+        "spec": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal",
         "project": "_bmad-output/projects/pyforge-marshal"
       }
     },
@@ -3015,7 +3038,7 @@ window.DASHBOARD_DATA = {
       "owner": "marshal",
       "type": "practice",
       "chain": {
-        "spec": "_bmad-output/projects/local-recipes/planning-artifacts/specs/spec-regenerable-factory",
+        "spec": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-regenerable-factory",
         "program": "regen"
       }
     },
@@ -3025,7 +3048,9 @@ window.DASHBOARD_DATA = {
       "status": "archived",
       "owner": "scribe",
       "type": "dream",
-      "chain": {},
+      "chain": {
+        "spec": "_bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-sentinel"
+      },
       "archived_reason": "absorbed"
     },
     {
@@ -3034,7 +3059,9 @@ window.DASHBOARD_DATA = {
       "status": "specified",
       "owner": "scribe",
       "type": "dream",
-      "chain": {}
+      "chain": {
+        "spec": "_bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-team-memory"
+      }
     },
     {
       "slug": "unity-data-stack",
@@ -3044,8 +3071,7 @@ window.DASHBOARD_DATA = {
       "type": "dream",
       "chain": {
         "deck": "presentations/unity-data-stack",
-        "spec": "_bmad-output/projects/unity-data-stack/planning-artifacts/specs/spec-unity-data-stack",
-        "project": "_bmad-output/projects/unity-data-stack"
+        "spec": "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-unity-data-stack"
       }
     },
     {
@@ -3066,111 +3092,20 @@ window.DASHBOARD_DATA = {
       "type": "dream",
       "chain": {
         "deck": "presentations/wasm-analytics-stack",
-        "spec": "_bmad-output/projects/wasm-analytics-stack/planning-artifacts/specs/spec-wasm-analytics-stack",
-        "project": "_bmad-output/projects/wasm-analytics-stack"
+        "spec": "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-wasm-analytics-stack"
       }
     }
   ],
   "specs": [
     {
-      "slug": "deckcraft",
-      "project": "deckcraft",
-      "title": "deckcraft — the air-gapped, conda-native editable-deck pipeline",
-      "caps": 9,
+      "slug": "microsoft-org-sweep",
+      "project": "pyforge-atlas",
+      "title": "microsoft-org-sweep — retirement record",
+      "caps": 0,
       "companions": 0,
-      "updated": "2026-07-25",
-      "dream": "deckcraft",
-      "path": "_bmad-output/projects/deckcraft/planning-artifacts/specs/spec-deckcraft"
-    },
-    {
-      "slug": "enterprise-airgap",
-      "project": "local-recipes",
-      "title": "the factory behind the firewall",
-      "caps": 3,
-      "companions": 1,
-      "updated": "2026-07-23",
-      "dream": "enterprise-airgap",
-      "path": "_bmad-output/projects/local-recipes/planning-artifacts/specs/spec-enterprise-airgap"
-    },
-    {
-      "slug": "factory-console",
-      "project": "local-recipes",
-      "title": "factory console (program console + Dreamscape)",
-      "caps": 4,
-      "companions": 1,
-      "updated": "2026-07-26",
-      "dream": "factory-console",
-      "path": "_bmad-output/projects/local-recipes/planning-artifacts/specs/spec-factory-console"
-    },
-    {
-      "slug": "fleet-stewardship",
-      "project": "local-recipes",
-      "title": "fleet stewardship (the recipes/ fleet)",
-      "caps": 3,
-      "companions": 3,
-      "updated": "2026-07-25",
-      "dream": "fleet-stewardship",
-      "path": "_bmad-output/projects/local-recipes/planning-artifacts/specs/spec-fleet-stewardship"
-    },
-    {
-      "slug": "modernist-identity",
-      "project": "local-recipes",
-      "title": "one visual language for everything pyforge",
-      "caps": 3,
-      "companions": 1,
-      "updated": "2026-07-25",
-      "dream": "modernist-identity",
-      "path": "_bmad-output/projects/local-recipes/planning-artifacts/specs/spec-modernist-identity"
-    },
-    {
-      "slug": "multi-loop-isolation",
-      "project": "local-recipes",
-      "title": "multi-loop isolation harness",
-      "caps": 3,
-      "companions": 0,
-      "updated": "2026-07-25",
-      "dream": "",
-      "path": "_bmad-output/projects/local-recipes/planning-artifacts/specs/spec-multi-loop-isolation"
-    },
-    {
-      "slug": "packaging-factory",
-      "project": "local-recipes",
-      "title": "the packaging factory (conda-forge-expert machinery)",
-      "caps": 4,
-      "companions": 2,
-      "updated": "2026-07-25",
-      "dream": "packaging-factory",
-      "path": "_bmad-output/projects/local-recipes/planning-artifacts/specs/spec-packaging-factory"
-    },
-    {
-      "slug": "pyforge-marshal",
-      "project": "local-recipes",
-      "title": "Marshal (graduated-autonomy loop orchestration, as shipped)",
-      "caps": 4,
-      "companions": 3,
-      "updated": "2026-07-25",
-      "dream": "pyforge-marshal",
-      "path": "_bmad-output/projects/local-recipes/planning-artifacts/specs/spec-pyforge-marshal"
-    },
-    {
-      "slug": "regenerable-factory",
-      "project": "local-recipes",
-      "title": "regenerable-factory program",
-      "caps": 4,
-      "companions": 1,
-      "updated": "2026-07-25",
-      "dream": "regenerable-factory",
-      "path": "_bmad-output/projects/local-recipes/planning-artifacts/specs/spec-regenerable-factory"
-    },
-    {
-      "slug": "presenton-pixi-image",
-      "project": "presenton-pixi-image",
-      "title": "presenton-pixi-image — air-gapped conda-native Presenton for OpenShift",
-      "caps": 6,
-      "companions": 0,
-      "updated": "2026-07-25",
-      "dream": "presenton-pixi-image",
-      "path": "_bmad-output/projects/presenton-pixi-image/planning-artifacts/specs/spec-presenton-pixi-image"
+      "updated": "",
+      "dream": "microsoft-org-sweep",
+      "path": "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-microsoft-org-sweep"
     },
     {
       "slug": "pyforge-atlas",
@@ -3183,6 +3118,16 @@ window.DASHBOARD_DATA = {
       "path": "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas"
     },
     {
+      "slug": "unity-data-stack",
+      "project": "pyforge-atlas",
+      "title": "Unity Data Stack — the enterprise innersource python-first platform",
+      "caps": 9,
+      "companions": 2,
+      "updated": "",
+      "dream": "unity-data-stack",
+      "path": "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-unity-data-stack"
+    },
+    {
       "slug": "upstream-discovery",
       "project": "pyforge-atlas",
       "title": "upstream discovery — sense what the world is building",
@@ -3191,6 +3136,16 @@ window.DASHBOARD_DATA = {
       "updated": "2026-07-25",
       "dream": "upstream-discovery",
       "path": "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-upstream-discovery"
+    },
+    {
+      "slug": "wasm-analytics-stack",
+      "project": "pyforge-atlas",
+      "title": "Wasm Analytics Stack — WASI-sandboxed upload validation, seed use case",
+      "caps": 5,
+      "companions": 1,
+      "updated": "",
+      "dream": "wasm-analytics-stack",
+      "path": "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-wasm-analytics-stack"
     },
     {
       "slug": "pyforge-doctor",
@@ -3203,14 +3158,34 @@ window.DASHBOARD_DATA = {
       "path": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor"
     },
     {
+      "slug": "pyforge-charter",
+      "project": "pyforge-genesis",
+      "title": "The Charter — keeping the constitution true",
+      "caps": 4,
+      "companions": 0,
+      "updated": "",
+      "dream": "pyforge-charter",
+      "path": "_bmad-output/projects/pyforge-genesis/planning-artifacts/specs/spec-pyforge-charter"
+    },
+    {
       "slug": "pyforge-genesis",
       "project": "pyforge-genesis",
-      "title": "Genesis — the operating-model installer",
-      "caps": 9,
-      "companions": 1,
+      "title": "Genesis — the operating model, recorded",
+      "caps": 4,
+      "companions": 0,
       "updated": "2026-07-25",
       "dream": "pyforge-genesis",
       "path": "_bmad-output/projects/pyforge-genesis/planning-artifacts/specs/spec-pyforge-genesis"
+    },
+    {
+      "slug": "deckcraft",
+      "project": "pyforge-herald",
+      "title": "deckcraft — the air-gapped, conda-native editable-deck pipeline",
+      "caps": 9,
+      "companions": 0,
+      "updated": "",
+      "dream": "deckcraft",
+      "path": "_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-deckcraft"
     },
     {
       "slug": "design-code-bridge",
@@ -3223,6 +3198,106 @@ window.DASHBOARD_DATA = {
       "path": "_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-design-code-bridge"
     },
     {
+      "slug": "modernist-identity",
+      "project": "pyforge-herald",
+      "title": "one visual language for everything pyforge",
+      "caps": 3,
+      "companions": 1,
+      "updated": "",
+      "dream": "modernist-identity",
+      "path": "_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-modernist-identity"
+    },
+    {
+      "slug": "pyforge-herald",
+      "project": "pyforge-herald",
+      "title": "pyforge-herald",
+      "caps": 0,
+      "companions": 0,
+      "updated": "",
+      "dream": "pyforge-herald",
+      "path": "_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald"
+    },
+    {
+      "slug": "agent-portability",
+      "project": "pyforge-marshal",
+      "title": "agent-portability",
+      "caps": 0,
+      "companions": 0,
+      "updated": "",
+      "dream": "agent-portability",
+      "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-agent-portability"
+    },
+    {
+      "slug": "agent-tool-surface",
+      "project": "pyforge-marshal",
+      "title": "The agent tool surface — the factory, callable",
+      "caps": 4,
+      "companions": 0,
+      "updated": "",
+      "dream": "agent-tool-surface",
+      "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-agent-tool-surface"
+    },
+    {
+      "slug": "agentic-sdlc-autonomy",
+      "project": "pyforge-marshal",
+      "title": "agentic-sdlc-autonomy",
+      "caps": 0,
+      "companions": 0,
+      "updated": "",
+      "dream": "agentic-sdlc-autonomy",
+      "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-agentic-sdlc-autonomy"
+    },
+    {
+      "slug": "artifact-console",
+      "project": "pyforge-marshal",
+      "title": "artifact-console — retirement record",
+      "caps": 0,
+      "companions": 0,
+      "updated": "",
+      "dream": "artifact-console",
+      "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-artifact-console"
+    },
+    {
+      "slug": "bmad-loop-governance",
+      "project": "pyforge-marshal",
+      "title": "Marshal (graduated-autonomy loop orchestration, as shipped)",
+      "caps": 4,
+      "companions": 3,
+      "updated": "",
+      "dream": "",
+      "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-bmad-loop-governance"
+    },
+    {
+      "slug": "factory-console",
+      "project": "pyforge-marshal",
+      "title": "factory console (program console + Dreamscape)",
+      "caps": 4,
+      "companions": 1,
+      "updated": "",
+      "dream": "factory-console",
+      "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-factory-console"
+    },
+    {
+      "slug": "genesis-installer",
+      "project": "pyforge-marshal",
+      "title": "Genesis — the operating-model installer",
+      "caps": 9,
+      "companions": 1,
+      "updated": "",
+      "dream": "genesis-installer",
+      "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-genesis-installer"
+    },
+    {
+      "slug": "multi-loop-isolation",
+      "project": "pyforge-marshal",
+      "title": "multi-loop isolation harness",
+      "caps": 3,
+      "companions": 0,
+      "updated": "",
+      "dream": "",
+      "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-multi-loop-isolation"
+    },
+    {
       "slug": "pyforge-marshal",
       "project": "pyforge-marshal",
       "title": "marshal CLI — graduated autonomy, productized",
@@ -3231,6 +3306,66 @@ window.DASHBOARD_DATA = {
       "updated": "2026-07-26",
       "dream": "pyforge-marshal",
       "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal"
+    },
+    {
+      "slug": "regenerable-factory",
+      "project": "pyforge-marshal",
+      "title": "regenerable-factory program",
+      "caps": 4,
+      "companions": 1,
+      "updated": "",
+      "dream": "regenerable-factory",
+      "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-regenerable-factory"
+    },
+    {
+      "slug": "copilot-cli-packaging",
+      "project": "pyforge-mason",
+      "title": "copilot-cli-packaging — retirement record",
+      "caps": 0,
+      "companions": 0,
+      "updated": "",
+      "dream": "copilot-cli-packaging",
+      "path": "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-copilot-cli-packaging"
+    },
+    {
+      "slug": "db-gpt-packaging",
+      "project": "pyforge-mason",
+      "title": "db-gpt-packaging — retirement record",
+      "caps": 0,
+      "companions": 0,
+      "updated": "",
+      "dream": "db-gpt-packaging",
+      "path": "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-db-gpt-packaging"
+    },
+    {
+      "slug": "fleet-stewardship",
+      "project": "pyforge-mason",
+      "title": "fleet stewardship (the recipes/ fleet)",
+      "caps": 3,
+      "companions": 3,
+      "updated": "",
+      "dream": "fleet-stewardship",
+      "path": "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-fleet-stewardship"
+    },
+    {
+      "slug": "packaging-factory",
+      "project": "pyforge-mason",
+      "title": "the packaging factory (conda-forge-expert machinery)",
+      "caps": 4,
+      "companions": 2,
+      "updated": "",
+      "dream": "packaging-factory",
+      "path": "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-packaging-factory"
+    },
+    {
+      "slug": "presenton-pixi-image",
+      "project": "pyforge-mason",
+      "title": "presenton-pixi-image — air-gapped conda-native Presenton for OpenShift",
+      "caps": 6,
+      "companions": 0,
+      "updated": "",
+      "dream": "presenton-pixi-image",
+      "path": "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-presenton-pixi-image"
     },
     {
       "slug": "pyforge-mason",
@@ -3253,6 +3388,36 @@ window.DASHBOARD_DATA = {
       "path": "_bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-pyforge-scribe"
     },
     {
+      "slug": "sentinel",
+      "project": "pyforge-scribe",
+      "title": "sentinel — retirement record",
+      "caps": 0,
+      "companions": 0,
+      "updated": "",
+      "dream": "sentinel",
+      "path": "_bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-sentinel"
+    },
+    {
+      "slug": "team-memory",
+      "project": "pyforge-scribe",
+      "title": "team-memory",
+      "caps": 0,
+      "companions": 0,
+      "updated": "",
+      "dream": "team-memory",
+      "path": "_bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-team-memory"
+    },
+    {
+      "slug": "enterprise-airgap",
+      "project": "pyforge-steward",
+      "title": "the factory behind the firewall",
+      "caps": 3,
+      "companions": 1,
+      "updated": "",
+      "dream": "enterprise-airgap",
+      "path": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-enterprise-airgap"
+    },
+    {
       "slug": "pyforge-steward",
       "project": "pyforge-steward",
       "title": "Steward (pyforge-steward) — the estate the factory stands on",
@@ -3271,26 +3436,6 @@ window.DASHBOARD_DATA = {
       "updated": "2026-07-25",
       "dream": "pyforge-warden",
       "path": "_bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-pyforge-warden"
-    },
-    {
-      "slug": "unity-data-stack",
-      "project": "unity-data-stack",
-      "title": "Unity Data Stack — the enterprise innersource python-first platform",
-      "caps": 9,
-      "companions": 2,
-      "updated": "2026-07-25",
-      "dream": "unity-data-stack",
-      "path": "_bmad-output/projects/unity-data-stack/planning-artifacts/specs/spec-unity-data-stack"
-    },
-    {
-      "slug": "wasm-analytics-stack",
-      "project": "wasm-analytics-stack",
-      "title": "Wasm Analytics Stack — WASI-sandboxed upload validation, seed use case",
-      "caps": 5,
-      "companions": 1,
-      "updated": "2026-07-25",
-      "dream": "wasm-analytics-stack",
-      "path": "_bmad-output/projects/wasm-analytics-stack/planning-artifacts/specs/spec-wasm-analytics-stack"
     }
   ],
   "pitch": [
@@ -3394,7 +3539,7 @@ window.DASHBOARD_DATA = {
       "of": 6,
       "export": "2026-07-24",
       "path": "presentations/pyforge-genesis",
-      "owner": "marshal"
+      "owner": "guild"
     },
     {
       "slug": "pyforge-herald",
@@ -3690,15 +3835,15 @@ window.DASHBOARD_DATA = {
           "depth": "epics",
           "state": "running",
           "have": {
-            "research": true,
-            "brief": true,
-            "prd": true,
-            "architecture": true,
-            "epics": true
+            "research": false,
+            "brief": false,
+            "prd": false,
+            "architecture": false,
+            "epics": false
           },
-          "n": 5,
+          "n": 0,
           "of": 5,
-          "status": "landed"
+          "status": "running"
         },
         {
           "wave": "2b",
@@ -3707,15 +3852,15 @@ window.DASHBOARD_DATA = {
           "depth": "prd+arch",
           "state": "running",
           "have": {
-            "research": true,
-            "brief": true,
-            "prd": true,
-            "architecture": true,
+            "research": false,
+            "brief": false,
+            "prd": false,
+            "architecture": false,
             "epics": false
           },
-          "n": 4,
+          "n": 0,
           "of": 4,
-          "status": "landed"
+          "status": "running"
         },
         {
           "wave": "2c",
@@ -3724,15 +3869,15 @@ window.DASHBOARD_DATA = {
           "depth": "prd+arch",
           "state": "running",
           "have": {
-            "research": true,
-            "brief": true,
-            "prd": true,
-            "architecture": true,
+            "research": false,
+            "brief": false,
+            "prd": false,
+            "architecture": false,
             "epics": false
           },
-          "n": 4,
+          "n": 0,
           "of": 4,
-          "status": "landed"
+          "status": "running"
         },
         {
           "wave": "2d",
@@ -3741,15 +3886,15 @@ window.DASHBOARD_DATA = {
           "depth": "epics",
           "state": "queued",
           "have": {
-            "research": true,
-            "brief": true,
+            "research": false,
+            "brief": false,
             "prd": true,
             "architecture": true,
             "epics": true
           },
-          "n": 5,
+          "n": 3,
           "of": 5,
-          "status": "landed"
+          "status": "partial"
         }
       ]
     },
@@ -3879,11 +4024,12 @@ window.DASHBOARD_DATA = {
       {
         "label": "herald",
         "slug": "pyforge-herald",
+        "project": "pyforge-herald",
         "dream": "pyforge-herald",
         "stages": {
           "dream": "07-23",
           "deck": "07-23",
-          "spec": "07-23",
+          "spec": "",
           "research": "07-25",
           "brief": "07-25",
           "prd": "07-25",
@@ -3901,13 +4047,14 @@ window.DASHBOARD_DATA = {
         "stale": false,
         "version": "0.1.0",
         "progress": "2/17",
-        "complete": 9,
+        "complete": 8,
         "of": 9,
         "owner": "herald"
       },
       {
         "label": "doctor",
         "slug": "pyforge-doctor",
+        "project": "pyforge-doctor",
         "dream": "pyforge-doctor",
         "stages": {
           "dream": "07-23",
@@ -3937,6 +4084,7 @@ window.DASHBOARD_DATA = {
       {
         "label": "scribe",
         "slug": "pyforge-scribe",
+        "project": "pyforge-scribe",
         "dream": "pyforge-scribe",
         "stages": {
           "dream": "07-23",
@@ -3966,6 +4114,7 @@ window.DASHBOARD_DATA = {
       {
         "label": "steward",
         "slug": "pyforge-steward",
+        "project": "pyforge-steward",
         "dream": "pyforge-steward",
         "stages": {
           "dream": "07-23",
@@ -3979,8 +4128,8 @@ window.DASHBOARD_DATA = {
           "code": "07-25"
         },
         "backfilled": false,
-        "openQuestions": 0,
-        "overtaken": false,
+        "openQuestions": 1,
+        "overtaken": true,
         "na": [],
         "furthest": "code",
         "updated": "2026-07-25",
@@ -3995,6 +4144,7 @@ window.DASHBOARD_DATA = {
       {
         "label": "marshal",
         "slug": "pyforge-marshal",
+        "project": "pyforge-marshal",
         "dream": "pyforge-marshal",
         "stages": {
           "dream": "07-23",
@@ -4002,13 +4152,13 @@ window.DASHBOARD_DATA = {
           "spec": "07-25",
           "research": "07-25",
           "brief": "07-25",
-          "prd": "07-25",
+          "prd": "",
           "arch": "07-25",
           "epics": "07-25",
           "code": "07-26"
         },
         "backfilled": false,
-        "openQuestions": 0,
+        "openQuestions": 1,
         "overtaken": false,
         "na": [],
         "furthest": "code",
@@ -4017,13 +4167,14 @@ window.DASHBOARD_DATA = {
         "stale": false,
         "version": "0.1.0",
         "progress": "1/41",
-        "complete": 9,
+        "complete": 8,
         "of": 9,
         "owner": "marshal"
       },
       {
         "label": "mason",
         "slug": "pyforge-mason",
+        "project": "pyforge-mason",
         "dream": "pyforge-mason",
         "stages": {
           "dream": "07-25",
@@ -4053,6 +4204,7 @@ window.DASHBOARD_DATA = {
       {
         "label": "atlas",
         "slug": "pyforge-atlas",
+        "project": "pyforge-atlas",
         "dream": "pyforge-atlas",
         "stages": {
           "dream": "07-23",
@@ -4066,8 +4218,8 @@ window.DASHBOARD_DATA = {
           "code": "07-17"
         },
         "backfilled": true,
-        "openQuestions": 0,
-        "overtaken": false,
+        "openQuestions": 6,
+        "overtaken": true,
         "na": [],
         "furthest": "code",
         "updated": "2026-07-28",
@@ -4082,6 +4234,7 @@ window.DASHBOARD_DATA = {
       {
         "label": "warden",
         "slug": "pyforge-warden",
+        "project": "pyforge-warden",
         "dream": "pyforge-warden",
         "stages": {
           "dream": "07-23",
@@ -4089,8 +4242,8 @@ window.DASHBOARD_DATA = {
           "spec": "07-25",
           "research": "07-25",
           "brief": "07-25",
-          "prd": "07-14",
-          "arch": "07-14",
+          "prd": "",
+          "arch": "",
           "epics": "07-14",
           "code": "07-14"
         },
@@ -4104,22 +4257,23 @@ window.DASHBOARD_DATA = {
         "stale": false,
         "version": "0.1.0",
         "progress": "31/31",
-        "complete": 9,
+        "complete": 7,
         "of": 9,
         "owner": "warden"
       },
       {
         "label": "genesis",
         "slug": "pyforge-genesis",
+        "project": "pyforge-genesis",
         "dream": "pyforge-genesis",
         "stages": {
           "dream": "07-23",
           "deck": "07-23",
           "spec": "07-25",
-          "research": "07-25",
-          "brief": "07-25",
-          "prd": "07-25",
-          "arch": "07-25",
+          "research": "",
+          "brief": "",
+          "prd": "",
+          "arch": "",
           "epics": "07-25",
           "code": ""
         },
@@ -4133,127 +4287,127 @@ window.DASHBOARD_DATA = {
         "stale": false,
         "version": "",
         "progress": "0/36",
-        "complete": 8,
+        "complete": 4,
         "of": 9,
-        "owner": "marshal"
+        "owner": "guild"
       },
       {
         "label": "deckcraft",
         "slug": "deckcraft",
+        "project": "pyforge-herald",
         "dream": "deckcraft",
         "stages": {
           "dream": "07-23",
-          "deck": "07-25",
-          "spec": "07-25",
+          "deck": "07-23",
+          "spec": "",
           "research": "07-25",
-          "brief": "05-10",
-          "prd": "05-10",
-          "arch": "05-10",
-          "epics": "05-10",
-          "code": ""
+          "brief": "",
+          "prd": "",
+          "arch": "",
+          "epics": "07-25",
+          "code": "07-25"
         },
-        "backfilled": true,
+        "backfilled": false,
         "openQuestions": 0,
         "overtaken": false,
         "na": [],
-        "furthest": "epics",
-        "updated": "2026-07-25",
-        "age": 3,
+        "furthest": "code",
+        "updated": "2026-07-26",
+        "age": 2,
         "stale": false,
-        "version": "",
-        "progress": "",
-        "complete": 8,
+        "version": "0.1.0",
+        "progress": "2/17",
+        "complete": 5,
         "of": 9,
         "owner": "herald"
       },
       {
         "label": "presenton",
         "slug": "presenton-pixi-image",
+        "project": "pyforge-mason",
         "dream": "presenton-pixi-image",
         "stages": {
           "dream": "07-23",
-          "deck": "07-25",
-          "spec": "07-25",
+          "deck": "07-23",
+          "spec": "",
           "research": "07-25",
-          "brief": "07-25",
-          "prd": "05-01",
-          "arch": "07-25",
+          "brief": "",
+          "prd": "",
+          "arch": "",
           "epics": "07-25",
-          "code": ""
+          "code": "07-25"
         },
-        "backfilled": true,
+        "backfilled": false,
         "openQuestions": 0,
         "overtaken": false,
         "na": [],
-        "furthest": "epics",
+        "furthest": "code",
         "updated": "2026-07-25",
         "age": 3,
         "stale": false,
-        "version": "",
-        "progress": "",
-        "complete": 8,
+        "version": "0.1.0",
+        "progress": "1/38",
+        "complete": 5,
         "of": 9,
         "owner": "mason"
       },
       {
         "label": "unity",
         "slug": "unity-data-stack",
+        "project": "pyforge-atlas",
         "dream": "unity-data-stack",
         "stages": {
           "dream": "07-23",
-          "deck": "07-25",
-          "spec": "07-25",
+          "deck": "07-23",
+          "spec": "",
           "research": "07-25",
-          "brief": "07-25",
-          "prd": "07-25",
-          "arch": "07-25",
-          "epics": "",
-          "code": ""
+          "brief": "",
+          "prd": "",
+          "arch": "",
+          "epics": "07-17",
+          "code": "07-17"
         },
-        "backfilled": false,
-        "openQuestions": 0,
+        "backfilled": true,
+        "openQuestions": 6,
         "overtaken": false,
-        "na": [
-          "epics"
-        ],
-        "furthest": "arch",
-        "updated": "2026-07-25",
-        "age": 3,
+        "na": [],
+        "furthest": "code",
+        "updated": "2026-07-28",
+        "age": 0,
         "stale": false,
-        "version": "",
-        "progress": "",
-        "complete": 8,
+        "version": "0.1.0",
+        "progress": "35/38",
+        "complete": 5,
         "of": 9,
         "owner": "atlas"
       },
       {
         "label": "wasm",
         "slug": "wasm-analytics-stack",
+        "project": "pyforge-atlas",
         "dream": "wasm-analytics-stack",
         "stages": {
           "dream": "07-23",
-          "deck": "07-25",
-          "spec": "07-25",
+          "deck": "07-23",
+          "spec": "",
           "research": "07-25",
-          "brief": "07-25",
-          "prd": "07-25",
-          "arch": "07-25",
-          "epics": "",
-          "code": ""
+          "brief": "",
+          "prd": "",
+          "arch": "",
+          "epics": "07-17",
+          "code": "07-17"
         },
-        "backfilled": false,
-        "openQuestions": 0,
+        "backfilled": true,
+        "openQuestions": 6,
         "overtaken": false,
-        "na": [
-          "epics"
-        ],
-        "furthest": "arch",
-        "updated": "2026-07-25",
-        "age": 3,
+        "na": [],
+        "furthest": "code",
+        "updated": "2026-07-28",
+        "age": 0,
         "stale": false,
-        "version": "",
-        "progress": "",
-        "complete": 8,
+        "version": "0.1.0",
+        "progress": "35/38",
+        "complete": 5,
         "of": 9,
         "owner": "atlas"
       }
@@ -4265,9 +4419,9 @@ window.DASHBOARD_DATA = {
         "name": "drift-check",
         "task": "bmad-drift-check",
         "guards": "BMAD artifacts vs the live factory",
-        "state": "green",
-        "findings": 0,
-        "verdict": "OK: all tracked BMAD artifacts are in sync with the live factory MINOR.",
+        "state": "drift",
+        "findings": 1,
+        "verdict": "DRIFT: 0 integrity + 1 currency finding(s). Re-sync via _bmad-output/projects/pyforge-marshal/SYNC-RUNBOOK.md.",
         "runbook": "_bmad-output/projects/local-recipes/SYNC-RUNBOOK.md"
       },
       {
@@ -4275,8 +4429,8 @@ window.DASHBOARD_DATA = {
         "task": "spec-surface-check",
         "guards": "every tracked file under a Spec surface",
         "state": "drift",
-        "findings": 5,
-        "verdict": "FINDINGS (5):",
+        "findings": 13,
+        "verdict": "FINDINGS (13):",
         "runbook": ""
       },
       {
@@ -4290,24 +4444,14 @@ window.DASHBOARD_DATA = {
       }
     ],
     "baseline": {
-      "skill": "8.79.1",
-      "head": "d68dad75ae",
+      "skill": "",
+      "head": "",
       "deltas": [],
       "runbook": "_bmad-output/projects/local-recipes/SYNC-RUNBOOK.md"
     }
   },
   "backlog": {
     "rows": [
-      {
-        "slug": "agentic-sdlc-autonomy",
-        "title": "The Agentic SDLC — four views of autonomy, one governed factory",
-        "status": "pitched",
-        "owner": "marshal",
-        "blockedOn": "",
-        "chain": {
-          "deck": "presentations/agentic-sdlc"
-        }
-      },
       {
         "slug": "deckcraft",
         "title": "Deckcraft — editable decks from primitives, air-gapped",
@@ -4316,20 +4460,17 @@ window.DASHBOARD_DATA = {
         "blockedOn": "",
         "chain": {
           "deck": "presentations/deckcraft",
-          "spec": "_bmad-output/projects/deckcraft/planning-artifacts/specs/spec-deckcraft",
-          "project": "_bmad-output/projects/deckcraft"
+          "spec": "_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-deckcraft"
         }
       },
       {
-        "slug": "pyforge-genesis",
-        "title": "Genesis — the seed of the operating model",
+        "slug": "genesis-installer",
+        "title": "Genesis installer — the seed, made executable",
         "status": "specified",
         "owner": "marshal",
         "blockedOn": "",
         "chain": {
-          "deck": "presentations/pyforge-genesis",
-          "spec": "_bmad-output/projects/pyforge-genesis/planning-artifacts/specs/spec-pyforge-genesis",
-          "project": "_bmad-output/projects/pyforge-genesis"
+          "spec": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-genesis-installer"
         }
       },
       {
@@ -4338,7 +4479,9 @@ window.DASHBOARD_DATA = {
         "status": "specified",
         "owner": "scribe",
         "blockedOn": "",
-        "chain": {}
+        "chain": {
+          "spec": "_bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-team-memory"
+        }
       },
       {
         "slug": "unity-data-stack",
@@ -4348,8 +4491,7 @@ window.DASHBOARD_DATA = {
         "blockedOn": "",
         "chain": {
           "deck": "presentations/unity-data-stack",
-          "spec": "_bmad-output/projects/unity-data-stack/planning-artifacts/specs/spec-unity-data-stack",
-          "project": "_bmad-output/projects/unity-data-stack"
+          "spec": "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-unity-data-stack"
         }
       },
       {
@@ -4370,8 +4512,7 @@ window.DASHBOARD_DATA = {
         "blockedOn": "",
         "chain": {
           "deck": "presentations/wasm-analytics-stack",
-          "spec": "_bmad-output/projects/wasm-analytics-stack/planning-artifacts/specs/spec-wasm-analytics-stack",
-          "project": "_bmad-output/projects/wasm-analytics-stack"
+          "spec": "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-wasm-analytics-stack"
         }
       },
       {
@@ -4382,15 +4523,14 @@ window.DASHBOARD_DATA = {
         "blockedOn": "Phase-0 decision gate (Epic 1)",
         "chain": {
           "deck": "presentations/presenton-pixi-image",
-          "spec": "_bmad-output/projects/presenton-pixi-image/planning-artifacts/specs/spec-presenton-pixi-image",
-          "project": "_bmad-output/projects/presenton-pixi-image"
+          "spec": "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-presenton-pixi-image"
         }
       }
     ],
     "blocked": 1,
     "byOwner": {
-      "marshal": 2,
       "herald": 1,
+      "marshal": 1,
       "scribe": 1,
       "atlas": 3,
       "mason": 1
@@ -4401,6 +4541,18 @@ window.DASHBOARD_DATA = {
         "title": "Agent portability — BMAD on any agent, never vendor-locked",
         "owner": "marshal",
         "status": "dreamt"
+      },
+      {
+        "slug": "agent-tool-surface",
+        "title": "Agent tool surface — every craft reachable through one governed API",
+        "owner": "marshal",
+        "status": "realized"
+      },
+      {
+        "slug": "agentic-sdlc-autonomy",
+        "title": "The Agentic SDLC — four views of autonomy, one governed factory",
+        "owner": "marshal",
+        "status": "pitched"
       },
       {
         "slug": "enterprise-airgap",
@@ -4504,14 +4656,14 @@ window.DASHBOARD_DATA = {
         "total": 8,
         "counts": {
           "dreamt": 0,
-          "pitched": 1,
+          "pitched": 0,
           "specified": 1,
-          "realized": 3,
+          "realized": 2,
           "archived": 1,
-          "practice": 2
+          "practice": 4
         },
         "line": "paused 1.2",
-        "load": 2,
+        "load": 1,
         "blocked": 0,
         "dreams": [
           {
@@ -4532,14 +4684,14 @@ window.DASHBOARD_DATA = {
             "slug": "agentic-sdlc-autonomy",
             "title": "The Agentic SDLC — four views of autonomy, one governed factory",
             "status": "pitched",
-            "type": "dream",
+            "type": "practice",
             "blockedOn": ""
           },
           {
             "slug": "agent-tool-surface",
             "title": "Agent tool surface — every craft reachable through one governed API",
             "status": "realized",
-            "type": "dream",
+            "type": "practice",
             "blockedOn": ""
           },
           {
@@ -4564,8 +4716,8 @@ window.DASHBOARD_DATA = {
             "blockedOn": ""
           },
           {
-            "slug": "pyforge-genesis",
-            "title": "Genesis — the seed of the operating model",
+            "slug": "genesis-installer",
+            "title": "Genesis installer — the seed, made executable",
             "status": "specified",
             "type": "dream",
             "blockedOn": ""
@@ -4806,6 +4958,11 @@ window.DASHBOARD_DATA = {
         "slug": "pyforge-charter",
         "title": "The PyForge Charter",
         "status": "pitched"
+      },
+      {
+        "slug": "pyforge-genesis",
+        "title": "Genesis — the seed of the operating model",
+        "status": "specified"
       }
     ]
   }

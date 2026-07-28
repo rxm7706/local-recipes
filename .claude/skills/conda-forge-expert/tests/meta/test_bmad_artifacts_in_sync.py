@@ -9,7 +9,7 @@ Integrity = the broken-drift-contract class that is wrong regardless of release 
 This deliberately does NOT fail on mere *currency* drift (a doc a few releases behind the live
 skill) — that is expected between syncs and is surfaced on demand by
 ``pixi run -e local-recipes bmad-drift-check``. The full reconciliation procedure (BMAD skills +
-baseline re-stamp) lives in ``_bmad-output/projects/local-recipes/SYNC-RUNBOOK.md``.
+baseline re-stamp) lives in ``_bmad-output/projects/pyforge-marshal/SYNC-RUNBOOK.md``.
 
 Portable: skips cleanly when the BMAD project is absent (the skill ships without it).
 """
@@ -23,12 +23,12 @@ import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[5]
 SCRIPT = REPO_ROOT / "scripts" / "bmad_drift_check.py"
-PROJECT = REPO_ROOT / "_bmad-output" / "projects" / "local-recipes"
+PROJECT = REPO_ROOT / "_bmad-output" / "projects" / "pyforge-marshal"
 
 
 @pytest.mark.skipif(
     not PROJECT.is_dir() or not SCRIPT.is_file(),
-    reason="local-recipes BMAD project / drift-check script not present (skill used standalone)",
+    reason="pyforge-marshal BMAD project / drift-check script not present (skill used standalone)",
 )
 def test_bmad_artifacts_integrity():
     result = subprocess.run(

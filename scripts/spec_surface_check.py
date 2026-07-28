@@ -76,6 +76,14 @@ def parse_surface(spec_md: Path) -> tuple[list[str], str]:
             (globs if section == "surface" else excludes).append(
                 line[4:].split("#", 1)[0].strip())
             continue
+        # A comment or blank line INSIDE a block sequence is valid YAML and must not
+        # end the section. Before 2026-07-28 any such line reset `section`, silently
+        # dropping every glob after it — so adding an explanatory comment under
+        # `surface:` UN-GOVERNED the whole spec, and the checker reported the files as
+        # "removed" rather than erroring. Silent governance loss, caught only because
+        # the removal looked impossible (the file was plainly still there).
+        if section and (not line.strip() or line.lstrip().startswith("#")):
+            continue
         section = None
         if line.startswith("surface:"):
             section = "surface"

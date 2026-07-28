@@ -345,7 +345,7 @@ description = "Verify local-recipes env, BMAD installation, and active project b
 cmd = "bash scripts/ensure-bmad-preflight.sh"
 
 [feature.local-recipes.tasks.bmad-drift-check]
-description = "Detector: report drift between the _bmad-output/local-recipes artifacts and the live factory (pins, counts, coverage completeness, baseline, stale rules). Exits non-zero on drift. Flags: -- --fix (archive moves), -- --integrity-only, -- --write-baseline (stamp after a reconciliation). See _bmad-output/projects/local-recipes/SYNC-RUNBOOK.md."
+description = "Detector: report drift between the _bmad-output/pyforge-marshal factory-doc artifacts and the live factory (pins, counts, coverage completeness, baseline, stale rules). Exits non-zero on drift. Flags: -- --fix (archive moves), -- --integrity-only, -- --write-baseline (stamp after a reconciliation). See _bmad-output/projects/pyforge-marshal/SYNC-RUNBOOK.md."
 cmd = "python scripts/bmad_drift_check.py"
 
 [feature.local-recipes.tasks.bmad-groundtruth]

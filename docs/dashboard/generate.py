@@ -469,12 +469,24 @@ DREAM_TYPES = ("dream", "practice")
 # Dream does not mean it becomes that Smith's package.
 STATIONS = ("herald", "marshal", "atlas", "warden",
             "mason", "doctor", "scribe", "steward")
-# The ONE Dream that may name no station, because it CONSTITUTES them: the
-# Charter. `guild` is NOT a ninth station and never renders as one — it marks a
-# Dream sitting above the roster, not beside it. (Genesis was briefly here and
-# was wrong: its origin doc is Marshal's own setup plan, and "the bootstrapper
-# that installs the operating model anywhere" is Marshal's craft.)
-GUILD_DREAMS = ("pyforge-charter",)
+# The Dreams that may name no station, because they PRECEDE them: the Charter, which
+# constitutes the stations, and pyforge-genesis, the operating-model seed. `guild` is NOT
+# a ninth station and never renders as one — it marks a Dream sitting above the roster,
+# not beside it.
+#
+# MIRRORS scripts/bmad_drift_check.py:GUILD_DREAMS — keep the two in step. The mirror was
+# missed on 2026-07-28 and the board warned on a Dream the Charter explicitly permits.
+#
+# History, because this list flipped twice and the middle position was half-right. An
+# earlier comment here read: "Genesis was briefly here and was wrong: its origin doc is
+# Marshal's own setup plan, and 'the bootstrapper that installs the operating model
+# anywhere' is Marshal's craft." That reasoning holds for the INSTALLER and only the
+# installer. Genesis was doing two jobs in one Dream — constitutive records (the Charter,
+# the Lexicon, the Guild's membership) AND a buildable bootstrapper. Removing it from
+# `guild` wholesale fixed the second and broke the first. Resolved 2026-07-28 by splitting
+# them: the installer became the marshal-owned `genesis-installer` Dream; Genesis kept the
+# constitutive half and returned here. Charter §5 + its Realization log carry the ruling.
+GUILD_DREAMS = ("pyforge-charter", "pyforge-genesis")
 
 
 # Deck dirs whose name differs from the dream slug (mason's chapter deck backs
@@ -868,14 +880,19 @@ FLEET_PROJECTS = [
     ("atlas", "pyforge-atlas", "pyforge-atlas"),
     ("warden", "pyforge-warden", "pyforge-warden"),
     ("genesis", "pyforge-genesis", "pyforge-genesis"),
-    ("deckcraft", "deckcraft", "deckcraft"),
-    ("presenton", "presenton-pixi-image", "presenton-pixi-image"),
-    ("unity", "unity-data-stack", "unity-data-stack"),
-    ("wasm", "wasm-analytics-stack", "wasm-analytics-stack"),
+    # Chains absorbed by their owning station (Charter §5, 2026-07-28).
+    ("deckcraft", "pyforge-herald", "deckcraft"),
+    ("presenton", "pyforge-mason", "presenton-pixi-image"),
+    # Chains absorbed by their owning station (Charter §5 "owning is becoming",
+    # 2026-07-28): the DREAM keeps its slug, the PROJECT is now the owner's tree.
+    ("unity", "pyforge-atlas", "unity-data-stack"),
+    ("wasm", "pyforge-atlas", "wasm-analytics-stack"),
 ]
 # lifecycle order — the Dream-to-Code chain, left to right
 FLEET_STAGES = ("dream", "deck", "spec", "research", "brief", "prd", "arch", "epics", "code")
 # stages a project legitimately does not have (depth chosen at planning time)
+# Stages a CHAIN legitimately does not have (depth chosen at planning time). Keyed by
+# dream slug, matching the fleet row key.
 FLEET_NA = {"unity-data-stack": {"epics"}, "wasm-analytics-stack": {"epics"}}
 _STALE_DAYS = 30
 
@@ -941,11 +958,16 @@ def scan_fleet(projects: dict) -> dict:
         stages = {
             "dream":    _added([f"docs/dreams/{dream}.md"]),
             "deck":     _added([f"presentations/{slug}/project/*.dc.html"]),
-            "spec":     _added([f"{pa}/specs/spec-*/SPEC.md"]),
+            # Chain-scoped, NOT project-scoped. Under Charter §5 as amended a project
+            # holds MANY chains, so `specs/spec-*/SPEC.md` would credit every chain in
+            # the tree with every other chain's artifacts. Match the dream slug.
+            "spec":     _added([f"{pa}/specs/spec-{dream}/SPEC.md"]),
             "research": _added([f"{pa}/research/*.md"]),
-            "brief":    _added([f"{pa}/product-brief*", f"{pa}/briefs/**/brief*.md"]),
-            "prd":      _added([f"{pa}/prd.md", f"{pa}/prds/*/prd.md"]),
-            "arch":     _added([f"{pa}/architecture.md", f"{pa}/architecture/*/*.md"]),
+            "brief":    _added([f"{pa}/product-brief-{dream}*",
+                                f"{pa}/briefs/brief-{dream}-*/brief*.md"]),
+            "prd":      _added([f"{pa}/prd.md", f"{pa}/prds/prd-{dream}-*/prd.md"]),
+            "arch":     _added([f"{pa}/architecture.md",
+                                f"{pa}/architecture/architecture-{dream}-*/*.md"]),
             "epics":    _added([f"{pa}/epics.md"]),
             "code":     _added([f"src/shared/packages/{slug}/pyproject.toml"]),
         }
@@ -986,7 +1008,11 @@ def scan_fleet(projects: dict) -> dict:
         # here + PRD + architecture present = downstream has overtaken the Spec.
         open_q = _spec_open_questions(slug)
         overtaken = bool(open_q) and bool(stages["prd"]) and bool(stages["arch"])
-        rows.append({"label": label, "slug": slug, "dream": dream, "stages": stages,
+        # `slug` identifies the CHAIN (the dream), not the hosting project — under
+        # Charter §5 as amended several chains share one project, and keying rows by
+        # project rendered "pyforge-atlas" three times with no way to tell them apart.
+        rows.append({"label": label, "slug": dream, "project": slug,
+                     "dream": dream, "stages": stages,
                      "backfilled": backfilled, "openQuestions": open_q,
                      "overtaken": overtaken,
                      "na": sorted(na), "furthest": furthest, "updated": updated,
@@ -1362,6 +1388,47 @@ def apply_owner(data: dict) -> None:
           + (f" · UNOWNED: {', '.join(missing)}" if missing else " · all sections attributed"))
 
 
+
+# ---- the accountability gate (Charter §7, amended 2026-07-28) ----------------
+
+def gate_ownership(data: dict) -> list[str]:
+    """Refuse to publish a hall that cannot say who is accountable for a row.
+
+    Charter §7: the Guildhall is the unit of *accountability made real*, not merely of
+    visibility — "visibility without consequence is decoration". This is the only place
+    the whole Dream->Code chain is assembled in one view, so it is the only place a break
+    in that chain can be seen whole.
+
+    Corrects an inversion: check_render.js exited non-zero on a JavaScript TypeError while
+    this generator printed `· UNOWNED: …` and exited clean — a cosmetic fault blocked
+    publication while a governance fault shipped. The `[owner]` line already computed the
+    answer and threw it away.
+
+    Hard gate from day one, deliberately: a grace period on the model's critical path is
+    how drift becomes permanent.
+    """
+    valid = set(STATIONS) | {"guild"}
+    v: list[str] = []
+
+    for d in data.get("dreams", []):
+        o = d.get("owner") or ""
+        if not o:
+            v.append(f"dream {d['slug']}: no owner")
+        elif o not in valid:
+            v.append(f"dream {d['slug']}: owner {o!r} is not one of the eight (+guild)")
+
+    for row in (data.get("fleet") or {}).get("rows", []):
+        # campaigns are deliberately unowned (they span stations) — see apply_owner
+        if not row.get("owner") and not row.get("campaign"):
+            v.append(f"fleet row {row.get('slug', '?')}: blank station")
+
+    for key, proj in (data.get("projects") or {}).items():
+        if not proj.get("owner") and not proj.get("practice"):
+            v.append(f"build line {key}: no owning station")
+
+    return v
+
+
 # ---- shared ------------------------------------------------------------------
 
 def load_data() -> dict:
@@ -1419,6 +1486,14 @@ def main() -> int:
     scan_timing(data["projects"])
     data["backlog"] = scan_backlog(data["dreams"], data["projects"])
     data["guild"] = scan_guild(data["dreams"], data["projects"], data["backlog"])
+
+    violations = gate_ownership(data)
+    if violations:
+        print(f"\n[GATE] ACCOUNTABILITY — {len(violations)} violation(s); NOT publishing:")
+        for x in violations:
+            print(f"     ✗ {x}")
+        print("  Charter §7: the hall does not put a row on the wall it cannot attribute.")
+        return 1
 
     ts = now_utc()
     data["snapshot"] = _SNAP_TS.sub(ts, data["snapshot"], count=1)
