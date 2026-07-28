@@ -7,7 +7,7 @@ surface:
   - .claude/skills/conda-forge-expert/scripts/_http.py
   - docs/reference/pixi-config-jfrog.example.toml
 companions:
-  - ../../../../../docs/reference/enterprise-deployment.md   # adopted: deployment guide
+  - ../../../../../../docs/reference/enterprise-deployment.md   # adopted: deployment guide
 open_questions:
   - "JFROG_API_KEY injects unconditionally on every outbound request
     regardless of host — cross-resolver credential leak (Doctor finding,

@@ -7,7 +7,7 @@ surface:
   - presentations/**
   - scripts/deck_export.py   # the export-set contract's engine
 companions:
-  - ../../../../../docs/specs/presentation-deck.md   # adopted: deck workflow (legacy Tier-1, in force)
+  - ../../../../../../docs/specs/presentation-deck.md   # adopted: deck workflow (legacy Tier-1, in force)
 open_questions: []
 ---
 

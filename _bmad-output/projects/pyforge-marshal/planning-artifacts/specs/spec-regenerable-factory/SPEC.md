@@ -5,9 +5,14 @@ owner-dream: docs/dreams/regenerable-factory.md
 companions:
   - waves.md
 sources:
-  - ../../../../../docs/dreams/regenerable-factory.md
+  - ../../../../../../docs/dreams/regenerable-factory.md
 surface:
-  - scripts/spec_surface_check.py   # CAP-3 deliverable (does not exist yet)
+  # The chain-integrity instruments. Governed here (2026-07-28) because a detector that
+  # polices the Dream->Code chain is this practice's own tooling — and three of them sat
+  # UNGOVERNED, i.e. the things enforcing the model were outside it.
+  - scripts/spec_surface_check.py   # CAP-3 deliverable — SHIPPED (the "does not exist yet" note was stale)
+  - scripts/bmad_drift_check.py     # artifact<->factory sync + the `dream-unowned` check the Charter §5 cites
+  - scripts/dream_chain_check.py    # INV-0..3: owner-dream links, Dream->Spec coverage, chain location, sharded tree
 assumptions:
   - Backfilled specs can carry machine-checkable success signals grounded in
     existing behavior (the surfaces already work; the spec states the contract

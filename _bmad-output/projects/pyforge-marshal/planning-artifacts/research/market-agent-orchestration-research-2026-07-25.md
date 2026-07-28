@@ -3,7 +3,7 @@ stepsCompleted: [1, 2, 3, 4, 5, 6]
 inputDocuments:
   - "docs/dreams/pyforge-marshal.md"
   - "docs/dreams/ecosystem-crew.md"
-  - "_bmad-output/projects/local-recipes/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md"
+  - "_bmad-output/projects/local-recipes/planning-artifacts/specs/spec-bmad-loop-governance/SPEC.md"
 workflowType: 'research'
 lastStep: 6
 research_type: 'market'

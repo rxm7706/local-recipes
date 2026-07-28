@@ -1,17 +1,18 @@
 ---
 id: SPEC-pyforge-marshal
+owner-dream: docs/dreams/pyforge-marshal.md
 surface:
   - src/shared/packages/pyforge-marshal/**    # the CLI this Spec builds (not yet created)
 companions:
   - glossary.md                                              # spec-authored: the vocabulary + the gate-mode/autonomy ladder
-  - ../../prd.md                                             # adopted (chain): FR-1..FR-58 / NFR-1..NFR-14 with testable consequences
-  - ../../architecture.md                                    # adopted (chain): the 39 ADs, structural seed, stack, diagrams
+  - ../../prds/prd-pyforge-marshal-2026-07-25/prd.md                                             # adopted (chain): FR-1..FR-58 / NFR-1..NFR-14 with testable consequences
+  - ../../architecture/architecture-pyforge-marshal-2026-07-25/architecture.md                                    # adopted (chain): the 39 ADs, structural seed, stack, diagrams
   - ../../epics.md                                           # adopted (chain): 6 epics / 40 stories, FR coverage map, story DAG
-  - ../../reviews/review-ad25-39-adversarial-2026-07-25.md   # adopted (chain): the BLOCKED-ON verdict behind § Open Questions
+  - ../../architecture/architecture-pyforge-marshal-2026-07-25/reviews/review-ad25-39-adversarial-2026-07-25.md   # adopted (chain): the BLOCKED-ON verdict behind § Open Questions
 sources:
   - ../../../../../../docs/dreams/pyforge-marshal.md
   - ../../product-brief-pyforge-marshal.md
-  # Sibling, NOT superseded: ../../../../local-recipes/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  # Sibling, NOT superseded: ../../../../local-recipes/planning-artifacts/specs/spec-bmad-loop-governance/SPEC.md
   # is a narrow governance-surface Spec binding the SHIPPED machinery (`.bmad-loop/**`) into the
   # governance map. THIS Spec is the `marshal` CLI product that productizes that capability.
   # Both are live; neither supersedes the other. Do not merge or move them.

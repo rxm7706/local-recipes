@@ -1,5 +1,5 @@
 ---
-spec: pyforge-marshal
+spec: bmad-loop-governance
 status: shipped
 owner-dream: docs/dreams/pyforge-marshal.md
 program: regenerable-factory (post-program backfill, user-directed)
@@ -8,8 +8,8 @@ surface:
 surface-drift: exempt   # policy.toml model flips are per-story operational tuning on loop branches; the paper trail is run journals + loop commits
 companions:
   - ../spec-multi-loop-isolation/SPEC.md                  # the concurrency harness kernel (Wave 0)
-  - ../../../../../docs/specs/bmad-loop-adoption.md       # adopted: the adoption effort (legacy Tier-1, in force)
-  - ../../../../../docs/dreams/pyforge-marshal.md         # adopted: the Dream (doctrine + frontier)
+  - ../../../../../../docs/specs/bmad-loop-adoption.md       # adopted: the adoption effort (legacy Tier-1, in force)
+  - ../../../../../../docs/dreams/pyforge-marshal.md         # adopted: the Dream (doctrine + frontier)
 open_questions: []
 ---
 

@@ -1,17 +1,18 @@
 ---
 id: SPEC-pyforge-genesis
 spec: pyforge-genesis
-owner-dream: docs/dreams/pyforge-genesis.md
+owner-dream: docs/dreams/genesis-installer.md   # re-pointed 2026-07-28 (Charter §5 amendment): this Spec is the INSTALLER, owned by marshal. The constitutive Genesis Dream (owner: guild) is a different chain.
 surface:
   - src/shared/packages/pyforge-genesis/**   # the package this spec builds (not yet created)
 companions:
   - extraction-manifest.md
 sources:
-  - ../../../../../../docs/dreams/pyforge-genesis.md
-  - ../../product-brief-pyforge-genesis.md
-  - ../../prd.md
-  - ../../architecture.md
-  - ../../epics.md
+  - ../../../../../../docs/dreams/genesis-installer.md
+  - ../../../../../../docs/dreams/pyforge-genesis.md   # the constitutive Dream this installs
+  - ../../research/product-brief-pyforge-genesis.md
+  - ../../prds/prd-genesis-installer-2026-07-25/prd.md
+  - ../../architecture/architecture-genesis-installer-2026-07-25/architecture.md
+  - ../../epics-genesis-installer.md
 ---
 
 > **Canonical contract.** This SPEC and the files in `companions:` are the complete, preservation-validated contract for what to build, test, and validate. Source documents listed in frontmatter are for traceability only — consult them only if you need narrative rationale or prose color this contract intentionally omits.

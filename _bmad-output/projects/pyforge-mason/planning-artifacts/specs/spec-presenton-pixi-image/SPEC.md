@@ -1,5 +1,6 @@
 ---
 id: SPEC-presenton-pixi-image
+owner-dream: docs/dreams/presenton-pixi-image.md
 surface:
   # NOTE (2026-07-25): globs that would claim THIS repo's shared root files
   # (pixi.toml/pixi.lock/src/**/tests/**/helm/**) were removed — this project's
@@ -12,9 +13,9 @@ sources:
   - ../../../../../../docs/dreams/presenton-pixi-image.md
   - ../../briefs/brief-presenton-pixi-image-2026-07-25/brief.md
   - ../../briefs/brief-presenton-pixi-image-2026-07-25/addendum.md
-  - ../../prd.md
+  - ../../prds/prd-presenton-pixi-image-2026-05-01/prd.md
   - ../../architecture/architecture-presenton-pixi-image-2026-07-25/ARCHITECTURE-SPINE.md
-  - ../../epics.md
+  - ../../epics-presenton-pixi-image.md
 ---
 
 > **Canonical contract.** This SPEC is the complete, preservation-validated contract for what to build, test, and validate. Source documents listed in frontmatter are for traceability only — consult them only if you need narrative rationale or prose color this contract intentionally omits.

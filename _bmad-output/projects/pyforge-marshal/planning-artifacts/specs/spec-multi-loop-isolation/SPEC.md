@@ -8,8 +8,8 @@ surface:
   - scripts/bmad-loop-worktree
 companions: []
 sources:
-  - ../../../../../docs/dreams/pyforge-marshal.md
-  - ../../../../../docs/dreams/regenerable-factory.md
+  - ../../../../../../docs/dreams/pyforge-marshal.md
+  - ../../../../../../docs/dreams/regenerable-factory.md
 assumptions:
   - bmad-loop resolves its sprint feed and journals via the repo-relative
     implementation-artifacts path of its CWD, so the backlink makes the main

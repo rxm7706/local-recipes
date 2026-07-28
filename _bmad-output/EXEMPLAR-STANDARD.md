@@ -1,8 +1,134 @@
-# The planning-artifacts exemplar standard
+# The Dream-to-Code operating model
 
 **Reference implementation: `projects/pyforge-atlas/planning-artifacts/`.**
-Established 2026-07-27. Applies to every BMAD project in this repo under
-bmad-method ≥ 6.10 with bmad-loop.
+Established 2026-07-27, extended to the full chain 2026-07-28. Applies to every BMAD
+project in this repo under bmad-method ≥ 6.10 with bmad-loop.
+
+---
+
+## The three invariants
+
+Decided 2026-07-28 (operator). **Consistency first: one operating model, one ownership
+model, one build tree — across every Dream-to-Code chain, with no per-artifact
+exceptions.** These are not guidelines; a violation is a detector finding.
+
+### INV-0 — Every Spec declares `owner-dream:`
+
+Not decided — **discovered**, while validating the detector against pyforge-atlas. It is
+listed first because INV-1 and INV-2 cannot be measured without it.
+
+The first cut of `dream_chain_check.py` reported **21** Dreams without a Spec. The true
+number is **11**. The other 10 had Specs that simply never declared the link, and an
+eleventh (`spec-upstream-discovery`) had frontmatter that would not parse at all — its
+`open_questions` list contained an unquoted `(legacy default: monthly):`, and the
+detector's `except: return {}` turned that silently into "no Spec."
+
+The lesson is the session's recurring one: **a detector's own bugs propagate outward as
+confident, wrong numbers.** Validate a new detector against a chain you already know well
+before trusting its backlog.
+
+*Measured at adoption: 10 Specs missing the link; 1 unparseable (fixed 2026-07-28).*
+
+### INV-1 — Every Dream has a Spec
+
+All Dreams in `docs/dreams/*.md` get a Spec, **including `archived` and `pitched` ones**.
+No status is exempt.
+
+An archived Dream's Spec is not busywork: it records the contract that was abandoned and
+why, so a future reader learns from the retirement instead of rediscovering the idea. A
+pitched Dream's Spec is what makes the pitch reviewable.
+
+*Measured at adoption: **11** of 31 Dreams have no Spec. Only one is `realized` —
+`agent-tool-surface` (marshal), i.e. shipped work with no governing contract — and two are
+`specified` (`pyforge-herald`, `team-memory`); the remaining 8 are dreamt/pitched/archived.
+An earlier draft of this section claimed 21, and named `design-code-bridge` as a second
+realized-without-a-Spec case. Both were wrong, from the INV-0 defect above.*
+
+### INV-2 — Owning is becoming, at the planning tier
+
+> **The station owns the chain.** A Dream may start anywhere, but it is assigned to a
+> station at birth, and its whole Dream→Code chain — Spec, PRD, architecture, epics,
+> stories — then lives in that station's project.
+> — Charter § 5, as amended 2026-07-28
+
+| Dream `owner:` | Chain lives in |
+|---|---|
+| a Smith (`marshal`, `mason`, `atlas`, …) | `projects/pyforge-<owner>/planning-artifacts/` |
+| `guild` — the two constitutive Dreams only | `projects/pyforge-genesis/planning-artifacts/` |
+
+**It does not rename the package.** This is the distinction the superseded Charter clause
+missed. What ships is declared by a Spec's `surface:`, which does not move when the planning
+tree does: `spec-deckcraft` filed under `pyforge-herald/` still builds `apps/deckcraft/**`,
+not `pyforge-herald`. Three of the four projects the old clause worried about
+(`unity-data-stack`, `wasm-analytics-stack`, `presenton-pixi-image`) declare no `pyforge-*`
+surface at all. *Planning home* and *package identity* are independent axes; the old clause
+forbade the first to protect the second, and only the second needed protecting.
+
+**`pyforge-genesis` is the constitutive project** — the one not named for a Smith, because
+the two Dreams it holds *precede* the Smiths: `pyforge-charter` and `pyforge-genesis`
+itself. It records the origin Dream, the Charter, the Lexicon, and the Guild's membership.
+`owner: guild` is terminal for exactly these two; a third is an unassigned Dream hiding
+behind a collective noun.
+
+**Genesis's installer is not constitutive.** `genesis init` / `genesis adopt` — standing up
+a repo with the pixi environment, bmad-method, bmad-loop, multi-project wiring, skill-forge
+and the BMM/BMB/TEA modules — is buildable work owned by the **Marshal**, whose Charter
+toolkit already lists every one of those components and whose cadence already opens with
+`marshal init`. Constitutive records and the machine that installs them are different nouns.
+
+**The placeholder is retired.** `local-recipes` — what this monorepo started as — is intake
+only: somewhere a Dream can land before it has a station. Applying INV-2 moves all 8 of its
+Specs out, leaving zero, and it is then removed. A Spec still sitting there is an
+unassigned-ownership finding, not a settled location.
+
+**Target: 9 projects — 8 Smiths + `pyforge-genesis`.**
+
+*Corrections on the record (2026-07-28).* Three earlier drafts of this section were wrong and
+are superseded: (1) a split between "project scope" and "owner scope", which let a station
+show clean while owning open findings; (2) `guild` as non-terminal intake plus a
+"constitutive exemption" parking the Charter in the placeholder — two inventions that kept
+the placeholder alive to hold one file; (3) a new `pyforge-guild` project, when the
+constitutive home already existed and is named Genesis. Each was an exception invented to
+make an inconvenient case come out tidy; the rule was sufficient every time.
+
+*Measured at adoption: 10 chains to move, 5 projects dissolved.*
+
+### INV-3 — One build tree, sharded
+
+Every project's `planning-artifacts/` uses the 6.10 sharded shape — what `bmad-prd` and
+`bmad-architecture` actually emit:
+
+```
+planning-artifacts/
+├── specs/spec-<slug>/          SPEC.md + peer companions (+ .memlog.md)
+├── prds/prd-<slug>-<date>/     prd.md, .memlog.md, addendum.md, review-*.md
+├── architecture/architecture-<slug>-<date>/
+│                               ARCHITECTURE-SPINE.md, .memlog.md, reviews/
+├── epics.md
+├── briefs/  research/  retros/
+└── README.md
+```
+
+Flat `prd.md` / `architecture.md` is the output of `bmad-create-prd` /
+`bmad-create-architecture` — deprecated wrappers slated for removal in v7 — and is
+non-conformant.
+
+*Measured at adoption: 9 of 14 projects sharded; 5 flat (local-recipes, pyforge-marshal,
+pyforge-warden, pyforge-genesis, deckcraft); 2 with no `epics.md` at all
+(unity-data-stack, wasm-analytics-stack).*
+
+### Why no size-based exemption
+
+The tempting rule is "small artifacts skip the PRD/epics tier." It was considered and
+**rejected**: it makes conformance a judgement call, judgement calls drift, and the drift
+is invisible. A uniform model is mechanically checkable; a tasteful one is not.
+
+Where a tier genuinely has nothing to say, it says so in one line. That is cheaper than
+arguing about thresholds forever, and it keeps the detector honest.
+
+---
+
+## Planning-artifacts detail
 
 This document is the conformance target. When it and pyforge-atlas disagree,
 **pyforge-atlas is right and this document is stale** — the exemplar is a working tree,
@@ -76,24 +202,72 @@ These are the ones most likely to be violated with good intentions.
 
 ## Conformance status
 
+> **Conformance is measured by OWNER, and that is the only scope.** A station is answerable
+> for every Dream carrying its `owner:`, wherever those artifacts happen to sit on disk.
+> Directory layout is a filing decision; it is not an accountability boundary.
+>
+> An earlier draft of this document split "project scope" from "owner scope" and reported
+> `pyforge-atlas` as **0 findings**. That was rejected 2026-07-28: it is a true statement
+> that produces a false impression, and it opens a loophole — a station can park its debt in
+> satellite projects and still show a clean table. It is the same shape as `status: shipped`
+> meaning "32 stories merged" while three attended events sat undischarged. **The station's
+> number is the sum of its Dreams.**
+>
+> So: **atlas carries 5 findings** — `microsoft-org-sweep` (archived, no Spec), and
+> `unity-data-stack` / `wasm-analytics-stack` (no `owner-dream:` link, no `epics.md`).
+> Atlas is the exemplar **for the build tree** — the shape of `pyforge-atlas/planning-artifacts/`
+> is what every project migrates toward. It is *not* a clean station, and the table below is
+> about the tree, not a conformance score.
+>
+> Nor was it clean when the invariants arrived: `spec-upstream-discovery/SPEC.md` had
+> frontmatter that would not parse (fixed 2026-07-28). An exemplar that survives its own new
+> detector unchanged usually means the detector is too weak.
+
 | Project | 6.10 shape | Spec kernel | Companions | Story specs | Delivery records | DW ledger | README |
 |---|---|---|---|---|---|---|---|
 | **pyforge-atlas** | ✅ | ✅ | ✅ 4 | ✅ 32 | ✅ 32/32 | ✅ 52 | ✅ |
 | pyforge-warden | ❌ flat | ✅ | ✅ 3 | ✅ 31 | ❌ | ❌ | ❌ |
 | pyforge-doctor / mason / herald / scribe / steward | ✅ | ✅ | ❌ | partial | ❌ | ❌ | mostly ✅ |
-| pyforge-marshal / genesis / deckcraft | ❌ flat | ✅ | ❌ | partial | ❌ | ❌ | partial |
+| pyforge-marshal / genesis | ❌ flat | ✅ | ❌ | partial | ❌ | ❌ | partial |
 
-Warden is the closest and the cheapest to finish: reshard `prd.md` → `prds/prd-pyforge-warden-<date>/`,
+*(`deckcraft`, `presenton-pixi-image`, `unity-data-stack`, `wasm-analytics-stack` and
+`local-recipes` are omitted — all five dissolve under INV-2; their chains move to the owning
+Smith.)*
+
+Warden is the cheapest to finish: reshard `prd.md` → `prds/prd-pyforge-warden-<date>/`,
 regenerate `architecture.md` as an `ARCHITECTURE-SPINE.md` run folder, and back-fill delivery
 records from PR #110. Its companion pattern and story-spec fidelity already exceed the bar.
 
+Marshal is the largest debt — 11 findings, a flat tree, four Specs to author (one for
+`agent-tool-surface`, which is `realized` with **no contract at all**), and the Genesis
+installer to absorb. It also owns the console and the loop that every other station depends
+on, so its conformance is load-bearing rather than cosmetic.
+
 ## Verifying conformance
 
-No detector exists yet — `scripts/bmad_drift_check.py` covers the `local-recipes` project only.
-Adding a `--projects` mode that checks items 1–10 across all fourteen is the natural next step,
-and is the difference between a standard that holds and a standard that decays.
+**`scripts/dream_chain_check.py` is the detector.** It enforces INV-0…INV-3 across every
+Dream and project, rolls findings up **by owner** (the accountability unit), and exits
+non-zero so it gates CI. Its findings **are** the migration backlog — derived, never
+hand-listed in this document, because a hand-listed backlog is stale the moment it is
+written.
 
-Until then, the mechanical checks the exemplar was verified with:
+```bash
+pixi run -e local-recipes python scripts/dream_chain_check.py            # report + scoreboard
+pixi run -e local-recipes python scripts/dream_chain_check.py --json     # machine-readable
+pixi run -e local-recipes python scripts/dream_chain_check.py --inv INV-2
+```
+
+`scripts/bmad_drift_check.py` remains the `local-recipes`-scoped detector and owns the
+`dream-unowned` check (`GUILD_DREAMS` = the two constitutive Dreams).
+
+**Validate a new detector against a chain you already know.** The first cut of
+`dream_chain_check.py` reported 21 Dreams without a Spec; the true number was 11. Ten Specs
+existed but declared no link, and one had frontmatter that would not parse — which
+`except: return {}` turned silently into "missing." A detector's own bugs propagate outward
+as confident, wrong numbers, and this document repeated them until the exemplar was used as
+the test case.
+
+The mechanical spot-checks used alongside it:
 
 ```bash
 # companions all exist and are all cross-referenced from the kernel

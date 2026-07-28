@@ -1,5 +1,6 @@
 ---
 id: SPEC-unity-data-stack
+owner-dream: docs/dreams/unity-data-stack.md
 surface:
   # NOTE (2026-07-25): globs that would claim THIS repo's shared root files
   # (pixi.toml/pixi.lock/src/**/tests/**/helm/**) were removed — this project's

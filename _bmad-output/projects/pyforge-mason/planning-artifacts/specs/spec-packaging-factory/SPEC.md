@@ -9,8 +9,8 @@ surface:
   - .claude/tools/conda_forge_server.py
 surface-drift: sentinel:.claude/skills/conda-forge-expert/CHANGELOG.md
 companions:
-  - ../../../../../.claude/skills/conda-forge-expert/SKILL.md        # adopted: the living operating contract (v8.79.0)
-  - ../../../../../.claude/skills/conda-forge-expert/CHANGELOG.md    # adopted: the release record Rule 2 maintains
+  - ../../../../../../.claude/skills/conda-forge-expert/SKILL.md        # adopted: the living operating contract (v8.79.0)
+  - ../../../../../../.claude/skills/conda-forge-expert/CHANGELOG.md    # adopted: the release record Rule 2 maintains
 open_questions: []
 ---
 

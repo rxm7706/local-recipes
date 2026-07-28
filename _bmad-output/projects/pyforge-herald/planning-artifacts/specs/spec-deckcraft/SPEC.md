@@ -1,5 +1,6 @@
 ---
 id: SPEC-deckcraft
+owner-dream: docs/dreams/deckcraft.md
 surface:
   - apps/deckcraft/**             # the package this spec builds (not yet created)
   - recipes/deckcraft/**          # conda-forge recipe (CAP-9)
@@ -7,10 +8,10 @@ surface:
 companions: []
 sources:
   - ../../../../../../docs/dreams/deckcraft.md
-  - ../../product-brief-deckcraft.md
-  - ../../prd.md
-  - ../../architecture.md
-  - ../../epics.md
+  - ../../briefs/product-brief-deckcraft.md
+  - ../../prds/prd-deckcraft-2026-05-10/prd.md
+  - ../../architecture/architecture-deckcraft-2026-05-10/architecture.md
+  - ../../epics-deckcraft.md
   - ../../research/plan-validation-notes-2026-07-25.md
 ---
 

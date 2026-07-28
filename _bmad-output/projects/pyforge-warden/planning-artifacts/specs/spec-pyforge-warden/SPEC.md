@@ -12,8 +12,8 @@ companions:
 sources:
   - ../../../../../../docs/dreams/pyforge-warden.md
   - ../../../../../../docs/specs/pyforge-warden.md   # LEGACY Tier-1 intake spec (status: in-progress, FR1–FR40, D1–D12, release map, vision catalog) — superseded by this Tier-2 Spec; absorbed, not adopted
-  - ../../prd.md
-  - ../../architecture.md
+  - ../../prds/prd-pyforge-warden-2026-07-14/prd.md
+  - ../../architecture/architecture-pyforge-warden-2026-07-14/architecture.md
   - ../../epics.md
 ---
 

@@ -10,7 +10,7 @@ surface-drift-exclude:
 companions:
   - console-contract.md
 sources:
-  - ../../../../../docs/dreams/factory-console.md
+  - ../../../../../../docs/dreams/factory-console.md
 open_questions: []
 ---
 
