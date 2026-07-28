@@ -2,126 +2,132 @@
 schema_version: 1
 
 context:
-  version: "0.6.1"
+  version: "0.6.5"
 
 package:
   name: office2pdf
   version: ${{ version }}
 
 source:
-  - url: https://github.com/developer0hye/office2pdf/archive/refs/tags/v${{ version }}.tar.gz
-    sha256: 57ec6d795d90b3901e08f8cf20f0a7d6ea75679103ed080b035e8593557367b0
-    target_directory: _src/office2pdf
-    patches:
-      - patches/0001-vendor-git-fork-deps.patch
-  # Vendored git-fork deps (see build.sh + CFE comments). Pinned by commit.
-  - url: https://github.com/developer0hye/umya-spreadsheet/archive/19d82bc244fcc1ef4b741a1b5c1e083d9add5480.tar.gz
-    sha256: e97e6b90e3ae9f839298fddc5abe9dcd4f23d5f5395c71c010db744429ebb51c
-    target_directory: _src/umya
-  - url: https://github.com/developer0hye/docx-rs/archive/c57785df81bd54e2bba023df2c28b852cb8dc50a.tar.gz
-    sha256: fd2c85ee83beb20f7e80f49e0ea9e074178ce20b0d051c5a0f2bd7bbc9d5aa45
-    target_directory: _src/docxrs
+  # office2pdf-cli is the published binary crate that installs the `office2pdf`
+  # command. Build from the crates.io release rather than the GitHub workspace:
+  # the workspace Cargo.toml pins git forks via [patch.crates-io], which cannot
+  # be fetched in an offline build, while the published crate resolves every
+  # dependency from the registry and ships a Cargo.lock for a reproducible build.
+  - url: https://static.crates.io/crates/office2pdf-cli/office2pdf-cli-${{ version }}.crate
+    sha256: b8f7f26a1e489cb084d4594e2823a7dfd5ea5775159caa78fbad17380d8f893b
+  # The published crate carries only the SPDX license string, not the license
+  # text, so fetch LICENSE from the matching git tag.
+  - url: https://raw.githubusercontent.com/developer0hye/office2pdf/v${{ version }}/LICENSE
+    sha256: a69f60df4102c74db295b45bdeca8bb300ecaa954a319de94cbe4e8e337e98f9
 
 build:
   number: 0
+  script:
+    env:
+      CARGO_PROFILE_RELEASE_STRIP: symbols
+      CARGO_PROFILE_RELEASE_LTO: fat
+    content:
+      # rattler-build does not auto-extract a .crate, so unpack it before building.
+      - if: unix
+        then: |
+          tar -xzf office2pdf-cli-${{ version }}.crate
+          cd office2pdf-cli-${{ version }}
+          cargo-bundle-licenses --format yaml --output "${SRC_DIR}/THIRDPARTY.yml"
+          cargo auditable install --locked --no-track --bins --root "${PREFIX}" --path .
+        else: |
+          tar -xzf office2pdf-cli-${{ version }}.crate
+          cd office2pdf-cli-${{ version }}
+          cargo-bundle-licenses --format yaml --output "%SRC_DIR%\THIRDPARTY.yml"
+          cargo auditable install --locked --no-track --bins --root "%LIBRARY_PREFIX%" --path .
 
 requirements:
   build:
+    - ${{ compiler('rust') }}
     - ${{ compiler('c') }}
     - ${{ stdlib('c') }}
-    - ${{ compiler('rust') }}
     - cargo-bundle-licenses
     - cargo-auditable
 
 tests:
   - script:
-      - office2pdf --help
       - office2pdf --version
+      - office2pdf --help
+  - package_contents:
+      bin:
+        - office2pdf
+      strict: true
 
 about:
   homepage: https://github.com/developer0hye/office2pdf
   repository: https://github.com/developer0hye/office2pdf
+  summary: Convert DOCX, XLSX, and PPTX files to PDF using pure Rust
+  description: |
+    office2pdf converts Microsoft Office documents (DOCX, XLSX, PPTX) to PDF.
+    It is written in pure Rust and renders documents with Typst, so it needs no
+    external office suite or runtime. Fonts embedded in the source documents are
+    extracted automatically, and PDF/A-2b archival output is available.
   license: Apache-2.0
   license_file:
     - LICENSE
     - THIRDPARTY.yml
-  summary: Convert DOCX, XLSX, and PPTX files to PDF using pure Rust
-  description: |
-    office2pdf is a pure-Rust library and CLI that converts DOCX, XLSX, and
-    PPTX files to PDF, powered by Typst. No LibreOffice, Chromium, or Docker
-    required — just a single binary.
 
 extra:
   recipe-maintainers:
+    - killua156
+    - mgorny
     - rxm7706
 
 #### CFE metadata AND comments
 # CFE metadata
   cfe-conda-name: office2pdf
-  cfe-upstream-registry: github
-  cfe-upstream-name: developer0hye/office2pdf
+  cfe-upstream-registry: cargo
+  cfe-upstream-name: office2pdf-cli
   cfe-purls:
     - pkg:conda/office2pdf@${{ version }}?channel=conda-forge
-    - pkg:cargo/office2pdf@${{ version }}
+    - pkg:cargo/office2pdf-cli@${{ version }}
     - pkg:github/developer0hye/office2pdf@v${{ version }}
   cfe-upstream-repo: https://github.com/developer0hye/office2pdf
   cfe-upstream-homepage: https://github.com/developer0hye/office2pdf
   cfe-import-names: []
-  cfe-source-kind: github-tag
+  cfe-source-kind: "crates-io-crate:published-crate-ships-cargo-lock-avoids-git-fork-patch"
   cfe-noarch: compiled
   cfe-pip-check: "false:not-python"
-  cfe-on-conda-forge-status: blocked-pending-prerequisites
-  cfe-on-conda-forge-feedstock: none
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/office2pdf-feedstock
   cfe-forge-recipe-updates-needed: none
-  cfe-forge-blocker-list:
-    - "office2pdf depends on two un-released git forks via [patch.crates-io]: umya-spreadsheet (developer0hye fork, branch fix/panic-safety-v2) and docx-rs (developer0hye fork, branch fix/parse-tolerance). This recipe vendors them as pinned source: tarballs + repoints the patch to in-tree paths (build.sh), which builds and installs offline-safe, BUT conda-forge reviewers disfavor vendored git-fork deps. The clean fix is upstream (see CFE comments below)."
-    - "Upstream ships no Cargo.lock, so the build cannot use cargo --locked (not byte-reproducible)."
-  cfe-last-checked: 2026-07-12T02:10:52Z
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-07-28T00:16:58Z
   cfe-generated-by-version: manual
-  cfe-generated-at-datetime: 2026-07-12T02:10:52Z
+  cfe-generated-at-datetime: 2026-07-28T00:16:58Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-07-12T02:15:22Z
+  cfe-local-build-datetime: 2026-07-28T00:31:31Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
-# ==========================================================================
-# UPSTREAM FIXES TO FILE (option C) — these remove the vendoring below and
-# make office2pdf cleanly conda-forge-submittable. File on
-# github.com/developer0hye/office2pdf:
-#
-#   1. Un-fork the two patched dependencies so released crates.io versions
-#      can be used and the [patch.crates-io] block can be DELETED:
-#        - umya-spreadsheet: upstream the `fix/panic-safety-v2` changes
-#          (currently developer0hye/umya-spreadsheet@19d82bc) and depend on a
-#          released 2.x that includes them. crates.io umya-spreadsheet max is
-#          3.0.0; office2pdf pins ^2.
-#        - docx-rs: upstream the `fix/parse-tolerance` changes (currently
-#          developer0hye/docx-rs@c57785df, crate docx-core = docx-rs 0.4.19)
-#          to github.com/bokuweb/docx-rs and depend on a released 0.4.x.
-#          crates.io docx-rs max is 0.4.20; office2pdf pins ^0.4.
-#      Once both are on crates.io, delete [patch.crates-io] from the root
-#      Cargo.toml. Then this recipe drops the 2nd/3rd source: entries and the
-#      patch-repoint step in build.sh entirely.
-#
-#   2. Commit a Cargo.lock to the office2pdf repo (it has none). Then the
-#      recipe can build with `cargo auditable install --locked` for
-#      reproducible builds (currently --locked is omitted).
-# ==========================================================================
+# Header:
+#    # Mirrored from conda-forge/office2pdf-feedstock main @ a38a6f9b
+#    # (merge of PR #6, 2026-07-28T00:11:26Z). recipe/ upstream contains ONLY
+#    # recipe.yaml — no build.sh / build.bat / patches. The feedstock's root
+#    # conda-forge.yml is mirrored alongside this file.
 # source:
-#   # 2nd/3rd source: entries are the pinned git-fork deps. GitHub commit-archive
-#   # sha256 can drift if GitHub re-gzips (CFE G61) — recompute if the source
-#   # fetch fails its checksum.
+#    # BOTH former blockers are RESOLVED as of the crates.io source strategy:
+#    #   1. The vendored git-fork deps (umya-spreadsheet @19d82bc, docx-rs
+#    #      @c57785df, pinned via [patch.crates-io] in the GitHub workspace) are
+#    #      gone — the published office2pdf-cli crate resolves every dependency
+#    #      from the registry, so no vendoring and no downstream patch is needed.
+#    #   2. Upstream's missing Cargo.lock no longer blocks reproducibility — the
+#    #      published crate ships one, so the build uses `cargo auditable install
+#    #      --locked`.
+#    # The prior local strategy (GitHub tag archive + 2 fork tarballs +
+#    # patches/0001-vendor-git-fork-deps.patch) is therefore obsolete and was
+#    # deleted with this sync; the upstream-ask CFE comments it carried are moot.
+#    # cfe-source-kind uses a non-enum value: the documented taxonomy
+#    # (pypi-sdist | pypi-wheel | github-tag | github-commit |
+#    # github-release-binary) has no crates.io member. Recorded accurately
+#    # rather than forced into a wrong bucket.
 # build:
-#   # The two forks extract as sibling sources at _src/umya and _src/docxrs;
-#   # patches/0001-vendor-git-fork-deps.patch repoints office2pdf's
-#   # [patch.crates-io] to the relative paths ../umya and ../docxrs/docx-core
-#   # (rattler-build strips each archive's top dir under target_directory, so the
-#   # layout is deterministic; the forks are outside the office2pdf workspace so
-#   # no [workspace] hack is needed). build.sh (unix) / build.bat (win) then just
-#   # `cargo auditable install` the office2pdf-cli binary — no python. --locked
-#   # omitted (no upstream Cargo.lock; upstream ask #2). VERIFICATION: linux-64
-#   # built + tested GREEN locally. macOS should work via build.sh but is
-#   # unverified (no host); build.bat is best-effort/unverified (no Windows host)
-#   # — both need conda-forge CI before submission.
+#    # `tar -xzf` before building is load-bearing: rattler-build does not
+#    # auto-extract a .crate (it is a gzipped tar with a non-archive extension).
 ####
