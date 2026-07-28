@@ -1,6 +1,0 @@
-output_folder = "_bmad-output/projects/unity-data-stack"
-
-[project]
-slug = "unity-data-stack"
-description = "Unity Data Stack — enterprise innersource python-first monorepo platform (Constitution + pixi root + PEP 751 toolchain from gist intake)"
-status = "active"
