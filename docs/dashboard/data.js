@@ -2369,8 +2369,8 @@ window.DASHBOARD_DATA = {
     "atlas": {
       "label": "Atlas",
       "accentVar": "--atlas",
-      "branch": "migration complete — Waves 0–H shipped",
-      "contract": "Kedro + pixi · DuckDB singularity · nebi-scaffolded · 28 CLIs → Vizro pages · migrates cf_atlas (phases B→N) to a typed, incremental data pipeline",
+      "branch": "Waves 0–H shipped · Wave I post-audit truth-up in progress",
+      "contract": "Kedro + pixi · DuckDB singularity · nebi-scaffolded · 8 Vizro pages shipped (28-CLI inventory deferred, DW-D2-1) · migrates cf_atlas (phases B→N) to a typed, incremental data pipeline",
       "seglabels": [
         "W0",
         "WA–WB",
@@ -2591,6 +2591,42 @@ window.DASHBOARD_DATA = {
               "Orchestrate crews via Dagster"
             ]
           ]
+        },
+        {
+          "badge": "10",
+          "title": "Wave I — Post-audit truth-up (Round-3 findings, PR #131 branch abandoned)",
+          "stories": [
+            [
+              "I0",
+              "done",
+              "Atlas dependency completeness — unblock kedro-test (AUD-ATLAS-010/013)"
+            ],
+            [
+              "I1",
+              "done",
+              "Kernel + companion truth-up: retract the false run-admission claim (AUD-ATLAS-046/041/047/049)"
+            ],
+            [
+              "I2",
+              "done",
+              "Uniform story-spec frontmatter + README reversal (AUD-ATLAS-045/048)"
+            ],
+            [
+              "I3",
+              "pending",
+              "pandas 3.0 None-identity contracts — FIRST loop story, kedro-test is red until it lands (AUD-ATLAS-011)"
+            ],
+            [
+              "I4",
+              "pending",
+              "AD-17 advisory timestamps: MCP read_dataset envelope + per-page build stamps (AUD-ATLAS-043/044)"
+            ],
+            [
+              "I5",
+              "pending",
+              "Run admission / single-writer — DW-AD23-1, re-promotes AD-23 (AUD-ATLAS-046 impl half)"
+            ]
+          ]
         }
       ],
       "roadmap": {
@@ -2695,14 +2731,14 @@ window.DASHBOARD_DATA = {
         "total": 1502
       },
       "lineState": {
-        "state": "complete",
-        "at": ""
+        "state": "paused",
+        "at": "I3"
       },
       "owner": "atlas",
       "practice": false
     }
   },
-  "snapshot": "<span>2026-07-26 15:29 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-07-28 09:48 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -3141,8 +3177,8 @@ window.DASHBOARD_DATA = {
       "project": "pyforge-atlas",
       "title": "Atlas — the intelligence layer an agent workforce can extend",
       "caps": 17,
-      "companions": 5,
-      "updated": "2026-07-25",
+      "companions": 4,
+      "updated": "2026-07-28",
       "dream": "pyforge-atlas",
       "path": "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas"
     },
@@ -3861,7 +3897,7 @@ window.DASHBOARD_DATA = {
         "na": [],
         "furthest": "code",
         "updated": "2026-07-26",
-        "age": 0,
+        "age": 2,
         "stale": false,
         "version": "0.1.0",
         "progress": "2/17",
@@ -3890,7 +3926,7 @@ window.DASHBOARD_DATA = {
         "na": [],
         "furthest": "code",
         "updated": "2026-07-26",
-        "age": 0,
+        "age": 2,
         "stale": false,
         "version": "0.1.0",
         "progress": "1/12",
@@ -3919,7 +3955,7 @@ window.DASHBOARD_DATA = {
         "na": [],
         "furthest": "code",
         "updated": "2026-07-26",
-        "age": 0,
+        "age": 2,
         "stale": false,
         "version": "0.1.0",
         "progress": "1/9",
@@ -3948,7 +3984,7 @@ window.DASHBOARD_DATA = {
         "na": [],
         "furthest": "code",
         "updated": "2026-07-25",
-        "age": 1,
+        "age": 3,
         "stale": false,
         "version": "0.1.0",
         "progress": "1/18",
@@ -3977,7 +4013,7 @@ window.DASHBOARD_DATA = {
         "na": [],
         "furthest": "code",
         "updated": "2026-07-26",
-        "age": 0,
+        "age": 2,
         "stale": false,
         "version": "0.1.0",
         "progress": "1/41",
@@ -4006,7 +4042,7 @@ window.DASHBOARD_DATA = {
         "na": [],
         "furthest": "code",
         "updated": "2026-07-25",
-        "age": 1,
+        "age": 3,
         "stale": false,
         "version": "0.1.0",
         "progress": "1/38",
@@ -4034,11 +4070,11 @@ window.DASHBOARD_DATA = {
         "overtaken": false,
         "na": [],
         "furthest": "code",
-        "updated": "2026-07-25",
-        "age": 1,
+        "updated": "2026-07-28",
+        "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "32/32",
+        "progress": "35/38",
         "complete": 9,
         "of": 9,
         "owner": "atlas"
@@ -4064,7 +4100,7 @@ window.DASHBOARD_DATA = {
         "na": [],
         "furthest": "code",
         "updated": "2026-07-25",
-        "age": 1,
+        "age": 3,
         "stale": false,
         "version": "0.1.0",
         "progress": "31/31",
@@ -4093,7 +4129,7 @@ window.DASHBOARD_DATA = {
         "na": [],
         "furthest": "epics",
         "updated": "2026-07-25",
-        "age": 1,
+        "age": 3,
         "stale": false,
         "version": "",
         "progress": "0/36",
@@ -4122,7 +4158,7 @@ window.DASHBOARD_DATA = {
         "na": [],
         "furthest": "epics",
         "updated": "2026-07-25",
-        "age": 1,
+        "age": 3,
         "stale": false,
         "version": "",
         "progress": "",
@@ -4151,7 +4187,7 @@ window.DASHBOARD_DATA = {
         "na": [],
         "furthest": "epics",
         "updated": "2026-07-25",
-        "age": 1,
+        "age": 3,
         "stale": false,
         "version": "",
         "progress": "",
@@ -4182,7 +4218,7 @@ window.DASHBOARD_DATA = {
         ],
         "furthest": "arch",
         "updated": "2026-07-25",
-        "age": 1,
+        "age": 3,
         "stale": false,
         "version": "",
         "progress": "",
@@ -4213,7 +4249,7 @@ window.DASHBOARD_DATA = {
         ],
         "furthest": "arch",
         "updated": "2026-07-25",
-        "age": 1,
+        "age": 3,
         "stale": false,
         "version": "",
         "progress": "",
@@ -4238,18 +4274,18 @@ window.DASHBOARD_DATA = {
         "name": "spec-surface",
         "task": "spec-surface-check",
         "guards": "every tracked file under a Spec surface",
-        "state": "green",
-        "findings": 0,
-        "verdict": "OK: every tracked file governed or allowlisted; no drift.",
+        "state": "drift",
+        "findings": 5,
+        "verdict": "FINDINGS (5):",
         "runbook": ""
       },
       {
         "name": "llms-full",
         "task": "llms-full-check",
         "guards": "library catalog freshness",
-        "state": "green",
-        "findings": 0,
-        "verdict": "",
+        "state": "drift",
+        "findings": 3,
+        "verdict": "DRIFT: 3 finding(s). Reconcile by regenerating the catalog (prompt in its header), then re-run.",
         "runbook": ""
       }
     ],
@@ -4547,7 +4583,7 @@ window.DASHBOARD_DATA = {
           "archived": 1,
           "practice": 0
         },
-        "line": "complete",
+        "line": "paused I3",
         "load": 3,
         "blocked": 0,
         "dreams": [
