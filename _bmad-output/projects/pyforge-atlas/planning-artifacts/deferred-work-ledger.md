@@ -599,7 +599,16 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
     against C1-C6, ideally fresh-context (the pyforge-atlas retro A1 finding: in-loop
     reviewers inherit the implementation's assumptions; the INDEPENDENT pass is what caught
     B1/B2/B5/B7/G2). Not a blocker for I5.
-  status: open
+  status: review PERFORMED 2026-07-29 — CLOSED with no findings.
+    The owed independent pass ran as adversarial MUTATION testing of `provenance.py`. Three
+    mutants injected, each CAUGHT by tests/mcp + tests/dashboard: (1) `file-mtime` made to
+    report the READ time — i.e. AUD-ATLAS-043 itself, reintroduced — 2 tests failed;
+    (2) the same substitution on the `row-fetched-at` path, 4 failed; (3) C3 violated by
+    reporting the NEWEST `fetched_at` as the oldest, 3 failed. The gate therefore pins the
+    actual property ("a persisted dataset reports its own recorded time, not the read time")
+    and not merely "a stamp is present", which is what the reverted first implementation
+    passed. Caveat on record: the reviewer was not context-free — mutation evidence stands in
+    for a fresh reading.
   promoted: 2026-07-29 from the gitignored Tier-3 `implementation-artifacts/deferred-work.md`,
     where it was recorded as the generic id `DW-1`. Renamed to `DW-I4-1` to match this
     ledger's `DW-<story>-<n>` convention and to stop a bare `DW-1` colliding with the next
