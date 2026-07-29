@@ -765,7 +765,7 @@ def apply_line_state(projects: dict) -> None:
 
 DETECTORS = [
     ("drift-check",  "bmad-drift-check",   "BMAD artifacts vs the live factory",
-     "_bmad-output/projects/local-recipes/SYNC-RUNBOOK.md"),
+     "_bmad-output/projects/pyforge-marshal/SYNC-RUNBOOK.md"),
     ("spec-surface", "spec-surface-check", "every tracked file under a Spec surface", ""),
     ("llms-full",    "llms-full-check",    "library catalog freshness", ""),
 ]
@@ -841,7 +841,7 @@ def scan_health() -> dict:
     # is a staged-recipes fork), so "N commits behind" is noise. The fingerprint is
     # exactly what makes drift-check's `surface-changed` fire.
     base, deltas = {}, []
-    bp = REPO_ROOT / "_bmad-output/projects/local-recipes/.sync-baseline.json"
+    bp = REPO_ROOT / "_bmad-output/projects/pyforge-marshal/.sync-baseline.json"
     if bp.is_file():
         try:
             base = json.loads(bp.read_text(encoding="utf-8"))
@@ -859,12 +859,20 @@ def scan_health() -> dict:
         except Exception:
             pass
     green = sum(1 for r in rows if r["state"] == "green")
-    print(f"[health] {green}/{len(rows)} detectors green · "
-          + (f"{len(deltas)} fingerprint delta(s) vs baseline" if deltas else "fingerprint matches baseline"))
+    # "matches baseline" is only true if a baseline was actually READ. When the file is
+    # missing, `deltas` is empty VACUOUSLY -- reporting a match there is a false green, and
+    # it is exactly what happened when the baseline moved projects (2026-07-28).
+    if not base:
+        fingerprint = f"NO BASELINE at {bp.relative_to(REPO_ROOT)} — nothing compared"
+    elif deltas:
+        fingerprint = f"{len(deltas)} fingerprint delta(s) vs baseline"
+    else:
+        fingerprint = "fingerprint matches baseline"
+    print(f"[health] {green}/{len(rows)} detectors green · " + fingerprint)
     return {"detectors": rows,
             "baseline": {"skill": base.get("skill_version", ""), "head": (base.get("git_head") or "")[:10],
                          "deltas": deltas,
-                         "runbook": "_bmad-output/projects/local-recipes/SYNC-RUNBOOK.md"}}
+                         "runbook": "_bmad-output/projects/pyforge-marshal/SYNC-RUNBOOK.md"}}
 
 
 # ---- fleet view (Dream -> Code, per project: stage, recency, version) --------
