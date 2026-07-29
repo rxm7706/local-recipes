@@ -1368,10 +1368,21 @@ def scan_timing(projects: dict) -> None:
             # The in-flight caveat has to live HERE too, not only on `timing.note`:
             # velocity is now derivable on a line whose timing is curated (atlas), so
             # the note that used to carry this never reaches the reader.
-            "sub": "Active agent-compute per story (dev + review; excludes "
-                   "gate-pause wait) — derived from this line's bmad-loop journals. "
-                   "A story still in flight contributes only its CLOSED sessions, so "
-                   "its bar is a floor, not a total.",
+            #
+            # COVERAGE IS STATED, never implied. A graph showing 2 bars on a line with
+            # 38 stories reads as data loss unless it says why. Only loop-driven stories
+            # have journals: atlas's waves 0-H ran in a web session and were never
+            # measured for active compute, and their wall-clock numbers (PR timestamps,
+            # gate waits included) are a DIFFERENT metric that must not share this axis.
+            "sub": (f"Active agent-compute per story (dev + review; excludes "
+                    f"gate-pause wait) — derived from this line's bmad-loop journals. "
+                    f"{len(bars)} of {len(st)} stories measured"
+                    + ("" if len(bars) == len(st) else
+                       "; the rest predate loop instrumentation and carry wall-clock "
+                       "only (a different metric — see the timing strip), so they are "
+                       "deliberately absent rather than plotted on this axis")
+                    + ". A story still in flight contributes only its CLOSED sessions, "
+                      "so its bar is a floor, not a total."),
             "bars": bars,
             "foot": [
                 [f"~{median} min", "median / story", "var(--done)"],
