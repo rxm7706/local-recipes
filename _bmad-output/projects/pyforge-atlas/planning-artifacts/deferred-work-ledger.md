@@ -728,9 +728,41 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
     loop policy's own A4 rule, a deferral appearing a second time in a different story stops
     being story-level and becomes contract-level. Either raise `max_followup_reviews` or
     record that finalizing on a spent cap is accepted, deliberately.
-  status: open
+  status: review PERFORMED 2026-07-29 — part (a) done, part (b) still open.
+    The owed independent pass ran as adversarial MUTATION testing rather than a re-read:
+    cross-process exclusion removed, stale-PID reclamation disabled, and the true
+    acquisition order reversed were each injected into `admission.py` and each was CAUGHT
+    by the suite (the two-process gate is NOT vacuous). One finding: `DW-AD23-3`. Caveat
+    on record — the reviewer was not context-free, which is the whole point of an
+    independent pass, so mutation evidence was used in place of a fresh reading.
+    Part (b), the max_followup_reviews POLICY question, is untouched and belongs to the retro.
   promoted: 2026-07-29 from the gitignored Tier-3 `deferred-work.md` (recorded there as the
     generic `DW-2`); renamed to match this ledger's `DW-<story>-<n>` convention.
+
+## DW-AD23-3 — the lock store's DEFAULT location is the hazardous one (MEDIUM) — DEFERRED
+
+- source_spec: `spec-10-6-make-run-admission-real-or-stop-claiming-it.md` (Story I5, D1/D4)
+  found_by: independent follow-up review of `admission.py`, 2026-07-29 (the pass `DW-I5-1` owed)
+  summary: `admission.py` documents this itself, honestly, and then ships the unsafe default.
+    The lock root resolves to `<data_root>/.locks`, i.e. INSIDE the tree the locks guard.
+    `rm -rf data/` is a routine "force a rebuild" move, and deleting a lock file out from
+    under a live holder does NOT free that holder's flock — it unlinks the inode the flock
+    belongs to, so the next acquirer creates a FRESH file at the same path, flocks that, and
+    **two writers proceed**. That is a direct violation of the AD-23 invariant this very story
+    re-promoted, reachable by an ordinary operator action, with no guard and no test.
+    The escape hatch exists (`PYFORGE_ATLAS_LOCK_ROOT` pointed outside the data tree) but the
+    DEFAULT is the configuration that can break, and the only warning lives in a module
+    docstring. The other three declared boundaries are correctly classified as AVAILABILITY
+    limits (locks held to process exit → later runs are REJECTED, never admitted alongside);
+    this one is the sole CORRECTNESS exposure among them.
+  resolution: move the default lock root OUTSIDE `data_root` (a project-anchored sibling, not
+    a child of the tree being cleared) so the safe configuration is the one you get by doing
+    nothing; keep `PYFORGE_ATLAS_LOCK_ROOT` as the override. Add a regression test that
+    unlinks a held lock file mid-hold and asserts a second acquirer is still refused. If the
+    default is kept deliberately, the warning belongs somewhere an operator will actually read
+    it (the pixi task, or a refusal when the lock root is a descendant of data_root), not only
+    in a docstring.
+  status: open
 
 ## 24. Sprint status
 
