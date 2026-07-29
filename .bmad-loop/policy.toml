@@ -40,6 +40,27 @@ retrospective = "notify"     # never | notify | auto (auto unsupported in v1)
 
 [limits]
 max_review_cycles = 3
+# 2026-07-29: SET EXPLICITLY (was an unchosen bmad-loop default of 1). The default was
+# silently deciding when stories are done. Counts ONLY rounds granted because a round
+# finalized a story `done` yet STILL set `followup_review_recommended: true`; once spent the
+# next such round force-converges (verify -> refile the recommendation -> commit).
+#
+# Evidence for 2 rather than 1: FIVE stories across THREE projects were damped this way —
+# atlas 10.5 + 10.6, marshal 1.1, warden 6.3 + 5.1 — i.e. the cap, not the reviewer, was
+# deciding. And the flag is not reflexive: upstream #2580 made it severity-scored precisely
+# because pre-#2580 every pass recommended another, so a firing flag is meant to be the
+# EXCEPTION. When the two atlas recommendations were finally honored (2026-07-29) they
+# yielded one real MEDIUM finding, DW-AD23-3 — a correctness exposure on the AD-23 invariant
+# story 10.6 had just re-promoted. The flag was right to fire.
+#
+# Not higher than 2: max_review_cycles = 3 remains the hard outer bound, each round is a
+# multi-hour session (atlas 10.5's reviews ran 3h00m and 2h27m), and a story still flagging
+# after two independent passes is genuinely exceptional and deserves a human, not another
+# grant. Its recommendation then refiles to the ledger — which is now DURABLE, enforced by
+# `pixi run -e local-recipes deferred-work-check` (the refile target,
+# implementation-artifacts/deferred-work.md, is gitignored; 97 KB across four projects was
+# sitting only there until that detector found it).
+max_followup_reviews = 2
 max_dev_attempts = 2
 session_timeout_min = 180  # raised from 90 (2026-07-12): Story 1-1's dev session hit the 90-min cap mid-work — keystone stories need the headroom
 stop_without_result_nudges = 1

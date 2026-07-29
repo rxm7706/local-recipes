@@ -13,6 +13,7 @@ surface:
   - scripts/spec_surface_check.py   # CAP-3 deliverable — SHIPPED (the "does not exist yet" note was stale)
   - scripts/bmad_drift_check.py     # artifact<->factory sync + the `dream-unowned` check the Charter §5 cites
   - scripts/dream_chain_check.py    # INV-0..3: owner-dream links, Dream->Spec coverage, chain location, sharded tree
+  - scripts/deferred_work_check.py   # nothing important lives only in gitignored Tier-3 (the loop's own damping valve refiles THERE)
 assumptions:
   - Backfilled specs can carry machine-checkable success signals grounded in
     existing behavior (the surfaces already work; the spec states the contract

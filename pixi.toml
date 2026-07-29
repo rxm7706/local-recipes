@@ -360,6 +360,10 @@ cmd = "node docs/dashboard/check_render.js"
 description = "Detector: report drift between docs/reference/library-llms-full.md (the library catalog) and pixi.toml — undocumented deps, ghost entries, version-floor drift. Exits non-zero on drift. Reconciler = the regeneration prompt in the catalog header. Pass -- --json for machine output."
 cmd = "python scripts/llms_full_check.py"
 
+[feature.local-recipes.tasks.deferred-work-check]
+description = "Detector: no deferred-work entry lives ONLY in gitignored Tier-3. bmad-loop's follow-up-review damping refiles a still-recommended review into implementation-artifacts/deferred-work.md, which is gitignored — so its own safety valve leaks. Fails when a Tier-3 DW-* id has no tracked twin in planning-artifacts/deferred-work-ledger.md, or when a project carries a substantive Tier-3 ledger and no tracked one at all. Reconcile by promoting into the tracked ledger. Contract: spec-regenerable-factory."
+cmd = "python scripts/deferred_work_check.py"
+
 [feature.local-recipes.tasks.spec-surface-check]
 description = "Detector: every tracked file is governed by a spec surface: manifest or explicitly allowlisted (scripts/spec_surface_allowlist.txt), and no governed file drifted without its spec's memlog moving. Exits non-zero on findings. Reconcile: update the spec (bmad-spec re-derive), then -- --write-baseline. Contract: spec-regenerable-factory CAP-3."
 cmd = "python scripts/spec_surface_check.py"
