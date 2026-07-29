@@ -3,7 +3,9 @@
 Every function here does exactly ONE of the two allowed shapes:
 
 1. ``session.run(pipeline_name=<name>)`` — a pipeline trigger, or
-2. ``catalog.load(<dataset>)`` — a dataset read passthrough.
+2. ``_provenance.load_with_provenance(catalog, <dataset>)`` — ONE seam call
+   behind which the ``catalog.load`` itself AND its build-provenance
+   envelope live (Story I4, AD-17).
 
 NO metric/business logic lives here — metric semantics live in nodes
 (legacy CLIs/views until D1, BSL after). Enforced by the AST scan in
@@ -20,6 +22,7 @@ from typing import Any
 
 from pyforge.atlas.mcp import session as _session
 from pyforge.atlas import nl as _nl
+from pyforge.atlas import provenance as _provenance
 
 # The authoritative registry mirror: the four registered pipelines from
 # B1/B2 (`find_pipelines()` discovers them from the pipelines/ package).
@@ -74,36 +77,61 @@ def read_dataset(
     *,
     project_path: Path | str | None = None,
     env: str | None = None,
-) -> Any:
-    """``catalog.load(<name>)`` + a JSON-serializable coercion (AD-7).
+) -> dict[str, Any]:
+    """``catalog.load(<name>)`` + a JSON-serializable coercion, wrapped in a
+    build-provenance envelope (AD-7, AD-17).
 
-    The load is the passthrough; the coercion is TRANSPORT plumbing, not
-    metric/business logic — most catalog datasets are Parquet-backed and load
-    as a pandas/polars DataFrame, which FastMCP cannot serialize (a raw
-    DataFrame return `TypeError`s at the MCP boundary). We coerce DataFrame /
-    Series / ndarray / set to JSON-native shapes by DUCK-TYPING on the class
-    name + public methods — never importing pandas/numpy — so the AD-7 no-
-    business-logic AST gate stays satisfied. Anything already JSON-native is
-    returned as-is.
+    Returns ``{schema_version, dataset, provenance_kind, build_stamp,
+    build_stamp_newest, reason, value}``: ``value`` is the existing coerced
+    return (byte-for-byte unchanged); the rest is the dataset's OWN recorded
+    build provenance (never a read-time clock stand-in) — a ``fetched_at``
+    column's oldest/newest recorded value, a materialized file's mtime, or
+    ``now`` for a live-fetch API source; ``unavailable`` + a reason when no
+    genuine provenance exists (a required, valid, non-error response).
 
-    Raises whatever ``catalog.load`` raises on an unknown dataset name.
+    The load + provenance dispatch both happen inside
+    ``_provenance.load_with_provenance`` (one seam call) so the session's
+    catalog is only ever built ONCE per read (``_session.loaded_catalog(s)``
+    is not called a second time here).
+
+    The coercion is TRANSPORT plumbing, not metric/business logic — most
+    catalog datasets are Parquet-backed and load as a pandas/polars
+    DataFrame, which FastMCP cannot serialize (a raw DataFrame return
+    `TypeError`s at the MCP boundary). We coerce DataFrame / Series / ndarray
+    / set to JSON-native shapes by DUCK-TYPING on the class name + public
+    methods — never importing pandas/numpy — so the AD-7 no-business-logic
+    AST gate stays satisfied. Anything already JSON-native is returned as-is.
+
+    Raises whatever ``catalog.load`` raises on an unknown dataset name (the
+    envelope wraps only the success path).
     """
     with _session.bootstrapped_session(project_path, env=env) as s:
-        result = _session.loaded_catalog(s).load(name)
+        catalog = _session.loaded_catalog(s)
+        result, info = _provenance.load_with_provenance(catalog, name)
     cls_name = result.__class__.__name__
     if cls_name == "DataFrame":
         # pandas: orient=records → list[row-dict]; polars: to_dicts().
         try:
-            return result.to_dict(orient="records")
+            value = result.to_dict(orient="records")
         except TypeError:
-            return result.to_dicts()
-    if cls_name == "Series":
-        return result.to_dict()
-    if cls_name == "ndarray":
-        return result.tolist()
-    if cls_name == "set":
-        return list(result)
-    return result
+            value = result.to_dicts()
+    elif cls_name == "Series":
+        value = result.to_dict()
+    elif cls_name == "ndarray":
+        value = result.tolist()
+    elif cls_name == "set":
+        value = list(result)
+    else:
+        value = result
+    return {
+        "schema_version": _provenance.SCHEMA_VERSION,
+        "dataset": name,
+        "provenance_kind": info.kind,
+        "build_stamp": info.build_stamp,
+        "build_stamp_newest": info.build_stamp_newest,
+        "reason": info.reason,
+        "value": value,
+    }
 
 
 def query_vizro_ai(query: str, *, env: Mapping[str, str] | None = None) -> dict[str, Any]:

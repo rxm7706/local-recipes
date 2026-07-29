@@ -9,8 +9,9 @@ logic in a tool body, so the re-exposure is structural, not a 23-function
 re-port. Verdict vocabulary:
 
 - ``"read_dataset:<catalog-name>"`` — the migrated data the tool read is a
-  declared catalog dataset; the generic ``read_dataset`` passthrough
-  serves it.
+  declared catalog dataset; the generic ``read_dataset`` surface serves it
+  (the load is still a passthrough, wrapped since Story I4 in an AD-17
+  build-provenance envelope under ``value``).
 - ``"pipeline-trigger"`` — served by the NEW B3 capability (the
   ``run_<pipeline>_pipeline`` triggers): refresh the data, then read it.
 - ``"deferred-to-BSL(D1)"`` — metric/composite/free-SELECT semantics that

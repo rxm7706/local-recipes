@@ -306,3 +306,64 @@ def test_no_bsl_shell_pages_state_the_gap_without_data(dashboard):
         assert _dm_get(f"data::{pid}") is None
         card = page.components[0]
         assert "Data gap" in card.text
+
+
+# --------------------------------------------------------------------------- #
+# AD-17 (Story I4) — every page carries ITS OWN data's provenance
+# --------------------------------------------------------------------------- #
+
+
+def test_grounded_page_carries_file_mtime_not_render_time(tmp_path):
+    """The feedstock-health page's Card states THAT FILE's own mtime (via a
+    deliberately old ``os.utime``) — not the dashboard's build_stamp/now
+    render-time constants standing in for the data's provenance (C6)."""
+    import datetime
+    import os
+
+    parquet = tmp_path / dash_data.FEEDSTOCK_HEALTH_PARQUET
+    parquet.parent.mkdir(parents=True, exist_ok=True)
+    pd.DataFrame({"feedstock_name": ["alpha"]}).to_parquet(parquet)
+    old_ts = 1_600_000_000  # 2020-09-13 — deliberately far from STAMP/NOW below
+    os.utime(parquet, (old_ts, old_ts))
+
+    d = app.build_dashboard(build_stamp=STAMP, data_root=tmp_path, now=NOW)
+    page = next(p for p in d.pages if p.id == "feedstock-health")
+    card = next(c for c in page.components if isinstance(c, vm.Card))
+
+    expected_stamp = datetime.datetime.fromtimestamp(old_ts, tz=datetime.UTC).isoformat()
+    assert expected_stamp in card.text
+    assert "AD-17" in card.text
+    # NOT the dashboard's own render-time stand-ins.
+    assert STAMP not in card.text
+    assert str(NOW) not in card.text
+
+
+def test_shell_pages_state_unavailable_provenance_honestly(dashboard):
+    """Under the default, file-absent ``data_root`` every non-grounded,
+    non-factory page (the 3 bsl-shell + 2 no-bsl-shell pages) honestly states
+    its OWN data as "unavailable" + `AD-17` — never a fabricated stamp, never
+    the dashboard's render time standing in for it."""
+    shell_ids = {
+        "staleness-report",
+        "query-atlas",
+        "detail-cf-atlas",
+        "behind-upstream",
+        "whodepends",
+    }
+    no_bsl_ids = {"behind-upstream", "whodepends"}
+    seen = set()
+    for page in dashboard.pages:
+        if page.id not in shell_ids:
+            continue
+        seen.add(page.id)
+        card = next(c for c in page.components if isinstance(c, vm.Card))
+        assert "unavailable" in card.text
+        assert "AD-17" in card.text
+        # The TWO distinct unavailable states stay distinguishable — a
+        # file-absent bsl-shell page must not read like a no-data-function
+        # page (and vice versa).
+        if page.id in no_bsl_ids:
+            assert "no data function registered" in card.text
+        else:
+            assert "backing file not found" in card.text
+    assert seen == shell_ids
