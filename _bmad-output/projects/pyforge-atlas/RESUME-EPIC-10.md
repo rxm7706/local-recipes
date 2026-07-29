@@ -5,6 +5,17 @@ Epic 10 is **5 of 6 done**. Story I5 (10.6) was interrupted during its review pa
 
 ---
 
+> ## ✅ CLOSED 2026-07-29 — Epic 10 is 6/6, all merged, gates green
+>
+> I5 (10.6) resumed after the shutdown and completed. `kedro-test` **901 passed / 0 failed**,
+> `kedro-catalog-check` 47. D1–D6 verified in the code; AD-23 re-promoted **with four stated
+> boundaries**. Merged into `fix/atlas-post-audit-epic-10`; tag `checkpoint/epic-10-complete`.
+>
+> **The resume instructions below are HISTORY.** What remains is closeout only:
+> `DW-I4-1` + `DW-I5-1` (both stories finalized on a spent review budget — see the ledger),
+> the CFE Rule-2 retro, and push + the `maintenance` label. Nothing is pushed.
+
+
 ## Start here
 
 ```bash
