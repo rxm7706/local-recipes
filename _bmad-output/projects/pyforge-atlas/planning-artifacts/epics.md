@@ -1156,17 +1156,78 @@ As an agent reading atlas data,
 I want every advisory response to carry the build stamp of the data behind it,
 So that I can tell fresh data from stale.
 
-**Acceptance Criteria:**
+**AMENDED 2026-07-28 after a CRITICAL escalation — the first draft's approach was
+wrong, and the loop was right to refuse it.** The dev session implemented the
+original ACs faithfully (all 6 tasks, 790/790 green), then its review pass found the
+defect was in *this contract*, reverted rather than ship it, and escalated. The
+original AC said the envelope carries a `build_stamp` computed as wall-clock-**now**
+at call time. That can never distinguish fresh data from stale — every read of a
+month-old dataset reports "now" — which contradicts AD-13 ("republication never
+launders freshness"), SPEC.md's own AD-17 definition (a payload carries **the
+pipeline's build timestamp**, not a read receipt), and the Wave-H `CompileCrew`
+precedent, which forwards *source* staleness into republished output rather than
+fabricating a fresh timestamp.
 
-**Given** the MCP `read_dataset` surface
-**When** a dataset is read
-**Then** the response carries a `build_stamp` envelope
-**And** the dashboard pages carry the same stamp rather than only `factory-status`.
+**The escalation offered two ways out and BOTH ARE REJECTED.** (a) "invent or build a
+new per-dataset freshness signal" — unnecessary, see C1. (b) "rename the field away
+from AD-17 framing to an honest response-generation receipt" — that keeps the useless
+value and deletes the requirement instead of meeting it. **C1–C6 below are binding.**
 
-- **Findings:** AUD-ATLAS-043, AUD-ATLAS-044.
-- **Invariants:** AD-17, AD-13 (republication never launders freshness).
-- **Mode:** LOOP (bmad-loop).
-- **Verify gate:** `kedro-test` + an envelope-presence test.
+**The escalation's blocking premise was FALSE, and this is why (b) is rejected.** It
+concluded "no per-dataset materialization timestamp exists anywhere in the catalog
+today." `IncrementalParquetDataset` already *"stamps + round-trips a per-row
+`fetched_at` epoch timestamp and owns the TTL freshness verdict"* — **15 catalog
+entries** carry it. The signal exists, is already persisted, and needs no inventing.
+
+**C1 — Stamp from the DATA's own provenance, never from the clock.** *Given* a dataset
+read, *when* the envelope is built, *then* its freshness fields derive from that
+dataset's own recorded provenance. Per kind, exhaustively (75 catalog entries today):
+
+| Dataset kind | Count | Provenance the stamp MUST use |
+|---|---|---|
+| `IncrementalParquetDataset` | 15 | its own `fetched_at` column (epoch seconds) |
+| `pandas.ParquetDataset` | 22 | the materialized file's mtime |
+| `api.APIDataset` | 24 | **`now` IS correct here** — the read genuinely is the fetch |
+| everything else | rest | `null` + an explicit `reason`, never a fabricated value |
+
+**C2 — The envelope is self-describing about WHICH of those it got.** *Given* any
+envelope, *when* a consumer inspects it, *then* a `provenance_kind` field names the
+source of the timestamp (e.g. `row-fetched-at` · `file-mtime` · `live-fetch` ·
+`unavailable`). An agent must never have to guess whether a timestamp means "the data
+is from then" or "we called the API just now" — those are opposite meanings and the
+whole finding (AUD-ATLAS-043) is that conflating them is what made the field useless.
+
+**C3 — For row-level provenance, carry the RANGE and judge on the OLDEST.** *Given* an
+incremental dataset whose rows were fetched at different times, *when* the envelope is
+built, *then* it carries both the oldest and newest `fetched_at`, and any staleness
+verdict uses the **oldest** (worst case). A single summary timestamp on a partially
+refreshed dataset is itself a small laundering of freshness.
+
+**C4 — `null` is a valid, REQUIRED answer.** *Given* a dataset with no recoverable
+provenance, *when* the envelope is built, *then* the timestamp is `null` with a stated
+`reason` and the call still succeeds. Fabricating a plausible value is the defect this
+story exists to remove; failing the read would be worse than a truthful "unknown".
+
+**C5 — Version the envelope (folds in the escalation's `bad_spec` finding).** *Given*
+this is a breaking change to the response shape, *when* the envelope ships, *then* it
+carries a `schema_version`. The escalation raised this and it stands regardless of the
+approach chosen.
+
+**C6 — Close the AUD-ATLAS-044 half too.** *Given* the Vizro dashboard, *when* any page
+renders, *then* it carries its data's stamp — not only `factory-status`, which is the
+sole page carrying one today (`dashboard/app.py`). Same rule as C1: the page shows the
+provenance of the data it displays, not the time it was rendered.
+
+- **Findings:** AUD-ATLAS-043, AUD-ATLAS-044 (+ the escalation's `schema_version`
+  `bad_spec` finding, folded into C5).
+- **Invariants:** AD-17, AD-13 (republication never launders freshness) — the invariant
+  the original AC would have violated.
+- **Mode:** LOOP (bmad-loop). Re-driven from this corrected contract; the reverted
+  patch is NOT restored, because it faithfully implemented the wrong approach.
+- **Verify gate:** `kedro-test` + `kedro-catalog-check`, plus per-kind envelope tests
+  proving a **persisted** dataset reports its own recorded time and **not** the read
+  time — a test that only asserts "a stamp is present" does not discharge C1, since
+  the rejected implementation passed exactly that test.
 - **Depends on:** I3 (gate).
 
 ### Story I5 (10.6): Make run admission real, or stop claiming it
