@@ -4,14 +4,14 @@ part_id: conda-forge-expert
 display_name: conda-forge-expert skill
 project_type_id: library
 date: 2026-07-25
-source_pin: 'conda-forge-expert v8.79.1'
+source_pin: 'conda-forge-expert v8.80.0'
 ---
 
 # Architecture: conda-forge-expert (Part 1)
 
 > **Re-verified 2026-07-25** (source_pin → **v8.79.1**; reconciler pass per SYNC-RUNBOOK). **The skill's behavioural contract barely moved** since the 2026-07-06 re-ground — this pass is mostly count correction, not rewriting.
 >
-> **Changed since the last pass:** one new governance binding — the skill's own files are now the declared `surface:` of the brownfield Spec `spec-packaging-factory`, policed by `scripts/spec_surface_check.py` with a **CHANGELOG sentinel** (v8.79.1, § *Spec-surface governance* below); one new meta-test (`tests/meta/test_spec_surface_check.py`, 9 meta tests now); `reference/atlas-phase-engineering.md` § 14 (v8.79.0); gotcha **G106** (v8.78.0) and **G100–G105** (v8.77.0), so the catalog is **G1–G106** contiguous.
+> **Changed since the last pass:** one new governance binding — the skill's own files are now the declared `surface:` of the brownfield Spec `spec-packaging-factory`, policed by `scripts/spec_surface_check.py` with a **CHANGELOG sentinel** (v8.79.1, § *Spec-surface governance* below); one new meta-test (`tests/meta/test_spec_surface_check.py`, 9 meta tests now); `reference/atlas-phase-engineering.md` § 14 (v8.79.0); gotcha **G106** (v8.78.0) and **G100–G105** (v8.77.0), so the catalog is **G1–G107** contiguous.
 >
 > **Corrected in this pass** (numbers carried forward unchecked since 2026-07-06 or earlier, all re-counted live): scripts 54 → **66** (41,410 LOC); wrapper layer 46 → **60 entries** (57 `.py`); test suite 82 files → **100 `.py`** (98 `test_*.py`, 1,186 test functions); pixi tasks ~30 → **106**; lint codes 17 → **23**; `reference/` 17 → **15**; SKILL.md 2,569 → **3,887 lines**; INDEX.md 178 → **180**; install.py ~150 → **238**; Critical Constraints 5 → **10**; the loop's "10 steps" → **12 gated stages**; the `no_task_allowlist` roster; the `tests/fixtures/error_logs/` directory (**does not exist**); and the meta.yaml/recipe.yaml corpus split.
 >
@@ -347,7 +347,7 @@ Three doc layers, each loaded by the agent under different conditions:
 12. Complementary Skills (which BMAD/practice skills compose with this one)
 13. CI Infrastructure Reference (platform assignments, OS versions, compiler pins, bot commands)
 14. Ecosystem Updates (May 2026)
-15. Recipe Authoring Gotchas — **G1–G106**, all inline in SKILL.md; latest **G106** (`hatch-build-scripts` `clean_artifacts` defaults `True` and deletes prebuilt artifacts *before* honoring a SKIP env var), added v8.78.0
+15. Recipe Authoring Gotchas — **G1–G107**, all inline in SKILL.md; latest **G106** (`hatch-build-scripts` `clean_artifacts` defaults `True` and deletes prebuilt artifacts *before* honoring a SKIP env var), added v8.78.0
 16. Skill Automation
 17. Manual CLI Commands
 18. Version History
@@ -397,7 +397,7 @@ Release history with a TL;DR section at the top. Every MINOR-version bump trigge
 
 ## Recipe Authoring Gotchas (SKILL.md § Recipe Authoring Gotchas)
 
-Non-obvious failures that have bitten enough times to be enumerated. The catalog spans **G1–G106**, **contiguous with no gaps** (verified 2026-07-25 against `^### G\d+` in SKILL.md — 106 headings, max 106). All are promoted into SKILL.md; the table below shows the founding six and a title-only roll-up of G7–G53 follows. Each carries a one-line symptom + fix in SKILL.md § Recipe Authoring Gotchas, which is authoritative.
+Non-obvious failures that have bitten enough times to be enumerated. The catalog spans **G1–G107**, **contiguous with no gaps** (verified 2026-07-25 against `^### G\d+` in SKILL.md — 106 headings, max 106). All are promoted into SKILL.md; the table below shows the founding six and a title-only roll-up of G7–G53 follows. Each carries a one-line symptom + fix in SKILL.md § Recipe Authoring Gotchas, which is authoritative.
 
 Recent additions: **G100–G105** (v8.77.0 — npm CLIs must be per-arch; bun-native npm distributions; the staged-recipes win-64 leg builds noarch recipes; npm `engines` caps colliding with the nodejs run-export; strict-channel-priority local-channel shadowing; rattler python tests default `pip_check` to TRUE) and **G106** (v8.78.0 — `hatch-build-scripts`' `OneScriptConfig.clean_artifacts` defaults `True` and unlinks the hook's artifacts *before* honoring a SKIP env var, silently shipping an incomplete package that `imports:` + `pip_check` still pass).
 

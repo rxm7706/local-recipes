@@ -3742,6 +3742,65 @@ tests:
 
 ---
 
+### G107. A conda package EXISTING under the bare name does not mean it ships the Python module — the name may belong to a different artifact entirely, and the env solves green while `import` fails
+
+The established rule (auto-memory `feedback_pypi_conda_mapping_unreliable`) is *try four
+spellings — bare, hyphen↔underscore, `-py`, `-python` — before declaring a package
+missing*. That answers **"does a package with this name exist?"**. It does not answer
+**"does that package contain the importable module?"**, and for a split distribution the
+bare name is the *wrong* half.
+
+**Live, verified 2026-07-29.** conda-forge ships **two** playwright packages:
+
+| conda-forge package | What it actually contains |
+|---|---|
+| `playwright` | the **Node CLI + browser driver** (`bin/playwright`) — **no site-packages module** |
+| `playwright-python` | the **`import playwright` bindings** (provides the PyPI dist `playwright`) |
+
+On **PyPI** the bindings are published as **`playwright`**; there is no
+`playwright-python` distribution at all (`importlib.metadata.version("playwright")` →
+`1.61.0`; `version("playwright-python")` → `PackageNotFoundError`).
+
+So the four-spellings walk starts at the bare name, **finds `playwright`, stops, and
+declares the Node CLI**. The environment resolves cleanly, the recipe lints, and nothing
+fails until something executes `import playwright`. If the package's own test does not
+import the module — or the dependency is a *transitive* need of a module the tests never
+reach — this ships.
+
+**The check is one line, and it is about content, not existence:**
+
+```bash
+# does the candidate actually carry an importable module?
+conda run -p <env> python -c "import <module>"          # after installing the candidate
+# or, before installing, inspect the artifact's file list:
+python -c "import json,urllib.request as u; \
+  print([f for f in json.load(u.urlopen('https://api.anaconda.org/package/conda-forge/<name>/files'))[0]])"
+```
+
+**Both halves are usually required and they are not alternatives.** The atlas kedro-viz
+capture task drives headless Chrome through the Python API, so it declares *both*:
+
+```toml
+playwright        = ">=1.58.0"   # CLI + browser driver
+playwright-python = ">=1.61.0"   # the `import playwright` bindings
+```
+
+**The skill's own mapping data had this backwards** (fixed in this release):
+`pypi_conda_mappings/different_names.json` carried a `parselmouth`-sourced entry keyed
+`playwright-python` → conda `playwright` — i.e. it treated a non-existent PyPI name as
+real and pointed it at the half with no module, while the *actual* PyPI name `playwright`
+was **absent from the map entirely**, guaranteeing the fall-through to the bare name.
+Treat `source: parselmouth` entries as upstream-derived and therefore fallible on split
+distributions; a mapping is a hypothesis until an import proves it.
+
+**Where else this shape appears:** any upstream that ships a CLI/driver and bindings
+separately — Node-backed tools, `-cli` vs library splits, and C libraries whose bare name
+is the shared object while the bindings carry a `py`/`python` suffix. When the bare-name
+package's description mentions a CLI, a binary, or a driver, assume it is the wrong half
+until an import says otherwise.
+
+---
+
 ## Skill Automation
 
 A quarterly live-doc audit keeps this skill aligned with upstream conda-forge changes. It runs as a remote Claude Code routine (registered at `claude.ai/code/routines`) but the prompt and runner are committed under [`automation/`](automation/) so the job is reproducible from this repo.
@@ -3777,6 +3836,8 @@ To run an off-cycle audit locally: `.claude/skills/conda-forge-expert/automation
 ---
 
 ## Version History
+
+- **v8.80.0** (Jul 29, 2026) — **pyforge-atlas Epic-10 post-audit retro (Rule 2): 1 new gotcha G107 + a verified mapping-data fix (MINOR).** From Epic 10 (stories I0–I5, 6/6 merged; `kedro-test` 803 → 901 passed); **no recipes authored, no `recipes/**` touched**. **G107 (new)** — a conda package EXISTING under the bare name does not mean it ships the Python module: conda-forge `playwright` is the Node CLI/driver with no site-packages module, while the `import playwright` bindings are `playwright-python`; on PyPI the bindings ARE `playwright` and no `playwright-python` distribution exists. The four-spellings walk starts at the bare name, finds the CLI, and stops — the env resolves cleanly and the recipe lints, so nothing fails until something runs `import`. Both halves are usually required. **Mapping-data defect FIXED** — `different_names.json` had a `parselmouth`-sourced entry keyed `playwright-python` → conda `playwright` (a non-existent PyPI name pointing at the module-less half) while the real name `playwright` was absent, guaranteeing the fall-through; treat `source: parselmouth` rows as fallible on split distributions. **Technique** — story I0 cleared 17 collection errors by deriving run-deps from an AST import scan (3 declared vs 19 imported), classifying each as conda-mappable, PyPI-only (⇒ a packaging blocker, not a declarable dep — `boring_semantic_layer`), or stdlib. **Files**: `SKILL.md`, `pypi_conda_mappings/different_names.json`, `config/skill-config.yaml` (8.79.1 → 8.80.0), `CHANGELOG.md`.
 
 - **v8.79.1** (Jul 23, 2026) — **regenerable-factory Wave-4 retro (Rule 2): governance binding, no guidance change (PATCH).** The skill surface (`.claude/skills/conda-forge-expert/**`, `.claude/scripts/conda-forge-expert/**`, `.claude/tools/conda_forge_server.py`) is now governed by the brownfield spec kernel `spec-packaging-factory` (local-recipes BMAD project) under the repo-wide `scripts/spec_surface_check.py` detector, with a **CHANGELOG sentinel** — a governed edit that moves neither this skill's CHANGELOG nor the spec memlog is a checker finding (Rule 2 mechanized). `recipes/**` is governed by `spec-fleet-stewardship` (coverage-only; per-recipe control stays the 10-step loop). No operational guidance, gotcha, CLI, or schema change. **Files**: `CHANGELOG.md`, `SKILL.md` (Version History), `config/skill-config.yaml` (8.79.0 → 8.79.1), `tests/meta/test_spec_surface_check.py` (new — the detector joins the meta suite).
 

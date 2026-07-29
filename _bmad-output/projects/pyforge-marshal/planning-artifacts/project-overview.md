@@ -4,7 +4,7 @@ project_name: local-recipes
 date: 2026-07-25
 repository_type: monorepo
 parts: 5
-source_pin: 'conda-forge-expert v8.79.1'
+source_pin: 'conda-forge-expert v8.80.0'
 ---
 
 # Project Overview: local-recipes
@@ -18,7 +18,7 @@ source_pin: 'conda-forge-expert v8.79.1'
 > - **A second MCP server.** `pyforge-atlas` ships its own FastMCP server (11 tools), separate from and additive to the legacy 46-tool server.
 > - **Corrections landed here:** the doc's own source pin was self-contradictory (body said v8.41.0), it claimed both "1,602 recipes" and "~440 recipes" in the same file, and its repo tree listed a root `pyproject.toml`, an `output/` directory, and four `docs/` files that are not where it said (one of which no longer exists at all).
 >
-> **Re-verified as UNCHANGED — do not "fix" these:** cf_atlas schema **v29**, **46 MCP tools** on the legacy server, **22 executable atlas phases** (23 cataloged — see below), gotchas **G1–G106** contiguous.
+> **Re-verified as UNCHANGED — do not "fix" these:** cf_atlas schema **v29**, **46 MCP tools** on the legacy server, **22 executable atlas phases** (23 cataloged — see below), gotchas **G1–G107** contiguous.
 
 
 **A semi-autonomous conda-forge packaging factory with an offline-tolerant package-intelligence layer, MCP tool surface, a PyForge namespace-package family, and BMAD multi-project planning infrastructure — all in a single pixi monorepo.**
@@ -100,7 +100,7 @@ local-recipes/                                  # pixi monorepo root  (NOTE: no 
 │
 ├── .claude/                                    # Part 1 (skill) + Part 3 (MCP server) live here
 │   ├── skills/conda-forge-expert/              # Part 1
-│   │   ├── SKILL.md                            # 3,887 lines; 6 Operating Principles, 12 Critical Constraints, G1–G106
+│   │   ├── SKILL.md                            # 3,887 lines; 6 Operating Principles, 12 Critical Constraints, G1–G107
 │   │   ├── INDEX.md                            # task→tool navigator
 │   │   ├── CHANGELOG.md                        # release history (drift-detection source)
 │   │   ├── config/                             # 2 files — skill-config.yaml is the CANONICAL version stamp

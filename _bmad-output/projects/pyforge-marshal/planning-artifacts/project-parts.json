@@ -3,7 +3,7 @@
   "doc_type": "project-parts",
   "project_name": "local-recipes",
   "date": "2026-07-25",
-  "source_pin": "conda-forge-expert v8.79.1",
+  "source_pin": "conda-forge-expert v8.80.0",
   "shipped_spec_history": [
     {
       "version_target": "v8.6.0",
@@ -35,7 +35,7 @@
       "part_id": "conda-forge-expert",
       "display_name": "conda-forge-expert skill",
       "project_type_id": "library",
-      "description": "Claude Code skill encoding the full conda-forge recipe lifecycle. 3-tier architecture: canonical scripts + CLI wrappers + data state. The lifecycle is 9 numbered steps plus 3 lettered sub-steps (1b, 7a/7b, 8b) = 12 gated stages; CLAUDE.md refers to it as 'the 10-step loop'. One human-gated checkpoint at step 8b (prepare_submission_branch). Authoritative spine: SKILL.md (3,887 lines) — 6 `## Operating Principles`, 12 `## Critical Constraints` subsections, gotchas G1–G106 (contiguous, no gaps).",
+      "description": "Claude Code skill encoding the full conda-forge recipe lifecycle. 3-tier architecture: canonical scripts + CLI wrappers + data state. The lifecycle is 9 numbered steps plus 3 lettered sub-steps (1b, 7a/7b, 8b) = 12 gated stages; CLAUDE.md refers to it as 'the 10-step loop'. One human-gated checkpoint at step 8b (prepare_submission_branch). Authoritative spine: SKILL.md (3,887 lines) — 6 `## Operating Principles`, 12 `## Critical Constraints` subsections, gotchas G1–G107 (contiguous, no gaps).",
       "root_paths": [
         ".claude/skills/conda-forge-expert/",
         ".claude/scripts/conda-forge-expert/"
@@ -57,7 +57,7 @@
       "version_pin": "v8.79.1",
       "version_pin_note": "Canonical source is `config/skill-config.yaml` (`skill.version: 8.79.1`). KNOWN DEFECT (live 2026-07-25): `SKILL.md` frontmatter and `MANIFEST.yaml` both still declare `version: 7.0.0` — a stale layout-era stamp. Do NOT treat 7.0.0 as the skill version; it is an unfixed inconsistency in the skill, not in this doc set.",
       "subdirectories": {
-        "SKILL.md": "primary spine, 3,887 lines: critical constraints, the 9+3-step lifecycle, recipe authoring gotchas G1–G106",
+        "SKILL.md": "primary spine, 3,887 lines: critical constraints, the 9+3-step lifecycle, recipe authoring gotchas G1–G107",
         "INDEX.md": "task→tool navigator",
         "CHANGELOG.md": "release history with TL;DR section (canonical drift-detection source)",
         "reference/": "15 deep-reference files (recipe-yaml-reference[-full], meta-yaml-reference, mcp-tools, python-min-policy, conda-forge-yml-reference[-full], pinning-reference, selectors-reference, jinja-functions, abi3-matrix-collapse, dependency-input-formats, atlas-phases-overview, atlas-phase-engineering, conda-forge-ecosystem)",

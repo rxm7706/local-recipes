@@ -5,7 +5,7 @@ date: 2026-07-25
 via: bmad-correct-course
 scope: moderate
 status: implemented
-source_pin: 'conda-forge-expert v8.79.1'
+source_pin: 'conda-forge-expert v8.80.0'
 artifacts_modified:
   - planning-artifacts/PRD.md
   - planning-artifacts/epics.md
@@ -88,7 +88,7 @@ owns *the ability to rebuild the whole*, not the crafts that fill it.
 | Parts 1-4 / "the four parts" | **Parts 1-5 / five** |
 | 9 envs, ~50 tasks | **15 envs / 17 features / 154 tasks** (106 in `local-recipes`) |
 | Part 1 "~44 scripts" | **66 Tier-1 / 57 Tier-2** |
-| F1.7 G1-G87 | **G1-G106** |
+| F1.7 G1-G87 | **G1-G107** |
 | F4.5 "64 real skills / 65 entries" | **89 real skills across 93 dirs**, BMAD **6.10.0** |
 | §6 metric 42 / 42 | **46 / 46** |
 | Total features 57 | **62** (54 in parts + 8 cross-cutting) |
@@ -133,7 +133,7 @@ owns *the ability to rebuild the whole*, not the crafts that fill it.
 ## 6. Left alone deliberately
 
 - **§ 7 architectural-gaps table** — its `G1-G6` is a *different* numbering for
-  **system** gaps, distinct from the `G1-G106` recipe-authoring gotchas. Untouched by
+  **system** gaps, distinct from the `G1-G107` recipe-authoring gotchas. Untouched by
   every prior sync; untouched here.
 - **§ 9 Deferred Work** — no DW row is demonstrably shipped in this span.
 - **All `SPEC.md` files** — `bmad-spec` is their single writer.

@@ -4,14 +4,14 @@ project_name: local-recipes
 date: 2026-07-25
 repository_type: monorepo
 parts: 5
-source_pin: 'conda-forge-expert v8.79.1'
+source_pin: 'conda-forge-expert v8.80.0'
 ---
 
 # Source Tree Analysis
 
 > **Re-grounded 2026-07-25** (source_pin → v8.79.1; full end-to-end re-verification of every path and count against the live checkout). **The headline is structural, not a version bump: the repo grew a fifth part — `src/`, the `pyforge` package family** (five hatchling dists sharing a PEP 420 implicit namespace: `pyforge-warden`, `pyforge-atlas`, `pyforge-herald`, `pyforge-scribe`, `pyforge-doctor`, plus the non-packaged `src/sentinel/knowledge/` and the generated `src/prototype/`). The prior revision did not mention `src/` at all. Also newly mapped: `presentations/` (14 decks), `docs/dreams/` (Tier 0), `docs/dashboard/` (the **Guildhall** console), `.bmad-loop/`, `conf/`, `helm/`, `archive/`, `_skf-learn/`, `.claude/memory/`, `.claude/hooks/`.
 >
-> **Re-verified UNCHANGED** (do not "fix" these): cf_atlas schema **v29**, **46 MCP tools**, gotchas **G1–G106**, **22 executable atlas phases** (23 cataloged — `reference/atlas-phases-overview.md` also carries a runner-less conceptual Phase I), CFE `reference/` 15 / `guides/` 9 / `quickref/` 2.
+> **Re-verified UNCHANGED** (do not "fix" these): cf_atlas schema **v29**, **46 MCP tools**, gotchas **G1–G107**, **22 executable atlas phases** (23 cataloged — `reference/atlas-phases-overview.md` also carries a runner-less conceptual Phase I), CFE `reference/` 15 / `guides/` 9 / `quickref/` 2.
 >
 > **Corrected (previously wrong, not merely stale):** the top-level tree claimed a root `pyproject.toml`, a root `package.json`, an `output/` directory and a `build.pid` — **none exist**; `.gitignore` is **738 lines**, not ">13k"; `SDKs/` was described as a committed binary but is entirely untracked; the Counts table's atlas schema version, MCP-tool count, reference-doc count, skill-test count and pixi-env count all sat below live and are now re-measured; `docs/` no longer has any top-level `.md` (everything moved into `docs/reference/` + `archive/docs/`). See § *Counts* refresh notes.
 
@@ -115,7 +115,7 @@ local-recipes/                               # pixi monorepo root, default-env=l
 │   │                                        # real split: 51 bmad-*, 16 skf-*, 21 engineering-practice, 1 conda-forge-expert
 │   │
 │   ├── conda-forge-expert/                  # ★★ Part 1 canonical source
-│   │   ├── SKILL.md                         # ★ primary spine (3,887 lines): critical constraints, 10-step loop, gotchas G1–G106
+│   │   ├── SKILL.md                         # ★ primary spine (3,887 lines): critical constraints, 10-step loop, gotchas G1–G107
 │   │   ├── INDEX.md                         # task→tool navigator
 │   │   ├── CHANGELOG.md                     # ★ release history (1,841 lines) with TL;DR (canonical drift-detection source; v8.79.1 current)
 │   │   ├── MANIFEST.yaml                    # declares "standalone-portable" deployment (host-repo install.py target)
@@ -730,8 +730,8 @@ Every row below was re-measured against the live checkout on 2026-07-25 — none
 | Skill data / config / examples / automation | 3 / 2 / 6 / 3 |
 | Name-mapping files | `pypi_conda_mappings/` 3 + legacy `mappings/` 1 |
 | SKILL.md / CHANGELOG.md | 3,887 / 1,841 lines |
-| Recipe-Authoring Gotchas | **G1–G106** |
-| Skill version (source_pin) | **conda-forge-expert v8.79.1** |
+| Recipe-Authoring Gotchas | **G1–G107** |
+| Skill version (source_pin) | **conda-forge-expert v8.80.0** |
 
 **Part 2 — cf_atlas**
 
@@ -797,7 +797,7 @@ Every row below was re-measured against the live checkout on 2026-07-25 — none
 - **Structural: a fifth part.** `src/` (the `pyforge` family) did not exist in the prior revision's map at all. Also newly mapped: `presentations/`, `docs/dreams/`, `docs/dashboard/` (the Guildhall), `docs/intake/`, `.bmad-loop/`, `.claude/memory/`, `.claude/hooks/`, `conf/`, `helm/`, `archive/`, `_skf-learn/`, `.scripts/`, `AGENTS.md`, `GEMINI.md`.
 - **Corrections (previously *wrong*, not just stale):** root `pyproject.toml`, root `package.json`, `output/` and `build.pid` were all documented but do **not** exist; `.gitignore` is 738 lines, not ">13k"; `SDKs/` was called a "committed binary" but is entirely untracked; `docs/` top-level `.md` files no longer exist (moved to `docs/reference/`, retired to `archive/docs/`); the Counts table's schema version, MCP-tool count, reference-doc count and pixi-env count were all below live.
 - **Growth:** recipes 1,602 → 1,664 (`recipe.yaml` 718 → 933 as v0→v1 migration advances); CFE scripts 54 → 66; wrappers 46 → 60; skill tests 82 files → 100 files / 1,186 `def test_`; skills 65 dirs → 93; pixi envs 9 → 15, tasks ~80 → 152; BMAD projects 3 → 14; `docs/specs/` 12 → 19 (now **legacy** — Tier 2 `planning-artifacts/specs/` holds the 8 active Specs).
-- **Re-verified UNCHANGED:** cf_atlas schema **v29**; **46 MCP tools**; **22 executable / 23 cataloged** atlas phases; gotchas **G1–G106**; `reference/` 15, `guides/` 9, `quickref/` 2; templates 41 across 13 ecosystems.
+- **Re-verified UNCHANGED:** cf_atlas schema **v29**; **46 MCP tools**; **22 executable / 23 cataloged** atlas phases; gotchas **G1–G107**; `reference/` 15, `guides/` 9, `quickref/` 2; templates 41 across 13 ecosystems.
 - **Sibling artifact in agreement:** `planning-artifacts/project-parts.json` was reconciled in the same 2026-07-25 pass — it now declares **5** parts (`conda-forge-expert`, `cf-atlas`, `mcp-server`, `bmad-infra`, **`pyforge-packages`**) at `source_pin` v8.79.1, matching this document's frontmatter and § *Part 5*. It entered this pass declaring 4 parts at v8.79.0.
 - **Verified defect recorded, not fixed:** `src/sentinel/knowledge/` — 14 `wiki-*` pixi tasks reference 9 crew modules, 8 of which do not exist; `crews/` has no `__init__.py`; the one existing module has no `__main__` guard, so even `wiki-compile` is a no-op.
 - Earlier per-sync refresh notes (2026-06-20 through 2026-07-06) recorded incremental skill-version spans with no source-tree structural change; they have been collapsed into this entry, since several of their counts were superseded or were wrong at the time.

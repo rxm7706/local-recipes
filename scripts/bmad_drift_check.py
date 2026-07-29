@@ -510,6 +510,14 @@ def classify(path: Path) -> str:
         return "archive:retros"
     if rel == "implementation-artifacts/deferred-work.md":
         return "tracked:deferred"
+    if rel == "planning-artifacts/deferred-work-ledger.md":
+        # The DURABLE twin of the Tier-3 ledger above, promoted 2026-07-29 because
+        # bmad-loop's follow-up-review damping refiles into the gitignored one (see
+        # scripts/deferred_work_check.py). Hand-authored and not pin-gated: entries
+        # are dated in their own bodies, and the file is deliberately a copy whose
+        # curation lags — a version pin would report drift on every skill bump for a
+        # document that tracks stories, not the skill surface.
+        return "tracked:deferred"
     if re.fullmatch(r"implementation-artifacts/sprint-status(-[a-z0-9-]+)?\.yaml", rel):
         # Tier-3 sprint feed (gitignored, local-only) — the program console's
         # dashboard-gen reads it; no pin gating.

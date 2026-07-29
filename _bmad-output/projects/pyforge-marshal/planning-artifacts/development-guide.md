@@ -2,7 +2,7 @@
 doc_type: development-guide
 project_name: local-recipes
 date: 2026-07-25
-source_pin: 'conda-forge-expert v8.79.1'
+source_pin: 'conda-forge-expert v8.80.0'
 ---
 
 # Development Guide
@@ -777,7 +777,7 @@ identical to upstream.
 | Air-gap setup | `docs/reference/enterprise-deployment.md` (or `deployment-guide.md` in this set) |
 | MCP server internals | `docs/reference/mcp-server-architecture.md` |
 | Which library / CLI is available where | `docs/reference/library-llms-full.md` (detector: `pixi run llms-full-check`) |
-| Recipe authoring gotchas | `.claude/skills/conda-forge-expert/SKILL.md` § Recipe Authoring Gotchas (G1–G106) |
+| Recipe authoring gotchas | `.claude/skills/conda-forge-expert/SKILL.md` § Recipe Authoring Gotchas (G1–G107) |
 | BMAD multi-project | `_bmad-output/PROJECTS.md` |
 | Keeping this doc set honest | `_bmad-output/projects/local-recipes/SYNC-RUNBOOK.md` |
 | Project-specific rules | `_bmad-output/projects/local-recipes/project-context.md` |

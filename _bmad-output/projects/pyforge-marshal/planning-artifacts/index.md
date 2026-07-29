@@ -5,7 +5,7 @@ date: 2026-07-25
 repository_type: monorepo
 parts: 5
 docs_generated: 12
-source_pin: 'conda-forge-expert v8.79.1'
+source_pin: 'conda-forge-expert v8.80.0'
 ---
 
 # `local-recipes` — Master Documentation Index
@@ -14,7 +14,7 @@ source_pin: 'conda-forge-expert v8.79.1'
 >
 > **What moved** — all of it *around* the packaging factory, none of it *inside* it: the repo grew a **fifth part** (`pyforge-packages` — five shipping distributions under `src/shared/packages/`); **19 pixi envs** in two families (+3 product envs: `pyforge-doctor`, `pyforge-herald`, `pyforge-scribe`); BMAD went **6.6.0 → 6.10.0** with **93 skill dirs / 89 real skills** across **14 projects** carrying **22 Specs** + **63 tracked story specs**; the **PyForge identity system** landed and is now binding on prose; **26 Dreams**, **14 deck folders**; and a new governance layer (`spec_surface_check.py`, `bmad-loop-worktree`, the HARD parallel-agent rule).
 >
-> **Re-verified unchanged against live code:** cf_atlas **schema v29**, **46 MCP tools**, **22 executable atlas phases**, gotchas **G1–G106**, the autonomous lifecycle loop.
+> **Re-verified unchanged against live code:** cf_atlas **schema v29**, **46 MCP tools**, **22 executable atlas phases**, gotchas **G1–G107**, the autonomous lifecycle loop.
 >
 > **This pass corrected 10 dead documentation links, a cancelled pipeline phase presented as in-flight, and a fabricated MCP registration mechanism.** See § *Drift Status*.
 
@@ -56,7 +56,7 @@ The tracked living set is **12 documents** (the detector's `tracked:living` clas
 | 1 | [project-overview.md](./project-overview.md) | System framing, monorepo structure, five-part decomposition, cross-cutting concerns, getting-started orientation |
 | 2 | [architecture.md](./architecture.md) | Consolidated architecture: system overview, architectural style, the five parts, cross-cutting concerns, data architecture, **ADR-001…ADR-017**, quality attributes, risks, build order, glossary |
 | 3 | [source-tree-analysis.md](./source-tree-analysis.md) | Annotated directory tree, entry-points table, critical files, per-part counts |
-| 4 | [architecture-conda-forge-expert.md](./architecture-conda-forge-expert.md) | Part 1: 3-tier canonical/wrapper/data architecture, 66 canonical scripts, 42 templates / 13 ecosystems, the autonomous loop's 12 gated stages, build-failure protocol, Recipe Authoring Gotchas G1–G106 |
+| 4 | [architecture-conda-forge-expert.md](./architecture-conda-forge-expert.md) | Part 1: 3-tier canonical/wrapper/data architecture, 66 canonical scripts, 42 templates / 13 ecosystems, the autonomous loop's 12 gated stages, build-failure protocol, Recipe Authoring Gotchas G1–G107 |
 | 5 | [architecture-cf-atlas.md](./architecture-cf-atlas.md) | Part 2: the **22-phase** pipeline (B/B.5/B.6/C/C.5/D/O/P/Q/R/S/E/E.5/F/G/G'/H/J/K/L/M/N), schema v29, 5 SQL views, TTL gates, S3 + cf-graph offline backends, failure modes |
 | 6 | [architecture-mcp-server.md](./architecture-mcp-server.md) | Part 3: 46 MCP tools (21 recipe-authoring / 21 atlas / 2 project-scanning / 2 infra), the thin-subprocess-wrapper pattern, stdio transport, `~/.claude.json` registration |
 | 7 | [architecture-bmad-infra.md](./architecture-bmad-infra.md) | Part 4: BMAD 6.10.0, six-layer config merge, the two-half active-project switch, 89 skills, 14 projects, the Spec + memlog model, bmad-loop, the governance detectors |
@@ -180,7 +180,7 @@ Build order from `project-parts.json`:
 
 1. Get the most recent log: `ls -t build_artifacts/*/bld/rattler-build_<name>_*/work/conda_build.log | head -1`
 2. Run `pixi run -e local-recipes analyze-failure -- <log>`
-3. Check the Recipe Authoring Gotchas (G1–G106) in [architecture-conda-forge-expert.md](./architecture-conda-forge-expert.md)
+3. Check the Recipe Authoring Gotchas (G1–G107) in [architecture-conda-forge-expert.md](./architecture-conda-forge-expert.md)
 4. See [development-guide.md](./development-guide.md) § Debugging
 
 ### Path E: I'm setting up an air-gapped / JFrog deployment
@@ -249,7 +249,7 @@ Surprising or non-obvious facts that AI agents and humans both get wrong.
 
 | Asset | Pinned to | Live | Drift action |
 |---|---|---|---|
-| This living doc set (12) | v8.79.1 | conda-forge-expert v8.79.1 | None — reconciled 2026-07-25 |
+| This living doc set (12) | v8.79.1 | conda-forge-expert v8.80.0 | None — reconciled 2026-07-25 |
 | `project-context.md` | v8.79.1 | v8.79.1 | None — reconciled 2026-07-25 |
 | `PRD.md` / `epics.md` (plan) | v8.79.0 | v8.79.1 | **Outstanding** — structural re-sync via `bmad-correct-course` not run in this pass |
 | Gate snapshots (2) | dated | — | By design: a gate is only meaningful re-run, never number-patched |

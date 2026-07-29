@@ -4,7 +4,7 @@ part_id: mcp-server
 display_name: FastMCP server
 project_type_id: backend
 date: 2026-07-25
-source_pin: 'conda-forge-expert v8.79.1'
+source_pin: 'conda-forge-expert v8.80.0'
 ---
 
 # Architecture: MCP Server (Part 3)

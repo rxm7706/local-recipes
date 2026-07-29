@@ -4,7 +4,7 @@ project_name: local-recipes
 date: 2026-07-25
 version: '1.1.0'
 status: draft
-source_pin: 'conda-forge-expert v8.79.1'
+source_pin: 'conda-forge-expert v8.80.0'
 consolidates:
   - architecture-conda-forge-expert.md
   - architecture-cf-atlas.md
@@ -15,7 +15,7 @@ consolidates:
 
 # Unified Architecture: `local-recipes`
 
-> **Re-grounded 2026-07-25** (source_pin → v8.79.1). **The system grew a fifth part.** `src/shared/packages/` now hosts **`pyforge-packages`** — five hatchling-built distributions (`pyforge-warden`, `pyforge-atlas`, `pyforge-herald`, `pyforge-scribe`, `pyforge-doctor`) sharing one PEP 420 implicit `pyforge` namespace, each a pixi workspace member with its own lean `no-default-feature` env. Consequences woven through this doc: **19 pixi envs** (9 factory + 9 product, was 9), a **second MCP server** (pyforge-atlas' 11-tool FastMCP, additive to the legacy 46-tool one), **Parquet + Ibis→DuckDB** storage alongside SQLite, **spec-surface governance** (`scripts/spec_surface_check.py`), and five new ADRs (013–017). Also corrected — every one of these was **understated** here and is now raised to live: the view count on `cf_atlas.db` (now **21 tables + 5 views**; the missing one is `v_pypi_intelligence_valid`, which schema v29 landed), Part 1's inventory (**66 Tier-1 scripts / 57 Tier-2 wrappers / 100 test files / 15 reference files**), the BMAD installer version (**6.10.0**), the skill catalogue (**93 dirs / 89 real skills**), the project count (**14**), the recipe corpus (**1,664**), and the several stale `SCHEMA_VERSION` mentions (now **29** throughout). Re-verified **unchanged**: conda-forge-expert **v8.79.1**, cf_atlas schema **v29**, **46 legacy MCP tools**, gotchas **G1–G106**, **22 executable atlas phases** (23 cataloged), 41 templates / 13 ecosystems, and the `JFROG_API_KEY` cross-host leak in `_http.py` (still UNRESOLVED — ADR-010 stands).
+> **Re-grounded 2026-07-25** (source_pin → v8.79.1). **The system grew a fifth part.** `src/shared/packages/` now hosts **`pyforge-packages`** — five hatchling-built distributions (`pyforge-warden`, `pyforge-atlas`, `pyforge-herald`, `pyforge-scribe`, `pyforge-doctor`) sharing one PEP 420 implicit `pyforge` namespace, each a pixi workspace member with its own lean `no-default-feature` env. Consequences woven through this doc: **19 pixi envs** (9 factory + 9 product, was 9), a **second MCP server** (pyforge-atlas' 11-tool FastMCP, additive to the legacy 46-tool one), **Parquet + Ibis→DuckDB** storage alongside SQLite, **spec-surface governance** (`scripts/spec_surface_check.py`), and five new ADRs (013–017). Also corrected — every one of these was **understated** here and is now raised to live: the view count on `cf_atlas.db` (now **21 tables + 5 views**; the missing one is `v_pypi_intelligence_valid`, which schema v29 landed), Part 1's inventory (**66 Tier-1 scripts / 57 Tier-2 wrappers / 100 test files / 15 reference files**), the BMAD installer version (**6.10.0**), the skill catalogue (**93 dirs / 89 real skills**), the project count (**14**), the recipe corpus (**1,664**), and the several stale `SCHEMA_VERSION` mentions (now **29** throughout). Re-verified **unchanged**: conda-forge-expert **v8.79.1**, cf_atlas schema **v29**, **46 legacy MCP tools**, gotchas **G1–G107**, **22 executable atlas phases** (23 cataloged), 41 templates / 13 ecosystems, and the `JFROG_API_KEY` cross-host leak in `_http.py` (still UNRESOLVED — ADR-010 stands).
 
 
 This document is the **executive architecture** for the rebuild. It consolidates the four part-specific architecture docs plus the integration doc into one navigable artifact, and adds the fifth part (`pyforge-packages`), which has no part-specific doc of its own — its detail lives in the per-product `_bmad-output/projects/pyforge-*/planning-artifacts/` sets. Part-specific docs remain authoritative for fine-grained detail (~3,000 lines collectively); this doc is for orientation, decision rationale, and rebuild planning.
@@ -41,7 +41,7 @@ This document is the **executive architecture** for the rebuild. It consolidates
    │  - active-project   │   ┌──────────────────────────▼───────────│    in ~/.claude.json   │
    │    marker + 2       │   │   Part 1: conda-forge-expert skill   └────────────────────────┘
    │    symlinks         │◀──│   - SKILL.md (10-step loop, 5 critical          │
-   │  - bmad-loop        │   │     constraints, G1-G106 gotchas)                │
+   │  - bmad-loop        │   │     constraints, G1-G107 gotchas)                │
    │    (external        │   │   - 66 Tier 1 canonical scripts                 │
    │     harness)        │   │   - 57 Tier 2 CLI wrappers                      │
    └─────────────────────┘   │   - 41 templates / 13 ecosystems (12 language + conda-forge-yml)                │
@@ -137,7 +137,7 @@ Parts 1–4 are the **factory**: the machinery that turns upstream sources into 
 **Key invariants**:
 1. 10-step autonomous loop with one human gate at step 8b
 2. 5 critical constraints (no-mix-formats, stdlib-required, python-floor, pypi-url-pattern, build.bat-call-prefix)
-3. 106 Recipe Authoring Gotchas (G1-G106)
+3. 106 Recipe Authoring Gotchas (G1-G107)
 4. Three-place rule for new scripts (canonical + wrapper + pixi task + meta-test)
 
 **Detail**: see [architecture-conda-forge-expert.md](./architecture-conda-forge-expert.md)

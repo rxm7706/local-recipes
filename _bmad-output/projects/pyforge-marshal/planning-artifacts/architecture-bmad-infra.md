@@ -4,7 +4,7 @@ part_id: bmad-infra
 display_name: BMAD infrastructure
 project_type_id: infra
 date: 2026-07-25
-source_pin: 'conda-forge-expert v8.79.1'
+source_pin: 'conda-forge-expert v8.80.0'
 ---
 
 # Architecture: BMAD Infrastructure (Part 4)
@@ -23,7 +23,7 @@ source_pin: 'conda-forge-expert v8.79.1'
 > three-layer per-skill merge, the six BMAD agent personas and their descriptors in
 > `_bmad/config.toml`, the 21 engineering-practice skills, and both BMAD ↔ conda-forge-expert
 > integration rules. Live factory facts this doc leans on (`bmad-groundtruth`, 2026-07-25):
-> cf_atlas **schema v29**, **46 MCP tools**, 23 atlas phases, gotchas **G1–G106**, **19 pixi envs**.
+> cf_atlas **schema v29**, **46 MCP tools**, 23 atlas phases, gotchas **G1–G107**, **19 pixi envs**.
 
 BMAD-METHOD is an AI-driven software development framework that this repository hosts as a
 **multi-project installation**. A single BMAD installer (`_bmad/`) drives spec + planning + dev +
@@ -1040,7 +1040,7 @@ the CHANGELOG nor the Spec memlog is a `spec_surface_check.py` finding.
 
 `_bmad-output/projects/local-recipes/project-context.md` — foundational rules every BMAD agent reads
 on spawn. Hand-maintained, pinned via `last_synced_skill_version` (currently
-**`conda-forge-expert v8.79.1`**, re-grounded 2026-07-25). Drift contract: a MINOR bump triggers
+**`conda-forge-expert v8.80.0`**, re-grounded 2026-07-25). Drift contract: a MINOR bump triggers
 re-sync, a PATCH does not — detected by `scripts/bmad_drift_check.py`, reconciled per
 `SYNC-RUNBOOK.md`.
 
