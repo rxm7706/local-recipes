@@ -1,4 +1,6 @@
-"""AC-2 — the dataset-read surface is a REAL ``catalog.load`` passthrough.
+"""AC-2 — the dataset-read surface is a REAL ``catalog.load`` passthrough,
+returned since Story I4 inside an AD-17 build-provenance envelope (the
+loaded object itself is still handed back untouched, under ``value``).
 
 Offline (AD-11): the session is faked, but the catalog is a genuine
 ``kedro.io.DataCatalog`` seeded with a ``MemoryDataset``, so the exercise
@@ -49,10 +51,28 @@ def real_catalog_session(monkeypatch):
 
 
 def test_read_dataset_is_a_catalog_load_passthrough(real_catalog_session):
-    loaded = tools.read_dataset("demo_ds")
+    envelope = tools.read_dataset("demo_ds")
+    loaded = envelope["value"]
     # identity: the exact sentinel object came back untouched — no transform
     assert loaded is SENTINEL
     assert loaded == {"rows": [{"package": "demo", "health": "green"}]}
+
+
+def test_read_dataset_envelope_carries_schema_version_and_dataset_name(real_catalog_session):
+    envelope = tools.read_dataset("demo_ds")
+    assert envelope["schema_version"] == "1"
+    assert envelope["dataset"] == "demo_ds"
+
+
+def test_read_dataset_unknown_kind_reports_unavailable_with_reason(real_catalog_session):
+    """A ``MemoryDataset`` (or any type outside the three known kinds) has no
+    genuine provenance — ``unavailable`` + a non-empty reason is a REQUIRED,
+    valid, non-error response (C4), never a fabricated value."""
+    envelope = tools.read_dataset("demo_ds")
+    assert envelope["provenance_kind"] == "unavailable"
+    assert envelope["build_stamp"] is None
+    assert envelope["build_stamp_newest"] is None
+    assert isinstance(envelope["reason"], str) and envelope["reason"]
 
 
 def test_read_dataset_unknown_name_raises_catalog_error(real_catalog_session):
@@ -89,14 +109,14 @@ def test_read_dataset_coerces_a_dataframe_to_json_serializable(monkeypatch):
 
     monkeypatch.setattr(_session_mod, "bootstrapped_session", fake_session)
 
-    out = tools.read_dataset("df_ds")
+    envelope = tools.read_dataset("df_ds")
     # coerced to list[row-dict], not a raw DataFrame
-    assert out == [
+    assert envelope["value"] == [
         {"package": "numpy", "downloads": 10},
         {"package": "pandas", "downloads": 20},
     ]
-    # the whole point: it survives the MCP JSON boundary
-    json.dumps(out)
+    # the whole point: the whole envelope survives the MCP JSON boundary
+    json.dumps(envelope)
 
 
 def test_read_dataset_coerces_series_ndarray_set(monkeypatch):
@@ -123,8 +143,352 @@ def test_read_dataset_coerces_series_ndarray_set(monkeypatch):
 
     monkeypatch.setattr(_session_mod, "bootstrapped_session", fake_session)
 
-    assert tools.read_dataset("series_ds") == {"a": 1, "b": 2}
-    assert tools.read_dataset("arr_ds") == [1, 2, 3]
-    assert sorted(tools.read_dataset("set_ds")) == ["x", "y"]
+    assert tools.read_dataset("series_ds")["value"] == {"a": 1, "b": 2}
+    assert tools.read_dataset("arr_ds")["value"] == [1, 2, 3]
+    assert sorted(tools.read_dataset("set_ds")["value"]) == ["x", "y"]
     for ds in ("series_ds", "arr_ds", "set_ds"):
         json.dumps(tools.read_dataset(ds))
+
+
+# --------------------------------------------------------------------------- #
+# AD-17 (Story I4) — genuine build provenance, per dataset KIND
+# --------------------------------------------------------------------------- #
+
+
+def test_read_dataset_api_dataset_reports_live_fetch(monkeypatch):
+    """``api.APIDataset`` -> ``live-fetch``: the read genuinely IS the fetch, so
+    ``build_stamp`` is the current call time — the ONE kind where "now" is
+    correct provenance, not a fabricated stand-in."""
+    import contextlib
+    import datetime
+
+    from kedro.io import DataCatalog
+    from kedro_datasets.api import APIDataset
+
+    ds = APIDataset(url="http://example.invalid/x")
+    # Never touch the network: stub the dataset's own load, the same object
+    # DataCatalog.load() calls into (catalog[name] is dataset, by identity).
+    monkeypatch.setattr(ds, "load", lambda: {"ok": True})
+    catalog = DataCatalog(datasets={"api_ds": ds})
+    fake = FakeSession(catalog)
+
+    @contextlib.contextmanager
+    def fake_session(project_path=None, extra_params=None, env=None):
+        yield fake
+
+    monkeypatch.setattr(_session_mod, "bootstrapped_session", fake_session)
+
+    before = datetime.datetime.now(tz=datetime.UTC)
+    envelope = tools.read_dataset("api_ds")
+    after = datetime.datetime.now(tz=datetime.UTC)
+
+    assert envelope["provenance_kind"] == "live-fetch"
+    assert envelope["build_stamp_newest"] is None
+    assert envelope["reason"] is None
+    stamp = datetime.datetime.fromisoformat(envelope["build_stamp"])
+    assert before <= stamp <= after
+    assert envelope["value"] == {"ok": True}
+
+
+def test_read_dataset_incremental_parquet_reports_fetched_at_not_read_time(
+    tmp_path, monkeypatch
+):
+    """``IncrementalParquetDataset`` -> ``row-fetched-at``: ``build_stamp`` is the
+    OLDEST recorded ``fetched_at``, ``build_stamp_newest`` the newest — the
+    dataset's OWN recorded time, proven by a deliberately-old fixture value, not
+    merely "a stamp is present" (equality, not presence)."""
+    import contextlib
+    import datetime
+
+    import pandas as pd
+    from kedro.io import DataCatalog
+    from pyforge.atlas.datasets import IncrementalParquetDataset
+
+    path = tmp_path / "core_downloads" / "core_downloads.parquet"
+    ds = IncrementalParquetDataset(filepath=str(path))
+    # 111 / 222 are deliberately ancient epoch-seconds stamps (1970), far from
+    # "now" — save() preserves a caller-supplied, already-numeric fetched_at
+    # column verbatim (no fill, no ms-fix needed).
+    ds.save(pd.DataFrame({"conda_name": ["a", "b"], "fetched_at": [222, 111]}))
+    catalog = DataCatalog(datasets={"incr_ds": ds})
+    fake = FakeSession(catalog)
+
+    @contextlib.contextmanager
+    def fake_session(project_path=None, extra_params=None, env=None):
+        yield fake
+
+    monkeypatch.setattr(_session_mod, "bootstrapped_session", fake_session)
+
+    envelope = tools.read_dataset("incr_ds")
+    assert envelope["provenance_kind"] == "row-fetched-at"
+    assert envelope["build_stamp"] == datetime.datetime.fromtimestamp(
+        111, tz=datetime.UTC
+    ).isoformat()
+    assert envelope["build_stamp_newest"] == datetime.datetime.fromtimestamp(
+        222, tz=datetime.UTC
+    ).isoformat()
+
+
+def test_read_dataset_incremental_parquet_normalizes_millisecond_fetched_at(
+    tmp_path, monkeypatch
+):
+    """Review pass 1 regression: a ``fetched_at`` column that reached the
+    Parquet file at MILLISECOND magnitude (bypassing ``save()``'s own ms-guard —
+    e.g. a future writer, or a frame constructed directly) must NOT crash
+    ``read_dataset``; it must normalize to seconds like
+    ``IncrementalParquetDataset`` itself already does (DW-A3-P10)."""
+    import contextlib
+    import datetime
+
+    import pandas as pd
+    from kedro.io import DataCatalog
+    from pyforge.atlas.datasets import IncrementalParquetDataset
+
+    # Write the Parquet DIRECTLY (bypassing IncrementalParquetDataset.save(),
+    # which would normalize ms values at write time) so the persisted file
+    # genuinely holds a raw ms-magnitude fetched_at, exactly as `.load()` (a
+    # thin `self._inner.load()` passthrough) would hand it back unmodified.
+    ms_value = 1_700_000_000_000  # ms-magnitude (>= 1e12)
+    path = tmp_path / "ms_ds" / "ms_ds.parquet"
+    path.parent.mkdir(parents=True)
+    pd.DataFrame({"conda_name": ["a"], "fetched_at": [ms_value]}).to_parquet(path)
+
+    ds = IncrementalParquetDataset(filepath=str(path))
+    catalog = DataCatalog(datasets={"ms_ds": ds})
+    fake = FakeSession(catalog)
+
+    @contextlib.contextmanager
+    def fake_session(project_path=None, extra_params=None, env=None):
+        yield fake
+
+    monkeypatch.setattr(_session_mod, "bootstrapped_session", fake_session)
+
+    envelope = tools.read_dataset("ms_ds")  # must NOT raise ValueError
+    assert envelope["provenance_kind"] == "row-fetched-at"
+    expected = datetime.datetime.fromtimestamp(ms_value / 1000, tz=datetime.UTC).isoformat()
+    assert envelope["build_stamp"] == expected
+    assert envelope["build_stamp_newest"] == expected
+
+
+def test_read_dataset_pandas_parquet_reports_file_mtime_not_read_time(
+    tmp_path, monkeypatch
+):
+    """``pandas.ParquetDataset`` -> ``file-mtime``: ``build_stamp`` is the
+    materialized file's own mtime, proven via ``os.utime`` to a deliberately-old
+    value — equality against that value, not merely "a stamp is present"."""
+    import contextlib
+    import datetime
+    import os
+
+    import pandas as pd
+    from kedro.io import DataCatalog
+    from kedro_datasets.pandas import ParquetDataset
+
+    path = tmp_path / "core_feedstock_health" / "core_feedstock_health.parquet"
+    path.parent.mkdir(parents=True)
+    pd.DataFrame({"feedstock_name": ["a"]}).to_parquet(path)
+    old_ts = 1_600_000_000  # 2020-09-13, deliberately far from "now"
+    os.utime(path, (old_ts, old_ts))
+
+    ds = ParquetDataset(filepath=str(path))
+    catalog = DataCatalog(datasets={"pq_ds": ds})
+    fake = FakeSession(catalog)
+
+    @contextlib.contextmanager
+    def fake_session(project_path=None, extra_params=None, env=None):
+        yield fake
+
+    monkeypatch.setattr(_session_mod, "bootstrapped_session", fake_session)
+
+    envelope = tools.read_dataset("pq_ds")
+    assert envelope["provenance_kind"] == "file-mtime"
+    assert envelope["build_stamp"] == datetime.datetime.fromtimestamp(
+        old_ts, tz=datetime.UTC
+    ).isoformat()
+    assert envelope["build_stamp_newest"] is None
+
+
+def test_read_dataset_datetime_typed_fetched_at_reports_genuine_stamp(
+    tmp_path, monkeypatch
+):
+    """Review pass 3: a ``fetched_at`` column persisted as a DATETIME dtype
+    (a bypass writer storing ``pd.Timestamp``s, not epoch numerics) is genuine
+    recorded provenance and must convert unit-independently to the correct
+    stamps — ``to_numeric`` on datetime64 yields raw µs/ns integers that the
+    ms-guard's single division cannot bring into range (was a ``ValueError``
+    crash)."""
+    import contextlib
+    import datetime
+
+    import pandas as pd
+    from kedro.io import DataCatalog
+    from pyforge.atlas.datasets import IncrementalParquetDataset
+
+    path = tmp_path / "dt_ds" / "dt_ds.parquet"
+    path.parent.mkdir(parents=True)
+    pd.DataFrame(
+        {
+            "conda_name": ["a", "b"],
+            "fetched_at": pd.to_datetime(
+                ["2020-01-02T00:00:00Z", "2020-01-01T00:00:00Z"]
+            ),
+        }
+    ).to_parquet(path)
+
+    ds = IncrementalParquetDataset(filepath=str(path))
+    catalog = DataCatalog(datasets={"dt_ds": ds})
+    fake = FakeSession(catalog)
+
+    @contextlib.contextmanager
+    def fake_session(project_path=None, extra_params=None, env=None):
+        yield fake
+
+    monkeypatch.setattr(_session_mod, "bootstrapped_session", fake_session)
+
+    envelope = tools.read_dataset("dt_ds")  # must NOT raise ValueError
+    assert envelope["provenance_kind"] == "row-fetched-at"
+    assert envelope["build_stamp"] == datetime.datetime.fromtimestamp(
+        1_577_836_800, tz=datetime.UTC  # 2020-01-01T00:00:00Z (the OLDEST)
+    ).isoformat()
+    assert envelope["build_stamp_newest"] == datetime.datetime.fromtimestamp(
+        1_577_923_200, tz=datetime.UTC  # 2020-01-02T00:00:00Z
+    ).isoformat()
+
+
+def test_read_dataset_out_of_range_fetched_at_degrades_to_unavailable(
+    tmp_path, monkeypatch
+):
+    """Review pass 3: raw integer epoch-NANOSECOND magnitude (one class beyond
+    the ms-guard's single division) must degrade to an honest ``unavailable``
+    — never abort a read whose data already loaded successfully."""
+    import contextlib
+
+    import pandas as pd
+    from kedro.io import DataCatalog
+    from pyforge.atlas.datasets import IncrementalParquetDataset
+
+    ns_value = 1_700_000_000_000_000_000  # epoch-ns; // 1000 leaves µs-range
+    path = tmp_path / "ns_ds" / "ns_ds.parquet"
+    path.parent.mkdir(parents=True)
+    pd.DataFrame({"conda_name": ["a"], "fetched_at": [ns_value]}).to_parquet(path)
+
+    ds = IncrementalParquetDataset(filepath=str(path))
+    catalog = DataCatalog(datasets={"ns_ds": ds})
+    fake = FakeSession(catalog)
+
+    @contextlib.contextmanager
+    def fake_session(project_path=None, extra_params=None, env=None):
+        yield fake
+
+    monkeypatch.setattr(_session_mod, "bootstrapped_session", fake_session)
+
+    envelope = tools.read_dataset("ns_ds")  # must NOT raise
+    assert envelope["provenance_kind"] == "unavailable"
+    assert envelope["build_stamp"] is None
+    assert "fetched_at" in envelope["reason"]
+    assert envelope["value"]  # the read itself still succeeded
+
+
+def test_read_dataset_provenance_failure_never_aborts_a_successful_read(
+    real_catalog_session, monkeypatch
+):
+    """Review pass 3: provenance is ADVISORY (C4) — if the kind dispatch
+    itself blows up AFTER ``catalog.load`` succeeded, the envelope degrades to
+    ``unavailable`` naming the failure; the read must not error and the loaded
+    value must come back untouched."""
+    from pyforge.atlas import provenance as _provenance_mod
+
+    def boom(catalog, name, loaded_value):
+        raise RuntimeError("describe exploded")
+
+    monkeypatch.setattr(_provenance_mod, "resolve_for_catalog_dataset", boom)
+
+    envelope = tools.read_dataset("demo_ds")
+    assert envelope["value"] is SENTINEL
+    assert envelope["provenance_kind"] == "unavailable"
+    assert "provenance resolution failed" in envelope["reason"]
+    assert "RuntimeError" in envelope["reason"]
+
+
+def test_resolve_for_catalog_dataset_non_local_parquet_degrades_honestly():
+    """Review pass 3: a non-local (fsspec-remote) ``ParquetDataset`` must not
+    be stat'd locally — ``_describe()["filepath"]`` is protocol-STRIPPED, so a
+    local stat would yield a FALSE "not found" (or an unrelated local file's
+    mtime). The protocol guard states the real limitation instead. Direct
+    seam-unit call (per the spec, ``resolve_for_catalog_dataset`` stays
+    directly unit-testable); ``memory://`` is the one remote-like protocol
+    needing no extra deps."""
+    from kedro.io import DataCatalog
+    from kedro_datasets.pandas import ParquetDataset
+
+    from pyforge.atlas import provenance as _provenance_mod
+
+    ds = ParquetDataset(filepath="memory://bucket/x.parquet")
+    catalog = DataCatalog(datasets={"mem_ds": ds})
+
+    info = _provenance_mod.resolve_for_catalog_dataset(catalog, "mem_ds", loaded_value=None)
+    assert info.kind == "unavailable"
+    assert "non-local protocol 'memory'" in info.reason
+    assert "not found" not in info.reason
+
+
+def test_resolve_row_fetched_at_reads_object_dtype_timestamp_strings():
+    """Review pass 4: a ``fetched_at`` column that round-tripped through
+    Parquet as object-dtype ISO-8601 STRINGS (or ``datetime.datetime``
+    objects) is genuine recorded provenance. ``to_numeric`` cannot see it, so
+    before pass 4 it was discarded AND misreported as "0 rows or all-NULL";
+    it must now yield the real oldest/newest stamps."""
+    import datetime
+
+    import pandas as pd
+
+    from pyforge.atlas import provenance as _provenance_mod
+
+    frame = pd.DataFrame({"fetched_at": ["2020-01-02T00:00:00Z", "2020-01-01T00:00:00Z"]})
+    assert frame["fetched_at"].dtype == object  # the shape under test
+
+    info = _provenance_mod._resolve_row_fetched_at(frame, "fetched_at")
+    assert info.kind == "row-fetched-at"
+    assert info.build_stamp == datetime.datetime.fromtimestamp(
+        1_577_836_800, tz=datetime.UTC  # 2020-01-01T00:00:00Z (the OLDEST)
+    ).isoformat()
+    assert info.build_stamp_newest == datetime.datetime.fromtimestamp(
+        1_577_923_200, tz=datetime.UTC  # 2020-01-02T00:00:00Z
+    ).isoformat()
+
+
+def test_resolve_row_fetched_at_unparseable_column_states_an_honest_reason():
+    """Review pass 4: a column FULL of unparseable values is not "0 rows or
+    all-NULL" — claiming so is a false statement about the data on the one
+    path (C4) whose entire contract is an honest reason. It must say what is
+    actually wrong, and must still not crash."""
+    import pandas as pd
+
+    from pyforge.atlas import provenance as _provenance_mod
+
+    info = _provenance_mod._resolve_row_fetched_at(
+        pd.DataFrame({"fetched_at": ["not-a-time", "also-not-a-time"]}), "fetched_at"
+    )
+    assert info.kind == "unavailable"
+    assert info.build_stamp is None
+    assert "no parseable 'fetched_at' values" in info.reason
+    assert "all-NULL" not in info.reason  # the false reason it used to give
+
+    # The genuinely-empty case keeps saying so.
+    empty = _provenance_mod._resolve_row_fetched_at(
+        pd.DataFrame({"fetched_at": pd.Series([], dtype="float64")}), "fetched_at"
+    )
+    assert empty.kind == "unavailable"
+    assert "0 rows or all-NULL" in empty.reason
+
+
+def test_resolve_for_file_refuses_a_directory_mtime(tmp_path):
+    """Review pass 4: a directory has an mtime too, but it describes the
+    CONTAINER, not the data — reporting it as ``file-mtime`` is exactly the
+    plausible-but-wrong stamp AD-17 exists to refuse."""
+    from pyforge.atlas import provenance as _provenance_mod
+
+    info = _provenance_mod.resolve_for_file(tmp_path)
+    assert info.kind == "unavailable"
+    assert info.build_stamp is None
+    assert "not a regular file" in info.reason

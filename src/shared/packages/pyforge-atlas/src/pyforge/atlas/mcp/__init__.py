@@ -7,7 +7,9 @@ wrapped-where-helpful, never load-bearing (spec § 4.5 / § 5.5, FR-7, AD-1).
 Design invariants honored here:
 
 - **AD-7 (thin tool bodies)** — a tool body does exactly two shapes of
-  thing: a ``catalog.load(<dataset>)`` passthrough or a
+  thing: a ``_provenance.load_with_provenance(catalog, <dataset>)`` seam
+  call (behind which the ``catalog.load`` itself and its AD-17 build-
+  provenance envelope live, Story I4) or a
   ``session.run(pipeline_name=<name>)`` trigger. No metric/business logic
   ever lives in a tool body (AST-enforced by
   ``tests/mcp/test_no_business_logic_in_tool_bodies.py``).
