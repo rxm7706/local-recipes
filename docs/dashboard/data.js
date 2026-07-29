@@ -14,7 +14,7 @@ window.DASHBOARD_DATA = {
       "inflight": null,
       "velocity": {
         "derived": true,
-        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals.",
+        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
         "bars": [
           [
             "1.1",
@@ -158,7 +158,7 @@ window.DASHBOARD_DATA = {
       "inflight": null,
       "velocity": {
         "derived": true,
-        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals.",
+        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
         "bars": [
           [
             "1.1",
@@ -351,7 +351,7 @@ window.DASHBOARD_DATA = {
       "inflight": null,
       "velocity": {
         "derived": true,
-        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals.",
+        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
         "bars": [
           [
             "1.1",
@@ -902,7 +902,7 @@ window.DASHBOARD_DATA = {
       "inflight": null,
       "velocity": {
         "derived": true,
-        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals.",
+        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
         "bars": [
           [
             "1.1",
@@ -2375,7 +2375,8 @@ window.DASHBOARD_DATA = {
         "W0",
         "WA–WB",
         "WC–WE",
-        "WF–WH"
+        "WF–WH",
+        "WI · post-audit"
       ],
       "epics": [
         {
@@ -2630,7 +2631,7 @@ window.DASHBOARD_DATA = {
         }
       ],
       "roadmap": {
-        "sub": "Complete: all of Waves 0–H are shipped (per merged PRs #69–#102) — the Kedro port, MCP surface, parity harness, Universal SBOM intake, orchestration, the BSL + Vizro + Vizro-AI dashboards, A2A + OpenLineage/OTel, the full DuckDB singularity (cold-start gate, Pandera contracts, vss RAG, F4’s hygiene node importing Warden’s ComplianceReport), Wave G’s WASM read surface + static-host Parquet emitter + Dagster sensors, and Wave H’s AI software factory (Karpathy wiki + 5 factory personas, agno crews, La Suite sync, Dagster orchestration). The migration was closed out by the CFE Rule-2 retro #103 (v8.79.0). 32/32.",
+        "sub": "Complete: all of Waves 0–H are shipped (per merged PRs #69–#102) — the Kedro port, MCP surface, parity harness, Universal SBOM intake, orchestration, the BSL + Vizro + Vizro-AI dashboards, A2A + OpenLineage/OTel, the full DuckDB singularity (cold-start gate, Pandera contracts, vss RAG, F4’s hygiene node importing Warden’s ComplianceReport), Wave G’s WASM read surface + static-host Parquet emitter + Dagster sensors, and Wave H’s AI software factory (Karpathy wiki + 5 factory personas, agno crews, La Suite sync, Dagster orchestration). The migration was closed out by the CFE Rule-2 retro #103 (v8.79.0) — 32/32. Wave I is NOT part of the migration: it is post-audit remediation, opened 2026-07-27 after an independent Round-3 spec-to-code audit raised 49 findings (PR #131, branch abandoned — the incorporation record is the only surviving account). Six stories close the verified atlas subset at source; it is ordered by the verify gate rather than by wave, because kedro-test was red on main until I3 landed.",
         "stops": [
           [
             "0",
@@ -2676,6 +2677,11 @@ window.DASHBOARD_DATA = {
             "H",
             "AI factory",
             "done"
+          ],
+          [
+            "I",
+            "post-audit truth-up",
+            "wip"
           ]
         ]
       },
@@ -2735,10 +2741,57 @@ window.DASHBOARD_DATA = {
         "at": "10.5"
       },
       "owner": "atlas",
-      "practice": false
+      "practice": false,
+      "inflight": {
+        "key": "10.5",
+        "title": "I4 — AD-17 advisory timestamps: MCP read_dataset envelope + per-page build stamps (AUD-ATLAS-043/044)",
+        "phase": "dev",
+        "attempt": "1",
+        "startEpoch": 1785287678,
+        "median": 29,
+        "lo": 4,
+        "hi": 227,
+        "phaseAsOf": "2026-07-29 02:08 UTC"
+      },
+      "velocity": {
+        "derived": true,
+        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
+        "bars": [
+          [
+            "10.4",
+            68
+          ],
+          [
+            "10.5",
+            29
+          ]
+        ],
+        "foot": [
+          [
+            "~48 min",
+            "median / story",
+            "var(--done)"
+          ],
+          [
+            "29–68 min",
+            "observed range",
+            ""
+          ],
+          [
+            "36/38",
+            "stories complete",
+            "var(--done)"
+          ],
+          [
+            "2",
+            "remaining",
+            ""
+          ]
+        ]
+      }
     }
   },
-  "snapshot": "<span>2026-07-29 01:56 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-07-29 02:08 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -4429,8 +4482,8 @@ window.DASHBOARD_DATA = {
         "task": "spec-surface-check",
         "guards": "every tracked file under a Spec surface",
         "state": "drift",
-        "findings": 2,
-        "verdict": "FINDINGS (2):",
+        "findings": 3,
+        "verdict": "FINDINGS (3):",
         "runbook": ""
       },
       {

@@ -353,6 +353,71 @@ def apply_loop_inflight(projects: dict) -> None:
                     marked.append(story[0])
         if marked:
             print(f"[{pkey}] loop-home in-flight: {', '.join(marked)} (run {runs[0].name})")
+        _set_inflight_card(proj, pkey, runs[0], active_ids)
+
+
+def _set_inflight_card(proj: dict, pkey: str, run: Path, active_ids: set[str]) -> None:
+    """Populate `inflight` — the live elapsed clock / progress / ETA card.
+
+    The card has always existed in the renderer; nothing ever FED it. The function
+    above is named `apply_loop_inflight` but only ever flipped a story's status from
+    pending to active, so `inflight` stayed whatever a human last hand-pasted — which
+    is why the clock vanished from every line the moment nobody hand-pasted one.
+
+    ALL-OR-NOTHING, deliberately. The renderer guards with `if (p.inflight)` and then
+    reads startEpoch/median/lo/hi/key/title/phase/attempt/phaseAsOf unconditionally —
+    `Math.round(f.median / f.hi * 100)` throws on a partial object and takes the whole
+    board down with it. Emit every field or leave it None.
+    """
+    import time
+    jf = run / "journal.jsonl"
+    if not jf.is_file():
+        return
+    start_ts, last_task = None, None
+    for line in jf.read_text(encoding="utf-8", errors="replace").splitlines():
+        try:
+            e = json.loads(line)
+        except Exception:
+            continue
+        kind, ts = e.get("kind"), e.get("ts")
+        if kind == "story-start" and isinstance(ts, (int, float)):
+            start_ts = ts                      # a re-drive restarts the clock, as it should
+        elif kind == "session-start" and e.get("task_id"):
+            last_task = e["task_id"]
+    if start_ts is None or not last_task:
+        return
+
+    # task ids are `<story-key>-<phase>-<attempt>`; phase/attempt come from the tail so
+    # the card says "review · attempt 2" rather than guessing from run state.
+    m = re.search(r"-(dev|review|triage)-(\d+)$", last_task)
+    phase, attempt = (m.group(1), m.group(2)) if m else ("dev", "1")
+
+    sid = sorted(active_ids)[0]
+    title = next((s[2] for e in proj["epics"] for s in e["stories"] if s[0] == sid), sid)
+
+    # Baseline for the progress bar + ETA: this line's OWN measured stories. Using
+    # another line's numbers would compare unlike metrics (warden measures active
+    # compute, atlas wall-clock), so a line with no history simply gets no card.
+    per = (proj.get("timing") or {}).get("perStory") or {}
+    mins = sorted(v for v in per.values() if isinstance(v, (int, float)) and v > 0)
+    if not mins:
+        return
+    median = mins[len(mins) // 2] if len(mins) % 2 else \
+        round((mins[len(mins) // 2 - 1] + mins[len(mins) // 2]) / 2)
+
+    proj["inflight"] = {
+        "key": sid,
+        "title": title,
+        "phase": phase,
+        "attempt": attempt,
+        "startEpoch": int(start_ts),
+        "median": int(median),
+        "lo": int(mins[0]),
+        "hi": int(max(mins[-1], median + 1)),   # hi is a divisor in the renderer
+        "phaseAsOf": time.strftime("%Y-%m-%d %H:%M UTC", time.gmtime()),
+    }
+    print(f"[{pkey}] in-flight card: {sid} · {phase} attempt {attempt} · "
+          f"started {int((time.time() - start_ts) / 60)} min ago · median {median}m")
 
 
 # ---- source: git (hands-off / CI) -------------------------------------------
@@ -1247,10 +1312,16 @@ def scan_timing(projects: dict) -> None:
         # (The marker alone was insufficient: output written before the marker
         # existed looked curated and could never be repaired by re-running.)
         broken = isinstance(existing_t, dict) and "perStory" not in existing_t
-        curated = (not broken) and (
-            (isinstance(existing_t, dict) and not existing_t.get("derived"))
-            or (isinstance(existing_v, dict) and not existing_v.get("derived")))
-        if curated:
+        # Curated-ness is PER FIELD, not per project. The old all-or-nothing test
+        # skipped the whole project when EITHER field was hand-authored — so atlas,
+        # which has a curated `timing` (wall-clock from PR timestamps, because waves
+        # 0-H ran in a web session with no journals) but NO `velocity` at all, could
+        # never gain a velocity graph even once it had real loop journals. Warden is
+        # unaffected: both of its fields are curated, so there is nothing to fill.
+        timing_curated = (not broken) and isinstance(existing_t, dict) \
+            and not existing_t.get("derived")
+        velocity_curated = isinstance(existing_v, dict) and not existing_v.get("derived")
+        if timing_curated and velocity_curated:
             continue
         runs = Path(home) / ".bmad-loop" / "runs"
         if not runs.is_dir():
@@ -1292,10 +1363,15 @@ def scan_timing(projects: dict) -> None:
             round((mins[len(mins) // 2 - 1] + mins[len(mins) // 2]) / 2)
         st = [s for e in proj["epics"] for s in e["stories"]]
         done_n = sum(1 for s in st if s[1] == "done")
-        proj["velocity"] = {
+        velocity_obj = {
             "derived": True,
+            # The in-flight caveat has to live HERE too, not only on `timing.note`:
+            # velocity is now derivable on a line whose timing is curated (atlas), so
+            # the note that used to carry this never reaches the reader.
             "sub": "Active agent-compute per story (dev + review; excludes "
-                   "gate-pause wait) — derived from this line's bmad-loop journals.",
+                   "gate-pause wait) — derived from this line's bmad-loop journals. "
+                   "A story still in flight contributes only its CLOSED sessions, so "
+                   "its bar is a floor, not a total.",
             "bars": bars,
             "foot": [
                 [f"~{median} min", "median / story", "var(--done)"],
@@ -1315,7 +1391,7 @@ def scan_timing(projects: dict) -> None:
         epic_min: dict[str, int] = {}
         for sid, mins in bars:
             epic_min[f"E{sid.split('.')[0]}"] = epic_min.get(f"E{sid.split('.')[0]}", 0) + mins
-        proj["timing"] = {
+        timing_obj = {
             "derived": True,
             "metric": "active agent-compute per story (dev + review; excludes "
                       "gate-pause wait) — from bmad-loop run journals",
@@ -1328,8 +1404,20 @@ def scan_timing(projects: dict) -> None:
             "perStory": per_story,
             "epicMin": epic_min,
         }
-        print(f"[{pkey}] timing derived: {len(bars)} stories, "
-              f"{sum(b[1] for b in bars)} min active compute")
+        # Assign PER FIELD — a curated field is never overwritten, but its presence
+        # no longer blocks the other from being filled.
+        wrote = []
+        if not velocity_curated:
+            proj["velocity"] = velocity_obj
+            wrote.append("velocity")
+        if not timing_curated:
+            proj["timing"] = timing_obj
+            wrote.append("timing")
+        if not wrote:
+            continue
+        print(f"[{pkey}] {'+'.join(wrote)} derived: {len(bars)} stories, "
+              f"{sum(b[1] for b in bars)} min active compute"
+              + (" (curated timing preserved)" if timing_curated else ""))
 
 
 # ---- station ownership (the Dream -> code through-line) ----------------------

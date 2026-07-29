@@ -999,7 +999,12 @@
       ph += '</div><div class="foot">' + v.foot.map(([val,k,col]) =>
         '<div class="m"><span class="v"' + (col ? ' style="color:' + col + '"' : '') + '>' + val + '</span><span class="k">' + k + '</span></div>').join("") + '</div></div>';
       html += ph;
-    } else if (p.roadmap) {
+    }
+    // Velocity and the wave roadmap are COMPLEMENTARY, not alternatives: one is
+    // per-story compute, the other is where the programme is. This was `else if`
+    // only because no line had ever carried both — the moment atlas gained a
+    // derived velocity, its Wave roadmap silently vanished.
+    if (p.roadmap) {
       const r = p.roadmap;
       let ph = '<div class="panel"><h2>Wave roadmap</h2><p class="sub">' + r.sub + '</p><div class="rail">';
       r.stops.forEach(([w, name, st]) => {
