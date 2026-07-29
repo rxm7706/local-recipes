@@ -2,13 +2,13 @@
 title: 'Stamp advisory data with its build provenance (AD-17)'
 type: 'feature'
 created: '2026-07-28'
-status: 'in-review'
+status: 'done'
 review_loop_iteration: 0
-followup_review_recommended: true  # pass 3 (fresh follow-up): 0 bad_spec, 7 patches auto-fixed (2 medium: a reproduced datetime/ns fetched_at ValueError crash + missing failure isolation in the provenance seam) — new defensive logic in provenance.py warrants one independent look; gates green (800/19, 47/47)
+followup_review_recommended: true  # pass 4 (fresh follow-up): 0 bad_spec, 4 patches auto-fixed (1 medium: object-dtype fetched_at silently discarded AND misreported with a false "0 rows or all-NULL" reason, reproduced live) — the fix adds a NEW speculative-parse fallback branch plus 2 new degrade paths in resolve_for_file that no independent reviewer has seen; gates green (803/19, 47/47)
 context: []
 warnings: ['oversized']
 baseline_revision: 'fd2fd0b260a1f59164afc9314de268e2cd7abedc'
-final_revision: '6696543a68ef790571d7ad4adc0e7247ad0a0f82'
+final_revision: '7688ce5864eda7f8307425a5099ebea1f61d776a'
 ---
 
 <intent-contract>
@@ -564,4 +564,143 @@ ownership/unversioned-sibling-receipts design speculation (versioning
 framing settled in pass 2); style residue incl. the vacuous
 `str(NOW) not in card.text` assertion (cosmetic).
 
+### 2026-07-29 — Review pass 4 (fresh follow-up pass on the done spec)
 
+- intent_gap: 0
+- bad_spec: 0
+- patch: 4: (high 0, medium 1, low 3)
+- defer: 4: (high 0, medium 0, low 4)
+- reject: 12
+- addressed_findings:
+  - `[medium]` `[patch]` `provenance.py::_resolve_row_fetched_at` discarded
+    genuine provenance from an OBJECT-dtype `fetched_at` column (ISO-8601
+    strings or `datetime.datetime` objects — the shape a bypass writer
+    round-trips through Parquet) AND then misreported it with a demonstrably
+    false reason, `"no 'fetched_at' values recorded (0 rows or all-NULL)"`,
+    about a column that was neither empty nor NULL. Reproduced live for both
+    shapes. Pass 3 fixed exactly this class for `datetime64` dtype; object
+    dtype was the adjacent uncovered case. Fixed: a speculative
+    `pd.to_datetime` fallback runs ONLY after the numeric path yields nothing
+    AND only for a non-numeric column (so a numeric column is never
+    re-interpreted as a date, and numeric STRINGS still take the numeric
+    path); the unavailable reason now distinguishes genuinely-empty from
+    unparseable. New tests:
+    `test_resolve_row_fetched_at_reads_object_dtype_timestamp_strings`,
+    `test_resolve_row_fetched_at_unparseable_column_states_an_honest_reason`.
+  - `[low]` `[patch]` `provenance.py::resolve_for_file` reported a
+    DIRECTORY's mtime as confident `file-mtime` provenance — a container's
+    timestamp presented as the data's, i.e. exactly the plausible-but-wrong
+    stamp the Never boundary forbids. Reproduced live. Fixed: an
+    `S_ISREG` guard degrades to `unavailable` + "not a regular file". New
+    test: `test_resolve_for_file_refuses_a_directory_mtime`.
+  - `[low]` `[patch]` `resolve_for_file` called `_iso(mtime)` unguarded while
+    the sibling `_resolve_row_fetched_at` wraps its own `_iso` calls — and it
+    is the MORE exposed of the two, because `build_dashboard` calls it
+    outside `load_with_provenance`'s advisory-failure backstop, so an
+    unconvertible mtime would take down the entire dashboard build rather
+    than one page's stamp. Fixed: the same
+    `(ValueError, OverflowError, OSError)` backstop.
+  - `[low]` `[patch]` three docstrings that assert the AD-7 invariant still
+    described `read_dataset` as a bare `catalog.load` passthrough, which the
+    `_provenance` seam made false: `mcp/__init__.py`'s "a tool body does
+    exactly two shapes of thing" invariant, `mcp/audit.py`'s
+    `read_dataset:<catalog-name>` verdict definition, and
+    `tests/mcp/test_read_surface.py`'s module docstring. Pass 3 patched this
+    same class in `mcp/tools.py` + `provenance.py` but the sweep stopped
+    there. All three corrected.
+
+Deferred (4 NEW ledger entries; per the orchestrator's instruction no
+existing entry was modified, re-opened, or rewritten): the kind dispatch's
+coverage gap over the 8 `json.JSONDataset`/`yaml.YAMLDataset` entries whose
+`_describe()` already exposes a stat-able `filepath`; the 3 composed
+request datasets (`AnacondaDownloadsDataset`/`GitHubRequestDataset`/
+`PyPIJsonRequestDataset`) that compose rather than subclass `APIDataset` and
+so miss the `live-fetch` branch; the dashboard-vs-MCP dual path-resolution
+mechanism for the same logical dataset; and the per-read `logger.warning`
+that reusing `_to_epoch_seconds` on the read path produces. The first two
+are coverage EXTENSIONS, not deviations — the intent-contract's I/O matrix
+explicitly specifies `unavailable` for both — and the fourth is deliberately
+not patched in-pass because the only clean fix widens a shared dataset
+classmethod's signature, against this spec's "reuse directly" mandate.
+
+Rejected (12): four are duplicates of existing pass-2 ledger entries
+(dashboard eager-vs-lazy timing, `_describe()` fragility, versioned-
+`ParquetDataset` base paths, `build_stamp_newest` never rendered) and were
+left untouched. Four are behaviors the frozen contract explicitly mandates,
+so "fixing" them would be the deviation: `IncrementalParquetDataset` with no
+usable `fetched_at` degrading to `unavailable` rather than falling back to
+file-mtime; individual unparseable cells being ignored like NULLs; a `0`
+sentinel surfacing as a 1970 stamp and a single ancient row dominating the
+range (C3 mandates OLDEST precisely so staleness is judged on the worst
+case); and the fallback `reason` naming the dataset's type. One is
+explicitly out of scope by the Never boundary (stamping `factory-status`,
+which an AC requires byte-for-byte unchanged). The remaining three are
+settled or unreachable: absolute paths in `reason` strings (pass-3
+disposition holds — a local operator/agent tool reading local data, no
+secret), `_provenance_line` rendering a literal `None` (no construction site
+in the module or the dashboard leaves `build_stamp`/`reason` unset), and the
+two vacuous `STAMP`/`str(NOW) not in card.text` assertions (pass-3
+disposition holds — cosmetic; the `expected_stamp in card.text` equality on
+the line above is what actually carries the proof).
+
+
+
+## Auto Run Result
+
+Status: `done` — review pass 4 (a fresh follow-up review of the already-`done`
+spec, `review_loop_iteration` 0). No intent gap, no `bad_spec`, so no
+implementation loopback: the pass-3 code was reviewed as-shipped and hardened
+in place.
+
+**Implemented change (unchanged in substance since pass 3):** `read_dataset`
+and the 7 non-factory dashboard pages carry the data's OWN build provenance
+(AD-17), derived by dataset KIND in `pyforge.atlas.provenance` — a
+`fetched_at` column's oldest/newest recorded value, a materialized file's
+mtime, `now` only for a genuine live API fetch, or an honest `unavailable` +
+reason. This pass changed no envelope field, no `provenance_kind` value, and
+no acceptance criterion.
+
+**Files changed this pass** (commit `7688ce5864`, baseline `fd2fd0b260`):
+- `src/pyforge/atlas/provenance.py` — object-dtype `fetched_at` now parses as
+  a datetime after the numeric path yields nothing; the `unavailable` reason
+  distinguishes genuinely-empty from unparseable; `resolve_for_file` refuses a
+  non-regular path and backstops an unconvertible mtime; new
+  `_datetime_to_epoch_seconds` helper shared by both datetime paths.
+- `src/pyforge/atlas/mcp/__init__.py` — the AD-7 "two shapes of thing"
+  invariant now names the `_provenance` seam instead of a bare `catalog.load`.
+- `src/pyforge/atlas/mcp/audit.py` — the `read_dataset:<catalog-name>` verdict
+  definition notes the AD-17 envelope.
+- `tests/mcp/test_read_surface.py` — module docstring corrected; 3 regression
+  tests added (object-dtype strings, honest unparseable reason, directory
+  refusal).
+
+**Review findings breakdown:** 4 patches applied (1 medium, 3 low), 4 items
+deferred as NEW ledger entries, 12 rejected. Full detail in the Review Triage
+Log entry for this pass. Existing `deferred-work.md` entries were neither
+modified nor re-opened, per the orchestrator's instruction; the 4 duplicates
+of pass-2 entries were rejected rather than re-filed.
+
+**Verification performed:**
+- `pixi run -e pyforge-atlas kedro-test` — **803 passed, 19 skipped** (pass-3
+  baseline 800 passed; +3 new regression tests, zero regressions).
+- `pixi run -e pyforge-atlas kedro-catalog-check` — **47/47 passed**, unchanged
+  (no `catalog.yml` edits).
+- Every patched finding was reproduced against the live pinned env
+  (pandas 3.0.3 / kedro 1.5.0) BEFORE fixing: object-dtype ISO strings and
+  `datetime.datetime` objects both returned the false "0 rows or all-NULL"
+  reason, and `resolve_for_file(<a directory>)` returned a confident
+  `file-mtime` stamp. A pandas "could not infer format" `UserWarning` that the
+  new speculative parse initially leaked was suppressed at the probe site and
+  confirmed gone from the suite's warning summary.
+
+**Residual risks:**
+- The new speculative-parse fallback is new behavior on a degradation path.
+  It is ordered to be unreachable for numeric columns (including numeric
+  STRINGS, which the numeric path already coerces), but no independent
+  reviewer has seen it — hence `followup_review_recommended: true`.
+- The kind dispatch still covers 61 of 86 catalog entries by design; the 8
+  JSON/YAML entries and the 3 composed request datasets that could carry
+  genuine provenance are logged as coverage extensions, not deviations.
+- The dashboard-vs-MCP dual path-resolution mechanism remains: each surface is
+  internally consistent, but they can disagree with each other when the
+  process CWD is not the repo root.
