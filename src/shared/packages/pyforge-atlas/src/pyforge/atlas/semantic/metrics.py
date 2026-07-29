@@ -147,9 +147,11 @@ def ci_red(t: Any) -> Any:
 
     AUD-ATLAS-012: a NULL ``ci_status`` (CI state never observed) must NOT read as
     CI-red — the legacy predicate is a ``--filter``, where a NULL simply fails to match
-    and is therefore not ci-red. ``.fill_null(False)`` restores that parity and matches
-    the sibling predicates below (``has_open_prs`` / ``has_open_issues``), which already
-    coalesce their NULL-prone inputs the same way.
+    and is therefore not ci-red. ``.fill_null(False)`` restores that parity, matching the
+    sibling predicates below in effect (not mechanism): ``has_open_prs`` /
+    ``has_open_issues`` coalesce their NULL-prone *inputs* (``fill_null(0) > 0``), while
+    here the coalesce is on the membership test's *output*, since ``NULL.isin(...)``
+    yields NULL, not False.
     """
     return t.ci_status.isin(_CI_RED_STATES).fill_null(False)
 
@@ -235,7 +237,9 @@ METRIC_PROVENANCE: dict[str, dict[str, str]] = {
         "provenance": "migrated-node-derived-flag-recapture",
         "data_wiring": "migrated-column",
         "note": "gh_default_branch_status IN ('failure','error') mapped onto the "
-        "migrated ci_status column; value domain assumed identical, needs recapture.",
+        "migrated ci_status column; value domain assumed identical, needs recapture. "
+        "NULL ci_status coalesces to FALSE (AUD-ATLAS-012 .fill_null) — an unobserved "
+        "CI state is not ci-red, matching the legacy --filter's NULL-excludes semantics.",
     },
     "has_open_prs": {
         "kind": "dimension",

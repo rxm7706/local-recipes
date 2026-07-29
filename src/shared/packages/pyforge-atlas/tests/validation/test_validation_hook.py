@@ -324,8 +324,9 @@ def test_non_dataframe_output_skips_gracefully():
 def test_empty_frame_with_valid_columns_passes():
     # explicit `string[pyarrow]` (not `dtype=str`): pandera dtype-checks an EMPTY column's
     # literal declared dtype (there are no values to infer a type from), and `Column(str)`
-    # always expects `string[pyarrow]` there, independent of pyforge.atlas's
-    # `future.infer_string` pin (__init__.py, AUD-ATLAS-011). NOTE: this is a narrow fix for
+    # expects `string[pyarrow]` there (observed under pandera 0.32 / pandas 3.0 with pyarrow
+    # installed — a version-coupled mapping, not a timeless contract), independent of
+    # pyforge.atlas's `future.infer_string` pin (__init__.py, AUD-ATLAS-011). NOTE: this is a narrow fix for
     # THIS test's empty frame, not a general answer -- `DEFAULT_CONTRACTS` ships empty today,
     # but a future `Column(str)` contract validated against a naturally-empty `object`-dtype
     # frame (the pin's normal output) will hit the same mismatch. Tracked in
@@ -346,6 +347,12 @@ def test_empty_frame_missing_a_required_column_halts():
     hooks = DataValidationHooks([PanderaValidator({"pypi_current_versions": PYPI_SCHEMA})], build_stamp=STAMP)
     raised, saves = _run(hooks, empty_bad)
     assert isinstance(raised, DataContractViolation)
+    # the violation is the missing `version` column specifically, and ONLY that — not the
+    # incidental empty-frame dtype mismatch this test used to (also) trip pre-AUD-ATLAS-011.
+    [violation] = raised.violations
+    cases = violation.evidence["failure_cases"]
+    assert any(c.get("check") == "column_in_dataframe" and c.get("failure_case") == "version" for c in cases)
+    assert all(c.get("check") == "column_in_dataframe" for c in cases)
     assert saves == []
 
 

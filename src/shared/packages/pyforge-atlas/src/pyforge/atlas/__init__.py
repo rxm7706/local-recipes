@@ -1,5 +1,10 @@
 """pyforge-atlas
+
+Importing this package (or any of its submodules) pins pandas' process-wide
+``future.infer_string`` option to ``False`` — see AUD-ATLAS-011 below.
 """
+
+import warnings
 
 import pandas as _pd
 
@@ -17,7 +22,13 @@ import pandas as _pd
 # crashing this package's import.
 try:
     _pd.set_option("future.infer_string", False)
-except _pd.errors.OptionError:  # pragma: no cover - only if a future pandas removes it
-    pass
+except (_pd.errors.OptionError, ValueError):  # pragma: no cover - only if a future pandas removes/locks it
+    warnings.warn(
+        "pyforge.atlas could not pin pandas' future.infer_string option off; "
+        "string-like columns will use NaN (not None) as their missing-value sentinel, "
+        "re-exposing the AUD-ATLAS-011 NULL-identity regressions.",
+        RuntimeWarning,
+        stacklevel=2,
+    )
 
 __version__ = "0.1.0"  # keep in sync with pyproject.toml / pixi.toml [package] version
