@@ -267,9 +267,13 @@ close later.
   `in_process` executor in `conf/base/dagster.yml` remains what serializes ops *within* a single
   run — a different property, and on the Dagster plane a load-bearing one (`DW-AD23-2`). Three
   boundaries stand: file locks are single-machine (NFS `flock` is unreliable); release on the
-  Dagster plane is process-local; and because kedro calls `before_pipeline_run` outside its `try`
-  with admission dispatched first, a later before-hook that raises leaves the locks held until the
-  process exits — an availability wedge for the long-lived MCP server, not a correctness hole.
+  Dagster plane is process-local, and a *failed* Dagster run releases nothing in-process at all
+  (its `on_pipeline_error` fires in the daemon, not the run worker); and because kedro calls
+  `before_pipeline_run` outside its `try` with admission dispatched first, a later before-hook
+  that raises leaves the locks held until the process exits — an availability wedge for the
+  long-lived MCP server, not a correctness hole. Admission's first-dispatch position is enforced
+  by `@hook_impl(tryfirst=True)`, not by its place in the `settings.HOOKS` tuple, which
+  entry-point plugins would otherwise outrank.
 - **No data-access logic in a node body, ever.** Sources, outputs, credentials, endpoints, and
   physical layout are catalog concerns; nodes are pure functions taking and returning
   dataframes. Credentials attach to a dataset's destination host only. Nodes carry no retries,

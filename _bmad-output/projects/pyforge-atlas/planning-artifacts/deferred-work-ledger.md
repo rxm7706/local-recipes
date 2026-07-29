@@ -634,10 +634,11 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
     is PROJECT-anchored, never CWD-relative — a first implementation got this wrong and was
     reverted, because kedro resolves catalog filepaths under the project root while the MCP
     server and the repo's pixi tasks run from different CWDs.
-    Gate, re-run against the tree on 2026-07-29 (not transcribed): `kedro-test`
-    **874 passed / 19 skipped** (baseline before the story: 803 / 19; `tests/test_admission.py`
-    contributes **71**, including a two-process contention gate that spawns a real second OS
-    process — no threads, no mocks); `kedro-catalog-check` **47**; `dagster-dryrun` **58**.
+    Gate, re-run against the tree on 2026-07-29 after review pass 3 (not transcribed):
+    `kedro-test` **888 passed / 19 skipped** (baseline before the story: 803 / 19;
+    `tests/test_admission.py` contributes **85**, including a two-process contention gate that
+    spawns a real second OS process — no threads, no mocks); `kedro-catalog-check` **47**;
+    `dagster-dryrun` **58**.
     AD-23 was re-promoted to its full form in the spine on the strength of that gate, with the
     single-machine (NFS `flock`) and Dagster-release boundaries carried explicitly.
   status: closed
@@ -654,26 +655,41 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
     pluggy's missing-argument check is per-IMPL, not per-call, so any impl declaring
     `run_result` raises `HookCallError`. `AtlasObservabilityHooks.after_pipeline_run` still
     declares it, so the Dagster after-op still fails there. Admission is unharmed only because
-    kedro registers `settings.HOOKS` in tuple order and pluggy dispatches LIFO:
-    `RunAdmissionHooks` is appended last, therefore dispatched FIRST, and its subset signature
-    lets it release BEFORE the E2 impl raises. That ordering is load-bearing and easy to break
-    by reordering the tuple. Not fixed here: it is E2-owned and touches 10 positional call
-    sites in `tests/observability/`, which this story is scoped out of.
+    it is dispatched FIRST and its subset signature lets it release BEFORE the E2 impl raises.
+    That ordering is load-bearing, and it is bought by `@hook_impl(tryfirst=True)` on all three
+    admission hooks — **not** by tuple position. Tuple position is NOT sufficient, and was
+    measured to be wrong: `KedroSession.__init__` registers `settings.HOOKS` and *then*
+    `_register_hooks_entry_points(...)`, so an installed plugin registers later and, under
+    pluggy's LIFO, dispatches earlier — this env's `kedro-viz` `PipelineRunStatusHook` took all
+    three hooks ahead of admission until the markers were added (review pass 3). Not fixed
+    here: the `run_result` signature is E2-owned and touches 10 positional call sites in
+    `tests/observability/`, which this story is scoped out of.
     (2) **`in_process` coupling.** Acquisition happens inside the
     `before_pipeline_run_hook_<job>` op. An OS file lock belongs to the open file description
     of the process that took it, so under a MULTIPROCESS Dagster executor that op's subprocess
     would exit and the kernel would drop every lock before the first node ran — admission would
     silently become a no-op on this plane while still reporting success. It is safe today ONLY
     because `conf/base/dagster.yml` declares `in_process`.
-    (3) **Later before-hooks can strand admission's locks.** Kedro calls `before_pipeline_run`
-    OUTSIDE its `try` block, so only exceptions from `runner.run` reach `on_pipeline_error`.
-    Admission is dispatched FIRST (LIFO), so every other before-hook runs after the locks are
-    taken: if one raises — e.g. `AtlasObservabilityHooks.before_pipeline_run` opening an OTel
-    span against a live exporter — kedro fires no error hook and the locks are held until the
+    (3) **Later before-hooks can strand admission's locks.** Kedro calls BOTH
+    `before_pipeline_run` and `after_pipeline_run` OUTSIDE its `try` block, so only exceptions
+    from `runner.run` reach `on_pipeline_error`. Admission is dispatched FIRST (`tryfirst`), so
+    every other before-hook runs after the locks are taken: if one raises — e.g.
+    `AtlasObservabilityHooks.before_pipeline_run` opening an OTel span against a live exporter,
+    or any installed plugin's — kedro fires no error hook and the locks are held until the
     process exits. Harmless for a CLI run; for the long-lived MCP server it wedges that dataset
     set until restart. It is an AVAILABILITY boundary, not a correctness hole (no second writer
     is ever admitted), and it is NOT fixable by releasing other runs' tickets — that would be
-    actively wrong inside a concurrently-serving process.
+    actively wrong inside a concurrently-serving process. The symmetric *release*-side window
+    (a hook raising in `after_pipeline_run` before admission got to run) is CLOSED by
+    `tryfirst`, and only by it.
+    (4) **A FAILED Dagster run releases nothing in-process.** kedro-dagster's after-op is
+    SKIPPED when an upstream op fails, and it fires `on_pipeline_error` from a
+    `@dg.run_failure_sensor` that executes in the Dagster DAEMON process — where `_tickets` is
+    empty, so `_release_for` is a no-op. On that plane a failed run's locks are therefore freed
+    only by the run worker's process exit. Survivable today only because Dagster launches run
+    workers as separate short-lived processes: an undeclared coupling of exactly the same kind
+    as the `in_process` one in (2), and recorded here for the same reason. Nothing on the CLI
+    or MCP planes is affected — kedro fires `on_pipeline_error` in-process there.
   resolution: (1) drop the unused `run_result` parameter from
     `AtlasObservabilityHooks.after_pipeline_run` (or make it defaulted) and update its
     positional call sites, then assert both planes in `tests/observability/`. (2) Before
@@ -683,7 +699,10 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
     `admission.py` both carry the warning inline so the coupling is discovered at the point of
     change, not after a silent regression. (3) needs a hook-manager-level guarantee kedro does not
     currently offer; the honest interim is that it is recorded on AD-23 and in `SPEC.md` as the
-    third boundary rather than left for an operator to discover during an incident.
+    third boundary rather than left for an operator to discover during an incident. (4) resolves
+    with the same move as (2) — a run-scoped Dagster resource whose teardown runs in the run
+    process would release on both the success and the failure path, replacing two undeclared
+    process-lifetime couplings with one explicit lifetime.
   status: open
 
 ## 24. Sprint status

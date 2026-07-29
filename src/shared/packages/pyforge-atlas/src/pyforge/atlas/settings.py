@@ -43,10 +43,12 @@ from pyforge.atlas.validation import DataValidationHooks
 # CWD-relative — a CWD-relative root would silently void admission between two
 # processes writing the same Parquet from different directories).
 #
-# Appended LAST on purpose: kedro registers this tuple in order and pluggy dispatches
-# LIFO, so admission is acquired BEFORE every other before_pipeline_run and released
-# BEFORE every other after_pipeline_run. See pyforge.atlas.admission for the boundaries
-# that ordering creates.
+# Admission is acquired BEFORE every other before_pipeline_run and released BEFORE every
+# other after_pipeline_run — but that comes from the `@hook_impl(tryfirst=True)` markers on
+# RunAdmissionHooks, NOT from its position in this tuple. Kedro registers entry-point plugins
+# AFTER this tuple and pluggy dispatches LIFO, so tuple order alone puts any installed plugin
+# (kedro-viz is in this env) ahead of everything here. See pyforge.atlas.admission for the
+# measurement and for the boundaries that ordering creates.
 from pyforge.atlas.admission import RunAdmissionHooks
 
 HOOKS = (

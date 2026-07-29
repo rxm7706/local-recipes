@@ -269,8 +269,13 @@ def spawn(tmp_path):
     yield _spawn
 
     for child in children:
+        # One unreapable child must not abandon the rest still holding flocks in tmp_path:
+        # `kill()` waits with a timeout and can raise `TimeoutExpired`, which would otherwise
+        # break out of this loop.
         try:
             child.kill()
+        except Exception:  # noqa: BLE001 - teardown reaps every child or none
+            pass
         finally:
             child.close()
 
@@ -441,6 +446,18 @@ def test_a_relative_project_path_is_refused(relative):
         default_lock_root(relative)
 
 
+@pytest.mark.parametrize("relative", ["locks", "data/.locks", ".", "../locks", Path("rel")])
+def test_a_relative_lock_root_is_refused(relative, tmp_path, monkeypatch):
+    """The guard ``_resolve_base`` applies to ``project_path``, on the input path that used to
+    skip it. ``acquire(lock_root="locks")`` — or ``RunAdmissionHooks(lock_root="locks")`` —
+    silently re-anchored the locks to the CWD, which is the exact defect review pass 1
+    reverted, reachable through a different door."""
+    monkeypatch.chdir(tmp_path)
+    with pytest.raises(AdmissionConfigError, match="absolute"):
+        acquire(["a"], run_id="r1", lock_root=relative)
+    assert list(tmp_path.iterdir()) == [], "a config error must take no locks"
+
+
 def test_an_empty_project_path_falls_back_to_the_package_derived_root(monkeypatch, tmp_path):
     """``""`` means "not supplied", not "anchor here": it falls through to the
     ``__file__``-derived project root — still absolute, still the tree the guarded Parquet
@@ -514,9 +531,41 @@ def test_hook_registered_in_settings_beside_the_others():
     kinds = [type(h).__name__ for h in settings.HOOKS]
     assert "RunAdmissionHooks" in kinds
     assert {"ProjectHooks", "AtlasObservabilityHooks", "DataValidationHooks"} <= set(kinds)
-    # appended LAST → pluggy's LIFO dispatch runs admission FIRST (locks taken before every
-    # other before_pipeline_run, released before every other after_pipeline_run).
-    assert kinds[-1] == "RunAdmissionHooks"
+
+
+def _dispatch_order(hook_manager, hook_name: str) -> list[str]:
+    """Plugin class names in the order pluggy will CALL them.
+
+    ``get_hookimpls()`` returns the internal list, whose LAST element is called first.
+    """
+    impls = getattr(hook_manager.hook, hook_name).get_hookimpls()
+    return [type(impl.plugin).__name__ for impl in reversed(impls)]
+
+
+def test_admission_is_dispatched_first_on_a_real_session_not_merely_last_in_the_tuple():
+    """The claim is about DISPATCH order, so assert dispatch order — on a real session.
+
+    The version this replaces asserted ``settings.HOOKS[-1] is RunAdmissionHooks`` and called
+    that "LIFO ⇒ dispatched first". It is not the same statement, and the difference was
+    live: ``KedroSession.__init__`` registers ``settings.HOOKS`` and THEN
+    ``_register_hooks_entry_points(...)``, so an installed plugin registers later and — under
+    LIFO — dispatches EARLIER. Measured before the fix, kedro-viz's ``PipelineRunStatusHook``
+    preceded admission on all three hooks. ``@hook_impl(tryfirst=True)`` is what actually buys
+    the ordering; this test is what stops it being removed as decoration.
+    """
+    _seed_stub_credentials()
+    from kedro.framework.session import KedroSession
+    from kedro.framework.startup import bootstrap_project
+
+    bootstrap_project(MEMBER_DIR)
+    with KedroSession.create(project_path=MEMBER_DIR) as session:
+        hook_manager = session._hook_manager
+        for hook_name in ("before_pipeline_run", "after_pipeline_run", "on_pipeline_error"):
+            order = _dispatch_order(hook_manager, hook_name)
+            assert order[0] == "RunAdmissionHooks", (
+                f"{hook_name} dispatch order is {order} — admission must acquire before, and "
+                f"release before, every other implementation (including entry-point plugins)"
+            )
 
 
 def test_deepcopy_is_a_working_hook_with_empty_per_run_state(tmp_path):
@@ -707,18 +756,27 @@ def test_gate_opt_in_wait_admits_only_after_the_holder_actually_releases(tmp_pat
         waiter.wait_until_ready()
         early = waiter.poll_verdict(_BLOCKED_WINDOW)
         assert early is None, f"the waiter never blocked on the held lock: {early}"
+        # ...and it was SILENT because it was blocking, not because it had died. Without this
+        # the assertion above passes for a child that crashed after the handshake, and the
+        # real failure surfaces `_CHILD_TIMEOUT` later as an unrelated-looking timeout.
+        assert waiter.proc.poll() is None, (
+            f"the waiter exited instead of blocking (rc={waiter.proc.returncode}); "
+            f"stderr:\n{waiter._stderr_text()}"
+        )
     finally:
         released_at = time.monotonic()
         release(held)
 
     verdict = waiter.verdict()
-    admitted_at = time.monotonic()
 
     assert verdict["verdict"] == "admitted"
     assert verdict["datasets"] == ["a"]
     assert verdict["reclaimed"] == [], "a live holder that releases cleanly is not a reclaim"
-    # It was provably still blocked when the parent released, and only spoke afterwards.
-    assert admitted_at > released_at > spawned_at + _BLOCKED_WINDOW
+    # `_BLOCKED_WINDOW` of proven silence, then admission only after the release. (There used
+    # to be an `admitted_at > released_at > spawned_at + _BLOCKED_WINDOW` line here; it read
+    # as independent corroboration but was true by construction — `released_at` is sampled
+    # after a mandatory blocking poll, and monotonic time supplies the rest.)
+    assert released_at - spawned_at >= _BLOCKED_WINDOW
 
 
 def test_gate_opt_in_wait_rejects_when_the_deadline_expires(tmp_path, spawn):
@@ -935,15 +993,43 @@ def test_a_missing_holder_record_still_rejects_cleanly(tmp_path):
 
 def test_the_opt_in_wait_is_one_deadline_shared_across_all_locks(tmp_path):
     """Not ``wait_seconds`` per lock, which would multiply the caller's budget by the
-    dataset count."""
-    held = acquire(["a", "b", "c"], run_id="r1", lock_root=tmp_path)
+    dataset count.
+
+    The contender must actually REACH a second lock for the distinction to exist. The version
+    this replaces held ``{a, b, c}`` and asked for ``{a, b, c}``: ``a`` is first in sorted
+    order and was already held, so the contender timed out on lock #1 and never got to #2 —
+    measured, a per-lock-deadline mutant of :func:`acquire` finished in 0.504s against the
+    shipped 0.505s and cleared the same ``< 1.4`` bar. The property was unproven while three
+    artifacts asserted it.
+
+    So: hold ``a`` and ``b`` as SEPARATE tickets, hand ``a`` back part-way through the budget,
+    and keep ``b``. The contender now spends ~``FREE_AT`` on ``a`` and must reject on ``b``
+    when the ONE shared deadline expires at ~``BUDGET``. A per-lock mutant would restart the
+    clock at ``b`` and only reject at ~``FREE_AT + BUDGET``.
+    """
+    budget, free_at = 1.0, 0.4
+    first = acquire(["a"], run_id="holder-a", lock_root=tmp_path)
+    second = acquire(["b"], run_id="holder-b", lock_root=tmp_path)
+    releaser = threading.Timer(free_at, release, args=(first,))
+    releaser.start()
     started = time.monotonic()
     try:
-        with pytest.raises(RunAdmissionRejected):
-            acquire(["a", "b", "c"], run_id="r2", lock_root=tmp_path, wait_seconds=0.5)
+        with pytest.raises(RunAdmissionRejected) as excinfo:
+            acquire(["a", "b"], run_id="r2", lock_root=tmp_path, wait_seconds=budget)
+        elapsed = time.monotonic() - started
     finally:
-        release(held)
-    assert time.monotonic() - started < 1.4, "the deadline was applied per lock, not once"
+        releaser.cancel()
+        releaser.join(timeout=10.0)
+        release(second)
+
+    assert excinfo.value.conflicting == "b", "the contender never got past the freed lock"
+    # It waited out the whole shared budget...
+    assert elapsed >= budget * 0.9, f"rejected early at {elapsed:.3f}s"
+    # ...and did NOT restart the clock at `b` (which would land near free_at + budget).
+    assert elapsed < free_at + budget * 0.8, (
+        f"the deadline was applied per lock, not once: {elapsed:.3f}s"
+    )
+    assert _is_free(tmp_path, "a"), "the rolled-back lock was left held"
 
 
 def test_release_without_acquire_is_a_no_op(tmp_path):
@@ -996,6 +1082,62 @@ def test_any_exception_inside_acquire_rolls_back_the_locks_already_taken(monkeyp
 
     assert _is_free(tmp_path, "a"), "the k-1 locks already held were stranded"
     assert _is_free(tmp_path, "b")
+
+
+def test_a_torn_holder_record_is_rolled_back_too(monkeypatch, tmp_path):
+    """``Path.write_text`` truncates on open, so an ``OSError`` part-way through leaves a torn
+    sidecar — and ``written`` was appended to only AFTER the write returned, so rollback never
+    unlinked exactly the record that failure created. A self-named corpse on a lock nobody
+    holds is the same false-reclaim noise the rollback was added to remove."""
+    real_write = admission._write_holder
+
+    def torn(path, run_id):
+        if path.name.startswith("b"):
+            path.write_text('{"run_id": "r1", "pi', encoding="utf-8")  # torn mid-write
+            raise OSError(28, "No space left on device")
+        return real_write(path, run_id)
+
+    monkeypatch.setattr(admission, "_write_holder", torn)
+
+    with pytest.raises(OSError):
+        acquire(["a", "b"], run_id="r1", lock_root=tmp_path)
+
+    assert not (tmp_path / "b.holder.json").exists(), "rollback left a torn record behind"
+    assert not (tmp_path / "a.holder.json").exists()
+    assert _is_free(tmp_path, "a") and _is_free(tmp_path, "b")
+
+
+def test_the_holder_record_outlives_a_failed_release(tmp_path, caplog):
+    """Ordering: unlink the sidecar only once the lock has ACTUALLY let go.
+
+    The two orderings each leave a window and this is the harmless one. Unlinking first meant
+    a ``release()`` that raised left the flock held with its record already gone — reporting
+    ``run None (pid None)``, unattributable and unreclaimable, for the life of the process
+    (the state correctness requirement 1 exists to prevent). A free lock that still advertises
+    a holder, by contrast, is self-correcting: the next acquirer takes the lock first, sees a
+    live pid, claims no reclaim, and overwrites.
+    """
+    ticket = acquire(["a"], run_id="r1", lock_root=tmp_path)
+
+    class _Angry:
+        lock_file = "angry"
+
+        def release(self, force=False):
+            raise OSError("cannot release")
+
+    poisoned = AdmissionTicket(
+        run_id="r1", datasets=("a",), locks=(_Angry(),), lock_root=ticket.lock_root
+    )
+    with caplog.at_level("WARNING", logger=admission.logger.name):
+        release(poisoned)  # must not raise
+
+    assert (tmp_path / "a.holder.json").is_file(), (
+        "a lock that is still held must keep its holder record, or it is unattributable"
+    )
+    assert json.loads((tmp_path / "a.holder.json").read_text())["run_id"] == "r1"
+    release(ticket)  # the real handle still lets go cleanly
+    assert _is_free(tmp_path, "a")
+    assert not (tmp_path / "a.holder.json").exists()
 
 
 def test_release_does_not_abort_mid_loop_when_one_handle_raises(tmp_path):
@@ -1072,6 +1214,65 @@ def test_tickets_pair_by_dataset_set_so_the_run_that_started_first_may_finish_fi
     assert _is_free(tmp_path, "b")
 
 
+def test_an_ambiguous_no_match_release_frees_nothing_rather_than_guessing(tmp_path, caplog):
+    """The no-match fallback used to release ``stack[-1]`` — the bare LIFO pop the block five
+    lines above it forbids by name, and which
+    ``test_tickets_pair_by_dataset_set_...`` exists to prove wrong.
+
+    With two runs outstanding under one ``run_id`` and a finishing pipeline matching neither,
+    there is NO evidence about which ticket is finishing. Guessing frees a run that is still
+    writing — the exact interleaving admission exists to prevent, re-introduced by the release
+    path. Holding both is the safe answer: process exit still frees them, and no second writer
+    is admitted meanwhile.
+    """
+    hooks = RunAdmissionHooks(lock_root=tmp_path)
+    run_params = {"run_id": "shared"}
+    hooks.before_pipeline_run(
+        run_params=run_params, pipeline=_pipeline("a"), catalog=DataCatalog({})
+    )
+    hooks.before_pipeline_run(
+        run_params=run_params, pipeline=_pipeline("b"), catalog=DataCatalog({})
+    )
+
+    with caplog.at_level("ERROR", logger=admission.logger.name):
+        hooks.after_pipeline_run(
+            run_params=run_params, pipeline=_pipeline("zzz"), catalog=DataCatalog({})
+        )
+
+    assert "releasing NOTHING" in caplog.text, "an ambiguous release must be loud"
+    assert not _is_free(tmp_path, "a"), "a LIFO guess freed a run that is still writing"
+    assert not _is_free(tmp_path, "b")
+    assert len(hooks._tickets["shared"]) == 2, "no ticket may be dropped either"
+
+    hooks.after_pipeline_run(
+        run_params=run_params, pipeline=_pipeline("a"), catalog=DataCatalog({})
+    )
+    hooks.after_pipeline_run(
+        run_params=run_params, pipeline=_pipeline("b"), catalog=DataCatalog({})
+    )
+    assert _is_free(tmp_path, "a") and _is_free(tmp_path, "b")
+
+
+def test_a_single_outstanding_ticket_is_still_released_on_a_no_match(tmp_path, caplog):
+    """With exactly ONE ticket there is no ambiguity to protect against, and refusing would
+    strand the common case (a pipeline object that differs between the before- and after-hook)
+    for no gain."""
+    hooks = RunAdmissionHooks(lock_root=tmp_path)
+    run_params = {"run_id": "solo"}
+    hooks.before_pipeline_run(
+        run_params=run_params, pipeline=_pipeline("a"), catalog=DataCatalog({})
+    )
+
+    with caplog.at_level("WARNING", logger=admission.logger.name):
+        hooks.after_pipeline_run(
+            run_params=run_params, pipeline=_pipeline("zzz"), catalog=DataCatalog({})
+        )
+
+    assert "no other candidate" in caplog.text
+    assert _is_free(tmp_path, "a")
+    assert hooks._tickets == {}
+
+
 def test_the_ticket_registry_does_not_grow_one_dead_key_per_run(tmp_path):
     """The MCP server is long-lived and dispatches every ``run_*`` tool through ONE hook
     instance, so a registry that keeps an empty stack per finished run leaks a key per run
@@ -1124,7 +1325,13 @@ def test_locks_never_silently_downgrade_to_a_soft_lock(tmp_path):
             # `fallback_to_soft` is filelock's own public property (3.30+) — no internals.
             assert lock.fallback_to_soft is False, "an ENOSYS mount would downgrade silently"
             assert not isinstance(lock, filelock.SoftFileLock)
-            assert isinstance(lock, filelock.UnixFileLock), "not a kernel flock"
+            # Platform-conditional: `win-64` is a declared workspace platform (root
+            # pixi.toml), which is why `_pid_alive` is POSIX-gated at all. Asserting
+            # `UnixFileLock` unconditionally would red this gate on the one platform the
+            # module goes out of its way to support. The invariant is "a kernel lock, not
+            # filelock's userspace marker-file emulation" — which is what both names mean.
+            kernel_lock = filelock.UnixFileLock if os.name == "posix" else filelock.WindowsFileLock
+            assert isinstance(lock, kernel_lock), "not a kernel-enforced lock"
     finally:
         release(ticket)
 
@@ -1144,6 +1351,46 @@ def test_pid_liveness_probe_is_posix_gated(monkeypatch):
     monkeypatch.setattr(admission.os, "kill", forbidden)
 
     assert admission._pid_alive(999_999) is True  # conservative: treat as alive
+
+
+def test_a_pid_wider_than_a_c_int_does_not_crash_an_otherwise_successful_admission(tmp_path):
+    """``os.kill(10**20, 0)`` raises ``OverflowError`` — neither ``OSError`` nor
+    ``ValueError``, so it escaped ``_pid_alive`` and propagated.
+
+    This is worse than the sibling ``held_since`` cases: they corrupt a REJECTION, whereas
+    this fires on the success path, *after* the lock has been taken. The run would have died
+    with an untyped ``OverflowError`` (rolled back, but never admitted) because a sidecar left
+    by something else carried a garbage integer. Conservative answer: unreadable pid ⇒ treat
+    the holder as alive ⇒ claim no reclaim.
+    """
+    (tmp_path / "a.holder.json").write_text(
+        json.dumps({"run_id": "ghost", "pid": 10**20, "started_at": time.time()}),
+        encoding="utf-8",
+    )
+    ticket = acquire(["a"], run_id="r1", lock_root=tmp_path)
+    try:
+        assert ticket.datasets == ("a",)
+        assert ticket.reclaimed == (), "an unreadable pid is not evidence of a corpse"
+    finally:
+        release(ticket)
+
+
+@pytest.mark.parametrize("pid", [0, -1, -12345])
+def test_a_non_positive_pid_is_not_a_holder(tmp_path, pid, caplog):
+    """``os.kill(0, 0)`` signals this process's whole group and ``os.kill(-1, 0)`` every
+    process the caller may signal — both return cleanly, so a record naming no process at all
+    would read as a live holder."""
+    (tmp_path / "a.holder.json").write_text(
+        json.dumps({"run_id": "ghost", "pid": pid, "started_at": time.time()}),
+        encoding="utf-8",
+    )
+    with caplog.at_level("WARNING", logger=admission.logger.name):
+        ticket = acquire(["a"], run_id="r1", lock_root=tmp_path)
+    try:
+        assert ticket.reclaimed == ()
+        assert "reclaimed" not in caplog.text
+    finally:
+        release(ticket)
 
 
 def test_pid_liveness_treats_a_permission_error_as_alive(monkeypatch):
@@ -1223,7 +1470,12 @@ def test_the_rejection_message_is_honest_for_both_planes(tmp_path):
         release(held)
     message = str(excinfo.value)
     assert "--params admission_wait_seconds=" in message
-    assert "MCP" in message and "retry once the holding run finishes" in message
+    # `mcp.tools.run_pipeline(name, extra_params=...)` DOES reach `runtime_params`
+    # (`session.bootstrapped_session` -> `KedroSession.create(runtime_params=...)`), so the
+    # message must not claim MCP has no params channel at all — only that the seven shipped
+    # FastMCP wrappers hardcode none.
+    assert "extra_params=" in message
+    assert "FastMCP" in message and "retry once the holding run finishes" in message
 
 
 def test_on_pipeline_error_releases_and_a_same_set_run_is_then_admitted(tmp_path):

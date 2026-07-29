@@ -35,20 +35,41 @@ Boundaries — write them down rather than overclaim
 --------------------------------------------------
 * **Single machine.** ``flock`` is a kernel primitive on one host; NFS ``flock`` is
   unreliable. A multi-machine atlas re-opens the mechanism choice.
-* **``RunAdmissionHooks`` runs FIRST.** Kedro registers ``settings.HOOKS`` in tuple order
-  and pluggy dispatches LIFO, so this hook — appended last — is dispatched first. Every
-  other ``before_pipeline_run`` therefore runs *after* the locks are taken. Kedro calls
-  ``before_pipeline_run`` OUTSIDE its ``try`` (``session.py``), so if a later hook raises
-  there, kedro fires NO error hook and this run's locks stay held until the process exits.
-  For a ``kedro run`` that is immediate; for the long-lived MCP server it is not. This is
-  recorded, not "fixed": releasing another run's ticket would be actively wrong under a
-  concurrently-serving process.
+* **``RunAdmissionHooks`` runs FIRST — but only because it asks to.** Tuple order is NOT
+  enough. ``KedroSession.__init__`` registers ``settings.HOOKS`` and *then*
+  ``_register_hooks_entry_points(...)``, and pluggy dispatches LIFO — so an installed plugin
+  (``kedro-viz`` is in this env) registers LATER and would therefore be dispatched EARLIER
+  than anything in ``settings.HOOKS``. Measured: without an explicit marker the real session
+  dispatched ``PipelineRunStatusHook`` (kedro-viz) ahead of this hook on all three of
+  ``before_pipeline_run`` / ``after_pipeline_run`` / ``on_pipeline_error``. The three
+  ``@hook_impl(tryfirst=True)`` markers below are what actually buy the ordering: pluggy puts
+  ``tryfirst`` impls at the head of the call list, ahead of every plain ``@hook_impl``
+  regardless of registration order. Do not remove them — the guarantee they buy is that the
+  locks are taken before, and released before, any other implementation gets to run (and so
+  before any other implementation gets to *raise*).
+* **A raising hook on either side strands this run's locks.** Kedro calls BOTH
+  ``before_pipeline_run`` and ``after_pipeline_run`` OUTSIDE its ``try`` (``session.py``):
+  only exceptions from ``runner.run`` reach ``on_pipeline_error``. ``tryfirst`` means we have
+  already acquired (resp. released) before any other impl runs, which closes the
+  ``after_pipeline_run`` side entirely and narrows the ``before_pipeline_run`` side to "a
+  hook that raises after we acquired but before the runner starts". In that window kedro
+  fires NO error hook and this run's locks stay held until the process exits. For a
+  ``kedro run`` that is immediate; for the long-lived MCP server it is not. Recorded, not
+  "fixed": releasing another run's ticket would be actively wrong under a concurrently-serving
+  process. Tracked as ``DW-AD23-2``.
 * **Dagster-plane release is process-local.** kedro-dagster fires the hooks itself from a
   ``before_pipeline_run_hook_<job>`` op, and its after-op calls ``after_pipeline_run``
   without kedro's ``run_result`` argument. Ours declares only the subset it reads, so it
   releases; ``AtlasObservabilityHooks.after_pipeline_run`` still declares ``run_result`` and
   pluggy raises ``HookCallError`` from it — *after* our release has run. Tracked as
   ``DW-AD23-2`` (E2-owned).
+* **A FAILED Dagster run releases nothing in-process.** kedro-dagster's after-op is SKIPPED
+  when an upstream op fails, and it fires ``on_pipeline_error`` from a
+  ``@dg.run_failure_sensor`` that executes in the Dagster DAEMON process — where
+  ``_tickets`` is empty, so ``_release_for`` is a no-op. On that plane a failed run's locks
+  are therefore freed only by the run worker's process exit. Survivable today only because
+  Dagster launches run workers as separate short-lived processes — the same undeclared
+  coupling as ``in_process``, and recorded in ``DW-AD23-2`` for the same reason.
 * **The ``in_process`` executor is load-bearing on the Dagster plane.** Acquisition happens
   inside an op; under a multiprocess executor that op's subprocess exits immediately and the
   kernel drops the flock before the first node runs. ``conf/base/dagster.yml`` declares
@@ -129,8 +150,10 @@ class RunAdmissionRejected(RuntimeError):
             f"{_format_epoch(held_since)}). Requested output set: "
             f"{', '.join(self.datasets) or '<empty>'}. "
             f"To wait for the holder instead of rejecting, a `kedro run` can pass "
-            f"`--params {WAIT_PARAM}=<seconds>`; an MCP `run_*` trigger has no params "
-            f"channel, so retry once the holding run finishes."
+            f"`--params {WAIT_PARAM}=<seconds>`, and a caller of "
+            f"`mcp.tools.run_pipeline` can pass `extra_params={{{WAIT_PARAM!r}: <seconds>}}` "
+            f"(the seven FastMCP `run_*` tools currently hardcode no params, so from those "
+            f"retry once the holding run finishes)."
         )
 
 
@@ -182,8 +205,11 @@ def default_lock_root(project_path: Any = None) -> Path:
 
     ``PYFORGE_ATLAS_LOCK_ROOT`` then ``PYFORGE_ATLAS_DATA_ROOT`` (the catalog's own
     ``globals.yml`` ``paths.data_root`` override) select the store; an ABSOLUTE value is
-    honored verbatim, so relocating the store relocates the locks with it. An EMPTY env var
-    is treated as unset, matching ``settings._env_or`` (review-pass P6).
+    honored verbatim, so relocating the store relocates the locks with it. An empty OR
+    whitespace-only env var is treated as unset — deliberately STRICTER than
+    ``settings._env_or``, which passes any truthy value through unstripped: ``export
+    PYFORGE_ATLAS_DATA_ROOT="  "`` is a blanked override, and creating a store directory
+    named after the spaces (one per typo) is not a behaviour worth mirroring.
     """
     base = _resolve_base(project_path)
     env = (
@@ -287,6 +313,11 @@ def _pid_alive(pid: int) -> bool:
     kernel still frees the flock when its owner dies, so D5 degrades to "no reclaim
     message", never to "wedged dataset". An ``OSError`` that is not ``ProcessLookupError``
     (e.g. ``EPERM`` — a live process owned by someone else) also reads as alive.
+
+    ``OverflowError`` is caught for the same reason ``_format_epoch`` catches it: a torn or
+    hostile sidecar can carry a JSON integer wider than a C ``int`` (``os.kill(10**20, 0)``
+    raises it, and it is neither ``OSError`` nor ``ValueError``), which would escape and turn
+    a SUCCESSFUL admission — the locks are already held at this point — into an untyped crash.
     """
     if not _IS_POSIX:
         return True
@@ -294,7 +325,7 @@ def _pid_alive(pid: int) -> bool:
         os.kill(pid, 0)
     except ProcessLookupError:
         return False
-    except OSError:
+    except (OSError, OverflowError, ValueError):
         return True
     return True
 
@@ -325,9 +356,14 @@ def _read_holder(path: Path) -> dict[str, Any]:
             held_since = float(started)
         except OverflowError:
             held_since = None
+    # A pid must be POSITIVE to be a holder: `os.kill(0, 0)` signals this process's whole
+    # group and `os.kill(-1, 0)` every process the user may signal — both would answer
+    # "alive" for a record that names no process at all.
     return {
         "holder_run_id": str(run_id) if isinstance(run_id, (str, int)) else None,
-        "holder_pid": pid if isinstance(pid, int) and not isinstance(pid, bool) else None,
+        "holder_pid": (
+            pid if isinstance(pid, int) and not isinstance(pid, bool) and pid > 0 else None
+        ),
         "held_since": held_since,
     }
 
@@ -341,18 +377,25 @@ def _write_holder(path: Path, run_id: str) -> None:
     )
 
 
+def _release_one(lock: Any) -> bool:
+    """Release ONE lock. Returns whether it actually let go; never raises."""
+    try:
+        lock.release(force=True)
+    except Exception as exc:  # noqa: BLE001 - a stuck handle must not strand the rest
+        logger.warning(
+            "run admission: releasing %s failed (%s: %s); continuing",
+            getattr(lock, "lock_file", lock),
+            type(exc).__name__,
+            exc,
+        )
+        return False
+    return True
+
+
 def _release_locks(locks: list[Any]) -> None:
     """Release a list of held locks, never aborting mid-loop (correctness requirement 3)."""
     for lock in locks:
-        try:
-            lock.release(force=True)
-        except Exception as exc:  # noqa: BLE001 - a stuck handle must not strand the rest
-            logger.warning(
-                "run admission: releasing %s failed (%s: %s); continuing",
-                getattr(lock, "lock_file", lock),
-                type(exc).__name__,
-                exc,
-            )
+        _release_one(lock)
 
 
 def acquire(
@@ -383,7 +426,19 @@ def acquire(
         # A pipeline with no declared outputs writes nothing: admitted, no lock files.
         return AdmissionTicket(run_id=run_id)
 
-    root = Path(lock_root) if lock_root is not None else default_lock_root()
+    if lock_root is not None:
+        root = Path(lock_root)
+        if not root.is_absolute():
+            # The SAME guard `_resolve_base` applies to `project_path`, on the one input path
+            # that reached the lock root without it. A relative `lock_root` re-anchors the
+            # locks to the CWD — precisely the defect the first implementation of this story
+            # shipped and was reverted for — and does it silently.
+            raise AdmissionConfigError(
+                f"lock_root must be absolute so the locks cannot become CWD-relative; "
+                f"got {lock_root!r}"
+            )
+    else:
+        root = default_lock_root()
     deadline = time.monotonic() + timeout
     held: list[Any] = []
     written: list[Path] = []
@@ -434,8 +489,12 @@ def acquire(
                     stale_pid,
                     _format_epoch(stale["held_since"]),
                 )
-            _write_holder(holder_path, run_id)
+            # Recorded BEFORE the write, not after: `Path.write_text` truncates on open, so
+            # an OSError part-way through (ENOSPC — the very failure the rollback exists for)
+            # leaves a torn sidecar behind. Appending afterwards meant rollback never unlinked
+            # exactly the record that failure created.
             written.append(holder_path)
+            _write_holder(holder_path, run_id)
     except BaseException:
         # Remove the sidecars this failed attempt wrote BEFORE dropping its locks. Otherwise
         # a rejected run leaves a record naming itself; once its process exits, `_pid_alive`
@@ -470,13 +529,19 @@ def release(ticket: AdmissionTicket) -> None:
     """Release every lock the ticket holds. Never raises, never aborts mid-loop.
 
     A failure here must not convert a successful run into a failed one — ``after_pipeline_run``
-    is the last thing kedro calls (correctness requirement 3). The sidecar is unlinked while
-    the lock is still held, so no window exists in which a free lock still advertises a
-    holder.
+    is the last thing kedro calls (correctness requirement 3).
+
+    The sidecar is unlinked only AFTER the lock actually let go. The two orderings each leave
+    one window, and this is the harmless one: a free lock that still advertises a holder is
+    self-correcting (the next acquirer takes the lock FIRST, then finds our still-live pid,
+    claims no reclaim, and overwrites the record), whereas a still-HELD lock whose record was
+    already removed is exactly the unattributable, unreclaimable state correctness
+    requirement 1 exists to prevent — ``run None (pid None)`` for the life of the process.
     """
     root = ticket.lock_root
     for name, lock in zip(ticket.datasets, ticket.locks):
-        if root is not None:
+        released = _release_one(lock)
+        if root is not None and released:
             try:
                 (root / f"{name}{_HOLDER_SUFFIX}").unlink(missing_ok=True)
             except OSError as exc:
@@ -487,7 +552,6 @@ def release(ticket: AdmissionTicket) -> None:
                     type(exc).__name__,
                     exc,
                 )
-        _release_locks([lock])
 
 
 class RunAdmissionHooks:
@@ -567,7 +631,11 @@ class RunAdmissionHooks:
 
     # -- hooks ---------------------------------------------------------------- #
 
-    @hook_impl
+    # tryfirst on all three: settings.HOOKS tuple order is NOT enough, because kedro registers
+    # entry-point plugins AFTER settings.HOOKS and pluggy dispatches LIFO — measured, an
+    # installed kedro-viz took `before_pipeline_run` ahead of this hook. See the module
+    # docstring; removing these markers silently gives that ordering away.
+    @hook_impl(tryfirst=True)
     def before_pipeline_run(
         self, run_params: dict[str, Any], pipeline: Any, catalog: Any
     ) -> None:
@@ -599,18 +667,18 @@ class RunAdmissionHooks:
             )
         stack.append(ticket)
 
-    @hook_impl
+    @hook_impl(tryfirst=True)
     def after_pipeline_run(
         self, run_params: dict[str, Any], pipeline: Any, catalog: Any
     ) -> None:
         # SUBSET signature, deliberately: pluggy's missing-argument check is per-IMPL, and
-        # this hook is dispatched FIRST (LIFO over settings.HOOKS tuple order). kedro-dagster
-        # calls after_pipeline_run WITHOUT kedro's `run_result`, so a full signature here
-        # would make THIS impl the raiser — and it would never release. Declaring only what
-        # it reads means the locks are freed before any other impl's HookCallError.
+        # this hook is dispatched FIRST (by `tryfirst`, above). kedro-dagster calls
+        # after_pipeline_run WITHOUT kedro's `run_result`, so a full signature here would make
+        # THIS impl the raiser — and it would never release. Declaring only what it reads
+        # means the locks are freed before any other impl's HookCallError.
         self._release_for(run_params, pipeline)
 
-    @hook_impl
+    @hook_impl(tryfirst=True)
     def on_pipeline_error(
         self, error: Exception, run_params: dict[str, Any], pipeline: Any, catalog: Any
     ) -> None:
@@ -637,13 +705,32 @@ class RunAdmissionHooks:
                 -1,
             )
             if index < 0:
+                if len(stack) > 1:
+                    # AMBIGUOUS: several runs share this run_id and none declared this output
+                    # set, so there is no evidence about which ticket is the finishing one.
+                    # Falling back to the most recent here would perform exactly the LIFO
+                    # wrong-release the block above forbids — freeing a run that is still
+                    # writing. Releasing NOTHING is the safe answer: those locks are freed by
+                    # process exit, and no second writer is ever admitted in the meantime.
+                    logger.error(
+                        "run admission: no outstanding ticket for run %r matches the "
+                        "finishing pipeline's outputs %s, and %d tickets are outstanding "
+                        "(%s); releasing NOTHING rather than guessing — these locks are now "
+                        "held until the process exits",
+                        run_id,
+                        list(wanted),
+                        len(stack),
+                        [t.datasets for t in stack],
+                    )
+                    return
                 logger.warning(
-                    "run admission: no outstanding ticket for run %r matches the finishing "
-                    "pipeline's outputs %s; releasing the most recent instead",
-                    run_id,
+                    "run admission: the finishing pipeline's outputs %s do not match run "
+                    "%r's single outstanding ticket %s; releasing it (no other candidate)",
                     list(wanted),
+                    run_id,
+                    list(stack[0].datasets),
                 )
-                index = len(stack) - 1
+                index = 0
         release(stack.pop(index))
         if not stack:
             # Do not let the registry grow one dead key per run in a long-lived MCP server.
