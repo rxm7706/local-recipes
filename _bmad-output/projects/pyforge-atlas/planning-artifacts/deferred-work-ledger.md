@@ -634,9 +634,9 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
     is PROJECT-anchored, never CWD-relative — a first implementation got this wrong and was
     reverted, because kedro resolves catalog filepaths under the project root while the MCP
     server and the repo's pixi tasks run from different CWDs.
-    Gate, re-run against the tree on 2026-07-29 after review pass 3 (not transcribed):
-    `kedro-test` **888 passed / 19 skipped** (baseline before the story: 803 / 19;
-    `tests/test_admission.py` contributes **85**, including a two-process contention gate that
+    Gate, re-run against the tree on 2026-07-29 after review pass 4 (not transcribed):
+    `kedro-test` **901 passed / 19 skipped** (baseline before the story: 803 / 19;
+    `tests/test_admission.py` contributes **98**, including a two-process contention gate that
     spawns a real second OS process — no threads, no mocks); `kedro-catalog-check` **47**;
     `dagster-dryrun` **58**.
     AD-23 was re-promoted to its full form in the spine on the strength of that gate, with the
@@ -645,11 +645,13 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
 
 ---
 
-## DW-AD23-2 — Dagster-plane release is process-local and `in_process`-coupled (MEDIUM) — DEFERRED
+## DW-AD23-2 — Run-admission release residuals: Dagster-plane process-locality, `in_process` coupling, and the hook-ordering strand window (MEDIUM) — DEFERRED
 
 - source_spec: `spec-10-6-make-run-admission-real-or-stop-claiming-it.md` (Epic 10 / Story I5, AD-23)
   origin: implementation boundary recorded while closing `DW-AD23-1`
-  summary: Two coupled residuals on the Dagster plane, both out of Story 10.6's scope.
+  summary: FOUR residuals, all out of Story 10.6's scope. (1), (2) and (4) are Dagster-plane;
+    (3) is NOT — it affects the long-lived MCP server today, so do not scope this entry as
+    Dagster-only work.
     (1) **`run_result` signature.** kedro-dagster's after-op calls
     `after_pipeline_run(run_results=None, ...)` — it omits kedro's `run_result` entirely.
     pluggy's missing-argument check is per-IMPL, not per-call, so any impl declaring
@@ -671,8 +673,10 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
     silently become a no-op on this plane while still reporting success. It is safe today ONLY
     because `conf/base/dagster.yml` declares `in_process`.
     (3) **Later before-hooks can strand admission's locks.** Kedro calls BOTH
-    `before_pipeline_run` and `after_pipeline_run` OUTSIDE its `try` block, so only exceptions
-    from `runner.run` reach `on_pipeline_error`. Admission is dispatched FIRST (`tryfirst`), so
+    `before_pipeline_run` and `after_pipeline_run` OUTSIDE its `try` block, and it catches
+    `Exception` — so only `Exception` subclasses raised by `runner.run` reach
+    `on_pipeline_error`, and a `KeyboardInterrupt` or `SystemExit` out of the runner fires
+    NEITHER hook. Admission is dispatched FIRST (`tryfirst`), so
     every other before-hook runs after the locks are taken: if one raises — e.g.
     `AtlasObservabilityHooks.before_pipeline_run` opening an OTel span against a live exporter,
     or any installed plugin's — kedro fires no error hook and the locks are held until the

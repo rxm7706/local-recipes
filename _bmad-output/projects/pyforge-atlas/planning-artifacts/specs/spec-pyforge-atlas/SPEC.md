@@ -265,13 +265,18 @@ close later.
   includes in-run intermediates because over-locking fails safe — so genuinely disjoint pipelines
   still run concurrently. The
   `in_process` executor in `conf/base/dagster.yml` remains what serializes ops *within* a single
-  run — a different property, and on the Dagster plane a load-bearing one (`DW-AD23-2`). Three
+  run — a different property, and on the Dagster plane a load-bearing one (`DW-AD23-2`). Four
   boundaries stand: file locks are single-machine (NFS `flock` is unreliable); release on the
   Dagster plane is process-local, and a *failed* Dagster run releases nothing in-process at all
-  (its `on_pipeline_error` fires in the daemon, not the run worker); and because kedro calls
+  (its `on_pipeline_error` fires in the daemon, not the run worker); because kedro calls
   `before_pipeline_run` outside its `try` with admission dispatched first, a later before-hook
-  that raises leaves the locks held until the process exits — an availability wedge for the
-  long-lived MCP server, not a correctness hole. Admission's first-dispatch position is enforced
+  that raises leaves the locks held until the process exits — as does a non-`Exception` exit
+  from the runner, which kedro's `except Exception` does not catch and which therefore reaches
+  neither `on_pipeline_error` nor `after_pipeline_run` — an availability wedge for the
+  long-lived MCP server, not a correctness hole; and the lock store lives inside the tree it
+  guards (`<data_root>/.locks`), so clearing `data/` mid-run unlinks a live holder's lock file
+  and lets the next acquirer create a fresh one at the same path — two writers, silently.
+  Admission's first-dispatch position is enforced
   by `@hook_impl(tryfirst=True)`, not by its place in the `settings.HOOKS` tuple, which
   entry-point plugins would otherwise outrank.
 - **No data-access logic in a node body, ever.** Sources, outputs, credentials, endpoints, and

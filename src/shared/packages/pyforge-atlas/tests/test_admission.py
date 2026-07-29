@@ -115,7 +115,7 @@ def main():
     # on the lock rather than still booting.
     print("READY_TOKEN", file=sys.stderr, flush=True)
     try:
-        hooks.before_pipeline_run(run_params=run_params, pipeline=pipe, catalog=catalog)
+        hooks.before_pipeline_run(run_params=run_params, pipeline=pipe)
     except RunAdmissionRejected as exc:
         print(json.dumps({
             "verdict": "rejected", "pid": os.getpid(), "conflicting": exc.conflicting,
@@ -134,7 +134,7 @@ def main():
         sys.stdin.readline()      # hold until the parent says stop (or SIGKILLs us)
     else:
         time.sleep(hold_seconds)  # hold for a fixed window, then release
-    hooks.after_pipeline_run(run_params=run_params, pipeline=pipe, catalog=catalog)
+    hooks.after_pipeline_run(run_params=run_params, pipeline=pipe)
     print(json.dumps({"verdict": "released", "pid": os.getpid()}), flush=True)
 
 
@@ -569,28 +569,23 @@ def test_admission_is_dispatched_first_on_a_real_session_not_merely_last_in_the_
 
 
 def test_deepcopy_is_a_working_hook_with_empty_per_run_state(tmp_path):
-    """C1's KedroProjectTranslator deep-copies settings.HOOKS at to_dagster() time."""
+    """Defence, not a measured copy: kedro-dagster 0.7.x passes the hook manager BY REFERENCE
+    (``translator.py`` -> ``self._context._hook_manager``), so the Dagster plane runs against
+    this very object. The contract still has to hold for whichever of deepcopy/pickle a future
+    translator or multiprocess runner reaches for — configuration by value, tickets never."""
     original = RunAdmissionHooks(lock_root=tmp_path)
-    original.before_pipeline_run(
-        run_params={"run_id": "r1"}, pipeline=_pipeline("a"), catalog=DataCatalog({})
-    )
+    original.before_pipeline_run(run_params={"run_id": "r1"}, pipeline=_pipeline("a"))
     try:
         dup = copy.deepcopy(original)
         assert isinstance(dup, RunAdmissionHooks)
         assert dup._tickets == {}          # per-run state is fresh, never a copied handle
         assert dup._lock_root == tmp_path  # configuration carries over
     finally:
-        original.after_pipeline_run(
-            run_params={"run_id": "r1"}, pipeline=_pipeline("a"), catalog=DataCatalog({})
-        )
+        original.after_pipeline_run(run_params={"run_id": "r1"}, pipeline=_pipeline("a"))
     # and the copy is still a working hook
-    dup.before_pipeline_run(
-        run_params={"run_id": "r2"}, pipeline=_pipeline("a"), catalog=DataCatalog({})
-    )
+    dup.before_pipeline_run(run_params={"run_id": "r2"}, pipeline=_pipeline("a"))
     assert not _is_free(tmp_path, "a")
-    dup.after_pipeline_run(
-        run_params={"run_id": "r2"}, pipeline=_pipeline("a"), catalog=DataCatalog({})
-    )
+    dup.after_pipeline_run(run_params={"run_id": "r2"}, pipeline=_pipeline("a"))
     assert _is_free(tmp_path, "a")
 
 
@@ -599,23 +594,15 @@ def test_pickle_roundtrip_drops_tickets_and_still_works(tmp_path):
     the flock belongs to the ORIGINAL process's open file description — so tickets are
     dropped rather than shipped as a lie."""
     original = RunAdmissionHooks(lock_root=tmp_path, wait_seconds=2)
-    original.before_pipeline_run(
-        run_params={"run_id": "r1"}, pipeline=_pipeline("a"), catalog=DataCatalog({})
-    )
+    original.before_pipeline_run(run_params={"run_id": "r1"}, pipeline=_pipeline("a"))
     try:
         dup = pickle.loads(pickle.dumps(original))
     finally:
-        original.after_pipeline_run(
-            run_params={"run_id": "r1"}, pipeline=_pipeline("a"), catalog=DataCatalog({})
-        )
+        original.after_pipeline_run(run_params={"run_id": "r1"}, pipeline=_pipeline("a"))
     assert dup._tickets == {}
     assert dup._wait_seconds == 2
-    dup.before_pipeline_run(
-        run_params={"run_id": "r3"}, pipeline=_pipeline("b"), catalog=DataCatalog({})
-    )
-    dup.after_pipeline_run(
-        run_params={"run_id": "r3"}, pipeline=_pipeline("b"), catalog=DataCatalog({})
-    )
+    dup.before_pipeline_run(run_params={"run_id": "r3"}, pipeline=_pipeline("b"))
+    dup.after_pipeline_run(run_params={"run_id": "r3"}, pipeline=_pipeline("b"))
     assert _is_free(tmp_path, "b")
 
 
@@ -645,8 +632,10 @@ def test_the_hooks_are_callable_on_both_the_kedro_and_the_dagster_plane(tmp_path
 def test_admission_releases_before_the_observability_hookcallerror_on_the_dagster_plane(tmp_path):
     """DW-AD23-2, pinned. kedro-dagster's after-op omits kedro's ``run_result``; pluggy's
     missing-argument check is per-IMPL, so ``AtlasObservabilityHooks`` (which still declares
-    it) raises ``HookCallError``. Because admission is registered LAST it is dispatched
-    FIRST, so the locks are already released when that raise happens."""
+    it) raises ``HookCallError``. Admission is dispatched FIRST — bought by
+    ``@hook_impl(tryfirst=True)``, NOT by its position in ``settings.HOOKS`` (review pass 3
+    measured tuple position to be insufficient) — so the locks are already released when that
+    raise happens."""
     from pyforge.atlas.observability import AtlasObservabilityHooks
 
     hooks = RunAdmissionHooks(lock_root=tmp_path)
@@ -783,12 +772,23 @@ def test_gate_opt_in_wait_rejects_when_the_deadline_expires(tmp_path, spawn):
     holder = spawn(tmp_path, "run-A", ["a"])
     assert holder.verdict()["verdict"] == "admitted"
 
-    waiter = spawn(tmp_path, "run-G", ["a"], wait_seconds=0.3)
+    wait = 1.0
+    started = time.monotonic()
+    waiter = spawn(tmp_path, "run-G", ["a"], wait_seconds=wait)
     verdict = waiter.verdict()
+    elapsed = time.monotonic() - started
 
     assert verdict["verdict"] == "rejected"
     assert verdict["conflicting"] == "a"
     assert verdict["holder_run_id"] == "run-A"
+    # It must reject BECAUSE THE DEADLINE PASSED, not merely reject. Without this the test
+    # was vacuous: a mutant that ignores `wait_seconds` entirely and always rejects fast
+    # produced the identical three assertions above (the same defect class review passes 2
+    # and 3 each removed from a different wait test). Verified RED under that mutation.
+    assert elapsed >= wait, (
+        f"rejected after {elapsed:.3f}s — the {wait}s deadline was never waited out, so "
+        f"reject-fast is indistinguishable from the opt-in wait"
+    )
 
 
 def test_gate_partial_overlap_rejects_and_leaves_the_uncontended_lock_free(tmp_path, spawn):
@@ -1007,7 +1007,10 @@ def test_the_opt_in_wait_is_one_deadline_shared_across_all_locks(tmp_path):
     when the ONE shared deadline expires at ~``BUDGET``. A per-lock mutant would restart the
     clock at ``b`` and only reject at ~``FREE_AT + BUDGET``.
     """
-    budget, free_at = 1.0, 0.4
+    # Widened from (1.0, 0.4): the upper bound below left ~150 ms of slack on an unattended,
+    # possibly loaded runner, which is a flake waiting to happen. The property is a RATIO, so
+    # scaling both keeps the discrimination identical while tripling the margin.
+    budget, free_at = 3.0, 1.2
     first = acquire(["a"], run_id="holder-a", lock_root=tmp_path)
     second = acquire(["b"], run_id="holder-b", lock_root=tmp_path)
     releaser = threading.Timer(free_at, release, args=(first,))
@@ -1034,12 +1037,10 @@ def test_the_opt_in_wait_is_one_deadline_shared_across_all_locks(tmp_path):
 
 def test_release_without_acquire_is_a_no_op(tmp_path):
     hooks = RunAdmissionHooks(lock_root=tmp_path)
-    hooks.after_pipeline_run(
-        run_params={"run_id": "never-started"}, pipeline=_pipeline("a"), catalog=DataCatalog({})
-    )
+    hooks.after_pipeline_run(run_params={"run_id": "never-started"}, pipeline=_pipeline("a"))
     hooks.on_pipeline_error(
-        error=RuntimeError("x"), run_params={"run_id": "never-started"},
-        pipeline=_pipeline("a"), catalog=DataCatalog({}),
+        run_params={"run_id": "never-started"},
+        pipeline=_pipeline("a"),
     )
     assert _is_free(tmp_path, "a")
 
@@ -1085,10 +1086,12 @@ def test_any_exception_inside_acquire_rolls_back_the_locks_already_taken(monkeyp
 
 
 def test_a_torn_holder_record_is_rolled_back_too(monkeypatch, tmp_path):
-    """``Path.write_text`` truncates on open, so an ``OSError`` part-way through leaves a torn
-    sidecar — and ``written`` was appended to only AFTER the write returned, so rollback never
-    unlinked exactly the record that failure created. A self-named corpse on a lock nobody
-    holds is the same false-reclaim noise the rollback was added to remove."""
+    """``written`` is appended to BEFORE the write, not after: a sidecar write that fails
+    part-way must still be unlinked by the rollback, or the failed run leaves a self-named
+    corpse on a lock nobody holds — the same false-reclaim noise the rollback was added to
+    remove. (Review pass 4 also made ``_write_holder`` itself atomic, so it no longer AUTHORS
+    a torn record; this test injects the failure at that boundary, so it pins the rollback's
+    ordering independently of how the write is implemented.)"""
     real_write = admission._write_holder
 
     def torn(path, run_id):
@@ -1108,14 +1111,13 @@ def test_a_torn_holder_record_is_rolled_back_too(monkeypatch, tmp_path):
 
 
 def test_the_holder_record_outlives_a_failed_release(tmp_path, caplog):
-    """Ordering: unlink the sidecar only once the lock has ACTUALLY let go.
+    """A lock that did NOT let go keeps its holder record.
 
-    The two orderings each leave a window and this is the harmless one. Unlinking first meant
-    a ``release()`` that raised left the flock held with its record already gone — reporting
-    ``run None (pid None)``, unattributable and unreclaimable, for the life of the process
-    (the state correctness requirement 1 exists to prevent). A free lock that still advertises
-    a holder, by contrast, is self-correcting: the next acquirer takes the lock first, sees a
-    live pid, claims no reclaim, and overwrites.
+    ``release()`` unlinks the sidecar first, so this is the one state that ordering risks: a
+    still-held flock whose record is already gone reports ``run None (pid None)`` —
+    unattributable and unreclaimable for the life of the process, the state correctness
+    requirement 1 exists to prevent. It is repaired by re-writing the record whenever the
+    release did not actually succeed.
     """
     ticket = acquire(["a"], run_id="r1", lock_root=tmp_path)
 
@@ -1170,20 +1172,18 @@ def test_a_second_ticket_under_one_run_id_is_stacked_not_overwritten(tmp_path, c
     first, second = _pipeline("a"), _pipeline("b")
     run_params = {"run_id": "shared"}
 
-    hooks.before_pipeline_run(run_params=run_params, pipeline=first, catalog=DataCatalog({}))
+    hooks.before_pipeline_run(run_params=run_params, pipeline=first)
     with caplog.at_level("WARNING", logger=admission.logger.name):
-        hooks.before_pipeline_run(
-            run_params=run_params, pipeline=second, catalog=DataCatalog({})
-        )
+        hooks.before_pipeline_run(run_params=run_params, pipeline=second)
 
     assert "already has 1 outstanding ticket" in caplog.text, "the collision must be loud"
     assert len(hooks._tickets["shared"]) == 2
     assert not _is_free(tmp_path, "a") and not _is_free(tmp_path, "b")
 
-    hooks.after_pipeline_run(run_params=run_params, pipeline=second, catalog=DataCatalog({}))
+    hooks.after_pipeline_run(run_params=run_params, pipeline=second)
     assert _is_free(tmp_path, "b")
     assert not _is_free(tmp_path, "a"), "the first ticket must not have been orphaned"
-    hooks.after_pipeline_run(run_params=run_params, pipeline=first, catalog=DataCatalog({}))
+    hooks.after_pipeline_run(run_params=run_params, pipeline=first)
     assert _is_free(tmp_path, "a")
 
 
@@ -1200,17 +1200,17 @@ def test_tickets_pair_by_dataset_set_so_the_run_that_started_first_may_finish_fi
     first, second = _pipeline("a"), _pipeline("b")
     run_params = {"run_id": "shared"}
 
-    hooks.before_pipeline_run(run_params=run_params, pipeline=first, catalog=DataCatalog({}))
-    hooks.before_pipeline_run(run_params=run_params, pipeline=second, catalog=DataCatalog({}))
+    hooks.before_pipeline_run(run_params=run_params, pipeline=first)
+    hooks.before_pipeline_run(run_params=run_params, pipeline=second)
 
-    hooks.after_pipeline_run(run_params=run_params, pipeline=first, catalog=DataCatalog({}))
+    hooks.after_pipeline_run(run_params=run_params, pipeline=first)
 
     assert _is_free(tmp_path, "a"), "the finishing pipeline's own lock was not released"
     assert not _is_free(tmp_path, "b"), "a LIFO pop freed the run that is still writing"
     assert not (tmp_path / "a.holder.json").exists()
     assert (tmp_path / "b.holder.json").is_file(), "the live run lost its holder record"
 
-    hooks.after_pipeline_run(run_params=run_params, pipeline=second, catalog=DataCatalog({}))
+    hooks.after_pipeline_run(run_params=run_params, pipeline=second)
     assert _is_free(tmp_path, "b")
 
 
@@ -1227,29 +1227,19 @@ def test_an_ambiguous_no_match_release_frees_nothing_rather_than_guessing(tmp_pa
     """
     hooks = RunAdmissionHooks(lock_root=tmp_path)
     run_params = {"run_id": "shared"}
-    hooks.before_pipeline_run(
-        run_params=run_params, pipeline=_pipeline("a"), catalog=DataCatalog({})
-    )
-    hooks.before_pipeline_run(
-        run_params=run_params, pipeline=_pipeline("b"), catalog=DataCatalog({})
-    )
+    hooks.before_pipeline_run(run_params=run_params, pipeline=_pipeline("a"))
+    hooks.before_pipeline_run(run_params=run_params, pipeline=_pipeline("b"))
 
     with caplog.at_level("ERROR", logger=admission.logger.name):
-        hooks.after_pipeline_run(
-            run_params=run_params, pipeline=_pipeline("zzz"), catalog=DataCatalog({})
-        )
+        hooks.after_pipeline_run(run_params=run_params, pipeline=_pipeline("zzz"))
 
     assert "releasing NOTHING" in caplog.text, "an ambiguous release must be loud"
     assert not _is_free(tmp_path, "a"), "a LIFO guess freed a run that is still writing"
     assert not _is_free(tmp_path, "b")
     assert len(hooks._tickets["shared"]) == 2, "no ticket may be dropped either"
 
-    hooks.after_pipeline_run(
-        run_params=run_params, pipeline=_pipeline("a"), catalog=DataCatalog({})
-    )
-    hooks.after_pipeline_run(
-        run_params=run_params, pipeline=_pipeline("b"), catalog=DataCatalog({})
-    )
+    hooks.after_pipeline_run(run_params=run_params, pipeline=_pipeline("a"))
+    hooks.after_pipeline_run(run_params=run_params, pipeline=_pipeline("b"))
     assert _is_free(tmp_path, "a") and _is_free(tmp_path, "b")
 
 
@@ -1259,14 +1249,10 @@ def test_a_single_outstanding_ticket_is_still_released_on_a_no_match(tmp_path, c
     for no gain."""
     hooks = RunAdmissionHooks(lock_root=tmp_path)
     run_params = {"run_id": "solo"}
-    hooks.before_pipeline_run(
-        run_params=run_params, pipeline=_pipeline("a"), catalog=DataCatalog({})
-    )
+    hooks.before_pipeline_run(run_params=run_params, pipeline=_pipeline("a"))
 
     with caplog.at_level("WARNING", logger=admission.logger.name):
-        hooks.after_pipeline_run(
-            run_params=run_params, pipeline=_pipeline("zzz"), catalog=DataCatalog({})
-        )
+        hooks.after_pipeline_run(run_params=run_params, pipeline=_pipeline("zzz"))
 
     assert "no other candidate" in caplog.text
     assert _is_free(tmp_path, "a")
@@ -1280,30 +1266,18 @@ def test_the_ticket_registry_does_not_grow_one_dead_key_per_run(tmp_path):
     hooks = RunAdmissionHooks(lock_root=tmp_path)
     for index in range(3):
         run_params = {"run_id": f"run-{index}"}
-        hooks.before_pipeline_run(
-            run_params=run_params, pipeline=_pipeline("a"), catalog=DataCatalog({})
-        )
-        hooks.after_pipeline_run(
-            run_params=run_params, pipeline=_pipeline("a"), catalog=DataCatalog({})
-        )
+        hooks.before_pipeline_run(run_params=run_params, pipeline=_pipeline("a"))
+        hooks.after_pipeline_run(run_params=run_params, pipeline=_pipeline("a"))
     assert hooks._tickets == {}, f"leaked run ids: {sorted(hooks._tickets)}"
 
     # ...and the key must survive while the run still holds something.
     run_params = {"run_id": "shared"}
-    hooks.before_pipeline_run(
-        run_params=run_params, pipeline=_pipeline("a"), catalog=DataCatalog({})
-    )
-    hooks.before_pipeline_run(
-        run_params=run_params, pipeline=_pipeline("b"), catalog=DataCatalog({})
-    )
-    hooks.after_pipeline_run(
-        run_params=run_params, pipeline=_pipeline("a"), catalog=DataCatalog({})
-    )
+    hooks.before_pipeline_run(run_params=run_params, pipeline=_pipeline("a"))
+    hooks.before_pipeline_run(run_params=run_params, pipeline=_pipeline("b"))
+    hooks.after_pipeline_run(run_params=run_params, pipeline=_pipeline("a"))
     assert list(hooks._tickets) == ["shared"], "dropped a key that still holds a lock"
 
-    hooks.on_pipeline_error(
-        error=RuntimeError("x"), run_params=run_params, pipeline=_pipeline("b"),
-        catalog=DataCatalog({}),
+    hooks.on_pipeline_error(run_params=run_params, pipeline=_pipeline("b"),
     )
     assert hooks._tickets == {}
     assert _is_free(tmp_path, "a") and _is_free(tmp_path, "b")
@@ -1482,15 +1456,12 @@ def test_on_pipeline_error_releases_and_a_same_set_run_is_then_admitted(tmp_path
     hooks = RunAdmissionHooks(lock_root=tmp_path)
     pipe, catalog = _pipeline("a", "b"), DataCatalog({})
 
-    hooks.before_pipeline_run(run_params={"run_id": "r1"}, pipeline=pipe, catalog=catalog)
-    hooks.on_pipeline_error(
-        error=RuntimeError("node blew up"),
-        run_params={"run_id": "r1"}, pipeline=pipe, catalog=catalog,
-    )
+    hooks.before_pipeline_run(run_params={"run_id": "r1"}, pipeline=pipe)
+    hooks.on_pipeline_error(run_params={"run_id": "r1"}, pipeline=pipe)
 
     assert _is_free(tmp_path, "a") and _is_free(tmp_path, "b")
-    hooks.before_pipeline_run(run_params={"run_id": "r2"}, pipeline=pipe, catalog=catalog)
-    hooks.after_pipeline_run(run_params={"run_id": "r2"}, pipeline=pipe, catalog=catalog)
+    hooks.before_pipeline_run(run_params={"run_id": "r2"}, pipeline=pipe)
+    hooks.after_pipeline_run(run_params={"run_id": "r2"}, pipeline=pipe)
 
 
 def test_a_real_runner_failure_releases_through_on_pipeline_error(tmp_path):
@@ -1509,9 +1480,7 @@ def test_a_real_runner_failure_releases_through_on_pipeline_error(tmp_path):
     catalog = DataCatalog({"raw_in": MemoryDataset(1)})
     run_params = {"run_id": "r1"}
 
-    hook_manager.hook.before_pipeline_run(
-        run_params=run_params, pipeline=pipe, catalog=catalog
-    )
+    hook_manager.hook.before_pipeline_run(run_params=run_params, pipeline=pipe, catalog=catalog)
     with pytest.raises(Exception):
         SequentialRunner().run(pipe, catalog, hook_manager=hook_manager)
     hook_manager.hook.on_pipeline_error(
@@ -1534,7 +1503,6 @@ def test_the_runtime_param_is_the_live_wait_channel(tmp_path):
             hooks.before_pipeline_run(
                 run_params={"run_id": "r1", "runtime_params": {"admission_wait_seconds": 0.4}},
                 pipeline=_pipeline("a"),
-                catalog=DataCatalog({}),
             )
     finally:
         release(held)
@@ -1547,7 +1515,6 @@ def test_an_invalid_runtime_param_refuses_the_run(tmp_path):
         hooks.before_pipeline_run(
             run_params={"run_id": "r1", "runtime_params": {"admission_wait_seconds": "soon"}},
             pipeline=_pipeline("a"),
-            catalog=DataCatalog({}),
         )
 
 
@@ -1563,8 +1530,203 @@ def test_filelock_is_declared_in_both_manifests():
 
 def test_the_in_process_executor_coupling_is_recorded_in_dagster_yml():
     """Acquisition happens inside an op; under a multiprocess executor that op's subprocess
-    exits and the kernel drops the lock before the first node runs (``DW-AD23-2``)."""
-    dagster_yml = (MEMBER_DIR / "conf" / "base" / "dagster.yml").read_text(encoding="utf-8")
+    exits and the kernel drops the lock before the first node runs (``DW-AD23-2``).
 
-    assert "admission" in dagster_yml.lower()
-    assert "in_process" in dagster_yml
+    Asserts the CONFIGURED EXECUTOR, not the presence of the warning that describes it. The
+    string checks alone were vacuous: both ``admission`` and ``in_process`` appear inside the
+    warning comment, so flipping ``jobs.__default__.executor`` to ``multiprocess`` — the one
+    change the whole comment forbids, and the one that silently voids admission on this
+    plane — left them satisfied and the gate green.
+    """
+    import yaml
+
+    text = (MEMBER_DIR / "conf" / "base" / "dagster.yml").read_text(encoding="utf-8")
+    cfg = yaml.safe_load(text)
+
+    assert "admission" in text.lower(), "the coupling must stay documented in the file"
+    for job_name, job in (cfg.get("jobs") or {}).items():
+        assert job.get("executor") == "in_process", (
+            f"job {job_name!r} uses executor {job.get('executor')!r}; admission is acquired "
+            f"inside an op, so any out-of-process executor drops the lock before the first "
+            f"node runs (DW-AD23-2)"
+        )
+    assert "in_process" in (cfg.get("executors") or {})
+
+
+# --------------------------------------------------------------------------- #
+# Review pass 4 — what three passes of a green gate did not cover
+# --------------------------------------------------------------------------- #
+
+
+def test_the_holder_record_is_removed_before_the_lock_is_dropped(tmp_path):
+    """Ordering pin. Releasing the flock FIRST and unlinking after was measured to delete the
+    SUCCESSOR's record: a contender can win the lock and write its own sidecar inside that
+    gap, and the departing run then unlinks the live holder's file — after which a third
+    contender's rejection reports ``run None (pid None)`` and a later ``SIGKILL`` of that
+    holder produces no D5 reclaim WARNING. Unlinking while we still hold the lock closes it,
+    because nobody else can be the holder yet."""
+    ticket = acquire(["d"], run_id="run-A", lock_root=tmp_path)
+    holder = tmp_path / "d.holder.json"
+    assert holder.is_file()
+
+    class _Spy:
+        def __init__(self, inner):
+            self._inner = inner
+            self.lock_file = inner.lock_file
+            self.record_present_at_release = None
+
+        def release(self, force=False):
+            self.record_present_at_release = holder.exists()
+            return self._inner.release(force=force)
+
+    spy = _Spy(ticket.locks[0])
+    release(
+        AdmissionTicket(
+            run_id="run-A", datasets=("d",), locks=(spy,), lock_root=ticket.lock_root
+        )
+    )
+
+    assert spy.record_present_at_release is False, (
+        "the sidecar was still on disk when the flock was dropped — a successor admitted in "
+        "that window would have its own holder record unlinked by this run"
+    )
+    assert _is_free(tmp_path, "d")
+
+
+def test_the_holder_record_is_replaced_atomically_not_truncated_in_place(tmp_path):
+    """A contender reads this file WITHOUT holding the lock, and the write happens right
+    after the winner takes the flock — i.e. exactly when a contender is reading. ``write_text``
+    opens with ``O_TRUNC``, so that reader sees zero bytes and every diagnostic field the AC
+    demands degrades to ``None``. An already-open reader is the deterministic probe: under
+    ``os.replace`` it still sees the whole previous record; under truncate-in-place it sees a
+    torn one."""
+    path = tmp_path / "d.holder.json"
+    admission._write_holder(path, "run-first")
+
+    reader = path.open("r", encoding="utf-8")  # a contender, mid-flight
+    try:
+        admission._write_holder(path, "run-second")
+        assert json.loads(reader.read())["run_id"] == "run-first", (
+            "the in-flight reader saw a torn record — the write truncated in place"
+        )
+    finally:
+        reader.close()
+
+    assert json.loads(path.read_text(encoding="utf-8"))["run_id"] == "run-second"
+    assert not list(tmp_path.glob("*.tmp")), "the temp file was left behind"
+
+
+def test_an_absolute_lock_root_env_var_needs_no_derivable_project_root(monkeypatch, tmp_path):
+    """Installed from the built ``.conda`` artifact, ``_PROJECT_ROOT`` lands in
+    ``site-packages`` and the guard refuses to guess — while its own message names an absolute
+    ``PYFORGE_ATLAS_LOCK_ROOT`` as the remedy. Resolving the base BEFORE reading the env made
+    that remedy unreachable: the guard fired before the override was ever read."""
+    monkeypatch.setattr(admission, "_PROJECT_ROOT", tmp_path / "site-packages" / "pyforge")
+    monkeypatch.setenv("PYFORGE_ATLAS_LOCK_ROOT", str(tmp_path / "elsewhere"))
+    monkeypatch.delenv("PYFORGE_ATLAS_DATA_ROOT", raising=False)
+
+    assert default_lock_root() == (tmp_path / "elsewhere" / ".locks").resolve()
+
+
+def test_the_derived_project_root_is_refused_when_it_is_not_a_kedro_project(
+    monkeypatch, tmp_path
+):
+    """The other half of the same guard: with no absolute override there IS no anchor, and
+    guessing would anchor the locks away from the Parquet they guard — the defect the first
+    implementation of this story shipped and was reverted for."""
+    monkeypatch.setattr(admission, "_PROJECT_ROOT", tmp_path / "site-packages" / "pyforge")
+    monkeypatch.delenv("PYFORGE_ATLAS_LOCK_ROOT", raising=False)
+    monkeypatch.delenv("PYFORGE_ATLAS_DATA_ROOT", raising=False)
+
+    with pytest.raises(AdmissionConfigError, match="cannot locate the Kedro project root"):
+        default_lock_root()
+
+
+def test_a_non_iterable_datasets_argument_is_refused(tmp_path):
+    """The other half of correctness requirement 7's input guard: only the bare-``str`` case
+    was covered."""
+    with pytest.raises(AdmissionConfigError, match="not iterable"):
+        acquire(123, run_id="r1", lock_root=tmp_path)
+
+
+@pytest.mark.parametrize("name", ["../escaped", "sub/dir", "", ".", ".."])
+def test_a_dataset_name_that_cannot_be_a_lock_identity_is_refused(tmp_path, name):
+    """Every name becomes ``<lock_root>/<name>.lock``. Measured before the guard:
+    ``acquire(["../escaped"])`` created the lock file OUTSIDE the lock root, where no other
+    process anchored to that root will ever contend with it — admission silently off for that
+    dataset."""
+    with pytest.raises(AdmissionConfigError, match="not a safe lock identity"):
+        acquire([name], run_id="r1", lock_root=tmp_path)
+    assert not list(tmp_path.parent.glob("escaped.lock"))
+
+
+def test_the_hooks_declare_only_the_arguments_they_read(tmp_path):
+    """pluggy's missing-argument check is per-IMPL, so every argument an impl NAMES is one a
+    caller must supply or that impl raises ``HookCallError`` — and under ``tryfirst`` this
+    impl is asked first, so it would be the raiser. Verified before the fix: an
+    ``after_pipeline_run`` call without ``catalog`` raised from admission itself, left the
+    ticket outstanding and left the flock held. kedro and kedro-dagster both pass ``catalog``
+    today; declaring an argument this module never reads stakes the release path on that."""
+    import inspect
+
+    for name in ("before_pipeline_run", "after_pipeline_run", "on_pipeline_error"):
+        params = set(inspect.signature(getattr(RunAdmissionHooks, name)).parameters) - {"self"}
+        assert params == {"run_params", "pipeline"}, f"{name} declares {params}"
+
+    hooks = RunAdmissionHooks(lock_root=tmp_path)
+    hook_manager = _create_hook_manager()
+    hook_manager.register(hooks)
+    pipe, run_params = _pipeline("a"), {"run_id": "r1"}
+
+    # Every call shape below omits at least one hookspec argument.
+    hook_manager.hook.before_pipeline_run(run_params=run_params, pipeline=pipe)
+    assert not _is_free(tmp_path, "a")
+    hook_manager.hook.after_pipeline_run(run_params=run_params, pipeline=pipe, run_result={})
+    assert _is_free(tmp_path, "a"), "a HookCallError from our own impl stranded the lock"
+
+    hook_manager.hook.before_pipeline_run(run_params=run_params, pipeline=pipe)
+    hook_manager.hook.on_pipeline_error(run_params=run_params, pipeline=pipe)
+    assert _is_free(tmp_path, "a")
+
+
+def test_a_release_with_no_usable_pipeline_and_two_tickets_frees_nothing(tmp_path, caplog):
+    """The ambiguity guard covered the no-MATCH case but not the no-PIPELINE one, so
+    ``_release_for(run_params, None)`` fell through to the bare LIFO pop the same function
+    forbids by name — freeing a run that is still writing. Measured: with ``{x}`` and ``{y}``
+    outstanding under one run id, ``y`` was released."""
+    hooks = RunAdmissionHooks(lock_root=tmp_path)
+    run_params = {"run_id": "shared"}
+    hooks.before_pipeline_run(run_params=run_params, pipeline=_pipeline("x"))
+    hooks.before_pipeline_run(run_params=run_params, pipeline=_pipeline("y"))
+
+    with caplog.at_level("ERROR", logger=admission.logger.name):
+        hooks._release_for(run_params, None)
+
+    assert "releasing NOTHING" in caplog.text
+    assert not _is_free(tmp_path, "x") and not _is_free(tmp_path, "y")
+    assert len(hooks._tickets["shared"]) == 2
+
+    hooks.after_pipeline_run(run_params=run_params, pipeline=_pipeline("x"))
+    hooks.after_pipeline_run(run_params=run_params, pipeline=_pipeline("y"))
+    assert _is_free(tmp_path, "x") and _is_free(tmp_path, "y")
+
+
+def test_a_pipeline_whose_outputs_cannot_be_read_does_not_fail_a_successful_run(tmp_path):
+    """``release()`` promises never to raise, but ``_release_for`` computed
+    ``_lock_names(pipeline.all_outputs())`` outside every guard — and kedro calls
+    ``after_pipeline_run`` OUTSIDE its ``try``. So an ``AdmissionConfigError`` or an
+    ``AttributeError`` there failed a run whose nodes had all SUCCEEDED, and stranded the
+    ticket on the way out."""
+
+    class _Broken:
+        def all_outputs(self):
+            raise AttributeError("no outputs here")
+
+    hooks = RunAdmissionHooks(lock_root=tmp_path)
+    run_params = {"run_id": "solo"}
+    hooks.before_pipeline_run(run_params=run_params, pipeline=_pipeline("a"))
+
+    hooks.after_pipeline_run(run_params=run_params, pipeline=_Broken())  # must not raise
+
+    assert _is_free(tmp_path, "a"), "the single unambiguous ticket must still be released"
+    assert hooks._tickets == {}
