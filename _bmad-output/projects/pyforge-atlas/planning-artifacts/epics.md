@@ -598,7 +598,7 @@ So that I watch runs in the Dagster UI and the 1800 s silent-phase-drop defect i
 **And** Phase P stays `PHASE_P_ENABLED=1`, admin-config-only, never a default schedule.
 
 - **FRs:** FR-6.
-- **Invariants:** AD-6, AD-1 (`kedro-dagster` is replaceable glue; no upward imports), AD-23 (one execution plane; ~~run admission serializes per dataset set~~ — **admission clause RETRACTED 2026-07-27, `AUD-ATLAS-046`: never implemented; the `in_process` executor serializes ops within a run only. Tracked as `DW-AD23-1`**).
+- **Invariants:** AD-6, AD-1 (`kedro-dagster` is replaceable glue; no upward imports), AD-23 (one execution plane; run admission serializes per dataset set — **admission clause RESTORED 2026-07-29: retracted 2026-07-27 as unimplemented (`AUD-ATLAS-046`), built and gated by Story 10.6 (`admission.py` + `settings.HOOKS`), which closes `DW-AD23-1`. C1's `in_process` executor still only serializes ops within a run — and on the Dagster plane it is load-bearing for admission's release path, `DW-AD23-2`**).
 - **Mode:** ATTENDED (bring-up boundary event — one of the five § 2.5 attended events; the `dagster-dryrun` gate it builds is loop-consumable thereafter).
 - **Gating question:** **Q2** — default adopted (above); re-verify the Dagster bet at wave start (release cadence under Prefect, `kedro-dagster` compatibility, Components/Prefect-deployer ramps).
 - **Verify gate:** **builds `dagster-dryrun`**.
