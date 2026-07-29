@@ -3,7 +3,7 @@ doc_type: deferred-work-ledger
 project: pyforge-atlas
 date: 2026-07-29
 status: restored
-entries: 53
+entries: 55
 ---
 
 # pyforge-atlas — deferred-work ledger (RESTORED, tracked)
@@ -11,6 +11,12 @@ entries: 53
 **All 52 real deferrals recorded during the Kedro migration, with full bodies — the
 ledger is complete.** The run log's index of "54" double-counted two aliases; see
 § Provenance.
+
+The frontmatter `entries` count is the number of `## DW-` headings in this file and so
+runs ahead of that 52 as post-restore work lands: **55** today = the 52 restored + `DW-I4-1`
+(promoted 2026-07-29 out of the gitignored Tier-3 ledger) + `DW-AD23-1` and `DW-AD23-2`
+(Story 10.6, same date — the first *defining* an id that eight artifacts had been citing
+with no entry behind it).
 
 ## Why this file exists
 
@@ -598,6 +604,87 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
     where it was recorded as the generic id `DW-1`. Renamed to `DW-I4-1` to match this
     ledger's `DW-<story>-<n>` convention and to stop a bare `DW-1` colliding with the next
     run that emits one.
+
+---
+
+## DW-AD23-1 — Run admission was asserted but never implemented (HIGH) — CLOSED
+
+- source_spec: `spec-c1-integrate-kedro-dagster-for-scheduling-execution.md` (Epic 4 / Story C1, AD-23, audit `AUD-ATLAS-046`)
+  origin: audit-retraction (`sprint-change-proposal-2026-07-27.md`), closed by Story 10.6
+  summary: `ARCHITECTURE-SPINE.md` AD-23 and `orchestration/definitions.py` both asserted
+    "a dataset has one writing run at a time — run admission serializes on the target dataset
+    set". **Nothing implemented it.** The `in_process` Dagster executor in
+    `conf/base/dagster.yml` serializes ops *within* one run and provides no cross-run or
+    cross-process admission; there was no lock or queue anywhere in the package. Two MCP
+    `run_*` triggers, or an MCP trigger racing a `kedro run`, could interleave writes to the
+    same Parquet file. The 2026-07-27 sprint-change proposal retracted the claim and DEMOTED
+    AD-23, citing this id — which, until now, **eight artifacts referenced and no ledger
+    entry defined**.
+  resolution: **CLOSED 2026-07-29 by Story 10.6** (`spec-10-6-make-run-admission-real-or-stop-claiming-it.md`).
+    `pyforge/atlas/admission.py` ships the mechanism and `RunAdmissionHooks()` is the fourth
+    entry in `settings.HOOKS`, so the CLI, the seven MCP `run_*` tools and the Dagster plane
+    all inherit it from one registration (it rides the kedro HOOK MANAGER — not
+    `KedroSession.run`, which the Dagster plane does not use). One `filelock` OS file lock per
+    dataset in `pipeline.all_outputs()`, acquired in sorted order in `before_pipeline_run`,
+    released in BOTH `after_pipeline_run` and `on_pipeline_error`. Reject-fast by default with
+    a typed `RunAdmissionRejected` naming the conflicting dataset, the holder's run id, PID and
+    hold start; a bounded wait is opt-in via `--params admission_wait_seconds=<n>` and is
+    enforced as ONE deadline shared across all locks. A dead holder never wedges the factory
+    (the kernel drops its flock; the surviving sidecar is reclaimed and logged). The lock root
+    is PROJECT-anchored, never CWD-relative — a first implementation got this wrong and was
+    reverted, because kedro resolves catalog filepaths under the project root while the MCP
+    server and the repo's pixi tasks run from different CWDs.
+    Gate, re-run against the tree on 2026-07-29 (not transcribed): `kedro-test`
+    **874 passed / 19 skipped** (baseline before the story: 803 / 19; `tests/test_admission.py`
+    contributes **71**, including a two-process contention gate that spawns a real second OS
+    process — no threads, no mocks); `kedro-catalog-check` **47**; `dagster-dryrun` **58**.
+    AD-23 was re-promoted to its full form in the spine on the strength of that gate, with the
+    single-machine (NFS `flock`) and Dagster-release boundaries carried explicitly.
+  status: closed
+
+---
+
+## DW-AD23-2 — Dagster-plane release is process-local and `in_process`-coupled (MEDIUM) — DEFERRED
+
+- source_spec: `spec-10-6-make-run-admission-real-or-stop-claiming-it.md` (Epic 10 / Story I5, AD-23)
+  origin: implementation boundary recorded while closing `DW-AD23-1`
+  summary: Two coupled residuals on the Dagster plane, both out of Story 10.6's scope.
+    (1) **`run_result` signature.** kedro-dagster's after-op calls
+    `after_pipeline_run(run_results=None, ...)` — it omits kedro's `run_result` entirely.
+    pluggy's missing-argument check is per-IMPL, not per-call, so any impl declaring
+    `run_result` raises `HookCallError`. `AtlasObservabilityHooks.after_pipeline_run` still
+    declares it, so the Dagster after-op still fails there. Admission is unharmed only because
+    kedro registers `settings.HOOKS` in tuple order and pluggy dispatches LIFO:
+    `RunAdmissionHooks` is appended last, therefore dispatched FIRST, and its subset signature
+    lets it release BEFORE the E2 impl raises. That ordering is load-bearing and easy to break
+    by reordering the tuple. Not fixed here: it is E2-owned and touches 10 positional call
+    sites in `tests/observability/`, which this story is scoped out of.
+    (2) **`in_process` coupling.** Acquisition happens inside the
+    `before_pipeline_run_hook_<job>` op. An OS file lock belongs to the open file description
+    of the process that took it, so under a MULTIPROCESS Dagster executor that op's subprocess
+    would exit and the kernel would drop every lock before the first node ran — admission would
+    silently become a no-op on this plane while still reporting success. It is safe today ONLY
+    because `conf/base/dagster.yml` declares `in_process`.
+    (3) **Later before-hooks can strand admission's locks.** Kedro calls `before_pipeline_run`
+    OUTSIDE its `try` block, so only exceptions from `runner.run` reach `on_pipeline_error`.
+    Admission is dispatched FIRST (LIFO), so every other before-hook runs after the locks are
+    taken: if one raises — e.g. `AtlasObservabilityHooks.before_pipeline_run` opening an OTel
+    span against a live exporter — kedro fires no error hook and the locks are held until the
+    process exits. Harmless for a CLI run; for the long-lived MCP server it wedges that dataset
+    set until restart. It is an AVAILABILITY boundary, not a correctness hole (no second writer
+    is ever admitted), and it is NOT fixable by releasing other runs' tickets — that would be
+    actively wrong inside a concurrently-serving process.
+  resolution: (1) drop the unused `run_result` parameter from
+    `AtlasObservabilityHooks.after_pipeline_run` (or make it defaulted) and update its
+    positional call sites, then assert both planes in `tests/observability/`. (2) Before
+    `DW-C1-1`'s daemon bring-up reaches for a real executor, move admission acquisition out of
+    the hook op (e.g. onto a run-scoped Dagster resource whose lifetime spans the run) — or
+    accept `in_process` as a hard constraint and gate on it. `conf/base/dagster.yml` and
+    `admission.py` both carry the warning inline so the coupling is discovered at the point of
+    change, not after a silent regression. (3) needs a hook-manager-level guarantee kedro does not
+    currently offer; the honest interim is that it is recorded on AD-23 and in `SPEC.md` as the
+    third boundary rather than left for an operator to discover during an incident.
+  status: open
 
 ## 24. Sprint status
 

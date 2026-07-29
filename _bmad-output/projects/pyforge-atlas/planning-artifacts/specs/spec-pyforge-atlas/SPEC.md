@@ -253,13 +253,23 @@ close later.
   trace instrumentation, and profile definitions are declared in run configuration, so every
   entry point — scheduled job, sensor, MCP trigger, CLI — executes the identical named pipeline
   with identical machinery; an MCP trigger names a profile explicitly or inherits `maintainer`.
-  **Run admission is NOT implemented** *(corrected 2026-07-27, `AUD-ATLAS-046`)*. The
-  `in_process` executor declared in `conf/base/dagster.yml` serializes ops *within* a single
-  run; it provides no cross-run or cross-process admission. Two concurrent triggers of the same
-  dataset set — an MCP trigger racing a CLI run, or two MCP triggers — are **not** serialized,
-  rejected, or queued. The shipped guarantee is the shared plane and identical machinery,
-  **not** single-writer safety. Tracked as `DW-AD23-1`; **do not design against a serialization
-  guarantee that does not exist.** This clause previously asserted the opposite.
+  **Run admission IS implemented** *(shipped 2026-07-29, Story 10.6, closing `DW-AD23-1` /
+  `AUD-ATLAS-046`; it was correctly recorded as unimplemented between 2026-07-27 and then)*. A
+  dataset has one writing run at a time: `pyforge.atlas.admission.RunAdmissionHooks`, registered
+  in `settings.HOOKS`, takes one OS file lock per output dataset in `before_pipeline_run` and
+  releases in both `after_pipeline_run` and `on_pipeline_error`. Two concurrent triggers of the
+  same dataset set — an MCP trigger racing a CLI run, or two MCP triggers — are rejected fast
+  with a typed error naming the holder, or retried to a finite deadline if the run explicitly asked for a bounded wait (a poll on the lock — no queue, no ordering or fairness guarantee)
+  (`--params admission_wait_seconds=<n>`); they are never interleaved. Granularity is the
+  pipeline's declared output set — concretely `pipeline.all_outputs()`, a deliberate superset that
+  includes in-run intermediates because over-locking fails safe — so genuinely disjoint pipelines
+  still run concurrently. The
+  `in_process` executor in `conf/base/dagster.yml` remains what serializes ops *within* a single
+  run — a different property, and on the Dagster plane a load-bearing one (`DW-AD23-2`). Three
+  boundaries stand: file locks are single-machine (NFS `flock` is unreliable); release on the
+  Dagster plane is process-local; and because kedro calls `before_pipeline_run` outside its `try`
+  with admission dispatched first, a later before-hook that raises leaves the locks held until the
+  process exits — an availability wedge for the long-lived MCP server, not a correctness hole.
 - **No data-access logic in a node body, ever.** Sources, outputs, credentials, endpoints, and
   physical layout are catalog concerns; nodes are pure functions taking and returning
   dataframes. Credentials attach to a dataset's destination host only. Nodes carry no retries,

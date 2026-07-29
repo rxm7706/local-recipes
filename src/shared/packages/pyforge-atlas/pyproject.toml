@@ -35,6 +35,12 @@ dependencies = [
     "duckdb>=1.5.5",
     "ibis-framework>=12.0.0",
     "pandera>=0.32.1",
+    # Story 10.6 (AD-23): `admission.py` imports `filelock` at MODULE level for the
+    # per-output-dataset run-admission lock. It was already IN the env — but only
+    # TRANSITIVELY, via dagster and ibis-framework-core. AUD-ATLAS-010's doctrine is
+    # that an undeclared module-level import is a runtime dependency whether or not
+    # the manifest says so, so it is declared here. No new package enters the env.
+    "filelock>=3.32.0",
     "vizro>=0.1.59",
     "dagster>=1.13.15",
     # `boring-semantic-layer` is intentionally ABSENT — PyPI-only (no conda-forge
