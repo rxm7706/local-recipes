@@ -144,8 +144,14 @@ def ci_red(t: Any) -> Any:
     ASSUMED identical ({'failure','error',...}) and FLAGGED for legacy recapture — the
     migrated node is a shape port (§ PARITY_NOTES B-seeds), so this is anchored to the
     migrated column, not a credentialed legacy capture.
+
+    AUD-ATLAS-012: a NULL ``ci_status`` (CI state never observed) must NOT read as
+    CI-red — the legacy predicate is a ``--filter``, where a NULL simply fails to match
+    and is therefore not ci-red. ``.fill_null(False)`` restores that parity and matches
+    the sibling predicates below (``has_open_prs`` / ``has_open_issues``), which already
+    coalesce their NULL-prone inputs the same way.
     """
-    return t.ci_status.isin(_CI_RED_STATES)
+    return t.ci_status.isin(_CI_RED_STATES).fill_null(False)
 
 
 def has_open_prs(t: Any) -> Any:
