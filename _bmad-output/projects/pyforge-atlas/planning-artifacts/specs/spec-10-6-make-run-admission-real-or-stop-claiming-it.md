@@ -2,13 +2,13 @@
 title: 'Make run admission real, or stop claiming it'
 type: 'feature'
 created: '2026-07-29'
-status: 'in-review'
+status: 'done'
 review_loop_iteration: 0
-followup_review_recommended: true  # pass 2: 0 bad_spec, but 17 patches (9 medium) that changed real behavior — rollback now unlinks sidecars, locks refuse the SoftFileLock downgrade, tickets pair by dataset set, and `_resolve_base` is new code. Those paths no independent reviewer has seen.
+followup_review_recommended: true  # pass 4: 0 bad_spec again, but 7 medium patches on the acquire/RELEASE paths — all three hook signatures narrowed (changing what every caller on every plane must supply), `release()`'s unlink/release order reversed a SECOND time, `_release_for` gained a new no-pipeline branch, `_write_holder` became atomic, and `default_lock_root`'s resolution order changed. No independent reviewer has seen any of it. Pass 4 also found TWO more vacuous tests and a third false mechanism claim that three prior passes missed, so the base rate of "a pass still finds real defects" has not yet fallen.
 context: []
 warnings: ['oversized']
 baseline_revision: '56739413c2d9da27e87ec6e03a94eb571852ff76'
-final_revision: '5ace46d901a0ba13346e26e7a8c1e6ed59d726da'
+final_revision: '6c5569bf5f766a4a1ff738f959379582773e3cef'
 ---
 
 <intent-contract>
@@ -374,6 +374,34 @@ re-promotes AD-23 to its full form on the strength of it — i.e. re-committing 
   - `[low]` `[patch]` Test hygiene: the headline wait test's closing `admitted_at > released_at > spawned_at + _BLOCKED_WINDOW` was true by construction (`released_at` is sampled after a mandatory blocking poll) and read as corroboration it did not supply — replaced; `assert early is None` now also asserts the child is still ALIVE, so a child that crashed after the handshake fails there rather than 45s later as an unrelated-looking timeout; and the child-reap loop no longer aborts on one `TimeoutExpired`, stranding the remaining children.
   - deferred (1): run admission is writer-writer exclusion only, and the concurrency it deliberately permits is reader-writer unsafe — `pandas.ParquetDataset.save` truncates in place, and the 7 pipelines carry 12 cross-pipeline write→read edges, so a run admitted for having a disjoint OUTPUT set can read a half-written Parquet. Pre-existing, and strictly improved by this story, but newly over-assumable now that per-dataset-set granularity is documented as a feature. Closing it needs atomic dataset writes or read-locks — wider than an admission story.
   - rejected (4): rewriting `sprint-change-proposal-2026-07-27.md` and `.memlog.md` (the spec names both as historical/append-only records of what was believed at the time), and `spec-archive/ATLAS-BMAD-SPECS-CONSOLIDATED.md` (a self-described derived archive, not a canonical copy); and validating that an explicitly-supplied ABSOLUTE `project_path` is a Kedro root — the `__file__`-derived fallback is checked precisely because nobody chose it, whereas an explicit argument is the caller's choice to make.
+### 2026-07-29 — Review pass 4 (follow-up review, triggered by pass 3's `followup_review_recommended`)
+
+- intent_gap: 0
+- bad_spec: 0
+- patch: 18: (high 0, medium 7, low 11)
+- defer: 1: (high 0, medium 0, low 1)
+- reject: 5: (high 0, medium 1, low 4)
+- addressed_findings:
+  - `[medium]` `[patch]` **`after_pipeline_run` / `on_pipeline_error` declared `catalog` (and `error`) they never read** — re-creating, on the RELEASE path, the exact `HookCallError` exposure the subset-signature comment claims to have eliminated. pluggy's missing-arg check is per-IMPL, so every declared argument is one a caller must supply; and under `tryfirst` admission is asked FIRST, so it is the raiser and nothing downstream can compensate. Reproduced: `after_pipeline_run(run_params=…, pipeline=…, run_result={})` with no `catalog` → `HookCallError` from admission's own impl, ticket still outstanding, flock still held — for the long-lived MCP server, until restart. All three hooks now declare exactly `(run_params, pipeline)`; pinned by a signature assertion plus real-hook-manager calls that omit `catalog`/`error`. Mutation-verified RED.
+  - `[medium]` `[patch]` **`release()` deleted the SUCCESSOR's holder record.** Pass 3 reversed the order to unlink after releasing; a contender can win the flock and write its own sidecar inside that gap, and the departing run then unlinks the LIVE holder's file. Reproduced deterministically: run B admitted, record present, A's unlink → `run None (pid None)`. Costs the rejection diagnostics the AC demands and kills the D5 reclaim WARNING if B is later `SIGKILL`ed. Now unlinks BEFORE releasing (nobody else can be the holder while we hold it) and re-writes the record if the release did not actually let go — closing both windows rather than trading one for the other. Pinned by an ordering spy; mutation-verified RED.
+  - `[medium]` `[patch]` **`_release_for` with `pipeline=None` fell through to the bare LIFO pop it forbids by name.** Pass 3's ambiguity guard covered the no-MATCH case only. Measured: `{x}` and `{y}` outstanding under one `run_id`, `_release_for(rp, None)` freed `y` — a run that is still writing. Same rule now applies to the no-pipeline case: release NOTHING, log at ERROR. Mutation-verified RED.
+  - `[medium]` `[patch]` **`_release_for` could raise out of `after_pipeline_run`**, contradicting `release()`'s "never raises, never fails a good run" contract: `_lock_names(pipeline.all_outputs())` sat outside every guard, and kedro calls `after_pipeline_run` OUTSIDE its `try`. An `AdmissionConfigError` or `AttributeError` there failed a run whose nodes had all succeeded AND stranded the ticket. Now guarded, falling back to the single-ticket rule.
+  - `[medium]` `[patch]` **`default_lock_root` resolved the project root BEFORE reading the env**, so an absolute `PYFORGE_ATLAS_LOCK_ROOT` could not rescue a non-editable install — while `_resolve_base`'s own error advertises exactly that remedy. Reproduced. The env is now read first; an absolute value needs no anchor. Mutation-verified RED.
+  - `[medium]` `[patch]` **`test_the_in_process_executor_coupling_is_recorded_in_dagster_yml` guarded the comment, not the coupling** — it asserted only that the strings `admission` and `in_process` appear, and both live inside the warning comment. Flipping `jobs.__default__.executor` to `multiprocess`, the one change that whole block forbids and the one that silently voids admission on the Dagster plane, passed green. Now parses the YAML and asserts every job's executor. Mutation-verified RED.
+  - `[medium]` `[patch]` **`test_gate_opt_in_wait_rejects_when_the_deadline_expires` was vacuous** — it asserted only the rejection fields, so a mutant ignoring `wait_seconds` entirely produced identical results. Third instance of this defect class in three passes. Now asserts the deadline was actually waited out. Mutation-verified RED.
+  - `[low]` `[patch]` `_write_holder` used `Path.write_text` (`O_TRUNC`), authoring the very "torn sidecar" state `_read_holder` and `RunAdmissionRejected` go to such lengths to survive — and doing so in the window right after the flock is taken, i.e. exactly when a contender is reading. Measured: a read in that window degrades every field to `None`. Now temp file + `os.replace`; pinned by an already-open reader that must still see the whole previous record. Mutation-verified RED.
+  - `[low]` `[patch]` A dataset name containing a path separator or a `..` segment escaped the lock root: measured, `acquire(["../escaped"], lock_root=R)` created the lock OUTSIDE `R`, where nothing anchored to `R` ever contends with it — admission silently off for that dataset. Now refused with `AdmissionConfigError`. Mutation-verified RED (5 cases).
+  - `[low]` `[patch]` `__deepcopy__`'s justification ("C1's `KedroProjectTranslator` DEEP-COPIES `settings.HOOKS` at `to_dagster()` build time") is false for the installed kedro-dagster 0.7.x: `translator.py:253,262` pass the hook manager BY REFERENCE and the only `deepcopy` in the package is in `datasets/partitioned_dataset.py`. The contract is worth keeping as defence; the unmeasured mechanism claim is not — in a story whose thesis is that. Restated in `admission.py` and in the test docstring.
+  - `[low]` `[patch]` `tests/test_admission.py` still carried "Because admission is registered LAST it is dispatched FIRST" — the precise claim pass 3 measured wrong and corrected in the spine, `SPEC.md`, `settings.py`, `admission.py` and `DW-AD23-2`, left standing in the very file whose new test exists to distinguish the two.
+  - `[low]` `[patch]` A rejected run emitted no observability at all: `tryfirst` means no observability hook has run, and kedro fires no error hook for a raise in `before_pipeline_run`, so an admission conflict in the unattended factory left only a traceback. Now logged at WARNING before the raise.
+  - `[low]` `[patch]` The boundary list said "only exceptions from `runner.run` reach `on_pipeline_error`" — imprecise: kedro catches `Exception`, so a `KeyboardInterrupt`/`SystemExit` out of the runner fires NEITHER hook. Sharpened in `admission.py`, the spine, `SPEC.md` and `DW-AD23-2`(3).
+  - `[low]` `[patch]` The lock store lives inside the tree it guards (`<data_root>/.locks`), so `rm -rf data/` — a routine "force a rebuild" — unlinks the inode a live holder's flock belongs to and lets the next acquirer create a fresh file at the same path: two writers, silently. Undocumented anywhere. Now carried in the module boundary list, the spine and `SPEC.md`, with the `PYFORGE_ATLAS_LOCK_ROOT` mitigation named.
+  - `[low]` `[patch]` `DW-AD23-2`'s summary opened "**Two** coupled residuals" while enumerating four (pass 3 added the fourth), and its title scoped the entry to the Dagster plane although residual (3) affects the MCP server today — inviting exactly the mis-scoping that drops it. Both corrected. Only the two ledger entries THIS diff created were touched; no pre-existing entry's status or resolution was altered.
+  - `[low]` `[patch]` `DW-AD23-1`'s gate evidence re-stamped from the pass-3 figures to the pass-4 re-run (901/19, 98 admission tests) — this story's own binding rule is that counts are re-run, never transcribed.
+  - `[low]` `[patch]` Coverage gaps in code this story added: `_resolve_base`'s site-packages guard (the sole protection against anchoring the locks to the wrong tree — the defect pass 1 reverted the whole implementation for) and `_lock_names`'s non-iterable branch were both untested. Tests added.
+  - `[low]` `[patch]` Flake risk: the shared-deadline test's upper bound left ~150 ms of slack on a 1 s budget on an unattended, possibly loaded runner. The property is a ratio, so both terms were tripled — identical discrimination, 3× the margin. Test hygiene: a misplaced `# noqa: BLE001` on an `except OSError`, and a docstring that described the pre-pass-4 release ordering.
+  - deferred (1): `observability.py` states in three places that the translator deep-copies the settings hooks — measured false against the installed kedro-dagster — and its lazy-`TracerProvider` design at `:188-195` exists specifically to satisfy that build. Pre-existing and E2-owned; surfaced only because the new hook copied the claim verbatim.
+  - rejected (5): PID recycling defeating `_pid_alive` (real, but the consequence is one missing WARNING and the fix needs boot-relative process start times — complexity against Simplicity First); no upper bound on `admission_wait_seconds` (`1e12` is finite and is the caller's explicit choice, which is what the validator exists to honour); the spine "already-running pipeline" phrasing (the same sentence states the dataset-set rule first); "harmless for a CLI run" allegedly understating false-corpse noise (a run that died holding IS a corpse — D5 firing is correct behaviour, not noise); and `zip(strict=True)` in `release()` (it would introduce a raise path into a function contractually forbidden to raise — handled instead by logging the mismatch and releasing every lock the ticket carries).
 
 
 ## Design Notes
@@ -612,3 +640,72 @@ and each closes a way the mechanism fails silently rather than loudly:
   (`sprint-change-proposal-2026-07-27.md`, `*.memlog.md`, `reviews/`), which are records of
   what was believed at the time and must NOT be rewritten.
 
+
+
+## Auto Run Result
+
+Status: `done` (review pass 4 — follow-up review; 0 intent_gap, 0 bad_spec, no loopback).
+
+**Change under review.** Story 10.6 makes AD-23's "a dataset has one writing run at a time"
+real: `pyforge.atlas.admission` takes one `filelock` OS file lock per dataset in
+`pipeline.all_outputs()`, in sorted order, from a `RunAdmissionHooks` registered once in
+`settings.HOOKS`, and releases in both `after_pipeline_run` and `on_pipeline_error`.
+Reject-fast by default with a typed `RunAdmissionRejected`; a bounded wait is opt-in and
+enforced as ONE deadline across all locks. Pass 4 changed no design decision — it repaired
+seven behaviour-level defects on the acquire/release paths and removed two more vacuous
+tests.
+
+**Files changed this pass** (5; nothing else in the working tree):
+
+- `src/pyforge/atlas/admission.py` — hook signatures narrowed to `(run_params, pipeline)` on
+  all three hooks; `release()` unlinks before dropping the flock and restores the record on a
+  failed release; `_write_holder` is atomic; `_lock_names` refuses unsafe lock identities;
+  `default_lock_root` reads the env before resolving the project root; `_release_for` guards
+  both `all_outputs()` and the no-pipeline ambiguity; a rejection is logged; four boundary
+  corrections in the module docstring.
+- `tests/test_admission.py` — 13 new tests (98 total in the file, from 85); the dagster.yml
+  and deadline-expiry tests rewritten from vacuous to mutation-verified; direct hook call
+  sites updated to the narrowed signatures; three stale docstrings corrected.
+- `.../ARCHITECTURE-SPINE.md` + `.../spec-pyforge-atlas/SPEC.md` — AD-23's boundary list gains
+  the non-`Exception` runner-exit window and the lock-store-deletion hazard ("Three boundaries
+  stand" → four).
+- `.../deferred-work-ledger.md` — `DW-AD23-2`'s "Two coupled residuals" corrected to four and
+  its title de-scoped from Dagster-only; residual (3) sharpened; `DW-AD23-1`'s gate evidence
+  re-stamped from the re-run.
+
+**Review findings.** 18 patches applied (7 medium, 11 low), 1 deferred, 5 rejected, 0
+bad_spec, 0 intent_gap. Full detail in `## Review Triage Log` § *Review pass 4*.
+
+**Verification** (all re-run against this tree, not transcribed):
+
+- `pixi run --frozen -e pyforge-atlas kedro-test` → **901 passed / 19 skipped** (pass 3: 888/19;
+  story baseline 803/19). `tests/test_admission.py` alone: **98 passed**.
+- `pixi run --frozen -e pyforge-atlas kedro-catalog-check` → **47 passed**.
+- `pixi run --frozen -e pyforge-atlas dagster-dryrun` → **58 passed**.
+- `pixi run --frozen -e pyforge-atlas python -c "import pyforge.atlas.admission"` → clean.
+- **Mutation checks, 8 of 8 RED** — release-order reversed, `write_text` restored, `wait_seconds`
+  ignored, executor swapped to `multiprocess`, no-pipeline LIFO pop restored, `catalog`
+  re-declared, safe-name guard removed, base-before-env restored. Every new assertion bites.
+- Retraction-string grep over the seven doc targets: zero surviving hits outside the
+  historical/append-only files (the one `Dagster-owned` hit is `spec-b3:64`'s corrected
+  "are **NOT** Dagster-owned").
+- Empirical re-verification of each reviewer claim before acting: the `HookCallError` strand,
+  the successor-record deletion, the `pipeline=None` LIFO pop, the absolute-`LOCK_ROOT`
+  deadlock, the `../escaped` lock-root escape and the torn-read window were each reproduced in
+  the live env; five further claims were reproduced-but-rejected as noise (see the triage log).
+
+**Residual risks.**
+
+1. Pass 4 reversed `release()`'s unlink/release ordering that pass 3 had itself reversed. The
+   new form is strictly better (it can only ever remove OUR record, and repairs the one state
+   it risks), and it is pinned by an ordering test — but this is the second time this
+   five-line loop has changed, on the path that frees locks.
+2. Narrowing all three hook signatures changes what kedro, kedro-dagster and every installed
+   plugin must supply for admission to run. Both real callers pass a superset today (verified
+   in the installed `kedro_dagster` 0.7.x), and `dagster-dryrun` is green, but the Dagster
+   plane is exercised by a dry run, not by a live daemon.
+3. `DW-AD23-2` remains open with four residuals; residual (4) — a failed Dagster run releasing
+   nothing in-process — is still unproven either way, since no live Dagster daemon exists yet
+   (`DW-C1-1`).
+4. The deferred reader-writer gap (pass 3) and the deferred `observability.py` deepcopy premise
+   (this pass) both remain open in `implementation-artifacts/deferred-work.md`.

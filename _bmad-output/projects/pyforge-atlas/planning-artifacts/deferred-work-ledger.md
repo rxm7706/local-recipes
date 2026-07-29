@@ -709,6 +709,29 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
     process-lifetime couplings with one explicit lifetime.
   status: open
 
+## DW-I5-1 — 10.6 also finalized on a spent review budget (LOW) — DEFERRED
+
+- source_spec: `spec-10-6-make-run-admission-real-or-stop-claiming-it.md` (Epic 10 / Story I5, AUD-ATLAS-046 / DW-AD23-1)
+  origin: review-budget-followup (bmad-loop run `20260729-112237-3139`)
+  summary: Identical shape to `DW-I4-1`, and that repetition is the finding. The story
+    finalized `done` with gates green (kedro-test 901 passed, kedro-catalog-check 47) while
+    the review pass was STILL recommending an independent follow-up and
+    `limits.max_followup_reviews = 1` was spent. Two consecutive stories have now closed on
+    a BUDGET CAP rather than on reviewer convergence — so the cap, not the reviewer, is
+    deciding when atlas stories are done. D1-D6 were independently verified in the shipped
+    code afterwards (filelock per output dataset in sorted order; `tryfirst` hook in
+    settings.HOOKS releasing on both after_pipeline_run and on_pipeline_error;
+    `RunAdmissionRejected` carrying holder_run_id + held_since; PID-based stale reclamation;
+    AD-23 re-promoted WITH four stated boundaries), which is why this is LOW.
+  resolution: (a) one independent fresh-context review of `admission.py` + `test_admission.py`
+    against D1-D6; and (b) treat the repeat as a POLICY question for the retro — per the
+    loop policy's own A4 rule, a deferral appearing a second time in a different story stops
+    being story-level and becomes contract-level. Either raise `max_followup_reviews` or
+    record that finalizing on a spent cap is accepted, deliberately.
+  status: open
+  promoted: 2026-07-29 from the gitignored Tier-3 `deferred-work.md` (recorded there as the
+    generic `DW-2`); renamed to match this ledger's `DW-<story>-<n>` convention.
+
 ## 24. Sprint status
 
 > **Tier:** Tier 3 · **Source:** `_bmad-output/projects/pyforge-atlas/implementation-artifacts/sprint-status.yaml`
