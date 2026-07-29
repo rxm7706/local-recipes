@@ -1181,20 +1181,91 @@ WITHIN a run and provides no cross-run or cross-process admission at all. I1 ret
 the claim; this story decides whether to build the property or record its absence as
 a contract-level non-goal.
 
-**Acceptance Criteria:**
+**The mechanism question is CLOSED — operator decision, 2026-07-28.** The story's
+former `q_gate` ("file lock vs DB lock vs Dagster run-queue — decide in the story
+spec") was resolved by the operator before this story was drafted. D1–D6 below are
+**binding ACs, not suggestions**; the dev session implements them rather than
+re-deciding. Rationale is recorded so a future reader can re-open it on evidence,
+not on taste.
 
-**Given** two runs triggered concurrently against the same dataset set
-**When** admission is evaluated
-**Then** the second is rejected or queued — never admitted to write concurrently
-**Or** the absence is recorded as an explicit contract-level non-goal with its risk
-stated, and the code comment at `definitions.py:26` is corrected to match.
+**Grounding (verified in the code, 2026-07-28):** writes land as **Parquet** under
+`data/` (env-overridable `PYFORGE_ATLAS_DATA_ROOT`). Every DuckDB connection in the
+package is argless — `duckdb.connect()` / `ibis.duckdb.connect()` — i.e. **in-memory**;
+DuckDB is the query engine over Parquet, **not** a persistent store. Concurrent
+writers are therefore *multiple processes on one machine sharing a POSIX filesystem*:
+the 7 MCP `run_*` tools (each calling `KedroSession.run`), the CLI, and — once
+DW-C1-1 lands — Dagster.
+
+**Acceptance Criteria (D1–D6, all binding):**
+
+**D1 — Mechanism: an OS file lock.** *Given* the write store is Parquet on a local
+filesystem, *when* admission is enforced, *then* it uses `filelock` (**already present
+in the `pyforge-atlas` env** — no new dependency).
+*Rejected — DB lock:* there is no database to lock. DuckDB here is in-memory, so this
+would mean **creating** a persistent store purely for coordination — a new failure
+domain — and DuckDB permits one writer process anyway, i.e. its file lock with extra
+steps.
+*Rejected — Dagster run-queue (`QueuedRunCoordinator` + `tag_concurrency_limits`):*
+it governs only runs that pass through the Dagster daemon. **The MCP tools never touch
+Dagster** — they call `KedroSession.run` directly. It would guard the one entry point
+that is not the problem, leave the agent-facing path unguarded, and cannot even be
+demonstrated today (the daemon is deferred, DW-C1-1). Shipping it would satisfy this
+story's letter while leaving AD-23's actual property false — the precise defect class
+AUD-ATLAS-046 raised.
+
+**D2 — Placement: a Kedro hook registered in `settings.HOOKS`.** *Given* AD-23's rule
+is "every entry point rides the same machinery", *when* the lock is acquired, *then* it
+happens in `before_pipeline_run` and is released in **both** `after_pipeline_run` **and**
+`on_pipeline_error`. This is the load-bearing half of the story: `HOOKS = (ProjectHooks(),
+AtlasObservabilityHooks(), DataValidationHooks())` is *already* the seam validation and
+lineage use for exactly this reason — a `kedro run`, an MCP trigger and a Dagster run all
+pass through `KedroSession.run`. Admission is the same kind of cross-cutting guarantee and
+belongs in the same place. Admission logic MUST NOT live in `mcp/`, in `orchestration/
+definitions.py`, or in any node body.
+
+**D3 — Reject, do not queue** (with an opt-in bounded wait). *Given* a dataset set whose
+lock is held, *when* a second run requests admission, *then* it fails fast with a typed
+error naming **which** dataset(s) are locked, the holding run id, and the hold start time.
+A blocking wait is available only via explicit opt-in with a finite timeout. Rationale: the
+caller is usually an agent over MCP, where a silent block is indistinguishable from a hang
+and may hit the MCP timeout anyway; queueing is the right default for a daemon, not for a
+synchronous tool call.
+
+**D4 — Granularity: the pipeline's declared OUTPUT dataset set**, one lock per dataset,
+**acquired in sorted name order**. *Given* two pipelines with disjoint outputs, *when* both
+run, *then* both proceed concurrently. *Given* two pipelines sharing one output dataset,
+*when* both run, *then* exactly one is admitted. Sorted acquisition order is the deadlock
+avoidance and costs nothing. A single global lock is NOT acceptable: it would serialize
+genuinely unrelated pipelines (`seed_gaps` vs `vulnerability`) and would overclaim, since
+AD-23 says *per target dataset set*, not "one run at a time".
+
+**D5 — Stale locks are reclaimable.** *Given* a lock whose holding PID is no longer alive,
+*when* a new run requests admission, *then* it reclaims the lock and proceeds, recording
+that it did so. The lock file records holder PID + start time. A SIGKILL'd run must never
+wedge the factory permanently — that converts a safety feature into an outage.
+
+**D6 — Build it; the non-goal escape hatch is CLOSED.** The AC formerly permitted
+"record the absence as a contract-level non-goal". That option is withdrawn: AD-23 is
+currently DEMOTED in the spine because the claim outran the code, and documenting the
+absence would leave a spine invariant permanently half-stated. On green, **re-promote
+AD-23 to its full form** in `ARCHITECTURE-SPINE.md` and correct the retracted docstring in
+`orchestration/definitions.py`.
+
+**Stated boundary (write it down, don't discover it later):** file locks do not hold
+across machines — NFS `flock` is unreliable. Atlas is single-machine today, so this is in
+scope as written; a multi-machine atlas re-opens D1. Dagster's run-queue is **not** wasted:
+once the daemon lands it is a complementary nicety for Dagster-originated runs, while this
+hook-level lock remains the actual safety property because it is the only one covering MCP
+and CLI.
 
 - **Findings:** AUD-ATLAS-046, DW-AD23-1.
-- **Invariants:** AD-23.
-- **Mode:** LOOP (bmad-loop) — design-heavy; per the policy's HARD-STORY procedure,
-  flip `[adapter.dev] model` to `opus` before running this one.
-- **Verify gate:** `kedro-test` + a concurrent-admission test (or, if the non-goal
-  path is taken, the corrected comment plus the contract-level record).
+- **Invariants:** AD-23 (re-promoted by this story, per D6).
+- **Mode:** LOOP (bmad-loop) — per the policy's HARD-STORY procedure, flip
+  `[adapter.dev] model` to `opus` before running this one.
+- **Verify gate:** `kedro-test` + `kedro-catalog-check`, plus a NEW **two-process**
+  concurrency test: a real second OS process (not a thread, not a mock) attempting the
+  same dataset set is rejected, and one with a disjoint set is admitted. A single-process
+  test does not discharge this AC — the defect being fixed is cross-process.
 - **Depends on:** I3 (gate); informed by I1's retraction.
 
 ---
