@@ -33,6 +33,8 @@ from vizro.tables import dash_ag_grid
 
 from . import data as _data
 from . import factory_status as _fs
+from .. import provenance as _provenance
+from ..provenance import ProvenanceInfo
 
 # The D2 AC's live-confirmed-first consumer set (order preserved for determinism).
 LIVE_CONSUMER_CLIS = (
@@ -108,7 +110,16 @@ DASHBOARD_ID = "cf-atlas"
 DASHBOARD_TITLE = "cf_atlas Factory"
 
 
-def _legibility_card(page: PageDef, *, grounded: bool) -> vm.Card:
+def _provenance_line(provenance: ProvenanceInfo) -> str:
+    """The AD-17 stamp line: THIS page's own backing data's provenance (a real
+    file mtime / row timestamp, or an honest "unavailable" reason) — never the
+    dashboard's build/render time standing in for it (C6)."""
+    if provenance.kind == "unavailable":
+        return f"**Data build stamp (AD-17):** unavailable — {provenance.reason}"
+    return f"**Data build stamp (AD-17):** `{provenance.build_stamp}` ({provenance.kind})"
+
+
+def _legibility_card(page: PageDef, *, grounded: bool, provenance: ProvenanceInfo) -> vm.Card:
     """A semantic markdown Card carrying the page's provenance + any data-gap note
     (NFR-8 agent-legibility — a deterministic, agent-readable header)."""
     lines = [
@@ -122,10 +133,14 @@ def _legibility_card(page: PageDef, *, grounded: bool) -> vm.Card:
     if page.note:
         lines.append("")
         lines.append(f"**Data gap:** {page.note}")
+    lines.append("")
+    lines.append(_provenance_line(provenance))
     return vm.Card(id=f"{page.id}--about", text="\n".join(lines))
 
 
-def _data_page(page: PageDef, loader: Callable[[], Any], *, grounded: bool) -> vm.Page:
+def _data_page(
+    page: PageDef, loader: Callable[[], Any], *, grounded: bool, provenance: ProvenanceInfo
+) -> vm.Page:
     """A page = a legibility Card + an AgGrid fed by a lazily-registered BSL data function."""
     key = f"data::{page.id}"
     data_manager[key] = loader
@@ -133,18 +148,18 @@ def _data_page(page: PageDef, loader: Callable[[], Any], *, grounded: bool) -> v
         id=page.id,
         title=page.title,
         components=[
-            _legibility_card(page, grounded=grounded),
+            _legibility_card(page, grounded=grounded, provenance=provenance),
             vm.AgGrid(id=f"{page.id}--grid", figure=dash_ag_grid(key)),
         ],
     )
 
 
-def _shell_page(page: PageDef) -> vm.Page:
+def _shell_page(page: PageDef, *, provenance: ProvenanceInfo) -> vm.Page:
     """A no-BSL-model shell: a Card stating the gap, no data function (no fabrication)."""
     return vm.Page(
         id=page.id,
         title=page.title,
-        components=[_legibility_card(page, grounded=False)],
+        components=[_legibility_card(page, grounded=False, provenance=provenance)],
     )
 
 
@@ -209,35 +224,54 @@ def build_dashboard(
         now = int(time.time())
     root = Path(data_root) if data_root is not None else _data.default_data_root()
 
+    # AD-17 (Story I4): each grounded/bsl-shell page's provenance is THAT page's own
+    # backing Parquet file's mtime (resolve_for_file degrades to "unavailable" + a
+    # reason when the file is absent — the composed store's real, honest state
+    # today for the 3 packages-backed shells, DW-D2). The 2 no-bsl-shell pages have
+    # no backing file at all — a hardcoded "unavailable", never a fabricated stamp.
+    feedstock_health_provenance = _provenance.resolve_for_file(root / _data.FEEDSTOCK_HEALTH_PARQUET)
+    my_feedstocks_provenance = _provenance.resolve_for_file(root / _data.PACKAGE_MAINTAINERS_PARQUET)
+    packages_provenance = _provenance.resolve_for_file(root / _data.PACKAGES_PARQUET)
+    no_bsl_model_provenance = ProvenanceInfo(
+        kind="unavailable",
+        build_stamp=None,
+        reason="no data function registered for this page",
+    )
+
     by_id = {p.id: p for p in PAGE_INVENTORY}
     pages: list[vm.Page] = [
         _data_page(
             by_id["feedstock-health"],
             lambda: _data.load_feedstock_health(root / _data.FEEDSTOCK_HEALTH_PARQUET),
             grounded=True,
+            provenance=feedstock_health_provenance,
         ),
         _data_page(
             by_id["my-feedstocks"],
             lambda: _data.load_my_feedstocks(root / _data.PACKAGE_MAINTAINERS_PARQUET),
             grounded=True,
+            provenance=my_feedstocks_provenance,
         ),
         _data_page(
             by_id["staleness-report"],
             lambda: _data.load_staleness(root / _data.PACKAGES_PARQUET, now=now),
             grounded=False,
+            provenance=packages_provenance,
         ),
         _data_page(
             by_id["query-atlas"],
             lambda: _data.load_query_atlas(root / _data.PACKAGES_PARQUET, now=now),
             grounded=False,
+            provenance=packages_provenance,
         ),
         _data_page(
             by_id["detail-cf-atlas"],
             lambda: _data.load_detail(root / _data.PACKAGES_PARQUET, now=now),
             grounded=False,
+            provenance=packages_provenance,
         ),
-        _shell_page(by_id["behind-upstream"]),
-        _shell_page(by_id["whodepends"]),
+        _shell_page(by_id["behind-upstream"], provenance=no_bsl_model_provenance),
+        _shell_page(by_id["whodepends"], provenance=no_bsl_model_provenance),
         _factory_page(
             by_id["factory-status"],
             build_stamp=build_stamp,

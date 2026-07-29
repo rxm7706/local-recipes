@@ -62,7 +62,12 @@ def build_server(name: str = "pyforge-atlas-atlas"):
 
     @mcp.tool()
     def read_atlas_dataset(name: str):
-        """Read a catalog dataset natively — a thin catalog.load passthrough."""
+        """Read a catalog dataset, stamped with its own build provenance (AD-17):
+        returns ``{schema_version, dataset, provenance_kind, build_stamp,
+        build_stamp_newest, reason, value}`` — ``value`` is the JSON-coerced
+        dataset read; the rest states the data's own recorded build time (a
+        `fetched_at` column, a file mtime, or a live-fetch instant), or an
+        honest `unavailable` + reason when no genuine provenance exists."""
         return tools.read_dataset(name)
 
     @mcp.tool()
