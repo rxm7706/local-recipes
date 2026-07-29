@@ -1,7 +1,7 @@
 ---
 title: 'Story H2 (9.2): Implement Agno Compilation, Linting, and Q&A Crews'
 type: 'feature'
-status: 'regenerated'
+status: shipped
 regenerated: '2026-07-25'
 source: 'epics.md (authoritative intent + acceptance criteria) + shipped code on main'
 original_spec: 'NEVER AUTHORED as a file — wave B9-H4 ran through the in-session agent loop, not bmad-create-story (which wrote files only for waves 0/A/B1-B8), confirmed by the migration session itself. Nothing was lost; there is no original to recover. Intent+ACs below are the real epics.md contract.'
@@ -44,46 +44,70 @@ So that the wiki maintains itself with agent labor.
 - **Depends on:** H1.
 - **DELIVERED (2026-07-18):** `factory/crews.py` — `CompileCrew` (raw→compiled, per-doc-resilient, forwards source staleness from BOTH the inline `stale:` frontmatter AND the `.staleness.json` sidecar into compiled frontmatter + a visible body banner — AD-13/AD-22, republication never launders freshness), `LintCrew` (reports `missing-frontmatter`/`missing-title`/`empty-body`/`broken-link` [path-resolved, recursive]/`laundered-staleness`/`malformed-frontmatter`; never raises), `QACrew` (grounded answers over compiled content; deterministic keyword retriever + extractive synthesizer defaults). agno-Agent/LLM synthesis + F3-vss production retriever are injectable seams, offline by default — live bring-up DEFERRED (DW-H2). Gate `tests/factory/test_crews.py` (26). AD-1 import-ban green (yaml+stdlib only). An independent adversarial review found 2 MUST-FIX (inline-staleness laundering; lint/QA crash-on-malformed) + 1 SHOULD-FIX (leaf-only broken-link) — all fixed + regression-tested before merge.
 
-### Story H3 (9.3): Integrate La Suite Docs REST API Sync
+## Tasks / Subtasks
 
-As the operator,
-I want `LaSuiteClient` + `WikiSyncer` pushing compiled wiki files to the Layer-1 CMS via the Wagtail/Django REST API,
-So that humans read the factory's knowledge in the presentation layer.
+*(Derived from the ACs — no original task breakdown was authored for this loop-run story.)*
 
-**Acceptance Criteria:** (spec § 9 Story H3, binding)
+- [x] compile transforms raw → compiled, lint reports violations, and Q&A answers grounded in compiled content
+- [x] wiki outputs carry their source datasets' staleness markers forward (AD-13/AD-22 — republication never launders freshness).
 
-**Given** the H2 compiled wiki output and a mock Wagtail API
-**When** the sync runs
-**Then** a round-trip fixture test passes against the mock (push, update, idempotent re-push).
+## Dev Notes
 
-- **FRs:** FR-22(c).
-- **Invariants:** AD-22 (writes only wiki/CMS; idempotent re-push).
-- **Mode:** LOOP-E (spec § 9 explicit).
-- **Gating question:** none.
-- **Verify gate:** mock-Wagtail round-trip fixture in `kedro-test`.
-- **Depends on:** H1, H2.
-- **DELIVERED (2026-07-18):** `factory/lasuite.py` — `LaSuiteClient` (create/update/get/list over the Wagtail/Django REST shape; clear `LaSuiteError` on non-2xx AND on a 2xx-without-id, per § 2.1) + `WikiSyncer` (idempotent **outputs/**→CMS push keyed by content sha: new→create, changed→update, unchanged→SKIP with NO remote call). CMS source is `outputs/` (the Oracle's final reports, per the H1 layout contract + § 7.4), not internal `compiled/` (`source_stage` override available). Transport is the injected `opener` seam — package code holds no HTTP client (AC-2, no-inline-IO gate green); the default opener refuses clearly. Mapping sidecar lives at the wiki ROOT (AD-22), written ATOMICALLY (tmp+os.replace) and corruption-loud on load. Verified against an in-memory mock Wagtail (push/update/idempotent-re-push/mapping-resume). Live Wagtail server + httpx opener bring-up DEFERRED (DW-H3). Independent review found 3 SHOULD-FIX (malformed-2xx KeyError; non-atomic sidecar write; compiled-vs-outputs contract contradiction) + NITs — all fixed + regression-tested. Gate `tests/factory/test_lasuite.py`.
+**Planning metadata (from `epics.md`):**
 
-### Story H4 (9.4): Orchestrate Crews via Dagster
+- **FRs:** FR-22(b).
+- **Invariants:** AD-22, AD-13.
+- **Mode:** DEV-AUTO (spec § 9 explicit: crew design needs judgment).
+- **Gating question:** none (crew design detail is a story-spec decision, Spine Deferred).
+- **Verify gate:** crews-on-fixture-wiki tests in `kedro-test`.
+- **Depends on:** H1.
+- **DELIVERED (2026-07-18):** `factory/crews.py` — `CompileCrew` (raw→compiled, per-doc-resilient, forwards source staleness from BOTH the inline `stale:` frontmatter AND the `.staleness.json` sidecar into compiled frontmatter + a visible body banner — AD-13/AD-22, republication never launders freshness), `LintCrew` (reports `missing-frontmatter`/`missing-title`/`empty-body`/`broken-link` [path-resolved, recursive]/`laundered-staleness`/`malformed-frontmatter`; never raises), `QACrew` (grounded answers over compiled content; deterministic keyword retriever + extractive synthesizer defaults). agno-Agent/LLM synthesis + F3-vss production retriever are injectable seams, offline by default — live bring-up DEFERRED (DW-H2). Gate `tests/factory/test_crews.py` (26). AD-1 import-ban green (yaml+stdlib only). An independent adversarial review found 2 MUST-FIX (inline-staleness laundering; lint/QA crash-on-malformed) + 1 SHOULD-FIX (leaf-only broken-link) — all fixed + regression-tested before merge.
 
-As the operator,
-I want Dagster assets, sensors (new raw files), and schedules (weekly linting) triggering the Agno crews autonomously,
-So that the factory layer runs itself.
+### Implementation notes
 
-**Acceptance Criteria:** (spec § 9 Story H4, binding)
+<!-- DERIVED 2026-07-27 by reading the shipped code (PR #100). No original dev-session
+     notes existed for this story; this is what the merged implementation actually does. -->
 
-**Given** the H2 crews and the C1 Dagster repository
-**When** the assets/sensors/schedules land
-**Then** an asset dry-run enumerates the crew assets
-**And** a simulated new-raw-file event triggers the compile crew via a Sensor.
+**Three crews, each mapped to its personas.** `CompileCrew` (Compiler + Linker) turns
+`wiki/raw/` markdown into `wiki/compiled/`; `LintCrew` (Linter/QA) validates compiled output
+and reports violations; `QACrew` (Oracle + Ingester) answers questions grounded in compiled
+content.
 
-- **FRs:** FR-22(d), FR-6.
-- **Invariants:** AD-22, AD-6, AD-23.
-- **Mode:** LOOP-E (spec § 9 explicit).
-- **Gating question:** none.
-- **Verify gate:** `dagster-dryrun` (crew assets enumerate) + simulated-trigger fixture.
-- **Depends on:** H1, H2, H3; C1.
-- **DELIVERED (2026-07-18 — closes Wave H + the migration):** the Wave-H crews run on C1's single Dagster plane (AD-6/AD-23). `orchestration/definitions.py` gains crew ASSETS (`compiled_wiki` → CompileCrew, `wiki_lint_report` → LintCrew, `deps=[compiled_wiki]`), their asset-jobs (`wiki_compile_job`/`wiki_lint_job`), a weekly LINT schedule (`wiki_lint_schedule`, `0 6 * * 1`, § 7.2), and the new-raw-file compile SENSOR (`wiki_raw_file_sensor` → `wiki_compile_job`, ships STOPPED). The raw-scan + cursor-dedupe DECISION logic lives in `orchestration/wiki_events.py` (dagster-free — AD-1 holds; only definitions.py imports dagster). `dagster definitions validate` green; a simulated new-raw-file event (injected lister + `build_sensor_context`) → one `RunRequest` for the compile job. Live daemon + wiki-store bring-up DEFERRED (DW-H4). Gate `test_definitions_dryrun.py` H4 section (+12; C1/G3 invariants scoped to kedro op-jobs via `_kedro_jobs`). Independent review found 1 SHOULD-FIX (`_decode_cursor` crashed on a valid-JSON-but-nested cursor, breaking its "never a crash" contract) — fixed (filter to str inside the guard) + regression-tested; the `_kedro_jobs` scoping was verified NOT to weaken any C1/G3 guard.
+**Staleness propagation is the load-bearing behavior.** `CompileCrew` forwards source
+staleness from **both** the inline `stale:` frontmatter **and** the `.staleness.json` sidecar
+(the same shape the datasets write) into the compiled frontmatter **and** a visible body
+banner. A stale source can never produce a compiled page that reads as fresh — republication
+never launders freshness (AD-13/AD-22). `LintCrew` then enforces this with a
+`laundered-staleness` violation, so the property is checked, not merely implemented.
+
+**Nothing raises.** `LintCrew` reports `missing-frontmatter`, `missing-title`, `empty-body`,
+`broken-link` (path-resolved and recursive), `laundered-staleness`, and
+`malformed-frontmatter` — and never throws. `CompileCrew` is **per-doc resilient**: one bad
+document does not abort the batch. For a crew that runs unattended over a growing wiki, a
+crash is a worse outcome than a reported violation.
+
+**Offline-first with injectable synthesis (the D3/F3/G3 pattern).** Every crew's core
+transform is deterministic and offline — `QACrew` defaults to a keyword retriever plus an
+extractive synthesizer. The agno Agent/LLM synthesis and the F3 `vss` production retriever
+are **injectable seams**, with live bring-up deferred as DW-H2. Imports stay `yaml` + stdlib,
+so the AD-1 ban holds.
+
+**The write boundary again (AD-22).** Crews read atlas datasets and the raw wiki, and write
+**only** the wiki tree, through `WikiLayout` whose `stage_path` refuses any escape. No crew
+writes an atlas dataset — the factory layer consumes, it never becomes a second writer.
+
+**Adversarial review caught real defects before merge.** Two MUST-FIX — inline-staleness
+laundering (the sidecar path propagated, the inline `stale:` path did not, so the exact
+property the story exists to guarantee had a hole) and lint/QA crashing on malformed input
+(breaking the never-raises contract) — plus one SHOULD-FIX (leaf-only broken-link resolution).
+All fixed and regression-tested. Both MUST-FIXes were failures of the story's *own* headline
+invariant, which is the case for adversarial review on invariant-bearing work.
+
+### References
+
+- [Source: _bmad-output/projects/pyforge-atlas/planning-artifacts/epics.md#Story-H2]
+- [Source: docs/specs/cfe-atlas-datapipeline-kedro-migration.md#§9-Story-H2]
+- [Architecture: _bmad-output/projects/pyforge-atlas/planning-artifacts/architecture/architecture-pyforge-atlas-2026-07-17/ARCHITECTURE-SPINE.md]
 
 ## Realized in
 
@@ -93,13 +117,80 @@ So that the factory layer runs itself.
   precise file-level Code Map, read the implementation on `main` — this regenerated spec
   deliberately does not guess a per-file map it cannot verify from the lost original.
 
-## Provenance & recovery note
+## Delivery Record
 
-Recovered 2026-07-25 as part of the spec-durability remediation (see
-`planning-artifacts/specs/README.md`). Same root cause + fix as pyforge-warden: story specs
-now live tracked in `planning-artifacts/specs/`, not Tier-3 gitignored `implementation-artifacts/`.
+<!-- DERIVED from the merged PR via `gh` on 2026-07-27. Exact, not reconstructed. -->
 
-## Dev narrative — recovered from the merged record (2026-07-25)
+| | |
+|---|---|
+| Pull request | **#100** — H2: agno compile/lint/Q&A wiki crews (FR-22(b)) |
+| Merged | 2026-07-18 |
+| Diff | 4 files, +789 / -0 |
+| Test files touched | 1 |
+
+**Commits**
+
+- `f952c75` H2: agno compile/lint/Q&A wiki crews (FR-22(b))
+
+**File list** *(exact, from the merged diff)*
+
+```
+  437 +     0 -  src/shared/packages/pyforge-atlas/src/pyforge/atlas/factory/crews.py
+  330 +     0 -  src/shared/packages/pyforge-atlas/tests/factory/test_crews.py
+   20 +     0 -  src/shared/packages/pyforge-atlas/src/pyforge/atlas/factory/__init__.py
+    2 +     0 -  _bmad-output/projects/pyforge-atlas/planning-artifacts/epics.md
+```
+
+## Dev Agent Record
+
+### Agent Model Used
+
+In-session BMAD agent loop (draft → 2× adversarial review → 1× independent fresh-eyes review → real-gate verify), not a `bmad-dev-story` story-file run.
+
+### Completion Notes List
+
+- **Impl commit `2f4240f`** — H2: agno compile/lint/Q&A wiki crews (FR-22(b)) (#100)
+  - Implement the three AI-Software-Factory crews that maintain the Karpathy
+  - wiki (Wave H, spec § 7.3 / § 9 Story H2), offline-first on a fixture wiki.
+  - factory/crews.py (imports yaml + stdlib only — AD-1 preserved):
+  - - CompileCrew (Compiler + Linker): wiki/raw/*.md -> wiki/compiled/*.md.
+  - Derives a title, carries the source ref, and PROPAGATES source staleness
+  - forward (AD-13/AD-22 — republication never launders freshness) from BOTH
+  - carriers: the raw doc's own `stale:` frontmatter AND the .staleness.json
+  - sidecar (union; either => stale). A stale source gets a machine-readable
+  - frontmatter marker AND a visible body banner. Per-doc resilient: a
+  - malformed raw doc is recorded in result.failed and skipped, never
+  - aborting mid-loop into a half-written compiled/ state. Byte-stable output.
+  - - LintCrew (Linter/QA): reports missing-frontmatter / missing-title /
+  - empty-body / broken-link / laundered-staleness / malformed-frontmatter.
+  - Never raises — a malformed page is a reported violation, not a DoS of the
+  - whole pass. broken-link resolves targets RELATIVE to the doc's dir against
+  - the real (recursive) tree, so it neither false-negatives a wrong-subdir
+  - link nor false-positives a real subdir page, and flags a link escaping
+  - compiled/.
+  - - QACrew (Oracle + Ingester): grounded answers over compiled content.
+  - Retriever + synthesizer are injectable; defaults are offline deterministic
+  - (keyword-overlap ranking + extractive answer). grounded == the answer is
+  - backed by >=1 compiled snippet (the Oracle never answers ungrounded).
+  - Skips a malformed page rather than crashing the answer.
+  - The agno-Agent / LLM synthesis (enricher/synthesizer) and the F3 vss
+  - production retriever are injectable seams that default to the offline path;
+  - the live bring-up is attended -> DEFERRED (DW-H2), mirroring D3/F3.
+  - Independent adversarial review found and this commit fixes: 2 MUST-FIX
+  - (a raw doc's inline `stale:` frontmatter was dropped -> laundered, and
+  - lint/QA raised on a malformed page instead of reporting/skipping) + 1
+  - SHOULD-FIX (leaf-only broken-link matching) — all regression-tested.
+  - Verify gate: tests/factory/test_crews.py (26). Full atlas suite 762 passed.
+  - Also folds in the H1 DELIVERED doc catch-up (epics + sprint-status) and
+  - DW-H2.
+  - Claude-Session: https://claude.ai/code/session_01FYyQvBJuXwySiaMUUYCqBZ
+  - Co-authored-by: Claude <noreply@anthropic.com>
+
+## Review Triage Log
+
+No separate review-fix commit; findings (if any) folded into the impl commit. Full review threads on PR `#100`.
+
+## Dev narrative — recovered from the merged record
 
 > The original spec's `## Dev Notes` / `## Review Triage Log` were lost with the Tier-3
 > worktree teardown (this story was built in claude.ai/code web session
@@ -110,30 +201,26 @@ now live tracked in `planning-artifacts/specs/`, not Tier-3 gitignored `implemen
 
 ### Dev summary — merged PR #100: H2: agno compile/lint/Q&A wiki crews (FR-22(b))
 
-## Story H2 — Agno Compilation, Linting, and Q&A Crews (FR-22(b), § 7.3)
+## Deferred Work (DW ledger)
 
-The three AI-Software-Factory crews that maintain the Karpathy wiki, offline-first on a fixture wiki. `factory/crews.py` imports `yaml` + stdlib only (AD-1 import-confinement preserved).
-
-### Crews
-- **`CompileCrew`** (Compiler + Linker): `wiki/raw/*.md` → `wiki/compiled/*.md`. Derives a title, carries the source ref, and **propagates source staleness forward** (AD-13/AD-22 — republication never launders freshness) from BOTH carriers (the raw doc's own `stale:` frontmatter AND the `.staleness.json` sidecar; either ⇒ stale), as a machine-readable frontmatter marker AND a visible body banner. Per-doc resilient (a malformed raw doc is recorded + skipped, never a half-written `compiled/`). Byte-stable output.
-- **`LintCrew`** (Linter/QA): reports `missing-frontmatter` / `missing-title` / `empty-body` / `broken-link` / `laundered-staleness` / `malformed-frontmatter`. Never raises. `broken-link` resolves targets relative to the doc's dir against the real recursive tree (no leaf-only false-neg/false-pos).
-- **`QACrew`** (Oracle + Ingester): grounded answers over compiled content; injectable retriever + synthesizer default to offline determinism (keyword-overlap + extractive). `grounded` ⇔ the answer is backed by ≥1 compiled snippet.
-
-### Deferred
-- The `agno`-Agent / LLM synthesis (`enricher`/`synthesizer`) and the F3-vss production retriever are injectable seams, offline by default; the live bring-up is attended → **DW-H2**.
-
-### Independent review
-An adversarial fresh-eyes review found **2 MUST-FIX** (a raw doc's inline `stale:` frontmatter was dropped → laundered; lint/QA raised on a malformed page instead of reporting/skipping) + **1 SHOULD-FIX** (leaf-only `broken-link` matching). All fixed and regression-tested in this PR.
-
-### Verification
-- `tests/factory/test_crews.py`: **26 passed** (incl. the 6 regression tests for the review findings).
-- Full atlas suite: **762 passed**. AD-1 import-ban green.
-
-Also folds in the H1 DELIVERED doc catch-up (epics + sprint-status) and the DW-H2 ledger entry.
-
-### Commits on `main`
-
-- `ea4a9a5b56` H2: agno compile/lint/Q&A wiki crews (FR-22(b)) (#100)  _(dev-landing)_
-
-_This PR also carried an automated Gemini review; not reproduced here per repo policy ([[feedback_no_gemini_reviews]])._
-
+### DW-H2 — the live `agno`-Agent / LLM synthesis + F3-vss production retriever bring-up (ATTENDED) — DEFERRED
+- source_spec: `cfe-atlas-datapipeline-kedro-migration.md` (Story H2, § 7.3, FR-22(b))
+  summary: H2 shipped the three wiki crews (`factory/crews.py`: `CompileCrew`, `LintCrew`,
+    `QACrew`) with their DETERMINISTIC cores running fully offline on a fixture wiki — the real
+    raw→compiled→answer flow, staleness propagation, and lint rules all exercised with NO network
+    and NO model. Two production seams are INJECTABLE and default to the offline path, so the
+    live bring-up is the attended deferral (mirrors DW-D3-1 LLM backend + DW-F3-2 vss provisioning):
+    (1) **the `agno`-Agent / LLM synthesis** — `CompileCrew`'s `enricher` and `QACrew`'s
+    `synthesizer` default to offline determinism (identity enrich; extractive answer). Standing up
+    a real `agno` Agent over a resolved model backend (`pyforge.atlas.nl.backend.resolve_backend`
+    — repo model-backend routing, env-driven, never a hardcoded endpoint) and running the crews
+    through it is the deferred generative path; (2) **the F3 vss production retriever** —
+    `QACrew`'s `retriever` defaults to the offline deterministic keyword-overlap ranker; the
+    production retriever is `rag.store.DuckdbVssRagStore.similarity_search` (AD-4 single engine)
+    wrapped to the `Retriever` signature, which needs the vss extension provisioned (DW-F3-2). Do
+    NOT weaken the H2 gate to call a live model or bind a socket (NFR-12).
+  evidence: `factory/crews.py` imports only `yaml` + stdlib + `.wiki` (AD-1 import-ban green over
+    the new module); `tests/factory/test_crews.py` exercises compile/lint/Q&A + staleness
+    propagation offline (26 crew tests). `Enricher`/`Synthesizer`/`Retriever` are the injectable
+    seams; their defaults (`_identity_enricher`, `_extractive_synthesizer`, `keyword_retriever`)
+    are offline. No `agno` Agent is constructed and no model/vss is loaded in-package.

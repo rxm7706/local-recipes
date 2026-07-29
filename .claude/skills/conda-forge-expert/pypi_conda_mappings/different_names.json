@@ -2970,10 +2970,11 @@
     "source": "parselmouth"
   },
   "playwright-python": {
-    "conda_name": "playwright",
-    "import_name": "",
-    "pypi_name": "playwright-python",
-    "source": "parselmouth"
+    "conda_name": "playwright-python",
+    "import_name": "playwright",
+    "pypi_name": "playwright",
+    "source": "cfe-retro-2026-07-29-verified",
+    "note": "NOT a PyPI name — no such distribution exists. Kept as an alias so a lookup of the conda name resolves to the bindings, not to the Node CLI. The prior parselmouth-sourced entry mapped it to conda `playwright`, which ships no importable module (G107)."
   },
   "pocketsphinx-python": {
     "conda_name": "pocketsphinx",
@@ -6082,5 +6083,11 @@
     "import_name": "zstd",
     "pypi_name": "zstd",
     "source": "cf_graph"
+  },
+  "playwright": {
+    "conda_name": "playwright-python",
+    "import_name": "playwright",
+    "pypi_name": "playwright",
+    "source": "cfe-retro-2026-07-29-verified"
   }
 }

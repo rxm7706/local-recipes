@@ -2,6 +2,7 @@
 surface:
   - src/shared/packages/pyforge-scribe/**   # the CLI this Spec builds
 id: SPEC-scribe
+owner-dream: docs/dreams/pyforge-scribe.md
 companions:
   - ../../architecture/architecture-pyforge-scribe-2026-07-25/ARCHITECTURE-SPINE.md
 sources:

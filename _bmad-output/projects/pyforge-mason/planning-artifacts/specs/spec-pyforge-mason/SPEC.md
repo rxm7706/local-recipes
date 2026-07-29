@@ -1,5 +1,6 @@
 ---
 id: SPEC-pyforge-mason
+owner-dream: docs/dreams/pyforge-mason.md
 surface:
   - src/shared/packages/pyforge-mason/**    # the CLI this Spec builds (not yet created)
 companions:
@@ -7,7 +8,7 @@ companions:
   - ../../prds/prd-pyforge-mason-2026-07-25/prd.md                                   # adopted (chain): FR-1..FR-50 / NFR-1..NFR-16 / D-1..D-13
   - ../../architecture/architecture-pyforge-mason-2026-07-25/ARCHITECTURE-SPINE.md   # adopted (chain): the 16 ADs, structural seed, stack, diagrams
   - ../../epics.md                                                                   # adopted (chain): 5 epics / 38 stories
-  - ../../../../local-recipes/planning-artifacts/specs/spec-packaging-factory/SPEC.md # adopted: the Spec governing the CFE surface Mason wraps — authoritative over Mason (Rule 1)
+  - ../spec-packaging-factory/SPEC.md # adopted: the Spec governing the CFE surface Mason wraps — authoritative over Mason (Rule 1)
 sources:
   - ../../../../../../docs/dreams/packaging-factory.md
   - ../../briefs/brief-pyforge-mason-2026-07-25/brief.md

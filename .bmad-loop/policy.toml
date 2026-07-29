@@ -40,6 +40,27 @@ retrospective = "notify"     # never | notify | auto (auto unsupported in v1)
 
 [limits]
 max_review_cycles = 3
+# 2026-07-29: SET EXPLICITLY (was an unchosen bmad-loop default of 1). The default was
+# silently deciding when stories are done. Counts ONLY rounds granted because a round
+# finalized a story `done` yet STILL set `followup_review_recommended: true`; once spent the
+# next such round force-converges (verify -> refile the recommendation -> commit).
+#
+# Evidence for 2 rather than 1: FIVE stories across THREE projects were damped this way —
+# atlas 10.5 + 10.6, marshal 1.1, warden 6.3 + 5.1 — i.e. the cap, not the reviewer, was
+# deciding. And the flag is not reflexive: upstream #2580 made it severity-scored precisely
+# because pre-#2580 every pass recommended another, so a firing flag is meant to be the
+# EXCEPTION. When the two atlas recommendations were finally honored (2026-07-29) they
+# yielded one real MEDIUM finding, DW-AD23-3 — a correctness exposure on the AD-23 invariant
+# story 10.6 had just re-promoted. The flag was right to fire.
+#
+# Not higher than 2: max_review_cycles = 3 remains the hard outer bound, each round is a
+# multi-hour session (atlas 10.5's reviews ran 3h00m and 2h27m), and a story still flagging
+# after two independent passes is genuinely exceptional and deserves a human, not another
+# grant. Its recommendation then refiles to the ledger — which is now DURABLE, enforced by
+# `pixi run -e local-recipes deferred-work-check` (the refile target,
+# implementation-artifacts/deferred-work.md, is gitignored; 97 KB across four projects was
+# sitting only there until that detector found it).
+max_followup_reviews = 2
 max_dev_attempts = 2
 session_timeout_min = 180  # raised from 90 (2026-07-12): Story 1-1's dev session hit the 90-min cap mid-work — keystone stories need the headroom
 stop_without_result_nudges = 1
@@ -58,17 +79,28 @@ cache_read_weight = 0.1      # cache reads bill at ~0.1x input on all vendors; 1
 # succeed, rewrites pixi.lock with worktree-absolute file:// channel paths that
 # the squash-merge would commit. Frozen mode uses the tracked lock as-is
 # (deferred-work.md, story 1.1).
+# 2026-07-28 — RESTORED for the atlas post-audit effort (Epic 10), exactly as the
+# note below anticipated. pyforge-atlas bmad-loop work HAS resumed: the Round-3
+# audit (PR #131, branch abandoned) left ~43 findings open on main, and they are
+# being re-derived as stories rather than recovered from the dead branch.
+#
+# The warden gate is commented out for the same reason it displaced these: running
+# an off-project suite during an atlas story's verify is noise at best. Swap the
+# active block back when the loop returns to pyforge-warden.
+#
+# PRECONDITION, now satisfied: until 2026-07-28 `kedro-test` could not COLLECT its
+# own suite on main (17 errors — AUD-ATLAS-010/013), so this gate would have failed
+# every atlas story regardless of content. Dependency-completeness landed first;
+# the suite now runs 781 passed / 6 failed / 19 skipped.
+#
+# The 6 failures are AUD-ATLAS-011 (pandas 3.0 coerces None -> NaN) reproducing on
+# main. They are a KNOWN-RED baseline, not flake. Until the AUD-ATLAS-011 story
+# lands, `kedro-test` will fail here — so the first atlas story through the loop
+# must be AUD-ATLAS-011 itself, or this gate blocks everything behind it.
 commands = [
-  "pixi run --frozen -e pyforge-warden pyforge-warden-test",
-  # pyforge-atlas gates dropped from the active run policy 2026-07-18: the
-  # Kedro migration is COMPLETE (Waves 0–H shipped, PRs #69–#102, closed out by
-  # #103 / v8.79.0), and this branch drives pyforge-warden Epic-6 producers.
-  # Running the atlas gates during a pyforge-warden story's verify is both
-  # off-project and risky (the lean pyforge-atlas env is lock-unproven in
-  # containers per its own AD-11 note). Restore these two lines if pyforge-atlas
-  # bmad-loop work resumes:
-  #   "pixi run --frozen -e pyforge-atlas kedro-test",
-  #   "pixi run --frozen -e pyforge-atlas kedro-catalog-check",
+  "pixi run --frozen -e pyforge-atlas kedro-test",
+  "pixi run --frozen -e pyforge-atlas kedro-catalog-check",
+  # "pixi run --frozen -e pyforge-warden pyforge-warden-test",
 ]
 
 [notify]
@@ -132,7 +164,16 @@ cleanup_session_on_finish = true  # kill the run's tmux session when it finishes
 # revert [adapter.dev] to "sonnet" for the mechanical batches: 1.5–1.9,
 # 2.4–2.6, 3.1–3.3, 4.1, 5.1–5.2, 6.2–6.4, 6.6–6.8.
 [adapter.dev]
-model = "sonnet"    # reverted opus→sonnet 2026-07-24 post-6.9 (6.9 recovered+merged). 6.6 is mechanical (engine version-range pinning). Mechanical default for
+model = "opus"      # 2026-07-29: sonnet -> opus for I5 (10.6, run admission), per this
+                    # block's HARD-STORY procedure. Tempered judgement: the story's DESIGN
+                    # burden is already gone — its mechanism question was closed by operator
+                    # decision as binding ACs D1-D6, so the dev session implements rather than
+                    # chooses. What remains is still subtle CORRECTNESS, not transcription:
+                    # sorted-order lock acquisition for deadlock avoidance, stale-lock
+                    # reclamation by dead PID, and hook lifecycle across
+                    # after_pipeline_run/on_pipeline_error. Last story of the epic; revert to
+                    # "sonnet" for the next mechanical batch.
+                    # Original note: reverted opus→sonnet 2026-07-24 post-6.9 (6.9 recovered+merged). 6.6 is mechanical (engine version-range pinning). Mechanical default for
                     # 6.7/6.8/6.6 + Epic 5. Re-flip to "opus" before HARD story 6.9
                     # (actuator egress).
                     # Default DEV tier rationale: post-BMAD-refinement ACs are transcription-
@@ -140,7 +181,13 @@ model = "sonnet"    # reverted opus→sonnet 2026-07-24 post-6.9 (6.9 recovered+
                     # pyforge-warden-test) is a deterministic, free backstop
 
 [adapter.review]
-model = "fable"     # strongest model where it pays: review misses are what ship
+model = "opus"     # 2026-07-29: fable -> opus, EXECUTING this block's own
+                    # instruction. I4/10.5 review-3 hit the weekly Fable 5 cap and sat at an
+                    # interactive "continue on credits / switch model" prompt for 2.5h — an
+                    # unattended run has nobody to press a key, and the loop does not detect
+                    # a session blocked on a PROMPT (only one that ends without a result).
+                    # Restore "fable" when weekly headroom returns.
+                    # Original note: strongest model where it pays: review misses are what ship
                     # false-greens (Warden's C0 invariant). If Fable hits its usage
                     # cap mid-run, drop this one key to "opus" — do NOT re-pin the
                     # whole adapter
@@ -198,7 +245,12 @@ seed_adapter_defaults = true # seed each loaded adapter's default gitignored con
 # marker BMAD config resolution in the worktree loses the project layers.
 # Literal paths only (no globs) — update the project slug on bmad-switch.
 worktree_seed = [
-  "_bmad-output/projects/pyforge-warden/implementation-artifacts",
+  # 2026-07-28 — repointed pyforge-warden -> pyforge-atlas for the Epic-10 post-audit
+  # effort, per this block's own instruction ("update the project slug on bmad-switch").
+  # Without the ACTIVE project's Tier-3 dir, the engine's verify step crashes reading
+  # sprint-status.yaml in a fresh worktree — a seeded path for the WRONG project fails
+  # the same way, silently, so this line has to move with the switch.
+  "_bmad-output/projects/pyforge-atlas/implementation-artifacts",
   "_bmad/custom/.active-project",
 ]
 

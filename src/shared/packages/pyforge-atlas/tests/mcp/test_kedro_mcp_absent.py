@@ -99,4 +99,9 @@ def test_surface_reads_with_kedro_mcp_absent(kedro_mcp_unimportable, monkeypatch
 
     monkeypatch.setattr(session_mod, "bootstrapped_session", fake_bootstrapped_session)
 
-    assert tools.read_dataset("demo_ds") is sentinel
+    envelope = tools.read_dataset("demo_ds")
+    assert envelope["value"] is sentinel
+    # kedro_mcp absent doesn't degrade the AD-17 envelope shape either.
+    assert envelope["schema_version"] == "1"
+    assert envelope["dataset"] == "demo_ds"
+    assert envelope["provenance_kind"] == "unavailable"  # MemoryDataset: no genuine provenance

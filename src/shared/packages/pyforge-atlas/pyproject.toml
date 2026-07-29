@@ -21,6 +21,36 @@ dependencies = [
     # json / yaml / text) — catalog resolution imports kedro_datasets, so it is
     # a real runtime dependency of the package, not just a pixi-env dep.
     "kedro-datasets>=9.5.0",  # floor matches the member pixi.toml run-dep
+    # --- AUD-ATLAS-010 (2026-07-27): dependency completeness --------------
+    # Kept byte-for-byte in step with the member pixi.toml run-dependencies;
+    # PyPI distribution names differ from the conda names in four places, noted
+    # inline. Derived by AST scan of module-level imports, floors pinned to the
+    # versions resolved in the working env. See the pixi.toml block for the
+    # lean-env tension this deliberately accepts.
+    "pandas>=3.0.3",
+    "pyarrow>=24.0.0",
+    "PyYAML>=6.0.3",                  # conda: pyyaml — imported as `yaml`
+    "pydantic>=2.13.4",
+    "attrs>=26.1.0",                  # imported as `attr`
+    "duckdb>=1.5.5",
+    "ibis-framework>=12.0.0",
+    "pandera>=0.32.1",
+    # Story 10.6 (AD-23): `admission.py` imports `filelock` at MODULE level for the
+    # per-output-dataset run-admission lock. It was already IN the env — but only
+    # TRANSITIVELY, via dagster and ibis-framework-core. AUD-ATLAS-010's doctrine is
+    # that an undeclared module-level import is a runtime dependency whether or not
+    # the manifest says so, so it is declared here. No new package enters the env.
+    "filelock>=3.32.0",
+    "vizro>=0.1.59",
+    "dagster>=1.13.15",
+    # `boring-semantic-layer` is intentionally ABSENT — PyPI-only (no conda-forge
+    # candidate), so it cannot be a conda run-dep and is supplied to the env
+    # instead. Kept out of the wheel metadata too, so both manifests agree.
+    # See the member pixi.toml for the recorded residual.
+    "openlineage-python>=1.52.0",     # imported as `openlineage`
+    "opentelemetry-api>=1.44.0",
+    "opentelemetry-sdk>=1.44.0",
+    "a2a-sdk>=1.1.2",                 # imported as `a2a`
 ]
 
 [project.optional-dependencies]

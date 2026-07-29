@@ -353,6 +353,71 @@ def apply_loop_inflight(projects: dict) -> None:
                     marked.append(story[0])
         if marked:
             print(f"[{pkey}] loop-home in-flight: {', '.join(marked)} (run {runs[0].name})")
+        _set_inflight_card(proj, pkey, runs[0], active_ids)
+
+
+def _set_inflight_card(proj: dict, pkey: str, run: Path, active_ids: set[str]) -> None:
+    """Populate `inflight` — the live elapsed clock / progress / ETA card.
+
+    The card has always existed in the renderer; nothing ever FED it. The function
+    above is named `apply_loop_inflight` but only ever flipped a story's status from
+    pending to active, so `inflight` stayed whatever a human last hand-pasted — which
+    is why the clock vanished from every line the moment nobody hand-pasted one.
+
+    ALL-OR-NOTHING, deliberately. The renderer guards with `if (p.inflight)` and then
+    reads startEpoch/median/lo/hi/key/title/phase/attempt/phaseAsOf unconditionally —
+    `Math.round(f.median / f.hi * 100)` throws on a partial object and takes the whole
+    board down with it. Emit every field or leave it None.
+    """
+    import time
+    jf = run / "journal.jsonl"
+    if not jf.is_file():
+        return
+    start_ts, last_task = None, None
+    for line in jf.read_text(encoding="utf-8", errors="replace").splitlines():
+        try:
+            e = json.loads(line)
+        except Exception:
+            continue
+        kind, ts = e.get("kind"), e.get("ts")
+        if kind == "story-start" and isinstance(ts, (int, float)):
+            start_ts = ts                      # a re-drive restarts the clock, as it should
+        elif kind == "session-start" and e.get("task_id"):
+            last_task = e["task_id"]
+    if start_ts is None or not last_task:
+        return
+
+    # task ids are `<story-key>-<phase>-<attempt>`; phase/attempt come from the tail so
+    # the card says "review · attempt 2" rather than guessing from run state.
+    m = re.search(r"-(dev|review|triage)-(\d+)$", last_task)
+    phase, attempt = (m.group(1), m.group(2)) if m else ("dev", "1")
+
+    sid = sorted(active_ids)[0]
+    title = next((s[2] for e in proj["epics"] for s in e["stories"] if s[0] == sid), sid)
+
+    # Baseline for the progress bar + ETA: this line's OWN measured stories. Using
+    # another line's numbers would compare unlike metrics (warden measures active
+    # compute, atlas wall-clock), so a line with no history simply gets no card.
+    per = (proj.get("timing") or {}).get("perStory") or {}
+    mins = sorted(v for v in per.values() if isinstance(v, (int, float)) and v > 0)
+    if not mins:
+        return
+    median = mins[len(mins) // 2] if len(mins) % 2 else \
+        round((mins[len(mins) // 2 - 1] + mins[len(mins) // 2]) / 2)
+
+    proj["inflight"] = {
+        "key": sid,
+        "title": title,
+        "phase": phase,
+        "attempt": attempt,
+        "startEpoch": int(start_ts),
+        "median": int(median),
+        "lo": int(mins[0]),
+        "hi": int(max(mins[-1], median + 1)),   # hi is a divisor in the renderer
+        "phaseAsOf": time.strftime("%Y-%m-%d %H:%M UTC", time.gmtime()),
+    }
+    print(f"[{pkey}] in-flight card: {sid} · {phase} attempt {attempt} · "
+          f"started {int((time.time() - start_ts) / 60)} min ago · median {median}m")
 
 
 # ---- source: git (hands-off / CI) -------------------------------------------
@@ -469,12 +534,24 @@ DREAM_TYPES = ("dream", "practice")
 # Dream does not mean it becomes that Smith's package.
 STATIONS = ("herald", "marshal", "atlas", "warden",
             "mason", "doctor", "scribe", "steward")
-# The ONE Dream that may name no station, because it CONSTITUTES them: the
-# Charter. `guild` is NOT a ninth station and never renders as one — it marks a
-# Dream sitting above the roster, not beside it. (Genesis was briefly here and
-# was wrong: its origin doc is Marshal's own setup plan, and "the bootstrapper
-# that installs the operating model anywhere" is Marshal's craft.)
-GUILD_DREAMS = ("pyforge-charter",)
+# The Dreams that may name no station, because they PRECEDE them: the Charter, which
+# constitutes the stations, and pyforge-genesis, the operating-model seed. `guild` is NOT
+# a ninth station and never renders as one — it marks a Dream sitting above the roster,
+# not beside it.
+#
+# MIRRORS scripts/bmad_drift_check.py:GUILD_DREAMS — keep the two in step. The mirror was
+# missed on 2026-07-28 and the board warned on a Dream the Charter explicitly permits.
+#
+# History, because this list flipped twice and the middle position was half-right. An
+# earlier comment here read: "Genesis was briefly here and was wrong: its origin doc is
+# Marshal's own setup plan, and 'the bootstrapper that installs the operating model
+# anywhere' is Marshal's craft." That reasoning holds for the INSTALLER and only the
+# installer. Genesis was doing two jobs in one Dream — constitutive records (the Charter,
+# the Lexicon, the Guild's membership) AND a buildable bootstrapper. Removing it from
+# `guild` wholesale fixed the second and broke the first. Resolved 2026-07-28 by splitting
+# them: the installer became the marshal-owned `genesis-installer` Dream; Genesis kept the
+# constitutive half and returned here. Charter §5 + its Realization log carry the ruling.
+GUILD_DREAMS = ("pyforge-charter", "pyforge-genesis")
 
 
 # Deck dirs whose name differs from the dream slug (mason's chapter deck backs
@@ -753,7 +830,7 @@ def apply_line_state(projects: dict) -> None:
 
 DETECTORS = [
     ("drift-check",  "bmad-drift-check",   "BMAD artifacts vs the live factory",
-     "_bmad-output/projects/local-recipes/SYNC-RUNBOOK.md"),
+     "_bmad-output/projects/pyforge-marshal/SYNC-RUNBOOK.md"),
     ("spec-surface", "spec-surface-check", "every tracked file under a Spec surface", ""),
     ("llms-full",    "llms-full-check",    "library catalog freshness", ""),
 ]
@@ -829,7 +906,7 @@ def scan_health() -> dict:
     # is a staged-recipes fork), so "N commits behind" is noise. The fingerprint is
     # exactly what makes drift-check's `surface-changed` fire.
     base, deltas = {}, []
-    bp = REPO_ROOT / "_bmad-output/projects/local-recipes/.sync-baseline.json"
+    bp = REPO_ROOT / "_bmad-output/projects/pyforge-marshal/.sync-baseline.json"
     if bp.is_file():
         try:
             base = json.loads(bp.read_text(encoding="utf-8"))
@@ -847,12 +924,20 @@ def scan_health() -> dict:
         except Exception:
             pass
     green = sum(1 for r in rows if r["state"] == "green")
-    print(f"[health] {green}/{len(rows)} detectors green · "
-          + (f"{len(deltas)} fingerprint delta(s) vs baseline" if deltas else "fingerprint matches baseline"))
+    # "matches baseline" is only true if a baseline was actually READ. When the file is
+    # missing, `deltas` is empty VACUOUSLY -- reporting a match there is a false green, and
+    # it is exactly what happened when the baseline moved projects (2026-07-28).
+    if not base:
+        fingerprint = f"NO BASELINE at {bp.relative_to(REPO_ROOT)} — nothing compared"
+    elif deltas:
+        fingerprint = f"{len(deltas)} fingerprint delta(s) vs baseline"
+    else:
+        fingerprint = "fingerprint matches baseline"
+    print(f"[health] {green}/{len(rows)} detectors green · " + fingerprint)
     return {"detectors": rows,
             "baseline": {"skill": base.get("skill_version", ""), "head": (base.get("git_head") or "")[:10],
                          "deltas": deltas,
-                         "runbook": "_bmad-output/projects/local-recipes/SYNC-RUNBOOK.md"}}
+                         "runbook": "_bmad-output/projects/pyforge-marshal/SYNC-RUNBOOK.md"}}
 
 
 # ---- fleet view (Dream -> Code, per project: stage, recency, version) --------
@@ -868,14 +953,19 @@ FLEET_PROJECTS = [
     ("atlas", "pyforge-atlas", "pyforge-atlas"),
     ("warden", "pyforge-warden", "pyforge-warden"),
     ("genesis", "pyforge-genesis", "pyforge-genesis"),
-    ("deckcraft", "deckcraft", "deckcraft"),
-    ("presenton", "presenton-pixi-image", "presenton-pixi-image"),
-    ("unity", "unity-data-stack", "unity-data-stack"),
-    ("wasm", "wasm-analytics-stack", "wasm-analytics-stack"),
+    # Chains absorbed by their owning station (Charter §5, 2026-07-28).
+    ("deckcraft", "pyforge-herald", "deckcraft"),
+    ("presenton", "pyforge-mason", "presenton-pixi-image"),
+    # Chains absorbed by their owning station (Charter §5 "owning is becoming",
+    # 2026-07-28): the DREAM keeps its slug, the PROJECT is now the owner's tree.
+    ("unity", "pyforge-atlas", "unity-data-stack"),
+    ("wasm", "pyforge-atlas", "wasm-analytics-stack"),
 ]
 # lifecycle order — the Dream-to-Code chain, left to right
 FLEET_STAGES = ("dream", "deck", "spec", "research", "brief", "prd", "arch", "epics", "code")
 # stages a project legitimately does not have (depth chosen at planning time)
+# Stages a CHAIN legitimately does not have (depth chosen at planning time). Keyed by
+# dream slug, matching the fleet row key.
 FLEET_NA = {"unity-data-stack": {"epics"}, "wasm-analytics-stack": {"epics"}}
 _STALE_DAYS = 30
 
@@ -941,11 +1031,16 @@ def scan_fleet(projects: dict) -> dict:
         stages = {
             "dream":    _added([f"docs/dreams/{dream}.md"]),
             "deck":     _added([f"presentations/{slug}/project/*.dc.html"]),
-            "spec":     _added([f"{pa}/specs/spec-*/SPEC.md"]),
+            # Chain-scoped, NOT project-scoped. Under Charter §5 as amended a project
+            # holds MANY chains, so `specs/spec-*/SPEC.md` would credit every chain in
+            # the tree with every other chain's artifacts. Match the dream slug.
+            "spec":     _added([f"{pa}/specs/spec-{dream}/SPEC.md"]),
             "research": _added([f"{pa}/research/*.md"]),
-            "brief":    _added([f"{pa}/product-brief*", f"{pa}/briefs/**/brief*.md"]),
-            "prd":      _added([f"{pa}/prd.md", f"{pa}/prds/*/prd.md"]),
-            "arch":     _added([f"{pa}/architecture.md", f"{pa}/architecture/*/*.md"]),
+            "brief":    _added([f"{pa}/product-brief-{dream}*",
+                                f"{pa}/briefs/brief-{dream}-*/brief*.md"]),
+            "prd":      _added([f"{pa}/prd.md", f"{pa}/prds/prd-{dream}-*/prd.md"]),
+            "arch":     _added([f"{pa}/architecture.md",
+                                f"{pa}/architecture/architecture-{dream}-*/*.md"]),
             "epics":    _added([f"{pa}/epics.md"]),
             "code":     _added([f"src/shared/packages/{slug}/pyproject.toml"]),
         }
@@ -986,7 +1081,11 @@ def scan_fleet(projects: dict) -> dict:
         # here + PRD + architecture present = downstream has overtaken the Spec.
         open_q = _spec_open_questions(slug)
         overtaken = bool(open_q) and bool(stages["prd"]) and bool(stages["arch"])
-        rows.append({"label": label, "slug": slug, "dream": dream, "stages": stages,
+        # `slug` identifies the CHAIN (the dream), not the hosting project — under
+        # Charter §5 as amended several chains share one project, and keying rows by
+        # project rendered "pyforge-atlas" three times with no way to tell them apart.
+        rows.append({"label": label, "slug": dream, "project": slug,
+                     "dream": dream, "stages": stages,
                      "backfilled": backfilled, "openQuestions": open_q,
                      "overtaken": overtaken,
                      "na": sorted(na), "furthest": furthest, "updated": updated,
@@ -1213,10 +1312,16 @@ def scan_timing(projects: dict) -> None:
         # (The marker alone was insufficient: output written before the marker
         # existed looked curated and could never be repaired by re-running.)
         broken = isinstance(existing_t, dict) and "perStory" not in existing_t
-        curated = (not broken) and (
-            (isinstance(existing_t, dict) and not existing_t.get("derived"))
-            or (isinstance(existing_v, dict) and not existing_v.get("derived")))
-        if curated:
+        # Curated-ness is PER FIELD, not per project. The old all-or-nothing test
+        # skipped the whole project when EITHER field was hand-authored — so atlas,
+        # which has a curated `timing` (wall-clock from PR timestamps, because waves
+        # 0-H ran in a web session with no journals) but NO `velocity` at all, could
+        # never gain a velocity graph even once it had real loop journals. Warden is
+        # unaffected: both of its fields are curated, so there is nothing to fill.
+        timing_curated = (not broken) and isinstance(existing_t, dict) \
+            and not existing_t.get("derived")
+        velocity_curated = isinstance(existing_v, dict) and not existing_v.get("derived")
+        if timing_curated and velocity_curated:
             continue
         runs = Path(home) / ".bmad-loop" / "runs"
         if not runs.is_dir():
@@ -1258,10 +1363,26 @@ def scan_timing(projects: dict) -> None:
             round((mins[len(mins) // 2 - 1] + mins[len(mins) // 2]) / 2)
         st = [s for e in proj["epics"] for s in e["stories"]]
         done_n = sum(1 for s in st if s[1] == "done")
-        proj["velocity"] = {
+        velocity_obj = {
             "derived": True,
-            "sub": "Active agent-compute per story (dev + review; excludes "
-                   "gate-pause wait) — derived from this line's bmad-loop journals.",
+            # The in-flight caveat has to live HERE too, not only on `timing.note`:
+            # velocity is now derivable on a line whose timing is curated (atlas), so
+            # the note that used to carry this never reaches the reader.
+            #
+            # COVERAGE IS STATED, never implied. A graph showing 2 bars on a line with
+            # 38 stories reads as data loss unless it says why. Only loop-driven stories
+            # have journals: atlas's waves 0-H ran in a web session and were never
+            # measured for active compute, and their wall-clock numbers (PR timestamps,
+            # gate waits included) are a DIFFERENT metric that must not share this axis.
+            "sub": (f"Active agent-compute per story (dev + review; excludes "
+                    f"gate-pause wait) — derived from this line's bmad-loop journals. "
+                    f"{len(bars)} of {len(st)} stories measured"
+                    + ("" if len(bars) == len(st) else
+                       "; the rest predate loop instrumentation and carry wall-clock "
+                       "only (a different metric — see the timing strip), so they are "
+                       "deliberately absent rather than plotted on this axis")
+                    + ". A story still in flight contributes only its CLOSED sessions, "
+                      "so its bar is a floor, not a total."),
             "bars": bars,
             "foot": [
                 [f"~{median} min", "median / story", "var(--done)"],
@@ -1281,7 +1402,7 @@ def scan_timing(projects: dict) -> None:
         epic_min: dict[str, int] = {}
         for sid, mins in bars:
             epic_min[f"E{sid.split('.')[0]}"] = epic_min.get(f"E{sid.split('.')[0]}", 0) + mins
-        proj["timing"] = {
+        timing_obj = {
             "derived": True,
             "metric": "active agent-compute per story (dev + review; excludes "
                       "gate-pause wait) — from bmad-loop run journals",
@@ -1294,8 +1415,20 @@ def scan_timing(projects: dict) -> None:
             "perStory": per_story,
             "epicMin": epic_min,
         }
-        print(f"[{pkey}] timing derived: {len(bars)} stories, "
-              f"{sum(b[1] for b in bars)} min active compute")
+        # Assign PER FIELD — a curated field is never overwritten, but its presence
+        # no longer blocks the other from being filled.
+        wrote = []
+        if not velocity_curated:
+            proj["velocity"] = velocity_obj
+            wrote.append("velocity")
+        if not timing_curated:
+            proj["timing"] = timing_obj
+            wrote.append("timing")
+        if not wrote:
+            continue
+        print(f"[{pkey}] {'+'.join(wrote)} derived: {len(bars)} stories, "
+              f"{sum(b[1] for b in bars)} min active compute"
+              + (" (curated timing preserved)" if timing_curated else ""))
 
 
 # ---- station ownership (the Dream -> code through-line) ----------------------
@@ -1362,6 +1495,47 @@ def apply_owner(data: dict) -> None:
           + (f" · UNOWNED: {', '.join(missing)}" if missing else " · all sections attributed"))
 
 
+
+# ---- the accountability gate (Charter §7, amended 2026-07-28) ----------------
+
+def gate_ownership(data: dict) -> list[str]:
+    """Refuse to publish a hall that cannot say who is accountable for a row.
+
+    Charter §7: the Guildhall is the unit of *accountability made real*, not merely of
+    visibility — "visibility without consequence is decoration". This is the only place
+    the whole Dream->Code chain is assembled in one view, so it is the only place a break
+    in that chain can be seen whole.
+
+    Corrects an inversion: check_render.js exited non-zero on a JavaScript TypeError while
+    this generator printed `· UNOWNED: …` and exited clean — a cosmetic fault blocked
+    publication while a governance fault shipped. The `[owner]` line already computed the
+    answer and threw it away.
+
+    Hard gate from day one, deliberately: a grace period on the model's critical path is
+    how drift becomes permanent.
+    """
+    valid = set(STATIONS) | {"guild"}
+    v: list[str] = []
+
+    for d in data.get("dreams", []):
+        o = d.get("owner") or ""
+        if not o:
+            v.append(f"dream {d['slug']}: no owner")
+        elif o not in valid:
+            v.append(f"dream {d['slug']}: owner {o!r} is not one of the eight (+guild)")
+
+    for row in (data.get("fleet") or {}).get("rows", []):
+        # campaigns are deliberately unowned (they span stations) — see apply_owner
+        if not row.get("owner") and not row.get("campaign"):
+            v.append(f"fleet row {row.get('slug', '?')}: blank station")
+
+    for key, proj in (data.get("projects") or {}).items():
+        if not proj.get("owner") and not proj.get("practice"):
+            v.append(f"build line {key}: no owning station")
+
+    return v
+
+
 # ---- shared ------------------------------------------------------------------
 
 def load_data() -> dict:
@@ -1419,6 +1593,14 @@ def main() -> int:
     scan_timing(data["projects"])
     data["backlog"] = scan_backlog(data["dreams"], data["projects"])
     data["guild"] = scan_guild(data["dreams"], data["projects"], data["backlog"])
+
+    violations = gate_ownership(data)
+    if violations:
+        print(f"\n[GATE] ACCOUNTABILITY — {len(violations)} violation(s); NOT publishing:")
+        for x in violations:
+            print(f"     ✗ {x}")
+        print("  Charter §7: the hall does not put a row on the wall it cannot attribute.")
+        return 1
 
     ts = now_utc()
     data["snapshot"] = _SNAP_TS.sub(ts, data["snapshot"], count=1)

@@ -14,7 +14,7 @@ inputs:
   - docs/dreams/ecosystem-crew.md
   - docs/dreams/agent-portability.md
   - docs/dreams/agentic-sdlc-autonomy.md
-  - _bmad-output/projects/local-recipes/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - _bmad-output/projects/local-recipes/planning-artifacts/specs/spec-bmad-loop-governance/SPEC.md
   - _bmad-output/projects/local-recipes/planning-artifacts/specs/spec-multi-loop-isolation/SPEC.md
   - docs/specs/bmad-loop-adoption.md
   - planning-artifacts/research/market-agent-orchestration-research-2026-07-25.md

@@ -6,6 +6,7 @@ Permanent Wave-A tests (AD-11): fixture-based, non-credentialed, offline.
 - (c) `import kedro_dagster` — the py3.14-unclassified glue AD-16 names
       (solve-asserted only until this import runs).
 - (d) the Kedro bootstrap/session seam on the dotted `package_name` (Task 2.2).
+- (e) the AUD-ATLAS-011 pandas NULL-identity pin canary (story 10-4).
 """
 from pathlib import Path
 
@@ -23,6 +24,23 @@ def test_import_pyforge_warden_beside_atlas():
 
 def test_import_kedro_dagster_glue():
     import kedro_dagster  # noqa: F401
+
+
+def test_pandas_null_identity_pin_applied():
+    """AUD-ATLAS-011 canary: importing pyforge.atlas pins `future.infer_string` off.
+
+    If THIS test fails first, the pin itself broke (option removed by a pandas bump,
+    or re-flipped by co-resident code) — diagnose here, not in the six downstream
+    NULL-identity tests it protects (attribute_feedstocks / license-map gap / BSL
+    semantic parity), whose failures present as cryptic NaN mismatches.
+    """
+    import pandas as pd
+
+    import pyforge.atlas  # noqa: F401
+
+    assert pd.get_option("future.infer_string") is False
+    # a string-like column round-trips a missing cell as None, not NaN
+    assert pd.DataFrame({"c": ["x", None]})["c"].iloc[1] is None
 
 
 def test_kedro_bootstrap_resolves_dotted_package():

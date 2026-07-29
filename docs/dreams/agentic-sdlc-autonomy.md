@@ -1,6 +1,6 @@
 ---
 title: The Agentic SDLC — four views of autonomy, one governed factory
-type: dream
+type: practice
 owner: marshal
 status: pitched
 ---

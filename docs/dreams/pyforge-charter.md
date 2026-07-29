@@ -159,6 +159,7 @@ dependencies to build the foundational data pipeline.
 ### Key Responsibilities & Workflows
 * **Registry Discovery:** Checking PyPI, Conda, and private indexes simultaneously to construct an omniscient view of artifact availability.
 * **Ecosystem Bridging:** Normalizing naming conventions and version strings between the Python and Conda package registries.
+* **General-purpose craft, Python-scoped implementation** *(recorded 2026-07-28)*: "chart the dependencies, map the world, define the floor" names no ecosystem. Today Atlas maps the **Python ecosystem** — PyPI/pip and conda/conda-forge — and the registry names above are therefore *today's* instantiation, not the mandate. The trajectory is the same as Warden's: lift the domain-specific parts — registry clients, the name-mapping bridge, the PEP 440 comparator, the conda channel qualifier — into **separate modules** behind the declared-dataset seam, so a new ecosystem arrives as a pipeline plus a module rather than a rewrite. The seven closed pipelines are a *Python-era* allocation; the closure rule is structural, the membership is not.
 
 ### CLI Cadence
 ```bash
@@ -196,6 +197,7 @@ supply-chain vulnerabilities, licensing risks, and code degradation.
   5. *Provenance* **(Vision — not built):** package source verification, signature validation, authorship (Sigstore / SLSA).
   6. *Maintenance* **(Vision — not built):** abandonment and upstream-health signals (OpenSSF Scorecard-class).
 * **Gatekeeping:** Serving as a hard barrier in CI/CD pipelines, blocking code that breaches established risk thresholds.
+* **General-purpose craft, Python-scoped implementation** *(recorded 2026-07-28)*: the six axes are ecosystem-agnostic by mandate — nothing in "dependency and security judgment" is Python. Today's implementation is **Python libraries** (PyPI + conda-forge), and that is *scope*, not identity. The trajectory is to lift the domain-specific parts — the ecosystem parsers, the PyPI/conda identity predicate, the registry adapters — into **separate modules** behind the existing engine seam, leaving a general-purpose Warden that gains an ecosystem by gaining a module. Read every Python-specific statement in this section as "today", never as "by definition".
 
 ### CLI Cadence
 ```bash
@@ -264,6 +266,7 @@ prescribing the fix before they become outages.
 * **Pre-flight Diagnostics:** A `doctor` self-check verifies every required engine and toolchain is present and correctly configured before Marshal spins the factory.
 * **Fleet Health Monitoring:** Continuously tracking feedstock health, version staleness, upstream drift, new advisories, and abandonment signals across the shipped estate.
 * **Remediation Guidance:** Translating health findings into prioritized, actionable worklists — what to patch, upgrade, or retire, and in what order.
+* **Verdict on the Marshal's conformance** *(ratified 2026-07-28)*: the cross-cutting practices — [[agent-tool-surface]], [[agent-portability]], [[agentic-sdlc-autonomy]] — are owned by the Marshal but bind all eight stations. Marshal detects, each station remediates its own row, and **the Doctor holds the verdict on Marshal's own row** — the one station that would otherwise grade itself. This is §5's *the hand that builds is never the gate that judges*, applied to process rather than code, and it follows existing precedent: the `JFROG_API_KEY` leak was a Steward remediation **on a Doctor finding**. *Governance is kept separate:* the Marshal may not weaken, re-threshold or disable a check that judges the Marshal — a conformance gate is amendable by its subject only through the Doctor's verdict, exactly as Mason cannot pass its own build by lowering Warden's bar.
 
 ### CLI Cadence
 ```bash
@@ -468,15 +471,37 @@ the station model exists to make impossible.
 
 Two clarifications, because both were live gaps until 2026-07-25:
 
-- **Owning is not becoming.** The station is the post, not the product. Atlas
-  owning [[unity-data-stack]] means Atlas is accountable for carrying it Dream →
-  code; it does not mean it ships as `pyforge-atlas`. This is what lets every
-  Dream map to a Smith without every Dream becoming a `pyforge-*` package.
+- **Owning is becoming — at the planning tier.** *(Amended 2026-07-28; see the
+  Realization log. Supersedes "owning is not becoming.")* The station owns the
+  **chain**: a Dream's planning artifacts — Spec, PRD, architecture, epics,
+  stories — live in the owning Smith's project. Atlas owning
+  [[unity-data-stack]] means that chain lives under `pyforge-atlas/`.
+  **It does not rename the package.** What ships is declared by the Spec's
+  `surface:`, which is independent of which planning tree hosts it:
+  `spec-deckcraft` under `pyforge-herald/` still builds `apps/deckcraft/**`, not
+  `pyforge-herald`. The superseded clause conflated two axes — *planning home*
+  and *package identity* — and forbade the first to protect the second. Only the
+  second needed protecting. Consequence: **eight Smiths, eight projects**; there
+  is no placeholder project in the target state.
 - **`owner: guild` is reserved** for the two Dreams that *precede* the stations —
   this Charter, which constitutes the Guild, and [[pyforge-genesis]], the
   operating-model seed. Nothing else may claim it; a third `guild` is an
   unassigned Dream hiding behind a collective noun. (The retired `owner: crew`
   was exactly that, on four Dreams.)
+
+  **Their chains live in `pyforge-genesis`** *(clarified 2026-07-28)* — the
+  constitutive project: the origin Dream, and the records of this Charter, the
+  Lexicon, and the Guild's membership. It is the one project not named for a
+  Smith, because the two Dreams it holds precede the Smiths.
+
+  **The seed's *installer* is not constitutive and is not held here.**
+  `genesis init` / `genesis adopt` — standing up a greenfield or brownfield repo
+  with the pixi environment, python, bmad-method, bmad-loop, the multi-project
+  wiring, skill-forge, and the BMM/BMB/TEA modules — is **buildable work owned by
+  the Marshal**, whose toolkit already lists every one of those components and
+  whose cadence already opens with `marshal init`. Constitutive records and the
+  machine that installs them are different nouns: the first authorizes, the
+  second is built.
 
 Enforced, not merely asserted: `bmad-drift-check` emits a **`dream-unowned`**
 finding when a Dream names no station, names something outside the eight, or
@@ -502,7 +527,10 @@ load-bearing, not poetic:
   Smith wielding CFE v8 is the same one who wielded v6 — continuity of
   accountability across upgraded capability.
 
-### 7. The Guildhall — the unit of *visibility* (and the human's seat)
+### 7. The Guildhall — the unit of *accountability made real* (and the human's seat)
+
+*(Amended 2026-07-28 from "the unit of visibility". One noun, one job — the job is
+larger than display.)*
 
 The public console. Its conviction is Herald's — *invisible engineering is failed
 engineering* — but its deeper function is that **the Guildhall is how the human
@@ -511,6 +539,21 @@ real if intent can be exercised without reading logs. The hall is that interface
 Dreams on the wall, Campaigns in motion, build lines forging, Realized works proven —
 all derived from ledgers, never hand-trusted. A guild that works in secret cannot be
 trusted with autonomy; **the hall is the price of the autonomy, paid in public.**
+
+**Visibility without consequence is decoration.** The hall does not merely *render* the
+ownership through-line — it **refuses to publish without it**. The `owner:` carried from
+Tier 0 onto every downstream row is the model's critical path: it is the only place the
+whole chain is assembled in one view, so it is the only place a break in that chain can
+be seen whole. A hall that cannot say who is accountable for a row does not put that row
+on the wall.
+
+This closed a real inversion. Until the amendment the console **failed on a rendering
+error but not on an ownership hole** — `check_render.js` exited non-zero when the page's
+JavaScript threw, while `generate.py` printed `· UNOWNED: …` and exited clean. A cosmetic
+fault blocked publication; a governance fault shipped. The `[owner]` line had already
+computed the answer and was throwing it away.
+
+The station is not a column on the board. It is the condition of appearing on it.
 
 ### The chain, read both ways
 
@@ -586,6 +629,61 @@ herald broadcast slack,email --channel engineering-updates
 
 ## Realization log
 
+- **2026-07-28 (ratified)** — **§6 the Doctor holds the verdict on the Marshal's
+  conformance.** The three cross-cutting practices ([[agent-tool-surface]],
+  [[agent-portability]], [[agentic-sdlc-autonomy]]) are Marshal-owned but bind all eight
+  stations, and until now nothing checked horizontally — every gate in the repo was
+  vertical, each station's suite testing its own code. That is how the tool surface reached
+  **2-station-of-6 coverage, with Marshal itself at zero**, inside a Dream marked
+  `realized`. The model: Marshal detects · each station remediates its own row · **Doctor
+  judges Marshal's row** · the Guildhall gates (§7). **Warden was not the answer, and the
+  reason is craft, not scope** *(corrected 2026-07-28 — the first draft of this entry said
+  "Warden's scope is domain-specific", which is wrong twice over)*: Warden's craft is
+  **dependency and security judgment**, and process conformance is a different craft —
+  which stays true however general Warden's ecosystem coverage becomes. Its present
+  Python-only reach is **implementation scope, not mandate** (see §3/§4), so a
+  general-purpose Warden would still not take conformance. Doctor's mandate
+  (*continuously monitor · diagnose · prescribe*) already covers conformance drift as a
+  health signal. §4 *"each works one craft, not all"* is the governing line. **Governance is kept separate:** the Marshal may not weaken, re-threshold
+  or disable a check that judges the Marshal — the same rule that stops Mason passing its
+  own build by lowering Warden's bar. Precedent: the `JFROG_API_KEY` leak was a Steward
+  remediation on a Doctor finding — detection and remediation already separate across
+  stations.
+- **2026-07-28 (amendment)** — **§7 "the unit of visibility" → "the unit of accountability
+  made real"** (operator decision). The Guildhall now **gates** on the ownership
+  through-line rather than merely rendering it: a Dream with no station, a fleet / In Build
+  / Realized row with a blank owner, or a Spec whose `owner-dream:` does not resolve fails
+  the publish. Rationale: *visibility without consequence is decoration*, and the hall is
+  the only place the whole Dream→Code chain is assembled in one view — so it is the only
+  place a break in that chain can be seen whole. This corrected an inversion in which
+  `check_render.js` exited non-zero on a JavaScript `TypeError` while `generate.py` printed
+  `· UNOWNED: …` and exited clean — a cosmetic fault blocked publication while a governance
+  fault shipped silently. Gating **hard from day one**, not against a baseline: the model's
+  critical path is the ownership chain, and a grace period on the critical path is how drift
+  becomes permanent. "Every noun does exactly one job" is intact — the job was always
+  *accountability made real*, and display was only its visible half.
+- **2026-07-28 (amendment)** — **§5 "owning is not becoming" → "owning is becoming — at
+  the planning tier"** (operator decision). The superseded clause forbade a Dream's chain
+  from living in its owner's project, to stop every Dream "becoming a `pyforge-*` package."
+  Evidence showed the two are independent axes: package identity is declared by a Spec's
+  `surface:` and does not move when the planning tree does — `spec-deckcraft` builds
+  `apps/deckcraft/**` wherever its Spec is filed, and `unity-data-stack` /
+  `wasm-analytics-stack` / `presenton-pixi-image` declare no `pyforge-*` surface at all.
+  The clause forbade the first axis to protect the second; only the second needed it.
+  **Consequence: eight Smiths, eight projects.** The `local-recipes` placeholder — what
+  this monorepo started as — holds nothing in the target state and is retired; the
+  Charter, being the unit of *legitimacy* rather than *contract*, needs no Spec.
+  Also settled: **[[pyforge-genesis]] stays** as the constitutive project — the origin
+  Dream plus the records of this Charter, the Lexicon, and the Guild's membership — so
+  `owner: guild` keeps both its Dreams, as §5 always said. What moves is the **installer**:
+  `genesis init` / `adopt` is buildable work and belongs to the **Marshal**, whose toolkit
+  already lists every component of it (bmad-method, bmad-loop, multi-project, skill-forge,
+  BMM/BMB/TEA) and whose cadence already opens with `marshal init`. Constitutive records
+  and the machine that installs them are different nouns. **Target: nine projects** — eight
+  Smiths plus `pyforge-genesis`.
+  *(An intermediate draft of this amendment reduced `guild` to the Charter alone and
+  proposed a new `pyforge-guild`; both were withdrawn — the constitutive home already
+  existed and is named Genesis.)*
 - **2026-07-25** — the PyForge mission + tagline canonized at the masthead (operator-wordsmithed through the register series); genesis deck opening-slide refresh queued to Herald's backlog.
 - **2026-07-25** — Dream renamed `ecosystem-crew` → **`pyforge-charter`** (operator naming round): the document is the crew's constitutive charter — offices, mottos, doctrine, and now the canonized mission at its masthead. The crew keeps its name (the PyForge Guild); the Dream names the document.
 - **2026-07-25** — the crew renamed: **the Ecosystem Crew → the PyForge Guild** (slug form `pyforge-guild`). The Charter constitutes the Guild — eight offices, one Agentic SDLC. Deck copy updates ride Herald's queued refresh.

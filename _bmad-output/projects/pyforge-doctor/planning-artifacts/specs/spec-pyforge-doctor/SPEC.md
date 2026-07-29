@@ -2,6 +2,7 @@
 surface:
   - src/shared/packages/pyforge-doctor/**   # the CLI this Spec builds
 id: SPEC-doctor
+owner-dream: docs/dreams/pyforge-doctor.md
 companions:
   - ../../architecture/architecture-pyforge-doctor-2026-07-25/ARCHITECTURE-SPINE.md
 sources:

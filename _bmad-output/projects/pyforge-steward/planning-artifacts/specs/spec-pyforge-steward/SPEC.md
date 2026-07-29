@@ -1,7 +1,14 @@
 ---
 surface:
   - src/shared/packages/pyforge-steward/**  # the CLI this Spec builds (not yet created)
+  # Governed here 2026-07-28: the library catalog describes what is IN the pixi envs, and
+  # Steward provisions envs ("runners and environments for Marshal's line ... pixi envs").
+  # The subject is environment CONTENTS, not the Dream->Code chain — which is why it does
+  # not sit with the chain detectors under regenerable-factory.
+  - scripts/llms_full_check.py
+  - docs/reference/library-llms-full.md
 id: SPEC-steward
+owner-dream: docs/dreams/pyforge-steward.md
 companions:
   - ../../architecture/architecture-pyforge-steward-2026-07-25/ARCHITECTURE-SPINE.md
 sources:

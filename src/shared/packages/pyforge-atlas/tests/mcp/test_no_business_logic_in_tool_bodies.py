@@ -45,6 +45,10 @@ ALLOWED_CALL_ROOTS = {
     "_nl",  # D3: the NL-interface seam (pyforge.atlas.nl) — like _session, a delegated
             # seam; the query_vizro_ai tool body only calls _nl.query_vizro_ai (AD-7), the
             # backend-resolution + BSL-grounded (deferred) Vizro-AI logic lives in nl/.
+    "_provenance",  # I4: the build-provenance seam (pyforge.atlas.provenance) — like
+                     # _session/_nl, a delegated seam; read_dataset only calls
+                     # _provenance.load_with_provenance (AD-7/AD-17), the kind-dispatch +
+                     # pandas/kedro_datasets introspection lives in provenance.py.
     "s",
     "result",
     "sorted",

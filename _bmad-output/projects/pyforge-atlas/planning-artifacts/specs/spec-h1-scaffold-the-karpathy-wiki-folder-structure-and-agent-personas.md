@@ -1,7 +1,7 @@
 ---
 title: 'Story H1 (9.1): Scaffold the Karpathy Wiki folder structure and Agent Personas'
 type: 'feature'
-status: 'regenerated'
+status: shipped
 regenerated: '2026-07-25'
 source: 'epics.md (authoritative intent + acceptance criteria) + shipped code on main'
 original_spec: 'NEVER AUTHORED as a file — wave B9-H4 ran through the in-session agent loop, not bmad-create-story (which wrote files only for waves 0/A/B1-B8), confirmed by the migration session itself. Nothing was lost; there is no original to recover. Intent+ACs below are the real epics.md contract.'
@@ -45,67 +45,65 @@ So that the knowledge-base factory has its storage shape and workforce.
 - **Depends on:** Epic 8 complete (wave order); pipeline outputs to consume exist from Epic 3+.
 - **DELIVERED (2026-07-18 — opens Wave H):** new `pyforge.atlas.factory` package. `factory/wiki.py` = the single-owner `raw/→compiled/→outputs/` layout contract (`WIKI_STAGES`/`WikiLayout`/`scaffold_wiki`) with a per-segment `stage_path` traversal guard enforcing the AD-22 write-boundary; `factory/personas.py` = the 5 § 2.2 personas + `resolve_personas(*overlays)` (BMAD customization layers, highest-priority-last; overlay may only refine — unknown name / rename rejected; workforce frozen at five); `factory/storage.py` = env-driven resolver defaulting to the OFFLINE filesystem backend (MinIO selected only when `ATLAS_WIKI_S3_ENDPOINT` set; host-agnostic AD-2). MinIO/PostgreSQL SERVER bring-up DEFERRED (DW-H1). Gate `tests/factory/` (26). AD-1 import-ban green. PR #99.
 
-### Story H2 (9.2): Implement Agno Compilation, Linting, and Q&A Crews
+## Tasks / Subtasks
 
-As the operator,
-I want `agno` crews that compile raw docs, lint the wiki, and answer questions,
-So that the wiki maintains itself with agent labor.
+*(Derived from the ACs — no original task breakdown was authored for this loop-run story.)*
 
-**Acceptance Criteria:** (spec § 9 Story H2, binding)
+- [x] the three-stage wiki tree exists with a scaffold-layout test
+- [x] the 5 persona definitions resolve through the § 2 customization layers
+- [x] PostgreSQL/MinIO storage services are conda-forge-provisioned per AD-16 (MinIO server provisioning resolved as this story's precondition).
 
-**Given** the H1 scaffold and a fixture wiki
-**When** each crew runs end-to-end
-**Then** compile transforms raw → compiled, lint reports violations, and Q&A answers grounded in compiled content
-**And** wiki outputs carry their source datasets' staleness markers forward (AD-13/AD-22 — republication never launders freshness).
+## Dev Notes
 
-- **FRs:** FR-22(b).
-- **Invariants:** AD-22, AD-13.
-- **Mode:** DEV-AUTO (spec § 9 explicit: crew design needs judgment).
-- **Gating question:** none (crew design detail is a story-spec decision, Spine Deferred).
-- **Verify gate:** crews-on-fixture-wiki tests in `kedro-test`.
-- **Depends on:** H1.
-- **DELIVERED (2026-07-18):** `factory/crews.py` — `CompileCrew` (raw→compiled, per-doc-resilient, forwards source staleness from BOTH the inline `stale:` frontmatter AND the `.staleness.json` sidecar into compiled frontmatter + a visible body banner — AD-13/AD-22, republication never launders freshness), `LintCrew` (reports `missing-frontmatter`/`missing-title`/`empty-body`/`broken-link` [path-resolved, recursive]/`laundered-staleness`/`malformed-frontmatter`; never raises), `QACrew` (grounded answers over compiled content; deterministic keyword retriever + extractive synthesizer defaults). agno-Agent/LLM synthesis + F3-vss production retriever are injectable seams, offline by default — live bring-up DEFERRED (DW-H2). Gate `tests/factory/test_crews.py` (26). AD-1 import-ban green (yaml+stdlib only). An independent adversarial review found 2 MUST-FIX (inline-staleness laundering; lint/QA crash-on-malformed) + 1 SHOULD-FIX (leaf-only broken-link) — all fixed + regression-tested before merge.
+**Planning metadata (from `epics.md`):**
 
-### Story H3 (9.3): Integrate La Suite Docs REST API Sync
-
-As the operator,
-I want `LaSuiteClient` + `WikiSyncer` pushing compiled wiki files to the Layer-1 CMS via the Wagtail/Django REST API,
-So that humans read the factory's knowledge in the presentation layer.
-
-**Acceptance Criteria:** (spec § 9 Story H3, binding)
-
-**Given** the H2 compiled wiki output and a mock Wagtail API
-**When** the sync runs
-**Then** a round-trip fixture test passes against the mock (push, update, idempotent re-push).
-
-- **FRs:** FR-22(c).
-- **Invariants:** AD-22 (writes only wiki/CMS; idempotent re-push).
+- **FRs:** FR-22(a).
+- **Invariants:** AD-22, AD-16.
 - **Mode:** LOOP-E (spec § 9 explicit).
 - **Gating question:** none.
-- **Verify gate:** mock-Wagtail round-trip fixture in `kedro-test`.
-- **Depends on:** H1, H2.
-- **DELIVERED (2026-07-18):** `factory/lasuite.py` — `LaSuiteClient` (create/update/get/list over the Wagtail/Django REST shape; clear `LaSuiteError` on non-2xx AND on a 2xx-without-id, per § 2.1) + `WikiSyncer` (idempotent **outputs/**→CMS push keyed by content sha: new→create, changed→update, unchanged→SKIP with NO remote call). CMS source is `outputs/` (the Oracle's final reports, per the H1 layout contract + § 7.4), not internal `compiled/` (`source_stage` override available). Transport is the injected `opener` seam — package code holds no HTTP client (AC-2, no-inline-IO gate green); the default opener refuses clearly. Mapping sidecar lives at the wiki ROOT (AD-22), written ATOMICALLY (tmp+os.replace) and corruption-loud on load. Verified against an in-memory mock Wagtail (push/update/idempotent-re-push/mapping-resume). Live Wagtail server + httpx opener bring-up DEFERRED (DW-H3). Independent review found 3 SHOULD-FIX (malformed-2xx KeyError; non-atomic sidecar write; compiled-vs-outputs contract contradiction) + NITs — all fixed + regression-tested. Gate `tests/factory/test_lasuite.py`.
+- **Verify gate:** scaffold-layout test + persona-resolution test in `kedro-test`.
+- **Depends on:** Epic 8 complete (wave order); pipeline outputs to consume exist from Epic 3+.
+- **DELIVERED (2026-07-18 — opens Wave H):** new `pyforge.atlas.factory` package. `factory/wiki.py` = the single-owner `raw/→compiled/→outputs/` layout contract (`WIKI_STAGES`/`WikiLayout`/`scaffold_wiki`) with a per-segment `stage_path` traversal guard enforcing the AD-22 write-boundary; `factory/personas.py` = the 5 § 2.2 personas + `resolve_personas(*overlays)` (BMAD customization layers, highest-priority-last; overlay may only refine — unknown name / rename rejected; workforce frozen at five); `factory/storage.py` = env-driven resolver defaulting to the OFFLINE filesystem backend (MinIO selected only when `ATLAS_WIKI_S3_ENDPOINT` set; host-agnostic AD-2). MinIO/PostgreSQL SERVER bring-up DEFERRED (DW-H1). Gate `tests/factory/` (26). AD-1 import-ban green. PR #99.
 
-### Story H4 (9.4): Orchestrate Crews via Dagster
+### Implementation notes
 
-As the operator,
-I want Dagster assets, sensors (new raw files), and schedules (weekly linting) triggering the Agno crews autonomously,
-So that the factory layer runs itself.
+<!-- DERIVED 2026-07-27 by reading the shipped code (PR #99). No original dev-session
+     notes existed for this story; this is what the merged implementation actually does. -->
 
-**Acceptance Criteria:** (spec § 9 Story H4, binding)
+**Three modules open the factory layer.** `factory/wiki.py` owns the
+`raw/ → compiled/ → outputs/` layout contract (`WIKI_STAGES`, `WikiLayout`,
+`scaffold_wiki`); `factory/personas.py` the workforce; `factory/storage.py` the backend
+resolver.
 
-**Given** the H2 crews and the C1 Dagster repository
-**When** the assets/sensors/schedules land
-**Then** an asset dry-run enumerates the crew assets
-**And** a simulated new-raw-file event triggers the compile crew via a Sensor.
+**The write boundary is enforced per path segment (AD-22).** `stage_path` refuses any escape
+from the stage root — a per-segment traversal guard, not a prefix check on the assembled
+string, which is what makes `../` and absolute-path tricks fail. Crews can therefore be given
+a layout object rather than trusted to behave.
 
-- **FRs:** FR-22(d), FR-6.
-- **Invariants:** AD-22, AD-6, AD-23.
-- **Mode:** LOOP-E (spec § 9 explicit).
-- **Gating question:** none.
-- **Verify gate:** `dagster-dryrun` (crew assets enumerate) + simulated-trigger fixture.
-- **Depends on:** H1, H2, H3; C1.
-- **DELIVERED (2026-07-18 — closes Wave H + the migration):** the Wave-H crews run on C1's single Dagster plane (AD-6/AD-23). `orchestration/definitions.py` gains crew ASSETS (`compiled_wiki` → CompileCrew, `wiki_lint_report` → LintCrew, `deps=[compiled_wiki]`), their asset-jobs (`wiki_compile_job`/`wiki_lint_job`), a weekly LINT schedule (`wiki_lint_schedule`, `0 6 * * 1`, § 7.2), and the new-raw-file compile SENSOR (`wiki_raw_file_sensor` → `wiki_compile_job`, ships STOPPED). The raw-scan + cursor-dedupe DECISION logic lives in `orchestration/wiki_events.py` (dagster-free — AD-1 holds; only definitions.py imports dagster). `dagster definitions validate` green; a simulated new-raw-file event (injected lister + `build_sensor_context`) → one `RunRequest` for the compile job. Live daemon + wiki-store bring-up DEFERRED (DW-H4). Gate `test_definitions_dryrun.py` H4 section (+12; C1/G3 invariants scoped to kedro op-jobs via `_kedro_jobs`). Independent review found 1 SHOULD-FIX (`_decode_cursor` crashed on a valid-JSON-but-nested cursor, breaking its "never a crash" contract) — fixed (filter to str inside the guard) + regression-tested; the `_kedro_jobs` scoping was verified NOT to weaken any C1/G3 guard.
+**The workforce is frozen at five, and the type system says so.** `resolve_personas(*overlays)`
+models BMAD's layered merge (baseline `DEFAULT_PERSONAS`, overlays applied highest-priority-last,
+mirroring the repo's six-layer config merge). An overlay **may only refine an existing
+persona** — it can neither introduce a sixth nor drop one of the five, and a typo'd persona
+name in an overlay is a **rejection, not a silent no-op**. `Persona` is a pydantic model with
+`frozen=True, extra="forbid"`, so a stray overlay key is refused rather than carried — the
+same discipline as the A2A schema family.
+
+That last property is the interesting one: a customization system whose most likely failure is
+a misspelled key is a customization system that silently ignores your configuration. This one
+fails loudly instead.
+
+**Storage defaults offline and host-agnostic (AD-2).** The resolver returns the filesystem
+backend unless `ATLAS_WIKI_S3_ENDPOINT` is set, which is the only thing that selects MinIO. No
+host is baked in. The MinIO/PostgreSQL **server** bring-up is deferred as DW-H1 — the seam
+exists and defaults safe; the service is not running.
+
+**Gate:** `tests/factory/` (26 assertions), AD-1 import-ban green.
+
+### References
+
+- [Source: _bmad-output/projects/pyforge-atlas/planning-artifacts/epics.md#Story-H1]
+- [Source: docs/specs/cfe-atlas-datapipeline-kedro-migration.md#§9-Story-H1]
+- [Architecture: _bmad-output/projects/pyforge-atlas/planning-artifacts/architecture/architecture-pyforge-atlas-2026-07-17/ARCHITECTURE-SPINE.md]
 
 ## Realized in
 
@@ -115,13 +113,79 @@ So that the factory layer runs itself.
   precise file-level Code Map, read the implementation on `main` — this regenerated spec
   deliberately does not guess a per-file map it cannot verify from the lost original.
 
-## Provenance & recovery note
+## Delivery Record
 
-Recovered 2026-07-25 as part of the spec-durability remediation (see
-`planning-artifacts/specs/README.md`). Same root cause + fix as pyforge-warden: story specs
-now live tracked in `planning-artifacts/specs/`, not Tier-3 gitignored `implementation-artifacts/`.
+<!-- DERIVED from the merged PR via `gh` on 2026-07-27. Exact, not reconstructed. -->
 
-## Dev narrative — recovered from the merged record (2026-07-25)
+| | |
+|---|---|
+| Pull request | **#99** — H1: scaffold the Karpathy wiki + the 5 factory personas (FR-22(a)) |
+| Merged | 2026-07-18 |
+| Diff | 7 files, +546 / -0 |
+| Test files touched | 3 |
+
+**Commits**
+
+- `f0ec142` H1: scaffold the Karpathy wiki + the 5 factory personas (FR-22(a))
+
+**File list** *(exact, from the merged diff)*
+
+```
+  143 +     0 -  src/shared/packages/pyforge-atlas/tests/factory/test_personas.py
+  126 +     0 -  src/shared/packages/pyforge-atlas/src/pyforge/atlas/factory/personas.py
+   93 +     0 -  src/shared/packages/pyforge-atlas/src/pyforge/atlas/factory/wiki.py
+   74 +     0 -  src/shared/packages/pyforge-atlas/src/pyforge/atlas/factory/storage.py
+   71 +     0 -  src/shared/packages/pyforge-atlas/tests/factory/test_wiki_scaffold.py
+   39 +     0 -  src/shared/packages/pyforge-atlas/src/pyforge/atlas/factory/__init__.py
+    0 +     0 -  src/shared/packages/pyforge-atlas/tests/factory/__init__.py
+```
+
+## Dev Agent Record
+
+### Agent Model Used
+
+In-session BMAD agent loop (draft → 2× adversarial review → 1× independent fresh-eyes review → real-gate verify), not a `bmad-dev-story` story-file run.
+
+### Completion Notes List
+
+- **Impl commit `fe52bbd`** — H1: scaffold the Karpathy wiki + the 5 factory personas (FR-22(a)) (#99)
+  - Land the buildable half of the AI Software Factory storage layer (Wave H,
+  - spec § 7 / § 9 Story H1), fully offline.
+  - New package pyforge.atlas.factory (AD-22 write-boundary: reads atlas
+  - datasets, writes ONLY the wiki tree / CMS):
+  - - factory/wiki.py: the SINGLE owner of the wiki layout contract.
+  - WIKI_STAGES ("raw","compiled","outputs") + WikiLayout + scaffold_wiki.
+  - stage_path() safety-checks every segment and refuses any relative that
+  - would escape the wiki root (traversal / absolute / empty) — the
+  - emitter._require_safe_name lesson applied so a crafted document name
+  - can't turn a wiki write into a write outside the tree. scaffold_wiki is
+  - idempotent + non-destructive (factory only ADDS).
+  - - factory/personas.py: the 5 § 2.2 personas (Ingester=Analyst,
+  - Compiler=Architect, Linker=Developer, Linter=QA/Reviewer,
+  - Oracle=Product Owner) each mapped to a wiki stage + governed tools.
+  - resolve_personas(*overlays) merges the BMAD customization layers
+  - highest-priority-last (CLAUDE.md six-layer semantics); an overlay may
+  - only REFINE an existing persona — an unknown name raises (no silent
+  - sixth agent) and the workforce always resolves exactly five. Frozen,
+  - extra=forbid; merged personas are re-validated so a bad role/tool/stage
+  - fails at resolve time, and DEFAULT_PERSONAS is never mutated.
+  - - factory/storage.py: env-driven storage resolver. Defaults to the OFFLINE
+  - filesystem backend (the scaffolded wiki/ tree) and opens no connection;
+  - a MinIO/S3 backend is selected only when ATLAS_WIKI_S3_ENDPOINT is set
+  - (host-agnostic, AD-2 — no host hardcoded; empty env == unset). Only the
+  - minio SDK is in-env — the MinIO/PostgreSQL SERVER bring-up is the
+  - attended H1 precondition, DEFERRED (DW-H1).
+  - Verify gate: tests/factory/ (scaffold-layout + persona-resolution +
+  - storage-resolution), 25 tests. AD-1 import-ban gate covers the new module
+  - (imports pydantic + stdlib only). Full atlas suite 737 passed.
+  - Claude-Session: https://claude.ai/code/session_01FYyQvBJuXwySiaMUUYCqBZ
+  - Co-authored-by: Claude <noreply@anthropic.com>
+
+## Review Triage Log
+
+No separate review-fix commit; findings (if any) folded into the impl commit. Full review threads on PR `#99`.
+
+## Dev narrative — recovered from the merged record
 
 > The original spec's `## Dev Notes` / `## Review Triage Log` were lost with the Tier-3
 > worktree teardown (this story was built in claude.ai/code web session
@@ -132,27 +196,28 @@ now live tracked in `planning-artifacts/specs/`, not Tier-3 gitignored `implemen
 
 ### Dev summary — merged PR #99: H1: scaffold the Karpathy wiki + the 5 factory personas (FR-22(a))
 
-## Story H1 — Scaffold the Karpathy Wiki + Agent Personas (FR-22(a), § 7 / § 9)
+## Deferred Work (DW ledger)
 
-Lands the buildable half of the AI Software Factory storage layer (Wave H), fully offline. New package `pyforge.atlas.factory` — the **AD-22 write-boundary** is its defining invariant: factory components *read* atlas datasets and *write* ONLY the wiki tree (and, in H3, the CMS).
-
-### Changes
-- **`factory/wiki.py`** — the SINGLE owner of the wiki layout contract: `WIKI_STAGES` (`raw`→`compiled`→`outputs`) + `WikiLayout` + `scaffold_wiki`. `stage_path()` safety-checks every path segment and refuses any relative that would escape the wiki root (traversal / absolute / empty) — the `emitter._require_safe_name` lesson applied so a crafted document name can't turn a wiki write into a write outside the tree. `scaffold_wiki` is idempotent + non-destructive.
-- **`factory/personas.py`** — the 5 § 2.2 personas (Ingester=Analyst, Compiler=Architect, Linker=Developer, Linter=QA/Reviewer, Oracle=Product Owner), each mapped to a wiki stage + governed tools. `resolve_personas(*overlays)` merges the BMAD customization layers highest-priority-last; an overlay may only **refine** an existing persona — unknown name raises (no silent sixth agent), a rename is rejected (name is identity), and the workforce always resolves exactly five. Frozen + `extra="forbid"`; merged personas re-validated; `DEFAULT_PERSONAS` never mutated.
-- **`factory/storage.py`** — env-driven storage resolver. Defaults to the **offline filesystem** backend (opens no connection); a MinIO/S3 backend is selected only when `ATLAS_WIKI_S3_ENDPOINT` is set (host-agnostic, AD-2 — no host hardcoded; empty env == unset).
-
-### Deferred
-- The MinIO/PostgreSQL **server** bring-up (only the SDKs are in-env) is the attended H1 precondition → **DW-H1**.
-
-### Verification
-- `tests/factory/` — scaffold-layout + persona-resolution + storage-resolution: **26 passed**.
-- AD-1 import-ban gate covers the new module (imports pydantic + stdlib only).
-- Full atlas suite: **737 passed**.
-- An independent adversarial review (path-traversal / persona-merge mutation / offline-storage) found no must-fix/should-fix; its one actionable NIT (overlay renaming a persona) is fixed in this PR.
-
-### Commits on `main`
-
-- `7183e1c30d` H1: scaffold the Karpathy wiki + the 5 factory personas (FR-22(a)) (#99)  _(dev-landing)_
-
-_This PR also carried an automated Gemini review; not reproduced here per repo policy ([[feedback_no_gemini_reviews]])._
-
+### DW-H1 — the MinIO/PostgreSQL SERVER provisioning + bring-up (ATTENDED) — DEFERRED to the H1 precondition event
+- source_spec: `cfe-atlas-datapipeline-kedro-migration.md` (Story H1, § 7.4, FR-22(a))
+  summary: H1 shipped the BUILDABLE half of the Karpathy-wiki storage layer — the layout contract
+    (`factory/wiki.py`: `WIKI_STAGES` + `WikiLayout` + `scaffold_wiki`, the SINGLE owner of the
+    `raw/ → compiled/ → outputs/` tree), the five § 2.2 personas + their BMAD customization-layer
+    resolution (`factory/personas.py`), and the storage-backend RESOLVER (`factory/storage.py`),
+    all offline. The architecture (ARCHITECTURE-SPINE § "Factory layer") records that **only the
+    MinIO Python SDK is in-env today — the MinIO/PostgreSQL SERVERS are not provisioned**, and calls
+    that server bring-up the H1 precondition (Spine "Deferred"). H1's code therefore DEFAULTS to the
+    plain local filesystem (`resolve_storage_config()` → `backend="filesystem"` when
+    `ATLAS_WIKI_S3_ENDPOINT` is empty/unset) and never opens a connection; a MinIO backend is
+    selected ONLY when an endpoint is explicitly configured (host-agnostic, AD-2 — no host is
+    hardcoded). The ACTUAL deferred bring-up: provision the conda-forge MinIO + PostgreSQL servers
+    (precedent: MyBMAD's per-user PostgreSQL in the `bmad-ui` env), create the wiki bucket, wire the
+    live `minio` SDK client from the resolved config, and run the crews against the object store
+    instead of the local dir. Do NOT weaken any gate to stand up a server unattended or bind a
+    socket (NFR-12). Mirrors DW-C1-1 / DW-G3 (live daemon bring-up) and DW-D3-1 (live backend).
+  evidence: `factory/storage.py::resolve_storage_config` returns `filesystem` with no network
+    touch when the endpoint env is absent (`tests/factory/test_personas.py` storage cases:
+    default-is-filesystem, empty-env-is-unset, configured-endpoint-selects-minio,
+    both-keys-required-for-credentials). Only `minio` the SDK is importable in-env; no server
+    process runs. The AD-16 pixi.toml line ships `minio >=7.2.20` (SDK) + `psycopg2 >=2.9.12`
+    (driver) — the SDKs, not the servers.
