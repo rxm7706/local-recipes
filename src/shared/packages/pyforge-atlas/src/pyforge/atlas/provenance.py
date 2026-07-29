@@ -32,6 +32,8 @@ from __future__ import annotations
 
 import datetime
 import os
+import stat
+import warnings
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -84,10 +86,12 @@ def resolve_for_file(path: str | os.PathLike[str]) -> ProvenanceInfo:
     ``exists()`` check) avoids a TOCTOU race where the file disappears
     between the check and the read; a non-ENOENT failure (permissions, a
     symlink loop) states what actually happened instead of a false
-    "not found"."""
+    "not found". A non-regular path (a directory) has an mtime too, but it
+    is the mtime of the CONTAINER, not of the data — reporting it would be
+    exactly the plausible-but-wrong stamp this module exists to refuse."""
     p = Path(path)
     try:
-        mtime = p.stat().st_mtime
+        st = p.stat()
     except FileNotFoundError:
         return ProvenanceInfo(
             kind="unavailable",
@@ -100,21 +104,52 @@ def resolve_for_file(path: str | os.PathLike[str]) -> ProvenanceInfo:
             build_stamp=None,
             reason=f"backing file not readable: {p} ({type(exc).__name__})",
         )
-    return ProvenanceInfo(kind="file-mtime", build_stamp=_iso(mtime))
+    if not stat.S_ISREG(st.st_mode):
+        return ProvenanceInfo(
+            kind="unavailable",
+            build_stamp=None,
+            reason=f"backing path is not a regular file: {p}",
+        )
+    try:
+        return ProvenanceInfo(kind="file-mtime", build_stamp=_iso(st.st_mtime))
+    except (ValueError, OverflowError, OSError):
+        # Same backstop `_resolve_row_fetched_at` already applies to its own
+        # `_iso` calls. It matters MORE here: `build_dashboard` calls this
+        # outside `load_with_provenance`'s advisory-failure guard, so an
+        # unconvertible mtime would take down the whole dashboard build.
+        return ProvenanceInfo(
+            kind="unavailable",
+            build_stamp=None,
+            reason=f"backing file mtime out of convertible range: {p} ({st.st_mtime!r})",
+        )
+
+
+def _datetime_to_epoch_seconds(col: Any) -> Any:
+    """Datetime-typed column -> epoch seconds via unit-aware arithmetic
+    (datetime64[ns]/[us]/[s], tz-aware or naive-as-UTC all collapse
+    correctly). NOT ``to_numeric``, which on datetime64 yields raw µs/ns
+    integers the ms-guard's single division cannot bring into range."""
+    return (
+        pd.to_datetime(col, utc=True) - pd.Timestamp("1970-01-01", tz="UTC")
+    ).dt.total_seconds()
 
 
 def _resolve_row_fetched_at(loaded_value: Any, column: str) -> ProvenanceInfo:
     """``row-fetched-at`` provenance: the OLDEST/newest ``fetched_at`` values
     actually recorded in the loaded frame. A datetime-typed column (a bypass
-    writer persisting ``pd.Timestamp``s) converts unit-independently first —
-    ``to_numeric`` on datetime64 yields raw µs/ns integers that the ms-guard's
-    single division cannot bring into range. Numeric millisecond-magnitude
-    values are then normalized to seconds via ``IncrementalParquetDataset``'s
-    OWN documented ms-guard (DW-A3-P10) — reused directly (not reimplemented)
-    so the two stay in lockstep by construction. Anything still outside
-    ``datetime.fromtimestamp``'s range after that (e.g. raw epoch-µs/ns
-    integers) degrades to ``unavailable`` — never a crash — as does an empty
-    frame or an all-NULL column."""
+    writer persisting ``pd.Timestamp``s) converts unit-independently first.
+    Numeric millisecond-magnitude values are then normalized to seconds via
+    ``IncrementalParquetDataset``'s OWN documented ms-guard (DW-A3-P10) —
+    reused directly (not reimplemented) so the two stay in lockstep by
+    construction. A column that coerces to NOTHING numerically and is not
+    numeric to begin with gets one more chance as a datetime (the object-dtype
+    ISO-string / ``datetime.datetime`` shapes a bypass writer round-trips
+    through Parquet are genuine recorded provenance ``to_numeric`` simply
+    cannot see) — tried only AFTER the numeric path so a numeric column is
+    never re-interpreted as a date. Anything still outside
+    ``datetime.fromtimestamp``'s range (e.g. raw epoch-µs/ns integers)
+    degrades to ``unavailable`` — never a crash — as does an empty frame or
+    an all-NULL column."""
     if column not in loaded_value.columns:
         return ProvenanceInfo(
             kind="unavailable",
@@ -123,18 +158,31 @@ def _resolve_row_fetched_at(loaded_value: Any, column: str) -> ProvenanceInfo:
         )
     col = loaded_value[column]
     if pd.api.types.is_datetime64_any_dtype(col):
-        # A genuine recorded time in datetime form — convert via unit-aware
-        # arithmetic (datetime64[ns]/[us]/[s], tz-aware or naive-as-UTC all
-        # collapse correctly), not via to_numeric magnitude guessing.
-        col = (
-            pd.to_datetime(col, utc=True) - pd.Timestamp("1970-01-01", tz="UTC")
-        ).dt.total_seconds()
+        col = _datetime_to_epoch_seconds(col)
     seconds = IncrementalParquetDataset._to_epoch_seconds(col).dropna()
+    if seconds.empty and not pd.api.types.is_numeric_dtype(col):
+        with warnings.catch_warnings():
+            # This parse is a SPECULATIVE probe on a column we already know is
+            # not numeric — pandas' "could not infer format" UserWarning is
+            # about our guess, not about the operator's data, and leaking it
+            # would read as a data defect on a path that degrades quietly.
+            warnings.simplefilter("ignore", UserWarning)
+            parsed = pd.to_datetime(col, utc=True, errors="coerce")
+        if parsed.notna().any():
+            seconds = _datetime_to_epoch_seconds(parsed).dropna()
     if seconds.empty:
         return ProvenanceInfo(
             kind="unavailable",
             build_stamp=None,
-            reason=f"no {column!r} values recorded (0 rows or all-NULL)",
+            # Say which of the two it actually is: claiming "0 rows or
+            # all-NULL" about a column that is FULL of unparseable values is
+            # a false reason, and an honest reason is the whole contract on
+            # the unavailable path (C4).
+            reason=(
+                f"no {column!r} values recorded (0 rows or all-NULL)"
+                if col.isna().all()
+                else f"no parseable {column!r} values (dtype {col.dtype})"
+            ),
         )
     try:
         return ProvenanceInfo(

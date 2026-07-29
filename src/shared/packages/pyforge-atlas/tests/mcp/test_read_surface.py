@@ -1,4 +1,6 @@
-"""AC-2 — the dataset-read surface is a REAL ``catalog.load`` passthrough.
+"""AC-2 — the dataset-read surface is a REAL ``catalog.load`` passthrough,
+returned since Story I4 inside an AD-17 build-provenance envelope (the
+loaded object itself is still handed back untouched, under ``value``).
 
 Offline (AD-11): the session is faked, but the catalog is a genuine
 ``kedro.io.DataCatalog`` seeded with a ``MemoryDataset``, so the exercise
@@ -428,3 +430,65 @@ def test_resolve_for_catalog_dataset_non_local_parquet_degrades_honestly():
     assert info.kind == "unavailable"
     assert "non-local protocol 'memory'" in info.reason
     assert "not found" not in info.reason
+
+
+def test_resolve_row_fetched_at_reads_object_dtype_timestamp_strings():
+    """Review pass 4: a ``fetched_at`` column that round-tripped through
+    Parquet as object-dtype ISO-8601 STRINGS (or ``datetime.datetime``
+    objects) is genuine recorded provenance. ``to_numeric`` cannot see it, so
+    before pass 4 it was discarded AND misreported as "0 rows or all-NULL";
+    it must now yield the real oldest/newest stamps."""
+    import datetime
+
+    import pandas as pd
+
+    from pyforge.atlas import provenance as _provenance_mod
+
+    frame = pd.DataFrame({"fetched_at": ["2020-01-02T00:00:00Z", "2020-01-01T00:00:00Z"]})
+    assert frame["fetched_at"].dtype == object  # the shape under test
+
+    info = _provenance_mod._resolve_row_fetched_at(frame, "fetched_at")
+    assert info.kind == "row-fetched-at"
+    assert info.build_stamp == datetime.datetime.fromtimestamp(
+        1_577_836_800, tz=datetime.UTC  # 2020-01-01T00:00:00Z (the OLDEST)
+    ).isoformat()
+    assert info.build_stamp_newest == datetime.datetime.fromtimestamp(
+        1_577_923_200, tz=datetime.UTC  # 2020-01-02T00:00:00Z
+    ).isoformat()
+
+
+def test_resolve_row_fetched_at_unparseable_column_states_an_honest_reason():
+    """Review pass 4: a column FULL of unparseable values is not "0 rows or
+    all-NULL" — claiming so is a false statement about the data on the one
+    path (C4) whose entire contract is an honest reason. It must say what is
+    actually wrong, and must still not crash."""
+    import pandas as pd
+
+    from pyforge.atlas import provenance as _provenance_mod
+
+    info = _provenance_mod._resolve_row_fetched_at(
+        pd.DataFrame({"fetched_at": ["not-a-time", "also-not-a-time"]}), "fetched_at"
+    )
+    assert info.kind == "unavailable"
+    assert info.build_stamp is None
+    assert "no parseable 'fetched_at' values" in info.reason
+    assert "all-NULL" not in info.reason  # the false reason it used to give
+
+    # The genuinely-empty case keeps saying so.
+    empty = _provenance_mod._resolve_row_fetched_at(
+        pd.DataFrame({"fetched_at": pd.Series([], dtype="float64")}), "fetched_at"
+    )
+    assert empty.kind == "unavailable"
+    assert "0 rows or all-NULL" in empty.reason
+
+
+def test_resolve_for_file_refuses_a_directory_mtime(tmp_path):
+    """Review pass 4: a directory has an mtime too, but it describes the
+    CONTAINER, not the data — reporting it as ``file-mtime`` is exactly the
+    plausible-but-wrong stamp AD-17 exists to refuse."""
+    from pyforge.atlas import provenance as _provenance_mod
+
+    info = _provenance_mod.resolve_for_file(tmp_path)
+    assert info.kind == "unavailable"
+    assert info.build_stamp is None
+    assert "not a regular file" in info.reason
