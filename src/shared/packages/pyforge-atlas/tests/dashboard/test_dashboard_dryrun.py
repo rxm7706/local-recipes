@@ -350,6 +350,7 @@ def test_shell_pages_state_unavailable_provenance_honestly(dashboard):
         "behind-upstream",
         "whodepends",
     }
+    no_bsl_ids = {"behind-upstream", "whodepends"}
     seen = set()
     for page in dashboard.pages:
         if page.id not in shell_ids:
@@ -358,4 +359,11 @@ def test_shell_pages_state_unavailable_provenance_honestly(dashboard):
         card = next(c for c in page.components if isinstance(c, vm.Card))
         assert "unavailable" in card.text
         assert "AD-17" in card.text
+        # The TWO distinct unavailable states stay distinguishable — a
+        # file-absent bsl-shell page must not read like a no-data-function
+        # page (and vice versa).
+        if page.id in no_bsl_ids:
+            assert "no data function registered" in card.text
+        else:
+            assert "backing file not found" in card.text
     assert seen == shell_ids

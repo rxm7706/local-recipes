@@ -3,8 +3,9 @@
 Every function here does exactly ONE of the two allowed shapes:
 
 1. ``session.run(pipeline_name=<name>)`` — a pipeline trigger, or
-2. ``catalog.load(<dataset>)`` — a dataset read, wrapped in a build-
-   provenance envelope (Story I4, AD-17) via the ``_provenance`` seam.
+2. ``_provenance.load_with_provenance(catalog, <dataset>)`` — ONE seam call
+   behind which the ``catalog.load`` itself AND its build-provenance
+   envelope live (Story I4, AD-17).
 
 NO metric/business logic lives here — metric semantics live in nodes
 (legacy CLIs/views until D1, BSL after). Enforced by the AST scan in
