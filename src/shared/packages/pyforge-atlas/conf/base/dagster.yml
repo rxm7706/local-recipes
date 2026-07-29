@@ -4,6 +4,17 @@
 # (op-subset) + schedule + profile config + the per-op timeouts / retry on top
 # of this. `dagster`/`kedro_dagster` are imported ONLY by that glue module
 # (AD-1); NEVER by pipeline/node/dataset/mcp code.
+#
+# `in_process` IS LOAD-BEARING FOR RUN ADMISSION (Story 10.6, AD-23; DW-AD23-2).
+# On the Dagster plane the AD-23 locks are acquired inside the
+# `before_pipeline_run_hook_<job>` OP, by pyforge.atlas.admission.RunAdmissionHooks.
+# An OS file lock (`fcntl.flock`) belongs to the open file description of the process
+# that took it, so under a MULTIPROCESS executor that op's subprocess would exit the
+# moment the op finished and the kernel would drop every lock BEFORE the first node
+# ran — admission would silently become a no-op on this plane while still reporting
+# success. Do NOT swap this for `multiprocess`/`k8s`/`celery` (e.g. during DW-C1-1's
+# daemon bring-up) without first moving acquisition out of the op, or admission on the
+# Dagster plane is void. The CLI and MCP planes are unaffected either way.
 executors:
   in_process:
     in_process: {}

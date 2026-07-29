@@ -60,6 +60,12 @@ attrs = ">=26.1.0"                    # imported as `attr` (observability.py)
 duckdb = ">=1.5.5"
 ibis-framework = ">=12.0.0"
 pandera = ">=0.32.1"
+# Story 10.6 (AD-23): `admission.py` imports `filelock` at MODULE level for the
+# per-output-dataset run-admission lock. Already in the env, but only TRANSITIVELY
+# (via dagster + ibis-framework-core) — AUD-ATLAS-010: an undeclared module-level
+# import is a runtime dependency whether or not the manifest says so. Kept
+# byte-for-byte in step with the pyproject.toml [project].dependencies entry.
+filelock = ">=3.32.0"
 vizro = ">=0.1.59"
 dagster = ">=1.13.15"
 # NOT declarable here: `boring_semantic_layer`. It is one of the Spec's two
