@@ -961,7 +961,17 @@ pass. Excluded already-filed items (AUD-ATLAS-001–013, AUD-WARDEN-001–010, A
   shipped = shared Kedro plane only).
 - **BMAD pickup:** SEED-ATLAS-046 — file/DB lock or Dagster run-queue across MCP + CLI; concurrent second
   writer must reject/queue; re-promote AD-23 only after proof; close DW-AD23-1.
-- **Status:** deferred
+- **Status:** **fixed 2026-07-29** — the deferral above is history, not live state. pyforge-atlas
+  Story 10.6 (`spec-10-6-make-run-admission-real-or-stop-claiming-it.md`) built it:
+  `pyforge/atlas/admission.py` + `RunAdmissionHooks` in `settings.HOOKS` take one `filelock` OS
+  file lock per output dataset, so a concurrent second writer over an overlapping set is rejected
+  (or retried to an explicitly requested finite deadline). Every exit criterion this entry set is
+  met: the concurrent second writer is rejected — proven by a two-process gate that spawns a real
+  second OS process (`tests/test_admission.py`) — `DW-AD23-1` is closed in the atlas ledger, and
+  spine AD-23 was re-promoted only on that proof, with its three residual boundaries carried
+  explicitly (single-machine `flock`; process-local release on the Dagster plane; before-hook
+  stranding) as `DW-AD23-2`. The Dagster run-queue option was explicitly rejected: it governs only
+  daemon-routed runs and would leave every MCP trigger unguarded.
 
 ### AUD-ATLAS-047 — SPEC claims credentialed parity sign-off + legacy retirement (High / stale-doc)
 - **Evidence:** retirement gate refuses fixture-mode; legacy `conda_forge_atlas.py` still live
@@ -1236,7 +1246,7 @@ Still deferred (DW): atlas 032/046/049.
 | AUD-ATLAS-032 | **KEEP_DEFER** — DW-B7-4 streaming BOM |
 | AUD-ATLAS-036 | **DEMOTE_DOC** — intentional cursor; DW-G3 note |
 | AUD-ATLAS-039 | **IMPLEMENT** — downloads `groupby.max` |
-| AUD-ATLAS-046 | **KEEP_DEFER** — DW-AD23-1 |
+| AUD-ATLAS-046 | ~~**KEEP_DEFER** — DW-AD23-1~~ → **FIXED 2026-07-29** by atlas Story 10.6; DW-AD23-1 closed, AD-23 re-promoted on a two-process gate |
 | AUD-ATLAS-049 | **KEEP_DEFER** — DW-F1-1 (docs already closed) |
 
 **Verified:** `pyforge-warden-test` → **1962 passed**; `kedro-test` → **809 passed**, 19 skipped.

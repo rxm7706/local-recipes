@@ -7147,7 +7147,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/yarl-1.24.5-pyh7db6752_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/yaspin-3.4.0-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/zipp-4.1.0-pyhcf101f3_0.conda
-      - conda_source: pyforge-atlas[2757826f] @ src/shared/packages/pyforge-atlas
+      - conda_source: pyforge-atlas[51253508] @ src/shared/packages/pyforge-atlas
       - conda_source: pyforge-warden[76e29aa7] @ src/shared/packages/pyforge-warden
       - pypi: https://files.pythonhosted.org/packages/47/15/7da7c0efa3ecfb2b69ef2283e17b93330109d618afe5c788b9bc81807da4/returns-0.28.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/8b/bb/96c99dfa9c08c43f8dc31e3385040a3e4dabbba791ed34ae018934653a3b/boring_semantic_layer-0.3.16-py3-none-any.whl
@@ -7548,7 +7548,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/yaml-0.2.5-h925e9cb_3.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zlib-1.3.2-h8088a28_2.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zstd-1.5.7-hbf9d68e_6.conda
-      - conda_source: pyforge-atlas[d55614df] @ src/shared/packages/pyforge-atlas
+      - conda_source: pyforge-atlas[b1fe4206] @ src/shared/packages/pyforge-atlas
       - conda_source: pyforge-warden[1db3951b] @ src/shared/packages/pyforge-warden
       - pypi: https://files.pythonhosted.org/packages/47/15/7da7c0efa3ecfb2b69ef2283e17b93330109d618afe5c788b9bc81807da4/returns-0.28.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/8b/bb/96c99dfa9c08c43f8dc31e3385040a3e4dabbba791ed34ae018934653a3b/boring_semantic_layer-0.3.16-py3-none-any.whl
@@ -7947,7 +7947,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/win-64/yaml-0.2.5-h6a83c73_3.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/zlib-1.3.2-hfd05255_2.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/zstd-1.5.7-h534d264_6.conda
-      - conda_source: pyforge-atlas[5de8b037] @ src/shared/packages/pyforge-atlas
+      - conda_source: pyforge-atlas[3542f35e] @ src/shared/packages/pyforge-atlas
       - conda_source: pyforge-warden[c81cea16] @ src/shared/packages/pyforge-warden
       - pypi: https://files.pythonhosted.org/packages/47/15/7da7c0efa3ecfb2b69ef2283e17b93330109d618afe5c788b9bc81807da4/returns-0.28.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/8b/bb/96c99dfa9c08c43f8dc31e3385040a3e4dabbba791ed34ae018934653a3b/boring_semantic_layer-0.3.16-py3-none-any.whl
@@ -45404,7 +45404,7 @@ packages:
     - zstd >=1.5.7,<1.6.0a0
   size: 388453
   timestamp: 1764777142545
-- conda_source: pyforge-atlas[2757826f] @ src/shared/packages/pyforge-atlas
+- conda_source: pyforge-atlas[3542f35e] @ src/shared/packages/pyforge-atlas
   variants:
     target_platform: noarch
   depends:
@@ -45421,6 +45421,59 @@ packages:
   - duckdb >=1.5.5
   - ibis-framework >=12.0.0
   - pandera >=0.32.1
+  - filelock >=3.32.0
+  - vizro >=0.1.59
+  - dagster >=1.13.15
+  - openlineage-python >=1.52.0
+  - opentelemetry-api >=1.44.0
+  - opentelemetry-sdk >=1.44.0
+  - a2a-sdk >=1.1.2
+  license: MIT
+  host_packages:
+  - conda: https://conda.anaconda.org/conda-forge/noarch/ca-certificates-2026.7.22-h4c7d964_0.conda
+  - conda: https://conda.anaconda.org/conda-forge/noarch/editables-0.6-pyhcf101f3_0.conda
+  - conda: https://conda.anaconda.org/conda-forge/noarch/hatchling-1.31.0-pyhcf101f3_0.conda
+  - conda: https://conda.anaconda.org/conda-forge/noarch/packaging-26.2-pyhc364b38_0.conda
+  - conda: https://conda.anaconda.org/conda-forge/noarch/pathspec-1.1.1-pyhd8ed1ab_0.conda
+  - conda: https://conda.anaconda.org/conda-forge/noarch/pluggy-1.6.0-pyhf9edf01_1.conda
+  - conda: https://conda.anaconda.org/conda-forge/noarch/python_abi-3.14-8_cp314.conda
+  - conda: https://conda.anaconda.org/conda-forge/noarch/tomli-2.4.1-pyhcf101f3_0.conda
+  - conda: https://conda.anaconda.org/conda-forge/noarch/trove-classifiers-2026.6.1.19-pyhcf101f3_0.conda
+  - conda: https://conda.anaconda.org/conda-forge/noarch/tzdata-2026c-h151e31d_0.conda
+  - conda: https://conda.anaconda.org/conda-forge/win-64/bzip2-1.0.8-h0ad9c76_9.conda
+  - conda: https://conda.anaconda.org/conda-forge/win-64/libexpat-2.8.1-hac47afa_1.conda
+  - conda: https://conda.anaconda.org/conda-forge/win-64/libffi-3.5.2-h3d046cb_0.conda
+  - conda: https://conda.anaconda.org/conda-forge/win-64/liblzma-5.8.3-hfd05255_0.conda
+  - conda: https://conda.anaconda.org/conda-forge/win-64/libmpdec-4.0.0-hfd05255_1.conda
+  - conda: https://conda.anaconda.org/conda-forge/win-64/libsqlite-3.53.4-hf5d6505_0.conda
+  - conda: https://conda.anaconda.org/conda-forge/win-64/libzlib-1.3.2-hfd05255_2.conda
+  - conda: https://conda.anaconda.org/conda-forge/win-64/openssl-3.6.3-hf411b9b_0.conda
+  - conda: https://conda.anaconda.org/conda-forge/win-64/python-3.14.6-h4b44e0e_101_cp314.conda
+  - conda: https://conda.anaconda.org/conda-forge/win-64/tk-8.6.13-h967ab96_3.conda
+  - conda: https://conda.anaconda.org/conda-forge/win-64/ucrt-10.0.26100.0-h57928b3_0.conda
+  - conda: https://conda.anaconda.org/conda-forge/win-64/uv-0.11.32-h7ca4a90_0.conda
+  - conda: https://conda.anaconda.org/conda-forge/win-64/vc-14.5-h1b7c187_39.conda
+  - conda: https://conda.anaconda.org/conda-forge/win-64/vc14_runtime-14.51.36231-h1b9f54f_39.conda
+  - conda: https://conda.anaconda.org/conda-forge/win-64/vcomp14-14.51.36231-h1b9f54f_39.conda
+  - conda: https://conda.anaconda.org/conda-forge/win-64/zstd-1.5.7-h534d264_6.conda
+- conda_source: pyforge-atlas[51253508] @ src/shared/packages/pyforge-atlas
+  variants:
+    target_platform: noarch
+  depends:
+  - python >=3.14
+  - python *
+  - kedro >=1.5.0
+  - kedro-datasets >=9.5.0
+  - kedro-dagster >=0.7.0
+  - pandas >=3.0.3
+  - pyarrow >=24.0.0
+  - pyyaml >=6.0.3
+  - pydantic >=2.13.4
+  - attrs >=26.1.0
+  - duckdb >=1.5.5
+  - ibis-framework >=12.0.0
+  - pandera >=0.32.1
+  - filelock >=3.32.0
   - vizro >=0.1.59
   - dagster >=1.13.15
   - openlineage-python >=1.52.0
@@ -45460,7 +45513,7 @@ packages:
   - conda: https://conda.anaconda.org/conda-forge/noarch/tomli-2.4.1-pyhcf101f3_0.conda
   - conda: https://conda.anaconda.org/conda-forge/noarch/trove-classifiers-2026.6.1.19-pyhcf101f3_0.conda
   - conda: https://conda.anaconda.org/conda-forge/noarch/tzdata-2026c-h151e31d_0.conda
-- conda_source: pyforge-atlas[5de8b037] @ src/shared/packages/pyforge-atlas
+- conda_source: pyforge-atlas[b1fe4206] @ src/shared/packages/pyforge-atlas
   variants:
     target_platform: noarch
   depends:
@@ -45477,57 +45530,7 @@ packages:
   - duckdb >=1.5.5
   - ibis-framework >=12.0.0
   - pandera >=0.32.1
-  - vizro >=0.1.59
-  - dagster >=1.13.15
-  - openlineage-python >=1.52.0
-  - opentelemetry-api >=1.44.0
-  - opentelemetry-sdk >=1.44.0
-  - a2a-sdk >=1.1.2
-  license: MIT
-  host_packages:
-  - conda: https://conda.anaconda.org/conda-forge/noarch/ca-certificates-2026.7.22-h4c7d964_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/editables-0.6-pyhcf101f3_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/hatchling-1.31.0-pyhcf101f3_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/packaging-26.2-pyhc364b38_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/pathspec-1.1.1-pyhd8ed1ab_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/pluggy-1.6.0-pyhf9edf01_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/python_abi-3.14-8_cp314.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/tomli-2.4.1-pyhcf101f3_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/trove-classifiers-2026.6.1.19-pyhcf101f3_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/noarch/tzdata-2026c-h151e31d_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/bzip2-1.0.8-h0ad9c76_9.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/libexpat-2.8.1-hac47afa_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/libffi-3.5.2-h3d046cb_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/liblzma-5.8.3-hfd05255_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/libmpdec-4.0.0-hfd05255_1.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/libsqlite-3.53.4-hf5d6505_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/libzlib-1.3.2-hfd05255_2.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/openssl-3.6.3-hf411b9b_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/python-3.14.6-h4b44e0e_101_cp314.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/tk-8.6.13-h967ab96_3.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/ucrt-10.0.26100.0-h57928b3_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/uv-0.11.32-h7ca4a90_0.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/vc-14.5-h1b7c187_39.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/vc14_runtime-14.51.36231-h1b9f54f_39.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/vcomp14-14.51.36231-h1b9f54f_39.conda
-  - conda: https://conda.anaconda.org/conda-forge/win-64/zstd-1.5.7-h534d264_6.conda
-- conda_source: pyforge-atlas[d55614df] @ src/shared/packages/pyforge-atlas
-  variants:
-    target_platform: noarch
-  depends:
-  - python >=3.14
-  - python *
-  - kedro >=1.5.0
-  - kedro-datasets >=9.5.0
-  - kedro-dagster >=0.7.0
-  - pandas >=3.0.3
-  - pyarrow >=24.0.0
-  - pyyaml >=6.0.3
-  - pydantic >=2.13.4
-  - attrs >=26.1.0
-  - duckdb >=1.5.5
-  - ibis-framework >=12.0.0
-  - pandera >=0.32.1
+  - filelock >=3.32.0
   - vizro >=0.1.59
   - dagster >=1.13.15
   - openlineage-python >=1.52.0
