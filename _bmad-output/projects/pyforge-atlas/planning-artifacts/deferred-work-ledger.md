@@ -1,9 +1,9 @@
 ---
 doc_type: deferred-work-ledger
 project: pyforge-atlas
-date: 2026-07-25
+date: 2026-07-29
 status: restored
-entries: 52
+entries: 53
 ---
 
 # pyforge-atlas — deferred-work ledger (RESTORED, tracked)
@@ -574,6 +574,30 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
     wiki_events unit tests). The live wiki store is DW-H1; the crews' agno/LLM synthesis is DW-H2.
 
 ---
+
+## DW-I4-1 — 10.5 finalized on a spent review budget, not on convergence (LOW) — DEFERRED
+
+- source_spec: `spec-10-5-stamp-advisory-data-with-its-build-provenance-2.md` (Epic 10 / Story I4, AUD-ATLAS-043/044)
+  origin: review-budget-followup (bmad-loop run `20260728-201438-15bd`)
+  summary: The story finalized `done` with the verify gate GREEN (kedro-test 803 passed,
+    kedro-catalog-check 47) — but the review pass was still RECOMMENDING an independent
+    follow-up when `limits.max_followup_reviews = 1` was spent. The story therefore closed
+    on a BUDGET CAP, not because its reviewer was satisfied. That distinction matters here
+    more than usual: this same story's FIRST drive produced a faithful implementation of a
+    wrong contract and had to be reverted, so "the reviewer still wanted another look" is
+    not a formality. C1-C6 were independently verified in the shipped code afterwards
+    (per-kind resolution, `provenance_kind` vocabulary, oldest/newest range, null+reason,
+    `SCHEMA_VERSION`, dashboard stamps), which is why this is LOW rather than open risk —
+    but the recommended pass itself never ran.
+  resolution: run one independent review of `provenance.py` + the `read_dataset` envelope
+    against C1-C6, ideally fresh-context (the pyforge-atlas retro A1 finding: in-loop
+    reviewers inherit the implementation's assumptions; the INDEPENDENT pass is what caught
+    B1/B2/B5/B7/G2). Not a blocker for I5.
+  status: open
+  promoted: 2026-07-29 from the gitignored Tier-3 `implementation-artifacts/deferred-work.md`,
+    where it was recorded as the generic id `DW-1`. Renamed to `DW-I4-1` to match this
+    ledger's `DW-<story>-<n>` convention and to stop a bare `DW-1` colliding with the next
+    run that emits one.
 
 ## 24. Sprint status
 
