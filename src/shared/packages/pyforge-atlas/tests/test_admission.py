@@ -1165,6 +1165,38 @@ def test_release_does_not_abort_mid_loop_when_one_handle_raises(tmp_path):
     assert _is_free(tmp_path, "b"), "the loop aborted at the raising handle"
 
 
+def test_release_frees_the_tail_when_a_ticket_has_fewer_names_than_locks(tmp_path, caplog):
+    """A ticket with `len(datasets) < len(locks)` must still release EVERY lock.
+
+    `release()` zips `datasets` against `locks`, so a short `datasets` would truncate the
+    zip and silently leak the tail — locks held for the life of the process, which is the
+    unreclaimable state correctness requirement 1 exists to prevent. `release()` pads
+    `names` with `None` to stop exactly that.
+
+    Added 2026-07-30 by the owed I5 follow-up review. The padding branch was the ONE
+    surviving mutant of 8 injected across the pass-4 surfaces: deleting
+    `names += [None] * (len(locks) - len(names))` left all 98 tests green, so neither the
+    tail-release guarantee nor the `logger.error` its own comment promises was verified.
+    """
+    ticket = acquire(["a", "b"], run_id="r1", lock_root=tmp_path)
+
+    # Two locks, ONE name — the malformed shape the padding exists for.
+    malformed = AdmissionTicket(
+        run_id=ticket.run_id,
+        datasets=("a",),
+        locks=(ticket.locks[0], ticket.locks[1]),
+        lock_root=ticket.lock_root,
+    )
+    with caplog.at_level("ERROR", logger=admission.logger.name):
+        release(malformed)  # must not raise
+
+    assert _is_free(tmp_path, "a")
+    assert _is_free(tmp_path, "b"), (
+        "the tail lock was never released — zip() truncated to the shorter sequence"
+    )
+    assert "is malformed" in caplog.text, "a malformed ticket must be loud, not silent"
+
+
 def test_a_second_ticket_under_one_run_id_is_stacked_not_overwritten(tmp_path, caplog):
     """kedro-dagster reuses ONE run id (the build-time session id) for every job. Overwriting
     would orphan the first ticket's locks — or let run A's after-hook release run B's."""
