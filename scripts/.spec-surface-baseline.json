@@ -1105,10 +1105,10 @@
   "files": {
    "docs/dashboard/README.md": "970ed18c67aa61ca4a0e12e81d4cb3054f7ffaa1",
    "docs/dashboard/check_render.js": "17fedbfc1c3e52fef4dc4aec6fa6dbe39faa048e",
-   "docs/dashboard/generate.py": "6a5e1ed23409bb1f41a35f18d7677b1cdced8137",
+   "docs/dashboard/generate.py": "0a97fd0e78bef42936751c697719f18038b2a200",
    "docs/dashboard/index.html": "d5826fdce91296b57a35f3dbf83de3043c3d372c"
   },
-  "memlog": "053540841ad753183c37a4d8c62226ff663cbdf7"
+  "memlog": "b396943ba9e70bb212f51801c34837020c9e9d1d"
  },
  "pyforge-marshal/spec-genesis-installer": {
   "files": {},
@@ -1155,12 +1155,12 @@
  },
  "pyforge-marshal/spec-regenerable-factory": {
   "files": {
-   "scripts/bmad_drift_check.py": "9ca591ea9316ebfc9857b9e880e832202ee9d8a6",
+   "scripts/bmad_drift_check.py": "2395d0161b242c7f8cbdda38ba40ac8552c4579d",
    "scripts/deferred_work_check.py": "650b88d946430125916c4d5b248bcda10627ccdf",
    "scripts/dream_chain_check.py": "360aa1b964a42543439408e95b6911b8072b2874",
    "scripts/spec_surface_check.py": "27a430fe7270bba2445bd665c411e10fbd5bf67a"
   },
-  "memlog": "e6d6c725fb56accf7ea0a54b7673c967f22e7934"
+  "memlog": "b7191ceff141f50b35bcb1bc4af9a10de7581035"
  },
  "pyforge-mason/spec-copilot-cli-packaging": {
   "files": {},

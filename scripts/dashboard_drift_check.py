@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
-"""Detector: the committed `docs/dashboard/data.js` still tells the truth.
+"""Detector: the board still tells the truth — the committed `data.js`, and the
+tracked status ledgers the deploy now reads.
 
-Two ways the board goes quietly wrong, both observed live on 2026-07-29/30, both
+Three ways it goes quietly wrong. The first two were observed live on
+2026-07-29/30; the third is the failure mode the fix for them introduced. All are
 invisible to every existing detector (`dashboard-check` proves the board's
 JavaScript *runs*, not that its contents are current).
 
@@ -25,7 +27,14 @@ and nothing complained. The next squash-merged epic would do it again.
 on `_first_or_second_id` below — but it means such a project's story list is
 maintained by hand, so a newly added story is silently absent from the board.
 
-This detector is deliberately LOCAL-ONLY: check 1 reads each project's
+**3. A stale tracked twin (`twin-stale` / `twin-missing`).**
+`generate.py:apply_tracked_ledger` now reads
+`planning-artifacts/sprint-status-ledger.yaml` at deploy time, so the board no
+longer needs commit archaeology. But that only moves the trust: a twin that has
+drifted from its Tier-3 feed makes the DEPLOY render the stale set, which is the
+original bug wearing a different hat. `sprint-ledger-sync` regenerates them.
+
+This detector is deliberately LOCAL-ONLY: it reads each project's
 `sprint-status.yaml`, which is gitignored Tier-3 that CI cannot see. That is the
 same asymmetry that caused the bug, so the check lives where the truth lives.
 """
@@ -104,11 +113,44 @@ def main() -> int:
     data = _load_data_js()
     projects = data.get("projects", {})
     findings: list[str] = []
-    checked_done = checked_stories = 0
+    checked_done = checked_stories = checked_twin = 0
 
     for key, proj in sorted(projects.items()):
         stories = _board_stories(proj)
         board_ids = {s[0] for s in stories}
+
+        # --- check 3: the TRACKED twin still matches the Tier-3 feed ----------
+        # The twin is what CI reads (`apply_tracked_ledger`), so a stale twin is a
+        # board that lies at deploy time — the same failure the twin was added to
+        # cure, just relocated. Promoting is `sprint-ledger-sync`.
+        rel_feed = gen.PROJECT_SOURCES.get(key)
+        slug_ = gen._KEY_SLUG_OVERRIDE.get(key, f"pyforge-{key}")
+        twin = (REPO_ROOT / "_bmad-output" / "projects" / slug_
+                / "planning-artifacts" / "sprint-status-ledger.yaml")
+        feed_p = REPO_ROOT / rel_feed if rel_feed else None
+        if feed_p and feed_p.is_file() and twin.is_file():
+            feed_map = gen.parse_sprint_status(feed_p)
+            twin_map = gen.parse_sprint_status(twin)
+            checked_twin += len(set(feed_map) | set(twin_map))
+            drifted = sorted(
+                k for k in set(feed_map) | set(twin_map)
+                if feed_map.get(k) != twin_map.get(k)
+            )
+            if drifted:
+                shown = ", ".join(drifted[:4]) + ("…" if len(drifted) > 4 else "")
+                findings.append(
+                    f"[twin-stale] {key}: the tracked sprint-status ledger disagrees "
+                    f"with the Tier-3 feed on {len(drifted)} story(ies) ({shown}). CI "
+                    f"reads the TWIN, so the deploy would render the stale set: run "
+                    f"`pixi run -e local-recipes sprint-ledger-sync` and commit."
+                )
+        elif feed_p and feed_p.is_file() and not twin.is_file():
+            findings.append(
+                f"[twin-missing] {key}: has a Tier-3 sprint feed but no tracked "
+                f"ledger at {twin.relative_to(REPO_ROOT)} — CI cannot see this "
+                f"project's completions and will fall back to commit archaeology. "
+                f"Run `pixi run -e local-recipes sprint-ledger-sync`."
+            )
 
         # --- check 1: the committed baseline agrees with the local feed --------
         rel = gen.PROJECT_SOURCES.get(key)
@@ -152,16 +194,16 @@ def main() -> int:
                 f"data.js by hand."
             )
 
-    print(f"dashboard drift — {len(projects)} line(s) · {checked_done} story status(es) "
-          f"cross-checked against sprint feeds · {checked_stories} epics.md heading(s) "
-          f"cross-checked against the board")
+    print(f"dashboard drift — {len(projects)} line(s) · {checked_done} board status(es) "
+          f"vs sprint feeds · {checked_stories} epics.md heading(s) vs the board · "
+          f"{checked_twin} tracked-ledger entry(ies) vs the Tier-3 feeds")
     if findings:
         print(f"\nFINDINGS ({len(findings)}):")
         for f in findings:
             print(f"  ✗ {f}")
         return 1
-    print("\nOK: the committed data.js matches the feeds, and every epics.md story "
-          "is on the board.")
+    print("\nOK: the committed data.js matches the feeds, every epics.md story is on "
+          "the board, and every tracked ledger matches its Tier-3 feed.")
     return 0
 
 

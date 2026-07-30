@@ -1,0 +1,73 @@
+# GENERATED — do not hand-edit. Regenerate with:
+#     pixi run -e local-recipes sprint-ledger-sync
+#
+# TRACKED twin of _bmad-output/projects/pyforge-atlas/implementation-artifacts/sprint-status.yaml
+# which is gitignored Tier-3 (.gitignore:736) and therefore invisible to CI and
+# absent from every fresh clone. The dashboard's deploy-time render reads THIS
+# file, so a story's completion no longer has to be reconstructed from commit
+# subjects — the archaeology that failed when squash-merging PR #132 made Epic
+# 10's bmad-loop merge subjects unreachable from main.
+#
+# Same shape as the Tier-3 feed on purpose: generate.py's parse_sprint_status
+# reads both, so there is no second parser to drift.
+#
+# project: atlas
+# stories: 57
+development_status:
+  0-1-generate-legacy-contextual-skill: done
+  10-1-restore-atlas-dependency-completeness: done
+  10-2-truth-up-the-spec-kernel-and-its-companions: done
+  10-3-uniform-story-spec-frontmatter-without-laundering-provenance: done
+  10-4-preserve-null-identity-under-pandas-3-0: done
+  10-5-stamp-advisory-data-with-its-build-provenance: done
+  10-6-make-run-admission-real-or-stop-claiming-it: done
+  a1-scaffold-the-kedro-pixi-project-via-nebi: done
+  a2-define-the-data-catalog-for-all-sources-outputs: done
+  a3-implement-incrementalparquetdataset-for-ttl-gating: done
+  b1-port-the-conda-side-backbone-phases-into-kedro-nodes: done
+  b10-migration-readiness-datasets-classification-node: done
+  b2-port-the-pypi-and-vulnerability-pipelines: done
+  b3-re-expose-the-data-surface-as-kedro-api-native-mcp-tools: done
+  b4-verify-dataset-parity-against-the-legacy-orchestrator: done
+  b5-port-the-external-refresh-assets: done
+  b6-port-the-seed-gaps-pipeline: done
+  b7-extend-the-universal-sbom-intake: done
+  b8-basilisk-conda-native-vulnerability-ingestion: done
+  b9-release-to-availability-velocity-columns: done
+  c1-integrate-kedro-dagster-for-scheduling-execution: done
+  c2-integrate-kedro-viz-expose-a-pixi-task: done
+  d1-define-the-boring-semantic-layer-bsl-models: done
+  d2-build-the-vizro-dashboard-port-the-28-clis-to-pages: done
+  d3-integrate-vizro-ai-expose-the-nl-interface-as-an-mcp-tool: done
+  e1-implement-the-a2a-communication-interfaces: done
+  e2-integrate-openlineage-opentelemetry: done
+  epic-1: done
+  epic-1-retrospective: done
+  epic-10: done
+  epic-2: done
+  epic-2-retrospective: done
+  epic-3: done
+  epic-3-retrospective: done
+  epic-4: done
+  epic-4-retrospective: done
+  epic-5: done
+  epic-5-retrospective: done
+  epic-6: done
+  epic-6-retrospective: done
+  epic-7: done
+  epic-7-retrospective: done
+  epic-8: done
+  epic-8-retrospective: done
+  epic-9: done
+  epic-9-retrospective: done
+  f1-complete-the-duckdb-consolidation-prove-the-cold-start-claim: done
+  f2-implement-the-data-validation-hook-and-inline-pandera-contracts: done
+  f3-implement-vector-similarity-search-rag-via-duckdb-vss: done
+  f4-dependency-hygiene-node-unified-ci-policy-gate: done
+  g1-compile-the-intelligence-layer-to-pyodide-duckdb-wasm: done
+  g2-emit-parquet-artifacts-to-a-static-web-host: done
+  g3-implement-dagster-sensors-for-near-real-time-ingestion: done
+  h1-scaffold-the-karpathy-wiki-folder-structure-and-agent-personas: done
+  h2-implement-agno-compilation-linting-and-qa-crews: done
+  h3-integrate-la-suite-docs-rest-api-sync: done
+  h4-orchestrate-crews-via-dagster: done

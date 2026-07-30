@@ -1,0 +1,59 @@
+# GENERATED — do not hand-edit. Regenerate with:
+#     pixi run -e local-recipes sprint-ledger-sync
+#
+# TRACKED twin of _bmad-output/projects/pyforge-warden/implementation-artifacts/sprint-status.yaml
+# which is gitignored Tier-3 (.gitignore:736) and therefore invisible to CI and
+# absent from every fresh clone. The dashboard's deploy-time render reads THIS
+# file, so a story's completion no longer has to be reconstructed from commit
+# subjects — the archaeology that failed when squash-merging PR #132 made Epic
+# 10's bmad-loop merge subjects unreachable from main.
+#
+# Same shape as the Tier-3 feed on purpose: generate.py's parse_sprint_status
+# reads both, so there is no second parser to drift.
+#
+# project: warden
+# stories: 43
+development_status:
+  1-1-frozen-contract-verdict-lattice-projection-safety: done
+  1-2-interfaces-null-engine-regression-harness-socket-deny: done
+  1-3-deptry-as-the-first-engine: done
+  1-4-osv-db-offline-provisioning-spike: done
+  1-5-osv-scanner-as-the-second-engine: done
+  1-6-severity-gate-verdict-composition-end-to-end: done
+  1-7-typed-errors-the-no-scan-guard: done
+  1-8-human-machine-report-renderers: done
+  1-9-manifest-discovery-deterministic-selection-the-resolved-scan-set: done
+  2-1-conda-pypi-map-the-ecosystem-identity-predicate: done
+  2-2-non-rendering-extraction-differential-oracle: done
+  2-3-the-full-supported-construct-matrix: done
+  2-4-honest-split-coverage-the-indeterminate-producer: done
+  2-5-name-level-cve-tier-stale-db-cross-ecosystem-non-merge: done
+  2-6-lockfile-extraction-the-locked-closure-vuln-hero-path: done
+  3-1-configurable-policy: done
+  3-2-auditable-expiring-waivers: done
+  3-3-waiver-expiry-warn-only-adoption-on-ramp: done
+  4-1-cyclonedx-sbom-emission: done
+  5-1-actionable-diagnostics-safe-by-default-posture: done
+  5-2-fleet-scale-validation-corpus-oracle-maturation: done
+  6-1-the-versioned-compliancereport-schema-amendment: done
+  6-10-amendment-design-spike-finding-id-families-verdict-encoding-rung-discriminator-fold-semantics: done
+  6-2-license-axis-producer-gate-flags: done
+  6-3-currency-axis-producer-gate-flags: done
+  6-4-kev-feed-provisioning-enrichment-the-fail-on-kev-gate: done
+  6-5-two-mode-policy-integration: done
+  6-6-engine-version-range-pinning: done
+  6-7-epss-feed-the-min-epss-gate: done
+  6-8-baseline-grandfathering: done
+  6-9-fix-pr-actuator: done
+  epic-1: done
+  epic-1-retrospective: done
+  epic-2: done
+  epic-2-retrospective: done
+  epic-3: done
+  epic-3-retrospective: done
+  epic-4: done
+  epic-4-retrospective: done
+  epic-5: done
+  epic-5-retrospective: done
+  epic-6: done
+  epic-6-retrospective: done
