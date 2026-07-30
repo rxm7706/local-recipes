@@ -15,9 +15,9 @@
 # stories: 53
 development_status:
   1-1-package-spine-verdict-lattice-findings-registry-and-the-meta-tests-that-enforce-them: done
-  1-10-render-the-harness-policy-from-the-canonical-effectivepolicy: backlog
-  1-2-story-identity-merge-subject-rendering-and-feed-completeness: backlog
-  1-3-layered-policy-composition-with-provenance-and-validation: backlog
+  1-10-render-the-harness-policy-from-the-canonical-effectivepolicy: done
+  1-2-story-identity-merge-subject-rendering-and-feed-completeness: done
+  1-3-layered-policy-composition-with-provenance-and-validation: done
   1-4-provision-a-loop-home: backlog
   1-5-single-sourced-tier-3-store-via-backlink: backlog
   1-6-isolation-verification-and-home-enumeration: backlog

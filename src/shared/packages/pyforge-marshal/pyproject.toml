@@ -14,9 +14,12 @@ authors = [{ name = "rxm7706" }]
 # here rather than inherited transitively from bmad-loop, even though
 # PyYAML/tomlkit/psutil also happen to resolve in-environment via
 # bmad-loop's own flattened noarch recipe. jsonschema is entirely new
-# surface (envelope + journal schema validation). bmad-loop itself is not
-# yet a declared dependency: adapters/harness_bmadloop.py stays a
-# docstring-only seam this story (no code resolves or invokes it yet).
+# surface (envelope + journal schema validation). bmad-loop itself is
+# still not a declared dependency as of Story 1.10: adapters/harness_bmadloop.py
+# now renders .bmad-loop/policy.toml from a vendored template (verified once
+# against the installed bmad_loop 0.9.0 schema) rather than importing the
+# package at runtime, so no runtime dependency on bmad-loop exists yet.
+# Story 1.9 owns declaring it as Marshal's real packaged dependency.
 dependencies = [
     "PyYAML>=6.0",
     # <0.13.3 matches this repo's own environment cap (root pixi.toml pins

@@ -749,6 +749,12 @@ _bmad-output/projects/*/.bmad-config.user.toml
 .viz/
 .bmad-loop/runs/
 .bmad-loop/cache/
+# Derived artifact (Story 1.10, AD-12/AD-35): rendered whole from the
+# canonical EffectivePolicy by adapters/harness_bmadloop.py on every write --
+# never hand-edited, never tracked (closes the F-1 cross-project bleed where
+# a loop home's hand-edit rode `git push origin HEAD:main` onto every
+# project).
+.bmad-loop/policy.toml
 _bmad/_memory/
 
 # Parked artifact-fork evidence dirs (local-only Tier-3 copies; see each dir's README)
