@@ -47,7 +47,7 @@ These tools wrap the cf_atlas data layer (~16 schema versions, 15 pipeline phase
 
 | Tool | Purpose |
 |---|---|
-| `query_atlas` | Direct SELECT against `packages` (read-only, write-keywords blocked, LIMIT capped). Use for ad-hoc questions when the higher-level tools don't fit. |
+| `query_atlas` | Direct SELECT against `packages`. Use for ad-hoc questions when the higher-level tools don't fit. **Fragment rules (v8.81.0, AUD-CFE-005):** the connection is opened **read-only**; `select` accepts a comma-separated column list (table-qualified, aliased, or wrapped in `COUNT`/`SUM`/`AVG`/`MIN`/`MAX`/`TOTAL`/`ROUND`/`COALESCE`/`LENGTH`/`LOWER`/`UPPER`/`ABS`) — **no subqueries or other functions**; `order_by` accepts columns or ordinals with optional `ASC`/`DESC`/`NULLS FIRST|LAST` — **no expressions** (`RANDOM()`, `CASE WHEN …` are rejected; it used to be interpolated unvalidated); `where` still supports the side-table subqueries documented below, but rejects `;`, `--`, `/* */` and write/DDL keywords. `limit` is clamped to **1–1000** (a negative LIMIT means *no limit* in SQLite). |
 | `package_health` | Full health card for one package — combines Phase B/E/F/G/H/J/K/M/N signals. |
 | `my_feedstocks` | List all feedstocks where a maintainer is in the recipe-maintainers list, with download / version / archived / risk per row. |
 | `staleness_report` | Stalest feedstocks — sortable by `--by-risk` (Phase G CVE counts) or filterable by `--has-vulns` / `--bot-stuck`. |

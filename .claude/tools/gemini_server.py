@@ -65,46 +65,53 @@ def _api_key() -> str | None:
     return os.environ.get("GEMINI_API_KEY")
 
 
-def _post_requests(path: str, payload: dict, timeout: int = 60) -> dict:
+def _require_key() -> str:
     key = _api_key()
     if not key:
         raise RuntimeError("GEMINI_API_KEY is not set")
-    url = f"{_BASE}/{path}?key={key}"
+    return key
+
+
+# AUD-CFE-010: the key used to travel as a `?key=` query parameter, which lands
+# in proxy access logs, browser/CLI history and error strings that echo the URL.
+# Google documents `x-goog-api-key` for exactly this reason. All four transport
+# paths below build the header the same way so none can drift back.
+def _auth_headers(*, json_body: bool = False) -> dict[str, str]:
+    headers = {"x-goog-api-key": _require_key()}
+    if json_body:
+        headers["Content-Type"] = "application/json"
+    return headers
+
+
+def _post_requests(path: str, payload: dict, timeout: int = 60) -> dict:
+    headers = _auth_headers(json_body=True)
+    url = f"{_BASE}/{path}"
     assert requests is not None  # _post binds here only when requests is importable
-    response = requests.post(
-        url, json=payload, headers={"Content-Type": "application/json"}, timeout=timeout
-    )
+    response = requests.post(url, json=payload, headers=headers, timeout=timeout)
     response.raise_for_status()
     return response.json()
 
 def _get_requests(path: str, timeout: int = 30) -> dict:
-    key = _api_key()
-    if not key:
-        raise RuntimeError("GEMINI_API_KEY is not set")
-    url = f"{_BASE}/{path}?key={key}"
+    headers = _auth_headers()
+    url = f"{_BASE}/{path}"
     assert requests is not None  # _get binds here only when requests is importable
-    response = requests.get(url, timeout=timeout)
+    response = requests.get(url, headers=headers, timeout=timeout)
     response.raise_for_status()
     return response.json()
 
 def _post_urllib(path: str, payload: dict, timeout: int = 60) -> dict:
-    key = _api_key()
-    if not key:
-        raise RuntimeError("GEMINI_API_KEY is not set")
-    url = f"{_BASE}/{path}?key={key}"
+    headers = _auth_headers(json_body=True)
+    url = f"{_BASE}/{path}"
     data = json.dumps(payload).encode()
-    req = urllib.request.Request(
-        url, data=data, headers={"Content-Type": "application/json"}, method="POST"
-    )
+    req = urllib.request.Request(url, data=data, headers=headers, method="POST")
     with urllib.request.urlopen(req, timeout=timeout) as resp:
         return json.loads(resp.read())
 
 def _get_urllib(path: str, timeout: int = 30) -> dict:
-    key = _api_key()
-    if not key:
-        raise RuntimeError("GEMINI_API_KEY is not set")
-    url = f"{_BASE}/{path}?key={key}"
-    with urllib.request.urlopen(url, timeout=timeout) as resp:
+    headers = _auth_headers()
+    url = f"{_BASE}/{path}"
+    req = urllib.request.Request(url, headers=headers, method="GET")
+    with urllib.request.urlopen(req, timeout=timeout) as resp:
         return json.loads(resp.read())
 
 # Choose implementation based on availability

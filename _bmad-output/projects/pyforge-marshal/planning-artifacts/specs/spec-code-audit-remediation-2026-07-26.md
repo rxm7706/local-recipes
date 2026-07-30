@@ -1474,3 +1474,144 @@ E       assert nan is None
 That is `AUD-ATLAS-011` (pandas 3.0 `str` dtype coercing `None` → `NaN`, breaking
 None-identity contracts) reproducing on `main`. It is **confirmed OPEN**, is not fixed here —
 that is its own story — and the 6 failures are the ready-made regression set for it.
+
+---
+
+# Incorporation record — wave 2, 2026-07-29: the `AUD-CFE-*` + `AUD-REPO-001` half
+
+> **Added by a separate effort.** Wave 1 (2026-07-27) dispositioned the 49
+> `AUD-ATLAS-*` findings and stated explicitly that `AUD-CFE-*` and
+> `AUD-WARDEN-*` "were out of scope for this effort and carry **no** disposition
+> here". This wave closes the `AUD-CFE-*` set plus `AUD-REPO-001`.
+> `AUD-WARDEN-*` remains backlogged by operator decision — with one exception
+> noted in § 4.
+
+## 1. Method: re-verified against `main`, not read from the branch
+
+Wave 1's standing instruction was followed: **no `Status:` line above was
+trusted.** Every finding was re-checked against the shipped tree before any edit.
+All ten `AUD-CFE-*` findings and `AUD-REPO-001` were confirmed **OPEN on `main`**.
+
+`AUD-REPO-001` was verifiable by absence: `tests/packaging/` held only a stale
+`__pycache__/` and `pyforge-deps-test` was not in `pixi.toml`.
+
+## 2. The root cause wave 1 could not have seen
+
+**PR #131's path-guard remediation does not work, and never did.**
+
+`AUD-CFE-001/002/006` on that branch import a helper module
+`scripts/_path_guard.py`. **The branch does not contain that file.** A fresh
+checkout of `fix/code-audit-remediation-2026-07-26` raises `ImportError` on
+`submit_pr.py`, `recipe_editor.py` and `conda_forge_server.py` — three
+recipe-facing surfaces.
+
+The file existed only as an **untracked working-tree file** on the authoring
+machine, because `/.claude/skills` was listed in `.git/info/exclude`. 919 files
+under that path are tracked, so the rule changed nothing visible — it hid only
+**new** files, from `git status` and therefore from the author.
+
+Two load-bearing files were lost this way:
+
+| File | What it is |
+|---|---|
+| `scripts/_path_guard.py` | the confinement helper AUD-CFE-001/002/006 depend on |
+| `tests/meta/test_dashboard_renders.py` | the correctness assertion that discharged half of atlas retro action **A3** |
+
+Both are now committed. The exclude entry is removed, and
+`tests/meta/test_skill_files_tracked.py` guards the class: it walks the
+filesystem and diffs against `git ls-files`, deliberately **not** using
+`git status` / `git check-ignore`, since both honour the exclude and would report
+clean — the detector would have been suppressed by the very rule it exists to
+catch.
+
+## 3. Disposition of the 12 `AUD-CFE-*` findings + `AUD-REPO-001`
+
+| Status on `main` | Count |
+|---|---|
+| **FIXED** | 10 |
+| **DEFERRED** (product/architecture decision) | 2 |
+| **REFUTED** | 0 |
+
+### 3.1 Fixed
+
+| ID | What landed |
+|---|---|
+| `AUD-CFE-001` | `prepare_branch` validates the slug and confines the resolved dir before `copytree` into a **public fork**. |
+| `AUD-CFE-002` | `execute_actions` confines writes to `recipes/`. A suffix check is not a location check — it would rewrite any `.yaml`/`.yml` in the repo. |
+| `AUD-CFE-005` | `select`/`order_by` allowlists (**`order_by` had no validation at all**); `where` keeps its documented subquery capability but rejects separators/comments/DDL; keywords now match on **word boundaries** (the substring scan rejected any column containing `UPDATE`, e.g. `updated_at`); connection **read-only** and closed; `limit` clamped at both ends. |
+| `AUD-CFE-006` | `trigger_build` confines **before** probing for `recipe.yaml`/`meta.yaml`, so traversal cannot be used to test for files outside the tree. |
+| `AUD-CFE-007` | Two batched queries instead of one per dependency. Also applied to `fetch_atlas_vuln_summary`, which the finding did not name but which leaked its connection identically and could exceed SQLite's host-parameter limit. |
+| `AUD-CFE-008` | `.secrets`, `.env.github`, `.private` moved into the **tracked** `.gitignore`; they were covered only by the local `.git/info/exclude`, so no clone had them. |
+| `AUD-CFE-009` | `http_request` returns the body its annotation promised; `--wait_for_response` is a real boolean (`action="store_true"`); failures print to stderr and exit 1. |
+| `AUD-CFE-010` | Key moved to `x-goog-api-key` on all four transport paths, behind one helper so a new transport cannot reintroduce the query-string form. |
+| `AUD-CFE-011` | Was deferred as "intentional fork sync"; it needed no product decision. `--force-with-lease` after fetching origin, and on rejection it raises with the exact command to inspect what would have been discarded. |
+| `AUD-REPO-001` | `tests/packaging/test_dependency_completeness.py` + `pyforge-deps-test`. Pure stdlib, so it runs in the lean `pyforge-ci` env — a completeness check requiring its own audit targets installed would be circular. Glob-discovered, so a new package is covered the day it lands. |
+
+### 3.2 Deferred, with the reason sharpened
+
+| ID | Why it is not closed here |
+|---|---|
+| `AUD-CFE-003` | MCP sandbox / auth layer is a genuine architecture decision. **Mitigation now real, not just documented:** the three path guards confine every path-taking tool, and `query_atlas` is read-only. |
+| `AUD-CFE-004` | The audit proposed a host/scheme allowlist. **A private-IP or host denylist cannot be adopted as-is:** internal and private hosts are exactly what the documented `<HOST>_BASE_URL` enterprise-mirror routing (JFrog Artifactory, internal PyPI) points at, so a naive SSRF guard would break air-gapped operation. The decision needed is the policy — allowlist source, and its enterprise escape hatch — before any code. |
+
+### 3.3 Reclassified
+
+| ID | Change |
+|---|---|
+| `AUD-CFE-012` | Stays "trusted-operator wrapper" — it grants nothing the operator could not get by invoking the server directly, and every path-taking tool it reaches is now confined. But it **did** have robustness defects (bare `IndexError` on no arguments, malformed JSON reaching a traceback, a JSON array accepted where an object is required, a tool error exiting 0); those are fixed. |
+
+## 4. Findings surfaced *by* this wave
+
+### AUD-WARDEN-010 was still OPEN on `main` — closed
+
+Wave 1's table records `AUD-WARDEN-010 fixed`. That was **branch-scoped**, like
+every other status line. `AUD-REPO-001`'s gate reproduced it on its first run:
+warden's `pyproject.toml` declared `packageurl-python` while the member
+`pixi.toml` omitted it, so the built `.conda` received it only as
+`cyclonedx-python-lib`'s transitive. Fixed — a one-line manifest declaration,
+not warden feature work, and required for the gate to be green.
+
+### Three atlas hard imports are undeclared — BASELINED, not fixed
+
+The gate also found four undeclared module-level imports in `pyforge-atlas`. One
+(`kedro_dagster`) was a one-line `pyproject.toml` omission affecting wheel
+metadata only, and was fixed. The other three are the owning package's call and
+are recorded in the gate's `BASELINE_UNDECLARED_IMPORTS` with rationale:
+
+| Import | Why baselined |
+|---|---|
+| `boring_semantic_layer` | **AUD-ATLAS-050**, already OPEN per wave 1 § 5. Deliberately absent from **both** manifests (PyPI-only, no conda-forge candidate — declaring it fails the solve on `osx-arm64-min`). Needs a lazy/guarded import; a dependency line cannot fix it. |
+| `google` | atlas's `pixi.toml` records a deliberate reliance on `a2a-sdk` bringing the `google` namespace transitively. That is the same transitive reliance `AUD-WARDEN-010` named, so `protobuf` arguably belongs declared — but that changes atlas's conda solve. |
+| `pydantic_core` | Same shape: `pydantic_core arrives with` pydantic per the manifest comment, though `pydantic-core` is its own distribution on PyPI and conda-forge. |
+
+The baseline is a **ratchet, not an allowlist**: `test_baseline_entries_are_still_violated`
+fails when an entry stops being a violation, so the list can only shrink, and
+every **new** violation fails immediately. Each entry must carry a rationale.
+
+### A test that nothing runs gates nothing
+
+`AUD-ATLAS-013` (wave 1, INCORPORATED) correctly moved `test_knowledge.py` out of
+the atlas test tree, but **no task was pointed at its new home** and it needs
+`PYTHONPATH=src` because `sentinel` is a plain source tree. It therefore
+collected **nowhere** — `ModuleNotFoundError: No module named 'sentinel'`. Wired
+as `wiki-test`; 4 tests, green. Same family as CFE gotcha **G95**.
+
+## 5. Repo-hygiene defects fixed in passing
+
+| Defect | Fix |
+|---|---|
+| `environment.yaml` stale on `main` since `d339b9442d` ("pixi update") | Regenerated. That linter check is **ungated by the `maintenance` label**, so it would red every PR. |
+| Same commit split the pixi floor: three feature floors → 0.74.0, but `requires-pixi`, `dashboard.yml`'s `pixi-version` and the linter workflow's micromamba create-arg left at 0.73.0 — contradicting the "keep all four in step" comment on `requires-pixi` itself | Realigned all five sites to 0.74.0 (the installed and lock-producing version). |
+| `SKILL.md` frontmatter and `MANIFEST.yaml` both declared skill `version: 7.0.0` against a canonical 8.80.0 | Corrected to 8.81.0 alongside the Rule-2 retro bump. |
+| `.vscode/settings.json` tracked but ungoverned — the standing `spec-surface-check` finding | Allowlisted next to `.idea/**`, same class. The detector is now fully green (it was red on `main`). |
+
+## 6. Standing instruction, extended
+
+Wave 1's four rules still hold. Add a fifth:
+
+5. **A remediation branch can be incomplete in a way its own tests cannot see.**
+   PR #131's path guards were unrunnable because the module they import was never
+   committed — and no signal reported it, because the tool that would have
+   (`git status`) was the tool being suppressed. When porting from a reference
+   branch, confirm every import it adds resolves **in a fresh checkout of that
+   branch**, not in the working tree that produced it.

@@ -4,7 +4,7 @@ project_name: local-recipes
 date: 2026-07-25
 version: '1.1.0'
 status: draft
-source_pin: 'conda-forge-expert v8.80.0'
+source_pin: 'conda-forge-expert v8.81.0'
 consolidates:
   - architecture-conda-forge-expert.md
   - architecture-cf-atlas.md

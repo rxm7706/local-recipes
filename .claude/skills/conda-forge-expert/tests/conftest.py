@@ -121,12 +121,19 @@ def load_module():
 
 
 @pytest.fixture
-def copy_recipe(tmp_path):
+def copy_recipe(tmp_path, monkeypatch):
     """Copy a fixture recipe into a fresh tmp_path and return the new dir.
 
     Usage:
         recipe_dir = copy_recipe("v1-noarch")
         # recipe_dir contains a clean copy of fixtures/recipes/v1-noarch/
+
+    Also points ``CFE_RECIPES_ROOT`` at ``tmp_path``. The recipe-facing CLIs
+    confine writes to the repo's ``recipes/`` tree (AUD-CFE-001/002/006), and
+    fixture copies deliberately live outside it — without the override every
+    edit against a copied fixture would be rejected as out-of-tree. Set in
+    ``os.environ`` so subprocess runs (``script_runner`` copies the env) and
+    in-process calls both see it.
     """
 
     def _copy(name: str) -> Path:
@@ -135,6 +142,7 @@ def copy_recipe(tmp_path):
             raise FileNotFoundError(f"Fixture recipe not found: {src}")
         dest = tmp_path / name
         shutil.copytree(src, dest)
+        monkeypatch.setenv("CFE_RECIPES_ROOT", str(tmp_path))
         return dest
 
     return _copy
