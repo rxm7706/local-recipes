@@ -15,6 +15,10 @@ import sys
 from pathlib import Path
 from typing import Dict, Any, List
 
+# Sibling helper — path confinement shared with submit_pr.py and the MCP server.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from _path_guard import validate_recipe_file_path  # noqa: E402
+
 try:
     from ruamel.yaml import YAML
     RUAMEL_AVAILABLE = True
@@ -73,19 +77,16 @@ def calculate_sha256_from_url(url: str) -> str:
     except requests.RequestException as e:
         raise RuntimeError(f"Failed to download source for hash calculation: {e}") from e
 
-def _validate_recipe_path(recipe_path: Path) -> None:
-    """Raise ValueError if the path is not a YAML file (prevents obvious misuse at CLI boundary)."""
-    if recipe_path.suffix not in (".yaml", ".yml"):
-        raise ValueError(f"Recipe path must be a .yaml/.yml file, got: {recipe_path}")
-
-
 def execute_actions(recipe_path: Path, actions: List[Dict[str, Any]]) -> Dict[str, Any]:
     """Execute a list of modification actions on a recipe file."""
     if not RUAMEL_AVAILABLE:
         return {"success": False, "error": "ruamel.yaml is not installed."}
 
+    # AUD-CFE-002: a suffix check alone let this rewrite ANY .yaml/.yml in the
+    # repo (pixi.toml's siblings, .github/workflows/*.yml, conda-forge.yml at the
+    # root). Confine writes to the recipes/ subtree.
     try:
-        _validate_recipe_path(recipe_path)
+        recipe_path = validate_recipe_file_path(recipe_path)
     except ValueError as e:
         return {"success": False, "error": str(e)}
 

@@ -40,7 +40,9 @@ import sys
 import tempfile
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
+from contextlib import closing
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -1727,6 +1729,37 @@ def _dt_iso_now() -> str:
     return _dt.datetime.now(_dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
+# ── cf_atlas read helpers (AUD-CFE-007) ─────────────────────────────────────
+# Both atlas readers in this module previously opened a connection and never
+# closed it, and one issued a query per dependency. They now share these two
+# helpers so the batching + lifetime rules hold at every site rather than
+# per-site discipline (atlas retro action A2).
+
+# SQLite's SQLITE_MAX_VARIABLE_NUMBER is 32766 on current builds but 999 on
+# older ones; a big lock file can carry thousands of deps, so chunk well under.
+_ATLAS_IN_CHUNK = 500
+
+
+def _atlas_connect_ro() -> sqlite3.Connection:
+    """Open cf_atlas.db read-only — this module only ever reads it."""
+    uri = f"file:{urllib.parse.quote(str(ATLAS_DB))}?mode=ro"
+    return sqlite3.connect(uri, uri=True)
+
+
+def _atlas_select_in(conn: sqlite3.Connection, sql_template: str,
+                     values: list[str]):
+    """Run a `... IN ({placeholders})` query in chunks and yield all rows.
+
+    `sql_template` must contain exactly one `{placeholders}` slot.
+    """
+    for start in range(0, len(values), _ATLAS_IN_CHUNK):
+        chunk = values[start:start + _ATLAS_IN_CHUNK]
+        placeholders = ",".join("?" for _ in chunk)
+        yield from conn.execute(
+            sql_template.format(placeholders=placeholders), chunk
+        )
+
+
 def fetch_atlas_vuln_summary(deps: list[Dep],
                               _atlas_records: dict[str, dict[str, Any]]
                               ) -> dict[str, dict[str, int]]:
@@ -1738,31 +1771,36 @@ def fetch_atlas_vuln_summary(deps: list[Dep],
     """
     if not ATLAS_DB.exists():
         return {}
-    out: dict[str, dict[str, int]] = {}
-    try:
-        conn = sqlite3.connect(ATLAS_DB)
-    except sqlite3.Error:
-        return {}
-    names = [d.name for d in deps if d.ecosystem in ("conda", "pypi")]
+    names = list(dict.fromkeys(
+        d.name for d in deps if d.ecosystem in ("conda", "pypi")
+    ))
     if not names:
         return {}
-    placeholders = ",".join("?" for _ in names)
     sql = (
         "SELECT conda_name, vuln_total, vuln_critical_affecting_current, "
         "       vuln_high_affecting_current, vuln_kev_affecting_current, "
         "       vdb_scanned_at "
-        f"FROM packages WHERE conda_name IN ({placeholders})"
+        "FROM packages WHERE conda_name IN ({placeholders})"
     )
-    for r in conn.execute(sql, names):
-        if r[5] is None:
-            continue
-        out[r[0]] = {
-            "total": r[1] or 0,
-            "critical_affecting_current": r[2] or 0,
-            "high_affecting_current": r[3] or 0,
-            "kev_affecting_current": r[4] or 0,
-            "scanned_at": r[5],
-        }
+    out: dict[str, dict[str, int]] = {}
+    try:
+        with closing(_atlas_connect_ro()) as conn:
+            conn.row_factory = sqlite3.Row
+            for r in _atlas_select_in(conn, sql, names):
+                if r["vdb_scanned_at"] is None:
+                    continue
+                out[r["conda_name"]] = {
+                    "total": r["vuln_total"] or 0,
+                    "critical_affecting_current":
+                        r["vuln_critical_affecting_current"] or 0,
+                    "high_affecting_current":
+                        r["vuln_high_affecting_current"] or 0,
+                    "kev_affecting_current":
+                        r["vuln_kev_affecting_current"] or 0,
+                    "scanned_at": r["vdb_scanned_at"],
+                }
+    except sqlite3.Error:
+        return {}
     return out
 
 
@@ -2663,12 +2701,16 @@ def lookup_vulns(
 # ── Atlas enrichment ────────────────────────────────────────────────────────
 
 def enrich_with_atlas(deps: list[Dep]) -> dict[str, dict[str, Any]]:
-    """For conda/pypi deps, look up atlas record by name. Returns {dep_key: atlas_record}."""
+    """For conda/pypi deps, look up atlas record by name. Returns {dep_key: atlas_record}.
+
+    Two batched queries (one per ecosystem) rather than one query per
+    dependency (AUD-CFE-007); a 2,000-dep lock file issued 2,000 round trips.
+    """
     if not ATLAS_DB.exists():
         return {}
-    conn = sqlite3.connect(ATLAS_DB)
-    conn.row_factory = sqlite3.Row
-    out: dict[str, dict[str, Any]] = {}
+
+    # Dedupe per ecosystem, preserving first-seen order.
+    wanted: dict[str, list[str]] = {"conda": [], "pypi": []}
     seen: set[str] = set()
     for dep in deps:
         if dep.ecosystem not in ("conda", "pypi"):
@@ -2677,14 +2719,28 @@ def enrich_with_atlas(deps: list[Dep]) -> dict[str, dict[str, Any]]:
         if key in seen:
             continue
         seen.add(key)
-        col = "conda_name" if dep.ecosystem == "conda" else "pypi_name"
-        row = conn.execute(
-            f"SELECT conda_name, pypi_name, latest_conda_version, conda_license, "
-            f"feedstock_archived, latest_status FROM packages WHERE {col} = ? LIMIT 1",
-            (dep.name,),
-        ).fetchone()
-        if row:
-            out[key] = dict(row)
+        wanted[dep.ecosystem].append(dep.name)
+
+    if not any(wanted.values()):
+        return {}
+
+    cols = ("conda_name, pypi_name, latest_conda_version, conda_license, "
+            "feedstock_archived, latest_status")
+    out: dict[str, dict[str, Any]] = {}
+    try:
+        with closing(_atlas_connect_ro()) as conn:
+            conn.row_factory = sqlite3.Row
+            for eco, col in (("conda", "conda_name"), ("pypi", "pypi_name")):
+                if not wanted[eco]:
+                    continue
+                sql = (f"SELECT {cols} FROM packages "
+                       f"WHERE {col} IN ({{placeholders}})")
+                for row in _atlas_select_in(conn, sql, wanted[eco]):
+                    # setdefault keeps the first row for a name, matching the
+                    # per-dep `LIMIT 1` this replaced.
+                    out.setdefault(f"{eco}:{row[col]}", dict(row))
+    except sqlite3.Error:
+        return {}
     return out
 
 

@@ -19,7 +19,14 @@ from fastmcp import FastMCP, Context
 mcp = FastMCP("conda-forge-expert")
 
 # Paths to the scripts relative to this file
-SCRIPTS_DIR = Path(__file__).parent.parent / "skills" / "conda-forge-expert" / "scripts"
+SCRIPTS_DIR = Path(__file__).resolve().parent.parent / "skills" / "conda-forge-expert" / "scripts"
+
+# Path confinement shared with submit_pr.py / recipe_editor.py (AUD-CFE-006).
+sys.path.insert(0, str(SCRIPTS_DIR))
+from _path_guard import (  # noqa: E402
+    resolve_under_recipes,
+    validate_recipe_file_path,
+)
 VALIDATE_SCRIPT = SCRIPTS_DIR / "validate_recipe.py"
 CHECKER_SCRIPT = SCRIPTS_DIR / "dependency-checker.py"
 GENERATOR_SCRIPT = SCRIPTS_DIR / "recipe-generator.py"
@@ -927,6 +934,15 @@ async def trigger_build(
         recipe_path = Path(recipe)
         if not recipe_path.is_absolute():
             recipe_path = repo_root / recipe
+
+        # AUD-CFE-006: `recipe` is an agent-supplied path. Confine it to recipes/
+        # BEFORE probing for recipe.yaml/meta.yaml, so a traversal can't even be
+        # used to test for the existence of files outside the subtree.
+        try:
+            recipe_path = resolve_under_recipes(recipe_path)
+        except ValueError as exc:
+            return json.dumps({"error": str(exc)})
+
         if recipe_path.is_dir():
             for cand in ("recipe.yaml", "meta.yaml"):
                 if (recipe_path / cand).exists():
@@ -934,6 +950,11 @@ async def trigger_build(
                     break
             else:
                 return json.dumps({"error": f"No recipe.yaml or meta.yaml in {recipe_path}"})
+        else:
+            try:
+                recipe_path = validate_recipe_file_path(recipe_path)
+            except ValueError as exc:
+                return json.dumps({"error": str(exc)})
         if not recipe_path.exists():
             return json.dumps({"error": f"Recipe not found: {recipe_path}"})
 
@@ -2057,6 +2078,84 @@ def package_health(name: str) -> str:
     return json.dumps(_run_script(ATLAS_DETAIL_CF_ATLAS, args), indent=2)
 
 
+# --- AUD-CFE-005: query_atlas SQL-fragment validation ------------------------
+# `select` / `order_by` / `where` are interpolated into the SQL text because they
+# are identifiers and clauses, not values — they cannot be bound as parameters.
+# So each is constrained here.
+#
+# `select` and `order_by` get strict ALLOWLISTS: neither has any legitimate need
+# for a subquery. `where` stays permissive enough for the subqueries this tool's
+# docstring advertises (the side tables are reachable only via `... IN (SELECT
+# ...)`), so it is guarded by a deny-list of statement separators, comments and
+# write/DDL keywords instead. The read-only connection in query_atlas is what
+# actually makes a write impossible; these checks reject the request early with a
+# clear message and close off information-disclosure shapes that a read-only
+# connection would still permit.
+
+_SQL_COMMENT_OR_SEP = re.compile(r";|--|/\*|\*/")
+
+# Word-boundary matched on purpose: the previous substring check rejected any
+# fragment merely CONTAINING a keyword, so a column named `updated_at` or
+# `vuln_history_deleted` was a false positive.
+_SQL_FORBIDDEN_KEYWORDS = re.compile(
+    r"\b(INSERT|UPDATE|DELETE|DROP|ALTER|CREATE|REPLACE|TRUNCATE|GRANT|"
+    r"ATTACH|DETACH|PRAGMA|VACUUM|REINDEX|LOAD_EXTENSION)\b",
+    re.IGNORECASE,
+)
+
+_SQL_IDENT = r"[A-Za-z_][A-Za-z0-9_]*"
+_SQL_COL = rf"(?:{_SQL_IDENT}\.)?(?:{_SQL_IDENT}|\*)"
+# Read-only scalar/aggregate helpers that show up in real atlas queries.
+_SQL_FUNC = r"(?:COUNT|SUM|AVG|MIN|MAX|TOTAL|ROUND|COALESCE|LENGTH|LOWER|UPPER|ABS)"
+_SQL_SELECT_ITEM = (
+    rf"(?:{_SQL_COL}|{_SQL_FUNC}\s*\(\s*(?:DISTINCT\s+)?{_SQL_COL}"
+    rf"(?:\s*,\s*(?:{_SQL_COL}|\d+))*\s*\))(?:\s+AS\s+{_SQL_IDENT})?"
+)
+_SQL_SELECT_LIST = re.compile(
+    rf"\A\s*{_SQL_SELECT_ITEM}(?:\s*,\s*{_SQL_SELECT_ITEM})*\s*\Z", re.IGNORECASE
+)
+# Ordinal positions (`2 DESC`) are common and safe.
+_SQL_ORDER_ITEM = (
+    rf"(?:{_SQL_COL}|\d+)(?:\s+(?:ASC|DESC))?(?:\s+NULLS\s+(?:FIRST|LAST))?"
+)
+_SQL_ORDER_LIST = re.compile(
+    rf"\A\s*{_SQL_ORDER_ITEM}(?:\s*,\s*{_SQL_ORDER_ITEM})*\s*\Z", re.IGNORECASE
+)
+
+
+def _validate_atlas_fragments(
+    select: str, order_by: str, where: str | None
+) -> Optional[str]:
+    """Return an error message if any SQL fragment is unacceptable, else None."""
+    for label, fragment in (
+        ("select", select),
+        ("order_by", order_by),
+        ("where", where or ""),
+    ):
+        if "\0" in fragment:
+            return f"null byte in {label}"
+        if _SQL_COMMENT_OR_SEP.search(fragment):
+            return (
+                f"statement separator or SQL comment in {label} — "
+                "';', '--' and '/* */' are not allowed"
+            )
+        if _SQL_FORBIDDEN_KEYWORDS.search(fragment):
+            return f"disallowed SQL keyword in {label} — this tool is read-only"
+
+    if not _SQL_SELECT_LIST.match(select):
+        return (
+            "select must be a comma-separated column list (optionally "
+            "table-qualified, aliased, or wrapped in a read-only aggregate "
+            "such as COUNT/SUM/MIN/MAX/COALESCE)"
+        )
+    if not _SQL_ORDER_LIST.match(order_by):
+        return (
+            "order_by must be a comma-separated list of columns or ordinals, "
+            "each optionally followed by ASC/DESC"
+        )
+    return None
+
+
 @mcp.tool()
 def query_atlas(
     where: str | None = None,
@@ -2075,28 +2174,39 @@ def query_atlas(
     `package_version_downloads`, `package_version_vulns`,
     `upstream_versions_history` are also queryable via JOIN.
     """
-    if any(kw in (where or "").upper() for kw in
-           ("INSERT", "UPDATE", "DELETE", "DROP", "ALTER", "ATTACH",
-            "DETACH", "PRAGMA", "VACUUM")):
-        return json.dumps({"error": "only SELECT-style WHERE clauses allowed"})
-    if any(kw in select.upper() for kw in
-           ("INSERT", "UPDATE", "DELETE", "DROP", "ALTER")):
-        return json.dumps({"error": "only column lists allowed in select"})
+    err = _validate_atlas_fragments(select, order_by, where)
+    if err:
+        return json.dumps({"error": err})
+
+    import contextlib as _ctx
     import sqlite3 as _sql
+    from urllib.parse import quote as _quote
+
     db_path = (
-        Path(__file__).parent.parent
+        Path(__file__).resolve().parent.parent
         / "data" / "conda-forge-expert" / "cf_atlas.db"
     )
     if not db_path.exists():
         return json.dumps({"error": f"cf_atlas.db missing at {db_path}"})
+
+    # A negative LIMIT means "no limit" in SQLite, so `min(limit, 1000)` alone
+    # let `limit=-1` dump the whole table. Clamp both ends.
+    try:
+        bounded_limit = max(1, min(int(limit), 1000))
+    except (TypeError, ValueError):
+        return json.dumps({"error": f"limit must be an integer, got: {limit!r}"})
+
     sql = f"SELECT {select} FROM packages"
     if where:
         sql += f" WHERE {where}"
-    sql += f" ORDER BY {order_by} LIMIT {min(int(limit), 1000)}"
+    sql += f" ORDER BY {order_by} LIMIT {bounded_limit}"
+
+    # Read-only connection: the enforcement behind the fragment checks above.
+    uri = f"file:{_quote(str(db_path))}?mode=ro"
     try:
-        conn = _sql.connect(db_path)
-        conn.row_factory = _sql.Row
-        rows = [dict(r) for r in conn.execute(sql)]
+        with _ctx.closing(_sql.connect(uri, uri=True)) as conn:
+            conn.row_factory = _sql.Row
+            rows = [dict(r) for r in conn.execute(sql)]
         return json.dumps({"sql": sql, "rows": rows}, indent=2, default=str)
     except _sql.Error as e:
         return json.dumps({"error": f"SQL error: {e}", "sql": sql})
