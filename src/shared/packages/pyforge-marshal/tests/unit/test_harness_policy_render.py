@@ -245,3 +245,69 @@ def test_write_policy_toml_wraps_oserror_in_harness_policy_write_error(tmp_path)
     effective = _compose()
     with pytest.raises(HarnessPolicyWriteError):
         write_policy_toml(effective, blocked)
+
+
+# --- the CLI seam: nothing reachable called write_policy_toml -----------------
+# Story 1.10 shipped render_policy_toml/write_policy_toml with full unit coverage
+# and a meta test proving the rendered file stays untracked -- yet no operator
+# could produce it: `marshal config` only printed, the writer's sole callers were
+# the tests above, and no pixi task called either. Merging the story then deleted
+# the tracked file from pyforge-marshal's own loop home, leaving it with no policy
+# at all. These tests assert the seam EXISTS, which is the property the original
+# suite could not see: a writer proven correct in isolation, that nobody can reach.
+
+
+def test_conventional_project_policy_path_lands_on_the_repo_root(tmp_path):
+    """An off-by-one in `repo_root()` resolves to `<repo>/src` and every
+    convention lookup silently misses -- falling back to bare defaults whose
+    `verify_commands` is EMPTY, i.e. no gate at all. Caught exactly that during
+    implementation, hence this test."""
+    from pyforge.marshal.cli import config as config_cli
+
+    root = config_cli.repo_root()
+    assert (root / "pixi.toml").is_file(), (
+        f"repo_root() resolved to {root}, which has no pixi.toml -- the parent "
+        "index is wrong and every project-policy lookup will miss"
+    )
+    p = config_cli.conventional_project_policy_path("pyforge-marshal")
+    assert p == root / (
+        "_bmad-output/projects/pyforge-marshal/planning-artifacts/marshal-policy.toml"
+    )
+
+
+def test_cli_writes_the_harness_policy_via_the_convention_layer(tmp_path):
+    """The whole point: `marshal config --project <slug> --write-harness-policy
+    <home>` must find the tracked layer by convention and write a policy carrying
+    that project's OWN verify command -- with no --project-policy passed."""
+    from pyforge.marshal.cli.main import main
+
+    rc = main([
+        "config", "--project", "pyforge-marshal",
+        "--write-harness-policy", str(tmp_path), "--format", "json",
+    ])
+    assert rc == 0, "a clean composition must exit 0"
+
+    written = tmp_path / ".bmad-loop" / "policy.toml"
+    assert written.is_file(), "the CLI did not reach write_policy_toml"
+    parsed = tomllib.loads(written.read_text(encoding="utf-8"))
+    assert parsed["verify"]["commands"] == [
+        "pixi run --frozen -e pyforge-marshal pyforge-marshal-test"
+    ], "the project layer was not composed in -- verify would be EMPTY (no gate)"
+    assert parsed["gates"]["mode"] == "none"
+    assert parsed["limits"]["max_followup_reviews"] == 2
+
+
+def test_cli_refuses_to_write_a_policy_from_an_error_composition(tmp_path):
+    """bmad-loop READS this file on its next run, so a composition Marshal could
+    not determine the intent of must not become the harness's policy."""
+    from pyforge.marshal.cli.main import main
+
+    rc = main([
+        "config", "--project", "pyforge-marshal",
+        "--set", "max_review_cycles=not-an-int",
+        "--write-harness-policy", str(tmp_path), "--format", "json",
+    ])
+    assert not (tmp_path / ".bmad-loop" / "policy.toml").exists(), (
+        "a policy was written despite error-severity findings"
+    )
+    assert rc != 0

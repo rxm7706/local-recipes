@@ -1,0 +1,42 @@
+# Marshal project-policy layer for pyforge-herald.
+#
+# The MIDDLE layer of AD-16's fixed precedence: Marshal defaults -> THIS FILE ->
+# invocation flags, last wins. Found by convention at
+# `planning-artifacts/marshal-policy.toml`; `marshal config --project-policy PATH`
+# still overrides the lookup.
+#
+# WHY THIS FILE IS TRACKED WHILE THE RENDERED ONE IS NOT. Story 1.10 correctly made
+# `.bmad-loop/policy.toml` a derived artifact (AD-12/AD-35) and untracked it, closing
+# the F-1 cross-project bleed. But nothing reachable RENDERED it: the writer's only
+# callers were its own tests, `marshal config` merely printed, and no pixi task called
+# either. Merging that story then DELETED the file from pyforge-marshal's own loop
+# home, leaving it with no policy at all -- the exact state 1.10's SEQUENCING (hard)
+# note forbade. A derived artifact needs a governed SOURCE; this is that source.
+#
+# Only keys that differ from Marshal's built-in defaults appear here. Deliberately
+# ABSENT:
+#   * `worktree_seed_paths` -- generated from the project slug, so restating it would
+#     create a second truth that could drift.
+#   * `model_tier_map` -- it maps DIFFICULTY CLASS to {stage: model}, and which
+#     difficulty applies to a story is explicitly "a later story's concern", so the
+#     vocabulary does not exist yet. The rendered template already carries the stage
+#     baselines (`[adapter] model = "sonnet"`, `[adapter.review] model = "fable"`),
+#     so per-stage tiering works without it. Populate when FR-51 tier-batching lands.
+#
+# gate_mode: unattended (operator direction, 2026-07-26). This is the HUMAN approval
+# gate ONLY -- the independent reviewer still runs on every story.
+gate_mode = "none"
+
+# max_followup_reviews: chosen EXPLICITLY rather than left at Marshal's default of 1.
+# That default was an unchosen value deciding when stories are done: five stories
+# across three projects (atlas 10.5/10.6, marshal 1.1, warden 6.3/5.1) were damped by
+# the cap rather than by the reviewer, and honoring two atlas recommendations yielded a
+# real MEDIUM finding, DW-AD23-3. Seven of nine homes had the key absent entirely.
+max_followup_reviews = 2
+
+# verify_commands: THIS station's own suite. Every home except atlas and warden was
+# cloned from warden's and inherited `pyforge-warden-test`, so a story here would have
+# gone green on warden's tests while this station's own never ran.
+verify_commands = [
+  "pixi run --frozen -e pyforge-herald pyforge-herald-test",
+]

@@ -46,6 +46,7 @@ import tomllib
 from collections.abc import Mapping
 from pathlib import Path
 
+from ..adapters.harness_bmadloop import HarnessPolicyWriteError, write_policy_toml
 from ..core import policy
 from ..core.model import Finding, Severity, Status, build_envelope, status_for
 from ..core.verdict import compute_verdict, exit_code_for
@@ -122,6 +123,16 @@ def add_config_subparser(subparsers: argparse._SubParsersAction) -> None:
         default=None,
         metavar="DIR",
         help="Write the composed policy to DIR as a content-addressed, write-once JSON file.",
+    )
+    parser.add_argument(
+        "--write-harness-policy",
+        type=Path,
+        default=None,
+        metavar="LOOP_HOME",
+        help=(
+            "Render the composed policy into LOOP_HOME/.bmad-loop/policy.toml "
+            "(the file bmad-loop hard-codes). Overwrites it whole."
+        ),
     )
     parser.add_argument(
         "--format",
@@ -202,6 +213,34 @@ def _policy_fields_payload(effective: policy.EffectivePolicy) -> dict[str, objec
             "raw_source": _json_safe(policy.redact(key, field.raw_source)),
         }
     return payload
+
+
+#: Where a project's policy layer lives, relative to the repo root. Tracked, so
+#: a fresh clone and a newly provisioned loop home both have it -- unlike the
+#: rendered `.bmad-loop/policy.toml`, which is a derived artifact (AD-12/AD-35)
+#: and gitignored.
+PROJECT_POLICY_RELPATH = "_bmad-output/projects/{slug}/planning-artifacts/marshal-policy.toml"
+
+
+def repo_root() -> Path:
+    """The repo root, resolved from this module's own location.
+
+    `cli/config.py` -> ... -> `<repo>/src/shared/packages/pyforge-marshal/src/
+    pyforge/marshal/cli/config.py`, so the root is 8 parents up. Derived rather
+    than taken from CWD: `marshal config` is run from a loop home, from the main
+    checkout, and from a story worktree, and a CWD-relative root would silently
+    resolve to a different project's policy in two of the three.
+
+    The index is asserted by `test_conventional_project_policy_path_lands_on_the_repo_root`
+    -- an off-by-one here resolves to `<repo>/src` and every lookup silently
+    misses, falling back to bare defaults with no verify command.
+    """
+    return Path(__file__).resolve().parents[8]
+
+
+def conventional_project_policy_path(slug: str) -> Path:
+    """The conventional project-policy path for ``slug``."""
+    return repo_root() / PROJECT_POLICY_RELPATH.format(slug=slug)
 
 
 class PolicyIOError(Exception):
@@ -347,9 +386,21 @@ def run_config(args: argparse.Namespace) -> int:
     # Marshal's bare defaults -- only the read step earns that fallback.
     project_data: Mapping[str, object] = {}
     io_findings: list[Finding] = []
-    if args.project_policy is not None:
+    policy_source: Path | None = args.project_policy
+    if policy_source is None and project_slug:
+        # CONVENTION LOOKUP. Without this, composing needs `--project-policy`
+        # passed by hand every time, so the common invocation silently returns
+        # Marshal's bare defaults -- `verify_commands = ()`, i.e. NO gate, which
+        # is worse than the wrong gate. AD-16 fixes the precedence but not where
+        # the middle layer lives; this fixes that at
+        # `<project>/planning-artifacts/marshal-policy.toml`, tracked so a fresh
+        # clone has it. An explicit --project-policy still wins.
+        candidate = conventional_project_policy_path(project_slug)
+        if candidate.is_file():
+            policy_source = candidate
+    if policy_source is not None:
         try:
-            project_data = _read_project_policy(args.project_policy)
+            project_data = _read_project_policy(policy_source)
         except PolicyIOError as exc:
             io_findings.append(exc.finding)
 
@@ -383,6 +434,40 @@ def run_config(args: argparse.Namespace) -> int:
                 "composition carried error-severity findings; nothing was written"
             )
 
+    # The OPERATOR path to the harness projection. Story 1.10 untracked and
+    # gitignored `.bmad-loop/policy.toml` and shipped `write_policy_toml`, but
+    # nothing reachable CALLED it: `marshal config` only printed, the writer's
+    # sole callers were its own tests, and no pixi task rendered it. Since
+    # bmad-loop hard-codes POLICY_FILE with no path flag, that left a fresh
+    # clone or a newly provisioned loop home with no policy and no way to make
+    # one -- exactly the hazard 1.10's own SEQUENCING (hard) note forbade
+    # ("untracking must not precede rendering"). This closes it.
+    harness_policy_path: Path | None = None
+    harness_policy_skipped: str | None = None
+    if args.write_harness_policy is not None:
+        # Same ok-status gate as --materialize, for the same reason and one
+        # sharper: this artifact is what the harness READS on its next run, so
+        # writing a composition Marshal could not determine the intent of would
+        # hand bmad-loop a policy born of a failed invocation.
+        if status_for(compute_verdict(findings)) is Status.OK:
+            try:
+                harness_policy_path = write_policy_toml(
+                    effective, args.write_harness_policy
+                )
+            except HarnessPolicyWriteError as exc:
+                # Reuses MRS-POLICY-004, whose registered meaning is exactly
+                # this: "a CLI-boundary I/O step fails (an unwritable
+                # --materialize target ...)". A new code would have to be added
+                # to REGISTERED_CODES, and Finding() raises
+                # UnregisteredFindingCodeError otherwise -- inventing one here
+                # would be a second concept for one condition.
+                findings = (*findings, PolicyIOError(str(exc)).finding)
+        else:
+            harness_policy_skipped = (
+                "composition carried error-severity findings; the harness policy "
+                "was not written"
+            )
+
     data: dict[str, object] = {
         "policy": _policy_fields_payload(effective),
         "content_hash": effective.content_hash,
@@ -391,6 +476,10 @@ def run_config(args: argparse.Namespace) -> int:
         data["materialized_path"] = str(materialized_path)
     if materialize_skipped is not None:
         data["materialize_skipped"] = materialize_skipped
+    if harness_policy_path is not None:
+        data["harness_policy_path"] = str(harness_policy_path)
+    if harness_policy_skipped is not None:
+        data["harness_policy_skipped"] = harness_policy_skipped
 
     verdict_value = compute_verdict(findings)
     envelope = build_envelope(

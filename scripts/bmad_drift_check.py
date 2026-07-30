@@ -522,6 +522,16 @@ def classify(path: Path) -> str:
         # Tier-3 sprint feed (gitignored, local-only) — the program console's
         # dashboard-gen reads it; no pin gating.
         return "local:sprint-feed"
+    if rel == "planning-artifacts/marshal-policy.toml":
+        # Marshal's PROJECT-POLICY layer -- the middle tier of AD-16's
+        # defaults -> project -> flags chain, added 2026-07-30. Tracked on
+        # purpose: it is the governed SOURCE the gitignored, derived
+        # `.bmad-loop/policy.toml` is rendered from (AD-12/AD-35), so a fresh
+        # clone or a newly provisioned loop home can reproduce its harness
+        # policy. Hand-authored and not pin-gated -- it carries a station's
+        # verify command and gate posture, which track that project's own
+        # surface rather than the skill's.
+        return "tracked:marshal-policy"
     if rel == "planning-artifacts/sprint-status-ledger.yaml":
         # The DURABLE twin of the Tier-3 sprint feed above, promoted 2026-07-30 for
         # the same reason as deferred-work-ledger.md: implementation-artifacts/ is
