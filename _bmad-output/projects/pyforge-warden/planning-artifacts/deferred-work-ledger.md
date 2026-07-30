@@ -40,7 +40,9 @@ Durability first; curation is owned follow-up work.
   summary: The loop's exact `[verify]` command (`pixi run -e python-deptry-osv-scanner python-deptry-osv-scanner-test`, unfrozen) fails environmentally in every bmad-loop worktree — pixi-build-python 0.8.3 panics (`tools.rs:461` byte-index underflow) when the build `workDirectory` exceeds ~250 chars (run-worktree roots are ~162 chars), and behind it any successful unfrozen re-solve in a worktree rewrites `pixi.lock` with worktree-absolute paths for the gitignored `file://…/build_artifacts` channel (toxic to commit via the loop's `git add -A` squash-merge); switch `.bmad-loop/policy.toml` `[verify]` to `pixi run --frozen -e python-deptry-osv-scanner python-deptry-osv-scanner-test` (or export `PIXI_FROZEN=true` in the engine env / shorten the runs-dir path / pin pixi-build-python past the underflow), and note the related risk that a stale pixi build cache can resolve the package to non-worktree sources, so the verify gate should always run `--frozen` from the worktree root.
   evidence: Reproduced at baseline (before this story's changes) and re-confirmed after — the unfrozen solve dies with "the build backend (pixi-build-python) exited prematurely" during the `python-deptry-osv-scanner` env solve, while `pixi run --frozen -e python-deptry-osv-scanner python-deptry-osv-scanner-test` passes the identical suite (111 passed at implementation, all green at review patch close); a controlled experiment showed the same package solves at a 149-char root and panics at 162 (path-length-driven), and the `detached-environments = true` + `build_artifacts` symlink workaround made the exact unfrozen command pass 111/111 before both tracked files were reverted to keep the story diff clean.
 
-  status: open
+  status: done 2026-07-30
+
+  verified: 2026-07-30 — ALREADY RESOLVED, by the fix this entry itself prescribed. `planning-artifacts/marshal-policy.toml` now declares `verify_commands = ["pixi run --frozen -e pyforge-warden pyforge-warden-test"]` — the `--frozen` switch the entry recommended, so the unfrozen re-solve that rewrote `pixi.lock` with worktree-absolute paths can no longer occur on this station's gate.
 
 ## DW-BMAD-LOOP-1 — `scm.isolation = \"worktree\"` + `cleanup.trim_artifacts = true` silently lose any dev/review-se…
 
@@ -104,6 +106,8 @@ Durability first; curation is owned follow-up work.
 
   status: open
 
+  verified: 2026-07-30 — `scripts/refresh_endoflife_feed.py:191` and `:205` both iterate `for slug in deduped_slugs`, issuing one `fetch_product_cycles` per slug — the fan-out is unchanged.
+
 ## DW-6-3-3 — `_resolve_from_lines`/`_resolve_from_cycles` (currency.py) compute `lag` by counting entries rel…
 
 - source_spec: `_bmad-output/projects/pyforge-warden/implementation-artifacts/spec-6-3-currency-axis-producer-gate-flags.md`
@@ -112,6 +116,8 @@ Durability first; curation is owned follow-up work.
 
   status: open
 
+  verified: 2026-07-30 — `currency.py:68` still states it outright: '`lag` is an integer count of entries (LTS lines / endoflife.date …)', and `:60` defines `lag > 0` as behind by ANY positive count. Still counting entries, not versions.
+
 ## DW-6-3-4 — `currency.py`'s `DEFAULT_CURRENCY_POLICY` and `config.py`'s `EffectiveConfig.currency_policy` pr…
 
 - source_spec: `_bmad-output/projects/pyforge-warden/implementation-artifacts/spec-6-3-currency-axis-producer-gate-flags.md`
@@ -119,6 +125,8 @@ Durability first; curation is owned follow-up work.
   evidence: Raised by the Blind Hunter review pass; confirmed both definitions exist independently in `currency.py` and `config.py`. A real fix (deriving one from the other, or a shared module-level table both axes import) would touch the pre-existing 6.2 pattern too — a cross-cutting consolidation out of this story's scope.
 
   status: open
+
+  verified: 2026-07-30 — Both tables still exist and can drift: `currency.py:209` `DEFAULT_CURRENCY_POLICY` and `config.py:524` `EffectiveConfig.currency_policy`.
 
 ## DW-6-3-5 — The endoflife.date cache reuses `feeds.DEFAULT_FEED_MAX_AGE_DAYS` (7 days, tuned for KEV's frequ…
 
@@ -191,6 +199,8 @@ status: open
 
   status: open
 
+  verified: 2026-07-30 — `report.py:229/:464` thread `warn_as_error` only into `exit_code_for(warn_is_error=…)`. It appears 0 times in `models.py` and 0 times in `data/report-schema.json`, so the projection still leaves no trace in the report body.
+
 ## DW-6-5-3 — Under an active gate with an absent/stale feed, `CurrencyEngine.run` (deliberately mirroring `Os…
 
 - source_spec: `_bmad-output/projects/pyforge-warden/implementation-artifacts/spec-6-5-two-mode-policy-integration.md`
@@ -207,6 +217,8 @@ status: open
   evidence: `vuln.py`'s `OsvParse.kev_candidates` field (Story 6.4) is read verbatim by both `engines._stamp_kev` and the new `engines._stamp_epss` (Story 6.7's Boundaries explicitly mandate this reuse — "no new candidate-collection mechanism"). Raised by the Blind Hunter review pass (naming/maintainability, not a behavior defect).
 
   status: open
+
+  verified: 2026-07-30 — `OsvParse.kev_candidates` is unchanged and now has a second consumer — `vuln.py:85` records that Story 6.7 'reuses `OsvParse.kev_candidates` verbatim'; see also `:122` and `:915`.
 
 ## DW-6-7-2 — The EPSS cache reuses `feeds.DEFAULT_FEED_MAX_AGE_DAYS` (7 days) unchanged — the same shared con…
 
@@ -387,6 +399,7 @@ status: open
   summary: `scripts/harvest_corpus.py`'s `write_sources_md` hardcodes the 3-bullet "Hand-authored" description list in prose rather than deriving it from `_HANDAUTHORED_FIXTURES`, so adding/renaming/removing an entry in that dict silently leaves `SOURCES.md`'s prose out of sync with what is actually on disk (the `handauthored` parameter passed into the function is unused, deliberately `del`'d).
   evidence: `write_sources_md`'s hand-authored section is a fixed `lines` literal, unlike its own upstream half (`upstream_lines`, derived live from `_UPSTREAM_OUT.iterdir()`); making the two symmetric needs each `_HANDAUTHORED_FIXTURES` entry to carry a human-readable description alongside its content, a moderate refactor of a dev-only maintenance script. Raised by the Blind Hunter of the Story 5.2 review pass.
   status: open
+  verified: 2026-07-30 — `scripts/harvest_corpus.py:332` still emits the literal `"## Hand-authored"` heading.
 
 ## DW-5-2-4 — `test_perf_overhead.py`'s `REPRESENTATIVE_TARGET` hardcodes a single corpus feedstock path (`rec…
 
@@ -395,6 +408,8 @@ status: open
   evidence: `test_perf_overhead.py` references the literal path once, with no fallback/discovery logic if it is absent; low likelihood (an established, actively-maintained feedstock) and low consequence (a loud, clearly-worded test failure rather than a silent gap) but a real edge case. Raised by the Edge Case Hunter of the Story 5.2 review pass.
 
   status: open
+
+  verified: 2026-07-30 — `tests/conformance/test_perf_overhead.py:53` still hardcodes `REPRESENTATIVE_TARGET`, asserted present at `:96`.
 ## Deferred from: follow-up code review of spec-5-2-fleet-scale-validation-corpus-oracle-maturation (2026-07-24, bmad-dev-auto follow-up review pass)
 
 ## DW-5-2-5 — No CI workflow or scheduled runner ever executes the new `pyforge-warden-test-corpus-oracle` pix…

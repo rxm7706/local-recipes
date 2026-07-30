@@ -2800,7 +2800,7 @@ window.DASHBOARD_DATA = {
       }
     }
   },
-  "snapshot": "<span>2026-07-30 15:35 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-07-30 16:28 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -6598,7 +6598,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-07-25",
           "deck": "",
-          "spec": "2026-07-30T14:40",
+          "spec": "2026-07-30T15:10",
           "research": "2026-07-25",
           "brief": "",
           "prd": "",
@@ -8446,15 +8446,15 @@ window.DASHBOARD_DATA = {
     ]
   },
   "openwork": {
-    "open": 139,
-    "done": 4,
-    "triaged": 16,
+    "open": 138,
+    "done": 5,
+    "triaged": 23,
     "bySeverity": {
       "critical": 0,
       "high": 1,
       "medium": 3,
       "low": 9,
-      "unspecified": 126
+      "unspecified": 125
     },
     "projects": [
       {
@@ -8868,16 +8868,16 @@ window.DASHBOARD_DATA = {
       {
         "project": "pyforge-warden",
         "path": "_bmad-output/projects/pyforge-warden/planning-artifacts/deferred-work-ledger.md",
-        "open": 41,
-        "done": 2,
-        "triaged": 13,
+        "open": 40,
+        "done": 3,
+        "triaged": 20,
         "entries": [
           {
             "id": "DW-1-1-1",
             "title": "The loop's exact `[verify]` command (`pixi run -e python-deptry-osv-scanner python-deptry-osv-sc…",
-            "status": "open",
+            "status": "done",
             "severity": "unspecified",
-            "triaged": false
+            "triaged": true
           },
           {
             "id": "DW-BMAD-LOOP-1",
@@ -8905,21 +8905,21 @@ window.DASHBOARD_DATA = {
             "title": "`scripts/refresh_endoflife_feed.py` fetches one HTTP request per registry product slug with no r…",
             "status": "open",
             "severity": "unspecified",
-            "triaged": false
+            "triaged": true
           },
           {
             "id": "DW-6-3-3",
             "title": "`_resolve_from_lines`/`_resolve_from_cycles` (currency.py) compute `lag` by counting entries rel…",
             "status": "open",
             "severity": "unspecified",
-            "triaged": false
+            "triaged": true
           },
           {
             "id": "DW-6-3-4",
             "title": "`currency.py`'s `DEFAULT_CURRENCY_POLICY` and `config.py`'s `EffectiveConfig.currency_policy` pr…",
             "status": "open",
             "severity": "unspecified",
-            "triaged": false
+            "triaged": true
           },
           {
             "id": "DW-6-3-5",
@@ -8975,7 +8975,7 @@ window.DASHBOARD_DATA = {
             "title": "The `warn-as-error` exit projection leaves no trace anywhere in the output — the report persists…",
             "status": "open",
             "severity": "unspecified",
-            "triaged": false
+            "triaged": true
           },
           {
             "id": "DW-6-5-3",
@@ -8989,7 +8989,7 @@ window.DASHBOARD_DATA = {
             "title": "`OsvParse.kev_candidates` (the finding.id -> CVE-alias-tuple mapping populated at OSV-parse time…",
             "status": "open",
             "severity": "unspecified",
-            "triaged": false
+            "triaged": true
           },
           {
             "id": "DW-6-7-2",
@@ -9136,14 +9136,14 @@ window.DASHBOARD_DATA = {
             "title": "`scripts/harvest_corpus.py`'s `write_sources_md` hardcodes the 3-bullet \"Hand-authored\" descript…",
             "status": "open",
             "severity": "unspecified",
-            "triaged": false
+            "triaged": true
           },
           {
             "id": "DW-5-2-4",
             "title": "`test_perf_overhead.py`'s `REPRESENTATIVE_TARGET` hardcodes a single corpus feedstock path (`rec…",
             "status": "open",
             "severity": "unspecified",
-            "triaged": false
+            "triaged": true
           },
           {
             "id": "DW-5-2-5",
