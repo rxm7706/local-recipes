@@ -2800,7 +2800,7 @@ window.DASHBOARD_DATA = {
       }
     }
   },
-  "snapshot": "<span>2026-07-30 13:58 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-07-30 14:42 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -6598,7 +6598,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-07-25",
           "deck": "",
-          "spec": "2026-07-29T04:40",
+          "spec": "2026-07-30T14:40",
           "research": "2026-07-25",
           "brief": "",
           "prd": "",
@@ -6926,7 +6926,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-07-25",
           "deck": "",
-          "spec": "2026-07-29T20:10",
+          "spec": "2026-07-30T14:40",
           "research": "2026-07-25",
           "brief": "",
           "prd": "",
@@ -7907,9 +7907,9 @@ window.DASHBOARD_DATA = {
         "name": "spec-surface",
         "task": "spec-surface-check",
         "guards": "every tracked file under a Spec surface",
-        "state": "drift",
-        "findings": 2,
-        "verdict": "FINDINGS (2):",
+        "state": "green",
+        "findings": 0,
+        "verdict": "OK: every tracked file governed or allowlisted; no drift.",
         "runbook": ""
       },
       {
@@ -8442,6 +8442,1066 @@ window.DASHBOARD_DATA = {
         "slug": "pyforge-genesis",
         "title": "Genesis — the seed of the operating model",
         "status": "specified"
+      }
+    ]
+  },
+  "openwork": {
+    "open": 140,
+    "done": 3,
+    "triaged": 3,
+    "bySeverity": {
+      "critical": 0,
+      "high": 1,
+      "medium": 3,
+      "low": 9,
+      "unspecified": 127
+    },
+    "projects": [
+      {
+        "project": "pyforge-atlas",
+        "path": "_bmad-output/projects/pyforge-atlas/planning-artifacts/deferred-work-ledger.md",
+        "open": 55,
+        "done": 2,
+        "triaged": 3,
+        "entries": [
+          {
+            "id": "DW-A1-5",
+            "title": "local-recipes doc re-sync + drift baseline re-stamp (surface-changed)",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-B1-1",
+            "title": "parity-diff harness under-checks (HIGH, B4 must resolve before it trusts parity)",
+            "status": "open",
+            "severity": "high",
+            "triaged": false
+          },
+          {
+            "id": "DW-B1-2",
+            "title": "RateLimitedScheduler not yet wired to the fetch path (MEDIUM, B2/live-fetch)",
+            "status": "open",
+            "severity": "medium",
+            "triaged": false
+          },
+          {
+            "id": "DW-B1-3",
+            "title": "enumerate_conda_packages tie-break + B.5 inactive placeholder rows (LOW/MEDIUM, B4 parity)",
+            "status": "open",
+            "severity": "low",
+            "triaged": false
+          },
+          {
+            "id": "DW-B2-1",
+            "title": "DAG-level persistence of operator notes edited on the SCORED output (MEDIUM, persistence boundary)",
+            "status": "open",
+            "severity": "medium",
+            "triaged": false
+          },
+          {
+            "id": "DW-B2-2",
+            "title": "coerce_cvss_score not on the B2 node data path until B5 wires the vdb boundary (LOW, B5)",
+            "status": "open",
+            "severity": "low",
+            "triaged": false
+          },
+          {
+            "id": "DW-B2-3",
+            "title": "vuln_kev_affecting_current in the report-only rollup is package-wide, not version-scoped (LOW, report-only)",
+            "status": "open",
+            "severity": "low",
+            "triaged": false
+          },
+          {
+            "id": "DW-B2-4",
+            "title": "Phase P cost-gate class not yet wired into the catalog (B3/B4 pre-flight, MEDIUM)",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-B2-5",
+            "title": "pypi_intelligence pipeline not end-to-end runnable unattended (by design, note-only)",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-B4-1",
+            "title": "the credentialed full parity run (ATTENDED, AD-19) — DEFERRED to the wave-boundary event",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-B4-2",
+            "title": "human sign-off + marking legacy retirement (FR-4) — DEFERRED (human act)",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-B4-3",
+            "title": "fixture recapture from a real legacy run (DW-B1-1 part a) — tool SHIPPED, recapture DEFERRED",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-B4-4",
+            "title": "DW-B2-4 BigQuery-routing pre-flight before any credentialed Phase-P run — DEFERRED (carries DW-B2-4)",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-B4-5",
+            "title": "parity-reconcile items surfaced at the credentialed run (carries DW-B1-3 / DW-B2-3) — DEFERRED",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-B4-6",
+            "title": "credentialed-mode read-path hardening (attended event) — DEFERRED",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-B5-1",
+            "title": "re-point name_resolver.py / recipe-generator.py at Phase C + verify the live authoring read (Q6) — DEFERRED (read-only .",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-B5-2",
+            "title": "C1 wires the Dagster Schedules AND the concrete refresher/fetcher INJECTION (+ store-format fidelity) — DEFERRED (attend",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-B5-3",
+            "title": "DW-A2-P4 JFrog dynamic per-host credential attachment for enterprise-mirrored refresh stores — DEFERRED (no live surface",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-B5-4",
+            "title": "wire the AD-13 staleness marker into the G/G' consumer read-path (degrade to indeterminate) — DEFERRED (consumer-side, B",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-B6-1",
+            "title": "spdx-schema-gap atlas-usage ranking needs `conda_license` (not yet produced by core) — DEFERRED",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-B6-2",
+            "title": "cwe-seed-gap `_other_impact` headline needs the per-package CWE-rollup dataset — DEFERRED",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-B7-1",
+            "title": "the UPDATE-FEEDSTOCK bucket needs an upstream-of-record column (not yet on core_packages_enumerated) — DEFERRED",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-B7-2",
+            "title": "the real transitive resolver (pip --dry-run / py-rattler solve) is injected, not shipped in-package — DEFERRED",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-B7-3",
+            "title": "universe-BOM standalone pypi-only completeness (not a scope hole; a widening) — DEFERRED",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-B8-1",
+            "title": "the concrete live Basilisk fetcher (querybatch / detail GET) is injected, not shipped in-package — DEFERRED",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-B8-2",
+            "title": "the no-currency-conflation view's behind-upstream join is fixture-supplied — DEFERRED",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-B8-3",
+            "title": "the full 21,163-package Basilisk population run is credentialed/attended — DEFERRED",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-C1-1",
+            "title": "the live Dagster schedule bring-up (ATTENDED, Q2) — DEFERRED to the wave-boundary event",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-C1-2",
+            "title": "per-op runtime ENFORCEMENT + profile-config run-wiring are bring-up concerns (structural-only in C1)",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-D2-1",
+            "title": "the full 28-page Vizro inventory is CIS-two-spine deferred",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-D2-2",
+            "title": "shell pages await their composed-store materialization (staleness / query-atlas / detail-cf-atlas / behind-upstream / wh",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-D2-3",
+            "title": "DEV-AUTO visual verification of the rendered UI (headless container cannot)",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-D3-1",
+            "title": "the live Vizro-AI NL→chart backend bring-up (ATTENDED, Q3) — DEFERRED to the wave-boundary event",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-D3-2",
+            "title": "the dashboard NL query field (the D2 Vizro dashboard's NL entry point) — DEFERRED (carries DW-D3-1 + the CIS spine)",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-E1-1",
+            "title": "the live cross-process A2A wire (a running fasta2a server / broker) — DEFERRED",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-E2-1",
+            "title": "the live OTel collector + OpenLineage backend wiring (env-driven) — DEFERRED",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-E2-2",
+            "title": "Dagster-plane observability inheritance verification + span-key footgun (bring-up)",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-E2-3",
+            "title": "AtlasNodeMetricsRunFacet provenance stamp (cosmetic)",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-F1-1",
+            "title": "the cold-start / warm-incremental benchmark (ATTENDED, SM-3) — DEFERRED",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-F2-1",
+            "title": "the Great Expectations boundary adapter (version-capped at cf 1.18.2) — DEFERRED",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-F2-2",
+            "title": "wire a real A2A alert_sink into the shipped validation hook (gated on F4's first contract)",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-F3-1",
+            "title": "a real learned embedding model (upgrade from the deterministic default)",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-F3-2",
+            "title": "live `vss` extension provisioning (the one-time network INSTALL)",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-G1-1",
+            "title": "full Vizro-AI dashboard RENDERED inside Pyodide (the heavy read-surface half)",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-G1-2",
+            "title": "heavy WASM build assets are gitignored; CI must run `wasm-build` before `wasm-smoke`",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-G2-1",
+            "title": "the LIVE GitHub Pages publish is the ATTENDED boundary event (not automated)",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-G2-2",
+            "title": "migrate the G1 wasm/ runtime to consume the emitter's manifest (single-owner completion)",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-G3",
+            "title": "the live Dagster sensor DAEMON bring-up (ATTENDED, Q2) — DEFERRED to the wave-boundary event",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-H1",
+            "title": "the MinIO/PostgreSQL SERVER provisioning + bring-up (ATTENDED) — DEFERRED to the H1 precondition event",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-H2",
+            "title": "the live `agno`-Agent / LLM synthesis + F3-vss production retriever bring-up (ATTENDED) — DEFERRED",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-H3",
+            "title": "the live La Suite/Wagtail SERVER + credential + httpx opener bring-up (ATTENDED) — DEFERRED",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-H4",
+            "title": "the live factory-crew daemon bring-up (sensor RUNNING + weekly lint + live wiki store) (ATTENDED) — DEFERRED",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-I4-1",
+            "title": "10.5 finalized on a spent review budget, not on convergence (LOW) — DEFERRED",
+            "status": "open",
+            "severity": "low",
+            "triaged": true
+          },
+          {
+            "id": "DW-AD23-1",
+            "title": "Run admission was asserted but never implemented (HIGH) — CLOSED",
+            "status": "done",
+            "severity": "high",
+            "triaged": true
+          },
+          {
+            "id": "DW-AD23-2",
+            "title": "Run-admission release residuals: Dagster-plane process-locality, `in_process` coupling, and the hook-ordering strand win",
+            "status": "open",
+            "severity": "medium",
+            "triaged": true
+          },
+          {
+            "id": "DW-I5-1",
+            "title": "10.6 also finalized on a spent review budget (LOW) — DEFERRED",
+            "status": "open",
+            "severity": "low",
+            "triaged": true
+          },
+          {
+            "id": "DW-AD23-3",
+            "title": "the lock store's DEFAULT location is the hazardous one (MEDIUM) — CLOSED",
+            "status": "done",
+            "severity": "medium",
+            "triaged": true
+          }
+        ]
+      },
+      {
+        "project": "pyforge-warden",
+        "path": "_bmad-output/projects/pyforge-warden/planning-artifacts/deferred-work-ledger.md",
+        "open": 42,
+        "done": 1,
+        "triaged": 0,
+        "entries": [
+          {
+            "id": "DW-1-1-1",
+            "title": "The loop's exact `[verify]` command (`pixi run -e python-deptry-osv-scanner python-deptry-osv-sc…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-BMAD-LOOP-1",
+            "title": "`scm.isolation = \\\"worktree\\\"` + `cleanup.trim_artifacts = true` silently lose any dev/review-se…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-4-1",
+            "title": "The 1.4 fixture proves offline OSV matching only for the literal pin `pdos-vuln-fixture==1.0.0`;…",
+            "status": "done",
+            "severity": "unspecified",
+            "triaged": true
+          },
+          {
+            "id": "DW-6-3-1",
+            "title": "The report schema has no `runtime_python` field on `ComplianceReport`/the currency section — epi…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-6-3-2",
+            "title": "`scripts/refresh_endoflife_feed.py` fetches one HTTP request per registry product slug with no r…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-6-3-3",
+            "title": "`_resolve_from_lines`/`_resolve_from_cycles` (currency.py) compute `lag` by counting entries rel…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-6-3-4",
+            "title": "`currency.py`'s `DEFAULT_CURRENCY_POLICY` and `config.py`'s `EffectiveConfig.currency_policy` pr…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-6-3-5",
+            "title": "The endoflife.date cache reuses `feeds.DEFAULT_FEED_MAX_AGE_DAYS` (7 days, tuned for KEV's frequ…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-6-3-6",
+            "title": "Both currency resolvers parse and DROP the `lts` boolean (registry `lts_lines` entries and endof…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-6-3-7",
+            "title": "`currency:`/`license:` finding ids (`<axis>:<reason>:<name>@<version>`) carry no ecosystem discr…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-6-3-8",
+            "title": "The frozen 6.1 model invariant (\"currency eol/over-lag finding requires non-null latest/lag/eol_…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-6-3-9",
+            "title": "`ComplianceReport.__post_init__`'s duplicate-finding-id invariant turns ANY producer-side id col…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-FU-6-3",
+            "title": "Follow-up review still recommended for 6-3-currency-axis-producer-gate-flags after the damping cap was spent",
+            "status": "open",
+            "severity": "low",
+            "triaged": false
+          },
+          {
+            "id": "DW-6-5-1",
+            "title": "The bundled `data/lts-registry.yaml` carries a fixed `updated:` date (currently `2026-07-06`) an…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-6-5-2",
+            "title": "The `warn-as-error` exit projection leaves no trace anywhere in the output — the report persists…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-6-5-3",
+            "title": "Under an active gate with an absent/stale feed, `CurrencyEngine.run` (deliberately mirroring `Os…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-6-7-1",
+            "title": "`OsvParse.kev_candidates` (the finding.id -> CVE-alias-tuple mapping populated at OSV-parse time…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-6-7-2",
+            "title": "The EPSS cache reuses `feeds.DEFAULT_FEED_MAX_AGE_DAYS` (7 days) unchanged — the same shared con…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-6-7-3",
+            "title": "The real FIRST.org EPSS feed (~290k rows, republished daily) was poured into cache conventions s…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-6-7-4",
+            "title": "The `feeds.py` atomic-write shape now carries FOUR copies of a latent double-close: if `json.dum…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-6-7-5",
+            "title": "The conformance-suite helper trio is now duplicated wholesale across feed-enrichment test files…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-6-8-1",
+            "title": "`architecture.md`'s \"Project Structure\" tree (§ around the `waiver.py`/`report.py`/`verdict.py`…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-6-8-2",
+            "title": "`--baseline-emit` stamps every proposed entry with `expires_at = now + waiver_default_expiry_day…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-6-8-3",
+            "title": "An EXPIRED suppression (waiver or baseline) is invisible in the machine-readable contract: `supp…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-6-8-4",
+            "title": "`report-schema.json`'s top-level `suppressions` description (the `\"description\"` string on the `…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-6-8-5",
+            "title": "`load_waivers` still parses with plain `yaml.safe_load`, which silently keeps the LAST of two du…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-5-1-1",
+            "title": "A hygiene-axis remediation line's manifest+location clause is frequently unavailable because `hy…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-5-1-2",
+            "title": "`--doctor` silently no-ops every other `scan` flag it's combined with (`--sbom-output`, `--basel…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-5-1-3",
+            "title": "`report._remediation_line`'s vuln branch recovers the advisory id for display by re-splitting th…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-5-1-4",
+            "title": "`tests/conftest.py`'s comment describing the ambient offline OSV DB fixture still claims \"its ON…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-5-1-5",
+            "title": "The literal argv `[\"deptry\", \"--version\"]` / `[\"osv-scanner\", \"--version\"]` now exists independe…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-5-1-6",
+            "title": "`vuln._extract_fixed_version` takes the FIRST well-formed `fixed` event in document order (an in…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-5-1-7",
+            "title": "The remediation line's manifest-location clause unions provenance across ALL same-named componen…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-5-1-8",
+            "title": "The `manifest_locations` lookup applies PEP-503 canonicalization (`_canonical_subject_key`) to E…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-FU-5-1",
+            "title": "Follow-up review still recommended for 5-1-actionable-diagnostics-safe-by-default-posture after the damping cap was spen",
+            "status": "open",
+            "severity": "low",
+            "triaged": false
+          },
+          {
+            "id": "DW-5-2-1",
+            "title": "The new `ThreadPoolExecutor`-based 4-axis engine fan-out in `cli.py`'s `_run_scan` changes SIGIN…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-5-2-2",
+            "title": "`test_extraction_oracle.py`'s corpus-scale comparison excludes any manifest whose raw text match…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-5-2-3",
+            "title": "`scripts/harvest_corpus.py`'s `write_sources_md` hardcodes the 3-bullet \"Hand-authored\" descript…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-5-2-4",
+            "title": "`test_perf_overhead.py`'s `REPRESENTATIVE_TARGET` hardcodes a single corpus feedstock path (`rec…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-5-2-5",
+            "title": "No CI workflow or scheduled runner ever executes the new `pyforge-warden-test-corpus-oracle` pix…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-5-2-6",
+            "title": "`.warden-baseline.yaml`'s first entry hardcodes the running interpreter's patch version in its f…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-5-2-7",
+            "title": "All 19 entries in the committed `.warden-baseline.yaml` expire simultaneously at 2027-07-24T00:0…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-CROSS-CUTTING-1",
+            "title": "`pixi-build-python` 0.8.3 panics with an unsigned byte-index underflow (`tools.rs:461`, `end byt…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          }
+        ]
+      },
+      {
+        "project": "pyforge-herald",
+        "path": "_bmad-output/projects/pyforge-herald/planning-artifacts/deferred-work-ledger.md",
+        "open": 24,
+        "done": 0,
+        "triaged": 0,
+        "entries": [
+          {
+            "id": "DW-1-1-1",
+            "title": "Fresh bmad-loop worktrees can't `pixi run`/`pixi lock`/`pixi install` any brand-new or never-yet…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-1-2",
+            "title": "The `/dist/` and `/dist-conda/` lines in the pixi-package `.gitignore` pattern (copied verbatim…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-1-3",
+            "title": "None of `pyforge-warden`/`pyforge-atlas`/`pyforge-herald`'s `pyproject.toml` scope `[tool.hatch.…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-1-4",
+            "title": "`pyforge-warden`/`pyforge-atlas`/`pyforge-herald` each declare `license = { text = \"MIT\" }` in `…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-1-5",
+            "title": "`pyforge-herald`'s version `\"0.1.0\"` (like warden's/atlas's) is hand-duplicated between the pack…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-1-6",
+            "title": "`pyforge-herald`'s root `pixi.toml` feature block pins `python-build = \">=1.5.0\"` with no upper…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-1-7",
+            "title": "The verify-gate repair for this story (populating `build_artifacts/linux64` stubs so `pixi run -…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-1-8",
+            "title": "No meta-test enumerates or validates the set of registered pixi environments/features in root `p…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-2-1",
+            "title": "`McpTransport` opens one `asyncio.run()`-scoped MCP session per tool call (one extra `initialize…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-2-2",
+            "title": "bmad-loop worktree paths longer than ~173 characters make EVERY `pixi` source-package operation…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-2-3",
+            "title": "The `DesignTransport` port has no `list_files` or `delete_files` method, but the live `finalize_…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-2-4",
+            "title": "`FileRead` drops the server's `untrusted-project-content` provenance marking — the wrapper exist…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-2-5",
+            "title": "A conflicted write is returned to the caller as an ordinary success `Mapping`. The live `write_f…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-2-6",
+            "title": "`_call_tool_async` — the only code that builds the three auth headers, filters MCP content block…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-2-7",
+            "title": "A server-*answered* JSON-RPC error is reported as `TransportUnreachableError`. The `mcp` SDK rai…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-2-8",
+            "title": "HTTP 429 and 5xx have no distinct error class — both land on `TransportUnreachableError`, so a r…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-2-9",
+            "title": "No request timeout is set on either `streamablehttp_client(...)` or `session.call_tool(...)`, so…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-2-10",
+            "title": "`mcp>=1.28.1` is declared with no upper bound in all three manifests while `_call_tool_async` bi…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-2-11",
+            "title": "`McpTransport` resolves the credential once and caches it on the instance for the process lifeti…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-2-12",
+            "title": "`AuthError` subclasses `TransportError`, so the natural retry predicate for the parent class (`e…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-2-13",
+            "title": "`sanitize_payload` collapses two distinct string mapping keys that both name the tokenized previ…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-2-14",
+            "title": "`mcp_transport.py` imports `_as_text` and `_as_optional_text` from `base.py` as underscored priv…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-2-15",
+            "title": "`ARCHITECTURE-SPINE.md`'s amended *Etag headers* convention row asserts that `read_file`'s `if_n…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-1-9",
+            "title": "Story 1.1's spec was never promoted from the gitignored Tier-3 `implementation-artifacts/` into…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          }
+        ]
+      },
+      {
+        "project": "pyforge-marshal",
+        "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md",
+        "open": 15,
+        "done": 0,
+        "triaged": 0,
+        "entries": [
+          {
+            "id": "DW-1-1-1",
+            "title": "The `pyforge-mason`, `pyforge-steward`, and `pyforge-warden` `*-build-conda` pixi tasks (root `p…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-1-2",
+            "title": "`pyforge-doctor` and `pyforge-warden`'s package `.gitignore` files put comments inline after the…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-1-3",
+            "title": "Every pyforge sibling package (doctor, warden, steward, mason, and now marshal) declares `licens…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-1-4",
+            "title": "The `pyforge-mason-build-dist` and `pyforge-steward-build-dist` pixi tasks (root `pixi.toml`) ru…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-FU-1-1",
+            "title": "Follow-up review still recommended for 1-1-package-spine-verdict-lattice-findings-registry-and-the-meta-tests-that-enfor",
+            "status": "open",
+            "severity": "low",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-3-1",
+            "title": "`core/policy.py`'s `content_hash` (and therefore `materialize()`'s content-addressed filename) i…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-3-2",
+            "title": "`schemas/policy.json`'s `policyField` `$defs` entry does not constrain the TYPE of `value`/`raw_…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-3-3",
+            "title": "`cli/config.py::materialize()` can leave an orphaned `.policy-*.tmp` file in the target director…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-FU-1-3",
+            "title": "Follow-up review still recommended for 1-3-layered-policy-composition-with-provenance-and-validation after the damping c",
+            "status": "open",
+            "severity": "low",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-10-1",
+            "title": "`adapters/harness_bmadloop.py`'s vendored `_POLICY_TEMPLATE` is a hand-copied snapshot of `bmad_…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-10-2",
+            "title": "`write_policy_toml`'s unconditional whole-file overwrite will silently discard harness-native st…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-10-3",
+            "title": "This story's untrack (`git rm --cached .bmad-loop/policy.toml`) only closes the F-1 cross-projec…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-10-4",
+            "title": "Between this story's merge (which untracks `.bmad-loop/policy.toml`) and the later story that wi…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-10-5",
+            "title": "The `max_followup_reviews = 2` value in the (now untracked) live policy.toml was explicitly bran…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-10-6",
+            "title": "The tracked `.bmad-loop/policy.toml` this story deletes carried curated operational commentary w…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          }
+        ]
+      },
+      {
+        "project": "pyforge-doctor",
+        "path": "_bmad-output/projects/pyforge-doctor/planning-artifacts/deferred-work-ledger.md",
+        "open": 4,
+        "done": 0,
+        "triaged": 0,
+        "entries": [
+          {
+            "id": "DW-1-1-1",
+            "title": "The loop's exact `[verify]` command (`pixi run -e pyforge-doctor pyforge-doctor-test`, unfrozen)…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-1-2",
+            "title": "The team's own auto-memory (`project_bmad_loop_worktree_path_length_limit.md`, updated 2026-07-2…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-1-3",
+            "title": "Three uncoordinated version constraints exist for the same `hatchling` build backend across the…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-1-4",
+            "title": "The AD-2 sole-ownership meta-test's AST exit-literal detector (mirroring `pyforge-warden/tests/m…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          }
+        ]
       }
     ]
   }

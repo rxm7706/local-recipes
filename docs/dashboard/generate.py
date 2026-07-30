@@ -1585,6 +1585,72 @@ def scan_pitch() -> list[dict]:
     return cards
 
 
+# ---- open work (the tracked deferred-work ledgers) ---------------------------
+
+_DW_HEAD = re.compile(r"^#{2,4}\s+(DW-[A-Za-z0-9][A-Za-z0-9-]*)\s*[—:-]?\s*(.*)$", re.M)
+_DW_STATUS = re.compile(r"^\s*status:\s*(\S.*?)\s*$", re.M)
+_DW_SEVERITY = re.compile(r"^\s*severity:\s*(\w+)", re.M)
+# atlas encodes severity in the heading — `## DW-B1-1 — title (HIGH, context)`.
+_DW_SEV_HEAD = re.compile(r"\((CRITICAL|HIGH|MEDIUM|LOW)\b", re.I)
+_DW_RESOLUTION = re.compile(r"^\s*resolution:\s*\S", re.M)
+_SEVERITIES = ("critical", "high", "medium", "low", "unspecified")
+
+
+def scan_deferred() -> dict:
+    """Open deferred work per project, from the TRACKED ledgers.
+
+    This is the factory's largest body of known-but-unscheduled work and it had NO board
+    surface at all — 143 entries across five ledgers, invisible to anyone not reading the
+    files. It could not be surfaced earlier because four incompatible shapes and 82 entries
+    without ids left nothing stable to count; the 2026-07-30 normalization is what made this
+    function possible.
+
+    The `verified` count is reported separately and deliberately: 134 of the status lines
+    were added mechanically by that normalization, which recorded what the ledger SAID, not
+    what the code shows. An entry carrying a `resolution:` or a non-bare status has actually
+    been triaged; a bare `open` means nobody has checked. Reporting one number for both
+    would repeat the conflation that hid this work in the first place.
+    """
+    projects, totals = [], {"open": 0, "done": 0, "triaged": 0}
+    by_sev: dict[str, int] = {s: 0 for s in _SEVERITIES}
+    for led in sorted(REPO_ROOT.glob(
+            "_bmad-output/projects/*/planning-artifacts/deferred-work-ledger.md")):
+        slug = led.parts[-3]
+        text = led.read_text(encoding="utf-8")
+        marks = [(m.start(), m.group(1), m.group(2)) for m in _DW_HEAD.finditer(text)]
+        rows = []
+        for i, (pos, ident, title) in enumerate(marks):
+            body = text[pos:marks[i + 1][0] if i + 1 < len(marks) else len(text)]
+            sm = _DW_STATUS.search(body)
+            status = (sm.group(1) if sm else "open").strip()
+            done = status.lower().startswith(("done", "closed", "superseded", "resolved"))
+            sev = (_DW_SEVERITY.search(body) or _DW_SEV_HEAD.search(title))
+            sev = (sev.group(1).lower() if sev else "unspecified")
+            if sev not in by_sev:
+                sev = "unspecified"
+            triaged = bool(_DW_RESOLUTION.search(body)) or status.lower() != "open"
+            rows.append({"id": ident, "title": title.strip()[:120],
+                         "status": "done" if done else "open",
+                         "severity": sev, "triaged": triaged})
+            totals["done" if done else "open"] += 1
+            if not done:
+                by_sev[sev] += 1
+                totals["triaged"] += bool(triaged)
+        projects.append({
+            "project": slug, "path": str(led.relative_to(REPO_ROOT)),
+            "open": sum(1 for r in rows if r["status"] == "open"),
+            "done": sum(1 for r in rows if r["status"] == "done"),
+            "triaged": sum(1 for r in rows if r["status"] == "open" and r["triaged"]),
+            "entries": rows,
+        })
+    projects.sort(key=lambda p: -p["open"])
+    print(f"[open-work] {totals['open']} open · {totals['done']} done across "
+          f"{len(projects)} ledger(s) · {totals['triaged']} of the open entries have been "
+          f"verified against the code, {totals['open'] - totals['triaged']} have not")
+    return {"open": totals["open"], "done": totals["done"],
+            "triaged": totals["triaged"], "bySeverity": by_sev, "projects": projects}
+
+
 # ---- archived (absorbed / retired / terminal / blocked) ----------------------
 
 # Archived is driven ENTIRELY by Dream frontmatter (`status: archived` +
@@ -2049,6 +2115,7 @@ def main() -> int:
         {"id": "build-2026-07-25", "title": "The Build", "kind": "build",
          "status": "active", **build_c},
     ]
+    data["openwork"] = scan_deferred()
     data["archived"] = build_archived(data["dreams"])
     # apply_owner MUST precede scan_guild: the Guild's `building` column reads
     # proj["owner"], which apply_owner sets. Ordered the other way it silently
