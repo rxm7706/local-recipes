@@ -118,6 +118,10 @@ def test_story_key_total_ordering():
         {"epic": 1, "seq": 1, "suffix": "ab"},
         {"epic": 1, "seq": 1, "suffix": "A"},
         {"epic": 1, "seq": 1, "suffix": "1"},
+        # Unicode lowercase letters pass islower()/isalpha() but are NOT
+        # a-z -- the guard must be an explicit ASCII range or this mints a
+        # key normalize() can never round-trip.
+        {"epic": 1, "seq": 1, "suffix": "ß"},
     ],
 )
 def test_story_key_post_init_rejects_invalid_direct_construction(kwargs):
@@ -160,6 +164,22 @@ def test_render_filename_slug_and_branch_segment_agree_on_shape_only():
     key = StoryKey(epic=1, seq=2)
     assert render_filename_slug(key) == render_branch_segment(key) == "1-2"
     assert render_filename_slug is not render_branch_segment
+
+
+@pytest.mark.parametrize(
+    "render",
+    [render_feed_key, render_filename_slug, render_branch_segment],
+    ids=lambda fn: fn.__name__,
+)
+def test_render_functions_reject_a_non_story_key(render):
+    """``render_feed_key``'s bare ``str(key)`` would otherwise silently echo
+    un-normalized input (``"6-1A"``) as if it were canonical -- the exact
+    silent coercion this module exists to prevent -- and the hyphen forms
+    would raise an incidental ``AttributeError`` instead of a typed one."""
+    with pytest.raises(TypeError):
+        render(  # type: ignore[arg-type]
+            "6-1A"
+        )
 
 
 # --- merge-subject render/parse round-trip ----------------------------------
@@ -315,9 +335,62 @@ def test_resolve_feed_multi_failure_per_item_attribution():
 def test_resolve_feed_reports_non_str_entries_instead_of_crashing():
     """A real footgun: an unquoted YAML feed key like ``1.2:`` parses as
     the float ``1.2``, not the string ``"1.2"``. A non-str entry must be
-    reported in ``unresolved``/``findings`` (repr'd), never raise."""
-    result = resolve_feed(["1.1", 1.2, "1.3"])
+    reported in ``unresolved``/``findings`` (repr'd), never raise -- and
+    because ``repr(1.2)`` is the quoteless, valid-looking ``1.2``, the
+    finding's message must also name the type, or the diagnostic would
+    claim a well-formed key failed to resolve."""
+    result = resolve_feed(["1.1", 1.2, "1.3"])  # type: ignore[list-item]
     assert result.total == 3
     assert result.resolved == (StoryKey(1, 1), StoryKey(1, 3))
     assert result.unresolved == ("1.2",)
     assert result.findings[0].path == "1.2"
+    assert "(float)" in result.findings[0].message
+
+
+def test_resolve_feed_rejects_a_bare_str_feed():
+    """A ``str`` satisfies ``Sequence[str]``, so a single feed key passed
+    where a list was meant would otherwise shred into per-character garbage
+    findings (``total=3``, unresolved ``('1', '.', '2')``) -- the same
+    footgun ``model.py``'s ``Envelope`` guards ``assumptions`` against."""
+    with pytest.raises(TypeError):
+        resolve_feed("1.2")
+
+
+def test_resolve_feed_empty_feed_is_a_clean_zero_of_zero():
+    """Pinned deliberately, not left accidental: an empty feed resolves to
+    a clean 0-of-0. Whether an empty feed is itself an error is the
+    caller's policy (the loop's completeness gate), not identity's."""
+    result = resolve_feed([])
+    assert result.total == 0
+    assert result.resolved == ()
+    assert result.unresolved == ()
+    assert result.findings == ()
+    assert verdict.compute_verdict(result.findings) == Verdict.CLEAN
+
+
+@pytest.mark.parametrize(
+    "kwargs",
+    [
+        # total fabricated: 5 raw entries claimed, only 1 accounted for.
+        {
+            "resolved": (StoryKey(1, 1),),
+            "unresolved": (),
+            "total": 5,
+            "findings": (),
+        },
+        # findings not 1:1 with unresolved.
+        {
+            "resolved": (),
+            "unresolved": ("not-a-key",),
+            "total": 1,
+            "findings": (),
+        },
+    ],
+)
+def test_feed_resolution_post_init_rejects_fabricated_completeness(kwargs):
+    """``FeedResolution`` is AD-38's completeness attestation -- a directly
+    constructed instance (bypassing ``resolve_feed()``) must not be able to
+    claim a false "N of M", matching ``StoryKey``/``model.py``'s
+    construct-time validation convention."""
+    with pytest.raises(ValueError):
+        FeedResolution(**kwargs)

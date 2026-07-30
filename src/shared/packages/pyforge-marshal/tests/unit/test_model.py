@@ -3,10 +3,11 @@ spec's I/O & Edge-Case Matrix for the Finding/Envelope contract, plus
 jsonschema validation of ``Envelope.to_json_dict()`` against the packaged
 ``schemas/envelope.v1.json``.
 
-``core.findings.REGISTERED_CODES`` starts an empty ``frozenset()`` (Design
-Notes) -- every test needing a *valid* ``Finding`` registers a synthetic
-code via ``monkeypatch`` first, mirroring the sibling meta-tests'
-convention of never seeding invented production codes.
+``core.findings.REGISTERED_CODES`` ships with Story 1.2's two real codes
+(``MRS-IDENT-001``/``MRS-IDENT-002``, from ``core/identity.py``) -- the
+tests here still register a synthetic code via ``monkeypatch`` for every
+*valid* ``Finding`` they need, mirroring the sibling meta-tests'
+convention of never coupling tests to production codes.
 """
 
 from __future__ import annotations

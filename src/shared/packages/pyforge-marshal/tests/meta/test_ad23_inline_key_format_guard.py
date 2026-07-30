@@ -23,10 +23,20 @@ formatting shape is legitimate and is excluded from the scan).
 Bounds (stated, not aspirational): this is a best-effort STATIC check, like
 the AD-7 guard it mirrors. It only recognizes exactly-two-placeholder
 literals with a bare ``.``/``-`` separator; a key built via concatenation,
-an f-string with an intervening variable, or a template stored in a
-non-literal string (``call_format_on_a_variable.format(...)``) is out of
-scope. ``tests/unit/test_identity.py``'s round-trip tests are the
-behavioral backstop for identity's own correctness.
+an f-string with an intervening variable, a template stored in a
+non-literal string (``call_format_on_a_variable.format(...)``), or a
+THREE-placeholder suffix-aware form (``f"{epic}-{seq}{suffix}"`` -- the
+verbatim shape of identity's own ``_hyphen_form``/``__str__`` bodies) is
+out of scope. Two consequences stated plainly rather than implied:
+copy-pasting identity's own suffix-aware render bodies into another module
+would NOT fire this detector (only the suffix-DROPPING two-placeholder
+form does -- which is the incident shape AD-38 documents), and the
+detector finds zero violations in ``identity.py`` itself, so the ``EXCEPT
+core/identity.py`` carve-out is precautionary rather than currently
+load-bearing and this guard's aliveness proof is synthetic-only -- weaker
+than the AD-7 guard's fires-on-its-own-target proof, which cannot be
+replicated here. ``tests/unit/test_identity.py``'s round-trip tests are
+the behavioral backstop for identity's own correctness.
 """
 
 from __future__ import annotations

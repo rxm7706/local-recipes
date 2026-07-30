@@ -108,8 +108,11 @@ class StoryKey:
             raise ValueError(f"epic must be a non-negative int, got {self.epic!r}")
         if not isinstance(self.seq, int) or isinstance(self.seq, bool) or self.seq < 0:
             raise ValueError(f"seq must be a non-negative int, got {self.seq!r}")
+        # An explicit ASCII range, not `islower() and isalpha()` -- those are
+        # Unicode-wide, so they'd accept e.g. "ß" while the error message
+        # below promises a-z, minting a key normalize() can never round-trip.
         if not isinstance(self.suffix, str) or (
-            self.suffix and (len(self.suffix) != 1 or not self.suffix.islower() or not self.suffix.isalpha())
+            self.suffix and (len(self.suffix) != 1 or not ("a" <= self.suffix <= "z"))
         ):
             raise ValueError(
                 f"suffix must be '' or a single lowercase a-z letter, got {self.suffix!r}"
@@ -150,12 +153,26 @@ def normalize(raw: str) -> StoryKey:
     )
 
 
+def _require_story_key(key: StoryKey) -> None:
+    """Every render function's type guard. Without it, ``render_feed_key``'s
+    bare ``str(key)`` would silently echo un-normalized input (e.g. the raw
+    string ``"6-1A"``) as if it were a canonical feed key -- the exact
+    silent coercion this module exists to prevent -- and the hyphen-form
+    renderers would fail with an incidental ``AttributeError`` instead of a
+    typed rejection."""
+    if not isinstance(key, StoryKey):
+        raise TypeError(f"key must be a StoryKey, got {key!r}")
+
+
 def render_feed_key(key: StoryKey) -> str:
-    """The feed-key external form: the dot form, e.g. ``"6.1a"``."""
+    """The feed-key external form: the dot form, e.g. ``"6.1a"``. Rejects a
+    non-``StoryKey`` ``key`` -- only canonical keys reach external forms."""
+    _require_story_key(key)
     return str(key)
 
 
 def _hyphen_form(key: StoryKey) -> str:
+    _require_story_key(key)
     return f"{key.epic}-{key.seq}{key.suffix}"
 
 
@@ -250,12 +267,33 @@ class FeedResolution:
     strings that failed to parse), ``total`` (the RAW pre-parse count --
     F-13's fix, never the post-parse count), and ``findings`` (one
     ``MRS-IDENT-001`` ``Finding`` per unresolved raw key, ready to feed into
-    ``verdict.compute_verdict``)."""
+    ``verdict.compute_verdict``).
+
+    ``__post_init__`` enforces the completeness arithmetic at construction
+    (matching ``model.py``'s ``Finding``/``Envelope`` and ``StoryKey``'s own
+    convention): ``total == len(resolved) + len(unresolved)`` and one
+    finding per unresolved entry. Without this, direct construction
+    (bypassing ``resolve_feed()``) could fabricate the false "N of M"
+    attestation AD-38 exists to prevent."""
 
     resolved: tuple[StoryKey, ...]
     unresolved: tuple[str, ...]
     total: int
     findings: tuple[Finding, ...]
+
+    def __post_init__(self) -> None:
+        if self.total != len(self.resolved) + len(self.unresolved):
+            raise ValueError(
+                f"total ({self.total}) must equal len(resolved) + "
+                f"len(unresolved) ({len(self.resolved)} + "
+                f"{len(self.unresolved)}) -- every raw entry either resolves "
+                "or is reported (AD-38)"
+            )
+        if len(self.findings) != len(self.unresolved):
+            raise ValueError(
+                f"findings ({len(self.findings)}) must carry exactly one "
+                f"entry per unresolved key ({len(self.unresolved)})"
+            )
 
 
 def resolve_feed(raw_keys: Sequence[str]) -> FeedResolution:
@@ -264,7 +302,17 @@ def resolve_feed(raw_keys: Sequence[str]) -> FeedResolution:
     suffix can never report a false "N of N" (F-13, AD-38). Malformed
     entries are reported, never raised: each contributes its raw string to
     ``unresolved`` and a ``MRS-IDENT-001`` error-severity ``Finding`` naming
-    it to ``findings``."""
+    it to ``findings``. An empty feed resolves to a clean 0-of-0 -- whether
+    an empty feed is itself an error is the caller's policy, not identity's.
+    A bare ``str`` feed is rejected loudly: a ``str`` satisfies
+    ``Sequence[str]``, so ``resolve_feed("1.2")`` would otherwise shred into
+    per-character garbage findings (the same footgun ``model.py``'s
+    ``Envelope`` guards ``assumptions`` against)."""
+    if isinstance(raw_keys, str):
+        raise TypeError(
+            "raw_keys must be a sequence of story references, not a bare "
+            f"str: {raw_keys!r}"
+        )
     total = len(raw_keys)
     resolved: list[StoryKey] = []
     unresolved: list[str] = []
@@ -277,14 +325,25 @@ def resolve_feed(raw_keys: Sequence[str]) -> FeedResolution:
             # key) -- `unresolved`/`Finding.path` are both str-typed, so a
             # non-str raw entry is repr'd for reporting rather than passed
             # through, which would otherwise crash `Finding.__post_init__`'s
-            # own `path must be a str or None` check.
-            display = raw if isinstance(raw, str) else repr(raw)
+            # own `path must be a str or None` check. But repr() of e.g. the
+            # float 1.2 is the quoteless, perfectly-valid-looking "1.2" --
+            # so the message also names the type, or the diagnostic would
+            # claim a well-formed key failed to resolve.
+            if isinstance(raw, str):
+                display = raw
+                message = f"unresolved story reference: {raw}"
+            else:
+                display = repr(raw)
+                message = (
+                    f"unresolved story reference: {display} "
+                    f"({type(raw).__name__})"
+                )
             unresolved.append(display)
             findings.append(
                 Finding(
                     code="MRS-IDENT-001",
                     severity=Severity.ERROR,
-                    message=f"unresolved story reference: {display}",
+                    message=message,
                     path=display,
                 )
             )
