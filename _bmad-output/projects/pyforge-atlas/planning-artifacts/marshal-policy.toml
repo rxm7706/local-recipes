@@ -31,12 +31,6 @@
 # gate ONLY -- the independent reviewer still runs on every story.
 gate_mode = "none"
 
-# max_followup_reviews: chosen EXPLICITLY rather than left at Marshal's default of 1.
-# That default was an unchosen value deciding when stories are done: five stories
-# across three projects (atlas 10.5/10.6, marshal 1.1, warden 6.3/5.1) were damped by
-# the cap rather than by the reviewer, and honoring two atlas recommendations yielded a
-# real MEDIUM finding, DW-AD23-3. Seven of nine homes had the key absent entirely.
-max_followup_reviews = 2
 
 # verify_commands: THIS station's own suite. Every home except atlas and warden was
 # cloned from warden's and inherited `pyforge-warden-test`, so a story here would have

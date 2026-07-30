@@ -138,7 +138,16 @@ DEFAULT_POLICY: Mapping[str, object] = {
     "frozen_surfaces": (),
     "max_dev_attempts": 2,
     "max_review_cycles": 3,
-    "max_followup_reviews": 1,
+    # 2, not 1, because this is a REPO-WIDE decision and this is the only
+    # repo-wide home for one. A cap of 1 damped five still-recommended
+    # follow-up reviews across three projects (atlas 10.5/10.6, marshal 1.1,
+    # warden 6.3/5.1) into a GITIGNORED ledger -- the incident behind
+    # DW-AD23-3 and behind `deferred-work-check` existing at all. Story
+    # 1.10's own review named the placement rule: the value "has nothing to
+    # do with marshal", so supplying it from a project layer under-scopes the
+    # fix and hand-copies one decision into every station. Seeded here, no
+    # project layer needs to restate it and a new station inherits it.
+    "max_followup_reviews": 2,
 }
 
 # Secret redaction (Boundaries & Constraints): a case-insensitive suffix

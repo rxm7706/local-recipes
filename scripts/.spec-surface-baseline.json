@@ -1137,7 +1137,7 @@
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/findings.py": "cb5e268eb81436ba2f57034b5229acdad944f814",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/identity.py": "85a663d46ccd1d875893bf1c0a924bc96bcf6af7",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/model.py": "51d1d0d1919d3eda959ac31165c4d8839c56e641",
-   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/policy.py": "4a57508209e495e425e3d7ce4e71f78d20447d51",
+   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/policy.py": "8421bcdc138f55836f5615c8a284aef6354f89cf",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/verdict.py": "aa808521e61954c9b2bb76333765569636f23a94",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/ports/__init__.py": "9c64ae05027f72e8193d1f82eee5ca771ce2b26e",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/py.typed": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
@@ -1155,13 +1155,13 @@
    "src/shared/packages/pyforge-marshal/tests/meta/test_rendered_policy_untracked.py": "7a97be3399f6ba636185e323959e3851f6090c3b",
    "src/shared/packages/pyforge-marshal/tests/unit/test_cli.py": "a7dd63f87a33507a2eebb653937341be76bfe677",
    "src/shared/packages/pyforge-marshal/tests/unit/test_findings.py": "de5d02a5fd6d27cbc660d36a336c87d96463ad2a",
-   "src/shared/packages/pyforge-marshal/tests/unit/test_harness_policy_render.py": "6805b7ffda13036ecdb7d4f6877d8ff08bbb7c10",
+   "src/shared/packages/pyforge-marshal/tests/unit/test_harness_policy_render.py": "bb0db28aa1631ac1e4806c5bea9ead59bb05fedb",
    "src/shared/packages/pyforge-marshal/tests/unit/test_identity.py": "bae9cb95562e4a7b59cff43ab0423f809c141b54",
    "src/shared/packages/pyforge-marshal/tests/unit/test_model.py": "4df465f5f0b2ed6f03832dc239692cdc1158dbb7",
    "src/shared/packages/pyforge-marshal/tests/unit/test_policy.py": "bd51e98c1acf917b772e2549bcdbe10dacca90fb",
    "src/shared/packages/pyforge-marshal/tests/unit/test_verdict.py": "9d3a4b678f6b230c715eb38f105bac52b93319ee"
   },
-  "memlog": "d88e856d57152e025fc94ef2f5989b05f508124c"
+  "memlog": "5695af15910e0348f5f5108d9323869883cd02f3"
  },
  "pyforge-marshal/spec-regenerable-factory": {
   "files": {

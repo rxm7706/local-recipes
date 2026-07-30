@@ -82,7 +82,12 @@ def test_defaults_only_composition_maps_marshal_defaults():
     assert doc["gates"]["mode"] == "per-story-spec-approval"
     assert doc["limits"]["max_dev_attempts"] == 2
     assert doc["limits"]["max_review_cycles"] == 3
-    assert doc["limits"]["max_followup_reviews"] == 1
+    # 2, deliberately not the harness's stock 1 and not a loosened assertion:
+    # DEFAULT_POLICY is the only repo-wide home for a repo-wide decision, and a
+    # cap of 1 damped five still-recommended follow-up reviews across three
+    # projects into a gitignored ledger (DW-AD23-3). A station layer restating
+    # it would be nine copies of one decision -- Story 1.10's review said so.
+    assert doc["limits"]["max_followup_reviews"] == 2
     assert doc["verify"]["commands"] == []
     assert doc["scm"]["worktree_seed"] == [
         "_bmad-output/projects/acme/implementation-artifacts",
