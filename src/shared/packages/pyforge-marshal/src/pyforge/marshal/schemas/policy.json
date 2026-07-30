@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:local-recipes:pyforge-marshal:policy.v1",
+  "title": "MarshalEffectivePolicy",
+  "description": "The composed EffectivePolicy's wire shape (AD-10, AD-16, AD-26, AD-35): the closed 9-key policy vocabulary, each key a {value, layer, raw_source} PolicyField. additionalProperties is false at both the document and the PolicyField level -- an unrecognized/typo'd key is a schema violation, matching envelope.v1.json's own discipline. This is the exact shape core/policy.materialize() writes to <target_dir>/policy-<content_hash>.json; `marshal config --format json` nests one of these documents under its envelope's data.policy key alongside data.content_hash.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "verify_commands",
+    "worktree_seed_paths",
+    "merge_subject_template",
+    "model_tier_map",
+    "gate_mode",
+    "frozen_surfaces",
+    "max_dev_attempts",
+    "max_review_cycles",
+    "max_followup_reviews"
+  ],
+  "properties": {
+    "verify_commands": {
+      "$ref": "#/$defs/policyField",
+      "description": "STATIC. The allowlisted verify commands (AD-17) -- a tuple of str."
+    },
+    "worktree_seed_paths": {
+      "$ref": "#/$defs/policyField",
+      "description": "STATIC. GENERATED from the active project slug (FR-50), never a literal -- the two base paths plus any extra paths the project layer declares."
+    },
+    "merge_subject_template": {
+      "$ref": "#/$defs/policyField",
+      "description": "STATIC. The merge-subject template string (AD-24) -- validated as a non-empty str only; placeholder-shape conformance is core/identity.py's own concern."
+    },
+    "model_tier_map": {
+      "$ref": "#/$defs/policyField",
+      "description": "STATIC. A mapping of difficulty-class name to {stage: model_name}; stage names are drawn from the closed set {dev, review, triage}."
+    },
+    "gate_mode": {
+      "$ref": "#/$defs/policyField",
+      "description": "SEED (AD-26) -- reachable only via EffectivePolicy.seed_view(). One of {none, per-epic, per-story-spec-approval}; the INITIAL value only -- the live value during a run comes solely from the journal fold."
+    },
+    "frozen_surfaces": {
+      "$ref": "#/$defs/policyField",
+      "description": "SEED (AD-26) -- reachable only via EffectivePolicy.seed_view(). The initial frozen-surface set; a tuple of str paths."
+    },
+    "max_dev_attempts": {
+      "$ref": "#/$defs/policyField",
+      "description": "SEED (AD-26) -- reachable only via EffectivePolicy.seed_view(). A non-negative int ceiling."
+    },
+    "max_review_cycles": {
+      "$ref": "#/$defs/policyField",
+      "description": "SEED (AD-26) -- reachable only via EffectivePolicy.seed_view(). A non-negative int ceiling."
+    },
+    "max_followup_reviews": {
+      "$ref": "#/$defs/policyField",
+      "description": "SEED (AD-26) -- reachable only via EffectivePolicy.seed_view(). A non-negative int ceiling."
+    }
+  },
+  "$defs": {
+    "policyField": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["value", "layer", "raw_source"],
+      "properties": {
+        "value": {
+          "description": "The effective value for this key -- shape varies per key (string, integer, array of strings, or a mapping of difficulty class to {stage: model})."
+        },
+        "layer": {
+          "enum": ["default", "project", "flag"],
+          "description": "The winning layer (AD-16): Marshal defaults -> project policy -> invocation flags, last wins, no fourth layer."
+        },
+        "raw_source": {
+          "description": "The unwrapped original value from the winning layer, for provenance display. A secret-shaped field's value/raw_source is redacted before this document is rendered."
+        }
+      }
+    }
+  }
+}

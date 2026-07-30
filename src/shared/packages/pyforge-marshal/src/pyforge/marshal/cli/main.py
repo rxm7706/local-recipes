@@ -1,10 +1,17 @@
-"""The ``marshal`` console-script entry point (Story 1.1 scaffold stub).
+"""The ``marshal`` console-script entry point (Story 1.1 scaffold; Story
+1.3 converts the flat parser to a subparser tree).
 
-Only ``--version``/``--help`` are wired -- no real command exists yet (that
-lands story-by-story against the Structural Seed's ``cli/`` package). Not
-wired through the envelope/finding machinery: mirrors
-``pyforge-doctor``'s ``__main__.py`` exit-relay pattern (structure: return
-an int, never raise, relay argparse's own code, clamp anything foreign).
+``--version``/``--help`` keep working with no subcommand given -- a bare
+``marshal`` invocation still returns ``EXIT_OK`` (Story 1.1's own
+behavior, preserved). ``config`` (Story 1.3, FR-54) is the first real
+subcommand, dispatched to ``cli/config.py``. Not wired through the
+envelope/finding machinery ITSELF: mirrors ``pyforge-doctor``'s
+``__main__.py`` exit-relay pattern (structure: return an int, never raise,
+relay argparse's own code, clamp anything foreign) -- individual
+subcommand handlers (e.g. ``config.run_config``) are the ones that build
+and print an envelope; this module only dispatches to them and relays
+their returned int.
+
 ``main`` always RETURNS an int and embeds NO guarded exit-code literal
 itself: ``EXIT_OK``/``EXIT_USAGE``/``EXIT_SIGINT``/``GUARDED_EXIT_CODES``
 are imported from ``core/verdict.py``, the sole module permitted to spell
@@ -23,6 +30,7 @@ import argparse
 import sys
 
 from ..core.verdict import EXIT_OK, EXIT_SIGINT, EXIT_USAGE, GUARDED_EXIT_CODES
+from . import config as config_cli
 
 # Scaffold stage (Story 1.1): __init__.py stays empty (no __version__
 # constant), so the version string duplicates pyproject.toml's version
@@ -34,14 +42,13 @@ __version__ = "0.1.0"
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="marshal",
-        description=(
-            "Deterministic BMAD-loop supervisor (scaffold stage: no real "
-            "command wired yet)."
-        ),
+        description="Deterministic BMAD-loop supervisor.",
     )
     parser.add_argument(
         "--version", action="version", version=f"%(prog)s {__version__}"
     )
+    subparsers = parser.add_subparsers(dest="command")
+    config_cli.add_config_subparser(subparsers)
     return parser
 
 
@@ -49,9 +56,11 @@ def main(argv: list[str] | None = None) -> int:
     """Parse ``argv`` and return an exit code -- never raises ``SystemExit``
     itself. Exit codes stay inside Marshal's frozen ``{0, 1, 2, 3, 4, 130}``
     domain (AD-7): argparse's own ``--version``/``--help`` exits (``0``)
-    and usage errors (``2``) are relayed as plain ints, and a
-    ``KeyboardInterrupt`` anywhere in parser construction or parsing returns
-    the SIGINT constant.
+    and usage errors (``2``) are relayed as plain ints, a subcommand
+    handler's own returned int is relayed unchanged (it is expected to stay
+    inside the same guarded domain -- see ``core/verdict.exit_code_for``),
+    and a ``KeyboardInterrupt`` anywhere in parser construction, parsing, or
+    handler dispatch returns the SIGINT constant.
     """
     if argv is None:
         argv = sys.argv[1:]
@@ -60,7 +69,19 @@ def main(argv: list[str] | None = None) -> int:
         # during parser construction must return EXIT_SIGINT like one during
         # parsing, or main() would raise in violation of its own contract.
         parser = _build_parser()
-        parser.parse_args(argv)
+        args = parser.parse_args(argv)
+        if getattr(args, "command", None) is None:
+            return EXIT_OK
+        handler = getattr(args, "handler", None)
+        if handler is None:
+            # Unreachable today -- every registered subparser calls
+            # `set_defaults(handler=...)` -- but a future subparser that
+            # forgets to must not silently report EXIT_OK: that would mask
+            # an internal wiring bug as success. EXIT_USAGE (never a raise,
+            # keeping this function's own "never raise" contract) makes the
+            # failure visible instead.
+            return EXIT_USAGE
+        return handler(args)
     except SystemExit as exc:
         # argparse exits itself: --version/--help -> 0, a usage error -> 2
         # (never 0). Surface its code as a return value, never re-raised --
@@ -82,7 +103,6 @@ def main(argv: list[str] | None = None) -> int:
         return EXIT_USAGE
     except KeyboardInterrupt:
         return EXIT_SIGINT
-    return EXIT_OK
 
 
 if __name__ == "__main__":
