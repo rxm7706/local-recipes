@@ -25,9 +25,19 @@ Story 1.2's two real codes (``MRS-IDENT-001``/``MRS-IDENT-002``, from
 ``core/identity.py``) are its first real entries, both classified
 ``Verdict.UNEVALUABLE`` -- a malformed key or non-conforming merge subject
 means the reference could not be evaluated, not that anything failed a
-gate. Later stories populate the table further as they add real codes. The
-mechanism (a total, fail-loud lookup) is separately proven via
-``monkeypatch``-injected synthetic entries in ``tests/unit/test_verdict.py``.
+gate. Story 1.3's real codes (``MRS-POLICY-001/002/003/004/006``, from
+``core/policy.py``/``cli/config.py``) classify ``Verdict.UNEVALUABLE`` for the
+same reason: an unknown policy key, a malformed field value, a malformed
+project slug, or a CLI-boundary I/O failure resolving/writing policy means
+Marshal cannot determine operator intent or complete the requested
+operation, not that a gate failed. ``MRS-POLICY-005`` (no project slug
+supplied) classifies ``Verdict.WARN`` -- a bare no-active-project
+``marshal config`` is a legitimate show-me-the-defaults invocation, so it
+stays in the exit-0 half of the lattice while still surfacing that the
+project-derived seed path was omitted. Later stories populate the table
+further as they add real codes. The mechanism (a total, fail-loud lookup) is
+separately proven via ``monkeypatch``-injected synthetic entries in
+``tests/unit/test_verdict.py``.
 
 Every other module *feeds* findings; only this module *projects* them to a
 verdict and an exit code -- enforced by the sole-ownership meta-test
@@ -79,9 +89,16 @@ GUARDED_EXIT_CODES: frozenset[int] = frozenset(_EXIT_BY_VERDICT.values()) | {
 }
 
 # Story 1.2's core/identity.py -- the table's first real classifications.
+# Story 1.3's core/policy.py/cli/config.py add the second real caller's six codes.
 _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-IDENT-001": Verdict.UNEVALUABLE,
     "MRS-IDENT-002": Verdict.UNEVALUABLE,
+    "MRS-POLICY-001": Verdict.UNEVALUABLE,
+    "MRS-POLICY-002": Verdict.UNEVALUABLE,
+    "MRS-POLICY-003": Verdict.UNEVALUABLE,
+    "MRS-POLICY-004": Verdict.UNEVALUABLE,
+    "MRS-POLICY-005": Verdict.WARN,
+    "MRS-POLICY-006": Verdict.UNEVALUABLE,
 }
 
 
