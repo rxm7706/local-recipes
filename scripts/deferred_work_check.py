@@ -80,6 +80,54 @@ def _ids(path: Path) -> set[str]:
 _SUBSTANTIVE_BYTES = 2048
 
 
+_ENTRY_RE = re.compile(r"^#{2,4}\s+(DW-[A-Za-z0-9][A-Za-z0-9-]*)", re.M)
+_ANON_RE = re.compile(r"^-\s+source_spec:", re.M)
+_STATUS_RE = re.compile(r"^\s*status:", re.M)
+
+
+def _entries(path: Path) -> list[tuple[str, bool]]:
+    """`(id, has_status)` for every ID'd entry in a tracked ledger."""
+    if not path.is_file():
+        return []
+    text = path.read_text(encoding="utf-8", errors="replace")
+    marks = [(m.start(), m.group(1)) for m in _ENTRY_RE.finditer(text)]
+    out = []
+    for i, (pos, ident) in enumerate(marks):
+        end = marks[i + 1][0] if i + 1 < len(marks) else len(text)
+        out.append((ident, bool(_STATUS_RE.search(text[pos:end]))))
+    return out
+
+
+def _anonymous(path: Path) -> list[int]:
+    """Line numbers of entries that carry no `## DW-<id>` heading of their own.
+
+    `- source_spec:` is ambiguous: in a structured entry it is a FIELD directly under the
+    heading, and in the legacy shapes it opens an ENTRY. The rule that separates them is
+    positional — the FIRST such bullet after a heading is that entry's field; a SECOND one
+    before the next heading is a new, unidentified entry.
+
+    An earlier version latched `seen_id` true until the next heading, which made it
+    unable to see an anonymous entry in any file that had at least one id — i.e. vacuous on
+    exactly the mixed state normalization produces. Proved by mutation: deleting an id
+    heading did not red the detector.
+    """
+    if not path.is_file():
+        return []
+    lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
+    out, field_taken, in_entry = [], False, False
+    for n, ln in enumerate(lines, 1):
+        if _ENTRY_RE.match(ln):
+            field_taken, in_entry = False, True
+        elif re.match(r"^#{1,6}\s", ln):
+            field_taken, in_entry = False, False
+        elif _ANON_RE.match(ln):
+            if in_entry and not field_taken:
+                field_taken = True          # this one belongs to the heading above
+            else:
+                out.append(n)
+    return out
+
+
 def scan() -> list[dict]:
     findings: list[dict] = []
     if not PROJECTS.is_dir():
@@ -104,6 +152,41 @@ def scan() -> list[dict]:
                     "tier3": str(t3_path.relative_to(REPO_ROOT)),
                     "tracked": str(tracked_path.relative_to(REPO_ROOT)),
                     "tier3_bytes": size,
+                    "generic_id": False,
+                }
+            )
+
+        # FORMAT check on the TRACKED ledger. Durability is not enough on its own: the five
+        # tracked ledgers had grown FOUR incompatible shapes, and 83 of 134 entries carried
+        # no id and no `status:` at all — so they could not be counted, cited from a board
+        # row, deduplicated across runs, or individually closed. That is why the console had
+        # no open-work surface: there was nothing stable to render. Normalized 2026-07-30 by
+        # `scripts/normalize_deferred_ledgers.py`; this guard is what stops it decaying back.
+        #
+        # Deliberately minimal — an entry needs an ID HEADING and a STATUS line. The prose
+        # body is not policed, because the prose is the value in these files and no detector
+        # should invite a regex to reshape it.
+        for entry_id, has_status in _entries(tracked_path):
+            if has_status:
+                continue
+            findings.append(
+                {
+                    "kind": "ledger-entry-unstatused",
+                    "project": proj.name,
+                    "id": entry_id,
+                    "tier3": str(t3_path.relative_to(REPO_ROOT)),
+                    "tracked": str(tracked_path.relative_to(REPO_ROOT)),
+                    "generic_id": False,
+                }
+            )
+        for n in _anonymous(tracked_path):
+            findings.append(
+                {
+                    "kind": "ledger-entry-unidentified",
+                    "project": proj.name,
+                    "id": f"line {n}",
+                    "tier3": str(t3_path.relative_to(REPO_ROOT)),
+                    "tracked": str(tracked_path.relative_to(REPO_ROOT)),
                     "generic_id": False,
                 }
             )
@@ -153,6 +236,15 @@ def main(argv: list[str] | None = None) -> int:
             print(f"  ✗ [no-tracked-ledger] {f['project']}: {f['tier3']} holds "
                   f"{f['tier3_bytes'] / 1024:.0f} KB of deferred work and "
                   f"{f['tracked']} does not exist — the WHOLE record is gitignored.")
+            continue
+        if f["kind"] == "ledger-entry-unstatused":
+            print(f"  ✗ [ledger-entry-unstatused] {f['project']}/{f['id']}: no `status:` "
+                  f"line in {f['tracked']} — it cannot be counted as open or closed.")
+            continue
+        if f["kind"] == "ledger-entry-unidentified":
+            print(f"  ✗ [ledger-entry-unidentified] {f['project']} {f['id']} of "
+                  f"{f['tracked']}: an entry with no `## DW-<scope>-<n>` heading — it "
+                  f"cannot be cited, deduped, or individually closed.")
             continue
         hint = ""
         if f["generic_id"]:
