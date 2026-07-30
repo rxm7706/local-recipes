@@ -1,5 +1,5 @@
 #                             VVVVVV  minimum `pixi` version
-"$schema" = "https://pixi.sh/v0.73.0/schema/manifest/schema.json"
+"$schema" = "https://pixi.sh/v0.75.0/schema/manifest/schema.json"
 
 [workspace]
 name = "staged-recipes"
@@ -31,12 +31,12 @@ platforms = [
 
 [feature.python.dependencies]
 python = ">=3.14.6,3.14.*"        # Python language interpreter
-pixi = ">=0.73.0"                 # Pixi package & environment manager
+pixi = ">=0.74.0"                 # Pixi package & environment manager
 gh = ">=2.96.0"                   # GitHub CLI for PR / issue / repo automation
 gitpython = ">=3.1.57"            # Pythonic Git wrapper for complex repo interactions
 nodejs = ">=24.16.0,24.*,<25.0"   # Pin to LTS version
 bmad-method = ">=6.10.0"          # BMAD agent-driven dev framework (planning + dev skills)
-spec-kit = ">=0.14.2"             # Spec-kit for spec-driven development
+spec-kit = ">=0.14.4"             # Spec-kit for spec-driven development
 truststore = ">=0.10.4"           # OS trust store for corporate CA / JFrog TLS
 # pixi upgrade --pinning-strategy latest-up --exclude conda-libmamba-solver --exclude conda-build --exclude conda-index --exclude conda-forge-ci-setup --exclude conda-forge-pinning --exclude frozendict --exclude networkx --exclude rattler-build-conda-compat --exclude grayskull --exclude conda-recipe-manager --exclude conda-smithy --exclude shellcheck --exclude python --exclude django --exclude wagtail --exclude nodejs --exclude coderedcms
 # Canonical upgrade command (19 excludes). tomlkit / structlog / sqlglot / pyarrow / pandas
@@ -119,7 +119,7 @@ dependencies.shellcheck = ">=0.10.0"
 # want to refresh creds or switch projects.
 # Linux + macOS only — google-cloud-sdk isn't on conda-forge for win-64.
 platforms = ["linux-64", "osx-arm64-min"]
-dependencies.google-cloud-sdk = ">=577.0.0"
+dependencies.google-cloud-sdk = ">=578.0.0"
 
 # --- pyforge-mason (Mason): pixi build workspace member (warden/doctor mirror, Story 1.1) --
 # Source + package manifest live in ./src/shared/packages/pyforge-mason (its own
@@ -249,7 +249,7 @@ python-build = ">=1.5.0"                  # PyPA `python -m build` frontend
 pytest = ">=9.1.1"                        # test runner
 pixi-build-python = ">=0.8.3"             # pixi build backend -> .conda from the hatchling wheel
 pixi-build-rattler-build = ">=0.4.4"      # pixi build backend -> recipe-driven .conda
-twine = ">=6.2.0"                         # PyPI upload
+twine = ">=7.0.0"                         # PyPI upload
 
 [environments]
 # default-env: local-recipes
@@ -732,9 +732,9 @@ platforms = ["linux-64", "osx-arm64-min", "win-64"]
 [feature.vuln-db.dependencies]
 python = "3.14.*"                 # Python language interpreter
 conda-forge-metadata = ">=0.16.1"  # so --deep also works in this env
-apsw = ">=3.53.3.1"               # SQLite bindings for Python (vdb backend)
+apsw = ">=3.53.4.0"               # SQLite bindings for Python (vdb backend)
 appthreat-vulnerability-db = ">=6.7.0"  # AppThreat Deep Signals vulnerability database (CVE, CISA KEV, EPSS, CWE, SPDX)
-cyclonedx-bom = ">=7.3.0"         # CycloneDX Software Bill of Materials (SBOM) generation utility.
+cyclonedx-bom = ">=7.3.1"         # CycloneDX Software Bill of Materials (SBOM) generation utility.
 cyclonedx-python-lib= ">=11.11.0"  # Python library for CycloneDX.
 #cdxgen = ">=12.7.1"               # Creates CycloneDX Bill of Materials (BOM) for projects and containers in 20+ languages and package managers
 #oras-py = ">=0.2.42"              # OCI registry client for Python (vdb backend) — ORAS-hosted CVE DB snapshots blocked by conda-forge-metadata -> conda-oci-mirror -> oras-py ==0.1.14 i
@@ -789,9 +789,9 @@ tomlkit = ">=0.13.2"              # TOML parser and writer library (dagster-dg-c
 # BSL v0.3.16 moved xorq to an OPTIONAL extra (`boring-semantic-layer[xorq]`); we install
 # it bare, so xorq's structlog<26 / sqlglot<28.7.0 ceilings no longer bind. Floors kept.
 structlog = ">=26.1.0"            # structured logging (was ceilinged by xorq)
-sqlglot = ">=28.10.1"             # SQL parser + transpiler (for feedstock analysis)
+sqlglot = ">=30.12.0"             # SQL parser + transpiler (for feedstock analysis)
 pyarrow = ">=24.0.0"              # Apache Arrow Python bindings
-pandas = ">=3.0.3"                # DataFrame library for tabular data
+pandas = ">=3.0.5"                # DataFrame library for tabular data
 # CrewAI dependency pins
 #tomli  = ">=2.0.2,<2.1"
 #tomli-w = ">=1.1.0,<1.2"
@@ -833,11 +833,11 @@ setuptools = ">=81.0.0"           # Python build backend (setup.py / pyproject.t
 setuptools-scm = ">=10.2.1"       # Version metadata from VCS tags
 hatchling = ">=1.31.0"            # Hatch build backend (PEP 517)
 python-build = ">=1.5.0"          # PEP 517 build frontend (`python -m build`)
-twine = ">=6.2.0"                 # PyPI artifact uploader
-uv = ">=0.11.32"                  # Fast Rust-based Python package installer / resolver
+twine = ">=7.0.0"                 # PyPI artifact uploader
+uv = ">=0.12.0"                  # Fast Rust-based Python package installer / resolver
 wheel = ">=0.47.0"                # PEP 427 wheel format utilities
 ## For Building Javsscript and nodejs Projects
-pnpm = ">=11.17.0"                # Fast disk-efficient Node package manager
+pnpm = ">=11.18.0"                # Fast disk-efficient Node package manager
 ## Extensions for Conda and Conda-build Projects
 conda-lock = ">=4.0.2"            # Generate cross-platform lockfiles for conda envs
 conda-pack = ">=0.9.2"            # Bundle a conda env into a relocatable archive
@@ -845,9 +845,9 @@ conda-pypi = ">=0.11.0"           # Better PyPI interoperability for the conda e
 #conda-tree = ">=1.2.0"            # Visualize conda dependency tree #NOTE numpy <2.0
 feedrattler = ">=0.3.14"          # Convert conda-forge feedstocks to rattler-build (v1) format
 ### Extensions Pixi - enabling all Python, C,C++, Rust, CMake Projects
-pixi = ">=0.73.0"                 # Pixi package & environment manager
+pixi = ">=0.74.0"                 # Pixi package & environment manager
 #pixitainer = ">=0.7.1"            # Containerize your Pixi workspace with a single command
-rattler-build = ">=0.70.1"        # Rust-native v1 conda recipe build engine
+rattler-build = ">=0.72.0"        # Rust-native v1 conda recipe build engine
 pixi-build-rattler-build = ">=0.4.4"  # pixi build backend that delegates to rattler-build
 pixi-build-cmake = ">=0.4.4"      # pixi build backend for CMake projects
 pixi-build-python = ">=0.8.3"     # pixi build backend for Python projects
@@ -868,7 +868,7 @@ pixi-inspect = ">=2.0.2"          # pixi-inspect is a pixi extension used to ins
 #pixi-browse = ">=0.0.13"          # Browse conda packages interactively #NOTE python >=3.13
 pixi-diff = ">=0.1.7"             # Diff two pixi.lock files
 py-rattler = ">=0.22.0"           # Python bindings for the Rust rattler conda lib
-py-rattler-build = ">=0.70.1"     # Python bindings for rattler-build
+py-rattler-build = ">=0.72.0"     # Python bindings for rattler-build
 ## Nebi - local-first workspace management for Pixi (CLI + Desktop)
 nebi-cli = ">=0.13"               # Local-first workspace management for Pixi
 #nebi-desktop = ">=0.11"           # Nebi desktop application - local-first workspace management for Pixi #NOTE webkit2gtk4.1 2.48.5 would require __glibc >=2.34,<3.0.a0, for which no candidates were found
@@ -941,12 +941,12 @@ kedro-datasets = ">=9.5.0"        # Kedro-Datasets is where you can find all of 
 graphviz = ">=14.1.2"             # Graph layout engine (the `dot` binary) — drives the kedro-viz prototype's regenerate-kedro-viz-proto DAG-image (SVG) emitter
 python-graphviz = ">=0.21"        # Python interface to graphviz (imports as `graphviz`) — used by the prototype's DAG-image generator
 numpy = ">=2.5.1"                 # Numerical computing
-polars = ">=1.43.0"               # Rust-backed columnar DataFrame library
+polars = ">=1.43.1"               # Rust-backed columnar DataFrame library
 tablib = ">=3.9.0"                # Tabular data handling
 tabulate = ">=0.10.0"             # Pretty-print tabular data
 # Category 8: Visualization & Dashboards
 # See: docs/reference/package-taxonomy.md#8-visualization--dashboards
-bokeh = ">=3.9.1"                 # Statistical and novel interactive HTML plots for Python
+bokeh = ">=3.9.2"                 # Statistical and novel interactive HTML plots for Python
 bokeh-django = ">=0.2.1"          # Bokeh integration for Django web applications.
 kedro-viz = ">=12.4.0"            # Visualize your Kedro pipelines in the browser with Kedro-Viz
 panel = ">=1.9.3"                 # The powerful data exploration & web app framework for Python.
@@ -976,11 +976,11 @@ markdownify = ">=1.2.3"           # Markdown converter (used in markitdown)
 beautifulsoup4 = ">=4.15.0"       # HTML parser (used in markitdown)
 rank-bm25 = ">=0.2.2"             # Various BM25 algorithms for document ranking
 dbgpt = ">=0.8.1"                 # An open-source AI native data app development framework with AWEL and agents (DB-GPT)
+#ocrmypdf = ">=17.8.1"             # OCR text layer for scanned PDFs.
 # ocrmypdf is target-gated below — it is noarch, but hard-deps pngquant, which
 # conda-forge ships only on linux-64/osx-64. A shared dep here is unsolvable.
 odfpy = ">=1.4.1"                 # ODP/ODT style extraction (stretch goal in FR-46d); OpenDocument Apache-2.0 noarch lib
-# office2pdf is target-gated below — conda-forge ships it on linux-64/osx-64/win-64
-# but NOT osx-arm64, so a shared dep here makes the workspace lock unsolvable.
+office2pdf = ">=0.6.5"            # DOCX/XLSX/PPTX -> PDF (pure Rust)
 olefile = ">=0.47"                # OLE2 / old-style Microsoft Office file parser (used for legacy .doc loader in markitdown)
 ollama-python = ">=0.6.2"         # Python client (the existing 'ollama' is the Go server binary)
 openpyxl = ">=3.1.5"              # Read / write Office Open XML .xlsx files
@@ -1006,7 +1006,7 @@ tesseract = ">=5.5.2"             # Google's OCR engine (binary; pairs with pyte
 transformers = ">=5.14.1"         # Hugging Face transformers (model hub + pipelines)
 xlrd = ">=2.0.2"                  # Excel .xls reader (used in markitdown's Excel loader)
 cocoindex = ">=1.0.18"            # Incremental engine for long horizon agents
-graphifyy = ">=0.9.26"            # AI coding assistant skill that turns any folder of code, docs, papers, images, or videos into a queryable knowledge graph.
+graphifyy = ">=0.9.30"            # AI coding assistant skill that turns any folder of code, docs, papers, images, or videos into a queryable knowledge graph.
 ## Data processing & conversion (ibis + adjacent ecosystem)
 google-cloud-bigquery = ">=3.42.2" # BigQuery client — cf_atlas Phase P (opt-in via PHASE_P_ENABLED=1; needs ADC creds via the `gcloud` env)
 ibis-duckdb = ">=12.0.0"          # Ibis backend for DuckDB
@@ -1031,20 +1031,20 @@ agno = ">=2.6.22"                 # Agno is a lightweight framework for building
 a2a-sdk = ">=1.1.2"               # Official Python SDK for the Agent2Agent (A2A) Protocol
 google-genai = ">=2.14.0"         # Google GenAI API client library
 anthropic = ">=0.76.0"            # Anthropic Claude API SDK
-claude-agent-acp = ">=0.62.0"     # bridges the Claude Agent SDK to the Agent Client Protocol (ACP)
+claude-agent-acp = ">=0.63.0"     # bridges the Claude Agent SDK to the Agent Client Protocol (ACP)
 diffusers = ">=0.39.0"            # Hugging Face diffusion model library
 django-mcp-server = ">=0.5.7"     # Django integration for the Model Context Protocol
 fasta2a = ">=0.6.1"               # FastAPI-style implementation of the A2A protocol
-fastmcp = ">=3.4.4"               # FastMCP framework for building MCP servers
+fastmcp = ">=3.4.5"               # FastMCP framework for building MCP servers
 github-copilot-sdk =">=1.0.8"     # GitHub Copilot Python SDK
 langchain-anthropic = ">=1.3.1"   # LangChain integration for Anthropic Claude
-langchain-mcp-adapters = ">=0.3.0"  # LangChain ↔ MCP tool/resource adapters
+langchain-mcp-adapters = ">=0.3.1"  # LangChain ↔ MCP tool/resource adapters
 #langflow = ">=1.10.3"             # LangChain visual workflow builder,   name: bcrypt > "5.0.0", #setuptools = ">=81.0.0", #rich = ">=14.3.4"
 lumen-ai-anthropic = ">=1.2.1"    # Lumen AI's Anthropic backend integration
 mcp = ">=1.28.1"                  # Official Model Context Protocol Python SDK
 ollama = ">=0.24.0"               # Ollama Go server (local LLM runtime)
-pydantic-ai = ">=2.18.0"          # Pydantic-AI agent framework
-"llama.cpp" = ">=10003"           # llama.cpp local LLM inference engine
+pydantic-ai = ">=2.20.0"          # Pydantic-AI agent framework
+"llama.cpp" = ">=10158"           # llama.cpp local LLM inference engine
 #crawl4ai = ">=0.8.5"              # Open-source LLM Friendly Web Crawler & Scraper framework
 #"whisper.cpp" = ">=1.8.3"         # NOT ADDED - Outdated on Conda-forge
 #litellm = ">=1.83.14"             # NOT ADDED - Tier-3 LLM router/proxy: unified API over llama.cpp/Ollama/cloud, fallback chains, observability
@@ -1063,7 +1063,7 @@ nbqa = ">=1.9.0"                  # apply Python linters / formatters to Jupyter
 sqlfluff = ">=4.2.2"              # SQL linter and formatter
 go-sops = ">=3.13.3"              # Mozilla SOPS encrypted-secret editor
 age = ">=1.3.1"                   # modern simple file encryption tool
-yarn = ">=4.17.1"                 # Node package manager (Berry)
+yarn = ">=4.18.0"                 # Node package manager (Berry)
 requests = ">=2.34.2"             # Python HTTP client library
 ## Visual Studio Code Extensions
 ## Visual Studio Code Extensions (vscodepy + adjacent Microsoft Azure ecosystem)
@@ -1107,15 +1107,12 @@ graphviz2drawio = ">=1.2.0"       # Convert Graphviz .dot files to draw.io .draw
 mlx = ">=0.32.0"                  # Apple's array framework (Linux build via libblas/lapack)
 mlx-lm = ">=0.31.3"               # noarch — opt-in alternative LLM runner on Linux, parity with macOS dep set
 tmux = ">=3.7b_"                  # terminal multiplexer — bmad-loop spawns coding-agent sessions in tmux (docs/specs/bmad-loop-adoption.md)
-office2pdf = ">=0.6.0"            # DOCX/XLSX/PPTX -> PDF (pure Rust). Target-gated: conda-forge has
-                                  # linux-64/osx-64/win-64 only — no osx-arm64 build, so it cannot be a
-                                  # shared dep. Lift the gate once office2pdf-feedstock is platform-expanded.
 ocrmypdf = ">=17.8.1"             # OCR text layer for scanned PDFs. linux-64 only here: ocrmypdf itself is
                                   # noarch, but hard-deps pngquant, which conda-forge ships only on
                                   # linux-64/osx-64 (no osx-arm64, no win-64).
 
 [feature.local-recipes.target.win-64.dependencies]
-office2pdf = ">=0.6.0"            # see the linux-64 note above
+
 
 [feature.local-recipes.target.osx-arm64.dependencies]
 mlx = ">=0.32.0"                  # Apple's array framework (Metal-accelerated on M-series)
@@ -1166,10 +1163,10 @@ kedro-mcp = ">=0.1.2"             # MCP server with Kedro prompts and tools
 [dependencies]
 #[feature.python.dependencies]
 python = "3.14.*"                 # Python language interpreter
-pixi = ">=0.73.0"                 # Pixi package & environment manager
+pixi = ">=0.74.0"                 # Pixi package & environment manager
 conda = ">=26.5.0"                # conda package manager
 pip = ">=26.1.2"                  # Python package installer
-uv = ">=0.11.32"                  # fast Rust-based Python package installer / resolver
+uv = ">=0.12.0"                  # fast Rust-based Python package installer / resolver
 
 #[pypi-dependencies]
 #daft = ">=0.6.8"
@@ -1272,7 +1269,7 @@ hatchling = ">=1.31.0"            # Python build backend (drives both conda + wh
 python-build = ">=1.5.0"          # PyPA `python -m build` frontend (wheel + sdist)
 pytest = ">=9.1.1"                # test runner
 py-rattler = ">=0.25.0"           # test-only oracle for extract/lockfiles.py (Story 2.6); NEVER a pyforge-warden runtime dep
-py-rattler-build = ">=0.70.1"     # test-only differential-oracle for extract/recipe_v1.py (Story 2.2, v1 recipe.yaml render); NEVER a pyforge-warden runtime dep
+py-rattler-build = ">=0.72.0"     # test-only differential-oracle for extract/recipe_v1.py (Story 2.2, v1 recipe.yaml render); NEVER a pyforge-warden runtime dep
 conda-build = ">=25.3.1"          # test-only differential-oracle for extract/meta_v0.py (Story 2.2, v0 meta.yaml render); NEVER a pyforge-warden runtime dep
 
 [feature.pyforge-warden.tasks.warden-scan]
@@ -1330,7 +1327,7 @@ kedro-viz = ">=12.4.0"             # C2 `viz` task + test_viz_loadable smoke —
 # CLI/browser driver (bin/playwright, no site-packages module), while the Python bindings
 # `import playwright` come from `playwright-python`. Declaring only the former resolves
 # cleanly and still fails at import — which is exactly how this was missed.
-playwright = ">=1.58.0"            # CLI + browser driver
+playwright = ">=1.62.0"            # CLI + browser driver
 playwright-python = ">=1.61.0"     # the `import playwright` bindings
 
 [feature.pyforge-atlas.pypi-dependencies]

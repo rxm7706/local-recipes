@@ -2,7 +2,32 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
+      <module fileurl="file://$PROJECT_DIR$/.idea/bmad-dashboard.iml" filepath="$PROJECT_DIR$/.idea/bmad-dashboard.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/clean-fixture.iml" filepath="$PROJECT_DIR$/.idea/clean-fixture.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/config-precedence-fixture.iml" filepath="$PROJECT_DIR$/.idea/config-precedence-fixture.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/deptry-ignore-fixture.iml" filepath="$PROJECT_DIR$/.idea/deptry-ignore-fixture.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/deptry-missing-fixture.iml" filepath="$PROJECT_DIR$/.idea/deptry-missing-fixture.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/deptry-stdlib-fixture.iml" filepath="$PROJECT_DIR$/.idea/deptry-stdlib-fixture.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/deptry-unused-fixture.iml" filepath="$PROJECT_DIR$/.idea/deptry-unused-fixture.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/f4-unused-dep-fixture.iml" filepath="$PROJECT_DIR$/.idea/f4-unused-dep-fixture.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/mybmad-dashboard.iml" filepath="$PROJECT_DIR$/.idea/mybmad-dashboard.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/pyforge-atlas.iml" filepath="$PROJECT_DIR$/.idea/pyforge-atlas.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/pyforge-atlas-kedro-viz.iml" filepath="$PROJECT_DIR$/.idea/pyforge-atlas-kedro-viz.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/pyforge-doctor.iml" filepath="$PROJECT_DIR$/.idea/pyforge-doctor.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/pyforge-herald.iml" filepath="$PROJECT_DIR$/.idea/pyforge-herald.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/pyforge-marshal.iml" filepath="$PROJECT_DIR$/.idea/pyforge-marshal.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/pyforge-mason.iml" filepath="$PROJECT_DIR$/.idea/pyforge-mason.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/pyforge-scribe.iml" filepath="$PROJECT_DIR$/.idea/pyforge-scribe.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/pyforge-steward.iml" filepath="$PROJECT_DIR$/.idea/pyforge-steward.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/pyforge-warden.iml" filepath="$PROJECT_DIR$/.idea/pyforge-warden.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/sentinel-fixture.iml" filepath="$PROJECT_DIR$/.idea/sentinel-fixture.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/staged-recipes.iml" filepath="$PROJECT_DIR$/.idea/staged-recipes.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/vuln-critical-fixture.iml" filepath="$PROJECT_DIR$/.idea/vuln-critical-fixture.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/vuln-high-fixture.iml" filepath="$PROJECT_DIR$/.idea/vuln-high-fixture.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/vuln-kev-fail-on-kev-false-fixture.iml" filepath="$PROJECT_DIR$/.idea/vuln-kev-fail-on-kev-false-fixture.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/vuln-kev-fixture.iml" filepath="$PROJECT_DIR$/.idea/vuln-kev-fixture.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/vuln-min-epss-toml-fixture.iml" filepath="$PROJECT_DIR$/.idea/vuln-min-epss-toml-fixture.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/warn-and-indeterminate-fixture.iml" filepath="$PROJECT_DIR$/.idea/warn-and-indeterminate-fixture.iml" />
     </modules>
   </component>
 </project>
