@@ -2619,12 +2619,12 @@ window.DASHBOARD_DATA = {
             ],
             [
               "10.5",
-              "active",
+              "done",
               "I4 — AD-17 advisory timestamps: MCP read_dataset envelope + per-page build stamps (AUD-ATLAS-043/044)"
             ],
             [
               "10.6",
-              "pending",
+              "done",
               "I5 — Run admission / single-writer — DW-AD23-1, re-promotes AD-23 (AUD-ATLAS-046 impl half)"
             ]
           ]
@@ -2737,8 +2737,8 @@ window.DASHBOARD_DATA = {
         "total": 1502
       },
       "lineState": {
-        "state": "in flight",
-        "at": "10.5"
+        "state": "complete",
+        "at": ""
       },
       "owner": "atlas",
       "practice": false,
@@ -2755,7 +2755,7 @@ window.DASHBOARD_DATA = {
       },
       "velocity": {
         "derived": true,
-        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 2 of 38 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
+        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 3 of 38 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
         "bars": [
           [
             "10.4",
@@ -2763,27 +2763,31 @@ window.DASHBOARD_DATA = {
           ],
           [
             "10.5",
-            29
+            499
+          ],
+          [
+            "10.6",
+            194
           ]
         ],
         "foot": [
           [
-            "~48 min",
+            "~194 min",
             "median / story",
             "var(--done)"
           ],
           [
-            "29–68 min",
+            "68–499 min",
             "observed range",
             ""
           ],
           [
-            "36/38",
+            "38/38",
             "stories complete",
             "var(--done)"
           ],
           [
-            "2",
+            "0",
             "remaining",
             ""
           ]
@@ -2791,7 +2795,7 @@ window.DASHBOARD_DATA = {
       }
     }
   },
-  "snapshot": "<span>2026-07-29 02:14 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-07-30 03:11 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -3156,7 +3160,7 @@ window.DASHBOARD_DATA = {
       "title": "microsoft-org-sweep — retirement record",
       "caps": 0,
       "companions": 0,
-      "updated": "2026-07-28",
+      "updated": "2026-07-29",
       "dream": "microsoft-org-sweep",
       "path": "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-microsoft-org-sweep"
     },
@@ -3166,7 +3170,7 @@ window.DASHBOARD_DATA = {
       "title": "Atlas — the intelligence layer an agent workforce can extend",
       "caps": 17,
       "companions": 4,
-      "updated": "2026-07-28",
+      "updated": "2026-07-29",
       "dream": "pyforge-atlas",
       "path": "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas"
     },
@@ -3176,7 +3180,7 @@ window.DASHBOARD_DATA = {
       "title": "Unity Data Stack — the enterprise innersource python-first platform",
       "caps": 9,
       "companions": 2,
-      "updated": "2026-07-28",
+      "updated": "2026-07-29",
       "dream": "unity-data-stack",
       "path": "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-unity-data-stack"
     },
@@ -3186,7 +3190,7 @@ window.DASHBOARD_DATA = {
       "title": "upstream discovery — sense what the world is building",
       "caps": 5,
       "companions": 2,
-      "updated": "2026-07-28",
+      "updated": "2026-07-29",
       "dream": "upstream-discovery",
       "path": "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-upstream-discovery"
     },
@@ -3196,7 +3200,7 @@ window.DASHBOARD_DATA = {
       "title": "Wasm Analytics Stack — WASI-sandboxed upload validation, seed use case",
       "caps": 5,
       "companions": 1,
-      "updated": "2026-07-28",
+      "updated": "2026-07-29",
       "dream": "wasm-analytics-stack",
       "path": "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-wasm-analytics-stack"
     },
@@ -3206,7 +3210,7 @@ window.DASHBOARD_DATA = {
       "title": "Doctor (pyforge-doctor) — one bedside manner for the whole fleet",
       "caps": 4,
       "companions": 1,
-      "updated": "2026-07-28",
+      "updated": "2026-07-29",
       "dream": "pyforge-doctor",
       "path": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor"
     },
@@ -3216,7 +3220,7 @@ window.DASHBOARD_DATA = {
       "title": "The Charter — keeping the constitution true",
       "caps": 4,
       "companions": 0,
-      "updated": "2026-07-28",
+      "updated": "2026-07-29",
       "dream": "pyforge-charter",
       "path": "_bmad-output/projects/pyforge-genesis/planning-artifacts/specs/spec-pyforge-charter"
     },
@@ -3226,7 +3230,7 @@ window.DASHBOARD_DATA = {
       "title": "Genesis — the operating model, recorded",
       "caps": 4,
       "companions": 0,
-      "updated": "2026-07-28",
+      "updated": "2026-07-29",
       "dream": "pyforge-genesis",
       "path": "_bmad-output/projects/pyforge-genesis/planning-artifacts/specs/spec-pyforge-genesis"
     },
@@ -3236,7 +3240,7 @@ window.DASHBOARD_DATA = {
       "title": "deckcraft — the air-gapped, conda-native editable-deck pipeline",
       "caps": 9,
       "companions": 0,
-      "updated": "2026-07-28",
+      "updated": "2026-07-29",
       "dream": "deckcraft",
       "path": "_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-deckcraft"
     },
@@ -3246,7 +3250,7 @@ window.DASHBOARD_DATA = {
       "title": "herald CLI — the Design↔Code Bridge, formalized",
       "caps": 5,
       "companions": 2,
-      "updated": "2026-07-28",
+      "updated": "2026-07-29",
       "dream": "design-code-bridge",
       "path": "_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-design-code-bridge"
     },
@@ -3256,7 +3260,7 @@ window.DASHBOARD_DATA = {
       "title": "one visual language for everything pyforge",
       "caps": 3,
       "companions": 1,
-      "updated": "2026-07-28",
+      "updated": "2026-07-29",
       "dream": "modernist-identity",
       "path": "_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-modernist-identity"
     },
@@ -3266,7 +3270,7 @@ window.DASHBOARD_DATA = {
       "title": "pyforge-herald",
       "caps": 0,
       "companions": 0,
-      "updated": "2026-07-28",
+      "updated": "2026-07-29",
       "dream": "pyforge-herald",
       "path": "_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald"
     },
@@ -3276,7 +3280,7 @@ window.DASHBOARD_DATA = {
       "title": "agent-portability",
       "caps": 0,
       "companions": 0,
-      "updated": "2026-07-28",
+      "updated": "2026-07-29",
       "dream": "agent-portability",
       "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-agent-portability"
     },
@@ -3286,7 +3290,7 @@ window.DASHBOARD_DATA = {
       "title": "The agent tool surface — the factory, callable",
       "caps": 4,
       "companions": 0,
-      "updated": "2026-07-28",
+      "updated": "2026-07-29",
       "dream": "agent-tool-surface",
       "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-agent-tool-surface"
     },
@@ -3296,7 +3300,7 @@ window.DASHBOARD_DATA = {
       "title": "agentic-sdlc-autonomy",
       "caps": 0,
       "companions": 0,
-      "updated": "2026-07-28",
+      "updated": "2026-07-29",
       "dream": "agentic-sdlc-autonomy",
       "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-agentic-sdlc-autonomy"
     },
@@ -3306,7 +3310,7 @@ window.DASHBOARD_DATA = {
       "title": "artifact-console — retirement record",
       "caps": 0,
       "companions": 0,
-      "updated": "2026-07-28",
+      "updated": "2026-07-29",
       "dream": "artifact-console",
       "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-artifact-console"
     },
@@ -3316,7 +3320,7 @@ window.DASHBOARD_DATA = {
       "title": "Marshal (graduated-autonomy loop orchestration, as shipped)",
       "caps": 4,
       "companions": 3,
-      "updated": "2026-07-28",
+      "updated": "2026-07-29",
       "dream": "",
       "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-bmad-loop-governance"
     },
@@ -3326,7 +3330,7 @@ window.DASHBOARD_DATA = {
       "title": "factory console (program console + Dreamscape)",
       "caps": 4,
       "companions": 1,
-      "updated": "2026-07-28",
+      "updated": "2026-07-29",
       "dream": "factory-console",
       "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-factory-console"
     },
@@ -3336,7 +3340,7 @@ window.DASHBOARD_DATA = {
       "title": "Genesis — the operating-model installer",
       "caps": 9,
       "companions": 1,
-      "updated": "2026-07-28",
+      "updated": "2026-07-29",
       "dream": "genesis-installer",
       "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-genesis-installer"
     },
@@ -3346,7 +3350,7 @@ window.DASHBOARD_DATA = {
       "title": "multi-loop isolation harness",
       "caps": 3,
       "companions": 0,
-      "updated": "2026-07-28",
+      "updated": "2026-07-29",
       "dream": "",
       "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-multi-loop-isolation"
     },
@@ -3356,7 +3360,7 @@ window.DASHBOARD_DATA = {
       "title": "marshal CLI — graduated autonomy, productized",
       "caps": 8,
       "companions": 5,
-      "updated": "2026-07-28",
+      "updated": "2026-07-29",
       "dream": "pyforge-marshal",
       "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal"
     },
@@ -3366,7 +3370,7 @@ window.DASHBOARD_DATA = {
       "title": "regenerable-factory program",
       "caps": 4,
       "companions": 1,
-      "updated": "2026-07-28",
+      "updated": "2026-07-29",
       "dream": "regenerable-factory",
       "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-regenerable-factory"
     },
@@ -3376,7 +3380,7 @@ window.DASHBOARD_DATA = {
       "title": "copilot-cli-packaging — retirement record",
       "caps": 0,
       "companions": 0,
-      "updated": "2026-07-28",
+      "updated": "2026-07-29",
       "dream": "copilot-cli-packaging",
       "path": "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-copilot-cli-packaging"
     },
@@ -3386,7 +3390,7 @@ window.DASHBOARD_DATA = {
       "title": "db-gpt-packaging — retirement record",
       "caps": 0,
       "companions": 0,
-      "updated": "2026-07-28",
+      "updated": "2026-07-29",
       "dream": "db-gpt-packaging",
       "path": "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-db-gpt-packaging"
     },
@@ -3396,7 +3400,7 @@ window.DASHBOARD_DATA = {
       "title": "fleet stewardship (the recipes/ fleet)",
       "caps": 3,
       "companions": 3,
-      "updated": "2026-07-28",
+      "updated": "2026-07-29",
       "dream": "fleet-stewardship",
       "path": "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-fleet-stewardship"
     },
@@ -3406,7 +3410,7 @@ window.DASHBOARD_DATA = {
       "title": "the packaging factory (conda-forge-expert machinery)",
       "caps": 4,
       "companions": 2,
-      "updated": "2026-07-28",
+      "updated": "2026-07-29",
       "dream": "packaging-factory",
       "path": "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-packaging-factory"
     },
@@ -3416,7 +3420,7 @@ window.DASHBOARD_DATA = {
       "title": "presenton-pixi-image — air-gapped conda-native Presenton for OpenShift",
       "caps": 6,
       "companions": 0,
-      "updated": "2026-07-28",
+      "updated": "2026-07-29",
       "dream": "presenton-pixi-image",
       "path": "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-presenton-pixi-image"
     },
@@ -3426,7 +3430,7 @@ window.DASHBOARD_DATA = {
       "title": "mason CLI — the packaging factory, made portable",
       "caps": 7,
       "companions": 5,
-      "updated": "2026-07-28",
+      "updated": "2026-07-29",
       "dream": "pyforge-mason",
       "path": "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason"
     },
@@ -3436,7 +3440,7 @@ window.DASHBOARD_DATA = {
       "title": "Scribe (pyforge-scribe) — the team's inward voice",
       "caps": 4,
       "companions": 1,
-      "updated": "2026-07-28",
+      "updated": "2026-07-29",
       "dream": "pyforge-scribe",
       "path": "_bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-pyforge-scribe"
     },
@@ -3446,7 +3450,7 @@ window.DASHBOARD_DATA = {
       "title": "sentinel — retirement record",
       "caps": 0,
       "companions": 0,
-      "updated": "2026-07-28",
+      "updated": "2026-07-29",
       "dream": "sentinel",
       "path": "_bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-sentinel"
     },
@@ -3456,7 +3460,7 @@ window.DASHBOARD_DATA = {
       "title": "team-memory",
       "caps": 0,
       "companions": 0,
-      "updated": "2026-07-28",
+      "updated": "2026-07-29",
       "dream": "team-memory",
       "path": "_bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-team-memory"
     },
@@ -3466,7 +3470,7 @@ window.DASHBOARD_DATA = {
       "title": "the factory behind the firewall",
       "caps": 3,
       "companions": 1,
-      "updated": "2026-07-28",
+      "updated": "2026-07-29",
       "dream": "enterprise-airgap",
       "path": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-enterprise-airgap"
     },
@@ -3476,7 +3480,7 @@ window.DASHBOARD_DATA = {
       "title": "Steward (pyforge-steward) — the estate the factory stands on",
       "caps": 4,
       "companions": 1,
-      "updated": "2026-07-28",
+      "updated": "2026-07-29",
       "dream": "pyforge-steward",
       "path": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward"
     },
@@ -3486,7 +3490,7 @@ window.DASHBOARD_DATA = {
       "title": "Warden — the compliance gate that never false-greens",
       "caps": 12,
       "companions": 3,
-      "updated": "2026-07-28",
+      "updated": "2026-07-29",
       "dream": "pyforge-warden",
       "path": "_bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-pyforge-warden"
     }
@@ -4082,7 +4086,7 @@ window.DASHBOARD_DATA = {
         "stages": {
           "dream": "07-23",
           "deck": "07-23",
-          "spec": "07-28",
+          "spec": "07-29",
           "research": "07-25",
           "brief": "07-25",
           "prd": "07-25",
@@ -4095,7 +4099,7 @@ window.DASHBOARD_DATA = {
         "overtaken": false,
         "na": [],
         "furthest": "code",
-        "updated": "2026-07-28",
+        "updated": "2026-07-29",
         "age": 0,
         "stale": false,
         "version": "0.1.0",
@@ -4125,7 +4129,7 @@ window.DASHBOARD_DATA = {
         "overtaken": false,
         "na": [],
         "furthest": "code",
-        "updated": "2026-07-28",
+        "updated": "2026-07-29",
         "age": 0,
         "stale": false,
         "version": "0.1.0",
@@ -4155,7 +4159,7 @@ window.DASHBOARD_DATA = {
         "overtaken": false,
         "na": [],
         "furthest": "code",
-        "updated": "2026-07-28",
+        "updated": "2026-07-29",
         "age": 0,
         "stale": false,
         "version": "0.1.0",
@@ -4185,7 +4189,7 @@ window.DASHBOARD_DATA = {
         "overtaken": true,
         "na": [],
         "furthest": "code",
-        "updated": "2026-07-28",
+        "updated": "2026-07-29",
         "age": 0,
         "stale": false,
         "version": "0.1.0",
@@ -4205,7 +4209,7 @@ window.DASHBOARD_DATA = {
           "spec": "07-25",
           "research": "07-25",
           "brief": "07-25",
-          "prd": "07-28",
+          "prd": "07-29",
           "arch": "07-25",
           "epics": "07-25",
           "code": "07-26"
@@ -4215,7 +4219,7 @@ window.DASHBOARD_DATA = {
         "overtaken": true,
         "na": [],
         "furthest": "code",
-        "updated": "2026-07-28",
+        "updated": "2026-07-29",
         "age": 0,
         "stale": false,
         "version": "0.1.0",
@@ -4245,7 +4249,7 @@ window.DASHBOARD_DATA = {
         "overtaken": false,
         "na": [],
         "furthest": "code",
-        "updated": "2026-07-28",
+        "updated": "2026-07-29",
         "age": 0,
         "stale": false,
         "version": "0.1.0",
@@ -4275,11 +4279,11 @@ window.DASHBOARD_DATA = {
         "overtaken": true,
         "na": [],
         "furthest": "code",
-        "updated": "2026-07-28",
+        "updated": "2026-07-29",
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "36/38",
+        "progress": "38/38",
         "complete": 9,
         "of": 9,
         "owner": "atlas"
@@ -4295,8 +4299,8 @@ window.DASHBOARD_DATA = {
           "spec": "07-25",
           "research": "07-25",
           "brief": "07-25",
-          "prd": "07-28",
-          "arch": "07-28",
+          "prd": "07-29",
+          "arch": "07-29",
           "epics": "07-14",
           "code": "07-14"
         },
@@ -4305,7 +4309,7 @@ window.DASHBOARD_DATA = {
         "overtaken": false,
         "na": [],
         "furthest": "code",
-        "updated": "2026-07-28",
+        "updated": "2026-07-29",
         "age": 0,
         "stale": false,
         "version": "0.1.0",
@@ -4325,8 +4329,8 @@ window.DASHBOARD_DATA = {
           "spec": "07-25",
           "research": "",
           "brief": "",
-          "prd": "07-28",
-          "arch": "07-28",
+          "prd": "07-29",
+          "arch": "07-29",
           "epics": "07-25",
           "code": ""
         },
@@ -4335,7 +4339,7 @@ window.DASHBOARD_DATA = {
         "overtaken": false,
         "na": [],
         "furthest": "epics",
-        "updated": "2026-07-28",
+        "updated": "2026-07-29",
         "age": 0,
         "stale": false,
         "version": "",
@@ -4352,11 +4356,11 @@ window.DASHBOARD_DATA = {
         "stages": {
           "dream": "07-23",
           "deck": "07-23",
-          "spec": "07-28",
+          "spec": "07-29",
           "research": "07-25",
           "brief": "",
-          "prd": "07-28",
-          "arch": "07-28",
+          "prd": "07-29",
+          "arch": "07-29",
           "epics": "07-25",
           "code": "07-25"
         },
@@ -4365,7 +4369,7 @@ window.DASHBOARD_DATA = {
         "overtaken": false,
         "na": [],
         "furthest": "code",
-        "updated": "2026-07-28",
+        "updated": "2026-07-29",
         "age": 0,
         "stale": false,
         "version": "0.1.0",
@@ -4382,11 +4386,11 @@ window.DASHBOARD_DATA = {
         "stages": {
           "dream": "07-23",
           "deck": "07-23",
-          "spec": "07-28",
+          "spec": "07-29",
           "research": "07-25",
-          "brief": "07-28",
-          "prd": "07-28",
-          "arch": "07-28",
+          "brief": "07-29",
+          "prd": "07-29",
+          "arch": "07-29",
           "epics": "07-25",
           "code": "07-25"
         },
@@ -4395,7 +4399,7 @@ window.DASHBOARD_DATA = {
         "overtaken": false,
         "na": [],
         "furthest": "code",
-        "updated": "2026-07-28",
+        "updated": "2026-07-29",
         "age": 0,
         "stale": false,
         "version": "0.1.0",
@@ -4412,11 +4416,11 @@ window.DASHBOARD_DATA = {
         "stages": {
           "dream": "07-23",
           "deck": "07-23",
-          "spec": "07-28",
+          "spec": "07-29",
           "research": "07-25",
-          "brief": "07-28",
-          "prd": "07-28",
-          "arch": "07-28",
+          "brief": "07-29",
+          "prd": "07-29",
+          "arch": "07-29",
           "epics": "07-17",
           "code": "07-17"
         },
@@ -4425,11 +4429,11 @@ window.DASHBOARD_DATA = {
         "overtaken": true,
         "na": [],
         "furthest": "code",
-        "updated": "2026-07-28",
+        "updated": "2026-07-29",
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "36/38",
+        "progress": "38/38",
         "complete": 9,
         "of": 9,
         "owner": "atlas"
@@ -4442,11 +4446,11 @@ window.DASHBOARD_DATA = {
         "stages": {
           "dream": "07-23",
           "deck": "07-23",
-          "spec": "07-28",
+          "spec": "07-29",
           "research": "07-25",
-          "brief": "07-28",
-          "prd": "07-28",
-          "arch": "07-28",
+          "brief": "07-29",
+          "prd": "07-29",
+          "arch": "07-29",
           "epics": "07-17",
           "code": "07-17"
         },
@@ -4455,11 +4459,11 @@ window.DASHBOARD_DATA = {
         "overtaken": true,
         "na": [],
         "furthest": "code",
-        "updated": "2026-07-28",
+        "updated": "2026-07-29",
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "36/38",
+        "progress": "38/38",
         "complete": 9,
         "of": 9,
         "owner": "atlas"
@@ -4472,18 +4476,18 @@ window.DASHBOARD_DATA = {
         "name": "drift-check",
         "task": "bmad-drift-check",
         "guards": "BMAD artifacts vs the live factory",
-        "state": "drift",
-        "findings": 1,
-        "verdict": "DRIFT: 0 integrity + 1 currency finding(s). Re-sync via _bmad-output/projects/pyforge-marshal/SYNC-RUNBOOK.md.",
+        "state": "green",
+        "findings": 0,
+        "verdict": "OK: all tracked BMAD artifacts are in sync with the live factory MINOR.",
         "runbook": "_bmad-output/projects/pyforge-marshal/SYNC-RUNBOOK.md"
       },
       {
         "name": "spec-surface",
         "task": "spec-surface-check",
         "guards": "every tracked file under a Spec surface",
-        "state": "drift",
-        "findings": 3,
-        "verdict": "FINDINGS (3):",
+        "state": "green",
+        "findings": 0,
+        "verdict": "OK: every tracked file governed or allowlisted; no drift.",
         "runbook": ""
       },
       {
@@ -4491,14 +4495,14 @@ window.DASHBOARD_DATA = {
         "task": "llms-full-check",
         "guards": "library catalog freshness",
         "state": "drift",
-        "findings": 3,
-        "verdict": "DRIFT: 3 finding(s). Reconcile by regenerating the catalog (prompt in its header), then re-run.",
+        "findings": 24,
+        "verdict": "DRIFT: 24 finding(s). Reconcile by regenerating the catalog (prompt in its header), then re-run.",
         "runbook": ""
       }
     ],
     "baseline": {
-      "skill": "8.79.1",
-      "head": "b06d46a096",
+      "skill": "8.81.0",
+      "head": "9223031ccf",
       "deltas": [],
       "runbook": "_bmad-output/projects/pyforge-marshal/SYNC-RUNBOOK.md"
     }
@@ -4788,7 +4792,7 @@ window.DASHBOARD_DATA = {
           "archived": 1,
           "practice": 0
         },
-        "line": "in flight 10.5",
+        "line": "complete",
         "load": 3,
         "blocked": 0,
         "dreams": [
