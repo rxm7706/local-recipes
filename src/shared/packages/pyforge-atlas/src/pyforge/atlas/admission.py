@@ -76,13 +76,18 @@ Boundaries — write them down rather than overclaim
   inside an op; under a multiprocess executor that op's subprocess exits immediately and the
   kernel drops the flock before the first node runs. ``conf/base/dagster.yml`` declares
   ``in_process`` and carries the same warning (``DW-AD23-2``).
-* **The lock store lives INSIDE the tree it guards** (``<data_root>/.locks``, so the member
-  ``.gitignore``'s ``data/**`` already covers it). ``rm -rf data/`` is a routine "force a
-  rebuild" move, and deleting a lock file out from under a live holder does not free that
-  holder's flock — it unlinks the inode the flock belongs to, so the next acquirer creates a
-  FRESH file at the same path, flocks that, and two writers proceed. Do not clear the store
-  while a run is in flight; point ``PYFORGE_ATLAS_LOCK_ROOT`` outside the data tree if that
-  cannot be guaranteed.
+* **Unlinking a lock file out from under its holder still defeats exclusion.** Deleting the
+  file does not free the holder's flock — it unlinks the inode the flock belongs to, so the
+  next acquirer creates a FRESH file at the same path, flocks that, and two writers proceed.
+  That is a property of ``flock``, not something this module can guard. What it CAN do is
+  keep the store out of the way of the one deletion an operator performs routinely, which is
+  what ``DW-AD23-3`` corrected: the store used to be ``<data_root>/.locks`` — inside the tree
+  ``rm -rf data/`` clears — and is now the SIBLING ``<data_root>.locks``, so the routine
+  "force a rebuild" move cannot reach it. Deriving the store from the data root (rather than
+  pinning it to the project) is deliberate: two checkouts pointed at one shared
+  ``PYFORGE_ATLAS_DATA_ROOT`` must still contend, which a project-pinned store would silently
+  break. ``PYFORGE_ATLAS_LOCK_ROOT`` remains the override, and is REFUSED when it would put
+  the store back inside the data tree.
 
 Imports are stdlib + ``filelock`` + ``kedro.framework.hooks`` only — no ``pandas``, no
 ``dashboard.*``, no ``dagster``, and (the file is scanned by
@@ -121,6 +126,11 @@ WAIT_PARAM = "admission_wait_seconds"
 # Sidecar suffixes under the lock root.
 _LOCK_SUFFIX = ".lock"
 _HOLDER_SUFFIX = ".holder.json"
+
+# The store's own name. Used TWO ways, deliberately kept as one constant so they cannot
+# drift: appended to the data root's name to make the sibling `<data_root>.locks` (the
+# default), and as the child directory under an explicit `PYFORGE_ATLAS_LOCK_ROOT`.
+_STORE_NAME = ".locks"
 
 
 class AdmissionConfigError(ValueError):
@@ -212,6 +222,15 @@ def default_lock_root(project_path: Any = None) -> Path:
     repo root) while the repo's own pixi tasks set ``cwd = src/shared/packages/pyforge-atlas``,
     i.e. exactly the flagship "MCP trigger racing a ``kedro run``" race.
 
+    By default the store is the data root's SIBLING — ``<data_root>.locks``, not
+    ``<data_root>/.locks`` (``DW-AD23-3``). The old child placement put the locks inside the
+    tree ``rm -rf data/`` clears, and unlinking a lock file does not free its holder's flock:
+    the next acquirer creates a fresh inode at the same path and two writers proceed. A
+    routine operator action could therefore break AD-23 with no guard and no warning, so the
+    safe placement is now the one you get by doing nothing. It stays DERIVED FROM THE DATA
+    ROOT rather than pinned to the project, because two checkouts sharing one
+    ``PYFORGE_ATLAS_DATA_ROOT`` write the same Parquet and must contend.
+
     ``PYFORGE_ATLAS_LOCK_ROOT`` then ``PYFORGE_ATLAS_DATA_ROOT`` (the catalog's own
     ``globals.yml`` ``paths.data_root`` override) select the store; an ABSOLUTE value is
     honored verbatim, so relocating the store relocates the locks with it. An empty OR
@@ -220,20 +239,77 @@ def default_lock_root(project_path: Any = None) -> Path:
     PYFORGE_ATLAS_DATA_ROOT="  "`` is a blanked override, and creating a store directory
     named after the spaces (one per typo) is not a behaviour worth mirroring.
 
+    ``PYFORGE_ATLAS_LOCK_ROOT`` keeps its ``<value>/.locks`` child placement — the operator
+    named that directory, so nothing is being placed beside a tree they did not choose — but
+    is REFUSED when it lands inside the data root. Closing the default door while leaving
+    that one open would fix nothing an operator could not silently undo, the same reasoning
+    that made a relative ``lock_root=`` a refusal rather than a warning.
+
     The env var is read BEFORE the project root is resolved. An absolute override needs no
     anchor, and demanding one anyway made :func:`_resolve_base`'s own advice unreachable: its
     error tells the caller to "set ``PYFORGE_ATLAS_LOCK_ROOT`` to an absolute path", which
-    could not work while the guard fired before the override was read.
+    could not work while the guard fired before the override was read. That is also why the
+    descendant check consults :func:`_data_root_if_resolvable`: in the layout whose error
+    message recommends this override, the data root is exactly what cannot be resolved, and
+    an unresolvable data root must not turn the escape hatch back off.
     """
-    env = (
-        (os.environ.get("PYFORGE_ATLAS_LOCK_ROOT") or "").strip()
-        or (os.environ.get("PYFORGE_ATLAS_DATA_ROOT") or "").strip()
-        or "data"
-    )
+    override = (os.environ.get("PYFORGE_ATLAS_LOCK_ROOT") or "").strip()
+    if not override:
+        return _beside(_data_root(project_path))
+    root = Path(override)
+    if not root.is_absolute():
+        root = _resolve_base(project_path) / root
+    root = (root / _STORE_NAME).resolve()
+    data_root = _data_root_if_resolvable(project_path)
+    if data_root is not None and (root == data_root or data_root in root.parents):
+        raise AdmissionConfigError(
+            f"PYFORGE_ATLAS_LOCK_ROOT={override!r} puts the lock store at {str(root)!r}, "
+            f"inside the data root {str(data_root)!r} that the locks guard. Clearing the "
+            f"data tree would then delete lock files out from under their live holders — "
+            f"which does NOT free their flocks — and admit a second writer (AD-23, "
+            f"DW-AD23-3). Point it outside the data tree, or unset it to get the "
+            f"sibling default."
+        )
+    return root
+
+
+def _data_root(project_path: Any = None) -> Path:
+    """The absolute data root the default store is placed BESIDE.
+
+    Mirrors the catalog's ``globals.yml`` ``paths.data_root`` — same env var, same
+    ``"data"`` default — and anchors a relative value the same way :func:`default_lock_root`
+    anchors everything else, so the store follows the data wherever the data goes.
+    """
+    env = (os.environ.get("PYFORGE_ATLAS_DATA_ROOT") or "").strip() or "data"
     root = Path(env)
     if root.is_absolute():
-        return (root / ".locks").resolve()
-    return ((_resolve_base(project_path) / root) / ".locks").resolve()
+        return root.resolve()
+    return (_resolve_base(project_path) / root).resolve()
+
+
+def _data_root_if_resolvable(project_path: Any = None) -> Path | None:
+    """:func:`_data_root`, or ``None`` when it needs an anchor that cannot be found.
+
+    Only the descendant check uses this. It is advisory by necessity: an installed layout
+    with no ``conf/base/catalog.yml`` is precisely the case an absolute
+    ``PYFORGE_ATLAS_LOCK_ROOT`` exists to serve, so failing the check closed would make that
+    escape hatch unreachable in the one situation that needs it.
+    """
+    try:
+        return _data_root(project_path)
+    except AdmissionConfigError:
+        return None
+
+
+def _beside(data_root: Path) -> Path:
+    """``<data_root>.locks`` — the data tree's sibling, never its child."""
+    if data_root.name == "":
+        raise AdmissionConfigError(
+            f"the data root resolves to {str(data_root)!r}, which has no name for a sibling "
+            f"lock store to be placed beside. Set PYFORGE_ATLAS_DATA_ROOT to a real "
+            f"directory, or PYFORGE_ATLAS_LOCK_ROOT to an absolute path outside it."
+        )
+    return data_root.with_name(f"{data_root.name}{_STORE_NAME}")
 
 
 def _resolve_base(project_path: Any) -> Path:

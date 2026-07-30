@@ -43,6 +43,7 @@ import os
 import pickle
 import queue
 import re
+import shutil
 import subprocess
 import sys
 import threading
@@ -368,10 +369,10 @@ def test_default_lock_root_is_project_anchored_not_cwd_relative(monkeypatch, tmp
 
     root = default_lock_root()
 
-    assert root == (catalog_filepath_root / "data" / ".locks").resolve()
+    assert root == (catalog_filepath_root / "data.locks").resolve()
     # ...and explicitly NOT anchored to the foreign CWD.
     assert tmp_path.resolve() not in root.parents
-    assert root != (tmp_path / "data" / ".locks").resolve()
+    assert root != (tmp_path / "data.locks").resolve()
 
 
 def test_default_lock_root_is_identical_from_two_different_cwds(monkeypatch, tmp_path):
@@ -394,7 +395,7 @@ def test_default_lock_root_honors_an_absolute_data_root_verbatim(monkeypatch, tm
     monkeypatch.setenv("PYFORGE_ATLAS_DATA_ROOT", str(tmp_path / "elsewhere"))
     monkeypatch.chdir(tmp_path)
 
-    assert default_lock_root() == (tmp_path / "elsewhere" / ".locks").resolve()
+    assert default_lock_root() == (tmp_path / "elsewhere.locks").resolve()
 
 
 def test_default_lock_root_resolves_a_relative_data_root_against_the_project(monkeypatch, tmp_path):
@@ -402,7 +403,7 @@ def test_default_lock_root_resolves_a_relative_data_root_against_the_project(mon
     monkeypatch.setenv("PYFORGE_ATLAS_DATA_ROOT", "var/store")
     monkeypatch.chdir(tmp_path)
 
-    assert default_lock_root() == (MEMBER_DIR / "var" / "store" / ".locks").resolve()
+    assert default_lock_root() == (MEMBER_DIR / "var" / "store.locks").resolve()
 
 
 def test_lock_root_env_beats_data_root(monkeypatch, tmp_path):
@@ -419,7 +420,7 @@ def test_empty_env_var_is_treated_as_unset(monkeypatch, tmp_path):
     monkeypatch.setenv("PYFORGE_ATLAS_DATA_ROOT", "")
     monkeypatch.chdir(tmp_path)
 
-    assert default_lock_root() == (MEMBER_DIR / "data" / ".locks").resolve()
+    assert default_lock_root() == (MEMBER_DIR / "data.locks").resolve()
 
 
 def test_a_whitespace_only_env_var_is_treated_as_unset(monkeypatch, tmp_path):
@@ -432,7 +433,7 @@ def test_a_whitespace_only_env_var_is_treated_as_unset(monkeypatch, tmp_path):
 
     root = default_lock_root()
 
-    assert root == (MEMBER_DIR / "data" / ".locks").resolve()
+    assert root == (MEMBER_DIR / "data.locks").resolve()
     assert not any(part.strip() == "" for part in root.parts), f"whitespace path {root}"
 
 
@@ -466,7 +467,7 @@ def test_an_empty_project_path_falls_back_to_the_package_derived_root(monkeypatc
     monkeypatch.delenv("PYFORGE_ATLAS_DATA_ROOT", raising=False)
     monkeypatch.chdir(tmp_path)
 
-    assert default_lock_root("") == (MEMBER_DIR / "data" / ".locks").resolve()
+    assert default_lock_root("") == (MEMBER_DIR / "data.locks").resolve()
 
 
 def test_default_lock_root_uses_the_run_params_project_path(monkeypatch, tmp_path):
@@ -475,7 +476,7 @@ def test_default_lock_root_uses_the_run_params_project_path(monkeypatch, tmp_pat
     monkeypatch.delenv("PYFORGE_ATLAS_LOCK_ROOT", raising=False)
     monkeypatch.delenv("PYFORGE_ATLAS_DATA_ROOT", raising=False)
 
-    assert default_lock_root(str(tmp_path)) == (tmp_path / "data" / ".locks").resolve()
+    assert default_lock_root(str(tmp_path)) == (tmp_path / "data.locks").resolve()
 
 
 def test_shipped_settings_hooks_lock_under_the_project_anchored_default(monkeypatch, tmp_path):
@@ -488,7 +489,7 @@ def test_shipped_settings_hooks_lock_under_the_project_anchored_default(monkeypa
     monkeypatch.chdir(tmp_path)
 
     name = "admission_wiring_probe"
-    expected = (MEMBER_DIR / "data" / ".locks" / f"{name}.lock").resolve()
+    expected = (MEMBER_DIR / "data.locks" / f"{name}.lock").resolve()
     hook_manager = _create_hook_manager()
     for hook in settings.HOOKS:
         hook_manager.register(hook)
@@ -512,12 +513,133 @@ def test_shipped_settings_hooks_lock_under_the_project_anchored_default(monkeypa
     finally:
         # This is the ONE test that writes into the REAL project tree instead of tmp_path,
         # and `filelock` never unlinks a lock file — so without this the probe's lock sits in
-        # `data/.locks/` forever after the first run. Gitignored, but not hermetic.
+        # `data.locks/` forever after the first run. Gitignored, but not hermetic.
         for leftover in (expected, holder):
             try:
                 leftover.unlink(missing_ok=True)
             except OSError:  # never mask the real assertion with a cleanup failure
                 pass
+
+
+# --------------------------------------------------------------------------- #
+# DW-AD23-3: the store sits BESIDE the data tree, never inside it
+# --------------------------------------------------------------------------- #
+#
+# The deferral this closes: the store defaulted to `<data_root>/.locks`, inside the tree
+# `rm -rf data/` clears. Unlinking a lock file does not free its holder's flock — it unlinks
+# the inode the flock belongs to, so the next acquirer creates a fresh file at the same path,
+# flocks that, and two writers proceed. A routine operator action could therefore break AD-23
+# with no guard and no test, and the only warning lived in a module docstring.
+
+
+@pytest.mark.parametrize(
+    "data_root_env",
+    [None, "var/store", "@ABS@"],
+    ids=["default", "relative-data-root", "absolute-data-root"],
+)
+def test_the_default_store_is_a_sibling_of_the_data_tree_never_a_child(
+    monkeypatch, tmp_path, data_root_env
+):
+    """THE regression assertion for ``DW-AD23-3``, stated as the invariant rather than as a
+    literal path: whatever the data root turns out to be, the store is not under it."""
+    monkeypatch.delenv("PYFORGE_ATLAS_LOCK_ROOT", raising=False)
+    monkeypatch.delenv("PYFORGE_ATLAS_DATA_ROOT", raising=False)
+    if data_root_env is not None:
+        value = str(tmp_path / "relocated") if data_root_env == "@ABS@" else data_root_env
+        monkeypatch.setenv("PYFORGE_ATLAS_DATA_ROOT", value)
+
+    data_root = admission._data_root()
+    root = default_lock_root()
+
+    assert data_root not in root.parents, f"{root} is inside the data tree {data_root}"
+    assert root != data_root
+    assert root.parent == data_root.parent, "the store must be the data root's SIBLING"
+
+
+def test_clearing_the_data_tree_leaves_a_held_lock_still_excluding(monkeypatch, tmp_path):
+    """The operator action that motivated the deferral, executed for real.
+
+    ``rm -rf data/`` mid-run used to delete the lock file out from under its live holder, and
+    the next acquirer would then take a *fresh* inode at the same path — two writers on one
+    Parquet. With the store beside the tree rather than in it, the deletion cannot reach the
+    lock and the second acquirer is still refused.
+    """
+    monkeypatch.delenv("PYFORGE_ATLAS_LOCK_ROOT", raising=False)
+    data_root = tmp_path / "data"
+    monkeypatch.setenv("PYFORGE_ATLAS_DATA_ROOT", str(data_root))
+    (data_root / "primary").mkdir(parents=True)
+    (data_root / "primary" / "core.parquet").write_bytes(b"not really parquet")
+
+    ticket = acquire(["core"], run_id="holder")  # no injected lock_root: the shipped default
+    try:
+        shutil.rmtree(data_root)
+        assert not data_root.exists()
+        assert (ticket.lock_root / "core.lock").is_file(), (
+            "clearing the data tree took the lock file with it — the store is inside it again"
+        )
+        with pytest.raises(RunAdmissionRejected) as excinfo:
+            acquire(["core"], run_id="second")
+        assert excinfo.value.holder_run_id == "holder"
+    finally:
+        release(ticket)
+
+
+def test_a_lock_root_pointed_inside_the_data_tree_is_refused(monkeypatch, tmp_path):
+    """Fixing the default while leaving the override able to undo it would fix nothing an
+    operator could not silently reintroduce — the same reasoning that made a relative
+    ``lock_root=`` a refusal rather than a warning."""
+    monkeypatch.setenv("PYFORGE_ATLAS_DATA_ROOT", str(tmp_path / "data"))
+    monkeypatch.setenv("PYFORGE_ATLAS_LOCK_ROOT", str(tmp_path / "data" / "locks"))
+
+    with pytest.raises(AdmissionConfigError, match="inside the data root"):
+        default_lock_root()
+
+
+def test_a_lock_root_outside_the_data_tree_is_still_honored(monkeypatch, tmp_path):
+    """The escape hatch the refusal above must not close: its ``<value>/.locks`` child
+    placement is unchanged, because the operator named that directory themselves."""
+    monkeypatch.setenv("PYFORGE_ATLAS_DATA_ROOT", str(tmp_path / "data"))
+    monkeypatch.setenv("PYFORGE_ATLAS_LOCK_ROOT", str(tmp_path / "locks"))
+
+    assert default_lock_root() == (tmp_path / "locks" / ".locks").resolve()
+
+
+def test_one_shared_data_root_yields_one_store_across_two_project_roots(monkeypatch, tmp_path):
+    """Why the store is derived from the DATA root and not pinned to the project.
+
+    Two checkouts pointed at one ``PYFORGE_ATLAS_DATA_ROOT`` write the same Parquet and must
+    contend. A project-anchored constant (``<project>/.locks``) would have given them one
+    store each — the same silent voiding of admission that CWD-anchoring caused, through a
+    different door.
+    """
+    monkeypatch.delenv("PYFORGE_ATLAS_LOCK_ROOT", raising=False)
+    monkeypatch.setenv("PYFORGE_ATLAS_DATA_ROOT", str(tmp_path / "shared-data"))
+
+    checkout_a = default_lock_root(str(tmp_path / "checkout-a"))
+    checkout_b = default_lock_root(str(tmp_path / "checkout-b"))
+
+    assert checkout_a == checkout_b == (tmp_path / "shared-data.locks").resolve()
+
+
+def test_unlinking_the_lock_file_itself_still_admits_a_second_writer(monkeypatch, tmp_path):
+    """The residual boundary, pinned so it is not mistaken for something the fix closed.
+
+    ``flock`` belongs to the inode, so deleting the lock file lets the next acquirer create a
+    fresh one and succeed. No placement can prevent that; moving the store beside the data
+    tree only takes it out of the path of the ONE deletion an operator performs routinely.
+    Documented in the module docstring — asserted here so a future change that claims to have
+    fixed it has to red this test first.
+    """
+    monkeypatch.delenv("PYFORGE_ATLAS_LOCK_ROOT", raising=False)
+    monkeypatch.setenv("PYFORGE_ATLAS_DATA_ROOT", str(tmp_path / "data"))
+
+    ticket = acquire(["core"], run_id="holder")
+    try:
+        (ticket.lock_root / "core.lock").unlink()
+        second = acquire(["core"], run_id="second")  # NOT a guarantee — a known limitation
+        release(second)
+    finally:
+        release(ticket)
 
 
 # --------------------------------------------------------------------------- #

@@ -19,6 +19,11 @@ data/**
 # except their sub-folders
 !data/**/
 
+# the run-admission lock store (src/pyforge/atlas/admission.py). Deliberately a SIBLING of
+# `data/` rather than a child, so `rm -rf data/` cannot delete a lock file out from under a
+# live holder — see DW-AD23-3. The `data/**` rule above therefore no longer covers it.
+data.locks/
+
 # also keep all .gitkeep files
 !.gitkeep
 

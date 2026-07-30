@@ -748,7 +748,7 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
   promoted: 2026-07-29 from the gitignored Tier-3 `deferred-work.md` (recorded there as the
     generic `DW-2`); renamed to match this ledger's `DW-<story>-<n>` convention.
 
-## DW-AD23-3 — the lock store's DEFAULT location is the hazardous one (MEDIUM) — DEFERRED
+## DW-AD23-3 — the lock store's DEFAULT location is the hazardous one (MEDIUM) — CLOSED
 
 - source_spec: `spec-10-6-make-run-admission-real-or-stop-claiming-it.md` (Story I5, D1/D4)
   found_by: independent follow-up review of `admission.py`, 2026-07-29 (the pass `DW-I5-1` owed)
@@ -771,7 +771,38 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
     default is kept deliberately, the warning belongs somewhere an operator will actually read
     it (the pixi task, or a refusal when the lock root is a descendant of data_root), not only
     in a docstring.
-  status: open
+  status: CLOSED 2026-07-30. Both branches of the resolution were taken, because the first
+    alone leaves the defect reachable through the override door — the same reasoning that made
+    a relative `lock_root=` a refusal rather than a warning.
+    (1) **The default store is now the data tree's SIBLING**, `<data_root>.locks`, not its
+    child `<data_root>/.locks`. `rm -rf data/` can no longer reach it, so the safe placement
+    is the one an operator gets by doing nothing. It stays DERIVED FROM the data root rather
+    than pinned to the project (`<project>/.locks` was considered and rejected): two checkouts
+    sharing one `PYFORGE_ATLAS_DATA_ROOT` write the same Parquet and must contend, and a
+    project-pinned store would have given them one store each — the same silent voiding of
+    admission that CWD-anchoring caused, through a different door. Pinned by
+    `test_one_shared_data_root_yields_one_store_across_two_project_roots`.
+    (2) **`PYFORGE_ATLAS_LOCK_ROOT` is REFUSED when it resolves inside the data root**
+    (`AdmissionConfigError`, raised before any lock is taken). Its `<value>/.locks` child
+    placement is otherwise unchanged — the operator named that directory. The check is
+    advisory-if-unresolvable by necessity: an installed layout with no `conf/base/catalog.yml`
+    is exactly the case an absolute `PYFORGE_ATLAS_LOCK_ROOT` exists to serve, so a data root
+    that cannot be resolved must not turn that escape hatch back off
+    (`_data_root_if_resolvable`).
+    What this does NOT fix, stated so it is not mistaken for closed: unlinking a lock file
+    out from under its holder still admits a second writer. That is a property of `flock` —
+    the lock belongs to the inode — and no placement can prevent it. The fix removes the
+    ROUTINE way to trigger it, nothing more. Pinned as a characterization test
+    (`test_unlinking_the_lock_file_itself_still_admits_a_second_writer`) so a future change
+    claiming to have fixed it has to red that test first.
+    Tests: 5 new functions / 8 cases in `tests/test_admission.py` under the `DW-AD23-3`
+    section, including the operator-action regression the resolution asked for
+    (`test_clearing_the_data_tree_leaves_a_held_lock_still_excluding` — acquire at the shipped
+    default, `shutil.rmtree` the data root, assert a second acquirer is still refused). Nine
+    existing `default_lock_root` expectations were restated for the sibling path; none were
+    weakened. The member `.gitignore` gains `data.locks/`, since the `data/**` rule no longer
+    covers the store. Gate: `kedro-test` **911 passed / 19 skipped** (was 903/19 — +8, exactly
+    the new cases); `kedro-catalog-check` 47; `dagster-dryrun` 58.
 
 ## 24. Sprint status
 

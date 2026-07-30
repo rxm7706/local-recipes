@@ -273,9 +273,12 @@ close later.
   that raises leaves the locks held until the process exits — as does a non-`Exception` exit
   from the runner, which kedro's `except Exception` does not catch and which therefore reaches
   neither `on_pipeline_error` nor `after_pipeline_run` — an availability wedge for the
-  long-lived MCP server, not a correctness hole; and the lock store lives inside the tree it
-  guards (`<data_root>/.locks`), so clearing `data/` mid-run unlinks a live holder's lock file
-  and lets the next acquirer create a fresh one at the same path — two writers, silently.
+  long-lived MCP server, not a correctness hole; and unlinking a lock file out from under its
+  holder does not free that holder's flock, so the next acquirer takes a fresh inode at the
+  same path — two writers, silently. That last one is a property of `flock`, not a
+  configuration choice, and `DW-AD23-3` removed the routine way to trigger it: the store is
+  the data tree's SIBLING (`<data_root>.locks`), not its child, so `rm -rf data/` cannot reach
+  it, and a `PYFORGE_ATLAS_LOCK_ROOT` that would put it back inside is refused.
   Admission's first-dispatch position is enforced
   by `@hook_impl(tryfirst=True)`, not by its place in the `settings.HOOKS` tuple, which
   entry-point plugins would otherwise outrank.
