@@ -4,7 +4,7 @@ type: 'feature'
 created: '2026-07-28'
 status: 'done'
 review_loop_iteration: 0
-followup_review_recommended: true  # pass 4 (fresh follow-up): 0 bad_spec, 4 patches auto-fixed (1 medium: object-dtype fetched_at silently discarded AND misreported with a false "0 rows or all-NULL" reason, reproduced live) — the fix adds a NEW speculative-parse fallback branch plus 2 new degrade paths in resolve_for_file that no independent reviewer has seen; gates green (803/19, 47/47)
+followup_review_recommended: false  # discharged 2026-07-30 by review pass 5 (independent, adversarial-mutation lens over pass 4's surfaces): 7 mutants, 5 caught, 2 survived — N3 (the numeric guard) proved a genuine no-op, unreachable by construction, so NOT a gap; N7 (resolve_for_file's non-ENOENT reason) was a real vacuity reporting an existing file as missing, now fixed by test_resolve_for_file_says_unreadable_not_missing. kedro-test 902 -> 903 passed, catalog-check 47/47. 0 behavioural defects.
 context: []
 warnings: ['oversized']
 baseline_revision: 'fd2fd0b260a1f59164afc9314de268e2cd7abedc'
@@ -704,3 +704,53 @@ of pass-2 entries were rejected rather than re-filed.
 - The dashboard-vs-MCP dual path-resolution mechanism remains: each surface is
   internally consistent, but they can disagree with each other when the
   process CWD is not the repo root.
+
+### 2026-07-30 — Review pass 5 (the owed independent follow-up, triggered by pass 4's `followup_review_recommended`)
+
+**Lens: adversarial mutation of the pass-4 surfaces**, the same lens applied to story 10.6
+the same day. Pass 4's flag named its own exposure exactly — the medium fix "adds a NEW
+speculative-parse fallback branch plus 2 new degrade paths in `resolve_for_file` that no
+independent reviewer has seen" — so this pass asked the 902-test gate to prove it constrains
+each of those surfaces, by breaking them one at a time.
+
+| # | Surface (pass-4 change) | Mutation | Result |
+|---|---|---|---|
+| N1 | the speculative-parse fallback | remove it (object-dtype ISO strings silently discarded — the original bug) | **caught** |
+| N2 | the honest `unavailable` reason | force `"0 rows or all-NULL"` unconditionally (the false reason pass 4 fixed) | **caught** |
+| N3 | the `not is_numeric_dtype` guard on the fallback | drop the guard | **survived — but correctly, see below** |
+| N4 | `_datetime_to_epoch_seconds` unit-awareness | replace with `to_numeric` (the documented-wrong approach) | **caught** (2 tests) |
+| N5 | the datetime-dtype pre-conversion | drop it | **caught** |
+| N6 | `resolve_for_file` refuses a directory mtime | drop the `S_ISREG` check | **caught** |
+| N7 | `resolve_for_file` non-ENOENT reason | collapse into a false `"not found"` | **SURVIVED** |
+
+**N3 is not a gap — hypothesis raised and disproved.** Dropping the numeric guard leaves all
+902 tests green, which looked like a third vacuity. It is not: for a numeric column
+`_to_epoch_seconds` can only produce `NaN` where the input was already `NaN`, so
+`seconds.empty` implies the column is all-NULL, and `pd.to_datetime` then yields all-`NaT`,
+so `parsed.notna().any()` is `False` and the branch changes nothing. Verified empirically
+against three numeric shapes (raw epoch-ns integers, `YYYYMMDD`-looking ints, all-NULL
+float): guard ON and guard OFF produce identical results in every case. **The guard is
+belt-and-braces; the docstring's "never re-interpreted as a date" property is delivered by
+the ORDERING (numeric path first), not by the guard.** Recorded so nobody later "closes" this
+with a test that cannot fail.
+
+**N7 is a real vacuity — fixed.** `resolve_for_file` splits `FileNotFoundError` from every
+other `OSError` precisely so a permissions failure or symlink loop "states what actually
+happened instead of a false 'not found'". Collapsing that branch into the not-found reason
+left all 902 tests green while the function reported a file **that exists** as absent — the
+same false-reason defect class pass 4 had just fixed one function over in
+`_resolve_row_fetched_at`, on one of the very two `resolve_for_file` degrade paths the flag
+named. Its sibling (the directory case, N6) *was* tested; this one was not. Reproduced live:
+a file inside a `chmod 000` directory resolves to
+`backing file not readable: … (PermissionError)`. Closed by
+`test_resolve_for_file_says_unreadable_not_missing` (skipped under euid 0, which traverses
+regardless of mode bits). Re-injecting N7 now fails it.
+
+**Gates after:** `kedro-test` 902 → **903 passed / 19 skipped**; `kedro-catalog-check` 47/47.
+
+**Scope, stated honestly.** A mutation pass over the surfaces pass 4 changed — not a fresh
+full reading of `provenance.py`. Deliberately a different lens from passes 1–4.
+
+**Flag cleared.** `followup_review_recommended` → `false`. Pass 4 produced 1 medium plus 4
+auto-fixed patches; this pass produced **0 behavioural defects, 1 vacuity (fixed), and 1
+disproved hypothesis**. Nothing deferred.

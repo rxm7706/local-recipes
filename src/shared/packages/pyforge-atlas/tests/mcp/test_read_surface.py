@@ -10,6 +10,7 @@ runs the real ``catalog.load`` path end-to-end.
 from __future__ import annotations
 
 import contextlib
+import os
 
 import pytest
 from kedro.io import DataCatalog, MemoryDataset
@@ -492,3 +493,41 @@ def test_resolve_for_file_refuses_a_directory_mtime(tmp_path):
     assert info.kind == "unavailable"
     assert info.build_stamp is None
     assert "not a regular file" in info.reason
+
+
+@pytest.mark.skipif(os.geteuid() == 0, reason="root traverses regardless of mode bits")
+def test_resolve_for_file_says_unreadable_not_missing(tmp_path):
+    """An unreadable file must not be reported as a MISSING one.
+
+    `resolve_for_file` splits `FileNotFoundError` from every other `OSError`
+    precisely so a permissions failure or symlink loop "states what actually
+    happened instead of a false 'not found'" — the honest-reason contract (C4)
+    on the unavailable path. The file here exists; only traversal is denied.
+
+    Added 2026-07-30 by the owed 10.5 follow-up review. Collapsing this branch
+    into the `not found` reason was one of two surviving mutants out of seven
+    injected across pass 4's surfaces: all 902 tests stayed green while the
+    function reported a file that exists as absent. Its sibling directory case
+    above was tested; this one was not — and it is the same false-reason defect
+    class pass 4 had just fixed one function over in `_resolve_row_fetched_at`.
+    """
+    from pyforge.atlas import provenance as _provenance_mod
+
+    walled = tmp_path / "walled"
+    walled.mkdir()
+    target = walled / "data.parquet"
+    target.write_bytes(b"x")
+    os.chmod(walled, 0o000)  # deny traverse, so stat() raises PermissionError
+    try:
+        info = _provenance_mod.resolve_for_file(target)
+    finally:
+        os.chmod(walled, 0o755)
+
+    assert info.kind == "unavailable"
+    assert info.build_stamp is None
+    assert "not readable" in info.reason, (
+        "a file that EXISTS but cannot be stat'd was reported as missing — "
+        "a false reason on the path whose whole purpose is an honest one"
+    )
+    assert "not found" not in info.reason
+    assert "PermissionError" in info.reason, "the reason must name what happened"
