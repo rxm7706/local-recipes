@@ -1,7 +1,9 @@
 """Unit tests for ``pyforge.marshal.core.findings`` (Story 1.1, AD-15) --
 format + membership checks via ``monkeypatch``-registered synthetic codes.
-``REGISTERED_CODES`` starts an empty ``frozenset()`` in the shipped module
-(Design Notes) -- no test here fabricates a production code.
+Most tests below still exercise the mechanism via synthetic codes, never a
+fabricated production one -- ``test_registered_codes_contains_the_real_codes``
+is the one exception, asserting the registry's REAL, currently-shipped
+contents.
 """
 
 from __future__ import annotations
@@ -11,8 +13,11 @@ import pytest
 from pyforge.marshal.core import findings
 
 
-def test_registered_codes_starts_empty():
-    assert findings.REGISTERED_CODES == frozenset()
+def test_registered_codes_contains_the_real_codes():
+    """The registry no longer starts empty -- Story 1.2's core/identity.py
+    is its first real caller, registering MRS-IDENT-001/002. This asserts
+    the registry's exact real contents."""
+    assert findings.REGISTERED_CODES == frozenset({"MRS-IDENT-001", "MRS-IDENT-002"})
 
 
 def test_code_pattern_matches_well_formed_code():

@@ -19,12 +19,15 @@ imports these names instead of spelling the integers.
 
 ``classify()`` is the SOLE owner of finding-code -> lattice-member
 classification (AD-31): no other module assigns a verdict directly.
-``_CLASSIFY_TABLE`` starts empty for the same reason ``findings.
-REGISTERED_CODES`` starts empty (Design Notes) -- no command in this story
-emits a real finding, so there is nothing to classify yet; later stories
-populate it additively as they add real codes. The mechanism (a total,
-fail-loud lookup) is proven via ``monkeypatch``-injected synthetic entries
-in ``tests/unit/test_verdict.py``.
+``_CLASSIFY_TABLE`` shipped Story 1.1 empty for the same reason ``findings.
+REGISTERED_CODES`` did -- no command in that story emitted a real finding.
+Story 1.2's two real codes (``MRS-IDENT-001``/``MRS-IDENT-002``, from
+``core/identity.py``) are its first real entries, both classified
+``Verdict.UNEVALUABLE`` -- a malformed key or non-conforming merge subject
+means the reference could not be evaluated, not that anything failed a
+gate. Later stories populate the table further as they add real codes. The
+mechanism (a total, fail-loud lookup) is separately proven via
+``monkeypatch``-injected synthetic entries in ``tests/unit/test_verdict.py``.
 
 Every other module *feeds* findings; only this module *projects* them to a
 verdict and an exit code -- enforced by the sole-ownership meta-test
@@ -75,7 +78,11 @@ GUARDED_EXIT_CODES: frozenset[int] = frozenset(_EXIT_BY_VERDICT.values()) | {
     EXIT_SIGINT,
 }
 
-_CLASSIFY_TABLE: dict[str, Verdict] = {}
+# Story 1.2's core/identity.py -- the table's first real classifications.
+_CLASSIFY_TABLE: dict[str, Verdict] = {
+    "MRS-IDENT-001": Verdict.UNEVALUABLE,
+    "MRS-IDENT-002": Verdict.UNEVALUABLE,
+}
 
 
 def classify(code: str) -> Verdict:
