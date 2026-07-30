@@ -170,7 +170,7 @@
    "src/shared/packages/pyforge-atlas/tests/mcp/test_audit_mapping.py": "af818b23761905ed2417984d9e6798e6cd3c5052",
    "src/shared/packages/pyforge-atlas/tests/mcp/test_kedro_mcp_absent.py": "ca4684b3a49839897381b265a5a756f711667eb5",
    "src/shared/packages/pyforge-atlas/tests/mcp/test_no_business_logic_in_tool_bodies.py": "33b631d644143c716223e943466b3e7e8a017c37",
-   "src/shared/packages/pyforge-atlas/tests/mcp/test_read_surface.py": "05f0f4dbe15fb8b1bc6e81aa69ead6f2510f96c8",
+   "src/shared/packages/pyforge-atlas/tests/mcp/test_read_surface.py": "b2c0ca173b92ced32bea6015244be0b492dd0c96",
    "src/shared/packages/pyforge-atlas/tests/mcp/test_trigger_surface.py": "b5ced2e33b0eb7bd0057e0b3110959a5f235160e",
    "src/shared/packages/pyforge-atlas/tests/nl/__init__.py": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
    "src/shared/packages/pyforge-atlas/tests/nl/test_query_vizro_ai_dryrun.py": "3e1b7e99e534ef4df892253c59850fbe6f7591cc",
@@ -284,7 +284,7 @@
    "src/shared/packages/pyforge-atlas/wasm/index.html": "58d44155379ec640d36caf59b8c701ec8fcfce27",
    "src/shared/packages/pyforge-atlas/wasm/package.json": "e8ec7eef8dff664e2910f4fee67ada79e4105d93"
   },
-  "memlog": "9a8ecc8f801f789bbd9bc04f3adca91e38686d2f"
+  "memlog": "747112b4e3fb2a6d072b9372ebaecb490aa6ebc1"
  },
  "pyforge-atlas/spec-unity-data-stack": {
   "files": {},
