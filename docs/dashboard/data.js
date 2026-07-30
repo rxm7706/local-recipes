@@ -2800,7 +2800,7 @@ window.DASHBOARD_DATA = {
       }
     }
   },
-  "snapshot": "<span>2026-07-30 13:05 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-07-30 13:58 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -4077,401 +4077,3818 @@ window.DASHBOARD_DATA = {
       "research",
       "brief",
       "prd",
+      "ux",
       "arch",
+      "context",
       "epics",
-      "code"
+      "sprint",
+      "gates",
+      "code",
+      "verify",
+      "retro"
     ],
     "staleDays": 30,
+    "shelfLife": {
+      "dream": null,
+      "deck": 90,
+      "spec": null,
+      "research": 90,
+      "brief": 90,
+      "prd": 90,
+      "ux": 90,
+      "arch": 90,
+      "context": null,
+      "epics": 90,
+      "sprint": 90,
+      "gates": 90,
+      "code": 90,
+      "verify": 90,
+      "retro": null
+    },
+    "sound": 0,
+    "live": 29,
+    "reached": 1,
+    "gaps": 46,
+    "findings": 20,
     "rows": [
       {
-        "label": "herald",
-        "slug": "pyforge-herald",
-        "project": "pyforge-herald",
-        "dream": "pyforge-herald",
+        "label": "atlas",
+        "slug": "pyforge-atlas",
+        "project": "pyforge-atlas",
+        "dream": "pyforge-atlas",
+        "owner": "atlas",
         "stages": {
-          "dream": "07-23",
-          "deck": "07-23",
-          "spec": "07-29",
-          "research": "07-25",
-          "brief": "07-25",
-          "prd": "07-25",
-          "arch": "07-25",
-          "epics": "07-25",
-          "code": "07-25"
+          "dream": "2026-07-23",
+          "deck": "2026-07-23",
+          "spec": "2026-07-23",
+          "research": "2026-07-25",
+          "brief": "2026-07-25",
+          "prd": "2026-07-17",
+          "ux": "",
+          "arch": "2026-07-17",
+          "context": "",
+          "epics": "2026-07-17",
+          "sprint": "2026-07-29",
+          "gates": "2026-07-17",
+          "code": "2026-07-17",
+          "verify": "",
+          "retro": "2026-07-25"
         },
+        "updatedAt": {
+          "dream": "2026-07-23",
+          "deck": "2026-07-25",
+          "spec": "2026-07-30T12:40",
+          "research": "2026-07-25",
+          "brief": "2026-07-25",
+          "prd": "2026-07-17",
+          "ux": "",
+          "arch": "2026-07-17",
+          "context": "",
+          "epics": "2026-07-29",
+          "sprint": "2026-07-29",
+          "gates": "2026-07-17",
+          "code": "2026-07-29",
+          "verify": "2026-07-29",
+          "retro": "2026-07-25"
+        },
+        "sub": {
+          "research": {
+            "have": {
+              "domain": true,
+              "market": true,
+              "technical": true
+            },
+            "n": 3,
+            "of": 3,
+            "missing": [],
+            "inherited": false
+          },
+          "deck": {
+            "have": {
+              "prototype": true,
+              "exec": true,
+              "infographic": true,
+              "marp": true,
+              "standalone": true,
+              "pptx": true
+            },
+            "n": 6,
+            "of": 6,
+            "missing": []
+          }
+        },
+        "archived": false,
+        "dreamStatus": "realized",
+        "ownerDream": "pyforge-atlas",
+        "noDream": false,
+        "unowned": false,
         "backfilled": true,
         "openQuestions": 0,
         "overtaken": false,
-        "na": [],
-        "furthest": "code",
+        "na": [
+          "ux"
+        ],
+        "required": [
+          "dream",
+          "deck",
+          "spec",
+          "research",
+          "brief",
+          "prd",
+          "arch",
+          "context",
+          "epics",
+          "sprint",
+          "gates",
+          "code",
+          "verify",
+          "retro"
+        ],
+        "gaps": [
+          "context",
+          "verify"
+        ],
+        "partial": [],
+        "staleBy": [
+          {
+            "kind": "feeds",
+            "stage": "brief",
+            "than": "prd",
+            "at": "2026-07-25",
+            "other": "2026-07-17"
+          },
+          {
+            "kind": "feeds",
+            "stage": "spec",
+            "than": "prd",
+            "at": "2026-07-30T12:40",
+            "other": "2026-07-17"
+          },
+          {
+            "kind": "feeds",
+            "stage": "code",
+            "than": "retro",
+            "at": "2026-07-29",
+            "other": "2026-07-25"
+          }
+        ],
+        "furthest": "retro",
         "updated": "2026-07-30",
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "2/17",
-        "complete": 9,
-        "of": 9,
-        "owner": "herald"
+        "progress": "38/38",
+        "complete": 12,
+        "of": 14
       },
       {
         "label": "doctor",
         "slug": "pyforge-doctor",
         "project": "pyforge-doctor",
         "dream": "pyforge-doctor",
+        "owner": "doctor",
         "stages": {
-          "dream": "07-23",
-          "deck": "07-23",
-          "spec": "07-25",
-          "research": "07-25",
-          "brief": "07-25",
-          "prd": "07-25",
-          "arch": "07-25",
-          "epics": "07-25",
-          "code": "07-25"
+          "dream": "2026-07-23",
+          "deck": "2026-07-23",
+          "spec": "2026-07-25",
+          "research": "2026-07-25",
+          "brief": "2026-07-25",
+          "prd": "2026-07-25",
+          "ux": "",
+          "arch": "2026-07-25",
+          "context": "",
+          "epics": "2026-07-25",
+          "sprint": "2026-07-29",
+          "gates": "",
+          "code": "2026-07-25",
+          "verify": "2026-07-25",
+          "retro": ""
         },
-        "backfilled": false,
+        "updatedAt": {
+          "dream": "2026-07-25",
+          "deck": "2026-07-25",
+          "spec": "2026-07-29",
+          "research": "2026-07-25",
+          "brief": "2026-07-25",
+          "prd": "2026-07-25",
+          "ux": "",
+          "arch": "2026-07-25",
+          "context": "",
+          "epics": "2026-07-25",
+          "sprint": "2026-07-29",
+          "gates": "",
+          "code": "2026-07-25",
+          "verify": "2026-07-25",
+          "retro": ""
+        },
+        "sub": {
+          "research": {
+            "have": {
+              "domain": true,
+              "market": false,
+              "technical": true
+            },
+            "n": 2,
+            "of": 3,
+            "missing": [
+              "market"
+            ],
+            "inherited": false
+          },
+          "deck": {
+            "have": {
+              "prototype": true,
+              "exec": true,
+              "infographic": true,
+              "marp": true,
+              "standalone": true,
+              "pptx": true
+            },
+            "n": 6,
+            "of": 6,
+            "missing": []
+          }
+        },
+        "archived": false,
+        "dreamStatus": "specified",
+        "ownerDream": "pyforge-doctor",
+        "noDream": false,
+        "unowned": false,
+        "backfilled": true,
         "openQuestions": 0,
         "overtaken": false,
-        "na": [],
-        "furthest": "code",
+        "na": [
+          "ux"
+        ],
+        "required": [
+          "dream",
+          "deck",
+          "spec",
+          "research",
+          "brief",
+          "prd",
+          "arch",
+          "context",
+          "epics",
+          "sprint",
+          "gates",
+          "code",
+          "verify"
+        ],
+        "gaps": [
+          "context",
+          "gates"
+        ],
+        "partial": [
+          "research"
+        ],
+        "staleBy": [
+          {
+            "kind": "feeds",
+            "stage": "spec",
+            "than": "prd",
+            "at": "2026-07-29",
+            "other": "2026-07-25"
+          }
+        ],
+        "furthest": "verify",
         "updated": "2026-07-30",
         "age": 0,
         "stale": false,
         "version": "0.1.0",
         "progress": "1/12",
-        "complete": 9,
-        "of": 9,
-        "owner": "doctor"
-      },
-      {
-        "label": "scribe",
-        "slug": "pyforge-scribe",
-        "project": "pyforge-scribe",
-        "dream": "pyforge-scribe",
-        "stages": {
-          "dream": "07-23",
-          "deck": "07-23",
-          "spec": "07-25",
-          "research": "07-25",
-          "brief": "07-25",
-          "prd": "07-25",
-          "arch": "07-25",
-          "epics": "07-25",
-          "code": "07-25"
-        },
-        "backfilled": false,
-        "openQuestions": 0,
-        "overtaken": false,
-        "na": [],
-        "furthest": "code",
-        "updated": "2026-07-30",
-        "age": 0,
-        "stale": false,
-        "version": "0.1.0",
-        "progress": "1/9",
-        "complete": 9,
-        "of": 9,
-        "owner": "scribe"
-      },
-      {
-        "label": "steward",
-        "slug": "pyforge-steward",
-        "project": "pyforge-steward",
-        "dream": "pyforge-steward",
-        "stages": {
-          "dream": "07-23",
-          "deck": "07-23",
-          "spec": "07-25",
-          "research": "07-25",
-          "brief": "07-25",
-          "prd": "07-25",
-          "arch": "07-25",
-          "epics": "07-25",
-          "code": "07-25"
-        },
-        "backfilled": false,
-        "openQuestions": 0,
-        "overtaken": false,
-        "na": [],
-        "furthest": "code",
-        "updated": "2026-07-30",
-        "age": 0,
-        "stale": false,
-        "version": "0.1.0",
-        "progress": "1/18",
-        "complete": 9,
-        "of": 9,
-        "owner": "steward"
-      },
-      {
-        "label": "marshal",
-        "slug": "pyforge-marshal",
-        "project": "pyforge-marshal",
-        "dream": "pyforge-marshal",
-        "stages": {
-          "dream": "07-23",
-          "deck": "07-23",
-          "spec": "07-25",
-          "research": "07-25",
-          "brief": "07-25",
-          "prd": "07-29",
-          "arch": "07-25",
-          "epics": "07-25",
-          "code": "07-26"
-        },
-        "backfilled": true,
-        "openQuestions": 0,
-        "overtaken": false,
-        "na": [],
-        "furthest": "code",
-        "updated": "2026-07-30",
-        "age": 0,
-        "stale": false,
-        "version": "0.1.0",
-        "progress": "4/41",
-        "complete": 9,
-        "of": 9,
-        "owner": "marshal"
-      },
-      {
-        "label": "mason",
-        "slug": "pyforge-mason",
-        "project": "pyforge-mason",
-        "dream": "pyforge-mason",
-        "stages": {
-          "dream": "07-25",
-          "deck": "07-23",
-          "spec": "07-25",
-          "research": "07-25",
-          "brief": "07-25",
-          "prd": "07-25",
-          "arch": "07-25",
-          "epics": "07-25",
-          "code": "07-25"
-        },
-        "backfilled": true,
-        "openQuestions": 0,
-        "overtaken": false,
-        "na": [],
-        "furthest": "code",
-        "updated": "2026-07-30",
-        "age": 0,
-        "stale": false,
-        "version": "0.1.0",
-        "progress": "1/38",
-        "complete": 9,
-        "of": 9,
-        "owner": "mason"
-      },
-      {
-        "label": "atlas",
-        "slug": "pyforge-atlas",
-        "project": "pyforge-atlas",
-        "dream": "pyforge-atlas",
-        "stages": {
-          "dream": "07-23",
-          "deck": "07-23",
-          "spec": "07-23",
-          "research": "07-25",
-          "brief": "07-25",
-          "prd": "07-17",
-          "arch": "07-17",
-          "epics": "07-17",
-          "code": "07-17"
-        },
-        "backfilled": true,
-        "openQuestions": 0,
-        "overtaken": false,
-        "na": [],
-        "furthest": "code",
-        "updated": "2026-07-30",
-        "age": 0,
-        "stale": false,
-        "version": "0.1.0",
-        "progress": "38/38",
-        "complete": 9,
-        "of": 9,
-        "owner": "atlas"
-      },
-      {
-        "label": "warden",
-        "slug": "pyforge-warden",
-        "project": "pyforge-warden",
-        "dream": "pyforge-warden",
-        "stages": {
-          "dream": "07-23",
-          "deck": "07-14",
-          "spec": "07-25",
-          "research": "07-25",
-          "brief": "07-25",
-          "prd": "07-29",
-          "arch": "07-29",
-          "epics": "07-14",
-          "code": "07-14"
-        },
-        "backfilled": true,
-        "openQuestions": 0,
-        "overtaken": false,
-        "na": [],
-        "furthest": "code",
-        "updated": "2026-07-30",
-        "age": 0,
-        "stale": false,
-        "version": "0.1.0",
-        "progress": "31/31",
-        "complete": 9,
-        "of": 9,
-        "owner": "warden"
+        "complete": 11,
+        "of": 13
       },
       {
         "label": "genesis",
         "slug": "pyforge-genesis",
         "project": "pyforge-genesis",
         "dream": "pyforge-genesis",
+        "owner": "guild",
         "stages": {
-          "dream": "07-23",
-          "deck": "07-23",
-          "spec": "07-25",
+          "dream": "2026-07-23",
+          "deck": "2026-07-23",
+          "spec": "2026-07-25",
           "research": "",
           "brief": "",
-          "prd": "07-29",
-          "arch": "07-29",
-          "epics": "07-25",
-          "code": ""
+          "prd": "2026-07-28",
+          "ux": "",
+          "arch": "2026-07-28",
+          "context": "",
+          "epics": "2026-07-28",
+          "sprint": "2026-07-29",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
         },
-        "backfilled": true,
+        "updatedAt": {
+          "dream": "2026-07-29",
+          "deck": "2026-07-25",
+          "spec": "2026-07-29",
+          "research": "",
+          "brief": "",
+          "prd": "2026-07-28",
+          "ux": "",
+          "arch": "2026-07-28",
+          "context": "",
+          "epics": "2026-07-29",
+          "sprint": "2026-07-29",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "sub": {
+          "research": {
+            "have": {
+              "domain": false,
+              "market": false,
+              "technical": false
+            },
+            "n": 0,
+            "of": 3,
+            "missing": [
+              "domain",
+              "market",
+              "technical"
+            ],
+            "inherited": false
+          },
+          "deck": {
+            "have": {
+              "prototype": true,
+              "exec": true,
+              "infographic": true,
+              "marp": true,
+              "standalone": true,
+              "pptx": true
+            },
+            "n": 6,
+            "of": 6,
+            "missing": []
+          }
+        },
+        "archived": false,
+        "dreamStatus": "specified",
+        "ownerDream": "pyforge-genesis",
+        "noDream": false,
+        "unowned": false,
+        "backfilled": false,
         "openQuestions": 0,
         "overtaken": false,
-        "na": [],
-        "furthest": "epics",
+        "na": [
+          "ux"
+        ],
+        "required": [
+          "dream",
+          "deck",
+          "spec",
+          "research",
+          "brief",
+          "prd",
+          "arch",
+          "context",
+          "epics",
+          "sprint"
+        ],
+        "gaps": [
+          "research",
+          "brief",
+          "context"
+        ],
+        "partial": [],
+        "staleBy": [
+          {
+            "kind": "feeds",
+            "stage": "spec",
+            "than": "prd",
+            "at": "2026-07-29",
+            "other": "2026-07-28"
+          }
+        ],
+        "furthest": "sprint",
         "updated": "2026-07-30",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "0/36",
-        "complete": 6,
-        "of": 9,
-        "owner": "guild"
+        "complete": 7,
+        "of": 10
       },
       {
-        "label": "deckcraft",
-        "slug": "deckcraft",
+        "label": "herald",
+        "slug": "pyforge-herald",
         "project": "pyforge-herald",
-        "dream": "deckcraft",
+        "dream": "pyforge-herald",
+        "owner": "herald",
         "stages": {
-          "dream": "07-23",
-          "deck": "07-23",
-          "spec": "07-29",
-          "research": "07-25",
-          "brief": "",
-          "prd": "07-29",
-          "arch": "07-29",
-          "epics": "07-25",
-          "code": "07-25"
+          "dream": "2026-07-23",
+          "deck": "2026-07-23",
+          "spec": "2026-07-29",
+          "research": "2026-07-25",
+          "brief": "2026-07-25",
+          "prd": "2026-07-25",
+          "ux": "",
+          "arch": "2026-07-25",
+          "context": "",
+          "epics": "2026-07-25",
+          "sprint": "2026-07-29",
+          "gates": "",
+          "code": "2026-07-25",
+          "verify": "2026-07-25",
+          "retro": ""
         },
+        "updatedAt": {
+          "dream": "2026-07-25",
+          "deck": "2026-07-25",
+          "spec": "2026-07-29",
+          "research": "2026-07-25",
+          "brief": "2026-07-25",
+          "prd": "2026-07-25",
+          "ux": "",
+          "arch": "2026-07-25",
+          "context": "",
+          "epics": "2026-07-25",
+          "sprint": "2026-07-29",
+          "gates": "",
+          "code": "2026-07-25",
+          "verify": "2026-07-25",
+          "retro": ""
+        },
+        "sub": {
+          "research": {
+            "have": {
+              "domain": true,
+              "market": true,
+              "technical": true
+            },
+            "n": 3,
+            "of": 3,
+            "missing": [],
+            "inherited": false
+          },
+          "deck": {
+            "have": {
+              "prototype": true,
+              "exec": true,
+              "infographic": true,
+              "marp": true,
+              "standalone": true,
+              "pptx": true
+            },
+            "n": 6,
+            "of": 6,
+            "missing": []
+          }
+        },
+        "archived": false,
+        "dreamStatus": "specified",
+        "ownerDream": "pyforge-herald",
+        "noDream": false,
+        "unowned": false,
         "backfilled": true,
         "openQuestions": 0,
         "overtaken": false,
-        "na": [],
-        "furthest": "code",
+        "na": [
+          "ux"
+        ],
+        "required": [
+          "dream",
+          "deck",
+          "spec",
+          "research",
+          "brief",
+          "prd",
+          "arch",
+          "context",
+          "epics",
+          "sprint",
+          "gates",
+          "code",
+          "verify"
+        ],
+        "gaps": [
+          "context",
+          "gates"
+        ],
+        "partial": [],
+        "staleBy": [
+          {
+            "kind": "feeds",
+            "stage": "spec",
+            "than": "prd",
+            "at": "2026-07-29",
+            "other": "2026-07-25"
+          }
+        ],
+        "furthest": "verify",
         "updated": "2026-07-30",
         "age": 0,
         "stale": false,
         "version": "0.1.0",
         "progress": "2/17",
-        "complete": 8,
-        "of": 9,
-        "owner": "herald"
+        "complete": 11,
+        "of": 13
       },
       {
-        "label": "presenton",
-        "slug": "presenton-pixi-image",
-        "project": "pyforge-mason",
-        "dream": "presenton-pixi-image",
+        "label": "marshal",
+        "slug": "pyforge-marshal",
+        "project": "pyforge-marshal",
+        "dream": "pyforge-marshal",
+        "owner": "marshal",
         "stages": {
-          "dream": "07-23",
-          "deck": "07-23",
-          "spec": "07-29",
-          "research": "07-25",
-          "brief": "07-29",
-          "prd": "07-29",
-          "arch": "07-29",
-          "epics": "07-25",
-          "code": "07-25"
+          "dream": "2026-07-23",
+          "deck": "2026-07-23",
+          "spec": "2026-07-25",
+          "research": "2026-07-16",
+          "brief": "2026-07-25",
+          "prd": "2026-07-25",
+          "ux": "",
+          "arch": "2026-07-25",
+          "context": "2026-06-20",
+          "epics": "2026-07-25",
+          "sprint": "2026-07-29",
+          "gates": "2026-06-21",
+          "code": "2026-07-26",
+          "verify": "2026-07-26",
+          "retro": ""
         },
+        "updatedAt": {
+          "dream": "2026-07-25",
+          "deck": "2026-07-25",
+          "spec": "2026-07-29",
+          "research": "2026-07-25",
+          "brief": "2026-07-25",
+          "prd": "2026-07-25",
+          "ux": "",
+          "arch": "2026-07-25",
+          "context": "2026-06-20",
+          "epics": "2026-07-25",
+          "sprint": "2026-07-30",
+          "gates": "2026-07-06",
+          "code": "2026-07-30",
+          "verify": "2026-07-30",
+          "retro": ""
+        },
+        "sub": {
+          "research": {
+            "have": {
+              "domain": true,
+              "market": true,
+              "technical": true
+            },
+            "n": 3,
+            "of": 3,
+            "missing": [],
+            "inherited": false
+          },
+          "deck": {
+            "have": {
+              "prototype": true,
+              "exec": true,
+              "infographic": true,
+              "marp": true,
+              "standalone": true,
+              "pptx": true
+            },
+            "n": 6,
+            "of": 6,
+            "missing": []
+          }
+        },
+        "archived": false,
+        "dreamStatus": "realized",
+        "ownerDream": "pyforge-marshal",
+        "noDream": false,
+        "unowned": false,
         "backfilled": true,
         "openQuestions": 0,
         "overtaken": false,
-        "na": [],
-        "furthest": "code",
+        "na": [
+          "ux"
+        ],
+        "required": [
+          "dream",
+          "deck",
+          "spec",
+          "research",
+          "brief",
+          "prd",
+          "arch",
+          "context",
+          "epics",
+          "sprint",
+          "gates",
+          "code",
+          "verify"
+        ],
+        "gaps": [],
+        "partial": [],
+        "staleBy": [
+          {
+            "kind": "feeds",
+            "stage": "spec",
+            "than": "prd",
+            "at": "2026-07-29",
+            "other": "2026-07-25"
+          },
+          {
+            "kind": "feeds",
+            "stage": "prd",
+            "than": "gates",
+            "at": "2026-07-25",
+            "other": "2026-06-21"
+          }
+        ],
+        "furthest": "verify",
+        "updated": "2026-07-30",
+        "age": 0,
+        "stale": false,
+        "version": "0.1.0",
+        "progress": "4/41",
+        "complete": 13,
+        "of": 13
+      },
+      {
+        "label": "mason",
+        "slug": "pyforge-mason",
+        "project": "pyforge-mason",
+        "dream": "pyforge-mason",
+        "owner": "mason",
+        "stages": {
+          "dream": "2026-07-25",
+          "deck": "2026-07-23",
+          "spec": "2026-07-25",
+          "research": "2026-07-25",
+          "brief": "2026-07-25",
+          "prd": "2026-07-25",
+          "ux": "",
+          "arch": "2026-07-25",
+          "context": "",
+          "epics": "2026-07-25",
+          "sprint": "2026-07-29",
+          "gates": "",
+          "code": "2026-07-25",
+          "verify": "2026-07-25",
+          "retro": ""
+        },
+        "updatedAt": {
+          "dream": "2026-07-25",
+          "deck": "2026-07-25",
+          "spec": "2026-07-29",
+          "research": "2026-07-25",
+          "brief": "2026-07-25",
+          "prd": "2026-07-25",
+          "ux": "",
+          "arch": "2026-07-25",
+          "context": "",
+          "epics": "2026-07-25",
+          "sprint": "2026-07-29",
+          "gates": "",
+          "code": "2026-07-25",
+          "verify": "2026-07-25",
+          "retro": ""
+        },
+        "sub": {
+          "research": {
+            "have": {
+              "domain": true,
+              "market": false,
+              "technical": true
+            },
+            "n": 2,
+            "of": 3,
+            "missing": [
+              "market"
+            ],
+            "inherited": false
+          },
+          "deck": {
+            "have": {
+              "prototype": true,
+              "exec": true,
+              "infographic": true,
+              "marp": true,
+              "standalone": true,
+              "pptx": true
+            },
+            "n": 6,
+            "of": 6,
+            "missing": []
+          }
+        },
+        "archived": false,
+        "dreamStatus": "specified",
+        "ownerDream": "pyforge-mason",
+        "noDream": false,
+        "unowned": false,
+        "backfilled": true,
+        "openQuestions": 0,
+        "overtaken": false,
+        "na": [
+          "ux"
+        ],
+        "required": [
+          "dream",
+          "deck",
+          "spec",
+          "research",
+          "brief",
+          "prd",
+          "arch",
+          "context",
+          "epics",
+          "sprint",
+          "gates",
+          "code",
+          "verify"
+        ],
+        "gaps": [
+          "context",
+          "gates"
+        ],
+        "partial": [
+          "research"
+        ],
+        "staleBy": [
+          {
+            "kind": "feeds",
+            "stage": "spec",
+            "than": "prd",
+            "at": "2026-07-29",
+            "other": "2026-07-25"
+          }
+        ],
+        "furthest": "verify",
         "updated": "2026-07-30",
         "age": 0,
         "stale": false,
         "version": "0.1.0",
         "progress": "1/38",
-        "complete": 9,
-        "of": 9,
-        "owner": "mason"
+        "complete": 11,
+        "of": 13
+      },
+      {
+        "label": "scribe",
+        "slug": "pyforge-scribe",
+        "project": "pyforge-scribe",
+        "dream": "pyforge-scribe",
+        "owner": "scribe",
+        "stages": {
+          "dream": "2026-07-23",
+          "deck": "2026-07-23",
+          "spec": "2026-07-25",
+          "research": "2026-07-25",
+          "brief": "2026-07-25",
+          "prd": "2026-07-25",
+          "ux": "",
+          "arch": "2026-07-25",
+          "context": "",
+          "epics": "2026-07-25",
+          "sprint": "2026-07-29",
+          "gates": "",
+          "code": "2026-07-25",
+          "verify": "2026-07-25",
+          "retro": ""
+        },
+        "updatedAt": {
+          "dream": "2026-07-25",
+          "deck": "2026-07-25",
+          "spec": "2026-07-29",
+          "research": "2026-07-25",
+          "brief": "2026-07-25",
+          "prd": "2026-07-25",
+          "ux": "",
+          "arch": "2026-07-25",
+          "context": "",
+          "epics": "2026-07-25",
+          "sprint": "2026-07-29",
+          "gates": "",
+          "code": "2026-07-25",
+          "verify": "2026-07-25",
+          "retro": ""
+        },
+        "sub": {
+          "research": {
+            "have": {
+              "domain": true,
+              "market": true,
+              "technical": false
+            },
+            "n": 2,
+            "of": 3,
+            "missing": [
+              "technical"
+            ],
+            "inherited": false
+          },
+          "deck": {
+            "have": {
+              "prototype": true,
+              "exec": true,
+              "infographic": true,
+              "marp": true,
+              "standalone": true,
+              "pptx": true
+            },
+            "n": 6,
+            "of": 6,
+            "missing": []
+          }
+        },
+        "archived": false,
+        "dreamStatus": "specified",
+        "ownerDream": "pyforge-scribe",
+        "noDream": false,
+        "unowned": false,
+        "backfilled": true,
+        "openQuestions": 0,
+        "overtaken": false,
+        "na": [
+          "ux"
+        ],
+        "required": [
+          "dream",
+          "deck",
+          "spec",
+          "research",
+          "brief",
+          "prd",
+          "arch",
+          "context",
+          "epics",
+          "sprint",
+          "gates",
+          "code",
+          "verify"
+        ],
+        "gaps": [
+          "context",
+          "gates"
+        ],
+        "partial": [
+          "research"
+        ],
+        "staleBy": [
+          {
+            "kind": "feeds",
+            "stage": "spec",
+            "than": "prd",
+            "at": "2026-07-29",
+            "other": "2026-07-25"
+          }
+        ],
+        "furthest": "verify",
+        "updated": "2026-07-30",
+        "age": 0,
+        "stale": false,
+        "version": "0.1.0",
+        "progress": "1/9",
+        "complete": 11,
+        "of": 13
+      },
+      {
+        "label": "steward",
+        "slug": "pyforge-steward",
+        "project": "pyforge-steward",
+        "dream": "pyforge-steward",
+        "owner": "steward",
+        "stages": {
+          "dream": "2026-07-23",
+          "deck": "2026-07-23",
+          "spec": "2026-07-25",
+          "research": "2026-07-25",
+          "brief": "2026-07-25",
+          "prd": "2026-07-25",
+          "ux": "",
+          "arch": "2026-07-25",
+          "context": "",
+          "epics": "2026-07-25",
+          "sprint": "2026-07-29",
+          "gates": "",
+          "code": "2026-07-25",
+          "verify": "2026-07-25",
+          "retro": ""
+        },
+        "updatedAt": {
+          "dream": "2026-07-25",
+          "deck": "2026-07-25",
+          "spec": "2026-07-29",
+          "research": "2026-07-25",
+          "brief": "2026-07-25",
+          "prd": "2026-07-25",
+          "ux": "",
+          "arch": "2026-07-25",
+          "context": "",
+          "epics": "2026-07-25",
+          "sprint": "2026-07-29",
+          "gates": "",
+          "code": "2026-07-25",
+          "verify": "2026-07-25",
+          "retro": ""
+        },
+        "sub": {
+          "research": {
+            "have": {
+              "domain": true,
+              "market": false,
+              "technical": true
+            },
+            "n": 2,
+            "of": 3,
+            "missing": [
+              "market"
+            ],
+            "inherited": false
+          },
+          "deck": {
+            "have": {
+              "prototype": true,
+              "exec": true,
+              "infographic": true,
+              "marp": true,
+              "standalone": true,
+              "pptx": true
+            },
+            "n": 6,
+            "of": 6,
+            "missing": []
+          }
+        },
+        "archived": false,
+        "dreamStatus": "specified",
+        "ownerDream": "pyforge-steward",
+        "noDream": false,
+        "unowned": false,
+        "backfilled": true,
+        "openQuestions": 0,
+        "overtaken": false,
+        "na": [
+          "ux"
+        ],
+        "required": [
+          "dream",
+          "deck",
+          "spec",
+          "research",
+          "brief",
+          "prd",
+          "arch",
+          "context",
+          "epics",
+          "sprint",
+          "gates",
+          "code",
+          "verify"
+        ],
+        "gaps": [
+          "context",
+          "gates"
+        ],
+        "partial": [
+          "research"
+        ],
+        "staleBy": [
+          {
+            "kind": "feeds",
+            "stage": "spec",
+            "than": "prd",
+            "at": "2026-07-29",
+            "other": "2026-07-25"
+          }
+        ],
+        "furthest": "verify",
+        "updated": "2026-07-30",
+        "age": 0,
+        "stale": false,
+        "version": "0.1.0",
+        "progress": "1/18",
+        "complete": 11,
+        "of": 13
+      },
+      {
+        "label": "warden",
+        "slug": "pyforge-warden",
+        "project": "pyforge-warden",
+        "dream": "pyforge-warden",
+        "owner": "warden",
+        "stages": {
+          "dream": "2026-07-23",
+          "deck": "2026-07-14",
+          "spec": "2026-07-25",
+          "research": "2026-07-25",
+          "brief": "2026-07-25",
+          "prd": "2026-07-14",
+          "ux": "",
+          "arch": "2026-07-14",
+          "context": "",
+          "epics": "2026-07-14",
+          "sprint": "2026-07-29",
+          "gates": "2026-07-11",
+          "code": "2026-07-14",
+          "verify": "2026-07-14",
+          "retro": ""
+        },
+        "updatedAt": {
+          "dream": "2026-07-25",
+          "deck": "2026-07-24",
+          "spec": "2026-07-29",
+          "research": "2026-07-25",
+          "brief": "2026-07-25",
+          "prd": "2026-07-14",
+          "ux": "",
+          "arch": "2026-07-14",
+          "context": "",
+          "epics": "2026-07-16",
+          "sprint": "2026-07-29",
+          "gates": "2026-07-16",
+          "code": "2026-07-24",
+          "verify": "2026-07-24",
+          "retro": ""
+        },
+        "sub": {
+          "research": {
+            "have": {
+              "domain": true,
+              "market": true,
+              "technical": false
+            },
+            "n": 2,
+            "of": 3,
+            "missing": [
+              "technical"
+            ],
+            "inherited": false
+          },
+          "deck": {
+            "have": {
+              "prototype": true,
+              "exec": true,
+              "infographic": true,
+              "marp": true,
+              "standalone": true,
+              "pptx": true
+            },
+            "n": 6,
+            "of": 6,
+            "missing": []
+          }
+        },
+        "archived": false,
+        "dreamStatus": "realized",
+        "ownerDream": "pyforge-warden",
+        "noDream": false,
+        "unowned": false,
+        "backfilled": true,
+        "openQuestions": 0,
+        "overtaken": false,
+        "na": [
+          "ux"
+        ],
+        "required": [
+          "dream",
+          "deck",
+          "spec",
+          "research",
+          "brief",
+          "prd",
+          "arch",
+          "context",
+          "epics",
+          "sprint",
+          "gates",
+          "code",
+          "verify"
+        ],
+        "gaps": [
+          "context"
+        ],
+        "partial": [
+          "research"
+        ],
+        "staleBy": [
+          {
+            "kind": "feeds",
+            "stage": "brief",
+            "than": "prd",
+            "at": "2026-07-25",
+            "other": "2026-07-14"
+          },
+          {
+            "kind": "feeds",
+            "stage": "spec",
+            "than": "prd",
+            "at": "2026-07-29",
+            "other": "2026-07-14"
+          },
+          {
+            "kind": "feeds",
+            "stage": "prd",
+            "than": "gates",
+            "at": "2026-07-14",
+            "other": "2026-07-11"
+          }
+        ],
+        "furthest": "verify",
+        "updated": "2026-07-30",
+        "age": 0,
+        "stale": false,
+        "version": "0.1.0",
+        "progress": "31/31",
+        "complete": 12,
+        "of": 13
+      },
+      {
+        "label": "microsoft-org-sweep",
+        "slug": "microsoft-org-sweep",
+        "project": "pyforge-atlas",
+        "dream": "microsoft-org-sweep",
+        "owner": "atlas",
+        "stages": {
+          "dream": "2026-07-25",
+          "deck": "",
+          "spec": "2026-07-29",
+          "research": "2026-07-25",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "updatedAt": {
+          "dream": "2026-07-25",
+          "deck": "",
+          "spec": "2026-07-29",
+          "research": "2026-07-25",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "sub": {
+          "research": {
+            "have": {
+              "domain": true,
+              "market": true,
+              "technical": true
+            },
+            "n": 3,
+            "of": 3,
+            "missing": [],
+            "inherited": true
+          },
+          "deck": {
+            "have": {
+              "prototype": false,
+              "exec": false,
+              "infographic": false,
+              "marp": false,
+              "standalone": false,
+              "pptx": false
+            },
+            "n": 0,
+            "of": 6,
+            "missing": [
+              "exec",
+              "infographic",
+              "marp",
+              "pptx",
+              "prototype",
+              "standalone"
+            ]
+          }
+        },
+        "archived": true,
+        "dreamStatus": "archived",
+        "ownerDream": "microsoft-org-sweep",
+        "noDream": false,
+        "unowned": false,
+        "backfilled": false,
+        "openQuestions": 0,
+        "overtaken": false,
+        "na": [
+          "ux"
+        ],
+        "required": [
+          "dream",
+          "deck",
+          "spec",
+          "research"
+        ],
+        "gaps": [
+          "deck"
+        ],
+        "partial": [],
+        "staleBy": [],
+        "furthest": "research",
+        "updated": "2026-07-30",
+        "age": 0,
+        "stale": false,
+        "version": "",
+        "progress": "",
+        "complete": 3,
+        "of": 4
       },
       {
         "label": "unity",
         "slug": "unity-data-stack",
         "project": "pyforge-atlas",
         "dream": "unity-data-stack",
+        "owner": "atlas",
         "stages": {
-          "dream": "07-23",
-          "deck": "07-23",
-          "spec": "07-29",
-          "research": "07-25",
-          "brief": "07-29",
-          "prd": "07-29",
-          "arch": "07-29",
-          "epics": "07-17",
-          "code": "07-17"
+          "dream": "2026-07-23",
+          "deck": "2026-07-25",
+          "spec": "2026-07-29",
+          "research": "2026-07-25",
+          "brief": "2026-07-25",
+          "prd": "2026-07-25",
+          "ux": "",
+          "arch": "2026-07-25",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
         },
+        "updatedAt": {
+          "dream": "2026-07-25",
+          "deck": "2026-07-25",
+          "spec": "2026-07-29",
+          "research": "2026-07-25",
+          "brief": "2026-07-25",
+          "prd": "2026-07-25",
+          "ux": "",
+          "arch": "2026-07-25",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "sub": {
+          "research": {
+            "have": {
+              "domain": true,
+              "market": true,
+              "technical": true
+            },
+            "n": 3,
+            "of": 3,
+            "missing": [],
+            "inherited": true
+          },
+          "deck": {
+            "have": {
+              "prototype": true,
+              "exec": true,
+              "infographic": true,
+              "marp": true,
+              "standalone": true,
+              "pptx": true
+            },
+            "n": 6,
+            "of": 6,
+            "missing": []
+          }
+        },
+        "archived": false,
+        "dreamStatus": "specified",
+        "ownerDream": "unity-data-stack",
+        "noDream": false,
+        "unowned": false,
         "backfilled": true,
         "openQuestions": 0,
         "overtaken": false,
-        "na": [],
-        "furthest": "code",
+        "na": [
+          "epics"
+        ],
+        "required": [
+          "dream",
+          "deck",
+          "spec",
+          "research",
+          "brief",
+          "prd",
+          "ux",
+          "arch"
+        ],
+        "gaps": [
+          "ux"
+        ],
+        "partial": [],
+        "staleBy": [
+          {
+            "kind": "feeds",
+            "stage": "spec",
+            "than": "prd",
+            "at": "2026-07-29",
+            "other": "2026-07-25"
+          }
+        ],
+        "furthest": "arch",
         "updated": "2026-07-30",
         "age": 0,
         "stale": false,
-        "version": "0.1.0",
-        "progress": "38/38",
-        "complete": 9,
-        "of": 9,
-        "owner": "atlas"
+        "version": "",
+        "progress": "",
+        "complete": 7,
+        "of": 8
+      },
+      {
+        "label": "upstream-discovery",
+        "slug": "upstream-discovery",
+        "project": "pyforge-atlas",
+        "dream": "upstream-discovery",
+        "owner": "atlas",
+        "stages": {
+          "dream": "2026-07-23",
+          "deck": "",
+          "spec": "2026-07-25",
+          "research": "2026-07-25",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "updatedAt": {
+          "dream": "2026-07-25",
+          "deck": "",
+          "spec": "2026-07-29",
+          "research": "2026-07-25",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "sub": {
+          "research": {
+            "have": {
+              "domain": true,
+              "market": true,
+              "technical": true
+            },
+            "n": 3,
+            "of": 3,
+            "missing": [],
+            "inherited": true
+          },
+          "deck": {
+            "have": {
+              "prototype": false,
+              "exec": false,
+              "infographic": false,
+              "marp": false,
+              "standalone": false,
+              "pptx": false
+            },
+            "n": 0,
+            "of": 6,
+            "missing": [
+              "exec",
+              "infographic",
+              "marp",
+              "pptx",
+              "prototype",
+              "standalone"
+            ]
+          }
+        },
+        "archived": false,
+        "dreamStatus": "specified",
+        "ownerDream": "upstream-discovery",
+        "noDream": false,
+        "unowned": false,
+        "backfilled": false,
+        "openQuestions": 6,
+        "overtaken": false,
+        "na": [
+          "ux"
+        ],
+        "required": [
+          "dream",
+          "deck",
+          "spec",
+          "research"
+        ],
+        "gaps": [
+          "deck"
+        ],
+        "partial": [],
+        "staleBy": [],
+        "furthest": "research",
+        "updated": "2026-07-30",
+        "age": 0,
+        "stale": false,
+        "version": "",
+        "progress": "",
+        "complete": 3,
+        "of": 4
       },
       {
         "label": "wasm",
         "slug": "wasm-analytics-stack",
         "project": "pyforge-atlas",
         "dream": "wasm-analytics-stack",
+        "owner": "atlas",
         "stages": {
-          "dream": "07-23",
-          "deck": "07-23",
-          "spec": "07-29",
-          "research": "07-25",
-          "brief": "07-29",
-          "prd": "07-29",
-          "arch": "07-29",
-          "epics": "07-17",
-          "code": "07-17"
+          "dream": "2026-07-23",
+          "deck": "2026-07-25",
+          "spec": "2026-07-29",
+          "research": "2026-07-25",
+          "brief": "2026-07-25",
+          "prd": "2026-07-25",
+          "ux": "",
+          "arch": "2026-07-25",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
         },
+        "updatedAt": {
+          "dream": "2026-07-25",
+          "deck": "2026-07-25",
+          "spec": "2026-07-29",
+          "research": "2026-07-25",
+          "brief": "2026-07-25",
+          "prd": "2026-07-25",
+          "ux": "",
+          "arch": "2026-07-25",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "sub": {
+          "research": {
+            "have": {
+              "domain": true,
+              "market": true,
+              "technical": true
+            },
+            "n": 3,
+            "of": 3,
+            "missing": [],
+            "inherited": true
+          },
+          "deck": {
+            "have": {
+              "prototype": true,
+              "exec": true,
+              "infographic": true,
+              "marp": true,
+              "standalone": true,
+              "pptx": true
+            },
+            "n": 6,
+            "of": 6,
+            "missing": []
+          }
+        },
+        "archived": false,
+        "dreamStatus": "specified",
+        "ownerDream": "wasm-analytics-stack",
+        "noDream": false,
+        "unowned": false,
+        "backfilled": true,
+        "openQuestions": 0,
+        "overtaken": false,
+        "na": [
+          "epics"
+        ],
+        "required": [
+          "dream",
+          "deck",
+          "spec",
+          "research",
+          "brief",
+          "prd",
+          "ux",
+          "arch"
+        ],
+        "gaps": [
+          "ux"
+        ],
+        "partial": [],
+        "staleBy": [
+          {
+            "kind": "feeds",
+            "stage": "spec",
+            "than": "prd",
+            "at": "2026-07-29",
+            "other": "2026-07-25"
+          }
+        ],
+        "furthest": "arch",
+        "updated": "2026-07-30",
+        "age": 0,
+        "stale": false,
+        "version": "",
+        "progress": "",
+        "complete": 7,
+        "of": 8
+      },
+      {
+        "label": "charter",
+        "slug": "pyforge-charter",
+        "project": "pyforge-genesis",
+        "dream": "pyforge-charter",
+        "owner": "guild",
+        "stages": {
+          "dream": "2026-07-25",
+          "deck": "",
+          "spec": "2026-07-29",
+          "research": "",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "updatedAt": {
+          "dream": "2026-07-29",
+          "deck": "",
+          "spec": "2026-07-29",
+          "research": "",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "sub": {
+          "research": {
+            "have": {
+              "domain": false,
+              "market": false,
+              "technical": false
+            },
+            "n": 0,
+            "of": 3,
+            "missing": [
+              "domain",
+              "market",
+              "technical"
+            ],
+            "inherited": false
+          },
+          "deck": {
+            "have": {
+              "prototype": false,
+              "exec": false,
+              "infographic": false,
+              "marp": false,
+              "standalone": false,
+              "pptx": false
+            },
+            "n": 0,
+            "of": 6,
+            "missing": [
+              "exec",
+              "infographic",
+              "marp",
+              "pptx",
+              "prototype",
+              "standalone"
+            ]
+          }
+        },
+        "archived": false,
+        "dreamStatus": "pitched",
+        "ownerDream": "pyforge-charter",
+        "noDream": false,
+        "unowned": false,
+        "backfilled": false,
+        "openQuestions": 0,
+        "overtaken": false,
+        "na": [
+          "ux"
+        ],
+        "required": [
+          "dream",
+          "deck",
+          "spec"
+        ],
+        "gaps": [
+          "deck"
+        ],
+        "partial": [],
+        "staleBy": [],
+        "furthest": "spec",
+        "updated": "2026-07-30",
+        "age": 0,
+        "stale": false,
+        "version": "",
+        "progress": "",
+        "complete": 2,
+        "of": 3
+      },
+      {
+        "label": "deckcraft",
+        "slug": "deckcraft",
+        "project": "pyforge-herald",
+        "dream": "deckcraft",
+        "owner": "herald",
+        "stages": {
+          "dream": "2026-07-23",
+          "deck": "2026-07-25",
+          "spec": "2026-07-29",
+          "research": "2026-07-25",
+          "brief": "",
+          "prd": "2026-05-10",
+          "ux": "",
+          "arch": "2026-05-10",
+          "context": "2026-05-09",
+          "epics": "2026-07-29",
+          "sprint": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "updatedAt": {
+          "dream": "2026-07-25",
+          "deck": "2026-07-25",
+          "spec": "2026-07-29",
+          "research": "2026-07-25",
+          "brief": "",
+          "prd": "2026-05-10",
+          "ux": "",
+          "arch": "2026-05-10",
+          "context": "2026-07-29",
+          "epics": "2026-07-29",
+          "sprint": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "sub": {
+          "research": {
+            "have": {
+              "domain": true,
+              "market": true,
+              "technical": true
+            },
+            "n": 3,
+            "of": 3,
+            "missing": [],
+            "inherited": true
+          },
+          "deck": {
+            "have": {
+              "prototype": true,
+              "exec": true,
+              "infographic": true,
+              "marp": true,
+              "standalone": true,
+              "pptx": true
+            },
+            "n": 6,
+            "of": 6,
+            "missing": []
+          }
+        },
+        "archived": false,
+        "dreamStatus": "specified",
+        "ownerDream": "deckcraft",
+        "noDream": false,
+        "unowned": false,
         "backfilled": true,
         "openQuestions": 0,
         "overtaken": false,
         "na": [],
-        "furthest": "code",
+        "required": [
+          "dream",
+          "deck",
+          "spec",
+          "research",
+          "brief",
+          "prd",
+          "ux",
+          "arch",
+          "context",
+          "epics"
+        ],
+        "gaps": [
+          "brief",
+          "ux"
+        ],
+        "partial": [],
+        "staleBy": [
+          {
+            "kind": "feeds",
+            "stage": "spec",
+            "than": "prd",
+            "at": "2026-07-29",
+            "other": "2026-05-10"
+          }
+        ],
+        "furthest": "epics",
         "updated": "2026-07-30",
         "age": 0,
         "stale": false,
-        "version": "0.1.0",
-        "progress": "38/38",
-        "complete": 9,
-        "of": 9,
-        "owner": "atlas"
+        "version": "",
+        "progress": "",
+        "complete": 8,
+        "of": 10
+      },
+      {
+        "label": "design-code-bridge",
+        "slug": "design-code-bridge",
+        "project": "pyforge-herald",
+        "dream": "design-code-bridge",
+        "owner": "herald",
+        "stages": {
+          "dream": "2026-07-23",
+          "deck": "",
+          "spec": "2026-07-23",
+          "research": "2026-07-25",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "updatedAt": {
+          "dream": "2026-07-25",
+          "deck": "",
+          "spec": "2026-07-29",
+          "research": "2026-07-25",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "sub": {
+          "research": {
+            "have": {
+              "domain": true,
+              "market": true,
+              "technical": true
+            },
+            "n": 3,
+            "of": 3,
+            "missing": [],
+            "inherited": true
+          },
+          "deck": {
+            "have": {
+              "prototype": false,
+              "exec": false,
+              "infographic": false,
+              "marp": false,
+              "standalone": false,
+              "pptx": false
+            },
+            "n": 0,
+            "of": 6,
+            "missing": [
+              "exec",
+              "infographic",
+              "marp",
+              "pptx",
+              "prototype",
+              "standalone"
+            ]
+          }
+        },
+        "archived": false,
+        "dreamStatus": "realized",
+        "ownerDream": "design-code-bridge",
+        "noDream": false,
+        "unowned": false,
+        "backfilled": false,
+        "openQuestions": 0,
+        "overtaken": false,
+        "na": [
+          "ux"
+        ],
+        "required": [
+          "dream",
+          "deck",
+          "spec",
+          "research"
+        ],
+        "gaps": [
+          "deck"
+        ],
+        "partial": [],
+        "staleBy": [],
+        "furthest": "research",
+        "updated": "2026-07-30",
+        "age": 0,
+        "stale": false,
+        "version": "",
+        "progress": "",
+        "complete": 3,
+        "of": 4
+      },
+      {
+        "label": "modernist-identity",
+        "slug": "modernist-identity",
+        "project": "pyforge-herald",
+        "dream": "modernist-identity",
+        "owner": "herald",
+        "stages": {
+          "dream": "2026-07-23",
+          "deck": "",
+          "spec": "2026-07-29",
+          "research": "2026-07-25",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "updatedAt": {
+          "dream": "2026-07-25",
+          "deck": "",
+          "spec": "2026-07-29",
+          "research": "2026-07-25",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "sub": {
+          "research": {
+            "have": {
+              "domain": true,
+              "market": true,
+              "technical": true
+            },
+            "n": 3,
+            "of": 3,
+            "missing": [],
+            "inherited": true
+          },
+          "deck": {
+            "have": {
+              "prototype": false,
+              "exec": false,
+              "infographic": false,
+              "marp": false,
+              "standalone": false,
+              "pptx": false
+            },
+            "n": 0,
+            "of": 6,
+            "missing": [
+              "exec",
+              "infographic",
+              "marp",
+              "pptx",
+              "prototype",
+              "standalone"
+            ]
+          }
+        },
+        "archived": false,
+        "dreamStatus": "realized",
+        "ownerDream": "modernist-identity",
+        "noDream": false,
+        "unowned": false,
+        "backfilled": false,
+        "openQuestions": 0,
+        "overtaken": false,
+        "na": [
+          "ux"
+        ],
+        "required": [
+          "dream",
+          "deck",
+          "spec",
+          "research"
+        ],
+        "gaps": [
+          "deck"
+        ],
+        "partial": [],
+        "staleBy": [],
+        "furthest": "research",
+        "updated": "2026-07-30",
+        "age": 0,
+        "stale": false,
+        "version": "",
+        "progress": "",
+        "complete": 3,
+        "of": 4
+      },
+      {
+        "label": "agent-portability",
+        "slug": "agent-portability",
+        "project": "pyforge-marshal",
+        "dream": "agent-portability",
+        "owner": "marshal",
+        "stages": {
+          "dream": "2026-07-23",
+          "deck": "",
+          "spec": "2026-07-29",
+          "research": "2026-07-16",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "updatedAt": {
+          "dream": "2026-07-25",
+          "deck": "",
+          "spec": "2026-07-29",
+          "research": "2026-07-25",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "sub": {
+          "research": {
+            "have": {
+              "domain": true,
+              "market": true,
+              "technical": true
+            },
+            "n": 3,
+            "of": 3,
+            "missing": [],
+            "inherited": false
+          },
+          "deck": {
+            "have": {
+              "prototype": false,
+              "exec": false,
+              "infographic": false,
+              "marp": false,
+              "standalone": false,
+              "pptx": false
+            },
+            "n": 0,
+            "of": 6,
+            "missing": [
+              "exec",
+              "infographic",
+              "marp",
+              "pptx",
+              "prototype",
+              "standalone"
+            ]
+          }
+        },
+        "archived": false,
+        "dreamStatus": "dreamt",
+        "ownerDream": "agent-portability",
+        "noDream": false,
+        "unowned": false,
+        "backfilled": true,
+        "openQuestions": 0,
+        "overtaken": false,
+        "na": [
+          "ux"
+        ],
+        "required": [
+          "dream",
+          "deck",
+          "spec",
+          "research"
+        ],
+        "gaps": [
+          "deck"
+        ],
+        "partial": [],
+        "staleBy": [],
+        "furthest": "research",
+        "updated": "2026-07-30",
+        "age": 0,
+        "stale": false,
+        "version": "",
+        "progress": "",
+        "complete": 3,
+        "of": 4
+      },
+      {
+        "label": "agent-tool-surface",
+        "slug": "agent-tool-surface",
+        "project": "pyforge-marshal",
+        "dream": "agent-tool-surface",
+        "owner": "marshal",
+        "stages": {
+          "dream": "2026-07-25",
+          "deck": "",
+          "spec": "2026-07-29",
+          "research": "2026-07-16",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "updatedAt": {
+          "dream": "2026-07-29",
+          "deck": "",
+          "spec": "2026-07-29",
+          "research": "2026-07-25",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "sub": {
+          "research": {
+            "have": {
+              "domain": true,
+              "market": true,
+              "technical": true
+            },
+            "n": 3,
+            "of": 3,
+            "missing": [],
+            "inherited": true
+          },
+          "deck": {
+            "have": {
+              "prototype": false,
+              "exec": false,
+              "infographic": false,
+              "marp": false,
+              "standalone": false,
+              "pptx": false
+            },
+            "n": 0,
+            "of": 6,
+            "missing": [
+              "exec",
+              "infographic",
+              "marp",
+              "pptx",
+              "prototype",
+              "standalone"
+            ]
+          }
+        },
+        "archived": false,
+        "dreamStatus": "realized",
+        "ownerDream": "agent-tool-surface",
+        "noDream": false,
+        "unowned": false,
+        "backfilled": false,
+        "openQuestions": 1,
+        "overtaken": false,
+        "na": [
+          "ux"
+        ],
+        "required": [
+          "dream",
+          "deck",
+          "spec",
+          "research"
+        ],
+        "gaps": [
+          "deck"
+        ],
+        "partial": [],
+        "staleBy": [],
+        "furthest": "research",
+        "updated": "2026-07-30",
+        "age": 0,
+        "stale": false,
+        "version": "",
+        "progress": "",
+        "complete": 3,
+        "of": 4
+      },
+      {
+        "label": "agentic-sdlc-autonomy",
+        "slug": "agentic-sdlc-autonomy",
+        "project": "pyforge-marshal",
+        "dream": "agentic-sdlc-autonomy",
+        "owner": "marshal",
+        "stages": {
+          "dream": "2026-07-23",
+          "deck": "",
+          "spec": "2026-07-29",
+          "research": "2026-07-16",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "updatedAt": {
+          "dream": "2026-07-29",
+          "deck": "",
+          "spec": "2026-07-29",
+          "research": "2026-07-25",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "sub": {
+          "research": {
+            "have": {
+              "domain": true,
+              "market": true,
+              "technical": true
+            },
+            "n": 3,
+            "of": 3,
+            "missing": [],
+            "inherited": true
+          },
+          "deck": {
+            "have": {
+              "prototype": false,
+              "exec": false,
+              "infographic": false,
+              "marp": false,
+              "standalone": false,
+              "pptx": false
+            },
+            "n": 0,
+            "of": 6,
+            "missing": [
+              "exec",
+              "infographic",
+              "marp",
+              "pptx",
+              "prototype",
+              "standalone"
+            ]
+          }
+        },
+        "archived": false,
+        "dreamStatus": "pitched",
+        "ownerDream": "agentic-sdlc-autonomy",
+        "noDream": false,
+        "unowned": false,
+        "backfilled": false,
+        "openQuestions": 0,
+        "overtaken": false,
+        "na": [
+          "ux"
+        ],
+        "required": [
+          "dream",
+          "deck",
+          "spec",
+          "research"
+        ],
+        "gaps": [
+          "deck"
+        ],
+        "partial": [],
+        "staleBy": [],
+        "furthest": "research",
+        "updated": "2026-07-30",
+        "age": 0,
+        "stale": false,
+        "version": "",
+        "progress": "",
+        "complete": 3,
+        "of": 4
+      },
+      {
+        "label": "artifact-console",
+        "slug": "artifact-console",
+        "project": "pyforge-marshal",
+        "dream": "artifact-console",
+        "owner": "marshal",
+        "stages": {
+          "dream": "2026-07-25",
+          "deck": "",
+          "spec": "2026-07-29",
+          "research": "2026-07-16",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "updatedAt": {
+          "dream": "2026-07-25",
+          "deck": "",
+          "spec": "2026-07-29",
+          "research": "2026-07-25",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "sub": {
+          "research": {
+            "have": {
+              "domain": true,
+              "market": true,
+              "technical": true
+            },
+            "n": 3,
+            "of": 3,
+            "missing": [],
+            "inherited": true
+          },
+          "deck": {
+            "have": {
+              "prototype": false,
+              "exec": false,
+              "infographic": false,
+              "marp": false,
+              "standalone": false,
+              "pptx": false
+            },
+            "n": 0,
+            "of": 6,
+            "missing": [
+              "exec",
+              "infographic",
+              "marp",
+              "pptx",
+              "prototype",
+              "standalone"
+            ]
+          }
+        },
+        "archived": true,
+        "dreamStatus": "archived",
+        "ownerDream": "artifact-console",
+        "noDream": false,
+        "unowned": false,
+        "backfilled": false,
+        "openQuestions": 0,
+        "overtaken": false,
+        "na": [
+          "ux"
+        ],
+        "required": [
+          "dream",
+          "deck",
+          "spec",
+          "research"
+        ],
+        "gaps": [
+          "deck"
+        ],
+        "partial": [],
+        "staleBy": [],
+        "furthest": "research",
+        "updated": "2026-07-30",
+        "age": 0,
+        "stale": false,
+        "version": "",
+        "progress": "",
+        "complete": 3,
+        "of": 4
+      },
+      {
+        "label": "bmad-loop-governance",
+        "slug": "bmad-loop-governance",
+        "project": "pyforge-marshal",
+        "dream": "bmad-loop-governance",
+        "owner": "marshal",
+        "stages": {
+          "dream": "",
+          "deck": "",
+          "spec": "2026-07-29",
+          "research": "2026-07-16",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "updatedAt": {
+          "dream": "",
+          "deck": "",
+          "spec": "2026-07-29",
+          "research": "2026-07-25",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "sub": {
+          "research": {
+            "have": {
+              "domain": true,
+              "market": true,
+              "technical": true
+            },
+            "n": 3,
+            "of": 3,
+            "missing": [],
+            "inherited": true
+          },
+          "deck": {
+            "have": {
+              "prototype": false,
+              "exec": false,
+              "infographic": false,
+              "marp": false,
+              "standalone": false,
+              "pptx": false
+            },
+            "n": 0,
+            "of": 6,
+            "missing": [
+              "exec",
+              "infographic",
+              "marp",
+              "pptx",
+              "prototype",
+              "standalone"
+            ]
+          }
+        },
+        "archived": false,
+        "dreamStatus": "",
+        "ownerDream": "pyforge-marshal",
+        "noDream": false,
+        "unowned": false,
+        "backfilled": false,
+        "openQuestions": 0,
+        "overtaken": false,
+        "na": [
+          "ux"
+        ],
+        "required": [
+          "dream",
+          "deck",
+          "spec",
+          "research"
+        ],
+        "gaps": [
+          "dream",
+          "deck"
+        ],
+        "partial": [],
+        "staleBy": [],
+        "furthest": "research",
+        "updated": "2026-07-30",
+        "age": 0,
+        "stale": false,
+        "version": "",
+        "progress": "",
+        "complete": 2,
+        "of": 4
+      },
+      {
+        "label": "factory-console",
+        "slug": "factory-console",
+        "project": "pyforge-marshal",
+        "dream": "factory-console",
+        "owner": "marshal",
+        "stages": {
+          "dream": "2026-07-23",
+          "deck": "",
+          "spec": "2026-07-29",
+          "research": "2026-07-16",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "updatedAt": {
+          "dream": "2026-07-25",
+          "deck": "",
+          "spec": "2026-07-29T04:40",
+          "research": "2026-07-25",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "sub": {
+          "research": {
+            "have": {
+              "domain": true,
+              "market": true,
+              "technical": true
+            },
+            "n": 3,
+            "of": 3,
+            "missing": [],
+            "inherited": true
+          },
+          "deck": {
+            "have": {
+              "prototype": false,
+              "exec": false,
+              "infographic": false,
+              "marp": false,
+              "standalone": false,
+              "pptx": false
+            },
+            "n": 0,
+            "of": 6,
+            "missing": [
+              "exec",
+              "infographic",
+              "marp",
+              "pptx",
+              "prototype",
+              "standalone"
+            ]
+          }
+        },
+        "archived": false,
+        "dreamStatus": "realized",
+        "ownerDream": "factory-console",
+        "noDream": false,
+        "unowned": false,
+        "backfilled": false,
+        "openQuestions": 0,
+        "overtaken": false,
+        "na": [
+          "ux"
+        ],
+        "required": [
+          "dream",
+          "deck",
+          "spec",
+          "research"
+        ],
+        "gaps": [
+          "deck"
+        ],
+        "partial": [],
+        "staleBy": [],
+        "furthest": "research",
+        "updated": "2026-07-30",
+        "age": 0,
+        "stale": false,
+        "version": "",
+        "progress": "",
+        "complete": 3,
+        "of": 4
+      },
+      {
+        "label": "genesis-installer",
+        "slug": "genesis-installer",
+        "project": "pyforge-marshal",
+        "dream": "genesis-installer",
+        "owner": "marshal",
+        "stages": {
+          "dream": "2026-07-29",
+          "deck": "",
+          "spec": "2026-07-29",
+          "research": "2026-07-16",
+          "brief": "",
+          "prd": "2026-07-25",
+          "ux": "",
+          "arch": "2026-07-25",
+          "context": "",
+          "epics": "2026-07-29",
+          "sprint": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "updatedAt": {
+          "dream": "2026-07-29",
+          "deck": "",
+          "spec": "2026-07-29",
+          "research": "2026-07-25",
+          "brief": "",
+          "prd": "2026-07-25",
+          "ux": "",
+          "arch": "2026-07-25",
+          "context": "",
+          "epics": "2026-07-29",
+          "sprint": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "sub": {
+          "research": {
+            "have": {
+              "domain": true,
+              "market": true,
+              "technical": true
+            },
+            "n": 3,
+            "of": 3,
+            "missing": [],
+            "inherited": true
+          },
+          "deck": {
+            "have": {
+              "prototype": false,
+              "exec": false,
+              "infographic": false,
+              "marp": false,
+              "standalone": false,
+              "pptx": false
+            },
+            "n": 0,
+            "of": 6,
+            "missing": [
+              "exec",
+              "infographic",
+              "marp",
+              "pptx",
+              "prototype",
+              "standalone"
+            ]
+          }
+        },
+        "archived": false,
+        "dreamStatus": "specified",
+        "ownerDream": "genesis-installer",
+        "noDream": false,
+        "unowned": false,
+        "backfilled": true,
+        "openQuestions": 0,
+        "overtaken": false,
+        "na": [
+          "ux"
+        ],
+        "required": [
+          "dream",
+          "deck",
+          "spec",
+          "research",
+          "brief",
+          "prd",
+          "arch",
+          "context",
+          "epics"
+        ],
+        "gaps": [
+          "deck",
+          "brief",
+          "context"
+        ],
+        "partial": [],
+        "staleBy": [
+          {
+            "kind": "feeds",
+            "stage": "spec",
+            "than": "prd",
+            "at": "2026-07-29",
+            "other": "2026-07-25"
+          }
+        ],
+        "furthest": "epics",
+        "updated": "2026-07-30",
+        "age": 0,
+        "stale": false,
+        "version": "",
+        "progress": "",
+        "complete": 6,
+        "of": 9
+      },
+      {
+        "label": "multi-loop-isolation",
+        "slug": "multi-loop-isolation",
+        "project": "pyforge-marshal",
+        "dream": "multi-loop-isolation",
+        "owner": "marshal",
+        "stages": {
+          "dream": "",
+          "deck": "",
+          "spec": "2026-07-29",
+          "research": "2026-07-16",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "updatedAt": {
+          "dream": "",
+          "deck": "",
+          "spec": "2026-07-29",
+          "research": "2026-07-25",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "sub": {
+          "research": {
+            "have": {
+              "domain": true,
+              "market": true,
+              "technical": true
+            },
+            "n": 3,
+            "of": 3,
+            "missing": [],
+            "inherited": true
+          },
+          "deck": {
+            "have": {
+              "prototype": false,
+              "exec": false,
+              "infographic": false,
+              "marp": false,
+              "standalone": false,
+              "pptx": false
+            },
+            "n": 0,
+            "of": 6,
+            "missing": [
+              "exec",
+              "infographic",
+              "marp",
+              "pptx",
+              "prototype",
+              "standalone"
+            ]
+          }
+        },
+        "archived": false,
+        "dreamStatus": "",
+        "ownerDream": "pyforge-marshal",
+        "noDream": false,
+        "unowned": false,
+        "backfilled": false,
+        "openQuestions": 0,
+        "overtaken": false,
+        "na": [
+          "ux"
+        ],
+        "required": [
+          "dream",
+          "deck",
+          "spec",
+          "research"
+        ],
+        "gaps": [
+          "dream",
+          "deck"
+        ],
+        "partial": [],
+        "staleBy": [],
+        "furthest": "research",
+        "updated": "2026-07-30",
+        "age": 0,
+        "stale": false,
+        "version": "",
+        "progress": "",
+        "complete": 2,
+        "of": 4
+      },
+      {
+        "label": "regenerable-factory",
+        "slug": "regenerable-factory",
+        "project": "pyforge-marshal",
+        "dream": "regenerable-factory",
+        "owner": "marshal",
+        "stages": {
+          "dream": "2026-07-23",
+          "deck": "",
+          "spec": "2026-07-29",
+          "research": "2026-07-16",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "2026-07-25",
+          "sprint": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "updatedAt": {
+          "dream": "2026-07-25",
+          "deck": "",
+          "spec": "2026-07-29T20:10",
+          "research": "2026-07-25",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "2026-07-25",
+          "sprint": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "sub": {
+          "research": {
+            "have": {
+              "domain": true,
+              "market": true,
+              "technical": true
+            },
+            "n": 3,
+            "of": 3,
+            "missing": [],
+            "inherited": true
+          },
+          "deck": {
+            "have": {
+              "prototype": false,
+              "exec": false,
+              "infographic": false,
+              "marp": false,
+              "standalone": false,
+              "pptx": false
+            },
+            "n": 0,
+            "of": 6,
+            "missing": [
+              "exec",
+              "infographic",
+              "marp",
+              "pptx",
+              "prototype",
+              "standalone"
+            ]
+          }
+        },
+        "archived": false,
+        "dreamStatus": "realized",
+        "ownerDream": "regenerable-factory",
+        "noDream": false,
+        "unowned": false,
+        "backfilled": true,
+        "openQuestions": 0,
+        "overtaken": false,
+        "na": [
+          "ux"
+        ],
+        "required": [
+          "dream",
+          "deck",
+          "spec",
+          "research",
+          "brief",
+          "prd",
+          "arch",
+          "context",
+          "epics"
+        ],
+        "gaps": [
+          "deck",
+          "brief",
+          "prd",
+          "arch",
+          "context"
+        ],
+        "partial": [],
+        "staleBy": [],
+        "furthest": "epics",
+        "updated": "2026-07-30",
+        "age": 0,
+        "stale": false,
+        "version": "",
+        "progress": "",
+        "complete": 4,
+        "of": 9
+      },
+      {
+        "label": "copilot-cli-packaging",
+        "slug": "copilot-cli-packaging",
+        "project": "pyforge-mason",
+        "dream": "copilot-cli-packaging",
+        "owner": "mason",
+        "stages": {
+          "dream": "2026-07-25",
+          "deck": "",
+          "spec": "2026-07-29",
+          "research": "2026-07-25",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "updatedAt": {
+          "dream": "2026-07-25",
+          "deck": "",
+          "spec": "2026-07-29",
+          "research": "2026-07-25",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "sub": {
+          "research": {
+            "have": {
+              "domain": true,
+              "market": false,
+              "technical": true
+            },
+            "n": 2,
+            "of": 3,
+            "missing": [
+              "market"
+            ],
+            "inherited": true
+          },
+          "deck": {
+            "have": {
+              "prototype": false,
+              "exec": false,
+              "infographic": false,
+              "marp": false,
+              "standalone": false,
+              "pptx": false
+            },
+            "n": 0,
+            "of": 6,
+            "missing": [
+              "exec",
+              "infographic",
+              "marp",
+              "pptx",
+              "prototype",
+              "standalone"
+            ]
+          }
+        },
+        "archived": true,
+        "dreamStatus": "archived",
+        "ownerDream": "copilot-cli-packaging",
+        "noDream": false,
+        "unowned": false,
+        "backfilled": false,
+        "openQuestions": 0,
+        "overtaken": false,
+        "na": [
+          "ux"
+        ],
+        "required": [
+          "dream",
+          "deck",
+          "spec",
+          "research"
+        ],
+        "gaps": [
+          "deck"
+        ],
+        "partial": [
+          "research"
+        ],
+        "staleBy": [],
+        "furthest": "research",
+        "updated": "2026-07-30",
+        "age": 0,
+        "stale": false,
+        "version": "",
+        "progress": "",
+        "complete": 3,
+        "of": 4
+      },
+      {
+        "label": "db-gpt-packaging",
+        "slug": "db-gpt-packaging",
+        "project": "pyforge-mason",
+        "dream": "db-gpt-packaging",
+        "owner": "mason",
+        "stages": {
+          "dream": "2026-07-25",
+          "deck": "",
+          "spec": "2026-07-29",
+          "research": "2026-07-25",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "updatedAt": {
+          "dream": "2026-07-25",
+          "deck": "",
+          "spec": "2026-07-29",
+          "research": "2026-07-25",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "sub": {
+          "research": {
+            "have": {
+              "domain": true,
+              "market": false,
+              "technical": true
+            },
+            "n": 2,
+            "of": 3,
+            "missing": [
+              "market"
+            ],
+            "inherited": true
+          },
+          "deck": {
+            "have": {
+              "prototype": false,
+              "exec": false,
+              "infographic": false,
+              "marp": false,
+              "standalone": false,
+              "pptx": false
+            },
+            "n": 0,
+            "of": 6,
+            "missing": [
+              "exec",
+              "infographic",
+              "marp",
+              "pptx",
+              "prototype",
+              "standalone"
+            ]
+          }
+        },
+        "archived": true,
+        "dreamStatus": "archived",
+        "ownerDream": "db-gpt-packaging",
+        "noDream": false,
+        "unowned": false,
+        "backfilled": false,
+        "openQuestions": 0,
+        "overtaken": false,
+        "na": [
+          "ux"
+        ],
+        "required": [
+          "dream",
+          "deck",
+          "spec",
+          "research"
+        ],
+        "gaps": [
+          "deck"
+        ],
+        "partial": [
+          "research"
+        ],
+        "staleBy": [],
+        "furthest": "research",
+        "updated": "2026-07-30",
+        "age": 0,
+        "stale": false,
+        "version": "",
+        "progress": "",
+        "complete": 3,
+        "of": 4
+      },
+      {
+        "label": "fleet-stewardship",
+        "slug": "fleet-stewardship",
+        "project": "pyforge-mason",
+        "dream": "fleet-stewardship",
+        "owner": "mason",
+        "stages": {
+          "dream": "2026-07-23",
+          "deck": "",
+          "spec": "2026-07-29",
+          "research": "2026-07-25",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "updatedAt": {
+          "dream": "2026-07-25",
+          "deck": "",
+          "spec": "2026-07-29",
+          "research": "2026-07-25",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "sub": {
+          "research": {
+            "have": {
+              "domain": true,
+              "market": false,
+              "technical": true
+            },
+            "n": 2,
+            "of": 3,
+            "missing": [
+              "market"
+            ],
+            "inherited": true
+          },
+          "deck": {
+            "have": {
+              "prototype": false,
+              "exec": false,
+              "infographic": false,
+              "marp": false,
+              "standalone": false,
+              "pptx": false
+            },
+            "n": 0,
+            "of": 6,
+            "missing": [
+              "exec",
+              "infographic",
+              "marp",
+              "pptx",
+              "prototype",
+              "standalone"
+            ]
+          }
+        },
+        "archived": false,
+        "dreamStatus": "realized",
+        "ownerDream": "fleet-stewardship",
+        "noDream": false,
+        "unowned": false,
+        "backfilled": false,
+        "openQuestions": 0,
+        "overtaken": false,
+        "na": [
+          "ux"
+        ],
+        "required": [
+          "dream",
+          "deck",
+          "spec",
+          "research"
+        ],
+        "gaps": [
+          "deck"
+        ],
+        "partial": [
+          "research"
+        ],
+        "staleBy": [],
+        "furthest": "research",
+        "updated": "2026-07-30",
+        "age": 0,
+        "stale": false,
+        "version": "",
+        "progress": "",
+        "complete": 3,
+        "of": 4
+      },
+      {
+        "label": "packaging-factory",
+        "slug": "packaging-factory",
+        "project": "pyforge-mason",
+        "dream": "packaging-factory",
+        "owner": "mason",
+        "stages": {
+          "dream": "2026-07-23",
+          "deck": "",
+          "spec": "2026-07-29",
+          "research": "2026-07-25",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "updatedAt": {
+          "dream": "2026-07-25",
+          "deck": "",
+          "spec": "2026-07-29",
+          "research": "2026-07-25",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "sub": {
+          "research": {
+            "have": {
+              "domain": true,
+              "market": false,
+              "technical": true
+            },
+            "n": 2,
+            "of": 3,
+            "missing": [
+              "market"
+            ],
+            "inherited": true
+          },
+          "deck": {
+            "have": {
+              "prototype": false,
+              "exec": false,
+              "infographic": false,
+              "marp": false,
+              "standalone": false,
+              "pptx": false
+            },
+            "n": 0,
+            "of": 6,
+            "missing": [
+              "exec",
+              "infographic",
+              "marp",
+              "pptx",
+              "prototype",
+              "standalone"
+            ]
+          }
+        },
+        "archived": false,
+        "dreamStatus": "realized",
+        "ownerDream": "packaging-factory",
+        "noDream": false,
+        "unowned": false,
+        "backfilled": false,
+        "openQuestions": 0,
+        "overtaken": false,
+        "na": [
+          "ux"
+        ],
+        "required": [
+          "dream",
+          "deck",
+          "spec",
+          "research"
+        ],
+        "gaps": [
+          "deck"
+        ],
+        "partial": [
+          "research"
+        ],
+        "staleBy": [],
+        "furthest": "research",
+        "updated": "2026-07-30",
+        "age": 0,
+        "stale": false,
+        "version": "",
+        "progress": "",
+        "complete": 3,
+        "of": 4
+      },
+      {
+        "label": "presenton",
+        "slug": "presenton-pixi-image",
+        "project": "pyforge-mason",
+        "dream": "presenton-pixi-image",
+        "owner": "mason",
+        "stages": {
+          "dream": "2026-07-23",
+          "deck": "2026-07-25",
+          "spec": "2026-07-29",
+          "research": "2026-07-25",
+          "brief": "2026-07-25",
+          "prd": "2026-05-01",
+          "ux": "",
+          "arch": "2026-07-25",
+          "context": "",
+          "epics": "2026-07-29",
+          "sprint": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "updatedAt": {
+          "dream": "2026-07-25",
+          "deck": "2026-07-25",
+          "spec": "2026-07-29",
+          "research": "2026-07-25",
+          "brief": "2026-07-25",
+          "prd": "2026-07-25",
+          "ux": "",
+          "arch": "2026-07-25",
+          "context": "",
+          "epics": "2026-07-29",
+          "sprint": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "sub": {
+          "research": {
+            "have": {
+              "domain": true,
+              "market": false,
+              "technical": true
+            },
+            "n": 2,
+            "of": 3,
+            "missing": [
+              "market"
+            ],
+            "inherited": true
+          },
+          "deck": {
+            "have": {
+              "prototype": true,
+              "exec": true,
+              "infographic": true,
+              "marp": true,
+              "standalone": true,
+              "pptx": true
+            },
+            "n": 6,
+            "of": 6,
+            "missing": []
+          }
+        },
+        "archived": false,
+        "dreamStatus": "specified",
+        "ownerDream": "presenton-pixi-image",
+        "noDream": false,
+        "unowned": false,
+        "backfilled": true,
+        "openQuestions": 0,
+        "overtaken": false,
+        "na": [],
+        "required": [
+          "dream",
+          "deck",
+          "spec",
+          "research",
+          "brief",
+          "prd",
+          "ux",
+          "arch",
+          "context",
+          "epics"
+        ],
+        "gaps": [
+          "ux",
+          "context"
+        ],
+        "partial": [
+          "research"
+        ],
+        "staleBy": [
+          {
+            "kind": "feeds",
+            "stage": "brief",
+            "than": "prd",
+            "at": "2026-07-25",
+            "other": "2026-05-01"
+          },
+          {
+            "kind": "feeds",
+            "stage": "spec",
+            "than": "prd",
+            "at": "2026-07-29",
+            "other": "2026-05-01"
+          }
+        ],
+        "furthest": "epics",
+        "updated": "2026-07-30",
+        "age": 0,
+        "stale": false,
+        "version": "",
+        "progress": "",
+        "complete": 8,
+        "of": 10
+      },
+      {
+        "label": "sentinel",
+        "slug": "sentinel",
+        "project": "pyforge-scribe",
+        "dream": "sentinel",
+        "owner": "scribe",
+        "stages": {
+          "dream": "2026-07-23",
+          "deck": "",
+          "spec": "2026-07-29",
+          "research": "2026-07-25",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "updatedAt": {
+          "dream": "2026-07-25",
+          "deck": "",
+          "spec": "2026-07-29",
+          "research": "2026-07-25",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "sub": {
+          "research": {
+            "have": {
+              "domain": true,
+              "market": true,
+              "technical": false
+            },
+            "n": 2,
+            "of": 3,
+            "missing": [
+              "technical"
+            ],
+            "inherited": true
+          },
+          "deck": {
+            "have": {
+              "prototype": false,
+              "exec": false,
+              "infographic": false,
+              "marp": false,
+              "standalone": false,
+              "pptx": false
+            },
+            "n": 0,
+            "of": 6,
+            "missing": [
+              "exec",
+              "infographic",
+              "marp",
+              "pptx",
+              "prototype",
+              "standalone"
+            ]
+          }
+        },
+        "archived": true,
+        "dreamStatus": "archived",
+        "ownerDream": "sentinel",
+        "noDream": false,
+        "unowned": false,
+        "backfilled": false,
+        "openQuestions": 0,
+        "overtaken": false,
+        "na": [
+          "ux"
+        ],
+        "required": [
+          "dream",
+          "deck",
+          "spec",
+          "research"
+        ],
+        "gaps": [
+          "deck"
+        ],
+        "partial": [
+          "research"
+        ],
+        "staleBy": [],
+        "furthest": "research",
+        "updated": "2026-07-30",
+        "age": 0,
+        "stale": false,
+        "version": "",
+        "progress": "",
+        "complete": 3,
+        "of": 4
+      },
+      {
+        "label": "team-memory",
+        "slug": "team-memory",
+        "project": "pyforge-scribe",
+        "dream": "team-memory",
+        "owner": "scribe",
+        "stages": {
+          "dream": "2026-07-23",
+          "deck": "",
+          "spec": "2026-07-29",
+          "research": "2026-07-25",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "updatedAt": {
+          "dream": "2026-07-25",
+          "deck": "",
+          "spec": "2026-07-29",
+          "research": "2026-07-25",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "sub": {
+          "research": {
+            "have": {
+              "domain": true,
+              "market": true,
+              "technical": false
+            },
+            "n": 2,
+            "of": 3,
+            "missing": [
+              "technical"
+            ],
+            "inherited": false
+          },
+          "deck": {
+            "have": {
+              "prototype": false,
+              "exec": false,
+              "infographic": false,
+              "marp": false,
+              "standalone": false,
+              "pptx": false
+            },
+            "n": 0,
+            "of": 6,
+            "missing": [
+              "exec",
+              "infographic",
+              "marp",
+              "pptx",
+              "prototype",
+              "standalone"
+            ]
+          }
+        },
+        "archived": false,
+        "dreamStatus": "specified",
+        "ownerDream": "team-memory",
+        "noDream": false,
+        "unowned": false,
+        "backfilled": true,
+        "openQuestions": 0,
+        "overtaken": false,
+        "na": [
+          "ux"
+        ],
+        "required": [
+          "dream",
+          "deck",
+          "spec",
+          "research"
+        ],
+        "gaps": [
+          "deck"
+        ],
+        "partial": [
+          "research"
+        ],
+        "staleBy": [],
+        "furthest": "research",
+        "updated": "2026-07-30",
+        "age": 0,
+        "stale": false,
+        "version": "",
+        "progress": "",
+        "complete": 3,
+        "of": 4
+      },
+      {
+        "label": "enterprise-airgap",
+        "slug": "enterprise-airgap",
+        "project": "pyforge-steward",
+        "dream": "enterprise-airgap",
+        "owner": "steward",
+        "stages": {
+          "dream": "2026-07-23",
+          "deck": "",
+          "spec": "2026-07-29",
+          "research": "2026-07-25",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "updatedAt": {
+          "dream": "2026-07-25",
+          "deck": "",
+          "spec": "2026-07-29",
+          "research": "2026-07-25",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "sub": {
+          "research": {
+            "have": {
+              "domain": true,
+              "market": false,
+              "technical": true
+            },
+            "n": 2,
+            "of": 3,
+            "missing": [
+              "market"
+            ],
+            "inherited": true
+          },
+          "deck": {
+            "have": {
+              "prototype": false,
+              "exec": false,
+              "infographic": false,
+              "marp": false,
+              "standalone": false,
+              "pptx": false
+            },
+            "n": 0,
+            "of": 6,
+            "missing": [
+              "exec",
+              "infographic",
+              "marp",
+              "pptx",
+              "prototype",
+              "standalone"
+            ]
+          }
+        },
+        "archived": false,
+        "dreamStatus": "realized",
+        "ownerDream": "enterprise-airgap",
+        "noDream": false,
+        "unowned": false,
+        "backfilled": false,
+        "openQuestions": 1,
+        "overtaken": false,
+        "na": [
+          "ux"
+        ],
+        "required": [
+          "dream",
+          "deck",
+          "spec",
+          "research"
+        ],
+        "gaps": [
+          "deck"
+        ],
+        "partial": [
+          "research"
+        ],
+        "staleBy": [],
+        "furthest": "research",
+        "updated": "2026-07-30",
+        "age": 0,
+        "stale": false,
+        "version": "",
+        "progress": "",
+        "complete": 3,
+        "of": 4
       }
     ]
   },
@@ -4491,8 +7908,8 @@ window.DASHBOARD_DATA = {
         "task": "spec-surface-check",
         "guards": "every tracked file under a Spec surface",
         "state": "drift",
-        "findings": 1,
-        "verdict": "FINDINGS (1):",
+        "findings": 2,
+        "verdict": "FINDINGS (2):",
         "runbook": ""
       },
       {
