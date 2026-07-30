@@ -1,0 +1,16 @@
+{
+    "cursor.general.gitGraphIndexing": "enabled",
+
+    // build_artifacts/ is the rattler-build output root (CONDA_BLD_PATH, pixi.toml:71).
+    // CMake FetchContent / cargo clone real git repos into the build tree (arrow, re2,
+    // protobuf, azure-sdk-for-rust, ...), and builds patch them in place. Those are
+    // independent repositories, so this repo's .gitignore cannot suppress them --
+    // auto-detection would list each as its own SCM provider with dirty files.
+    "git.autoRepositoryDetection": "openEditors",
+    "files.watcherExclude": {
+        "**/build_artifacts/**": true
+    },
+    "search.exclude": {
+        "**/build_artifacts/**": true
+    }
+}

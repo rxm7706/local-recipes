@@ -7,7 +7,7 @@
 >
 > Source of truth: `pixi.toml` (workspace "staged-recipes" v0.2.0). This file is a
 > derived catalog — regenerate it whenever `pixi.toml` changes.
-> Generated: 2026-07-12; incrementally updated 2026-07-18 (pyforge-atlas member env + kedro-viz; pyforge-warden + bmad-ui envs; pin corrections) and 2026-07-25 (the pyforge-herald / -doctor / -scribe member envs, then pyforge-mason / -steward at Story 1.1 — seven `pyforge` packages, 17 envs). Channels: conda-forge + SelfExplainML.
+> Generated: 2026-07-12; incrementally updated 2026-07-18 (pyforge-atlas member env + kedro-viz; pyforge-warden + bmad-ui envs; pin corrections) and 2026-07-25 (the pyforge-herald / -doctor / -scribe member envs, then pyforge-mason / -steward / -marshal at Story 1.1 — eight `pyforge` packages, 18 envs). Channels: conda-forge + SelfExplainML.
 > Platforms: linux-64, win-64, osx-arm64 (macOS >= 14.5 "Sonoma" floor, required by mlx).
 
 ## To regenerate (any session): ask Claude Code:
@@ -60,6 +60,7 @@ Everything runs through pixi environments. Nothing here is installed globally.
 | `pyforge-scribe`| pyforge-scribe (no-default-feature)                  | Lean env for the built `pyforge-scribe` package (`src/shared/packages/pyforge-scribe` path dep -> conda pkg + pytest/hatchling/python-build). Knowledge/narration station; inherits the `src/sentinel/` knowledge-graph lineage. Spec: `_bmad-output/projects/pyforge-scribe/planning-artifacts/specs/` |
 | `pyforge-mason`| pyforge-mason (no-default-feature)                    | Lean env for the built `pyforge-mason` package (`src/shared/packages/pyforge-mason` path dep -> conda pkg + pytest/hatchling/python-build). The Artisan Builder's CLI (`mason recipe`/`package`/`environment`); **no CLI-framework dep by contract** (FR-41 forbids click/typer — argparse only). Tasks: `pyforge-mason-build{,-conda,-dist}`, `pyforge-mason-test`. Spec: `_bmad-output/projects/pyforge-mason/planning-artifacts/` |
 | `pyforge-steward`| pyforge-steward (no-default-feature)                | Lean env for the built `pyforge-steward` package (`src/shared/packages/pyforge-steward` path dep -> conda pkg + pytest/hatchling/python-build). The Provisioner's CLI (`steward keys`/`deploy`/`provision`/`budget`); task names mirror `pyforge-warden`'s verbatim. Spec: `_bmad-output/projects/pyforge-steward/planning-artifacts/` |
+| `pyforge-marshal`| pyforge-marshal (no-default-feature)                | Lean env for the built `pyforge-marshal` package (`src/shared/packages/pyforge-marshal` path dep -> conda pkg + pytest/hatchling/python-build + **import-linter**). Marshal is the harness/orchestration station; `import-linter` is load-bearing, not incidental — it enforces AD-3 (only `adapters/harness_bmadloop.py` may import `bmad_loop`) and AD-4 (`core/**` imports no `subprocess`/`os`/`time`/`adapters`) as **build-breaking contracts** rather than conventions. Task: `pyforge-marshal-test`. Spec: `_bmad-output/projects/pyforge-marshal/planning-artifacts/` |
 - **graphviz** (>=14.1.2) — Graph layout engine (the `dot` binary); drives the
   kedro-viz prototype's DAG-image (SVG) emitter.
 - **python-graphviz** (>=0.21) — Python interface to Graphviz — **imports as
@@ -89,27 +90,27 @@ Available in every environment (the `python` feature + workspace `[dependencies]
 - **python** (>=3.14.6, 3.14.*) — CPython interpreter. All Python libs below target 3.14.
 - **pixi** (>=0.73.0) — the package/environment manager itself, available *inside*
   envs for nested workspace operations. `pixi-build` preview is enabled (unlocks
-  `[package]`/build tables for the **seven** `pyforge` workspace members under
+  `[package]`/build tables for the **eight** `pyforge` workspace members under
   `src/shared/packages/` — `pyforge-warden`, `pyforge-atlas`, `pyforge-herald`,
-  `pyforge-scribe`, `pyforge-doctor`, `pyforge-mason`, `pyforge-steward` — each
-  pulled in as a path dependency by its own lean `no-default-feature` env, and each sharing the one PEP 420 implicit
+  `pyforge-scribe`, `pyforge-doctor`, `pyforge-mason`, `pyforge-steward`,
+  `pyforge-marshal` — each pulled in as a path dependency by its own lean `no-default-feature` env, and each sharing the one PEP 420 implicit
   `pyforge` namespace).
 - **conda** (>=26.5.0) — classic conda package manager; needed by conda-build,
   conda-smithy 2026.x, and `conda pypi`.
 - **pip** (>=26.1.2) — standard Python installer (prefer `uv` for speed).
-- **uv** (>=0.11.31) — Rust-based, very fast pip/pip-tools replacement: `uv pip install`,
+- **uv** (>=0.11.32) — Rust-based, very fast pip/pip-tools replacement: `uv pip install`,
   `uv venv`, `uv pip compile` for lock-style resolution.
 - **nodejs** (24.x LTS) — `node` / `npm` / `npx`; runtime for the JS tools below.
 - **gh** (>=2.96.0) — GitHub CLI: PRs, issues, releases, `gh api` for raw REST/GraphQL,
   `gh pr checks`, workflow dispatch. The repo's primary GitHub automation surface.
-- **gitpython** (>=3.1.53) — `import git`; programmatic Git (repos, diffs, commits,
+- **gitpython** (>=3.1.57) — `import git`; programmatic Git (repos, diffs, commits,
   remotes) when shelling out to `git` is awkward.
 - **truststore** (>=0.10.4) — `import truststore; truststore.inject_into_ssl()`; makes
   Python TLS use the OS trust store (corporate CAs, JFrog). Set `TRUSTSTORE=1` pattern
   used by the vuln-db tasks.
 - **bmad-method** (>=6.10.0) — BMAD-METHOD CLI (`bmad`): AI-driven agile
   planning/dev framework (agents, workflows, story lifecycle). See § 12.
-- **spec-kit** (>=0.13.2) — GitHub Spec Kit (`specify` CLI) for spec-driven
+- **spec-kit** (>=0.14.2) — GitHub Spec Kit (`specify` CLI) for spec-driven
   development scaffolding (constitution → specify → plan → tasks → implement).
 
 ---
@@ -122,12 +123,12 @@ per the table above; all of them coexist in `local-recipes`.
 Build engines & solvers:
 - **conda-build** (>=25.3.1) — v0 recipe engine: builds `meta.yaml` recipes, renders
   Jinja2, runs tests. Never mix v0 and v1 recipes in one build run.
-- **rattler-build** (>=0.69.1) — Rust-native v1 recipe engine: builds `recipe.yaml`,
+- **rattler-build** (>=0.70.1) — Rust-native v1 recipe engine: builds `recipe.yaml`,
   much faster than conda-build, first-class cross-compilation. Primary local build tool.
 - **py-rattler** (>=0.22.0) — `import rattler`; Python bindings to the rattler libs:
   solve environments, fetch/inspect .conda artifacts, repodata handling — programmatic
   conda operations without shelling out.
-- **py-rattler-build** (>=0.69.1) — Python bindings to rattler-build (drive v1 builds
+- **py-rattler-build** (>=0.70.1) — Python bindings to rattler-build (drive v1 builds
   from Python).
 - **conda-libmamba-solver** (>=24.9.0) — fast libmamba solver backend for conda.
 - **conda-index** (>=0.3.0) — generate `repodata.json` for local file:// channels
@@ -217,7 +218,7 @@ All in `local-recipes`.
   vulnerability database library (OSV + GHSA sources locally; CVE, EPSS, CWE data
   model). Present in BOTH `local-recipes` and `vuln-db`; the ~600MB local DB lives at
   `.claude/data/conda-forge-expert/vdb/` (built via `pixi run -e vuln-db vdb-refresh`).
-- **go-sops** (>=3.13.2) — `sops` binary; encrypted-secrets editor (YAML/JSON/env
+- **go-sops** (>=3.13.3) — `sops` binary; encrypted-secrets editor (YAML/JSON/env
   files; age/KMS/PGP backends).
 - **age** (>=1.3.1) — `age` / `age-keygen`; modern simple file encryption (the
   default sops backend here).
@@ -244,10 +245,10 @@ All in `local-recipes`.
 
 Core arrays/frames:
 - **numpy** (>=2.5.1) — n-dimensional arrays, the numeric foundation (NumPy 2.x API).
-- **pandas** (>=1.5.3,<3) — DataFrames for tabular data (2.x resolved).
+- **pandas** (>=3.0.3) — DataFrames for tabular data (2.x resolved).
 - **polars** (>=1.43.0) — Rust-backed columnar DataFrames; lazy queries, streaming;
   much faster than pandas for large data.
-- **pyarrow-all** (>=21) — `import pyarrow`; Apache Arrow with ALL extras: Parquet,
+- **pyarrow-all** (>=24.0.0) — `import pyarrow`; Apache Arrow with ALL extras: Parquet,
   Datasets, Flight RPC, ORC, ADBC-adjacent IO. The interchange layer between pandas,
   polars, duckdb, dagster, daft.
 - **getdaft** (>=0.6.13) — `import daft`; distributed DataFrames for multimodal data
@@ -259,9 +260,9 @@ Core arrays/frames:
   framework (AWEL workflows + agents), aka DB-GPT.
 
 SQL engines & tooling:
-- **duckdb** (>=1.5.4) — embedded analytical (OLAP) SQL database; reads/writes
+- **duckdb** (>=1.5.5) — embedded analytical (OLAP) SQL database; reads/writes
   Parquet/CSV/Arrow natively; the default local analytics engine.
-- **sqlglot** (>26.32,<28.7) — parse, transpile, optimize SQL across ~30 dialects;
+- **sqlglot** (>=28.10.1) — parse, transpile, optimize SQL across ~30 dialects;
   build/rewrite SQL ASTs programmatically (used for feedstock analysis).
 - **sqlfluff** (>=4.2.2) — SQL linter/formatter, dialect-aware.
 - **psycopg2** (>=2.9.12) — real PostgreSQL driver (DB-API).
@@ -280,8 +281,9 @@ Ibis — one dataframe API over many engines:
 Small utilities:
 - **tablib** (>=3.9.0) — one API for tabular import/export: XLSX, CSV, JSON, YAML, ODS.
 - **tabulate** (>=0.10.0) — pretty-print tables as text/markdown/grid.
-- **tomlkit** (<0.13.3) — style-preserving TOML read/write (round-trips comments).
-- **structlog** (>24.2,<26) — structured (key-value/JSON) logging.
+- **tomlkit** (>=0.13.2) — style-preserving TOML read/write (round-trips comments).
+  Resolves to 0.13.2: dagster-dg-core and pyforge-marshal both cap it below 0.13.3.
+- **structlog** (>=26.1.0) — structured (key-value/JSON) logging.
 - **ruamel.yaml** (>=0.18.17) — round-trip YAML that preserves comments and key order
   — the correct choice for editing `recipe.yaml`/`conda-forge.yml` in place.
 - **frozendict** — immutable mapping type.
@@ -294,10 +296,10 @@ Small utilities:
 
 All in `local-recipes`.
 
-- **dagster** (>=1.13.14) — asset-based data orchestrator: software-defined assets,
+- **dagster** (>=1.13.15) — asset-based data orchestrator: software-defined assets,
   schedules, sensors, partitions, type-checked IO.
-- **dagster-webserver** (>=1.13.14) — the Dagster UI (`dagster dev`).
-- **dagster-pipes** (>=1.13.14) — run external-process transform logic (scripts,
+- **dagster-webserver** (>=1.13.15) — the Dagster UI (`dagster dev`).
+- **dagster-pipes** (>=1.13.15) — run external-process transform logic (scripts,
   containers) with structured logging/metadata back into Dagster.
 - **kedro** (>=1.5.0) — opinionated pipeline framework: nodes, pipelines, data
   catalog, config environments. (A Kedro 3.14-compat warning is suppressed via
@@ -307,11 +309,11 @@ All in `local-recipes`.
 - **kedro-dagster** (>=0.7.0) — deploy Kedro pipelines onto Dagster.
 - **kedro-viz** (>=12.4.0) — interactive browser visualization of Kedro pipelines.
 - **kedro-mcp** (>=0.1.2, PyPI) — MCP server exposing Kedro prompts/tools to agents.
-- **great-expectations** (>=1.19.0) — data-quality contracts: expectations suites,
+- **great-expectations** (>=1.19.1) — data-quality contracts: expectations suites,
   validation, data docs (used inside Kedro nodes).
 - **pandera** (>=0.32.1) — lightweight statistical dataframe validation via typed
   schemas (pandas/dask/spark).
-- **openlineage-python** (>=1.51.0) — `import openlineage.client`; emit OpenLineage
+- **openlineage-python** (>=1.52.0) — `import openlineage.client`; emit OpenLineage
   data-lineage events.
 - **opentelemetry-api / opentelemetry-sdk** (>=1.44.0) — traces/metrics/logs
   instrumentation and export (OTLP).
@@ -418,7 +420,7 @@ Hugging Face stack:
   launching for HF models.
 - **diffusers** (>=0.39.0) — diffusion pipelines (Stable Diffusion et al.) for local
   image generation.
-- **sentence-transformers** (>=5.6.0) — dense text embeddings + cosine search; used
+- **sentence-transformers** (>=5.6.1) — dense text embeddings + cosine search; used
   for long-document RAG, slide dedup, template matching.
 - **sentencepiece** (>=0.2.1) — subword tokenizer runtime (T5/MarianMT/SD3 need it).
 - **hf-transfer** (>=0.1.9) — Rust accelerator for model downloads; enable with
@@ -437,9 +439,9 @@ Local inference runtimes:
   preferred local runner on Apple Silicon. Same platform limits as mlx.
 
 Knowledge & indexing for agents:
-- **cocoindex** (>=1.0.17) — incremental indexing/transformation engine for
+- **cocoindex** (>=1.0.18) — incremental indexing/transformation engine for
   long-horizon agents (recompute only what changed).
-- **graphifyy** (>=0.9.23) — turn a folder of code/docs/papers/images into a
+- **graphifyy** (>=0.9.26) — turn a folder of code/docs/papers/images into a
   queryable knowledge graph for coding assistants.
 
 ---
@@ -453,15 +455,15 @@ This is the stack for *building* agents and agent servers.
 Provider SDKs:
 - **anthropic** (>=0.76.0) — official Claude SDK: Messages API, streaming, tool use,
   prompt caching.
-- **google-genai** (>=2.13.0) — `from google import genai`; Gemini API client.
-- **github-copilot-sdk** (>=1.0.7) — drive GitHub Copilot programmatically from
+- **google-genai** (>=2.14.0) — `from google import genai`; Gemini API client.
+- **github-copilot-sdk** (>=1.0.8) — drive GitHub Copilot programmatically from
   Python.
 - **langchain-anthropic** (>=1.3.1) — LangChain chat-model integration for Claude.
 - **lumen-ai-anthropic** (>=1.2.1) — Anthropic backend for HoloViz Lumen AI
   (chat-with-your-data on top of Panel).
 
 Agent frameworks:
-- **pydantic-ai** (>=2.15.0) — typed agent framework from the Pydantic team:
+- **pydantic-ai** (>=2.18.0) — typed agent framework from the Pydantic team:
   structured outputs, tools, dependency injection, model-agnostic.
 - **agno** (>=2.6.22) — lightweight multi-modal agent framework: any provider,
   multi-agent teams, memory, knowledge stores, structured outputs, monitoring.
@@ -476,10 +478,10 @@ Model Context Protocol (MCP):
 - **vizro-mcp** / **kedro-mcp** — domain MCP servers (§ 8 / § 7).
 
 Agent2Agent (A2A) & ACP:
-- **a2a-sdk** (>=1.1.1) — `import a2a`; official Python SDK for the Agent2Agent
+- **a2a-sdk** (>=1.1.2) — `import a2a`; official Python SDK for the Agent2Agent
   protocol (agent cards, task lifecycle, messaging).
 - **fasta2a** (>=0.6.1) — FastAPI-style A2A server implementation.
-- **claude-agent-acp** (>=0.60.0) — bridge the Claude Agent SDK to the Agent Client
+- **claude-agent-acp** (>=0.62.0) — bridge the Claude Agent SDK to the Agent Client
   Protocol (ACP) so editors/clients that speak ACP can drive Claude agents.
 
 ---
@@ -557,7 +559,7 @@ HTTP & APIs:
 All in `local-recipes`.
 
 Linters & formatters:
-- **ruff** (>=0.15.22) — extremely fast Python linter + formatter (flake8/isort/black
+- **ruff** (>=0.16.0) — extremely fast Python linter + formatter (flake8/isort/black
   replacement). Default Python QA tool here.
 - **yamllint** (>=1.38.0) — YAML linting.
 - **taplo** (>=0.10.0) — TOML linter/formatter/LSP (use on pixi.toml itself).
@@ -579,7 +581,7 @@ Testing:
 - **pytest-xdist** (>=3.8.0) — parallel test execution (`-n auto`).
 
 Browser automation:
-- **playwright** (>=1.61.1) — the Node Playwright CLI (browser installs, codegen).
+- **playwright** (>=1.62.0) — the Node Playwright CLI (browser installs, codegen).
 - **playwright-python** (>=1.61.0) — `from playwright.sync_api import ...`; drive
   Chromium/Firefox/WebKit from Python (scraping, E2E, screenshots).
 
@@ -589,7 +591,7 @@ Terminal & CLI building:
 - **typer** (>=0.27.0) — build CLIs from type-hinted functions (click-based).
 
 Node package managers:
-- **pnpm** (>=11.15.1) — fast, disk-efficient npm alternative (default for JS builds
+- **pnpm** (>=11.17.0) — fast, disk-efficient npm alternative (default for JS builds
   here; in .bat scripts always `call pnpm`).
 - **yarn** (>=4.17.1) — Yarn Berry.
 

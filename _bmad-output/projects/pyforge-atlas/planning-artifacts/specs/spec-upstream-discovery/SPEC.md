@@ -40,11 +40,11 @@ open_questions:
     to gate candidates, or does discovery's first batch have to run without
     it? pyforge-doctor has planning artifacts as of 2026-07-25 but its
     implementation status is unverified from this kernel.
-  - Cadence mechanism for re-running discovery (legacy default: monthly):
+  - "Cadence mechanism for re-running discovery (legacy default: monthly):
     does it reuse the shipped migration's Dagster Sensor + RSS/poll-cursor
     pattern (G3, `orchestration/definitions.py` `UPSTREAM_SENSORS`) instead
     of a fresh scheduling routine? The sensor substrate already exists and
-    is the more architecturally consistent fit, but this is not decided.
+    is the more architecturally consistent fit, but this is not decided."
 ---
 
 > **Canonical contract.** This SPEC and the files in `companions:` are the complete, preservation-validated contract for what to build, test, and validate. Source documents listed in frontmatter are for traceability only — consult them only if you need narrative rationale or prose color this contract intentionally omits.

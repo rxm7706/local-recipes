@@ -2,7 +2,7 @@
 schema_version: 1
 context:
   name: ppt-master
-  version: "3.1.0"
+  version: "4.2.0"
 
 package:
   name: ${{ name }}
@@ -10,13 +10,24 @@ package:
 
 source:
   url: https://github.com/hugohe3/ppt-master/archive/refs/tags/v${{ version }}.tar.gz
-  sha256: 451dbe3fbc4e60e507d2d40564a5e496960d737546bf522c61679ffea25b5bab
+  sha256: 0465e669f92d466cf1d6d57ef26fa8cf21f41358d111b9c55b1d544e6c2c31ab
 
 build:
   number: 0
   noarch: generic
 
 requirements:
+  build:
+    # Build-time only: the build script ASCII-normalizes the Chinese-named
+    # brand/deck kit paths and rewrites their internal references via
+    # normalize_paths.sed. Deliberately NOT python — a `python` build dep makes
+    # rattler-build expand the python variant matrix and split this
+    # noarch:generic package into four identical py3XX artifacts. sed carries
+    # no variant, so the package stays a single noarch artifact installable on
+    # every platform at any python >=3.10.
+    - if: win
+      then: m2-sed
+      else: sed
   run:
     - python >=3.10
     - python-pptx >=0.6.21
@@ -24,8 +35,9 @@ requirements:
     - requests >=2.31.0
     - beautifulsoup4 >=4.12.0
     - numpy >=1.20.0
-    - reportlab >=4.0.0
-    - svglib >=1.5.0
+    # reportlab + svglib dropped in v4: no longer listed in
+    # skills/ppt-master/requirements.txt (SVG handling moved to the native
+    # DrawingML converter in scripts/svg_to_pptx.py).
     - pymupdf >=1.23.0
     - google-genai >=1.0.0
     # v3 additions (upstream marks all skill deps optional; edge-tts is
@@ -39,6 +51,8 @@ requirements:
     - openpyxl >=3.1.0
     - curl-cffi >=0.7.0
     - flask >=3.0.0
+    # v4 addition (svg_to_pptx.py / xlsx export path)
+    - xlsxwriter >=3.0.0
 
 tests:
   - script:

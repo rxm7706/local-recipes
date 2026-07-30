@@ -41,6 +41,25 @@ retrospective = "notify"     # never | notify | auto (auto unsupported in v1)
 
 [limits]
 max_review_cycles = 3
+# RESTORED 2026-07-30 after merging main into this loop home. The merge conflicted on
+# this file and was resolved `--ours` to keep marshal's own [verify] command and
+# worktree_seed — which also silently dropped THIS key, a repo-wide policy decision that
+# has nothing to do with marshal. Without it bmad-loop falls back to its own default of 1.
+#
+# That default is the defect: it was an unchosen value deciding when stories are done.
+# FIVE stories across THREE projects were damped by the cap rather than by the reviewer
+# (atlas 10.5 + 10.6, marshal 1.1, warden 6.3 + 5.1), and when the two atlas
+# recommendations were finally honored they yielded a real MEDIUM finding, DW-AD23-3.
+#
+# Not higher than 2: max_review_cycles = 3 stays the hard outer bound, each round is a
+# multi-hour session, and a story still flagging after two independent passes deserves a
+# human rather than another grant — its recommendation then refiles to the DURABLE ledger
+# enforced by `deferred-work-check`.
+#
+# This whole hazard — one tracked file carrying both per-project wiring and repo-wide
+# policy, so no merge resolution can be right for both — is F-1, and Story 1.10 is its
+# structural fix.
+max_followup_reviews = 2
 max_dev_attempts = 2
 session_timeout_min = 180  # raised from 90 (2026-07-12): Story 1-1's dev session hit the 90-min cap mid-work — keystone stories need the headroom
 stop_without_result_nudges = 1

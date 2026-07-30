@@ -1,0 +1,118 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "7.2.8"
+
+package:
+  name: edge-tts
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/e/edge-tts/edge_tts-${{ version }}.tar.gz
+  sha256: fcf185a0d527a0d2d003f9d5841facc1d5e0e7b3b88d5df9c32990402c6b8cd0
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - edge-tts = edge_tts.__main__:main
+      - edge-playback = edge_playback.__main__:_main
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - setuptools
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - aiohttp >=3.8.0,<4.0.0
+    - certifi >=2023.11.17
+    - tabulate >=0.4.4,<1.0.0
+    - typing_extensions >=4.1.0,<5.0.0
+
+tests:
+  - python:
+      imports:
+        - edge_tts
+        - edge_playback
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+  - requirements:
+      run:
+        - python ${{ python_min }}.*
+    script:
+      - edge-tts --help
+
+about:
+  homepage: https://github.com/rany2/edge-tts
+  repository: https://github.com/rany2/edge-tts
+  license: LGPL-3.0-only
+  license_file: LICENSE
+  summary: Python client for Microsoft Edge's online text-to-speech service
+  description: |
+    edge-tts lets Python code and the command line use Microsoft Edge's
+    online text-to-speech service, without needing Edge, Windows, or an API
+    key. It can write audio and word-boundary subtitle files, list the
+    available voices, and stream synthesized speech.
+
+    Two entry points are installed: ``edge-tts`` for synthesis, and
+    ``edge-playback`` which plays the result back. ``edge-playback``
+    additionally requires the ``mpv`` media player on PATH at runtime; it is
+    not declared as a dependency because the ``edge-tts`` entry point and the
+    Python API do not need it.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: edge-tts
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: edge-tts
+  cfe-purls:
+    - pkg:conda/edge-tts@${{ version }}?channel=conda-forge
+    - pkg:pypi/edge-tts@${{ version }}
+  cfe-upstream-repo: https://github.com/rany2/edge-tts
+  cfe-upstream-homepage: https://github.com/rany2/edge-tts
+  cfe-import-names: [edge_tts, edge_playback]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: "2026-07-26T00:00:00Z"
+  cfe-generated-by-version: 8.79.1
+  cfe-generated-at-datetime: "2026-07-26T00:00:00Z"
+  cfe-local-build-status: success
+  cfe-local-build-datetime: "2026-07-26T16:27:18Z"
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # Authored 2026-07-26 to close a dependency gap hit by TWO local recipes:
+#    # ResearchStudio's paper2poster skill (requirements.txt: edge-tts>=7.0)
+#    # and ppt-master, whose recipe comment records "edge-tts is omitted --
+#    # not on conda-forge -- so audio narration degrades gracefully".
+#    # Also listed in bmad-manticore's REEL_PIP set.
+# about:
+#    # License is LGPL-3.0-only, taken from the setup.cfg classifier
+#    # "License :: OSI Approved :: GNU Lesser General Public License v3
+#    # (LGPLv3)" -- there is no license field in the metadata. OSI-approved,
+#    # so conda-forge-eligible.
+# requirements:
+#    # python_min is NOT declared in context: upstream says >=3.7, which is
+#    # below the conda-forge floor, so the default 3.10 applies.
+#    # setuptools-only build (setup.cfg + setup.py, no pyproject.toml).
+# tests:
+#    # edge-playback is imported but not invoked: it shells out to mpv, which
+#    # is deliberately not a dependency (see about.description).
+####

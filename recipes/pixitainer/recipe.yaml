@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: pixitainer
-  version: "0.7.1"
+  version: "0.8.2"
 
 recipe:
   name: ${{ name }}
@@ -11,7 +11,7 @@ recipe:
 
 source:
   url: https://github.com/RaphaelRibes/pixitainer/archive/refs/tags/v${{ version }}.tar.gz
-  sha256: c1c1827782509a2b38b52f833517f81a4826871126f8784a6a70e1a3e5cf7054
+  sha256: 5745b6eb3b34ae7f13687dbcc980377a7628968b1f7a931acb723b569894fde7
 
 build:
   number: 0
@@ -34,6 +34,9 @@ outputs:
         - cp lib/common.sh $PREFIX/opt/pixitainer/common.sh
         - cp lib/sif.sh $PREFIX/opt/pixitainer/sif.sh
         - cp lib/bootstrap.sh $PREFIX/opt/pixitainer/bootstrap.sh
+        # 0.8.2 added lib/tool.sh; pixi-containerize sources it, so omitting
+        # it makes `pixi-containerize --help` fail at test time.
+        - cp lib/tool.sh $PREFIX/opt/pixitainer/tool.sh
         - cp pixi-containerize $PREFIX/bin/pixi-containerize
         - chmod +x $PREFIX/bin/pixi-containerize
     requirements:
@@ -47,6 +50,7 @@ outputs:
           - test -f ${PREFIX}/opt/pixitainer/common.sh
           - test -f ${PREFIX}/opt/pixitainer/sif.sh
           - test -f ${PREFIX}/opt/pixitainer/bootstrap.sh
+          - test -f ${PREFIX}/opt/pixitainer/tool.sh
           - pixi-containerize --help
     about:
       summary: Containerize Pixi workspaces into Apptainer/SIF images with a single command
@@ -57,6 +61,44 @@ outputs:
         be shipped as portable container images without writing a Dockerfile
         or Singularity definition file by hand.
 
+  # New in 0.8.2: upstream split the Singularity path out of the apptainer
+  # CLI into its own pixi-containerize-singularity entry point, backed by the
+  # `singularity` runtime instead of `apptainer`.
+  - package:
+      name: ${{ name }}-singularity
+    build:
+      noarch: generic
+      script:
+        - mkdir -p $PREFIX/bin
+        - mkdir -p $PREFIX/opt/pixitainer
+        - cp lib/common.sh $PREFIX/opt/pixitainer/common.sh
+        - cp lib/sif.sh $PREFIX/opt/pixitainer/sif.sh
+        - cp lib/bootstrap.sh $PREFIX/opt/pixitainer/bootstrap.sh
+        - cp lib/tool.sh $PREFIX/opt/pixitainer/tool.sh
+        - cp pixi-containerize-singularity $PREFIX/bin/pixi-containerize-singularity
+        - chmod +x $PREFIX/bin/pixi-containerize-singularity
+    requirements:
+      run:
+        - __linux
+        - singularity >=3.0.0
+        - bash
+    tests:
+      - script:
+          - test -x ${PREFIX}/bin/pixi-containerize-singularity
+          - test -f ${PREFIX}/opt/pixitainer/common.sh
+          - test -f ${PREFIX}/opt/pixitainer/sif.sh
+          - test -f ${PREFIX}/opt/pixitainer/bootstrap.sh
+          - test -f ${PREFIX}/opt/pixitainer/tool.sh
+          - pixi-containerize-singularity --help
+    about:
+      summary: Containerize Pixi workspaces into Singularity images with a single command
+      description: |
+        `pixitainer-singularity` is the Singularity-backed sibling of
+        `pixitainer`. It wraps the `singularity` runtime to build images from
+        a `pixi.toml` workspace with a single command, handling bootstrap,
+        build, and metadata so reproducible-research pipelines can be shipped
+        as portable images without hand-writing a definition file.
+
   - package:
       name: ${{ name }}-docker
     build:
@@ -66,6 +108,8 @@ outputs:
         - mkdir -p $PREFIX/opt/pixitainer
         - cp lib/common.sh $PREFIX/opt/pixitainer/common.sh
         - cp lib/bootstrap.sh $PREFIX/opt/pixitainer/bootstrap.sh
+        # 0.8.2: pixi-containerize-docker sources lib/tool.sh too.
+        - cp lib/tool.sh $PREFIX/opt/pixitainer/tool.sh
         - cp pixi-containerize-docker $PREFIX/bin/pixi-containerize-docker
         - chmod +x $PREFIX/bin/pixi-containerize-docker
     requirements:
@@ -78,6 +122,7 @@ outputs:
           - test -x ${PREFIX}/bin/pixi-containerize-docker
           - test -f ${PREFIX}/opt/pixitainer/common.sh
           - test -f ${PREFIX}/opt/pixitainer/bootstrap.sh
+          - test -f ${PREFIX}/opt/pixitainer/tool.sh
           - pixi-containerize-docker --help
     about:
       summary: Containerize Pixi workspaces into Docker images with a single command

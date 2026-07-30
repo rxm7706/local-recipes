@@ -37,6 +37,7 @@ environment.yaml         # derived export of pixi.toml (CI sync check governs)
 .ci_support/**           # inherited staged-recipes CI support (upstream-owned)
 .appveyor.yml.notused    # inherited staged-recipes remnant (upstream-owned)
 .idea/**                 # IDE metadata
+.vscode/**               # IDE metadata (same class as .idea/**; settings.json is tracked)
 .junie/**                # per-tool pointer (AGENTS.md family)
 .cursorrules             # per-tool pointer (AGENTS.md family)
 .prettierignore          # repo plumbing

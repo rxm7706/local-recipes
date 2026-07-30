@@ -1,0 +1,64 @@
+# GENERATED — do not hand-edit. Regenerate with:
+#     pixi run -e local-recipes sprint-ledger-sync
+#
+# TRACKED twin of _bmad-output/projects/pyforge-genesis/implementation-artifacts/sprint-status.yaml
+# which is gitignored Tier-3 (.gitignore:736) and therefore invisible to CI and
+# absent from every fresh clone. The dashboard's deploy-time render reads THIS
+# file, so a story's completion no longer has to be reconstructed from commit
+# subjects — the archaeology that failed when squash-merging PR #132 made Epic
+# 10's bmad-loop merge subjects unreachable from main.
+#
+# Same shape as the Tier-3 feed on purpose: generate.py's parse_sprint_status
+# reads both, so there is no second parser to drift.
+#
+# project: genesis
+# stories: 48
+development_status:
+  1-1-package-skeleton-as-a-pixi-workspace-member: backlog
+  1-2-error-taxonomy-and-exit-codes: backlog
+  1-3-the-fs-write-primitive-and-the-never-write-guard: backlog
+  1-4-manifest-schema-loader-and-model-version-ranges: backlog
+  1-5-the-v1-extraction-manifest: backlog
+  1-6-spike-0-copier-api-fit: backlog
+  2-1-marker-grammar-and-the-per-format-registry: backlog
+  2-2-region-parser-span-discovery-nesting-rejection-fence-awareness: backlog
+  2-3-span-substitution-the-update-primitive: backlog
+  2-4-anchor-resolution-and-region-insertion: backlog
+  2-5-marker-deletion-as-a-sanctioned-opt-out: backlog
+  3-1-findings-model-severity-types-remedies: backlog
+  3-2-repo-inventory-walker-and-artifact-classification: backlog
+  3-3-content-hashing-for-managed-files-and-regions: backlog
+  3-4-legacy-convention-detection: backlog
+  3-5-manifest-coverage-check: backlog
+  3-6-plan-and-action-types-repo-fingerprint-and-the-plan-builder: backlog
+  4-1-copier-engine-wrapper-the-single-seam: backlog
+  4-2-state-schema-and-the-atomic-store: backlog
+  4-3-the-apply-runner-transactional-guarded: backlog
+  4-4-preconditions-refusals-and-skips: backlog
+  4-5-genesis-check: backlog
+  4-6-genesis-adopt: backlog
+  4-7-genesis-init: backlog
+  5-1-neutral-contract-and-agent-adapter-fan-out: backlog
+  5-2-projects-md-index-and-artifact-symlink-derivation: backlog
+  5-3-migration-registry-and-runner: backlog
+  5-4-genesis-update-two-phase: backlog
+  5-5-referenced-dependency-verification-and-doctor-delegation: backlog
+  5-6-genesis-explain-and-genesis-version: backlog
+  6-1-full-pixi-wiring-distribution-and-repo-gate-compliance: backlog
+  6-2-the-local-recipes-empty-plan-oracle: backlog
+  6-3-offline-operation-and-the-egress-counter: backlog
+  6-4-pattern-meta-tests-and-the-never-write-proof: backlog
+  6-5-cli-contract-idempotence-harness-and-performance-gates: backlog
+  6-6-readme-adoption-guide-and-the-finding-remedy-reference: backlog
+  epic-1: backlog
+  epic-1-retrospective: optional
+  epic-2: backlog
+  epic-2-retrospective: optional
+  epic-3: backlog
+  epic-3-retrospective: optional
+  epic-4: backlog
+  epic-4-retrospective: optional
+  epic-5: backlog
+  epic-5-retrospective: optional
+  epic-6: backlog
+  epic-6-retrospective: optional

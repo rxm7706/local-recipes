@@ -15,10 +15,14 @@ from pyforge.atlas.hooks import ProjectHooks
 
 # Story E2 (FR-12, AD-6/AD-23): observability instrumentation declared ONCE here
 # so EVERY entry point inherits it — a `kedro run` picks up settings HOOKS
-# natively, and a Dagster run picks them up too because C1's KedroProjectTranslator
-# runs each node through KedroSession.run (settings hooks included). Constructed
-# with no args → both backends default to no-op/offline (no network at import or
-# run); the gate injects in-memory captors. See pyforge.atlas.observability.
+# natively, and a Dagster run picks them up too. NOT because the translator "runs
+# each node through KedroSession.run" — it does not; kedro-dagster calls
+# `Node.run()` directly and fires the hooks itself from dedicated ops. What every
+# entry point actually shares is the kedro HOOK MANAGER, which is what these
+# registrations ride (corrected by Story 10.6; the same false claim was removed
+# from orchestration/definitions.py). Constructed with no args → both backends
+# default to no-op/offline (no network at import or run); the gate injects
+# in-memory captors. See pyforge.atlas.observability.
 from pyforge.atlas.observability import AtlasObservabilityHooks
 
 # Story F2 (FR-10, AD-9/AD-20/AD-23): the data-validation hook rides EVERY entry
@@ -30,7 +34,29 @@ from pyforge.atlas.observability import AtlasObservabilityHooks
 # See pyforge.atlas.validation.
 from pyforge.atlas.validation import DataValidationHooks
 
-HOOKS = (ProjectHooks(), AtlasObservabilityHooks(), DataValidationHooks())
+# Story 10.6 (AD-23, audit AUD-ATLAS-046): run admission declared ONCE here so EVERY
+# entry point inherits it — the `kedro run` CLI, the seven MCP `run_*` tools, and the
+# Dagster plane all dispatch through the same hook manager. One OS file lock per output
+# dataset; reject-fast by default, bounded wait opt-in via
+# `--params admission_wait_seconds=<n>`. Constructed with no args → the lock root
+# resolves per-run from `run_params["project_path"]` (PROJECT-anchored, never
+# CWD-relative — a CWD-relative root would silently void admission between two
+# processes writing the same Parquet from different directories).
+#
+# Admission is acquired BEFORE every other before_pipeline_run and released BEFORE every
+# other after_pipeline_run — but that comes from the `@hook_impl(tryfirst=True)` markers on
+# RunAdmissionHooks, NOT from its position in this tuple. Kedro registers entry-point plugins
+# AFTER this tuple and pluggy dispatches LIFO, so tuple order alone puts any installed plugin
+# (kedro-viz is in this env) ahead of everything here. See pyforge.atlas.admission for the
+# measurement and for the boundaries that ordering creates.
+from pyforge.atlas.admission import RunAdmissionHooks
+
+HOOKS = (
+    ProjectHooks(),
+    AtlasObservabilityHooks(),
+    DataValidationHooks(),
+    RunAdmissionHooks(),
+)
 
 # Installed plugins for which to disable hook auto-registration.
 # DISABLE_HOOKS_FOR_PLUGINS = ("kedro-viz",)

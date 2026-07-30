@@ -26,12 +26,18 @@ import sys
 from pathlib import Path
 from typing import Any
 
-# Sibling helper — universal conda-forge.yml pre-seed (shared with recipe-generator.py).
+# Sibling helpers — universal conda-forge.yml pre-seed (shared with
+# recipe-generator.py) and path confinement (shared with recipe_editor.py and
+# the MCP server). REPO_ROOT is defined by _path_guard so all three surfaces
+# resolve the recipes/ root identically.
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from _cfy_template import render_conda_forge_yml  # noqa: E402
+from _path_guard import (  # noqa: E402
+    REPO_ROOT,
+    resolve_under_recipes,
+    validate_recipe_name,
+)
 
-# .claude/skills/conda-forge-expert/scripts/ -> repo root (4 levels up)
-REPO_ROOT = Path(__file__).resolve().parents[4]
 STAGED_RECIPES_FORK_PATH = REPO_ROOT.parent / "staged-recipes"
 UPSTREAM_REPO = "conda-forge/staged-recipes"
 UPSTREAM_URL = "https://github.com/conda-forge/staged-recipes.git"
@@ -81,7 +87,27 @@ def _sync_fork(fork_path: Path) -> int:
     )
     behind_n = int(behind) if rc == 0 and behind.isdigit() else 0
     _run(["git", "reset", "--hard", "upstream/main"], cwd=fork_path)
-    _run(["git", "push", "origin", "main", "--force"], cwd=fork_path)
+
+    # AUD-CFE-011: this used a bare `--force`, which silently discards anything
+    # on the fork's main that is not in upstream (a recipe committed straight to
+    # the fork, a hand-applied review fix). `prepare_branch` already uses
+    # --force-with-lease for the feature branch; make the fork-main sync agree.
+    # The lease is compared against the origin/main tracking ref, so it has to be
+    # fetched first or the check is against stale data.
+    _run(["git", "fetch", "origin", "main"], cwd=fork_path, check=False)
+    rc, _, err = _run(
+        ["git", "push", "origin", "main", "--force-with-lease"],
+        cwd=fork_path, check=False,
+    )
+    if rc != 0:
+        raise RuntimeError(
+            "Refusing to overwrite your fork's main: it holds commits that are "
+            "not in conda-forge/staged-recipes, so the sync would discard them. "
+            "Inspect with `git -C "
+            f"{fork_path} log origin/main ^upstream/main` and either push them "
+            "somewhere durable or reset the branch yourself, then re-run.\n"
+            f"git said: {err}"
+        )
     return behind_n
 
 
@@ -115,7 +141,15 @@ def prepare_branch(
     the push is skipped (``pushed: false``). Force pushes use ``--force-with-lease``
     when ``force=True`` (the default).
     """
-    recipe_dir = REPO_ROOT / "recipes" / recipe_name
+    # AUD-CFE-001: `recipe_name` reaches this from an MCP tool argument and is
+    # joined straight onto recipes/, then copytree'd into a PUBLIC fork. Reject
+    # traversal and nested names before touching the filesystem.
+    try:
+        validate_recipe_name(recipe_name)
+        recipe_dir = resolve_under_recipes(REPO_ROOT / "recipes" / recipe_name)
+    except ValueError as e:
+        return {"success": False, "error": str(e)}
+
     if not recipe_dir.exists():
         return {"success": False, "error": f"Recipe not found: {recipe_dir}"}
 

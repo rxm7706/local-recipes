@@ -34,6 +34,7 @@ import os
 import re
 import subprocess
 import sys
+import tomllib
 from pathlib import Path
 
 # dashboard project-key -> its sprint-status.yaml (repo-root-relative)
@@ -57,13 +58,46 @@ MAIN_BRANCH = "main"
 # so attribution is by the merge TARGET branch when present: loop/pyforge-herald ->
 # herald, etc. Bare/legacy matches (warden's epic-tail branches) default to warden.
 _LOOP_DONE = re.compile(r"Merge bmad-loop/[^/]+/(\d+-\d+)-\S*(?:\s+into\s+(\S+))?")
-_LOOP_TARGET_PROJECT = (
-    ("pyforge-herald", "herald"),
-    ("pyforge-doctor", "doctor"),
-    ("pyforge-scribe", "scribe"),
-    ("pyforge-warden", "warden"),
-    ("warden-epic", "warden"),
-)
+# Attribution is DERIVED from the merge target: `loop/pyforge-<slug>` -> `<slug>`.
+# It used to be a hardcoded 5-entry tuple with a blanket `warden` fallback, which
+# failed the moment a new smith existed: marshal's Story 1.1 merged into
+# loop/pyforge-marshal, matched nothing, and was silently CREDITED TO WARDEN —
+# so marshal read 0/41 on the published board while reading 1/41 locally.
+# A stray `claude/pdos-1-3-…` branch was being credited to warden the same way.
+# Deriving the slug means a new loop home needs no edit here; an unrecognised
+# target now WARNS and is skipped rather than being charged to warden.
+# Deliberately `[a-z0-9]+` (NO hyphen): project slugs are single words, and the
+# target may carry a suffix — `loop/pyforge-marshal` -> marshal, but also
+# `pyforge-warden-loop-policy-tiering` -> warden. Allowing hyphens captured the
+# whole tail, matched no project, and silently dropped 10 real warden stories.
+_LOOP_TARGET_SLUG = re.compile(r"pyforge-([a-z0-9]+)")
+# Legacy subjects that predate the loop/pyforge-<slug> convention.
+# `claude/pdos-*` is warden's pre-rename Epic-1 branch family (pdos = the project's
+# earlier name); its stories are warden's.
+_LOOP_TARGET_LEGACY = (("warden-epic", "warden"), ("claude/pdos", "warden"))
+# A story can also land as a plain PR MERGE rather than a bmad-loop merge — those
+# subjects never match _LOOP_DONE, which is why warden 1.2/1.3/1.4 read pending on
+# the published board while reading done locally. Two shapes exist on main:
+#   Merge pull request #53 from rxm7706/claude/pdos-1-2-interfaces-null-engine
+#   Merge pull request #115 from rxm7706/build/pyforge-doctor-1-1
+_PR_BUILD_DONE = re.compile(r"Merge pull request #\d+ from \S+/build/pyforge-([a-z0-9]+)-(\d+)-(\d+)")
+_PR_PDOS_DONE = re.compile(r"Merge pull request #\d+ from \S+/claude/pdos-(\d+)-(\d+)")
+# RETIRED convention, warden-only: warden's Epic-1 landed as bare `story N.N: …`
+# subjects before any loop/PR branch convention existed. All six such subjects on
+# main are warden's (1.1–1.4); nothing else has ever used the form, and current
+# work uses the loop/build shapes above. Anchored to start-of-subject so it cannot
+# match prose mid-line. Distinct from _ATLAS_STORY, which requires parens: story(A1).
+# If a future project adopts a bare `story N.N:` subject it WILL be miscredited to
+# warden — the durable fix is a tracked done-manifest, not another regex.
+_WARDEN_LEGACY_STORY = re.compile(r"^story (\d+\.\d+):")
+# PROJECT-QUALIFIED story subjects — the safe form, because the prefix names its
+# own project(s) and every token is validated against the LIVE project set, so an
+# unknown prefix is ignored rather than misattributed. Covers both shapes on main:
+#   pyforge-warden: story 6.10 decision record — …      (single, optional prefix)
+#   mason + steward: Story 1.1 — two stations reach code (MULTI-project, `+`-joined)
+# The multi form is why mason and steward read 0 on the published board: their only
+# completion signal names two projects at once and matched no single-project regex.
+_QUALIFIED_STORY = re.compile(r"^([a-z0-9 +\-]+?):\s*story\s+(\d+\.\d+)\b", re.I)
 # Atlas: most stories land as `story(A1)` / `story(B10)` / `story(0.1)`; the Wave
 # G/H tail uses bare `GN:` / `HN:` subjects instead.
 _ATLAS_STORY = re.compile(r"story\((\w[\w.]*)\)")
@@ -319,16 +353,84 @@ def apply_loop_inflight(projects: dict) -> None:
                     marked.append(story[0])
         if marked:
             print(f"[{pkey}] loop-home in-flight: {', '.join(marked)} (run {runs[0].name})")
+        _set_inflight_card(proj, pkey, runs[0], active_ids)
+
+
+def _set_inflight_card(proj: dict, pkey: str, run: Path, active_ids: set[str]) -> None:
+    """Populate `inflight` — the live elapsed clock / progress / ETA card.
+
+    The card has always existed in the renderer; nothing ever FED it. The function
+    above is named `apply_loop_inflight` but only ever flipped a story's status from
+    pending to active, so `inflight` stayed whatever a human last hand-pasted — which
+    is why the clock vanished from every line the moment nobody hand-pasted one.
+
+    ALL-OR-NOTHING, deliberately. The renderer guards with `if (p.inflight)` and then
+    reads startEpoch/median/lo/hi/key/title/phase/attempt/phaseAsOf unconditionally —
+    `Math.round(f.median / f.hi * 100)` throws on a partial object and takes the whole
+    board down with it. Emit every field or leave it None.
+    """
+    import time
+    jf = run / "journal.jsonl"
+    if not jf.is_file():
+        return
+    start_ts, last_task = None, None
+    for line in jf.read_text(encoding="utf-8", errors="replace").splitlines():
+        try:
+            e = json.loads(line)
+        except Exception:
+            continue
+        kind, ts = e.get("kind"), e.get("ts")
+        if kind == "story-start" and isinstance(ts, (int, float)):
+            start_ts = ts                      # a re-drive restarts the clock, as it should
+        elif kind == "session-start" and e.get("task_id"):
+            last_task = e["task_id"]
+    if start_ts is None or not last_task:
+        return
+
+    # task ids are `<story-key>-<phase>-<attempt>`; phase/attempt come from the tail so
+    # the card says "review · attempt 2" rather than guessing from run state.
+    m = re.search(r"-(dev|review|triage)-(\d+)$", last_task)
+    phase, attempt = (m.group(1), m.group(2)) if m else ("dev", "1")
+
+    sid = sorted(active_ids)[0]
+    title = next((s[2] for e in proj["epics"] for s in e["stories"] if s[0] == sid), sid)
+
+    # Baseline for the progress bar + ETA: this line's OWN measured stories. Using
+    # another line's numbers would compare unlike metrics (warden measures active
+    # compute, atlas wall-clock), so a line with no history simply gets no card.
+    per = (proj.get("timing") or {}).get("perStory") or {}
+    mins = sorted(v for v in per.values() if isinstance(v, (int, float)) and v > 0)
+    if not mins:
+        return
+    median = mins[len(mins) // 2] if len(mins) % 2 else \
+        round((mins[len(mins) // 2 - 1] + mins[len(mins) // 2]) / 2)
+
+    proj["inflight"] = {
+        "key": sid,
+        "title": title,
+        "phase": phase,
+        "attempt": attempt,
+        "startEpoch": int(start_ts),
+        "median": int(median),
+        "lo": int(mins[0]),
+        "hi": int(max(mins[-1], median + 1)),   # hi is a divisor in the renderer
+        "phaseAsOf": time.strftime("%Y-%m-%d %H:%M UTC", time.gmtime()),
+    }
+    print(f"[{pkey}] in-flight card: {sid} · {phase} attempt {attempt} · "
+          f"started {int((time.time() - start_ts) / 60)} min ago · median {median}m")
 
 
 # ---- source: git (hands-off / CI) -------------------------------------------
 
-def done_ids_from_git(branch: str) -> dict[str, set[str]]:
+def done_ids_from_git(branch: str, project_keys: tuple[str, ...] = ()) -> dict[str, set[str]]:
     """PER-PROJECT done story ids from `branch`'s commit subjects.
 
     Numeric story ids collide across projects (the regen program's rf(5.1)
     is NOT warden's 5.1), so each project matches ONLY its own commit
     convention — never a shared pool.
+
+    `project_keys` seeds the buckets from the LIVE project set rather than a
+    literal, so a newly provisioned smith is never missing one.
     """
     ref = branch
     if subprocess.run(
@@ -338,26 +440,105 @@ def done_ids_from_git(branch: str) -> dict[str, set[str]]:
     log = subprocess.run(
         ["git", "log", ref, "--format=%s"], capture_output=True, text=True, check=True
     ).stdout
-    done: dict[str, set[str]] = {"warden": set(), "atlas": set(), "regen": set(),
-                                 "herald": set(), "doctor": set(), "scribe": set()}
+    done: dict[str, set[str]] = {k: set() for k in project_keys}
+    for fixed in ("warden", "atlas", "regen", "herald", "doctor", "scribe"):
+        done.setdefault(fixed, set())  # always present, even pre-scan
+    unattributed: set[str] = set()
     for line in log.splitlines():
         m = _LOOP_DONE.search(line)
         if m:
             target = m.group(2) or ""
-            pkey = next((p for frag, p in _LOOP_TARGET_PROJECT if frag in target),
-                        "warden")  # legacy bare matches are warden's
+            slug = _LOOP_TARGET_SLUG.search(target)
+            if slug and slug.group(1) in done:
+                pkey = slug.group(1)
+            else:
+                pkey = next((p for frag, p in _LOOP_TARGET_LEGACY if frag in target), None)
+            if pkey is None:
+                # No target at all = pre-convention subject, historically warden's.
+                # A target that exists but resolves to no known project is NOT
+                # warden's — charging it there is how marshal's story vanished.
+                if not target:
+                    pkey = "warden"
+                else:
+                    unattributed.add(target)
+                    continue
             done[pkey].add(m.group(1).replace("-", "."))  # 6-1 -> 6.1
         for a in _ATLAS_STORY.finditer(line):
             done["atlas"].add(a.group(1))  # A1, B10, 0.1, F4 ...
         for a in _ATLAS_GH.finditer(line):
             done["atlas"].add(a.group(1))  # G3, H1, H2 ...
+        pm = _PR_BUILD_DONE.search(line)
+        if pm and pm.group(1) in done:
+            done[pm.group(1)].add(f"{pm.group(2)}.{pm.group(3)}")
+        pm = _PR_PDOS_DONE.search(line)
+        if pm:
+            done["warden"].add(f"{pm.group(1)}.{pm.group(2)}")
+        pm = _WARDEN_LEGACY_STORY.match(line)
+        if pm:
+            done["warden"].add(pm.group(1))
+        qm = _QUALIFIED_STORY.match(line)
+        if qm:
+            sid = qm.group(2)
+            for tok in qm.group(1).split("+"):
+                key = tok.strip().lower()
+                if key.startswith("pyforge-"):
+                    key = key[len("pyforge-"):]
+                if key in done:          # validated against the live project set
+                    done[key].add(sid)
         for a in _RF_STORY.finditer(line):
             done["regen"].add(a.group(1))  # 1.1, 4.R ...
+    if unattributed:
+        print(f"[git] WARN {len(unattributed)} bmad-loop merge target(s) matched no "
+              f"known project — their stories are NOT counted (previously they were "
+              f"silently credited to warden): {', '.join(sorted(unattributed))}")
     return done
 
 
+def apply_tracked_ledger(projects: dict) -> None:
+    """Upgrade stories to `done` from each project's TRACKED status ledger.
+
+    `implementation-artifacts/` is gitignored wholesale, so the sprint feed — the
+    only place that knows a story finished — is invisible to CI and absent from
+    every clone. That is why the git path had to reconstruct DONE from commit
+    subjects, and why it broke the moment a completion signal stopped being an
+    ancestor of `main`: squash-merging PR #132 left Epic 10's
+    `Merge bmad-loop/<run>/10-N-…` subjects unreachable and the board sat at 36/38
+    with a ticking clock on a finished story.
+
+    `scripts/promote_sprint_status.py` promotes that map to
+    `planning-artifacts/sprint-status-ledger.yaml`, which IS tracked — the same
+    move already made for `deferred-work-ledger.md`. This reads it, so the deploy
+    reads truth rather than guessing, whatever the merge strategy was.
+
+    UPGRADE-ONLY, deliberately. It never sets a story back to pending even if a
+    ledger says so: a stale twin must not be able to un-finish a shipped story,
+    and the never-downgrade invariant is what lets curated in-flight state survive
+    a deploy. `dashboard-drift-check` is what catches a stale twin.
+    """
+    for pkey in sorted(projects):
+        slug = _KEY_SLUG_OVERRIDE.get(pkey, f"pyforge-{pkey}")
+        ledger = (REPO_ROOT / "_bmad-output" / "projects" / slug
+                  / "planning-artifacts" / "sprint-status-ledger.yaml")
+        if not ledger.is_file():
+            continue
+        statuses = parse_sprint_status(ledger)
+        if not statuses:
+            print(f"[{pkey}] tracked ledger parsed 0 statuses — ignored")
+            continue
+        upgraded = 0
+        for epic in projects[pkey].get("epics", []):
+            for story in epic.get("stories", []):
+                if story[1] == "done":
+                    continue
+                if dashboard_id_to_status(story[0], statuses) == "done":
+                    story[1] = "done"
+                    upgraded += 1
+        print(f"[{pkey}] tracked ledger: {len(statuses)} status(es), "
+              f"{upgraded} story(ies) upgraded to done")
+
+
 def apply_git(projects: dict) -> None:
-    per_project = done_ids_from_git(MAIN_BRANCH)
+    per_project = done_ids_from_git(MAIN_BRANCH, tuple(projects))
     for pkey, ids in per_project.items():
         print(f"git-derived DONE ids [{pkey}] ({len(ids)}): {', '.join(sorted(ids))}")
     for pkey, proj in projects.items():
@@ -396,12 +577,24 @@ DREAM_TYPES = ("dream", "practice")
 # Dream does not mean it becomes that Smith's package.
 STATIONS = ("herald", "marshal", "atlas", "warden",
             "mason", "doctor", "scribe", "steward")
-# The ONE Dream that may name no station, because it CONSTITUTES them: the
-# Charter. `guild` is NOT a ninth station and never renders as one — it marks a
-# Dream sitting above the roster, not beside it. (Genesis was briefly here and
-# was wrong: its origin doc is Marshal's own setup plan, and "the bootstrapper
-# that installs the operating model anywhere" is Marshal's craft.)
-GUILD_DREAMS = ("pyforge-charter",)
+# The Dreams that may name no station, because they PRECEDE them: the Charter, which
+# constitutes the stations, and pyforge-genesis, the operating-model seed. `guild` is NOT
+# a ninth station and never renders as one — it marks a Dream sitting above the roster,
+# not beside it.
+#
+# MIRRORS scripts/bmad_drift_check.py:GUILD_DREAMS — keep the two in step. The mirror was
+# missed on 2026-07-28 and the board warned on a Dream the Charter explicitly permits.
+#
+# History, because this list flipped twice and the middle position was half-right. An
+# earlier comment here read: "Genesis was briefly here and was wrong: its origin doc is
+# Marshal's own setup plan, and 'the bootstrapper that installs the operating model
+# anywhere' is Marshal's craft." That reasoning holds for the INSTALLER and only the
+# installer. Genesis was doing two jobs in one Dream — constitutive records (the Charter,
+# the Lexicon, the Guild's membership) AND a buildable bootstrapper. Removing it from
+# `guild` wholesale fixed the second and broke the first. Resolved 2026-07-28 by splitting
+# them: the installer became the marshal-owned `genesis-installer` Dream; Genesis kept the
+# constitutive half and returned here. Charter §5 + its Realization log carry the ruling.
+GUILD_DREAMS = ("pyforge-charter", "pyforge-genesis")
 
 
 # Deck dirs whose name differs from the dream slug (mason's chapter deck backs
@@ -680,7 +873,7 @@ def apply_line_state(projects: dict) -> None:
 
 DETECTORS = [
     ("drift-check",  "bmad-drift-check",   "BMAD artifacts vs the live factory",
-     "_bmad-output/projects/local-recipes/SYNC-RUNBOOK.md"),
+     "_bmad-output/projects/pyforge-marshal/SYNC-RUNBOOK.md"),
     ("spec-surface", "spec-surface-check", "every tracked file under a Spec surface", ""),
     ("llms-full",    "llms-full-check",    "library catalog freshness", ""),
 ]
@@ -688,13 +881,59 @@ _FINDING_RE = re.compile(r"(\d+)\s+(?:integrity|currency|finding)")
 _FINDINGS_HDR = re.compile(r"^FINDINGS \((\d+)\)")   # spec-surface-check's form
 
 
+def _task_cmd(task: str) -> list[str] | None:
+    """This task's own `cmd` from pixi.toml, retargeted at the running interpreter.
+
+    DERIVED, never declared twice: a task's command is written down in exactly one
+    place, so the direct runner below cannot drift away from what `pixi run` does.
+    Only plain `python script.py` tasks are returned — anything else must go
+    through pixi, which is what the fallback in _run_detector is for.
+    """
+    try:
+        cfg = tomllib.loads((REPO_ROOT / "pixi.toml").read_text(encoding="utf-8"))
+    except Exception:
+        return None
+    for feat in cfg.get("feature", {}).values():
+        spec = (feat.get("tasks") or {}).get(task)
+        cmd = spec.get("cmd") if isinstance(spec, dict) else spec
+        if isinstance(cmd, str) and cmd.split() and cmd.split()[0] == "python":
+            return [sys.executable, *cmd.split()[1:]]
+    return None
+
+
+def _run_detector(task: str):
+    """Run a detector DIRECTLY where possible, falling back to `pixi run`.
+
+    Direct-first is deliberate. All three detectors are stdlib-only and shell out
+    to `git` alone — nothing in them needs the pixi environment, so requiring one
+    bought nothing and cost everything: `pixi run -e local-recipes` is unavailable
+    on the Pages runner, so the published board reported every detector as
+    "could not run here" while they read green locally. Materialising that env in
+    CI to satisfy the launcher would mean a ~9.8 GB download per deploy against a
+    10 GB cache ceiling. The environment was never the requirement.
+
+    pixi remains the fallback for any detector whose task is not a plain
+    `python script.py` invocation.
+    """
+    for cmd in (_task_cmd(task), ["pixi", "run", "--frozen", "-e", "local-recipes", task]):
+        if not cmd:
+            continue
+        try:
+            return subprocess.run(cmd, capture_output=True, text=True,
+                                  cwd=REPO_ROOT, timeout=120)
+        except Exception:                      # interpreter/pixi absent, timeout, anything
+            continue
+    return None
+
+
 def scan_health() -> dict:
     """Run the standing detectors; capture verdict + finding count + remedy."""
     rows = []
     for name, task, guards, runbook in DETECTORS:
-        try:
-            r = subprocess.run(["pixi", "run", "--frozen", "-e", "local-recipes", task],
-                               capture_output=True, text=True, cwd=REPO_ROOT, timeout=120)
+        r = _run_detector(task)
+        if r is None:
+            state, verdict_line, n = "unknown", "detector could not run here", 0
+        else:
             out = (r.stdout + r.stderr).strip().splitlines()
             verdict_line = next((l.strip() for l in reversed(out)
                                  if l.strip().startswith(("OK:", "DRIFT:", "FAIL:", "FINDINGS ("))), "")
@@ -702,8 +941,6 @@ def scan_health() -> dict:
             hdr = _FINDINGS_HDR.match(verdict_line)
             n = int(hdr.group(1)) if hdr else (
                 sum(int(m) for m in _FINDING_RE.findall(verdict_line)) if verdict_line else 0)
-        except Exception:                      # pixi absent (CI), timeout, anything
-            state, verdict_line, n = "unknown", "detector could not run here", 0
         rows.append({"name": name, "task": task, "guards": guards, "state": state,
                      "findings": n, "verdict": verdict_line[:120], "runbook": runbook})
 
@@ -712,14 +949,13 @@ def scan_health() -> dict:
     # is a staged-recipes fork), so "N commits behind" is noise. The fingerprint is
     # exactly what makes drift-check's `surface-changed` fire.
     base, deltas = {}, []
-    bp = REPO_ROOT / "_bmad-output/projects/local-recipes/.sync-baseline.json"
+    bp = REPO_ROOT / "_bmad-output/projects/pyforge-marshal/.sync-baseline.json"
     if bp.is_file():
         try:
             base = json.loads(bp.read_text(encoding="utf-8"))
             live = {}
-            g = subprocess.run(["pixi", "run", "--frozen", "-e", "local-recipes", "bmad-groundtruth"],
-                               capture_output=True, text=True, cwd=REPO_ROOT, timeout=120)
-            if g.returncode == 0:
+            g = _run_detector("bmad-groundtruth")   # direct-first, same as the detectors
+            if g is not None and g.returncode == 0:
                 s = g.stdout[g.stdout.find("{"):g.stdout.rfind("}") + 1]
                 live = json.loads(s) if s else {}
             for key, label in (("skill_version", "skill"), ("pixi_envs", "pixi envs"),
@@ -731,12 +967,20 @@ def scan_health() -> dict:
         except Exception:
             pass
     green = sum(1 for r in rows if r["state"] == "green")
-    print(f"[health] {green}/{len(rows)} detectors green · "
-          + (f"{len(deltas)} fingerprint delta(s) vs baseline" if deltas else "fingerprint matches baseline"))
+    # "matches baseline" is only true if a baseline was actually READ. When the file is
+    # missing, `deltas` is empty VACUOUSLY -- reporting a match there is a false green, and
+    # it is exactly what happened when the baseline moved projects (2026-07-28).
+    if not base:
+        fingerprint = f"NO BASELINE at {bp.relative_to(REPO_ROOT)} — nothing compared"
+    elif deltas:
+        fingerprint = f"{len(deltas)} fingerprint delta(s) vs baseline"
+    else:
+        fingerprint = "fingerprint matches baseline"
+    print(f"[health] {green}/{len(rows)} detectors green · " + fingerprint)
     return {"detectors": rows,
             "baseline": {"skill": base.get("skill_version", ""), "head": (base.get("git_head") or "")[:10],
                          "deltas": deltas,
-                         "runbook": "_bmad-output/projects/local-recipes/SYNC-RUNBOOK.md"}}
+                         "runbook": "_bmad-output/projects/pyforge-marshal/SYNC-RUNBOOK.md"}}
 
 
 # ---- fleet view (Dream -> Code, per project: stage, recency, version) --------
@@ -752,14 +996,19 @@ FLEET_PROJECTS = [
     ("atlas", "pyforge-atlas", "pyforge-atlas"),
     ("warden", "pyforge-warden", "pyforge-warden"),
     ("genesis", "pyforge-genesis", "pyforge-genesis"),
-    ("deckcraft", "deckcraft", "deckcraft"),
-    ("presenton", "presenton-pixi-image", "presenton-pixi-image"),
-    ("unity", "unity-data-stack", "unity-data-stack"),
-    ("wasm", "wasm-analytics-stack", "wasm-analytics-stack"),
+    # Chains absorbed by their owning station (Charter §5, 2026-07-28).
+    ("deckcraft", "pyforge-herald", "deckcraft"),
+    ("presenton", "pyforge-mason", "presenton-pixi-image"),
+    # Chains absorbed by their owning station (Charter §5 "owning is becoming",
+    # 2026-07-28): the DREAM keeps its slug, the PROJECT is now the owner's tree.
+    ("unity", "pyforge-atlas", "unity-data-stack"),
+    ("wasm", "pyforge-atlas", "wasm-analytics-stack"),
 ]
 # lifecycle order — the Dream-to-Code chain, left to right
 FLEET_STAGES = ("dream", "deck", "spec", "research", "brief", "prd", "arch", "epics", "code")
 # stages a project legitimately does not have (depth chosen at planning time)
+# Stages a CHAIN legitimately does not have (depth chosen at planning time). Keyed by
+# dream slug, matching the fleet row key.
 FLEET_NA = {"unity-data-stack": {"epics"}, "wasm-analytics-stack": {"epics"}}
 _STALE_DAYS = 30
 
@@ -825,11 +1074,16 @@ def scan_fleet(projects: dict) -> dict:
         stages = {
             "dream":    _added([f"docs/dreams/{dream}.md"]),
             "deck":     _added([f"presentations/{slug}/project/*.dc.html"]),
-            "spec":     _added([f"{pa}/specs/spec-*/SPEC.md"]),
+            # Chain-scoped, NOT project-scoped. Under Charter §5 as amended a project
+            # holds MANY chains, so `specs/spec-*/SPEC.md` would credit every chain in
+            # the tree with every other chain's artifacts. Match the dream slug.
+            "spec":     _added([f"{pa}/specs/spec-{dream}/SPEC.md"]),
             "research": _added([f"{pa}/research/*.md"]),
-            "brief":    _added([f"{pa}/product-brief*", f"{pa}/briefs/**/brief*.md"]),
-            "prd":      _added([f"{pa}/prd.md", f"{pa}/prds/*/prd.md"]),
-            "arch":     _added([f"{pa}/architecture.md", f"{pa}/architecture/*/*.md"]),
+            "brief":    _added([f"{pa}/product-brief-{dream}*",
+                                f"{pa}/briefs/brief-{dream}-*/brief*.md"]),
+            "prd":      _added([f"{pa}/prd.md", f"{pa}/prds/prd-{dream}-*/prd.md"]),
+            "arch":     _added([f"{pa}/architecture.md",
+                                f"{pa}/architecture/architecture-{dream}-*/*.md"]),
             "epics":    _added([f"{pa}/epics.md"]),
             "code":     _added([f"src/shared/packages/{slug}/pyproject.toml"]),
         }
@@ -870,7 +1124,11 @@ def scan_fleet(projects: dict) -> dict:
         # here + PRD + architecture present = downstream has overtaken the Spec.
         open_q = _spec_open_questions(slug)
         overtaken = bool(open_q) and bool(stages["prd"]) and bool(stages["arch"])
-        rows.append({"label": label, "slug": slug, "dream": dream, "stages": stages,
+        # `slug` identifies the CHAIN (the dream), not the hosting project — under
+        # Charter §5 as amended several chains share one project, and keying rows by
+        # project rendered "pyforge-atlas" three times with no way to tell them apart.
+        rows.append({"label": label, "slug": dream, "project": slug,
+                     "dream": dream, "stages": stages,
                      "backfilled": backfilled, "openQuestions": open_q,
                      "overtaken": overtaken,
                      "na": sorted(na), "furthest": furthest, "updated": updated,
@@ -1083,8 +1341,31 @@ def scan_timing(projects: dict) -> None:
     """
     for pkey, home in LOOP_HOMES.items():
         proj = projects.get(pkey)
-        if proj is None or proj.get("velocity") or proj.get("timing"):
-            continue                      # absent line, or curated — leave alone
+        # Skip CURATED timing only. Derived output carries `derived: true` so a
+        # later run can refresh (or repair) it — without that marker the first
+        # derivation became permanent, and a bug in it could never be fixed by
+        # re-running the generator.
+        if proj is None:
+            continue
+        existing_t, existing_v = proj.get("timing"), proj.get("velocity")
+        # A timing object WITHOUT `perStory` is broken by definition — the
+        # renderer does `p.timing && p.timing.perStory[key]`, so a partial object
+        # passes the truthiness guard and then throws, aborting the whole script.
+        # Treat it as stale and regenerate, whatever its `derived` marker says.
+        # (The marker alone was insufficient: output written before the marker
+        # existed looked curated and could never be repaired by re-running.)
+        broken = isinstance(existing_t, dict) and "perStory" not in existing_t
+        # Curated-ness is PER FIELD, not per project. The old all-or-nothing test
+        # skipped the whole project when EITHER field was hand-authored — so atlas,
+        # which has a curated `timing` (wall-clock from PR timestamps, because waves
+        # 0-H ran in a web session with no journals) but NO `velocity` at all, could
+        # never gain a velocity graph even once it had real loop journals. Warden is
+        # unaffected: both of its fields are curated, so there is nothing to fill.
+        timing_curated = (not broken) and isinstance(existing_t, dict) \
+            and not existing_t.get("derived")
+        velocity_curated = isinstance(existing_v, dict) and not existing_v.get("derived")
+        if timing_curated and velocity_curated:
+            continue
         runs = Path(home) / ".bmad-loop" / "runs"
         if not runs.is_dir():
             continue
@@ -1116,23 +1397,81 @@ def scan_timing(projects: dict) -> None:
             bars.append([f"{m.group(1)}.{m.group(2)}" if m else key, round(secs / 60)])
         bars.sort(key=lambda b: [int(x) if x.isdigit() else 0 for x in b[0].split(".")])
         total_h = sum(b[1] for b in bars) / 60
-        proj["velocity"] = {
-            "sub": "Active agent-compute per story (dev + review; excludes "
-                   "gate-pause wait) — derived from this line's bmad-loop journals.",
+        # The renderer reads v.{bars,sub,foot} — ALL of them. `foot` is not
+        # optional: `v.foot.map(...)` throws on a partial object exactly as
+        # `timing.perStory` did. Enumerated from the render rather than guessed,
+        # after fixing the same class of bug twice in a row.
+        mins = sorted(b[1] for b in bars)
+        median = mins[len(mins) // 2] if len(mins) % 2 else \
+            round((mins[len(mins) // 2 - 1] + mins[len(mins) // 2]) / 2)
+        st = [s for e in proj["epics"] for s in e["stories"]]
+        done_n = sum(1 for s in st if s[1] == "done")
+        velocity_obj = {
+            "derived": True,
+            # The in-flight caveat has to live HERE too, not only on `timing.note`:
+            # velocity is now derivable on a line whose timing is curated (atlas), so
+            # the note that used to carry this never reaches the reader.
+            #
+            # COVERAGE IS STATED, never implied. A graph showing 2 bars on a line with
+            # 38 stories reads as data loss unless it says why. Only loop-driven stories
+            # have journals: atlas's waves 0-H ran in a web session and were never
+            # measured for active compute, and their wall-clock numbers (PR timestamps,
+            # gate waits included) are a DIFFERENT metric that must not share this axis.
+            "sub": (f"Active agent-compute per story (dev + review; excludes "
+                    f"gate-pause wait) — derived from this line's bmad-loop journals. "
+                    f"{len(bars)} of {len(st)} stories measured"
+                    + ("" if len(bars) == len(st) else
+                       "; the rest predate loop instrumentation and carry wall-clock "
+                       "only (a different metric — see the timing strip), so they are "
+                       "deliberately absent rather than plotted on this axis")
+                    + ". A story still in flight contributes only its CLOSED sessions, "
+                      "so its bar is a floor, not a total."),
             "bars": bars,
+            "foot": [
+                [f"~{median} min", "median / story", "var(--done)"],
+                [f"{mins[0]}–{mins[-1]} min" if len(mins) > 1 else f"{mins[0]} min",
+                 "observed range", ""],
+                [f"{done_n}/{len(st)}", "stories complete", "var(--done)"],
+                [f"{len(st) - done_n}", "remaining", ""],
+            ],
         }
-        proj["timing"] = {
+        # The renderer reads timing.{perStory,epicMin,metric,note,totalLabel} —
+        # ALL of them. Emitting a partial object is worse than emitting none:
+        # `p.timing && p.timing.perStory[key]` passes the truthiness guard and
+        # then throws on the missing key, which aborts the whole script and took
+        # In Build / Realized / Archived down with it (2026-07-26). Match the
+        # curated shape exactly.
+        per_story = {sid: mins for sid, mins in bars}
+        epic_min: dict[str, int] = {}
+        for sid, mins in bars:
+            epic_min[f"E{sid.split('.')[0]}"] = epic_min.get(f"E{sid.split('.')[0]}", 0) + mins
+        timing_obj = {
+            "derived": True,
             "metric": "active agent-compute per story (dev + review; excludes "
                       "gate-pause wait) — from bmad-loop run journals",
+            "total": sum(b[1] for b in bars),
             "totalLabel": (f"~{total_h:.1f} h active compute" if total_h >= 1
                            else f"~{sum(b[1] for b in bars)} min active compute"),
             "note": f"Derived from {len(bars)} measured "
                     f"stor{'y' if len(bars) == 1 else 'ies'}; a story still in "
                     f"flight contributes only its closed sessions.",
-            "epicMin": {},
+            "perStory": per_story,
+            "epicMin": epic_min,
         }
-        print(f"[{pkey}] timing derived: {len(bars)} stories, "
-              f"{sum(b[1] for b in bars)} min active compute")
+        # Assign PER FIELD — a curated field is never overwritten, but its presence
+        # no longer blocks the other from being filled.
+        wrote = []
+        if not velocity_curated:
+            proj["velocity"] = velocity_obj
+            wrote.append("velocity")
+        if not timing_curated:
+            proj["timing"] = timing_obj
+            wrote.append("timing")
+        if not wrote:
+            continue
+        print(f"[{pkey}] {'+'.join(wrote)} derived: {len(bars)} stories, "
+              f"{sum(b[1] for b in bars)} min active compute"
+              + (" (curated timing preserved)" if timing_curated else ""))
 
 
 # ---- station ownership (the Dream -> code through-line) ----------------------
@@ -1142,7 +1481,10 @@ PROGRAM_DREAM = {"warden": "pyforge-warden", "atlas": "pyforge-atlas",
                  "herald": "pyforge-herald", "doctor": "pyforge-doctor",
                  "scribe": "pyforge-scribe", "regen": "regenerable-factory",
                  "marshal": "pyforge-marshal", "mason": "pyforge-mason",
-                 "steward": "pyforge-steward", "genesis": "pyforge-genesis"}
+                 "steward": "pyforge-steward", "genesis": "pyforge-genesis",
+                 # auto-discovered lines whose Dream slug is NOT pyforge-prefixed
+                 "deckcraft": "deckcraft",
+                 "presenton-pixi-image": "presenton-pixi-image"}
 
 
 def apply_owner(data: dict) -> None:
@@ -1196,6 +1538,47 @@ def apply_owner(data: dict) -> None:
           + (f" · UNOWNED: {', '.join(missing)}" if missing else " · all sections attributed"))
 
 
+
+# ---- the accountability gate (Charter §7, amended 2026-07-28) ----------------
+
+def gate_ownership(data: dict) -> list[str]:
+    """Refuse to publish a hall that cannot say who is accountable for a row.
+
+    Charter §7: the Guildhall is the unit of *accountability made real*, not merely of
+    visibility — "visibility without consequence is decoration". This is the only place
+    the whole Dream->Code chain is assembled in one view, so it is the only place a break
+    in that chain can be seen whole.
+
+    Corrects an inversion: check_render.js exited non-zero on a JavaScript TypeError while
+    this generator printed `· UNOWNED: …` and exited clean — a cosmetic fault blocked
+    publication while a governance fault shipped. The `[owner]` line already computed the
+    answer and threw it away.
+
+    Hard gate from day one, deliberately: a grace period on the model's critical path is
+    how drift becomes permanent.
+    """
+    valid = set(STATIONS) | {"guild"}
+    v: list[str] = []
+
+    for d in data.get("dreams", []):
+        o = d.get("owner") or ""
+        if not o:
+            v.append(f"dream {d['slug']}: no owner")
+        elif o not in valid:
+            v.append(f"dream {d['slug']}: owner {o!r} is not one of the eight (+guild)")
+
+    for row in (data.get("fleet") or {}).get("rows", []):
+        # campaigns are deliberately unowned (they span stations) — see apply_owner
+        if not row.get("owner") and not row.get("campaign"):
+            v.append(f"fleet row {row.get('slug', '?')}: blank station")
+
+    for key, proj in (data.get("projects") or {}).items():
+        if not proj.get("owner") and not proj.get("practice"):
+            v.append(f"build line {key}: no owning station")
+
+    return v
+
+
 # ---- shared ------------------------------------------------------------------
 
 def load_data() -> dict:
@@ -1221,6 +1604,11 @@ def main() -> int:
     data["projects"] = scan_projects(data["projects"])
     check_project_coverage(data["projects"])
     if args.source == "git":
+        # Tracked truth FIRST, archaeology second. The ledger twins are committed,
+        # so CI can read them; `apply_git` then only has to cover whatever predates
+        # a twin. Order matters only for the log's readability — both paths upgrade
+        # and neither downgrades.
+        apply_tracked_ledger(data["projects"])
         apply_git(data["projects"])
     else:
         apply_sprint_status(data["projects"])
@@ -1253,6 +1641,14 @@ def main() -> int:
     scan_timing(data["projects"])
     data["backlog"] = scan_backlog(data["dreams"], data["projects"])
     data["guild"] = scan_guild(data["dreams"], data["projects"], data["backlog"])
+
+    violations = gate_ownership(data)
+    if violations:
+        print(f"\n[GATE] ACCOUNTABILITY — {len(violations)} violation(s); NOT publishing:")
+        for x in violations:
+            print(f"     ✗ {x}")
+        print("  Charter §7: the hall does not put a row on the wall it cannot attribute.")
+        return 1
 
     ts = now_utc()
     data["snapshot"] = _SNAP_TS.sub(ts, data["snapshot"], count=1)

@@ -1,0 +1,142 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.7.72"
+
+package:
+  name: hyperframes
+  version: ${{ version }}
+
+source:
+  - url: https://registry.npmjs.org/hyperframes/-/hyperframes-${{ version }}.tgz
+    sha256: 958a29b1908dc29d7ed6ca24f98a6fd32f4fbdef05f9f3fec6c81217c3945216
+  # The npm tarball's `files` array is ["bin","dist"], so LICENSE is not
+  # published. Take it from the matching repo tag.
+  - url: https://raw.githubusercontent.com/heygen-com/hyperframes/v${{ version }}/LICENSE
+    sha256: 4259155fb06f127687ee7b0a8a3682d45132db0f2da26cbc0b7a2d1e796436b8
+    file_name: LICENSE
+
+build:
+  number: 0
+  # NOT noarch: npm writes platform-native bin shims (symlinks on unix,
+  # .cmd on Windows), so each platform installs its own (SKILL.md G100).
+  script:
+    # Upstream publishes the CLI with NINE unresolved monorepo references in
+    # devDependencies ("@hyperframes/core": "workspace:*", etc). pnpm parses
+    # them even under --prod and aborts with ERR_PNPM_WORKSPACE_PKG_NOT_FOUND,
+    # so drop devDependencies before installing. Uses node (already a build
+    # dep) so the same statement works on every platform.
+    - if: unix
+      then:
+        - export npm_config_prefix="${PREFIX}"
+        - node -e "const fs=require('fs');const p=JSON.parse(fs.readFileSync('package.json','utf8'));delete p.devDependencies;fs.writeFileSync('package.json',JSON.stringify(p,null,2));"
+        - pnpm install --ignore-scripts --prod
+        - npm pack --ignore-scripts
+        - npm install -g ./hyperframes-${{ version }}.tgz
+        - pnpm-licenses generate-disclaimer --prod --output-file=third-party-licenses.txt
+      else:
+        - call npm config set prefix "%PREFIX%"
+        - if %ERRORLEVEL% neq 0 exit 1
+        - node -e "const fs=require('fs');const p=JSON.parse(fs.readFileSync('package.json','utf8'));delete p.devDependencies;fs.writeFileSync('package.json',JSON.stringify(p,null,2));"
+        - if %ERRORLEVEL% neq 0 exit 1
+        - call pnpm install --ignore-scripts --prod
+        - if %ERRORLEVEL% neq 0 exit 1
+        - call npm pack --ignore-scripts
+        - if %ERRORLEVEL% neq 0 exit 1
+        - call npm install --userconfig nonexistentrc -g hyperframes-${{ version }}.tgz
+        - if %ERRORLEVEL% neq 0 exit 1
+        - call pnpm-licenses generate-disclaimer --prod --output-file=third-party-licenses.txt
+        - if %ERRORLEVEL% neq 0 exit 1
+
+requirements:
+  build:
+    - nodejs >=22
+    - pnpm
+    - pnpm-licenses
+  host:
+    - nodejs >=22
+  run:
+    # No explicit upper bound: the host nodejs run-export supplies the
+    # constraint. Upstream's `engines: {node: ">=22"}` floor is mirrored on
+    # build/host so the right variant is selected (SKILL.md G103).
+    - nodejs
+
+tests:
+  - script:
+      - hyperframes --help
+      - if: unix
+        then:
+          - test -f "${PREFIX}/lib/node_modules/hyperframes/package.json"
+        else:
+          - if not exist "%PREFIX%\\node_modules\\hyperframes\\package.json" exit 1
+
+about:
+  homepage: https://github.com/heygen-com/hyperframes
+  repository: https://github.com/heygen-com/hyperframes
+  license: Apache-2.0
+  license_file:
+    - LICENSE
+    - third-party-licenses.txt
+  summary: Frame-deterministic motion-graphics engine and CLI for programmatic video
+  description: |
+    HyperFrames renders motion graphics programmatically: compositions are a
+    pure function of frame index, so output is frame-deterministic and
+    reproducible. It ships a block catalog (code animations, transitions,
+    caption styles, lower thirds, social cards, data-viz, 3D device mockups),
+    footage-facing effects such as colour grading, grain and background
+    removal, and HDR10 / 4K delivery. Rendering runs locally.
+
+    This package provides the ``hyperframes`` command line interface.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: hyperframes
+  cfe-upstream-registry: npm
+  cfe-upstream-name: hyperframes
+  cfe-purls:
+    - pkg:conda/hyperframes@${{ version }}?channel=conda-forge
+    - pkg:npm/hyperframes@${{ version }}
+  cfe-upstream-repo: https://github.com/heygen-com/hyperframes
+  cfe-upstream-homepage: https://github.com/heygen-com/hyperframes
+  cfe-import-names: []
+  cfe-source-kind: npm-registry-tarball
+  cfe-noarch: compiled
+  cfe-pip-check: "false:not-a-python-package"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: "2026-07-26T00:00:00Z"
+  cfe-generated-by-version: 8.79.1
+  cfe-generated-at-datetime: "2026-07-26T00:00:00Z"
+  cfe-local-build-status: success
+  cfe-local-build-datetime: "2026-07-26T16:32:46Z"
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # Authored 2026-07-26 to close bmad-manticore's motion-graphics gap.
+#    # manticore 2.0.0 "consolidated on HyperFrames as the single
+#    # motion-graphics engine; Remotion is retired", and mc-setup's
+#    # check_deps.py requires npx specifically for "hyperframes CLI, skills,
+#    # and catalog blocks". Every manticore graphics skill shells out to it.
+# build:
+#    # This is a REAL npm CLI (17 runtime deps), not a G101-style shim over
+#    # per-platform prebuilt binaries -- package.json has no platform
+#    # optionalDependencies beyond @google/genai, which is a genuine optional
+#    # integration. Per-arch anyway, per G100.
+# source:
+#    # LICENSE comes from the repo tag v0.7.72, which matches the npm version
+#    # exactly, rather than a commit pin -- the npm `files` array is
+#    # ["bin","dist"] so no license ships in the published tarball (G102).
+# requirements:
+#    # engines.node is ">=22"; mirrored as a FLOOR on build/host only. Do NOT
+#    # add an upper bound to run: the nodejs run-export already constrains it
+#    # and an engines-derived cap makes the env unsolvable (G103).
+####

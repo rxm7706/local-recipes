@@ -39,7 +39,9 @@ the two fails the gate.
   is declared over the migrated column and FLAGGED (exactly the B2 shape-only-seed
   discipline). All three feedstock-health filters are flagged: `ci_red` assumes
   `ci_status`'s value domain equals the legacy `gh_default_branch_status`
-  ({failure, error, …}); `has_open_prs` loses the bot(Phase M) vs human(Phase N) split;
+  ({failure, error, …}) and coalesces a NULL `ci_status` to FALSE (AUD-ATLAS-012
+  `.fill_null` — an unobserved CI state is not ci-red, matching the legacy filter's
+  NULL-excludes behavior); `has_open_prs` loses the bot(Phase M) vs human(Phase N) split;
   `has_open_issues` rides the unverified `gh_open_issues_count → open_issues` rename. A
   green gate proves the Ibis expression is self-consistent, NOT that it reproduces the
   credentialed legacy value — B4-style recapture confirms that.

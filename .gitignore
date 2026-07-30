@@ -144,6 +144,12 @@ celerybeat.pid
 
 # Environments
 .env
+# AUD-CFE-008: these three were covered only by the LOCAL .git/info/exclude, so
+# a fresh clone had no rule for them and a stray secret file could be committed.
+# Keep them in the tracked .gitignore, where every clone gets them.
+.env.github
+.secrets
+.private
 .venv
 env/
 venv/

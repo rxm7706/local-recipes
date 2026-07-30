@@ -1,11 +1,20 @@
 ---
 title: Genesis — the seed of the operating model
 type: dream
-owner: marshal
+owner: guild
 status: specified
 ---
 
 # Genesis — the master idea, and the seed that plants it
+
+> **Constitutive (`owner: guild`, Charter §5).** This Dream and the Charter are the two
+> that precede the stations; their chains live in the `pyforge-genesis` project, which
+> records the Charter, the Lexicon, and the Guild's membership.
+>
+> **The installer is not held here** *(split 2026-07-28)*. `genesis init` / `genesis adopt`
+> — the machine that installs this model into any repo — is buildable work owned by the
+> **Marshal**: **[[genesis-installer]]**. This Dream is what gets installed; that Dream is
+> what installs it. The § Frontier note below is superseded by the split.
 
 ## The Dream
 

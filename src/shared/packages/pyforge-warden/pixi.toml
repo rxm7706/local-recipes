@@ -46,4 +46,8 @@ pyyaml = "*"
 packaging = "*"
 cyclonedx-python-lib = "*"
 jsonschema = "*"
+# AUD-WARDEN-010: declared in pyproject.toml but missing here, so the built
+# .conda got it only as cyclonedx-python-lib's transitive and would break at
+# import the moment cyclonedx re-bounded it. conda-forge ships 0.17.6 (noarch).
+packageurl-python = "*"
 license-expression = "*"

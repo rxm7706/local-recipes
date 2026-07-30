@@ -19,11 +19,31 @@ kedro-dagster does not provide natively but Story C1 requires:
    budget (:data:`NODE_TIMEOUTS`), structurally retiring the legacy single
    ``1800s`` ``cf_atlas_core`` monolithic timeout that silently dropped phases.
 
-AD-23 — ONE execution plane: the ops are kedro-dagster's translated ops, which
-run each Kedro node through the ``kedro_run`` resource (``KedroSession.run``);
-this glue only *wraps* that plane (subset, tag, schedule) — it never adds a
-second one. The base job uses the ``in_process`` executor declared in
-``conf/base/dagster.yml`` so run admission serializes per dataset set.
+AD-23 — ONE execution plane: the ops are kedro-dagster's translated ops, which run
+each Kedro node through the ``kedro_run`` resource and fire the project's
+``settings.HOOKS`` around them; this glue only *wraps* that plane (subset, tag,
+schedule) — it never adds a second one. (Precisely: kedro-dagster calls ``Node.run()``
+directly and invokes the hooks itself from dedicated ops, so what the three planes
+actually share is the kedro HOOK MANAGER, not ``KedroSession.run``.)
+
+The base job uses the ``in_process`` executor declared in ``conf/base/dagster.yml``,
+which serializes ops *within* a single run — that alone is still **not** cross-run
+admission. Cross-run admission is now enforced UPSTREAM of the executor, by
+``pyforge.atlas.admission.RunAdmissionHooks`` registered in ``settings.HOOKS``
+(Story 10.6, closing ``DW-AD23-1`` / audit ``AUD-ATLAS-046``): one OS file lock per
+output dataset, taken in ``before_pipeline_run``, so a second run over an overlapping
+output set is rejected — or, with an explicitly requested bounded wait, retried to a
+finite deadline (a poll, NOT an ordered queue) — before
+any node executes. Because it rides the hook manager, it covers the Dagster plane, the
+CLI and the MCP ``run_*`` tools alike. Two caveats live with it, both recorded in
+``admission.py``: the ``in_process`` executor is load-bearing here (a multiprocess
+executor would exit the hook op's subprocess and drop the lock before the first node
+ran), and release on this plane is process-local (``DW-AD23-2``).
+
+Dagster's own run queue is not wasted by this. Once ``DW-C1-1``'s daemon lands,
+``QueuedRunCoordinator`` remains a complementary nicety for Dagster-originated runs;
+the hook-level lock stays the actual safety property, because it is the only one that
+also covers MCP and CLI triggers.
 
 **Offline / dryrun**: building these definitions performs NO network IO — the
 Kedro catalog datasets take injected fetchers that default to offline (Wave B),

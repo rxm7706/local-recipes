@@ -19,9 +19,23 @@ What provisioning does:
      Tier-3 dir is auto-provisioned as a backlink to the main checkout's
      canonical `implementation-artifacts` (see bmad-switch), so sprint feeds
      and journals stay single-sourced.
-  3. Prints the launch line. Loops publish results with
-     `git push origin HEAD:main` (rebase/retry on non-FF) — `main` is never
-     checked out twice.
+  3. Prints the launch line and the publish line. Loops publish by pushing the
+     loop branch and opening a PR — NOT by pushing to `main`.
+
+     `main` is never checked out twice: git forbids two worktrees holding one
+     branch, so a loop home genuinely cannot merge into a local `main`. That
+     constraint is real, but it only rules out *checking out* main — it says
+     nothing about *pushing* to it, and this script used to print
+     `git push origin HEAD:main` as if it did. That hint was the whole reason
+     work bypassed the repo's PR CI. Two gates run ONLY on a pull request:
+       * the inherited staged-recipes linter reds on any change outside
+         `recipes/` unless the PR carries the `maintenance` label;
+       * the `environment.yaml` <-> `pixi.toml` sync check.
+     A push straight to `main` runs neither. (Corrected 2026-07-26.)
+
+     bmad-loop itself never pushes — its run ends at `unit-merged` on the loop
+     branch. Publishing is entirely the operator's step, which is exactly why
+     the line this script prints matters.
 
 Usage:
     bmad-loop-worktree <slug>              # provision (idempotent) + launch line
@@ -131,7 +145,11 @@ def cmd_provision(root: Path, slug: str) -> int:
     if home is None:
         return 1
     print(f"\nlaunch:  cd {home} && BMAD_ACTIVE_PROJECT={slug} <bmad-loop command>")
-    print("publish: git push origin HEAD:main   (rebase & retry on non-FF)")
+    print(f"publish: git push origin HEAD:refs/heads/loop/{slug}")
+    print(f"         gh pr create --repo rxm7706/local-recipes --label maintenance \\")
+    print(f"                      --head loop/{slug} --title '{slug}: <story>'")
+    print("         (the `maintenance` label is REQUIRED for any change outside")
+    print("          recipes/ — the staged-recipes linter reds without it)")
     return 0
 
 

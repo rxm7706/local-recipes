@@ -1,0 +1,69 @@
+# GENERATED — do not hand-edit. Regenerate with:
+#     pixi run -e local-recipes sprint-ledger-sync
+#
+# TRACKED twin of _bmad-output/projects/pyforge-marshal/implementation-artifacts/sprint-status.yaml
+# which is gitignored Tier-3 (.gitignore:736) and therefore invisible to CI and
+# absent from every fresh clone. The dashboard's deploy-time render reads THIS
+# file, so a story's completion no longer has to be reconstructed from commit
+# subjects — the archaeology that failed when squash-merging PR #132 made Epic
+# 10's bmad-loop merge subjects unreachable from main.
+#
+# Same shape as the Tier-3 feed on purpose: generate.py's parse_sprint_status
+# reads both, so there is no second parser to drift.
+#
+# project: marshal
+# stories: 53
+development_status:
+  1-1-package-spine-verdict-lattice-findings-registry-and-the-meta-tests-that-enforce-them: done
+  1-10-render-the-harness-policy-from-the-canonical-effectivepolicy: backlog
+  1-2-story-identity-merge-subject-rendering-and-feed-completeness: backlog
+  1-3-layered-policy-composition-with-provenance-and-validation: backlog
+  1-4-provision-a-loop-home: backlog
+  1-5-single-sourced-tier-3-store-via-backlink: backlog
+  1-6-isolation-verification-and-home-enumeration: backlog
+  1-7-preflight-adapter-config-seeding-and-first-run-acknowledgement: backlog
+  1-8-teardown-that-refuses-to-destroy-work: backlog
+  1-9-packaging-distribution-and-version-reporting: backlog
+  2-1-standalone-verify-command-runner-project-scoped: backlog
+  2-2-verdict-aggregation-that-never-false-greens: backlog
+  2-3-frozen-surface-scope-check-narrowing-only: backlog
+  2-4-doc-only-story-classification: backlog
+  2-5-gate-mode-ladder-with-autonomy-labels: backlog
+  2-6-gate-evidence-record-with-redaction-at-egress: backlog
+  3-1-run-identity-and-the-journal-writer: backlog
+  3-2-the-journal-fold-one-producer-for-accumulating-run-state: backlog
+  3-3-detached-launch-with-scoped-story-selection: backlog
+  3-4-supervisor-process-lifecycle: backlog
+  3-5-idle-strand-detection: backlog
+  3-6-budget-ceilings-and-the-heaviest-story-advisory: backlog
+  3-7-escalation-deferral-and-resume: backlog
+  4-1-story-spec-promotion-with-a-durability-predicate: backlog
+  4-2-teardown-reachability-and-spec-recovery-assistance: backlog
+  4-3-merge-subject-conformance-and-review-cap-landing: backlog
+  4-4-batch-pull-request-with-hygiene-preflight: backlog
+  4-5-feed-refresh-with-truth-partitioned-by-domain: backlog
+  4-6-deploy-idempotence-and-reconciliation-of-open-intents: backlog
+  5-1-fleet-view: backlog
+  5-2-per-run-detail: backlog
+  5-3-escalation-queue: backlog
+  5-4-ledger-vs-git-reconciliation-and-the-versioned-status-contract: backlog
+  6-1-profile-driven-adapter-selection-project-scoped: backlog
+  6-2-skill-tree-projection: backlog
+  6-3-projection-drift-detection-that-can-actually-fail: backlog
+  6-4-adapter-probe-with-a-machine-scoped-record: backlog
+  6-5-conformance-smoke-in-an-ephemeral-home: backlog
+  6-6-the-conformance-matrix: backlog
+  6-7-entry-file-family-drift-check-detect-only: backlog
+  6-8-upstream-contribution-register: backlog
+  epic-1: backlog
+  epic-1-retrospective: optional
+  epic-2: backlog
+  epic-2-retrospective: optional
+  epic-3: backlog
+  epic-3-retrospective: optional
+  epic-4: backlog
+  epic-4-retrospective: optional
+  epic-5: backlog
+  epic-5-retrospective: optional
+  epic-6: backlog
+  epic-6-retrospective: optional

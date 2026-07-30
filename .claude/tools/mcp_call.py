@@ -36,7 +36,28 @@ def call(tool_name: str, **kwargs) -> dict:
     return {"error": "no response", "stderr": proc.stderr[:500]}
 
 if __name__ == "__main__":
+    # AUD-CFE-012 is a trusted-operator wrapper by design: it grants nothing the
+    # operator could not do by running conda_forge_server.py directly, so it adds
+    # no privilege boundary. What it DID do was crash with a bare IndexError when
+    # called with no arguments, and pass malformed JSON straight to a traceback.
+    # The tools it reaches are themselves confined now (AUD-CFE-001/002/006).
+    if len(sys.argv) < 2:
+        print(
+            f"usage: {Path(sys.argv[0]).name} <tool_name> ['{{\"arg\": \"value\"}}']\n"
+            "  Calls a tool on conda_forge_server.py over stdio JSON-RPC.",
+            file=sys.stderr,
+        )
+        sys.exit(2)
     tool = sys.argv[1]
-    args = json.loads(sys.argv[2]) if len(sys.argv) > 2 else {}
+    try:
+        args = json.loads(sys.argv[2]) if len(sys.argv) > 2 else {}
+    except json.JSONDecodeError as exc:
+        print(f"arguments must be a JSON object: {exc}", file=sys.stderr)
+        sys.exit(2)
+    if not isinstance(args, dict):
+        print(f"arguments must be a JSON object, got {type(args).__name__}",
+              file=sys.stderr)
+        sys.exit(2)
     result = call(tool, **args)
     print(json.dumps(result, indent=2))
+    sys.exit(1 if isinstance(result, dict) and "error" in result else 0)

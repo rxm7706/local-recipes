@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """bmad_drift_check.py — keep the local-recipes BMAD project docs in sync with the live factory.
 
-The `_bmad-output/projects/local-recipes/` artifacts (planning AND implementation) hard-code
+The `_bmad-output/projects/pyforge-marshal/` factory-doc artifacts (planning AND implementation) hard-code
 volatile facts about the conda-forge-expert factory (skill version, cf_atlas schema, MCP tool
 count, atlas phase count, pixi env count, gotcha range) and follow filing conventions
 (sprint-change-proposals in change-history/, retros in retros/). The factory ships a release
@@ -31,7 +31,7 @@ Usage:
   pixi run -e local-recipes bmad-drift-check
   pixi run -e local-recipes bmad-drift-check -- --fix
   pixi run -e local-recipes bmad-groundtruth
-See _bmad-output/projects/local-recipes/SYNC-RUNBOOK.md for the full re-sync procedure.
+See _bmad-output/projects/pyforge-marshal/SYNC-RUNBOOK.md for the full re-sync procedure.
 """
 from __future__ import annotations
 
@@ -44,12 +44,16 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SKILL = REPO_ROOT / ".claude" / "skills" / "conda-forge-expert"
-PROJ = REPO_ROOT / "_bmad-output" / "projects" / "local-recipes"
+# The factory document set moved local-recipes -> pyforge-marshal on 2026-07-28: the
+# placeholder project dissolved under Charter §5, and this doc set IS the factory rebuild
+# spec, owned by Marshal via the regenerable-factory practice. TRACKED below uses paths
+# RELATIVE to PROJ, so retargeting this one constant carried all 18 of them.
+PROJ = REPO_ROOT / "_bmad-output" / "projects" / "pyforge-marshal"
 PLAN = PROJ / "planning-artifacts"
 IMPL = PROJ / "implementation-artifacts"
 BASELINE = PROJ / ".sync-baseline.json"  # records the repo state artifacts were last reconciled against
 DOCS_SPECS = REPO_ROOT / "docs" / "specs"  # Tier-1: BMAD-consumable intake specs (bmad-quick-dev entry points)
-IMPL_REL = "_bmad-output/projects/local-recipes/implementation-artifacts"
+IMPL_REL = "_bmad-output/projects/pyforge-marshal/implementation-artifacts"
 
 Ver = tuple[int, int, int]
 
@@ -73,7 +77,7 @@ TRACKED: list[tuple[str, str]] = [
     ("planning-artifacts/project-parts.json", "living"),
     ("project-context.md", "context"),
     ("planning-artifacts/PRD.md", "plan"),
-    ("planning-artifacts/epics.md", "plan"),
+    ("planning-artifacts/epics-regenerable-factory.md", "plan"),  # renamed on the move: marshal keeps its own epics.md
     ("planning-artifacts/implementation-readiness-report.md", "snapshot"),  # dated gate output, regenerated not pinned
     ("planning-artifacts/validation-report-PRD.md", "snapshot"),
 ]
@@ -449,6 +453,33 @@ def classify(path: Path) -> str:
         return f"tracked:{TRACKED_CAT[rel]}"
     if rel.startswith("planning-artifacts/change-history/"):
         return "archive:change-history"
+    # --- the 6.10 sharded station shape -------------------------------------
+    # Added 2026-07-28 when this detector was retargeted from the dissolved
+    # `local-recipes` placeholder onto `pyforge-marshal`. It had only ever seen one
+    # project's shape; a station carries its OWN chain artifacts too — sharded PRD and
+    # architecture run folders, per-chain epics, briefs, upstream reports. Fourteen files
+    # landed as `uncovered` on the first run, which is the coverage rule working: an
+    # unclassified file is a hole, not a pass.
+    if re.fullmatch(r"planning-artifacts/prds/prd-[a-z0-9-]+-\d{4}-\d{2}-\d{2}/[A-Za-z0-9._-]+", rel):
+        return "tracked:plan"          # bmad-prd run folder: prd.md + memlog + reviews
+    if re.fullmatch(r"planning-artifacts/architecture/architecture-[a-z0-9-]+-\d{4}-\d{2}-\d{2}/.*", rel):
+        return "tracked:plan"          # bmad-architecture run folder (incl. reviews/)
+    if re.fullmatch(r"planning-artifacts/briefs/brief-[a-z0-9-]+-\d{4}-\d{2}-\d{2}/[A-Za-z0-9._-]+", rel):
+        return "tracked:plan"
+    if re.fullmatch(r"planning-artifacts/epics(-[a-z0-9-]+)?\.md", rel):
+        # The station's own epics.md, plus chain-scoped epics-<slug>.md for chains that
+        # moved in under Charter §5 (the destination keeps its own epics.md).
+        return "tracked:plan"
+    if re.fullmatch(r"planning-artifacts/product-brief-[a-z0-9-]+\.md", rel):
+        return "tracked:plan"
+    if re.fullmatch(r"planning-artifacts/research/[A-Za-z0-9._-]+\.md", rel):
+        return "archive:research"      # undated research + briefs filed under research/
+    if re.fullmatch(r"planning-artifacts/upstream-report-[a-z0-9-]+\.md", rel):
+        return "archive:change-history"  # frozen upstream defect report
+    if rel == "planning-artifacts/README.md":
+        return "tracked:living"
+    if re.fullmatch(r"implementation-artifacts/epic-\d+-context\.md", rel):
+        return "local:sprint-feed"     # Tier-3 story context, gitignored
     if re.fullmatch(r"planning-artifacts/prfaq-[a-z0-9-]+(-distillate)?\.md", rel):
         # PRFAQ kill-test records + distillates (bmad-prfaq): frozen stress-test
         # outputs — no pin gating.
@@ -468,14 +499,41 @@ def classify(path: Path) -> str:
         # + companions. The memlog is the decision-of-record and SPEC.md re-derives
         # from it (never hand-patched), so no pin gating here.
         return "tracked:spec"
+    if re.fullmatch(r"planning-artifacts/specs/spec-[a-z0-9-]+\.md", rel):
+        # FLAT spec files directly under specs/ — the rule above only matched spec
+        # FOLDERS, so a flat one fell through to UNKNOWN and failed coverage. Two
+        # real shapes live here: per-story specs (the durable Tier-2 home) and
+        # standalone effort specs such as the 2026-07-26 code-audit remediation
+        # record. Both are tracked, hand-authored, and not pin-gated.
+        return "tracked:spec"
     if rel.startswith("implementation-artifacts/retros/"):
         return "archive:retros"
     if rel == "implementation-artifacts/deferred-work.md":
         return "tracked:deferred"
-    if rel == "implementation-artifacts/sprint-status.yaml":
+    if rel == "planning-artifacts/deferred-work-ledger.md":
+        # The DURABLE twin of the Tier-3 ledger above, promoted 2026-07-29 because
+        # bmad-loop's follow-up-review damping refiles into the gitignored one (see
+        # scripts/deferred_work_check.py). Hand-authored and not pin-gated: entries
+        # are dated in their own bodies, and the file is deliberately a copy whose
+        # curation lags — a version pin would report drift on every skill bump for a
+        # document that tracks stories, not the skill surface.
+        return "tracked:deferred"
+    if re.fullmatch(r"implementation-artifacts/sprint-status(-[a-z0-9-]+)?\.yaml", rel):
         # Tier-3 sprint feed (gitignored, local-only) — the program console's
         # dashboard-gen reads it; no pin gating.
         return "local:sprint-feed"
+    if rel == "planning-artifacts/sprint-status-ledger.yaml":
+        # The DURABLE twin of the Tier-3 sprint feed above, promoted 2026-07-30 for
+        # the same reason as deferred-work-ledger.md: implementation-artifacts/ is
+        # gitignored wholesale, so the only record that a story finished was
+        # invisible to CI, which is why the console's deploy-time render had to
+        # reconstruct DONE from commit subjects — and why it broke when squash
+        # merging left a bmad-loop merge subject unreachable from main.
+        # GENERATED by scripts/promote_sprint_status.py (`sprint-ledger-sync`) and
+        # read by docs/dashboard/generate.py:apply_tracked_ledger; freshness is
+        # enforced against the Tier-3 feed by scripts/dashboard_drift_check.py, not
+        # by a version pin — it tracks stories, not the skill surface.
+        return "tracked:sprint-ledger"
     if re.fullmatch(r"implementation-artifacts/spec-.*\.md", rel):
         return "tracked:spec"
     return "UNKNOWN"
@@ -541,7 +599,7 @@ STATIONS = ("herald", "marshal", "atlas", "warden",
             "mason", "doctor", "scribe", "steward")
 # The one Dream that may name no station because it CONSTITUTES them: the
 # Charter. `guild` is NOT a ninth station.
-GUILD_DREAMS = ("pyforge-charter",)
+GUILD_DREAMS = ("pyforge-charter", "pyforge-genesis")
 
 
 # The Dream lifecycle — each state names the ACT THAT COMPLETED. Mirrored in
@@ -725,7 +783,7 @@ def cmd_check(integrity_only: bool, fix: bool) -> int:
         fixable = [f for f in findings if f.fixable]
         hint = "  (run with --fix to auto-remediate the mechanical ones)" if fixable else ""
         print(f"DRIFT: {len(hard)} integrity + {len(drift)} currency finding(s). "
-              f"Re-sync via _bmad-output/projects/local-recipes/SYNC-RUNBOOK.md.{hint}")
+              f"Re-sync via _bmad-output/projects/pyforge-marshal/SYNC-RUNBOOK.md.{hint}")
         return 1
     print("OK: all tracked BMAD artifacts are in sync with the live factory MINOR.")
     return 0

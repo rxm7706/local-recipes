@@ -1,0 +1,99 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.20"
+
+package:
+  name: ebooklib
+  version: ${{ version }}
+
+source:
+  # Note the sdist filename case: 0.18 and earlier published as EbookLib-*,
+  # 0.19+ publish as ebooklib-*.
+  url: https://pypi.org/packages/source/e/ebooklib/ebooklib-${{ version }}.tar.gz
+  sha256: 35e2f9d7d39907be8d39ae2deb261b19848945903ae3dbb6577b187ead69e985
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - setuptools
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - lxml
+    - six
+
+tests:
+  - python:
+      imports:
+        - ebooklib
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/aerkalov/ebooklib
+  repository: https://github.com/aerkalov/ebooklib
+  license: AGPL-3.0-or-later
+  license_file: LICENSE.txt
+  summary: Ebook library which can handle EPUB2/EPUB3 and Kindle format
+  description: |
+    EbookLib is a Python library for reading and writing ebooks. It supports
+    EPUB 2 and EPUB 3, and can read (but not write) the unencrypted Kindle
+    format. It handles the package document, spine, table of contents,
+    metadata and embedded items, so callers can build or inspect a book
+    without hand-assembling the container format.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: ebooklib
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: ebooklib
+  cfe-purls:
+    - pkg:conda/ebooklib@${{ version }}?channel=conda-forge
+    - pkg:pypi/ebooklib@${{ version }}
+  cfe-upstream-repo: https://github.com/aerkalov/ebooklib
+  cfe-upstream-homepage: https://github.com/aerkalov/ebooklib
+  cfe-import-names: [ebooklib]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/ebooklib-feedstock
+  cfe-forge-recipe-updates-needed:
+    - "version bump 0.17 -> 0.20"
+    - "meta-yaml-to-recipe-yaml"
+  cfe-forge-blocker-list: []
+  cfe-last-checked: "2026-07-26T00:00:00Z"
+  cfe-generated-by-version: 8.79.1
+  cfe-generated-at-datetime: "2026-07-26T00:00:00Z"
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # v1 authored 2026-07-26 at 0.20. conda-forge is stuck at 0.17, which is
+#    # what forces ppt-master to carry a loosened `ebooklib >=0.17` with a
+#    # TODO where upstream actually wants >=0.18 -- building 0.20 locally lets
+#    # that pin be tightened.
+#    # meta.yaml is KEPT alongside: the deployed feedstock is still v0, so the
+#    # local mirror keeps the v0 copy until the feedstock itself migrates.
+#    # The local meta.yaml sat at 0.18, ahead of the feedstock's 0.17.
+# about:
+#    # License normalized to the SPDX form AGPL-3.0-or-later; the old meta.yaml
+#    # used the deprecated bare "AGPL-3.0" and PyPI only carries the prose
+#    # "GNU Affero General Public License".
+####
