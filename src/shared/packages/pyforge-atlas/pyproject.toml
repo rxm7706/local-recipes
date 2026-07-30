@@ -21,6 +21,11 @@ dependencies = [
     # json / yaml / text) — catalog resolution imports kedro_datasets, so it is
     # a real runtime dependency of the package, not just a pixi-env dep.
     "kedro-datasets>=9.5.0",  # floor matches the member pixi.toml run-dep
+    # AUD-REPO-001: present in the member pixi.toml run-deps but missing here, so
+    # the WHEEL did not declare it while `orchestration/definitions.py` imports
+    # `kedro_dagster` at module level. Restores the "byte-for-byte in step with
+    # the member pixi.toml" invariant the block below states.
+    "kedro-dagster>=0.7.0",
     # --- AUD-ATLAS-010 (2026-07-27): dependency completeness --------------
     # Kept byte-for-byte in step with the member pixi.toml run-dependencies;
     # PyPI distribution names differ from the conda names in four places, noted

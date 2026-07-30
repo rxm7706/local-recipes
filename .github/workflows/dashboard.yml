@@ -63,7 +63,7 @@ jobs:
       # older pixi cannot read. Bump it in step with pixi.lock.
       - uses: prefix-dev/setup-pixi@v0.10.0
         with:
-          pixi-version: v0.73.0
+          pixi-version: v0.74.0
           environments: pyforge-ci
           locked: true
           cache: true

@@ -7,7 +7,7 @@ preview = ["pixi-build"]  # enable the pixi build backend for the ./src/shared/p
 # NOTE: Gemini PR#49 suggested a `[workspace] members = [...]` key, but pixi
 # (through 0.72.2) has no such key — workspace members are declared via path
 # dependencies (see [feature.pyforge-warden.dependencies]).
-requires-pixi = ">=0.73.0"  # single pixi floor for the workspace — matches feature.python/local-recipes `pixi = ">=0.73.0"`, environment.yaml, and the CI pixi-version pin in .github/workflows/dashboard.yml. Keep all four in step. 0.71+ is a hard floor regardless: the named platform entry `osx-arm64-min` ({ name, platform, macos }) replaced the deprecated [system-requirements] table and older pixi cannot read it.
+requires-pixi = ">=0.74.0"  # single pixi floor for the workspace — matches feature.python/local-recipes/build `pixi = ">=0.74.0"`, environment.yaml, the CI pixi-version pin in .github/workflows/dashboard.yml, and the micromamba create-arg in .github/workflows/staged-recipes-linter.yml. Keep all five in step (the `pixi update` of 2026-07-29 bumped the feature floors to 0.74.0 and left this at 0.73.0). 0.71+ is a hard floor regardless: the named platform entry `osx-arm64-min` ({ name, platform, macos }) replaced the deprecated [system-requirements] table and older pixi cannot read it.
 description = "The entry point to conda-forge"
 version = "0.2.0"
 license = "BSD-3-Clause"
@@ -250,6 +250,22 @@ pytest = ">=9.1.1"                        # test runner
 pixi-build-python = ">=0.8.3"             # pixi build backend -> .conda from the hatchling wheel
 pixi-build-rattler-build = ">=0.4.4"      # pixi build backend -> recipe-driven .conda
 twine = ">=7.0.0"                         # PyPI upload
+
+# The dependency-completeness + manifest-parity gate for ALL `pyforge-*` packages
+# (AUD-REPO-001, the permanent form of the auditor that found AUD-ATLAS-010 and
+# AUD-WARDEN-010). It AST-scans each package's src/ for unconditional
+# module-level imports and proves every one is declared in pyproject.toml AND
+# mirrored into pixi.toml [package.run-dependencies].
+#
+# It lives in `pyforge-ci` on purpose: the check is pure stdlib (ast + tomllib),
+# so running it in the leanest env in the repo — which carries no runtime
+# libraries at all — is the standing proof that it never needs the very
+# dependencies it audits. A check that needed them installed would be circular.
+# It also discovers packages by glob, so a new `pyforge-*` package is covered the
+# day it lands with nobody having to remember. Runs in ~0.4s.
+[feature.pyforge-ci.tasks.pyforge-deps-test]
+description = "Dependency-completeness + wheel/.conda manifest parity for every pyforge-* package (pure stdlib; no runtime deps required)"
+cmd = "python -m pytest tests/packaging -q"
 
 [environments]
 # default-env: local-recipes
@@ -1214,6 +1230,17 @@ cmd = "python -m sentinel.knowledge.crews.qa_crew"
 
 [feature.local-recipes.tasks.wiki-sync]
 cmd = "python -m sentinel.knowledge.lasuite.sync"
+
+# AUD-ATLAS-013 left this test runnable by nobody. The file was correctly moved
+# out of the atlas test tree (it covers `sentinel.*`, not `pyforge.atlas`, and
+# could not collect in any env from there) but no task was ever pointed at its
+# new home, and it needs PYTHONPATH=src because `sentinel` is a plain source
+# tree, not an installed package. So it collected nowhere and gated nothing:
+# `ModuleNotFoundError: No module named 'sentinel'` on a bare pytest run.
+[feature.local-recipes.tasks.wiki-test]
+description = "Test the sentinel knowledge base (config resolution + LaSuite client/sync timeout recovery)"
+cmd = "python -m pytest src/sentinel/tests -q"
+env = { PYTHONPATH = "src" }
 
 [feature.local-recipes.tasks.wiki-compile-all]
 description = "Compile all wiki pages into a single document"
