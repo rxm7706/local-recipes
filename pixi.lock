@@ -7149,7 +7149,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/yaspin-3.4.0-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/zipp-4.1.0-pyhcf101f3_0.conda
       - conda_source: pyforge-atlas[b0d40bc1] @ src/shared/packages/pyforge-atlas
-      - conda_source: pyforge-warden[87f0f664] @ src/shared/packages/pyforge-warden
+      - conda_source: pyforge-warden[03e02573] @ src/shared/packages/pyforge-warden
       - pypi: https://files.pythonhosted.org/packages/47/15/7da7c0efa3ecfb2b69ef2283e17b93330109d618afe5c788b9bc81807da4/returns-0.28.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/8b/bb/96c99dfa9c08c43f8dc31e3385040a3e4dabbba791ed34ae018934653a3b/boring_semantic_layer-0.3.16-py3-none-any.whl
       p1:
@@ -7550,7 +7550,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zlib-1.3.2-h8088a28_3.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zstd-1.5.7-hbf9d68e_6.conda
       - conda_source: pyforge-atlas[5173f8d4] @ src/shared/packages/pyforge-atlas
-      - conda_source: pyforge-warden[99ad340e] @ src/shared/packages/pyforge-warden
+      - conda_source: pyforge-warden[1dfef3a8] @ src/shared/packages/pyforge-warden
       - pypi: https://files.pythonhosted.org/packages/47/15/7da7c0efa3ecfb2b69ef2283e17b93330109d618afe5c788b9bc81807da4/returns-0.28.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/8b/bb/96c99dfa9c08c43f8dc31e3385040a3e4dabbba791ed34ae018934653a3b/boring_semantic_layer-0.3.16-py3-none-any.whl
       win-64:
@@ -7949,7 +7949,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/win-64/zlib-1.3.2-hfd05255_3.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/zstd-1.5.7-h534d264_6.conda
       - conda_source: pyforge-atlas[f1974552] @ src/shared/packages/pyforge-atlas
-      - conda_source: pyforge-warden[e583fd39] @ src/shared/packages/pyforge-warden
+      - conda_source: pyforge-warden[25ded72a] @ src/shared/packages/pyforge-warden
       - pypi: https://files.pythonhosted.org/packages/47/15/7da7c0efa3ecfb2b69ef2283e17b93330109d618afe5c788b9bc81807da4/returns-0.28.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/8b/bb/96c99dfa9c08c43f8dc31e3385040a3e4dabbba791ed34ae018934653a3b/boring_semantic_layer-0.3.16-py3-none-any.whl
   pyforge-ci:
@@ -9558,7 +9558,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/unearth-0.18.2-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/urllib3-2.7.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/zipp-4.1.0-pyhcf101f3_0.conda
-      - conda_source: pyforge-warden[87f0f664] @ src/shared/packages/pyforge-warden
+      - conda_source: pyforge-warden[03e02573] @ src/shared/packages/pyforge-warden
       p1:
       - conda: https://conda.anaconda.org/conda-forge/noarch/_python_abi3_support-1.0-hd8ed1ab_3.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/annotated-types-0.8.0-pyhd8ed1ab_0.conda
@@ -9728,7 +9728,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/yaml-cpp-0.8.0-ha1acc90_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zstandard-0.25.0-py314h9d33bd4_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zstd-1.5.7-hbf9d68e_6.conda
-      - conda_source: pyforge-warden[99ad340e] @ src/shared/packages/pyforge-warden
+      - conda_source: pyforge-warden[1dfef3a8] @ src/shared/packages/pyforge-warden
       win-64:
       - conda: https://conda.anaconda.org/conda-forge/noarch/_python_abi3_support-1.0-hd8ed1ab_3.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/annotated-types-0.8.0-pyhd8ed1ab_0.conda
@@ -9886,7 +9886,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/win-64/yaml-cpp-0.8.0-he0c23c2_0.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/zstandard-0.25.0-py314hc5dbbe4_1.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/zstd-1.5.7-h534d264_6.conda
-      - conda_source: pyforge-warden[e583fd39] @ src/shared/packages/pyforge-warden
+      - conda_source: pyforge-warden[25ded72a] @ src/shared/packages/pyforge-warden
   vuln-db:
     channels:
     - url: https://conda.anaconda.org/conda-forge/
@@ -46059,7 +46059,7 @@ packages:
   - conda: https://conda.anaconda.org/conda-forge/win-64/vc14_runtime-14.51.36247-habf1de7_41.conda
   - conda: https://conda.anaconda.org/conda-forge/win-64/vcomp14-14.51.36247-habf1de7_41.conda
   - conda: https://conda.anaconda.org/conda-forge/win-64/zstd-1.5.7-h534d264_6.conda
-- conda_source: pyforge-warden[87f0f664] @ src/shared/packages/pyforge-warden
+- conda_source: pyforge-warden[03e02573] @ src/shared/packages/pyforge-warden
   variants:
     target_platform: noarch
   depends:
@@ -46071,6 +46071,7 @@ packages:
   - packaging
   - cyclonedx-python-lib
   - jsonschema
+  - packageurl-python
   - license-expression
   license: MIT
   host_packages:
@@ -46105,7 +46106,7 @@ packages:
   - conda: https://conda.anaconda.org/conda-forge/noarch/tomli-2.4.1-pyhcf101f3_0.conda
   - conda: https://conda.anaconda.org/conda-forge/noarch/trove-classifiers-2026.6.1.19-pyhcf101f3_0.conda
   - conda: https://conda.anaconda.org/conda-forge/noarch/tzdata-2026c-h151e31d_0.conda
-- conda_source: pyforge-warden[99ad340e] @ src/shared/packages/pyforge-warden
+- conda_source: pyforge-warden[1dfef3a8] @ src/shared/packages/pyforge-warden
   variants:
     target_platform: noarch
   depends:
@@ -46117,6 +46118,7 @@ packages:
   - packaging
   - cyclonedx-python-lib
   - jsonschema
+  - packageurl-python
   - license-expression
   license: MIT
   host_packages:
@@ -46146,7 +46148,7 @@ packages:
   - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tk-8.6.13-hd3d0363_3.conda
   - conda: https://conda.anaconda.org/conda-forge/osx-arm64/uv-0.12.0-h11277c2_0.conda
   - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zstd-1.5.7-hbf9d68e_6.conda
-- conda_source: pyforge-warden[e583fd39] @ src/shared/packages/pyforge-warden
+- conda_source: pyforge-warden[25ded72a] @ src/shared/packages/pyforge-warden
   variants:
     target_platform: noarch
   depends:
@@ -46158,6 +46160,7 @@ packages:
   - packaging
   - cyclonedx-python-lib
   - jsonschema
+  - packageurl-python
   - license-expression
   license: MIT
   host_packages:
