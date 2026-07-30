@@ -2,11 +2,315 @@
 import its package, read its policy file, or parse its output (AD-3) --
 enforced by an ``import-linter`` "forbidden" contract in ``pyproject.toml``.
 
+Story 1.10 (AD-10/AD-12/AD-35, FR-49/50/51) gives this module its first real
+job: rendering the harness's ``.bmad-loop/policy.toml`` from Marshal's own
+composed ``EffectivePolicy`` (Story 1.3, ``core/policy.py``). ``bmad-loop``
+0.9.0 hard-codes ``POLICY_FILE = .bmad-loop/policy.toml`` with no
+policy-path flag, and that file was git-tracked and hand-edited per loop
+home -- the F-1 cross-project bleed where one loop home's edit rode
+``git push origin HEAD:main`` onto every other project. ``render_policy_toml``
+and ``write_policy_toml`` close that hazard structurally: the file becomes a
+DERIVED artifact (AD-12) -- always rendered whole from the canonical
+policy, never patched or hand-edited, and (as of this story) gitignored so
+it can never again ride a commit onto another project.
+
+``_POLICY_TEMPLATE`` is a vendored, project-agnostic default ``policy.toml``
+covering every section of the installed ``bmad_loop`` 0.9.0 schema at stock
+defaults -- but deliberately NOT its every key: instance-local keys the
+harness itself persists into a live policy.toml (the ``[tui]``
+pane-geometry keys, the ``[mux].backend`` line written by
+``bmad-loop mux set``), reserved or per-profile knobs that fall back
+correctly when absent (``gates.on_escalation``, adapter/stage
+``usage_grace_s`` / ``stop_without_result_nudges`` / ``extra_args``), and
+dynamic per-plugin sub-tables are all omitted, and the harness applies its
+own default for any absent key. The template was verified once against the
+installed package's own ``policy.py`` (its
+dataclasses and its own ``POLICY_TEMPLATE`` constant) rather than imported
+at runtime -- importing ``bmad_loop`` is permitted by this module's own seam
+but not required by this story's ACs, and would force an unrelated root
+``pixi.lock`` re-solve (Story 1.9 owns declaring ``bmad-loop`` as a real
+dependency). Exactly 6 of its keys carry a hardcoded, evidence-based
+repo-wide override over ``bmad_loop``'s own stock default --
+``review.trigger``, ``scm.isolation``, ``scm.merge_strategy``,
+``scm.rollback_on_failure``, ``limits.session_timeout_min``, and the
+baseline ``[adapter].model``/``[adapter.review].model`` pair -- confirmed by
+diffing every live loop home's actual policy.toml against the stock
+defaults. Changing one of those 6 literal template constants means editing
+this constant, never a rendered file. That diffing exercise covered ONLY
+these 6 hardcoded literals -- it says nothing about whether any project's
+``EffectivePolicy`` composition actually supplies the per-project values
+(e.g. ``gate_mode``, ``max_followup_reviews``) a given live loop home is
+tuned to; establishing that project-policy source is a later story's job
+(no CLI wires this module's functions yet -- see below).
+
+``frozen_surfaces`` and ``merge_subject_template`` -- 2 of Marshal's 9
+composed policy keys -- are deliberately NOT rendered here: neither has a
+real ``bmad_loop`` policy.toml counterpart (confirmed against the installed
+0.9.0 schema -- no ``frozen`` key anywhere, and ``scm.commit_message_template``
+governs the per-story dev-session commit, not the landing merge subject,
+which ``bmad_loop`` hardcodes unconditionally). Both stay Marshal-internal,
+consumed by ``core/gate``/``core/identity`` in later stories, not by the
+harness.
+
 Reserved for a later story: this module does not yet resolve or invoke the
-harness. It exists this story only to declare the seam -- the one place a
-future story wires ``ports.HarnessPort`` to the real ``bmad_loop`` package
-(entry point ``bmad-loop = bmad_loop.cli:main``, confirmed via
-``recipes/bmad-loop/recipe.yaml``).
+``bmad-loop`` binary itself, or wire ``ports.HarnessPort`` to the real
+``bmad_loop`` package (entry point ``bmad-loop = bmad_loop.cli:main``,
+confirmed via ``recipes/bmad-loop/recipe.yaml``).
 """
 
 from __future__ import annotations
+
+import os
+import threading
+from pathlib import Path
+
+import tomlkit
+
+from ..core import policy
+
+# --- the vendored, project-agnostic harness policy template ----------------
+#
+# Covers every section of the installed bmad_loop 0.9.0 schema at its own
+# stock default (deliberately not every key -- the module docstring names
+# the omitted instance-local/reserved ones), EXCEPT the 6 named repo-wide
+# overrides called out inline below. The 6 keys Marshal's own EffectivePolicy owns (gates.mode,
+# limits.max_dev_attempts/.max_review_cycles/.max_followup_reviews,
+# verify.commands, scm.worktree_seed) carry a placeholder baseline here --
+# render_policy_toml() always overwrites them, so their template value never
+# reaches a caller.
+_POLICY_TEMPLATE = """\
+# bmad-loop orchestration policy -- the harness's own vocabulary (bmad_loop
+# 0.9.0). This file is a DERIVED artifact: Marshal renders it whole from the
+# canonical EffectivePolicy every time it is written. Never hand-edit it --
+# a per-project setting belongs in Marshal's own policy source, and a
+# repo-wide default belongs in this template (adapters/harness_bmadloop.py's
+# _POLICY_TEMPLATE), never in this rendered file. All keys optional; the
+# harness applies its own stock default for anything absent.
+
+[gates]
+mode = "per-epic"            # none | per-epic | per-story-spec-approval -- overwritten per render from EffectivePolicy
+retrospective = "notify"     # never | notify | auto (auto unsupported in v1)
+
+[limits]
+max_review_cycles = 3        # overwritten per render from EffectivePolicy
+max_dev_attempts = 2         # overwritten per render from EffectivePolicy
+max_followup_reviews = 1     # overwritten per render from EffectivePolicy
+session_timeout_min = 180    # repo-wide override (stock default: 90) -- keystone stories need the headroom
+git_timeout_s = 120
+teardown_grace_s = 20
+stop_without_result_nudges = 1
+dev_stall_grace_s = 600
+dev_stall_nudges = 2
+dev_stall_nudges_cap = 6
+workflow_stall_nudges_cap = 3
+max_tokens_per_story = 2000000
+cache_read_weight = 0.1
+session_budget_mode = "warn"  # off | warn | enforce
+max_tokens_per_session = 4000000
+session_budget_grace_s = 240
+
+[verify]
+commands = []                 # overwritten per render from EffectivePolicy
+
+[notify]
+desktop = true
+file = true
+
+[review]
+enabled = true
+# repo-wide override (stock default: "recommended") -- run the independent
+# second-opinion review on every story rather than only when a dev pass
+# self-recommends one.
+trigger = "always"            # recommended | always
+
+[stories]
+source = "sprint-status"      # sprint-status | stories
+spec_folder = ""
+
+[dev]
+skill = "bmad-dev-auto"
+
+[adapter]
+name = "claude"               # claude | codex | gemini | copilot | antigravity | opencode-http | <custom .bmad-loop/profiles/*.toml>
+model = "sonnet"               # repo-wide override (stock default: "" = CLI default model)
+cleanup_session_on_finish = true
+# extra_args replaces the profile's default permission-bypass flags when set:
+# extra_args = ["--permission-mode", "bypassPermissions"]
+
+# Per-stage overrides for the dev, review and sweep-triage passes. Unset
+# keys inherit from [adapter] when the stage runs the same client.
+# [adapter.dev] and [adapter.triage] are intentionally absent here -- FR-51
+# tier-batching writes a stage's table in only when that stage is present
+# in the resolved difficulty's model map; an absent stage inherits
+# [adapter].model.
+[adapter.review]
+model = "fable"                # repo-wide override -- review misses ship false-greens; strongest model where it pays
+
+[sweep]
+auto = "never"                 # never | per-epic | run-end
+max_bundles = 5
+max_triage_attempts = 2
+max_migration_attempts = 2
+repeat = false
+max_cycles = 5
+
+[cleanup]
+run_retention = 10
+retention_days = 0
+trim_artifacts = true
+archive_old = true
+auto_clean_on_finish = true
+clean_tmp = true
+
+[scm]
+isolation = "worktree"         # repo-wide override (stock default: "none") -- the per-story-branch workflow every loop home depends on
+branch_per = "story"           # story | run
+target_branch = ""
+merge_strategy = "squash"      # repo-wide override (stock default: "merge")
+delete_branch = true
+keep_failed = true
+rollback_on_failure = true     # repo-wide override (stock default: false)
+preserve_keep = 20
+failed_diff_max_mb = 5
+failed_diff_unlimited = false
+commit_message_template = ""
+max_parallel = 1
+seed_adapter_defaults = true
+worktree_seed = []             # overwritten per render from EffectivePolicy
+
+[plugins]
+enabled = []
+
+[tui]
+low_frame_rate = false
+
+[mux]
+# backend = "tmux"
+"""
+
+_ADAPTER_STAGES: tuple[str, ...] = ("dev", "review", "triage")
+
+
+def render_policy_toml(effective: policy.EffectivePolicy, *, difficulty: str | None = None) -> str:
+    """Pure string builder (no I/O): parse ``_POLICY_TEMPLATE``, overwrite
+    Marshal's 6 mapped keys from ``effective``, apply FR-51 tier-batching,
+    and return ``tomlkit.dumps(...)``. Identical ``(effective, difficulty)``
+    produces byte-identical output (AD-12/AD-35 "derived artifact"
+    discipline).
+
+    The 6 mapped keys: ``gate_mode`` -> ``[gates].mode``,
+    ``max_dev_attempts``/``max_review_cycles``/``max_followup_reviews`` ->
+    ``[limits]``'s same-named keys (all four SEED fields, read exclusively
+    via ``seed_view()`` per AD-26), ``verify_commands`` -> ``[verify].commands``,
+    ``worktree_seed_paths`` -> ``[scm].worktree_seed`` (both STATIC fields).
+    Seed fields carry the INITIAL composed values: during a live run the
+    operative value of a seed field (``gate_mode`` above all) comes solely
+    from the journal fold (AD-26), so a mid-run re-render reproduces
+    run-START state, never the live one.
+
+    FR-51 tier-batching: when ``difficulty`` is given and is a key of
+    ``effective.model_tier_map.value``, each of ``dev``/``review``/``triage``
+    present in that difficulty's stage map gets ``[adapter.<stage>].model``
+    set to the mapped model name; a stage absent from the map (or
+    ``difficulty`` being ``None``/unknown) keeps the template's baseline --
+    no override table is written for it. Never an error: resolving which
+    difficulty applies to a story/batch is a later story's concern.
+
+    Raises ``ValueError`` when ``max_dev_attempts`` or ``max_review_cycles``
+    is 0: Marshal's own composition permits 0, but ``bmad_loop`` 0.9.0
+    rejects either key < 1 at policy load, so rendering it would produce a
+    file that bricks the loop home's next run (``max_followup_reviews = 0``
+    is legal on both sides and renders fine). A plain exception, not an
+    ``MRS-*`` finding -- no CLI caller exists yet to convert one.
+    """
+    doc = tomlkit.parse(_POLICY_TEMPLATE)
+
+    seed = effective.seed_view()
+    # bmad_loop 0.9.0's load-time floor is stricter than Marshal's own
+    # composition for exactly these two keys (its loader raises PolicyError
+    # on limits.max_review_cycles/.max_dev_attempts < 1, while Marshal's
+    # _valid_attempt_count accepts 0; max_followup_reviews >= 0 is legal on
+    # both sides). Refuse at the projection boundary rather than write a
+    # file the harness rejects wholesale at next run start.
+    for key in ("max_dev_attempts", "max_review_cycles"):
+        if seed[key].value < 1:
+            raise ValueError(
+                f"cannot render policy.toml: {key}={seed[key].value}, but "
+                f"bmad-loop 0.9.0 rejects limits.{key} < 1 at policy load"
+            )
+    doc["gates"]["mode"] = seed["gate_mode"].value
+    doc["limits"]["max_dev_attempts"] = seed["max_dev_attempts"].value
+    doc["limits"]["max_review_cycles"] = seed["max_review_cycles"].value
+    doc["limits"]["max_followup_reviews"] = seed["max_followup_reviews"].value
+    doc["verify"]["commands"] = list(effective.verify_commands.value)
+    doc["scm"]["worktree_seed"] = list(effective.worktree_seed_paths.value)
+
+    tier_map = effective.model_tier_map.value
+    if difficulty is not None and difficulty in tier_map:
+        stage_models = tier_map[difficulty]
+        adapter_table = doc["adapter"]
+        for stage in _ADAPTER_STAGES:
+            if stage not in stage_models:
+                continue
+            if stage not in adapter_table:
+                adapter_table[stage] = tomlkit.table()
+            adapter_table[stage]["model"] = stage_models[stage]
+
+    return tomlkit.dumps(doc)
+
+
+class HarnessPolicyWriteError(Exception):
+    """Raised by ``write_policy_toml`` when the atomic write to
+    ``<loop_home>/.bmad-loop/policy.toml`` fails (an unwritable loop home, a
+    non-directory occupying ``.bmad-loop``, or any other ``OSError`` during
+    the temp-file-then-``os.replace`` sequence). No ``MRS-*`` finding code is
+    registered for this -- there is no CLI caller yet to convert an I/O
+    failure into a ``Finding`` (that is a later story's concern); a plain
+    exception is sufficient until one exists.
+    """
+
+
+def write_policy_toml(
+    effective: policy.EffectivePolicy, loop_home: Path, *, difficulty: str | None = None
+) -> Path:
+    """The I/O boundary: render via ``render_policy_toml`` and atomically
+    write ``<loop_home>/.bmad-loop/policy.toml`` whole, mirroring
+    ``cli/config.py::materialize``'s temp-file-then-``os.replace`` mechanics
+    -- MINUS its write-once/content-hash/no-op logic, since this artifact is
+    a fresh projection on every call, never content-addressed, never skipped.
+    Never reads an existing file at that path first: every call fully
+    replaces any prior content, including hand-edited or unrelated bytes.
+    Creates ``<loop_home>/.bmad-loop`` if it does not already exist. Any
+    ``OSError`` during the sequence is wrapped in ``HarnessPolicyWriteError``
+    rather than propagating raw.
+
+    Like ``cli/config.py::materialize``, THE CALLER owns the gate deciding
+    whether a given composition may be persisted at all (e.g. only
+    OK-status compositions) -- this function writes whatever
+    ``EffectivePolicy`` it is handed, subject only to
+    ``render_policy_toml``'s own attempt-count floor.
+    """
+    text = render_policy_toml(effective, difficulty=difficulty)
+    bmad_loop_dir = Path(loop_home) / ".bmad-loop"
+    try:
+        bmad_loop_dir.mkdir(parents=True, exist_ok=True)
+        target_path = bmad_loop_dir / "policy.toml"
+        # pid+thread-id suffixed, O_EXCL-guarded, no pre-unlink -- the same
+        # collision-safety reasoning as cli/config.py::materialize's own temp
+        # file (see that function's comment for the full rationale).
+        tmp_path = bmad_loop_dir / (
+            f".policy.toml.pid{os.getpid()}.t{threading.get_native_id()}.tmp"
+        )
+        fd = os.open(tmp_path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o666)
+        try:
+            with os.fdopen(fd, "wb") as handle:
+                handle.write(text.encode("utf-8"))
+            os.replace(tmp_path, target_path)
+        except BaseException:
+            tmp_path.unlink(missing_ok=True)
+            raise
+        return target_path
+    except OSError as exc:
+        raise HarnessPolicyWriteError(
+            f"cannot write policy.toml to {bmad_loop_dir}: {exc}"
+        ) from exc
