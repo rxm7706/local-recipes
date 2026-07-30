@@ -2800,7 +2800,7 @@ window.DASHBOARD_DATA = {
       }
     }
   },
-  "snapshot": "<span>2026-07-30 10:37 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-07-30 13:05 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -3175,7 +3175,7 @@ window.DASHBOARD_DATA = {
       "title": "Atlas — the intelligence layer an agent workforce can extend",
       "caps": 17,
       "companions": 4,
-      "updated": "2026-07-29",
+      "updated": "2026-07-30",
       "dream": "pyforge-atlas",
       "path": "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas"
     },
@@ -3335,7 +3335,7 @@ window.DASHBOARD_DATA = {
       "title": "factory console (program console + Dreamscape)",
       "caps": 4,
       "companions": 1,
-      "updated": "2026-07-29",
+      "updated": "2026-07-30",
       "dream": "factory-console",
       "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-factory-console"
     },
@@ -4190,8 +4190,8 @@ window.DASHBOARD_DATA = {
           "code": "07-25"
         },
         "backfilled": false,
-        "openQuestions": 1,
-        "overtaken": true,
+        "openQuestions": 0,
+        "overtaken": false,
         "na": [],
         "furthest": "code",
         "updated": "2026-07-30",
@@ -4220,8 +4220,8 @@ window.DASHBOARD_DATA = {
           "code": "07-26"
         },
         "backfilled": true,
-        "openQuestions": 1,
-        "overtaken": true,
+        "openQuestions": 0,
+        "overtaken": false,
         "na": [],
         "furthest": "code",
         "updated": "2026-07-30",
@@ -4280,8 +4280,8 @@ window.DASHBOARD_DATA = {
           "code": "07-17"
         },
         "backfilled": true,
-        "openQuestions": 6,
-        "overtaken": true,
+        "openQuestions": 0,
+        "overtaken": false,
         "na": [],
         "furthest": "code",
         "updated": "2026-07-30",
@@ -4430,8 +4430,8 @@ window.DASHBOARD_DATA = {
           "code": "07-17"
         },
         "backfilled": true,
-        "openQuestions": 6,
-        "overtaken": true,
+        "openQuestions": 0,
+        "overtaken": false,
         "na": [],
         "furthest": "code",
         "updated": "2026-07-30",
@@ -4460,8 +4460,8 @@ window.DASHBOARD_DATA = {
           "code": "07-17"
         },
         "backfilled": true,
-        "openQuestions": 6,
-        "overtaken": true,
+        "openQuestions": 0,
+        "overtaken": false,
         "na": [],
         "furthest": "code",
         "updated": "2026-07-30",
@@ -4500,8 +4500,8 @@ window.DASHBOARD_DATA = {
         "task": "llms-full-check",
         "guards": "library catalog freshness",
         "state": "drift",
-        "findings": 24,
-        "verdict": "DRIFT: 24 finding(s). Reconcile by regenerating the catalog (prompt in its header), then re-run.",
+        "findings": 27,
+        "verdict": "DRIFT: 27 finding(s). Reconcile by regenerating the catalog (prompt in its header), then re-run.",
         "runbook": ""
       }
     ],

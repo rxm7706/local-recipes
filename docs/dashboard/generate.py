@@ -1046,22 +1046,88 @@ def _pkg_version(slug: str) -> str:
     return m.group(1) if m else ""
 
 
-def _spec_open_questions(slug: str) -> int:
-    """Unresolved `open_questions[]` in this project's SPEC.md (0 when none)."""
-    for smd in sorted((REPO_ROOT / "_bmad-output" / "projects" / slug /
-                       "planning-artifacts" / "specs").glob("spec-*/SPEC.md")):
-        text = smd.read_text(encoding="utf-8")
-        if not text.startswith("---"):
+_FM_ITEM = re.compile(r"^( +)-\s+\S")
+
+
+def _strip_yaml_comment(value: str) -> str:
+    """Drop a trailing `# …` comment from a scalar, honouring quotes.
+
+    `open_questions: []   # all four resolved 2026-07-25` is the live shape in
+    spec-pyforge-atlas, and a naive reader calls that an unrecognised value and warns about
+    a file that is perfectly well-formed. A `#` inside quotes is content, not a comment.
+    """
+    quote = None
+    for i, ch in enumerate(value):
+        if quote:
+            if ch == quote:
+                quote = None
+        elif ch in "\"'":
+            quote = ch
+        elif ch == "#" and (i == 0 or value[i - 1].isspace()):
+            return value[:i].strip()
+    return value.strip()
+
+
+def _spec_open_questions(project: str, dream: str) -> int:
+    """Unresolved `open_questions[]` in THIS CHAIN's SPEC.md (0 when none).
+
+    CHAIN-scoped, matching the `spec` stage's `spec-{dream}/SPEC.md` rule — not
+    project-scoped. A project hosts many chains (Charter §5 as amended), so globbing
+    `spec-*/SPEC.md` and returning the first non-empty count credited one chain's
+    unanswered questions to a DIFFERENT chain's row. Measured before the fix: all five
+    `overtaken` badges named a chain whose own SPEC.md was clean — steward was wearing
+    `spec-enterprise-airgap`'s question, marshal `spec-agent-tool-surface`'s, and atlas +
+    unity-data-stack + wasm-analytics-stack were all wearing the same six from
+    `spec-upstream-discovery` — while those three chains, the only ones that really carry
+    open questions, have no Fleet row at all. The lookup was left project-keyed when the
+    rows themselves were converted to chain-keyed (see `scan_fleet`).
+
+    Parsed with stdlib rather than PyYAML deliberately. That lazy `import yaml` was this
+    generator's ONLY third-party import and it sat inside a blanket `except Exception`,
+    so on CI — which runs the generator on a bare `actions/setup-python` interpreter with
+    no PyYAML, the pixi env never being activated for that step — the import raised, the
+    except swallowed it, and the published board reported 0 open questions for all 13 rows
+    while the local board reported 5. A dependency that exists only locally is worse than
+    no dependency: it makes the two boards disagree with neither one erroring.
+    """
+    smd = (REPO_ROOT / "_bmad-output" / "projects" / project / "planning-artifacts" /
+           "specs" / f"spec-{dream}" / "SPEC.md")
+    if not smd.is_file():
+        return 0
+    lines = smd.read_text(encoding="utf-8").splitlines()
+    if not lines or lines[0].strip() != "---":
+        return 0
+    end = next((i for i in range(1, len(lines)) if lines[i].strip() == "---"), -1)
+    if end < 0:
+        print(f"[fleet] WARN {smd}: frontmatter is never closed — reporting 0")
+        return 0
+    fm = lines[1:end]
+    key = next((i for i, ln in enumerate(fm) if ln.startswith("open_questions:")), -1)
+    if key < 0:
+        return 0
+    inline = _strip_yaml_comment(fm[key].split(":", 1)[1])
+    if inline:
+        if not (inline.startswith("[") and inline.endswith("]")):
+            # Anything else (an anchor, a folded scalar) is a shape this reader does not
+            # understand. Say so — silently answering 0 is the defect being removed.
+            print(f"[fleet] WARN {smd}: unrecognised open_questions value {inline!r} "
+                  f"— reporting 0")
+            return 0
+        return len([x for x in inline[1:-1].split(",") if x.strip()])
+    # Block list. Count only items at the FIRST item's indent, so a wrapped continuation
+    # line and any nested list are not miscounted as questions of their own.
+    count, indent = 0, None
+    for ln in fm[key + 1:]:
+        if ln.strip() and not ln.startswith((" ", "\t")):
+            break  # the next top-level key ends the list
+        m = _FM_ITEM.match(ln)
+        if not m:
             continue
-        try:
-            import yaml
-            fm = yaml.safe_load(text.split("---")[1]) or {}
-        except Exception:
-            continue
-        q = fm.get("open_questions") or []
-        if q:
-            return len(q)
-    return 0
+        if indent is None:
+            indent = len(m.group(1))
+        if len(m.group(1)) == indent:
+            count += 1
+    return count
 
 
 def scan_fleet(projects: dict) -> dict:
@@ -1122,7 +1188,7 @@ def scan_fleet(projects: dict) -> dict:
         # already exists. bmad-spec emits open_questions[] by design for gaps the
         # Dream could not resolve; research/PRD are what resolve them. Non-empty
         # here + PRD + architecture present = downstream has overtaken the Spec.
-        open_q = _spec_open_questions(slug)
+        open_q = _spec_open_questions(slug, dream)
         overtaken = bool(open_q) and bool(stages["prd"]) and bool(stages["arch"])
         # `slug` identifies the CHAIN (the dream), not the hosting project — under
         # Charter §5 as amended several chains share one project, and keying rows by
