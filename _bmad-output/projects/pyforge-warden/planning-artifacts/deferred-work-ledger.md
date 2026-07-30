@@ -51,6 +51,8 @@ Durability first; curation is owned follow-up work.
   evidence: Run `20260716-043830-a9bb` (story `1-5-osv-scanner-as-the-second-engine`, 2026-07-16) — after `bmad-loop resume` completed the merge (`ce2ed97bc4`) and the worktree was torn down, the main checkout's `sprint-status.yaml` still read `1-5-osv-scanner-as-the-second-engine: backlog`, and the worktree's updated `deferred-work.md` (8682 bytes, one new section appended by the review session) plus the newly-authored `spec-1-5-osv-scanner-as-the-second-engine.md` (25308 bytes) were both gone — `.bmad-loop/archive/` had no copy for this run, and `trim_artifacts=true` had already removed `worktrees/`. All three were manually reconstructed from conversation context (the spec had been read in full during the pre-merge spec-approval review) rather than recovered from disk.
 
   status: open
+
+  verified: 2026-07-30 — CONFIRMED STILL OPEN at the orchestrator level. bmad-loop has moved 0.8.1 → 0.9.0 and still ships NONE of the three fixes this entry proposed: zero hits for `sync_back`/`copy_back`/`artifacts_back`/`reconcile_artifacts` across every module in `bmad_loop/`. `scm.worktree_seed` remains one-directional (`engine.py:595` `seeds.extend(scm.worktree_seed)` — copy IN only). What HAS changed is a local mitigation, not an orchestrator fix: each loop home now carries `_bmad-output/implementation-artifacts` as a symlink to `projects/pyforge-<slug>/implementation-artifacts` (verified on doctor, warden, herald and marshal). Note the symlink is NOT git-tracked (`git ls-files` returns nothing for it), so it cannot reach a fresh worktree by checkout — it depends on the seed. Scope limit on this check: no run worktrees currently exist (all pruned 2026-07-26), so this is verified by reading bmad-loop 0.9.0's code, not by reproducing the loss.
 ## Deferred from: code review of spec-1-1-frozen-contract-verdict-lattice-projection-safety (2026-07-13)
 
 - `status_driver.finding_id` has no referential integrity against `findings[]` (models.py:281) — a `policy-violation` report whose driver names a finding absent from `findings[]` validates at both the model and schema layers; blanket enforcement is not safely expressible in 1.1 because the error-driver grammar is owned by Story 1.7 and waiver-suppression semantics by Epic 3. Revisit when 1.7 lands the error-driver grammar.
@@ -76,7 +78,17 @@ Durability first; curation is owned follow-up work.
 - **RESOLVED (Story 5.2, 2026-07-24):** The 1.4 proof test establishes offline behavior by passing `--offline` and pointing at the fixture DB, but does NOT observe the osv-scanner subprocess's network (the in-process socket-deny harness cannot patch a child process) — a future osv that egressed under `--offline` (telemetry, transitive resolution) would pass silently; NFR-S2's central "never fetch silently" claim was trusted, not measured, for the subprocess.
   evidence: `conftest.py`'s socket-deny harness is in-process only (its own docstring notes engine subprocesses are outside it); nothing asserted zero connections occurred. Closed via the lighter "egress counter" alternative this item itself named: `tests/conformance/test_corpus_egress_counter.py` wraps the WHOLE `warden scan` process tree (CLI + every forked engine subprocess) in `strace -f -e trace=network` over the full 5.2 corpus, asserting 0 `connect`/`sendto` syscalls (Linux-only, skip-if-`strace`-unavailable — never a hard requirement elsewhere); live-verified green. Originally: source_spec `_bmad-output/projects/python-deptry-osv-scanner/implementation-artifacts/spec-1-4-osv-db-offline-provisioning-spike.md`, raised by the Blind Hunter (finding 7).
 
-  status: done (resolution recorded inline, date unknown)
+  status: open
+
+  verified: 2026-07-30 — STATUS CORRECTED `done` → `open`: this id carries TWO distinct
+  deferrals and the `done` came from the wrong one. The SECOND bullet (the osv-scanner
+  subprocess-egress gap) is genuinely resolved — `tests/conformance/test_corpus_egress_counter.py`
+  exists and wraps the process tree in `strace` (12 references). But the FIRST bullet, the one
+  the heading names, is UNTOUCHED: PEP-503 name-normalization against the offline DB is still
+  unexercised — zero hits for the underscore spelling `pdos_vuln_fixture` anywhere under
+  `tests/`, so only the literal pin `pdos-vuln-fixture==1.0.0` is still proven. Needs SPLITTING
+  into two ids; not renumbered here because 69 files cite scoped ids and renumbering breaks
+  them. Flagged for the ledger owner.
 ## Deferred from: code review of spec-1-5-osv-scanner-as-the-second-engine (2026-07-16, review pass)
 
 - `DefaultPolicy.evaluate` (interfaces.py, untouched by the 1.5 diff) unconditionally stamps every engine `ErrorRecord`'s rung driver with `axis=AXIS_VULNERABILITY` regardless of source engine/error kind — pre-existing since 1.2/1.3 (already true for `DeptryEngine`'s own hygiene-axis errors), already explicitly tracked in `interfaces.py`'s own docstring as owned by Story 1.7's error-grammar work; `OsvEngine`'s new errors merely ride the same known, pre-existing path. Owned by Story 1.7.
@@ -147,6 +159,8 @@ Durability first; curation is owned follow-up work.
 
   status: open
 
+  verified: 2026-07-30 — CONFIRMED STILL OPEN. The `lts` boolean is read nowhere in the package — zero hits for `.get("lts")`, `["lts"]` or `is_lts` across `src/pyforge/warden/*.py`; the only `lts`-shaped names are the gate flag `require_lts` (`cli.py:1069`/`:1088`, `config.py:430`/`:964`) and the registry filename. `CurrencyInfo` (`models.py:317-321`) still carries exactly `verdict`/`latest`/`lag`/`eol_date`/`tier` — no LTS signal — so `--require-lts` still cannot be evaluated from what this producer emits. Note Story 6.5 shipped the FLAG without the data behind it, which is the sharper form of the risk this entry raised.
+
 ## DW-6-3-7 — `currency:`/`license:` finding ids (`<axis>:<reason>:<name>@<version>`) carry no ecosystem discr…
 
 - source_spec: `_bmad-output/projects/pyforge-warden/implementation-artifacts/spec-6-3-currency-axis-producer-gate-flags.md`
@@ -155,6 +169,8 @@ Durability first; curation is owned follow-up work.
 
   status: open
 
+  verified: 2026-07-30 — CONFIRMED STILL OPEN on both axes. `currency.py:717` builds `id=f"currency:{reason}:{subject_segment}@{version_segment}"` and `license.py:764` builds `id=f"license:{reason_segment}:{name_segment}@{version_segment}"` — neither carries an ecosystem discriminator. Meanwhile `license.py:673-679` still dispatches on `component.ecosystem` (CONDA / PYPI / else), keeping the ecosystems distinct upstream of an id grammar that cannot express the distinction. The id-injectivity break is unchanged.
+
 ## DW-6-3-8 — The frozen 6.1 model invariant ("currency eol/over-lag finding requires non-null latest/lag/eol_…
 
 - source_spec: `_bmad-output/projects/pyforge-warden/implementation-artifacts/spec-6-3-currency-axis-producer-gate-flags.md`
@@ -162,6 +178,8 @@ Durability first; curation is owned follow-up work.
   evidence: Confirmed live this pass — implementing verdict=EOL/eol_date=None for `eol: true` turned the suite red at models.py:437 ("currency eol/over-lag finding requires non-null latest/lag/eol_date"); the 6.3 spec's Block-If forbids widening the frozen 6.1 schema, so `_resolve_from_cycles` now documents and degrades those shapes instead. Raised by the follow-up Edge Case Hunter pass (partially patched; remainder schema-blocked).
 
   status: open
+
+  verified: 2026-07-30 — CONFIRMED STILL OPEN — the frozen invariant is verbatim intact at `models.py:438`: 'currency eol/over-lag finding requires non-null latest/lag/eol_date'. No nullable `eol_date` variant and no dateless-EOL marker was added, so endoflife.date's boolean `eol: true` (already-EOL, no date published) still has no expressible shape and still degrades to `currency:unknown`. As the entry predicted, this remains unfixable under the no-schema-widening rule — it needs a deliberate schema amendment, not a story patch.
 ## Deferred from: second follow-up code review of spec-6-3-currency-axis-producer-gate-flags (2026-07-23, bmad-dev-auto review pass)
 
 ## DW-6-3-9 — `ComplianceReport.__post_init__`'s duplicate-finding-id invariant turns ANY producer-side id col…
@@ -171,12 +189,16 @@ Durability first; curation is owned follow-up work.
   evidence: Live-reproduced pre-patch this pass — a project with pyproject.toml + pixi.toml both declaring `mystery-pkg==1.0.0` (an ordinary dual-manifest shape) crashed `scan` end-to-end: `merge_components` keeps `(ecosystem, name, version)` identities distinct, currency resolution is ecosystem-agnostic, both components minted `currency:unknown:mystery-pkg@1.0.0`, and models.py's uniqueness check raised straight through to the internal-error exit with no report. Post-patch the same project emits a full report with one deduped finding (verified live). license.py:638's per-ecosystem dispatch leaves the narrower license-side collision reachable (e.g. conda recipe metadata + pypi metadata both unresolved at the same name+version). Raised by the second-pass Blind Hunter.
 
   status: open
+
+  verified: 2026-07-30 — CONFIRMED STILL OPEN, exactly as split. The hard-crash posture is unchanged: `models.py:650-655` still raises `ValueError` — 'finding ids must be unique (waiver matching and by-id consumers depend on it)' — and `assemble_report` (`report.py:208`) still runs outside the engine seam, so it still falls through to the internal-error exit with no report. The currency half stays patched: `currency.py:854-869` dedupes in-producer (`deduped: dict[str, Finding]`, `deduped.setdefault(finding.id, finding)`). The license half is still unguarded — `license.py` has NO finding-id dedup (its only 'deduplicated' at `:592` is SPDX-classifier ids, a different thing) while `:673-679` still dispatches per-ecosystem, so colliding `license:unknown:<pkg>@<ver>` ids across conda+pypi remain reachable.
 ### DW-FU-6-3: Follow-up review still recommended for 6-3-currency-axis-producer-gate-flags after the damping cap was spent
 origin: review-budget-followup
 source_spec: `spec-6-3-currency-axis-producer-gate-flags.md`
 severity: low
 reason: The follow-up-review damping cap (limits.max_followup_reviews = 1) was spent with the story finalized (status: done, verify green) while the review pass still recommended an independent follow-up. The work was committed by bmad-loop run 20260723-184834-a653; this entry preserves the lingering recommendation for a deliberate later review.
 status: open
+
+verified: 2026-07-30 — CONFIRMED STILL OPEN — the recommended independent follow-up review never happened. `_bmad-output/projects/pyforge-warden/planning-artifacts/` holds one adversarial review (`adversarial-review-pyforge-warden-spec-2026-07-15.md`, which predates this 2026-07-23 story) and five implementation-readiness reports, none covering `6-3-currency-axis-producer-gate-flags`. Grepping the whole planning-artifacts tree for that story slug matches only `sprint-status-ledger.yaml` and this ledger — no review artifact exists. Standing note: the four 6-3-* entries verified alongside this one are themselves the unreviewed residue.
 
 ## Deferred from: code review of spec-6-5-two-mode-policy-integration (2026-07-24, Blind Hunter + Edge Case Hunter, Opus)
 
@@ -208,6 +230,8 @@ status: open
   evidence: `engines.CurrencyEngine.run` sets `deps_assessed=inventory.count` unconditionally before the gated `currency_stale_finding` append; `_kev_enrichment` is the shipped precedent 6.5 was contractually required to mirror ("exactly as `_kev_enrichment` gates on `fail_on_kev`"). Raised by the Blind Hunter review pass; internally coherent with 6.4, but 6.5 is the story that made the dissonance reachable on a second axis.
 
   status: open
+
+  verified: 2026-07-30 — CONFIRMED STILL OPEN, and the ordering the entry describes is visible in one screen. `engines.py:1850-1857` appends `currency_stale_finding(unavailable=currency_data is None)` under the gate, and the coverage block immediately after at `:1863` still sets `deps_assessed=inventory.count` unconditionally — so the same `EngineResult` reports 100% assessed alongside the whole-axis `indeterminate` provenance finding. The 6.4 mirror is intact too (`LicenseEngine` at `:1804` has the identical shape), so this is still the cross-axis coverage-semantics decision the entry called for, not a currency-local fix.
 ## Deferred from: code review of spec-6-7-epss-feed-the-min-epss-gate (2026-07-24, Blind Hunter + Edge Case Hunter)
 
 ## DW-6-7-1 — `OsvParse.kev_candidates` (the finding.id -> CVE-alias-tuple mapping populated at OSV-parse time…
@@ -239,6 +263,8 @@ status: open
 
   status: open
 
+  verified: 2026-07-30 — CONFIRMED STILL OPEN on all three counts. (1) Pretty-printing unchanged: `feeds.py:249`, `:318` and `:406` all still call `json.dump(document, fh, indent=2, sort_keys=True)` — the EPSS copy at `:406` still mirrors KEV's shape verbatim. (2) No memoization: `load_epss_scores` (`feeds.py:334`) still does a whole-file `path.read_text()` then `json.loads(raw)`, and `engines.py:1212` still calls it per-run with no `lru_cache`/`@cache` anywhere in `engines.py` or `feeds.py`. (3) The refresh script still holds all four buffers live: `scripts/refresh_epss_feed.py:80` `raw_gzip = response.read()`, `:82` `gzip.decompress(raw_gzip).decode("utf-8")`, `:92` `raw_csv.splitlines()`. One change since authoring, and it cuts the wrong way: a review added a per-entry finite/`[0,1]` domain filter inside `load_epss_scores`, so every one of the ~290k entries now costs slightly MORE per load, not less.
+
 ## DW-6-7-4 — The `feeds.py` atomic-write shape now carries FOUR copies of a latent double-close: if `json.dum…
 
 - source_spec: `_bmad-output/projects/pyforge-warden/implementation-artifacts/spec-6-7-epss-feed-the-min-epss-gate.md`
@@ -256,6 +282,8 @@ status: open
   evidence: `grep -l "def run_scan" tests/conformance/` matches test_scan_harness.py, test_kev_enrichment.py, and test_epss_enrichment.py; `def load_schema` additionally in test_report_schema.py; Story 6.7's file re-copies were spec-directed ("mirrors test_kev_enrichment.py's 10-test structure"). Raised by the follow-up Blind Hunter pass (maintainability, not behavior).
 
   status: open
+
+  verified: 2026-07-30 — CONFIRMED STILL OPEN and MEASURABLY WORSE — the duplication roughly doubled while the prescribed fix was never started. There is still no `tests/conformance/conftest.py` (file does not exist). Counted by hand today vs the entry's own figures: `def run_scan` 3 → **5** files (adds `test_engine_parallelism.py`, `test_fix_pr_actuator.py`); `def parse_report` 3 → **6** (adds those two plus `test_dogfood.py`); `def load_schema` 4 → **8** (adds `test_engine_parallelism.py`, `test_fix_pr_actuator.py`, `test_baseline_grandfathering.py`, `test_dogfood.py`). `_osv_scanner_bin` sits in 4 files and `_load_osv_builder` in 2. A schema-path or CLI-invocation change now needs EIGHT synchronized edits, not four.
 ## Deferred from: code review of spec-6-8-baseline-grandfathering (2026-07-24, bmad-dev-auto review pass)
 
 ## DW-6-8-1 — `architecture.md`'s "Project Structure" tree (§ around the `waiver.py`/`report.py`/`verdict.py`…
@@ -265,6 +293,8 @@ status: open
   evidence: `_bmad-output/planning-artifacts/architecture.md`'s "Project Structure" tree (the block containing `waiver.py               # FR24-26 — .yaml read (safe_load) + --bypass stanza (safe_dump)`) has no sibling entries for any Epic 6 module; the separate "Module structure" list a few hundred lines earlier in the same file DOES track them (and was corrected by this review pass for the baseline/waiver consolidation). Raised by the Blind Hunter review pass (documentation drift, not a code defect).
 
   status: open
+
+  verified: 2026-07-30 — CONFIRMED STILL OPEN, decisively — the tree is unchanged. `planning-artifacts/architecture/architecture-pyforge-warden-2026-07-14/architecture.md:265-300` still lists `waiver.py` with the exact stale comment this entry quoted ('# FR24-26 — .yaml read (safe_load) + --bypass stanza (safe_dump)', no FR39 baseline mention) and carries NO entry for `license.py`, `currency.py`, `feeds.py` or `actuator.py`. The entry's distinction also still holds: those modules DO appear elsewhere in the same file (the 'Module structure' list — license.py ×1, currency.py ×1, feeds.py ×6, actuator.py ×2), just never in the Project Structure tree. Note `:238` declares that tree 'authoritative' where the two disagree, so the stale copy is the one that wins.
 ## Deferred from: follow-up code review of spec-6-8-baseline-grandfathering (2026-07-24, bmad-dev-auto follow-up review pass)
 
 ## DW-6-8-2 — `--baseline-emit` stamps every proposed entry with `expires_at = now + waiver_default_expiry_day…
@@ -295,6 +325,8 @@ status: open
 
   status: open
 
+  verified: 2026-07-30 — CONFIRMED STILL OPEN, and both halves of the self-contradiction are still in the file verbatim. `data/report-schema.json:150` still reads 'Story 6.1 populates only the waiver half; absent/[] on a scan with no applied waivers.' while `:551` already says '(Story 6.1 wires the waiver half; Story 6.8 the baseline half)'. Still a one-string fix awaiting a story permitted to touch the schema file.
+
 ## DW-6-8-5 — `load_waivers` still parses with plain `yaml.safe_load`, which silently keeps the LAST of two du…
 
 - source_spec: `_bmad-output/projects/pyforge-warden/implementation-artifacts/spec-6-8-baseline-grandfathering.md`
@@ -313,6 +345,8 @@ status: open
   evidence: `hygiene.py:543` sets `subject=module` (the raw deptry-reported import name); the module's own docstring (lines ~17-22) already documents that a module name is "not a distribution name" and cites real examples (PyYAML→yaml, beautifulsoup4→bs4, Pillow→PIL, scikit-learn→sklearn). Raised by the Blind Hunter review pass.
   status: open
 
+  verified: 2026-07-30 — CONFIRMED STILL OPEN — `hygiene.py:543` still sets `subject=module` (deptry's raw import name). No import-name→distribution correlation table was added, so the manifest-location clause is still silently omitted for hygiene findings.
+
 ## DW-5-1-2 — `--doctor` silently no-ops every other `scan` flag it's combined with (`--sbom-output`, `--basel…
 
 - source_spec: `_bmad-output/projects/pyforge-warden/implementation-artifacts/spec-5-1-actionable-diagnostics-safe-by-default-posture.md`
@@ -328,12 +362,16 @@ status: open
   evidence: `report.py`'s `_remediation_line` vuln branch splits `finding["id"]` to recover the advisory-id display segment; `vuln.py`'s `_sanitize_id_segment` (via `interfaces._sanitize_id_segment`) already ran on that segment when the id was built. Raised by the Blind Hunter review pass.
   status: open
 
+  verified: 2026-07-30 — CONFIRMED STILL OPEN, and the pattern has spread. `report.py:619` still recovers the advisory id with `_, advisory_id, _ = finding_id.split(":", 2)` on the already-percent-escaped segment. Three sibling branches now do the same re-split — `:638` (code), `:657` and `:680` (reason) — so a reverse-unescape fix would have four call sites, not one. Still practically unreachable for real GHSA-/CVE-/PYSEC- ids.
+
 ## DW-5-1-4 — `tests/conftest.py`'s comment describing the ambient offline OSV DB fixture still claims "its ON…
 
 - source_spec: `_bmad-output/projects/pyforge-warden/implementation-artifacts/spec-5-1-actionable-diagnostics-safe-by-default-posture.md`
   summary: `tests/conftest.py`'s comment describing the ambient offline OSV DB fixture still claims "its ONE seeded advisory (`PDOS-FIXTURE-0001`, package `pdos-vuln-fixture`)" — already stale before this story (a `PDOS-FIXTURE-0002` record already existed), and this story's own new `PDOS-FIXTURE-0003` fixture (added for fixed-version extraction coverage) compounds the inaccuracy further. Pre-existing documentation drift, not caused by this story; a one-line comment fix whenever `conftest.py` is next touched.
   evidence: `tests/conftest.py` (~line 277-279) vs `tests/fixtures/osv-db/pypi/` containing `PDOS-FIXTURE-0001.json`, `PDOS-FIXTURE-0002.json`, and (as of this story) `PDOS-FIXTURE-0003.json`. Raised by the Blind Hunter review pass.
   status: open
+
+  verified: 2026-07-30 — CONFIRMED STILL OPEN and now understated by one more fixture than when written. `tests/conftest.py:278` still claims the single '(`PDOS-FIXTURE-0001`, package `pdos-vuln-fixture`)', while `tests/fixtures/osv-db/pypi/` holds FOUR records: `PDOS-FIXTURE-0001.json`, `-0002.json`, `-0003.json` and `PDOS-KEV-FIXTURE-0001.json` — the KEV fixture landed after this entry was authored.
 
 ## DW-5-1-5 — The literal argv `["deptry", "--version"]` / `["osv-scanner", "--version"]` now exists independe…
 
@@ -361,6 +399,8 @@ status: open
   evidence: `cli.py`'s `manifest_locations` build unions `component.provenance` per canonicalized name with no version key; `inventory.py` documents that distinct versions of one name stay distinct components, each with its own provenance. Raised by the follow-up Blind Hunter pass.
 
   status: open
+
+  verified: 2026-07-30 — CONFIRMED STILL OPEN — `cli.py:1268-1282` still builds `manifest_locations` with no version component: `keys = [_canonical_subject_key(component.name)]` (`:1277`), optionally plus the pypi identity (`:1279`), then unions provenance on collision (`:1281-1282`). A version-bearing finding still renders every same-named component's manifests, including those declaring only the non-vulnerable version.
 ## Deferred from: second follow-up code review of spec-5-1-actionable-diagnostics-safe-by-default-posture (2026-07-24, bmad-dev-auto third review pass)
 
 ## DW-5-1-8 — The `manifest_locations` lookup applies PEP-503 canonicalization (`_canonical_subject_key`) to E…
@@ -370,12 +410,16 @@ status: open
   evidence: `cli.py`'s `manifest_locations` build canonicalizes `component.name` unconditionally (`keys = [_canonical_subject_key(component.name)]`) and unions provenance on key collision; `report._canonical_subject_key`'s own docstring justification ("two spellings that collapse together ARE the same PyPI package") holds only for PyPI-namespace names, while the dict is also keyed by conda-native `component.name` for conda/pixi-sourced components. Raised independently by both the Blind Hunter and Edge Case Hunter of the third review pass.
 
   status: open
+
+  verified: 2026-07-30 — CONFIRMED STILL OPEN — same code block, the other defect. `cli.py:1277` still applies `_canonical_subject_key(component.name)` unconditionally, with no exact-match-first tier, so conda separator-twins (`importlib-metadata` vs `importlib_metadata` — genuinely distinct conda-forge packages) still collapse to one key and can cross-name each other's manifests.
 ### DW-FU-5-1: Follow-up review still recommended for 5-1-actionable-diagnostics-safe-by-default-posture after the damping cap was spent
 origin: review-budget-followup
 source_spec: `spec-5-1-actionable-diagnostics-safe-by-default-posture.md`
 severity: low
 reason: The follow-up-review damping cap (limits.max_followup_reviews = 1) was spent with the story finalized (status: done, verify green) while the review pass still recommended an independent follow-up. The work was committed by bmad-loop run 20260724-162245-3440; this entry preserves the lingering recommendation for a deliberate later review.
 status: open
+
+verified: 2026-07-30 — CONFIRMED STILL OPEN — same as its 6-3 twin, and by the same measurement. No review artifact for `5-1-actionable-diagnostics-safe-by-default-posture` exists anywhere in `planning-artifacts/`; the story slug matches only `sprint-status-ledger.yaml` and this ledger. The damping cap spent its one follow-up and the recommendation has sat unactioned since 2026-07-24.
 
 ## Deferred from: code review of spec-5-2-fleet-scale-validation-corpus-oracle-maturation (2026-07-24, bmad-dev-auto review pass)
 
@@ -386,12 +430,16 @@ status: open
   evidence: `concurrent.futures.Executor.__exit__` hardcodes `self.shutdown(wait=True)`, not parameterizable via the context-manager form; fixing this correctly needs manual `pool.shutdown(wait=False, cancel_futures=True)` handling in an except-path around `future.result()`, which touches interrupt-sensitive code (this project already has an explicit top-level `except KeyboardInterrupt`/exit-130 contract in `main()`) — a deliberate, focused change rather than a same-pass patch. Raised independently by both the Blind Hunter and Edge Case Hunter of the Story 5.2 review pass.
   status: open
 
+  verified: 2026-07-30 — CONFIRMED STILL OPEN — `cli.py:1345` still uses the context-manager form `with ThreadPoolExecutor(max_workers=len(engines_to_run)) as pool:`, whose `__exit__` hardcodes `shutdown(wait=True)`. Zero occurrences of `cancel_futures` or an explicit `pool.shutdown(` anywhere in `cli.py`, so the SIGINT-latency behaviour is exactly as described.
+
 ## DW-5-2-2 — `test_extraction_oracle.py`'s corpus-scale comparison excludes any manifest whose raw text match…
 
 - source_spec: `_bmad-output/projects/pyforge-warden/implementation-artifacts/spec-5-2-fleet-scale-validation-corpus-oracle-maturation.md`
   summary: `test_extraction_oracle.py`'s corpus-scale comparison excludes any manifest whose raw text matches `_EXCLUDED_CONSTRUCT_RE` (`compiler(`/`stdlib(`/`pin_subpackage(`) via a plain substring search over the WHOLE file, not parsed structure — a file that merely mentions one of those strings in a comment or a string literal (e.g. an `about.summary` describing "wraps stdlib(json)") is needlessly excluded from the strict per-file comparison, silently and unmeasurably reducing oracle coverage.
   evidence: `_EXCLUDED_CONSTRUCT_RE.search(text)` runs against the full file text read from disk, not against parsed YAML values; conservative in direction (under-compares rather than mis-compares) so it is safety-neutral, not a correctness bug, but a structural (AST-aware) exclusion would be more precise. Raised by the Blind Hunter of the Story 5.2 review pass.
   status: open
+
+  verified: 2026-07-30 — CONFIRMED STILL OPEN, at two call sites rather than the one implied. `tests/conformance/test_extraction_oracle.py:87` still defines `_EXCLUDED_CONSTRUCT_RE = re.compile(r"compiler\(|stdlib\(|pin_subpackage\(")` and it is still applied as a raw-text `.search(text)` over the whole file at BOTH `:424` and `:480`. No AST-aware exclusion was introduced.
 
 ## DW-5-2-3 — `scripts/harvest_corpus.py`'s `write_sources_md` hardcodes the 3-bullet "Hand-authored" descript…
 
@@ -446,3 +494,5 @@ status: open
   mitigations shipped: (1) `--frozen` on every build line's `[verify]`; (2) loop homes relocated to a short root `~/.bmad-loops/<slug>` via `scripts/bmad-loop-worktree` (`BMAD_LOOP_HOME_ROOT` overrides) — worst-case workDirectory 238 → 192 chars; (3) new-environment lock bootstrap from the short main checkout before a loop line runs frozen.
   related hazard: a *successful* unfrozen re-solve inside a worktree rewrites `pixi.lock` with worktree-absolute `file://` channel paths — toxic to commit via the loop's `git add -A`. Also in the report.
   status: open
+
+  verified: 2026-07-30 — CONFIRMED STILL OPEN — the panicking version is still the one pinned. `pixi.lock` resolves `pixi-build-python-0.8.3` on all three platforms (`:3483` linux-64, `:5205` osx-arm64, `:6302` win-64); no bump past the `tools.rs:461` underflow has landed. As with doctor's DW-1-1-2 the trigger is mitigated by the fleet's move to `~/.bmad-loops/` (157–159 char worktree roots vs the ~173 threshold), but the underlying panic is untouched.

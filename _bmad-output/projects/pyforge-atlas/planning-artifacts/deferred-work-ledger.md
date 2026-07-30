@@ -3,7 +3,7 @@ doc_type: deferred-work-ledger
 project: pyforge-atlas
 date: 2026-07-29
 status: restored
-entries: 55
+entries: 57
 ---
 
 # pyforge-atlas — deferred-work ledger (RESTORED, tracked)
@@ -13,10 +13,17 @@ ledger is complete.** The run log's index of "54" double-counted two aliases; se
 § Provenance.
 
 The frontmatter `entries` count is the number of `## DW-` headings in this file and so
-runs ahead of that 52 as post-restore work lands: **55** today = the 52 restored + `DW-I4-1`
+runs ahead of that 52 as post-restore work lands: **57** today = the 52 restored + `DW-I4-1`
 (promoted 2026-07-29 out of the gitignored Tier-3 ledger) + `DW-AD23-1` and `DW-AD23-2`
 (Story 10.6, same date — the first *defining* an id that eight artifacts had been citing
-with no entry behind it).
+with no entry behind it) + `DW-I5-1` (the 10.6 review-budget follow-up, promoted the same
+day) + `DW-AD23-3` (the lock-store default, found by the pass `DW-I5-1` owed; closed
+2026-07-30 by PR #140).
+
+*(The count read `55` until 2026-07-30, when the verification campaign recounted the
+headings and found 57 — the two Story-10.6 follow-ups had been added without re-stamping
+it. Stale counts in a file that declares its own counting rule are exactly what the
+campaign exists to catch.)*
 
 ## Why this file exists
 
@@ -67,7 +74,9 @@ Per CLAUDE.md sync loop / SYNC-RUNBOOK: run the local-recipes reconciler pass
 `pixi run -e local-recipes bmad-drift-check -- --write-baseline`.
 Non-blocking (integrity clean); owed before the next local-recipes doc-sync PR.
 
-  status: open
+  status: done 2026-07-30
+
+  verified: 2026-07-30 — RESOLVED — `bmad-drift-check` no longer reports the `surface-changed` finding this entry was raised for. A live run today ends 'OK: all tracked BMAD artifacts are in sync with the live factory MINOR', with only two INFO `pin-behind` notes (implementation-readiness-report and validation-report-PRD pinned v8.79.0 < live v8.81.0 — a different, non-blocking class). The doc re-sync and baseline re-stamp this entry owed were absorbed by later sync passes.
 ## DW-B1-1 — parity-diff harness under-checks (HIGH, B4 must resolve before it trusts parity)
 
 Independent B1 follow-up review (2026-07-17) found two harness weaknesses that manufacture false confidence:
@@ -76,16 +85,22 @@ Independent B1 follow-up review (2026-07-17) found two harness weaknesses that m
 Owner: B4 (parity gate). The must-fix `downloads_source='merged'` bug this review found was itself endorsed by an unfixed fixture — proof the harness needs recapture.
 
   status: open
+
+  verified: 2026-07-30 — PARTIALLY RESOLVED — part (b) is DONE, part (a) is untouched, so the entry stays open on (a). (b) FIXED: `tests/parity/harness.py:220-223` now carries the tightened diff and names this entry — 'B4 (DW-B1-1 part b): the TIGHTENED diff — column-SET equality both […] that let a spurious column or an int64->float64 regression pass silently'. (a) NOT fixed: every fixture still carries `"provenance": "shape-only-seed-B2-needs-B4-recapture"` (checked across `tests/parity/fixtures/pypi_intelligence/` and `vulnerability/`). So the harness now checks properly, but it still checks against hand-authored seeds — a green `parity-diff` is still NOT legacy parity, exactly as the entry warned.
 ## DW-B1-2 — RateLimitedScheduler not yet wired to the fetch path (MEDIUM, B2/live-fetch)
 
 `_RequestParameterizedAPIDataset.load()` calls `self._inner.load()` but never `self.scheduler.acquire()` — the token bucket is real but enforced on nothing in B1 (fan-out is documented-deferred). Wire `acquire()` into the live request path when B2/live fetch lands. Also document the scheduler's fake-clock coupling (a frozen clock + no-op sleep makes acquire() infinite-spin) so a future fixture doesn't hang.
 
-  status: open
+  status: done 2026-07-30
+
+  verified: 2026-07-30 — RESOLVED — the token bucket is now enforced on the real path. `datasets/request_datasets.py:109` and `:120` both call `self.scheduler.acquire()`, and `:54` records the fix in the past tense ('but ``load()`` never called ``self.scheduler.acquire()``'). The scheduler is constructed at `:91` with a real default (`RateLimitedScheduler(rps=rps)`), and `datasets/rate_limit.py:246` is the acquire implementation. The entry's core complaint — 'the token bucket is real but enforced on nothing' — no longer holds.
 ## DW-B1-3 — enumerate_conda_packages tie-break + B.5 inactive placeholder rows (LOW/MEDIUM, B4 parity)
 
 (a) enumerate_conda_packages uses non-stable sort before groupby-last → arbitrary winner on duplicate-timestamp builds (latent parity risk vs legacy's defined tie-break). (b) Legacy phase_b5 also inserts inactive placeholder rows (relationship='conda_only', latest_status='inactive') for feedstock-outputs entries absent from repodata; the port's attribute_feedstocks omits them — changes downstream v_actionable population. Both are B4 parity-reconcile items.
 
   status: open
+
+  verified: 2026-07-30 — CONFIRMED STILL OPEN by its gate rather than by its code. Both halves are explicitly B4 parity-reconcile items, and B4's credentialed run has not happened (see DW-B4-1 / DW-B4-5, both still open, and `parity/evidence.py:51` `human_sign_off: str | None = None`). SCOPE LIMIT, stated rather than glossed: I could not locate an `enumerate_conda_packages` sort/groupby site to check the tie-break directly in `pipelines/core/nodes.py`, so the (a) half is verified as un-reconciled, not as un-fixed. The reconciliation itself provably has not run.
 ## DW-B2-1 — DAG-level persistence of operator notes edited on the SCORED output (MEDIUM, persistence boundary)
 
 - source_spec: `_bmad-output/projects/pyforge-atlas/implementation-artifacts/b2-port-the-pypi-and-vulnerability-pipelines.md`
@@ -93,6 +108,8 @@ Owner: B4 (parity gate). The must-fix `downloads_source='merged'` bug this revie
   evidence: `score_pypi_readiness` passes `prior_scored=None` and `pipeline.py` wires only `pypi_intelligence_enriched`; a notes-merging persistence boundary (custom dataset OR a prior-read alias) would satisfy the scored-output-edit case, but that exceeds B2's bounded catalog scope (Task 7: only the 2 FLIPs + conftest edit). Owner: the persistence-boundary story (B4/B5). Adversarial-review (Blind Hunter) 2026-07-17.
 
   status: open
+
+  verified: 2026-07-30 — CONFIRMED STILL OPEN — the seam is unchanged. `pipelines/pypi_intelligence/nodes.py:547` still signs `prior_scored: pd.DataFrame | None = None` (the single-package helper path), and `:562` guards on `prior_scored is not None`. No full-DAG notes-merging persistence boundary was wired, so an operator note edited directly on the persisted `pypi_intelligence_scored` output still does not survive.
 ## DW-B2-2 — coerce_cvss_score not on the B2 node data path until B5 wires the vdb boundary (LOW, B5)
 
 - source_spec: `_bmad-output/projects/pyforge-atlas/implementation-artifacts/b2-port-the-pypi-and-vulnerability-pipelines.md`
@@ -100,6 +117,8 @@ Owner: B4 (parity gate). The must-fix `downloads_source='merged'` bug this revie
   evidence: G-3 scoping (B2 consumes the interim vdb PATH; B5 lands the read-only VDB dataset class that parses+coerces). Acceptable under scope; note for B5 to wire `coerce_cvss_score` at its dataset boundary. Adversarial-review (Blind Hunter) 2026-07-17.
 
   status: open
+
+  verified: 2026-07-30 — CONFIRMED STILL OPEN — `coerce_cvss_score` exists and is exported (`datasets/vdb_boundary.py`, re-exported at `datasets/__init__.py:56` and listed in `__all__` at `:82`) but has ZERO occurrences anywhere under `pipelines/`, so it is still not on the B2 node data path. B5's vdb dataset boundary never wired it.
 ## DW-B2-3 — vuln_kev_affecting_current in the report-only rollup is package-wide, not version-scoped (LOW, report-only)
 
 - source_spec: `_bmad-output/projects/pyforge-atlas/implementation-artifacts/b2-port-the-pypi-and-vulnerability-pipelines.md`
@@ -107,6 +126,8 @@ Owner: B4 (parity gate). The must-fix `downloads_source='merged'` bug this revie
   evidence: the rollup is REPORT-ONLY (AC-2) and documented in code as such; the version-accurate KEV-affecting-current is `v_current_version_vulns` (backed by `per_version_vulns`). Low impact; verify against legacy CFA:3854 scoping at B4 parity. Adversarial-review (Blind Hunter) 2026-07-17.
 
   status: open
+
+  verified: 2026-07-30 — CONFIRMED STILL OPEN — `pipelines/vulnerability/nodes.py:200` still describes the rollup as 'in the KEV set (KEV-affecting, matching Phase G's ``vuln_kev_affecting_current``)', with the same package-wide framing at `:12`. No version scoping was added, and the legacy CFA:3854 comparison it needs is gated on the unrun credentialed parity run.
 ## DW-B2-4 — Phase P cost-gate class not yet wired into the catalog (B3/B4 pre-flight, MEDIUM)
 
 Independent B2 follow-up review (2026-07-17): `BigQueryDownloadsDataset` (the two-layer
@@ -122,6 +143,8 @@ Phase-P run** so the gate actually guards the live query. Owner: B3 (MCP/credent
 surface) or B4 (parity).
 
   status: open
+
+  verified: 2026-07-30 — CONFIRMED STILL OPEN — the catalog routing is unchanged. `conf/base/catalog.yml:198-201` still resolves `pypi_bigquery_downloads_raw` to `type: api.APIDataset` against `${globals:extra_overrides.BIGQUERY_BASE_URL}/projects` with `credentials: bigquery_adc`. `BigQueryDownloadsDataset` — the two-layer cost gate — is still not the catalog target, so a credentialed Phase-P run would still fetch with no cost gate.
 ## DW-B2-5 — pypi_intelligence pipeline not end-to-end runnable unattended (by design, note-only)
 
 `pypi_json_raw` → `PyPIJsonRequestDataset.load()` raises (directs to load_many, the
@@ -131,6 +154,8 @@ migration phase; the concrete DAG-load fan-out is a dataset-owned + attended con
 No action needed — recorded so nobody expects an unattended full run to work yet.
 
   status: open
+
+  verified: 2026-07-30 — CONFIRMED STILL OPEN and still correct as a note-only entry. The attended per-request fan-out is unchanged, and the sibling deferrals it mirrors (DW-B5-2 refresher injection, DW-B7-2 resolver injection, DW-B8-1 fetcher injection) are all still open too, so no unattended end-to-end `pypi_intelligence` run is possible. No action was ever required.
 ## DW-B4-1 — the credentialed full parity run (ATTENDED, AD-19) — DEFERRED to the wave-boundary event
 
 B4 built the credentialed-parity comparator (`tests/parity/parity_runner.py`), but the actual
@@ -142,6 +167,8 @@ schema then), run `run_parity(legacy_db=..., kedro_frame_provider=...)`, and rec
 resulting `ParityEvidenceRecord`s per `PARITY_EVIDENCE_TEMPLATE.md`. Owner: B4 attended event.
 
   status: open
+
+  verified: 2026-07-30 — This is an ATTENDED wave-boundary event, so verification asks whether the event happened — it has not. `parity/evidence.py:51` still declares `human_sign_off: str | None = None` and `:64` still gates `may_retire_legacy` on `bool(self.human_sign_off)`, so no credentialed evidence was ever recorded. The comparator (`tests/parity/parity_runner.py`) exists and is ready; the run against a real operator `cf_atlas.db` has not occurred.
 ## DW-B4-2 — human sign-off + marking legacy retirement (FR-4) — DEFERRED (human act)
 
 `may_retire_legacy` returns `allowed=False` in-loop (correct — no credentialed, signed
@@ -150,6 +177,8 @@ does the gate open. The actual `phase_state` removal / `bootstrap-data` retireme
 separate attended action gated on `allowed=True`. Do NOT mark retirement until then.
 
   status: open
+
+  verified: 2026-07-30 — This is an ATTENDED wave-boundary event, so verification asks whether the event happened — it has not. `parity/evidence.py:64` still returns `bool(self.human_sign_off)` and `human_sign_off` still defaults to `None` at `:51` — nobody has signed, so `may_retire_legacy` still returns `allowed=False` and legacy is correctly not marked retired. Its precondition (DW-B4-1) is itself unmet.
 ## DW-B4-3 — fixture recapture from a real legacy run (DW-B1-1 part a) — tool SHIPPED, recapture DEFERRED
 
 `tests/parity/capture_fixtures.py` is the recapture tool. At the event, back a
@@ -158,6 +187,8 @@ to replace the B1/B2 shape-only seeds (stamped `credentialed-legacy-capture-<dat
 then the seeds stay flagged `shape-only-seed-...` and a green `parity-diff` is NOT legacy parity.
 
   status: open
+
+  verified: 2026-07-30 — CONFIRMED STILL OPEN — the recapture never ran. The tool (`tests/parity/capture_fixtures.py`) is present, but every fixture still carries the pre-recapture stamp `"provenance": "shape-only-seed-B2-needs-B4-recapture"` rather than the `credentialed-legacy-capture-<date>` stamp the entry specifies. Same evidence as DW-B1-1(a).
 ## DW-B4-4 — DW-B2-4 BigQuery-routing pre-flight before any credentialed Phase-P run — DEFERRED (carries DW-B2-4)
 
 Route `pypi_bigquery_downloads_raw` → `BigQueryDownloadsDataset` (the two-layer cost gate)
@@ -166,6 +197,8 @@ it would change `conf/base/catalog.yml` and risk the `kedro-catalog-check=38` in
 gate that only bites a credentialed run B4 never performs in-container. Carries DW-B2-4 forward.
 
   status: open
+
+  verified: 2026-07-30 — CONFIRMED STILL OPEN — carries DW-B2-4 unchanged. `conf/base/catalog.yml:198-199` still routes `pypi_bigquery_downloads_raw` to `api.APIDataset`, not `BigQueryDownloadsDataset`. The pre-flight the entry mandates before any credentialed Phase-P run has not been done (and no such run has happened — see DW-B4-1).
 ## DW-B4-5 — parity-reconcile items surfaced at the credentialed run (carries DW-B1-3 / DW-B2-3) — DEFERRED
 
 At the credentialed run, the drift report must reconcile the known legacy-vs-port deltas:
@@ -175,6 +208,8 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
 "AC-5"). These need real data to reconcile; not doable in-loop.
 
   status: open
+
+  verified: 2026-07-30 — CONFIRMED STILL OPEN — the reconcile is gated on a run that has not happened. Both carried items are still open on their own entries (DW-B1-3, DW-B2-3), and `parity/evidence.py:51` shows no credentialed evidence was recorded. Nothing here is reconcilable without real data, exactly as recorded.
 ## DW-B4-6 — credentialed-mode read-path hardening (attended event) — DEFERRED
 
 - source_spec: `b4-verify-dataset-parity-against-the-legacy-orchestrator.md`
@@ -182,6 +217,8 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
   evidence: Edge-case review (2026-07-17). The credentialed path is ATTENDED-only and exercised in-loop only via a synthetic on-disk/in-memory SQLite fixture + a synthetic provider (fixture mode is the shipped gate), so these are event-time robustness items, not in-loop correctness holes. Harden them alongside DW-B4-1 when the per-view Kedro composition is finalized against the real schema; wrap each per-view read in try/except emitting an errored `ParityEvidenceRecord` (material_drift=True) so one bad view doesn't abort the whole credentialed run.
 
   status: open
+
+  verified: 2026-07-30 — CONFIRMED STILL OPEN — the credentialed read path is still unhardened. No per-view try/except emitting an errored `ParityEvidenceRecord` was added, and the entry's own precondition (DW-B4-1, finalizing the per-view Kedro composition against the real schema) has not occurred.
 ## DW-B5-1 — re-point name_resolver.py / recipe-generator.py at Phase C + verify the live authoring read (Q6) — DEFERRED (read-only .claude/**)
 
 - source_spec: `b5-port-the-external-refresh-assets.md`
@@ -189,6 +226,8 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
   evidence: the flat file is retained as the compatibility shim (byte-format `{pypi_name: conda_name}`); until DW-B5-1 proves the readers can drop it, the shim stays. `g10_spelling` provenance + no-clobber survive regardless (AD-10).
 
   status: open
+
+  verified: 2026-07-30 — CONFIRMED STILL OPEN, and structurally blocked as recorded. The re-point targets live under `.claude/skills/conda-forge-expert/scripts/**`, which the migration treats as HARD read-only, so the flat-file compatibility shim necessarily stays until someone works outside that boundary. Nothing in the atlas package changed this.
 ## DW-B5-2 — C1 wires the Dagster Schedules AND the concrete refresher/fetcher INJECTION (+ store-format fidelity) — DEFERRED (attended/C1)
 
 - source_spec: `b5-port-the-external-refresh-assets.md`
@@ -196,6 +235,8 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
   evidence: catalog constructs `VDBStoreDataset`/`OSVOfflineStoreDataset` with only `filepath` (+`bucket_url`); no refresher kwarg is wired (by design — credentialed/live runs attended-only, AD-11/NFR-2). `save()` honors `RefreshRequest.force` + cadence; `_describe()` carries `retry_budget` + `required_resource` for C1 to consume.
 
   status: open
+
+  verified: 2026-07-30 — CONFIRMED STILL OPEN on both halves. The refresher is still un-injected (the catalog constructs the store datasets with `filepath`/`bucket_url` only — no refresher kwarg), and the Dagster schedules are still not brought up: `orchestration/definitions.py:301` sets `SENSOR_DEFAULT_STATUS = dg.DefaultSensorStatus.STOPPED`, so nothing auto-starts. Both halves wait on the same C1 attended event as DW-C1-1.
 ## DW-B5-3 — DW-A2-P4 JFrog dynamic per-host credential attachment for enterprise-mirrored refresh stores — DEFERRED (no live surface)
 
 - source_spec: `b5-port-the-external-refresh-assets.md`
@@ -203,6 +244,8 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
   evidence: `tests/catalog/test_credential_scoping.py` CREDENTIAL_ALLOWLIST unchanged; no new `credentials:` key added. Revisit when an enterprise-mirrored refresh store (e.g. an Artifactory-hosted vdb/OSV mirror) actually lands.
 
   status: open
+
+  verified: 2026-07-30 — CONFIRMED STILL OPEN, and still with no live surface to attach to — which is the entry's own stated revisit condition, not a defect. None of the three shipped stores routes to an Artifactory host, so the dynamic per-host JFrog attachment has nothing to bind. Revisit remains correctly deferred to an enterprise-mirrored refresh store landing. (Note: this is the carried-forward body of the `DW-A2-P4` alias — see § Provenance.)
 ## DW-B5-4 — wire the AD-13 staleness marker into the G/G' consumer read-path (degrade to indeterminate) — DEFERRED (consumer-side, B2 nodes)
 
 - source_spec: `b5-port-the-external-refresh-assets.md`
@@ -210,6 +253,8 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
   evidence: Blind-Hunter finding (2026-07-18). B5 owns the refresh-asset staleness SURFACE (AC-5: marker stamped + surfaced, offline load returns last-good — proven by `tests/datasets/test_refresh_assets.py`); the consumer-side degrade-to-indeterminate is a follow-up on the B2 vulnerability nodes.
 
   status: open
+
+  verified: 2026-07-30 — CONFIRMED STILL OPEN — the consumer is still blind. Grepping the whole `pipelines/` tree for `is_stale` or `staleness()` returns ZERO hits, so `summarize_vdb_vulns` / `per_version_vulns` still cannot distinguish an air-gapped empty store from a genuinely vuln-free one. AD-13's degrade-to-indeterminate contract remains unimplemented on the consumer side.
 ## DW-B6-1 — spdx-schema-gap atlas-usage ranking needs `conda_license` (not yet produced by core) — DEFERRED
 
 - source_spec: `b6-port-the-seed-gaps-pipeline.md`
@@ -217,6 +262,8 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
   evidence: `grep -rn conda_license src/` returns 0 hits in the kedro package; `core.nodes.enumerate_conda_packages` output columns are `conda_name/latest_version/subdirs` only. Re-point the atlas-usage read to a full actionable-packages-with-license dataset when B1/parity produces `conda_license`.
 
   status: open
+
+  verified: 2026-07-30 — CONFIRMED STILL OPEN, with one measurement changed since authoring. The entry's evidence said '`grep -rn conda_license src/` returns 0 hits'; it now returns 6 — but all six are in `pipelines/seed_gaps/nodes.py`, the CONSUMER that reads the column gracefully. It is still not PRODUCED: `core_packages_enumerated` carries no `conda_license`, so the add-to-schema and non-standard tiers stay empty in-loop.
 ## DW-B6-2 — cwe-seed-gap `_other_impact` headline needs the per-package CWE-rollup dataset — DEFERRED
 
 - source_spec: `b6-port-the-seed-gaps-pipeline.md`
@@ -224,6 +271,8 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
   evidence: `vulnerability_cwe_categories` (the migrated CWE catalog table) carries `cwe_id/cwe_name/category` — the catalog rows, not the per-package rollup. The proposals (which CWEs to seed) are fully computed; only the universe-cost headline is deferred.
 
   status: open
+
+  verified: 2026-07-30 — CONFIRMED STILL OPEN — no per-package CWE-categories rollup dataset landed. The migrated `vulnerability_cwe_categories` remains the catalog table (`cwe_id`/`cwe_name`/`category`), not the per-package blob the `_other_impact` headline needs. The proposal rows — the load-bearing output — are unaffected.
 ## DW-B7-1 — the UPDATE-FEEDSTOCK bucket needs an upstream-of-record column (not yet on core_packages_enumerated) — DEFERRED
 
 - source_spec: `b7-extend-the-universal-sbom-intake.md`
@@ -231,6 +280,8 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
   evidence: `test_all_six_buckets_reproduced_on_a_fixture_inventory` supplies `upstream_version` in its fixture core frame; the matcher's `_build_indexes` guards the column with `if "upstream_version" in core_packages_enumerated.columns`.
 
   status: open
+
+  verified: 2026-07-30 — CONFIRMED STILL OPEN — `upstream_version` has no producer. It does not appear in `pipelines/core/nodes.py`, so `core_packages_enumerated` still carries only `conda_name`/`latest_version`/`subdirs` and the UPDATE-FEEDSTOCK bucket still cannot fire from live data. Sibling of DW-B6-1, same root cause: a B1-scope column never ported.
 ## DW-B7-2 — the real transitive resolver (pip --dry-run / py-rattler solve) is injected, not shipped in-package — DEFERRED
 
 - source_spec: `b7-extend-the-universal-sbom-intake.md`
@@ -238,6 +289,8 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
   evidence: `tests/datasets/test_sbom_intake.py::test_resolver_resolved_records_depth_and_fanout` uses a stub resolver; `test_resolver_offline_returns_unresolved_marker` + `test_resolver_exception_degrades_to_unresolved_never_crashes` prove the offline/never-crash contract; `tests/catalog/test_no_inline_io.py` passes (no `subprocess` import anywhere in the package). Review note (Blind LOW-5): AC-1's "never hang" is guaranteed for the OFFLINE (default None) + exception paths B7 ships; a WEDGED injected resolver has no wall-clock guard — the injected callable's CONTRACT is that it must self-bound (a wall-clock guard lands with the concrete resolver + its orchestration wiring).
 
   status: open
+
+  verified: 2026-07-30 — CONFIRMED STILL OPEN — the resolver is still injection-only. The concrete resolver would need `subprocess` or py-rattler, and the A2 no-inline-IO AST scan still bans that import package-wide, so the offline `unresolved` marker remains the shipped path. Lands with the C1 orchestration wiring, which is itself still deferred (DW-C1-1).
 ## DW-B7-3 — universe-BOM standalone pypi-only completeness (not a scope hole; a widening) — DEFERRED
 
 - source_spec: `b7-extend-the-universal-sbom-intake.md`
@@ -245,6 +298,8 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
   evidence: `test_add_membership_comes_from_the_full_pypi_universe_not_the_mapping` (ADD via pypi_universe, unmatched-to-mapping) + `test_unmatched_pypi_not_in_universe_is_unknown_never_add`; `_build_indexes` reads `pypi_universe["pypi_name"]`. The G10 bare-match guard (Blind MEDIUM-3) is now PORTED using `pypi_conda_mapping` (`conda_to_pypifold`) — `test_g10_bare_match_guard_rejects_a_name_coincidence`.
 
   status: open
+
+  verified: 2026-07-30 — CONFIRMED STILL OPEN as a widening, not a hole — the entry's own framing. The matcher correctness half was RESOLVED in B7 (ADD membership reads the full `pypi_universe`); what remains is the artifact shape: `build_universe_sbom` still emits conda components plus `cfe:pypi_name` on mapped rows, with no standalone `pkg:pypi/<name>` universe members.
 ## DW-B8-1 — the concrete live Basilisk fetcher (querybatch / detail GET) is injected, not shipped in-package — DEFERRED
 
 - source_spec: `b8-basilisk-conda-native-vulnerability-ingestion.md`
@@ -252,6 +307,8 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
   evidence: `tests/datasets/test_basilisk.py` drives every path against a STUB fetcher; `test_batch_offline_marks_stale_keeps_last_good` + `test_detail_offline_marks_stale` + `test_wired_fetcher_load_marks_stale_when_unpopulated` prove the offline/never-crash contract; `tests/catalog/test_no_inline_io.py` passes (no `subprocess`/HTTP import anywhere in the package incl. `datasets/basilisk.py`).
 
   status: open
+
+  verified: 2026-07-30 — CONFIRMED STILL OPEN — same injected-seam shape as DW-B5-2 and DW-B7-2, and blocked by the same rule: a concrete Basilisk client needs an HTTP import that the A2 no-inline-IO scan bans from the package. The offline stale path plus the stub-driven chunking/rate-limit proofs are what ship; the concrete fetcher waits on C1 or an attended run.
 ## DW-B8-2 — the no-currency-conflation view's behind-upstream join is fixture-supplied — DEFERRED
 
 - source_spec: `b8-basilisk-conda-native-vulnerability-ingestion.md`
@@ -259,6 +316,8 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
   evidence: `test_current_package_still_surfaces_its_advisory` + `test_view_does_not_render_security_as_version_currency` supply `behind_upstream` with `version_current`; `v_basilisk_advisories` reads it with `{"conda_name","version_current"} <= set(bu.columns)` (graceful: absent -> None).
 
   status: open
+
+  verified: 2026-07-30 — CONFIRMED STILL OPEN — the join is still fixture-supplied, because its upstream data still does not exist. This is the same missing column as DW-B7-1 (`upstream_version` absent from `core_packages_enumerated`), so the behind-upstream re-point cannot happen until the B-wave upstream-of-record data lands.
 ## DW-B8-3 — the full 21,163-package Basilisk population run is credentialed/attended — DEFERRED
 
 - source_spec: `b8-basilisk-conda-native-vulnerability-ingestion.md`
@@ -266,6 +325,8 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
   evidence: `chunk_queries`/`query_population` prove the ≤1,000 chunking (2500 -> [1000,1000,500]; 1001 -> [1000,1]) against a stub; the credentialed fan-out is DATASET-owned via `query_population`, called by the attended/Dagster path (DW-B8-1).
 
   status: open
+
+  verified: 2026-07-30 — This is an ATTENDED wave-boundary event, so verification asks whether the event happened — it has not. No credentialed Basilisk population run has occurred — the population source would be `core_packages_enumerated`, and the fan-out is dataset-owned via `query_population`, called only by the attended/Dagster path (DW-B8-1), which is itself still deferred. In-loop the batch is still fixture-driven.
 ## DW-C1-1 — the live Dagster schedule bring-up (ATTENDED, Q2) — DEFERRED to the wave-boundary event
 
 - source_spec: `c1-integrate-kedro-dagster-for-scheduling-execution.md`
@@ -273,6 +334,8 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
   evidence: `dagster definitions validate -m pyforge.atlas.orchestration.definitions` passes offline; `tests/orchestration/test_definitions_dryrun.py` (19) + the AD-1 import-ban (`tests/catalog/test_no_inline_io.py`) are the loop-consumable gate. `defs = build_definitions()` builds under blocked sockets (no network IO at import).
 
   status: open
+
+  verified: 2026-07-30 — This is an ATTENDED wave-boundary event, so verification asks whether the event happened — it has not. Nothing was turned RUNNING: `orchestration/definitions.py:301` still declares `SENSOR_DEFAULT_STATUS = dg.DefaultSensorStatus.STOPPED`, and `:299` still carries the inline note that turning them running 'against a live feed is the attended' event, citing this very entry (DW-C1-1). `:576` repeats 'Ships STOPPED'. The offline dryrun gate is intact and was not weakened.
 ## DW-C1-2 — per-op runtime ENFORCEMENT + profile-config run-wiring are bring-up concerns (structural-only in C1)
 
 - source_spec: `c1-integrate-kedro-dagster-for-scheduling-execution.md`
@@ -283,6 +346,8 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
   evidence: `test_timeouts_are_not_a_single_monolith` + `test_every_op_has_its_own_timeout` prove the structural side; `resolve_profile_config` is exercised only by the gate, and `build_definitions` does not call it (structural-scope, by design for the attended C1 boundary).
 
   status: open
+
+  verified: 2026-07-30 — CONFIRMED STILL OPEN on the half that matters. `resolve_profile_config` is defined at `orchestration/definitions.py:371` and referenced in the module docstring at `:16`, but it is still attached to no job as `RunConfig`/`default_config` — a real run still does not consume it. Per-op timeout ENFORCEMENT likewise still depends on the daemon that DW-C1-1 has not brought up.
 ## DW-D2-1 — the full 28-page Vizro inventory is CIS-two-spine deferred
 
 - source_spec: `d2-build-the-vizro-dashboard-port-the-28-clis.md`
@@ -290,6 +355,8 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
   evidence: D2 AC "Given the D1 BSL models AND the CIS two-spine design specs"; verify-gate note "D2 page inventory detail resolves in the CIS specs (Spine Deferred)". The dashboard-dryrun gate asserts the shipped pages build offline + are BSL-driven; it does not assert 28-page completeness.
 
   status: open
+
+  verified: 2026-07-30 — CONFIRMED STILL OPEN — the precondition never arrived. The CIS two-spine specs (`DESIGN.md` + `EXPERIENCE.md`) were not produced, so the full 28-page inventory stays blocked and the page set correctly was not expanded past the live-confirmed core.
 ## DW-D2-2 — shell pages await their composed-store materialization (staleness / query-atlas / detail-cf-atlas / behind-upstream / whodepends)
 
 - source_spec: `d2-build-the-vizro-dashboard-port-the-28-clis.md`
@@ -297,6 +364,8 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
   evidence: `dashboard/data.py` shell loaders are grouped under a "BSL-wired SHELL pages (composed store not yet materialized — DW-D2)" banner; each returns an empty typed frame via `_bsl_query_or_empty` when the store is absent.
 
   status: open
+
+  verified: 2026-07-30 — CONFIRMED STILL OPEN — the banner is still in the code. `dashboard/data.py:126` still reads 'BSL-wired SHELL pages (packages composed store not yet materialized — DW-D2)', with supporting notes at `:13` and `:46`. The composed store was never materialized, so those pages still render empty (honestly empty — never fabricated).
 ## DW-D2-3 — DEV-AUTO visual verification of the rendered UI (headless container cannot)
 
 - source_spec: `d2-build-the-vizro-dashboard-port-the-28-clis.md`
@@ -304,6 +373,8 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
   evidence: `dashboard-dryrun` builds the object + asserts structure only; it never launches the server (offline gate, mirrors C1 dagster-dryrun / C2 viz-loadable).
 
   status: open
+
+  verified: 2026-07-30 — CONFIRMED STILL OPEN — the visual pass is inherently out of reach of this verification too. The `dashboard-dryrun` gate still builds the Dashboard OBJECT and asserts structure only, never launching a server, so the browser-rendered UI and the §2.1 semantic-HTML/ARIA check remain unverified by anything.
 ## DW-D3-1 — the live Vizro-AI NL→chart backend bring-up (ATTENDED, Q3) — DEFERRED to the wave-boundary event
 
 - source_spec: `d3-vizro-ai-nl-interface-query-vizro-ai-mcp-tool.md`
@@ -311,6 +382,8 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
   evidence: `tests/nl/test_query_vizro_ai_dryrun.py` proves the tool is registered + callable, the unconfigured path returns the advisory with no network (sockets blocked), a configured `OPENAI_BASE_URL` is the endpoint used, no host-bearing URL literal exists in the resolver (Q3 §11), the tool body is AD-7-thin, and the NL context is BSL-grounded (AD-8). `nl/query.py::query_vizro_ai` returns `chart=None` in both paths; `vizro_ai_available()` is a guarded probe. Mirrors the C1 dagster-schedule bring-up (DW-C1-1) and the B5/B7/B8 injected-fetcher deferrals.
 
   status: open
+
+  verified: 2026-07-30 — This is an ATTENDED wave-boundary event, so verification asks whether the event happened — it has not. No backend was configured and no live call was wired: `nl/query.py:28-29` still defines both deferral statuses — `STATUS_UNCONFIGURED = "backend-not-configured"` and `STATUS_DEFERRED = "backend-configured-live-call-deferred"` — and `:91-93` still documents both paths returning receipts rather than charts. The dryrun gate was not weakened.
 ## DW-D3-2 — the dashboard NL query field (the D2 Vizro dashboard's NL entry point) — DEFERRED (carries DW-D3-1 + the CIS spine)
 
 - source_spec: `d3-vizro-ai-nl-interface-query-vizro-ai-mcp-tool.md`
@@ -318,6 +391,8 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
   evidence: D3's shipped surface is the MCP tool only (`server.py` `query_vizro_ai` @mcp.tool + `tools.query_vizro_ai`); `dashboard/app.py` is unchanged by D3 (no NL component added). The shared seam (`pyforge.atlas.nl`) is deliberately UI-agnostic so the dashboard field can reuse it at the event.
 
   status: open
+
+  verified: 2026-07-30 — CONFIRMED STILL OPEN — and doubly blocked, as recorded. Its two preconditions are both still open on their own entries: the live Vizro-AI backend (DW-D3-1, still returning deferral receipts) and the CIS spine gating dashboard page design (DW-D2-1, specs never produced). The dashboard still ships without an NL field.
 ## DW-E1-1 — the live cross-process A2A wire (a running fasta2a server / broker) — DEFERRED
 
 - source_spec: `cfe-atlas-datapipeline-kedro-migration.md` (Story E1, FR-11)
@@ -325,6 +400,8 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
   evidence: `tests/a2a_surface/test_a2a_payloads.py` drives the whole surface against the in-process hand-off — `test_insight_round_trip_is_exact` / `test_alert_round_trip_is_exact` (exact incl. AD-17 stamp, no int→float drift, unicode), `test_analytical_to_authoring_hand_off` (ordered exact delivery to the authoring inbox), the AD-20 single-schema-source scans (`test_ad20_no_competing_payload_schema_outside_a2a`, `test_ad20_only_a2a_schema_subclasses_the_base`) + `tests/catalog/test_no_inline_io.py::test_a2a_sdk_only_in_a2a_layer` (only `a2a/` imports the a2a SDK), AD-17 (`test_ad17_stamp_required_and_injected`, `test_ad17_stamp_on_the_wire_envelope`), AD-8 (`test_ad8_insight_metric_must_be_a_bsl_identifier`), and the degrade-not-crash edges (unknown kind / malformed JSON / non-JSON-native field / missing payload part). No socket is bound and no second process is spawned in any test (AD-11 / offline).
 
   status: open
+
+  verified: 2026-07-30 — This is an ATTENDED wave-boundary event, so verification asks whether the event happened — it has not. No cross-process A2A wire exists — no fasta2a server, no broker, no bound socket. The in-process `hand_off` → `AuthoringInbox` transport remains the shipped path, which is the honest offline half the entry describes. Because the envelope is already a real a2a-sdk `Message`, this stays a substrate swap rather than a schema change.
 ## DW-E2-1 — the live OTel collector + OpenLineage backend wiring (env-driven) — DEFERRED
 
 - source_spec: `cfe-atlas-datapipeline-kedro-migration.md` (Story E2, FR-12)
@@ -332,6 +409,8 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
   evidence: `tests/observability/test_observability_fixtures.py` drives a real two-node SequentialRunner pipeline (plus the pipeline-level hooks, as KedroSession fires them) with an in-memory OTel span exporter + a capturing OpenLineage client (`make_capturing_client`) and asserts the emitted event/span SHAPE — START+COMPLETE per node, input/output lineage edges, shared runId, the rowCount + rows/latency(`>=0`)/cache-hit facets, and the nested pipeline→node→dataset span tree in one trace — these captured fixtures ARE the gate (AD-20). Edge cases proven: `on_node_error` emits FAIL + closes the span (no leak, ERROR status), no-input/output nodes, empty-frame rows=0, non-DataFrame output degrades (rowCount omitted, no crash), the None-captor default path runs the full lifecycle without emitting/crashing, nested pipeline frames close without leaking, and no now()/uuid leaks into any asserted field. `test_no_inline_io.py::test_observability_libs_only_in_observability` pins the single-seam containment. `AtlasObservabilityHooks.__getstate__` drops the un-deepcopyable OTel tracer so C1's translator can deep-copy the settings HOOKS (the copy rebuilds a lazy default tracer). No socket is bound and no exporter reaches a network in any test (offline).
 
   status: open
+
+  verified: 2026-07-30 — This is an ATTENDED wave-boundary event, so verification asks whether the event happened — it has not. No live collector or backend was wired. The emitters remain injectable with no-op defaults, and no env-driven `TracerProvider`/OpenLineage client construction was added to `settings.py` or a factory. The offline fixture gate is intact and no fake endpoint was introduced.
 ## DW-E2-2 — Dagster-plane observability inheritance verification + span-key footgun (bring-up)
 
 - source_spec: `e2-integrate-openlineage-opentelemetry.md`
@@ -339,6 +418,8 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
   evidence: E2 gate drives a SequentialRunner + manual before/after_pipeline_run; `dagster definitions validate` passes but does not RUN nodes. Thread-safety: `_nodes`/`produced` are unlocked — correct under SequentialRunner + C1 in_process executor (DAG-ordered), a ThreadRunner/ParallelRunner would need locking.
 
   status: open
+
+  verified: 2026-07-30 — CONFIRMED STILL OPEN — and residual (1) of DW-AD23-2 shows why it cannot yet be checked. `observability.py:308-311` still declares `run_result` on `AtlasObservabilityHooks.after_pipeline_run`, which is exactly the signature kedro-dagster omits — so the Dagster after-op still raises there, and the Dagster-plane nesting assertion this entry owes remains unmakeable until both that and the DW-C1-1 daemon bring-up land. The `_nodes`-keyed-by-`node.name` footgun is likewise still unreachable, hence untouched.
 ## DW-E2-3 — AtlasNodeMetricsRunFacet provenance stamp (cosmetic)
 
 - source_spec: `e2-integrate-openlineage-opentelemetry.md`
@@ -346,6 +427,8 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
   evidence: `AtlasNodeMetricsRunFacet` construction on the COMPLETE event does not pass producer; the standard rowCount + errorMessage facets do.
 
   status: open
+
+  verified: 2026-07-30 — CONFIRMED STILL OPEN — measured: zero `producer=` arguments appear in the `AtlasNodeMetricsRunFacet` construction in `observability.py`, so its `_producer` still defaults to the OpenLineage library URI rather than the project PRODUCER. Cosmetic, as recorded — the metric values are unaffected.
 ## DW-F1-1 — the cold-start / warm-incremental benchmark (ATTENDED, SM-3) — DEFERRED
 
 - source_spec: `f1-complete-the-duckdb-consolidation-prove-the-cold-start-claim.md`
@@ -365,6 +448,8 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
     precondition — legacy is not marked retired until its credentialed parity + sign-off land.
 
   status: open
+
+  verified: 2026-07-30 — This is an ATTENDED wave-boundary event, so verification asks whether the event happened — it has not. The benchmark never ran, and its own precondition is unmet: B4 retirement (DW-B4-2) is still blocked on an unsigned `human_sign_off` (`parity/evidence.py:51`). The always-on offline half — the DuckDB-singularity grep gate — is intact.
 ## DW-F2-1 — the Great Expectations boundary adapter (version-capped at cf 1.18.2) — DEFERRED
 
 - source_spec: `cfe-atlas-datapipeline-kedro-migration.md` (Story F2, FR-10, AD-9)
@@ -372,6 +457,8 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
   evidence: `tests/validation/test_validation_hook.py` drives a real one-node SequentialRunner pipeline with a persistence-tracking dataset and asserts the F2 behaviours: a malformed payload (PyPI frame missing `version`) HALTS via a native `DataContractViolation` with the output NOT persisted (save loop never ran), emitting an `AtlasAlert` (severity critical + rule `pandera_schema` + evidence naming the column) delivered over the real A2A channel (`hand_off` → `AuthoringInbox`, round-trip-identical); a valid payload passes AND persists (no false halt); a STUB second validator halts the SAME node with zero node edits (AC-3 validator-agnosticism), and a stub-only config proves pandera is not special; the GX boundary stub raises with the 1.18.2 DW note; `test_no_inline_io.py::test_banned_validation_plugins_nowhere` + `test_no_great_expectations_in_shipped_validation_path` pin AD-9. Edge cases proven: no registered contract → pass-through; non-frame output skips gracefully (no crash); empty-frame conformant passes / missing-column halts; a broken validator halts loudly (never silently passes bad data); the default no-op sink and a RAISING sink both never mask the halt; a multi-output node halts before ANY output persists; the default hook is deepcopy-safe (C1 translator copies `settings.HOOKS`); and co-registration with the E2 observability hook still halts order-independently. `DEFAULT_CONTRACTS` ships EMPTY (machinery + seam, nothing speculative) so the settings-armed hook can never false-halt a real run until a contract is declared. No socket is bound and no network is touched in any test (offline).
 
   status: open
+
+  verified: 2026-07-30 — CONFIRMED STILL OPEN, and the cap is still correctly held. `validation.py:220-226` still documents that 'The in-env GX is 1.19.0' against the AD-9 1.18.2 cap and that 'this stub is replaced by a 1.18.2-feature-only adapter' only in a pinned environment. No `great_expectations` import was added to the shipped path — the ban held.
 ## DW-F2-2 — wire a real A2A alert_sink into the shipped validation hook (gated on F4's first contract)
 
 - source_spec: `f2-data-validation-hook-inline-pandera-contracts.md`
@@ -391,6 +478,8 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
     + rule fallback) landed in F2 so a real sink can't be crashed by a third-party backend.
 
   status: open
+
+  verified: 2026-07-30 — CONFIRMED STILL OPEN, and still MOOT for exactly the stated reason. `settings.py:57` still constructs `DataValidationHooks()` with NO `alert_sink`, and `validation.py:74` still declares `DEFAULT_CONTRACTS: dict[str, pa.DataFrameSchema] = {}` — empty, so no violation can fire and no alert can be dropped yet. The gating condition the entry names (F4 registering the first real contract) has not occurred.
 ## DW-F3-1 — a real learned embedding model (upgrade from the deterministic default)
 
 - source_spec: `f3-implement-vector-similarity-search-rag-via-duckdb-vss.md`
@@ -408,6 +497,8 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
     change the vectors, not the ranking mechanism).
 
   status: open
+
+  verified: 2026-07-30 — CONFIRMED STILL OPEN — `rag/embedding.py` still ships `HashingEmbedder` as the default (described at `:57` as 'Pure + deterministic'), and `rag/__init__.py:4-5` still records that 'The default embedder is deterministic + offline'. No learned model was wired; the `Embedder` Protocol seam is ready and unused.
 ## DW-F3-2 — live `vss` extension provisioning (the one-time network INSTALL)
 
 - source_spec: `f3-implement-vector-similarity-search-rag-via-duckdb-vss.md`
@@ -423,6 +514,8 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
     `provision_vss` (the only INSTALL); the rag gate proves the consumer path makes no network call.
 
   status: open
+
+  verified: 2026-07-30 — CONFIRMED STILL OPEN — the split is intact: `rag/store.py::load_vss_offline` still does an offline LOAD or raises `VssNotProvisionedError`, and `provision_vss` remains the only INSTALL, never called by the consumer path (`rag/__init__.py:5` documents `vss` being LOADed from the local cache). The clean-environment provisioning step remains attended.
 ## DW-G1-1 — full Vizro-AI dashboard RENDERED inside Pyodide (the heavy read-surface half)
 
 - source_spec: `g1-compile-the-intelligence-layer-to-pyodide-duckdb-wasm.md`
@@ -443,6 +536,8 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
     browser/no-backend half.
 
   status: open
+
+  verified: 2026-07-30 — CONFIRMED STILL OPEN — `wasm/index.html:70` still fetches a single flat Parquet (`fetch("./core_feedstock_health.parquet")`) and renders the query result, with no Pyodide runtime and no Vizro component tree anywhere in the artifact. The query surface the render would sit on is proven; the render itself was never attempted.
 ## DW-G1-2 — heavy WASM build assets are gitignored; CI must run `wasm-build` before `wasm-smoke`
 
 - source_spec: `g1-compile-the-intelligence-layer-to-pyodide-duckdb-wasm.md`
@@ -462,6 +557,8 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
     via curl); `wasm-smoke` is offline (loopback static host + asserted zero external requests).
 
   status: open
+
+  verified: 2026-07-30 — CONFIRMED STILL OPEN, and currently live: `wasm/build/` does NOT exist in this checkout (`ls wasm/build` → No such file or directory), so `wasm-smoke` would take exactly the documented not-built skip path right now. No automatic `wasm-build` CI pre-step was wired, so the two-step build→verify flow is still the only way to run the gate.
 ## DW-G2-1 — the LIVE GitHub Pages publish is the ATTENDED boundary event (not automated)
 
 - source_spec: `g2-emit-parquet-artifacts-to-a-static-web-host.md`
@@ -483,6 +580,8 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
     fixture-hosts on loopback and asserts NO live publish. No push/credential/host code exists.
 
   status: open
+
+  verified: 2026-07-30 — This is an ATTENDED wave-boundary event, so verification asks whether the event happened — it has not. No publish code exists to have run: grepping `publish/emitter.py` for `gh-pages`, `github.io` or `push` returns nothing, so the emitter is still host-agnostic by construction and no credential/host/push path was added. The live publish remains one of the five attended boundary events.
 ## DW-G2-2 — migrate the G1 wasm/ runtime to consume the emitter's manifest (single-owner completion)
 
 - source_spec: `g2-emit-parquet-artifacts-to-a-static-web-host.md`
@@ -501,6 +600,8 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
     IS a manifest consumer (proves the layout); G1 is not yet.
 
   status: open
+
+  verified: 2026-07-30 — CONFIRMED STILL OPEN — the two layouts are still independent. `wasm/index.html:70` still hardcodes `fetch("./core_feedstock_health.parquet")` and contains no reference to `manifest.json` or `chunk_url`, so G1 has not migrated onto the emitter's single-owner published layout. As recorded, this is best done with the DW-G2-1 bring-up.
 ## DW-G3 — the live Dagster sensor DAEMON bring-up (ATTENDED, Q2) — DEFERRED to the wave-boundary event
 
 - source_spec: `cfe-atlas-datapipeline-kedro-migration.md` (Story G3, § 5.9, FR-6)
@@ -531,6 +632,8 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
     readers do not exist in-package (injected, mirroring the B5/B7/B8 injected-fetcher deferrals).
 
   status: open
+
+  verified: 2026-07-30 — This is an ATTENDED wave-boundary event, so verification asks whether the event happened — it has not. The sensors still ship STOPPED — `orchestration/definitions.py:301` `SENSOR_DEFAULT_STATUS = dg.DefaultSensorStatus.STOPPED`, applied at `:492` and `:583`, with `:576` stating 'Ships STOPPED' outright. No daemon was brought up; the definitions and their eval logic remain verified offline only.
 ## DW-H1 — the MinIO/PostgreSQL SERVER provisioning + bring-up (ATTENDED) — DEFERRED to the H1 precondition event
 
 - source_spec: `cfe-atlas-datapipeline-kedro-migration.md` (Story H1, § 7.4, FR-22(a))
@@ -557,6 +660,8 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
     (driver) — the SDKs, not the servers.
 
   status: open
+
+  verified: 2026-07-30 — This is an ATTENDED wave-boundary event, so verification asks whether the event happened — it has not. Verified from the code's own statement of fact: `factory/storage.py:6` still reads '**Only the MinIO *Python SDK* is in-env today; the MinIO *server* is NOT provisioned**'. No server provisioning or bring-up has occurred. Also carried as PRD § 6.4 DC-3.
 ## DW-H2 — the live `agno`-Agent / LLM synthesis + F3-vss production retriever bring-up (ATTENDED) — DEFERRED
 
 - source_spec: `cfe-atlas-datapipeline-kedro-migration.md` (Story H2, § 7.3, FR-22(b))
@@ -581,6 +686,8 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
     are offline. No `agno` Agent is constructed and no model/vss is loaded in-package.
 
   status: open
+
+  verified: 2026-07-30 — This is an ATTENDED wave-boundary event, so verification asks whether the event happened — it has not. No agno/LLM synthesis bring-up happened — `factory/__init__.py:11` still describes the agno crews as future work ('adds the agno crews'), and the F3 `vss` production retriever depends on DW-F3-2's attended provisioning, still open. Carried as PRD § 6.4 DC-5/DC-6.
 ## DW-H3 — the live La Suite/Wagtail SERVER + credential + httpx opener bring-up (ATTENDED) — DEFERRED
 
 - source_spec: `cfe-atlas-datapipeline-kedro-migration.md` (Story H3, § 7.1, FR-22(c))
@@ -606,6 +713,8 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
     `None` unless BOTH env vars are set.
 
   status: open
+
+  verified: 2026-07-30 — This is an ATTENDED wave-boundary event, so verification asks whether the event happened — it has not. No live La Suite/Wagtail server, credential or httpx opener was stood up; `factory/__init__.py:11` still lists the CMS sync as H3's future scope. Carried as PRD § 6.4 DC-4.
 ## DW-H4 — the live factory-crew daemon bring-up (sensor RUNNING + weekly lint + live wiki store) (ATTENDED) — DEFERRED
 
 - source_spec: `cfe-atlas-datapipeline-kedro-migration.md` (Story H4, § 7.2, FR-22(d)/FR-6)
@@ -633,6 +742,8 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
 ---
 
   status: open
+
+  verified: 2026-07-30 — This is an ATTENDED wave-boundary event, so verification asks whether the event happened — it has not. The factory-crew daemon was never brought up. Its sensor half ships STOPPED with the rest (`definitions.py:301`/`:583`), and its two data dependencies — the live wiki store (DW-H1) and the agno synthesis (DW-H2) — are both still open. Carried as PRD § 6.4 DC-1.
 ## DW-I4-1 — 10.5 finalized on a spent review budget, not on convergence (LOW) — DEFERRED
 
 - source_spec: `spec-10-5-stamp-advisory-data-with-its-build-provenance-2.md` (Epic 10 / Story I4, AUD-ATLAS-043/044)
@@ -665,6 +776,13 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
     where it was recorded as the generic id `DW-1`. Renamed to `DW-I4-1` to match this
     ledger's `DW-<story>-<n>` convention and to stop a bare `DW-1` colliding with the next
     run that emits one.
+
+  verified: 2026-07-30 — CLOSURE HOLDS. The subject of the mutation testing exists and is
+    covered: `src/pyforge/atlas/provenance.py` is present, and `provenance` is referenced across
+    four test modules in the two suites the closure names — `tests/mcp/test_read_surface.py`,
+    `tests/mcp/test_no_business_logic_in_tool_bodies.py`, `tests/mcp/test_kedro_mcp_absent.py`
+    and `tests/dashboard/test_dashboard_dryrun.py`. The recorded caveat (the reviewer was not
+    context-free) stands as written and is not re-litigated here.
 
 ---
 
@@ -703,6 +821,13 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
     AD-23 was re-promoted to its full form in the spine on the strength of that gate, with the
     single-machine (NFS `flock`) and Dagster-release boundaries carried explicitly.
   status: closed
+
+  verified: 2026-07-30 — CLOSURE HOLDS, checked against the code rather than the label.
+    `src/pyforge/atlas/admission.py` ships and uses `filelock` (10 references), and
+    `RunAdmissionHooks` is imported at `settings.py:52` and registered as the fourth entry in
+    `settings.HOOKS` at `:58` — so the CLI, the MCP `run_*` tools and the Dagster plane all
+    inherit it from one registration, as the resolution claims. `settings.py:48` also records
+    that the ordering comes from the hook markers, NOT from tuple position.
 
 ---
 
@@ -770,6 +895,8 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
     process-lifetime couplings with one explicit lifetime.
   status: open
 
+  verified: 2026-07-30 — CONFIRMED STILL OPEN — all four residuals verified individually, and residual (1) is live today. (1) `observability.py:308-311` still declares `run_result: dict[str, Any]` on `AtlasObservabilityHooks.after_pipeline_run`, the exact parameter kedro-dagster omits, so the Dagster after-op still raises `HookCallError` there. (2) `conf/base/dagster.yml:18-19` still declares the `in_process` executor, and `:8` carries the inline warning '`in_process` IS LOAD-BEARING FOR RUN ADMISSION (Story 10.6, AD-23; DW-AD23-2)' — the coupling is documented at the point of change, as the resolution asked. (3) and (4) follow from the same unchanged structure. The load-bearing mitigation is intact: `admission.py` carries 9 `tryfirst` markers, which the entry records as what buys the ordering — not tuple position.
+
 ## DW-I5-1 — 10.6 also finalized on a spent review budget (LOW) — DEFERRED
 
 - source_spec: `spec-10-6-make-run-admission-real-or-stop-claiming-it.md` (Epic 10 / Story I5, AUD-ATLAS-046 / DW-AD23-1)
@@ -799,6 +926,17 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
     Part (b), the max_followup_reviews POLICY question, is untouched and belongs to the retro.
   promoted: 2026-07-29 from the gitignored Tier-3 `deferred-work.md` (recorded there as the
     generic `DW-2`); renamed to match this ledger's `DW-<story>-<n>` convention.
+
+  verified: 2026-07-30 — PART (b) IS NOW RESOLVED, in another project's code. The
+    `max_followup_reviews` policy question was settled by seeding the value in Marshal's
+    `DEFAULT_POLICY`: `pyforge-marshal/src/pyforge/marshal/core/policy.py:150` now declares
+    `"max_followup_reviews": 2`, and the ten comment lines at `:141-150` name this exact
+    incident as the reason — "A cap of 1 damped five still-recommended follow-up reviews across
+    three projects (atlas 10.5/10.6, marshal 1.1, warden 6.3/5.1) into a GITIGNORED ledger".
+    Those five damped stories are `DW-I4-1` + this entry + marshal's `DW-FU-1-1` + warden's
+    `DW-FU-6-3`/`DW-FU-5-1`. The placement is also the one the review demanded (a repo-wide
+    home, not a project layer): marshal's station layers restate it ZERO times. Part (a) stands
+    as recorded — closed by mutation testing, with the not-context-free caveat on record.
 
 ## DW-AD23-3 — the lock store's DEFAULT location is the hazardous one (MEDIUM) — CLOSED
 
@@ -1375,6 +1513,14 @@ story_meta:
       Final story. After epic-9 closes, run the CFE Rule-2 retrospective
       (CLAUDE.md — effort closeout requirement, AD-18 execution seam).
 ```
+
+  verified: 2026-07-30 — CLOSURE HOLDS, and the fix is the sibling placement, not a child.
+    `admission.py:133` defines `_STORE_NAME = ".locks"` and `:131-132` documents it being
+    "appended to the data root's name to make the sibling `<data_root>.locks` (the default)".
+    `default_lock_root` at `:210` carries the same contract at `:225-226`: "the store is the
+    data root's SIBLING -- ``<data_root>.locks``, not ``<data_root>/.locks`` (``DW-AD23-3``)".
+    `:84-89` narrates the correction and confirms `PYFORGE_ATLAS_LOCK_ROOT` is REFUSED when it
+    would place the store back inside the data tree.
 
 ---
 
