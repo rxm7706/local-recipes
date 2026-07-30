@@ -1612,6 +1612,17 @@ def main() -> int:
         apply_git(data["projects"])
     else:
         apply_sprint_status(data["projects"])
+        # Tracked twins as a FLOOR under local mode too, and last so it can only
+        # raise. `apply_sprint_status` leaves a project "as-is" when its Tier-3
+        # feed is missing — and as-is is the embedded `pending` baseline, not the
+        # project's real state. That is invisible in the main worktree, where all
+        # ten feeds exist, and wrong in every other one: run from a bmad-loop home,
+        # where only the running project's feed is symlinked in, this rendered SIX
+        # projects' shipped stories back to `pending` (2026-07-30, caught before
+        # commit by diffing against the published board). `dashboard-drift-check`
+        # could not catch it there either — it compares the board against feeds
+        # that are themselves absent, so it reported OK on a regressed board.
+        apply_tracked_ledger(data["projects"])
         apply_loop_inflight(data["projects"])
     data["dreams"] = scan_dreams()
     data["specs"] = scan_specs()

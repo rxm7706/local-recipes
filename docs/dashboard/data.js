@@ -351,31 +351,43 @@ window.DASHBOARD_DATA = {
       "inflight": null,
       "velocity": {
         "derived": true,
-        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 1 of 41 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
+        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 4 of 41 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
         "bars": [
           [
             "1.1",
             165
+          ],
+          [
+            "1.2",
+            65
+          ],
+          [
+            "1.3",
+            153
+          ],
+          [
+            "1.10",
+            62
           ]
         ],
         "foot": [
           [
-            "~165 min",
+            "~109 min",
             "median / story",
             "var(--done)"
           ],
           [
-            "165 min",
+            "62–165 min",
             "observed range",
             ""
           ],
           [
-            "1/41",
+            "4/41",
             "stories complete",
             "var(--done)"
           ],
           [
-            "40",
+            "37",
             "remaining",
             ""
           ]
@@ -384,19 +396,22 @@ window.DASHBOARD_DATA = {
       "timing": {
         "derived": true,
         "metric": "active agent-compute per story (dev + review; excludes gate-pause wait) — from bmad-loop run journals",
-        "total": 165,
-        "totalLabel": "~2.8 h active compute",
-        "note": "Derived from 1 measured story; a story still in flight contributes only its closed sessions.",
+        "total": 445,
+        "totalLabel": "~7.4 h active compute",
+        "note": "Derived from 4 measured stories; a story still in flight contributes only its closed sessions.",
         "perStory": {
-          "1.1": 165
+          "1.1": 165,
+          "1.2": 65,
+          "1.3": 153,
+          "1.10": 62
         },
         "epicMin": {
-          "E1": 165
+          "E1": 445
         }
       },
       "lineState": {
         "state": "paused",
-        "at": "1.2"
+        "at": "1.4"
       },
       "epics": [
         {
@@ -410,17 +425,17 @@ window.DASHBOARD_DATA = {
             ],
             [
               "1.2",
-              "pending",
+              "done",
               "Story identity, merge-subject rendering, and feed completeness"
             ],
             [
               "1.3",
-              "pending",
+              "done",
               "Layered policy composition with provenance and validation"
             ],
             [
               "1.10",
-              "pending",
+              "done",
               "Render the harness policy from the canonical EffectivePolicy"
             ],
             [
@@ -2785,7 +2800,7 @@ window.DASHBOARD_DATA = {
       }
     }
   },
-  "snapshot": "<span>2026-07-30 03:25 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-07-30 10:37 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -3350,7 +3365,7 @@ window.DASHBOARD_DATA = {
       "title": "marshal CLI — graduated autonomy, productized",
       "caps": 8,
       "companions": 5,
-      "updated": "2026-07-29",
+      "updated": "2026-07-30",
       "dream": "pyforge-marshal",
       "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal"
     },
@@ -3360,7 +3375,7 @@ window.DASHBOARD_DATA = {
       "title": "regenerable-factory program",
       "caps": 4,
       "companions": 1,
-      "updated": "2026-07-29",
+      "updated": "2026-07-30",
       "dream": "regenerable-factory",
       "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-regenerable-factory"
     },
@@ -4089,7 +4104,7 @@ window.DASHBOARD_DATA = {
         "overtaken": false,
         "na": [],
         "furthest": "code",
-        "updated": "2026-07-29",
+        "updated": "2026-07-30",
         "age": 0,
         "stale": false,
         "version": "0.1.0",
@@ -4119,7 +4134,7 @@ window.DASHBOARD_DATA = {
         "overtaken": false,
         "na": [],
         "furthest": "code",
-        "updated": "2026-07-29",
+        "updated": "2026-07-30",
         "age": 0,
         "stale": false,
         "version": "0.1.0",
@@ -4149,7 +4164,7 @@ window.DASHBOARD_DATA = {
         "overtaken": false,
         "na": [],
         "furthest": "code",
-        "updated": "2026-07-29",
+        "updated": "2026-07-30",
         "age": 0,
         "stale": false,
         "version": "0.1.0",
@@ -4179,7 +4194,7 @@ window.DASHBOARD_DATA = {
         "overtaken": true,
         "na": [],
         "furthest": "code",
-        "updated": "2026-07-29",
+        "updated": "2026-07-30",
         "age": 0,
         "stale": false,
         "version": "0.1.0",
@@ -4209,11 +4224,11 @@ window.DASHBOARD_DATA = {
         "overtaken": true,
         "na": [],
         "furthest": "code",
-        "updated": "2026-07-29",
+        "updated": "2026-07-30",
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "1/41",
+        "progress": "4/41",
         "complete": 9,
         "of": 9,
         "owner": "marshal"
@@ -4239,7 +4254,7 @@ window.DASHBOARD_DATA = {
         "overtaken": false,
         "na": [],
         "furthest": "code",
-        "updated": "2026-07-29",
+        "updated": "2026-07-30",
         "age": 0,
         "stale": false,
         "version": "0.1.0",
@@ -4269,7 +4284,7 @@ window.DASHBOARD_DATA = {
         "overtaken": true,
         "na": [],
         "furthest": "code",
-        "updated": "2026-07-29",
+        "updated": "2026-07-30",
         "age": 0,
         "stale": false,
         "version": "0.1.0",
@@ -4299,7 +4314,7 @@ window.DASHBOARD_DATA = {
         "overtaken": false,
         "na": [],
         "furthest": "code",
-        "updated": "2026-07-29",
+        "updated": "2026-07-30",
         "age": 0,
         "stale": false,
         "version": "0.1.0",
@@ -4329,7 +4344,7 @@ window.DASHBOARD_DATA = {
         "overtaken": false,
         "na": [],
         "furthest": "epics",
-        "updated": "2026-07-29",
+        "updated": "2026-07-30",
         "age": 0,
         "stale": false,
         "version": "",
@@ -4359,7 +4374,7 @@ window.DASHBOARD_DATA = {
         "overtaken": false,
         "na": [],
         "furthest": "code",
-        "updated": "2026-07-29",
+        "updated": "2026-07-30",
         "age": 0,
         "stale": false,
         "version": "0.1.0",
@@ -4389,7 +4404,7 @@ window.DASHBOARD_DATA = {
         "overtaken": false,
         "na": [],
         "furthest": "code",
-        "updated": "2026-07-29",
+        "updated": "2026-07-30",
         "age": 0,
         "stale": false,
         "version": "0.1.0",
@@ -4419,7 +4434,7 @@ window.DASHBOARD_DATA = {
         "overtaken": true,
         "na": [],
         "furthest": "code",
-        "updated": "2026-07-29",
+        "updated": "2026-07-30",
         "age": 0,
         "stale": false,
         "version": "0.1.0",
@@ -4449,7 +4464,7 @@ window.DASHBOARD_DATA = {
         "overtaken": true,
         "na": [],
         "furthest": "code",
-        "updated": "2026-07-29",
+        "updated": "2026-07-30",
         "age": 0,
         "stale": false,
         "version": "0.1.0",
@@ -4475,9 +4490,9 @@ window.DASHBOARD_DATA = {
         "name": "spec-surface",
         "task": "spec-surface-check",
         "guards": "every tracked file under a Spec surface",
-        "state": "green",
-        "findings": 0,
-        "verdict": "OK: every tracked file governed or allowlisted; no drift.",
+        "state": "drift",
+        "findings": 1,
+        "verdict": "FINDINGS (1):",
         "runbook": ""
       },
       {
@@ -4492,7 +4507,7 @@ window.DASHBOARD_DATA = {
     ],
     "baseline": {
       "skill": "8.81.0",
-      "head": "9223031ccf",
+      "head": "f38ac349a0",
       "deltas": [],
       "runbook": "_bmad-output/projects/pyforge-marshal/SYNC-RUNBOOK.md"
     }
@@ -4709,7 +4724,7 @@ window.DASHBOARD_DATA = {
           "archived": 1,
           "practice": 4
         },
-        "line": "paused 1.2",
+        "line": "paused 1.4",
         "load": 1,
         "blocked": 0,
         "dreams": [
