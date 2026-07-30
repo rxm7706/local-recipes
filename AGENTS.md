@@ -77,6 +77,38 @@ Keeping the Dream → spec handoff portable across agents is **Herald's** job.
   legacy `docs/specs/` file for an existing effort.
 - `implementation-artifacts/` is gitignored/local-only — **nothing there should be git-tracked.**
 
+## Dates, tags and versions (one rule: is it a date or a version?)
+
+Two formats that sort alike but can never be confused for one another. The distinction is
+load-bearing — the Fleet console extracts dates with `\d{4}-\d{2}-\d{2}`, so a dotted
+version string cannot be mistaken for a date, and vice versa.
+
+| It is a… | Format | Where |
+|---|---|---|
+| **date** | `YYYY-MM-DD` — hyphenated ISO, zero-padded | filenames (`…-research-2026-07-25.md`), directory names (`prd-<chain>-2026-07-25/`), frontmatter (`created:`, `updated:`, `date:`), changelog date lines |
+| **version** | `YYYY.MM.DD` CalVer, declared **unpadded** (`2026.7.30`) | `pyproject.toml`, package metadata, git tags |
+
+**Dates are zero-padded** and therefore sort correctly as plain text — that property belongs
+to the date format only, and several tools here rely on it.
+
+**Versions are declared unpadded** because PEP 440 normalization strips leading zeros
+whatever you write: `2026.07.30` becomes `2026.7.30` in the wheel filename, the metadata and
+on PyPI. Declaring the normalized form keeps declared == displayed. The consequence is that a
+normalized version does **not** text-sort correctly (`2026.10.1` sorts before `2026.7.9`), so
+**never text-sort a version** — use `sort -V`, or `packaging.version.Version` as the key.
+A second release on one day takes a fourth segment: `2026.7.30.1`.
+
+**A git tag is a version alias, not a date** — unpadded, byte-identical to the version.
+Do not pad it: 1,926 recipes here build their source URL from `{{ version }}` (57 as
+`/v{{ version }}`), so a `v2026.07.30` tag against a `2026.7.30` version resolves to a URL
+that 404s.
+
+**Chain-scoped artifacts carry both** the chain and the date in the filename **and** declare
+them in frontmatter (`chain:`, `created:`, `updated:`). Redundant on purpose: the filename is
+greppable and sortable with no parsing, the frontmatter is authoritative, and a detector
+cross-checks them — so a rename that forgets the frontmatter, or an edit that forgets the
+rename, becomes visible instead of silently drifting.
+
 ## Claude Design ↔ repo bridge (decks, prototypes)
 
 When the session has the **`claude-design` MCP server** connected (`/design-login` in Claude

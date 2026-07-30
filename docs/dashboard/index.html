@@ -395,6 +395,12 @@
   .fdot { width: 10px; height: 10px; border-radius: 3px; background: var(--done); }
   .fdot.miss { background: var(--pending-ground); border: 1px solid var(--slate-faint); }
   .fdot.na { background: transparent; border: 1px dashed var(--slate-faint); opacity: .45; }
+  /* Partial: the stage exists but its artifact SET is incomplete (research 2/3, deck 4/6).
+     Half-filled so it reads as neither done nor missing at a glance. */
+  .fdot.part { background: linear-gradient(90deg, var(--done) 50%, var(--pending-ground) 50%);
+               border: 1px solid var(--slate-faint); }
+  .fleetrow.arch > summary { opacity: .5; }
+  .fstale { display: block; margin-top: 4px; color: var(--active); }
   .fleet-stage { font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: .06em;
     color: var(--slate); background: var(--panel-2); border: 1px solid var(--line); border-radius: 4px;
     padding: 2px 8px; justify-self: start; white-space: nowrap; }
@@ -408,6 +414,8 @@
   .fmark { font-family: var(--mono); font-size: 8.5px; text-transform: uppercase;
     letter-spacing: .06em; border-radius: 999px; padding: 1px 6px; white-space: nowrap; }
   .fmark.bf { color: var(--slate-faint); border: 1px dashed var(--line); }
+  .fmark.bad { color: var(--blocked, #c0392b);
+               border: 1px solid color-mix(in srgb, var(--blocked, #c0392b) 40%, transparent); }
   .fmark.ov { color: var(--active); border: 1px solid color-mix(in srgb,var(--active) 40%,transparent);
     background: var(--active-ground); }
   .fleet-ver { font-family: var(--mono); font-size: 11px; color: var(--slate-faint); text-align: right; }
@@ -836,33 +844,61 @@
   // ---- 2d · Fleet (Dream -> Code state per project) ----
   const FLEET = window.DASHBOARD_DATA.fleet || null;
   const FLABEL = {dream:"Dream", deck:"Deck", spec:"Spec", research:"Research", brief:"Brief",
-                  prd:"PRD", arch:"Architecture", epics:"Epics", code:"Code"};
+                  prd:"PRD", ux:"UX", arch:"Architecture", context:"Context", epics:"Epics",
+                  sprint:"Sprint feed", gates:"Gate reports", code:"Code", verify:"Verify",
+                  retro:"Retro"};
   if (FLEET && FLEET.rows && FLEET.rows.length) {
     document.getElementById("fleetsec").hidden = false;
-    const full = FLEET.rows.filter(r => r.complete === r.of).length;
-    const stale = FLEET.rows.filter(r => r.stale).length;
+    // SOUND leads, reached follows. "Complete" used to mean nine globs matched, which is
+    // how unity and wasm reported a full chain while owning neither epics nor code. Sound
+    // = no gap before the furthest stage reached, no partial artifact set, nothing out of
+    // date. It starts brutal and improves as real work lands, which is the point.
+    const live = FLEET.rows.filter(r => !r.archived);
     document.getElementById("fleeth").textContent =
-      "Fleet · " + FLEET.rows.length + " projects (" + full + " complete chains" +
-      (stale ? " · " + stale + " stale" : "") + ")";
+      "Fleet · " + live.length + " live chains · " + (FLEET.sound || 0) + " sound · " +
+      (FLEET.gaps || 0) + " gaps · " + (FLEET.findings || 0) + " out of date" +
+      (FLEET.rows.length - live.length ? " · " + (FLEET.rows.length - live.length) + " archived" : "");
     document.getElementById("fleetrows").innerHTML = FLEET.rows.map(r => {
       const dots = FLEET.stages.map(s => {
         const na = (r.na || []).includes(s), has = !!r.stages[s];
-        const cls = na ? "na" : (has ? "" : "miss");
-        const tip = FLABEL[s] + (na ? " — not in scope" : (has ? " — " + r.stages[s] : " — missing"));
-        return '<span class="fdot ' + cls + '" title="' + tip + '"></span>';
+        const sub = (r.sub || {})[s];
+        // A set-valued stage renders PARTIAL rather than green: one green dot for
+        // `research` hid five stations missing an entire discipline, and one for `deck`
+        // hid an incomplete six-artifact family.
+        const part = has && sub && sub.n < sub.of;
+        const cls = na ? "na" : (part ? "part" : (has ? "" : "miss"));
+        let tip = FLABEL[s] + (na ? " — not in scope" : (has ? " — " + r.stages[s] : " — missing"));
+        if (sub) tip += " · " + sub.n + "/" + sub.of +
+          (sub.missing && sub.missing.length ? " (missing " + sub.missing.join(", ") + ")" : "") +
+          (sub.inherited ? " · inherited from the station" : "");
+        return '<span class="fdot ' + cls + '" title="' + esc(tip) + '"></span>';
       }).join("");
       const ledger = FLEET.stages.map(s => {
-        const na = (r.na || []).includes(s), v = r.stages[s];
+        const na = (r.na || []).includes(s), v = r.stages[s], sub = (r.sub || {})[s];
         return '<span><b>' + FLABEL[s] + '</b> ' +
-          (na ? '<span class="none">n/a</span>' : (v || '<span class="none">—</span>')) + '</span>';
-      }).join("");
-      return '<details class="fleetrow"><summary>' +
+          (na ? '<span class="none">n/a</span>' : (v || '<span class="none">—</span>')) +
+          (sub ? ' <span class="none">' + sub.n + '/' + sub.of +
+                 (sub.inherited ? ' inherited' : '') + '</span>' : '') + '</span>';
+      }).join("") +
+      (r.staleBy && r.staleBy.length ? '<span class="fstale"><b>Out of date</b> ' +
+        r.staleBy.map(f => esc(f.kind === 'feeds'
+          ? f.stage + ' (' + f.at + ') is newer than ' + f.than + ' (' + f.other + ')'
+          : f.kind === 'behind-code'
+          ? f.stage + ' (' + f.at + ') predates the code it governs (' + f.other + ')'
+          : f.stage + ' is ' + f.days + 'd old (shelf life ' + f.life + 'd)')).join(' · ') +
+        '</span>' : '');
+      return '<details class="fleetrow' + (r.archived ? ' arch' : '') + '"><summary>' +
         '<span class="fleet-name"><a href="' + REPO + '/blob/main/docs/dreams/' + esc(r.dream) + '.md">' + esc(r.label) + '</a></span>' +
         smithChip(r.owner) +
         '<span class="fdots">' + dots + '</span>' +
         '<span class="fmarks">' +
+          (r.archived ? '<span class="fmark bf" title="this Dream ended — kept on the wall so no chain is invisible, and excluded from the sound/gap tallies">archived</span>' : '') +
+          (r.noDream ? '<span class="fmark bad" title="a Spec with no Dream of its own and no `owner-dream:` naming a parent — Dream-first says every effort starts as a Dream">no dream</span>' : '') +
+          (r.gaps && r.gaps.length ? '<span class="fmark bad" title="stages missing BEFORE the furthest one reached — a hole in the chain, not merely unfinished: ' + esc(r.gaps.join(", ")) + '">' + r.gaps.length + ' gap' + (r.gaps.length > 1 ? 's' : '') + '</span>' : '') +
+          (r.staleBy && r.staleBy.length ? '<span class="fmark ov" title="open the row for detail">' + r.staleBy.length + ' out of date</span>' : '') +
           (r.backfilled ? '<span class="fmark bf" title="stage dates do not ascend — the chain was retro-fitted after the fact (docs/dreams/README.md: realized is not exempt from the chain). True history, not an error.">backfilled</span>' : '') +
           (r.overtaken ? '<span class="fmark ov" title="the Spec still carries ' + r.openQuestions + ' unresolved open_questions while its PRD and architecture already exist — downstream has overtaken the contract">overtaken · ' + r.openQuestions + '</span>' : '') +
+          (!r.overtaken && r.openQuestions ? '<span class="fmark ov" title="the Spec carries ' + r.openQuestions + ' unresolved open_questions">open q · ' + r.openQuestions + '</span>' : '') +
         '</span>' +
         '<span class="fleet-stage">' + esc(FLABEL[r.furthest] || r.furthest) + '</span>' +
         '<span class="fleet-prog">' + (r.progress || '') + '</span>' +

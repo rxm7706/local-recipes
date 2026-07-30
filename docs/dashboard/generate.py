@@ -985,57 +985,234 @@ def scan_health() -> dict:
 
 # ---- fleet view (Dream -> Code, per project: stage, recency, version) --------
 
-FLEET_PROJECTS = [
-    # (display label, project slug, dream slug — differs where the Dream predates the station)
-    ("herald", "pyforge-herald", "pyforge-herald"),
-    ("doctor", "pyforge-doctor", "pyforge-doctor"),
-    ("scribe", "pyforge-scribe", "pyforge-scribe"),
-    ("steward", "pyforge-steward", "pyforge-steward"),
-    ("marshal", "pyforge-marshal", "pyforge-marshal"),
-    ("mason", "pyforge-mason", "pyforge-mason"),
-    ("atlas", "pyforge-atlas", "pyforge-atlas"),
-    ("warden", "pyforge-warden", "pyforge-warden"),
-    ("genesis", "pyforge-genesis", "pyforge-genesis"),
-    # Chains absorbed by their owning station (Charter §5, 2026-07-28).
-    ("deckcraft", "pyforge-herald", "deckcraft"),
-    ("presenton", "pyforge-mason", "presenton-pixi-image"),
-    # Chains absorbed by their owning station (Charter §5 "owning is becoming",
-    # 2026-07-28): the DREAM keeps its slug, the PROJECT is now the owner's tree.
-    ("unity", "pyforge-atlas", "unity-data-stack"),
-    ("wasm", "pyforge-atlas", "wasm-analytics-stack"),
-]
-# lifecycle order — the Dream-to-Code chain, left to right
-FLEET_STAGES = ("dream", "deck", "spec", "research", "brief", "prd", "arch", "epics", "code")
-# stages a project legitimately does not have (depth chosen at planning time)
+# Display-name overrides. Everything else uses the slug with any `pyforge-` prefix
+# dropped — the roster is DERIVED (see `_fleet_chains`), so this holds only the handful
+# of names that read better short.
+FLEET_LABELS = {
+    "presenton-pixi-image": "presenton",
+    "unity-data-stack": "unity",
+    "wasm-analytics-stack": "wasm",
+}
+# Lifecycle order — the Dream-to-Code chain, left to right. Grown from 9 to 15 because
+# several dots stood for a whole artifact SET or hid a distinct gate: `research` is three
+# disciplines, `deck` is the six-artifact family contract, `epics` and `code` each hid a
+# second question (is it drivable? does it verify?), and `ux` / `context` / `gates` /
+# `retro` are real chain artifacts that had no dot at all.
+FLEET_STAGES = ("dream", "deck", "spec", "research", "brief", "prd", "ux", "arch",
+                "context", "epics", "sprint", "gates", "code", "verify", "retro")
+# Stages whose dot stands for a SET: {stage: the artifacts that must all be present}.
+RESEARCH_TYPES = ("domain", "market", "technical")
+DECK_FAMILY = ("prototype", "exec", "infographic", "marp", "standalone", "pptx")
+FLEET_SUBSCORE = {"research": RESEARCH_TYPES, "deck": DECK_FAMILY}
 # Stages a CHAIN legitimately does not have (depth chosen at planning time). Keyed by
-# dream slug, matching the fleet row key.
+# CHAIN slug, matching the fleet row key — it used to be read with the PROJECT slug, so it
+# matched nothing and every row rendered `na: []`, which is why unity-data-stack and
+# wasm-analytics-stack both reported a complete 9/9 chain while owning neither epics nor
+# code. `ux` is n/a everywhere except chains that declare a UI surface.
 FLEET_NA = {"unity-data-stack": {"epics"}, "wasm-analytics-stack": {"epics"}}
+FLEET_UX = {"deckcraft", "presenton-pixi-image", "unity-data-stack", "wasm-analytics-stack"}
 _STALE_DAYS = 30
+# Shelf life in days, per stage. A global default keeps this usable with no configuration;
+# override only where the artifact really ages differently. `None` = never goes stale: a
+# Dream is a standing aspiration and a Spec is a contract — neither expires by the calendar,
+# they expire when something downstream contradicts them, which is what the
+# stale-by-dependency check is for.
+_SHELF_LIFE_DEFAULT = 90
+_SHELF_LIFE = {"dream": None, "spec": None, "context": None, "retro": None}
+
+def _frontmatter_scalars(path: Path, keys: tuple[str, ...]) -> dict[str, str]:
+    """The named top-level scalars from a file's `---` frontmatter, comments stripped."""
+    out: dict[str, str] = {}
+    try:
+        lines = path.read_text(encoding="utf-8").splitlines()
+    except (OSError, UnicodeDecodeError):
+        return out
+    if not lines or lines[0].strip() != "---":
+        return out
+    for ln in lines[1:]:
+        if ln.strip() == "---":
+            break
+        for k in keys:
+            if ln.startswith(f"{k}:"):
+                out[k] = _strip_yaml_comment(ln.split(":", 1)[1])
+    return out
 
 
-def _added(patterns: list[str]) -> str:
-    """Earliest add-date across matching paths (MM-DD), '' when absent."""
-    best = ""
+def _fleet_chains() -> list[tuple[str, str, str, str]]:
+    """Every chain in the repo as `(slug, project, owner, dream_status)` — DERIVED.
+
+    The roster was a 13-entry literal while the repo held 34 chains, so 21 chains — every
+    one of them carrying a SPEC.md — had no Fleet row at all, including all three that
+    carry unresolved `open_questions`. A hardcoded roster omits exactly the newest thing;
+    deriving it and warning on what cannot be placed is the standing rule here.
+
+    A chain is a Dream (`docs/dreams/<slug>.md`) OR a Spec directory
+    (`…/planning-artifacts/specs/spec-<slug>/`). The UNION on purpose: a Dream with no Spec
+    and a Spec with no Dream are both real conditions worth seeing, and taking either side
+    alone would hide one of them. The Spec's own location names the owning project —
+    authoritative in a way `owner:` is not, since `owner: guild` names no project tree.
+    """
+    spec_project: dict[str, str] = {}
+    owner_dream: dict[str, str] = {}
+    for d in sorted(REPO_ROOT.glob("_bmad-output/projects/*/planning-artifacts/specs/spec-*")):
+        if not (d / "SPEC.md").is_file():
+            continue
+        slug = d.name[len("spec-"):]
+        spec_project.setdefault(slug, d.parts[-4])
+        # A chain need not have a Dream FILE of its own. Charter §5: one Dream can spawn
+        # several Specs, and such a Spec names its parent in `owner-dream:`. Reading that
+        # is what distinguishes a legitimate sub-chain from genuinely unattributed work —
+        # without it, bmad-loop-governance and multi-loop-isolation read as ownerless and
+        # tripped the Charter §7 accountability gate, which refuses to publish a row it
+        # cannot attribute.
+        od = _frontmatter_scalars(d / "SPEC.md", ("owner-dream",)).get("owner-dream", "")
+        if od:
+            owner_dream.setdefault(slug, Path(od.strip("'\"")).stem)
+    dreams = {f.stem: _frontmatter_scalars(f, ("owner", "status"))
+              for f in sorted(DREAMS_DIR.glob("*.md")) if f.name != "README.md"}
+    out = []
+    for slug in sorted(set(spec_project) | set(dreams)):
+        meta = dreams.get(slug, {})
+        parent = owner_dream.get(slug, "")
+        # Own Dream first; else inherit the parent Dream's station.
+        owner = meta.get("owner") or dreams.get(parent, {}).get("owner", "")
+        project = spec_project.get(slug)
+        if not project and owner and owner != "guild":
+            project = f"pyforge-{owner}"
+        if not project:
+            print(f"[fleet] WARN chain {slug!r}: no spec directory and no station owner — "
+                  f"its artifact lookups have nowhere to look")
+        if not owner:
+            print(f"[fleet] WARN chain {slug!r}: no owner — no Dream of its own and no "
+                  f"`owner-dream:` in its SPEC.md; the Charter §7 gate will refuse it")
+        out.append((slug, project or "", owner, meta.get("status", ""), parent))
+    # Stations first (a chain whose slug names its own project), then satellites grouped
+    # under the station that owns them — the reading order the hand-written roster had.
+    return sorted(out, key=lambda c: (c[0] != c[1], c[2], c[0]))
+
+
+_ISO = re.compile(r"(\d{4}-\d{2}-\d{2})")
+_GIT_SCOPES = ("docs/dreams", "_bmad-output", "presentations", "src/shared/packages")
+_GIT_FIRST: dict[str, str] = {}
+_GIT_LAST: dict[str, str] = {}
+
+
+def _build_git_index() -> None:
+    """First-seen and last-touched dates for every tracked path, in ONE git pass.
+
+    This used to be one `git log` per matched path. At 13 chains x 9 stages that was
+    tolerable; at 34 x 15, with two dates per artifact, it is ~500 subprocesses on every CI
+    deploy. One `--name-only` walk over the scoped paths indexes ~3,900 paths from ~480
+    commits in about a tenth of a second. `git log` is newest-first, so a path's FIRST
+    sighting is its last-touched and its LAST sighting is when it was added.
+    """
+    if _GIT_FIRST:
+        return
+    r = subprocess.run(["git", "log", "--format=%x00%ad", "--date=short", "--name-only",
+                        "--", *_GIT_SCOPES],
+                       capture_output=True, text=True, cwd=REPO_ROOT)
+    when = ""
+    for line in r.stdout.splitlines():
+        if line.startswith("\0"):
+            when = line[1:]
+        elif line.strip():
+            _GIT_LAST.setdefault(line, when)
+            _GIT_FIRST[line] = when
+
+
+def _artifact_dates(rel: str) -> tuple[str, str]:
+    """`(created, updated)` for one tracked path, as full ISO. `("", "")` if unknown.
+
+    TWO clocks, because the board asks two different questions and one date cannot answer
+    both: `created` orders the chain (is this backfilled?), `updated` judges currency (is
+    this still true?).
+
+    The PATH date wins, per the adopted convention — a date in the filename or directory
+    name is the artifact's own "as of" claim, it is universal here (every one of the 38
+    dated artifact directories carries it), and it cannot silently drift from the file the
+    way a frontmatter field can. Frontmatter is consulted next, git only as a last resort:
+    git-add is the one source measured to lie, differing from the path date on 86 paths by
+    up to ~88 days, because the 2026-07-29 spec-recovery wave committed artifacts authored
+    in May.
+
+    A path date is fixed at creation and so cannot express an update; for the `updated`
+    clock it is therefore a FLOOR, taking whichever of it and git's last-touched is later.
+    Full ISO throughout: the old `%m-%d` format discarded the year, which made the
+    chain-ordering comparison behind `backfilled` year-blind.
+    """
+    _build_git_index()
+    m = _ISO.search(rel)
+    path_date = m.group(1) if m else ""
+    fm = {}
+    p = REPO_ROOT / rel
+    if p.is_file() and p.suffix in (".md", ".yaml", ".yml"):
+        try:
+            fm = _frontmatter_scalars(p, ("created", "updated", "date"))
+        except OSError:
+            fm = {}
+    fm = {k: v.strip("'\"") for k, v in fm.items()}
+    created = path_date or fm.get("created") or fm.get("date") or _GIT_FIRST.get(rel, "")
+    # STRICT precedence, never max(). An explicit `updated:` is the only field that can
+    # express a refresh, so it leads; the path date is next per the adopted convention;
+    # git is the last resort. Taking the max let git's last-touched win, and a bulk commit
+    # is not a refresh: the 2026-07-29 spec-recovery wave re-committed most of the tree in
+    # one go, which made 41 of 45 currency findings report that wave rather than any real
+    # staleness. If an artifact declares a date, that date IS its currency.
+    updated = (fm.get("updated") or path_date or fm.get("date")
+               or _GIT_LAST.get(rel, "") or created)
+    return created, updated
+
+
+def _resolve(patterns: list[str]) -> list[str]:
+    """Repo-relative paths matching any of the globs, deduped and sorted."""
+    out: set[str] = set()
     for pat in patterns:
-        for path in glob.glob(pat, recursive=True):
-            rel = str(Path(path).resolve().relative_to(REPO_ROOT))
-            r = subprocess.run(["git", "log", "--diff-filter=A", "--format=%ad",
-                                "--date=format:%m-%d", "--", rel],
-                               capture_output=True, text=True, cwd=REPO_ROOT)
-            dates = [d for d in r.stdout.strip().split("\n") if d]
-            if dates and (not best or dates[-1] < best):
-                best = dates[-1]
+        for path in glob.glob(str(REPO_ROOT / pat), recursive=True):
+            p = Path(path)
+            if p.is_file():
+                out.add(str(p.resolve().relative_to(REPO_ROOT)))
+    return sorted(out)
+
+
+def _stage_dates(paths: list[str]) -> tuple[str, str]:
+    """`(created, updated)` for a STAGE, across every file that satisfies it.
+
+    EARLIEST created, because a stage is reached when its first artifact appears; LATEST
+    updated, because the stage is only as current as its most recently refreshed piece.
+    """
+    pairs = [_artifact_dates(p) for p in paths]
+    created = [a for a, _ in pairs if a]
+    updated = [b for _, b in pairs if b]
+    return (min(created) if created else "", max(updated) if updated else "")
+
+
+def _last_touched(prefixes: list[str]) -> str:
+    """Most recent commit date (ISO) under any of the given path prefixes."""
+    _build_git_index()
+    keys = [p.rstrip("/") for p in prefixes]
+    best = ""
+    for rel, when in _GIT_LAST.items():
+        if when > best and any(rel == k or rel.startswith(k + "/") for k in keys):
+            best = when
     return best
 
 
-def _last_touched(paths: list[str]) -> str:
-    """Most recent commit date (ISO) across the given paths."""
-    existing = [p for p in paths if (REPO_ROOT / p).exists()]
-    if not existing:
-        return ""
-    r = subprocess.run(["git", "log", "-1", "--format=%ad", "--date=short", "--"] + existing,
-                       capture_output=True, text=True, cwd=REPO_ROOT)
-    return r.stdout.strip()
+def _pixi_tasks() -> set[str]:
+    """Every task name declared in the workspace manifest (all feature tables)."""
+    global _PIXI_TASKS
+    if _PIXI_TASKS is None:
+        try:
+            data = tomllib.loads((REPO_ROOT / "pixi.toml").read_text(encoding="utf-8"))
+        except (OSError, tomllib.TOMLDecodeError):
+            data = {}
+        names = set(data.get("tasks", {}))
+        for feat in (data.get("feature") or {}).values():
+            names |= set((feat or {}).get("tasks") or {})
+        _PIXI_TASKS = names
+    return _PIXI_TASKS
+
+
+_PIXI_TASKS: set[str] | None = None
 
 
 def _pkg_version(slug: str) -> str:
@@ -1130,36 +1307,130 @@ def _spec_open_questions(project: str, dream: str) -> int:
     return count
 
 
-def scan_fleet(projects: dict) -> dict:
-    """Per-project Dream-to-Code state: stage dates, furthest stage, recency, version."""
+def _stage_globs(slug: str, project: str, primary: bool) -> dict[str, list[str]]:
+    """Where each stage's artifacts live for ONE chain.
+
+    Chain-scoped first, always. A chain may claim the project-ROOT artifacts (`prd.md`,
+    `architecture.md`, `epics.md`, the flat `research/`, the package, the deck) only when
+    it is PRIMARY — its slug names its own project, i.e. it is the station's own chain.
+    Those belong to the station, not to every chain parked in its tree; crediting them to
+    satellites is what let unity-data-stack and wasm-analytics-stack each report a complete
+    9/9 chain while owning neither epics nor code.
+
+    `research`, `gates` and `retro` have no chain component in the repo's naming convention
+    yet (unlike prd/arch/brief/epics, which all carry `-<chain>-`), so the chain-scoped
+    globs here match a slug ANYWHERE in the name and will start resolving as the migration
+    adds it. Until then those artifacts answer only for the primary chain, and
+    `unattributed` below reports what that leaves unaccounted for.
+    """
+    pa = f"_bmad-output/projects/{project}/planning-artifacts"
+    proj = f"_bmad-output/projects/{project}"
+    g: dict[str, list[str]] = {
+        "dream":    [f"docs/dreams/{slug}.md"],
+        "deck":     [f"presentations/{slug}/project/*.html"],
+        # The memlog joins the spec stage on purpose. `SPEC.md` carries no path date and no
+        # `updated:`, so its currency fell through to git last-touched — which the 2026-07-29
+        # promotion wave set for nearly every spec at once, producing 11 identical and
+        # meaningless `spec newer than prd` findings. The sibling `.memlog.md` IS the spec's
+        # change log and does carry `updated:`, so it answers the question honestly.
+        "spec":     [f"{pa}/specs/spec-{slug}/SPEC.md", f"{pa}/specs/spec-{slug}/.memlog.md"],
+        # Station research is INHERITED by its satellites, and marked as such (see
+        # `_subscore`). The three disciplines were commissioned once per station and the
+        # satellite chains genuinely draw on them; calling that a gap on 23 chains would
+        # invent work that was already done. A chain that commissions its own research
+        # names itself in the filename and stops being marked inherited.
+        "research": [f"{pa}/research/*{slug}*.md", f"{pa}/research/*.md"],
+        "brief":    [f"{pa}/product-brief-{slug}*.md",
+                     f"{pa}/briefs/brief-{slug}-*/brief*.md"],
+        "prd":      [f"{pa}/prds/prd-{slug}-*/prd.md"],
+        "ux":       [f"{pa}/ux-{slug}*.md", f"{pa}/ux/{slug}*.md"],
+        "arch":     [f"{pa}/architecture/architecture-{slug}-*/*.md"],
+        "context":  [f"{proj}/project-context-{slug}.md"],
+        "epics":    [f"{pa}/epics-{slug}.md"],
+        "sprint":   [f"{pa}/sprint-status-ledger-{slug}.yaml"],
+        "gates":    [f"{pa}/implementation-readiness-report*{slug}*.md",
+                     f"{pa}/validation-report-PRD*{slug}*.md"],
+        "code":     [f"src/shared/packages/{slug}/pyproject.toml"],
+        "verify":   [],   # not a file — a declared gate; resolved in scan_fleet
+        "retro":    [f"{pa}/retros/*{slug}*.md"],
+    }
+    if primary:
+        g["deck"] += [f"presentations/{project}/project/*.html"]
+        g["research"] += [f"{pa}/research/*.md"]
+        g["brief"] += [f"{pa}/product-brief*.md"]
+        g["prd"] += [f"{pa}/prd.md", f"{pa}/PRD.md"]
+        g["ux"] += [f"{pa}/ux*.md"]
+        g["arch"] += [f"{pa}/architecture.md"]
+        g["context"] += [f"{proj}/project-context.md", f"{pa}/project-context.md"]
+        g["epics"] += [f"{pa}/epics.md"]
+        g["sprint"] += [f"{pa}/sprint-status-ledger.yaml"]
+        g["gates"] += [f"{pa}/implementation-readiness-report*.md",
+                       f"{pa}/validation-report-PRD*.md"]
+        g["retro"] += [f"{pa}/retros/*.md"]
+    return g
+
+
+def _subscore(stage: str, slug: str, project: str, primary: bool,
+              paths: list[str], pitch: dict) -> dict | None:
+    """`{have, of, missing}` for a stage whose dot stands for a SET, else None.
+
+    A single green dot for `research` hid five projects missing an entire discipline, and a
+    single green dot for `deck` hid a partial family. A set-valued stage reports partial.
+    """
+    if stage == "research":
+        have = {t: any(Path(p).name.startswith(t + "-") for p in paths)
+                for t in RESEARCH_TYPES}
+        own = [p for p in paths if slug in Path(p).name]
+        return {"have": have, "n": sum(have.values()), "of": len(have),
+                "missing": sorted(k for k, v in have.items() if not v),
+                "inherited": bool(paths) and not own and not primary}
+    elif stage == "deck":
+        card = pitch.get(slug) or (pitch.get(project) if primary else None)
+        have = dict(card["have"]) if card else {k: False for k in DECK_FAMILY}
+    else:
+        return None
+    return {"have": have, "n": sum(have.values()), "of": len(have),
+            "missing": sorted(k for k, v in have.items() if not v)}
+
+
+def scan_fleet(projects: dict, pitch_cards: list[dict] | None = None) -> dict:
+    """Per-CHAIN Dream-to-Code state: stages, sub-scores, currency, gaps, version."""
     from datetime import date
     today = date.today()
-    rows = []
-    for label, slug, dream in FLEET_PROJECTS:
-        pa = f"_bmad-output/projects/{slug}/planning-artifacts"
-        stages = {
-            "dream":    _added([f"docs/dreams/{dream}.md"]),
-            "deck":     _added([f"presentations/{slug}/project/*.dc.html"]),
-            # Chain-scoped, NOT project-scoped. Under Charter §5 as amended a project
-            # holds MANY chains, so `specs/spec-*/SPEC.md` would credit every chain in
-            # the tree with every other chain's artifacts. Match the dream slug.
-            "spec":     _added([f"{pa}/specs/spec-{dream}/SPEC.md"]),
-            "research": _added([f"{pa}/research/*.md"]),
-            "brief":    _added([f"{pa}/product-brief-{dream}*",
-                                f"{pa}/briefs/brief-{dream}-*/brief*.md"]),
-            "prd":      _added([f"{pa}/prd.md", f"{pa}/prds/prd-{dream}-*/prd.md"]),
-            "arch":     _added([f"{pa}/architecture.md",
-                                f"{pa}/architecture/architecture-{dream}-*/*.md"]),
-            "epics":    _added([f"{pa}/epics.md"]),
-            "code":     _added([f"src/shared/packages/{slug}/pyproject.toml"]),
-        }
-        na = FLEET_NA.get(slug, set())
+    pitch = {c["slug"]: c for c in (pitch_cards or [])}
+    tasks = _pixi_tasks()
+    rows, unattributed = [], []
+    for slug, project, owner, dstatus, parent in _fleet_chains():
+        primary = (slug == project)
+        globs = _stage_globs(slug, project, primary)
+        stages, updated_at, files = {}, {}, {}
+        for st in FLEET_STAGES:
+            if st == "verify":
+                # Not a file. A chain verifies when the workspace declares a gate for it.
+                gate = next((t for t in (f"{slug}-test", f"{project}-test") if t in tasks), "")
+                stages[st] = stages.get("code", "") if gate else ""
+                updated_at[st] = updated_at.get("code", "")
+                files[st] = [gate] if gate else []
+                continue
+            found = _resolve(globs[st])
+            files[st] = found
+            stages[st], updated_at[st] = _stage_dates(found)
+        na = set(FLEET_NA.get(slug, set())) | (set() if slug in FLEET_UX else {"ux"})
+        sub = {st: s for st in FLEET_SUBSCORE
+               if (s := _subscore(st, slug, project, primary, files[st], pitch))}
         reached = [s for s in FLEET_STAGES if stages[s]]
         furthest = reached[-1] if reached else "dream"
-        updated = _last_touched([f"docs/dreams/{dream}.md",
-                                 f"_bmad-output/projects/{slug}",
-                                 f"presentations/{slug}",
-                                 f"src/shared/packages/{slug}"])
+        # REQUIRED = every stage up to and including the furthest one reached. A chain that
+        # got to `code` owes everything before it; a chain that only reached `spec` is judged
+        # on dream/deck/spec alone. That turns the row from "how far along" into "is this
+        # chain sound", and it self-scales instead of showing a dreamt chain 13 red dots.
+        cut = FLEET_STAGES.index(furthest)
+        required = [s for s in FLEET_STAGES[:cut + 1] if s not in na]
+        gaps = [s for s in required if not stages[s]]
+        partial = [st for st, s in sub.items() if s["n"] and s["n"] < s["of"]]
+        updated = _last_touched([f"docs/dreams/{slug}.md", f"{'_bmad-output/projects/' + project}"]
+                                + ([f"presentations/{project}", f"src/shared/packages/{project}"]
+                                   if primary else [f"presentations/{slug}"]))
         age = ""
         if updated:
             try:
@@ -1167,49 +1438,112 @@ def scan_fleet(projects: dict) -> dict:
                 age = (today - date(y, m, d)).days
             except ValueError:
                 age = ""
-        # story progress when this project is a wired build line
         prog = ""
-        pkey = {"pyforge-herald": "herald", "pyforge-doctor": "doctor",
-                "pyforge-scribe": "scribe", "pyforge-warden": "warden",
-                "pyforge-atlas": "atlas", "pyforge-marshal": "marshal",
-                "pyforge-mason": "mason", "pyforge-steward": "steward",
-                "pyforge-genesis": "genesis"}.get(slug)
+        pkey = project.removeprefix("pyforge-") if primary else ""
         if pkey and pkey in projects:
-            st = [s for e in projects[pkey]["epics"] for s in e["stories"]]
-            prog = f"{sum(1 for s in st if s[1] == 'done')}/{len(st)}"
-        # F1 — a row whose stage dates do not ascend was BACKFILLED, not built out
-        # of order. docs/dreams/README.md mandates it: "realized is not exempt from
-        # the chain" — a Dream that shipped before the model existed gets its
-        # PRD/spec retro-fitted. warden shipped from a 07-14 PRD, then got its Dream
-        # 07-23 and its Spec 07-25. True history, previously invisible.
-        seq = [stages[s] for s in FLEET_STAGES if stages[s]]
+            st_ = [s for e in projects[pkey]["epics"] for s in e["stories"]]
+            prog = f"{sum(1 for s in st_ if s[1] == 'done')}/{len(st_)}"
+        # Ordering is judged on the chain's OWN artifacts. An inherited stage carries the
+        # station's date, not this chain's, so counting it invented ordering inversions —
+        # it took `backfilled` from 16 chains to 25 the moment research inheritance landed,
+        # which is the signal decaying into noise rather than 9 chains becoming backfilled.
+        inherited = {st for st, s in sub.items() if s.get("inherited")}
+        seq = [stages[s] for s in FLEET_STAGES if stages[s] and s not in inherited]
         backfilled = seq != sorted(seq)
-        # F3 — the contract has unanswered questions while its decomposition
-        # already exists. bmad-spec emits open_questions[] by design for gaps the
-        # Dream could not resolve; research/PRD are what resolve them. Non-empty
-        # here + PRD + architecture present = downstream has overtaken the Spec.
-        open_q = _spec_open_questions(slug, dream)
+        open_q = _spec_open_questions(project, slug)
         overtaken = bool(open_q) and bool(stages["prd"]) and bool(stages["arch"])
-        # `slug` identifies the CHAIN (the dream), not the hosting project — under
-        # Charter §5 as amended several chains share one project, and keying rows by
-        # project rendered "pyforge-atlas" three times with no way to tell them apart.
-        rows.append({"label": label, "slug": dream, "project": slug,
-                     "dream": dream, "stages": stages,
-                     "backfilled": backfilled, "openQuestions": open_q,
-                     "overtaken": overtaken,
-                     "na": sorted(na), "furthest": furthest, "updated": updated,
-                     "age": age, "stale": isinstance(age, int) and age > _STALE_DAYS,
-                     "version": _pkg_version(slug), "progress": prog,
-                     "complete": sum(1 for s in FLEET_STAGES if stages[s] or s in na),
-                     "of": len(FLEET_STAGES)})
-    full = sum(1 for r in rows if r["complete"] == r["of"])
-    bf = [r["slug"] for r in rows if r["backfilled"]]
-    ov = [f"{r['slug']}({r['openQuestions']})" for r in rows if r["overtaken"]]
-    print(f"[fleet] {len(rows)} projects · {full} complete chains · "
-          f"{sum(1 for r in rows if r['stale'])} stale (>{_STALE_DAYS}d)"
-          + (f" · {len(bf)} backfilled: {', '.join(bf)}" if bf else "")
-          + (f" · overtaken: {', '.join(ov)}" if ov else ""))
-    return {"stages": list(FLEET_STAGES), "staleDays": _STALE_DAYS, "rows": rows}
+        stale_by = _currency(slug, stages, updated_at, na, today,
+                             realized=(dstatus == "realized"))
+        if (sub.get("research") or {}).get("inherited"):
+            unattributed.append(slug)
+        rows.append({
+            "label": FLEET_LABELS.get(slug) or slug.removeprefix("pyforge-"),
+            "slug": slug, "project": project, "dream": slug, "owner": owner,
+            "stages": stages, "updatedAt": updated_at, "sub": sub,
+            "archived": dstatus == "archived", "dreamStatus": dstatus,
+            # A chain without its OWN Dream file is only a Dream-first violation when it
+            # also names no parent. Charter §5 lets one Dream spawn several Specs, and such
+            # a Spec declares `owner-dream:` — that is a sub-chain, not unattributed work.
+            "ownerDream": parent, "noDream": not stages["dream"] and not parent,
+            "unowned": not owner,
+            "backfilled": backfilled, "openQuestions": open_q, "overtaken": overtaken,
+            "na": sorted(na), "required": required, "gaps": gaps, "partial": sorted(partial),
+            "staleBy": stale_by, "furthest": furthest, "updated": updated, "age": age,
+            "stale": isinstance(age, int) and age > _STALE_DAYS,
+            "version": _pkg_version(project) if primary else "", "progress": prog,
+            "complete": len(required) - len(gaps), "of": len(required),
+        })
+    live = [r for r in rows if not r["archived"]]
+    sound = [r for r in live if not r["gaps"] and not r["partial"] and not r["staleBy"]]
+    flags = {k: [r["slug"] for r in live if r[k]]
+             for k in ("noDream", "unowned", "overtaken", "backfilled")}
+    reached = sum(1 for r in live if not r["gaps"])
+    print(f"[fleet] {len(rows)} chains ({len(live)} live, {len(rows) - len(live)} archived) · "
+          f"{len(sound)} sound · {reached} no-gap · {sum(len(r['gaps']) for r in live)} gap(s) · "
+          f"{sum(len(r['partial']) for r in live)} partial set(s) · "
+          f"{sum(len(r['staleBy']) for r in live)} currency finding(s)")
+    for k, v in flags.items():
+        if v:
+            print(f"[fleet]   {k}: {', '.join(v)}")
+    if unattributed:
+        print(f"[fleet]   research inherited from the station (no chain-scoped research of "
+              f"its own): {len(unattributed)} chain(s)")
+    return {"stages": list(FLEET_STAGES), "staleDays": _STALE_DAYS,
+            "shelfLife": {s: _SHELF_LIFE.get(s, _SHELF_LIFE_DEFAULT) for s in FLEET_STAGES},
+            "sound": len(sound), "live": len(live), "reached": reached,
+            "gaps": sum(len(r["gaps"]) for r in live),
+            "findings": sum(len(r["staleBy"]) for r in live),
+            "rows": rows}
+
+
+# Which stage must not be older than which. A chain is a pipeline: research feeds the
+# brief, the brief the PRD, the PRD the architecture, and so on. An upstream artifact
+# DATED AFTER the thing built from it means the input moved and the output was never
+# re-derived — the live defect `backfilled` deliberately does not cover, because
+# `backfilled` describes true history (a chain retro-fitted after the fact) while this
+# describes a contract that has quietly gone out of date.
+_FEEDS = (("research", "brief"), ("brief", "prd"), ("prd", "arch"), ("spec", "prd"),
+          ("arch", "epics"), ("epics", "sprint"), ("prd", "gates"), ("code", "retro"))
+
+
+def _currency(slug: str, stages: dict, updated_at: dict, na: set, today,
+              realized: bool = False) -> list[dict]:
+    """Every way this chain's artifacts are out of date. Empty list when current."""
+    from datetime import date
+    out = []
+    for up, down in _FEEDS:
+        u, d = updated_at.get(up, ""), stages.get(down, "")
+        if u and d and u > d and up not in na and down not in na:
+            out.append({"kind": "feeds", "stage": up, "than": down, "at": u, "other": d})
+    for st in FLEET_STAGES:
+        life = _SHELF_LIFE.get(st, _SHELF_LIFE_DEFAULT)
+        when = updated_at.get(st, "")
+        if life is None or not when or st in na:
+            continue
+        try:
+            y, m, dd = (int(x) for x in when.split("-"))
+        except ValueError:
+            continue
+        days = (today - date(y, m, dd)).days
+        if days > life:
+            out.append({"kind": "shelf", "stage": st, "at": when, "days": days, "life": life})
+    # The contract has fallen behind the implementation: a spec/PRD/architecture older than
+    # the last change to the code it governs.
+    #
+    # SUPPRESSED once the Dream is `realized`. A shipped chain's code goes on moving —
+    # bug fixes, follow-up reviews, dependency bumps — so this would pin warden and atlas
+    # permanently red for behaving normally, and a board that is always red gets ignored.
+    # The signal is aimed at chains still being built, where a contract falling behind the
+    # code means the contract stopped being the thing that drives it. Stale-by-dependency
+    # still applies to realized chains, because THAT compares two contracts and stays
+    # meaningful after ship.
+    code = updated_at.get("code", "")
+    if not realized:
+        for st in ("spec", "prd", "arch"):
+            when = updated_at.get(st, "")
+            if code and when and when < code and st not in na:
+                out.append({"kind": "behind-code", "stage": st, "at": when, "other": code})
+    return out
 
 
 # ---- pitch roster (the deck family) ------------------------------------------
@@ -1569,7 +1903,11 @@ def apply_owner(data: dict) -> None:
     missing: list[str] = []
 
     for row in data["fleet"]["rows"]:                    # carries `dream` already
-        row["owner"] = by_slug.get(row["dream"], "")
+        # A sub-chain has no Dream FILE of its own; its SPEC names the parent in
+        # `owner-dream:` (Charter §5 — one Dream can spawn several Specs). Resolving
+        # through the parent keeps the single source of truth this function exists to
+        # enforce: the owner still comes from Dream frontmatter, just the parent's.
+        row["owner"] = by_slug.get(row["dream"], "") or by_slug.get(row.get("ownerDream", ""), "")
         if not row["owner"]:
             missing.append(f"fleet:{row['slug']}")
 
@@ -1698,7 +2036,11 @@ def main() -> int:
     build_c = scan_impl_campaign(data["projects"])
     apply_line_state(data["projects"])
     data["health"] = scan_health()
-    data["fleet"] = scan_fleet(data["projects"])
+    # Pitch BEFORE fleet: the deck dot is sub-scored against the six-artifact family
+    # contract, and scan_pitch already computes exactly that per deck. Recomputing it
+    # inside the fleet would be a second producer of one fact.
+    data["pitch"] = scan_pitch()
+    data["fleet"] = scan_fleet(data["projects"], data["pitch"])
     data["campaigns"] = [
         {"id": "spec-completion-2026-07-25", "title": "Spec Completion",
          "kind": "planning", "status": "completed", "completed": "2026-07-25",
@@ -1707,7 +2049,6 @@ def main() -> int:
         {"id": "build-2026-07-25", "title": "The Build", "kind": "build",
          "status": "active", **build_c},
     ]
-    data["pitch"] = scan_pitch()
     data["archived"] = build_archived(data["dreams"])
     # apply_owner MUST precede scan_guild: the Guild's `building` column reads
     # proj["owner"], which apply_owner sets. Ordered the other way it silently
