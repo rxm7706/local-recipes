@@ -205,16 +205,29 @@ def scan_projects(existing: dict) -> dict:
             if m and cur and m.group(1) == cur["badge"][1:]:
                 epics[-1]["stories"].append(
                     [f"{m.group(1)}.{m.group(2)}", "pending", m.group(3).strip()])
-        # Guard on STORIES, not just epics. pyforge-atlas parses to 9 epics with
+        # Guard on STORIES, not just epics. pyforge-atlas parses to 10 epics with
         # ZERO stories because its story headings are `A1`/`B1`/`0.1`, not
         # `Story 1.1` — and a naive `if not epics` guard let that through and
         # silently overwrote 32 real stories. A project whose epics.md uses a
         # different convention keeps its previous entry and says so loudly.
+        #
+        # DO NOT "fix" this by teaching the parser atlas's convention. Tried and
+        # reverted 2026-07-30. Its headings do carry a canonical pair —
+        # `### Story A1 (2.1):` — but the sprint-status keys it must match are
+        # MIXED: waves A–H key off the DISPLAY letter (`A1` -> `a1-scaffold-…`)
+        # while Epic 10 keys off the PARENS (`I0 (10.1)` -> `10-1-restore-…`).
+        # Deriving either one alone drops the other half: emitting the canonical
+        # pair took atlas from 38 matched / 0 unmatched to 6 / 32, and the board
+        # still rendered and still looked plausible. The hand-authored line is
+        # correct and deliberate; this warning is the guard announcing it, not a
+        # defect to chase.
         if sum(len(e["stories"]) for e in epics) == 0:
             if prev:
+                extra = (" — EXPECTED for this project, see the note above; the "
+                         "hand-authored line is correct" if slug == "pyforge-atlas" else "")
                 print(f"[projects] WARN {slug}: epics.md parsed {len(epics)} epic(s) "
                       f"but NO stories (unrecognised story-heading convention) — "
-                      f"keeping the existing hand-authored line, NOT overwriting it")
+                      f"keeping the existing hand-authored line, NOT overwriting it{extra}")
             continue
         row = {k: prev[k] for k in _EDITORIAL if k in prev}
         row.setdefault("label", key.capitalize())
