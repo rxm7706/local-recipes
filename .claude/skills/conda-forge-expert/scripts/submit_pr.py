@@ -87,7 +87,27 @@ def _sync_fork(fork_path: Path) -> int:
     )
     behind_n = int(behind) if rc == 0 and behind.isdigit() else 0
     _run(["git", "reset", "--hard", "upstream/main"], cwd=fork_path)
-    _run(["git", "push", "origin", "main", "--force"], cwd=fork_path)
+
+    # AUD-CFE-011: this used a bare `--force`, which silently discards anything
+    # on the fork's main that is not in upstream (a recipe committed straight to
+    # the fork, a hand-applied review fix). `prepare_branch` already uses
+    # --force-with-lease for the feature branch; make the fork-main sync agree.
+    # The lease is compared against the origin/main tracking ref, so it has to be
+    # fetched first or the check is against stale data.
+    _run(["git", "fetch", "origin", "main"], cwd=fork_path, check=False)
+    rc, _, err = _run(
+        ["git", "push", "origin", "main", "--force-with-lease"],
+        cwd=fork_path, check=False,
+    )
+    if rc != 0:
+        raise RuntimeError(
+            "Refusing to overwrite your fork's main: it holds commits that are "
+            "not in conda-forge/staged-recipes, so the sync would discard them. "
+            "Inspect with `git -C "
+            f"{fork_path} log origin/main ^upstream/main` and either push them "
+            "somewhere durable or reset the branch yourself, then re-run.\n"
+            f"git said: {err}"
+        )
     return behind_n
 
 
