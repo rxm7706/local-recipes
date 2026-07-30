@@ -760,3 +760,25 @@ it does not cover code pass 4 did not touch.
 fallen the way pass 4 asked to see before converging: pass 4 produced 7 medium behavioural
 patches plus 2 vacuous tests; this pass produced **0 behavioural defects and 1 vacuity**,
 which is fixed rather than deferred. `DW-I5-1` (the pass this discharges) is satisfied.
+
+## Post-closeout — `DW-AD23-3` fixed 2026-07-30
+
+Recorded here because this spec is the deferral's `source_spec` and two paragraphs above
+still say it stays open — they are the review-pass-5 record and are left as written. It no
+longer does.
+
+The default lock store is now the data tree's **sibling** `<data_root>.locks` rather than its
+child `<data_root>/.locks`, so `rm -rf data/` cannot delete a lock file out from under a live
+holder, and a `PYFORGE_ATLAS_LOCK_ROOT` resolving inside the data root is refused before any
+lock is taken. Pass 5's separation held up exactly as it called it: the **anchoring** argument
+needed no change at all — every project-anchored property it defends is untouched, and the
+`_resolve_base` / read-env-before-anchor ordering is preserved so the absolute-override escape
+hatch stays reachable in an installed layout. Only the default **value** moved.
+
+What the fix does not do, stated so the boundary is not lost: unlinking a lock file still
+admits a second writer, because `flock` belongs to the inode. That is unfixable by placement
+and is now pinned as a characterization test rather than left in prose. Full record, including
+why the store stays derived from the data root instead of pinned to the project, is in the
+`DW-AD23-3` ledger entry. Gate: `kedro-test` **911 passed / 19 skipped** (was 903, the count
+after 10.5's pass-5 fix — +8, exactly the new cases); `kedro-catalog-check` 47;
+`dagster-dryrun` 58.
