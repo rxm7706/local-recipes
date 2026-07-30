@@ -147,6 +147,8 @@ Durability first; curation is owned follow-up work.
 
   status: open
 
+  verified: 2026-07-30 — CONFIRMED STILL OPEN. The `lts` boolean is read nowhere in the package — zero hits for `.get("lts")`, `["lts"]` or `is_lts` across `src/pyforge/warden/*.py`; the only `lts`-shaped names are the gate flag `require_lts` (`cli.py:1069`/`:1088`, `config.py:430`/`:964`) and the registry filename. `CurrencyInfo` (`models.py:317-321`) still carries exactly `verdict`/`latest`/`lag`/`eol_date`/`tier` — no LTS signal — so `--require-lts` still cannot be evaluated from what this producer emits. Note Story 6.5 shipped the FLAG without the data behind it, which is the sharper form of the risk this entry raised.
+
 ## DW-6-3-7 — `currency:`/`license:` finding ids (`<axis>:<reason>:<name>@<version>`) carry no ecosystem discr…
 
 - source_spec: `_bmad-output/projects/pyforge-warden/implementation-artifacts/spec-6-3-currency-axis-producer-gate-flags.md`
@@ -155,6 +157,8 @@ Durability first; curation is owned follow-up work.
 
   status: open
 
+  verified: 2026-07-30 — CONFIRMED STILL OPEN on both axes. `currency.py:717` builds `id=f"currency:{reason}:{subject_segment}@{version_segment}"` and `license.py:764` builds `id=f"license:{reason_segment}:{name_segment}@{version_segment}"` — neither carries an ecosystem discriminator. Meanwhile `license.py:673-679` still dispatches on `component.ecosystem` (CONDA / PYPI / else), keeping the ecosystems distinct upstream of an id grammar that cannot express the distinction. The id-injectivity break is unchanged.
+
 ## DW-6-3-8 — The frozen 6.1 model invariant ("currency eol/over-lag finding requires non-null latest/lag/eol_…
 
 - source_spec: `_bmad-output/projects/pyforge-warden/implementation-artifacts/spec-6-3-currency-axis-producer-gate-flags.md`
@@ -162,6 +166,8 @@ Durability first; curation is owned follow-up work.
   evidence: Confirmed live this pass — implementing verdict=EOL/eol_date=None for `eol: true` turned the suite red at models.py:437 ("currency eol/over-lag finding requires non-null latest/lag/eol_date"); the 6.3 spec's Block-If forbids widening the frozen 6.1 schema, so `_resolve_from_cycles` now documents and degrades those shapes instead. Raised by the follow-up Edge Case Hunter pass (partially patched; remainder schema-blocked).
 
   status: open
+
+  verified: 2026-07-30 — CONFIRMED STILL OPEN — the frozen invariant is verbatim intact at `models.py:438`: 'currency eol/over-lag finding requires non-null latest/lag/eol_date'. No nullable `eol_date` variant and no dateless-EOL marker was added, so endoflife.date's boolean `eol: true` (already-EOL, no date published) still has no expressible shape and still degrades to `currency:unknown`. As the entry predicted, this remains unfixable under the no-schema-widening rule — it needs a deliberate schema amendment, not a story patch.
 ## Deferred from: second follow-up code review of spec-6-3-currency-axis-producer-gate-flags (2026-07-23, bmad-dev-auto review pass)
 
 ## DW-6-3-9 — `ComplianceReport.__post_init__`'s duplicate-finding-id invariant turns ANY producer-side id col…
@@ -171,12 +177,16 @@ Durability first; curation is owned follow-up work.
   evidence: Live-reproduced pre-patch this pass — a project with pyproject.toml + pixi.toml both declaring `mystery-pkg==1.0.0` (an ordinary dual-manifest shape) crashed `scan` end-to-end: `merge_components` keeps `(ecosystem, name, version)` identities distinct, currency resolution is ecosystem-agnostic, both components minted `currency:unknown:mystery-pkg@1.0.0`, and models.py's uniqueness check raised straight through to the internal-error exit with no report. Post-patch the same project emits a full report with one deduped finding (verified live). license.py:638's per-ecosystem dispatch leaves the narrower license-side collision reachable (e.g. conda recipe metadata + pypi metadata both unresolved at the same name+version). Raised by the second-pass Blind Hunter.
 
   status: open
+
+  verified: 2026-07-30 — CONFIRMED STILL OPEN, exactly as split. The hard-crash posture is unchanged: `models.py:650-655` still raises `ValueError` — 'finding ids must be unique (waiver matching and by-id consumers depend on it)' — and `assemble_report` (`report.py:208`) still runs outside the engine seam, so it still falls through to the internal-error exit with no report. The currency half stays patched: `currency.py:854-869` dedupes in-producer (`deduped: dict[str, Finding]`, `deduped.setdefault(finding.id, finding)`). The license half is still unguarded — `license.py` has NO finding-id dedup (its only 'deduplicated' at `:592` is SPDX-classifier ids, a different thing) while `:673-679` still dispatches per-ecosystem, so colliding `license:unknown:<pkg>@<ver>` ids across conda+pypi remain reachable.
 ### DW-FU-6-3: Follow-up review still recommended for 6-3-currency-axis-producer-gate-flags after the damping cap was spent
 origin: review-budget-followup
 source_spec: `spec-6-3-currency-axis-producer-gate-flags.md`
 severity: low
 reason: The follow-up-review damping cap (limits.max_followup_reviews = 1) was spent with the story finalized (status: done, verify green) while the review pass still recommended an independent follow-up. The work was committed by bmad-loop run 20260723-184834-a653; this entry preserves the lingering recommendation for a deliberate later review.
 status: open
+
+verified: 2026-07-30 — CONFIRMED STILL OPEN — the recommended independent follow-up review never happened. `_bmad-output/projects/pyforge-warden/planning-artifacts/` holds one adversarial review (`adversarial-review-pyforge-warden-spec-2026-07-15.md`, which predates this 2026-07-23 story) and five implementation-readiness reports, none covering `6-3-currency-axis-producer-gate-flags`. Grepping the whole planning-artifacts tree for that story slug matches only `sprint-status-ledger.yaml` and this ledger — no review artifact exists. Standing note: the four 6-3-* entries verified alongside this one are themselves the unreviewed residue.
 
 ## Deferred from: code review of spec-6-5-two-mode-policy-integration (2026-07-24, Blind Hunter + Edge Case Hunter, Opus)
 
@@ -208,6 +218,8 @@ status: open
   evidence: `engines.CurrencyEngine.run` sets `deps_assessed=inventory.count` unconditionally before the gated `currency_stale_finding` append; `_kev_enrichment` is the shipped precedent 6.5 was contractually required to mirror ("exactly as `_kev_enrichment` gates on `fail_on_kev`"). Raised by the Blind Hunter review pass; internally coherent with 6.4, but 6.5 is the story that made the dissonance reachable on a second axis.
 
   status: open
+
+  verified: 2026-07-30 — CONFIRMED STILL OPEN, and the ordering the entry describes is visible in one screen. `engines.py:1850-1857` appends `currency_stale_finding(unavailable=currency_data is None)` under the gate, and the coverage block immediately after at `:1863` still sets `deps_assessed=inventory.count` unconditionally — so the same `EngineResult` reports 100% assessed alongside the whole-axis `indeterminate` provenance finding. The 6.4 mirror is intact too (`LicenseEngine` at `:1804` has the identical shape), so this is still the cross-axis coverage-semantics decision the entry called for, not a currency-local fix.
 ## Deferred from: code review of spec-6-7-epss-feed-the-min-epss-gate (2026-07-24, Blind Hunter + Edge Case Hunter)
 
 ## DW-6-7-1 — `OsvParse.kev_candidates` (the finding.id -> CVE-alias-tuple mapping populated at OSV-parse time…
@@ -239,6 +251,8 @@ status: open
 
   status: open
 
+  verified: 2026-07-30 — CONFIRMED STILL OPEN on all three counts. (1) Pretty-printing unchanged: `feeds.py:249`, `:318` and `:406` all still call `json.dump(document, fh, indent=2, sort_keys=True)` — the EPSS copy at `:406` still mirrors KEV's shape verbatim. (2) No memoization: `load_epss_scores` (`feeds.py:334`) still does a whole-file `path.read_text()` then `json.loads(raw)`, and `engines.py:1212` still calls it per-run with no `lru_cache`/`@cache` anywhere in `engines.py` or `feeds.py`. (3) The refresh script still holds all four buffers live: `scripts/refresh_epss_feed.py:80` `raw_gzip = response.read()`, `:82` `gzip.decompress(raw_gzip).decode("utf-8")`, `:92` `raw_csv.splitlines()`. One change since authoring, and it cuts the wrong way: a review added a per-entry finite/`[0,1]` domain filter inside `load_epss_scores`, so every one of the ~290k entries now costs slightly MORE per load, not less.
+
 ## DW-6-7-4 — The `feeds.py` atomic-write shape now carries FOUR copies of a latent double-close: if `json.dum…
 
 - source_spec: `_bmad-output/projects/pyforge-warden/implementation-artifacts/spec-6-7-epss-feed-the-min-epss-gate.md`
@@ -256,6 +270,8 @@ status: open
   evidence: `grep -l "def run_scan" tests/conformance/` matches test_scan_harness.py, test_kev_enrichment.py, and test_epss_enrichment.py; `def load_schema` additionally in test_report_schema.py; Story 6.7's file re-copies were spec-directed ("mirrors test_kev_enrichment.py's 10-test structure"). Raised by the follow-up Blind Hunter pass (maintainability, not behavior).
 
   status: open
+
+  verified: 2026-07-30 — CONFIRMED STILL OPEN and MEASURABLY WORSE — the duplication roughly doubled while the prescribed fix was never started. There is still no `tests/conformance/conftest.py` (file does not exist). Counted by hand today vs the entry's own figures: `def run_scan` 3 → **5** files (adds `test_engine_parallelism.py`, `test_fix_pr_actuator.py`); `def parse_report` 3 → **6** (adds those two plus `test_dogfood.py`); `def load_schema` 4 → **8** (adds `test_engine_parallelism.py`, `test_fix_pr_actuator.py`, `test_baseline_grandfathering.py`, `test_dogfood.py`). `_osv_scanner_bin` sits in 4 files and `_load_osv_builder` in 2. A schema-path or CLI-invocation change now needs EIGHT synchronized edits, not four.
 ## Deferred from: code review of spec-6-8-baseline-grandfathering (2026-07-24, bmad-dev-auto review pass)
 
 ## DW-6-8-1 — `architecture.md`'s "Project Structure" tree (§ around the `waiver.py`/`report.py`/`verdict.py`…
@@ -376,6 +392,8 @@ source_spec: `spec-5-1-actionable-diagnostics-safe-by-default-posture.md`
 severity: low
 reason: The follow-up-review damping cap (limits.max_followup_reviews = 1) was spent with the story finalized (status: done, verify green) while the review pass still recommended an independent follow-up. The work was committed by bmad-loop run 20260724-162245-3440; this entry preserves the lingering recommendation for a deliberate later review.
 status: open
+
+verified: 2026-07-30 — CONFIRMED STILL OPEN — same as its 6-3 twin, and by the same measurement. No review artifact for `5-1-actionable-diagnostics-safe-by-default-posture` exists anywhere in `planning-artifacts/`; the story slug matches only `sprint-status-ledger.yaml` and this ledger. The damping cap spent its one follow-up and the recommendation has sat unactioned since 2026-07-24.
 
 ## Deferred from: code review of spec-5-2-fleet-scale-validation-corpus-oracle-maturation (2026-07-24, bmad-dev-auto review pass)
 
