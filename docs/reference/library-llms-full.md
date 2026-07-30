@@ -7,7 +7,7 @@
 >
 > Source of truth: `pixi.toml` (workspace "staged-recipes" v0.2.0). This file is a
 > derived catalog — regenerate it whenever `pixi.toml` changes.
-> Generated: 2026-07-12; incrementally updated 2026-07-18 (pyforge-atlas member env + kedro-viz; pyforge-warden + bmad-ui envs; pin corrections) and 2026-07-25 (the pyforge-herald / -doctor / -scribe member envs, then pyforge-mason / -steward / -marshal at Story 1.1 — eight `pyforge` packages, 18 envs). Channels: conda-forge + SelfExplainML.
+> Generated: 2026-07-12; incrementally updated 2026-07-18 (pyforge-atlas member env + kedro-viz; pyforge-warden + bmad-ui envs; pin corrections), 2026-07-25 (the pyforge-herald / -doctor / -scribe member envs, then pyforge-mason / -steward / -marshal at Story 1.1 — eight `pyforge` packages, 18 envs) and 2026-07-30 (24 version floors re-synced to `pixi.toml`; `bmad-manticore`, `ocrmypdf` and `office2pdf` documented — the three deps the agent-CLI recipe wave added without a catalog entry). Channels: conda-forge + SelfExplainML.
 > Platforms: linux-64, win-64, osx-arm64 (macOS >= 14.5 "Sonoma" floor, required by mlx).
 
 ## To regenerate (any session): ask Claude Code:
@@ -88,7 +88,7 @@ Everything runs through pixi environments. Nothing here is installed globally.
 Available in every environment (the `python` feature + workspace `[dependencies]`).
 
 - **python** (>=3.14.6, 3.14.*) — CPython interpreter. All Python libs below target 3.14.
-- **pixi** (>=0.73.0) — the package/environment manager itself, available *inside*
+- **pixi** (>=0.75.0) — the package/environment manager itself, available *inside*
   envs for nested workspace operations. `pixi-build` preview is enabled (unlocks
   `[package]`/build tables for the **eight** `pyforge` workspace members under
   `src/shared/packages/` — `pyforge-warden`, `pyforge-atlas`, `pyforge-herald`,
@@ -98,7 +98,7 @@ Available in every environment (the `python` feature + workspace `[dependencies]
 - **conda** (>=26.5.0) — classic conda package manager; needed by conda-build,
   conda-smithy 2026.x, and `conda pypi`.
 - **pip** (>=26.1.2) — standard Python installer (prefer `uv` for speed).
-- **uv** (>=0.11.32) — Rust-based, very fast pip/pip-tools replacement: `uv pip install`,
+- **uv** (>=0.12.0) — Rust-based, very fast pip/pip-tools replacement: `uv pip install`,
   `uv venv`, `uv pip compile` for lock-style resolution.
 - **nodejs** (24.x LTS) — `node` / `npm` / `npx`; runtime for the JS tools below.
 - **gh** (>=2.96.0) — GitHub CLI: PRs, issues, releases, `gh api` for raw REST/GraphQL,
@@ -110,7 +110,7 @@ Available in every environment (the `python` feature + workspace `[dependencies]
   used by the vuln-db tasks.
 - **bmad-method** (>=6.10.0) — BMAD-METHOD CLI (`bmad`): AI-driven agile
   planning/dev framework (agents, workflows, story lifecycle). See § 12.
-- **spec-kit** (>=0.14.2) — GitHub Spec Kit (`specify` CLI) for spec-driven
+- **spec-kit** (>=0.14.4) — GitHub Spec Kit (`specify` CLI) for spec-driven
   development scaffolding (constitution → specify → plan → tasks → implement).
 
 ---
@@ -123,12 +123,12 @@ per the table above; all of them coexist in `local-recipes`.
 Build engines & solvers:
 - **conda-build** (>=25.3.1) — v0 recipe engine: builds `meta.yaml` recipes, renders
   Jinja2, runs tests. Never mix v0 and v1 recipes in one build run.
-- **rattler-build** (>=0.70.1) — Rust-native v1 recipe engine: builds `recipe.yaml`,
+- **rattler-build** (>=0.72.0) — Rust-native v1 recipe engine: builds `recipe.yaml`,
   much faster than conda-build, first-class cross-compilation. Primary local build tool.
 - **py-rattler** (>=0.22.0) — `import rattler`; Python bindings to the rattler libs:
   solve environments, fetch/inspect .conda artifacts, repodata handling — programmatic
   conda operations without shelling out.
-- **py-rattler-build** (>=0.70.1) — Python bindings to rattler-build (drive v1 builds
+- **py-rattler-build** (>=0.72.0) — Python bindings to rattler-build (drive v1 builds
   from Python).
 - **conda-libmamba-solver** (>=24.9.0) — fast libmamba solver backend for conda.
 - **conda-index** (>=0.3.0) — generate `repodata.json` for local file:// channels
@@ -204,7 +204,7 @@ All in `local-recipes`.
 - **hatchling** (>=1.31) — modern PEP 517 build backend (Hatch).
 - **python-build** (>=1.5) — PEP 517 frontend: `python -m build` produces sdist+wheel
   from any backend.
-- **twine** (>=6.2) — upload artifacts to PyPI (check + upload).
+- **twine** (>=7.0.0) — upload artifacts to PyPI (check + upload).
 - **pip-audit** (>=2.10.1) — audit installed Python environments / requirements
   against known-vulnerability databases (OSV/PyPI advisory).
 - **bandit** (>=1.9.4) — static security linter for Python source (dangerous calls,
@@ -245,8 +245,8 @@ All in `local-recipes`.
 
 Core arrays/frames:
 - **numpy** (>=2.5.1) — n-dimensional arrays, the numeric foundation (NumPy 2.x API).
-- **pandas** (>=3.0.3) — DataFrames for tabular data (2.x resolved).
-- **polars** (>=1.43.0) — Rust-backed columnar DataFrames; lazy queries, streaming;
+- **pandas** (>=3.0.5) — DataFrames for tabular data (2.x resolved).
+- **polars** (>=1.43.1) — Rust-backed columnar DataFrames; lazy queries, streaming;
   much faster than pandas for large data.
 - **pyarrow-all** (>=24.0.0) — `import pyarrow`; Apache Arrow with ALL extras: Parquet,
   Datasets, Flight RPC, ORC, ADBC-adjacent IO. The interchange layer between pandas,
@@ -262,11 +262,11 @@ Core arrays/frames:
 SQL engines & tooling:
 - **duckdb** (>=1.5.5) — embedded analytical (OLAP) SQL database; reads/writes
   Parquet/CSV/Arrow natively; the default local analytics engine.
-- **sqlglot** (>=28.10.1) — parse, transpile, optimize SQL across ~30 dialects;
+- **sqlglot** (>=30.12.0) — parse, transpile, optimize SQL across ~30 dialects;
   build/rewrite SQL ASTs programmatically (used for feedstock analysis).
 - **sqlfluff** (>=4.2.2) — SQL linter/formatter, dialect-aware.
 - **psycopg2** (>=2.9.12) — real PostgreSQL driver (DB-API).
-- **apsw** (>=3.53.3.1) — thin, full-featured SQLite bindings. **vuln-db env only**
+- **apsw** (>=3.53.4.0) — thin, full-featured SQLite bindings. **vuln-db env only**
   (backend for the AppThreat vdb).
 
 Ibis — one dataframe API over many engines:
@@ -328,7 +328,7 @@ All in `local-recipes`.
 
 - **matplotlib** (>=3.11.1) — general-purpose static 2D plotting.
 - **plotly** (>=6.9.0) — interactive web-based charts (JSON-serializable figures).
-- **bokeh** (>=3.9.1) — interactive HTML/JS plots and apps from Python; server mode
+- **bokeh** (>=3.9.2) — interactive HTML/JS plots and apps from Python; server mode
   for streaming.
 - **panel** (>=1.9.3) — HoloViz app framework: turn plots/widgets/dataframes into
   dashboards and web apps; works in notebooks and as served apps.
@@ -351,7 +351,7 @@ All in `local-recipes`. This is the "deckcraft / markitdown" stack — everythin
 to read, convert, and generate documents.
 
 Any-format → Markdown (LLM ingestion):
-- **markitdown** (>=0.1.6) — Microsoft's converter: PDF, DOCX, XLSX, PPTX, HTML,
+- **markitdown** (>=0.1.7) — Microsoft's converter: PDF, DOCX, XLSX, PPTX, HTML,
   images (w/ OCR), audio → clean Markdown for LLM pipelines. The loaders below back it.
 - **mammoth** (>=1.12.0) — focused, high-fidelity .docx → HTML/Markdown.
 - **markdown** (>=3.10.2) — Markdown → HTML parser.
@@ -383,12 +383,22 @@ Office formats:
 - **xlrd** (>=2.0.2) — read legacy Excel .xls.
 - **odfpy** (>=1.4.1) — OpenDocument (.odt/.odp/.ods) read/write.
 - **olefile** (>=0.47) — parse legacy OLE2 files (old .doc/.xls containers).
+- **office2pdf** (>=0.6.5) — `office2pdf` CLI; DOCX/XLSX/PPTX → PDF. Pure Rust, so no
+  LibreOffice/headless-Office dependency. Ships on all three platforms
+  (linux-64 / osx-arm64 / win-64), so it is an unconditional `local-recipes` dep.
 - **pptxgenjs** (>=4.0.1) — JavaScript (Node) library for *generating* .pptx decks
   programmatically; used by the deck workflows (`docs/specs/presentation-deck.md`).
 
 OCR & images:
 - **tesseract** (>=5.5.2) — Google's OCR engine binary.
 - **pytesseract** (>=0.3.13) — Python wrapper for tesseract (scanned-PDF fallback).
+- **ocrmypdf** (>=17.8.1) — `ocrmypdf` CLI; adds a searchable OCR **text layer** to a
+  scanned PDF while keeping the original page images (tesseract-backed).
+  **linux-64 ONLY here.** The package itself is `noarch`, but it hard-deps `pngquant`,
+  which conda-forge ships only for linux-64/osx-64 — so it is declared under
+  `[feature.local-recipes.target.linux-64.dependencies]`, not as a shared dep (a shared
+  one makes the workspace lock unsolvable on `osx-arm64`). Lift the gate if
+  pngquant gains osx-arm64/win-64 builds.
 - **pillow** (>=12.3.0) — `from PIL import Image`; image open/convert/resize/draw.
 
 Slides & diagrams:
@@ -427,7 +437,7 @@ Hugging Face stack:
   `HF_HUB_ENABLE_HF_TRANSFER=1`.
 
 Local inference runtimes:
-- **llama.cpp** (>=10003) — `llama-cli` / `llama-server` binaries; GGUF model
+- **llama.cpp** (>=10158) — `llama-cli` / `llama-server` binaries; GGUF model
   inference on CPU/GPU; `llama-server` exposes an OpenAI-compatible API.
 - **ollama** (>=0.24.0) — the Ollama server binary (Go): `ollama serve`,
   `ollama run <model>`; local model registry + OpenAI-compatible endpoint.
@@ -441,7 +451,7 @@ Local inference runtimes:
 Knowledge & indexing for agents:
 - **cocoindex** (>=1.0.18) — incremental indexing/transformation engine for
   long-horizon agents (recompute only what changed).
-- **graphifyy** (>=0.9.26) — turn a folder of code/docs/papers/images into a
+- **graphifyy** (>=0.9.30) — turn a folder of code/docs/papers/images into a
   queryable knowledge graph for coding assistants.
 
 ---
@@ -455,24 +465,24 @@ This is the stack for *building* agents and agent servers.
 Provider SDKs:
 - **anthropic** (>=0.76.0) — official Claude SDK: Messages API, streaming, tool use,
   prompt caching.
-- **google-genai** (>=2.14.0) — `from google import genai`; Gemini API client.
+- **google-genai** (>=2.15.0) — `from google import genai`; Gemini API client.
 - **github-copilot-sdk** (>=1.0.8) — drive GitHub Copilot programmatically from
   Python.
 - **langchain-anthropic** (>=1.3.1) — LangChain chat-model integration for Claude.
-- **lumen-ai-anthropic** (>=1.2.1) — Anthropic backend for HoloViz Lumen AI
+- **lumen-ai-anthropic** (>=1.3.0) — Anthropic backend for HoloViz Lumen AI
   (chat-with-your-data on top of Panel).
 
 Agent frameworks:
-- **pydantic-ai** (>=2.18.0) — typed agent framework from the Pydantic team:
+- **pydantic-ai** (>=2.21.0) — typed agent framework from the Pydantic team:
   structured outputs, tools, dependency injection, model-agnostic.
 - **agno** (>=2.6.22) — lightweight multi-modal agent framework: any provider,
   multi-agent teams, memory, knowledge stores, structured outputs, monitoring.
 
 Model Context Protocol (MCP):
 - **mcp** (>=1.28.1) — official MCP Python SDK (clients + servers, stdio/SSE).
-- **fastmcp** (>=3.4.4) — decorator-style framework for building MCP servers fast
+- **fastmcp** (>=3.4.5) — decorator-style framework for building MCP servers fast
   (this repo's `conda_forge_server` is built on it).
-- **langchain-mcp-adapters** (>=0.3.0) — expose MCP tools/resources as LangChain
+- **langchain-mcp-adapters** (>=0.3.1) — expose MCP tools/resources as LangChain
   tools and vice versa.
 - **django-mcp-server** (>=0.5.7) — serve MCP from a Django app.
 - **vizro-mcp** / **kedro-mcp** — domain MCP servers (§ 8 / § 7).
@@ -481,7 +491,7 @@ Agent2Agent (A2A) & ACP:
 - **a2a-sdk** (>=1.1.2) — `import a2a`; official Python SDK for the Agent2Agent
   protocol (agent cards, task lifecycle, messaging).
 - **fasta2a** (>=0.6.1) — FastAPI-style A2A server implementation.
-- **claude-agent-acp** (>=0.62.0) — bridge the Claude Agent SDK to the Agent Client
+- **claude-agent-acp** (>=0.63.0) — bridge the Claude Agent SDK to the Agent Client
   Protocol (ACP) so editors/clients that speak ACP can drive Claude agents.
 
 ---
@@ -507,6 +517,9 @@ in `CLAUDE.md` and `_bmad-output/`.
   expansion.
 - **bmad-utility-skills** (>=2.0.0) — 10 maintainer utility skills.
 - **bmad-labs-skills** (>=1.0.0.dev0) — community skills marketplace (21 skills).
+- **bmad-manticore** (>=2.0.0.dev0) — brain dump → a rendered, graphics-rich video in
+  your own words. `noarch`. Note the version is a `.dev0` pre-release: upstream wrote
+  2.0.0 but never tagged it, so this rides a commit pin until a `v2.0.0` tag appears.
 - **bmad-dashboard** (>=1.2.2.dev0) — VS Code extension installer for the BMAD
   dashboard UI. Also provisioned in the `bmad-ui` env (from the locally-built
   consume-not-submit mirror); task `bmad-dashboard-install`.
@@ -537,7 +550,7 @@ Cloud / storage / identity:
 - **google-cloud-bigquery** (>=3.42.2) — `from google.cloud import bigquery`;
   BigQuery client. Used by cf_atlas Phase P (opt-in `PHASE_P_ENABLED=1`); auth via
   ADC creds cached by the `gcloud` env.
-- **google-cloud-sdk** (>=577.0.0) — the `gcloud` CLI. **`gcloud` env only,
+- **google-cloud-sdk** (>=578.0.0) — the `gcloud` CLI. **`gcloud` env only,
   linux/macOS only.** Used once for `gcloud auth application-default login`; after
   that the BigQuery lib picks up cached ADC automatically.
 - **azure-identity** (>=1.25.3) — Azure AD/Entra credential objects for all Azure
@@ -591,9 +604,9 @@ Terminal & CLI building:
 - **typer** (>=0.27.0) — build CLIs from type-hinted functions (click-based).
 
 Node package managers:
-- **pnpm** (>=11.17.0) — fast, disk-efficient npm alternative (default for JS builds
+- **pnpm** (>=11.18.0) — fast, disk-efficient npm alternative (default for JS builds
   here; in .bat scripts always `call pnpm`).
-- **yarn** (>=4.17.1) — Yarn Berry.
+- **yarn** (>=4.18.0) — Yarn Berry.
 
 ---
 
@@ -606,8 +619,8 @@ First `vdb-refresh` downloads ~600MB to `.claude/data/conda-forge-expert/vdb/`.
   multi-source CVE DB (OSV + GHSA; NVD/npm via sources) queried by `detail-cf-atlas
   --vdb`, `scan-project`, and cf_atlas Phase G/G'. CISA KEV is fetched out-of-band
   (`fetch-cisa-kev` task) because vdb's aqua source hardcodes KEV exclusion.
-- **apsw** (>=3.53.3.1) — SQLite backend for vdb.
-- **cyclonedx-bom** (>=7.3.0) — `cyclonedx-py` CLI: generate CycloneDX SBOMs from
+- **apsw** (>=3.53.4.0) — SQLite backend for vdb.
+- **cyclonedx-bom** (>=7.3.1) — `cyclonedx-py` CLI: generate CycloneDX SBOMs from
   environments/requirements/poetry/pipenv.
 - **cyclonedx-python-lib** (>=11.11.0) — programmatic CycloneDX BOM model
   (read/build/serialize 1.x BOMs; used by universe-sbom / inventory-match tooling).
