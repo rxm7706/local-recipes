@@ -60,7 +60,7 @@ cache_read_weight = 0.1      # cache reads bill at ~0.1x input on all vendors; 1
 # the squash-merge would commit. Frozen mode uses the tracked lock as-is
 # (deferred-work.md, story 1.1).
 commands = [
-  "pixi run --frozen -e pyforge-warden pyforge-warden-test",
+  "pixi run --frozen -e pyforge-marshal pyforge-marshal-test",
   # pyforge-atlas gates dropped from the active run policy 2026-07-18: the
   # Kedro migration is COMPLETE (Waves 0–H shipped, PRs #69–#102, closed out by
   # #103 / v8.79.0), and this branch drives pyforge-warden Epic-6 producers.
@@ -199,7 +199,7 @@ seed_adapter_defaults = true # seed each loaded adapter's default gitignored con
 # marker BMAD config resolution in the worktree loses the project layers.
 # Literal paths only (no globs) — update the project slug on bmad-switch.
 worktree_seed = [
-  "_bmad-output/projects/pyforge-warden/implementation-artifacts",
+  "_bmad-output/projects/pyforge-marshal/implementation-artifacts",
   "_bmad/custom/.active-project",
 ]
 
