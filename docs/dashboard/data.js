@@ -2800,7 +2800,7 @@ window.DASHBOARD_DATA = {
       }
     }
   },
-  "snapshot": "<span>2026-07-30 14:42 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-07-30 15:35 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -8446,15 +8446,15 @@ window.DASHBOARD_DATA = {
     ]
   },
   "openwork": {
-    "open": 140,
-    "done": 3,
-    "triaged": 3,
+    "open": 139,
+    "done": 4,
+    "triaged": 16,
     "bySeverity": {
       "critical": 0,
       "high": 1,
       "medium": 3,
       "low": 9,
-      "unspecified": 127
+      "unspecified": 126
     },
     "projects": [
       {
@@ -8868,9 +8868,9 @@ window.DASHBOARD_DATA = {
       {
         "project": "pyforge-warden",
         "path": "_bmad-output/projects/pyforge-warden/planning-artifacts/deferred-work-ledger.md",
-        "open": 42,
-        "done": 1,
-        "triaged": 0,
+        "open": 41,
+        "done": 2,
+        "triaged": 13,
         "entries": [
           {
             "id": "DW-1-1-1",
@@ -8898,7 +8898,7 @@ window.DASHBOARD_DATA = {
             "title": "The report schema has no `runtime_python` field on `ComplianceReport`/the currency section — epi…",
             "status": "open",
             "severity": "unspecified",
-            "triaged": false
+            "triaged": true
           },
           {
             "id": "DW-6-3-2",
@@ -8926,7 +8926,7 @@ window.DASHBOARD_DATA = {
             "title": "The endoflife.date cache reuses `feeds.DEFAULT_FEED_MAX_AGE_DAYS` (7 days, tuned for KEV's frequ…",
             "status": "open",
             "severity": "unspecified",
-            "triaged": false
+            "triaged": true
           },
           {
             "id": "DW-6-3-6",
@@ -8968,7 +8968,7 @@ window.DASHBOARD_DATA = {
             "title": "The bundled `data/lts-registry.yaml` carries a fixed `updated:` date (currently `2026-07-06`) an…",
             "status": "open",
             "severity": "unspecified",
-            "triaged": false
+            "triaged": true
           },
           {
             "id": "DW-6-5-2",
@@ -8996,7 +8996,7 @@ window.DASHBOARD_DATA = {
             "title": "The EPSS cache reuses `feeds.DEFAULT_FEED_MAX_AGE_DAYS` (7 days) unchanged — the same shared con…",
             "status": "open",
             "severity": "unspecified",
-            "triaged": false
+            "triaged": true
           },
           {
             "id": "DW-6-7-3",
@@ -9008,9 +9008,9 @@ window.DASHBOARD_DATA = {
           {
             "id": "DW-6-7-4",
             "title": "The `feeds.py` atomic-write shape now carries FOUR copies of a latent double-close: if `json.dum…",
-            "status": "open",
+            "status": "done",
             "severity": "unspecified",
-            "triaged": false
+            "triaged": true
           },
           {
             "id": "DW-6-7-5",
@@ -9031,14 +9031,14 @@ window.DASHBOARD_DATA = {
             "title": "`--baseline-emit` stamps every proposed entry with `expires_at = now + waiver_default_expiry_day…",
             "status": "open",
             "severity": "unspecified",
-            "triaged": false
+            "triaged": true
           },
           {
             "id": "DW-6-8-3",
             "title": "An EXPIRED suppression (waiver or baseline) is invisible in the machine-readable contract: `supp…",
             "status": "open",
             "severity": "unspecified",
-            "triaged": false
+            "triaged": true
           },
           {
             "id": "DW-6-8-4",
@@ -9052,7 +9052,7 @@ window.DASHBOARD_DATA = {
             "title": "`load_waivers` still parses with plain `yaml.safe_load`, which silently keeps the LAST of two du…",
             "status": "open",
             "severity": "unspecified",
-            "triaged": false
+            "triaged": true
           },
           {
             "id": "DW-5-1-1",
@@ -9066,7 +9066,7 @@ window.DASHBOARD_DATA = {
             "title": "`--doctor` silently no-ops every other `scan` flag it's combined with (`--sbom-output`, `--basel…",
             "status": "open",
             "severity": "unspecified",
-            "triaged": false
+            "triaged": true
           },
           {
             "id": "DW-5-1-3",
@@ -9087,14 +9087,14 @@ window.DASHBOARD_DATA = {
             "title": "The literal argv `[\"deptry\", \"--version\"]` / `[\"osv-scanner\", \"--version\"]` now exists independe…",
             "status": "open",
             "severity": "unspecified",
-            "triaged": false
+            "triaged": true
           },
           {
             "id": "DW-5-1-6",
             "title": "`vuln._extract_fixed_version` takes the FIRST well-formed `fixed` event in document order (an in…",
             "status": "open",
             "severity": "unspecified",
-            "triaged": false
+            "triaged": true
           },
           {
             "id": "DW-5-1-7",
@@ -9150,21 +9150,21 @@ window.DASHBOARD_DATA = {
             "title": "No CI workflow or scheduled runner ever executes the new `pyforge-warden-test-corpus-oracle` pix…",
             "status": "open",
             "severity": "unspecified",
-            "triaged": false
+            "triaged": true
           },
           {
             "id": "DW-5-2-6",
             "title": "`.warden-baseline.yaml`'s first entry hardcodes the running interpreter's patch version in its f…",
             "status": "open",
             "severity": "unspecified",
-            "triaged": false
+            "triaged": true
           },
           {
             "id": "DW-5-2-7",
             "title": "All 19 entries in the committed `.warden-baseline.yaml` expire simultaneously at 2027-07-24T00:0…",
             "status": "open",
             "severity": "unspecified",
-            "triaged": false
+            "triaged": true
           },
           {
             "id": "DW-CROSS-CUTTING-1",

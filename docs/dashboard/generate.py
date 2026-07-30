@@ -1592,7 +1592,11 @@ _DW_STATUS = re.compile(r"^\s*status:\s*(\S.*?)\s*$", re.M)
 _DW_SEVERITY = re.compile(r"^\s*severity:\s*(\w+)", re.M)
 # atlas encodes severity in the heading — `## DW-B1-1 — title (HIGH, context)`.
 _DW_SEV_HEAD = re.compile(r"\((CRITICAL|HIGH|MEDIUM|LOW)\b", re.I)
-_DW_RESOLUTION = re.compile(r"^\s*resolution:\s*\S", re.M)
+# `verified:` is the sweep-protocol result line — an entry checked against the actual code
+# with file:line or a measured count as evidence. `resolution:` is the older annotation for
+# the same thing. Either means a human (or this protocol) has LOOKED; a bare `open` with
+# neither means the ledger's word is all we have.
+_DW_RESOLUTION = re.compile(r"^\s*(?:resolution|verified):\s*\S", re.M)
 _SEVERITIES = ("critical", "high", "medium", "low", "unspecified")
 
 
