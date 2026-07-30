@@ -21,7 +21,21 @@ its project-derived seed path), and ``MRS-POLICY-006`` (a malformed project
 slug -- not usable as a single path segment). 001-004 and 006 classify
 ``Verdict.UNEVALUABLE``; 005 classifies ``Verdict.WARN`` (a bare
 no-active-project invocation legitimately shows the defaults and exits 0)
--- see ``core/verdict.py``. Later stories
+-- see ``core/verdict.py``. Story 1.4's ``cli/init.py`` adds the registry's
+third real caller: ``MRS-INIT-001`` (a malformed project slug -- the shape
+check itself is shared with ``core/policy.py`` via
+``_is_valid_project_slug``, but ``init`` registers its own code since
+``marshal init`` is a distinct command with its own envelope),
+``MRS-INIT-002`` (the slug names no known BMAD project -- no
+``_bmad-output/projects/<slug>/`` on ``main``), ``MRS-INIT-003`` (the loop
+home's active-project marker and ``planning-artifacts`` symlink already
+disagree with each other -- a prior partial failure, blocked before any
+further write rather than silently overwritten), and ``MRS-INIT-004`` (a
+``git``/filesystem operation failed -- worktree add, marker write, or
+symlink repoint). 001-002 classify ``Verdict.UNEVALUABLE`` (Marshal could
+not determine what to provision); 003-004 classify ``Verdict.ERROR`` (a
+real operation was attempted and failed, or was blocked to avoid
+compounding an existing failure) -- see ``core/verdict.py``. Later stories
 append further real codes here as they gain their own real callers. The
 registry MECHANISM
 (format check, then membership check) is separately proven via
@@ -46,6 +60,7 @@ CODE_PATTERN = re.compile(r"MRS-[A-Z][A-Z0-9]*-[0-9]{3}")
 
 # Story 1.2's core/identity.py -- the registry's first real registrations.
 # Story 1.3's core/policy.py/cli/config.py add the second real caller's six codes.
+# Story 1.4's cli/init.py adds the third real caller's four codes.
 REGISTERED_CODES: frozenset[str] = frozenset(
     {
         "MRS-IDENT-001",
@@ -56,6 +71,10 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-POLICY-004",
         "MRS-POLICY-005",
         "MRS-POLICY-006",
+        "MRS-INIT-001",
+        "MRS-INIT-002",
+        "MRS-INIT-003",
+        "MRS-INIT-004",
     }
 )
 

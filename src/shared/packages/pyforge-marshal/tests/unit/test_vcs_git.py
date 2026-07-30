@@ -1,0 +1,227 @@
+"""Unit tests for ``pyforge.marshal.adapters.vcs_git`` (Story 1.4, AD-4/AD-11)
+-- ``GitVcs`` against REAL temp git repos, matching this package's own
+"real I/O against tmp_path, not heavy mocking" convention.
+"""
+
+from __future__ import annotations
+
+import subprocess
+from pathlib import Path
+
+import pytest
+
+from pyforge.marshal.adapters.vcs_git import GitVcs, VcsCommandError
+
+
+def _git(repo: Path, *args: str) -> subprocess.CompletedProcess[str]:
+    result = subprocess.run(
+        ["git", "-C", str(repo), *args], capture_output=True, text=True
+    )
+    assert result.returncode == 0, result.stderr
+    return result
+
+
+def _init_repo(tmp_path: Path) -> Path:
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    _git(repo, "init", "-b", "main")
+    _git(repo, "config", "user.email", "test@example.com")
+    _git(repo, "config", "user.name", "Test")
+    (repo / "README.md").write_text("hello\n", encoding="utf-8")
+    _git(repo, "add", "README.md")
+    _git(repo, "commit", "-m", "initial")
+    return repo
+
+
+@pytest.fixture
+def repo(tmp_path: Path) -> Path:
+    return _init_repo(tmp_path)
+
+
+@pytest.fixture
+def vcs() -> GitVcs:
+    return GitVcs()
+
+
+# --- repo_common_root ---------------------------------------------------------
+
+
+def test_repo_common_root_from_repo_dir(vcs, repo):
+    assert vcs.repo_common_root(repo) == repo.resolve()
+
+
+def test_repo_common_root_from_subdirectory(vcs, repo):
+    subdir = repo / "subdir"
+    subdir.mkdir()
+    assert vcs.repo_common_root(subdir) == repo.resolve()
+
+
+def test_repo_common_root_raises_outside_a_repo(vcs, tmp_path):
+    outside = tmp_path / "not-a-repo"
+    outside.mkdir()
+    with pytest.raises(VcsCommandError):
+        vcs.repo_common_root(outside)
+
+
+def test_repo_common_root_from_linked_worktree_resolves_to_main_checkout(vcs, repo, tmp_path):
+    """The whole point of --git-common-dir: a linked worktree's common dir
+    still points at the MAIN checkout's .git, regardless of which worktree
+    the query runs from."""
+    home = tmp_path / "home"
+    vcs.add_worktree(repo, home, "loop/x", base="main")
+    assert vcs.repo_common_root(home) == repo.resolve()
+
+
+# --- branch_exists -------------------------------------------------------------
+
+
+def test_branch_exists_true_for_main(vcs, repo):
+    assert vcs.branch_exists(repo, "main") is True
+
+
+def test_branch_exists_false_for_unknown_branch(vcs, repo):
+    assert vcs.branch_exists(repo, "loop/nonexistent") is False
+
+
+def test_branch_exists_true_after_plain_branch_create(vcs, repo):
+    _git(repo, "branch", "loop/created", "main")
+    assert vcs.branch_exists(repo, "loop/created") is True
+
+
+# --- worktree_path_for_branch ---------------------------------------------------
+
+
+def test_worktree_path_for_branch_none_when_absent(vcs, repo):
+    assert vcs.worktree_path_for_branch(repo, "loop/absent") is None
+
+
+def test_worktree_path_for_branch_finds_added_worktree(vcs, repo, tmp_path):
+    home = tmp_path / "home"
+    vcs.add_worktree(repo, home, "loop/found", base="main")
+    found = vcs.worktree_path_for_branch(repo, "loop/found")
+    assert found is not None
+    assert found.resolve() == home.resolve()
+
+
+def test_worktree_path_for_branch_ignores_other_branches(vcs, repo, tmp_path):
+    home = tmp_path / "home"
+    vcs.add_worktree(repo, home, "loop/one", base="main")
+    assert vcs.worktree_path_for_branch(repo, "loop/two") is None
+
+
+# --- add_worktree ----------------------------------------------------------------
+
+
+def test_add_worktree_creates_new_branch_from_base(vcs, repo, tmp_path):
+    home = tmp_path / "home"
+    vcs.add_worktree(repo, home, "loop/fresh", base="main")
+    assert home.is_dir()
+    assert vcs.branch_exists(repo, "loop/fresh") is True
+    # the new worktree is ON the new branch, not on base
+    result = _git(home, "rev-parse", "--abbrev-ref", "HEAD")
+    assert result.stdout.strip() == "loop/fresh"
+
+
+def test_add_worktree_never_checks_out_base_a_second_time(vcs, repo, tmp_path):
+    """Boundaries & Constraints: main is never checked out into the new
+    worktree -- proven by main's own worktree (the repo dir) staying
+    exclusively on main, unaffected by provisioning a second branch."""
+    home = tmp_path / "home"
+    vcs.add_worktree(repo, home, "loop/fresh", base="main")
+    result = _git(repo, "rev-parse", "--abbrev-ref", "HEAD")
+    assert result.stdout.strip() == "main"
+
+
+def test_add_worktree_attaches_to_an_existing_branch_without_dash_b(vcs, repo, tmp_path):
+    _git(repo, "branch", "loop/attach", "main")
+    home = tmp_path / "home"
+    vcs.add_worktree(repo, home, "loop/attach", base="main")
+    assert home.is_dir()
+    result = _git(home, "rev-parse", "--abbrev-ref", "HEAD")
+    assert result.stdout.strip() == "loop/attach"
+
+
+def test_add_worktree_raises_vcs_command_error_on_locked_target(vcs, repo, tmp_path):
+    """A worktree add that fails (here: the target path already exists as a
+    non-empty non-worktree directory) raises VcsCommandError, never a raw
+    subprocess exception."""
+    home = tmp_path / "home"
+    home.mkdir()
+    (home / "occupied.txt").write_text("in the way\n", encoding="utf-8")
+    with pytest.raises(VcsCommandError):
+        vcs.add_worktree(repo, home, "loop/blocked", base="main")
+
+
+def test_add_worktree_raises_on_branch_checked_out_twice(vcs, repo, tmp_path):
+    home = tmp_path / "home"
+    vcs.add_worktree(repo, home, "loop/dup", base="main")
+    other_home = tmp_path / "other-home"
+    with pytest.raises(VcsCommandError):
+        vcs.add_worktree(repo, other_home, "loop/dup", base="main")
+
+
+def test_add_worktree_attaches_the_branch_even_when_a_same_named_tag_exists(
+    vcs, repo, tmp_path
+):
+    """A `loop/<slug>` tag colliding with the branch of the same name must
+    not make `add_worktree` attach in detached HEAD instead of the branch
+    (empirically: `git worktree add <path> <bare-name>` recognizes the
+    branch and checks it out non-detached even with a colliding tag -- see
+    `add_worktree`'s own docstring for the live-verified git behavior this
+    asserts)."""
+    _git(repo, "branch", "loop/tagged", "main")
+    _git(repo, "tag", "loop/tagged")  # a same-named tag on the same commit
+    home = tmp_path / "home"
+    vcs.add_worktree(repo, home, "loop/tagged", base="main")
+    # symbolic-ref, not --abbrev-ref: with the collision present git's
+    # abbreviation algorithm prints the disambiguated "heads/loop/tagged"
+    # rather than the short form, but HEAD is still ATTACHED (not detached)
+    # to the real branch -- symbolic-ref only succeeds when HEAD is attached.
+    result = _git(home, "symbolic-ref", "-q", "HEAD")
+    assert result.stdout.strip() == "refs/heads/loop/tagged"
+
+
+def test_add_worktree_creates_a_new_branch_when_only_a_same_named_tag_exists(
+    vcs, repo, tmp_path
+):
+    """Review finding, the actual bug: with only a TAG present (no branch),
+    a bare `rev-parse --verify <branch>` (pre-fix `branch_exists`) resolves
+    the tag and reports `True`, so `add_worktree` would take the "attach to
+    an existing branch" path against a ref that is not a branch at all --
+    checking out that tag detached and never creating `loop/<slug>` as an
+    actual branch. `branch_exists` now checks `refs/heads/<branch>`
+    specifically, so this must go through the `-b` (mint-new-branch) path."""
+    _git(repo, "tag", "loop/tagonly", "main")  # a tag, deliberately no branch
+    assert vcs.branch_exists(repo, "loop/tagonly") is False
+    home = tmp_path / "home"
+    vcs.add_worktree(repo, home, "loop/tagonly", base="main")
+    # symbolic-ref: HEAD must be ATTACHED to the new branch, not detached
+    # onto the tag's commit (symbolic-ref only succeeds when attached).
+    result = _git(home, "symbolic-ref", "-q", "HEAD")
+    assert result.stdout.strip() == "refs/heads/loop/tagonly"
+    assert vcs.branch_exists(repo, "loop/tagonly") is True  # -b actually created it
+
+
+# --- _run failure translation (review findings: git-not-found, timeout) --------
+
+
+def test_run_wraps_missing_git_executable(vcs, repo, monkeypatch):
+    import pyforge.marshal.adapters.vcs_git as vcs_git_module
+
+    def _raise_not_found(*args, **kwargs):
+        raise FileNotFoundError("no such file: git")
+
+    monkeypatch.setattr(vcs_git_module.subprocess, "run", _raise_not_found)
+    with pytest.raises(VcsCommandError, match="git executable not found"):
+        vcs.repo_common_root(repo)
+
+
+def test_run_wraps_a_hung_git_process(vcs, repo, monkeypatch):
+    import pyforge.marshal.adapters.vcs_git as vcs_git_module
+
+    def _raise_timeout(*args, **kwargs):
+        raise subprocess.TimeoutExpired(cmd=["git"], timeout=30.0)
+
+    monkeypatch.setattr(vcs_git_module.subprocess, "run", _raise_timeout)
+    with pytest.raises(VcsCommandError, match="timed out"):
+        vcs.repo_common_root(repo)

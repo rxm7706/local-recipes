@@ -34,7 +34,15 @@ operation, not that a gate failed. ``MRS-POLICY-005`` (no project slug
 supplied) classifies ``Verdict.WARN`` -- a bare no-active-project
 ``marshal config`` is a legitimate show-me-the-defaults invocation, so it
 stays in the exit-0 half of the lattice while still surfacing that the
-project-derived seed path was omitted. Later stories populate the table
+project-derived seed path was omitted. Story 1.4's real codes
+(``MRS-INIT-001/002``, from ``cli/init.py``) classify ``Verdict.UNEVALUABLE``
+for the same reason as their ``core/policy.py`` counterparts: a malformed
+slug or an unknown project means Marshal cannot determine what to
+provision, not that a gate failed. ``MRS-INIT-003``/``MRS-INIT-004``
+classify ``Verdict.ERROR``: a marker/symlink desync or a failed
+``git``/filesystem operation means a real provisioning step was attempted
+(or correctly refused) and did not converge, a stronger failure than
+"could not evaluate". Later stories populate the table
 further as they add real codes. The mechanism (a total, fail-loud lookup) is
 separately proven via ``monkeypatch``-injected synthetic entries in
 ``tests/unit/test_verdict.py``.
@@ -90,6 +98,7 @@ GUARDED_EXIT_CODES: frozenset[int] = frozenset(_EXIT_BY_VERDICT.values()) | {
 
 # Story 1.2's core/identity.py -- the table's first real classifications.
 # Story 1.3's core/policy.py/cli/config.py add the second real caller's six codes.
+# Story 1.4's cli/init.py adds the third real caller's four codes.
 _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-IDENT-001": Verdict.UNEVALUABLE,
     "MRS-IDENT-002": Verdict.UNEVALUABLE,
@@ -99,6 +108,10 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-POLICY-004": Verdict.UNEVALUABLE,
     "MRS-POLICY-005": Verdict.WARN,
     "MRS-POLICY-006": Verdict.UNEVALUABLE,
+    "MRS-INIT-001": Verdict.UNEVALUABLE,
+    "MRS-INIT-002": Verdict.UNEVALUABLE,
+    "MRS-INIT-003": Verdict.ERROR,
+    "MRS-INIT-004": Verdict.ERROR,
 }
 
 
