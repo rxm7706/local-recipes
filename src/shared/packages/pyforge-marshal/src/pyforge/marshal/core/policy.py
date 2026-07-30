@@ -67,10 +67,12 @@ check for ``verify_commands`` (FR-53 assigns that to preflight, Story 1.7).
 No modeling of the harness's full ``.bmad-loop/policy.toml`` key surface. No
 ``policy_surface ∩ spec_surface`` allowlist (Story 2.3's concern). No
 resolution of a story's difficulty class against ``model_tier_map``. No
-support for ``--set`` on the three list/mapping-typed fields -- that is a
-``cli/config.py`` UX restriction on which flags it exposes, not a
-restriction this module enforces (``compose()`` itself layers all 9 keys
-uniformly across all 3 layers, matching AD-16's "no per-key reordering").
+support for ``--set`` on the four list/mapping-typed fields
+(``verify_commands``, ``worktree_seed_paths``, ``model_tier_map``,
+``frozen_surfaces``) -- that is a ``cli/config.py`` UX restriction on which
+flags it exposes, not a restriction this module enforces (``compose()``
+itself layers all 9 keys uniformly across all 3 layers, matching AD-16's
+"no per-key reordering").
 
 **Marshal's own built-in defaults** (``DEFAULT_POLICY``) are a DIFFERENT
 thing from any one project's ``.bmad-loop/policy.toml`` -- that file
@@ -158,15 +160,18 @@ class PolicyLayer(StrEnum):
 
 
 def _freeze_raw(value: object) -> object:
-    """An immutable, UNALIASED snapshot of a layer's raw value for
+    """An immutable, UNALIASED snapshot of a field's ``value`` and
     ``raw_source``: any ``Mapping`` becomes a ``MappingProxyType`` over a
     fresh dict, any ``list``/``tuple`` becomes a tuple, scalars pass through.
-    ``content_hash`` covers ``raw_source``, so storing the caller's own
-    list/dict object (or exposing a mutable one through the ``raw_source``
-    attribute) would let a mutation AFTER ``compose()`` silently change the
-    hash -- breaking AD-35's content-addressing and the documented
-    "immutable ``EffectivePolicy``" guarantee (AD-10). The wire shape is
-    unchanged: ``_to_plain`` projects proxies/tuples back to dicts/lists."""
+    ``content_hash`` covers both halves, so storing the caller's own
+    list/dict object (or exposing a mutable one through either attribute)
+    would let a mutation AFTER construction silently change the hash --
+    breaking AD-35's content-addressing and the documented "immutable
+    ``EffectivePolicy``" guarantee (AD-10). Applied uniformly by
+    ``PolicyField.__post_init__``, so EVERY construction path is covered --
+    ``compose()``'s merges and a directly constructed ``PolicyField`` alike.
+    The wire shape is unchanged: ``_to_plain`` projects proxies/tuples back
+    to dicts/lists."""
     if isinstance(value, Mapping):
         return MappingProxyType({key: _freeze_raw(item) for key, item in value.items()})
     if isinstance(value, (list, tuple)):
@@ -180,8 +185,13 @@ class PolicyField:
     ``value``, the ``layer`` that won it, and ``raw_source`` -- the
     unwrapped original value from that winning layer (for provenance
     display; equals ``value`` when the winning layer is ``default``).
-    ``raw_source`` is snapshotted via ``_freeze_raw`` at construction, so no
-    ``PolicyField`` ever aliases a caller-mutable container."""
+    BOTH ``value`` and ``raw_source`` are snapshotted via ``_freeze_raw``
+    at construction, so no ``PolicyField`` ever aliases a caller-mutable
+    container regardless of how it was constructed. The generated ``repr``
+    shows raw values: a bare ``PolicyField`` does not know its own field
+    NAME, which is what secret-shape redaction keys on -- name-aware
+    egresses (``EffectivePolicy.__repr__``, ``cli/config.py``'s renders,
+    ``_malformed_finding``) each apply ``redact()`` themselves."""
 
     value: object
     layer: PolicyLayer
@@ -189,6 +199,7 @@ class PolicyField:
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "layer", PolicyLayer(self.layer))
+        object.__setattr__(self, "value", _freeze_raw(self.value))
         object.__setattr__(self, "raw_source", _freeze_raw(self.raw_source))
 
 
@@ -228,52 +239,46 @@ def _valid_str_tuple(value: object) -> tuple[str, ...] | None:
 def _valid_seed_path_extras(value: object) -> tuple[str, ...] | None:
     """``worktree_seed_paths`` extras: each entry must be a clean RELATIVE
     path (shape-only, FR-53) -- the same threat model as the slug guard,
-    because every extra becomes a literal seed path inside a worktree.
-    Splitting on ``/``, no segment may be empty (absolute paths, ``//``,
-    trailing ``/``), ``.``, or ``..`` (segment aliasing/escape) -- so a
-    traversal-shaped or absolute path can no more enter through the extras
-    than through the generated base."""
+    because every extra becomes a literal seed path inside a worktree. Two
+    checks per entry, and BOTH are needed: every character must come from
+    the slug charset plus ``/`` (rejecting backslash separators, drive
+    colons, ``~`` expansion targets, NUL bytes, whitespace -- anything the
+    slug guard would reject in a single segment), and, splitting on ``/``,
+    no segment may be empty (absolute paths, ``//``, trailing ``/``),
+    ``.``, or ``..`` (segment aliasing/escape). Together they guarantee a
+    traversal-shaped, absolute, or non-portable path can no more enter
+    through the extras than through the generated base."""
     base = _valid_str_tuple(value)
     if base is None:
         return None
+    allowed = _SLUG_CHARS | {"/"}
     for entry in base:
+        if not set(entry) <= allowed:
+            return None
         if any(part in ("", ".", "..") for part in entry.split("/")):
             return None
     return base
 
 
 def _valid_model_tier_map(value: object) -> dict[str, dict[str, str]] | None:
+    """Difficulty and model names must be NON-EMPTY strings for the same
+    reason ``_valid_str_tuple`` rejects the empty string: an empty
+    difficulty class or an empty model name is not a degenerate instance of
+    the concept, it is no instance at all -- an Epic 3/4 consumer resolving
+    a stage against it would inherit the garbage silently."""
     if not isinstance(value, Mapping):
         return None
     result: dict[str, dict[str, str]] = {}
     for difficulty, stages in value.items():
-        if not isinstance(difficulty, str) or not isinstance(stages, Mapping):
+        if not isinstance(difficulty, str) or difficulty == "" or not isinstance(stages, Mapping):
             return None
         stage_map: dict[str, str] = {}
         for stage, model in stages.items():
-            if stage not in _STAGE_NAMES or not isinstance(model, str):
+            if stage not in _STAGE_NAMES or not isinstance(model, str) or model == "":
                 return None
             stage_map[stage] = model
         result[difficulty] = stage_map
     return result
-
-
-def _freeze_model_tier_map(
-    value: Mapping[str, Mapping[str, str]],
-) -> Mapping[str, Mapping[str, str]]:
-    """Deep-freeze a merged ``model_tier_map`` VALUE: ``MappingProxyType``
-    at both levels. Every other field's value is an immutable
-    tuple/str/int; ``model_tier_map`` is the one nested-mapping field and
-    needs this explicit step (``copy.deepcopy`` cannot run on an
-    already-frozen ``MappingProxyType``, so this is applied ONCE, after
-    ``_merge_field`` finishes with a plain dict, never baked into
-    ``DEFAULT_POLICY`` or a validator's return value). This covers the
-    ``value`` side only -- the ``raw_source`` side is snapshotted uniformly
-    by ``PolicyField.__post_init__``'s ``_freeze_raw``; together they make
-    ``content_hash`` immune to any post-``compose()`` mutation."""
-    return MappingProxyType(
-        {difficulty: MappingProxyType(dict(stages)) for difficulty, stages in value.items()}
-    )
 
 
 def _to_plain(value: object) -> object:
@@ -312,13 +317,20 @@ def _malformed_finding(code: str, key: str, layer_name: str, raw_value: object) 
     # value must not leak its raw value into the finding message, the one
     # egress path that read `raw_value` directly instead of `field.value`/
     # `field.raw_source` (both already routed through redact() by callers).
+    #
+    # "ignored", never "falling back to the Marshal default": the excluded-
+    # not-poisoned semantics mean the field keeps the previous VALID layer's
+    # value when one exists (project-valid + flag-malformed retains the
+    # project value), and the extras route retains the generated base --
+    # claiming a default fallback would contradict the effective value
+    # printed one line away in exactly those cases.
     safe_value = redact(key, raw_value)
     return Finding(
         code=code,
         severity=Severity.ERROR,
         message=(
             f"malformed value for policy key {key!r} in the {layer_name} "
-            f"layer: {safe_value!r} -- falling back to the Marshal default"
+            f"layer: {safe_value!r} -- this layer's value is ignored"
         ),
         path=layer_name,
     )
@@ -335,10 +347,19 @@ def _unknown_key_finding(key: str, layer_name: str) -> Finding:
 
 def _is_valid_project_slug(slug: str) -> bool:
     """Shape-only (FR-53): a project slug must be usable as ONE literal path
-    segment of the generated ``worktree_seed_paths`` entry. Non-empty, drawn
-    from the conservative ``_SLUG_CHARS`` charset, and not a pure-dot name
+    segment of the generated ``worktree_seed_paths`` entry. Non-empty, at
+    most 255 characters (POSIX NAME_MAX -- a longer slug is a path segment
+    no target filesystem accepts, so validating it here reports the garbage
+    at compose time instead of deferring an ENAMETOOLONG to every
+    consumer; the charset is ASCII, so characters == bytes), drawn from the
+    conservative ``_SLUG_CHARS`` charset, and not a pure-dot name
     (``.``/``..`` would alias or escape the ``projects/`` directory)."""
-    return bool(slug) and set(slug) <= _SLUG_CHARS and slug.strip(".") != ""
+    return (
+        bool(slug)
+        and len(slug) <= 255
+        and set(slug) <= _SLUG_CHARS
+        and slug.strip(".") != ""
+    )
 
 
 def _project_slug_finding(slug: str) -> Finding:
@@ -361,8 +382,9 @@ def _project_slug_finding(slug: str) -> Finding:
         severity=Severity.ERROR,
         message=(
             f"malformed project slug {slug!r} -- must be one safe path "
-            "segment (letters, digits, '.', '_', '-'; not '.' or '..'); "
-            "worktree_seed_paths omits its project-derived path"
+            "segment (letters, digits, '.', '_', '-'; not '.' or '..'; "
+            "at most 255 characters); worktree_seed_paths omits its "
+            "project-derived path"
         ),
     )
 
@@ -494,6 +516,37 @@ class EffectivePolicy:
                 raise ValueError(f"_seed[{seed_key!r}] must be a PolicyField, got {field!r}")
         object.__setattr__(self, "_seed", MappingProxyType(dict(self._seed)))
 
+    def __repr__(self) -> str:
+        """Name-aware and redaction-routed, unlike the dataclass-generated
+        repr it replaces: every ``value``/``raw_source`` passes through
+        ``redact()`` keyed on its field name, so a traceback, log line, or
+        debugger that reprs a composed policy can never leak a
+        secret-shaped field's raw value -- the same mechanism-completeness
+        standard already applied to ``_malformed_finding``. Inert for the 9
+        real fields (none is secret-shaped today), proven via the synthetic
+        suffix fixture like every other redaction egress."""
+
+        def _field_repr(name: str, field: PolicyField) -> str:
+            return (
+                f"PolicyField(value={redact(name, field.value)!r}, "
+                f"layer={field.layer!r}, "
+                f"raw_source={redact(name, field.raw_source)!r})"
+            )
+
+        static = ", ".join(
+            f"{name}={_field_repr(name, getattr(self, name))}"
+            for name in (
+                "verify_commands",
+                "worktree_seed_paths",
+                "merge_subject_template",
+                "model_tier_map",
+            )
+        )
+        seed = ", ".join(
+            f"{key!r}: {_field_repr(key, field)}" for key, field in sorted(self._seed.items())
+        )
+        return f"{type(self).__name__}({static}, _seed={{{seed}}})"
+
     def seed_view(self) -> Mapping[str, PolicyField]:
         """The sole whitelisted accessor for the 5 seed-tagged fields
         (AD-26, closing F-8): a read-only mapping keyed by field name. This
@@ -605,15 +658,6 @@ def compose(
         flags,
         findings,
         "MRS-POLICY-002",
-    )
-    # Deep-freeze AFTER the merge (never inside DEFAULT_POLICY or the
-    # validator): `_merge_field`'s `copy.deepcopy(default_value)` cannot run
-    # on an already-frozen MappingProxyType, so this is the one place the
-    # freeze can apply uniformly regardless of which layer won.
-    model_tier_map = PolicyField(
-        value=_freeze_model_tier_map(model_tier_map.value),
-        layer=model_tier_map.layer,
-        raw_source=model_tier_map.raw_source,
     )
     seed = {
         "gate_mode": _merge_field(

@@ -41,6 +41,23 @@ from . import config as config_cli
 __version__ = "0.1.0"
 
 
+def _drain_stdout() -> None:
+    """Flush stdout inside a guard before returning an exit code. With
+    stdout piped or redirected it is block-buffered: the usage line and
+    argparse's ``--help``/``--version`` output never touch the fd during
+    ``main()``, and a broken destination (closed pipe, full disk) surfaces
+    only at the interpreter's shutdown flush -- which CPython converts to
+    exit status 120, outside the frozen domain, after ``main()`` has
+    already returned its careful in-domain code. Flushing HERE surfaces the
+    ``OSError`` while it can still be suppressed (``config``'s devnull
+    redirect neutralizes the dirty buffer so the shutdown re-flush cannot
+    raise) and the in-domain return value survives."""
+    try:
+        sys.stdout.flush()
+    except OSError:
+        config_cli._suppress_downstream_pipe_close()
+
+
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="marshal",
@@ -78,6 +95,7 @@ def main(argv: list[str] | None = None) -> int:
             # a caller that LOST its arguments read as success -- print the
             # usage line so the invocation is visibly incomplete.
             parser.print_usage()
+            _drain_stdout()
             return EXIT_OK
         handler = getattr(args, "handler", None)
         if handler is None:
@@ -109,6 +127,10 @@ def main(argv: list[str] | None = None) -> int:
         # config) falls back to 2, still inside the guarded domain. bool is
         # excluded like everywhere else in this package: SystemExit(True)
         # numerically equals 1 but is not an exit code -- clamp it.
+        # argparse printed help/version to stdout before exiting (its own
+        # write is even swallowed on error since 3.12) -- drain the buffer
+        # NOW or a piped `marshal --help` exits 120 at shutdown flush.
+        _drain_stdout()
         if exc.code is None:
             return EXIT_OK
         if (

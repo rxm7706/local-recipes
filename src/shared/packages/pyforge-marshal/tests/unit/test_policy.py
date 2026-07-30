@@ -695,3 +695,105 @@ def test_frozen_surfaces_rejects_empty_string_entry():
     assert effective.seed_view()["frozen_surfaces"].value == DEFAULT_POLICY["frozen_surfaces"]
     assert len(findings) == 1
     assert findings[0].code == "MRS-POLICY-003"
+
+
+# --- fourth review pass regressions (2026-07-30) ------------------------------
+
+
+@pytest.mark.parametrize(
+    "bad_entry",
+    ["..\\evil", "C:\\x", "a\x00b", "~/.ssh", "has space", "a\nb"],
+    ids=["backslash-traversal", "drive-letter", "nul-byte", "tilde", "space", "newline"],
+)
+def test_worktree_seed_extras_reject_entries_outside_the_path_charset(bad_entry):
+    """The extras validator claims the slug guard's threat model, so it must
+    enforce the slug guard's CHARSET too: segment checks alone split on `/`
+    only, letting backslash traversal, drive letters, NUL bytes (a later
+    Path() consumer dies on an embedded null), `~` (escapes the worktree
+    under any expanduser), and whitespace compose cleanly."""
+    effective, findings = compose(
+        project_slug="acme", project={"worktree_seed_paths": [bad_entry]}, flags={}
+    )
+    assert effective.worktree_seed_paths.value == (
+        "_bmad-output/projects/acme/implementation-artifacts",
+        "_bmad/custom/.active-project",
+    )
+    assert len(findings) == 1
+    assert findings[0].code == "MRS-POLICY-002"
+
+
+def test_malformed_finding_does_not_claim_a_fallback_that_did_not_happen():
+    """project supplies a VALID gate_mode, a flag then supplies a malformed
+    one: the excluded-not-poisoned semantics retain the project value, so
+    the finding text must not assert 'falling back to the Marshal default'
+    -- the effective value printed one line away would contradict it."""
+    effective, findings = compose(
+        project_slug="acme", project={"gate_mode": "none"}, flags={"gate_mode": "bogus"}
+    )
+    gate_mode = effective.seed_view()["gate_mode"]
+    assert gate_mode.value == "none"
+    assert gate_mode.layer is PolicyLayer.PROJECT
+    assert len(findings) == 1
+    assert "ignored" in findings[0].message
+    assert "default" not in findings[0].message
+
+
+@pytest.mark.parametrize(
+    "tier_map",
+    [{"": {"dev": "opus"}}, {"hard": {"dev": ""}}],
+    ids=["empty-difficulty", "empty-model"],
+)
+def test_model_tier_map_rejects_empty_difficulty_and_model_names(tier_map):
+    """An empty difficulty class or model name is no instance of the concept
+    at all -- the same empty-string rule every other string field already
+    enforces (an Epic 3/4 stage resolution would inherit it silently)."""
+    effective, findings = compose(
+        project_slug="acme", project={"model_tier_map": tier_map}, flags={}
+    )
+    assert effective.model_tier_map.value == DEFAULT_POLICY["model_tier_map"]
+    assert len(findings) == 1
+    assert findings[0].code == "MRS-POLICY-002"
+
+
+def test_slug_longer_than_name_max_is_malformed():
+    """A slug over 255 characters is a path segment no target filesystem
+    accepts -- shape validation reports it at compose time instead of
+    deferring an ENAMETOOLONG to every later consumer."""
+    effective, findings = compose(project_slug="a" * 256, project={}, flags={})
+    assert len(findings) == 1
+    assert findings[0].code == "MRS-POLICY-006"
+    assert effective.worktree_seed_paths.value == ("_bmad/custom/.active-project",)
+
+
+def test_slug_at_exactly_name_max_is_accepted():
+    effective, findings = compose(project_slug="a" * 255, project={}, flags={})
+    assert findings == ()
+    assert ("a" * 255) in effective.worktree_seed_paths.value[0]
+
+
+def test_policy_field_snapshots_mutable_value_at_construction():
+    """Direct construction is public API: __post_init__ must freeze VALUE
+    exactly as it freezes raw_source, or a caller-held list/dict mutated
+    after construction silently changes content_hash -- re-opening the
+    AD-35 mutability hole for every non-compose() construction path."""
+    source = ["a"]
+    field = PolicyField(value=source, layer="default", raw_source=source)
+    source.append("b")
+    assert field.value == ("a",)
+    assert field.raw_source == ("a",)
+    with pytest.raises(TypeError):
+        PolicyField(value={"k": "v"}, layer="default", raw_source={}).value["k"] = "x"  # type: ignore[index]
+
+
+def test_effective_policy_repr_redacts_secret_shaped_fields(monkeypatch):
+    """The dataclass-generated repr printed every raw value -- an unredacted
+    egress through any traceback/log/debugger. The custom __repr__ routes
+    every value/raw_source through redact() keyed on the field name (proven
+    synthetically: none of the 9 real fields is secret-shaped)."""
+    monkeypatch.setattr(policy, "SECRET_KEY_SUFFIXES", frozenset({"_MODE"}))
+    effective, _ = compose(project_slug="acme", project={"gate_mode": "none"}, flags={})
+    text = repr(effective)
+    assert REDACTED_SENTINEL in text
+    assert "'none'" not in text
+    # non-secret fields still repr their real values
+    assert "acme" in text

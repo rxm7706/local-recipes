@@ -23,11 +23,16 @@ omits the project-derived path.
 int-typed fields are ``int()``-coerced here; a coercion failure is left as
 the raw string rather than raised, so ``policy.compose()``'s own uniform
 validation reports it as a malformed value (``MRS-POLICY-003``) through the
-same path every other malformed value takes. The three list/mapping-typed
-fields (``verify_commands``, ``worktree_seed_paths``,
-``model_tier_map``) are never exposed as ``--set`` targets -- a caller who
-tries anyway gets a plain string value that ``compose()``'s validators will
-reject the same way (reported, never raised).
+same path every other malformed value takes. The FOUR list/mapping-typed
+fields (``verify_commands``, ``worktree_seed_paths``, ``model_tier_map``,
+``frozen_surfaces``) are not ``--set`` targets at all: a ``--set`` naming
+one is a clean usage error at the flag boundary (``EXIT_USAGE``) telling
+the operator to supply it via the ``--project-policy`` TOML layer --
+letting it flow into ``compose()`` as a plain string would come back as a
+"malformed value" finding, a categorically wrong diagnostic for a key no
+string value could ever satisfy. Unknown keys still flow through to
+``compose()`` and report ``MRS-POLICY-001`` like any other layer's unknown
+key.
 """
 
 from __future__ import annotations
@@ -36,6 +41,7 @@ import argparse
 import json
 import os
 import sys
+import threading
 import tomllib
 from collections.abc import Mapping
 from pathlib import Path
@@ -49,6 +55,13 @@ ENV_ACTIVE_PROJECT = "BMAD_ACTIVE_PROJECT"
 # Only these 3 of the 5 --set-eligible scalar keys are int-typed; the other
 # two (gate_mode, merge_subject_template) stay plain strings.
 _INT_SET_KEYS = frozenset({"max_dev_attempts", "max_review_cycles", "max_followup_reviews"})
+
+# The 4 list/mapping-typed fields --set cannot express (no string value
+# could ever satisfy their validators); naming one is a usage error, not a
+# misleading "malformed value" policy finding. See the module docstring.
+_UNSETTABLE_KEYS = frozenset(
+    {"verify_commands", "worktree_seed_paths", "model_tier_map", "frozen_surfaces"}
+)
 
 # Field render order: the 4 static keys, then the 5 seed keys -- matches the
 # spec's own enumeration order (Boundaries & Constraints, second bullet).
@@ -124,14 +137,22 @@ def _parse_set_item(item: str) -> tuple[str, str]:
     ``KEY=VALUE`` and raises ``argparse.ArgumentTypeError`` (a clean usage
     error, ``EXIT_USAGE`` -- argparse's own mechanism, matching how every
     other malformed flag on this CLI is already handled) if there is no
-    ``=``. A missing ``=`` carries no key to attach a policy value to, so
-    silently dropping it (the previous behavior) gave the operator zero
-    feedback; a usage error is the correct signal, not a policy-layer
-    finding (``compose()`` has nothing to validate for a flag that never
-    reached it)."""
+    ``=`` or the key is one of the 4 list/mapping-typed fields. A missing
+    ``=`` carries no key to attach a policy value to, so silently dropping
+    it (the previous behavior) gave the operator zero feedback. A
+    list/mapping-typed key is rejected HERE, with the fix named, because
+    the alternative -- letting the plain string reach ``compose()`` -- came
+    back as "malformed value ... in the flag layer", sending the operator
+    chasing value-format variations for a key that is not flag-settable at
+    all."""
     key, sep, raw_value = item.partition("=")
     if not sep:
         raise argparse.ArgumentTypeError(f"--set {item!r} must be KEY=VALUE")
+    if key in _UNSETTABLE_KEYS:
+        raise argparse.ArgumentTypeError(
+            f"--set cannot target the list/mapping-typed key {key!r}; "
+            "supply it via the --project-policy TOML layer"
+        )
     return key, raw_value
 
 
@@ -209,7 +230,15 @@ def materialize(effective_policy: policy.EffectivePolicy, target_dir: Path) -> P
     true no-op path the existing file's mtime is left untouched and no write
     is attempted at all. A non-file (e.g. a directory) occupying the path,
     or any ``mkdir``/temp-file/write failure, likewise raises
-    ``PolicyIOError`` rather than an uncaught ``OSError``."""
+    ``PolicyIOError`` rather than an uncaught ``OSError``.
+
+    THE CALLER owns the persist-only-ok-compositions gate: this function
+    takes no findings (the spec pins the ``(policy, target_dir)``
+    signature) and will durably write whatever composition it is handed.
+    ``run_config`` checks ``status_for(compute_verdict(findings))`` before
+    calling; any future direct caller (Story 1.4's loop-home resolution)
+    must apply the same gate or an error-class composition outlives its
+    non-zero exit code as a content-addressed artifact."""
     target_dir = Path(target_dir)
     try:
         target_dir.mkdir(parents=True, exist_ok=True)
@@ -236,11 +265,18 @@ def materialize(effective_policy: policy.EffectivePolicy, target_dir: Path) -> P
         # mkstemp+fchmod approach needed an os.umask(0)/restore probe to
         # learn the umask -- a process-GLOBAL toggle that briefly zeroed the
         # umask for every other thread on each write. The tmp name is
-        # pid-suffixed and O_EXCL-guarded; a stale same-name leftover from a
-        # SIGKILLed earlier run is unlinked first (the dot-prefixed name is
-        # this writer's own convention, safe to reclaim).
-        tmp_path = target_dir / f".policy-{effective_policy.content_hash}.pid{os.getpid()}.tmp"
-        tmp_path.unlink(missing_ok=True)
+        # pid+thread-suffixed so no two live writers can ever share it, and
+        # O_EXCL-guarded with NO pre-unlink: a pre-unlink could only ever
+        # collide with (and destroy) a SAME-process sibling's in-flight temp
+        # -- a SIGKILLed earlier run has a different pid, so its leftover
+        # never collides here; if pid+tid recycling ever does land on a
+        # stale leftover, O_EXCL surfaces it as an explicit PolicyIOError
+        # (delete the stale file and re-run) instead of a silent publish of
+        # a half-written artifact.
+        tmp_path = target_dir / (
+            f".policy-{effective_policy.content_hash}"
+            f".pid{os.getpid()}.t{threading.get_native_id()}.tmp"
+        )
         fd = os.open(tmp_path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o666)
         try:
             with os.fdopen(fd, "wb") as handle:
@@ -361,34 +397,47 @@ def run_config(args: argparse.Namespace) -> int:
         command="config", verdict=verdict_value, data=data, findings=findings
     )
 
+    # flush=True is load-bearing, not stylistic: with stdout piped or
+    # redirected it is BLOCK-buffered, so a plain print() never touches the
+    # fd here -- the write happens at interpreter shutdown, AFTER main()
+    # returns, where CPython converts a failed flush into exit status 120
+    # plus an "Exception ignored" traceback, bypassing both except clauses
+    # entirely (`marshal config | head -1` exited 120 before this flush).
+    # Forcing the flush inside the try makes the EPIPE/EIO/ENOSPC surface
+    # where the guard can actually catch it.
     try:
         if args.format == "json":
-            print(json.dumps(envelope.to_json_dict(), indent=2, sort_keys=True))
+            print(json.dumps(envelope.to_json_dict(), indent=2, sort_keys=True), flush=True)
         else:
-            print(_render_text(envelope.data, envelope.findings))
-    except BrokenPipeError:
-        _suppress_downstream_pipe_close()
+            print(_render_text(envelope.data, envelope.findings), flush=True)
     except OSError:
-        # EIO on a vanished pty, ENOSPC on a full-disk redirect: like the
-        # broken-pipe case, the compose/materialize work already completed
-        # and there is nothing left to print to -- return the verdict-derived
-        # exit code instead of crashing through main()'s relay (which
-        # catches only SystemExit/KeyboardInterrupt).
-        pass
+        # BrokenPipeError (the reader hung up) and its non-pipe siblings
+        # (EIO on a vanished pty, ENOSPC on a full-disk redirect) all take
+        # the same path: the compose/materialize work already completed and
+        # there is nothing left to print to, so neutralize stdout and
+        # return the verdict-derived exit code instead of crashing through
+        # main()'s relay. The devnull redirect is required for the non-pipe
+        # cases too -- a failed flush leaves the unwritten bytes IN the
+        # buffer, and the interpreter's shutdown re-flush would re-raise
+        # the same OSError (-> exit 120) if stdout still pointed at the
+        # broken destination.
+        _suppress_downstream_pipe_close()
 
     return exit_code_for(envelope.verdict)
 
 
 def _suppress_downstream_pipe_close() -> None:
-    """A closed stdout (e.g. ``marshal config | head -1``) is the READER's
-    choice, not a policy failure -- the compose/materialize work already
-    completed by the time the envelope prints. ``BrokenPipeError`` is an
-    ``OSError`` that ``main()``'s ``SystemExit``/``KeyboardInterrupt`` relay
-    would never catch, so without this guard a piped invocation crashes with
-    a traceback in violation of the never-raise exit-relay contract.
-    Redirect stdout to devnull (the CPython-documented pattern) so the
-    interpreter's final flush does not raise a SECOND BrokenPipeError at
-    shutdown; ``run_config`` then returns its verdict-derived exit code.
+    """A dead stdout -- a closed pipe (``marshal config | head -1``), a
+    vanished pty (EIO), a full disk (ENOSPC) -- is not a policy failure:
+    the compose/materialize work already completed by the time the envelope
+    prints. These are all ``OSError``\\s that ``main()``'s
+    ``SystemExit``/``KeyboardInterrupt`` relay would never catch, so
+    without this guard the invocation crashes (or, worse, exits 120 from
+    the interpreter's shutdown flush of the still-dirty buffer -- see the
+    ``flush=True`` comment at the call site). Redirect stdout to devnull
+    (the CPython-documented pattern) so the shutdown re-flush of any
+    retained bytes lands harmlessly; ``run_config`` then returns its
+    verdict-derived exit code.
 
     Touches process-level FDs only when ``sys.stdout`` IS the real process
     stdout: a replaced stdout (pytest capture, an embedding TUI) has its own

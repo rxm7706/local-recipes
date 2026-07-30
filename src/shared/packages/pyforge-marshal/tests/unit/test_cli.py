@@ -593,6 +593,66 @@ def test_config_materialize_is_skipped_when_composition_carries_error_findings(
     assert "skipped" in captured.out
 
 
+# --- follow-up review regressions (2026-07-30, fourth pass) -------------------
+
+
+@pytest.mark.parametrize(
+    "argv",
+    [["config", "--project", "acme"], ["--help"], []],
+    ids=["config", "help", "bare-usage"],
+)
+def test_piped_invocation_with_closed_reader_exits_in_domain(argv):
+    """The in-process fake-stdout regressions above inject the failure at
+    write() time -- a shape that structurally cannot represent BUFFERING.
+    In a real console-script invocation with stdout piped, output smaller
+    than the block buffer never touches the fd inside run_config's guard;
+    the EPIPE surfaced at interpreter-shutdown flush, which CPython
+    converts to exit status 120 (outside the frozen domain) with an
+    'Exception ignored' traceback on stderr. Spawning the real thing with
+    the read end closed is the only test shape that catches it -- both
+    prior passes' in-process guards shipped green while `marshal config |
+    head -1` exited 120."""
+    import os as os_module
+    import subprocess
+    import sys as sys_module
+
+    env = {
+        k: v
+        for k, v in os_module.environ.items()
+        if k not in ("PYTHONUNBUFFERED", "BMAD_ACTIVE_PROJECT")
+    }
+    code = (
+        "import sys\n"
+        "from pyforge.marshal.cli.main import main\n"
+        f"sys.exit(main({argv!r}))\n"
+    )
+    proc = subprocess.Popen(
+        [sys_module.executable, "-c", code],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        env=env,
+    )
+    proc.stdout.close()  # hang up before the child flushes
+    stderr = proc.stderr.read()
+    proc.stderr.close()
+    returncode = proc.wait()
+    assert returncode == 0, stderr.decode(errors="replace")
+    assert b"Exception ignored" not in stderr
+
+
+def test_config_set_on_a_list_or_mapping_key_is_a_usage_error(capsys):
+    """`--set verify_commands=...` used to flow into compose() as a plain
+    string and come back as 'malformed value ... in the flag layer' -- a
+    categorically wrong diagnostic (no string value could ever satisfy a
+    list/mapping-typed key). The flag boundary now rejects the KEY with a
+    usage error naming the actual fix."""
+    exit_code = main(["config", "--set", "verify_commands=pytest -q"])
+    assert exit_code == EXIT_USAGE
+    captured = capsys.readouterr()
+    assert "verify_commands" in captured.err
+    assert "--project-policy" in captured.err
+
+
 def test_handler_returning_none_is_clamped_to_usage(monkeypatch):
     """A future handler that falls off the end returns None; the console
     script's sys.exit(None) would exit 0, masking the wiring bug as success.
