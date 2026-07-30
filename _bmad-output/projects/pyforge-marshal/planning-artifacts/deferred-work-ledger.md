@@ -32,6 +32,27 @@ Durability first; curation is owned follow-up work.
 
 # Deferred Work
 
+> **Re-reconciled 2026-07-29 against conda-forge-expert v8.81.0** (Round-4 code-audit
+> remediation). Each entry re-checked against the live tree; **1 of 5 is resolved, 4 stand**:
+>
+> - **`pixi build --manifest-path` (entry 1) — RESOLVED, and not by this pass.** The root
+>   `pixi.toml` tasks already target the member package by `cwd` rather than the missing
+>   flag (`pyforge-{mason,steward}-build-conda`, with the reason in an inline comment), so
+>   the tasks the entry describes as failing do not fail. Re-verified against the newly
+>   floored pixi **0.74.0**: `pixi build --help` still exposes only `--path`, no
+>   `--manifest-path`, so the `cwd` workaround remains the correct shape rather than
+>   something to revert. The entry described already-fixed code.
+> - **Inline `.gitignore` comments (entry 2) — STILL OPEN, confirmed live.**
+>   `pyforge-doctor/.gitignore` and `pyforge-warden/.gitignore` both still read
+>   `/dist/          # pypi: wheel + sdist (...)`; gitignore has no trailing-comment
+>   syntax, so both patterns remain dead and those directories are not ignored.
+> - **Missing package LICENSE files (entry 3) — STILL OPEN.** `ls src/shared/packages/*/LICENSE*`
+>   returns nothing while every sibling `pyproject.toml` declares MIT.
+> - **DW-1 / DW-FU-1-1 follow-up review — STILL OPEN.** Unchanged.
+>
+> Nothing was re-severitied and nothing was closed in place: the one resolved entry is
+> recorded as resolved-by-prior-work, not claimed by this pass.
+
 - source_spec: `_bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-1-1-package-spine-verdict-lattice-findings-registry-and-the-meta-tests-that-enforce-them.md`
   summary: The `pyforge-mason`, `pyforge-steward`, and `pyforge-warden` `*-build-conda` pixi tasks (root `pixi.toml`) invoke `pixi build --manifest-path ...`, a flag the installed pixi (0.73.0) does not have (`pixi build --help` only exposes `--path`), so all three tasks fail when run.
   evidence: Confirmed live against the installed `pixi build --help` output while implementing Story 1.1's own `pyforge-marshal-build-conda` task, which mirrors the same block but was written with `--path` instead to avoid propagating the bug. Pre-existing in already-merged code; outside this story's declared surface (`src/shared/packages/pyforge-marshal/**` + root `pixi.toml` additions only).

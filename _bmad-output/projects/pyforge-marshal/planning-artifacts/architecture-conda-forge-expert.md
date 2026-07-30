@@ -4,7 +4,7 @@ part_id: conda-forge-expert
 display_name: conda-forge-expert skill
 project_type_id: library
 date: 2026-07-25
-source_pin: 'conda-forge-expert v8.80.0'
+source_pin: 'conda-forge-expert v8.81.0'
 ---
 
 # Architecture: conda-forge-expert (Part 1)
@@ -17,7 +17,9 @@ source_pin: 'conda-forge-expert v8.80.0'
 >
 > **Re-verified unchanged:** three-tier architecture and the three-place rule; the 6 Operating Principles; the Build Failure / Migration / Security-boundary protocols; step 8b as the sole human gate; the 13-ecosystem template tree (41 templates); the mapping subsystem's two coexisting halves; the portability story (`MANIFEST.yaml` + `install.py`).
 >
-> **Live defect recorded, not propagated:** `SKILL.md` frontmatter and `MANIFEST.yaml` both still declare `version: 7.0.0` while `config/skill-config.yaml` + `CHANGELOG.md` say **8.79.1** — see § *Drift Detection*.
+> ~~**Live defect recorded, not propagated:** `SKILL.md` frontmatter and `MANIFEST.yaml` both still declare `version: 7.0.0` while `config/skill-config.yaml` + `CHANGELOG.md` say **8.79.1**~~ → **FIXED 2026-07-29** (CFE v8.81.0): both surfaces were stale by 13 minor versions and now read `8.81.0` alongside `config/skill-config.yaml`. See § *Drift Detection*.
+>
+> **Updated 2026-07-29 (source_pin → v8.81.0; Round-4 code-audit remediation).** Added: a **6th shared-infrastructure module**, `_path_guard.py` (§ *Shared infrastructure*), and an **11th Critical Constraint** — *Every Recipe-Facing Path Argument Confines Through `_path_guard`* — because three surfaces (`submit_pr.prepare_branch`, `recipe_editor.execute_actions`, and Part 3's `trigger_build`) each hand-rolled or omitted the check. Two new meta-tests (`test_skill_files_tracked.py`, plus the previously-uncommitted `test_dashboard_renders.py`), so the meta count moves 9 → 11. **Governance note:** the CHANGELOG sentinel described below did its job — this pass could not have landed silently.
 
 
 The `conda-forge-expert` skill is **the heart of the system** — a Claude Code skill that encodes every conda-forge packaging decision so an AI agent can author, validate, build, and submit recipes that pass conda-forge review on first land. Parts 2 (`cf_atlas`) and 3 (`mcp-server`) are extensions of this part: Part 2 is the data pipeline encoded in this skill's `scripts/`, and Part 3 is the MCP wire format over this skill's `scripts/`. Part 4 (BMAD) is independent infrastructure that invokes this skill per the integration rules in `CLAUDE.md`.
@@ -239,10 +241,11 @@ Grouped by function (script names map 1:1 to `.claude/skills/conda-forge-expert/
 | `health_check.py` | System health check | `run_system_health_check` |
 | `_sbom.py` | SBOM parsing helpers (CycloneDX / SPDX / Syft) — internal helper for scan_project + env_inspect SBOM mode | (internal) |
 
-### Shared infrastructure (5 modules — used by all 4 parts)
+### Shared infrastructure (6 modules — used by all 4 parts)
 
 | Module | Role |
 |---|---|
+| `_path_guard.py` | ★ Path confinement for every recipe-facing surface (v8.81.0, AUD-CFE-001/002/006). `validate_recipe_name` (flat slug), `resolve_under_recipes` (any path; resolves symlinks, requires containment via `is_relative_to` — a string prefix would admit `recipes-evil/`), `validate_recipe_file_path` (+ YAML suffix). Consumed by `submit_pr.py`, `recipe_editor.py` and `.claude/tools/conda_forge_server.py` (`trigger_build`), so "inside the recipes tree" is defined **once**. The confinement root is read **per call** from `CFE_RECIPES_ROOT` (default `<repo>/recipes`), because capturing it at import would silently defeat the test suite's override. **Historically notable:** this module was written for the abandoned PR #131 and never committed — `/.claude/skills` sat in `.git/info/exclude`, hiding new files from `git status` — so that branch's remediation imports a module it does not ship. Guarded now by `tests/meta/test_skill_files_tracked.py`. |
 | `_http.py` | ★ The canonical shared-utility module, **1,024 LOC**. Surfaces: (1) truststore + JFrog/GitHub/.netrc auth chain — `auth_headers_for(url)` extracted in v7.8.0 so `requests`-based callers share the same auth resolution as urllib callers; (2) **19** `resolve_<host>_urls` resolvers (re-counted 2026-07-25; was 14) backed by **21 `<HOST>_BASE_URL` env vars** — every external host the atlas + skill talks to is redirectable; (3) `atomic_writer` / `atomic_write_bytes` / `atomic_write_text` — `.tmp` + fsync + `os.replace` pattern; (4) `fetch_to_file_resumable(target, urls, ...)` — streaming Range/resume download with atomic finalize. **Contains the JFROG_API_KEY cross-host leak — still UNRESOLVED as of 2026-07-25** (mitigated only via env-var hygiene; see `deployment-guide.md`). Every outbound HTTP request from Parts 1+2+3 routes through here. |
 | `mapping_manager.py` | PyPI→conda mapping refresh (`update_mapping_cache` MCP tool) |
 | `_cfy_template.py` | Universal `conda-forge.yml` pre-seed emitter (v8.61.0) — every generator path emits a pre-seeded `conda-forge.yml` by default (G83) |

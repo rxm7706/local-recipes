@@ -4,7 +4,7 @@ part_id: mcp-server
 display_name: FastMCP server
 project_type_id: backend
 date: 2026-07-25
-source_pin: 'conda-forge-expert v8.80.0'
+source_pin: 'conda-forge-expert v8.81.0'
 ---
 
 # Architecture: MCP Server (Part 3)
@@ -18,6 +18,8 @@ source_pin: 'conda-forge-expert v8.80.0'
 > **Re-verified unchanged:** 46 `@mcp.tool` registrations and zero `@mcp.resource` / `@mcp.prompt`; `mcp = FastMCP("conda-forge-expert")` at `:19`; exactly 2 `async def` tools (`update_cve_database` `:820`, `trigger_build` `:867`), both taking `ctx: Context`; `_run_script(script_path, args, input_text=None, timeout=120)` at `:83`; stdio transport via a bare `mcp.run()` at `:2266`; `_PYTHON = sys.executable`; `mcp_call.py` at 42 lines; the three-layer error discipline; zero auth code in the server.
 >
 > **New in the neighbourhood:** a **second, separate MCP server** now exists in-repo (`src/shared/packages/pyforge-atlas/src/pyforge/atlas/mcp/server.py`, 11 tools) belonging to the Kedro reimplementation. It is additive and unrelated to this one — see § *The second MCP server*.
+>
+> **Updated 2026-07-29 (CFE v8.81.0, Round-4 code-audit remediation — tool count unchanged at 46):** two argument-handling facts in this doc's model of the server changed. (1) **`trigger_build` now confines its caller-supplied `recipe` path** to the `recipes/` subtree before probing for `recipe.yaml`/`meta.yaml`, via the shared `_path_guard` helper the server imports from the skill's `scripts/` dir (AUD-CFE-006); the same helper backs `edit_recipe` and `submit_pr`, so path confinement is one implementation rather than three. (2) **`query_atlas` is no longer a thin SELECT passthrough**: `select` and `order_by` are allowlist-validated (`order_by` had previously been interpolated into the SQL with *no* validation), `where` retains the side-table subquery capability its docstring advertises but rejects statement separators / comments / DDL, write-keyword matching moved from substring to **word boundary** (the substring form rejected any column containing `UPDATE`, e.g. `updated_at`), the connection is opened **read-only** and closed, and `limit` is clamped to 1–1000 — the prior `min(limit, 1000)` admitted `limit=-1`, which SQLite reads as *no limit*. `gemini_server.py` sends its key as `x-goog-api-key` rather than `?key=` on all four transport paths (AUD-CFE-010). "Zero auth code in the server" **still holds** — AUD-CFE-003 (sandbox/auth layer) remains an open architecture decision; the path guards are a mitigation, not a resolution.
 
 
 The MCP server is the **wire format** between Claude Code's MCP runtime and Parts 1+2's canonical Python scripts. It exposes **46** tools across four surfaces (recipe-authoring, atlas-intelligence, project-scanning, infrastructure), each implemented as a thin subprocess wrapper over a Tier 1 script. The server is **not** where the logic lives — it's where the logic is **named** for the MCP protocol.

@@ -7,7 +7,7 @@ description: |
 
   USE THIS SKILL WHEN: creating or updating conda recipes, fixing conda-forge
   build failures, or performing any task related to conda packaging.
-version: 7.0.0
+version: 8.81.0
 allowed-tools: [conda_forge_server]
 ---
 
@@ -162,6 +162,41 @@ if errorlevel 1 exit /b 1
 ```
 
 `call` is harmless on real `.exe` (`node.exe`, `cargo.exe`, `rustc.exe`); when in doubt, add it. See `guides/ci-troubleshooting.md` § "Silent build.bat Termination".
+
+### Every Recipe-Facing Path Argument Confines Through `_path_guard`
+
+Any surface that accepts a **caller-supplied path or recipe slug** — an MCP tool
+argument, a CLI positional — must confine it to the `recipes/` subtree via
+`scripts/_path_guard.py`, never a hand-rolled check:
+
+```python
+from _path_guard import (
+    REPO_ROOT, recipes_root,
+    validate_recipe_name,        # a flat slug: rejects "/", "\", "..", control bytes
+    resolve_under_recipes,       # any path: resolves symlinks, requires containment
+    validate_recipe_file_path,   # the above + a .yaml/.yml suffix check
+)
+```
+
+Three surfaces skipped it and each was a real escape (AUD-CFE-001/002/006):
+`submit_pr.prepare_branch` joined a slug onto `recipes/` and `copytree`'d the
+result into a **public fork**; `recipe_editor.execute_actions` validated only the
+file **suffix**, so it would rewrite any `.yaml`/`.yml` in the repo (`pixi.toml`'s
+siblings, `.github/workflows/*.yml`); `trigger_build` would build any recipe path
+on the filesystem. A suffix check is not a location check.
+
+Two properties worth preserving if you touch the helper:
+
+- **`.resolve()` before comparing**, so a symlink *inside* `recipes/` that points
+  out is also rejected — and use `is_relative_to`, not a string prefix, or
+  `recipes-evil/` passes a `recipes/` root.
+- **The root is read per call** (`CFE_RECIPES_ROOT`, else `<repo>/recipes`).
+  Capturing it at import would make the test suite's override silently
+  ineffective in an already-imported module — the fixture copies live in
+  `tmp_path`, outside the real tree.
+
+`tests/unit/test_path_guard.py` covers the escapes; add a case there rather than
+re-deriving the rules at a new call site.
 
 ### Every v1 Recipe Must Declare the Schema Header
 
@@ -3836,6 +3871,8 @@ To run an off-cycle audit locally: `.claude/skills/conda-forge-expert/automation
 ---
 
 ## Version History
+
+- **v8.81.0** (Jul 29, 2026) — **Round-4 code-audit remediation retro (Rule 2 — the AUD-CFE-\* + AUD-REPO-001 findings; 1 new operating constraint; MINOR).** Closes the `AUD-CFE-*` half of `spec-code-audit-remediation-2026-07-26`, which the 2026-07-27 incorporation record left with **no disposition** ("pyforge-atlas only"). PR #131 is abandoned, so every finding was re-verified **OPEN against `main`** rather than trusted from the branch's `Status:` lines. No recipes authored; no `recipes/**` touched. **New Critical Constraint** — *Every Recipe-Facing Path Argument Confines Through `_path_guard`*: `submit_pr.prepare_branch` (slug → `recipes/` → `copytree` into a **public fork**), `recipe_editor.execute_actions` (suffix-only check, so any repo YAML was writable) and `trigger_build` (any recipe path on disk) all skipped confinement; they now share one helper, whose root is read **per call** so the test override cannot be silently defeated. **Root cause found:** `/.claude/skills` sat in `.git/info/exclude` — 919 files there are tracked, so it hid only **new** ones, which is why `_path_guard.py` and `tests/meta/test_dashboard_renders.py` were written and never committed (**PR #131 imports a module it does not ship**). Guarded by `tests/meta/test_skill_files_tracked.py`, which walks the filesystem instead of asking `git status` (that honours the exclude and reports clean). **Refinements:** a keyword *substring* scan false-positives on identifiers (`updated_at` contains `UPDATE`) → word-boundary matching; `query_atlas`'s `order_by` was interpolated with **no** validation → allowlists on `select`/`order_by`, `where` keeps its documented subqueries, connection read-only, `limit` clamped at both ends (`limit=-1` = *no limit* in SQLite, verified to dump a table); the atlas N+1 fix applied to **both** readers via a shared chunked helper, not just the one the finding named (`with sqlite3.connect(...)` manages the transaction, **not** the connection). **AUD-REPO-001** dependency-completeness gate restored (`pyforge-deps-test`, pure stdlib so it runs in the lean env) — it found AUD-WARDEN-010 still open on `main` on its first run. Also: Gemini key → `x-goog-api-key`; provenance-hook return/argparse/exit fixes; `.secrets` into the tracked `.gitignore`; `--force-with-lease` on the fork sync; `wiki-test` wired for a suite that collected nowhere; **stale `7.0.0` in `SKILL.md`/`MANIFEST.yaml` corrected**. AUD-CFE-003/004 stay deferred (004 cannot be a private-IP denylist — internal hosts are what `<HOST>_BASE_URL` routing targets). **Files**: `SKILL.md`, `MANIFEST.yaml`, `config/skill-config.yaml`, `reference/mcp-tools.md`, `scripts/{_path_guard,submit_pr,recipe_editor,scan_project}.py`, `.claude/tools/{conda_forge_server,gemini_server,mcp_call}.py`, `.claude/hooks/post-tool-call.py`, `tests/{meta,unit}/…` (+134 tests), `tests/packaging/`, `pixi.toml`, `.gitignore`, `CHANGELOG.md`.
 
 - **v8.80.0** (Jul 29, 2026) — **pyforge-atlas Epic-10 post-audit retro (Rule 2): 1 new gotcha G107 + a verified mapping-data fix (MINOR).** From Epic 10 (stories I0–I5, 6/6 merged; `kedro-test` 803 → 901 passed); **no recipes authored, no `recipes/**` touched**. **G107 (new)** — a conda package EXISTING under the bare name does not mean it ships the Python module: conda-forge `playwright` is the Node CLI/driver with no site-packages module, while the `import playwright` bindings are `playwright-python`; on PyPI the bindings ARE `playwright` and no `playwright-python` distribution exists. The four-spellings walk starts at the bare name, finds the CLI, and stops — the env resolves cleanly and the recipe lints, so nothing fails until something runs `import`. Both halves are usually required. **Mapping-data defect FIXED** — `different_names.json` had a `parselmouth`-sourced entry keyed `playwright-python` → conda `playwright` (a non-existent PyPI name pointing at the module-less half) while the real name `playwright` was absent, guaranteeing the fall-through; treat `source: parselmouth` rows as fallible on split distributions. **Technique** — story I0 cleared 17 collection errors by deriving run-deps from an AST import scan (3 declared vs 19 imported), classifying each as conda-mappable, PyPI-only (⇒ a packaging blocker, not a declarable dep — `boring_semantic_layer`), or stdlib. **Files**: `SKILL.md`, `pypi_conda_mappings/different_names.json`, `config/skill-config.yaml` (8.79.1 → 8.80.0), `CHANGELOG.md`.
 
