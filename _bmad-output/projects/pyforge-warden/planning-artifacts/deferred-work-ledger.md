@@ -94,6 +94,8 @@ Durability first; curation is owned follow-up work.
 
   status: open
 
+  verified: 2026-07-30 — `runtime_python` appears 0 times in both `data/report-schema.json` and `models.py` — the field was never added.
+
 ## DW-6-3-2 — `scripts/refresh_endoflife_feed.py` fetches one HTTP request per registry product slug with no r…
 
 - source_spec: `_bmad-output/projects/pyforge-warden/implementation-artifacts/spec-6-3-currency-axis-producer-gate-flags.md`
@@ -125,6 +127,8 @@ Durability first; curation is owned follow-up work.
   evidence: Raised by the Blind Hunter review pass. This story's spec explicitly required reusing `feeds.py`'s shared cache/staleness layer "verbatim" (per epics.md's 6.4 AC: "axes never compute staleness," defaults live only in `feeds.py`) — the fail-closed-to-unknown behavior is honest and NFR-37-compliant, not a bug, but the specific 7-day default may be worth reconsidering as a per-feed-type default (or a config override) in a future cross-axis staleness-defaults pass; changing it unilaterally here would mean either touching the shared KEV-serving constant or building a private override, both against this story's explicit boundaries.
 
   status: open
+
+  verified: 2026-07-30 — `feeds.py:98` still defines the shared `DEFAULT_FEED_MAX_AGE_DAYS = 7`, and `vuln.py:146` imports that same constant — no endoflife-specific age exists.
 ## Deferred from: follow-up code review of spec-6-3-currency-axis-producer-gate-flags (2026-07-23, independent follow-up review pass)
 
 ## DW-6-3-6 — Both currency resolvers parse and DROP the `lts` boolean (registry `lts_lines` entries and endof…
@@ -175,6 +179,8 @@ status: open
   evidence: `currency.py:_REGISTRY_MAX_AGE_DAYS = 180` + `_registry_feed_provenance` derive staleness from the registry's own `updated:` field against wall-clock `now`; `engines.CurrencyEngine.run` appends `currency_stale_finding` whenever `self._gating and (currency_data is None or not currency_data.max_age_ok)`. The registry is a pre-existing 6.3 bundled resource (no writer/refresh script exists, only the manual CFE-source re-copy); 6.5 only makes its staleness gate-relevant. Two conformance tests that compared gated-vs-unconfigured findings against the live registry were made time-robust this pass (they now exclude the gate-only `indeterminate:currency-registry-*` provenance id from the producer-invariance comparison), but the underlying operational aging is not a test artifact. Raised by the Blind Hunter review pass (fail-closed, medium).
 
   status: open
+
+  verified: 2026-07-30 — `data/lts-registry.yaml:35` still carries the fixed `updated: 2026-07-06` — 24 days stale as of this check.
 ## Deferred from: follow-up code review of spec-6-5-two-mode-policy-integration (2026-07-24, bmad-dev-auto follow-up review pass)
 
 ## DW-6-5-2 — The `warn-as-error` exit projection leaves no trace anywhere in the output — the report persists…
@@ -209,6 +215,8 @@ status: open
   evidence: `feeds.py`'s `_epss_enrichment`/`epss_cache_path` reuse `feeds.DEFAULT_FEED_MAX_AGE_DAYS` (7) with no EPSS-specific override; no code path in this diff computes or considers EPSS's real-world update frequency. Raised by the Blind Hunter review pass (product/tuning, not a code defect).
 
   status: open
+
+  verified: 2026-07-30 — No EPSS-specific max-age constant exists; the EPSS path still resolves through `feeds.DEFAULT_FEED_MAX_AGE_DAYS` (`feeds.py:98`).
 ## Deferred from: follow-up code review of spec-6-7-epss-feed-the-min-epss-gate (2026-07-24, bmad-dev-auto follow-up review pass)
 
 ## DW-6-7-3 — The real FIRST.org EPSS feed (~290k rows, republished daily) was poured into cache conventions s…
@@ -225,7 +233,9 @@ status: open
   summary: The `feeds.py` atomic-write shape now carries FOUR copies of a latent double-close: if `json.dump` raises inside the `with os.fdopen(handle, ...)` block, the context manager closes the fd, then the `except BaseException` handler calls `os.close(handle)` a second time — normally a swallowed EBADF, but in any threaded embedder that fd number may already have been reused, silently closing a stranger's file descriptor. `write_epss_cache` (Story 6.7) is the newest copy, deliberately mirroring `write_kev_cache`/`write_endoflife_cache` "verbatim" per its spec boundary; the unified fix (an fh-opened flag, or closing only pre-fdopen) spans the KEV and endoflife writers that 6.7's own Never-list forbids touching, so it needs a dedicated cross-feed pass.
   evidence: `feeds.py`'s three `write_*_cache` functions (KEV, endoflife, EPSS) share the identical `except BaseException: os.close(handle)` recovery after an `os.fdopen` context manager that already owns (and closes) the same handle; `os.fdopen` docs — the file object takes ownership of the fd. Raised independently by both the follow-up Blind Hunter and Edge Case Hunter passes (latent, unreproducible-when-it-fires class).
 
-  status: open
+  status: done 2026-07-30
+
+  verified: 2026-07-30 — ALREADY RESOLVED. All three atomic-write sites (`feeds.py:257-260`, `:322-325`, `:410-413`) now wrap `os.close(handle)` in `try/except OSError: pass`, with a comment stating the intent — 'tolerate EBADF rather than double-close'. The latent double-close is defused at every site; the entry's 'four copies' is now three, all guarded.
 
 ## DW-6-7-5 — The conformance-suite helper trio is now duplicated wholesale across feed-enrichment test files…
 
@@ -253,6 +263,8 @@ status: open
 
   status: open
 
+  verified: 2026-07-30 — `cli.py:686` still documents the stamp as `expires_at = now + waiver_default_expiry_days`; behaviour unchanged.
+
 ## DW-6-8-3 — An EXPIRED suppression (waiver or baseline) is invisible in the machine-readable contract: `supp…
 
 - source_spec: `_bmad-output/projects/pyforge-warden/implementation-artifacts/spec-6-8-baseline-grandfathering.md`
@@ -260,6 +272,8 @@ status: open
   evidence: `report.py` threads `expired_waivers`/`expired_baseline` into `render_text` only; `assemble_report`/`ComplianceReport` accept no expired-notice input; `report-schema.json` has no expired-suppression slot anywhere; conformance test `test_expired_baseline_entry_reblocks_the_finding` shows the JSON document with `suppressions=[]` and no other machine-readable trace. Raised by the follow-up Blind Hunter pass (observability gap in the primary CI surface).
 
   status: open
+
+  verified: 2026-07-30 — Neither `models.py` nor `data/report-schema.json` contains any `expired` handling — an expired suppression is still invisible in the machine-readable contract.
 
 ## DW-6-8-4 — `report-schema.json`'s top-level `suppressions` description (the `"description"` string on the `…
 
@@ -276,6 +290,8 @@ status: open
   evidence: `waiver.py`'s `load_waivers` uses `yaml.safe_load(handle)` directly; `_UniqueKeySafeLoader` (added by the 6.8 follow-up review) is wired into `load_baseline` only, with its docstring explicitly recording "load_waivers deliberately keeps stock yaml.safe_load (this story may not alter the waiver-only path)". Confirmed empirically by the Edge Case Hunter pass (PyYAML last-wins on duplicate keys, both loaders affected pre-fix).
 
   status: open
+
+  verified: 2026-07-30 — `waiver.py:508-520` still parses with plain `yaml.safe_load` and its own docstring reaffirms safe_load-only; no duplicate-key guard was added.
 ## Deferred from: code review of spec-5-1-actionable-diagnostics-safe-by-default-posture (2026-07-24, Blind Hunter + Edge Case Hunter)
 
 ## DW-5-1-1 — A hygiene-axis remediation line's manifest+location clause is frequently unavailable because `hy…
@@ -291,6 +307,7 @@ status: open
   summary: `--doctor` silently no-ops every other `scan` flag it's combined with (`--sbom-output`, `--baseline`, `--fail-on`, `--allow-licenses`/`--deny-licenses`, `--warn-only`, `--open-fix-prs`/`--fix-prs-dry-run`, etc.) since `_run_doctor` dispatches before any of them are read, with no warning that they were ignored. Low-priority UX polish (no incorrect security/policy behavior results — the flags are simply never consulted), not a functional defect; a future story could add a stderr note when `--doctor` coexists with a policy-affecting flag.
   evidence: `main()`'s `if args.doctor: return _run_doctor(args)` branch (cli.py) precedes `return _run_scan(args)` unconditionally; `_run_doctor` never reads any flag other than `args.path`/`args.format`. Raised by the Blind Hunter review pass.
   status: open
+  verified: 2026-07-30 — `cli.py:258` still returns `_run_doctor(args)` strictly before the scan path, so every other `scan` flag is still silently no-op'd when `--doctor` is passed.
 
 ## DW-5-1-3 — `report._remediation_line`'s vuln branch recovers the advisory id for display by re-splitting th…
 
@@ -313,6 +330,8 @@ status: open
   evidence: `engines.py` — `DeptryEngine.run`'s pre-flight, `OsvEngine.run`'s pre-flight, and the new `run_doctor_checks` each declare the same two argv literals locally. Raised by the Blind Hunter review pass.
 
   status: open
+
+  verified: 2026-07-30 — The literal argv still exists at FOUR sites: `engines.py:725`, `:732`, `:947`, `:1485`.
 ## Deferred from: follow-up code review of spec-5-1-actionable-diagnostics-safe-by-default-posture (2026-07-24, bmad-dev-auto follow-up review pass)
 
 ## DW-5-1-6 — `vuln._extract_fixed_version` takes the FIRST well-formed `fixed` event in document order (an in…
@@ -321,6 +340,7 @@ status: open
   summary: `vuln._extract_fixed_version` takes the FIRST well-formed `fixed` event in document order (an intent-contract-recorded design decision), which for real multi-branch backport advisories (Django/DRF/cryptography-style — one `affected[]` entry or range per release series, oldest branch listed first) typically yields the OLDEST branch's fix, so the remediation line can advise "upgrade django to >= 3.2.20 to resolve GHSA-…" to a user whose installed 4.2.1 already satisfies that bound — self-contradictory, unactionable advice. Taking the MAX well-formed fixed event instead would be universally sufficient (upgrading to the highest fixed version always resolves the advisory) at identical cost and still without any semver-range resolution — but "take the FIRST well-formed fixed event" is written inside the spec's intent contract (Block If), so changing the selection rule needs a spec-level decision, not a review patch.
   evidence: `vuln.py`'s `_extract_fixed_version` returns on the first `isinstance(fixed, str) and fixed` hit across `affected[].ranges[].events[]` in document order; the 5.1 spec's Block If section records "take the FIRST well-formed fixed event found for that advisory … do not build a full semver-range resolver". Both the initial Blind Hunter pass's wording concern ("to resolve" overclaims sufficiency) and this follow-up pass's oldest-branch scenario describe the same selection-rule root cause. Raised by the follow-up Blind Hunter pass.
   status: open
+  verified: 2026-07-30 — `vuln.py:744-750` — `_extract_fixed_version`'s own docstring still specifies the FIRST well-formed `fixed` event in document order.
 
 ## DW-5-1-7 — The remediation line's manifest-location clause unions provenance across ALL same-named componen…
 
@@ -383,6 +403,7 @@ status: open
   summary: No CI workflow or scheduled runner ever executes the new `pyforge-warden-test-corpus-oracle` pixi task (`-m slow`), and Story 5.2's whole-module slow-marking moved the 4 pre-existing precision differential-oracle tests (Stories 2.2/2.3) out of the default `pyforge-warden-test` loop with it — so an extractor change that breaks render-parity on the precision fixtures now merges green through the default gate and only surfaces whenever someone manually remembers to run the slow task, far from the offending commit.
   evidence: A sweep of `.github/workflows/` shows no workflow references any pyforge-warden pixi task (pre-existing — the default task was never CI-wired either, but it IS the loop's canonical verify command, which the slow task is not); `pixi.toml`'s `pyforge-warden-test` now carries `-m "not slow"` and `test_extraction_oracle.py` is module-marked slow per the spec's own recorded deviation. Fixing needs repo-level CI/scheduler wiring (out of the story's package scope). Raised by the follow-up Blind Hunter pass.
   status: open
+  verified: 2026-07-30 — No file under `.github/workflows/` references the corpus-oracle or corpus-test task — nothing schedules or gates it.
 
 ## DW-5-2-6 — `.warden-baseline.yaml`'s first entry hardcodes the running interpreter's patch version in its f…
 
@@ -390,6 +411,7 @@ status: open
   summary: `.warden-baseline.yaml`'s first entry hardcodes the running interpreter's patch version in its finding id (`currency:unknown:!python-runtime@3.14.6`), so any pixi-environment Python bump silently un-matches it — the finding resurfaces un-grandfathered as report noise (an unbypassed WARN; exit 0 is unaffected since WARN never gates) while the stale entry sits dead in the committed file until the next regeneration.
   evidence: `currency.py` builds the id from `sys.version_info[:3]`; the test suite is insulated only because `tests/conftest.py` writes its ambient endoflife feed with the dynamically-computed interpreter version, whereas the committed baseline froze the opposite, brittle strategy. A version-agnostic baseline id would need a Story 6.8 match-semantics change (out of 5.2's validation-only scope). Raised independently by both reviewers of the follow-up pass.
   status: open
+  verified: 2026-07-30 — `.warden-baseline.yaml:38` still pins the running interpreter's patch version: `currency:unknown:!python-runtime@3.14.6`.
 
 ## DW-5-2-7 — All 19 entries in the committed `.warden-baseline.yaml` expire simultaneously at 2027-07-24T00:0…
 
@@ -398,6 +420,8 @@ status: open
   evidence: `waiver.py` treats an expired exact-id match as unmatched (rung left blocking, expired-notice collected) and `verdict.py` maps INDETERMINATE to exit 1; the six `indeterminate:no-version:*` findings fire in the test environment too, so the failure is deterministic once the wall clock passes the shared expires_at. Expiry-forces-re-review is Story 6.8's intended design — the defect is only the single shared cliff date. Raised independently by both reviewers of the follow-up pass.
 
   status: open
+
+  verified: 2026-07-30 — Confirmed exactly: all 19 entries carry `expires_at: "2027-07-24T00:00:00+00:00"`, and the file's own note at line 31 records the simultaneity.
 ## Deferred: upstream bug report — pixi-build-python path panic (2026-07-25)
 
 ## DW-CROSS-CUTTING-1 — `pixi-build-python` 0.8.3 panics with an unsigned byte-index underflow (`tools.rs:461`, `end byt…
