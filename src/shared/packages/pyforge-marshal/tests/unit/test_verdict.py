@@ -1,8 +1,10 @@
 """Unit tests for ``pyforge.marshal.core.verdict`` (Story 1.1, AD-7/AD-31)
 -- ``classify``/``compute_verdict``/``exit_code_for`` behavior via
 monkeypatched registry + classify-table entries; empty-findings floor
-behavior. ``_CLASSIFY_TABLE`` starts empty in the shipped module (Design
-Notes); every test needing a classified code injects a synthetic one.
+behavior. ``_CLASSIFY_TABLE`` ships with Story 1.2's two real entries
+(``MRS-IDENT-001``/``MRS-IDENT-002``, from ``core/identity.py``); the
+tests here still exercise the MECHANISM via ``monkeypatch``-injected
+synthetic entries, never the real ones.
 """
 
 from __future__ import annotations
