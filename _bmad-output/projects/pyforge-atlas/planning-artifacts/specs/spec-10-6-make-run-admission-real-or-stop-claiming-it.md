@@ -4,7 +4,7 @@ type: 'feature'
 created: '2026-07-29'
 status: 'done'
 review_loop_iteration: 0
-followup_review_recommended: true  # pass 4: 0 bad_spec again, but 7 medium patches on the acquire/RELEASE paths — all three hook signatures narrowed (changing what every caller on every plane must supply), `release()`'s unlink/release order reversed a SECOND time, `_release_for` gained a new no-pipeline branch, `_write_holder` became atomic, and `default_lock_root`'s resolution order changed. No independent reviewer has seen any of it. Pass 4 also found TWO more vacuous tests and a third false mechanism claim that three prior passes missed, so the base rate of "a pass still finds real defects" has not yet fallen.
+followup_review_recommended: false  # discharged 2026-07-30 by review pass 5 (independent, adversarial-mutation lens): 8 mutants over pass 4's surfaces, 7 caught, 1 survived (release()'s malformed-ticket padding — a third vacuity) and is now fixed by a new test; mutation score 8/8, kedro-test 902 passed. 0 behavioural defects, so the find-rate pass 4 wanted to see fall has fallen. DW-AD23-3 independently corroborated and left open.
 context: []
 warnings: ['oversized']
 baseline_revision: '56739413c2d9da27e87ec6e03a94eb571852ff76'
@@ -709,3 +709,54 @@ bad_spec, 0 intent_gap. Full detail in `## Review Triage Log` § *Review pass 4*
    (`DW-C1-1`).
 4. The deferred reader-writer gap (pass 3) and the deferred `observability.py` deepcopy premise
    (this pass) both remain open in `implementation-artifacts/deferred-work.md`.
+
+### 2026-07-30 — Review pass 5 (the owed independent follow-up, triggered by pass 4's `followup_review_recommended`)
+
+**Lens: adversarial mutation of the pass-4 surfaces.** Pass 4's flag said the problem
+precisely — *"7 medium patches on the acquire/RELEASE paths … No independent reviewer has
+seen any of it"* — and three prior passes had already read this file and still left two
+vacuous tests behind. So this pass did not re-read for opinions; it asked the suite to
+prove it constrains each patched surface, by breaking that surface and requiring a failure.
+
+**Method.** Eight mutants injected one at a time into `admission.py`, each reverting a
+specific pass-4 decision, with `tests/test_admission.py` (98 tests) as the oracle and the
+file restored from a pristine copy between runs.
+
+| # | Surface (pass-4 change) | Mutation | Result |
+|---|---|---|---|
+| M1 | `_write_holder` became atomic | revert to `write_text` (no temp + `os.replace`) | **caught** |
+| M2 | `release()` unlink/release order (reversed a 2nd time) | back to release-then-unlink | **caught** |
+| M3 | `release()` re-writes the record when release fails | drop the repair | **caught** |
+| M4 | `release()` pads `names` for a malformed ticket | drop the padding | **SURVIVED** |
+| M5 | `_release_one` never raises | let a stuck handle propagate | **caught** (2 tests) |
+| M6a | `default_lock_root` env precedence | swap `DATA_ROOT` ahead of `LOCK_ROOT` | **caught** |
+| M6b | `default_lock_root` strips whitespace-only env | drop `.strip()` | **caught** |
+| M6c | `default_lock_root` honors an absolute override | drop the `is_absolute()` branch | **caught** |
+
+**One finding — a third vacuity, now closed.** `release()` pads `names` with `None` when a
+ticket carries fewer dataset names than locks, because `zip()` would otherwise truncate and
+**leak the tail locks for the life of the process** — the unreclaimable state correctness
+requirement 1 exists to prevent. Deleting that line left all 98 tests green: no test ever
+constructed a malformed ticket, so neither the tail-release guarantee nor the `logger.error`
+the code's own comment promises was verified. Closed by
+`test_release_frees_the_tail_when_a_ticket_has_fewer_names_than_locks`, which asserts both
+locks end free and the error is logged. Re-injecting M4 now fails it, so the mutation score
+is **8/8**. Gates after: `kedro-test` **902 passed / 19 skipped** (was 901).
+
+**Independent corroboration of `DW-AD23-3`.** Reading `default_lock_root` for M6 confirmed
+the deferral is real and correctly characterized: the resolution chain ends in the literal
+default `"data"`, so with neither env var set the store is `<project_root>/data/.locks` —
+inside the tree the locks guard. The docstring argues (convincingly) for anchoring to the
+project root rather than the CWD, and that argument is sound and well-tested (M6a–M6c all
+caught); it is the *default value*, not the anchoring, that is hazardous. `DW-AD23-3` stays
+open, unchanged, with its severity intact.
+
+**Scope, stated honestly.** This was a mutation pass over the surfaces pass 4 changed, not a
+fresh full reading of the module. It is a deliberately different lens from passes 1–4 (which
+were readings), and its value is that it cannot be satisfied by a plausible-looking test — but
+it does not cover code pass 4 did not touch.
+
+**Flag cleared.** `followup_review_recommended` → `false`. The rate of new findings has
+fallen the way pass 4 asked to see before converging: pass 4 produced 7 medium behavioural
+patches plus 2 vacuous tests; this pass produced **0 behavioural defects and 1 vacuity**,
+which is fixed rather than deferred. `DW-I5-1` (the pass this discharges) is satisfied.

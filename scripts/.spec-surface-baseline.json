@@ -268,7 +268,7 @@
    "src/shared/packages/pyforge-atlas/tests/semantic/test_metric_provenance.py": "7167f491588932043aa6624fd042a451fdc55e8c",
    "src/shared/packages/pyforge-atlas/tests/singularity/__init__.py": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
    "src/shared/packages/pyforge-atlas/tests/singularity/test_duckdb_sole_engine.py": "ebc3c4d9ee8d7ace7a17ab88d0b0a576896c9e9d",
-   "src/shared/packages/pyforge-atlas/tests/test_admission.py": "a24bce9c08f064cf33ebf837927afa46f76da65d",
+   "src/shared/packages/pyforge-atlas/tests/test_admission.py": "08e33ed7b685c571388d634a79b4d797802456d0",
    "src/shared/packages/pyforge-atlas/tests/test_hooks.py": "4233d8e7b48964e9ea9746d664574251dad0e33d",
    "src/shared/packages/pyforge-atlas/tests/test_import_smoke.py": "86d8f2f7cec4186a5750623499bdc88e1ce0594c",
    "src/shared/packages/pyforge-atlas/tests/test_scaffold_layout.py": "e24c8e28aabdd3b0f6ec88b525f594fb4bb69d3b",
@@ -284,7 +284,7 @@
    "src/shared/packages/pyforge-atlas/wasm/index.html": "58d44155379ec640d36caf59b8c701ec8fcfce27",
    "src/shared/packages/pyforge-atlas/wasm/package.json": "e8ec7eef8dff664e2910f4fee67ada79e4105d93"
   },
-  "memlog": "58ed5ffbc642464cd1d3bc35c804bcbfd92f4813"
+  "memlog": "9a8ecc8f801f789bbd9bc04f3adca91e38686d2f"
  },
  "pyforge-atlas/spec-unity-data-stack": {
   "files": {},

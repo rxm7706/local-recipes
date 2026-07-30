@@ -2,13 +2,33 @@
 title: 'Stamp advisory data with its build provenance (AD-17)'
 type: 'feature'
 created: '2026-07-28'
-status: ready-for-dev
+status: superseded
+superseded_by: 'spec-10-5-stamp-advisory-data-with-its-build-provenance-2.md'
 review_loop_iteration: 0
 followup_review_recommended: false
 context: []
 warnings: []
 baseline_revision: '90c2792843be8a46c672f0f5ad4eaa24ead37a6c'
 ---
+
+> **SUPERSEDED — this is the drafted intent contract, not the record of the work.**
+> Story 10.5 was re-driven, and bmad-loop wrote its completed spec to a second file:
+> [`spec-10-5-stamp-advisory-data-with-its-build-provenance-2.md`](spec-10-5-stamp-advisory-data-with-its-build-provenance-2.md)
+> (706 lines vs this file's 174) carrying `status: 'done'`, `final_revision:
+> 7688ce5864eda7f8307425a5099ebea1f61d776a`, and the full dev/review triage log.
+> **That file is the source of record for 10.5.**
+>
+> This one is kept, not deleted, because it is the *original* drafted contract and
+> this project has already lost story specs to Tier-3 teardown once. Its `status:` was
+> `ready-for-dev` until 2026-07-30 — the only non-terminal spec in the project, which
+> read as an unfinished story when the story had in fact landed (PR #132, 6/6). It is
+> marked `superseded` rather than `done` so one story does not appear to have two
+> completed specs.
+>
+> `superseded` is a new value in this repo's spec vocabulary (`shipped` · `done` ·
+> `draft` · `in-review` · `ready` · `in-progress`). No detector validates the field.
+> This `-2` pair is the only re-drive spec pair in the fleet, so there was no
+> precedent to follow.
 
 <intent-contract>
 
