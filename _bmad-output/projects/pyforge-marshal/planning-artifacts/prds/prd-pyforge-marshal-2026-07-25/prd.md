@@ -67,11 +67,11 @@ Today the capability runs as a hand-assembled stack of an external orchestrator 
 
 - **UJ-2. The contract freeze.** Story 6.1 amended a schema and froze three files. The operator sets the gate mode to per-story spec approval; every subsequent producer story pauses after drafting its spec. The operator reads the spec, and `marshal gate evaluate --scope-check` confirms the story's declared surface does not touch the frozen trio. Approval releases the story. *Realizes FR-20, FR-22, FR-24.*
 
-- **UJ-3. The morning after.** `marshal status` shows seven loop homes: five idle, one running with its current story and elapsed budget, one paused on an escalation. Each row links to a run journal. The operator drills into the paused one, resolves the contradiction, and resumes — backgrounded, because there is no other way to launch it. *Realizes FR-36, FR-38, FR-17.*
+- **UJ-3. The morning after.** `marshal status` shows nine loop homes: seven idle, one running with its current story and elapsed budget, one paused on an escalation. Each row links to a run journal. The operator drills into the paused one, resolves the contradiction, and resumes — backgrounded, because there is no other way to launch it. *Realizes FR-36, FR-38, FR-17.*
 
 - **UJ-4. Landing the wave.** `marshal deploy` opens one batch pull request for the merged stories, promotes each merged story's spec from the run's gitignored scratch into tracked planning artifacts, refreshes the sprint feed and console data, and reports which merge subjects conformed to the convention the dashboard keys on. Nothing depends on the operator remembering to copy a file. *Realizes FR-28, FR-30, FR-32.*
 
-- **UJ-5. Proving portability.** The operator wants the method to run on the Copilot CLI. `marshal adapters sync` projects the 92 skills into the tree that adapter expects; `marshal adapters probe copilot` records what the CLI actually supports here; `marshal adapters conform copilot` drives a canonical smoke story end to end and writes the result into a conformance matrix. The claim "BMAD runs on Copilot" becomes an artifact with a date on it, not an aspiration. *Realizes FR-41, FR-43, FR-45.*
+- **UJ-5. Proving portability.** The operator wants the method to run on the Copilot CLI. `marshal adapters sync` projects the 89 skills into the tree that adapter expects; `marshal adapters probe copilot` records what the CLI actually supports here; `marshal adapters conform copilot` drives a canonical smoke story end to end and writes the result into a conformance matrix. The claim "BMAD runs on Copilot" becomes an artifact with a date on it, not an aspiration. *Realizes FR-41, FR-43, FR-45.*
 
 ---
 
@@ -188,13 +188,13 @@ The portability charter (`docs/dreams/agent-portability.md`, re-scoped from Hera
 
 Research reinforces this from the other side. There is no published GitHub statement permitting or forbidding third-party OpenAI/Anthropic-format clients against Copilot inference, but the mechanism is an undocumented token-exchange endpoint plus mandatory spoofed editor headers — unversioned, reverse-engineered, and abuse-detection-exposed — while GitHub shipped `copilot --acp` in public preview on 2026-01-28 with "CI/CD pipeline orchestration" named as an intended use case. And `vscode.lm` is unusable for unattended work on four independent grounds: no headless VS Code exists, first-use consent cannot be pre-granted or suppressed, extension tool invocations always confirm, and the API draws the same rate-limited Copilot quota.
 
-**But the charter is not therefore satisfied, because of one concrete, verified gap:** four of the six profiles read skills from `.agents/skills/`. **`.agents/` does not exist in this repository**, and all 92 skills live only under `.claude/skills/`. Running the loop on codex, gemini, copilot or antigravity today would find no skills at all. That gap — not a proxy, not an extension — is Marshal's actual portability work.
+**But the charter is not therefore satisfied, because of one concrete, verified gap:** four of the six profiles read skills from `.agents/skills/`. **`.agents/` does not exist in this repository**, and all 89 skills live only under `.claude/skills/`. Running the loop on codex, gemini, copilot or antigravity today would find no skills at all. That gap — not a proxy, not an extension — is Marshal's actual portability work.
 
 ### 6.2 The fold
 
 | Legacy scope | Source | v1 / Deferred | Disposition |
 |---|---|---|---|
-| **Skill-tree projection** across adapter trees | *(new — found by this research)* | **v1** | FR-41, FR-42. The blocking gap. 92 skills; `.agents/` absent. |
+| **Skill-tree projection** across adapter trees | *(new — found by this research)* | **v1** | FR-41, FR-42. The blocking gap. 89 skills; `.agents/` absent. |
 | **Adapter probe + conformance matrix** | new; wraps upstream `probe-adapter` | **v1** | FR-43, FR-44, FR-45. Turns "runs on any agent" into a dated artifact. |
 | **Per-project adapter and model policy** | absorbs bridge stories 13–14 (headless runner wiring; multiproject awareness), in safer form | **v1** | FR-49, FR-50, FR-51. Env wiring becomes composed policy; the hard-coded `worktree_seed` slug dies here. |
 | **Entry-file family lockstep check** (`AGENTS.md` ↔ `CLAUDE.md` / `.cursor/rules` / `GEMINI.md` / `copilot-instructions.md`) | agent-portability Dream; AGENTS.md Portability contract | **v1 (detector only)** | FR-46. Research shows Cursor applies the *union* of AGENTS.md and CLAUDE.md while Claude reads only CLAUDE.md — drift is silently cross-contaminating. Detect and report; **do not edit shared files** (Q-2 ownership). |
@@ -453,7 +453,8 @@ Before opening or updating a PR, mechanical repository gates are checked.
 #### FR-30: Automatic story-spec promotion
 Every merged story's spec is promoted from run scratch into tracked planning artifacts.
 **Consequences:**
-- After a story merges, its spec is copied from the run's Tier-3 scratch into the project's tracked `planning-artifacts/specs/` and staged for commit.
+- After a story merges, its spec is copied from the run's Tier-3 scratch into the project's tracked `planning-artifacts/specs/` — the **real** project path, never the gitignored `_bmad-output/planning-artifacts/` symlink — and **committed** by Marshal in a dedicated commit containing only promotion paths.
+- Promotion is complete only when those bytes are reachable from a ref that survives the loop home; that ref may be **local**, so promotion never requires the network (architecture AD-29, NFR-2). *(Amended 2026-07-30, **F-14**: this consequence said "staged for commit", which AD-29 explicitly declares insufficient — a merely-staged spec dies with the branch at teardown, which is the motivating incident.)*
 - Promotion happens **before** any worktree teardown for that story.
 - A story that merges without a promotable spec is reported as a paper-trail gap, never passed over silently.
 - Zero-byte or truncated specs are detected and reported rather than promoted.
@@ -496,7 +497,7 @@ Commits, PR bodies and comments Marshal emits carry no AI-attribution or courtes
 
 ### 7.5 Fleet visibility — `marshal status`
 
-**Description.** With seven loop homes live, "what is running?" currently requires inspecting several places. `marshal status` answers it in one view derived from ledgers, never hand-maintained. Realizes UJ-3.
+**Description.** With nine loop homes live, "what is running?" currently requires inspecting several places. `marshal status` answers it in one view derived from ledgers, never hand-maintained. Realizes UJ-3.
 
 **Functional Requirements:**
 
@@ -545,7 +546,7 @@ Skills are made available in every tree the configured adapters read from.
 - Projection uses the cheapest mechanism that the adapter and platform support, and the mechanism used is reported.
 - The canonical source tree is authoritative; projected trees are derived and never edited in place.
 - Re-projection after a source change converges; stale entries are removed.
-- *Motivating evidence: `.agents/` does not exist in this repository; 92 skills live only under `.claude/skills/`. Four of six adapter profiles would find nothing.*
+- *Motivating evidence: `.agents/` does not exist in this repository; 89 skills live only under `.claude/skills/` (93 directories, 89 carrying a `SKILL.md`; verified 2026-07-30). Four of six adapter profiles would find nothing.*
 
 #### FR-42: Projection drift detection
 Divergence between the canonical skill tree and a projected tree is detected.
@@ -568,7 +569,7 @@ The operator can drive a canonical smoke story end to end on a named adapter.
 - Runs in a throwaway loop home and leaves no residue.
 
 #### FR-45: Conformance matrix
-Per-adapter conformance results accumulate into a dated, tracked artifact.
+Per-adapter conformance results accumulate into a dated, tracked artifact, **keyed by host**.
 **Consequences:**
 - One row per adapter: status, adapter version, harness version, date, and the failing stage where applicable.
 - Results older than a configured age are marked stale.
@@ -613,7 +614,8 @@ Effective run policy is composed from ordered layers with defined precedence.
 Project-specific values are supplied by the project layer, never by editing a shared file.
 **Consequences:**
 - The worktree-seed path list is generated from the active project, not literal.
-- Verify commands, the **initial** frozen-surface set, and the merge-subject form come from the project layer. Freezes declared *during* a run accumulate through the run record, not through policy (architecture AD-26).
+- Verify commands, the **initial** frozen-surface set, the merge-subject form, and **the per-epic declared surface allowlist** come from the project layer. Freezes declared *during* a run accumulate through the run record, not through policy (architecture AD-26).
+- *The per-epic surface is mandatory, and its absence is a registered finding naming the epic — never a default.* Architecture AD-27 computes the effective surface as `policy_surface ∩ spec_surface`, so the per-epic entry is what a story spec is intersected against; AD-17 forbids "everything except", so an epic with no entry yields `∅` (every story fails) or `unevaluable` (every story blocks). There is no benign default, which is exactly why a missing entry must be reported as a policy gap rather than silently bricking the epic. *(Added 2026-07-30, **F-18**: AD-27 and this FR were edited in the same pass, and this — the FR that enumerates what the project layer supplies — did not list the key AD-27 requires.)*
 - Switching projects requires no edit to any shared file.
 
 #### FR-51: Per-story model tiering
