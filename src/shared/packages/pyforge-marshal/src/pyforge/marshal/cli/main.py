@@ -2,8 +2,10 @@
 1.3 converts the flat parser to a subparser tree).
 
 ``--version``/``--help`` keep working with no subcommand given -- a bare
-``marshal`` invocation still returns ``EXIT_OK`` (Story 1.1's own
-behavior, preserved). ``config`` (Story 1.3, FR-54) is the first real
+``marshal`` invocation still returns ``EXIT_OK`` (Story 1.1's exit-code
+behavior, preserved) but prints the usage line rather than silence, so a
+caller that lost its arguments cannot read as success. ``config`` (Story
+1.3, FR-54) is the first real
 subcommand, dispatched to ``cli/config.py``. Not wired through the
 envelope/finding machinery ITSELF: mirrors ``pyforge-doctor``'s
 ``__main__.py`` exit-relay pattern (structure: return an int, never raise,
@@ -71,6 +73,11 @@ def main(argv: list[str] | None = None) -> int:
         parser = _build_parser()
         args = parser.parse_args(argv)
         if getattr(args, "command", None) is None:
+            # Story 1.1's bare-invocation EXIT CODE is preserved (0), but
+            # now that real subcommands exist, exiting in silence would let
+            # a caller that LOST its arguments read as success -- print the
+            # usage line so the invocation is visibly incomplete.
+            parser.print_usage()
             return EXIT_OK
         handler = getattr(args, "handler", None)
         if handler is None:

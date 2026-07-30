@@ -23,6 +23,17 @@ _SCHEMA_PATH = (
 )
 
 
+@pytest.fixture(autouse=True)
+def _isolate_active_project_env(monkeypatch):
+    """`marshal config` deliberately reads BMAD_ACTIVE_PROJECT (AD-2's one
+    sanctioned env var) -- and this repo's own agent conventions EXPORT that
+    var per invocation, so any test that doesn't pin the slug inherits
+    whatever the invoking shell had (a malformed value flips exit-0
+    assertions via MRS-POLICY-006). Every test starts env-clean; the tests
+    that exercise the env-var path set it explicitly via monkeypatch."""
+    monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
+
+
 def test_version_returns_zero_and_prints_version(capsys):
     exit_code = main(["--version"])
     assert exit_code == 0
@@ -37,8 +48,13 @@ def test_help_returns_zero_and_prints_usage(capsys):
     assert "usage" in captured.out.lower()
 
 
-def test_no_args_returns_zero():
+def test_no_args_returns_zero_and_prints_usage(capsys):
+    """Story 1.1's bare-invocation exit code (0) is preserved, but with real
+    subcommands present the invocation must not be SILENT -- a pipeline that
+    lost its argument array would otherwise read as success with no trace."""
     assert main([]) == 0
+    captured = capsys.readouterr()
+    assert "usage" in (captured.out + captured.err).lower()
 
 
 def test_bogus_flag_returns_two_with_stderr_diagnostic(capsys):
@@ -495,16 +511,19 @@ def test_materialize_refuses_a_tampered_existing_artifact(tmp_path):
 
 
 def test_materialized_artifact_gets_umask_respecting_permissions(tmp_path):
-    """mkstemp creates 0600 regardless of umask; os.replace would carry
-    that onto the final artifact, making it owner-only unlike any ordinarily
-    created file. The write path re-applies the process umask to 0666."""
+    """The temp file is created via os.open(..., 0o666), so the KERNEL
+    applies the process umask exactly like a plain open() would and
+    os.replace carries ordinary permissions onto the final artifact --
+    never mkstemp's owner-only 0600, and with no process-global
+    os.umask(0) probe (which briefly zeroed the umask for every other
+    thread on each write)."""
     import os as os_module
 
     from pyforge.marshal.cli.config import materialize
     from pyforge.marshal.core.policy import compose
 
-    if not hasattr(os_module, "fchmod"):
-        pytest.skip("os.fchmod unavailable on this platform")
+    if os_module.name != "posix":
+        pytest.skip("POSIX permission-bit semantics required")
     effective, _ = compose(project_slug="acme", project={}, flags={})
     written = materialize(effective, tmp_path)
     current_umask = os_module.umask(0)
@@ -517,14 +536,61 @@ def test_broken_pipe_during_config_output_returns_verdict_exit_code(monkeypatch)
     OSError that main()'s SystemExit/KeyboardInterrupt relay never catches,
     so run_config must suppress it itself and still return its
     verdict-derived exit code -- the compose work already completed; the
-    reader hanging up is not a policy failure."""
-    import builtins
+    reader hanging up is not a policy failure.
 
-    def raise_broken_pipe(*args, **kwargs):
-        raise BrokenPipeError(32, "Broken pipe")
+    The failure is injected at the sys.stdout level, NOT by monkeypatching
+    builtins.print: with a replaced stdout the suppression guard's
+    `sys.stdout is sys.__stdout__` check correctly declines to dup2 -- a
+    print-level injection under `pytest -s` (capture disabled, stdout IS the
+    real fd 1) would let the guard redirect the whole test session's output
+    to devnull."""
+    import sys as sys_module
 
-    monkeypatch.setattr(builtins, "print", raise_broken_pipe)
+    class _BrokenPipeStdout:
+        def write(self, *args, **kwargs):
+            raise BrokenPipeError(32, "Broken pipe")
+
+        def flush(self):
+            pass
+
+    monkeypatch.setattr(sys_module, "stdout", _BrokenPipeStdout())
     assert main(["config", "--project", "acme"]) == 0
+
+
+def test_nonpipe_oserror_during_config_output_returns_verdict_exit_code(monkeypatch):
+    """A non-EPIPE OSError from the output print (EIO on a vanished pty,
+    ENOSPC on a full-disk redirect) must land in the same guarded path --
+    returned as the verdict-derived exit code, never an uncaught traceback
+    through main()'s relay."""
+    import sys as sys_module
+
+    class _EIOStdout:
+        def write(self, *args, **kwargs):
+            raise OSError(5, "Input/output error")
+
+        def flush(self):
+            pass
+
+    monkeypatch.setattr(sys_module, "stdout", _EIOStdout())
+    assert main(["config", "--project", "acme"]) == 0
+
+
+def test_config_materialize_is_skipped_when_composition_carries_error_findings(
+    tmp_path, capsys
+):
+    """--materialize must not persist a durable, content-addressed artifact
+    born of an error-class (unevaluable) invocation: the non-zero exit code
+    protects only the immediate caller, while a written file would outlive
+    it for any consumer globbing the target directory."""
+    target_dir = tmp_path / "materialized"
+    exit_code = main(
+        ["config", "--set", "gate_mode=bogus", "--materialize", str(target_dir)]
+    )
+    assert exit_code != 0
+    # the skip happens before materialize() -- the target dir is never even created
+    assert not target_dir.exists()
+    captured = capsys.readouterr()
+    assert "skipped" in captured.out
 
 
 def test_handler_returning_none_is_clamped_to_usage(monkeypatch):

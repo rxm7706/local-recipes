@@ -214,11 +214,32 @@ _Validator = Callable[[object], object]
 
 
 def _valid_str_tuple(value: object) -> tuple[str, ...] | None:
+    """A list/tuple of NON-EMPTY strings. The empty string is rejected for
+    the same reason ``_valid_merge_subject_template`` rejects it for the
+    scalar field: an empty verify command or an empty frozen surface is not
+    a degenerate instance of the concept, it is no instance at all."""
     if isinstance(value, str) or not isinstance(value, (list, tuple)):
         return None
-    if not all(isinstance(item, str) for item in value):
+    if not all(isinstance(item, str) and item != "" for item in value):
         return None
     return tuple(value)
+
+
+def _valid_seed_path_extras(value: object) -> tuple[str, ...] | None:
+    """``worktree_seed_paths`` extras: each entry must be a clean RELATIVE
+    path (shape-only, FR-53) -- the same threat model as the slug guard,
+    because every extra becomes a literal seed path inside a worktree.
+    Splitting on ``/``, no segment may be empty (absolute paths, ``//``,
+    trailing ``/``), ``.``, or ``..`` (segment aliasing/escape) -- so a
+    traversal-shaped or absolute path can no more enter through the extras
+    than through the generated base."""
+    base = _valid_str_tuple(value)
+    if base is None:
+        return None
+    for entry in base:
+        if any(part in ("", ".", "..") for part in entry.split("/")):
+            return None
+    return base
 
 
 def _valid_model_tier_map(value: object) -> dict[str, dict[str, str]] | None:
@@ -406,7 +427,10 @@ def _compose_worktree_seed_paths(
     (matching the spec's I/O matrix exactly). Flags are supported
     symmetrically for consistency with AD-16's uniform precedence, though
     ``cli/config.py`` deliberately never offers ``--set`` for this
-    list-typed field."""
+    list-typed field. Extras are shape-validated by
+    ``_valid_seed_path_extras`` (clean relative segments only), so the slug
+    guard's traversal defense holds for BOTH ways content enters this
+    field."""
     key = "worktree_seed_paths"
     base = _base_worktree_seed_paths(project_slug)
     extras: tuple[str, ...] = ()
@@ -419,7 +443,7 @@ def _compose_worktree_seed_paths(
         if key not in mapping:
             continue
         raw = mapping[key]
-        coerced = _valid_str_tuple(raw)
+        coerced = _valid_seed_path_extras(raw)
         if coerced is None:
             findings.append(_malformed_finding("MRS-POLICY-002", key, layer_name, raw))
         else:
@@ -433,8 +457,10 @@ class EffectivePolicy:
     ``PolicyField`` attributes plus a private ``_seed`` mapping holding the
     5 SEED fields (AD-26). ``seed_view()`` is the sole whitelisted accessor
     for ``_seed`` -- ``tests/meta/test_ad26_seed_field_access_guard.py``
-    fails the build if any module OTHER than this one accesses the ``_seed``
-    attribute directly. ``content_hash`` is AD-35's naming primitive: a
+    fails the build if any other module IN THE INSTALLED PACKAGE accesses
+    the ``_seed`` attribute directly (its scan surface; test code and
+    external consumers are outside it -- see the guard's own stated
+    bounds). ``content_hash`` is AD-35's naming primitive: a
     ``sha256`` hex digest over a canonical sorted-key JSON serialization of
     every field's value (static and seed), deterministic across identical
     ``compose()`` inputs.

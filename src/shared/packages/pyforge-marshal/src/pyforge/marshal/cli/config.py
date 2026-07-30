@@ -36,13 +36,12 @@ import argparse
 import json
 import os
 import sys
-import tempfile
 import tomllib
 from collections.abc import Mapping
 from pathlib import Path
 
 from ..core import policy
-from ..core.model import Finding, Severity, build_envelope
+from ..core.model import Finding, Severity, Status, build_envelope, status_for
 from ..core.verdict import compute_verdict, exit_code_for
 
 ENV_ACTIVE_PROJECT = "BMAD_ACTIVE_PROJECT"
@@ -209,7 +208,7 @@ def materialize(effective_policy: policy.EffectivePolicy, target_dir: Path) -> P
     instead of being blessed as a successful materialization forever. On the
     true no-op path the existing file's mtime is left untouched and no write
     is attempted at all. A non-file (e.g. a directory) occupying the path,
-    or any ``mkdir``/``mkstemp``/write failure, likewise raises
+    or any ``mkdir``/temp-file/write failure, likewise raises
     ``PolicyIOError`` rather than an uncaught ``OSError``."""
     target_dir = Path(target_dir)
     try:
@@ -231,21 +230,21 @@ def materialize(effective_policy: policy.EffectivePolicy, target_dir: Path) -> P
                     "name -- refusing to bless a foreign or corrupt artifact"
                 )
             return target_path
-        fd, tmp_name = tempfile.mkstemp(dir=target_dir, prefix=".policy-", suffix=".tmp")
-        tmp_path = Path(tmp_name)
+        # os.open with mode 0o666 lets the KERNEL apply the process umask
+        # (exactly like a plain open() would), so the final artifact gets
+        # ordinary permissions after os.replace. The previous
+        # mkstemp+fchmod approach needed an os.umask(0)/restore probe to
+        # learn the umask -- a process-GLOBAL toggle that briefly zeroed the
+        # umask for every other thread on each write. The tmp name is
+        # pid-suffixed and O_EXCL-guarded; a stale same-name leftover from a
+        # SIGKILLed earlier run is unlinked first (the dot-prefixed name is
+        # this writer's own convention, safe to reclaim).
+        tmp_path = target_dir / f".policy-{effective_policy.content_hash}.pid{os.getpid()}.tmp"
+        tmp_path.unlink(missing_ok=True)
+        fd = os.open(tmp_path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o666)
         try:
             with os.fdopen(fd, "wb") as handle:
                 handle.write(expected_bytes)
-                if hasattr(os, "fchmod"):
-                    # mkstemp creates 0600 regardless of umask (its own
-                    # temp-file security contract), and os.replace carries
-                    # that mode onto the final artifact -- which would make
-                    # the materialized policy owner-only-readable, unlike any
-                    # ordinarily created file. Re-apply the process umask to
-                    # 0666 like a plain open() would.
-                    current_umask = os.umask(0)
-                    os.umask(current_umask)
-                    os.fchmod(handle.fileno(), 0o666 & ~current_umask)
             os.replace(tmp_path, target_path)
         except BaseException:
             tmp_path.unlink(missing_ok=True)
@@ -270,6 +269,8 @@ def _render_text(data: Mapping[str, object], findings: tuple[Finding, ...]) -> s
     lines.append(f"content_hash: {data['content_hash']}")
     if "materialized_path" in data:
         lines.append(f"materialized: {data['materialized_path']}")
+    if "materialize_skipped" in data:
+        lines.append(f"materialized: skipped -- {data['materialize_skipped']}")
     if findings:
         lines.append("findings:")
         for finding in findings:
@@ -320,14 +321,31 @@ def run_config(args: argparse.Namespace) -> int:
     effective, findings = policy.compose(
         project_slug=project_slug, project=project_data, flags=flags
     )
-    findings = (*findings, *io_findings)
+    # io_findings FIRST: the --project-policy read happens before compose(),
+    # and its failure is the root CAUSE of every "layer=default" symptom
+    # compose() then reports -- the operator scanning top-down should meet
+    # cause before consequence.
+    findings = (*io_findings, *findings)
 
     materialized_path: Path | None = None
+    materialize_skipped: str | None = None
     if args.materialize is not None:
-        try:
-            materialized_path = materialize(effective, args.materialize)
-        except PolicyIOError as exc:
-            findings = (*findings, exc.finding)
+        # Persist ONLY an ok-status composition ({clean, warn}). An
+        # error-class one (a malformed slug, a bogus --set, an unreadable
+        # --project-policy silently replaced by bare defaults) means Marshal
+        # could not determine what the operator intended -- writing a
+        # durable, content-addressed artifact born of that invocation would
+        # let downstream consumers bless it long after the non-zero exit
+        # code scrolled away.
+        if status_for(compute_verdict(findings)) is Status.OK:
+            try:
+                materialized_path = materialize(effective, args.materialize)
+            except PolicyIOError as exc:
+                findings = (*findings, exc.finding)
+        else:
+            materialize_skipped = (
+                "composition carried error-severity findings; nothing was written"
+            )
 
     data: dict[str, object] = {
         "policy": _policy_fields_payload(effective),
@@ -335,6 +353,8 @@ def run_config(args: argparse.Namespace) -> int:
     }
     if materialized_path is not None:
         data["materialized_path"] = str(materialized_path)
+    if materialize_skipped is not None:
+        data["materialize_skipped"] = materialize_skipped
 
     verdict_value = compute_verdict(findings)
     envelope = build_envelope(
@@ -348,6 +368,13 @@ def run_config(args: argparse.Namespace) -> int:
             print(_render_text(envelope.data, envelope.findings))
     except BrokenPipeError:
         _suppress_downstream_pipe_close()
+    except OSError:
+        # EIO on a vanished pty, ENOSPC on a full-disk redirect: like the
+        # broken-pipe case, the compose/materialize work already completed
+        # and there is nothing left to print to -- return the verdict-derived
+        # exit code instead of crashing through main()'s relay (which
+        # catches only SystemExit/KeyboardInterrupt).
+        pass
 
     return exit_code_for(envelope.verdict)
 
@@ -371,8 +398,15 @@ def _suppress_downstream_pipe_close() -> None:
         return
     try:
         devnull = os.open(os.devnull, os.O_WRONLY)
+    except OSError:
+        return
+    try:
         os.dup2(devnull, sys.stdout.fileno())
     except (OSError, ValueError):
         # A stdout with no usable fd has no shutdown flush to protect;
         # io.UnsupportedOperation is a ValueError.
         pass
+    finally:
+        # dup2 duplicated the descriptor onto stdout's fd; the original
+        # devnull fd must be closed or every suppression leaks one fd.
+        os.close(devnull)

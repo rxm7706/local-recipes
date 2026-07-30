@@ -623,3 +623,75 @@ def test_raw_source_is_not_mutable_through_the_policy_field():
         effective.model_tier_map.raw_source["hard"] = {"dev": "haiku"}  # type: ignore[index]
     with pytest.raises(TypeError):
         effective.model_tier_map.raw_source["hard"]["dev"] = "haiku"  # type: ignore[index]
+
+
+# --- third review pass regressions (2026-07-30) -------------------------------
+
+
+@pytest.mark.parametrize(
+    "bad_extras",
+    [
+        ["../escape"],
+        ["/etc/passwd"],
+        [""],
+        ["a//b"],
+        ["a/./b"],
+        ["trailing/"],
+        ["ok/path", "../also-checked"],
+    ],
+)
+def test_worktree_seed_extras_reject_unclean_or_escaping_paths(bad_extras):
+    """The slug guard's traversal defense must hold for BOTH ways content
+    enters worktree_seed_paths: extras arriving via the project layer are
+    shape-validated as clean RELATIVE paths (no empty/'.'/'..' segments, no
+    absolute paths) -- a rejected list is reported (MRS-POLICY-002) and the
+    field falls back to the generated base, never composing a
+    traversal-shaped or absolute seed path."""
+    effective, findings = compose(
+        project_slug="acme", project={"worktree_seed_paths": bad_extras}, flags={}
+    )
+    assert effective.worktree_seed_paths.value == (
+        "_bmad-output/projects/acme/implementation-artifacts",
+        "_bmad/custom/.active-project",
+    )
+    assert effective.worktree_seed_paths.layer is PolicyLayer.DEFAULT
+    assert len(findings) == 1
+    assert findings[0].code == "MRS-POLICY-002"
+    assert findings[0].path == "project"
+
+
+def test_worktree_seed_extras_accept_clean_relative_paths():
+    effective, findings = compose(
+        project_slug="acme",
+        project={"worktree_seed_paths": ["extra/seed-dir", "another.file"]},
+        flags={},
+    )
+    assert findings == ()
+    assert effective.worktree_seed_paths.value == (
+        "_bmad-output/projects/acme/implementation-artifacts",
+        "_bmad/custom/.active-project",
+        "extra/seed-dir",
+        "another.file",
+    )
+    assert effective.worktree_seed_paths.layer is PolicyLayer.PROJECT
+
+
+def test_verify_commands_rejects_empty_string_entry():
+    """An empty verify command is no command at all -- same rule the scalar
+    merge_subject_template already applies to the empty string."""
+    effective, findings = compose(
+        project_slug="acme", project={"verify_commands": ["pytest -q", ""]}, flags={}
+    )
+    assert effective.verify_commands.value == DEFAULT_POLICY["verify_commands"]
+    assert effective.verify_commands.layer is PolicyLayer.DEFAULT
+    assert len(findings) == 1
+    assert findings[0].code == "MRS-POLICY-002"
+
+
+def test_frozen_surfaces_rejects_empty_string_entry():
+    effective, findings = compose(
+        project_slug="acme", project={"frozen_surfaces": [""]}, flags={}
+    )
+    assert effective.seed_view()["frozen_surfaces"].value == DEFAULT_POLICY["frozen_surfaces"]
+    assert len(findings) == 1
+    assert findings[0].code == "MRS-POLICY-003"
