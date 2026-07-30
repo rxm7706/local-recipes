@@ -401,6 +401,14 @@
                border: 1px solid var(--slate-faint); }
   .fleetrow.arch > summary { opacity: .5; }
   .fstale { display: block; margin-top: 4px; color: var(--active); }
+  .owrow { display: block; padding: 2px 0; line-height: 1.5; }
+  .owrow code { font-size: 10px; opacity: .8; margin-right: 4px; }
+  .osev { font-family: var(--mono); font-size: 8.5px; text-transform: uppercase;
+          padding: 0 4px; border-radius: 3px; margin-right: 4px; }
+  .os-critical, .os-high { color: var(--blocked, #c0392b);
+          border: 1px solid color-mix(in srgb, var(--blocked, #c0392b) 40%, transparent); }
+  .os-medium { color: var(--active); border: 1px solid color-mix(in srgb, var(--active) 35%, transparent); }
+  .os-low, .os-unspecified { color: var(--slate-faint); border: 1px dashed var(--line); }
   .fleet-stage { font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: .06em;
     color: var(--slate); background: var(--panel-2); border: 1px solid var(--line); border-radius: 4px;
     padding: 2px 8px; justify-self: start; white-space: nowrap; }
@@ -652,6 +660,18 @@
   <details class="dreams zsec zone" id="realsec" open>
     <summary><h2 class="zone-h z-real" id="realh">Realized</h2><span class="zcaret">▸</span></summary>
     <div id="realzone"></div>
+  </details>
+
+  <details class="dreams zsec zone" id="openwrap">
+    <summary><h2 class="zone-h z-open" id="openh">Open work</h2><span class="zcaret">▸</span></summary>
+    <div id="opensec">
+      <div class="dflow"><b>Deferred work the factory owes itself</b> — every entry in the
+      five tracked <code>deferred-work-ledger.md</code> files. These are things a review or a
+      dev session found, decided not to do then, and wrote down. <b>triaged</b> = somebody has
+      since checked the entry against the actual code and recorded a result; everything else
+      is what the ledger <em>says</em>, not what the code shows.</div>
+      <div id="openrows"></div>
+    </div>
   </details>
 
   <details class="dreams zsec zone" id="archwrap">
@@ -1127,6 +1147,40 @@
       '<span class="arch-name"><a href="' + REPO + '/tree/main/' + esc(a.link) + '">' + esc(a.name) + '</a></span>' +
       '<span class="arch-note">' + smithChip(a.owner) + ' ' + esc(a.note) + '</span>' +
     '</div>').join("");
+
+  // ---- Open work (the tracked deferred-work ledgers) ----
+  // The factory's largest body of known-but-unscheduled work, and it had no surface at all
+  // until the ledgers were normalized — four incompatible shapes and 82 entries without ids
+  // left nothing stable to render.
+  const OPEN = window.DASHBOARD_DATA.openwork || null;
+  if (OPEN && (OPEN.projects || []).length) {
+    const sev = OPEN.bySeverity || {};
+    const sevBits = ["critical", "high", "medium", "low"]
+      .filter(k => sev[k]).map(k => sev[k] + " " + k).join(" · ");
+    document.getElementById("openh").innerHTML =
+      "Open work · " + OPEN.open + " open" +
+      (OPEN.done ? " · " + OPEN.done + " done" : "") +
+      ' <span class="none">(' + OPEN.triaged + " verified against the code, " +
+      (OPEN.open - OPEN.triaged) + " not" + (sevBits ? " · " + sevBits : "") + ")</span>";
+    document.getElementById("openrows").innerHTML = OPEN.projects.map(p => {
+      const rows = p.entries.filter(e => e.status === "open").map(e =>
+        '<span class="owrow"><code>' + esc(e.id) + '</code> ' +
+        '<span class="osev os-' + esc(e.severity) + '">' + esc(e.severity) + '</span> ' +
+        esc(e.title) + (e.triaged ? ' <span class="fmark bf">triaged</span>' : '') +
+        '</span>').join("");
+      return '<details class="fleetrow"><summary>' +
+        '<span class="fleet-name"><a href="' + REPO + '/blob/main/' + esc(p.path) + '">' +
+          esc(p.project.replace(/^pyforge-/, "")) + '</a></span>' +
+        '<span class="fmarks">' +
+          '<span class="fmark bad">' + p.open + ' open</span>' +
+          (p.done ? '<span class="fmark bf">' + p.done + ' done</span>' : '') +
+          (p.triaged ? '<span class="fmark bf">' + p.triaged + ' triaged</span>' : '') +
+        '</span>' +
+        '</summary><div class="fledger">' + rows + '</div></details>';
+    }).join("");
+  } else {
+    const w = document.getElementById("openwrap"); if (w) w.hidden = true;
+  }
 
   // ---- The Guild (one row per Smith; the Charter is not a ninth station) ----
   const GUILD = window.DASHBOARD_DATA.guild || null;

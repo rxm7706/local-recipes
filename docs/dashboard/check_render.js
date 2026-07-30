@@ -45,8 +45,18 @@ const node = () => ({
   querySelector: () => node(), querySelectorAll: () => [],
 });
 
+// Nodes are cached BY ID so the stub has identity: `getElementById(x)` twice must return
+// the same object, or nothing the script writes can ever be observed. It previously minted
+// a fresh node per call, which is why this check could only ever assert "did not throw" —
+// and "did not throw" is not "did render". A renderer skipped by a truthiness guard, or
+// aimed at a typo'd id, leaves an empty div and exits 0.
+const _byId = new Map();
+
 global.document = {
-  getElementById: () => node(),
+  getElementById: (id) => {
+    if (!_byId.has(id)) _byId.set(id, node());
+    return _byId.get(id);
+  },
   querySelector: () => node(),
   querySelectorAll: () => [],
   createElement: () => node(),
@@ -89,6 +99,28 @@ try {
 
 const d = global.window.DASHBOARD_DATA;
 const lines = Object.keys(d.projects || {}).length;
+
+// "It did not throw" is not "it rendered". A section whose renderer is skipped by a
+// truthiness guard — a missing key, an empty array, a typo'd id — leaves an EMPTY div and
+// exits 0, which is the silent-blank failure this detector exists to catch. Assert that the
+// sections carrying data actually produced output.
+const populated = [
+  ['fleetrows', (d.fleet && d.fleet.rows || []).length],
+  ['openrows', (d.openwork && d.openwork.projects || []).length],
+  ['archrows', (d.archived || []).length],
+];
+const blank = populated.filter(([id, n]) => n > 0 &&
+  !(document.getElementById(id) && (document.getElementById(id).innerHTML || '').trim()));
+if (blank.length) {
+  for (const [id, n] of blank) {
+    console.error(`FAIL: #${id} rendered EMPTY while its data carries ${n} row(s) — ` +
+      'the renderer was skipped, not the data missing.');
+  }
+  process.exit(1);
+}
+
 console.log(
   `OK: dashboard script ran clean — ${lines} lines, ` +
-  `${(d.dreams || []).length} dreams, ${(d.archived || []).length} archived.`);
+  `${(d.dreams || []).length} dreams, ${(d.archived || []).length} archived, ` +
+  `${(d.fleet && d.fleet.rows || []).length} chains, ` +
+  `${(d.openwork || {}).open || 0} open-work items.`);
