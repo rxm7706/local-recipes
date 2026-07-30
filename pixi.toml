@@ -7,7 +7,7 @@ preview = ["pixi-build"]  # enable the pixi build backend for the ./src/shared/p
 # NOTE: Gemini PR#49 suggested a `[workspace] members = [...]` key, but pixi
 # (through 0.72.2) has no such key — workspace members are declared via path
 # dependencies (see [feature.pyforge-warden.dependencies]).
-requires-pixi = ">=0.75.0"  # single pixi floor for the workspace — matches feature.python/local-recipes/build `pixi = ">=0.74.0"`, environment.yaml, the CI pixi-version pin in .github/workflows/dashboard.yml, and the micromamba create-arg in .github/workflows/staged-recipes-linter.yml. Keep all five in step (the `pixi update` of 2026-07-29 bumped the feature floors to 0.74.0 and left this at 0.73.0). 0.71+ is a hard floor regardless: the named platform entry `osx-arm64-min` ({ name, platform, macos }) replaced the deprecated [system-requirements] table and older pixi cannot read it.
+requires-pixi = ">=0.75.0"  # single pixi floor for the workspace — matches feature.python/local-recipes/build `pixi = ">=0.75.0"`, environment.yaml, the CI pixi-version pin in .github/workflows/dashboard.yml, and the micromamba create-arg in .github/workflows/staged-recipes-linter.yml. Keep all five in step: the dashboard pin is an EXACT version, so leaving it below this floor makes setup-pixi install a pixi that refuses the manifest (the `pixi update` of 2026-07-30 raised this to 0.75.0 and left the other four at 0.74.0). 0.71+ is a hard floor regardless: the named platform entry `osx-arm64-min` ({ name, platform, macos }) replaced the deprecated [system-requirements] table and older pixi cannot read it.
 description = "The entry point to conda-forge"
 version = "0.2.0"
 license = "BSD-3-Clause"
