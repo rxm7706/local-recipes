@@ -16,8 +16,8 @@ from pyforge.marshal.core import findings
 def test_registered_codes_contains_the_real_codes():
     """The registry no longer starts empty -- Story 1.2's core/identity.py
     is its first real caller, registering MRS-IDENT-001/002. Story 1.3's
-    core/policy.py/cli/config.py add MRS-POLICY-001/002/003/004. This
-    asserts the registry's exact real contents."""
+    core/policy.py/cli/config.py add MRS-POLICY-001/002/003/004/005/006.
+    This asserts the registry's exact real contents."""
     assert findings.REGISTERED_CODES == frozenset(
         {
             "MRS-IDENT-001",
@@ -26,6 +26,8 @@ def test_registered_codes_contains_the_real_codes():
             "MRS-POLICY-002",
             "MRS-POLICY-003",
             "MRS-POLICY-004",
+            "MRS-POLICY-005",
+            "MRS-POLICY-006",
         }
     )
 

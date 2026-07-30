@@ -30,7 +30,17 @@ one layer is excluded FOR THAT LAYER ONLY -- composition falls through to
 whatever the previous (better) layer already established for that field,
 floored at Marshal's own built-in default if no layer ever supplied a valid
 value (``MRS-POLICY-002`` for a malformed STATIC field, ``MRS-POLICY-003``
-for a malformed SEED field). **Stated assumption** (the spec's prose reads
+for a malformed SEED field). The ``project_slug`` itself is shape-validated
+too (FR-53's shape-only spirit -- it becomes a literal path segment of the
+generated ``worktree_seed_paths``): a MISSING slug (empty string) reports
+``MRS-POLICY-005`` (severity ``warn`` -- a bare ``marshal config`` with no
+active project is a legitimate show-me-the-defaults invocation, so it still
+exits 0); a MALFORMED slug (path separators, ``.``/``..``, characters
+outside the slug charset) reports ``MRS-POLICY-006`` (severity ``error`` --
+the operator explicitly supplied garbage, matching the malformed ``--set``
+precedent). Either way the project-derived seed path is OMITTED rather than
+generated around a bad slug -- never a ``projects//`` or traversal-shaped
+path. **Stated assumption** (the spec's prose reads
 "falls back to Marshal's default value for that field", which is ambiguous
 about a THIRD scenario neither the spec's own I/O matrix nor its Acceptance
 Criteria exercises: project sets a field validly, flags then sets the SAME
@@ -107,6 +117,14 @@ _ALL_KEYS: frozenset[str] = _STATIC_KEYS | _SEED_KEYS
 _STAGE_NAMES: frozenset[str] = frozenset({"dev", "review", "triage"})
 _GATE_MODES: frozenset[str] = frozenset({"none", "per-epic", "per-story-spec-approval"})
 
+# The conservative charset a project slug may draw from -- it is interpolated
+# as ONE literal path segment of the generated worktree_seed_paths entry
+# (`_bmad-output/projects/<slug>/implementation-artifacts`), so anything that
+# could split or escape that segment is out.
+_SLUG_CHARS: frozenset[str] = frozenset(
+    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789._-"
+)
+
 # Marshal's OWN built-in defaults for the 8 literal-valued keys -- see the
 # module docstring for why this is independent of any one project's rendered
 # policy file, and why `worktree_seed_paths` has no entry here.
@@ -139,12 +157,31 @@ class PolicyLayer(StrEnum):
     FLAG = "flag"
 
 
+def _freeze_raw(value: object) -> object:
+    """An immutable, UNALIASED snapshot of a layer's raw value for
+    ``raw_source``: any ``Mapping`` becomes a ``MappingProxyType`` over a
+    fresh dict, any ``list``/``tuple`` becomes a tuple, scalars pass through.
+    ``content_hash`` covers ``raw_source``, so storing the caller's own
+    list/dict object (or exposing a mutable one through the ``raw_source``
+    attribute) would let a mutation AFTER ``compose()`` silently change the
+    hash -- breaking AD-35's content-addressing and the documented
+    "immutable ``EffectivePolicy``" guarantee (AD-10). The wire shape is
+    unchanged: ``_to_plain`` projects proxies/tuples back to dicts/lists."""
+    if isinstance(value, Mapping):
+        return MappingProxyType({key: _freeze_raw(item) for key, item in value.items()})
+    if isinstance(value, (list, tuple)):
+        return tuple(_freeze_raw(item) for item in value)
+    return value
+
+
 @dataclass(frozen=True)
 class PolicyField:
     """One policy value plus its provenance (AD-16): the effective
     ``value``, the ``layer`` that won it, and ``raw_source`` -- the
     unwrapped original value from that winning layer (for provenance
-    display; equals ``value`` when the winning layer is ``default``)."""
+    display; equals ``value`` when the winning layer is ``default``).
+    ``raw_source`` is snapshotted via ``_freeze_raw`` at construction, so no
+    ``PolicyField`` ever aliases a caller-mutable container."""
 
     value: object
     layer: PolicyLayer
@@ -152,6 +189,7 @@ class PolicyField:
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "layer", PolicyLayer(self.layer))
+        object.__setattr__(self, "raw_source", _freeze_raw(self.raw_source))
 
 
 def is_secret_key(field_name: str) -> bool:
@@ -202,14 +240,16 @@ def _valid_model_tier_map(value: object) -> dict[str, dict[str, str]] | None:
 def _freeze_model_tier_map(
     value: Mapping[str, Mapping[str, str]],
 ) -> Mapping[str, Mapping[str, str]]:
-    """Deep-freeze a merged ``model_tier_map`` value: ``MappingProxyType``
-    at both levels. Every other field is an immutable tuple/str/int, so a
-    caller holding a reference to it cannot mutate what ``content_hash``
-    computes afterward -- ``model_tier_map`` is the one nested-mapping field
-    and needs this explicit step (``copy.deepcopy`` cannot run on an
+    """Deep-freeze a merged ``model_tier_map`` VALUE: ``MappingProxyType``
+    at both levels. Every other field's value is an immutable
+    tuple/str/int; ``model_tier_map`` is the one nested-mapping field and
+    needs this explicit step (``copy.deepcopy`` cannot run on an
     already-frozen ``MappingProxyType``, so this is applied ONCE, after
     ``_merge_field`` finishes with a plain dict, never baked into
-    ``DEFAULT_POLICY`` or a validator's return value)."""
+    ``DEFAULT_POLICY`` or a validator's return value). This covers the
+    ``value`` side only -- the ``raw_source`` side is snapshotted uniformly
+    by ``PolicyField.__post_init__``'s ``_freeze_raw``; together they make
+    ``content_hash`` immune to any post-``compose()`` mutation."""
     return MappingProxyType(
         {difficulty: MappingProxyType(dict(stages)) for difficulty, stages in value.items()}
     )
@@ -272,6 +312,40 @@ def _unknown_key_finding(key: str, layer_name: str) -> Finding:
     )
 
 
+def _is_valid_project_slug(slug: str) -> bool:
+    """Shape-only (FR-53): a project slug must be usable as ONE literal path
+    segment of the generated ``worktree_seed_paths`` entry. Non-empty, drawn
+    from the conservative ``_SLUG_CHARS`` charset, and not a pure-dot name
+    (``.``/``..`` would alias or escape the ``projects/`` directory)."""
+    return bool(slug) and set(slug) <= _SLUG_CHARS and slug.strip(".") != ""
+
+
+def _project_slug_finding(slug: str) -> Finding:
+    """A MISSING slug is ``warn`` (MRS-POLICY-005): a bare invocation with
+    no active project legitimately shows the defaults, so the verdict stays
+    in the exit-0 half of the lattice. A MALFORMED slug is ``error``
+    (MRS-POLICY-006): the operator explicitly supplied a value that cannot
+    be a path segment -- same posture as a malformed ``--set`` value."""
+    if slug == "":
+        return Finding(
+            code="MRS-POLICY-005",
+            severity=Severity.WARN,
+            message=(
+                "no project slug supplied -- worktree_seed_paths omits its "
+                "project-derived path and carries only the marker path"
+            ),
+        )
+    return Finding(
+        code="MRS-POLICY-006",
+        severity=Severity.ERROR,
+        message=(
+            f"malformed project slug {slug!r} -- must be one safe path "
+            "segment (letters, digits, '.', '_', '-'; not '.' or '..'); "
+            "worktree_seed_paths omits its project-derived path"
+        ),
+    )
+
+
 def _merge_field(
     key: str,
     validator: _Validator,
@@ -304,9 +378,15 @@ def _merge_field(
     return PolicyField(value=value, layer=layer, raw_source=raw_source)
 
 
-def _base_worktree_seed_paths(project_slug: str) -> tuple[str, str]:
-    """FR-50: the two paths every project gets, GENERATED from
-    ``project_slug`` -- never a hardcoded project name."""
+def _base_worktree_seed_paths(project_slug: str | None) -> tuple[str, ...]:
+    """FR-50: the base paths every project gets, GENERATED from
+    ``project_slug`` -- never a hardcoded project name. ``None`` means the
+    slug failed shape validation (missing or malformed -- already reported
+    by ``compose()``): the project-derived path is OMITTED entirely rather
+    than generated around a bad slug, so a ``projects//`` or
+    traversal-shaped path can never enter a composed policy."""
+    if project_slug is None:
+        return ("_bmad/custom/.active-project",)
     return (
         f"_bmad-output/projects/{project_slug}/implementation-artifacts",
         "_bmad/custom/.active-project",
@@ -314,7 +394,7 @@ def _base_worktree_seed_paths(project_slug: str) -> tuple[str, str]:
 
 
 def _compose_worktree_seed_paths(
-    project_slug: str,
+    project_slug: str | None,
     project: Mapping[str, object],
     flags: Mapping[str, object],
     findings: list[Finding],
@@ -443,11 +523,14 @@ def compose(
 
     Never raises for malformed CONTENT within ``project``/``flags`` --see
     the module docstring for the exact "excluded, not poisoned" fallback
-    semantics and the MRS-POLICY-001/002/003 code split. Still raises
-    ``TypeError`` for a CONTRACT violation (a non-``str`` ``project_slug``,
-    or a ``project``/``flags`` that isn't a ``Mapping`` -- including a bare
-    ``str``, which satisfies neither layer's intended shape), matching
-    ``core/identity.py``'s own type-guard convention.
+    semantics and the MRS-POLICY-001/002/003 code split. A missing or
+    malformed ``project_slug`` is likewise reported, never raised
+    (MRS-POLICY-005 warn / MRS-POLICY-006 error), and the project-derived
+    seed path is omitted. Still raises ``TypeError`` for a CONTRACT
+    violation (a non-``str`` ``project_slug``, or a ``project``/``flags``
+    that isn't a ``Mapping`` -- including a bare ``str``, which satisfies
+    neither layer's intended shape), matching ``core/identity.py``'s own
+    type-guard convention.
     """
     if not isinstance(project_slug, str):
         raise TypeError(f"project_slug must be a str, got {project_slug!r}")
@@ -457,6 +540,10 @@ def compose(
         raise TypeError(f"flags must be a Mapping, not a bare str: {flags!r}")
 
     findings: list[Finding] = []
+
+    slug_ok = _is_valid_project_slug(project_slug)
+    if not slug_ok:
+        findings.append(_project_slug_finding(project_slug))
 
     for layer_name, mapping in (("project", project), ("flag", flags)):
         for key in mapping:
@@ -472,7 +559,9 @@ def compose(
         findings,
         "MRS-POLICY-002",
     )
-    worktree_seed_paths = _compose_worktree_seed_paths(project_slug, project, flags, findings)
+    worktree_seed_paths = _compose_worktree_seed_paths(
+        project_slug if slug_ok else None, project, flags, findings
+    )
     merge_subject_template = _merge_field(
         "merge_subject_template",
         _valid_merge_subject_template,

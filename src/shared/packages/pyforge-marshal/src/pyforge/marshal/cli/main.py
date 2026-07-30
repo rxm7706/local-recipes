@@ -57,8 +57,8 @@ def main(argv: list[str] | None = None) -> int:
     itself. Exit codes stay inside Marshal's frozen ``{0, 1, 2, 3, 4, 130}``
     domain (AD-7): argparse's own ``--version``/``--help`` exits (``0``)
     and usage errors (``2``) are relayed as plain ints, a subcommand
-    handler's own returned int is relayed unchanged (it is expected to stay
-    inside the same guarded domain -- see ``core/verdict.exit_code_for``),
+    handler's returned value is relayed only after the SAME domain clamp the
+    ``SystemExit`` path applies (see ``core/verdict.exit_code_for``),
     and a ``KeyboardInterrupt`` anywhere in parser construction, parsing, or
     handler dispatch returns the SIGINT constant.
     """
@@ -81,7 +81,20 @@ def main(argv: list[str] | None = None) -> int:
             # keeping this function's own "never raise" contract) makes the
             # failure visible instead.
             return EXIT_USAGE
-        return handler(args)
+        result = handler(args)
+        if (
+            isinstance(result, int)
+            and not isinstance(result, bool)
+            and result in GUARDED_EXIT_CODES
+        ):
+            return result
+        # Same clamp as the SystemExit branch below, for the same reason: a
+        # handler that returns None (fell off the end) or any value outside
+        # the frozen domain is an internal wiring bug, and the console
+        # script's sys.exit(None) would exit 0 -- masking the bug as
+        # success. The docstring's frozen-domain claim is enforced, not
+        # merely expected.
+        return EXIT_USAGE
     except SystemExit as exc:
         # argparse exits itself: --version/--help -> 0, a usage error -> 2
         # (never 0). Surface its code as a return value, never re-raised --

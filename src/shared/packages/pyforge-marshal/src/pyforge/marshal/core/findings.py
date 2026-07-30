@@ -13,10 +13,15 @@ malformed story key) and ``MRS-IDENT-002`` (a non-conforming merge subject)
 are its two registered codes. Story 1.3's ``core/policy.py``/``cli/config.py``
 add the registry's second real caller: ``MRS-POLICY-001`` (an unknown
 top-level policy key), ``MRS-POLICY-002`` (a malformed STATIC field value),
-``MRS-POLICY-003`` (a malformed SEED field value), and ``MRS-POLICY-004``
+``MRS-POLICY-003`` (a malformed SEED field value), ``MRS-POLICY-004``
 (a CLI-boundary I/O failure resolving or writing policy -- an unreadable
-``--project-policy`` file or an unwritable ``--materialize`` target) -- all
-four classify ``Verdict.UNEVALUABLE`` (``core/verdict.py``). Later stories
+``--project-policy`` file or an unwritable ``--materialize`` target),
+``MRS-POLICY-005`` (no project slug supplied -- the composed policy omits
+its project-derived seed path), and ``MRS-POLICY-006`` (a malformed project
+slug -- not usable as a single path segment). 001-004 and 006 classify
+``Verdict.UNEVALUABLE``; 005 classifies ``Verdict.WARN`` (a bare
+no-active-project invocation legitimately shows the defaults and exits 0)
+-- see ``core/verdict.py``. Later stories
 append further real codes here as they gain their own real callers. The
 registry MECHANISM
 (format check, then membership check) is separately proven via
@@ -40,7 +45,7 @@ import re
 CODE_PATTERN = re.compile(r"MRS-[A-Z][A-Z0-9]*-[0-9]{3}")
 
 # Story 1.2's core/identity.py -- the registry's first real registrations.
-# Story 1.3's core/policy.py/cli/config.py add the second real caller's four codes.
+# Story 1.3's core/policy.py/cli/config.py add the second real caller's six codes.
 REGISTERED_CODES: frozenset[str] = frozenset(
     {
         "MRS-IDENT-001",
@@ -49,6 +54,8 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-POLICY-002",
         "MRS-POLICY-003",
         "MRS-POLICY-004",
+        "MRS-POLICY-005",
+        "MRS-POLICY-006",
     }
 )
 

@@ -121,7 +121,9 @@ def test_config_defaults_only_exits_zero(capsys, monkeypatch):
 def test_config_prints_all_nine_keys(capsys, monkeypatch):
     """AC: 'every one of the 9 keys prints its effective value and winning
     layer' -- checked exhaustively, not just a couple of spot-checked
-    fields."""
+    fields. The layer half is counted, not merely detected: exactly one
+    `(layer=...)` suffix per key line, so a regression that drops the
+    suffix from all but one line cannot ship green."""
     monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
     exit_code = main(["config"])
     assert exit_code == 0
@@ -138,7 +140,7 @@ def test_config_prints_all_nine_keys(capsys, monkeypatch):
         "max_followup_reviews",
     ):
         assert f"{key}:" in captured.out, f"marshal config did not print {key!r}"
-        assert captured.out.count(f"(layer=") >= 1
+    assert captured.out.count("(layer=") == 9
 
 
 def test_config_redacts_a_secret_shaped_field(capsys, monkeypatch):
@@ -201,16 +203,36 @@ def test_config_project_flag_wins_over_env(monkeypatch, capsys):
     assert "env-slug" not in captured.out
 
 
-def test_config_missing_project_slug_does_not_crash(monkeypatch, capsys):
+def test_config_missing_project_slug_reports_warn_finding_still_exits_zero(monkeypatch, capsys):
+    """Spec: 'missing -> a registered finding, still prints defaults' AND
+    '`marshal config` exits 0 with defaults only' -- reconciled by
+    MRS-POLICY-005 classifying Verdict.WARN (exit 0). The project-derived
+    seed path is OMITTED, never generated as a `projects//` garbage path."""
     monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
     exit_code = main(["config"])
     assert exit_code == 0
     captured = capsys.readouterr()
     assert "worktree_seed_paths" in captured.out
+    assert "MRS-POLICY-005" in captured.out
+    assert "_bmad-output/projects//" not in captured.out
+    assert "_bmad/custom/.active-project" in captured.out
 
 
-def test_config_format_json_prints_a_valid_envelope(capsys):
-    exit_code = main(["config", "--format", "json"])
+def test_config_malformed_project_slug_reports_finding_and_nonzero_exit(capsys):
+    """A slug that cannot be one safe path segment (here a traversal shape)
+    must be reported (MRS-POLICY-006, unevaluable -> exit 1) and the
+    project-derived seed path omitted -- never silently folded into a
+    traversal-shaped `_bmad-output/projects/../...` path."""
+    exit_code = main(["config", "--project", "../evil"])
+    assert exit_code != 0
+    captured = capsys.readouterr()
+    assert "MRS-POLICY-006" in captured.out
+    assert "_bmad-output/projects/../evil" not in captured.out
+
+
+def test_config_format_json_prints_a_valid_envelope(capsys, monkeypatch):
+    monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
+    exit_code = main(["config", "--project", "acme", "--format", "json"])
     assert exit_code == 0
     payload = json.loads(capsys.readouterr().out)
     assert payload["command"] == "config"
@@ -220,8 +242,11 @@ def test_config_format_json_prints_a_valid_envelope(capsys):
     assert "content_hash" in payload["data"]
 
 
-def test_config_format_json_with_findings_has_error_status(capsys):
-    exit_code = main(["config", "--format", "json", "--set", "gate_mode=bogus"])
+def test_config_format_json_with_findings_has_error_status(capsys, monkeypatch):
+    monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
+    exit_code = main(
+        ["config", "--project", "acme", "--format", "json", "--set", "gate_mode=bogus"]
+    )
     assert exit_code != 0
     payload = json.loads(capsys.readouterr().out)
     assert payload["status"] == "error"
@@ -397,3 +422,132 @@ def test_config_set_without_equals_is_a_usage_error(capsys):
     assert exit_code == EXIT_USAGE
     captured = capsys.readouterr()
     assert "gate_mode" in captured.err or "gate_mode" in captured.out
+
+
+# --- follow-up review regressions (2026-07-30, second pass) -------------------
+
+
+def test_config_non_utf8_project_policy_reports_finding_not_crash(tmp_path, capsys):
+    """UnicodeDecodeError is a ValueError SIBLING of TOMLDecodeError --
+    tomllib decodes the bytes itself and lets it propagate, so a UTF-16 or
+    binary --project-policy file must land in the same MRS-POLICY-004 path
+    as every other read failure, not crash straight through main()."""
+    bad_bytes = tmp_path / "project-policy.toml"
+    bad_bytes.write_bytes(b"\xff\xfe not utf-8 \x00")
+    exit_code = main(["config", "--project", "acme", "--project-policy", str(bad_bytes)])
+    assert exit_code != 0
+    captured = capsys.readouterr()
+    assert "MRS-POLICY-004" in captured.out
+
+
+def test_field_order_matches_the_closed_policy_vocabulary():
+    """The 9-key vocabulary is declared in three places (_FIELD_ORDER, the
+    _STATIC_KEYS/_SEED_KEYS sets, schemas/policy.json). This is the derive-
+    don't-declare tie: adding a 10th key to core/policy.py without updating
+    the render order or the schema fails HERE, instead of silently vanishing
+    from `marshal config` output and the materialized artifact while still
+    being hashed."""
+    from pyforge.marshal.cli import config as config_module
+    from pyforge.marshal.core import policy
+
+    assert set(config_module._FIELD_ORDER) == set(policy._ALL_KEYS)
+    assert len(config_module._FIELD_ORDER) == len(policy._ALL_KEYS)
+    schema = json.loads(_SCHEMA_PATH.read_text(encoding="utf-8"))
+    assert set(schema["properties"].keys()) == set(policy._ALL_KEYS)
+    assert set(schema["required"]) == set(policy._ALL_KEYS)
+
+
+def test_config_json_envelope_validates_against_envelope_schema(tmp_path, capsys, monkeypatch):
+    """The envelope output is the machine contract every consumer parses --
+    validate it against schemas/envelope.v1.json (the materialized FILE was
+    already schema-validated; the envelope was not), and pin the
+    success-path data.materialized_path, asserted nowhere else."""
+    monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
+    target_dir = tmp_path / "materialized"
+    exit_code = main(
+        ["config", "--project", "acme", "--format", "json", "--materialize", str(target_dir)]
+    )
+    assert exit_code == 0
+    payload = json.loads(capsys.readouterr().out)
+    envelope_schema = json.loads(
+        (_SCHEMA_PATH.parent / "envelope.v1.json").read_text(encoding="utf-8")
+    )
+    jsonschema.validate(instance=payload, schema=envelope_schema)
+    written = next(target_dir.glob("policy-*.json"))
+    assert payload["data"]["materialized_path"] == str(written)
+
+
+def test_materialize_refuses_a_tampered_existing_artifact(tmp_path):
+    """Write-once must not bless foreign bytes: content-addressing only
+    guarantees identical content for files written by a cooperating atomic
+    writer, so a hand-edited/truncated file squatting on the
+    content-addressed name is a PolicyIOError, not a silent 'success'."""
+    from pyforge.marshal.cli.config import PolicyIOError, materialize
+    from pyforge.marshal.core.policy import compose
+
+    effective, _ = compose(project_slug="acme", project={}, flags={})
+    target_path = tmp_path / f"policy-{effective.content_hash}.json"
+    target_path.write_bytes(b'{"tampered": true}\n')
+    with pytest.raises(PolicyIOError):
+        materialize(effective, tmp_path)
+    # the tampered bytes are refused, never repaired-in-place either
+    assert target_path.read_bytes() == b'{"tampered": true}\n'
+
+
+def test_materialized_artifact_gets_umask_respecting_permissions(tmp_path):
+    """mkstemp creates 0600 regardless of umask; os.replace would carry
+    that onto the final artifact, making it owner-only unlike any ordinarily
+    created file. The write path re-applies the process umask to 0666."""
+    import os as os_module
+
+    from pyforge.marshal.cli.config import materialize
+    from pyforge.marshal.core.policy import compose
+
+    if not hasattr(os_module, "fchmod"):
+        pytest.skip("os.fchmod unavailable on this platform")
+    effective, _ = compose(project_slug="acme", project={}, flags={})
+    written = materialize(effective, tmp_path)
+    current_umask = os_module.umask(0)
+    os_module.umask(current_umask)
+    assert written.stat().st_mode & 0o777 == 0o666 & ~current_umask
+
+
+def test_broken_pipe_during_config_output_returns_verdict_exit_code(monkeypatch):
+    """`marshal config | head -1` closes stdout early: BrokenPipeError is an
+    OSError that main()'s SystemExit/KeyboardInterrupt relay never catches,
+    so run_config must suppress it itself and still return its
+    verdict-derived exit code -- the compose work already completed; the
+    reader hanging up is not a policy failure."""
+    import builtins
+
+    def raise_broken_pipe(*args, **kwargs):
+        raise BrokenPipeError(32, "Broken pipe")
+
+    monkeypatch.setattr(builtins, "print", raise_broken_pipe)
+    assert main(["config", "--project", "acme"]) == 0
+
+
+def test_handler_returning_none_is_clamped_to_usage(monkeypatch):
+    """A future handler that falls off the end returns None; the console
+    script's sys.exit(None) would exit 0, masking the wiring bug as success.
+    The dispatch clamps handler returns to the guarded domain exactly like
+    the SystemExit relay."""
+    from pyforge.marshal.cli import main as main_module
+
+    def fake_add(subparsers):
+        parser = subparsers.add_parser("config")
+        parser.set_defaults(handler=lambda args: None)
+
+    monkeypatch.setattr(main_module.config_cli, "add_config_subparser", fake_add)
+    assert main_module.main(["config"]) == EXIT_USAGE
+
+
+def test_handler_returning_out_of_domain_int_is_clamped_to_usage(monkeypatch):
+    from pyforge.marshal.cli import main as main_module
+
+    def fake_add(subparsers):
+        parser = subparsers.add_parser("config")
+        parser.set_defaults(handler=lambda args: 77)
+
+    monkeypatch.setattr(main_module.config_cli, "add_config_subparser", fake_add)
+    assert main_module.main(["config"]) == EXIT_USAGE

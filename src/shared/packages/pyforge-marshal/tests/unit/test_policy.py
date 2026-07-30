@@ -552,3 +552,74 @@ def test_malformed_finding_redacts_a_secret_shaped_key(monkeypatch):
 def test_unknown_key_finding_names_the_key_and_layer():
     _, findings = compose(project_slug="acme", project={"bogus_key": 1}, flags={})
     assert any(f.code == "MRS-POLICY-001" and f.path == "project" for f in findings)
+
+
+# --- follow-up review regressions (2026-07-30, second pass) -------------------
+
+
+def test_missing_slug_emits_warn_finding_and_omits_project_path():
+    """Spec: 'missing -> a registered finding, still prints defaults'.
+    MRS-POLICY-005 classifies Verdict.WARN so a bare no-active-project
+    invocation stays exit-0, and the project-derived seed path is OMITTED --
+    never generated as `_bmad-output/projects//implementation-artifacts`."""
+    effective, findings = compose(project_slug="", project={}, flags={})
+    assert effective.worktree_seed_paths.value == ("_bmad/custom/.active-project",)
+    assert len(findings) == 1
+    assert findings[0].code == "MRS-POLICY-005"
+    assert findings[0].severity.value == "warn"
+    assert verdict.compute_verdict(findings) == Verdict.WARN
+
+
+@pytest.mark.parametrize("bad_slug", ["../evil", "a/b", ".", "..", "has space", "a\\b"])
+def test_malformed_slug_emits_error_finding_and_omits_project_path(bad_slug):
+    """A slug that cannot be one safe path segment is MRS-POLICY-006
+    (unevaluable -- the operator explicitly supplied garbage, matching the
+    malformed --set precedent) and never enters a generated path."""
+    effective, findings = compose(project_slug=bad_slug, project={}, flags={})
+    assert effective.worktree_seed_paths.value == ("_bmad/custom/.active-project",)
+    assert len(findings) == 1
+    assert findings[0].code == "MRS-POLICY-006"
+    assert verdict.compute_verdict(findings) == Verdict.UNEVALUABLE
+
+
+def test_slug_finding_classifications():
+    assert verdict.classify("MRS-POLICY-005") == Verdict.WARN
+    assert verdict.classify("MRS-POLICY-006") == Verdict.UNEVALUABLE
+
+
+def test_content_hash_stable_after_caller_mutates_inputs():
+    """raw_source must be a SNAPSHOT, not an alias of the caller's own
+    containers: mutating the passed-in project mapping's values after
+    compose() must not change content_hash -- otherwise a later
+    materialize() of the SAME EffectivePolicy writes under a different name,
+    defeating AD-35's write-once content-addressing."""
+    commands = ["pytest -q"]
+    tier_map = {"hard": {"dev": "opus"}}
+    project = {"verify_commands": commands, "model_tier_map": tier_map}
+    effective, _ = compose(project_slug="acme", project=project, flags={})
+    hash_before = effective.content_hash
+
+    commands.append("rm -rf /")
+    tier_map["hard"]["dev"] = "haiku"
+    project["verify_commands"] = ["something-else"]
+
+    assert effective.content_hash == hash_before
+    # and the recorded provenance still shows the original raw values
+    assert tuple(effective.verify_commands.raw_source) == ("pytest -q",)
+    assert effective.model_tier_map.raw_source["hard"]["dev"] == "opus"
+
+
+def test_raw_source_is_not_mutable_through_the_policy_field():
+    """The consumer-side half of the same guarantee: raw_source itself is
+    frozen (MappingProxyType/tuple), so a caller holding the composed policy
+    cannot mutate what content_hash computes through the raw_source
+    attribute either."""
+    effective, _ = compose(
+        project_slug="acme",
+        project={"model_tier_map": {"hard": {"dev": "opus"}}},
+        flags={},
+    )
+    with pytest.raises(TypeError):
+        effective.model_tier_map.raw_source["hard"] = {"dev": "haiku"}  # type: ignore[index]
+    with pytest.raises(TypeError):
+        effective.model_tier_map.raw_source["hard"]["dev"] = "haiku"  # type: ignore[index]

@@ -9,11 +9,13 @@ reads, env var reads, and disk writes all belong here, never in
 
 ``project_slug`` resolution order: ``--project`` flag, then the
 ``BMAD_ACTIVE_PROJECT`` env var (AD-2's one sanctioned env var), then an
-empty string if neither is set -- ``compose()`` still runs and still prints
-every field; ``worktree_seed_paths`` simply generates its two base paths
-with an empty slug segment rather than crashing (the spec's own "missing --
-still prints defaults, just no project-derived paths beyond the base two --
-do not crash").
+empty string if neither is set. Slug SHAPE validation lives in
+``compose()`` (FR-53's shape-only spirit): a missing slug still composes
+and prints every field but reports the registered ``MRS-POLICY-005``
+(warn -- exit 0) and omits the project-derived worktree seed path rather
+than generating a ``projects//`` garbage path; a malformed slug (path
+separators, ``.``/``..``) reports ``MRS-POLICY-006`` (error) and likewise
+omits the project-derived path.
 
 ``--set`` accepts only the 5 SCALAR fields
 (``gate_mode``/``merge_subject_template``/``max_dev_attempts``/
@@ -33,6 +35,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import sys
 import tempfile
 import tomllib
 from collections.abc import Mapping
@@ -183,11 +186,12 @@ def _policy_fields_payload(effective: policy.EffectivePolicy) -> dict[str, objec
 
 class PolicyIOError(Exception):
     """Raised by ``materialize()``/``run_config()`` when a CLI-boundary I/O
-    step fails (an unwritable ``--materialize`` target, an unreadable
-    ``--project-policy`` file) -- registers as ``MRS-POLICY-004``. Never lets
-    a raw ``OSError``/``tomllib.TOMLDecodeError`` propagate out of
-    ``run_config()``, matching ``cli/main.py``'s own "never raise, clamp
-    anything foreign" exit-relay contract."""
+    step fails (an unwritable ``--materialize`` target, an unreadable or
+    non-UTF-8 ``--project-policy`` file, a foreign artifact squatting on the
+    content-addressed path) -- registers as ``MRS-POLICY-004``. Never lets a
+    raw ``OSError``/``UnicodeDecodeError``/``tomllib.TOMLDecodeError``
+    propagate out of ``run_config()``, matching ``cli/main.py``'s own "never
+    raise, clamp anything foreign" exit-relay contract."""
 
     def __init__(self, message: str) -> None:
         super().__init__(message)
@@ -197,29 +201,51 @@ class PolicyIOError(Exception):
 def materialize(effective_policy: policy.EffectivePolicy, target_dir: Path) -> Path:
     """Write ``<target_dir>/policy-<content_hash>.json`` via
     write-to-a-temp-file-then-``os.replace`` (atomic) -- AD-35's write-once
-    artifact. A no-op if that exact path already exists AS A FILE
-    (content-addressing guarantees identical content): the existing file's
-    mtime is left untouched, and no write is attempted at all. A non-file
-    (e.g. a directory) occupying the content-addressed path, or any
-    ``mkdir``/``mkstemp``/write failure, raises ``PolicyIOError`` rather
-    than an uncaught ``OSError``."""
+    artifact. A no-op if that exact path already exists AS A FILE **with the
+    expected bytes** -- content-addressing only guarantees identical content
+    for files written by a cooperating atomic writer, so the existing bytes
+    are compared rather than trusted: a truncated, hand-edited, or foreign
+    file squatting on the content-addressed name raises ``PolicyIOError``
+    instead of being blessed as a successful materialization forever. On the
+    true no-op path the existing file's mtime is left untouched and no write
+    is attempted at all. A non-file (e.g. a directory) occupying the path,
+    or any ``mkdir``/``mkstemp``/write failure, likewise raises
+    ``PolicyIOError`` rather than an uncaught ``OSError``."""
     target_dir = Path(target_dir)
     try:
         target_dir.mkdir(parents=True, exist_ok=True)
         target_path = target_dir / f"policy-{effective_policy.content_hash}.json"
-        if target_path.exists():
-            if target_path.is_file():
-                return target_path
-            raise PolicyIOError(
-                f"cannot materialize policy: {target_path} exists and is not a file"
-            )
         payload = _policy_fields_payload(effective_policy)
+        expected_bytes = (
+            json.dumps(payload, indent=2, sort_keys=True) + "\n"
+        ).encode("utf-8")
+        if target_path.exists():
+            if not target_path.is_file():
+                raise PolicyIOError(
+                    f"cannot materialize policy: {target_path} exists and is not a file"
+                )
+            if target_path.read_bytes() != expected_bytes:
+                raise PolicyIOError(
+                    f"cannot materialize policy: {target_path} already exists "
+                    "with content that does not match its content-addressed "
+                    "name -- refusing to bless a foreign or corrupt artifact"
+                )
+            return target_path
         fd, tmp_name = tempfile.mkstemp(dir=target_dir, prefix=".policy-", suffix=".tmp")
         tmp_path = Path(tmp_name)
         try:
-            with os.fdopen(fd, "w", encoding="utf-8") as handle:
-                json.dump(payload, handle, indent=2, sort_keys=True)
-                handle.write("\n")
+            with os.fdopen(fd, "wb") as handle:
+                handle.write(expected_bytes)
+                if hasattr(os, "fchmod"):
+                    # mkstemp creates 0600 regardless of umask (its own
+                    # temp-file security contract), and os.replace carries
+                    # that mode onto the final artifact -- which would make
+                    # the materialized policy owner-only-readable, unlike any
+                    # ordinarily created file. Re-apply the process umask to
+                    # 0666 like a plain open() would.
+                    current_umask = os.umask(0)
+                    os.umask(current_umask)
+                    os.fchmod(handle.fileno(), 0o666 & ~current_umask)
             os.replace(tmp_path, target_path)
         except BaseException:
             tmp_path.unlink(missing_ok=True)
@@ -253,13 +279,17 @@ def _render_text(data: Mapping[str, object], findings: tuple[Finding, ...]) -> s
 
 def _read_project_policy(path: Path) -> Mapping[str, object]:
     """Read ``--project-policy`` via ``tomllib``. Wraps every failure mode
-    (missing file, a directory, unreadable, malformed TOML) into
-    ``PolicyIOError`` rather than letting a raw ``OSError``/
-    ``tomllib.TOMLDecodeError`` propagate out of ``run_config()``."""
+    (missing file, a directory, unreadable, malformed TOML, bytes that are
+    not valid UTF-8) into ``PolicyIOError`` rather than letting a raw
+    exception propagate out of ``run_config()``. ``UnicodeDecodeError`` must
+    be listed explicitly: ``tomllib.load`` decodes the bytes itself and lets
+    it propagate, and it is a ``ValueError`` SIBLING of ``TOMLDecodeError``
+    -- caught by neither ``OSError`` nor the TOML catch (a UTF-16-saved or
+    binary file would otherwise crash straight through ``main()``)."""
     try:
         with open(path, "rb") as handle:
             return tomllib.load(handle)
-    except (OSError, tomllib.TOMLDecodeError) as exc:
+    except (OSError, UnicodeDecodeError, tomllib.TOMLDecodeError) as exc:
         raise PolicyIOError(f"cannot read --project-policy {path}: {exc}") from exc
 
 
@@ -311,9 +341,38 @@ def run_config(args: argparse.Namespace) -> int:
         command="config", verdict=verdict_value, data=data, findings=findings
     )
 
-    if args.format == "json":
-        print(json.dumps(envelope.to_json_dict(), indent=2, sort_keys=True))
-    else:
-        print(_render_text(envelope.data, envelope.findings))
+    try:
+        if args.format == "json":
+            print(json.dumps(envelope.to_json_dict(), indent=2, sort_keys=True))
+        else:
+            print(_render_text(envelope.data, envelope.findings))
+    except BrokenPipeError:
+        _suppress_downstream_pipe_close()
 
     return exit_code_for(envelope.verdict)
+
+
+def _suppress_downstream_pipe_close() -> None:
+    """A closed stdout (e.g. ``marshal config | head -1``) is the READER's
+    choice, not a policy failure -- the compose/materialize work already
+    completed by the time the envelope prints. ``BrokenPipeError`` is an
+    ``OSError`` that ``main()``'s ``SystemExit``/``KeyboardInterrupt`` relay
+    would never catch, so without this guard a piped invocation crashes with
+    a traceback in violation of the never-raise exit-relay contract.
+    Redirect stdout to devnull (the CPython-documented pattern) so the
+    interpreter's final flush does not raise a SECOND BrokenPipeError at
+    shutdown; ``run_config`` then returns its verdict-derived exit code.
+
+    Touches process-level FDs only when ``sys.stdout`` IS the real process
+    stdout: a replaced stdout (pytest capture, an embedding TUI) has its own
+    lifecycle and no interpreter-shutdown flush of the real fd to protect --
+    dup2-ing over its fileno() would corrupt the capturing host instead."""
+    if sys.stdout is not sys.__stdout__:
+        return
+    try:
+        devnull = os.open(os.devnull, os.O_WRONLY)
+        os.dup2(devnull, sys.stdout.fileno())
+    except (OSError, ValueError):
+        # A stdout with no usable fd has no shutdown flush to protect;
+        # io.UnsupportedOperation is a ValueError.
+        pass
