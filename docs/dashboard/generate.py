@@ -494,6 +494,49 @@ def done_ids_from_git(branch: str, project_keys: tuple[str, ...] = ()) -> dict[s
     return done
 
 
+def apply_tracked_ledger(projects: dict) -> None:
+    """Upgrade stories to `done` from each project's TRACKED status ledger.
+
+    `implementation-artifacts/` is gitignored wholesale, so the sprint feed — the
+    only place that knows a story finished — is invisible to CI and absent from
+    every clone. That is why the git path had to reconstruct DONE from commit
+    subjects, and why it broke the moment a completion signal stopped being an
+    ancestor of `main`: squash-merging PR #132 left Epic 10's
+    `Merge bmad-loop/<run>/10-N-…` subjects unreachable and the board sat at 36/38
+    with a ticking clock on a finished story.
+
+    `scripts/promote_sprint_status.py` promotes that map to
+    `planning-artifacts/sprint-status-ledger.yaml`, which IS tracked — the same
+    move already made for `deferred-work-ledger.md`. This reads it, so the deploy
+    reads truth rather than guessing, whatever the merge strategy was.
+
+    UPGRADE-ONLY, deliberately. It never sets a story back to pending even if a
+    ledger says so: a stale twin must not be able to un-finish a shipped story,
+    and the never-downgrade invariant is what lets curated in-flight state survive
+    a deploy. `dashboard-drift-check` is what catches a stale twin.
+    """
+    for pkey in sorted(projects):
+        slug = _KEY_SLUG_OVERRIDE.get(pkey, f"pyforge-{pkey}")
+        ledger = (REPO_ROOT / "_bmad-output" / "projects" / slug
+                  / "planning-artifacts" / "sprint-status-ledger.yaml")
+        if not ledger.is_file():
+            continue
+        statuses = parse_sprint_status(ledger)
+        if not statuses:
+            print(f"[{pkey}] tracked ledger parsed 0 statuses — ignored")
+            continue
+        upgraded = 0
+        for epic in projects[pkey].get("epics", []):
+            for story in epic.get("stories", []):
+                if story[1] == "done":
+                    continue
+                if dashboard_id_to_status(story[0], statuses) == "done":
+                    story[1] = "done"
+                    upgraded += 1
+        print(f"[{pkey}] tracked ledger: {len(statuses)} status(es), "
+              f"{upgraded} story(ies) upgraded to done")
+
+
 def apply_git(projects: dict) -> None:
     per_project = done_ids_from_git(MAIN_BRANCH, tuple(projects))
     for pkey, ids in per_project.items():
@@ -1561,6 +1604,11 @@ def main() -> int:
     data["projects"] = scan_projects(data["projects"])
     check_project_coverage(data["projects"])
     if args.source == "git":
+        # Tracked truth FIRST, archaeology second. The ledger twins are committed,
+        # so CI can read them; `apply_git` then only has to cover whatever predates
+        # a twin. Order matters only for the log's readability — both paths upgrade
+        # and neither downgrades.
+        apply_tracked_ledger(data["projects"])
         apply_git(data["projects"])
     else:
         apply_sprint_status(data["projects"])

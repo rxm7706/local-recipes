@@ -1,0 +1,34 @@
+# GENERATED — do not hand-edit. Regenerate with:
+#     pixi run -e local-recipes sprint-ledger-sync
+#
+# TRACKED twin of _bmad-output/projects/pyforge-doctor/implementation-artifacts/sprint-status.yaml
+# which is gitignored Tier-3 (.gitignore:736) and therefore invisible to CI and
+# absent from every fresh clone. The dashboard's deploy-time render reads THIS
+# file, so a story's completion no longer has to be reconstructed from commit
+# subjects — the archaeology that failed when squash-merging PR #132 made Epic
+# 10's bmad-loop merge subjects unreachable from main.
+#
+# Same shape as the Tier-3 feed on purpose: generate.py's parse_sprint_status
+# reads both, so there is no second parser to drift.
+#
+# project: doctor
+# stories: 18
+development_status:
+  1-1-package-scaffold-frozen-finding-doctorreport-contract-exit-code-module: done
+  1-2-wrap-wardens-engine-availability-self-check: backlog
+  1-3-tri-state-individually-addressable-checks: backlog
+  1-4-credential-environment-hygiene-check: backlog
+  1-5-doctor-check-cli-wiring-json-and-the-speed-budget: backlog
+  2-1-atlas-gather-filter-staleness-axis-mcp-first-with-cli-fallback: backlog
+  2-2-cve-and-abandonment-watch-axes: backlog
+  2-3-doctor-monitor-fleet-cli-wiring-default-axis-set-json: backlog
+  3-1-partition-findings-by-actionability: backlog
+  3-2-rank-the-actionable-partition: backlog
+  3-3-root-cause-naming: backlog
+  3-4-doctor-diagnose-target-prescribe-cli-wiring-json: backlog
+  epic-1: backlog
+  epic-1-retrospective: optional
+  epic-2: backlog
+  epic-2-retrospective: optional
+  epic-3: backlog
+  epic-3-retrospective: optional
