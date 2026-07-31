@@ -23,27 +23,61 @@ def _owner_path(root: Path) -> Path:
     return (root / "exit_codes.py").resolve()
 
 
+# Nodes that open a new (non-module) scope: names bound inside them are
+# locals/attributes, not module-level names, so the scan must not descend.
+_SCOPE_NODES = (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef, ast.Lambda)
+
+
 def _module_level_exit_names(tree: ast.Module) -> list[str]:
-    """`EXIT_*` names assigned directly in the module body -- not inside a
-    function or class, so a same-spelled local variable elsewhere is not
+    """`EXIT_*` names bound at module scope -- not inside a function, class,
+    or lambda, so a same-spelled local variable or class attribute is not
     mistaken for a rogue owner.
 
-    Each target is AST-walked, not just checked for a bare `ast.Name`, so a
-    tuple/list-unpacking assignment (e.g. `EXIT_ROGUE, _ = 99, None`) can't
-    hide an `EXIT_*` name from a shallower check that only recognized a
-    direct `ast.Name` target.
+    The scan recurses through nested *statements* (if/try/for/while/with) and
+    recognizes every module-level binding form, not just a bare top-level
+    `x = ...`: plain/unpacking/annotated/augmented assignment, walrus
+    (`:=`), `for`/`with ... as` targets, `except ... as` names, `def`/`class`
+    names, and `import ... as` aliases. A shallower check that only iterated
+    `tree.body` for `ast.Assign` would let e.g. a platform-conditional
+    `if sys.platform == "win32": EXIT_WIN = 75` -- the most realistic drift
+    vector -- pass undetected.
+
+    The one sanctioned binding is consumption of the contract itself:
+    `from <...>.exit_codes import EXIT_X` with no rename. Renaming
+    (`as EXIT_Y`) or importing an `EXIT_*` name from anywhere else creates a
+    new module-level `EXIT_*` name and is flagged.
     """
-    names = []
-    for node in tree.body:
-        targets: list[ast.expr] = []
-        if isinstance(node, ast.Assign):
-            targets = node.targets
-        elif isinstance(node, ast.AnnAssign):
-            targets = [node.target]
-        for target in targets:
-            for sub in ast.walk(target):
-                if isinstance(sub, ast.Name) and sub.id.startswith("EXIT_"):
-                    names.append(sub.id)
+    names: list[str] = []
+
+    def record(name: str) -> None:
+        if name.startswith("EXIT_"):
+            names.append(name)
+
+    def visit(node: ast.AST) -> None:
+        for child in ast.iter_child_nodes(node):
+            if isinstance(child, _SCOPE_NODES):
+                # def/class statements still BIND their own name at module
+                # level, even though their bodies are a new scope.
+                if isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+                    record(child.name)
+                continue
+            if isinstance(child, ast.Name) and isinstance(child.ctx, ast.Store):
+                record(child.id)
+            elif isinstance(child, ast.ExceptHandler) and child.name:
+                record(child.name)
+            elif isinstance(child, (ast.Import, ast.ImportFrom)):
+                from_owner = (
+                    isinstance(child, ast.ImportFrom)
+                    and child.module is not None
+                    and child.module.rpartition(".")[2] == "exit_codes"
+                )
+                for alias in child.names:
+                    if from_owner and alias.asname is None:
+                        continue  # canonical, un-renamed consumption
+                    record(alias.asname or alias.name.split(".")[0])
+            visit(child)
+
+    visit(tree)
     return names
 
 
@@ -151,6 +185,72 @@ def test_tuple_unpacking_assignment_does_not_hide_a_rogue_exit_name(tmp_path):
     violators = {p.resolve() for p in _find_rogue_exit_code_owners(root, _owner_path(root))}
 
     assert (root / "sneaky.py").resolve() in violators
+
+
+@pytest.mark.parametrize("source", [
+    pytest.param('if True:\n    EXIT_WIN = 75\n', id="conditional"),
+    pytest.param('(EXIT_W := 9)\n', id="walrus"),
+    pytest.param('try:\n    EXIT_T = 1\nexcept Exception:\n    pass\n', id="try-block"),
+    pytest.param('for EXIT_I in [1]:\n    pass\n', id="for-target"),
+    pytest.param('with open("x") as EXIT_F:\n    pass\n', id="with-as"),
+    pytest.param('while False:\n    EXIT_LOOP = 4\n', id="while-body"),
+    pytest.param('try:\n    pass\nexcept OSError as EXIT_E:\n    pass\n', id="except-as"),
+    pytest.param('EXIT_AUG = 0\nEXIT_AUG += 1\n', id="aug-assign"),
+    pytest.param('import os as EXIT_OS\n', id="import-as"),
+    pytest.param('from os.path import sep as EXIT_SEP\n', id="from-import-as"),
+    pytest.param('from other_module import EXIT_FOREIGN\n', id="foreign-exit-import"),
+    pytest.param('from exit_codes import EXIT_OK as EXIT_YES\n', id="renamed-canonical-import"),
+    pytest.param('def EXIT_helper():\n    pass\n', id="def-name"),
+])
+def test_nested_and_indirect_module_level_bindings_are_not_hidden(tmp_path, source):
+    """Every module-level binding form must be visible to the scanner — a
+    shallow `tree.body`-only walk missed all the nested/indirect ones (the
+    platform-conditional case being the realistic drift vector)."""
+    root = tmp_path / "mason"
+    root.mkdir()
+    (root / "exit_codes.py").write_text("EXIT_OK = 0\n", encoding="utf-8")
+    (root / "sneaky.py").write_text(source, encoding="utf-8")
+
+    violators = {p.resolve() for p in _find_rogue_exit_code_owners(root, _owner_path(root))}
+
+    assert (root / "sneaky.py").resolve() in violators
+
+
+def test_canonical_unrenamed_exit_codes_import_is_not_flagged(tmp_path):
+    """`from .exit_codes import EXIT_OK` is the sanctioned way for cli.py to
+    consume the contract — it re-binds the canonical names, it doesn't define
+    new ones. (The real cli.py depends on this exemption.)"""
+    root = tmp_path / "mason"
+    root.mkdir()
+    (root / "exit_codes.py").write_text("EXIT_OK = 0\nEXIT_FAILED = 1\n", encoding="utf-8")
+    (root / "cli.py").write_text(
+        "from .exit_codes import EXIT_FAILED, EXIT_OK\n", encoding="utf-8",
+    )
+
+    violators = _find_rogue_exit_code_owners(root, _owner_path(root))
+
+    assert violators == []
+
+
+def test_bindings_inside_functions_classes_and_lambdas_are_not_flagged(tmp_path):
+    """Scope exclusion: locals, class attributes, and lambda parameters named
+    EXIT_* are not module-level names and must not be flagged."""
+    root = tmp_path / "mason"
+    root.mkdir()
+    (root / "exit_codes.py").write_text("EXIT_OK = 0\n", encoding="utf-8")
+    (root / "scoped.py").write_text(
+        "def f():\n"
+        "    EXIT_LOCAL = 5\n"
+        "    return EXIT_LOCAL\n"
+        "class C:\n"
+        "    EXIT_ATTR = 1\n"
+        "g = lambda EXIT_ARG=1: EXIT_ARG\n",
+        encoding="utf-8",
+    )
+
+    violators = _find_rogue_exit_code_owners(root, _owner_path(root))
+
+    assert violators == []
 
 
 def test_non_utf8_file_fails_cleanly_not_with_a_raw_traceback(tmp_path):

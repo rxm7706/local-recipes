@@ -1,8 +1,11 @@
 """The sole exit-code owner (AD-7, FR-32).
 
 `main()` in `cli.py` is the only place that turns an outcome into a process
-exit code, and it does so exclusively by returning one of the five names
-defined here. No other module under `pyforge.mason` may define a module-level
+exit code: every outcome it classifies returns one of the five names defined
+here, and an argparse-raised `SystemExit` passes its integer code through
+unchanged (argparse itself only produces `0` for `--help`/`--version` and
+`2` for usage errors -- the same values as `EXIT_OK`/`EXIT_USAGE`). No other
+module under `pyforge.mason` may define a module-level
 `EXIT_*` name -- enforced by `tests/meta/test_exit_code_ownership.py`, which
 mirrors `test_dependency_direction.py`'s AST-based approach.
 
@@ -20,8 +23,9 @@ escaped a command. Also the correction of the pre-Story-1.3 `EXIT_INTERNAL =
 70` (EX_SOFTWARE), which contradicted AD-7/FR-33's mandated `1`."""
 
 EXIT_USAGE = 2
-"""A usage error: a bare noun with no verb, or an argparse-rejected
-invocation. Matches argparse's own convention."""
+"""A usage error: a bare noun with no verb, an argparse-rejected invocation,
+or `main()`'s conservative fallback for a `SystemExit` carrying a non-integer
+payload. Matches argparse's own convention."""
 
 EXIT_CFE_UNAVAILABLE = 3
 """The CFE root could not be resolved for a CFE-dependent command. Defined

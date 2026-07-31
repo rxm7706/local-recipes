@@ -30,8 +30,9 @@ class MasonError(Exception):
     """Base class for every anticipated Mason failure.
 
     `identifier` must be a string matching `_IDENTIFIER_PATTERN`, and
-    `message` must be non-empty and state what failed and what to do next
-    (NFR-14); construction raises `ValueError` for either violation, since
+    `message` must be a string with non-whitespace content that states what
+    failed and what to do next (NFR-14); construction raises `ValueError`
+    for either violation, since
     an unvalidated identifier or a message with nothing to say is exactly
     the drift AD-7 and NFR-14 exist to prevent.
     """
@@ -42,10 +43,10 @@ class MasonError(Exception):
                 f"invalid MasonError identifier {identifier!r}: must be a string "
                 f"matching {_IDENTIFIER_PATTERN.pattern!r} (e.g. 'cfe:unresolved')"
             )
-        if not message:
+        if not isinstance(message, str) or not message.strip():
             raise ValueError(
-                "MasonError message must be non-empty: it must state what failed "
-                "and what to do next (NFR-14)"
+                "MasonError message must be a non-empty string: it must state "
+                "what failed and what to do next (NFR-14)"
             )
         self.identifier = identifier
         self.message = message

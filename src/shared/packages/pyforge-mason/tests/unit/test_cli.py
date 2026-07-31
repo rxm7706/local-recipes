@@ -1,8 +1,14 @@
-"""Story 1.2 — the noun -> verb tree, global flags, and exit-code ownership.
+"""Stories 1.2 + 1.3 + 1.4 — the noun -> verb tree, global flags, the
+exit-code / MasonError projection in main(), and doctor's dual-output contract.
 
-Story 1.4 extends this file with `doctor`'s dual-output-format contract:
-its stub result now flows through `render.write` (AD-8) instead of a raw
-stderr `print()`, so the doctor tests below assert on stdout, not stderr.
+Story 1.3 (error taxonomy) was DEFERRED when 1.4 landed, so 1.4 was built
+without it and this file carried only 1.2 + 1.4. 1.3 was recovered on
+2026-07-31; the two touch main()'s error handling from opposite ends, so the
+docstring names all three rather than whichever landed last.
+
+Note the stream split 1.4 established and 1.3 must not undo: `doctor`'s stub
+result flows through `render.write` to STDOUT (AD-8), while a MasonError and a
+bare-noun usage error go to STDERR. The doctor tests below assert on stdout.
 """
 
 from __future__ import annotations
@@ -188,15 +194,20 @@ def test_mason_error_raised_in_main_prints_message_and_returns_exit_failed(monke
     failure (AD-7): its `identifier: message` goes to stderr, no traceback,
     and the process exits EXIT_FAILED -- same monkeypatch pattern as the
     KeyboardInterrupt/RuntimeError cases above. No verb dispatch exists yet
-    (later epics), so this proves the handler itself, not a dispatch path."""
+    (later epics), so this proves the handler itself, not a dispatch path.
+    The identifier is deliberately synthetic: pinning a real one like
+    `cfe:unresolved` -> EXIT_FAILED would pre-break Story 1.7, which maps
+    CFE-unavailable to EXIT_CFE_UNAVAILABLE (3)."""
     monkeypatch.setattr(
         "pyforge.mason.cli.build_parser",
-        lambda: (_ for _ in ()).throw(MasonError("cfe:unresolved", "no CFE root found")),
+        lambda: (_ for _ in ()).throw(
+            MasonError("test:injected-failure", "synthetic anticipated failure")
+        ),
     )
     rc = main([])
     assert rc == EXIT_FAILED
     err = capsys.readouterr().err
-    assert err.strip() == "cfe:unresolved: no CFE root found"
+    assert err.strip() == "test:injected-failure: synthetic anticipated failure"
     assert "Traceback" not in err
 
 

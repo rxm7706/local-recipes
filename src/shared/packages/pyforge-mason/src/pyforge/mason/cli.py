@@ -42,9 +42,11 @@ from .errors import MasonError
 from .exit_codes import EXIT_FAILED, EXIT_INTERRUPTED, EXIT_OK, EXIT_USAGE
 
 # main() is the sole owner of the process exit code. A verb never calls
-# sys.exit() directly; it returns an int and main() projects it. The five
-# possible codes live in exit_codes.py (AD-7) -- this module only imports
-# the names it uses.
+# sys.exit() directly; it returns an int and main() projects it. The
+# exit-code contract lives in exit_codes.py (AD-7) -- this module imports
+# only the names it produces today (EXIT_CFE_UNAVAILABLE arrives with Story
+# 1.7), and an argparse-raised SystemExit's own code (0 or 2) passes through
+# in main()'s handler.
 
 _NOUNS = {
     "recipe": "author, validate and build conda recipes (wraps the conda-forge-expert craft)",
