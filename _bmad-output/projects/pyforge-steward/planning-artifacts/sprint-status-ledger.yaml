@@ -15,8 +15,8 @@
 # stories: 26
 development_status:
   1-1-steward-exists-as-an-installable-cli: done
-  1-2-credentials-never-attach-outside-their-declared-host-and-the-jfrog-leak-can-never-recur-silently: backlog
-  1-3-secrets-steward-stores-live-encrypted-in-git-never-as-plaintext: backlog
+  1-2-credentials-never-attach-outside-their-declared-host-and-the-jfrog-leak-can-never-recur-silently: done
+  1-3-secrets-steward-stores-live-encrypted-in-git-never-as-plaintext: done
   1-4-rotating-a-key-never-breaks-what-already-trusted-it: backlog
   1-5-the-operator-can-see-every-credential-steward-knows-about-never-a-secret-value: backlog
   1-6-the-operator-can-ask-is-anything-host-unscoped-right-now-and-get-a-real-answer: backlog

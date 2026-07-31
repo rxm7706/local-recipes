@@ -28,15 +28,41 @@
 # pyforge-* package's manifests are complete) rather than another station's suite,
 # which would pass regardless of genesis and guarantee a false green. Replace when
 # Story 1.1 creates the package.
+#
+# ==========================================================================
+# RETIRED 2026-07-30 — THIS STATION DOES NOT RUN.
+# ==========================================================================
+# `pyforge-genesis` is the CONSTITUTIVE project: it records the operating model
+# and ships nothing. Its `epics.md` has said so since the 2026-07-28 split
+# ("No epics, and that is the contract"). There are no stories here to gate.
+#
+# The reasoning above was SOUND for the world it was written in, and is kept
+# because the pattern is reusable: `pyforge-deps-test` really is the right gate
+# for a package-creating story, because it discovers `src/shared/packages/pyforge-*`
+# by glob and therefore covers a package the day it lands -- and because a story
+# cannot be gated by the pixi env it is creating (`--frozen` forbids the solve).
+# What was stale was only its premise line, "genesis has no package yet (0/36
+# stories)", which predates the split.
+#
+# The 36 installer stories moved to pyforge-marshal's feed as epics 7-12, and
+# marshal's `verify_commands` gained `pyforge-deps-test` as its second entry for
+# exactly this reason. See `pyforge-marshal/planning-artifacts/marshal-policy.toml`.
+#
+# The feed retirement is the load-bearing half: until 2026-07-30 this project's
+# `sprint-status.yaml` still listed all 36 stories, and bmad-loop reads it, so
+# launching this home would have built a package for a project that ships none.
+#
+# `verify_commands` is left EMPTY deliberately rather than deleted. An empty list
+# renders an empty `[verify]` block, which bmad-loop treats as "no verify gate" --
+# and with no stories to dispatch there is nothing for a gate to protect. If a
+# story ever appears in this project's feed again, that is the drift signal
+# genesis's own epics.md tells you to check for, not a policy to fill in.
 
 # gate_mode: unattended (operator direction, 2026-07-26). This is the HUMAN approval
 # gate ONLY -- the independent reviewer still runs on every story.
 gate_mode = "none"
 
 
-# verify_commands: THIS station's own suite. Every home except atlas and warden was
-# cloned from warden's and inherited `pyforge-warden-test`, so a story here would have
-# gone green on warden's tests while this station's own never ran.
-verify_commands = [
-  "pixi run --frozen -e pyforge-ci pyforge-deps-test",
-]
+# verify_commands: EMPTY — retired, see the block above. This station has no
+# stories; its buildable work runs from pyforge-marshal's feed as epics 7-12.
+verify_commands = []

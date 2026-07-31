@@ -749,6 +749,17 @@ _bmad-output/projects/*/.bmad-config.user.toml
 .viz/
 .bmad-loop/runs/
 .bmad-loop/cache/
+# bmad-loop writes the story's HEAD commit hash to this file at the run-worktree
+# root and never removes it. It has no in-repo producer or consumer (`grep -rn
+# claude_hash` across scripts, hooks, .bmad-loop/ and settings finds neither), and
+# it was NOT gitignored -- so the loop's own `git add -A` swept it into a merge
+# commit and it rode onto loop/pyforge-scribe. Scribe's Story 1.2 review predicted
+# exactly that ("any later `git add -A` automation would sweep it into a commit")
+# and the prediction came true in the same run that made it; the entry is now
+# DW-1-2-* in that project's tracked deferred-work ledger. The real fix belongs
+# upstream in bmad-loop (write it outside the worktree, or ignore it there); this
+# line is the local containment so it cannot reach main again.
+claude_hash.txt
 # Derived artifact (Story 1.10, AD-12/AD-35): rendered whole from the
 # canonical EffectivePolicy by adapters/harness_bmadloop.py on every write --
 # never hand-edited, never tracked (closes the F-1 cross-project bleed where
@@ -759,3 +770,10 @@ _bmad/_memory/
 
 # Parked artifact-fork evidence dirs (local-only Tier-3 copies; see each dir's README)
 _bmad-output/projects/*/_root-fallback-fork-*/
+
+# pyforge-herald: repo-local bridge state (Story 1.4, AD-5) -- the operational
+# etag/state store `herald deck` reads and writes, never the source of truth
+# for anything git tracks. Root-anchored: AD-5 puts the store at the repo
+# root only, and an unanchored pattern would silently swallow any future
+# tracked `.herald/` test fixture deeper in the tree.
+/.herald/

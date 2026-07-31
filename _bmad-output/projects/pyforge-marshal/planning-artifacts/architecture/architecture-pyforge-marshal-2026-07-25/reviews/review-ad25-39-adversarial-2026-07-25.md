@@ -7,10 +7,106 @@ target: planning-artifacts/architecture.md § Invariants & Rules (AD-25..AD-39)
 also-checked: planning-artifacts/prd.md (FR-22, FR-50 edits + adjacent FRs), planning-artifacts/epics.md (propagation)
 reviewer-posture: default-skeptical; findings are CONFIRMED-broken unless tagged otherwise
 created: 2026-07-25
-verdict: CRITICALS-RESOLVED
+updated: 2026-07-30
+verdict: ALL-RESOLVED
 ---
 
 # Adversarial review — AD-25 through AD-39
+
+> ## Resolution — 2026-07-30 (verification pass + amendment pass)
+>
+> **Every remaining finding is now dispositioned.** Verdict moves
+> `CRITICALS-RESOLVED` → `ALL-RESOLVED`. Each of the 26 open findings was
+> re-verified **against the live documents and the shipped code** before being
+> touched — the same by-hand protocol as the deferred-work campaign, and it paid
+> the same way: **3 were already closed and 1 CRITICAL believed closed was not.**
+>
+> ### The thing worth reading first
+>
+> **F-2 — a CRITICAL marked resolved on 2026-07-25 was still live in the story
+> that implements it.** The 2026-07-25 pass amended `AD-30` in `architecture.md`
+> to scoped unevaluability, but **epics S-3.2 still carried the original clause
+> verbatim**: *"an unparseable line is quarantined … and does **not** make
+> surrounding run state unevaluable."* A builder taking S-3.2 as the contract —
+> which is exactly what `bmad-loop` hands a dev session — would have implemented
+> the legislated false green the CRITICAL fix existed to remove, in the one
+> artifact AD-5 declares the sole source of run truth. Fixing an AD is not
+> fixing the story. Epic 3 had not been re-derived after the amendment, so **the
+> only stories that got the fix were the ones already in flight** (S-1.2 and
+> S-1.3 both carry their corrections correctly).
+>
+> Same class, same story: S-3.1 still carried `seq`, `O_EXCL`, `(seq, ts)` and
+> "lexicographically sortable" — all four superseded by the F-6 and F-30/F-31
+> resolutions — plus a concurrency test asserting "zero malformed lines", which
+> **tests atomicity, not identity, and would have passed while the id invariant
+> was violated**. That is the review's own words about the pre-fix design; the
+> test survived the fix unchanged.
+>
+> ### Already closed by the CRITICAL pass (verified, no action)
+>
+> | # | Why it was already closed |
+> |---|---|
+> | **F-8** | `AD-26` now carves out `EffectivePolicy.seed_view()`; the shipped `tests/meta/test_ad26_seed_field_access_guard.py` enforces it, and epics S-1.3 carries the reconciled AC. |
+> | **F-19** | Both halves fell to the F-3 and F-5 fixes. The PRD glossary's "a set of files **a prior story** declared" is correct again under AD-27's narrowing table, and UJ-2 is reachable end to end: its freeze is declarable in any gate mode, and its `gate evaluate --scope-check` exits 0 on the policy-seed fold. |
+> | **F-27** | `AD-35` now defines the per-home **`current` pointer file** — atomic rewrite, `marshal config` resolves through it. |
+>
+> ### New findings, introduced BY the CRITICAL fixes
+>
+> The review predicted this class in its own "Pattern" note — *the new ADs
+> amended the rule that was wrong without amending the rules that depended on
+> it.* The fixes reproduced it:
+>
+> | # | Sev | Finding |
+> |---|---|---|
+> | **N-1** | HIGH | **Three normative statements of the journal total order.** AD-28 said `(ts, writer_id, counter)`; AD-30 said `(seq, writer_id, counter)`; the Consistency Conventions table said `(seq, ts)`. `seq` is the pre-F-6 global integer whose removal was the entire point of F-6 — it survived in two places, one of them normative. Unified on `(ts, writer_id, counter)`; every `seq` reference removed. |
+> | **N-2** | HIGH | **The Journal-entries convention row was never propagated.** It still specified `{id, seq, ts, …}` with `phase ∈ intent\|outcome` — the exact two-valued shape F-6 replaced, and the row a builder is most likely to implement from. |
+>
+> ### Dispositions
+>
+> All remaining findings amended in `architecture.md` (22 edits), `prd.md`
+> (9) and `epics.md` (12). Two required an operator decision and got one:
+>
+> - **F-7 — the conformance matrix is TRACKED, keyed by host** (`planning-artifacts/conformance/matrix/<hostname>.md`). AD-37's machine-scoped reading contradicted FR-45's "tracked", NFR-8, **and a sentence in the architecture's own Operational envelope** — for the single artifact SM-6 measures the product on. Raw probe records stay machine-scoped; they are host facts, not claims.
+> - **F-14 — durability may be satisfied by a LOCAL ref.** The predicate named only "pushed to the remote, or merged to the integration branch", and C-4 forbids the second `main` checkout that would make the local merge possible — so the only real route was a network push NFR-2 does not permit, and an **offline operator's every teardown would refuse**, training the refusal gate away. A declared durable local ref keeps NFR-2 intact and keeps the refusal meaningful.
+>
+> The remaining HIGH/MED were single-document contradictions with one defensible
+> reading each: **F-9** (S-2.3 gains `S-3.2`; it declared a dependency on a
+> component in the next epic), **F-10** (two codes, not one code classified two
+> ways — the shipped `classify(code: str)` already implements the declared
+> signature, so the *behaviour* was the unimplementable half), **F-11**
+> (`not-applicable` deleted; link-target identity is itself falsifiable, which
+> AD-36 half-stated), **F-12** (AD-23 admits the suffix the pinned harness's own
+> CLI accepts, and normalization **preserves** it), **F-13** (`M` is counted
+> pre-parse — otherwise the guarantee reports "18 of 18" while reproducing the
+> incident), **F-15** (egress = durable/third-party sink; process spawn carved
+> out, since a child needs its credentials), **F-16** (`adapters → core`
+> authorized — the shipped import-linter contract already permits it; only the
+> declaration forbade it), **F-17** (an open intent classifies `warn`, exempt
+> from AD-21's exit-0 clause), **F-18** (FR-50 gains the per-epic surface key),
+> **F-20** (AD-18 tagged `[SUPERSEDED BY AD-34]`), **F-21** (AD-14 gains
+> `data_version`, which the conventions table and the shipped envelope both
+> already had), **F-22** (severity is presentational *within the bound the
+> verdict sets* — which is what the shipped meta-test already asserts), **F-23**
+> (the *stop condition* must be externally reachable, not merely accompanied),
+> **F-24** (`stale-evidence`, non-blocking — `unevaluable` made a graceful
+> degradation a run halt), **F-25** (session gate records bind to a `run_id`
+> when supplied, so SM-1 is provable for hand-landed stories), **F-26** (the
+> real project path is named; the gitignored symlink is not), **F-28** (the
+> supervisor's *inputs* are observation-only; its writes are the journal plus a
+> closed control set — FR-12 requires nudge/stop-and-retry), **F-29** (cites
+> AD-29, whose predicate superseded AD-13's), **F-30/F-31/F-32** (per-slug
+> sortability; `mkdir` not `O_EXCL`; and the doc facts, which had drifted
+> **further** — "seven loop homes" is now **nine**, "92 skills" is **89** of 93
+> directories).
+>
+> **Method note.** Three findings were confirmed *by the shipped code rather
+> than by the document*: F-10 (`verdict.py:classify(code: str)` implements the
+> code-only signature, proving the context-dependent behaviour unimplementable),
+> F-16 (`[tool.importlinter]` forbids only `core → adapters`, so the code had
+> already settled the edge the doc still forbade), and F-22
+> (`test_ok_status_with_error_severity_finding_raises` already asserts the
+> monotone reading). Where doc and code disagreed, the **code was right every
+> time** — the amendments moved the documents.
 
 > ## Resolution — 2026-07-25
 >

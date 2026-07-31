@@ -237,3 +237,9 @@ Enterprise routing (JFrog Artifactory, internal mirrors) is **runtime-driven** v
 Repo-wide pointers:
 - **`_bmad-output/PROJECTS.md`** — BMAD multi-project index.
 - **Auto-memory** — `~/.claude/projects/-home-rxm7706-UserLocal-Projects-Github-rxm7706-local-recipes/memory/MEMORY.md` indexes accumulated feedback (skill disambiguation, recipe pin-loosening, .bat shim rules, BMAD multi-project pattern) and project context.
+
+## Team Memory
+
+This repo carries a checked-in team-memory index at `.claude/memory/MEMORY.md` — one-line entries capturing team-relevant decisions, feedback, and reference material as reviewable prose (see `.claude/memory/README.md` for the schema and promotion workflow). It is imported below so the index is in context for every session. The import line must stay bare — a backticked `@path` is an inert code span, not an import.
+
+@.claude/memory/MEMORY.md
