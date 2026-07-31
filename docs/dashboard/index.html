@@ -686,7 +686,7 @@
     <div class="cbstatus">
       <span class="cchip cslot-l" id="chip-ship"><span class="cdot"></span><span class="ctext">last shipped <b>—</b></span></span>
       <span class="cchip cslot-c" id="chip-run"><span class="cdot"></span><span class="ctext">running <b>—</b></span></span>
-      <span class="cchip cslot-r" id="chip-gen"><span class="cdot"></span><span class="ctext">generated <b>—</b></span></span>
+      <span class="cchip cslot-r" id="chip-gen"><span class="cdot"></span><span class="ctext">Refreshed <b>—</b></span></span>
     </div>
   </div>
 
@@ -1477,12 +1477,19 @@
     const TZ = Intl.DateTimeFormat().resolvedOptions().timeZone || "America/New_York";
     const localStamp = (epochSec) => new Date(epochSec * 1000).toLocaleString([], {
       timeZone: TZ, month: "short", day: "numeric",
-      hour: "2-digit", minute: "2-digit", hour12: false,
+      hour: "numeric", minute: "2-digit", hour12: true,
     });
+    // Show the STANDARD-time abbreviation year-round (CST, not CDT), by operator
+    // preference: CDT is the correct label for July, but people read and say
+    // "CST" for the zone. The true abbreviation and the UTC stamp both stay in
+    // the tooltip, so nothing precise is lost — only the face of the chip is
+    // colloquial. Guarded to the X_DT -> X_ST pattern so a zone that does not
+    // use that form (e.g. "GMT+5:30") is passed through untouched.
     const zoneAbbr = (epochSec) => {
-      const p = new Intl.DateTimeFormat([], { timeZone: TZ, timeZoneName: "short" })
+      const part = new Intl.DateTimeFormat([], { timeZone: TZ, timeZoneName: "short" })
         .formatToParts(new Date(epochSec * 1000)).find(x => x.type === "timeZoneName");
-      return p ? p.value : TZ;
+      const abbr = part ? part.value : TZ;
+      return /^[A-Z]DT$/.test(abbr) ? abbr.replace("DT", "ST") : abbr;
     };
     const genEl = document.getElementById("chip-gen");
     const genTxt = st.generatedEpoch
@@ -1494,16 +1501,17 @@
     // the two boards this is, because they answer different questions by design:
     // `local` sees the gitignored Tier-3 feeds and therefore in-flight state;
     // `published` is rebuilt on GitHub Pages from git history alone and cannot.
-    const SOURCE_LABEL = { "sprint-status": "local", "git": "published" };
-    const srcTxt = SOURCE_LABEL[st.source] || st.source || "?";
+    // The chip says only WHEN. Which board this is, and what it can or cannot
+    // see, moved to the tooltip: it matters when the two disagree, not on every
+    // glance, and it was crowding the one fact the chip exists to show.
     if (genEl) {
-      genEl.title = `generated ${st.generatedAt || ""} (UTC)\n`
+      genEl.title = `refreshed ${st.generatedAt || ""} (UTC)\n`
         + (st.source === "git"
             ? "published board — rebuilt on GitHub Pages from git history; cannot see in-flight state"
             : "local board — reads the gitignored Tier-3 sprint feeds, so it sees in-flight state")
         + `\n(generator --source ${st.source})`;
     }
-    set("chip-gen", "", `generated <b>${genTxt}</b> · ${srcTxt}`);
+    set("chip-gen", "", `Refreshed <b>${genTxt}</b>`);
 
     if (!st.runningAvailable) {
       // Honest absence, not silence: in-flight state comes from ~/.bmad-loops and
