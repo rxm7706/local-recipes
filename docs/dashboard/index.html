@@ -91,16 +91,15 @@
   .consolebar { margin: 0 0 22px; padding: 0; background: var(--panel);
     border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
   .cbrow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 9px 12px; }
-  /* CHIPS ARE A GRID, not a flex row. Flex + `white-space: nowrap` + three
-     data-driven strings of unpredictable length kept colliding: each chip is an
-     atomic nowrap box, so when the row cannot fit them the overflow has nowhere
-     legal to go and they run together. A grid gives every chip its OWN column
-     track that no sibling can enter, so overlap is structurally impossible
-     rather than merely unlikely. auto-fit + minmax collapses 3 columns -> 2 -> 1
-     as the viewport narrows, and each chip truncates inside its own track. */
+  /* Chips: a simple wrapping flex row, LEFT-aligned and not truncated.
+     Earlier versions tried nowrap+ellipsis (text cut to "SPRINT…" with room to
+     spare) and then an auto-fit grid (three 1fr tracks flung the chips to
+     opposite edges of a wide bar and STILL truncated). Both were solving an
+     overflow that does not happen at real widths: the three strings total
+     ~110 characters at 11px. Let them sit together and wrap if they must. */
   .cbstatus { border-top: 1px solid var(--line); background: var(--panel-2);
-    display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
-    gap: 6px 18px; padding: 8px 12px; align-items: center; }
+    display: flex; flex-wrap: wrap; align-items: center; gap: 8px 26px;
+    padding: 8px 12px; }
   .cprompt { font-family: var(--mono); font-size: 12.5px; letter-spacing: 0.02em;
     color: var(--slate); flex: none; }
   .cprompt .prompt { color: var(--accent); transition: color .3s; }
@@ -120,11 +119,13 @@
   .cbtn:hover { color: var(--ink); border-color: var(--accent-dim); }
   .cbtn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   .chip { font-family: var(--mono); font-size: 11px; color: var(--ink-soft);
-    display: flex; align-items: center; gap: 6px; min-width: 0; }
-  /* the text truncates; the dot never does */
-  .chip > span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    display: inline-flex; align-items: center; gap: 7px; }
+  /* The dot is a fixed circle. `flex: none` alone was not enough — as a flex
+     child it still stretched into an oval, which is what made the running chip
+     render as a coloured pill with no visible text. Pin all three axes. */
+  .chip .dot { flex: 0 0 auto; width: 7px; height: 7px; min-width: 7px;
+    border-radius: 50%; background: var(--slate); }
   .chip b { color: var(--ink); font-weight: 600; }
-  .chip .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--slate); flex: none; }
   .chip.live .dot { background: var(--accent); animation: pulse 2s ease-in-out infinite; }
   .chip.stale b { color: var(--slate); }
   @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .35; } }
@@ -646,9 +647,9 @@
       <button class="cbtn" id="tt" type="button" aria-label="Toggle theme">◐ theme</button>
     </div>
     <div class="cbstatus">
-      <span class="chip" id="chip-gen"><span class="dot"></span><span>generated <b>—</b></span></span>
-      <span class="chip" id="chip-run"><span class="dot"></span><span>running <b>—</b></span></span>
-      <span class="chip" id="chip-ship"><span class="dot"></span><span>last shipped <b>—</b></span></span>
+      <span class="chip" id="chip-gen"><span class="dot"></span><span class="ctext">generated <b>—</b></span></span>
+      <span class="chip" id="chip-run"><span class="dot"></span><span class="ctext">running <b>—</b></span></span>
+      <span class="chip" id="chip-ship"><span class="dot"></span><span class="ctext">last shipped <b>—</b></span></span>
     </div>
   </div>
 
@@ -1403,7 +1404,12 @@
       const el = document.getElementById(id);
       if (!el) return;
       el.className = "chip" + (cls ? " " + cls : "");
-      el.querySelector("span:last-child").innerHTML = html;
+      // Target the text span BY CLASS. This was `querySelector("span:last-child")`,
+      // which is ambiguous inside a chip and matched the DOT — the text was being
+      // injected into a 7px circle, which stretched it into a coloured pill with
+      // no readable label (exactly how the running chip rendered).
+      const slot = el.querySelector(".ctext");
+      if (slot) slot.innerHTML = html;
     };
     if (!st) { set("chip-gen", "stale", "generated <b>unknown</b>"); return; }
 
