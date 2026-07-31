@@ -72,6 +72,9 @@ a detector that cannot run reports unknown, never green).
 """
 from __future__ import annotations
 
+# Registry declaration — see scripts/detectors.py. `repo`: reads tracked files only.
+DETECTOR = {"scope": "repo"}
+
 import contextlib
 import functools
 import http.server

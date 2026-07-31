@@ -50,6 +50,9 @@ Usage: ``pixi run -e local-recipes deferred-work-check [-- --json]``
 
 from __future__ import annotations
 
+# Registry declaration — see scripts/detectors.py. `repo`: reads tracked files only.
+DETECTOR = {"scope": "repo"}
+
 import argparse
 import json
 import re

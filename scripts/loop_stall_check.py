@@ -47,6 +47,9 @@ EXIT
 """
 from __future__ import annotations
 
+# Registry declaration — see scripts/detectors.py. `runtime`: reads host state (gitignored Tier-3 sprint feeds / tmux / ~/.bmad-loops), so CI cannot run it.
+DETECTOR = {"scope": "runtime"}
+
 import argparse
 import json
 import subprocess

@@ -20,6 +20,9 @@ Exit codes: 0 clean, 1 drift found, 2 missing input file.
 """
 from __future__ import annotations
 
+# Registry declaration — see scripts/detectors.py. `repo`: reads tracked files only.
+DETECTOR = {"scope": "repo"}
+
 import argparse
 import json
 import re

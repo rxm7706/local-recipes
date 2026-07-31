@@ -1,0 +1,122 @@
+name: Detectors
+
+# Runs the repo-scope detector suite on every PR and every push to main.
+#
+# WHY THIS FILE DID NOT EXIST UNTIL 2026-07-31, which is the point of it: this
+# repo had NINE detectors, seven pixi tasks, three rows on the dashboard, and
+# ZERO automatic invocations. `EXEMPLAR-STANDARD.md` says of `dream_chain_check`
+# that it "exits non-zero so it gates CI" — it gated nothing, because nothing
+# ran it. Every green anyone reported was hand-run, by whoever remembered.
+#
+# The cost was not theoretical. PR #170 broke `spec_surface_check` (it changed a
+# file governed by spec-pyforge-genesis without moving that Spec's memlog) and
+# merged green, because the only check that ran was the staged-recipes linter.
+#
+# WHAT RUNS. `detectors-ci` = the scope=repo subset, discovered from the
+# filesystem by scripts/detectors.py rather than listed here — a second
+# hand-written list in this file would reproduce the exact defect the registry
+# exists to prevent, and would omit the next detector somebody adds.
+#
+# WHAT DOES NOT RUN, and why it is not an oversight: the scope=runtime pair
+# (dashboard-drift-check, loop-stall-check) reads gitignored Tier-3 sprint
+# feeds, tmux, and ~/.bmad-loops. None of that exists on a runner. Those
+# detectors observe what the factory DID, and the factory has no durable
+# observation plane yet — see docs/dreams/fidelity-enforcement.md. Their absence
+# here is that gap, surfacing as a deployment constraint.
+#
+# ADVISORY, NOT BLOCKING — operator decision 2026-07-31. Findings surface as
+# GitHub warning annotations and a job summary; the job itself always succeeds,
+# so a detector finding never blocks a merge.
+#
+# State that plainly rather than letting the green tick imply more than it means:
+# this is FAST FEEDBACK, not a gate. docs/dreams/fidelity-enforcement.md holds
+# that "a contract that nothing can fail against is a plan", and by its own test
+# an advisory check is the weaker thing. It is still a large step up from what
+# preceded it — nothing ran these at all, and PR #170 merged a real
+# spec_surface_check break unnoticed — but it is deliberately short of a gate,
+# and the Dream records that as an open decision rather than a settled one.
+#
+# To make it gate later: delete the `|| true`, drop the annotation plumbing, and
+# let the runner's exit code stand (0 pass · 1 findings · 2 could-not-run — 2
+# being "could not look", which must never read as success).
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: detectors-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  detectors:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # story_status_check reads commit SUBJECTS on main to confirm a `done`
+          # story is backed by a real merge; a shallow clone silently narrows
+          # what it can see and would let a false green through.
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+
+      # Deliberately NOT pixi. The repo-scope detectors are stdlib + PyYAML and
+      # shell out to git alone — the same property that lets generate.py run them
+      # directly at deploy time. The `local-recipes` env is ~1102 packages /
+      # ~9.8 GB, which is a poor trade for a suite that finishes in ten seconds.
+      - name: Install detector dependencies
+        run: python -m pip install --quiet pyyaml playwright
+
+      # check_layout drives headless Chrome. ubuntu-latest ships google-chrome,
+      # which the detector prefers via channel="chrome" before falling back to a
+      # playwright-managed chromium. If neither resolves, check_layout reports
+      # UNKNOWN and the runner exits 2 — surfaced as a warning here, rather than
+      # quietly skipping the one check that asserts the bar LOOKS right.
+      - name: Verify a browser is present for the layout gate
+        run: |
+          which google-chrome || which chromium || \
+            python -m playwright install --with-deps chromium
+
+      # Registry integrity is reported first and separately, so a hole in the
+      # registry reads as "the registry is wrong" rather than as a finding from
+      # some detector.
+      - name: Registry integrity
+        run: python scripts/detectors.py --list || true
+
+      - name: Run repo-scope detectors
+        run: |
+          set +e
+          python scripts/detectors.py --scope repo 2>&1 | tee detectors.out
+          rc=${PIPESTATUS[0]}
+          set -e
+
+          {
+            echo "## Detectors — repo scope"
+            echo
+            echo '```'
+            sed -n '1,40p' detectors.out
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          # One annotation per detector that reported, so findings are visible on
+          # the PR without opening the log. Advisory: the step still exits 0.
+          grep -E '^\s+(✗|\?) ' detectors.out | while read -r line; do
+            echo "::warning title=Detector::${line}"
+          done || true
+
+          case "$rc" in
+            0) echo "All repo-scope detectors passed." ;;
+            1) echo "::warning title=Detectors::Findings reported (advisory — not blocking). See the job summary." ;;
+            2) echo "::warning title=Detectors::A detector COULD NOT RUN — unknown, not green. See the job summary." ;;
+            *) echo "::warning title=Detectors::Runner exited ${rc}." ;;
+          esac
+          exit 0

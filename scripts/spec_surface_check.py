@@ -21,6 +21,9 @@ Pixi:   pixi run -e local-recipes spec-surface-check
 """
 from __future__ import annotations
 
+# Registry declaration — see scripts/detectors.py. `repo`: reads tracked files only.
+DETECTOR = {"scope": "repo"}
+
 import argparse
 import hashlib
 import json

@@ -424,6 +424,22 @@ cmd = "python scripts/seed_claude_consent.py"
 description = "Detector: every tracked file is governed by a spec surface: manifest or explicitly allowlisted (scripts/spec_surface_allowlist.txt), and no governed file drifted without its spec's memlog moving. Exits non-zero on findings. Reconcile: update the spec (bmad-spec re-derive), then -- --write-baseline. Contract: spec-regenerable-factory CAP-3."
 cmd = "python scripts/spec_surface_check.py"
 
+[feature.local-recipes.tasks.dream-chain-check]
+description = "Detector: the Dream-to-Code operating model holds — INV-0 every Spec declares owner-dream, INV-1 every Dream has a Spec (no status exempt), INV-2 the chain lives in the owning Smith's project, INV-3 the 6.10 sharded build tree. Rolls findings up BY OWNER, which is the accountability unit. Exits non-zero; the findings ARE the migration backlog. Flags: -- --json, -- --inv INV-2. Contract: _bmad-output/EXEMPLAR-STANDARD.md."
+cmd = "python scripts/dream_chain_check.py"
+
+[feature.local-recipes.tasks.dashboard-layout-check]
+description = "Detector: the Guildhall console bar LOOKS right, not merely that its JavaScript runs (which is all check_render.js proves). Asserts chip edges, no overlap per row, one row above the 720px breakpoint, and no chip clipping its own label — across 6 viewport widths x 5 font-pressure steps via headless Chrome. Font pressure rather than live content, because both bugs it was written for are a function of text width and the live board is whatever it happens to be that minute. Reports UNKNOWN (exit 2) without a browser rather than claiming green. Contract: docs/dreams/fidelity-enforcement.md."
+cmd = "python docs/dashboard/check_layout.py"
+
+[feature.local-recipes.tasks.detectors]
+description = "Run EVERY detector, discovered from the filesystem rather than a hand-written list — the registry fails on its own gaps (a detector with no pixi task, or a check script declaring no scope). Exit 0 pass, 1 findings, 2 could-not-run: a detector that cannot run reports unknown, NEVER green. Flags: -- --scope repo|runtime|all, -- --list, -- --json."
+cmd = "python scripts/detectors.py"
+
+[feature.local-recipes.tasks.detectors-ci]
+description = "The CI-safe detector subset: scope=repo only, i.e. those reading tracked files alone. The scope=runtime pair (dashboard-drift-check, loop-stall-check) is excluded because it observes gitignored Tier-3 feeds, tmux and ~/.bmad-loops, which do not exist on a runner — that exclusion is the missing observation plane showing up as a deployment constraint, not a convenience."
+cmd = "python scripts/detectors.py --scope repo"
+
 [feature.local-recipes.tasks.deck-export]
 description = "Regenerate a presentation deck's derived export artifacts (standalone infographic HTML + PPTX) from its Marp .md sources via marp — keeps the § Standard export set reproducible. Usage: pixi run -e local-recipes deck-export <slug> [html|deck-pptx|infographic-pptx ...] (default: all). PPTX needs Chrome. See docs/specs/presentation-deck.md."
 cmd = "python scripts/deck_export.py"
