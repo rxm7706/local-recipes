@@ -25,9 +25,18 @@ pixi run -e pyforge-marshal lint-imports --config src/shared/packages/pyforge-ma
 pixi run -e pyforge-marshal pyforge-marshal-build-conda   # .conda package via pixi-build-python
 pixi run -e pyforge-marshal pyforge-marshal-build-dist    # wheel + sdist via `python -m build`
 pixi run -e pyforge-marshal pyforge-marshal-build         # both of the above
+pixi run -e pyforge-marshal pyforge-marshal-smoke         # marshal --help/--version against the INSTALLED artifact (FR-56)
 ```
 
 The `pyforge-marshal` environment is lean by design (`no-default-feature`): it
 carries only the built package plus its conda run-dependencies (`python`,
-`pyyaml`, `tomlkit`, `psutil`, `jsonschema`), the build toolchain
+`pyyaml`, `tomlkit`, `psutil`, `jsonschema`, and the pinned `bmad-loop`
+harness the smoke task proves resolvable), the build toolchain
 (`hatchling`, `python-build`), a test runner (`pytest`), and `import-linter`.
+
+## Platforms
+
+Build and smoke targets: `linux-64` and `osx-arm64`. Windows support is
+WSL-first -- run Marshal inside WSL rather than as a native `win-64` build;
+native Windows is not a build/smoke target even where the pixi environment
+happens to resolve there.
