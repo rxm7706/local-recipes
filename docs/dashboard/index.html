@@ -104,19 +104,45 @@
      opposite edges of a wide bar and STILL truncated). Both were solving an
      overflow that does not happen at real widths: the three strings total
      ~110 characters at 11px. Let them sit together and wrap if they must. */
-  /* Three slots: last-shipped LEFT, running CENTRE, generated RIGHT.
-     `1fr auto 1fr` is what actually centres the middle chip — with
-     space-between, the centre drifts whenever the two outer strings differ in
-     length, which they always do. The outer tracks stay equal regardless, so
-     the running chip sits at the true midpoint. Collapses to a single
-     left-aligned column under 720px rather than squeezing three into a
-     phone width. */
+  /* TWO slots now: last-shipped LEFT, running RIGHT (operator call 2026-07-31).
+     "Refreshed <when>" moved up into .cbrow beside the REFRESH control it
+     describes, and with it the whole three-way split — and the centring problem
+     that came from it. Recorded because this bar has now been through five
+     layouts and each one lost the reason for the last:
+
+       nowrap+ellipsis      truncated to "SPRINT…" with room to spare
+       auto-fit 3x1fr       flung chips to opposite edges, still truncated
+       1fr auto 1fr         centred, but `1fr` splits FREE space — so a long
+                            string overflowed its equal share and the running
+                            chip was shoved right until it jammed against
+                            "Refreshed". Reproduced under font pressure at
+                            +4.5px (17px font), +69.5px (20px), +156.2px (24px).
+       minmax(max-content,) stopped the overflow but gave each side a different
+                            floor, so the longer side pushed the centre off the
+                            midpoint — the same bug, other shoe.
+       1fr auto (this)      no centre to defend. Left chip owns the slack and
+                            WRAPS if its text outgrows it; the running chip is
+                            content-sized and pinned right.
+
+     `minmax(0, 1fr)` on the left track (not bare `1fr`) is what lets it wrap
+     rather than overflow. Collapses to a single left-aligned column under 720px.
+
+     A 6px-wide running chip was chased through this template on 2026-07-31 with
+     a `minmax(max-content, auto)` track and a `min-width: max-content` on the
+     chip. BOTH WERE WRONG and are reverted: the width came from a colliding
+     `.live` class (see the note by `classList.remove` below), not from track
+     sizing. Recorded because the wrong fix looked like it worked at wide widths
+     and would have been inherited as fact. */
   .cbstatus { border-top: 1px solid var(--line); background: var(--panel-2);
-    display: grid; grid-template-columns: 1fr auto 1fr; align-items: center;
+    display: grid; align-items: center;
+    grid-template-columns: minmax(0, 1fr) auto;
     gap: 6px 20px; padding: 8px 12px; }
   .cslot-l { justify-self: start; }
-  .cslot-c { justify-self: center; }
+  .cslot-c { justify-self: end; }
   .cslot-r { justify-self: end; }
+  /* Relocated out of .cbstatus into .cbrow (a wrapping flex row): pushed to
+     the right edge so it sits under the REFRESH button it describes. */
+  .cslot-gen { margin-left: auto; }
   @media (max-width: 720px) {
     .cbstatus { grid-template-columns: 1fr; }
     .cslot-l, .cslot-c, .cslot-r { justify-self: start; }
@@ -159,12 +185,23 @@
      wrapped word by word. It is safe now because the centre grid track is
      `auto` — sized to its content — so the chip is never squeezed in the first
      place, and the outer `1fr` tracks absorb the slack. */
-  .ctext { white-space: nowrap; }
+  /* nowrap is scoped to the CENTRE chip only (2026-07-31). It is the one that
+     must never break mid-phrase, and it sits in an `auto` track sized to its
+     content so it is never squeezed. The OUTER chips must be free to wrap:
+     their tracks are `minmax(0, 1fr)` — deliberately equal, so the centre stays
+     on the true midpoint — which means a long outer string has to fold rather
+     than overflow into its neighbour. Wrapping an outer chip is the cost of a
+     centred running chip, and it is the right thing to spend. */
+  .ctext { white-space: normal; overflow-wrap: anywhere; }
+  /* The running chip never breaks mid-phrase — it previously stacked as
+     "running"/"Doctor"/"1.5"/"(dev)" on four lines. The outer chips stay
+     wrappable so a long label folds instead of overflowing its track. */
+  .cslot-c .ctext { white-space: nowrap; overflow-wrap: normal; }
   .cchip b { color: var(--ink); font-weight: 600; }
-  .cchip.live .cdot { background: var(--accent); animation: pulse 2s ease-in-out infinite; }
-  .cchip.stale b { color: var(--slate); }
+  .cchip.clive .cdot { background: var(--accent); animation: pulse 2s ease-in-out infinite; }
+  .cchip.cstale b { color: var(--slate); }
   @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .35; } }
-  @media (prefers-reduced-motion: reduce) { .cchip.live .cdot { animation: none; } }
+  @media (prefers-reduced-motion: reduce) { .cchip.clive .cdot { animation: none; } }
 
   h1 { font-family: var(--mono); font-weight: 600; letter-spacing: -0.01em;
     font-size: clamp(24px,4vw,34px); line-height: 1.05; margin: 0 0 4px; text-wrap: balance; }
@@ -680,13 +717,21 @@
       <button class="cbtn" id="cb-collapse" type="button" title="Collapse every panel">▾ collapse</button>
       <button class="cbtn" id="cb-expand" type="button" title="Expand every panel">▸ expand</button>
       <button class="cbtn" id="tt" type="button" aria-label="Toggle theme">◐ theme</button>
+      <!-- "Refreshed <when>" belongs with the REFRESH control, not in the status
+           row (operator call 2026-07-31). It answers "how current is this view?",
+           which is a property of the CONTROL BAR, whereas the status row answers
+           "what is the factory doing?". Keeping it in the status row also forced
+           a three-way split there and was the proximate cause of the running
+           chip being shoved off the midpoint. `margin-left: auto` parks it at
+           the right edge of whichever button line it lands on — directly under
+           REFRESH. -->
+      <span class="cchip cslot-gen" id="chip-gen"><span class="cdot"></span><span class="ctext">Refreshed <b>—</b></span></span>
     </div>
     <!-- Order is deliberate and matches how the bar is read: what LANDED (left),
          what is happening NOW (centre), when this view was made (right). -->
     <div class="cbstatus">
       <span class="cchip cslot-l" id="chip-ship"><span class="cdot"></span><span class="ctext">last shipped <b>—</b></span></span>
       <span class="cchip cslot-c" id="chip-run"><span class="cdot"></span><span class="ctext">running <b>—</b></span></span>
-      <span class="cchip cslot-r" id="chip-gen"><span class="cdot"></span><span class="ctext">Refreshed <b>—</b></span></span>
     </div>
   </div>
 
@@ -1357,7 +1402,18 @@
   }
 
   // ---- statusline, accent, footer ----
-  const lead = live[0] || shipped[shipped.length - 1];
+  // `lead` drives BOTH the `state:` line and the accent colour, so it must name
+  // the station a reader would say the board is "on". Until 2026-07-31 it was
+  // `live[0]` — the first in-build program in list order — which made the bar
+  // contradict itself: the running chip read the live RUN (Marshal 1.7) while
+  // `state:` two elements away read a ROSTER POSITION (loop/pyforge-doctor).
+  // Same bar, same question, two different sources. Prefer the project that is
+  // actually running, from the same `status.running` the chip uses, and fall
+  // back to list order only when nothing is live.
+  const _st = (window.DASHBOARD_DATA || {}).status || {};
+  const _runStation = ((_st.running && _st.running[0] || {}).station || "").toLowerCase();
+  const lead = (_runStation && live.find(e => String(e[0]).toLowerCase() === _runStation))
+    || live[0] || shipped[shipped.length - 1];
   if (lead) {
     root.setAttribute("data-project", lead[0]);
     branchEl.textContent = "state: " + lead[1].branch;
@@ -1448,7 +1504,15 @@
       // `cslot-*` grid placement (collapsing all three chips into one column),
       // and reading it back to re-add the slot threw in the render stub, where
       // `className` is undefined. classList touches neither.
-      el.classList.remove("live", "stale");
+      // State classes are `clive`/`cstale`, NOT `live`/`stale`. A bare `live`
+      // collides with the generic dot indicator at `.live { width:6px; height:6px;
+      // background: var(--active) }` further down this sheet — which silently gave
+      // the running chip an explicit 6px width and an orange fill, so its 232px
+      // label rendered outside its own box and the bar showed a lone coloured dot
+      // at the panel edge (2026-07-31). Same shape as the earlier `.chip`/`.dot`
+      // collision that forced the `c*` prefix in the first place: every class this
+      // component owns carries it, with no exceptions for state.
+      el.classList.remove("clive", "cstale");
       if (cls) el.classList.add(cls);
       // Target the text span BY CLASS. This was `querySelector("span:last-child")`,
       // which is ambiguous inside a chip and matched the DOT — the text was being
@@ -1457,7 +1521,7 @@
       const slot = el.querySelector(".ctext");
       if (slot) slot.innerHTML = html;
     };
-    if (!st) { set("chip-gen", "stale", "generated <b>unknown</b>"); return; }
+    if (!st) { set("chip-gen", "cstale", "generated <b>unknown</b>"); return; }
 
     const ago = (epochSec) => {
       const m = Math.max(0, Math.round((Date.now() / 1000 - epochSec) / 60));
@@ -1517,14 +1581,14 @@
       // Honest absence, not silence: in-flight state comes from ~/.bmad-loops and
       // tmux, which do not exist on a CI runner, so the published board CANNOT
       // know. Saying so beats implying nothing is running.
-      set("chip-run", "stale", "running <b>n/a on published board</b>");
+      set("chip-run", "cstale", "running <b>n/a on published board</b>");
     } else if (!st.running || !st.running.length) {
       set("chip-run", "", "running <b>nothing</b>");
     } else {
       const r = st.running[0];
       const extra = st.running.length > 1 ? ` +${st.running.length - 1}` : "";
       const since = r.startEpoch ? " · " + ago(r.startEpoch) : "";
-      set("chip-run", "live", `running <b>${r.station} ${r.story}</b> (${r.phase || "?"})${since}${extra}`);
+      set("chip-run", "clive", `running <b>${r.station} ${r.story}</b> (${r.phase || "?"})${since}${extra}`);
     }
 
     const s = st.lastShipped;
