@@ -113,7 +113,16 @@ determine what to tear down), the same tier as ``MRS-INIT-001``/
 ``MRS-PREFLIGHT-010``'s identical shape check; ``MRS-TEARDOWN-002/003``
 classify ``Verdict.ERROR``, the same tier as every other story's
 real-operation-attempted-and-did-not-complete codes -- see
-``core/verdict.py``. Later stories
+``core/verdict.py``. Story 1.9's ``cli/init.py::run_preflight`` (packaging,
+FR-52/FR-57) graduates the harness-version check and adds an eleventh
+code, ``MRS-PREFLIGHT-011`` (a resolvable, same-major harness version that
+lies outside the declared minor range, ``>=0.9.0,<0.10``) -- previously
+this state shared ``MRS-PREFLIGHT-002`` with the undeterminable/
+major-mismatch case; it is now split into its own code because it does
+NOT block: ``MRS-PREFLIGHT-002`` remains for ``harness_version is None``
+or a genuine major-version mismatch (``Verdict.ERROR``, blocking,
+unchanged), while ``MRS-PREFLIGHT-011`` classifies ``Verdict.WARN``
+(non-blocking) -- see ``core/verdict.py``. Later stories
 append further real codes here as they gain their own real callers. The
 registry MECHANISM
 (format check, then membership check) is separately proven via
@@ -143,6 +152,8 @@ CODE_PATTERN = re.compile(r"MRS-[A-Z][A-Z0-9]*-[0-9]{3}")
 # Story 1.6's cli/init.py::run_homes adds the fourth real caller's three codes.
 # Story 1.7's cli/init.py::run_preflight adds the fifth real caller's ten codes.
 # Story 1.8's cli/init.py::run_teardown adds the sixth real caller's three codes.
+# Story 1.9's cli/init.py::run_preflight adds an eleventh code, graduating
+# the harness-version check into two tiers.
 REGISTERED_CODES: frozenset[str] = frozenset(
     {
         "MRS-IDENT-001",
@@ -171,6 +182,7 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-PREFLIGHT-008",
         "MRS-PREFLIGHT-009",
         "MRS-PREFLIGHT-010",
+        "MRS-PREFLIGHT-011",
         "MRS-TEARDOWN-001",
         "MRS-TEARDOWN-002",
         "MRS-TEARDOWN-003",

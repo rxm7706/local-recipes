@@ -75,7 +75,14 @@ unreachable promotion, and ``--force`` was not supplied) -- both classify
 ``Verdict.ERROR``, the same tier as every sibling story's
 real-operation-attempted-or-correctly-refused codes: a real teardown was
 attempted and either failed or was correctly blocked, never "could not
-evaluate". Later
+evaluate". Story 1.9's ``cli/init.py::run_preflight`` (packaging,
+FR-52/FR-57) graduates the harness-version check into two tiers and adds
+``MRS-PREFLIGHT-011`` (a resolvable, same-major harness version outside
+the declared minor range) classified ``Verdict.WARN`` -- a legitimate,
+non-blocking heads-up, the same reasoning as ``MRS-POLICY-005``'s own
+``Verdict.WARN`` tier, and distinct from ``MRS-PREFLIGHT-002`` (unchanged:
+``harness_version is None`` or a genuine major-version mismatch), which
+stays ``Verdict.ERROR``. Later
 stories populate the table
 further as they add real codes. The mechanism (a total, fail-loud lookup) is
 separately proven via ``monkeypatch``-injected synthetic entries in
@@ -137,6 +144,8 @@ GUARDED_EXIT_CODES: frozenset[int] = frozenset(_EXIT_BY_VERDICT.values()) | {
 # Story 1.6's cli/init.py::run_homes adds the fourth real caller's three codes.
 # Story 1.7's cli/init.py::run_preflight adds the fifth real caller's ten codes.
 # Story 1.8's cli/init.py::run_teardown adds the sixth real caller's three codes.
+# Story 1.9's cli/init.py::run_preflight adds an eleventh code, graduating
+# the harness-version check into two tiers.
 _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-IDENT-001": Verdict.UNEVALUABLE,
     "MRS-IDENT-002": Verdict.UNEVALUABLE,
@@ -164,6 +173,7 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-PREFLIGHT-008": Verdict.ERROR,
     "MRS-PREFLIGHT-009": Verdict.ERROR,
     "MRS-PREFLIGHT-010": Verdict.UNEVALUABLE,
+    "MRS-PREFLIGHT-011": Verdict.WARN,
     "MRS-TEARDOWN-001": Verdict.UNEVALUABLE,
     "MRS-TEARDOWN-002": Verdict.ERROR,
     "MRS-TEARDOWN-003": Verdict.ERROR,

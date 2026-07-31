@@ -112,6 +112,25 @@ adapter is configured. Its ten codes: ``MRS-PREFLIGHT-001`` through
 ``Verdict.UNEVALUABLE`` -- see ``core/findings.py``'s own docstring for the
 exact per-code mapping.
 
+Story 1.9 (packaging, FR-52/FR-57) relocates the harness-version-range
+constants and the parsing/range functions that used to live here
+(``_HARNESS_MIN_VERSION``/``_HARNESS_MAX_MINOR_EXCLUSIVE``/
+``HARNESS_VERSION_RANGE_TEXT``, ``harness_version_tuple``,
+``harness_version_in_range``) into ``adapters/harness_bmadloop.py`` itself
+(FR-52: "the seam declares the harness version range it supports") --
+this module now imports them instead of defining its own copies -- and
+graduates ``run_preflight``'s harness-version check into two tiers using
+the new ``harness_version_is_major_mismatch`` seam function:
+``harness_version is None`` or a genuine major-version mismatch still
+blocks via ``MRS-PREFLIGHT-002`` (unchanged tier), while a determinable,
+same-major version outside the declared minor range now warns via the
+eleventh code, ``MRS-PREFLIGHT-011`` (``Verdict.WARN``, non-blocking),
+instead of sharing ``MRS-PREFLIGHT-002``'s blocking tier as it did before
+this story. ``cli/main.py``'s ``--version`` gains the same harness-version
+reporting (and the same prominent warning for either tier) alongside
+Marshal's own hand-synced version literal, still bypassing the envelope
+entirely -- see that module's own docstring.
+
 Story 1.8 adds a FIFTH command in this same module, ``marshal teardown``
 (``add_teardown_subparser``/``run_teardown``, NFR-6/AD-29): removes the
 ``loop/<slug>`` worktree and branch ``run_init`` provisions, refusing
@@ -160,12 +179,20 @@ import argparse
 import json
 import os
 import shlex
-import tomllib
 from collections.abc import Mapping
 from pathlib import Path
 
+import tomllib
+
 from ..adapters.fs_local import FsError, LocalFs
-from ..adapters.harness_bmadloop import BmadLoopHarness, HarnessError, render_policy_toml
+from ..adapters.harness_bmadloop import (
+    HARNESS_VERSION_RANGE_TEXT,
+    BmadLoopHarness,
+    HarnessError,
+    harness_version_in_range,
+    harness_version_is_major_mismatch,
+    render_policy_toml,
+)
 from ..adapters.vcs_git import GitVcs, VcsCommandError
 from ..core import policy, status
 from ..core.model import Finding, Severity, build_envelope
@@ -857,15 +884,6 @@ def _emit_homes(args: argparse.Namespace, data: dict[str, object], findings: lis
 # ``marshal preflight`` (Story 1.7, FR-7/FR-47/FR-52).
 # =====================================================================
 
-# The declared supported harness range (AD-3, matches Story 1.9's planned
-# conda pin): pre-1.0, so the upper bound excludes a minor bump that could
-# rename/remove any of the bmad_loop modules adapters/harness_bmadloop.py
-# reads. Tuple comparison, not the `packaging` library -- this package has
-# no dependency on it and the range is a fixed, simple two-point interval.
-_HARNESS_MIN_VERSION: tuple[int, ...] = (0, 9, 0)
-_HARNESS_MAX_MINOR_EXCLUSIVE: tuple[int, ...] = (0, 10)
-_HARNESS_VERSION_RANGE_TEXT = ">=0.9.0,<0.10"
-
 # The default machine-scoped state path (AD-37's fourth write target),
 # overridable via MARSHAL_STATE_HOME -- mirrors ENV_LOOP_HOME_ROOT's own
 # override convention. This fact ("has the operator answered this adapter's
@@ -879,32 +897,6 @@ _SUSTAINED_AUTOMATION_CAVEAT = (
     "acknowledge only after personally running the adapter once and "
     "answering its own first-run trust dialog on this machine"
 )
-
-
-def _version_tuple(text: str) -> tuple[int, ...] | None:
-    """Parse a dotted version string's leading numeric run per component
-    (``"0.9.0"`` -> ``(0, 9, 0)``, ``"0.9.0rc1"`` -> ``(0, 9, 0)``, stopping
-    at the first component with no leading digit). ``None`` if the FIRST
-    component carries no digits at all."""
-    parts: list[int] = []
-    for chunk in text.split("."):
-        digits = ""
-        for char in chunk:
-            if not char.isdigit():
-                break
-            digits += char
-        if not digits:
-            break
-        parts.append(int(digits))
-    return tuple(parts) if parts else None
-
-
-def _harness_version_in_range(text: str) -> bool:
-    parsed = _version_tuple(text)
-    if parsed is None:
-        return False
-    padded = parsed + (0, 0, 0)
-    return padded[:3] >= _HARNESS_MIN_VERSION and padded[:2] < _HARNESS_MAX_MINOR_EXCLUSIVE
 
 
 def _ack_state_path() -> Path:
@@ -1093,14 +1085,38 @@ def run_preflight(
     else:
         harness_version = harness.harness_version()
         data["harness_version"] = harness_version
-        if harness_version is None or not _harness_version_in_range(harness_version):
+        # Story 1.9 (FR-52/FR-57): graduated two-tier split using the
+        # adapters.harness_bmadloop seam's harness_version_is_major_mismatch
+        # (which already treats None as a mismatch, so no separate `is None`
+        # check is needed here) and harness_version_in_range -- the same
+        # harness_version_in_range function cli/main.py's --version also
+        # calls for its own out-of-range warning. Undeterminable or a
+        # genuine major-version mismatch still blocks (unchanged
+        # MRS-PREFLIGHT-002 tier); a determinable, same-major version
+        # outside the declared minor range now warns instead
+        # (MRS-PREFLIGHT-011, non-blocking) rather than sharing -002's
+        # blocking tier with the undeterminable/major-mismatch case, as it
+        # did before this story.
+        if harness_version_is_major_mismatch(harness_version):
             findings.append(
                 Finding(
                     code="MRS-PREFLIGHT-002",
                     severity=Severity.ERROR,
                     message=(
                         f"harness version {harness_version or 'unknown'!r} is "
-                        f"outside the supported range {_HARNESS_VERSION_RANGE_TEXT}"
+                        f"outside the supported range {HARNESS_VERSION_RANGE_TEXT}"
+                    ),
+                )
+            )
+        elif not harness_version_in_range(harness_version):
+            findings.append(
+                Finding(
+                    code="MRS-PREFLIGHT-011",
+                    severity=Severity.WARN,
+                    message=(
+                        f"harness version {harness_version!r} is outside the "
+                        f"supported range {HARNESS_VERSION_RANGE_TEXT} (same "
+                        "major version -- non-blocking)"
                     ),
                 )
             )

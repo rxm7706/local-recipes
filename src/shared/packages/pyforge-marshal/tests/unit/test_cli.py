@@ -116,6 +116,108 @@ def test_hand_synced_version_literal_matches_pyproject():
     assert __version__ == pyproject["project"]["version"]
 
 
+# --- Story 1.9: --version's harness-version reporting ------------------------
+
+
+class _FakeHarnessVersion:
+    """A minimal stand-in for ``BmadLoopHarness``, driving only the one
+    method ``_version_text()`` calls -- mirrors this file's existing
+    ``fake_add``/``monkeypatch`` idiom used for the ``config``/``init``
+    subcommand wiring tests below."""
+
+    def __init__(self, version: str | None) -> None:
+        self._version = version
+
+    def harness_version(self) -> str | None:
+        return self._version
+
+
+def _patch_harness_version(monkeypatch, version: str | None) -> None:
+    from pyforge.marshal.cli import main as main_module
+
+    # main.py's --version handling constructs BmadLoopHarness() via the
+    # module-level name (the same DI idiom cli/init.py uses for its own
+    # default-port construction) -- monkeypatching THAT attribute is the
+    # pragmatic seam, since there is no subcommand-handler frame to inject
+    # a fake harness through here.
+    monkeypatch.setattr(main_module, "BmadLoopHarness", lambda: _FakeHarnessVersion(version))
+
+
+def test_version_harness_in_range_prints_both_versions_no_warning(monkeypatch, capsys):
+    _patch_harness_version(monkeypatch, "0.9.3")
+    exit_code = main(["--version"])
+    assert exit_code == 0
+    out = capsys.readouterr().out
+    assert __version__ in out
+    assert "bmad-loop 0.9.3" in out
+    assert "WARNING" not in out
+
+
+def test_version_harness_same_major_out_of_range_shows_warning(monkeypatch, capsys):
+    _patch_harness_version(monkeypatch, "0.10.2")
+    exit_code = main(["--version"])
+    assert exit_code == 0
+    out = capsys.readouterr().out
+    assert "bmad-loop 0.10.2" in out
+    assert "WARNING" in out
+    assert ">=0.9.0,<0.10" in out
+
+
+def test_version_harness_major_mismatch_shows_warning(monkeypatch, capsys):
+    _patch_harness_version(monkeypatch, "2.0.0")
+    exit_code = main(["--version"])
+    assert exit_code == 0
+    out = capsys.readouterr().out
+    assert "bmad-loop 2.0.0" in out
+    assert "WARNING" in out
+
+
+def test_version_harness_unparseable_shows_could_not_be_parsed_warning(monkeypatch, capsys):
+    """Review finding: an unparseable-but-non-None version (e.g. "dev") is
+    NOT "outside the supported range" -- it isn't a version at all. The
+    warning must name that distinctly, not reuse the numerically-out-of-range
+    wording ``test_version_harness_same_major_out_of_range_shows_warning``
+    covers."""
+    _patch_harness_version(monkeypatch, "dev")
+    exit_code = main(["--version"])
+    assert exit_code == 0
+    out = capsys.readouterr().out
+    assert "bmad-loop dev" in out
+    assert "could not be parsed" in out
+    assert "outside the supported range" not in out
+
+
+def test_version_harness_absent_shows_not_determined(monkeypatch, capsys):
+    _patch_harness_version(monkeypatch, None)
+    exit_code = main(["--version"])
+    assert exit_code == 0
+    out = capsys.readouterr().out
+    assert "not determined" in out
+    assert "WARNING" in out
+
+
+def test_version_wins_over_a_subcommand_missing_its_required_argument(capsys):
+    """Review-caught regression: a first pass made ``--version`` a plain
+    ``store_true`` flag checked only after ``parse_args`` fully succeeded,
+    so ``marshal --version init`` (missing ``init``'s required ``slug``)
+    started exiting 2 with a usage error instead of printing the version --
+    breaking the "``--version``/``--help`` always win" convention every
+    other argparse-based CLI in this repo follows. ``_VersionAction`` fires
+    during parsing, before argparse ever validates ``init``'s required
+    ``slug``, restoring that property."""
+    exit_code = main(["--version", "init"])
+    assert exit_code == 0
+    out = capsys.readouterr().out
+    assert __version__ in out
+
+
+def test_version_wins_over_an_unrecognized_trailing_flag(capsys):
+    exit_code = main(["--version", "--bogus"])
+    assert exit_code == 0
+    out = capsys.readouterr().out
+    assert __version__ in out
+
+
 # --- Story 1.3: the `config` subcommand -------------------------------------
 
 

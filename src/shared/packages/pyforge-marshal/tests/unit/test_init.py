@@ -1602,10 +1602,18 @@ def test_preflight_harness_binary_absent_reports_finding(repo_root, tmp_path, ca
     assert "harness_version: None" in out
 
 
-# --- harness version outside range: MRS-PREFLIGHT-002 ----------------------
+# --- harness version outside range: MRS-PREFLIGHT-002 (major mismatch/ ----
+# undeterminable, blocking) vs MRS-PREFLIGHT-011 (same-major, warn-only,
+# Story 1.9's graduated tier) ------------------------------------------------
 
 
-def test_preflight_harness_version_outside_range_reports_finding(repo_root, tmp_path, capsys):
+def test_preflight_harness_version_same_major_outside_range_warns_and_does_not_block(
+    repo_root, tmp_path, capsys
+):
+    """Story 1.9: a same-major (0.x), out-of-minor-range harness version used
+    to share MRS-PREFLIGHT-002's blocking tier with the undeterminable/
+    major-mismatch case -- it now reports the new MRS-PREFLIGHT-011 at warn
+    severity instead, and does NOT block (exit 0)."""
     slug = "acme"
     home = tmp_path / "loop-homes" / slug
     fs = FakeFs(project_dirs={home})
@@ -1615,11 +1623,37 @@ def test_preflight_harness_version_outside_range_reports_finding(repo_root, tmp_
     _seed_acknowledged(fs, tmp_path, ["claude"])
 
     exit_code = run_preflight(_preflight_namespace(slug), vcs=vcs, fs=fs, harness=harness)
+    assert exit_code == EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-PREFLIGHT-011" in out
+    assert "[warn]" in out
+    assert "MRS-PREFLIGHT-002" not in out
+    assert "0.10.2" in out
+    assert ">=0.9.0,<0.10" in out
+
+
+def test_preflight_harness_version_major_mismatch_reports_finding_and_blocks(
+    repo_root, tmp_path, capsys
+):
+    """Story 1.9: a genuine major-version mismatch (e.g. a future bmad-loop
+    2.0.0) still blocks via MRS-PREFLIGHT-002, unchanged tier -- only the
+    same-major-out-of-minor-range case above moved to the new warn-only
+    code."""
+    slug = "acme"
+    home = tmp_path / "loop-homes" / slug
+    fs = FakeFs(project_dirs={home})
+    vcs = FakeVcs(repo_root=repo_root)
+    harness = _converged_harness()
+    harness.version = "2.0.0"
+    _seed_acknowledged(fs, tmp_path, ["claude"])
+
+    exit_code = run_preflight(_preflight_namespace(slug), vcs=vcs, fs=fs, harness=harness)
     assert exit_code != EXIT_OK
     out = capsys.readouterr().out
     assert "MRS-PREFLIGHT-002" in out
-    assert "0.10.2" in out
+    assert "2.0.0" in out
     assert ">=0.9.0,<0.10" in out
+    assert "MRS-PREFLIGHT-011" not in out
 
 
 def test_preflight_harness_version_unparseable_reports_finding(repo_root, tmp_path, capsys):
@@ -2225,6 +2259,8 @@ def test_preflight_finding_codes_classify_as_documented():
     # Second review pass: the ONE preflight code with a special-cased tier
     # was the one classification nothing asserted.
     assert classify("MRS-PREFLIGHT-010") == Verdict.UNEVALUABLE
+    # Story 1.9: the graduated harness-version tier's new warn-only code.
+    assert classify("MRS-PREFLIGHT-011") == Verdict.WARN
 
 
 # =====================================================================
