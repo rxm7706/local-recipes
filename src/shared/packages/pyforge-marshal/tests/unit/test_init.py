@@ -21,7 +21,7 @@ from pyforge.marshal.adapters.fs_local import FsError
 from pyforge.marshal.adapters.harness_bmadloop import HarnessError
 from pyforge.marshal.adapters.vcs_git import VcsCommandError
 from pyforge.marshal.cli import init as init_module
-from pyforge.marshal.cli.init import run_homes, run_init, run_preflight
+from pyforge.marshal.cli.init import run_homes, run_init, run_preflight, run_teardown
 from pyforge.marshal.core.verdict import EXIT_OK
 from pyforge.marshal.ports.vcs import WorktreeEntry
 
@@ -45,6 +45,20 @@ class FakeVcs:
         self.fail_worktree_path_for_branch: Exception | None = None
         self.fail_add_worktree: Exception | None = None
         self.fail_list_worktrees: Exception | None = None
+        # Story 1.8 (marshal teardown): dirty/unmerged are OPT-IN sets --
+        # a branch/worktree this fake knows about defaults to clean and
+        # merged (mirrors a freshly-provisioned, zero-new-commits home,
+        # real git's own trivial-ancestry case), so the common "clean,
+        # fully-merged" happy path needs no boilerplate; a test exercising
+        # the refusal path adds the worktree path / branch name explicitly.
+        self.dirty_worktrees: set[Path] = set()
+        self.unmerged_branches: set[str] = set()
+        self.fail_has_uncommitted_changes: Exception | None = None
+        self.fail_is_branch_merged: Exception | None = None
+        self.fail_remove_worktree: Exception | None = None
+        self.fail_delete_branch: Exception | None = None
+        self.remove_worktree_calls: list[tuple[Path, Path, bool]] = []
+        self.delete_branch_calls: list[tuple[Path, str, bool]] = []
         # Story 1.6: list_worktrees derives its entries from the SAME
         # self.worktrees dict every other FakeVcs method already maintains,
         # plus one synthesized entry for the main checkout itself.
@@ -109,6 +123,35 @@ class FakeVcs:
             entries.append(WorktreeEntry(path=path, branch=branch))
         entries.extend(self.extra_worktree_entries)
         return tuple(entries)
+
+    def has_uncommitted_changes(self, worktree_path: Path) -> bool:
+        self.calls.append("has_uncommitted_changes")
+        if self.fail_has_uncommitted_changes:
+            raise self.fail_has_uncommitted_changes
+        return worktree_path in self.dirty_worktrees
+
+    def is_branch_merged(self, repo_root: Path, branch: str, *, into: str) -> bool:
+        self.calls.append("is_branch_merged")
+        if self.fail_is_branch_merged:
+            raise self.fail_is_branch_merged
+        return branch not in self.unmerged_branches
+
+    def remove_worktree(self, repo_root: Path, home: Path, *, force: bool = False) -> None:
+        self.calls.append("remove_worktree")
+        self.remove_worktree_calls.append((repo_root, home, force))
+        if self.fail_remove_worktree:
+            raise self.fail_remove_worktree
+        for branch, path in list(self.worktrees.items()):
+            if path == home:
+                del self.worktrees[branch]
+        self.worktree_dirs.discard(home)
+
+    def delete_branch(self, repo_root: Path, branch: str, *, force: bool = False) -> None:
+        self.calls.append("delete_branch")
+        self.delete_branch_calls.append((repo_root, branch, force))
+        if self.fail_delete_branch:
+            raise self.fail_delete_branch
+        self.branches.discard(branch)
 
 
 class FakeFs:
@@ -2182,3 +2225,584 @@ def test_preflight_finding_codes_classify_as_documented():
     # Second review pass: the ONE preflight code with a special-cased tier
     # was the one classification nothing asserted.
     assert classify("MRS-PREFLIGHT-010") == Verdict.UNEVALUABLE
+
+
+# =====================================================================
+# ``run_teardown`` (Story 1.8, NFR-6/AD-29) -- CLI-layer coverage of the
+# full I/O & Edge-Case Matrix, driven entirely through the FakeVcs seam
+# (``fail_*``/opt-in ``dirty_worktrees``/``unmerged_branches`` sets). The
+# real squash-merge-recognition walkthrough this story's own Design Notes
+# describe is a ``GitVcs`` concern, proven against REAL git in
+# ``test_vcs_git.py``'s ``is_branch_merged`` tests, and end-to-end (a real
+# ``marshal init`` then ``marshal teardown``) in
+# ``tests/integration/test_init_worktree.py``.
+# =====================================================================
+
+
+def _teardown_namespace(slug: str, *, force: bool = False, fmt: str = "text") -> argparse.Namespace:
+    return argparse.Namespace(slug=slug, force=force, format=fmt)
+
+
+def _provisioned_teardown_vcs(repo_root: Path, home: Path, slug: str) -> FakeVcs:
+    """A FakeVcs already carrying a provisioned ``loop/<slug>`` worktree+
+    branch, clean and (by ``FakeVcs``'s own opt-in default) merged -- the
+    "clean, fully-merged home" happy path needs no further setup."""
+    vcs = FakeVcs(repo_root=repo_root)
+    branch = f"loop/{slug}"
+    vcs.worktrees[branch] = home
+    vcs.branches.add(branch)
+    return vcs
+
+
+# --- nothing provisioned: clean no-op, zero findings ------------------------
+
+
+def test_teardown_nothing_provisioned_reports_already_removed(repo_root, capsys):
+    vcs = FakeVcs(repo_root=repo_root)
+    fs = FakeFs()
+    exit_code = run_teardown(_teardown_namespace("acme"), vcs=vcs, fs=fs)
+    assert exit_code == EXIT_OK
+    out = capsys.readouterr().out
+    assert "already_removed: True" in out
+    assert "findings:" not in out
+    assert vcs.remove_worktree_calls == []
+    assert vcs.delete_branch_calls == []
+
+
+# --- clean, fully-merged home: removed, exit 0 -------------------------------
+
+
+def test_teardown_clean_merged_home_removes_worktree_and_branch(repo_root, tmp_path, capsys):
+    home = tmp_path / "loop-homes" / "acme"
+    vcs = _provisioned_teardown_vcs(repo_root, home, "acme")
+    fs = FakeFs()
+    exit_code = run_teardown(_teardown_namespace("acme"), vcs=vcs, fs=fs)
+    assert exit_code == EXIT_OK
+    out = capsys.readouterr().out
+    assert "removed: True" in out
+    assert "forced:" not in out
+    # a clean, already-verified-safe home removes with NO --force flag
+    assert vcs.remove_worktree_calls == [(repo_root, home, False)]
+    # branch deletion always uses -D (force=True) once authorized
+    assert vcs.delete_branch_calls == [(repo_root, "loop/acme", True)]
+    assert "loop/acme" not in vcs.branches
+    assert vcs.worktree_path_for_branch(repo_root, "loop/acme") is None
+
+
+def test_teardown_clean_merged_home_json_matches_schema(repo_root, tmp_path):
+    home = tmp_path / "loop-homes" / "acme"
+    vcs = _provisioned_teardown_vcs(repo_root, home, "acme")
+    fs = FakeFs()
+    import io
+    import sys
+
+    captured = io.StringIO()
+    old_stdout = sys.stdout
+    sys.stdout = captured
+    try:
+        exit_code = run_teardown(_teardown_namespace("acme", fmt="json"), vcs=vcs, fs=fs)
+    finally:
+        sys.stdout = old_stdout
+    assert exit_code == EXIT_OK
+    payload = json.loads(captured.getvalue())
+    schema = json.loads(_SCHEMA_PATH.read_text(encoding="utf-8"))
+    jsonschema.validate(instance=payload, schema=schema)
+    assert payload["command"] == "teardown"
+    assert payload["status"] == "ok"
+    assert payload["data"]["removed"] is True
+    assert "forced" not in payload["data"]
+    assert payload["findings"] == []
+
+
+# --- uncommitted changes, no --force: refuse, nothing removed ---------------
+
+
+def test_teardown_dirty_worktree_without_force_refuses(repo_root, tmp_path, capsys):
+    home = tmp_path / "loop-homes" / "acme"
+    vcs = _provisioned_teardown_vcs(repo_root, home, "acme")
+    vcs.dirty_worktrees.add(home)
+    fs = FakeFs(project_dirs={home})
+    exit_code = run_teardown(_teardown_namespace("acme"), vcs=vcs, fs=fs)
+    assert exit_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-TEARDOWN-003" in out
+    assert "uncommitted changes" in out
+    assert "--force" in out
+    assert vcs.remove_worktree_calls == []
+    assert vcs.delete_branch_calls == []
+
+
+# --- genuinely unmerged branch, no --force: refuse, nothing removed ---------
+
+
+def test_teardown_unmerged_branch_without_force_refuses(repo_root, tmp_path, capsys):
+    home = tmp_path / "loop-homes" / "acme"
+    vcs = _provisioned_teardown_vcs(repo_root, home, "acme")
+    vcs.unmerged_branches.add("loop/acme")
+    fs = FakeFs()
+    exit_code = run_teardown(_teardown_namespace("acme"), vcs=vcs, fs=fs)
+    assert exit_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-TEARDOWN-003" in out
+    assert "not yet safely captured on main" in out
+    assert vcs.remove_worktree_calls == []
+    assert vcs.delete_branch_calls == []
+
+
+def test_teardown_refusal_finding_names_every_triggering_condition(repo_root, tmp_path):
+    """Boundaries & Constraints: "the finding names every condition that
+    triggered it" -- ONE finding, both reasons named, when both a dirty
+    working tree AND a genuinely unmerged branch fire together."""
+    home = tmp_path / "loop-homes" / "acme"
+    vcs = _provisioned_teardown_vcs(repo_root, home, "acme")
+    vcs.dirty_worktrees.add(home)
+    vcs.unmerged_branches.add("loop/acme")
+    fs = FakeFs(project_dirs={home})
+    import io
+    import sys
+
+    captured = io.StringIO()
+    old_stdout = sys.stdout
+    sys.stdout = captured
+    try:
+        exit_code = run_teardown(_teardown_namespace("acme", fmt="json"), vcs=vcs, fs=fs)
+    finally:
+        sys.stdout = old_stdout
+    assert exit_code != EXIT_OK
+    payload = json.loads(captured.getvalue())
+    findings = payload["findings"]
+    assert len(findings) == 1
+    assert findings[0]["code"] == "MRS-TEARDOWN-003"
+    assert "uncommitted changes" in findings[0]["message"]
+    assert "not yet safely captured on main" in findings[0]["message"]
+
+
+# --- either refusal, with --force: removed, forced=true ---------------------
+
+
+def test_teardown_dirty_with_force_removes_and_reports_forced(repo_root, tmp_path, capsys):
+    home = tmp_path / "loop-homes" / "acme"
+    vcs = _provisioned_teardown_vcs(repo_root, home, "acme")
+    vcs.dirty_worktrees.add(home)
+    fs = FakeFs(project_dirs={home})
+    exit_code = run_teardown(_teardown_namespace("acme", force=True), vcs=vcs, fs=fs)
+    assert exit_code == EXIT_OK
+    out = capsys.readouterr().out
+    assert "removed: True" in out
+    assert "forced: True" in out
+    # the operator's own --force was needed, so worktree removal passes it
+    assert vcs.remove_worktree_calls == [(repo_root, home, True)]
+    assert vcs.delete_branch_calls == [(repo_root, "loop/acme", True)]
+
+
+def test_teardown_unmerged_with_force_removes_and_reports_forced(repo_root, tmp_path, capsys):
+    home = tmp_path / "loop-homes" / "acme"
+    vcs = _provisioned_teardown_vcs(repo_root, home, "acme")
+    vcs.unmerged_branches.add("loop/acme")
+    fs = FakeFs()
+    exit_code = run_teardown(_teardown_namespace("acme", force=True), vcs=vcs, fs=fs)
+    assert exit_code == EXIT_OK
+    out = capsys.readouterr().out
+    assert "removed: True" in out
+    assert "forced: True" in out
+    assert vcs.remove_worktree_calls == [(repo_root, home, True)]
+    assert vcs.delete_branch_calls == [(repo_root, "loop/acme", True)]
+
+
+def test_teardown_force_on_an_already_clean_home_does_not_report_forced(
+    repo_root, tmp_path, capsys
+):
+    """--force is only "used" when a real refusal condition existed --
+    passing it redundantly to an already-safe home is a no-op flag."""
+    home = tmp_path / "loop-homes" / "acme"
+    vcs = _provisioned_teardown_vcs(repo_root, home, "acme")
+    fs = FakeFs()
+    exit_code = run_teardown(_teardown_namespace("acme", force=True), vcs=vcs, fs=fs)
+    assert exit_code == EXIT_OK
+    out = capsys.readouterr().out
+    assert "removed: True" in out
+    assert "forced:" not in out
+    assert vcs.remove_worktree_calls == [(repo_root, home, False)]
+
+
+# --- partial reconciliation: branch present, worktree already gone ----------
+
+
+def test_teardown_branch_only_no_worktree_deletes_just_the_branch(repo_root, tmp_path, capsys):
+    """A worktree removed by hand (outside marshal), branch left behind --
+    teardown reconciles by deleting just the orphaned branch."""
+    vcs = FakeVcs(repo_root=repo_root)
+    vcs.branches.add("loop/acme")  # branch exists, but no worktree entry
+    fs = FakeFs()
+    exit_code = run_teardown(_teardown_namespace("acme"), vcs=vcs, fs=fs)
+    assert exit_code == EXIT_OK
+    out = capsys.readouterr().out
+    assert "removed: True" in out
+    assert vcs.remove_worktree_calls == []
+    assert vcs.delete_branch_calls == [(repo_root, "loop/acme", True)]
+    assert "has_uncommitted_changes" not in vcs.calls
+
+
+# --- malformed slug: MRS-TEARDOWN-001, no I/O at all -------------------------
+
+
+@pytest.mark.parametrize(
+    "bad_slug", ["", "../evil", "a/b", ".", "..", "has space", "a\\b"]
+)
+def test_teardown_malformed_slug_reports_finding_with_zero_io(repo_root, bad_slug, capsys):
+    vcs = FakeVcs(repo_root=repo_root)
+    fs = FakeFs()
+    exit_code = run_teardown(_teardown_namespace(bad_slug), vcs=vcs, fs=fs)
+    assert exit_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-TEARDOWN-001" in out
+    assert vcs.calls == []
+    assert fs.calls == []
+
+
+@pytest.mark.parametrize("bad_slug", ["x.lock", ".foo", "foo.", "a..b"])
+def test_teardown_git_ref_invalid_slug_shapes_report_mrs_teardown_001(
+    repo_root, bad_slug, capsys
+):
+    vcs = FakeVcs(repo_root=repo_root)
+    fs = FakeFs()
+    exit_code = run_teardown(_teardown_namespace(bad_slug), vcs=vcs, fs=fs)
+    assert exit_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-TEARDOWN-001" in out
+    assert "branch" in out
+    assert vcs.calls == []
+    assert fs.calls == []
+
+
+# --- git operation failures land in the envelope as MRS-TEARDOWN-002 --------
+
+
+def test_teardown_repo_root_resolution_failure_reports_mrs_teardown_002(repo_root, capsys):
+    vcs = FakeVcs(repo_root=repo_root)
+    vcs.fail_repo_common_root = VcsCommandError("not a git repo")
+    fs = FakeFs()
+    exit_code = run_teardown(_teardown_namespace("acme"), vcs=vcs, fs=fs)
+    assert exit_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-TEARDOWN-002" in out
+
+
+def test_teardown_worktree_path_for_branch_failure_reports_mrs_teardown_002(
+    repo_root, capsys
+):
+    vcs = FakeVcs(repo_root=repo_root)
+    vcs.fail_worktree_path_for_branch = VcsCommandError("git worktree list failed")
+    fs = FakeFs()
+    exit_code = run_teardown(_teardown_namespace("acme"), vcs=vcs, fs=fs)
+    assert exit_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-TEARDOWN-002" in out
+
+
+def test_teardown_branch_exists_failure_reports_mrs_teardown_002(repo_root, capsys):
+    from pyforge.marshal.adapters.vcs_git import VcsCommandError as _VcsCommandError
+
+    class _BranchExistsFailingVcs(FakeVcs):
+        def branch_exists(self, repo_root, branch):
+            self.calls.append("branch_exists")
+            raise _VcsCommandError("held lock")
+
+    vcs = _BranchExistsFailingVcs(repo_root=repo_root)
+    fs = FakeFs()
+    exit_code = run_teardown(_teardown_namespace("acme"), vcs=vcs, fs=fs)
+    assert exit_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-TEARDOWN-002" in out
+
+
+def test_teardown_has_uncommitted_changes_failure_reports_mrs_teardown_002(
+    repo_root, tmp_path, capsys
+):
+    home = tmp_path / "loop-homes" / "acme"
+    vcs = _provisioned_teardown_vcs(repo_root, home, "acme")
+    vcs.fail_has_uncommitted_changes = VcsCommandError("git status failed")
+    fs = FakeFs(project_dirs={home})
+    exit_code = run_teardown(_teardown_namespace("acme"), vcs=vcs, fs=fs)
+    assert exit_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-TEARDOWN-002" in out
+    assert vcs.remove_worktree_calls == []
+
+
+def test_teardown_is_branch_merged_failure_reports_mrs_teardown_002(
+    repo_root, tmp_path, capsys
+):
+    home = tmp_path / "loop-homes" / "acme"
+    vcs = _provisioned_teardown_vcs(repo_root, home, "acme")
+    vcs.fail_is_branch_merged = VcsCommandError("cannot build virtual commit")
+    fs = FakeFs()
+    exit_code = run_teardown(_teardown_namespace("acme"), vcs=vcs, fs=fs)
+    assert exit_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-TEARDOWN-002" in out
+    assert vcs.remove_worktree_calls == []
+
+
+def test_teardown_remove_worktree_failure_reports_mrs_teardown_002(
+    repo_root, tmp_path, capsys
+):
+    home = tmp_path / "loop-homes" / "acme"
+    vcs = _provisioned_teardown_vcs(repo_root, home, "acme")
+    vcs.fail_remove_worktree = VcsCommandError("worktree remove failed")
+    fs = FakeFs()
+    exit_code = run_teardown(_teardown_namespace("acme"), vcs=vcs, fs=fs)
+    assert exit_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-TEARDOWN-002" in out
+    # branch deletion never attempted once the worktree removal failed
+    assert vcs.delete_branch_calls == []
+
+
+def test_teardown_delete_branch_failure_reports_mrs_teardown_002(
+    repo_root, tmp_path, capsys
+):
+    home = tmp_path / "loop-homes" / "acme"
+    vcs = _provisioned_teardown_vcs(repo_root, home, "acme")
+    vcs.fail_delete_branch = VcsCommandError("branch delete failed")
+    fs = FakeFs()
+    exit_code = run_teardown(_teardown_namespace("acme"), vcs=vcs, fs=fs)
+    assert exit_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-TEARDOWN-002" in out
+    # the worktree WAS already removed before the branch delete failed --
+    # the message says so (review finding: it previously relayed only the
+    # raw git stderr, leaving the operator to infer recovery state).
+    assert "worktree was already removed" in out
+    assert vcs.remove_worktree_calls == [(repo_root, home, False)]
+
+
+def test_teardown_remove_worktree_uses_the_git_registered_path_not_the_computed_home(
+    repo_root, tmp_path, capsys
+):
+    """Review finding: git's OWN registered location can disagree with the
+    merely COMPUTED ``home`` (e.g. ``BMAD_LOOP_HOME_ROOT`` changed since
+    provisioning) -- removal must target git's truth, mirroring
+    ``run_init``'s own precedent and what the dirty-check already does."""
+    registered_path = tmp_path / "elsewhere" / "acme-moved"
+    vcs = _provisioned_teardown_vcs(repo_root, registered_path, "acme")
+    fs = FakeFs()
+    exit_code = run_teardown(_teardown_namespace("acme"), vcs=vcs, fs=fs)
+    assert exit_code == EXIT_OK
+    assert vcs.remove_worktree_calls == [(repo_root, registered_path, False)]
+
+
+def test_teardown_worktree_directory_missing_skips_dirty_check_and_removes(
+    repo_root, tmp_path, capsys
+):
+    """git still registers the worktree, but its directory was deleted by
+    hand (mirrors run_init's/run_homes's own stale/prunable guard). Review
+    finding: this previously called ``has_uncommitted_changes`` against the
+    missing path, which raises rather than answering, permanently blocking
+    teardown -- even with ``--force`` -- since the raise happens before the
+    refusal/force branch is ever reached."""
+    home = tmp_path / "loop-homes" / "acme"
+    vcs = _provisioned_teardown_vcs(repo_root, home, "acme")
+    fs = FakeFs()  # home NOT registered as a dir -- "missing on disk"
+    exit_code = run_teardown(_teardown_namespace("acme"), vcs=vcs, fs=fs)
+    assert exit_code == EXIT_OK
+    assert "has_uncommitted_changes" not in vcs.calls
+    assert vcs.remove_worktree_calls == [(repo_root, home, False)]
+
+
+def test_teardown_leftover_directory_with_nothing_registered_is_not_already_removed(
+    repo_root, tmp_path, capsys
+):
+    """Review finding: a prior partial/failed removal (or manual git
+    surgery) can deregister a worktree while leaving real, possibly
+    uncommitted files behind -- this repo's own history has hit exactly
+    that failure mode. Trusting git's registry alone would silently claim
+    full cleanup; teardown must check for a leftover directory instead."""
+    home = tmp_path / "loop-homes" / "acme"
+    vcs = FakeVcs(repo_root=repo_root)  # nothing registered with git
+    fs = FakeFs(project_dirs={home})  # but real files remain on disk
+    exit_code = run_teardown(_teardown_namespace("acme"), vcs=vcs, fs=fs)
+    assert exit_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-TEARDOWN-002" in out
+    assert "already_removed" not in out
+    assert "still exists on disk" in out
+
+
+def test_teardown_leftover_plain_file_with_nothing_registered_is_not_already_removed(
+    repo_root, tmp_path, capsys
+):
+    """Follow-up review finding: the leftover guard probed ``fs.is_dir``,
+    so a leftover regular FILE at the home path slipped through as
+    ``already_removed: True`` -- the same silently-claimed-cleanup defect
+    the guard exists to prevent, one file-type away. It probes
+    ``fs.exists`` now."""
+    home = tmp_path / "loop-homes" / "acme"
+    vcs = FakeVcs(repo_root=repo_root)  # nothing registered with git
+    fs = FakeFs()
+    fs.files.add(home)  # a plain file occupies the home path
+    exit_code = run_teardown(_teardown_namespace("acme"), vcs=vcs, fs=fs)
+    assert exit_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-TEARDOWN-002" in out
+    assert "already_removed" not in out
+    assert "still exists on disk" in out
+
+
+def test_teardown_branch_only_with_leftover_on_disk_refuses_instead_of_deleting_the_branch(
+    repo_root, tmp_path, capsys
+):
+    """Follow-up review finding: the leftover-on-disk guard ran only in
+    the NOTHING-registered arm -- in the branch-only state (a prior
+    partial removal deregistered the worktree but left real files AND the
+    branch behind), teardown deleted the branch and reported
+    ``removed: True`` while the unverified leftover sat there. The guard
+    now covers every worktree-deregistered state."""
+    home = tmp_path / "loop-homes" / "acme"
+    vcs = FakeVcs(repo_root=repo_root)
+    vcs.branches.add("loop/acme")  # branch survives, worktree deregistered
+    fs = FakeFs(project_dirs={home})  # but real files remain on disk
+    exit_code = run_teardown(_teardown_namespace("acme"), vcs=vcs, fs=fs)
+    assert exit_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-TEARDOWN-002" in out
+    assert "still exists on disk" in out
+    assert "removed: True" not in out
+    assert vcs.delete_branch_calls == []
+
+
+def test_teardown_dirty_probe_error_with_force_is_absorbed_and_removal_proceeds(
+    repo_root, tmp_path, capsys
+):
+    """Follow-up review finding: a ``VcsCommandError`` from the dirty
+    probe previously returned MRS-TEARDOWN-002 BEFORE the ``--force``
+    branch was ever reached, so ``--force`` could not carry past a
+    damaged-but-present worktree (e.g. a corrupt ``.git`` gitdir pointer)
+    -- the exact states teardown is most needed for, and the same
+    dead-end class the missing-directory guard already removed. Under
+    ``--force`` the probe's answer cannot change the outcome, so its
+    failure becomes one more named forced-past reason. WITHOUT --force
+    the error still blocks as 002 (covered by
+    ``test_teardown_has_uncommitted_changes_failure_reports_mrs_teardown_002``)."""
+    home = tmp_path / "loop-homes" / "acme"
+    vcs = _provisioned_teardown_vcs(repo_root, home, "acme")
+    vcs.fail_has_uncommitted_changes = VcsCommandError("corrupt gitdir pointer")
+    fs = FakeFs(project_dirs={home})
+    exit_code = run_teardown(_teardown_namespace("acme", force=True), vcs=vcs, fs=fs)
+    assert exit_code == EXIT_OK
+    out = capsys.readouterr().out
+    assert "removed: True" in out
+    assert "forced: True" in out
+    assert vcs.remove_worktree_calls == [(repo_root, home, True)]
+    assert vcs.delete_branch_calls == [(repo_root, "loop/acme", True)]
+
+
+def test_teardown_merged_probe_error_with_force_is_absorbed_and_removal_proceeds(
+    repo_root, tmp_path, capsys
+):
+    """Same follow-up finding as the dirty-probe variant above, for the
+    merged check: e.g. ``refs/heads/main`` unresolvable makes
+    ``is_branch_merged`` raise, which previously dead-ended ``--force``
+    with MRS-TEARDOWN-002."""
+    home = tmp_path / "loop-homes" / "acme"
+    vcs = _provisioned_teardown_vcs(repo_root, home, "acme")
+    vcs.fail_is_branch_merged = VcsCommandError("cannot resolve refs/heads/main")
+    fs = FakeFs()
+    exit_code = run_teardown(_teardown_namespace("acme", force=True), vcs=vcs, fs=fs)
+    assert exit_code == EXIT_OK
+    out = capsys.readouterr().out
+    assert "removed: True" in out
+    assert "forced: True" in out
+    assert vcs.remove_worktree_calls == [(repo_root, home, True)]
+    assert vcs.delete_branch_calls == [(repo_root, "loop/acme", True)]
+
+
+def test_teardown_refusal_message_names_the_git_registered_path(
+    repo_root, tmp_path, capsys
+):
+    """Follow-up review finding: the MRS-TEARDOWN-003 headline named the
+    merely COMPUTED ``home`` even though the dirty check and the removal
+    both operate on git's REGISTERED path -- in the moved-home case the
+    finding told the operator to inspect a directory that is not the one
+    being checked or removed."""
+    registered_path = tmp_path / "elsewhere" / "acme-moved"
+    vcs = _provisioned_teardown_vcs(repo_root, registered_path, "acme")
+    vcs.dirty_worktrees.add(registered_path)
+    fs = FakeFs(project_dirs={registered_path})
+    exit_code = run_teardown(_teardown_namespace("acme"), vcs=vcs, fs=fs)
+    assert exit_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-TEARDOWN-003" in out
+    assert str(registered_path) in out
+
+
+def test_teardown_ad29_unreachable_promotion_blocks_without_force(
+    repo_root, tmp_path, capsys, monkeypatch
+):
+    """The AD-29 promotion-reachability extension point is a hardcoded
+    no-op today (``_unreachable_promotions`` always returns ``()``), so
+    this path has no real caller yet -- covered here by monkeypatching the
+    stub, proving the refusal-message wiring works before Epic 4 ever
+    makes the predicate real (review finding: this branch was previously
+    unexercised by any test)."""
+    home = tmp_path / "loop-homes" / "acme"
+    vcs = _provisioned_teardown_vcs(repo_root, home, "acme")
+    fs = FakeFs(project_dirs={home})
+    monkeypatch.setattr(
+        "pyforge.marshal.cli.init._unreachable_promotions",
+        lambda repo_root, branch: ("story-1.2", "story-1.3"),
+    )
+    exit_code = run_teardown(_teardown_namespace("acme"), vcs=vcs, fs=fs)
+    assert exit_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-TEARDOWN-003" in out
+    assert "story-1.2" in out and "story-1.3" in out
+    assert vcs.remove_worktree_calls == []
+
+    # --force still overrides it, exactly like the other two conditions.
+    exit_code = run_teardown(_teardown_namespace("acme", force=True), vcs=vcs, fs=fs)
+    assert exit_code == EXIT_OK
+    assert vcs.remove_worktree_calls == [(repo_root, home, True)]
+
+
+def test_teardown_deleted_cwd_reports_mrs_teardown_002(repo_root, capsys, monkeypatch):
+    def _cwd_gone(cls):
+        raise FileNotFoundError("current working directory was deleted")
+
+    monkeypatch.setattr("pathlib.Path.cwd", classmethod(_cwd_gone))
+    vcs = FakeVcs(repo_root=repo_root)
+    fs = FakeFs()
+    exit_code = run_teardown(_teardown_namespace("acme"), vcs=vcs, fs=fs)
+    assert exit_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-TEARDOWN-002" in out
+    assert "working directory" in out
+    assert vcs.calls == []
+
+
+def test_teardown_unresolvable_home_reports_mrs_teardown_002(repo_root, capsys, monkeypatch):
+    monkeypatch.delenv("BMAD_LOOP_HOME_ROOT")
+
+    def _no_home(cls):
+        raise RuntimeError("could not determine a home directory")
+
+    monkeypatch.setattr("pathlib.Path.home", classmethod(_no_home))
+    vcs = FakeVcs(repo_root=repo_root)
+    fs = FakeFs()
+    exit_code = run_teardown(_teardown_namespace("acme"), vcs=vcs, fs=fs)
+    assert exit_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-TEARDOWN-002" in out
+    assert "loop-home root" in out
+
+
+# --- verdict classification of the three new codes ---------------------------
+
+
+def test_teardown_finding_codes_classify_as_documented():
+    from pyforge.marshal.core.model import Verdict
+    from pyforge.marshal.core.verdict import classify
+
+    assert classify("MRS-TEARDOWN-001") == Verdict.UNEVALUABLE
+    assert classify("MRS-TEARDOWN-002") == Verdict.ERROR
+    assert classify("MRS-TEARDOWN-003") == Verdict.ERROR

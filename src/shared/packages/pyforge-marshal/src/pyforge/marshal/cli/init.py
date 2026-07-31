@@ -111,6 +111,47 @@ adapter is configured. Its ten codes: ``MRS-PREFLIGHT-001`` through
 ``MRS-PREFLIGHT-010`` (a malformed slug, checked before any I/O) classifies
 ``Verdict.UNEVALUABLE`` -- see ``core/findings.py``'s own docstring for the
 exact per-code mapping.
+
+Story 1.8 adds a FIFTH command in this same module, ``marshal teardown``
+(``add_teardown_subparser``/``run_teardown``, NFR-6/AD-29): removes the
+``loop/<slug>`` worktree and branch ``run_init`` provisions, refusing
+(``MRS-TEARDOWN-003``) when the home's working tree is dirty
+(``VcsPort.has_uncommitted_changes``), the branch's content is not yet
+safely captured on ``main`` (``VcsPort.is_branch_merged`` -- patch-CONTENT
+equivalence, never bare ancestry; see that method's own docstring and this
+story's spec Design Notes for why), or the AD-29 promotion-reachability
+extension point (``_unreachable_promotions``, a hardcoded-empty stub Epic 4
+replaces the BODY of, never the call site or contract) names anything
+unreachable -- unless ``--force`` overrides all three together (``--force``
+also carries past a dirty/merged PROBE failure, absorbing it as one more
+named forced-past reason: under ``--force`` the probe's answer cannot
+change the outcome, so its failure must not dead-end the flag). A slug with
+nothing provisioned (no worktree, no branch) is a clean no-op
+(``data.already_removed``), never a failure -- teardown is a cleanup
+command, not a precondition-verifying one like ``preflight``. Once removal
+is authorized, branch deletion always uses ``git branch -D``
+(``delete_branch(..., force=True)``): git's own ``-d`` uses ancestry and
+would spuriously refuse the exact squash-merged branches this story exists
+to unblock, once Marshal's own more-accurate check (or the operator's
+``--force``) has already authorized the removal; worktree removal passes
+``--force`` only on the path where the operator's own ``--force`` was
+needed to authorize it (a clean, already-verified-safe home removes with a
+plain ``git worktree remove``). Takes the SAME ``vcs``/``fs`` DI seam as ``run_init``/``run_preflight``:
+``fs`` is used ONLY for read-only existence checks (whether a registered
+worktree's directory is actually present on disk, and whether a
+deregistered slug left real files behind -- both mirror ``run_init``'s/
+``run_homes``'s own stale-worktree-directory guards) -- this command calls
+no ``FsPort`` WRITE method and never references the canonical Tier-3 store
+path at all. (``is_branch_merged``'s fallback does create one internal git
+object via ``VcsPort`` -- a detached, unreferenced commit, garbage-collected
+in the ordinary course -- which is a write in the general sense but outside
+AD-11's FsPort/tracked-artifact meaning of the term; see that method's own
+docstring.) Its three codes: ``MRS-TEARDOWN-001`` (a malformed slug,
+checked before any I/O, mirroring ``MRS-INIT-001``/``MRS-PREFLIGHT-010``'s
+identical shape gate) classifies ``Verdict.UNEVALUABLE``;
+``MRS-TEARDOWN-002`` (a git operation failed) and ``MRS-TEARDOWN-003``
+(refused: work would be lost) classify ``Verdict.ERROR`` -- see
+``core/findings.py``'s own docstring for the exact per-code mapping.
 """
 
 from __future__ import annotations
@@ -1414,6 +1455,372 @@ def _emit_preflight(args: argparse.Namespace, data: dict[str, object], findings:
             print(json.dumps(envelope.to_json_dict(), indent=2, sort_keys=True), flush=True)
         else:
             print(_render_text_preflight(envelope.data, envelope.findings), flush=True)
+    except OSError:
+        _suppress_downstream_pipe_close()
+    return exit_code_for(envelope.verdict)
+
+
+# =====================================================================
+# ``marshal teardown`` (Story 1.8, NFR-6/AD-29).
+# =====================================================================
+
+
+def add_teardown_subparser(subparsers: argparse._SubParsersAction) -> None:
+    """Register the ``teardown`` subcommand (Story 1.8, NFR-6/AD-29)."""
+    parser = subparsers.add_parser(
+        "teardown",
+        help="Remove a loop home's worktree and branch, refusing when work would be lost.",
+        description=(
+            "Removes the loop/<slug> git worktree and branch run_init "
+            "provisions, refusing when the home has uncommitted changes or "
+            "the branch's content is not yet safely captured on main, "
+            "unless --force overrides the refusal. A slug with nothing "
+            "provisioned is a clean no-op."
+        ),
+    )
+    parser.add_argument("slug", help="The BMAD project slug whose loop home to tear down.")
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        help=(
+            "Override refusal: remove the worktree/branch even when the "
+            "home is dirty, the branch is genuinely unmerged, or the "
+            "AD-29 promotion-reachability check names something "
+            "unreachable."
+        ),
+    )
+    parser.add_argument(
+        "--format",
+        choices=("text", "json"),
+        default="text",
+        help="Output format (default: text).",
+    )
+    parser.set_defaults(handler=run_teardown)
+
+
+def _unreachable_promotions(repo_root: Path, branch: str) -> tuple[str, ...]:
+    """AD-29's promotion-reachability extension point -- NOT Epic 4's real
+    predicate, which will name every promotion route (pushed / merged /
+    durable-local-ref) ``branch``'s content would become unreachable from if
+    its loop home were torn down now. Hardcoded to "nothing unreachable"
+    today, matching the spec's own instruction: a repo-wide grep at
+    planning time found zero existing promotion/reachability machinery, and
+    this story's declared surface is ``cli/init.py`` + ``adapters/
+    vcs_git.py`` only. ``run_teardown``'s call site and contract (called
+    before the refusal decision; a non-empty result is one more refusal
+    reason) are permanent -- Epic 4 replaces only this function's BODY."""
+    return ()
+
+
+def _teardown_op_failed_finding(message: str) -> Finding:
+    return Finding(code="MRS-TEARDOWN-002", severity=Severity.ERROR, message=message)
+
+
+def run_teardown(
+    args: argparse.Namespace,
+    *,
+    vcs: VcsPort | None = None,
+    fs: FsPort | None = None,
+) -> int:
+    vcs = vcs if vcs is not None else GitVcs()
+    fs = fs if fs is not None else LocalFs()
+    # `fs` is used ONLY for read-only existence checks (see this module's
+    # own docstring) -- this command calls no FsPort WRITE method.
+
+    slug = args.slug
+    force = bool(getattr(args, "force", False))
+    findings: list[Finding] = []
+    data: dict[str, object] = {"slug": slug}
+
+    if not policy._is_valid_project_slug(slug):
+        findings.append(
+            Finding(
+                code="MRS-TEARDOWN-001",
+                severity=Severity.ERROR,
+                message=(
+                    f"malformed project slug {slug!r} -- must be one safe "
+                    "path segment (letters, digits, '.', '_', '-'; not '.' "
+                    "or '..'; at most 255 characters)"
+                ),
+            )
+        )
+        return _emit_teardown(args, data, findings)
+
+    # Same git-ref-shape guard as run_init's identical gate -- a branch-name
+    # component git itself would refuse, checked here so it dies as a crisp
+    # pre-I/O MRS-TEARDOWN-001 instead of an opaque MRS-TEARDOWN-002
+    # carrying raw git stderr. (review finding: run_preflight does NOT
+    # apply this same guard today -- a pre-existing Story 1.7 gap, not
+    # introduced here; logged to deferred-work.md rather than fixed in this
+    # story's own surface.)
+    if (
+        slug.startswith(".")
+        or slug.endswith(".")
+        or ".." in slug
+        or slug.endswith(".lock")
+    ):
+        findings.append(
+            Finding(
+                code="MRS-TEARDOWN-001",
+                severity=Severity.ERROR,
+                message=(
+                    f"project slug {slug!r} is not usable as the git branch "
+                    f"loop/{slug} -- a branch-name component must not start "
+                    "or end with '.', contain '..', or end with '.lock'"
+                ),
+            )
+        )
+        return _emit_teardown(args, data, findings)
+
+    try:
+        invocation_dir = Path.cwd()
+    except OSError as exc:
+        findings.append(
+            _teardown_op_failed_finding(f"resolving the current working directory: {exc}")
+        )
+        return _emit_teardown(args, data, findings)
+    try:
+        repo_root = vcs.repo_common_root(invocation_dir)
+    except VcsCommandError as exc:
+        findings.append(_teardown_op_failed_finding(f"resolving the repo root: {exc}"))
+        return _emit_teardown(args, data, findings)
+    data["repo_root"] = str(repo_root)
+
+    try:
+        home = _home_path(slug)
+    except (RuntimeError, OSError) as exc:
+        findings.append(_teardown_op_failed_finding(f"resolving the loop-home root: {exc}"))
+        return _emit_teardown(args, data, findings)
+    branch = f"loop/{slug}"
+    data["home"] = str(home)
+    data["branch"] = branch
+
+    # --- reconcile: what is actually provisioned for this slug? -------------
+    try:
+        worktree_path = vcs.worktree_path_for_branch(repo_root, branch)
+    except VcsCommandError as exc:
+        findings.append(
+            _teardown_op_failed_finding(f"resolving worktree state for {branch}: {exc}")
+        )
+        return _emit_teardown(args, data, findings)
+    try:
+        branch_present = vcs.branch_exists(repo_root, branch)
+    except VcsCommandError as exc:
+        findings.append(_teardown_op_failed_finding(f"checking whether {branch} exists: {exc}"))
+        return _emit_teardown(args, data, findings)
+
+    if worktree_path is None:
+        # No worktree REGISTERED for this slug (the branch may or may not
+        # remain). Usually a clean no-op or a branch-only reconciliation
+        # (teardown is a cleanup command, not a precondition-verifying one
+        # like preflight) -- but a prior partial/failed removal (or manual
+        # git surgery) can deregister a worktree while leaving real files
+        # behind, and this repo's own history has hit exactly that failure
+        # mode. Trusting git's registry alone here would silently claim
+        # full cleanup while unverified -- possibly uncommitted -- content
+        # sits untouched on disk (review finding); check for it (read-only)
+        # rather than assume absence. `exists`, not `is_dir` (follow-up
+        # review finding): a leftover regular FILE at the home path would
+        # otherwise slip through as "already removed". And the guard runs
+        # for the branch-only state too (follow-up review finding): it
+        # previously ran only when NOTHING was registered, so a leftover
+        # dir plus a surviving branch reported `removed: True` while the
+        # unverified leftover sat there.
+        try:
+            leftover = fs.exists(home)
+        except FsError as exc:
+            findings.append(
+                _teardown_op_failed_finding(f"checking for a leftover at {home}: {exc}")
+            )
+            return _emit_teardown(args, data, findings)
+        if leftover:
+            findings.append(
+                _teardown_op_failed_finding(
+                    f"{home} still exists on disk but git no longer "
+                    "registers it as a worktree for any branch -- its "
+                    "contents were never checked for uncommitted work; "
+                    "inspect and remove it by hand"
+                )
+            )
+            return _emit_teardown(args, data, findings)
+        if not branch_present:
+            data["already_removed"] = True
+            return _emit_teardown(args, data, findings)
+
+    # --- refusal decision: dirty working tree, unmerged content, or an ------
+    # unreachable promotion -- the finding names EVERY condition that fires.
+    reasons: list[str] = []
+
+    if worktree_path is not None:
+        # git still registers the worktree, but its directory may have been
+        # deleted by hand rather than via `git worktree remove` (mirrors
+        # run_init's/run_homes's own identical guard for the same known
+        # failure mode -- this repo's own history has hit it). There is
+        # nothing to check for dirtiness in that case, and calling
+        # has_uncommitted_changes against a missing path raises rather than
+        # answering (review finding: this previously left --force with no
+        # way to proceed past that raised error). git's own
+        # `worktree remove` cleans up this exact stale registration WITHOUT
+        # needing --force (confirmed live), so removal below still
+        # succeeds once this check is skipped.
+        try:
+            worktree_on_disk = fs.is_dir(worktree_path)
+        except FsError as exc:
+            findings.append(
+                _teardown_op_failed_finding(f"checking whether {worktree_path} exists: {exc}")
+            )
+            return _emit_teardown(args, data, findings)
+        if worktree_on_disk:
+            # Probe failures block only an UNFORCED teardown (follow-up
+            # review finding): a VcsCommandError here previously returned
+            # MRS-TEARDOWN-002 before the --force branch was ever reached,
+            # so --force could not carry past a damaged-but-present
+            # worktree (e.g. a corrupt .git gitdir pointer) -- the exact
+            # states teardown is most needed for, and the same dead-end
+            # class the missing-directory guard above already removed.
+            # Under --force the probe's answer cannot change the outcome,
+            # so its failure becomes one more (named) forced-past reason.
+            try:
+                dirty = vcs.has_uncommitted_changes(worktree_path)
+            except VcsCommandError as exc:
+                if not force:
+                    findings.append(
+                        _teardown_op_failed_finding(
+                            f"checking for uncommitted changes in {worktree_path}: {exc}"
+                        )
+                    )
+                    return _emit_teardown(args, data, findings)
+                reasons.append(
+                    f"the dirty-state of {worktree_path} could not be determined: {exc}"
+                )
+            else:
+                if dirty:
+                    reasons.append(f"{worktree_path} has uncommitted changes")
+
+    if branch_present:
+        # Same forced-past treatment as the dirty probe above.
+        try:
+            merged = vcs.is_branch_merged(repo_root, branch, into="main")
+        except VcsCommandError as exc:
+            if not force:
+                findings.append(
+                    _teardown_op_failed_finding(
+                        f"checking whether {branch} is merged into main: {exc}"
+                    )
+                )
+                return _emit_teardown(args, data, findings)
+            reasons.append(
+                f"whether {branch} is merged into main could not be determined: {exc}"
+            )
+        else:
+            if not merged:
+                reasons.append(
+                    f"branch {branch}'s content is not yet safely captured on main"
+                )
+
+    unreachable = _unreachable_promotions(repo_root, branch)
+    if unreachable:
+        reasons.append(
+            f"branch {branch} would become unreachable from: {', '.join(unreachable)}"
+        )
+
+    if reasons and not force:
+        # Name the path the checks and the removal actually operate on --
+        # git's registered location when one exists (follow-up review
+        # finding: the headline previously named the merely COMPUTED
+        # `home` even in the moved-home case where the two disagree and
+        # every operation targets git's truth).
+        refusal_target = worktree_path if worktree_path is not None else home
+        findings.append(
+            Finding(
+                code="MRS-TEARDOWN-003",
+                severity=Severity.ERROR,
+                message=(
+                    f"refusing to tear down {refusal_target} -- work would be lost: "
+                    f"{'; '.join(reasons)} -- pass --force to override"
+                ),
+            )
+        )
+        return _emit_teardown(args, data, findings)
+
+    # --- removal: authorized either because every check passed, or because -
+    # the operator's own --force overrode a real refusal. Worktree removal
+    # only needs --force on the latter path; branch deletion always uses -D
+    # (see this module's own docstring for why plain -d is unsafe here even
+    # on the clean path).
+    worktree_needed_force = bool(reasons)
+
+    if worktree_path is not None:
+        try:
+            # git's own registered location, not the merely COMPUTED `home`
+            # (review finding: these can disagree -- e.g. BMAD_LOOP_HOME_ROOT
+            # changed since provisioning -- and run_init's own precedent is
+            # to trust git's truth, exactly like the dirty-check above
+            # already does).
+            vcs.remove_worktree(repo_root, worktree_path, force=worktree_needed_force)
+        except VcsCommandError as exc:
+            findings.append(_teardown_op_failed_finding(str(exc)))
+            return _emit_teardown(args, data, findings)
+
+    if branch_present:
+        try:
+            vcs.delete_branch(repo_root, branch, force=True)
+        except VcsCommandError as exc:
+            message = str(exc)
+            if worktree_path is not None:
+                # By this point the worktree removal above already
+                # succeeded (any failure there returned early) -- naming
+                # that here saves the operator from re-diagnosing "did
+                # anything happen" after a partial failure (review finding:
+                # the recovery path, a bare re-run, is already handled by
+                # this function's own branch-only reconciliation above, but
+                # was not surfaced in the message).
+                message = f"the worktree was already removed; {message}"
+            findings.append(_teardown_op_failed_finding(message))
+            return _emit_teardown(args, data, findings)
+
+    data["removed"] = True
+    if worktree_needed_force:
+        data["forced"] = True
+
+    return _emit_teardown(args, data, findings)
+
+
+def _render_text_teardown(data: Mapping[str, object], findings: tuple[Finding, ...]) -> str:
+    """A pure projection of the SAME envelope ``data``/``findings`` the
+    ``--format json`` path prints (AD-14), matching this module's own
+    ``_render_text``/``_render_text_homes``/``_render_text_preflight``
+    convention."""
+    lines = [f"teardown: {data.get('slug', '')}"]
+    if "home" in data:
+        lines.append(f"home: {data['home']}")
+    if "branch" in data:
+        lines.append(f"branch: {data['branch']}")
+    if "already_removed" in data:
+        lines.append(f"already_removed: {data['already_removed']}")
+    if "removed" in data:
+        lines.append(f"removed: {data['removed']}")
+    if "forced" in data:
+        lines.append(f"forced: {data['forced']}")
+    if findings:
+        lines.append("findings:")
+        for finding in findings:
+            lines.append(f"  {finding.code} [{finding.severity.value}] {finding.message}")
+    return "\n".join(lines)
+
+
+def _emit_teardown(args: argparse.Namespace, data: dict[str, object], findings: list[Finding]) -> int:
+    verdict_value = compute_verdict(tuple(findings))
+    envelope = build_envelope(
+        command="teardown", verdict=verdict_value, data=data, findings=tuple(findings)
+    )
+    # Same flush + broken-pipe-suppression convention as _emit/_emit_homes/
+    # _emit_preflight and cli/config.py::run_config.
+    try:
+        if args.format == "json":
+            print(json.dumps(envelope.to_json_dict(), indent=2, sort_keys=True), flush=True)
+        else:
+            print(_render_text_teardown(envelope.data, envelope.findings), flush=True)
     except OSError:
         _suppress_downstream_pipe_close()
     return exit_code_for(envelope.verdict)
