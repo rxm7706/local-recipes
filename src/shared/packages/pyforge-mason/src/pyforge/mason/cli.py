@@ -38,13 +38,13 @@ import sys
 from typing import Sequence
 
 from . import __version__, render
+from .errors import MasonError
+from .exit_codes import EXIT_FAILED, EXIT_INTERRUPTED, EXIT_OK, EXIT_USAGE
 
 # main() is the sole owner of the process exit code. A verb never calls
-# sys.exit() directly; it returns an int and main() projects it.
-EXIT_OK = 0
-EXIT_USAGE = 2          # argparse's own convention, preserved
-EXIT_INTERRUPTED = 130  # 128 + SIGINT, the shell convention
-EXIT_INTERNAL = 70      # EX_SOFTWARE — never the bare interpreter default of 1
+# sys.exit() directly; it returns an int and main() projects it. The five
+# possible codes live in exit_codes.py (AD-7) -- this module only imports
+# the names it uses.
 
 _NOUNS = {
     "recipe": "author, validate and build conda recipes (wraps the conda-forge-expert craft)",
@@ -236,10 +236,16 @@ def main(argv: Sequence[str] | None = None) -> int:
         if code is None:
             return EXIT_OK
         return code if isinstance(code, int) else EXIT_USAGE
+    except MasonError as exc:
+        # Anticipated failure (AD-7): the identifier + message is the whole
+        # diagnostic, no traceback. Must precede the bare `Exception` catch
+        # below, since MasonError is a subclass of it.
+        print(str(exc), file=sys.stderr)
+        return EXIT_FAILED
     except Exception:                              # noqa: BLE001 — deliberate boundary
         import traceback
         traceback.print_exc()
-        return EXIT_INTERNAL
+        return EXIT_FAILED
 
 
 if __name__ == "__main__":                          # pragma: no cover

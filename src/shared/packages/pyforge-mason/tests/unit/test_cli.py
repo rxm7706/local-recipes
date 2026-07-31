@@ -12,10 +12,9 @@ import json
 import pytest
 
 from pyforge.mason import __version__
-from pyforge.mason.cli import (
-    EXIT_INTERNAL, EXIT_INTERRUPTED, EXIT_OK, EXIT_USAGE,
-    _resolve_bool, _resolve_str, build_parser, main,
-)
+from pyforge.mason.cli import _resolve_bool, _resolve_str, build_parser, main
+from pyforge.mason.errors import MasonError
+from pyforge.mason.exit_codes import EXIT_FAILED, EXIT_INTERRUPTED, EXIT_OK, EXIT_USAGE
 
 
 def test_version_is_reported(capsys):
@@ -170,13 +169,35 @@ def test_keyboard_interrupt_projects_to_130(monkeypatch):
     assert main([]) == EXIT_INTERRUPTED
 
 
-def test_unexpected_exception_never_returns_bare_1(monkeypatch, capsys):
-    """A crash must project to a documented code, not the interpreter default."""
+def test_unanticipated_exception_projects_to_exit_failed_with_traceback(monkeypatch, capsys):
+    """A crash must project to the documented EXIT_FAILED (AD-7), with the
+    full traceback on stderr -- not the interpreter's bare default and not a
+    silent failure."""
     monkeypatch.setattr("pyforge.mason.cli.build_parser",
                         lambda: (_ for _ in ()).throw(RuntimeError("boom")))
     rc = main([])
-    assert rc == EXIT_INTERNAL
-    assert rc != 1
+    assert rc == EXIT_FAILED
+    err = capsys.readouterr().err
+    assert "Traceback" in err
+    assert "RuntimeError" in err
+    assert "boom" in err
+
+
+def test_mason_error_raised_in_main_prints_message_and_returns_exit_failed(monkeypatch, capsys):
+    """A MasonError raised inside main()'s try block is an anticipated
+    failure (AD-7): its `identifier: message` goes to stderr, no traceback,
+    and the process exits EXIT_FAILED -- same monkeypatch pattern as the
+    KeyboardInterrupt/RuntimeError cases above. No verb dispatch exists yet
+    (later epics), so this proves the handler itself, not a dispatch path."""
+    monkeypatch.setattr(
+        "pyforge.mason.cli.build_parser",
+        lambda: (_ for _ in ()).throw(MasonError("cfe:unresolved", "no CFE root found")),
+    )
+    rc = main([])
+    assert rc == EXIT_FAILED
+    err = capsys.readouterr().err
+    assert err.strip() == "cfe:unresolved: no CFE root found"
+    assert "Traceback" not in err
 
 
 # --- AD-13 precedence helpers, tested directly as pure functions -----------
