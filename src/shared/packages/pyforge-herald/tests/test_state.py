@@ -134,11 +134,14 @@ def test_write_blocked_by_a_plain_file_in_the_parent_path_raises_herald_error(
     tmp_path: Path,
 ):
     """A plain file where the `.herald` directory should be must surface as
-    a HeraldError, not a bare FileExistsError/NotADirectoryError."""
+    a HeraldError, not a bare FileExistsError/NotADirectoryError. The
+    pre-write load is what trips (``open()`` through a plain-file parent
+    raises ``NotADirectoryError``, wrapped as "could not be read"); write's
+    own mkdir wrap would catch the same shape racing into place later."""
     blocker = tmp_path / ".herald"
     blocker.write_text("not a directory")
     state_path = blocker / "bridge-state.json"
-    with pytest.raises(HeraldError, match="could not be written"):
+    with pytest.raises(HeraldError, match="could not be read"):
         write(state_path, "x", DeckState(project_id="p1", etags={}))
 
 
@@ -152,3 +155,78 @@ def test_write_over_a_corrupt_existing_file_raises_and_leaves_it_untouched(
     with pytest.raises(HeraldError, match="could not be read"):
         write(state_path, "x", DeckState(project_id="p1", etags={}))
     assert state_path.read_text() == "{not valid json"
+
+
+def test_read_of_an_explicit_null_entry_raises_herald_error(tmp_path: Path):
+    """A hand-edited ``"slug": null`` is a malformed entry, not an absent
+    one -- a plain ``.get(slug)`` would silently read it as no-state."""
+    state_path = tmp_path / "bridge-state.json"
+    state_path.write_text('{"x": null}')
+    with pytest.raises(HeraldError, match="not a JSON object"):
+        read(state_path, "x")
+
+
+def test_read_names_the_offending_field(tmp_path: Path):
+    """The operator hand-editing this file (the module docstring's headline
+    failure mode) needs to know *which* field broke, not just that one
+    did."""
+    state_path = tmp_path / "bridge-state.json"
+    state_path.write_text('{"x": {"project_id": 123, "etags": {}}}')
+    with pytest.raises(HeraldError, match="project_id"):
+        read(state_path, "x")
+
+
+def test_read_with_a_plain_file_as_a_parent_path_component_raises_herald_error(
+    tmp_path: Path,
+):
+    """``Path.exists`` returns False whenever the stat fails, so an
+    ``exists()`` pre-check would misread this as "no state yet" -- ``open()``
+    is the authority, and its ``NotADirectoryError`` must surface
+    structurally."""
+    blocker = tmp_path / ".herald"
+    blocker.write_text("not a directory")
+    with pytest.raises(HeraldError, match="could not be read"):
+        read(blocker / "bridge-state.json", "x")
+
+
+def test_read_of_absurdly_nested_json_raises_herald_error(tmp_path: Path):
+    """Past the parser's nesting limit ``json.load`` raises
+    ``RecursionError`` -- a ``ValueError`` *cousin*, not subclass, that must
+    not leak raw."""
+    state_path = tmp_path / "bridge-state.json"
+    state_path.write_text("[" * 100_000 + "]" * 100_000)
+    with pytest.raises(HeraldError, match="could not be read"):
+        read(state_path, "x")
+
+
+def test_write_refuses_a_type_lying_deck_state(tmp_path: Path):
+    """``json.dump`` would either crash with a raw ``TypeError`` (an
+    unserializable etags value) or silently launder an ``int`` key into its
+    string -- both refused up front, so ``read`` never has to reject
+    Herald's own write as corruption."""
+    state_path = tmp_path / "bridge-state.json"
+    with pytest.raises(HeraldError, match="etags"):
+        write(state_path, "x", DeckState(project_id="p1", etags={"a": 5}))
+    with pytest.raises(HeraldError, match="etags"):
+        write(state_path, "x", DeckState(project_id="p1", etags={1: "E1"}))
+    assert not state_path.exists()
+
+
+def test_write_refuses_a_non_string_slug(tmp_path: Path):
+    """``json.dump(sort_keys=True)`` would launder ``5`` into ``"5"`` in an
+    otherwise-empty document, or crash comparing ``int`` to ``str`` beside
+    an existing entry -- refused up front instead."""
+    state_path = tmp_path / "bridge-state.json"
+    with pytest.raises(HeraldError, match="slug must be a string"):
+        write(state_path, 5, DeckState(project_id="p1", etags={}))
+    assert not state_path.exists()
+
+
+def test_write_where_state_path_is_a_directory_raises_herald_error(tmp_path: Path):
+    """The docstring's ``state_path``-is-a-directory refusal, exercised:
+    the load trips first (``open()`` on a directory), and the write-side
+    wrap covers a directory racing into place after it identically."""
+    state_path = tmp_path / "bridge-state.json"
+    state_path.mkdir()
+    with pytest.raises(HeraldError, match="could not be read"):
+        write(state_path, "x", DeckState(project_id="p1", etags={}))

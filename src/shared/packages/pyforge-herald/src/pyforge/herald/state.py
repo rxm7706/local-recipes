@@ -20,7 +20,10 @@ structurally, never silently -- so malformed or binary-corrupt JSON, an
 unreadable file, a non-object document, or a slug entry missing or
 mis-typing a required field all raise ``errors.HeraldError`` rather than
 leaking a bare ``json.JSONDecodeError``/``UnicodeDecodeError``/``OSError``/
-``KeyError``.
+``KeyError``. ``write`` holds its inputs to the same discipline: a
+non-string slug or a ``DeckState`` whose fields lie about their declared
+types is refused up front, never persisted for ``read`` to reject as
+corruption one process later.
 """
 
 from __future__ import annotations
@@ -52,28 +55,54 @@ class DeckState:
     last_pull: str | None = None
 
 
+_MISSING = object()
+"""Sentinel distinguishing an absent slug entry from an explicit JSON
+``null`` one -- a plain ``.get(slug)`` reads a hand-edited ``"slug": null``
+as silently absent, when it is a malformed entry that must fail
+structurally (AD-6)."""
+
+
+def _fields_problem(project_id: object, etags: object, last_pull: object) -> str | None:
+    """Which declared-type constraint the three ``DeckState`` fields break,
+    or ``None`` when all hold -- shared by ``read`` (parsed JSON) and
+    ``write`` (a caller's ``DeckState``), so both sides of the round-trip
+    enforce one shape and a type-lying value is refused where it appears,
+    not discovered as "corruption" one process later. String *keys* only
+    matter on the write side (JSON object keys are strings by construction,
+    but ``json.dump`` silently launders an ``int`` key into one)."""
+    if not isinstance(project_id, str):
+        return "field 'project_id' must be a string"
+    if not isinstance(etags, dict) or not all(
+        isinstance(key, str) and isinstance(value, str) for key, value in etags.items()
+    ):
+        return "field 'etags' must be an object with string keys and string values"
+    if last_pull is not None and not isinstance(last_pull, str):
+        return "field 'last_pull' must be a string or null"
+    return None
+
+
 def _load_document(state_path: Path) -> dict[str, object]:
     """The whole state file as a slug-keyed dict, or ``{}`` when the file
     does not exist yet -- both a missing file and a missing slug are "no
     state yet", never an error (the I/O matrix's read rows).
 
-    A file that exists but cannot be read as UTF-8 JSON, or whose top-level
-    value is not a JSON object, is a structural failure (AD-6): raises
-    ``errors.HeraldError`` naming ``state_path`` rather than leaking
+    Anything else that stops the read is a structural failure (AD-6):
+    raises ``errors.HeraldError`` naming ``state_path`` rather than leaking
     ``json.JSONDecodeError``, ``UnicodeDecodeError`` (binary corruption),
-    an ``OSError`` (unreadable file, ``state_path`` being a directory), or
-    an ``AttributeError`` from treating a non-dict as one. The ``open()``
-    itself is guarded against the file being removed between the
-    ``exists()`` check and the read (TOCTOU) -- that race is "no state yet"
-    too, not a corruption."""
-    if not state_path.exists():
-        return {}
+    ``RecursionError`` (absurdly nested JSON), an ``OSError`` (unreadable
+    file, ``state_path`` being a directory, a parent component that is a
+    plain file), or an ``AttributeError`` from treating a non-dict as one.
+    There is deliberately no ``exists()`` pre-check: ``Path.exists``
+    returns ``False`` whenever the *stat* fails (an unsearchable parent, a
+    symlink loop), which would silently misread genuinely unreadable state
+    as empty -- ``open()`` is the sole authority, and only its
+    ``FileNotFoundError`` means "no state yet"."""
     try:
         with state_path.open(encoding="utf-8") as fh:
             document = json.load(fh)
     except FileNotFoundError:
         return {}
-    except (ValueError, OSError) as exc:
+    except (ValueError, OSError, RecursionError) as exc:
         # ValueError covers json.JSONDecodeError and UnicodeDecodeError --
         # the latter is JSONDecodeError's *sibling* under ValueError, not a
         # subclass, so naming only JSONDecodeError would leak it raw.
@@ -94,31 +123,28 @@ def read(state_path: Path, slug: str) -> DeckState | None:
     """``slug``'s stored state, or ``None`` when the file or the slug's
     entry is absent.
 
-    A present entry missing ``project_id``/``etags``, or carrying the wrong
-    type for any field -- including a non-string ``etags`` value or a
-    non-string ``last_pull`` -- is a structural failure (AD-6): raises
-    ``errors.HeraldError`` naming the slug rather than leaking a bare
+    A present entry that is not a JSON object (including an explicit
+    ``null`` -- absent and null are different hand-edits), missing
+    ``project_id``/``etags``, or carrying the wrong type for any field --
+    including a non-string ``etags`` value or a non-string ``last_pull`` --
+    is a structural failure (AD-6): raises ``errors.HeraldError`` naming
+    the slug and the offending field rather than leaking a bare
     ``KeyError``/``TypeError``, or handing a later story a ``DeckState``
     whose fields lie about their declared types."""
-    entry = _load_document(state_path).get(slug)
-    if entry is None:
+    entry = _load_document(state_path).get(slug, _MISSING)
+    if entry is _MISSING:
         return None
+    malformed = (
+        f"bridge state file {state_path} has a malformed entry for slug {slug!r}"
+    )
     if not isinstance(entry, dict):
-        raise errors.HeraldError(
-            f"bridge state file {state_path} has a malformed entry for slug {slug!r}"
-        )
+        raise errors.HeraldError(f"{malformed}: entry is not a JSON object")
     project_id = entry.get("project_id")
     etags = entry.get("etags")
     last_pull = entry.get("last_pull")
-    if (
-        not isinstance(project_id, str)
-        or not isinstance(etags, dict)
-        or not all(isinstance(value, str) for value in etags.values())
-        or not (last_pull is None or isinstance(last_pull, str))
-    ):
-        raise errors.HeraldError(
-            f"bridge state file {state_path} has a malformed entry for slug {slug!r}"
-        )
+    problem = _fields_problem(project_id, etags, last_pull)
+    if problem:
+        raise errors.HeraldError(f"{malformed}: {problem}")
     return DeckState(project_id=project_id, etags=dict(etags), last_pull=last_pull)
 
 
@@ -126,20 +152,35 @@ def write(state_path: Path, slug: str, state: DeckState) -> None:
     """Store ``state`` under ``slug``, preserving every other slug already
     in the file. Creates ``state_path``'s parent directory if needed, and
     writes atomically (temp file in the same directory, then
-    ``os.replace``) so a crash mid-write can never leave a half-written
-    state file behind -- mirrors ``pyforge.warden.feeds.write_kev_cache``.
+    ``os.replace``) so a *process* crash mid-write can never leave a
+    half-written state file behind -- mirrors
+    ``pyforge.warden.feeds.write_kev_cache``, including its limit: neither
+    fsyncs, so surviving power loss is the filesystem's business, not a
+    guarantee this module makes.
 
-    Raises ``errors.HeraldError`` when the existing file is corrupt or
-    unreadable (the same load ``read`` uses -- a corrupt file blocks writes
+    Refuses up front -- as ``errors.HeraldError`` naming the slug -- a
+    non-string ``slug`` or a ``DeckState`` whose fields do not match their
+    declared types: ``json.dump`` would otherwise either crash raw or
+    silently launder the value (an ``int`` key becomes its string), handing
+    ``read`` a "corruption" Herald itself manufactured. Also raises
+    ``errors.HeraldError`` when the existing file is corrupt or unreadable
+    (the same load ``read`` uses -- a corrupt file blocks writes
     deliberately, since clobbering it would destroy every other slug's
     entry; the operator's recovery is deleting the file) and when the
     filesystem refuses the write (a plain file where a directory is
     needed, a read-only tree, ``state_path`` itself being a directory)."""
-    document = _load_document(state_path)
-    document[slug] = asdict(state)
     could_not_write = (
         f"bridge state for slug {slug!r} could not be written to {state_path}"
     )
+    if not isinstance(slug, str):
+        raise errors.HeraldError(
+            f"{could_not_write}: slug must be a string, not {type(slug).__name__}"
+        )
+    problem = _fields_problem(state.project_id, state.etags, state.last_pull)
+    if problem:
+        raise errors.HeraldError(f"{could_not_write}: {problem}")
+    document = _load_document(state_path)
+    document[slug] = asdict(state)
     try:
         state_path.parent.mkdir(parents=True, exist_ok=True)
         handle, tmp_name = tempfile.mkstemp(
@@ -168,6 +209,11 @@ def write(state_path: Path, slug: str, state: DeckState) -> None:
             os.unlink(tmp_name)
         except OSError:
             pass
-        if isinstance(exc, OSError):
+        if isinstance(exc, (OSError, TypeError, ValueError)):
+            # The up-front validation makes a json.dump TypeError /
+            # ValueError unreachable for this slug's own entry, and every
+            # other entry came from JSON (serializable by construction) --
+            # wrapped anyway: a raw leak through the AD-6 contract is worse
+            # than a redundant guard.
             raise errors.HeraldError(f"{could_not_write}: {exc}") from exc
         raise
