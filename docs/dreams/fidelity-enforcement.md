@@ -281,6 +281,43 @@ proposes it.
   Marshal live in Doctor's package with no Marshal write path. Until one ships,
   every verdict below it is self-graded.
 
+### Invariants for the trigger
+
+Recorded here rather than in a plan, because they are the parts that do not
+regenerate: the detector inventory, the run timings and the repo/runtime split
+are all derivable from the tree at any moment, and were derived to reach these.
+The choices are not.
+
+1. **One derived registry, never a second list.** Enumerating detectors by hand
+   is what produced the present state — **eight scripts on disk, seven pixi
+   tasks, three rows on the board, zero in CI**, with the newest detector
+   missing from two of the three. A hand-written list omits exactly the newest
+   thing. The registry is derived, and it **fails on its own gaps**: a detector
+   script with no declaration, or a declared detector with no task, is a
+   finding. `generate.py` already derives a task's command from `pixi.toml`
+   *"never declared twice"*; the list above it is hand-typed, and that is the
+   whole bug.
+2. **Each detector declares its own scope.** `repo` reads tracked files only and
+   can run anywhere; `runtime` observes host state — Tier-3 feeds, tmux,
+   `~/.bmad-loops` — and cannot run in CI at all. This is not a limitation to
+   work around: it is the missing observation plane showing up as a deployment
+   constraint. **The runtime detectors are the ones with nowhere to run.**
+3. **A detector that cannot run reports `unknown`, never green.** Already the
+   board's behaviour — *the strip never claims green it did not measure* — and
+   promoted here to a rule binding every consumer of the registry.
+4. **Advisory locally, blocking in CI and in the fleet.** A local hook is
+   per-clone, untracked and bypassable, so it is fast feedback and must not be
+   mistaken for a gate. Treating it as one would be this Dream's own error.
+5. **Never a blocking `pre-commit`.** Every worktree — loop homes and per-story
+   worktrees alike — resolves to the *same* `.git/hooks`. A blocking pre-commit
+   fires inside unattended dev sessions that cannot interpret a detector
+   failure, and would convert one red check into fleet-wide story loss.
+   `pre-push` is the local seam.
+6. **The fleet is the load-bearing consumer, not CI.** Most code here is written
+   by bmad-loop, not by a human at a terminal and not in a pull request. Until
+   the repo-scope detectors are in the harness `[verify]` set, the trigger
+   covers the least of the three places work happens.
+
 ## Landing a gate on a factory that already violates it
 
 Every gate on that list fails on contact with the existing estate. INV-4 switched
@@ -580,3 +617,16 @@ this law was first discovered) · [[pyforge-charter]].
   conformance rows are unenforced because no detector covers them, and the
   detectors are unenforced because no trigger covers the detectors. *Wire the
   eight* is now the first frontier item, ahead of INV-4.
+- **2026-07-31** — **six invariants recorded for the trigger** (§ The frontier),
+  after the design for it was worked out conversationally and would otherwise
+  have survived only in a session transcript — the precise failure this Dream
+  is about, committed by the Dream's own author. Only the non-derivable
+  decisions are recorded; the inventory, timings and repo/runtime split
+  regenerate from the tree. Measured while deriving them: **8 detector scripts,
+  7 pixi tasks, 3 board rows, 0 in CI**, all eight running in 0.4–0.9s
+  (~4.2s total, so cost is not what kept them untriggered). Also found: three
+  detectors are **red on `main` right now** — `spec-surface-check` broken by
+  PR #170 itself (touched `docs/dreams/README.md`, governed by
+  `spec-pyforge-genesis`, without moving its memlog) and merged green because
+  nothing ran it; `dashboard-drift-check` transiently, against the live run;
+  `dream_chain_check`'s INV-1, expected until the Spec exists.
