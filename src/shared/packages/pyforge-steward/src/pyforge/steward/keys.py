@@ -351,13 +351,16 @@ def encrypt_file(input_path: str | Path, *, recipient: str, output: str | Path) 
     """`age --encrypt` `input_path` to `output` for `recipient`.
 
     Raises `subprocess.CalledProcessError` on a non-zero `age` exit (e.g. a
-    malformed recipient) — propagated, not swallowed.
+    malformed recipient) — propagated, not swallowed. The `--` separator keeps
+    a flag-shaped filename (`-r`) from being parsed as an `age` flag, and the
+    closed stdin keeps `age`'s stdin fallback from hanging an unattended run.
     """
     subprocess.run(
-        ["age", "--encrypt", "--recipient", recipient, "--output", str(output), str(input_path)],
+        ["age", "--encrypt", "--recipient", recipient, "--output", str(output), "--", str(input_path)],
         check=True,
         capture_output=True,
         text=True,
+        stdin=subprocess.DEVNULL,
     )
 
 
@@ -367,12 +370,14 @@ def decrypt_file(input_path: str | Path, *, identity: str | Path, output: str | 
     Raises `subprocess.CalledProcessError` on a non-zero `age` exit — most
     notably an identity that does not match any recipient the file was
     encrypted to (`age: error: no identity matched any of the recipients`).
+    `--` and the closed stdin: same rationale as `encrypt_file`.
     """
     subprocess.run(
-        ["age", "--decrypt", "--identity", str(identity), "--output", str(output), str(input_path)],
+        ["age", "--decrypt", "--identity", str(identity), "--output", str(output), "--", str(input_path)],
         check=True,
         capture_output=True,
         text=True,
+        stdin=subprocess.DEVNULL,
     )
 
 
@@ -441,15 +446,28 @@ def scan_directory_for_secrets(directory: str | Path) -> list[PlaintextSecretFin
     the top level. A directory with no secret-shaped content returns ``[]``.
 
     Raises `NotADirectoryError` if `directory` doesn't exist or isn't a
-    directory — an audit primitive must never let a typo'd path silently
-    read as "clean" when it never actually scanned anything.
+    directory, and propagates any `OSError` from the walk or a file read
+    (e.g. an unreadable subtree) — an audit primitive must never let a
+    typo'd path or a permission wall silently read as "clean" when it never
+    actually scanned everything. `Path.walk` (not ``rglob``) because the
+    glob machinery swallows per-directory `PermissionError`, and its
+    symlink-traversal default changed across 3.12/3.13; `walk` propagates
+    via ``on_error`` and never descends into directory symlinks, uniformly.
     """
     directory = Path(directory)
     if not directory.is_dir():
         raise NotADirectoryError(f"scan_directory_for_secrets: not a directory: {directory}")
+
+    def _propagate(error: OSError) -> None:
+        raise error
+
     findings: list[PlaintextSecretFinding] = []
-    for path in sorted(p for p in directory.rglob("*") if p.is_file()):
-        findings.extend(scan_file_for_secrets(path))
+    for dirpath, dirnames, filenames in directory.walk(on_error=_propagate):
+        dirnames.sort()
+        for name in sorted(filenames):
+            path = dirpath / name
+            if path.is_file():
+                findings.extend(scan_file_for_secrets(path))
     return findings
 
 
@@ -462,9 +480,13 @@ class KeysDuty:
     """The real `keys` duty — dispatches `encrypt`/`decrypt` onto the `age`
     subprocess primitives above.
 
-    Bare `steward keys` (no verb), or a verb this story hasn't implemented,
-    degrades to `DutyResult(ok=True, ...)` naming the available verbs (AD-7 —
-    dispatch never crashes on an unrecognized/missing verb). `age` failing
+    Bare `steward keys` (no verb) reaches this adapter with no ``keys_verb``
+    and degrades to `DutyResult(ok=True, ...)` naming the available verbs
+    (AD-7 — dispatch never crashes on a missing/unrecognized verb). Via the
+    CLI that is the only path into the degrade branch — argparse rejects an
+    unknown verb with a usage error before dispatch — so the
+    ``verb not in _KEYS_VERBS`` guard otherwise protects programmatic
+    callers handing this adapter an arbitrary namespace. `age` failing
     (bad identity, bad file) is caught here as `subprocess.CalledProcessError`
     and reported as a duty-level failure — never conflated with an internal
     crash (AD-8: that boundary is `cli.main()`'s alone).

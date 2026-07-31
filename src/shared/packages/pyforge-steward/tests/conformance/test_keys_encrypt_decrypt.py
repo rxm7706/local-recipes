@@ -28,7 +28,11 @@ def _generate_identity(tmp_path: Path, name: str) -> tuple[Path, str]:
         capture_output=True,
         text=True,
     )
-    pubkey = result.stderr.strip().removeprefix("Public key: ")
+    # Parse the "Public key: " line specifically — age-keygen may emit extra
+    # stderr lines (e.g. a file-permissions warning) around it.
+    pubkey = next(
+        line for line in result.stderr.splitlines() if line.startswith("Public key: ")
+    ).removeprefix("Public key: ")
     return key_path, pubkey
 
 
@@ -128,3 +132,18 @@ def test_bare_keys_names_the_available_verbs_and_still_exits_ok(capsys):
     assert rc == EXIT_OK
     assert "encrypt" in out
     assert "decrypt" in out
+
+
+def test_cli_module_import_does_not_trigger_the_keys_bridge():
+    """Importing `cli` must not import `keys` — keys.py refuses to load
+    outside a local-recipes checkout (its `_http.py` bridge resolves at import
+    time), so a top-level `cli -> keys` import would take `steward --help`/
+    `--version` and every other duty down with it in an installed package.
+    """
+    import sys as _sys
+
+    code = (
+        "import sys; import pyforge.steward.cli; "
+        "assert 'pyforge.steward.keys' not in sys.modules"
+    )
+    subprocess.run([_sys.executable, "-c", code], check=True, capture_output=True, text=True)

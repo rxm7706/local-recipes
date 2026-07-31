@@ -15,7 +15,6 @@ from typing import Sequence
 
 from . import __version__
 from .interfaces import Duty, DutyResult, NullDuty
-from .keys import KeysDuty
 
 EXIT_OK = 0
 EXIT_FAILED = 1          # a duty ran and reported ok=False — the ONLY legitimate 1
@@ -75,6 +74,12 @@ def resolve_duty(name: str) -> Duty:
     epic at a time without changing this seam.
     """
     if name == "keys":
+        # Imported here, not at module top: keys.py resolves its `_http.py`
+        # bridge at import time and refuses to load outside a local-recipes
+        # checkout, so a top-level import would take `steward --help`/
+        # `--version` and every other duty down with it.
+        from .keys import KeysDuty
+
         return KeysDuty()
     return NullDuty(name)
 
