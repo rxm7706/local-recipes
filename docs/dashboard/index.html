@@ -91,8 +91,16 @@
   .consolebar { margin: 0 0 22px; padding: 0; background: var(--panel);
     border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
   .cbrow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 9px 12px; }
+  /* CHIPS ARE A GRID, not a flex row. Flex + `white-space: nowrap` + three
+     data-driven strings of unpredictable length kept colliding: each chip is an
+     atomic nowrap box, so when the row cannot fit them the overflow has nowhere
+     legal to go and they run together. A grid gives every chip its OWN column
+     track that no sibling can enter, so overlap is structurally impossible
+     rather than merely unlikely. auto-fit + minmax collapses 3 columns -> 2 -> 1
+     as the viewport narrows, and each chip truncates inside its own track. */
   .cbstatus { border-top: 1px solid var(--line); background: var(--panel-2);
-    gap: 18px; padding-top: 8px; padding-bottom: 8px; }
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: 6px 18px; padding: 8px 12px; align-items: center; }
   .cprompt { font-family: var(--mono); font-size: 12.5px; letter-spacing: 0.02em;
     color: var(--slate); flex: none; }
   .cprompt .prompt { color: var(--accent); transition: color .3s; }
@@ -106,15 +114,15 @@
   .consolebar .branch { font-family: var(--mono); font-size: 12.5px; color: var(--ink-soft);
     flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis;
     white-space: nowrap; }
-  /* Chips may wrap onto their own lines rather than overflow the box. */
-  .cbstatus { flex-wrap: wrap; row-gap: 6px; }
   .cbtn { font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.04em;
     background: var(--panel-2); color: var(--slate); border: 1px solid var(--line);
     border-radius: 6px; padding: 5px 11px; cursor: pointer; text-transform: uppercase; }
   .cbtn:hover { color: var(--ink); border-color: var(--accent-dim); }
   .cbtn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   .chip { font-family: var(--mono); font-size: 11px; color: var(--ink-soft);
-    display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+    display: flex; align-items: center; gap: 6px; min-width: 0; }
+  /* the text truncates; the dot never does */
+  .chip > span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .chip b { color: var(--ink); font-weight: 600; }
   .chip .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--slate); flex: none; }
   .chip.live .dot { background: var(--accent); animation: pulse 2s ease-in-out infinite; }
@@ -637,7 +645,7 @@
       <button class="cbtn" id="cb-expand" type="button" title="Expand every panel">▸ expand</button>
       <button class="cbtn" id="tt" type="button" aria-label="Toggle theme">◐ theme</button>
     </div>
-    <div class="cbrow cbstatus">
+    <div class="cbstatus">
       <span class="chip" id="chip-gen"><span class="dot"></span><span>generated <b>—</b></span></span>
       <span class="chip" id="chip-run"><span class="dot"></span><span>running <b>—</b></span></span>
       <span class="chip" id="chip-ship"><span class="dot"></span><span>last shipped <b>—</b></span></span>
