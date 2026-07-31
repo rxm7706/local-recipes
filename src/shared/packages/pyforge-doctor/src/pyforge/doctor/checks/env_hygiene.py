@@ -41,22 +41,44 @@ story spec's Design Notes -- do not re-litigate here):
   dispatch, or any other expression-level conditional is not recognized as
   suppressing a finding (review finding, scoped out rather than chased: a
   narrower edge case than the false-positive/false-negative gaps above).
+  STATEMENT-FLOW guards are likewise not recognized: the early-return
+  idiom (``if host != safe: return`` followed by an unguarded
+  ``headers[...] = os.environ.get(...)``) still produces a WARN even
+  though it is correctly host-gated -- suppressing it would require
+  tracking which preceding sibling ``if`` bodies unconditionally
+  ``return``/``raise``, a statement-flow analysis beyond v1's
+  enclosing-guard model (review finding, logged in ``deferred-work.md``).
 * A finding is suppressed only when SOME enclosing ``if``/``elif`` test,
   anywhere up the assignment's ancestor chain WITHIN ITS OWN ENCLOSING
   FUNCTION, references a host-like name (``host``/``netloc``/``hostname``/
-  ``domain``, matched as a whole ``_``-separated token, case-insensitive,
-  against any ``ast.Name.id`` or ``ast.Attribute.attr`` in the test
-  subtree -- substring containment was rejected: it let an unrelated name
-  like ``ghost_mode`` accidentally suppress a real finding, review
-  finding). Suppression applies ONLY to the guarded ``if``/``elif``'s TRUE
-  branch (``node.body``) -- an assignment in the ``else``/failed-``elif``
-  branch (``node.orelse``) does NOT inherit that same test as a guard,
-  since the test being FALSE there is exactly the "not this host" case
-  this check exists to catch (review finding: `if host==safe: ... else:
-  headers[...] = os.environ.get(...)` was silently invisible before this
-  fix). A guard belonging to an outer function that merely contains a
-  nested ``def`` does not count either -- see
+  ``domain``, matched as a whole token -- split on ``_`` AND camelCase
+  boundaries (``serverHost``/``APIHost`` count, review finding),
+  case-insensitive, against any ``ast.Name.id`` or ``ast.Attribute.attr``
+  in the test subtree -- substring containment was rejected: it let an
+  unrelated name like ``ghost_mode`` accidentally suppress a real finding,
+  review finding). Suppression follows the test's POLARITY: for an
+  ordinary test it applies only to the TRUE branch (``node.body``) -- an
+  assignment in the ``else``/failed-``elif`` branch (``node.orelse``) does
+  NOT inherit that same test as a guard, since the test being FALSE there
+  is exactly the "not this host" case this check exists to catch (review
+  finding: `if host==safe: ... else: headers[...] = os.environ.get(...)`
+  was silently invisible before this fix). For a PURE-NEGATION test (an
+  ``ast.Compare`` whose every op is ``!=``/``not in``/``is not``) the
+  branches swap: ``if host != safe: headers[...] = os.environ.get(...)``
+  is flagged (the TRUE branch is the "not this host" case) while the same
+  assignment in its ``else`` branch is suppressed (review finding: the
+  negated form was silently invisible). Negation expressed any other way
+  (``not host_ok(h)``, a ``BoolOp`` over negated compares) is NOT polarity-
+  resolved -- deciding it would require knowing whether the compared set
+  is an allowlist or a denylist, which is statically undecidable; those
+  tests conservatively suppress their TRUE branch (logged in
+  ``deferred-work.md``). A guard belonging to an outer function that
+  merely contains a nested ``def`` does not count either -- see
   ``_CredentialInjectionVisitor``.
+* A ``target`` that is not a directory (a single file, a nonexistent
+  path) yields ``()`` -- the registry-wide ``gather(target: Path)``
+  directory convention (established Story 1.3 review), never a misleading
+  incomplete-scan sentinel.
 
 Every emitted ``Finding`` carries ``status=DoctorStatus.WARN`` (Design
 Decision, story spec): a hand-written pattern-match with no wrap-a-proven-
@@ -71,6 +93,7 @@ from __future__ import annotations
 
 import ast
 import os
+import re
 from pathlib import Path
 from typing import Iterator
 
@@ -79,6 +102,15 @@ from ..models import DoctorStatus, Finding, Source
 # The one check this module produces -- registered in checks.registry's
 # _CATALOG under category "env" and dispatched by gather_one.
 CHECK_NAME = "unconditional-credential-injection"
+
+# Degradation-sentinel check name for an INCOMPLETE discovery walk --
+# deliberately DISTINCT from CHECK_NAME and never cataloged in
+# checks.registry, mirroring sources/warden.py's own sentinel convention
+# (check="pyforge-warden", named after the source rather than any cataloged
+# check): reusing CHECK_NAME let gather_one("env", CHECK_NAME, ...) either
+# silently drop the incompleteness signal (a real finding sorted first) or
+# return it AS IF it were a real injection match (review finding).
+SCAN_INCOMPLETE_CHECK_NAME = "env-hygiene"
 
 # Directory names pruned from the discovery walk -- never a project's own
 # scannable source (extends pyforge.warden.hygiene.has_adjacent_python_
@@ -109,6 +141,15 @@ def _discover_python_files(target: Path) -> tuple[list[Path], bool]:
     idiom, which this module's discovery walk previously omitted (review
     finding) -- a silently-pruned subtree could otherwise hide the exact
     leak this scanner exists to find with zero signal in the result."""
+    # A non-directory target (single file, nonexistent path) is the
+    # documented empty case, not an incomplete scan -- without this guard
+    # os.walk's top-level scandir raises NotADirectoryError/
+    # FileNotFoundError into onerror, converting the established
+    # silent-empty convention into a misleading "walk could not read some
+    # subdirectory" sentinel (review finding).
+    if not target.is_dir():
+        return [], False
+
     discovered: list[Path] = []
     entries_visited = 0
     incomplete = False
@@ -158,6 +199,13 @@ def _resolve_os_aliases(
                     os_names.add(alias.asname)
         elif isinstance(node, ast.ImportFrom) and node.module == "os":
             for alias in node.names:
+                if alias.name == "*":
+                    # `from os import *` binds environ AND getenv under
+                    # their own names (review finding: the star-import
+                    # variant previously evaded the scanner entirely).
+                    environ_names.add("environ")
+                    getenv_names.add("getenv")
+                    continue
                 bound = alias.asname or alias.name
                 if alias.name == "environ":
                     environ_names.add(bound)
@@ -222,17 +270,39 @@ def _env_read_match(
     return None, False
 
 
+def _skipped_test_walrus_values(tests: Iterator[ast.expr]) -> Iterator[ast.AST]:
+    """Value-carrying rescues from otherwise-skipped condition subtrees: a
+    walrus (``ast.NamedExpr``) inside a skipped test BINDS its value into
+    the enclosing scope (e.g. ``t if (t := os.environ.get("K")) else "d"``
+    -- the bound ``t`` IS a value branch), so its ``.value`` subtree stays
+    in value-carrying position even though the rest of the test does not
+    (review finding: the walrus form was silently invisible)."""
+    for test in tests:
+        for sub in ast.walk(test):
+            if isinstance(sub, ast.NamedExpr):
+                yield from _walk_value_positions(sub.value)
+
+
 def _walk_value_positions(node: ast.AST) -> Iterator[ast.AST]:
-    """Like ``ast.walk`` but never descends into ``ast.IfExp.test`` -- a
-    ternary's condition decides BETWEEN two other values and contributes
-    no value of its own to the assignment, so an env-read used only there
-    is not "fed" into the header (review finding: this previously produced
-    a false positive on e.g. ``"a" if os.environ.get("X") else "b"``, with
-    a message asserting the env-var fed the header when it did not)."""
+    """Like ``ast.walk`` but never descends into condition-only subtrees
+    that contribute no value of their own to the assignment: an
+    ``ast.IfExp.test`` (a ternary's condition decides BETWEEN two other
+    values -- review finding: previously a false positive on e.g. ``"a" if
+    os.environ.get("X") else "b"``, with a message asserting the env-var
+    fed the header when it did not) and a ``comprehension``'s ``ifs``
+    filters (they decide WHICH values are included, by the same rationale
+    -- review finding). Walrus bindings inside those skipped subtrees are
+    still walked (see ``_skipped_test_walrus_values``)."""
     yield node
     if isinstance(node, ast.IfExp):
+        yield from _skipped_test_walrus_values(iter((node.test,)))
         for child in (node.body, node.orelse):
             yield from _walk_value_positions(child)
+        return
+    if isinstance(node, ast.comprehension):
+        yield from _walk_value_positions(node.target)
+        yield from _walk_value_positions(node.iter)
+        yield from _skipped_test_walrus_values(iter(node.ifs))
         return
     for child in ast.iter_child_nodes(node):
         yield from _walk_value_positions(child)
@@ -265,24 +335,55 @@ def _header_subscript_name(target: ast.expr) -> str | None:
     return base.id
 
 
-def _header_subscript_target(assign: ast.Assign) -> str | None:
-    """The header-dict variable name when ANY of ``assign``'s targets is
-    an ``ast.Subscript`` on a bare ``ast.Name`` whose ``.id`` (case-
-    insensitive) contains ``"header"`` -- handles a chained assignment
-    (``headers["X"] = other["Y"] = value``, review finding); ``None`` when
-    no target matches."""
+def _iter_assign_checks(assign: ast.Assign) -> Iterator[tuple[str, ast.expr]]:
+    """``(header_var, value_expr)`` pairs to test for ``assign``.
+
+    Chained top-level targets (``headers["X"] = other["Y"] = value``,
+    review finding) share the one value; the FIRST header-shaped target
+    wins so one statement yields at most one finding. A tuple/list-
+    unpacking target (``headers["A"], x = ...``, review finding: previously
+    invisible) pairs each header-shaped element with its POSITIONAL value
+    when the value is a same-length tuple/list literal (so ``headers["A"],
+    x = "static", os.environ.get("D")`` does not false-positive on the
+    element feeding ``x``), else with the whole value expression. One
+    level of unpacking only -- nested destructuring is out of v1 scope."""
     for target in assign.targets:
         name = _header_subscript_name(target)
         if name is not None:
-            return name
-    return None
+            yield name, assign.value
+            return
+    for target in assign.targets:
+        if not isinstance(target, (ast.Tuple, ast.List)):
+            continue
+        value = assign.value
+        positional = (
+            value.elts
+            if isinstance(value, (ast.Tuple, ast.List))
+            and len(value.elts) == len(target.elts)
+            else None
+        )
+        for index, elt in enumerate(target.elts):
+            elt_name = _header_subscript_name(elt)
+            if elt_name is not None:
+                yield elt_name, (
+                    positional[index] if positional is not None else value
+                )
+
+
+# Token boundaries for host-like matching: "_" plus camelCase transitions
+# (lower/digit->Upper, and acronym->Word like "APIHost" -> "API"/"Host") --
+# splitting on "_" alone missed camelCase guards like `serverHost` (review
+# finding).
+_NAME_TOKEN_SPLIT = re.compile(
+    r"_|(?<=[a-z0-9])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])"
+)
 
 
 def _references_host_like(test: ast.expr) -> bool:
     """Whether ``test`` references a host-like name, matched as a WHOLE
-    ``_``-separated token (case-insensitive) -- substring containment was
-    rejected: it let an unrelated name like ``ghost_mode`` accidentally
-    suppress a real finding (review finding)."""
+    token (split on ``_`` and camelCase boundaries, case-insensitive) --
+    substring containment was rejected: it let an unrelated name like
+    ``ghost_mode`` accidentally suppress a real finding (review finding)."""
     for node in ast.walk(test):
         if isinstance(node, ast.Name):
             candidate = node.id
@@ -290,10 +391,25 @@ def _references_host_like(test: ast.expr) -> bool:
             candidate = node.attr
         else:
             continue
-        tokens = candidate.lower().split("_")
-        if any(token in _HOST_LIKE_TOKENS for token in tokens):
+        tokens = _NAME_TOKEN_SPLIT.split(candidate)
+        if any(token.lower() in _HOST_LIKE_TOKENS for token in tokens):
             return True
     return False
+
+
+def _is_pure_negation(test: ast.expr) -> bool:
+    """Whether ``test`` is an ``ast.Compare`` whose EVERY op is a negative
+    comparator (``!=``/``not in``/``is not``) -- the one negation shape
+    whose polarity is statically decidable: its TRUE branch is the "not
+    this host" case, so a host-referencing guard of this shape must not
+    suppress there (review finding: ``if host != safe: headers[...] =
+    os.environ.get(...)`` -- the exact inverse-condition leak -- was
+    silently suppressed). ``not x`` / ``BoolOp`` negation forms are
+    deliberately excluded: resolving them requires knowing whether the
+    compared set is an allowlist or a denylist (see module docstring)."""
+    return isinstance(test, ast.Compare) and all(
+        isinstance(op, (ast.NotEq, ast.NotIn, ast.IsNot)) for op in test.ops
+    )
 
 
 class _CredentialInjectionVisitor(ast.NodeVisitor):
@@ -327,18 +443,27 @@ class _CredentialInjectionVisitor(ast.NodeVisitor):
 
     def visit_If(self, node: ast.If) -> None:
         # node.test is evaluated under the CURRENT (not-yet-extended) guard
-        # stack; only node.body runs "gated on node.test passing" -- node.
-        # orelse (else/failed-elif) runs precisely when the test did NOT
-        # match, so inheriting the same guard there would suppress the
-        # exact inverse-condition leak this check exists to catch (review
+        # stack. Only the branch that runs "gated on the host condition
+        # HOLDING" inherits node.test as a guard -- for an ordinary test
+        # that is node.body (node.orelse runs precisely when the test did
+        # NOT match: inheriting the guard there would suppress the exact
+        # inverse-condition leak this check exists to catch -- review
         # finding: `if host==safe: ... else: headers[...] =
-        # os.environ.get(...)` was silently invisible before this fix).
+        # os.environ.get(...)` was silently invisible); for a pure-negation
+        # test the branches swap (review finding: `if host != safe:
+        # headers[...] = os.environ.get(...)` was silently suppressed --
+        # its TRUE branch is the "not this host" case, and its else branch
+        # is the host-scoped one).
         self.visit(node.test)
+        if _is_pure_negation(node.test):
+            guarded, unguarded = node.orelse, node.body
+        else:
+            guarded, unguarded = node.body, node.orelse
         self._guards.append(node.test)
-        for stmt in node.body:
+        for stmt in guarded:
             self.visit(stmt)
         self._guards.pop()
-        for stmt in node.orelse:
+        for stmt in unguarded:
             self.visit(stmt)
 
     def _visit_function_scope(
@@ -366,7 +491,8 @@ class _CredentialInjectionVisitor(ast.NodeVisitor):
             self.matches.append((lineno, header_var, env_var_name))
 
     def visit_Assign(self, node: ast.Assign) -> None:
-        self._check(_header_subscript_target(node), node.value, node.lineno)
+        for header_var, value in _iter_assign_checks(node):
+            self._check(header_var, value, node.lineno)
         self.generic_visit(node)
 
     def visit_AugAssign(self, node: ast.AugAssign) -> None:
@@ -375,22 +501,45 @@ class _CredentialInjectionVisitor(ast.NodeVisitor):
         )
         self.generic_visit(node)
 
+    def visit_AnnAssign(self, node: ast.AnnAssign) -> None:
+        # `headers["X"]: str = os.environ.get(...)` is legal Python and was
+        # previously invisible -- only plain Assign/AugAssign were visited
+        # (review finding). A bare annotation (node.value is None) assigns
+        # nothing.
+        if node.value is not None:
+            self._check(
+                _header_subscript_name(node.target), node.value, node.lineno
+            )
+        self.generic_visit(node)
+
 
 def _scan_file(file_path: Path) -> list[Finding]:
     try:
         source = file_path.read_text(encoding="utf-8")
         tree = ast.parse(source, filename=str(file_path))
-    except (SyntaxError, UnicodeDecodeError, OSError):
-        # A file that fails to parse -- a syntax error, an undecodable
-        # encoding, or a filesystem race -- is skipped, never crashes the
-        # scan (pyforge.doctor's degrade-never-crash discipline; mirrors
-        # sources/warden.py's own "no Exception escapes gather()" rule).
+        os_names, environ_names, getenv_names = _resolve_os_aliases(tree)
+        visitor = _CredentialInjectionVisitor(
+            os_names, environ_names, getenv_names
+        )
+        visitor.visit(tree)
+    except (SyntaxError, UnicodeDecodeError, OSError, RecursionError):
+        # A file that fails to parse or analyze -- a syntax error, an
+        # undecodable encoding, a filesystem race, or a parseable-but-
+        # pathologically-deep expression tree blowing the recursion limit
+        # in the (recursive) visitor walk (review finding: RecursionError
+        # previously escaped gather() and crashed the whole doctor run) --
+        # is skipped, never crashes the scan (pyforge.doctor's degrade-
+        # never-crash discipline; mirrors sources/warden.py's own "no
+        # Exception escapes gather()" rule).
         return []
-    os_names, environ_names, getenv_names = _resolve_os_aliases(tree)
-    visitor = _CredentialInjectionVisitor(os_names, environ_names, getenv_names)
-    visitor.visit(tree)
     findings: list[Finding] = []
-    for lineno, header_var, env_var_name in visitor.matches:
+    # Sorted by line only (env_var_name can be None -- unorderable against
+    # str): visit_If's polarity swap visits a negated test's else-branch
+    # before its body, so raw match order is no longer guaranteed to be
+    # source order; the stable sort keeps visit order within a line.
+    for lineno, header_var, env_var_name in sorted(
+        visitor.matches, key=lambda match: match[0]
+    ):
         env_label = env_var_name or "an env-var"
         findings.append(
             Finding(
@@ -430,10 +579,17 @@ def gather(target: Path) -> tuple[Finding, ...]:
     for file_path in files:
         findings.extend(_scan_file(file_path))
     if incomplete:
+        # Distinct sentinel check name (never cataloged, mirroring
+        # sources/warden.py's "pyforge-warden" sentinel) so the
+        # incompleteness signal can neither shadow nor be shadowed by a
+        # real CHECK_NAME finding under gather_one's name filter (review
+        # finding); evidence carries only the scanned root -- the typed
+        # {file, line: int, var_name} evidence contract belongs to real
+        # CHECK_NAME findings.
         findings.append(
             Finding(
                 source=Source.ENV_HYGIENE,
-                check=CHECK_NAME,
+                check=SCAN_INCOMPLETE_CHECK_NAME,
                 status=DoctorStatus.WARN,
                 message=(
                     f"scan of {target} was INCOMPLETE -- the discovery "
@@ -441,7 +597,7 @@ def gather(target: Path) -> tuple[Finding, ...]:
                     "subdirectory; results above may be missing real "
                     "findings"
                 ),
-                evidence={"file": str(target), "line": None, "var_name": None},
+                evidence={"target": str(target)},
             )
         )
     return tuple(findings)

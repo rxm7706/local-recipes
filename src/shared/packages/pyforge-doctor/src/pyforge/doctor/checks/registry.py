@@ -120,14 +120,17 @@ def gather_one(category: str, name: str, target: Path) -> Finding | None:
     "env": the directory tree ``env_hygiene`` scans); it never affects
     which check *names* exist, only their results.
 
-    Filter semantics cut both ways when the "engines" category's gather
-    DEGRADES to its single sentinel ``Finding`` (``check ==
-    "pyforge-warden"``, Story 1.2's three failure shapes): every cataloged
-    name then returns ``None``, while the sentinel's own name -- one
-    ``list_checks()`` never advertises -- IS addressable here and returns
-    the sentinel itself. Whether a CLI validates names against the catalog
-    or passes them through is Story 1.5's decision (see
-    ``deferred-work.md``).
+    Filter semantics cut both ways when a category's gather DEGRADES to a
+    sentinel ``Finding`` whose check name is deliberately never cataloged:
+    for "engines" that is ``check == "pyforge-warden"`` (Story 1.2's three
+    failure shapes); for "env" it is ``check ==
+    env_hygiene.SCAN_INCOMPLETE_CHECK_NAME`` (an incomplete discovery
+    walk). Every cataloged name then returns ``None`` (or, for "env", the
+    real matches minus the incompleteness signal), while the sentinel's
+    own name -- one ``list_checks()`` never advertises -- IS addressable
+    here and returns the sentinel itself. Whether a CLI validates names
+    against the catalog or passes them through is Story 1.5's decision
+    (see ``deferred-work.md``).
     """
     # Deliberately NOT derived from `_CATALOG` membership: each category
     # needs its own real gather function ("engines" -> warden_source,
