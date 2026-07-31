@@ -260,3 +260,69 @@ def test_remove_empty_dir_raises_fs_error_when_path_is_a_file(fs, tmp_path):
     target.write_text("x", encoding="utf-8")
     with pytest.raises(FsError):
         fs.remove_empty_dir(target)
+
+
+# --- resolve_path (Story 1.6) -----------------------------------------------------
+
+
+def test_resolve_path_matches_a_plain_non_symlink_path(fs, tmp_path):
+    real = tmp_path / "real-dir"
+    real.mkdir()
+    assert fs.resolve_path(real) == real.resolve()
+
+
+def test_resolve_path_resolves_a_real_symlink_chain(fs, tmp_path):
+    target = tmp_path / "target"
+    target.mkdir()
+    middle = tmp_path / "middle"
+    middle.symlink_to(target)
+    link = tmp_path / "link"
+    link.symlink_to(middle)
+    assert fs.resolve_path(link) == target.resolve()
+
+
+def test_resolve_path_tolerates_a_broken_dangling_target(fs, tmp_path):
+    """Non-strict (mirrors pathlib.Path.resolve()'s own strict=False
+    default): a symlink whose target does not exist still resolves rather
+    than raising -- a broken backlink is exactly the violation
+    marshal homes' Tier-3 check needs to name, not an error to abort on."""
+    link = tmp_path / "dangling-link"
+    link.symlink_to(tmp_path / "does-not-exist")
+    resolved = fs.resolve_path(link)
+    assert resolved == (tmp_path / "does-not-exist").resolve()
+
+
+def test_resolve_path_tolerates_a_wholly_nonexistent_path(fs, tmp_path):
+    absent = tmp_path / "never-created" / "nested"
+    resolved = fs.resolve_path(absent)
+    assert resolved == absent.resolve()
+
+
+# --- exists (Story 1.6, review finding) -------------------------------------------
+
+
+def test_exists_true_for_a_real_directory(fs, tmp_path):
+    real = tmp_path / "real-dir"
+    real.mkdir()
+    assert fs.exists(real) is True
+
+
+def test_exists_true_for_a_regular_file(fs, tmp_path):
+    """The occupancy state is_dir cannot see -- the reason this primitive
+    exists (a plain file squatting where a symlink belongs)."""
+    target = tmp_path / "plain-file"
+    target.write_text("x", encoding="utf-8")
+    assert fs.exists(target) is True
+
+
+def test_exists_false_for_an_absent_path(fs, tmp_path):
+    assert fs.exists(tmp_path / "never-created") is False
+
+
+def test_exists_false_for_a_dangling_symlink(fs, tmp_path):
+    """Pathlib semantics (follows the link): a dangling symlink reports
+    False -- callers probe read_symlink_target FIRST, so the symlink case
+    never reaches this method; see the port docstring."""
+    link = tmp_path / "dangling"
+    link.symlink_to(tmp_path / "does-not-exist")
+    assert fs.exists(link) is False
