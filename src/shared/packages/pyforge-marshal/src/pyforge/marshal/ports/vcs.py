@@ -4,8 +4,8 @@ Seed: ``ports/`` declares shapes, never implementations); implemented
 solely by ``adapters/vcs_git.py`` (AD-4). Not an egress port: nothing here
 ever leaves the local git repository.
 
-Four methods, each a direct port of one piece of ``scripts/bmad-loop-worktree``'s
-``provision()`` logic (the design reference named by this story's spec) --
+Four methods are a direct port of one piece of ``scripts/bmad-loop-worktree``'s
+``provision()`` logic (the design reference named by Story 1.4's spec) --
 ported rather than shelled out to, so ``cli/init.py`` observes and classifies
 every git operation instead of treating the script as an opaque write:
 
@@ -24,12 +24,33 @@ every git operation instead of treating the script as an opaque write:
   to mint a new branch (always FROM ``base``, never checking ``base`` itself
   out a second time) or attach to an already-existing one, exactly like the
   script's ``has_branch``-gated ``git worktree add`` call.
+
+A fifth method, ``list_worktrees`` (Story 1.6, FR-8), generalizes
+``worktree_path_for_branch``'s single-branch lookup to the FULL enumeration
+``marshal homes`` needs to auto-discover every loop home: every block of
+``git worktree list --porcelain``'s output, not just the first match for one
+branch. It returns ``WorktreeEntry`` -- a small frozen value type, not a
+Protocol method -- carrying each worktree's path and branch (``None`` for a
+detached HEAD).
 """
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol
+
+
+@dataclass(frozen=True)
+class WorktreeEntry:
+    """One block of ``git worktree list --porcelain``'s output (Story 1.6):
+    a worktree's ``path`` and the bare ``branch`` name checked out there
+    (e.g. ``"loop/acme"``, never the fully-qualified ``refs/heads/loop/acme``
+    form the porcelain output itself carries) -- ``None`` for a detached-HEAD
+    worktree, which has no ``branch`` line at all."""
+
+    path: Path
+    branch: str | None
 
 
 class VcsPort(Protocol):
@@ -54,4 +75,13 @@ class VcsPort(Protocol):
         not yet exist it is created FROM ``base`` (``base`` itself is never
         checked out into ``home``); if it already exists, ``home`` attaches
         to it directly. Raises ``VcsCommandError`` on any git failure."""
+        ...
+
+    def list_worktrees(self, repo_root: Path) -> tuple[WorktreeEntry, ...]:
+        """Every worktree git has registered for the repo rooted at
+        ``repo_root`` (Story 1.6, FR-8): the main working tree (always
+        present, always listed first by ``git worktree list``) plus every
+        linked worktree, ``loop/<slug>`` or otherwise -- the full
+        enumeration ``marshal homes`` auto-discovers every loop home from.
+        Raises ``VcsCommandError`` on any git failure."""
         ...

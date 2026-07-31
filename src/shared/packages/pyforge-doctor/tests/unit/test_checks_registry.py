@@ -41,6 +41,18 @@ _EXPECTED_ENGINE_SPECS = tuple(
     CheckSpec(category="engines", name=name) for name in _ENGINE_NAMES
 )
 
+# The test suite's OWN copy of the one env-hygiene check name (Story 1.4),
+# deliberately NOT imported from ``env_hygiene`` -- same anti-tautology
+# rationale as ``_ENGINE_NAMES`` above.
+_ENV_CHECK_NAME = "unconditional-credential-injection"
+
+_EXPECTED_ENV_SPECS = (CheckSpec(category="env", name=_ENV_CHECK_NAME),)
+
+# _CATALOG's insertion order is "engines" then "env" -- unfiltered
+# list_checks() concatenates every registered category's catalog in that
+# order.
+_EXPECTED_ALL_SPECS = _EXPECTED_ENGINE_SPECS + _EXPECTED_ENV_SPECS
+
 
 def _checks(*specs: tuple[str, bool, str]) -> tuple[DoctorCheck, ...]:
     return tuple(DoctorCheck(name=n, ok=ok, message=m) for n, ok, m in specs)
@@ -50,19 +62,29 @@ def _checks(*specs: tuple[str, bool, str]) -> tuple[DoctorCheck, ...]:
 
 
 def test_list_checks_returns_the_six_known_engine_specs():
-    assert list_checks() == _EXPECTED_ENGINE_SPECS
+    assert list_checks(category="engines") == _EXPECTED_ENGINE_SPECS
 
 
-def test_list_checks_filtered_by_engines_matches_unfiltered():
-    assert list_checks(category="engines") == list_checks()
+def test_list_checks_env_category_returns_the_one_registered_spec():
+    # Story 1.4: the complement of the engines assertion above -- "env"
+    # is the one other registered category.
+    assert list_checks(category="env") == _EXPECTED_ENV_SPECS
+
+
+def test_list_checks_unfiltered_returns_every_category_concatenated():
+    # Was "filtered_by_engines_matches_unfiltered" back when "engines" was
+    # the only registered category (that equality no longer holds now that
+    # Story 1.4 adds "env" alongside it) -- unfiltered list_checks() is the
+    # concatenation of every registered category's catalog.
+    assert list_checks() == _EXPECTED_ALL_SPECS
 
 
 def test_list_checks_unknown_category_returns_empty_tuple_no_exception():
-    # "env" is a DELIBERATE tripwire, not just an example: the moment
-    # Story 1.4 registers it in _CATALOG, the first assert fails, sending
-    # that implementer here -- and to gather_one's dispatch (see
-    # test_every_cataloged_category_is_dispatchable_by_gather_one).
-    assert list_checks(category="env") == ()
+    # "env" WAS a deliberate tripwire here (see
+    # test_list_checks_env_category_returns_the_one_registered_spec above,
+    # which now covers it, and gather_one's dispatch, covered by
+    # test_every_cataloged_category_is_dispatchable_by_gather_one) -- only
+    # a truly unregistered category name still returns empty.
     assert list_checks(category="bogus-category") == ()
 
 
@@ -75,7 +97,7 @@ def test_list_checks_never_invokes_run_doctor_checks(monkeypatch):
 
     monkeypatch.setattr(engines_mod, "run_doctor_checks", _boom)
 
-    assert list_checks() == _EXPECTED_ENGINE_SPECS
+    assert list_checks() == _EXPECTED_ALL_SPECS
 
 
 # --- gather_one ---------------------------------------------------------------
@@ -214,7 +236,12 @@ def test_live_catalog_matches_real_warden_gather_check_names(tmp_path: Path):
             + live_findings[0].message
         )
 
-    catalog_names = tuple(spec.name for spec in list_checks())
+    # Filtered to "engines" -- unfiltered list_checks() also carries the
+    # unrelated "env" category (Story 1.4), which warden's own gather()
+    # knows nothing about.
+    catalog_names = tuple(
+        spec.name for spec in list_checks(category="engines")
+    )
 
     assert catalog_names == live_names
 
