@@ -106,9 +106,11 @@ invoke ``bmad-loop`` or import its package, per AD-3/AD-19), reuses
 resolves the configured adapter's NAME via the SAME pure
 ``adapters.harness_bmadloop.render_policy_toml`` function ``marshal config
 --write-harness-policy`` calls, so the two can never disagree about which
-adapter is configured. Its own nine codes, ``MRS-PREFLIGHT-001`` through
-``MRS-PREFLIGHT-009``, all classify ``Verdict.ERROR`` -- see
-``core/findings.py``'s own docstring for the exact per-code mapping.
+adapter is configured. Its ten codes: ``MRS-PREFLIGHT-001`` through
+``MRS-PREFLIGHT-009`` all classify ``Verdict.ERROR``, and
+``MRS-PREFLIGHT-010`` (a malformed slug, checked before any I/O) classifies
+``Verdict.UNEVALUABLE`` -- see ``core/findings.py``'s own docstring for the
+exact per-code mapping.
 """
 
 from __future__ import annotations
@@ -1007,7 +1009,17 @@ def run_preflight(
     # --- composed policy (S-1.3) -- its own findings merge into ours --------
     project_data: Mapping[str, object] = {}
     policy_path = conventional_project_policy_path(slug)
-    if policy_path.is_file():
+    try:
+        policy_present = policy_path.is_file()
+    except OSError:
+        # Python 3.12 pathlib raises PermissionError for an unreadable
+        # ancestor (3.13+ suppresses all OSError -- the same class
+        # fs_local.py backports for this package's 3.12 floor). Treat it as
+        # present so _read_project_policy converts the identical failure
+        # into its typed PolicyIOError finding instead of a raw crash
+        # (review finding).
+        policy_present = True
+    if policy_present:
         try:
             project_data = _read_project_policy(policy_path)
         except PolicyIOError as exc:
@@ -1087,6 +1099,25 @@ def run_preflight(
     else:
         parsed_policy = tomllib.loads(rendered)
         adapter_name = parsed_policy.get("adapter", {}).get("name")
+        if not isinstance(adapter_name, str) or not adapter_name:
+            # Fail loud, never open (review finding): a rendered policy with
+            # no [adapter].name previously left adapter_name None with NO
+            # finding, so the adapter check, seeding, and the first-run gate
+            # all silently skipped and preflight could exit 0 having gated
+            # nothing. Unreachable while the vendored template always emits
+            # the baseline name -- this guards the template edit that would
+            # make it reachable.
+            adapter_name = None
+            findings.append(
+                Finding(
+                    code="MRS-PREFLIGHT-004",
+                    severity=Severity.ERROR,
+                    message=(
+                        "cannot resolve the configured adapter: the rendered "
+                        "harness policy declares no [adapter].name"
+                    ),
+                )
+            )
 
     adapter_binary_name: str | None = None
     adapter_present = False

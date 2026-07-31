@@ -2080,6 +2080,66 @@ def test_preflight_adapter_resolution_render_failure_reports_finding(
     assert "MRS-PREFLIGHT-008" not in out
 
 
+def test_preflight_adapter_name_missing_from_rendered_policy_fails_loud(
+    repo_root, tmp_path, capsys, monkeypatch
+):
+    """Second review pass: a rendered policy with no ``[adapter].name``
+    previously left ``adapter_name`` None with NO finding, so the adapter
+    check, seeding, and the first-run gate all silently skipped and preflight
+    could exit 0 having gated nothing. Unreachable while the vendored
+    template always emits the baseline name -- this pins the fail-loud guard
+    against the template edit that would make it reachable."""
+    slug = "acme"
+    home = tmp_path / "loop-homes" / slug
+    fs = FakeFs(project_dirs={home})
+    vcs = FakeVcs(repo_root=repo_root)
+    harness = _converged_harness()
+    _seed_acknowledged(fs, tmp_path, ["claude"])
+
+    monkeypatch.setattr(
+        init_module, "render_policy_toml", lambda effective: "[gates]\nmode = 'none'\n"
+    )
+
+    exit_code = run_preflight(_preflight_namespace(slug), vcs=vcs, fs=fs, harness=harness)
+    assert exit_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-PREFLIGHT-004" in out
+    assert "declares no [adapter].name" in out
+    assert "adapter: name=None" in out
+
+
+def test_preflight_policy_path_is_file_oserror_degrades_to_typed_finding(
+    repo_root, tmp_path, capsys, monkeypatch
+):
+    """Second review pass: ``policy_path.is_file()`` was unguarded -- on the
+    3.12 floor, pathlib raises ``PermissionError`` for an unreadable ancestor
+    (3.13+ suppresses it), crashing the whole command. The guard treats the
+    OSError as "present" so ``_read_project_policy`` converts the identical
+    failure into its typed ``MRS-POLICY-004`` finding instead."""
+    slug = "acme"
+    home = tmp_path / "loop-homes" / slug
+    fs = FakeFs(project_dirs={home})
+    vcs = FakeVcs(repo_root=repo_root)
+    harness = _converged_harness()
+    _seed_acknowledged(fs, tmp_path, ["claude"])
+
+    class _IsFileRaises(Path):
+        def is_file(self) -> bool:  # type: ignore[override]
+            raise PermissionError(13, "Permission denied", str(self))
+
+    # Points at a nonexistent file: is_file() raises, the guard degrades to
+    # "present", and _read_project_policy's open() then fails typed.
+    raising_path = _IsFileRaises(tmp_path / "unreadable" / "marshal-policy.toml")
+    monkeypatch.setattr(
+        init_module, "conventional_project_policy_path", lambda slug: raising_path
+    )
+
+    exit_code = run_preflight(_preflight_namespace(slug), vcs=vcs, fs=fs, harness=harness)
+    assert exit_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-POLICY-004" in out
+
+
 # --- timing: presence/resolvability checks only, well under NFR-14's 10s ---
 
 
@@ -2119,3 +2179,6 @@ def test_preflight_finding_codes_classify_as_documented():
         "MRS-PREFLIGHT-009",
     ):
         assert classify(code) == Verdict.ERROR
+    # Second review pass: the ONE preflight code with a special-cased tier
+    # was the one classification nothing asserted.
+    assert classify("MRS-PREFLIGHT-010") == Verdict.UNEVALUABLE

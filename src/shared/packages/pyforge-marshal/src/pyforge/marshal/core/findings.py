@@ -75,11 +75,15 @@ story feed is missing or unparseable), ``MRS-PREFLIGHT-006`` (a configured
 verify command's executable is not on ``PATH``), ``MRS-PREFLIGHT-007``
 (``main`` is checked out in more than one worktree, or that could not be
 verified), ``MRS-PREFLIGHT-008`` (the configured adapter's first-run
-requirement is unacknowledged), and ``MRS-PREFLIGHT-009`` (a seed-file copy
-failed, OR the loop home named on the command line is not provisioned at
-all -- the latter checked before any of the other eight, sharing this code
-rather than adding an eleventh: both are "a real filesystem precondition this
-command needs is not met", the same tier as the seed-copy failure). All nine
+requirement is unacknowledged, OR the acknowledgement state path could not
+be resolved, OR a requested acknowledgement could not be recorded -- all
+three are "the first-run gate is not satisfiably recorded"), and
+``MRS-PREFLIGHT-009`` (a seed-file copy failed, OR the loop-home ROOT could
+not be resolved, OR the loop home named on the command line is not
+provisioned at all -- the latter two checked before any of the other eight,
+sharing this code rather than adding more: each is "a real filesystem
+precondition this command needs is not met", the same tier as the seed-copy
+failure). All nine
 classify ``Verdict.ERROR`` -- a real prerequisite check ran and failed, the
 same tier as ``MRS-INIT-003/004/005``/``MRS-HOMES-*``, never "could not
 evaluate". ``MRS-PREFLIGHT-010`` (a malformed project slug, checked before

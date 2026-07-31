@@ -62,10 +62,13 @@ the adapter's own CLI, which could itself trigger the first-run dialog
 inside the method body, never at module top level, so ``marshal config``/
 ``marshal init``/``marshal homes`` keep working even if the installed
 ``bmad_loop`` is broken or absent, and so ``ImportError``/the harness's own
-typed errors (``ProfileError``, ``BmadConfigError``, ``SprintStatusError``)
-never escape this module raw -- every one is caught and re-raised as
-``HarnessError`` (or, for the two methods documented to never raise,
-degraded to their documented sentinel: ``None``/``False``).
+typed errors (``ProfileError``, ``MultiplexerError``, ``BmadConfigError``,
+``SprintStatusError``) never escape this module raw -- every one is caught
+and re-raised as ``HarnessError``, except in the three methods documented to
+never raise, which degrade instead: ``binary_present`` (a pure
+``shutil.which`` check, no failure mode), ``harness_version`` (``None``),
+and ``story_feed_error`` (the error TEXT is the return value; ``None`` means
+success).
 ``bmad-loop`` is now a declared runtime dependency (``pyproject.toml``,
 ``pixi.toml``) -- see those files' own comments for why the range is
 ``>=0.9.0,<0.10``.
@@ -340,8 +343,11 @@ def write_policy_toml(
 
 # A quick `--version` call, not a checkout-populating operation like
 # `vcs_git.py`'s `_GIT_CHECKOUT_TIMEOUT_S` tier -- NFR-14's 10s preflight
-# budget has no room for a generous timeout here.
-_VERSION_TIMEOUT_S = 10.0
+# budget has no room for a generous timeout here, so this must sit WELL
+# BELOW that budget (review finding: this was 10.0, the entire budget --
+# a hung binary alone exhausted it before the other checks even started).
+# A healthy argparse `action="version"` responds in milliseconds.
+_VERSION_TIMEOUT_S = 5.0
 
 
 class HarnessError(Exception):
@@ -394,10 +400,18 @@ class BmadLoopHarness:
 
     def multiplexer_backend_available(self) -> tuple[str, bool]:
         try:
-            from bmad_loop.adapters.multiplexer import detect_multiplexers
+            from bmad_loop.adapters.multiplexer import MultiplexerError, detect_multiplexers
         except ImportError as exc:
             raise HarnessError(f"bmad_loop is not importable: {exc}") from exc
-        rows = detect_multiplexers()  # never raises, per its own docstring
+        # detect_multiplexers documents "never raises", but this module's own
+        # contract ("no bmad_loop exception type escapes raw") must not rest
+        # on an upstream promise -- catch its seam-level error type anyway
+        # (review finding: HarnessError's docstring named MultiplexerError as
+        # caught while nothing actually caught it).
+        try:
+            rows = detect_multiplexers()
+        except MultiplexerError as exc:
+            raise HarnessError(f"multiplexer detection failed: {exc}") from exc
         selected = next((row for row in rows if row.selected), None)
         if selected is None:
             return "", False
@@ -419,7 +433,11 @@ class BmadLoopHarness:
         # (review finding: this port's own docstring promises "raises
         # HarnessError for an unknown adapter_name or an unimportable
         # bmad_loop", not a raw traceback for a corrupt overlay file).
-        except (OSError, UnicodeDecodeError) as exc:
+        # ValueError/TypeError/AttributeError: _parse_profile coerces overlay
+        # values with bare float()/int()/.items() (e.g. usage_grace_s = "x"),
+        # so a VALID-TOML overlay with a wrong-typed field raises those RAW
+        # past ProfileError too -- same class, second review pass.
+        except (OSError, UnicodeDecodeError, ValueError, TypeError, AttributeError) as exc:
             raise HarnessError(f"cannot read adapter profile overlay: {exc}") from exc
 
     def adapter_binary(self, adapter_name: str, project: Path) -> str:
@@ -448,6 +466,13 @@ class BmadLoopHarness:
             return str(exc)
         except (OSError, UnicodeDecodeError) as exc:
             return f"cannot read bmad-config: {exc}"
+        # load_paths calls `doc.get(...)` on whatever yaml.safe_load returned
+        # without an isinstance check, so a config.yaml whose top level is a
+        # list or scalar raises AttributeError RAW past BmadConfigError
+        # (review finding -- sprintstatus.load is shape-safe, it isinstance-
+        # checks its own doc, so only this call needs the extra catch).
+        except (AttributeError, TypeError) as exc:
+            return f"invalid bmad-config shape: {exc}"
         try:
             sprintstatus.load(paths.sprint_status)
         except sprintstatus.SprintStatusError as exc:
