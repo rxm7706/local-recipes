@@ -11,6 +11,7 @@ from pathlib import Path
 import pytest
 
 from pyforge.marshal.adapters.vcs_git import GitVcs, VcsCommandError
+from pyforge.marshal.ports.vcs import WorktreeEntry
 
 
 def _git(repo: Path, *args: str) -> subprocess.CompletedProcess[str]:
@@ -139,6 +140,80 @@ def test_worktree_path_for_branch_raises_on_a_block_without_worktree_line(
     monkeypatch.setattr(vcs_git_module.subprocess, "run", _mangled_porcelain)
     with pytest.raises(VcsCommandError, match="no worktree line"):
         vcs.worktree_path_for_branch(repo, "loop/acme")
+
+
+# --- list_worktrees (Story 1.6) --------------------------------------------------
+
+
+def test_list_worktrees_returns_only_the_main_checkout_when_no_others_exist(vcs, repo):
+    entries = vcs.list_worktrees(repo)
+    assert len(entries) == 1
+    assert entries[0].path.resolve() == repo.resolve()
+    assert entries[0].branch == "main"
+
+
+def test_list_worktrees_includes_every_linked_worktree(vcs, repo, tmp_path):
+    home_one = tmp_path / "home-one"
+    home_two = tmp_path / "home-two"
+    vcs.add_worktree(repo, home_one, "loop/acme", base="main")
+    vcs.add_worktree(repo, home_two, "loop/beta", base="main")
+    entries = vcs.list_worktrees(repo)
+    by_branch = {entry.branch: entry.path.resolve() for entry in entries}
+    assert by_branch == {
+        "main": repo.resolve(),
+        "loop/acme": home_one.resolve(),
+        "loop/beta": home_two.resolve(),
+    }
+
+
+def test_list_worktrees_main_checkout_is_listed_first(vcs, repo, tmp_path):
+    """Real git's own documented behavior -- not depended on by
+    cli/init.py::run_homes (which identifies the main checkout by realpath,
+    not list position), but worth pinning as a regression guard."""
+    home = tmp_path / "home"
+    vcs.add_worktree(repo, home, "loop/acme", base="main")
+    entries = vcs.list_worktrees(repo)
+    assert entries[0].path.resolve() == repo.resolve()
+
+
+def test_list_worktrees_reports_none_branch_for_a_detached_head(vcs, repo, tmp_path):
+    home = tmp_path / "detached"
+    head_commit = _git(repo, "rev-parse", "HEAD").stdout.strip()
+    _git(repo, "worktree", "add", "--detach", str(home), head_commit)
+    entries = vcs.list_worktrees(repo)
+    detached = [entry for entry in entries if entry.path.resolve() == home.resolve()]
+    assert len(detached) == 1
+    assert detached[0].branch is None
+
+
+def test_list_worktrees_returns_worktree_entry_instances(vcs, repo):
+    entries = vcs.list_worktrees(repo)
+    assert entries and all(isinstance(entry, WorktreeEntry) for entry in entries)
+
+
+def test_list_worktrees_raises_outside_a_repo(vcs, tmp_path):
+    outside = tmp_path / "not-a-repo"
+    outside.mkdir()
+    with pytest.raises(VcsCommandError):
+        vcs.list_worktrees(outside)
+
+
+def test_list_worktrees_raises_on_a_block_without_worktree_line(vcs, repo, monkeypatch):
+    """Same defect class as worktree_path_for_branch's identical test --
+    both methods share _iter_worktree_blocks."""
+    import pyforge.marshal.adapters.vcs_git as vcs_git_module
+
+    def _mangled_porcelain(*args, **kwargs):
+        return subprocess.CompletedProcess(
+            args=args,
+            returncode=0,
+            stdout="branch refs/heads/loop/acme\n\n",
+            stderr="",
+        )
+
+    monkeypatch.setattr(vcs_git_module.subprocess, "run", _mangled_porcelain)
+    with pytest.raises(VcsCommandError, match="no worktree line"):
+        vcs.list_worktrees(repo)
 
 
 # --- add_worktree ----------------------------------------------------------------

@@ -1,8 +1,14 @@
-"""Story 1.2 — the noun -> verb tree, global flags, and exit-code ownership.
+"""Stories 1.2 + 1.3 + 1.4 — the noun -> verb tree, global flags, the
+exit-code / MasonError projection in main(), and doctor's dual-output contract.
 
-Story 1.4 extends this file with `doctor`'s dual-output-format contract:
-its stub result now flows through `render.write` (AD-8) instead of a raw
-stderr `print()`, so the doctor tests below assert on stdout, not stderr.
+Story 1.3 (error taxonomy) was DEFERRED when 1.4 landed, so 1.4 was built
+without it and this file carried only 1.2 + 1.4. 1.3 was recovered on
+2026-07-31; the two touch main()'s error handling from opposite ends, so the
+docstring names all three rather than whichever landed last.
+
+Note the stream split 1.4 established and 1.3 must not undo: `doctor`'s stub
+result flows through `render.write` to STDOUT (AD-8), while a MasonError and a
+bare-noun usage error go to STDERR. The doctor tests below assert on stdout.
 """
 
 from __future__ import annotations
@@ -12,10 +18,9 @@ import json
 import pytest
 
 from pyforge.mason import __version__
-from pyforge.mason.cli import (
-    EXIT_INTERNAL, EXIT_INTERRUPTED, EXIT_OK, EXIT_USAGE,
-    _resolve_bool, _resolve_str, build_parser, main,
-)
+from pyforge.mason.cli import _resolve_bool, _resolve_str, build_parser, main
+from pyforge.mason.errors import MasonError
+from pyforge.mason.exit_codes import EXIT_FAILED, EXIT_INTERRUPTED, EXIT_OK, EXIT_USAGE
 
 
 def test_version_is_reported(capsys):
@@ -170,13 +175,40 @@ def test_keyboard_interrupt_projects_to_130(monkeypatch):
     assert main([]) == EXIT_INTERRUPTED
 
 
-def test_unexpected_exception_never_returns_bare_1(monkeypatch, capsys):
-    """A crash must project to a documented code, not the interpreter default."""
+def test_unanticipated_exception_projects_to_exit_failed_with_traceback(monkeypatch, capsys):
+    """A crash must project to the documented EXIT_FAILED (AD-7), with the
+    full traceback on stderr -- not the interpreter's bare default and not a
+    silent failure."""
     monkeypatch.setattr("pyforge.mason.cli.build_parser",
                         lambda: (_ for _ in ()).throw(RuntimeError("boom")))
     rc = main([])
-    assert rc == EXIT_INTERNAL
-    assert rc != 1
+    assert rc == EXIT_FAILED
+    err = capsys.readouterr().err
+    assert "Traceback" in err
+    assert "RuntimeError" in err
+    assert "boom" in err
+
+
+def test_mason_error_raised_in_main_prints_message_and_returns_exit_failed(monkeypatch, capsys):
+    """A MasonError raised inside main()'s try block is an anticipated
+    failure (AD-7): its `identifier: message` goes to stderr, no traceback,
+    and the process exits EXIT_FAILED -- same monkeypatch pattern as the
+    KeyboardInterrupt/RuntimeError cases above. No verb dispatch exists yet
+    (later epics), so this proves the handler itself, not a dispatch path.
+    The identifier is deliberately synthetic: pinning a real one like
+    `cfe:unresolved` -> EXIT_FAILED would pre-break Story 1.7, which maps
+    CFE-unavailable to EXIT_CFE_UNAVAILABLE (3)."""
+    monkeypatch.setattr(
+        "pyforge.mason.cli.build_parser",
+        lambda: (_ for _ in ()).throw(
+            MasonError("test:injected-failure", "synthetic anticipated failure")
+        ),
+    )
+    rc = main([])
+    assert rc == EXIT_FAILED
+    err = capsys.readouterr().err
+    assert err.strip() == "test:injected-failure: synthetic anticipated failure"
+    assert "Traceback" not in err
 
 
 # --- AD-13 precedence helpers, tested directly as pure functions -----------
