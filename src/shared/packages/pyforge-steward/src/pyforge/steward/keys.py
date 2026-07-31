@@ -3,25 +3,39 @@
 Story 1.2 slice: a host-scoped credential resolver (FR-7) and a drift-detection
 primitive (FR-4) that AST-scans a Python source file for the historical
 unconditional-injection shape `_http.py` had before commit ``a4137cdfa3``.
-
 Both pieces delegate entirely to `.claude/skills/conda-forge-expert/scripts/
 _http.py`'s ``auth_headers_for`` — this module decides only *host membership*
 and *whether a function's header-attachment is gated*; it never builds its own
-request/header logic (AD-1, AD-2: delegate, never reimplement). Stories 1.3-1.7
-extend this same file (the architecture's single duty-adapter-module design for
-Epic 1) rather than splitting it into a subpackage. No CLI verb is wired to
-this yet — `cli.py`'s `resolve_duty("keys")` still returns `NullDuty` until
-Story 1.6.
+request/header logic (AD-1, AD-2: delegate, never reimplement).
+
+Story 1.3 slice: `encrypt_file`/`decrypt_file`, thin subprocess wraps of the
+real `age` CLI (AD-1/AD-3 — never vendored/reimplemented crypto), and a
+second, distinct scan primitive — `PlaintextSecretFinding`, a small fixed
+pattern table, `scan_file_for_secrets`/`scan_directory_for_secrets` — that
+flags committed content plausibly matching a known secret shape. `KeysDuty`
+is the `Duty`-conforming adapter `cli.py`'s `resolve_duty("keys")` now
+returns, wiring `steward keys encrypt`/`steward keys decrypt`. There is still
+no `steward keys audit` verb — Story 1.6 exposes both this module's findings
+(`DriftFinding` and `PlaintextSecretFinding`) through one CLI verb. Stories
+1.4-1.7 continue to extend this same file (the architecture's single
+duty-adapter-module design for Epic 1) rather than splitting it into a
+subpackage.
 """
 
 from __future__ import annotations
 
+import argparse
 import ast
+import re
+import stat
+import subprocess
 import sys
 import tokenize
 from dataclasses import dataclass
 from pathlib import Path
 from urllib.parse import urlparse
+
+from .interfaces import DutyResult
 
 # ── Bridge to the real, already-fixed `_http.py` (AD-2: delegate, never reimplement) ──
 
@@ -323,3 +337,222 @@ def _find_credential_assignments(stmt: ast.stmt, func_name: str) -> list[DriftFi
         for inner in (*stmt.body, *stmt.orelse):
             findings.extend(_find_credential_assignments(inner, func_name))
     return findings
+
+
+# ── `age` subprocess primitives (FR-2) ──────────────────────────────────────
+#
+# Thin subprocess wraps of the real `age` CLI — no vendored/reimplemented
+# crypto (AD-1, AD-3). Argument names mirror `age`'s own flags rather than
+# inventing Steward-specific ones (see this story's spec, "Design Notes").
+# `subprocess.CalledProcessError` is left to propagate here — caught only at
+# the `KeysDuty` boundary — matching `scan_source`'s `SyntaxError` precedent
+# of not swallowing errors at the primitive level.
+
+def _reject_stdio_sentinel(input_path: str | Path, output: str | Path) -> None:
+    """Refuse `age`'s `-` stdin/stdout sentinel for either path.
+
+    `-` survives the `--` separator (it is a positional value `age`
+    special-cases, not a flag), but this wrapper closes stdin and discards
+    captured stdout — so `-` as input would encrypt the empty DEVNULL stream
+    and `-` as output would report success while the real payload vanished
+    into the discarded capture. Both are silent data loss; raise instead.
+    """
+    for role, value in (("input", input_path), ("output", output)):
+        if str(value) == "-":
+            raise ValueError(
+                f"{role} path '-' means stdin/stdout to age, which this "
+                "wrapper closes/discards — pass a real path (e.g. ./-)"
+            )
+
+
+def encrypt_file(input_path: str | Path, *, recipient: str, output: str | Path) -> None:
+    """`age --encrypt` `input_path` to `output` for `recipient`.
+
+    Raises `subprocess.CalledProcessError` on a non-zero `age` exit (e.g. a
+    malformed recipient) — propagated, not swallowed — and `ValueError` for a
+    `-` input/output path (see `_reject_stdio_sentinel`). The `--` separator
+    keeps a flag-shaped filename (`-r`) from being parsed as an `age` flag,
+    the closed stdin keeps `age`'s stdin fallback from hanging an unattended
+    run, and the lenient capture decode keeps a non-UTF-8 byte on `age`'s
+    stderr (e.g. an echoed filename) from crashing the error path itself.
+    """
+    _reject_stdio_sentinel(input_path, output)
+    subprocess.run(
+        ["age", "--encrypt", "--recipient", recipient, "--output", str(output), "--", str(input_path)],
+        check=True,
+        capture_output=True,
+        text=True,
+        errors="replace",
+        stdin=subprocess.DEVNULL,
+    )
+
+
+def decrypt_file(input_path: str | Path, *, identity: str | Path, output: str | Path) -> None:
+    """`age --decrypt` `input_path` to `output` using the identity at `identity`.
+
+    Raises `subprocess.CalledProcessError` on a non-zero `age` exit — most
+    notably an identity that does not match any recipient the file was
+    encrypted to (`age: error: no identity matched any of the recipients`) —
+    and `ValueError` for a `-` input/output path. `--`, the closed stdin, and
+    the lenient capture decode: same rationale as `encrypt_file`.
+    """
+    _reject_stdio_sentinel(input_path, output)
+    subprocess.run(
+        ["age", "--decrypt", "--identity", str(identity), "--output", str(output), "--", str(input_path)],
+        check=True,
+        capture_output=True,
+        text=True,
+        errors="replace",
+        stdin=subprocess.DEVNULL,
+    )
+
+
+# ── Plaintext-secret scan primitive ─────────────────────────────────────────
+#
+# A small, fixed, named pattern table — not a pluggable/extensible rule
+# engine (see this story's spec, "Never"). Targets exactly three known
+# secret shapes: an Anthropic API key, a plaintext `age` identity (the exact
+# unencrypted shape `encrypt_file` above exists to protect against), and a
+# PEM private-key header. This is `PlaintextSecretFinding`, deliberately a
+# distinct type from `DriftFinding` above — a committed plaintext secret and
+# an ungated credential-attachment code path are unrelated defect shapes, and
+# a caller must never conflate them. Story 1.6 wires a CLI verb; this story
+# only proves the primitive (mirrors how 1.2 framed its own drift scan).
+
+@dataclass(frozen=True)
+class PlaintextSecretFinding:
+    """One line of file content plausibly matching a known secret shape."""
+
+    path: Path
+    line: int
+    pattern_name: str
+    message: str
+
+
+_SECRET_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
+    ("anthropic-api-key", re.compile(r"sk-ant-[A-Za-z0-9_-]{20,}")),
+    ("age-identity", re.compile(r"AGE-SECRET-KEY-1[A-Z0-9]{20,}")),
+    ("pem-private-key-header", re.compile(r"-----BEGIN [A-Z0-9 ]*PRIVATE KEY-----")),
+)
+
+
+def scan_file_for_secrets(path: str | Path) -> list[PlaintextSecretFinding]:
+    """Scan the file at `path` for content matching `_SECRET_PATTERNS`.
+
+    Reads raw bytes and decodes leniently (``errors="replace"``) rather than
+    `scan_file`'s ``tokenize.open`` above — this primitive scans arbitrary
+    file content, not just Python source, so a binary `.age` ciphertext
+    sitting in the same directory must not crash the scan with a decode
+    error. NUL bytes are stripped before matching so a UTF-16-encoded secret
+    (interleaved NULs — e.g. a PowerShell-redirected key file) cannot
+    silently scan as clean; other non-UTF-8 encodings remain out of scope.
+    Lines split on ``\\n`` only (not ``str.splitlines``, which also splits on
+    form feed/NEL/LS/PS) so a finding's `line` matches `grep -n`/editor
+    numbering.
+    """
+    path = Path(path)
+    text = path.read_bytes().decode("utf-8", errors="replace").replace("\x00", "")
+    findings: list[PlaintextSecretFinding] = []
+    for lineno, line in enumerate(text.split("\n"), start=1):
+        for pattern_name, pattern in _SECRET_PATTERNS:
+            if pattern.search(line):
+                findings.append(
+                    PlaintextSecretFinding(
+                        path=path,
+                        line=lineno,
+                        pattern_name=pattern_name,
+                        message=(
+                            f"{path}:{lineno} matches the {pattern_name!r} "
+                            "plaintext-secret pattern"
+                        ),
+                    )
+                )
+    return findings
+
+
+def scan_directory_for_secrets(directory: str | Path) -> list[PlaintextSecretFinding]:
+    """`scan_file_for_secrets` over every regular file under `directory`.
+
+    Recurses — a committed secret can land at any depth in a tree, not just
+    the top level. A directory with no secret-shaped content returns ``[]``.
+
+    Raises `NotADirectoryError` if `directory` doesn't exist or isn't a
+    directory, and propagates any `OSError` from the walk, an entry `stat`,
+    or a file read (e.g. an unreadable subtree, a dangling symlink) — an
+    audit primitive must never let a typo'd path or a permission wall
+    silently read as "clean" when it never actually scanned everything.
+    `Path.walk` (not ``rglob``) because the glob machinery swallows
+    per-directory `PermissionError`, and its symlink-traversal default
+    changed across 3.12/3.13; `walk` propagates via ``on_error`` and (pinned
+    explicitly) never descends into directory symlinks. File symlinks are
+    still followed — the follow/no-follow policy is a Story 1.6 decision
+    (see deferred-work) — but one whose target can't be stat'd raises
+    instead of silently skipping.
+    """
+    directory = Path(directory)
+    if not directory.is_dir():
+        raise NotADirectoryError(f"scan_directory_for_secrets: not a directory: {directory}")
+
+    def _propagate(error: OSError) -> None:
+        raise error
+
+    findings: list[PlaintextSecretFinding] = []
+    for dirpath, dirnames, filenames in directory.walk(on_error=_propagate, follow_symlinks=False):
+        dirnames.sort()
+        for name in sorted(filenames):
+            path = dirpath / name
+            # stat(), not is_file(): is_file() swallows OSError, so a dangling
+            # symlink or one into an unreadable tree would silently scan as
+            # "clean" — the exact failure mode this contract forbids. The
+            # S_ISREG check still skips non-regular files (FIFOs, sockets) so
+            # a blocking special file can't hang the scan.
+            if stat.S_ISREG(path.stat().st_mode):
+                findings.extend(scan_file_for_secrets(path))
+    return findings
+
+
+# ── KeysDuty (Duty-protocol adapter) ────────────────────────────────────────
+
+_KEYS_VERBS: tuple[str, ...] = ("encrypt", "decrypt")
+
+
+class KeysDuty:
+    """The real `keys` duty — dispatches `encrypt`/`decrypt` onto the `age`
+    subprocess primitives above.
+
+    Bare `steward keys` (no verb) reaches this adapter with no ``keys_verb``
+    and degrades to `DutyResult(ok=True, ...)` naming the available verbs
+    (AD-7 — dispatch never crashes on a missing/unrecognized verb). Via the
+    CLI that is the only path into the degrade branch — argparse rejects an
+    unknown verb with a usage error before dispatch — so the
+    ``verb not in _KEYS_VERBS`` guard otherwise protects programmatic
+    callers handing this adapter an arbitrary namespace. `age` failing
+    (bad identity, bad file) is caught here as `subprocess.CalledProcessError`,
+    and a rejected `-` sentinel path as `ValueError` — both reported as
+    duty-level failures (bad input, not a broken Steward), never conflated
+    with an internal crash (AD-8: that boundary is `cli.main()`'s alone).
+    """
+
+    name = "keys"
+
+    def run(self, ns: argparse.Namespace) -> DutyResult:
+        verb = getattr(ns, "keys_verb", None)
+        if verb not in _KEYS_VERBS:
+            return DutyResult(
+                ok=True,
+                summary=f"keys: available verbs are {', '.join(_KEYS_VERBS)}",
+            )
+        try:
+            if verb == "encrypt":
+                encrypt_file(ns.file, recipient=ns.recipient, output=ns.output)
+            else:
+                decrypt_file(ns.file, identity=ns.identity, output=ns.output)
+        except ValueError as exc:
+            return DutyResult(ok=False, summary=f"keys {verb}: {exc}")
+        except subprocess.CalledProcessError as exc:
+            stderr = (exc.stderr or "").strip()
+            return DutyResult(
+                ok=False,
+                summary=f"keys {verb}: age exited {exc.returncode}: {stderr}",
+            )
+        return DutyResult(ok=True, summary=f"keys {verb}: wrote {ns.output}")
