@@ -5,6 +5,10 @@ temp-path-then-``os.replace`` (atomic on the same filesystem), mirroring
 ``cli/config.py::materialize``'s own idiom, generalized from
 ``scripts/bmad-switch``'s hardcoded ``_bmad-output/*`` paths to plain
 ``Path`` arguments.
+
+Story 1.5 adds ``ensure_dir``/``remove_empty_dir``, porting
+``bmad-switch.ensure_tier3_backlink``'s ``mkdir(parents=True,
+exist_ok=True)``/empty-dir-removal primitives the same way.
 """
 
 from __future__ import annotations
@@ -119,3 +123,24 @@ class LocalFs:
             return path.is_dir()
         except OSError:
             return False
+
+    def ensure_dir(self, path: Path) -> None:
+        try:
+            path.mkdir(parents=True, exist_ok=True)
+        except OSError as exc:
+            raise FsError(f"cannot create directory {path}: {exc}") from exc
+
+    def remove_empty_dir(self, path: Path) -> bool:
+        # Mirrors scripts/bmad-switch's ensure_tier3_backlink: `any(iterdir())`
+        # distinguishes "real but empty" (removed, returns True) from "real
+        # and occupied" (left alone, returns False -- not raised, so the
+        # caller can tell this safe refusal apart from a real I/O failure
+        # structurally, rather than by matching a message string; see
+        # ports/fs.py's docstring).
+        try:
+            if any(path.iterdir()):
+                return False
+            path.rmdir()
+            return True
+        except OSError as exc:
+            raise FsError(f"cannot remove directory {path}: {exc}") from exc

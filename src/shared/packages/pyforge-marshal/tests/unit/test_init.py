@@ -88,15 +88,23 @@ class FakeVcs:
 class FakeFs:
     def __init__(self, *, project_dirs: set[Path] | None = None) -> None:
         self.dirs: set[Path] = set(project_dirs or set())
+        # A subset of `dirs` treated as a real, NON-EMPTY directory by
+        # `remove_empty_dir` (Story 1.5) -- a dir in `dirs` but absent here
+        # is a real, EMPTY directory.
+        self.non_empty_dirs: set[Path] = set()
         self.texts: dict[Path, str] = {}
         self.symlinks: dict[Path, Path] = {}
         self.calls: list[str] = []
         self.write_calls: list[Path] = []
         self.repoint_calls: list[Path] = []
+        self.ensure_dir_calls: list[Path] = []
+        self.remove_empty_dir_calls: list[Path] = []
         self.fail_read_text: Exception | None = None
         self.fail_write_text: Exception | None = None
         self.fail_read_symlink: Exception | None = None
         self.fail_repoint: Exception | None = None
+        self.fail_ensure_dir: Exception | None = None
+        self.fail_remove_empty_dir: Exception | None = None
 
     def is_dir(self, path: Path) -> bool:
         self.calls.append("is_dir")
@@ -131,6 +139,23 @@ class FakeFs:
     def is_symlink(self, path: Path) -> bool:  # pragma: no cover - convenience only
         return path in self.symlinks
 
+    def ensure_dir(self, path: Path) -> None:
+        self.calls.append("ensure_dir")
+        self.ensure_dir_calls.append(path)
+        if self.fail_ensure_dir:
+            raise self.fail_ensure_dir
+        self.dirs.add(path)
+
+    def remove_empty_dir(self, path: Path) -> bool:
+        self.calls.append("remove_empty_dir")
+        self.remove_empty_dir_calls.append(path)
+        if self.fail_remove_empty_dir:
+            raise self.fail_remove_empty_dir
+        if path in self.non_empty_dirs:
+            return False
+        self.dirs.discard(path)
+        return True
+
 
 def _namespace(slug: str, *, fmt: str = "text") -> argparse.Namespace:
     return argparse.Namespace(slug=slug, format=fmt)
@@ -162,6 +187,25 @@ def _home_with_project(home: Path, slug: str) -> set[Path]:
     return {home, home / "_bmad-output" / "projects" / slug / "planning-artifacts"}
 
 
+def _tier3_paths(repo_root: Path, home: Path, slug: str) -> tuple[Path, Path]:
+    """(canonical, local) Tier-3 paths for `slug`, matching `cli/init.py`'s
+    own computation."""
+    canonical = repo_root / "_bmad-output" / "projects" / slug / "implementation-artifacts"
+    local = home / "_bmad-output" / "projects" / slug / "implementation-artifacts"
+    return canonical, local
+
+
+def _converge_tier3(fs: FakeFs, repo_root: Path, home: Path, slug: str) -> None:
+    """Pre-seed `fs` so the `tier3_backlink` step is already converged
+    (matching symlink + canonical dir present) -- used by tests that need
+    to isolate the planning-artifacts marker/symlink pair from this new
+    step's own writes, which otherwise land in the SAME `repoint_calls`
+    list (both steps call `repoint_symlink_atomic`)."""
+    canonical, local = _tier3_paths(repo_root, home, slug)
+    fs.dirs.add(canonical)
+    fs.symlinks[local] = canonical
+
+
 # --- fresh provision -----------------------------------------------------------
 
 
@@ -172,6 +216,7 @@ def test_fresh_provision_all_steps_done(repo_root, capsys):
     assert exit_code == EXIT_OK
     out = capsys.readouterr().out
     assert "worktree: done" in out
+    assert "tier3_backlink: done" in out
     assert "symlink: done" in out
     assert "marker: done" in out
     assert vcs.add_worktree_calls == [(repo_root, vcs.worktrees["loop/acme"], "loop/acme", "main")]
@@ -234,21 +279,25 @@ def test_idempotent_rerun_all_steps_skipped_and_zero_writes(repo_root, capsys):
     vcs = FakeVcs(repo_root=repo_root, worktree_dirs=fs.dirs)
     first_exit = run_init(_namespace("acme"), vcs=vcs, fs=fs)
     assert first_exit == EXIT_OK
-    capsys.readouterr()  # drain first run's output
+    first_out = capsys.readouterr().out  # drain first run's output
+    assert "tier3_backlink: done" in first_out
 
     writes_before = list(fs.write_calls)
     repoints_before = list(fs.repoint_calls)
+    ensure_dir_calls_before = list(fs.ensure_dir_calls)
     add_worktree_calls_before = list(vcs.add_worktree_calls)
 
     second_exit = run_init(_namespace("acme"), vcs=vcs, fs=fs)
     assert second_exit == EXIT_OK
     out = capsys.readouterr().out
     assert "worktree: skipped" in out
+    assert "tier3_backlink: skipped" in out
     assert "symlink: skipped" in out
     assert "marker: skipped" in out
     # zero NEW writes on the second call
     assert fs.write_calls == writes_before
     assert fs.repoint_calls == repoints_before
+    assert fs.ensure_dir_calls == ensure_dir_calls_before
     assert vcs.add_worktree_calls == add_worktree_calls_before
 
 
@@ -365,6 +414,10 @@ def test_marker_symlink_desync_blocks_before_any_write(repo_root, tmp_path, caps
     fs = FakeFs(
         project_dirs=_provisioned_project(repo_root, "acme") | _home_with_project(home, "acme")
     )
+    # Pre-converge the (independent) tier3_backlink step so its own write
+    # doesn't land in the same fs.repoint_calls list this test inspects --
+    # this test's own concern is the planning-artifacts marker/symlink pair.
+    _converge_tier3(fs, repo_root, home, "acme")
     fs.texts[home / "_bmad" / "custom" / ".active-project"] = "other-project\n"
     fs.symlinks[home / "_bmad-output" / "planning-artifacts"] = Path(
         "projects/yet-another/planning-artifacts"
@@ -373,6 +426,7 @@ def test_marker_symlink_desync_blocks_before_any_write(repo_root, tmp_path, caps
     assert exit_code != EXIT_OK
     out = capsys.readouterr().out
     assert "MRS-INIT-003" in out
+    assert "tier3_backlink: skipped" in out
     assert fs.write_calls == []
     assert fs.repoint_calls == []
 
@@ -396,9 +450,16 @@ def test_marker_alone_with_no_symlink_is_not_a_desync(repo_root, tmp_path):
 # --- symlink/marker write failures: MRS-INIT-004 --------------------------------
 
 
-def test_symlink_write_failure_stops_before_marker(repo_root, capsys):
+def test_symlink_write_failure_stops_before_marker(repo_root, tmp_path, capsys):
+    home = tmp_path / "loop-homes" / "acme"
     fs = FakeFs(project_dirs=_provisioned_project(repo_root, "acme"))
     vcs = FakeVcs(repo_root=repo_root, worktree_dirs=fs.dirs)
+    vcs.worktrees["loop/acme"] = home
+    fs.dirs |= _home_with_project(home, "acme")
+    # Pre-converge tier3_backlink so `fail_repoint` (which fails EVERY
+    # repoint_symlink_atomic call, tier3's included) hits the
+    # planning-artifacts symlink step specifically, not this independent one.
+    _converge_tier3(fs, repo_root, home, "acme")
     fs.fail_repoint = FsError("disk full")
     exit_code = run_init(_namespace("acme"), vcs=vcs, fs=fs)
     assert exit_code != EXIT_OK
@@ -516,6 +577,9 @@ def test_unparseable_symlink_target_blocks_as_desync(repo_root, tmp_path, capsys
     fs = FakeFs(
         project_dirs=_provisioned_project(repo_root, "acme") | _home_with_project(home, "acme")
     )
+    # Pre-converge the independent tier3_backlink step -- see the comment in
+    # test_marker_symlink_desync_blocks_before_any_write.
+    _converge_tier3(fs, repo_root, home, "acme")
     fs.symlinks[home / "_bmad-output" / "planning-artifacts"] = Path(
         "/somewhere/else/planning-artifacts"
     )
@@ -607,7 +671,155 @@ def test_relative_loop_home_root_is_anchored_absolute(repo_root, tmp_path, monke
     assert home == tmp_path / "rel-loop-homes" / "acme"
 
 
-# --- verdict classification of the four new codes --------------------------------
+# --- tier3_backlink (Story 1.5): the full I/O & Edge-Case Matrix ---------------
+
+
+def test_tier3_backlink_fresh_creates_canonical_and_symlink(repo_root, capsys):
+    fs = FakeFs(project_dirs=_provisioned_project(repo_root, "acme"))
+    vcs = FakeVcs(repo_root=repo_root, worktree_dirs=fs.dirs)
+    exit_code = run_init(_namespace("acme"), vcs=vcs, fs=fs)
+    assert exit_code == EXIT_OK
+    out = capsys.readouterr().out
+    assert "tier3_backlink: done" in out
+    home = vcs.worktrees["loop/acme"]
+    canonical, local = _tier3_paths(repo_root, home, "acme")
+    assert canonical in fs.dirs
+    assert fs.symlinks[local] == canonical
+
+
+def test_tier3_backlink_self_heal_recreates_missing_canonical_dir(repo_root, tmp_path, capsys):
+    """Symlink target already matches canonical, but the canonical directory
+    itself is missing on disk (e.g. hand-deleted) -- recreated, symlink
+    rewritten, still reports `done` (not `skipped`)."""
+    vcs = FakeVcs(repo_root=repo_root)
+    home = tmp_path / "loop-homes" / "acme"
+    vcs.worktrees["loop/acme"] = home
+    canonical, local = _tier3_paths(repo_root, home, "acme")
+    fs = FakeFs(
+        project_dirs=_provisioned_project(repo_root, "acme") | _home_with_project(home, "acme")
+    )
+    fs.symlinks[local] = canonical  # matches, but canonical dir absent from fs.dirs
+    exit_code = run_init(_namespace("acme"), vcs=vcs, fs=fs)
+    assert exit_code == EXIT_OK
+    out = capsys.readouterr().out
+    assert "tier3_backlink: done" in out
+    assert canonical in fs.dirs
+    assert fs.symlinks[local] == canonical
+
+
+def test_tier3_backlink_stale_empty_local_dir_is_replaced(repo_root, tmp_path, capsys):
+    vcs = FakeVcs(repo_root=repo_root)
+    home = tmp_path / "loop-homes" / "acme"
+    vcs.worktrees["loop/acme"] = home
+    canonical, local = _tier3_paths(repo_root, home, "acme")
+    fs = FakeFs(
+        project_dirs=_provisioned_project(repo_root, "acme")
+        | _home_with_project(home, "acme")
+        | {local}  # a real, empty local directory -- no symlink
+    )
+    exit_code = run_init(_namespace("acme"), vcs=vcs, fs=fs)
+    assert exit_code == EXIT_OK
+    out = capsys.readouterr().out
+    assert "tier3_backlink: done" in out
+    assert local in fs.remove_empty_dir_calls
+    assert fs.symlinks[local] == canonical
+
+
+def test_tier3_backlink_real_nonempty_local_dir_reports_mrs_init_005(repo_root, tmp_path, capsys):
+    vcs = FakeVcs(repo_root=repo_root)
+    home = tmp_path / "loop-homes" / "acme"
+    vcs.worktrees["loop/acme"] = home
+    canonical, local = _tier3_paths(repo_root, home, "acme")
+    fs = FakeFs(
+        project_dirs=_provisioned_project(repo_root, "acme")
+        | _home_with_project(home, "acme")
+        | {local}
+    )
+    fs.non_empty_dirs.add(local)
+    exit_code = run_init(_namespace("acme"), vcs=vcs, fs=fs)
+    assert exit_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-INIT-005" in out
+    assert str(local) in out
+    assert str(canonical) in out
+    # left untouched: no write attempted, the directory is still present
+    assert local in fs.dirs
+    assert fs.ensure_dir_calls == []
+    assert local not in fs.symlinks
+
+
+def test_tier3_backlink_wrong_target_symlink_is_repointed_silently(repo_root, tmp_path, capsys):
+    vcs = FakeVcs(repo_root=repo_root)
+    home = tmp_path / "loop-homes" / "acme"
+    vcs.worktrees["loop/acme"] = home
+    canonical, local = _tier3_paths(repo_root, home, "acme")
+    fs = FakeFs(
+        project_dirs=_provisioned_project(repo_root, "acme") | _home_with_project(home, "acme")
+    )
+    fs.symlinks[local] = Path("/somewhere/else/implementation-artifacts")
+    exit_code = run_init(_namespace("acme"), vcs=vcs, fs=fs)
+    assert exit_code == EXIT_OK
+    out = capsys.readouterr().out
+    assert "tier3_backlink: done" in out
+    assert fs.symlinks[local] == canonical
+
+
+def test_tier3_backlink_read_symlink_failure_reports_mrs_init_004(repo_root, capsys):
+    fs = FakeFs(project_dirs=_provisioned_project(repo_root, "acme"))
+    vcs = FakeVcs(repo_root=repo_root, worktree_dirs=fs.dirs)
+    fs.fail_read_symlink = FsError("permission denied")
+    exit_code = run_init(_namespace("acme"), vcs=vcs, fs=fs)
+    assert exit_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-INIT-004" in out
+    assert "tier3_backlink: failed" in out
+
+
+def test_tier3_backlink_remove_empty_dir_failure_reports_mrs_init_004(repo_root, tmp_path, capsys):
+    vcs = FakeVcs(repo_root=repo_root)
+    home = tmp_path / "loop-homes" / "acme"
+    vcs.worktrees["loop/acme"] = home
+    _, local = _tier3_paths(repo_root, home, "acme")
+    fs = FakeFs(
+        project_dirs=_provisioned_project(repo_root, "acme")
+        | _home_with_project(home, "acme")
+        | {local}
+    )
+    fs.fail_remove_empty_dir = FsError("permission denied")
+    exit_code = run_init(_namespace("acme"), vcs=vcs, fs=fs)
+    assert exit_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-INIT-004" in out
+    assert "tier3_backlink: failed" in out
+
+
+def test_tier3_backlink_ensure_dir_failure_reports_mrs_init_004(repo_root, capsys):
+    fs = FakeFs(project_dirs=_provisioned_project(repo_root, "acme"))
+    vcs = FakeVcs(repo_root=repo_root, worktree_dirs=fs.dirs)
+    fs.fail_ensure_dir = FsError("disk full")
+    exit_code = run_init(_namespace("acme"), vcs=vcs, fs=fs)
+    assert exit_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-INIT-004" in out
+    assert "tier3_backlink: failed" in out
+    assert fs.repoint_calls == []  # never reached
+
+
+def test_tier3_backlink_repoint_failure_reports_mrs_init_004(repo_root, capsys):
+    fs = FakeFs(project_dirs=_provisioned_project(repo_root, "acme"))
+    vcs = FakeVcs(repo_root=repo_root, worktree_dirs=fs.dirs)
+    fs.fail_repoint = FsError("disk full")
+    exit_code = run_init(_namespace("acme"), vcs=vcs, fs=fs)
+    assert exit_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-INIT-004" in out
+    assert "tier3_backlink: failed" in out
+    assert "symlink: failed" in out
+    assert "marker: failed" in out
+    assert fs.write_calls == []
+
+
+# --- verdict classification of the five new codes --------------------------------
 
 
 def test_init_finding_codes_classify_as_documented():
@@ -618,3 +830,4 @@ def test_init_finding_codes_classify_as_documented():
     assert classify("MRS-INIT-002") == Verdict.UNEVALUABLE
     assert classify("MRS-INIT-003") == Verdict.ERROR
     assert classify("MRS-INIT-004") == Verdict.ERROR
+    assert classify("MRS-INIT-005") == Verdict.ERROR

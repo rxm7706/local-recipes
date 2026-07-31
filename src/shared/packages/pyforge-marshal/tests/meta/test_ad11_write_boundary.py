@@ -1,15 +1,18 @@
-"""Meta test -- AD-11 write-boundary guard for Story 1.4's active surface
-(``marshal init``'s loop home). Unlike the AST-scan meta-tests this package
-already ships (AD-3/AD-4, AD-7, AD-26), this guard is RUNTIME: it injects
-path-recording fake ``VcsPort``/``FsPort`` implementations into
-``cli.init.run_init``'s own dependency-injection seam
-(``run_init(args, vcs=..., fs=...)``), drives one full ``init`` invocation
-against a ``tmp_path``-rooted fake home, and asserts every path either fake
-recorded a WRITE to resolves under that home directory -- the architecture's
-"Marshal writes only inside the loop home ... " invariant (Epic 1 context,
-Technical Decisions), scoped to exactly what this story can write (no
-Tier-3 backlink, no promotion target, no host/adapter-facts path -- those
-are later stories' surfaces).
+"""Meta test -- AD-11 write-boundary guard for Story 1.4/1.5's active
+surface (``marshal init``'s loop home, plus Story 1.5's Tier-3 backlink).
+Unlike the AST-scan meta-tests this package already ships (AD-3/AD-4, AD-7,
+AD-26), this guard is RUNTIME: it injects path-recording fake
+``VcsPort``/``FsPort`` implementations into ``cli.init.run_init``'s own
+dependency-injection seam (``run_init(args, vcs=..., fs=...)``), drives one
+full ``init`` invocation against a ``tmp_path``-rooted fake home, and
+asserts every path either fake recorded a WRITE to resolves under ONE of
+the architecture's two allowed targets for this story's surface (Epic 1
+context, Technical Decisions -- "Marshal writes only inside ... the loop
+home, the canonical execution-artifact store (via backlink) ..."): the
+provisioned home, OR the main checkout's canonical Tier-3 store at
+``repo_root/_bmad-output/projects/<slug>/implementation-artifacts`` (no
+promotion target, no host/adapter-facts path -- those are later stories'
+surfaces).
 
 Bounds (stated, not aspirational): this exercises the REAL orchestration
 logic in ``cli/init.py`` end-to-end (unlike an AST scan, it proves the
@@ -18,12 +21,13 @@ themselves are fakes -- ``tests/unit/test_vcs_git.py``/``test_fs_local.py``
 and the real end-to-end ``tests/integration/test_init_worktree.py`` are
 what prove the ADAPTERS' own writes land where their fake counterparts
 claim. The guarded invariant is therefore: every FS-port write and the
-worktree TARGET path land under the home. A real ``git worktree add`` also
-writes git-internal bookkeeping OUTSIDE the home (the new branch ref and
-``$GIT_DIR/worktrees/<id>`` admin data in the main repo's ``.git``) --
-those are git's own writes, not Marshal's, and are deliberately exempt
-from the claim (review finding: the earlier docstring implied the real
-adapter could satisfy an all-writes-under-home reading, which it cannot).
+worktree TARGET path land under the home OR the canonical Tier-3 store. A
+real ``git worktree add`` also writes git-internal bookkeeping OUTSIDE the
+home (the new branch ref and ``$GIT_DIR/worktrees/<id>`` admin data in the
+main repo's ``.git``) -- those are git's own writes, not Marshal's, and are
+deliberately exempt from the claim (review finding: the earlier docstring
+implied the real adapter could satisfy an all-writes-under-home reading,
+which it cannot).
 """
 
 from __future__ import annotations
@@ -57,8 +61,12 @@ class _RecordingVcs:
 
 
 class _RecordingFs:
-    """Fakes just enough of ``FsPort`` to let ``run_init`` reach both of its
-    writes (symlink repoint, marker write), recording each write path."""
+    """Fakes ``FsPort`` in full (incl. ``remove_empty_dir``, unreached by
+    THIS fixture's fresh-provision scenario but implemented so the guard
+    would not crash if a future scenario pre-seeds a stale local Tier-3
+    directory) so ``run_init`` can reach every one of its writes
+    (tier3_backlink's ``ensure_dir``/symlink repoint, the planning-artifacts
+    symlink repoint, marker write), recording each write path."""
 
     def __init__(self, dirs: set[Path]) -> None:
         self._dirs = dirs
@@ -79,8 +87,18 @@ class _RecordingFs:
     def repoint_symlink_atomic(self, path: Path, target: Path) -> None:
         self.write_paths.append(path)
 
+    def ensure_dir(self, path: Path) -> None:
+        self.write_paths.append(path)
 
-def test_every_observed_write_resolves_under_the_provisioned_home(tmp_path, monkeypatch):
+    def remove_empty_dir(self, path: Path) -> bool:
+        self.write_paths.append(path)
+        self._dirs.discard(path)
+        return True
+
+
+def test_every_observed_write_resolves_under_the_home_or_canonical_tier3_store(
+    tmp_path, monkeypatch
+):
     monkeypatch.setenv("BMAD_LOOP_HOME_ROOT", str(tmp_path / "loop-homes"))
     slug = "acme"
     repo_root = tmp_path / "repo"
@@ -98,15 +116,31 @@ def test_every_observed_write_resolves_under_the_provisioned_home(tmp_path, monk
     assert exit_code == EXIT_OK
 
     all_writes = vcs.write_paths + fs.write_paths
-    # Non-vacuous: a full successful init writes the worktree (vcs) AND the
-    # symlink + marker (fs) -- three writes total. If this drops to zero the
-    # guard would trivially pass without checking anything.
+    # Non-vacuous: a full successful init writes the worktree (vcs) AND,
+    # from cli/init.py's fs-port calls: tier3_backlink's canonical
+    # ensure_dir + local symlink repoint, the planning-artifacts symlink
+    # repoint, and the marker write -- four fs writes total. If this drops
+    # the guard would trivially pass without checking anything.
     assert vcs.write_paths, "no vcs write was observed -- the guard would be vacuous"
-    assert len(fs.write_paths) == 2, "expected exactly the symlink + marker writes"
+    assert len(fs.write_paths) == 4, (
+        "expected exactly tier3_backlink's ensure_dir + symlink repoint, "
+        "the planning-artifacts symlink repoint, and the marker write"
+    )
 
     home_resolved = home.resolve()
+    # AD-11's second allowed target for this story's surface: the main
+    # checkout's canonical Tier-3 store (Story 1.5's backlink destination).
+    canonical_tier3_resolved = (
+        repo_root / "_bmad-output" / "projects" / slug / "implementation-artifacts"
+    ).resolve()
     for path in all_writes:
         resolved = Path(path).resolve()
-        assert resolved == home_resolved or home_resolved in resolved.parents, (
-            f"write to {path} does not resolve under the provisioned home {home}"
+        under_home = resolved == home_resolved or home_resolved in resolved.parents
+        under_canonical_tier3 = (
+            resolved == canonical_tier3_resolved
+            or canonical_tier3_resolved in resolved.parents
+        )
+        assert under_home or under_canonical_tier3, (
+            f"write to {path} does not resolve under the provisioned home "
+            f"{home} or the canonical Tier-3 store {canonical_tier3_resolved}"
         )

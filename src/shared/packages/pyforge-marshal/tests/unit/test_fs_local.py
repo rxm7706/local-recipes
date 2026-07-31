@@ -204,3 +204,59 @@ def test_is_dir_false_on_unsearchable_ancestor(fs, tmp_path):
         assert fs.is_dir(child) is False
     finally:
         parent.chmod(0o755)
+
+
+# --- ensure_dir (Story 1.5) -------------------------------------------------------
+
+
+def test_ensure_dir_creates_missing_parents(fs, tmp_path):
+    target = tmp_path / "nested" / "deeper" / "implementation-artifacts"
+    fs.ensure_dir(target)
+    assert target.is_dir()
+
+
+def test_ensure_dir_is_idempotent_on_an_existing_dir(fs, tmp_path):
+    target = tmp_path / "implementation-artifacts"
+    target.mkdir()
+    (target / "keep-me.txt").write_text("x", encoding="utf-8")
+    fs.ensure_dir(target)
+    assert target.is_dir()
+    assert (target / "keep-me.txt").read_text(encoding="utf-8") == "x"
+
+
+def test_ensure_dir_raises_fs_error_on_unwritable_target(fs, tmp_path):
+    blocked = tmp_path / "not-a-directory"
+    blocked.write_text("occupied", encoding="utf-8")
+    with pytest.raises(FsError):
+        fs.ensure_dir(blocked / "implementation-artifacts")
+
+
+# --- remove_empty_dir (Story 1.5) -------------------------------------------------
+
+
+def test_remove_empty_dir_removes_a_real_empty_dir(fs, tmp_path):
+    target = tmp_path / "implementation-artifacts"
+    target.mkdir()
+    assert fs.remove_empty_dir(target) is True
+    assert not target.exists()
+
+
+def test_remove_empty_dir_leaves_a_real_nonempty_dir_untouched(fs, tmp_path):
+    target = tmp_path / "implementation-artifacts"
+    target.mkdir()
+    (target / "sprint-status.yaml").write_text("x", encoding="utf-8")
+    assert fs.remove_empty_dir(target) is False
+    assert target.is_dir()
+    assert (target / "sprint-status.yaml").read_text(encoding="utf-8") == "x"
+
+
+def test_remove_empty_dir_raises_fs_error_when_path_is_missing(fs, tmp_path):
+    with pytest.raises(FsError):
+        fs.remove_empty_dir(tmp_path / "absent")
+
+
+def test_remove_empty_dir_raises_fs_error_when_path_is_a_file(fs, tmp_path):
+    target = tmp_path / "not-a-directory"
+    target.write_text("x", encoding="utf-8")
+    with pytest.raises(FsError):
+        fs.remove_empty_dir(target)

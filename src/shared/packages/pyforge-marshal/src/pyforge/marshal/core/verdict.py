@@ -42,7 +42,11 @@ provision, not that a gate failed. ``MRS-INIT-003``/``MRS-INIT-004``
 classify ``Verdict.ERROR``: a marker/symlink desync or a failed
 ``git``/filesystem operation means a real provisioning step was attempted
 (or correctly refused) and did not converge, a stronger failure than
-"could not evaluate". Later stories populate the table
+"could not evaluate". Story 1.5's ``MRS-INIT-005`` (``cli/init.py``'s
+``tier3_backlink`` step) classifies ``Verdict.ERROR`` too, the same tier as
+its two predecessors: a real, non-empty local Tier-3 directory is a real
+provisioning step correctly refused, not "could not evaluate". Later
+stories populate the table
 further as they add real codes. The mechanism (a total, fail-loud lookup) is
 separately proven via ``monkeypatch``-injected synthetic entries in
 ``tests/unit/test_verdict.py``.
@@ -99,6 +103,7 @@ GUARDED_EXIT_CODES: frozenset[int] = frozenset(_EXIT_BY_VERDICT.values()) | {
 # Story 1.2's core/identity.py -- the table's first real classifications.
 # Story 1.3's core/policy.py/cli/config.py add the second real caller's six codes.
 # Story 1.4's cli/init.py adds the third real caller's four codes.
+# Story 1.5's cli/init.py tier3_backlink step adds a fifth code.
 _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-IDENT-001": Verdict.UNEVALUABLE,
     "MRS-IDENT-002": Verdict.UNEVALUABLE,
@@ -112,6 +117,7 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-INIT-002": Verdict.UNEVALUABLE,
     "MRS-INIT-003": Verdict.ERROR,
     "MRS-INIT-004": Verdict.ERROR,
+    "MRS-INIT-005": Verdict.ERROR,
 }
 
 
