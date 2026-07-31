@@ -20,7 +20,8 @@ def test_registered_codes_contains_the_real_codes():
     Story 1.4's cli/init.py adds MRS-INIT-001/002/003/004. Story 1.5's
     cli/init.py tier3_backlink step adds MRS-INIT-005. Story 1.6's
     cli/init.py::run_homes adds MRS-HOMES-001/002/003. Story 1.7's
-    cli/init.py::run_preflight adds MRS-PREFLIGHT-001..010. This asserts the
+    cli/init.py::run_preflight adds MRS-PREFLIGHT-001..010. Story 1.8's
+    cli/init.py::run_teardown adds MRS-TEARDOWN-001/002/003. This asserts the
     registry's exact real contents."""
     assert findings.REGISTERED_CODES == frozenset(
         {
@@ -50,6 +51,9 @@ def test_registered_codes_contains_the_real_codes():
             "MRS-PREFLIGHT-008",
             "MRS-PREFLIGHT-009",
             "MRS-PREFLIGHT-010",
+            "MRS-TEARDOWN-001",
+            "MRS-TEARDOWN-002",
+            "MRS-TEARDOWN-003",
         }
     )
 

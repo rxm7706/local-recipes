@@ -6,7 +6,17 @@ design -- performs literally ZERO writes, and by Story 1.7 to prove
 machine-scoped acknowledgement file) resolve under one of THREE allowed
 targets rather than the original two -- see that test's own docstring for
 why a third target is legitimate here (AD-37's fourth write target, not a
-loosening of AD-11).
+loosening of AD-11), and by Story 1.8 to prove ``marshal teardown`` performs
+literally ZERO ``FsPort`` writes (mirroring ``marshal homes``'s own
+read-only guard) while its one ``VcsPort`` mutation target
+(``remove_worktree``'s ``home`` argument) resolves under the provisioned
+home *in the provisioned-in-place case this guard constructs* -- when git's
+registry names a DIFFERENT path for ``loop/<slug>`` (e.g.
+``BMAD_LOOP_HOME_ROOT`` changed since provisioning), the registered path is
+the removal target by design, outside any home root (review finding: the
+claim as previously worded overstated a universal containment the code
+deliberately does not have -- see ``test_init.py``'s
+``test_teardown_remove_worktree_uses_the_git_registered_path_not_the_computed_home``).
 Unlike the AST-scan meta-tests this package already ships (AD-3/AD-4, AD-7,
 AD-26), this guard is RUNTIME: it injects path-recording fake
 ``VcsPort``/``FsPort`` implementations into ``cli.init.run_init``'s own
@@ -48,28 +58,39 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
-from pyforge.marshal.cli.init import run_homes, run_init, run_preflight
+from pyforge.marshal.cli.init import run_homes, run_init, run_preflight, run_teardown
 from pyforge.marshal.core.verdict import EXIT_OK
 from pyforge.marshal.ports.vcs import WorktreeEntry
 
 
 class _RecordingVcs:
-    """Fakes just enough of ``VcsPort`` to let ``run_init``/``run_homes``
-    reach every write path, recording the one write (``add_worktree``)
-    either can make."""
+    """Fakes just enough of ``VcsPort`` to let ``run_init``/``run_homes``/
+    ``run_teardown`` reach every write path, recording the writes
+    (``add_worktree``, ``remove_worktree``) each can make. ``provisioned_*``
+    default to "nothing provisioned" (``run_init``'s own fresh-provision
+    scenario); ``run_teardown``'s own test overrides them so a worktree
+    genuinely exists to remove."""
 
-    def __init__(self, repo_root: Path) -> None:
+    def __init__(
+        self,
+        repo_root: Path,
+        *,
+        provisioned_worktree: Path | None = None,
+        provisioned_branch_exists: bool = False,
+    ) -> None:
         self.repo_root = repo_root
         self.write_paths: list[Path] = []
+        self._provisioned_worktree = provisioned_worktree
+        self._provisioned_branch_exists = provisioned_branch_exists
 
     def repo_common_root(self, start: Path) -> Path:
         return self.repo_root
 
     def branch_exists(self, repo_root: Path, branch: str) -> bool:
-        return False
+        return self._provisioned_branch_exists
 
     def worktree_path_for_branch(self, repo_root: Path, branch: str) -> Path | None:
-        return None
+        return self._provisioned_worktree
 
     def add_worktree(self, repo_root: Path, home: Path, branch: str, *, base: str) -> None:
         self.write_paths.append(home)
@@ -81,6 +102,29 @@ class _RecordingVcs:
             WorktreeEntry(path=self.repo_root, branch="main"),
             WorktreeEntry(path=self.repo_root / "loop-homes" / "acme", branch="loop/acme"),
         )
+
+    def has_uncommitted_changes(self, worktree_path: Path) -> bool:
+        # Story 1.8: a read -- never recorded. Clean by construction, so
+        # run_teardown's own refusal path never blocks this guard's run.
+        return False
+
+    def is_branch_merged(self, repo_root: Path, branch: str, *, into: str) -> bool:
+        # Story 1.8: a read -- never recorded. Merged by construction, for
+        # the same reason as has_uncommitted_changes above.
+        return True
+
+    def remove_worktree(self, repo_root: Path, home: Path, *, force: bool = False) -> None:
+        # The worktree TARGET path this guard tracks, mirroring
+        # add_worktree's own recorded write above.
+        self.write_paths.append(home)
+
+    def delete_branch(self, repo_root: Path, branch: str, *, force: bool = False) -> None:
+        # NOT recorded: branch deletion is a git-ref-level operation inside
+        # $GIT_DIR, outside both allowed targets -- git-internal bookkeeping
+        # exempt from this guard's claim for the SAME reason add_worktree's
+        # own branch-ref write is (see this class's own docstring precedent
+        # and the module docstring's "real git worktree add" paragraph).
+        pass
 
 
 class _RecordingFs:
@@ -289,4 +333,45 @@ def test_preflight_writes_resolve_under_the_home_or_the_ack_state_path(
         assert under_home or is_ack_path, (
             f"write to {path} does not resolve under the provisioned home "
             f"{home} or the ack-state path {ack_path_resolved}"
+        )
+
+
+def test_teardown_produces_zero_fs_writes_and_its_one_vcs_write_resolves_under_the_home(
+    tmp_path, monkeypatch
+):
+    """Story 1.8: ``marshal teardown`` is NOT read-only like ``marshal
+    homes``, but it makes exactly ONE mutation this guard can observe --
+    ``remove_worktree``'s ``home`` target (``delete_branch``'s ref deletion
+    is git-internal bookkeeping in ``$GIT_DIR``, exempt from this guard's
+    claim for the same reason ``add_worktree``'s own branch-ref write is --
+    see ``_RecordingVcs.delete_branch``'s own comment). The guarded claims
+    are: zero ``FsPort`` writes at all (cli/init.py's own docstring: this
+    command calls no write method and never references the canonical Tier-3
+    store), and the one ``VcsPort`` write resolves under the home WHEN the
+    registry and the computed home agree -- the provisioned-in-place case
+    this test constructs. That containment is deliberately NOT universal
+    (review finding: the previous wording overclaimed it): when git
+    registers ``loop/<slug>`` at a different path, that registered path is
+    the removal target by design -- proven by ``test_init.py``'s own
+    moved-home test."""
+    monkeypatch.setenv("BMAD_LOOP_HOME_ROOT", str(tmp_path / "loop-homes"))
+    slug = "acme"
+    repo_root = tmp_path / "repo"
+    home = tmp_path / "loop-homes" / slug
+
+    vcs = _RecordingVcs(repo_root, provisioned_worktree=home, provisioned_branch_exists=True)
+    fs = _RecordingFs(set())
+
+    args = argparse.Namespace(slug=slug, force=False, format="text")
+    exit_code = run_teardown(args, vcs=vcs, fs=fs)
+
+    assert exit_code == EXIT_OK
+    assert fs.write_paths == []
+    assert vcs.write_paths, "no vcs write was observed -- the guard would be vacuous"
+
+    home_resolved = home.resolve()
+    for path in vcs.write_paths:
+        resolved = Path(path).resolve()
+        assert resolved == home_resolved or home_resolved in resolved.parents, (
+            f"write to {path} does not resolve under the provisioned home {home}"
         )
