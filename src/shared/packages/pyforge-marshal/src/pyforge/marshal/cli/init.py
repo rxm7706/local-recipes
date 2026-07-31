@@ -1,24 +1,31 @@
-"""``marshal init`` (Story 1.4, FR-1/FR-2, AD-11/AD-21) -- provisions an
-isolated loop home: a git worktree at ``<loop-home-root>/<slug>`` on branch
-``loop/<slug>``, carrying its own BMAD active-project marker
-(``_bmad/custom/.active-project``) and ``_bmad-output/planning-artifacts``
-symlink. Idempotent (AD-21, reconcile-then-act): each of the three steps
-(worktree, symlink, marker) is checked against real state via
+"""``marshal init`` (Stories 1.4/1.5, FR-1/FR-2/FR-3, AD-11/AD-21) --
+provisions an isolated loop home: a git worktree at
+``<loop-home-root>/<slug>`` on branch ``loop/<slug>``, carrying its own BMAD
+active-project marker (``_bmad/custom/.active-project``),
+``_bmad-output/planning-artifacts`` symlink, and a backlink from the home's
+gitignored Tier-3 execution-artifact store
+(``_bmad-output/projects/<slug>/implementation-artifacts``) to the main
+checkout's canonical copy of the same path. Idempotent (AD-21,
+reconcile-then-act): each of the four steps (worktree, tier3_backlink,
+symlink, marker) is checked against real state via
 ``ports.VcsPort``/``ports.FsPort`` before any write is attempted, so a
 re-run against an already-converged home performs zero writes and still
 exits 0.
 
 Ports this ``git worktree`` provisioning logic from ``scripts/bmad-loop-worktree``
 (the ``home_path``/``loop_home_root``/``provision`` functions) plus the
-marker/symlink primitives from ``scripts/bmad-switch`` into Marshal's own
-``VcsPort``/``FsPort`` seam, rather than shelling out to either script --
-see ``ports/vcs.py``/``ports/fs.py`` and the spec's Design Notes for why
-(the AD-11 write-boundary meta-test needs every write observable through
-Marshal's own ports). Deliberately simplified relative to the reference
-scripts: no legacy sibling-repo layout (the spec's own Boundaries &
-Constraints -- "do not reinvent the sibling-repo layout"), and no Tier-3
-backlink (that is Story 1.5's ``ensure_tier3_backlink`` surface, out of
-scope here -- a fresh home carries only the ``planning-artifacts`` symlink).
+marker/symlink primitives and ``ensure_tier3_backlink`` from
+``scripts/bmad-switch`` into Marshal's own ``VcsPort``/``FsPort`` seam,
+rather than shelling out to either script -- see ``ports/vcs.py``/
+``ports/fs.py`` and the spec's Design Notes for why (the AD-11
+write-boundary meta-test needs every write observable through Marshal's own
+ports). Deliberately simplified relative to the reference scripts: no
+legacy sibling-repo layout (the spec's own Boundaries & Constraints -- "do
+not reinvent the sibling-repo layout"), and no top-level
+``implementation-artifacts`` compatibility symlink (that lives in
+``bmad-switch``'s separate ``repoint_links`` function, shared with
+``planning-artifacts``, and stays out of this story's ``tier3_backlink``
+scope -- see Story 1.5's spec Design Notes).
 
 Slug shape validation reuses ``core.policy._is_valid_project_slug`` directly
 (a deliberate cross-module private import within this package, per the
@@ -33,12 +40,18 @@ ABSOLUTE path (review finding: a relative override would be resolved
 against ``repo_root`` by ``git -C`` but against the CWD by ``LocalFs``,
 splitting the two writers across different homes).
 
-Ordering: the marker/symlink DESYNC check runs before any write in this
+Ordering: the ``tier3_backlink`` step runs right after the in-home project
+gate and BEFORE the marker/symlink desync check (mirrors
+``scripts/bmad-switch``'s own call order: ``ensure_tier3_backlink`` runs
+before ``repoint_links``) -- it is entirely independent of the
+``planning-artifacts`` marker/symlink pair and their desync guard, which
+stays scoped to that pair exactly as Story 1.4 left it. Within the
+marker/symlink pair, the DESYNC check runs before any write in this
 invocation (a prior partial failure left the two naming different slugs, or
 a symlink target this command never shaped -- ``MRS-INIT-003``, blocking);
 the symlink is written BEFORE the marker (mirrors ``scripts/bmad-switch``'s
 own ordering rationale -- the marker must never advance past a symlink that
-failed to move). Once provisioning begins, each of the three steps reports
+failed to move). Once provisioning begins, each of the four steps reports
 exactly one of ``done``/``skipped``/``failed`` in the envelope's
 ``data.steps``; an unattempted step (because an earlier step failed or
 blocked) reports ``failed`` too, since it did not converge either. The
@@ -49,11 +62,12 @@ carry no ``steps`` key at all.
 ``MRS-INIT-001`` (malformed slug, including slug shapes git rejects as a
 branch-name component) and ``MRS-INIT-002`` (unknown project) classify
 ``Verdict.UNEVALUABLE`` and are checked before any write is attempted --
--001 before any I/O at all. ``MRS-INIT-003`` (desync) and ``MRS-INIT-004``
+-001 before any I/O at all. ``MRS-INIT-003`` (desync), ``MRS-INIT-004``
 (any git/filesystem operation failure, including resolving the repo root
 itself, plus the blocking in-home check that the provisioned tree really
-contains the project the symlink is about to target) classify
-``Verdict.ERROR``.
+contains the project the symlink is about to target), and ``MRS-INIT-005``
+(a real, non-empty directory already occupies the local Tier-3 path,
+refusing the backlink) classify ``Verdict.ERROR``.
 """
 
 from __future__ import annotations
@@ -76,7 +90,7 @@ from .config import _suppress_downstream_pipe_close
 
 ENV_LOOP_HOME_ROOT = "BMAD_LOOP_HOME_ROOT"
 
-_STEP_NAMES: tuple[str, ...] = ("worktree", "symlink", "marker")
+_STEP_NAMES: tuple[str, ...] = ("worktree", "tier3_backlink", "symlink", "marker")
 
 
 def add_init_subparser(subparsers: argparse._SubParsersAction) -> None:
@@ -87,7 +101,9 @@ def add_init_subparser(subparsers: argparse._SubParsersAction) -> None:
         description=(
             "Idempotently provisions a git worktree at "
             "<loop-home-root>/<slug> on branch loop/<slug>, with its own "
-            "active-project marker and planning-artifacts symlink. "
+            "active-project marker, planning-artifacts symlink, and a "
+            "backlink from its gitignored Tier-3 implementation-artifacts "
+            "store to the main checkout's canonical copy. "
             "Re-running against an already-converged home performs zero "
             "writes and exits 0."
         ),
@@ -250,7 +266,7 @@ def run_init(
     steps: dict[str, str] = {name: "failed" for name in _STEP_NAMES}
     data["steps"] = steps
 
-    # --- step 1: worktree (reconcile-then-act against git's own truth) ------
+    # --- step: worktree (reconcile-then-act against git's own truth) -------
     try:
         existing = vcs.worktree_path_for_branch(repo_root, branch)
     except VcsCommandError as exc:
@@ -312,6 +328,66 @@ def run_init(
         )
         return _emit(args, data, findings)
 
+    # --- step: tier3_backlink (Story 1.5) ------------------------------------
+    # Symlinks the home's gitignored Tier-3 store to the main checkout's
+    # canonical copy at the same repo-relative path (ports
+    # scripts/bmad-switch::ensure_tier3_backlink). Runs before the
+    # marker/symlink pair below and is entirely independent of their desync
+    # guard -- this backlink has its own convergence check.
+    canonical = repo_root / "_bmad-output" / "projects" / slug / "implementation-artifacts"
+    local = home / "_bmad-output" / "projects" / slug / "implementation-artifacts"
+    try:
+        tier3_link_target = fs.read_symlink_target(local)
+    except FsError as exc:
+        findings.append(_op_failed_finding(f"reading tier-3 backlink state: {exc}"))
+        return _emit(args, data, findings)
+
+    if tier3_link_target == canonical and fs.is_dir(canonical):
+        # Converged: matching symlink target AND the canonical directory
+        # still present -- zero further FsPort calls (AD-21/NFR-7's
+        # idempotency bar).
+        steps["tier3_backlink"] = "skipped"
+    else:
+        if tier3_link_target is None and fs.is_dir(local):
+            # A real (non-symlink) directory already sits at `local` -- only
+            # a STALE EMPTY one may be cleared to make way for the backlink;
+            # a real, non-empty one is a safe refusal (MRS-INIT-005), not a
+            # failure (mirrors ensure_tier3_backlink's own any(iterdir())
+            # check, plus this repo's own live incident: a BMAD write-skill
+            # populated the local Tier-3 path before the backlink existed).
+            try:
+                removed = fs.remove_empty_dir(local)
+            except FsError as exc:
+                findings.append(
+                    _op_failed_finding(f"removing stale tier-3 directory {local}: {exc}")
+                )
+                return _emit(args, data, findings)
+            if not removed:
+                findings.append(
+                    Finding(
+                        code="MRS-INIT-005",
+                        severity=Severity.ERROR,
+                        message=(
+                            f"{local} is a real, non-empty directory -- "
+                            f"refusing to replace it with a backlink to "
+                            f"{canonical}; move its contents into that "
+                            "canonical directory by hand (creating it if "
+                            "absent), remove the then-empty local "
+                            "directory, and re-run"
+                        ),
+                        path=str(local),
+                    )
+                )
+                return _emit(args, data, findings)
+
+        try:
+            fs.ensure_dir(canonical)
+            fs.repoint_symlink_atomic(local, canonical)
+            steps["tier3_backlink"] = "done"
+        except FsError as exc:
+            findings.append(_op_failed_finding(str(exc)))
+            return _emit(args, data, findings)
+
     # --- desync check: BLOCKING, before any further write -------------------
     marker_path = home / "_bmad" / "custom" / ".active-project"
     link_path = home / "_bmad-output" / "planning-artifacts"
@@ -362,7 +438,7 @@ def run_init(
         )
         return _emit(args, data, findings)
 
-    # --- step 2: symlink, written BEFORE the marker --------------------------
+    # --- step: symlink, written BEFORE the marker -----------------------------
     if link_slug == slug:
         steps["symlink"] = "skipped"
     else:
@@ -374,7 +450,7 @@ def run_init(
             findings.append(_op_failed_finding(str(exc)))
             return _emit(args, data, findings)
 
-    # --- step 3: marker -------------------------------------------------------
+    # --- step: marker -----------------------------------------------------------
     if marker_slug == slug:
         steps["marker"] = "skipped"
     else:

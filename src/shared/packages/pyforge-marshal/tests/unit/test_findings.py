@@ -17,7 +17,8 @@ def test_registered_codes_contains_the_real_codes():
     """The registry no longer starts empty -- Story 1.2's core/identity.py
     is its first real caller, registering MRS-IDENT-001/002. Story 1.3's
     core/policy.py/cli/config.py add MRS-POLICY-001/002/003/004/005/006.
-    Story 1.4's cli/init.py adds MRS-INIT-001/002/003/004. This asserts the
+    Story 1.4's cli/init.py adds MRS-INIT-001/002/003/004. Story 1.5's
+    cli/init.py tier3_backlink step adds MRS-INIT-005. This asserts the
     registry's exact real contents."""
     assert findings.REGISTERED_CODES == frozenset(
         {
@@ -33,6 +34,7 @@ def test_registered_codes_contains_the_real_codes():
             "MRS-INIT-002",
             "MRS-INIT-003",
             "MRS-INIT-004",
+            "MRS-INIT-005",
         }
     )
 
