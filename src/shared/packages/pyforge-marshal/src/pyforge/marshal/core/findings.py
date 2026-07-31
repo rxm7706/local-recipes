@@ -92,7 +92,26 @@ resolve OUTSIDE the loop home via ``..``/an absolute path, and the seed-copy
 step would then write real bytes there) classifies ``Verdict.UNEVALUABLE``
 instead, mirroring ``MRS-INIT-001``'s own tier for the identical shape check:
 a malformed slug means Marshal cannot determine what to preflight, not that
-a gate failed. Later stories
+a gate failed. Story 1.8's ``cli/init.py::run_teardown`` (``marshal
+teardown``, NFR-6/AD-29) adds the registry's sixth real caller and its own
+three codes: ``MRS-TEARDOWN-001`` (a malformed project slug, including a
+shape git rejects as a branch-name component -- the same pre-I/O shape gate
+``run_init`` already applies, reusing its identical checks rather than a
+third slug regex; ``run_preflight`` does not apply this same git-ref-shape
+guard today, a pre-existing gap this story surfaced but did not cause),
+``MRS-TEARDOWN-002`` (a git operation
+failed -- resolving the current working directory or the loop-home root,
+resolving worktree/branch state, or the removal itself), and
+``MRS-TEARDOWN-003`` (refused: the home has uncommitted changes, the
+branch's content is not yet safely captured on ``main``, or the AD-29
+promotion-reachability stub names something unreachable -- and ``--force``
+was not supplied; the one finding names every triggering condition).
+``MRS-TEARDOWN-001`` classifies ``Verdict.UNEVALUABLE`` (Marshal cannot
+determine what to tear down), the same tier as ``MRS-INIT-001``/
+``MRS-PREFLIGHT-010``'s identical shape check; ``MRS-TEARDOWN-002/003``
+classify ``Verdict.ERROR``, the same tier as every other story's
+real-operation-attempted-and-did-not-complete codes -- see
+``core/verdict.py``. Later stories
 append further real codes here as they gain their own real callers. The
 registry MECHANISM
 (format check, then membership check) is separately proven via
@@ -121,6 +140,7 @@ CODE_PATTERN = re.compile(r"MRS-[A-Z][A-Z0-9]*-[0-9]{3}")
 # Story 1.5's cli/init.py tier3_backlink step adds a fifth code.
 # Story 1.6's cli/init.py::run_homes adds the fourth real caller's three codes.
 # Story 1.7's cli/init.py::run_preflight adds the fifth real caller's ten codes.
+# Story 1.8's cli/init.py::run_teardown adds the sixth real caller's three codes.
 REGISTERED_CODES: frozenset[str] = frozenset(
     {
         "MRS-IDENT-001",
@@ -149,6 +169,9 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-PREFLIGHT-008",
         "MRS-PREFLIGHT-009",
         "MRS-PREFLIGHT-010",
+        "MRS-TEARDOWN-001",
+        "MRS-TEARDOWN-002",
+        "MRS-TEARDOWN-003",
     }
 )
 

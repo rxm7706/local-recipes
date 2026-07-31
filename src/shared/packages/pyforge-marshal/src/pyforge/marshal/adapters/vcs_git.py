@@ -12,6 +12,19 @@ shares ``worktree_path_for_branch``'s own ``git worktree list --porcelain``
 block parser (``_iter_worktree_blocks``) rather than duplicating it -- the
 two methods differ only in whether they stop at the first matching block or
 return every block.
+
+Story 1.8 (``marshal teardown``, NFR-6/AD-29) adds four more methods:
+``has_uncommitted_changes`` (``git status --porcelain``),
+``is_branch_merged`` (ancestry first, then a ``commit-tree``+``git cherry``
+patch-CONTENT fallback -- see that method's own docstring for the full
+rationale, live-verified during planning against a throwaway repo
+reproducing this repo's own squash-merge convention), and the two writes
+``remove_worktree``/``delete_branch``. ``is_branch_merged``'s internal
+``commit-tree`` call pins its own ``user.name``/``user.email`` and disables
+``commit.gpgsign`` via ``-c`` flags (never the operator's global git
+config) -- the resulting object is never referenced by any ref and is
+eligible for garbage collection the moment this process exits; its identity
+has no lasting effect beyond this one comparison.
 """
 
 from __future__ import annotations
@@ -260,3 +273,163 @@ class GitVcs:
             raise
         if result.returncode != 0:
             raise VcsCommandError(f"git worktree add failed: {result.stderr.strip()}")
+
+    def has_uncommitted_changes(self, worktree_path: Path) -> bool:
+        """``git status --porcelain`` against ``worktree_path`` -- its
+        output already covers untracked files, so no separate check is
+        needed (Story 1.8's own Boundaries & Constraints). ``-c
+        status.showUntrackedFiles=normal`` pins the setting explicitly
+        (review finding: an operator's global/local config setting it to
+        ``no`` would otherwise hide untracked files from this exact check,
+        silently defeating the refusal this method exists to drive) --
+        mirrors ``is_branch_merged``'s own explicit-config-pin discipline
+        below."""
+        result = _run(
+            [
+                "git",
+                "-C",
+                str(worktree_path),
+                "-c",
+                "status.showUntrackedFiles=normal",
+                "status",
+                "--porcelain",
+            ]
+        )
+        if result.returncode != 0:
+            raise VcsCommandError(
+                f"git status --porcelain failed in {worktree_path}: {result.stderr.strip()}"
+            )
+        return bool(result.stdout.strip())
+
+    def is_branch_merged(self, repo_root: Path, branch: str, *, into: str) -> bool:
+        """Tries cheap ancestry first (``git merge-base --is-ancestor``,
+        exactly ``branch_exists``'s own exit-code discipline: only exit 1
+        means "not an ancestor" specifically, any other non-zero exit is a
+        real failure) -- covers plain fast-forward/real-merge workflows for
+        free. Falls back to patch-CONTENT equivalence only when ancestry
+        says no: builds a detached virtual commit (``branch``'s own tree,
+        reparented onto ``merge-base(into, branch)`` via ``commit-tree``)
+        and compares it against ``into`` via ``git cherry``'s patch-id
+        matching -- confirmed live to correctly read this repo's own
+        single-parent SQUASH-merge convention as merged, even after
+        ``into`` has since advanced further (see this story's spec Design
+        Notes for the live-verified walkthrough)."""
+        branch_ref = f"refs/heads/{branch}"
+        into_ref = f"refs/heads/{into}"
+
+        ancestry = _run(
+            ["git", "-C", str(repo_root), "merge-base", "--is-ancestor", branch_ref, into_ref]
+        )
+        if ancestry.returncode == 0:
+            return True
+        if ancestry.returncode != 1:
+            raise VcsCommandError(
+                f"git merge-base --is-ancestor failed for {branch_ref}..{into_ref} "
+                f"(exit {ancestry.returncode}): {ancestry.stderr.strip()}"
+            )
+
+        merge_base_result = _run(
+            ["git", "-C", str(repo_root), "merge-base", branch_ref, into_ref]
+        )
+        if merge_base_result.returncode != 0:
+            raise VcsCommandError(
+                f"cannot find a merge base for {branch_ref} and {into_ref}: "
+                f"{merge_base_result.stderr.strip()}"
+            )
+        merge_base = merge_base_result.stdout.strip()
+
+        tree_result = _run(
+            ["git", "-C", str(repo_root), "rev-parse", f"{branch_ref}^{{tree}}"]
+        )
+        if tree_result.returncode != 0:
+            raise VcsCommandError(
+                f"cannot resolve the tree of {branch_ref}: {tree_result.stderr.strip()}"
+            )
+        tree = tree_result.stdout.strip()
+
+        # -c user.name/user.email/commit.gpgsign=false: pinned explicitly so
+        # this NEVER depends on (or blocks on) the operator's global git
+        # config in an unattended context (Story 1.8's own Boundaries &
+        # Constraints) -- the resulting object is never referenced by any
+        # ref, so its identity has no lasting effect beyond this comparison.
+        commit_tree_result = _run(
+            [
+                "git",
+                "-C",
+                str(repo_root),
+                "-c",
+                "user.name=marshal-teardown",
+                "-c",
+                "user.email=marshal-teardown@localhost",
+                "-c",
+                "commit.gpgsign=false",
+                "commit-tree",
+                tree,
+                "-p",
+                merge_base,
+                "-m",
+                "marshal teardown merged-check (not a real commit)",
+            ]
+        )
+        if commit_tree_result.returncode != 0:
+            raise VcsCommandError(
+                f"cannot build the virtual merged-check commit for {branch_ref}: "
+                f"{commit_tree_result.stderr.strip()}"
+            )
+        virtual_commit = commit_tree_result.stdout.strip()
+
+        cherry_result = _run(["git", "-C", str(repo_root), "cherry", into_ref, virtual_commit])
+        if cherry_result.returncode != 0:
+            raise VcsCommandError(
+                f"git cherry failed comparing {branch_ref} against {into_ref}: "
+                f"{cherry_result.stderr.strip()}"
+            )
+        # "-" = a commit on `into` already carries an equivalent patch
+        # (merged); "+" = no equivalent found on `into` (genuinely
+        # unmerged). Every live trial during planning produced exactly one
+        # line (the single virtual commit is never itself reachable from
+        # `into`, by construction) -- an EMPTY result is therefore an
+        # unproven shape, not a confirmed-safe one, so this fails loud
+        # (review finding: `all()` over an empty sequence is vacuously
+        # True, which would make a safety gate default to "safe to delete"
+        # on input nobody has ever observed) rather than silently reporting
+        # "merged".
+        lines = [line for line in cherry_result.stdout.splitlines() if line.strip()]
+        if not lines:
+            raise VcsCommandError(
+                f"git cherry produced no output comparing the virtual commit "
+                f"for {branch_ref} against {into_ref} -- expected exactly one "
+                "line for the one virtual commit; refusing to guess"
+            )
+        return all(line.startswith("-") for line in lines)
+
+    def remove_worktree(self, repo_root: Path, home: Path, *, force: bool = False) -> None:
+        """``git worktree remove``, optionally ``--force``. ``force`` is the
+        caller's decision (``run_teardown``'s own refusal logic), never
+        inferred here. Uses ``_GIT_CHECKOUT_TIMEOUT_S`` (review finding:
+        removing a worktree deletes the SAME full tree ``add_worktree``
+        populates -- this repo's own large-tree cold-cache rationale for
+        that method's extended timeout applies symmetrically here; the
+        default query timeout could SIGKILL a large removal mid-delete,
+        leaving a partial worktree)."""
+        args = ["git", "-C", str(repo_root), "worktree", "remove"]
+        if force:
+            args.append("--force")
+        args.append(str(home))
+        result = _run(args, timeout_s=_GIT_CHECKOUT_TIMEOUT_S)
+        if result.returncode != 0:
+            raise VcsCommandError(
+                f"git worktree remove failed for {home}: {result.stderr.strip()}"
+            )
+
+    def delete_branch(self, repo_root: Path, branch: str, *, force: bool = False) -> None:
+        """``git branch -d``/``-D``, selected by ``force``. See the port's
+        own docstring for why a caller that already ran ``is_branch_merged``
+        passes ``force=True`` rather than relying on git's own
+        ancestry-only ``-d`` heuristic."""
+        flag = "-D" if force else "-d"
+        result = _run(["git", "-C", str(repo_root), "branch", flag, branch])
+        if result.returncode != 0:
+            raise VcsCommandError(
+                f"git branch {flag} failed for {branch}: {result.stderr.strip()}"
+            )

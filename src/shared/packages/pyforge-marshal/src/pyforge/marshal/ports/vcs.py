@@ -32,6 +32,20 @@ A fifth method, ``list_worktrees`` (Story 1.6, FR-8), generalizes
 branch. It returns ``WorktreeEntry`` -- a small frozen value type, not a
 Protocol method -- carrying each worktree's path and branch (``None`` for a
 detached HEAD).
+
+Story 1.8 (``marshal teardown``, NFR-6/AD-29) adds four more methods, the
+git-truthful primitives ``run_teardown`` composes its refusal decision from:
+
+- ``has_uncommitted_changes`` -- the dirty-working-tree probe
+  (``git status --porcelain``, which already covers untracked files).
+- ``is_branch_merged`` -- "is this branch's content already safely captured
+  elsewhere", answered by patch-CONTENT equivalence rather than bare
+  commit-SHA ancestry (the story's own Design Notes: this repo's own
+  bmad-loop landing convention produces single-parent SQUASH commits that
+  ancestry alone misreports as unmerged forever).
+- ``remove_worktree``/``delete_branch`` -- the two writes, gated by
+  ``run_teardown``'s own refusal decision rather than attempted
+  unconditionally.
 """
 
 from __future__ import annotations
@@ -84,4 +98,45 @@ class VcsPort(Protocol):
         linked worktree, ``loop/<slug>`` or otherwise -- the full
         enumeration ``marshal homes`` auto-discovers every loop home from.
         Raises ``VcsCommandError`` on any git failure."""
+        ...
+
+    def has_uncommitted_changes(self, worktree_path: Path) -> bool:
+        """``True`` if ``worktree_path``'s working tree carries any
+        uncommitted change -- staged, unstaged, OR untracked
+        (``git status --porcelain`` already reports untracked files, so no
+        separate check is needed -- Story 1.8's own Boundaries &
+        Constraints). Raises ``VcsCommandError`` on any git failure."""
+        ...
+
+    def is_branch_merged(self, repo_root: Path, branch: str, *, into: str) -> bool:
+        """``True`` if ``branch``'s content is already safely captured on
+        ``into`` -- patch-CONTENT equivalence, never bare commit-SHA
+        ancestry (Story 1.8, AD-29's F-14 amendment): tries the cheap
+        ``git merge-base --is-ancestor`` check first (covers fast-forward/
+        real-merge workflows for free), then falls back to comparing a
+        detached virtual commit -- ``branch``'s tree, reparented onto
+        ``merge-base(into, branch)`` -- against ``into`` via ``git
+        cherry``'s patch-id matching, which correctly reads a SQUASH-merged
+        branch (this repo's own landing convention: a single-parent "merge"
+        commit whose tip is never an ancestor of ``into``) as merged even
+        after ``into`` has since advanced further. Raises
+        ``VcsCommandError`` on any git failure."""
+        ...
+
+    def remove_worktree(self, repo_root: Path, home: Path, *, force: bool = False) -> None:
+        """Remove the worktree at ``home`` (``git worktree remove``).
+        ``force`` passes ``--force`` -- reserved for the path where the
+        operator's own ``--force`` was needed to authorize a refused
+        teardown; a home ``run_teardown`` has already verified safe removes
+        with no flag. Raises ``VcsCommandError`` on any git failure."""
+        ...
+
+    def delete_branch(self, repo_root: Path, branch: str, *, force: bool = False) -> None:
+        """Delete ``branch`` (``git branch -d``/``-D``). ``force`` selects
+        ``-D``: git's own ``-d`` uses commit-SHA ancestry and would
+        spuriously refuse a branch this port's own ``is_branch_merged``
+        already proved safe by CONTENT (the squash-merge case) -- a caller
+        that trusts its own merged-check passes ``force=True`` rather than
+        relying on git's weaker heuristic. Raises ``VcsCommandError`` on any
+        git failure."""
         ...

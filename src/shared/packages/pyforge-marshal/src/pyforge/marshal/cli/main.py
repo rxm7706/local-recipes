@@ -8,8 +8,9 @@ caller that lost its arguments cannot read as success. ``config`` (Story
 1.3, FR-54) is the first real
 subcommand, dispatched to ``cli/config.py``. ``init`` (Story 1.4,
 FR-1/FR-2) is the second, dispatched to ``cli/init.py``. ``homes`` (Story
-1.6, FR-4/FR-8) is the third, and ``preflight`` (Story 1.7, FR-7/FR-47/FR-52)
-is the fourth, both dispatched to the SAME ``cli/init.py`` module (see that
+1.6, FR-4/FR-8) is the third, ``preflight`` (Story 1.7, FR-7/FR-47/FR-52)
+is the fourth, and ``teardown`` (Story 1.8, NFR-6/AD-29) is the fifth, all
+three dispatched to the SAME ``cli/init.py`` module (see that
 module's own docstring for why). Not wired through the
 envelope/finding machinery ITSELF: mirrors ``pyforge-doctor``'s
 ``__main__.py`` exit-relay pattern (structure: return an int, never raise,
@@ -76,6 +77,7 @@ def _build_parser() -> argparse.ArgumentParser:
     init_cli.add_init_subparser(subparsers)
     init_cli.add_homes_subparser(subparsers)
     init_cli.add_preflight_subparser(subparsers)
+    init_cli.add_teardown_subparser(subparsers)
     return parser
 
 

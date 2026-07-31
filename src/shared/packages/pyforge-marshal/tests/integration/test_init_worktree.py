@@ -1,20 +1,26 @@
-"""Integration test -- Stories 1.4/1.5/1.6/1.7, ``@pytest.mark.slow`` (real
-``git``/filesystem I/O against a throwaway temp repo shaped like this one: a
-tracked ``_bmad-output/projects/<slug>/planning-artifacts/`` on ``main``).
-Drives the full ``marshal init``/``marshal homes``/``marshal preflight``
-commands end-to-end through ``cli.main.main`` with the REAL
-``GitVcs``/``LocalFs``/``BmadLoopHarness`` adapters (no fakes -- those live
-in ``tests/unit/test_init.py``), proving the Acceptance Criteria a fake-port
-test cannot: a real git worktree lands on disk on the right branch, a real
-second invocation is a true zero-write no-op, the home's gitignored Tier-3
-store (Story 1.5) really resolves to the SAME real directory as the repo's
-own canonical copy, ``marshal homes`` (Story 1.6) really auto-discovers real
-worktrees via real ``git worktree list`` and really detects a real
-hand-edited desync, and ``marshal preflight`` (Story 1.7) really invokes the
-installed ``bmad-loop --version``, really resolves the real ``claude``
-profile via the installed ``bmad_loop`` package, really copies a real seed
-file's bytes, and really persists a machine-scoped acknowledgement across
-two invocations.
+"""Integration test -- Stories 1.4/1.5/1.6/1.7/1.8, ``@pytest.mark.slow``
+(real ``git``/filesystem I/O against a throwaway temp repo shaped like this
+one: a tracked ``_bmad-output/projects/<slug>/planning-artifacts/`` on
+``main``). Drives the full ``marshal init``/``marshal homes``/``marshal
+preflight``/``marshal teardown`` commands end-to-end through ``cli.main.main``
+with the REAL ``GitVcs``/``LocalFs``/``BmadLoopHarness`` adapters (no fakes
+-- those live in ``tests/unit/test_init.py``), proving the Acceptance
+Criteria a fake-port test cannot: a real git worktree lands on disk on the
+right branch, a real second invocation is a true zero-write no-op, the
+home's gitignored Tier-3 store (Story 1.5) really resolves to the SAME real
+directory as the repo's own canonical copy, ``marshal homes`` (Story 1.6)
+really auto-discovers real worktrees via real ``git worktree list`` and
+really detects a real hand-edited desync, ``marshal preflight`` (Story 1.7)
+really invokes the installed ``bmad-loop --version``, really resolves the
+real ``claude`` profile via the installed ``bmad_loop`` package, really
+copies a real seed file's bytes, and really persists a machine-scoped
+acknowledgement across two invocations, and ``marshal teardown`` (Story 1.8)
+really removes a real worktree+branch via real ``git worktree remove``/
+``git branch -D``, and -- the story's own headline scenario -- really
+recognizes a REAL single-parent squash-merge commit (this repo's own
+bmad-loop landing convention) as merged via the real ``git commit-tree``+
+``git cherry`` fallback, where real bare ancestry would misreport it as
+unmerged.
 """
 
 from __future__ import annotations
@@ -323,3 +329,133 @@ def test_preflight_refuses_an_unprovisioned_loop_home(tmp_path, monkeypatch, cap
     assert exit_code != 0
     assert "MRS-PREFLIGHT-009" in out
     assert "marshal init" in out
+
+
+def _seed_real_gitignore(repo: Path) -> None:
+    """Commits the SAME two ``.gitignore`` patterns this repo's own root
+    ``.gitignore`` carries for a loop home's ``_bmad/custom/.active-project``
+    marker and ``_bmad-output/planning-artifacts`` symlink -- without this, a
+    freshly ``marshal init``-provisioned worktree in a throwaway test repo
+    (which starts with no ``.gitignore`` at all) would report those two
+    ``run_init``-written paths as untracked, making ``has_uncommitted_changes``
+    report every fresh home dirty regardless of any REAL uncommitted work."""
+    (repo / ".gitignore").write_text(
+        "_bmad/custom/.active-project\n"
+        "_bmad-output/planning-artifacts\n"
+        "_bmad-output/projects/*/implementation-artifacts/\n"
+        "_bmad-output/projects/*/implementation-artifacts\n",
+        encoding="utf-8",
+    )
+    _git(repo, "add", ".gitignore")
+    _git(repo, "commit", "-m", "seed gitignore")
+
+
+@pytest.mark.slow
+def test_teardown_end_to_end_removes_a_clean_merged_home(tmp_path, monkeypatch, capsys):
+    """Story 1.8 AC: a provisioned, clean loop home's worktree AND branch
+    are really removed, and a real ``git worktree list`` is clean
+    afterward. A second real invocation reports ``already_removed`` with no
+    error (the spec's own literal Verification instruction)."""
+    slug = "acme"
+    repo = _build_repo(tmp_path, slug)
+    _seed_real_gitignore(repo)
+    loop_home_root = tmp_path / "loop-homes"
+    monkeypatch.setenv("BMAD_LOOP_HOME_ROOT", str(loop_home_root))
+    monkeypatch.chdir(repo)
+
+    assert main(["init", slug]) == 0
+    capsys.readouterr()
+    home = loop_home_root / slug
+    assert home.is_dir()
+
+    exit_code = main(["teardown", slug])
+    out = capsys.readouterr().out
+    assert exit_code == 0, out
+    assert "removed: True" in out
+    assert not home.exists()
+
+    worktrees = _git(repo, "worktree", "list", "--porcelain").stdout
+    assert str(home) not in worktrees
+    branches = _git(repo, "branch", "--list", f"loop/{slug}").stdout
+    assert branches.strip() == ""
+
+    second_exit = main(["teardown", slug])
+    second_out = capsys.readouterr().out
+    assert second_exit == 0, second_out
+    assert "already_removed: True" in second_out
+    assert "findings:" not in second_out
+
+
+@pytest.mark.slow
+def test_teardown_end_to_end_refuses_dirty_then_force_removes(tmp_path, monkeypatch, capsys):
+    slug = "acme"
+    repo = _build_repo(tmp_path, slug)
+    _seed_real_gitignore(repo)
+    loop_home_root = tmp_path / "loop-homes"
+    monkeypatch.setenv("BMAD_LOOP_HOME_ROOT", str(loop_home_root))
+    monkeypatch.chdir(repo)
+
+    assert main(["init", slug]) == 0
+    capsys.readouterr()
+    home = loop_home_root / slug
+    (home / "uncommitted.txt").write_text("real uncommitted work\n", encoding="utf-8")
+
+    refused_exit = main(["teardown", slug])
+    refused_out = capsys.readouterr().out
+    assert refused_exit != 0
+    assert "MRS-TEARDOWN-003" in refused_out
+    assert "uncommitted changes" in refused_out
+    assert home.is_dir()  # nothing removed
+
+    forced_exit = main(["teardown", slug, "--force"])
+    forced_out = capsys.readouterr().out
+    assert forced_exit == 0, forced_out
+    assert "forced: True" in forced_out
+    assert not home.exists()
+
+
+@pytest.mark.slow
+def test_teardown_end_to_end_recognizes_a_real_squash_merge(tmp_path, monkeypatch, capsys):
+    """The story's own headline scenario, live-verified during planning and
+    now pinned as a regression test: a branch landed via THIS REPO's own
+    single-parent squash-merge convention removes cleanly with NO --force,
+    even though real bare ancestry (``git merge-base --is-ancestor``) would
+    report it as unmerged."""
+    slug = "acme"
+    repo = _build_repo(tmp_path, slug)
+    _seed_real_gitignore(repo)
+    loop_home_root = tmp_path / "loop-homes"
+    monkeypatch.setenv("BMAD_LOOP_HOME_ROOT", str(loop_home_root))
+    monkeypatch.chdir(repo)
+
+    assert main(["init", slug]) == 0
+    capsys.readouterr()
+    home = loop_home_root / slug
+
+    (home / "FEATURE.md").write_text("real feature work\n", encoding="utf-8")
+    _git(home, "add", "FEATURE.md")
+    _git(home, "commit", "-m", "feature work")
+
+    # This repo's own landing convention: `git merge --squash` + a normal
+    # commit -- a SINGLE-parent commit on main, never an ancestry-visible
+    # merge.
+    _git(repo, "merge", "--squash", f"loop/{slug}")
+    _git(repo, "commit", "-m", f"Merge loop/{slug} into main")
+    squash_commit = _git(repo, "cat-file", "-p", "HEAD").stdout
+    assert squash_commit.count("\nparent ") + (
+        1 if squash_commit.startswith("parent ") else 0
+    ) == 1
+
+    ancestry = subprocess.run(
+        ["git", "-C", str(repo), "merge-base", "--is-ancestor", f"loop/{slug}", "main"],
+        capture_output=True,
+    )
+    assert ancestry.returncode != 0  # confirms bare ancestry WOULD misreport this
+
+    exit_code = main(["teardown", slug])
+    out = capsys.readouterr().out
+    assert exit_code == 0, out
+    assert "removed: True" in out
+    assert "forced" not in out  # no --force needed or given
+    assert not home.exists()
+    assert _git(repo, "branch", "--list", f"loop/{slug}").stdout.strip() == ""

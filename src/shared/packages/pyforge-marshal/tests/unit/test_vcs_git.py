@@ -365,6 +365,354 @@ def test_run_replaces_undecodable_git_output(monkeypatch):
     assert result.stdout == "�"
 
 
+# --- has_uncommitted_changes (Story 1.8) ----------------------------------------
+
+
+def test_has_uncommitted_changes_false_for_a_clean_worktree(vcs, repo):
+    assert vcs.has_uncommitted_changes(repo) is False
+
+
+def test_has_uncommitted_changes_true_for_an_untracked_file(vcs, repo):
+    (repo / "untracked.txt").write_text("new\n", encoding="utf-8")
+    assert vcs.has_uncommitted_changes(repo) is True
+
+
+def test_has_uncommitted_changes_true_for_a_staged_change(vcs, repo):
+    (repo / "README.md").write_text("changed\n", encoding="utf-8")
+    _git(repo, "add", "README.md")
+    assert vcs.has_uncommitted_changes(repo) is True
+
+
+def test_has_uncommitted_changes_true_for_an_unstaged_modification(vcs, repo):
+    (repo / "README.md").write_text("changed\n", encoding="utf-8")
+    assert vcs.has_uncommitted_changes(repo) is True
+
+
+def test_has_uncommitted_changes_false_in_a_clean_linked_worktree(vcs, repo, tmp_path):
+    home = tmp_path / "home"
+    vcs.add_worktree(repo, home, "loop/clean", base="main")
+    assert vcs.has_uncommitted_changes(home) is False
+
+
+def test_has_uncommitted_changes_raises_outside_a_repo(vcs, tmp_path):
+    outside = tmp_path / "not-a-repo"
+    outside.mkdir()
+    with pytest.raises(VcsCommandError):
+        vcs.has_uncommitted_changes(outside)
+
+
+def test_has_uncommitted_changes_true_for_untracked_file_despite_local_config_hiding_it(
+    vcs, repo
+):
+    """Review finding: an operator's LOCAL ``status.showUntrackedFiles=no``
+    would otherwise hide an untracked file from plain ``git status
+    --porcelain``, silently defeating the refusal this method exists to
+    drive. The explicit ``-c status.showUntrackedFiles=normal`` pin must
+    override it."""
+    _git(repo, "config", "status.showUntrackedFiles", "no")
+    (repo / "untracked.txt").write_text("new\n", encoding="utf-8")
+    assert vcs.has_uncommitted_changes(repo) is True
+
+
+# --- is_branch_merged (Story 1.8) -------------------------------------------------
+
+
+def test_is_branch_merged_true_for_a_branch_with_no_new_commits(vcs, repo):
+    _git(repo, "branch", "loop/noop", "main")
+    assert vcs.is_branch_merged(repo, "loop/noop", into="main") is True
+
+
+def test_is_branch_merged_true_for_a_fast_forward_merged_branch(vcs, repo):
+    """Cheap ancestry path: main fast-forwards onto the branch tip."""
+    _git(repo, "checkout", "-b", "loop/ff")
+    (repo / "ff.txt").write_text("ff\n", encoding="utf-8")
+    _git(repo, "add", "ff.txt")
+    _git(repo, "commit", "-m", "ff commit")
+    _git(repo, "checkout", "main")
+    _git(repo, "merge", "--ff-only", "loop/ff")
+    assert vcs.is_branch_merged(repo, "loop/ff", into="main") is True
+
+
+def test_is_branch_merged_true_for_a_real_merge_commit(vcs, repo):
+    """Cheap ancestry path: a real (multi-parent) merge commit."""
+    _git(repo, "checkout", "-b", "loop/realmerge")
+    (repo / "rm.txt").write_text("rm\n", encoding="utf-8")
+    _git(repo, "add", "rm.txt")
+    _git(repo, "commit", "-m", "real merge source commit")
+    _git(repo, "checkout", "main")
+    _git(repo, "merge", "--no-ff", "-m", "real merge", "loop/realmerge")
+    assert vcs.is_branch_merged(repo, "loop/realmerge", into="main") is True
+
+
+def test_is_branch_merged_false_for_a_genuinely_unmerged_branch(vcs, repo):
+    _git(repo, "checkout", "-b", "loop/unmerged")
+    (repo / "never.txt").write_text("never merged\n", encoding="utf-8")
+    _git(repo, "add", "never.txt")
+    _git(repo, "commit", "-m", "never merged content")
+    _git(repo, "checkout", "main")
+    assert vcs.is_branch_merged(repo, "loop/unmerged", into="main") is False
+
+
+def test_is_branch_merged_true_for_a_squash_merged_branch(vcs, repo):
+    """The story's own central scenario: this repo's own bmad-loop landing
+    convention produces a single-parent "squash" commit on `main` whose tip
+    is never an ancestor of the branch it replaced -- live-verified during
+    planning (`git cat-file -p 7f0bb6b23f` -- exactly one parent line
+    despite the message reading "Merge X into Y"). Ancestry alone
+    (`git merge-base --is-ancestor`) reports this branch as UNMERGED;
+    `is_branch_merged` must not."""
+    _git(repo, "checkout", "-b", "loop/squash")
+    (repo / "squash.txt").write_text("one\n", encoding="utf-8")
+    _git(repo, "add", "squash.txt")
+    _git(repo, "commit", "-m", "squash: one")
+    (repo / "squash.txt").write_text("one\ntwo\n", encoding="utf-8")
+    _git(repo, "add", "squash.txt")
+    _git(repo, "commit", "-m", "squash: two")
+    _git(repo, "checkout", "main")
+    _git(repo, "merge", "--squash", "loop/squash")
+    _git(repo, "commit", "-m", "Merge loop/squash into main")
+
+    # Confirms the parent count really is 1 -- the exact live-verified shape
+    # this method exists to handle.
+    show = _git(repo, "cat-file", "-p", "HEAD")
+    assert show.stdout.count("\nparent ") + (
+        1 if show.stdout.startswith("parent ") else 0
+    ) == 1
+    # Confirms bare ancestry really would misreport this as unmerged.
+    ancestry = subprocess.run(
+        ["git", "-C", str(repo), "merge-base", "--is-ancestor", "loop/squash", "main"],
+        capture_output=True,
+    )
+    assert ancestry.returncode != 0
+
+    assert vcs.is_branch_merged(repo, "loop/squash", into="main") is True
+
+
+def test_is_branch_merged_true_for_a_squash_merge_even_after_main_advances_further(
+    vcs, repo
+):
+    """Confirms the live-verified claim from the story's Design Notes: the
+    squash-merge recognition survives `main` advancing with further,
+    unrelated commits after the squash landed."""
+    _git(repo, "checkout", "-b", "loop/squash2")
+    (repo / "squash2.txt").write_text("content\n", encoding="utf-8")
+    _git(repo, "add", "squash2.txt")
+    _git(repo, "commit", "-m", "squash2 content")
+    _git(repo, "checkout", "main")
+    _git(repo, "merge", "--squash", "loop/squash2")
+    _git(repo, "commit", "-m", "Merge loop/squash2 into main")
+    (repo / "unrelated.txt").write_text("later\n", encoding="utf-8")
+    _git(repo, "add", "unrelated.txt")
+    _git(repo, "commit", "-m", "unrelated later commit")
+
+    assert vcs.is_branch_merged(repo, "loop/squash2", into="main") is True
+
+
+def test_is_branch_merged_commit_tree_call_never_depends_on_global_git_identity(
+    vcs, tmp_path, monkeypatch
+):
+    """Boundaries & Constraints: the internal commit-tree call must pin its
+    own author/committer identity and disable GPG signing so it never
+    depends on the operator's global git config -- proven against a repo/
+    environment carrying NO identity anywhere ELSE git would look (no local
+    repo config, an isolated HOME/XDG_CONFIG_HOME, GIT_CONFIG_GLOBAL/SYSTEM
+    pointed at nonexistent files, no GIT_AUTHOR_*/GIT_COMMITTER_* env vars)."""
+    fake_home = tmp_path / "fake-home"
+    fake_home.mkdir()
+    monkeypatch.setenv("HOME", str(fake_home))
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(fake_home / "config"))
+    monkeypatch.setenv("GIT_CONFIG_GLOBAL", str(fake_home / "no-such-gitconfig"))
+    monkeypatch.setenv("GIT_CONFIG_SYSTEM", str(fake_home / "no-such-system-gitconfig"))
+    for var in (
+        "GIT_AUTHOR_NAME",
+        "GIT_AUTHOR_EMAIL",
+        "GIT_COMMITTER_NAME",
+        "GIT_COMMITTER_EMAIL",
+        "EMAIL",
+    ):
+        monkeypatch.delenv(var, raising=False)
+
+    no_identity_repo = tmp_path / "no-identity-repo"
+    no_identity_repo.mkdir()
+
+    def _run_git(*args: str) -> subprocess.CompletedProcess[str]:
+        return subprocess.run(
+            ["git", "-C", str(no_identity_repo), *args],
+            capture_output=True,
+            text=True,
+        )
+
+    def _setup_commit(*args: str) -> None:
+        # -c identity for THIS invocation only -- never persisted to local
+        # or global config -- so the fixture's own history is constructible
+        # without the environment carrying any ambient identity either.
+        result = subprocess.run(
+            [
+                "git",
+                "-C",
+                str(no_identity_repo),
+                "-c",
+                "user.name=setup",
+                "-c",
+                "user.email=setup@example.com",
+                *args,
+            ],
+            capture_output=True,
+            text=True,
+        )
+        assert result.returncode == 0, result.stderr
+
+    assert _run_git("init", "-b", "main").returncode == 0
+    (no_identity_repo / "README.md").write_text("hi\n", encoding="utf-8")
+    assert _run_git("add", "README.md").returncode == 0
+    _setup_commit("commit", "-m", "initial")
+    _setup_commit("checkout", "-b", "loop/noidentity")
+    (no_identity_repo / "x.txt").write_text("x\n", encoding="utf-8")
+    assert _run_git("add", "x.txt").returncode == 0
+    _setup_commit("commit", "-m", "unmerged content")
+    _setup_commit("checkout", "main")
+
+    # Sanity: an ORDINARY commit in this environment genuinely fails without
+    # an explicit -c identity -- proves the isolation above is real, not
+    # accidentally leaking some other identity source.
+    (no_identity_repo / "y.txt").write_text("y\n", encoding="utf-8")
+    assert _run_git("add", "y.txt").returncode == 0
+    naked = _run_git("commit", "-m", "no identity")
+    assert naked.returncode != 0
+
+    # is_branch_merged's own internal commit-tree call must succeed even
+    # here -- if it relied on ambient identity it would raise
+    # VcsCommandError instead of returning a bool.
+    assert (
+        vcs.is_branch_merged(no_identity_repo, "loop/noidentity", into="main") is False
+    )
+
+
+def test_is_branch_merged_raises_on_unknown_branch(vcs, repo):
+    with pytest.raises(VcsCommandError):
+        vcs.is_branch_merged(repo, "loop/does-not-exist", into="main")
+
+
+def test_is_branch_merged_raises_on_empty_cherry_output(vcs, repo, monkeypatch):
+    """Review finding: `all()` over an empty sequence is vacuously True --
+    a safety gate defaulting to "merged" on unproven zero-line `git cherry`
+    output would default to permissive. Every live trial during planning
+    produced exactly one line for the one virtual commit; this proves the
+    defensive branch fails loud instead of silently reporting "safe to
+    delete" on a shape nobody has observed."""
+    import subprocess as _subprocess
+
+    import pyforge.marshal.adapters.vcs_git as vcs_git_module
+
+    _git(repo, "checkout", "-q", "-b", "loop/emptycherry", "main")
+    (repo / "unmerged.txt").write_text("x\n", encoding="utf-8")
+    _git(repo, "add", "unmerged.txt")
+    _git(repo, "commit", "-qm", "unmerged commit")
+    _git(repo, "checkout", "-q", "main")
+
+    real_run = vcs_git_module._run
+
+    def _fake_run(args, *, timeout_s=vcs_git_module._GIT_TIMEOUT_S):
+        if "cherry" in args:
+            return _subprocess.CompletedProcess(args, returncode=0, stdout="", stderr="")
+        return real_run(args, timeout_s=timeout_s)
+
+    monkeypatch.setattr(vcs_git_module, "_run", _fake_run)
+    with pytest.raises(VcsCommandError, match="no output"):
+        vcs.is_branch_merged(repo, "loop/emptycherry", into="main")
+
+
+# --- remove_worktree (Story 1.8) --------------------------------------------------
+
+
+def test_remove_worktree_removes_a_clean_worktree(vcs, repo, tmp_path):
+    home = tmp_path / "home"
+    vcs.add_worktree(repo, home, "loop/removable", base="main")
+    vcs.remove_worktree(repo, home)
+    assert not home.exists()
+    assert vcs.worktree_path_for_branch(repo, "loop/removable") is None
+
+
+def test_remove_worktree_refuses_a_dirty_worktree_without_force(vcs, repo, tmp_path):
+    home = tmp_path / "home"
+    vcs.add_worktree(repo, home, "loop/dirty", base="main")
+    (home / "dirty.txt").write_text("dirty\n", encoding="utf-8")
+    with pytest.raises(VcsCommandError):
+        vcs.remove_worktree(repo, home)
+    assert home.exists()
+
+
+def test_remove_worktree_force_removes_a_dirty_worktree(vcs, repo, tmp_path):
+    home = tmp_path / "home"
+    vcs.add_worktree(repo, home, "loop/dirty2", base="main")
+    (home / "dirty.txt").write_text("dirty\n", encoding="utf-8")
+    vcs.remove_worktree(repo, home, force=True)
+    assert not home.exists()
+
+
+def test_remove_worktree_raises_on_a_nonexistent_worktree(vcs, repo, tmp_path):
+    with pytest.raises(VcsCommandError):
+        vcs.remove_worktree(repo, tmp_path / "never-existed")
+
+
+# --- delete_branch (Story 1.8) ----------------------------------------------------
+
+
+def test_delete_branch_removes_a_merged_branch_without_force(vcs, repo):
+    _git(repo, "branch", "loop/mergeddelete", "main")
+    vcs.delete_branch(repo, "loop/mergeddelete")
+    assert vcs.branch_exists(repo, "loop/mergeddelete") is False
+
+
+def test_delete_branch_plain_refuses_an_unmerged_branch(vcs, repo):
+    _git(repo, "checkout", "-b", "loop/unmergeddelete")
+    (repo / "u.txt").write_text("u\n", encoding="utf-8")
+    _git(repo, "add", "u.txt")
+    _git(repo, "commit", "-m", "unmerged content")
+    _git(repo, "checkout", "main")
+    with pytest.raises(VcsCommandError):
+        vcs.delete_branch(repo, "loop/unmergeddelete")
+    assert vcs.branch_exists(repo, "loop/unmergeddelete") is True
+
+
+def test_delete_branch_force_removes_an_unmerged_branch(vcs, repo):
+    _git(repo, "checkout", "-b", "loop/forcedelete")
+    (repo / "u2.txt").write_text("u2\n", encoding="utf-8")
+    _git(repo, "add", "u2.txt")
+    _git(repo, "commit", "-m", "unmerged content 2")
+    _git(repo, "checkout", "main")
+    vcs.delete_branch(repo, "loop/forcedelete", force=True)
+    assert vcs.branch_exists(repo, "loop/forcedelete") is False
+
+
+def test_delete_branch_force_removes_a_squash_merged_branch_plain_d_would_refuse(
+    vcs, repo
+):
+    """The exact rationale this story's Design Notes give for always using
+    -D once Marshal's own merged-check authorizes removal: plain `-d`'s
+    ancestry-only heuristic refuses a squash-merged branch even though it is
+    genuinely safe."""
+    _git(repo, "checkout", "-b", "loop/squashdelete")
+    (repo / "sd.txt").write_text("sd\n", encoding="utf-8")
+    _git(repo, "add", "sd.txt")
+    _git(repo, "commit", "-m", "squash delete content")
+    _git(repo, "checkout", "main")
+    _git(repo, "merge", "--squash", "loop/squashdelete")
+    _git(repo, "commit", "-m", "Merge loop/squashdelete into main")
+
+    with pytest.raises(VcsCommandError):
+        vcs.delete_branch(repo, "loop/squashdelete")  # plain -d refuses
+    assert vcs.branch_exists(repo, "loop/squashdelete") is True
+
+    vcs.delete_branch(repo, "loop/squashdelete", force=True)  # -D succeeds
+    assert vcs.branch_exists(repo, "loop/squashdelete") is False
+
+
+def test_delete_branch_raises_on_unknown_branch(vcs, repo):
+    with pytest.raises(VcsCommandError):
+        vcs.delete_branch(repo, "loop/never-existed", force=True)
+
+
 def test_add_worktree_timeout_names_the_cleanup_commands(vcs, repo, tmp_path, monkeypatch):
     """Review finding: the flat 30s timeout could SIGKILL `git worktree
     add` mid-checkout on a large repo. The add now runs under its own
