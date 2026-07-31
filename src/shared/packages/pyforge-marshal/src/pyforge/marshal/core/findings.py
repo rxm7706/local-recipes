@@ -48,7 +48,21 @@ replace it with a backlink to the main checkout's canonical copy (see the
 spec's Design Notes on why this is a distinct code from ``MRS-INIT-004``
 rather than a message a caller would need to string-match). It classifies
 ``Verdict.ERROR``, the same tier as 003-004: a real operation was attempted
-and blocked, not "could not evaluate". Later stories
+and blocked, not "could not evaluate". Story 1.6's read-only ``cli/init.py::run_homes``
+(``marshal homes``, FR-4/FR-8) adds the registry's fourth real caller and its
+own three codes: ``MRS-HOMES-001`` (a discovered home's marker slug, symlink
+slug, or branch-derived slug disagree -- the three-way check that closes
+``MRS-INIT-003``'s own narrower two-way blind spot named in deferred-work,
+scoped to this NEW command only; the SAME code also names the main
+checkout's own marker/symlink pair disagreeing, checked by the identical
+two-way rule with no branch-derived third leg), ``MRS-HOMES-002`` (a home's
+local Tier-3 backlink resolves, BY REALPATH, to a directory other than its
+expected canonical store), and ``MRS-HOMES-003`` (a ``git``/filesystem
+operation failed while gathering state -- the same "real operation attempted
+and did not complete" tier as ``MRS-INIT-004``, not "could not evaluate").
+All three classify ``Verdict.ERROR``, following ``MRS-INIT-003/004/005``'s
+precedent: a real isolation check ran and found (or could not complete)
+a real violation. Later stories
 append further real codes here as they gain their own real callers. The
 registry MECHANISM
 (format check, then membership check) is separately proven via
@@ -75,6 +89,7 @@ CODE_PATTERN = re.compile(r"MRS-[A-Z][A-Z0-9]*-[0-9]{3}")
 # Story 1.3's core/policy.py/cli/config.py add the second real caller's six codes.
 # Story 1.4's cli/init.py adds the third real caller's four codes.
 # Story 1.5's cli/init.py tier3_backlink step adds a fifth code.
+# Story 1.6's cli/init.py::run_homes adds the fourth real caller's three codes.
 REGISTERED_CODES: frozenset[str] = frozenset(
     {
         "MRS-IDENT-001",
@@ -90,6 +105,9 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-INIT-003",
         "MRS-INIT-004",
         "MRS-INIT-005",
+        "MRS-HOMES-001",
+        "MRS-HOMES-002",
+        "MRS-HOMES-003",
     }
 )
 
