@@ -45,7 +45,15 @@ classify ``Verdict.ERROR``: a marker/symlink desync or a failed
 "could not evaluate". Story 1.5's ``MRS-INIT-005`` (``cli/init.py``'s
 ``tier3_backlink`` step) classifies ``Verdict.ERROR`` too, the same tier as
 its two predecessors: a real, non-empty local Tier-3 directory is a real
-provisioning step correctly refused, not "could not evaluate". Later
+provisioning step correctly refused, not "could not evaluate". Story 1.6's
+``cli/init.py::run_homes`` (``marshal homes``) adds ``MRS-HOMES-001`` (a
+home's or the main checkout's marker/symlink/branch-derived-slug agreement
+check failed), ``MRS-HOMES-002`` (a home's Tier-3 backlink realpath does not
+match its canonical store), and ``MRS-HOMES-003`` (a ``git``/filesystem
+operation failed while gathering state) -- all three classify
+``Verdict.ERROR``, the same tier as ``MRS-INIT-003/004/005``: a real
+isolation check ran and found (or could not complete) a real violation, not
+"could not evaluate". Later
 stories populate the table
 further as they add real codes. The mechanism (a total, fail-loud lookup) is
 separately proven via ``monkeypatch``-injected synthetic entries in
@@ -104,6 +112,7 @@ GUARDED_EXIT_CODES: frozenset[int] = frozenset(_EXIT_BY_VERDICT.values()) | {
 # Story 1.3's core/policy.py/cli/config.py add the second real caller's six codes.
 # Story 1.4's cli/init.py adds the third real caller's four codes.
 # Story 1.5's cli/init.py tier3_backlink step adds a fifth code.
+# Story 1.6's cli/init.py::run_homes adds the fourth real caller's three codes.
 _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-IDENT-001": Verdict.UNEVALUABLE,
     "MRS-IDENT-002": Verdict.UNEVALUABLE,
@@ -118,6 +127,9 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-INIT-003": Verdict.ERROR,
     "MRS-INIT-004": Verdict.ERROR,
     "MRS-INIT-005": Verdict.ERROR,
+    "MRS-HOMES-001": Verdict.ERROR,
+    "MRS-HOMES-002": Verdict.ERROR,
+    "MRS-HOMES-003": Verdict.ERROR,
 }
 
 

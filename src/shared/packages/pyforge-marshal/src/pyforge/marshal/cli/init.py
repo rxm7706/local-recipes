@@ -68,6 +68,25 @@ itself, plus the blocking in-home check that the provisioned tree really
 contains the project the symlink is about to target), and ``MRS-INIT-005``
 (a real, non-empty directory already occupies the local Tier-3 path,
 refusing the backlink) classify ``Verdict.ERROR``.
+
+Story 1.6 adds a second, entirely READ-ONLY command in this same module,
+``marshal homes`` (``add_homes_subparser``/``run_homes``, FR-4/FR-8): it
+takes no slug argument, auto-discovers every ``loop/<slug>`` worktree via
+``VcsPort.list_worktrees``, gathers each home's (and the main checkout's
+own) marker/symlink/Tier-3-backlink state via ``FsPort``, and hands that
+plain data to the new pure ``core/status.py`` module, which computes the
+isolation checks and builds the response. ``run_homes`` performs the SAME
+kind of CLI-boundary I/O ``run_init`` does (``Path.cwd()``,
+``repo_common_root``) but never writes -- proven by
+``tests/meta/test_ad11_write_boundary.py``'s recording-fake extension.
+Its own three codes, ``MRS-HOMES-001`` (a home's or the main checkout's
+marker/symlink/branch-derived-slug agreement check failed), ``MRS-HOMES-002``
+(a home's Tier-3 backlink realpath does not match its canonical store), and
+``MRS-HOMES-003`` (a ``git``/filesystem operation failed while gathering
+state), all classify ``Verdict.ERROR`` -- see ``core/status.py``'s own
+docstring for the full isolation-check design, and this story's spec's
+Design Notes for why this command lives here rather than in a new
+``cli/status.py`` (reserved for a later, broader fleet-visibility story).
 """
 
 from __future__ import annotations
@@ -81,11 +100,11 @@ from pathlib import Path
 
 from ..adapters.fs_local import FsError, LocalFs
 from ..adapters.vcs_git import GitVcs, VcsCommandError
-from ..core import policy
+from ..core import policy, status
 from ..core.model import Finding, Severity, build_envelope
 from ..core.verdict import compute_verdict, exit_code_for
 from ..ports.fs import FsPort
-from ..ports.vcs import VcsPort
+from ..ports.vcs import VcsPort, WorktreeEntry
 from .config import _suppress_downstream_pipe_close
 
 ENV_LOOP_HOME_ROOT = "BMAD_LOOP_HOME_ROOT"
@@ -116,6 +135,29 @@ def add_init_subparser(subparsers: argparse._SubParsersAction) -> None:
         help="Output format (default: text).",
     )
     parser.set_defaults(handler=run_init)
+
+
+def add_homes_subparser(subparsers: argparse._SubParsersAction) -> None:
+    """Register the ``homes`` subcommand on ``main.py``'s subparser tree
+    (Story 1.6, FR-4/FR-8). No slug argument -- full enumeration only."""
+    parser = subparsers.add_parser(
+        "homes",
+        help="List every discovered loop home and verify isolation (FR-4/FR-8).",
+        description=(
+            "Auto-discovers every loop/<slug> git worktree, verifies each "
+            "home's marker/symlink/branch-derived slug agree and its "
+            "Tier-3 backlink resolves to the canonical store, and reports "
+            "the main checkout's own marker/symlink self-consistency. "
+            "Read-only -- never writes a marker, symlink, or backlink."
+        ),
+    )
+    parser.add_argument(
+        "--format",
+        choices=("text", "json"),
+        default="text",
+        help="Output format (default: text).",
+    )
+    parser.set_defaults(handler=run_homes)
 
 
 def _loop_home_root() -> Path:
@@ -507,6 +549,231 @@ def _emit(args: argparse.Namespace, data: dict[str, object], findings: list[Find
             print(json.dumps(envelope.to_json_dict(), indent=2, sort_keys=True), flush=True)
         else:
             print(_render_text(envelope.data, envelope.findings), flush=True)
+    except OSError:
+        _suppress_downstream_pipe_close()
+    return exit_code_for(envelope.verdict)
+
+
+# =====================================================================
+# ``marshal homes`` (Story 1.6, FR-4/FR-8) -- read-only, never writes.
+# =====================================================================
+
+
+def _homes_op_failed_finding(message: str) -> Finding:
+    return Finding(code="MRS-HOMES-003", severity=Severity.ERROR, message=message)
+
+
+def _gather_home_facts(entry: WorktreeEntry, repo_root: Path, fs: FsPort) -> status.HomeFacts:
+    """Reads ONE ``loop/<slug>`` worktree's raw state via ``FsPort`` --
+    ``entry.branch`` is guaranteed ``loop/``-prefixed by ``run_homes``'s own
+    discovery filter before this is ever called."""
+    assert entry.branch is not None  # narrows for the type checker; see docstring
+    slug = entry.branch.removeprefix("loop/")
+    marker_path = entry.path / "_bmad" / "custom" / ".active-project"
+    link_path = entry.path / "_bmad-output" / "planning-artifacts"
+    tier3_local_path = (
+        entry.path / "_bmad-output" / "projects" / slug / "implementation-artifacts"
+    )
+    tier3_canonical_path = (
+        repo_root / "_bmad-output" / "projects" / slug / "implementation-artifacts"
+    )
+
+    marker_text = fs.read_text(marker_path)
+    symlink_target = fs.read_symlink_target(link_path)
+    # A real (non-symlink) directory or file at the planning-artifacts path
+    # is NOT "symlink absent" -- it means writes no longer reach the
+    # canonical project tree. Same occupancy distinction as the Tier-3 probe
+    # below, applied to the OTHER symlink this command checks (review
+    # finding: previously read as benign absence).
+    link_occupied = symlink_target is None and fs.exists(link_path)
+    # Genuinely NOTHING at the local Tier-3 path (no symlink, no directory,
+    # no file) has no realpath worth comparing -- None mirrors "absence is
+    # not a violation" (core/status.py's own docstring). A REAL, non-symlink
+    # occupant there is a distinct third state, not absence: a DIRECTORY is
+    # exactly what init's own MRS-INIT-005 refuses to silently replace, and
+    # a plain FILE blocks any future backlink the same way (review finding:
+    # the first occupancy fix probed is_dir only, leaving the file case read
+    # as absence) -- either means Tier-3 is NOT single-sourced for this
+    # home. Resolving it anyway (it resolves to itself, since there is no
+    # link to follow) lets the ordinary realpath comparison below catch the
+    # divergence as MRS-HOMES-002 rather than this being silently reported
+    # as clean (review finding).
+    tier3_local_target = fs.read_symlink_target(tier3_local_path)
+    tier3_occupied = tier3_local_target is not None or fs.exists(tier3_local_path)
+    tier3_local_realpath = fs.resolve_path(tier3_local_path) if tier3_occupied else None
+    tier3_canonical_realpath = fs.resolve_path(tier3_canonical_path)
+    # A backlink that resolves to the RIGHT path can still dangle: the
+    # canonical store itself may have been deleted after provisioning.
+    # init's own convergence check has always required is_dir(canonical);
+    # gather the same fact so core/status can name that state instead of
+    # blessing it (review finding).
+    tier3_canonical_is_dir = fs.is_dir(tier3_canonical_path)
+
+    return status.HomeFacts(
+        path=entry.path,
+        branch=entry.branch,
+        marker_text=marker_text,
+        symlink_target=symlink_target,
+        tier3_local_realpath=tier3_local_realpath,
+        tier3_canonical_realpath=tier3_canonical_realpath,
+        link_occupied=link_occupied,
+        tier3_canonical_is_dir=tier3_canonical_is_dir,
+    )
+
+
+def _gather_main_checkout_facts(
+    main_entry: WorktreeEntry, repo_root: Path, fs: FsPort
+) -> status.MainCheckoutFacts:
+    """Reads the main checkout's own raw state via ``FsPort``. Sub-paths are
+    built from ``repo_root`` (not ``main_entry.path``) -- both name the same
+    directory, but ``repo_root`` is this module's one authoritative value for
+    it everywhere else."""
+    marker_path = repo_root / "_bmad" / "custom" / ".active-project"
+    link_path = repo_root / "_bmad-output" / "planning-artifacts"
+    marker_text = fs.read_text(marker_path)
+    symlink_target = fs.read_symlink_target(link_path)
+    # Same occupancy probe as _gather_home_facts (review finding): a real
+    # directory materialized where the main checkout's planning-artifacts
+    # symlink belongs is the hand-configuration state the two-way rule
+    # exists to name, not benign absence.
+    link_occupied = symlink_target is None and fs.exists(link_path)
+    return status.MainCheckoutFacts(
+        path=repo_root,
+        branch=main_entry.branch,
+        marker_text=marker_text,
+        symlink_target=symlink_target,
+        link_occupied=link_occupied,
+    )
+
+
+def run_homes(
+    args: argparse.Namespace,
+    *,
+    vcs: VcsPort | None = None,
+    fs: FsPort | None = None,
+) -> int:
+    vcs = vcs if vcs is not None else GitVcs()
+    fs = fs if fs is not None else LocalFs()
+
+    findings: list[Finding] = []
+    data: dict[str, object] = {}
+
+    try:
+        invocation_dir = Path.cwd()
+    except OSError as exc:
+        findings.append(
+            _homes_op_failed_finding(f"resolving the current working directory: {exc}")
+        )
+        return _emit_homes(args, data, findings)
+    try:
+        repo_root = vcs.repo_common_root(invocation_dir)
+    except VcsCommandError as exc:
+        findings.append(_homes_op_failed_finding(f"resolving the repo root: {exc}"))
+        return _emit_homes(args, data, findings)
+
+    try:
+        worktrees = vcs.list_worktrees(repo_root)
+    except VcsCommandError as exc:
+        findings.append(_homes_op_failed_finding(f"listing worktrees: {exc}"))
+        return _emit_homes(args, data, findings)
+
+    # Identify the main checkout by REALPATH (not a raw-string/ordinal
+    # assumption about git's own listing order) -- every OTHER loop/<slug>
+    # entry becomes a home candidate; anything else (a detached-HEAD
+    # worktree, an unrelated hand-made linked worktree) is neither.
+    try:
+        repo_root_realpath = fs.resolve_path(repo_root)
+        main_entry: WorktreeEntry | None = None
+        home_entries: list[WorktreeEntry] = []
+        for entry in worktrees:
+            if fs.resolve_path(entry.path) == repo_root_realpath:
+                main_entry = entry
+            elif entry.branch is not None and entry.branch.startswith("loop/"):
+                home_entries.append(entry)
+    except FsError as exc:
+        findings.append(_homes_op_failed_finding(f"resolving worktree paths: {exc}"))
+        return _emit_homes(args, data, findings)
+
+    if main_entry is None:
+        findings.append(
+            _homes_op_failed_finding(
+                f"'git worktree list' for {repo_root} did not include an "
+                "entry for the main checkout itself"
+            )
+        )
+        return _emit_homes(args, data, findings)
+
+    try:
+        gathered_home_facts: list[status.HomeFacts] = []
+        for entry in home_entries:
+            # git still registers the worktree, but its directory may have
+            # been deleted by hand rather than via `git worktree remove`
+            # (mirrors run_init's own identical guard for the same known
+            # failure mode). Every FsPort read below would silently return
+            # None for a missing path, misreporting a genuinely stale/
+            # prunable home as a harmless "never provisioned" one (review
+            # finding) -- named as its own finding instead, and excluded
+            # from data.homes rather than gathered.
+            if not fs.is_dir(entry.path):
+                findings.append(
+                    _homes_op_failed_finding(
+                        f"git still registers a worktree for {entry.branch} at "
+                        f"{entry.path}, but that directory does not exist on "
+                        "disk (a stale/prunable entry) -- run "
+                        "'git worktree prune'"
+                    )
+                )
+                continue
+            gathered_home_facts.append(_gather_home_facts(entry, repo_root, fs))
+        home_facts = tuple(gathered_home_facts)
+        main_facts = _gather_main_checkout_facts(main_entry, repo_root, fs)
+    except FsError as exc:
+        findings.append(_homes_op_failed_finding(f"reading loop-home state: {exc}"))
+        return _emit_homes(args, data, findings)
+
+    evaluation = status.evaluate_homes(home_facts, main_facts)
+    data["homes"] = [dict(row) for row in evaluation.homes]
+    data["main_checkout"] = dict(evaluation.main_checkout)
+    findings.extend(evaluation.findings)
+
+    return _emit_homes(args, data, findings)
+
+
+def _render_text_homes(data: Mapping[str, object], findings: tuple[Finding, ...]) -> str:
+    """A pure projection of the SAME envelope ``data``/``findings`` the
+    ``--format json`` path prints (AD-14), matching ``_render_text``'s own
+    convention for ``init``."""
+    lines = ["homes:"]
+    for row in data.get("homes", []):
+        lines.append(f"  {row['slug']} ({row['path']}):")
+        lines.append(f"    branch: {row['branch']}")
+        lines.append(f"    active_project: {row['active_project']}")
+        lines.append(f"    desynced: {row['desynced']}")
+    if "main_checkout" in data:
+        row = data["main_checkout"]
+        lines.append(f"main_checkout ({row['path']}):")
+        lines.append(f"  branch: {row['branch']}")
+        lines.append(f"  active_project: {row['active_project']}")
+        lines.append(f"  desynced: {row['desynced']}")
+    if findings:
+        lines.append("findings:")
+        for finding in findings:
+            lines.append(f"  {finding.code} [{finding.severity.value}] {finding.message}")
+    return "\n".join(lines)
+
+
+def _emit_homes(args: argparse.Namespace, data: dict[str, object], findings: list[Finding]) -> int:
+    verdict_value = compute_verdict(tuple(findings))
+    envelope = build_envelope(
+        command="homes", verdict=verdict_value, data=data, findings=tuple(findings)
+    )
+    # Same flush + broken-pipe-suppression convention as _emit (init's own)
+    # and cli/config.py::run_config.
+    try:
+        if args.format == "json":
+            print(json.dumps(envelope.to_json_dict(), indent=2, sort_keys=True), flush=True)
+        else:
+            print(_render_text_homes(envelope.data, envelope.findings), flush=True)
     except OSError:
         _suppress_downstream_pipe_close()
     return exit_code_for(envelope.verdict)
