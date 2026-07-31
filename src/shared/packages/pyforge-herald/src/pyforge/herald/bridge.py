@@ -10,10 +10,11 @@ inference SDK: the only thing ``operation`` is ever handed is something typed
 to the ``DesignTransport`` protocol (``transport/base.py``), never a concrete
 class. This is exactly what AD-3 (bridge-core is transport-agnostic) and AD-4
 (the determinism boundary holds regardless of active transport) require, and
-what ``test_bridge.py``'s static import check verifies by inspecting this
-module's own import statements -- never a concrete adapter module
-(``mcp_transport``, a future ``agent_sdk_transport``) and never an
-LLM/inference-SDK package.
+what ``test_bridge.py``'s static determinism-boundary check verifies by
+inspecting this module's AST -- every import statement and every named
+identifier -- for a concrete adapter module (``mcp_transport``, a future
+``agent_sdk_transport``), an adapter class name, an LLM/inference-SDK
+package, or dynamic-import machinery: none may ever appear here.
 
 No CAP function body lives here yet -- each lands with its own story:
 ``seed`` (1.6), ``pull`` (2.x), ``status`` (3.x), ``watch`` (4.x),

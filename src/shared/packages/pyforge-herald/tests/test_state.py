@@ -92,3 +92,63 @@ def test_read_of_an_entry_with_the_wrong_field_types_raises_herald_error(
     state_path.write_text('{"x": {"project_id": 123, "etags": {}}}')
     with pytest.raises(HeraldError, match="x"):
         read(state_path, "x")
+
+
+def test_read_of_a_binary_corrupt_file_raises_herald_error(tmp_path: Path):
+    """UnicodeDecodeError is JSONDecodeError's sibling under ValueError, not
+    a subclass -- a truncated or wrong-encoding write must not leak it raw."""
+    state_path = tmp_path / "bridge-state.json"
+    state_path.write_bytes(b"\xff\xfe\x00\x01")
+    with pytest.raises(HeraldError, match="could not be read"):
+        read(state_path, "x")
+
+
+def test_read_of_a_state_path_that_is_a_directory_raises_herald_error(
+    tmp_path: Path,
+):
+    state_path = tmp_path / "bridge-state.json"
+    state_path.mkdir()
+    with pytest.raises(HeraldError, match="could not be read"):
+        read(state_path, "x")
+
+
+def test_read_of_an_entry_with_a_non_string_etag_value_raises_herald_error(
+    tmp_path: Path,
+):
+    state_path = tmp_path / "bridge-state.json"
+    state_path.write_text('{"x": {"project_id": "p1", "etags": {"prototype": 5}}}')
+    with pytest.raises(HeraldError, match="x"):
+        read(state_path, "x")
+
+
+def test_read_of_an_entry_with_a_non_string_last_pull_raises_herald_error(
+    tmp_path: Path,
+):
+    state_path = tmp_path / "bridge-state.json"
+    state_path.write_text('{"x": {"project_id": "p1", "etags": {}, "last_pull": 123}}')
+    with pytest.raises(HeraldError, match="x"):
+        read(state_path, "x")
+
+
+def test_write_blocked_by_a_plain_file_in_the_parent_path_raises_herald_error(
+    tmp_path: Path,
+):
+    """A plain file where the `.herald` directory should be must surface as
+    a HeraldError, not a bare FileExistsError/NotADirectoryError."""
+    blocker = tmp_path / ".herald"
+    blocker.write_text("not a directory")
+    state_path = blocker / "bridge-state.json"
+    with pytest.raises(HeraldError, match="could not be written"):
+        write(state_path, "x", DeckState(project_id="p1", etags={}))
+
+
+def test_write_over_a_corrupt_existing_file_raises_and_leaves_it_untouched(
+    tmp_path: Path,
+):
+    """A corrupt file blocks writes deliberately (clobbering would destroy
+    every other slug's entry) -- and the corrupt file must survive intact."""
+    state_path = tmp_path / "bridge-state.json"
+    state_path.write_text("{not valid json")
+    with pytest.raises(HeraldError, match="could not be read"):
+        write(state_path, "x", DeckState(project_id="p1", etags={}))
+    assert state_path.read_text() == "{not valid json"

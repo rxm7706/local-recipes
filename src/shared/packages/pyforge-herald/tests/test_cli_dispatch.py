@@ -74,3 +74,18 @@ def test_dispatch_maps_an_unmapped_herald_error_to_1(capsys):
 
     assert dispatch(operation) == 1
     assert "HeraldError" in capsys.readouterr().err
+
+
+def test_dispatch_flattens_a_multi_line_message_to_one_stderr_line(capsys):
+    """The contract is *one* structured stderr line; a message carrying
+    embedded newlines (a future conflict listing, a wrapped OS error) must
+    not break line-oriented consumers."""
+
+    def operation() -> None:
+        raise HeraldError("line one\nline two")
+
+    assert dispatch(operation) == 1
+    err = capsys.readouterr().err
+    assert err.endswith("\n")
+    assert err.count("\n") == 1
+    assert "line one line two" in err

@@ -83,12 +83,15 @@ def dispatch(operation: Callable[[], None]) -> int:
     (AD-6): bridge-core raises, this is the sole place that catches.
 
     Writes one structured line to stderr (tool name, error type name,
-    message) and returns ``errors.exit_code_for``'s mapped exit code;
+    message -- embedded newlines flattened to spaces, so a multi-line
+    message can never break the one-line contract for line-oriented
+    consumers) and returns ``errors.exit_code_for``'s mapped exit code;
     returns 0 when ``operation`` completes without raising. Not wired to any
     subcommand yet -- exercised directly in tests."""
     try:
         operation()
     except errors.HeraldError as exc:
-        print(f"{TOOL_NAME}: {type(exc).__name__}: {exc}", file=sys.stderr)
+        message = " ".join(str(exc).splitlines())
+        print(f"{TOOL_NAME}: {type(exc).__name__}: {message}", file=sys.stderr)
         return errors.exit_code_for(exc)
     return 0
