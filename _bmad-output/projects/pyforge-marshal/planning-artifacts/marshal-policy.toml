@@ -31,6 +31,30 @@ gate_mode = "none"
 # verify_commands: THIS station's own suite. Every home except atlas and warden was
 # cloned from warden's and inherited `pyforge-warden-test`, so a story here would have
 # gone green on warden's tests while this station's own never ran.
+#
+# TWO commands since 2026-07-30, because this home now runs TWO products. Marshal
+# absorbed the genesis installer's 36 stories (epics 7-12, `epics-genesis-installer.md`)
+# when `pyforge-genesis` was retired to constitutive. Marshal's own suite cannot gate a
+# story that builds `pyforge-genesis` -- it would pass regardless, which is exactly the
+# false green the 2026-07-30 audit found on six homes running warden's suite.
+#
+# `pyforge-deps-test` closes that: it is `tests/packaging/test_dependency_completeness.py`,
+# pure stdlib in the lean `pyforge-ci` env, and it DISCOVERS `src/shared/packages/pyforge-*`
+# BY GLOB -- so a package is covered the day it lands, with nobody having to remember.
+# Per package it asserts manifest parity, that every hard import is a declared dependency,
+# that conda run-deps cover the project deps and add nothing undeclared, that shared pins
+# agree, and that versions match. ~0.4s, and it also covers pyforge-marshal itself.
+#
+# It is the RIGHT gate for S-7.1 (package skeleton) specifically, because of a bootstrap
+# constraint worth remembering: `pixi run --frozen -e pyforge-genesis pyforge-genesis-test`
+# cannot work until that env is in `pixi.lock`, and `--frozen` forbids solving. Marshal hit
+# this itself -- `feature.pyforge-marshal.tasks.pyforge-marshal-test` first appears in
+# `3b804eeb9d`, which IS its own S-1.1 merge. A package-creating story creates its own gate;
+# it cannot be gated by it on the run that creates it.
+#
+# Add a third entry (`pixi run --frozen -e pyforge-genesis pyforge-genesis-test`) once S-7.1
+# has landed the package, its pixi feature/env and the lock update.
 verify_commands = [
   "pixi run --frozen -e pyforge-marshal pyforge-marshal-test",
+  "pixi run --frozen -e pyforge-ci pyforge-deps-test",
 ]
