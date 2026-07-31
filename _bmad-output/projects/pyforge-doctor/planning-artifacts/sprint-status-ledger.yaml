@@ -17,7 +17,7 @@ development_status:
   1-1-package-scaffold-frozen-finding-doctorreport-contract-exit-code-module: done
   1-2-wrap-wardens-engine-availability-self-check: done
   1-3-tri-state-individually-addressable-checks: done
-  1-4-credential-environment-hygiene-check: backlog
+  1-4-credential-environment-hygiene-check: done
   1-5-doctor-check-cli-wiring-json-and-the-speed-budget: backlog
   2-1-atlas-gather-filter-staleness-axis-mcp-first-with-cli-fallback: backlog
   2-2-cve-and-abandonment-watch-axes: backlog
