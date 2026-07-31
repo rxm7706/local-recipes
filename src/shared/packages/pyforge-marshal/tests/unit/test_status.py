@@ -25,6 +25,8 @@ def _home(
     symlink: Path | None = None,
     tier3_local: Path | None = None,
     tier3_canonical: Path = _CANONICAL,
+    link_occupied: bool = False,
+    tier3_canonical_is_dir: bool = True,
 ) -> status.HomeFacts:
     return status.HomeFacts(
         path=path,
@@ -33,6 +35,8 @@ def _home(
         symlink_target=symlink,
         tier3_local_realpath=tier3_local,
         tier3_canonical_realpath=tier3_canonical,
+        link_occupied=link_occupied,
+        tier3_canonical_is_dir=tier3_canonical_is_dir,
     )
 
 
@@ -42,9 +46,14 @@ def _main(
     branch: str | None = "main",
     marker: str | None = None,
     symlink: Path | None = None,
+    link_occupied: bool = False,
 ) -> status.MainCheckoutFacts:
     return status.MainCheckoutFacts(
-        path=path, branch=branch, marker_text=marker, symlink_target=symlink
+        path=path,
+        branch=branch,
+        marker_text=marker,
+        symlink_target=symlink,
+        link_occupied=link_occupied,
     )
 
 
@@ -175,6 +184,36 @@ def test_unrecognized_symlink_shape_is_a_violation():
     assert "unrecognized" in result.findings[0].message
 
 
+def test_occupied_planning_artifacts_is_a_violation():
+    """A real (non-symlink) occupant at the planning-artifacts path is one
+    step further gone than an unrecognized symlink target -- previously it
+    read as benign absence (review finding)."""
+    home = _home(marker="acme\n", symlink=None, link_occupied=True, tier3_local=None)
+    result = status.evaluate_homes((home,), _CLEAN_MAIN)
+    assert len(result.findings) == 1
+    assert result.findings[0].code == "MRS-HOMES-001"
+    assert "occupied" in result.findings[0].message
+    assert result.homes[0]["desynced"] is True
+
+
+def test_all_three_slugs_disagreeing_names_every_pair():
+    """The multi-corruption case (review finding): with marker, symlink,
+    and branch all pairwise disagreeing, the finding must name EVERY
+    disagreeing value, not just the first pair."""
+    home = _home(
+        branch="loop/zeta",
+        marker="alpha\n",
+        symlink=Path("projects/beta/planning-artifacts"),
+        tier3_local=None,
+    )
+    result = status.evaluate_homes((home,), _CLEAN_MAIN)
+    assert len(result.findings) == 1
+    message = result.findings[0].message
+    assert "alpha" in message
+    assert "beta" in message
+    assert "zeta" in message
+
+
 # --- Tier-3 realpath mismatch: MRS-HOMES-002 --------------------------------------
 
 
@@ -209,6 +248,35 @@ def test_tier3_and_slug_mismatch_both_fire_independently():
 
 def test_unprovisioned_tier3_backlink_is_not_a_violation():
     home = _home(marker="acme\n", symlink=Path("projects/acme/planning-artifacts"), tier3_local=None)
+    result = status.evaluate_homes((home,), _CLEAN_MAIN)
+    assert result.findings == ()
+    assert result.homes[0]["desynced"] is False
+
+
+def test_backlink_dangling_at_the_canonical_path_is_a_violation():
+    """The backlink resolves to the RIGHT path, but the canonical store
+    itself is gone (review finding: previously blessed as clean) -- marshal
+    init's own convergence check has always required is_dir(canonical)."""
+    home = _home(
+        marker="acme\n",
+        symlink=Path("projects/acme/planning-artifacts"),
+        tier3_local=_CANONICAL,
+        tier3_canonical=_CANONICAL,
+        tier3_canonical_is_dir=False,
+    )
+    result = status.evaluate_homes((home,), _CLEAN_MAIN)
+    assert len(result.findings) == 1
+    finding = result.findings[0]
+    assert finding.code == "MRS-HOMES-002"
+    assert "does not exist" in finding.message
+    assert result.homes[0]["desynced"] is True
+
+
+def test_missing_canonical_store_without_a_backlink_is_not_a_violation():
+    """The dangling-backlink check only applies when a backlink exists --
+    an unprovisioned home whose canonical store also doesn't exist yet is
+    still just 'never provisioned'."""
+    home = _home(marker="acme\n", symlink=Path("projects/acme/planning-artifacts"), tier3_local=None, tier3_canonical_is_dir=False)
     result = status.evaluate_homes((home,), _CLEAN_MAIN)
     assert result.findings == ()
     assert result.homes[0]["desynced"] is False
@@ -252,6 +320,20 @@ def test_main_checkout_marker_alone_present_is_not_a_violation():
     result = status.evaluate_homes((), main)
     assert result.findings == ()
     assert result.main_checkout["desynced"] is False
+
+
+def test_main_checkout_occupied_planning_artifacts_is_a_violation():
+    """Same occupancy rule as a home's (review finding): a real directory
+    materialized at the main checkout's planning-artifacts path is named,
+    never read as 'symlink absent'."""
+    main = _main(marker=None, symlink=None, link_occupied=True)
+    result = status.evaluate_homes((), main)
+    assert len(result.findings) == 1
+    finding = result.findings[0]
+    assert finding.code == "MRS-HOMES-001"
+    assert "main checkout" in finding.message
+    assert "occupied" in finding.message
+    assert result.main_checkout["desynced"] is True
 
 
 # --- zero/one home -----------------------------------------------------------------

@@ -83,12 +83,15 @@ def _iter_worktree_blocks(stdout: str) -> Iterator[dict[str, str]]:
     """Parses ``git worktree list --porcelain``'s blank-line-delimited
     blocks of ``key value`` lines into per-worktree dicts. A valueless
     marker line (``detached``, ``bare`` -- no space, so no value) normalizes
-    to ``"true"`` rather than being dropped, so ``list_worktrees`` can tell a
-    detached-HEAD block apart from one simply missing a ``branch`` line for
-    some other reason. Shared by ``worktree_path_for_branch`` (Story 1.4,
-    the first caller, single-branch lookup) and ``list_worktrees`` (Story
-    1.6, the full-enumeration generalization) so this parse lives in exactly
-    one place."""
+    to ``"true"`` rather than being dropped, keeping every porcelain fact a
+    block carries available to callers -- today's callers key off the
+    ``branch``/``worktree`` lines only (``list_worktrees`` derives
+    detached-HEAD purely from the ABSENT ``branch`` line and never reads the
+    ``detached`` key -- review finding: an earlier version of this docstring
+    overclaimed that it did). Shared by ``worktree_path_for_branch`` (Story
+    1.4, the first caller, single-branch lookup) and ``list_worktrees``
+    (Story 1.6, the full-enumeration generalization) so this parse lives in
+    exactly one place."""
     for block in stdout.split("\n\n"):
         lines: dict[str, str] = {}
         for line in block.splitlines():

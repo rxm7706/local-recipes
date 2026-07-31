@@ -13,7 +13,9 @@ exist_ok=True)``/empty-dir-removal primitives the same way.
 Story 1.6 adds ``resolve_path`` -- a thin wrapper over
 ``pathlib.Path.resolve()`` (non-strict by default, so it never requires
 ``path`` to exist), with the same "wrap OSError into FsError" convention as
-every other method here.
+every other method here -- and ``exists``, a thin wrapper over
+``pathlib.Path.exists()`` with the same suppress-OSError-to-``False``
+convention as ``is_dir``.
 """
 
 from __future__ import annotations
@@ -134,6 +136,16 @@ class LocalFs:
             path.mkdir(parents=True, exist_ok=True)
         except OSError as exc:
             raise FsError(f"cannot create directory {path}: {exc}") from exc
+
+    def exists(self, path: Path) -> bool:
+        # Same suppress-OSError-to-False convention as is_dir above: an
+        # unreadable ancestor reports "not usably present", never a raw
+        # traceback. Follows symlinks (pathlib semantics) -- callers probe
+        # read_symlink_target first; see the port docstring.
+        try:
+            return path.exists()
+        except OSError:
+            return False
 
     def resolve_path(self, path: Path) -> Path:
         # strict=False (the default): a broken/dangling target is exactly
