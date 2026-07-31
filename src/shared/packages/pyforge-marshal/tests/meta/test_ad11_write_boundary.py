@@ -1,7 +1,12 @@
 """Meta test -- AD-11 write-boundary guard for Story 1.4/1.5's active
 surface (``marshal init``'s loop home, plus Story 1.5's Tier-3 backlink),
 extended by Story 1.6 to prove ``marshal homes`` -- a READ-ONLY command by
-design -- performs literally ZERO writes.
+design -- performs literally ZERO writes, and by Story 1.7 to prove
+``marshal preflight``'s writes (seed-file copies into the home, the
+machine-scoped acknowledgement file) resolve under one of THREE allowed
+targets rather than the original two -- see that test's own docstring for
+why a third target is legitimate here (AD-37's fourth write target, not a
+loosening of AD-11).
 Unlike the AST-scan meta-tests this package already ships (AD-3/AD-4, AD-7,
 AD-26), this guard is RUNTIME: it injects path-recording fake
 ``VcsPort``/``FsPort`` implementations into ``cli.init.run_init``'s own
@@ -43,7 +48,7 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
-from pyforge.marshal.cli.init import run_homes, run_init
+from pyforge.marshal.cli.init import run_homes, run_init, run_preflight
 from pyforge.marshal.core.verdict import EXIT_OK
 from pyforge.marshal.ports.vcs import WorktreeEntry
 
@@ -86,8 +91,13 @@ class _RecordingFs:
     (tier3_backlink's ``ensure_dir``/symlink repoint, the planning-artifacts
     symlink repoint, marker write), recording each write path."""
 
-    def __init__(self, dirs: set[Path]) -> None:
+    def __init__(self, dirs: set[Path], *, files: set[Path] | None = None) -> None:
         self._dirs = dirs
+        # Story 1.7: a distinct membership set from `_dirs` -- run_preflight's
+        # seed-file loop probes `exists()` on plain FILE paths (a home
+        # destination, a main-checkout source), never `is_dir()`.
+        self._files = files if files is not None else set()
+        self._texts: dict[Path, str] = {}
         self.write_paths: list[Path] = []
 
     def is_dir(self, path: Path) -> bool:
@@ -96,11 +106,12 @@ class _RecordingFs:
     def exists(self, path: Path) -> bool:
         # Story 1.6: a read -- never recorded. Nothing exists beyond the
         # seeded dirs, so run_homes's occupancy probes stay False (benign
-        # absence) and its clean-run exit stays EXIT_OK.
-        return path in self._dirs
+        # absence) and its clean-run exit stays EXIT_OK. Story 1.7 extends
+        # membership to `_files`/`_texts` for the same reason.
+        return path in self._dirs or path in self._files or path in self._texts
 
     def read_text(self, path: Path) -> str | None:
-        return None
+        return self._texts.get(path)
 
     def write_text_atomic(self, path: Path, content: str) -> None:
         self.write_paths.append(path)
@@ -125,6 +136,10 @@ class _RecordingFs:
         # answer for both the main-checkout-identification comparison and
         # the (absent) Tier-3 backlink comparison run_homes performs.
         return path
+
+    def copy_file(self, src: Path, dst: Path) -> None:
+        self.write_paths.append(dst)
+        self._files.add(dst)
 
 
 def test_every_observed_write_resolves_under_the_home_or_canonical_tier3_store(
@@ -197,3 +212,81 @@ def test_homes_produces_zero_recorded_writes(tmp_path):
     assert exit_code == EXIT_OK
     assert vcs.write_paths == []
     assert fs.write_paths == []
+
+
+class _RecordingHarness:
+    """Fakes ``HarnessPort`` in full, all-converged, so ``run_preflight``
+    reaches its two writes (the seed-file copy, the ack-state write) without
+    tripping any OTHER finding first. Harness methods are all reads -- never
+    recorded, mirroring ``_RecordingVcs``'s own read/write split."""
+
+    def binary_present(self, binary: str) -> bool:
+        return True
+
+    def harness_version(self) -> str | None:
+        return "0.9.0"
+
+    def multiplexer_backend_available(self) -> tuple[str, bool]:
+        return ("tmux", True)
+
+    def adapter_binary(self, adapter_name: str, project: Path) -> str:
+        return "claude"
+
+    def adapter_seed_files(self, adapter_name: str, project: Path) -> tuple[str, ...]:
+        return (".mcp.json",)
+
+    def adapter_first_run_note(self, adapter_name: str, project: Path) -> str:
+        return "run claude once"
+
+    def story_feed_error(self, project: Path) -> str | None:
+        return None
+
+
+def test_preflight_writes_resolve_under_the_home_or_the_ack_state_path(
+    tmp_path, monkeypatch
+):
+    """Story 1.7: ``marshal preflight`` is NOT read-only like ``marshal
+    homes`` -- it copies seed files into the home and records first-run
+    acknowledgement in a machine-scoped state file OUTSIDE both of
+    ``run_init``'s two allowed targets (the home, the canonical Tier-3
+    store) -- AD-37's own fourth write target, not a loosening of AD-11: the
+    guarded claim here is "every write resolves under the home OR the
+    ack-state path", never the canonical Tier-3 store (this command never
+    touches it) and never anywhere else."""
+    monkeypatch.setenv("BMAD_LOOP_HOME_ROOT", str(tmp_path / "loop-homes"))
+    state_home = tmp_path / "state-home"
+    monkeypatch.setenv("MARSHAL_STATE_HOME", str(state_home))
+
+    slug = "acme"
+    repo_root = tmp_path / "repo"
+    home = tmp_path / "loop-homes" / slug
+    # The seed file's SOURCE (main checkout) must exist for the copy to be
+    # attempted at all -- copy-when-absent-on-both-sides is a skip, not a
+    # write (see cli/init.py's own seed-file loop).
+    vcs = _RecordingVcs(repo_root)
+    fs = _RecordingFs({home}, files={repo_root / ".mcp.json"})
+    harness = _RecordingHarness()
+
+    args = argparse.Namespace(slug=slug, acknowledge="claude", format="text")
+    exit_code = run_preflight(args, vcs=vcs, fs=fs, harness=harness)
+
+    assert exit_code == EXIT_OK
+    assert vcs.write_paths == []  # run_preflight never touches VcsPort's one write
+    all_writes = fs.write_paths
+    # Non-vacuous: the seed-file copy (fs) and the ack-state write (fs) --
+    # two writes total. If this drops the guard would trivially pass without
+    # checking anything.
+    assert len(all_writes) == 2, (
+        "expected exactly the seed-file copy and the ack-state write"
+    )
+
+    home_resolved = home.resolve()
+    ack_path_resolved = (state_home / "adapter-acknowledgements.json").resolve()
+    for path in all_writes:
+        resolved = Path(path).resolve()
+        under_home = resolved == home_resolved or home_resolved in resolved.parents
+        is_ack_path = resolved == ack_path_resolved
+        assert under_home or is_ack_path, (
+            f"write to {path} does not resolve under the provisioned home "
+            f"{home} or the ack-state path {ack_path_resolved}"
+        )

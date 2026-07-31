@@ -87,6 +87,28 @@ state), all classify ``Verdict.ERROR`` -- see ``core/status.py``'s own
 docstring for the full isolation-check design, and this story's spec's
 Design Notes for why this command lives here rather than in a new
 ``cli/status.py`` (reserved for a later, broader fleet-visibility story).
+
+Story 1.7 adds a THIRD command in this same module, ``marshal preflight``
+(``add_preflight_subparser``/``run_preflight``, FR-7/FR-47/FR-52): given a
+provisioned loop home, it reports six presence/resolvability facts (harness
+binary + version, multiplexer backend, configured adapter + its binary,
+story-feed resolvability, each verify command's resolvability, and whether
+``main`` is checked out exactly once), copies the configured adapter's
+declared gitignored seed files into the home (real bytes, copy-when-absent,
+AD-21), and gates on the adapter's first-run acknowledgement -- recorded,
+idempotently, in a new machine-scoped JSON file
+(``_ack_state_path``/``_read_acknowledged``/``_write_acknowledged``) rather
+than the loop home itself (Design Notes: the underlying fact is per-machine
+per-adapter, not per-project). It takes the SAME ``HarnessPort`` DI seam as
+``run_init``/``run_homes`` (``BmadLoopHarness``, the sole module permitted to
+invoke ``bmad-loop`` or import its package, per AD-3/AD-19), reuses
+``policy.compose()`` (S-1.3) and its own ``MRS-POLICY-*`` findings, and
+resolves the configured adapter's NAME via the SAME pure
+``adapters.harness_bmadloop.render_policy_toml`` function ``marshal config
+--write-harness-policy`` calls, so the two can never disagree about which
+adapter is configured. Its own nine codes, ``MRS-PREFLIGHT-001`` through
+``MRS-PREFLIGHT-009``, all classify ``Verdict.ERROR`` -- see
+``core/findings.py``'s own docstring for the exact per-code mapping.
 """
 
 from __future__ import annotations
@@ -95,19 +117,28 @@ import argparse
 import json
 import os
 import shlex
+import tomllib
 from collections.abc import Mapping
 from pathlib import Path
 
 from ..adapters.fs_local import FsError, LocalFs
+from ..adapters.harness_bmadloop import BmadLoopHarness, HarnessError, render_policy_toml
 from ..adapters.vcs_git import GitVcs, VcsCommandError
 from ..core import policy, status
 from ..core.model import Finding, Severity, build_envelope
 from ..core.verdict import compute_verdict, exit_code_for
 from ..ports.fs import FsPort
+from ..ports.harness import HarnessPort
 from ..ports.vcs import VcsPort, WorktreeEntry
-from .config import _suppress_downstream_pipe_close
+from .config import (
+    PolicyIOError,
+    _read_project_policy,
+    _suppress_downstream_pipe_close,
+    conventional_project_policy_path,
+)
 
 ENV_LOOP_HOME_ROOT = "BMAD_LOOP_HOME_ROOT"
+ENV_MARSHAL_STATE_HOME = "MARSHAL_STATE_HOME"
 
 _STEP_NAMES: tuple[str, ...] = ("worktree", "tier3_backlink", "symlink", "marker")
 
@@ -774,6 +805,584 @@ def _emit_homes(args: argparse.Namespace, data: dict[str, object], findings: lis
             print(json.dumps(envelope.to_json_dict(), indent=2, sort_keys=True), flush=True)
         else:
             print(_render_text_homes(envelope.data, envelope.findings), flush=True)
+    except OSError:
+        _suppress_downstream_pipe_close()
+    return exit_code_for(envelope.verdict)
+
+
+# =====================================================================
+# ``marshal preflight`` (Story 1.7, FR-7/FR-47/FR-52).
+# =====================================================================
+
+# The declared supported harness range (AD-3, matches Story 1.9's planned
+# conda pin): pre-1.0, so the upper bound excludes a minor bump that could
+# rename/remove any of the bmad_loop modules adapters/harness_bmadloop.py
+# reads. Tuple comparison, not the `packaging` library -- this package has
+# no dependency on it and the range is a fixed, simple two-point interval.
+_HARNESS_MIN_VERSION: tuple[int, ...] = (0, 9, 0)
+_HARNESS_MAX_MINOR_EXCLUSIVE: tuple[int, ...] = (0, 10)
+_HARNESS_VERSION_RANGE_TEXT = ">=0.9.0,<0.10"
+
+# The default machine-scoped state path (AD-37's fourth write target),
+# overridable via MARSHAL_STATE_HOME -- mirrors ENV_LOOP_HOME_ROOT's own
+# override convention. This fact ("has the operator answered this adapter's
+# trust dialog on THIS MACHINE") belongs to the operator's machine and the
+# adapter, not to any one project's loop home -- see the spec's Design Notes.
+_ACK_STATE_FILENAME = "adapter-acknowledgements.json"
+
+_SUSTAINED_AUTOMATION_CAVEAT = (
+    "once acknowledged, bmad-loop will launch this adapter unattended and "
+    "repeatedly for every future session against every project -- "
+    "acknowledge only after personally running the adapter once and "
+    "answering its own first-run trust dialog on this machine"
+)
+
+
+def _version_tuple(text: str) -> tuple[int, ...] | None:
+    """Parse a dotted version string's leading numeric run per component
+    (``"0.9.0"`` -> ``(0, 9, 0)``, ``"0.9.0rc1"`` -> ``(0, 9, 0)``, stopping
+    at the first component with no leading digit). ``None`` if the FIRST
+    component carries no digits at all."""
+    parts: list[int] = []
+    for chunk in text.split("."):
+        digits = ""
+        for char in chunk:
+            if not char.isdigit():
+                break
+            digits += char
+        if not digits:
+            break
+        parts.append(int(digits))
+    return tuple(parts) if parts else None
+
+
+def _harness_version_in_range(text: str) -> bool:
+    parsed = _version_tuple(text)
+    if parsed is None:
+        return False
+    padded = parsed + (0, 0, 0)
+    return padded[:3] >= _HARNESS_MIN_VERSION and padded[:2] < _HARNESS_MAX_MINOR_EXCLUSIVE
+
+
+def _ack_state_path() -> Path:
+    override = os.environ.get(ENV_MARSHAL_STATE_HOME)
+    base = (
+        Path(override).expanduser()
+        if override
+        else Path.home() / ".local" / "state" / "pyforge-marshal"
+    )
+    if not base.is_absolute():
+        # Same anchoring as _loop_home_root's own BMAD_LOOP_HOME_ROOT
+        # override (review finding: a relative MARSHAL_STATE_HOME would
+        # otherwise resolve against a DIFFERENT directory on every
+        # invocation with a different CWD, so the acknowledgement would
+        # never appear to "stick" from the operator's point of view).
+        base = Path.cwd() / base
+    return base / _ACK_STATE_FILENAME
+
+
+def _read_acknowledged(fs: FsPort, path: Path) -> set[str]:
+    """The set of adapter names ever acknowledged on this machine. Absent,
+    unreadable, or malformed (not valid JSON, or not a JSON array of
+    strings) all read as the empty set -- this is Marshal's own internal
+    state file, never hand-edited, so a defensive "nothing acknowledged yet"
+    is the safe degrade rather than a raised exception."""
+    try:
+        text = fs.read_text(path)
+    except FsError:
+        return set()
+    if text is None:
+        return set()
+    try:
+        parsed = json.loads(text)
+    except json.JSONDecodeError:
+        return set()
+    if not isinstance(parsed, list):
+        return set()
+    return {item for item in parsed if isinstance(item, str)}
+
+
+def _write_acknowledged(fs: FsPort, path: Path, names: set[str]) -> None:
+    fs.write_text_atomic(path, json.dumps(sorted(names), indent=2) + "\n")
+
+
+def add_preflight_subparser(subparsers: argparse._SubParsersAction) -> None:
+    """Register the ``preflight`` subcommand (Story 1.7, FR-7/FR-47/FR-52)."""
+    parser = subparsers.add_parser(
+        "preflight",
+        help="Verify a loop home can run, seed adapter config, and gate on first-run acknowledgement.",
+        description=(
+            "Resolves the composed policy and the configured adapter's "
+            "declarative profile, reports harness/multiplexer/adapter/"
+            "story-feed/verify-command/single-checkout presence and "
+            "resolvability, copies the adapter's declared gitignored seed "
+            "files into the home (copy-when-absent, real bytes), and blocks "
+            "on an unacknowledged adapter first-run requirement."
+        ),
+    )
+    parser.add_argument("slug", help="The BMAD project slug whose loop home to preflight.")
+    parser.add_argument(
+        "--acknowledge",
+        metavar="ADAPTER",
+        default=None,
+        help=(
+            "Record this machine's acknowledgement of ADAPTER's first-run "
+            "requirement (idempotent), before the first-run check runs in "
+            "this same invocation."
+        ),
+    )
+    parser.add_argument(
+        "--format",
+        choices=("text", "json"),
+        default="text",
+        help="Output format (default: text).",
+    )
+    parser.set_defaults(handler=run_preflight)
+
+
+def run_preflight(
+    args: argparse.Namespace,
+    *,
+    vcs: VcsPort | None = None,
+    fs: FsPort | None = None,
+    harness: HarnessPort | None = None,
+) -> int:
+    vcs = vcs if vcs is not None else GitVcs()
+    fs = fs if fs is not None else LocalFs()
+    harness = harness if harness is not None else BmadLoopHarness()
+
+    slug = args.slug
+    findings: list[Finding] = []
+    data: dict[str, object] = {"slug": slug}
+
+    # --- slug shape -- blocking, before ANY filesystem read/write (review
+    # finding: an unvalidated slug reached _home_path/conventional_project_
+    # policy_path below and, via '..'/an absolute path, could resolve OUTSIDE
+    # loop_home_root entirely -- the seed-copy step would then write real
+    # bytes there, violating AD-11. Mirrors run_init's own MRS-INIT-001 gate,
+    # reusing the SAME shape check (core.policy._is_valid_project_slug, which
+    # excludes '/' from its charset) rather than a second regex. -----------
+    if not policy._is_valid_project_slug(slug):
+        findings.append(
+            Finding(
+                code="MRS-PREFLIGHT-010",
+                severity=Severity.ERROR,
+                message=(
+                    f"malformed project slug {slug!r} -- must be one safe "
+                    "path segment (letters, digits, '.', '_', '-'; not '.' "
+                    "or '..'; at most 255 characters)"
+                ),
+            )
+        )
+        return _emit_preflight(args, data, findings)
+
+    # --- loop home must exist -- blocking, before any of the eight checks ---
+    try:
+        home = _home_path(slug)
+    except (RuntimeError, OSError) as exc:
+        findings.append(
+            Finding(
+                code="MRS-PREFLIGHT-009",
+                severity=Severity.ERROR,
+                message=f"resolving the loop-home root: {exc}",
+            )
+        )
+        return _emit_preflight(args, data, findings)
+    data["home"] = str(home)
+
+    if not fs.is_dir(home):
+        findings.append(
+            Finding(
+                code="MRS-PREFLIGHT-009",
+                severity=Severity.ERROR,
+                message=(
+                    f"loop home not provisioned: {home} is not a directory -- "
+                    f"run 'marshal init {slug}' first"
+                ),
+                path=str(home),
+            )
+        )
+        return _emit_preflight(args, data, findings)
+
+    # --- composed policy (S-1.3) -- its own findings merge into ours --------
+    project_data: Mapping[str, object] = {}
+    policy_path = conventional_project_policy_path(slug)
+    if policy_path.is_file():
+        try:
+            project_data = _read_project_policy(policy_path)
+        except PolicyIOError as exc:
+            findings.append(exc.finding)
+    effective, policy_findings = policy.compose(
+        project_slug=slug, project=project_data, flags={}
+    )
+    findings.extend(policy_findings)
+
+    # --- repo root -- needed by main_checked_out_once and the seed-copy source
+    repo_root: Path | None
+    repo_root_error: str | None
+    try:
+        repo_root = vcs.repo_common_root(Path.cwd())
+        repo_root_error = None
+    except (OSError, VcsCommandError) as exc:
+        repo_root = None
+        repo_root_error = str(exc)
+
+    # --- harness presence/version --------------------------------------------
+    if not harness.binary_present("bmad-loop"):
+        data["harness_version"] = None
+        findings.append(
+            Finding(
+                code="MRS-PREFLIGHT-001",
+                severity=Severity.ERROR,
+                message="harness binary 'bmad-loop' not found on PATH",
+            )
+        )
+    else:
+        harness_version = harness.harness_version()
+        data["harness_version"] = harness_version
+        if harness_version is None or not _harness_version_in_range(harness_version):
+            findings.append(
+                Finding(
+                    code="MRS-PREFLIGHT-002",
+                    severity=Severity.ERROR,
+                    message=(
+                        f"harness version {harness_version or 'unknown'!r} is "
+                        f"outside the supported range {_HARNESS_VERSION_RANGE_TEXT}"
+                    ),
+                )
+            )
+
+    # --- multiplexer -----------------------------------------------------------
+    try:
+        backend_name, backend_available = harness.multiplexer_backend_available()
+    except HarnessError as exc:
+        backend_name, backend_available = "", False
+        findings.append(
+            Finding(code="MRS-PREFLIGHT-003", severity=Severity.ERROR, message=str(exc))
+        )
+    else:
+        if not backend_available:
+            findings.append(
+                Finding(
+                    code="MRS-PREFLIGHT-003",
+                    severity=Severity.ERROR,
+                    message=f"multiplexer backend {backend_name!r} is not available",
+                )
+            )
+    data["multiplexer"] = {"backend": backend_name, "available": backend_available}
+
+    # --- adapter name resolution (the SAME render_policy_toml marshal config uses) --
+    adapter_name: str | None
+    try:
+        rendered = render_policy_toml(effective)
+    except ValueError as exc:
+        adapter_name = None
+        findings.append(
+            Finding(
+                code="MRS-PREFLIGHT-004",
+                severity=Severity.ERROR,
+                message=f"cannot resolve the configured adapter: {exc}",
+            )
+        )
+    else:
+        parsed_policy = tomllib.loads(rendered)
+        adapter_name = parsed_policy.get("adapter", {}).get("name")
+
+    adapter_binary_name: str | None = None
+    adapter_present = False
+    seed_files: tuple[str, ...] = ()
+    first_run_note = ""
+    if adapter_name is not None:
+        try:
+            adapter_binary_name = harness.adapter_binary(adapter_name, home)
+        except HarnessError as exc:
+            findings.append(
+                Finding(
+                    code="MRS-PREFLIGHT-004",
+                    severity=Severity.ERROR,
+                    message=f"cannot resolve adapter {adapter_name!r}: {exc}",
+                )
+            )
+        else:
+            adapter_present = harness.binary_present(adapter_binary_name)
+            if not adapter_present:
+                findings.append(
+                    Finding(
+                        code="MRS-PREFLIGHT-004",
+                        severity=Severity.ERROR,
+                        message=(
+                            f"adapter {adapter_name!r} binary "
+                            f"{adapter_binary_name!r} not found on PATH"
+                        ),
+                    )
+                )
+            # Both draw from the SAME resolved profile as adapter_binary
+            # above, so a failure here would be the identical root cause
+            # already reported -- HarnessError is not re-raised as a second
+            # finding.
+            try:
+                seed_files = harness.adapter_seed_files(adapter_name, home)
+            except HarnessError:
+                seed_files = ()
+            try:
+                first_run_note = harness.adapter_first_run_note(adapter_name, home)
+            except HarnessError:
+                first_run_note = ""
+    data["adapter"] = {"name": adapter_name, "binary_present": adapter_present}
+
+    # --- story feed -------------------------------------------------------------
+    feed_error = harness.story_feed_error(home)
+    data["story_feed"] = {"resolvable": feed_error is None, "error": feed_error}
+    if feed_error is not None:
+        findings.append(
+            Finding(code="MRS-PREFLIGHT-005", severity=Severity.ERROR, message=feed_error)
+        )
+
+    # --- verify commands ---------------------------------------------------------
+    verify_entries: list[dict[str, object]] = []
+    for command in effective.verify_commands.value:
+        try:
+            tokens = shlex.split(command)
+        except ValueError:
+            tokens = []
+        program = tokens[0] if tokens else None
+        resolvable = bool(program) and harness.binary_present(program)
+        verify_entries.append({"command": command, "resolvable": resolvable})
+        if not resolvable:
+            findings.append(
+                Finding(
+                    code="MRS-PREFLIGHT-006",
+                    severity=Severity.ERROR,
+                    message=f"verify command {command!r} is not resolvable on PATH",
+                )
+            )
+    data["verify_commands"] = verify_entries
+
+    # --- main checked out exactly once -------------------------------------------
+    if repo_root is None:
+        data["main_checked_out_once"] = False
+        findings.append(
+            Finding(
+                code="MRS-PREFLIGHT-007",
+                severity=Severity.ERROR,
+                message=f"cannot verify main is checked out once: {repo_root_error}",
+            )
+        )
+    else:
+        try:
+            worktree_entries = vcs.list_worktrees(repo_root)
+        except VcsCommandError as exc:
+            data["main_checked_out_once"] = False
+            findings.append(
+                Finding(
+                    code="MRS-PREFLIGHT-007",
+                    severity=Severity.ERROR,
+                    message=f"cannot list worktrees to verify main is checked out once: {exc}",
+                )
+            )
+        else:
+            try:
+                # Mirrors run_homes's own identical try/except around its
+                # resolve_path calls (review finding: this block previously
+                # called resolve_path unguarded, unlike its sibling command
+                # in the same file -- an FsError here, e.g. a
+                # permission-denied ancestor, crashed the whole command
+                # instead of yielding MRS-PREFLIGHT-007).
+                repo_root_realpath = fs.resolve_path(repo_root)
+                violators = [
+                    entry.path
+                    for entry in worktree_entries
+                    if entry.branch == "main"
+                    and fs.resolve_path(entry.path) != repo_root_realpath
+                ]
+            except FsError as exc:
+                data["main_checked_out_once"] = False
+                findings.append(
+                    Finding(
+                        code="MRS-PREFLIGHT-007",
+                        severity=Severity.ERROR,
+                        message=f"cannot resolve worktree paths to verify main is checked out once: {exc}",
+                    )
+                )
+                violators = None
+            if violators is not None:
+                data["main_checked_out_once"] = not violators
+            if violators:
+                other_paths = ", ".join(str(path) for path in violators)
+                findings.append(
+                    Finding(
+                        code="MRS-PREFLIGHT-007",
+                        severity=Severity.ERROR,
+                        message=(
+                            "main is checked out in more than one worktree: "
+                            f"{repo_root} and {other_paths}"
+                        ),
+                    )
+                )
+
+    # --- seed files: copy-when-absent, real bytes, halt after one failure -------
+    seed_entries: list[dict[str, object]] = []
+    halted = False
+    for rel in seed_files:
+        if halted:
+            seed_entries.append({"path": rel, "status": "failed"})
+            continue
+        dst = home / rel
+        if fs.exists(dst):
+            seed_entries.append({"path": rel, "status": "skipped"})
+            continue
+        if repo_root is None:
+            seed_entries.append({"path": rel, "status": "failed"})
+            findings.append(
+                Finding(
+                    code="MRS-PREFLIGHT-009",
+                    severity=Severity.ERROR,
+                    message=(
+                        f"cannot seed {dst}: the main checkout could not be "
+                        f"resolved: {repo_root_error}"
+                    ),
+                    path=str(dst),
+                )
+            )
+            halted = True
+            continue
+        src = repo_root / rel
+        if not fs.exists(src):
+            # bmad_loop.install.provision_worktree's own copy-when-absent
+            # semantics: a seed entry with no source in the main checkout is
+            # nothing to seed, not a failure -- an operator who never made a
+            # given optional config file must not fail preflight over it.
+            seed_entries.append({"path": rel, "status": "skipped"})
+            continue
+        try:
+            fs.copy_file(src, dst)
+            seed_entries.append({"path": rel, "status": "copied"})
+        except FsError as exc:
+            seed_entries.append({"path": rel, "status": "failed"})
+            findings.append(
+                Finding(
+                    code="MRS-PREFLIGHT-009",
+                    severity=Severity.ERROR,
+                    message=f"cannot seed {dst}: {exc}",
+                    path=str(dst),
+                )
+            )
+            halted = True
+    data["seed_files"] = seed_entries
+
+    # --- first-run acknowledgement -- ack write happens BEFORE the check --------
+    try:
+        ack_path = _ack_state_path()
+    except (RuntimeError, OSError) as exc:
+        data["first_run_acknowledged"] = False
+        findings.append(
+            Finding(
+                code="MRS-PREFLIGHT-008",
+                severity=Severity.ERROR,
+                message=f"cannot resolve the acknowledgement state path: {exc}",
+            )
+        )
+    else:
+        acknowledged = _read_acknowledged(fs, ack_path)
+        requested = getattr(args, "acknowledge", None)
+        if requested and requested not in acknowledged:
+            candidate = acknowledged | {requested}
+            try:
+                _write_acknowledged(fs, ack_path, candidate)
+            except FsError as exc:
+                # Review finding: the in-memory set was previously unioned
+                # BEFORE the write was attempted, so a failed write still
+                # left `is_acknowledged` (and data.first_run_acknowledged)
+                # reading True below -- self-contradicting the blocking
+                # finding this except clause emits. `acknowledged` stays
+                # UNCHANGED here (never reassigned to `candidate`), so the
+                # is_acknowledged check below reflects what is actually on
+                # disk, not what this invocation merely attempted to persist.
+                findings.append(
+                    Finding(
+                        code="MRS-PREFLIGHT-008",
+                        severity=Severity.ERROR,
+                        message=f"cannot record acknowledgement for {requested!r}: {exc}",
+                    )
+                )
+            else:
+                acknowledged = candidate
+        is_acknowledged = adapter_name is not None and adapter_name in acknowledged
+        data["first_run_acknowledged"] = is_acknowledged
+        if adapter_name is not None and not is_acknowledged:
+            note = first_run_note or "(this adapter's profile declares no first-run note)"
+            findings.append(
+                Finding(
+                    code="MRS-PREFLIGHT-008",
+                    severity=Severity.ERROR,
+                    message=(
+                        f"adapter {adapter_name!r} first-run requirement not "
+                        f"acknowledged -- {note} -- {_SUSTAINED_AUTOMATION_CAVEAT} "
+                        f"-- once verified, run 'marshal preflight {slug} "
+                        f"--acknowledge {adapter_name}'"
+                    ),
+                )
+            )
+
+    return _emit_preflight(args, data, findings)
+
+
+def _render_text_preflight(data: Mapping[str, object], findings: tuple[Finding, ...]) -> str:
+    """A pure projection of the SAME envelope ``data``/``findings`` the
+    ``--format json`` path prints (AD-14), matching this module's own
+    ``_render_text``/``_render_text_homes`` convention."""
+    lines = [f"preflight: {data.get('slug', '')}"]
+    if "home" in data:
+        lines.append(f"home: {data['home']}")
+    if "harness_version" in data:
+        lines.append(f"harness_version: {data['harness_version']}")
+    if "multiplexer" in data:
+        multiplexer = data["multiplexer"]
+        lines.append(
+            f"multiplexer: backend={multiplexer['backend']!r} "
+            f"available={multiplexer['available']}"
+        )
+    if "adapter" in data:
+        adapter = data["adapter"]
+        lines.append(
+            f"adapter: name={adapter['name']!r} binary_present={adapter['binary_present']}"
+        )
+    if "story_feed" in data:
+        story_feed = data["story_feed"]
+        lines.append(
+            f"story_feed: resolvable={story_feed['resolvable']} error={story_feed['error']!r}"
+        )
+    if "verify_commands" in data:
+        lines.append("verify_commands:")
+        for entry in data["verify_commands"]:
+            lines.append(f"  {entry['command']!r}: resolvable={entry['resolvable']}")
+    if "main_checked_out_once" in data:
+        lines.append(f"main_checked_out_once: {data['main_checked_out_once']}")
+    if "seed_files" in data:
+        lines.append("seed_files:")
+        for entry in data["seed_files"]:
+            lines.append(f"  {entry['path']}: {entry['status']}")
+    if "first_run_acknowledged" in data:
+        lines.append(f"first_run_acknowledged: {data['first_run_acknowledged']}")
+    if findings:
+        lines.append("findings:")
+        for finding in findings:
+            lines.append(f"  {finding.code} [{finding.severity.value}] {finding.message}")
+    return "\n".join(lines)
+
+
+def _emit_preflight(args: argparse.Namespace, data: dict[str, object], findings: list[Finding]) -> int:
+    verdict_value = compute_verdict(tuple(findings))
+    envelope = build_envelope(
+        command="preflight", verdict=verdict_value, data=data, findings=tuple(findings)
+    )
+    # Same flush + broken-pipe-suppression convention as _emit/_emit_homes
+    # and cli/config.py::run_config.
+    try:
+        if args.format == "json":
+            print(json.dumps(envelope.to_json_dict(), indent=2, sort_keys=True), flush=True)
+        else:
+            print(_render_text_preflight(envelope.data, envelope.findings), flush=True)
     except OSError:
         _suppress_downstream_pipe_close()
     return exit_code_for(envelope.verdict)

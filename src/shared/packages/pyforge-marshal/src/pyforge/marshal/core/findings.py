@@ -62,7 +62,33 @@ operation failed while gathering state -- the same "real operation attempted
 and did not complete" tier as ``MRS-INIT-004``, not "could not evaluate").
 All three classify ``Verdict.ERROR``, following ``MRS-INIT-003/004/005``'s
 precedent: a real isolation check ran and found (or could not complete)
-a real violation. Later stories
+a real violation. Story 1.7's ``cli/init.py::run_preflight``
+(``marshal preflight``, FR-7/FR-47/FR-52) adds the registry's fifth real
+caller and its own ten codes, one per report check plus one shared by two
+pre-provisioning gates, plus a pre-I/O slug-shape gate: ``MRS-PREFLIGHT-001``
+(the ``bmad-loop`` harness binary is not on ``PATH``), ``MRS-PREFLIGHT-002``
+(the harness's ``--version`` is outside the declared ``>=0.9.0,<0.10`` range,
+or could not be determined at all), ``MRS-PREFLIGHT-003`` (no multiplexer
+backend is available), ``MRS-PREFLIGHT-004`` (the configured adapter cannot
+be resolved, or its binary is not on ``PATH``), ``MRS-PREFLIGHT-005`` (the
+story feed is missing or unparseable), ``MRS-PREFLIGHT-006`` (a configured
+verify command's executable is not on ``PATH``), ``MRS-PREFLIGHT-007``
+(``main`` is checked out in more than one worktree, or that could not be
+verified), ``MRS-PREFLIGHT-008`` (the configured adapter's first-run
+requirement is unacknowledged), and ``MRS-PREFLIGHT-009`` (a seed-file copy
+failed, OR the loop home named on the command line is not provisioned at
+all -- the latter checked before any of the other eight, sharing this code
+rather than adding an eleventh: both are "a real filesystem precondition this
+command needs is not met", the same tier as the seed-copy failure). All nine
+classify ``Verdict.ERROR`` -- a real prerequisite check ran and failed, the
+same tier as ``MRS-INIT-003/004/005``/``MRS-HOMES-*``, never "could not
+evaluate". ``MRS-PREFLIGHT-010`` (a malformed project slug, checked before
+any filesystem read/write -- review finding: an unvalidated slug could
+resolve OUTSIDE the loop home via ``..``/an absolute path, and the seed-copy
+step would then write real bytes there) classifies ``Verdict.UNEVALUABLE``
+instead, mirroring ``MRS-INIT-001``'s own tier for the identical shape check:
+a malformed slug means Marshal cannot determine what to preflight, not that
+a gate failed. Later stories
 append further real codes here as they gain their own real callers. The
 registry MECHANISM
 (format check, then membership check) is separately proven via
@@ -90,6 +116,7 @@ CODE_PATTERN = re.compile(r"MRS-[A-Z][A-Z0-9]*-[0-9]{3}")
 # Story 1.4's cli/init.py adds the third real caller's four codes.
 # Story 1.5's cli/init.py tier3_backlink step adds a fifth code.
 # Story 1.6's cli/init.py::run_homes adds the fourth real caller's three codes.
+# Story 1.7's cli/init.py::run_preflight adds the fifth real caller's ten codes.
 REGISTERED_CODES: frozenset[str] = frozenset(
     {
         "MRS-IDENT-001",
@@ -108,6 +135,16 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-HOMES-001",
         "MRS-HOMES-002",
         "MRS-HOMES-003",
+        "MRS-PREFLIGHT-001",
+        "MRS-PREFLIGHT-002",
+        "MRS-PREFLIGHT-003",
+        "MRS-PREFLIGHT-004",
+        "MRS-PREFLIGHT-005",
+        "MRS-PREFLIGHT-006",
+        "MRS-PREFLIGHT-007",
+        "MRS-PREFLIGHT-008",
+        "MRS-PREFLIGHT-009",
+        "MRS-PREFLIGHT-010",
     }
 )
 

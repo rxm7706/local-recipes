@@ -14,12 +14,14 @@ authors = [{ name = "rxm7706" }]
 # here rather than inherited transitively from bmad-loop, even though
 # PyYAML/tomlkit/psutil also happen to resolve in-environment via
 # bmad-loop's own flattened noarch recipe. jsonschema is entirely new
-# surface (envelope + journal schema validation). bmad-loop itself is
-# still not a declared dependency as of Story 1.10: adapters/harness_bmadloop.py
-# now renders .bmad-loop/policy.toml from a vendored template (verified once
-# against the installed bmad_loop 0.9.0 schema) rather than importing the
-# package at runtime, so no runtime dependency on bmad-loop exists yet.
-# Story 1.9 owns declaring it as Marshal's real packaged dependency.
+# surface (envelope + journal schema validation). Story 1.7 makes bmad-loop
+# itself a declared runtime dependency: adapters/harness_bmadloop.py now
+# lazily imports bmad_loop.adapters.multiplexer/profile,
+# bmad_loop.bmadconfig, and bmad_loop.sprintstatus (inside the relevant
+# HarnessPort methods, never at module top level) to back `marshal
+# preflight`'s harness/adapter/story-feed checks (AD-19). The range matches
+# AD-3/Story 1.9's planned conda pin -- pre-1.0, so the upper bound excludes
+# a minor bump that could rename/remove any of the modules this module reads.
 dependencies = [
     "PyYAML>=6.0",
     # <0.13.3 matches this repo's own environment cap (root pixi.toml pins
@@ -28,6 +30,7 @@ dependencies = [
     "tomlkit>=0.13,<0.13.3",
     "psutil>=7.2.2",
     "jsonschema>=4.25",
+    "bmad-loop>=0.9.0,<0.10",
 ]
 
 [project.scripts]
@@ -73,3 +76,17 @@ source_modules = [
     "pyforge.marshal.supervisor",
 ]
 forbidden_modules = ["bmad_loop"]
+# Story 1.7: import-linter's default (false) checks INDIRECT chains too, so
+# the moment harness_bmadloop.py gained a real `import bmad_loop...` (Story
+# 1.10 only ever rendered a vendored template -- no such import existed
+# until this story), the pre-existing cli.config -> harness_bmadloop edge
+# (Story 1.10's write_policy_toml wiring) became a "cli imports bmad_loop"
+# violation under strict/transitive checking, even though cli.config never
+# writes that import itself. AD-3's own wording ("only ... may invoke the
+# harness binary, import its package") is about DIRECT import authorship,
+# not about whether a caller may use harness_bmadloop.py's public API (the
+# whole point of the seam) -- true regardless of indirect-checking, so this
+# flag makes the contract's enforcement match its stated intent rather than
+# loosen it: cli/core/ports/supervisor still may never themselves write
+# `import bmad_loop`.
+allow_indirect_imports = true

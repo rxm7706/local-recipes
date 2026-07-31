@@ -34,3 +34,7 @@ pyyaml = ">=6.0"
 tomlkit = ">=0.13,<0.13.3"
 psutil = ">=7.2.2"
 jsonschema = ">=4.25"
+# Story 1.7: adapters/harness_bmadloop.py now lazily imports bmad_loop's own
+# multiplexer/profile/bmadconfig/sprintstatus modules -- see pyproject.toml's
+# matching entry for why the range is >=0.9.0,<0.10.
+bmad-loop = ">=0.9.0,<0.10"
