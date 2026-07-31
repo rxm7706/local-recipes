@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: marshal
-# stories: 53
+# stories: 101
 development_status:
   1-1-package-spine-verdict-lattice-findings-registry-and-the-meta-tests-that-enforce-them: done
   1-10-render-the-harness-policy-from-the-canonical-effectivepolicy: done
@@ -20,10 +20,29 @@ development_status:
   1-3-layered-policy-composition-with-provenance-and-validation: done
   1-4-provision-a-loop-home: done
   1-5-single-sourced-tier-3-store-via-backlink: done
-  1-6-isolation-verification-and-home-enumeration: done
+  1-6-isolation-verification-and-home-enumeration: backlog
   1-7-preflight-adapter-config-seeding-and-first-run-acknowledgement: backlog
   1-8-teardown-that-refuses-to-destroy-work: backlog
   1-9-packaging-distribution-and-version-reporting: backlog
+  10-1-copier-engine-wrapper-the-single-seam: backlog
+  10-2-state-schema-and-the-atomic-store: backlog
+  10-3-the-apply-runner-transactional-guarded: backlog
+  10-4-preconditions-refusals-and-skips: backlog
+  10-5-genesis-check: backlog
+  10-6-genesis-adopt: backlog
+  10-7-genesis-init: backlog
+  11-1-neutral-contract-and-agent-adapter-fan-out: backlog
+  11-2-projects-md-index-and-artifact-symlink-derivation: backlog
+  11-3-migration-registry-and-runner: backlog
+  11-4-genesis-update-two-phase: backlog
+  11-5-referenced-dependency-verification-and-doctor-delegation: backlog
+  11-6-genesis-explain-and-genesis-version: backlog
+  12-1-full-pixi-wiring-distribution-and-repo-gate-compliance: backlog
+  12-2-the-local-recipes-empty-plan-oracle: backlog
+  12-3-offline-operation-and-the-egress-counter: backlog
+  12-4-pattern-meta-tests-and-the-never-write-proof: backlog
+  12-5-cli-contract-idempotence-harness-and-performance-gates: backlog
+  12-6-readme-adoption-guide-and-the-finding-remedy-reference: backlog
   2-1-standalone-verify-command-runner-project-scoped: backlog
   2-2-verdict-aggregation-that-never-false-greens: backlog
   2-3-frozen-surface-scope-check-narrowing-only: backlog
@@ -55,8 +74,31 @@ development_status:
   6-6-the-conformance-matrix: backlog
   6-7-entry-file-family-drift-check-detect-only: backlog
   6-8-upstream-contribution-register: backlog
+  7-1-package-skeleton-as-a-pixi-workspace-member: backlog
+  7-2-error-taxonomy-and-exit-codes: backlog
+  7-3-the-fs-write-primitive-and-the-never-write-guard: backlog
+  7-4-manifest-schema-loader-and-model-version-ranges: backlog
+  7-5-the-v1-extraction-manifest: backlog
+  7-6-spike-0-copier-api-fit: backlog
+  8-1-marker-grammar-and-the-per-format-registry: backlog
+  8-2-region-parser-span-discovery-nesting-rejection-fence-awareness: backlog
+  8-3-span-substitution-the-update-primitive: backlog
+  8-4-anchor-resolution-and-region-insertion: backlog
+  8-5-marker-deletion-as-a-sanctioned-opt-out: backlog
+  9-1-findings-model-severity-types-remedies: backlog
+  9-2-repo-inventory-walker-and-artifact-classification: backlog
+  9-3-content-hashing-for-managed-files-and-regions: backlog
+  9-4-legacy-convention-detection: backlog
+  9-5-manifest-coverage-check: backlog
+  9-6-plan-and-action-types-repo-fingerprint-and-the-plan-builder: backlog
   epic-1: backlog
   epic-1-retrospective: optional
+  epic-10: backlog
+  epic-10-retrospective: optional
+  epic-11: backlog
+  epic-11-retrospective: optional
+  epic-12: backlog
+  epic-12-retrospective: optional
   epic-2: backlog
   epic-2-retrospective: optional
   epic-3: backlog
@@ -67,3 +109,9 @@ development_status:
   epic-5-retrospective: optional
   epic-6: backlog
   epic-6-retrospective: optional
+  epic-7: backlog
+  epic-7-retrospective: optional
+  epic-8: backlog
+  epic-8-retrospective: optional
+  epic-9: backlog
+  epic-9-retrospective: optional
