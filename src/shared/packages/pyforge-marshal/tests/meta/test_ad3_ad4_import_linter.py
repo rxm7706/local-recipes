@@ -140,6 +140,37 @@ def test_root_package_init_carries_no_imports():
     )
 
 
+def test_harness_bmadloop_imports_bmad_loop_lazily_only():
+    """``adapters/harness_bmadloop.py``'s module docstring promises
+    ``marshal config``/``init``/``homes`` keep working when the installed
+    ``bmad_loop`` is broken or absent -- which requires every ``bmad_loop``
+    import in that module to live INSIDE a function body, never at module
+    top level (``cli/init.py`` imports the module at its own import time).
+    The AD-3 contract cannot enforce this (``allow_indirect_imports`` aside,
+    it governs WHO may import ``bmad_loop``, not WHEN), so a future
+    top-level import would pass import-linter and brick every CLI command at
+    import time (review finding, second pass). AST check: no ``Import``/
+    ``ImportFrom`` naming ``bmad_loop`` in the module body's top level."""
+    import ast
+
+    module_path = _installed_package_dir() / "adapters" / "harness_bmadloop.py"
+    tree = ast.parse(module_path.read_text(encoding="utf-8"), filename=str(module_path))
+    offenders = []
+    for node in tree.body:  # top-level statements only -- nested defs are the lazy path
+        if isinstance(node, ast.Import):
+            if any(alias.name.split(".")[0] == "bmad_loop" for alias in node.names):
+                offenders.append(node.lineno)
+        elif isinstance(node, ast.ImportFrom):
+            if node.module is not None and node.module.split(".")[0] == "bmad_loop":
+                offenders.append(node.lineno)
+    assert not offenders, (
+        f"harness_bmadloop.py imports bmad_loop at module top level at "
+        f"line(s) {offenders} -- every bmad_loop import must stay lazy "
+        "(inside the method that needs it) so the marshal CLI keeps working "
+        "when bmad_loop is broken or absent"
+    )
+
+
 def test_lint_imports_passes_against_the_installed_package():
     if shutil.which("lint-imports") is None:
         pytest.fail(
