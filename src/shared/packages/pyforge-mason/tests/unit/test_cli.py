@@ -1,6 +1,13 @@
-"""Story 1.2 — the noun -> verb tree, global flags, and exit-code ownership."""
+"""Story 1.2 — the noun -> verb tree, global flags, and exit-code ownership.
+
+Story 1.4 extends this file with `doctor`'s dual-output-format contract:
+its stub result now flows through `render.write` (AD-8) instead of a raw
+stderr `print()`, so the doctor tests below assert on stdout, not stderr.
+"""
 
 from __future__ import annotations
+
+import json
 
 import pytest
 
@@ -55,11 +62,58 @@ def test_unrecognized_verb_is_a_native_argparse_usage_error(capsys):
     assert "sometypo" in err
 
 
-def test_doctor_invocation_stubs_and_succeeds(capsys):
+def test_doctor_invocation_stubs_and_succeeds(monkeypatch, capsys):
+    """Story 1.4: the stub result now goes through `render.write` to
+    stdout (AD-8) -- stderr carries no diagnostic for a successful run.
+    Also confirms the default format is text, not JSON: `--format text` is
+    the documented default, and the substring checks below would still
+    pass on a JSON payload containing the same words, so the shape itself
+    is asserted too."""
+    # An ambient MASON_FORMAT=json would legitimately select JSON here --
+    # this test asserts the no-flag/no-env default, so it must be hermetic.
+    monkeypatch.delenv("MASON_FORMAT", raising=False)
     assert main(["doctor"]) == EXIT_OK
     out = capsys.readouterr()
-    assert "doctor" in out.err
-    assert out.out == ""
+    assert "doctor" in out.out
+    assert "not implemented yet" in out.out
+    assert out.err == ""
+    assert not out.out.lstrip().startswith("{")
+    with pytest.raises(json.JSONDecodeError):
+        json.loads(out.out)
+
+
+def test_doctor_json_format_emits_the_envelope(capsys):
+    assert main(["doctor", "--format", "json"]) == EXIT_OK
+    out = capsys.readouterr()
+    assert out.err == ""
+    doc = json.loads(out.out)
+    assert set(doc) == {"schema_version", "command", "status", "data", "errors"}
+    assert doc["command"] == "doctor"
+    assert doc["status"] == "ok"
+    assert doc["errors"] == []
+    assert "not implemented yet" in doc["data"]["message"]
+
+
+def test_doctor_env_var_selects_json_format_without_the_flag(monkeypatch, capsys):
+    monkeypatch.setenv("MASON_FORMAT", "json")
+    assert main(["doctor"]) == EXIT_OK
+    out = capsys.readouterr()
+    assert out.err == ""
+    doc = json.loads(out.out)
+    assert doc["command"] == "doctor"
+    assert "not implemented yet" in doc["data"]["message"]
+
+
+def test_doctor_invalid_env_format_falls_back_to_text(monkeypatch, capsys):
+    """`--format`'s `choices=("text","json")` validates the flag, but
+    `MASON_FORMAT` bypasses argparse entirely -- an out-of-choices value
+    must fall back to the text default, not crash."""
+    monkeypatch.setenv("MASON_FORMAT", "bogus")
+    assert main(["doctor"]) == EXIT_OK
+    out = capsys.readouterr()
+    assert out.err == ""
+    assert not out.out.lstrip().startswith("{")
+    assert "doctor" in out.out
 
 
 def test_doctor_help_works(capsys):
