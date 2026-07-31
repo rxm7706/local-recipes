@@ -27,7 +27,7 @@ EXIT_INTERNAL = 70       # EX_SOFTWARE — a crash, never conflated with EXIT_FA
 DUTIES: tuple[str, ...] = ("keys", "deploy", "provision", "budget")
 
 _HELP = {
-    "keys": "credential lifecycle — issue, rotate, revoke, audit",
+    "keys": "credential lifecycle — encrypt/decrypt (rotation and audit land in later stories)",
     "deploy": "deployment duties",
     "provision": "environment and substrate provisioning",
     "budget": "cost budgeting and enforcement",

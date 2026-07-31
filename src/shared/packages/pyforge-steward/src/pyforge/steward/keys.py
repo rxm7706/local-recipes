@@ -27,6 +27,7 @@ from __future__ import annotations
 import argparse
 import ast
 import re
+import stat
 import subprocess
 import sys
 import tokenize
@@ -347,19 +348,41 @@ def _find_credential_assignments(stmt: ast.stmt, func_name: str) -> list[DriftFi
 # the `KeysDuty` boundary — matching `scan_source`'s `SyntaxError` precedent
 # of not swallowing errors at the primitive level.
 
+def _reject_stdio_sentinel(input_path: str | Path, output: str | Path) -> None:
+    """Refuse `age`'s `-` stdin/stdout sentinel for either path.
+
+    `-` survives the `--` separator (it is a positional value `age`
+    special-cases, not a flag), but this wrapper closes stdin and discards
+    captured stdout — so `-` as input would encrypt the empty DEVNULL stream
+    and `-` as output would report success while the real payload vanished
+    into the discarded capture. Both are silent data loss; raise instead.
+    """
+    for role, value in (("input", input_path), ("output", output)):
+        if str(value) == "-":
+            raise ValueError(
+                f"{role} path '-' means stdin/stdout to age, which this "
+                "wrapper closes/discards — pass a real path (e.g. ./-)"
+            )
+
+
 def encrypt_file(input_path: str | Path, *, recipient: str, output: str | Path) -> None:
     """`age --encrypt` `input_path` to `output` for `recipient`.
 
     Raises `subprocess.CalledProcessError` on a non-zero `age` exit (e.g. a
-    malformed recipient) — propagated, not swallowed. The `--` separator keeps
-    a flag-shaped filename (`-r`) from being parsed as an `age` flag, and the
-    closed stdin keeps `age`'s stdin fallback from hanging an unattended run.
+    malformed recipient) — propagated, not swallowed — and `ValueError` for a
+    `-` input/output path (see `_reject_stdio_sentinel`). The `--` separator
+    keeps a flag-shaped filename (`-r`) from being parsed as an `age` flag,
+    the closed stdin keeps `age`'s stdin fallback from hanging an unattended
+    run, and the lenient capture decode keeps a non-UTF-8 byte on `age`'s
+    stderr (e.g. an echoed filename) from crashing the error path itself.
     """
+    _reject_stdio_sentinel(input_path, output)
     subprocess.run(
         ["age", "--encrypt", "--recipient", recipient, "--output", str(output), "--", str(input_path)],
         check=True,
         capture_output=True,
         text=True,
+        errors="replace",
         stdin=subprocess.DEVNULL,
     )
 
@@ -369,14 +392,17 @@ def decrypt_file(input_path: str | Path, *, identity: str | Path, output: str | 
 
     Raises `subprocess.CalledProcessError` on a non-zero `age` exit — most
     notably an identity that does not match any recipient the file was
-    encrypted to (`age: error: no identity matched any of the recipients`).
-    `--` and the closed stdin: same rationale as `encrypt_file`.
+    encrypted to (`age: error: no identity matched any of the recipients`) —
+    and `ValueError` for a `-` input/output path. `--`, the closed stdin, and
+    the lenient capture decode: same rationale as `encrypt_file`.
     """
+    _reject_stdio_sentinel(input_path, output)
     subprocess.run(
         ["age", "--decrypt", "--identity", str(identity), "--output", str(output), "--", str(input_path)],
         check=True,
         capture_output=True,
         text=True,
+        errors="replace",
         stdin=subprocess.DEVNULL,
     )
 
@@ -417,12 +443,17 @@ def scan_file_for_secrets(path: str | Path) -> list[PlaintextSecretFinding]:
     `scan_file`'s ``tokenize.open`` above — this primitive scans arbitrary
     file content, not just Python source, so a binary `.age` ciphertext
     sitting in the same directory must not crash the scan with a decode
-    error.
+    error. NUL bytes are stripped before matching so a UTF-16-encoded secret
+    (interleaved NULs — e.g. a PowerShell-redirected key file) cannot
+    silently scan as clean; other non-UTF-8 encodings remain out of scope.
+    Lines split on ``\\n`` only (not ``str.splitlines``, which also splits on
+    form feed/NEL/LS/PS) so a finding's `line` matches `grep -n`/editor
+    numbering.
     """
     path = Path(path)
-    text = path.read_bytes().decode("utf-8", errors="replace")
+    text = path.read_bytes().decode("utf-8", errors="replace").replace("\x00", "")
     findings: list[PlaintextSecretFinding] = []
-    for lineno, line in enumerate(text.splitlines(), start=1):
+    for lineno, line in enumerate(text.split("\n"), start=1):
         for pattern_name, pattern in _SECRET_PATTERNS:
             if pattern.search(line):
                 findings.append(
@@ -446,13 +477,17 @@ def scan_directory_for_secrets(directory: str | Path) -> list[PlaintextSecretFin
     the top level. A directory with no secret-shaped content returns ``[]``.
 
     Raises `NotADirectoryError` if `directory` doesn't exist or isn't a
-    directory, and propagates any `OSError` from the walk or a file read
-    (e.g. an unreadable subtree) — an audit primitive must never let a
-    typo'd path or a permission wall silently read as "clean" when it never
-    actually scanned everything. `Path.walk` (not ``rglob``) because the
-    glob machinery swallows per-directory `PermissionError`, and its
-    symlink-traversal default changed across 3.12/3.13; `walk` propagates
-    via ``on_error`` and never descends into directory symlinks, uniformly.
+    directory, and propagates any `OSError` from the walk, an entry `stat`,
+    or a file read (e.g. an unreadable subtree, a dangling symlink) — an
+    audit primitive must never let a typo'd path or a permission wall
+    silently read as "clean" when it never actually scanned everything.
+    `Path.walk` (not ``rglob``) because the glob machinery swallows
+    per-directory `PermissionError`, and its symlink-traversal default
+    changed across 3.12/3.13; `walk` propagates via ``on_error`` and (pinned
+    explicitly) never descends into directory symlinks. File symlinks are
+    still followed — the follow/no-follow policy is a Story 1.6 decision
+    (see deferred-work) — but one whose target can't be stat'd raises
+    instead of silently skipping.
     """
     directory = Path(directory)
     if not directory.is_dir():
@@ -462,11 +497,16 @@ def scan_directory_for_secrets(directory: str | Path) -> list[PlaintextSecretFin
         raise error
 
     findings: list[PlaintextSecretFinding] = []
-    for dirpath, dirnames, filenames in directory.walk(on_error=_propagate):
+    for dirpath, dirnames, filenames in directory.walk(on_error=_propagate, follow_symlinks=False):
         dirnames.sort()
         for name in sorted(filenames):
             path = dirpath / name
-            if path.is_file():
+            # stat(), not is_file(): is_file() swallows OSError, so a dangling
+            # symlink or one into an unreadable tree would silently scan as
+            # "clean" — the exact failure mode this contract forbids. The
+            # S_ISREG check still skips non-regular files (FIFOs, sockets) so
+            # a blocking special file can't hang the scan.
+            if stat.S_ISREG(path.stat().st_mode):
                 findings.extend(scan_file_for_secrets(path))
     return findings
 
@@ -487,9 +527,10 @@ class KeysDuty:
     unknown verb with a usage error before dispatch — so the
     ``verb not in _KEYS_VERBS`` guard otherwise protects programmatic
     callers handing this adapter an arbitrary namespace. `age` failing
-    (bad identity, bad file) is caught here as `subprocess.CalledProcessError`
-    and reported as a duty-level failure — never conflated with an internal
-    crash (AD-8: that boundary is `cli.main()`'s alone).
+    (bad identity, bad file) is caught here as `subprocess.CalledProcessError`,
+    and a rejected `-` sentinel path as `ValueError` — both reported as
+    duty-level failures (bad input, not a broken Steward), never conflated
+    with an internal crash (AD-8: that boundary is `cli.main()`'s alone).
     """
 
     name = "keys"
@@ -506,6 +547,8 @@ class KeysDuty:
                 encrypt_file(ns.file, recipient=ns.recipient, output=ns.output)
             else:
                 decrypt_file(ns.file, identity=ns.identity, output=ns.output)
+        except ValueError as exc:
+            return DutyResult(ok=False, summary=f"keys {verb}: {exc}")
         except subprocess.CalledProcessError as exc:
             stderr = (exc.stderr or "").strip()
             return DutyResult(

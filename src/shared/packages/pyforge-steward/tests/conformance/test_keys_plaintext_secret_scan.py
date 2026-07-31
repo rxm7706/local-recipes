@@ -8,6 +8,8 @@ wires this into `steward keys audit`; this story only proves the primitive.
 
 from __future__ import annotations
 
+import os
+import sys
 from pathlib import Path
 
 import pytest
@@ -48,6 +50,10 @@ def test_nonexistent_directory_raises_instead_of_silently_reporting_clean(tmp_pa
         scan_directory_for_secrets(tmp_path / "does-not-exist")
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="chmod 000 does not restrict Windows")
+@pytest.mark.skipif(
+    hasattr(os, "geteuid") and os.geteuid() == 0, reason="chmod 000 does not restrict root"
+)
 def test_unreadable_subdirectory_raises_instead_of_silently_reporting_clean(tmp_path):
     locked = tmp_path / "locked"
     locked.mkdir()
@@ -90,3 +96,28 @@ def test_age_identity_and_pem_header_patterns_are_each_detected(tmp_path):
 
 def test_single_file_scan_agrees_with_the_directory_scan_for_the_fixture():
     assert scan_file_for_secrets(FIXTURE_FILE) == scan_directory_for_secrets(FIXTURE_DIR)
+
+
+def test_utf16_encoded_secret_is_still_detected(tmp_path):
+    """Interleaved UTF-16 NUL bytes must not defeat the patterns — a
+    PowerShell-redirected key file is a routine Windows artifact, and a
+    committed UTF-16 secret scanning as clean is a false negative in the
+    exact primitive whose contract forbids silent-clean."""
+    (tmp_path / "utf16.txt").write_text(
+        'ANTHROPIC_API_KEY = "sk-ant-api03-TEST00FAKE00PLACEHOLDER00NOTREAL"\n',
+        encoding="utf-16",
+    )
+
+    findings = scan_directory_for_secrets(tmp_path)
+
+    assert [f.pattern_name for f in findings] == ["anthropic-api-key"]
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="symlink creation needs privileges on Windows")
+def test_dangling_symlink_raises_instead_of_silently_reporting_clean(tmp_path):
+    """`is_file()` swallowed the OSError from an unresolvable symlink, letting
+    it scan as clean; the stat()-based walk must raise instead."""
+    (tmp_path / "dangling.txt").symlink_to(tmp_path / "does-not-exist")
+
+    with pytest.raises(FileNotFoundError):
+        scan_directory_for_secrets(tmp_path)

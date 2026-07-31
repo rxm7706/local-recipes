@@ -125,6 +125,35 @@ def test_keysduty_decrypt_with_wrong_identity_projects_to_exit_failed(
     assert rc == EXIT_FAILED
 
 
+def test_dash_sentinel_paths_are_rejected_not_silently_lost(tmp_path, identity):
+    """age's `-` means stdin/stdout — under this wrapper's closed stdin and
+    discarded capture it would encrypt the empty DEVNULL stream (input `-`)
+    or report success while the payload vanished into the discarded capture
+    (output `-`), so both primitives refuse it up front."""
+    key_path, pubkey = identity
+    plaintext = tmp_path / "plaintext.txt"
+    plaintext.write_bytes(b"synthetic payload")
+
+    with pytest.raises(ValueError):
+        encrypt_file("-", recipient=pubkey, output=tmp_path / "out.age")
+    with pytest.raises(ValueError):
+        encrypt_file(plaintext, recipient=pubkey, output="-")
+    with pytest.raises(ValueError):
+        decrypt_file("-", identity=key_path, output=tmp_path / "back.txt")
+    with pytest.raises(ValueError):
+        decrypt_file(tmp_path / "out.age", identity=key_path, output="-")
+
+
+def test_dash_sentinel_via_the_cli_projects_to_exit_failed(tmp_path, identity):
+    _key_path, pubkey = identity
+    plaintext = tmp_path / "plaintext.txt"
+    plaintext.write_bytes(b"synthetic payload")
+
+    rc = main(["keys", "encrypt", str(plaintext), "--recipient", pubkey, "--output", "-"])
+
+    assert rc == EXIT_FAILED
+
+
 def test_bare_keys_names_the_available_verbs_and_still_exits_ok(capsys):
     rc = main(["keys"])
     out = capsys.readouterr().out
