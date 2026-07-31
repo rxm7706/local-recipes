@@ -378,20 +378,10 @@ window.DASHBOARD_DATA = {
         "E5",
         "E6"
       ],
-      "inflight": {
-        "key": "1.8",
-        "title": "Teardown that refuses to destroy work",
-        "phase": "dev",
-        "attempt": "1",
-        "startEpoch": 1785523546,
-        "median": 104,
-        "lo": 62,
-        "hi": 450,
-        "phaseAsOf": "2026-07-31 19:34 UTC"
-      },
+      "inflight": null,
       "velocity": {
         "derived": true,
-        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 8 of 41 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
+        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 10 of 41 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
         "bars": [
           [
             "1.1",
@@ -422,13 +412,21 @@ window.DASHBOARD_DATA = {
             110
           ],
           [
+            "1.8",
+            92
+          ],
+          [
+            "1.9",
+            80
+          ],
+          [
             "1.10",
             62
           ]
         ],
         "foot": [
           [
-            "~104 min",
+            "~94 min",
             "median / story",
             "var(--done)"
           ],
@@ -438,12 +436,12 @@ window.DASHBOARD_DATA = {
             ""
           ],
           [
-            "8/41",
+            "10/41",
             "stories complete",
             "var(--done)"
           ],
           [
-            "33",
+            "31",
             "remaining",
             ""
           ]
@@ -452,9 +450,9 @@ window.DASHBOARD_DATA = {
       "timing": {
         "derived": true,
         "metric": "active agent-compute per story (dev + review; excludes gate-pause wait) — from bmad-loop run journals",
-        "total": 1171,
-        "totalLabel": "~19.5 h active compute",
-        "note": "Derived from 8 measured stories; a story still in flight contributes only its closed sessions.",
+        "total": 1343,
+        "totalLabel": "~22.4 h active compute",
+        "note": "Derived from 10 measured stories; a story still in flight contributes only its closed sessions.",
         "perStory": {
           "1.1": 165,
           "1.2": 65,
@@ -463,15 +461,17 @@ window.DASHBOARD_DATA = {
           "1.5": 69,
           "1.6": 450,
           "1.7": 110,
+          "1.8": 92,
+          "1.9": 80,
           "1.10": 62
         },
         "epicMin": {
-          "E1": 1171
+          "E1": 1343
         }
       },
       "lineState": {
-        "state": "in flight",
-        "at": "1.8"
+        "state": "paused",
+        "at": "2.1"
       },
       "epics": [
         {
@@ -520,12 +520,12 @@ window.DASHBOARD_DATA = {
             ],
             [
               "1.8",
-              "active",
+              "done",
               "Teardown that refuses to destroy work"
             ],
             [
               "1.9",
-              "pending",
+              "done",
               "Packaging, distribution, and version reporting"
             ]
           ]
@@ -2981,7 +2981,7 @@ window.DASHBOARD_DATA = {
       }
     }
   },
-  "snapshot": "<span>2026-07-31 19:34 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-07-31 21:54 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -3070,6 +3070,14 @@ window.DASHBOARD_DATA = {
       }
     },
     {
+      "slug": "durable-runs",
+      "title": "Durable runs — work survives the machine that made it",
+      "status": "dreamt",
+      "owner": "marshal",
+      "type": "dream",
+      "chain": {}
+    },
+    {
       "slug": "enterprise-airgap",
       "title": "Firewalled Factory",
       "status": "realized",
@@ -3139,6 +3147,14 @@ window.DASHBOARD_DATA = {
       }
     },
     {
+      "slug": "one-front-door",
+      "title": "One front door — Marshal drives everything BMAD installs",
+      "status": "dreamt",
+      "owner": "marshal",
+      "type": "dream",
+      "chain": {}
+    },
+    {
       "slug": "packaging-factory",
       "title": "The Packaging Factory",
       "status": "realized",
@@ -3148,6 +3164,14 @@ window.DASHBOARD_DATA = {
         "deck": "presentations/pyforge-mason",
         "spec": "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-packaging-factory"
       }
+    },
+    {
+      "slug": "pr-lifecycle",
+      "title": "PR lifecycle — a story lands itself",
+      "status": "dreamt",
+      "owner": "marshal",
+      "type": "dream",
+      "chain": {}
     },
     {
       "slug": "presenton-pixi-image",
@@ -4295,9 +4319,9 @@ window.DASHBOARD_DATA = {
       "retro": null
     },
     "sound": 0,
-    "live": 30,
+    "live": 33,
     "reached": 1,
-    "gaps": 48,
+    "gaps": 54,
     "findings": 24,
     "rows": [
       {
@@ -4924,7 +4948,7 @@ window.DASHBOARD_DATA = {
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "8/41",
+        "progress": "10/41",
         "complete": 13,
         "of": 13
       },
@@ -6790,6 +6814,111 @@ window.DASHBOARD_DATA = {
         "of": 4
       },
       {
+        "label": "durable-runs",
+        "slug": "durable-runs",
+        "project": "pyforge-marshal",
+        "dream": "durable-runs",
+        "owner": "marshal",
+        "stages": {
+          "dream": "2026-07-31",
+          "deck": "",
+          "spec": "",
+          "research": "2026-07-16",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "updatedAt": {
+          "dream": "2026-07-31",
+          "deck": "",
+          "spec": "",
+          "research": "2026-07-25",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "sub": {
+          "research": {
+            "have": {
+              "domain": true,
+              "market": true,
+              "technical": true
+            },
+            "n": 3,
+            "of": 3,
+            "missing": [],
+            "inherited": true
+          },
+          "deck": {
+            "have": {
+              "prototype": false,
+              "exec": false,
+              "infographic": false,
+              "marp": false,
+              "standalone": false,
+              "pptx": false
+            },
+            "n": 0,
+            "of": 6,
+            "missing": [
+              "exec",
+              "infographic",
+              "marp",
+              "pptx",
+              "prototype",
+              "standalone"
+            ]
+          }
+        },
+        "archived": false,
+        "dreamStatus": "dreamt",
+        "ownerDream": "",
+        "noDream": false,
+        "unowned": false,
+        "backfilled": false,
+        "openQuestions": 0,
+        "overtaken": false,
+        "na": [
+          "ux"
+        ],
+        "required": [
+          "dream",
+          "deck",
+          "spec",
+          "research"
+        ],
+        "gaps": [
+          "deck",
+          "spec"
+        ],
+        "partial": [],
+        "staleBy": [],
+        "furthest": "research",
+        "updated": "2026-07-31",
+        "age": 0,
+        "stale": false,
+        "version": "",
+        "progress": "",
+        "complete": 2,
+        "of": 4
+      },
+      {
         "label": "factory-console",
         "slug": "factory-console",
         "project": "pyforge-marshal",
@@ -7024,7 +7153,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-07-29",
           "deck": "",
-          "spec": "2026-07-29",
+          "spec": "2026-07-31T21:05",
           "research": "2026-07-25",
           "brief": "",
           "prd": "2026-07-25",
@@ -7104,7 +7233,7 @@ window.DASHBOARD_DATA = {
             "kind": "feeds",
             "stage": "spec",
             "than": "prd",
-            "at": "2026-07-29",
+            "at": "2026-07-31T21:05",
             "other": "2026-07-25"
           }
         ],
@@ -7210,6 +7339,216 @@ window.DASHBOARD_DATA = {
         "gaps": [
           "dream",
           "deck"
+        ],
+        "partial": [],
+        "staleBy": [],
+        "furthest": "research",
+        "updated": "2026-07-31",
+        "age": 0,
+        "stale": false,
+        "version": "",
+        "progress": "",
+        "complete": 2,
+        "of": 4
+      },
+      {
+        "label": "one-front-door",
+        "slug": "one-front-door",
+        "project": "pyforge-marshal",
+        "dream": "one-front-door",
+        "owner": "marshal",
+        "stages": {
+          "dream": "2026-07-31",
+          "deck": "",
+          "spec": "",
+          "research": "2026-07-16",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "updatedAt": {
+          "dream": "2026-07-31",
+          "deck": "",
+          "spec": "",
+          "research": "2026-07-25",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "sub": {
+          "research": {
+            "have": {
+              "domain": true,
+              "market": true,
+              "technical": true
+            },
+            "n": 3,
+            "of": 3,
+            "missing": [],
+            "inherited": true
+          },
+          "deck": {
+            "have": {
+              "prototype": false,
+              "exec": false,
+              "infographic": false,
+              "marp": false,
+              "standalone": false,
+              "pptx": false
+            },
+            "n": 0,
+            "of": 6,
+            "missing": [
+              "exec",
+              "infographic",
+              "marp",
+              "pptx",
+              "prototype",
+              "standalone"
+            ]
+          }
+        },
+        "archived": false,
+        "dreamStatus": "dreamt",
+        "ownerDream": "",
+        "noDream": false,
+        "unowned": false,
+        "backfilled": false,
+        "openQuestions": 0,
+        "overtaken": false,
+        "na": [
+          "ux"
+        ],
+        "required": [
+          "dream",
+          "deck",
+          "spec",
+          "research"
+        ],
+        "gaps": [
+          "deck",
+          "spec"
+        ],
+        "partial": [],
+        "staleBy": [],
+        "furthest": "research",
+        "updated": "2026-07-31",
+        "age": 0,
+        "stale": false,
+        "version": "",
+        "progress": "",
+        "complete": 2,
+        "of": 4
+      },
+      {
+        "label": "pr-lifecycle",
+        "slug": "pr-lifecycle",
+        "project": "pyforge-marshal",
+        "dream": "pr-lifecycle",
+        "owner": "marshal",
+        "stages": {
+          "dream": "2026-07-31",
+          "deck": "",
+          "spec": "",
+          "research": "2026-07-16",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "updatedAt": {
+          "dream": "2026-07-31",
+          "deck": "",
+          "spec": "",
+          "research": "2026-07-25",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "sub": {
+          "research": {
+            "have": {
+              "domain": true,
+              "market": true,
+              "technical": true
+            },
+            "n": 3,
+            "of": 3,
+            "missing": [],
+            "inherited": true
+          },
+          "deck": {
+            "have": {
+              "prototype": false,
+              "exec": false,
+              "infographic": false,
+              "marp": false,
+              "standalone": false,
+              "pptx": false
+            },
+            "n": 0,
+            "of": 6,
+            "missing": [
+              "exec",
+              "infographic",
+              "marp",
+              "pptx",
+              "prototype",
+              "standalone"
+            ]
+          }
+        },
+        "archived": false,
+        "dreamStatus": "dreamt",
+        "ownerDream": "",
+        "noDream": false,
+        "unowned": false,
+        "backfilled": false,
+        "openQuestions": 0,
+        "overtaken": false,
+        "na": [
+          "ux"
+        ],
+        "required": [
+          "dream",
+          "deck",
+          "spec",
+          "research"
+        ],
+        "gaps": [
+          "deck",
+          "spec"
         ],
         "partial": [],
         "staleBy": [],
@@ -8229,9 +8568,9 @@ window.DASHBOARD_DATA = {
         "name": "spec-surface",
         "task": "spec-surface-check",
         "guards": "every tracked file under a Spec surface",
-        "state": "green",
-        "findings": 0,
-        "verdict": "OK: every tracked file governed or allowlisted; no drift.",
+        "state": "drift",
+        "findings": 23,
+        "verdict": "FINDINGS (23):",
         "runbook": ""
       },
       {
@@ -8254,8 +8593,32 @@ window.DASHBOARD_DATA = {
   "backlog": {
     "rows": [
       {
+        "slug": "durable-runs",
+        "title": "Durable runs — work survives the machine that made it",
+        "status": "dreamt",
+        "owner": "marshal",
+        "blockedOn": "",
+        "chain": {}
+      },
+      {
         "slug": "fidelity-enforcement",
         "title": "Fidelity enforcement — a contract is only a contract if something fails against it",
+        "status": "dreamt",
+        "owner": "marshal",
+        "blockedOn": "",
+        "chain": {}
+      },
+      {
+        "slug": "one-front-door",
+        "title": "One front door — Marshal drives everything BMAD installs",
+        "status": "dreamt",
+        "owner": "marshal",
+        "blockedOn": "",
+        "chain": {}
+      },
+      {
+        "slug": "pr-lifecycle",
+        "title": "PR lifecycle — a story lands itself",
         "status": "dreamt",
         "owner": "marshal",
         "blockedOn": "",
@@ -8338,7 +8701,7 @@ window.DASHBOARD_DATA = {
     ],
     "blocked": 1,
     "byOwner": {
-      "marshal": 2,
+      "marshal": 5,
       "herald": 1,
       "scribe": 1,
       "atlas": 3,
@@ -8462,17 +8825,17 @@ window.DASHBOARD_DATA = {
       },
       {
         "station": "marshal",
-        "total": 9,
+        "total": 12,
         "counts": {
-          "dreamt": 1,
+          "dreamt": 4,
           "pitched": 0,
           "specified": 1,
           "realized": 2,
           "archived": 1,
           "practice": 4
         },
-        "line": "in flight 1.8",
-        "load": 2,
+        "line": "paused 2.1",
+        "load": 5,
         "blocked": 0,
         "dreams": [
           {
@@ -8490,8 +8853,29 @@ window.DASHBOARD_DATA = {
             "blockedOn": ""
           },
           {
+            "slug": "durable-runs",
+            "title": "Durable runs — work survives the machine that made it",
+            "status": "dreamt",
+            "type": "dream",
+            "blockedOn": ""
+          },
+          {
             "slug": "fidelity-enforcement",
             "title": "Fidelity enforcement — a contract is only a contract if something fails against it",
+            "status": "dreamt",
+            "type": "dream",
+            "blockedOn": ""
+          },
+          {
+            "slug": "one-front-door",
+            "title": "One front door — Marshal drives everything BMAD installs",
+            "status": "dreamt",
+            "type": "dream",
+            "blockedOn": ""
+          },
+          {
+            "slug": "pr-lifecycle",
+            "title": "PR lifecycle — a story lands itself",
             "status": "dreamt",
             "type": "dream",
             "blockedOn": ""
@@ -10137,23 +10521,16 @@ window.DASHBOARD_DATA = {
   },
   "status": {
     "source": "sprint-status",
-    "running": [
-      {
-        "station": "Marshal",
-        "story": "1.8",
-        "phase": "dev",
-        "startEpoch": 1785523546
-      }
-    ],
+    "running": [],
     "lastShipped": {
-      "station": "scribe",
-      "story": "1.3",
-      "epoch": 1785515691,
-      "sha": "d68187f4b",
-      "subject": "scribe: recover Story 1.3 from a DANGLING commit — 1,102 lines that were one gc from gone (#168)"
+      "station": "marshal",
+      "story": "1.9",
+      "epoch": 1785533914,
+      "sha": "9f4121c85",
+      "subject": "Merge bmad-loop/20260731-115548-f223/1-9-packaging-distribution-and-version-reporting into loop/pyforge-marshal (bmad-lo"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-07-31 19:34 UTC",
-    "generatedEpoch": 1785526443
+    "generatedAt": "2026-07-31 21:54 UTC",
+    "generatedEpoch": 1785534841
   }
 };
