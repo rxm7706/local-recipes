@@ -1485,13 +1485,25 @@
       return p ? p.value : TZ;
     };
     const genEl = document.getElementById("chip-gen");
-    if (genEl && st.generatedEpoch) {
-      genEl.title = "generated " + (st.generatedAt || "") + " (UTC)";
-    }
     const genTxt = st.generatedEpoch
       ? `${localStamp(st.generatedEpoch)} ${zoneAbbr(st.generatedEpoch)}`
       : (st.generatedAt || "—");
-    set("chip-gen", "", `generated <b>${genTxt}</b> · ${st.source || "?"}`);
+    // The raw `--source` flag values are `sprint-status` and `git`. Neither means
+    // anything to a reader — "sprint-status" in particular reads as though it were
+    // a STATUS rather than the name of an input. What the reader needs is which of
+    // the two boards this is, because they answer different questions by design:
+    // `local` sees the gitignored Tier-3 feeds and therefore in-flight state;
+    // `published` is rebuilt on GitHub Pages from git history alone and cannot.
+    const SOURCE_LABEL = { "sprint-status": "local", "git": "published" };
+    const srcTxt = SOURCE_LABEL[st.source] || st.source || "?";
+    if (genEl) {
+      genEl.title = `generated ${st.generatedAt || ""} (UTC)\n`
+        + (st.source === "git"
+            ? "published board — rebuilt on GitHub Pages from git history; cannot see in-flight state"
+            : "local board — reads the gitignored Tier-3 sprint feeds, so it sees in-flight state")
+        + `\n(generator --source ${st.source})`;
+    }
+    set("chip-gen", "", `generated <b>${genTxt}</b> · ${srcTxt}`);
 
     if (!st.runningAvailable) {
       // Honest absence, not silence: in-flight state comes from ~/.bmad-loops and
