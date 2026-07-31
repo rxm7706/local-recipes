@@ -39,7 +39,7 @@ def test_package_pixi_version_matches_pyproject():
 
 
 def test_package_run_dependencies_match_project_dependencies():
-    """Same four deps, same pins, both manifests -- ``python`` excluded (a
+    """Same deps, same pins, both manifests -- ``python`` excluded (a
     conda-side interpreter pin with no pyproject counterpart; pyproject's
     ``requires-python`` covers it)."""
     pyproject_deps: dict[str, str] = {}
