@@ -1,5 +1,7 @@
 """Meta test -- AD-11 write-boundary guard for Story 1.4/1.5's active
-surface (``marshal init``'s loop home, plus Story 1.5's Tier-3 backlink).
+surface (``marshal init``'s loop home, plus Story 1.5's Tier-3 backlink),
+extended by Story 1.6 to prove ``marshal homes`` -- a READ-ONLY command by
+design -- performs literally ZERO writes.
 Unlike the AST-scan meta-tests this package already ships (AD-3/AD-4, AD-7,
 AD-26), this guard is RUNTIME: it injects path-recording fake
 ``VcsPort``/``FsPort`` implementations into ``cli.init.run_init``'s own
@@ -41,13 +43,15 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
-from pyforge.marshal.cli.init import run_init
+from pyforge.marshal.cli.init import run_homes, run_init
 from pyforge.marshal.core.verdict import EXIT_OK
+from pyforge.marshal.ports.vcs import WorktreeEntry
 
 
 class _RecordingVcs:
-    """Fakes just enough of ``VcsPort`` to let ``run_init`` reach every
-    write path, recording the one write (``add_worktree``) it can make."""
+    """Fakes just enough of ``VcsPort`` to let ``run_init``/``run_homes``
+    reach every write path, recording the one write (``add_worktree``)
+    either can make."""
 
     def __init__(self, repo_root: Path) -> None:
         self.repo_root = repo_root
@@ -65,6 +69,14 @@ class _RecordingVcs:
     def add_worktree(self, repo_root: Path, home: Path, branch: str, *, base: str) -> None:
         self.write_paths.append(home)
 
+    def list_worktrees(self, repo_root: Path) -> tuple[WorktreeEntry, ...]:
+        # Story 1.6: a read -- never recorded. One main-checkout entry plus
+        # one loop home, so run_homes has a non-trivial home row to gather.
+        return (
+            WorktreeEntry(path=self.repo_root, branch="main"),
+            WorktreeEntry(path=self.repo_root / "loop-homes" / "acme", branch="loop/acme"),
+        )
+
 
 class _RecordingFs:
     """Fakes ``FsPort`` in full (incl. ``remove_empty_dir``, unreached by
@@ -79,6 +91,12 @@ class _RecordingFs:
         self.write_paths: list[Path] = []
 
     def is_dir(self, path: Path) -> bool:
+        return path in self._dirs
+
+    def exists(self, path: Path) -> bool:
+        # Story 1.6: a read -- never recorded. Nothing exists beyond the
+        # seeded dirs, so run_homes's occupancy probes stay False (benign
+        # absence) and its clean-run exit stays EXIT_OK.
         return path in self._dirs
 
     def read_text(self, path: Path) -> str | None:
@@ -100,6 +118,13 @@ class _RecordingFs:
         self.write_paths.append(path)
         self._dirs.discard(path)
         return True
+
+    def resolve_path(self, path: Path) -> Path:
+        # Story 1.6: a read -- never recorded. This fake carries no
+        # symlinks, so "resolves to itself" is the correct/sufficient
+        # answer for both the main-checkout-identification comparison and
+        # the (absent) Tier-3 backlink comparison run_homes performs.
+        return path
 
 
 def test_every_observed_write_resolves_under_the_home_or_canonical_tier3_store(
@@ -150,3 +175,25 @@ def test_every_observed_write_resolves_under_the_home_or_canonical_tier3_store(
             f"write to {path} does not resolve under the provisioned home "
             f"{home} or the canonical Tier-3 store {canonical_tier3_resolved}"
         )
+
+
+def test_homes_produces_zero_recorded_writes(tmp_path):
+    """Story 1.6: ``marshal homes`` is read-only by construction -- unlike
+    ``run_init`` above, the guarded claim here is not "every write resolves
+    under an allowed target" but "there is no write at all", on BOTH
+    ``VcsPort`` and ``FsPort``, even for a run that discovers a real home
+    and reports it clean."""
+    repo_root = tmp_path / "repo"
+    vcs = _RecordingVcs(repo_root)
+    # The loop home's own directory must exist for this to be "a run that
+    # discovers a real home" (per this test's own docstring) rather than
+    # tripping run_homes's phantom/prunable-worktree guard (Story 1.6
+    # review finding), which would report MRS-HOMES-003 instead of clean.
+    fs = _RecordingFs({repo_root / "loop-homes" / "acme"})
+
+    args = argparse.Namespace(format="text")
+    exit_code = run_homes(args, vcs=vcs, fs=fs)
+
+    assert exit_code == EXIT_OK
+    assert vcs.write_paths == []
+    assert fs.write_paths == []
