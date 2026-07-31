@@ -15,7 +15,7 @@
 # stories: 13
 development_status:
   1-1-package-scaffold-direct-capture-into-team-memory: done
-  1-2-claude-md-wiring-team-memory-loads-automatically: backlog
+  1-2-claude-md-wiring-team-memory-loads-automatically: done
   1-3-promotion-workflow-proposal-then-confirm-team-voice-rewrite: backlog
   1-4-pointer-stub-write-back-idempotent-re-invocation: backlog
   1-5-seed-promotion-the-end-to-end-proof: backlog
