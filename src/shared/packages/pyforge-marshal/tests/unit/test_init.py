@@ -1656,7 +1656,7 @@ def test_preflight_harness_version_major_mismatch_reports_finding_and_blocks(
     assert "MRS-PREFLIGHT-011" not in out
 
 
-def test_preflight_harness_version_unparseable_reports_finding(repo_root, tmp_path, capsys):
+def test_preflight_harness_version_undetermined_reports_finding(repo_root, tmp_path, capsys):
     slug = "acme"
     home = tmp_path / "loop-homes" / slug
     fs = FakeFs(project_dirs={home})
@@ -1669,6 +1669,35 @@ def test_preflight_harness_version_unparseable_reports_finding(repo_root, tmp_pa
     assert exit_code != EXIT_OK
     out = capsys.readouterr().out
     assert "MRS-PREFLIGHT-002" in out
+    # Follow-up-review wording parity with cli/main.py's _version_text: an
+    # undetermined version is named as such, not "outside the supported
+    # range" (it is not a version at all).
+    assert "could not be determined" in out
+
+
+def test_preflight_harness_version_unparseable_string_reports_finding_and_blocks(
+    repo_root, tmp_path, capsys
+):
+    """A harness ``--version`` that prints a non-version string (e.g.
+    ``"dev"``) is undeterminable-in-substance: still MRS-PREFLIGHT-002,
+    still blocking -- and the message says "could not be parsed", not
+    "outside the supported range" (follow-up-review wording parity with
+    cli/main.py's ``_version_text``, which drew the same distinction one
+    pass earlier)."""
+    slug = "acme"
+    home = tmp_path / "loop-homes" / slug
+    fs = FakeFs(project_dirs={home})
+    vcs = FakeVcs(repo_root=repo_root)
+    harness = _converged_harness()
+    harness.version = "dev"
+    _seed_acknowledged(fs, tmp_path, ["claude"])
+
+    exit_code = run_preflight(_preflight_namespace(slug), vcs=vcs, fs=fs, harness=harness)
+    assert exit_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-PREFLIGHT-002" in out
+    assert "could not be parsed" in out
+    assert "outside the supported range" not in out
 
 
 # --- multiplexer unavailable: MRS-PREFLIGHT-003 -----------------------------

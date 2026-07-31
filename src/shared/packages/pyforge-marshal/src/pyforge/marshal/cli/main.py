@@ -32,9 +32,13 @@ declared range (either tier -- see that adapter module's
 ``store_true`` flag checked after parsing completes: an Action fires the
 instant its option string is consumed, DURING ``parse_args``, before
 argparse ever validates a subcommand's required arguments or rejects
-unrecognized trailing tokens -- the same "always wins, regardless of what
-else is on the line" property the built-in ``action="version"`` this
-replaces, and ``--help``, both have. A first-pass ``store_true`` version of
+unrecognized trailing tokens -- the same "always wins" property the
+built-in ``action="version"`` this replaces had. (Scope, unchanged from
+that built-in: the flag is registered on the ROOT parser only, so it wins
+anywhere before a subcommand name hands parsing to a subparser --
+``marshal init --version`` remains that subparser's usage error, unlike
+``--help``, which argparse auto-registers per subparser.) A first-pass
+``store_true`` version of
 this change lost that property (``marshal --version init`` and
 ``marshal --version --bogus`` both started exiting ``2`` instead of
 printing the version, review-caught and reverted) -- ``_VersionAction``
@@ -138,12 +142,15 @@ class _VersionAction(argparse.Action):
     option string is consumed during ``parse_args`` -- before argparse
     checks a subcommand's required arguments or rejects unrecognized
     trailing tokens -- rather than only after a full, successful parse. This
-    is what gives ``--version`` (like ``--help``) its "always wins" property
-    regardless of what else is on the command line; a plain ``store_true``
-    flag checked inside ``main()`` after ``parse_args`` returns does NOT
-    have this property (review-caught: ``marshal --version init`` and
-    ``marshal --version --bogus`` exited ``2`` instead of printing the
-    version under that approach)."""
+    is what gives ``--version`` its "always wins" property for any tokens
+    AFTER it on the root-parser line; once a subcommand name is consumed,
+    the subparser owns the rest and no per-subcommand ``--version`` is
+    registered (same as the built-in action this mirrors -- ``--help``
+    differs only because argparse auto-registers it per subparser). A plain
+    ``store_true`` flag checked inside ``main()`` after ``parse_args``
+    returns does NOT have this property (review-caught: ``marshal --version
+    init`` and ``marshal --version --bogus`` exited ``2`` instead of
+    printing the version under that approach)."""
 
     def __init__(self, option_strings, dest=argparse.SUPPRESS, default=argparse.SUPPRESS, help=None):
         super().__init__(
@@ -151,7 +158,18 @@ class _VersionAction(argparse.Action):
         )
 
     def __call__(self, parser, namespace, values, option_string=None):
-        print(_version_text())
+        try:
+            print(_version_text())
+        except OSError:
+            # With WRITE-THROUGH stdout (a tty, `python -u`) a broken
+            # destination surfaces at this print itself, before
+            # ``parser.exit()`` ever runs -- and an OSError raised here
+            # would escape ``main()``'s SystemExit/KeyboardInterrupt-only
+            # catch, violating its never-raises contract. The
+            # block-buffered case is already covered by ``_drain_stdout()``
+            # at the SystemExit catch; this guard covers the unbuffered
+            # path the same way, with the same suppression.
+            config_cli._suppress_downstream_pipe_close()
         parser.exit()
 
 

@@ -79,14 +79,16 @@ Story 1.9 (packaging, FR-52) gives this module its declared-range job:
 ``harness_version_in_range`` functions relocate here from ``cli/init.py``
 (which defined its own copy when Story 1.7 first needed one). Both
 ``cli/init.py``'s ``run_preflight`` and ``cli/main.py``'s ``--version``
-import ``harness_version_in_range`` (and, transitively through it,
-``HARNESS_VERSION_RANGE_TEXT``) for their own out-of-range warnings. The
-new ``harness_version_is_major_mismatch`` function is ``run_preflight``'s
+import ``harness_version_in_range``, ``harness_version_tuple``, and
+``HARNESS_VERSION_RANGE_TEXT`` -- each name directly (a constant is never
+available "through" a function import) -- for their own out-of-range and
+could-not-be-parsed wording. The new
+``harness_version_is_major_mismatch`` function is ``run_preflight``'s
 alone -- it is what lets that command split "undeterminable or a different
 major version" (still blocking) from "a determinable, same-major version
 outside the declared minor range" (now a non-blocking warning); see that
 call site's own docstring for how it uses the split. ``--version`` has no
-such split -- it prints one warning line for either case, since it never
+blocking tier at all -- it only ever prints warning lines, since it never
 blocks (informational, not a gate).
 """
 
@@ -384,7 +386,13 @@ def harness_version_tuple(text: str) -> tuple[int, ...] | None:
     for chunk in text.split("."):
         digits = ""
         for char in chunk:
-            if not char.isdigit():
+            # ASCII-only, not str.isdigit(): isdigit() accepts Unicode
+            # digit characters (e.g. "²") that int() then rejects with
+            # ValueError -- an uncaught crash escaping the frozen exit-code
+            # domain, for input this function does not control (it parses
+            # ``bmad-loop --version``'s stdout). Review-caught, reproduced
+            # live.
+            if not ("0" <= char <= "9"):
                 break
             digits += char
         if not digits:

@@ -7,6 +7,7 @@ returns an int and never raises ``SystemExit`` itself.
 from __future__ import annotations
 
 import json
+import re
 import tomllib
 from pathlib import Path
 from unittest.mock import patch
@@ -143,6 +144,19 @@ def _patch_harness_version(monkeypatch, version: str | None) -> None:
     monkeypatch.setattr(main_module, "BmadLoopHarness", lambda: _FakeHarnessVersion(version))
 
 
+@pytest.fixture(autouse=True)
+def _default_fake_harness(monkeypatch):
+    """Every ``--version`` invocation in this file resolves the harness
+    through a fake by default: ``_version_text()`` otherwise shells out to
+    the REAL ``bmad-loop --version`` (up to its 5s timeout), which belongs
+    in the slow tier per this package's own marker convention ("dominated
+    by real git/subprocess calls"), and makes assertions PATH-dependent (an
+    ambient out-of-range bmad-loop would add WARNING lines the tests never
+    asked for). Tests that need a specific version override via
+    ``_patch_harness_version`` -- their later ``setattr`` wins."""
+    _patch_harness_version(monkeypatch, "0.9.3")
+
+
 def test_version_harness_in_range_prints_both_versions_no_warning(monkeypatch, capsys):
     _patch_harness_version(monkeypatch, "0.9.3")
     exit_code = main(["--version"])
@@ -150,6 +164,12 @@ def test_version_harness_in_range_prints_both_versions_no_warning(monkeypatch, c
     out = capsys.readouterr().out
     assert __version__ in out
     assert "bmad-loop 0.9.3" in out
+    # pixi.toml's pyforge-marshal-smoke greps `^bmad-loop [0-9]` out of this
+    # exact output for its harness-resolvable proof (FR-56) -- pin the
+    # line-anchored shape, not just the substring, so a reformat cannot
+    # silently break that cross-artifact contract in a different tool on a
+    # different machine.
+    assert re.search(r"^bmad-loop 0\.9\.3$", out, re.MULTILINE)
     assert "WARNING" not in out
 
 

@@ -179,10 +179,9 @@ import argparse
 import json
 import os
 import shlex
+import tomllib
 from collections.abc import Mapping
 from pathlib import Path
-
-import tomllib
 
 from ..adapters.fs_local import FsError, LocalFs
 from ..adapters.harness_bmadloop import (
@@ -191,6 +190,7 @@ from ..adapters.harness_bmadloop import (
     HarnessError,
     harness_version_in_range,
     harness_version_is_major_mismatch,
+    harness_version_tuple,
     render_policy_toml,
 )
 from ..adapters.vcs_git import GitVcs, VcsCommandError
@@ -1087,8 +1087,9 @@ def run_preflight(
         data["harness_version"] = harness_version
         # Story 1.9 (FR-52/FR-57): graduated two-tier split using the
         # adapters.harness_bmadloop seam's harness_version_is_major_mismatch
-        # (which already treats None as a mismatch, so no separate `is None`
-        # check is needed here) and harness_version_in_range -- the same
+        # (which already treats None as a mismatch, so the PREDICATE needs
+        # no separate `is None` check here -- only the message wording
+        # below branches on it) and harness_version_in_range -- the same
         # harness_version_in_range function cli/main.py's --version also
         # calls for its own out-of-range warning. Undeterminable or a
         # genuine major-version mismatch still blocks (unchanged
@@ -1098,14 +1099,31 @@ def run_preflight(
         # blocking tier with the undeterminable/major-mismatch case, as it
         # did before this story.
         if harness_version_is_major_mismatch(harness_version):
+            # Name the ACTUAL problem (review-caught, the same wording fix
+            # cli/main.py's _version_text got): an undetermined or
+            # unparseable "version" is not numerically "outside the
+            # supported range" -- it is not a version at all.
+            if harness_version is None:
+                message = (
+                    "harness version could not be determined -- expected a "
+                    f"bmad-loop version in {HARNESS_VERSION_RANGE_TEXT}"
+                )
+            elif harness_version_tuple(harness_version) is None:
+                message = (
+                    f"harness version {harness_version!r} could not be parsed "
+                    f"-- expected a version in {HARNESS_VERSION_RANGE_TEXT}"
+                )
+            else:
+                message = (
+                    f"harness version {harness_version!r} has a different "
+                    "major version than the supported range "
+                    f"{HARNESS_VERSION_RANGE_TEXT}"
+                )
             findings.append(
                 Finding(
                     code="MRS-PREFLIGHT-002",
                     severity=Severity.ERROR,
-                    message=(
-                        f"harness version {harness_version or 'unknown'!r} is "
-                        f"outside the supported range {HARNESS_VERSION_RANGE_TEXT}"
-                    ),
+                    message=message,
                 )
             )
         elif not harness_version_in_range(harness_version):

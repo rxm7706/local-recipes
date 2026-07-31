@@ -360,6 +360,15 @@ def test_harness_version_tuple_none_when_first_component_has_no_digits():
     assert harness_version_tuple("dev") is None
 
 
+def test_harness_version_tuple_treats_non_ascii_unicode_digits_as_non_digits():
+    """``str.isdigit()`` accepts Unicode digit characters (e.g. "²") that
+    ``int()`` then rejects with ValueError -- the parser must treat them as
+    non-digits (parse stops, ``None`` here), never crash (review-caught,
+    reproduced live before the ASCII-only guard)."""
+    assert harness_version_tuple("²") is None
+    assert harness_version_tuple("².9.0") is None
+
+
 def test_harness_version_in_range_true_for_the_exact_floor():
     assert harness_version_in_range("0.9.0") is True
 

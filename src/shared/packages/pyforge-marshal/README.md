@@ -30,7 +30,8 @@ pixi run -e pyforge-marshal pyforge-marshal-smoke         # marshal --help/--ver
 
 The `pyforge-marshal` environment is lean by design (`no-default-feature`): it
 carries only the built package plus its conda run-dependencies (`python`,
-`pyyaml`, `tomlkit`, `psutil`, `jsonschema`), the build toolchain
+`pyyaml`, `tomlkit`, `psutil`, `jsonschema`, and the pinned `bmad-loop`
+harness the smoke task proves resolvable), the build toolchain
 (`hatchling`, `python-build`), a test runner (`pytest`), and `import-linter`.
 
 ## Platforms
