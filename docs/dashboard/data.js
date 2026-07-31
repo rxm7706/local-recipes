@@ -14,31 +14,43 @@ window.DASHBOARD_DATA = {
       "inflight": null,
       "velocity": {
         "derived": true,
-        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 1 of 12 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
+        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 4 of 12 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
         "bars": [
           [
             "1.1",
             101
+          ],
+          [
+            "1.2",
+            65
+          ],
+          [
+            "1.3",
+            42
+          ],
+          [
+            "1.4",
+            427
           ]
         ],
         "foot": [
           [
-            "~101 min",
+            "~83 min",
             "median / story",
             "var(--done)"
           ],
           [
-            "101 min",
+            "42–427 min",
             "observed range",
             ""
           ],
           [
-            "1/12",
+            "3/12",
             "stories complete",
             "var(--done)"
           ],
           [
-            "11",
+            "9",
             "remaining",
             ""
           ]
@@ -47,19 +59,22 @@ window.DASHBOARD_DATA = {
       "timing": {
         "derived": true,
         "metric": "active agent-compute per story (dev + review; excludes gate-pause wait) — from bmad-loop run journals",
-        "total": 101,
-        "totalLabel": "~1.7 h active compute",
-        "note": "Derived from 1 measured story; a story still in flight contributes only its closed sessions.",
+        "total": 635,
+        "totalLabel": "~10.6 h active compute",
+        "note": "Derived from 4 measured stories; a story still in flight contributes only its closed sessions.",
         "perStory": {
-          "1.1": 101
+          "1.1": 101,
+          "1.2": 65,
+          "1.3": 42,
+          "1.4": 427
         },
         "epicMin": {
-          "E1": 101
+          "E1": 635
         }
       },
       "lineState": {
         "state": "paused",
-        "at": "1.2"
+        "at": "1.4"
       },
       "epics": [
         {
@@ -73,12 +88,12 @@ window.DASHBOARD_DATA = {
             ],
             [
               "1.2",
-              "pending",
+              "done",
               "Wrap warden's engine-availability self-check (FR-1)"
             ],
             [
               "1.3",
-              "pending",
+              "done",
               "Tri-state, individually addressable checks (FR-2)"
             ],
             [
@@ -158,7 +173,7 @@ window.DASHBOARD_DATA = {
       "inflight": null,
       "velocity": {
         "derived": true,
-        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 3 of 17 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
+        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 5 of 17 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
         "bars": [
           [
             "1.1",
@@ -170,27 +185,35 @@ window.DASHBOARD_DATA = {
           ],
           [
             "1.3",
-            16
+            29
+          ],
+          [
+            "1.4",
+            108
+          ],
+          [
+            "1.5",
+            417
           ]
         ],
         "foot": [
           [
-            "~60 min",
+            "~98 min",
             "median / story",
             "var(--done)"
           ],
           [
-            "16–98 min",
+            "29–417 min",
             "observed range",
             ""
           ],
           [
-            "2/17",
+            "4/17",
             "stories complete",
             "var(--done)"
           ],
           [
-            "15",
+            "13",
             "remaining",
             ""
           ]
@@ -199,16 +222,18 @@ window.DASHBOARD_DATA = {
       "timing": {
         "derived": true,
         "metric": "active agent-compute per story (dev + review; excludes gate-pause wait) — from bmad-loop run journals",
-        "total": 174,
-        "totalLabel": "~2.9 h active compute",
-        "note": "Derived from 3 measured stories; a story still in flight contributes only its closed sessions.",
+        "total": 712,
+        "totalLabel": "~11.9 h active compute",
+        "note": "Derived from 5 measured stories; a story still in flight contributes only its closed sessions.",
         "perStory": {
           "1.1": 60,
           "1.2": 98,
-          "1.3": 16
+          "1.3": 29,
+          "1.4": 108,
+          "1.5": 417
         },
         "epicMin": {
-          "E1": 174
+          "E1": 712
         }
       },
       "lineState": {
@@ -237,12 +262,12 @@ window.DASHBOARD_DATA = {
             ],
             [
               "1.4",
-              "pending",
+              "done",
               "Bridge-core skeleton — state, errors, determinism boundary"
             ],
             [
               "1.5",
-              "pending",
+              "done",
               "Registry module — README § Design project"
             ],
             [
@@ -351,7 +376,7 @@ window.DASHBOARD_DATA = {
       "inflight": null,
       "velocity": {
         "derived": true,
-        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 4 of 41 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
+        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 7 of 41 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
         "bars": [
           [
             "1.1",
@@ -366,28 +391,40 @@ window.DASHBOARD_DATA = {
             153
           ],
           [
+            "1.4",
+            97
+          ],
+          [
+            "1.5",
+            69
+          ],
+          [
+            "1.6",
+            450
+          ],
+          [
             "1.10",
             62
           ]
         ],
         "foot": [
           [
-            "~109 min",
+            "~97 min",
             "median / story",
             "var(--done)"
           ],
           [
-            "62–165 min",
+            "62–450 min",
             "observed range",
             ""
           ],
           [
-            "4/41",
+            "6/41",
             "stories complete",
             "var(--done)"
           ],
           [
-            "37",
+            "35",
             "remaining",
             ""
           ]
@@ -396,22 +433,25 @@ window.DASHBOARD_DATA = {
       "timing": {
         "derived": true,
         "metric": "active agent-compute per story (dev + review; excludes gate-pause wait) — from bmad-loop run journals",
-        "total": 445,
-        "totalLabel": "~7.4 h active compute",
-        "note": "Derived from 4 measured stories; a story still in flight contributes only its closed sessions.",
+        "total": 1061,
+        "totalLabel": "~17.7 h active compute",
+        "note": "Derived from 7 measured stories; a story still in flight contributes only its closed sessions.",
         "perStory": {
           "1.1": 165,
           "1.2": 65,
           "1.3": 153,
+          "1.4": 97,
+          "1.5": 69,
+          "1.6": 450,
           "1.10": 62
         },
         "epicMin": {
-          "E1": 445
+          "E1": 1061
         }
       },
       "lineState": {
         "state": "paused",
-        "at": "1.4"
+        "at": "1.6"
       },
       "epics": [
         {
@@ -440,12 +480,12 @@ window.DASHBOARD_DATA = {
             ],
             [
               "1.4",
-              "pending",
+              "done",
               "Provision a loop home"
             ],
             [
               "1.5",
-              "pending",
+              "done",
               "Single-sourced Tier-3 store via backlink"
             ],
             [
@@ -672,11 +712,64 @@ window.DASHBOARD_DATA = {
         "E5"
       ],
       "inflight": null,
-      "velocity": "",
-      "timing": "",
+      "velocity": {
+        "derived": true,
+        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 3 of 38 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
+        "bars": [
+          [
+            "1.2",
+            91
+          ],
+          [
+            "1.3",
+            402
+          ],
+          [
+            "1.4",
+            36
+          ]
+        ],
+        "foot": [
+          [
+            "~91 min",
+            "median / story",
+            "var(--done)"
+          ],
+          [
+            "36–402 min",
+            "observed range",
+            ""
+          ],
+          [
+            "3/38",
+            "stories complete",
+            "var(--done)"
+          ],
+          [
+            "35",
+            "remaining",
+            ""
+          ]
+        ]
+      },
+      "timing": {
+        "derived": true,
+        "metric": "active agent-compute per story (dev + review; excludes gate-pause wait) — from bmad-loop run journals",
+        "total": 529,
+        "totalLabel": "~8.8 h active compute",
+        "note": "Derived from 3 measured stories; a story still in flight contributes only its closed sessions.",
+        "perStory": {
+          "1.2": 91,
+          "1.3": 402,
+          "1.4": 36
+        },
+        "epicMin": {
+          "E1": 529
+        }
+      },
       "lineState": {
         "state": "paused",
-        "at": "1.2"
+        "at": "1.3"
       },
       "epics": [
         {
@@ -690,7 +783,7 @@ window.DASHBOARD_DATA = {
             ],
             [
               "1.2",
-              "pending",
+              "done",
               "CLI noun-verb structure and global flags"
             ],
             [
@@ -700,7 +793,7 @@ window.DASHBOARD_DATA = {
             ],
             [
               "1.4",
-              "pending",
+              "done",
               "Dual output format with stream discipline"
             ],
             [
@@ -917,31 +1010,43 @@ window.DASHBOARD_DATA = {
       "inflight": null,
       "velocity": {
         "derived": true,
-        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 1 of 9 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
+        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 4 of 9 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
         "bars": [
           [
             "1.1",
             70
+          ],
+          [
+            "1.2",
+            39
+          ],
+          [
+            "1.3",
+            360
+          ],
+          [
+            "1.4",
+            9
           ]
         ],
         "foot": [
           [
-            "~70 min",
+            "~54 min",
             "median / story",
             "var(--done)"
           ],
           [
-            "70 min",
+            "9–360 min",
             "observed range",
             ""
           ],
           [
-            "1/9",
+            "2/9",
             "stories complete",
             "var(--done)"
           ],
           [
-            "8",
+            "7",
             "remaining",
             ""
           ]
@@ -950,19 +1055,22 @@ window.DASHBOARD_DATA = {
       "timing": {
         "derived": true,
         "metric": "active agent-compute per story (dev + review; excludes gate-pause wait) — from bmad-loop run journals",
-        "total": 70,
-        "totalLabel": "~1.2 h active compute",
-        "note": "Derived from 1 measured story; a story still in flight contributes only its closed sessions.",
+        "total": 478,
+        "totalLabel": "~8.0 h active compute",
+        "note": "Derived from 4 measured stories; a story still in flight contributes only its closed sessions.",
         "perStory": {
-          "1.1": 70
+          "1.1": 70,
+          "1.2": 39,
+          "1.3": 360,
+          "1.4": 9
         },
         "epicMin": {
-          "E1": 70
+          "E1": 478
         }
       },
       "lineState": {
         "state": "paused",
-        "at": "1.2"
+        "at": "1.3"
       },
       "epics": [
         {
@@ -976,7 +1084,7 @@ window.DASHBOARD_DATA = {
             ],
             [
               "1.2",
-              "pending",
+              "done",
               "`CLAUDE.md` wiring — team memory loads automatically"
             ],
             [
@@ -1038,11 +1146,64 @@ window.DASHBOARD_DATA = {
         "E4"
       ],
       "inflight": null,
-      "velocity": "",
-      "timing": "",
+      "velocity": {
+        "derived": true,
+        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 3 of 18 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
+        "bars": [
+          [
+            "1.2",
+            69
+          ],
+          [
+            "1.3",
+            79
+          ],
+          [
+            "1.4",
+            360
+          ]
+        ],
+        "foot": [
+          [
+            "~79 min",
+            "median / story",
+            "var(--done)"
+          ],
+          [
+            "69–360 min",
+            "observed range",
+            ""
+          ],
+          [
+            "3/18",
+            "stories complete",
+            "var(--done)"
+          ],
+          [
+            "15",
+            "remaining",
+            ""
+          ]
+        ]
+      },
+      "timing": {
+        "derived": true,
+        "metric": "active agent-compute per story (dev + review; excludes gate-pause wait) — from bmad-loop run journals",
+        "total": 508,
+        "totalLabel": "~8.5 h active compute",
+        "note": "Derived from 3 measured stories; a story still in flight contributes only its closed sessions.",
+        "perStory": {
+          "1.2": 69,
+          "1.3": 79,
+          "1.4": 360
+        },
+        "epicMin": {
+          "E1": 508
+        }
+      },
       "lineState": {
         "state": "paused",
-        "at": "1.2"
+        "at": "1.4"
       },
       "epics": [
         {
@@ -1056,12 +1217,12 @@ window.DASHBOARD_DATA = {
             ],
             [
               "1.2",
-              "pending",
+              "done",
               "Credentials never attach outside their declared host, and the JFrog leak can never recur silently"
             ],
             [
               "1.3",
-              "pending",
+              "done",
               "Secrets Steward stores live encrypted in Git, never as plaintext"
             ],
             [
@@ -2800,7 +2961,7 @@ window.DASHBOARD_DATA = {
       }
     }
   },
-  "snapshot": "<span>2026-07-30 22:17 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-07-31 10:28 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -3485,7 +3646,7 @@ window.DASHBOARD_DATA = {
       "title": "Steward (pyforge-steward) — the estate the factory stands on",
       "caps": 4,
       "companions": 1,
-      "updated": "2026-07-29",
+      "updated": "2026-07-30",
       "dream": "pyforge-steward",
       "path": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward"
     },
@@ -3973,7 +4134,7 @@ window.DASHBOARD_DATA = {
           "stories": 17,
           "state": "running",
           "note": "line 1 — smallest full product, spec settled 0 OQs",
-          "done": 2,
+          "done": 4,
           "total": 17
         },
         {
@@ -3982,7 +4143,7 @@ window.DASHBOARD_DATA = {
           "stories": 12,
           "state": "running",
           "note": "line 2 — consolidative wrap",
-          "done": 1,
+          "done": 3,
           "total": 12
         },
         {
@@ -3991,7 +4152,7 @@ window.DASHBOARD_DATA = {
           "stories": 9,
           "state": "running",
           "note": "line 3 — team memory + graph",
-          "done": 1,
+          "done": 2,
           "total": 9
         },
         {
@@ -4109,7 +4270,7 @@ window.DASHBOARD_DATA = {
     "live": 29,
     "reached": 1,
     "gaps": 46,
-    "findings": 20,
+    "findings": 23,
     "rows": [
       {
         "label": "atlas",
@@ -4234,7 +4395,7 @@ window.DASHBOARD_DATA = {
         ],
         "furthest": "retro",
         "updated": "2026-07-30",
-        "age": 0,
+        "age": 1,
         "stale": false,
         "version": "0.1.0",
         "progress": "38/38",
@@ -4275,7 +4436,7 @@ window.DASHBOARD_DATA = {
           "arch": "2026-07-25",
           "context": "",
           "epics": "2026-07-25",
-          "sprint": "2026-07-29",
+          "sprint": "2026-07-31",
           "gates": "",
           "code": "2026-07-25",
           "verify": "2026-07-25",
@@ -4352,11 +4513,11 @@ window.DASHBOARD_DATA = {
           }
         ],
         "furthest": "verify",
-        "updated": "2026-07-30",
+        "updated": "2026-07-31",
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "1/12",
+        "progress": "3/12",
         "complete": 11,
         "of": 13
       },
@@ -4393,8 +4554,8 @@ window.DASHBOARD_DATA = {
           "ux": "",
           "arch": "2026-07-28",
           "context": "",
-          "epics": "2026-07-29",
-          "sprint": "2026-07-29",
+          "epics": "2026-07-31",
+          "sprint": "2026-07-31",
           "gates": "",
           "code": "",
           "verify": "",
@@ -4466,10 +4627,17 @@ window.DASHBOARD_DATA = {
             "than": "prd",
             "at": "2026-07-29",
             "other": "2026-07-28"
+          },
+          {
+            "kind": "feeds",
+            "stage": "epics",
+            "than": "sprint",
+            "at": "2026-07-31",
+            "other": "2026-07-29"
           }
         ],
         "furthest": "sprint",
-        "updated": "2026-07-30",
+        "updated": "2026-07-31",
         "age": 0,
         "stale": false,
         "version": "",
@@ -4511,7 +4679,7 @@ window.DASHBOARD_DATA = {
           "arch": "2026-07-25",
           "context": "",
           "epics": "2026-07-25",
-          "sprint": "2026-07-29",
+          "sprint": "2026-07-31",
           "gates": "",
           "code": "2026-07-25",
           "verify": "2026-07-25",
@@ -4584,11 +4752,11 @@ window.DASHBOARD_DATA = {
           }
         ],
         "furthest": "verify",
-        "updated": "2026-07-30",
+        "updated": "2026-07-31",
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "2/17",
+        "progress": "4/17",
         "complete": 11,
         "of": 13
       },
@@ -4623,10 +4791,10 @@ window.DASHBOARD_DATA = {
           "brief": "2026-07-25",
           "prd": "2026-07-25",
           "ux": "",
-          "arch": "2026-07-25",
+          "arch": "2026-07-30",
           "context": "2026-06-20",
-          "epics": "2026-07-25",
-          "sprint": "2026-07-30",
+          "epics": "2026-07-31",
+          "sprint": "2026-07-31",
           "gates": "2026-07-06",
           "code": "2026-07-30",
           "verify": "2026-07-30",
@@ -4696,6 +4864,20 @@ window.DASHBOARD_DATA = {
           },
           {
             "kind": "feeds",
+            "stage": "arch",
+            "than": "epics",
+            "at": "2026-07-30",
+            "other": "2026-07-25"
+          },
+          {
+            "kind": "feeds",
+            "stage": "epics",
+            "than": "sprint",
+            "at": "2026-07-31",
+            "other": "2026-07-29"
+          },
+          {
+            "kind": "feeds",
             "stage": "prd",
             "than": "gates",
             "at": "2026-07-25",
@@ -4703,11 +4885,11 @@ window.DASHBOARD_DATA = {
           }
         ],
         "furthest": "verify",
-        "updated": "2026-07-30",
+        "updated": "2026-07-31",
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "4/41",
+        "progress": "6/41",
         "complete": 13,
         "of": 13
       },
@@ -4745,7 +4927,7 @@ window.DASHBOARD_DATA = {
           "arch": "2026-07-25",
           "context": "",
           "epics": "2026-07-25",
-          "sprint": "2026-07-29",
+          "sprint": "2026-07-31",
           "gates": "",
           "code": "2026-07-25",
           "verify": "2026-07-25",
@@ -4822,11 +5004,11 @@ window.DASHBOARD_DATA = {
           }
         ],
         "furthest": "verify",
-        "updated": "2026-07-30",
+        "updated": "2026-07-31",
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "1/38",
+        "progress": "3/38",
         "complete": 11,
         "of": 13
       },
@@ -4864,7 +5046,7 @@ window.DASHBOARD_DATA = {
           "arch": "2026-07-25",
           "context": "",
           "epics": "2026-07-25",
-          "sprint": "2026-07-29",
+          "sprint": "2026-07-31",
           "gates": "",
           "code": "2026-07-25",
           "verify": "2026-07-25",
@@ -4941,11 +5123,11 @@ window.DASHBOARD_DATA = {
           }
         ],
         "furthest": "verify",
-        "updated": "2026-07-30",
+        "updated": "2026-07-31",
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "1/9",
+        "progress": "2/9",
         "complete": 11,
         "of": 13
       },
@@ -4983,7 +5165,7 @@ window.DASHBOARD_DATA = {
           "arch": "2026-07-25",
           "context": "",
           "epics": "2026-07-25",
-          "sprint": "2026-07-29",
+          "sprint": "2026-07-31",
           "gates": "",
           "code": "2026-07-25",
           "verify": "2026-07-25",
@@ -5060,11 +5242,11 @@ window.DASHBOARD_DATA = {
           }
         ],
         "furthest": "verify",
-        "updated": "2026-07-30",
+        "updated": "2026-07-31",
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "1/18",
+        "progress": "3/18",
         "complete": 11,
         "of": 13
       },
@@ -5193,7 +5375,7 @@ window.DASHBOARD_DATA = {
         ],
         "furthest": "verify",
         "updated": "2026-07-30",
-        "age": 0,
+        "age": 1,
         "stale": false,
         "version": "0.1.0",
         "progress": "31/31",
@@ -5297,7 +5479,7 @@ window.DASHBOARD_DATA = {
         "staleBy": [],
         "furthest": "research",
         "updated": "2026-07-30",
-        "age": 0,
+        "age": 1,
         "stale": false,
         "version": "",
         "progress": "",
@@ -5406,7 +5588,7 @@ window.DASHBOARD_DATA = {
         ],
         "furthest": "arch",
         "updated": "2026-07-30",
-        "age": 0,
+        "age": 1,
         "stale": false,
         "version": "",
         "progress": "",
@@ -5510,7 +5692,7 @@ window.DASHBOARD_DATA = {
         "staleBy": [],
         "furthest": "research",
         "updated": "2026-07-30",
-        "age": 0,
+        "age": 1,
         "stale": false,
         "version": "",
         "progress": "",
@@ -5619,7 +5801,7 @@ window.DASHBOARD_DATA = {
         ],
         "furthest": "arch",
         "updated": "2026-07-30",
-        "age": 0,
+        "age": 1,
         "stale": false,
         "version": "",
         "progress": "",
@@ -5725,7 +5907,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "spec",
-        "updated": "2026-07-30",
+        "updated": "2026-07-31",
         "age": 0,
         "stale": false,
         "version": "",
@@ -5835,7 +6017,7 @@ window.DASHBOARD_DATA = {
           }
         ],
         "furthest": "epics",
-        "updated": "2026-07-30",
+        "updated": "2026-07-31",
         "age": 0,
         "stale": false,
         "version": "",
@@ -5939,7 +6121,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-07-30",
+        "updated": "2026-07-31",
         "age": 0,
         "stale": false,
         "version": "",
@@ -6043,7 +6225,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-07-30",
+        "updated": "2026-07-31",
         "age": 0,
         "stale": false,
         "version": "",
@@ -6147,7 +6329,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-07-30",
+        "updated": "2026-07-31",
         "age": 0,
         "stale": false,
         "version": "",
@@ -6251,7 +6433,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-07-30",
+        "updated": "2026-07-31",
         "age": 0,
         "stale": false,
         "version": "",
@@ -6355,7 +6537,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-07-30",
+        "updated": "2026-07-31",
         "age": 0,
         "stale": false,
         "version": "",
@@ -6459,7 +6641,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-07-30",
+        "updated": "2026-07-31",
         "age": 0,
         "stale": false,
         "version": "",
@@ -6564,7 +6746,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-07-30",
+        "updated": "2026-07-31",
         "age": 0,
         "stale": false,
         "version": "",
@@ -6668,7 +6850,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-07-30",
+        "updated": "2026-07-31",
         "age": 0,
         "stale": false,
         "version": "",
@@ -6709,7 +6891,7 @@ window.DASHBOARD_DATA = {
           "ux": "",
           "arch": "2026-07-25",
           "context": "",
-          "epics": "2026-07-29",
+          "epics": "2026-07-31",
           "sprint": "",
           "gates": "",
           "code": "",
@@ -6787,7 +6969,7 @@ window.DASHBOARD_DATA = {
           }
         ],
         "furthest": "epics",
-        "updated": "2026-07-30",
+        "updated": "2026-07-31",
         "age": 0,
         "stale": false,
         "version": "",
@@ -6892,7 +7074,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-07-30",
+        "updated": "2026-07-31",
         "age": 0,
         "stale": false,
         "version": "",
@@ -7005,7 +7187,7 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "epics",
-        "updated": "2026-07-30",
+        "updated": "2026-07-31",
         "age": 0,
         "stale": false,
         "version": "",
@@ -7113,7 +7295,7 @@ window.DASHBOARD_DATA = {
         ],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-07-30",
+        "updated": "2026-07-31",
         "age": 0,
         "stale": false,
         "version": "",
@@ -7221,7 +7403,7 @@ window.DASHBOARD_DATA = {
         ],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-07-30",
+        "updated": "2026-07-31",
         "age": 0,
         "stale": false,
         "version": "",
@@ -7329,7 +7511,7 @@ window.DASHBOARD_DATA = {
         ],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-07-30",
+        "updated": "2026-07-31",
         "age": 0,
         "stale": false,
         "version": "",
@@ -7437,7 +7619,7 @@ window.DASHBOARD_DATA = {
         ],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-07-30",
+        "updated": "2026-07-31",
         "age": 0,
         "stale": false,
         "version": "",
@@ -7558,7 +7740,7 @@ window.DASHBOARD_DATA = {
           }
         ],
         "furthest": "epics",
-        "updated": "2026-07-30",
+        "updated": "2026-07-31",
         "age": 0,
         "stale": false,
         "version": "",
@@ -7666,7 +7848,7 @@ window.DASHBOARD_DATA = {
         ],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-07-30",
+        "updated": "2026-07-31",
         "age": 0,
         "stale": false,
         "version": "",
@@ -7774,7 +7956,7 @@ window.DASHBOARD_DATA = {
         ],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-07-30",
+        "updated": "2026-07-31",
         "age": 0,
         "stale": false,
         "version": "",
@@ -7882,7 +8064,7 @@ window.DASHBOARD_DATA = {
         ],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-07-30",
+        "updated": "2026-07-31",
         "age": 0,
         "stale": false,
         "version": "",
@@ -7907,9 +8089,9 @@ window.DASHBOARD_DATA = {
         "name": "spec-surface",
         "task": "spec-surface-check",
         "guards": "every tracked file under a Spec surface",
-        "state": "drift",
-        "findings": 1,
-        "verdict": "FINDINGS (1):",
+        "state": "green",
+        "findings": 0,
+        "verdict": "OK: every tracked file governed or allowlisted; no drift.",
         "runbook": ""
       },
       {
@@ -8141,7 +8323,7 @@ window.DASHBOARD_DATA = {
           "archived": 1,
           "practice": 4
         },
-        "line": "paused 1.4",
+        "line": "paused 1.6",
         "load": 1,
         "blocked": 0,
         "dreams": [
@@ -8290,7 +8472,7 @@ window.DASHBOARD_DATA = {
           "archived": 2,
           "practice": 2
         },
-        "line": "paused 1.2",
+        "line": "paused 1.3",
         "load": 1,
         "blocked": 1,
         "dreams": [
@@ -8349,7 +8531,7 @@ window.DASHBOARD_DATA = {
           "archived": 0,
           "practice": 0
         },
-        "line": "paused 1.2",
+        "line": "paused 1.4",
         "load": 0,
         "blocked": 0,
         "dreams": [
@@ -8373,7 +8555,7 @@ window.DASHBOARD_DATA = {
           "archived": 1,
           "practice": 0
         },
-        "line": "paused 1.2",
+        "line": "paused 1.3",
         "load": 1,
         "blocked": 0,
         "dreams": [
@@ -8411,7 +8593,7 @@ window.DASHBOARD_DATA = {
           "archived": 0,
           "practice": 1
         },
-        "line": "paused 1.2",
+        "line": "paused 1.4",
         "load": 0,
         "blocked": 0,
         "dreams": [
@@ -8446,15 +8628,15 @@ window.DASHBOARD_DATA = {
     ]
   },
   "openwork": {
-    "open": 129,
+    "open": 165,
     "done": 16,
     "triaged": 129,
     "bySeverity": {
       "critical": 0,
       "high": 1,
       "medium": 2,
-      "low": 9,
-      "unspecified": 117
+      "low": 11,
+      "unspecified": 151
     },
     "projects": [
       {
@@ -9178,7 +9360,7 @@ window.DASHBOARD_DATA = {
       {
         "project": "pyforge-herald",
         "path": "_bmad-output/projects/pyforge-herald/planning-artifacts/deferred-work-ledger.md",
-        "open": 21,
+        "open": 26,
         "done": 3,
         "triaged": 21,
         "entries": [
@@ -9349,6 +9531,197 @@ window.DASHBOARD_DATA = {
             "status": "done",
             "severity": "unspecified",
             "triaged": true
+          },
+          {
+            "id": "DW-1-4-1",
+            "title": "Follow-up review still recommended for 1-4-bridge-core-skeleton-state-errors-determinism-boundar",
+            "status": "open",
+            "severity": "low",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-4-2",
+            "title": "`state.py`'s `write()` does an unlocked read-modify-write of the whole slug-keyed document (read…",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-4-3",
+            "title": "`state.py`'s `write()` calls `state_path.parent.mkdir(parents=True, exist_ok=True)` unguarded — …",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1",
+            "title": "Follow-up review still recommended for 1-4-bridge-core-skeleton-state-errors-determinism-boundary after the damping cap ",
+            "status": "open",
+            "severity": "low",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-5-1",
+            "title": "`registry.read()` raises \"malformed\" (`expected exactly two body lines, found 5`) against every …",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          }
+        ]
+      },
+      {
+        "project": "pyforge-steward",
+        "path": "_bmad-output/projects/pyforge-steward/planning-artifacts/deferred-work-ledger.md",
+        "open": 21,
+        "done": 0,
+        "triaged": 0,
+        "entries": [
+          {
+            "id": "DW-1-2-1",
+            "title": "source_spec: `_bmad-output/implementation-artifacts/spec-1-2-credentials-never-attach-outside-their-declared-host-and-th",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-2-2",
+            "title": "source_spec: `_bmad-output/implementation-artifacts/spec-1-2-credentials-never-attach-outside-their-declared-host-and-th",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-2-3",
+            "title": "source_spec: `_bmad-output/implementation-artifacts/spec-1-2-credentials-never-attach-outside-their-declared-host-and-th",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-2-4",
+            "title": "source_spec: `_bmad-output/implementation-artifacts/spec-1-2-credentials-never-attach-outside-their-declared-host-and-th",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-2-5",
+            "title": "source_spec: `_bmad-output/implementation-artifacts/spec-1-2-credentials-never-attach-outside-their-declared-host-and-th",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-3-1",
+            "title": "source_spec: `_bmad-output/implementation-artifacts/spec-1-3-secrets-steward-stores-live-encrypted-in-git-never-as-plain",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-3-2",
+            "title": "source_spec: `_bmad-output/implementation-artifacts/spec-1-3-secrets-steward-stores-live-encrypted-in-git-never-as-plain",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-3-3",
+            "title": "source_spec: `_bmad-output/implementation-artifacts/spec-1-3-secrets-steward-stores-live-encrypted-in-git-never-as-plain",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-3-4",
+            "title": "source_spec: `_bmad-output/implementation-artifacts/spec-1-3-secrets-steward-stores-live-encrypted-in-git-never-as-plain",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-3-5",
+            "title": "source_spec: `_bmad-output/implementation-artifacts/spec-1-3-secrets-steward-stores-live-encrypted-in-git-never-as-plain",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-3-6",
+            "title": "source_spec: `_bmad-output/implementation-artifacts/spec-1-3-secrets-steward-stores-live-encrypted-in-git-never-as-plain",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-3-7",
+            "title": "source_spec: `_bmad-output/implementation-artifacts/spec-1-3-secrets-steward-stores-live-encrypted-in-git-never-as-plain",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-3-8",
+            "title": "source_spec: `_bmad-output/implementation-artifacts/spec-1-3-secrets-steward-stores-live-encrypted-in-git-never-as-plain",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-3-9",
+            "title": "source_spec: `_bmad-output/implementation-artifacts/spec-1-3-secrets-steward-stores-live-encrypted-in-git-never-as-plain",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-3-10",
+            "title": "source_spec: `_bmad-output/implementation-artifacts/spec-1-3-secrets-steward-stores-live-encrypted-in-git-never-as-plain",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-3-11",
+            "title": "source_spec: `_bmad-output/implementation-artifacts/spec-1-3-secrets-steward-stores-live-encrypted-in-git-never-as-plain",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-3-12",
+            "title": "source_spec: `_bmad-output/implementation-artifacts/spec-1-3-secrets-steward-stores-live-encrypted-in-git-never-as-plain",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-3-13",
+            "title": "source_spec: `_bmad-output/implementation-artifacts/spec-1-3-secrets-steward-stores-live-encrypted-in-git-never-as-plain",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-3-14",
+            "title": "source_spec: `_bmad-output/implementation-artifacts/spec-1-3-secrets-steward-stores-live-encrypted-in-git-never-as-plain",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-3-15",
+            "title": "source_spec: `_bmad-output/implementation-artifacts/spec-1-3-secrets-steward-stores-live-encrypted-in-git-never-as-plain",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-3-16",
+            "title": "source_spec: `_bmad-output/implementation-artifacts/spec-1-3-secrets-steward-stores-live-encrypted-in-git-never-as-plain",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
           }
         ]
       },
@@ -9477,6 +9850,94 @@ window.DASHBOARD_DATA = {
             "status": "open",
             "severity": "unspecified",
             "triaged": true
+          }
+        ]
+      },
+      {
+        "project": "pyforge-scribe",
+        "path": "_bmad-output/projects/pyforge-scribe/planning-artifacts/deferred-work-ledger.md",
+        "open": 6,
+        "done": 0,
+        "triaged": 0,
+        "entries": [
+          {
+            "id": "DW-1-2-1",
+            "title": "source_spec: `_bmad-output/projects/pyforge-scribe/implementation-artifacts/spec-1-2-claude-md-wiring-team-memory-loads-",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-2-2",
+            "title": "source_spec: `_bmad-output/projects/pyforge-scribe/implementation-artifacts/spec-1-2-claude-md-wiring-team-memory-loads-",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-2-3",
+            "title": "source_spec: `_bmad-output/projects/pyforge-scribe/implementation-artifacts/spec-1-2-claude-md-wiring-team-memory-loads-",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-2-4",
+            "title": "source_spec: `_bmad-output/projects/pyforge-scribe/implementation-artifacts/spec-1-2-claude-md-wiring-team-memory-loads-",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-2-5",
+            "title": "source_spec: `_bmad-output/projects/pyforge-scribe/implementation-artifacts/spec-1-2-claude-md-wiring-team-memory-loads-",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-2-6",
+            "title": "source_spec: `_bmad-output/projects/pyforge-scribe/implementation-artifacts/spec-1-2-claude-md-wiring-team-memory-loads-",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          }
+        ]
+      },
+      {
+        "project": "pyforge-mason",
+        "path": "_bmad-output/projects/pyforge-mason/planning-artifacts/deferred-work-ledger.md",
+        "open": 4,
+        "done": 0,
+        "triaged": 0,
+        "entries": [
+          {
+            "id": "DW-1-3-1",
+            "title": "source_spec: `_bmad-output/implementation-artifacts/spec-1-3-error-taxonomy-and-exit-code-contract.md`",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-3-2",
+            "title": "source_spec: `_bmad-output/implementation-artifacts/spec-1-3-error-taxonomy-and-exit-code-contract.md`",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-4-1",
+            "title": "source_spec: `_bmad-output/implementation-artifacts/spec-1-4-dual-output-format-with-stream-discipline.md`",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-4-2",
+            "title": "source_spec: `_bmad-output/implementation-artifacts/spec-1-4-dual-output-format-with-stream-discipline.md`",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
           }
         ]
       },
