@@ -52,15 +52,33 @@ which ``bmad_loop`` hardcodes unconditionally). Both stay Marshal-internal,
 consumed by ``core/gate``/``core/identity`` in later stories, not by the
 harness.
 
-Reserved for a later story: this module does not yet resolve or invoke the
-``bmad-loop`` binary itself, or wire ``ports.HarnessPort`` to the real
-``bmad_loop`` package (entry point ``bmad-loop = bmad_loop.cli:main``,
-confirmed via ``recipes/bmad-loop/recipe.yaml``).
+Story 1.7 (AD-3/AD-19, FR-7/FR-52) closes the "reserved for a later story"
+gap above: ``BmadLoopHarness`` (``ports.HarnessPort``'s sole implementation)
+resolves and invokes the ``bmad-loop`` binary (``--version`` only -- never
+the adapter's own CLI, which could itself trigger the first-run dialog
+``marshal preflight`` exists to gate ahead of time) and lazily imports
+``bmad_loop.adapters.multiplexer``/``bmad_loop.adapters.profile``/
+``bmad_loop.bmadconfig``/``bmad_loop.sprintstatus`` -- one import per method,
+inside the method body, never at module top level, so ``marshal config``/
+``marshal init``/``marshal homes`` keep working even if the installed
+``bmad_loop`` is broken or absent, and so ``ImportError``/the harness's own
+typed errors (``ProfileError``, ``MultiplexerError``, ``BmadConfigError``,
+``SprintStatusError``) never escape this module raw -- every one is caught
+and re-raised as ``HarnessError``, except in the three methods documented to
+never raise, which degrade instead: ``binary_present`` (a pure
+``shutil.which`` check, no failure mode), ``harness_version`` (``None``),
+and ``story_feed_error`` (the error TEXT is the return value; ``None`` means
+success).
+``bmad-loop`` is now a declared runtime dependency (``pyproject.toml``,
+``pixi.toml``) -- see those files' own comments for why the range is
+``>=0.9.0,<0.10``.
 """
 
 from __future__ import annotations
 
 import os
+import shutil
+import subprocess
 import threading
 from pathlib import Path
 
@@ -314,3 +332,151 @@ def write_policy_toml(
         raise HarnessPolicyWriteError(
             f"cannot write policy.toml to {bmad_loop_dir}: {exc}"
         ) from exc
+
+
+# =====================================================================
+# ``BmadLoopHarness`` (Story 1.7) -- ``ports.HarnessPort``'s sole
+# implementation. Everything below this line is the only code in this
+# package that imports ``bmad_loop`` for anything beyond rendering
+# ``policy.toml`` (AD-3).
+# =====================================================================
+
+# A quick `--version` call, not a checkout-populating operation like
+# `vcs_git.py`'s `_GIT_CHECKOUT_TIMEOUT_S` tier -- NFR-14's 10s preflight
+# budget has no room for a generous timeout here, so this must sit WELL
+# BELOW that budget (review finding: this was 10.0, the entire budget --
+# a hung binary alone exhausted it before the other checks even started).
+# A healthy argparse `action="version"` responds in milliseconds.
+_VERSION_TIMEOUT_S = 5.0
+
+
+class HarnessError(Exception):
+    """Raised by ``BmadLoopHarness`` methods that are documented to raise
+    (``multiplexer_backend_available``, ``adapter_binary``,
+    ``adapter_seed_files``, ``adapter_first_run_note``) when the lazy
+    ``bmad_loop`` import fails, or the harness's own typed error
+    (``ProfileError``, a ``bmad_loop.adapters.multiplexer.MultiplexerError``)
+    is raised. Never a raw ``ImportError``/harness-internal exception type --
+    ``cli/init.py`` only ever needs to catch this ONE class (AD-3's own
+    seam: nothing outside this module names a ``bmad_loop`` exception
+    type)."""
+
+
+def _run(args: list[str], *, timeout_s: float = _VERSION_TIMEOUT_S) -> subprocess.CompletedProcess[str] | None:
+    """Mirrors ``vcs_git.py``'s ``_run``: same ``encoding="utf-8"``/
+    ``errors="replace"`` decode discipline. Unlike that module's version,
+    every failure mode here (missing binary, launch failure, a hung
+    process) degrades to ``None`` rather than raising -- ``harness_version``
+    is documented to never raise, so there is no typed exception for a
+    caller to catch."""
+    try:
+        return subprocess.run(
+            args,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=timeout_s,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+
+
+class BmadLoopHarness:
+    """``ports.HarnessPort``'s sole implementation."""
+
+    def binary_present(self, binary: str) -> bool:
+        return shutil.which(binary) is not None
+
+    def harness_version(self) -> str | None:
+        result = _run(["bmad-loop", "--version"])
+        if result is None or result.returncode != 0:
+            return None
+        # argparse's `action="version"` prints "bmad-loop 0.9.0" to stdout --
+        # the version is the token after the last space.
+        text = result.stdout.strip()
+        _prog, _sep, version = text.rpartition(" ")
+        return version or None
+
+    def multiplexer_backend_available(self) -> tuple[str, bool]:
+        try:
+            from bmad_loop.adapters.multiplexer import MultiplexerError, detect_multiplexers
+        except ImportError as exc:
+            raise HarnessError(f"bmad_loop is not importable: {exc}") from exc
+        # detect_multiplexers documents "never raises", but this module's own
+        # contract ("no bmad_loop exception type escapes raw") must not rest
+        # on an upstream promise -- catch its seam-level error type anyway
+        # (review finding: HarnessError's docstring named MultiplexerError as
+        # caught while nothing actually caught it).
+        try:
+            rows = detect_multiplexers()
+        except MultiplexerError as exc:
+            raise HarnessError(f"multiplexer detection failed: {exc}") from exc
+        selected = next((row for row in rows if row.selected), None)
+        if selected is None:
+            return "", False
+        return selected.name, selected.available
+
+    def _get_profile(self, adapter_name: str, project: Path):
+        try:
+            from bmad_loop.adapters.profile import ProfileError, get_profile
+        except ImportError as exc:
+            raise HarnessError(f"bmad_loop is not importable: {exc}") from exc
+        try:
+            return get_profile(adapter_name, project=project)
+        except ProfileError as exc:
+            raise HarnessError(str(exc)) from exc
+        # get_profile reads a project-local `.bmad-loop/profiles/*.toml`
+        # overlay via plain `Path.read_text(encoding="utf-8")`, which raises
+        # OSError/UnicodeDecodeError RAW for an unreadable or non-UTF-8
+        # overlay file -- neither is caught by bmad_loop's own ProfileError
+        # (review finding: this port's own docstring promises "raises
+        # HarnessError for an unknown adapter_name or an unimportable
+        # bmad_loop", not a raw traceback for a corrupt overlay file).
+        # ValueError/TypeError/AttributeError: _parse_profile coerces overlay
+        # values with bare float()/int()/.items() (e.g. usage_grace_s = "x"),
+        # so a VALID-TOML overlay with a wrong-typed field raises those RAW
+        # past ProfileError too -- same class, second review pass.
+        except (OSError, UnicodeDecodeError, ValueError, TypeError, AttributeError) as exc:
+            raise HarnessError(f"cannot read adapter profile overlay: {exc}") from exc
+
+    def adapter_binary(self, adapter_name: str, project: Path) -> str:
+        return self._get_profile(adapter_name, project).binary
+
+    def adapter_seed_files(self, adapter_name: str, project: Path) -> tuple[str, ...]:
+        return self._get_profile(adapter_name, project).seed_files
+
+    def adapter_first_run_note(self, adapter_name: str, project: Path) -> str:
+        return self._get_profile(adapter_name, project).first_run_note
+
+    def story_feed_error(self, project: Path) -> str | None:
+        try:
+            from bmad_loop import bmadconfig, sprintstatus
+        except ImportError as exc:
+            return f"bmad_loop is not importable: {exc}"
+        # Both bmadconfig.load_paths and sprintstatus.load read a config/feed
+        # file via plain Path.read_text(encoding="utf-8") before their own
+        # typed error handling begins, so an unreadable or non-UTF-8 file
+        # raises OSError/UnicodeDecodeError RAW past BmadConfigError/
+        # SprintStatusError (review finding: this method's own docstring
+        # promises "never raises" -- the message text IS the return value).
+        try:
+            paths = bmadconfig.load_paths(project)
+        except bmadconfig.BmadConfigError as exc:
+            return str(exc)
+        except (OSError, UnicodeDecodeError) as exc:
+            return f"cannot read bmad-config: {exc}"
+        # load_paths calls `doc.get(...)` on whatever yaml.safe_load returned
+        # without an isinstance check, so a config.yaml whose top level is a
+        # list or scalar raises AttributeError RAW past BmadConfigError
+        # (review finding -- sprintstatus.load is shape-safe, it isinstance-
+        # checks its own doc, so only this call needs the extra catch).
+        except (AttributeError, TypeError) as exc:
+            return f"invalid bmad-config shape: {exc}"
+        try:
+            sprintstatus.load(paths.sprint_status)
+        except sprintstatus.SprintStatusError as exc:
+            return str(exc)
+        except (OSError, UnicodeDecodeError) as exc:
+            return f"cannot read story feed: {exc}"
+        return None

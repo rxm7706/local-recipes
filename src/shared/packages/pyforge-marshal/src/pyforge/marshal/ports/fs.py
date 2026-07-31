@@ -45,6 +45,13 @@ to tell "genuinely nothing at this path" (benign absence) apart from "a real,
 non-symlink file or directory occupies it" (a violation to name) at the two
 symlink locations it checks -- ``is_dir`` alone cannot see a regular-file
 occupant (review finding).
+
+Story 1.7 (``marshal preflight``, AD-21) adds ``copy_file``: seeding an
+adapter's gitignored config into a loop home needs REAL bytes, never a
+symlink (Design Notes -- a symlinked ``.claude/settings.json`` would mean an
+edit inside the home silently mutates the main checkout's copy), so this is
+a distinct primitive from ``repoint_symlink_atomic`` rather than a second
+call to it.
 """
 
 from __future__ import annotations
@@ -128,4 +135,14 @@ class FsPort(Protocol):
         method, kept for defense in depth against a future/alternate
         resolver that DOES raise, but is not currently reachable via the
         two scenarios above."""
+        ...
+
+    def copy_file(self, src: Path, dst: Path) -> None:
+        """Copy ``src`` to ``dst`` as REAL bytes (never a symlink), creating
+        ``dst``'s parent directories as needed. No exists-guard baked in --
+        unconditionally overwrites/creates ``dst``; the caller decides
+        skip-vs-copy (AD-21, reconcile-then-act) BEFORE calling this, exactly
+        like ``remove_empty_dir``'s split between "safe refusal" and this
+        port's own I/O. Raises ``FsError`` on any failure (``src`` missing,
+        naming a directory, or unreadable; ``dst``'s parent unwritable)."""
         ...

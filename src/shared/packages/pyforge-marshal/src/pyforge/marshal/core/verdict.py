@@ -53,7 +53,18 @@ match its canonical store), and ``MRS-HOMES-003`` (a ``git``/filesystem
 operation failed while gathering state) -- all three classify
 ``Verdict.ERROR``, the same tier as ``MRS-INIT-003/004/005``: a real
 isolation check ran and found (or could not complete) a real violation, not
-"could not evaluate". Later
+"could not evaluate". Story 1.7's ``cli/init.py::run_preflight``
+(``marshal preflight``) adds ``MRS-PREFLIGHT-001`` through
+``MRS-PREFLIGHT-009`` -- all nine classify ``Verdict.ERROR`` too: every one
+is a real prerequisite check that ran (the harness binary, its version, the
+multiplexer, the adapter, the story feed, each verify command, the
+single-checkout invariant, seed-file copying, first-run acknowledgement, or
+the loop home's own existence) and found a real gap, never "could not
+evaluate" -- same tier as every code this story's siblings registered.
+``MRS-PREFLIGHT-010`` (a malformed slug, checked before any I/O) classifies
+``Verdict.UNEVALUABLE`` instead, the same tier as its ``MRS-INIT-001``
+counterpart: Marshal cannot determine what to preflight, not that a gate
+failed. Later
 stories populate the table
 further as they add real codes. The mechanism (a total, fail-loud lookup) is
 separately proven via ``monkeypatch``-injected synthetic entries in
@@ -113,6 +124,7 @@ GUARDED_EXIT_CODES: frozenset[int] = frozenset(_EXIT_BY_VERDICT.values()) | {
 # Story 1.4's cli/init.py adds the third real caller's four codes.
 # Story 1.5's cli/init.py tier3_backlink step adds a fifth code.
 # Story 1.6's cli/init.py::run_homes adds the fourth real caller's three codes.
+# Story 1.7's cli/init.py::run_preflight adds the fifth real caller's ten codes.
 _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-IDENT-001": Verdict.UNEVALUABLE,
     "MRS-IDENT-002": Verdict.UNEVALUABLE,
@@ -130,6 +142,16 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-HOMES-001": Verdict.ERROR,
     "MRS-HOMES-002": Verdict.ERROR,
     "MRS-HOMES-003": Verdict.ERROR,
+    "MRS-PREFLIGHT-001": Verdict.ERROR,
+    "MRS-PREFLIGHT-002": Verdict.ERROR,
+    "MRS-PREFLIGHT-003": Verdict.ERROR,
+    "MRS-PREFLIGHT-004": Verdict.ERROR,
+    "MRS-PREFLIGHT-005": Verdict.ERROR,
+    "MRS-PREFLIGHT-006": Verdict.ERROR,
+    "MRS-PREFLIGHT-007": Verdict.ERROR,
+    "MRS-PREFLIGHT-008": Verdict.ERROR,
+    "MRS-PREFLIGHT-009": Verdict.ERROR,
+    "MRS-PREFLIGHT-010": Verdict.UNEVALUABLE,
 }
 
 

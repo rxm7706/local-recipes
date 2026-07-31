@@ -326,3 +326,54 @@ def test_exists_false_for_a_dangling_symlink(fs, tmp_path):
     link = tmp_path / "dangling"
     link.symlink_to(tmp_path / "does-not-exist")
     assert fs.exists(link) is False
+
+
+# --- copy_file (Story 1.7) --------------------------------------------------
+
+
+def test_copy_file_copies_real_bytes(fs, tmp_path):
+    src = tmp_path / "src" / ".mcp.json"
+    src.parent.mkdir()
+    src.write_text('{"mcpServers": {}}', encoding="utf-8")
+    dst = tmp_path / "dst" / ".mcp.json"
+    fs.copy_file(src, dst)
+    assert dst.read_text(encoding="utf-8") == '{"mcpServers": {}}'
+    assert not dst.is_symlink()
+
+
+def test_copy_file_creates_parent_dirs(fs, tmp_path):
+    src = tmp_path / "src.txt"
+    src.write_text("x", encoding="utf-8")
+    dst = tmp_path / "nested" / "deeper" / "dst.txt"
+    fs.copy_file(src, dst)
+    assert dst.read_text(encoding="utf-8") == "x"
+
+
+def test_copy_file_overwrites_an_existing_destination(fs, tmp_path):
+    src = tmp_path / "src.txt"
+    src.write_text("new", encoding="utf-8")
+    dst = tmp_path / "dst.txt"
+    dst.write_text("old", encoding="utf-8")
+    fs.copy_file(src, dst)
+    assert dst.read_text(encoding="utf-8") == "new"
+
+
+def test_copy_file_raises_fs_error_when_source_is_missing(fs, tmp_path):
+    with pytest.raises(FsError):
+        fs.copy_file(tmp_path / "absent.txt", tmp_path / "dst.txt")
+
+
+def test_copy_file_raises_fs_error_when_source_is_a_directory(fs, tmp_path):
+    src = tmp_path / "a-dir"
+    src.mkdir()
+    with pytest.raises(FsError):
+        fs.copy_file(src, tmp_path / "dst.txt")
+
+
+def test_copy_file_raises_fs_error_on_unwritable_destination_parent(fs, tmp_path):
+    src = tmp_path / "src.txt"
+    src.write_text("x", encoding="utf-8")
+    blocked = tmp_path / "not-a-directory"
+    blocked.write_text("occupied", encoding="utf-8")
+    with pytest.raises(FsError):
+        fs.copy_file(src, blocked / "dst.txt")
