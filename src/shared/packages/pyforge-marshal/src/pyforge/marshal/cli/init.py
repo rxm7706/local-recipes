@@ -370,8 +370,10 @@ def run_init(
                         message=(
                             f"{local} is a real, non-empty directory -- "
                             f"refusing to replace it with a backlink to "
-                            f"{canonical}; merge its contents into the "
-                            "canonical copy by hand, then re-run"
+                            f"{canonical}; move its contents into that "
+                            "canonical directory by hand (creating it if "
+                            "absent), remove the then-empty local "
+                            "directory, and re-run"
                         ),
                         path=str(local),
                     )

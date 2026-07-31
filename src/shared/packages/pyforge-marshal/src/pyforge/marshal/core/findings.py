@@ -41,8 +41,9 @@ could not determine what to provision); 003-004 classify ``Verdict.ERROR``
 compounding an existing failure) -- see ``core/verdict.py``. Story 1.5's
 ``tier3_backlink`` step (still ``cli/init.py``) adds a fifth code,
 ``MRS-INIT-005``: a real, non-empty directory already occupies the loop
-home's local Tier-3 path (``_bmad-output/projects/<slug>/
-implementation-artifacts``) -- the safe, structural refusal to silently
+home's local Tier-3 path
+(``_bmad-output/projects/<slug>/implementation-artifacts``) -- the safe,
+structural refusal to silently
 replace it with a backlink to the main checkout's canonical copy (see the
 spec's Design Notes on why this is a distinct code from ``MRS-INIT-004``
 rather than a message a caller would need to string-match). It classifies

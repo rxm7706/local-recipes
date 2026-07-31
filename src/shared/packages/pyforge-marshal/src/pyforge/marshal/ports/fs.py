@@ -82,5 +82,7 @@ class FsPort(Protocol):
         with zero entries. Returns ``False`` and leaves ``path`` untouched
         if it is a real directory containing entries -- a safe refusal, not
         a failure. Raises ``FsError`` on any other I/O failure (e.g. ``path``
-        does not exist, or is not a directory at all)."""
+        does not exist, is not a directory at all, or is a symlink -- even
+        one pointing at an empty directory: removal refuses to operate
+        through a link, so callers must check for a symlink first)."""
         ...

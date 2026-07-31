@@ -27,7 +27,13 @@ home (the new branch ref and ``$GIT_DIR/worktrees/<id>`` admin data in the
 main repo's ``.git``) -- those are git's own writes, not Marshal's, and are
 deliberately exempt from the claim (review finding: the earlier docstring
 implied the real adapter could satisfy an all-writes-under-home reading,
-which it cannot).
+which it cannot). Likewise ``ensure_dir`` is recorded only at its leaf
+argument: the real adapter's ``mkdir(parents=True)`` could also create
+missing ANCESTORS of the canonical store (above the guarded boundary) --
+unreachable today because the in-home project gate guarantees those
+ancestors exist, but structurally invisible to this guard if that ever
+changes (review finding: the guard's claim is bounded by what the fakes
+can observe).
 """
 
 from __future__ import annotations

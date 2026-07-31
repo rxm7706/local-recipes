@@ -285,6 +285,7 @@ def test_idempotent_rerun_all_steps_skipped_and_zero_writes(repo_root, capsys):
     writes_before = list(fs.write_calls)
     repoints_before = list(fs.repoint_calls)
     ensure_dir_calls_before = list(fs.ensure_dir_calls)
+    remove_empty_dir_calls_before = list(fs.remove_empty_dir_calls)
     add_worktree_calls_before = list(vcs.add_worktree_calls)
 
     second_exit = run_init(_namespace("acme"), vcs=vcs, fs=fs)
@@ -298,6 +299,7 @@ def test_idempotent_rerun_all_steps_skipped_and_zero_writes(repo_root, capsys):
     assert fs.write_calls == writes_before
     assert fs.repoint_calls == repoints_before
     assert fs.ensure_dir_calls == ensure_dir_calls_before
+    assert fs.remove_empty_dir_calls == remove_empty_dir_calls_before
     assert vcs.add_worktree_calls == add_worktree_calls_before
 
 
