@@ -14,7 +14,7 @@ window.DASHBOARD_DATA = {
       "inflight": null,
       "velocity": {
         "derived": true,
-        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 4 of 12 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
+        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 5 of 12 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
         "bars": [
           [
             "1.1",
@@ -31,11 +31,15 @@ window.DASHBOARD_DATA = {
           [
             "1.4",
             427
+          ],
+          [
+            "1.5",
+            80
           ]
         ],
         "foot": [
           [
-            "~83 min",
+            "~80 min",
             "median / story",
             "var(--done)"
           ],
@@ -45,12 +49,12 @@ window.DASHBOARD_DATA = {
             ""
           ],
           [
-            "4/12",
+            "5/12",
             "stories complete",
             "var(--done)"
           ],
           [
-            "8",
+            "7",
             "remaining",
             ""
           ]
@@ -59,22 +63,23 @@ window.DASHBOARD_DATA = {
       "timing": {
         "derived": true,
         "metric": "active agent-compute per story (dev + review; excludes gate-pause wait) — from bmad-loop run journals",
-        "total": 635,
-        "totalLabel": "~10.6 h active compute",
-        "note": "Derived from 4 measured stories; a story still in flight contributes only its closed sessions.",
+        "total": 715,
+        "totalLabel": "~11.9 h active compute",
+        "note": "Derived from 5 measured stories; a story still in flight contributes only its closed sessions.",
         "perStory": {
           "1.1": 101,
           "1.2": 65,
           "1.3": 42,
-          "1.4": 427
+          "1.4": 427,
+          "1.5": 80
         },
         "epicMin": {
-          "E1": 635
+          "E1": 715
         }
       },
       "lineState": {
         "state": "paused",
-        "at": "1.5"
+        "at": "2.1"
       },
       "epics": [
         {
@@ -103,7 +108,7 @@ window.DASHBOARD_DATA = {
             ],
             [
               "1.5",
-              "pending",
+              "done",
               "`doctor check` CLI wiring, `--json`, and the speed budget (FR-9, NFR-4)"
             ]
           ]
@@ -2961,7 +2966,7 @@ window.DASHBOARD_DATA = {
       }
     }
   },
-  "snapshot": "<span>2026-07-31 14:33 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-07-31 16:04 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -4143,7 +4148,7 @@ window.DASHBOARD_DATA = {
           "stories": 12,
           "state": "running",
           "note": "line 2 — consolidative wrap",
-          "done": 4,
+          "done": 5,
           "total": 12
         },
         {
@@ -4517,7 +4522,7 @@ window.DASHBOARD_DATA = {
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "4/12",
+        "progress": "5/12",
         "complete": 11,
         "of": 13
       },
@@ -8531,7 +8536,7 @@ window.DASHBOARD_DATA = {
           "archived": 0,
           "practice": 0
         },
-        "line": "paused 1.5",
+        "line": "paused 2.1",
         "load": 0,
         "blocked": 0,
         "dreams": [
@@ -9979,5 +9984,19 @@ window.DASHBOARD_DATA = {
         ]
       }
     ]
+  },
+  "status": {
+    "source": "sprint-status",
+    "running": [],
+    "lastShipped": {
+      "station": "mason",
+      "story": "1.3",
+      "epoch": 1785508216,
+      "sha": "f93e838f8",
+      "subject": "mason: recover Story 1.3 — error taxonomy and exit-code contract (review TIMED OUT, no verdict) (#164)"
+    },
+    "runningAvailable": true,
+    "generatedAt": "2026-07-31 16:04 UTC",
+    "generatedEpoch": 1785513866
   }
 };

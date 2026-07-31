@@ -1,6 +1,13 @@
 <!doctype html>
 <meta charset="utf-8">
 <meta http-equiv="refresh" content="120">
+<!-- The 120s auto-refresh re-requests this page, and a cached copy would make
+     that a no-op that LOOKS like a refresh. Observed 2026-07-31: data.js was
+     re-fetched (timestamp current) while index.html was served from cache, so
+     CSS/markup fixes appeared not to land for three rounds. -->
+<meta http-equiv="cache-control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="pragma" content="no-cache">
+<meta http-equiv="expires" content="0">
 <title>PyForge · Guildhall</title>
 <style>
   :root {
@@ -84,15 +91,80 @@
     line-height: 1.5; font-size: 15px; -webkit-font-smoothing: antialiased; }
   .wrap { max-width: 1080px; margin: 0 auto; padding: clamp(20px,4vw,48px) clamp(16px,4vw,40px) 64px; }
 
-  .statusline { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap;
-    font-family: var(--mono); font-size: 12.5px; letter-spacing: 0.02em; color: var(--slate); margin-bottom: 22px; }
-  .statusline .prompt { color: var(--accent); transition: color .3s; }
-  .statusline .branch { color: var(--ink-soft); }
-  .theme-toggle { margin-left: auto; font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.04em;
-    background: var(--panel); color: var(--slate); border: 1px solid var(--line); border-radius: 6px;
-    padding: 5px 11px; cursor: pointer; text-transform: uppercase; }
-  .theme-toggle:hover { color: var(--ink); border-color: var(--accent-dim); }
-  .theme-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* Console bar: prompt, state, actions and live status chips in ONE box, two rows.
+     Previously an unboxed .statusline sat above a bordered .consolebar, which left
+     `state:` orphaned outside the frame and read as two competing control strips. */
+  .consolebar { margin: 0 0 22px; padding: 0; background: var(--panel);
+    border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+  .cbrow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 9px 12px; }
+  /* Chips: a simple wrapping flex row, LEFT-aligned and not truncated.
+     Earlier versions tried nowrap+ellipsis (text cut to "SPRINT…" with room to
+     spare) and then an auto-fit grid (three 1fr tracks flung the chips to
+     opposite edges of a wide bar and STILL truncated). Both were solving an
+     overflow that does not happen at real widths: the three strings total
+     ~110 characters at 11px. Let them sit together and wrap if they must. */
+  /* Three slots: last-shipped LEFT, running CENTRE, generated RIGHT.
+     `1fr auto 1fr` is what actually centres the middle chip — with
+     space-between, the centre drifts whenever the two outer strings differ in
+     length, which they always do. The outer tracks stay equal regardless, so
+     the running chip sits at the true midpoint. Collapses to a single
+     left-aligned column under 720px rather than squeezing three into a
+     phone width. */
+  .cbstatus { border-top: 1px solid var(--line); background: var(--panel-2);
+    display: grid; grid-template-columns: 1fr auto 1fr; align-items: center;
+    gap: 6px 20px; padding: 8px 12px; }
+  .cslot-l { justify-self: start; }
+  .cslot-c { justify-self: center; }
+  .cslot-r { justify-self: end; }
+  @media (max-width: 720px) {
+    .cbstatus { grid-template-columns: 1fr; }
+    .cslot-l, .cslot-c, .cslot-r { justify-self: start; }
+  }
+  .cprompt { font-family: var(--mono); font-size: 12.5px; letter-spacing: 0.02em;
+    color: var(--slate); flex: none; }
+  .cprompt .prompt { color: var(--accent); transition: color .3s; }
+  /* `state:` carries UNBOUNDED prose from the data — marshal's runs 77 chars
+     ("loop/pyforge-marshal · CRITICALS-RESOLVED — S-1.1 unblocked 2026-07-25").
+     Left to size itself it consumed the row, pushed the buttons onto a second
+     line and ran into the chips below. It now truncates with an ellipsis and
+     keeps the full text in a tooltip, so the bar is ONE line at any length and
+     nothing is lost. `min-width: 0` is the part that actually allows a flex
+     child to shrink below its content width. */
+  .consolebar .branch { font-family: var(--mono); font-size: 12.5px; color: var(--ink-soft);
+    flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis;
+    white-space: nowrap; }
+  .cbtn { font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.04em;
+    background: var(--panel-2); color: var(--slate); border: 1px solid var(--line);
+    border-radius: 6px; padding: 5px 11px; cursor: pointer; text-transform: uppercase; }
+  .cbtn:hover { color: var(--ink); border-color: var(--accent-dim); }
+  .cbtn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  /* NAMED `cchip`/`cdot`, NOT `chip`/`dot`. This file already defines BOTH at
+     lines ~248/~265 for the per-story status pills — `.chip` there sets
+     `text-transform: uppercase`, `border-radius: 999px` and padding, and
+     `.dot` sets 10px/3px-radius. Mine were declared EARLIER, so the existing
+     rules won on source order and silently restyled the console chips: text
+     forced to caps, my `display: inline-flex` dropped so the dot and label
+     stopped flexing, and the chips collapsed onto each other. Three "fixes"
+     chased that as a flex/grid problem before the collision was found. Distinct
+     names are the fix; do not reintroduce a bare `.chip` here. */
+  .cchip { font-family: var(--mono); font-size: 11px; color: var(--ink-soft);
+    display: inline-flex; align-items: center; gap: 7px;
+    text-transform: none; letter-spacing: normal; padding: 0; border: 0; }
+  .cchip .cdot { flex: 0 0 auto; width: 7px; height: 7px; min-width: 7px;
+    border-radius: 50%; background: var(--slate); }
+  /* Never break a chip mid-phrase. Dropping this in an earlier simplification is
+     what produced the vertical stacking ("running" / "Doctor" / "1.5" / "(dev)"
+     on four lines, spilling out of the bar): with no width to work in, the text
+     wrapped word by word. It is safe now because the centre grid track is
+     `auto` — sized to its content — so the chip is never squeezed in the first
+     place, and the outer `1fr` tracks absorb the slack. */
+  .ctext { white-space: nowrap; }
+  .cchip b { color: var(--ink); font-weight: 600; }
+  .cchip.live .cdot { background: var(--accent); animation: pulse 2s ease-in-out infinite; }
+  .cchip.stale b { color: var(--slate); }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .35; } }
+  @media (prefers-reduced-motion: reduce) { .cchip.live .cdot { animation: none; } }
 
   h1 { font-family: var(--mono); font-weight: 600; letter-spacing: -0.01em;
     font-size: clamp(24px,4vw,34px); line-height: 1.05; margin: 0 0 4px; text-wrap: balance; }
@@ -595,10 +667,27 @@
 </style>
 
 <div class="wrap">
-  <div class="statusline">
-    <span><span class="prompt">pyforge ❯</span> status --guildhall</span>
-    <span class="branch" id="branch">state: —</span>
-    <button class="theme-toggle" id="tt" type="button" aria-label="Toggle theme">◐ theme</button>
+  <!-- ONE console: the prompt/state line, the actions and the status chips share a
+       single box. They were two adjacent strips (an unboxed .statusline above a
+       bordered .consolebar), which left `state:` visually orphaned outside the
+       frame and read as two competing control rows. -->
+  <div class="consolebar">
+    <div class="cbrow">
+      <span class="cprompt"><span class="prompt">pyforge ❯</span> status --guildhall</span>
+      <span class="branch" id="branch">state: —</span>
+      <button class="cbtn" id="cb-refresh" type="button"
+        title="Reload with fresh data. Note: a page cannot force the browser to re-read its OWN html/css from disk — after a markup or style change, use Ctrl+Shift+R once.">⟳ refresh</button>
+      <button class="cbtn" id="cb-collapse" type="button" title="Collapse every panel">▾ collapse</button>
+      <button class="cbtn" id="cb-expand" type="button" title="Expand every panel">▸ expand</button>
+      <button class="cbtn" id="tt" type="button" aria-label="Toggle theme">◐ theme</button>
+    </div>
+    <!-- Order is deliberate and matches how the bar is read: what LANDED (left),
+         what is happening NOW (centre), when this view was made (right). -->
+    <div class="cbstatus">
+      <span class="cchip cslot-l" id="chip-ship"><span class="cdot"></span><span class="ctext">last shipped <b>—</b></span></span>
+      <span class="cchip cslot-c" id="chip-run"><span class="cdot"></span><span class="ctext">running <b>—</b></span></span>
+      <span class="cchip cslot-r" id="chip-gen"><span class="cdot"></span><span class="ctext">Refreshed <b>—</b></span></span>
+    </div>
   </div>
 
   <h1>PyForge <span class="sep">·</span> Guildhall</h1>
@@ -1272,6 +1361,7 @@
   if (lead) {
     root.setAttribute("data-project", lead[0]);
     branchEl.textContent = "state: " + lead[1].branch;
+    branchEl.title = "state: " + lead[1].branch;   // truncated in view; full text on hover
   }
   footerEl.innerHTML = '<b>Snapshot:</b> ' + window.DASHBOARD_DATA.snapshot +
     ' · Dreams ' + DREAMS.length + ' · Specs ' + SPECS.length + ' · Decks ' + PITCH.length +
@@ -1325,6 +1415,123 @@
       d.addEventListener("toggle", () => localStorage.setItem(k, d.open ? "1" : "0"));
     } catch (e) { /* storage unavailable — defaults stand */ }
   });
+
+  // ---- console bar: actions + live status chips ---------------------------
+  // Navigates with a cache-busting query rather than location.reload(), whose
+  // forceGet argument is long deprecated and ignored by every current engine.
+  //
+  // HONEST LIMIT, learned the hard way: this refreshes DATA, not the page's own
+  // html/css. No script can make a browser re-read the document it is running
+  // inside, bypassing cache — only a real hard reload (Ctrl+Shift+R) does that.
+  // On 2026-07-31 three markup/CSS fixes appeared not to land because index.html
+  // was cached while data.js was re-fetched, and this button could not tell the
+  // difference. The no-store meta tags above are the durable mitigation; the
+  // tooltip says the rest.
+  document.getElementById("cb-refresh").addEventListener("click", () => {
+    const u = new URL(location.href);
+    u.searchParams.set("_", Date.now().toString());
+    location.replace(u.toString());
+  });
+
+  const panels = () => Array.from(document.querySelectorAll("details.zsec"));
+  document.getElementById("cb-collapse").addEventListener("click",
+    () => panels().forEach(d => { d.open = false; }));
+  document.getElementById("cb-expand").addEventListener("click",
+    () => panels().forEach(d => { d.open = true; }));
+
+  (function statusChips() {
+    const st = (window.DASHBOARD_DATA || {}).status;
+    const set = (id, cls, html) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      // Toggle ONLY the state classes. Rewriting className wholesale dropped the
+      // `cslot-*` grid placement (collapsing all three chips into one column),
+      // and reading it back to re-add the slot threw in the render stub, where
+      // `className` is undefined. classList touches neither.
+      el.classList.remove("live", "stale");
+      if (cls) el.classList.add(cls);
+      // Target the text span BY CLASS. This was `querySelector("span:last-child")`,
+      // which is ambiguous inside a chip and matched the DOT — the text was being
+      // injected into a 7px circle, which stretched it into a coloured pill with
+      // no readable label (exactly how the running chip rendered).
+      const slot = el.querySelector(".ctext");
+      if (slot) slot.innerHTML = html;
+    };
+    if (!st) { set("chip-gen", "stale", "generated <b>unknown</b>"); return; }
+
+    const ago = (epochSec) => {
+      const m = Math.max(0, Math.round((Date.now() / 1000 - epochSec) / 60));
+      if (m < 60) return m + "m ago";
+      const h = Math.floor(m / 60);
+      return h < 24 ? h + "h " + (m % 60) + "m ago" : Math.floor(h / 24) + "d ago";
+    };
+
+    // generated-at also names the SOURCE. The local (sprint-status) and published
+    // (git) boards answer different questions by design — the factory-console
+    // Dream's "two-source refresh" — so the header says which one you are reading
+    // rather than leaving a mismatch to be discovered.
+    // Times render in the VIEWER's zone (falling back to EST if the browser
+    // cannot resolve one), because a UTC stamp forces mental arithmetic every
+    // time you glance at it. The UTC value stays in the tooltip so a shared
+    // screenshot is still unambiguous across machines.
+    const TZ = Intl.DateTimeFormat().resolvedOptions().timeZone || "America/New_York";
+    const localStamp = (epochSec) => new Date(epochSec * 1000).toLocaleString([], {
+      timeZone: TZ, month: "short", day: "numeric",
+      hour: "numeric", minute: "2-digit", hour12: true,
+    });
+    // Show the STANDARD-time abbreviation year-round (CST, not CDT), by operator
+    // preference: CDT is the correct label for July, but people read and say
+    // "CST" for the zone. The true abbreviation and the UTC stamp both stay in
+    // the tooltip, so nothing precise is lost — only the face of the chip is
+    // colloquial. Guarded to the X_DT -> X_ST pattern so a zone that does not
+    // use that form (e.g. "GMT+5:30") is passed through untouched.
+    const zoneAbbr = (epochSec) => {
+      const part = new Intl.DateTimeFormat([], { timeZone: TZ, timeZoneName: "short" })
+        .formatToParts(new Date(epochSec * 1000)).find(x => x.type === "timeZoneName");
+      const abbr = part ? part.value : TZ;
+      return /^[A-Z]DT$/.test(abbr) ? abbr.replace("DT", "ST") : abbr;
+    };
+    const genEl = document.getElementById("chip-gen");
+    const genTxt = st.generatedEpoch
+      ? `${localStamp(st.generatedEpoch)} ${zoneAbbr(st.generatedEpoch)}`
+      : (st.generatedAt || "—");
+    // The raw `--source` flag values are `sprint-status` and `git`. Neither means
+    // anything to a reader — "sprint-status" in particular reads as though it were
+    // a STATUS rather than the name of an input. What the reader needs is which of
+    // the two boards this is, because they answer different questions by design:
+    // `local` sees the gitignored Tier-3 feeds and therefore in-flight state;
+    // `published` is rebuilt on GitHub Pages from git history alone and cannot.
+    // The chip says only WHEN. Which board this is, and what it can or cannot
+    // see, moved to the tooltip: it matters when the two disagree, not on every
+    // glance, and it was crowding the one fact the chip exists to show.
+    if (genEl) {
+      genEl.title = `refreshed ${st.generatedAt || ""} (UTC)\n`
+        + (st.source === "git"
+            ? "published board — rebuilt on GitHub Pages from git history; cannot see in-flight state"
+            : "local board — reads the gitignored Tier-3 sprint feeds, so it sees in-flight state")
+        + `\n(generator --source ${st.source})`;
+    }
+    set("chip-gen", "", `Refreshed <b>${genTxt}</b>`);
+
+    if (!st.runningAvailable) {
+      // Honest absence, not silence: in-flight state comes from ~/.bmad-loops and
+      // tmux, which do not exist on a CI runner, so the published board CANNOT
+      // know. Saying so beats implying nothing is running.
+      set("chip-run", "stale", "running <b>n/a on published board</b>");
+    } else if (!st.running || !st.running.length) {
+      set("chip-run", "", "running <b>nothing</b>");
+    } else {
+      const r = st.running[0];
+      const extra = st.running.length > 1 ? ` +${st.running.length - 1}` : "";
+      const since = r.startEpoch ? " · " + ago(r.startEpoch) : "";
+      set("chip-run", "live", `running <b>${r.station} ${r.story}</b> (${r.phase || "?"})${since}${extra}`);
+    }
+
+    const s = st.lastShipped;
+    set("chip-ship", "", s
+      ? `last shipped <b>${s.station} ${s.story}</b> · ${ago(s.epoch)}`
+      : "last shipped <b>—</b>");
+  })();
 
   document.getElementById("tt").addEventListener("click", () => {
     const cur = root.getAttribute("data-theme");
