@@ -387,7 +387,7 @@ window.DASHBOARD_DATA = {
         "median": 104,
         "lo": 62,
         "hi": 450,
-        "phaseAsOf": "2026-07-31 19:24 UTC"
+        "phaseAsOf": "2026-07-31 19:34 UTC"
       },
       "velocity": {
         "derived": true,
@@ -2981,7 +2981,7 @@ window.DASHBOARD_DATA = {
       }
     }
   },
-  "snapshot": "<span>2026-07-31 19:24 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-07-31 19:34 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -3424,7 +3424,7 @@ window.DASHBOARD_DATA = {
       "title": "Genesis — the operating model, recorded",
       "caps": 4,
       "companions": 0,
-      "updated": "2026-07-29",
+      "updated": "2026-07-31",
       "dream": "pyforge-genesis",
       "path": "_bmad-output/projects/pyforge-genesis/planning-artifacts/specs/spec-pyforge-genesis"
     },
@@ -4575,7 +4575,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-07-29",
           "deck": "2026-07-25",
-          "spec": "2026-07-29",
+          "spec": "2026-07-31T19:40",
           "research": "",
           "brief": "",
           "prd": "2026-07-28",
@@ -4653,7 +4653,7 @@ window.DASHBOARD_DATA = {
             "kind": "feeds",
             "stage": "spec",
             "than": "prd",
-            "at": "2026-07-29",
+            "at": "2026-07-31T19:40",
             "other": "2026-07-28"
           },
           {
@@ -5758,7 +5758,7 @@ window.DASHBOARD_DATA = {
           "retro": ""
         },
         "updatedAt": {
-          "dream": "2026-07-25",
+          "dream": "2026-07-31",
           "deck": "2026-07-25",
           "spec": "2026-07-29",
           "research": "2026-07-25",
@@ -5835,8 +5835,8 @@ window.DASHBOARD_DATA = {
           }
         ],
         "furthest": "arch",
-        "updated": "2026-07-30",
-        "age": 1,
+        "updated": "2026-07-31",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -8128,7 +8128,7 @@ window.DASHBOARD_DATA = {
           "retro": ""
         },
         "updatedAt": {
-          "dream": "2026-07-25",
+          "dream": "2026-07-31",
           "deck": "",
           "spec": "2026-07-29",
           "research": "2026-07-25",
@@ -8229,9 +8229,9 @@ window.DASHBOARD_DATA = {
         "name": "spec-surface",
         "task": "spec-surface-check",
         "guards": "every tracked file under a Spec surface",
-        "state": "drift",
-        "findings": 1,
-        "verdict": "FINDINGS (1):",
+        "state": "green",
+        "findings": 0,
+        "verdict": "OK: every tracked file governed or allowlisted; no drift.",
         "runbook": ""
       },
       {
@@ -10153,7 +10153,7 @@ window.DASHBOARD_DATA = {
       "subject": "scribe: recover Story 1.3 from a DANGLING commit — 1,102 lines that were one gc from gone (#168)"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-07-31 19:24 UTC",
-    "generatedEpoch": 1785525847
+    "generatedAt": "2026-07-31 19:34 UTC",
+    "generatedEpoch": 1785526443
   }
 };

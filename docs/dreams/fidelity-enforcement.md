@@ -305,9 +305,18 @@ The choices are not.
 3. **A detector that cannot run reports `unknown`, never green.** Already the
    board's behaviour — *the strip never claims green it did not measure* — and
    promoted here to a rule binding every consumer of the registry.
-4. **Advisory locally, blocking in CI and in the fleet.** A local hook is
-   per-clone, untracked and bypassable, so it is fast feedback and must not be
-   mistaken for a gate. Treating it as one would be this Dream's own error.
+4. **Advisory locally and in CI; the fleet is where it must bind.** *(Amended
+   2026-07-31 — operator decision. The original read "blocking in CI and in the
+   fleet".)* A local hook is per-clone, untracked and bypassable, so it was never
+   a gate. CI is now **also advisory** by choice: findings surface as warning
+   annotations and never block a merge. Recorded as an amendment rather than
+   quietly implemented, because it is a real concession against this Dream's own
+   thesis — by the test in its first line, an advisory check is a plan. What it
+   buys is that the suite runs *at all*, on every PR, which is a large step from
+   nothing; what it costs is that a red detector can still be merged past, which
+   is exactly how PR #170 landed a `spec_surface_check` break. **The fleet's
+   `[verify]` set therefore carries the whole binding weight** — and until it is
+   wired, nothing in this factory can fail on a detector finding.
 5. **Never a blocking `pre-commit`.** Every worktree — loop homes and per-story
    worktrees alike — resolves to the *same* `.git/hooks`. A blocking pre-commit
    fires inside unattended dev sessions that cannot interpret a detector
@@ -617,6 +626,16 @@ this law was first discovered) · [[pyforge-charter]].
   conformance rows are unenforced because no detector covers them, and the
   detectors are unenforced because no trigger covers the detectors. *Wire the
   eight* is now the first frontier item, ahead of INV-4.
+- **2026-07-31** — **the trigger shipped, advisory** (operator decision). Nine
+  detectors now run on every PR and push to `main` via
+  `.github/workflows/detectors.yml`, discovered by a derived registry
+  (`scripts/detectors.py`) that fails on its own gaps. **Findings warn, they do
+  not block** — invariant 4 amended accordingly. First CI run proved the
+  plumbing: all seven repo-scope detectors executed on bare python in 25s,
+  including the headless-Chrome layout gate, and reported the one true open
+  finding. Reconciled in the same change: the `spec_surface_check` drift that
+  PR #170 introduced and merged unnoticed, which is the concrete cost of having
+  had no trigger at all.
 - **2026-07-31** — **six invariants recorded for the trigger** (§ The frontier),
   after the design for it was worked out conversationally and would otherwise
   have survived only in a session transcript — the precise failure this Dream

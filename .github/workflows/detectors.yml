@@ -24,10 +24,21 @@ name: Detectors
 # observation plane yet — see docs/dreams/fidelity-enforcement.md. Their absence
 # here is that gap, surfacing as a deployment constraint.
 #
-# EXIT CODES: 0 pass · 1 findings · 2 could-not-run. 2 fails the job on purpose.
-# A detector that cannot run reports unknown, never green (fidelity-enforcement,
-# invariant 3); treating "we could not look" as success is the false-green this
-# whole suite exists to refuse.
+# ADVISORY, NOT BLOCKING — operator decision 2026-07-31. Findings surface as
+# GitHub warning annotations and a job summary; the job itself always succeeds,
+# so a detector finding never blocks a merge.
+#
+# State that plainly rather than letting the green tick imply more than it means:
+# this is FAST FEEDBACK, not a gate. docs/dreams/fidelity-enforcement.md holds
+# that "a contract that nothing can fail against is a plan", and by its own test
+# an advisory check is the weaker thing. It is still a large step up from what
+# preceded it — nothing ran these at all, and PR #170 merged a real
+# spec_surface_check break unnoticed — but it is deliberately short of a gate,
+# and the Dream records that as an open decision rather than a settled one.
+#
+# To make it gate later: delete the `|| true`, drop the annotation plumbing, and
+# let the runner's exit code stand (0 pass · 1 findings · 2 could-not-run — 2
+# being "could not look", which must never read as success).
 
 on:
   pull_request:
@@ -67,20 +78,45 @@ jobs:
 
       # check_layout drives headless Chrome. ubuntu-latest ships google-chrome,
       # which the detector prefers via channel="chrome" before falling back to a
-      # playwright-managed chromium. If neither resolves it reports UNKNOWN and
-      # the suite exits 2 — visibly, rather than quietly skipping the one gate
-      # that asserts the console bar LOOKS right.
+      # playwright-managed chromium. If neither resolves, check_layout reports
+      # UNKNOWN and the runner exits 2 — surfaced as a warning here, rather than
+      # quietly skipping the one check that asserts the bar LOOKS right.
       - name: Verify a browser is present for the layout gate
         run: |
           which google-chrome || which chromium || \
             python -m playwright install --with-deps chromium
 
+      # Registry integrity is reported first and separately, so a hole in the
+      # registry reads as "the registry is wrong" rather than as a finding from
+      # some detector.
       - name: Registry integrity
-        # Fails when a detector script declares no scope, or declares one but has
-        # no pixi task — i.e. when the registry itself has a hole. Run first and
-        # separately so that failure reads as "the registry is wrong", not as a
-        # finding from some detector.
-        run: python scripts/detectors.py --list
+        run: python scripts/detectors.py --list || true
 
       - name: Run repo-scope detectors
-        run: python scripts/detectors.py --scope repo
+        run: |
+          set +e
+          python scripts/detectors.py --scope repo 2>&1 | tee detectors.out
+          rc=${PIPESTATUS[0]}
+          set -e
+
+          {
+            echo "## Detectors — repo scope"
+            echo
+            echo '```'
+            sed -n '1,40p' detectors.out
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          # One annotation per detector that reported, so findings are visible on
+          # the PR without opening the log. Advisory: the step still exits 0.
+          grep -E '^\s+(✗|\?) ' detectors.out | while read -r line; do
+            echo "::warning title=Detector::${line}"
+          done || true
+
+          case "$rc" in
+            0) echo "All repo-scope detectors passed." ;;
+            1) echo "::warning title=Detectors::Findings reported (advisory — not blocking). See the job summary." ;;
+            2) echo "::warning title=Detectors::A detector COULD NOT RUN — unknown, not green. See the job summary." ;;
+            *) echo "::warning title=Detectors::Runner exited ${rc}." ;;
+          esac
+          exit 0
