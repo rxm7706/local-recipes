@@ -45,12 +45,12 @@ window.DASHBOARD_DATA = {
             ""
           ],
           [
-            "3/12",
+            "4/12",
             "stories complete",
             "var(--done)"
           ],
           [
-            "9",
+            "8",
             "remaining",
             ""
           ]
@@ -74,7 +74,7 @@ window.DASHBOARD_DATA = {
       },
       "lineState": {
         "state": "paused",
-        "at": "1.4"
+        "at": "1.5"
       },
       "epics": [
         {
@@ -98,7 +98,7 @@ window.DASHBOARD_DATA = {
             ],
             [
               "1.4",
-              "pending",
+              "done",
               "Credential/environment-hygiene check (FR-3)"
             ],
             [
@@ -419,12 +419,12 @@ window.DASHBOARD_DATA = {
             ""
           ],
           [
-            "6/41",
+            "7/41",
             "stories complete",
             "var(--done)"
           ],
           [
-            "35",
+            "34",
             "remaining",
             ""
           ]
@@ -451,7 +451,7 @@ window.DASHBOARD_DATA = {
       },
       "lineState": {
         "state": "paused",
-        "at": "1.6"
+        "at": "1.7"
       },
       "epics": [
         {
@@ -490,7 +490,7 @@ window.DASHBOARD_DATA = {
             ],
             [
               "1.6",
-              "pending",
+              "done",
               "Isolation verification and home enumeration"
             ],
             [
@@ -741,12 +741,12 @@ window.DASHBOARD_DATA = {
             ""
           ],
           [
-            "3/38",
+            "4/38",
             "stories complete",
             "var(--done)"
           ],
           [
-            "35",
+            "34",
             "remaining",
             ""
           ]
@@ -769,7 +769,7 @@ window.DASHBOARD_DATA = {
       },
       "lineState": {
         "state": "paused",
-        "at": "1.3"
+        "at": "1.5"
       },
       "epics": [
         {
@@ -788,7 +788,7 @@ window.DASHBOARD_DATA = {
             ],
             [
               "1.3",
-              "pending",
+              "done",
               "Error taxonomy and exit-code contract"
             ],
             [
@@ -2961,7 +2961,7 @@ window.DASHBOARD_DATA = {
       }
     }
   },
-  "snapshot": "<span>2026-07-31 10:28 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-07-31 14:33 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -3376,7 +3376,7 @@ window.DASHBOARD_DATA = {
       "title": "Doctor (pyforge-doctor) — one bedside manner for the whole fleet",
       "caps": 4,
       "companions": 1,
-      "updated": "2026-07-29",
+      "updated": "2026-07-31",
       "dream": "pyforge-doctor",
       "path": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor"
     },
@@ -3416,7 +3416,7 @@ window.DASHBOARD_DATA = {
       "title": "herald CLI — the Design↔Code Bridge, formalized",
       "caps": 5,
       "companions": 2,
-      "updated": "2026-07-29",
+      "updated": "2026-07-31",
       "dream": "design-code-bridge",
       "path": "_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-design-code-bridge"
     },
@@ -3436,7 +3436,7 @@ window.DASHBOARD_DATA = {
       "title": "pyforge-herald",
       "caps": 0,
       "companions": 0,
-      "updated": "2026-07-29",
+      "updated": "2026-07-31",
       "dream": "pyforge-herald",
       "path": "_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald"
     },
@@ -3526,7 +3526,7 @@ window.DASHBOARD_DATA = {
       "title": "marshal CLI — graduated autonomy, productized",
       "caps": 8,
       "companions": 5,
-      "updated": "2026-07-30",
+      "updated": "2026-07-31",
       "dream": "pyforge-marshal",
       "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal"
     },
@@ -3596,7 +3596,7 @@ window.DASHBOARD_DATA = {
       "title": "mason CLI — the packaging factory, made portable",
       "caps": 7,
       "companions": 5,
-      "updated": "2026-07-29",
+      "updated": "2026-07-31",
       "dream": "pyforge-mason",
       "path": "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason"
     },
@@ -4143,7 +4143,7 @@ window.DASHBOARD_DATA = {
           "stories": 12,
           "state": "running",
           "note": "line 2 — consolidative wrap",
-          "done": 3,
+          "done": 4,
           "total": 12
         },
         {
@@ -4517,7 +4517,7 @@ window.DASHBOARD_DATA = {
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "3/12",
+        "progress": "4/12",
         "complete": 11,
         "of": 13
       },
@@ -4796,8 +4796,8 @@ window.DASHBOARD_DATA = {
           "epics": "2026-07-31",
           "sprint": "2026-07-31",
           "gates": "2026-07-06",
-          "code": "2026-07-30",
-          "verify": "2026-07-30",
+          "code": "2026-07-31",
+          "verify": "2026-07-31",
           "retro": ""
         },
         "sub": {
@@ -4889,7 +4889,7 @@ window.DASHBOARD_DATA = {
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "6/41",
+        "progress": "7/41",
         "complete": 13,
         "of": 13
       },
@@ -5008,7 +5008,7 @@ window.DASHBOARD_DATA = {
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "3/38",
+        "progress": "4/38",
         "complete": 11,
         "of": 13
       },
@@ -8323,7 +8323,7 @@ window.DASHBOARD_DATA = {
           "archived": 1,
           "practice": 4
         },
-        "line": "paused 1.6",
+        "line": "paused 1.7",
         "load": 1,
         "blocked": 0,
         "dreams": [
@@ -8472,7 +8472,7 @@ window.DASHBOARD_DATA = {
           "archived": 2,
           "practice": 2
         },
-        "line": "paused 1.3",
+        "line": "paused 1.5",
         "load": 1,
         "blocked": 1,
         "dreams": [
@@ -8531,7 +8531,7 @@ window.DASHBOARD_DATA = {
           "archived": 0,
           "practice": 0
         },
-        "line": "paused 1.4",
+        "line": "paused 1.5",
         "load": 0,
         "blocked": 0,
         "dreams": [

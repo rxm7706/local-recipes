@@ -52,7 +52,10 @@ AD-33 already resolves this: **git is the sole authority for repository facts**
 So a `done` story is CONFIRMED landed if either holds:
 
   1. a merge commit naming its story key exists on any ref, OR
-  2. the harness recorded a `commit_sha` for it.
+  2. the harness recorded a `commit_sha` for it, OR
+  3. a commit reachable from `main` names it as `Story <epic>.<seq>` -- the
+     hand-landed route (cherry-pick + squash PR), which has neither of the
+     above and whose run state stays frozen at `deferred` forever.
 
 and is reported ONLY when neither holds AND the harness positively says the
 story is `deferred`/`escalated`. That last clause is what keeps hand-implemented
@@ -133,6 +136,41 @@ def main() -> int:
                 if args.verbose:
                     print(f"  ok       {slug}/{key}  (merge commit found)")
                 continue
+            # Route 3: landed BY HAND, reachable from main. A story recovered by
+            # cherry-pick + squash PR has no `Merge bmad-loop/<run>/<key> into`
+            # subject and its run state is frozen at whatever the loop last wrote
+            # (`deferred`), so routes 1 and 2 both miss it and it is
+            # indistinguishable from a false green. That is heuristic B, which
+            # this file's own header documents as wrong -- and which the first
+            # version of this detector then walked into on 2026-07-31, flagging
+            # doctor 1.4 / marshal 1.6 / mason 1.3 minutes after they merged.
+            #
+            # Accept a commit REACHABLE FROM MAIN whose subject names the story
+            # as `Story <epic>.<seq>`. Deliberately narrower than a free-text
+            # search: `--grep` is anchored to that phrase and restricted to main,
+            # so an unrelated mention on a side branch cannot silence a finding.
+            # Route 3 evidence must be a commit SUBJECT, not anywhere in the
+            # message. Two mutation rounds shaped this:
+            #
+            #   * matching the story number alone silenced steward 1.4 (never
+            #     written) with doctor's "recover Story 1.4" -- the number is not
+            #     unique across stations, so the slug must match too;
+            #   * matching the whole message then silenced it AGAIN, because the
+            #     fleet-run save commit DOCUMENTS every deferral and so mentions
+            #     "steward" and "Story 1.4" in its body. Prose ABOUT a story is
+            #     not evidence OF a story.
+            #
+            # A subject line is a claim that the commit does the thing. Bodies
+            # explain, reference and enumerate; subjects assert. Only subjects
+            # reachable from main count.
+            m = re.match(r"^(\d+)-(\d+)-", key)
+            if m:
+                needle = f"story {m.group(1)}.{m.group(2)}"
+                subjects = sh("git", "log", "--format=%s", "main").lower().splitlines()
+                if any(slug in s and needle in s for s in subjects):
+                    if args.verbose:
+                        print(f"  ok       {slug}/{key}  (hand-landed; named in a commit subject on main)")
+                    continue
             phase = task.get("phase", "")
             if phase in NOT_LANDED:
                 findings.append((slug, key, phase, task.get("defer_reason") or ""))
