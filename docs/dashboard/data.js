@@ -2981,7 +2981,7 @@ window.DASHBOARD_DATA = {
       }
     }
   },
-  "snapshot": "<span>2026-07-31 21:40 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-07-31 21:54 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -8568,9 +8568,9 @@ window.DASHBOARD_DATA = {
         "name": "spec-surface",
         "task": "spec-surface-check",
         "guards": "every tracked file under a Spec surface",
-        "state": "green",
-        "findings": 0,
-        "verdict": "OK: every tracked file governed or allowlisted; no drift.",
+        "state": "drift",
+        "findings": 23,
+        "verdict": "FINDINGS (23):",
         "runbook": ""
       },
       {
@@ -10523,14 +10523,14 @@ window.DASHBOARD_DATA = {
     "source": "sprint-status",
     "running": [],
     "lastShipped": {
-      "station": "scribe",
-      "story": "1.3",
-      "epoch": 1785515691,
-      "sha": "d68187f4b",
-      "subject": "scribe: recover Story 1.3 from a DANGLING commit — 1,102 lines that were one gc from gone (#168)"
+      "station": "marshal",
+      "story": "1.9",
+      "epoch": 1785533914,
+      "sha": "9f4121c85",
+      "subject": "Merge bmad-loop/20260731-115548-f223/1-9-packaging-distribution-and-version-reporting into loop/pyforge-marshal (bmad-lo"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-07-31 21:40 UTC",
-    "generatedEpoch": 1785534022
+    "generatedAt": "2026-07-31 21:54 UTC",
+    "generatedEpoch": 1785534841
   }
 };
