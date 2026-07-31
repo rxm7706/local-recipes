@@ -1,17 +1,20 @@
-"""Integration test -- Stories 1.4/1.5, ``@pytest.mark.slow`` (real ``git``/
-filesystem I/O against a throwaway temp repo shaped like this one: a
+"""Integration test -- Stories 1.4/1.5/1.6, ``@pytest.mark.slow`` (real
+``git``/filesystem I/O against a throwaway temp repo shaped like this one: a
 tracked ``_bmad-output/projects/<slug>/planning-artifacts/`` on ``main``).
-Drives the full ``marshal init`` command end-to-end through
-``cli.main.main`` with the REAL ``GitVcs``/``LocalFs`` adapters (no fakes --
-those live in ``tests/unit/test_init.py``), proving the Acceptance Criteria
-a fake-port test cannot: a real git worktree lands on disk on the right
-branch, a real second invocation is a true zero-write no-op, and the home's
-gitignored Tier-3 store (Story 1.5) really resolves to the SAME real
-directory as the repo's own canonical copy.
+Drives the full ``marshal init``/``marshal homes`` commands end-to-end
+through ``cli.main.main`` with the REAL ``GitVcs``/``LocalFs`` adapters (no
+fakes -- those live in ``tests/unit/test_init.py``), proving the Acceptance
+Criteria a fake-port test cannot: a real git worktree lands on disk on the
+right branch, a real second invocation is a true zero-write no-op, the
+home's gitignored Tier-3 store (Story 1.5) really resolves to the SAME real
+directory as the repo's own canonical copy, and ``marshal homes`` (Story
+1.6) really auto-discovers real worktrees via real ``git worktree list``
+and really detects a real hand-edited desync.
 """
 
 from __future__ import annotations
 
+import json
 import subprocess
 from pathlib import Path
 
@@ -163,3 +166,59 @@ def test_init_refuses_a_real_nonempty_local_tier3_directory(tmp_path, monkeypatc
     assert home_tier3.is_dir()
     assert not home_tier3.is_symlink()
     assert stray_file.read_text(encoding="utf-8") == "status: in-progress\n"
+
+
+@pytest.mark.slow
+def test_homes_end_to_end_two_clean_worktrees_then_a_real_desync(tmp_path, monkeypatch, capsys):
+    """Story 1.6: real ``git worktree list`` auto-discovery against two
+    real ``marshal init``-provisioned worktrees, then a hand-edited marker
+    (exactly the kind of external tampering ``marshal homes`` exists to
+    catch) really trips ``MRS-HOMES-001`` on a second real invocation."""
+    slug_one = "acme"
+    repo = _build_repo(tmp_path, slug_one)
+    slug_two = "beta"
+    beta_dir = repo / "_bmad-output" / "projects" / slug_two / "planning-artifacts"
+    beta_dir.mkdir(parents=True)
+    (beta_dir / ".gitkeep").write_text("", encoding="utf-8")
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-m", "seed second project")
+
+    loop_home_root = tmp_path / "loop-homes"
+    monkeypatch.setenv("BMAD_LOOP_HOME_ROOT", str(loop_home_root))
+    monkeypatch.chdir(repo)
+
+    assert main(["init", slug_one]) == 0
+    capsys.readouterr()
+    assert main(["init", slug_two]) == 0
+    capsys.readouterr()
+
+    exit_code = main(["homes", "--format", "json"])
+    assert exit_code == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["status"] == "ok"
+    homes_by_slug = {row["slug"]: row for row in payload["data"]["homes"]}
+    assert set(homes_by_slug) == {slug_one, slug_two}
+    for row in homes_by_slug.values():
+        assert row["desynced"] is False
+        assert row["active_project"] == row["slug"]
+    assert payload["data"]["main_checkout"]["desynced"] is False
+    assert payload["findings"] == []
+
+    # Real external tampering: hand-edit acme's own marker to name a
+    # different project while its symlink/branch stay put.
+    acme_marker = loop_home_root / slug_one / "_bmad" / "custom" / ".active-project"
+    acme_marker.write_text(f"{slug_two}\n", encoding="utf-8")
+
+    second_exit = main(["homes", "--format", "json"])
+    assert second_exit != 0
+    second_payload = json.loads(capsys.readouterr().out)
+    codes = {finding["code"] for finding in second_payload["findings"]}
+    assert "MRS-HOMES-001" in codes
+    acme_row = next(
+        row for row in second_payload["data"]["homes"] if row["slug"] == slug_one
+    )
+    assert acme_row["desynced"] is True
+    beta_row = next(
+        row for row in second_payload["data"]["homes"] if row["slug"] == slug_two
+    )
+    assert beta_row["desynced"] is False  # unaffected by acme's own tampering
