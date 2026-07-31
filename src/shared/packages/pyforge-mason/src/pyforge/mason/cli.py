@@ -37,7 +37,7 @@ import os
 import sys
 from typing import Sequence
 
-from . import __version__
+from . import __version__, render
 
 # main() is the sole owner of the process exit code. A verb never calls
 # sys.exit() directly; it returns an int and main() projects it.
@@ -200,8 +200,17 @@ def main(argv: Sequence[str] | None = None) -> int:
             # verb level, so its namespace carries no `verb` attribute at
             # all, and a verb-less `doctor` is a complete command (EXIT_OK),
             # not a usage error.
-            print("mason doctor: not implemented yet (Story 1.2 is CLI wiring only)",
-                  file=sys.stderr)
+            #
+            # FR-34 frames `doctor` as a reporting command, so its stub
+            # result goes through the one formatter (AD-8) to stdout, not a
+            # raw stderr print(). Story 1.8 replaces the placeholder `data`
+            # with real diagnosis; the plumbing here does not change then.
+            fmt = _resolve_str(getattr(ns, "format", None), _ENV_FORMAT, "text")
+            render.write(
+                fmt, sys.stdout, "doctor", "ok",
+                {"message": "not implemented yet (Story 1.8 implements real diagnosis)"},
+                [],
+            )
             return EXIT_OK
 
         if not getattr(ns, "verb", None):
