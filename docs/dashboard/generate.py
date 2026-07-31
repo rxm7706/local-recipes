@@ -2104,6 +2104,71 @@ def now_utc() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
 
 
+# ---- console status block (the header chips) -------------------------------
+def build_status(data: dict, source: str) -> dict:
+    """The three facts the header chips render: generated-at, running now, last shipped.
+
+    Emitted as DATA rather than baked into the `snapshot` prose string, because the
+    front-end needs the pieces separately and a reader needs to know WHICH board
+    they are looking at. `source` is carried through for exactly that reason: the
+    local (`sprint-status`) and published (`git`) boards answer different questions
+    by design -- the factory-console Dream calls this the "two-source refresh" --
+    and a header that does not say which one it is invites the "why don't these
+    match?" question this block exists to pre-empt.
+
+    `running` is LOCAL-ONLY by construction: it derives from ~/.bmad-loops and tmux,
+    neither of which exists on a CI runner. On the published board it is therefore
+    reported as `unavailable` rather than omitted -- an honest absence, not a
+    silent one, so the board never implies "nothing is running" when it simply
+    cannot know.
+    """
+    running = []
+    projects = data.get("projects") or {}
+    for proj in (projects.values() if isinstance(projects, dict) else projects):
+        if not isinstance(proj, dict):
+            continue
+        ls = proj.get("lineState") or {}
+        if ls.get("state") == "in flight":
+            infl = proj.get("inflight") or {}
+            running.append({
+                "station": proj.get("label", "?"),
+                "story": ls.get("at", ""),
+                "phase": infl.get("phase", ""),
+                "startEpoch": infl.get("startEpoch"),
+            })
+
+    shipped = None
+    out = subprocess.run(
+        ["git", "log", MAIN_BRANCH, "--format=%H%x1f%ct%x1f%s", "-n", "400"],
+        capture_output=True, text=True, cwd=REPO_ROOT).stdout
+    for line in out.splitlines():
+        parts = line.split("\x1f")
+        if len(parts) != 3:
+            continue
+        sha, when, subject = parts
+        key = slug = None
+        m = _LOOP_DONE.search(subject)
+        if m:
+            key = m.group(1).replace("-", ".")
+            tgt = _LOOP_TARGET_SLUG.search(m.group(2) or "")
+            slug = tgt.group(1) if tgt else None
+        if not key:
+            # hand-landed: `<station>: ... Story <e>.<s> ...` in the SUBJECT
+            m2 = re.search(r"story\s+(\d+)\.(\d+)", subject, re.I)
+            if m2:
+                for cand in PROJECT_SOURCES:
+                    if cand in subject.lower():
+                        key, slug = f"{m2.group(1)}.{m2.group(2)}", cand
+                        break
+        if key and slug:
+            shipped = {"station": slug, "story": key, "epoch": int(when),
+                       "sha": sha[:9], "subject": subject[:120]}
+            break
+
+    return {"source": source, "running": running, "lastShipped": shipped,
+            "runningAvailable": source == "sprint-status"}
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument(
@@ -2179,6 +2244,8 @@ def main() -> int:
 
     ts = now_utc()
     data["snapshot"] = _SNAP_TS.sub(ts, data["snapshot"], count=1)
+    data["status"] = build_status(data, args.source)
+    data["status"]["generatedAt"] = ts
     DATA_JS.write_text(
         "window.DASHBOARD_DATA = " + json.dumps(data, indent=2, ensure_ascii=False) + ";\n",
         encoding="utf-8",

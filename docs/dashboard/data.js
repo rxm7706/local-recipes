@@ -11,7 +11,17 @@ window.DASHBOARD_DATA = {
         "E3–E5",
         "E6 · multi-axis"
       ],
-      "inflight": null,
+      "inflight": {
+        "key": "1.5",
+        "title": "`doctor check` CLI wiring, `--json`, and the speed budget (FR-9, NFR-4)",
+        "phase": "dev",
+        "attempt": "1",
+        "startEpoch": 1785508954,
+        "median": 83,
+        "lo": 42,
+        "hi": 427,
+        "phaseAsOf": "2026-07-31 14:59 UTC"
+      },
       "velocity": {
         "derived": true,
         "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 4 of 12 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
@@ -73,7 +83,7 @@ window.DASHBOARD_DATA = {
         }
       },
       "lineState": {
-        "state": "paused",
+        "state": "in flight",
         "at": "1.5"
       },
       "epics": [
@@ -103,7 +113,7 @@ window.DASHBOARD_DATA = {
             ],
             [
               "1.5",
-              "pending",
+              "active",
               "`doctor check` CLI wiring, `--json`, and the speed budget (FR-9, NFR-4)"
             ]
           ]
@@ -2961,7 +2971,7 @@ window.DASHBOARD_DATA = {
       }
     }
   },
-  "snapshot": "<span>2026-07-31 14:33 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-07-31 14:59 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -8531,7 +8541,7 @@ window.DASHBOARD_DATA = {
           "archived": 0,
           "practice": 0
         },
-        "line": "paused 1.5",
+        "line": "in flight 1.5",
         "load": 0,
         "blocked": 0,
         "dreams": [
@@ -9979,5 +9989,25 @@ window.DASHBOARD_DATA = {
         ]
       }
     ]
+  },
+  "status": {
+    "source": "sprint-status",
+    "running": [
+      {
+        "station": "Doctor",
+        "story": "1.5",
+        "phase": "dev",
+        "startEpoch": 1785508954
+      }
+    ],
+    "lastShipped": {
+      "station": "mason",
+      "story": "1.3",
+      "epoch": 1785508216,
+      "sha": "f93e838f8",
+      "subject": "mason: recover Story 1.3 — error taxonomy and exit-code contract (review TIMED OUT, no verdict) (#164)"
+    },
+    "runningAvailable": true,
+    "generatedAt": "2026-07-31 14:59 UTC"
   }
 };

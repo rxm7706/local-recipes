@@ -94,6 +94,26 @@
   .theme-toggle:hover { color: var(--ink); border-color: var(--accent-dim); }
   .theme-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
+  /* Console bar: actions + live status chips. Buttons reuse .theme-toggle's
+     shape so the header reads as one control strip rather than two styles. */
+  .consolebar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+    margin: 0 0 18px; padding: 10px 12px; background: var(--panel);
+    border: 1px solid var(--line); border-radius: 8px; }
+  .cbtn { font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.04em;
+    background: var(--panel-2); color: var(--slate); border: 1px solid var(--line);
+    border-radius: 6px; padding: 5px 11px; cursor: pointer; text-transform: uppercase; }
+  .cbtn:hover { color: var(--ink); border-color: var(--accent-dim); }
+  .cbtn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .cspacer { flex: 1 1 auto; }
+  .chip { font-family: var(--mono); font-size: 11px; color: var(--ink-soft);
+    display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+  .chip b { color: var(--ink); font-weight: 600; }
+  .chip .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--slate); flex: none; }
+  .chip.live .dot { background: var(--accent); animation: pulse 2s ease-in-out infinite; }
+  .chip.stale b { color: var(--slate); }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .35; } }
+  @media (prefers-reduced-motion: reduce) { .chip.live .dot { animation: none; } }
+
   h1 { font-family: var(--mono); font-weight: 600; letter-spacing: -0.01em;
     font-size: clamp(24px,4vw,34px); line-height: 1.05; margin: 0 0 4px; text-wrap: balance; }
   h1 .sep { color: var(--accent); font-weight: 400; transition: color .3s; }
@@ -599,6 +619,17 @@
     <span><span class="prompt">pyforge ❯</span> status --guildhall</span>
     <span class="branch" id="branch">state: —</span>
     <button class="theme-toggle" id="tt" type="button" aria-label="Toggle theme">◐ theme</button>
+  </div>
+
+  <div class="consolebar">
+    <button class="cbtn" id="cb-refresh" type="button"
+      title="Hard refresh — re-fetches data.js, bypassing cache (Ctrl+Shift+R)">⟳ refresh</button>
+    <button class="cbtn" id="cb-collapse" type="button" title="Collapse every panel">▾ collapse all</button>
+    <button class="cbtn" id="cb-expand" type="button" title="Expand every panel">▸ expand all</button>
+    <span class="cspacer"></span>
+    <span class="chip" id="chip-gen"><span class="dot"></span><span>generated <b>—</b></span></span>
+    <span class="chip" id="chip-run"><span class="dot"></span><span>running <b>—</b></span></span>
+    <span class="chip" id="chip-ship"><span class="dot"></span><span>last shipped <b>—</b></span></span>
   </div>
 
   <h1>PyForge <span class="sep">·</span> Guildhall</h1>
@@ -1325,6 +1356,68 @@
       d.addEventListener("toggle", () => localStorage.setItem(k, d.open ? "1" : "0"));
     } catch (e) { /* storage unavailable — defaults stand */ }
   });
+
+  // ---- console bar: actions + live status chips ---------------------------
+  // The page carries a 120s meta-refresh but data.js is a STATIC snapshot, so a
+  // plain reload can serve the same stale file from cache. `refresh` therefore
+  // navigates with a cache-busting query rather than calling location.reload(),
+  // whose forceGet argument is long deprecated and ignored by every current
+  // engine. Locally, `dashboard-watch` regenerates data.js beside a running
+  // loop; this button is what makes the new bytes visible without Ctrl+Shift+R.
+  document.getElementById("cb-refresh").addEventListener("click", () => {
+    const u = new URL(location.href);
+    u.searchParams.set("_", Date.now().toString());
+    location.replace(u.toString());
+  });
+
+  const panels = () => Array.from(document.querySelectorAll("details.zsec"));
+  document.getElementById("cb-collapse").addEventListener("click",
+    () => panels().forEach(d => { d.open = false; }));
+  document.getElementById("cb-expand").addEventListener("click",
+    () => panels().forEach(d => { d.open = true; }));
+
+  (function statusChips() {
+    const st = (window.DASHBOARD_DATA || {}).status;
+    const set = (id, cls, html) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.className = "chip" + (cls ? " " + cls : "");
+      el.querySelector("span:last-child").innerHTML = html;
+    };
+    if (!st) { set("chip-gen", "stale", "generated <b>unknown</b>"); return; }
+
+    const ago = (epochSec) => {
+      const m = Math.max(0, Math.round((Date.now() / 1000 - epochSec) / 60));
+      if (m < 60) return m + "m ago";
+      const h = Math.floor(m / 60);
+      return h < 24 ? h + "h " + (m % 60) + "m ago" : Math.floor(h / 24) + "d ago";
+    };
+
+    // generated-at also names the SOURCE. The local (sprint-status) and published
+    // (git) boards answer different questions by design — the factory-console
+    // Dream's "two-source refresh" — so the header says which one you are reading
+    // rather than leaving a mismatch to be discovered.
+    set("chip-gen", "", `generated <b>${st.generatedAt || "—"}</b> · ${st.source || "?"}`);
+
+    if (!st.runningAvailable) {
+      // Honest absence, not silence: in-flight state comes from ~/.bmad-loops and
+      // tmux, which do not exist on a CI runner, so the published board CANNOT
+      // know. Saying so beats implying nothing is running.
+      set("chip-run", "stale", "running <b>n/a on published board</b>");
+    } else if (!st.running || !st.running.length) {
+      set("chip-run", "", "running <b>nothing</b>");
+    } else {
+      const r = st.running[0];
+      const extra = st.running.length > 1 ? ` +${st.running.length - 1}` : "";
+      const since = r.startEpoch ? " · " + ago(r.startEpoch) : "";
+      set("chip-run", "live", `running <b>${r.station} ${r.story}</b> (${r.phase || "?"})${since}${extra}`);
+    }
+
+    const s = st.lastShipped;
+    set("chip-ship", "", s
+      ? `last shipped <b>${s.station} ${s.story}</b> · ${ago(s.epoch)}`
+      : "last shipped <b>—</b>");
+  })();
 
   document.getElementById("tt").addEventListener("click", () => {
     const cur = root.getAttribute("data-theme");
