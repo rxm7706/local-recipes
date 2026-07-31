@@ -15,6 +15,7 @@ from typing import Sequence
 
 from . import __version__
 from .interfaces import Duty, DutyResult, NullDuty
+from .keys import KeysDuty
 
 EXIT_OK = 0
 EXIT_FAILED = 1          # a duty ran and reported ok=False — the ONLY legitimate 1
@@ -42,16 +43,39 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--version", action="version", version=f"steward {__version__}")
     subs = parser.add_subparsers(dest="duty", metavar="{" + ",".join(DUTIES) + "}")
     for name in DUTIES:
-        subs.add_parser(name, help=_HELP[name], description=_HELP[name])
+        duty_parser = subs.add_parser(name, help=_HELP[name], description=_HELP[name])
+        if name == "keys":
+            _add_keys_subparsers(duty_parser)
     return parser
+
+
+def _add_keys_subparsers(keys_parser: argparse.ArgumentParser) -> None:
+    """Add `encrypt`/`decrypt` verbs (Story 1.3) — the only CLI surface this
+    story adds. Flag names deliberately mirror `age`'s own (`--recipient`/
+    `-r`, `--identity`/`-i`, `--output`/`-o`).
+    """
+    keys_subs = keys_parser.add_subparsers(dest="keys_verb", metavar="{encrypt,decrypt}")
+
+    encrypt = keys_subs.add_parser("encrypt", help="age-encrypt a file to a recipient")
+    encrypt.add_argument("file", help="the plaintext file to encrypt")
+    encrypt.add_argument("--recipient", "-r", required=True, help="the age public key to encrypt to")
+    encrypt.add_argument("--output", "-o", required=True, help="path to write the encrypted file")
+
+    decrypt = keys_subs.add_parser("decrypt", help="age-decrypt a file with an identity")
+    decrypt.add_argument("file", help="the age-encrypted file to decrypt")
+    decrypt.add_argument("--identity", "-i", required=True, help="the age identity (secret key) file")
+    decrypt.add_argument("--output", "-o", required=True, help="path to write the decrypted file")
 
 
 def resolve_duty(name: str) -> Duty:
     """Return the duty implementation for *name*.
 
-    Every duty is a :class:`NullDuty` at Story 1.1; real implementations replace
-    them one epic at a time without changing this seam.
+    `keys` returns a real `KeysDuty` (Story 1.3); `deploy`/`provision`/
+    `budget` are still `NullDuty` — real implementations replace them one
+    epic at a time without changing this seam.
     """
+    if name == "keys":
+        return KeysDuty()
     return NullDuty(name)
 
 
