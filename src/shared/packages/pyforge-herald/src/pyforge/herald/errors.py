@@ -1,13 +1,14 @@
-"""The Herald exception hierarchy (Story 1.2 -- transport-scoped subset).
+"""The Herald exception hierarchy (Story 1.2's transport branch, extended by
+Story 1.4 with bridge-core's conflict branch and the exit-code projection).
 
 Every error Herald raises descends from ``HeraldError``, so a caller can
-catch the whole surface with one ``except``. This story creates only the
-root plus the transport branch it actually raises: the CLI-boundary catch
-and the ``exit_code_for`` projection that maps these onto process exit
-codes are AD-6's assignment to Story 1.4, together with the conflict /
-state errors the bridge core needs. Deliberately no exit-code map here --
-a half-populated map is worse than none, because a later story would have
-to keep two sources of truth agreeing.
+catch the whole surface with one ``except``. Story 1.2 shipped only the root
+plus the transport branch it actually raises. This story adds the three
+conflict errors bridge-core raises (AD-6) and ``exit_code_for``, the sole
+owner of the error-to-exit-code projection -- mirroring
+``pyforge.warden.verdict.exit_code_for``'s shape: checked most-specific-first
+via ``isinstance``, so a narrower subclass can be given its own entry above
+a broader ancestor's without disturbing it.
 
 ``AuthError`` is the one error with a fixed remediation: the stored
 ``/design-login`` credential is missing or expired, and NFR-05 forbids
@@ -59,3 +60,59 @@ class UnconditionalWriteError(TransportError):
     write can never reach the server: every write-side entry must carry
     ``if_match`` (or ``leaf_if_match`` for a folder destination), with
     ``"0"`` asserting the path does not yet exist."""
+
+
+class SeedConflictError(HeraldError):
+    """``herald deck seed`` found Design-side edits it would clobber.
+
+    A direct ``HeraldError`` sibling of ``TransportError``, not one of its
+    subclasses: the transport answered fine, and the conflict is
+    bridge-core's own interpretation of that answer (Story 1.6 defines how
+    a response maps to this)."""
+
+
+class PullConflictError(HeraldError):
+    """``herald deck pull`` found a conflict it will not silently resolve.
+
+    Sibling of ``TransportError`` for the same reason as
+    ``SeedConflictError``: the interpretation belongs to bridge-core, not
+    the transport that merely answered the call."""
+
+
+class ExportConflictError(HeraldError):
+    """``herald deck`` export push-back found a conflict it will not
+    silently resolve.
+
+    Sibling of ``TransportError`` for the same reason as
+    ``SeedConflictError``."""
+
+
+_EXIT_BY_ERROR: tuple[tuple[type[HeraldError], int], ...] = (
+    (SeedConflictError, 3),
+    (PullConflictError, 3),
+    (ExportConflictError, 3),
+    (TransportError, 4),
+)
+"""Fixed, most-specific-first exit-code map (AD-6). Checked via
+``isinstance`` in order, so ``TransportError``'s one entry covers every
+existing subclass (``AuthError``, ``TransportUnreachableError``,
+``TransportCallError``, ``UnconditionalWriteError``) with no entry of its
+own -- adding one later only ever *adds* an isinstance entry above this
+line, never renumbers an existing one. A bare ``HeraldError`` (or any
+subclass this map has not yet been extended to cover) falls through to
+``1``, the safety net."""
+
+
+def exit_code_for(error: HeraldError) -> int:
+    """Project a ``HeraldError`` to its process exit code -- sole owner of
+    the mapping, mirroring ``pyforge.warden.verdict.exit_code_for``'s shape.
+
+    Fixed values: ``1`` for any other ``HeraldError`` (the safety net for a
+    type this map is not yet extended to cover); ``3`` for the three
+    conflict types; ``4`` for ``TransportError`` and everything under it.
+    Argparse's own usage-error exit (``2``) is untouched by this map -- it
+    never reaches here."""
+    for error_type, code in _EXIT_BY_ERROR:
+        if isinstance(error, error_type):
+            return code
+    return 1

@@ -350,13 +350,38 @@ def apply_loop_inflight(projects: dict) -> None:
         live = _live_loop_sessions()
         fresh = bool(runs) and (time.time() - runs[0].stat().st_mtime) < _RUN_FRESH_SECS
         if runs and (runs[0].name in live or fresh):
+            # A worktree's PRESENCE is not evidence a story is running: policy
+            # `keep_failed = true` deliberately leaves a deferred/escalated story's
+            # worktree on disk so its work can be recovered. Keying on presence alone
+            # made a paused run read as in flight -- live 2026-07-31, scribe reported
+            # "in-flight: 1.3, 1.4" with 1.3 deferred, 1.4 escalated and the run PAUSED,
+            # and the card ran a wall clock on a story that had stopped 3 hours earlier.
+            # Same class as _RUN_FRESH_SECS above: the console must not claim motion it
+            # has not measured. state.json is the authority for a story's phase (AD-33:
+            # the journal owns process facts), so intersect presence with it.
+            done_phases = {"deferred", "escalated", "done", "abandoned"}
+            phases: dict[str, str] = {}
+            try:
+                st = json.loads((runs[0] / "state.json").read_text())
+                phases = {k: (v or {}).get("phase", "") for k, v in (st.get("tasks") or {}).items()}
+            except Exception:
+                phases = {}  # unreadable state -> fall back to presence, as before
             wts = runs[0] / "worktrees"
             if wts.is_dir():
                 for wt in wts.iterdir():
                     m = _WT_STORY.match(wt.name)
-                    if m:
+                    if m and phases.get(wt.name, "") not in done_phases:
                         active_ids.add(m.group(1).replace("-", "."))
         if not active_ids:
+            # Nothing running -> CLEAR any card a previous render left behind.
+            # `continue`ing here (the old behaviour) preserved a stale card forever:
+            # the run that set it had since paused, so the board kept a live elapsed
+            # clock on a story that had stopped. A card is a claim about NOW; absent
+            # evidence it must be withdrawn, not retained (AD-8's no-silent-pass, in
+            # presentational form).
+            if proj.get("inflight"):
+                print(f"[{pkey}] clearing stale in-flight card (nothing running)")
+                proj["inflight"] = None
             continue
         marked = []
         for epic in proj["epics"]:

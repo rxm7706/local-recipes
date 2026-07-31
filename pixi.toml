@@ -221,8 +221,12 @@ description = "Build BOTH pyforge-marshal artifacts (conda + wheel/sdist) from o
 depends-on = ["pyforge-marshal-build-conda", "pyforge-marshal-build-dist"]
 
 [feature.pyforge-marshal.tasks.pyforge-marshal-test]
-description = "Run the pyforge-marshal test suite (unit + meta)."
-cmd = "pytest src/shared/packages/pyforge-marshal/tests -q"
+description = "Run the pyforge-marshal test suite (unit + meta, fast default loop -- excludes @pytest.mark.slow)."
+cmd = "pytest src/shared/packages/pyforge-marshal/tests -q -m \"not slow\""
+
+[feature.pyforge-marshal.tasks.pyforge-marshal-test-slow]
+description = "Run the slow, real-git end-to-end integration tests (@pytest.mark.slow) -- not part of the default loop (mirrors pyforge-warden-test-corpus-oracle's split)."
+cmd = "pytest src/shared/packages/pyforge-marshal/tests -q -m slow"
 
 # The OPERATOR path to a loop home's harness policy. Story 1.10 correctly made
 # `.bmad-loop/policy.toml` a derived artifact (AD-12/AD-35) and gitignored it,
@@ -1446,6 +1450,7 @@ depends-on = ["pyforge-atlas-build-conda", "pyforge-atlas-build-dist"]
 # _bmad-output/projects/pyforge-doctor/planning-artifacts/.
 [feature.pyforge-doctor.dependencies]
 pyforge-doctor = { path = "src/shared/packages/pyforge-doctor" }  # -> built conda pkg
+pyforge-warden = { path = "src/shared/packages/pyforge-warden" }  # Story 1.2, AD-1: the `gate` extra default-installed IN-REPO at feature level (mirrors [feature.pyforge-atlas.dependencies]'s identical edge) -- NOT a pyforge-doctor package run-dep, so external conda installs stay warden-optional
 hatchling = ">=1.31.0"                    # Python build backend (drives both conda + wheel/sdist)
 python-build = ">=1.5.0"                 # PyPA `python -m build` frontend (wheel + sdist)
 pytest = ">=9.1.1"                       # test runner

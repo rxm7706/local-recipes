@@ -295,8 +295,17 @@ def test_cli_writes_the_harness_policy_via_the_convention_layer(tmp_path):
     written = tmp_path / ".bmad-loop" / "policy.toml"
     assert written.is_file(), "the CLI did not reach write_policy_toml"
     parsed = tomllib.loads(written.read_text(encoding="utf-8"))
+    # Still an EXACT list, deliberately -- this assertion is the only thing standing
+    # between a mis-composed layer and a run with no gate, so it is not loosened to a
+    # membership check. The list grew to two on 2026-07-31 when marshal absorbed the
+    # pyforge-genesis installer as epics 7-12: marshal's own suite cannot gate a story
+    # that builds pyforge-genesis (it would pass regardless -- the same false green the
+    # 2026-07-30 audit found on six loop homes running warden's suite), so the station
+    # layer carries pyforge-deps-test as a second entry. That check discovers
+    # src/shared/packages/pyforge-* BY GLOB, so it covers a package the day it lands.
     assert parsed["verify"]["commands"] == [
-        "pixi run --frozen -e pyforge-marshal pyforge-marshal-test"
+        "pixi run --frozen -e pyforge-marshal pyforge-marshal-test",
+        "pixi run --frozen -e pyforge-ci pyforge-deps-test",
     ], "the project layer was not composed in -- verify would be EMPTY (no gate)"
     assert parsed["gates"]["mode"] == "none"
     assert parsed["limits"]["max_followup_reviews"] == 2

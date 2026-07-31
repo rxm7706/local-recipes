@@ -6,7 +6,8 @@
 behavior, preserved) but prints the usage line rather than silence, so a
 caller that lost its arguments cannot read as success. ``config`` (Story
 1.3, FR-54) is the first real
-subcommand, dispatched to ``cli/config.py``. Not wired through the
+subcommand, dispatched to ``cli/config.py``. ``init`` (Story 1.4,
+FR-1/FR-2) is the second, dispatched to ``cli/init.py``. Not wired through the
 envelope/finding machinery ITSELF: mirrors ``pyforge-doctor``'s
 ``__main__.py`` exit-relay pattern (structure: return an int, never raise,
 relay argparse's own code, clamp anything foreign) -- individual
@@ -33,6 +34,7 @@ import sys
 
 from ..core.verdict import EXIT_OK, EXIT_SIGINT, EXIT_USAGE, GUARDED_EXIT_CODES
 from . import config as config_cli
+from . import init as init_cli
 
 # Scaffold stage (Story 1.1): __init__.py stays empty (no __version__
 # constant), so the version string duplicates pyproject.toml's version
@@ -68,6 +70,7 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     subparsers = parser.add_subparsers(dest="command")
     config_cli.add_config_subparser(subparsers)
+    init_cli.add_init_subparser(subparsers)
     return parser
 
 
