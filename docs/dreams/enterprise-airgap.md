@@ -1,5 +1,5 @@
 ---
-title: The factory behind the firewall
+title: Firewalled Factory
 type: practice
 owner: steward
 status: realized
