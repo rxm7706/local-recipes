@@ -28,6 +28,13 @@ LIFECYCLE. Exits by itself once no bmad-loop engine process remains, so it never
 outlives the fleet — the same contract dashboard-watch follows. Run it detached
 beside a fleet launch.
 
+INTERVAL. 30 minutes by default (operator call 2026-07-31; the first cut was 3
+minutes). A dev phase runs 60-90 minutes, so 30 catches the common case — a
+finished phase sitting unpushed while review runs — without a network round trip
+per home every few minutes for work that has not moved. The number is a floor on
+how much can be lost, not a target: shortening it buys less than moving the push
+to a stage boundary, which is the actual fix.
+
 This bounds worst-case loss to one interval. It does not eliminate it: the
 durable fix is for the loop to push at its own stage boundaries, and this is the
 stopgap that makes the next dev phase survivable in the meantime.
@@ -102,8 +109,8 @@ def push_cycle(verbose: bool) -> tuple[int, int]:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-    ap.add_argument("--interval", type=int, default=180,
-                    help="seconds between cycles (default 180 — bounds worst-case loss)")
+    ap.add_argument("--interval", type=int, default=1800,
+                    help="seconds between cycles (default 1800 = 30 min)")
     ap.add_argument("--once", action="store_true", help="one cycle, then exit")
     ap.add_argument("--quiet", action="store_true")
     args = ap.parse_args()
