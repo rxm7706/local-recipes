@@ -677,3 +677,46 @@ def test_handler_returning_out_of_domain_int_is_clamped_to_usage(monkeypatch):
 
     monkeypatch.setattr(main_module.config_cli, "add_config_subparser", fake_add)
     assert main_module.main(["config"]) == EXIT_USAGE
+
+
+# --- Story 1.4: the `init` subcommand's wiring into main.py -----------------
+
+
+def test_help_lists_init_subcommand(capsys):
+    exit_code = main(["--help"])
+    assert exit_code == 0
+    assert "init" in capsys.readouterr().out
+
+
+def test_init_missing_required_slug_is_a_usage_error(capsys):
+    exit_code = main(["init"])
+    assert exit_code == EXIT_USAGE
+    captured = capsys.readouterr()
+    # Review finding: asserting `captured.err` alone is non-vacuous but too
+    # weak -- it would pass for ANY argparse usage error, not specifically
+    # the missing `slug` positional. Name the actual missing argument.
+    assert "slug" in captured.err
+
+
+def test_init_dispatches_to_run_init_with_parsed_args(monkeypatch):
+    """A lightweight wiring proof (mirrors this file's existing
+    fake_add/monkeypatch pattern): main() parses `init <slug>` and calls
+    cli.init.run_init with a Namespace carrying that slug, relaying
+    whatever int it returns -- the real orchestration is covered by
+    tests/unit/test_init.py and the real end-to-end
+    tests/integration/test_init_worktree.py."""
+    from pyforge.marshal.cli import init as init_module
+
+    received: list[str] = []
+
+    def fake_run_init(args, **kwargs):
+        received.append(args.slug)
+        return 0
+
+    monkeypatch.setattr(init_module, "run_init", fake_run_init)
+    # main.py's _build_parser() binds cli.init.run_init at subparser-registration
+    # time (`set_defaults(handler=run_init)` inside add_init_subparser), so the
+    # monkeypatch above (applied to the module attribute) must be in place
+    # BEFORE main() builds a fresh parser -- which it does on every call.
+    assert main(["init", "acme"]) == 0
+    assert received == ["acme"]

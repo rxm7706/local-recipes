@@ -27,7 +27,7 @@ EXIT_INTERNAL = 70       # EX_SOFTWARE — a crash, never conflated with EXIT_FA
 DUTIES: tuple[str, ...] = ("keys", "deploy", "provision", "budget")
 
 _HELP = {
-    "keys": "credential lifecycle — issue, rotate, revoke, audit",
+    "keys": "credential lifecycle — encrypt/decrypt (rotation and audit land in later stories)",
     "deploy": "deployment duties",
     "provision": "environment and substrate provisioning",
     "budget": "cost budgeting and enforcement",
@@ -42,16 +42,45 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--version", action="version", version=f"steward {__version__}")
     subs = parser.add_subparsers(dest="duty", metavar="{" + ",".join(DUTIES) + "}")
     for name in DUTIES:
-        subs.add_parser(name, help=_HELP[name], description=_HELP[name])
+        duty_parser = subs.add_parser(name, help=_HELP[name], description=_HELP[name])
+        if name == "keys":
+            _add_keys_subparsers(duty_parser)
     return parser
+
+
+def _add_keys_subparsers(keys_parser: argparse.ArgumentParser) -> None:
+    """Add `encrypt`/`decrypt` verbs (Story 1.3) — the only CLI surface this
+    story adds. Flag names deliberately mirror `age`'s own (`--recipient`/
+    `-r`, `--identity`/`-i`, `--output`/`-o`).
+    """
+    keys_subs = keys_parser.add_subparsers(dest="keys_verb", metavar="{encrypt,decrypt}")
+
+    encrypt = keys_subs.add_parser("encrypt", help="age-encrypt a file to a recipient")
+    encrypt.add_argument("file", help="the plaintext file to encrypt")
+    encrypt.add_argument("--recipient", "-r", required=True, help="the age public key to encrypt to")
+    encrypt.add_argument("--output", "-o", required=True, help="path to write the encrypted file")
+
+    decrypt = keys_subs.add_parser("decrypt", help="age-decrypt a file with an identity")
+    decrypt.add_argument("file", help="the age-encrypted file to decrypt")
+    decrypt.add_argument("--identity", "-i", required=True, help="the age identity (secret key) file")
+    decrypt.add_argument("--output", "-o", required=True, help="path to write the decrypted file")
 
 
 def resolve_duty(name: str) -> Duty:
     """Return the duty implementation for *name*.
 
-    Every duty is a :class:`NullDuty` at Story 1.1; real implementations replace
-    them one epic at a time without changing this seam.
+    `keys` returns a real `KeysDuty` (Story 1.3); `deploy`/`provision`/
+    `budget` are still `NullDuty` — real implementations replace them one
+    epic at a time without changing this seam.
     """
+    if name == "keys":
+        # Imported here, not at module top: keys.py resolves its `_http.py`
+        # bridge at import time and refuses to load outside a local-recipes
+        # checkout, so a top-level import would take `steward --help`/
+        # `--version` and every other duty down with it.
+        from .keys import KeysDuty
+
+        return KeysDuty()
     return NullDuty(name)
 
 

@@ -363,7 +363,9 @@ As the operator,
 I want a story's changed files checked against both its declared surface and every frozen surface,
 So that a producer story cannot silently amend a contract another story froze.
 
-**Type:** feature • **Effort:** M • **Deps:** S-1.2, S-2.2 • **FR/AD:** FR-22; NFR-3, NFR-5; AD-26, AD-27
+**Type:** feature • **Effort:** M • **Deps:** S-1.2, S-2.2, **S-3.2** • **FR/AD:** FR-22; NFR-3, NFR-5; AD-26, AD-27
+
+> **Dependency corrected 2026-07-30 (F-9).** This story's own ACs require the frozen set to be "produced by the journal fold" — and the fold is **S-3.2, in the next epic**. As declared (`S-1.2, S-2.2`) the story was **not implementable in its position**: it depended on a component that did not yet exist. Adding `S-3.2` makes the graph honest. The alternative — moving the fold into Epic 2 — was rejected because S-3.2 also owns run-state derivation that Epic 3 needs, and splitting it would give the fold two homes. Epic 2 therefore completes after S-3.2 lands; the epic boundary is a value boundary, not a scheduling barrier.
 **Surface:** `core/gate.py`, `core/policy.py` (seed accessor), `tests/unit/test_scope.py`
 
 **Acceptance Criteria:**
@@ -444,7 +446,7 @@ So that I can prove months later what was checked and what it said.
 
 As the operator,
 I want every run to have a Marshal-owned identity and an append-only journal written safely,
-So that seven concurrent homes can share one store without braiding their histories together.
+So that nine concurrent homes can share one store without braiding their histories together.
 
 **Type:** foundation • **Effort:** M • **Deps:** S-1.1, S-1.5 • **FR/AD:** FR-18; NFR-8; AD-25, AD-28, AD-30
 **Surface:** `core/journal.py`, `adapters/fs_local.py`, `schemas/journal.json`
@@ -453,15 +455,15 @@ So that seven concurrent homes can share one store without braiding their histor
 
 **Given** any run or session invocation
 **When** the identifier is minted
-**Then** Marshal mints it **at `intent` time, before any spawn** — lexicographically sortable, globally unique, `<slug>-<utc-compact>-<random>` (AD-25)
+**Then** Marshal mints it **at `intent` time, before any spawn** — globally unique, `<slug>-<utc-compact>-<random>`, sortable chronologically **within a slug** but not across the fleet; fleet-wide chronology sorts on `ts`, never on the id (AD-25)
 **And** the harness's own identifier is recorded as `harness_run_id` on the first `outcome` entry and is **never** a key, a path segment, or a grouping field
-**And** run directories are created `O_EXCL`; a collision is a hard finding, never an append
+**And** run directories are created with `mkdir`, which already fails `EEXIST`; a collision is a hard finding, never an append
 **And** non-run invocations (standalone gate evaluation, adapter probe) mint into a separate `sessions/` namespace excluded from fleet folds **by construction, not by filtering**
-**And** every entry carries `{id, seq, ts, run_id, story?, kind, phase, intent_id?, payload}` with `intent_id` mandatory on every `outcome` (AD-28)
+**And** every entry carries `{id, ts, run_id, story?, kind, phase, intent_id?, payload}` where `id` is the composite **`(writer_id, counter)`** — monotonic within a writer, never across the run — and `phase ∈ intent | outcome | observation`, with `intent_id` mandatory on every `outcome` and absent on every `observation` (AD-28)
 **And** each append is a single `os.write()` of one complete newline-terminated line on an `O_APPEND|O_CREAT` descriptor, `fsync`ed for `phase: intent`, with no buffered stream held open across appends (AD-30)
 **And** payloads over 4 KiB go to a sidecar blob with a reference in the entry
-**And** timestamps carry millisecond precision and total order is `(seq, ts)`
-**And** a concurrency test with a long-lived writer and repeated short-lived writers produces zero malformed lines
+**And** timestamps carry millisecond precision and total order is **`(ts, writer_id, counter)`** — a total order without cross-writer coordination, explicitly **not** a causal order; no consumer may infer causality from adjacency (AD-28)
+**And** a concurrency test with a long-lived writer and repeated short-lived writers produces zero malformed lines **and zero duplicate `(writer_id, counter)` pairs** — the malformed-line assertion alone tests atomicity, not identity, and would pass while the id invariant was violated
 
 ### Story 3.2: The journal fold — one producer for accumulating run state
 
@@ -479,7 +481,8 @@ So that no two components can disagree about what happened.
 **Then** it produces run state — story transitions, gate verdicts, escalations, deferrals, consumption, supervisor actions, frozen surfaces, attempt counts, effective gate mode
 **And** these accumulating values have **exactly one producer**: this fold. Any module reading them from `EffectivePolicy` fails a meta-test (AD-26)
 **And** `intent`/`outcome` pairing is by `intent_id` **only** — no positional or heuristic pairing exists anywhere (AD-28)
-**And** an unparseable line is **quarantined** and surfaced as a registered finding on that record, and does **not** make surrounding run state unevaluable (AD-30)
+**And** an unparseable line is **quarantined**, surfaced as a registered finding, and makes **its own story key and decision domain `unevaluable`** — records provably unaffected stay evaluable; when the line's `story` or `kind` cannot be recovered the scope widens to the whole run, because unknown blast radius is not a reason to narrow it (AD-30)
+**And** a reference to a **missing sidecar blob** is the same class and takes the same treatment — `unevaluable` for that record, never "quarantine and continue"
 **And** the fold is a pure function over entries with no I/O (AD-4)
 **And** a lone `intent` is reported as open, never inferred closed
 
@@ -798,7 +801,7 @@ So that a dashboard can trust it without scraping human output.
 
 ## Epic 6: Portability proven
 
-**Goal:** the operator can run the method on an agent other than the default, and hold a dated artifact that says so. This epic exists because 92 skills currently live only in one adapter's tree while four of six adapter profiles read from another — so "BMAD runs on any agent" is today an aspiration, not a fact.
+**Goal:** the operator can run the method on an agent other than the default, and hold a dated artifact that says so. This epic exists because 89 skills currently live only in one adapter's tree while four of six adapter profiles read from another — so "BMAD runs on any agent" is today an aspiration, not a fact.
 
 ### Story 6.1: Profile-driven adapter selection, project-scoped
 
@@ -852,7 +855,7 @@ So that a projection mechanism cannot report clean simply because it is incapabl
 **Given** a projected skill tree
 **When** drift detection runs
 **Then** it reports added, removed and modified skills per adapter tree
-**And** the check is **mechanism-specific**: a link-based projection asserts link-target identity and reports `not-applicable` for content drift — **never `clean`** (AD-36)
+**And** the check is **mechanism-specific**: a link-based projection asserts **link-target identity** — a falsifiable check that can genuinely fail — and emits **no content-drift finding at all**; it never reports `clean` for a check that cannot fail, and it never emits `not-applicable`, which the closed lattice has no member for (AD-36, AD-31)
 **And** reporting `clean` for a check that cannot fail is a meta-test failure
 **And** it runs as part of preflight whenever a non-default adapter is configured
 
@@ -890,7 +893,7 @@ So that "it works here" is something I ran, not something I assumed.
 **When** the conformance smoke runs
 **Then** the smoke story exercises spec read → change → verify → commit and is adapter-agnostic
 **And** the result is `pass | fail | unavailable` with the **failing stage named**
-**And** it runs in a loop home provisioned `ephemeral: true` — a flag only this command may set — which is **exempt from the promotion predicate** and produces no promotable artifact by construction (AD-37, AD-13)
+**And** it runs in a loop home provisioned `ephemeral: true` — a flag only this command may set — which is **exempt from AD-29's promotion-reachability predicate** and produces no promotable artifact by construction (AD-37, AD-29 — **not** AD-13, whose predicate AD-29 superseded)
 **And** the ephemeral home leaves no residue afterwards
 **And** an adapter absent from the host reports `unavailable` without failing the command
 
@@ -911,7 +914,7 @@ So that there is exactly one place Marshal makes a portability claim.
 **And** status distinguishes **`not-attempted` (no claim made) from `unavailable` (attempted, host lacks it) from `fail` from `pass`** (AD-31)
 **And** **SM-6 counts only `pass`** — the metric is not gameable by uninstalled adapters
 **And** rows older than a configured age are marked stale
-**And** it lives at the single machine-scoped path, and is the **only** place Marshal makes a portability claim (AD-37)
+**And** it lives at the **tracked, per-host** path `planning-artifacts/conformance/matrix/<hostname>.md` — reviewable in a PR and present in every clone — and is the **only** place Marshal makes a portability claim (AD-37 as amended 2026-07-30; FR-45's "tracked", NFR-8 and the architecture's Operational envelope all required this, and the machine-scoped reading contradicted all three for the one artifact SM-6 measures)
 
 ### Story 6.7: Entry-file family drift check, detect-only
 
