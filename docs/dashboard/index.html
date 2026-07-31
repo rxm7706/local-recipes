@@ -104,9 +104,23 @@
      opposite edges of a wide bar and STILL truncated). Both were solving an
      overflow that does not happen at real widths: the three strings total
      ~110 characters at 11px. Let them sit together and wrap if they must. */
+  /* Three slots: last-shipped LEFT, running CENTRE, generated RIGHT.
+     `1fr auto 1fr` is what actually centres the middle chip — with
+     space-between, the centre drifts whenever the two outer strings differ in
+     length, which they always do. The outer tracks stay equal regardless, so
+     the running chip sits at the true midpoint. Collapses to a single
+     left-aligned column under 720px rather than squeezing three into a
+     phone width. */
   .cbstatus { border-top: 1px solid var(--line); background: var(--panel-2);
-    display: flex; flex-wrap: wrap; align-items: center; gap: 8px 26px;
-    padding: 8px 12px; }
+    display: grid; grid-template-columns: 1fr auto 1fr; align-items: center;
+    gap: 6px 20px; padding: 8px 12px; }
+  .cslot-l { justify-self: start; }
+  .cslot-c { justify-self: center; }
+  .cslot-r { justify-self: end; }
+  @media (max-width: 720px) {
+    .cbstatus { grid-template-columns: 1fr; }
+    .cslot-l, .cslot-c, .cslot-r { justify-self: start; }
+  }
   .cprompt { font-family: var(--mono); font-size: 12.5px; letter-spacing: 0.02em;
     color: var(--slate); flex: none; }
   .cprompt .prompt { color: var(--accent); transition: color .3s; }
@@ -139,6 +153,13 @@
     text-transform: none; letter-spacing: normal; padding: 0; border: 0; }
   .cchip .cdot { flex: 0 0 auto; width: 7px; height: 7px; min-width: 7px;
     border-radius: 50%; background: var(--slate); }
+  /* Never break a chip mid-phrase. Dropping this in an earlier simplification is
+     what produced the vertical stacking ("running" / "Doctor" / "1.5" / "(dev)"
+     on four lines, spilling out of the bar): with no width to work in, the text
+     wrapped word by word. It is safe now because the centre grid track is
+     `auto` — sized to its content — so the chip is never squeezed in the first
+     place, and the outer `1fr` tracks absorb the slack. */
+  .ctext { white-space: nowrap; }
   .cchip b { color: var(--ink); font-weight: 600; }
   .cchip.live .cdot { background: var(--accent); animation: pulse 2s ease-in-out infinite; }
   .cchip.stale b { color: var(--slate); }
@@ -660,10 +681,12 @@
       <button class="cbtn" id="cb-expand" type="button" title="Expand every panel">▸ expand</button>
       <button class="cbtn" id="tt" type="button" aria-label="Toggle theme">◐ theme</button>
     </div>
+    <!-- Order is deliberate and matches how the bar is read: what LANDED (left),
+         what is happening NOW (centre), when this view was made (right). -->
     <div class="cbstatus">
-      <span class="cchip" id="chip-gen"><span class="cdot"></span><span class="ctext">generated <b>—</b></span></span>
-      <span class="cchip" id="chip-run"><span class="cdot"></span><span class="ctext">running <b>—</b></span></span>
-      <span class="cchip" id="chip-ship"><span class="cdot"></span><span class="ctext">last shipped <b>—</b></span></span>
+      <span class="cchip cslot-l" id="chip-ship"><span class="cdot"></span><span class="ctext">last shipped <b>—</b></span></span>
+      <span class="cchip cslot-c" id="chip-run"><span class="cdot"></span><span class="ctext">running <b>—</b></span></span>
+      <span class="cchip cslot-r" id="chip-gen"><span class="cdot"></span><span class="ctext">generated <b>—</b></span></span>
     </div>
   </div>
 
@@ -1421,7 +1444,12 @@
     const set = (id, cls, html) => {
       const el = document.getElementById(id);
       if (!el) return;
-      el.className = "cchip" + (cls ? " " + cls : "");
+      // Toggle ONLY the state classes. Rewriting className wholesale dropped the
+      // `cslot-*` grid placement (collapsing all three chips into one column),
+      // and reading it back to re-add the slot threw in the render stub, where
+      // `className` is undefined. classList touches neither.
+      el.classList.remove("live", "stale");
+      if (cls) el.classList.add(cls);
       // Target the text span BY CLASS. This was `querySelector("span:last-child")`,
       // which is ambiguous inside a chip and matched the DOT — the text was being
       // injected into a 7px circle, which stretched it into a coloured pill with
