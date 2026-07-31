@@ -6,12 +6,21 @@ rationale -- see this module's own docstrings for the specific mapping).
 
 No new runtime dependency: ``git`` is invoked as an external process exactly
 like the reference script does, never via a Python git library.
+
+Story 1.6 adds ``list_worktrees`` (FR-8's full-enumeration primitive), which
+shares ``worktree_path_for_branch``'s own ``git worktree list --porcelain``
+block parser (``_iter_worktree_blocks``) rather than duplicating it -- the
+two methods differ only in whether they stop at the first matching block or
+return every block.
 """
 
 from __future__ import annotations
 
 import subprocess
+from collections.abc import Iterator
 from pathlib import Path
+
+from ..ports.vcs import WorktreeEntry
 
 
 class VcsCommandError(Exception):
@@ -68,6 +77,28 @@ def _run(
         # non-executable shim, ENOEXEC on a corrupt binary -- all must land
         # in the envelope, not escape raw (review finding).
         raise VcsCommandError(f"cannot launch git: {exc}") from exc
+
+
+def _iter_worktree_blocks(stdout: str) -> Iterator[dict[str, str]]:
+    """Parses ``git worktree list --porcelain``'s blank-line-delimited
+    blocks of ``key value`` lines into per-worktree dicts. A valueless
+    marker line (``detached``, ``bare`` -- no space, so no value) normalizes
+    to ``"true"`` rather than being dropped, so ``list_worktrees`` can tell a
+    detached-HEAD block apart from one simply missing a ``branch`` line for
+    some other reason. Shared by ``worktree_path_for_branch`` (Story 1.4,
+    the first caller, single-branch lookup) and ``list_worktrees`` (Story
+    1.6, the full-enumeration generalization) so this parse lives in exactly
+    one place."""
+    for block in stdout.split("\n\n"):
+        lines: dict[str, str] = {}
+        for line in block.splitlines():
+            if " " in line:
+                key, value = line.split(" ", 1)
+                lines[key] = value
+            elif line:
+                lines[line] = "true"
+        if lines:
+            yield lines
 
 
 class GitVcs:
@@ -128,17 +159,15 @@ class GitVcs:
 
     def worktree_path_for_branch(self, repo_root: Path, branch: str) -> Path | None:
         """Mirrors the reference script's ``cmd_list``: parses
-        ``git worktree list --porcelain`` (blank-line-delimited blocks of
-        ``key value`` lines) for the block whose ``branch`` line is exactly
-        ``refs/heads/<branch>``."""
+        ``git worktree list --porcelain`` (via ``_iter_worktree_blocks``) for
+        the block whose ``branch`` line is exactly ``refs/heads/<branch>``."""
         result = _run(["git", "-C", str(repo_root), "worktree", "list", "--porcelain"])
         if result.returncode != 0:
             raise VcsCommandError(
                 f"git worktree list failed: {result.stderr.strip()}"
             )
         wanted = f"refs/heads/{branch}"
-        for block in result.stdout.split("\n\n"):
-            lines = dict(line.split(" ", 1) for line in block.splitlines() if " " in line)
+        for lines in _iter_worktree_blocks(result.stdout):
             if lines.get("branch") == wanted:
                 worktree = lines.get("worktree")
                 if worktree is None:
@@ -152,6 +181,36 @@ class GitVcs:
                     )
                 return Path(worktree)
         return None
+
+    def list_worktrees(self, repo_root: Path) -> tuple[WorktreeEntry, ...]:
+        """Story 1.6, FR-8: generalizes ``worktree_path_for_branch``'s
+        single-branch lookup (same ``_iter_worktree_blocks`` parse) to return
+        EVERY block instead of stopping at the first match -- the main
+        working tree (always listed first by real ``git worktree list``)
+        plus every linked worktree, ``loop/<slug>`` or otherwise.
+        ``branch`` is stripped back to its bare name (porcelain always
+        qualifies it ``refs/heads/<branch>``); ``None`` for a detached-HEAD
+        block, which carries no ``branch`` line at all."""
+        result = _run(["git", "-C", str(repo_root), "worktree", "list", "--porcelain"])
+        if result.returncode != 0:
+            raise VcsCommandError(
+                f"git worktree list failed: {result.stderr.strip()}"
+            )
+        entries: list[WorktreeEntry] = []
+        for lines in _iter_worktree_blocks(result.stdout):
+            worktree = lines.get("worktree")
+            if worktree is None:
+                # Same "no worktree line" defect class as
+                # worktree_path_for_branch above -- surfaced here without a
+                # specific wanted branch to name, since this method has none.
+                raise VcsCommandError(
+                    "unparseable 'git worktree list --porcelain' block: "
+                    "no worktree line"
+                )
+            branch_ref = lines.get("branch")
+            branch = branch_ref.removeprefix("refs/heads/") if branch_ref is not None else None
+            entries.append(WorktreeEntry(path=Path(worktree), branch=branch))
+        return tuple(entries)
 
     def add_worktree(self, repo_root: Path, home: Path, branch: str, *, base: str) -> None:
         """Mirrors the reference script's ``has_branch``-gated

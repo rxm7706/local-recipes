@@ -9,6 +9,11 @@ temp-path-then-``os.replace`` (atomic on the same filesystem), mirroring
 Story 1.5 adds ``ensure_dir``/``remove_empty_dir``, porting
 ``bmad-switch.ensure_tier3_backlink``'s ``mkdir(parents=True,
 exist_ok=True)``/empty-dir-removal primitives the same way.
+
+Story 1.6 adds ``resolve_path`` -- a thin wrapper over
+``pathlib.Path.resolve()`` (non-strict by default, so it never requires
+``path`` to exist), with the same "wrap OSError into FsError" convention as
+every other method here.
 """
 
 from __future__ import annotations
@@ -129,6 +134,15 @@ class LocalFs:
             path.mkdir(parents=True, exist_ok=True)
         except OSError as exc:
             raise FsError(f"cannot create directory {path}: {exc}") from exc
+
+    def resolve_path(self, path: Path) -> Path:
+        # strict=False (the default): a broken/dangling target is exactly
+        # the violation marshal homes' Tier-3 check exists to name, not an
+        # error to raise on -- see this method's own port docstring.
+        try:
+            return path.resolve()
+        except OSError as exc:
+            raise FsError(f"cannot resolve {path}: {exc}") from exc
 
     def remove_empty_dir(self, path: Path) -> bool:
         # Mirrors scripts/bmad-switch's ensure_tier3_backlink: `any(iterdir())`

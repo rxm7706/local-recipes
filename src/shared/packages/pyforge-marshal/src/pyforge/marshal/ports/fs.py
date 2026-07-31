@@ -33,6 +33,14 @@ primitives, ported from ``bmad-switch.ensure_tier3_backlink``:
   the caller can tell a safe refusal (``MRS-INIT-005``) apart from a real
   I/O failure (``FsError`` -> ``MRS-INIT-004``) structurally rather than by
   string-matching a message (see the spec's Design Notes).
+
+Story 1.6 (``marshal homes``, FR-4) adds ``resolve_path``: the realpath
+primitive its Tier-3 isolation check needs to compare a home's local backlink
+against the canonical store BY REALPATH rather than the raw (typically
+relative) symlink target string ``read_symlink_target`` returns -- closing a
+gap the raw-string comparison ``cli/init.py``'s own ``tier3_backlink`` step
+still has (see that story's spec Design Notes for why the gap stays open
+there).
 """
 
 from __future__ import annotations
@@ -85,4 +93,25 @@ class FsPort(Protocol):
         does not exist, is not a directory at all, or is a symlink -- even
         one pointing at an empty directory: removal refuses to operate
         through a link, so callers must check for a symlink first)."""
+        ...
+
+    def resolve_path(self, path: Path) -> Path:
+        """The full realpath of ``path``: every symlink resolved, normalized
+        to an absolute path (mirrors ``os.path.realpath``). Non-strict --
+        ``path`` (or any component of it) need not exist; a target that
+        doesn't fully exist still resolves as far as possible rather than
+        raising, since a broken/dangling backlink is exactly the violation
+        ``marshal homes``'s Tier-3 realpath check (Story 1.6, FR-4) needs to
+        name, not an error to abort the whole command on. This includes a
+        symlink LOOP and a permission-denied ancestor: confirmed live
+        (CPython's ``Path.resolve(strict=False)`` swallows both and returns
+        a best-effort path rather than raising -- review finding, this
+        module previously overclaimed an ``FsError`` here) -- either
+        degrades to a realpath that will not match the expected canonical
+        target, so the caller's ordinary equality comparison still surfaces
+        it as a mismatch finding rather than this method raising. ``FsError``
+        is reserved for the same convention as every other ``FsPort``
+        method, kept for defense in depth against a future/alternate
+        resolver that DOES raise, but is not currently reachable via the
+        two scenarios above."""
         ...

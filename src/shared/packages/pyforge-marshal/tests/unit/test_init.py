@@ -19,8 +19,9 @@ import pytest
 
 from pyforge.marshal.adapters.fs_local import FsError
 from pyforge.marshal.adapters.vcs_git import VcsCommandError
-from pyforge.marshal.cli.init import run_init
+from pyforge.marshal.cli.init import run_homes, run_init
 from pyforge.marshal.core.verdict import EXIT_OK
+from pyforge.marshal.ports.vcs import WorktreeEntry
 
 _SCHEMA_PATH = (
     Path(__file__).resolve().parents[2]
@@ -41,6 +42,12 @@ class FakeVcs:
         self.fail_repo_common_root: Exception | None = None
         self.fail_worktree_path_for_branch: Exception | None = None
         self.fail_add_worktree: Exception | None = None
+        self.fail_list_worktrees: Exception | None = None
+        # Story 1.6: list_worktrees derives its entries from the SAME
+        # self.worktrees dict every other FakeVcs method already maintains,
+        # plus one synthesized entry for the main checkout itself.
+        self.main_branch: str | None = "main"
+        self.omit_main_worktree_entry: bool = False
         self.add_worktree_calls: list[tuple[Path, Path, str, str]] = []
         # Optionally the SAME set object as a FakeFs.dirs, so a successful
         # add_worktree here makes fs.is_dir(home) true too -- mirrors what a
@@ -84,6 +91,17 @@ class FakeVcs:
                 home / "_bmad-output" / "projects" / slug / "planning-artifacts"
             )
 
+    def list_worktrees(self, repo_root: Path) -> tuple[WorktreeEntry, ...]:
+        self.calls.append("list_worktrees")
+        if self.fail_list_worktrees:
+            raise self.fail_list_worktrees
+        entries: list[WorktreeEntry] = []
+        if not self.omit_main_worktree_entry:
+            entries.append(WorktreeEntry(path=self.repo_root, branch=self.main_branch))
+        for branch, path in self.worktrees.items():
+            entries.append(WorktreeEntry(path=path, branch=branch))
+        return tuple(entries)
+
 
 class FakeFs:
     def __init__(self, *, project_dirs: set[Path] | None = None) -> None:
@@ -105,6 +123,7 @@ class FakeFs:
         self.fail_repoint: Exception | None = None
         self.fail_ensure_dir: Exception | None = None
         self.fail_remove_empty_dir: Exception | None = None
+        self.fail_resolve_path: Exception | None = None
 
     def is_dir(self, path: Path) -> bool:
         self.calls.append("is_dir")
@@ -155,6 +174,25 @@ class FakeFs:
             return False
         self.dirs.discard(path)
         return True
+
+    def resolve_path(self, path: Path) -> Path:
+        """Story 1.6: a lightweight realpath fake -- chases `self.symlinks`
+        (relative targets joined against the link's own parent, exactly
+        like a real symlink) until it lands on a non-symlink path. A path
+        never in `self.symlinks` (a plain directory, or one this fake has
+        no knowledge of) resolves to itself, matching real
+        `Path.resolve()`'s behavior for a path with nothing left to
+        follow."""
+        self.calls.append("resolve_path")
+        if self.fail_resolve_path:
+            raise self.fail_resolve_path
+        current = path
+        seen: set[Path] = set()
+        while current in self.symlinks and current not in seen:
+            seen.add(current)
+            target = self.symlinks[current]
+            current = target if target.is_absolute() else (current.parent / target)
+        return current
 
 
 def _namespace(slug: str, *, fmt: str = "text") -> argparse.Namespace:
@@ -833,3 +871,301 @@ def test_init_finding_codes_classify_as_documented():
     assert classify("MRS-INIT-003") == Verdict.ERROR
     assert classify("MRS-INIT-004") == Verdict.ERROR
     assert classify("MRS-INIT-005") == Verdict.ERROR
+    assert classify("MRS-HOMES-001") == Verdict.ERROR
+    assert classify("MRS-HOMES-002") == Verdict.ERROR
+    assert classify("MRS-HOMES-003") == Verdict.ERROR
+
+
+# =====================================================================
+# ``run_homes`` (Story 1.6, FR-4/FR-8) -- CLI-layer coverage of the same
+# I/O & Edge-Case Matrix core/status.py's own tests exercise at the pure
+# logic layer (tests/unit/test_status.py); this file drives the full
+# gather -> evaluate -> envelope path through the FakeVcs/FakeFs seam.
+# =====================================================================
+
+
+def _homes_namespace(*, fmt: str = "text") -> argparse.Namespace:
+    return argparse.Namespace(format=fmt)
+
+
+def _seed_clean_home(fs: FakeFs, vcs: FakeVcs, repo_root: Path, home: Path, slug: str) -> None:
+    branch = f"loop/{slug}"
+    vcs.worktrees[branch] = home
+    # A REAL `marshal init`-provisioned home's directory always exists on
+    # disk -- without this, run_homes's phantom/prunable-worktree guard
+    # (review finding) would treat every one of these fixtures as stale.
+    fs.dirs.add(home)
+    marker_path = home / "_bmad" / "custom" / ".active-project"
+    link_path = home / "_bmad-output" / "planning-artifacts"
+    canonical, local = _tier3_paths(repo_root, home, slug)
+    fs.texts[marker_path] = f"{slug}\n"
+    fs.symlinks[link_path] = Path(f"projects/{slug}/planning-artifacts")
+    fs.symlinks[local] = canonical
+
+
+def test_homes_lists_two_clean_provisioned_homes(repo_root, tmp_path):
+    fs = FakeFs()
+    vcs = FakeVcs(repo_root=repo_root)
+    _seed_clean_home(fs, vcs, repo_root, tmp_path / "loop-homes" / "acme", "acme")
+    _seed_clean_home(fs, vcs, repo_root, tmp_path / "loop-homes" / "beta", "beta")
+
+    import io
+    import sys
+
+    captured = io.StringIO()
+    old_stdout = sys.stdout
+    sys.stdout = captured
+    try:
+        exit_code = run_homes(_homes_namespace(fmt="json"), vcs=vcs, fs=fs)
+    finally:
+        sys.stdout = old_stdout
+    assert exit_code == EXIT_OK
+    payload = json.loads(captured.getvalue())
+    homes = {row["slug"]: row for row in payload["data"]["homes"]}
+    assert set(homes) == {"acme", "beta"}
+    assert all(not row["desynced"] for row in homes.values())
+    assert payload["data"]["main_checkout"]["desynced"] is False
+    assert payload["findings"] == []
+
+
+def test_homes_zero_loop_worktrees_reports_only_main_checkout(repo_root):
+    fs = FakeFs()
+    vcs = FakeVcs(repo_root=repo_root)
+
+    import io
+    import sys
+
+    captured = io.StringIO()
+    old_stdout = sys.stdout
+    sys.stdout = captured
+    try:
+        exit_code = run_homes(_homes_namespace(fmt="json"), vcs=vcs, fs=fs)
+    finally:
+        sys.stdout = old_stdout
+    assert exit_code == EXIT_OK
+    payload = json.loads(captured.getvalue())
+    assert payload["data"]["homes"] == []
+    assert payload["data"]["main_checkout"]["path"] == str(repo_root)
+
+
+def test_homes_reports_marker_symlink_desync(repo_root, tmp_path, capsys):
+    fs = FakeFs()
+    vcs = FakeVcs(repo_root=repo_root)
+    home = tmp_path / "loop-homes" / "acme"
+    vcs.worktrees["loop/acme"] = home
+    fs.dirs.add(home)
+    marker_path = home / "_bmad" / "custom" / ".active-project"
+    link_path = home / "_bmad-output" / "planning-artifacts"
+    canonical, local = _tier3_paths(repo_root, home, "acme")
+    fs.texts[marker_path] = "other-project\n"
+    fs.symlinks[link_path] = Path("projects/yet-another/planning-artifacts")
+    fs.symlinks[local] = canonical
+
+    exit_code = run_homes(_homes_namespace(), vcs=vcs, fs=fs)
+    assert exit_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-HOMES-001" in out
+
+
+def test_homes_reports_the_branch_agreement_blind_spot(repo_root, tmp_path, capsys):
+    """Marker and symlink agree with EACH OTHER but not with the home's own
+    branch -- exactly the deferred-work blind spot MRS-INIT-003's own
+    two-way check would miss."""
+    fs = FakeFs()
+    vcs = FakeVcs(repo_root=repo_root)
+    home = tmp_path / "loop-homes" / "bar"
+    vcs.worktrees["loop/bar"] = home
+    fs.dirs.add(home)
+    marker_path = home / "_bmad" / "custom" / ".active-project"
+    link_path = home / "_bmad-output" / "planning-artifacts"
+    fs.texts[marker_path] = "foo\n"
+    fs.symlinks[link_path] = Path("projects/foo/planning-artifacts")
+
+    exit_code = run_homes(_homes_namespace(), vcs=vcs, fs=fs)
+    assert exit_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-HOMES-001" in out
+    assert "foo" in out
+    assert "bar" in out
+
+
+def test_homes_reports_tier3_mismatch(repo_root, tmp_path, capsys):
+    fs = FakeFs()
+    vcs = FakeVcs(repo_root=repo_root)
+    home = tmp_path / "loop-homes" / "acme"
+    vcs.worktrees["loop/acme"] = home
+    fs.dirs.add(home)
+    marker_path = home / "_bmad" / "custom" / ".active-project"
+    link_path = home / "_bmad-output" / "planning-artifacts"
+    _, local = _tier3_paths(repo_root, home, "acme")
+    fs.texts[marker_path] = "acme\n"
+    fs.symlinks[link_path] = Path("projects/acme/planning-artifacts")
+    fs.symlinks[local] = tmp_path / "somewhere-else"
+
+    exit_code = run_homes(_homes_namespace(), vcs=vcs, fs=fs)
+    assert exit_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-HOMES-002" in out
+
+
+def test_homes_reports_a_real_non_symlink_tier3_occupant(repo_root, tmp_path, capsys):
+    """A real, non-symlink directory left at the local Tier-3 path (e.g. by
+    init's own MRS-INIT-005 refusal) is NOT 'never provisioned' -- it means
+    Tier-3 is not single-sourced for this home, and must be flagged, not
+    silently treated as absent (review finding)."""
+    fs = FakeFs()
+    vcs = FakeVcs(repo_root=repo_root)
+    home = tmp_path / "loop-homes" / "acme"
+    vcs.worktrees["loop/acme"] = home
+    fs.dirs.add(home)
+    marker_path = home / "_bmad" / "custom" / ".active-project"
+    link_path = home / "_bmad-output" / "planning-artifacts"
+    _, local = _tier3_paths(repo_root, home, "acme")
+    fs.texts[marker_path] = "acme\n"
+    fs.symlinks[link_path] = Path("projects/acme/planning-artifacts")
+    # `local` is a REAL directory (in `fs.dirs`), deliberately NOT a symlink
+    # (absent from `fs.symlinks`) -- exactly the MRS-INIT-005 leftover state.
+    fs.dirs.add(local)
+
+    exit_code = run_homes(_homes_namespace(), vcs=vcs, fs=fs)
+    assert exit_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-HOMES-002" in out
+
+
+def test_homes_reports_a_phantom_prunable_worktree(repo_root, tmp_path, capsys):
+    """git still registers a `loop/<slug>` worktree, but its directory was
+    deleted by hand rather than via `git worktree remove` -- must be named
+    as its own finding, never silently reported as a clean, unprovisioned
+    home (review finding; mirrors run_init's own identical guard)."""
+    fs = FakeFs()
+    vcs = FakeVcs(repo_root=repo_root)
+    ghost = tmp_path / "loop-homes" / "ghost"
+    vcs.worktrees["loop/ghost"] = ghost
+    # Deliberately NOT added to fs.dirs -- the directory is gone on disk.
+
+    exit_code = run_homes(_homes_namespace(fmt="json"), vcs=vcs, fs=fs)
+    assert exit_code != EXIT_OK
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["data"]["homes"] == []
+    assert any(f["code"] == "MRS-HOMES-003" for f in payload["findings"])
+    assert any("ghost" in f["message"] for f in payload["findings"])
+
+
+def test_homes_reports_main_checkout_desync(repo_root, capsys):
+    fs = FakeFs()
+    vcs = FakeVcs(repo_root=repo_root)
+    repo_marker = repo_root / "_bmad" / "custom" / ".active-project"
+    repo_link = repo_root / "_bmad-output" / "planning-artifacts"
+    fs.texts[repo_marker] = "other\n"
+    fs.symlinks[repo_link] = Path("projects/elsewhere/planning-artifacts")
+
+    exit_code = run_homes(_homes_namespace(), vcs=vcs, fs=fs)
+    assert exit_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-HOMES-001" in out
+    assert str(repo_root) in out
+
+
+def test_homes_list_worktrees_failure_reports_mrs_homes_003(repo_root, capsys):
+    fs = FakeFs()
+    vcs = FakeVcs(repo_root=repo_root)
+    vcs.fail_list_worktrees = VcsCommandError("git worktree list failed")
+
+    exit_code = run_homes(_homes_namespace(), vcs=vcs, fs=fs)
+    assert exit_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-HOMES-003" in out
+
+
+def test_homes_repo_root_resolution_failure_reports_mrs_homes_003(repo_root, capsys):
+    fs = FakeFs()
+    vcs = FakeVcs(repo_root=repo_root)
+    vcs.fail_repo_common_root = VcsCommandError("not a git repo")
+
+    exit_code = run_homes(_homes_namespace(), vcs=vcs, fs=fs)
+    assert exit_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-HOMES-003" in out
+
+
+def test_homes_missing_main_checkout_entry_reports_mrs_homes_003(repo_root, capsys):
+    fs = FakeFs()
+    vcs = FakeVcs(repo_root=repo_root)
+    vcs.omit_main_worktree_entry = True
+
+    exit_code = run_homes(_homes_namespace(), vcs=vcs, fs=fs)
+    assert exit_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-HOMES-003" in out
+
+
+def test_homes_resolve_path_failure_reports_mrs_homes_003(repo_root, capsys):
+    fs = FakeFs()
+    fs.fail_resolve_path = FsError("permission denied")
+    vcs = FakeVcs(repo_root=repo_root)
+
+    exit_code = run_homes(_homes_namespace(), vcs=vcs, fs=fs)
+    assert exit_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-HOMES-003" in out
+
+
+def test_homes_read_text_failure_reports_mrs_homes_003(repo_root, tmp_path, capsys):
+    fs = FakeFs()
+    vcs = FakeVcs(repo_root=repo_root)
+    home = tmp_path / "loop-homes" / "acme"
+    vcs.worktrees["loop/acme"] = home
+    # Home directory exists (else the new phantom-worktree guard would skip
+    # it before ever reaching fs.read_text, testing the wrong code path).
+    fs.dirs.add(home)
+    fs.fail_read_text = FsError("permission denied")
+
+    exit_code = run_homes(_homes_namespace(), vcs=vcs, fs=fs)
+    assert exit_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-HOMES-003" in out
+
+
+def test_homes_performs_zero_writes(repo_root, tmp_path):
+    fs = FakeFs()
+    vcs = FakeVcs(repo_root=repo_root)
+    home = tmp_path / "loop-homes" / "acme"
+    vcs.worktrees["loop/acme"] = home
+    fs.dirs.add(home)
+
+    run_homes(_homes_namespace(), vcs=vcs, fs=fs)
+    assert fs.write_calls == []
+    assert fs.repoint_calls == []
+    assert fs.ensure_dir_calls == []
+    assert fs.remove_empty_dir_calls == []
+    assert vcs.add_worktree_calls == []
+
+
+def test_homes_json_format_emits_a_schema_valid_envelope(repo_root, tmp_path):
+    fs = FakeFs()
+    vcs = FakeVcs(repo_root=repo_root)
+    _seed_clean_home(fs, vcs, repo_root, tmp_path / "loop-homes" / "acme", "acme")
+
+    import io
+    import sys
+
+    captured = io.StringIO()
+    old_stdout = sys.stdout
+    sys.stdout = captured
+    try:
+        exit_code = run_homes(_homes_namespace(fmt="json"), vcs=vcs, fs=fs)
+    finally:
+        sys.stdout = old_stdout
+    assert exit_code == EXIT_OK
+    payload = json.loads(captured.getvalue())
+    schema = json.loads(_SCHEMA_PATH.read_text(encoding="utf-8"))
+    jsonschema.validate(instance=payload, schema=schema)
+    assert payload["command"] == "homes"
+    assert payload["status"] == "ok"
+
+
+def test_homes_takes_no_slug_argument():
+    """FR-8: full enumeration only, no selection flags -- the namespace
+    run_homes is driven with never carries a `slug` attribute."""
+    assert not hasattr(_homes_namespace(), "slug")
