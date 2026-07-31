@@ -378,10 +378,20 @@ window.DASHBOARD_DATA = {
         "E5",
         "E6"
       ],
-      "inflight": null,
+      "inflight": {
+        "key": "1.8",
+        "title": "Teardown that refuses to destroy work",
+        "phase": "dev",
+        "attempt": "1",
+        "startEpoch": 1785523546,
+        "median": 104,
+        "lo": 62,
+        "hi": 450,
+        "phaseAsOf": "2026-07-31 19:24 UTC"
+      },
       "velocity": {
         "derived": true,
-        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 7 of 41 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
+        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 8 of 41 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
         "bars": [
           [
             "1.1",
@@ -408,13 +418,17 @@ window.DASHBOARD_DATA = {
             450
           ],
           [
+            "1.7",
+            110
+          ],
+          [
             "1.10",
             62
           ]
         ],
         "foot": [
           [
-            "~97 min",
+            "~104 min",
             "median / story",
             "var(--done)"
           ],
@@ -424,12 +438,12 @@ window.DASHBOARD_DATA = {
             ""
           ],
           [
-            "7/41",
+            "8/41",
             "stories complete",
             "var(--done)"
           ],
           [
-            "34",
+            "33",
             "remaining",
             ""
           ]
@@ -438,9 +452,9 @@ window.DASHBOARD_DATA = {
       "timing": {
         "derived": true,
         "metric": "active agent-compute per story (dev + review; excludes gate-pause wait) — from bmad-loop run journals",
-        "total": 1061,
-        "totalLabel": "~17.7 h active compute",
-        "note": "Derived from 7 measured stories; a story still in flight contributes only its closed sessions.",
+        "total": 1171,
+        "totalLabel": "~19.5 h active compute",
+        "note": "Derived from 8 measured stories; a story still in flight contributes only its closed sessions.",
         "perStory": {
           "1.1": 165,
           "1.2": 65,
@@ -448,15 +462,16 @@ window.DASHBOARD_DATA = {
           "1.4": 97,
           "1.5": 69,
           "1.6": 450,
+          "1.7": 110,
           "1.10": 62
         },
         "epicMin": {
-          "E1": 1061
+          "E1": 1171
         }
       },
       "lineState": {
-        "state": "paused",
-        "at": "1.7"
+        "state": "in flight",
+        "at": "1.8"
       },
       "epics": [
         {
@@ -500,12 +515,12 @@ window.DASHBOARD_DATA = {
             ],
             [
               "1.7",
-              "pending",
+              "done",
               "Preflight, adapter config seeding, and first-run acknowledgement"
             ],
             [
               "1.8",
-              "pending",
+              "active",
               "Teardown that refuses to destroy work"
             ],
             [
@@ -2966,7 +2981,7 @@ window.DASHBOARD_DATA = {
       }
     }
   },
-  "snapshot": "<span>2026-07-31 16:04 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-07-31 19:24 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -3056,7 +3071,7 @@ window.DASHBOARD_DATA = {
     },
     {
       "slug": "enterprise-airgap",
-      "title": "The factory behind the firewall",
+      "title": "Firewalled Factory",
       "status": "realized",
       "owner": "steward",
       "type": "practice",
@@ -3073,6 +3088,14 @@ window.DASHBOARD_DATA = {
       "chain": {
         "spec": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-factory-console"
       }
+    },
+    {
+      "slug": "fidelity-enforcement",
+      "title": "Fidelity enforcement — a contract is only a contract if something fails against it",
+      "status": "dreamt",
+      "owner": "marshal",
+      "type": "dream",
+      "chain": {}
     },
     {
       "slug": "fleet-stewardship",
@@ -3314,7 +3337,7 @@ window.DASHBOARD_DATA = {
     },
     {
       "slug": "wasm-analytics-stack",
-      "title": "Wasm-first analytical data stack (OCP-ready)",
+      "title": "WASM Data Stack",
       "status": "specified",
       "owner": "atlas",
       "type": "dream",
@@ -3501,7 +3524,7 @@ window.DASHBOARD_DATA = {
       "title": "factory console (program console + Dreamscape)",
       "caps": 4,
       "companions": 1,
-      "updated": "2026-07-30",
+      "updated": "2026-07-31",
       "dream": "factory-console",
       "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-factory-console"
     },
@@ -3611,7 +3634,7 @@ window.DASHBOARD_DATA = {
       "title": "Scribe (pyforge-scribe) — the team's inward voice",
       "caps": 4,
       "companions": 1,
-      "updated": "2026-07-29",
+      "updated": "2026-07-31",
       "dream": "pyforge-scribe",
       "path": "_bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-pyforge-scribe"
     },
@@ -3631,7 +3654,7 @@ window.DASHBOARD_DATA = {
       "title": "team-memory",
       "caps": 0,
       "companions": 0,
-      "updated": "2026-07-29",
+      "updated": "2026-07-31",
       "dream": "team-memory",
       "path": "_bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-team-memory"
     },
@@ -4272,10 +4295,10 @@ window.DASHBOARD_DATA = {
       "retro": null
     },
     "sound": 0,
-    "live": 29,
+    "live": 30,
     "reached": 1,
-    "gaps": 46,
-    "findings": 23,
+    "gaps": 48,
+    "findings": 24,
     "rows": [
       {
         "label": "atlas",
@@ -4683,7 +4706,7 @@ window.DASHBOARD_DATA = {
           "ux": "",
           "arch": "2026-07-25",
           "context": "",
-          "epics": "2026-07-25",
+          "epics": "2026-07-31",
           "sprint": "2026-07-31",
           "gates": "",
           "code": "2026-07-25",
@@ -4754,6 +4777,13 @@ window.DASHBOARD_DATA = {
             "than": "prd",
             "at": "2026-07-29",
             "other": "2026-07-25"
+          },
+          {
+            "kind": "feeds",
+            "stage": "epics",
+            "than": "sprint",
+            "at": "2026-07-31",
+            "other": "2026-07-29"
           }
         ],
         "furthest": "verify",
@@ -4894,7 +4924,7 @@ window.DASHBOARD_DATA = {
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "7/41",
+        "progress": "8/41",
         "complete": 13,
         "of": 13
       },
@@ -6864,6 +6894,111 @@ window.DASHBOARD_DATA = {
         "of": 4
       },
       {
+        "label": "fidelity-enforcement",
+        "slug": "fidelity-enforcement",
+        "project": "pyforge-marshal",
+        "dream": "fidelity-enforcement",
+        "owner": "marshal",
+        "stages": {
+          "dream": "2026-07-31",
+          "deck": "",
+          "spec": "",
+          "research": "2026-07-16",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "updatedAt": {
+          "dream": "2026-07-31",
+          "deck": "",
+          "spec": "",
+          "research": "2026-07-25",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "sub": {
+          "research": {
+            "have": {
+              "domain": true,
+              "market": true,
+              "technical": true
+            },
+            "n": 3,
+            "of": 3,
+            "missing": [],
+            "inherited": true
+          },
+          "deck": {
+            "have": {
+              "prototype": false,
+              "exec": false,
+              "infographic": false,
+              "marp": false,
+              "standalone": false,
+              "pptx": false
+            },
+            "n": 0,
+            "of": 6,
+            "missing": [
+              "exec",
+              "infographic",
+              "marp",
+              "pptx",
+              "prototype",
+              "standalone"
+            ]
+          }
+        },
+        "archived": false,
+        "dreamStatus": "dreamt",
+        "ownerDream": "",
+        "noDream": false,
+        "unowned": false,
+        "backfilled": false,
+        "openQuestions": 0,
+        "overtaken": false,
+        "na": [
+          "ux"
+        ],
+        "required": [
+          "dream",
+          "deck",
+          "spec",
+          "research"
+        ],
+        "gaps": [
+          "deck",
+          "spec"
+        ],
+        "partial": [],
+        "staleBy": [],
+        "furthest": "research",
+        "updated": "2026-07-31",
+        "age": 0,
+        "stale": false,
+        "version": "",
+        "progress": "",
+        "complete": 2,
+        "of": 4
+      },
+      {
         "label": "genesis-installer",
         "slug": "genesis-installer",
         "project": "pyforge-marshal",
@@ -8094,9 +8229,9 @@ window.DASHBOARD_DATA = {
         "name": "spec-surface",
         "task": "spec-surface-check",
         "guards": "every tracked file under a Spec surface",
-        "state": "green",
-        "findings": 0,
-        "verdict": "OK: every tracked file governed or allowlisted; no drift.",
+        "state": "drift",
+        "findings": 1,
+        "verdict": "FINDINGS (1):",
         "runbook": ""
       },
       {
@@ -8118,6 +8253,14 @@ window.DASHBOARD_DATA = {
   },
   "backlog": {
     "rows": [
+      {
+        "slug": "fidelity-enforcement",
+        "title": "Fidelity enforcement — a contract is only a contract if something fails against it",
+        "status": "dreamt",
+        "owner": "marshal",
+        "blockedOn": "",
+        "chain": {}
+      },
       {
         "slug": "deckcraft",
         "title": "Deckcraft — editable decks from primitives, air-gapped",
@@ -8172,7 +8315,7 @@ window.DASHBOARD_DATA = {
       },
       {
         "slug": "wasm-analytics-stack",
-        "title": "Wasm-first analytical data stack (OCP-ready)",
+        "title": "WASM Data Stack",
         "status": "specified",
         "owner": "atlas",
         "blockedOn": "",
@@ -8195,8 +8338,8 @@ window.DASHBOARD_DATA = {
     ],
     "blocked": 1,
     "byOwner": {
+      "marshal": 2,
       "herald": 1,
-      "marshal": 1,
       "scribe": 1,
       "atlas": 3,
       "mason": 1
@@ -8222,7 +8365,7 @@ window.DASHBOARD_DATA = {
       },
       {
         "slug": "enterprise-airgap",
-        "title": "The factory behind the firewall",
+        "title": "Firewalled Factory",
         "owner": "steward",
         "status": "realized"
       },
@@ -8319,17 +8462,17 @@ window.DASHBOARD_DATA = {
       },
       {
         "station": "marshal",
-        "total": 8,
+        "total": 9,
         "counts": {
-          "dreamt": 0,
+          "dreamt": 1,
           "pitched": 0,
           "specified": 1,
           "realized": 2,
           "archived": 1,
           "practice": 4
         },
-        "line": "paused 1.7",
-        "load": 1,
+        "line": "in flight 1.8",
+        "load": 2,
         "blocked": 0,
         "dreams": [
           {
@@ -8344,6 +8487,13 @@ window.DASHBOARD_DATA = {
             "title": "Agent portability — BMAD on any agent, never vendor-locked",
             "status": "dreamt",
             "type": "practice",
+            "blockedOn": ""
+          },
+          {
+            "slug": "fidelity-enforcement",
+            "title": "Fidelity enforcement — a contract is only a contract if something fails against it",
+            "status": "dreamt",
+            "type": "dream",
             "blockedOn": ""
           },
           {
@@ -8435,7 +8585,7 @@ window.DASHBOARD_DATA = {
           },
           {
             "slug": "wasm-analytics-stack",
-            "title": "Wasm-first analytical data stack (OCP-ready)",
+            "title": "WASM Data Stack",
             "status": "specified",
             "type": "dream",
             "blockedOn": ""
@@ -8604,7 +8754,7 @@ window.DASHBOARD_DATA = {
         "dreams": [
           {
             "slug": "enterprise-airgap",
-            "title": "The factory behind the firewall",
+            "title": "Firewalled Factory",
             "status": "realized",
             "type": "practice",
             "blockedOn": ""
@@ -9987,16 +10137,23 @@ window.DASHBOARD_DATA = {
   },
   "status": {
     "source": "sprint-status",
-    "running": [],
+    "running": [
+      {
+        "station": "Marshal",
+        "story": "1.8",
+        "phase": "dev",
+        "startEpoch": 1785523546
+      }
+    ],
     "lastShipped": {
-      "station": "mason",
+      "station": "scribe",
       "story": "1.3",
-      "epoch": 1785508216,
-      "sha": "f93e838f8",
-      "subject": "mason: recover Story 1.3 — error taxonomy and exit-code contract (review TIMED OUT, no verdict) (#164)"
+      "epoch": 1785515691,
+      "sha": "d68187f4b",
+      "subject": "scribe: recover Story 1.3 from a DANGLING commit — 1,102 lines that were one gc from gone (#168)"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-07-31 16:04 UTC",
-    "generatedEpoch": 1785513866
+    "generatedAt": "2026-07-31 19:24 UTC",
+    "generatedEpoch": 1785525847
   }
 };

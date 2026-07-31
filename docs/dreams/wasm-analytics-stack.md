@@ -1,5 +1,5 @@
 ---
-title: Wasm-first analytical data stack (OCP-ready)
+title: WASM Data Stack
 type: dream
 owner: atlas
 status: specified
