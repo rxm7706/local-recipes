@@ -2123,17 +2123,30 @@ def build_status(data: dict, source: str) -> dict:
     silent one, so the board never implies "nothing is running" when it simply
     cannot know.
     """
+    # Derive `running` from the in-flight CARD, not from `lineState`.
+    #
+    # lineState is computed from the sprint feed, and bmad-loop marks a story
+    # `done` in that feed when its DEV pass finishes — while the REVIEW is still
+    # running. In that window the feed says done, lineState moves on to the next
+    # story, and a feed-derived chip reports "running nothing" about a story that
+    # is visibly still running. Observed live 2026-07-31: doctor 1.5 sat in
+    # `review-running` for 20+ minutes while the board claimed nothing was in
+    # flight.
+    #
+    # `inflight` comes from apply_loop_inflight's scan of the loop home — the
+    # story worktree plus its state.json phase — which is the harness's own view
+    # and owes nothing to the feed. Same lesson as the deferred-story false green
+    # one layer up: the feed reports intent, the run reports fact.
     running = []
     projects = data.get("projects") or {}
     for proj in (projects.values() if isinstance(projects, dict) else projects):
         if not isinstance(proj, dict):
             continue
-        ls = proj.get("lineState") or {}
-        if ls.get("state") == "in flight":
-            infl = proj.get("inflight") or {}
+        infl = proj.get("inflight") or {}
+        if infl.get("key"):
             running.append({
                 "station": proj.get("label", "?"),
-                "story": ls.get("at", ""),
+                "story": infl.get("key", ""),
                 "phase": infl.get("phase", ""),
                 "startEpoch": infl.get("startEpoch"),
             })
