@@ -38,7 +38,17 @@ blocking in-home check found the provisioned tree missing the project the
 symlink would target). 001-002 classify ``Verdict.UNEVALUABLE`` (Marshal
 could not determine what to provision); 003-004 classify ``Verdict.ERROR``
 (a real operation was attempted and failed, or was blocked to avoid
-compounding an existing failure) -- see ``core/verdict.py``. Later stories
+compounding an existing failure) -- see ``core/verdict.py``. Story 1.5's
+``tier3_backlink`` step (still ``cli/init.py``) adds a fifth code,
+``MRS-INIT-005``: a real, non-empty directory already occupies the loop
+home's local Tier-3 path
+(``_bmad-output/projects/<slug>/implementation-artifacts``) -- the safe,
+structural refusal to silently
+replace it with a backlink to the main checkout's canonical copy (see the
+spec's Design Notes on why this is a distinct code from ``MRS-INIT-004``
+rather than a message a caller would need to string-match). It classifies
+``Verdict.ERROR``, the same tier as 003-004: a real operation was attempted
+and blocked, not "could not evaluate". Later stories
 append further real codes here as they gain their own real callers. The
 registry MECHANISM
 (format check, then membership check) is separately proven via
@@ -64,6 +74,7 @@ CODE_PATTERN = re.compile(r"MRS-[A-Z][A-Z0-9]*-[0-9]{3}")
 # Story 1.2's core/identity.py -- the registry's first real registrations.
 # Story 1.3's core/policy.py/cli/config.py add the second real caller's six codes.
 # Story 1.4's cli/init.py adds the third real caller's four codes.
+# Story 1.5's cli/init.py tier3_backlink step adds a fifth code.
 REGISTERED_CODES: frozenset[str] = frozenset(
     {
         "MRS-IDENT-001",
@@ -78,6 +89,7 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-INIT-002",
         "MRS-INIT-003",
         "MRS-INIT-004",
+        "MRS-INIT-005",
     }
 )
 
