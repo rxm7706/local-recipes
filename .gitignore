@@ -759,3 +759,8 @@ _bmad/_memory/
 
 # Parked artifact-fork evidence dirs (local-only Tier-3 copies; see each dir's README)
 _bmad-output/projects/*/_root-fallback-fork-*/
+
+# pyforge-herald: repo-local bridge state (Story 1.4, AD-5) -- the operational
+# etag/state store `herald deck` reads and writes, never the source of truth
+# for anything git tracks.
+.herald/
