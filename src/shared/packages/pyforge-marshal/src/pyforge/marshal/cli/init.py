@@ -87,6 +87,90 @@ state), all classify ``Verdict.ERROR`` -- see ``core/status.py``'s own
 docstring for the full isolation-check design, and this story's spec's
 Design Notes for why this command lives here rather than in a new
 ``cli/status.py`` (reserved for a later, broader fleet-visibility story).
+
+Story 1.7 adds a THIRD command in this same module, ``marshal preflight``
+(``add_preflight_subparser``/``run_preflight``, FR-7/FR-47/FR-52): given a
+provisioned loop home, it reports six presence/resolvability facts (harness
+binary + version, multiplexer backend, configured adapter + its binary,
+story-feed resolvability, each verify command's resolvability, and whether
+``main`` is checked out exactly once), copies the configured adapter's
+declared gitignored seed files into the home (real bytes, copy-when-absent,
+AD-21), and gates on the adapter's first-run acknowledgement -- recorded,
+idempotently, in a new machine-scoped JSON file
+(``_ack_state_path``/``_read_acknowledged``/``_write_acknowledged``) rather
+than the loop home itself (Design Notes: the underlying fact is per-machine
+per-adapter, not per-project). It takes the SAME ``HarnessPort`` DI seam as
+``run_init``/``run_homes`` (``BmadLoopHarness``, the sole module permitted to
+invoke ``bmad-loop`` or import its package, per AD-3/AD-19), reuses
+``policy.compose()`` (S-1.3) and its own ``MRS-POLICY-*`` findings, and
+resolves the configured adapter's NAME via the SAME pure
+``adapters.harness_bmadloop.render_policy_toml`` function ``marshal config
+--write-harness-policy`` calls, so the two can never disagree about which
+adapter is configured. Its ten codes: ``MRS-PREFLIGHT-001`` through
+``MRS-PREFLIGHT-009`` all classify ``Verdict.ERROR``, and
+``MRS-PREFLIGHT-010`` (a malformed slug, checked before any I/O) classifies
+``Verdict.UNEVALUABLE`` -- see ``core/findings.py``'s own docstring for the
+exact per-code mapping.
+
+Story 1.9 (packaging, FR-52/FR-57) relocates the harness-version-range
+constants and the parsing/range functions that used to live here
+(``_HARNESS_MIN_VERSION``/``_HARNESS_MAX_MINOR_EXCLUSIVE``/
+``HARNESS_VERSION_RANGE_TEXT``, ``harness_version_tuple``,
+``harness_version_in_range``) into ``adapters/harness_bmadloop.py`` itself
+(FR-52: "the seam declares the harness version range it supports") --
+this module now imports them instead of defining its own copies -- and
+graduates ``run_preflight``'s harness-version check into two tiers using
+the new ``harness_version_is_major_mismatch`` seam function:
+``harness_version is None`` or a genuine major-version mismatch still
+blocks via ``MRS-PREFLIGHT-002`` (unchanged tier), while a determinable,
+same-major version outside the declared minor range now warns via the
+eleventh code, ``MRS-PREFLIGHT-011`` (``Verdict.WARN``, non-blocking),
+instead of sharing ``MRS-PREFLIGHT-002``'s blocking tier as it did before
+this story. ``cli/main.py``'s ``--version`` gains the same harness-version
+reporting (and the same prominent warning for either tier) alongside
+Marshal's own hand-synced version literal, still bypassing the envelope
+entirely -- see that module's own docstring.
+
+Story 1.8 adds a FIFTH command in this same module, ``marshal teardown``
+(``add_teardown_subparser``/``run_teardown``, NFR-6/AD-29): removes the
+``loop/<slug>`` worktree and branch ``run_init`` provisions, refusing
+(``MRS-TEARDOWN-003``) when the home's working tree is dirty
+(``VcsPort.has_uncommitted_changes``), the branch's content is not yet
+safely captured on ``main`` (``VcsPort.is_branch_merged`` -- patch-CONTENT
+equivalence, never bare ancestry; see that method's own docstring and this
+story's spec Design Notes for why), or the AD-29 promotion-reachability
+extension point (``_unreachable_promotions``, a hardcoded-empty stub Epic 4
+replaces the BODY of, never the call site or contract) names anything
+unreachable -- unless ``--force`` overrides all three together (``--force``
+also carries past a dirty/merged PROBE failure, absorbing it as one more
+named forced-past reason: under ``--force`` the probe's answer cannot
+change the outcome, so its failure must not dead-end the flag). A slug with
+nothing provisioned (no worktree, no branch) is a clean no-op
+(``data.already_removed``), never a failure -- teardown is a cleanup
+command, not a precondition-verifying one like ``preflight``. Once removal
+is authorized, branch deletion always uses ``git branch -D``
+(``delete_branch(..., force=True)``): git's own ``-d`` uses ancestry and
+would spuriously refuse the exact squash-merged branches this story exists
+to unblock, once Marshal's own more-accurate check (or the operator's
+``--force``) has already authorized the removal; worktree removal passes
+``--force`` only on the path where the operator's own ``--force`` was
+needed to authorize it (a clean, already-verified-safe home removes with a
+plain ``git worktree remove``). Takes the SAME ``vcs``/``fs`` DI seam as ``run_init``/``run_preflight``:
+``fs`` is used ONLY for read-only existence checks (whether a registered
+worktree's directory is actually present on disk, and whether a
+deregistered slug left real files behind -- both mirror ``run_init``'s/
+``run_homes``'s own stale-worktree-directory guards) -- this command calls
+no ``FsPort`` WRITE method and never references the canonical Tier-3 store
+path at all. (``is_branch_merged``'s fallback does create one internal git
+object via ``VcsPort`` -- a detached, unreferenced commit, garbage-collected
+in the ordinary course -- which is a write in the general sense but outside
+AD-11's FsPort/tracked-artifact meaning of the term; see that method's own
+docstring.) Its three codes: ``MRS-TEARDOWN-001`` (a malformed slug,
+checked before any I/O, mirroring ``MRS-INIT-001``/``MRS-PREFLIGHT-010``'s
+identical shape gate) classifies ``Verdict.UNEVALUABLE``;
+``MRS-TEARDOWN-002`` (a git operation failed) and ``MRS-TEARDOWN-003``
+(refused: work would be lost) classify ``Verdict.ERROR`` -- see
+``core/findings.py``'s own docstring for the exact per-code mapping.
 """
 
 from __future__ import annotations
@@ -95,19 +179,36 @@ import argparse
 import json
 import os
 import shlex
+import tomllib
 from collections.abc import Mapping
 from pathlib import Path
 
 from ..adapters.fs_local import FsError, LocalFs
+from ..adapters.harness_bmadloop import (
+    HARNESS_VERSION_RANGE_TEXT,
+    BmadLoopHarness,
+    HarnessError,
+    harness_version_in_range,
+    harness_version_is_major_mismatch,
+    harness_version_tuple,
+    render_policy_toml,
+)
 from ..adapters.vcs_git import GitVcs, VcsCommandError
 from ..core import policy, status
 from ..core.model import Finding, Severity, build_envelope
 from ..core.verdict import compute_verdict, exit_code_for
 from ..ports.fs import FsPort
+from ..ports.harness import HarnessPort
 from ..ports.vcs import VcsPort, WorktreeEntry
-from .config import _suppress_downstream_pipe_close
+from .config import (
+    PolicyIOError,
+    _read_project_policy,
+    _suppress_downstream_pipe_close,
+    conventional_project_policy_path,
+)
 
 ENV_LOOP_HOME_ROOT = "BMAD_LOOP_HOME_ROOT"
+ENV_MARSHAL_STATE_HOME = "MARSHAL_STATE_HOME"
 
 _STEP_NAMES: tuple[str, ...] = ("worktree", "tier3_backlink", "symlink", "marker")
 
@@ -774,6 +875,986 @@ def _emit_homes(args: argparse.Namespace, data: dict[str, object], findings: lis
             print(json.dumps(envelope.to_json_dict(), indent=2, sort_keys=True), flush=True)
         else:
             print(_render_text_homes(envelope.data, envelope.findings), flush=True)
+    except OSError:
+        _suppress_downstream_pipe_close()
+    return exit_code_for(envelope.verdict)
+
+
+# =====================================================================
+# ``marshal preflight`` (Story 1.7, FR-7/FR-47/FR-52).
+# =====================================================================
+
+# The default machine-scoped state path (AD-37's fourth write target),
+# overridable via MARSHAL_STATE_HOME -- mirrors ENV_LOOP_HOME_ROOT's own
+# override convention. This fact ("has the operator answered this adapter's
+# trust dialog on THIS MACHINE") belongs to the operator's machine and the
+# adapter, not to any one project's loop home -- see the spec's Design Notes.
+_ACK_STATE_FILENAME = "adapter-acknowledgements.json"
+
+_SUSTAINED_AUTOMATION_CAVEAT = (
+    "once acknowledged, bmad-loop will launch this adapter unattended and "
+    "repeatedly for every future session against every project -- "
+    "acknowledge only after personally running the adapter once and "
+    "answering its own first-run trust dialog on this machine"
+)
+
+
+def _ack_state_path() -> Path:
+    override = os.environ.get(ENV_MARSHAL_STATE_HOME)
+    base = (
+        Path(override).expanduser()
+        if override
+        else Path.home() / ".local" / "state" / "pyforge-marshal"
+    )
+    if not base.is_absolute():
+        # Same anchoring as _loop_home_root's own BMAD_LOOP_HOME_ROOT
+        # override (review finding: a relative MARSHAL_STATE_HOME would
+        # otherwise resolve against a DIFFERENT directory on every
+        # invocation with a different CWD, so the acknowledgement would
+        # never appear to "stick" from the operator's point of view).
+        base = Path.cwd() / base
+    return base / _ACK_STATE_FILENAME
+
+
+def _read_acknowledged(fs: FsPort, path: Path) -> set[str]:
+    """The set of adapter names ever acknowledged on this machine. Absent,
+    unreadable, or malformed (not valid JSON, or not a JSON array of
+    strings) all read as the empty set -- this is Marshal's own internal
+    state file, never hand-edited, so a defensive "nothing acknowledged yet"
+    is the safe degrade rather than a raised exception."""
+    try:
+        text = fs.read_text(path)
+    except FsError:
+        return set()
+    if text is None:
+        return set()
+    try:
+        parsed = json.loads(text)
+    except json.JSONDecodeError:
+        return set()
+    if not isinstance(parsed, list):
+        return set()
+    return {item for item in parsed if isinstance(item, str)}
+
+
+def _write_acknowledged(fs: FsPort, path: Path, names: set[str]) -> None:
+    fs.write_text_atomic(path, json.dumps(sorted(names), indent=2) + "\n")
+
+
+def add_preflight_subparser(subparsers: argparse._SubParsersAction) -> None:
+    """Register the ``preflight`` subcommand (Story 1.7, FR-7/FR-47/FR-52)."""
+    parser = subparsers.add_parser(
+        "preflight",
+        help="Verify a loop home can run, seed adapter config, and gate on first-run acknowledgement.",
+        description=(
+            "Resolves the composed policy and the configured adapter's "
+            "declarative profile, reports harness/multiplexer/adapter/"
+            "story-feed/verify-command/single-checkout presence and "
+            "resolvability, copies the adapter's declared gitignored seed "
+            "files into the home (copy-when-absent, real bytes), and blocks "
+            "on an unacknowledged adapter first-run requirement."
+        ),
+    )
+    parser.add_argument("slug", help="The BMAD project slug whose loop home to preflight.")
+    parser.add_argument(
+        "--acknowledge",
+        metavar="ADAPTER",
+        default=None,
+        help=(
+            "Record this machine's acknowledgement of ADAPTER's first-run "
+            "requirement (idempotent), before the first-run check runs in "
+            "this same invocation."
+        ),
+    )
+    parser.add_argument(
+        "--format",
+        choices=("text", "json"),
+        default="text",
+        help="Output format (default: text).",
+    )
+    parser.set_defaults(handler=run_preflight)
+
+
+def run_preflight(
+    args: argparse.Namespace,
+    *,
+    vcs: VcsPort | None = None,
+    fs: FsPort | None = None,
+    harness: HarnessPort | None = None,
+) -> int:
+    vcs = vcs if vcs is not None else GitVcs()
+    fs = fs if fs is not None else LocalFs()
+    harness = harness if harness is not None else BmadLoopHarness()
+
+    slug = args.slug
+    findings: list[Finding] = []
+    data: dict[str, object] = {"slug": slug}
+
+    # --- slug shape -- blocking, before ANY filesystem read/write (review
+    # finding: an unvalidated slug reached _home_path/conventional_project_
+    # policy_path below and, via '..'/an absolute path, could resolve OUTSIDE
+    # loop_home_root entirely -- the seed-copy step would then write real
+    # bytes there, violating AD-11. Mirrors run_init's own MRS-INIT-001 gate,
+    # reusing the SAME shape check (core.policy._is_valid_project_slug, which
+    # excludes '/' from its charset) rather than a second regex. -----------
+    if not policy._is_valid_project_slug(slug):
+        findings.append(
+            Finding(
+                code="MRS-PREFLIGHT-010",
+                severity=Severity.ERROR,
+                message=(
+                    f"malformed project slug {slug!r} -- must be one safe "
+                    "path segment (letters, digits, '.', '_', '-'; not '.' "
+                    "or '..'; at most 255 characters)"
+                ),
+            )
+        )
+        return _emit_preflight(args, data, findings)
+
+    # --- loop home must exist -- blocking, before any of the eight checks ---
+    try:
+        home = _home_path(slug)
+    except (RuntimeError, OSError) as exc:
+        findings.append(
+            Finding(
+                code="MRS-PREFLIGHT-009",
+                severity=Severity.ERROR,
+                message=f"resolving the loop-home root: {exc}",
+            )
+        )
+        return _emit_preflight(args, data, findings)
+    data["home"] = str(home)
+
+    if not fs.is_dir(home):
+        findings.append(
+            Finding(
+                code="MRS-PREFLIGHT-009",
+                severity=Severity.ERROR,
+                message=(
+                    f"loop home not provisioned: {home} is not a directory -- "
+                    f"run 'marshal init {slug}' first"
+                ),
+                path=str(home),
+            )
+        )
+        return _emit_preflight(args, data, findings)
+
+    # --- composed policy (S-1.3) -- its own findings merge into ours --------
+    project_data: Mapping[str, object] = {}
+    policy_path = conventional_project_policy_path(slug)
+    try:
+        policy_present = policy_path.is_file()
+    except OSError:
+        # Python 3.12 pathlib raises PermissionError for an unreadable
+        # ancestor (3.13+ suppresses all OSError -- the same class
+        # fs_local.py backports for this package's 3.12 floor). Treat it as
+        # present so _read_project_policy converts the identical failure
+        # into its typed PolicyIOError finding instead of a raw crash
+        # (review finding).
+        policy_present = True
+    if policy_present:
+        try:
+            project_data = _read_project_policy(policy_path)
+        except PolicyIOError as exc:
+            findings.append(exc.finding)
+    effective, policy_findings = policy.compose(
+        project_slug=slug, project=project_data, flags={}
+    )
+    findings.extend(policy_findings)
+
+    # --- repo root -- needed by main_checked_out_once and the seed-copy source
+    repo_root: Path | None
+    repo_root_error: str | None
+    try:
+        repo_root = vcs.repo_common_root(Path.cwd())
+        repo_root_error = None
+    except (OSError, VcsCommandError) as exc:
+        repo_root = None
+        repo_root_error = str(exc)
+
+    # --- harness presence/version --------------------------------------------
+    if not harness.binary_present("bmad-loop"):
+        data["harness_version"] = None
+        findings.append(
+            Finding(
+                code="MRS-PREFLIGHT-001",
+                severity=Severity.ERROR,
+                message="harness binary 'bmad-loop' not found on PATH",
+            )
+        )
+    else:
+        harness_version = harness.harness_version()
+        data["harness_version"] = harness_version
+        # Story 1.9 (FR-52/FR-57): graduated two-tier split using the
+        # adapters.harness_bmadloop seam's harness_version_is_major_mismatch
+        # (which already treats None as a mismatch, so the PREDICATE needs
+        # no separate `is None` check here -- only the message wording
+        # below branches on it) and harness_version_in_range -- the same
+        # harness_version_in_range function cli/main.py's --version also
+        # calls for its own out-of-range warning. Undeterminable or a
+        # genuine major-version mismatch still blocks (unchanged
+        # MRS-PREFLIGHT-002 tier); a determinable, same-major version
+        # outside the declared minor range now warns instead
+        # (MRS-PREFLIGHT-011, non-blocking) rather than sharing -002's
+        # blocking tier with the undeterminable/major-mismatch case, as it
+        # did before this story.
+        if harness_version_is_major_mismatch(harness_version):
+            # Name the ACTUAL problem (review-caught, the same wording fix
+            # cli/main.py's _version_text got): an undetermined or
+            # unparseable "version" is not numerically "outside the
+            # supported range" -- it is not a version at all.
+            if harness_version is None:
+                message = (
+                    "harness version could not be determined -- expected a "
+                    f"bmad-loop version in {HARNESS_VERSION_RANGE_TEXT}"
+                )
+            elif harness_version_tuple(harness_version) is None:
+                message = (
+                    f"harness version {harness_version!r} could not be parsed "
+                    f"-- expected a version in {HARNESS_VERSION_RANGE_TEXT}"
+                )
+            else:
+                message = (
+                    f"harness version {harness_version!r} has a different "
+                    "major version than the supported range "
+                    f"{HARNESS_VERSION_RANGE_TEXT}"
+                )
+            findings.append(
+                Finding(
+                    code="MRS-PREFLIGHT-002",
+                    severity=Severity.ERROR,
+                    message=message,
+                )
+            )
+        elif not harness_version_in_range(harness_version):
+            findings.append(
+                Finding(
+                    code="MRS-PREFLIGHT-011",
+                    severity=Severity.WARN,
+                    message=(
+                        f"harness version {harness_version!r} is outside the "
+                        f"supported range {HARNESS_VERSION_RANGE_TEXT} (same "
+                        "major version -- non-blocking)"
+                    ),
+                )
+            )
+
+    # --- multiplexer -----------------------------------------------------------
+    try:
+        backend_name, backend_available = harness.multiplexer_backend_available()
+    except HarnessError as exc:
+        backend_name, backend_available = "", False
+        findings.append(
+            Finding(code="MRS-PREFLIGHT-003", severity=Severity.ERROR, message=str(exc))
+        )
+    else:
+        if not backend_available:
+            findings.append(
+                Finding(
+                    code="MRS-PREFLIGHT-003",
+                    severity=Severity.ERROR,
+                    message=f"multiplexer backend {backend_name!r} is not available",
+                )
+            )
+    data["multiplexer"] = {"backend": backend_name, "available": backend_available}
+
+    # --- adapter name resolution (the SAME render_policy_toml marshal config uses) --
+    adapter_name: str | None
+    try:
+        rendered = render_policy_toml(effective)
+    except ValueError as exc:
+        adapter_name = None
+        findings.append(
+            Finding(
+                code="MRS-PREFLIGHT-004",
+                severity=Severity.ERROR,
+                message=f"cannot resolve the configured adapter: {exc}",
+            )
+        )
+    else:
+        parsed_policy = tomllib.loads(rendered)
+        adapter_name = parsed_policy.get("adapter", {}).get("name")
+        if not isinstance(adapter_name, str) or not adapter_name:
+            # Fail loud, never open (review finding): a rendered policy with
+            # no [adapter].name previously left adapter_name None with NO
+            # finding, so the adapter check, seeding, and the first-run gate
+            # all silently skipped and preflight could exit 0 having gated
+            # nothing. Unreachable while the vendored template always emits
+            # the baseline name -- this guards the template edit that would
+            # make it reachable.
+            adapter_name = None
+            findings.append(
+                Finding(
+                    code="MRS-PREFLIGHT-004",
+                    severity=Severity.ERROR,
+                    message=(
+                        "cannot resolve the configured adapter: the rendered "
+                        "harness policy declares no [adapter].name"
+                    ),
+                )
+            )
+
+    adapter_binary_name: str | None = None
+    adapter_present = False
+    seed_files: tuple[str, ...] = ()
+    first_run_note = ""
+    if adapter_name is not None:
+        try:
+            adapter_binary_name = harness.adapter_binary(adapter_name, home)
+        except HarnessError as exc:
+            findings.append(
+                Finding(
+                    code="MRS-PREFLIGHT-004",
+                    severity=Severity.ERROR,
+                    message=f"cannot resolve adapter {adapter_name!r}: {exc}",
+                )
+            )
+        else:
+            adapter_present = harness.binary_present(adapter_binary_name)
+            if not adapter_present:
+                findings.append(
+                    Finding(
+                        code="MRS-PREFLIGHT-004",
+                        severity=Severity.ERROR,
+                        message=(
+                            f"adapter {adapter_name!r} binary "
+                            f"{adapter_binary_name!r} not found on PATH"
+                        ),
+                    )
+                )
+            # Both draw from the SAME resolved profile as adapter_binary
+            # above, so a failure here would be the identical root cause
+            # already reported -- HarnessError is not re-raised as a second
+            # finding.
+            try:
+                seed_files = harness.adapter_seed_files(adapter_name, home)
+            except HarnessError:
+                seed_files = ()
+            try:
+                first_run_note = harness.adapter_first_run_note(adapter_name, home)
+            except HarnessError:
+                first_run_note = ""
+    data["adapter"] = {"name": adapter_name, "binary_present": adapter_present}
+
+    # --- story feed -------------------------------------------------------------
+    feed_error = harness.story_feed_error(home)
+    data["story_feed"] = {"resolvable": feed_error is None, "error": feed_error}
+    if feed_error is not None:
+        findings.append(
+            Finding(code="MRS-PREFLIGHT-005", severity=Severity.ERROR, message=feed_error)
+        )
+
+    # --- verify commands ---------------------------------------------------------
+    verify_entries: list[dict[str, object]] = []
+    for command in effective.verify_commands.value:
+        try:
+            tokens = shlex.split(command)
+        except ValueError:
+            tokens = []
+        program = tokens[0] if tokens else None
+        resolvable = bool(program) and harness.binary_present(program)
+        verify_entries.append({"command": command, "resolvable": resolvable})
+        if not resolvable:
+            findings.append(
+                Finding(
+                    code="MRS-PREFLIGHT-006",
+                    severity=Severity.ERROR,
+                    message=f"verify command {command!r} is not resolvable on PATH",
+                )
+            )
+    data["verify_commands"] = verify_entries
+
+    # --- main checked out exactly once -------------------------------------------
+    if repo_root is None:
+        data["main_checked_out_once"] = False
+        findings.append(
+            Finding(
+                code="MRS-PREFLIGHT-007",
+                severity=Severity.ERROR,
+                message=f"cannot verify main is checked out once: {repo_root_error}",
+            )
+        )
+    else:
+        try:
+            worktree_entries = vcs.list_worktrees(repo_root)
+        except VcsCommandError as exc:
+            data["main_checked_out_once"] = False
+            findings.append(
+                Finding(
+                    code="MRS-PREFLIGHT-007",
+                    severity=Severity.ERROR,
+                    message=f"cannot list worktrees to verify main is checked out once: {exc}",
+                )
+            )
+        else:
+            try:
+                # Mirrors run_homes's own identical try/except around its
+                # resolve_path calls (review finding: this block previously
+                # called resolve_path unguarded, unlike its sibling command
+                # in the same file -- an FsError here, e.g. a
+                # permission-denied ancestor, crashed the whole command
+                # instead of yielding MRS-PREFLIGHT-007).
+                repo_root_realpath = fs.resolve_path(repo_root)
+                violators = [
+                    entry.path
+                    for entry in worktree_entries
+                    if entry.branch == "main"
+                    and fs.resolve_path(entry.path) != repo_root_realpath
+                ]
+            except FsError as exc:
+                data["main_checked_out_once"] = False
+                findings.append(
+                    Finding(
+                        code="MRS-PREFLIGHT-007",
+                        severity=Severity.ERROR,
+                        message=f"cannot resolve worktree paths to verify main is checked out once: {exc}",
+                    )
+                )
+                violators = None
+            if violators is not None:
+                data["main_checked_out_once"] = not violators
+            if violators:
+                other_paths = ", ".join(str(path) for path in violators)
+                findings.append(
+                    Finding(
+                        code="MRS-PREFLIGHT-007",
+                        severity=Severity.ERROR,
+                        message=(
+                            "main is checked out in more than one worktree: "
+                            f"{repo_root} and {other_paths}"
+                        ),
+                    )
+                )
+
+    # --- seed files: copy-when-absent, real bytes, halt after one failure -------
+    seed_entries: list[dict[str, object]] = []
+    halted = False
+    for rel in seed_files:
+        if halted:
+            seed_entries.append({"path": rel, "status": "failed"})
+            continue
+        dst = home / rel
+        if fs.exists(dst):
+            seed_entries.append({"path": rel, "status": "skipped"})
+            continue
+        if repo_root is None:
+            seed_entries.append({"path": rel, "status": "failed"})
+            findings.append(
+                Finding(
+                    code="MRS-PREFLIGHT-009",
+                    severity=Severity.ERROR,
+                    message=(
+                        f"cannot seed {dst}: the main checkout could not be "
+                        f"resolved: {repo_root_error}"
+                    ),
+                    path=str(dst),
+                )
+            )
+            halted = True
+            continue
+        src = repo_root / rel
+        if not fs.exists(src):
+            # bmad_loop.install.provision_worktree's own copy-when-absent
+            # semantics: a seed entry with no source in the main checkout is
+            # nothing to seed, not a failure -- an operator who never made a
+            # given optional config file must not fail preflight over it.
+            seed_entries.append({"path": rel, "status": "skipped"})
+            continue
+        try:
+            fs.copy_file(src, dst)
+            seed_entries.append({"path": rel, "status": "copied"})
+        except FsError as exc:
+            seed_entries.append({"path": rel, "status": "failed"})
+            findings.append(
+                Finding(
+                    code="MRS-PREFLIGHT-009",
+                    severity=Severity.ERROR,
+                    message=f"cannot seed {dst}: {exc}",
+                    path=str(dst),
+                )
+            )
+            halted = True
+    data["seed_files"] = seed_entries
+
+    # --- first-run acknowledgement -- ack write happens BEFORE the check --------
+    try:
+        ack_path = _ack_state_path()
+    except (RuntimeError, OSError) as exc:
+        data["first_run_acknowledged"] = False
+        findings.append(
+            Finding(
+                code="MRS-PREFLIGHT-008",
+                severity=Severity.ERROR,
+                message=f"cannot resolve the acknowledgement state path: {exc}",
+            )
+        )
+    else:
+        acknowledged = _read_acknowledged(fs, ack_path)
+        requested = getattr(args, "acknowledge", None)
+        if requested and requested not in acknowledged:
+            candidate = acknowledged | {requested}
+            try:
+                _write_acknowledged(fs, ack_path, candidate)
+            except FsError as exc:
+                # Review finding: the in-memory set was previously unioned
+                # BEFORE the write was attempted, so a failed write still
+                # left `is_acknowledged` (and data.first_run_acknowledged)
+                # reading True below -- self-contradicting the blocking
+                # finding this except clause emits. `acknowledged` stays
+                # UNCHANGED here (never reassigned to `candidate`), so the
+                # is_acknowledged check below reflects what is actually on
+                # disk, not what this invocation merely attempted to persist.
+                findings.append(
+                    Finding(
+                        code="MRS-PREFLIGHT-008",
+                        severity=Severity.ERROR,
+                        message=f"cannot record acknowledgement for {requested!r}: {exc}",
+                    )
+                )
+            else:
+                acknowledged = candidate
+        is_acknowledged = adapter_name is not None and adapter_name in acknowledged
+        data["first_run_acknowledged"] = is_acknowledged
+        if adapter_name is not None and not is_acknowledged:
+            note = first_run_note or "(this adapter's profile declares no first-run note)"
+            findings.append(
+                Finding(
+                    code="MRS-PREFLIGHT-008",
+                    severity=Severity.ERROR,
+                    message=(
+                        f"adapter {adapter_name!r} first-run requirement not "
+                        f"acknowledged -- {note} -- {_SUSTAINED_AUTOMATION_CAVEAT} "
+                        f"-- once verified, run 'marshal preflight {slug} "
+                        f"--acknowledge {adapter_name}'"
+                    ),
+                )
+            )
+
+    return _emit_preflight(args, data, findings)
+
+
+def _render_text_preflight(data: Mapping[str, object], findings: tuple[Finding, ...]) -> str:
+    """A pure projection of the SAME envelope ``data``/``findings`` the
+    ``--format json`` path prints (AD-14), matching this module's own
+    ``_render_text``/``_render_text_homes`` convention."""
+    lines = [f"preflight: {data.get('slug', '')}"]
+    if "home" in data:
+        lines.append(f"home: {data['home']}")
+    if "harness_version" in data:
+        lines.append(f"harness_version: {data['harness_version']}")
+    if "multiplexer" in data:
+        multiplexer = data["multiplexer"]
+        lines.append(
+            f"multiplexer: backend={multiplexer['backend']!r} "
+            f"available={multiplexer['available']}"
+        )
+    if "adapter" in data:
+        adapter = data["adapter"]
+        lines.append(
+            f"adapter: name={adapter['name']!r} binary_present={adapter['binary_present']}"
+        )
+    if "story_feed" in data:
+        story_feed = data["story_feed"]
+        lines.append(
+            f"story_feed: resolvable={story_feed['resolvable']} error={story_feed['error']!r}"
+        )
+    if "verify_commands" in data:
+        lines.append("verify_commands:")
+        for entry in data["verify_commands"]:
+            lines.append(f"  {entry['command']!r}: resolvable={entry['resolvable']}")
+    if "main_checked_out_once" in data:
+        lines.append(f"main_checked_out_once: {data['main_checked_out_once']}")
+    if "seed_files" in data:
+        lines.append("seed_files:")
+        for entry in data["seed_files"]:
+            lines.append(f"  {entry['path']}: {entry['status']}")
+    if "first_run_acknowledged" in data:
+        lines.append(f"first_run_acknowledged: {data['first_run_acknowledged']}")
+    if findings:
+        lines.append("findings:")
+        for finding in findings:
+            lines.append(f"  {finding.code} [{finding.severity.value}] {finding.message}")
+    return "\n".join(lines)
+
+
+def _emit_preflight(args: argparse.Namespace, data: dict[str, object], findings: list[Finding]) -> int:
+    verdict_value = compute_verdict(tuple(findings))
+    envelope = build_envelope(
+        command="preflight", verdict=verdict_value, data=data, findings=tuple(findings)
+    )
+    # Same flush + broken-pipe-suppression convention as _emit/_emit_homes
+    # and cli/config.py::run_config.
+    try:
+        if args.format == "json":
+            print(json.dumps(envelope.to_json_dict(), indent=2, sort_keys=True), flush=True)
+        else:
+            print(_render_text_preflight(envelope.data, envelope.findings), flush=True)
+    except OSError:
+        _suppress_downstream_pipe_close()
+    return exit_code_for(envelope.verdict)
+
+
+# =====================================================================
+# ``marshal teardown`` (Story 1.8, NFR-6/AD-29).
+# =====================================================================
+
+
+def add_teardown_subparser(subparsers: argparse._SubParsersAction) -> None:
+    """Register the ``teardown`` subcommand (Story 1.8, NFR-6/AD-29)."""
+    parser = subparsers.add_parser(
+        "teardown",
+        help="Remove a loop home's worktree and branch, refusing when work would be lost.",
+        description=(
+            "Removes the loop/<slug> git worktree and branch run_init "
+            "provisions, refusing when the home has uncommitted changes or "
+            "the branch's content is not yet safely captured on main, "
+            "unless --force overrides the refusal. A slug with nothing "
+            "provisioned is a clean no-op."
+        ),
+    )
+    parser.add_argument("slug", help="The BMAD project slug whose loop home to tear down.")
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        help=(
+            "Override refusal: remove the worktree/branch even when the "
+            "home is dirty, the branch is genuinely unmerged, or the "
+            "AD-29 promotion-reachability check names something "
+            "unreachable."
+        ),
+    )
+    parser.add_argument(
+        "--format",
+        choices=("text", "json"),
+        default="text",
+        help="Output format (default: text).",
+    )
+    parser.set_defaults(handler=run_teardown)
+
+
+def _unreachable_promotions(repo_root: Path, branch: str) -> tuple[str, ...]:
+    """AD-29's promotion-reachability extension point -- NOT Epic 4's real
+    predicate, which will name every promotion route (pushed / merged /
+    durable-local-ref) ``branch``'s content would become unreachable from if
+    its loop home were torn down now. Hardcoded to "nothing unreachable"
+    today, matching the spec's own instruction: a repo-wide grep at
+    planning time found zero existing promotion/reachability machinery, and
+    this story's declared surface is ``cli/init.py`` + ``adapters/
+    vcs_git.py`` only. ``run_teardown``'s call site and contract (called
+    before the refusal decision; a non-empty result is one more refusal
+    reason) are permanent -- Epic 4 replaces only this function's BODY."""
+    return ()
+
+
+def _teardown_op_failed_finding(message: str) -> Finding:
+    return Finding(code="MRS-TEARDOWN-002", severity=Severity.ERROR, message=message)
+
+
+def run_teardown(
+    args: argparse.Namespace,
+    *,
+    vcs: VcsPort | None = None,
+    fs: FsPort | None = None,
+) -> int:
+    vcs = vcs if vcs is not None else GitVcs()
+    fs = fs if fs is not None else LocalFs()
+    # `fs` is used ONLY for read-only existence checks (see this module's
+    # own docstring) -- this command calls no FsPort WRITE method.
+
+    slug = args.slug
+    force = bool(getattr(args, "force", False))
+    findings: list[Finding] = []
+    data: dict[str, object] = {"slug": slug}
+
+    if not policy._is_valid_project_slug(slug):
+        findings.append(
+            Finding(
+                code="MRS-TEARDOWN-001",
+                severity=Severity.ERROR,
+                message=(
+                    f"malformed project slug {slug!r} -- must be one safe "
+                    "path segment (letters, digits, '.', '_', '-'; not '.' "
+                    "or '..'; at most 255 characters)"
+                ),
+            )
+        )
+        return _emit_teardown(args, data, findings)
+
+    # Same git-ref-shape guard as run_init's identical gate -- a branch-name
+    # component git itself would refuse, checked here so it dies as a crisp
+    # pre-I/O MRS-TEARDOWN-001 instead of an opaque MRS-TEARDOWN-002
+    # carrying raw git stderr. (review finding: run_preflight does NOT
+    # apply this same guard today -- a pre-existing Story 1.7 gap, not
+    # introduced here; logged to deferred-work.md rather than fixed in this
+    # story's own surface.)
+    if (
+        slug.startswith(".")
+        or slug.endswith(".")
+        or ".." in slug
+        or slug.endswith(".lock")
+    ):
+        findings.append(
+            Finding(
+                code="MRS-TEARDOWN-001",
+                severity=Severity.ERROR,
+                message=(
+                    f"project slug {slug!r} is not usable as the git branch "
+                    f"loop/{slug} -- a branch-name component must not start "
+                    "or end with '.', contain '..', or end with '.lock'"
+                ),
+            )
+        )
+        return _emit_teardown(args, data, findings)
+
+    try:
+        invocation_dir = Path.cwd()
+    except OSError as exc:
+        findings.append(
+            _teardown_op_failed_finding(f"resolving the current working directory: {exc}")
+        )
+        return _emit_teardown(args, data, findings)
+    try:
+        repo_root = vcs.repo_common_root(invocation_dir)
+    except VcsCommandError as exc:
+        findings.append(_teardown_op_failed_finding(f"resolving the repo root: {exc}"))
+        return _emit_teardown(args, data, findings)
+    data["repo_root"] = str(repo_root)
+
+    try:
+        home = _home_path(slug)
+    except (RuntimeError, OSError) as exc:
+        findings.append(_teardown_op_failed_finding(f"resolving the loop-home root: {exc}"))
+        return _emit_teardown(args, data, findings)
+    branch = f"loop/{slug}"
+    data["home"] = str(home)
+    data["branch"] = branch
+
+    # --- reconcile: what is actually provisioned for this slug? -------------
+    try:
+        worktree_path = vcs.worktree_path_for_branch(repo_root, branch)
+    except VcsCommandError as exc:
+        findings.append(
+            _teardown_op_failed_finding(f"resolving worktree state for {branch}: {exc}")
+        )
+        return _emit_teardown(args, data, findings)
+    try:
+        branch_present = vcs.branch_exists(repo_root, branch)
+    except VcsCommandError as exc:
+        findings.append(_teardown_op_failed_finding(f"checking whether {branch} exists: {exc}"))
+        return _emit_teardown(args, data, findings)
+
+    if worktree_path is None:
+        # No worktree REGISTERED for this slug (the branch may or may not
+        # remain). Usually a clean no-op or a branch-only reconciliation
+        # (teardown is a cleanup command, not a precondition-verifying one
+        # like preflight) -- but a prior partial/failed removal (or manual
+        # git surgery) can deregister a worktree while leaving real files
+        # behind, and this repo's own history has hit exactly that failure
+        # mode. Trusting git's registry alone here would silently claim
+        # full cleanup while unverified -- possibly uncommitted -- content
+        # sits untouched on disk (review finding); check for it (read-only)
+        # rather than assume absence. `exists`, not `is_dir` (follow-up
+        # review finding): a leftover regular FILE at the home path would
+        # otherwise slip through as "already removed". And the guard runs
+        # for the branch-only state too (follow-up review finding): it
+        # previously ran only when NOTHING was registered, so a leftover
+        # dir plus a surviving branch reported `removed: True` while the
+        # unverified leftover sat there.
+        try:
+            leftover = fs.exists(home)
+        except FsError as exc:
+            findings.append(
+                _teardown_op_failed_finding(f"checking for a leftover at {home}: {exc}")
+            )
+            return _emit_teardown(args, data, findings)
+        if leftover:
+            findings.append(
+                _teardown_op_failed_finding(
+                    f"{home} still exists on disk but git no longer "
+                    "registers it as a worktree for any branch -- its "
+                    "contents were never checked for uncommitted work; "
+                    "inspect and remove it by hand"
+                )
+            )
+            return _emit_teardown(args, data, findings)
+        if not branch_present:
+            data["already_removed"] = True
+            return _emit_teardown(args, data, findings)
+
+    # --- refusal decision: dirty working tree, unmerged content, or an ------
+    # unreachable promotion -- the finding names EVERY condition that fires.
+    reasons: list[str] = []
+
+    if worktree_path is not None:
+        # git still registers the worktree, but its directory may have been
+        # deleted by hand rather than via `git worktree remove` (mirrors
+        # run_init's/run_homes's own identical guard for the same known
+        # failure mode -- this repo's own history has hit it). There is
+        # nothing to check for dirtiness in that case, and calling
+        # has_uncommitted_changes against a missing path raises rather than
+        # answering (review finding: this previously left --force with no
+        # way to proceed past that raised error). git's own
+        # `worktree remove` cleans up this exact stale registration WITHOUT
+        # needing --force (confirmed live), so removal below still
+        # succeeds once this check is skipped.
+        try:
+            worktree_on_disk = fs.is_dir(worktree_path)
+        except FsError as exc:
+            findings.append(
+                _teardown_op_failed_finding(f"checking whether {worktree_path} exists: {exc}")
+            )
+            return _emit_teardown(args, data, findings)
+        if worktree_on_disk:
+            # Probe failures block only an UNFORCED teardown (follow-up
+            # review finding): a VcsCommandError here previously returned
+            # MRS-TEARDOWN-002 before the --force branch was ever reached,
+            # so --force could not carry past a damaged-but-present
+            # worktree (e.g. a corrupt .git gitdir pointer) -- the exact
+            # states teardown is most needed for, and the same dead-end
+            # class the missing-directory guard above already removed.
+            # Under --force the probe's answer cannot change the outcome,
+            # so its failure becomes one more (named) forced-past reason.
+            try:
+                dirty = vcs.has_uncommitted_changes(worktree_path)
+            except VcsCommandError as exc:
+                if not force:
+                    findings.append(
+                        _teardown_op_failed_finding(
+                            f"checking for uncommitted changes in {worktree_path}: {exc}"
+                        )
+                    )
+                    return _emit_teardown(args, data, findings)
+                reasons.append(
+                    f"the dirty-state of {worktree_path} could not be determined: {exc}"
+                )
+            else:
+                if dirty:
+                    reasons.append(f"{worktree_path} has uncommitted changes")
+
+    if branch_present:
+        # Same forced-past treatment as the dirty probe above.
+        try:
+            merged = vcs.is_branch_merged(repo_root, branch, into="main")
+        except VcsCommandError as exc:
+            if not force:
+                findings.append(
+                    _teardown_op_failed_finding(
+                        f"checking whether {branch} is merged into main: {exc}"
+                    )
+                )
+                return _emit_teardown(args, data, findings)
+            reasons.append(
+                f"whether {branch} is merged into main could not be determined: {exc}"
+            )
+        else:
+            if not merged:
+                reasons.append(
+                    f"branch {branch}'s content is not yet safely captured on main"
+                )
+
+    unreachable = _unreachable_promotions(repo_root, branch)
+    if unreachable:
+        reasons.append(
+            f"branch {branch} would become unreachable from: {', '.join(unreachable)}"
+        )
+
+    if reasons and not force:
+        # Name the path the checks and the removal actually operate on --
+        # git's registered location when one exists (follow-up review
+        # finding: the headline previously named the merely COMPUTED
+        # `home` even in the moved-home case where the two disagree and
+        # every operation targets git's truth).
+        refusal_target = worktree_path if worktree_path is not None else home
+        findings.append(
+            Finding(
+                code="MRS-TEARDOWN-003",
+                severity=Severity.ERROR,
+                message=(
+                    f"refusing to tear down {refusal_target} -- work would be lost: "
+                    f"{'; '.join(reasons)} -- pass --force to override"
+                ),
+            )
+        )
+        return _emit_teardown(args, data, findings)
+
+    # --- removal: authorized either because every check passed, or because -
+    # the operator's own --force overrode a real refusal. Worktree removal
+    # only needs --force on the latter path; branch deletion always uses -D
+    # (see this module's own docstring for why plain -d is unsafe here even
+    # on the clean path).
+    worktree_needed_force = bool(reasons)
+
+    if worktree_path is not None:
+        try:
+            # git's own registered location, not the merely COMPUTED `home`
+            # (review finding: these can disagree -- e.g. BMAD_LOOP_HOME_ROOT
+            # changed since provisioning -- and run_init's own precedent is
+            # to trust git's truth, exactly like the dirty-check above
+            # already does).
+            vcs.remove_worktree(repo_root, worktree_path, force=worktree_needed_force)
+        except VcsCommandError as exc:
+            findings.append(_teardown_op_failed_finding(str(exc)))
+            return _emit_teardown(args, data, findings)
+
+    if branch_present:
+        try:
+            vcs.delete_branch(repo_root, branch, force=True)
+        except VcsCommandError as exc:
+            message = str(exc)
+            if worktree_path is not None:
+                # By this point the worktree removal above already
+                # succeeded (any failure there returned early) -- naming
+                # that here saves the operator from re-diagnosing "did
+                # anything happen" after a partial failure (review finding:
+                # the recovery path, a bare re-run, is already handled by
+                # this function's own branch-only reconciliation above, but
+                # was not surfaced in the message).
+                message = f"the worktree was already removed; {message}"
+            findings.append(_teardown_op_failed_finding(message))
+            return _emit_teardown(args, data, findings)
+
+    data["removed"] = True
+    if worktree_needed_force:
+        data["forced"] = True
+
+    return _emit_teardown(args, data, findings)
+
+
+def _render_text_teardown(data: Mapping[str, object], findings: tuple[Finding, ...]) -> str:
+    """A pure projection of the SAME envelope ``data``/``findings`` the
+    ``--format json`` path prints (AD-14), matching this module's own
+    ``_render_text``/``_render_text_homes``/``_render_text_preflight``
+    convention."""
+    lines = [f"teardown: {data.get('slug', '')}"]
+    if "home" in data:
+        lines.append(f"home: {data['home']}")
+    if "branch" in data:
+        lines.append(f"branch: {data['branch']}")
+    if "already_removed" in data:
+        lines.append(f"already_removed: {data['already_removed']}")
+    if "removed" in data:
+        lines.append(f"removed: {data['removed']}")
+    if "forced" in data:
+        lines.append(f"forced: {data['forced']}")
+    if findings:
+        lines.append("findings:")
+        for finding in findings:
+            lines.append(f"  {finding.code} [{finding.severity.value}] {finding.message}")
+    return "\n".join(lines)
+
+
+def _emit_teardown(args: argparse.Namespace, data: dict[str, object], findings: list[Finding]) -> int:
+    verdict_value = compute_verdict(tuple(findings))
+    envelope = build_envelope(
+        command="teardown", verdict=verdict_value, data=data, findings=tuple(findings)
+    )
+    # Same flush + broken-pipe-suppression convention as _emit/_emit_homes/
+    # _emit_preflight and cli/config.py::run_config.
+    try:
+        if args.format == "json":
+            print(json.dumps(envelope.to_json_dict(), indent=2, sort_keys=True), flush=True)
+        else:
+            print(_render_text_teardown(envelope.data, envelope.findings), flush=True)
     except OSError:
         _suppress_downstream_pipe_close()
     return exit_code_for(envelope.verdict)

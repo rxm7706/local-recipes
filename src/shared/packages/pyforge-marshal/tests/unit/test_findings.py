@@ -19,8 +19,12 @@ def test_registered_codes_contains_the_real_codes():
     core/policy.py/cli/config.py add MRS-POLICY-001/002/003/004/005/006.
     Story 1.4's cli/init.py adds MRS-INIT-001/002/003/004. Story 1.5's
     cli/init.py tier3_backlink step adds MRS-INIT-005. Story 1.6's
-    cli/init.py::run_homes adds MRS-HOMES-001/002/003. This asserts the
-    registry's exact real contents."""
+    cli/init.py::run_homes adds MRS-HOMES-001/002/003. Story 1.7's
+    cli/init.py::run_preflight adds MRS-PREFLIGHT-001..010. Story 1.8's
+    cli/init.py::run_teardown adds MRS-TEARDOWN-001/002/003. Story 1.9's
+    cli/init.py::run_preflight adds MRS-PREFLIGHT-011, graduating the
+    harness-version check into two tiers. This asserts the registry's exact
+    real contents."""
     assert findings.REGISTERED_CODES == frozenset(
         {
             "MRS-IDENT-001",
@@ -39,6 +43,20 @@ def test_registered_codes_contains_the_real_codes():
             "MRS-HOMES-001",
             "MRS-HOMES-002",
             "MRS-HOMES-003",
+            "MRS-PREFLIGHT-001",
+            "MRS-PREFLIGHT-002",
+            "MRS-PREFLIGHT-003",
+            "MRS-PREFLIGHT-004",
+            "MRS-PREFLIGHT-005",
+            "MRS-PREFLIGHT-006",
+            "MRS-PREFLIGHT-007",
+            "MRS-PREFLIGHT-008",
+            "MRS-PREFLIGHT-009",
+            "MRS-PREFLIGHT-010",
+            "MRS-PREFLIGHT-011",
+            "MRS-TEARDOWN-001",
+            "MRS-TEARDOWN-002",
+            "MRS-TEARDOWN-003",
         }
     )
 

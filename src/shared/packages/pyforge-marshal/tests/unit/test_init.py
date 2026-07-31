@@ -18,8 +18,10 @@ import jsonschema
 import pytest
 
 from pyforge.marshal.adapters.fs_local import FsError
+from pyforge.marshal.adapters.harness_bmadloop import HarnessError
 from pyforge.marshal.adapters.vcs_git import VcsCommandError
-from pyforge.marshal.cli.init import run_homes, run_init
+from pyforge.marshal.cli import init as init_module
+from pyforge.marshal.cli.init import run_homes, run_init, run_preflight, run_teardown
 from pyforge.marshal.core.verdict import EXIT_OK
 from pyforge.marshal.ports.vcs import WorktreeEntry
 
@@ -43,6 +45,20 @@ class FakeVcs:
         self.fail_worktree_path_for_branch: Exception | None = None
         self.fail_add_worktree: Exception | None = None
         self.fail_list_worktrees: Exception | None = None
+        # Story 1.8 (marshal teardown): dirty/unmerged are OPT-IN sets --
+        # a branch/worktree this fake knows about defaults to clean and
+        # merged (mirrors a freshly-provisioned, zero-new-commits home,
+        # real git's own trivial-ancestry case), so the common "clean,
+        # fully-merged" happy path needs no boilerplate; a test exercising
+        # the refusal path adds the worktree path / branch name explicitly.
+        self.dirty_worktrees: set[Path] = set()
+        self.unmerged_branches: set[str] = set()
+        self.fail_has_uncommitted_changes: Exception | None = None
+        self.fail_is_branch_merged: Exception | None = None
+        self.fail_remove_worktree: Exception | None = None
+        self.fail_delete_branch: Exception | None = None
+        self.remove_worktree_calls: list[tuple[Path, Path, bool]] = []
+        self.delete_branch_calls: list[tuple[Path, str, bool]] = []
         # Story 1.6: list_worktrees derives its entries from the SAME
         # self.worktrees dict every other FakeVcs method already maintains,
         # plus one synthesized entry for the main checkout itself.
@@ -108,6 +124,35 @@ class FakeVcs:
         entries.extend(self.extra_worktree_entries)
         return tuple(entries)
 
+    def has_uncommitted_changes(self, worktree_path: Path) -> bool:
+        self.calls.append("has_uncommitted_changes")
+        if self.fail_has_uncommitted_changes:
+            raise self.fail_has_uncommitted_changes
+        return worktree_path in self.dirty_worktrees
+
+    def is_branch_merged(self, repo_root: Path, branch: str, *, into: str) -> bool:
+        self.calls.append("is_branch_merged")
+        if self.fail_is_branch_merged:
+            raise self.fail_is_branch_merged
+        return branch not in self.unmerged_branches
+
+    def remove_worktree(self, repo_root: Path, home: Path, *, force: bool = False) -> None:
+        self.calls.append("remove_worktree")
+        self.remove_worktree_calls.append((repo_root, home, force))
+        if self.fail_remove_worktree:
+            raise self.fail_remove_worktree
+        for branch, path in list(self.worktrees.items()):
+            if path == home:
+                del self.worktrees[branch]
+        self.worktree_dirs.discard(home)
+
+    def delete_branch(self, repo_root: Path, branch: str, *, force: bool = False) -> None:
+        self.calls.append("delete_branch")
+        self.delete_branch_calls.append((repo_root, branch, force))
+        if self.fail_delete_branch:
+            raise self.fail_delete_branch
+        self.branches.discard(branch)
+
 
 class FakeFs:
     def __init__(self, *, project_dirs: set[Path] | None = None) -> None:
@@ -123,6 +168,13 @@ class FakeFs:
         self.repoint_calls: list[Path] = []
         self.ensure_dir_calls: list[Path] = []
         self.remove_empty_dir_calls: list[Path] = []
+        # Story 1.7: paths created via copy_file -- a distinct membership set
+        # from `texts` (marker/ack-file WRITES) so a seed-file source/
+        # destination can be modeled as "a real file exists here" without
+        # also satisfying read_text's contract (copy_file's caller never
+        # reads the bytes back through this fake).
+        self.files: set[Path] = set()
+        self.copy_file_calls: list[tuple[Path, Path]] = []
         self.fail_read_text: Exception | None = None
         self.fail_write_text: Exception | None = None
         self.fail_read_symlink: Exception | None = None
@@ -130,6 +182,7 @@ class FakeFs:
         self.fail_ensure_dir: Exception | None = None
         self.fail_remove_empty_dir: Exception | None = None
         self.fail_resolve_path: Exception | None = None
+        self.fail_copy_file: Exception | None = None
 
     def is_dir(self, path: Path) -> bool:
         self.calls.append("is_dir")
@@ -139,9 +192,17 @@ class FakeFs:
         """Story 1.6: occupancy probe -- anything this fake knows about
         (a dir, a text file, or a symlink entry) exists. run_homes only
         calls this AFTER read_symlink_target returned None, so the symlink
-        membership never masks the real-occupant distinction there."""
+        membership never masks the real-occupant distinction there. Story
+        1.7 extends membership to `files` (copy_file's own destinations/
+        pre-seeded sources) -- run_preflight's seed-file loop is this
+        method's other caller."""
         self.calls.append("exists")
-        return path in self.dirs or path in self.texts or path in self.symlinks
+        return (
+            path in self.dirs
+            or path in self.texts
+            or path in self.symlinks
+            or path in self.files
+        )
 
     def read_text(self, path: Path) -> str | None:
         self.calls.append("read_text")
@@ -208,6 +269,72 @@ class FakeFs:
             current = target if target.is_absolute() else (current.parent / target)
         return current
 
+    def copy_file(self, src: Path, dst: Path) -> None:
+        self.calls.append("copy_file")
+        self.copy_file_calls.append((src, dst))
+        if self.fail_copy_file:
+            raise self.fail_copy_file
+        self.files.add(dst)
+
+
+class FakeHarness:
+    """Story 1.7: a fake ``HarnessPort`` implementation -- drives
+    ``run_preflight``'s I/O & Edge-Case Matrix without touching a real
+    ``bmad_loop`` install (that lives in
+    ``test_harness_bmadloop_preflight.py``). Every call is recorded in
+    ``.calls`` for "no further checks ran" assertions, matching
+    ``FakeVcs``/``FakeFs``'s own convention."""
+
+    def __init__(self) -> None:
+        self.binaries_present: set[str] = set()
+        self.version: str | None = "0.9.0"
+        self.multiplexer: tuple[str, bool] = ("tmux", True)
+        self.fail_multiplexer: Exception | None = None
+        self.adapter_binaries: dict[str, str] = {"claude": "claude"}
+        self.adapter_seed_files_map: dict[str, tuple[str, ...]] = {"claude": ()}
+        self.adapter_first_run_notes: dict[str, str] = {
+            "claude": "run `claude` once in the project to accept workspace trust"
+        }
+        self.fail_adapter: Exception | None = None
+        self.feed_error: str | None = None
+        self.calls: list[str] = []
+
+    def binary_present(self, binary: str) -> bool:
+        self.calls.append(f"binary_present:{binary}")
+        return binary in self.binaries_present
+
+    def harness_version(self) -> str | None:
+        self.calls.append("harness_version")
+        return self.version
+
+    def multiplexer_backend_available(self) -> tuple[str, bool]:
+        self.calls.append("multiplexer_backend_available")
+        if self.fail_multiplexer:
+            raise self.fail_multiplexer
+        return self.multiplexer
+
+    def adapter_binary(self, adapter_name: str, project: Path) -> str:
+        self.calls.append(f"adapter_binary:{adapter_name}")
+        if self.fail_adapter:
+            raise self.fail_adapter
+        return self.adapter_binaries[adapter_name]
+
+    def adapter_seed_files(self, adapter_name: str, project: Path) -> tuple[str, ...]:
+        self.calls.append(f"adapter_seed_files:{adapter_name}")
+        if self.fail_adapter:
+            raise self.fail_adapter
+        return self.adapter_seed_files_map.get(adapter_name, ())
+
+    def adapter_first_run_note(self, adapter_name: str, project: Path) -> str:
+        self.calls.append(f"adapter_first_run_note:{adapter_name}")
+        if self.fail_adapter:
+            raise self.fail_adapter
+        return self.adapter_first_run_notes.get(adapter_name, "")
+
+    def story_feed_error(self, project: Path) -> str | None:
+        self.calls.append("story_feed_error")
+        return self.feed_error
+
 
 def _namespace(slug: str, *, fmt: str = "text") -> argparse.Namespace:
     return argparse.Namespace(slug=slug, format=fmt)
@@ -221,6 +348,15 @@ def _sandbox_loop_home_root(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> 
     pinned under ``tmp_path`` so no test can ever compute a path under the
     REAL ``~/.bmad-loops``."""
     monkeypatch.setenv("BMAD_LOOP_HOME_ROOT", str(tmp_path / "loop-homes"))
+
+
+@pytest.fixture(autouse=True)
+def _sandbox_state_home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Story 1.7: same rationale as ``_sandbox_loop_home_root`` above, for
+    ``run_preflight``'s ``MARSHAL_STATE_HOME`` read -- pinned under
+    ``tmp_path`` so no preflight test can ever touch the REAL
+    ``~/.local/state/pyforge-marshal/adapter-acknowledgements.json``."""
+    monkeypatch.setenv("MARSHAL_STATE_HOME", str(tmp_path / "state-home"))
 
 
 @pytest.fixture
@@ -1308,3 +1444,1430 @@ def test_homes_reports_a_backlink_dangling_at_the_canonical_path(
     out = capsys.readouterr().out
     assert "MRS-HOMES-002" in out
     assert "does not exist" in out
+
+
+# =====================================================================
+# ``run_preflight`` (Story 1.7, FR-7/FR-47/FR-52) -- CLI-layer coverage of
+# the full I/O & Edge-Case Matrix, driven through Fake{Vcs,Fs,Harness}. The
+# real ``BmadLoopHarness`` against the installed ``bmad_loop`` package is
+# covered separately in ``test_harness_bmadloop_preflight.py``; the real
+# end-to-end pass (real git, real harness on PATH) is
+# ``tests/integration/test_init_worktree.py``.
+#
+# ``conventional_project_policy_path`` (``cli/config.py``) is NOT
+# DI-injectable -- it resolves from THIS PACKAGE's own on-disk location, not
+# from ``tmp_path`` -- so every test below uses the slug "acme" (confirmed
+# absent from this repo's real ``_bmad-output/projects/``), which makes
+# ``policy_path.is_file()`` False and composition fall through to Marshal's
+# bare ``DEFAULT_POLICY`` (``verify_commands=()``, adapter always resolves
+# to the template baseline "claude"). Tests that need a NON-bare policy
+# layer (an unknown key, a bad verify command, a bricking attempt count)
+# monkeypatch ``init_module.conventional_project_policy_path`` to point at a
+# real ``tmp_path`` TOML file instead of writing into the real repo tree.
+# =====================================================================
+
+
+def _preflight_namespace(
+    slug: str, *, acknowledge: str | None = None, fmt: str = "text"
+) -> argparse.Namespace:
+    return argparse.Namespace(slug=slug, acknowledge=acknowledge, format=fmt)
+
+
+def _seed_acknowledged(fs: FakeFs, tmp_path: Path, names: list[str]) -> Path:
+    """Pre-seed the (sandboxed, per ``_sandbox_state_home``) ack state file
+    as already carrying ``names``. Returns the path, for assertions."""
+    ack_path = tmp_path / "state-home" / "adapter-acknowledgements.json"
+    fs.texts[ack_path] = json.dumps(names)
+    return ack_path
+
+
+def _converged_harness() -> FakeHarness:
+    harness = FakeHarness()
+    harness.binaries_present = {"bmad-loop", "claude"}
+    return harness
+
+
+# --- fully converged: zero findings, exit 0 --------------------------------
+
+
+def test_preflight_fully_converged_reports_zero_findings(repo_root, tmp_path, capsys):
+    slug = "acme"
+    home = tmp_path / "loop-homes" / slug
+    fs = FakeFs(project_dirs={home})
+    vcs = FakeVcs(repo_root=repo_root)
+    harness = _converged_harness()
+    _seed_acknowledged(fs, tmp_path, ["claude"])
+
+    exit_code = run_preflight(_preflight_namespace(slug), vcs=vcs, fs=fs, harness=harness)
+    assert exit_code == EXIT_OK
+    out = capsys.readouterr().out
+    assert "findings:" not in out
+    assert "harness_version: 0.9.0" in out
+    assert "multiplexer: backend='tmux' available=True" in out
+    assert "adapter: name='claude' binary_present=True" in out
+    assert "story_feed: resolvable=True error=None" in out
+    assert "main_checked_out_once: True" in out
+    assert "first_run_acknowledged: True" in out
+
+
+def test_preflight_fully_converged_json_matches_schema(repo_root, tmp_path):
+    slug = "acme"
+    home = tmp_path / "loop-homes" / slug
+    fs = FakeFs(project_dirs={home})
+    vcs = FakeVcs(repo_root=repo_root)
+    harness = _converged_harness()
+    _seed_acknowledged(fs, tmp_path, ["claude"])
+
+    import io
+    import sys
+
+    captured = io.StringIO()
+    old_stdout = sys.stdout
+    sys.stdout = captured
+    try:
+        exit_code = run_preflight(
+            _preflight_namespace(slug, fmt="json"), vcs=vcs, fs=fs, harness=harness
+        )
+    finally:
+        sys.stdout = old_stdout
+    assert exit_code == EXIT_OK
+    payload = json.loads(captured.getvalue())
+    schema = json.loads(_SCHEMA_PATH.read_text(encoding="utf-8"))
+    jsonschema.validate(instance=payload, schema=schema)
+    assert payload["command"] == "preflight"
+    assert payload["status"] == "ok"
+    assert payload["findings"] == []
+    assert payload["data"]["seed_files"] == []
+    assert payload["data"]["verify_commands"] == []
+
+
+# --- loop home not provisioned: MRS-PREFLIGHT-009, no further checks ------
+
+
+def test_preflight_loop_home_not_provisioned_reports_finding_with_no_further_checks(
+    repo_root, tmp_path, capsys
+):
+    fs = FakeFs()  # home NOT registered as a dir
+    vcs = FakeVcs(repo_root=repo_root)
+    harness = FakeHarness()
+
+    exit_code = run_preflight(_preflight_namespace("acme"), vcs=vcs, fs=fs, harness=harness)
+    assert exit_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-PREFLIGHT-009" in out
+    assert "marshal init" in out
+    assert harness.calls == []
+    assert vcs.calls == []
+
+
+# --- malformed slug: MRS-PREFLIGHT-010, rejected before any I/O ------------
+
+
+@pytest.mark.parametrize("slug", ["../escaped-dir", "/etc", "a/b", "..", "."])
+def test_preflight_malformed_slug_rejected_before_any_io(slug, tmp_path, capsys):
+    """Review finding: an unvalidated slug reached _home_path/
+    conventional_project_policy_path and, via '..'/an absolute path, could
+    resolve OUTSIDE loop_home_root entirely -- the seed-copy step would then
+    write real bytes there, violating AD-11. Mirrors run_init's own
+    MRS-INIT-001 gate: rejected before ANY FsPort/VcsPort/HarnessPort call."""
+    fs = FakeFs()
+    vcs = FakeVcs(repo_root=tmp_path / "repo")
+    harness = FakeHarness()
+
+    exit_code = run_preflight(_preflight_namespace(slug), vcs=vcs, fs=fs, harness=harness)
+    assert exit_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-PREFLIGHT-010" in out
+    assert fs.calls == []
+    assert vcs.calls == []
+    assert harness.calls == []
+
+
+# --- harness binary absent: MRS-PREFLIGHT-001 -------------------------------
+
+
+def test_preflight_harness_binary_absent_reports_finding(repo_root, tmp_path, capsys):
+    slug = "acme"
+    home = tmp_path / "loop-homes" / slug
+    fs = FakeFs(project_dirs={home})
+    vcs = FakeVcs(repo_root=repo_root)
+    harness = _converged_harness()
+    harness.binaries_present.discard("bmad-loop")
+    _seed_acknowledged(fs, tmp_path, ["claude"])
+
+    exit_code = run_preflight(_preflight_namespace(slug), vcs=vcs, fs=fs, harness=harness)
+    assert exit_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-PREFLIGHT-001" in out
+    assert "harness_version: None" in out
+
+
+# --- harness version outside range: MRS-PREFLIGHT-002 (major mismatch/ ----
+# undeterminable, blocking) vs MRS-PREFLIGHT-011 (same-major, warn-only,
+# Story 1.9's graduated tier) ------------------------------------------------
+
+
+def test_preflight_harness_version_same_major_outside_range_warns_and_does_not_block(
+    repo_root, tmp_path, capsys
+):
+    """Story 1.9: a same-major (0.x), out-of-minor-range harness version used
+    to share MRS-PREFLIGHT-002's blocking tier with the undeterminable/
+    major-mismatch case -- it now reports the new MRS-PREFLIGHT-011 at warn
+    severity instead, and does NOT block (exit 0)."""
+    slug = "acme"
+    home = tmp_path / "loop-homes" / slug
+    fs = FakeFs(project_dirs={home})
+    vcs = FakeVcs(repo_root=repo_root)
+    harness = _converged_harness()
+    harness.version = "0.10.2"
+    _seed_acknowledged(fs, tmp_path, ["claude"])
+
+    exit_code = run_preflight(_preflight_namespace(slug), vcs=vcs, fs=fs, harness=harness)
+    assert exit_code == EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-PREFLIGHT-011" in out
+    assert "[warn]" in out
+    assert "MRS-PREFLIGHT-002" not in out
+    assert "0.10.2" in out
+    assert ">=0.9.0,<0.10" in out
+
+
+def test_preflight_harness_version_major_mismatch_reports_finding_and_blocks(
+    repo_root, tmp_path, capsys
+):
+    """Story 1.9: a genuine major-version mismatch (e.g. a future bmad-loop
+    2.0.0) still blocks via MRS-PREFLIGHT-002, unchanged tier -- only the
+    same-major-out-of-minor-range case above moved to the new warn-only
+    code."""
+    slug = "acme"
+    home = tmp_path / "loop-homes" / slug
+    fs = FakeFs(project_dirs={home})
+    vcs = FakeVcs(repo_root=repo_root)
+    harness = _converged_harness()
+    harness.version = "2.0.0"
+    _seed_acknowledged(fs, tmp_path, ["claude"])
+
+    exit_code = run_preflight(_preflight_namespace(slug), vcs=vcs, fs=fs, harness=harness)
+    assert exit_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-PREFLIGHT-002" in out
+    assert "2.0.0" in out
+    assert ">=0.9.0,<0.10" in out
+    assert "MRS-PREFLIGHT-011" not in out
+
+
+def test_preflight_harness_version_undetermined_reports_finding(repo_root, tmp_path, capsys):
+    slug = "acme"
+    home = tmp_path / "loop-homes" / slug
+    fs = FakeFs(project_dirs={home})
+    vcs = FakeVcs(repo_root=repo_root)
+    harness = _converged_harness()
+    harness.version = None  # binary present but --version could not be determined
+    _seed_acknowledged(fs, tmp_path, ["claude"])
+
+    exit_code = run_preflight(_preflight_namespace(slug), vcs=vcs, fs=fs, harness=harness)
+    assert exit_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-PREFLIGHT-002" in out
+    # Follow-up-review wording parity with cli/main.py's _version_text: an
+    # undetermined version is named as such, not "outside the supported
+    # range" (it is not a version at all).
+    assert "could not be determined" in out
+
+
+def test_preflight_harness_version_unparseable_string_reports_finding_and_blocks(
+    repo_root, tmp_path, capsys
+):
+    """A harness ``--version`` that prints a non-version string (e.g.
+    ``"dev"``) is undeterminable-in-substance: still MRS-PREFLIGHT-002,
+    still blocking -- and the message says "could not be parsed", not
+    "outside the supported range" (follow-up-review wording parity with
+    cli/main.py's ``_version_text``, which drew the same distinction one
+    pass earlier)."""
+    slug = "acme"
+    home = tmp_path / "loop-homes" / slug
+    fs = FakeFs(project_dirs={home})
+    vcs = FakeVcs(repo_root=repo_root)
+    harness = _converged_harness()
+    harness.version = "dev"
+    _seed_acknowledged(fs, tmp_path, ["claude"])
+
+    exit_code = run_preflight(_preflight_namespace(slug), vcs=vcs, fs=fs, harness=harness)
+    assert exit_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-PREFLIGHT-002" in out
+    assert "could not be parsed" in out
+    assert "outside the supported range" not in out
+
+
+# --- multiplexer unavailable: MRS-PREFLIGHT-003 -----------------------------
+
+
+def test_preflight_multiplexer_unavailable_reports_finding(repo_root, tmp_path, capsys):
+    slug = "acme"
+    home = tmp_path / "loop-homes" / slug
+    fs = FakeFs(project_dirs={home})
+    vcs = FakeVcs(repo_root=repo_root)
+    harness = _converged_harness()
+    harness.multiplexer = ("tmux", False)
+    _seed_acknowledged(fs, tmp_path, ["claude"])
+
+    exit_code = run_preflight(_preflight_namespace(slug), vcs=vcs, fs=fs, harness=harness)
+    assert exit_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-PREFLIGHT-003" in out
+    assert "'tmux'" in out
+
+
+def test_preflight_multiplexer_harness_error_reports_finding(repo_root, tmp_path, capsys):
+    slug = "acme"
+    home = tmp_path / "loop-homes" / slug
+    fs = FakeFs(project_dirs={home})
+    vcs = FakeVcs(repo_root=repo_root)
+    harness = _converged_harness()
+    harness.fail_multiplexer = HarnessError("bmad_loop is not importable: boom")
+    _seed_acknowledged(fs, tmp_path, ["claude"])
+
+    exit_code = run_preflight(_preflight_namespace(slug), vcs=vcs, fs=fs, harness=harness)
+    assert exit_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-PREFLIGHT-003" in out
+    assert "not importable" in out
+    assert "multiplexer: backend='' available=False" in out
+
+
+# --- adapter binary absent: MRS-PREFLIGHT-004 -------------------------------
+
+
+def test_preflight_adapter_binary_absent_reports_finding(repo_root, tmp_path, capsys):
+    slug = "acme"
+    home = tmp_path / "loop-homes" / slug
+    fs = FakeFs(project_dirs={home})
+    vcs = FakeVcs(repo_root=repo_root)
+    harness = _converged_harness()
+    harness.binaries_present.discard("claude")
+    _seed_acknowledged(fs, tmp_path, ["claude"])
+
+    exit_code = run_preflight(_preflight_namespace(slug), vcs=vcs, fs=fs, harness=harness)
+    assert exit_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-PREFLIGHT-004" in out
+    assert "'claude'" in out
+    assert "adapter: name='claude' binary_present=False" in out
+
+
+def test_preflight_adapter_resolution_harness_error_reports_finding(repo_root, tmp_path, capsys):
+    slug = "acme"
+    home = tmp_path / "loop-homes" / slug
+    fs = FakeFs(project_dirs={home})
+    vcs = FakeVcs(repo_root=repo_root)
+    harness = _converged_harness()
+    harness.fail_adapter = HarnessError("unknown CLI profile: 'claude'")
+    _seed_acknowledged(fs, tmp_path, ["claude"])
+
+    exit_code = run_preflight(_preflight_namespace(slug), vcs=vcs, fs=fs, harness=harness)
+    assert exit_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-PREFLIGHT-004" in out
+    assert "adapter: name='claude' binary_present=False" in out
+
+
+# --- unacknowledged adapter: MRS-PREFLIGHT-008 ------------------------------
+
+
+def test_preflight_unacknowledged_adapter_reports_finding_naming_note_and_caveat(
+    repo_root, tmp_path, capsys
+):
+    slug = "acme"
+    home = tmp_path / "loop-homes" / slug
+    fs = FakeFs(project_dirs={home})
+    vcs = FakeVcs(repo_root=repo_root)
+    harness = _converged_harness()
+    # no ack file seeded -- absent from it entirely
+
+    exit_code = run_preflight(_preflight_namespace(slug), vcs=vcs, fs=fs, harness=harness)
+    assert exit_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-PREFLIGHT-008" in out
+    assert "workspace trust" in out  # the fake adapter's own first-run note
+    assert "unattended" in out  # the sustained-automation caveat text
+    assert "first_run_acknowledged: False" in out
+
+
+# --- --acknowledge records first, then passes in the SAME invocation ------
+
+
+def test_preflight_acknowledge_flag_records_and_passes_same_invocation(
+    repo_root, tmp_path, capsys
+):
+    slug = "acme"
+    home = tmp_path / "loop-homes" / slug
+    fs = FakeFs(project_dirs={home})
+    vcs = FakeVcs(repo_root=repo_root)
+    harness = _converged_harness()
+
+    exit_code = run_preflight(
+        _preflight_namespace(slug, acknowledge="claude"), vcs=vcs, fs=fs, harness=harness
+    )
+    assert exit_code == EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-PREFLIGHT-008" not in out
+    assert "first_run_acknowledged: True" in out
+
+    ack_path = tmp_path / "state-home" / "adapter-acknowledgements.json"
+    assert json.loads(fs.texts[ack_path]) == ["claude"]
+
+
+def test_preflight_acknowledge_is_idempotent_on_a_rerun(repo_root, tmp_path, capsys):
+    """A prior acknowledgement persists into a later invocation with no
+    --acknowledge flag at all -- the state file, not the flag, is what the
+    first-run check reads."""
+    slug = "acme"
+    home = tmp_path / "loop-homes" / slug
+    fs = FakeFs(project_dirs={home})
+    vcs = FakeVcs(repo_root=repo_root)
+    harness = _converged_harness()
+
+    first_exit = run_preflight(
+        _preflight_namespace(slug, acknowledge="claude"), vcs=vcs, fs=fs, harness=harness
+    )
+    assert first_exit == EXIT_OK
+    capsys.readouterr()
+    writes_after_first = list(fs.write_calls)
+
+    second_exit = run_preflight(_preflight_namespace(slug), vcs=vcs, fs=fs, harness=harness)
+    assert second_exit == EXIT_OK
+    out = capsys.readouterr().out
+    assert "first_run_acknowledged: True" in out
+    # idempotent: the second run's ack is already satisfied, no new write
+    assert fs.write_calls == writes_after_first
+
+
+def test_preflight_acknowledging_a_different_adapter_does_not_satisfy_the_configured_one(
+    repo_root, tmp_path, capsys
+):
+    slug = "acme"
+    home = tmp_path / "loop-homes" / slug
+    fs = FakeFs(project_dirs={home})
+    vcs = FakeVcs(repo_root=repo_root)
+    harness = _converged_harness()
+
+    exit_code = run_preflight(
+        _preflight_namespace(slug, acknowledge="codex"), vcs=vcs, fs=fs, harness=harness
+    )
+    assert exit_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-PREFLIGHT-008" in out
+    assert "first_run_acknowledged: False" in out
+    ack_path = tmp_path / "state-home" / "adapter-acknowledgements.json"
+    assert json.loads(fs.texts[ack_path]) == ["codex"]  # recorded, but for a different adapter
+
+
+def test_preflight_acknowledge_write_failure_does_not_report_acknowledged(
+    repo_root, tmp_path, capsys
+):
+    """Review finding: the in-memory acknowledged set was previously unioned
+    BEFORE the persisting write was attempted, so a failed write still left
+    data.first_run_acknowledged reading True -- self-contradicting the
+    MRS-PREFLIGHT-008 finding this same invocation emits."""
+    slug = "acme"
+    home = tmp_path / "loop-homes" / slug
+    fs = FakeFs(project_dirs={home})
+    fs.fail_write_text = FsError("disk full")
+    vcs = FakeVcs(repo_root=repo_root)
+    harness = _converged_harness()
+
+    exit_code = run_preflight(
+        _preflight_namespace(slug, acknowledge="claude"), vcs=vcs, fs=fs, harness=harness
+    )
+    assert exit_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-PREFLIGHT-008" in out
+    assert "cannot record acknowledgement" in out
+    assert "first_run_acknowledged: False" in out
+
+
+# --- MARSHAL_STATE_HOME anchoring -------------------------------------------
+
+
+def test_ack_state_path_anchors_a_relative_marshal_state_home_to_cwd(
+    tmp_path, monkeypatch
+):
+    """Review finding: unlike BMAD_LOOP_HOME_ROOT's own anchoring, a
+    relative MARSHAL_STATE_HOME previously resolved against whatever the
+    OS's own CWD-relative Path() construction did -- different on every
+    invocation with a different CWD, so an acknowledgement would never
+    appear to "stick"."""
+    monkeypatch.delenv("MARSHAL_STATE_HOME", raising=False)
+    monkeypatch.setenv("MARSHAL_STATE_HOME", "relative-state-dir")
+    monkeypatch.chdir(tmp_path)
+
+    path = init_module._ack_state_path()
+    assert path == tmp_path / "relative-state-dir" / "adapter-acknowledgements.json"
+
+
+# --- seed files: already present -> skipped, no write ----------------------
+
+
+def test_preflight_seed_file_already_present_is_skipped(repo_root, tmp_path, capsys):
+    slug = "acme"
+    home = tmp_path / "loop-homes" / slug
+    fs = FakeFs(project_dirs={home})
+    vcs = FakeVcs(repo_root=repo_root)
+    harness = _converged_harness()
+    harness.adapter_seed_files_map["claude"] = (".mcp.json",)
+    fs.files.add(home / ".mcp.json")  # already present in the home
+    _seed_acknowledged(fs, tmp_path, ["claude"])
+
+    exit_code = run_preflight(_preflight_namespace(slug), vcs=vcs, fs=fs, harness=harness)
+    assert exit_code == EXIT_OK
+    out = capsys.readouterr().out
+    assert "  .mcp.json: skipped" in out
+    assert fs.copy_file_calls == []
+
+
+# --- seed files: absent in home, present in main checkout -> copied --------
+
+
+def test_preflight_seed_file_absent_is_copied_from_main_checkout(repo_root, tmp_path, capsys):
+    slug = "acme"
+    home = tmp_path / "loop-homes" / slug
+    fs = FakeFs(project_dirs={home})
+    vcs = FakeVcs(repo_root=repo_root)
+    harness = _converged_harness()
+    harness.adapter_seed_files_map["claude"] = (".mcp.json",)
+    fs.files.add(repo_root / ".mcp.json")  # present in the main checkout
+    _seed_acknowledged(fs, tmp_path, ["claude"])
+
+    exit_code = run_preflight(_preflight_namespace(slug), vcs=vcs, fs=fs, harness=harness)
+    assert exit_code == EXIT_OK
+    out = capsys.readouterr().out
+    assert "  .mcp.json: copied" in out
+    assert fs.copy_file_calls == [(repo_root / ".mcp.json", home / ".mcp.json")]
+
+
+def test_preflight_seed_file_absent_in_both_home_and_main_is_skipped_not_failed(
+    repo_root, tmp_path, capsys
+):
+    """Mirrors bmad_loop.install.provision_worktree's own copy-when-absent
+    semantics: nothing to seed is not a failure -- an operator who never
+    made a given optional config file must not fail preflight over it."""
+    slug = "acme"
+    home = tmp_path / "loop-homes" / slug
+    fs = FakeFs(project_dirs={home})
+    vcs = FakeVcs(repo_root=repo_root)
+    harness = _converged_harness()
+    harness.adapter_seed_files_map["claude"] = (".mcp.json",)
+    _seed_acknowledged(fs, tmp_path, ["claude"])
+
+    exit_code = run_preflight(_preflight_namespace(slug), vcs=vcs, fs=fs, harness=harness)
+    assert exit_code == EXIT_OK
+    out = capsys.readouterr().out
+    assert "  .mcp.json: skipped" in out
+    assert fs.copy_file_calls == []
+
+
+# --- seed file copy fails: MRS-PREFLIGHT-009, halts further attempts -------
+
+
+def test_preflight_seed_file_copy_failure_reports_finding_and_halts(repo_root, tmp_path, capsys):
+    slug = "acme"
+    home = tmp_path / "loop-homes" / slug
+    fs = FakeFs(project_dirs={home})
+    vcs = FakeVcs(repo_root=repo_root)
+    harness = _converged_harness()
+    harness.adapter_seed_files_map["claude"] = (".mcp.json", ".claude/settings.json")
+    fs.files.add(repo_root / ".mcp.json")
+    fs.files.add(repo_root / ".claude" / "settings.json")
+    fs.fail_copy_file = FsError("disk full")
+    _seed_acknowledged(fs, tmp_path, ["claude"])
+
+    exit_code = run_preflight(_preflight_namespace(slug), vcs=vcs, fs=fs, harness=harness)
+    assert exit_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-PREFLIGHT-009" in out
+    assert str(home / ".mcp.json") in out
+    assert "  .mcp.json: failed" in out
+    # the SECOND seed file is never attempted -- reported failed too, one halt
+    assert "  .claude/settings.json: failed" in out
+    assert len(fs.copy_file_calls) == 1
+
+
+# --- main checked out twice: MRS-PREFLIGHT-007 ------------------------------
+
+
+def test_preflight_main_checked_out_twice_reports_finding_naming_both_paths(
+    repo_root, tmp_path, capsys
+):
+    slug = "acme"
+    home = tmp_path / "loop-homes" / slug
+    other = tmp_path / "elsewhere-main"
+    fs = FakeFs(project_dirs={home})
+    vcs = FakeVcs(repo_root=repo_root)
+    vcs.extra_worktree_entries = [WorktreeEntry(path=other, branch="main")]
+    harness = _converged_harness()
+    _seed_acknowledged(fs, tmp_path, ["claude"])
+
+    exit_code = run_preflight(_preflight_namespace(slug), vcs=vcs, fs=fs, harness=harness)
+    assert exit_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-PREFLIGHT-007" in out
+    assert str(repo_root) in out
+    assert str(other) in out
+    assert "main_checked_out_once: False" in out
+
+
+def test_preflight_main_checked_out_twice_list_worktrees_failure_reports_finding(
+    repo_root, tmp_path, capsys
+):
+    slug = "acme"
+    home = tmp_path / "loop-homes" / slug
+    fs = FakeFs(project_dirs={home})
+    vcs = FakeVcs(repo_root=repo_root)
+    vcs.fail_list_worktrees = VcsCommandError("git worktree list failed")
+    harness = _converged_harness()
+    _seed_acknowledged(fs, tmp_path, ["claude"])
+
+    exit_code = run_preflight(_preflight_namespace(slug), vcs=vcs, fs=fs, harness=harness)
+    assert exit_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-PREFLIGHT-007" in out
+    assert "main_checked_out_once: False" in out
+
+
+def test_preflight_main_checked_out_once_resolve_path_failure_reports_finding(
+    repo_root, tmp_path, capsys
+):
+    """Review finding: this block previously called fs.resolve_path
+    unguarded, unlike run_homes's own identical try/except around the SAME
+    call in this same module -- an FsError (e.g. a permission-denied
+    ancestor) crashed the whole command instead of yielding
+    MRS-PREFLIGHT-007."""
+    slug = "acme"
+    home = tmp_path / "loop-homes" / slug
+    fs = FakeFs(project_dirs={home})
+    fs.fail_resolve_path = FsError("permission denied")
+    vcs = FakeVcs(repo_root=repo_root)
+    harness = _converged_harness()
+    _seed_acknowledged(fs, tmp_path, ["claude"])
+
+    exit_code = run_preflight(_preflight_namespace(slug), vcs=vcs, fs=fs, harness=harness)
+    assert exit_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-PREFLIGHT-007" in out
+    assert "permission denied" in out
+    assert "main_checked_out_once: False" in out
+
+
+# --- story feed missing/unparseable: MRS-PREFLIGHT-005 ----------------------
+
+
+def test_preflight_story_feed_error_reports_the_harnesss_own_error_text(
+    repo_root, tmp_path, capsys
+):
+    slug = "acme"
+    home = tmp_path / "loop-homes" / slug
+    fs = FakeFs(project_dirs={home})
+    vcs = FakeVcs(repo_root=repo_root)
+    harness = _converged_harness()
+    harness.feed_error = "sprint status file not found: /nowhere/sprint-status.yaml"
+    _seed_acknowledged(fs, tmp_path, ["claude"])
+
+    exit_code = run_preflight(_preflight_namespace(slug), vcs=vcs, fs=fs, harness=harness)
+    assert exit_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-PREFLIGHT-005" in out
+    assert "sprint status file not found" in out
+    assert "story_feed: resolvable=False" in out
+
+
+# --- verify command unresolvable: MRS-PREFLIGHT-006 -------------------------
+
+
+def test_preflight_verify_command_unresolvable_reports_finding(
+    repo_root, tmp_path, capsys, monkeypatch
+):
+    slug = "acme"
+    home = tmp_path / "loop-homes" / slug
+    fs = FakeFs(project_dirs={home})
+    vcs = FakeVcs(repo_root=repo_root)
+    harness = _converged_harness()
+    _seed_acknowledged(fs, tmp_path, ["claude"])
+
+    policy_path = tmp_path / "marshal-policy.toml"
+    policy_path.write_text(
+        'verify_commands = ["definitely-not-a-real-binary-xyz --flag"]\n', encoding="utf-8"
+    )
+    monkeypatch.setattr(
+        init_module, "conventional_project_policy_path", lambda slug: policy_path
+    )
+
+    exit_code = run_preflight(_preflight_namespace(slug), vcs=vcs, fs=fs, harness=harness)
+    assert exit_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-PREFLIGHT-006" in out
+    assert "definitely-not-a-real-binary-xyz --flag" in out
+
+
+def test_preflight_verify_command_resolvable_reports_no_finding(
+    repo_root, tmp_path, capsys, monkeypatch
+):
+    slug = "acme"
+    home = tmp_path / "loop-homes" / slug
+    fs = FakeFs(project_dirs={home})
+    vcs = FakeVcs(repo_root=repo_root)
+    harness = _converged_harness()
+    harness.binaries_present.add("pytest")
+    _seed_acknowledged(fs, tmp_path, ["claude"])
+
+    policy_path = tmp_path / "marshal-policy.toml"
+    policy_path.write_text('verify_commands = ["pytest -q"]\n', encoding="utf-8")
+    monkeypatch.setattr(
+        init_module, "conventional_project_policy_path", lambda slug: policy_path
+    )
+
+    exit_code = run_preflight(_preflight_namespace(slug), vcs=vcs, fs=fs, harness=harness)
+    assert exit_code == EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-PREFLIGHT-006" not in out
+    assert "'pytest -q': resolvable=True" in out
+
+
+# --- policy composition findings merge into preflight's own list -----------
+
+
+def test_preflight_merges_policy_composition_findings(repo_root, tmp_path, capsys, monkeypatch):
+    slug = "acme"
+    home = tmp_path / "loop-homes" / slug
+    fs = FakeFs(project_dirs={home})
+    vcs = FakeVcs(repo_root=repo_root)
+    harness = _converged_harness()
+    _seed_acknowledged(fs, tmp_path, ["claude"])
+
+    policy_path = tmp_path / "marshal-policy.toml"
+    policy_path.write_text('not_a_real_policy_key = "x"\n', encoding="utf-8")
+    monkeypatch.setattr(
+        init_module, "conventional_project_policy_path", lambda slug: policy_path
+    )
+
+    exit_code = run_preflight(_preflight_namespace(slug), vcs=vcs, fs=fs, harness=harness)
+    assert exit_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-POLICY-001" in out
+    assert "not_a_real_policy_key" in out
+
+
+def test_preflight_adapter_resolution_render_failure_reports_finding(
+    repo_root, tmp_path, capsys, monkeypatch
+):
+    """``render_policy_toml`` raises ``ValueError`` when a seed attempt-count
+    is 0 (Marshal permits it; bmad-loop 0.9.0's loader does not) -- folded
+    into the adapter check's own code since resolving the adapter NAME is
+    exactly what failed."""
+    slug = "acme"
+    home = tmp_path / "loop-homes" / slug
+    fs = FakeFs(project_dirs={home})
+    vcs = FakeVcs(repo_root=repo_root)
+    harness = _converged_harness()
+    _seed_acknowledged(fs, tmp_path, ["claude"])
+
+    policy_path = tmp_path / "marshal-policy.toml"
+    policy_path.write_text("max_dev_attempts = 0\n", encoding="utf-8")
+    monkeypatch.setattr(
+        init_module, "conventional_project_policy_path", lambda slug: policy_path
+    )
+
+    exit_code = run_preflight(_preflight_namespace(slug), vcs=vcs, fs=fs, harness=harness)
+    assert exit_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-PREFLIGHT-004" in out
+    assert "adapter: name=None" in out
+    # no adapter resolved -- the first-run check has nothing to report on
+    assert "MRS-PREFLIGHT-008" not in out
+
+
+def test_preflight_adapter_name_missing_from_rendered_policy_fails_loud(
+    repo_root, tmp_path, capsys, monkeypatch
+):
+    """Second review pass: a rendered policy with no ``[adapter].name``
+    previously left ``adapter_name`` None with NO finding, so the adapter
+    check, seeding, and the first-run gate all silently skipped and preflight
+    could exit 0 having gated nothing. Unreachable while the vendored
+    template always emits the baseline name -- this pins the fail-loud guard
+    against the template edit that would make it reachable."""
+    slug = "acme"
+    home = tmp_path / "loop-homes" / slug
+    fs = FakeFs(project_dirs={home})
+    vcs = FakeVcs(repo_root=repo_root)
+    harness = _converged_harness()
+    _seed_acknowledged(fs, tmp_path, ["claude"])
+
+    monkeypatch.setattr(
+        init_module, "render_policy_toml", lambda effective: "[gates]\nmode = 'none'\n"
+    )
+
+    exit_code = run_preflight(_preflight_namespace(slug), vcs=vcs, fs=fs, harness=harness)
+    assert exit_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-PREFLIGHT-004" in out
+    assert "declares no [adapter].name" in out
+    assert "adapter: name=None" in out
+
+
+def test_preflight_policy_path_is_file_oserror_degrades_to_typed_finding(
+    repo_root, tmp_path, capsys, monkeypatch
+):
+    """Second review pass: ``policy_path.is_file()`` was unguarded -- on the
+    3.12 floor, pathlib raises ``PermissionError`` for an unreadable ancestor
+    (3.13+ suppresses it), crashing the whole command. The guard treats the
+    OSError as "present" so ``_read_project_policy`` converts the identical
+    failure into its typed ``MRS-POLICY-004`` finding instead."""
+    slug = "acme"
+    home = tmp_path / "loop-homes" / slug
+    fs = FakeFs(project_dirs={home})
+    vcs = FakeVcs(repo_root=repo_root)
+    harness = _converged_harness()
+    _seed_acknowledged(fs, tmp_path, ["claude"])
+
+    class _IsFileRaises(Path):
+        def is_file(self) -> bool:  # type: ignore[override]
+            raise PermissionError(13, "Permission denied", str(self))
+
+    # Points at a nonexistent file: is_file() raises, the guard degrades to
+    # "present", and _read_project_policy's open() then fails typed.
+    raising_path = _IsFileRaises(tmp_path / "unreadable" / "marshal-policy.toml")
+    monkeypatch.setattr(
+        init_module, "conventional_project_policy_path", lambda slug: raising_path
+    )
+
+    exit_code = run_preflight(_preflight_namespace(slug), vcs=vcs, fs=fs, harness=harness)
+    assert exit_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-POLICY-004" in out
+
+
+# --- timing: presence/resolvability checks only, well under NFR-14's 10s ---
+
+
+def test_preflight_completes_well_under_ten_seconds(repo_root, tmp_path, capsys):
+    import time
+
+    slug = "acme"
+    home = tmp_path / "loop-homes" / slug
+    fs = FakeFs(project_dirs={home})
+    vcs = FakeVcs(repo_root=repo_root)
+    harness = _converged_harness()
+    _seed_acknowledged(fs, tmp_path, ["claude"])
+
+    started = time.perf_counter()
+    exit_code = run_preflight(_preflight_namespace(slug), vcs=vcs, fs=fs, harness=harness)
+    elapsed = time.perf_counter() - started
+    assert exit_code == EXIT_OK
+    assert elapsed < 10.0
+
+
+# --- verdict classification of the nine new codes ---------------------------
+
+
+def test_preflight_finding_codes_classify_as_documented():
+    from pyforge.marshal.core.model import Verdict
+    from pyforge.marshal.core.verdict import classify
+
+    for code in (
+        "MRS-PREFLIGHT-001",
+        "MRS-PREFLIGHT-002",
+        "MRS-PREFLIGHT-003",
+        "MRS-PREFLIGHT-004",
+        "MRS-PREFLIGHT-005",
+        "MRS-PREFLIGHT-006",
+        "MRS-PREFLIGHT-007",
+        "MRS-PREFLIGHT-008",
+        "MRS-PREFLIGHT-009",
+    ):
+        assert classify(code) == Verdict.ERROR
+    # Second review pass: the ONE preflight code with a special-cased tier
+    # was the one classification nothing asserted.
+    assert classify("MRS-PREFLIGHT-010") == Verdict.UNEVALUABLE
+    # Story 1.9: the graduated harness-version tier's new warn-only code.
+    assert classify("MRS-PREFLIGHT-011") == Verdict.WARN
+
+
+# =====================================================================
+# ``run_teardown`` (Story 1.8, NFR-6/AD-29) -- CLI-layer coverage of the
+# full I/O & Edge-Case Matrix, driven entirely through the FakeVcs seam
+# (``fail_*``/opt-in ``dirty_worktrees``/``unmerged_branches`` sets). The
+# real squash-merge-recognition walkthrough this story's own Design Notes
+# describe is a ``GitVcs`` concern, proven against REAL git in
+# ``test_vcs_git.py``'s ``is_branch_merged`` tests, and end-to-end (a real
+# ``marshal init`` then ``marshal teardown``) in
+# ``tests/integration/test_init_worktree.py``.
+# =====================================================================
+
+
+def _teardown_namespace(slug: str, *, force: bool = False, fmt: str = "text") -> argparse.Namespace:
+    return argparse.Namespace(slug=slug, force=force, format=fmt)
+
+
+def _provisioned_teardown_vcs(repo_root: Path, home: Path, slug: str) -> FakeVcs:
+    """A FakeVcs already carrying a provisioned ``loop/<slug>`` worktree+
+    branch, clean and (by ``FakeVcs``'s own opt-in default) merged -- the
+    "clean, fully-merged home" happy path needs no further setup."""
+    vcs = FakeVcs(repo_root=repo_root)
+    branch = f"loop/{slug}"
+    vcs.worktrees[branch] = home
+    vcs.branches.add(branch)
+    return vcs
+
+
+# --- nothing provisioned: clean no-op, zero findings ------------------------
+
+
+def test_teardown_nothing_provisioned_reports_already_removed(repo_root, capsys):
+    vcs = FakeVcs(repo_root=repo_root)
+    fs = FakeFs()
+    exit_code = run_teardown(_teardown_namespace("acme"), vcs=vcs, fs=fs)
+    assert exit_code == EXIT_OK
+    out = capsys.readouterr().out
+    assert "already_removed: True" in out
+    assert "findings:" not in out
+    assert vcs.remove_worktree_calls == []
+    assert vcs.delete_branch_calls == []
+
+
+# --- clean, fully-merged home: removed, exit 0 -------------------------------
+
+
+def test_teardown_clean_merged_home_removes_worktree_and_branch(repo_root, tmp_path, capsys):
+    home = tmp_path / "loop-homes" / "acme"
+    vcs = _provisioned_teardown_vcs(repo_root, home, "acme")
+    fs = FakeFs()
+    exit_code = run_teardown(_teardown_namespace("acme"), vcs=vcs, fs=fs)
+    assert exit_code == EXIT_OK
+    out = capsys.readouterr().out
+    assert "removed: True" in out
+    assert "forced:" not in out
+    # a clean, already-verified-safe home removes with NO --force flag
+    assert vcs.remove_worktree_calls == [(repo_root, home, False)]
+    # branch deletion always uses -D (force=True) once authorized
+    assert vcs.delete_branch_calls == [(repo_root, "loop/acme", True)]
+    assert "loop/acme" not in vcs.branches
+    assert vcs.worktree_path_for_branch(repo_root, "loop/acme") is None
+
+
+def test_teardown_clean_merged_home_json_matches_schema(repo_root, tmp_path):
+    home = tmp_path / "loop-homes" / "acme"
+    vcs = _provisioned_teardown_vcs(repo_root, home, "acme")
+    fs = FakeFs()
+    import io
+    import sys
+
+    captured = io.StringIO()
+    old_stdout = sys.stdout
+    sys.stdout = captured
+    try:
+        exit_code = run_teardown(_teardown_namespace("acme", fmt="json"), vcs=vcs, fs=fs)
+    finally:
+        sys.stdout = old_stdout
+    assert exit_code == EXIT_OK
+    payload = json.loads(captured.getvalue())
+    schema = json.loads(_SCHEMA_PATH.read_text(encoding="utf-8"))
+    jsonschema.validate(instance=payload, schema=schema)
+    assert payload["command"] == "teardown"
+    assert payload["status"] == "ok"
+    assert payload["data"]["removed"] is True
+    assert "forced" not in payload["data"]
+    assert payload["findings"] == []
+
+
+# --- uncommitted changes, no --force: refuse, nothing removed ---------------
+
+
+def test_teardown_dirty_worktree_without_force_refuses(repo_root, tmp_path, capsys):
+    home = tmp_path / "loop-homes" / "acme"
+    vcs = _provisioned_teardown_vcs(repo_root, home, "acme")
+    vcs.dirty_worktrees.add(home)
+    fs = FakeFs(project_dirs={home})
+    exit_code = run_teardown(_teardown_namespace("acme"), vcs=vcs, fs=fs)
+    assert exit_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-TEARDOWN-003" in out
+    assert "uncommitted changes" in out
+    assert "--force" in out
+    assert vcs.remove_worktree_calls == []
+    assert vcs.delete_branch_calls == []
+
+
+# --- genuinely unmerged branch, no --force: refuse, nothing removed ---------
+
+
+def test_teardown_unmerged_branch_without_force_refuses(repo_root, tmp_path, capsys):
+    home = tmp_path / "loop-homes" / "acme"
+    vcs = _provisioned_teardown_vcs(repo_root, home, "acme")
+    vcs.unmerged_branches.add("loop/acme")
+    fs = FakeFs()
+    exit_code = run_teardown(_teardown_namespace("acme"), vcs=vcs, fs=fs)
+    assert exit_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-TEARDOWN-003" in out
+    assert "not yet safely captured on main" in out
+    assert vcs.remove_worktree_calls == []
+    assert vcs.delete_branch_calls == []
+
+
+def test_teardown_refusal_finding_names_every_triggering_condition(repo_root, tmp_path):
+    """Boundaries & Constraints: "the finding names every condition that
+    triggered it" -- ONE finding, both reasons named, when both a dirty
+    working tree AND a genuinely unmerged branch fire together."""
+    home = tmp_path / "loop-homes" / "acme"
+    vcs = _provisioned_teardown_vcs(repo_root, home, "acme")
+    vcs.dirty_worktrees.add(home)
+    vcs.unmerged_branches.add("loop/acme")
+    fs = FakeFs(project_dirs={home})
+    import io
+    import sys
+
+    captured = io.StringIO()
+    old_stdout = sys.stdout
+    sys.stdout = captured
+    try:
+        exit_code = run_teardown(_teardown_namespace("acme", fmt="json"), vcs=vcs, fs=fs)
+    finally:
+        sys.stdout = old_stdout
+    assert exit_code != EXIT_OK
+    payload = json.loads(captured.getvalue())
+    findings = payload["findings"]
+    assert len(findings) == 1
+    assert findings[0]["code"] == "MRS-TEARDOWN-003"
+    assert "uncommitted changes" in findings[0]["message"]
+    assert "not yet safely captured on main" in findings[0]["message"]
+
+
+# --- either refusal, with --force: removed, forced=true ---------------------
+
+
+def test_teardown_dirty_with_force_removes_and_reports_forced(repo_root, tmp_path, capsys):
+    home = tmp_path / "loop-homes" / "acme"
+    vcs = _provisioned_teardown_vcs(repo_root, home, "acme")
+    vcs.dirty_worktrees.add(home)
+    fs = FakeFs(project_dirs={home})
+    exit_code = run_teardown(_teardown_namespace("acme", force=True), vcs=vcs, fs=fs)
+    assert exit_code == EXIT_OK
+    out = capsys.readouterr().out
+    assert "removed: True" in out
+    assert "forced: True" in out
+    # the operator's own --force was needed, so worktree removal passes it
+    assert vcs.remove_worktree_calls == [(repo_root, home, True)]
+    assert vcs.delete_branch_calls == [(repo_root, "loop/acme", True)]
+
+
+def test_teardown_unmerged_with_force_removes_and_reports_forced(repo_root, tmp_path, capsys):
+    home = tmp_path / "loop-homes" / "acme"
+    vcs = _provisioned_teardown_vcs(repo_root, home, "acme")
+    vcs.unmerged_branches.add("loop/acme")
+    fs = FakeFs()
+    exit_code = run_teardown(_teardown_namespace("acme", force=True), vcs=vcs, fs=fs)
+    assert exit_code == EXIT_OK
+    out = capsys.readouterr().out
+    assert "removed: True" in out
+    assert "forced: True" in out
+    assert vcs.remove_worktree_calls == [(repo_root, home, True)]
+    assert vcs.delete_branch_calls == [(repo_root, "loop/acme", True)]
+
+
+def test_teardown_force_on_an_already_clean_home_does_not_report_forced(
+    repo_root, tmp_path, capsys
+):
+    """--force is only "used" when a real refusal condition existed --
+    passing it redundantly to an already-safe home is a no-op flag."""
+    home = tmp_path / "loop-homes" / "acme"
+    vcs = _provisioned_teardown_vcs(repo_root, home, "acme")
+    fs = FakeFs()
+    exit_code = run_teardown(_teardown_namespace("acme", force=True), vcs=vcs, fs=fs)
+    assert exit_code == EXIT_OK
+    out = capsys.readouterr().out
+    assert "removed: True" in out
+    assert "forced:" not in out
+    assert vcs.remove_worktree_calls == [(repo_root, home, False)]
+
+
+# --- partial reconciliation: branch present, worktree already gone ----------
+
+
+def test_teardown_branch_only_no_worktree_deletes_just_the_branch(repo_root, tmp_path, capsys):
+    """A worktree removed by hand (outside marshal), branch left behind --
+    teardown reconciles by deleting just the orphaned branch."""
+    vcs = FakeVcs(repo_root=repo_root)
+    vcs.branches.add("loop/acme")  # branch exists, but no worktree entry
+    fs = FakeFs()
+    exit_code = run_teardown(_teardown_namespace("acme"), vcs=vcs, fs=fs)
+    assert exit_code == EXIT_OK
+    out = capsys.readouterr().out
+    assert "removed: True" in out
+    assert vcs.remove_worktree_calls == []
+    assert vcs.delete_branch_calls == [(repo_root, "loop/acme", True)]
+    assert "has_uncommitted_changes" not in vcs.calls
+
+
+# --- malformed slug: MRS-TEARDOWN-001, no I/O at all -------------------------
+
+
+@pytest.mark.parametrize(
+    "bad_slug", ["", "../evil", "a/b", ".", "..", "has space", "a\\b"]
+)
+def test_teardown_malformed_slug_reports_finding_with_zero_io(repo_root, bad_slug, capsys):
+    vcs = FakeVcs(repo_root=repo_root)
+    fs = FakeFs()
+    exit_code = run_teardown(_teardown_namespace(bad_slug), vcs=vcs, fs=fs)
+    assert exit_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-TEARDOWN-001" in out
+    assert vcs.calls == []
+    assert fs.calls == []
+
+
+@pytest.mark.parametrize("bad_slug", ["x.lock", ".foo", "foo.", "a..b"])
+def test_teardown_git_ref_invalid_slug_shapes_report_mrs_teardown_001(
+    repo_root, bad_slug, capsys
+):
+    vcs = FakeVcs(repo_root=repo_root)
+    fs = FakeFs()
+    exit_code = run_teardown(_teardown_namespace(bad_slug), vcs=vcs, fs=fs)
+    assert exit_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-TEARDOWN-001" in out
+    assert "branch" in out
+    assert vcs.calls == []
+    assert fs.calls == []
+
+
+# --- git operation failures land in the envelope as MRS-TEARDOWN-002 --------
+
+
+def test_teardown_repo_root_resolution_failure_reports_mrs_teardown_002(repo_root, capsys):
+    vcs = FakeVcs(repo_root=repo_root)
+    vcs.fail_repo_common_root = VcsCommandError("not a git repo")
+    fs = FakeFs()
+    exit_code = run_teardown(_teardown_namespace("acme"), vcs=vcs, fs=fs)
+    assert exit_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-TEARDOWN-002" in out
+
+
+def test_teardown_worktree_path_for_branch_failure_reports_mrs_teardown_002(
+    repo_root, capsys
+):
+    vcs = FakeVcs(repo_root=repo_root)
+    vcs.fail_worktree_path_for_branch = VcsCommandError("git worktree list failed")
+    fs = FakeFs()
+    exit_code = run_teardown(_teardown_namespace("acme"), vcs=vcs, fs=fs)
+    assert exit_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-TEARDOWN-002" in out
+
+
+def test_teardown_branch_exists_failure_reports_mrs_teardown_002(repo_root, capsys):
+    from pyforge.marshal.adapters.vcs_git import VcsCommandError as _VcsCommandError
+
+    class _BranchExistsFailingVcs(FakeVcs):
+        def branch_exists(self, repo_root, branch):
+            self.calls.append("branch_exists")
+            raise _VcsCommandError("held lock")
+
+    vcs = _BranchExistsFailingVcs(repo_root=repo_root)
+    fs = FakeFs()
+    exit_code = run_teardown(_teardown_namespace("acme"), vcs=vcs, fs=fs)
+    assert exit_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-TEARDOWN-002" in out
+
+
+def test_teardown_has_uncommitted_changes_failure_reports_mrs_teardown_002(
+    repo_root, tmp_path, capsys
+):
+    home = tmp_path / "loop-homes" / "acme"
+    vcs = _provisioned_teardown_vcs(repo_root, home, "acme")
+    vcs.fail_has_uncommitted_changes = VcsCommandError("git status failed")
+    fs = FakeFs(project_dirs={home})
+    exit_code = run_teardown(_teardown_namespace("acme"), vcs=vcs, fs=fs)
+    assert exit_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-TEARDOWN-002" in out
+    assert vcs.remove_worktree_calls == []
+
+
+def test_teardown_is_branch_merged_failure_reports_mrs_teardown_002(
+    repo_root, tmp_path, capsys
+):
+    home = tmp_path / "loop-homes" / "acme"
+    vcs = _provisioned_teardown_vcs(repo_root, home, "acme")
+    vcs.fail_is_branch_merged = VcsCommandError("cannot build virtual commit")
+    fs = FakeFs()
+    exit_code = run_teardown(_teardown_namespace("acme"), vcs=vcs, fs=fs)
+    assert exit_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-TEARDOWN-002" in out
+    assert vcs.remove_worktree_calls == []
+
+
+def test_teardown_remove_worktree_failure_reports_mrs_teardown_002(
+    repo_root, tmp_path, capsys
+):
+    home = tmp_path / "loop-homes" / "acme"
+    vcs = _provisioned_teardown_vcs(repo_root, home, "acme")
+    vcs.fail_remove_worktree = VcsCommandError("worktree remove failed")
+    fs = FakeFs()
+    exit_code = run_teardown(_teardown_namespace("acme"), vcs=vcs, fs=fs)
+    assert exit_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-TEARDOWN-002" in out
+    # branch deletion never attempted once the worktree removal failed
+    assert vcs.delete_branch_calls == []
+
+
+def test_teardown_delete_branch_failure_reports_mrs_teardown_002(
+    repo_root, tmp_path, capsys
+):
+    home = tmp_path / "loop-homes" / "acme"
+    vcs = _provisioned_teardown_vcs(repo_root, home, "acme")
+    vcs.fail_delete_branch = VcsCommandError("branch delete failed")
+    fs = FakeFs()
+    exit_code = run_teardown(_teardown_namespace("acme"), vcs=vcs, fs=fs)
+    assert exit_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-TEARDOWN-002" in out
+    # the worktree WAS already removed before the branch delete failed --
+    # the message says so (review finding: it previously relayed only the
+    # raw git stderr, leaving the operator to infer recovery state).
+    assert "worktree was already removed" in out
+    assert vcs.remove_worktree_calls == [(repo_root, home, False)]
+
+
+def test_teardown_remove_worktree_uses_the_git_registered_path_not_the_computed_home(
+    repo_root, tmp_path, capsys
+):
+    """Review finding: git's OWN registered location can disagree with the
+    merely COMPUTED ``home`` (e.g. ``BMAD_LOOP_HOME_ROOT`` changed since
+    provisioning) -- removal must target git's truth, mirroring
+    ``run_init``'s own precedent and what the dirty-check already does."""
+    registered_path = tmp_path / "elsewhere" / "acme-moved"
+    vcs = _provisioned_teardown_vcs(repo_root, registered_path, "acme")
+    fs = FakeFs()
+    exit_code = run_teardown(_teardown_namespace("acme"), vcs=vcs, fs=fs)
+    assert exit_code == EXIT_OK
+    assert vcs.remove_worktree_calls == [(repo_root, registered_path, False)]
+
+
+def test_teardown_worktree_directory_missing_skips_dirty_check_and_removes(
+    repo_root, tmp_path, capsys
+):
+    """git still registers the worktree, but its directory was deleted by
+    hand (mirrors run_init's/run_homes's own stale/prunable guard). Review
+    finding: this previously called ``has_uncommitted_changes`` against the
+    missing path, which raises rather than answering, permanently blocking
+    teardown -- even with ``--force`` -- since the raise happens before the
+    refusal/force branch is ever reached."""
+    home = tmp_path / "loop-homes" / "acme"
+    vcs = _provisioned_teardown_vcs(repo_root, home, "acme")
+    fs = FakeFs()  # home NOT registered as a dir -- "missing on disk"
+    exit_code = run_teardown(_teardown_namespace("acme"), vcs=vcs, fs=fs)
+    assert exit_code == EXIT_OK
+    assert "has_uncommitted_changes" not in vcs.calls
+    assert vcs.remove_worktree_calls == [(repo_root, home, False)]
+
+
+def test_teardown_leftover_directory_with_nothing_registered_is_not_already_removed(
+    repo_root, tmp_path, capsys
+):
+    """Review finding: a prior partial/failed removal (or manual git
+    surgery) can deregister a worktree while leaving real, possibly
+    uncommitted files behind -- this repo's own history has hit exactly
+    that failure mode. Trusting git's registry alone would silently claim
+    full cleanup; teardown must check for a leftover directory instead."""
+    home = tmp_path / "loop-homes" / "acme"
+    vcs = FakeVcs(repo_root=repo_root)  # nothing registered with git
+    fs = FakeFs(project_dirs={home})  # but real files remain on disk
+    exit_code = run_teardown(_teardown_namespace("acme"), vcs=vcs, fs=fs)
+    assert exit_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-TEARDOWN-002" in out
+    assert "already_removed" not in out
+    assert "still exists on disk" in out
+
+
+def test_teardown_leftover_plain_file_with_nothing_registered_is_not_already_removed(
+    repo_root, tmp_path, capsys
+):
+    """Follow-up review finding: the leftover guard probed ``fs.is_dir``,
+    so a leftover regular FILE at the home path slipped through as
+    ``already_removed: True`` -- the same silently-claimed-cleanup defect
+    the guard exists to prevent, one file-type away. It probes
+    ``fs.exists`` now."""
+    home = tmp_path / "loop-homes" / "acme"
+    vcs = FakeVcs(repo_root=repo_root)  # nothing registered with git
+    fs = FakeFs()
+    fs.files.add(home)  # a plain file occupies the home path
+    exit_code = run_teardown(_teardown_namespace("acme"), vcs=vcs, fs=fs)
+    assert exit_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-TEARDOWN-002" in out
+    assert "already_removed" not in out
+    assert "still exists on disk" in out
+
+
+def test_teardown_branch_only_with_leftover_on_disk_refuses_instead_of_deleting_the_branch(
+    repo_root, tmp_path, capsys
+):
+    """Follow-up review finding: the leftover-on-disk guard ran only in
+    the NOTHING-registered arm -- in the branch-only state (a prior
+    partial removal deregistered the worktree but left real files AND the
+    branch behind), teardown deleted the branch and reported
+    ``removed: True`` while the unverified leftover sat there. The guard
+    now covers every worktree-deregistered state."""
+    home = tmp_path / "loop-homes" / "acme"
+    vcs = FakeVcs(repo_root=repo_root)
+    vcs.branches.add("loop/acme")  # branch survives, worktree deregistered
+    fs = FakeFs(project_dirs={home})  # but real files remain on disk
+    exit_code = run_teardown(_teardown_namespace("acme"), vcs=vcs, fs=fs)
+    assert exit_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-TEARDOWN-002" in out
+    assert "still exists on disk" in out
+    assert "removed: True" not in out
+    assert vcs.delete_branch_calls == []
+
+
+def test_teardown_dirty_probe_error_with_force_is_absorbed_and_removal_proceeds(
+    repo_root, tmp_path, capsys
+):
+    """Follow-up review finding: a ``VcsCommandError`` from the dirty
+    probe previously returned MRS-TEARDOWN-002 BEFORE the ``--force``
+    branch was ever reached, so ``--force`` could not carry past a
+    damaged-but-present worktree (e.g. a corrupt ``.git`` gitdir pointer)
+    -- the exact states teardown is most needed for, and the same
+    dead-end class the missing-directory guard already removed. Under
+    ``--force`` the probe's answer cannot change the outcome, so its
+    failure becomes one more named forced-past reason. WITHOUT --force
+    the error still blocks as 002 (covered by
+    ``test_teardown_has_uncommitted_changes_failure_reports_mrs_teardown_002``)."""
+    home = tmp_path / "loop-homes" / "acme"
+    vcs = _provisioned_teardown_vcs(repo_root, home, "acme")
+    vcs.fail_has_uncommitted_changes = VcsCommandError("corrupt gitdir pointer")
+    fs = FakeFs(project_dirs={home})
+    exit_code = run_teardown(_teardown_namespace("acme", force=True), vcs=vcs, fs=fs)
+    assert exit_code == EXIT_OK
+    out = capsys.readouterr().out
+    assert "removed: True" in out
+    assert "forced: True" in out
+    assert vcs.remove_worktree_calls == [(repo_root, home, True)]
+    assert vcs.delete_branch_calls == [(repo_root, "loop/acme", True)]
+
+
+def test_teardown_merged_probe_error_with_force_is_absorbed_and_removal_proceeds(
+    repo_root, tmp_path, capsys
+):
+    """Same follow-up finding as the dirty-probe variant above, for the
+    merged check: e.g. ``refs/heads/main`` unresolvable makes
+    ``is_branch_merged`` raise, which previously dead-ended ``--force``
+    with MRS-TEARDOWN-002."""
+    home = tmp_path / "loop-homes" / "acme"
+    vcs = _provisioned_teardown_vcs(repo_root, home, "acme")
+    vcs.fail_is_branch_merged = VcsCommandError("cannot resolve refs/heads/main")
+    fs = FakeFs()
+    exit_code = run_teardown(_teardown_namespace("acme", force=True), vcs=vcs, fs=fs)
+    assert exit_code == EXIT_OK
+    out = capsys.readouterr().out
+    assert "removed: True" in out
+    assert "forced: True" in out
+    assert vcs.remove_worktree_calls == [(repo_root, home, True)]
+    assert vcs.delete_branch_calls == [(repo_root, "loop/acme", True)]
+
+
+def test_teardown_refusal_message_names_the_git_registered_path(
+    repo_root, tmp_path, capsys
+):
+    """Follow-up review finding: the MRS-TEARDOWN-003 headline named the
+    merely COMPUTED ``home`` even though the dirty check and the removal
+    both operate on git's REGISTERED path -- in the moved-home case the
+    finding told the operator to inspect a directory that is not the one
+    being checked or removed."""
+    registered_path = tmp_path / "elsewhere" / "acme-moved"
+    vcs = _provisioned_teardown_vcs(repo_root, registered_path, "acme")
+    vcs.dirty_worktrees.add(registered_path)
+    fs = FakeFs(project_dirs={registered_path})
+    exit_code = run_teardown(_teardown_namespace("acme"), vcs=vcs, fs=fs)
+    assert exit_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-TEARDOWN-003" in out
+    assert str(registered_path) in out
+
+
+def test_teardown_ad29_unreachable_promotion_blocks_without_force(
+    repo_root, tmp_path, capsys, monkeypatch
+):
+    """The AD-29 promotion-reachability extension point is a hardcoded
+    no-op today (``_unreachable_promotions`` always returns ``()``), so
+    this path has no real caller yet -- covered here by monkeypatching the
+    stub, proving the refusal-message wiring works before Epic 4 ever
+    makes the predicate real (review finding: this branch was previously
+    unexercised by any test)."""
+    home = tmp_path / "loop-homes" / "acme"
+    vcs = _provisioned_teardown_vcs(repo_root, home, "acme")
+    fs = FakeFs(project_dirs={home})
+    monkeypatch.setattr(
+        "pyforge.marshal.cli.init._unreachable_promotions",
+        lambda repo_root, branch: ("story-1.2", "story-1.3"),
+    )
+    exit_code = run_teardown(_teardown_namespace("acme"), vcs=vcs, fs=fs)
+    assert exit_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-TEARDOWN-003" in out
+    assert "story-1.2" in out and "story-1.3" in out
+    assert vcs.remove_worktree_calls == []
+
+    # --force still overrides it, exactly like the other two conditions.
+    exit_code = run_teardown(_teardown_namespace("acme", force=True), vcs=vcs, fs=fs)
+    assert exit_code == EXIT_OK
+    assert vcs.remove_worktree_calls == [(repo_root, home, True)]
+
+
+def test_teardown_deleted_cwd_reports_mrs_teardown_002(repo_root, capsys, monkeypatch):
+    def _cwd_gone(cls):
+        raise FileNotFoundError("current working directory was deleted")
+
+    monkeypatch.setattr("pathlib.Path.cwd", classmethod(_cwd_gone))
+    vcs = FakeVcs(repo_root=repo_root)
+    fs = FakeFs()
+    exit_code = run_teardown(_teardown_namespace("acme"), vcs=vcs, fs=fs)
+    assert exit_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-TEARDOWN-002" in out
+    assert "working directory" in out
+    assert vcs.calls == []
+
+
+def test_teardown_unresolvable_home_reports_mrs_teardown_002(repo_root, capsys, monkeypatch):
+    monkeypatch.delenv("BMAD_LOOP_HOME_ROOT")
+
+    def _no_home(cls):
+        raise RuntimeError("could not determine a home directory")
+
+    monkeypatch.setattr("pathlib.Path.home", classmethod(_no_home))
+    vcs = FakeVcs(repo_root=repo_root)
+    fs = FakeFs()
+    exit_code = run_teardown(_teardown_namespace("acme"), vcs=vcs, fs=fs)
+    assert exit_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-TEARDOWN-002" in out
+    assert "loop-home root" in out
+
+
+# --- verdict classification of the three new codes ---------------------------
+
+
+def test_teardown_finding_codes_classify_as_documented():
+    from pyforge.marshal.core.model import Verdict
+    from pyforge.marshal.core.verdict import classify
+
+    assert classify("MRS-TEARDOWN-001") == Verdict.UNEVALUABLE
+    assert classify("MRS-TEARDOWN-002") == Verdict.ERROR
+    assert classify("MRS-TEARDOWN-003") == Verdict.ERROR

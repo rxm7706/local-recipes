@@ -194,6 +194,13 @@ cmd = "steward --version"
 # envelope (AD-14/AD-39), a --version/--help-only CLI, and the import-linter
 # AD-3/AD-4 contracts. Spec:
 # _bmad-output/projects/pyforge-marshal/planning-artifacts/.
+#
+# Platforms (Story 1.9): build + smoke targets are linux-64 and osx-arm64
+# (this feature declares no platforms of its own, so it inherits the
+# workspace's [linux-64, win-64, osx-arm64-min] list above). Windows support
+# is WSL-first -- native win-64 is documentation-only here, not a build/smoke
+# target, even though the environment currently resolves there too; this is
+# a documentation-level statement, not a platform-list removal.
 [feature.pyforge-marshal.dependencies]
 pyforge-marshal = { path = "src/shared/packages/pyforge-marshal" }  # -> built conda pkg
 hatchling = ">=1.31.0"                    # Python build backend (drives both conda + wheel/sdist)
@@ -202,7 +209,7 @@ pytest = ">=9.1.1"                       # test runner
 import-linter = ">=2.13"                 # enforces the AD-3 seam + AD-4 purity contracts (pyproject.toml's [tool.importlinter])
 
 [feature.pyforge-marshal.tasks.pyforge-marshal-build-conda]
-description = "Build the pyforge-marshal conda package via pixi-build-python."
+description = "Build the pyforge-marshal conda package via pixi-build-python. Supported build targets: linux-64 and osx-arm64 (Windows is WSL-first, not a native build target)."
 # NOTE: the pyforge-steward block this mirrors uses `--manifest-path`, which
 # the installed pixi (0.73.0) rejects (`pixi build --help` names the flag
 # `--path`); steward's own build-conda task fails identically. Using the
@@ -210,14 +217,14 @@ description = "Build the pyforge-marshal conda package via pixi-build-python."
 cmd = "pixi build --path src/shared/packages/pyforge-marshal --output-dir dist-conda"
 
 [feature.pyforge-marshal.tasks.pyforge-marshal-build-dist]
-description = "Build the pyforge-marshal wheel + sdist from the same hatchling pyproject."
+description = "Build the pyforge-marshal wheel + sdist from the same hatchling pyproject. Supported build targets: linux-64 and osx-arm64 (Windows is WSL-first, not a native build target)."
 # --no-isolation (warden/doctor precedent): without it `python -m build`
 # creates an isolated venv and pip-fetches hatchling from PyPI -- dead weight
 # for the hatchling provisioned above, and a hard failure air-gapped.
 cmd = "python -m build --no-isolation --outdir dist src/shared/packages/pyforge-marshal"
 
 [feature.pyforge-marshal.tasks.pyforge-marshal-build]
-description = "Build BOTH pyforge-marshal artifacts (conda + wheel/sdist) from one manifest."
+description = "Build BOTH pyforge-marshal artifacts (conda + wheel/sdist) from one manifest. Supported build targets: linux-64 and osx-arm64 (Windows is WSL-first, not a native build target)."
 depends-on = ["pyforge-marshal-build-conda", "pyforge-marshal-build-dist"]
 
 [feature.pyforge-marshal.tasks.pyforge-marshal-test]
@@ -227,6 +234,10 @@ cmd = "pytest src/shared/packages/pyforge-marshal/tests -q -m \"not slow\""
 [feature.pyforge-marshal.tasks.pyforge-marshal-test-slow]
 description = "Run the slow, real-git end-to-end integration tests (@pytest.mark.slow) -- not part of the default loop (mirrors pyforge-warden-test-corpus-oracle's split)."
 cmd = "pytest src/shared/packages/pyforge-marshal/tests -q -m slow"
+
+[feature.pyforge-marshal.tasks.pyforge-marshal-smoke]
+description = "Smoke-test the INSTALLED pyforge-marshal conda artifact (FR-56): marshal --help proves the console script and its subparser tree work; marshal --version always exits 0 (informational, never a gate), so the actual harness-resolvable proof is grepping its output for a real 'bmad-loop <version>' line rather than trusting the exit code -- against the SAME lean pyforge-marshal pixi-build-python-installed environment (no separate throwaway env), which already carries the built package plus its pinned bmad-loop run-dependency. Supported smoke targets: linux-64 and osx-arm64 (Windows is WSL-first)."
+cmd = "marshal --help && marshal --version | tee /dev/stderr | grep -qE '^bmad-loop [0-9]'"
 
 # The OPERATOR path to a loop home's harness policy. Story 1.10 correctly made
 # `.bmad-loop/policy.toml` a derived artifact (AD-12/AD-35) and gitignored it,
