@@ -51,14 +51,26 @@ class CaptureResult:
     memory_index_line: str
 
 
-def capture(memory_root: Path, capture_type: CaptureType, text: str) -> CaptureResult:
+def capture(
+    memory_root: Path,
+    capture_type: CaptureType,
+    text: str,
+    *,
+    slug: str | None = None,
+    description: str | None = None,
+) -> CaptureResult:
     """Append one new record under ``memory_root/<capture_type>/`` (AD-1/AD-2/FR-7).
 
-    ``name``/``description`` are always derived from ``text`` — there is no
-    override. A slug collision appends a numeric suffix; the original file
-    is never touched. Raises ``ValueError`` for an invalid ``capture_type``,
-    blank ``text``, or a missing/malformed ``memory_root`` -- always before
-    any filesystem write.
+    By default ``name``/``description`` are derived from ``text`` — passing
+    ``slug``/``description`` explicitly (Story 1.3's ``promote.py``) overrides
+    that derivation so a promoted entry can keep its own rewritten
+    description and a filename-derived slug instead of one re-derived from
+    the (already rewritten) body text; leaving both ``None`` preserves the
+    original direct-capture behavior byte-for-byte. Either way the slug is
+    sanitized and collision-checked exactly the same way, and a collision
+    appends a numeric suffix — the original file is never touched. Raises
+    ``ValueError`` for an invalid ``capture_type``, blank ``text``, or a
+    missing/malformed ``memory_root`` -- always before any filesystem write.
     """
     if capture_type not in CAPTURE_TYPES:
         raise ValueError(f"invalid capture type {capture_type!r}; must be one of {CAPTURE_TYPES}")
@@ -78,14 +90,19 @@ def capture(memory_root: Path, capture_type: CaptureType, text: str) -> CaptureR
         type_dir = memory_root / capture_type
         type_dir.mkdir(parents=True, exist_ok=True)
 
-        slug = _unique_slug(type_dir, _slugify(text))
-        description = _truncate(text, _DESCRIPTION_MAX_LEN)
-        record = CaptureRecord(type=capture_type, name=slug, description=description, text=text)
+        base_slug = _slugify(slug) if slug is not None else _slugify(text)
+        final_slug = _unique_slug(type_dir, base_slug)
+        final_description = _truncate(
+            description if description is not None else text, _DESCRIPTION_MAX_LEN
+        )
+        record = CaptureRecord(
+            type=capture_type, name=final_slug, description=final_description, text=text
+        )
 
-        path = type_dir / f"{slug}.md"
+        path = type_dir / f"{final_slug}.md"
         path.write_text(record.to_frontmatter() + "\n" + text.strip() + "\n", encoding="utf-8")
 
-        index_line = f"- [{slug}]({capture_type}/{slug}.md) — {description}"
+        index_line = f"- [{final_slug}]({capture_type}/{final_slug}.md) — {final_description}"
         _append_index_line(memory_md_path, capture_type, index_line)
 
     return CaptureResult(record=record, path=path, memory_index_line=index_line)
