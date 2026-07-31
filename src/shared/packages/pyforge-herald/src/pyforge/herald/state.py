@@ -17,13 +17,15 @@ is the caller's job (Story 1.6+), not this module's.
 A corrupt or hand-edited state file is a realistic first failure mode for
 exactly this file, and AD-6 requires every bridge command to fail
 structurally, never silently -- so malformed or binary-corrupt JSON, an
-unreadable file, a non-object document, or a slug entry missing or
-mis-typing a required field all raise ``errors.HeraldError`` rather than
-leaking a bare ``json.JSONDecodeError``/``UnicodeDecodeError``/``OSError``/
-``KeyError``. ``write`` holds its inputs to the same discipline: a
-non-string slug or a ``DeckState`` whose fields lie about their declared
-types is refused up front, never persisted for ``read`` to reject as
-corruption one process later.
+unreadable file, a non-object document, a duplicated key, or a slug entry
+missing, mis-typing, or carrying a field this schema does not declare (a
+typoed field name would otherwise be silently ignored, its intended value
+lost) all raise ``errors.HeraldError`` rather than leaking a bare
+``json.JSONDecodeError``/``UnicodeDecodeError``/``OSError``/``KeyError``.
+``write`` holds its inputs to the same discipline: a non-string slug, a
+non-``DeckState`` state, or a ``DeckState`` whose fields lie about their
+declared types is refused up front, never persisted for ``read`` to reject
+as corruption one process later.
 """
 
 from __future__ import annotations
@@ -60,6 +62,26 @@ _MISSING = object()
 ``null`` one -- a plain ``.get(slug)`` reads a hand-edited ``"slug": null``
 as silently absent, when it is a malformed entry that must fail
 structurally (AD-6)."""
+
+_DECK_STATE_FIELDS = frozenset(("project_id", "etags", "last_pull"))
+"""The schema: exactly ``DeckState``'s fields. An entry key outside this set
+is a hand-edit typo or a newer schema this version cannot round-trip --
+either way, tolerating it silently loses data (the typoed value is ignored;
+the unknown field would be dropped by the next same-slug ``write``)."""
+
+
+def _reject_duplicate_keys(pairs: list[tuple[str, object]]) -> dict[str, object]:
+    """``object_pairs_hook`` refusing a duplicated key anywhere in the
+    document -- ``json.load``'s default is silent last-wins, which would
+    discard the earlier of two hand-edited duplicate slug blocks on read
+    and erase it permanently on the next ``write``. The ``ValueError`` is
+    wrapped into ``HeraldError`` by ``_load_document``'s catch."""
+    document: dict[str, object] = {}
+    for key, value in pairs:
+        if key in document:
+            raise ValueError(f"duplicate key {key!r}")
+        document[key] = value
+    return document
 
 
 def _fields_problem(project_id: object, etags: object, last_pull: object) -> str | None:
@@ -99,7 +121,7 @@ def _load_document(state_path: Path) -> dict[str, object]:
     ``FileNotFoundError`` means "no state yet"."""
     try:
         with state_path.open(encoding="utf-8") as fh:
-            document = json.load(fh)
+            document = json.load(fh, object_pairs_hook=_reject_duplicate_keys)
     except FileNotFoundError:
         return {}
     except (ValueError, OSError, RecursionError) as exc:
@@ -125,12 +147,21 @@ def read(state_path: Path, slug: str) -> DeckState | None:
 
     A present entry that is not a JSON object (including an explicit
     ``null`` -- absent and null are different hand-edits), missing
-    ``project_id``/``etags``, or carrying the wrong type for any field --
+    ``project_id``/``etags``, carrying the wrong type for any field --
     including a non-string ``etags`` value or a non-string ``last_pull`` --
-    is a structural failure (AD-6): raises ``errors.HeraldError`` naming
-    the slug and the offending field rather than leaking a bare
-    ``KeyError``/``TypeError``, or handing a later story a ``DeckState``
-    whose fields lie about their declared types."""
+    or carrying a field outside the ``DeckState`` schema (a typoed field
+    name must not be silently ignored) is a structural failure (AD-6):
+    raises ``errors.HeraldError`` naming the slug and the offending field
+    rather than leaking a bare ``KeyError``/``TypeError``, or handing a
+    later story a ``DeckState`` whose fields lie about their declared
+    types. A non-string ``slug`` is refused the same way ``write`` refuses
+    it -- JSON keys are strings, so ``.get(5)`` could never match and the
+    caller's bug would otherwise read as "no state yet"."""
+    if not isinstance(slug, str):
+        raise errors.HeraldError(
+            f"bridge state for slug {slug!r} could not be read from "
+            f"{state_path}: slug must be a string, not {type(slug).__name__}"
+        )
     entry = _load_document(state_path).get(slug, _MISSING)
     if entry is _MISSING:
         return None
@@ -139,6 +170,11 @@ def read(state_path: Path, slug: str) -> DeckState | None:
     )
     if not isinstance(entry, dict):
         raise errors.HeraldError(f"{malformed}: entry is not a JSON object")
+    unknown = sorted(set(entry) - _DECK_STATE_FIELDS)
+    if unknown:
+        raise errors.HeraldError(
+            f"{malformed}: unknown field(s) {', '.join(map(repr, unknown))}"
+        )
     project_id = entry.get("project_id")
     etags = entry.get("etags")
     last_pull = entry.get("last_pull")
@@ -156,10 +192,15 @@ def write(state_path: Path, slug: str, state: DeckState) -> None:
     half-written state file behind -- mirrors
     ``pyforge.warden.feeds.write_kev_cache``, including its limit: neither
     fsyncs, so surviving power loss is the filesystem's business, not a
-    guarantee this module makes.
+    guarantee this module makes. Atomic replacement is crash-safety, not
+    concurrency-safety: two concurrent writers each load-then-replace the
+    whole document, and the loser's update is silently lost -- no current
+    caller writes concurrently, and the future ``watch``-vs-manual-command
+    overlap is tracked in the deferred-work ledger.
 
     Refuses up front -- as ``errors.HeraldError`` naming the slug -- a
-    non-string ``slug`` or a ``DeckState`` whose fields do not match their
+    non-string ``slug``, a ``state`` that is not a ``DeckState`` at all, or
+    a ``DeckState`` whose fields do not match their
     declared types: ``json.dump`` would otherwise either crash raw or
     silently launder the value (an ``int`` key becomes its string), handing
     ``read`` a "corruption" Herald itself manufactured. Also raises
@@ -175,6 +216,13 @@ def write(state_path: Path, slug: str, state: DeckState) -> None:
     if not isinstance(slug, str):
         raise errors.HeraldError(
             f"{could_not_write}: slug must be a string, not {type(slug).__name__}"
+        )
+    if not isinstance(state, DeckState):
+        # A duck-typed stand-in would otherwise crash asdict() raw (or, for
+        # a plain dict, crash the attribute access just below) -- the same
+        # annotation violation the slug check already refuses structurally.
+        raise errors.HeraldError(
+            f"{could_not_write}: state must be a DeckState, not {type(state).__name__}"
         )
     problem = _fields_problem(state.project_id, state.etags, state.last_pull)
     if problem:
@@ -209,11 +257,13 @@ def write(state_path: Path, slug: str, state: DeckState) -> None:
             os.unlink(tmp_name)
         except OSError:
             pass
-        if isinstance(exc, (OSError, TypeError, ValueError)):
+        if isinstance(exc, (OSError, TypeError, ValueError, RecursionError)):
             # The up-front validation makes a json.dump TypeError /
             # ValueError unreachable for this slug's own entry, and every
             # other entry came from JSON (serializable by construction) --
             # wrapped anyway: a raw leak through the AD-6 contract is worse
-            # than a redundant guard.
+            # than a redundant guard. RecursionError mirrors the load-side
+            # wrap: what json.load parsed under the limit, json.dump must
+            # not leak raw over it.
             raise errors.HeraldError(f"{could_not_write}: {exc}") from exc
         raise

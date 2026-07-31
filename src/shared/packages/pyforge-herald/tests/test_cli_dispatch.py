@@ -89,3 +89,19 @@ def test_dispatch_flattens_a_multi_line_message_to_one_stderr_line(capsys):
     assert err.endswith("\n")
     assert err.count("\n") == 1
     assert "line one line two" in err
+
+
+def test_dispatch_flattens_control_characters_out_of_the_stderr_line(capsys):
+    """A server-relayed message carrying ANSI escapes or backspaces could
+    erase or spoof the structured prefix on a terminal -- every
+    non-printable character is flattened to a space alongside newlines."""
+
+    def operation() -> None:
+        raise HeraldError("evil \x1b[2K spoof \x08\x08ok")
+
+    assert dispatch(operation) == 1
+    err = capsys.readouterr().err
+    assert "\x1b" not in err
+    assert "\x08" not in err
+    assert err.count("\n") == 1
+    assert "spoof" in err

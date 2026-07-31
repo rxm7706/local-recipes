@@ -230,3 +230,46 @@ def test_write_where_state_path_is_a_directory_raises_herald_error(tmp_path: Pat
     state_path.mkdir()
     with pytest.raises(HeraldError, match="could not be read"):
         write(state_path, "x", DeckState(project_id="p1", etags={}))
+
+
+def test_read_refuses_a_non_string_slug(tmp_path: Path):
+    """``write`` refuses a non-string slug structurally; ``read`` must not
+    mask the identical caller bug as "no state yet" (JSON keys are strings,
+    so ``.get(5)`` could never match -- that is silence, not absence)."""
+    state_path = tmp_path / "bridge-state.json"
+    with pytest.raises(HeraldError, match="slug must be a string"):
+        read(state_path, 5)
+
+
+def test_read_of_an_entry_with_an_unknown_field_raises_herald_error(tmp_path: Path):
+    """A typoed field name in a hand-edit (``"lastpull"``) would otherwise
+    be silently ignored -- the intended value lost, the entry still "valid",
+    and the stray key dropped wholesale by the next same-slug ``write``."""
+    state_path = tmp_path / "bridge-state.json"
+    state_path.write_text('{"x": {"project_id": "p1", "etags": {}, "lastpull": "t1"}}')
+    with pytest.raises(HeraldError, match="lastpull"):
+        read(state_path, "x")
+
+
+def test_read_of_a_document_with_duplicate_keys_raises_herald_error(tmp_path: Path):
+    """``json.load``'s default is silent last-wins on a duplicated key --
+    which would discard the earlier of two hand-edited duplicate slug
+    blocks on read and erase it permanently on the next ``write``. An
+    ambiguous hand-edit must fail structurally like every other one."""
+    state_path = tmp_path / "bridge-state.json"
+    state_path.write_text(
+        '{"x": {"project_id": "OLD", "etags": {}},'
+        ' "x": {"project_id": "NEW", "etags": {}}}'
+    )
+    with pytest.raises(HeraldError, match="duplicate"):
+        read(state_path, "x")
+
+
+def test_write_refuses_a_state_that_is_not_a_deck_state(tmp_path: Path):
+    """A duck-typed stand-in (right attributes, wrong type) would crash
+    ``asdict()`` raw, and a plain dict would crash the attribute access --
+    both the same annotation violation the slug check already refuses."""
+    state_path = tmp_path / "bridge-state.json"
+    with pytest.raises(HeraldError, match="must be a DeckState"):
+        write(state_path, "x", {"project_id": "p1", "etags": {}})
+    assert not state_path.exists()

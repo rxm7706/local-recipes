@@ -17,6 +17,7 @@ from pathlib import Path
 
 import pytest
 
+import pyforge.herald as herald_pkg
 from pyforge.herald import bridge, errors, state
 from pyforge.herald import transport as transport_pkg
 from pyforge.herald.cli import dispatch
@@ -147,46 +148,74 @@ automatically."""
 _FORBIDDEN_INFERENCE_PACKAGES = {
     "a2a_sdk",
     "anthropic",
+    "boto3",
     "claude_agent_sdk",
     "cohere",
     "fastmcp",
     "genai",
+    "generativeai",
     "groq",
+    "huggingface_hub",
     "langchain",
     "langchain_anthropic",
     "langchain_core",
     "langchain_mcp_adapters",
     "langgraph",
     "litellm",
+    "llama_cpp",
     "mcp",
     "mistralai",
     "ollama",
     "openai",
     "pydantic_ai",
+    "transformers",
+    "vertexai",
+    "vllm",
 }
 """A documented short list of LLM/inference-SDK package names bridge-core
 may never name directly (AD-4) -- a defensive, hand-maintained denylist,
-not a derived one. ``google-genai`` appears as its import segment
-``genai``; ``fastmcp`` is in this repo's own pixi environments, so it is a
-foreseeable reach, not a hypothetical one."""
+not a derived one. ``google-genai`` appears as its import segment ``genai``
+and the still-widely-installed legacy ``google-generativeai`` as
+``generativeai``; ``fastmcp`` is in this repo's own pixi environments (and
+a Gemini MCP server is in its tool config), so those are foreseeable
+reaches, not hypothetical ones. Local-inference stacks (``transformers``,
+``vllm``, ``llama_cpp``, ``huggingface_hub``) and hosted-inference clients
+(``vertexai``, ``boto3`` for Bedrock) clear the same foreseeable-reach
+bar."""
 
 _FORBIDDEN_DYNAMIC_IMPORT_NAMES = {
+    "__dict__",
+    "__getattribute__",
     "__import__",
+    "attrgetter",
     "eval",
     "exec",
     "getattr",
+    "globals",
     "import_module",
     "importlib",
+    "locals",
+    "modules",
+    "pkgutil",
+    "resolve_name",
+    "runpy",
+    "vars",
 }
 """A static check cannot see what *runtime* machinery loads -- so none of
 it may be named in bridge-core at all: dynamic import (``importlib``,
-``__import__``), string execution (``eval``/``exec``, which can synthesize
-an import out of concatenated strings), and ``getattr`` (which reaches an
-adapter as an attribute of an innocently imported parent package while the
-attribute's name hides in a string). A string fed to any of these is
-invisible to this check by design; forbidding the machinery's own names is
-the strongest guarantee a static check can give, and that limit is
-deliberate: the epics AC asks for a static/code-level proof."""
+``__import__``, ``pkgutil``/``resolve_name``, ``runpy``), string execution
+(``eval``/``exec``, which can synthesize an import out of concatenated
+strings), dynamic attribute access (``getattr``, ``vars``, ``__dict__``,
+``__getattribute__``, ``operator.attrgetter``, ``globals``/``locals`` --
+each reaches an adapter as an attribute of an innocently imported parent
+while the attribute's name hides in a string), and the already-imported-
+module registry (``sys.modules``, via its ``modules`` attribute -- a
+lookup there imports nothing, so the runtime subprocess probe stays green
+while an adapter some other layer already loaded is fished out by string
+key). A string fed to any of these is invisible to this check by design;
+forbidding the machinery's own names is the strongest guarantee a static
+check can give, and that limit is deliberate: the epics AC asks for a
+static/code-level proof."""
 
 
 def test_derived_adapter_denylists_cover_the_known_adapter():
@@ -195,6 +224,20 @@ def test_derived_adapter_denylists_cover_the_known_adapter():
     this fails before the guard silently covers nothing."""
     assert "mcp_transport" in _FORBIDDEN_ADAPTER_MODULES
     assert "McpTransport" in _FORBIDDEN_ADAPTER_NAMES
+
+
+def test_bridge_core_sweep_covers_every_non_excluded_package_module():
+    """``_BRIDGE_CORE_MODULES`` is declared while every denylist above is
+    derived -- this pin makes the declaration loud instead of silently
+    stale: a new package module (Story 1.5's ``registry.py``) fails here
+    until it is either added to the sweep or, with cause, to the exclusion
+    set (``cli`` is the CLI layer, AD-2; ``transport`` is the adapter
+    side, AD-3)."""
+    package_modules = {
+        module.name for module in pkgutil.iter_modules(herald_pkg.__path__)
+    }
+    swept = {module.__name__.rsplit(".", 1)[-1] for module in _BRIDGE_CORE_MODULES}
+    assert package_modules - {"cli", "transport"} == swept
 
 
 def _import_statements(source: str) -> list[tuple[str, tuple[str, ...]]]:
@@ -369,6 +412,12 @@ def test_guard_flags_adapter_names_in_any_position(evasion):
         'exec("imp" + "ort anthropic")',
         'eval("__im" + "port__(\'anthropic\')")',
         'getattr(h.transport, "Mcp" + "Transport")',
+        'sys.modules["pyforge.herald.transport." + "mcp_" + "transport"]',
+        'vars(mod)["Mcp" + "Transport"]',
+        'h.transport.__dict__["Mcp" + "Transport"]',
+        'pkgutil.resolve_name("pyforge.herald.transport:McpTransport")',
+        'operator.attrgetter("Mcp" + "Transport")(mod)',
+        'globals()["__buil" + "tins__"]',
     ],
 )
 def test_guard_flags_inference_and_dynamic_import_forms(evasion):
@@ -376,8 +425,13 @@ def test_guard_flags_inference_and_dynamic_import_forms(evasion):
     check (only ``Anthropic`` was collected, never ``anthropic``); dynamic
     imports were invisible to it entirely, and ``eval``/``exec``/``getattr``
     could each smuggle an adapter or SDK behind a string the AST cannot see
-    -- so the machinery's own names are forbidden. Pin every known form
-    closed."""
+    -- so the machinery's own names are forbidden. The later six forms each
+    evaded the first eval/exec/getattr denylist too (``sys.modules`` fishes
+    an already-loaded adapter out by string key without importing anything;
+    ``vars``/``__dict__`` substitute for the denied ``getattr``;
+    ``pkgutil.resolve_name`` is a full dynamic import under another name;
+    ``attrgetter`` and ``globals`` are the same machinery one module over).
+    Pin every known form closed."""
     forbidden = _FORBIDDEN_INFERENCE_PACKAGES | _FORBIDDEN_DYNAMIC_IMPORT_NAMES
     assert not _all_identifiers(evasion).isdisjoint(forbidden)
 
