@@ -16,11 +16,18 @@ Story 1.6 adds ``resolve_path`` -- a thin wrapper over
 every other method here -- and ``exists``, a thin wrapper over
 ``pathlib.Path.exists()`` with the same suppress-OSError-to-``False``
 convention as ``is_dir``.
+
+Story 1.7 adds ``copy_file`` -- real-bytes ``shutil.copy2`` (preserves
+mtime/permissions), not the temp-file-then-``os.replace`` dance the other
+writers here use: seeding a gitignored adapter config is a plain
+copy-when-absent (the caller already checked absence), not a repoint of a
+name already in use by a live reader.
 """
 
 from __future__ import annotations
 
 import os
+import shutil
 import threading
 from pathlib import Path
 
@@ -170,3 +177,10 @@ class LocalFs:
             return True
         except OSError as exc:
             raise FsError(f"cannot remove directory {path}: {exc}") from exc
+
+    def copy_file(self, src: Path, dst: Path) -> None:
+        try:
+            dst.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(src, dst)
+        except OSError as exc:
+            raise FsError(f"cannot copy {src} to {dst}: {exc}") from exc
