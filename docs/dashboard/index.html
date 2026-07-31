@@ -125,18 +125,25 @@
     border-radius: 6px; padding: 5px 11px; cursor: pointer; text-transform: uppercase; }
   .cbtn:hover { color: var(--ink); border-color: var(--accent-dim); }
   .cbtn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-  .chip { font-family: var(--mono); font-size: 11px; color: var(--ink-soft);
-    display: inline-flex; align-items: center; gap: 7px; }
-  /* The dot is a fixed circle. `flex: none` alone was not enough — as a flex
-     child it still stretched into an oval, which is what made the running chip
-     render as a coloured pill with no visible text. Pin all three axes. */
-  .chip .dot { flex: 0 0 auto; width: 7px; height: 7px; min-width: 7px;
+  /* NAMED `cchip`/`cdot`, NOT `chip`/`dot`. This file already defines BOTH at
+     lines ~248/~265 for the per-story status pills — `.chip` there sets
+     `text-transform: uppercase`, `border-radius: 999px` and padding, and
+     `.dot` sets 10px/3px-radius. Mine were declared EARLIER, so the existing
+     rules won on source order and silently restyled the console chips: text
+     forced to caps, my `display: inline-flex` dropped so the dot and label
+     stopped flexing, and the chips collapsed onto each other. Three "fixes"
+     chased that as a flex/grid problem before the collision was found. Distinct
+     names are the fix; do not reintroduce a bare `.chip` here. */
+  .cchip { font-family: var(--mono); font-size: 11px; color: var(--ink-soft);
+    display: inline-flex; align-items: center; gap: 7px;
+    text-transform: none; letter-spacing: normal; padding: 0; border: 0; }
+  .cchip .cdot { flex: 0 0 auto; width: 7px; height: 7px; min-width: 7px;
     border-radius: 50%; background: var(--slate); }
-  .chip b { color: var(--ink); font-weight: 600; }
-  .chip.live .dot { background: var(--accent); animation: pulse 2s ease-in-out infinite; }
-  .chip.stale b { color: var(--slate); }
+  .cchip b { color: var(--ink); font-weight: 600; }
+  .cchip.live .cdot { background: var(--accent); animation: pulse 2s ease-in-out infinite; }
+  .cchip.stale b { color: var(--slate); }
   @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .35; } }
-  @media (prefers-reduced-motion: reduce) { .chip.live .dot { animation: none; } }
+  @media (prefers-reduced-motion: reduce) { .cchip.live .cdot { animation: none; } }
 
   h1 { font-family: var(--mono); font-weight: 600; letter-spacing: -0.01em;
     font-size: clamp(24px,4vw,34px); line-height: 1.05; margin: 0 0 4px; text-wrap: balance; }
@@ -654,9 +661,9 @@
       <button class="cbtn" id="tt" type="button" aria-label="Toggle theme">◐ theme</button>
     </div>
     <div class="cbstatus">
-      <span class="chip" id="chip-gen"><span class="dot"></span><span class="ctext">generated <b>—</b></span></span>
-      <span class="chip" id="chip-run"><span class="dot"></span><span class="ctext">running <b>—</b></span></span>
-      <span class="chip" id="chip-ship"><span class="dot"></span><span class="ctext">last shipped <b>—</b></span></span>
+      <span class="cchip" id="chip-gen"><span class="cdot"></span><span class="ctext">generated <b>—</b></span></span>
+      <span class="cchip" id="chip-run"><span class="cdot"></span><span class="ctext">running <b>—</b></span></span>
+      <span class="cchip" id="chip-ship"><span class="cdot"></span><span class="ctext">last shipped <b>—</b></span></span>
     </div>
   </div>
 
@@ -1414,7 +1421,7 @@
     const set = (id, cls, html) => {
       const el = document.getElementById(id);
       if (!el) return;
-      el.className = "chip" + (cls ? " " + cls : "");
+      el.className = "cchip" + (cls ? " " + cls : "");
       // Target the text span BY CLASS. This was `querySelector("span:last-child")`,
       // which is ambiguous inside a chip and matched the DOT — the text was being
       // injected into a 7px circle, which stretched it into a coloured pill with
