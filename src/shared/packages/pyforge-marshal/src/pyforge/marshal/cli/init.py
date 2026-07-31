@@ -28,23 +28,32 @@ spec's own instruction) rather than a second regex.
 CLI-boundary read, like ``cli/config.py``'s own ``BMAD_ACTIVE_PROJECT`` env
 read -- so ``marshal init`` works whether invoked from the main checkout or
 from inside another linked worktree. ``BMAD_LOOP_HOME_ROOT`` is read the
-same way (mirrors the reference script's own env var).
+same way (mirrors the reference script's own env var), then anchored to an
+ABSOLUTE path (review finding: a relative override would be resolved
+against ``repo_root`` by ``git -C`` but against the CWD by ``LocalFs``,
+splitting the two writers across different homes).
 
 Ordering: the marker/symlink DESYNC check runs before any write in this
-invocation (a prior partial failure left the two naming different slugs --
-``MRS-INIT-003``, blocking); the symlink is written BEFORE the marker
-(mirrors ``scripts/bmad-switch``'s own ordering rationale -- the marker must
-never advance past a symlink that failed to move). Each of the three steps
-reports exactly one of ``done``/``skipped``/``failed`` in the envelope's
+invocation (a prior partial failure left the two naming different slugs, or
+a symlink target this command never shaped -- ``MRS-INIT-003``, blocking);
+the symlink is written BEFORE the marker (mirrors ``scripts/bmad-switch``'s
+own ordering rationale -- the marker must never advance past a symlink that
+failed to move). Once provisioning begins, each of the three steps reports
+exactly one of ``done``/``skipped``/``failed`` in the envelope's
 ``data.steps``; an unattempted step (because an earlier step failed or
-blocked) reports ``failed`` too, since it did not converge either.
+blocked) reports ``failed`` too, since it did not converge either. The
+pre-provisioning gates (malformed slug, unknown project, repo-root
+resolution failure) exit BEFORE ``data.steps`` exists -- their envelopes
+carry no ``steps`` key at all.
 
-``MRS-INIT-001`` (malformed slug) and ``MRS-INIT-002`` (unknown project)
-classify ``Verdict.UNEVALUABLE`` and involve NO I/O at all -- checked before
-``repo_common_root`` is even resolved for -001, and before any worktree/
-marker/symlink write for -002. ``MRS-INIT-003`` (desync) and
-``MRS-INIT-004`` (any git/filesystem operation failure, including
-resolving the repo root itself) classify ``Verdict.ERROR``.
+``MRS-INIT-001`` (malformed slug, including slug shapes git rejects as a
+branch-name component) and ``MRS-INIT-002`` (unknown project) classify
+``Verdict.UNEVALUABLE`` and are checked before any write is attempted --
+-001 before any I/O at all. ``MRS-INIT-003`` (desync) and ``MRS-INIT-004``
+(any git/filesystem operation failure, including resolving the repo root
+itself, plus the blocking in-home check that the provisioned tree really
+contains the project the symlink is about to target) classify
+``Verdict.ERROR``.
 """
 
 from __future__ import annotations
@@ -55,7 +64,7 @@ import os
 from collections.abc import Mapping
 from pathlib import Path
 
-from ..adapters.fs_local import FsWriteError, LocalFs
+from ..adapters.fs_local import FsError, LocalFs
 from ..adapters.vcs_git import GitVcs, VcsCommandError
 from ..core import policy
 from ..core.model import Finding, Severity, build_envelope
@@ -94,7 +103,15 @@ def add_init_subparser(subparsers: argparse._SubParsersAction) -> None:
 
 def _loop_home_root() -> Path:
     override = os.environ.get(ENV_LOOP_HOME_ROOT)
-    return Path(override).expanduser() if override else Path.home() / ".bmad-loops"
+    root = Path(override).expanduser() if override else Path.home() / ".bmad-loops"
+    if not root.is_absolute():
+        # Anchor once, here: `git -C <repo_root> worktree add` resolves a
+        # relative home against repo_root while LocalFs resolves against
+        # the CWD -- left relative, the two writers land in DIFFERENT
+        # directories and the command exits 0 over a split-brain home
+        # (review finding).
+        root = Path.cwd() / root
+    return root
 
 
 def _home_path(slug: str) -> Path:
@@ -151,8 +168,43 @@ def run_init(
         )
         return _emit(args, data, findings)
 
+    # The shared shape check admits '.' freely, but the slug is also
+    # interpolated into the branch name loop/<slug>, and git refuses a ref
+    # component that starts/ends with '.', contains '..', or ends '.lock'
+    # (review finding: those slugs died later as an opaque MRS-INIT-004
+    # from git's own stderr instead of this crisp pre-I/O rejection). A
+    # git-ref constraint on TOP of the shared check, not a second slug
+    # regex -- the spec's single-shape-check rule still holds.
+    if (
+        slug.startswith(".")
+        or slug.endswith(".")
+        or ".." in slug
+        or slug.endswith(".lock")
+    ):
+        findings.append(
+            Finding(
+                code="MRS-INIT-001",
+                severity=Severity.ERROR,
+                message=(
+                    f"project slug {slug!r} is not usable as the git branch "
+                    f"loop/{slug} -- a branch-name component must not start "
+                    "or end with '.', contain '..', or end with '.lock'"
+                ),
+            )
+        )
+        return _emit(args, data, findings)
+
     try:
-        repo_root = vcs.repo_common_root(Path.cwd())
+        invocation_dir = Path.cwd()
+    except OSError as exc:
+        # A deleted CWD (routine around concurrent worktree teardown) must
+        # report through the envelope, not escape as a raw traceback
+        # (review finding: Path.cwd() raises OSError, which the
+        # VcsCommandError catch below never covered).
+        findings.append(_op_failed_finding(f"resolving the current working directory: {exc}"))
+        return _emit(args, data, findings)
+    try:
+        repo_root = vcs.repo_common_root(invocation_dir)
     except VcsCommandError as exc:
         findings.append(_op_failed_finding(f"resolving the repo root: {exc}"))
         return _emit(args, data, findings)
@@ -163,7 +215,10 @@ def run_init(
     # missing planning-artifacts pass this gate, and the symlink step below
     # would then happily create a DANGLING link -- mirrors
     # scripts/bmad-switch's own repoint_links, which validates each
-    # symlink's target directory before ever writing the link).
+    # symlink's target directory before ever writing the link). This is the
+    # cheap fail-fast against the MAIN CHECKOUT's working tree; the
+    # authoritative gate against the tree the symlink actually resolves in
+    # (the home's own checkout) runs after the worktree step below.
     planning_dir = repo_root / "_bmad-output" / "projects" / slug / "planning-artifacts"
     if not fs.is_dir(planning_dir):
         findings.append(
@@ -172,14 +227,22 @@ def run_init(
                 severity=Severity.ERROR,
                 message=(
                     f"no such BMAD project: {slug!r} -- {planning_dir} does "
-                    "not exist on main"
+                    "not exist in the main checkout"
                 ),
                 path=str(planning_dir),
             )
         )
         return _emit(args, data, findings)
 
-    home = _home_path(slug)
+    try:
+        home = _home_path(slug)
+    except (RuntimeError, OSError) as exc:
+        # Path.home()/expanduser raise RuntimeError when HOME is
+        # unresolvable (cron/systemd -- exactly Marshal's unattended
+        # context), and the relative-override anchor's Path.cwd() can raise
+        # OSError; both must land in the envelope (review finding).
+        findings.append(_op_failed_finding(f"resolving the loop-home root: {exc}"))
+        return _emit(args, data, findings)
     branch = f"loop/{slug}"
     data["home"] = str(home)
     data["branch"] = branch
@@ -227,15 +290,59 @@ def run_init(
             findings.append(_op_failed_finding(str(exc)))
             return _emit(args, data, findings)
 
+    # --- in-home project gate: BLOCKING, before the symlink can dangle ------
+    # The pre-flight above checked the MAIN CHECKOUT's tree, but the symlink
+    # written below resolves inside the HOME's tree -- content from a fresh
+    # mint of `main` or a pre-existing loop/<slug> branch, either of which
+    # can lack the project even when the main checkout has it (review
+    # finding: an uncommitted brand-new project -- exactly when init first
+    # runs -- passed the pre-flight and exited 0 with a DANGLING symlink).
+    home_planning_dir = home / "_bmad-output" / "projects" / slug / "planning-artifacts"
+    if not fs.is_dir(home_planning_dir):
+        findings.append(
+            _op_failed_finding(
+                f"the home's checked-out tree has no _bmad-output/projects/"
+                f"{slug}/planning-artifacts (looked at {home_planning_dir}) "
+                "-- the project exists in the main checkout but not in the "
+                "tree the symlink would resolve in (uncommitted project, or "
+                f"a stale {branch} branch); commit the project to main (or "
+                "update the loop branch) and re-run"
+            )
+        )
+        return _emit(args, data, findings)
+
     # --- desync check: BLOCKING, before any further write -------------------
     marker_path = home / "_bmad" / "custom" / ".active-project"
     link_path = home / "_bmad-output" / "planning-artifacts"
 
     try:
         marker_slug = _slug_from_marker(fs.read_text(marker_path))
-        link_slug = _slug_from_symlink_target(fs.read_symlink_target(link_path))
-    except FsWriteError as exc:
+        raw_link_target = fs.read_symlink_target(link_path)
+        link_slug = _slug_from_symlink_target(raw_link_target)
+    except FsError as exc:
         findings.append(_op_failed_finding(f"reading marker/symlink state: {exc}"))
+        return _emit(args, data, findings)
+
+    if raw_link_target is not None and link_slug is None:
+        # A symlink that EXISTS but whose target this command never shaped
+        # (absolute path, wrong depth) is evidence of hand configuration,
+        # not partial convergence -- repointing it would be exactly the
+        # silent overwrite MRS-INIT-003 exists to refuse (review finding:
+        # the both-slugs-parse desync check below silently skipped this).
+        findings.append(
+            Finding(
+                code="MRS-INIT-003",
+                severity=Severity.ERROR,
+                message=(
+                    f"unrecognized planning-artifacts symlink target "
+                    f"{str(raw_link_target)!r} in {home} -- expected "
+                    "projects/<slug>/planning-artifacts; refusing to "
+                    "repoint a link this command did not shape; resolve "
+                    "by hand before re-running"
+                ),
+                path=str(link_path),
+            )
+        )
         return _emit(args, data, findings)
 
     if marker_slug is not None and link_slug is not None and marker_slug != link_slug:
@@ -262,7 +369,7 @@ def run_init(
         try:
             fs.repoint_symlink_atomic(link_path, target)
             steps["symlink"] = "done"
-        except FsWriteError as exc:
+        except FsError as exc:
             findings.append(_op_failed_finding(str(exc)))
             return _emit(args, data, findings)
 
@@ -273,7 +380,7 @@ def run_init(
         try:
             fs.write_text_atomic(marker_path, slug + "\n")
             steps["marker"] = "done"
-        except FsWriteError as exc:
+        except FsError as exc:
             findings.append(_op_failed_finding(str(exc)))
             return _emit(args, data, findings)
 

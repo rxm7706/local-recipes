@@ -17,7 +17,7 @@ from pathlib import Path
 import jsonschema
 import pytest
 
-from pyforge.marshal.adapters.fs_local import FsWriteError
+from pyforge.marshal.adapters.fs_local import FsError
 from pyforge.marshal.adapters.vcs_git import VcsCommandError
 from pyforge.marshal.cli.init import run_init
 from pyforge.marshal.core.verdict import EXIT_OK
@@ -44,10 +44,15 @@ class FakeVcs:
         self.add_worktree_calls: list[tuple[Path, Path, str, str]] = []
         # Optionally the SAME set object as a FakeFs.dirs, so a successful
         # add_worktree here makes fs.is_dir(home) true too -- mirrors what a
-        # real `git worktree add` does to the real filesystem. Only tests
-        # that call run_init twice against the same fakes need this link
-        # (the stale/prunable-worktree guard's fs.is_dir(home) check).
+        # real `git worktree add` does to the real filesystem. Every test
+        # whose run reaches the worktree step needs this link now: the
+        # in-home project gate probes fs.is_dir(<home planning dir>) right
+        # after the worktree step.
         self.worktree_dirs: set[Path] = worktree_dirs if worktree_dirs is not None else set()
+        # Mirrors the checked-out tree CONTAINING the project (the normal
+        # case: the project is committed on main). The in-home dangling-
+        # symlink test flips this off to model an uncommitted project.
+        self.populate_home_project_dir = True
 
     def repo_common_root(self, start: Path) -> Path:
         self.calls.append("repo_common_root")
@@ -73,6 +78,11 @@ class FakeVcs:
         self.branches.add(branch)
         self.worktrees[branch] = home
         self.worktree_dirs.add(home)
+        if self.populate_home_project_dir:
+            slug = branch.removeprefix("loop/")
+            self.worktree_dirs.add(
+                home / "_bmad-output" / "projects" / slug / "planning-artifacts"
+            )
 
 
 class FakeFs:
@@ -145,12 +155,19 @@ def _provisioned_project(repo_root: Path, slug: str) -> set[Path]:
     return {repo_root / "_bmad-output" / "projects" / slug / "planning-artifacts"}
 
 
+def _home_with_project(home: Path, slug: str) -> set[Path]:
+    """A pre-existing home directory whose checked-out tree contains the
+    project -- what the in-home project gate probes after the worktree
+    step reports skipped."""
+    return {home, home / "_bmad-output" / "projects" / slug / "planning-artifacts"}
+
+
 # --- fresh provision -----------------------------------------------------------
 
 
 def test_fresh_provision_all_steps_done(repo_root, capsys):
-    vcs = FakeVcs(repo_root=repo_root)
     fs = FakeFs(project_dirs=_provisioned_project(repo_root, "acme"))
+    vcs = FakeVcs(repo_root=repo_root, worktree_dirs=fs.dirs)
     exit_code = run_init(_namespace("acme"), vcs=vcs, fs=fs)
     assert exit_code == EXIT_OK
     out = capsys.readouterr().out
@@ -161,8 +178,8 @@ def test_fresh_provision_all_steps_done(repo_root, capsys):
 
 
 def test_fresh_provision_prints_launch_line(repo_root, capsys):
-    vcs = FakeVcs(repo_root=repo_root)
     fs = FakeFs(project_dirs=_provisioned_project(repo_root, "acme"))
+    vcs = FakeVcs(repo_root=repo_root, worktree_dirs=fs.dirs)
     exit_code = run_init(_namespace("acme"), vcs=vcs, fs=fs)
     assert exit_code == EXIT_OK
     out = capsys.readouterr().out
@@ -171,16 +188,16 @@ def test_fresh_provision_prints_launch_line(repo_root, capsys):
 
 
 def test_fresh_provision_writes_symlink_before_marker(repo_root):
-    vcs = FakeVcs(repo_root=repo_root)
     fs = FakeFs(project_dirs=_provisioned_project(repo_root, "acme"))
+    vcs = FakeVcs(repo_root=repo_root, worktree_dirs=fs.dirs)
     run_init(_namespace("acme"), vcs=vcs, fs=fs)
     # symlink write recorded strictly before the marker write
     assert fs.calls.index("repoint_symlink_atomic") < fs.calls.index("write_text_atomic")
 
 
 def test_fresh_provision_marker_and_symlink_agree_with_slug(repo_root):
-    vcs = FakeVcs(repo_root=repo_root)
     fs = FakeFs(project_dirs=_provisioned_project(repo_root, "acme"))
+    vcs = FakeVcs(repo_root=repo_root, worktree_dirs=fs.dirs)
     run_init(_namespace("acme"), vcs=vcs, fs=fs)
     home = vcs.worktrees["loop/acme"]
     marker_path = home / "_bmad" / "custom" / ".active-project"
@@ -329,7 +346,9 @@ def test_marker_symlink_desync_blocks_before_any_write(repo_root, tmp_path, caps
     vcs = FakeVcs(repo_root=repo_root)
     home = tmp_path / "loop-homes" / "acme"
     vcs.worktrees["loop/acme"] = home
-    fs = FakeFs(project_dirs=_provisioned_project(repo_root, "acme") | {home})
+    fs = FakeFs(
+        project_dirs=_provisioned_project(repo_root, "acme") | _home_with_project(home, "acme")
+    )
     fs.texts[home / "_bmad" / "custom" / ".active-project"] = "other-project\n"
     fs.symlinks[home / "_bmad-output" / "planning-artifacts"] = Path(
         "projects/yet-another/planning-artifacts"
@@ -348,7 +367,9 @@ def test_marker_alone_with_no_symlink_is_not_a_desync(repo_root, tmp_path):
     vcs = FakeVcs(repo_root=repo_root)
     home = tmp_path / "loop-homes" / "acme"
     vcs.worktrees["loop/acme"] = home
-    fs = FakeFs(project_dirs=_provisioned_project(repo_root, "acme") | {home})
+    fs = FakeFs(
+        project_dirs=_provisioned_project(repo_root, "acme") | _home_with_project(home, "acme")
+    )
     fs.texts[home / "_bmad" / "custom" / ".active-project"] = "some-stale-value\n"
     exit_code = run_init(_namespace("acme"), vcs=vcs, fs=fs)
     assert exit_code == EXIT_OK
@@ -360,9 +381,9 @@ def test_marker_alone_with_no_symlink_is_not_a_desync(repo_root, tmp_path):
 
 
 def test_symlink_write_failure_stops_before_marker(repo_root, capsys):
-    vcs = FakeVcs(repo_root=repo_root)
     fs = FakeFs(project_dirs=_provisioned_project(repo_root, "acme"))
-    fs.fail_repoint = FsWriteError("disk full")
+    vcs = FakeVcs(repo_root=repo_root, worktree_dirs=fs.dirs)
+    fs.fail_repoint = FsError("disk full")
     exit_code = run_init(_namespace("acme"), vcs=vcs, fs=fs)
     assert exit_code != EXIT_OK
     out = capsys.readouterr().out
@@ -373,9 +394,9 @@ def test_symlink_write_failure_stops_before_marker(repo_root, capsys):
 
 
 def test_marker_write_failure_reports_finding(repo_root, capsys):
-    vcs = FakeVcs(repo_root=repo_root)
     fs = FakeFs(project_dirs=_provisioned_project(repo_root, "acme"))
-    fs.fail_write_text = FsWriteError("disk full")
+    vcs = FakeVcs(repo_root=repo_root, worktree_dirs=fs.dirs)
+    fs.fail_write_text = FsError("disk full")
     exit_code = run_init(_namespace("acme"), vcs=vcs, fs=fs)
     assert exit_code != EXIT_OK
     out = capsys.readouterr().out
@@ -388,8 +409,8 @@ def test_marker_write_failure_reports_finding(repo_root, capsys):
 
 
 def test_json_format_emits_a_schema_valid_envelope(repo_root):
-    vcs = FakeVcs(repo_root=repo_root)
     fs = FakeFs(project_dirs=_provisioned_project(repo_root, "acme"))
+    vcs = FakeVcs(repo_root=repo_root, worktree_dirs=fs.dirs)
     import io
     import sys
 
@@ -428,6 +449,146 @@ def test_json_format_error_path_has_no_launch_line(repo_root):
     payload = json.loads(captured.getvalue())
     assert "launch_line" not in payload["data"]
     assert payload["findings"][0]["code"] == "MRS-INIT-002"
+
+
+# --- in-home project gate: the tree the symlink resolves in ---------------------
+
+
+def test_project_missing_from_home_tree_blocks_before_symlink(repo_root, capsys):
+    """Review finding: the pre-flight gate checks the MAIN CHECKOUT's tree,
+    but the symlink resolves inside the HOME's tree (minted from `main` or a
+    pre-existing loop branch). An uncommitted brand-new project passed the
+    pre-flight and init exited 0 having written a DANGLING symlink."""
+    fs = FakeFs(project_dirs=_provisioned_project(repo_root, "acme"))
+    vcs = FakeVcs(repo_root=repo_root, worktree_dirs=fs.dirs)
+    vcs.populate_home_project_dir = False  # `main` does not carry the project
+    exit_code = run_init(_namespace("acme"), vcs=vcs, fs=fs)
+    assert exit_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-INIT-004" in out
+    assert "planning-artifacts" in out
+    assert fs.write_calls == []
+    assert fs.repoint_calls == []
+
+
+def test_project_missing_from_a_preexisting_home_tree_blocks_too(repo_root, tmp_path, capsys):
+    """Attach path: a stale loop/<slug> branch whose tree no longer carries
+    the project must block the same way, not report all-skipped."""
+    vcs = FakeVcs(repo_root=repo_root)
+    home = tmp_path / "loop-homes" / "acme"
+    vcs.worktrees["loop/acme"] = home
+    fs = FakeFs(project_dirs=_provisioned_project(repo_root, "acme") | {home})
+    exit_code = run_init(_namespace("acme"), vcs=vcs, fs=fs)
+    assert exit_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-INIT-004" in out
+    assert fs.write_calls == []
+    assert fs.repoint_calls == []
+
+
+# --- unrecognized symlink target: blocked, never silently repointed -------------
+
+
+def test_unparseable_symlink_target_blocks_as_desync(repo_root, tmp_path, capsys):
+    """Review finding: a symlink whose target does not parse as
+    projects/<slug>/planning-artifacts (hand repair, older tooling) slipped
+    past the both-slugs-parse desync check and was silently repointed --
+    exactly the overwrite MRS-INIT-003 exists to refuse."""
+    vcs = FakeVcs(repo_root=repo_root)
+    home = tmp_path / "loop-homes" / "acme"
+    vcs.worktrees["loop/acme"] = home
+    fs = FakeFs(
+        project_dirs=_provisioned_project(repo_root, "acme") | _home_with_project(home, "acme")
+    )
+    fs.symlinks[home / "_bmad-output" / "planning-artifacts"] = Path(
+        "/somewhere/else/planning-artifacts"
+    )
+    exit_code = run_init(_namespace("acme"), vcs=vcs, fs=fs)
+    assert exit_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-INIT-003" in out
+    assert fs.write_calls == []
+    assert fs.repoint_calls == []
+
+
+# --- environment failures land in the envelope, never a raw traceback -----------
+
+
+def test_deleted_cwd_reports_mrs_init_004(repo_root, capsys, monkeypatch):
+    """Review finding: Path.cwd() raises OSError when the invocation
+    directory was deleted underneath the process (routine around concurrent
+    worktree teardown) -- previously escaped as a raw traceback."""
+
+    def _cwd_gone(cls):
+        raise FileNotFoundError("current working directory was deleted")
+
+    monkeypatch.setattr("pathlib.Path.cwd", classmethod(_cwd_gone))
+    vcs = FakeVcs(repo_root=repo_root)
+    fs = FakeFs()
+    exit_code = run_init(_namespace("acme"), vcs=vcs, fs=fs)
+    assert exit_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-INIT-004" in out
+    assert "working directory" in out
+    assert vcs.calls == []
+
+
+def test_unresolvable_home_reports_mrs_init_004(repo_root, capsys, monkeypatch):
+    """Review finding: with BMAD_LOOP_HOME_ROOT unset and HOME unresolvable
+    (cron/systemd -- Marshal's own unattended context), Path.home() raises
+    RuntimeError -- previously escaped as a raw traceback."""
+    monkeypatch.delenv("BMAD_LOOP_HOME_ROOT")
+
+    def _no_home(cls):
+        raise RuntimeError("could not determine a home directory")
+
+    monkeypatch.setattr("pathlib.Path.home", classmethod(_no_home))
+    vcs = FakeVcs(repo_root=repo_root)
+    fs = FakeFs(project_dirs=_provisioned_project(repo_root, "acme"))
+    exit_code = run_init(_namespace("acme"), vcs=vcs, fs=fs)
+    assert exit_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-INIT-004" in out
+    assert "loop-home root" in out
+    assert vcs.add_worktree_calls == []
+
+
+# --- git-ref-invalid slug shapes: crisp MRS-INIT-001, no I/O --------------------
+
+
+@pytest.mark.parametrize("bad_slug", ["x.lock", ".foo", "foo.", "a..b"])
+def test_git_ref_invalid_slug_shapes_report_mrs_init_001(repo_root, bad_slug, capsys):
+    """Review finding: these pass the shared slug shape check but git
+    refuses them inside loop/<slug> -- they died later as an opaque
+    MRS-INIT-004 carrying raw git stderr instead of this pre-I/O
+    rejection."""
+    vcs = FakeVcs(repo_root=repo_root)
+    fs = FakeFs()
+    exit_code = run_init(_namespace(bad_slug), vcs=vcs, fs=fs)
+    assert exit_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-INIT-001" in out
+    assert "branch" in out
+    assert vcs.calls == []
+    assert fs.calls == []
+
+
+# --- relative BMAD_LOOP_HOME_ROOT is anchored before any writer sees it ---------
+
+
+def test_relative_loop_home_root_is_anchored_absolute(repo_root, tmp_path, monkeypatch):
+    """Review finding: a relative override was resolved against repo_root
+    by `git -C` but against the CWD by LocalFs -- two writers, two homes,
+    exit 0. Anchoring to the CWD once keeps every consumer on one path."""
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("BMAD_LOOP_HOME_ROOT", "rel-loop-homes")
+    fs = FakeFs(project_dirs=_provisioned_project(repo_root, "acme"))
+    vcs = FakeVcs(repo_root=repo_root, worktree_dirs=fs.dirs)
+    exit_code = run_init(_namespace("acme"), vcs=vcs, fs=fs)
+    assert exit_code == EXIT_OK
+    (_, home, _, _) = vcs.add_worktree_calls[0]
+    assert home.is_absolute()
+    assert home == tmp_path / "rel-loop-homes" / "acme"
 
 
 # --- verdict classification of the four new codes --------------------------------

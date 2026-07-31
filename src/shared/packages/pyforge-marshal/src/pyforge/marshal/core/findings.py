@@ -27,14 +27,17 @@ check itself is shared with ``core/policy.py`` via
 ``_is_valid_project_slug``, but ``init`` registers its own code since
 ``marshal init`` is a distinct command with its own envelope),
 ``MRS-INIT-002`` (the slug names no known BMAD project -- no
-``_bmad-output/projects/<slug>/`` on ``main``), ``MRS-INIT-003`` (the loop
-home's active-project marker and ``planning-artifacts`` symlink already
-disagree with each other -- a prior partial failure, blocked before any
-further write rather than silently overwritten), and ``MRS-INIT-004`` (a
-``git``/filesystem operation failed -- worktree add, marker write, or
-symlink repoint). 001-002 classify ``Verdict.UNEVALUABLE`` (Marshal could
-not determine what to provision); 003-004 classify ``Verdict.ERROR`` (a
-real operation was attempted and failed, or was blocked to avoid
+``_bmad-output/projects/<slug>/planning-artifacts`` in the main checkout),
+``MRS-INIT-003`` (the loop home's active-project marker and
+``planning-artifacts`` symlink already disagree with each other, or the
+symlink carries a target shape this command never writes -- a prior partial
+failure or hand configuration, blocked before any further write rather
+than silently overwritten), and ``MRS-INIT-004`` (a ``git``/filesystem
+operation failed -- worktree add, marker write, or symlink repoint -- or a
+blocking in-home check found the provisioned tree missing the project the
+symlink would target). 001-002 classify ``Verdict.UNEVALUABLE`` (Marshal
+could not determine what to provision); 003-004 classify ``Verdict.ERROR``
+(a real operation was attempted and failed, or was blocked to avoid
 compounding an existing failure) -- see ``core/verdict.py``. Later stories
 append further real codes here as they gain their own real callers. The
 registry MECHANISM

@@ -18,26 +18,43 @@ class VcsCommandError(Exception):
     """Raised when a ``git`` invocation fails: a non-zero exit (locked
     index, a permission error, an ambiguous ref, ``start``/``repo_root`` not
     being inside a git repository, a worktree conflict), a missing ``git``
-    executable, or a hung process exceeding ``_GIT_TIMEOUT_S``. Carries the
+    executable, or a hung process exceeding its timeout tier
+    (``_GIT_TIMEOUT_S`` for queries, ``_GIT_CHECKOUT_TIMEOUT_S`` for the
+    tree-populating ``worktree add``). Carries the
     command's stderr (or the underlying exception) in the message; never
     lets a raw ``subprocess.CalledProcessError``, ``FileNotFoundError``, or
     ``subprocess.TimeoutExpired`` escape this module (review finding:
     ``_run`` previously let both of the latter two propagate raw)."""
 
 
+# Two tiers, not one flat value (review finding): a quick ref/worktree
+# query hanging past 30s is a hung git, but `git worktree add` populates a
+# FULL working tree -- on a large repo (this one is a staged-recipes fork)
+# a cold-cache checkout can legitimately exceed 30s, and a timeout there
+# SIGKILLs git mid-checkout, leaving a registered-but-partial worktree.
 _GIT_TIMEOUT_S = 30.0
+_GIT_CHECKOUT_TIMEOUT_S = 600.0
 
 
-def _run(args: list[str]) -> subprocess.CompletedProcess[str]:
+def _run(
+    args: list[str], *, timeout_s: float = _GIT_TIMEOUT_S
+) -> subprocess.CompletedProcess[str]:
     try:
+        # errors="replace": git output (a path, stderr text) undecodable in
+        # the process locale must degrade to replacement characters, not
+        # escape as a raw UnicodeDecodeError (review finding).
         return subprocess.run(
-            args, capture_output=True, text=True, timeout=_GIT_TIMEOUT_S
+            args,
+            capture_output=True,
+            text=True,
+            errors="replace",
+            timeout=timeout_s,
         )
     except FileNotFoundError as exc:
         raise VcsCommandError(f"git executable not found: {exc}") from exc
     except subprocess.TimeoutExpired as exc:
         raise VcsCommandError(
-            f"git command timed out after {_GIT_TIMEOUT_S}s: {' '.join(args)}"
+            f"git command timed out after {timeout_s}s: {' '.join(args)}"
         ) from exc
 
 
@@ -83,7 +100,19 @@ class GitVcs:
                 f"refs/heads/{branch}",
             ]
         )
-        return result.returncode == 0
+        if result.returncode == 0:
+            return True
+        # --verify --quiet exits 1 for "ref does not exist" specifically;
+        # any OTHER exit (128: not a repository, corrupt/unreadable refs, a
+        # held lock) is a real failure, not absence -- conflating them made
+        # add_worktree take the mint-new-branch path against an existing
+        # branch, masking the real cause (review finding).
+        if result.returncode == 1:
+            return False
+        raise VcsCommandError(
+            f"git rev-parse --verify failed for refs/heads/{branch} "
+            f"(exit {result.returncode}): {result.stderr.strip()}"
+        )
 
     def worktree_path_for_branch(self, repo_root: Path, branch: str) -> Path | None:
         """Mirrors the reference script's ``cmd_list``: parses
@@ -131,6 +160,19 @@ class GitVcs:
                 str(home),
                 base,
             ]
-        result = _run(args)
+        try:
+            result = _run(args, timeout_s=_GIT_CHECKOUT_TIMEOUT_S)
+        except VcsCommandError as exc:
+            if isinstance(exc.__cause__, subprocess.TimeoutExpired):
+                # The kill can land mid-checkout, leaving a registered
+                # worktree with a partial tree. Per the spec's own edge-case
+                # matrix, partial state is left as-is and NEVER auto-cleaned
+                # -- the operator instruction rides in the message instead.
+                raise VcsCommandError(
+                    f"{exc} -- if a partial worktree remains at {home}, "
+                    f"remove it with 'git worktree remove --force {home}' "
+                    "and 'git worktree prune' before re-running"
+                ) from exc.__cause__
+            raise
         if result.returncode != 0:
             raise VcsCommandError(f"git worktree add failed: {result.stderr.strip()}")

@@ -17,7 +17,13 @@ RUNTIME write set, not just the absence of a banned import), but the ports
 themselves are fakes -- ``tests/unit/test_vcs_git.py``/``test_fs_local.py``
 and the real end-to-end ``tests/integration/test_init_worktree.py`` are
 what prove the ADAPTERS' own writes land where their fake counterparts
-claim.
+claim. The guarded invariant is therefore: every FS-port write and the
+worktree TARGET path land under the home. A real ``git worktree add`` also
+writes git-internal bookkeeping OUTSIDE the home (the new branch ref and
+``$GIT_DIR/worktrees/<id>`` admin data in the main repo's ``.git``) --
+those are git's own writes, not Marshal's, and are deliberately exempt
+from the claim (review finding: the earlier docstring implied the real
+adapter could satisfy an all-writes-under-home reading, which it cannot).
 """
 
 from __future__ import annotations
@@ -54,12 +60,12 @@ class _RecordingFs:
     """Fakes just enough of ``FsPort`` to let ``run_init`` reach both of its
     writes (symlink repoint, marker write), recording each write path."""
 
-    def __init__(self, planning_dir: Path) -> None:
-        self._planning_dir = planning_dir
+    def __init__(self, dirs: set[Path]) -> None:
+        self._dirs = dirs
         self.write_paths: list[Path] = []
 
     def is_dir(self, path: Path) -> bool:
-        return path == self._planning_dir
+        return path in self._dirs
 
     def read_text(self, path: Path) -> str | None:
         return None
@@ -80,9 +86,12 @@ def test_every_observed_write_resolves_under_the_provisioned_home(tmp_path, monk
     repo_root = tmp_path / "repo"
     home = tmp_path / "loop-homes" / slug
     planning_dir = repo_root / "_bmad-output" / "projects" / slug / "planning-artifacts"
+    # The home-side twin: the in-home project gate probes the tree the
+    # symlink will resolve in, right after the worktree step.
+    home_planning_dir = home / "_bmad-output" / "projects" / slug / "planning-artifacts"
 
     vcs = _RecordingVcs(repo_root)
-    fs = _RecordingFs(planning_dir)
+    fs = _RecordingFs({planning_dir, home_planning_dir})
 
     args = argparse.Namespace(slug=slug, format="text")
     exit_code = run_init(args, vcs=vcs, fs=fs)

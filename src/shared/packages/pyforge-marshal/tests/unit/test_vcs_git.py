@@ -88,6 +88,17 @@ def test_branch_exists_true_after_plain_branch_create(vcs, repo):
     assert vcs.branch_exists(repo, "loop/created") is True
 
 
+def test_branch_exists_raises_on_a_real_git_failure(vcs, tmp_path):
+    """Review finding: only `--verify --quiet`'s exit 1 means the ref is
+    absent; any other failure (here: not a repository at all, exit 128 --
+    same class as corrupt refs or a held lock) must raise, not silently
+    read as branch-absent and send add_worktree down the mint-new path."""
+    outside = tmp_path / "not-a-repo"
+    outside.mkdir()
+    with pytest.raises(VcsCommandError):
+        vcs.branch_exists(outside, "loop/anything")
+
+
 # --- worktree_path_for_branch ---------------------------------------------------
 
 
@@ -225,3 +236,40 @@ def test_run_wraps_a_hung_git_process(vcs, repo, monkeypatch):
     monkeypatch.setattr(vcs_git_module.subprocess, "run", _raise_timeout)
     with pytest.raises(VcsCommandError, match="timed out"):
         vcs.repo_common_root(repo)
+
+
+def test_run_replaces_undecodable_git_output(monkeypatch):
+    """Review finding: git output undecodable in the process locale (a
+    foreign-bytes path or stderr) previously escaped `_run`'s two except
+    clauses as a raw UnicodeDecodeError; errors='replace' degrades it to
+    replacement characters instead."""
+    import sys
+
+    from pyforge.marshal.adapters.vcs_git import _run
+
+    result = _run(
+        [sys.executable, "-c", "import sys; sys.stdout.buffer.write(b'\\xff')"]
+    )
+    assert result.returncode == 0
+    assert result.stdout == "�"
+
+
+def test_add_worktree_timeout_names_the_cleanup_commands(vcs, repo, tmp_path, monkeypatch):
+    """Review finding: the flat 30s timeout could SIGKILL `git worktree
+    add` mid-checkout on a large repo. The add now runs under its own
+    (much longer) tier, and a timeout there carries operator cleanup
+    guidance -- partial state itself is left as-is per the spec's own
+    edge-case matrix (never auto-cleaned)."""
+    import pyforge.marshal.adapters.vcs_git as vcs_git_module
+
+    real_run = subprocess.run
+
+    def _timeout_only_worktree_add(args, **kwargs):
+        if "worktree" in args:
+            raise subprocess.TimeoutExpired(cmd=args, timeout=kwargs.get("timeout"))
+        return real_run(args, **kwargs)
+
+    monkeypatch.setattr(vcs_git_module.subprocess, "run", _timeout_only_worktree_add)
+    home = tmp_path / "home"
+    with pytest.raises(VcsCommandError, match="worktree remove --force"):
+        vcs.add_worktree(repo, home, "loop/hung", base="main")

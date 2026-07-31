@@ -21,7 +21,7 @@ provisioned loop home instead of the repo root ``bmad-switch`` assumes:
   temp-file/temp-link-then-``os.replace`` (mirrors ``cli/config.py``'s
   ``materialize``/``adapters/harness_bmadloop.py``'s own atomic-write idiom,
   and ``bmad-switch.repoint_links``'s identical tmp-symlink dance). Raises
-  ``FsWriteError`` on any I/O failure.
+  ``FsError`` on any I/O failure.
 """
 
 from __future__ import annotations
@@ -33,14 +33,14 @@ from typing import Protocol
 class FsPort(Protocol):
     def read_text(self, path: Path) -> str | None:
         """The file's UTF-8 text, or ``None`` if ``path`` does not exist.
-        Raises ``FsWriteError`` for any other read failure (e.g. a
+        Raises ``FsError`` for any other read failure (e.g. a
         permission error, or ``path`` naming a directory)."""
         ...
 
     def write_text_atomic(self, path: Path, content: str) -> None:
         """Write ``content`` to ``path`` via a temp-file-then-``os.replace``
         sequence, creating parent directories as needed. Raises
-        ``FsWriteError`` on failure."""
+        ``FsError`` on failure."""
         ...
 
     def read_symlink_target(self, path: Path) -> Path | None:
@@ -51,7 +51,7 @@ class FsPort(Protocol):
     def repoint_symlink_atomic(self, path: Path, target: Path) -> None:
         """Atomically make ``path`` a symlink pointing at ``target``
         (temp-symlink-then-``os.replace``), creating parent directories as
-        needed. Refuses (raises ``FsWriteError``) if ``path`` exists and is
+        needed. Refuses (raises ``FsError``) if ``path`` exists and is
         a real file/directory rather than a symlink -- that would destroy
         real content instead of moving a pointer."""
         ...
