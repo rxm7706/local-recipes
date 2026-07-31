@@ -6,7 +6,11 @@ the **V1 inventory** — which artifact sits in which class, and why. It is the 
 `genesis explain <artifact>` renders from, and the thing a manifest diff is reviewed
 against.
 
-Derived from a live inventory of the model surface in `local-recipes` (2026-07-25).
+Derived from a live inventory of the model surface in `local-recipes` (2026-07-25),
+**re-audited 2026-07-31** — that audit added ten REFERENCED rows the V1 inventory had
+missed entirely and flagged two rows as restated-rather-than-derived. See the Spec's
+memlog for the findings; the gaps are recorded there rather than silently closed here,
+because this file is a companion and the kernel re-renders from the log.
 
 ---
 
@@ -36,7 +40,13 @@ Genesis **verifies presence and floor** for these and never installs them.
 | Artifact | Pin | Rationale |
 |---|---|---|
 | `bmad-method` | `>=6.10.0` (conda-forge) | upstream product; gains `bmad-dev-auto` at 6.10; never vendored |
-| `bmad-loop` | `>=0.8.1` (conda-forge) | Marshal's orchestrator; Genesis declares the floor, Marshal operates it |
+| `bmad-loop` | `>=0.8.1` (conda-forge) | Marshal's orchestrator; Genesis declares the floor, Marshal operates it. **Floor is hand-written and has drifted** — 0.9.0 is what the model is exercised against. Deliberately not bumped: raising a floor without a load-bearing feature behind it invents a requirement. |
+| `bmad-builder` (**BMB**) | `>=2.1.0` (conda-forge) | Custom agents & workflows. *Added 2026-07-31 — the Dream promised it and V1 classified it nowhere.* |
+| `bmad-method-test-architecture-enterprise` (**TEA**) | `>=1.19.1` (conda-forge) | Risk-based test strategy. *Added 2026-07-31.* |
+| `bmad-creative-intelligence-suite` (**CIS**) | `>=0.2.1` (conda-forge) | Brainstorming / design thinking. *Added 2026-07-31.* |
+| **Skill Forge** — `_bmad/skf/**` (59 dirs) + 16 `skf-*` skills | via `bmad-method install` | Skill authoring, campaigns, audits. Installer-owned like `_bmad/bmm/**`; also in the never-write set. *Added 2026-07-31 — the largest single omission in V1.* |
+| `bmad-dashboard` | `>=1.2.2` (conda-forge) | BMad Method UI boards. *Added 2026-07-31.* |
+| `bmad-manticore` · `bmad-labs-skills` · `bmad-utility-skills` · `bmad-method-wds-expansion` · `bmad-module-template` | installed, floors unset | **TRIAGE OPEN** — installed here but barely exercised. Keep, wrap, or remove is an operator call, tracked in `docs/dreams/one-front-door.md`; an unexercised dependency is surface area with no owner. Classified REFERENCED provisionally so CAP-1's coverage check can pass honestly rather than by omission. |
 | `copier` | `>=9.17,<10` (conda-forge) | Genesis's own engine |
 | `pixi` | `>=0.72.2` | `preview = ["pixi-build"]` requires it |
 | `tmux` | `>=3.7b` | the loop spawns agent sessions in it; Linux/macOS only |
@@ -48,7 +58,7 @@ Genesis **verifies presence and floor** for these and never installs them.
 |---|---|
 | `scripts/bmad-switch` | executable model machinery with a known production incident (the marker/symlink desync); bug fixes **must** propagate to installed repos |
 | `scripts/bmad-loop-worktree` | concurrent loop homes; same reasoning |
-| `scripts/bmad_drift_check.py` (the detector) | must run locally and offline in the adopting repo's CI; the conformance engine evolves with the model |
+| **The detector set** — resolved through `scripts/detectors.py`, *not* enumerated here | must run locally and offline in the adopting repo's CI; the conformance engine evolves with the model. **Changed 2026-07-31:** this row named one file (`bmad_drift_check.py`) while the repo had grown to **ten** detectors, so an adopting repo inherited a tenth of the conformance surface. The registry discovers them from the filesystem and fails on its own gaps, which is exactly why the row must resolve through it — a hand-written list omits the newest thing, which is the defect the registry exists to prevent, reproduced one tier up in the artifact that installs it. |
 | `docs/dreams/README.md` | the Tier-0 contract itself — Dream frontmatter schema, flow, conventions |
 | CI workflow running `genesis check` + the detector | mechanical; no reason for a repo to own it |
 | The `.gitignore` model block | the tier rules made executable — delivered as a managed **region** inside a repo-owned `.gitignore` (see HYBRID) |
