@@ -20,7 +20,7 @@ window.DASHBOARD_DATA = {
         "median": 83,
         "lo": 42,
         "hi": 427,
-        "phaseAsOf": "2026-07-31 14:59 UTC"
+        "phaseAsOf": "2026-07-31 15:28 UTC"
       },
       "velocity": {
         "derived": true,
@@ -2971,7 +2971,7 @@ window.DASHBOARD_DATA = {
       }
     }
   },
-  "snapshot": "<span>2026-07-31 14:59 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-07-31 15:28 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -10008,6 +10008,7 @@ window.DASHBOARD_DATA = {
       "subject": "mason: recover Story 1.3 — error taxonomy and exit-code contract (review TIMED OUT, no verdict) (#164)"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-07-31 14:59 UTC"
+    "generatedAt": "2026-07-31 15:28 UTC",
+    "generatedEpoch": 1785511714
   }
 };

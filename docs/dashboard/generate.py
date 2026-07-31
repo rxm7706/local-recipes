@@ -33,6 +33,7 @@ import json
 import os
 import re
 import subprocess
+import time
 import sys
 import tomllib
 from pathlib import Path
@@ -2246,6 +2247,9 @@ def main() -> int:
     data["snapshot"] = _SNAP_TS.sub(ts, data["snapshot"], count=1)
     data["status"] = build_status(data, args.source)
     data["status"]["generatedAt"] = ts
+    # epoch too, so the front-end can render it in the VIEWER's timezone --
+    # a UTC string alone forces mental arithmetic on every glance.
+    data["status"]["generatedEpoch"] = int(time.time())
     DATA_JS.write_text(
         "window.DASHBOARD_DATA = " + json.dumps(data, indent=2, ensure_ascii=False) + ";\n",
         encoding="utf-8",

@@ -1,6 +1,13 @@
 <!doctype html>
 <meta charset="utf-8">
 <meta http-equiv="refresh" content="120">
+<!-- The 120s auto-refresh re-requests this page, and a cached copy would make
+     that a no-op that LOOKS like a refresh. Observed 2026-07-31: data.js was
+     re-fetched (timestamp current) while index.html was served from cache, so
+     CSS/markup fixes appeared not to land for three rounds. -->
+<meta http-equiv="cache-control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="pragma" content="no-cache">
+<meta http-equiv="expires" content="0">
 <title>PyForge · Guildhall</title>
 <style>
   :root {
@@ -641,7 +648,7 @@
       <span class="cprompt"><span class="prompt">pyforge ❯</span> status --guildhall</span>
       <span class="branch" id="branch">state: —</span>
       <button class="cbtn" id="cb-refresh" type="button"
-        title="Hard refresh — re-fetches data.js, bypassing cache (Ctrl+Shift+R)">⟳ refresh</button>
+        title="Reload with fresh data. Note: a page cannot force the browser to re-read its OWN html/css from disk — after a markup or style change, use Ctrl+Shift+R once.">⟳ refresh</button>
       <button class="cbtn" id="cb-collapse" type="button" title="Collapse every panel">▾ collapse</button>
       <button class="cbtn" id="cb-expand" type="button" title="Expand every panel">▸ expand</button>
       <button class="cbtn" id="tt" type="button" aria-label="Toggle theme">◐ theme</button>
@@ -1380,12 +1387,16 @@
   });
 
   // ---- console bar: actions + live status chips ---------------------------
-  // The page carries a 120s meta-refresh but data.js is a STATIC snapshot, so a
-  // plain reload can serve the same stale file from cache. `refresh` therefore
-  // navigates with a cache-busting query rather than calling location.reload(),
-  // whose forceGet argument is long deprecated and ignored by every current
-  // engine. Locally, `dashboard-watch` regenerates data.js beside a running
-  // loop; this button is what makes the new bytes visible without Ctrl+Shift+R.
+  // Navigates with a cache-busting query rather than location.reload(), whose
+  // forceGet argument is long deprecated and ignored by every current engine.
+  //
+  // HONEST LIMIT, learned the hard way: this refreshes DATA, not the page's own
+  // html/css. No script can make a browser re-read the document it is running
+  // inside, bypassing cache — only a real hard reload (Ctrl+Shift+R) does that.
+  // On 2026-07-31 three markup/CSS fixes appeared not to land because index.html
+  // was cached while data.js was re-fetched, and this button could not tell the
+  // difference. The no-store meta tags above are the durable mitigation; the
+  // tooltip says the rest.
   document.getElementById("cb-refresh").addEventListener("click", () => {
     const u = new URL(location.href);
     u.searchParams.set("_", Date.now().toString());
@@ -1424,7 +1435,28 @@
     // (git) boards answer different questions by design — the factory-console
     // Dream's "two-source refresh" — so the header says which one you are reading
     // rather than leaving a mismatch to be discovered.
-    set("chip-gen", "", `generated <b>${st.generatedAt || "—"}</b> · ${st.source || "?"}`);
+    // Times render in the VIEWER's zone (falling back to EST if the browser
+    // cannot resolve one), because a UTC stamp forces mental arithmetic every
+    // time you glance at it. The UTC value stays in the tooltip so a shared
+    // screenshot is still unambiguous across machines.
+    const TZ = Intl.DateTimeFormat().resolvedOptions().timeZone || "America/New_York";
+    const localStamp = (epochSec) => new Date(epochSec * 1000).toLocaleString([], {
+      timeZone: TZ, month: "short", day: "numeric",
+      hour: "2-digit", minute: "2-digit", hour12: false,
+    });
+    const zoneAbbr = (epochSec) => {
+      const p = new Intl.DateTimeFormat([], { timeZone: TZ, timeZoneName: "short" })
+        .formatToParts(new Date(epochSec * 1000)).find(x => x.type === "timeZoneName");
+      return p ? p.value : TZ;
+    };
+    const genEl = document.getElementById("chip-gen");
+    if (genEl && st.generatedEpoch) {
+      genEl.title = "generated " + (st.generatedAt || "") + " (UTC)";
+    }
+    const genTxt = st.generatedEpoch
+      ? `${localStamp(st.generatedEpoch)} ${zoneAbbr(st.generatedEpoch)}`
+      : (st.generatedAt || "—");
+    set("chip-gen", "", `generated <b>${genTxt}</b> · ${st.source || "?"}`);
 
     if (!st.runningAvailable) {
       // Honest absence, not silence: in-flight state comes from ~/.bmad-loops and
