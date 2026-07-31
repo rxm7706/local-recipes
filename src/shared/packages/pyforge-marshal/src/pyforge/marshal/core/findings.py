@@ -101,7 +101,9 @@ third slug regex; ``run_preflight`` does not apply this same git-ref-shape
 guard today, a pre-existing gap this story surfaced but did not cause),
 ``MRS-TEARDOWN-002`` (a git operation
 failed -- resolving the current working directory or the loop-home root,
-resolving worktree/branch state, or the removal itself), and
+resolving worktree/branch state, or the removal itself -- or an on-disk
+state git can no longer account for: a deregistered home path that still
+exists and was never checked for uncommitted work), and
 ``MRS-TEARDOWN-003`` (refused: the home has uncommitted changes, the
 branch's content is not yet safely captured on ``main``, or the AD-29
 promotion-reachability stub names something unreachable -- and ``--force``

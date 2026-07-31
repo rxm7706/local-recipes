@@ -122,7 +122,10 @@ equivalence, never bare ancestry; see that method's own docstring and this
 story's spec Design Notes for why), or the AD-29 promotion-reachability
 extension point (``_unreachable_promotions``, a hardcoded-empty stub Epic 4
 replaces the BODY of, never the call site or contract) names anything
-unreachable -- unless ``--force`` overrides all three together. A slug with
+unreachable -- unless ``--force`` overrides all three together (``--force``
+also carries past a dirty/merged PROBE failure, absorbing it as one more
+named forced-past reason: under ``--force`` the probe's answer cannot
+change the outcome, so its failure must not dead-end the flag). A slug with
 nothing provisioned (no worktree, no branch) is a clean no-op
 (``data.already_removed``), never a failure -- teardown is a cleanup
 command, not a precondition-verifying one like ``preflight``. Once removal
@@ -1606,21 +1609,28 @@ def run_teardown(
         findings.append(_teardown_op_failed_finding(f"checking whether {branch} exists: {exc}"))
         return _emit_teardown(args, data, findings)
 
-    if worktree_path is None and not branch_present:
-        # Nothing REGISTERED for this slug. Usually a clean no-op (teardown
-        # is a cleanup command, not a precondition-verifying one like
-        # preflight) -- but a prior partial/failed removal (or manual git
-        # surgery) can deregister a worktree while leaving real files
+    if worktree_path is None:
+        # No worktree REGISTERED for this slug (the branch may or may not
+        # remain). Usually a clean no-op or a branch-only reconciliation
+        # (teardown is a cleanup command, not a precondition-verifying one
+        # like preflight) -- but a prior partial/failed removal (or manual
+        # git surgery) can deregister a worktree while leaving real files
         # behind, and this repo's own history has hit exactly that failure
         # mode. Trusting git's registry alone here would silently claim
         # full cleanup while unverified -- possibly uncommitted -- content
         # sits untouched on disk (review finding); check for it (read-only)
-        # rather than assume absence.
+        # rather than assume absence. `exists`, not `is_dir` (follow-up
+        # review finding): a leftover regular FILE at the home path would
+        # otherwise slip through as "already removed". And the guard runs
+        # for the branch-only state too (follow-up review finding): it
+        # previously ran only when NOTHING was registered, so a leftover
+        # dir plus a surviving branch reported `removed: True` while the
+        # unverified leftover sat there.
         try:
-            leftover = fs.is_dir(home)
+            leftover = fs.exists(home)
         except FsError as exc:
             findings.append(
-                _teardown_op_failed_finding(f"checking for a leftover directory at {home}: {exc}")
+                _teardown_op_failed_finding(f"checking for a leftover at {home}: {exc}")
             )
             return _emit_teardown(args, data, findings)
         if leftover:
@@ -1633,8 +1643,9 @@ def run_teardown(
                 )
             )
             return _emit_teardown(args, data, findings)
-        data["already_removed"] = True
-        return _emit_teardown(args, data, findings)
+        if not branch_present:
+            data["already_removed"] = True
+            return _emit_teardown(args, data, findings)
 
     # --- refusal decision: dirty working tree, unmerged content, or an ------
     # unreachable promotion -- the finding names EVERY condition that fires.
@@ -1660,32 +1671,52 @@ def run_teardown(
             )
             return _emit_teardown(args, data, findings)
         if worktree_on_disk:
+            # Probe failures block only an UNFORCED teardown (follow-up
+            # review finding): a VcsCommandError here previously returned
+            # MRS-TEARDOWN-002 before the --force branch was ever reached,
+            # so --force could not carry past a damaged-but-present
+            # worktree (e.g. a corrupt .git gitdir pointer) -- the exact
+            # states teardown is most needed for, and the same dead-end
+            # class the missing-directory guard above already removed.
+            # Under --force the probe's answer cannot change the outcome,
+            # so its failure becomes one more (named) forced-past reason.
             try:
                 dirty = vcs.has_uncommitted_changes(worktree_path)
             except VcsCommandError as exc:
-                findings.append(
-                    _teardown_op_failed_finding(
-                        f"checking for uncommitted changes in {worktree_path}: {exc}"
+                if not force:
+                    findings.append(
+                        _teardown_op_failed_finding(
+                            f"checking for uncommitted changes in {worktree_path}: {exc}"
+                        )
                     )
+                    return _emit_teardown(args, data, findings)
+                reasons.append(
+                    f"the dirty-state of {worktree_path} could not be determined: {exc}"
                 )
-                return _emit_teardown(args, data, findings)
-            if dirty:
-                reasons.append(f"{worktree_path} has uncommitted changes")
+            else:
+                if dirty:
+                    reasons.append(f"{worktree_path} has uncommitted changes")
 
     if branch_present:
+        # Same forced-past treatment as the dirty probe above.
         try:
             merged = vcs.is_branch_merged(repo_root, branch, into="main")
         except VcsCommandError as exc:
-            findings.append(
-                _teardown_op_failed_finding(
-                    f"checking whether {branch} is merged into main: {exc}"
+            if not force:
+                findings.append(
+                    _teardown_op_failed_finding(
+                        f"checking whether {branch} is merged into main: {exc}"
+                    )
                 )
-            )
-            return _emit_teardown(args, data, findings)
-        if not merged:
+                return _emit_teardown(args, data, findings)
             reasons.append(
-                f"branch {branch}'s content is not yet safely captured on main"
+                f"whether {branch} is merged into main could not be determined: {exc}"
             )
+        else:
+            if not merged:
+                reasons.append(
+                    f"branch {branch}'s content is not yet safely captured on main"
+                )
 
     unreachable = _unreachable_promotions(repo_root, branch)
     if unreachable:
@@ -1694,12 +1725,18 @@ def run_teardown(
         )
 
     if reasons and not force:
+        # Name the path the checks and the removal actually operate on --
+        # git's registered location when one exists (follow-up review
+        # finding: the headline previously named the merely COMPUTED
+        # `home` even in the moved-home case where the two disagree and
+        # every operation targets git's truth).
+        refusal_target = worktree_path if worktree_path is not None else home
         findings.append(
             Finding(
                 code="MRS-TEARDOWN-003",
                 severity=Severity.ERROR,
                 message=(
-                    f"refusing to tear down {home} -- work would be lost: "
+                    f"refusing to tear down {refusal_target} -- work would be lost: "
                     f"{'; '.join(reasons)} -- pass --force to override"
                 ),
             )

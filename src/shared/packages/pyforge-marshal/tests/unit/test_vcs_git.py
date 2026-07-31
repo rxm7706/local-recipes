@@ -453,6 +453,38 @@ def test_is_branch_merged_false_for_a_genuinely_unmerged_branch(vcs, repo):
     assert vcs.is_branch_merged(repo, "loop/unmerged", into="main") is False
 
 
+def test_is_branch_merged_true_for_a_net_zero_branch(vcs, repo):
+    """Follow-up review finding: a branch whose commits cancel out (a
+    change plus its revert -- tree IDENTICAL to the merge base's) carries
+    nothing ``main`` lacks, but the virtual-commit fallback cannot prove
+    it: the virtual commit's diff is empty, and ``git cherry`` reports an
+    empty-diff commit as ``+`` (no equivalent patch on ``into``;
+    live-verified), which spuriously refused a branch with nothing to
+    lose. The tree-equality shortcut answers first."""
+    _git(repo, "checkout", "-b", "loop/netzero")
+    (repo / "temp.txt").write_text("temporary\n", encoding="utf-8")
+    _git(repo, "add", "temp.txt")
+    _git(repo, "commit", "-m", "add temp")
+    _git(repo, "rm", "-q", "temp.txt")
+    _git(repo, "commit", "-m", "revert temp")
+    _git(repo, "checkout", "main")
+
+    # Confirms bare ancestry really would misreport this as unmerged (the
+    # branch's two commits are not on main), so only the fallback answers.
+    ancestry = subprocess.run(
+        ["git", "-C", str(repo), "merge-base", "--is-ancestor", "loop/netzero", "main"],
+        capture_output=True,
+    )
+    assert ancestry.returncode != 0
+    # Confirms the trees really are identical -- the exact shape the
+    # shortcut exists for.
+    branch_tree = _git(repo, "rev-parse", "loop/netzero^{tree}").stdout.strip()
+    main_tree = _git(repo, "rev-parse", "main^{tree}").stdout.strip()
+    assert branch_tree == main_tree
+
+    assert vcs.is_branch_merged(repo, "loop/netzero", into="main") is True
+
+
 def test_is_branch_merged_true_for_a_squash_merged_branch(vcs, repo):
     """The story's own central scenario: this repo's own bmad-loop landing
     convention produces a single-parent "squash" commit on `main` whose tip

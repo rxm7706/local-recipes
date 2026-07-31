@@ -347,6 +347,25 @@ class GitVcs:
             )
         tree = tree_result.stdout.strip()
 
+        base_tree_result = _run(
+            ["git", "-C", str(repo_root), "rev-parse", f"{merge_base}^{{tree}}"]
+        )
+        if base_tree_result.returncode != 0:
+            raise VcsCommandError(
+                f"cannot resolve the tree of the merge base {merge_base}: "
+                f"{base_tree_result.stderr.strip()}"
+            )
+        if tree == base_tree_result.stdout.strip():
+            # A net-zero branch (e.g. a change and its revert): the branch's
+            # tree is IDENTICAL to the merge base's, so `into` already
+            # reaches every byte the branch carries. The virtual-commit path
+            # below cannot answer this case -- its commit would carry an
+            # EMPTY diff, and `git cherry` reports an empty-diff commit as
+            # "+" (no equivalent patch on `into`; live-verified), which
+            # would spuriously refuse a branch with nothing to lose (review
+            # finding). Answer by tree equality first.
+            return True
+
         # -c user.name/user.email/commit.gpgsign=false: pinned explicitly so
         # this NEVER depends on (or blocks on) the operator's global git
         # config in an unattended context (Story 1.8's own Boundaries &
@@ -378,7 +397,17 @@ class GitVcs:
             )
         virtual_commit = commit_tree_result.stdout.strip()
 
-        cherry_result = _run(["git", "-C", str(repo_root), "cherry", into_ref, virtual_commit])
+        # _GIT_CHECKOUT_TIMEOUT_S, not the default query timeout: `git
+        # cherry` computes a patch-id (a full diff) for every commit on
+        # `into` since the merge base -- history-proportional work, and loop
+        # homes routinely fork long before teardown, so on a large repo a
+        # cold-cache scan can exceed 30s (review finding: the same
+        # large-repo reasoning remove_worktree's own extended timeout
+        # already applies).
+        cherry_result = _run(
+            ["git", "-C", str(repo_root), "cherry", into_ref, virtual_commit],
+            timeout_s=_GIT_CHECKOUT_TIMEOUT_S,
+        )
         if cherry_result.returncode != 0:
             raise VcsCommandError(
                 f"git cherry failed comparing {branch_ref} against {into_ref}: "

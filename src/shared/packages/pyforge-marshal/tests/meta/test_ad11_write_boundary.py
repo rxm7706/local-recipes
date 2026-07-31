@@ -10,7 +10,13 @@ loosening of AD-11), and by Story 1.8 to prove ``marshal teardown`` performs
 literally ZERO ``FsPort`` writes (mirroring ``marshal homes``'s own
 read-only guard) while its one ``VcsPort`` mutation target
 (``remove_worktree``'s ``home`` argument) resolves under the provisioned
-home.
+home *in the provisioned-in-place case this guard constructs* -- when git's
+registry names a DIFFERENT path for ``loop/<slug>`` (e.g.
+``BMAD_LOOP_HOME_ROOT`` changed since provisioning), the registered path is
+the removal target by design, outside any home root (review finding: the
+claim as previously worded overstated a universal containment the code
+deliberately does not have -- see ``test_init.py``'s
+``test_teardown_remove_worktree_uses_the_git_registered_path_not_the_computed_home``).
 Unlike the AST-scan meta-tests this package already ships (AD-3/AD-4, AD-7,
 AD-26), this guard is RUNTIME: it injects path-recording fake
 ``VcsPort``/``FsPort`` implementations into ``cli.init.run_init``'s own
@@ -341,7 +347,13 @@ def test_teardown_produces_zero_fs_writes_and_its_one_vcs_write_resolves_under_t
     see ``_RecordingVcs.delete_branch``'s own comment). The guarded claims
     are: zero ``FsPort`` writes at all (cli/init.py's own docstring: this
     command calls no write method and never references the canonical Tier-3
-    store), and the one ``VcsPort`` write resolves under the home."""
+    store), and the one ``VcsPort`` write resolves under the home WHEN the
+    registry and the computed home agree -- the provisioned-in-place case
+    this test constructs. That containment is deliberately NOT universal
+    (review finding: the previous wording overclaimed it): when git
+    registers ``loop/<slug>`` at a different path, that registered path is
+    the removal target by design -- proven by ``test_init.py``'s own
+    moved-home test."""
     monkeypatch.setenv("BMAD_LOOP_HOME_ROOT", str(tmp_path / "loop-homes"))
     slug = "acme"
     repo_root = tmp_path / "repo"

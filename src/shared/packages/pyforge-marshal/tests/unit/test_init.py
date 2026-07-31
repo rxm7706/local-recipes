@@ -2629,6 +2629,113 @@ def test_teardown_leftover_directory_with_nothing_registered_is_not_already_remo
     assert "still exists on disk" in out
 
 
+def test_teardown_leftover_plain_file_with_nothing_registered_is_not_already_removed(
+    repo_root, tmp_path, capsys
+):
+    """Follow-up review finding: the leftover guard probed ``fs.is_dir``,
+    so a leftover regular FILE at the home path slipped through as
+    ``already_removed: True`` -- the same silently-claimed-cleanup defect
+    the guard exists to prevent, one file-type away. It probes
+    ``fs.exists`` now."""
+    home = tmp_path / "loop-homes" / "acme"
+    vcs = FakeVcs(repo_root=repo_root)  # nothing registered with git
+    fs = FakeFs()
+    fs.files.add(home)  # a plain file occupies the home path
+    exit_code = run_teardown(_teardown_namespace("acme"), vcs=vcs, fs=fs)
+    assert exit_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-TEARDOWN-002" in out
+    assert "already_removed" not in out
+    assert "still exists on disk" in out
+
+
+def test_teardown_branch_only_with_leftover_on_disk_refuses_instead_of_deleting_the_branch(
+    repo_root, tmp_path, capsys
+):
+    """Follow-up review finding: the leftover-on-disk guard ran only in
+    the NOTHING-registered arm -- in the branch-only state (a prior
+    partial removal deregistered the worktree but left real files AND the
+    branch behind), teardown deleted the branch and reported
+    ``removed: True`` while the unverified leftover sat there. The guard
+    now covers every worktree-deregistered state."""
+    home = tmp_path / "loop-homes" / "acme"
+    vcs = FakeVcs(repo_root=repo_root)
+    vcs.branches.add("loop/acme")  # branch survives, worktree deregistered
+    fs = FakeFs(project_dirs={home})  # but real files remain on disk
+    exit_code = run_teardown(_teardown_namespace("acme"), vcs=vcs, fs=fs)
+    assert exit_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-TEARDOWN-002" in out
+    assert "still exists on disk" in out
+    assert "removed: True" not in out
+    assert vcs.delete_branch_calls == []
+
+
+def test_teardown_dirty_probe_error_with_force_is_absorbed_and_removal_proceeds(
+    repo_root, tmp_path, capsys
+):
+    """Follow-up review finding: a ``VcsCommandError`` from the dirty
+    probe previously returned MRS-TEARDOWN-002 BEFORE the ``--force``
+    branch was ever reached, so ``--force`` could not carry past a
+    damaged-but-present worktree (e.g. a corrupt ``.git`` gitdir pointer)
+    -- the exact states teardown is most needed for, and the same
+    dead-end class the missing-directory guard already removed. Under
+    ``--force`` the probe's answer cannot change the outcome, so its
+    failure becomes one more named forced-past reason. WITHOUT --force
+    the error still blocks as 002 (covered by
+    ``test_teardown_has_uncommitted_changes_failure_reports_mrs_teardown_002``)."""
+    home = tmp_path / "loop-homes" / "acme"
+    vcs = _provisioned_teardown_vcs(repo_root, home, "acme")
+    vcs.fail_has_uncommitted_changes = VcsCommandError("corrupt gitdir pointer")
+    fs = FakeFs(project_dirs={home})
+    exit_code = run_teardown(_teardown_namespace("acme", force=True), vcs=vcs, fs=fs)
+    assert exit_code == EXIT_OK
+    out = capsys.readouterr().out
+    assert "removed: True" in out
+    assert "forced: True" in out
+    assert vcs.remove_worktree_calls == [(repo_root, home, True)]
+    assert vcs.delete_branch_calls == [(repo_root, "loop/acme", True)]
+
+
+def test_teardown_merged_probe_error_with_force_is_absorbed_and_removal_proceeds(
+    repo_root, tmp_path, capsys
+):
+    """Same follow-up finding as the dirty-probe variant above, for the
+    merged check: e.g. ``refs/heads/main`` unresolvable makes
+    ``is_branch_merged`` raise, which previously dead-ended ``--force``
+    with MRS-TEARDOWN-002."""
+    home = tmp_path / "loop-homes" / "acme"
+    vcs = _provisioned_teardown_vcs(repo_root, home, "acme")
+    vcs.fail_is_branch_merged = VcsCommandError("cannot resolve refs/heads/main")
+    fs = FakeFs()
+    exit_code = run_teardown(_teardown_namespace("acme", force=True), vcs=vcs, fs=fs)
+    assert exit_code == EXIT_OK
+    out = capsys.readouterr().out
+    assert "removed: True" in out
+    assert "forced: True" in out
+    assert vcs.remove_worktree_calls == [(repo_root, home, True)]
+    assert vcs.delete_branch_calls == [(repo_root, "loop/acme", True)]
+
+
+def test_teardown_refusal_message_names_the_git_registered_path(
+    repo_root, tmp_path, capsys
+):
+    """Follow-up review finding: the MRS-TEARDOWN-003 headline named the
+    merely COMPUTED ``home`` even though the dirty check and the removal
+    both operate on git's REGISTERED path -- in the moved-home case the
+    finding told the operator to inspect a directory that is not the one
+    being checked or removed."""
+    registered_path = tmp_path / "elsewhere" / "acme-moved"
+    vcs = _provisioned_teardown_vcs(repo_root, registered_path, "acme")
+    vcs.dirty_worktrees.add(registered_path)
+    fs = FakeFs(project_dirs={registered_path})
+    exit_code = run_teardown(_teardown_namespace("acme"), vcs=vcs, fs=fs)
+    assert exit_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-TEARDOWN-003" in out
+    assert str(registered_path) in out
+
+
 def test_teardown_ad29_unreachable_promotion_blocks_without_force(
     repo_root, tmp_path, capsys, monkeypatch
 ):
