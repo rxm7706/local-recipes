@@ -41,6 +41,9 @@ same asymmetry that caused the bug, so the check lives where the truth lives.
 
 from __future__ import annotations
 
+# Registry declaration — see scripts/detectors.py. `runtime`: reads host state (gitignored Tier-3 sprint feeds / tmux / ~/.bmad-loops), so CI cannot run it.
+DETECTOR = {"scope": "runtime"}
+
 import importlib.util
 import json
 import re

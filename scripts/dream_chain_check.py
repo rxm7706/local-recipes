@@ -22,6 +22,9 @@ Deliberately stdlib + PyYAML only, so it runs in bare CI like the other detector
 """
 from __future__ import annotations
 
+# Registry declaration — see scripts/detectors.py. `repo`: reads tracked files only.
+DETECTOR = {"scope": "repo"}
+
 import argparse
 import json
 import pathlib

@@ -35,6 +35,9 @@ See _bmad-output/projects/pyforge-marshal/SYNC-RUNBOOK.md for the full re-sync p
 """
 from __future__ import annotations
 
+# Registry declaration — see scripts/detectors.py. `repo`: reads tracked files only.
+DETECTOR = {"scope": "repo"}
+
 import argparse
 import json
 import re
