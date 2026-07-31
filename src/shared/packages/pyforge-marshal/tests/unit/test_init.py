@@ -187,6 +187,22 @@ def test_fresh_provision_prints_launch_line(repo_root, capsys):
     assert "cd " in out
 
 
+def test_launch_line_quotes_a_home_path_with_spaces(repo_root, tmp_path, monkeypatch, capsys):
+    """Review finding: the launch line embedded the home path unquoted, so
+    a BMAD_LOOP_HOME_ROOT override containing a space produced a line that
+    word-splits on paste instead of the AC's directly-pasteable command."""
+    import shlex
+
+    monkeypatch.setenv("BMAD_LOOP_HOME_ROOT", str(tmp_path / "my loops"))
+    fs = FakeFs(project_dirs=_provisioned_project(repo_root, "acme"))
+    vcs = FakeVcs(repo_root=repo_root, worktree_dirs=fs.dirs)
+    exit_code = run_init(_namespace("acme"), vcs=vcs, fs=fs)
+    assert exit_code == EXIT_OK
+    out = capsys.readouterr().out
+    home = vcs.worktrees["loop/acme"]
+    assert f"cd {shlex.quote(str(home))} && export BMAD_ACTIVE_PROJECT=acme" in out
+
+
 def test_fresh_provision_writes_symlink_before_marker(repo_root):
     fs = FakeFs(project_dirs=_provisioned_project(repo_root, "acme"))
     vcs = FakeVcs(repo_root=repo_root, worktree_dirs=fs.dirs)

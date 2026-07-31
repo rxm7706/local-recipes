@@ -22,9 +22,11 @@ class VcsCommandError(Exception):
     (``_GIT_TIMEOUT_S`` for queries, ``_GIT_CHECKOUT_TIMEOUT_S`` for the
     tree-populating ``worktree add``). Carries the
     command's stderr (or the underlying exception) in the message; never
-    lets a raw ``subprocess.CalledProcessError``, ``FileNotFoundError``, or
-    ``subprocess.TimeoutExpired`` escape this module (review finding:
-    ``_run`` previously let both of the latter two propagate raw)."""
+    lets a raw ``subprocess.CalledProcessError``, ``FileNotFoundError``, any
+    other launch ``OSError`` (EACCES on a non-executable shim, ENOEXEC on a
+    corrupt binary), or ``subprocess.TimeoutExpired`` escape this module
+    (review finding: ``_run`` previously let all but the first propagate
+    raw)."""
 
 
 # Two tiers, not one flat value (review finding): a quick ref/worktree
@@ -40,13 +42,18 @@ def _run(
     args: list[str], *, timeout_s: float = _GIT_TIMEOUT_S
 ) -> subprocess.CompletedProcess[str]:
     try:
-        # errors="replace": git output (a path, stderr text) undecodable in
-        # the process locale must degrade to replacement characters, not
-        # escape as a raw UnicodeDecodeError (review finding).
+        # encoding="utf-8" pins the decode: git emits paths as raw bytes,
+        # and decoding with the process LOCALE would mangle a valid UTF-8
+        # path under a non-UTF-8 locale (cron/systemd -- Marshal's own
+        # unattended context), corrupting the reconcile comparison (review
+        # finding). errors="replace": output undecodable even as UTF-8 must
+        # degrade to replacement characters, not escape as a raw
+        # UnicodeDecodeError (review finding).
         return subprocess.run(
             args,
             capture_output=True,
             text=True,
+            encoding="utf-8",
             errors="replace",
             timeout=timeout_s,
         )
@@ -56,6 +63,11 @@ def _run(
         raise VcsCommandError(
             f"git command timed out after {timeout_s}s: {' '.join(args)}"
         ) from exc
+    except OSError as exc:
+        # Launching git can fail with more than absence: EACCES on a
+        # non-executable shim, ENOEXEC on a corrupt binary -- all must land
+        # in the envelope, not escape raw (review finding).
+        raise VcsCommandError(f"cannot launch git: {exc}") from exc
 
 
 class GitVcs:
@@ -128,7 +140,17 @@ class GitVcs:
         for block in result.stdout.split("\n\n"):
             lines = dict(line.split(" ", 1) for line in block.splitlines() if " " in line)
             if lines.get("branch") == wanted:
-                return Path(lines["worktree"])
+                worktree = lines.get("worktree")
+                if worktree is None:
+                    # A matching block with no `worktree` line (a path
+                    # containing a blank line splits one block in two) must
+                    # surface as the port's error, not a raw KeyError
+                    # (review finding).
+                    raise VcsCommandError(
+                        f"unparseable 'git worktree list --porcelain' block "
+                        f"for {wanted}: no worktree line"
+                    )
+                return Path(worktree)
         return None
 
     def add_worktree(self, repo_root: Path, home: Path, branch: str, *, base: str) -> None:

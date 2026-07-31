@@ -120,6 +120,27 @@ def test_worktree_path_for_branch_ignores_other_branches(vcs, repo, tmp_path):
     assert vcs.worktree_path_for_branch(repo, "loop/two") is None
 
 
+def test_worktree_path_for_branch_raises_on_a_block_without_worktree_line(
+    vcs, repo, monkeypatch
+):
+    """Review finding: a porcelain block carrying a `branch` line but no
+    `worktree` line (a worktree path containing a blank line splits one
+    block in two) raised a raw KeyError instead of the port's error."""
+    import pyforge.marshal.adapters.vcs_git as vcs_git_module
+
+    def _mangled_porcelain(*args, **kwargs):
+        return subprocess.CompletedProcess(
+            args=args,
+            returncode=0,
+            stdout="branch refs/heads/loop/acme\n\n",
+            stderr="",
+        )
+
+    monkeypatch.setattr(vcs_git_module.subprocess, "run", _mangled_porcelain)
+    with pytest.raises(VcsCommandError, match="no worktree line"):
+        vcs.worktree_path_for_branch(repo, "loop/acme")
+
+
 # --- add_worktree ----------------------------------------------------------------
 
 
@@ -235,6 +256,21 @@ def test_run_wraps_a_hung_git_process(vcs, repo, monkeypatch):
 
     monkeypatch.setattr(vcs_git_module.subprocess, "run", _raise_timeout)
     with pytest.raises(VcsCommandError, match="timed out"):
+        vcs.repo_common_root(repo)
+
+
+def test_run_wraps_a_git_launch_permission_error(vcs, repo, monkeypatch):
+    """Review finding: `_run` wrapped only FileNotFoundError and
+    TimeoutExpired -- a PermissionError (EACCES on a non-executable shim)
+    or ENOEXEC OSError from launching git escaped raw, past run_init's
+    typed handlers and out of the CLI as a traceback."""
+    import pyforge.marshal.adapters.vcs_git as vcs_git_module
+
+    def _raise_eacces(*args, **kwargs):
+        raise PermissionError("exec format error: git")
+
+    monkeypatch.setattr(vcs_git_module.subprocess, "run", _raise_eacces)
+    with pytest.raises(VcsCommandError, match="cannot launch git"):
         vcs.repo_common_root(repo)
 
 

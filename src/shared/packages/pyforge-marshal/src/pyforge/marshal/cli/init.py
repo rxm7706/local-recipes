@@ -61,6 +61,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import shlex
 from collections.abc import Mapping
 from pathlib import Path
 
@@ -384,7 +385,13 @@ def run_init(
             findings.append(_op_failed_finding(str(exc)))
             return _emit(args, data, findings)
 
-    data["launch_line"] = f"cd {home} && export BMAD_ACTIVE_PROJECT={slug}"
+    # shlex.quote keeps the line directly pasteable even when the home path
+    # needs shell quoting (a BMAD_LOOP_HOME_ROOT override containing a
+    # space); it is a no-op for the common unspaced path, and the slug's
+    # charset never needs quoting (review finding).
+    data["launch_line"] = (
+        f"cd {shlex.quote(str(home))} && export BMAD_ACTIVE_PROJECT={shlex.quote(slug)}"
+    )
     return _emit(args, data, findings)
 
 

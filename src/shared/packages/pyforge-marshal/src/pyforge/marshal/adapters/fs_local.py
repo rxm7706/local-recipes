@@ -79,23 +79,35 @@ class LocalFs:
             raise FsError(f"cannot read symlink {path}: {exc}") from exc
 
     def repoint_symlink_atomic(self, path: Path, target: Path) -> None:
-        # Mirrors scripts/bmad-switch's repoint_links: refuse to clobber a
-        # real (non-symlink) file/directory -- that would destroy content
-        # rather than move a pointer.
-        if path.exists() and not path.is_symlink():
-            raise FsError(
-                f"{path} is a real file/directory, not a symlink -- refusing to replace it"
-            )
         tmp_path = _tmp_sibling(path)
         try:
+            # Mirrors scripts/bmad-switch's repoint_links: refuse to clobber
+            # a real (non-symlink) file/directory -- that would destroy
+            # content rather than move a pointer. is_symlink() probes first
+            # (lstat, never follows the link), and BOTH probes sit inside
+            # the try: on Python 3.12 either raises PermissionError from an
+            # unsearchable ancestor, and exists() additionally follows a
+            # symlink into its (possibly unreadable) target -- previously
+            # the guard ran before the try and escaped as a raw traceback
+            # (review finding).
+            if not path.is_symlink() and path.exists():
+                raise FsError(
+                    f"{path} is a real file/directory, not a symlink -- refusing to replace it"
+                )
             path.parent.mkdir(parents=True, exist_ok=True)
             if tmp_path.is_symlink() or tmp_path.exists():
                 tmp_path.unlink()
             os.symlink(target, tmp_path)
             os.replace(tmp_path, path)  # atomic; replaces any prior symlink in place
         except OSError as exc:
-            if tmp_path.is_symlink():
+            # The cleanup probe itself must not raise a second, raw
+            # exception out of this handler (same 3.12 pathlib class as
+            # above); tmp_path is this process's private name, so an
+            # unconditional unlink is safe.
+            try:
                 tmp_path.unlink(missing_ok=True)
+            except OSError:
+                pass
             raise FsError(f"cannot repoint symlink {path} -> {target}: {exc}") from exc
 
     def is_dir(self, path: Path) -> bool:

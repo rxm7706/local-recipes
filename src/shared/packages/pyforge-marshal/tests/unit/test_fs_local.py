@@ -30,7 +30,7 @@ def test_read_text_returns_existing_content(fs, tmp_path):
     assert fs.read_text(target) == "acme\n"
 
 
-def test_read_text_raises_fs_write_error_when_path_is_a_directory(fs, tmp_path):
+def test_read_text_raises_fs_error_when_path_is_a_directory(fs, tmp_path):
     directory = tmp_path / "a-dir"
     directory.mkdir()
     with pytest.raises(FsError):
@@ -69,7 +69,7 @@ def test_write_text_atomic_leaves_no_temp_file_behind(fs, tmp_path):
     assert leftovers == []
 
 
-def test_write_text_atomic_raises_fs_write_error_on_unwritable_target(fs, tmp_path):
+def test_write_text_atomic_raises_fs_error_on_unwritable_target(fs, tmp_path):
     blocked = tmp_path / "not-a-directory"
     blocked.write_text("occupied", encoding="utf-8")
     with pytest.raises(FsError):
@@ -156,6 +156,22 @@ def test_repoint_symlink_atomic_refuses_a_real_file(fs, tmp_path):
     with pytest.raises(FsError):
         fs.repoint_symlink_atomic(link, Path("projects/acme/planning-artifacts"))
     assert link.read_text(encoding="utf-8") == "real content"
+
+
+@pytest.mark.skipif(os.geteuid() == 0, reason="root ignores permission bits")
+def test_repoint_symlink_atomic_wraps_an_unsearchable_ancestor(fs, tmp_path):
+    """Review finding: the refuse-to-clobber guard ran BEFORE the try
+    block, so on Python 3.12 an unsearchable ancestor made its pathlib
+    probes escape as a raw PermissionError instead of FsError."""
+    parent = tmp_path / "locked"
+    link = parent / "link"
+    parent.mkdir()
+    parent.chmod(0o000)
+    try:
+        with pytest.raises(FsError):
+            fs.repoint_symlink_atomic(link, Path("projects/acme/planning-artifacts"))
+    finally:
+        parent.chmod(0o755)
 
 
 # --- is_dir ----------------------------------------------------------------------
