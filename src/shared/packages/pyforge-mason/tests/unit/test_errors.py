@@ -51,10 +51,21 @@ def test_non_string_identifier_raises_value_error_not_type_error():
         MasonError(None, "msg")
 
 
-def test_empty_message_raises_value_error():
-    """An empty message can't state what failed or what to do next (NFR-14)."""
+@pytest.mark.parametrize("message", ["", "   ", "\n", "\t \n"])
+def test_empty_or_whitespace_only_message_raises_value_error(message):
+    """An empty or all-whitespace message can't state what failed or what to
+    do next (NFR-14) — whitespace-only is the same truncated diagnostic as
+    empty, one space bar away."""
     with pytest.raises(ValueError):
-        MasonError("cfe:unresolved", "")
+        MasonError("cfe:unresolved", message)
+
+
+def test_non_string_message_raises_value_error():
+    """A non-str message (int, list, exception object) must fail with the
+    documented ValueError — same asymmetry-closing guard as the non-str
+    identifier case above."""
+    with pytest.raises(ValueError):
+        MasonError("cfe:unresolved", 123)
 
 
 def test_str_format_is_identifier_colon_space_message():
