@@ -6,6 +6,12 @@ itself; ``cli/init.py::run_preflight``'s own tests in ``test_init.py`` use a
 ``test_harness_policy_render.py`` (Story 1.10's own ``render_policy_toml``/
 ``write_policy_toml`` coverage) since this is a distinct concern: seven new
 ``HarnessPort`` methods, none of which render or write ``policy.toml``.
+
+Story 1.9 adds a direct-unit-coverage section at the end of this file for
+the harness-version-range functions relocated here from ``cli/init.py``
+(``harness_version_tuple``, ``harness_version_in_range``, and the new
+``harness_version_is_major_mismatch``) -- pure functions, no ``BmadLoopHarness``
+instance or real ``bmad_loop`` subprocess call involved.
 """
 
 from __future__ import annotations
@@ -15,7 +21,13 @@ import sys
 
 import pytest
 
-from pyforge.marshal.adapters.harness_bmadloop import BmadLoopHarness, HarnessError
+from pyforge.marshal.adapters.harness_bmadloop import (
+    BmadLoopHarness,
+    HarnessError,
+    harness_version_in_range,
+    harness_version_is_major_mismatch,
+    harness_version_tuple,
+)
 
 
 @pytest.fixture
@@ -330,3 +342,71 @@ def test_story_feed_error_never_raises_when_bmad_loop_unimportable(harness, tmp_
     error = harness.story_feed_error(tmp_path)
     assert error is not None
     assert "not importable" in error
+
+
+# --- Story 1.9: harness_version_tuple / harness_version_in_range / ---------
+# harness_version_is_major_mismatch (relocated from cli/init.py) -----------
+
+
+def test_harness_version_tuple_parses_an_exact_version():
+    assert harness_version_tuple("0.9.0") == (0, 9, 0)
+
+
+def test_harness_version_tuple_stops_at_first_non_digit_component():
+    assert harness_version_tuple("0.9.0rc1") == (0, 9, 0)
+
+
+def test_harness_version_tuple_none_when_first_component_has_no_digits():
+    assert harness_version_tuple("dev") is None
+
+
+def test_harness_version_tuple_treats_non_ascii_unicode_digits_as_non_digits():
+    """``str.isdigit()`` accepts Unicode digit characters (e.g. "²") that
+    ``int()`` then rejects with ValueError -- the parser must treat them as
+    non-digits (parse stops, ``None`` here), never crash (review-caught,
+    reproduced live before the ASCII-only guard)."""
+    assert harness_version_tuple("²") is None
+    assert harness_version_tuple("².9.0") is None
+
+
+def test_harness_version_in_range_true_for_the_exact_floor():
+    assert harness_version_in_range("0.9.0") is True
+
+
+def test_harness_version_in_range_true_for_in_range_but_not_exact():
+    assert harness_version_in_range("0.9.5") is True
+
+
+def test_harness_version_in_range_false_for_same_major_out_of_minor_range():
+    assert harness_version_in_range("0.10.2") is False
+
+
+def test_harness_version_in_range_false_for_a_different_major():
+    assert harness_version_in_range("2.0.0") is False
+
+
+def test_harness_version_in_range_false_for_unparseable_text():
+    assert harness_version_in_range("dev") is False
+
+
+def test_harness_version_is_major_mismatch_false_for_the_exact_floor():
+    assert harness_version_is_major_mismatch("0.9.0") is False
+
+
+def test_harness_version_is_major_mismatch_false_for_same_major_out_of_minor_range():
+    """The one case this story's split exists for: a determinable,
+    same-major version outside the minor range is NOT a major mismatch --
+    it warns (MRS-PREFLIGHT-011) rather than blocking (MRS-PREFLIGHT-002)."""
+    assert harness_version_is_major_mismatch("0.10.2") is False
+
+
+def test_harness_version_is_major_mismatch_true_for_a_different_major():
+    assert harness_version_is_major_mismatch("2.0.0") is True
+
+
+def test_harness_version_is_major_mismatch_true_for_unparseable_text():
+    assert harness_version_is_major_mismatch("dev") is True
+
+
+def test_harness_version_is_major_mismatch_true_for_none():
+    assert harness_version_is_major_mismatch(None) is True

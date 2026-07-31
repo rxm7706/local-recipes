@@ -19,6 +19,33 @@ subcommand handlers (e.g. ``config.run_config``) are the ones that build
 and print an envelope; this module only dispatches to them and relays
 their returned int.
 
+Story 1.9 (packaging, FR-52/FR-57) extends ``--version`` (still bypassing
+the envelope, still exiting ``EXIT_OK`` unconditionally -- it is
+informational, never a gate) to ALSO resolve and print the harness's
+version via ``adapters.harness_bmadloop.BmadLoopHarness`` (a module-level
+reference here, exactly like ``cli/init.py``'s own DI seam, so tests can
+monkeypatch ``pyforge.marshal.cli.main.BmadLoopHarness``), plus a
+prominent warning line when the harness is undeterminable or outside its
+declared range (either tier -- see that adapter module's
+``harness_version_in_range``). ``--version`` stays a CUSTOM ``argparse.Action``
+(``_VersionAction``, ``nargs=0``) rather than becoming a plain
+``store_true`` flag checked after parsing completes: an Action fires the
+instant its option string is consumed, DURING ``parse_args``, before
+argparse ever validates a subcommand's required arguments or rejects
+unrecognized trailing tokens -- the same "always wins" property the
+built-in ``action="version"`` this replaces had. (Scope, unchanged from
+that built-in: the flag is registered on the ROOT parser only, so it wins
+anywhere before a subcommand name hands parsing to a subparser --
+``marshal init --version`` remains that subparser's usage error, unlike
+``--help``, which argparse auto-registers per subparser.) A first-pass
+``store_true`` version of
+this change lost that property (``marshal --version init`` and
+``marshal --version --bogus`` both started exiting ``2`` instead of
+printing the version, review-caught and reverted) -- ``_VersionAction``
+restores it while still computing its text dynamically, which the built-in
+action's static ``%(prog)s`` template cannot do. ``__version__`` itself
+(the hand-synced literal below) and its own safety-net test are untouched.
+
 ``main`` always RETURNS an int and embeds NO guarded exit-code literal
 itself: ``EXIT_OK``/``EXIT_USAGE``/``EXIT_SIGINT``/``GUARDED_EXIT_CODES``
 are imported from ``core/verdict.py``, the sole module permitted to spell
@@ -36,6 +63,12 @@ from __future__ import annotations
 import argparse
 import sys
 
+from ..adapters.harness_bmadloop import (
+    HARNESS_VERSION_RANGE_TEXT,
+    BmadLoopHarness,
+    harness_version_in_range,
+    harness_version_tuple,
+)
 from ..core.verdict import EXIT_OK, EXIT_SIGINT, EXIT_USAGE, GUARDED_EXIT_CODES
 from . import config as config_cli
 from . import init as init_cli
@@ -64,13 +97,91 @@ def _drain_stdout() -> None:
         config_cli._suppress_downstream_pipe_close()
 
 
+def _version_text() -> str:
+    """Story 1.9 (FR-52/FR-57): the text ``--version`` prints -- Marshal's
+    own hand-synced ``__version__`` plus the resolved harness version (or a
+    "not determined" line), plus a prominent warning line whenever the
+    harness is undeterminable, unparseable, or numerically outside its
+    declared range -- each names the specific problem rather than
+    collapsing all three into one "outside the supported range" wording.
+    ``BmadLoopHarness()`` is instantiated via the module-level name so tests
+    can monkeypatch ``pyforge.marshal.cli.main.BmadLoopHarness`` -- the same
+    DI idiom ``cli/init.py``'s ``run_init``/``run_preflight`` use for their
+    own default-port construction, just with no subcommand-handler frame to
+    thread an explicit parameter through here."""
+    lines = [f"marshal {__version__}"]
+    harness_version = BmadLoopHarness().harness_version()
+    if harness_version is None:
+        lines.append("bmad-loop: not determined")
+        lines.append(
+            "WARNING: harness version could not be determined -- expected "
+            f"a bmad-loop version in {HARNESS_VERSION_RANGE_TEXT}"
+        )
+    else:
+        lines.append(f"bmad-loop {harness_version}")
+        if harness_version_tuple(harness_version) is None:
+            # Distinct from the numerically-out-of-range case below: this
+            # string isn't a version at all (review finding: the original
+            # wording said "is outside the supported range" even for an
+            # unparseable string like "dev", conflating the two).
+            lines.append(
+                f"WARNING: bmad-loop version {harness_version!r} could not "
+                f"be parsed -- expected a version in {HARNESS_VERSION_RANGE_TEXT}"
+            )
+        elif not harness_version_in_range(harness_version):
+            lines.append(
+                f"WARNING: bmad-loop {harness_version} is outside the "
+                f"supported range {HARNESS_VERSION_RANGE_TEXT}"
+            )
+    return "\n".join(lines)
+
+
+class _VersionAction(argparse.Action):
+    """Story 1.9: a custom, zero-argument ``Action`` (mirrors argparse's own
+    built-in ``_VersionAction``) so ``--version`` fires THE INSTANT its
+    option string is consumed during ``parse_args`` -- before argparse
+    checks a subcommand's required arguments or rejects unrecognized
+    trailing tokens -- rather than only after a full, successful parse. This
+    is what gives ``--version`` its "always wins" property for any tokens
+    AFTER it on the root-parser line; once a subcommand name is consumed,
+    the subparser owns the rest and no per-subcommand ``--version`` is
+    registered (same as the built-in action this mirrors -- ``--help``
+    differs only because argparse auto-registers it per subparser). A plain
+    ``store_true`` flag checked inside ``main()`` after ``parse_args``
+    returns does NOT have this property (review-caught: ``marshal --version
+    init`` and ``marshal --version --bogus`` exited ``2`` instead of
+    printing the version under that approach)."""
+
+    def __init__(self, option_strings, dest=argparse.SUPPRESS, default=argparse.SUPPRESS, help=None):
+        super().__init__(
+            option_strings=option_strings, dest=dest, default=default, nargs=0, help=help
+        )
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        try:
+            print(_version_text())
+        except OSError:
+            # With WRITE-THROUGH stdout (a tty, `python -u`) a broken
+            # destination surfaces at this print itself, before
+            # ``parser.exit()`` ever runs -- and an OSError raised here
+            # would escape ``main()``'s SystemExit/KeyboardInterrupt-only
+            # catch, violating its never-raises contract. The
+            # block-buffered case is already covered by ``_drain_stdout()``
+            # at the SystemExit catch; this guard covers the unbuffered
+            # path the same way, with the same suppression.
+            config_cli._suppress_downstream_pipe_close()
+        parser.exit()
+
+
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="marshal",
         description="Deterministic BMAD-loop supervisor.",
     )
     parser.add_argument(
-        "--version", action="version", version=f"%(prog)s {__version__}"
+        "--version",
+        action=_VersionAction,
+        help="Show marshal's version and the resolved harness version, then exit.",
     )
     subparsers = parser.add_subparsers(dest="command")
     config_cli.add_config_subparser(subparsers)
@@ -84,8 +195,12 @@ def _build_parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> int:
     """Parse ``argv`` and return an exit code -- never raises ``SystemExit``
     itself. Exit codes stay inside Marshal's frozen ``{0, 1, 2, 3, 4, 130}``
-    domain (AD-7): argparse's own ``--version``/``--help`` exits (``0``)
-    and usage errors (``2``) are relayed as plain ints, a subcommand
+    domain (AD-7): argparse's own ``--help``/``--version`` exits (``0``) and
+    usage errors (``2``) are relayed as plain ints via the ``SystemExit``
+    catch below -- ``--version`` (Story 1.9) is ``_VersionAction``, a custom
+    Action that calls ``parser.exit()`` itself, so it raises ``SystemExit``
+    exactly like the built-in version/help actions it mirrors and is
+    relayed through the SAME path, never a separate branch. A subcommand
     handler's returned value is relayed only after the SAME domain clamp the
     ``SystemExit`` path applies (see ``core/verdict.exit_code_for``),
     and a ``KeyboardInterrupt`` anywhere in parser construction, parsing, or

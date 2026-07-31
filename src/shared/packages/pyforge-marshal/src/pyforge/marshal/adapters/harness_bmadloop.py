@@ -72,6 +72,24 @@ success).
 ``bmad-loop`` is now a declared runtime dependency (``pyproject.toml``,
 ``pixi.toml``) -- see those files' own comments for why the range is
 ``>=0.9.0,<0.10``.
+
+Story 1.9 (packaging, FR-52) gives this module its declared-range job:
+``_HARNESS_MIN_VERSION``/``_HARNESS_MAX_MINOR_EXCLUSIVE``/
+``HARNESS_VERSION_RANGE_TEXT`` and the public ``harness_version_tuple``/
+``harness_version_in_range`` functions relocate here from ``cli/init.py``
+(which defined its own copy when Story 1.7 first needed one). Both
+``cli/init.py``'s ``run_preflight`` and ``cli/main.py``'s ``--version``
+import ``harness_version_in_range``, ``harness_version_tuple``, and
+``HARNESS_VERSION_RANGE_TEXT`` -- each name directly (a constant is never
+available "through" a function import) -- for their own out-of-range and
+could-not-be-parsed wording. The new
+``harness_version_is_major_mismatch`` function is ``run_preflight``'s
+alone -- it is what lets that command split "undeterminable or a different
+major version" (still blocking) from "a determinable, same-major version
+outside the declared minor range" (now a non-blocking warning); see that
+call site's own docstring for how it uses the split. ``--version`` has no
+blocking tier at all -- it only ever prints warning lines, since it never
+blocks (informational, not a gate).
 """
 
 from __future__ import annotations
@@ -335,6 +353,85 @@ def write_policy_toml(
 
 
 # =====================================================================
+# Harness version range (Story 1.9, FR-52: "the seam declares the harness
+# version range it supports"). Relocated here from ``cli/init.py``, which
+# defined its own copy when Story 1.7 first needed it for
+# ``run_preflight`` -- moving it into the seam itself means
+# ``cli/init.py``'s ``run_preflight`` and ``cli/main.py``'s ``--version``
+# share ONE source of truth instead of a second copy that could drift out
+# of sync with the ``pyproject.toml``/``pixi.toml`` pin these constants
+# mirror. Pure (no I/O, no ``bmad_loop`` import) -- placed ABOVE the
+# ``BmadLoopHarness`` section boundary below rather than inside it.
+#
+# The declared supported harness range: pre-1.0, so the upper bound
+# excludes a minor bump that could rename/remove any of the ``bmad_loop``
+# modules this module reads. Tuple comparison, not the ``packaging``
+# library -- this package has no dependency on it and the range is a
+# fixed, simple two-point interval.
+_HARNESS_MIN_VERSION: tuple[int, ...] = (0, 9, 0)
+_HARNESS_MAX_MINOR_EXCLUSIVE: tuple[int, ...] = (0, 10)
+HARNESS_VERSION_RANGE_TEXT = ">=0.9.0,<0.10"
+
+
+def harness_version_tuple(text: str) -> tuple[int, ...] | None:
+    """Parse a dotted version string's leading numeric run per component
+    (``"0.9.0"`` -> ``(0, 9, 0)``, ``"0.9.0rc1"`` -> ``(0, 9, 0)``, stopping
+    at the first component with no leading digit). ``None`` if the FIRST
+    component carries no digits at all. Public (Story 1.9 -- renamed from
+    the private ``_version_tuple`` this replaces, since ``harness_version_in_range``
+    and ``harness_version_is_major_mismatch``, both cross-module callers'
+    entry points into this parsing, now live outside ``cli/init.py``
+    alongside it)."""
+    parts: list[int] = []
+    for chunk in text.split("."):
+        digits = ""
+        for char in chunk:
+            # ASCII-only, not str.isdigit(): isdigit() accepts Unicode
+            # digit characters (e.g. "²") that int() then rejects with
+            # ValueError -- an uncaught crash escaping the frozen exit-code
+            # domain, for input this function does not control (it parses
+            # ``bmad-loop --version``'s stdout). Review-caught, reproduced
+            # live.
+            if not ("0" <= char <= "9"):
+                break
+            digits += char
+        if not digits:
+            break
+        parts.append(int(digits))
+    return tuple(parts) if parts else None
+
+
+def harness_version_in_range(text: str) -> bool:
+    """``True`` iff ``text`` parses and falls within
+    ``[_HARNESS_MIN_VERSION, _HARNESS_MAX_MINOR_EXCLUSIVE)``. Public (Story
+    1.9 -- renamed from the private ``_harness_version_in_range`` this
+    replaces)."""
+    parsed = harness_version_tuple(text)
+    if parsed is None:
+        return False
+    padded = parsed + (0, 0, 0)
+    return padded[:3] >= _HARNESS_MIN_VERSION and padded[:2] < _HARNESS_MAX_MINOR_EXCLUSIVE
+
+
+def harness_version_is_major_mismatch(text: str | None) -> bool:
+    """Story 1.9's graduated-tier split (FR-57): ``True`` for ``None`` or
+    unparseable ``text``, or a parsed version whose MAJOR component (the
+    first element of ``harness_version_tuple``'s result) differs from
+    ``_HARNESS_MIN_VERSION[0]`` -- these are exactly the cases
+    ``cli/init.py``'s ``run_preflight`` still BLOCKS on, via
+    ``MRS-PREFLIGHT-002``. ``False`` for any other determinable version,
+    including one that is same-major but outside the declared minor range
+    -- that case now warns via the new ``MRS-PREFLIGHT-011`` instead,
+    non-blocking (see ``cli/init.py``'s own docstring)."""
+    if text is None:
+        return True
+    parsed = harness_version_tuple(text)
+    if parsed is None:
+        return True
+    return parsed[0] != _HARNESS_MIN_VERSION[0]
+
+
+# =====================================================================
 # ``BmadLoopHarness`` (Story 1.7) -- ``ports.HarnessPort``'s sole
 # implementation. Everything below this line is the only code in this
 # package that imports ``bmad_loop`` for anything beyond rendering
@@ -400,7 +497,10 @@ class BmadLoopHarness:
 
     def multiplexer_backend_available(self) -> tuple[str, bool]:
         try:
-            from bmad_loop.adapters.multiplexer import MultiplexerError, detect_multiplexers
+            from bmad_loop.adapters.multiplexer import (
+                MultiplexerError,
+                detect_multiplexers,
+            )
         except ImportError as exc:
             raise HarnessError(f"bmad_loop is not importable: {exc}") from exc
         # detect_multiplexers documents "never raises", but this module's own
