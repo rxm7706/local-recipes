@@ -1446,6 +1446,7 @@ depends-on = ["pyforge-atlas-build-conda", "pyforge-atlas-build-dist"]
 # _bmad-output/projects/pyforge-doctor/planning-artifacts/.
 [feature.pyforge-doctor.dependencies]
 pyforge-doctor = { path = "src/shared/packages/pyforge-doctor" }  # -> built conda pkg
+pyforge-warden = { path = "src/shared/packages/pyforge-warden" }  # Story 1.2, AD-1: the `gate` extra default-installed IN-REPO at feature level (mirrors [feature.pyforge-atlas.dependencies]'s identical edge) -- NOT a pyforge-doctor package run-dep, so external conda installs stay warden-optional
 hatchling = ">=1.31.0"                    # Python build backend (drives both conda + wheel/sdist)
 python-build = ">=1.5.0"                 # PyPA `python -m build` frontend (wheel + sdist)
 pytest = ">=9.1.1"                       # test runner

@@ -2,12 +2,17 @@
 
 Doctor's own closed taxonomy (architecture spine AD-3): structurally mirrors
 ``pyforge.warden``'s ``StrEnum`` + frozen-dataclass ``__post_init__``
-coercion idiom, but Doctor NEVER imports from ``pyforge.warden`` — its
+coercion idiom, but THIS MODULE never imports from ``pyforge.warden`` — its
 ``Finding``/``Source``/``DoctorStatus`` taxonomy is deliberately independent.
 Importing warden's ``ErrorKind`` would silently stretch a vocabulary scoped
 to *scan-engine operational failure* over Doctor's broader domain
 (engine-missing / feedstock-stale / credential-hygiene), making it a shared,
-driftable vocabulary neither package fully owns.
+driftable vocabulary neither package fully owns. The rule is scoped, not an
+absolute package-wide ban: ``doctor.sources.warden`` (Story 1.2, AD-1) is
+the one sanctioned exception, importing only
+``pyforge.warden.engines.run_doctor_checks`` as a library call and
+normalizing its output into this module's own ``Finding`` shape — it never
+imports ``ErrorKind`` or any other warden vocabulary into this taxonomy.
 
 ``DoctorReport`` is the one JSON envelope per invocation (Consistency
 Conventions): ``{schema_version, verb, generated_at, findings,
