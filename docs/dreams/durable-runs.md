@@ -74,6 +74,31 @@ its life with an hour of unsaved work somewhere.
   the way it refuses to publish an unowned Dream.
 - **Nothing should require a human to ask.** The whole finding above surfaced
   because an operator asked twice. Once is attention; twice is luck.
+- **Branch retirement — the other half of the lifecycle.** Saving work created 36
+  branches and 160 rescue tags in one afternoon; nothing knows when any of them
+  may be released. The question is *derivable*, not a judgement call: a story
+  branch is retirable when its content is in `main` **by patch-id**, its run is
+  concluded, and its story is `done` with a merge sha. Doing that by hand across
+  62 branches is 62 chances to be wrong; writing it once is zero.
+
+  Two prefixes are never candidates: `loop/*` is how the fleet works, and
+  `rescue/*` tags are the **only** reachability for commits `git gc` would
+  otherwise collect — untagging them re-arms the very failure they record.
+
+  **The first pruning run must explain itself.** For each branch it proposes to
+  retire it names the evidence — the merge sha, the patch-id match, the concluded
+  run — and it refuses on anything it cannot prove, rather than defaulting to
+  delete. Dry-run by default, like `adopt`.
+
+  It is the inverse of `unpushed-work-check` and shares its machinery: that one
+  finds what must be saved, this finds what may be released. Both answer "where
+  does this content exist?"; only the sign differs.
+
+  Recorded because the classification is genuinely hard and looks easy. Two
+  quick heuristics were tried and both were wrong — a three-dot diff mismeasures
+  squash-merged branches, a two-dot diff mismeasures branches `main` has moved
+  past. And the stakes are known: herald 1.2's 734 lines *looked* dead at six
+  days old, and scribe 1.3's 1,102 lines showed as 8 insertions in a diffstat.
 
 ## What this is not
 
