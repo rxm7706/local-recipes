@@ -114,6 +114,169 @@ def test_capture_slug_collision_writes_second_distinct_file(
     assert len(written) == 2
 
 
+def _scaffold_source_entry(source_root: Path, filename: str, content: str) -> Path:
+    path = source_root / filename
+    path.write_text(content, encoding="utf-8")
+    return path
+
+
+def test_capture_promote_confirm_yes_writes_file_and_prints_proposal(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    _scaffold_memory_root(tmp_path)
+    source_root = tmp_path / "source"
+    source_root.mkdir()
+    _scaffold_source_entry(
+        source_root,
+        "feedback_run_tests_first.md",
+        "---\n"
+        "name: run-tests-first\n"
+        "description: I prefer running the tests before opening a PR.\n"
+        "type: feedback\n"
+        "---\n"
+        "I prefer that contributors run the full test suite before opening a PR.\n",
+    )
+
+    result = runner.invoke(
+        app, ["capture", "--promote", "--source", str(source_root)], input="y\n"
+    )
+
+    assert result.exit_code == 0
+    written = list((tmp_path / ".claude" / "memory" / "feedback").glob("*.md"))
+    assert len(written) == 1
+    assert written[0].name == "run-tests-first.md"
+    content = written[0].read_text(encoding="utf-8")
+    assert "I prefer" not in content
+
+    output = _combined_output(result)
+    assert "team-relevant" in output
+    assert "run-tests-first" in output
+
+    memory_md = (tmp_path / ".claude" / "memory" / "MEMORY.md").read_text(encoding="utf-8")
+    assert "run-tests-first" in memory_md
+
+    # Source untouched.
+    source_content = (source_root / "feedback_run_tests_first.md").read_text(encoding="utf-8")
+    assert "I prefer that contributors run the full test suite" in source_content
+
+
+def test_capture_promote_confirm_no_writes_nothing_and_exits_0(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    _scaffold_memory_root(tmp_path)
+    source_root = tmp_path / "source"
+    source_root.mkdir()
+    _scaffold_source_entry(
+        source_root,
+        "feedback_run_tests_first.md",
+        "---\nname: run-tests-first\ndescription: Run tests first.\ntype: feedback\n---\n"
+        "Run the full test suite before opening a PR.\n",
+    )
+
+    result = runner.invoke(
+        app, ["capture", "--promote", "--source", str(source_root)], input="n\n"
+    )
+
+    assert result.exit_code == 0
+    assert "Cancelled" in _combined_output(result)
+    assert list((tmp_path / ".claude" / "memory" / "feedback").glob("*.md")) == []
+
+
+def test_capture_promote_mixed_classifications_only_writes_team_relevant(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    _scaffold_memory_root(tmp_path)
+    source_root = tmp_path / "source"
+    source_root.mkdir()
+    _scaffold_source_entry(
+        source_root,
+        "feedback_relevant.md",
+        "---\nname: relevant\ndescription: A rule worth sharing.\ntype: feedback\n---\n"
+        "Always rerender after a feedstock push.\n",
+    )
+    _scaffold_source_entry(
+        source_root,
+        "feedback_tone.md",
+        "---\nname: tone\ndescription: Keep responses terse.\ntype: feedback\n---\n"
+        "Personal tone preference.\n",
+    )
+    _scaffold_source_entry(
+        source_root,
+        "feedback_done.md",
+        "---\nname: done\ndescription: Already done.\ntype: feedback\npromoted: true\n---\n"
+        "Promoted to .claude/memory/feedback/done.md.\n",
+    )
+    _scaffold_source_entry(
+        source_root,
+        "feedback_stale.md",
+        "---\nname: stale\ndescription: References a dead path.\ntype: feedback\n---\n"
+        "See `src/pyforge/scribe/nope.py` for details.\n",
+    )
+
+    result = runner.invoke(
+        app, ["capture", "--promote", "--source", str(source_root)], input="y\n"
+    )
+
+    assert result.exit_code == 0
+    written = list((tmp_path / ".claude" / "memory" / "feedback").glob("*.md"))
+    assert len(written) == 1
+    assert written[0].name == "relevant.md"
+
+
+def test_capture_promote_nothing_to_promote_skips_confirm_prompt(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    _scaffold_memory_root(tmp_path)
+    source_root = tmp_path / "source"
+    source_root.mkdir()
+    _scaffold_source_entry(
+        source_root,
+        "feedback_tone.md",
+        "---\nname: tone\ndescription: Keep responses terse.\ntype: feedback\n---\nBody.\n",
+    )
+
+    # No input provided -- if the code incorrectly still called typer.confirm()
+    # for an empty proposal, CliRunner would raise/abort for lack of stdin.
+    result = runner.invoke(app, ["capture", "--promote", "--source", str(source_root)])
+
+    assert result.exit_code == 0
+    assert "Nothing to promote" in _combined_output(result)
+
+
+def test_capture_promote_missing_source_dir_writes_nothing_and_exits_2(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    _scaffold_memory_root(tmp_path)
+
+    result = runner.invoke(
+        app, ["capture", "--promote", "--source", str(tmp_path / "does-not-exist")]
+    )
+
+    assert result.exit_code == 2
+    for capture_type in ("feedback", "project", "reference"):
+        assert list((tmp_path / ".claude" / "memory" / capture_type).glob("*.md")) == []
+
+
+def test_capture_promote_mutually_exclusive_with_type_and_text_exits_2(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    _scaffold_memory_root(tmp_path)
+
+    result = runner.invoke(
+        app,
+        ["capture", "--promote", "--type", "feedback", "--text", "some text"],
+    )
+
+    assert result.exit_code == 2
+    assert list((tmp_path / ".claude" / "memory" / "feedback").glob("*.md")) == []
+
+
 def test_graph_compile_stub_touches_nothing_and_exits_0(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
