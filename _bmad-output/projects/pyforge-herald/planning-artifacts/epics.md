@@ -264,6 +264,30 @@ to `bridge-core` — no branch of `bridge-core`'s logic differs based on which a
 (NFR-01, AD-4)
 **And** it also strips raw `serve_url`s at the adapter boundary (NFR-04)
 
+**And** — **HARD CONSTRAINT, added 2026-07-31 after two silent crashes** — the nested agent
+process is **never actually spawned during development or in any test**. `AgentSdkTransport`
+must take its process-launch seam as an injected dependency (a `ProcessRunner`-shaped callable
+or equivalent), so every test drives it with a **stub**, and no test, fixture or exploratory
+command in this story invokes a real `claude` binary.
+
+> **Why this constraint exists.** This story's subject IS a nested Claude Code invocation, and
+> it is being implemented BY a Claude Code session. Both prior dev attempts (run
+> `20260730-192235-062b`, 2026-07-30) died mid-thinking with **no error text**, logs ending on
+> a spinner frame, 36,261 weighted tokens total — and OOM, session timeout and environment
+> fault were each ruled out by direct check. Attempt 2's log shows the session shelling out to
+> a real `claude -p` that was still `Running…` at **6m22s under a `timeout 90`** which never
+> fired. A nested agent invocation from inside an agent session is the one thing this story
+> asks for and the one thing that reliably kills the session doing the asking.
+>
+> The transport is fully specifiable without ever launching one: the protocol conformance, the
+> tool allowlist, the determinism boundary and the `serve_url` stripping are all assertions
+> about what the adapter SENDS and RETURNS, not about a live subprocess. Injecting the launch
+> seam is also the AD-4-shaped design — the impure edge belongs behind a port — so this makes
+> the story both survivable and better-factored.
+>
+> This narrows the story's surface, which AD-27 permits a spec to do. Live verification against
+> a real nested agent is deferred to an operator-run integration check, outside the loop.
+
 ### Story 1.4: Bridge-core skeleton — state, errors, determinism boundary
 
 As an operator,

@@ -44,9 +44,9 @@ change only has to touch that one module.
 
 The body below the frontmatter is free-form markdown. For a direct
 `scribe capture` it is the raw `--text` verbatim — no team-voice rewrite,
-no `Why:`/`How-to-apply` structuring. A future *promoted* entry (Story
-1.3) is rewritten in team voice instead; direct capture is deliberately
-fast and unstructured.
+no `Why:`/`How-to-apply` structuring. A *promoted* entry (`scribe capture
+--promote`, Story 1.3) is rewritten in team voice instead; direct capture
+is deliberately fast and unstructured.
 
 `type` selects the subdirectory the file lands in: `feedback/`,
 `project/`, or `reference/`.
@@ -70,16 +70,25 @@ brand-new contributor to this repo, on their first session, without ever
 having talked to me, benefit from this rule?"** Yes → belongs in
 `.claude/memory/`. No → stays in user-local memory only.
 
-## Promotion workflow (arrives Story 1.3)
+## Promotion workflow (Story 1.3)
 
-`scribe capture --type <type> --text "<text>"` (this story, 1.1) is a
-**direct** capture — verbatim, at the moment a decision is made, with no
-scan of existing memory. A future `scribe capture --promote` (Story 1.3)
-will scan user-local auto-memory, classify each entry (team-relevant /
-personal / already-promoted / stale) against the team-relevance test
-above, rewrite the team-relevant ones in team voice, and halt for human
-confirmation before writing anything — proposal-then-confirm, never
-auto-commit. Not yet implemented.
+`scribe capture --type <type> --text "<text>"` (Story 1.1) is a **direct**
+capture — verbatim, at the moment a decision is made, with no scan of
+existing memory.
+
+`scribe capture --promote [--source <dir>]` scans a user-local auto-memory
+directory (default: Claude Code's per-project
+`~/.claude/projects/<encoded-path>/memory/`, derived from the current
+working directory; override with `--source` if the auto-detected path is
+ever wrong), classifies each entry — `team-relevant` / `personal` /
+`already-promoted` / `stale`, against the team-relevance test above —
+mechanically rewrites the `team-relevant` ones into team voice (no LLM or
+network call: strips first-person "I prefer"/"I want" framing, drops "(the)
+user prefers" framing, drops parenthetical asides containing a bare
+git-short-hash), and prints the full proposal (target path, rewritten
+content, `MEMORY.md` line). Nothing is written until you confirm — decline
+and it exits cleanly with zero files changed. The source user-local file is
+left byte-for-byte untouched; rewriting it to a pointer stub is Story 1.4.
 
 ## Pointer stubs (arrives Story 1.4)
 
