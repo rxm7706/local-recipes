@@ -432,6 +432,14 @@ cmd = "python scripts/dream_chain_check.py"
 description = "Detector: the Guildhall console bar LOOKS right, not merely that its JavaScript runs (which is all check_render.js proves). Asserts chip edges, no overlap per row, one row above the 720px breakpoint, and no chip clipping its own label — across 6 viewport widths x 5 font-pressure steps via headless Chrome. Font pressure rather than live content, because both bugs it was written for are a function of text width and the live board is whatever it happens to be that minute. Reports UNKNOWN (exit 2) without a browser rather than claiming green. Contract: docs/dreams/fidelity-enforcement.md."
 cmd = "python docs/dashboard/check_layout.py"
 
+[feature.local-recipes.tasks.loop-push-watch]
+description = "Push every loop home's station + per-story worktree branches on an interval, for as long as any bmad-loop engine is running, then EXIT on its own (same lifecycle contract as dashboard-watch). Closes the window in which a finished dev phase's work exists only on one disk: marshal 1.8 sat as a local-only 1,748-line commit for ~40 minutes on 2026-07-31, and that window reopens every time any of nine stations finishes a dev phase. Push is read-only w.r.t. working trees, so it cannot disturb a live session. A STOPGAP — the durable fix is for the loop to push at its own stage boundaries; this bounds worst-case loss to one interval meanwhile. Flags: -- --interval N (default 180), -- --once, -- --quiet."
+cmd = "python scripts/loop_push_watch.py"
+
+[feature.local-recipes.tasks.unpushed-work-check]
+description = "Detector: no work exists only on this disk — local branches carrying unique content that are on no remote, plus dangling commits holding real work that `git gc` may collect without warning. scope=runtime and deliberately NOT in CI: a runner has neither local branches nor dangling objects, so this check would pass vacuously there, which is a false green of the purest kind. Live cost 2026-07-31 when nothing checked: six station loop branches, ~5,150 lines on recover/*, herald 1.2's 734-line transport story (spec included) unpushed for six days, 156 dangling commits, and marshal 1.8's 1,748 lines committed 40 minutes earlier. Flags: -- --branches-only (skip the fsck scan), -- --min-files N, -- --json. Contract: docs/dreams/fidelity-enforcement.md."
+cmd = "python scripts/unpushed_work_check.py"
+
 [feature.local-recipes.tasks.detectors]
 description = "Run EVERY detector, discovered from the filesystem rather than a hand-written list — the registry fails on its own gaps (a detector with no pixi task, or a check script declaring no scope). Exit 0 pass, 1 findings, 2 could-not-run: a detector that cannot run reports unknown, NEVER green. Flags: -- --scope repo|runtime|all, -- --list, -- --json."
 cmd = "python scripts/detectors.py"

@@ -154,6 +154,7 @@ project, and spec maps to exactly one Dream; the herald CLI's status capability
 | [`agentic-sdlc-autonomy.md`](agentic-sdlc-autonomy.md) | pitched | The four views of agentic autonomy (taxonomy/process/architecture/environment) — the white paper + the 45-slide deck + our live L3 evidence. |
 | [`factory-console.md`](factory-console.md) | realized | The whole pipeline on one public page — every Dream + lifecycle stage (Dreamscape board), live epic/story progress, nothing hand-maintained (GitHub Pages). |
 | [`fidelity-enforcement.md`](fidelity-enforcement.md) | dreamt | A contract is only a contract if something fails against it — every tier boundary gated in both directions; generalizes §7's law from the Guildhall to the whole chain. |
+| [`durable-runs.md`](durable-runs.md) | dreamt | Work survives the machine that made it — no commit, spec or verdict exists only on one disk; the loop pushes at its own stage boundaries. |
 
 **Applications**
 
