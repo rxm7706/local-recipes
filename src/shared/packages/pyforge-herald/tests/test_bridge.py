@@ -15,10 +15,9 @@ import subprocess
 import sys
 from pathlib import Path
 
-import pytest
-
 import pyforge.herald as herald_pkg
-from pyforge.herald import bridge, errors, state
+import pytest
+from pyforge.herald import bridge, errors, registry, state
 from pyforge.herald import transport as transport_pkg
 from pyforge.herald.cli import dispatch
 from pyforge.herald.errors import (
@@ -112,10 +111,12 @@ def test_run_propagates_any_herald_error_unchanged(error):
 
 # --- determinism boundary: bridge-core's own source -------------------------
 
-_BRIDGE_CORE_MODULES = (bridge, state, errors)
+_BRIDGE_CORE_MODULES = (bridge, state, errors, registry)
 """The modules on the deterministic side of the boundary today. ``cli.py``
 is the CLI layer (AD-2) and ``transport/`` is the adapter side (AD-3) --
-neither belongs in this sweep."""
+neither belongs in this sweep. ``registry.py`` (Story 1.5) joins here: it is
+bridge-core, not the CLI layer or a transport adapter, so it has no cause
+for exclusion."""
 
 _SPECULATIVE_ADAPTER_MODULES = {"agent_sdk_transport"}
 """Story 1.3's planned adapter, denied by name before it exists --
@@ -317,11 +318,14 @@ def test_bridge_py_reaches_transport_only_via_transport_base():
     assert _transport_import_violations(_module_source(bridge)) == []
 
 
-@pytest.mark.parametrize("module", (state, errors), ids=lambda m: m.__name__)
+@pytest.mark.parametrize("module", (state, errors, registry), ids=lambda m: m.__name__)
 def test_state_and_errors_never_touch_transport_at_all(module):
     """Stricter than bridge.py's rule: these bridge-core modules have no
     business with the transport package in any form, not even ``base`` --
-    the identifier sweep catches attribute traversal as well as imports."""
+    the identifier sweep catches attribute traversal as well as imports.
+    ``registry.py`` (Story 1.5) joins ``state``/``errors`` here rather than
+    ``bridge``'s own laxer test: unlike ``bridge.run``, it has no legitimate
+    reason to name ``transport.base`` at all."""
     assert "transport" not in _all_identifiers(_module_source(module))
 
 
