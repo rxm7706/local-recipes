@@ -93,15 +93,26 @@
   .cbrow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 9px 12px; }
   .cbstatus { border-top: 1px solid var(--line); background: var(--panel-2);
     gap: 18px; padding-top: 8px; padding-bottom: 8px; }
-  .cprompt { font-family: var(--mono); font-size: 12.5px; letter-spacing: 0.02em; color: var(--slate); }
+  .cprompt { font-family: var(--mono); font-size: 12.5px; letter-spacing: 0.02em;
+    color: var(--slate); flex: none; }
   .cprompt .prompt { color: var(--accent); transition: color .3s; }
-  .consolebar .branch { font-family: var(--mono); font-size: 12.5px; color: var(--ink-soft); }
+  /* `state:` carries UNBOUNDED prose from the data — marshal's runs 77 chars
+     ("loop/pyforge-marshal · CRITICALS-RESOLVED — S-1.1 unblocked 2026-07-25").
+     Left to size itself it consumed the row, pushed the buttons onto a second
+     line and ran into the chips below. It now truncates with an ellipsis and
+     keeps the full text in a tooltip, so the bar is ONE line at any length and
+     nothing is lost. `min-width: 0` is the part that actually allows a flex
+     child to shrink below its content width. */
+  .consolebar .branch { font-family: var(--mono); font-size: 12.5px; color: var(--ink-soft);
+    flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis;
+    white-space: nowrap; }
+  /* Chips may wrap onto their own lines rather than overflow the box. */
+  .cbstatus { flex-wrap: wrap; row-gap: 6px; }
   .cbtn { font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.04em;
     background: var(--panel-2); color: var(--slate); border: 1px solid var(--line);
     border-radius: 6px; padding: 5px 11px; cursor: pointer; text-transform: uppercase; }
   .cbtn:hover { color: var(--ink); border-color: var(--accent-dim); }
   .cbtn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-  .cspacer { flex: 1 1 auto; }
   .chip { font-family: var(--mono); font-size: 11px; color: var(--ink-soft);
     display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
   .chip b { color: var(--ink); font-weight: 600; }
@@ -620,7 +631,6 @@
     <div class="cbrow">
       <span class="cprompt"><span class="prompt">pyforge ❯</span> status --guildhall</span>
       <span class="branch" id="branch">state: —</span>
-      <span class="cspacer"></span>
       <button class="cbtn" id="cb-refresh" type="button"
         title="Hard refresh — re-fetches data.js, bypassing cache (Ctrl+Shift+R)">⟳ refresh</button>
       <button class="cbtn" id="cb-collapse" type="button" title="Collapse every panel">▾ collapse</button>
@@ -1305,6 +1315,7 @@
   if (lead) {
     root.setAttribute("data-project", lead[0]);
     branchEl.textContent = "state: " + lead[1].branch;
+    branchEl.title = "state: " + lead[1].branch;   // truncated in view; full text on hover
   }
   footerEl.innerHTML = '<b>Snapshot:</b> ' + window.DASHBOARD_DATA.snapshot +
     ' · Dreams ' + DREAMS.length + ' · Specs ' + SPECS.length + ' · Decks ' + PITCH.length +
