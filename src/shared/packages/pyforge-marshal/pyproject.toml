@@ -36,6 +36,14 @@ marshal = "pyforge.marshal.cli.main:main"
 [tool.hatch.build.targets.wheel]
 packages = ["src/pyforge"]
 
+[tool.pytest.ini_options]
+# Story 1.4: tests/integration/test_init_worktree.py is a real end-to-end
+# `marshal init` provision + re-run against a throwaway temp git repo --
+# dominated by real `git worktree add` subprocess calls, too slow for the
+# default pyforge-marshal-test task (pixi.toml passes -m "not slow" there)
+# to stay a sub-minute loop. Mirrors pyforge-warden's identical convention.
+markers = ["slow: dominated by real git/subprocess calls, not part of the default pyforge-marshal-test task"]
+
 [tool.importlinter]
 root_packages = ["pyforge.marshal"]
 # subprocess/os/time and bmad_loop are all external to root_packages --

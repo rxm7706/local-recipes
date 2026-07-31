@@ -17,8 +17,8 @@ development_status:
   1-1-package-scaffold-for-pyforge-herald: done
   1-2-transport-port-primary-mcp-client-adapter-the-transport-spike: done
   1-3-fallback-transport-adapter: backlog
-  1-4-bridge-core-skeleton-state-errors-determinism-boundary: backlog
-  1-5-registry-module-readme-design-project: backlog
+  1-4-bridge-core-skeleton-state-errors-determinism-boundary: done
+  1-5-registry-module-readme-design-project: done
   1-6-herald-deck-seed-slug: backlog
   2-1-herald-deck-pull-slug-prototype-pull-with-etag-short-circuit: backlog
   2-2-commit-opt-in: backlog
