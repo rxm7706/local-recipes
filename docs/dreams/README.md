@@ -156,6 +156,7 @@ project, and spec maps to exactly one Dream; the herald CLI's status capability
 | [`fidelity-enforcement.md`](fidelity-enforcement.md) | dreamt | A contract is only a contract if something fails against it — every tier boundary gated in both directions; generalizes §7's law from the Guildhall to the whole chain. |
 | [`durable-runs.md`](durable-runs.md) | dreamt | Work survives the machine that made it — no commit, spec or verdict exists only on one disk; the loop pushes at its own stage boundaries. |
 | [`pr-lifecycle.md`](pr-lifecycle.md) | dreamt | A story lands itself — open, label, wait for checks, merge, resync; landing rules declared as policy instead of remembered. Resolves marshal open question #10. |
+| [`one-front-door.md`](one-front-door.md) | dreamt | Marshal drives everything BMAD installs — one composed surface over 11 packages, 51 skills, 10 detectors and the engine; the runtime half of [`genesis-installer`](genesis-installer.md). **Draft for refinement.** |
 
 **Applications**
 
