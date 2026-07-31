@@ -21,9 +21,9 @@ development_status:
   1-4-provision-a-loop-home: done
   1-5-single-sourced-tier-3-store-via-backlink: done
   1-6-isolation-verification-and-home-enumeration: done
-  1-7-preflight-adapter-config-seeding-and-first-run-acknowledgement: backlog
-  1-8-teardown-that-refuses-to-destroy-work: backlog
-  1-9-packaging-distribution-and-version-reporting: backlog
+  1-7-preflight-adapter-config-seeding-and-first-run-acknowledgement: done
+  1-8-teardown-that-refuses-to-destroy-work: done
+  1-9-packaging-distribution-and-version-reporting: done
   10-1-copier-engine-wrapper-the-single-seam: backlog
   10-2-state-schema-and-the-atomic-store: backlog
   10-3-the-apply-runner-transactional-guarded: backlog
