@@ -13,13 +13,19 @@ monkeypatch-``run_doctor_checks`` idiom for simulating a healthy/degraded
 from __future__ import annotations
 
 import json
+import shlex
 from importlib import resources
 from pathlib import Path
 
 import jsonschema
 
 from pyforge.doctor.__main__ import __version__, main
-from pyforge.doctor.checks.env_hygiene import CHECK_NAME as ENV_CHECK_NAME
+from pyforge.doctor.checks import env_hygiene
+from pyforge.doctor.checks.env_hygiene import (
+    CHECK_NAME as ENV_CHECK_NAME,
+    SCAN_INCOMPLETE_CHECK_NAME,
+)
+from pyforge.doctor.models import DoctorStatus, Finding, Source
 from pyforge.warden import engines as engines_mod
 from pyforge.warden.engines import DoctorCheck
 
@@ -56,9 +62,22 @@ def _stub_degraded_warden(monkeypatch) -> None:
     monkeypatch.setattr(engines_mod, "run_doctor_checks", _boom)
 
 
+class _ForbiddenGatherError(BaseException):
+    """Deliberately a ``BaseException``, NOT ``Exception`` (review finding):
+    ``sources.warden.gather``'s own ``except Exception`` degrade-never-crash
+    net swallows an ordinary ``AssertionError`` into a FAIL Finding, silently
+    defusing this sentinel -- a regression that gathered would have passed
+    these tests via their secondary assertions alone. ``gather`` deliberately
+    lets ``BaseException`` through, and ``main()``'s handlers catch only
+    ``SystemExit``/``KeyboardInterrupt``/``Exception``, so a forbidden gather
+    now propagates all the way out and fails the test loudly."""
+
+
 def _forbid_warden_gather(monkeypatch) -> None:
     def _boom(target):
-        raise AssertionError("must never gather/run the 'engines' category here")
+        raise _ForbiddenGatherError(
+            "must never gather/run the 'engines' category here"
+        )
 
     monkeypatch.setattr(engines_mod, "run_doctor_checks", _boom)
 
@@ -152,6 +171,26 @@ def test_degraded_engines_category_named_check_renders_one_synthetic_fail(
     assert "not found" not in finding["message"].lower()
 
 
+def test_degraded_whole_engines_category_emits_schema_valid_sentinel_json(
+    monkeypatch, tmp_path: Path, capsys
+):
+    # Review finding: the WHOLE-category degradation shape -- the sentinel
+    # `check == "pyforge-warden"` Finding flowing through _emit_json's
+    # schema self-validation and exit_code_for -> 2 -- is exactly what an
+    # automated --json consumer (Marshal) sees when warden breaks, and it
+    # was untested at the CLI layer.
+    _stub_degraded_warden(monkeypatch)
+
+    exit_code = main(["check", str(tmp_path), "--engines", "--json"])
+
+    captured = capsys.readouterr()
+    document = json.loads(captured.out)
+    jsonschema.validate(document, _schema())
+    assert exit_code == 2
+    assert [f["check"] for f in document["findings"]] == ["pyforge-warden"]
+    assert document["findings"][0]["status"] == "fail"
+
+
 # --- --env <name>: clean vs. a real match (the category asymmetry) ----------
 
 
@@ -192,6 +231,28 @@ def test_env_named_check_with_a_real_match_forwards_the_path(
     assert str(tmp_path) in finding["message"]
 
 
+def test_env_incomplete_scan_sentinel_flows_through_check_json(
+    monkeypatch, tmp_path: Path, capsys
+):
+    # Review finding: the env category's OTHER degradation shape -- the
+    # SCAN_INCOMPLETE sentinel (WARN, exit stays 0: a pre-flight "green"
+    # on an incomplete scan) -- was untested at the CLI layer. Trigger
+    # idiom mirrors test_checks_env_hygiene.py: shrink the discovery
+    # entry cap below the tree size.
+    monkeypatch.setattr(env_hygiene, "_DISCOVERY_ENTRY_CAP", 1)
+    (tmp_path / "a.py").write_text("x = 1\n", encoding="utf-8")
+    (tmp_path / "b.py").write_text("y = 2\n", encoding="utf-8")
+
+    exit_code = main(["check", str(tmp_path), "--env", "--json"])
+
+    captured = capsys.readouterr()
+    document = json.loads(captured.out)
+    jsonschema.validate(document, _schema())
+    assert exit_code == 0
+    statuses = {f["check"]: f["status"] for f in document["findings"]}
+    assert statuses[SCAN_INCOMPLETE_CHECK_NAME] == "warn"
+
+
 def test_unknown_env_check_name_is_usage_error(tmp_path: Path, capsys):
     exit_code = main(["check", str(tmp_path), "--env", "bogus-env-check"])
 
@@ -215,6 +276,41 @@ def test_unknown_check_name_that_is_also_a_real_path_hints_at_ordering(
     assert exit_code == 2
     assert "looks like a path" in captured.err
     assert "doctor check" in captured.err
+
+
+def test_empty_check_name_is_usage_error_without_the_path_hint(
+    monkeypatch, capsys
+):
+    # Review finding: `--engines=` yields the empty string, and Path("")
+    # normalizes to Path(".") which exists -- without the truthiness guard
+    # the error asserted '' "looks like a path" and suggested the nonsense
+    # command `doctor check  --engines`.
+    _forbid_warden_gather(monkeypatch)
+
+    exit_code = main(["check", "--engines="])
+
+    captured = capsys.readouterr()
+    assert exit_code == 2
+    assert "unknown check name" in captured.err
+    assert "looks like a path" not in captured.err
+
+
+def test_path_hint_shell_quotes_a_path_containing_whitespace(
+    monkeypatch, tmp_path: Path, capsys
+):
+    # Review finding: the suggested corrective command interpolated the
+    # rejected value raw -- copy-pasting it with an embedded space (or
+    # newline) split the arguments. shlex.quote keeps it one shell token.
+    _forbid_warden_gather(monkeypatch)
+    weird = tmp_path / "my dir"
+    weird.mkdir()
+
+    exit_code = main(["check", "--engines", str(weird)])
+
+    captured = capsys.readouterr()
+    assert exit_code == 2
+    assert "looks like a path" in captured.err
+    assert shlex.quote(str(weird)) in captured.err
 
 
 # --- --list --------------------------------------------------------------
@@ -331,3 +427,32 @@ def test_write_stdout_does_not_crash_when_sys_stdout_is_none(monkeypatch):
 
     monkeypatch.setattr(main_module.sys, "stdout", None)
     main_module._write_stdout("doctor: some output\n")
+
+
+# --- _emit_text's single-line message discipline -------------------------
+
+
+def test_text_output_neutralizes_embedded_newlines_in_messages(capsys):
+    # Review finding: warden's own _run_doctor wraps every message in
+    # _single_line so free text (e.g. a scanned file path containing a
+    # newline) can never forge extra finding lines under the header and
+    # desync its N finding(s) count -- doctor's _emit_text, which claims
+    # warden parity, interpolated finding.message raw.
+    from pyforge.doctor import __main__ as main_module
+
+    forged = Finding(
+        source=Source.WARDEN_DOCTOR,
+        check="deptry",
+        status=DoctorStatus.OK,
+        message="ok\n  [env-hygiene] forged-check: fail -- fabricated line",
+        evidence={},
+    )
+    main_module._emit_text((forged,))
+
+    captured = capsys.readouterr()
+    body_lines = captured.out.rstrip("\n").split("\n")
+    # Exactly the header plus ONE finding line -- the embedded newline is
+    # neutralized to a literal \n, never a real line break.
+    assert len(body_lines) == 2
+    assert "1 finding(s)" in body_lines[0]
+    assert "\\n" in body_lines[1]

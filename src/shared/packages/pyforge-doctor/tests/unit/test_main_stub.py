@@ -79,14 +79,19 @@ def test_keyboard_interrupt_during_check_dispatch_returns_exit_sigint():
         assert main(["check"]) == EXIT_SIGINT
 
 
-def test_unexpected_exception_during_check_dispatch_returns_two_not_a_traceback(
+def test_unexpected_exception_during_check_dispatch_returns_two_with_traceback(
     capsys,
 ):
     # Review finding: main()'s try/except only caught SystemExit/
     # KeyboardInterrupt -- any OTHER exception (e.g. a future schema/model
     # drift tripping _emit_json's jsonschema.validate self-check) escaped
     # uncaught, violating the documented {0, 2, 130} exit-code domain
-    # (AD-2). Mirrors pyforge-warden's cli.py last-resort net.
+    # (AD-2). Mirrors pyforge-warden's cli.py last-resort net -- which
+    # deliberately emits the FORMATTED traceback to stderr before the
+    # one-line repr (follow-up review finding: without the failing frame,
+    # an internal defect is undiagnosable for the unattended loop agents
+    # whose only diagnostic surface is stderr). The exit code stays
+    # contained at 2 -- never the interpreter's default 1.
     with patch(
         "pyforge.doctor.__main__._run_check",
         side_effect=RuntimeError("simulated internal defect"),
@@ -95,3 +100,26 @@ def test_unexpected_exception_during_check_dispatch_returns_two_not_a_traceback(
     assert exit_code == 2
     captured = capsys.readouterr()
     assert "simulated internal defect" in captured.err
+    assert "Traceback" in captured.err
+    assert "doctor: internal error:" in captured.err
+
+
+def test_system_exit_during_check_dispatch_returns_two_never_its_own_code(
+    capsys,
+):
+    # Review finding: dispatch-raised SystemExit previously fell into the
+    # argparse-mapping handler, so a component calling bare `sys.exit()`
+    # (SystemExit(None)) during a gather mapped to 0 -- a crashed run
+    # reporting success, the worst failure mode for a pre-flight gate.
+    # Mirrors warden's cli.py: a SystemExit raised inside dispatch is an
+    # exit-code sole-ownership violation whose carried code is not trusted
+    # -- even sys.exit(0) projects as internal error 2.
+    for carried in (None, 0):
+        with patch(
+            "pyforge.doctor.__main__._run_check",
+            side_effect=SystemExit(carried),
+        ):
+            exit_code = main(["check"])
+        assert exit_code == 2
+        captured = capsys.readouterr()
+        assert "sole-ownership" in captured.err

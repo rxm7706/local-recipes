@@ -19,7 +19,9 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import shlex
 import sys
+import traceback
 from datetime import UTC, datetime
 from importlib import resources
 from pathlib import Path
@@ -142,11 +144,17 @@ def _validate_check_names(
         )
         if value not in known_names:
             hint = ""
-            if Path(value).exists():
+            # `value and`: an empty NAME (`--engines=`) must not hint --
+            # Path("") normalizes to Path(".") which exists, so the bare
+            # truthiness guard is load-bearing, not cosmetic (review
+            # finding). shlex.quote: the suggested command must survive a
+            # copy-paste even when the path embeds whitespace/newlines
+            # (review finding).
+            if value and Path(value).exists():
                 hint = (
                     f" -- {value!r} looks like a path: if you meant to set "
                     "the scan target, place it BEFORE --engines/--env, e.g. "
-                    f"`doctor check {value} --{category}`"
+                    f"`doctor check {shlex.quote(value)} --{category}`"
                 )
             check_parser.error(
                 f"argument --{category}: unknown check name {value!r} "
@@ -165,37 +173,64 @@ def main(argv: list[str] | None = None) -> int:
         argv = sys.argv[1:]
     parser, check_parser = _build_parser()
     try:
-        args = parser.parse_args(argv)
-        _validate_check_names(args, check_parser)
+        try:
+            args = parser.parse_args(argv)
+            _validate_check_names(args, check_parser)
+        except SystemExit as exc:
+            # argparse exits itself: --version/--help -> 0, a usage error
+            # -> 2 (never 0). Surface its code as a return value, never
+            # re-raised -- a non-int code (argparse never produces one
+            # under this parser config) falls back to 2, still inside the
+            # guarded domain. This mapping is ONLY for the parse/validate
+            # phase: a SystemExit raised during dispatch is NOT argparse's
+            # and lands in the outer handler below instead (review
+            # finding: `SystemExit(None)` from a component calling bare
+            # `sys.exit()` inside a gather would otherwise map to 0 here
+            # -- a crashed run reporting success).
+            if exc.code is None:
+                return 0
+            if isinstance(exc.code, int) and exc.code in {0, 2, 130}:
+                return exc.code
+            # Any other int (or non-int, e.g. a message string) is clamped
+            # to 2 -- defense in depth for a future argparse action that
+            # might exit with something outside Doctor's frozen {0, 2, 130}
+            # domain (AD-2).
+            return 2
         # `check` is the only registered subcommand today -- args.command is
         # always "check" past this point (subparsers is required=True with no
-        # other subparser registered). Dispatch stays INSIDE this try: a
-        # gather call is real multi-second work (the whole point of this
+        # other subparser registered). Dispatch stays INSIDE the outer try:
+        # a gather call is real multi-second work (the whole point of this
         # story), so a Ctrl-C during `_run_check` -- not just during parsing
         # -- must also return EXIT_SIGINT rather than escape as a raw
         # KeyboardInterrupt (main() never raises -- see its own docstring).
         return _run_check(args)
-    except SystemExit as exc:
-        # argparse exits itself: --version/--help -> 0, a usage error -> 2
-        # (never 0). Surface its code as a return value, never re-raised --
-        # a non-int code (argparse never produces one under this parser
-        # config) falls back to 2, still inside the guarded domain.
-        if exc.code is None:
-            return 0
-        if isinstance(exc.code, int) and exc.code in {0, 2, 130}:
-            return exc.code
-        # Any other int (or non-int, e.g. a message string) is clamped to 2
-        # -- defense in depth for a future argparse action that might exit
-        # with something outside Doctor's frozen {0, 2, 130} domain (AD-2).
-        return 2
     except KeyboardInterrupt:
         return EXIT_SIGINT
+    except SystemExit:
+        # Exit-code sole ownership (mirrors warden's cli.py): argparse's
+        # own exits were already handled at the parse phase above, so a
+        # SystemExit reaching here was raised INSIDE dispatch -- a
+        # component calling sys.exit (even sys.exit(0)) must never dictate
+        # the verb's verdict. Its carried code is not trusted; projected as
+        # an internal error (review finding).
+        _stderr(
+            "doctor: internal error: SystemExit raised inside dispatch "
+            "(exit-code sole-ownership violation); any partial stdout "
+            "must not be consumed"
+        )
+        return 2
     except Exception as exc:  # noqa: BLE001 -- last-resort net, mirrors
         # pyforge-warden's cli.py: an internal defect (e.g. a future
         # schema/model drift tripping _emit_json's jsonschema.validate
         # self-check) must never surface as the interpreter's default exit
-        # 1 or a raw traceback -- it would violate this module's own
+        # 1 or an UNCAUGHT traceback -- it would violate this module's own
         # documented {0, 2, 130} exit-code domain (AD-2) (review finding).
+        # The formatted traceback IS deliberately emitted to stderr first,
+        # exactly as warden's net does -- Doctor's consumers are unattended
+        # loop agents whose only diagnostic surface is stderr, and a bare
+        # one-line repr (e.g. `ValidationError(...)`) is undiagnosable
+        # without the failing frame (review finding).
+        _stderr("".join(traceback.format_exception(exc)).rstrip("\n"))
         _stderr(f"doctor: internal error: {exc!r}")
         return 2
 
@@ -308,6 +343,18 @@ def _emit_json(findings: tuple[Finding, ...]) -> None:
     _write_stdout(json.dumps(document, sort_keys=True, indent=2) + "\n")
 
 
+def _single_line(text: str) -> str:
+    """Neutralize embedded line breaks so one finding's ``message`` can
+    never fabricate extra ``_emit_text`` lines (mirrors warden's
+    ``report.py::_single_line`` -- its own Story 1.8 review finding, and a
+    review finding here too). ``Finding.message`` is free text with no
+    no-newline guarantee -- env-hygiene messages embed scanned file paths
+    verbatim, and a path may legally contain ``\\n``, which would otherwise
+    render as a second, indistinguishable-from-real finding line and desync
+    the header's ``N finding(s)`` count."""
+    return text.replace("\r\n", "\\n").replace("\n", "\\n").replace("\r", "\\n")
+
+
 def _emit_text(findings: tuple[Finding, ...]) -> None:
     ok = sum(1 for f in findings if f.status is DoctorStatus.OK)
     warn = sum(1 for f in findings if f.status is DoctorStatus.WARN)
@@ -319,7 +366,7 @@ def _emit_text(findings: tuple[Finding, ...]) -> None:
     for finding in findings:
         lines.append(
             f"  [{finding.source.value}] {finding.check}: "
-            f"{finding.status.value} -- {finding.message}"
+            f"{finding.status.value} -- {_single_line(finding.message)}"
         )
     _write_stdout("\n".join(lines) + "\n")
 
