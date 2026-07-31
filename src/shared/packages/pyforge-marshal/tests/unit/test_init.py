@@ -48,6 +48,11 @@ class FakeVcs:
         # plus one synthesized entry for the main checkout itself.
         self.main_branch: str | None = "main"
         self.omit_main_worktree_entry: bool = False
+        # Entries appended verbatim (after the dict-derived ones) so a test
+        # can model worktrees the loop toolchain never mints: detached HEAD
+        # (branch=None) or a non-loop/* branch (review finding: the
+        # discovery filter's exclusion branches had no CLI-layer coverage).
+        self.extra_worktree_entries: list[WorktreeEntry] = []
         self.add_worktree_calls: list[tuple[Path, Path, str, str]] = []
         # Optionally the SAME set object as a FakeFs.dirs, so a successful
         # add_worktree here makes fs.is_dir(home) true too -- mirrors what a
@@ -100,6 +105,7 @@ class FakeVcs:
             entries.append(WorktreeEntry(path=self.repo_root, branch=self.main_branch))
         for branch, path in self.worktrees.items():
             entries.append(WorktreeEntry(path=path, branch=branch))
+        entries.extend(self.extra_worktree_entries)
         return tuple(entries)
 
 
@@ -128,6 +134,14 @@ class FakeFs:
     def is_dir(self, path: Path) -> bool:
         self.calls.append("is_dir")
         return path in self.dirs
+
+    def exists(self, path: Path) -> bool:
+        """Story 1.6: occupancy probe -- anything this fake knows about
+        (a dir, a text file, or a symlink entry) exists. run_homes only
+        calls this AFTER read_symlink_target returned None, so the symlink
+        membership never masks the real-occupant distinction there."""
+        self.calls.append("exists")
+        return path in self.dirs or path in self.texts or path in self.symlinks
 
     def read_text(self, path: Path) -> str | None:
         self.calls.append("read_text")
@@ -901,6 +915,10 @@ def _seed_clean_home(fs: FakeFs, vcs: FakeVcs, repo_root: Path, home: Path, slug
     fs.texts[marker_path] = f"{slug}\n"
     fs.symlinks[link_path] = Path(f"projects/{slug}/planning-artifacts")
     fs.symlinks[local] = canonical
+    # The canonical store really exists for a clean home -- without this,
+    # the dangling-backlink check (review finding) would flag every one of
+    # these fixtures as MRS-HOMES-002.
+    fs.dirs.add(canonical)
 
 
 def test_homes_lists_two_clean_provisioned_homes(repo_root, tmp_path):
@@ -960,6 +978,7 @@ def test_homes_reports_marker_symlink_desync(repo_root, tmp_path, capsys):
     fs.texts[marker_path] = "other-project\n"
     fs.symlinks[link_path] = Path("projects/yet-another/planning-artifacts")
     fs.symlinks[local] = canonical
+    fs.dirs.add(canonical)  # healthy Tier-3, so only the slug desync fires
 
     exit_code = run_homes(_homes_namespace(), vcs=vcs, fs=fs)
     assert exit_code != EXIT_OK
@@ -1165,7 +1184,127 @@ def test_homes_json_format_emits_a_schema_valid_envelope(repo_root, tmp_path):
     assert payload["status"] == "ok"
 
 
-def test_homes_takes_no_slug_argument():
-    """FR-8: full enumeration only, no selection flags -- the namespace
-    run_homes is driven with never carries a `slug` attribute."""
-    assert not hasattr(_homes_namespace(), "slug")
+def test_homes_parser_rejects_a_positional_argument(capsys):
+    """FR-8: full enumeration only, no selection flags -- proven against
+    the REAL parser via cli.main (review finding: the earlier version of
+    this test asserted a property of this file's own namespace helper,
+    which could never fail regardless of what add_homes_subparser does).
+    argparse rejects the stray positional before any handler runs, and
+    main relays its exit code 2."""
+    from pyforge.marshal.cli.main import main
+
+    assert main(["homes", "stray-slug"]) == 2
+    err = capsys.readouterr().err
+    assert "stray-slug" in err
+
+
+def test_homes_excludes_detached_head_and_non_loop_worktrees(repo_root, tmp_path, capsys):
+    """The discovery filter's exclusion branches (review finding: previously
+    untested at the CLI layer): a detached-HEAD worktree (branch=None --
+    exercising the filter's own None guard) and a non-loop/* linked worktree
+    are neither homes nor the main checkout, so they produce no row, no
+    finding, and no gathered reads."""
+    fs = FakeFs()
+    vcs = FakeVcs(repo_root=repo_root)
+    _seed_clean_home(fs, vcs, repo_root, tmp_path / "loop-homes" / "acme", "acme")
+    vcs.extra_worktree_entries = [
+        WorktreeEntry(path=tmp_path / "detached-worktree", branch=None),
+        WorktreeEntry(path=tmp_path / "feature-worktree", branch="feature/x"),
+    ]
+
+    exit_code = run_homes(_homes_namespace(fmt="json"), vcs=vcs, fs=fs)
+    assert exit_code == EXIT_OK
+    payload = json.loads(capsys.readouterr().out)
+    assert [row["slug"] for row in payload["data"]["homes"]] == ["acme"]
+    assert payload["findings"] == []
+
+
+def test_homes_reports_a_real_directory_at_planning_artifacts(repo_root, tmp_path, capsys):
+    """A real (non-symlink) directory materialized where a home's
+    planning-artifacts symlink belongs previously read as benign absence
+    (review finding) -- it means writes no longer reach the canonical
+    project tree, exactly the MRS-HOMES-001 violation class."""
+    fs = FakeFs()
+    vcs = FakeVcs(repo_root=repo_root)
+    home = tmp_path / "loop-homes" / "acme"
+    vcs.worktrees["loop/acme"] = home
+    fs.dirs.add(home)
+    fs.texts[home / "_bmad" / "custom" / ".active-project"] = "acme\n"
+    # The link path is a REAL directory (in fs.dirs), deliberately NOT a
+    # symlink entry.
+    fs.dirs.add(home / "_bmad-output" / "planning-artifacts")
+
+    exit_code = run_homes(_homes_namespace(), vcs=vcs, fs=fs)
+    assert exit_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-HOMES-001" in out
+    assert "occupied" in out
+
+
+def test_homes_reports_a_real_directory_at_main_checkout_planning_artifacts(
+    repo_root, capsys
+):
+    """Same occupancy blind spot on the main checkout's own link (review
+    finding): the two-way rule must name a real-directory occupant, not
+    read it as 'symlink absent'."""
+    fs = FakeFs()
+    vcs = FakeVcs(repo_root=repo_root)
+    fs.dirs.add(repo_root / "_bmad-output" / "planning-artifacts")
+
+    exit_code = run_homes(_homes_namespace(), vcs=vcs, fs=fs)
+    assert exit_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-HOMES-001" in out
+    assert str(repo_root) in out
+    assert "occupied" in out
+
+
+def test_homes_reports_a_plain_file_occupying_tier3(repo_root, tmp_path, capsys):
+    """A regular FILE at the local Tier-3 path is the third occupied state
+    (review finding: the first occupancy fix probed is_dir only) -- it
+    blocks any future backlink exactly like a directory occupant and must
+    surface as MRS-HOMES-002, never as 'never provisioned'."""
+    fs = FakeFs()
+    vcs = FakeVcs(repo_root=repo_root)
+    home = tmp_path / "loop-homes" / "acme"
+    vcs.worktrees["loop/acme"] = home
+    fs.dirs.add(home)
+    fs.texts[home / "_bmad" / "custom" / ".active-project"] = "acme\n"
+    fs.symlinks[home / "_bmad-output" / "planning-artifacts"] = Path(
+        "projects/acme/planning-artifacts"
+    )
+    _, local = _tier3_paths(repo_root, home, "acme")
+    # A plain file (in fs.texts), neither a symlink nor a directory.
+    fs.texts[local] = "stray content\n"
+
+    exit_code = run_homes(_homes_namespace(), vcs=vcs, fs=fs)
+    assert exit_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-HOMES-002" in out
+
+
+def test_homes_reports_a_backlink_dangling_at_the_canonical_path(
+    repo_root, tmp_path, capsys
+):
+    """A backlink that resolves to the RIGHT canonical path whose store was
+    deleted after provisioning previously reported clean (review finding),
+    though every write through it would fail and marshal init's own
+    convergence check (is_dir(canonical)) rejects the same state."""
+    fs = FakeFs()
+    vcs = FakeVcs(repo_root=repo_root)
+    home = tmp_path / "loop-homes" / "acme"
+    vcs.worktrees["loop/acme"] = home
+    fs.dirs.add(home)
+    fs.texts[home / "_bmad" / "custom" / ".active-project"] = "acme\n"
+    fs.symlinks[home / "_bmad-output" / "planning-artifacts"] = Path(
+        "projects/acme/planning-artifacts"
+    )
+    canonical, local = _tier3_paths(repo_root, home, "acme")
+    fs.symlinks[local] = canonical
+    # canonical deliberately NOT in fs.dirs -- the store is gone.
+
+    exit_code = run_homes(_homes_namespace(), vcs=vcs, fs=fs)
+    assert exit_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-HOMES-002" in out
+    assert "does not exist" in out

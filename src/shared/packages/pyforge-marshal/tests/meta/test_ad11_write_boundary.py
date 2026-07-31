@@ -93,6 +93,12 @@ class _RecordingFs:
     def is_dir(self, path: Path) -> bool:
         return path in self._dirs
 
+    def exists(self, path: Path) -> bool:
+        # Story 1.6: a read -- never recorded. Nothing exists beyond the
+        # seeded dirs, so run_homes's occupancy probes stay False (benign
+        # absence) and its clean-run exit stays EXIT_OK.
+        return path in self._dirs
+
     def read_text(self, path: Path) -> str | None:
         return None
 

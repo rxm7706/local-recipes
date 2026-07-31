@@ -83,12 +83,24 @@ class HomeFacts:
     read by ``cli/init.py::run_homes`` via ``VcsPort``/``FsPort`` before this
     pure module ever sees it.
 
-    ``tier3_local_realpath`` is ``None`` when the home's local Tier-3 path is
-    not a symlink at all (never provisioned by ``marshal init``) -- absence
-    is not a violation, only a resolved value that disagrees with
+    ``tier3_local_realpath`` is ``None`` when genuinely NOTHING occupies the
+    home's local Tier-3 path (never provisioned by ``marshal init``) --
+    absence is not a violation, only a resolved value that disagrees with
     ``tier3_canonical_realpath`` is. ``tier3_canonical_realpath`` is always
     known: it is the home's OWN branch-derived slug's canonical store,
     independent of whether the local backlink exists.
+    ``tier3_canonical_is_dir`` records whether that canonical store really
+    exists as a directory -- a backlink that resolves to the RIGHT path but
+    a MISSING store is a dangling link every write through it would fail on
+    (review finding: previously blessed as clean; ``marshal init``'s own
+    convergence check has always required ``is_dir(canonical)``).
+    ``link_occupied`` is ``True`` when the ``planning-artifacts`` path
+    exists but is NOT a symlink (a real directory or file squats there) --
+    distinct from absence (``symlink_target`` ``None``, ``link_occupied``
+    ``False``) and from a readable symlink (``symlink_target`` set); a real
+    occupant means writes no longer reach the canonical project tree, the
+    violation class ``MRS-HOMES-001`` exists to name (review finding:
+    previously read as benign absence).
     """
 
     path: Path
@@ -97,6 +109,8 @@ class HomeFacts:
     symlink_target: Path | None
     tier3_local_realpath: Path | None
     tier3_canonical_realpath: Path
+    link_occupied: bool = False
+    tier3_canonical_is_dir: bool = True
 
     def __post_init__(self) -> None:
         if not isinstance(self.branch, str) or not self.branch.startswith(
@@ -113,12 +127,16 @@ class MainCheckoutFacts:
     """Already-gathered state for the main checkout itself -- no
     branch-derived slug (it is not on a ``loop/<slug>`` branch, so there is
     no third leg to compare) and no Tier-3 check (Story 1.5's backlink is a
-    HOME-side concept only)."""
+    HOME-side concept only). ``link_occupied`` has the same meaning as
+    ``HomeFacts.link_occupied``: the main checkout's own
+    ``planning-artifacts`` path is occupied by a real (non-symlink)
+    directory or file."""
 
     path: Path
     branch: str | None
     marker_text: str | None
     symlink_target: Path | None
+    link_occupied: bool = False
 
 
 @dataclass(frozen=True)
@@ -159,42 +177,68 @@ def _mismatch_reason(
     link_slug: str | None,
     raw_link_target: Path | None,
     branch_slug: str | None,
+    link_occupied: bool = False,
 ) -> str | None:
     """The one comparison both checks 1 and 2 (module docstring) share.
     ``branch_slug=None`` is the main checkout's two-way rule (no third leg);
     a ``str`` is a home's three-way rule. Returns a human-readable mismatch
-    description, or ``None`` if nothing disagrees.
+    description naming EVERY disagreeing pair (review finding: naming only
+    the first under-reported the multi-corruption case the AC's "naming ...
+    the disagreeing values" covers), or ``None`` if nothing disagrees.
 
     Ported from ``cli/init.py``'s own ``MRS-INIT-003`` ordering: an
-    unrecognized (but present) symlink shape is evidence of hand
-    configuration and is reported on its own, before the value-agreement
-    checks below ever run -- mirrors ``init``'s own "refuse before any
-    further write" precedence, translated to "report before any further
-    comparison" for this read-only command.
+    unrecognized (but present) symlink shape -- or, one step further gone, a
+    real non-symlink occupant at the symlink's path (``link_occupied``,
+    review finding) -- is evidence of hand configuration and is reported on
+    its own, before the value-agreement checks below ever run -- mirrors
+    ``init``'s own "refuse before any further write" precedence, translated
+    to "report before any further comparison" for this read-only command.
     """
+    if link_occupied:
+        return (
+            "planning-artifacts is occupied by a real (non-symlink) "
+            "directory or file where a symlink belongs"
+        )
     if raw_link_target is not None and link_slug is None:
         return f"unrecognized planning-artifacts symlink target {str(raw_link_target)!r}"
+    reasons: list[str] = []
     if marker_slug is not None and link_slug is not None and marker_slug != link_slug:
-        return f"marker says {marker_slug!r} but symlink says {link_slug!r}"
+        reasons.append(f"marker says {marker_slug!r} but symlink says {link_slug!r}")
     if branch_slug is not None:
         if marker_slug is not None and marker_slug != branch_slug:
-            return f"marker says {marker_slug!r} but branch says {branch_slug!r}"
+            reasons.append(f"marker says {marker_slug!r} but branch says {branch_slug!r}")
         if link_slug is not None and link_slug != branch_slug:
-            return f"symlink says {link_slug!r} but branch says {branch_slug!r}"
+            reasons.append(f"symlink says {link_slug!r} but branch says {branch_slug!r}")
+    if reasons:
+        return "; ".join(reasons)
     return None
 
 
 def _tier3_mismatch_reason(
-    *, tier3_local_realpath: Path | None, tier3_canonical_realpath: Path
+    *,
+    tier3_local_realpath: Path | None,
+    tier3_canonical_realpath: Path,
+    tier3_canonical_is_dir: bool = True,
 ) -> str | None:
     """Check 3 (module docstring). ``None`` local realpath means the home's
-    Tier-3 backlink was never provisioned -- absence is not a violation."""
+    Tier-3 backlink was never provisioned -- absence is not a violation. A
+    backlink that resolves to the RIGHT path is still a violation when the
+    canonical store itself is missing (``tier3_canonical_is_dir`` false):
+    every write through it would fail, and ``marshal init``'s own
+    convergence check (``fs.is_dir(canonical)``) has never accepted that
+    state (review finding: previously blessed as clean)."""
     if tier3_local_realpath is None:
         return None
     if tier3_local_realpath != tier3_canonical_realpath:
         return (
             f"tier-3 backlink resolves to {tier3_local_realpath} but the "
             f"canonical store is {tier3_canonical_realpath}"
+        )
+    if not tier3_canonical_is_dir:
+        return (
+            f"tier-3 backlink resolves to the canonical store path "
+            f"{tier3_canonical_realpath}, but that store does not exist "
+            "(dangling backlink)"
         )
     return None
 
@@ -209,10 +253,12 @@ def _evaluate_home(home: HomeFacts) -> tuple[dict[str, object], tuple[Finding, .
         link_slug=link_slug,
         raw_link_target=home.symlink_target,
         branch_slug=slug,
+        link_occupied=home.link_occupied,
     )
     tier3_reason = _tier3_mismatch_reason(
         tier3_local_realpath=home.tier3_local_realpath,
         tier3_canonical_realpath=home.tier3_canonical_realpath,
+        tier3_canonical_is_dir=home.tier3_canonical_is_dir,
     )
 
     findings: list[Finding] = []
@@ -256,6 +302,7 @@ def _evaluate_main_checkout(
         link_slug=link_slug,
         raw_link_target=main_checkout.symlink_target,
         branch_slug=None,
+        link_occupied=main_checkout.link_occupied,
     )
 
     findings: tuple[Finding, ...] = ()

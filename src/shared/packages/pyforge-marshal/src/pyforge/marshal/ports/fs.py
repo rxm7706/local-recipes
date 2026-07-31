@@ -40,7 +40,11 @@ against the canonical store BY REALPATH rather than the raw (typically
 relative) symlink target string ``read_symlink_target`` returns -- closing a
 gap the raw-string comparison ``cli/init.py``'s own ``tier3_backlink`` step
 still has (see that story's spec Design Notes for why the gap stays open
-there).
+there). It also adds ``exists``: the occupancy probe ``marshal homes`` needs
+to tell "genuinely nothing at this path" (benign absence) apart from "a real,
+non-symlink file or directory occupies it" (a violation to name) at the two
+symlink locations it checks -- ``is_dir`` alone cannot see a regular-file
+occupant (review finding).
 """
 
 from __future__ import annotations
@@ -77,6 +81,16 @@ class FsPort(Protocol):
 
     def is_dir(self, path: Path) -> bool:
         """``True`` if ``path`` exists and is a directory."""
+        ...
+
+    def exists(self, path: Path) -> bool:
+        """``True`` if ``path`` exists in any non-symlink-aware sense
+        (mirrors ``pathlib.Path.exists()``: follows a symlink, so a
+        DANGLING symlink reports ``False``). Callers that need to
+        distinguish a symlink from a real occupant must probe
+        ``read_symlink_target`` first -- ``marshal homes``'s occupancy
+        checks (Story 1.6) do exactly that, then use this to catch a real
+        file OR directory squatting where a symlink belongs."""
         ...
 
     def ensure_dir(self, path: Path) -> None:

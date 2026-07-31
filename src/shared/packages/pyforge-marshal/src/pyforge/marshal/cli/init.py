@@ -580,20 +580,34 @@ def _gather_home_facts(entry: WorktreeEntry, repo_root: Path, fs: FsPort) -> sta
 
     marker_text = fs.read_text(marker_path)
     symlink_target = fs.read_symlink_target(link_path)
-    # Genuinely NOTHING at the local Tier-3 path (no symlink, no directory)
-    # has no realpath worth comparing -- None mirrors "absence is not a
-    # violation" (core/status.py's own docstring). A REAL, non-symlink
-    # DIRECTORY there is a distinct third state, not absence: it is exactly
-    # what init's own MRS-INIT-005 refuses to silently replace, so it means
-    # Tier-3 is NOT single-sourced for this home. Resolving it anyway (it
-    # resolves to itself, since there is no link to follow) lets the
-    # ordinary realpath comparison below catch the divergence as
-    # MRS-HOMES-002 rather than this being silently reported as clean
-    # (review finding).
+    # A real (non-symlink) directory or file at the planning-artifacts path
+    # is NOT "symlink absent" -- it means writes no longer reach the
+    # canonical project tree. Same occupancy distinction as the Tier-3 probe
+    # below, applied to the OTHER symlink this command checks (review
+    # finding: previously read as benign absence).
+    link_occupied = symlink_target is None and fs.exists(link_path)
+    # Genuinely NOTHING at the local Tier-3 path (no symlink, no directory,
+    # no file) has no realpath worth comparing -- None mirrors "absence is
+    # not a violation" (core/status.py's own docstring). A REAL, non-symlink
+    # occupant there is a distinct third state, not absence: a DIRECTORY is
+    # exactly what init's own MRS-INIT-005 refuses to silently replace, and
+    # a plain FILE blocks any future backlink the same way (review finding:
+    # the first occupancy fix probed is_dir only, leaving the file case read
+    # as absence) -- either means Tier-3 is NOT single-sourced for this
+    # home. Resolving it anyway (it resolves to itself, since there is no
+    # link to follow) lets the ordinary realpath comparison below catch the
+    # divergence as MRS-HOMES-002 rather than this being silently reported
+    # as clean (review finding).
     tier3_local_target = fs.read_symlink_target(tier3_local_path)
-    tier3_occupied = tier3_local_target is not None or fs.is_dir(tier3_local_path)
+    tier3_occupied = tier3_local_target is not None or fs.exists(tier3_local_path)
     tier3_local_realpath = fs.resolve_path(tier3_local_path) if tier3_occupied else None
     tier3_canonical_realpath = fs.resolve_path(tier3_canonical_path)
+    # A backlink that resolves to the RIGHT path can still dangle: the
+    # canonical store itself may have been deleted after provisioning.
+    # init's own convergence check has always required is_dir(canonical);
+    # gather the same fact so core/status can name that state instead of
+    # blessing it (review finding).
+    tier3_canonical_is_dir = fs.is_dir(tier3_canonical_path)
 
     return status.HomeFacts(
         path=entry.path,
@@ -602,6 +616,8 @@ def _gather_home_facts(entry: WorktreeEntry, repo_root: Path, fs: FsPort) -> sta
         symlink_target=symlink_target,
         tier3_local_realpath=tier3_local_realpath,
         tier3_canonical_realpath=tier3_canonical_realpath,
+        link_occupied=link_occupied,
+        tier3_canonical_is_dir=tier3_canonical_is_dir,
     )
 
 
@@ -616,11 +632,17 @@ def _gather_main_checkout_facts(
     link_path = repo_root / "_bmad-output" / "planning-artifacts"
     marker_text = fs.read_text(marker_path)
     symlink_target = fs.read_symlink_target(link_path)
+    # Same occupancy probe as _gather_home_facts (review finding): a real
+    # directory materialized where the main checkout's planning-artifacts
+    # symlink belongs is the hand-configuration state the two-way rule
+    # exists to name, not benign absence.
+    link_occupied = symlink_target is None and fs.exists(link_path)
     return status.MainCheckoutFacts(
         path=repo_root,
         branch=main_entry.branch,
         marker_text=marker_text,
         symlink_target=symlink_target,
+        link_occupied=link_occupied,
     )
 
 
