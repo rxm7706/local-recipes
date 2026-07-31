@@ -265,12 +265,14 @@ status: open
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-4-bridge-core-skeleton-state-errors-determinism-boundary.md`
   summary: `state.py`'s `write()` does an unlocked read-modify-write of the whole slug-keyed document (read every slug, mutate one, atomically replace the file), so two processes writing different slugs concurrently can race — the second writer's read can happen before the first writer's `os.replace`, silently losing the first writer's update. The atomic temp-file-plus-`os.replace` protects against a corrupted/partial file, not against a lost update.
   evidence: Found by this story's own Blind Hunter review pass. No current caller exercises concurrent writes (this story ships no seed/pull/watch logic yet — every call site is a single test), so it is latent, not active. Real risk lands with Story 4.x's `watch` loop if it ever runs multiple slugs' polls as separate processes, or with any future concurrent `herald` invocation against the same repo. Fix candidate: an advisory file lock (e.g. `fcntl.flock` on a sidecar lock file, POSIX-only) held across the read-modify-write span, or narrow `write()` to a single-slug patch file per artifact if per-slug granularity turns out to matter more than one shared document.
+  status: open
 
 ## DW-1-4-3 — `state.py`'s `write()` calls `state_path.parent.mkdir(parents=True, exist_ok=True)` unguarded — …
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-4-bridge-core-skeleton-state-errors-determinism-boundary.md`
   summary: `state.py`'s `write()` calls `state_path.parent.mkdir(parents=True, exist_ok=True)` unguarded — if any path component of `state_path.parent` already exists as a regular file (not a directory), `mkdir` raises an unhandled `NotADirectoryError`/`FileExistsError` rather than a `HeraldError`, contradicting AD-6's "every bridge command fails structurally" for this one rare shape.
   evidence: Found by this story's own Edge Case Hunter review pass. Lower priority than the JSON-corruption and malformed-entry cases already patched in this story (those are plausible from an interrupted write or hand-edit; this requires something to have created a plain file at exactly `.herald` or one of its ancestors, which nothing in this repo does today). Fix candidate: wrap the `mkdir` call and re-raise as `errors.HeraldError` naming the offending path.
+  status: open
 
 ### DW-1: Follow-up review still recommended for 1-4-bridge-core-skeleton-state-errors-determinism-boundary after the damping cap was spent
 origin: review-budget-followup
@@ -284,3 +286,4 @@ status: open
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-5-registry-module-readme-design-project.md`
   summary: `registry.read()` raises "malformed" (`expected exactly two body lines, found 5`) against every one of the 13 existing hand-seeded `presentations/*/README.md` § *Design project* sections (9 of them pyforge-*), so the bootstrap-fallback consumer a later CAP story wires in (AD-5) will fail against 100% of the current fleet until those sections are migrated to the canonical two-line shape or a tolerance decision is made — one `register()` call per deck normalizes a README, so Story 1.6's seed path may absorb the migration naturally, but nothing guarantees it covers all 13.
   evidence: Found by the 2026-07-31 follow-up review (Blind Hunter), reproduced live against the pyforge-herald/doctor/scribe/warden READMEs. Spec-sanctioned for this story — the intent contract's "Never" boundary explicitly scopes out parsing the pre-existing hand-authored prose — but the resulting migration debt was recorded nowhere until this entry.
+  status: open
