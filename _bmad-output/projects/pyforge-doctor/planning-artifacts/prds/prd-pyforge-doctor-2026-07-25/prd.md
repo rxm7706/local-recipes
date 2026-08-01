@@ -1,8 +1,9 @@
 ---
 title: Doctor (pyforge-doctor)
 created: 2026-07-25
-updated: 2026-07-25
+updated: 2026-08-04
 status: final
+currency_review: Reviewed 2026-08-04 — spec/brief timestamp bump was structural (project relocation / memlog story-completion recording), not content drift; PRD unchanged.
 inputs:
   - '_bmad-output/projects/pyforge-doctor/planning-artifacts/briefs/brief-pyforge-doctor-2026-07-25/brief.md'
   - '_bmad-output/projects/pyforge-doctor/planning-artifacts/research/domain-preflight-health-diagnostics-tooling-research-2026-07-25.md'

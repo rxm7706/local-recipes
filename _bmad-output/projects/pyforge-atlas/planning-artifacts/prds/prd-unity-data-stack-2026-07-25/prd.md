@@ -1,9 +1,10 @@
 ---
 title: Unity Data Stack
 created: 2026-07-25
-updated: 2026-07-25
+updated: 2026-08-04
 status: draft
 project_slug: unity-data-stack
+currency_review: Reviewed 2026-08-04 — spec/brief timestamp bump was structural (project relocation / memlog story-completion recording), not content drift; PRD unchanged.
 mode: headless / express — [ASSUMPTION] tags mark inferences; no user was present
 inputs:
   - "planning-artifacts/briefs/brief-unity-data-stack-2026-07-25/brief.md"

@@ -2,8 +2,9 @@
 title: "PRD — pyforge-genesis (constitutive)"
 status: final
 created: 2026-07-28
-updated: 2026-07-28
+updated: 2026-08-04
 project: pyforge-genesis
+currency_review: Reviewed 2026-08-04 — spec/brief timestamp bump was structural (project relocation / memlog story-completion recording), not content drift; PRD unchanged.
 ---
 
 # PRD — pyforge-genesis
