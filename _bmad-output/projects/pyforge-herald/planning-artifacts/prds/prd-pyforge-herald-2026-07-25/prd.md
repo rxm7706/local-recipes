@@ -2,7 +2,8 @@
 title: "Product Requirements Document — Herald (pyforge-herald)"
 status: "final"
 created: "2026-07-25"
-updated: "2026-07-25"
+updated: "2026-08-04"
+currency_review: Reviewed 2026-08-04 — SPEC expanded to include HER-2 (release notables) and HER-3 (visual identity system) on 2026-07-29. These capabilities were authored in the SPEC but never decomposed into the PRD. Updated PRD scope note and added high-level capability descriptions for HER-2 and HER-3.
 inputs:
   - "planning-artifacts/briefs/brief-pyforge-herald-2026-07-25/brief.md"
   - "planning-artifacts/specs/spec-design-code-bridge/SPEC.md + bridge-protocol.md (settled kernel, adopted verbatim for V1 FRs)"
@@ -15,12 +16,15 @@ project_slug: "pyforge-herald"
 ## Executive Summary
 
 Herald V1 is the Design↔Code Bridge, packaged: a `herald deck {seed,pull,status,watch}` CLI
-that wraps the proven, fully-specced protocol in `SPEC-design-code-bridge` (CAP-1..5) so any
-operator or agent can run seed/pull/status/watch/export-push-back without re-deriving the
-`bridge-protocol.md` tool sequence by hand inside a session. This PRD's Functional Requirements
-trace 1:1 to the settled spec's five capabilities — their `success:` clauses are adopted as
-this PRD's acceptance criteria, not re-derived. `updates compile` and `broadcast` (Herald's
-comms half) are **explicitly out of V1 scope** — carried forward as a Roadmap section per the
+that wraps the proven, fully-specced protocol in `SPEC-design-code-bridge` (HER-1 capabilities
+CAP-1..5) so any operator or agent can run seed/pull/status/watch/export-push-back without
+re-deriving the `bridge-protocol.md` tool sequence by hand inside a session. The SPEC (as of
+2026-07-29) also declares two additional capabilities — **HER-2** (releases are proclaimed from
+the ledger) and **HER-3** (the visual identity is one system) — which are **deferred from V1**
+pending dedicated product definitions and epics work. This PRD's Functional Requirements trace
+1:1 to HER-1's five settled capabilities; their `success:` clauses are adopted as this PRD's
+acceptance criteria, not re-derived. `updates compile` and `broadcast` (which may relate to
+HER-2) are **explicitly out of V1 scope** — carried forward as a Roadmap section per the
 product brief's instruction not to decompose them at the same depth as the bridge.
 
 ## Success Criteria
@@ -284,14 +288,32 @@ restated.
 
 ## Roadmap (explicitly deferred, NOT V1 scope)
 
-Per the product brief's instruction, `updates compile` and `broadcast` are represented here
-only as a pointer, not as numbered FRs — they require their own `bmad-spec` pass before any
-epic/story decomposition:
+### HER-2 & HER-3: New capabilities (awaiting dedicated spec + epic work)
+
+Per the SPEC expansion on 2026-07-29:
+
+- **HER-2 — Releases are proclaimed from the ledger** — Release notables compile from pipeline
+  data (sprint-status, Warden ComplianceReport, Atlas run summaries, gate reports), never
+  hand-written. May subsume or relate to the `herald updates compile` roadmap item below; open
+  whether this owns compiled-artifact schema, cross-project scope, and relationship to
+  `docs/dashboard/generate.py`.
+- **HER-3 — The visual identity is one system** — Decks, infographics, and the Guildhall share
+  the Modernist identity vocabulary (fonts, color tokens, motion language). Open: whether
+  Modernist coverage is complete for all Herald surfaces, how identity drift is detected, and
+  whether any Guildhall (Marshal's console) work is Herald-owned.
+
+Both require dedicated `bmad-spec` passes to define success criteria and story scopes before
+decomposition into epics.
+
+### V1-deferred features (further down the roadmap)
+
+Per the product brief's instruction, the following are represented here only as pointers, not as
+numbered FRs — they require their own `bmad-spec` pass before any epic/story decomposition:
 
 - **`herald updates compile`** — compiles pyforge's own structured telemetry (sprint-status,
   Warden `ComplianceReport`, Atlas run summaries, gate reports) into weekly notables. Open:
   compiled-artifact schema, single-project vs. cross-project (Marshal-mediated) scope,
-  relationship to `docs/dashboard/generate.py`'s existing sync.
+  relationship to `docs/dashboard/generate.py`'s existing sync, relationship to HER-2 above.
 - **`herald broadcast`** — fans a compiled artifact out to channel adapters (Slack/email/wiki),
   each reporting explicit success/failure. Open: channel-adapter credential ownership (likely
   Steward-adjacent, not Herald's to own outright).
