@@ -1750,7 +1750,7 @@
  },
  "pyforge-steward/spec-pyforge-steward": {
   "files": {
-   "docs/reference/library-llms-full.md": "5a167f2eb0b4e48fee7242981822b9fbbb8e6402",
+   "docs/reference/library-llms-full.md": "cd81c400d6803b83ff14dcc3e4509f9ad021f5a2",
    "scripts/llms_full_check.py": "b4be3162567293d6ac0cdbd466c4cac3dad35df9",
    "src/shared/packages/pyforge-steward/.gitignore": "be289b476d44528c782051711aa069c09adb1255",
    "src/shared/packages/pyforge-steward/README.md": "de2f3e39d6bcedb44c78bb12fe419971ea97103c",
@@ -1771,7 +1771,7 @@
    "src/shared/packages/pyforge-steward/tests/meta/test_invariants.py": "f3d0a1f2f3f877929b02f34f8f16a1670dc6daac",
    "src/shared/packages/pyforge-steward/tests/unit/test_cli.py": "763e319e8d4b363413249db747b52e0b17db1a10"
   },
-  "memlog": "5a3d71d328ea726fd82454f0813e46965f4c3f84"
+  "memlog": "516e4a6ab338b4338c9bbf0555b44cca1f9303a2"
  },
  "pyforge-warden/spec-pyforge-warden": {
   "files": {
