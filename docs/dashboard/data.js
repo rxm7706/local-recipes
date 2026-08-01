@@ -3026,7 +3026,7 @@ window.DASHBOARD_DATA = {
       }
     }
   },
-  "snapshot": "<span>2026-08-01 17:10 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-01 17:19 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -3418,7 +3418,9 @@ window.DASHBOARD_DATA = {
       "status": "dreamt",
       "owner": "herald",
       "type": "dream",
-      "chain": {}
+      "chain": {
+        "spec": "_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-video-scripts"
+      }
     },
     {
       "slug": "wasm-analytics-stack",
@@ -3552,6 +3554,16 @@ window.DASHBOARD_DATA = {
       "updated": "2026-07-31",
       "dream": "pyforge-herald",
       "path": "_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald"
+    },
+    {
+      "slug": "video-scripts",
+      "project": "pyforge-herald",
+      "title": "SPEC: Video content — the factory films its own documentation",
+      "caps": 0,
+      "companions": 0,
+      "updated": "2026-08-01",
+      "dream": "video-scripts",
+      "path": "_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-video-scripts"
     },
     {
       "slug": "agent-portability",
@@ -4422,7 +4434,7 @@ window.DASHBOARD_DATA = {
     "sound": 1,
     "live": 34,
     "reached": 9,
-    "gaps": 30,
+    "gaps": 29,
     "findings": 16,
     "rows": [
       {
@@ -6329,7 +6341,7 @@ window.DASHBOARD_DATA = {
         "stages": {
           "dream": "2026-08-01",
           "deck": "",
-          "spec": "",
+          "spec": "2026-08-01",
           "research": "2026-07-25",
           "brief": "",
           "prd": "",
@@ -6346,7 +6358,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-01",
           "deck": "",
-          "spec": "",
+          "spec": "2026-08-01",
           "research": "2026-07-25",
           "brief": "",
           "prd": "",
@@ -6411,8 +6423,7 @@ window.DASHBOARD_DATA = {
           "research"
         ],
         "gaps": [
-          "deck",
-          "spec"
+          "deck"
         ],
         "partial": [],
         "staleBy": [],
@@ -6422,7 +6433,7 @@ window.DASHBOARD_DATA = {
         "stale": false,
         "version": "",
         "progress": "",
-        "complete": 2,
+        "complete": 3,
         "of": 4
       },
       {
@@ -8686,8 +8697,8 @@ window.DASHBOARD_DATA = {
         "task": "spec-surface-check",
         "guards": "every tracked file under a Spec surface",
         "state": "drift",
-        "findings": 2,
-        "verdict": "FINDINGS (2):",
+        "findings": 3,
+        "verdict": "FINDINGS (3):",
         "runbook": ""
       },
       {
@@ -8755,7 +8766,9 @@ window.DASHBOARD_DATA = {
         "status": "dreamt",
         "owner": "herald",
         "blockedOn": "",
-        "chain": {}
+        "chain": {
+          "spec": "_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-video-scripts"
+        }
       },
       {
         "slug": "deckcraft",
@@ -10852,8 +10865,8 @@ window.DASHBOARD_DATA = {
       "subject": "Merge bmad-loop/20260731-115548-f223/1-9-packaging-distribution-and-version-reporting into loop/pyforge-marshal (bmad-lo"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-01 17:10 UTC",
-    "generatedEpoch": 1785604258
+    "generatedAt": "2026-08-01 17:19 UTC",
+    "generatedEpoch": 1785604790
   },
   "storySpecs": [
     {

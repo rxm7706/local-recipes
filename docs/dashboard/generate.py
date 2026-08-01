@@ -774,20 +774,28 @@ def scan_story_specs() -> list[dict]:
 
     for project_dir in sorted(projects_base.glob("pyforge-*")):
         # Count done stories from sprint-status-ledger.yaml (exclude epic-*/epic-*-retrospective)
+        # Parsed with stdlib rather than PyYAML to work in CI (bare Python env, no third-party).
         ledger_path = project_dir / "planning-artifacts" / "sprint-status-ledger.yaml"
         done_count = 0
         if ledger_path.exists():
-            ledger_text = ledger_path.read_text(encoding="utf-8")
-            if "development_status:" in ledger_text:
-                import yaml
-                try:
-                    ledger_data = yaml.safe_load(ledger_text)
-                    if ledger_data and "development_status" in ledger_data:
-                        # Exclude epic-* and epic-*-retrospective entries (never have spec-*.md files)
-                        done_count = sum(1 for k, v in ledger_data["development_status"].items()
-                                        if v == "done" and not k.startswith("epic-"))
-                except:
-                    pass
+            try:
+                ledger_text = ledger_path.read_text(encoding="utf-8")
+                in_status_block = False
+                for line in ledger_text.splitlines():
+                    stripped = line.strip()
+                    if stripped == "development_status:":
+                        in_status_block = True
+                        continue
+                    if in_status_block:
+                        if not line.startswith(" "):  # end of block (dedent)
+                            break
+                        if ": done" in line:
+                            # Extract story ID (key before ": done")
+                            key = line.split(":")[0].strip()
+                            if not key.startswith("epic-"):  # exclude epic entries
+                                done_count += 1
+            except Exception:
+                pass
 
         # Count tracked flat story-spec files (spec-*.md at top level, not nested dirs with SPEC.md)
         specs_dir = project_dir / "planning-artifacts" / "specs"
