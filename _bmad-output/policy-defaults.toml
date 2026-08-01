@@ -1,0 +1,36 @@
+# Repo-wide policy defaults (Marshal layer 2 of 4 in AD-16).
+#
+# The composition chain is: DEFAULT_POLICY (code) -> THIS FILE (repo-wide) ->
+# project-layer marshal-policy.toml (per-station) -> invocation flags (--set),
+# last wins. This file documents repo-wide decisions that apply to all loop
+# homes unless explicitly overridden at the project or flag level.
+#
+# File location is canonical at `_bmad-output/policy-defaults.toml`; Story 1.10
+# (policy rendering) reads from this file to render `.bmad-loop/policy.toml` for
+# each project. The policy composition happens in `cli/config.py` (file I/O) +
+# `core/policy.py` (the pure fold), and `core/policy.compose()` will accept a
+# `repo_defaults` parameter once S-1.10 wires it in.
+#
+# Only keys that diverge from Marshal's built-in DEFAULT_POLICY should appear
+# here. Keys deliberately ABSENT: `worktree_seed_paths` (generated from slug),
+# `model_tier_map` (per-difficulty mapping, settable per story in FR-51).
+
+
+# max_followup_reviews: 2 is a REPO-WIDE decision, not project-scoped.
+#
+# The upstream bmad-loop default is 1, which damped five still-recommended
+# follow-up reviews across three projects (atlas 10.5/10.6, marshal 1.1,
+# warden 6.3/5.1) into a gitignored ledger. That incident (DW-AD23-3) led to
+# the creation of deferred-work-check itself -- a detector that only exists to
+# surface work that the cap hid.
+#
+# The root cause: the cap was left at its upstream default (1) until it became
+# a burden. Now it is explicitly 2 with reasoning inline (here). This is the
+# only place this repo-wide decision lives; all 9 loop homes inherit it unless
+# a project layer explicitly overrides it (rare), and new homes inherit it
+# automatically.
+#
+# See the corresponding comment in `src/shared/packages/pyforge-marshal/src/
+# pyforge/marshal/core/policy.py:DEFAULT_POLICY` for the full incident history
+# and the design rationale for keeping this at the repo level.
+max_followup_reviews = 2

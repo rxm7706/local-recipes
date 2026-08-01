@@ -3026,7 +3026,7 @@ window.DASHBOARD_DATA = {
       }
     }
   },
-  "snapshot": "<span>2026-08-01 17:19 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-01 18:03 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -4435,7 +4435,7 @@ window.DASHBOARD_DATA = {
     "live": 34,
     "reached": 9,
     "gaps": 29,
-    "findings": 16,
+    "findings": 21,
     "rows": [
       {
         "label": "atlas",
@@ -4466,7 +4466,7 @@ window.DASHBOARD_DATA = {
           "spec": "2026-07-30T12:40",
           "research": "2026-07-25",
           "brief": "2026-07-25",
-          "prd": "2026-07-17",
+          "prd": "2026-08-04",
           "ux": "",
           "arch": "2026-07-17",
           "context": "2026-08-04",
@@ -4535,16 +4535,16 @@ window.DASHBOARD_DATA = {
         "staleBy": [
           {
             "kind": "feeds",
-            "stage": "brief",
-            "than": "prd",
-            "at": "2026-07-25",
+            "stage": "prd",
+            "than": "arch",
+            "at": "2026-08-04",
             "other": "2026-07-17"
           },
           {
             "kind": "feeds",
-            "stage": "spec",
-            "than": "prd",
-            "at": "2026-07-30T12:40",
+            "stage": "prd",
+            "than": "gates",
+            "at": "2026-08-04",
             "other": "2026-07-17"
           },
           {
@@ -4593,7 +4593,7 @@ window.DASHBOARD_DATA = {
           "spec": "2026-07-29",
           "research": "2026-07-25",
           "brief": "2026-07-25",
-          "prd": "2026-07-25",
+          "prd": "2026-08-04",
           "ux": "",
           "arch": "2026-07-25",
           "context": "2026-08-01",
@@ -4665,10 +4665,17 @@ window.DASHBOARD_DATA = {
         "staleBy": [
           {
             "kind": "feeds",
-            "stage": "spec",
-            "than": "prd",
-            "at": "2026-07-29",
+            "stage": "prd",
+            "than": "arch",
+            "at": "2026-08-04",
             "other": "2026-07-25"
+          },
+          {
+            "kind": "feeds",
+            "stage": "prd",
+            "than": "gates",
+            "at": "2026-08-04",
+            "other": "2026-08-01"
           }
         ],
         "furthest": "verify",
@@ -4709,7 +4716,7 @@ window.DASHBOARD_DATA = {
           "spec": "2026-07-31T19:40",
           "research": "",
           "brief": "",
-          "prd": "2026-07-28",
+          "prd": "2026-08-04",
           "ux": "",
           "arch": "2026-07-28",
           "context": "",
@@ -4778,9 +4785,9 @@ window.DASHBOARD_DATA = {
         "staleBy": [
           {
             "kind": "feeds",
-            "stage": "spec",
-            "than": "prd",
-            "at": "2026-07-31T19:40",
+            "stage": "prd",
+            "than": "arch",
+            "at": "2026-08-04",
             "other": "2026-07-28"
           }
         ],
@@ -4822,7 +4829,7 @@ window.DASHBOARD_DATA = {
           "spec": "2026-07-29",
           "research": "2026-07-25",
           "brief": "2026-07-25",
-          "prd": "2026-07-25",
+          "prd": "2026-08-04",
           "ux": "",
           "arch": "2026-07-25",
           "context": "2026-08-01",
@@ -4890,10 +4897,17 @@ window.DASHBOARD_DATA = {
         "staleBy": [
           {
             "kind": "feeds",
-            "stage": "spec",
-            "than": "prd",
-            "at": "2026-07-29",
+            "stage": "prd",
+            "than": "arch",
+            "at": "2026-08-04",
             "other": "2026-07-25"
+          },
+          {
+            "kind": "feeds",
+            "stage": "prd",
+            "than": "gates",
+            "at": "2026-08-04",
+            "other": "2026-08-01"
           }
         ],
         "furthest": "verify",
@@ -5038,7 +5052,7 @@ window.DASHBOARD_DATA = {
           "spec": "2026-07-29",
           "research": "2026-07-25",
           "brief": "2026-07-25",
-          "prd": "2026-07-25",
+          "prd": "2026-08-04",
           "ux": "",
           "arch": "2026-07-25",
           "context": "2026-08-01",
@@ -5110,10 +5124,17 @@ window.DASHBOARD_DATA = {
         "staleBy": [
           {
             "kind": "feeds",
-            "stage": "spec",
-            "than": "prd",
-            "at": "2026-07-29",
+            "stage": "prd",
+            "than": "arch",
+            "at": "2026-08-04",
             "other": "2026-07-25"
+          },
+          {
+            "kind": "feeds",
+            "stage": "prd",
+            "than": "gates",
+            "at": "2026-08-04",
+            "other": "2026-08-01"
           }
         ],
         "furthest": "verify",
@@ -5154,7 +5175,7 @@ window.DASHBOARD_DATA = {
           "spec": "2026-07-29",
           "research": "2026-07-25",
           "brief": "2026-07-25",
-          "prd": "2026-07-25",
+          "prd": "2026-08-04",
           "ux": "",
           "arch": "2026-07-25",
           "context": "2026-08-01",
@@ -5226,10 +5247,17 @@ window.DASHBOARD_DATA = {
         "staleBy": [
           {
             "kind": "feeds",
-            "stage": "spec",
-            "than": "prd",
-            "at": "2026-07-29",
+            "stage": "prd",
+            "than": "arch",
+            "at": "2026-08-04",
             "other": "2026-07-25"
+          },
+          {
+            "kind": "feeds",
+            "stage": "prd",
+            "than": "gates",
+            "at": "2026-08-04",
+            "other": "2026-08-01"
           }
         ],
         "furthest": "verify",
@@ -5270,7 +5298,7 @@ window.DASHBOARD_DATA = {
           "spec": "2026-08-01T09:51",
           "research": "2026-07-25",
           "brief": "2026-07-25",
-          "prd": "2026-07-25",
+          "prd": "2026-08-04",
           "ux": "",
           "arch": "2026-07-25",
           "context": "2026-08-01",
@@ -5342,10 +5370,17 @@ window.DASHBOARD_DATA = {
         "staleBy": [
           {
             "kind": "feeds",
-            "stage": "spec",
-            "than": "prd",
-            "at": "2026-08-01T09:51",
+            "stage": "prd",
+            "than": "arch",
+            "at": "2026-08-04",
             "other": "2026-07-25"
+          },
+          {
+            "kind": "feeds",
+            "stage": "prd",
+            "than": "gates",
+            "at": "2026-08-04",
+            "other": "2026-08-01"
           }
         ],
         "furthest": "verify",
@@ -5386,7 +5421,7 @@ window.DASHBOARD_DATA = {
           "spec": "2026-07-29",
           "research": "2026-07-25",
           "brief": "2026-07-25",
-          "prd": "2026-07-14",
+          "prd": "2026-08-04",
           "ux": "",
           "arch": "2026-07-14",
           "context": "2026-08-01",
@@ -5458,17 +5493,17 @@ window.DASHBOARD_DATA = {
         "staleBy": [
           {
             "kind": "feeds",
-            "stage": "brief",
-            "than": "prd",
-            "at": "2026-07-25",
+            "stage": "prd",
+            "than": "arch",
+            "at": "2026-08-04",
             "other": "2026-07-14"
           },
           {
             "kind": "feeds",
-            "stage": "spec",
-            "than": "prd",
-            "at": "2026-07-29",
-            "other": "2026-07-14"
+            "stage": "prd",
+            "than": "gates",
+            "at": "2026-08-04",
+            "other": "2026-07-16"
           }
         ],
         "furthest": "verify",
@@ -5613,7 +5648,7 @@ window.DASHBOARD_DATA = {
           "spec": "2026-07-29",
           "research": "2026-07-25",
           "brief": "2026-07-25",
-          "prd": "2026-07-25",
+          "prd": "2026-08-04",
           "ux": "",
           "arch": "2026-07-25",
           "context": "",
@@ -5678,9 +5713,9 @@ window.DASHBOARD_DATA = {
         "staleBy": [
           {
             "kind": "feeds",
-            "stage": "spec",
-            "than": "prd",
-            "at": "2026-07-29",
+            "stage": "prd",
+            "than": "arch",
+            "at": "2026-08-04",
             "other": "2026-07-25"
           }
         ],
@@ -5826,7 +5861,7 @@ window.DASHBOARD_DATA = {
           "spec": "2026-07-29",
           "research": "2026-07-25",
           "brief": "2026-07-25",
-          "prd": "2026-07-25",
+          "prd": "2026-08-04",
           "ux": "",
           "arch": "2026-07-25",
           "context": "",
@@ -5891,9 +5926,9 @@ window.DASHBOARD_DATA = {
         "staleBy": [
           {
             "kind": "feeds",
-            "stage": "spec",
-            "than": "prd",
-            "at": "2026-07-29",
+            "stage": "prd",
+            "than": "arch",
+            "at": "2026-08-04",
             "other": "2026-07-25"
           }
         ],
@@ -6042,7 +6077,7 @@ window.DASHBOARD_DATA = {
           "spec": "2026-07-29",
           "research": "2026-07-25",
           "brief": "",
-          "prd": "2026-05-10",
+          "prd": "2026-08-04",
           "ux": "",
           "arch": "2026-05-10",
           "context": "2026-07-29",
@@ -6109,9 +6144,9 @@ window.DASHBOARD_DATA = {
         "staleBy": [
           {
             "kind": "feeds",
-            "stage": "spec",
-            "than": "prd",
-            "at": "2026-07-29",
+            "stage": "prd",
+            "than": "arch",
+            "at": "2026-08-04",
             "other": "2026-05-10"
           }
         ],
@@ -7297,7 +7332,7 @@ window.DASHBOARD_DATA = {
           "spec": "2026-07-31T21:05",
           "research": "2026-07-31",
           "brief": "",
-          "prd": "2026-07-25",
+          "prd": "2026-08-04",
           "ux": "",
           "arch": "2026-07-25",
           "context": "",
@@ -7372,9 +7407,9 @@ window.DASHBOARD_DATA = {
         "staleBy": [
           {
             "kind": "feeds",
-            "stage": "spec",
-            "than": "prd",
-            "at": "2026-07-31T21:05",
+            "stage": "prd",
+            "than": "arch",
+            "at": "2026-08-04",
             "other": "2026-07-25"
           }
         ],
@@ -10865,8 +10900,8 @@ window.DASHBOARD_DATA = {
       "subject": "Merge bmad-loop/20260731-115548-f223/1-9-packaging-distribution-and-version-reporting into loop/pyforge-marshal (bmad-lo"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-01 17:19 UTC",
-    "generatedEpoch": 1785604790
+    "generatedAt": "2026-08-01 18:03 UTC",
+    "generatedEpoch": 1785607427
   },
   "storySpecs": [
     {

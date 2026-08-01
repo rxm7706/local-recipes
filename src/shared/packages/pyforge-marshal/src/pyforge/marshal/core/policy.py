@@ -1,12 +1,20 @@
 """Layered policy composition with provenance and validation (Story 1.3,
 architecture spine AD-10/AD-16/AD-26/AD-35).
 
-``compose()`` is the pure fold ``defaults -> project -> flags, last wins``
-(AD-16) over Marshal's own CLOSED 9-key policy vocabulary (FR-49/50/51/53/54)
--- not a mirror of the harness's much larger ``.bmad-loop/policy.toml`` key
-surface (that mapping is Story 1.10's rendering concern). Every field is
-wrapped in a ``PolicyField{value, layer, raw_source}`` so an operator can
-always answer "why is this value what it is?" (AD-16).
+``compose()`` is the pure fold ``defaults -> repo_defaults -> project -> flags,
+last wins`` (AD-16) over Marshal's own CLOSED 9-key policy vocabulary
+(FR-49/50/51/53/54) -- not a mirror of the harness's much larger
+``.bmad-loop/policy.toml`` key surface (that mapping is Story 1.10's rendering
+concern). Every field is wrapped in a ``PolicyField{value, layer, raw_source}``
+so an operator can always answer "why is this value what it is?" (AD-16).
+
+**The 4-layer precedence (as of Story 1.10):** ``DEFAULT_POLICY`` (code) ->
+``repo_defaults`` (tracked at `_bmad-output/policy-defaults.toml`, for repo-wide
+decisions like ``max_followup_reviews``) -> ``project`` (tracked per-station,
+like `_bmad-output/projects/pyforge-marshal/planning-artifacts/marshal-policy.toml`)
+-> ``flags`` (invocation ``--set``). A layer is only consulted if it provides a
+value for a key; if its value is malformed, that layer is skipped for that key
+and the previous (better) layer's value stands.
 
 **Static vs seed (AD-26).** 4 fields are STATIC -- public ``EffectivePolicy``
 attributes, each a ``PolicyField``: ``verify_commands``,
@@ -602,12 +610,16 @@ class EffectivePolicy:
 
 
 def compose(
-    *, project_slug: str, project: Mapping[str, object], flags: Mapping[str, object]
+    *, project_slug: str, repo_defaults: Mapping[str, object] | None = None, project: Mapping[str, object], flags: Mapping[str, object]
 ) -> tuple[EffectivePolicy, tuple[Finding, ...]]:
-    """The pure fold ``defaults -> project -> flags``, last wins (AD-16),
-    over Marshal's closed 9-key policy vocabulary. Never reads a file or an
-    env var -- ``project``/``flags`` arrive as already-parsed mappings; the
-    CLI boundary (``cli/config.py``) does the file/env I/O and calls this.
+    """The pure fold ``defaults -> repo_defaults -> project -> flags``, last
+    wins (AD-16), over Marshal's closed 9-key policy vocabulary. Never reads a
+    file or an env var -- ``repo_defaults``/``project``/``flags`` arrive as
+    already-parsed mappings; the CLI boundary (``cli/config.py``) does the
+    file/env I/O and calls this. The ``repo_defaults`` parameter was added in
+    Story 1.10 to read repo-wide policy from `_bmad-output/policy-defaults.toml`
+    and insert it between code defaults and project-layer overrides; it defaults
+    to ``None`` (empty dict) for backward compatibility.
 
     Never raises for malformed CONTENT within ``project``/``flags`` --see
     the module docstring for the exact "excluded, not poisoned" fallback

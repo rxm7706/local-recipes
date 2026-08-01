@@ -24,24 +24,23 @@ correctly when absent (``gates.on_escalation``, adapter/stage
 ``usage_grace_s`` / ``stop_without_result_nudges`` / ``extra_args``), and
 dynamic per-plugin sub-tables are all omitted, and the harness applies its
 own default for any absent key. The template was verified once against the
-installed package's own ``policy.py`` (its
-dataclasses and its own ``POLICY_TEMPLATE`` constant) rather than imported
-at runtime -- importing ``bmad_loop`` is permitted by this module's own seam
-but not required by this story's ACs, and would force an unrelated root
-``pixi.lock`` re-solve (Story 1.9 owns declaring ``bmad-loop`` as a real
-dependency). Exactly 6 of its keys carry a hardcoded, evidence-based
-repo-wide override over ``bmad_loop``'s own stock default --
-``review.trigger``, ``scm.isolation``, ``scm.merge_strategy``,
+installed package's own ``policy.py`` (its dataclasses and its own
+``POLICY_TEMPLATE`` constant) rather than imported at runtime -- importing
+``bmad_loop`` is permitted by this module's own seam but not required by this
+story's ACs, and would force an unrelated root ``pixi.lock`` re-solve (Story
+1.9 owns declaring ``bmad-loop`` as a real dependency). Placeholder baselines
+in this template are overwritten by ``render_policy_toml()`` from Marshal's
+composed ``EffectivePolicy`` (the 4-layer fold: code DEFAULT_POLICY -> repo
+defaults from `_bmad-output/policy-defaults.toml` -> project layer from
+marshal-policy.toml -> invocation --set flags). The 6 hardcoded template
+constants ``review.trigger``, ``scm.isolation``, ``scm.merge_strategy``,
 ``scm.rollback_on_failure``, ``limits.session_timeout_min``, and the
-baseline ``[adapter].model``/``[adapter.review].model`` pair -- confirmed by
-diffing every live loop home's actual policy.toml against the stock
-defaults. Changing one of those 6 literal template constants means editing
-this constant, never a rendered file. That diffing exercise covered ONLY
-these 6 hardcoded literals -- it says nothing about whether any project's
-``EffectivePolicy`` composition actually supplies the per-project values
-(e.g. ``gate_mode``, ``max_followup_reviews``) a given live loop home is
-tuned to; establishing that project-policy source is a later story's job
-(no CLI wires this module's functions yet -- see below).
+baseline ``[adapter].model``/``[adapter.review].model`` pair are repo-wide
+overrides verified by diffing against stock defaults -- these are the ONLY
+keys edited directly in this constant; changing them requires editing this
+file, not a rendered .bmad-loop/policy.toml. All other Marshal-composed keys
+(``gate_mode``, ``max_followup_reviews``, etc.) flow through
+``EffectivePolicy`` composition and are rendered by Story 1.10.
 
 ``frozen_surfaces`` and ``merge_subject_template`` -- 2 of Marshal's 9
 composed policy keys -- are deliberately NOT rendered here: neither has a
@@ -108,12 +107,14 @@ from ..core import policy
 #
 # Covers every section of the installed bmad_loop 0.9.0 schema at its own
 # stock default (deliberately not every key -- the module docstring names
-# the omitted instance-local/reserved ones), EXCEPT the 6 named repo-wide
-# overrides called out inline below. The 6 keys Marshal's own EffectivePolicy owns (gates.mode,
-# limits.max_dev_attempts/.max_review_cycles/.max_followup_reviews,
-# verify.commands, scm.worktree_seed) carry a placeholder baseline here --
-# render_policy_toml() always overwrites them, so their template value never
-# reaches a caller.
+# the omitted instance-local/reserved ones). Keys that are rendered from
+# Marshal's EffectivePolicy composition (the 4-layer fold: code DEFAULT_POLICY
+# -> repo-defaults from `_bmad-output/policy-defaults.toml` -> project-layer
+# from marshal-policy.toml -> invocation --set flags) carry placeholder
+# baselines here -- render_policy_toml() always overwrites them, so their
+# template value never reaches a caller. These include gates.mode,
+# max_dev_attempts/.max_review_cycles/.max_followup_reviews, verify.commands,
+# and scm.worktree_seed.
 _POLICY_TEMPLATE = """\
 # bmad-loop orchestration policy -- the harness's own vocabulary (bmad_loop
 # 0.9.0). This file is a DERIVED artifact: Marshal renders it whole from the
