@@ -1551,7 +1551,7 @@ def _currency(slug: str, stages: dict, updated_at: dict, na: set, today,
     from datetime import date
     out = []
     for up, down in _FEEDS:
-        u, d = updated_at.get(up, ""), stages.get(down, "")
+        u, d = updated_at.get(up, ""), updated_at.get(down, "")
         if u and d and u > d and up not in na and down not in na:
             out.append({"kind": "feeds", "stage": up, "than": down, "at": u, "other": d})
     for st in FLEET_STAGES:
