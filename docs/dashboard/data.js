@@ -381,7 +381,7 @@ window.DASHBOARD_DATA = {
       "inflight": null,
       "velocity": {
         "derived": true,
-        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 10 of 45 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
+        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 10 of 48 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
         "bars": [
           [
             "1.1",
@@ -436,12 +436,12 @@ window.DASHBOARD_DATA = {
             ""
           ],
           [
-            "10/45",
+            "10/48",
             "stories complete",
             "var(--done)"
           ],
           [
-            "35",
+            "38",
             "remaining",
             ""
           ]
@@ -604,6 +604,11 @@ window.DASHBOARD_DATA = {
               "3.7",
               "pending",
               "Escalation, deferral, and resume"
+            ],
+            [
+              "3.8",
+              "pending",
+              "Stage-bound durability, and fleet-launch wiring *(added 2026-08-01 — FR-61 / AD-46)*"
             ]
           ]
         },
@@ -655,6 +660,11 @@ window.DASHBOARD_DATA = {
               "4.9",
               "pending",
               "Derived surfaces regenerate on main; the shared store takes a lock *(added 2026-08-01 — AD-42 / the Q-10 decomposition)*"
+            ],
+            [
+              "4.10",
+              "pending",
+              "Fleet-wide branch retirement *(added 2026-08-01 — FR-63 / AD-47)*"
             ]
           ]
         },
@@ -681,6 +691,11 @@ window.DASHBOARD_DATA = {
               "5.4",
               "pending",
               "Ledger-vs-git reconciliation and the versioned status contract"
+            ],
+            [
+              "5.5",
+              "pending",
+              "Durability as a reported fleet-status dimension *(added 2026-08-01 — FR-62 / AD-48)*"
             ]
           ]
         },
@@ -3001,7 +3016,7 @@ window.DASHBOARD_DATA = {
       }
     }
   },
-  "snapshot": "<span>2026-08-01 13:08 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-01 14:15 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -3095,7 +3110,9 @@ window.DASHBOARD_DATA = {
       "status": "dreamt",
       "owner": "marshal",
       "type": "dream",
-      "chain": {}
+      "chain": {
+        "spec": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-durable-runs"
+      }
     },
     {
       "slug": "enterprise-airgap",
@@ -3123,7 +3140,9 @@ window.DASHBOARD_DATA = {
       "status": "dreamt",
       "owner": "marshal",
       "type": "dream",
-      "chain": {}
+      "chain": {
+        "spec": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-fidelity-enforcement"
+      }
     },
     {
       "slug": "fleet-stewardship",
@@ -3172,7 +3191,9 @@ window.DASHBOARD_DATA = {
       "status": "dreamt",
       "owner": "marshal",
       "type": "dream",
-      "chain": {}
+      "chain": {
+        "spec": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-one-front-door"
+      }
     },
     {
       "slug": "packaging-factory",
@@ -3191,7 +3212,9 @@ window.DASHBOARD_DATA = {
       "status": "dreamt",
       "owner": "marshal",
       "type": "dream",
-      "chain": {}
+      "chain": {
+        "spec": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pr-lifecycle"
+      }
     },
     {
       "slug": "presenton-pixi-image",
@@ -3571,6 +3594,16 @@ window.DASHBOARD_DATA = {
       "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-bmad-loop-governance"
     },
     {
+      "slug": "durable-runs",
+      "project": "pyforge-marshal",
+      "title": "durable runs",
+      "caps": 6,
+      "companions": 0,
+      "updated": "2026-08-01",
+      "dream": "durable-runs",
+      "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-durable-runs"
+    },
+    {
       "slug": "factory-console",
       "project": "pyforge-marshal",
       "title": "factory console (program console + Dreamscape)",
@@ -3579,6 +3612,16 @@ window.DASHBOARD_DATA = {
       "updated": "2026-07-31",
       "dream": "factory-console",
       "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-factory-console"
+    },
+    {
+      "slug": "fidelity-enforcement",
+      "project": "pyforge-marshal",
+      "title": "fidelity enforcement",
+      "caps": 9,
+      "companions": 3,
+      "updated": "2026-08-01",
+      "dream": "fidelity-enforcement",
+      "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-fidelity-enforcement"
     },
     {
       "slug": "genesis-installer",
@@ -3601,6 +3644,26 @@ window.DASHBOARD_DATA = {
       "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-multi-loop-isolation"
     },
     {
+      "slug": "one-front-door",
+      "project": "pyforge-marshal",
+      "title": "one front door",
+      "caps": 5,
+      "companions": 1,
+      "updated": "2026-08-01",
+      "dream": "one-front-door",
+      "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-one-front-door"
+    },
+    {
+      "slug": "pr-lifecycle",
+      "project": "pyforge-marshal",
+      "title": "PR lifecycle",
+      "caps": 6,
+      "companions": 0,
+      "updated": "2026-08-01",
+      "dream": "pr-lifecycle",
+      "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pr-lifecycle"
+    },
+    {
       "slug": "pyforge-marshal",
       "project": "pyforge-marshal",
       "title": "marshal CLI — graduated autonomy, productized",
@@ -3616,7 +3679,7 @@ window.DASHBOARD_DATA = {
       "title": "regenerable-factory program",
       "caps": 4,
       "companions": 1,
-      "updated": "2026-07-30",
+      "updated": "2026-08-01",
       "dream": "regenerable-factory",
       "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-regenerable-factory"
     },
@@ -4349,7 +4412,7 @@ window.DASHBOARD_DATA = {
     "sound": 0,
     "live": 34,
     "reached": 1,
-    "gaps": 56,
+    "gaps": 52,
     "findings": 27,
     "rows": [
       {
@@ -4878,7 +4941,7 @@ window.DASHBOARD_DATA = {
           "brief": "2026-08-01",
           "prd": "2026-08-01",
           "ux": "",
-          "arch": "2026-07-30",
+          "arch": "2026-08-01",
           "context": "2026-06-20",
           "epics": "2026-08-01",
           "sprint": "2026-08-01",
@@ -4974,7 +5037,7 @@ window.DASHBOARD_DATA = {
             "kind": "feeds",
             "stage": "arch",
             "than": "epics",
-            "at": "2026-07-30",
+            "at": "2026-08-01",
             "other": "2026-07-25"
           },
           {
@@ -4997,7 +5060,7 @@ window.DASHBOARD_DATA = {
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "10/45",
+        "progress": "10/48",
         "complete": 13,
         "of": 13
       },
@@ -6976,7 +7039,7 @@ window.DASHBOARD_DATA = {
         "stages": {
           "dream": "2026-07-31",
           "deck": "",
-          "spec": "",
+          "spec": "2026-08-01",
           "research": "2026-07-16",
           "brief": "",
           "prd": "",
@@ -6993,7 +7056,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-07-31",
           "deck": "",
-          "spec": "",
+          "spec": "2026-08-01T08:22",
           "research": "2026-07-31",
           "brief": "",
           "prd": "",
@@ -7042,7 +7105,7 @@ window.DASHBOARD_DATA = {
         },
         "archived": false,
         "dreamStatus": "dreamt",
-        "ownerDream": "",
+        "ownerDream": "durable-runs",
         "noDream": false,
         "unowned": false,
         "backfilled": false,
@@ -7058,8 +7121,7 @@ window.DASHBOARD_DATA = {
           "research"
         ],
         "gaps": [
-          "deck",
-          "spec"
+          "deck"
         ],
         "partial": [],
         "staleBy": [],
@@ -7069,7 +7131,7 @@ window.DASHBOARD_DATA = {
         "stale": false,
         "version": "",
         "progress": "",
-        "complete": 2,
+        "complete": 3,
         "of": 4
       },
       {
@@ -7185,7 +7247,7 @@ window.DASHBOARD_DATA = {
         "stages": {
           "dream": "2026-07-31",
           "deck": "",
-          "spec": "",
+          "spec": "2026-08-01",
           "research": "2026-07-16",
           "brief": "",
           "prd": "",
@@ -7200,9 +7262,9 @@ window.DASHBOARD_DATA = {
           "retro": ""
         },
         "updatedAt": {
-          "dream": "2026-07-31",
+          "dream": "2026-08-01",
           "deck": "",
-          "spec": "",
+          "spec": "2026-08-01T08:25",
           "research": "2026-07-31",
           "brief": "",
           "prd": "",
@@ -7251,7 +7313,7 @@ window.DASHBOARD_DATA = {
         },
         "archived": false,
         "dreamStatus": "dreamt",
-        "ownerDream": "",
+        "ownerDream": "fidelity-enforcement",
         "noDream": false,
         "unowned": false,
         "backfilled": false,
@@ -7267,8 +7329,7 @@ window.DASHBOARD_DATA = {
           "research"
         ],
         "gaps": [
-          "deck",
-          "spec"
+          "deck"
         ],
         "partial": [],
         "staleBy": [],
@@ -7278,7 +7339,7 @@ window.DASHBOARD_DATA = {
         "stale": false,
         "version": "",
         "progress": "",
-        "complete": 2,
+        "complete": 3,
         "of": 4
       },
       {
@@ -7514,7 +7575,7 @@ window.DASHBOARD_DATA = {
         "stages": {
           "dream": "2026-07-31",
           "deck": "",
-          "spec": "",
+          "spec": "2026-08-01",
           "research": "2026-07-16",
           "brief": "",
           "prd": "",
@@ -7531,7 +7592,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-07-31",
           "deck": "",
-          "spec": "",
+          "spec": "2026-08-01T08:30",
           "research": "2026-07-31",
           "brief": "",
           "prd": "",
@@ -7580,11 +7641,11 @@ window.DASHBOARD_DATA = {
         },
         "archived": false,
         "dreamStatus": "dreamt",
-        "ownerDream": "",
+        "ownerDream": "one-front-door",
         "noDream": false,
         "unowned": false,
         "backfilled": false,
-        "openQuestions": 0,
+        "openQuestions": 3,
         "overtaken": false,
         "na": [
           "ux"
@@ -7596,8 +7657,7 @@ window.DASHBOARD_DATA = {
           "research"
         ],
         "gaps": [
-          "deck",
-          "spec"
+          "deck"
         ],
         "partial": [],
         "staleBy": [],
@@ -7607,7 +7667,7 @@ window.DASHBOARD_DATA = {
         "stale": false,
         "version": "",
         "progress": "",
-        "complete": 2,
+        "complete": 3,
         "of": 4
       },
       {
@@ -7619,7 +7679,7 @@ window.DASHBOARD_DATA = {
         "stages": {
           "dream": "2026-07-31",
           "deck": "",
-          "spec": "",
+          "spec": "2026-08-01",
           "research": "2026-07-16",
           "brief": "",
           "prd": "",
@@ -7636,7 +7696,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-07-31",
           "deck": "",
-          "spec": "",
+          "spec": "2026-08-01T08:33",
           "research": "2026-07-31",
           "brief": "",
           "prd": "",
@@ -7685,7 +7745,7 @@ window.DASHBOARD_DATA = {
         },
         "archived": false,
         "dreamStatus": "dreamt",
-        "ownerDream": "",
+        "ownerDream": "pr-lifecycle",
         "noDream": false,
         "unowned": false,
         "backfilled": false,
@@ -7701,8 +7761,7 @@ window.DASHBOARD_DATA = {
           "research"
         ],
         "gaps": [
-          "deck",
-          "spec"
+          "deck"
         ],
         "partial": [],
         "staleBy": [],
@@ -7712,7 +7771,7 @@ window.DASHBOARD_DATA = {
         "stale": false,
         "version": "",
         "progress": "",
-        "complete": 2,
+        "complete": 3,
         "of": 4
       },
       {
@@ -7741,7 +7800,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-07-25",
           "deck": "",
-          "spec": "2026-07-30T14:40",
+          "spec": "2026-08-01T08:27",
           "research": "2026-07-31",
           "brief": "",
           "prd": "",
@@ -8713,9 +8772,9 @@ window.DASHBOARD_DATA = {
         "name": "drift-check",
         "task": "bmad-drift-check",
         "guards": "BMAD artifacts vs the live factory",
-        "state": "drift",
-        "findings": 1,
-        "verdict": "DRIFT: 1 integrity + 0 currency finding(s). Re-sync via _bmad-output/projects/pyforge-marshal/SYNC-RUNBOOK.md.",
+        "state": "green",
+        "findings": 0,
+        "verdict": "OK: all tracked BMAD artifacts are in sync with the live factory MINOR.",
         "runbook": "_bmad-output/projects/pyforge-marshal/SYNC-RUNBOOK.md"
       },
       {
@@ -8752,7 +8811,9 @@ window.DASHBOARD_DATA = {
         "status": "dreamt",
         "owner": "marshal",
         "blockedOn": "",
-        "chain": {}
+        "chain": {
+          "spec": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-durable-runs"
+        }
       },
       {
         "slug": "fidelity-enforcement",
@@ -8760,7 +8821,9 @@ window.DASHBOARD_DATA = {
         "status": "dreamt",
         "owner": "marshal",
         "blockedOn": "",
-        "chain": {}
+        "chain": {
+          "spec": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-fidelity-enforcement"
+        }
       },
       {
         "slug": "one-front-door",
@@ -8768,7 +8831,9 @@ window.DASHBOARD_DATA = {
         "status": "dreamt",
         "owner": "marshal",
         "blockedOn": "",
-        "chain": {}
+        "chain": {
+          "spec": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-one-front-door"
+        }
       },
       {
         "slug": "pr-lifecycle",
@@ -8776,7 +8841,9 @@ window.DASHBOARD_DATA = {
         "status": "dreamt",
         "owner": "marshal",
         "blockedOn": "",
-        "chain": {}
+        "chain": {
+          "spec": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pr-lifecycle"
+        }
       },
       {
         "slug": "video-scripts",
@@ -10881,7 +10948,7 @@ window.DASHBOARD_DATA = {
       "subject": "Merge bmad-loop/20260731-115548-f223/1-9-packaging-distribution-and-version-reporting into loop/pyforge-marshal (bmad-lo"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-01 13:08 UTC",
-    "generatedEpoch": 1785589732
+    "generatedAt": "2026-08-01 14:15 UTC",
+    "generatedEpoch": 1785593755
   }
 };
