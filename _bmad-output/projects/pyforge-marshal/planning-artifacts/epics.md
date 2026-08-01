@@ -43,7 +43,7 @@ Two conventions carried from the sibling builds:
 
 **Gates & verification** — FR-19 standalone gate evaluation · FR-20 project-scoped verify commands · FR-21 deterministic no-LLM gates · FR-22 frozen-surface scope check · FR-23 doc-only classification · FR-24 gate mode ladder · FR-25 gate evidence record · FR-26 never false-green · FR-27 review-cap landing path
 
-**Landing & paper trail** — FR-28 batch pull request · FR-29 repository-hygiene preflight · FR-30 automatic story-spec promotion · FR-31 spec-recovery assistance · FR-32 merge-subject conformance · FR-33 sprint & console feed refresh · FR-34 deploy idempotence · FR-35 no AI attribution
+**Landing & paper trail** — FR-28 batch pull request · FR-29 repository-hygiene preflight · FR-30 automatic story-spec promotion · FR-31 spec-recovery assistance · FR-32 merge-subject conformance · FR-33 sprint & console feed refresh · FR-34 deploy idempotence · FR-35 no AI attribution · *(added 2026-08-01)* FR-59 landing rules as policy · FR-60 `marshal land`
 
 **Fleet visibility** — FR-36 fleet view · FR-37 per-run detail · FR-38 escalation queue · FR-39 ledger-vs-git reconciliation · FR-40 stable machine-readable status contract
 
@@ -72,7 +72,7 @@ None — Marshal is a CLI with no visual surface. Its "UX" is the envelope contr
 | **E1** Provisioned, verified loop homes | FR-1..FR-8, FR-49..FR-57 | NFR-1, 7, 10, 12, 13, 14; AD-3, 4, 7, 10, 11, 14, 15, 16, 21, 23, 24, 31, 35, 38, 39 |
 | **E2** Gates you can run | FR-19..FR-27 (FR-27 partial) | NFR-3, 5, 11; AD-8, 17, 26 (seed), 27, 34 |
 | **E3** Supervised unattended runs | FR-9..FR-18 | NFR-4, 6, 8, 9; AD-5, 6, 9, 20, 22, 25, 26, 28, 30, 32 |
-| **E4** Landing with a durable paper trail | FR-27 (completion), FR-28..FR-35 | NFR-6, 8; AD-12, 13, 21, 24, 28, 29, 33 |
+| **E4** Landing with a durable paper trail | FR-27 (completion), FR-28..FR-35, FR-59, FR-60 | NFR-6, 8; AD-12, 13, 21, 24, 28, 29, 33, 40, 42 |
 | **E5** Fleet visibility | FR-36..FR-40 | NFR-12; AD-5, 33, 39 |
 | **E6** Portability proven | FR-41..FR-48, FR-58 | NFR-2, 9; AD-19, 31, 34, 36, 37 |
 
@@ -591,6 +591,7 @@ So that the agent never guesses at something it cannot safely decide.
 **When** resume runs
 **Then** it is detached on the same terms as launch and re-attaches a supervisor
 **And** resuming a run with an unresolved escalation is **refused** with a registered finding
+**And** *(added 2026-08-01 — AD-45)* the resume journal entry records a **reference to the resolving decision or artifact**, ingestion-sufficient for the knowledge station's pull (story key, reason, resolution reference, resolver attribution)
 
 ---
 
@@ -719,6 +720,69 @@ So that a crash mid-landing is recoverable without guesswork.
 **Then** it is closed **only** by a `reconciliation` outcome carrying observed external evidence — commit sha, worktree absence, PR number — plus the reconciling command (AD-28)
 **And** absent evidence the intent stays open and is reported
 **And** **reconciliation may observe and close; it may never re-perform an action whose intent is open without evidence the action did not occur** — the explicit AD-6 × AD-21 precedence
+
+---
+
+### Story 4.7: Landing rules as declared policy *(added 2026-08-01 — FR-59 / CAP-9)*
+
+As the operator,
+I want the rules a repository demands for landing declared as policy keys with provenance,
+So that landing stops being a memorized habit with a good track record.
+
+**Type:** feature • **Effort:** M • **Deps:** S-1.3 • **FR/AD:** FR-59; AD-40, AD-10, AD-16
+**Surface:** `core/policy.py`, `core/landing.py`, `schemas/policy.json`
+
+**Acceptance Criteria:**
+
+**Given** a project whose repository demands checks, labels, a merge strategy, and retirement behaviour
+**When** policy composes
+**Then** the landing surface appears as governed keys with per-key provenance — including repo-specific triggers such as this repository's `maintenance` label and its **ungated** `environment.yaml` sync check
+**And** an invalid landing policy is a preflight finding naming the layer that introduced each bad key
+**And** the effective landing policy prints with each key's winning layer, secrets redacted
+
+---
+
+### Story 4.8: `marshal land` — the last mile lands itself *(added 2026-08-01 — FR-60 / CAP-9)*
+
+As the operator,
+I want a story or wave that passed its gates to land on the integration branch without me driving the sequence,
+So that a run that ends with "somebody should open a PR" has actually ended.
+
+**Type:** feature • **Effort:** L • **Deps:** S-4.4, S-4.7 • **FR/AD:** FR-60; AD-40, AD-8, AD-6; NFR-6, NFR-7
+**Surface:** `cli/land.py`, `core/landing.py`, `adapters/forge_gh.py`, `core/journal.py`
+
+**Acceptance Criteria:**
+
+**Given** a merged wave and a composed landing policy
+**When** `marshal land` runs
+**Then** it opens or updates the PR (never duplicates), applies required labels, waits on required checks, merges by the declared strategy, retires the branch, and resyncs
+**And** a half-landed story — PR open, checks green, merge never issued — converges on re-run (idempotent and re-entrant)
+**Given** a red required check or an unacknowledged advisory finding
+**When** landing is attempted
+**Then** it refuses with a registered finding in the common envelope — no silent force, exactly teardown's refusal shape
+**And** every landing appends a journal verdict: checks required, checks passed, what merged, under whose authority
+**And** nothing emitted carries an AI-attribution trailer (FR-35 applies unchanged)
+
+---
+
+### Story 4.9: Derived surfaces regenerate on main; the shared store takes a lock *(added 2026-08-01 — AD-42 / the Q-10 decomposition)*
+
+As the operator,
+I want regenerated artifacts re-derived after landing instead of merged from homes, and shared-store appends serialized,
+So that two concurrent lines cannot silently last-write-wins each other's ledgers.
+
+**Type:** feature • **Effort:** M • **Deps:** S-4.5, S-4.8 • **FR/AD:** AD-42; C-3, C-4; extends FR-33
+**Surface:** `cli/deploy.py`, `cli/land.py`, `adapters/fs_local.py`
+
+**Acceptance Criteria:**
+
+**Given** a landing that changes story state
+**When** the sprint and console surfaces refresh
+**Then** they are **re-derived on the integration branch after the merge** — a regenerated file is never merged from a loop home
+**Given** two concurrent appends to the canonical Tier-3 store
+**When** both run
+**Then** an advisory file lock (an `FsPort` primitive) serializes them and neither append is lost
+**And** the journal's own two-writer protocol is explicitly out of scope here (F-6 owns it) — a test documents the boundary
 
 ---
 
@@ -952,6 +1016,26 @@ So that a workaround does not quietly become permanent.
 **And** each entry names the Marshal FR that compensates while the gap is open
 **And** the register is readable through the standard envelope so it can be surfaced in status or docs
 **And** an entry whose upstream status becomes `landed` flags its compensating workaround for removal
+
+---
+
+### Story 6.9: Tool-surface rendering and preflight probe *(added 2026-08-01 — AD-43 / the Q-11 resolution; post-MVP)*
+
+As the operator,
+I want the project's MCP tool surface declared in policy and rendered into the loop home,
+So that a provisioned home is reproducible in the one respect it currently is not: which tools the agent can call.
+
+**Type:** feature • **Effort:** M • **Deps:** S-1.7, S-6.1 • **FR/AD:** AD-43, AD-37; extends FR-5, FR-49
+**Surface:** `cli/init.py` (seed step), `core/policy.py`, `schemas/policy.json`
+
+**Acceptance Criteria:**
+
+**Given** a project policy declaring MCP servers
+**When** `marshal init` provisions the home
+**Then** a project-scoped `.mcp.json` renders into the home with seed-not-overwrite semantics identical to adapter seeds (Story 1.7's pattern)
+**And** preflight probes each declared server's resolvability and names blocking findings
+**And** the user-scoped registry is never read as authority and never written
+**And** the story is scheduled post-MVP; nothing in Epics 1–5 depends on it
 
 ---
 

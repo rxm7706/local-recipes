@@ -2,7 +2,7 @@
 title: Marshal (pyforge-marshal)
 status: final
 created: 2026-07-25
-updated: 2026-07-25
+updated: 2026-08-01  # CAP-9 -> FR-59/FR-60; competitive re-frame; FR-13 re-scope; FR-58 psmux; convergence watch; Q-3/Q-10..14 resolutions
 project: pyforge-marshal
 dist: pyforge-marshal
 module: pyforge.marshal
@@ -109,6 +109,8 @@ Three windows are open simultaneously, and none of them stays open indefinitely.
 
 **The strongest competitor has announced the thesis but not shipped it.** OpenHands' *Verification Stack* post argues verification, not generation, is the bottleneck and proposes a critic model plus a repo-level verifier. They are funded, at 82k stars, and aiming at the same target. The window is measured in quarters.
 
+**Re-framed 2026-08-01** (`research/market-agent-orchestration-research-2026-07-31.md` supersedes the generic slot claim): gated-unattended became a *named industry practice* ("Ralph loops"), Claude Code **Auto Mode** ships in-session safety with approval checkpoints first-party, and **Composio AO** — now the closest competitor — runs worktree-isolated agents managing their own PR lifecycle behind milestone gates. What remains unclaimed is **four properties in combination**: (1) the spec as an *executable contract* — frozen-surface scope checks; everyone stops on tests, nobody on contract conformance; (2) the supervisor *outside the session*, un-disableable (NFR-4); (3) **never-false-green** as a verdict lattice — unevaluable ≠ pass; (4) the paper trail that *survives teardown*. Marshal's positioning language uses these four, never the eroded generic claim.
+
 ---
 
 ## 5. Decision: Wrap versus Absorb
@@ -173,6 +175,8 @@ The distinction matters for scoping: "thin porcelain" alone would be a shell ali
 2. An upstream change breaks Marshal's contract tests in a way that cannot be adapted around within one minor version.
 3. Upstream declines a fix that is load-bearing for a Marshal invariant (a false-green risk, or a governance boundary).
 4. Licence change away from MIT.
+
+**Convergence watch item (added 2026-08-01 — a watch, not a trigger):** the upstream method's public roadmap names **"Dev Loop Automation"**. If upstream ships native loop automation overlapping bmad-loop or Marshal's supervision, the response is to **re-evaluate the seam, not the wrap** — convergence is the opposite failure mode from stall, and the four fork triggers above do not cover it.
 
 On trigger, the fallback is **vendoring a pinned fork behind the same adapter module** — which FR-52's single-seam constraint makes a bounded change rather than a rewrite. This is why the seam is a requirement and not a style preference.
 
@@ -313,6 +317,7 @@ A run cannot exceed configured token and wall-clock ceilings without a named sto
 - Per-story and per-run ceilings are enforced; a breach stops the unit with a named reason rather than a silent defer.
 - Consumption is journaled per story with a cost estimate where the adapter reports one.
 - Approaching a ceiling emits a warning before the stop.
+- *(Re-scoped 2026-08-01:)* upstream `bmad-loop` v0.9.0 ships **in-session** budget guards — credited, and not duplicated. Marshal's requirement is the half upstream cannot provide: ceilings enforced **from outside the session** by the supervisor (NFR-4), reachable from externally-observed quantities alone, so a wedged or compromised session cannot outlive its budget by being its own witness.
 
 #### FR-14: Heaviest-story budget advisory
 Before launch, the operator is warned when a selected story is likely to exceed the configured session budget.
@@ -492,6 +497,21 @@ Commits, PR bodies and comments Marshal emits carry no AI-attribution or courtes
 - No co-author trailer, model line, or generated-with line is added by Marshal.
 - Attribution, if ever added, is opt-in configuration and default-off.
 - *Grounding: the repo's standing convention, and the cautionary precedent of an editor vendor defaulting an AI co-author trailer on and reverting it after backlash — a commit trailer is part of the permanent authorship and blame record.*
+
+#### FR-59: Landing rules are declared policy *(added 2026-08-01 — CAP-9, operator ruling via `docs/dreams/pr-lifecycle.md`; resolves Q-3)*
+The rules a repository demands for landing compose from the policy layers with per-key provenance, like every other governed value.
+**Consequences:**
+- Required checks, merge strategy, label rules, branch-retirement behaviour, and repo-specific triggers are policy keys, not memorized habits — including this repository's `maintenance` label on non-`recipes/` changes and the **ungated** `environment.yaml` sync check that the label does not suppress.
+- The effective landing policy prints with each key's winning layer; an invalid landing policy is a preflight finding.
+- *Grounding: five PRs hand-driven in one session (2026-07-31), each repeating the same written-but-unenforced sequence; one (#170) merged a real detector break because nothing in the landing path asked.*
+
+#### FR-60: The last mile lands itself — `marshal land` *(added 2026-08-01 — CAP-9)*
+A story or wave that passed its gates lands on the integration branch without a human driving the sequence.
+**Consequences:**
+- `marshal land` opens or updates the PR, applies required labels, waits on required checks, merges by the declared strategy, retires the branch, and resyncs — idempotently and re-entrantly, so a half-landed story (PR open, checks green, merge never issued) converges on re-run.
+- Refusal semantics mirror teardown (FR-8): no merge on a red required check, no merge past an unacknowledged advisory finding, no silent force — refusals are named findings in the common envelope.
+- Every landing writes a journal verdict: which checks were required, which passed, what merged, under whose authority.
+- Wrap-never-absorb carried unchanged: the engine keeps dev/verify/review/commit and deliberately leaves this gap open; Marshal fills it around the engine, in the supervisor's domain.
 
 ---
 
@@ -680,7 +700,7 @@ Marshal is installable as a conda package and as a wheel.
 Fixes that belong upstream are tracked as such rather than worked around indefinitely.
 **Consequences:**
 - A tracked register lists each upstream-shaped gap, its Marshal workaround, and its upstream status.
-- Initial entries: idle-strand detection; per-story model tiering; `planning_artifacts` composition; ACP evaluation; non-POSIX multiplexer support.
+- Initial entries: idle-strand detection; per-story model tiering; `planning_artifacts` composition; ACP evaluation; ~~non-POSIX multiplexer support~~ *(landed upstream — v0.9.0 shipped a Windows psmux backend; entry closes as delivered, 2026-08-01)*.
 - Each entry names the Marshal FR that compensates while the gap is open.
 
 ---
@@ -691,12 +711,12 @@ Fixes that belong upstream are tracked as such rather than worked around indefin
 - **Marshal is not a skill.** It is deterministic harness; nothing in it is LLM-authored at runtime.
 - **Marshal does not judge its own output.** Station verdicts stay independent — the hand that builds is not the gate that judges. Compliance verdicts belong to Warden; toolchain health to Doctor; provisioning to Steward; comms to Herald.
 - **No hosted control plane, no telemetry to a remote host, no account.** Local-first.
-- **No IDE extension, no chat participant, no marketplace artifact.** §6.
+- **No IDE extension, no chat participant, no marketplace artifact.** §6. *(Q-13 resolved 2026-07-31: exclusion retained. The enterprise-seam ask dissolved into existing seams — adapter profiles, the policy-declared tool surface, installer-materialized site policy — and this Non-Goal stands.)*
 - **No HTTP proxy against any vendor's inference endpoint.** §6.
 - **No sandbox or container implementation.** Worktree isolation is in scope; process and network isolation is Steward's provisioning territory. *A worktree isolates the filesystem and branch, not the process or network — this boundary is stated, not hidden.*
-- **No PR-lifecycle automation beyond opening and updating a batch PR** — no CI watching, no auto-merge. (Q-3.)
+- **No PR-lifecycle automation beyond opening and updating a batch PR** — no CI watching, no auto-merge. (Q-3.) *(AMENDED 2026-07-31: Q-3 resolved — Marshal owns the PR lifecycle, per `docs/dreams/pr-lifecycle.md`. This non-goal narrows at the Spec's memlog-driven re-derivation; the line is annotated rather than deleted so the amendment stays visible.)*
 - **No fleet-level resource budgeting across concurrent runs.** Per-run ceilings only. (Q-4.)
-- **Marshal does not claim to be "the orchestrator."** It is the station around one.
+- **Marshal does not claim to be "the orchestrator."** It is the station around one. *(Q-14 resolved 2026-07-31: this Non-Goal stands with its scope clarified — it targets the engine claim. Marshal may sequence on verdicts it never authors; the route-verb surface belongs to the `spec-one-front-door` derivation.)*
 
 ---
 
@@ -708,7 +728,7 @@ Fixes that belong upstream are tracked as such rather than worked around indefin
 - Loop-home provisioning, per-worktree project state, Tier-3 backlink, isolation verification, teardown.
 - The supervisor: idle-strand detection, budget ceilings, escalation surfacing, run journal.
 - Gate evaluation as a standalone object, with frozen-surface scope checks, doc-only classification, and the autonomy-labelled gate-mode ladder.
-- Automatic story-spec promotion; batch PR; merge-subject conformance; sprint and console feed refresh.
+- Automatic story-spec promotion; batch PR; merge-subject conformance; sprint and console feed refresh; **landing rules as policy + `marshal land` (FR-59/FR-60, per the 2026-07-31 CAP-9 ruling)**.
 - Fleet status with ledger-versus-git reconciliation and a versioned machine-readable contract.
 - Skill-tree projection, adapter probe, conformance smoke and matrix, entry-file drift detection.
 - Layered policy composition with per-story model tiering and the single harness seam.
@@ -789,13 +809,21 @@ Fixes that belong upstream are tracked as such rather than worked around indefin
 
 1. **Q-1 — Wrap versus absorb.** **RESOLVED (§5): wrap and supervise.** Revisit triggers recorded in §5.4.
 2. **Q-2 — Ownership of the AGENTS.md entry-file family.** `AGENTS.md` states the portable Dream→spec handoff is Herald's job; `docs/dreams/agent-portability.md` records portability as re-scoped to Marshal on 2026-07-23. One is stale. Marshal ships **detection only** (FR-46) until this is settled; it edits nothing.
-3. **Q-3 — PR-lifecycle automation.** Does Marshal own create → watch CI → auto-merge, a gap the harness deliberately leaves open? Currently a non-goal. Owner: Crew ownership review.
+3. **Q-3 — PR-lifecycle automation.** **RESOLVED (operator, 2026-07-31): Marshal owns it.** Input Dream: `docs/dreams/pr-lifecycle.md` — landing rules become a declared policy surface; `marshal land` performs the last mile and refuses like teardown; wrap-never-absorb unchanged. The §8 non-goal narrows at the Spec's memlog-driven re-derivation, not by hand-patch.
 4. **Q-4 — Fleet-level resource budgets.** Per-run ceilings ship in v1; cross-run budgeting is deferred. Revisit when two projects routinely run heavy loops concurrently.
 5. **Q-5 — OpenTelemetry `gen_ai.*` emission.** Deferred; the conventions moved repositories in June 2026 and remain Development-stability with live renames. Revisit when the conventions stabilize or an external consumer requires them.
 6. **Q-6 — ACP migration trigger.** Proposed trigger: the upstream harness gains an ACP client path, **or** two adapters Marshal must support ship ACP-only, **or** ACP schema v2 reaches stable with the Claude adapter's known gaps closed. Until then, the harness's declarative profiles are the adapter contract.
 7. **Q-7 — Idle threshold default.** 25 minutes is carried from the production stopgap. Needs one wave of data to confirm it does not false-positive on legitimately slow verify steps.
 8. **Q-8 — Difficulty declaration source.** FR-51 reads story difficulty from the story's declaration; whether that lives in the story spec frontmatter or the epics document is an architecture-phase call.
 9. **Q-9 — Conformance smoke story content.** What minimal story exercises spec→change→verify→commit while staying adapter-agnostic and cheap? Architecture phase.
+
+**Q-10 … Q-14 added and resolved 2026-07-31 (architecture audit).** Five candidate capabilities were raised against this PRD, recorded as open questions rather than features, and resolved by operator ruling the same day. **Applied 2026-07-31/08-01:** the Spec re-render landed them as CAP-9, four constraints, and non-goal reaffirmations; this PRD carries the FR-level decomposition (FR-59/FR-60) and the §5.2/§7.2 re-scopes. None became an FR beyond what its decision states.
+
+10. **Q-10 — Serialization of shared Tier-2 writes.** **RESOLVED: decomposed; no mutex engine.** Tracked Tier-2 files are per-worktree copies, serialized by git at the push/PR boundary; the real hazard is semantic lost-update through clean merges of *regenerated* artifacts. Rule: merge append-only inputs, re-derive regenerated outputs on main after landing (an Epic 4 deploy-ordering rule). The genuinely shared canonical Tier-3 store gets an advisory append lock. The journal's two-writer problem is the Spec's F-6, already carried.
+11. **Q-11 — Tool-surface brokering.** **RESOLVED: yes, scoped.** The project's tool surface is declared in the project policy layer; `marshal init` renders a project-scoped `.mcp.json` into the loop home (the adapter-seed pattern); preflight probes resolvability. The user-scoped registry is never touched. Post-MVP, on the portability/adapter surface.
+12. **Q-12 — Escalation knowledge capture.** **RESOLVED: pull model.** Marshal's half is one FR-17 consequence — the resume entry records a reference to the resolving decision. Scribe ingests from run journals; that story is Scribe's backlog. No station writes across the boundary.
+13. **Q-13 — Enterprise plugin seam.** **RESOLVED: dissolved into existing seams; IDE exclusion retained.** Internal MCP servers → the Q-11 tool surface; proprietary/third-party agent CLIs → FR-52 adapter profiles; design bridges → Herald; internal skills → FR-45 projection. Site-wide policy vs the no-fourth-layer constraint resolves at install time — genesis-installer materializes site config into the Marshal-defaults layer, keeping runtime composition three layers and pure. No plugin-registry subsystem.
+14. **Q-14 — Does Marshal enforce inter-station order?** **RESOLVED (operator, 2026-07-31): Marshal sequences on verdicts it never authors.** Gating reads each station's durable, schema-validated verdict artifact, pinned to the tree revision it judged; Marshal never runs the judge. This *clarifies* the two §8 Non-Goals rather than striking them — "not 'the orchestrator'" targets the engine claim and stands; "verdicts stay independent" bars authorship, not consumption. Verdict reads remove most of the cross-environment invocation-port need; the route-verb surface is the queued `spec-one-front-door` derivation's contract.
 
 ---
 
@@ -825,13 +853,18 @@ Fixes that belong upstream are tracked as such rather than worked around indefin
   ],
   "open_questions": [
     "Q-2 AGENTS.md family ownership (Herald vs Marshal) — detection-only until settled",
-    "Q-3 PR-lifecycle automation ownership",
+    "Q-3 RESOLVED 2026-07-31: Marshal owns the PR lifecycle (docs/dreams/pr-lifecycle.md); non-goal narrows at Spec re-derivation",
     "Q-4 fleet-level resource budgets",
     "Q-5 OTel gen_ai.* emission",
     "Q-6 ACP migration trigger",
     "Q-7 idle threshold default validation",
     "Q-8 story difficulty declaration source",
-    "Q-9 conformance smoke story content"
+    "Q-9 conformance smoke story content",
+    "Q-10 RESOLVED 2026-07-31: Tier-2 writes decomposed — merge append-only inputs, re-derive outputs on main; Tier-3 append lock; F-6 carries the journal",
+    "Q-11 RESOLVED 2026-07-31: tool surface policy-declared, .mcp.json rendered into the loop home; user registry untouched",
+    "Q-12 RESOLVED 2026-07-31: pull model — FR-17 resume records the resolution reference; Scribe ingests from journals",
+    "Q-13 RESOLVED 2026-07-31: seam dissolved into adapter profiles + tool surface + installer-materialized site policy; IDE exclusion retained",
+    "Q-14 RESOLVED 2026-07-31: Marshal sequences on verdicts it never authors; non-goals clarified, not struck; route verbs -> spec-one-front-door"
   ],
   "assumptions": [
     "FR-12 idle default 25 min",
@@ -840,6 +873,6 @@ Fixes that belong upstream are tracked as such rather than worked around indefin
     "SM-4 80% escalation precision first target",
     "brief A1-A6 carried forward"
   ],
-  "counts": {"features": 8, "frs": 58, "nfrs": 14, "constraints": 10, "success_metrics": 10}
+  "counts": {"features": 8, "frs": 60, "nfrs": 14, "constraints": 10, "success_metrics": 10}
 }
 ```

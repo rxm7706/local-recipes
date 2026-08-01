@@ -402,6 +402,46 @@ graph TD
 
   **Severity is presentational WITHIN a bound (F-22, amended 2026-07-30).** The earlier meta-test asserted `status`, `verdict` and "the **maximum finding severity**" were "mutually consistent", while the Consistency Conventions table said "**severity is presentational**; the lattice member comes from `classify(code)`". Read as equality the two collide: a code classified `unevaluable` is free to carry severity `warn` for readability, and the meta-test then fails on correct output. Read as *monotone* consistency they agree, and that is what the shipped test already checks (`tests/meta/test_ad39_envelope_consistency.py::test_ok_status_with_error_severity_finding_raises`): severity may vary freely below the ceiling the verdict sets, and may never exceed it. The conventions row is amended to say so.
 
+### 2026-08-01 amendment set — AD-40…AD-45
+
+*Six additive decisions carrying the 2026-07-31 operator rulings (Spec CAP-9 + four constraints; PRD FR-59/FR-60) into the architecture. Numbering continues; nothing above is renumbered or weakened.*
+
+### AD-40 — Landing is a policy-governed surface in the supervisor's domain
+
+- **Binds:** FR-59, FR-60, CAP-9; extends AD-7 (exit domain), AD-8 (refusal shape), FR-8's teardown semantics
+- **Prevents:** the last mile remaining the one stage with no supervisor, no journal, and no verdict — and landing rules living as memorized habits (the five-PRs-hand-driven session; #170 merging a real detector break).
+- **Rule:** landing rules (required checks, merge strategy, labels, branch retirement, resync, repo-specific triggers) are **policy keys** composed with per-key provenance like every governed value. `marshal land` executes them idempotently and re-entrantly — a half-landed story converges on re-run — and refuses exactly as teardown does: named findings in the common envelope, no merge on a red required check, no silent force. Every landing appends a journal verdict (checks required/passed, what merged, under whose authority). The engine keeps dev/verify/review/commit; landing wraps *around* it.
+
+### AD-41 — Marshal sequences on verdicts it never authors
+
+- **Binds:** the 2026-07-31 doctrine ruling; extends AD-33 (truth partitioned by domain); scopes the "not the orchestrator" non-goal
+- **Prevents:** Marshal becoming the judge of another station's domain — and the opposite failure, a factory whose inter-station order is enforced by nobody.
+- **Rule:** inter-station gating is implemented as **reads of durable, schema-validated verdict artifacts, pinned to the tree revision they judged** — never as invocation of the judging station, never as re-derivation of its verdict. A verdict older than the revision under evaluation is *unevaluable*, not *pass* (AD-31 lattice). The composed route-verb surface (`marshal check` / `run` / `land` as one front door) is `spec-one-front-door`'s contract; this AD provides only the read discipline it will build on.
+
+### AD-42 — Shared writes serialize at the integration boundary; derived surfaces regenerate, never merge
+
+- **Binds:** the Q-10 resolution; extends AD-11 (loop home as write boundary), AD-37; C-3/C-4
+- **Prevents:** the "Tier-2 mutex engine" misdesign — and the real hazard it obscured: semantic lost-update through textually-clean merges of regenerated artifacts.
+- **Rule:** three distinct mechanisms, none a global lock. (1) Tracked planning artifacts are per-worktree copies; publication serializes through git's push/batch-PR boundary. (2) **Regenerated surfaces (sprint feed, console) are re-derived on `main` after landing** — a deploy-ordering rule: append-only inputs merge, derived outputs regenerate; `marshal deploy`/`land` never merges a regenerated file from a home. (3) Appends to the genuinely shared canonical Tier-3 store take an **advisory file lock** through the `FsPort`. The journal's two-writer protocol remains Open Question F-6's remedy and is not solved here.
+
+### AD-43 — The tool surface is policy-declared and home-rendered
+
+- **Binds:** the Q-11 resolution; extends AD-37 (enumerated write targets), the Story-1.7 adapter-seed pattern, FR-5's preflight findings
+- **Prevents:** a loop home reproducible in every respect except which tools the agent can call — and any Marshal write into user-scoped configuration.
+- **Rule:** the project's MCP tool surface is declared in the **project policy layer**; `marshal init` renders it into the loop home (project-scoped `.mcp.json`, seed-not-overwrite semantics identical to adapter seeds); preflight probes resolvability and names blocking findings. The user-scoped registry (`~/.claude.json`) is never read as authority and never written. Scheduling: the portability surface (Epic 6 adjacency), post-MVP.
+
+### AD-44 — Site configuration materializes at install time into the defaults layer
+
+- **Binds:** the Q-13 residue; preserves AD-35 and the three-layer composition of FR-49/CAP-7
+- **Prevents:** a fourth runtime policy layer — the one thing the composition constraint forbids — arriving disguised as an "enterprise requirement".
+- **Rule:** air-gapped/site-wide configuration enters by **install-time materialization into the Marshal-defaults layer** (the installer's job — Epics 10–12), leaving runtime composition exactly three layers with unchanged provenance semantics. Internal tooling mounts through existing seams: MCP servers via AD-43's tool surface, proprietary agent CLIs via declarative adapter profiles (FR-41/52). No plugin-registry subsystem exists. IDE surfaces remain excluded (§8 non-goal, reaffirmed).
+
+### AD-45 — Escalation knowledge flows by pull
+
+- **Binds:** the Q-12 resolution; extends AD-5/AD-6 (journal-first), FR-15/FR-17; respects C-3
+- **Prevents:** Marshal writing into another station's artifacts to "share knowledge" — the exact cross-boundary write C-3 exists to stop.
+- **Rule:** a resume against a resolved escalation records a **reference to the resolving decision/artifact** in the run journal (an FR-17 consequence). Ingestion into team memory is the knowledge station's read of journals from its own side of the boundary; no push path exists. The journal entry must therefore be ingestion-sufficient: story key, reason, resolution reference, resolver attribution as the trust model defines it (F-4 caveat carried, not resolved).
+
 ---
 
 ## Consistency Conventions
@@ -532,6 +572,9 @@ The supervisor's **inputs** are observation-only — it never asks the session h
 | Run supervision (FR-9..FR-18) | `supervisor/`, `core/supervise`, `core/journal`, `adapters/{process_posix,observer_mux,notify_*}` | AD-9, AD-20, AD-5, AD-6, AD-22 |
 | Gates & verification (FR-19..FR-27) | `core/gate`, `core/verdict`, `cli/gate` | AD-4, AD-7, AD-8, AD-17 |
 | Landing & paper trail (FR-28..FR-35) | `cli/deploy`, `core/identity`, `adapters/{vcs_git,forge_gh}` | AD-13, AD-24, AD-6, AD-12 |
+| PR lifecycle — landing rules as policy (FR-59, FR-60 · CAP-9, added 2026-08-01) | `cli/land`, `core/landing`, `core/policy`, `adapters/forge_gh` | AD-40, AD-42, AD-8, AD-6 |
+| Tool-surface rendering (Q-11 resolution, post-MVP) | `cli/init` seed step, `core/policy` | AD-43, AD-37 |
+| Inter-station verdict reads (doctrine, pre-`one-front-door`) | `core/verdict` readers (future) | AD-41, AD-31, AD-33 |
 | Fleet visibility (FR-36..FR-40) | `core/status`, `core/journal`, `cli/status` | AD-5, AD-14, AD-12 |
 | Adapter portability (FR-41..FR-48) | `core/conformance`, `cli/adapters`, `adapters/harness_bmadloop` | AD-19, AD-12, AD-3 |
 | Policy composition (FR-49..FR-54) | `core/policy`, `cli/config` | AD-10, AD-16, AD-3 |

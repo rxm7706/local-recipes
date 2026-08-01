@@ -271,3 +271,37 @@ This regenerated gate found **0 blocking gaps** and **3 non-blocking should-fix 
 - [project-context.md](../project-context.md) — last_synced_skill_version v8.41.0, 63 rules
 - [project-parts.json](./project-parts.json) — machine-readable part inventory
 - [index.md](./index.md) — navigator
+
+---
+
+# Addendum — 2026-08-01 chain-refresh re-adjudication
+
+> Scope: the full chain moved 2026-07-31/08-01 (memlog-driven SPEC re-render →
+> brief → PRD → architecture → epics). This addendum re-adjudicates the prior
+> gate's BLOCKED-ON findings (F-1..F-6, adversarial review of AD-25–39) against
+> shipped code and the refreshed chain. It does not re-run the full gate.
+
+## F-1..F-6 re-adjudication
+
+| Finding | Status 2026-08-01 | Evidence / owner |
+|---|---|---|
+| **F-1** composed policy has no path to the harness | **RESOLVED — shipped** | Story 1.10: `write_policy_toml` renders the composed policy into the loop home; the tracked `.bmad-loop/policy.toml` untracked (PR #139 lineage); residuals tracked as `DW-1-10-*` |
+| **F-2** quarantine clause legislates a false green | **OPEN — owned at Epic 3 head** | journal fold design (S-3.2); scoped unevaluability replaces the blanket clause before the fold ships |
+| **F-3** standalone gate evaluation has no frozen set | **OPEN — owned at Epic 2 head** | which journal a standalone evaluation folds is E2's first design decision (S-2.x) |
+| **F-4** trust model undeclared | **OPEN — carried** | AD-45 explicitly carries (not resolves) it; the declaration belongs before Epic 3's escalation surface ships |
+| **F-5** mid-run freeze accumulation has no writer in production gate modes | **OPEN — owned at Epic 2 head** | resolves with F-3 in the same design pass |
+| **F-6** unique monotonic journal id unachievable under the append protocol | **OPEN — owned at Epic 3 head** | AD-42 explicitly leaves the journal's two-writer case to F-6; composite id or declared lock decides at S-3.1/S-3.2 |
+
+## Chain-consistency verdict
+
+- SPEC (9 CAPs, re-rendered from memlog) ↔ PRD (60 FRs incl. FR-59/60) ↔
+  architecture (AD-1..45) ↔ epics (45 stories incl. 4.7–4.9, 6.9) — cross-refs
+  verified this pass; the pre-Epic-1 amendment set items from the prior gate
+  remain tracked in SPEC OQ 7–8.
+- **Readiness:** Epic 2 may start with F-3/F-5 resolutions at its head; Epic 3
+  with F-2/F-6 (and the F-4 declaration). Epic 4's new stories (4.7–4.9)
+  depend on S-1.3/S-4.4/S-4.5 only — no new blockers introduced. Story 6.9 is
+  post-MVP by declaration.
+- The five 2026-07-31 operator rulings are fully propagated; no artifact
+  contradicts another on them (verified by the section cross-reads in this
+  pass).

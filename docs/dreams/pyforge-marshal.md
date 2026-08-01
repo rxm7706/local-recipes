@@ -71,6 +71,30 @@ visible. Anti-vibe, by construction.
   `planning_artifacts` key composing with project config) belongs upstream in
   bmad-method. First live proof: the [[regenerable-factory]] backfill loop and
   the [[pyforge-warden]] 6.3 resume running concurrently.
+- **A floor that survives two writers.** "Many lines, one floor" isolates the
+  worktree but not the floor: the ledgers, feeds and epics every line writes are
+  shared mutable state with nothing serializing them. Isolation owes its own
+  concurrency answer.
+- **Crossing the boundary between stations.** The product environments are
+  isolated by construction, so one station never imports another. A verdict has
+  to arrive the way a stranger's would — as structured output, earned across a
+  process boundary, trusted only because it is machine-checkable.
+- **A crash an unattended reader can act on.** Nobody is watching at 03:00, and a
+  stack trace is not an instruction. Every failure should leave the line as a
+  coded finding.
+- **A run that cannot be torn down while it is still alive**, and a ceiling that
+  actually stops rather than warns.
+- **A seam for estates we cannot see.** An air-gapped floor runs on tools we will
+  never ship — internal trackers, private servers, proprietary clients. They
+  should mount, not fork ([[enterprise-airgap]]).
+- **Sequencing the Guild — resolved 2026-07-31: sequence on verdicts, never
+  author them.** The Charter's master pipeline hands the crew's work along in
+  order, supervised by Marshal; the apparent collision with "not the
+  orchestrator" dissolved on inspection — that non-goal targets the *engine*
+  claim, and verdict independence bars *authorship*, not consumption. Gating
+  reads each station's durable verdict artifact, pinned to the revision it
+  judged; Marshal never runs the judge. The composed surface that routes it all
+  is [[one-front-door]]'s to contract.
 
 ## Realization log
 
@@ -108,3 +132,16 @@ visible. Anti-vibe, by construction.
   gap): `spec-pyforge-marshal` Spec (local-recipes planning-artifacts) binds
   `.bmad-loop/**` into governance, adopting the multi-loop-isolation Spec +
   the bmad-loop-adoption spec; grounded live by the warden 6.3/6.5 wave.
+- **2026-07-31** — **five open questions ruled on in one sitting** (operator),
+  recorded as amendment inputs in the Spec's memlog for the queued re-derivation:
+  sequencing adopted as *sequence on verdicts, never author them* (neither
+  non-goal struck — scope clarified); the PR lifecycle is Marshal's
+  ([[pr-lifecycle]] resolves the Spec's OQ #10); the Tier-2 write question
+  decomposed (merge append-only inputs, re-derive outputs on main; advisory lock
+  on the shared Tier-3 store; F-6 carries the journal); the tool surface becomes
+  policy-declared and rendered per-home; the enterprise seam dissolved into the
+  seams that already exist, IDE surfaces staying excluded. Same day, the frontier
+  bullets above were re-grounded after an audit wrote four factual errors into
+  this Dream (19 envs not 15; Marshal, not Genesis, in the eight; the Charter's
+  actual pipeline order; a second MCP server that does not exist) — the lesson
+  recorded in the memlog: a premise handed to an agent is not evidence.
