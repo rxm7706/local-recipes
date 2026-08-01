@@ -734,7 +734,7 @@ def _git_date(path: Path) -> str:
 
 
 def scan_specs() -> list[dict]:
-    """Every _bmad-output/projects/*/planning-artifacts/specs/spec-*/SPEC.md."""
+    """Spec KERNELS only (Row 4) — .../specs/spec-<slug>/SPEC.md. For per-story specs (Row 7) see scan_story_specs()."""
     rows: list[dict] = []
     for spec_dir in sorted((REPO_ROOT / "_bmad-output" / "projects").glob(
             "*/planning-artifacts/specs/spec-*")):
@@ -764,6 +764,49 @@ def scan_specs() -> list[dict]:
                      "path": str(spec_dir.relative_to(REPO_ROOT))})
     print(f"[specs] {len(rows)} Specs scanned "
           f"({', '.join(sorted({r['project'] for r in rows}))})")
+    return rows
+
+
+def scan_story_specs() -> list[dict]:
+    """Per-station Row-7 compliance: done stories vs. tracked flat specs (spec-[0-9]*.md pattern only)."""
+    rows: list[dict] = []
+    projects_base = REPO_ROOT / "_bmad-output" / "projects"
+
+    for project_dir in sorted(projects_base.glob("pyforge-*")):
+        # Count done stories from sprint-status-ledger.yaml
+        ledger_path = project_dir / "planning-artifacts" / "sprint-status-ledger.yaml"
+        done_count = 0
+        if ledger_path.exists():
+            ledger_text = ledger_path.read_text(encoding="utf-8")
+            if "development_status:" in ledger_text:
+                import yaml
+                try:
+                    ledger_data = yaml.safe_load(ledger_text)
+                    if ledger_data and "development_status" in ledger_data:
+                        done_count = sum(1 for v in ledger_data["development_status"].values() if v == "done")
+                except:
+                    pass
+
+        # Count tracked flat story-spec files (spec-[0-9]*.md pattern)
+        specs_dir = project_dir / "planning-artifacts" / "specs"
+        tracked_count = 0
+        if specs_dir.exists():
+            # Flat files matching spec-<numeric-id>-*.md (not nested kernel dirs)
+            tracked_count = len([f for f in specs_dir.glob("spec-[0-9]*.md") if f.is_file()])
+
+        gap = done_count - tracked_count
+        project_slug = project_dir.name
+        rows.append({
+            "station": project_slug,
+            "done": done_count,
+            "tracked": tracked_count,
+            "gap": gap
+        })
+
+    total_done = sum(r["done"] for r in rows)
+    total_tracked = sum(r["tracked"] for r in rows)
+    total_gap = sum(r["gap"] for r in rows)
+    print(f"[story-specs] {len(rows)} station(s), {total_done} done, {total_tracked} tracked, {total_gap} gap(s)")
     return rows
 
 
@@ -2226,6 +2269,7 @@ def main() -> int:
         apply_loop_inflight(data["projects"])
     data["dreams"] = scan_dreams()
     data["specs"] = scan_specs()
+    data["storySpecs"] = scan_story_specs()
     data.pop("campaign", None)
     data.pop("campaign2", None)
     spec_c = scan_campaign()
