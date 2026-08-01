@@ -2,8 +2,9 @@
 title: Mason (pyforge-mason)
 status: final
 created: 2026-07-25
-updated: 2026-07-25
+updated: 2026-08-04
 project: pyforge-mason
+currency_review: Reviewed 2026-08-04 — spec/brief timestamp bump was structural (project relocation / memlog story-completion recording), not content drift; PRD unchanged.
 dream: docs/dreams/packaging-factory.md
 adopted_kernel: _bmad-output/projects/local-recipes/planning-artifacts/specs/spec-packaging-factory/SPEC.md
 inputs:

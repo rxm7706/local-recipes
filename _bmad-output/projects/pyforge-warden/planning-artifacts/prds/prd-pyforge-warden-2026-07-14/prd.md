@@ -14,6 +14,8 @@ stepsCompleted:
   - step-10-nonfunctional
   - step-11-polish
   - step-12-complete
+updated: 2026-08-04
+currency_review: Reviewed 2026-08-04 — spec/brief timestamp bump was structural (project relocation / memlog story-completion recording), not content drift; PRD unchanged.
 classification:
   projectType: cli_tool
   projectTypeNote: "Non-interactive CI/CD policy/quality-gate CLI; primary consumer is a pipeline, not a human terminal. report-schema.json is the data contract (an output_formats concern). developer_tool label dropped (no public SDK/IDE surface). Interactive/shell-completion UX deprioritized."

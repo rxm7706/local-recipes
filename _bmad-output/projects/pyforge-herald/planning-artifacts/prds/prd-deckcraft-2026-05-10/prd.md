@@ -14,6 +14,8 @@ stepsCompleted:
   - step-10-nonfunctional
   - step-11-polish
   - step-12-complete
+updated: 2026-08-04
+currency_review: Reviewed 2026-08-04 — spec/brief timestamp bump was structural (project relocation / memlog story-completion recording), not content drift; PRD unchanged.
 inputDocuments:
   - "_bmad-output/projects/deckcraft/planning-artifacts/product-brief-deckcraft.md"
   - "_bmad-output/projects/deckcraft/planning-artifacts/product-brief-deckcraft-distillate.md"
