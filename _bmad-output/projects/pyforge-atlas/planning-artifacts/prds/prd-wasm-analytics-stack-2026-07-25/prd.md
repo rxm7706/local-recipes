@@ -1,7 +1,7 @@
 ---
 title: Wasm Analytics Stack
 created: 2026-07-25
-updated: 2026-08-04
+updated: 2026-08-01
 status: final
 currency_review: Reviewed 2026-08-04 — spec/brief timestamp bump was structural (project relocation / memlog story-completion recording), not content drift; PRD unchanged.
 ---

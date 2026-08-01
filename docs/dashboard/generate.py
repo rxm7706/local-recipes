@@ -39,6 +39,9 @@ import tomllib
 from pathlib import Path
 
 # dashboard project-key -> its sprint-status.yaml (repo-root-relative)
+# TODO: Replace hardcoded PROJECT_SOURCES with dynamic discovery from _bmad-output/projects/*/
+# This hardcoding causes stale entries when projects are consolidated (e.g., deckcraft → herald).
+# Discovery should scan _bmad-output/projects/ and auto-derive the active project set.
 PROJECT_SOURCES = {
     "warden": "_bmad-output/projects/pyforge-warden/implementation-artifacts/sprint-status.yaml",
     "atlas": "_bmad-output/projects/pyforge-atlas/implementation-artifacts/sprint-status.yaml",
@@ -883,8 +886,6 @@ IMPL_CAMPAIGN = [
      "note": "line 3 — team memory + graph"},
     {"slug": "pyforge-steward",      "pkey": None, "stories": 18, "state": "queued",
      "note": "next free slot"},
-    {"slug": "deckcraft",            "pkey": None, "stories": 28, "state": "queued",
-     "note": "planned pre-campaign (6 epics); research backfill advisable before launch"},
     {"slug": "pyforge-mason",        "pkey": None, "stories": 38, "state": "queued",
      "note": "longest persona line; CFE Rule-2 retro at closeout"},
     {"slug": "presenton-pixi-image", "pkey": None, "stories": 30, "state": "held",
@@ -1107,7 +1108,7 @@ FLEET_NA = {
     "wasm-analytics-stack": {"epics"},
     "regenerable-factory": {"prd", "arch", "brief", "context"},  # shipped practice-type, no brief/UX by design
 }
-FLEET_UX = {"deckcraft", "presenton-pixi-image", "unity-data-stack", "wasm-analytics-stack"}
+FLEET_UX = {"presenton-pixi-image", "unity-data-stack", "wasm-analytics-stack"}
 # Verify gate task-name aliases: chains whose test task doesn't follow {slug}-test pattern.
 FLEET_VERIFY_ALIAS = {"pyforge-atlas": ("kedro-test",)}
 _STALE_DAYS = 30
@@ -2055,7 +2056,6 @@ PROGRAM_DREAM = {"warden": "pyforge-warden", "atlas": "pyforge-atlas",
                  "marshal": "pyforge-marshal", "mason": "pyforge-mason",
                  "steward": "pyforge-steward", "genesis": "pyforge-genesis",
                  # auto-discovered lines whose Dream slug is NOT pyforge-prefixed
-                 "deckcraft": "deckcraft",
                  "presenton-pixi-image": "presenton-pixi-image"}
 
 

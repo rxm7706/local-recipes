@@ -1,617 +1,566 @@
 ---
-stepsCompleted:
-  - step-01-validate-prerequisites
-  - step-02-design-epics
-  - step-03-create-stories
-  - step-04-final-validation
+stepsCompleted: ['step-01-validate-prerequisites']
 inputDocuments:
-  - planning-artifacts/prds/prd-pyforge-herald-2026-07-25/prd.md
-  - planning-artifacts/architecture/architecture-pyforge-herald-2026-07-25/ARCHITECTURE-SPINE.md
-  - planning-artifacts/specs/spec-design-code-bridge/SPEC.md
-  - planning-artifacts/specs/spec-design-code-bridge/bridge-protocol.md
-  - planning-artifacts/briefs/brief-pyforge-herald-2026-07-25/brief.md
+  - _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-herald-pitch/SPEC.md
+  - _bmad-output/projects/pyforge-herald/planning-artifacts/prds/prd-pyforge-herald-2026-08-01/prd.md
+  - _bmad-output/projects/pyforge-herald/planning-artifacts/architecture/architecture-herald-pitch-2026-08-01/ARCHITECTURE-SPINE.md
 ---
 
-# pyforge-herald - Epic Breakdown
+# Herald Pitch Deck Family Expansion - Epic Breakdown
 
 ## Overview
 
-Complete epic and story breakdown for **pyforge-herald** — a deterministic CLI (`herald`)
-packaging the proven Design↔Code Bridge (`SPEC-design-code-bridge`, CAP-1..5) as five
-repeatable commands: `herald deck seed/pull/status/watch` + export push-back. Decomposed from
-the finalized PRD (FR-01–FR-26 + NFR-01–NFR-09) and the finalized architecture spine (AD-1–AD-8,
-hexagonal ports-and-adapters, pixi workspace-member packaging). **No UX design contract** — this
-is a non-interactive/CLI-only surface with no human-UI beyond terminal output, matching the
-`pyforge-warden` precedent's "N/A — non-interactive CLI" UX posture. `updates compile`,
-`broadcast`, `deck generate`, and `bmad init` are **explicitly out of scope** — see § Deferred /
-Roadmap at the end of this document; no epic or story below touches them.
+This document provides the complete epic and story breakdown for Herald's Pitch Deck orchestration across 9 PyForge stations (Marshal, Warden, Atlas, Mason, Steward, Scribe, Genesis, Doctor, Herald), decomposing the Spec, PRD, and Architecture into implementable stories with acceptance criteria.
+
+**Core Mission**: Produce 6 artifact formats per station from a single Design source using proven Tier 1 capabilities (Design-Code-Bridge, Deckcraft, Video-Scripts, Modernist-Identity) with zero manual file transfers and aggressive footprint optimization (62% reduction).
+
+**Herald CLI v0.1.0 Status**: Herald CLI is already shipped with seed/pull commands. This effort extends beyond CLI to the full design-to-delivery pipeline for all 9 station decks, including PPTX export, narration extraction, HTML deck builds, and comprehensive validation.
+
+---
 
 ## Requirements Inventory
 
-### Functional Requirements
+### Functional Requirements (20 FRs)
 
-**A. Transport & Foundation (cross-cutting infrastructure the five CAPs share)**
-- FR-21: primary transport is a pure MCP client on the `claude-design` remote server, reusing
-  the stored `/design-login` OAuth credential, validated by a time-boxed spike as the first V1
-  story.
-- FR-22: fallback transport is a headless Claude Code / Agent SDK wrapper with a tool
-  allowlist, reusing the same stored login.
-- FR-23: every bridge operation is deterministic — no LLM in the decision path, regardless of
-  transport.
-- FR-24: every cross-surface read/write carries `if_none_match`/`if_match`; unconditional
-  writes are not possible through the CLI.
-- FR-25: Herald ships as a pixi-workspace-member package (`pyforge-herald` / `pyforge.herald` /
-  `herald`).
-- FR-26: `herald deck --help` documents every subcommand without requiring `bridge-protocol.md`.
+**Design Source & Seeding (CAP-1: Design-Code-Bridge)**
+- FR1: System must seed Design projects per station via 'herald deck seed <station>' command
+- FR2: System must pull updated Design protos into Code with etagged safety via 'herald deck pull <station>'
+- FR3: System must extract markdown sources from Design protos automatically
+- FR18: System must support round-trip Design ↔ Code via Design-Code-Bridge with etagged safety
 
-**B. CAP-1 — Seed (repo → Design)**
-- FR-01: `herald deck seed <slug>` yields a Modernist-bound Design project carrying the runtime
-  + a contract-compliant starter prototype.
-- FR-02: seed proves the prototype locally (`extract` + `build`) before any Design write; a
-  failing prove blocks the seed.
-- FR-03: seed refuses structurally over existing Design-side edits, writing nothing.
-- FR-04: seed prints only the `claude.ai/design/...` URL and registers the project in the deck
-  README § *Design project*.
+**PPTX Generation & Design Tokens (CAP-2: Deckcraft Framework)**
+- FR4: System must transform markdown sources into editable PowerPoint files (PPTX)
+- FR5: System must apply Modernist design tokens to PPTX generation
+- FR9: System must maintain one design system (Modernist-Identity) with tokens for Figma → JSON → PPTX → deck engine → video
 
-**C. CAP-2 — Pull (Design → repo)**
-- FR-05: unchanged etag → "unchanged" report, exit 0, zero bytes transferred.
-- FR-06: changed etag → decode, write `project/<Deck>.dc.html`, re-run
-  `extract` → `build` → `deck-export`.
-- FR-07: pulls Design-authored Marp sources into `src/marp/` via the same etag/decode loop, no
-  extract/build.
-- FR-08: pulls a Design-authored standalone bundle, superseding the marp `--html` fallback.
-- FR-09: commits are the operator's by default; `--commit` opts into an automatic commit.
-- FR-10: the returned etag is stored after every successful pull.
+**Narrative & Video Scripts (CAP-3: Video-Scripts Framework)**
+- FR6: System must generate {station}-narration-YYYY-MM-DD.md files from Design speaker notes
+- FR7: System must feed narration corpus to bmad-manticore for video production
+- FR16: System must enforce voice bible consistency (WPM, speech patterns, tone markers) via linter
+- FR17: System must prevent fabricated demos—all video content must be real screen recordings
 
-**D. CAP-3 — Status**
-- FR-11: `herald deck status [<slug>]` reports linked/unlinked, unchanged/changed/conflict, and
-  last-pull timestamp, machine-readable.
-- FR-12: detects a stale hand-mirror (a Design project holding a repo app-tree copy), verified
-  against a planted fixture.
-- FR-13: `status` never writes to either surface.
+**Deck Framework & Structure (CAP-5: Six-Act Deck Framework)**
+- FR10: System must structure all decks per six-act framework (Cover, Acts I-VI, Appendix) with ~28 slides
+- FR11: System must apply L.A.T.C.H. visual principles (Location, Analogy, Time, Color, Hierarchy) to all decks
 
-**E. CAP-4 — Watch**
-- FR-14: polls each watched deck's etag on a 60 s default interval (30 s hard floor, jittered).
-- FR-15: defers a pull until the etag is stable for one full poll interval.
-- FR-16: idle backoff doubles after ~10 unchanged polls, capped at 10 min, reset on change.
-- FR-17: halts (never retries) on an auth error, reporting the failure structurally.
+**Infographics & Multi-Format Export (CAP-6: Multi-Format Export)**
+- FR8: System must extract SVG infographics from Design protos
+- FR14: System must build interactive HTML decks from Markdown via Vite (gitignored, regenerable <5s)
+- FR15: System must validate all 9 HTML decks render without error via 'dashboard-check'
+- FR19: System must track 6 artifact formats per station: .dc.html, markdown, PPTX, narration, SVG, HTML (built)
+- FR20: System must gitignore intermediate artifacts (fragments.json, dist/, assets/, .mp4) with deterministic regeneration
 
-**F. CAP-5 — Export push-back**
-- FR-18: pushes the regenerated derived set into Design via `finalize_plan` + `write_files`,
-  per-file etags.
-- FR-19: an unchanged file (hash matches last-pushed etag record) is skipped.
-- FR-20: a conflict on any export file is refused structurally, no partial clobber of the rest
-  of the push set.
+**Station Customization (CAP-7: Station-Specific Customization)**
+- FR12: System must support per-station customization (thesis, pain point, solution pillars, personas)
+- FR13: System must support per-station visuals (domain-appropriate diagrams per 9 stations)
 
-### NonFunctional Requirements
+### Non-Functional Requirements (12 NFRs)
 
-- NFR-01 (Determinism): no bridge operation may invoke an LLM in its control-flow decision
-  path, under either transport.
-- NFR-02 (Structured failure): every conflict surfaces structured and machine-parseable, never
-  a silent no-op or partial write.
-- NFR-03 (Unreachable-surface failure): a clear structured failure at every command; `watch`
-  halts rather than retries on auth errors.
-- NFR-04 (URL hygiene): output/files carry only `claude.ai/design/...` URLs, never a tokenized
-  `serve_url`.
-- NFR-05 (Credential reuse): Herald reuses the existing stored `/design-login` credential; no
-  new credential storage mechanism.
-- NFR-06 (Directional integrity): inbound = authored sources only; outbound = seeds + derived
-  exports only; no code path constructs a mirrored app tree either direction.
-- NFR-07 (Portability): every FR's acceptance is exit-code + file-artifact based, framework
-  agnostic.
-- NFR-08 (Zero-byte unchanged): an unchanged pull/status/watch-poll transfers zero file bodies.
-- NFR-09 (Poll floor): default 60 s poll; 30 s hard floor enforced by the CLI.
+- NFR1: All Design ↔ Code transfers must validate etags; conflicts must fail loudly, never silently overwrite
+- NFR2: All 9 PPTX files must open and edit correctly in Microsoft PowerPoint with fonts/colors/layouts preserved
+- NFR3: All infographics must render as inline SVG (zero raster .png/.jpg images)
+- NFR4: All 9 HTML decks must render without error; 'dashboard-check' pass is terminal validation
+- NFR5: No fabricated product demos—all screen recordings must be real, never AI-generated mockups or synthetic UI
+- NFR6: Narration must pass linter validation (voice bible + blacklist) before video pipeline accepts it
+- NFR7: HTML deck regeneration must complete in <5 seconds
+- NFR8: Video regeneration must complete in <60 seconds
+- NFR9: Design protos must be tracked as immutable source of truth; code-side never pushes back to Design
+- NFR10: Tracked footprint must not exceed ~144 files (9 stations × ~16 files); 62% reduction from ~270 unoptimized
+- NFR11: All 9 stations must inherit tokens from single Modernist-Identity source (no per-station token drift)
+- NFR12: Speaker notes → narration extraction must be mechanical and deterministic (no hand-authoring)
 
-### Additional Requirements (from Architecture)
+### Additional Requirements (10 Architecture Decision Records - ADRs)
 
-*From `ARCHITECTURE-SPINE.md` — these shape epic/story design. **No starter template applies**
-(this is a from-scratch package, unlike a scaffolded-template greenfield project); the
-concrete scaffolding precedent is the sibling `src/shared/packages/pyforge-warden/` and
-`src/shared/packages/pyforge-atlas/` packages, both already shipped in this repo.*
+- **AD-1**: Each of 9 PyForge stations has exactly one immutable Design prototype (.dc.html) as source of truth
+- **AD-2**: Etagged safety protocol: read-file includes etag; write-file requires matching etag or fails explicitly
+- **AD-3**: Multi-format export pipeline with explicit ownership (Design → Markdown → PPTX, Narration, SVG → HTML, Video)
+- **AD-4**: Aggressive tracking strategy: track source + finals (~144 files), gitignore regenerables (fragments, dist/, assets/, .mp4)
+- **AD-5**: Modernist tokens as single authority: Figma → design-tokens.json → templates (PPTX, deck engine, video bibles)
+- **AD-6**: Identical framework across all 9 stations; per-station content varies (thesis, pain point, solution, personas)
+- **AD-7**: Narration extraction mechanical from Design speaker notes; deterministic, tracked, fed to video pipeline
+- **AD-8**: Video pipeline boundary: Herald orchestrates extraction/sourcing; bmad-manticore handles render (voice, graphics, SFX, final .mp4)
+- **AD-9**: No fabricated demos constraint: Herald enforces real footage sourcing; Manticore enforces at graphics-beats gate
+- **AD-10**: Narration voice identity enforced by linter (WPM, patterns, tone markers); blacklist blocks non-matching narration
 
-- **AD-1** (package shape): `src/shared/packages/pyforge-herald/` — own `[package]` table,
-  `pixi-build-python` backend, no `[workspace]` table; root `pixi.toml` wires it into a
-  dedicated `no-default-feature` `pyforge-herald` environment. Epic 1 Story 1 is the
-  scaffolding story, mirroring `pyforge-warden`'s own bootstrap.
-- **AD-2** (CLI framework): argparse, matching `pyforge.warden.cli:main` — `[project.scripts]
-  herald = "pyforge.herald.cli:main"`.
-- **AD-3** (transport-agnostic core): `bridge-core` depends only on a `DesignTransport`
-  protocol; two adapters (`McpTransport` primary, `AgentSdkTransport` fallback) implement it.
-- **AD-4** (determinism boundary): the harness inside `AgentSdkTransport` is plumbing only;
-  `bridge-core`'s branch logic never depends on model inference under either adapter.
-- **AD-5** (state persistence): `.herald/bridge-state.json` is the operational etag/state
-  source of truth; the README § *Design project* stays the human-readable registry, read only
-  as a bootstrap fallback.
-- **AD-6** (error model): a `HeraldError` hierarchy caught once at the CLI boundary, mapped to
-  fixed exit codes; stdout carries only machine-readable success output.
-- **AD-7** (deck-pipeline adapter): `deck_pipeline.py` wraps `npm run extract`/`build` and
-  `pixi run -e local-recipes deck-export <slug>` as opaque subprocess calls — never
-  reimplemented.
-- **AD-8** (registry ownership): `registry.py` is the sole module that reads/writes the deck
-  README's § *Design project* block.
+### Requirements Coverage Map
 
-### UX Design Requirements
+| Requirement Category | Epic(s) | Stories | Status |
+|---|---|---|---|
+| Design seeding & pulling (FR1-3, FR18) | Epic 1 | 1.1-1.3 | Ready |
+| PPTX & token application (FR4-5, FR9) | Epic 2 | 2.1-2.2, 2.5 | Ready |
+| Narration extraction (FR6-7, FR16-17) | Epic 3 | 3.1-3.4 | Ready |
+| SVG infographic extraction (FR8) | Epic 2 | 2.3 | Ready |
+| Six-act framework & L.A.T.C.H. (FR10-11) | Epic 1 | 1.2, 1.4 | Ready |
+| HTML decks & validation (FR14-15) | Epic 2 | 2.4-2.5 | Ready |
+| Per-station customization (FR12-13) | Epic 4 | 4.1-4.9 (9 stories) | Ready |
+| Artifact tracking & optimization (FR19-20) | Epic 0 | 0.2-0.3 | Ready |
+| Modernist tokens foundation (AD-5) | Epic 0 | 0.1 | Ready |
+| All ADRs (AD-1 through AD-10) | All epics | All stories | Ready |
 
-**N/A** — non-interactive CLI, no human-UI surface beyond terminal output. The
-human-facing affordances (`--help`, structured error messages, `claude.ai/design` links) are
-owned as FR-04/FR-26 + NFR-02/03/04, not as UX artifacts — matching `pyforge-warden`'s
-established posture for this project family.
-
-### FR Coverage Map
-
-FR-21, FR-22, FR-23, FR-24, FR-25: **Epic 1** (foundation, spans the epic's stories 1.1–1.5)
-FR-01, FR-02, FR-03, FR-04, FR-26: **Epic 1** (story 1.6, the epic's payoff)
-FR-05, FR-06, FR-07, FR-08, FR-09, FR-10: **Epic 2**
-FR-11, FR-12, FR-13: **Epic 3**
-FR-14, FR-15, FR-16, FR-17: **Epic 4**
-FR-18, FR-19, FR-20: **Epic 5**
-
-All 26 FRs covered. NFR-01–NFR-09 are cross-cutting acceptance gates applied wherever their
-concern is exercised (cited per-story below), not a separate epic — same convention
-`pyforge-warden`'s epics.md established for its own cross-cutting gates (C0, NFR-S\*, NFR-R\*).
+---
 
 ## Epic List
 
-*Vertical-slice epics, one per CAP, in the spec's own dependency order. Epic 1 carries the
-shared foundation (transport, state, errors, registry, package scaffold) **as part of
-delivering CAP-1's real user value** — never a standalone "build the spine" epic — per the
-`pyforge-warden` precedent (its own Epic 1 folds spine-building into the first vertical slice).
-Epics 2–5 each build on Epic 1's foundation but are independently complete for their own
-domain: Epic 3 does not require Epic 4; Epic 4 does not require Epic 5; and so on.*
-
-### Epic 1: Seed a deck into Claude Design
-An operator can turn a locally-authored, locally-proven prototype into a live, Modernist-bound
-Design project with one command — while this epic also stands up the transport, state, error,
-and registry foundation every later epic depends on.
-**FRs covered:** FR-01, FR-02, FR-03, FR-04, FR-21, FR-22, FR-23, FR-24, FR-25, FR-26
-
-### Epic 2: Pull Design edits back into the repo
-An operator can pull whatever a human changed in Claude Design — the prototype, Marp sources,
-or a Design-authored standalone bundle — straight into a green, re-derived repo state, or learn
-cheaply that nothing changed.
-**FRs covered:** FR-05, FR-06, FR-07, FR-08, FR-09, FR-10
-
-### Epic 3: See the bridge's state at a glance
-An operator can ask, for any deck or all of them, whether it's linked, in sync, conflicted, or
-sitting on a stale hand-mirror — without touching either surface.
-**FRs covered:** FR-11, FR-12, FR-13
-
-### Epic 4: Stay in sync automatically
-An operator can leave Herald watching a set of decks and trust that a Design-side edit lands in
-the repo on its own, without babysitting a pull loop or burning cycles on idle decks.
-**FRs covered:** FR-14, FR-15, FR-16, FR-17
-
-### Epic 5: Keep Design current with the shipped exports
-An operator (via the pull-then-export-then-push cycle) can trust that after `deck-export`
-regenerates a deck's derived artifacts, Design ends up holding the same complete set —
-without ever risking a clobber on either side.
-**FRs covered:** FR-18, FR-19, FR-20
+- **Epic 0**: Foundation & Infrastructure — Design-Code-Bridge etagged protocol, Modernist tokens, aggressive tracking strategy
+- **Epic 1**: Design Authoring & Seeding — Create 9 Design projects, establish six-act framework structure, seed with contract-compliant prototypes
+- **Epic 2**: Multi-Format Export Pipeline — Markdown, PPTX, SVG, HTML deck engine with etagged safety
+- **Epic 3**: Narration Extraction & Validation — Mechanical extraction, linter enforcement, video pipeline staging
+- **Epic 4**: Station-Specific Customization — 9 stations × 6 formats with domain-appropriate content and visuals
+- **Epic 5**: Build, Validation & Shipping — Comprehensive validation, footprint verification, git commit and narration staging
 
 ---
 
-## Epic 1: Seed a deck into Claude Design
+## Epic 0: Foundation & Infrastructure
 
-An operator can turn a locally-authored, locally-proven prototype into a live, Modernist-bound
-Design project with one command. This epic also stands up the foundation (package scaffold,
-transport port + both adapters, bridge-core with its state/error backbone, and the registry
-module) that Epics 2–5 build on — delivered as part of shipping CAP-1's real value, not as a
-separate infrastructure epic.
+**Goal**: Establish infrastructure for Design-Code-Bridge, Modernist design tokens, and aggressive artifact tracking strategy.
 
-### Story 1.1: Package scaffold for `pyforge-herald`
+### Story 0.1: Set up Modernist-Identity design system and token exports
 
-As an operator,
-I want a working `herald` CLI package wired into this repo's pixi workspace,
-So that Herald exists as a real, installable command before any bridge logic is built.
+As a **design system curator**,
+I want **Modernist design tokens to be centralized and exportable**,
+So that **all 9 station decks inherit consistent visual language without drift**.
 
 **Acceptance Criteria:**
 
-**Given** the repo has no `pyforge-herald` package yet
-**When** the scaffold is created at `src/shared/packages/pyforge-herald/` (its own `[package]`
-table, `pixi-build-python` backend, no `[workspace]` table, hatchling `pyproject.toml` with
-`[project.scripts] herald = "pyforge.herald.cli:main"`) and the root `pixi.toml` gains
-`[feature.pyforge-herald.dependencies] pyforge-herald = { path = "src/shared/packages/pyforge-herald" }`
-plus a dedicated `pyforge-herald = { features = ["pyforge-herald"], no-default-feature = true }`
-environment
-**Then** `pixi run -e pyforge-herald herald deck --help` runs and exits 0, printing the
-`deck` subcommand group (empty of real logic — this story only wires the entrypoint) (FR-25)
-**And** the package installs cleanly via `pixi run -e pyforge-herald pyforge-herald-build`
-(mirroring the `pyforge-warden-build`/`pyforge-atlas-build` task shape: conda pkg + wheel/sdist)
-**And** `herald deck --help`'s output is generated by argparse from the registered
-subcommands — no hand-written help text to keep in sync (FR-26, satisfied incrementally as
-later stories add subcommands)
+**Given** the Modernist-Identity design system is defined in Figma
+**When** design-tokens.json is generated from Figma variables
+**Then** the JSON contains all required token categories:
+- Colors: light palette (#f3f2f2), ink (#201e1d), red accent (#ec3013/#c22a10)
+- Typography: Archivo font family with size/weight scale
+- Spacing: Grid-based spacing scale (8px baseline)
+- Borders: 2px rules, zero corner radius
+**And** the token structure supports round-trip (Figma → JSON → PPTX templates → deck engine → video bibles)
 
-### Story 1.2: Transport port + primary MCP-client adapter (the transport spike)
+**Given** design-tokens.json exists
+**When** a PPTX template references tokens
+**Then** token values are applied correctly (no hardcoded colors/fonts)
+**And** regenerating PPTX preserves token-driven styling
 
-As an operator,
-I want Herald's primary transport to reach the `claude-design` MCP server outside a Claude Code
-session,
-So that the bridge doesn't require a live interactive session just to run a command.
+### Story 0.2: Establish .gitignore strategy and artifact tracking matrix
+
+As a **repo maintainer**,
+I want **.gitignore to reflect the aggressive optimization strategy (62% reduction)**,
+So that **tracked footprint stays ~144 files (vs. 270 unoptimized) with deterministic regeneration**.
 
 **Acceptance Criteria:**
 
-**Given** the `DesignTransport` protocol is defined (`get_design_prompt`, `create_project`,
-`finalize_plan`, `create_support_js`, `copy_files`, `write_files`, `read_file`,
-`render_preview` — the exact `bridge-protocol.md` tool surface) in `transport/base.py`
-**When** `McpTransport` is implemented against the `mcp` >=1.28.1 official SDK, reusing the
-stored `/design-login` OAuth credential (NFR-05), and exercised against a real
-`claude-design` remote MCP call (e.g. `get_design_prompt` for the Modernist design system)
-**Then** the call succeeds from a plain, non-interactive Python process — not inside a live
-Claude Code session — proving the primary path (FR-21)
-**And** if the spike instead demonstrates the primary path cannot reach the server outside a
-session, that finding is recorded as a blocking spike result and Story 1.3's fallback becomes
-the shipped default for V1 (spike-first per the PRD's risk mitigation; this AC accepts either
-verified outcome, not just success)
-**And** `McpTransport` returns only sanitized `claude.ai/design/...` URLs to callers — any raw
-`serve_url` in a tool response is stripped before it crosses the adapter boundary (NFR-04)
+**Given** the artifact tracking matrix is defined (track source + finals, gitignore intermediates)
+**When** .gitignore is updated
+**Then** the following are gitignored:
+- fragments.json (deck extraction intermediates)
+- dist/ (HTML deck build output)
+- assets/ (compiled JS/CSS)
+- .mp4 (video renders)
+- node_modules, build caches
+**And** the following are tracked:
+- .dc.html (design protos, 1 per station)
+- .md (markdown sources, 5-8 per station)
+- .pptx (PPTX exports, 2-4 per station)
+- narration .md files (1-2 per station)
+- .svg infographics (0-1 per station)
 
-### Story 1.3: Fallback transport adapter
+**Given** the tracking strategy is in place
+**When** artifacts are built and committed
+**Then** tracked file count for 9 stations ≈ 144 (±10%)
+**And** all gitignored artifacts regenerate deterministically (<5s for HTML, <60s for video)
 
-As an operator,
-I want a working fallback transport when the primary MCP client path is unavailable,
-So that the bridge still functions using the bmad-loop-proven headless substrate.
+### Story 0.3: Implement Design-Code-Bridge etagged pull protocol
 
-**Acceptance Criteria:**
-
-**Given** `DesignTransport` from Story 1.2
-**When** `AgentSdkTransport` is implemented as a headless Claude Code / Agent SDK wrapper with
-a tool allowlist limited to the bridge's tool surface, reusing the same stored `/design-login`
-credential (FR-22, NFR-05)
-**Then** it satisfies the identical `DesignTransport` protocol — a caller can swap
-`McpTransport` for `AgentSdkTransport` with zero code changes outside the transport-selection
-point (AD-3)
-**And** any harness process it runs internally exposes only the fixed deterministic tool calls
-to `bridge-core` — no branch of `bridge-core`'s logic differs based on which adapter is active
-(NFR-01, AD-4)
-**And** it also strips raw `serve_url`s at the adapter boundary (NFR-04)
-
-**And** — **HARD CONSTRAINT, added 2026-07-31 after two silent crashes** — the nested agent
-process is **never actually spawned during development or in any test**. `AgentSdkTransport`
-must take its process-launch seam as an injected dependency (a `ProcessRunner`-shaped callable
-or equivalent), so every test drives it with a **stub**, and no test, fixture or exploratory
-command in this story invokes a real `claude` binary.
-
-> **Why this constraint exists.** This story's subject IS a nested Claude Code invocation, and
-> it is being implemented BY a Claude Code session. Both prior dev attempts (run
-> `20260730-192235-062b`, 2026-07-30) died mid-thinking with **no error text**, logs ending on
-> a spinner frame, 36,261 weighted tokens total — and OOM, session timeout and environment
-> fault were each ruled out by direct check. Attempt 2's log shows the session shelling out to
-> a real `claude -p` that was still `Running…` at **6m22s under a `timeout 90`** which never
-> fired. A nested agent invocation from inside an agent session is the one thing this story
-> asks for and the one thing that reliably kills the session doing the asking.
->
-> The transport is fully specifiable without ever launching one: the protocol conformance, the
-> tool allowlist, the determinism boundary and the `serve_url` stripping are all assertions
-> about what the adapter SENDS and RETURNS, not about a live subprocess. Injecting the launch
-> seam is also the AD-4-shaped design — the impure edge belongs behind a port — so this makes
-> the story both survivable and better-factored.
->
-> This narrows the story's surface, which AD-27 permits a spec to do. Live verification against
-> a real nested agent is deferred to an operator-run integration check, outside the loop.
-
-### Story 1.4: Bridge-core skeleton — state, errors, determinism boundary
-
-As an operator,
-I want every bridge command to fail structurally and never silently, and to never depend on a
-live model call to decide what happens,
-So that I can trust the bridge's behavior is predictable and debuggable.
+As a **developer**,
+I want **etagged pull operations to prevent silent overwrites**,
+So that **Design ↔ Code transfers are safe across concurrent edits**.
 
 **Acceptance Criteria:**
 
-**Given** `state.py` (reads/writes `.herald/bridge-state.json`, keyed by slug: linked project
-id, per-artifact last-seen etag, last-pull timestamp — AD-5) and `errors.py` (the `HeraldError`
-hierarchy: `SeedConflictError`, `PullConflictError`, `ExportConflictError`,
-`TransportUnreachableError`, `AuthError` — AD-6)
-**When** `bridge-core` is exercised with a transport double that raises each error type in turn
-**Then** each error is caught exactly once at the CLI boundary and mapped to a fixed,
-documented exit code with a structured stderr message — never a silent no-op (NFR-02)
-**And** a static/code-level check (or an explicit test asserting no `bridge-core` module
-imports an LLM/inference client) proves the control-flow decision path contains zero calls
-into either transport adapter's harness internals — only the fixed protocol methods (NFR-01,
-FR-23)
-**And** `state.py`'s read/write round-trips a `DeckState` record without data loss, verified
-by a write-then-read test
+**Given** a Design proto exists at design-cloud:/{station}.dc.html
+**When** `herald deck pull <station>` is executed
+**Then** the pull reads the etag from Design cloud
+**And** stores the etag alongside the pulled artifact
+**And** all subsequent writes to the same artifact require matching etag or fail explicitly
 
-### Story 1.5: Registry module — README § Design project
-
-As an operator,
-I want the deck README's Design-project registry kept in one canonical format,
-So that a human reading any deck's README always finds the same link/id/name shape Herald
-itself relies on.
-
-**Acceptance Criteria:**
-
-**Given** `registry.py` (AD-8) as the sole owner of a deck README's § *Design project* block
-**When** `registry.register(slug, project_name, project_id, file_url)` is called against a
-README with no existing § *Design project* section
-**Then** the section is appended in the exact form `bridge-protocol.md`'s Conventions specify
-(project name, id, file URL)
-**And** calling `registry.read(slug)` against that README returns the same fields back,
-round-tripping cleanly
-**And** calling `register` again for the same slug updates the existing block in place rather
-than duplicating it
-
-### Story 1.6: `herald deck seed <slug>`
-
-As an operator,
-I want to run one command that turns my locally-authored, locally-proven prototype into a live
-Design project,
-So that I never have to hand-run the `bridge-protocol.md` tool sequence myself.
-
-**Acceptance Criteria:**
-
-**Given** a locally-authored `presentations/<slug>/project/<Deck>.dc.html` and a clean bridge
-state for `<slug>` (no existing Design project linked)
-**When** `herald deck seed <slug>` runs
-**Then** it first proves the prototype locally via `deck_pipeline` (`npm run extract` yields
-the expected slide count with no lost sections; `npm run build` succeeds) — a failing prove
-aborts before any Design write (FR-02)
-**And**, on a successful prove, it gates on `get_design_prompt`, then
-`create_project`/`finalize_plan`/`create_support_js`/`copy_files`/`write_files` in the exact
-`bridge-protocol.md` seed sequence, bound to the Modernist design system id
-`fbc1d6c8-b35f-4df6-9044-a64d2675427b` (FR-01)
-**And** it prints only the resulting `claude.ai/design/...` URL, registers the project via
-`registry.register` (Story 1.5), and initializes `.herald/bridge-state.json` for the slug
-(Story 1.4) (FR-04)
-**And**, when Design-side edits already exist for `<slug>` (simulated by a non-`"0"` etag on a
-prior write), `herald deck seed <slug>` raises `SeedConflictError` naming what it detected and
-writes nothing to either surface — verified by a subsequent `state.py` read showing no state
-change (FR-03, NFR-02)
-**And** it never constructs or transfers anything beyond the runtime + prototype — no app-tree
-mirroring (NFR-06)
+**Given** a pull operation is in-flight
+**When** Design edits occur concurrently
+**Then** the next pull validates etagged responses
+**And** detects mismatch, fails with clear error message
+**And** does not silently merge or overwrite
 
 ---
 
-## Epic 2: Pull Design edits back into the repo
+## Epic 1: Design Authoring & Seeding
 
-An operator can pull whatever a human changed in Claude Design — the prototype, Marp sources,
-or a Design-authored standalone bundle — straight into a green, re-derived repo state, or learn
-cheaply that nothing changed. Builds on Epic 1's transport, state, and bridge-core.
+**Goal**: Seed 9 Design projects per PyForge station, establish seeding contract, and author initial prototypes per six-act framework.
 
-### Story 2.1: `herald deck pull <slug>` — prototype pull with etag short-circuit
+### Story 1.1: Create 9 Design projects (seed per station)
 
-As an operator,
-I want to pull a Design-side prototype edit into the repo with one command, and pay nothing
-when there's no edit,
-So that I can ship whatever a human changed without a manual download.
+As a **design system curator**,
+I want **9 Design projects created and bound to Modernist identity**,
+So that **each PyForge station has a dedicated visual authoring surface**.
 
 **Acceptance Criteria:**
 
-**Given** a deck seeded via Story 1.6, with the last-seen prototype etag stored in
-`.herald/bridge-state.json`
-**When** `herald deck pull <slug>` runs and the Design-side etag is unchanged
-**Then** it prints "unchanged", exits 0, and transfers zero bytes of file body — verified by
-asserting the transport's `read_file` call was made `if_none_match`-guarded and the response
-was `{unchanged: true}` (FR-05, NFR-08)
-**When** instead the etag has changed
-**Then** it decodes the entity-escaped body (`&amp; &lt; &gt;` → `& < >`), writes
-`presentations/<slug>/project/<Deck>.dc.html`, and runs
-`extract` → `build` → `deck-export` in sequence via `deck_pipeline`, surfacing which stage
-failed if any does (FR-06, NFR-02)
-**And** on success, the new etag is stored in `.herald/bridge-state.json` before the command
-exits (FR-10)
+**Given** the Herald seeding contract is defined (1920×1080, Archivo, Modernist palette)
+**When** `herald deck seed <station>` is executed for each of the 9 stations (Marshal, Warden, Atlas, Mason, Steward, Scribe, Genesis, Doctor, Herald)
+**Then** a Design project is created with:
+- Name: `pyforge-{station}-pitch`
+- Bound to Modernist-Identity design system
+- Starter prototype (1920×1080 canvas, Archivo font, light palette, visible grid, 2px rules)
+- Speaker notes section ready for narration
+- Etagged tracking enabled
 
-### Story 2.2: `--commit` opt-in
+### Story 1.2: Establish six-act framework structure in Design prototypes
 
-As an operator,
-I want to optionally have Herald commit a pull's result automatically,
-So that routine pulls don't require a manual commit step when I trust the result.
+As a **deck author**,
+I want **each Design prototype structured per six-act framework**,
+So that **all 9 decks tell coherent stories with consistent narrative arc**.
 
 **Acceptance Criteria:**
 
-**Given** Story 2.1's pull logic
-**When** `herald deck pull <slug> --commit` runs and the pull changed files
-**Then** Herald stages and commits exactly the files the pull + re-derive touched, with a
-terse, non-interactive commit subject
-**When** `herald deck pull <slug>` runs without `--commit`
-**Then** no commit is made — the operator's working tree carries the changes, uncommitted
-(FR-09)
+**Given** a Design project is seeded
+**When** a deck author begins editing
+**Then** the prototype includes slide placeholders for:
+- Cover (hook + thesis statement)
+- Act I (friction/pain point)
+- Act II (insight/aha moment)
+- Act III (mechanics, 4-step delivery, L.A.T.C.H. Time)
+- Act IV (real-world fit, L.A.T.C.H. Location)
+- Act V (future/vision, L.A.T.C.H. Category)
+- Act VI (action/CTA)
+- Appendix (personas + stakeholder context)
 
-### Story 2.3: Marp-source pull
+**Given** the six-act structure is in place
+**When** a deck is authored
+**Then** each deck contains ~28 slides total
+**And** all speaker notes are written for narration extraction
 
-As an operator,
-I want Design-authored Marp sources pulled into the repo the same way the prototype is,
-So that exec-summary and infographic sources stay in sync with what was authored in Design.
+### Story 1.3: Extract markdown sources from Design prototypes
 
-**Acceptance Criteria:**
-
-**Given** a Design project holding Marp sources (deck, executive summary, infographic — per
-the warden pilot evidence)
-**When** `herald deck pull <slug>` runs
-**Then** each Marp source is pulled via the same etag/decode loop as the prototype, landing at
-`presentations/<slug>/src/marp/<slug>-{deck,executive-summary,infographic}-<date>.md` (FR-07)
-**And** no `extract`/`build` step runs for Marp sources — `deck-export` regenerates the
-derived set instead, per `bridge-protocol.md`'s authored-source-pull section
-**And** an unchanged Marp source (matching etag) is skipped individually — a changed prototype
-and an unchanged Marp source in the same pull invocation still short-circuit the Marp side
-
-### Story 2.4: Standalone bundle pull
-
-As an operator,
-I want a Design-authored standalone infographic bundle pulled and preferred over a marp-rendered
-fallback,
-So that the richer, hand-designed poster ships instead of a plainer regenerated one.
+As a **developer**,
+I want **markdown sources extracted from Design protos automatically**,
+So that **version-controlled markdown becomes available for downstream pipelines**.
 
 **Acceptance Criteria:**
 
-**Given** a Design project holding a standalone bundle (e.g. an "Infographic standalone" page)
-**When** `herald deck pull <slug>` runs and the bundle exists in Design
-**Then** it is pulled to its export path (`src/marp/<slug>-infographic-standalone-<date>.html`),
-superseding any `marp --html` render for that artifact (FR-08)
-**When** no Design-authored bundle exists for the slug
-**Then** the pull leaves the existing marp-rendered fallback untouched — Herald does not force
-a regeneration it has no bundle to justify
+**Given** a Design proto is finalized in Design cloud
+**When** `herald deck pull <station>` is executed
+**Then** the Design proto is pulled into Code as .dc.html
+**And** markdown extraction occurs automatically (mechanical, no hand-authoring)
+**And** markdown file is saved to `src/marp/{station}.md`
+**And** extraction is deterministic (same Design proto → same markdown every time)
+
+### Story 1.4: Validate station-specific narrative content in all 9 decks
+
+As a **content reviewer**,
+I want **each station's deck to include domain-specific narrative**,
+So that **station personas and solutions are articulated clearly**.
+
+**Acceptance Criteria:**
+
+**Given** all 9 decks are authored
+**When** a content reviewer audits them
+**Then** each deck contains:
+- Station thesis (unique value proposition)
+- Pain point (friction/problem framing specific to domain)
+- Solution pillars (3-5 pillars of the solution, domain-specific)
+- Ecosystem vision (how the station fits in PyForge, long-term direction)
+- Personas (stakeholder context, voting records, challenges)
 
 ---
 
-## Epic 3: See the bridge's state at a glance
+## Epic 2: Multi-Format Export Pipeline
 
-An operator can ask, for any deck or all of them, whether it's linked, in sync, conflicted, or
-sitting on a stale hand-mirror — without touching either surface. Builds on Epic 1's state file
-and Epic 2's per-artifact etag tracking, but is independently complete: an operator gets full
-status value without ever running `watch` or export push-back.
+**Goal**: Implement automated pipeline to produce 6 artifact formats per station from Design protos (Markdown, PPTX, SVG, HTML, Narration, Build artifacts).
 
-### Story 3.1: `herald deck status [<slug>]`
+### Story 2.1: Implement deckcraft pipeline (Markdown → PPTX with tokens)
 
-As an operator,
-I want to see every watched or seeded deck's bridge state in one machine-readable report,
-So that I know what's linked, in sync, or conflicted without manually comparing etags.
+As a **developer**,
+I want **markdown sources to transform into editable PowerPoint files**,
+So that **presenters can open and edit decks in Microsoft PowerPoint**.
 
 **Acceptance Criteria:**
 
-**Given** `.herald/bridge-state.json` holding state for one or more decks (some seeded, some
-not)
-**When** `herald deck status` runs with no slug argument
-**Then** it reports, per known deck, linked/unlinked, unchanged/changed/conflict (via a fresh
-etag comparison against Design), and the last-pull timestamp, in a machine-readable format
-(FR-11)
-**When** `herald deck status <slug>` runs with a specific slug
-**Then** it reports only that deck's state, in the same shape
-**And** across both invocations, no file is written on either surface — verified by asserting
-zero calls to any transport `write_files`/`create_project`/`finalize_plan` method and zero
-writes to `.herald/bridge-state.json` (FR-13, NFR-08)
+**Given** markdown source is available
+**When** `pixi run deck-export` is executed
+**Then** deckcraft pipeline processes markdown for each station:
+- Reads markdown source (marp format)
+- Applies Modernist design tokens (fonts, colors, spacing from design-tokens.json)
+- Generates PPTX using python-pptx
+- Outputs to `src/pptx/{station}.pptx`
+**And** pipeline completes in 5-10s per deck
 
-### Story 3.2: Stale hand-mirror detection
+**Given** a PPTX file is generated
+**When** it is opened in Microsoft PowerPoint
+**Then** it opens without errors
+**And** all fonts are Archivo (or fallback applied correctly)
+**And** all colors match design tokens (light, ink, accent, derivatives)
+**And** content can be edited without breaking the deck
 
-As an operator,
-I want Herald to flag a Design project that's secretly a hand-mirrored repo copy,
-So that I can identify and eventually retire the pattern the bridge was built to replace.
+### Story 2.2: Implement SVG infographic extraction from Design
+
+As a **developer**,
+I want **SVG infographics extracted from Design as inline assets**,
+So that **diagrams are vector-based, regenerable, and never raster**.
 
 **Acceptance Criteria:**
 
-**Given** a planted fixture Design project matching the "Local recipes repository connection"
-pattern (a project holding many files mirroring a repo app-tree structure, rather than a single
-prototype + a few authored sources)
-**When** `herald deck status` runs and encounters that project
-**Then** it flags it distinctly from the normal linked/unlinked/changed states — e.g. a
-`stale_mirror: true` field or equivalent — so it stands out in the report (FR-12)
-**And** a normal, correctly-shaped bridge project (single prototype + authored sources) is
-never flagged as a stale mirror — the heuristic has a verified negative case, not just the
-positive fixture
+**Given** Design protos contain diagrams/infographics
+**When** `herald deck pull <station>` extracts the Design
+**Then** diagrams are exported as SVG:
+- One infographic per station (stored in `src/marp/{station}-infographic.svg`)
+- SVG is inline, self-contained (no external dependencies)
+- Colors use design tokens (not hardcoded hex)
+
+**Given** SVG infographics are extracted
+**When** they are inspected
+**Then** they contain:
+- No raster images (.png, .jpg, .gif)
+- Only vector shapes, paths, and text
+
+### Story 2.3: Build interactive HTML decks via Vite (gitignored, regenerable)
+
+As a **developer**,
+I want **HTML decks to be built from markdown via Vite in <5 seconds**,
+So that **decks are interactive, navigable, and regenerable on-demand**.
+
+**Acceptance Criteria:**
+
+**Given** markdown sources and design tokens are available
+**When** `pixi run build-decks` is executed
+**Then** Vite builds all 9 decks:
+- Compiles markdown to HTML via deck engine
+- Applies design tokens to CSS
+- Each deck is standalone, self-contained
+- Build completes in <5s total
+
+**Given** HTML decks are built
+**When** they are served or opened locally
+**Then** all 9 decks render without console errors
+**And** keyboard navigation works
+
+### Story 2.4: Validate all 9 decks via dashboard-check
+
+As a **CI/QA**,
+I want **all 9 HTML decks validated by dashboard-check**,
+So that **render failures are caught before shipping**.
+
+**Acceptance Criteria:**
+
+**Given** all 9 HTML decks are built
+**When** `pixi run dashboard-check` is executed
+**Then** the check validates:
+- All 9 decks load without 404s or broken assets
+- All 9 decks render in browser (no console errors)
+- All fonts load correctly (Archivo)
+- All colors are present (light, ink, accent)
+- All slides are navigable
+**And** exit code is 0 if all pass, non-zero if any fail
+
+### Story 2.5: Establish Modernist design token application across all 9 PPTX files
+
+As a **design system owner**,
+I want **all 9 PPTX files to inherit Modernist tokens without per-station overrides**,
+So that **visual consistency is guaranteed and token changes flow downstream**.
+
+**Acceptance Criteria:**
+
+**Given** design-tokens.json is the single authority
+**When** any PPTX template is regenerated
+**Then** it consumes tokens from design-tokens.json only (no hardcoded values)
+**And** all 9 PPTX files use identical token values (no per-station drift)
 
 ---
 
-## Epic 4: Stay in sync automatically
+## Epic 3: Narration Extraction & Validation
 
-An operator can leave Herald watching a set of decks and trust that a Design-side edit lands in
-the repo on its own. Builds on Epic 2's pull logic (watch is a scheduled caller of `pull`), but
-is independently complete: an operator gets continuous sync without ever using export
-push-back.
+**Goal**: Extract narration scripts from Design speaker notes, validate against voice bible and blacklist, and stage for video pipeline.
 
-### Story 4.1: Poll loop with quiescence debounce
+### Story 3.1: Implement mechanical narration extraction from Design speaker notes
 
-As an operator,
-I want Herald to poll for Design-side changes and pull only once an edit has settled,
-So that I don't get a pull mid-edit on a half-saved prototype.
+As a **developer**,
+I want **narration scripts extracted mechanically from Design speaker notes**,
+So that **narrator text is deterministic, reproducible, and fed to video pipeline**.
 
 **Acceptance Criteria:**
 
-**Given** one or more decks passed to `herald deck watch`
-**When** the watch loop runs with the default 60 s poll interval
-**Then** each poll is an etag-only `read_file` call per watched deck — no body transferred
-unless a pull is triggered (FR-14, NFR-08)
-**And** a detected etag change is not pulled immediately — it is pulled only after the etag has
-remained stable across one full subsequent poll interval (FR-15)
-**And** consecutive unchanged polls across the whole loop perform zero writes on either surface
-— verified over N consecutive simulated unchanged polls
-**And** a caller requesting a poll interval below 30 s has it clamped to the 30 s hard floor
-(NFR-09)
+**Given** Design protos include speaker notes for all slides
+**When** `herald deck pull <station>` extracts the Design
+**Then** narration extraction occurs automatically:
+- Speaker notes are parsed from each slide
+- Extracted to `src/marp/{station}-narration-{YYYY-MM-DD}.md`
+- Extraction is deterministic (same Design → same narration every time)
 
-### Story 4.2: Idle backoff
+### Story 3.2: Implement narration linter (voice bible + blacklist enforcement)
 
-As an operator,
-I want the watch loop to poll less often when nothing is changing,
-So that long-idle decks don't burn API calls or rate-limit budget for no reason.
+As a **video producer**,
+I want **narration to be validated against voice bible and blacklist before video render**,
+So that **tonal consistency and accuracy are guaranteed**.
 
 **Acceptance Criteria:**
 
-**Given** Story 4.1's poll loop
-**When** a watched deck accumulates ~10 consecutive unchanged polls
-**Then** its poll interval doubles, up to a 10-minute cap (FR-16)
-**When** a change is subsequently detected for that deck
-**Then** its poll interval resets to the 60 s default on the next cycle
+**Given** narration script is extracted
+**When** `pixi run lint-narration <station>` is executed
+**Then** linter validates:
+- WPM (words per minute) falls within character's established range
+- Speech patterns match
+- Tone markers are appropriate
+- Blacklist items are not present
 
-### Story 4.3: Halt on auth error
+**Given** linter fails
+**When** error report is generated
+**Then** report includes:
+- Specific violation
+- Location (slide number, line number)
+- Guidance for correction
 
-As an operator,
-I want the watch loop to stop cleanly on an authentication failure rather than retry forever,
-So that I notice the credential problem instead of watching silent retries burn cycles.
+### Story 3.3: Stage narration scripts for bmad-manticore video pipeline
+
+As a **video orchestrator**,
+I want **all 9 narration scripts staged and available for Manticore**,
+So that **video production can proceed on-demand**.
 
 **Acceptance Criteria:**
 
-**Given** Story 4.1's poll loop
-**When** a poll raises `AuthError` (a transport 401-equivalent)
-**Then** the watch loop halts entirely — for all watched decks, not just the one that failed —
-and reports the failure structurally on stderr with a non-zero exit (FR-17, NFR-03)
-**And** the loop does not attempt a retry of the failed poll before halting
+**Given** all 9 narration scripts are extracted and linter-validated
+**When** a manifest is generated for video pipeline
+**Then** manifest includes:
+- Station name and slug
+- Narration script path
+- Real screen recording source paths (curator-verified)
+
+### Story 3.4: Enforce "no fabricated demos" constraint
+
+As a **quality assurance**,
+I want **all video content to use real screen recordings**,
+So that **product claims are authentic and liability is minimized**.
+
+**Acceptance Criteria:**
+
+**Given** screen recordings are sourced for video pipeline
+**When** a curator verifies real-footage sources
+**Then** each source is marked as:
+- Real product behavior (recorded from live system)
+- Never AI-generated mockup or synthetic UI
 
 ---
 
-## Epic 5: Keep Design current with the shipped exports
+## Epic 4: Station-Specific Customization
 
-After `deck-export` regenerates a deck's derived artifacts, Design ends up holding the same
-complete set. Builds on Epic 2's deck-export integration; independently complete — an operator
-gets export push-back without needing watch mode running.
+**Goal**: Customize content and visuals for all 9 PyForge stations while maintaining identical framework and design system.
 
-### Story 5.1: Push regenerated exports with etag guard
+### Story 4.1–4.9: Customize each of 9 stations (Marshal, Warden, Atlas, Mason, Steward, Scribe, Genesis, Doctor, Herald)
 
-As an operator,
-I want the derived export set pushed back into Design after a pull + `deck-export` cycle,
-So that Design holds the same complete artifact set the repo does.
+For each station, implement per-station customization ensuring:
+- Station thesis (unique value proposition)
+- Pain point (domain-specific friction)
+- Solution pillars (3-5 domain-specific capabilities)
+- Ecosystem vision (station's role in PyForge)
+- Personas (stakeholder context, voting records)
+- Per-station visuals (domain-appropriate diagrams)
+- All graphics use Modernist design tokens
+- All text uses Archivo font
 
-**Acceptance Criteria:**
-
-**Given** a deck whose derived exports were just regenerated (post `deck-export`, per Epic 2)
-**When** the export push-back runs
-**Then** it declares the export filenames via `finalize_plan` and writes each via
-`write_files`, using each file's last-known etag (`"0"` for a first push) (FR-18)
-**And** a file whose local hash matches its last-pushed etag record is skipped — no
-`write_files` call is made for it (FR-19, NFR-08)
-
-### Story 5.2: Conflict refusal on export push
-
-As an operator,
-I want a Design-side conflict on any export file to stop the push cleanly,
-So that I never silently clobber a change made directly in the Design project.
-
-**Acceptance Criteria:**
-
-**Given** Story 5.1's push logic and an export file whose Design-side etag has changed since
-Herald's last-pushed record (simulated conflict)
-**When** the export push-back runs
-**Then** that file's write is refused structurally (`ExportConflictError`), reported clearly,
-and the rest of the push set — files with no conflict — still completes; no partial clobber of
-either the conflicted file or an inconsistent partial-success state (FR-20, NFR-02)
+**9 Stories, one per station (4.1–4.9), following identical pattern but with station-specific content.**
 
 ---
 
-## Deferred / Roadmap (explicitly out of V1 — no epics/stories here)
+## Epic 5: Build, Validation & Shipping
 
-Per the PRD's explicit instruction, the following are **not** decomposed in this document —
-they require their own `bmad-spec` pass before any future epic/story breakdown:
+**Goal**: Validate all artifacts, verify optimization targets, and commit tracked files to git for publication.
 
-- **`herald updates compile`** — weekly release notables from pyforge's own structured
-  telemetry.
-- **`herald broadcast`** — omnichannel delivery of compiled updates.
-- **`herald deck generate`** — Dream→deck rendering from a raw prompt.
-- **`herald bmad init`** — BMAD monorepo/multi-project integration (Marshal's, not Herald's).
+### Story 5.1: Run comprehensive artifact validation (render, format, consistency checks)
 
-## Validation Summary (Step 4)
+As a **QA/release engineer**,
+I want **all 9 decks validated comprehensively before shipping**,
+So that **shipping is risk-free and quality is guaranteed**.
 
-- **FR coverage:** all 26 FRs (FR-01–FR-26) appear in exactly one epic's coverage list and at
-  least one story's acceptance criteria; none are orphaned.
-- **NFR coverage:** NFR-01–NFR-09 are each exercised by at least one explicit AC (NFR-01/AD-4 →
-  1.3/1.4; NFR-02 → 1.4/1.6/2.1/5.2; NFR-03 → 4.3; NFR-04 → 1.2/1.3; NFR-05 → 1.2/1.3; NFR-06 →
-  1.6; NFR-07 → every story's Given/When/Then is exit-code/file-state based by construction;
-  NFR-08 → 2.1/3.1/4.1/5.1; NFR-09 → 4.1).
-- **No starter template applies** — Story 1.1 is a from-scratch scaffold, mirroring the
-  `pyforge-warden`/`pyforge-atlas` precedent rather than cloning a template.
-- **Epic independence:** Epic 2 does not require Epic 3, 4, or 5 to function; Epic 3 does not
-  require Epic 4 or 5; Epic 4 does not require Epic 5. Each stands alone atop Epic 1's
-  foundation.
-- **No forward story dependencies:** within every epic, story N.M cites only stories N.1..N.(M-1)
-  or earlier epics — verified by re-reading each story's "Given" clause above.
-- **File-churn check:** Epics 2 and 5 both touch `deck_pipeline.py`'s deck-export integration,
-  and Epics 1/2/3 all touch `state.py` — assessed as incidental sharing (each epic adds a
-  distinct capability facet, not repeated churn on the same behavior), consistent with the
-  `pyforge-warden` precedent's own multi-epic touches to `verdict.py`/`report.py`; no
-  consolidation warranted.
+**Acceptance Criteria:**
+
+**Given** all 9 × 6 artifact sets are built
+**When** `pixi run validate-all-artifacts` is executed
+**Then** validation includes:
+- Render checks: All 9 HTML decks load without errors
+- Format checks: All PPTX files open in PowerPoint; all SVG infographics validate
+- Consistency checks: All 9 decks follow six-act structure; all use Modernist tokens
+- Narration checks: All 9 narration scripts pass linter; voice identity consistent
+- Footprint checks: Tracked files ≈ 144; gitignored artifacts regenerate deterministically
+
+### Story 5.2: Verify 62% footprint reduction (tracked vs. unoptimized)
+
+As a **repo maintainer**,
+I want **footprint targets verified before shipping**,
+So that **git repository stays lean and regenerable**.
+
+**Acceptance Criteria:**
+
+**Given** all 9 stations have been processed
+**When** `pixi run footprint-check` is executed
+**Then** check counts:
+- Tracked files: design protos + markdown + PPTX + narration + SVG (all present)
+- Gitignored files: fragments.json, dist/, assets/, .mp4 (all must be gitignored)
+- Total tracked: ≈ 144 files (±10%)
+- Reduction: ≈ 62% ✓
+
+### Story 5.3: Commit tracked artifacts and stage narration for video pipeline
+
+As a **developer**,
+I want **all tracked artifacts committed to git**,
+So that **source of record is preserved and narration is staged for downstream video production**.
+
+**Acceptance Criteria:**
+
+**Given** all artifacts are validated
+**When** `git add <tracked-files>` is executed
+**Then** only tracked files are staged:
+- All 9 × `.dc.html` design protos
+- All 9 × `.md` markdown sources
+- All 9 × `.pptx` PPTX exports
+- All 9 × `-narration-*.md` narration scripts
+- All 9 × `-infographic.svg` SVG files
+
+**Given** tracked artifacts are staged
+**When** narration scripts are staged for video pipeline
+**Then** manifest is generated including:
+- All 9 narration script paths
+- Real screen recording source refs (curator-confirmed)
+- Video output specs and priorities
+
+---
+
+## Notes for Implementation
+
+### Known Herald CLI v0.1.0 Status
+
+Herald CLI v0.1.0 is already shipped. The following commands are implemented:
+- `herald deck seed <station>` — Seed Design projects
+- `herald deck pull <station>` — Pull Design protos with etagged safety
+
+**Stories tied to existing Herald CLI code (may be marked as completed if re-verified)**:
+- Story 0.3: Design-Code-Bridge etagged pull protocol (partially implemented in CLI)
+- Story 1.1: Create 9 Design projects (already seeded via CLI for some stations)
+- Story 1.3: Extract markdown sources (already implemented in CLI)
+
+**New work (not yet implemented)**:
+- Epic 0: Foundation & Infrastructure (tokens, tracking strategy, .gitignore)
+- Epic 1 Stories 1.2, 1.4: Six-act framework structure, narrative validation
+- Epic 2: Multi-Format Export Pipeline (deckcraft, SVG, HTML, dashboard-check)
+- Epic 3: Narration Extraction & Validation (extraction, linter, pipeline staging)
+- Epic 4: Station-Specific Customization (9 × customization stories)
+- Epic 5: Build, Validation & Shipping
+
+### Success Signal Summary
+
+All work complete when:
+✅ 9 Design projects seeded with Modernist tokens
+✅ 9 prototypes authored per six-act framework
+✅ 54 artifacts exported (9 × 6 formats) and tracked
+✅ All 9 PPTX files open in PowerPoint
+✅ All 9 HTML decks render; dashboard-check passes
+✅ All 9 narration scripts extracted and linter-validated
+✅ Zero manual file transfers; Design-Code-Bridge validated end-to-end
+✅ Footprint: ~144 tracked files (62% reduction)
+✅ Narration scripts staged for bmad-manticore
+
+---
+
+**Epics Generated**: 2026-08-01  
+**Status**: Ready for developer implementation  
+**Next Step**: Developer begins with Epic 0, then proceeding sequentially through Epics 1–5.

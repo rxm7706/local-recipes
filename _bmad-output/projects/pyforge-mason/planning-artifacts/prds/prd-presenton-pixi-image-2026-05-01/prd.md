@@ -1,6 +1,6 @@
 ---
 stepsCompleted: ['step-01-init', 'step-01b-rearchitecture', 'step-01b-continue', 'step-02-discovery', 'step-02b-vision', 'step-02c-executive-summary', 'step-03-success', 'update-2026-07-25-research-revision']
-updated: 2026-08-04
+updated: 2026-08-01
 currency_review: Reviewed 2026-08-04 — spec/brief timestamp bump was structural (project relocation / memlog story-completion recording), not content drift; PRD unchanged.
 inputDocuments:
   - '{project-root}/_bmad-output/project-context.md'
