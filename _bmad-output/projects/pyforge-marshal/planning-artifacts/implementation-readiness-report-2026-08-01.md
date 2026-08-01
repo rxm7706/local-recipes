@@ -553,3 +553,66 @@ make before the next two epics reach implementation.
 the original BLOCKED-ON verdict and F-1's resolution.
 
 Implementation Readiness complete.
+
+---
+
+## Addendum — same-day second pass (FR-61..65 / AD-46..50 decomposition)
+
+**Scope.** Later the same day, three Dreams that sat at INV-1 (dreamt, no
+Spec) since 2026-07-31 got their Specs (`bmad-spec`) and were then
+decomposed into this chain: `durable-runs` (FR-61/62/63, AD-46/47/48),
+`fidelity-enforcement`'s Marshal-only slice (FR-64, AD-49 — Doctor's and
+Scribe's capabilities from the same Spec explicitly not decomposed here,
+per operator scoping), and `one-front-door` (FR-65, AD-50). PRD now
+FR-1..65, architecture now AD-1..50, epics now 6 epics / 50 stories.
+
+**Traceability re-verified for the 5 new FRs** (mechanical check, not
+re-run from scratch): every one of FR-61..65 appears in exactly one story's
+`FR/AD:` line, and every story's `Deps:` resolves to a story that already
+exists (S-3.4/S-3.1 for 3.8; S-3.8/S-4.8 for 4.10; S-5.1/S-3.8 for 5.5;
+S-2.1/S-4.1 for 2.7; S-5.1/S-1.3 for 5.6). No orphans, no dangling
+dependencies.
+
+**AD-41's forward reference resolved, no contradiction.** The original gate
+noted AD-41 states its own route-verb surface "belongs to the *future*
+`spec-one-front-door` chain." That chain landed this pass as AD-50 —
+cross-read confirms they agree: AD-41 provides the verdict-read discipline,
+AD-50 provides the context-resolution discipline for the verb surface built
+on it (`marshal check` first). Neither restates or narrows the other.
+
+**New dependency surfaced, not yet blocking.** Story 2.7 (FR-64, added this
+pass) depends on S-2.1 — which is itself one of the two stories the
+still-open **F-3** design question blocks (see the base report's Step 5 and
+Recommended Next Steps #1). Story 2.7 therefore inherits F-3's block
+transitively; it was not independently blocked before F-3 resolves, and
+this is a **new fact**, not a new problem — the dependency chain was
+already there in spirit (both stories touch `marshal gate evaluate`), F-3's
+resolution now additionally unblocks 2.7 alongside 2.1/2.3/2.5.
+
+**Correction to the base report's Recommended Next Steps #5.** That item
+recommended relocating or deleting "8 stray `local-recipes`-scoped files...
+from a historical symlink desync." **This was investigated the same day and
+is wrong** — those 8 files were deliberately relocated by commit
+`d25ec3e145` (2026-07-28) under the regenerable-factory practice, and
+`bmad-drift-check` actively tracks and pin-syncs them today (verified: the
+detector reports clean against them). **Do not act on the base report's
+item 5.** No cleanup was performed or is warranted.
+
+**Overall Readiness Status: unchanged — READY WITH CONDITIONS.** The new
+FRs/ADs/stories introduce no contradiction and (2.7 aside, which was never
+independently gate-free) touch nothing that changes the base report's
+Critical (Story 2.3→3.2, pre-existing, adjudicated) or its now-single Minor
+(FR-52 naming — the 8-stray-files Minor is corrected above, not carried
+forward). Epics 4, 5, and 6 (this pass's E4/E5 additions: 4.10, 5.5, 5.6)
+are cleanly implementable now, same as the base report found for the rest
+of E4/E6. Epic 2's new Story 2.7 and Epic 3's new Story 3.8 fall under the
+base report's existing guidance: resolve F-3/F-5 before Epic 2 stories
+begin, F-2/F-6 before Epic 3 stories begin — 3.8 and 2.7 add no new
+open question beyond those already named.
+
+---
+
+**Assessor:** bmad-check-implementation-readiness (autonomous re-run, same-day second pass)
+**Date:** 2026-08-01
+
+Implementation Readiness complete.
