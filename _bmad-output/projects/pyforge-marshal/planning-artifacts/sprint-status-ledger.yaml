@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: marshal
-# stories: 105
+# stories: 108
 development_status:
   1-1-package-spine-verdict-lattice-findings-registry-and-the-meta-tests-that-enforce-them: done
   1-10-render-the-harness-policy-from-the-canonical-effectivepolicy: done
@@ -56,7 +56,9 @@ development_status:
   3-5-idle-strand-detection: backlog
   3-6-budget-ceilings-and-the-heaviest-story-advisory: backlog
   3-7-escalation-deferral-and-resume: backlog
+  3-8-stage-bound-durability-and-fleet-launch-wiring: backlog
   4-1-story-spec-promotion-with-a-durability-predicate: backlog
+  4-10-fleet-wide-branch-retirement: backlog
   4-2-teardown-reachability-and-spec-recovery-assistance: backlog
   4-3-merge-subject-conformance-and-review-cap-landing: backlog
   4-4-batch-pull-request-with-hygiene-preflight: backlog
@@ -69,6 +71,7 @@ development_status:
   5-2-per-run-detail: backlog
   5-3-escalation-queue: backlog
   5-4-ledger-vs-git-reconciliation-and-the-versioned-status-contract: backlog
+  5-5-durability-as-a-reported-fleet-status-dimension: backlog
   6-1-profile-driven-adapter-selection-project-scoped: backlog
   6-2-skill-tree-projection: backlog
   6-3-projection-drift-detection-that-can-actually-fail: backlog

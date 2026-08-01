@@ -2,7 +2,7 @@
 title: Marshal (pyforge-marshal)
 status: final
 created: 2026-07-25
-updated: 2026-08-01  # CAP-9 -> FR-59/FR-60; competitive re-frame; FR-13 re-scope; FR-58 psmux; convergence watch; Q-3/Q-10..14 resolutions
+updated: 2026-08-01  # CAP-9 -> FR-59/FR-60; competitive re-frame; FR-13 re-scope; FR-58 psmux; convergence watch; Q-3/Q-10..14 resolutions; durable-runs -> FR-61/FR-62/FR-63
 project: pyforge-marshal
 dist: pyforge-marshal
 module: pyforge.marshal
@@ -353,6 +353,14 @@ Every run produces a durable, append-only journal owned by Marshal.
 - It is written incrementally, so a killed run still has a journal up to the kill.
 - *Rationale: vendor retention is 48 hours to 180 days and agent transcript formats are documented as changing between versions. The record must be self-owned.*
 
+#### FR-61: Bounded-loss durability *(added 2026-08-01 — `docs/dreams/durable-runs.md`)*
+The supervisor pushes a run's work at its own stage boundaries, and durability is on by default for every fleet launch — no separate step a human has to remember to start.
+**Consequences:**
+- After the dev commit, after the review verdict, and after the merge, the supervisor pushes the affected station and per-story branches — loss is bounded by a stage, not by an interval timer.
+- An interval-push watcher remains as the floor for whatever the stage hooks miss, and starts automatically as part of a fleet launch rather than requiring a separate manual invocation.
+- Push is read-only against working trees and remotes — never a force-push, never a rewrite — so it cannot disturb a live session.
+- *Motivating evidence: measured 2026-07-31 — 6 station loop branches on no remote, ~5,150 lines on `recover/*`, one story's 734-line transport branch (spec included) unpushed six days, 156 dangling commits one `git gc` from unrecoverable, and 1,748 lines sitting 40 minutes as a local-only commit. Nine detectors ran green throughout because none asked the durability question — the window reopens roughly every 60–90 minutes, once per station's dev phase.*
+
 ---
 
 ### 7.3 Gates and verification — `marshal gate evaluate`
@@ -513,6 +521,15 @@ A story or wave that passed its gates lands on the integration branch without a 
 - Every landing writes a journal verdict: which checks were required, which passed, what merged, under whose authority.
 - Wrap-never-absorb carried unchanged: the engine keeps dev/verify/review/commit and deliberately leaves this gap open; Marshal fills it around the engine, in the supervisor's domain.
 
+#### FR-63: Fleet-wide branch retirement *(added 2026-08-01 — `docs/dreams/durable-runs.md`)*
+Marshal proposes which station and story branches may be released, across the whole fleet, not only the one a landing just merged.
+**Consequences:**
+- A branch is a retirement candidate only when its content is reachable in the integration branch **by patch-id** (never a two-dot or three-dot diff heuristic — both misclassify squash-merges and branches the base has since moved past), its run has concluded, and its story is `done` with a recorded merge sha.
+- `loop/*` branches and `rescue/*` tags are permanent exclusions — `loop/*` is how the fleet operates, and `rescue/*` tags are the only reachability for commits `git gc` would otherwise collect.
+- Every proposed retirement names its evidence (merge sha, patch-id match, concluded run); anything unproven is refused, never defaulted to delete. Dry-run by default, like teardown (FR-8).
+- Distinct from FR-59's per-landing branch-retirement policy key: that retires the one branch a landing just merged; this sweeps the fleet's accumulated estate on its own schedule. The two share no code path but must not disagree — a branch FR-59 already retired is never re-proposed here.
+- *Motivating evidence: saving work created 36 branches and 160 rescue tags in one afternoon (2026-07-31), and nothing knew when any of them could be released.*
+
 ---
 
 ### 7.5 Fleet visibility — `marshal status`
@@ -550,6 +567,13 @@ Status output has a versioned schema downstream consumers can depend on.
 **Consequences:**
 - A schema version accompanies the payload; additive changes do not bump it, breaking changes do.
 - The console generator and any dashboard can consume it without scraping human output.
+
+#### FR-62: Durability as a reported fleet property *(added 2026-08-01 — `docs/dreams/durable-runs.md`)*
+`marshal status` reports unpushed work as a finding on the owning row, not only in a separate detector's output the operator has to remember to run.
+**Consequences:**
+- A row whose branches carry local-only content is never reported clean — the same refusal the fleet view already applies to an unowned Dream row.
+- The finding names the branch and the extent (line/commit count) so the operator does not have to cross-reference a second command to size the exposure.
+- *Rationale: "is the fleet's work saved?" required four separate commands before this FR (`bmad-loop status`, `tmux capture-pane`, a manual detector run, and re-deriving from git) — the same operator question, asked twice, is the failure signature this FR closes.*
 
 ---
 
@@ -730,6 +754,7 @@ Fixes that belong upstream are tracked as such rather than worked around indefin
 - Gate evaluation as a standalone object, with frozen-surface scope checks, doc-only classification, and the autonomy-labelled gate-mode ladder.
 - Automatic story-spec promotion; batch PR; merge-subject conformance; sprint and console feed refresh; **landing rules as policy + `marshal land` (FR-59/FR-60, per the 2026-07-31 CAP-9 ruling)**.
 - Fleet status with ledger-versus-git reconciliation and a versioned machine-readable contract.
+- **Bounded-loss durability and fleet-wide branch retirement (FR-61/FR-62/FR-63, per the `docs/dreams/durable-runs.md` ruling)**.
 - Skill-tree projection, adapter probe, conformance smoke and matrix, entry-file drift detection.
 - Layered policy composition with per-story model tiering and the single harness seam.
 - Conda package and wheel; upstream contribution register.

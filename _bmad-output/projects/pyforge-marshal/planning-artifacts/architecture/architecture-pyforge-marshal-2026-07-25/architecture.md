@@ -4,13 +4,13 @@ type: architecture-spine
 purpose: build-substrate
 altitude: feature
 paradigm: hexagonal (ports & adapters) around a pure decision core, with an out-of-process supervisor sidecar
-scope: The `marshal` CLI — loop-home provisioning, run supervision, gate evaluation, landing, fleet status, adapter portability, and policy composition. Governs everything built from PRD FR-1..FR-58 / NFR-1..NFR-14.
+scope: The `marshal` CLI — loop-home provisioning, run supervision, gate evaluation, landing, fleet status, adapter portability, and policy composition. Governs everything built from PRD FR-1..FR-63 / NFR-1..NFR-14.
 status: final
 created: 2026-07-25
-updated: 2026-07-30
+updated: 2026-08-01  # AD-46..48 (durable-runs, FR-61/62/63); binds/scope FR range corrected to FR-63 (was left at FR-58 through the AD-40..45 pass)
 mode: headless
 binds:
-  - FR-1..FR-58
+  - FR-1..FR-63
   - NFR-1..NFR-14
 sources:
   - planning-artifacts/prd.md
@@ -453,6 +453,28 @@ shipped stories, not all strictly independent of later epics' groundwork).
 - **Binds:** the Q-12 resolution; extends AD-5/AD-6 (journal-first), FR-15/FR-17; respects C-3
 - **Prevents:** Marshal writing into another station's artifacts to "share knowledge" — the exact cross-boundary write C-3 exists to stop.
 - **Rule:** a resume against a resolved escalation records a **reference to the resolving decision/artifact** in the run journal (an FR-17 consequence). Ingestion into team memory is the knowledge station's read of journals from its own side of the boundary; no push path exists. The journal entry must therefore be ingestion-sufficient: story key, reason, resolution reference, resolver attribution as the trust model defines it (F-4 caveat carried, not resolved).
+
+### 2026-08-01 amendment set — AD-46…AD-48 (durable-runs)
+
+*Three additive decisions carrying `docs/dreams/durable-runs.md` / `spec-durable-runs` into the architecture (PRD FR-61/FR-62/FR-63). Numbering continues; nothing above is renumbered or weakened.*
+
+### AD-46 — Durability is stage-bound, not interval-bound
+
+- **Binds:** FR-61; extends AD-22 (detached default), the supervisor's domain (AD-25, AD-40)
+- **Prevents:** worst-case data loss scaling with an arbitrary timer interval instead of the run's own structure — and a durability watcher nobody remembers to start.
+- **Rule:** the supervisor pushes affected station and per-story branches at three fixed stage boundaries — after the dev commit, after the review verdict, after the merge — rather than on a wall-clock interval. An interval-push watcher remains only as the floor for whatever the stage hooks miss, and is wired into fleet launch by default rather than a separate manual invocation. Push is read-only against working trees and remotes: never a force-push, never a rewrite.
+
+### AD-47 — Branch retirement is proof-gated, not schedule-gated
+
+- **Binds:** FR-63; extends AD-27 (allowlist narrows only), FR-8's teardown refusal semantics
+- **Prevents:** a retirement sweep silently deleting a branch on a heuristic diff — three-dot mismeasures squash-merges, two-dot mismeasures branches the base has since moved past, both tried and both wrong in the Dream's own authoring session.
+- **Rule:** a branch retires only when three independently-provable facts hold: content reachable in the integration branch **by patch-id**, its run concluded, its story `done` with a recorded merge sha. `loop/*` and `rescue/*` are **structural** exclusions, never policy-configurable — `rescue/*` tags are the only reachability for commits `git gc` would otherwise collect. Dry-run by default; a proposed retirement with unproven evidence is refused, never defaulted to delete. Shares its evidence machinery with FR-61's opposite question (what must be saved) but is a distinct sweep from FR-59's per-landing retirement (AD-40) — the two must never disagree on a branch's fate.
+
+### AD-48 — Durability is a first-class fleet-status dimension
+
+- **Binds:** FR-62; extends AD-38 (a resolved feed reports its own completeness), AD-39 (envelope field relationships)
+- **Prevents:** "is the fleet's work saved?" ever again requiring a command outside `marshal status`.
+- **Rule:** the fleet-status envelope carries an unpushed-work finding per row, **read from** the same evidence the unpushed-work detector already computes, never re-implemented against git directly. A row with unpushed content is never reported clean — the same refusal `marshal status` already applies to an unowned Dream row.
 
 ---
 

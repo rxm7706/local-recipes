@@ -12,7 +12,7 @@ inputDocuments:
   - "_bmad-output/projects/pyforge-marshal/planning-artifacts/research/domain-agent-portability-and-governance-research-2026-07-25.md"
 project_name: pyforge-marshal
 epicCount: 6
-storyCount: 40
+storyCount: 48  # corrected 2026-08-01: was left at the original 40 through the FR-59/60/AD-42 (45) and FR-61/62/63 (48) additions
 status: complete
 mode: headless
 ---
@@ -39,13 +39,13 @@ Two conventions carried from the sibling builds:
 
 **Loop homes & isolation** — FR-1 provision a loop home · FR-2 per-worktree active-project state · FR-3 single-sourced Tier-3 store · FR-4 isolation verification · FR-5 preflight · FR-6 teardown · FR-7 adapter config seeding · FR-8 enumerate loop homes
 
-**Run supervision** — FR-9 detached launch · FR-10 scoped launch · FR-11 supervisor attaches · FR-12 idle-strand detection · FR-13 budget ceilings · FR-14 heaviest-story advisory · FR-15 escalation surfacing · FR-16 deferral capture · FR-17 resume · FR-18 run journal
+**Run supervision** — FR-9 detached launch · FR-10 scoped launch · FR-11 supervisor attaches · FR-12 idle-strand detection · FR-13 budget ceilings · FR-14 heaviest-story advisory · FR-15 escalation surfacing · FR-16 deferral capture · FR-17 resume · FR-18 run journal · *(added 2026-08-01)* FR-61 bounded-loss durability
 
 **Gates & verification** — FR-19 standalone gate evaluation · FR-20 project-scoped verify commands · FR-21 deterministic no-LLM gates · FR-22 frozen-surface scope check · FR-23 doc-only classification · FR-24 gate mode ladder · FR-25 gate evidence record · FR-26 never false-green · FR-27 review-cap landing path
 
-**Landing & paper trail** — FR-28 batch pull request · FR-29 repository-hygiene preflight · FR-30 automatic story-spec promotion · FR-31 spec-recovery assistance · FR-32 merge-subject conformance · FR-33 sprint & console feed refresh · FR-34 deploy idempotence · FR-35 no AI attribution · *(added 2026-08-01)* FR-59 landing rules as policy · FR-60 `marshal land`
+**Landing & paper trail** — FR-28 batch pull request · FR-29 repository-hygiene preflight · FR-30 automatic story-spec promotion · FR-31 spec-recovery assistance · FR-32 merge-subject conformance · FR-33 sprint & console feed refresh · FR-34 deploy idempotence · FR-35 no AI attribution · *(added 2026-08-01)* FR-59 landing rules as policy · FR-60 `marshal land` · FR-63 fleet-wide branch retirement
 
-**Fleet visibility** — FR-36 fleet view · FR-37 per-run detail · FR-38 escalation queue · FR-39 ledger-vs-git reconciliation · FR-40 stable machine-readable status contract
+**Fleet visibility** — FR-36 fleet view · FR-37 per-run detail · FR-38 escalation queue · FR-39 ledger-vs-git reconciliation · FR-40 stable machine-readable status contract · *(added 2026-08-01)* FR-62 durability as a reported fleet property
 
 **Adapter portability** — FR-41 skill-tree projection · FR-42 projection drift detection · FR-43 adapter probe · FR-44 conformance smoke · FR-45 conformance matrix · FR-46 entry-file family drift check · FR-47 first-run acknowledgement · FR-48 project-scoped adapter selection
 
@@ -71,12 +71,12 @@ None — Marshal is a CLI with no visual surface. Its "UX" is the envelope contr
 |---|---|---|
 | **E1** Provisioned, verified loop homes | FR-1..FR-8, FR-49..FR-57 | NFR-1, 7, 10, 12, 13, 14; AD-3, 4, 7, 10, 11, 14, 15, 16, 21, 23, 24, 31, 35, 38, 39 |
 | **E2** Gates you can run | FR-19..FR-27 (FR-27 partial) | NFR-3, 5, 11; AD-8, 17, 26 (seed), 27, 34 |
-| **E3** Supervised unattended runs | FR-9..FR-18 | NFR-4, 6, 8, 9; AD-5, 6, 9, 20, 22, 25, 26, 28, 30, 32 |
-| **E4** Landing with a durable paper trail | FR-27 (completion), FR-28..FR-35, FR-59, FR-60 | NFR-6, 8; AD-12, 13, 21, 24, 28, 29, 33, 40, 42 |
-| **E5** Fleet visibility | FR-36..FR-40 | NFR-12; AD-5, 33, 39 |
+| **E3** Supervised unattended runs | FR-9..FR-18, FR-61 | NFR-4, 6, 8, 9; AD-5, 6, 9, 20, 22, 25, 26, 28, 30, 32, 46 |
+| **E4** Landing with a durable paper trail | FR-27 (completion), FR-28..FR-35, FR-59, FR-60, FR-63 | NFR-6, 8; AD-12, 13, 21, 24, 28, 29, 33, 40, 42, 47 |
+| **E5** Fleet visibility | FR-36..FR-40, FR-62 | NFR-12; AD-5, 33, 39, 48 |
 | **E6** Portability proven | FR-41..FR-48, FR-58 | NFR-2, 9; AD-19, 31, 34, 36, 37 |
 
-Every FR-1..FR-58 appears exactly once as a primary owner. FR-27 spans E2 (the gate re-run) and E4 (the landing), noted explicitly in both.
+Every FR-1..FR-63 appears exactly once as a primary owner. FR-27 spans E2 (the gate re-run) and E4 (the landing), noted explicitly in both.
 
 ---
 
@@ -595,6 +595,28 @@ So that the agent never guesses at something it cannot safely decide.
 
 ---
 
+### Story 3.8: Stage-bound durability, and fleet-launch wiring *(added 2026-08-01 — FR-61 / AD-46)*
+
+As the operator,
+I want the supervisor to push a run's work at its own stage boundaries rather than on a timer, with the fallback watcher on by default,
+So that worst-case loss is bounded by the run's own structure, and nobody has to remember to start a durability watcher.
+
+**Type:** feature • **Effort:** M • **Deps:** S-3.4, S-3.1 • **FR/AD:** FR-61; AD-46, AD-22, AD-25, AD-40
+**Surface:** `supervisor/durability.py`, `core/supervise.py`, `cli/spin.py`
+
+**Acceptance Criteria:**
+
+**Given** a running story
+**When** the dev commit lands, the review verdict is recorded, or the story merges
+**Then** the supervisor pushes the affected station and per-story branches at that boundary, never on a wall-clock interval alone
+**And** push is read-only against working trees and remotes — never a force-push, never a rewrite
+**Given** a fleet launch
+**When** it starts
+**Then** the interval-push watcher (the floor for whatever the stage hooks miss) starts automatically, with no separate manual invocation required
+**And** the watcher exits on its own when the fleet does
+
+---
+
 ## Epic 4: Landing with a durable paper trail
 
 **Goal:** the operator can close a wave in one command and the paper trail survives by construction. This epic exists because the motivating incident — 13 of 31 story specs lost outright, 8 more reduced to zero-byte husks — was caused by a step a human had to remember.
@@ -786,6 +808,32 @@ So that two concurrent lines cannot silently last-write-wins each other's ledger
 
 ---
 
+### Story 4.10: Fleet-wide branch retirement *(added 2026-08-01 — FR-63 / AD-47)*
+
+As the operator,
+I want Marshal to propose which station and story branches may be released across the whole fleet, proving its case for each,
+So that saving work does not leave a permanently growing pile of branches nobody knows when to delete.
+
+**Type:** feature • **Effort:** L • **Deps:** S-3.8, S-4.8 • **FR/AD:** FR-63; AD-47, AD-27; NFR-6
+**Surface:** `cli/retire.py`, `core/retire.py`, `adapters/git_local.py`
+
+**Acceptance Criteria:**
+
+**Given** the fleet's accumulated branches
+**When** a retirement sweep runs
+**Then** a branch is proposed only when three facts are independently provable — content reachable in the integration branch **by patch-id**, its run concluded, its story `done` with a recorded merge sha
+**And** the proposal names its evidence (merge sha, patch-id match, concluded run) per branch
+**Given** `loop/*` branches or `rescue/*` tags
+**When** the sweep runs
+**Then** they are never proposed — a structural exclusion, not a policy-configurable one
+**Given** a branch the sweep cannot fully prove
+**When** it evaluates that branch
+**Then** it refuses rather than defaulting to delete
+**And** the sweep runs dry-run by default, exactly as teardown does (FR-8)
+**And** a branch FR-59/AD-40 already retired at landing time is never re-proposed here — the two mechanisms share evidence but never disagree
+
+---
+
 ## Epic 5: Fleet visibility
 
 **Goal:** with many loop homes live, the operator gets one view derived from ledgers rather than assembled by hand — and is told, rather than left to discover, where the ledger and git disagree.
@@ -860,6 +908,25 @@ So that a dashboard can trust it without scraping human output.
 **And** the payload carries a `schema_version` for the envelope and a `data_version` for the status payload, bumped independently; additive fields bump neither (AD-39)
 **And** the schema is published in `schemas/` and validated in tests
 **And** the console generator can consume it without scraping human output
+
+---
+
+### Story 5.5: Durability as a reported fleet-status dimension *(added 2026-08-01 — FR-62 / AD-48)*
+
+As the operator,
+I want unpushed work reported on the owning row in `marshal status`, not only in a separate detector's output,
+So that "is the fleet's work saved?" never again needs a second command.
+
+**Type:** feature • **Effort:** S • **Deps:** S-5.1, S-3.8 • **FR/AD:** FR-62; AD-48, AD-38, AD-39
+**Surface:** `core/status.py`, `schemas/status.json`
+
+**Acceptance Criteria:**
+
+**Given** a loop home whose branches carry local-only content
+**When** `marshal status` runs
+**Then** that row carries an unpushed-work finding naming the branch and the extent (line or commit count) — the row is never reported clean
+**And** the finding is **read from** the unpushed-work detector's own evidence, never re-derived against git independently (AD-48)
+**And** the finding's presence follows the same versioned-envelope discipline as every other status field (FR-40, AD-39) — additive, no schema-version bump
 
 ---
 
