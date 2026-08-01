@@ -28,6 +28,17 @@
 gate_mode = "none"
 
 
+# max_followup_reviews: 2 is a REPO-WIDE decision, not project-scoped. The
+# upstream bmad-loop default is 1, which damped five still-recommended follow-up
+# reviews across three projects (atlas 10.5/10.6, marshal 1.1, warden 6.3/5.1)
+# into a gitignored ledger, creating DW-AD23-3 and forcing deferred-work-check.
+# Rendered explicitly here (not inherited from DEFAULT_POLICY in code) so the
+# policy source is the single location for the decision and its reasoning. Story
+# 1.10 renders this into .bmad-loop/policy.toml at run time; the rendered file
+# carries the baseline value when absent from a project layer.
+max_followup_reviews = 2
+
+
 # verify_commands: THIS station's own suite. Every home except atlas and warden was
 # cloned from warden's and inherited `pyforge-warden-test`, so a story here would have
 # gone green on warden's tests while this station's own never ran.
