@@ -768,7 +768,7 @@ def scan_specs() -> list[dict]:
 
 
 def scan_story_specs() -> list[dict]:
-    """Per-station Row-7 compliance: done stories vs. tracked flat specs (spec-[0-9]*.md pattern only)."""
+    """Per-station Row-7 compliance: done stories vs. tracked flat specs (spec-*.md pattern only, excludes nested SPEC.md)."""
     rows: list[dict] = []
     projects_base = REPO_ROOT / "_bmad-output" / "projects"
 
@@ -787,12 +787,12 @@ def scan_story_specs() -> list[dict]:
                 except:
                     pass
 
-        # Count tracked flat story-spec files (spec-[0-9]*.md pattern)
+        # Count tracked flat story-spec files (spec-*.md at top level, not nested dirs with SPEC.md)
         specs_dir = project_dir / "planning-artifacts" / "specs"
         tracked_count = 0
         if specs_dir.exists():
-            # Flat files matching spec-<numeric-id>-*.md (not nested kernel dirs)
-            tracked_count = len([f for f in specs_dir.glob("spec-[0-9]*.md") if f.is_file()])
+            # Flat files matching spec-*.md (not nested kernel dirs like spec-<slug>/SPEC.md)
+            tracked_count = len([f for f in specs_dir.glob("spec-*.md") if f.is_file()])
 
         gap = done_count - tracked_count
         project_slug = project_dir.name
