@@ -12,7 +12,7 @@ inputDocuments:
   - "_bmad-output/projects/pyforge-marshal/planning-artifacts/research/domain-agent-portability-and-governance-research-2026-07-25.md"
 project_name: pyforge-marshal
 epicCount: 6
-storyCount: 49  # corrected 2026-08-01: was left at the original 40 through the FR-59/60/AD-42 (45), FR-61/62/63 (48), and FR-64 (49) additions
+storyCount: 50  # corrected 2026-08-01: was left at the original 40 through the FR-59/60/AD-42 (45), FR-61/62/63 (48), FR-64 (49), and FR-65 (50) additions
 status: complete
 mode: headless
 ---
@@ -45,7 +45,7 @@ Two conventions carried from the sibling builds:
 
 **Landing & paper trail** — FR-28 batch pull request · FR-29 repository-hygiene preflight · FR-30 automatic story-spec promotion · FR-31 spec-recovery assistance · FR-32 merge-subject conformance · FR-33 sprint & console feed refresh · FR-34 deploy idempotence · FR-35 no AI attribution · *(added 2026-08-01)* FR-59 landing rules as policy · FR-60 `marshal land` · FR-63 fleet-wide branch retirement
 
-**Fleet visibility** — FR-36 fleet view · FR-37 per-run detail · FR-38 escalation queue · FR-39 ledger-vs-git reconciliation · FR-40 stable machine-readable status contract · *(added 2026-08-01)* FR-62 durability as a reported fleet property
+**Fleet visibility** — FR-36 fleet view · FR-37 per-run detail · FR-38 escalation queue · FR-39 ledger-vs-git reconciliation · FR-40 stable machine-readable status contract · *(added 2026-08-01)* FR-62 durability as a reported fleet property · FR-65 `marshal check` — the detector registry, context resolved once
 
 **Adapter portability** — FR-41 skill-tree projection · FR-42 projection drift detection · FR-43 adapter probe · FR-44 conformance smoke · FR-45 conformance matrix · FR-46 entry-file family drift check · FR-47 first-run acknowledgement · FR-48 project-scoped adapter selection
 
@@ -73,10 +73,10 @@ None — Marshal is a CLI with no visual surface. Its "UX" is the envelope contr
 | **E2** Gates you can run | FR-19..FR-27 (FR-27 partial), FR-64 | NFR-3, 5, 11; AD-8, 17, 26 (seed), 27, 34, 49 |
 | **E3** Supervised unattended runs | FR-9..FR-18, FR-61 | NFR-4, 6, 8, 9; AD-5, 6, 9, 20, 22, 25, 26, 28, 30, 32, 46 |
 | **E4** Landing with a durable paper trail | FR-27 (completion), FR-28..FR-35, FR-59, FR-60, FR-63 | NFR-6, 8; AD-12, 13, 21, 24, 28, 29, 33, 40, 42, 47 |
-| **E5** Fleet visibility | FR-36..FR-40, FR-62 | NFR-12; AD-5, 33, 39, 48 |
+| **E5** Fleet visibility | FR-36..FR-40, FR-62, FR-65 | NFR-12; AD-5, 33, 39, 48, 50 |
 | **E6** Portability proven | FR-41..FR-48, FR-58 | NFR-2, 9; AD-19, 31, 34, 36, 37 |
 
-Every FR-1..FR-64 appears exactly once as a primary owner. FR-27 spans E2 (the gate re-run) and E4 (the landing), noted explicitly in both.
+Every FR-1..FR-65 appears exactly once as a primary owner. FR-27 spans E2 (the gate re-run) and E4 (the landing), noted explicitly in both.
 
 ---
 
@@ -85,12 +85,14 @@ Every FR-1..FR-64 appears exactly once as a primary owner. FR-27 spans E2 (the g
 | Epic | Title | User value delivered | Stories | Effort |
 |---|---|---|---|---|
 | **E1** | Provisioned, verified loop homes | The operator can create an isolated, policy-composed, preflight-verified place for a loop to run — and prove two of them are isolated | 9 | ~15 days |
-| **E2** | Gates you can run | The operator or CI can evaluate the gate standalone and get a verdict that never false-greens | 6 | ~9 days |
-| **E3** | Supervised unattended runs | The operator can launch a gated run detached and have it watched — idle strands caught, budgets enforced, escalations surfaced | 7 | ~14 days |
-| **E4** | Landing with a durable paper trail | The operator can land a wave and have every merged story's spec survive teardown, automatically | 6 | ~10 days |
-| **E5** | Fleet visibility | The operator can see every loop home at once and be told where the ledger and git disagree | 4 | ~5 days |
+| **E2** | Gates you can run | The operator or CI can evaluate the gate standalone and get a verdict that never false-greens | 7* | ~9 days |
+| **E3** | Supervised unattended runs | The operator can launch a gated run detached and have it watched — idle strands caught, budgets enforced, escalations surfaced | 8* | ~14 days |
+| **E4** | Landing with a durable paper trail | The operator can land a wave and have every merged story's spec survive teardown, automatically | 10* | ~10 days |
+| **E5** | Fleet visibility | The operator can see every loop home at once and be told where the ledger and git disagree | 6* | ~5 days |
 | **E6** | Portability proven | The operator can run the method on another agent and hold a dated artifact proving it | 8 | ~12 days |
-| **Total** | | | **40** | **~65 days ≈ 13 weeks single-builder** |
+| **Total** | | | **49*** | **~65 days ≈ 13 weeks single-builder** |
+
+*\* Story counts corrected 2026-08-01 to match epics.md's actual content — the FR-59/FR-60/AD-42 pass (2026-08-01) and this session's FR-61..65 additions were never threaded back into this summary table. **Effort is NOT re-estimated** and still reflects the original per-epic scope; treat the day figures as understated pending a full re-estimate, and the story counts as the current ground truth.*
 
 **Standalone-ness check.** E1 ships a usable `marshal init` / `config` / `status --homes` with no later epic. E2 ships `marshal gate evaluate` usable by a human or CI with no run in flight. E3 needs E1 and E2 and nothing later. E4 needs E1–E3. E5 needs E3's journal. E6 needs E1 only. No epic requires a later epic to function.
 
@@ -949,6 +951,28 @@ So that "is the fleet's work saved?" never again needs a second command.
 **Then** that row carries an unpushed-work finding naming the branch and the extent (line or commit count) — the row is never reported clean
 **And** the finding is **read from** the unpushed-work detector's own evidence, never re-derived against git independently (AD-48)
 **And** the finding's presence follows the same versioned-envelope discipline as every other status field (FR-40, AD-39) — additive, no schema-version bump
+
+---
+
+### Story 5.6: `marshal check` — the detector registry through the front door *(added 2026-08-01 — FR-65 / AD-50)*
+
+As the operator,
+I want the repo's detector registry reachable as `marshal check`, with project/loop-home/policy/story context resolved once for it and every other verb,
+So that I stop needing to remember a separate pixi task exists, and two routed calls in one invocation never silently disagree about which project they're acting on.
+
+**Type:** feature • **Effort:** M • **Deps:** S-5.1, S-1.3 • **FR/AD:** FR-65; AD-50, AD-16, AD-35
+**Surface:** `cli/check.py`, `core/context.py`
+
+**Acceptance Criteria:**
+
+**Given** the repo's detector registry (`scripts/detectors.py`)
+**When** `marshal check` runs
+**Then** it invokes the registry and returns the same findings as the standalone pixi task — a route, never a reimplementation
+**Given** a `marshal` invocation dispatching to any verb — `check`, `run` (`factory spin`), `status`, or `land`
+**When** context (active project, loop home, composed policy, in-scope story) is needed
+**Then** it is resolved exactly once at the front door and threaded to the dispatched verb, which never re-derives it independently
+**And** `marshal status`'s fleet view may summarize detector-registry state per row; the detailed findings remain `check`'s own output
+**And** this story does not rename `factory spin`/`status`/`land` (Q-15 stays open) and does not decide the route-versus-contain boundary for any other `bmad-*` skill beyond this one concrete case (Q-16 stays open)
 
 ---
 

@@ -4,13 +4,13 @@ type: architecture-spine
 purpose: build-substrate
 altitude: feature
 paradigm: hexagonal (ports & adapters) around a pure decision core, with an out-of-process supervisor sidecar
-scope: The `marshal` CLI — loop-home provisioning, run supervision, gate evaluation, landing, fleet status, adapter portability, and policy composition. Governs everything built from PRD FR-1..FR-64 / NFR-1..NFR-14.
+scope: The `marshal` CLI — loop-home provisioning, run supervision, gate evaluation, landing, fleet status, adapter portability, and policy composition. Governs everything built from PRD FR-1..FR-65 / NFR-1..NFR-14.
 status: final
 created: 2026-07-25
-updated: 2026-08-01  # AD-46..48 (durable-runs, FR-61/62/63); AD-49 (fidelity-enforcement Marshal-only slice, FR-64); binds/scope FR range corrected to FR-63 then FR-64 (was left at FR-58 through the AD-40..45 pass)
+updated: 2026-08-01  # AD-46..48 (durable-runs, FR-61/62/63); AD-49 (fidelity-enforcement Marshal-only slice, FR-64); AD-50 (one-front-door, FR-65); binds/scope FR range corrected FR-58 -> FR-63 -> FR-64 -> FR-65 (was left at FR-58 through the AD-40..45 pass)
 mode: headless
 binds:
-  - FR-1..FR-64
+  - FR-1..FR-65
   - NFR-1..NFR-14
 sources:
   - planning-artifacts/prd.md
@@ -485,6 +485,16 @@ shipped stories, not all strictly independent of later epics' groundwork).
 - **Binds:** FR-64; extends AD-26 (never false-green), AD-31 (the lattice is closed and its admission criteria have one owner)
 - **Prevents:** a story's tracked spec silently losing its evidentiary force — a verify command narrowed or removed after the spec was tracked, with the gate still reporting green because it never re-checks *what* it is running against *why*.
 - **Rule:** gate evaluation resolves the story's tracked `specs/spec-<key>.md` and confirms the verify commands executed are the ones named by its Success signal. A mismatch is a registered finding, not a warning folded into an otherwise-green verdict — it participates in the same closed lattice as every other admission criterion (AD-31), so an untraceable or mismatched binding cannot itself be waived to green.
+
+### 2026-08-01 amendment — AD-50 (one-front-door, FR-65 slice)
+
+*One additive decision. `spec-one-front-door` decomposed with 2 of its 5 capabilities convergent with existing FRs (CAP-1 ~ FR-9..11, CAP-4 = FR-59/60 — no architecture change), CAP-5 folded as a consequence of FR-65 rather than a separate decision, and CAP-2's residual folded into FR-65. Only CAP-3 (the detector registry as a verb) plus the "context resolved once" discipline it must demonstrate first required a new AD. Verb naming (Q-15) and the route-versus-contain boundary per skill (Q-16) remain open — this AD does not resolve either.*
+
+### AD-50 — Context resolves once per invocation, at the front door
+
+- **Binds:** FR-65; extends AD-16 (defaults → project → flags precedence), AD-35 (materialized policy), the single-harness-seam constraint
+- **Prevents:** each routed verb (`check` first, `run`/`status`/`land` by the same discipline) independently re-deriving active project, loop home, composed policy, or in-scope story — the class of bug where two routed calls in one invocation silently disagree about which project they are acting on.
+- **Rule:** the CLI entry point resolves project/loop-home/policy/story context exactly once per invocation, before dispatching to any verb; a routed call receives that resolution, it never re-derives it. `marshal check`'s dispatch into `scripts/detectors.py`'s registry is the first concrete site this is tested against — a route through the existing seam (wrap-never-absorb applies to detector tooling as it does to the engine), never a reimplementation of the registry inside the `marshal` package.
 
 ---
 

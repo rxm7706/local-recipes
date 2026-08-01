@@ -2,7 +2,7 @@
 title: Marshal (pyforge-marshal)
 status: final
 created: 2026-07-25
-updated: 2026-08-01  # CAP-9 -> FR-59/FR-60; competitive re-frame; FR-13 re-scope; FR-58 psmux; convergence watch; Q-3/Q-10..14 resolutions; durable-runs -> FR-61/FR-62/FR-63; fidelity-enforcement (Marshal-only slice) -> FR-64
+updated: 2026-08-01  # CAP-9 -> FR-59/FR-60; competitive re-frame; FR-13 re-scope; FR-58 psmux; convergence watch; Q-3/Q-10..14 resolutions; durable-runs -> FR-61/FR-62/FR-63; fidelity-enforcement (Marshal-only slice) -> FR-64; one-front-door -> FR-65, Q-15/Q-16
 project: pyforge-marshal
 dist: pyforge-marshal
 module: pyforge.marshal
@@ -583,6 +583,14 @@ Status output has a versioned schema downstream consumers can depend on.
 - The finding names the branch and the extent (line/commit count) so the operator does not have to cross-reference a second command to size the exposure.
 - *Rationale: "is the fleet's work saved?" required four separate commands before this FR (`bmad-loop status`, `tmux capture-pane`, a manual detector run, and re-deriving from git) — the same operator question, asked twice, is the failure signature this FR closes.*
 
+#### FR-65: The detector registry as a verb — `marshal check` *(added 2026-08-01 — `docs/dreams/one-front-door.md`, CAP-3/CAP-5)*
+`marshal check` reaches the repo's detector registry through the same front door as every other verb, and every routed call — `check` included — carries its project/loop-home/policy/story context from one resolution rather than each tool re-deriving it.
+**Consequences:**
+- `marshal check` invokes `scripts/detectors.py`'s derived registry and returns the same findings as the standalone pixi task — a route, not a reimplementation (wrap-never-absorb applies to detector tooling exactly as it does to the engine).
+- `marshal status`'s fleet view (FR-36) may surface a summarized detector-registry state per row; the detailed findings remain `check`'s own output, not duplicated into `status`.
+- Context (active project, loop home, composed policy, in-scope story) resolves once per `marshal` invocation and threads to whichever verb is routed to — `run` (`factory spin`), `status`, `check`, and `land` alike — rather than each accepting it as a separately-supplied argument.
+- *Non-goal carried from the source Dream: this FR does not decide the final verb names for `run`/`status`/`land` (Q-15), and does not resolve which of the 51 `bmad-*` skills Marshal may route to versus must never contain (Q-16) — both stay open, named rather than invented.*
+
 ---
 
 ### 7.6 Adapter portability — `marshal adapters`
@@ -763,6 +771,7 @@ Fixes that belong upstream are tracked as such rather than worked around indefin
 - Automatic story-spec promotion; batch PR; merge-subject conformance; sprint and console feed refresh; **landing rules as policy + `marshal land` (FR-59/FR-60, per the 2026-07-31 CAP-9 ruling)**.
 - Fleet status with ledger-versus-git reconciliation and a versioned machine-readable contract.
 - **Bounded-loss durability and fleet-wide branch retirement (FR-61/FR-62/FR-63, per the `docs/dreams/durable-runs.md` ruling)**.
+- **`marshal check` — the detector registry through the front door, with context resolved once per invocation (FR-65, per the `docs/dreams/one-front-door.md` ruling)**.
 - Skill-tree projection, adapter probe, conformance smoke and matrix, entry-file drift detection.
 - Layered policy composition with per-story model tiering and the single harness seam.
 - Conda package and wheel; upstream contribution register.
@@ -856,7 +865,12 @@ Fixes that belong upstream are tracked as such rather than worked around indefin
 11. **Q-11 — Tool-surface brokering.** **RESOLVED: yes, scoped.** The project's tool surface is declared in the project policy layer; `marshal init` renders a project-scoped `.mcp.json` into the loop home (the adapter-seed pattern); preflight probes resolvability. The user-scoped registry is never touched. Post-MVP, on the portability/adapter surface.
 12. **Q-12 — Escalation knowledge capture.** **RESOLVED: pull model.** Marshal's half is one FR-17 consequence — the resume entry records a reference to the resolving decision. Scribe ingests from run journals; that story is Scribe's backlog. No station writes across the boundary.
 13. **Q-13 — Enterprise plugin seam.** **RESOLVED: dissolved into existing seams; IDE exclusion retained.** Internal MCP servers → the Q-11 tool surface; proprietary/third-party agent CLIs → FR-52 adapter profiles; design bridges → Herald; internal skills → FR-45 projection. Site-wide policy vs the no-fourth-layer constraint resolves at install time — genesis-installer materializes site config into the Marshal-defaults layer, keeping runtime composition three layers and pure. No plugin-registry subsystem.
-14. **Q-14 — Does Marshal enforce inter-station order?** **RESOLVED (operator, 2026-07-31): Marshal sequences on verdicts it never authors.** Gating reads each station's durable, schema-validated verdict artifact, pinned to the tree revision it judged; Marshal never runs the judge. This *clarifies* the two §8 Non-Goals rather than striking them — "not 'the orchestrator'" targets the engine claim and stands; "verdicts stay independent" bars authorship, not consumption. Verdict reads remove most of the cross-environment invocation-port need; the route-verb surface is the queued `spec-one-front-door` derivation's contract.
+14. **Q-14 — Does Marshal enforce inter-station order?** **RESOLVED (operator, 2026-07-31): Marshal sequences on verdicts it never authors.** Gating reads each station's durable, schema-validated verdict artifact, pinned to the tree revision it judged; Marshal never runs the judge. This *clarifies* the two §8 Non-Goals rather than striking them — "not 'the orchestrator'" targets the engine claim and stands; "verdicts stay independent" bars authorship, not consumption. Verdict reads remove most of the cross-environment invocation-port need; the route-verb surface was the then-queued `spec-one-front-door` derivation's contract — **that Spec landed 2026-08-01** (see Q-15/Q-16 below for what it left open).
+
+**Q-15/Q-16 added 2026-08-01, carried from `spec-one-front-door`'s own two live open questions rather than resolved by invention.**
+
+15. **Q-15 — Exact verb surface beyond `check`.** `spec-one-front-door` names `run`/`status`/`check`/`land`/`switch`(shipped)/`homes`(shipped) as candidates it explicitly says to argue with, not a decided list. FR-65 below builds `check` (net-new); `run`/`status`/`land` already exist as `factory spin`/`status`/`land` (FR-9..11, FR-36, FR-59/60) and this PRD does not rename them pending an operator call on whether the shorter forms are worth the churn.
+16. **Q-16 — Route-versus-contain boundary, per `bmad-*` skill.** Context supplied once (the front door's stated value) does not by itself say where "supplying context" ends and "containing a skill's logic" begins, across the 51 `bmad-*` skills Marshal routes to. Precedent sets per skill as routing is implemented; FR-65's `marshal check` is the first concrete site this will be tested against.
 
 ---
 
