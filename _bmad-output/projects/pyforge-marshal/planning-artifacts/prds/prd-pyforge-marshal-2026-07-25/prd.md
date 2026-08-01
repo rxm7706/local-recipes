@@ -2,7 +2,7 @@
 title: Marshal (pyforge-marshal)
 status: final
 created: 2026-07-25
-updated: 2026-08-01  # CAP-9 -> FR-59/FR-60; competitive re-frame; FR-13 re-scope; FR-58 psmux; convergence watch; Q-3/Q-10..14 resolutions; durable-runs -> FR-61/FR-62/FR-63
+updated: 2026-08-01  # CAP-9 -> FR-59/FR-60; competitive re-frame; FR-13 re-scope; FR-58 psmux; convergence watch; Q-3/Q-10..14 resolutions; durable-runs -> FR-61/FR-62/FR-63; fidelity-enforcement (Marshal-only slice) -> FR-64
 project: pyforge-marshal
 dist: pyforge-marshal
 module: pyforge.marshal
@@ -441,6 +441,14 @@ A story that is sound but did not converge in review can be landed deliberately,
 - The manual landing and its justification are journaled.
 - *Motivating evidence: two warden stories were landed this way by hand.*
 
+#### FR-64: A gate evaluation binds to the spec's Success signal *(added 2026-08-01 — `docs/dreams/fidelity-enforcement.md`, CAP-4)*
+Gate evaluation checks that the verify commands it runs still trace to the tracked story spec's declared Success signal, not only that they pass.
+**Consequences:**
+- Evaluating a story's gate resolves its tracked `specs/spec-<key>.md` and confirms the verify commands run are the ones the spec's Success signal names.
+- A verify command silently removed or narrowed since the spec was tracked is a named finding — a contract breach, not a passing suite.
+- Where no tracked spec exists to bind against, the gate reports that gap explicitly (a row-7 finding in the fidelity stack) rather than evaluating silently against nothing.
+- *Rationale: a spec's Success signal is worthless as a contract if nothing later fails when the test that proved it stops running — the never-false-green doctrine (FR-26) extended past merge time into the tracked record itself.*
+
 ---
 
 ### 7.4 Landing and paper trail — `marshal deploy`
@@ -751,7 +759,7 @@ Fixes that belong upstream are tracked as such rather than worked around indefin
 - All four charter verbs (`init`, `factory spin`, `gate evaluate`, `deploy`) plus `status` and `adapters`.
 - Loop-home provisioning, per-worktree project state, Tier-3 backlink, isolation verification, teardown.
 - The supervisor: idle-strand detection, budget ceilings, escalation surfacing, run journal.
-- Gate evaluation as a standalone object, with frozen-surface scope checks, doc-only classification, and the autonomy-labelled gate-mode ladder.
+- Gate evaluation as a standalone object, with frozen-surface scope checks, doc-only classification, the autonomy-labelled gate-mode ladder, and **binding to the tracked spec's Success signal (FR-64, per the `docs/dreams/fidelity-enforcement.md` ruling)**.
 - Automatic story-spec promotion; batch PR; merge-subject conformance; sprint and console feed refresh; **landing rules as policy + `marshal land` (FR-59/FR-60, per the 2026-07-31 CAP-9 ruling)**.
 - Fleet status with ledger-versus-git reconciliation and a versioned machine-readable contract.
 - **Bounded-loss durability and fleet-wide branch retirement (FR-61/FR-62/FR-63, per the `docs/dreams/durable-runs.md` ruling)**.
