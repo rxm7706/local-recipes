@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: marshal
-# stories: 101
+# stories: 105
 development_status:
   1-1-package-spine-verdict-lattice-findings-registry-and-the-meta-tests-that-enforce-them: done
   1-10-render-the-harness-policy-from-the-canonical-effectivepolicy: done
@@ -62,6 +62,9 @@ development_status:
   4-4-batch-pull-request-with-hygiene-preflight: backlog
   4-5-feed-refresh-with-truth-partitioned-by-domain: backlog
   4-6-deploy-idempotence-and-reconciliation-of-open-intents: backlog
+  4-7-landing-rules-as-declared-policy: backlog
+  4-8-marshal-land-the-last-mile-lands-itself: backlog
+  4-9-derived-surfaces-regenerate-on-main-the-shared-store-takes-a-lock: backlog
   5-1-fleet-view: backlog
   5-2-per-run-detail: backlog
   5-3-escalation-queue: backlog
@@ -74,6 +77,7 @@ development_status:
   6-6-the-conformance-matrix: backlog
   6-7-entry-file-family-drift-check-detect-only: backlog
   6-8-upstream-contribution-register: backlog
+  6-9-tool-surface-rendering-and-preflight-probe: backlog
   7-1-package-skeleton-as-a-pixi-workspace-member: backlog
   7-2-error-taxonomy-and-exit-codes: backlog
   7-3-the-fs-write-primitive-and-the-never-write-guard: backlog
