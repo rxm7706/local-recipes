@@ -3026,7 +3026,7 @@ window.DASHBOARD_DATA = {
       }
     }
   },
-  "snapshot": "<span>2026-08-01 15:52 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-01 16:55 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -8692,8 +8692,8 @@ window.DASHBOARD_DATA = {
         "task": "spec-surface-check",
         "guards": "every tracked file under a Spec surface",
         "state": "drift",
-        "findings": 1,
-        "verdict": "FINDINGS (1):",
+        "findings": 2,
+        "verdict": "FINDINGS (2):",
         "runbook": ""
       },
       {
@@ -10858,7 +10858,63 @@ window.DASHBOARD_DATA = {
       "subject": "Merge bmad-loop/20260731-115548-f223/1-9-packaging-distribution-and-version-reporting into loop/pyforge-marshal (bmad-lo"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-01 15:52 UTC",
-    "generatedEpoch": 1785599573
-  }
+    "generatedAt": "2026-08-01 16:55 UTC",
+    "generatedEpoch": 1785603358
+  },
+  "storySpecs": [
+    {
+      "station": "pyforge-atlas",
+      "done": 38,
+      "tracked": 39,
+      "gap": 0
+    },
+    {
+      "station": "pyforge-doctor",
+      "done": 5,
+      "tracked": 5,
+      "gap": 0
+    },
+    {
+      "station": "pyforge-genesis",
+      "done": 0,
+      "tracked": 0,
+      "gap": 0
+    },
+    {
+      "station": "pyforge-herald",
+      "done": 4,
+      "tracked": 4,
+      "gap": 0
+    },
+    {
+      "station": "pyforge-marshal",
+      "done": 10,
+      "tracked": 11,
+      "gap": 0
+    },
+    {
+      "station": "pyforge-mason",
+      "done": 4,
+      "tracked": 4,
+      "gap": 0
+    },
+    {
+      "station": "pyforge-scribe",
+      "done": 2,
+      "tracked": 2,
+      "gap": 0
+    },
+    {
+      "station": "pyforge-steward",
+      "done": 3,
+      "tracked": 3,
+      "gap": 0
+    },
+    {
+      "station": "pyforge-warden",
+      "done": 31,
+      "tracked": 31,
+      "gap": 0
+    }
+  ]
 };

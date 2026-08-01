@@ -773,7 +773,7 @@ def scan_story_specs() -> list[dict]:
     projects_base = REPO_ROOT / "_bmad-output" / "projects"
 
     for project_dir in sorted(projects_base.glob("pyforge-*")):
-        # Count done stories from sprint-status-ledger.yaml
+        # Count done stories from sprint-status-ledger.yaml (exclude epic-*/epic-*-retrospective)
         ledger_path = project_dir / "planning-artifacts" / "sprint-status-ledger.yaml"
         done_count = 0
         if ledger_path.exists():
@@ -783,7 +783,9 @@ def scan_story_specs() -> list[dict]:
                 try:
                     ledger_data = yaml.safe_load(ledger_text)
                     if ledger_data and "development_status" in ledger_data:
-                        done_count = sum(1 for v in ledger_data["development_status"].values() if v == "done")
+                        # Exclude epic-* and epic-*-retrospective entries (never have spec-*.md files)
+                        done_count = sum(1 for k, v in ledger_data["development_status"].items()
+                                        if v == "done" and not k.startswith("epic-"))
                 except:
                     pass
 
@@ -794,7 +796,7 @@ def scan_story_specs() -> list[dict]:
             # Flat files matching spec-*.md (not nested kernel dirs like spec-<slug>/SPEC.md)
             tracked_count = len([f for f in specs_dir.glob("spec-*.md") if f.is_file()])
 
-        gap = done_count - tracked_count
+        gap = max(0, done_count - tracked_count)  # clamp; spec-first is healthy surplus
         project_slug = project_dir.name
         rows.append({
             "station": project_slug,
