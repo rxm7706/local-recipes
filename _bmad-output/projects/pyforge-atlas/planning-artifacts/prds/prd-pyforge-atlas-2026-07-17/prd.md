@@ -2,9 +2,10 @@
 title: cf_atlas Kedro/Dagster/DuckDB Migration
 status: final
 created: 2026-07-17
-updated: 2026-07-17
+updated: 2026-08-04
 project: pyforge-atlas
 intent_source: docs/specs/cfe-atlas-datapipeline-kedro-migration.md (v5.6, ANALYSIS COMPLETE)
+currency_review: Reviewed 2026-08-04 — spec corrections applied to PRD. CAP-8 "28-CLI inventory is answerable" false claim corrected to "8 pages + factory-status; full 28-CLI deferred (DW-D2-1)". FR-4 run-admission retirement (silent-drop cap) already correctly stated (line 248-249). AD-23 lock-store placement details remain architectural (not PRD-level).
 ---
 
 # PRD: cf_atlas Kedro/Dagster/DuckDB Migration
@@ -295,9 +296,13 @@ feedstock-refresh / failure-remediation workflows: `behind-upstream`,
 `detail-cf-atlas`, `staleness-report` — port first. Frontend work in Waves
 D/G is preceded by the CIS two-spine specs (`DESIGN.md` + `EXPERIENCE.md`,
 spec § 2.4). Realizes UJ-3. (Stories D2, D3; Q3 gates the D3 LLM backend.)
-- Consequence: every read-only legacy CLI question is answerable from a page,
-  where for the three named exceptions "answerable" means the latest-report
-  artifact is surfaced read-only — the D2 acceptance bar covers all 28.
+- Consequence: the live-confirmed consumer CLIs (`behind-upstream`,
+  `query-atlas`, `whodepends`, `feedstock-health`, `my-feedstocks`,
+  `detail-cf-atlas`, `staleness-report`) are answerable from pages, where for
+  three exceptions "answerable" means the latest-report artifact is surfaced
+  read-only. The full 28-CLI inventory port is deferred (`DW-D2-1`); the D2
+  gate covers 8 dashboard pages + factory-status. *(Corrected 2026-07-27,
+  AUD-ATLAS-041: this clause previously claimed all 28 were answerable.)*
 - Consequence: pages meet the spec § 2.1 agent-legibility bar — semantic
   HTML, ARIA attributes, deterministic layouts (the factory-status page is
   explicitly tagged agent-readable in spec § 13.2).
