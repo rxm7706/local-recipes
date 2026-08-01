@@ -3026,7 +3026,7 @@ window.DASHBOARD_DATA = {
       }
     }
   },
-  "snapshot": "<span>2026-08-01 16:55 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-01 17:10 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -4421,8 +4421,8 @@ window.DASHBOARD_DATA = {
     },
     "sound": 1,
     "live": 34,
-    "reached": 8,
-    "gaps": 35,
+    "reached": 9,
+    "gaps": 30,
     "findings": 16,
     "rows": [
       {
@@ -4747,25 +4747,21 @@ window.DASHBOARD_DATA = {
         "openQuestions": 0,
         "overtaken": false,
         "na": [
+          "brief",
+          "context",
           "dream",
+          "research",
           "ux"
         ],
         "required": [
           "deck",
           "spec",
-          "research",
-          "brief",
           "prd",
           "arch",
-          "context",
           "epics",
           "sprint"
         ],
-        "gaps": [
-          "research",
-          "brief",
-          "context"
-        ],
+        "gaps": [],
         "partial": [],
         "staleBy": [
           {
@@ -4783,7 +4779,7 @@ window.DASHBOARD_DATA = {
         "version": "",
         "progress": "0/36",
         "complete": 6,
-        "of": 9
+        "of": 6
       },
       {
         "label": "herald",
@@ -7775,6 +7771,8 @@ window.DASHBOARD_DATA = {
         "overtaken": false,
         "na": [
           "arch",
+          "brief",
+          "context",
           "dream",
           "prd",
           "ux"
@@ -7783,14 +7781,10 @@ window.DASHBOARD_DATA = {
           "deck",
           "spec",
           "research",
-          "brief",
-          "context",
           "epics"
         ],
         "gaps": [
-          "deck",
-          "brief",
-          "context"
+          "deck"
         ],
         "partial": [],
         "staleBy": [],
@@ -7801,7 +7795,7 @@ window.DASHBOARD_DATA = {
         "version": "",
         "progress": "",
         "complete": 3,
-        "of": 6
+        "of": 4
       },
       {
         "label": "copilot-cli-packaging",
@@ -10858,8 +10852,8 @@ window.DASHBOARD_DATA = {
       "subject": "Merge bmad-loop/20260731-115548-f223/1-9-packaging-distribution-and-version-reporting into loop/pyforge-marshal (bmad-lo"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-01 16:55 UTC",
-    "generatedEpoch": 1785603358
+    "generatedAt": "2026-08-01 17:10 UTC",
+    "generatedEpoch": 1785604258
   },
   "storySpecs": [
     {
@@ -10907,7 +10901,7 @@ window.DASHBOARD_DATA = {
     {
       "station": "pyforge-steward",
       "done": 3,
-      "tracked": 3,
+      "tracked": 4,
       "gap": 0
     },
     {

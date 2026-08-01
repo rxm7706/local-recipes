@@ -1094,9 +1094,10 @@ FLEET_SUBSCORE = {"research": RESEARCH_TYPES, "deck": DECK_FAMILY}
 # wasm-analytics-stack both reported a complete 9/9 chain while owning neither epics nor
 # code. `ux` is n/a everywhere except chains that declare a UI surface.
 FLEET_NA = {
+    "pyforge-genesis": {"research", "brief", "context"},  # constitutive (Charter §5), precedes stations
     "unity-data-stack": {"epics"},
     "wasm-analytics-stack": {"epics"},
-    "regenerable-factory": {"prd", "arch"},
+    "regenerable-factory": {"prd", "arch", "brief", "context"},  # shipped practice-type, no brief/UX by design
 }
 FLEET_UX = {"deckcraft", "presenton-pixi-image", "unity-data-stack", "wasm-analytics-stack"}
 # Verify gate task-name aliases: chains whose test task doesn't follow {slug}-test pattern.
