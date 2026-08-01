@@ -1,11 +1,37 @@
 # Agentic AI across the software lifecycle — a deck
 
-A 45-slide field guide for engineers on **agentic AI across the SDLC**, grounded in
+A 50-slide field guide for engineers on **agentic AI across the SDLC**, grounded in
 the open-source [BMAD Method](https://github.com/bmad-code-org/BMAD-METHOD). Built as
 a self-contained **React + Vite** presentation app.
 
 The deck walks six acts: the case for change → spec-driven development → choosing a
 framework → the BMAD agent team → the four phases → scale, governance & ecosystem.
+
+## Ledger — 2026-08-01 refresh
+
+Five new slides landed this pass, plus a reconciliation. Design project:
+[f58c0f17-087b-417e-9cfa-c410de6169dc](https://claude.ai/design/p/f58c0f17-087b-417e-9cfa-c410de6169dc).
+
+**New content** (grounded in live-verified sources, not memory):
+- *The productivity paradox* (Act I) — Google's 2024 DORA report, the real numbers
+  (-1.5% throughput / -7.2% stability per 25% AI-adoption step, ~3,000 respondents),
+  plus the 2025 follow-up: throughput recovered, stability didn't.
+- *Spec rigor, on a spectrum* (Act II) — spec-first / spec-anchored / spec-as-source;
+  BMAD sits at spec-anchored.
+- *Governing the agent, not just the code* (Act VI) — OWASP's 2026 Top 10 for
+  Agentic Applications, ASI03 Identity & Privilege Abuse, the least-agency principle.
+
+**Reconciled, not new:** *The Lexicon* and *Lexicon to PyForge* existed in Design
+since 2026-07-25 but were never pulled to the repo (a real desync — recovered here
+per the byte-exact-pull discipline in `docs/specs/presentation-deck.md`). Both, plus
+their two standalone poster artifacts (also pulled to the repo for the first time —
+see `project/Lexicon Poster.dc.html` / `project/Lexicon to PyForge.dc.html`), were
+corrected to match the Charter's own Lexicon, which moved from six nouns to seven
+(the Spec, added 2026-07-25) and renamed "Forgemasters" to "Smiths." Dream count
+refreshed 25 → 37 against a live `dream-chain-check` run.
+
+45 → 50 sections; 47 carry the page-footer counter (Title and the two dense Lexicon
+slides are deliberately un-footered, matching their original convention).
 
 ## Quick start
 

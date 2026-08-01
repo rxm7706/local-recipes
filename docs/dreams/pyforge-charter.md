@@ -590,6 +590,14 @@ Amelia · Paige) are Marshal's *sub-agents on the floor*. This triad — one own
 skills as execution, harness as governance — carries the agentic SDLC at every
 autonomy level, up to fully autonomous when a human so chooses.
 
+**Sequencing clarified (2026-07-31):** Marshal **sequences on verdicts it never
+authors** — gating a downstream step on an upstream station's outcome reads that
+station's durable, schema-validated verdict artifact, pinned to the tree revision
+it judged; Marshal never invokes the judging station and never re-derives its
+verdict. This does not relax "the hand that builds is never the gate that
+judges" — it is that doctrine's read-only case, the shape sequencing across
+stations is permitted to take without becoming the thing it sequences.
+
 ---
 
 ## The Ultimate Master Pipeline Flow
@@ -700,3 +708,5 @@ herald broadcast slack,email --channel engineering-updates
 - **2026-07-25** — accuracy correction (from the Warden research backfill): the Charter billed Warden as a flat "6-Axis" auditor while shipped v1 gates **four** axes; 5–6 are the
   Dream's Vision tier. Marked explicitly — overstating our own coverage is the one thing a
   never-false-green product cannot do in its own constitution.
+- **2026-07-31** — **Execution Doctrine clarified: Marshal sequences on verdicts it never authors** (operator ruling, propagated the same day through Marshal's Spec as a constraint, its PRD, and two new architecture decisions). Gating a downstream step on an upstream station's outcome reads that station's durable, schema-validated verdict artifact, pinned to the tree revision it judged — never an invocation of the judging station, never a re-derivation of its verdict. States explicitly what the doctrine already implied: sequencing is the read-only case of "the hand that builds is never the gate that judges," not an exception to it.
+- **2026-08-01** — housekeeping: two Design-side Lexicon artifacts in the `agentic-sdlc` deck (the summary slide and the "Lexicon → Charter → repo" worked-example slide, plus their two standalone poster exports) were found still describing the **pre-2026-07-25** six-noun model — "Forgemasters," no Spec row, a stale 25-Dream count. Corrected to the current seven-noun Lexicon and pulled into the repo for the first time (they had existed only in Design since 2026-07-25, never pulled — the exact class of drift the byte-exact-pull discipline in `docs/specs/presentation-deck.md` exists to catch). No constitutional content changed; this is a downstream artifact catching up to an amendment already three entries above it.
