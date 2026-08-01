@@ -3026,7 +3026,7 @@ window.DASHBOARD_DATA = {
       }
     }
   },
-  "snapshot": "<span>2026-08-01 15:28 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-01 15:39 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -4421,8 +4421,8 @@ window.DASHBOARD_DATA = {
     },
     "sound": 1,
     "live": 34,
-    "reached": 1,
-    "gaps": 47,
+    "reached": 2,
+    "gaps": 46,
     "findings": 16,
     "rows": [
       {
@@ -4440,7 +4440,7 @@ window.DASHBOARD_DATA = {
           "prd": "2026-07-17",
           "ux": "",
           "arch": "2026-07-17",
-          "context": "",
+          "context": "2026-08-04",
           "epics": "2026-07-17",
           "sprint": "2026-07-29",
           "gates": "2026-07-17",
@@ -4457,7 +4457,7 @@ window.DASHBOARD_DATA = {
           "prd": "2026-07-17",
           "ux": "",
           "arch": "2026-07-17",
-          "context": "",
+          "context": "2026-08-04",
           "epics": "2026-07-29",
           "sprint": "2026-07-29",
           "gates": "2026-07-17",
@@ -4518,9 +4518,7 @@ window.DASHBOARD_DATA = {
           "verify",
           "retro"
         ],
-        "gaps": [
-          "context"
-        ],
+        "gaps": [],
         "partial": [],
         "staleBy": [
           {
@@ -4551,7 +4549,7 @@ window.DASHBOARD_DATA = {
         "stale": false,
         "version": "0.1.0",
         "progress": "38/38",
-        "complete": 12,
+        "complete": 13,
         "of": 13
       },
       {
@@ -10877,7 +10875,7 @@ window.DASHBOARD_DATA = {
       "subject": "Merge bmad-loop/20260731-115548-f223/1-9-packaging-distribution-and-version-reporting into loop/pyforge-marshal (bmad-lo"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-01 15:28 UTC",
-    "generatedEpoch": 1785598125
+    "generatedAt": "2026-08-01 15:39 UTC",
+    "generatedEpoch": 1785598759
   }
 };
