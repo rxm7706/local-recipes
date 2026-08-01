@@ -24,247 +24,277 @@
     "bg": "#F6F4EE"
   },
   {
-    "id": "05-what-is-ai-sdlc",
+    "id": "05-the-productivity-paradox",
+    "label": "The productivity paradox",
+    "notes": "The data behind why prompt-and-pray doesn't scale. Google's 2024 DORA report found a 25% rise in AI adoption came with a 1.5% throughput drop and a 7.2% stability drop across roughly three thousand respondents. The 2025 follow-up is the interesting part: throughput recovered as teams got better at using AI, but the stability cost didn't go away. That split is exactly the case for structure — speed is learnable, but nothing about typing faster reviews an architectural decision.",
+    "bg": "#F6F4EE"
+  },
+  {
+    "id": "06-what-is-ai-sdlc",
     "label": "What is AI-SDLC",
     "notes": "Define the term before going further. The AI-SDLC is not a new lifecycle — it's the one you already know: analyze, plan, design, build, test, ship. What changes is who does the work and how state moves between phases. Specialized agents execute each phase, humans keep judgment and approval, and persistent specs — not meetings or chat memory — carry the state from one phase to the next.",
     "bg": "#F6F4EE"
   },
   {
-    "id": "06-maturity-spectrum",
+    "id": "07-maturity-spectrum",
     "label": "Maturity spectrum",
     "notes": "Where does agentic sit relative to the AI-augmented SDLC most teams already have? It's a spectrum. Manual: humans do everything. AI-augmented: humans still execute every phase, AI assists inside each one — autocomplete, generated tests you curate, review hints. Agentic: agents execute the phases, humans direct and gate through specs — that's this deck. Autonomous: unattended loops where you set intent and review outcomes. The real jump from augmented to agentic: context moves out of your head and chat history into documents agents read and write.",
     "bg": "#F6F4EE"
   },
   {
-    "id": "07-core-idea",
+    "id": "08-core-idea",
     "label": "Core idea",
     "notes": "The core idea in one line: agents are collaborators, not oracles. They pull your best thinking out through a structured process instead of doing the thinking for you. This is the whole philosophy.",
     "bg": "#F6F4EE"
   },
   {
-    "id": "08-act-ii",
+    "id": "09-act-ii",
     "label": "Act II",
     "notes": "Act II opener: spec-driven development.",
     "bg": "#0B1626"
   },
   {
-    "id": "09-what-is-sdd",
+    "id": "10-what-is-sdd",
     "label": "What is SDD",
     "notes": "Define spec-driven development before we build on it. SDD means you write the specification first — a precise, versioned document stating behavior, constraints, and acceptance criteria — and the AI generates and validates code against it. Contrast that with vibe coding: prompt, get code, hope. In SDD the pipeline is intent → spec → human review → generate → validate. The spec is the contract; a bug means the contract was wrong or violated.",
     "bg": "#F6F4EE"
   },
   {
-    "id": "10-spec-driven",
+    "id": "11-spec-rigor-on-a-spectrum",
+    "label": "Spec rigor, on a spectrum",
+    "notes": "SDD isn't one thing — it's a spectrum of how strictly the spec is enforced. Spec-first: a document seeds the first generation, then is allowed to drift once code exists. Spec-anchored, where BMAD sits: the spec evolves with the code, and automated checks fail the build on drift, which is the sweet spot for production. Spec-as-source: the most radical end, where humans only ever touch the spec and code is fully regenerated — powerful, but it needs a level of generation determinism most teams don't have yet.",
+    "bg": "#F6F4EE"
+  },
+  {
+    "id": "12-spec-driven",
     "label": "Spec-driven",
     "notes": "Spec-driven development is the universal operating model. Specs aren't paperwork — they're programmable infrastructure. Three payoffs: expertise becomes a permanent asset instead of living in one person's head; structured specs become machine-readable instructions agents can execute; and every document compounds — it's semantic context that makes the next agent run smarter. V6 shards work into atomic, versioned step-files to eliminate context drift.",
     "bg": "#F6F4EE"
   },
   {
-    "id": "11-mental-model",
+    "id": "13-mental-model",
     "label": "Mental model",
     "notes": "The mental model that makes all of this click: the documentation is the brain, and agents are transient workers who read from and write to it. Never rely on an LLM's leaky chat memory to hold the plan. And the SDLC isn't a loop — it's a funnel of increasing resolution: why, what, how, build. No agent writes code until the what and the how are frozen in a text file.",
     "bg": "#F6F4EE"
   },
   {
-    "id": "12-act-iii",
+    "id": "14-act-iii",
     "label": "Act III",
     "notes": "Act III opener: the tool landscape and the BMAD choice.",
     "bg": "#0B1626"
   },
   {
-    "id": "13-sdd-landscape",
+    "id": "15-sdd-landscape",
     "label": "SDD landscape",
     "notes": "SDD is a category now, not one tool — 30+ frameworks by early 2026. Three broad buckets. Agent-team frameworks simulate a full agile team with role personas and file-based handoffs — BMAD is the archetype and what this deck follows. Spec-first scaffolding adds a specify-plan-tasks structure to a coding session — GitHub Spec Kit with its constitution, AWS Kiro baking specs into the IDE, GSD as the lightweight option. Living-spec tools treat the spec as the evolving source of truth — OpenSpec with delta specs for brownfield, Tessl betting on spec-as-source, Augment Intent writing changes back to the spec. Below all of these sits agent infrastructure — CrewAI, Agno, LangGraph, AutoGen — orchestration SDKs that provide multi-agent machinery, not a development methodology. Rules of thumb: complex greenfield with a paper trail, BMAD. Brownfield and lightweight, OpenSpec. Broad default, Spec Kit. AWS-native, Kiro.",
     "bg": "#F6F4EE"
   },
   {
-    "id": "14-method-vs-machinery",
+    "id": "16-method-vs-machinery",
     "label": "Method vs machinery",
     "notes": "Method and machinery are different layers, and engineers ask two questions when they see orchestration SDKs next to BMAD. First: do you need an SDK with BMAD? Usually not — BMAD installs as skills into your coding agent (Claude Code, Cursor, Codex), which is already the runtime: tool calling, files, context, with humans driving checkpoints. Reach for CrewAI or LangGraph only to build your own pipeline product — unattended CI loops, parallel story agents — where personas become crews or graph nodes and BMAD's artifacts stay the contracts. Second, the reverse: on an SDK already, do you need a method? For software, yes — orchestration SDKs are empty machinery with no roles, artifacts, or gates; borrow BMAD (personas become roles, artifacts the messages, gates the edges) or reinvent them. Not building software — research, bots, data pipelines? SDD is irrelevant. The relationship is asymmetric: method without SDK works out of the box; SDK without method only when you're not shipping software.",
     "bg": "#F6F4EE"
   },
   {
-    "id": "15-why-bmad",
+    "id": "17-why-bmad",
     "label": "Why BMAD",
     "notes": "Why this framework and not another from the landscape? Four reasons. Structure without rigidity: phases are guardrails, not gates you can't skip — drop optional phases, load agents directly, reorder once you know the flow. Context persistence: every plan is a file in git — new chat, agents pick up where you left off; the whole team sees the same artifacts. Scale-domain-adaptive: it sizes the ceremony to the work — bug fix gets three commands, an enterprise system gets compliance and security reviews — and adapts to domain: a dating app and a medical device don't get the same planning. And it's 100% free, MIT, no gated content.",
     "bg": "#F6F4EE"
   },
   {
-    "id": "16-cover-framework",
+    "id": "18-cover-framework",
     "label": "Cover · Framework",
     "notes": "Chapter break into the concrete half of the deck: the BMAD framework itself.",
     "bg": "#0B1626"
   },
   {
-    "id": "17-the-crew",
+    "id": "19-the-crew",
     "label": "The crew",
     "notes": "You don't talk to one monolithic AI. You talk to named agents, each anchored to a phase and a role, each with a persona and a menu of skills. Say 'Hey Mary, let's brainstorm' and she activates. The point: it feels like a team of specialists, not a slash-command menu.",
     "bg": "#F6F4EE"
   },
   {
-    "id": "18-why-named-agents",
+    "id": "20-why-named-agents",
     "label": "Why named agents",
     "notes": "Why personas instead of a menu or a blank prompt? A menu makes you memorize where each capability lives. A blank prompt makes you guess the magic words. Named agents invert it: you say what you want, in your words, to a teammate who already knows the work and their menu is there as a fallback.",
     "bg": "#F6F4EE"
   },
   {
-    "id": "19-party-mode",
+    "id": "21-party-mode",
     "label": "Party mode",
     "notes": "One agent at a time is the default, but some decisions need several perspectives at once. Party mode brings multiple personas into one session and lets them respond in turn. Three canonical uses: a design review where UX, architect, and developer weigh in together; a troubleshooting session where dev, DevOps, and DBA triangulate a production issue; and architecture decisions where PM, architect, and security argue trade-offs before you commit. It's the whiteboard meeting, minus the scheduling.",
     "bg": "#F6F4EE"
   },
   {
-    "id": "20-execution-matrix",
+    "id": "22-execution-matrix",
     "label": "Execution matrix",
     "notes": "One reference slide before we walk the phases: the execution matrix. Each phase has a persona, an input artifact, and an output artifact. Each output becomes the anchor for the next persona — the handoff is a file, not a chat thread. Keep this in your head as we go phase by phase.",
     "bg": "#F6F4EE"
   },
   {
-    "id": "21-skill-roster",
+    "id": "23-skill-roster",
     "label": "Skill roster",
     "notes": "The full skill roster in the latest release, aligned to agents and phases. Every workflow ships as an installable skill — invoke it directly by its bmad- id, or through the owning agent's menu. Mary and Paige cover analysis, John and Sally planning, Winston solutioning, Amelia the whole implementation loop. And a set of cross-cutting skills — help, party-mode, customize, project-context generation — plus the quick-dev and dev-auto parallel track work across all phases.",
     "bg": "#F6F4EE"
   },
   {
-    "id": "22-repo-artifacts",
+    "id": "24-repo-artifacts",
     "label": "Repo artifacts",
     "notes": "What this all physically looks like: two folders in your repo. _bmad holds the machinery — agent definitions, workflows, config. _bmad-output holds your artifacts, split in v6 into planning-artifacts (PRD, architecture, epics) and implementation-artifacts (sprint status), plus a project-context file. Four consequences: no context loss because a new chat picks up from the files; version control because plans live in git next to code; team visibility because everyone reads the same documents; and AI grounding because agents cite concrete files instead of hallucinating.",
     "bg": "#F6F4EE"
   },
   {
-    "id": "23-cover-phases",
+    "id": "25-cover-phases",
     "label": "Cover · Phases",
     "notes": "Chapter break opening the phase walkthrough.",
     "bg": "#0B1626"
   },
   {
-    "id": "24-phase-map",
+    "id": "26-phase-map",
     "label": "Phase map",
     "notes": "This is the map for the rest of the deck. Four phases: Analysis, Planning, Solutioning, Implementation. Each is a set of workflows that produce documents. We'll walk through each one. Phase 1 is optional; the real spine is Planning to Implementation.",
     "bg": "#F6F4EE"
   },
   {
-    "id": "25-phase-1-analysis",
+    "id": "27-phase-1-analysis",
     "label": "Phase 1 · Analysis",
     "notes": "Phase 1, Analysis, is optional but it makes everything downstream sharper. Four ways to think clearly before you build: brainstorm to generate, research to ground, brief to document, PRFAQ to stress-test. Skipping analysis means your PRD is built on assumptions.",
     "bg": "#F6F4EE"
   },
   {
-    "id": "26-choosing-a-tool",
+    "id": "28-choosing-a-tool",
     "label": "Choosing a tool",
     "notes": "Practical guidance: which analysis tool fits your situation. Vague idea, brainstorm. Need market truth, research. Know what you want, brief. Want it stress-tested, PRFAQ. Both brief and PRFAQ feed the PRD — the difference is how much challenge you want.",
     "bg": "#F6F4EE"
   },
   {
-    "id": "27-phase-2-planning",
+    "id": "29-phase-2-planning",
     "label": "Phase 2 · Planning",
     "notes": "Phase 2, Planning. This is where you define what to build and for whom. The PRD is the anchor — it answers what and why, and every downstream document inherits its clarity or its vagueness. UX runs alongside when experience matters.",
     "bg": "#F6F4EE"
   },
   {
-    "id": "28-phase-3-solutioning",
+    "id": "30-phase-3-solutioning",
     "label": "Phase 3 · Solutioning",
     "notes": "Phase 3, Solutioning. Translate what into how. The architect makes technical decisions explicit, the PM breaks requirements into epics and stories, and a readiness gate decides pass, concerns, or fail before anyone writes code.",
     "bg": "#F6F4EE"
   },
   {
-    "id": "29-why-solutioning",
+    "id": "31-why-solutioning",
     "label": "Why solutioning",
     "notes": "Concrete reason solutioning matters. Without shared architectural decisions, two agents on two epics pick REST and GraphQL independently, and integration becomes a nightmare. Decide once, up front, and everyone follows. Catching alignment issues here is 10x cheaper than during implementation.",
     "bg": "#F6F4EE"
   },
   {
-    "id": "30-phase-4-implementation",
+    "id": "32-phase-4-implementation",
     "label": "Phase 4 · Implementation",
     "notes": "Phase 4, Implementation. Build one story at a time. Each story carries complete, focused context so the dev agent isn't guessing. Sprint planning sequences the work once; then it's a tight loop per story.",
     "bg": "#F6F4EE"
   },
   {
-    "id": "31-the-dev-loop",
+    "id": "33-the-dev-loop",
     "label": "The dev loop",
     "notes": "Zoom into the loop. Create story, implement, review, and on to the next — with correct-course to handle mid-sprint changes and a retrospective at the end of each epic. Human stays in the loop; you choose how tight. This is the heartbeat of implementation.",
     "bg": "#F6F4EE"
   },
   {
-    "id": "32-cover-testing",
+    "id": "34-cover-testing",
     "label": "Cover · Testing",
     "notes": "Chapter break introducing the TEA testing module.",
     "bg": "#0B1626"
   },
   {
-    "id": "33-tea-testing",
+    "id": "35-tea-testing",
     "label": "TEA testing",
     "notes": "The complaint heard most from teams using AI for development: the tests are garbage. They pass, they look fine in review, and three sprints later half are flaky and nobody trusts the suite — because the AI had no testing strategy, it just wrote assertions matching current behavior. TEA, the Test Architect module, treats testing as an engineering discipline: risk-based test design scores probability times impact into P0 to P3 priorities, so the checkout flow gets deep coverage and the settings page gets a smoke test. Network-first patterns kill flaky waits. And the trace workflow maps tests to requirements and issues a release-gate decision: pass, concerns, fail, or waived.",
     "bg": "#F6F4EE"
   },
   {
-    "id": "34-cover-ecosystem",
+    "id": "36-cover-ecosystem",
     "label": "Cover · Ecosystem",
     "notes": "Chapter break opening the ecosystem section.",
     "bg": "#0B1626"
   },
   {
-    "id": "35-scale-adaptive",
+    "id": "37-scale-adaptive",
     "label": "Scale-adaptive",
     "notes": "BMad v6 offers three planning tracks, and bmad-help picks one for you. Quick Flow for bug fixes and clear-scope work (1-15 stories) produces just a tech-spec. BMad Method for products and platforms (10-50+ stories) produces a PRD, architecture, and UX. Enterprise for compliance and multi-tenant systems (30+ stories) adds security and DevOps. Story counts are guidance, not definitions — choose by planning need. Same primitives throughout, different depth. Quick flow for a bug fix, simple for a small feature, complex when solutioning is required, enterprise when governance is. The process adjusts to complexity instead of forcing one-size-fits-all.",
     "bg": "#F6F4EE"
   },
   {
-    "id": "36-quick-flow",
+    "id": "38-quick-flow",
     "label": "Quick flow",
     "notes": "Not everything needs four phases. For small, well-understood work there's a parallel track: quick-dev clarifies, plans, implements, reviews, and presents in one flow; dev-auto runs a single unattended iteration. Use the full method for the enterprise system, quick flow for the bug fix.",
     "bg": "#F6F4EE"
   },
   {
-    "id": "37-governance",
+    "id": "39-governance",
     "label": "Governance",
     "notes": "Pull the docs idea together and scale it. The documents aren't paperwork — they're the product's memory. A project-context file makes a dozen separate agent runs feel like one coherent team, and at enterprise scale it matures into a constitution: a single, versioned source of truth that supersedes ad-hoc practice. The interesting part: agents are empowered to enforce it — they audit every PR and cite the exact clause a change violates. Humans amend it through ADRs and sign-off. And a simplicity gate keeps complexity honest: YAGNI, with justification required.",
     "bg": "#F6F4EE"
   },
   {
-    "id": "38-build-for-agents",
+    "id": "40-the-lexicon",
+    "label": "The Lexicon",
+    "notes": "The vocabulary of the system, read as a constitution. Seven nouns, each a load-bearing separation of concerns, each doing exactly one job — the Spec joined the six on 2026-07-25 to close a real hole: nothing else held the five-field contract still while the PRD, architecture, and epics moved around it. The chain reads both ways: forward as authorization — the Charter authorizes the Guild, the Spec binds the work, the Guild seats Smiths, Smiths hold stations, stations wield skills, the work stands open in the Guildhall. Backward as audit — anything visible traces to an independent verdict, a named Smith, the Guild, a Spec, the Charter. The tagline maps directly: Governed is Charter plus Spec plus Stations, Auditable is the Guildhall plus the backward trace, Production-ready is Skills plus verdicts that never false-green.",
+    "bg": "#F6F4EE"
+  },
+  {
+    "id": "41-lexicon-to-pyforge",
+    "label": "Lexicon to PyForge",
+    "notes": "How the lexicon is actually implemented, using PyForge as the worked example. Read each row across: the abstract unit, what the Charter's law says, and the concrete artifact in the repo. The Charter is a markdown Dream at Tier 0, amended by a recorded Realization log. The Spec is the five-field contract every Dream distills to, derived from an append-only memlog and re-rendered, never hand-patched. The Guild shows up as owner frontmatter on all thirty-seven Dreams. Each Smith has a persona Dream, with the branding law enforced down to PEP 503 package names. Stations live as per-project BMAD output plus the loop policy's gates. Skills are the installed bmad-star suite plus the skill forge — the harness deliberately isn't one. And the Guildhall is the Factory Console on GitHub Pages, derived from ledgers, and refuses to publish a row with no accountable owner. The strip at the bottom is the Dream-first flow from the Dreams README — with the audit running backward in parallel.",
+    "bg": "#F6F4EE"
+  },
+  {
+    "id": "42-build-for-agents",
     "label": "Build for agents",
     "notes": "The flip side: it's not just about using agents to build — it's about building systems agents can operate. Three layers: interfaces with semantic structure and deterministic layouts, no vibe UI; APIs that are idempotent and self-documenting with errors clear enough for an agent to self-correct; and an agent harness — explicit tool exposure, strict guardrails, exhaustive run-trace logs.",
     "bg": "#F6F4EE"
   },
   {
-    "id": "39-module-ecosystem",
+    "id": "43-governing-the-agent-not-just-the-code",
+    "label": "Governing the agent, not just the code",
+    "notes": "As agents get more autonomy, the security conversation shifts from what the model outputs to what the agent is allowed to do. OWASP's 2026 Top 10 for Agentic Applications puts identity and privilege abuse at the top — agents inheriting broad, long-lived credentials and acting past what anyone intended. The governing principle industry is converging on is least agency, not just least privilege: bound not just what an agent can reach, but how much it can decide before checking back. BMAD's phase gates and named, scoped agents are already a structural head start on this, even though the framework itself isn't a security product.",
+    "bg": "#F6F4EE"
+  },
+  {
+    "id": "44-module-ecosystem",
     "label": "Module ecosystem",
     "notes": "BMAD isn't one thing — the core is a module in a wider ecosystem, and V6 leans hard into that. The core, BMM, is the 34+ workflow framework this deck walks through. On top of it, official modules extend the same scale-adaptive discipline into new domains, each installable during setup or any time after: BMad Builder to create your own agents and workflows; Test Architect (TEA) for risk-based test strategy; Game Dev Studio for Unity, Unreal, and Godot pipelines; and the Creative Intelligence Suite for brainstorming, innovation, and design-thinking facilitation. All MIT, all installed the same way. And when you're unsure what's next, the bmad-help skill tells you what to do and what's optional.",
     "bg": "#F6F4EE"
   },
   {
-    "id": "40-bmad-builder",
+    "id": "45-bmad-builder",
     "label": "BMad Builder",
     "notes": "When the built-in agents don't cover your domain — HIPAA reviews, a house deployment process — BMad Builder creates your own. The packaging model: everything is a skill, a folder with a SKILL.md, following the open Agent Skills standard; agents, workflows, and utilities all ship the same way. Agents come in three types: stateless for single-session experts; memory agents that keep a persistent 'sanctum' of identity and knowledge files and greet you by name next session; and autonomous agents that add a PULSE file and wake on a schedule to work unattended. Builders run as guided conversations, then modules package skills for distribution on GitHub.",
     "bg": "#F6F4EE"
   },
   {
-    "id": "41-plan-anywhere",
+    "id": "46-plan-anywhere",
     "label": "Plan anywhere",
     "notes": "The method isn't locked to one tool. Six planning coaches ship as web bundles you can install as ChatGPT Custom GPTs, Gemini Gems, or Microsoft Copilot agents — do the heavy planning on a flat-rate subscription, then bring the artifacts into your IDE for implementation. And a growing ecosystem of modules and community tools extends the same discipline to testing, game dev, automation, and more.",
     "bg": "#F6F4EE"
   },
   {
-    "id": "42-in-action",
+    "id": "47-in-action",
     "label": "In action",
     "notes": "Optional show-and-tell slide. Drop in your own screenshots to make the method concrete: the installer running in your terminal, a real workflow or party-mode session, and the generated artifacts in your editor or the docs site. Live captures land better than stock diagrams here — swap these three in before presenting. If you'd rather not use images, this slide can be removed.",
     "bg": "#F6F4EE"
   },
   {
-    "id": "43-get-started",
+    "id": "48-get-started",
     "label": "Get started",
     "notes": "How to actually try it. One install command, open your AI IDE, and if you're ever unsure, ask bmad-help and it tells you what's next. It's free and open source. The fastest way to understand it is to run it once on something small.",
     "bg": "#0B1626"
   },
   {
-    "id": "44-principles",
+    "id": "49-principles",
     "label": "Principles",
     "notes": "The takeaways that transfer even if you never use this specific framework. Structure beats prompting. Documents are context. Decide the hard things once. Match ceremony to complexity. Keep a human in the loop. And when output is wrong, fix the upstream document and rerun — don't patch the code. These are the durable lessons of agentic development.",
     "bg": "#0B1626"
   },
   {
-    "id": "45-closing",
+    "id": "50-closing",
     "label": "Closing",
     "notes": "Close. Agentic development isn't about handing off your judgment — it's about giving your judgment a structure to work in. Try it on something small this week. Resources on screen.",
     "bg": "#0B1626"

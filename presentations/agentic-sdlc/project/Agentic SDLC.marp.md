@@ -82,6 +82,22 @@ Frame the problem. Most AI coding tools generate for you and leave you to sort o
 
 ---
 
+###### THE DATA
+
+# Real numbers, not intuition
+
+**-1.5%** delivery throughput, per 25% rise in AI adoption
+**-7.2%** delivery stability, same 25% adoption step
+**2025 follow-up** — throughput recovered; stability still didn't
+
+Google's 2024 DORA report measured this across ~3,000 respondents: teams shipped more, and less reliably. The 2025 follow-up found the throughput hit had reversed — teams learned to use AI without slowing down — but the **stability cost persisted**. Speed came back on its own. Stability didn't, because nothing about typing faster reviews an architectural decision nobody looked at.
+
+<!--
+The data behind why prompt-and-pray doesn't scale. Google's 2024 DORA report found a 25% rise in AI adoption came with a 1.5% throughput drop and a 7.2% stability drop across roughly three thousand respondents. The 2025 follow-up is the interesting part: throughput recovered as teams got better at using AI, but the stability cost didn't go away. That split is exactly the case for structure — speed is learnable, but nothing about typing faster reviews an architectural decision.
+-->
+
+---
+
 ###### DEFINITION
 
 # What is the agentic AI‑SDLC?
@@ -161,6 +177,22 @@ SPEC-DRIVEN    intent → spec → human review → generate → validate
 
 <!--
 Define spec-driven development before we build on it. SDD means you write the specification first — a precise, versioned document stating behavior, constraints, and acceptance criteria — and the AI generates and validates code against it. Contrast that with vibe coding: prompt, get code, hope. In SDD the pipeline is intent → spec → human review → generate → validate. The spec is the contract; a bug means the contract was wrong or violated.
+-->
+
+---
+
+###### HOW MUCH RIGOR
+
+# How strictly is the spec enforced?
+
+**Spec-first** — Seed, then drift. A spec seeds the first generation; once code exists, the doc is allowed to go stale.
+**Spec-anchored — BMAD** — Living, enforced. The spec evolves with the code; tests and grounding hooks fail the build on drift instead of letting it accumulate invisibly.
+**Spec-as-source** — Humans never touch code. Every change starts and ends in the spec; code fully regenerates — needs a determinism guarantee most teams don't have yet.
+
+Three rigor levels, one spectrum. BMAD sits at **spec-anchored** — the sweet spot for production systems.
+
+<!--
+SDD isn't one thing — it's a spectrum of how strictly the spec is enforced. Spec-first: a document seeds the first generation, then is allowed to drift once code exists. Spec-anchored, where BMAD sits: the spec evolves with the code, and automated checks fail the build on drift, which is the sweet spot for production. Spec-as-source: the most radical end, where humans only ever touch the spec and code is fully regenerated — powerful, but it needs a level of generation determinism most teams don't have yet.
 -->
 
 ---
@@ -675,6 +707,62 @@ Pull the docs idea together and scale it. The documents aren't paperwork — the
 
 <!--
 The flip side: it's not just about using agents to build — it's about building systems agents can operate. Three layers: interfaces with semantic structure and deterministic layouts, no vibe UI; APIs that are idempotent and self-documenting with errors clear enough for an agent to self-correct; and an agent harness — explicit tool exposure, strict guardrails, exhaustive run-trace logs.
+-->
+
+---
+
+###### GOVERNANCE · 2026
+
+# The risk moved from the model to the agent
+
+OWASP's 2026 Top 10 for Agentic Applications reframes the security question: the risk isn't the model, it's the **autonomy and delegated authority** an agent carries. The top finding — **ASI03, Identity & Privilege Abuse** — is agents inheriting broad, long-lived credentials and acting past what the human ever intended.
+
+**The governing principle: least agency**, not just least privilege — bound not only what an agent can reach, but how much it may decide before checking back. Autonomy is earned, not a default.
+
+Where BMAD already helps: named, scoped agents per phase (no monolithic identity to abuse) · phase gates require explicit human approval, not implicit trust · every action traces to a file, not a chat log — auditable after the fact.
+
+<!--
+As agents get more autonomy, the security conversation shifts from what the model outputs to what the agent is allowed to do. OWASP's 2026 Top 10 for Agentic Applications puts identity and privilege abuse at the top — agents inheriting broad, long-lived credentials and acting past what anyone intended. The governing principle industry is converging on is least agency, not just least privilege: bound not just what an agent can reach, but how much it can decide before checking back. BMAD's phase gates and named, scoped agents are already a structural head start on this, even though the framework itself isn't a security product.
+-->
+
+---
+
+###### THE LEXICON
+
+# Seven nouns, one operating system
+
+A constitutional model for autonomous software delivery — every noun does exactly one job, every job has exactly one noun. Forward reads as **authorization**; backward as **audit**.
+
+1. **The Charter** *(legitimacy)* — authorizes the workers, does no work.
+2. **The Spec** *(contract)* — the five-field contract every Dream distills to.
+3. **The Guild** *(body)* — one accountable organization; bodies outlive rosters.
+4. **The Smiths** *(identity)* — eight beings, three registers of one thing.
+5. **The Stations** *(accountability)* — the post, not the person.
+6. **The Skills** *(execution)* — wielded, never worn.
+7. **The Guildhall** *(made real)* — the human's seat; refuses to publish an unowned row.
+
+<!--
+The vocabulary of the system, read as a constitution. Seven nouns, each a load-bearing separation of concerns — the Spec joined the six on 2026-07-25 to close a real hole: nothing else held the five-field contract still while the PRD, architecture, and epics moved around it. The chain reads both ways: forward as authorization, backward as audit.
+-->
+
+---
+
+###### THE CHARTER, IMPLEMENTED
+
+# Lexicon → Charter → repo — a worked example
+
+| Noun | The law | In this repo |
+|---|---|---|
+| Charter | Tier 0; changed only by recorded amendment | `docs/dreams/pyforge-charter.md` |
+| Spec | The five-field contract every Dream distills to | `planning-artifacts/specs/spec-<slug>/SPEC.md` — 34 tracked |
+| Guild | One organization; bodies outlive rosters | `docs/dreams/` `owner:` frontmatter — 37 Dreams stamped |
+| Smiths | Smith = agent = persona | `docs/dreams/pyforge-<name>.md` |
+| Stations | The hand that builds is never the gate that judges | `_bmad-output/projects/<slug>/` |
+| Skills | Wielded, never worn | `.claude/skills/bmad-*` · `_bmad/skf/` |
+| Guildhall | Refuses to publish an unowned row | `docs/dashboard/` → GitHub Pages |
+
+<!--
+How the lexicon is actually implemented, using PyForge as the worked example. Read each row: the abstract unit, what the Charter's law says, and the concrete artifact in the repo. The Guild shows up as owner frontmatter on all thirty-seven Dreams. Each Smith has a persona Dream, with the branding law enforced down to PEP 503 package names. And the Guildhall is the Factory Console on GitHub Pages, derived from ledgers — it refuses to publish a row with no accountable owner.
 -->
 
 ---
