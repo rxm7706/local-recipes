@@ -3026,7 +3026,7 @@ window.DASHBOARD_DATA = {
       }
     }
   },
-  "snapshot": "<span>2026-08-01 14:43 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-01 15:28 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -3619,7 +3619,7 @@ window.DASHBOARD_DATA = {
       "title": "factory console (program console + Dreamscape)",
       "caps": 4,
       "companions": 1,
-      "updated": "2026-07-31",
+      "updated": "2026-08-01",
       "dream": "factory-console",
       "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-factory-console"
     },
@@ -3799,7 +3799,7 @@ window.DASHBOARD_DATA = {
       "title": "Steward (pyforge-steward) — the estate the factory stands on",
       "caps": 4,
       "companions": 1,
-      "updated": "2026-07-30",
+      "updated": "2026-08-01",
       "dream": "pyforge-steward",
       "path": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward"
     },
@@ -4422,7 +4422,7 @@ window.DASHBOARD_DATA = {
     "sound": 1,
     "live": 34,
     "reached": 1,
-    "gaps": 52,
+    "gaps": 47,
     "findings": 16,
     "rows": [
       {
@@ -4445,7 +4445,7 @@ window.DASHBOARD_DATA = {
           "sprint": "2026-07-29",
           "gates": "2026-07-17",
           "code": "2026-07-17",
-          "verify": "",
+          "verify": "2026-07-17",
           "retro": "2026-07-25"
         },
         "updatedAt": {
@@ -4500,10 +4500,10 @@ window.DASHBOARD_DATA = {
         "openQuestions": 0,
         "overtaken": false,
         "na": [
+          "dream",
           "ux"
         ],
         "required": [
-          "dream",
           "deck",
           "spec",
           "research",
@@ -4519,8 +4519,7 @@ window.DASHBOARD_DATA = {
           "retro"
         ],
         "gaps": [
-          "context",
-          "verify"
+          "context"
         ],
         "partial": [],
         "staleBy": [
@@ -4553,7 +4552,7 @@ window.DASHBOARD_DATA = {
         "version": "0.1.0",
         "progress": "38/38",
         "complete": 12,
-        "of": 14
+        "of": 13
       },
       {
         "label": "doctor",
@@ -4632,10 +4631,10 @@ window.DASHBOARD_DATA = {
         "openQuestions": 0,
         "overtaken": false,
         "na": [
+          "dream",
           "ux"
         ],
         "required": [
-          "dream",
           "deck",
           "spec",
           "research",
@@ -4671,8 +4670,8 @@ window.DASHBOARD_DATA = {
         "stale": false,
         "version": "0.1.0",
         "progress": "5/12",
-        "complete": 11,
-        "of": 13
+        "complete": 10,
+        "of": 12
       },
       {
         "label": "genesis",
@@ -4753,10 +4752,10 @@ window.DASHBOARD_DATA = {
         "openQuestions": 0,
         "overtaken": false,
         "na": [
+          "dream",
           "ux"
         ],
         "required": [
-          "dream",
           "deck",
           "spec",
           "research",
@@ -4788,8 +4787,8 @@ window.DASHBOARD_DATA = {
         "stale": false,
         "version": "",
         "progress": "0/36",
-        "complete": 7,
-        "of": 10
+        "complete": 6,
+        "of": 9
       },
       {
         "label": "herald",
@@ -4866,10 +4865,10 @@ window.DASHBOARD_DATA = {
         "openQuestions": 0,
         "overtaken": false,
         "na": [
+          "dream",
           "ux"
         ],
         "required": [
-          "dream",
           "deck",
           "spec",
           "research",
@@ -4903,8 +4902,8 @@ window.DASHBOARD_DATA = {
         "stale": false,
         "version": "0.1.0",
         "progress": "4/17",
-        "complete": 11,
-        "of": 13
+        "complete": 10,
+        "of": 12
       },
       {
         "label": "marshal",
@@ -4981,10 +4980,10 @@ window.DASHBOARD_DATA = {
         "openQuestions": 0,
         "overtaken": false,
         "na": [
+          "dream",
           "ux"
         ],
         "required": [
-          "dream",
           "deck",
           "spec",
           "research",
@@ -5007,8 +5006,8 @@ window.DASHBOARD_DATA = {
         "stale": false,
         "version": "0.1.0",
         "progress": "10/50",
-        "complete": 13,
-        "of": 13
+        "complete": 12,
+        "of": 12
       },
       {
         "label": "mason",
@@ -5087,10 +5086,10 @@ window.DASHBOARD_DATA = {
         "openQuestions": 0,
         "overtaken": false,
         "na": [
+          "dream",
           "ux"
         ],
         "required": [
-          "dream",
           "deck",
           "spec",
           "research",
@@ -5126,8 +5125,8 @@ window.DASHBOARD_DATA = {
         "stale": false,
         "version": "0.1.0",
         "progress": "4/38",
-        "complete": 11,
-        "of": 13
+        "complete": 10,
+        "of": 12
       },
       {
         "label": "scribe",
@@ -5206,10 +5205,10 @@ window.DASHBOARD_DATA = {
         "openQuestions": 0,
         "overtaken": false,
         "na": [
+          "dream",
           "ux"
         ],
         "required": [
-          "dream",
           "deck",
           "spec",
           "research",
@@ -5245,8 +5244,8 @@ window.DASHBOARD_DATA = {
         "stale": false,
         "version": "0.1.0",
         "progress": "2/9",
-        "complete": 11,
-        "of": 13
+        "complete": 10,
+        "of": 12
       },
       {
         "label": "steward",
@@ -5274,7 +5273,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-07-25",
           "deck": "2026-07-25",
-          "spec": "2026-07-29",
+          "spec": "2026-08-01T09:51",
           "research": "2026-07-25",
           "brief": "2026-07-25",
           "prd": "2026-07-25",
@@ -5325,10 +5324,10 @@ window.DASHBOARD_DATA = {
         "openQuestions": 0,
         "overtaken": false,
         "na": [
+          "dream",
           "ux"
         ],
         "required": [
-          "dream",
           "deck",
           "spec",
           "research",
@@ -5354,7 +5353,7 @@ window.DASHBOARD_DATA = {
             "kind": "feeds",
             "stage": "spec",
             "than": "prd",
-            "at": "2026-07-29",
+            "at": "2026-08-01T09:51",
             "other": "2026-07-25"
           }
         ],
@@ -5364,8 +5363,8 @@ window.DASHBOARD_DATA = {
         "stale": false,
         "version": "0.1.0",
         "progress": "3/18",
-        "complete": 11,
-        "of": 13
+        "complete": 10,
+        "of": 12
       },
       {
         "label": "warden",
@@ -5444,10 +5443,10 @@ window.DASHBOARD_DATA = {
         "openQuestions": 0,
         "overtaken": false,
         "na": [
+          "dream",
           "ux"
         ],
         "required": [
-          "dream",
           "deck",
           "spec",
           "research",
@@ -5489,8 +5488,8 @@ window.DASHBOARD_DATA = {
         "stale": false,
         "version": "0.1.0",
         "progress": "31/31",
-        "complete": 12,
-        "of": 13
+        "complete": 11,
+        "of": 12
       },
       {
         "label": "microsoft-org-sweep",
@@ -5574,10 +5573,10 @@ window.DASHBOARD_DATA = {
         "openQuestions": 0,
         "overtaken": false,
         "na": [
+          "dream",
           "ux"
         ],
         "required": [
-          "dream",
           "deck",
           "spec",
           "research"
@@ -5593,8 +5592,8 @@ window.DASHBOARD_DATA = {
         "stale": false,
         "version": "",
         "progress": "",
-        "complete": 3,
-        "of": 4
+        "complete": 2,
+        "of": 3
       },
       {
         "label": "unity",
@@ -5671,10 +5670,10 @@ window.DASHBOARD_DATA = {
         "openQuestions": 0,
         "overtaken": false,
         "na": [
+          "dream",
           "epics"
         ],
         "required": [
-          "dream",
           "deck",
           "spec",
           "research",
@@ -5702,8 +5701,8 @@ window.DASHBOARD_DATA = {
         "stale": false,
         "version": "",
         "progress": "",
-        "complete": 7,
-        "of": 8
+        "complete": 6,
+        "of": 7
       },
       {
         "label": "upstream-discovery",
@@ -5787,10 +5786,10 @@ window.DASHBOARD_DATA = {
         "openQuestions": 6,
         "overtaken": false,
         "na": [
+          "dream",
           "ux"
         ],
         "required": [
-          "dream",
           "deck",
           "spec",
           "research"
@@ -5806,8 +5805,8 @@ window.DASHBOARD_DATA = {
         "stale": false,
         "version": "",
         "progress": "",
-        "complete": 3,
-        "of": 4
+        "complete": 2,
+        "of": 3
       },
       {
         "label": "wasm",
@@ -5884,10 +5883,10 @@ window.DASHBOARD_DATA = {
         "openQuestions": 0,
         "overtaken": false,
         "na": [
+          "dream",
           "epics"
         ],
         "required": [
-          "dream",
           "deck",
           "spec",
           "research",
@@ -5915,8 +5914,8 @@ window.DASHBOARD_DATA = {
         "stale": false,
         "version": "",
         "progress": "",
-        "complete": 7,
-        "of": 8
+        "complete": 6,
+        "of": 7
       },
       {
         "label": "charter",
@@ -6004,10 +6003,10 @@ window.DASHBOARD_DATA = {
         "openQuestions": 0,
         "overtaken": false,
         "na": [
+          "dream",
           "ux"
         ],
         "required": [
-          "dream",
           "deck",
           "spec"
         ],
@@ -6022,8 +6021,8 @@ window.DASHBOARD_DATA = {
         "stale": false,
         "version": "",
         "progress": "",
-        "complete": 2,
-        "of": 3
+        "complete": 1,
+        "of": 2
       },
       {
         "label": "deckcraft",
@@ -6099,9 +6098,10 @@ window.DASHBOARD_DATA = {
         "backfilled": true,
         "openQuestions": 0,
         "overtaken": false,
-        "na": [],
+        "na": [
+          "dream"
+        ],
         "required": [
-          "dream",
           "deck",
           "spec",
           "research",
@@ -6132,8 +6132,8 @@ window.DASHBOARD_DATA = {
         "stale": false,
         "version": "",
         "progress": "",
-        "complete": 8,
-        "of": 10
+        "complete": 7,
+        "of": 9
       },
       {
         "label": "design-code-bridge",
@@ -6217,10 +6217,10 @@ window.DASHBOARD_DATA = {
         "openQuestions": 0,
         "overtaken": false,
         "na": [
+          "dream",
           "ux"
         ],
         "required": [
-          "dream",
           "deck",
           "spec",
           "research"
@@ -6236,8 +6236,8 @@ window.DASHBOARD_DATA = {
         "stale": false,
         "version": "",
         "progress": "",
-        "complete": 3,
-        "of": 4
+        "complete": 2,
+        "of": 3
       },
       {
         "label": "modernist-identity",
@@ -6321,10 +6321,10 @@ window.DASHBOARD_DATA = {
         "openQuestions": 0,
         "overtaken": false,
         "na": [
+          "dream",
           "ux"
         ],
         "required": [
-          "dream",
           "deck",
           "spec",
           "research"
@@ -6340,8 +6340,8 @@ window.DASHBOARD_DATA = {
         "stale": false,
         "version": "",
         "progress": "",
-        "complete": 3,
-        "of": 4
+        "complete": 2,
+        "of": 3
       },
       {
         "label": "video-scripts",
@@ -6530,10 +6530,10 @@ window.DASHBOARD_DATA = {
         "openQuestions": 0,
         "overtaken": false,
         "na": [
+          "dream",
           "ux"
         ],
         "required": [
-          "dream",
           "deck",
           "spec",
           "research"
@@ -6549,8 +6549,8 @@ window.DASHBOARD_DATA = {
         "stale": false,
         "version": "",
         "progress": "",
-        "complete": 3,
-        "of": 4
+        "complete": 2,
+        "of": 3
       },
       {
         "label": "agent-tool-surface",
@@ -6634,10 +6634,10 @@ window.DASHBOARD_DATA = {
         "openQuestions": 1,
         "overtaken": false,
         "na": [
+          "dream",
           "ux"
         ],
         "required": [
-          "dream",
           "deck",
           "spec",
           "research"
@@ -6653,8 +6653,8 @@ window.DASHBOARD_DATA = {
         "stale": false,
         "version": "",
         "progress": "",
-        "complete": 3,
-        "of": 4
+        "complete": 2,
+        "of": 3
       },
       {
         "label": "agentic-sdlc-autonomy",
@@ -6738,10 +6738,10 @@ window.DASHBOARD_DATA = {
         "openQuestions": 0,
         "overtaken": false,
         "na": [
+          "dream",
           "ux"
         ],
         "required": [
-          "dream",
           "deck",
           "spec",
           "research"
@@ -6757,8 +6757,8 @@ window.DASHBOARD_DATA = {
         "stale": false,
         "version": "",
         "progress": "",
-        "complete": 3,
-        "of": 4
+        "complete": 2,
+        "of": 3
       },
       {
         "label": "artifact-console",
@@ -6842,10 +6842,10 @@ window.DASHBOARD_DATA = {
         "openQuestions": 0,
         "overtaken": false,
         "na": [
+          "dream",
           "ux"
         ],
         "required": [
-          "dream",
           "deck",
           "spec",
           "research"
@@ -6861,8 +6861,8 @@ window.DASHBOARD_DATA = {
         "stale": false,
         "version": "",
         "progress": "",
-        "complete": 3,
-        "of": 4
+        "complete": 2,
+        "of": 3
       },
       {
         "label": "bmad-loop-governance",
@@ -6946,16 +6946,15 @@ window.DASHBOARD_DATA = {
         "openQuestions": 0,
         "overtaken": false,
         "na": [
+          "dream",
           "ux"
         ],
         "required": [
-          "dream",
           "deck",
           "spec",
           "research"
         ],
         "gaps": [
-          "dream",
           "deck"
         ],
         "partial": [],
@@ -6967,7 +6966,7 @@ window.DASHBOARD_DATA = {
         "version": "",
         "progress": "",
         "complete": 2,
-        "of": 4
+        "of": 3
       },
       {
         "label": "durable-runs",
@@ -7051,10 +7050,10 @@ window.DASHBOARD_DATA = {
         "openQuestions": 0,
         "overtaken": false,
         "na": [
+          "dream",
           "ux"
         ],
         "required": [
-          "dream",
           "deck",
           "spec",
           "research"
@@ -7070,8 +7069,8 @@ window.DASHBOARD_DATA = {
         "stale": false,
         "version": "",
         "progress": "",
-        "complete": 3,
-        "of": 4
+        "complete": 2,
+        "of": 3
       },
       {
         "label": "factory-console",
@@ -7099,7 +7098,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-07-25",
           "deck": "",
-          "spec": "2026-07-30T15:10",
+          "spec": "2026-08-01T09:45",
           "research": "2026-07-31",
           "brief": "",
           "prd": "",
@@ -7155,10 +7154,10 @@ window.DASHBOARD_DATA = {
         "openQuestions": 0,
         "overtaken": false,
         "na": [
+          "dream",
           "ux"
         ],
         "required": [
-          "dream",
           "deck",
           "spec",
           "research"
@@ -7174,8 +7173,8 @@ window.DASHBOARD_DATA = {
         "stale": false,
         "version": "",
         "progress": "",
-        "complete": 3,
-        "of": 4
+        "complete": 2,
+        "of": 3
       },
       {
         "label": "fidelity-enforcement",
@@ -7259,10 +7258,10 @@ window.DASHBOARD_DATA = {
         "openQuestions": 0,
         "overtaken": false,
         "na": [
+          "dream",
           "ux"
         ],
         "required": [
-          "dream",
           "deck",
           "spec",
           "research"
@@ -7278,8 +7277,8 @@ window.DASHBOARD_DATA = {
         "stale": false,
         "version": "",
         "progress": "",
-        "complete": 3,
-        "of": 4
+        "complete": 2,
+        "of": 3
       },
       {
         "label": "genesis-installer",
@@ -7363,10 +7362,10 @@ window.DASHBOARD_DATA = {
         "openQuestions": 0,
         "overtaken": false,
         "na": [
+          "dream",
           "ux"
         ],
         "required": [
-          "dream",
           "deck",
           "spec",
           "research",
@@ -7397,8 +7396,8 @@ window.DASHBOARD_DATA = {
         "stale": false,
         "version": "",
         "progress": "",
-        "complete": 6,
-        "of": 9
+        "complete": 5,
+        "of": 8
       },
       {
         "label": "multi-loop-isolation",
@@ -7482,16 +7481,15 @@ window.DASHBOARD_DATA = {
         "openQuestions": 0,
         "overtaken": false,
         "na": [
+          "dream",
           "ux"
         ],
         "required": [
-          "dream",
           "deck",
           "spec",
           "research"
         ],
         "gaps": [
-          "dream",
           "deck"
         ],
         "partial": [],
@@ -7503,7 +7501,7 @@ window.DASHBOARD_DATA = {
         "version": "",
         "progress": "",
         "complete": 2,
-        "of": 4
+        "of": 3
       },
       {
         "label": "one-front-door",
@@ -7587,10 +7585,10 @@ window.DASHBOARD_DATA = {
         "openQuestions": 3,
         "overtaken": false,
         "na": [
+          "dream",
           "ux"
         ],
         "required": [
-          "dream",
           "deck",
           "spec",
           "research"
@@ -7606,8 +7604,8 @@ window.DASHBOARD_DATA = {
         "stale": false,
         "version": "",
         "progress": "",
-        "complete": 3,
-        "of": 4
+        "complete": 2,
+        "of": 3
       },
       {
         "label": "pr-lifecycle",
@@ -7691,10 +7689,10 @@ window.DASHBOARD_DATA = {
         "openQuestions": 0,
         "overtaken": false,
         "na": [
+          "dream",
           "ux"
         ],
         "required": [
-          "dream",
           "deck",
           "spec",
           "research"
@@ -7710,8 +7708,8 @@ window.DASHBOARD_DATA = {
         "stale": false,
         "version": "",
         "progress": "",
-        "complete": 3,
-        "of": 4
+        "complete": 2,
+        "of": 3
       },
       {
         "label": "regenerable-factory",
@@ -7795,24 +7793,22 @@ window.DASHBOARD_DATA = {
         "openQuestions": 0,
         "overtaken": false,
         "na": [
+          "arch",
+          "dream",
+          "prd",
           "ux"
         ],
         "required": [
-          "dream",
           "deck",
           "spec",
           "research",
           "brief",
-          "prd",
-          "arch",
           "context",
           "epics"
         ],
         "gaps": [
           "deck",
           "brief",
-          "prd",
-          "arch",
           "context"
         ],
         "partial": [],
@@ -7823,8 +7819,8 @@ window.DASHBOARD_DATA = {
         "stale": false,
         "version": "",
         "progress": "",
-        "complete": 4,
-        "of": 9
+        "complete": 3,
+        "of": 6
       },
       {
         "label": "copilot-cli-packaging",
@@ -7910,10 +7906,10 @@ window.DASHBOARD_DATA = {
         "openQuestions": 0,
         "overtaken": false,
         "na": [
+          "dream",
           "ux"
         ],
         "required": [
-          "dream",
           "deck",
           "spec",
           "research"
@@ -7931,8 +7927,8 @@ window.DASHBOARD_DATA = {
         "stale": false,
         "version": "",
         "progress": "",
-        "complete": 3,
-        "of": 4
+        "complete": 2,
+        "of": 3
       },
       {
         "label": "db-gpt-packaging",
@@ -8018,10 +8014,10 @@ window.DASHBOARD_DATA = {
         "openQuestions": 0,
         "overtaken": false,
         "na": [
+          "dream",
           "ux"
         ],
         "required": [
-          "dream",
           "deck",
           "spec",
           "research"
@@ -8039,8 +8035,8 @@ window.DASHBOARD_DATA = {
         "stale": false,
         "version": "",
         "progress": "",
-        "complete": 3,
-        "of": 4
+        "complete": 2,
+        "of": 3
       },
       {
         "label": "fleet-stewardship",
@@ -8126,10 +8122,10 @@ window.DASHBOARD_DATA = {
         "openQuestions": 0,
         "overtaken": false,
         "na": [
+          "dream",
           "ux"
         ],
         "required": [
-          "dream",
           "deck",
           "spec",
           "research"
@@ -8147,8 +8143,8 @@ window.DASHBOARD_DATA = {
         "stale": false,
         "version": "",
         "progress": "",
-        "complete": 3,
-        "of": 4
+        "complete": 2,
+        "of": 3
       },
       {
         "label": "packaging-factory",
@@ -8234,10 +8230,10 @@ window.DASHBOARD_DATA = {
         "openQuestions": 0,
         "overtaken": false,
         "na": [
+          "dream",
           "ux"
         ],
         "required": [
-          "dream",
           "deck",
           "spec",
           "research"
@@ -8255,8 +8251,8 @@ window.DASHBOARD_DATA = {
         "stale": false,
         "version": "",
         "progress": "",
-        "complete": 3,
-        "of": 4
+        "complete": 2,
+        "of": 3
       },
       {
         "label": "presenton",
@@ -8334,9 +8330,10 @@ window.DASHBOARD_DATA = {
         "backfilled": true,
         "openQuestions": 0,
         "overtaken": false,
-        "na": [],
+        "na": [
+          "dream"
+        ],
         "required": [
-          "dream",
           "deck",
           "spec",
           "research",
@@ -8369,8 +8366,8 @@ window.DASHBOARD_DATA = {
         "stale": false,
         "version": "",
         "progress": "",
-        "complete": 8,
-        "of": 10
+        "complete": 7,
+        "of": 9
       },
       {
         "label": "sentinel",
@@ -8456,10 +8453,10 @@ window.DASHBOARD_DATA = {
         "openQuestions": 0,
         "overtaken": false,
         "na": [
+          "dream",
           "ux"
         ],
         "required": [
-          "dream",
           "deck",
           "spec",
           "research"
@@ -8477,8 +8474,8 @@ window.DASHBOARD_DATA = {
         "stale": false,
         "version": "",
         "progress": "",
-        "complete": 3,
-        "of": 4
+        "complete": 2,
+        "of": 3
       },
       {
         "label": "team-memory",
@@ -8564,10 +8561,10 @@ window.DASHBOARD_DATA = {
         "openQuestions": 0,
         "overtaken": false,
         "na": [
+          "dream",
           "ux"
         ],
         "required": [
-          "dream",
           "deck",
           "spec",
           "research"
@@ -8585,8 +8582,8 @@ window.DASHBOARD_DATA = {
         "stale": false,
         "version": "",
         "progress": "",
-        "complete": 3,
-        "of": 4
+        "complete": 2,
+        "of": 3
       },
       {
         "label": "enterprise-airgap",
@@ -8672,10 +8669,10 @@ window.DASHBOARD_DATA = {
         "openQuestions": 1,
         "overtaken": false,
         "na": [
+          "dream",
           "ux"
         ],
         "required": [
-          "dream",
           "deck",
           "spec",
           "research"
@@ -8688,13 +8685,13 @@ window.DASHBOARD_DATA = {
         ],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-07-31",
-        "age": 1,
+        "updated": "2026-08-01",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
-        "complete": 3,
-        "of": 4
+        "complete": 2,
+        "of": 3
       }
     ]
   },
@@ -8722,9 +8719,9 @@ window.DASHBOARD_DATA = {
         "name": "llms-full",
         "task": "llms-full-check",
         "guards": "library catalog freshness",
-        "state": "drift",
-        "findings": 25,
-        "verdict": "DRIFT: 25 finding(s). Reconcile by regenerating the catalog (prompt in its header), then re-run.",
+        "state": "green",
+        "findings": 0,
+        "verdict": "",
         "runbook": ""
       }
     ],
@@ -10880,7 +10877,7 @@ window.DASHBOARD_DATA = {
       "subject": "Merge bmad-loop/20260731-115548-f223/1-9-packaging-distribution-and-version-reporting into loop/pyforge-marshal (bmad-lo"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-01 14:43 UTC",
-    "generatedEpoch": 1785595432
+    "generatedAt": "2026-08-01 15:28 UTC",
+    "generatedEpoch": 1785598125
   }
 };

@@ -1048,8 +1048,14 @@ FLEET_SUBSCORE = {"research": RESEARCH_TYPES, "deck": DECK_FAMILY}
 # matched nothing and every row rendered `na: []`, which is why unity-data-stack and
 # wasm-analytics-stack both reported a complete 9/9 chain while owning neither epics nor
 # code. `ux` is n/a everywhere except chains that declare a UI surface.
-FLEET_NA = {"unity-data-stack": {"epics"}, "wasm-analytics-stack": {"epics"}}
+FLEET_NA = {
+    "unity-data-stack": {"epics"},
+    "wasm-analytics-stack": {"epics"},
+    "regenerable-factory": {"prd", "arch"},
+}
 FLEET_UX = {"deckcraft", "presenton-pixi-image", "unity-data-stack", "wasm-analytics-stack"}
+# Verify gate task-name aliases: chains whose test task doesn't follow {slug}-test pattern.
+FLEET_VERIFY_ALIAS = {"pyforge-atlas": ("kedro-test",)}
 _STALE_DAYS = 30
 # Shelf life in days, per stage. A global default keeps this usable with no configuration;
 # override only where the artifact really ages differently. `None` = never goes stale: a
@@ -1446,7 +1452,8 @@ def scan_fleet(projects: dict, pitch_cards: list[dict] | None = None) -> dict:
         for st in FLEET_STAGES:
             if st == "verify":
                 # Not a file. A chain verifies when the workspace declares a gate for it.
-                gate = next((t for t in (f"{slug}-test", f"{project}-test") if t in tasks), "")
+                candidates = [f"{slug}-test", f"{project}-test"] + list(FLEET_VERIFY_ALIAS.get(slug, ()))
+                gate = next((t for t in candidates if t in tasks), "")
                 stages[st] = stages.get("code", "") if gate else ""
                 updated_at[st] = updated_at.get("code", "")
                 files[st] = [gate] if gate else []
@@ -1455,6 +1462,8 @@ def scan_fleet(projects: dict, pitch_cards: list[dict] | None = None) -> dict:
             files[st] = found
             stages[st], updated_at[st] = _stage_dates(found)
         na = set(FLEET_NA.get(slug, set())) | (set() if slug in FLEET_UX else {"ux"})
+        if parent:
+            na |= {"dream"}
         sub = {st: s for st in FLEET_SUBSCORE
                if (s := _subscore(st, slug, project, primary, files[st], pitch))}
         reached = [s for s in FLEET_STAGES if stages[s]]
