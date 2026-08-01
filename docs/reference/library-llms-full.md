@@ -7,7 +7,7 @@
 >
 > Source of truth: `pixi.toml` (workspace "staged-recipes" v0.2.0). This file is a
 > derived catalog — regenerate it whenever `pixi.toml` changes.
-> Generated: 2026-07-12; incrementally updated 2026-07-18 (pyforge-atlas member env + kedro-viz; pyforge-warden + bmad-ui envs; pin corrections), 2026-07-25 (the pyforge-herald / -doctor / -scribe member envs, then pyforge-mason / -steward / -marshal at Story 1.1 — eight `pyforge` packages, 18 envs) and 2026-07-30 (24 version floors re-synced to `pixi.toml`; `bmad-manticore`, `ocrmypdf` and `office2pdf` documented — the three deps the agent-CLI recipe wave added without a catalog entry). Channels: conda-forge + SelfExplainML.
+> Generated: 2026-07-12; incrementally updated 2026-07-18 (pyforge-atlas member env + kedro-viz; pyforge-warden + bmad-ui envs; pin corrections), 2026-07-25 (the pyforge-herald / -doctor / -scribe member envs, then pyforge-mason / -steward / -marshal at Story 1.1 — eight `pyforge` packages, 18 envs), 2026-07-30 (24 version floors re-synced to `pixi.toml`; `bmad-manticore`, `ocrmypdf` and `office2pdf` documented — the three deps the agent-CLI recipe wave added without a catalog entry) and 2026-08-01 (25 version floors re-synced to `pixi.toml`, incl. `mcp` 1.x->2.0.0 and `fastmcp` pinned back to 2.14.3). Channels: conda-forge + SelfExplainML.
 > Platforms: linux-64, win-64, osx-arm64 (macOS >= 14.5 "Sonoma" floor, required by mlx).
 
 ## To regenerate (any session): ask Claude Code:
@@ -97,11 +97,11 @@ Available in every environment (the `python` feature + workspace `[dependencies]
   `pyforge` namespace).
 - **conda** (>=26.5.0) — classic conda package manager; needed by conda-build,
   conda-smithy 2026.x, and `conda pypi`.
-- **pip** (>=26.1.2) — standard Python installer (prefer `uv` for speed).
-- **uv** (>=0.12.0) — Rust-based, very fast pip/pip-tools replacement: `uv pip install`,
+- **pip** (>=26.2) — standard Python installer (prefer `uv` for speed).
+- **uv** (>=0.12.1) — Rust-based, very fast pip/pip-tools replacement: `uv pip install`,
   `uv venv`, `uv pip compile` for lock-style resolution.
 - **nodejs** (24.x LTS) — `node` / `npm` / `npx`; runtime for the JS tools below.
-- **gh** (>=2.96.0) — GitHub CLI: PRs, issues, releases, `gh api` for raw REST/GraphQL,
+- **gh** (>=2.97.0) — GitHub CLI: PRs, issues, releases, `gh api` for raw REST/GraphQL,
   `gh pr checks`, workflow dispatch. The repo's primary GitHub automation surface.
 - **gitpython** (>=3.1.57) — `import git`; programmatic Git (repos, diffs, commits,
   remotes) when shelling out to `git` is awkward.
@@ -110,7 +110,7 @@ Available in every environment (the `python` feature + workspace `[dependencies]
   used by the vuln-db tasks.
 - **bmad-method** (>=6.10.0) — BMAD-METHOD CLI (`bmad`): AI-driven agile
   planning/dev framework (agents, workflows, story lifecycle). See § 12.
-- **spec-kit** (>=0.14.4) — GitHub Spec Kit (`specify` CLI) for spec-driven
+- **spec-kit** (>=0.15.1) — GitHub Spec Kit (`specify` CLI) for spec-driven
   development scaffolding (constitution → specify → plan → tasks → implement).
 
 ---
@@ -123,12 +123,12 @@ per the table above; all of them coexist in `local-recipes`.
 Build engines & solvers:
 - **conda-build** (>=25.3.1) — v0 recipe engine: builds `meta.yaml` recipes, renders
   Jinja2, runs tests. Never mix v0 and v1 recipes in one build run.
-- **rattler-build** (>=0.72.0) — Rust-native v1 recipe engine: builds `recipe.yaml`,
+- **rattler-build** (>=0.72.2) — Rust-native v1 recipe engine: builds `recipe.yaml`,
   much faster than conda-build, first-class cross-compilation. Primary local build tool.
 - **py-rattler** (>=0.22.0) — `import rattler`; Python bindings to the rattler libs:
   solve environments, fetch/inspect .conda artifacts, repodata handling — programmatic
   conda operations without shelling out.
-- **py-rattler-build** (>=0.72.0) — Python bindings to rattler-build (drive v1 builds
+- **py-rattler-build** (>=0.72.2) — Python bindings to rattler-build (drive v1 builds
   from Python).
 - **conda-libmamba-solver** (>=24.9.0) — fast libmamba solver backend for conda.
 - **conda-index** (>=0.3.0) — generate `repodata.json` for local file:// channels
@@ -262,7 +262,7 @@ Core arrays/frames:
 SQL engines & tooling:
 - **duckdb** (>=1.5.5) — embedded analytical (OLAP) SQL database; reads/writes
   Parquet/CSV/Arrow natively; the default local analytics engine.
-- **sqlglot** (>=30.12.0) — parse, transpile, optimize SQL across ~30 dialects;
+- **sqlglot** (>=30.14.0) — parse, transpile, optimize SQL across ~30 dialects;
   build/rewrite SQL ASTs programmatically (used for feedstock analysis).
 - **sqlfluff** (>=4.2.2) — SQL linter/formatter, dialect-aware.
 - **psycopg2** (>=2.9.12) — real PostgreSQL driver (DB-API).
@@ -279,7 +279,7 @@ Ibis — one dataframe API over many engines:
   declare metrics/dimensions once, query them across backends.
 
 Small utilities:
-- **tablib** (>=3.9.0) — one API for tabular import/export: XLSX, CSV, JSON, YAML, ODS.
+- **tablib** (>=3.10.0) — one API for tabular import/export: XLSX, CSV, JSON, YAML, ODS.
 - **tabulate** (>=0.10.0) — pretty-print tables as text/markdown/grid.
 - **tomlkit** (>=0.13.2) — style-preserving TOML read/write (round-trips comments).
   Resolves to 0.13.2: dagster-dg-core and pyforge-marshal both cap it below 0.13.3.
@@ -296,10 +296,10 @@ Small utilities:
 
 All in `local-recipes`.
 
-- **dagster** (>=1.13.15) — asset-based data orchestrator: software-defined assets,
+- **dagster** (>=1.13.16) — asset-based data orchestrator: software-defined assets,
   schedules, sensors, partitions, type-checked IO.
-- **dagster-webserver** (>=1.13.15) — the Dagster UI (`dagster dev`).
-- **dagster-pipes** (>=1.13.15) — run external-process transform logic (scripts,
+- **dagster-webserver** (>=1.13.16) — the Dagster UI (`dagster dev`).
+- **dagster-pipes** (>=1.13.16) — run external-process transform logic (scripts,
   containers) with structured logging/metadata back into Dagster.
 - **kedro** (>=1.5.0) — opinionated pipeline framework: nodes, pipelines, data
   catalog, config environments. (A Kedro 3.14-compat warning is suppressed via
@@ -334,7 +334,7 @@ All in `local-recipes`.
   dashboards and web apps; works in notebooks and as served apps.
 - **panel-graphic-walker** (>=0.6.5) — embeds Graphic Walker (open-source Tableau
   alternative) as a Panel pane for drag-and-drop exploration.
-- **vizro** (>=0.1.59) — McKinsey's low-code dashboard framework (config-driven, on
+- **vizro** (>=0.1.60) — McKinsey's low-code dashboard framework (config-driven, on
   top of Plotly/Dash).
 - **vizro-ai** (>=0.4.1) — natural-language → Vizro charts/dashboards (LLM-assisted).
 - **vizro-mcp** (>=0.1.4) — MCP server for creating Vizro dashboards from agents.
@@ -354,7 +354,7 @@ Any-format → Markdown (LLM ingestion):
 - **markitdown** (>=0.1.7) — Microsoft's converter: PDF, DOCX, XLSX, PPTX, HTML,
   images (w/ OCR), audio → clean Markdown for LLM pipelines. The loaders below back it.
 - **mammoth** (>=1.12.0) — focused, high-fidelity .docx → HTML/Markdown.
-- **markdown** (>=3.10.2) — Markdown → HTML parser.
+- **markdown** (>=3.10.3) — Markdown → HTML parser.
 - **markdownify** (>=1.2.3) — HTML → Markdown.
 - **beautifulsoup4** (>=4.15.0) — `from bs4 import BeautifulSoup`; forgiving HTML
   parsing/scraping.
@@ -451,7 +451,7 @@ Local inference runtimes:
 Knowledge & indexing for agents:
 - **cocoindex** (>=1.0.18) — incremental indexing/transformation engine for
   long-horizon agents (recompute only what changed).
-- **graphifyy** (>=0.9.30) — turn a folder of code/docs/papers/images into a
+- **graphifyy** (>=0.9.31) — turn a folder of code/docs/papers/images into a
   queryable knowledge graph for coding assistants.
 
 ---
@@ -465,7 +465,7 @@ This is the stack for *building* agents and agent servers.
 Provider SDKs:
 - **anthropic** (>=0.76.0) — official Claude SDK: Messages API, streaming, tool use,
   prompt caching.
-- **google-genai** (>=2.15.0) — `from google import genai`; Gemini API client.
+- **google-genai** (>=2.16.0) — `from google import genai`; Gemini API client.
 - **github-copilot-sdk** (>=1.0.8) — drive GitHub Copilot programmatically from
   Python.
 - **langchain-anthropic** (>=1.3.1) — LangChain chat-model integration for Claude.
@@ -473,14 +473,14 @@ Provider SDKs:
   (chat-with-your-data on top of Panel).
 
 Agent frameworks:
-- **pydantic-ai** (>=2.21.0) — typed agent framework from the Pydantic team:
+- **pydantic-ai** (>=2.22.0) — typed agent framework from the Pydantic team:
   structured outputs, tools, dependency injection, model-agnostic.
 - **agno** (>=2.6.22) — lightweight multi-modal agent framework: any provider,
   multi-agent teams, memory, knowledge stores, structured outputs, monitoring.
 
 Model Context Protocol (MCP):
-- **mcp** (>=1.28.1) — official MCP Python SDK (clients + servers, stdio/SSE).
-- **fastmcp** (>=3.4.5) — decorator-style framework for building MCP servers fast
+- **mcp** (>=2.0.0) — official MCP Python SDK (clients + servers, stdio/SSE).
+- **fastmcp** (>=2.14.3) — decorator-style framework for building MCP servers fast
   (this repo's `conda_forge_server` is built on it).
 - **langchain-mcp-adapters** (>=0.3.1) — expose MCP tools/resources as LangChain
   tools and vice versa.
@@ -491,7 +491,7 @@ Agent2Agent (A2A) & ACP:
 - **a2a-sdk** (>=1.1.2) — `import a2a`; official Python SDK for the Agent2Agent
   protocol (agent cards, task lifecycle, messaging).
 - **fasta2a** (>=0.6.1) — FastAPI-style A2A server implementation.
-- **claude-agent-acp** (>=0.63.0) — bridge the Claude Agent SDK to the Agent Client
+- **claude-agent-acp** (>=0.64.0) — bridge the Claude Agent SDK to the Agent Client
   Protocol (ACP) so editors/clients that speak ACP can drive Claude agents.
 
 ---
@@ -547,7 +547,7 @@ Django stack (LTS-pinned):
 - **django-mcp-server** — (§ 11) MCP endpoint inside Django.
 
 Cloud / storage / identity:
-- **google-cloud-bigquery** (>=3.42.2) — `from google.cloud import bigquery`;
+- **google-cloud-bigquery** (>=3.42.3) — `from google.cloud import bigquery`;
   BigQuery client. Used by cf_atlas Phase P (opt-in `PHASE_P_ENABLED=1`); auth via
   ADC creds cached by the `gcloud` env.
 - **google-cloud-sdk** (>=578.0.0) — the `gcloud` CLI. **`gcloud` env only,
@@ -572,7 +572,7 @@ HTTP & APIs:
 All in `local-recipes`.
 
 Linters & formatters:
-- **ruff** (>=0.16.0) — extremely fast Python linter + formatter (flake8/isort/black
+- **ruff** (>=0.16.1) — extremely fast Python linter + formatter (flake8/isort/black
   replacement). Default Python QA tool here.
 - **yamllint** (>=1.38.0) — YAML linting.
 - **taplo** (>=0.10.0) — TOML linter/formatter/LSP (use on pixi.toml itself).
@@ -584,7 +584,7 @@ Type checkers (three available — pick one per task):
 - **pyright** (>=1.1.411) — Microsoft's fast type checker (the default for quick
   checks).
 - **mypy** (>=2.3.0) — the reference type checker (plugin ecosystem).
-- **pyrefly** (>=1.1.1) — Meta's Rust-based checker (fastest on big codebases).
+- **pyrefly** (>=1.2.0) — Meta's Rust-based checker (fastest on big codebases).
 
 Testing:
 - **pytest** (>=9.1.1) — the test framework (repo suites live under
@@ -594,8 +594,8 @@ Testing:
 - **pytest-xdist** (>=3.8.0) — parallel test execution (`-n auto`).
 
 Browser automation:
-- **playwright** (>=1.62.0) — the Node Playwright CLI (browser installs, codegen).
-- **playwright-python** (>=1.61.0) — `from playwright.sync_api import ...`; drive
+- **playwright** (>=1.62.1) — the Node Playwright CLI (browser installs, codegen).
+- **playwright-python** (>=1.62.0) — `from playwright.sync_api import ...`; drive
   Chromium/Firefox/WebKit from Python (scraping, E2E, screenshots).
 
 Terminal & CLI building:
@@ -604,7 +604,7 @@ Terminal & CLI building:
 - **typer** (>=0.27.0) — build CLIs from type-hinted functions (click-based).
 
 Node package managers:
-- **pnpm** (>=11.18.0) — fast, disk-efficient npm alternative (default for JS builds
+- **pnpm** (>=11.19.0) — fast, disk-efficient npm alternative (default for JS builds
   here; in .bat scripts always `call pnpm`).
 - **yarn** (>=4.18.0) — Yarn Berry.
 
