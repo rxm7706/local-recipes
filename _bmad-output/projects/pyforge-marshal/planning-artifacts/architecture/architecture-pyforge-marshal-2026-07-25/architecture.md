@@ -4,13 +4,13 @@ type: architecture-spine
 purpose: build-substrate
 altitude: feature
 paradigm: hexagonal (ports & adapters) around a pure decision core, with an out-of-process supervisor sidecar
-scope: The `marshal` CLI — loop-home provisioning, run supervision, gate evaluation, landing, fleet status, adapter portability, and policy composition. Governs everything built from PRD FR-1..FR-63 / NFR-1..NFR-14.
+scope: The `marshal` CLI — loop-home provisioning, run supervision, gate evaluation, landing, fleet status, adapter portability, and policy composition. Governs everything built from PRD FR-1..FR-64 / NFR-1..NFR-14.
 status: final
 created: 2026-07-25
-updated: 2026-08-01  # AD-46..48 (durable-runs, FR-61/62/63); binds/scope FR range corrected to FR-63 (was left at FR-58 through the AD-40..45 pass)
+updated: 2026-08-01  # AD-46..48 (durable-runs, FR-61/62/63); AD-49 (fidelity-enforcement Marshal-only slice, FR-64); binds/scope FR range corrected to FR-63 then FR-64 (was left at FR-58 through the AD-40..45 pass)
 mode: headless
 binds:
-  - FR-1..FR-63
+  - FR-1..FR-64
   - NFR-1..NFR-14
 sources:
   - planning-artifacts/prd.md
@@ -475,6 +475,16 @@ shipped stories, not all strictly independent of later epics' groundwork).
 - **Binds:** FR-62; extends AD-38 (a resolved feed reports its own completeness), AD-39 (envelope field relationships)
 - **Prevents:** "is the fleet's work saved?" ever again requiring a command outside `marshal status`.
 - **Rule:** the fleet-status envelope carries an unpushed-work finding per row, **read from** the same evidence the unpushed-work detector already computes, never re-implemented against git directly. A row with unpushed content is never reported clean — the same refusal `marshal status` already applies to an unowned Dream row.
+
+### 2026-08-01 amendment — AD-49 (fidelity-enforcement, Marshal-only slice)
+
+*One additive decision. `spec-fidelity-enforcement` (`docs/dreams/fidelity-enforcement.md`) was decomposed Marshal-only per operator scoping: Doctor's and Scribe's capabilities (install-the-judge; the actor-attributed event record) are named cross-project follow-ups, not touched here. Of Marshal's own 7 attributed capabilities, 6 are repo-level detector tooling or already covered by FR-30 (see the PRD memlog for the full per-capability rationale) — only one is a new architecture decision.*
+
+### AD-49 — A gate's verdict is invalid against an untraceable spec
+
+- **Binds:** FR-64; extends AD-26 (never false-green), AD-31 (the lattice is closed and its admission criteria have one owner)
+- **Prevents:** a story's tracked spec silently losing its evidentiary force — a verify command narrowed or removed after the spec was tracked, with the gate still reporting green because it never re-checks *what* it is running against *why*.
+- **Rule:** gate evaluation resolves the story's tracked `specs/spec-<key>.md` and confirms the verify commands executed are the ones named by its Success signal. A mismatch is a registered finding, not a warning folded into an otherwise-green verdict — it participates in the same closed lattice as every other admission criterion (AD-31), so an untraceable or mismatched binding cannot itself be waived to green.
 
 ---
 

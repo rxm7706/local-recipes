@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: marshal
-# stories: 108
+# stories: 109
 development_status:
   1-1-package-spine-verdict-lattice-findings-registry-and-the-meta-tests-that-enforce-them: done
   1-10-render-the-harness-policy-from-the-canonical-effectivepolicy: done
@@ -49,6 +49,7 @@ development_status:
   2-4-doc-only-story-classification: backlog
   2-5-gate-mode-ladder-with-autonomy-labels: backlog
   2-6-gate-evidence-record-with-redaction-at-egress: backlog
+  2-7-a-gate-binds-to-the-specs-success-signal: backlog
   3-1-run-identity-and-the-journal-writer: backlog
   3-2-the-journal-fold-one-producer-for-accumulating-run-state: backlog
   3-3-detached-launch-with-scoped-story-selection: backlog

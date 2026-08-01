@@ -12,7 +12,7 @@ inputDocuments:
   - "_bmad-output/projects/pyforge-marshal/planning-artifacts/research/domain-agent-portability-and-governance-research-2026-07-25.md"
 project_name: pyforge-marshal
 epicCount: 6
-storyCount: 48  # corrected 2026-08-01: was left at the original 40 through the FR-59/60/AD-42 (45) and FR-61/62/63 (48) additions
+storyCount: 49  # corrected 2026-08-01: was left at the original 40 through the FR-59/60/AD-42 (45), FR-61/62/63 (48), and FR-64 (49) additions
 status: complete
 mode: headless
 ---
@@ -41,7 +41,7 @@ Two conventions carried from the sibling builds:
 
 **Run supervision** — FR-9 detached launch · FR-10 scoped launch · FR-11 supervisor attaches · FR-12 idle-strand detection · FR-13 budget ceilings · FR-14 heaviest-story advisory · FR-15 escalation surfacing · FR-16 deferral capture · FR-17 resume · FR-18 run journal · *(added 2026-08-01)* FR-61 bounded-loss durability
 
-**Gates & verification** — FR-19 standalone gate evaluation · FR-20 project-scoped verify commands · FR-21 deterministic no-LLM gates · FR-22 frozen-surface scope check · FR-23 doc-only classification · FR-24 gate mode ladder · FR-25 gate evidence record · FR-26 never false-green · FR-27 review-cap landing path
+**Gates & verification** — FR-19 standalone gate evaluation · FR-20 project-scoped verify commands · FR-21 deterministic no-LLM gates · FR-22 frozen-surface scope check · FR-23 doc-only classification · FR-24 gate mode ladder · FR-25 gate evidence record · FR-26 never false-green · FR-27 review-cap landing path · *(added 2026-08-01)* FR-64 gate binds to the spec's Success signal
 
 **Landing & paper trail** — FR-28 batch pull request · FR-29 repository-hygiene preflight · FR-30 automatic story-spec promotion · FR-31 spec-recovery assistance · FR-32 merge-subject conformance · FR-33 sprint & console feed refresh · FR-34 deploy idempotence · FR-35 no AI attribution · *(added 2026-08-01)* FR-59 landing rules as policy · FR-60 `marshal land` · FR-63 fleet-wide branch retirement
 
@@ -70,13 +70,13 @@ None — Marshal is a CLI with no visual surface. Its "UX" is the envelope contr
 | Epic | FRs covered | NFRs / ADs primarily discharged |
 |---|---|---|
 | **E1** Provisioned, verified loop homes | FR-1..FR-8, FR-49..FR-57 | NFR-1, 7, 10, 12, 13, 14; AD-3, 4, 7, 10, 11, 14, 15, 16, 21, 23, 24, 31, 35, 38, 39 |
-| **E2** Gates you can run | FR-19..FR-27 (FR-27 partial) | NFR-3, 5, 11; AD-8, 17, 26 (seed), 27, 34 |
+| **E2** Gates you can run | FR-19..FR-27 (FR-27 partial), FR-64 | NFR-3, 5, 11; AD-8, 17, 26 (seed), 27, 34, 49 |
 | **E3** Supervised unattended runs | FR-9..FR-18, FR-61 | NFR-4, 6, 8, 9; AD-5, 6, 9, 20, 22, 25, 26, 28, 30, 32, 46 |
 | **E4** Landing with a durable paper trail | FR-27 (completion), FR-28..FR-35, FR-59, FR-60, FR-63 | NFR-6, 8; AD-12, 13, 21, 24, 28, 29, 33, 40, 42, 47 |
 | **E5** Fleet visibility | FR-36..FR-40, FR-62 | NFR-12; AD-5, 33, 39, 48 |
 | **E6** Portability proven | FR-41..FR-48, FR-58 | NFR-2, 9; AD-19, 31, 34, 36, 37 |
 
-Every FR-1..FR-63 appears exactly once as a primary owner. FR-27 spans E2 (the gate re-run) and E4 (the landing), noted explicitly in both.
+Every FR-1..FR-64 appears exactly once as a primary owner. FR-27 spans E2 (the gate re-run) and E4 (the landing), noted explicitly in both.
 
 ---
 
@@ -435,6 +435,28 @@ So that I can prove months later what was checked and what it said.
 **And** the egress-port set lives in one code registry, and adding a port without classifying it fails the build
 **And** redaction is tested against a fixture of known token shapes and covers policy-declared secret keys
 **And** no call site performs its own redaction
+
+---
+
+### Story 2.7: A gate binds to the spec's Success signal *(added 2026-08-01 — FR-64 / AD-49)*
+
+As the operator,
+I want gate evaluation to confirm it is still running the verify commands the story's tracked spec named as its Success signal,
+So that a test quietly removed after the spec was tracked shows up as a contract breach, not a passing suite.
+
+**Type:** feature • **Effort:** S • **Deps:** S-2.1, S-4.1 • **FR/AD:** FR-64; AD-49, AD-26, AD-31
+**Surface:** `core/gate.py`, `core/spec_binding.py`
+
+**Acceptance Criteria:**
+
+**Given** a story with a tracked `specs/spec-<key>.md`
+**When** its gate is evaluated
+**Then** the verify commands run are confirmed against the ones named in the spec's Success signal
+**And** a narrowed or removed verify command since tracking is a registered finding, not a warning folded into an otherwise-green verdict
+**Given** a story with no tracked spec to bind against
+**When** its gate is evaluated
+**Then** the missing binding is reported explicitly as a finding, never evaluated silently against nothing
+**And** an untraceable or mismatched binding cannot be waived to green — it participates in the closed admission lattice (AD-31) like every other criterion
 
 ---
 
