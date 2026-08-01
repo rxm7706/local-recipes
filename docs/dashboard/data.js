@@ -381,7 +381,7 @@ window.DASHBOARD_DATA = {
       "inflight": null,
       "velocity": {
         "derived": true,
-        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 10 of 49 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
+        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 10 of 50 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
         "bars": [
           [
             "1.1",
@@ -436,12 +436,12 @@ window.DASHBOARD_DATA = {
             ""
           ],
           [
-            "10/49",
+            "10/50",
             "stories complete",
             "var(--done)"
           ],
           [
-            "39",
+            "40",
             "remaining",
             ""
           ]
@@ -701,6 +701,11 @@ window.DASHBOARD_DATA = {
               "5.5",
               "pending",
               "Durability as a reported fleet-status dimension *(added 2026-08-01 — FR-62 / AD-48)*"
+            ],
+            [
+              "5.6",
+              "pending",
+              "`marshal check` — the detector registry through the front door *(added 2026-08-01 — FR-65 / AD-50)*"
             ]
           ]
         },
@@ -3021,7 +3026,7 @@ window.DASHBOARD_DATA = {
       }
     }
   },
-  "snapshot": "<span>2026-08-01 14:24 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-01 14:34 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -5065,7 +5070,7 @@ window.DASHBOARD_DATA = {
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "10/49",
+        "progress": "10/50",
         "complete": 13,
         "of": 13
       },
@@ -10953,7 +10958,7 @@ window.DASHBOARD_DATA = {
       "subject": "Merge bmad-loop/20260731-115548-f223/1-9-packaging-distribution-and-version-reporting into loop/pyforge-marshal (bmad-lo"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-01 14:24 UTC",
-    "generatedEpoch": 1785594269
+    "generatedAt": "2026-08-01 14:34 UTC",
+    "generatedEpoch": 1785594840
   }
 };
