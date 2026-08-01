@@ -402,6 +402,18 @@ graph TD
 
   **Severity is presentational WITHIN a bound (F-22, amended 2026-07-30).** The earlier meta-test asserted `status`, `verdict` and "the **maximum finding severity**" were "mutually consistent", while the Consistency Conventions table said "**severity is presentational**; the lattice member comes from `classify(code)`". Read as equality the two collide: a code classified `unevaluable` is free to carry severity `warn` for readability, and the meta-test then fails on correct output. Read as *monotone* consistency they agree, and that is what the shipped test already checks (`tests/meta/test_ad39_envelope_consistency.py::test_ok_status_with_error_severity_finding_raises`): severity may vary freely below the ceiling the verdict sets, and may never exceed it. The conventions row is amended to say so.
 
+### Accepted exception to epic independence (recorded 2026-08-01, readiness gate)
+
+Story 2.3 (frozen-surface scope check) depends on Story 3.2 (the journal
+fold), making Epic 2 unable to complete independently of Epic 3 in the
+strict sense. This is a **deliberate, adjudicated exception** (finding F-9,
+2026-07-30), not an oversight: splitting S-3.2's journal fold to give Epic 2
+its own copy of run-state derivation was considered and rejected, because it
+would give the fold two homes. The epic boundary here is a value boundary —
+what ships and why — not a scheduling barrier on story order. Epic 1 already
+demonstrated this interleaved-delivery shape works operationally (10/10
+shipped stories, not all strictly independent of later epics' groundwork).
+
 ### 2026-08-01 amendment set — AD-40…AD-45
 
 *Six additive decisions carrying the 2026-07-31 operator rulings (Spec CAP-9 + four constraints; PRD FR-59/FR-60) into the architecture. Numbering continues; nothing above is renumbered or weakened.*
