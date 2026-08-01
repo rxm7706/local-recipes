@@ -3,7 +3,7 @@ project_name: 'pyforge-atlas'
 project_phase: 'shipped'
 user_name: 'rxm7706'
 date: '2026-08-04'
-sections_completed: ['technology_stack', 'critical_implementation_rules', 'testing_patterns', 'execution_model']
+sections_completed: ['technology_stack', 'critical_implementation_rules', 'testing_patterns', 'execution_model', 'code_grounded_patterns']
 ---
 
 # Project Context for AI Agents — pyforge-atlas
@@ -215,6 +215,137 @@ Resolved inside named story specs:
 - **H1:** MinIO server provisioning.
 - **D2:** CIS two-spine design specs (`DESIGN.md` + `EXPERIENCE.md`).
 - **Conditional surface:** If trendshift Track A ships Phase T before Wave B completes, Phase T joins the migration surface — re-check with live groundtruth at execution start.
+
+---
+
+## Code-Grounded Implementation Patterns (Session 2026-08-04 Enrichment)
+
+### Complete Module Directory Structure
+
+The actual `src/pyforge/atlas/` tree contains more top-level modules than the initial doc listed. **Full directory:**
+
+Core orchestration & data:
+- `pipelines/` — domain pipelines (ingest_conda_forge, analyze_sbom, etc.)
+- `datasets/` — Kedro dataset classes
+- `hooks.py` — Kedro hooks (lifecycle registration)
+- `pipeline_registry.py` — dynamic pipeline discovery (the **critical** file for node wiring)
+
+Data operations:
+- `semantic/` — Ibis metric expressions + boring-semantic-layer bindings (FR-8)
+- `a2a/` — A2A (agent-to-agent) interface for inter-agent collaboration
+- `parity/` — Wave B parity verification fixtures + tooling
+
+Support modules:
+- `observability.py` — **SOLE** module allowed to import openlineage/opentelemetry
+- `provenance.py` — legacy provenance tracking + CFA commit pins
+- `admission.py` / `validation.py` — data-quality check enforcement
+- `settings.py` — configuration + credentials scoping rules
+- `__main__.py` — CLI entry point
+
+Analytics/publishing:
+- `dashboard/` — Vizro pages (replaces 28 legacy CLIs)
+- `publish/` — export/artifact delivery
+- `nl/` / `factory/` / `orchestration/` / `rag/` — specialized sub-modules
+
+### Semantic Layer Pattern (FR-8: Ibis→DuckDB)
+
+The boring-semantic-layer (BSL) pattern enforces single translation surface. Real code:
+
+```python
+# semantic/metrics.py — pure Ibis, no DuckDB/pandas
+def adoption_stage(conda_name: ibis.Expr, ...) -> ibis.Expr:
+    """Adoption stage ranking. Legacy: adoption_stage() CFA:3847."""
+    # Age formula preserves legacy quirk: age_days or 99999
+    age = ibis.ifelse(...).else_(99999)
+    ...
+```
+
+```python
+# semantic/models.py — BSL binds expressions to datasets
+from boring_semantic_layer import SemanticModel, Dimension, Measure
+model = SemanticModel(..., measures=[
+    Measure("adoption_stage", adoption_stage, ...),
+])
+```
+
+```python
+# Reading: never pandas, never raw SQL
+def duckdb_table_from_parquet(path: str, *, connection=None):
+    con = connection if connection is not None else ibis.duckdb.connect()
+    return con.read_parquet(path)  # Ibis table, not DataFrame
+```
+
+### MCP Tool Registration — Two-Shape Rule + Lazy Import
+
+`mcp/server.py` lazy-imports fastmcp **inside** `build_server()` — allows import without fastmcp/kedro_mcp present. `mcp/tools.py` enforces (via AST-scanned test) that every tool body is exactly ONE of two shapes:
+
+1. `session.run(pipeline_name="...", ...)` — Kedro pipeline invocation
+2. `_provenance.load_with_provenance(catalog, ...)` — provenance-wrapped read
+
+**Non-allowed in `mcp/tools.py`:**
+- Direct `ibis`, `pandas`, `duckdb` imports (the module is orchestration-only; data logic lives in `semantic/`/`datasets/`)
+- Orchestration imports above `mcp/` layer
+
+### Credential Scoping — Declarative in Catalog, Not Runtime Host-Detection
+
+Contrary to what "JFrog/GitHub host-specific logic" might imply, credential scoping is **structural, not procedural**. Each catalog entry has (or lacks) a `credentials:` key:
+
+```yaml
+vcs_github_api_raw:
+  type: pyforge.atlas.datasets.GitHubRequestDataset
+  url: ${globals:endpoint_bases.GITHUB_API_BASE_URL}/graphql
+  credentials: github_token  # <-- this is it
+```
+
+Enforcement is in `tests/catalog/test_credential_scoping.py`:
+- Asserts the credentialed-entry set equals a fixed allowlist
+- Guards against `jfrog.evil.example.com` substring tricks via suffix-match on actual hostnames (`_is_artifactory_host`, guards JFrog entries specifically)
+- This fix addresses legacy bug: "JFrog branch evaluated first, host computed but never consulted, attached X-JFrog-Art-Api to every request"
+
+### OpenLineage/OpenTelemetry — Single-Seam, No-Op by Default
+
+`observability.py` is the **ONLY** module allowed to import `openlineage`/`opentelemetry` (AST-enforced). Both backends default to no-op:
+
+```python
+# No exporter attached by default
+tracer_provider = TracerProvider()  # local, no-op dispatch
+openlineage_client = None  # skip emission
+```
+
+Nodes stay pure `DataFrame→DataFrame` (zero instrumentation in node bodies). Hooks registered once in `settings.HOOKS` so both Kedro and Dagster runs inherit instrumentation atomically.
+
+### IncrementalParquetDataset — TTL Gotchas
+
+The sole reusable TTL primitive (replaces legacy `phase_state` table). Non-obvious patterns:
+
+- **TTL staleness uses strict `<`** (not `>=`) to match legacy SQL exactly
+- **`ttl_seconds` is injected post-construction** by `hooks.py` from `params:ttls.<name>` — never passed at catalog-resolution time (the A2 gate constructs entries with no TTL)
+- **Outer Kedro `version:` is explicitly rejected** with `ValueError` — IO is delegated to composed inner `ParquetDataset`, and version tracking would break that delegation
+
+### Legacy Provenance Convention — `# legacy: Phase <ID>`
+
+Every ported node in `pipelines/core/nodes.py` etc. carries the convention:
+
+```python
+# legacy: Phase B (phase_b_conda_enumeration CFA:1408; view v_actionable_packages CFA:376)
+def conda_enumerate(...):
+    ...
+```
+
+Where `CFA` = `conda_forge_atlas.py @ b18cbb5` (the legacy monolith's commit pin). This convention is **real and consistent** — agents benefit from seeing the legacy origin and corresponding commit SHA.
+
+### Pipeline & Node Registration — Dynamic Discovery + Empty-Scaffold Guard
+
+`pipeline_registry.py` uses `find_pipelines(raise_errors=True)` and must guard the empty-scaffold case (a zero-node repo would build an empty Pipeline):
+
+```python
+pipelines = find_pipelines(raise_errors=True)
+# Guard: sum() over an empty dict returns int 0, not a Pipeline
+if not pipelines:
+    pipelines["__default__"] = Pipeline([])
+```
+
+Individual pipelines (e.g., `pipelines/vulnerability/pipeline.py`) wire nodes via **`inputs=`/`outputs=` strings** (catalog names), not procedural references. Kedro resolves DAG execution order **automatically from declared edges** — never call nodes procedurally.
 
 ---
 
