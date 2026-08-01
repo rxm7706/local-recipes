@@ -750,6 +750,12 @@
     <div id="specrows"></div>
   </details>
 
+  <details class="dreams zsec" id="storyspecssec" hidden>
+    <summary><span class="program-h" id="storyspecsh">Story Specs (Row 7)</span><span class="zcaret">▸</span></summary>
+    <div class="dflow"><b>per-story coverage</b> — done stories vs. tracked flat spec files (spec-[0-9]*.md). Gap = shipped stories without durable per-story intent/acceptance-criteria docs.</div>
+    <div id="storyspecsrows"></div>
+  </details>
+
   <details class="dreams zsec" id="healthsec" hidden open>
     <summary><span class="program-h" id="healthh">Sync &amp; Health</span><span class="zcaret">▸</span></summary>
     <div class="dflow"><b>the standing detectors</b> — each guards one contract and runs in ~1s. Red is not failure, it is the loop working: reconcile via the <b>SYNC-RUNBOOK</b>, then re-stamp the baseline. A detector that cannot run here reports <i>unknown</i> rather than claiming green.</div>
@@ -917,7 +923,25 @@
       '</div>').join("");
   }
 
-  // ---- 2a · Sync & Health (standing detectors + baseline fingerprint) ----
+  // ---- 2b · Story Specs (Row 7 — per-story coverage) ----
+  const STORY_SPECS = window.DASHBOARD_DATA.storySpecs || [];
+  if (STORY_SPECS.length) {
+    document.getElementById("storyspecssec").hidden = false;
+    const total_gap = STORY_SPECS.reduce((sum, row) => sum + row.gap, 0);
+    document.getElementById("storyspecsh").textContent = "Story Specs (Row 7) · " +
+      STORY_SPECS.reduce((sum, r) => sum + r.done, 0) + " done / " +
+      STORY_SPECS.reduce((sum, r) => sum + r.tracked, 0) + " tracked" +
+      (total_gap > 0 ? " · " + total_gap + " gap(s)" : "");
+    document.getElementById("storyspecsrows").innerHTML = STORY_SPECS.map(row =>
+      '<div class="specrow">' +
+        '<span class="story-station">' + esc(row.station) + '</span>' +
+        '<span class="story-done">' + row.done + '</span>' +
+        '<span class="story-tracked">' + row.tracked + '</span>' +
+        '<span class="story-gap' + (row.gap > 0 ? ' gap-warn' : '') + '">' + row.gap + '</span>' +
+      '</div>').join("");
+  }
+
+  // ---- 3 · Sync & Health (standing detectors + baseline fingerprint) ----
   const HEALTH = window.DASHBOARD_DATA.health || null;
   if (HEALTH && HEALTH.detectors && HEALTH.detectors.length) {
     document.getElementById("healthsec").hidden = false;
