@@ -479,6 +479,11 @@ def classify(path: Path) -> str:
         return "archive:research"      # undated research + briefs filed under research/
     if re.fullmatch(r"planning-artifacts/upstream-report-[a-z0-9-]+\.md", rel):
         return "archive:change-history"  # frozen upstream defect report
+    if re.fullmatch(r"planning-artifacts/implementation-readiness-report-\d{4}-\d{2}-\d{2}\.md", rel):
+        # A dated re-run of the readiness gate alongside the undated TRACKED one (line ~84).
+        # Not pin-gated by this rule, same as sharded prd/arch/epics — a future re-run needs
+        # no new TRACKED entry to stay covered.
+        return "tracked:snapshot"
     if rel == "planning-artifacts/README.md":
         return "tracked:living"
     if re.fullmatch(r"implementation-artifacts/epic-\d+-context\.md", rel):
