@@ -2,7 +2,7 @@
 title: Marshal — graduated autonomy on the factory floor
 status: draft
 created: 2026-07-25
-updated: 2026-07-25
+updated: 2026-08-01  # competitive re-framing + Epic-1 shipped facts + Q3 resolution (see JSON block)
 project: pyforge-marshal
 dist: pyforge-marshal
 module: pyforge.marshal
@@ -19,6 +19,9 @@ inputs:
   - docs/specs/bmad-loop-adoption.md
   - planning-artifacts/research/market-agent-orchestration-research-2026-07-25.md
   - planning-artifacts/research/domain-agent-portability-and-governance-research-2026-07-25.md
+  - planning-artifacts/research/technical-bmad-ecosystem-verification-research-2026-07-31.md
+  - planning-artifacts/research/market-agent-orchestration-research-2026-07-31.md
+  - planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
 ---
 
 # Product Brief: Marshal
@@ -27,9 +30,9 @@ inputs:
 
 **Marshal** is the orchestration station of the pyforge Ecosystem Crew, productized: a deterministic CLI (`marshal`) that turns an approved spec into merged, verified code through gated, unattended development loops — and escalates to a human anything it cannot safely decide. Autonomy is a gradient, not a leap: attended stories first, then unattended loops wrapped in verify gates and quality gates, with every run visible in a durable journal.
 
-The capability already exists and already shipped real systems. Today it runs as a hand-assembled stack — the external `bmad-loop` orchestrator plus `scripts/bmad-switch` and `scripts/bmad-loop-worktree` — which drove **pyforge-atlas to 32/32 stories** and **pyforge-warden to 31/31 across six epics**, with **seven concurrent loop homes** provisioned on one machine as of 2026-07-25. What is missing is the product: a single named entry point, a supervisor for the failure modes the raw loop does not catch, a paper trail that survives worktree teardown, and a portability layer so the same method runs on whichever agent the team uses.
+The capability already exists and already shipped real systems. It began as a hand-assembled stack — the external `bmad-loop` orchestrator plus `scripts/bmad-switch` and `scripts/bmad-loop-worktree` — which drove **pyforge-atlas to 57/57 stories** and **pyforge-warden to 43/43**, with **eight concurrent loop homes** on one machine. *(Updated 2026-08-01:)* **the product's first epic has now shipped through its own line** — Epic 1 · 10/10, six commands (`init · homes · preflight · config · teardown · --version`), 785 tests, coded `MRS-*` envelopes, one import-linter-enforced harness seam. What remains ahead: the supervisor for the failure modes the raw loop does not catch (Epic 3), gates as objects (Epic 2), the landing paper trail and PR lifecycle (Epic 4, now in charter), fleet status (Epic 5), and the portability layer proven rather than claimed (Epic 6).
 
-The market timing is unusually favourable and unusually specific. Competitive research finds that **every competitor trades away either the gate or the unattendedness**: OpenHands has the richest open-source confirmation model in existence and hard-disables approval in headless mode; Google Jules ships the cleanest programmable approval gate found anywhere and then auto-approves it on a timer in its own UI; GitHub's cloud agent has the strongest published gating story of any hosted product and binds it entirely to GitHub's PR/CI model; and the category's most-starred open-source orchestrator has effectively no gating at all. Meanwhile **nobody treats the spec as an executable contract** — GitHub's own Spec Kit has 123,718 stars and ships *recommended sequencing, not enforced gates*. Marshal's slot is gated **and** unattended, spec-as-contract, self-hosted.
+The market timing remains favourable, but the slot **narrowed between intake and now** — the 2026-07-31 refresh (`market-agent-orchestration-research-2026-07-31.md`) supersedes this paragraph's original framing. Gated-unattended is no longer the differentiator: "Ralph loops" made overnight autonomy with stop criteria a named industry practice; Claude Code Auto Mode ships layered in-session safety with approval checkpoints first-party; and **Composio AO — the closest competitor — runs worktree-isolated agents that manage their own PR lifecycle behind milestone gates**. The intake-era observations (OpenHands hard-disabling approval headless, Jules auto-approving on a timer, Spec Kit's recommended-not-enforced sequencing) still hold individually. What remains genuinely unclaimed is **four properties in combination**: the spec as an *executable contract* (frozen-surface scope checks — everyone stops on tests, nobody on contract conformance); the supervisor *outside the session*, un-disableable; **never-false-green** as a verdict lattice (unevaluable ≠ pass); and the paper trail that *survives teardown*. Marshal's slot is those four, self-hosted, with first-party run evidence.
 
 ---
 
@@ -66,13 +69,13 @@ The governing principle stays the Crew's execution doctrine, unchanged: **skills
 
 ## What Makes This Different
 
-**Gated and unattended, simultaneously.** This is the category's open slot. Only Factory's `--auto low|medium|high` and Codex's orthogonal sandbox × approval axes offer a genuine unattended gradient, and neither is spec-driven. Marshal's gate modes map onto a published autonomy taxonomy — targeting **L4 "Approver"**: runs independently, surfaces only at blockers or pre-specified approval conditions.
+**Gated and unattended — now table stakes; the contract and the outside supervisor are the difference.** *(Re-framed 2026-08-01.)* The unattended gradient exists elsewhere (Factory's `--auto`, Codex's sandbox × approval axes, Auto Mode's checkpoint ladder, Ralph-loop practice). What no surveyed product carries: progression gated on *contract conformance* rather than tests alone, and enforcement ceilings reachable from **outside the session** — a wedged agent is never its own witness. Marshal's gate modes still map onto the published autonomy taxonomy, targeting **L4 "Approver"**; upstream `bmad-loop` 0.9.0's new *in-session* budget guards sharpen rather than erode this claim, since the supervisor's premise was always externality (NFR-4), not the mere existence of a ceiling.
 
 **The spec is an executable contract, not a context file.** Every competitor's "spec" is context injection — `AGENTS.md`, Devin Knowledge and Playbooks, aider's `CONVENTIONS.md`, `copilot-instructions.md`. Marshal consumes a spec carrying acceptance criteria and gates progression on satisfying them, with frozen-surface scope checks so a producer story cannot silently amend a contract another story froze.
 
 **Escalation-on-uncertainty is a primitive, not a hope.** The canonical field critique of autonomous agents names this exactly: "Devin would spend days pursuing impossible solutions rather than recognizing fundamental blockers." Anything the agent cannot safely decide pauses the run for a human, and the resolution is captured as spec amendment rather than chat.
 
-**N concurrent gated loops as the product.** Users are hand-rolling this — the most-discussed aider workflow of the period runs three instances on three branches to get three competing PRs. Codex documents worktrees as *advice*; OpenHands' sub-agents are sequential-only; Claude Code and Gemini both now ship worktree flags but neither handles teardown or merge-back. **Nobody ships N isolated, gated, verified loops with merge discipline as the product.** This factory runs seven.
+**N concurrent gated loops as the product.** *(Updated 2026-08-01 — the adjacent space filled; the claim narrows and holds.)* Conductor now ships a parallel-worktree dashboard (attended-only) and Composio AO ships per-agent worktrees with PR lifecycle management — the hand-rolling era is ending. What neither carries: **verified isolation as a command** (`marshal homes` — the machine that caught six homes running another station's verify), teardown that refuses to destroy unmerged work, and merge discipline bound to contract conformance. This factory runs eight homes; the provisioning half of the product is shipped and tested.
 
 **Honest moat statement.** The moat is not technical novelty — it is *composition plus evidence*. Every ingredient exists somewhere; nobody has assembled them, and nobody can point at two complete systems shipped through their own gated loop. In a category where the loudest benchmark number was independently found to be generated by `random.uniform()`, first-party reproducible run evidence is the only credible currency.
 
@@ -104,7 +107,7 @@ The governing principle stays the Crew's execution doctrine, unchanged: **skills
 
 ## Scope
 
-**In, for v1.** The four charter verbs plus `status` and `adapters`. Loop-home provisioning and isolation verification. Run supervision — idle-strand detection, token and time ceilings, escalation surfacing, durable run journal. Gate evaluation with frozen-surface scope checks and a gate-mode ladder mapped to autonomy levels. Adapter skill-tree projection, probing, and conformance recording. Batch-PR landing with automatic story-spec promotion and merge-subject conformance. Distribution as a conda package (with `bmad-loop` as a run dependency) plus a wheel.
+**In, for v1.** The four charter verbs plus `status` and `adapters` — and, per the 2026-07-31 operator ruling (`docs/dreams/pr-lifecycle.md`, contracted as SPEC CAP-9), **`marshal land`: the PR lifecycle as declared policy** with teardown-grade refusals. Loop-home provisioning and isolation verification. Run supervision — idle-strand detection, token and time ceilings, escalation surfacing, durable run journal. Gate evaluation with frozen-surface scope checks and a gate-mode ladder mapped to autonomy levels. Adapter skill-tree projection, probing, and conformance recording. Batch-PR landing with automatic story-spec promotion and merge-subject conformance. Distribution as a conda package (with `bmad-loop` as a run dependency) plus a wheel.
 
 **Out, for v1.** Forking or reimplementing `bmad-loop` — see the wrap-versus-absorb decision, resolved in the PRD. Any Copilot HTTP proxy or sideloaded VS Code extension — superseded, because `bmad-loop` already drives the sanctioned Copilot CLI directly and the proxy path is unversioned, reverse-engineered, and abuse-detection-exposed. The `@bmad` Copilot-Chat adapter — a human-in-the-IDE surface, deferred and re-owned. Speaking ACP as the adapter contract — a scheduled migration with an explicit revisit trigger, not a v1 bet. Windows-native operation — the harness is POSIX-multiplexer-bound, though upstream is moving. Sandboxing and container isolation beyond worktrees — real and necessary, but Steward's provisioning territory.
 
@@ -119,9 +122,9 @@ Two to three years out, Marshal is the reference answer to a question the indust
 ## Assumptions
 
 - **A1.** The reference customer is this factory and its operator; there is no external customer discovery. Success criteria are drawn from live operational evidence, not interviews.
-- **A2.** `bmad-loop` remains actively maintained upstream. It moved 0.8.1 → 0.9.0 within the adoption window, gaining pluggable multiplexers and six adapter profiles.
+- **A2.** `bmad-loop` remains actively maintained upstream. It moved 0.8.1 → 0.9.0 within the adoption window, gaining pluggable multiplexers and six adapter profiles. *(Re-verified 2026-08-01, STRENGTHENED: ten releases Jun 29 → Jul 21; predecessors retired cleanly — `bmad-automator` archived Jul 13 with a migration notice to bmad-loop; the method repo at 51k stars with "Dev Loop Automation" on its roadmap — logged as a convergence watch item on the §5.4 revisit list, not a fork trigger.)*
 - **A3.** BMAD Method conventions (`sprint-status.yaml`, `epics.md`, planning/implementation artifact tiers) remain the story-feed contract.
-- **A4.** Linux and macOS are the supported hosts for v1; Windows is WSL-only, consistent with the harness.
+- **A4.** Linux and macOS are the supported hosts for v1; Windows is WSL-only, consistent with the harness. *(Note 2026-08-01: upstream v0.9.0 shipped a Windows psmux backend — the assumption stands for v1, but the FR-58 register's "non-POSIX multiplexer" upstream-gap entry needs updating.)*
 - **A5.** Distribution through the local conda channel is acceptable for v1; `bmad-loop` is packaged here but not yet on conda-forge (`cfe-on-conda-forge-status: pending-submission-to-conda-forge`).
 - **A6.** Per repo convention (matching `deckcraft` and `pyforge-warden`), this brief is written flat into `planning-artifacts/` rather than into a `briefs/<run-folder>/` workspace with a `.memlog.md`; the brief's own frontmatter carries the input provenance.
 
@@ -129,25 +132,27 @@ Two to three years out, Marshal is the reference answer to a question the indust
 
 - **Q1.** Wrap versus absorb — thin porcelain over `bmad-loop`, or absorb the loop into the distributable? **Resolved in the PRD; recorded here as the brief's central open question at intake.**
 - **Q2.** Ownership of the AGENTS.md entry-file family. `AGENTS.md` states "Keeping the Dream → spec handoff portable across agents is **Herald's** job," while `docs/dreams/agent-portability.md` records portability as re-scoped to **Marshal** in the 2026-07-23 ownership review. One of the two is stale.
-- **Q3.** Does `marshal` own PR-lifecycle automation (create → watch CI → auto-merge), a gap `bmad-loop` deliberately leaves open, or does that belong upstream or to Steward?
+- **Q3.** ~~Does `marshal` own PR-lifecycle automation?~~ **RESOLVED 2026-07-31 (operator): Marshal owns it** — `docs/dreams/pr-lifecycle.md`; contracted as SPEC CAP-9; the Scope section updated accordingly.
 - **Q4.** Should the fleet-level resource budget (a Dream frontier item) be v1 scope, or does it wait for a second project running loops?
-- **Q5.** Is a `marshal`-emitted OpenTelemetry `gen_ai.*` trace worth v1 cost, given the conventions are still Development-stability and renamed attributes during the research window?
-- **Q6.** What is the trigger condition for migrating the adapter layer to ACP?
+- **Q5.** Is a `marshal`-emitted OpenTelemetry `gen_ai.*` trace worth v1 cost? *(Re-verified 2026-08-01: still Development-stability; the June 2026 move was a repo split, not a graduation — deferral holds.)*
+- **Q6.** What is the trigger condition for migrating the adapter layer to ACP? *(Re-verified 2026-08-01: ACP at v0.13.6, registry live, JetBrains/Google adoption — none of the recorded triggers fired; deferral holds, revisit pressure rising.)*
 
 ---
 
 ```json
 {
-  "status": "partial",
-  "intent": "create",
+  "status": "complete",
+  "intent": "update",
+  "updated": "2026-08-01",
+  "update_summary": "Competitive framing narrowed to four unclaimed properties (spec-as-contract, external supervisor, never-false-green, teardown-surviving trail; Composio AO named closest); Epic-1-shipped facts (10/10, six commands, 785 tests) folded into the summary; fleet numbers 57/57, 43/43, eight homes; marshal land added to v1 scope per CAP-9; A2 strengthened and A4 annotated from the 2026-07-31 verification research; Q3 resolved, Q5/Q6 re-verified as holding.",
   "brief": "_bmad-output/projects/pyforge-marshal/planning-artifacts/product-brief-pyforge-marshal.md",
   "open_questions": [
     "Q1 wrap-vs-absorb (resolved downstream in the PRD)",
     "Q2 AGENTS.md family ownership: Herald (per AGENTS.md) vs Marshal (per agent-portability Dream)",
-    "Q3 PR-lifecycle automation ownership",
+    "Q3 RESOLVED 2026-07-31: Marshal owns the PR lifecycle (CAP-9)",
     "Q4 fleet-level resource budgets in v1?",
-    "Q5 OTel gen_ai.* emission in v1?",
-    "Q6 ACP migration trigger condition"
+    "Q5 OTel gen_ai.* emission — deferral holds (re-verified 2026-08-01)",
+    "Q6 ACP migration trigger — unfired (re-verified 2026-08-01)"
   ],
   "assumptions": [
     "A1 reference customer is this factory; no external discovery",

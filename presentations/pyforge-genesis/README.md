@@ -61,3 +61,13 @@ family was then refreshed to match and re-synced both ways:
 
 NOT touched (separate branches, not affected by an infographic edit): the main
 deck (`PyForge Genesis.dc.html` / `…-deck-*.md`) and the Executive Summary.
+
+## 2026-07-31 — big picture absorbed by the Marshal family
+
+Per the genesis→charter fold (PR #177 amendment set), the ecosystem big picture
+this deck carried — the tier pipeline, the eight-station crew, the autonomy
+gradient, the phase×persona table, the Master Pipeline relay, the seed — now
+ALSO lives, updated and extended, in `presentations/pyforge-marshal/` (the
+2026-07-31 six-act generation). This family remains the historical genesis
+rendering; new ecosystem edits land in the Marshal family first. Retirement of
+this deck rides the constitutional fold application, not this note.
