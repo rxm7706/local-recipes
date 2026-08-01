@@ -3026,7 +3026,7 @@ window.DASHBOARD_DATA = {
       }
     }
   },
-  "snapshot": "<span>2026-08-01 14:34 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-01 14:43 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -4419,11 +4419,11 @@ window.DASHBOARD_DATA = {
       "verify": 90,
       "retro": null
     },
-    "sound": 0,
+    "sound": 1,
     "live": 34,
     "reached": 1,
     "gaps": 52,
-    "findings": 27,
+    "findings": 16,
     "rows": [
       {
         "label": "atlas",
@@ -4780,13 +4780,6 @@ window.DASHBOARD_DATA = {
             "than": "prd",
             "at": "2026-07-31T19:40",
             "other": "2026-07-28"
-          },
-          {
-            "kind": "feeds",
-            "stage": "epics",
-            "than": "sprint",
-            "at": "2026-07-31",
-            "other": "2026-07-29"
           }
         ],
         "furthest": "sprint",
@@ -4902,13 +4895,6 @@ window.DASHBOARD_DATA = {
             "than": "prd",
             "at": "2026-07-29",
             "other": "2026-07-25"
-          },
-          {
-            "kind": "feeds",
-            "stage": "epics",
-            "than": "sprint",
-            "at": "2026-07-31",
-            "other": "2026-07-29"
           }
         ],
         "furthest": "verify",
@@ -5014,57 +5000,7 @@ window.DASHBOARD_DATA = {
         ],
         "gaps": [],
         "partial": [],
-        "staleBy": [
-          {
-            "kind": "feeds",
-            "stage": "research",
-            "than": "brief",
-            "at": "2026-07-31",
-            "other": "2026-07-25"
-          },
-          {
-            "kind": "feeds",
-            "stage": "brief",
-            "than": "prd",
-            "at": "2026-08-01",
-            "other": "2026-07-25"
-          },
-          {
-            "kind": "feeds",
-            "stage": "prd",
-            "than": "arch",
-            "at": "2026-08-01",
-            "other": "2026-07-25"
-          },
-          {
-            "kind": "feeds",
-            "stage": "spec",
-            "than": "prd",
-            "at": "2026-08-01",
-            "other": "2026-07-25"
-          },
-          {
-            "kind": "feeds",
-            "stage": "arch",
-            "than": "epics",
-            "at": "2026-08-01",
-            "other": "2026-07-25"
-          },
-          {
-            "kind": "feeds",
-            "stage": "epics",
-            "than": "sprint",
-            "at": "2026-08-01",
-            "other": "2026-07-29"
-          },
-          {
-            "kind": "feeds",
-            "stage": "prd",
-            "than": "gates",
-            "at": "2026-08-01",
-            "other": "2026-06-21"
-          }
-        ],
+        "staleBy": [],
         "furthest": "verify",
         "updated": "2026-08-01",
         "age": 0,
@@ -5545,13 +5481,6 @@ window.DASHBOARD_DATA = {
             "than": "prd",
             "at": "2026-07-29",
             "other": "2026-07-14"
-          },
-          {
-            "kind": "feeds",
-            "stage": "prd",
-            "than": "gates",
-            "at": "2026-07-14",
-            "other": "2026-07-11"
           }
         ],
         "furthest": "verify",
@@ -8428,17 +8357,10 @@ window.DASHBOARD_DATA = {
         "staleBy": [
           {
             "kind": "feeds",
-            "stage": "brief",
-            "than": "prd",
-            "at": "2026-07-25",
-            "other": "2026-05-01"
-          },
-          {
-            "kind": "feeds",
             "stage": "spec",
             "than": "prd",
             "at": "2026-07-29",
-            "other": "2026-05-01"
+            "other": "2026-07-25"
           }
         ],
         "furthest": "epics",
@@ -8791,9 +8713,9 @@ window.DASHBOARD_DATA = {
         "name": "spec-surface",
         "task": "spec-surface-check",
         "guards": "every tracked file under a Spec surface",
-        "state": "green",
-        "findings": 0,
-        "verdict": "OK: every tracked file governed or allowlisted; no drift.",
+        "state": "drift",
+        "findings": 1,
+        "verdict": "FINDINGS (1):",
         "runbook": ""
       },
       {
@@ -10958,7 +10880,7 @@ window.DASHBOARD_DATA = {
       "subject": "Merge bmad-loop/20260731-115548-f223/1-9-packaging-distribution-and-version-reporting into loop/pyforge-marshal (bmad-lo"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-01 14:34 UTC",
-    "generatedEpoch": 1785594840
+    "generatedAt": "2026-08-01 14:43 UTC",
+    "generatedEpoch": 1785595432
   }
 };
