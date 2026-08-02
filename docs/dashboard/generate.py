@@ -1447,8 +1447,15 @@ def _stage_globs(slug: str, project: str, primary: bool) -> dict[str, list[str]]
         "arch":     [f"{pa}/architecture/architecture-{slug}-*/*.md"],
         "context":  [f"{proj}/project-context-{slug}.md"],
         "epics":    [f"{pa}/epics-{slug}.md"],
-        "sprint":   [f"{pa}/sprint-status-{slug}.yaml"],
-        "tea":      [f"{proj}/tests/test_*.py", f"{proj}/tests/**/*.spec.ts"],
+        "sprint":   [f"{pa}/sprint-status-ledger-{slug}.yaml"],
+        # CAP-1, spec-pyforge-testing-charter (2026-08-02): real tests live at the
+        # canonical src/shared/packages/pyforge-<slug>/tests/ location per
+        # project-context.md's workspace-package convention -- NOT under
+        # _bmad-output/projects/<slug>/tests/, which holds only planning-scaffold
+        # mocks/fixtures (or, for 6 of 8 stations, nothing but empty __init__.py
+        # stubs). The old glob undercounted every station's real coverage.
+        "tea":      [f"src/shared/packages/{slug}/tests/**/test_*.py",
+                     f"src/shared/packages/{slug}/tests/**/*.spec.ts"],
         "gates":    [f"{pa}/implementation-readiness-report*{slug}*.md",
                      f"{pa}/validation-report-PRD*{slug}*.md"],
         "code":     [f"src/shared/packages/{slug}/pyproject.toml"],
@@ -1464,8 +1471,7 @@ def _stage_globs(slug: str, project: str, primary: bool) -> dict[str, list[str]]
         g["arch"] += [f"{pa}/architecture.md"]
         g["context"] += [f"{proj}/project-context.md", f"{pa}/project-context.md"]
         g["epics"] += [f"{pa}/epics.md"]
-        g["sprint"] += [f"{pa}/sprint-status.yaml"]
-        g["tea"] += [f"{proj}/tests/test_*.py", f"{proj}/tests/**/*.spec.ts"]
+        g["sprint"] += [f"{pa}/sprint-status-ledger.yaml"]
         g["gates"] += [f"{pa}/implementation-readiness-report*.md",
                        f"{pa}/validation-report-PRD*.md"]
         g["retro"] += [f"{pa}/retros/*.md"]

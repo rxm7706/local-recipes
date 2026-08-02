@@ -1,10 +1,23 @@
 ---
 title: "Dream — PyForge Marshal: Loop Orchestrator"
 date: 2026-08-02
-status: dreamt
+status: archived
+archived-reason: duplicate
 owner: marshal
 scope: "Loop provisioning, deterministic execution, supervised runs, durable landing"
 ---
+
+> **Superseded.** This Dream restates scope already fully governed by
+> [`docs/dreams/pyforge-marshal.md`](pyforge-marshal.md) (status: realized) and its
+> `spec-pyforge-marshal` → PRD (FR-1..FR-58) → Architecture (39 ADs) → Epics (6 epics /
+> 50 stories) chain. Its own "Realization" list (Provisioned Loop Homes, Deterministic
+> Gates, Supervised Runs, Durable Durability, Batch Landing) maps 1:1 onto
+> `spec-pyforge-marshal`'s CAP-1/CAP-3/CAP-2/CAP-4, and its own Acceptance criterion
+> references "all 6 epics (50 stories)" — the existing epics, not new ones. Created
+> 2026-08-02 in a bulk commit later found to contain fabricated content (false
+> migration claims, boilerplate test scaffolding); retired same day rather than
+> spec'd as new work. See `spec-pyforge-marshal-loop-orchestrator` for the retirement
+> record.
 
 # PyForge Marshal — Loop Orchestrator
 

@@ -336,7 +336,7 @@ window.DASHBOARD_DATA = {
             [
               "2.1",
               "pending",
-              "Standalone tested-command runner, project-scoped"
+              "Standalone verify-command runner, project-scoped"
             ],
             [
               "2.2",
@@ -905,12 +905,12 @@ window.DASHBOARD_DATA = {
             ""
           ],
           [
-            "2/9",
+            "3/9",
             "stories complete",
             "var(--done)"
           ],
           [
-            "7",
+            "6",
             "remaining",
             ""
           ]
@@ -934,7 +934,7 @@ window.DASHBOARD_DATA = {
       },
       "lineState": {
         "state": "paused",
-        "at": "1.3"
+        "at": "1.4"
       },
       "epics": [
         {
@@ -953,7 +953,7 @@ window.DASHBOARD_DATA = {
             ],
             [
               "1.3",
-              "pending",
+              "done",
               "Promotion workflow — proposal-then-confirm, team-voice rewrite"
             ],
             [
@@ -2830,7 +2830,7 @@ window.DASHBOARD_DATA = {
       }
     }
   },
-  "snapshot": "<span>2026-08-02 13:14 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-02 16:42 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -3109,16 +3109,20 @@ window.DASHBOARD_DATA = {
       "type": "dream",
       "chain": {
         "deck": "presentations/pyforge-herald",
+        "spec": "_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald",
         "project": "_bmad-output/projects/pyforge-herald"
       }
     },
     {
       "slug": "pyforge-marshal-loop-orchestrator",
       "title": "\"Dream — PyForge Marshal: Loop Orchestrator\"",
-      "status": "dreamt",
+      "status": "archived",
       "owner": "marshal",
       "type": "dream",
-      "chain": {}
+      "chain": {
+        "spec": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal-loop-orchestrator"
+      },
+      "archived_reason": "duplicate"
     },
     {
       "slug": "pyforge-marshal",
@@ -3198,7 +3202,9 @@ window.DASHBOARD_DATA = {
       "status": "specified",
       "owner": "marshal",
       "type": "dream",
-      "chain": {}
+      "chain": {
+        "spec": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-testing-charter"
+      }
     },
     {
       "slug": "pyforge-warden-compliance-gates",
@@ -3383,9 +3389,19 @@ window.DASHBOARD_DATA = {
       "title": "Herald's Pitch Deck — Moment 1 Orchestration",
       "caps": 7,
       "companions": 5,
-      "updated": "2026-08-01",
+      "updated": "2026-08-02",
       "dream": "herald-pitch",
       "path": "_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-herald-pitch"
+    },
+    {
+      "slug": "pyforge-herald",
+      "project": "pyforge-herald",
+      "title": "pyforge-herald",
+      "caps": 0,
+      "companions": 0,
+      "updated": "2026-08-02",
+      "dream": "pyforge-herald",
+      "path": "_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald"
     },
     {
       "slug": "agent-portability",
@@ -3516,6 +3532,26 @@ window.DASHBOARD_DATA = {
       "updated": "2026-08-01",
       "dream": "pyforge-marshal",
       "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal"
+    },
+    {
+      "slug": "pyforge-marshal-loop-orchestrator",
+      "project": "pyforge-marshal",
+      "title": "pyforge-marshal-loop-orchestrator — retirement record",
+      "caps": 4,
+      "companions": 0,
+      "updated": "",
+      "dream": "pyforge-marshal-loop-orchestrator",
+      "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal-loop-orchestrator"
+    },
+    {
+      "slug": "pyforge-testing-charter",
+      "project": "pyforge-marshal",
+      "title": "PyForge Testing Charter — fleet-wide test architecture",
+      "caps": 5,
+      "companions": 2,
+      "updated": "",
+      "dream": "pyforge-testing-charter",
+      "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-testing-charter"
     },
     {
       "slug": "regenerable-factory",
@@ -3918,6 +3954,13 @@ window.DASHBOARD_DATA = {
       "link": "docs/dreams/microsoft-org-sweep.md"
     },
     {
+      "name": "\"Dream — PyForge Marshal: Loop Orchestrator\"",
+      "reason": "duplicate",
+      "owner": "marshal",
+      "note": "\"Dream — PyForge Marshal: Loop Orchestrator\"",
+      "link": "docs/dreams/pyforge-marshal-loop-orchestrator.md"
+    },
+    {
       "name": "Sentinel — the AI Software Factory (the ancestor)",
       "reason": "absorbed",
       "owner": "scribe",
@@ -4139,7 +4182,7 @@ window.DASHBOARD_DATA = {
           "stories": 9,
           "state": "running",
           "note": "line 3 — team memory + graph",
-          "done": 2,
+          "done": 3,
           "total": 9
         },
         {
@@ -4224,21 +4267,9 @@ window.DASHBOARD_DATA = {
       "tea",
       "gates",
       "code",
-      "tested",
+      "verify",
       "retro"
     ],
-    "required": {
-      "analysis": ["research", "brief"],
-      "planning": ["prd"],
-      "solutioning": ["arch", "epics", "spec"],
-      "implementation": ["code", "tested", "retro"]
-    },
-    "exitCriteria": {
-      "analysis": "Product Brief ✓ required",
-      "planning": "PRD ✓ required",
-      "solutioning": "Architecture + Epics + Specs ✓ required",
-      "implementation": "Code + Tests + PR + Merged + Retro ✓ required (tested = code + tests per TEA + PR + merged + retro)"
-    },
     "staleDays": 30,
     "shelfLife": {
       "dream": null,
@@ -4255,14 +4286,14 @@ window.DASHBOARD_DATA = {
       "tea": null,
       "gates": 90,
       "code": 90,
-      "tested": 90,
+      "verify": 90,
       "retro": null
     },
-    "sound": 0,
-    "live": 42,
-    "reached": 1,
-    "gaps": 59,
-    "findings": 15,
+    "sound": 1,
+    "live": 41,
+    "reached": 8,
+    "gaps": 48,
+    "findings": 16,
     "rows": [
       {
         "label": "atlas",
@@ -4281,11 +4312,11 @@ window.DASHBOARD_DATA = {
           "arch": "2026-07-17",
           "context": "2026-08-04",
           "epics": "2026-07-17",
-          "sprint": "2026-08-02",
-          "tea": "",
+          "sprint": "2026-07-29",
+          "tea": "2026-07-17",
           "gates": "2026-07-17",
           "code": "2026-07-17",
-          "tested": "2026-07-17",
+          "verify": "2026-07-17",
           "retro": "2026-07-25"
         },
         "updatedAt": {
@@ -4300,10 +4331,10 @@ window.DASHBOARD_DATA = {
           "context": "2026-08-04",
           "epics": "2026-07-29",
           "sprint": "2026-08-02",
-          "tea": "",
+          "tea": "2026-07-30",
           "gates": "2026-07-17",
           "code": "2026-07-29",
-          "tested": "2026-07-29",
+          "verify": "2026-07-29",
           "retro": "2026-07-25"
         },
         "sub": {
@@ -4357,12 +4388,10 @@ window.DASHBOARD_DATA = {
           "tea",
           "gates",
           "code",
-          "tested",
+          "verify",
           "retro"
         ],
-        "gaps": [
-          "tea"
-        ],
+        "gaps": [],
         "partial": [],
         "staleBy": [
           {
@@ -4388,12 +4417,12 @@ window.DASHBOARD_DATA = {
           }
         ],
         "furthest": "retro",
-        "updated": "2026-08-01",
-        "age": 1,
+        "updated": "2026-08-02",
+        "age": 0,
         "stale": false,
         "version": "0.1.0",
         "progress": "38/38",
-        "complete": 13,
+        "complete": 14,
         "of": 14
       },
       {
@@ -4413,11 +4442,11 @@ window.DASHBOARD_DATA = {
           "arch": "2026-07-25",
           "context": "2026-08-01",
           "epics": "2026-07-25",
-          "sprint": "2026-08-02",
-          "tea": "",
+          "sprint": "2026-07-29",
+          "tea": "2026-07-25",
           "gates": "2026-08-01",
           "code": "2026-07-25",
-          "tested": "2026-07-25",
+          "verify": "2026-07-25",
           "retro": ""
         },
         "updatedAt": {
@@ -4432,10 +4461,10 @@ window.DASHBOARD_DATA = {
           "context": "2026-08-01",
           "epics": "2026-07-25",
           "sprint": "2026-08-02",
-          "tea": "",
+          "tea": "2026-07-31",
           "gates": "2026-08-01",
           "code": "2026-07-25",
-          "tested": "2026-07-25",
+          "verify": "2026-07-25",
           "retro": ""
         },
         "sub": {
@@ -4491,11 +4520,9 @@ window.DASHBOARD_DATA = {
           "tea",
           "gates",
           "code",
-          "tested"
+          "verify"
         ],
-        "gaps": [
-          "tea"
-        ],
+        "gaps": [],
         "partial": [
           "research"
         ],
@@ -4508,13 +4535,13 @@ window.DASHBOARD_DATA = {
             "other": "2026-07-25"
           }
         ],
-        "furthest": "tested",
-        "updated": "2026-08-01",
-        "age": 1,
+        "furthest": "verify",
+        "updated": "2026-08-02",
+        "age": 0,
         "stale": false,
         "version": "0.1.0",
         "progress": "5/12",
-        "complete": 12,
+        "complete": 13,
         "of": 13
       },
       {
@@ -4534,11 +4561,11 @@ window.DASHBOARD_DATA = {
           "arch": "2026-07-28",
           "context": "",
           "epics": "2026-07-28",
-          "sprint": "2026-08-02",
+          "sprint": "",
           "tea": "",
           "gates": "",
           "code": "",
-          "tested": "",
+          "verify": "",
           "retro": ""
         },
         "updatedAt": {
@@ -4552,11 +4579,11 @@ window.DASHBOARD_DATA = {
           "arch": "2026-07-28",
           "context": "",
           "epics": "2026-07-31",
-          "sprint": "2026-08-02",
+          "sprint": "",
           "tea": "",
           "gates": "",
           "code": "",
-          "tested": "",
+          "verify": "",
           "retro": ""
         },
         "sub": {
@@ -4609,8 +4636,7 @@ window.DASHBOARD_DATA = {
           "spec",
           "prd",
           "arch",
-          "epics",
-          "sprint"
+          "epics"
         ],
         "gaps": [],
         "partial": [],
@@ -4623,14 +4649,14 @@ window.DASHBOARD_DATA = {
             "other": "2026-07-28"
           }
         ],
-        "furthest": "sprint",
-        "updated": "2026-08-01",
-        "age": 1,
+        "furthest": "epics",
+        "updated": "2026-08-02",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "0/36",
-        "complete": 6,
-        "of": 6
+        "complete": 5,
+        "of": 5
       },
       {
         "label": "herald",
@@ -4641,7 +4667,7 @@ window.DASHBOARD_DATA = {
         "stages": {
           "dream": "2026-07-23",
           "deck": "2026-07-23",
-          "spec": "",
+          "spec": "2026-07-29",
           "research": "2026-07-25",
           "brief": "",
           "prd": "2026-08-01",
@@ -4649,17 +4675,17 @@ window.DASHBOARD_DATA = {
           "arch": "",
           "context": "2026-08-01",
           "epics": "2026-07-25",
-          "sprint": "2026-08-02",
-          "tea": "",
+          "sprint": "2026-07-29",
+          "tea": "2026-07-25",
           "gates": "2026-08-01",
           "code": "2026-07-25",
-          "tested": "2026-07-25",
+          "verify": "2026-07-25",
           "retro": ""
         },
         "updatedAt": {
           "dream": "2026-08-01",
           "deck": "2026-07-25",
-          "spec": "",
+          "spec": "2026-08-02",
           "research": "2026-08-01",
           "brief": "",
           "prd": "2026-08-01",
@@ -4668,10 +4694,10 @@ window.DASHBOARD_DATA = {
           "context": "2026-08-01",
           "epics": "2026-08-02",
           "sprint": "2026-08-02",
-          "tea": "",
+          "tea": "2026-07-31",
           "gates": "2026-08-01",
           "code": "2026-07-25",
-          "tested": "2026-07-25",
+          "verify": "2026-07-25",
           "retro": ""
         },
         "sub": {
@@ -4702,17 +4728,17 @@ window.DASHBOARD_DATA = {
         },
         "archived": false,
         "dreamStatus": "specified",
-        "ownerDream": "",
+        "ownerDream": "pyforge-herald",
         "noDream": false,
         "unowned": false,
         "backfilled": true,
         "openQuestions": 0,
         "overtaken": false,
         "na": [
+          "dream",
           "ux"
         ],
         "required": [
-          "dream",
           "deck",
           "spec",
           "research",
@@ -4725,24 +4751,30 @@ window.DASHBOARD_DATA = {
           "tea",
           "gates",
           "code",
-          "tested"
+          "verify"
         ],
         "gaps": [
-          "spec",
           "brief",
-          "arch",
-          "tea"
+          "arch"
         ],
         "partial": [],
-        "staleBy": [],
-        "furthest": "tested",
+        "staleBy": [
+          {
+            "kind": "feeds",
+            "stage": "spec",
+            "than": "prd",
+            "at": "2026-08-02",
+            "other": "2026-08-01"
+          }
+        ],
+        "furthest": "verify",
         "updated": "2026-08-02",
         "age": 0,
         "stale": false,
         "version": "0.1.0",
         "progress": "3/19",
-        "complete": 10,
-        "of": 14
+        "complete": 11,
+        "of": 13
       },
       {
         "label": "marshal",
@@ -4761,11 +4793,11 @@ window.DASHBOARD_DATA = {
           "arch": "2026-07-25",
           "context": "2026-06-20",
           "epics": "2026-07-25",
-          "sprint": "2026-08-02",
-          "tea": "",
+          "sprint": "2026-07-29",
+          "tea": "2026-07-26",
           "gates": "2026-06-21",
           "code": "2026-07-26",
-          "tested": "2026-07-26",
+          "verify": "2026-07-26",
           "retro": ""
         },
         "updatedAt": {
@@ -4780,10 +4812,10 @@ window.DASHBOARD_DATA = {
           "context": "2026-06-20",
           "epics": "2026-08-01",
           "sprint": "2026-08-02",
-          "tea": "",
-          "gates": "2026-08-01",
+          "tea": "2026-07-31",
+          "gates": "2026-08-02",
           "code": "2026-07-31",
-          "tested": "2026-07-31",
+          "verify": "2026-07-31",
           "retro": ""
         },
         "sub": {
@@ -4837,20 +4869,18 @@ window.DASHBOARD_DATA = {
           "tea",
           "gates",
           "code",
-          "tested"
+          "verify"
         ],
-        "gaps": [
-          "tea"
-        ],
+        "gaps": [],
         "partial": [],
         "staleBy": [],
-        "furthest": "tested",
-        "updated": "2026-08-01",
-        "age": 1,
+        "furthest": "verify",
+        "updated": "2026-08-02",
+        "age": 0,
         "stale": false,
         "version": "0.1.0",
         "progress": "10/50",
-        "complete": 12,
+        "complete": 13,
         "of": 13
       },
       {
@@ -4870,11 +4900,11 @@ window.DASHBOARD_DATA = {
           "arch": "2026-07-25",
           "context": "2026-08-01",
           "epics": "2026-07-25",
-          "sprint": "2026-08-02",
-          "tea": "",
+          "sprint": "2026-07-29",
+          "tea": "2026-07-25",
           "gates": "2026-08-01",
           "code": "2026-07-25",
-          "tested": "2026-07-25",
+          "verify": "2026-07-25",
           "retro": ""
         },
         "updatedAt": {
@@ -4889,10 +4919,10 @@ window.DASHBOARD_DATA = {
           "context": "2026-08-01",
           "epics": "2026-07-25",
           "sprint": "2026-08-02",
-          "tea": "",
+          "tea": "2026-07-31",
           "gates": "2026-08-01",
           "code": "2026-07-25",
-          "tested": "2026-07-25",
+          "verify": "2026-07-25",
           "retro": ""
         },
         "sub": {
@@ -4948,11 +4978,9 @@ window.DASHBOARD_DATA = {
           "tea",
           "gates",
           "code",
-          "tested"
+          "verify"
         ],
-        "gaps": [
-          "tea"
-        ],
+        "gaps": [],
         "partial": [
           "research"
         ],
@@ -4965,13 +4993,13 @@ window.DASHBOARD_DATA = {
             "other": "2026-07-25"
           }
         ],
-        "furthest": "tested",
-        "updated": "2026-08-01",
-        "age": 1,
+        "furthest": "verify",
+        "updated": "2026-08-02",
+        "age": 0,
         "stale": false,
         "version": "0.1.0",
         "progress": "4/38",
-        "complete": 12,
+        "complete": 13,
         "of": 13
       },
       {
@@ -4991,11 +5019,11 @@ window.DASHBOARD_DATA = {
           "arch": "2026-07-25",
           "context": "2026-08-01",
           "epics": "2026-07-25",
-          "sprint": "2026-08-02",
-          "tea": "",
+          "sprint": "2026-07-29",
+          "tea": "2026-07-25",
           "gates": "2026-08-01",
           "code": "2026-07-25",
-          "tested": "2026-07-25",
+          "verify": "2026-07-25",
           "retro": ""
         },
         "updatedAt": {
@@ -5010,10 +5038,10 @@ window.DASHBOARD_DATA = {
           "context": "2026-08-01",
           "epics": "2026-07-25",
           "sprint": "2026-08-02",
-          "tea": "",
+          "tea": "2026-07-31",
           "gates": "2026-08-01",
           "code": "2026-07-25",
-          "tested": "2026-07-25",
+          "verify": "2026-07-25",
           "retro": ""
         },
         "sub": {
@@ -5069,11 +5097,9 @@ window.DASHBOARD_DATA = {
           "tea",
           "gates",
           "code",
-          "tested"
+          "verify"
         ],
-        "gaps": [
-          "tea"
-        ],
+        "gaps": [],
         "partial": [
           "research"
         ],
@@ -5086,13 +5112,13 @@ window.DASHBOARD_DATA = {
             "other": "2026-07-25"
           }
         ],
-        "furthest": "tested",
-        "updated": "2026-08-01",
-        "age": 1,
+        "furthest": "verify",
+        "updated": "2026-08-02",
+        "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "2/9",
-        "complete": 12,
+        "progress": "3/9",
+        "complete": 13,
         "of": 13
       },
       {
@@ -5112,11 +5138,11 @@ window.DASHBOARD_DATA = {
           "arch": "2026-07-25",
           "context": "2026-08-01",
           "epics": "2026-07-25",
-          "sprint": "2026-08-02",
-          "tea": "",
+          "sprint": "2026-07-29",
+          "tea": "2026-07-25",
           "gates": "2026-08-01",
           "code": "2026-07-25",
-          "tested": "2026-07-25",
+          "verify": "2026-07-25",
           "retro": ""
         },
         "updatedAt": {
@@ -5131,10 +5157,10 @@ window.DASHBOARD_DATA = {
           "context": "2026-08-01",
           "epics": "2026-07-25",
           "sprint": "2026-08-02",
-          "tea": "",
+          "tea": "2026-07-31",
           "gates": "2026-08-01",
           "code": "2026-07-25",
-          "tested": "2026-07-25",
+          "verify": "2026-07-25",
           "retro": ""
         },
         "sub": {
@@ -5190,11 +5216,9 @@ window.DASHBOARD_DATA = {
           "tea",
           "gates",
           "code",
-          "tested"
+          "verify"
         ],
-        "gaps": [
-          "tea"
-        ],
+        "gaps": [],
         "partial": [
           "research"
         ],
@@ -5214,13 +5238,13 @@ window.DASHBOARD_DATA = {
             "other": "2026-08-01"
           }
         ],
-        "furthest": "tested",
-        "updated": "2026-08-01",
-        "age": 1,
+        "furthest": "verify",
+        "updated": "2026-08-02",
+        "age": 0,
         "stale": false,
         "version": "0.1.0",
         "progress": "3/18",
-        "complete": 12,
+        "complete": 13,
         "of": 13
       },
       {
@@ -5240,11 +5264,11 @@ window.DASHBOARD_DATA = {
           "arch": "2026-07-14",
           "context": "2026-08-01",
           "epics": "2026-07-14",
-          "sprint": "2026-08-02",
-          "tea": "",
+          "sprint": "2026-07-29",
+          "tea": "2026-07-14",
           "gates": "2026-07-11",
           "code": "2026-07-14",
-          "tested": "2026-07-14",
+          "verify": "2026-07-14",
           "retro": ""
         },
         "updatedAt": {
@@ -5259,10 +5283,10 @@ window.DASHBOARD_DATA = {
           "context": "2026-08-01",
           "epics": "2026-07-16",
           "sprint": "2026-08-02",
-          "tea": "",
+          "tea": "2026-07-24",
           "gates": "2026-07-16",
           "code": "2026-07-24",
-          "tested": "2026-07-24",
+          "verify": "2026-07-24",
           "retro": ""
         },
         "sub": {
@@ -5318,11 +5342,9 @@ window.DASHBOARD_DATA = {
           "tea",
           "gates",
           "code",
-          "tested"
+          "verify"
         ],
-        "gaps": [
-          "tea"
-        ],
+        "gaps": [],
         "partial": [
           "research"
         ],
@@ -5342,13 +5364,13 @@ window.DASHBOARD_DATA = {
             "other": "2026-07-16"
           }
         ],
-        "furthest": "tested",
-        "updated": "2026-08-01",
-        "age": 1,
+        "furthest": "verify",
+        "updated": "2026-08-02",
+        "age": 0,
         "stale": false,
         "version": "0.1.0",
         "progress": "31/31",
-        "complete": 12,
+        "complete": 13,
         "of": 13
       },
       {
@@ -5372,7 +5394,7 @@ window.DASHBOARD_DATA = {
           "tea": "",
           "gates": "",
           "code": "",
-          "tested": "",
+          "verify": "",
           "retro": ""
         },
         "updatedAt": {
@@ -5390,7 +5412,7 @@ window.DASHBOARD_DATA = {
           "tea": "",
           "gates": "",
           "code": "",
-          "tested": "",
+          "verify": "",
           "retro": ""
         },
         "sub": {
@@ -5449,8 +5471,8 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-01",
-        "age": 1,
+        "updated": "2026-08-02",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -5478,7 +5500,7 @@ window.DASHBOARD_DATA = {
           "tea": "",
           "gates": "",
           "code": "",
-          "tested": "",
+          "verify": "",
           "retro": ""
         },
         "updatedAt": {
@@ -5496,7 +5518,7 @@ window.DASHBOARD_DATA = {
           "tea": "",
           "gates": "",
           "code": "",
-          "tested": "",
+          "verify": "",
           "retro": ""
         },
         "sub": {
@@ -5556,8 +5578,8 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-01",
-        "age": 1,
+        "updated": "2026-08-02",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -5585,7 +5607,7 @@ window.DASHBOARD_DATA = {
           "tea": "",
           "gates": "",
           "code": "",
-          "tested": "",
+          "verify": "",
           "retro": ""
         },
         "updatedAt": {
@@ -5603,7 +5625,7 @@ window.DASHBOARD_DATA = {
           "tea": "",
           "gates": "",
           "code": "",
-          "tested": "",
+          "verify": "",
           "retro": ""
         },
         "sub": {
@@ -5667,8 +5689,8 @@ window.DASHBOARD_DATA = {
           }
         ],
         "furthest": "arch",
-        "updated": "2026-08-01",
-        "age": 1,
+        "updated": "2026-08-02",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -5696,7 +5718,7 @@ window.DASHBOARD_DATA = {
           "tea": "",
           "gates": "",
           "code": "",
-          "tested": "",
+          "verify": "",
           "retro": ""
         },
         "updatedAt": {
@@ -5714,7 +5736,7 @@ window.DASHBOARD_DATA = {
           "tea": "",
           "gates": "",
           "code": "",
-          "tested": "",
+          "verify": "",
           "retro": ""
         },
         "sub": {
@@ -5773,8 +5795,8 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-01",
-        "age": 1,
+        "updated": "2026-08-02",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -5802,7 +5824,7 @@ window.DASHBOARD_DATA = {
           "tea": "",
           "gates": "",
           "code": "",
-          "tested": "",
+          "verify": "",
           "retro": ""
         },
         "updatedAt": {
@@ -5820,7 +5842,7 @@ window.DASHBOARD_DATA = {
           "tea": "",
           "gates": "",
           "code": "",
-          "tested": "",
+          "verify": "",
           "retro": ""
         },
         "sub": {
@@ -5884,8 +5906,8 @@ window.DASHBOARD_DATA = {
           }
         ],
         "furthest": "arch",
-        "updated": "2026-08-01",
-        "age": 1,
+        "updated": "2026-08-02",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -5913,7 +5935,7 @@ window.DASHBOARD_DATA = {
           "tea": "",
           "gates": "",
           "code": "",
-          "tested": "",
+          "verify": "",
           "retro": ""
         },
         "updatedAt": {
@@ -5931,7 +5953,7 @@ window.DASHBOARD_DATA = {
           "tea": "",
           "gates": "",
           "code": "",
-          "tested": "",
+          "verify": "",
           "retro": ""
         },
         "sub": {
@@ -5995,8 +6017,8 @@ window.DASHBOARD_DATA = {
         ],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-01",
-        "age": 1,
+        "updated": "2026-08-02",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -6024,7 +6046,7 @@ window.DASHBOARD_DATA = {
           "tea": "",
           "gates": "",
           "code": "",
-          "tested": "",
+          "verify": "",
           "retro": ""
         },
         "updatedAt": {
@@ -6042,7 +6064,7 @@ window.DASHBOARD_DATA = {
           "tea": "",
           "gates": "",
           "code": "",
-          "tested": "",
+          "verify": "",
           "retro": ""
         },
         "sub": {
@@ -6104,8 +6126,8 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "spec",
-        "updated": "2026-08-01",
-        "age": 1,
+        "updated": "2026-08-02",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -6133,7 +6155,7 @@ window.DASHBOARD_DATA = {
           "tea": "",
           "gates": "",
           "code": "",
-          "tested": "",
+          "verify": "",
           "retro": ""
         },
         "updatedAt": {
@@ -6151,7 +6173,7 @@ window.DASHBOARD_DATA = {
           "tea": "",
           "gates": "",
           "code": "",
-          "tested": "",
+          "verify": "",
           "retro": ""
         },
         "sub": {
@@ -6240,7 +6262,7 @@ window.DASHBOARD_DATA = {
           "tea": "",
           "gates": "",
           "code": "",
-          "tested": "",
+          "verify": "",
           "retro": ""
         },
         "updatedAt": {
@@ -6258,7 +6280,7 @@ window.DASHBOARD_DATA = {
           "tea": "",
           "gates": "",
           "code": "",
-          "tested": "",
+          "verify": "",
           "retro": ""
         },
         "sub": {
@@ -6350,11 +6372,11 @@ window.DASHBOARD_DATA = {
           "tea": "",
           "gates": "",
           "code": "",
-          "tested": "",
+          "verify": "",
           "retro": ""
         },
         "updatedAt": {
-          "dream": "2026-08-01",
+          "dream": "2026-08-02",
           "deck": "",
           "spec": "",
           "research": "2026-08-01",
@@ -6368,7 +6390,7 @@ window.DASHBOARD_DATA = {
           "tea": "",
           "gates": "",
           "code": "",
-          "tested": "",
+          "verify": "",
           "retro": ""
         },
         "sub": {
@@ -6457,7 +6479,7 @@ window.DASHBOARD_DATA = {
           "tea": "",
           "gates": "",
           "code": "",
-          "tested": "",
+          "verify": "",
           "retro": ""
         },
         "updatedAt": {
@@ -6475,7 +6497,7 @@ window.DASHBOARD_DATA = {
           "tea": "",
           "gates": "",
           "code": "",
-          "tested": "",
+          "verify": "",
           "retro": ""
         },
         "sub": {
@@ -6513,17 +6535,17 @@ window.DASHBOARD_DATA = {
         },
         "archived": false,
         "dreamStatus": "specified",
-        "ownerDream": "",
+        "ownerDream": "herald-pitch",
         "noDream": false,
         "unowned": false,
         "backfilled": false,
         "openQuestions": 0,
         "overtaken": false,
         "na": [
+          "dream",
           "ux"
         ],
         "required": [
-          "dream",
           "deck",
           "spec",
           "research",
@@ -6543,8 +6565,8 @@ window.DASHBOARD_DATA = {
         "stale": false,
         "version": "",
         "progress": "",
-        "complete": 5,
-        "of": 7
+        "complete": 4,
+        "of": 6
       },
       {
         "label": "agent-portability",
@@ -6567,7 +6589,7 @@ window.DASHBOARD_DATA = {
           "tea": "",
           "gates": "",
           "code": "",
-          "tested": "",
+          "verify": "",
           "retro": ""
         },
         "updatedAt": {
@@ -6585,7 +6607,7 @@ window.DASHBOARD_DATA = {
           "tea": "",
           "gates": "",
           "code": "",
-          "tested": "",
+          "verify": "",
           "retro": ""
         },
         "sub": {
@@ -6644,8 +6666,8 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-01",
-        "age": 1,
+        "updated": "2026-08-02",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -6673,7 +6695,7 @@ window.DASHBOARD_DATA = {
           "tea": "",
           "gates": "",
           "code": "",
-          "tested": "",
+          "verify": "",
           "retro": ""
         },
         "updatedAt": {
@@ -6691,7 +6713,7 @@ window.DASHBOARD_DATA = {
           "tea": "",
           "gates": "",
           "code": "",
-          "tested": "",
+          "verify": "",
           "retro": ""
         },
         "sub": {
@@ -6750,8 +6772,8 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-01",
-        "age": 1,
+        "updated": "2026-08-02",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -6779,7 +6801,7 @@ window.DASHBOARD_DATA = {
           "tea": "",
           "gates": "",
           "code": "",
-          "tested": "",
+          "verify": "",
           "retro": ""
         },
         "updatedAt": {
@@ -6797,7 +6819,7 @@ window.DASHBOARD_DATA = {
           "tea": "",
           "gates": "",
           "code": "",
-          "tested": "",
+          "verify": "",
           "retro": ""
         },
         "sub": {
@@ -6856,8 +6878,8 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-01",
-        "age": 1,
+        "updated": "2026-08-02",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -6885,7 +6907,7 @@ window.DASHBOARD_DATA = {
           "tea": "",
           "gates": "",
           "code": "",
-          "tested": "",
+          "verify": "",
           "retro": ""
         },
         "updatedAt": {
@@ -6903,7 +6925,7 @@ window.DASHBOARD_DATA = {
           "tea": "",
           "gates": "",
           "code": "",
-          "tested": "",
+          "verify": "",
           "retro": ""
         },
         "sub": {
@@ -6962,8 +6984,8 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-01",
-        "age": 1,
+        "updated": "2026-08-02",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -6991,7 +7013,7 @@ window.DASHBOARD_DATA = {
           "tea": "",
           "gates": "",
           "code": "",
-          "tested": "",
+          "verify": "",
           "retro": ""
         },
         "updatedAt": {
@@ -7009,7 +7031,7 @@ window.DASHBOARD_DATA = {
           "tea": "",
           "gates": "",
           "code": "",
-          "tested": "",
+          "verify": "",
           "retro": ""
         },
         "sub": {
@@ -7068,8 +7090,8 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-01",
-        "age": 1,
+        "updated": "2026-08-02",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -7097,7 +7119,7 @@ window.DASHBOARD_DATA = {
           "tea": "",
           "gates": "",
           "code": "",
-          "tested": "",
+          "verify": "",
           "retro": ""
         },
         "updatedAt": {
@@ -7115,7 +7137,7 @@ window.DASHBOARD_DATA = {
           "tea": "",
           "gates": "",
           "code": "",
-          "tested": "",
+          "verify": "",
           "retro": ""
         },
         "sub": {
@@ -7174,8 +7196,8 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-01",
-        "age": 1,
+        "updated": "2026-08-02",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -7203,7 +7225,7 @@ window.DASHBOARD_DATA = {
           "tea": "",
           "gates": "",
           "code": "",
-          "tested": "",
+          "verify": "",
           "retro": ""
         },
         "updatedAt": {
@@ -7221,7 +7243,7 @@ window.DASHBOARD_DATA = {
           "tea": "",
           "gates": "",
           "code": "",
-          "tested": "",
+          "verify": "",
           "retro": ""
         },
         "sub": {
@@ -7280,8 +7302,8 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-01",
-        "age": 1,
+        "updated": "2026-08-02",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -7309,7 +7331,7 @@ window.DASHBOARD_DATA = {
           "tea": "",
           "gates": "",
           "code": "",
-          "tested": "",
+          "verify": "",
           "retro": ""
         },
         "updatedAt": {
@@ -7327,7 +7349,7 @@ window.DASHBOARD_DATA = {
           "tea": "",
           "gates": "",
           "code": "",
-          "tested": "",
+          "verify": "",
           "retro": ""
         },
         "sub": {
@@ -7386,8 +7408,8 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-01",
-        "age": 1,
+        "updated": "2026-08-02",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -7415,7 +7437,7 @@ window.DASHBOARD_DATA = {
           "tea": "",
           "gates": "",
           "code": "",
-          "tested": "",
+          "verify": "",
           "retro": ""
         },
         "updatedAt": {
@@ -7433,7 +7455,7 @@ window.DASHBOARD_DATA = {
           "tea": "",
           "gates": "",
           "code": "",
-          "tested": "",
+          "verify": "",
           "retro": ""
         },
         "sub": {
@@ -7507,8 +7529,8 @@ window.DASHBOARD_DATA = {
           }
         ],
         "furthest": "epics",
-        "updated": "2026-08-01",
-        "age": 1,
+        "updated": "2026-08-02",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -7536,7 +7558,7 @@ window.DASHBOARD_DATA = {
           "tea": "",
           "gates": "",
           "code": "",
-          "tested": "",
+          "verify": "",
           "retro": ""
         },
         "updatedAt": {
@@ -7554,7 +7576,7 @@ window.DASHBOARD_DATA = {
           "tea": "",
           "gates": "",
           "code": "",
-          "tested": "",
+          "verify": "",
           "retro": ""
         },
         "sub": {
@@ -7613,8 +7635,8 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-01",
-        "age": 1,
+        "updated": "2026-08-02",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -7642,7 +7664,7 @@ window.DASHBOARD_DATA = {
           "tea": "",
           "gates": "",
           "code": "",
-          "tested": "",
+          "verify": "",
           "retro": ""
         },
         "updatedAt": {
@@ -7660,7 +7682,7 @@ window.DASHBOARD_DATA = {
           "tea": "",
           "gates": "",
           "code": "",
-          "tested": "",
+          "verify": "",
           "retro": ""
         },
         "sub": {
@@ -7719,8 +7741,8 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-01",
-        "age": 1,
+        "updated": "2026-08-02",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -7748,7 +7770,7 @@ window.DASHBOARD_DATA = {
           "tea": "",
           "gates": "",
           "code": "",
-          "tested": "",
+          "verify": "",
           "retro": ""
         },
         "updatedAt": {
@@ -7766,7 +7788,7 @@ window.DASHBOARD_DATA = {
           "tea": "",
           "gates": "",
           "code": "",
-          "tested": "",
+          "verify": "",
           "retro": ""
         },
         "sub": {
@@ -7825,8 +7847,8 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-01",
-        "age": 1,
+        "updated": "2026-08-02",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -7854,7 +7876,7 @@ window.DASHBOARD_DATA = {
           "tea": "",
           "gates": "",
           "code": "",
-          "tested": "",
+          "verify": "",
           "retro": ""
         },
         "updatedAt": {
@@ -7872,7 +7894,7 @@ window.DASHBOARD_DATA = {
           "tea": "",
           "gates": "",
           "code": "",
-          "tested": "",
+          "verify": "",
           "retro": ""
         },
         "sub": {
@@ -7908,19 +7930,19 @@ window.DASHBOARD_DATA = {
             ]
           }
         },
-        "archived": false,
-        "dreamStatus": "dreamt",
-        "ownerDream": "",
+        "archived": true,
+        "dreamStatus": "archived",
+        "ownerDream": "pyforge-marshal-loop-orchestrator",
         "noDream": false,
         "unowned": false,
         "backfilled": false,
         "openQuestions": 0,
         "overtaken": false,
         "na": [
+          "dream",
           "ux"
         ],
         "required": [
-          "dream",
           "deck",
           "spec",
           "research"
@@ -7932,13 +7954,13 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-01",
-        "age": 1,
+        "updated": "2026-08-02",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
-        "complete": 2,
-        "of": 4
+        "complete": 1,
+        "of": 3
       },
       {
         "label": "testing-charter",
@@ -7961,13 +7983,13 @@ window.DASHBOARD_DATA = {
           "tea": "",
           "gates": "",
           "code": "",
-          "tested": "",
+          "verify": "",
           "retro": ""
         },
         "updatedAt": {
           "dream": "2026-08-02",
           "deck": "",
-          "spec": "",
+          "spec": "2026-08-02T11:24",
           "research": "2026-07-31",
           "brief": "",
           "prd": "",
@@ -7979,7 +8001,7 @@ window.DASHBOARD_DATA = {
           "tea": "",
           "gates": "",
           "code": "",
-          "tested": "",
+          "verify": "",
           "retro": ""
         },
         "sub": {
@@ -8017,17 +8039,17 @@ window.DASHBOARD_DATA = {
         },
         "archived": false,
         "dreamStatus": "specified",
-        "ownerDream": "",
+        "ownerDream": "pyforge-testing-charter",
         "noDream": false,
         "unowned": false,
         "backfilled": false,
         "openQuestions": 0,
         "overtaken": false,
         "na": [
+          "dream",
           "ux"
         ],
         "required": [
-          "dream",
           "deck",
           "spec",
           "research"
@@ -8044,8 +8066,8 @@ window.DASHBOARD_DATA = {
         "stale": false,
         "version": "",
         "progress": "",
-        "complete": 2,
-        "of": 4
+        "complete": 1,
+        "of": 3
       },
       {
         "label": "regenerable-factory",
@@ -8068,7 +8090,7 @@ window.DASHBOARD_DATA = {
           "tea": "",
           "gates": "",
           "code": "",
-          "tested": "",
+          "verify": "",
           "retro": ""
         },
         "updatedAt": {
@@ -8086,7 +8108,7 @@ window.DASHBOARD_DATA = {
           "tea": "",
           "gates": "",
           "code": "",
-          "tested": "",
+          "verify": "",
           "retro": ""
         },
         "sub": {
@@ -8150,8 +8172,8 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "epics",
-        "updated": "2026-08-01",
-        "age": 1,
+        "updated": "2026-08-02",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -8179,7 +8201,7 @@ window.DASHBOARD_DATA = {
           "tea": "",
           "gates": "",
           "code": "",
-          "tested": "",
+          "verify": "",
           "retro": ""
         },
         "updatedAt": {
@@ -8197,7 +8219,7 @@ window.DASHBOARD_DATA = {
           "tea": "",
           "gates": "",
           "code": "",
-          "tested": "",
+          "verify": "",
           "retro": ""
         },
         "sub": {
@@ -8260,8 +8282,8 @@ window.DASHBOARD_DATA = {
         ],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-01",
-        "age": 1,
+        "updated": "2026-08-02",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -8289,7 +8311,7 @@ window.DASHBOARD_DATA = {
           "tea": "",
           "gates": "",
           "code": "",
-          "tested": "",
+          "verify": "",
           "retro": ""
         },
         "updatedAt": {
@@ -8307,7 +8329,7 @@ window.DASHBOARD_DATA = {
           "tea": "",
           "gates": "",
           "code": "",
-          "tested": "",
+          "verify": "",
           "retro": ""
         },
         "sub": {
@@ -8370,8 +8392,8 @@ window.DASHBOARD_DATA = {
         ],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-01",
-        "age": 1,
+        "updated": "2026-08-02",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -8399,7 +8421,7 @@ window.DASHBOARD_DATA = {
           "tea": "",
           "gates": "",
           "code": "",
-          "tested": "",
+          "verify": "",
           "retro": ""
         },
         "updatedAt": {
@@ -8417,7 +8439,7 @@ window.DASHBOARD_DATA = {
           "tea": "",
           "gates": "",
           "code": "",
-          "tested": "",
+          "verify": "",
           "retro": ""
         },
         "sub": {
@@ -8480,8 +8502,8 @@ window.DASHBOARD_DATA = {
         ],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-01",
-        "age": 1,
+        "updated": "2026-08-02",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -8509,7 +8531,7 @@ window.DASHBOARD_DATA = {
           "tea": "",
           "gates": "",
           "code": "",
-          "tested": "",
+          "verify": "",
           "retro": ""
         },
         "updatedAt": {
@@ -8527,7 +8549,7 @@ window.DASHBOARD_DATA = {
           "tea": "",
           "gates": "",
           "code": "",
-          "tested": "",
+          "verify": "",
           "retro": ""
         },
         "sub": {
@@ -8590,8 +8612,8 @@ window.DASHBOARD_DATA = {
         ],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-01",
-        "age": 1,
+        "updated": "2026-08-02",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -8619,7 +8641,7 @@ window.DASHBOARD_DATA = {
           "tea": "",
           "gates": "",
           "code": "",
-          "tested": "",
+          "verify": "",
           "retro": ""
         },
         "updatedAt": {
@@ -8637,7 +8659,7 @@ window.DASHBOARD_DATA = {
           "tea": "",
           "gates": "",
           "code": "",
-          "tested": "",
+          "verify": "",
           "retro": ""
         },
         "sub": {
@@ -8707,8 +8729,8 @@ window.DASHBOARD_DATA = {
           }
         ],
         "furthest": "epics",
-        "updated": "2026-08-01",
-        "age": 1,
+        "updated": "2026-08-02",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -8736,7 +8758,7 @@ window.DASHBOARD_DATA = {
           "tea": "",
           "gates": "",
           "code": "",
-          "tested": "",
+          "verify": "",
           "retro": ""
         },
         "updatedAt": {
@@ -8754,7 +8776,7 @@ window.DASHBOARD_DATA = {
           "tea": "",
           "gates": "",
           "code": "",
-          "tested": "",
+          "verify": "",
           "retro": ""
         },
         "sub": {
@@ -8818,8 +8840,8 @@ window.DASHBOARD_DATA = {
         ],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-01",
-        "age": 1,
+        "updated": "2026-08-02",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -8847,7 +8869,7 @@ window.DASHBOARD_DATA = {
           "tea": "",
           "gates": "",
           "code": "",
-          "tested": "",
+          "verify": "",
           "retro": ""
         },
         "updatedAt": {
@@ -8865,7 +8887,7 @@ window.DASHBOARD_DATA = {
           "tea": "",
           "gates": "",
           "code": "",
-          "tested": "",
+          "verify": "",
           "retro": ""
         },
         "sub": {
@@ -8929,8 +8951,8 @@ window.DASHBOARD_DATA = {
         ],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-01",
-        "age": 1,
+        "updated": "2026-08-02",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -8958,7 +8980,7 @@ window.DASHBOARD_DATA = {
           "tea": "",
           "gates": "",
           "code": "",
-          "tested": "",
+          "verify": "",
           "retro": ""
         },
         "updatedAt": {
@@ -8976,7 +8998,7 @@ window.DASHBOARD_DATA = {
           "tea": "",
           "gates": "",
           "code": "",
-          "tested": "",
+          "verify": "",
           "retro": ""
         },
         "sub": {
@@ -9039,8 +9061,8 @@ window.DASHBOARD_DATA = {
         ],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-01",
-        "age": 1,
+        "updated": "2026-08-02",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -9068,7 +9090,7 @@ window.DASHBOARD_DATA = {
           "tea": "",
           "gates": "",
           "code": "",
-          "tested": "",
+          "verify": "",
           "retro": ""
         },
         "updatedAt": {
@@ -9086,7 +9108,7 @@ window.DASHBOARD_DATA = {
           "tea": "",
           "gates": "",
           "code": "",
-          "tested": "",
+          "verify": "",
           "retro": ""
         },
         "sub": {
@@ -9149,8 +9171,8 @@ window.DASHBOARD_DATA = {
         ],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-01",
-        "age": 1,
+        "updated": "2026-08-02",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -9178,7 +9200,7 @@ window.DASHBOARD_DATA = {
           "tea": "",
           "gates": "",
           "code": "",
-          "tested": "",
+          "verify": "",
           "retro": ""
         },
         "updatedAt": {
@@ -9196,7 +9218,7 @@ window.DASHBOARD_DATA = {
           "tea": "",
           "gates": "",
           "code": "",
-          "tested": "",
+          "verify": "",
           "retro": ""
         },
         "sub": {
@@ -9259,8 +9281,8 @@ window.DASHBOARD_DATA = {
         ],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-01",
-        "age": 1,
+        "updated": "2026-08-02",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -9288,7 +9310,7 @@ window.DASHBOARD_DATA = {
           "tea": "",
           "gates": "",
           "code": "",
-          "tested": "",
+          "verify": "",
           "retro": ""
         },
         "updatedAt": {
@@ -9306,7 +9328,7 @@ window.DASHBOARD_DATA = {
           "tea": "",
           "gates": "",
           "code": "",
-          "tested": "",
+          "verify": "",
           "retro": ""
         },
         "sub": {
@@ -9370,8 +9392,8 @@ window.DASHBOARD_DATA = {
         ],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-01",
-        "age": 1,
+        "updated": "2026-08-02",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -9399,7 +9421,7 @@ window.DASHBOARD_DATA = {
           "tea": "",
           "gates": "",
           "code": "",
-          "tested": "",
+          "verify": "",
           "retro": ""
         },
         "updatedAt": {
@@ -9417,7 +9439,7 @@ window.DASHBOARD_DATA = {
           "tea": "",
           "gates": "",
           "code": "",
-          "tested": "",
+          "verify": "",
           "retro": ""
         },
         "sub": {
@@ -9481,8 +9503,8 @@ window.DASHBOARD_DATA = {
         ],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-01",
-        "age": 1,
+        "updated": "2026-08-02",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -9853,8 +9875,8 @@ window.DASHBOARD_DATA = {
         "task": "spec-surface-check",
         "guards": "every tracked file under a Spec surface",
         "state": "drift",
-        "findings": 782,
-        "verdict": "FINDINGS (782):",
+        "findings": 760,
+        "verdict": "FINDINGS (760):",
         "runbook": ""
       },
       {
@@ -9941,14 +9963,6 @@ window.DASHBOARD_DATA = {
         "chain": {}
       },
       {
-        "slug": "pyforge-marshal-loop-orchestrator",
-        "title": "\"Dream — PyForge Marshal: Loop Orchestrator\"",
-        "status": "dreamt",
-        "owner": "marshal",
-        "blockedOn": "",
-        "chain": {}
-      },
-      {
         "slug": "pyforge-mason-recipe-validator",
         "title": "\"Dream — PyForge Mason: Recipe Validator\"",
         "status": "dreamt",
@@ -10014,7 +10028,9 @@ window.DASHBOARD_DATA = {
         "status": "specified",
         "owner": "marshal",
         "blockedOn": "",
-        "chain": {}
+        "chain": {
+          "spec": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-testing-charter"
+        }
       },
       {
         "slug": "team-memory",
@@ -10072,7 +10088,7 @@ window.DASHBOARD_DATA = {
     ],
     "blocked": 1,
     "byOwner": {
-      "marshal": 7,
+      "marshal": 6,
       "herald": 3,
       "atlas": 4,
       "doctor": 1,
@@ -10195,20 +10211,27 @@ window.DASHBOARD_DATA = {
         "station": "marshal",
         "total": 14,
         "counts": {
-          "dreamt": 5,
+          "dreamt": 4,
           "pitched": 0,
           "specified": 2,
           "realized": 2,
-          "archived": 1,
+          "archived": 2,
           "practice": 4
         },
         "line": "paused 2.1",
-        "load": 7,
+        "load": 6,
         "blocked": 0,
         "dreams": [
           {
             "slug": "artifact-console",
             "title": "Artifact console — the factory board, hosted as a chat artifact",
+            "status": "archived",
+            "type": "dream",
+            "blockedOn": ""
+          },
+          {
+            "slug": "pyforge-marshal-loop-orchestrator",
+            "title": "\"Dream — PyForge Marshal: Loop Orchestrator\"",
             "status": "archived",
             "type": "dream",
             "blockedOn": ""
@@ -10244,13 +10267,6 @@ window.DASHBOARD_DATA = {
           {
             "slug": "pr-lifecycle",
             "title": "PR lifecycle — a story lands itself",
-            "status": "dreamt",
-            "type": "dream",
-            "blockedOn": ""
-          },
-          {
-            "slug": "pyforge-marshal-loop-orchestrator",
-            "title": "\"Dream — PyForge Marshal: Loop Orchestrator\"",
             "status": "dreamt",
             "type": "dream",
             "blockedOn": ""
@@ -10504,7 +10520,7 @@ window.DASHBOARD_DATA = {
           "archived": 1,
           "practice": 0
         },
-        "line": "paused 1.3",
+        "line": "paused 1.4",
         "load": 2,
         "blocked": 0,
         "dreams": [
@@ -10716,7 +10732,7 @@ window.DASHBOARD_DATA = {
           },
           {
             "id": "DW-B5-1",
-            "title": "re-point name_resolver.py / recipe-generator.py at Phase C + tested the live authoring read (Q6) — DEFERRED (read-only .",
+            "title": "re-point name_resolver.py / recipe-generator.py at Phase C + verify the live authoring read (Q6) — DEFERRED (read-only .",
             "status": "open",
             "severity": "unspecified",
             "triaged": true
@@ -11019,7 +11035,7 @@ window.DASHBOARD_DATA = {
         "entries": [
           {
             "id": "DW-1-1-1",
-            "title": "The loop's exact `[tested]` command (`pixi run -e python-deptry-osv-scanner python-deptry-osv-sc…",
+            "title": "The loop's exact `[verify]` command (`pixi run -e python-deptry-osv-scanner python-deptry-osv-sc…",
             "status": "done",
             "severity": "unspecified",
             "triaged": true
@@ -11681,7 +11697,7 @@ window.DASHBOARD_DATA = {
           },
           {
             "id": "DW-1-1-7",
-            "title": "The tested-gate repair for this story (populating `build_artifacts/linux64` stubs so `pixi run -…",
+            "title": "The verify-gate repair for this story (populating `build_artifacts/linux64` stubs so `pixi run -…",
             "status": "done",
             "severity": "unspecified",
             "triaged": true
@@ -12095,7 +12111,7 @@ window.DASHBOARD_DATA = {
         "entries": [
           {
             "id": "DW-1-1-1",
-            "title": "The loop's exact `[tested]` command (`pixi run -e pyforge-doctor pyforge-doctor-test`, unfrozen)…",
+            "title": "The loop's exact `[verify]` command (`pixi run -e pyforge-doctor pyforge-doctor-test`, unfrozen)…",
             "status": "done",
             "severity": "unspecified",
             "triaged": true
@@ -12136,19 +12152,19 @@ window.DASHBOARD_DATA = {
       "subject": "Merge bmad-loop/20260731-115548-f223/1-9-packaging-distribution-and-version-reporting into loop/pyforge-marshal (bmad-lo"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-02 13:14 UTC",
-    "generatedEpoch": 1785676457
+    "generatedAt": "2026-08-02 16:42 UTC",
+    "generatedEpoch": 1785688973
   },
   "storySpecs": [
     {
       "station": "pyforge-atlas",
-      "done": 0,
+      "done": 38,
       "tracked": 39,
       "gap": 0
     },
     {
       "station": "pyforge-doctor",
-      "done": 0,
+      "done": 5,
       "tracked": 5,
       "gap": 0
     },
@@ -12160,37 +12176,37 @@ window.DASHBOARD_DATA = {
     },
     {
       "station": "pyforge-herald",
-      "done": 0,
+      "done": 4,
       "tracked": 4,
       "gap": 0
     },
     {
       "station": "pyforge-marshal",
-      "done": 0,
+      "done": 10,
       "tracked": 11,
       "gap": 0
     },
     {
       "station": "pyforge-mason",
-      "done": 0,
+      "done": 4,
       "tracked": 4,
       "gap": 0
     },
     {
       "station": "pyforge-scribe",
-      "done": 0,
-      "tracked": 2,
+      "done": 3,
+      "tracked": 3,
       "gap": 0
     },
     {
       "station": "pyforge-steward",
-      "done": 0,
+      "done": 3,
       "tracked": 4,
       "gap": 0
     },
     {
       "station": "pyforge-warden",
-      "done": 0,
+      "done": 31,
       "tracked": 31,
       "gap": 0
     }
