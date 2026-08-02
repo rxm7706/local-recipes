@@ -8,7 +8,8 @@ inputDocuments:
   - _bmad-output/projects/pyforge-doctor/planning-artifacts/prds/prd-pyforge-doctor-2026-07-25/prd.md
   - _bmad-output/projects/pyforge-doctor/planning-artifacts/architecture/architecture-pyforge-doctor-2026-07-25/ARCHITECTURE-SPINE.md
   - _bmad-output/projects/pyforge-doctor/planning-artifacts/briefs/brief-pyforge-doctor-2026-07-25/brief.md
----
+updated: '2026-08-02'
+currency_review: "Reviewed 2026-08-02 — added Epic 4 (Stories 4.1-4.4, FR-10..13) decomposing the fresh docs/dreams/pyforge-doctor.md's frontier section. Mechanically verified: all 13 PRD FRs trace to epics.md both directions, 16/16 unique story ids, zero orphans."
 
 # pyforge-doctor - Epic Breakdown
 
@@ -35,6 +36,13 @@ FR-6: `diagnose --target <target>` partitions every gathered Finding into `actio
 FR-7: Within the `actionable` partition, Prescriptions are ranked by severity × exploitability × blast-radius, with the ranking factors shown (never an opaque priority number).
 FR-8: Every Prescription names a root cause, not just a symptom.
 FR-9: `doctor check`, `doctor monitor`, and `doctor diagnose` each accept a `--json` flag producing a schema-validated `DoctorReport` document with the same information as the human-readable output.
+
+**Added 2026-08-02 (v1.x, Epic 4 — the frontier, decomposed for real):**
+
+FR-10: A composite health grade (A–F) per dependency, synthesized from Doctor's own already-gathered Finding data — an aggregation layer, not a new scanning instrument.
+FR-11: A persistent, tracked fleet-health surface, strictly derived from `monitor --fleet` output — the graduation the original PRD §6.2 named as a candidate v1.x addition.
+FR-12: An `adoption` watch axis wiring cf_atlas's existing `adoption-stage`/`version-downloads` sources into `monitor --fleet`, following the same MCP-first/CLI-fallback rule as FR-5.
+FR-13: A single-hop safe-upgrade-version recommendation on `--prescribe`'s Prescription output — explicitly not a transitive dependency-graph resolver.
 
 ### NonFunctional Requirements
 
@@ -73,8 +81,12 @@ FR-6: Epic 3 — partition findings by actionability.
 FR-7: Epic 3 — rank the actionable partition.
 FR-8: Epic 3 — root-cause naming.
 FR-9: Epic 1 (`check --json`) + Epic 2 (`monitor --json`) + Epic 3 (`diagnose --json`) — delivered per-verb, as each verb's last story, not a separate epic (no epic exists that is JSON-output-only with no other user value).
+FR-10: Epic 4 — health scoring.
+FR-11: Epic 4 — persistent fleet-health surface.
+FR-12: Epic 4 — adoption-tracking watch axis.
+FR-13: Epic 4 — safe upgrade-path recommendation.
 
-All 9 FRs covered; dependencies flow forward only (Epic 1 establishes the frozen `Finding`/`DoctorReport` contract every later epic produces against, never edits; Epic 2 and Epic 3 are independently valuable and do not require each other — Epic 3 consumes Epic 1's `check` gather filter and Epic 2's `atlas` gather filter as already-shipped inputs, not as an in-flight dependency).
+All 13 FRs covered; dependencies flow forward only (Epic 1 establishes the frozen `Finding`/`DoctorReport` contract every later epic produces against, never edits; Epic 2 and Epic 3 are independently valuable and do not require each other; Epic 4 consumes Epic 1's frozen contract, Epic 2's `atlas` gather filter (Story 2.1's MCP-first/CLI-fallback pattern, extended) and Epic 3's `prescribe` pipeline (Story 3.1's partition, Story 3.2's ranking) as already-shipped inputs — Epic 4 cannot start before Epics 1-3 ship, per the PRD's own sequencing).
 
 ## Epic List
 
@@ -89,6 +101,10 @@ An operator runs `doctor monitor --fleet --watch staleness,cve,abandonment` and 
 ### Epic 3: Diagnose & Prescribe (doctor diagnose --prescribe)
 An operator triaging a specific feedstock or finding runs `doctor diagnose --target <target> --prescribe` and gets an ordered, explainable remediation worklist — partitioned by actionability, ranked by severity × exploitability × blast-radius, each entry naming its root cause — instead of unranked findings they have to prioritize themselves.
 **FRs covered:** FR-6, FR-7, FR-8, FR-9 (diagnose verb)
+
+### Epic 4: The frontier, decomposed (v1.x — added 2026-08-02)
+An operator gets four extensions to the walking skeleton, each strictly derived from Epics 1-3's already-shipped output rather than a new gather path: a composite health grade, a persistent fleet-health surface, an adoption-tracking watch axis, and a single-hop safe-upgrade recommendation. Sequenced after Epics 1-3 ship and prove themselves — this epic requires all three, uniquely among Doctor's epics.
+**FRs covered:** FR-10, FR-11, FR-12, FR-13
 
 ---
 
@@ -285,3 +301,73 @@ So that the full partition-and-rank pipeline is reachable through Doctor's one i
 **Given** `doctor diagnose --target <feedstock> --prescribe --json`, **When** it runs, **Then** stdout is exactly one valid `DoctorReport` (`verb: "diagnose"`) with `prescriptions` populated per Story 3.1/3.2's partition+rank output — same schema and parity guarantee as `check`/`monitor`.
 
 **Given** a target with only `blocked` and `accepted-risk` Findings (nothing actionable today), **When** `--prescribe` runs, **Then** the output still lists them (Story 3.1's no-silent-drop rule) rather than reporting an empty/misleadingly-clean result.
+
+---
+
+## Epic 4: The frontier, decomposed (v1.x — added 2026-08-02)
+
+Four extensions to the walking skeleton, each a pure synthesis/wiring layer over Epics 1-3's already-shipped output — zero new gather paths, zero new scanning instruments. Sequenced strictly after Epics 1-3 ship; this is the one epic in this project that genuinely requires its predecessors to function, not just to be more valuable.
+
+### Story 4.1: Health scoring (FR-10)
+
+As an **operator**,
+I want a composite health grade (A–F) per dependency, synthesized from Doctor's own already-gathered Finding data,
+So that I can tell at a glance whether a package is healthy without re-reading every individual Finding.
+
+**Acceptance Criteria:**
+
+**Given** a `list[Finding]` already gathered for a target (Epic 1's `check` filter and Epic 2's `atlas` filter as inputs), **When** `pyforge.doctor.score.grade` runs, **Then** it returns a grade in `{A, B, C, D, F}` computed as a pure function over that list — zero new subprocess or MCP calls (a meta-test asserts no such import exists in `doctor.score`, mirroring Story 3.1's AD-4 guard on `prescribe`).
+
+**Given** the same `list[Finding]` passed twice, **When** graded both times, **Then** the grade is byte-identical (deterministic — no timestamp or wall-clock read in the scoring path).
+
+**Given** a target whose gather only partially completed (e.g. the `cve` axis timed out but `staleness` succeeded), **When** graded, **Then** the result is explicitly `incomplete`, never a computed letter grade standing in for missing data.
+
+**Given** `--json` on any verb that includes a grade, **When** rendered, **Then** the grade and its constituent axis scores both appear in the `DoctorReport` (parity with FR-9's existing rule).
+
+### Story 4.2: Persistent fleet-health surface (FR-11)
+
+As an **operator**,
+I want the fleet's health condition written to a tracked, at-a-glance surface after a `monitor --fleet` run,
+So that I don't have to re-run and manually compare snapshots to see what changed.
+
+**Acceptance Criteria:**
+
+**Given** a completed `doctor monitor --fleet` run, **When** the surface is written, **Then** its content is derived solely from that run's `Finding`/`Source` output (Epic 2's existing shape) — no independent second gather is triggered to produce it.
+
+**Given** the same underlying findings, **When** the surface is regenerated, **Then** the output is idempotent (same findings in, same surface out, no spurious diff).
+
+**Given** the surface's own schema, **When** written, **Then** it carries a `schema_version` field starting at `1` (NFR-5's existing precedent extended to this new artifact), so a future format change is detectable by a consumer.
+
+**Given** a `monitor --fleet` run that includes the `adoption` axis (Story 4.3), **When** the surface is written, **Then** it reflects that axis too — the surface tracks whatever axes the triggering run covered, never a hardcoded subset.
+
+### Story 4.3: Adoption-tracking watch axis (FR-12)
+
+As an **operator**,
+I want `--watch adoption` to normalize cf_atlas's `adoption-stage` and `version-downloads` signals into the same Finding shape as the existing axes,
+So that I catch abandonment signals the staleness/cve axes alone would miss (a package can be un-abandoned-looking by commit history but genuinely losing adoption).
+
+**Acceptance Criteria:**
+
+**Given** an MCP client is available in-process, **When** `doctor monitor --fleet --watch adoption` runs, **Then** `doctor.sources.atlas` calls the `adoption_stage`/`version_downloads` MCP tools and normalizes their output into `Finding(source=Source.ADOPTION, ...)` objects — following Story 2.1's exact MCP-first pattern.
+
+**Given** no MCP client is available, **When** the same command runs, **Then** it falls back to the equivalent CLI subprocess via the existing `cli_bridge` (AD-5) — same sole-subprocess-site guard as Story 2.1, no new subprocess site added.
+
+**Given** `doctor monitor --fleet` with no `--watch` flag, **When** it runs, **Then** the default axis set stays `staleness`+`cve` (Story 2.3's existing default) — `adoption` is opt-in only, never silently added to the default.
+
+**Given** the `Source` enum (Story 1.1's closed taxonomy), **When** `ADOPTION` is added as a new member, **Then** the enum stays closed (AD-3) — the addition is a deliberate extension, not an open/stringly-typed escape hatch.
+
+### Story 4.4: Safe upgrade-path recommendation (FR-13)
+
+As an **operator**,
+I want a Prescription to name a specific next-safe-version target when one is confidently known,
+So that "update to X.Y.Z" replaces "here's a ranked problem" as the last mile of the worklist.
+
+**Acceptance Criteria:**
+
+**Given** an actionable Prescription (Story 3.2's ranked output) for a package where atlas's `behind-upstream` data names a next release with no known breaking-change signal, **When** rendered, **Then** the Prescription includes a `safe_upgrade_target` field naming that version.
+
+**Given** the same case but atlas's data spans multiple major-version jumps with no clear single "next safe" version, **When** rendered, **Then** `safe_upgrade_target` is explicitly `null`/absent with a stated reason — never a guessed version standing in for missing confidence.
+
+**Given** `pyforge.doctor.score` (or wherever this recommendation is computed), **When** it runs, **Then** it is single-hop only — this package's own next version, never a transitive resolution across multiple packages (a meta-test or code-review-gated invariant asserts no multi-package graph traversal exists in this module, keeping the PRD §5 "no real dependency-graph resolver" non-goal intact).
+
+**Given** `pyforge.doctor.prescribe`, **When** the upgrade-path recommendation is added, **Then** `prescribe` remains a pure function over already-gathered data (AD-4 preserved) — the recommendation is computed from data Epic 2's gather filters already produced, not a new fetch triggered inside `prescribe` itself.

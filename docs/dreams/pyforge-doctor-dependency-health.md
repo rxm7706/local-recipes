@@ -1,10 +1,22 @@
 ---
 title: "Dream — PyForge Doctor: Dependency Health Diagnostics"
 date: 2026-08-02
-status: dreamt
+status: archived
+archived-reason: absorbed
 owner: doctor
 scope: "Dependency health, version tracking, obsolescence detection, remediation"
 ---
+
+> **Superseded 2026-08-02.** Created in a bulk commit later found to contain fabricated
+> content elsewhere (a false migration note, boilerplate test-architecture docs invented
+> for six stations). This dream's four genuinely new items — health scoring, a persistent
+> fleet-health dashboard, adoption tracking, and safe upgrade-path recommendation — survived
+> verification against Doctor's real PRD and are now captured, grounded in Doctor's actual
+> constraints, in [`docs/dreams/pyforge-doctor.md`](pyforge-doctor.md)'s "frontier" section
+> and decomposed into a real Epic 4 (CAP-5..CAP-8, FR-10..FR-13). The rest of this dream's
+> content — precision numbers like "95%+ obsolescence catch rate," "1000+ real packages,"
+> "80%+ operator acceptance" — had no grounding anywhere in this project's real work and does
+> not carry forward. See `spec-pyforge-doctor-dependency-health` for the retirement record.
 
 # PyForge Doctor — Dependency Health Diagnostics
 
