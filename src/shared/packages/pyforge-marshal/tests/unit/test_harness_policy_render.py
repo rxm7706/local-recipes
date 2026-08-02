@@ -64,7 +64,7 @@ def test_full_composition_maps_all_six_keys_and_keeps_template_baseline_elsewher
     assert doc["scm"]["rollback_on_failure"] is True
     assert doc["limits"]["session_timeout_min"] == 180
     assert doc["adapter"]["model"] == "sonnet"
-    assert doc["adapter"]["review"]["model"] == "fable"
+    assert doc["adapter"]["review"]["model"] == "opus"
     # untouched stock defaults, spot-checked
     assert doc["gates"]["retrospective"] == "notify"
     assert doc["review"]["enabled"] is True
@@ -131,7 +131,7 @@ def test_tier_batching_partial_stage_set_leaves_other_stages_at_baseline():
     doc = tomllib.loads(render_policy_toml(effective, difficulty="hard"))
     assert doc["adapter"]["dev"]["model"] == "opus"
     # review keeps its template-baseline override; triage gets no table at all
-    assert doc["adapter"]["review"]["model"] == "fable"
+    assert doc["adapter"]["review"]["model"] == "opus"
     assert "triage" not in doc["adapter"]
 
 
@@ -140,7 +140,7 @@ def test_unknown_difficulty_renders_every_stage_at_baseline():
     doc = tomllib.loads(render_policy_toml(effective, difficulty="nonexistent"))
     assert "dev" not in doc["adapter"]
     assert "triage" not in doc["adapter"]
-    assert doc["adapter"]["review"]["model"] == "fable"
+    assert doc["adapter"]["review"]["model"] == "opus"
 
 
 def test_difficulty_none_renders_every_stage_at_baseline():
@@ -148,7 +148,7 @@ def test_difficulty_none_renders_every_stage_at_baseline():
     doc = tomllib.loads(render_policy_toml(effective, difficulty=None))
     assert "dev" not in doc["adapter"]
     assert "triage" not in doc["adapter"]
-    assert doc["adapter"]["review"]["model"] == "fable"
+    assert doc["adapter"]["review"]["model"] == "opus"
     assert doc["adapter"]["model"] == "sonnet"
 
 
@@ -157,7 +157,7 @@ def test_empty_model_tier_map_with_a_difficulty_renders_baseline():
     doc = tomllib.loads(render_policy_toml(effective, difficulty="hard"))
     assert "dev" not in doc["adapter"]
     assert "triage" not in doc["adapter"]
-    assert doc["adapter"]["review"]["model"] == "fable"
+    assert doc["adapter"]["review"]["model"] == "opus"
 
 
 # --- the harness's stricter attempt-count floor ---------------------------------

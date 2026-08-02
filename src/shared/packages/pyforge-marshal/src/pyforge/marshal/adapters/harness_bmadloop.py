@@ -181,7 +181,7 @@ cleanup_session_on_finish = true
 # in the resolved difficulty's model map; an absent stage inherits
 # [adapter].model.
 [adapter.review]
-model = "fable"                # repo-wide override -- review misses ship false-greens; strongest model where it pays
+model = "opus"                 # repo-wide override -- review misses ship false-greens; strongest model where it pays
 
 [sweep]
 auto = "never"                 # never | per-epic | run-end
