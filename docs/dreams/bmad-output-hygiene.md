@@ -40,6 +40,8 @@ consolidations (a handful found, distinct from the bulk-commit problem) is archi
   installer role that moved to Marshal in the 2026-07-28 split.
 - The handful of confirmed orphaned single files (below) are archived, mirroring the
   `archive/_bmad-output/...` convention already used for today's satellite-chain moves.
+- `_bmad-output/PROJECTS.md`'s per-project `Dream:` pointers name the actual station-charter
+  Dream file (`type: dream`), not a stale filename or a `type: practice` satellite.
 
 ## What is real
 
@@ -65,6 +67,17 @@ moved — this section is the evidence base for the cleanup above, not yet acted
 - `project-context.md` in Mason (claims "38/38 stories," Dream says 4/38) and Herald (claims
   "17/17," Dream says 4/17) — each is the sole copy at its path, so the fix is regeneration in
   place, not archiving.
+- `_bmad-output/PROJECTS.md`'s `Dream:` pointers for two stations are stale, found while
+  answering a user question about dreams/brief/PRD/architecture by station (2026-08-02, same
+  session as the audit above):
+  - **mason** points at `docs/dreams/packaging-factory.md`, but that file scope-noted itself
+    out of the station chain on 2026-07-25 ("Mason **the station** now has his own charter:
+    [[pyforge-mason]]") — it's a `type: practice` satellite, not the station charter. Should
+    point at `docs/dreams/pyforge-mason.md`.
+  - **herald** points at `docs/dreams/design-code-bridge.md`, which no longer exists (folded
+    into the station charter during an earlier consolidation). Should point at
+    `docs/dreams/pyforge-herald.md`.
+  - Fix is a two-line edit to `_bmad-output/PROJECTS.md`'s Projects table; no archiving needed.
 
 ### Confirmed clean, no action needed
 
@@ -83,3 +96,5 @@ was confirmed to be permanent-by-design record, not clutter — none were flagge
   consolidation was done. Findings above are the full evidence base; next step is `bmad-spec` (or
   direct execution, if the fix is judged mechanical enough to skip a full spec) to turn Cluster 1
   and Cluster 2 into actual archive/regeneration actions.
+- **2026-08-02** — Added the mason/herald stale-`Dream:`-pointer finding to Cluster 3 (report-only;
+  user chose to fold it into this pending cleanup rather than fix `PROJECTS.md` immediately).
