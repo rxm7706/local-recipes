@@ -2830,7 +2830,7 @@ window.DASHBOARD_DATA = {
       }
     }
   },
-  "snapshot": "<span>2026-08-02 17:18 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-02 17:30 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -3165,10 +3165,13 @@ window.DASHBOARD_DATA = {
     {
       "slug": "pyforge-scribe-team-memory",
       "title": "\"Dream — PyForge Scribe: Team Memory Management\"",
-      "status": "dreamt",
+      "status": "archived",
       "owner": "scribe",
       "type": "dream",
-      "chain": {}
+      "chain": {
+        "spec": "_bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-pyforge-scribe-team-memory"
+      },
+      "archived_reason": "duplicate"
     },
     {
       "slug": "pyforge-scribe",
@@ -3185,10 +3188,13 @@ window.DASHBOARD_DATA = {
     {
       "slug": "pyforge-steward-feedstock-maintenance",
       "title": "\"Dream — PyForge Steward: Feedstock Maintenance Automation\"",
-      "status": "dreamt",
+      "status": "archived",
       "owner": "steward",
       "type": "dream",
-      "chain": {}
+      "chain": {
+        "spec": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward-feedstock-maintenance"
+      },
+      "archived_reason": "absorbed"
     },
     {
       "slug": "pyforge-steward",
@@ -3215,10 +3221,13 @@ window.DASHBOARD_DATA = {
     {
       "slug": "pyforge-warden-compliance-gates",
       "title": "\"Dream — PyForge Warden: Compliance Gates\"",
-      "status": "dreamt",
+      "status": "archived",
       "owner": "warden",
       "type": "dream",
-      "chain": {}
+      "chain": {
+        "spec": "_bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-pyforge-warden-compliance-gates"
+      },
+      "archived_reason": "duplicate"
     },
     {
       "slug": "pyforge-warden",
@@ -3325,7 +3334,7 @@ window.DASHBOARD_DATA = {
       "title": "pyforge-atlas-intelligence-platform — retirement record",
       "caps": 0,
       "companions": 0,
-      "updated": "",
+      "updated": "2026-08-02",
       "dream": "pyforge-atlas-intelligence-platform",
       "path": "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas-intelligence-platform"
     },
@@ -3660,6 +3669,16 @@ window.DASHBOARD_DATA = {
       "path": "_bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-pyforge-scribe"
     },
     {
+      "slug": "pyforge-scribe-team-memory",
+      "project": "pyforge-scribe",
+      "title": "pyforge-scribe-team-memory — retirement record",
+      "caps": 2,
+      "companions": 0,
+      "updated": "",
+      "dream": "pyforge-scribe-team-memory",
+      "path": "_bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-pyforge-scribe-team-memory"
+    },
+    {
       "slug": "sentinel",
       "project": "pyforge-scribe",
       "title": "sentinel — retirement record",
@@ -3700,6 +3719,16 @@ window.DASHBOARD_DATA = {
       "path": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward"
     },
     {
+      "slug": "pyforge-steward-feedstock-maintenance",
+      "project": "pyforge-steward",
+      "title": "pyforge-steward-feedstock-maintenance — retirement record",
+      "caps": 4,
+      "companions": 0,
+      "updated": "",
+      "dream": "pyforge-steward-feedstock-maintenance",
+      "path": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward-feedstock-maintenance"
+    },
+    {
       "slug": "pyforge-warden",
       "project": "pyforge-warden",
       "title": "Warden — the compliance gate that never false-greens",
@@ -3708,6 +3737,16 @@ window.DASHBOARD_DATA = {
       "updated": "2026-07-29",
       "dream": "pyforge-warden",
       "path": "_bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-pyforge-warden"
+    },
+    {
+      "slug": "pyforge-warden-compliance-gates",
+      "project": "pyforge-warden",
+      "title": "pyforge-warden-compliance-gates — retirement record",
+      "caps": 7,
+      "companions": 0,
+      "updated": "",
+      "dream": "pyforge-warden-compliance-gates",
+      "path": "_bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-pyforge-warden-compliance-gates"
     }
   ],
   "pitch": [
@@ -3999,6 +4038,27 @@ window.DASHBOARD_DATA = {
       "owner": "mason",
       "note": "\"Dream — PyForge Mason: Recipe Validator\"",
       "link": "docs/dreams/pyforge-mason-recipe-validator.md"
+    },
+    {
+      "name": "\"Dream — PyForge Scribe: Team Memory Management\"",
+      "reason": "duplicate",
+      "owner": "scribe",
+      "note": "\"Dream — PyForge Scribe: Team Memory Management\"",
+      "link": "docs/dreams/pyforge-scribe-team-memory.md"
+    },
+    {
+      "name": "\"Dream — PyForge Steward: Feedstock Maintenance Automation\"",
+      "reason": "absorbed",
+      "owner": "steward",
+      "note": "\"Dream — PyForge Steward: Feedstock Maintenance Automation\"",
+      "link": "docs/dreams/pyforge-steward-feedstock-maintenance.md"
+    },
+    {
+      "name": "\"Dream — PyForge Warden: Compliance Gates\"",
+      "reason": "duplicate",
+      "owner": "warden",
+      "note": "\"Dream — PyForge Warden: Compliance Gates\"",
+      "link": "docs/dreams/pyforge-warden-compliance-gates.md"
     },
     {
       "name": "Sentinel — the AI Software Factory (the ancestor)",
@@ -4330,9 +4390,9 @@ window.DASHBOARD_DATA = {
       "retro": null
     },
     "sound": 2,
-    "live": 39,
+    "live": 36,
     "reached": 8,
-    "gaps": 43,
+    "gaps": 37,
     "findings": 13,
     "rows": [
       {
@@ -5506,7 +5566,7 @@ window.DASHBOARD_DATA = {
         "stages": {
           "dream": "2026-08-02",
           "deck": "",
-          "spec": "",
+          "spec": "2026-08-02",
           "research": "2026-07-25",
           "brief": "",
           "prd": "",
@@ -5524,7 +5584,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-02",
           "deck": "",
-          "spec": "",
+          "spec": "2026-08-02",
           "research": "2026-07-25",
           "brief": "",
           "prd": "",
@@ -5590,8 +5650,7 @@ window.DASHBOARD_DATA = {
           "research"
         ],
         "gaps": [
-          "deck",
-          "spec"
+          "deck"
         ],
         "partial": [],
         "staleBy": [],
@@ -5601,7 +5660,7 @@ window.DASHBOARD_DATA = {
         "stale": false,
         "version": "",
         "progress": "",
-        "complete": 1,
+        "complete": 2,
         "of": 3
       },
       {
@@ -8940,19 +8999,19 @@ window.DASHBOARD_DATA = {
             ]
           }
         },
-        "archived": false,
-        "dreamStatus": "dreamt",
-        "ownerDream": "",
+        "archived": true,
+        "dreamStatus": "archived",
+        "ownerDream": "pyforge-scribe-team-memory",
         "noDream": false,
         "unowned": false,
         "backfilled": false,
         "openQuestions": 0,
         "overtaken": false,
         "na": [
+          "dream",
           "ux"
         ],
         "required": [
-          "dream",
           "deck",
           "spec",
           "research"
@@ -8971,8 +9030,8 @@ window.DASHBOARD_DATA = {
         "stale": false,
         "version": "",
         "progress": "",
-        "complete": 2,
-        "of": 4
+        "complete": 1,
+        "of": 3
       },
       {
         "label": "sentinel",
@@ -9381,19 +9440,19 @@ window.DASHBOARD_DATA = {
             ]
           }
         },
-        "archived": false,
-        "dreamStatus": "dreamt",
-        "ownerDream": "",
+        "archived": true,
+        "dreamStatus": "archived",
+        "ownerDream": "pyforge-steward-feedstock-maintenance",
         "noDream": false,
         "unowned": false,
         "backfilled": false,
         "openQuestions": 0,
         "overtaken": false,
         "na": [
+          "dream",
           "ux"
         ],
         "required": [
-          "dream",
           "deck",
           "spec",
           "research"
@@ -9412,8 +9471,8 @@ window.DASHBOARD_DATA = {
         "stale": false,
         "version": "",
         "progress": "",
-        "complete": 2,
-        "of": 4
+        "complete": 1,
+        "of": 3
       },
       {
         "label": "warden-compliance-gates",
@@ -9492,19 +9551,19 @@ window.DASHBOARD_DATA = {
             ]
           }
         },
-        "archived": false,
-        "dreamStatus": "dreamt",
-        "ownerDream": "",
+        "archived": true,
+        "dreamStatus": "archived",
+        "ownerDream": "pyforge-warden-compliance-gates",
         "noDream": false,
         "unowned": false,
         "backfilled": false,
         "openQuestions": 0,
         "overtaken": false,
         "na": [
+          "dream",
           "ux"
         ],
         "required": [
-          "dream",
           "deck",
           "spec",
           "research"
@@ -9523,8 +9582,8 @@ window.DASHBOARD_DATA = {
         "stale": false,
         "version": "",
         "progress": "",
-        "complete": 2,
-        "of": 4
+        "complete": 1,
+        "of": 3
       }
     ]
   },
@@ -9890,8 +9949,8 @@ window.DASHBOARD_DATA = {
         "task": "spec-surface-check",
         "guards": "every tracked file under a Spec surface",
         "state": "drift",
-        "findings": 762,
-        "verdict": "FINDINGS (762):",
+        "findings": 765,
+        "verdict": "FINDINGS (765):",
         "runbook": ""
       },
       {
@@ -9966,30 +10025,6 @@ window.DASHBOARD_DATA = {
         "title": "\"Dream — PyForge Doctor: Dependency Health Diagnostics\"",
         "status": "dreamt",
         "owner": "doctor",
-        "blockedOn": "",
-        "chain": {}
-      },
-      {
-        "slug": "pyforge-scribe-team-memory",
-        "title": "\"Dream — PyForge Scribe: Team Memory Management\"",
-        "status": "dreamt",
-        "owner": "scribe",
-        "blockedOn": "",
-        "chain": {}
-      },
-      {
-        "slug": "pyforge-steward-feedstock-maintenance",
-        "title": "\"Dream — PyForge Steward: Feedstock Maintenance Automation\"",
-        "status": "dreamt",
-        "owner": "steward",
-        "blockedOn": "",
-        "chain": {}
-      },
-      {
-        "slug": "pyforge-warden-compliance-gates",
-        "title": "\"Dream — PyForge Warden: Compliance Gates\"",
-        "status": "dreamt",
-        "owner": "warden",
         "blockedOn": "",
         "chain": {}
       },
@@ -10090,9 +10125,7 @@ window.DASHBOARD_DATA = {
       "marshal": 6,
       "herald": 3,
       "doctor": 1,
-      "scribe": 2,
-      "steward": 1,
-      "warden": 1,
+      "scribe": 1,
       "atlas": 3,
       "mason": 1
     },
@@ -10384,21 +10417,21 @@ window.DASHBOARD_DATA = {
         "station": "warden",
         "total": 2,
         "counts": {
-          "dreamt": 1,
+          "dreamt": 0,
           "pitched": 0,
           "specified": 0,
           "realized": 1,
-          "archived": 0,
+          "archived": 1,
           "practice": 0
         },
         "line": "complete",
-        "load": 1,
+        "load": 0,
         "blocked": 0,
         "dreams": [
           {
             "slug": "pyforge-warden-compliance-gates",
             "title": "\"Dream — PyForge Warden: Compliance Gates\"",
-            "status": "dreamt",
+            "status": "archived",
             "type": "dream",
             "blockedOn": ""
           },
@@ -10512,28 +10545,28 @@ window.DASHBOARD_DATA = {
         "station": "scribe",
         "total": 4,
         "counts": {
-          "dreamt": 1,
+          "dreamt": 0,
           "pitched": 0,
           "specified": 2,
           "realized": 0,
-          "archived": 1,
+          "archived": 2,
           "practice": 0
         },
         "line": "paused 1.4",
-        "load": 2,
+        "load": 1,
         "blocked": 0,
         "dreams": [
           {
-            "slug": "sentinel",
-            "title": "Sentinel — the AI Software Factory (the ancestor)",
+            "slug": "pyforge-scribe-team-memory",
+            "title": "\"Dream — PyForge Scribe: Team Memory Management\"",
             "status": "archived",
             "type": "dream",
             "blockedOn": ""
           },
           {
-            "slug": "pyforge-scribe-team-memory",
-            "title": "\"Dream — PyForge Scribe: Team Memory Management\"",
-            "status": "dreamt",
+            "slug": "sentinel",
+            "title": "Sentinel — the AI Software Factory (the ancestor)",
+            "status": "archived",
             "type": "dream",
             "blockedOn": ""
           },
@@ -10557,21 +10590,21 @@ window.DASHBOARD_DATA = {
         "station": "steward",
         "total": 3,
         "counts": {
-          "dreamt": 1,
+          "dreamt": 0,
           "pitched": 0,
           "specified": 1,
           "realized": 0,
-          "archived": 0,
+          "archived": 1,
           "practice": 1
         },
         "line": "paused 1.4",
-        "load": 1,
+        "load": 0,
         "blocked": 0,
         "dreams": [
           {
             "slug": "pyforge-steward-feedstock-maintenance",
             "title": "\"Dream — PyForge Steward: Feedstock Maintenance Automation\"",
-            "status": "dreamt",
+            "status": "archived",
             "type": "dream",
             "blockedOn": ""
           },
@@ -12151,8 +12184,8 @@ window.DASHBOARD_DATA = {
       "subject": "Merge bmad-loop/20260731-115548-f223/1-9-packaging-distribution-and-version-reporting into loop/pyforge-marshal (bmad-lo"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-02 17:18 UTC",
-    "generatedEpoch": 1785691104
+    "generatedAt": "2026-08-02 17:30 UTC",
+    "generatedEpoch": 1785691838
   },
   "storySpecs": [
     {

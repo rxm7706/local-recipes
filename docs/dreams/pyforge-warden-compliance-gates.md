@@ -1,10 +1,24 @@
 ---
 title: "Dream — PyForge Warden: Compliance Gates"
 date: 2026-08-02
-status: dreamt
+status: archived
+archived-reason: duplicate
 owner: warden
 scope: "Compliance gates, dependency scanning, policy enforcement, findings aggregation"
 ---
+
+> **Superseded.** This Dream's six-item "Realization" list maps 1:1 onto capabilities
+> [`docs/dreams/pyforge-warden.md`](pyforge-warden.md) (status: realized) already fully
+> governs via `spec-pyforge-warden` (`status: shipped`, 31/31 stories merged via PR #110) —
+> and Warden's entire shipped product already **is** "a pluggable multi-axis Python
+> dependency compliance gate," verbatim from that Spec's own opening line. Multi-axis
+> scanning (hygiene/security/license/currency), the never-false-green verdict lattice,
+> fine-grained policy, baseline & grandfathering, the versioned `ComplianceReport` contract,
+> and the fix-PR actuator are all shipped capabilities (CAP-1, CAP-4, CAP-5, CAP-6/9, CAP-7,
+> CAP-12) with named stories (1.1, 1.3, 1.5, 3.1, 6.1, 6.2, 6.3, 6.4, 6.7, 6.8, 6.9). Created
+> 2026-08-02 in a bulk commit later found to contain fabricated content elsewhere in the
+> same commit; retired same day rather than spec'd as new work. See
+> `spec-pyforge-warden-compliance-gates` for the retirement record.
 
 # PyForge Warden — Compliance Gates
 

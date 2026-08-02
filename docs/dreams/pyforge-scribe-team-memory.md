@@ -1,10 +1,26 @@
 ---
 title: "Dream — PyForge Scribe: Team Memory Management"
 date: 2026-08-02
-status: dreamt
+status: archived
+archived-reason: duplicate
 owner: scribe
 scope: "Memory capture, team context, decision documentation, shared knowledge"
 ---
+
+> **Superseded.** This Dream proposes a team-memory system for Scribe — structured
+> frontmatter entries, `/remember` capture, promotion review, automatic context loading,
+> a compact `MEMORY.md` index. [`docs/dreams/pyforge-scribe.md`](pyforge-scribe.md)
+> (status: specified) already owns this exact scope via `spec-pyforge-scribe` and the
+> pre-existing `spec-team-memory` it absorbed 2026-07-25. Scribe's `epics.md` already
+> carries the stories this dream would duplicate — Epic 1 "Team Memory — Capture &
+> Promotion" (Story 1.1 `scribe capture` + frontmatter schema parity, Story 1.2 `CLAUDE.md`
+> wiring so "every session starts already knowing what the team knows", Story 1.3
+> proposal-then-confirm promotion using the team-relevance test "would a day-1 contributor
+> benefit from this rule?") and Epic 2 "Knowledge Graph — Compile & Recall" (the
+> pattern-discovery capability this dream's Problem section calls for). Created 2026-08-02
+> in a bulk commit later found to contain fabricated content elsewhere in the same commit;
+> retired same day rather than spec'd as new work. See `spec-pyforge-scribe-team-memory`
+> for the retirement record.
 
 # PyForge Scribe — Team Memory Management
 
