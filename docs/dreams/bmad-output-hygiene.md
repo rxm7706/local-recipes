@@ -2,7 +2,7 @@
 title: One fabricated commit, eight stations of debris
 type: dream
 owner: marshal
-status: dreamt
+status: realized
 ---
 
 # One fabricated commit, eight stations of debris
@@ -98,3 +98,25 @@ was confirmed to be permanent-by-design record, not clutter — none were flagge
   and Cluster 2 into actual archive/regeneration actions.
 - **2026-08-02** — Added the mason/herald stale-`Dream:`-pointer finding to Cluster 3 (report-only;
   user chose to fold it into this pending cleanup rather than fix `PROJECTS.md` immediately).
+- **2026-08-02** — Realized via `spec-bmad-output-hygiene` (branch `bmad-output-hygiene`), 9
+  capabilities, all archival not deletion (user directive mid-execution). CAP-1: `tests/`,
+  `pytest.ini`, `playwright.config.ts` archived from the 7 confirmed stations. CAP-2: the hollow
+  `sprint-status.yaml` stub archived from all 9. CAP-3: Genesis's `test-architecture.md`
+  regenerated to state plainly there is nothing to test. CAP-4: the `[role]`/`[responsibilities]`
+  placeholders turned out to live in each station's **project-root** `README.md` (8 of 9
+  stations, identical template — not `planning-artifacts/README.md` as this Dream's wording
+  implied), also describing the CAP-1-archived scaffolding as live; all 8 fixed, plus the 6
+  generic (non-literal-placeholder) `planning-artifacts/README.md` stubs rewritten with real
+  content. CAP-5: both orphaned files archived. CAP-6: `project-context.md` regenerated for
+  Mason/Herald — live re-check found this Dream's own cited "real" counts (4/38, 4/17) had
+  themselves gone stale (now 4/48, 4/27), and both files were fabricated beyond the count
+  (wrong role labels, dead reference paths). CAP-7: both `PROJECTS.md` pointers fixed, plus a
+  third stale row found and fixed (Genesis's own entry, same root cause). CAP-8 (originally
+  "relocate 13 misfiled local-recipes files") was **reverted in full**: the files were correctly
+  moved to `pyforge-marshal` on 2026-07-28 per `bmad_drift_check.py`'s own comment, and the
+  misdiagnosis traced to `CLAUDE.md` itself never being updated after that move — CAP-8 became
+  fixing those two stale `CLAUDE.md` mentions instead. CAP-9 (added
+  mid-execution, not originally in this Dream): marshal's genuine sole brief reshaped from a loose
+  file into the standard `briefs/brief-<slug>-<date>/` layout every other station uses. Both
+  drift checkers (`bmad-drift-check --integrity-only`, `dashboard_drift_check.py`) verified clean
+  of everything this Dream touched before closing.

@@ -1,6 +1,6 @@
 ---
 spec: bmad-output-hygiene
-status: ready
+status: shipped
 owner-dream: docs/dreams/bmad-output-hygiene.md
 companions: []
 sources:
