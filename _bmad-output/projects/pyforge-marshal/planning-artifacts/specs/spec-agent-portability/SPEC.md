@@ -1,50 +1,63 @@
 ---
 id: SPEC-agent-portability
 spec: agent-portability
-status: dreamt
+status: archived
+archived-reason: absorbed
 owner-dream: docs/dreams/agent-portability.md
-surface:
-  []          # no code surface yet
+surface: []          # archived — no live surface; see § What carries forward
 sources:
   - ../../../../../../docs/dreams/agent-portability.md
 open_questions: []
 ---
 
-> **Canonical contract.** This SPEC is the complete contract for what to build, test and
-> validate. Source documents in frontmatter are traceability only.
+> **Retirement record.** This Dream is `status: archived` (`absorbed`). Charter §5 requires
+> every Dream to carry a Spec, archived included. It states what was contracted, why it
+> ended, and what survives — not a plan for work that will not happen.
 
-# agent-portability
+# agent-portability — retirement record
 
-## Why
+## Why it was contracted
 
-**The method is the asset; the agent is a socket.** The operating model must run on
-whichever agent the team uses — Devin, GitHub Copilot and its agents, Claude, Cursor,
-Gemini — and planning must run on flat-rate subscriptions rather than metered IDE tokens.
-Re-scoped to Marshal in the 2026-07-23 ownership review; Herald keeps the communication face.
+A standing practice, not a one-time build: the BMAD operating model should run on whichever
+agent a team uses — Devin, GitHub Copilot, Claude, Cursor, Gemini — with planning able to run
+on flat-rate subscriptions instead of metered IDE tokens. The method is the asset; the agent
+is a socket. Three capabilities: PORT-1 (the entry-file family — `AGENTS.md`, `CLAUDE.md`,
+`.cursor/rules/`, `GEMINI.md`, `.github/copilot-instructions.md` — stays in step, drift
+detectable), PORT-2 (no vendor lock in the model itself), PORT-3 (planning runs on a
+substitutable, flat-rate surface).
 
-This is a **practice**, not a deliverable: every new agent is a new socket, so it is tended
-and never finished. Its sibling from the other side is [[agent-tool-surface]] — portability
-is "runs on whichever agent", the surface is "reaches whichever craft".
+## Why it ended
 
-## Capabilities
+**Retired 2026-08-02, as part of a dream-consolidation pass.** Not a duplicate or a
+fabrication — checked each capability individually against what's real today:
 
-- **PORT-1 — the entry-file family stays in step.** *Success:* `AGENTS.md` and its per-tool pointers (`CLAUDE.md`, `.cursor/rules/`, `GEMINI.md`, `.github/copilot-instructions.md`) carry the same contract; a drift between them is detectable, not discovered.
-- **PORT-2 — no vendor lock in the model.** *Success:* nothing in the tier layout, the BMAD wiring or the Spec contract names a specific agent as required.
-- **PORT-3 — planning is substitutable.** *Success:* the planning chain runs on a flat-rate surface (web bundles, Gems, Custom GPTs) and its artifacts return to the repo unchanged.
+- **PORT-1** maps directly onto `spec-pyforge-marshal`'s **FR-46** (entry-file family drift
+  check) in the real PRD — the same concern, already contracted under Marshal's main FR range.
+- **PORT-2** is a design constraint threaded through Epic 6's whole shape (adapter profiles,
+  conformance matrix, no agent named as required anywhere in the tier layout) rather than a
+  separately testable capability — it was never going to get its own FR, it's the reason
+  FR-41..48 exist at all.
+- **PORT-3** (planning on flat-rate web bundles / Gemini Gems / Custom GPTs) is not covered
+  by Marshal's runtime-portability FRs (those are about *execution* agents, not *planning*
+  tools) — but it already has a real home: `docs/specs/copilot-bridge-vscode-extension.md`
+  (legacy Tier-1, tracked, unimplemented backlog), which this Dream's own body pointed to
+  before being archived. Not orphaned.
 
-## Constraints
+## What carries forward
 
-- **The Dream is Tier 0 and this Spec is Tier 2.** Where they differ, the Dream is the
-  intent and this contract is what was agreed to build from it.
-- **Ownership does not move with the work.** Chains stay filed with the owning station
-  (Charter §5), whatever surface the work touches.
+The practice continues under `pyforge-marshal.md` / `spec-pyforge-marshal` Epic 6 (PORT-1/2)
+and `docs/specs/copilot-bridge-vscode-extension.md` (PORT-3) — this retirement does not touch
+either. The five bridge patterns (`copilot-api`, `litellm`, `copilot-openai-api`,
+`copilot-api-proxy`, `c2p`) remain real, cited detail in that legacy spec.
 
 ## Non-goals
 
-- **A per-agent fork of the model.** One method, many sockets — the moment a tool needs its own conventions, portability has already failed.
-- **Guaranteeing feature parity across agents.** Capabilities differ; the *contract* must not.
+- **Reviving this Dream as written.** Its intent already lives in the two homes named above.
+- **Treating this record as a backlog item.** Archived Dreams are excluded from the Backlog
+  board by design.
 
 ## Success signal
 
-Adding a new agent is a new pointer file and no change to the model. Today the family is
-maintained by review rather than by a gate — PORT-1 is the first thing to make mechanical.
+A reader arriving at this Dream learns in one page which of its three capabilities went
+where — FR-46, an implicit design constraint, or a pre-existing legacy spec — without
+mistaking any of them for an orphaned gap.

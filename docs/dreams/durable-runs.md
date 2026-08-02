@@ -2,8 +2,16 @@
 title: Durable runs — work survives the machine that made it
 type: dream
 owner: marshal
-status: dreamt
+status: archived
+archived-reason: absorbed
 ---
+
+> **Superseded 2026-08-02 (dream consolidation).** Fully decomposed into `spec-pyforge-marshal`
+> and the real PRD as FR-61 (bounded-loss durability, stage-boundary push + fleet-launch
+> wiring), FR-62 (durability as a reported fleet-status dimension), and FR-63 (fleet-wide
+> branch retirement) — see [`docs/dreams/pyforge-marshal.md`](pyforge-marshal.md). Nothing in
+> this Dream's real, measured evidence (the 2026-07-31 audit table) is lost — it is cited
+> directly in the consolidated Dream. See `spec-durable-runs` for the retirement record.
 
 # Durable runs — work survives the machine that made it
 

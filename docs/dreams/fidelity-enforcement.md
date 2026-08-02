@@ -2,8 +2,18 @@
 title: Fidelity enforcement — a contract is only a contract if something fails against it
 type: dream
 owner: marshal
-status: dreamt
+status: archived
+archived-reason: absorbed
 ---
+
+> **Superseded 2026-08-02 (dream consolidation).** The Marshal-owned slice is fully
+> decomposed into `spec-pyforge-marshal` and the real PRD as FR-64 (a gate evaluation binds
+> to the tracked spec's Success signal) — see
+> [`docs/dreams/pyforge-marshal.md`](pyforge-marshal.md). The Doctor- and Scribe-owned
+> slices of this same Dream (CAP-9 install-the-judge, CAP-6 actor-attributed event record)
+> were explicitly out of scope for Marshal's PRD per the 2026-08-01 operator-scoping
+> decision and remain those stations' own open items, not absorbed here. See
+> `spec-fidelity-enforcement` for the retirement record.
 
 # Fidelity enforcement — a contract is only a contract if something fails against it
 

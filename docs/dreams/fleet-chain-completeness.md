@@ -1,9 +1,18 @@
 ---
 title: Fleet Chain Completeness — Orchestrated Dream-to-Code Regeneration
 type: dream
-owner: herald
+owner: marshal
 status: dreamt
 ---
+
+> **Ownership reassigned 2026-08-02** (herald → marshal). Herald's own constitutive dream
+> draws an explicit boundary: "not infrastructure... BMAD monorepo/multi-project machinery
+> and cross-agent portability moved to [[pyforge-marshal]]... Herald keeps their
+> communication face only." An orchestrated Dream→Spec→Research→Brief→PRD→Architecture→
+> Epics regeneration workflow is exactly that kind of machinery, not "voice and visual
+> surface" work — it belongs under Marshal, which already owns the harness/governance layer
+> for everything BMAD-chain-shaped in this repo (see AGENTS.md, `dream_chain_check.py`).
+> No content changed; this is a placement correction, not a scope correction.
 
 # Fleet Chain Completeness — Orchestrated Dream-to-Code Regeneration
 

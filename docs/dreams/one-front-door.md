@@ -2,8 +2,17 @@
 title: One front door — Marshal drives everything BMAD installs
 type: dream
 owner: marshal
-status: dreamt
+status: archived
+archived-reason: absorbed
 ---
+
+> **Superseded 2026-08-02 (dream consolidation).** Fully decomposed into `spec-pyforge-marshal`
+> and the real PRD as FR-65 (`marshal check` — the detector registry through a single command,
+> context resolved once per invocation) — see
+> [`docs/dreams/pyforge-marshal.md`](pyforge-marshal.md). This Dream's other candidate verbs
+> (`run`/`status`/`land`) were found convergent with already-specified FRs (FR-9/10/11 `factory
+> spin`, FR-59/60 `land`) during the 2026-08-01 decomposition and correctly did not get new FR
+> numbers. See `spec-one-front-door` for the retirement record.
 
 # One front door — Marshal drives everything BMAD installs
 

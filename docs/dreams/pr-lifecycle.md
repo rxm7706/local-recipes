@@ -2,8 +2,15 @@
 title: PR lifecycle — a story lands itself
 type: dream
 owner: marshal
-status: dreamt
+status: archived
+archived-reason: absorbed
 ---
+
+> **Superseded 2026-08-02 (dream consolidation).** Fully decomposed into `spec-pyforge-marshal`
+> and the real PRD as FR-59 (landing rules are declared policy) and FR-60 (`marshal land` —
+> idempotent open/label/wait/merge/retire/resync) — see
+> [`docs/dreams/pyforge-marshal.md`](pyforge-marshal.md). See `spec-pr-lifecycle` for the
+> retirement record.
 
 # PR lifecycle — a story lands itself
 

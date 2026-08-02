@@ -1,134 +1,84 @@
 ---
 spec: one-front-door
-status: draft
+status: archived
+archived-reason: absorbed
 owner-dream: docs/dreams/one-front-door.md
-surface: []          # composes spec-pyforge-marshal's existing surface; claims no files of its own — see Why
+surface: []          # archived — no live surface of its own; see § What carries forward
 companions:
-  - inventory.md
+  - inventory.md      # kept live — the evidence base for Q2 (row-6 triage), still genuinely open
 sources:
   - ../../../../../../docs/dreams/one-front-door.md
 open_questions:
-  - "Q1 — exact verb surface. The Dream lists run/status/check/land/switch(shipped)/homes(shipped)/doctor(delegate) as candidates it explicitly says to argue with, not a decided list."
-  - "Q2 — row-6 triage. Five installed packages (bmad-manticore, bmad-labs-skills, bmad-utility-skills, bmad-method-wds-expansion, bmad-module-template) are largely unexercised in this repo; keep, wrap, or remove is unresolved."
-  - "Q3 — the route-versus-contain boundary, per skill. Where supplying context once (CAP-5) becomes containing a skill's logic is undecided across the 51 bmad-* skills."
+  - "Q2 — row-6 triage. Five installed packages (bmad-manticore, bmad-labs-skills, bmad-utility-skills, bmad-method-wds-expansion, bmad-module-template) are largely unexercised in this repo; keep, wrap, or remove is unresolved — not addressed anywhere in spec-pyforge-marshal's PRD."
 ---
 
-> **Canonical contract.** This SPEC and the files in `companions:` are the complete, preservation-validated contract for what to build, test, and validate. `docs/dreams/one-front-door.md` is listed in `sources:` for narrative rationale this contract intentionally omits.
+> **Retirement record.** This Dream is `status: archived` (`absorbed`). Charter §5 requires
+> every Dream to carry a Spec, archived included. It states what was contracted, why it
+> ended, and what survives — not a plan for work that will not happen. **`inventory.md` kept
+> live** (not archived) — it is the evidence base for Q2 (row-6 triage), which is still
+> genuinely open; a future decision on those five packages should read it, not rederive it.
 
-# SPEC — one front door
+# one-front-door — retirement record
 
-## Why
+## Why it was contracted
 
-The Charter says execution has one owner, Marshal — true of accountability,
-false of interface. What is installed is a toolbox (11 conda packages, 51
-`bmad-*` skills, 16 `skf-*` skills, 10 detectors, an engine, a dashboard, a
-multi-project switch — see `inventory.md`), used today by remembering which
-piece is needed, in what order, with which project active. Verified
-2026-08-01: no composed `marshal` entry-point verbs exist yet —
-`cli/init.py` and `cli/config.py` cover only the four already-shipped Epic-1
-verbs (`init`, `homes`, `preflight`, `teardown`, `config`), all governed by
-`spec-pyforge-marshal`. The Dream's own evidence: driving one fleet run
-end-to-end required hand-invoking `bmad-loop run`/`status`, `tmux
-capture-pane`, seven detectors individually, `dashboard-gen`,
-`dashboard-watch`, `spec-surface-check --write-baseline`, `git push` across
-nine homes, and `gh pr create/edit/merge` five times — none composed. The
-failure modes observed were seams: `dashboard-watch` never started because
-nobody thought of it, the push window reopened because nothing owned it
-([[durable-runs]]), PR #170 merged broken because the landing path asked
-nothing ([[pr-lifecycle]]).
+The Charter says execution has one owner, Marshal — true of accountability, false of
+interface. Verified 2026-08-01: no composed `marshal` entry-point verbs existed; driving one
+fleet run end-to-end required hand-invoking `bmad-loop run`/`status`, `tmux capture-pane`,
+seven detectors individually, `dashboard-gen`/`watch`, `spec-surface-check`, `git push` across
+nine homes, and `gh pr create/edit/merge` five times — none composed. Five capabilities:
+`marshal run` (CAP-1), `marshal status` (CAP-2), `marshal check` (CAP-3), `marshal land`
+(CAP-4, routing only — behavior specified by [[pr-lifecycle]]), and context resolved once and
+threaded through every routed call (CAP-5, the Dream's actual value).
 
-**Surface note.** `spec-pyforge-marshal` already claims
-`src/shared/packages/pyforge-marshal/**` in full; `spec-factory-console`
-claims `docs/dashboard/**`; `spec-bmad-loop-governance` claims
-`.bmad-loop/**`; `spec-multi-loop-isolation` claims `scripts/bmad-switch` +
-`scripts/bmad-loop-worktree`. This Spec claims no surface of its own — its
-verbs land inside `spec-pyforge-marshal`'s existing package when built. It
-is the composition contract, not a second claim on the same files.
+## Why it ended
 
-## Capabilities
+**Retired 2026-08-02, as part of a dream-consolidation pass.** Checked each capability
+individually against what's specified today, not assumed clean:
 
-- **CAP-1 — `marshal run`.**
-  - **intent:** One verb drives a story or epic through `bmad-loop`
-    internally (wraps, never absorbs the engine), supplying active
-    project + loop home + policy layer + story key from context.
-  - **success:** driving one story from the Dream's evidence scenario
-    collapses `bmad-loop run` + `status` + `tmux capture-pane` into one
-    `marshal run` call with no loss of context `bmad-loop` itself needs.
+- **CAP-1** (`marshal run`) and **CAP-2** (`marshal status`) are **convergent, no gap** —
+  already specified as `factory spin` (FR-9..11) and `marshal status` (FR-36); this Dream's
+  candidate verb names did not need new FRs, per Q-15's resolution in the real PRD.
+- **CAP-3** (`marshal check`) → **new FR-65** (added 2026-08-01) — the one genuinely new
+  capability from this Dream: the detector registry reachable as a verb, not a separately
+  remembered pixi task.
+- **CAP-4** (`marshal land`, routing only) → **FR-59/FR-60**, per [[pr-lifecycle]]'s own
+  retirement record — that Dream's Spec specified the landing behavior this capability
+  deferred to.
+- **CAP-5** (context resolved once, threaded through every routed call) → folded into
+  **FR-65**'s own Consequences ("context ... resolves once per `marshal` invocation and
+  threads to whichever verb is routed to — `run`, `status`, `check`, and `land` alike") rather
+  than getting a separate FR — it is a cross-cutting property of the front door, not an
+  independent feature.
+- **Q1** (exact verb surface) and **Q3** (route-versus-contain boundary) carried forward
+  verbatim into the PRD as **Q-15** and **Q-16** — both explicitly still open, not invented
+  answers.
+- **Q2** (row-6 triage) is **not addressed anywhere in the PRD** — grepped 2026-08-02, zero
+  hits for `bmad-manticore` or "row-6"/"row 6". This is not a clean absorption; see § What
+  carries forward.
 
-- **CAP-2 — `marshal status`.**
-  - **intent:** One verb answers "is Marshal's work saved, and how is it
-    going" across fleet state, the dashboard board, the detector registry,
-    and unpushed-work-check ([[durable-runs]] CAP-5's reported property) —
-    today that answer requires four separate commands.
-  - **success:** `marshal status` reports fleet health, unpushed-work
-    findings, and detector state in one call.
+## What carries forward
 
-- **CAP-3 — `marshal check`.**
-  - **intent:** `scripts/detectors.py`'s derived registry becomes reachable
-    as `marshal check` rather than a separate pixi task the operator must
-    remember exists.
-  - **success:** `marshal check` produces the same output as
-    `pixi run -e local-recipes detectors`, invoked through the front door.
-
-- **CAP-4 — `marshal land`.**
-  - **intent:** Once [[pr-lifecycle]]'s Spec exists and specifies what
-    landing requires, `marshal land` is the one verb behind that door. This
-    Spec records the routing contract only; landing behavior is
-    pr-lifecycle's to specify.
-  - **success:** `marshal land` invokes pr-lifecycle's specified behavior
-    rather than this Spec re-specifying it.
-
-- **CAP-5 — context supplied once.**
-  - **intent:** The active project, loop home, policy layer, and story key
-    are resolved once by the front door and threaded through every routed
-    call, rather than each composed tool independently requiring them. This
-    is the Dream's actual value — not shorter commands, context held once.
-  - **success:** a single `marshal` invocation carries project/home/policy/
-    story context to every tool it routes to, with no mid-sequence
-    re-specification.
-
-## Constraints
-
-- **Wrap, never absorb.** The moment `marshal` contains a skill's logic
-  instead of invoking it, this rule is broken one level up — CAP-1..4 route
-  to `bmad-loop`, the detector registry, and pr-lifecycle; none reimplement
-  them.
-- **Each craft stays with its owning station.** `conda-forge-expert` is
-  Mason's craft; Marshal routing to it is fine, Marshal knowing conda
-  internals is not (a named boundary test in the source Dream).
-- **Install-time and run-time stay two Dreams.** [[genesis-installer]] owns
-  greenfield `init` / brownfield `adopt` / the write guard / managed
-  regions; this Spec is scoped to the runtime half only.
-- New verbs land inside `spec-pyforge-marshal`'s existing package surface —
-  this Spec introduces no new package and claims no surface of its own.
+CAP-1/2/4/5 and Q1/Q3 all have a real, current home (a convergent FR, FR-65, or a named open
+question in the PRD) — nothing to track for them here. **Q2 does not** — whether
+`bmad-manticore`, `bmad-labs-skills`, `bmad-utility-skills`, `bmad-method-wds-expansion`, and
+`bmad-module-template` should be kept, wrapped, or removed is a real, undismissed question
+with no owner after this retirement. `inventory.md` is kept live specifically so a future
+triage of those five packages starts from the 2026-07-31 evidence table, not a rederivation.
 
 ## Non-goals
 
-- Not a replacement for `bmad-loop`'s engine, any of the 51 `bmad-*`
-  skills, or the 16 `skf-*` Skill Forge skills.
-- Not the install/init surface — that is [[genesis-installer]]'s Spec.
-- Not a decision on row 6's triage (see Open Questions Q2) — the Dream
-  poses keep/wrap/remove as genuinely open, and this Spec does not invent
-  an answer.
+- **Reviving this Dream as written.** CAP-1/2/4/5's intent already lives elsewhere; only Q2 is
+  genuinely open, and reviving the whole Dream would re-litigate what's settled.
+- **Treating this record as a backlog item in itself.** Archived Dreams are excluded from the
+  Backlog board by design — but Q2's underlying triage is a real, undismissed gap; a future
+  decision (by Marshal or whoever owns package hygiene) is the correct vehicle, not this
+  record.
+- **Assuming Marshal will triage row 6.** This retirement does not assign Q2 anywhere — it
+  was never an FR to begin with, only ever an open question.
 
 ## Success signal
 
-Driving one fleet run end-to-end — the Dream's own evidence scenario — no
-longer requires hand-invoking `bmad-loop`, `tmux`, seven detectors,
-`dashboard-gen`/`watch`, `spec-surface-check`, `git push` across nine homes,
-and `gh pr` five times as separate command classes. It runs through
-`marshal run`/`status`/`check`/`land`, with project/home/policy/story
-context supplied once.
-
-## Open Questions
-
-- Q1 — exact verb surface. The Dream lists run/status/check/land/switch
-  (shipped)/homes (shipped)/doctor (delegate) as candidates it explicitly
-  says to argue with, not a decided list.
-- Q2 — row-6 triage. Five installed packages (`bmad-manticore`,
-  `bmad-labs-skills`, `bmad-utility-skills`, `bmad-method-wds-expansion`,
-  `bmad-module-template`) are largely unexercised in this repo; keep, wrap,
-  or remove is unresolved.
-- Q3 — the route-versus-contain boundary, per skill. Where supplying
-  context once (CAP-5) becomes containing a skill's logic is undecided
-  across the 51 `bmad-*` skills.
+A reader arriving at this Dream learns in one page which four capabilities are settled and
+where, and that Q2's five-package triage is still genuinely open with its evidence preserved
+— without mistaking "archived" for "everything here is resolved."
