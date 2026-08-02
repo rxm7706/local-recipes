@@ -2830,7 +2830,7 @@ window.DASHBOARD_DATA = {
       }
     }
   },
-  "snapshot": "<span>2026-08-02 16:42 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-02 16:55 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -3139,10 +3139,13 @@ window.DASHBOARD_DATA = {
     {
       "slug": "pyforge-mason-recipe-validator",
       "title": "\"Dream — PyForge Mason: Recipe Validator\"",
-      "status": "dreamt",
+      "status": "archived",
       "owner": "mason",
       "type": "dream",
-      "chain": {}
+      "chain": {
+        "spec": "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason-recipe-validator"
+      },
+      "archived_reason": "conflicts-with-decided-architecture"
     },
     {
       "slug": "pyforge-mason",
@@ -3539,7 +3542,7 @@ window.DASHBOARD_DATA = {
       "title": "pyforge-marshal-loop-orchestrator — retirement record",
       "caps": 4,
       "companions": 0,
-      "updated": "",
+      "updated": "2026-08-02",
       "dream": "pyforge-marshal-loop-orchestrator",
       "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal-loop-orchestrator"
     },
@@ -3549,7 +3552,7 @@ window.DASHBOARD_DATA = {
       "title": "PyForge Testing Charter — fleet-wide test architecture",
       "caps": 5,
       "companions": 2,
-      "updated": "",
+      "updated": "2026-08-02",
       "dream": "pyforge-testing-charter",
       "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-testing-charter"
     },
@@ -3622,6 +3625,16 @@ window.DASHBOARD_DATA = {
       "updated": "2026-07-31",
       "dream": "pyforge-mason",
       "path": "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason"
+    },
+    {
+      "slug": "pyforge-mason-recipe-validator",
+      "project": "pyforge-mason",
+      "title": "pyforge-mason-recipe-validator — retirement record",
+      "caps": 0,
+      "companions": 0,
+      "updated": "",
+      "dream": "pyforge-mason-recipe-validator",
+      "path": "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason-recipe-validator"
     },
     {
       "slug": "pyforge-scribe",
@@ -3961,6 +3974,13 @@ window.DASHBOARD_DATA = {
       "link": "docs/dreams/pyforge-marshal-loop-orchestrator.md"
     },
     {
+      "name": "\"Dream — PyForge Mason: Recipe Validator\"",
+      "reason": "conflicts-with-decided-architecture",
+      "owner": "mason",
+      "note": "\"Dream — PyForge Mason: Recipe Validator\"",
+      "link": "docs/dreams/pyforge-mason-recipe-validator.md"
+    },
+    {
       "name": "Sentinel — the AI Software Factory (the ancestor)",
       "reason": "absorbed",
       "owner": "scribe",
@@ -4290,9 +4310,9 @@ window.DASHBOARD_DATA = {
       "retro": null
     },
     "sound": 1,
-    "live": 41,
+    "live": 40,
     "reached": 8,
-    "gaps": 48,
+    "gaps": 45,
     "findings": 16,
     "rows": [
       {
@@ -4810,7 +4830,7 @@ window.DASHBOARD_DATA = {
           "ux": "",
           "arch": "2026-08-01",
           "context": "2026-06-20",
-          "epics": "2026-08-01",
+          "epics": "2026-08-02",
           "sprint": "2026-08-02",
           "tea": "2026-07-31",
           "gates": "2026-08-02",
@@ -7864,7 +7884,7 @@ window.DASHBOARD_DATA = {
         "stages": {
           "dream": "2026-08-02",
           "deck": "",
-          "spec": "",
+          "spec": "2026-08-02",
           "research": "2026-07-16",
           "brief": "",
           "prd": "",
@@ -7882,7 +7902,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-02",
           "deck": "",
-          "spec": "",
+          "spec": "2026-08-02",
           "research": "2026-07-31",
           "brief": "",
           "prd": "",
@@ -7948,8 +7968,7 @@ window.DASHBOARD_DATA = {
           "research"
         ],
         "gaps": [
-          "deck",
-          "spec"
+          "deck"
         ],
         "partial": [],
         "staleBy": [],
@@ -7959,7 +7978,7 @@ window.DASHBOARD_DATA = {
         "stale": false,
         "version": "",
         "progress": "",
-        "complete": 1,
+        "complete": 2,
         "of": 3
       },
       {
@@ -7971,7 +7990,7 @@ window.DASHBOARD_DATA = {
         "stages": {
           "dream": "2026-08-02",
           "deck": "",
-          "spec": "",
+          "spec": "2026-08-02",
           "research": "2026-07-16",
           "brief": "",
           "prd": "",
@@ -8055,8 +8074,7 @@ window.DASHBOARD_DATA = {
           "research"
         ],
         "gaps": [
-          "deck",
-          "spec"
+          "deck"
         ],
         "partial": [],
         "staleBy": [],
@@ -8066,7 +8084,7 @@ window.DASHBOARD_DATA = {
         "stale": false,
         "version": "",
         "progress": "",
-        "complete": 1,
+        "complete": 2,
         "of": 3
       },
       {
@@ -8814,19 +8832,19 @@ window.DASHBOARD_DATA = {
             ]
           }
         },
-        "archived": false,
-        "dreamStatus": "dreamt",
-        "ownerDream": "",
+        "archived": true,
+        "dreamStatus": "archived",
+        "ownerDream": "pyforge-mason-recipe-validator",
         "noDream": false,
         "unowned": false,
         "backfilled": false,
         "openQuestions": 0,
         "overtaken": false,
         "na": [
+          "dream",
           "ux"
         ],
         "required": [
-          "dream",
           "deck",
           "spec",
           "research"
@@ -8845,8 +8863,8 @@ window.DASHBOARD_DATA = {
         "stale": false,
         "version": "",
         "progress": "",
-        "complete": 2,
-        "of": 4
+        "complete": 1,
+        "of": 3
       },
       {
         "label": "scribe-team-memory",
@@ -9875,8 +9893,8 @@ window.DASHBOARD_DATA = {
         "task": "spec-surface-check",
         "guards": "every tracked file under a Spec surface",
         "state": "drift",
-        "findings": 760,
-        "verdict": "FINDINGS (760):",
+        "findings": 761,
+        "verdict": "FINDINGS (761):",
         "runbook": ""
       },
       {
@@ -9959,14 +9977,6 @@ window.DASHBOARD_DATA = {
         "title": "\"Dream — PyForge Doctor: Dependency Health Diagnostics\"",
         "status": "dreamt",
         "owner": "doctor",
-        "blockedOn": "",
-        "chain": {}
-      },
-      {
-        "slug": "pyforge-mason-recipe-validator",
-        "title": "\"Dream — PyForge Mason: Recipe Validator\"",
-        "status": "dreamt",
-        "owner": "mason",
         "blockedOn": "",
         "chain": {}
       },
@@ -10092,10 +10102,10 @@ window.DASHBOARD_DATA = {
       "herald": 3,
       "atlas": 4,
       "doctor": 1,
-      "mason": 2,
       "scribe": 2,
       "steward": 1,
-      "warden": 1
+      "warden": 1,
+      "mason": 1
     },
     "practices": [
       {
@@ -10416,15 +10426,15 @@ window.DASHBOARD_DATA = {
         "station": "mason",
         "total": 7,
         "counts": {
-          "dreamt": 1,
+          "dreamt": 0,
           "pitched": 0,
           "specified": 2,
           "realized": 0,
-          "archived": 2,
+          "archived": 3,
           "practice": 2
         },
         "line": "paused 1.5",
-        "load": 2,
+        "load": 1,
         "blocked": 1,
         "dreams": [
           {
@@ -10444,7 +10454,7 @@ window.DASHBOARD_DATA = {
           {
             "slug": "pyforge-mason-recipe-validator",
             "title": "\"Dream — PyForge Mason: Recipe Validator\"",
-            "status": "dreamt",
+            "status": "archived",
             "type": "dream",
             "blockedOn": ""
           },
@@ -12152,8 +12162,8 @@ window.DASHBOARD_DATA = {
       "subject": "Merge bmad-loop/20260731-115548-f223/1-9-packaging-distribution-and-version-reporting into loop/pyforge-marshal (bmad-lo"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-02 16:42 UTC",
-    "generatedEpoch": 1785688973
+    "generatedAt": "2026-08-02 16:55 UTC",
+    "generatedEpoch": 1785689750
   },
   "storySpecs": [
     {
