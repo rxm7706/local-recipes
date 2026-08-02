@@ -1,10 +1,27 @@
 ---
 title: "Dream — PyForge Mason: Recipe Validator"
 date: 2026-08-02
-status: dreamt
+status: archived
+archived-reason: conflicts-with-decided-architecture
 owner: mason
 scope: "Recipe validation, conda-forge linting, schema enforcement, conformance"
 ---
+
+> **Superseded.** This Dream proposes a native, ~50-rule linting/validation engine
+> inside Mason. [`docs/dreams/pyforge-mason.md`](pyforge-mason.md) (status: specified)
+> already decided this exact question — decision D-1, "Option C": `mason recipe`
+> **wraps** the conda-forge-expert skill by subprocess for recipe semantics; the skill
+> stays canonical. Mason's epics.md already carries the wrapper stories this dream
+> would duplicate — Story 2.5 (`mason recipe validate`: "CFE's identifiers are
+> preserved verbatim — never renumbered, reworded, or re-severitied") and Story 2.8
+> (`mason recipe optimize`/`scan`: "CFE's check codes are preserved verbatim... Mason
+> applies no severity policy, threshold, or filtering of its own"). Implementing this
+> Dream as written would not just duplicate that scope — it would violate Mason's own
+> constitutive Dream's explicit non-goal: *"Never fork the craft... the in-repo
+> cautionary precedent is [[pyforge-atlas]], which chose full rebuild."* Created
+> 2026-08-02 in a bulk commit later found to contain fabricated content elsewhere in
+> the same commit; retired same day rather than spec'd as new work. See
+> `spec-pyforge-mason-recipe-validator` for the retirement record.
 
 # PyForge Mason — Recipe Validator
 
