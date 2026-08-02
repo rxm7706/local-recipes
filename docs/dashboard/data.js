@@ -2830,7 +2830,7 @@ window.DASHBOARD_DATA = {
       }
     }
   },
-  "snapshot": "<span>2026-08-01 23:53 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-02 00:09 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -3301,7 +3301,7 @@ window.DASHBOARD_DATA = {
       "title": "Herald's Pitch Deck — Moment 1 Orchestration",
       "caps": 7,
       "companions": 5,
-      "updated": "",
+      "updated": "2026-08-01",
       "dream": "herald-pitch",
       "path": "_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-herald-pitch"
     },
@@ -4165,8 +4165,8 @@ window.DASHBOARD_DATA = {
     "sound": 1,
     "live": 32,
     "reached": 8,
-    "gaps": 33,
-    "findings": 15,
+    "gaps": 31,
+    "findings": 16,
     "rows": [
       {
         "label": "atlas",
@@ -4548,7 +4548,7 @@ window.DASHBOARD_DATA = {
           "retro": ""
         },
         "updatedAt": {
-          "dream": "2026-07-25",
+          "dream": "2026-08-01",
           "deck": "2026-07-25",
           "spec": "",
           "research": "2026-08-01",
@@ -4557,7 +4557,7 @@ window.DASHBOARD_DATA = {
           "ux": "",
           "arch": "",
           "context": "2026-08-01",
-          "epics": "2026-07-31",
+          "epics": "2026-08-01",
           "sprint": "2026-07-31",
           "gates": "2026-08-01",
           "code": "2026-07-25",
@@ -4622,7 +4622,15 @@ window.DASHBOARD_DATA = {
           "arch"
         ],
         "partial": [],
-        "staleBy": [],
+        "staleBy": [
+          {
+            "kind": "feeds",
+            "stage": "epics",
+            "than": "sprint",
+            "at": "2026-08-01",
+            "other": "2026-07-31"
+          }
+        ],
         "furthest": "verify",
         "updated": "2026-08-01",
         "age": 0,
@@ -5754,7 +5762,7 @@ window.DASHBOARD_DATA = {
         "dream": "fleet-chain-completeness",
         "owner": "herald",
         "stages": {
-          "dream": "",
+          "dream": "2026-08-01",
           "deck": "",
           "spec": "",
           "research": "2026-07-25",
@@ -5771,7 +5779,7 @@ window.DASHBOARD_DATA = {
           "retro": ""
         },
         "updatedAt": {
-          "dream": "",
+          "dream": "2026-08-01",
           "deck": "",
           "spec": "",
           "research": "2026-08-01",
@@ -5823,7 +5831,7 @@ window.DASHBOARD_DATA = {
         "archived": false,
         "dreamStatus": "dreamt",
         "ownerDream": "",
-        "noDream": true,
+        "noDream": false,
         "unowned": false,
         "backfilled": false,
         "openQuestions": 0,
@@ -5838,7 +5846,6 @@ window.DASHBOARD_DATA = {
           "research"
         ],
         "gaps": [
-          "dream",
           "deck",
           "spec"
         ],
@@ -5850,7 +5857,7 @@ window.DASHBOARD_DATA = {
         "stale": false,
         "version": "",
         "progress": "",
-        "complete": 1,
+        "complete": 2,
         "of": 4
       },
       {
@@ -5860,7 +5867,7 @@ window.DASHBOARD_DATA = {
         "dream": "herald-pitch",
         "owner": "herald",
         "stages": {
-          "dream": "",
+          "dream": "2026-08-01",
           "deck": "",
           "spec": "2026-08-01",
           "research": "2026-07-25",
@@ -5877,7 +5884,7 @@ window.DASHBOARD_DATA = {
           "retro": ""
         },
         "updatedAt": {
-          "dream": "",
+          "dream": "2026-08-01",
           "deck": "",
           "spec": "2026-08-01",
           "research": "2026-08-01",
@@ -5929,7 +5936,7 @@ window.DASHBOARD_DATA = {
         "archived": false,
         "dreamStatus": "specified",
         "ownerDream": "",
-        "noDream": true,
+        "noDream": false,
         "unowned": false,
         "backfilled": false,
         "openQuestions": 0,
@@ -5947,7 +5954,6 @@ window.DASHBOARD_DATA = {
           "arch"
         ],
         "gaps": [
-          "dream",
           "deck",
           "prd"
         ],
@@ -5959,7 +5965,7 @@ window.DASHBOARD_DATA = {
         "stale": false,
         "version": "",
         "progress": "",
-        "complete": 4,
+        "complete": 5,
         "of": 7
       },
       {
@@ -8207,6 +8213,352 @@ window.DASHBOARD_DATA = {
       }
     ]
   },
+  "commandCenter": {
+    "phases": [
+      {
+        "id": "analysis",
+        "name": "ANALYSIS Phase",
+        "flow": "Dream → Pitch deck",
+        "artifacts": [
+          "DREAMS",
+          "res-domain",
+          "res-market",
+          "res-tech",
+          "prod-brief",
+          "PITCH-DECKS"
+        ],
+        "gate": "All 8 stations complete analysis",
+        "stations": [
+          {
+            "name": "Herald",
+            "emoji": "🎺",
+            "statuses": {
+              "DREAMS": "🚀",
+              "res": "✅",
+              "prod-brief": "◯",
+              "PITCH-DECKS": "✅"
+            }
+          },
+          {
+            "name": "Marshal",
+            "emoji": "⚔️",
+            "statuses": {
+              "DREAMS": "🚀",
+              "res": "✅",
+              "prod-brief": "✅",
+              "PITCH-DECKS": "✅"
+            }
+          },
+          {
+            "name": "Atlas",
+            "emoji": "🗺️",
+            "statuses": {
+              "DREAMS": "🚀",
+              "res": "✅",
+              "prod-brief": "✅",
+              "PITCH-DECKS": "✅"
+            }
+          },
+          {
+            "name": "Warden",
+            "emoji": "🛡️",
+            "statuses": {
+              "DREAMS": "🚀",
+              "res": "✅",
+              "prod-brief": "✅",
+              "PITCH-DECKS": "✅"
+            }
+          },
+          {
+            "name": "Mason",
+            "emoji": "🧱",
+            "statuses": {
+              "DREAMS": "🚀",
+              "res": "✅",
+              "prod-brief": "✅",
+              "PITCH-DECKS": "✅"
+            }
+          },
+          {
+            "name": "Doctor",
+            "emoji": "🏥",
+            "statuses": {
+              "DREAMS": "🚀",
+              "res": "✅",
+              "prod-brief": "✅",
+              "PITCH-DECKS": "✅"
+            }
+          },
+          {
+            "name": "Scribe",
+            "emoji": "📖",
+            "statuses": {
+              "DREAMS": "🚀",
+              "res": "✅",
+              "prod-brief": "✅",
+              "PITCH-DECKS": "✅"
+            }
+          },
+          {
+            "name": "Steward",
+            "emoji": "👑",
+            "statuses": {
+              "DREAMS": "🚀",
+              "res": "✅",
+              "prod-brief": "✅",
+              "PITCH-DECKS": "✅"
+            }
+          }
+        ]
+      },
+      {
+        "id": "planning",
+        "name": "PLANNING Phase",
+        "flow": "PRD requirements",
+        "artifacts": [
+          "PRD"
+        ],
+        "gate": "All 8 stations have PRD",
+        "stations": [
+          {
+            "name": "Herald",
+            "emoji": "🎺",
+            "statuses": {
+              "PRD": "✅"
+            }
+          },
+          {
+            "name": "Marshal",
+            "emoji": "⚔️",
+            "statuses": {
+              "PRD": "✅"
+            }
+          },
+          {
+            "name": "Atlas",
+            "emoji": "🗺️",
+            "statuses": {
+              "PRD": "✅"
+            }
+          },
+          {
+            "name": "Warden",
+            "emoji": "🛡️",
+            "statuses": {
+              "PRD": "✅"
+            }
+          },
+          {
+            "name": "Mason",
+            "emoji": "🧱",
+            "statuses": {
+              "PRD": "✅"
+            }
+          },
+          {
+            "name": "Doctor",
+            "emoji": "🏥",
+            "statuses": {
+              "PRD": "✅"
+            }
+          },
+          {
+            "name": "Scribe",
+            "emoji": "📖",
+            "statuses": {
+              "PRD": "✅"
+            }
+          },
+          {
+            "name": "Steward",
+            "emoji": "👑",
+            "statuses": {
+              "PRD": "✅"
+            }
+          }
+        ]
+      },
+      {
+        "id": "solutioning",
+        "name": "SOLUTIONING Phase",
+        "flow": "Architecture → specs",
+        "artifacts": [
+          "arch",
+          "epics",
+          "specs"
+        ],
+        "gate": "All 8 stations complete solutioning",
+        "stations": [
+          {
+            "name": "Herald",
+            "emoji": "🎺",
+            "statuses": {
+              "arch": "◯",
+              "epics": "✅",
+              "specs": "✅"
+            }
+          },
+          {
+            "name": "Marshal",
+            "emoji": "⚔️",
+            "statuses": {
+              "arch": "✅",
+              "epics": "✅",
+              "specs": "✅"
+            }
+          },
+          {
+            "name": "Atlas",
+            "emoji": "🗺️",
+            "statuses": {
+              "arch": "✅",
+              "epics": "✅",
+              "specs": "✅"
+            }
+          },
+          {
+            "name": "Warden",
+            "emoji": "🛡️",
+            "statuses": {
+              "arch": "✅",
+              "epics": "✅",
+              "specs": "✅"
+            }
+          },
+          {
+            "name": "Mason",
+            "emoji": "🧱",
+            "statuses": {
+              "arch": "✅",
+              "epics": "✅",
+              "specs": "✅"
+            }
+          },
+          {
+            "name": "Doctor",
+            "emoji": "🏥",
+            "statuses": {
+              "arch": "✅",
+              "epics": "✅",
+              "specs": "✅"
+            }
+          },
+          {
+            "name": "Scribe",
+            "emoji": "📖",
+            "statuses": {
+              "arch": "✅",
+              "epics": "✅",
+              "specs": "✅"
+            }
+          },
+          {
+            "name": "Steward",
+            "emoji": "👑",
+            "statuses": {
+              "arch": "✅",
+              "epics": "✅",
+              "specs": "✅"
+            }
+          }
+        ]
+      },
+      {
+        "id": "implementation",
+        "name": "IMPLEMENTATION Phase",
+        "flow": "Code → ship + retro",
+        "artifacts": [
+          "sprint-status",
+          "code",
+          "tests",
+          "retro"
+        ],
+        "gate": "Herald coding; others queued or ready",
+        "stations": [
+          {
+            "name": "Herald",
+            "emoji": "🎺",
+            "statuses": {
+              "sprint-status": "✅",
+              "code": "✅",
+              "tests": "✅",
+              "retro": "◯"
+            }
+          },
+          {
+            "name": "Marshal",
+            "emoji": "⚔️",
+            "statuses": {
+              "sprint-status": "✅",
+              "code": "✅",
+              "tests": "✅",
+              "retro": "◯"
+            }
+          },
+          {
+            "name": "Atlas",
+            "emoji": "🗺️",
+            "statuses": {
+              "sprint-status": "✅",
+              "code": "✅",
+              "tests": "✅",
+              "retro": "✅"
+            }
+          },
+          {
+            "name": "Warden",
+            "emoji": "🛡️",
+            "statuses": {
+              "sprint-status": "✅",
+              "code": "✅",
+              "tests": "✅",
+              "retro": "◯"
+            }
+          },
+          {
+            "name": "Mason",
+            "emoji": "🧱",
+            "statuses": {
+              "sprint-status": "✅",
+              "code": "✅",
+              "tests": "✅",
+              "retro": "◯"
+            }
+          },
+          {
+            "name": "Doctor",
+            "emoji": "🏥",
+            "statuses": {
+              "sprint-status": "✅",
+              "code": "✅",
+              "tests": "✅",
+              "retro": "◯"
+            }
+          },
+          {
+            "name": "Scribe",
+            "emoji": "📖",
+            "statuses": {
+              "sprint-status": "✅",
+              "code": "✅",
+              "tests": "✅",
+              "retro": "◯"
+            }
+          },
+          {
+            "name": "Steward",
+            "emoji": "👑",
+            "statuses": {
+              "sprint-status": "✅",
+              "code": "✅",
+              "tests": "✅",
+              "retro": "◯"
+            }
+          }
+        ]
+      }
+    ]
+  },
   "health": {
     "detectors": [
       {
@@ -10368,8 +10720,8 @@ window.DASHBOARD_DATA = {
       "subject": "Merge bmad-loop/20260731-115548-f223/1-9-packaging-distribution-and-version-reporting into loop/pyforge-marshal (bmad-lo"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-01 23:53 UTC",
-    "generatedEpoch": 1785628411
+    "generatedAt": "2026-08-02 00:09 UTC",
+    "generatedEpoch": 1785629395
   },
   "storySpecs": [
     {
