@@ -29,9 +29,9 @@ infographic production.
 - Coordinate with other stations via the deferred-work ledger.
 
 **Key Reference Files:**
-- Brief: `_bmad-output/projects/pyforge-herald/planning-artifacts/briefs/brief-herald-pitch-2026-08-01/brief.md`
+- Brief: `_bmad-output/projects/pyforge-herald/planning-artifacts/briefs/brief-pyforge-herald-2026-08-01/brief.md`
 - PRD: `_bmad-output/projects/pyforge-herald/planning-artifacts/prds/prd-pyforge-herald-2026-08-01/prd.md`
-- Architecture: `_bmad-output/projects/pyforge-herald/planning-artifacts/architecture/architecture-herald-pitch-2026-08-01/ARCHITECTURE-SPINE.md`
+- Architecture: `_bmad-output/projects/pyforge-herald/planning-artifacts/architecture/architecture-pyforge-herald-2026-08-01/ARCHITECTURE-SPINE.md`
 - Epics: `_bmad-output/projects/pyforge-herald/planning-artifacts/epics.md`
 - Readiness: `_bmad-output/projects/pyforge-herald/planning-artifacts/implementation-readiness-report-20260801.md`
 - Deferred Work: `_bmad-output/projects/pyforge-herald/planning-artifacts/deferred-work-ledger.md`

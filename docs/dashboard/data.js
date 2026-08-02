@@ -2856,7 +2856,7 @@ window.DASHBOARD_DATA = {
       }
     }
   },
-  "snapshot": "<span>2026-08-02 18:30 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-02 21:43 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -2901,6 +2901,16 @@ window.DASHBOARD_DATA = {
         "spec": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-artifact-console"
       },
       "archived_reason": "retired"
+    },
+    {
+      "slug": "bmad-output-hygiene",
+      "title": "One fabricated commit, eight stations of debris",
+      "status": "specified",
+      "owner": "marshal",
+      "type": "dream",
+      "chain": {
+        "spec": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-bmad-output-hygiene"
+      }
     },
     {
       "slug": "copilot-cli-packaging",
@@ -2994,9 +3004,7 @@ window.DASHBOARD_DATA = {
       "status": "archived",
       "owner": "marshal",
       "type": "dream",
-      "chain": {
-        "spec": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-genesis-installer"
-      },
+      "chain": {},
       "archived_reason": "absorbed"
     },
     {
@@ -3016,9 +3024,7 @@ window.DASHBOARD_DATA = {
       "status": "archived",
       "owner": "herald",
       "type": "dream",
-      "chain": {
-        "spec": "_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-herald-pitch"
-      },
+      "chain": {},
       "archived_reason": "absorbed"
     },
     {
@@ -3072,8 +3078,7 @@ window.DASHBOARD_DATA = {
       "owner": "mason",
       "type": "dream",
       "chain": {
-        "deck": "presentations/presenton-pixi-image",
-        "spec": "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-presenton-pixi-image"
+        "deck": "presentations/presenton-pixi-image"
       },
       "blockedOn": "Phase-0 decision gate (Epic 1)",
       "archived_reason": "blocked"
@@ -3321,14 +3326,21 @@ window.DASHBOARD_DATA = {
       "archived_reason": "absorbed"
     },
     {
+      "slug": "unified-container",
+      "title": "One container, eight stations",
+      "status": "dreamt",
+      "owner": "steward",
+      "type": "dream",
+      "chain": {}
+    },
+    {
       "slug": "unity-data-stack",
       "title": "Unity Data Stack — the enterprise innersource platform",
       "status": "archived",
       "owner": "atlas",
       "type": "dream",
       "chain": {
-        "deck": "presentations/unity-data-stack",
-        "spec": "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-unity-data-stack"
+        "deck": "presentations/unity-data-stack"
       },
       "archived_reason": "absorbed"
     },
@@ -3350,8 +3362,7 @@ window.DASHBOARD_DATA = {
       "owner": "atlas",
       "type": "dream",
       "chain": {
-        "deck": "presentations/wasm-analytics-stack",
-        "spec": "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-wasm-analytics-stack"
+        "deck": "presentations/wasm-analytics-stack"
       },
       "archived_reason": "absorbed"
     }
@@ -3370,10 +3381,10 @@ window.DASHBOARD_DATA = {
     {
       "slug": "pyforge-atlas",
       "project": "pyforge-atlas",
-      "title": "Atlas — the intelligence layer an agent workforce can extend",
-      "caps": 17,
-      "companions": 4,
-      "updated": "2026-07-30",
+      "title": "consolidated: 2026-08-02 — this Spec also carries spec-unity-data-stack and",
+      "caps": 31,
+      "companions": 5,
+      "updated": "2026-08-02",
       "dream": "pyforge-atlas",
       "path": "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas"
     },
@@ -3388,16 +3399,6 @@ window.DASHBOARD_DATA = {
       "path": "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas-intelligence-platform"
     },
     {
-      "slug": "unity-data-stack",
-      "project": "pyforge-atlas",
-      "title": "Unity Data Stack — the enterprise innersource python-first platform",
-      "caps": 9,
-      "companions": 2,
-      "updated": "2026-08-02",
-      "dream": "unity-data-stack",
-      "path": "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-unity-data-stack"
-    },
-    {
       "slug": "upstream-discovery",
       "project": "pyforge-atlas",
       "title": "upstream discovery — sense what the world is building",
@@ -3406,16 +3407,6 @@ window.DASHBOARD_DATA = {
       "updated": "2026-08-02",
       "dream": "upstream-discovery",
       "path": "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-upstream-discovery"
-    },
-    {
-      "slug": "wasm-analytics-stack",
-      "project": "pyforge-atlas",
-      "title": "Wasm Analytics Stack — WASI-sandboxed upload validation, seed use case",
-      "caps": 5,
-      "companions": 1,
-      "updated": "2026-08-02",
-      "dream": "wasm-analytics-stack",
-      "path": "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-wasm-analytics-stack"
     },
     {
       "slug": "pyforge-doctor",
@@ -3458,16 +3449,6 @@ window.DASHBOARD_DATA = {
       "path": "_bmad-output/projects/pyforge-genesis/planning-artifacts/specs/spec-pyforge-genesis"
     },
     {
-      "slug": "herald-moments-2-4",
-      "project": "pyforge-herald",
-      "title": "Herald's Proclamation Surfaces — Moments 2–4",
-      "caps": 3,
-      "companions": 1,
-      "updated": "2026-08-02",
-      "dream": "",
-      "path": "_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-herald-moments-2-4"
-    },
-    {
       "slug": "herald-moments-2-4-missing-surface",
       "project": "pyforge-herald",
       "title": "herald-moments-2-4-missing-surface — retirement record",
@@ -3478,21 +3459,11 @@ window.DASHBOARD_DATA = {
       "path": "_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-herald-moments-2-4-missing-surface"
     },
     {
-      "slug": "herald-pitch",
-      "project": "pyforge-herald",
-      "title": "Herald's Pitch Deck — Moment 1 Orchestration",
-      "caps": 7,
-      "companions": 5,
-      "updated": "2026-08-02",
-      "dream": "herald-pitch",
-      "path": "_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-herald-pitch"
-    },
-    {
       "slug": "pyforge-herald",
       "project": "pyforge-herald",
       "title": "pyforge-herald",
-      "caps": 0,
-      "companions": 0,
+      "caps": 3,
+      "companions": 6,
       "updated": "2026-08-02",
       "dream": "pyforge-herald",
       "path": "_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald"
@@ -3548,6 +3519,16 @@ window.DASHBOARD_DATA = {
       "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-bmad-loop-governance"
     },
     {
+      "slug": "bmad-output-hygiene",
+      "project": "pyforge-marshal",
+      "title": "bmad-output-hygiene",
+      "caps": 10,
+      "companions": 0,
+      "updated": "2026-08-02",
+      "dream": "bmad-output-hygiene",
+      "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-bmad-output-hygiene"
+    },
+    {
       "slug": "durable-runs",
       "project": "pyforge-marshal",
       "title": "durable-runs — retirement record",
@@ -3588,16 +3569,6 @@ window.DASHBOARD_DATA = {
       "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-fleet-chain-completeness"
     },
     {
-      "slug": "genesis-installer",
-      "project": "pyforge-marshal",
-      "title": "Genesis — the operating-model installer",
-      "caps": 9,
-      "companions": 1,
-      "updated": "2026-07-31",
-      "dream": "genesis-installer",
-      "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-genesis-installer"
-    },
-    {
       "slug": "multi-loop-isolation",
       "project": "pyforge-marshal",
       "title": "multi-loop isolation harness",
@@ -3631,9 +3602,9 @@ window.DASHBOARD_DATA = {
       "slug": "pyforge-marshal",
       "project": "pyforge-marshal",
       "title": "marshal CLI — graduated autonomy, productized",
-      "caps": 9,
-      "companions": 5,
-      "updated": "2026-08-01",
+      "caps": 18,
+      "companions": 7,
+      "updated": "2026-08-02",
       "dream": "pyforge-marshal",
       "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal"
     },
@@ -3708,20 +3679,10 @@ window.DASHBOARD_DATA = {
       "path": "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-packaging-factory"
     },
     {
-      "slug": "presenton-pixi-image",
-      "project": "pyforge-mason",
-      "title": "presenton-pixi-image — retirement record",
-      "caps": 0,
-      "companions": 0,
-      "updated": "2026-08-02",
-      "dream": "presenton-pixi-image",
-      "path": "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-presenton-pixi-image"
-    },
-    {
       "slug": "pyforge-mason",
       "project": "pyforge-mason",
       "title": "mason CLI — the packaging factory, made portable",
-      "caps": 7,
+      "caps": 13,
       "companions": 5,
       "updated": "2026-08-02",
       "dream": "pyforge-mason",
@@ -4587,11 +4548,11 @@ window.DASHBOARD_DATA = {
       "verify": 90,
       "retro": null
     },
-    "sound": 2,
-    "live": 19,
-    "reached": 8,
-    "gaps": 13,
-    "findings": 13,
+    "sound": 0,
+    "live": 20,
+    "reached": 9,
+    "gaps": 12,
+    "findings": 16,
     "rows": [
       {
         "label": "atlas",
@@ -4620,7 +4581,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-02",
           "deck": "2026-07-25",
-          "spec": "2026-07-30T12:40",
+          "spec": "2026-08-02T14:50",
           "research": "2026-07-25",
           "brief": "2026-07-25",
           "prd": "2026-08-01",
@@ -4691,7 +4652,15 @@ window.DASHBOARD_DATA = {
         ],
         "gaps": [],
         "partial": [],
-        "staleBy": [],
+        "staleBy": [
+          {
+            "kind": "feeds",
+            "stage": "spec",
+            "than": "prd",
+            "at": "2026-08-02T14:50",
+            "other": "2026-08-01"
+          }
+        ],
         "furthest": "retro",
         "updated": "2026-08-02",
         "age": 0,
@@ -4868,7 +4837,7 @@ window.DASHBOARD_DATA = {
           "ux": "",
           "arch": "2026-07-28",
           "context": "",
-          "epics": "2026-07-31",
+          "epics": "2026-08-02",
           "sprint": "",
           "tea": "",
           "gates": "",
@@ -4959,11 +4928,11 @@ window.DASHBOARD_DATA = {
           "deck": "2026-07-23",
           "spec": "2026-07-29",
           "research": "2026-07-25",
-          "brief": "",
+          "brief": "2026-08-01",
           "prd": "2026-08-01",
           "ux": "",
-          "arch": "",
-          "context": "2026-08-01",
+          "arch": "2026-08-01",
+          "context": "2026-08-02",
           "epics": "2026-07-25",
           "sprint": "2026-07-29",
           "tea": "2026-07-25",
@@ -4975,13 +4944,13 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-02",
           "deck": "2026-07-25",
-          "spec": "2026-08-02T13:00",
+          "spec": "2026-08-02T14:45",
           "research": "2026-08-01",
-          "brief": "",
-          "prd": "2026-08-01",
+          "brief": "2026-08-02",
+          "prd": "2026-08-02",
           "ux": "",
-          "arch": "",
-          "context": "2026-08-01",
+          "arch": "2026-08-02",
+          "context": "2026-08-02",
           "epics": "2026-08-02",
           "sprint": "2026-08-02",
           "tea": "2026-07-31",
@@ -4993,13 +4962,16 @@ window.DASHBOARD_DATA = {
         "sub": {
           "research": {
             "have": {
-              "domain": true,
+              "domain": false,
               "market": true,
-              "technical": true
+              "technical": false
             },
-            "n": 3,
+            "n": 1,
             "of": 3,
-            "missing": [],
+            "missing": [
+              "domain",
+              "technical"
+            ],
             "inherited": false
           },
           "deck": {
@@ -5043,17 +5015,23 @@ window.DASHBOARD_DATA = {
           "code",
           "verify"
         ],
-        "gaps": [
-          "brief",
-          "arch"
+        "gaps": [],
+        "partial": [
+          "research"
         ],
-        "partial": [],
         "staleBy": [
           {
             "kind": "feeds",
             "stage": "spec",
             "than": "prd",
-            "at": "2026-08-02T13:00",
+            "at": "2026-08-02T14:45",
+            "other": "2026-08-02"
+          },
+          {
+            "kind": "feeds",
+            "stage": "prd",
+            "than": "gates",
+            "at": "2026-08-02",
             "other": "2026-08-01"
           }
         ],
@@ -5063,7 +5041,7 @@ window.DASHBOARD_DATA = {
         "stale": false,
         "version": "0.1.0",
         "progress": "3/19",
-        "complete": 11,
+        "complete": 13,
         "of": 13
       },
       {
@@ -5093,12 +5071,12 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-02",
           "deck": "2026-08-01",
-          "spec": "2026-08-01",
+          "spec": "2026-08-02T14:36",
           "research": "2026-07-31",
-          "brief": "2026-08-01",
-          "prd": "2026-08-01",
+          "brief": "2026-08-02",
+          "prd": "2026-08-02",
           "ux": "",
-          "arch": "2026-08-01",
+          "arch": "2026-08-02",
           "context": "2026-06-20",
           "epics": "2026-08-02",
           "sprint": "2026-08-02",
@@ -5163,7 +5141,15 @@ window.DASHBOARD_DATA = {
         ],
         "gaps": [],
         "partial": [],
-        "staleBy": [],
+        "staleBy": [
+          {
+            "kind": "feeds",
+            "stage": "spec",
+            "than": "prd",
+            "at": "2026-08-02T14:36",
+            "other": "2026-08-02"
+          }
+        ],
         "furthest": "verify",
         "updated": "2026-08-02",
         "age": 0,
@@ -5188,7 +5174,7 @@ window.DASHBOARD_DATA = {
           "prd": "2026-07-25",
           "ux": "",
           "arch": "2026-07-25",
-          "context": "2026-08-01",
+          "context": "2026-08-02",
           "epics": "2026-07-25",
           "sprint": "2026-07-29",
           "tea": "2026-07-25",
@@ -5200,13 +5186,13 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-02",
           "deck": "2026-07-25",
-          "spec": "2026-08-02T12:59",
+          "spec": "2026-08-02T14:38",
           "research": "2026-07-25",
           "brief": "2026-07-25",
           "prd": "2026-08-01",
           "ux": "",
-          "arch": "2026-07-25",
-          "context": "2026-08-01",
+          "arch": "2026-08-02",
+          "context": "2026-08-02",
           "epics": "2026-07-25",
           "sprint": "2026-08-02",
           "tea": "2026-07-31",
@@ -5277,17 +5263,17 @@ window.DASHBOARD_DATA = {
         "staleBy": [
           {
             "kind": "feeds",
-            "stage": "prd",
-            "than": "arch",
-            "at": "2026-08-01",
-            "other": "2026-07-25"
+            "stage": "spec",
+            "than": "prd",
+            "at": "2026-08-02T14:38",
+            "other": "2026-08-01"
           },
           {
             "kind": "feeds",
-            "stage": "spec",
-            "than": "prd",
-            "at": "2026-08-02T12:59",
-            "other": "2026-08-01"
+            "stage": "arch",
+            "than": "epics",
+            "at": "2026-08-02",
+            "other": "2026-07-25"
           }
         ],
         "furthest": "verify",
@@ -5898,12 +5884,12 @@ window.DASHBOARD_DATA = {
         "stages": {
           "dream": "2026-07-23",
           "deck": "2026-07-25",
-          "spec": "2026-07-29",
+          "spec": "",
           "research": "2026-07-25",
-          "brief": "2026-07-25",
-          "prd": "2026-07-25",
+          "brief": "",
+          "prd": "",
           "ux": "",
-          "arch": "2026-07-25",
+          "arch": "",
           "context": "",
           "epics": "",
           "sprint": "",
@@ -5916,12 +5902,12 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-02",
           "deck": "2026-07-25",
-          "spec": "2026-08-02",
+          "spec": "",
           "research": "2026-07-25",
-          "brief": "2026-07-25",
-          "prd": "2026-08-01",
+          "brief": "",
+          "prd": "",
           "ux": "",
-          "arch": "2026-07-25",
+          "arch": "",
           "context": "",
           "epics": "",
           "sprint": "",
@@ -5959,53 +5945,34 @@ window.DASHBOARD_DATA = {
         },
         "archived": true,
         "dreamStatus": "archived",
-        "ownerDream": "unity-data-stack",
+        "ownerDream": "",
         "noDream": false,
         "unowned": false,
-        "backfilled": true,
+        "backfilled": false,
         "openQuestions": 0,
         "overtaken": false,
         "na": [
-          "dream",
           "epics"
         ],
         "required": [
+          "dream",
           "deck",
           "spec",
-          "research",
-          "brief",
-          "prd",
-          "ux",
-          "arch"
+          "research"
         ],
         "gaps": [
-          "ux"
+          "spec"
         ],
         "partial": [],
-        "staleBy": [
-          {
-            "kind": "feeds",
-            "stage": "prd",
-            "than": "arch",
-            "at": "2026-08-01",
-            "other": "2026-07-25"
-          },
-          {
-            "kind": "feeds",
-            "stage": "spec",
-            "than": "prd",
-            "at": "2026-08-02",
-            "other": "2026-08-01"
-          }
-        ],
-        "furthest": "arch",
+        "staleBy": [],
+        "furthest": "research",
         "updated": "2026-08-02",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
-        "complete": 6,
-        "of": 7
+        "complete": 3,
+        "of": 4
       },
       {
         "label": "upstream-discovery",
@@ -6122,12 +6089,12 @@ window.DASHBOARD_DATA = {
         "stages": {
           "dream": "2026-07-23",
           "deck": "2026-07-25",
-          "spec": "2026-07-29",
+          "spec": "",
           "research": "2026-07-25",
-          "brief": "2026-07-25",
-          "prd": "2026-07-25",
+          "brief": "",
+          "prd": "",
           "ux": "",
-          "arch": "2026-07-25",
+          "arch": "",
           "context": "",
           "epics": "",
           "sprint": "",
@@ -6140,12 +6107,12 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-02",
           "deck": "2026-07-25",
-          "spec": "2026-08-02",
+          "spec": "",
           "research": "2026-07-25",
-          "brief": "2026-07-25",
-          "prd": "2026-08-01",
+          "brief": "",
+          "prd": "",
           "ux": "",
-          "arch": "2026-07-25",
+          "arch": "",
           "context": "",
           "epics": "",
           "sprint": "",
@@ -6183,53 +6150,34 @@ window.DASHBOARD_DATA = {
         },
         "archived": true,
         "dreamStatus": "archived",
-        "ownerDream": "wasm-analytics-stack",
+        "ownerDream": "",
         "noDream": false,
         "unowned": false,
-        "backfilled": true,
+        "backfilled": false,
         "openQuestions": 0,
         "overtaken": false,
         "na": [
-          "dream",
           "epics"
         ],
         "required": [
+          "dream",
           "deck",
           "spec",
-          "research",
-          "brief",
-          "prd",
-          "ux",
-          "arch"
+          "research"
         ],
         "gaps": [
-          "ux"
+          "spec"
         ],
         "partial": [],
-        "staleBy": [
-          {
-            "kind": "feeds",
-            "stage": "prd",
-            "than": "arch",
-            "at": "2026-08-01",
-            "other": "2026-07-25"
-          },
-          {
-            "kind": "feeds",
-            "stage": "spec",
-            "than": "prd",
-            "at": "2026-08-02",
-            "other": "2026-08-01"
-          }
-        ],
-        "furthest": "arch",
+        "staleBy": [],
+        "furthest": "research",
         "updated": "2026-08-02",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
-        "complete": 6,
-        "of": 7
+        "complete": 3,
+        "of": 4
       },
       {
         "label": "doctor-dependency-health",
@@ -6451,116 +6399,6 @@ window.DASHBOARD_DATA = {
         "of": 2
       },
       {
-        "label": "herald-moments-2-4",
-        "slug": "herald-moments-2-4",
-        "project": "pyforge-herald",
-        "dream": "herald-moments-2-4",
-        "owner": "herald",
-        "stages": {
-          "dream": "",
-          "deck": "",
-          "spec": "2026-08-02",
-          "research": "2026-07-25",
-          "brief": "",
-          "prd": "2026-08-02",
-          "ux": "",
-          "arch": "2026-08-02",
-          "context": "",
-          "epics": "",
-          "sprint": "",
-          "tea": "",
-          "gates": "",
-          "code": "",
-          "verify": "",
-          "retro": ""
-        },
-        "updatedAt": {
-          "dream": "",
-          "deck": "",
-          "spec": "2026-08-02",
-          "research": "2026-08-01",
-          "brief": "",
-          "prd": "2026-08-02",
-          "ux": "",
-          "arch": "2026-08-02",
-          "context": "",
-          "epics": "",
-          "sprint": "",
-          "tea": "",
-          "gates": "",
-          "code": "",
-          "verify": "",
-          "retro": ""
-        },
-        "sub": {
-          "research": {
-            "have": {
-              "domain": true,
-              "market": true,
-              "technical": true
-            },
-            "n": 3,
-            "of": 3,
-            "missing": [],
-            "inherited": true
-          },
-          "deck": {
-            "have": {
-              "prototype": false,
-              "exec": false,
-              "infographic": false,
-              "marp": false,
-              "standalone": false,
-              "pptx": false
-            },
-            "n": 0,
-            "of": 6,
-            "missing": [
-              "exec",
-              "infographic",
-              "marp",
-              "pptx",
-              "prototype",
-              "standalone"
-            ]
-          }
-        },
-        "archived": false,
-        "dreamStatus": "",
-        "ownerDream": "herald-moments-2-4-missing-surface",
-        "noDream": false,
-        "unowned": false,
-        "backfilled": false,
-        "openQuestions": 0,
-        "overtaken": false,
-        "na": [
-          "dream",
-          "ux"
-        ],
-        "required": [
-          "deck",
-          "spec",
-          "research",
-          "brief",
-          "prd",
-          "arch"
-        ],
-        "gaps": [
-          "deck",
-          "brief"
-        ],
-        "partial": [],
-        "staleBy": [],
-        "furthest": "arch",
-        "updated": "2026-08-02",
-        "age": 0,
-        "stale": false,
-        "version": "",
-        "progress": "",
-        "complete": 4,
-        "of": 6
-      },
-      {
         "label": "herald-moments-2-4-missing-surface",
         "slug": "herald-moments-2-4-missing-surface",
         "project": "pyforge-herald",
@@ -6605,13 +6443,16 @@ window.DASHBOARD_DATA = {
         "sub": {
           "research": {
             "have": {
-              "domain": true,
+              "domain": false,
               "market": true,
-              "technical": true
+              "technical": false
             },
-            "n": 3,
+            "n": 1,
             "of": 3,
-            "missing": [],
+            "missing": [
+              "domain",
+              "technical"
+            ],
             "inherited": true
           },
           "deck": {
@@ -6655,7 +6496,9 @@ window.DASHBOARD_DATA = {
         "gaps": [
           "deck"
         ],
-        "partial": [],
+        "partial": [
+          "research"
+        ],
         "staleBy": [],
         "furthest": "research",
         "updated": "2026-08-02",
@@ -6675,12 +6518,12 @@ window.DASHBOARD_DATA = {
         "stages": {
           "dream": "2026-08-01",
           "deck": "",
-          "spec": "2026-08-01",
+          "spec": "",
           "research": "2026-07-25",
-          "brief": "2026-08-01",
+          "brief": "",
           "prd": "",
           "ux": "",
-          "arch": "2026-08-01",
+          "arch": "",
           "context": "",
           "epics": "",
           "sprint": "",
@@ -6691,14 +6534,14 @@ window.DASHBOARD_DATA = {
           "retro": ""
         },
         "updatedAt": {
-          "dream": "2026-08-01",
+          "dream": "2026-08-02",
           "deck": "",
-          "spec": "2026-08-01",
+          "spec": "",
           "research": "2026-08-01",
-          "brief": "2026-08-01",
+          "brief": "",
           "prd": "",
           "ux": "",
-          "arch": "2026-08-01",
+          "arch": "",
           "context": "",
           "epics": "",
           "sprint": "",
@@ -6711,13 +6554,16 @@ window.DASHBOARD_DATA = {
         "sub": {
           "research": {
             "have": {
-              "domain": true,
+              "domain": false,
               "market": true,
-              "technical": true
+              "technical": false
             },
-            "n": 3,
+            "n": 1,
             "of": 3,
-            "missing": [],
+            "missing": [
+              "domain",
+              "technical"
+            ],
             "inherited": true
           },
           "deck": {
@@ -6743,38 +6589,37 @@ window.DASHBOARD_DATA = {
         },
         "archived": true,
         "dreamStatus": "archived",
-        "ownerDream": "herald-pitch",
+        "ownerDream": "",
         "noDream": false,
         "unowned": false,
         "backfilled": false,
         "openQuestions": 0,
         "overtaken": false,
         "na": [
-          "dream",
           "ux"
         ],
         "required": [
+          "dream",
           "deck",
           "spec",
-          "research",
-          "brief",
-          "prd",
-          "arch"
+          "research"
         ],
         "gaps": [
           "deck",
-          "prd"
+          "spec"
         ],
-        "partial": [],
+        "partial": [
+          "research"
+        ],
         "staleBy": [],
-        "furthest": "arch",
+        "furthest": "research",
         "updated": "2026-08-02",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
-        "complete": 4,
-        "of": 6
+        "complete": 2,
+        "of": 4
       },
       {
         "label": "agent-portability",
@@ -7307,6 +7152,112 @@ window.DASHBOARD_DATA = {
         "of": 3
       },
       {
+        "label": "bmad-output-hygiene",
+        "slug": "bmad-output-hygiene",
+        "project": "pyforge-marshal",
+        "dream": "bmad-output-hygiene",
+        "owner": "marshal",
+        "stages": {
+          "dream": "2026-08-02",
+          "deck": "",
+          "spec": "2026-08-02",
+          "research": "2026-07-16",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "tea": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "updatedAt": {
+          "dream": "2026-08-02",
+          "deck": "",
+          "spec": "2026-08-02T16:41",
+          "research": "2026-07-31",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "tea": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "sub": {
+          "research": {
+            "have": {
+              "domain": true,
+              "market": true,
+              "technical": true
+            },
+            "n": 3,
+            "of": 3,
+            "missing": [],
+            "inherited": true
+          },
+          "deck": {
+            "have": {
+              "prototype": false,
+              "exec": false,
+              "infographic": false,
+              "marp": false,
+              "standalone": false,
+              "pptx": false
+            },
+            "n": 0,
+            "of": 6,
+            "missing": [
+              "exec",
+              "infographic",
+              "marp",
+              "pptx",
+              "prototype",
+              "standalone"
+            ]
+          }
+        },
+        "archived": false,
+        "dreamStatus": "specified",
+        "ownerDream": "bmad-output-hygiene",
+        "noDream": false,
+        "unowned": false,
+        "backfilled": false,
+        "openQuestions": 0,
+        "overtaken": false,
+        "na": [
+          "dream",
+          "ux"
+        ],
+        "required": [
+          "deck",
+          "spec",
+          "research"
+        ],
+        "gaps": [
+          "deck"
+        ],
+        "partial": [],
+        "staleBy": [],
+        "furthest": "research",
+        "updated": "2026-08-02",
+        "age": 0,
+        "stale": false,
+        "version": "",
+        "progress": "",
+        "complete": 2,
+        "of": 3
+      },
+      {
         "label": "durable-runs",
         "slug": "durable-runs",
         "project": "pyforge-marshal",
@@ -7437,7 +7388,7 @@ window.DASHBOARD_DATA = {
           "retro": ""
         },
         "updatedAt": {
-          "dream": "2026-07-25",
+          "dream": "2026-08-02",
           "deck": "",
           "spec": "2026-08-01T09:45",
           "research": "2026-07-31",
@@ -7739,12 +7690,12 @@ window.DASHBOARD_DATA = {
         "stages": {
           "dream": "2026-07-29",
           "deck": "",
-          "spec": "2026-07-29",
+          "spec": "",
           "research": "2026-07-16",
           "brief": "",
-          "prd": "2026-07-25",
+          "prd": "",
           "ux": "",
-          "arch": "2026-07-25",
+          "arch": "",
           "context": "",
           "epics": "2026-07-29",
           "sprint": "",
@@ -7757,12 +7708,12 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-02",
           "deck": "",
-          "spec": "2026-07-31T21:05",
+          "spec": "",
           "research": "2026-07-31",
           "brief": "",
-          "prd": "2026-08-01",
+          "prd": "",
           "ux": "",
-          "arch": "2026-07-25",
+          "arch": "",
           "context": "",
           "epics": "2026-07-31",
           "sprint": "",
@@ -7807,17 +7758,17 @@ window.DASHBOARD_DATA = {
         },
         "archived": true,
         "dreamStatus": "archived",
-        "ownerDream": "genesis-installer",
+        "ownerDream": "",
         "noDream": false,
         "unowned": false,
-        "backfilled": true,
+        "backfilled": false,
         "openQuestions": 0,
         "overtaken": false,
         "na": [
-          "dream",
           "ux"
         ],
         "required": [
+          "dream",
           "deck",
           "spec",
           "research",
@@ -7829,27 +7780,22 @@ window.DASHBOARD_DATA = {
         ],
         "gaps": [
           "deck",
+          "spec",
           "brief",
+          "prd",
+          "arch",
           "context"
         ],
         "partial": [],
-        "staleBy": [
-          {
-            "kind": "feeds",
-            "stage": "prd",
-            "than": "arch",
-            "at": "2026-08-01",
-            "other": "2026-07-25"
-          }
-        ],
+        "staleBy": [],
         "furthest": "epics",
         "updated": "2026-08-02",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
-        "complete": 5,
-        "of": 8
+        "complete": 3,
+        "of": 9
       },
       {
         "label": "multi-loop-isolation",
@@ -8941,12 +8887,12 @@ window.DASHBOARD_DATA = {
         "stages": {
           "dream": "2026-07-23",
           "deck": "2026-07-25",
-          "spec": "2026-07-29",
+          "spec": "",
           "research": "2026-07-25",
-          "brief": "2026-07-25",
-          "prd": "2026-05-01",
+          "brief": "",
+          "prd": "",
           "ux": "",
-          "arch": "2026-07-25",
+          "arch": "",
           "context": "",
           "epics": "2026-07-29",
           "sprint": "",
@@ -8959,14 +8905,14 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-02",
           "deck": "2026-07-25",
-          "spec": "2026-08-02",
+          "spec": "",
           "research": "2026-07-25",
-          "brief": "2026-07-25",
-          "prd": "2026-07-25",
+          "brief": "",
+          "prd": "",
           "ux": "",
-          "arch": "2026-07-25",
+          "arch": "",
           "context": "",
-          "epics": "2026-07-29",
+          "epics": "2026-08-02",
           "sprint": "",
           "tea": "",
           "gates": "",
@@ -9004,16 +8950,15 @@ window.DASHBOARD_DATA = {
         },
         "archived": true,
         "dreamStatus": "archived",
-        "ownerDream": "presenton-pixi-image",
+        "ownerDream": "",
         "noDream": false,
         "unowned": false,
-        "backfilled": true,
+        "backfilled": false,
         "openQuestions": 0,
         "overtaken": false,
-        "na": [
-          "dream"
-        ],
+        "na": [],
         "required": [
+          "dream",
           "deck",
           "spec",
           "research",
@@ -9025,29 +8970,25 @@ window.DASHBOARD_DATA = {
           "epics"
         ],
         "gaps": [
+          "spec",
+          "brief",
+          "prd",
           "ux",
+          "arch",
           "context"
         ],
         "partial": [
           "research"
         ],
-        "staleBy": [
-          {
-            "kind": "feeds",
-            "stage": "spec",
-            "than": "prd",
-            "at": "2026-08-02",
-            "other": "2026-07-25"
-          }
-        ],
+        "staleBy": [],
         "furthest": "epics",
         "updated": "2026-08-02",
         "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
-        "complete": 7,
-        "of": 9
+        "complete": 4,
+        "of": 10
       },
       {
         "label": "mason-recipe-validator",
@@ -9710,6 +9651,117 @@ window.DASHBOARD_DATA = {
         "of": 3
       },
       {
+        "label": "unified-container",
+        "slug": "unified-container",
+        "project": "pyforge-steward",
+        "dream": "unified-container",
+        "owner": "steward",
+        "stages": {
+          "dream": "2026-08-02",
+          "deck": "",
+          "spec": "",
+          "research": "2026-07-25",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "tea": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "updatedAt": {
+          "dream": "2026-08-02",
+          "deck": "",
+          "spec": "",
+          "research": "2026-07-25",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "tea": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "sub": {
+          "research": {
+            "have": {
+              "domain": true,
+              "market": false,
+              "technical": true
+            },
+            "n": 2,
+            "of": 3,
+            "missing": [
+              "market"
+            ],
+            "inherited": true
+          },
+          "deck": {
+            "have": {
+              "prototype": false,
+              "exec": false,
+              "infographic": false,
+              "marp": false,
+              "standalone": false,
+              "pptx": false
+            },
+            "n": 0,
+            "of": 6,
+            "missing": [
+              "exec",
+              "infographic",
+              "marp",
+              "pptx",
+              "prototype",
+              "standalone"
+            ]
+          }
+        },
+        "archived": false,
+        "dreamStatus": "dreamt",
+        "ownerDream": "",
+        "noDream": false,
+        "unowned": false,
+        "backfilled": false,
+        "openQuestions": 0,
+        "overtaken": false,
+        "na": [
+          "ux"
+        ],
+        "required": [
+          "dream",
+          "deck",
+          "spec",
+          "research"
+        ],
+        "gaps": [
+          "deck",
+          "spec"
+        ],
+        "partial": [
+          "research"
+        ],
+        "staleBy": [],
+        "furthest": "research",
+        "updated": "2026-08-02",
+        "age": 0,
+        "stale": false,
+        "version": "",
+        "progress": "",
+        "complete": 2,
+        "of": 4
+      },
+      {
         "label": "warden-compliance-gates",
         "slug": "pyforge-warden-compliance-gates",
         "project": "pyforge-warden",
@@ -9843,7 +9895,7 @@ window.DASHBOARD_DATA = {
             "statuses": {
               "DREAMS": "🚀",
               "res": "✅",
-              "prod-brief": "◯",
+              "prod-brief": "✅",
               "PITCH-DECKS": "✅"
             }
           },
@@ -10001,7 +10053,7 @@ window.DASHBOARD_DATA = {
             "name": "Herald",
             "emoji": "🎺",
             "statuses": {
-              "arch": "◯",
+              "arch": "✅",
               "epics": "✅",
               "specs": "✅"
             }
@@ -10174,8 +10226,8 @@ window.DASHBOARD_DATA = {
         "task": "bmad-drift-check",
         "guards": "BMAD artifacts vs the live factory",
         "state": "drift",
-        "findings": 21,
-        "verdict": "DRIFT: 21 integrity + 0 currency finding(s). Re-sync via _bmad-output/projects/pyforge-marshal/SYNC-RUNBOOK.md.",
+        "findings": 3,
+        "verdict": "DRIFT: 3 integrity + 0 currency finding(s). Re-sync via _bmad-output/projects/pyforge-marshal/SYNC-RUNBOOK.md.",
         "runbook": "_bmad-output/projects/pyforge-marshal/SYNC-RUNBOOK.md"
       },
       {
@@ -10183,8 +10235,8 @@ window.DASHBOARD_DATA = {
         "task": "spec-surface-check",
         "guards": "every tracked file under a Spec surface",
         "state": "drift",
-        "findings": 777,
-        "verdict": "FINDINGS (777):",
+        "findings": 24,
+        "verdict": "FINDINGS (24):",
         "runbook": ""
       },
       {
@@ -10205,9 +10257,31 @@ window.DASHBOARD_DATA = {
     }
   },
   "backlog": {
-    "rows": [],
+    "rows": [
+      {
+        "slug": "unified-container",
+        "title": "One container, eight stations",
+        "status": "dreamt",
+        "owner": "steward",
+        "blockedOn": "",
+        "chain": {}
+      },
+      {
+        "slug": "bmad-output-hygiene",
+        "title": "One fabricated commit, eight stations of debris",
+        "status": "specified",
+        "owner": "marshal",
+        "blockedOn": "",
+        "chain": {
+          "spec": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-bmad-output-hygiene"
+        }
+      }
+    ],
     "blocked": 0,
-    "byOwner": {},
+    "byOwner": {
+      "steward": 1,
+      "marshal": 1
+    },
     "practices": [
       {
         "slug": "agent-portability",
@@ -10313,17 +10387,17 @@ window.DASHBOARD_DATA = {
       },
       {
         "station": "marshal",
-        "total": 15,
+        "total": 16,
         "counts": {
           "dreamt": 0,
           "pitched": 0,
-          "specified": 0,
+          "specified": 1,
           "realized": 1,
           "archived": 10,
           "practice": 4
         },
         "line": "paused 2.1",
-        "load": 0,
+        "load": 1,
         "blocked": 0,
         "dreams": [
           {
@@ -10429,6 +10503,13 @@ window.DASHBOARD_DATA = {
             "title": "Regenerable factory — every line of code under a spec it can be rebuilt from",
             "status": "realized",
             "type": "practice",
+            "blockedOn": ""
+          },
+          {
+            "slug": "bmad-output-hygiene",
+            "title": "One fabricated commit, eight stations of debris",
+            "status": "specified",
+            "type": "dream",
             "blockedOn": ""
           }
         ]
@@ -10667,9 +10748,9 @@ window.DASHBOARD_DATA = {
       },
       {
         "station": "steward",
-        "total": 3,
+        "total": 4,
         "counts": {
-          "dreamt": 0,
+          "dreamt": 1,
           "pitched": 0,
           "specified": 1,
           "realized": 0,
@@ -10677,13 +10758,20 @@ window.DASHBOARD_DATA = {
           "practice": 1
         },
         "line": "paused 1.4",
-        "load": 0,
+        "load": 1,
         "blocked": 0,
         "dreams": [
           {
             "slug": "pyforge-steward-feedstock-maintenance",
             "title": "\"Dream — PyForge Steward: Feedstock Maintenance Automation\"",
             "status": "archived",
+            "type": "dream",
+            "blockedOn": ""
+          },
+          {
+            "slug": "unified-container",
+            "title": "One container, eight stations",
+            "status": "dreamt",
             "type": "dream",
             "blockedOn": ""
           },
@@ -12263,8 +12351,8 @@ window.DASHBOARD_DATA = {
       "subject": "Merge bmad-loop/20260731-115548-f223/1-9-packaging-distribution-and-version-reporting into loop/pyforge-marshal (bmad-lo"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-02 18:30 UTC",
-    "generatedEpoch": 1785695459
+    "generatedAt": "2026-08-02 21:43 UTC",
+    "generatedEpoch": 1785706985
   },
   "storySpecs": [
     {

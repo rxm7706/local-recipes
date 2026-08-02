@@ -482,7 +482,7 @@ Herald is the factory's **voice and visual surface**. Invisible engineering is f
 > `archive/_bmad-output/projects/pyforge-herald/planning-artifacts/prds/prd-herald-moments-2-4-2026-08-02/`.
 > Its source Spec (`spec-herald-moments-2-4`) is folded into `spec-pyforge-herald/SPEC.md` as
 > capabilities HER-11–HER-13, and its Architecture into
-> `architecture-herald-pitch-2026-08-01/ARCHITECTURE-SPINE.md` as AD-11–AD-20.
+> `architecture-pyforge-herald-2026-08-01/ARCHITECTURE-SPINE.md` as AD-11–AD-20.
 
 <!-- BEGIN verbatim prd-herald-moments-2-4-2026-08-02/prd.md -->
 
