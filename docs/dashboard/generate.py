@@ -1614,7 +1614,11 @@ def scan_fleet(projects: dict, pitch_cards: list[dict] | None = None) -> dict:
 # `backfilled` describes true history (a chain retro-fitted after the fact) while this
 # describes a contract that has quietly gone out of date.
 _FEEDS = (("research", "brief"), ("brief", "prd"), ("prd", "arch"), ("spec", "prd"),
-          ("arch", "epics"), ("epics", "sprint"), ("prd", "gates"), ("code", "retro"))
+          ("arch", "epics"), ("epics", "sprint"), ("code", "retro"))
+# `("prd", "gates")` deliberately excluded: a readiness report is a point-in-time snapshot
+# of a check that ran once, not a living document meant to track the PRD's every touch --
+# an administrative PRD bump does not mean the check needs re-running. `_SHELF_LIFE_DEFAULT`
+# (90 days) already covers the real question, "has this gate gone stale on its own merits."
 
 # A spec's `.memlog.md` gets a fresh `updated:` on every append -- routine corrections,
 # validation passes, cross-reference fixes -- far more often than its PRD is touched. A

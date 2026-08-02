@@ -7,8 +7,9 @@ paradigm: 'facade over existing instruments (pipes-and-filters gather → normal
 scope: 'pyforge-doctor v1 — the doctor CLI (check/monitor/diagnose verbs) as an in-repo pixi workspace member consolidating pyforge-warden + cf_atlas'
 status: final
 created: '2026-07-25'
-updated: '2026-07-25'
-binds: [FR-1, FR-2, FR-3, FR-4, FR-5, FR-6, FR-7, FR-8, FR-9]
+updated: '2026-08-02'
+currency_review: "Reviewed 2026-08-02 — the PRD's 2026-08-02 dream-consolidation pass added §4.5 (FR-10..FR-13, explicitly sequenced as v1.x, after Epics 1-3 ship). Added a Frontier section (AD-7..AD-10) documenting each at the same rigor as the v1 rules, deferred exactly as the PRD scopes them — not built now, not undocumented either."
+binds: [FR-1, FR-2, FR-3, FR-4, FR-5, FR-6, FR-7, FR-8, FR-9, FR-10, FR-11, FR-12, FR-13]
 sources:
   - '_bmad-output/projects/pyforge-doctor/planning-artifacts/prds/prd-pyforge-doctor-2026-07-25/prd.md'
   - '_bmad-output/projects/pyforge-doctor/planning-artifacts/briefs/brief-pyforge-doctor-2026-07-25/brief.md'
@@ -145,6 +146,64 @@ graph LR
   — the caller (human or agent) cannot tell which path produced a given Finding
   except via its `Source` tag.
 
+## Frontier (v1.x — FR-10..FR-13, deferred)
+
+The PRD's §4.5 scopes these four capabilities for **after** Epics 1-3 (the v1 walking
+skeleton) ship and prove themselves — not concurrent with them. Documented here at the
+same rigor as the v1 rules so the architecture stays honest about what exists versus
+what is designed-but-not-built, per the same discipline the `## Deferred` section
+already applies to smaller open questions.
+
+### AD-7 — Health scoring is a pure aggregation over existing Findings, never a fourth instrument
+
+- **Binds:** FR-10
+- **Prevents:** `doctor.score` becoming a second gather path that re-queries warden or
+  atlas, duplicating AD-1/AD-6's existing filters.
+- **Rule:** A new `pyforge.doctor.score` module takes the same `list[Finding]` shape
+  AD-4's `prescribe` already consumes and returns a `Grade` (`StrEnum`: `A`–`F`, or
+  `incomplete`) via a stable per-axis weighting function. No subprocess or MCP call of
+  its own. Deterministic: the same Finding set always produces the same grade. An
+  incomplete axis gather returns `incomplete`, never a false `A` (PRD FR-10's testable
+  consequence).
+
+### AD-8 — The fleet-health surface is derived output, regenerated idempotently from `monitor --fleet`
+
+- **Binds:** FR-11
+- **Prevents:** a second, independent gather path competing with FR-4's existing
+  `monitor --fleet`, and an incremental/diff-state model that could drift from the
+  underlying Findings.
+- **Rule:** The persisted surface is written strictly from `monitor --fleet`'s existing
+  Finding/Source output (AD-6's gather path), versioned the same way `DoctorReport`
+  already is (`schema_version`, Consistency Conventions). Regenerating from the same
+  underlying findings is idempotent — no incremental state to drift. Exact CLI surface
+  (flag vs. subcommand) is deferred to epics/stories, mirroring how `## Deferred`
+  already defers `check --list`'s flag spelling without blocking the rule it serves.
+
+### AD-9 — Adoption-tracking is a new Source wired through the existing MCP-first/CLI-fallback seam
+
+- **Binds:** FR-12
+- **Prevents:** a fifth ad hoc query path bypassing AD-5/AD-6's established
+  MCP-first/CLI-fallback seam.
+- **Rule:** `doctor.sources.atlas` gains `adoption-stage` and `version-downloads` as
+  additional MCP tool calls (CLI fallback per AD-5/AD-6), normalized into the same
+  closed `Finding` shape (AD-3) under a new `Source` enum member — AD-3's "closed
+  taxonomy extended, never opened" precedent, exact member naming deferred to
+  epics/stories. `adoption` is opt-in only: `monitor --fleet`'s default `--watch` set
+  (FR-4) is never widened by this addition (PRD FR-12's testable consequence).
+
+### AD-10 — Upgrade-path recommendation stays inside `prescribe`'s pure-function boundary
+
+- **Binds:** FR-13
+- **Prevents:** `--prescribe` growing a second, non-pure code path, or crossing into
+  the real dependency-graph resolver PRD §5 permanently excludes.
+- **Rule:** The existing `Prescription` dataclass (AD-4) gains an optional
+  `next_safe_version` field, populated from atlas's `behind-upstream`/version data
+  already reachable via AD-6's gather path — no new subprocess or MCP call is added to
+  `prescribe` itself, preserving AD-4's pure-function discipline. Single-hop only: the
+  field names this package's own next safe version, never a transitively-resolved
+  chain. An unrecommendable case states that plainly (e.g. `null`) rather than
+  guessing (PRD FR-13's testable consequence).
+
 ## Consistency Conventions
 
 | Concern | Convention |
@@ -205,6 +264,10 @@ src/shared/packages/pyforge-doctor/
 | FR-8 (root-cause naming) | `doctor.prescribe` (templated from `Finding.evidence`) | AD-4 |
 | FR-9 (`--json` envelope) | `doctor.cli` render path | Consistency Conventions (`DoctorReport` schema) |
 | Packaging (pixi workspace member) | `src/shared/packages/pyforge-doctor/`, root `pixi.toml` (future edit, not this run) | Stack, AD-1 |
+| FR-10 (health scoring, v1.x) | `doctor.score` (new module, not yet built) | AD-7 |
+| FR-11 (persistent fleet-health surface, v1.x) | derived from `doctor.sources.atlas` output (new persistence layer, not yet built) | AD-8 |
+| FR-12 (adoption-tracking watch axis, v1.x) | `doctor.sources.atlas` (new Source member, not yet built) | AD-9 |
+| FR-13 (safe upgrade-path recommendation, v1.x) | `doctor.prescribe` (`Prescription.next_safe_version`, not yet built) | AD-10 |
 
 ## Deferred
 
@@ -221,8 +284,10 @@ src/shared/packages/pyforge-doctor/
   MCP-first/CLI-fallback *rule*, not the client library call shape.
 - **`check --list` introspection flag's exact CLI shape** — deferred; AD-3/FR-2 fix
   that the capability must exist, not its flag spelling.
-- **A real dependency-graph resolver for `--prescribe`** — explicitly out of v1 per
-  PRD §5 Non-Goals; AD-4 fixes ranking-only for v1, leaves graph-ordering as a
-  possible v1.x AD-7 without pre-committing its shape.
+- **A real dependency-graph resolver for `--prescribe`** — explicitly and permanently
+  out of scope per PRD §5 Non-Goals (not the same thing as FR-13/AD-10's single-hop
+  `next_safe_version`, which stays inside `prescribe`'s existing ranking-only
+  boundary). AD-4 fixes ranking-only for v1; no AD number is reserved for a resolver
+  because none is planned.
 - **Waiver-authoring mechanism for the `accepted-risk` partition** — the partition
   exists (AD-4) but nothing populates it in v1; deferred per PRD §6.2.

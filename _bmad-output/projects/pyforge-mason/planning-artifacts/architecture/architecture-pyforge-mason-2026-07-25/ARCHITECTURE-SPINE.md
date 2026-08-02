@@ -4,12 +4,13 @@ type: architecture-spine
 purpose: build-substrate
 altitude: feature
 paradigm: 'ports-and-adapters (hexagonal) with a knowledge-free core'
-scope: 'The mason CLI: dist pyforge-mason / module pyforge.mason / CLI mason. Governs FR-1 – FR-46, NFR-1 – NFR-16, D-1 – D-9.'
+scope: 'The mason CLI: dist pyforge-mason / module pyforge.mason / CLI mason. Governs FR-1 – FR-50, NFR-1 – NFR-16, D-1 – D-9.'
 status: final
 created: '2026-07-25'
 updated: '2026-08-02'
+currency_review: "Reviewed 2026-08-02 — the PRD's r2 adversarial-review pass added FR-47..FR-50 (closing Rule-2 retrospective, configuration surface, logging/child-output handling, publish rehearsal), current v1 MVP scope per PRD §6.1, not deferred. FR-47/FR-48 were already covered in substance by AD-15/AD-13 respectively, just uncited — bound now. FR-49 (stream-vs-capture child output) and FR-50 (pypi-test rehearsal gate) were genuinely new rules; added as AD-25/AD-26."
 binds:
-  - 'FR-1..FR-46'
+  - 'FR-1..FR-50'
   - 'NFR-1..NFR-16'
   - 'D-1..D-9'
 sources:
@@ -184,12 +185,16 @@ graph TD
 
 ### AD-13 — No configuration file in v1
 
-- **Binds:** FR-35, NFR-9
+- **Binds:** FR-35, FR-48, NFR-9
 - **Prevents:** two configuration systems (flags/env plus a file) with undefined precedence — the
   classic source of "it works on my machine" in CLI tools.
 - **Rule:** Configuration is flags and environment variables only. Precedence is always
   flag → environment → default, uniformly, for every setting. Mason reads no `mason.toml`, and reads
-  no key from `pyproject.toml` other than the packaging metadata it is asked to build.
+  no key from `pyproject.toml` other than the packaging metadata it is asked to build. The v1 knob
+  set (FR-48) is closed and fully enumerated: `--cfe-root`/`MASON_CFE_ROOT`,
+  `--cfe-python`/`MASON_CFE_PYTHON`, `--cfe-timeout`/`MASON_CFE_TIMEOUT`, `--format`, `--verbose`,
+  `--quiet` — each with both a flag and an environment-variable form; a meta-test asserts no code
+  path reads a Mason-specific key from a file.
 
 ### AD-14 — Credential blindness
 
@@ -204,7 +209,7 @@ graph TD
 
 ### AD-15 — The CFE surface is read-only, forever
 
-- **Binds:** FR-45, NFR-16, CLAUDE.md Rules 1 & 2
+- **Binds:** FR-45, FR-47, NFR-16, CLAUDE.md Rules 1 & 2
 - **Prevents:** a Mason story "fixing" CFE — which would break the `spec-packaging-factory`
   CHANGELOG sentinel, bypass the Rule-2 retro that owns that surface, and make Mason a fork by
   increments.
@@ -227,6 +232,33 @@ graph TD
   requires a real CFE installation, network, or `recipes/` directory. The delegation-fidelity test
   (FR-46) is the single exception and is marked `slow`, mirroring `pyforge-warden`'s marker
   convention.
+
+### AD-25 — Delegated child output streams or is captured, never both, and never breaks the JSON envelope
+
+*(Numbered 25, continuing the primary spine's own sequence after the satellite's AD-17–AD-24, to
+avoid renumbering either.)*
+
+- **Binds:** FR-49
+- **Prevents:** a long-running delegated build appearing silently hung with no output, and a
+  streamed child writing to stdout mid-operation and breaking AD-8's single-JSON-document
+  guarantee under `--format json`.
+- **Rule:** Two invocation modes. **STREAM** — operations expected to exceed a few seconds
+  (`recipe build`, `package build`) forward child stderr through to the user's stderr as it is
+  produced, never buffered to completion. **CAPTURE** — short JSON-returning operations buffer
+  stdout for parsing (AD-4's existing `CfeResult` shape). Streamed child output always targets
+  stderr, even under `--format json`, so stdout's single-JSON-document guarantee (AD-8) holds
+  unbroken during a streaming operation. No log record at any level or mode contains an
+  environment-variable value (AD-14).
+
+### AD-26 — A rehearsal target gates the one irreversible publish
+
+- **Binds:** FR-50
+- **Prevents:** a first `pypi` upload doubling as an untested production one-way door.
+- **Rule:** The `pypi-test` ship target (AD-9's `ShipTarget` enum) runs the identical code path as
+  `pypi`, differing only in repository configuration (TestPyPI vs. PyPI) — never a separate
+  implementation. The self-hosting/release sequence (FR-24) runs `pypi-test` and requires it to
+  reach `terminal` success before `pypi` runs. The dry-run plan (AD-9's rendering, PRD FR-19)
+  states explicitly that the `pypi` target is irreversible.
 
 ## Consistency Conventions
 
@@ -338,6 +370,10 @@ sequenceDiagram
 | `mason doctor` (FR-34) | `doctor.py` | AD-5, AD-12 |
 | Distribution (FR-36 – FR-41) | `pyproject.toml`, `pixi.toml`, root `pixi.toml` | Stack, AD-12 |
 | Seam enforcement (FR-42 – FR-46) | `tests/meta/` | AD-1, AD-2, AD-3, AD-6, AD-15, AD-16 |
+| Closing retrospective (FR-47) | closeout process, not a module | AD-15 |
+| Configuration surface (FR-48) | `cli.py` flag parsing + env-var reads | AD-13 |
+| Logging + child-output handling (FR-49) | `cfe.py`, `engines/*` | AD-25 |
+| Publish rehearsal (FR-50) | `package.py` (`pypi-test` target) | AD-9, AD-26 |
 
 ## Deferred
 
