@@ -2856,7 +2856,7 @@ window.DASHBOARD_DATA = {
       }
     }
   },
-  "snapshot": "<span>2026-08-02 22:10 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-02 22:34 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -4552,7 +4552,7 @@ window.DASHBOARD_DATA = {
     "live": 20,
     "reached": 9,
     "gaps": 12,
-    "findings": 3,
+    "findings": 0,
     "rows": [
       {
         "label": "atlas",
@@ -4694,7 +4694,7 @@ window.DASHBOARD_DATA = {
           "brief": "2026-07-25",
           "prd": "2026-08-02",
           "ux": "",
-          "arch": "2026-07-25",
+          "arch": "2026-08-02",
           "context": "2026-08-01",
           "epics": "2026-08-02",
           "sprint": "2026-08-02",
@@ -4763,15 +4763,7 @@ window.DASHBOARD_DATA = {
         "partial": [
           "research"
         ],
-        "staleBy": [
-          {
-            "kind": "feeds",
-            "stage": "prd",
-            "than": "arch",
-            "at": "2026-08-02",
-            "other": "2026-07-25"
-          }
-        ],
+        "staleBy": [],
         "furthest": "verify",
         "updated": "2026-08-02",
         "age": 0,
@@ -5140,7 +5132,7 @@ window.DASHBOARD_DATA = {
           "ux": "",
           "arch": "2026-08-02",
           "context": "2026-08-02",
-          "epics": "2026-07-25",
+          "epics": "2026-08-02",
           "sprint": "2026-08-02",
           "tea": "2026-07-31",
           "gates": "2026-08-01",
@@ -5207,15 +5199,7 @@ window.DASHBOARD_DATA = {
         "partial": [
           "research"
         ],
-        "staleBy": [
-          {
-            "kind": "feeds",
-            "stage": "arch",
-            "than": "epics",
-            "at": "2026-08-02",
-            "other": "2026-07-25"
-          }
-        ],
+        "staleBy": [],
         "furthest": "verify",
         "updated": "2026-08-02",
         "age": 0,
@@ -5548,15 +5532,7 @@ window.DASHBOARD_DATA = {
         "partial": [
           "research"
         ],
-        "staleBy": [
-          {
-            "kind": "feeds",
-            "stage": "prd",
-            "than": "gates",
-            "at": "2026-08-01",
-            "other": "2026-07-16"
-          }
-        ],
+        "staleBy": [],
         "furthest": "verify",
         "updated": "2026-08-02",
         "age": 0,
@@ -7081,7 +7057,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-02",
           "deck": "",
-          "spec": "2026-08-02T17:00",
+          "spec": "2026-08-02T17:11",
           "research": "2026-07-31",
           "brief": "",
           "prd": "",
@@ -12243,8 +12219,8 @@ window.DASHBOARD_DATA = {
       "subject": "Merge bmad-loop/20260731-115548-f223/1-9-packaging-distribution-and-version-reporting into loop/pyforge-marshal (bmad-lo"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-02 22:10 UTC",
-    "generatedEpoch": 1785708651
+    "generatedAt": "2026-08-02 22:34 UTC",
+    "generatedEpoch": 1785710074
   },
   "storySpecs": [
     {
