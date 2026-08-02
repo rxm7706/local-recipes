@@ -8213,6 +8213,352 @@ window.DASHBOARD_DATA = {
       }
     ]
   },
+  "commandCenter": {
+    "phases": [
+      {
+        "id": "analysis",
+        "name": "ANALYSIS Phase",
+        "flow": "Dream → Pitch deck",
+        "artifacts": [
+          "DREAMS",
+          "res-domain",
+          "res-market",
+          "res-tech",
+          "prod-brief",
+          "PITCH-DECKS"
+        ],
+        "gate": "All 8 stations complete analysis",
+        "stations": [
+          {
+            "name": "Herald",
+            "emoji": "🎺",
+            "statuses": {
+              "DREAMS": "🚀",
+              "res": "✅",
+              "prod-brief": "◯",
+              "PITCH-DECKS": "✅"
+            }
+          },
+          {
+            "name": "Marshal",
+            "emoji": "⚔️",
+            "statuses": {
+              "DREAMS": "🚀",
+              "res": "✅",
+              "prod-brief": "✅",
+              "PITCH-DECKS": "✅"
+            }
+          },
+          {
+            "name": "Atlas",
+            "emoji": "🗺️",
+            "statuses": {
+              "DREAMS": "🚀",
+              "res": "✅",
+              "prod-brief": "✅",
+              "PITCH-DECKS": "✅"
+            }
+          },
+          {
+            "name": "Warden",
+            "emoji": "🛡️",
+            "statuses": {
+              "DREAMS": "🚀",
+              "res": "✅",
+              "prod-brief": "✅",
+              "PITCH-DECKS": "✅"
+            }
+          },
+          {
+            "name": "Mason",
+            "emoji": "🧱",
+            "statuses": {
+              "DREAMS": "🚀",
+              "res": "✅",
+              "prod-brief": "✅",
+              "PITCH-DECKS": "✅"
+            }
+          },
+          {
+            "name": "Doctor",
+            "emoji": "🏥",
+            "statuses": {
+              "DREAMS": "🚀",
+              "res": "✅",
+              "prod-brief": "✅",
+              "PITCH-DECKS": "✅"
+            }
+          },
+          {
+            "name": "Scribe",
+            "emoji": "📖",
+            "statuses": {
+              "DREAMS": "🚀",
+              "res": "✅",
+              "prod-brief": "✅",
+              "PITCH-DECKS": "✅"
+            }
+          },
+          {
+            "name": "Steward",
+            "emoji": "👑",
+            "statuses": {
+              "DREAMS": "🚀",
+              "res": "✅",
+              "prod-brief": "✅",
+              "PITCH-DECKS": "✅"
+            }
+          }
+        ]
+      },
+      {
+        "id": "planning",
+        "name": "PLANNING Phase",
+        "flow": "PRD requirements",
+        "artifacts": [
+          "PRD"
+        ],
+        "gate": "All 8 stations have PRD",
+        "stations": [
+          {
+            "name": "Herald",
+            "emoji": "🎺",
+            "statuses": {
+              "PRD": "✅"
+            }
+          },
+          {
+            "name": "Marshal",
+            "emoji": "⚔️",
+            "statuses": {
+              "PRD": "✅"
+            }
+          },
+          {
+            "name": "Atlas",
+            "emoji": "🗺️",
+            "statuses": {
+              "PRD": "✅"
+            }
+          },
+          {
+            "name": "Warden",
+            "emoji": "🛡️",
+            "statuses": {
+              "PRD": "✅"
+            }
+          },
+          {
+            "name": "Mason",
+            "emoji": "🧱",
+            "statuses": {
+              "PRD": "✅"
+            }
+          },
+          {
+            "name": "Doctor",
+            "emoji": "🏥",
+            "statuses": {
+              "PRD": "✅"
+            }
+          },
+          {
+            "name": "Scribe",
+            "emoji": "📖",
+            "statuses": {
+              "PRD": "✅"
+            }
+          },
+          {
+            "name": "Steward",
+            "emoji": "👑",
+            "statuses": {
+              "PRD": "✅"
+            }
+          }
+        ]
+      },
+      {
+        "id": "solutioning",
+        "name": "SOLUTIONING Phase",
+        "flow": "Architecture → specs",
+        "artifacts": [
+          "arch",
+          "epics",
+          "specs"
+        ],
+        "gate": "All 8 stations complete solutioning",
+        "stations": [
+          {
+            "name": "Herald",
+            "emoji": "🎺",
+            "statuses": {
+              "arch": "◯",
+              "epics": "✅",
+              "specs": "✅"
+            }
+          },
+          {
+            "name": "Marshal",
+            "emoji": "⚔️",
+            "statuses": {
+              "arch": "✅",
+              "epics": "✅",
+              "specs": "✅"
+            }
+          },
+          {
+            "name": "Atlas",
+            "emoji": "🗺️",
+            "statuses": {
+              "arch": "✅",
+              "epics": "✅",
+              "specs": "✅"
+            }
+          },
+          {
+            "name": "Warden",
+            "emoji": "🛡️",
+            "statuses": {
+              "arch": "✅",
+              "epics": "✅",
+              "specs": "✅"
+            }
+          },
+          {
+            "name": "Mason",
+            "emoji": "🧱",
+            "statuses": {
+              "arch": "✅",
+              "epics": "✅",
+              "specs": "✅"
+            }
+          },
+          {
+            "name": "Doctor",
+            "emoji": "🏥",
+            "statuses": {
+              "arch": "✅",
+              "epics": "✅",
+              "specs": "✅"
+            }
+          },
+          {
+            "name": "Scribe",
+            "emoji": "📖",
+            "statuses": {
+              "arch": "✅",
+              "epics": "✅",
+              "specs": "✅"
+            }
+          },
+          {
+            "name": "Steward",
+            "emoji": "👑",
+            "statuses": {
+              "arch": "✅",
+              "epics": "✅",
+              "specs": "✅"
+            }
+          }
+        ]
+      },
+      {
+        "id": "implementation",
+        "name": "IMPLEMENTATION Phase",
+        "flow": "Code → ship + retro",
+        "artifacts": [
+          "sprint-status",
+          "code",
+          "tests",
+          "retro"
+        ],
+        "gate": "Herald coding; others queued or ready",
+        "stations": [
+          {
+            "name": "Herald",
+            "emoji": "🎺",
+            "statuses": {
+              "sprint-status": "✅",
+              "code": "✅",
+              "tests": "✅",
+              "retro": "◯"
+            }
+          },
+          {
+            "name": "Marshal",
+            "emoji": "⚔️",
+            "statuses": {
+              "sprint-status": "✅",
+              "code": "✅",
+              "tests": "✅",
+              "retro": "◯"
+            }
+          },
+          {
+            "name": "Atlas",
+            "emoji": "🗺️",
+            "statuses": {
+              "sprint-status": "✅",
+              "code": "✅",
+              "tests": "✅",
+              "retro": "✅"
+            }
+          },
+          {
+            "name": "Warden",
+            "emoji": "🛡️",
+            "statuses": {
+              "sprint-status": "✅",
+              "code": "✅",
+              "tests": "✅",
+              "retro": "◯"
+            }
+          },
+          {
+            "name": "Mason",
+            "emoji": "🧱",
+            "statuses": {
+              "sprint-status": "✅",
+              "code": "✅",
+              "tests": "✅",
+              "retro": "◯"
+            }
+          },
+          {
+            "name": "Doctor",
+            "emoji": "🏥",
+            "statuses": {
+              "sprint-status": "✅",
+              "code": "✅",
+              "tests": "✅",
+              "retro": "◯"
+            }
+          },
+          {
+            "name": "Scribe",
+            "emoji": "📖",
+            "statuses": {
+              "sprint-status": "✅",
+              "code": "✅",
+              "tests": "✅",
+              "retro": "◯"
+            }
+          },
+          {
+            "name": "Steward",
+            "emoji": "👑",
+            "statuses": {
+              "sprint-status": "✅",
+              "code": "✅",
+              "tests": "✅",
+              "retro": "◯"
+            }
+          }
+        ]
+      }
+    ]
+  },
   "health": {
     "detectors": [
       {

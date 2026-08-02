@@ -545,6 +545,26 @@
   @media (max-width: 720px) { .fleetrow > summary { grid-template-columns: 78px auto 1fr auto; }
     .fleet-prog, .fleet-ver, .fleetrow .smith, .fmarks { display: none; } .fledger { padding-left: 0; } }
 
+  /* command center — consolidated view (stations × phases) */
+  .cc-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 12px; }
+  .cc-table th { background: var(--panel-2); color: var(--slate); font-family: var(--mono); font-size: 10px;
+    text-transform: uppercase; letter-spacing: .05em; padding: 8px 6px; text-align: left; font-weight: 600;
+    border-bottom: 2px solid var(--line); }
+  .cc-table td { padding: 8px 6px; border-bottom: 1px solid var(--line-soft); font-family: var(--mono); }
+  .cc-table tr:last-child td { border-bottom: none; }
+  .cc-station-col { width: 120px; }
+  .cc-phase-col { text-align: center; font-size: 11px; }
+  .cc-station { display: flex; align-items: center; gap: 6px; font-weight: 600; white-space: nowrap; }
+  .cc-dots { text-align: center; padding: 8px 4px; }
+  .cc-fdot { width: 10px; height: 10px; border-radius: 3px; background: var(--done); cursor: help; display: inline-block; margin: 0 3px; vertical-align: middle; }
+  .cc-fdot.miss { background: var(--pending-ground); border: 1px solid var(--slate-faint); }
+  .cc-fdot.active { background: var(--active); }
+  .cc-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-top: 12px; }
+  .cc-summary > div { font-family: var(--sans); font-size: 12px; color: var(--ink-soft); }
+  .cc-summary b { color: var(--slate); font-weight: 600; }
+  @media (max-width: 900px) { .cc-table { font-size: 12px; } .cc-table th, .cc-table td { padding: 6px 4px; } .cc-phase-cell { letter-spacing: 1px; } }
+  @media (max-width: 720px) { .cc-table { font-size: 11px; } .cc-table th, .cc-table td { padding: 4px 3px; } .cc-phase-cell { font-size: 12px; letter-spacing: 1px; } }
+
   /* campaign board */
   .camprow { display: grid; grid-template-columns: 34px minmax(150px,230px) auto 1fr auto auto; gap: 12px; padding: 9px 0; align-items: center; }
   .camprow + .camprow { border-top: 1px solid var(--line-soft); }
@@ -766,6 +786,12 @@
     <summary><span class="program-h" id="campaignh">Campaigns</span><span class="zcaret">▸</span></summary>
     <div class="dflow"><b>program-scale efforts across the BMAD projects</b> — each campaign is a roster of parallel chains/lines with live per-row state. Completed campaigns collapse and keep their durable record; the active campaign leads.</div>
     <div id="campaignblocks"></div>
+  </details>
+
+  <details class="dreams zsec" id="commandsec" hidden open>
+    <summary><span class="program-h" id="commandh">Command Center</span><span class="zcaret">▸</span></summary>
+    <div class="dflow"><b>PyForge Guild Fleet — Phase-Grouped View</b> — 8 stations tracked across 4 SDLC phases (ANALYSIS → PLANNING → SOLUTIONING → IMPLEMENTATION) with flow and artifact mapping. Each phase shows completion status across all stations and the gate condition.</div>
+    <div id="commandblocks"></div>
   </details>
 
   <details class="dreams zsec" id="fleetsec" hidden open>
@@ -1017,6 +1043,61 @@
         '<span class="campblock-m">' + esc(c.kind) + ' · ' + c.rows.length + ' rows · ' + meta + rec + '</span>' +
         '</summary><div class="campblock-body">' + rows + '</div></details>';
     }).join("");
+  }
+
+  // ---- Command Center (SDLC Phase-grouped view) ----
+  const CC = window.DASHBOARD_DATA.commandCenter || null;
+  if (CC && CC.phases && CC.phases.length) {
+    document.getElementById("commandsec").hidden = false;
+    const stationCount = CC.phases[0].stations.length;
+    document.getElementById("commandh").textContent = "Command Center · " + stationCount + " stations · 4 phases";
+
+    // Reorganize from phase-centric to station-centric: one row per station, columns per phase
+    const stations = {};
+    CC.phases.forEach(phase => {
+      phase.stations.forEach((station, idx) => {
+        if (!stations[station.name]) {
+          stations[station.name] = { emoji: station.emoji, phases: {} };
+        }
+        stations[station.name].phases[phase.id] = {
+          name: phase.name,
+          flow: phase.flow,
+          artifacts: phase.artifacts,
+          statuses: station.statuses
+        };
+      });
+    });
+
+    // Build consolidated table: one row per station, columns for each phase
+    const tableHtml = '<table class="cc-table cc-consolidated"><thead><tr>' +
+      '<th class="cc-station-col">Station</th>' +
+      CC.phases.map(p => '<th class="cc-phase-col">' + esc(p.name.replace(' Phase', '')) + '</th>').join('') +
+      '</tr></thead><tbody>' +
+      Object.entries(stations).map(([name, data]) => {
+        return '<tr>' +
+          '<td class="cc-station"><span>' + esc(data.emoji) + '</span><span>' + esc(name) + '</span></td>' +
+          CC.phases.map(phase => {
+            const phaseData = data.phases[phase.id];
+            if (!phaseData) return '<td></td>';
+            const dots = phase.artifacts.map(artifact => {
+              const status = phaseData.statuses[artifact] || '◯';
+              let cls = 'miss';  // default: missing
+              if (status === '✅') cls = '';  // done: green
+              else if (status === '🚀') cls = 'active';  // active: orange
+              return '<span class="cc-fdot ' + cls + '" title="' + esc(artifact) + '"></span>';
+            }).join('');
+            return '<td class="cc-dots">' + dots + '</td>';
+          }).join('') +
+          '</tr>';
+      }).join('') +
+      '</tbody></table>';
+
+    // Add summary line
+    const summary = '<div class="cc-summary">' +
+      CC.phases.map(p => '<div><b>' + esc(p.name.replace(' Phase', '')) + ':</b> ' + esc(p.flow) + '</div>').join('') +
+      '</div>';
+
+    document.getElementById("commandblocks").innerHTML = tableHtml + summary;
   }
 
   // ---- 2d · Fleet (Dream -> Code state per project) ----

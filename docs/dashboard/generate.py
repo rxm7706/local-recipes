@@ -1688,6 +1688,139 @@ def scan_pitch() -> list[dict]:
     return cards
 
 
+# ---- command center (SDLC phase-grouped view) --------------------------------
+
+def scan_command_center(fleet: dict) -> dict:
+    """PyForge Guild Fleet view grouped by SDLC phases.
+
+    Derives from fleet data: maps each station/project's artifacts to their
+    corresponding SDLC phases (ANALYSIS → PLANNING → SOLUTIONING → IMPLEMENTATION).
+    Status indicators reflect actual artifact existence from the fleet.
+    Aggregates per-station data (showing only primary chain per station per phase).
+    """
+    # Map fleet stages to SDLC phases
+    phase_map = {
+        "analysis": ["dream", "research", "brief", "deck"],
+        "planning": ["prd"],
+        "solutioning": ["arch", "epics", "context"],
+        "implementation": ["sprint", "code", "verify", "retro"]
+    }
+
+    # Station info: emoji + full name mapping (in display order)
+    station_order = ["herald", "marshal", "atlas", "warden", "mason", "doctor", "scribe", "steward"]
+    station_info = {
+        "herald": ("🎺", "Herald"),
+        "marshal": ("⚔️", "Marshal"),
+        "atlas": ("🗺️", "Atlas"),
+        "warden": ("🛡️", "Warden"),
+        "mason": ("🧱", "Mason"),
+        "doctor": ("🏥", "Doctor"),
+        "scribe": ("📖", "Scribe"),
+        "steward": ("👑", "Steward"),
+    }
+
+    # Artifact display names
+    artifact_labels = {
+        "dream": "DREAMS",
+        "research": "res",
+        "brief": "prod-brief",
+        "deck": "PITCH-DECKS",
+        "prd": "PRD",
+        "arch": "arch",
+        "epics": "epics",
+        "context": "specs",
+        "sprint": "sprint-status",
+        "code": "code",
+        "verify": "tests",
+        "retro": "retro"
+    }
+
+    # Build per-station fleet summary (one row per station, aggregating all chains)
+    station_fleets = {}
+    for row in fleet.get("rows", []):
+        owner = row.get("owner", "").lower()
+        if owner not in station_info:
+            continue
+        # Take the first (primary) row per station if multiple exist
+        if owner not in station_fleets:
+            station_fleets[owner] = row
+
+    # Build phase data from aggregated fleet
+    phases = []
+    phase_info = {
+        "analysis": {
+            "name": "ANALYSIS Phase",
+            "flow": "Dream → Pitch deck",
+            "artifacts": ["DREAMS", "res-domain", "res-market", "res-tech", "prod-brief", "PITCH-DECKS"],
+            "gate": "All 8 stations complete analysis"
+        },
+        "planning": {
+            "name": "PLANNING Phase",
+            "flow": "PRD requirements",
+            "artifacts": ["PRD"],
+            "gate": "All 8 stations have PRD"
+        },
+        "solutioning": {
+            "name": "SOLUTIONING Phase",
+            "flow": "Architecture → specs",
+            "artifacts": ["arch", "epics", "specs"],
+            "gate": "All 8 stations complete solutioning"
+        },
+        "implementation": {
+            "name": "IMPLEMENTATION Phase",
+            "flow": "Code → ship + retro",
+            "artifacts": ["sprint-status", "code", "tests", "retro"],
+            "gate": "Herald coding; others queued or ready"
+        }
+    }
+
+    for phase_id, phase_config in phase_info.items():
+        phase_stages = phase_map.get(phase_id, [])
+        stations = []
+
+        # Build station rows in defined order
+        for owner in station_order:
+            if owner not in station_fleets:
+                continue
+
+            row = station_fleets[owner]
+            emoji, name = station_info[owner]
+            statuses = {}
+
+            # Derive status for each artifact in this phase
+            for stage in phase_stages:
+                has_stage = bool(row.get("stages", {}).get(stage, ""))
+
+                # Determine status indicator based on artifact existence
+                if stage == "dream" and has_stage:
+                    status = "🚀"  # active
+                elif has_stage:
+                    status = "✅"  # complete
+                else:
+                    status = "◯"  # not started
+
+                # Map stage to artifact label
+                label = artifact_labels.get(stage, stage)
+                statuses[label] = status
+
+            stations.append({
+                "name": name,
+                "emoji": emoji,
+                "statuses": statuses
+            })
+
+        phases.append({
+            "id": phase_id,
+            "name": phase_config["name"],
+            "flow": phase_config["flow"],
+            "artifacts": phase_config["artifacts"],
+            "gate": phase_config["gate"],
+            "stations": stations
+        })
+
+    return {"phases": phases}
+
+
 # ---- open work (the tracked deferred-work ledgers) ---------------------------
 
 _DW_HEAD = re.compile(r"^#{2,4}\s+(DW-[A-Za-z0-9][A-Za-z0-9-]*)\s*[—:-]?\s*(.*)$", re.M)
@@ -2292,6 +2425,7 @@ def main() -> int:
     # inside the fleet would be a second producer of one fact.
     data["pitch"] = scan_pitch()
     data["fleet"] = scan_fleet(data["projects"], data["pitch"])
+    data["commandCenter"] = scan_command_center(data["fleet"])
     data["campaigns"] = [
         {"id": "spec-completion-2026-07-25", "title": "Spec Completion",
          "kind": "planning", "status": "completed", "completed": "2026-07-25",
