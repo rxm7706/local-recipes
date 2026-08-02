@@ -850,6 +850,20 @@ CAMPAIGN_ROSTER = [
 
 CAMPAIGN_STAGES = ("research", "brief", "prd", "architecture", "epics")
 
+# Same bug class as IMPL_CAMPAIGN_LEDGER: `pa` below assumed a roster slug always
+# names its own live `_bmad-output/projects/<slug>/` dir. 3 of these 10 slugs are
+# dissolved-and-absorbed (PROJECTS.md) -- their chain moved to the owning Smith's
+# tree, so the naive path both mis-detects `have` (false "not landed") and any link
+# built from it 404s. pyforge-genesis is deliberately absent from this map: it
+# wasn't absorbed into a Smith, its standard PRD/brief/architecture/epics chain was
+# retired outright (constitutive, ships no product) -- `have: all False` for it is
+# honest, not a bug; only its link gets a special-cased redirect (JS side).
+CAMPAIGN_PROJECT_OVERRIDE = {
+    "presenton-pixi-image": "pyforge-mason",
+    "wasm-analytics-stack": "pyforge-atlas",
+    "unity-data-stack": "pyforge-atlas",
+}
+
 
 def scan_campaign() -> dict:
     """Stage completion per chain, detected from planning-artifacts on main.
@@ -860,7 +874,8 @@ def scan_campaign() -> dict:
     """
     rows: list[dict] = []
     for e in CAMPAIGN_ROSTER:
-        pa = REPO_ROOT / "_bmad-output" / "projects" / e["slug"] / "planning-artifacts"
+        real_project = CAMPAIGN_PROJECT_OVERRIDE.get(e["slug"], e["slug"])
+        pa = REPO_ROOT / "_bmad-output" / "projects" / real_project / "planning-artifacts"
         have = {
             "research": bool(list((pa / "research").glob("*.md"))) if (pa / "research").is_dir() else False,
             "brief": bool(list(pa.glob("product-brief*")) or list(pa.glob("*/product-brief*"))
@@ -874,7 +889,8 @@ def scan_campaign() -> dict:
                   if not (s == "epics" and e["depth"] == "prd+arch")]
         n = sum(have[s] for s in target)
         status = "landed" if n == len(target) else ("partial" if n else e["state"])
-        rows.append({**e, "have": have, "n": n, "of": len(target), "status": status})
+        rows.append({**e, "have": have, "n": n, "of": len(target), "status": status,
+                     "planning_project": real_project})
     landed = sum(1 for r in rows if r["status"] == "landed")
     running = sum(1 for r in rows if r["status"] == "running")
     print(f"[campaign] {len(rows)} chains · {running} running · {landed} landed")
@@ -905,15 +921,19 @@ IMPL_CAMPAIGN = [
     {"slug": "pyforge-mason",        "pkey": None, "stories": 38, "state": "queued",
      "note": "longest persona line; CFE Rule-2 retro at closeout"},
     {"slug": "presenton-pixi-image", "pkey": None, "stories": 30, "state": "held",
-     "note": "operator Phase-0 gates: MS disconnected-stack check + memory-subsystem scope"},
+     "note": "operator Phase-0 gates: MS disconnected-stack check + memory-subsystem scope",
+     "epics_path": "_bmad-output/projects/pyforge-mason/planning-artifacts/epics-presenton-pixi-image.md"},
     {"slug": "pyforge-marshal",      "pkey": None, "stories": 40, "state": "held",
      "note": "AD-25–39 adversarial pass + floor quiescence (touches loop machinery)"},
     {"slug": "genesis-installer",    "pkey": None, "stories": 36, "state": "held",
-     "note": "last — model stability + consumes marshal-owned scripts"},
+     "note": "last — model stability + consumes marshal-owned scripts",
+     "epics_path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/epics-genesis-installer.md"},
     {"slug": "wasm-analytics-stack", "pkey": None, "stories": 0,  "state": "future",
-     "note": "PRD+arch only by design; stories decompose when scheduled"},
+     "note": "PRD+arch only by design; stories decompose when scheduled",
+     "epics_path": None},
     {"slug": "unity-data-stack",     "pkey": None, "stories": 0,  "state": "future",
-     "note": "PRD+arch only by design; stories decompose when scheduled"},
+     "note": "PRD+arch only by design; stories decompose when scheduled",
+     "epics_path": None},
 ]
 
 # Live ledger source for the non-`pkey` rows above: (ledger path, epic_min, epic_max),

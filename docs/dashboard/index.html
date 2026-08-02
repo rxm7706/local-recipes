@@ -1015,10 +1015,17 @@
       if (c.kind === "planning") {
         rows = c.rows.map(r => {
           const na = r.depth === "prd+arch" ? ["epics"] : [];
+          // pyforge-genesis was dissolved 2026-08-02 (constitutive, no project dir left) --
+          // its two load-bearing specs live under docs/governance/, not a planning-artifacts
+          // tree. Every other slug's real tree is `planning_project` (identity unless the
+          // chain was absorbed into a Smith, e.g. presenton-pixi-image -> pyforge-mason).
+          const slugHref = r.slug === "pyforge-genesis"
+            ? REPO + "/tree/main/docs/governance"
+            : REPO + "/tree/main/_bmad-output/projects/" + esc(r.planning_project || r.slug) + "/planning-artifacts";
           return '<div class="camprow">' +
             '<span class="camp-wave">' + esc(r.wave || "") + '</span>' +
-            '<span class="camp-slug"><a href="' + REPO + '/tree/main/_bmad-output/projects/' + esc(r.slug) +
-              '/planning-artifacts">' + esc(r.slug) + '</a></span>' +
+            '<span class="camp-slug"><a href="' + slugHref +
+              '">' + esc(r.slug) + '</a></span>' +
             '<span class="camp-model">' + esc(r.model || "") + '</span>' +
             '<span class="camp-stages">' + CAMP_STAGES.map(s =>
               '<span class="campdot' + (na.includes(s) ? ' na' : (r.have[s] ? '' : ' miss')) +
@@ -1029,16 +1036,27 @@
           '</div>';
         }).join("");
       } else {
-        rows = c.rows.map(r =>
-          '<div class="camprow">' +
+        rows = c.rows.map(r => {
+          // `epics_path` is explicit for satellite slugs whose real epics.md lives
+          // under a DIFFERENT project's tree (e.g. genesis-installer's stories are
+          // epics-genesis-installer.md inside pyforge-marshal, not a pyforge-genesis
+          // dir that no longer exists) -- the generic `<slug>/planning-artifacts/
+          // epics.md` guess 404s for those. `epics_path: null` (wasm/unity: no
+          // epics.md exists yet) renders plain text instead of a dead link.
+          const path = "epics_path" in r ? r.epics_path
+                       : "_bmad-output/projects/" + r.slug + "/planning-artifacts/epics.md";
+          const slugCell = path
+            ? '<a href="' + REPO + '/blob/main/' + esc(path) + '" title="' + esc(r.note || "") + '">' + esc(r.slug) + '</a>'
+            : '<span title="' + esc(r.note || "") + '">' + esc(r.slug) + '</span>';
+          return '<div class="camprow">' +
             '<span class="camp-wave"></span>' +
-            '<span class="camp-slug"><a href="' + REPO + '/blob/main/_bmad-output/projects/' + esc(r.slug) +
-              '/planning-artifacts/epics.md" title="' + esc(r.note || "") + '">' + esc(r.slug) + '</a></span>' +
+            '<span class="camp-slug">' + slugCell + '</span>' +
             '<span class="camp-model">' + (r.pkey ? "wired" : "—") + '</span>' +
             '<span class="camp-stages" style="font-family:var(--mono);font-size:11px;color:var(--slate);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(r.note || "") + '</span>' +
             '<span class="camp-n">' + (r.total ? r.done + "/" + r.total : "—") + '</span>' +
             '<span class="cbadge ' + (CBADGE[r.state] || "cb-queued") + '">' + esc(r.state) + '</span>' +
-          '</div>').join("");
+          '</div>';
+        }).join("");
       }
       const meta = (c.status === "completed" ? "completed " + esc(c.completed || "") :
                     "launched " + esc(c.launched || ""));

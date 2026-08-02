@@ -159,6 +159,7 @@ project, and spec maps to exactly one Dream; the herald CLI's status capability
 | [`one-front-door.md`](one-front-door.md) | dreamt | Marshal drives everything BMAD installs — one composed surface over 11 packages, 51 skills, 10 detectors and the engine; the runtime half of [`genesis-installer`](genesis-installer.md). **Draft for refinement.** |
 | [`unified-container.md`](unified-container.md) | dreamt | All 8 stations in one Docker/Podman image — one boot, the whole Guild available; motivated by the 2026-08-02 per-station architecture consolidation. |
 | [`bmad-output-hygiene.md`](bmad-output-hygiene.md) | dreamt | One fabricated bulk commit stamped dead test scaffolding, a hollow sprint-status template, and (in places) fake test-architecture/README content across all 8 stations, inconsistently fixed since — a 5-agent audit mapped exactly what's real vs. debris. |
+| [`dashboard-project-path-derivation.md`](dashboard-project-path-derivation.md) | dreamt | The dashboard builds links/`have` checks by gluing a roster slug straight onto a project directory — broke twice already for absorbed/dissolved satellites; wants one derivation helper instead of one override dict per occurrence. |
 
 **Applications**
 
