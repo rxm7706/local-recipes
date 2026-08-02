@@ -58,3 +58,13 @@ And **the seed**: the bootstrapper that installs the operating model anywhere �
   seeded; named `pyforge-genesis` (the origin-story deck of the family).
 - **2026-07-23 (gist audit)** — grounding: `docs/intake/gists/how-we-operate/` ("documentation as programmable infrastructure" — the operating philosophy in embryo).
 - **2026-07-23 (evening)** — master deck refreshed to the **eight-persona** crew: mottos grid 4×2 (+Scribe, +Steward), a Throughout-row in the Master Pipeline, "One Dream, nine decks"; re-seeded to Design via the bridge.
+- **2026-08-02** — the `pyforge-genesis` **BMAD project** dissolved (this Dream is unchanged).
+  It carried no product, only vestigial Smith-shaped scaffolding (`.bmad-config.toml`,
+  `epics.md`, a fabricated `test-architecture.md` from the 2026-08-02 bulk template
+  commit) around its two load-bearing Spec kernels (Charter, Lexicon). Those moved to
+  `docs/governance/spec-pyforge-charter/` and `docs/governance/spec-pyforge-genesis/` —
+  no Smith absorbed them (a Smith owning the Charter that constitutes the Smiths would be
+  circular); `docs/dashboard/generate.py` and `scripts/dream_chain_check.py` both
+  special-case this location for `owner: guild` chains. The rest of the project is archived
+  at `archive/_bmad-output/projects/pyforge-genesis/`, never deleted. See
+  `_bmad-output/EXEMPLAR-STANDARD.md`'s 2026-08-02 amendment for the full reasoning.

@@ -35,6 +35,7 @@ import yaml
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 DREAMS = ROOT / "docs" / "dreams"
 PROJECTS = ROOT / "_bmad-output" / "projects"
+GOVERNANCE = ROOT / "docs" / "governance"
 
 
 def frontmatter(path: pathlib.Path) -> dict:
@@ -52,19 +53,34 @@ def frontmatter(path: pathlib.Path) -> dict:
 PLACEHOLDER = "local-recipes"
 
 # The two constitutive Dreams (Charter §5): they PRECEDE the stations, so they are owned by
-# `guild` rather than a Smith, and their chains live in `pyforge-genesis` — the one project
-# not named for a Smith. `guild` IS terminal for these two and only these two; a third is an
-# unassigned Dream hiding behind a collective noun.
+# `guild` rather than a Smith. `guild` IS terminal for these two and only these two; a third
+# is an unassigned Dream hiding behind a collective noun.
 # Genesis's *installer* (`genesis init`/`adopt`) is NOT constitutive — it is buildable work
 # owned by the Marshal, and its Spec belongs under pyforge-marshal.
+# 2026-08-02: pyforge-genesis (the BMAD project) dissolved — it carried no product, only
+# vestigial Smith-shaped scaffolding around the two Specs below. Their chains now live at
+# docs/governance/spec-<slug>/, not a `_bmad-output/projects/<x>/` tree.
 CONSTITUTIVE = {"pyforge-charter", "pyforge-genesis"}
+GOVERNANCE_PROJECT = "docs/governance"  # sentinel `project` value for CONSTITUTIVE specs
 
 
 def expected_project(owner: str) -> str:
-    """Project for an owner. `guild` -> pyforge-genesis, the constitutive project
-    (origin Dream + Charter/Lexicon/membership records) — never the placeholder.
-    A *buildable* Dream owned by `guild` still means "station not yet chosen" (INV-2a)."""
-    return "pyforge-genesis" if owner == "guild" else f"pyforge-{owner}"
+    """Project for an owner. `guild` -> docs/governance (the constitutive home: origin
+    Dream + Charter/Lexicon/membership records) — never the placeholder. A *buildable*
+    Dream owned by `guild` still means "station not yet chosen" (INV-2a)."""
+    return GOVERNANCE_PROJECT if owner == "guild" else f"pyforge-{owner}"
+
+
+def expected_spec_dir(owner: str, slug: str) -> str:
+    """Full expected Spec directory for a Dream, project shape and all.
+
+    `docs/governance/` holds `spec-<slug>/` directly (no Smith-shaped
+    `planning-artifacts/specs/` nesting); every other project does.
+    """
+    project = expected_project(owner)
+    if project == GOVERNANCE_PROJECT:
+        return f"{GOVERNANCE_PROJECT}/spec-{slug}/"
+    return f"{project}/planning-artifacts/specs/spec-{slug}/"
 
 
 def collect() -> tuple[dict, list]:
@@ -80,6 +96,14 @@ def collect() -> tuple[dict, list]:
         fm = frontmatter(sp)
         specs.append({
             "project": sp.parts[len(PROJECTS.parts)],
+            "spec": sp.parent.name,
+            "dream": (fm.get("owner-dream") or "").split("/")[-1].removesuffix(".md"),
+            "path": str(sp.relative_to(ROOT)),
+        })
+    for sp in sorted(GOVERNANCE.glob("spec-*/SPEC.md")):
+        fm = frontmatter(sp)
+        specs.append({
+            "project": GOVERNANCE_PROJECT,
             "spec": sp.parent.name,
             "dream": (fm.get("owner-dream") or "").split("/")[-1].removesuffix(".md"),
             "path": str(sp.relative_to(ROOT)),
@@ -122,8 +146,7 @@ def check() -> list[dict]:
             findings.append({
                 "inv": "INV-1", "kind": "dream-without-spec", "subject": slug,
                 "owner": d["owner"] or "(none)", "status": d["status"] or "(none)",
-                "remedy": f"author a Spec under {expected_project(d['owner'] or 'guild')}"
-                          f"/planning-artifacts/specs/spec-{slug}/",
+                "remedy": f"author a Spec under {expected_spec_dir(d['owner'] or 'guild', slug)}",
             })
 
     # INV-2a — a buildable Dream owned by `guild` has no station yet. Resolving it to the
@@ -143,10 +166,11 @@ def check() -> list[dict]:
             continue
         want = expected_project(owner)
         if s["project"] != want:
+            slug = s["spec"].removeprefix("spec-")
             findings.append({
                 "inv": "INV-2", "kind": "spec-location-mismatch", "subject": s["spec"],
                 "owner": owner, "status": f"in {s['project']}",
-                "remedy": f"move to {want}/planning-artifacts/specs/{s['spec']}/",
+                "remedy": f"move to {expected_spec_dir(owner, slug)}",
             })
 
     # INV-3 — sharded build tree

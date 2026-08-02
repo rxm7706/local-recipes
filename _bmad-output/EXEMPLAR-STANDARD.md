@@ -54,7 +54,7 @@ realized-without-a-Spec case. Both were wrong, from the INV-0 defect above.*
 | Dream `owner:` | Chain lives in |
 |---|---|
 | a Smith (`marshal`, `mason`, `atlas`, …) | `projects/pyforge-<owner>/planning-artifacts/` |
-| `guild` — the two constitutive Dreams only | `projects/pyforge-genesis/planning-artifacts/` |
+| `guild` — the two constitutive Dreams only | `docs/governance/` (2026-08-02: `pyforge-genesis` dissolved — no Smith may own the Charter that constitutes the Smiths) |
 
 **It does not rename the package.** This is the distinction the superseded Charter clause
 missed. What ships is declared by a Spec's `surface:`, which does not move when the planning
@@ -64,11 +64,14 @@ not `pyforge-herald`. Three of the four projects the old clause worried about
 surface at all. *Planning home* and *package identity* are independent axes; the old clause
 forbade the first to protect the second, and only the second needed protecting.
 
-**`pyforge-genesis` is the constitutive project** — the one not named for a Smith, because
-the two Dreams it holds *precede* the Smiths: `pyforge-charter` and `pyforge-genesis`
-itself. It records the origin Dream, the Charter, the Lexicon, and the Guild's membership.
-`owner: guild` is terminal for exactly these two; a third is an unassigned Dream hiding
-behind a collective noun.
+**The constitutive Specs are not project-shaped.** The two Dreams that *precede* the Smiths —
+`pyforge-charter` and `pyforge-genesis` — record the origin Dream, the Charter, the Lexicon,
+and the Guild's membership. `owner: guild` is terminal for exactly these two; a third is an
+unassigned Dream hiding behind a collective noun. Their Spec kernels live at
+`docs/governance/spec-pyforge-charter/` and `docs/governance/spec-pyforge-genesis/` — not a
+`_bmad-output/projects/<x>/planning-artifacts/` tree, since they own no product and no
+Smith-shaped scaffolding (2026-08-02: the `pyforge-genesis` *project* dissolved for exactly
+this reason — see below).
 
 **Genesis's installer is not constitutive.** `genesis init` / `genesis adopt` — standing up
 a repo with the pixi environment, bmad-method, bmad-loop, multi-project wiring, skill-forge
@@ -81,7 +84,8 @@ only: somewhere a Dream can land before it has a station. Applying INV-2 moves a
 Specs out, leaving zero, and it is then removed. A Spec still sitting there is an
 unassigned-ownership finding, not a settled location.
 
-**Target: 9 projects — 8 Smiths + `pyforge-genesis`.**
+**Target: 8 projects (the 8 Smiths).** No ninth. The constitutive Specs live at
+`docs/governance/`, deliberately outside the project roster — see the amendment below.
 
 *Corrections on the record (2026-07-28).* Three earlier drafts of this section were wrong and
 are superseded: (1) a split between "project scope" and "owner scope", which let a station
@@ -92,6 +96,22 @@ constitutive home already existed and is named Genesis. Each was an exception in
 make an inconvenient case come out tidy; the rule was sufficient every time.
 
 *Measured at adoption: 10 chains to move, 5 projects dissolved.*
+
+*Amendment (2026-08-02): `pyforge-genesis` itself dissolved.* The correction above rejected a
+*new*, differently-named project (`pyforge-guild`) as an invented exception — that reasoning
+holds. It did not anticipate the actual defect: `pyforge-genesis`, though correctly named and
+correctly excluded from Smith ownership, was still *shaped like a Smith's project* — carrying
+a `.bmad-config.toml`, an `epics.md`, a `test-architecture.md`, a PRD and architecture that
+existed only to say "there is no product here." That scaffolding was real vestigial debt
+(dead test fixtures, a fabricated bulk-commit-era `test-architecture.md`), not a second
+naming mistake. The fix is not a new project; it is *no project* — the two Spec kernels move
+to `docs/governance/`, a plain documentation directory with no `.bmad-config.toml` and no
+Smith-shaped machinery to keep vestigially current. `docs/dashboard/generate.py` and
+`scripts/dream_chain_check.py` both special-case this location for the two `owner: guild`
+chains. The Dream files themselves (`docs/dreams/pyforge-genesis.md`,
+`docs/dreams/pyforge-charter.md`) are unchanged; only their Spec kernels' physical home moved.
+The rest of the old project is archived at `archive/_bmad-output/projects/pyforge-genesis/`,
+never deleted.
 
 ### INV-3 — One build tree, sharded
 
@@ -301,11 +321,13 @@ These are the ones most likely to be violated with good intentions.
 | **pyforge-atlas** | ✅ | ✅ | ✅ 4 | ✅ 32 | ✅ 32/32 | ✅ 52 | ✅ |
 | pyforge-warden | ❌ flat | ✅ | ✅ 3 | ✅ 31 | ❌ | ❌ | ❌ |
 | pyforge-doctor / mason / herald / scribe / steward | ✅ | ✅ | ❌ | partial | ❌ | ❌ | mostly ✅ |
-| pyforge-marshal / genesis | ❌ flat | ✅ | ❌ | partial | ❌ | ❌ | partial |
+| pyforge-marshal | ❌ flat | ✅ | ❌ | partial | ❌ | ❌ | partial |
 
 *(`deckcraft`, `presenton-pixi-image`, `unity-data-stack`, `wasm-analytics-stack` and
 `local-recipes` are omitted — all five dissolve under INV-2; their chains move to the owning
-Smith.)*
+Smith. `pyforge-genesis` is also omitted, but dissolved differently (2026-08-02): no Smith
+absorbed it — its two Spec kernels moved to `docs/governance/`, outside the project roster
+this table measures. Not a conformance row candidate; it never had epics/stories to score.)*
 
 Warden is the cheapest to finish: reshard `prd.md` → `prds/prd-pyforge-warden-<date>/`,
 regenerate `architecture.md` as an `ARCHITECTURE-SPINE.md` run folder, and back-fill delivery

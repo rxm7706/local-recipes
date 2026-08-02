@@ -6,7 +6,7 @@ owner-dream: docs/dreams/pyforge-charter.md
 surface:
   - docs/dreams/pyforge-charter.md
 sources:
-  - ../../../../../../docs/dreams/pyforge-charter.md
+  - ../../../docs/dreams/pyforge-charter.md
 open_questions: []
 ---
 

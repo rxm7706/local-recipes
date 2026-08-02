@@ -2856,7 +2856,7 @@ window.DASHBOARD_DATA = {
       }
     }
   },
-  "snapshot": "<span>2026-08-02 22:34 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-02 22:53 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -3114,8 +3114,7 @@ window.DASHBOARD_DATA = {
       "owner": "guild",
       "type": "dream",
       "chain": {
-        "deck": "presentations/pyforge-genesis",
-        "spec": "_bmad-output/projects/pyforge-genesis/planning-artifacts/specs/spec-pyforge-charter"
+        "deck": "presentations/pyforge-genesis"
       }
     },
     {
@@ -3148,9 +3147,7 @@ window.DASHBOARD_DATA = {
       "owner": "guild",
       "type": "dream",
       "chain": {
-        "deck": "presentations/pyforge-genesis",
-        "spec": "_bmad-output/projects/pyforge-genesis/planning-artifacts/specs/spec-pyforge-genesis",
-        "project": "_bmad-output/projects/pyforge-genesis"
+        "deck": "presentations/pyforge-genesis"
       }
     },
     {
@@ -3427,26 +3424,6 @@ window.DASHBOARD_DATA = {
       "updated": "2026-08-02",
       "dream": "pyforge-doctor-dependency-health",
       "path": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor-dependency-health"
-    },
-    {
-      "slug": "pyforge-charter",
-      "project": "pyforge-genesis",
-      "title": "The Charter — keeping the constitution true",
-      "caps": 4,
-      "companions": 0,
-      "updated": "2026-07-31",
-      "dream": "pyforge-charter",
-      "path": "_bmad-output/projects/pyforge-genesis/planning-artifacts/specs/spec-pyforge-charter"
-    },
-    {
-      "slug": "pyforge-genesis",
-      "project": "pyforge-genesis",
-      "title": "Genesis — the operating model, recorded",
-      "caps": 4,
-      "companions": 0,
-      "updated": "2026-07-31",
-      "dream": "pyforge-genesis",
-      "path": "_bmad-output/projects/pyforge-genesis/planning-artifacts/specs/spec-pyforge-genesis"
     },
     {
       "slug": "herald-moments-2-4-missing-surface",
@@ -3787,6 +3764,26 @@ window.DASHBOARD_DATA = {
       "updated": "2026-08-02",
       "dream": "pyforge-warden-compliance-gates",
       "path": "_bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-pyforge-warden-compliance-gates"
+    },
+    {
+      "slug": "pyforge-charter",
+      "project": "docs/governance",
+      "title": "The Charter — keeping the constitution true",
+      "caps": 4,
+      "companions": 0,
+      "updated": "",
+      "dream": "pyforge-charter",
+      "path": "docs/governance/spec-pyforge-charter"
+    },
+    {
+      "slug": "pyforge-genesis",
+      "project": "docs/governance",
+      "title": "Genesis — the operating model, recorded",
+      "caps": 4,
+      "companions": 0,
+      "updated": "",
+      "dream": "pyforge-genesis",
+      "path": "docs/governance/spec-pyforge-genesis"
     }
   ],
   "pitch": [
@@ -4400,13 +4397,13 @@ window.DASHBOARD_DATA = {
           "have": {
             "research": false,
             "brief": false,
-            "prd": true,
-            "architecture": true,
-            "epics": true
+            "prd": false,
+            "architecture": false,
+            "epics": false
           },
-          "n": 3,
+          "n": 0,
           "of": 5,
-          "status": "partial"
+          "status": "queued"
         }
       ]
     },
@@ -4548,10 +4545,10 @@ window.DASHBOARD_DATA = {
       "verify": 90,
       "retro": null
     },
-    "sound": 3,
+    "sound": 4,
     "live": 20,
-    "reached": 9,
-    "gaps": 12,
+    "reached": 10,
+    "gaps": 11,
     "findings": 0,
     "rows": [
       {
@@ -4772,112 +4769,6 @@ window.DASHBOARD_DATA = {
         "progress": "5/16",
         "complete": 13,
         "of": 13
-      },
-      {
-        "label": "genesis",
-        "slug": "pyforge-genesis",
-        "project": "pyforge-genesis",
-        "dream": "pyforge-genesis",
-        "owner": "guild",
-        "stages": {
-          "dream": "2026-07-23",
-          "deck": "2026-07-23",
-          "spec": "2026-07-25",
-          "research": "",
-          "brief": "",
-          "prd": "2026-07-28",
-          "ux": "",
-          "arch": "2026-07-28",
-          "context": "",
-          "epics": "2026-07-28",
-          "sprint": "",
-          "tea": "",
-          "gates": "",
-          "code": "",
-          "verify": "",
-          "retro": ""
-        },
-        "updatedAt": {
-          "dream": "2026-07-29",
-          "deck": "2026-07-25",
-          "spec": "2026-07-31T19:40",
-          "research": "",
-          "brief": "",
-          "prd": "2026-08-01",
-          "ux": "",
-          "arch": "2026-08-02",
-          "context": "",
-          "epics": "2026-08-02",
-          "sprint": "",
-          "tea": "",
-          "gates": "",
-          "code": "",
-          "verify": "",
-          "retro": ""
-        },
-        "sub": {
-          "research": {
-            "have": {
-              "domain": false,
-              "market": false,
-              "technical": false
-            },
-            "n": 0,
-            "of": 3,
-            "missing": [
-              "domain",
-              "market",
-              "technical"
-            ],
-            "inherited": false
-          },
-          "deck": {
-            "have": {
-              "prototype": true,
-              "exec": true,
-              "infographic": true,
-              "marp": true,
-              "standalone": true,
-              "pptx": true
-            },
-            "n": 6,
-            "of": 6,
-            "missing": []
-          }
-        },
-        "archived": false,
-        "dreamStatus": "specified",
-        "ownerDream": "pyforge-genesis",
-        "noDream": false,
-        "unowned": false,
-        "backfilled": false,
-        "openQuestions": 0,
-        "overtaken": false,
-        "na": [
-          "brief",
-          "context",
-          "dream",
-          "research",
-          "ux"
-        ],
-        "required": [
-          "deck",
-          "spec",
-          "prd",
-          "arch",
-          "epics"
-        ],
-        "gaps": [],
-        "partial": [],
-        "staleBy": [],
-        "furthest": "epics",
-        "updated": "2026-08-02",
-        "age": 0,
-        "stale": false,
-        "version": "",
-        "progress": "0/36",
-        "complete": 5,
-        "of": 5
       },
       {
         "label": "herald",
@@ -6171,13 +6062,13 @@ window.DASHBOARD_DATA = {
       {
         "label": "charter",
         "slug": "pyforge-charter",
-        "project": "pyforge-genesis",
+        "project": "docs/governance",
         "dream": "pyforge-charter",
         "owner": "guild",
         "stages": {
           "dream": "2026-07-25",
           "deck": "",
-          "spec": "2026-07-29",
+          "spec": "",
           "research": "",
           "brief": "",
           "prd": "",
@@ -6195,7 +6086,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-01",
           "deck": "",
-          "spec": "2026-07-29",
+          "spec": "2026-07-28T08:18",
           "research": "",
           "brief": "",
           "prd": "",
@@ -6259,23 +6150,120 @@ window.DASHBOARD_DATA = {
           "dream",
           "ux"
         ],
-        "required": [
-          "deck",
-          "spec"
-        ],
-        "gaps": [
-          "deck"
-        ],
+        "required": [],
+        "gaps": [],
         "partial": [],
         "staleBy": [],
-        "furthest": "spec",
-        "updated": "2026-08-02",
-        "age": 0,
+        "furthest": "dream",
+        "updated": "2026-08-01",
+        "age": 1,
+        "stale": false,
+        "version": "",
+        "progress": "",
+        "complete": 0,
+        "of": 0
+      },
+      {
+        "label": "genesis",
+        "slug": "pyforge-genesis",
+        "project": "docs/governance",
+        "dream": "pyforge-genesis",
+        "owner": "guild",
+        "stages": {
+          "dream": "2026-07-23",
+          "deck": "2026-07-23",
+          "spec": "",
+          "research": "",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "tea": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "updatedAt": {
+          "dream": "2026-07-29",
+          "deck": "2026-07-25",
+          "spec": "2026-07-31T19:40",
+          "research": "",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "tea": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "sub": {
+          "research": {
+            "have": {
+              "domain": false,
+              "market": false,
+              "technical": false
+            },
+            "n": 0,
+            "of": 3,
+            "missing": [
+              "domain",
+              "market",
+              "technical"
+            ],
+            "inherited": false
+          },
+          "deck": {
+            "have": {
+              "prototype": true,
+              "exec": true,
+              "infographic": true,
+              "marp": true,
+              "standalone": true,
+              "pptx": true
+            },
+            "n": 6,
+            "of": 6,
+            "missing": []
+          }
+        },
+        "archived": false,
+        "dreamStatus": "specified",
+        "ownerDream": "pyforge-genesis",
+        "noDream": false,
+        "unowned": false,
+        "backfilled": false,
+        "openQuestions": 0,
+        "overtaken": false,
+        "na": [
+          "brief",
+          "context",
+          "dream",
+          "research",
+          "ux"
+        ],
+        "required": [
+          "deck"
+        ],
+        "gaps": [],
+        "partial": [],
+        "staleBy": [],
+        "furthest": "deck",
+        "updated": "2026-08-01",
+        "age": 1,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 1,
-        "of": 2
+        "of": 1
       },
       {
         "label": "herald-moments-2-4-missing-surface",
@@ -10114,8 +10102,8 @@ window.DASHBOARD_DATA = {
         "task": "spec-surface-check",
         "guards": "every tracked file under a Spec surface",
         "state": "drift",
-        "findings": 24,
-        "verdict": "FINDINGS (24):",
+        "findings": 28,
+        "verdict": "FINDINGS (28):",
         "runbook": ""
       },
       {
@@ -12219,8 +12207,8 @@ window.DASHBOARD_DATA = {
       "subject": "Merge bmad-loop/20260731-115548-f223/1-9-packaging-distribution-and-version-reporting into loop/pyforge-marshal (bmad-lo"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-02 22:34 UTC",
-    "generatedEpoch": 1785710074
+    "generatedAt": "2026-08-02 22:53 UTC",
+    "generatedEpoch": 1785711221
   },
   "storySpecs": [
     {
@@ -12233,12 +12221,6 @@ window.DASHBOARD_DATA = {
       "station": "pyforge-doctor",
       "done": 5,
       "tracked": 5,
-      "gap": 0
-    },
-    {
-      "station": "pyforge-genesis",
-      "done": 0,
-      "tracked": 0,
       "gap": 0
     },
     {

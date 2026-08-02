@@ -6,9 +6,9 @@ owner-dream: docs/dreams/pyforge-genesis.md
 surface:
   - docs/dreams/README.md          # the Dream-tier contract; the Charter itself is spec-pyforge-charter
 sources:
-  - ../../../../../../docs/dreams/pyforge-genesis.md
-  - ../../../../../../docs/dreams/pyforge-charter.md
-  - ../../../../../../docs/dreams/genesis-installer.md
+  - ../../../docs/dreams/pyforge-genesis.md
+  - ../../../docs/dreams/pyforge-charter.md
+  - ../../../docs/dreams/genesis-installer.md
 open_questions: []
 ---
 
