@@ -2856,7 +2856,7 @@ window.DASHBOARD_DATA = {
       }
     }
   },
-  "snapshot": "<span>2026-08-02 21:53 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-02 21:58 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -4552,7 +4552,7 @@ window.DASHBOARD_DATA = {
     "live": 20,
     "reached": 9,
     "gaps": 12,
-    "findings": 7,
+    "findings": 4,
     "rows": [
       {
         "label": "atlas",
@@ -5265,9 +5265,9 @@ window.DASHBOARD_DATA = {
           "brief": "2026-07-25",
           "prd": "2026-08-01",
           "ux": "",
-          "arch": "2026-07-25",
+          "arch": "2026-08-02",
           "context": "2026-08-01",
-          "epics": "2026-07-25",
+          "epics": "2026-08-02",
           "sprint": "2026-08-02",
           "tea": "2026-07-31",
           "gates": "2026-08-01",
@@ -5334,15 +5334,7 @@ window.DASHBOARD_DATA = {
         "partial": [
           "research"
         ],
-        "staleBy": [
-          {
-            "kind": "feeds",
-            "stage": "prd",
-            "than": "arch",
-            "at": "2026-08-01",
-            "other": "2026-07-25"
-          }
-        ],
+        "staleBy": [],
         "furthest": "verify",
         "updated": "2026-08-02",
         "age": 0,
@@ -5384,9 +5376,9 @@ window.DASHBOARD_DATA = {
           "brief": "2026-07-25",
           "prd": "2026-08-01",
           "ux": "",
-          "arch": "2026-07-25",
+          "arch": "2026-08-02",
           "context": "2026-08-01",
-          "epics": "2026-07-25",
+          "epics": "2026-08-02",
           "sprint": "2026-08-02",
           "tea": "2026-07-31",
           "gates": "2026-08-01",
@@ -5453,15 +5445,7 @@ window.DASHBOARD_DATA = {
         "partial": [
           "research"
         ],
-        "staleBy": [
-          {
-            "kind": "feeds",
-            "stage": "prd",
-            "than": "arch",
-            "at": "2026-08-01",
-            "other": "2026-07-25"
-          }
-        ],
+        "staleBy": [],
         "furthest": "verify",
         "updated": "2026-08-02",
         "age": 0,
@@ -5503,9 +5487,9 @@ window.DASHBOARD_DATA = {
           "brief": "2026-07-25",
           "prd": "2026-08-01",
           "ux": "",
-          "arch": "2026-07-14",
+          "arch": "2026-08-02",
           "context": "2026-08-01",
-          "epics": "2026-07-16",
+          "epics": "2026-08-02",
           "sprint": "2026-08-02",
           "tea": "2026-07-24",
           "gates": "2026-07-16",
@@ -5573,13 +5557,6 @@ window.DASHBOARD_DATA = {
           "research"
         ],
         "staleBy": [
-          {
-            "kind": "feeds",
-            "stage": "prd",
-            "than": "arch",
-            "at": "2026-08-01",
-            "other": "2026-07-14"
-          },
           {
             "kind": "feeds",
             "stage": "prd",
@@ -12285,8 +12262,8 @@ window.DASHBOARD_DATA = {
       "subject": "Merge bmad-loop/20260731-115548-f223/1-9-packaging-distribution-and-version-reporting into loop/pyforge-marshal (bmad-lo"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-02 21:53 UTC",
-    "generatedEpoch": 1785707633
+    "generatedAt": "2026-08-02 21:58 UTC",
+    "generatedEpoch": 1785707924
   },
   "storySpecs": [
     {

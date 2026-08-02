@@ -174,18 +174,37 @@ compile.
   - **success:** the 0–1 day `spec`/`prd` findings disappear from all 8
     stations; the 5 genuine multi-day pairs (CAP-12) still surface.
 
-- **CAP-12 — catch up the 5 genuinely stale pairs.**
-  - **intent:** Warden (`prd`/`arch` 16d, `prd`/`gates` 18d), doctor
-    (`prd`/`arch` 8d), scribe (`prd`/`arch` 7d), steward (`prd`/`arch` 7d),
-    mason (`arch`/`epics` 8d) predate this cleanup. For each pair, read both
-    sides, confirm the downstream artifact still accurately reflects the
-    upstream one, and re-stamp a dated re-validation note (matching this
-    repo's existing `re_validated:`/pin-forward convention) rather than
-    silently editing a date. If content has genuinely drifted, note it
-    instead of covering it up.
-  - **success:** after CAP-11's grace period, these 5 pairs show zero
-    `staleBy` findings because the dates now honestly reflect a
-    just-verified-current state.
+- **CAP-12 — catch up the genuinely stale pairs (scope refined during
+  execution: 3 fixed, 3 honestly left as real findings).**
+  - **intent:** Warden (`prd`/`arch`, `prd`/`gates`), doctor (`prd`/`arch`),
+    scribe (`prd`/`arch`), steward (`prd`/`arch`), mason (`arch`/`epics`)
+    predate this cleanup. Each PRD's own `currency_review` note was read
+    first to judge whether its last bump was structural (safe to re-stamp
+    downstream) or real content drift (must not be papered over):
+    - **scribe, steward, warden (`prd`/`arch`)** — each PRD's
+      `currency_review` explicitly says the bump was structural (project
+      relocation), content unchanged. Architecture content re-checked
+      against the unchanged PRD, confirmed current, re-stamped with a
+      matching `updated:`/`currency_review:` pair. Stamping architecture's
+      date pushed staleness downstream to `arch`/`epics` (a new finding);
+      fixed by verifying epics.md was likewise unaffected and stamping it
+      too, rather than leaving a moved goalpost.
+    - **doctor (`prd`/`arch`)** — the PRD's own `currency_review` says the
+      bump added real content (FR-10..13 from a dream-consolidation pass).
+      Architecture genuinely has fallen behind. Left unfixed and visible —
+      real architecture authoring, out of scope for a hygiene spec.
+    - **mason (`arch`/`epics`)** — architecture binds FR-1..FR-46 but the
+      PRD's own `frCount: 50`; a genuine 4-FR gap. Left unfixed and visible,
+      same reasoning.
+    - **warden (`prd`/`gates`)** — deliberately left unstamped. An
+      implementation-readiness report is a point-in-time snapshot, not a
+      living document; bumping its date would misrepresent that a new gate
+      check happened. Structural property of the artifact type, not a
+      defect — noted for a possible future `generate.py` refinement, not
+      fixed here.
+  - **success:** fleet currency findings 16 → 4 (atlas/herald/marshal/scribe/steward
+    fully clean); the 3 remaining findings (doctor, mason, warden `prd`/`gates`)
+    are genuine and intentionally still visible, not silently suppressed.
 
 ## Constraints
 
@@ -219,4 +238,8 @@ compile.
 Re-running the same audit method (the 5-agent sweep's grep/read checks) across
 all 9 `pyforge-*` planning trees finds zero remaining Cluster 1/2/3 items from
 `docs/dreams/bmad-output-hygiene.md`, and `bmad_drift_check.py` / `dream_chain_check.py`
-still exit 0.
+still exit 0. `docs/dashboard/generate.py --source sprint-status`'s fleet scan
+reports zero `gaps` for all 9 stations and only genuine, honestly-surfaced
+`staleBy` findings (doctor's FR-10..13 architecture gap, mason's FR-47..50
+gap, warden's point-in-time readiness snapshot) — never noise from a
+zero-grace-period detector.
