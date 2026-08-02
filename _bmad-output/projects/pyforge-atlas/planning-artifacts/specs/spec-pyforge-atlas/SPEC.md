@@ -10,6 +10,17 @@ shipped_scope_note: |
   AUD-ATLAS-047 / AUD-ATLAS-049.
 owner-dream: docs/dreams/pyforge-atlas.md
 program: regenerable-factory
+# consolidated: 2026-08-02 — this Spec also carries spec-unity-data-stack and
+# spec-wasm-analytics-stack (per explicit user override of the dream-level-only
+# consolidation convention; see docs/dreams/pyforge-atlas.md § The estate Atlas
+# hosts). Their capabilities/constraints/non-goals/success-signal/assumptions/
+# open-questions are folded in below under "Satellite:" subsections with
+# CAP-n renumbered to continue this Spec's sequence (CAP-18..26 Unity,
+# CAP-27..31 Wasm). `surface`, `program`, and `owner-dream` above describe the
+# PRIMARY Atlas Spec only — neither satellite has shipped code, so neither
+# contributes to `surface` (see each satellite's own surface note, preserved
+# in its folded-in section, and its `Satellite: Unity Data Stack` /
+# `Satellite: Wasm Analytics Stack` frontmatter block below).
 surface:
   - src/shared/packages/pyforge-atlas/**               # the shipped package: conf/, src/pyforge/atlas/, tests/, wasm/
   - src/prototype/packages/pyforge-atlas-kedro-viz/**  # the generated dependency-free DAG mirror (tools/regenerate_from_atlas.py) — moves only when the real DAG moves
@@ -18,22 +29,44 @@ companions:
   - catalog-contract.md      # 7 pipelines x 86 datasets, every declared TTL, the two freshness clocks, identity + join keys
   - degradation-contract.md  # the 3 markers, the fixed policy mapping, the frozen exit projection
   - gate-contract.md         # the 7 gates, what each proves and what each refuses to do
+  - constitution-provenance.md  # [Unity satellite, folded in 2026-08-02] the 14-Article Constitution map + the 8 required amendments
 sources:
   - ../../../../../../docs/dreams/pyforge-atlas.md
   - ../../../../../../docs/dreams/pyforge-charter.md   # § 3 Atlas — the station's standing mandate
   - ../../../../../../docs/specs/cfe-atlas-datapipeline-kedro-migration.md   # LEGACY Tier-1 intake spec (v5.6, status: shipped) — the requirements contract this Spec distils; absorbed and superseded, not adopted
-  - ../../prds/prd-pyforge-atlas-2026-07-17/prd.md          # chain: FR-1..FR-22, SM-1..SM-12 + SM-C1..SM-C4, the § 5 non-goal boundary
+  - ../../prds/prd-pyforge-atlas-2026-07-17/prd.md          # chain: FR-1..FR-22, SM-1..SM-12 + SM-C1..SM-C4, the § 5 non-goal boundary (also carries the Unity + Wasm satellite PRDs verbatim since 2026-08-02)
   - ../../prds/prd-pyforge-atlas-2026-07-17/addendum.md     # chain: intake reconciliations
-  - ../../architecture/architecture-pyforge-atlas-2026-07-17/ARCHITECTURE-SPINE.md  # chain: AD-1..AD-23, the conventions table, stack, structural seed
+  - ../../architecture/architecture-pyforge-atlas-2026-07-17/ARCHITECTURE-SPINE.md  # chain: AD-1..AD-23, the conventions table, stack, structural seed (also carries the Unity + Wasm satellite spines, renumbered AD-24..56, since 2026-08-02)
   - ../../epics.md                                          # chain: 9 epics / 32 stories with their binding ACs and delivery records
   - ../../../../pyforge-warden/planning-artifacts/specs/spec-pyforge-warden/SPEC.md  # cross-project: owns the ComplianceReport contract this project's policy gate validates against by import
-  - ../../briefs/brief-pyforge-atlas-2026-07-25/brief.md
+  - ../../briefs/brief-pyforge-atlas-2026-07-25/brief.md    # also carries the Unity + Wasm satellite briefs verbatim since 2026-08-02
   - ../../research/domain-dependency-intelligence-ecosystem-observability-research-2026-07-25.md
   - ../../research/technical-kedro-dagster-duckdb-stack-currency-research-2026-07-25.md
-open_questions: []   # all four resolved 2026-07-25 — see § Resolved questions
+  - ../../../../../../docs/dreams/unity-data-stack.md       # [Unity satellite] archived 2026-08-02, narrative absorbed into pyforge-atlas.md
+  - ../../../../../../archive/_bmad-output/projects/pyforge-atlas/planning-artifacts/briefs/brief-unity-data-stack-2026-07-25/brief.md         # [Unity satellite, moved to archive/ 2026-08-02]
+  - ../../../../../../archive/_bmad-output/projects/pyforge-atlas/planning-artifacts/briefs/brief-unity-data-stack-2026-07-25/addendum.md      # [Unity satellite, moved to archive/ 2026-08-02]
+  - ../../../../../../archive/_bmad-output/projects/pyforge-atlas/planning-artifacts/prds/prd-unity-data-stack-2026-07-25/prd.md               # [Unity satellite, moved to archive/ 2026-08-02]
+  - ../../../../../../archive/_bmad-output/projects/pyforge-atlas/planning-artifacts/prds/prd-unity-data-stack-2026-07-25/addendum.md          # [Unity satellite, moved to archive/ 2026-08-02]
+  - ../../../../../../docs/dreams/wasm-analytics-stack.md   # [Wasm satellite] archived 2026-08-02, narrative absorbed into pyforge-atlas.md
+  - ../../../../../../archive/_bmad-output/projects/pyforge-atlas/planning-artifacts/briefs/brief-wasm-analytics-stack-2026-07-25/brief.md     # [Wasm satellite, moved to archive/ 2026-08-02]
+  - ../../../../../../archive/_bmad-output/projects/pyforge-atlas/planning-artifacts/prds/prd-wasm-analytics-stack-2026-07-25/prd.md           # [Wasm satellite, moved to archive/ 2026-08-02]
+open_questions: []   # all four of the PRIMARY Atlas Spec's own OQs resolved 2026-07-25 — see § Resolved questions. The two satellites carry their own unresolved open questions — see § Open Questions (satellites), not invented away by this consolidation.
 ---
 
 > **Canonical contract.** This SPEC and the files in `companions:` are the complete, preservation-validated contract for what to build, test, and validate. Source documents listed in frontmatter are for traceability only — consult them only if you need narrative rationale or prose color this contract intentionally omits.
+
+> **Consolidated 2026-08-02** — see
+> `archive/_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-unity-data-stack/SPEC.md` and
+> `archive/_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-wasm-analytics-stack/SPEC.md`
+> for the original standalone documents (moved there intact, not deleted).
+> This Spec now also carries the Unity Data Stack and Wasm
+> Analytics Stack Spec contracts, folded in as `Satellite:` subsections
+> under each of the five fields below, with `CAP-n` renumbered to continue
+> this Spec's sequence (`CAP-18`..`CAP-26` Unity, `CAP-27`..`CAP-31` Wasm)
+> and cross-referenced `AD-n` renumbered to match the merged
+> `ARCHITECTURE-SPINE.md` (`AD-24`..`AD-46` Unity, `AD-47`..`AD-56` Wasm).
+> Each satellite's own `FR-n`/`SM-n` numbering (local to its own PRD) is
+> **not** renumbered and stays independent of the primary Spec's `FR-1`..`FR-22`.
 
 # Atlas — the intelligence layer an agent workforce can extend
 
@@ -64,6 +97,21 @@ network-bound, so the win is **incremental re-materialization**, query-time anal
 Parquet reads — never an engine-swap cold-start miracle. Atlas is conda-forge-only by name,
 serving one operator and one agent workforce; that narrowness is the design, not a gap to
 close later.
+
+**2026-08-02 consolidation.** Atlas's project tree also plans two adjacent,
+substantial platform initiatives — Unity Data Stack (an enterprise
+innersource Python monorepo platform) and Wasm Analytics Stack (a
+WASI-sandboxed analytical pipeline for hardened OpenShift) — neither a
+capability of the `cf_atlas` pipeline described above, each its own
+initiative with its own Why, Capabilities, Constraints, Non-goals, Success
+signal, and Assumptions. Both were seeded 2026-07-23 and planned to
+PRD + Architecture depth by 2026-07-25; neither has epics/stories or code
+yet. Per an explicit user decision on 2026-08-02 (overriding this repo's
+default dream-level-only consolidation convention), their full Spec/PRD/
+Architecture chains were folded into this station's single Spec/PRD/
+Architecture rather than kept as separate chains under the same project
+tree. Their content appears below as `Satellite:` subsections under each of
+this document's five fields.
 
 ## Capabilities
 
@@ -230,6 +278,66 @@ close later.
     markers are carried forward into compiled output so republication never launders freshness;
     the CMS sync is idempotent by content hash against a mock API; and the crews are triggered
     by the same orchestration plane through assets, a weekly schedule, and a new-file sensor.
+
+### Satellite: Unity Data Stack capabilities
+
+> Folded in verbatim 2026-08-02 from `archive/_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-unity-data-stack/SPEC.md`
+> (status at fold-in: `draft`), renumbered `CAP-1`..`CAP-9` → `CAP-18`..`CAP-26`.
+> Success clauses reference this satellite's own `FR-n` (local to
+> `archive/_bmad-output/projects/pyforge-atlas/planning-artifacts/prds/prd-unity-data-stack-2026-07-25/prd.md`) and cross-reference `AD-n`
+> renumbered to match the merged `ARCHITECTURE-SPINE.md`.
+
+- **CAP-18**
+  - **intent:** A platform engineer declares one Workspace root — platform matrix, channels, system-requirement floors, and the set of Packages — from which Environments compose from named Features with no inherited bloat, and every Package carries a declared owner.
+  - **success:** FR-1–9 hold: adding a Package requires editing exactly one place; no dependency version string is duplicated; a minimal Environment's installed size is measured against a documented ceiling and a regression fails the gate; Stages are modelled separately from Environments so the number of distinct solves is bounded by genuine dependency variation, not Stage naming (AD-27).
+- **CAP-19**
+  - **intent:** The Workspace produces one authoritative Workspace Lock covering native and Python packages together, reproducing an Environment offline on every declared platform, with a derived standards-format export and an air-gapped Offline Bundle, and credentials that are host-scoped and never appear in a URL or argument.
+  - **success:** FR-10–17 hold: multi-platform coverage is proven by materialization, never assumed (FR-11); the Exported Lock is generated from, and drift-checked against, one pinned Workspace Lock commit SHA, failing the gate on mismatch (FR-12, resolves PRD OQ-1 via AD-25).
+- **CAP-20**
+  - **intent:** A developer runs one command that executes every check CI executes — lint, format, type checking, coverage thresholds, security scanning, and a tagged behavioural-test tier — with pre-commit mirroring a fast subset.
+  - **success:** FR-18–25 hold: a parity check asserts the local and CI check-sets are identical and fails on divergence (AD-32); coverage that decreases relative to the base branch fails the gate.
+- **CAP-21**
+  - **intent:** Every Constitution Mandate is classified, machine-readably, as a Platform Invariant (no override) or a Domain Default (Domain-overridable with a recorded decision); violations name the clause they violate; amendment is a governed, versioned process.
+  - **success:** FR-26–32 hold: an unclassified Mandate, or an override with no linked decision record, fails the Quality Gate (AD-31); the Constitution carries semver, ratified/amended/next-review dates; a coverage report distinguishes automatically-enforced Mandates from human-review-only ones.
+- **CAP-22**
+  - **intent:** Every Package names a Trusted Committer accountable for reviewing outside contributions, an outside contributor finds a documented path to contribute to code they don't own, and branch/commit/merge conventions are enforced automatically.
+  - **success:** FR-33–38 hold: a Package with no Trusted Committer fails the gate; a scaffolded Package or Data Product passes the Quality Gate immediately with no manual fixes (FR-37); cross-team contribution rate and an internal-fork counter-signal are both measured (FR-38).
+- **CAP-23**
+  - **intent:** Every built artifact carries a versioned SBOM with a populated dependency graph (runtime-scoped and full variants) and a build-provenance attestation, continuously gated against exploitation-aware vulnerability data through one schema-validated Compliance Report, with baselining/grandfathering and opt-in remediation proposals.
+  - **success:** FR-39–47 hold, delivered by **integrating** `pyforge-warden` (already a strict superset of the intake approach) rather than reimplementing it; SBOM generation runs against the built artifact and a test asserts a populated transitive dependency edge (AD-34); an artifact with no provenance attestation cannot be promoted to any Stage whose policy requires approval (AD-35).
+- **CAP-24**
+  - **intent:** Each Domain owns Data Products layered Raw → Curated → Consumption, with an enforced naming convention, a structured metadata contract, and versioned schema contracts; one reference Domain (`customer`) is implemented end to end as the pattern others follow.
+  - **success:** FR-48–54 hold: a schema change that breaks a declared consumer is detected before merge, requiring a version increment and migration note (FR-52, AD-39); the reference Domain exercises all three Layers, publishes a contract, and passes every gate — its structure is exactly what the FR-37 scaffolding templates generate.
+- **CAP-25**
+  - **intent:** Every capability available with public network access is available in Air-Gap Mode (or declares why not); deployment is declarative and environment-promoted under Stage policy; secrets are never committed and are validated present at service startup; a Stage's Data Classification bounds which datastores and network posture it may be configured against.
+  - **success:** FR-55–58 hold: a parity test enumerates capabilities and asserts each works air-gapped, targeting 100% with declared exceptions (SM-6); a secret-shaped string committed to the repository fails an automated check (FR-57).
+- **CAP-26**
+  - **intent:** A developer starts, stops, and inspects the full local service stack — aggregate and per-service — with single commands, and the Workspace names a small, stable public task API.
+  - **success:** FR-59–60 hold: status reports actual service health, not process existence; removing or renaming a public task is a breaking change requiring a decision record.
+
+### Satellite: Wasm Analytics Stack capabilities
+
+> Folded in verbatim 2026-08-02 from `archive/_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-wasm-analytics-stack/SPEC.md`
+> (status at fold-in: `final`), renumbered `CAP-1`..`CAP-5` → `CAP-27`..`CAP-31`.
+> Success clauses reference this satellite's own `FR-n` (local to
+> `archive/_bmad-output/projects/pyforge-atlas/planning-artifacts/prds/prd-wasm-analytics-stack-2026-07-25/prd.md`) and cross-reference `AD-n`
+> renumbered to match the merged `ARCHITECTURE-SPINE.md`.
+
+- **CAP-27**
+  - **intent:** A business user uploads an `.xlsx` file via an OIDC-authenticated FastAPI endpoint, and its structure and data quality are checked inside a genuine WASI Preview 2 sandbox before any row reaches ingestion, with row-level failures reported precisely and valid rows queued independently of rejected ones.
+  - **success:** FR-1–4 hold: an unauthenticated request receives HTTP 401 before the upload body is read; a structurally-invalid file is rejected in full (zero rows reach Bronze); each rejected row's error names the specific column/rule that failed without blocking rows that passed; no row reaches DuckDB Bronze via `dlt` without having passed validation.
+- **CAP-28**
+  - **intent:** `dbt-duckdb` transforms Bronze into schema-declared Silver and Gold models, emits column-level lineage for every model, and a failing `dbt test` blocks promotion of that model's output to the next layer.
+  - **success:** FR-5–7 hold: every `dbt run` is traceable to the Bronze table state it consumed; a lineage query for any Gold column returns its full upstream column chain back to Bronze; a `dbt run` with a failing test does not update the corresponding table and the prior good state remains queryable.
+- **CAP-29**
+  - **intent:** One W3C trace ID, minted once at the browser/API boundary, correlates OTel spans and OpenLineage facets across every pipeline stage to Marquez via a per-pod Vector sidecar, so a single trace-ID lookup reconstructs the full upload-to-Gold journey with no gaps.
+  - **success:** FR-8–11 hold: the trace ID returned to the client at upload time is the same one attached to that upload's eventual Gold-table lineage record; a trace query for any upload returns spans for every stage it passed through with no gap; Marquez returns the full Bronze→Silver→Gold lineage graph; no pipeline container other than the Vector sidecar holds an external telemetry egress path.
+- **CAP-30**
+  - **intent:** An automated, non-hollow gate mechanically proves the WASI validation component cannot reach any capability beyond its WIT-declared surface, and a build-time check blocks denylisted imports from ever entering the component's dependency closure.
+  - **success:** FR-12–13 hold: the gate fails on any host interaction beyond the component's declared WIT imports; deliberately widening the component's declared capabilities without a corresponding WIT change makes the gate fail, proving it checks something rather than always passing; adding a denylisted import (`numpy`, `pandas`, `pyarrow`, `pydantic`, or any other C-extension-backed or `componentize-py`-unproven package) fails `pixi run build`, not a later runtime error.
+- **CAP-31**
+  - **intent:** One Pixi toolchain builds every artifact the pipeline needs, including the compiled WASI component, and the same security context runs identically under a Podman digital twin and OpenShift Restricted SCC, with DuckDB state persisted via a `ReadWriteOnce` PVC at a consistent mount path.
+  - **success:** FR-14–17 hold: a clean checkout plus `pixi install && pixi run build` produces a runnable digital twin with no manual steps outside Pixi; every container starts as non-root UID 1001 with a read-only root filesystem in both the digital twin and OCP; the Helm chart's security context matches Restricted SCC exactly with no `anyuid` or other elevated binding requested; pipeline restarts do not lose previously-ingested Bronze/Silver/Gold data.
 
 ## Constraints
 
@@ -398,6 +506,59 @@ close later.
   the packaging skill invokes the `conda-forge-expert` skill, and an effort closes with its
   retrospective — the repo's standing Rules 1 and 2, which this contract does not override.
 
+### Satellite: Unity Data Stack constraints
+
+> Folded in verbatim 2026-08-02 from `archive/_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-unity-data-stack/SPEC.md`,
+> with `AD-n` renumbered to match the merged `ARCHITECTURE-SPINE.md`.
+
+- **One authoritative lock (AD-25):** exactly one Workspace Lock (conda+PyPI together) is authoritative and committed; every other lock artifact (Exported Lock, Offline Bundle) is generated from it and drift-checked against one pinned commit SHA per release — never hand-edited, never a second resolution input.
+- **Materialized coverage, never inferred (AD-26):** for every declared platform × every deployable Environment, a gate materializes the Environment from the lock and fails if it cannot; coverage is reported per platform, never as a single boolean.
+- **One-way dependency direction (AD-30):** dependencies flow shared → platform-infrastructure → domain, never upward or sideways between Domains; a Domain consumes another Domain's *published* Data Product/API only, never its Package or datastore directly; a cycle detector runs in the Quality Gate.
+- **Every Mandate machine-classified (AD-31):** each Constitution Mandate carries a stable identifier and a classification of exactly `platform-invariant` or `domain-default`; an unclassified Mandate, or a check with no declared Mandate, fails the Quality Gate.
+- **Tasks, not inline commands (AD-32):** every gate check is a named task with a globally unique name; CI invokes task names only — no inline tool invocation, no inline installation, no environment mutation; a parity check and a name-uniqueness check both run in the gate.
+- **Host-scoped credentials (AD-33):** credentials live only in the credential store or masked runner inputs; no committed file contains a credential-bearing URL in any form; no process receives a credential as a command-line argument; a request attaches a credential only when its host matches.
+- **Lean-by-declaration Environments (AD-36):** every deployable Environment inherits no default dependency set and composes only what it names; installed size is measured against a recorded ceiling and a regression fails the gate (exempt: the FR-7 compatibility-detection Environment, explicitly non-deployable).
+- **One accountable station per plane (AD-40):** each plane and cross-cutting concern resolves to exactly one pyforge-crew station (Marshal / Atlas / Warden / Mason / Steward / Doctor / Scribe / Herald); an unowned capability, or one claimed by two stations, is a defect — full map in the architecture-spine companion.
+- **The Constitution's 14 Articles are the requirement spine.** Every FR traces to an Article or to its explicit disposition; 8 amendments are required before re-ratification. Full Article map and the 8 amendments are in `constitution-provenance.md` — not restated here.
+- **The intake toolchain spec's flagship lock command does not exist:** `pdm export --format pylock --override-platform=...` has no such flag on `pdm export` (verified 2026-07-25); that exact mechanism cannot be reused as written, and PEP 751 itself does not guarantee multi-platform coverage — this is the empirical grounding for AD-25/AD-26 replacing an unverified format guarantee with gate-verified materialization. Detail in `constitution-provenance.md`.
+- **Compliance by integration, not reimplementation (AD-29):** the compliance capability is `pyforge-warden`, consumed as a CLI in its own lean, isolated Environment — never imported as a library, never invoked only in CI; the gate's exit code derives from its Compliance Report file.
+- **Python targets revised (Constitution Art. XIV amendment):** primary targets are 3.13 and 3.14; 3.12 is legacy-consumer-only (security-phase upstream); 3.15 first-releases 2026-10-01 and must be planned for inside this horizon.
+
+### Satellite: Wasm Analytics Stack constraints
+
+> Folded in verbatim 2026-08-02 from `archive/_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-wasm-analytics-stack/SPEC.md`,
+> with `AD-n` renumbered to match the merged `ARCHITECTURE-SPINE.md`.
+
+- **Maturity verdict (the project's central scoping fact):** DuckDB's native engine has no WASI build and no WASI roadmap upstream, so `dlt`, `dbt-duckdb`, and DuckDB itself cannot run inside a genuine WASI component today. The WASI sandbox is therefore scoped narrowly to the pure-Python upload-validation step only; a future `wasm32-wasi` build target for ingestion or transform requires an ADR amendment citing new upstream evidence, not an incremental extension of this project.
+- **AD-47, trust-boundary data shape:** the validation component's WIT interface accepts and returns only primitive/record types (strings, numbers, booleans, lists, records) — never a host-shared-memory or buffer type. No Arrow buffers, no raw Excel bytes cross the WIT boundary; Excel bytes are parsed into rows entirely outside the sandbox, before the WIT call.
+- **AD-48, denylist is a build gate:** `pixi run build` runs a static-import-scan against the validation component's source and its resolved dependency closure, failing the build — not merely a policy or PR-review expectation — on any denylisted import, direct or transitive.
+- **AD-50, the isolation gate must be non-hollow:** it ships with a meta-test from its first version — deliberately widening the component's declared WIT capabilities without a matching interface change must make the gate fail — and it runs on every build.
+- **AD-51, one trace-ID field:** `upload_trace_id` is always the bare 32-hex-character W3C trace-id (never the full `traceparent` string, never a UUID, never dashed), minted once at FastAPI ingress, and is never conflated with OpenLineage's own separately-minted `runId`.
+- **AD-52, one securityContext, two consumers:** a single canonical security-context definition is authored once under `deploy/`; the Helm chart and the Podman compose file both consume it via a generation step, neither hand-authors its own copy.
+- **AD-53, DuckDB single-writer:** each validated upload triggers exactly one `dlt` load followed by exactly one `dbt run` scoped to that load — 1:1, never batched — both invoked sequentially by the same owning process; a move to concurrent or batched transforms is a scope change requiring an ADR amendment.
+- **AD-54, air-gap-routable dependency fetch:** every build-time fetch (Pixi packages, DuckDB extensions, the `componentize-py`/Wasmtime toolchain) routes through the configured channel/mirror; no build script hardcodes a public URL.
+- **AD-55, synchronous upload:** `POST /upload/excel` blocks through parsing, WASI validation, and returns the full per-row result in one HTTP response; the returned trace ID is a correlation handle for observability/lineage lookups, not a polling handle — there is no V1 polling endpoint.
+- **AD-56, authentication at the ingress boundary:** OIDC token validation happens at a sidecar/gateway boundary in front of `apps/api/`, never embedded per-request inside the application code itself.
+
+### Reconciliation notes (2026-08-02 consolidation)
+
+No contradiction was found between the primary Atlas contract and either
+satellite's non-goals/constraints — the three bodies of work govern
+disjoint code surfaces (Atlas: `src/shared/packages/pyforge-atlas/**`;
+Unity: `constitution.md`/`config/**`/`templates/**` at an as-yet-unbuilt
+repository root; Wasm: `apps/**`/`deploy/**` at an as-yet-unbuilt repository
+root), so no rule in one binds code the other two own. One difference is
+worth naming explicitly rather than leaving implicit: **the three bodies of
+work commit to three different Python floors** — Atlas is conda-forge-only,
+pixi-managed, and **py3.14-floored** (exact-minor pinned, shipped); Unity's
+Constitution Art. XIV amendment targets **primary 3.13/3.14, 3.12
+legacy-consumer-only**; Wasm's host/pipeline processes pin **3.12** as a
+deliberately conservative, explicitly revisitable stability floor (nothing
+in its pinned dependency set forces it). This is not a conflict to resolve
+— each project owns its own environment and dependency closure — but a
+reader of this merged Spec should not assume one floor applies across all
+three.
+
 ## Non-goals
 
 - **A public, versioned API tier** — access is agent-mediated (MCP + `a2a`) and
@@ -438,6 +599,33 @@ close later.
   this project (`spec-upstream-discovery`) and was never absorbed into this migration's stories.
 - **A unified observation view** across the loop TUI, the BMAD artifact dashboards, and the
   pipeline UIs — three deliberately unjoined planes.
+
+### Satellite: Unity Data Stack non-goals
+
+> Folded in verbatim 2026-08-02 from `archive/_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-unity-data-stack/SPEC.md`.
+
+- Unity is not an Internal Developer Portal — no catalog UI, no service-discovery portal; it emits catalog-consumable facts, an adopter running Backstage integrates rather than migrates.
+- Unity is not a build-graph engine — no attempt to out-cache Pants, Bazel, or Nx on fine-grained caching or remote execution; orthogonal and unwinnable.
+- Unity does not maintain a second registry of truth — manifests are the source; catalogs, ownership maps, and portal feeds are all derived.
+- Unity is not a product to be sold — it is a platform an enterprise runs.
+- Unity does not replace a Domain's judgement about its own data models — global interoperability concerns are Platform Invariants, local modelling is a Domain Default.
+- Unity does not target SLSA Build L3 in v1 — L1 mandatory, L2 goal; L3 needs hardened builders, deferred.
+- Unity does not perform data-content inspection in v1 — Data Classification is enforced at the configuration boundary only (which datastore, which network), not content-level PII detection/masking/deletion.
+- Unity is not a general-purpose polyglot monorepo — Python-first by mandate.
+- Bootstrapping new Unity instances — depends on `pyforge-genesis`, unbuilt; a v2 dependency.
+- Local Kubernetes development — the required cluster tool isn't available through the mandated channel on every platform; the intake root's documented stub stands.
+
+### Satellite: Wasm Analytics Stack non-goals
+
+> Folded in verbatim 2026-08-02 from `archive/_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-wasm-analytics-stack/SPEC.md`.
+
+- A general-purpose Wasm-sandboxing framework for arbitrary third-party logic — the WASI boundary in v1 is scoped exclusively to the Excel-upload validation step.
+- Running `dlt`, `dbt`, or DuckDB itself inside a WASI Preview 2 sandbox — blocked at the DuckDB-dependency level per the technical research, not a scoping choice to revisit without new upstream evidence.
+- Apache Arrow buffers as the host↔WASI-component interchange format — deferred pending a confirmed `pyarrow`-in-WASI path or an Arrow-maintained WASM/WASI interchange primitive.
+- A browser-side query/dashboard surface onto Gold tables — v2, would reuse the `pyforge-atlas` G1 DuckDB-WASM/Pyodide pattern directly rather than reinvent it.
+- A general ingestion platform for arbitrary source types — Excel upload is the only ingestion path in v1.
+- Multi-tenant Unity Data Stack platform integration — a kinship, not a v1 commitment.
+- Migration to `dbt Fusion` (the Rust engine) — blocked until it gains a DuckDB adapter; a watch item, not scheduled.
 
 ## Success signal
 
@@ -480,6 +668,23 @@ been discharged. Three remain outstanding as of 2026-07-27:
 - **The live Dagster daemon has never ticked** a schedule or sensor (`DW-C1-1`, `DW-G3`,
   `DW-H4`); definitions build and validate offline only.
 
+### Satellite: Unity Data Stack success signal
+
+> Folded in verbatim 2026-08-02 from `archive/_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-unity-data-stack/SPEC.md`
+> (status: planning-complete, unscheduled — no epics/stories/code yet; SM-n
+> below is local to `archive/_bmad-output/projects/pyforge-atlas/planning-artifacts/prds/prd-unity-data-stack-2026-07-25/prd.md`).
+
+Onboarding: a new engineer reaches a running local stack with a passing package test using only written documentation, in under an hour, single-digit commands (SM-1). Cross-team reuse — the innersource proof — trends up (contributions merged into Packages the contributor doesn't own) while the internal-fork counter-metric does not rise in step (SM-2 vs. SM-C1); if it stays near zero, the platform has failed at its premise regardless of technical quality. Reproducibility is verified, not assumed: 100% of declared platforms materialize every Environment from the lock, online and offline (SM-4). Compliance latency — time from vulnerability publication to a determination of estate impact — is measured in minutes, ahead of the EU CRA's 2026-09-11 reporting-obligation deadline (SM-5). Air-gap parity reaches 100% of enumerated capabilities, with any exception explicitly declared, never silently degraded (SM-6).
+
+### Satellite: Wasm Analytics Stack success signal
+
+> Folded in verbatim 2026-08-02 from `archive/_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-wasm-analytics-stack/SPEC.md`
+> (status: planning-complete, unscheduled — no epics/stories/code yet; SM-n
+> below is local to `archive/_bmad-output/projects/pyforge-atlas/planning-artifacts/prds/prd-wasm-analytics-stack-2026-07-25/prd.md`; `CAP-27`
+> below was `CAP-1` in the standalone document).
+
+The seed use case — Excel upload → WASI-validated → DuckDB Bronze → Silver/Gold via `dbt`, traced end-to-end — runs correctly and identically under `podman --read-only --user 1001` locally and under real OpenShift Restricted SCC, with the WASI validation component's sandboxing mechanically verified, not just asserted (SM-1). The Isolation-Verification Gate passes on every build and demonstrably fails when the component's declared capability surface is deliberately widened without a corresponding WIT change — the non-hollow-gate proof (SM-2). The project ships zero claims beyond what the technical research verified as buildable today. Two counter-metrics guard against gaming the primary signals: growing workaround complexity in the denylist (SM-C1) is a signal to reconsider the WASI-sandboxing bet, not a target to minimize by weakening the boundary; and upload-validation latency must never be optimized by moving checks out of the sandbox back into the trusted process (SM-C2), which would defeat CAP-27's entire purpose.
+
 ## Assumptions
 
 - The story set is **complete** (32/32, 2026-07-18), so this contract is written in the present
@@ -501,10 +706,34 @@ been discharged. Three remain outstanding as of 2026-07-27:
   only when the real pipeline structure moves, which is exactly when this contract should move
   too.
 
+### Satellite: Unity Data Stack assumptions
+
+> Folded in verbatim 2026-08-02 from `archive/_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-unity-data-stack/SPEC.md`.
+> `AD-25` below (was `AD-2`) is renumbered to match the merged
+> `ARCHITECTURE-SPINE.md`; unresolved items are carried to
+> § Open Questions (satellites) below.
+
+- **Pixi-primary lock architecture:** the Workspace Lock (`pixi.lock`) is authoritative; `pylock.toml` is a derived PEP 751 export; offline deployment uses `pixi-pack`/`pixi-unpack`. Conda-native resolution is the differentiator and the alternative (PDM/PEP-751-primary) would discard it. This is the architecture's resolution (AD-25) but see § Open Questions (satellites) — it still needs explicit human ratification.
+- V1 targets SLSA Build L1 mandatory, L2 (signed provenance from a hosted build platform) as the goal; L3 is out of scope.
+- V1 delivers the Domain pattern plus one worked reference Domain (`customer`); the remaining ten Domains are adoption work, not build work — see § Open Questions (satellites), this changes MVP effort by an order of magnitude if wrong.
+- Data Classification is enforced at the configuration boundary; content-level inspection is deferred to v2.
+- Primary Python targets are 3.13 and 3.14; 3.12 is legacy-only; 3.15 (2026-10-01) must be planned for inside this horizon.
+
+### Satellite: Wasm Analytics Stack assumptions
+
+> Folded in verbatim 2026-08-02 from `archive/_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-wasm-analytics-stack/SPEC.md`.
+
+- Python 3.12 is chosen as a conservative stability floor for host/pipeline processes, even though nothing in the pinned dependency set (`dlt`/`dbt-core`/`dbt-duckdb`/`duckdb` all support through 3.14) forces it — revisitable.
+- Marquez's actual deployed image/version needs re-verification at implementation time; its last GitHub release tag (0.50.0, 2024-10-24) is stale relative to active repo development, and Marquez ships primarily via Docker/Maven rather than GitHub release tags.
+- No cost ceiling, no air-gap-routing detail beyond the general `enterprise-airgap` posture, and no SLA/RTO/RPO commitment is stated in the founding Dream or brief; none should be assumed by downstream work until resolved.
+
 ## Resolved questions
 
 All four closed **2026-07-25**; `open_questions[]` is empty. Recorded here rather
-than deleted, so the disposition is auditable.
+than deleted, so the disposition is auditable. (This section covers the
+**primary** Atlas Spec only — the two satellites carry their own,
+still-open questions; see § Open Questions (satellites) at the end of this
+document.)
 
 - **Does Atlas expose a public, versioned API tier?** → **Yes, eventually.**
   Deferred as a real capability, *not* closed as a non-goal. Tracked **DC-1**
@@ -526,4 +755,34 @@ than deleted, so the disposition is auditable.
   Sprint-status carries 9 retro entries — 8 `optional`, 1 `done` (epic-9). The
   CFE Rule-2 retro landed separately as v8.79.0; these 8 are additive. Process
   disposition only — bends no design decision, so it lands in no kernel field.
+
+## Open Questions (satellites)
+
+Unlike the primary Atlas Spec's `open_questions[]` (empty — all resolved,
+see § Resolved questions above), both satellites carry genuinely open
+questions, honestly preserved rather than silently resolved by this
+2026-08-02 consolidation. Neither is invented away here.
+
+### Satellite: Unity Data Stack open questions
+
+> Folded in verbatim 2026-08-02 from `archive/_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-unity-data-stack/SPEC.md`.
+> `AD-25`/`AD-31` below (was `AD-2`/`AD-8`) are renumbered to match the
+> merged `ARCHITECTURE-SPINE.md`.
+
+- **Lock authority (blocks everything):** is the Workspace Lock authoritative with the PEP 751 export derived, or the reverse, or split by tier? The architecture (AD-25) already resolves this as workspace-lock-primary and this Spec carries it as an assumption, but it still requires explicit **human confirmation** before any build work begins — it has not yet been independently ratified.
+- **V1 Domain count (order-of-magnitude sizing):** does v1 ship the pattern plus one worked Domain, or all eleven? Carried as an assumption above but not confirmed at sign-off.
+- **Platform Invariant vs. Domain Default classification:** AD-31 supplies the classification *mechanism*, but which specific Mandates get which classification is an unresolved sign-off decision — it directly determines whether Unity is genuinely federated/innersource (Data Mesh principle 4) or centrally imposed in practice.
+- **Governance boundary:** where does the Constitution's spec-kit governance end and this repo's BMAD planning chain begin? Both are live simultaneously; unresolved, and the two risk drifting independently without an explicit decision.
+
+### Satellite: Wasm Analytics Stack open questions
+
+> Folded in verbatim 2026-08-02 from `archive/_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-wasm-analytics-stack/SPEC.md`.
+> `AD-55` below (was `AD-9`) is renumbered to match the merged
+> `ARCHITECTURE-SPINE.md`.
+
+- **Upload size / latency budget:** exact maximum upload file size and the expected weekly row-count/latency budget for the "within seconds" claim — needed before Architecture can size the validation component's performance envelope; a large-enough file may force revisiting the synchronous-upload design (AD-55) via ADR amendment.
+- **Named regulatory framework:** which specific framework(s), if any, this deployment must satisfy beyond Restricted SCC + OIDC (HIPAA, PCI-DSS, SOX, none) — a named framework would likely add audit-log retention and encryption-at-rest requirements not yet captured.
+- **`componentize-py` rule-configuration redesign:** does the build-time-only import restriction force a redesign of the validation component's rule-configuration mechanism, if rules were meant to be dynamically loaded per file-type?
+- **Operational ownership:** who is on-call for this pipeline in production, and what SLA (if any) applies to validation/ingestion latency — needed before Architecture commits to a specific deployment topology.
+- **Data classification and retention:** no scheme (PII, confidential) is defined for Bronze/Silver/Gold or Marquez's lineage history; if the seed use case's actual data (headcount/cost) carries PII, this adds retention/access-control requirements not currently specified.
 

@@ -1,0 +1,85 @@
+---
+title: One fabricated commit, eight stations of debris
+type: dream
+owner: marshal
+status: dreamt
+---
+
+# One fabricated commit, eight stations of debris
+
+## The Dream
+
+`_bmad-output/projects/` holds every station's planning record — but a single bulk commit
+(`dad47c408a`, "chore: PyForge planning artifacts and test infrastructure — all 8 stations",
+2026-08-02) stamped generic, unreviewed template content across all 8 stations at once: dead
+test scaffolding that collects zero real tests, a hollow `sprint-status.yaml` claiming 0%
+completion regardless of real shipped work, and — in places — a fabricated `test-architecture.md`
+or an unfilled `README.md` `[role]`/`[responsibilities]` placeholder. Remediation since then has
+been real but inconsistent: some stations got fixed same-day (a follow-up commit rewrote
+`test-architecture.md` for six of them), some never did (Genesis's still describes the wrong,
+pre-split "genesis-as-installer" narrative), and the dead test scaffolding and hollow
+sprint-status template were never addressed anywhere.
+
+Every station's planning tree should tell the truth about itself — real content or an honest
+placeholder, never a templated fiction that happens to compile. This Dream is that cleanup,
+closed once every station's `_bmad-output/projects/<station>/` tree is either genuinely current
+or has been mechanically corrected, and any orphaned single-file debris from already-completed
+consolidations (a handful found, distinct from the bulk-commit problem) is archived.
+
+## What it looks like when real
+
+- No station's `_bmad-output/projects/<station>/` contains dead test scaffolding (a `tests/`
+  tree with zero real `test_*.py` files, a `pytest.ini` pointing at a nonexistent path, or a
+  `playwright.config.ts` configuring a web server the station doesn't have).
+- No station's `planning-artifacts/sprint-status.yaml` claims `0%`/`stories_complete: 0` while
+  its own `sprint-status-ledger.yaml` (or code) shows real shipped work — either it's deleted (the
+  `-ledger` twin is what dashboards/scripts actually read everywhere) or it's regenerated to match
+  reality.
+- Every station's `test-architecture.md` and root `README.md` describe what's actually there —
+  Genesis's especially, since it currently asserts a `src/pyforge_genesis` package and an
+  installer role that moved to Marshal in the 2026-07-28 split.
+- The handful of confirmed orphaned single files (below) are archived, mirroring the
+  `archive/_bmad-output/...` convention already used for today's satellite-chain moves.
+
+## What is real
+
+A 5-agent research-only audit ran 2026-08-02 across all 9 BMAD projects (679 files). Nothing was
+moved — this section is the evidence base for the cleanup above, not yet acted on.
+
+### Cluster 1 — the `dad47c408a` fabricated-boilerplate set (fleet-wide, the dominant finding)
+
+| Artifact | Confirmed affected | Confirmed clean / already fixed | Notes |
+|---|---|---|---|
+| Dead test scaffolding (`tests/`, `pytest.ini`, `playwright.config.ts`) | atlas, doctor, marshal, warden, scribe, mason, steward (7) | herald, genesis (never generated for them) | Zero real tests anywhere in these trees; the real, wired suites all live at `src/shared/packages/pyforge-<station>/tests/`. Atlas's copy even configures a Vite dev server; Marshal's configures Playwright `e2e/web`/`e2e/pages` for a CLI-only product. |
+| Hollow `planning-artifacts/sprint-status.yaml` (0%, empty arrays) | confirmed identical stub in all 8 stations | — | Distinct from `sprint-status-ledger.yaml`, which is real, tracked, and what dashboards/scripts actually read. Doctor's copy was explicitly called "stale" in a same-day follow-up commit (`17a3154075`) but never removed. |
+| Fabricated `test-architecture.md` | originally atlas, warden, doctor, mason, scribe, steward | **fixed same-day** by commit `2957718d4c` (real, code-grounded content) for those 6; herald and marshal's were never fabricated in the first place | **Genesis is the one exception — never fixed.** Its `test-architecture.md` still opens "Genesis bootstraps the PyForge factory installer... initializing the complete factory stack from scratch," referencing a `src/pyforge_genesis` package that doesn't exist and directly contradicting Genesis's own current, correct, constitutive PRD/architecture ("ships no product"). |
+| Unfilled `README.md` (`[role]`/`[responsibilities]` placeholder) | marshal, herald, genesis confirmed; doctor has an equivalent unfilled placeholder | — | Same generic text across all three checked; likely fleet-wide, not individually verified for the remaining 5. |
+
+### Cluster 2 — orphaned single-file debris (distinct pattern: leftovers from *already-completed*, unrelated consolidations, never cleaned up)
+
+- **Atlas** — `RESUME-EPIC-10.md`: self-marked "✅ CLOSED 2026-07-29... HISTORY," zero repo-wide references, its unique content (loop blind-spot lessons) already promoted into auto-memory.
+- **Herald** — `intake-video-scripts-manticore-2026-07-31.md`: input material for a Dream+Spec (`video-scripts`) that was fully retired to `archive/` on 2026-08-01; this one file was left behind by oversight. Same shape as `product-brief-deckcraft.md`, which the same-day Herald consolidation already found and archived.
+
+### Cluster 3 — content-drift, NOT archive candidates (flagged for a separate correction pass)
+
+- `project-context.md` in Mason (claims "38/38 stories," Dream says 4/38) and Herald (claims
+  "17/17," Dream says 4/17) — each is the sole copy at its path, so the fix is regeneration in
+  place, not archiving.
+
+### Confirmed clean, no action needed
+
+Scribe, Steward, and Warden's satellite-Dream/Spec-kernel layers all resolved to already-correct,
+archived-in-place retirement records from earlier same-day consolidation passes — zero genuine
+candidates beyond Cluster 1's fleet-wide items. Mason's 5 "orphan" Spec kernels all check out as
+intentional (2 live, 3 properly archived-in-place). Every `spec-archive/`, per-story spec,
+`.memlog.md`, retro, change-history file, and dated snapshot report checked across all 9 projects
+was confirmed to be permanent-by-design record, not clutter — none were flagged.
+
+## Realization log
+
+- **2026-08-02** — Dream captured from a 5-agent research-only audit (report-only, zero files
+  moved) run immediately after today's Atlas/Herald/Mason/Marshal PRD/brief/architecture/Spec
+  consolidation, motivated by the user noticing the file landscape looked overgrown once that
+  consolidation was done. Findings above are the full evidence base; next step is `bmad-spec` (or
+  direct execution, if the fix is judged mechanical enough to skip a full spec) to turn Cluster 1
+  and Cluster 2 into actual archive/regeneration actions.

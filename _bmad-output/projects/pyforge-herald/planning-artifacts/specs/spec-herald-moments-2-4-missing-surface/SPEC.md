@@ -16,6 +16,21 @@ open_questions: []
 > it. It states what was contracted, why the Dream *file* ended, and — critically here —
 > what did **not** end. Read `## What carries forward` before assuming this means the
 > work is done; it is the opposite of done.
+>
+> **Update 2026-08-02 (later same day).** `## What carries forward` below says
+> `spec-herald-moments-2-4` and its downstream PRD/Architecture "stay exactly as they are,
+> live and unarchived." That is now **false**: per an explicit, same-day user override of
+> the keep-chains-separate convention, `spec-herald-moments-2-4`'s three capabilities were
+> folded into `spec-pyforge-herald/SPEC.md` as HER-11–HER-13, its PRD into
+> `prd-pyforge-herald-2026-08-01/prd.md` as a Satellite section, and its Architecture into
+> `architecture-herald-pitch-2026-08-01/ARCHITECTURE-SPINE.md` as AD-11–AD-20. The
+> original `spec-herald-moments-2-4/` folder (SPEC.md + .memlog.md; its `epic-structure.md`
+> companion moved to `spec-pyforge-herald/`) is archived, unmodified, at
+> `archive/_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-herald-moments-2-4/`.
+> This record's own Non-goals section below (listing "touching spec-herald-moments-2-4" as
+> a non-goal) is correspondingly superseded for the same reason. The work itself — Moments
+> 2–4 — remains exactly as unbuilt as this record originally said; only its planning
+> chain's filing location changed.
 
 # herald-moments-2-4-missing-surface — retirement record
 

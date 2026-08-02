@@ -2,8 +2,8 @@
 stepsCompleted:
   - step-01-validate-prerequisites
 inputDocuments:
-  - _bmad-output/projects/pyforge-herald/planning-artifacts/prds/prd-herald-moments-2-4-2026-08-02/prd.md
-  - _bmad-output/projects/pyforge-herald/planning-artifacts/architecture/architecture-herald-moments-2-4-2026-08-02/ARCHITECTURE-SPINE.md
+  - _bmad-output/projects/pyforge-herald/planning-artifacts/prds/prd-pyforge-herald-2026-08-01/prd.md (formerly prds/prd-herald-moments-2-4-2026-08-02/prd.md, folded in 2026-08-02 as its "## Satellite: Herald's Proclamation Surfaces — Moments 2–4" section; original archived at archive/_bmad-output/projects/pyforge-herald/planning-artifacts/prds/prd-herald-moments-2-4-2026-08-02/)
+  - _bmad-output/projects/pyforge-herald/planning-artifacts/architecture/architecture-herald-pitch-2026-08-01/ARCHITECTURE-SPINE.md (formerly architecture/architecture-herald-moments-2-4-2026-08-02/ARCHITECTURE-SPINE.md, folded in 2026-08-02 as AD-11..AD-20; original archived at archive/_bmad-output/projects/pyforge-herald/planning-artifacts/architecture/architecture-herald-moments-2-4-2026-08-02/)
 ---
 
 # Herald Moments 2–4 - Epics & Stories

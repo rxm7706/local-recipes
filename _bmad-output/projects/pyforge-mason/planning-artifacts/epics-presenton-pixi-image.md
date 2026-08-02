@@ -5,11 +5,18 @@ stepsCompleted:
   - step-03-create-stories
   - step-04-final-validation
 inputDocuments:
-  - "_bmad-output/projects/presenton-pixi-image/planning-artifacts/prd.md"
-  - "_bmad-output/projects/presenton-pixi-image/planning-artifacts/architecture/architecture-presenton-pixi-image-2026-07-25/ARCHITECTURE-SPINE.md"
-  - "_bmad-output/projects/presenton-pixi-image/planning-artifacts/briefs/brief-presenton-pixi-image-2026-07-25/brief.md"
-  - "_bmad-output/projects/presenton-pixi-image/planning-artifacts/research/technical-presenton-stack-ocp-airgap-research-2026-07-25.md"
-  - "_bmad-output/projects/presenton-pixi-image/planning-artifacts/research/domain-regulated-enterprise-airgap-ai-deck-market-research-2026-07-25.md"
+  # NOTE (2026-08-02): the brief/PRD/architecture/Spec below were consolidated into
+  # pyforge-mason's own single planning-chain documents; paths here now point at the
+  # archived originals (moved, not deleted) plus the merged primary docs' "Satellite:
+  # Presenton" sections. Epics content itself is untouched by that consolidation.
+  - "archive/_bmad-output/projects/pyforge-mason/planning-artifacts/prds/prd-presenton-pixi-image-2026-05-01/prd.md"
+  - "_bmad-output/projects/pyforge-mason/planning-artifacts/prds/prd-pyforge-mason-2026-07-25/prd.md"
+  - "archive/_bmad-output/projects/pyforge-mason/planning-artifacts/architecture/architecture-presenton-pixi-image-2026-07-25/ARCHITECTURE-SPINE.md"
+  - "_bmad-output/projects/pyforge-mason/planning-artifacts/architecture/architecture-pyforge-mason-2026-07-25/ARCHITECTURE-SPINE.md"
+  - "archive/_bmad-output/projects/pyforge-mason/planning-artifacts/briefs/brief-presenton-pixi-image-2026-07-25/brief.md"
+  - "_bmad-output/projects/pyforge-mason/planning-artifacts/briefs/brief-pyforge-mason-2026-07-25/brief.md"
+  - "_bmad-output/projects/pyforge-mason/planning-artifacts/research/technical-presenton-stack-ocp-airgap-research-2026-07-25.md"
+  - "_bmad-output/projects/pyforge-mason/planning-artifacts/research/domain-regulated-enterprise-airgap-ai-deck-market-research-2026-07-25.md"
 project_name: presenton-pixi-image
 epicCount: 7
 storyCount: 30

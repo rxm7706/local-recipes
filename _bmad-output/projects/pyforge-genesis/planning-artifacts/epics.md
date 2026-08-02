@@ -54,5 +54,21 @@ exist and declare its own emptiness.
    (`S-7.1` … `S-12.6`), because 33 of the 36 ids collided with marshal's own `1.1`–`6.6`
    and AD-23 requires the canonical key `<epic>.<seq>` to be unique within a project — the
    loop, the journal, the spec archive, the merge subject and the dashboard all key on it.
-   The PRD, architecture and research they decompose still live here; only the epics and the
-   execution feed moved.
+   The epics and the execution feed live in `pyforge-marshal` as `epics-genesis-installer.md`
+   — unchanged, still true, still a separate document.
+
+**Update (2026-08-02, explicit user override):** the line above about "the PRD, architecture
+and research" was already physically inaccurate by this point (they had lived under
+`pyforge-marshal` since the 2026-07-28 split, never here) and is now doubly wrong: as of
+2026-08-02 there is no separate installer PRD, architecture, brief, or Spec at all. All four
+were **consolidated** into `pyforge-marshal`'s own single brief / PRD / architecture / Spec
+(`product-brief-pyforge-marshal.md`, `prds/prd-pyforge-marshal-2026-07-25/prd.md`,
+`architecture/architecture-pyforge-marshal-2026-07-25/architecture.md`,
+`specs/spec-pyforge-marshal/SPEC.md`, each carrying a "Satellite: Genesis Installer" section
+or continued `CAP-`/`AD-` numbering) — a direct user override of the "kept separate on
+purpose" decision that had stood since the split. Only the installer's **epics** stay a
+separate document, per that same override — `epics-genesis-installer.md` is untouched. The
+four original standalone documents are preserved at
+`archive/_bmad-output/projects/pyforge-marshal/planning-artifacts/{research/product-brief-pyforge-genesis.md,
+prds/prd-genesis-installer-2026-07-25/, architecture/architecture-genesis-installer-2026-07-25/,
+specs/spec-genesis-installer/}`.

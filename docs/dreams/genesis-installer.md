@@ -8,12 +8,23 @@ archived-reason: absorbed
 
 > **Narrative consolidated 2026-08-02 (dream-level only).** This Dream's narrative now lives
 > in [`docs/dreams/pyforge-marshal.md`](pyforge-marshal.md) under "Kept separate on purpose."
-> Unlike this session's other Marshal satellite retirements, **its downstream chain is
-> untouched and stays fully live**: `spec-genesis-installer`, `prds/prd-genesis-installer-2026-07-25/`,
-> `architecture/architecture-genesis-installer-2026-07-25/`, and `epics-genesis-installer.md`
-> all remain exactly as they were — real, substantial, Marshal-owned buildable work with its
-> own FR/AD range, deliberately kept separate from `marshal` the CLI's own FR-1..65. Only the
-> top-level Dream file consolidates; nothing downstream was merged, retired, or reworded.
+>
+> **Superseded the same day (explicit user override, third pass, 2026-08-02).** The
+> paragraph originally here said the downstream chain "remain[ed] exactly as they were...
+> deliberately kept separate from `marshal` the CLI's own FR-1..65." That is no longer true
+> for brief/PRD/architecture/Spec: `research/product-brief-pyforge-genesis.md`,
+> `prds/prd-genesis-installer-2026-07-25/`, `architecture/architecture-genesis-installer-2026-07-25/`,
+> and `specs/spec-genesis-installer/` were **consolidated** into `pyforge-marshal`'s own single
+> brief / PRD / architecture / Spec — a "Satellite: Genesis Installer" section in the brief and
+> PRD, a continued `AD-51..AD-65` in the architecture, a continued `CAP-10..CAP-18` in the Spec.
+> **Only the epics genuinely stay separate**, exactly as before: `epics-genesis-installer.md`
+> (6 epics / 36 stories, epics 7–12) is unchanged and was explicitly out of scope for this
+> consolidation. The four original standalone documents are preserved, not deleted, at
+> `archive/_bmad-output/projects/pyforge-marshal/planning-artifacts/{research/product-brief-pyforge-genesis.md,
+> prds/prd-genesis-installer-2026-07-25/, architecture/architecture-genesis-installer-2026-07-25/,
+> specs/spec-genesis-installer/}`. genesis-installer's own `FR1..FR62` (no dash) numbering is
+> unchanged and was never renumbered into Marshal's `FR-1..FR-65` (with dash) — the two ranges
+> stay distinct namespaces inside the one merged PRD.
 
 # Genesis installer — the seed, made executable
 
@@ -76,14 +87,30 @@ verb, made real.
 
 ## What is real
 
-- **The Spec** — `spec-genesis-installer` (9 capabilities), with its extraction manifest:
-  what is **copied** (conventions, skills, workflows) vs **referenced** (bmad-method
-  releases) vs **generated** (per-repo Dreams).
+- **The Spec** — `spec-genesis-installer`'s 9 capabilities live on as `spec-pyforge-marshal`'s
+  `CAP-10..CAP-18` *(folded in 2026-08-02, explicit user override)*, with its extraction
+  manifest (now `spec-pyforge-marshal/extraction-manifest.md`): what is **copied**
+  (conventions, skills, workflows) vs **referenced** (bmad-method releases) vs **generated**
+  (per-repo Dreams). The original standalone Spec is preserved at
+  `archive/_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-genesis-installer/`.
+- **The four verbs** — `init` (CAP-14, greenfield), `adopt` (CAP-12, brownfield,
+  dry-run by default), `check` (CAP-13, read-only conformance, CI-shaped), `update`
+  (CAP-15, versioned migration with no hand edits) — all one `resolve → detect → plan →
+  apply` pipeline. The master success switch is the **empty-plan oracle**: `genesis
+  adopt --dry-run` against this repository at the shipped model version must produce an
+  empty plan, or the model and the repo it was extracted from have diverged. **Zero
+  execution weight so far** — all 36 stories in `epics-genesis-installer.md` (epics
+  7–12) are `backlog`; no code exists under `src/shared/packages/` for any of it.
 - **The proof** — this repository was the first brownfield adoption, installed by hand from
   `archive/docs/bmad-setup-plan.md`. The installer is that procedure, generalized.
-- **The chain** — PRD, architecture and epics exist (Foundation & the Write Guard · the
-  Managed-Region Engine · Detect & Plan), inherited from the pre-split `pyforge-genesis`
-  project.
+- **The chain** — PRD and architecture *(folded in 2026-08-02, explicit user override)* now
+  live inside `pyforge-marshal`'s own PRD (a "Satellite: Genesis Installer PRD" section,
+  `FR1..FR62`) and architecture (a "Satellite: Genesis Installer Architecture" section,
+  `AD-51..AD-65` continuing the station's own `AD-1..AD-50`) rather than as separate
+  documents; the originals are preserved under `archive/`. **Epics stay separate, unchanged**:
+  `epics-genesis-installer.md` (Foundation & the Write Guard · the Managed-Region Engine ·
+  Detect & Plan, 6 epics / 36 stories) under `pyforge-marshal`, inherited from the pre-split
+  `pyforge-genesis` project.
 
 ## The frontier
 
@@ -110,6 +137,37 @@ verb, made real.
 
 ## Realization log
 
+- **2026-08-02 (dream-coverage audit)** — a separate pass audited the merged brief/PRD/
+  architecture/Spec against this Dream and `docs/dreams/pyforge-marshal.md`, checking every
+  substantial CAP-10..CAP-18 / FR1..FR62 / AD-51..AD-65 item for coverage and execution
+  weight (epics-genesis-installer.md, Marshal's own `sprint-status.yaml`, and
+  `src/shared/packages/` — genesis-installer has none of the three: all 36 stories are
+  `backlog`, no code exists). One gap found and closed: this Dream named only two of the
+  four verbs (`init`, `adopt`); `check` and `update` — and the empty-plan oracle that is the
+  PRD's own primary success criterion (SC-01) — were absent even at summary level. Added
+  above, in "What is real." Both flagged contradictions (CLI framework, `check` collision)
+  confirmed to still have **zero execution weight on either side of the collision** — no
+  genesis code exists, and Marshal's own `marshal check` (FR-65) is speced but its story
+  (5-6) is still `backlog` too — so nothing here was silently resolved by the audit.
+  Everything else in the merged chain was already reflected here or in
+  `docs/dreams/pyforge-marshal.md`'s "Kept separate on purpose" section; no pruning was
+  warranted.
+- **2026-08-02 (explicit user override)** — **brief/PRD/architecture/Spec consolidated into
+  `pyforge-marshal`'s own single chain**, reversing the "kept separate on purpose" call
+  `docs/dreams/pyforge-marshal.md` made earlier the same day. `research/product-brief-pyforge-genesis.md`
+  became a "Satellite: Genesis Installer" section in `product-brief-pyforge-marshal.md`;
+  `prds/prd-genesis-installer-2026-07-25/prd.md` (`FR1..FR62`) became a "Satellite: Genesis
+  Installer PRD" section, own numbering preserved and never renumbered into Marshal's
+  `FR-1..FR-65`; `architecture/architecture-genesis-installer-2026-07-25/architecture.md`'s
+  `AD-01..AD-15` became a "Satellite: Genesis Installer Architecture" section renumbered
+  `AD-51..AD-65`; `specs/spec-genesis-installer/SPEC.md`'s `CAP-1..CAP-9` continued this
+  station's own Spec sequence as `CAP-10..CAP-18`, its `AD-01..AD-09` references renumbered
+  to match. Two contradictions surfaced by the fold, flagged rather than resolved: the CLI
+  framework (Marshal's shipped `argparse` vs this installer's designed `typer`+`rich`), and a
+  `marshal check` / `genesis check` verb-name collision (both feed Open Question 17). Only
+  `epics-genesis-installer.md` stays a separate document, unchanged, per the same override.
+  The four original standalone documents are preserved (not deleted) at
+  `archive/_bmad-output/projects/pyforge-marshal/planning-artifacts/`.
 - **2026-07-31** — **fold the CLI into Marshal; retire the `genesis` binary** (operator
   call), and correct the Dream's over-promise (it listed `skill-forge` and BMM/BMB/TEA
   among what Genesis *stands up*, which no capability or manifest row ever claimed —

@@ -6,22 +6,28 @@ status: archived
 archived-reason: absorbed
 ---
 
-> **Superseded (narrative only).** This Dream's narrative now lives in
+> **Superseded and fully consolidated.** This Dream's narrative now lives in
 > [`docs/dreams/pyforge-atlas.md`](pyforge-atlas.md) § *The estate Atlas
 > hosts*, which names Unity Data Stack as a separate, substantial initiative
 > that Atlas's project tree hosts — **not** a capability of Atlas's own
-> `cf_atlas` pipeline (`spec-pyforge-atlas`'s Capabilities are untouched) and
-> **not** a duplicate of anything Atlas already builds. This is a dream-level
-> consolidation only: Unity's own contract — 9 capabilities, FR-1–60 — still
-> lives at `spec-unity-data-stack/SPEC.md`, with its own PRD
-> (`prds/prd-unity-data-stack-2026-07-25/`) and Architecture spine
-> (`architecture/architecture-unity-data-stack-2026-07-25/`) already
-> produced; neither is touched by this consolidation. It is also **not**
-> "the work is done" — epics/stories are deliberately not yet decomposed
-> (planning ran to PRD + Architecture depth only) and no code has been
-> written; the platform remains planning-complete and unscheduled. Archived
-> 2026-08-02 as the narrative entry point only; its Spec/PRD/Architecture
-> chain continues independently.
+> `cf_atlas` pipeline (`spec-pyforge-atlas`'s own CAP-1..CAP-17 are
+> untouched) and **not** a duplicate of anything Atlas already builds. This
+> started 2026-08-02 as a dream-level-only consolidation, then was
+> **upgraded the same day to a full chain consolidation by explicit user
+> decision**, overriding this repo's default dream-level-only convention:
+> Unity's own contract (9 capabilities, FR-1–60) is no longer a standalone
+> Spec — it was folded verbatim into `spec-pyforge-atlas/SPEC.md` as
+> `## Satellite: Unity Data Stack`, with its capabilities renumbered
+> `CAP-18`..`CAP-26`; its PRD was folded into
+> `prds/prd-pyforge-atlas-2026-07-17/prd.md`; its Architecture spine was
+> folded into `architecture/architecture-pyforge-atlas-2026-07-17/ARCHITECTURE-SPINE.md`
+> with its invariants renumbered `AD-24`..`AD-46`. The original standalone
+> documents were **not deleted** — they were moved intact to
+> `archive/_bmad-output/projects/pyforge-atlas/planning-artifacts/{briefs/brief-unity-data-stack-2026-07-25,prds/prd-unity-data-stack-2026-07-25,architecture/architecture-unity-data-stack-2026-07-25,specs/spec-unity-data-stack}/`.
+> It is also still **not** "the work is done" — epics/stories are
+> deliberately not yet decomposed (planning ran to PRD + Architecture depth
+> only) and no code has been written; the platform remains
+> planning-complete and unscheduled.
 
 # Unity Data Stack — a python-first innersource delivery model
 

@@ -7,13 +7,24 @@ archived-reason: absorbed
 ---
 
 > **Narrative consolidated 2026-08-02 (dream-level only).** This Dream's narrative now lives
-> in [`docs/dreams/pyforge-herald.md`](pyforge-herald.md) under "What is real." **Its downstream
-> chain stays fully live and untouched**: `spec-herald-pitch` (7 capabilities, 4 companions —
-> `artifact-tracking-matrix.md`, `bridge-protocol.md`, `six-act-framework.md`,
-> `station-roster.md`) remains real, verified, ready-for-decomposition work — the Spec's own
-> "Next Steps" (feed to `bmad-prd` → `bmad-architecture` → `bmad-create-epics-and-stories`) have
-> not run yet. Only this top-level Dream file consolidates; nothing downstream was merged,
-> retired, or reworded.
+> in [`docs/dreams/pyforge-herald.md`](pyforge-herald.md) under "What is real." Originally,
+> **its downstream chain stayed fully live and untouched**: `spec-herald-pitch` (7
+> capabilities, 5 companions — `artifact-tracking-matrix.md`, `bridge-protocol.md`,
+> `six-act-framework.md`, `station-roster.md`, `workflow-stages.md`) remained real, verified
+> work, and its PRD/Architecture decomposition had, in fact, already run the same day
+> (`prd-pyforge-herald-2026-08-01/prd.md`, `architecture-herald-pitch-2026-08-01/ARCHITECTURE-SPINE.md`).
+>
+> **Update 2026-08-02 (station-level consolidation, later the same day) — this claim is now
+> superseded.** Per an explicit user override of this repo's keep-chains-separate
+> convention, `spec-herald-pitch`'s 7 capabilities are folded into
+> `spec-pyforge-herald/SPEC.md` as HER-4..HER-10, its PRD is folded into
+> `prd-pyforge-herald-2026-08-01/prd.md` as the station's primary content (unchanged, since
+> that PRD already *was* `spec-herald-pitch`'s decomposition), and its Architecture remains
+> the station's primary Architecture (also unchanged, for the same reason) — only the
+> Moments-2-4 satellite content was newly appended to those two documents. The companion
+> files are relocated to `specs/spec-pyforge-herald/`. The original `spec-herald-pitch/`
+> folder (`SPEC.md` + `.memlog.md`) is archived, unmodified, at
+> `archive/_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-herald-pitch/`.
 
 # Herald's Pitch Deck — Moment 1 Orchestration (Consolidated)
 
