@@ -155,10 +155,12 @@ file = true
 
 [review]
 enabled = true
-# repo-wide override (stock default: "recommended") -- run the independent
-# second-opinion review on every story rather than only when a dev pass
-# self-recommends one.
-trigger = "always"            # recommended | always
+# repo-wide override, stock default: "recommended" (2026-08-02: switched back to
+# stock from "always" -- operator call, paired with raising [adapter.review].model
+# to opus: fewer review passes, stronger when they happen. Trusts the dev pass's
+# own self-assessment of whether it needs review -- the exact self-grading "always"
+# existed to not depend on; revisit if that trust turns out to be misplaced.
+trigger = "recommended"       # recommended | always
 
 [stories]
 source = "sprint-status"      # sprint-status | stories
@@ -169,7 +171,7 @@ skill = "bmad-dev-auto"
 
 [adapter]
 name = "claude"               # claude | codex | gemini | copilot | antigravity | opencode-http | <custom .bmad-loop/profiles/*.toml>
-model = "sonnet"               # repo-wide override (stock default: "" = CLI default model)
+model = "opus"                 # repo-wide override (stock default: "" = CLI default model). 2026-08-02: sonnet -> opus, operator call -- dev and review both opus for now, pending FR-51 tier-batching.
 cleanup_session_on_finish = true
 # extra_args replaces the profile's default permission-bypass flags when set:
 # extra_args = ["--permission-mode", "bypassPermissions"]

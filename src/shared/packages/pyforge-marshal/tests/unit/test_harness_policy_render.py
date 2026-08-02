@@ -58,12 +58,12 @@ def test_full_composition_maps_all_six_keys_and_keeps_template_baseline_elsewher
 
     # every other key at template baseline, including the 6 hardcoded
     # repo-wide overrides
-    assert doc["review"]["trigger"] == "always"
+    assert doc["review"]["trigger"] == "recommended"
     assert doc["scm"]["isolation"] == "worktree"
     assert doc["scm"]["merge_strategy"] == "squash"
     assert doc["scm"]["rollback_on_failure"] is True
     assert doc["limits"]["session_timeout_min"] == 180
-    assert doc["adapter"]["model"] == "sonnet"
+    assert doc["adapter"]["model"] == "opus"
     assert doc["adapter"]["review"]["model"] == "opus"
     # untouched stock defaults, spot-checked
     assert doc["gates"]["retrospective"] == "notify"
@@ -149,7 +149,7 @@ def test_difficulty_none_renders_every_stage_at_baseline():
     assert "dev" not in doc["adapter"]
     assert "triage" not in doc["adapter"]
     assert doc["adapter"]["review"]["model"] == "opus"
-    assert doc["adapter"]["model"] == "sonnet"
+    assert doc["adapter"]["model"] == "opus"
 
 
 def test_empty_model_tier_map_with_a_difficulty_renders_baseline():
