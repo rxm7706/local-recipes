@@ -326,7 +326,10 @@ As the operator or CI,
 I want to run this project's gates without a loop in flight,
 So that I can check a tree before approving anything.
 
-**Type:** feature • **Effort:** M • **Deps:** S-1.1, S-1.3 • **FR/AD:** FR-19, FR-20, FR-21; NFR-1, NFR-2; AD-4, AD-17
+**Type:** feature • **Effort:** M • **Deps:** S-1.1, S-1.3 • **FR/AD:** FR-19, FR-20, FR-21; NFR-1, NFR-2; AD-4, AD-17, AD-26
+
+> **F-3 resolution threaded in (2026-08-02, drift fix).** The adversarial review (`reviews/review-ad25-39-adversarial-2026-07-25.md`, `verdict: ALL-RESOLVED` 2026-07-30) resolved F-3 into AD-26's Resolution note, but that resolution had not been propagated into this story's own acceptance criteria — a developer reading only this story would not have known evaluation-with-no-run-in-flight folds the policy seed alone, not a run-scoped state. Added below; no other story or document changes.
+
 **Surface:** `core/gate.py`, `cli/gate.py`, `ports/process.py`, `adapters/process_posix.py`
 
 **Acceptance Criteria:**
@@ -339,6 +342,8 @@ So that I can check a tree before approving anything.
 **And** no model call occurs anywhere in the path, and the same tree plus the same commands produce the same verdict (NFR-1, FR-21)
 **And** verify commands are an explicit **allowlist**; anything not allowlisted is `unevaluable`, never permitted (AD-17)
 **And** the aggregation logic lives in `core/gate.py` as a pure function over exit codes, with all process spawning behind `ProcessPort` (AD-4)
+**And** with no run in flight, the evaluation folds **the policy seed alone** and says so: output carries an explicit `scope: policy-seed-only` marker and a `mid-run freezes not visible` note, so it is never mistaken for a run-scoped verdict (AD-26, F-3)
+**And** when a run **is** in flight and its id is supplied, the same command folds that run's journal instead and answers the run-scoped question (AD-26, F-3)
 
 ### Story 2.2: Verdict aggregation that never false-greens
 
