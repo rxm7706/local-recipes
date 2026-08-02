@@ -1,6 +1,6 @@
 ---
 spec: bmad-output-hygiene
-status: shipped
+status: in-progress
 owner-dream: docs/dreams/bmad-output-hygiene.md
 companions: []
 sources:
@@ -139,6 +139,27 @@ compile.
   - **success:** File lives at the sharded path; no remaining reference to the
     old loose path.
 
+- **CAP-10 — herald brief/architecture directory rename (found via the fleet
+  dashboard, added after reopening).**
+  - **intent:** `docs/dashboard/generate.py`'s fleet scan reports real gaps
+    `['brief', 'arch']` for herald — pre-existing on `main`, not introduced by
+    this branch. `_stage_globs()` expects
+    `briefs/brief-pyforge-herald-*/brief*.md` and
+    `architecture/architecture-pyforge-herald-*/*.md` (matching every other
+    station and herald's own `prds/prd-pyforge-herald-2026-08-01/`), but
+    herald's directories are named `briefs/brief-herald-pitch-2026-08-01/`
+    and `architecture/architecture-herald-pitch-2026-08-01/` — the
+    pre-consolidation Dream slug, not the station slug. Content is current
+    and real; only the directory name is wrong. `git mv` both to the
+    `pyforge-herald` naming, matching CAP-9's fix shape exactly. Update live
+    citations (`project-context.md`, `prd.md` `inputs:`, the spec's
+    `sources:`); leave dated historical/narrative references (dream files,
+    the archived dashboard snapshot) untouched. Regenerate and commit
+    `docs/dashboard/data.js` (generated file — never hand-edited) as the
+    final step.
+  - **success:** `docs/dashboard/generate.py --source sprint-status` reports
+    `pyforge-herald` `gaps: []`.
+
 ## Constraints
 
 - Every change lands only under `_bmad-output/`, `docs/dreams/`, and this
@@ -152,6 +173,8 @@ compile.
   reads this path" check immediately before moving — not just trust in the
   Dream's original 2026-08-02 audit, which can go stale as tooling changes
   underfoot.
+- `docs/dashboard/data.js` is generated (`docs/dashboard/generate.py`) — never
+  hand-edited. CAP-10 regenerates it as a final step, not a manual patch.
 
 ## Non-goals
 
