@@ -52,37 +52,20 @@ unit of governance. Herald keeps their communication face only.
 
 ## What is real
 
-- **The deck family** — 10 decks on one byte-identical engine
-  (`presentations/`), the Modernist DS bound to every one
-  ([[modernist-identity]]), full 6-artifact export sets + `deck-export`.
-- **The bridge** — Design↔Code as one surface, seed/pull proven on 7 decks in
-  one day; the `herald` CLI specced to 5 CAPs, zero open questions
-  ([[design-code-bridge]]).
-- **The stage** — the program console publishes the factory's state
-  ([[factory-console]], Marshal's ledger; in the persona ideal Herald
-  proclaims from it).
+- **The deck family** — 10 decks on one byte-identical engine (`presentations/`), Modernist design system bound to every one, full 6-artifact export sets + `deck-export`. See [[herald-pitch]] for the complete Moment 1 orchestration (design-code-bridge + deckcraft + video-scripts + modernist-identity frameworks consolidated).
+- **The bridge** — Design↔Code as one surface, seed/pull proven on 7 decks in one day; the `herald` CLI specced to 5 CAPs, zero open questions. See [[herald-pitch]] § Tier 1a for framework details.
+- **The stage** — the program console publishes the factory's state ([[factory-console]], Marshal's ledger; in the persona ideal Herald proclaims from it).
 
 ## The frontier
 
-- The `herald` CLI built (epics queued on the pyforge-herald BMAD project):
-  seed / pull / watch / stale-mirror / export push-back.
-- Marp sources + export sets for the 7 starter decks; the
-  [[packaging-factory]] origin-story deck.
-- `updates compile` / `broadcast` — release notables composed from run
-  telemetry and delivered where the audience lives (**moment 2 + 3**; the only
-  part of the continuous model with a specced surface today).
-- **Moment 4 has no surface** — no deprecation notice, no end-of-life
-  announcement, no migration guidance. The *state* is fine (`archived` +
-  `archived-reason: retired`); what is absent is anyone being **told**. A retired
-  product currently just stops appearing.
-- [[deckcraft]] as the editable-PPTX engine under every export.
+- **Moment 1 (Pitch)** — See [[herald-pitch]] for the complete 9-station expansion with Aggressive artifact strategy (144 tracked files), Layered architecture (Tier 0 Vision → Tier 1 Capabilities → Tier 2 Feature), file locations, and workflow orchestration.
+- **Moment 2 (Progress)** — `updates compile` / `broadcast` — release notables composed from run telemetry and delivered where the audience lives. Specced but no implementation surface yet.
+- **Moment 3 (Success)** — Release proclamations. Specced but no implementation surface yet.
+- **Moment 4 (Operations)** — Deprecation notices, end-of-life announcements, decommission guidance. No surface yet. The *state* is fine (`archived` + `archived-reason: retired`); what is absent is anyone being **told**. A retired product currently just stops appearing.
 
 ## Kinships
 
-[[pyforge-charter]] (charter section) · [[design-code-bridge]] (flagship
-product) · [[modernist-identity]] (the language it speaks) ·
-[[pyforge-marshal]] (receives the re-scoped infrastructure) ·
-[[pyforge-scribe]] (the inward voice to Herald's outward).
+[[pyforge-charter]] (charter section) · [[herald-pitch]] (Moment 1 complete orchestration: design-code-bridge + deckcraft + video-scripts + modernist-identity frameworks + 9-station expansion) · [[pyforge-marshal]] (receives the re-scoped infrastructure) · [[pyforge-scribe]] (the inward voice to Herald's outward) · [[factory-console]] (the stage Herald proclaims from).
 
 ## Realization log
 

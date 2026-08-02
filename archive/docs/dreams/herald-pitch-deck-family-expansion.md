@@ -32,16 +32,26 @@ This Dream orchestrates all five to author and export 21 pitch decks in all form
 Each of the 21 stations produces a **six-artifact export set** from one design source:
 
 ```
-presentations/pyforge-{station}/project/
-├── {Station}.dc.html          ← Design prototype (source of truth)
-└── dist/
-    ├── {station}.html         ← Interactive deck (HTML5 + Recharts)
-    ├── {station}.md           ← Markdown source (version-controlled)
-    ├── {station}.pptx         ← Editable PowerPoint (deckcraft)
-    ├── {station}-infographic.svg  ← Static infographic
-    ├── {station}-narration-2026-08-01.md  ← Narration script (video-scripts)
-    └── {station}.mp4          ← Companion video (manticore-rendered)
+presentations/pyforge-{station}/
+├── project/
+│   └── {Station}.dc.html          ← Design prototype (SOURCE OF TRUTH, tracked ✓)
+└── src/marp/
+    ├── {station}.md               ← Markdown source (tracked ✓)
+    ├── {station}-narration-2026-08-01.md  ← Narration script (tracked ✓)
+    └── {station}-infographic.svg  ← Static infographic (tracked ✓)
+└── src/pptx/
+    └── {station}.pptx             ← Editable PowerPoint (tracked ✓)
+
+Generated at build time (gitignored, regenerable):
+├── src/slides/fragments/{station}-*.json  ← Marp-parsed fragments (regen)
+├── dist/
+│   ├── index.html                 ← Vite-built interactive deck (regen)
+│   ├── assets/*.js                ← JS/CSS bundles (regen)
+│   └── assets/*.css
+└── {station}.mp4                  ← Companion video (regen via bmad-manticore)
 ```
+
+**Optimization**: Only source artifacts (design proto, markdown, PPTX, narration, infographic) are tracked. Fragments and build outputs regenerate at build time, reducing per-deck tracked files from ~53 to ~20.
 
 **The Six-Act Framework** (canonical structure for all 21):
 
@@ -55,6 +65,28 @@ presentations/pyforge-{station}/project/
 8. **Appendix: Personas** — Stakeholder context
 
 **~28 slides per deck, 90KB+ class, inline SVGs, full depth.**
+
+---
+
+## Artifact Optimization Strategy
+
+Scaling from 14 decks (747 tracked files) to 21 decks requires a deliberate gitignore strategy to prevent repo bloat. **Option A (Aggressive, 62% reduction to 420 tracked files)** is the chosen approach:
+
+| Category | Artifact | Tracked? | Regenerable? | Why |
+|----------|----------|----------|----------|-------|
+| **Source of Truth** | `{Station}.dc.html` | ✓ Yes | No | Design prototype is immutable, etagged, the authority |
+| **Source of Truth** | `{station}.md` | ✓ Yes | From `.dc.html` | Markdown is version-controlled content; regenerable but slow |
+| **Source of Truth** | `{station}.pptx` | ✓ Yes | From `.md` + deckcraft | Editable deliverable; regenerable but represents design choices |
+| **Source of Truth** | `{station}-narration-*.md` | ✓ Yes | From Design speaker notes | Narration scripts are content; regenerable but slow |
+| **Source of Truth** | `{station}-infographic.svg` | ✓ Yes | From `.md` extract | Infographic is final deliverable; regenerable but slow |
+| **Build Artifact** | `src/slides/fragments/*.json` | ✗ Gitignore | `npm run extract` + `npm run build` | Intermediate parse tree; regenerates in <5s |
+| **Build Artifact** | `dist/index.html` | ✗ Gitignore | `npm run build` (Vite) | Bundled; regenerates in <10s |
+| **Build Artifact** | `dist/assets/*.{js,css}` | ✗ Gitignore | `npm run build` | Bundles; regenerate in <10s |
+| **Build Artifact** | `{station}.mp4` | ✗ Gitignore | `bmad-manticore` + narration | Video; regenerate on demand (expensive) |
+
+**Key design principle**: The **source of truth** (Design proto) is immutable and authored once; everything else either derives from it or is a deliberate export format. Gitignoring intermediate parsing/bundling cuts the footprint by 62% without losing auditability (all source traces back to one Design file per station).
+
+---
 
 ### Per-Station Customization
 
@@ -94,20 +126,26 @@ Input: 21 Design prototypes.
 
 Process:
 1. **Pull** via `design-code-bridge` (Claude Code: "pull {station}" → read_file + etagged safety)
+   - Output: `{Station}.dc.html` → tracked in git ✓
 2. **Extract** via `npm run extract` (markdown source from `.dc.html`)
-3. **Build** via `npm run build` (HTML5 deck)
-4. **Export** via `pixi run deck-export` + deckcraft:
-   - `.pptx` (editable, python-pptx + deckcraft)
-   - `.svg` infographic (inline, no raster)
-   - `.html` (interactive, self-contained)
+   - Output: `{station}.md` → tracked in git ✓
+3. **Export** via `pixi run deck-export` + deckcraft:
+   - `.pptx` (editable, python-pptx + deckcraft) → tracked ✓
+   - `.svg` infographic (inline, no raster) → tracked ✓
+4. **Build** via `npm run build` (HTML5 deck)
+   - Parses `.md` → `src/slides/fragments/*.json` (gitignored, regenerable)
+   - Builds vite bundle → `dist/index.html` + `dist/assets/*` (gitignored, regenerable)
 5. **Narration** via `narration-extract` task:
    - Pull speaker notes from Design
-   - Generate `*-narration-2026-08-01.md`
+   - Generate `*-narration-2026-08-01.md` → tracked ✓
 6. **Video** via `bmad-manticore`:
    - Take narration + screen recordings + bibles
-   - Render `.mp4` (Kokoro voice, HyperFrames graphics, real UI)
+   - Render `.mp4` (Kokoro voice, HyperFrames graphics, real UI) (gitignored, regenerable)
 
-Output: Six artifacts per station × 21 stations = **126 artifacts**, all from one Design source.
+Output: 
+- **Tracked (126 files)**: Design protos, markdown sources, PPTX exports, narration scripts, infographics
+- **Regenerable (rebuilds on `npm install && npm run build`)**: Fragments, dist/, MP4s
+- **Total footprint**: ~20 tracked files per station × 21 = **420 files** (vs. 1,121 unoptimized)
 
 ### Stage 4: Commit & Ship
 
