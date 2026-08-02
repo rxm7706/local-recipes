@@ -203,7 +203,17 @@ window.DASHBOARD_DATA = {
         "E5",
         "E6"
       ],
-      "inflight": null,
+      "inflight": {
+        "key": "2.1",
+        "title": "Standalone verify-command runner, project-scoped",
+        "phase": "dev",
+        "attempt": "1",
+        "startEpoch": 1785713824,
+        "median": 94,
+        "lo": 62,
+        "hi": 450,
+        "phaseAsOf": "2026-08-02 23:52 UTC"
+      },
       "velocity": {
         "derived": true,
         "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 10 of 50 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
@@ -295,7 +305,7 @@ window.DASHBOARD_DATA = {
         }
       },
       "lineState": {
-        "state": "paused",
+        "state": "in flight",
         "at": "2.1"
       },
       "epics": [
@@ -361,7 +371,7 @@ window.DASHBOARD_DATA = {
           "stories": [
             [
               "2.1",
-              "pending",
+              "active",
               "Standalone verify-command runner, project-scoped"
             ],
             [
@@ -2856,7 +2866,7 @@ window.DASHBOARD_DATA = {
       }
     }
   },
-  "snapshot": "<span>2026-08-02 23:27 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-02 23:52 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -2922,6 +2932,14 @@ window.DASHBOARD_DATA = {
         "spec": "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-copilot-cli-packaging"
       },
       "archived_reason": "blocked"
+    },
+    {
+      "slug": "dashboard-project-path-derivation",
+      "title": "The dashboard assumes slug == project directory — it isn't, and won't stay",
+      "status": "dreamt",
+      "owner": "marshal",
+      "type": "dream",
+      "chain": {}
     },
     {
       "slug": "db-gpt-packaging",
@@ -4250,7 +4268,8 @@ window.DASHBOARD_DATA = {
           },
           "n": 5,
           "of": 5,
-          "status": "landed"
+          "status": "landed",
+          "planning_project": "pyforge-doctor"
         },
         {
           "wave": "1b",
@@ -4267,7 +4286,8 @@ window.DASHBOARD_DATA = {
           },
           "n": 5,
           "of": 5,
-          "status": "landed"
+          "status": "landed",
+          "planning_project": "pyforge-steward"
         },
         {
           "wave": "1c",
@@ -4284,7 +4304,8 @@ window.DASHBOARD_DATA = {
           },
           "n": 5,
           "of": 5,
-          "status": "landed"
+          "status": "landed",
+          "planning_project": "pyforge-scribe"
         },
         {
           "wave": "1d",
@@ -4301,7 +4322,8 @@ window.DASHBOARD_DATA = {
           },
           "n": 5,
           "of": 5,
-          "status": "landed"
+          "status": "landed",
+          "planning_project": "pyforge-herald"
         },
         {
           "wave": "1e",
@@ -4318,7 +4340,8 @@ window.DASHBOARD_DATA = {
           },
           "n": 5,
           "of": 5,
-          "status": "landed"
+          "status": "landed",
+          "planning_project": "pyforge-marshal"
         },
         {
           "wave": "1f",
@@ -4335,7 +4358,8 @@ window.DASHBOARD_DATA = {
           },
           "n": 5,
           "of": 5,
-          "status": "landed"
+          "status": "landed",
+          "planning_project": "pyforge-mason"
         },
         {
           "wave": "2a",
@@ -4344,15 +4368,16 @@ window.DASHBOARD_DATA = {
           "depth": "epics",
           "state": "running",
           "have": {
-            "research": false,
-            "brief": false,
-            "prd": false,
-            "architecture": false,
-            "epics": false
+            "research": true,
+            "brief": true,
+            "prd": true,
+            "architecture": true,
+            "epics": true
           },
-          "n": 0,
+          "n": 5,
           "of": 5,
-          "status": "running"
+          "status": "landed",
+          "planning_project": "pyforge-mason"
         },
         {
           "wave": "2b",
@@ -4361,15 +4386,16 @@ window.DASHBOARD_DATA = {
           "depth": "prd+arch",
           "state": "running",
           "have": {
-            "research": false,
-            "brief": false,
-            "prd": false,
-            "architecture": false,
-            "epics": false
+            "research": true,
+            "brief": true,
+            "prd": true,
+            "architecture": true,
+            "epics": true
           },
-          "n": 0,
+          "n": 4,
           "of": 4,
-          "status": "running"
+          "status": "landed",
+          "planning_project": "pyforge-atlas"
         },
         {
           "wave": "2c",
@@ -4378,15 +4404,16 @@ window.DASHBOARD_DATA = {
           "depth": "prd+arch",
           "state": "running",
           "have": {
-            "research": false,
-            "brief": false,
-            "prd": false,
-            "architecture": false,
-            "epics": false
+            "research": true,
+            "brief": true,
+            "prd": true,
+            "architecture": true,
+            "epics": true
           },
-          "n": 0,
+          "n": 4,
           "of": 4,
-          "status": "running"
+          "status": "landed",
+          "planning_project": "pyforge-atlas"
         },
         {
           "wave": "2d",
@@ -4403,7 +4430,8 @@ window.DASHBOARD_DATA = {
           },
           "n": 0,
           "of": 5,
-          "status": "queued"
+          "status": "queued",
+          "planning_project": "pyforge-genesis"
         }
       ]
     },
@@ -4465,6 +4493,7 @@ window.DASHBOARD_DATA = {
           "stories": 30,
           "state": "held",
           "note": "operator Phase-0 gates: MS disconnected-stack check + memory-subsystem scope",
+          "epics_path": "_bmad-output/projects/pyforge-mason/planning-artifacts/epics-presenton-pixi-image.md",
           "done": 0,
           "total": 30
         },
@@ -4483,6 +4512,7 @@ window.DASHBOARD_DATA = {
           "stories": 36,
           "state": "held",
           "note": "last — model stability + consumes marshal-owned scripts",
+          "epics_path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/epics-genesis-installer.md",
           "done": 0,
           "total": 36
         },
@@ -4492,6 +4522,7 @@ window.DASHBOARD_DATA = {
           "stories": 0,
           "state": "future",
           "note": "PRD+arch only by design; stories decompose when scheduled",
+          "epics_path": null,
           "done": 0,
           "total": 0
         },
@@ -4501,6 +4532,7 @@ window.DASHBOARD_DATA = {
           "stories": 0,
           "state": "future",
           "note": "PRD+arch only by design; stories decompose when scheduled",
+          "epics_path": null,
           "done": 0,
           "total": 0
         }
@@ -4546,9 +4578,9 @@ window.DASHBOARD_DATA = {
       "retro": null
     },
     "sound": 3,
-    "live": 20,
+    "live": 21,
     "reached": 9,
-    "gaps": 12,
+    "gaps": 15,
     "findings": 0,
     "rows": [
       {
@@ -7129,6 +7161,114 @@ window.DASHBOARD_DATA = {
         "progress": "",
         "complete": 2,
         "of": 3
+      },
+      {
+        "label": "dashboard-project-path-derivation",
+        "slug": "dashboard-project-path-derivation",
+        "project": "pyforge-marshal",
+        "dream": "dashboard-project-path-derivation",
+        "owner": "marshal",
+        "stages": {
+          "dream": "",
+          "deck": "",
+          "spec": "",
+          "research": "2026-07-16",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "tea": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "updatedAt": {
+          "dream": "",
+          "deck": "",
+          "spec": "",
+          "research": "2026-07-31",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "tea": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "sub": {
+          "research": {
+            "have": {
+              "domain": true,
+              "market": true,
+              "technical": true
+            },
+            "n": 3,
+            "of": 3,
+            "missing": [],
+            "inherited": true
+          },
+          "deck": {
+            "have": {
+              "prototype": false,
+              "exec": false,
+              "infographic": false,
+              "marp": false,
+              "standalone": false,
+              "pptx": false
+            },
+            "n": 0,
+            "of": 6,
+            "missing": [
+              "exec",
+              "infographic",
+              "marp",
+              "pptx",
+              "prototype",
+              "standalone"
+            ]
+          }
+        },
+        "archived": false,
+        "dreamStatus": "dreamt",
+        "ownerDream": "",
+        "noDream": true,
+        "unowned": false,
+        "backfilled": false,
+        "openQuestions": 0,
+        "overtaken": false,
+        "na": [
+          "ux"
+        ],
+        "required": [
+          "dream",
+          "deck",
+          "spec",
+          "research"
+        ],
+        "gaps": [
+          "dream",
+          "deck",
+          "spec"
+        ],
+        "partial": [],
+        "staleBy": [],
+        "furthest": "research",
+        "updated": "2026-08-02",
+        "age": 0,
+        "stale": false,
+        "version": "",
+        "progress": "",
+        "complete": 1,
+        "of": 4
       },
       {
         "label": "durable-runs",
@@ -10132,6 +10272,14 @@ window.DASHBOARD_DATA = {
   "backlog": {
     "rows": [
       {
+        "slug": "dashboard-project-path-derivation",
+        "title": "The dashboard assumes slug == project directory — it isn't, and won't stay",
+        "status": "dreamt",
+        "owner": "marshal",
+        "blockedOn": "",
+        "chain": {}
+      },
+      {
         "slug": "unified-container",
         "title": "One container, eight stations",
         "status": "dreamt",
@@ -10142,6 +10290,7 @@ window.DASHBOARD_DATA = {
     ],
     "blocked": 0,
     "byOwner": {
+      "marshal": 1,
       "steward": 1
     },
     "practices": [
@@ -10249,17 +10398,17 @@ window.DASHBOARD_DATA = {
       },
       {
         "station": "marshal",
-        "total": 16,
+        "total": 17,
         "counts": {
-          "dreamt": 0,
+          "dreamt": 1,
           "pitched": 0,
           "specified": 0,
           "realized": 2,
           "archived": 10,
           "practice": 4
         },
-        "line": "paused 2.1",
-        "load": 0,
+        "line": "in flight 2.1",
+        "load": 1,
         "blocked": 0,
         "dreams": [
           {
@@ -10336,6 +10485,13 @@ window.DASHBOARD_DATA = {
             "slug": "pyforge-testing-charter",
             "title": "\"Dream — PyForge Testing Charter: Systematic Testing for the Guild\"",
             "status": "archived",
+            "type": "dream",
+            "blockedOn": ""
+          },
+          {
+            "slug": "dashboard-project-path-derivation",
+            "title": "The dashboard assumes slug == project directory — it isn't, and won't stay",
+            "status": "dreamt",
             "type": "dream",
             "blockedOn": ""
           },
@@ -12204,7 +12360,14 @@ window.DASHBOARD_DATA = {
   },
   "status": {
     "source": "sprint-status",
-    "running": [],
+    "running": [
+      {
+        "station": "Marshal",
+        "story": "2.1",
+        "phase": "dev",
+        "startEpoch": 1785713824
+      }
+    ],
     "lastShipped": {
       "station": "marshal",
       "story": "1.9",
@@ -12213,8 +12376,8 @@ window.DASHBOARD_DATA = {
       "subject": "Merge bmad-loop/20260731-115548-f223/1-9-packaging-distribution-and-version-reporting into loop/pyforge-marshal (bmad-lo"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-02 23:27 UTC",
-    "generatedEpoch": 1785713229
+    "generatedAt": "2026-08-02 23:52 UTC",
+    "generatedEpoch": 1785714728
   },
   "storySpecs": [
     {
