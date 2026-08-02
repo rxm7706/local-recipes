@@ -2,7 +2,7 @@
 title: One fabricated commit, eight stations of debris
 type: dream
 owner: marshal
-status: specified
+status: realized
 ---
 
 # One fabricated commit, eight stations of debris
@@ -153,3 +153,7 @@ was confirmed to be permanent-by-design record, not clutter — none were flagge
   stations out of date, missing artifacts, and a gap. Verified against `main` (pre-existing, not
   branch-introduced) and root-caused to Cluster 4 above — herald's brief/architecture directories
   are misnamed. CAP-10 added to `spec-bmad-output-hygiene` to fix it.
+- **2026-08-02** — CAP-10 shipped: herald's `briefs/`/`architecture/` directories renamed to the
+  `pyforge-herald` convention; `docs/dashboard/data.js` regenerated. Verified
+  `pyforge-herald` now reports `gaps: []` (was `['brief', 'arch']`); fleet no-gap count 8 → 9.
+  Dream re-closed (`specified` → `realized`).
