@@ -2856,7 +2856,7 @@ window.DASHBOARD_DATA = {
       }
     }
   },
-  "snapshot": "<span>2026-08-02 22:53 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-02 23:27 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -3771,7 +3771,7 @@ window.DASHBOARD_DATA = {
       "title": "The Charter — keeping the constitution true",
       "caps": 4,
       "companions": 0,
-      "updated": "",
+      "updated": "2026-08-02",
       "dream": "pyforge-charter",
       "path": "docs/governance/spec-pyforge-charter"
     },
@@ -3781,7 +3781,7 @@ window.DASHBOARD_DATA = {
       "title": "Genesis — the operating model, recorded",
       "caps": 4,
       "companions": 0,
-      "updated": "",
+      "updated": "2026-08-02",
       "dream": "pyforge-genesis",
       "path": "docs/governance/spec-pyforge-genesis"
     }
@@ -4445,18 +4445,18 @@ window.DASHBOARD_DATA = {
           "slug": "pyforge-steward",
           "pkey": null,
           "stories": 18,
-          "state": "queued",
+          "state": "running",
           "note": "next free slot",
-          "done": 0,
+          "done": 3,
           "total": 18
         },
         {
           "slug": "pyforge-mason",
           "pkey": null,
           "stories": 38,
-          "state": "queued",
+          "state": "running",
           "note": "longest persona line; CFE Rule-2 retro at closeout",
-          "done": 0,
+          "done": 4,
           "total": 38
         },
         {
@@ -4472,13 +4472,13 @@ window.DASHBOARD_DATA = {
           "slug": "pyforge-marshal",
           "pkey": null,
           "stories": 40,
-          "state": "held",
+          "state": "running",
           "note": "AD-25–39 adversarial pass + floor quiescence (touches loop machinery)",
-          "done": 0,
-          "total": 40
+          "done": 10,
+          "total": 50
         },
         {
-          "slug": "pyforge-genesis",
+          "slug": "genesis-installer",
           "pkey": null,
           "stories": 36,
           "state": "held",
@@ -4545,10 +4545,10 @@ window.DASHBOARD_DATA = {
       "verify": 90,
       "retro": null
     },
-    "sound": 4,
+    "sound": 3,
     "live": 20,
-    "reached": 10,
-    "gaps": 11,
+    "reached": 9,
+    "gaps": 12,
     "findings": 0,
     "rows": [
       {
@@ -4918,7 +4918,7 @@ window.DASHBOARD_DATA = {
           "context": "2026-06-20",
           "epics": "2026-08-02",
           "sprint": "2026-08-02",
-          "tea": "2026-07-31",
+          "tea": "2026-08-02",
           "gates": "2026-08-02",
           "code": "2026-07-31",
           "verify": "2026-07-31",
@@ -6068,7 +6068,7 @@ window.DASHBOARD_DATA = {
         "stages": {
           "dream": "2026-07-25",
           "deck": "",
-          "spec": "",
+          "spec": "2026-08-02",
           "research": "",
           "brief": "",
           "prd": "",
@@ -6084,9 +6084,9 @@ window.DASHBOARD_DATA = {
           "retro": ""
         },
         "updatedAt": {
-          "dream": "2026-08-01",
+          "dream": "2026-08-02",
           "deck": "",
-          "spec": "2026-07-28T08:18",
+          "spec": "2026-08-02",
           "research": "",
           "brief": "",
           "prd": "",
@@ -6150,18 +6150,23 @@ window.DASHBOARD_DATA = {
           "dream",
           "ux"
         ],
-        "required": [],
-        "gaps": [],
+        "required": [
+          "deck",
+          "spec"
+        ],
+        "gaps": [
+          "deck"
+        ],
         "partial": [],
         "staleBy": [],
-        "furthest": "dream",
-        "updated": "2026-08-01",
-        "age": 1,
+        "furthest": "spec",
+        "updated": "2026-08-02",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
-        "complete": 0,
-        "of": 0
+        "complete": 1,
+        "of": 2
       },
       {
         "label": "genesis",
@@ -6172,7 +6177,7 @@ window.DASHBOARD_DATA = {
         "stages": {
           "dream": "2026-07-23",
           "deck": "2026-07-23",
-          "spec": "",
+          "spec": "2026-08-02",
           "research": "",
           "brief": "",
           "prd": "",
@@ -6188,9 +6193,9 @@ window.DASHBOARD_DATA = {
           "retro": ""
         },
         "updatedAt": {
-          "dream": "2026-07-29",
+          "dream": "2026-08-02",
           "deck": "2026-07-25",
-          "spec": "2026-07-31T19:40",
+          "spec": "2026-08-02",
           "research": "",
           "brief": "",
           "prd": "",
@@ -6251,19 +6256,20 @@ window.DASHBOARD_DATA = {
           "ux"
         ],
         "required": [
-          "deck"
+          "deck",
+          "spec"
         ],
         "gaps": [],
         "partial": [],
         "staleBy": [],
-        "furthest": "deck",
-        "updated": "2026-08-01",
-        "age": 1,
+        "furthest": "spec",
+        "updated": "2026-08-02",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
-        "complete": 1,
-        "of": 1
+        "complete": 2,
+        "of": 2
       },
       {
         "label": "herald-moments-2-4-missing-surface",
@@ -10102,8 +10108,8 @@ window.DASHBOARD_DATA = {
         "task": "spec-surface-check",
         "guards": "every tracked file under a Spec surface",
         "state": "drift",
-        "findings": 28,
-        "verdict": "FINDINGS (28):",
+        "findings": 27,
+        "verdict": "FINDINGS (27):",
         "runbook": ""
       },
       {
@@ -12207,8 +12213,8 @@ window.DASHBOARD_DATA = {
       "subject": "Merge bmad-loop/20260731-115548-f223/1-9-packaging-distribution-and-version-reporting into loop/pyforge-marshal (bmad-lo"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-02 22:53 UTC",
-    "generatedEpoch": 1785711221
+    "generatedAt": "2026-08-02 23:27 UTC",
+    "generatedEpoch": 1785713229
   },
   "storySpecs": [
     {
