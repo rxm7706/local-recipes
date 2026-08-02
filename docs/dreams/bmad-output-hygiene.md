@@ -2,7 +2,7 @@
 title: One fabricated commit, eight stations of debris
 type: dream
 owner: marshal
-status: specified
+status: realized
 ---
 
 # One fabricated commit, eight stations of debris
@@ -200,3 +200,13 @@ was confirmed to be permanent-by-design record, not clutter — none were flagge
   (GitHub Pages) only regenerates on push to `main` per `.github/workflows/dashboard.yml` — the
   herald fix is real and verified on this branch, it just hasn't deployed yet pending merge; this
   was not a second herald defect.
+- **2026-08-02** — CAP-11/CAP-12 shipped. CAP-11: `_currency()`'s `_FEEDS` check gained a 2-day
+  grace period; fleet currency findings 16 → 7. CAP-12: read each stale pair's PRD
+  `currency_review` note to tell structural bumps from real drift — scribe/steward/warden
+  (`prd`/`arch`) confirmed structural, re-stamped (and their downstream `epics.md`, to avoid
+  pushing the staleness further down the pipeline); doctor (`prd`/`arch`, real FR-10..13 content
+  added) and mason (`arch`/`epics`, FR-1..46 vs PRD's `frCount: 50`) left unfixed and visible —
+  genuine architecture-authoring gaps, out of scope for a hygiene spec; warden's `prd`/`gates`
+  left unstamped since a readiness report is a point-in-time snapshot, not a living document.
+  Fleet currency findings 16 → 4, all 4 remaining genuine and intentionally visible. Dream
+  re-closed (`specified` → `realized`).
