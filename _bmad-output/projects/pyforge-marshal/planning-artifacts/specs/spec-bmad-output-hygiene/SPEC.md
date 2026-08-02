@@ -1,6 +1,6 @@
 ---
 spec: bmad-output-hygiene
-status: shipped
+status: in-progress
 owner-dream: docs/dreams/bmad-output-hygiene.md
 companions: []
 sources:
@@ -160,6 +160,33 @@ compile.
   - **success:** `docs/dashboard/generate.py --source sprint-status` reports
     `pyforge-herald` `gaps: []`.
 
+- **CAP-11 — currency-check grace period (found via user report of universal
+  "outdated" readings after CAP-10).**
+  - **intent:** `_currency()`'s `_FEEDS` loop in `docs/dashboard/generate.py`
+    flags any positive timestamp difference — zero grace period. Every
+    `spec`/`prd` finding across all 8 stations is 0–1 days, because a spec's
+    `.memlog.md` gets a fresh `updated:` on every append, far more often than
+    its PRD — making "spec newer than prd" true by construction, not a real
+    drift signal. Add a small grace period (2 days) so only a difference
+    exceeding it counts. This is the same "always red, gets ignored"
+    suppression the code already applies to the separate `behind-code`
+    check, extended to `_FEEDS`.
+  - **success:** the 0–1 day `spec`/`prd` findings disappear from all 8
+    stations; the 5 genuine multi-day pairs (CAP-12) still surface.
+
+- **CAP-12 — catch up the 5 genuinely stale pairs.**
+  - **intent:** Warden (`prd`/`arch` 16d, `prd`/`gates` 18d), doctor
+    (`prd`/`arch` 8d), scribe (`prd`/`arch` 7d), steward (`prd`/`arch` 7d),
+    mason (`arch`/`epics` 8d) predate this cleanup. For each pair, read both
+    sides, confirm the downstream artifact still accurately reflects the
+    upstream one, and re-stamp a dated re-validation note (matching this
+    repo's existing `re_validated:`/pin-forward convention) rather than
+    silently editing a date. If content has genuinely drifted, note it
+    instead of covering it up.
+  - **success:** after CAP-11's grace period, these 5 pairs show zero
+    `staleBy` findings because the dates now honestly reflect a
+    just-verified-current state.
+
 ## Constraints
 
 - Every change lands only under `_bmad-output/`, `docs/dreams/`, and this
@@ -175,6 +202,8 @@ compile.
   underfoot.
 - `docs/dashboard/data.js` is generated (`docs/dashboard/generate.py`) — never
   hand-edited. CAP-10 regenerates it as a final step, not a manual patch.
+- CAP-12 never silently bumps a currency date to satisfy the detector —
+  each re-stamp requires an actual read of both sides of the pair first.
 
 ## Non-goals
 
