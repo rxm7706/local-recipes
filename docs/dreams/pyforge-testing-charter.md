@@ -1,8 +1,13 @@
+---
+title: "Dream — PyForge Testing Charter: Systematic Testing for the Guild"
+date: 2026-08-02
+status: specified
+owner: marshal
+scope: "Testing framework, quality gates, systematic coverage across all stations"
+---
+
 # Dream: PyForge Testing Charter — Systematic Testing for the Guild
 
-**Status**: Draft  
-**Date**: 2026-08-02  
-**Owned by**: Guild Crew  
 **Vision**: Test architecture is a first-class citizen in the Dream-to-Code pipeline. All 8 PyForge stations inherit the same systematic testing framework, eliminating duplication and ensuring quality gates are universal.
 
 ---

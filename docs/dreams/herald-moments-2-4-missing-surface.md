@@ -2,7 +2,7 @@
 title: Herald — Moments 2–4 Missing Surface
 type: dream
 owner: herald
-status: planning
+status: pitched
 ---
 
 # Herald — Moments 2–4 Missing Surface

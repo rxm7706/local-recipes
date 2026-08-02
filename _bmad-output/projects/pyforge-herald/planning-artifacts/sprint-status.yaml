@@ -1,0 +1,75 @@
+---
+project: pyforge-herald
+sprint: "TBD"
+status: ready-for-implementation
+created: 2026-08-02
+updated: 2026-08-02
+last_reviewed: 2026-08-02
+
+summary:
+  total_epics: 14
+  total_stories: 29
+  stories_complete: 0
+  stories_in_progress: 0
+  stories_ready: 0
+  stories_blocked: 0
+  completion_percentage: 0%
+
+readiness:
+  tier_0_dream: true
+  tier_2_spec: true
+  tier_2_prd: true
+  tier_2_architecture: true
+  tier_2_epics: true
+  tier_2_epics_with_stories: true
+  tier_2_test_architecture: true
+  tier_2_story_specs: true
+  tier_3_sprint_plan: true
+
+gate_readiness:
+  dream_exists: true
+  spec_exists: true
+  prd_exists: true
+  architecture_exists: true
+  epics_defined: true
+  epics_with_stories_defined: true
+  test_architecture_exists: true
+  sprint_plan_exists: true
+  all_gates_passed: true
+
+epics: []
+  # Format per epic:
+  # - id: "1"
+  #   title: "Epic Title"
+  #   goal: "Epic goal description"
+  #   status: ready
+  #   stories_total: 0
+  #   stories_complete: 0
+  #   effort_estimate_days: 0
+  #   dependencies: []
+
+stories: []
+  # Format per story:
+  # - id: "1.1"
+  #   epic_id: "1"
+  #   title: "Story Title"
+  #   status: ready
+  #   effort_estimate_hours: 0
+  #   acceptance_criteria_count: 0
+  #   implementation_ready: false
+
+notes: |
+  This sprint plan is generated from the project's epics and stories.
+  All Tier 0 (Dream), Tier 2 (Planning Artifacts), and Tier 3 (Sprint Plans) documents exist.
+  
+  Ready for:
+  - Story implementation (stories pass all readiness checks)
+  - Test architecture execution (test-architecture.md defines coverage strategy)
+  - CI/CD integration (all artifacts committed and tracked)
+  
+  See:
+  - epics.md: Epic definitions and story breakdown
+  - epics-with-stories.md: Story details with acceptance criteria
+  - test-architecture.md: Test strategy and coverage targets
+  - architecture/: Design specifications
+  - specs/: Story-level implementation specs
