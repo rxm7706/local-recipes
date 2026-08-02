@@ -62,12 +62,20 @@ compile.
     PRD/architecture.
 
 - **CAP-4 — README placeholder fill.**
-  - **intent:** Replace the unfilled `[role]`/`[responsibilities]` template text
-    in marshal, herald, genesis, and doctor's planning-artifacts READMEs with
-    real per-station content; check the remaining 5 stations during execution
-    and fix any also found.
+  - **intent:** The literal `[role]`/`[responsibilities]` placeholders actually
+    live in each station's project-root `README.md` (not planning-artifacts,
+    as originally assumed) — an identical template across 8 of 9 stations
+    (all but atlas, which has none), also referencing the CAP-1-archived
+    `tests/`/`pytest.ini`/`playwright.config.ts` as if real. Replace the
+    placeholder sentence with a real per-station role description in all 8,
+    and correct the Structure/Testing sections to point at the real suites
+    under `src/shared/packages/pyforge-<station>/tests/`. Also replace the 6
+    generic-but-not-literally-placeholder `planning-artifacts/README.md`
+    boilerplate (marshal, genesis, doctor, mason, scribe, steward — byte-identical
+    3-line stub) with real content, matching the Dream's spirit even though
+    its exact bracket-token wording didn't match what was on disk.
   - **success:** No station README contains a literal `[role]` or
-    `[responsibilities]` token.
+    `[responsibilities]` token; no README describes archived scaffolding as live.
 
 - **CAP-5 — orphaned single-file archival.**
   - **intent:** `git mv` Atlas's `RESUME-EPIC-10.md` and Herald's

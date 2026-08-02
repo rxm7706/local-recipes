@@ -6,7 +6,9 @@
 
 ## Overview
 
-doctor is a [role] station in the PyForge factory, responsible for [responsibilities].
+doctor is the **diagnostics** station in the PyForge factory, responsible for
+pre-flight toolchain verification, continuous fleet/feedstock health
+monitoring, and ordered remediation prescriptions (`doctor check/monitor/diagnose`).
 
 ## Structure
 
@@ -22,18 +24,13 @@ _bmad-output/projects/pyforge-doctor/
 │   ├── architecture/               — Architectural design specs
 │   └── briefs/                     — Brief summaries
 ├── implementation-artifacts/       — Local-only (gitignored)
-├── .bmad-config.toml             — Team config (checked in)
-├── .bmad-config.user.toml        — User config (gitignored)
-├── pytest.ini                      — Unit/integration test config
-├── playwright.config.ts            — E2E browser automation config
-└── tests/                          — Test scaffold
-    ├── unit/                       — Unit tests
-    ├── integration/                — Integration tests
-    ├── e2e/                        — End-to-end tests
-    ├── meta/                       — Meta-tests (invariants)
-    ├── mocks/                      — Test mocks
-    └── conftest.py                 — Shared fixtures
+├── .bmad-config.toml                — Team config (checked in)
+└── .bmad-config.user.toml           — User config (gitignored)
 ```
+
+Real unit/integration/meta tests live at `src/shared/packages/pyforge-doctor/tests/`,
+not in this planning tree — this project has no `pytest.ini`, `playwright.config.ts`,
+or `tests/` of its own.
 
 ## Tiers
 
@@ -58,26 +55,15 @@ _bmad-output/projects/pyforge-doctor/
 2. Review the Spec and PRD for the product contract
 3. Check the Epics and Stories for implementation scope
 4. Look at Test Architecture for coverage expectations
-5. Run tests locally: `pixi run -e local-recipes pytest tests/`
+5. Run the real test suite: `pixi run -e local-recipes pytest src/shared/packages/pyforge-doctor/tests/`
 
 ## Testing
 
 ```bash
-# Unit tests
-pytest tests/unit/ -v
-
-# Integration tests
-pytest tests/integration/ -v
-
-# E2E tests
-pytest tests/e2e/ --headed
-
-# All tests
-pytest tests/ -v
-
-# Coverage report
-pytest tests/ --cov=src/pyforge_doctor --cov-report=html
+pixi run -e local-recipes pytest src/shared/packages/pyforge-doctor/tests/ -v
 ```
+
+See `src/shared/packages/pyforge-doctor/README.md` for the full test/coverage setup.
 
 ## Next Steps
 

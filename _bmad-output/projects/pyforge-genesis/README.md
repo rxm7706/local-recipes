@@ -1,12 +1,17 @@
 # PyForge Station: genesis
 
-**Status**: Active  
-**Created**: 2026-08-02  
+**Status**: Active
+**Created**: 2026-08-02
 **Component**: PyForge Guild
 
 ## Overview
 
-genesis is a [role] station in the PyForge factory, responsible for [responsibilities].
+genesis is the **constitutive** project (Charter §5): it records the operating
+model — the Charter, the Lexicon, the Guild's membership — and **ships no
+product**. See `planning-artifacts/prds/prd-pyforge-genesis-2026-07-28/prd.md`
+§ *This tier has nothing to require, and says so*. The installer that
+bootstraps this model into other repos (`genesis init`/`genesis adopt`) is
+buildable work that moved to `pyforge-marshal` in the 2026-07-28 split.
 
 ## Structure
 
@@ -15,73 +20,43 @@ _bmad-output/projects/pyforge-genesis/
 ├── planning-artifacts/
 │   ├── epics.md                    — Epic breakdown
 │   ├── epics-with-stories.md       — Stories with acceptance criteria
-│   ├── test-architecture.md        — Test strategy (Unit/Integration/E2E)
-│   ├── sprint-status.yaml          — Sprint plan (epics + stories)
+│   ├── test-architecture.md        — States there is nothing to test
 │   ├── specs/                      — Story-level implementation specs
 │   ├── prds/                       — Product requirements documents
 │   ├── architecture/               — Architectural design specs
-│   └── briefs/                     — Brief summaries
+│   └── (no briefs/ — a constitutive project has no product to brief)
 ├── implementation-artifacts/       — Local-only (gitignored)
-├── .bmad-config.toml             — Team config (checked in)
-├── .bmad-config.user.toml        — User config (gitignored)
-├── pytest.ini                      — Unit/integration test config
-├── playwright.config.ts            — E2E browser automation config
-└── tests/                          — Test scaffold
-    ├── unit/                       — Unit tests
-    ├── integration/                — Integration tests
-    ├── e2e/                        — End-to-end tests
-    ├── meta/                       — Meta-tests (invariants)
-    ├── mocks/                      — Test mocks
-    └── conftest.py                 — Shared fixtures
+├── .bmad-config.toml                — Team config (checked in)
+└── .bmad-config.user.toml           — User config (gitignored)
 ```
+
+There is no `src/pyforge_genesis` package, no CLI, and no `tests/` — nothing
+here is buildable code.
 
 ## Tiers
 
-- **Tier 0 (Dream)**: `docs/dreams/pyforge-genesis*.md`
+- **Tier 0 (Dream)**: `docs/dreams/pyforge-genesis.md`
 - **Tier 2 (Planning)**: `_bmad-output/projects/pyforge-genesis/planning-artifacts/`
 - **Tier 3 (Execution)**: `_bmad-output/projects/pyforge-genesis/implementation-artifacts/` (gitignored)
 
 ## Key Documents
 
-- **Dream** (Tier 0): Vision, problem statement, success criteria
-- **Spec** (Tier 2): BMAD-generated specification contract
-- **PRD** (Tier 2): Product requirements
-- **Architecture** (Tier 2): Design specifications
-- **Epics** (Tier 2): Epic breakdown (epics.md)
-- **Stories** (Tier 2): Stories with acceptance criteria (epics-with-stories.md)
-- **Test Architecture** (Tier 2): Test strategy, coverage targets, fixtures
-- **Sprint Status** (Tier 3): Sprint plan with epic/story tracking
+- **Dream** (Tier 0): the master idea, the alignment instrument (vision deck), the seed
+- **Spec** (Tier 2): the Charter and Lexicon kernels (`specs/spec-pyforge-charter/`, `specs/spec-pyforge-genesis/`)
+- **PRD** (Tier 2): states plainly there is no product to require
+- **Architecture** (Tier 2): the constitutive structure, not a buildable design
+- **Epics** (Tier 2): epic breakdown (`epics.md`)
 
 ## Getting Started
 
-1. Read the Dream (`docs/dreams/pyforge-genesis*.md`) to understand the vision
-2. Review the Spec and PRD for the product contract
-3. Check the Epics and Stories for implementation scope
-4. Look at Test Architecture for coverage expectations
-5. Run tests locally: `pixi run -e local-recipes pytest tests/`
-
-## Testing
-
-```bash
-# Unit tests
-pytest tests/unit/ -v
-
-# Integration tests
-pytest tests/integration/ -v
-
-# E2E tests
-pytest tests/e2e/ --headed
-
-# All tests
-pytest tests/ -v
-
-# Coverage report
-pytest tests/ --cov=src/pyforge_genesis --cov-report=html
-```
+1. Read the Dream (`docs/dreams/pyforge-genesis.md`) to understand the vision
+2. Read the PRD to see why this tier has no requirements
+3. See `pyforge-marshal`'s `spec-genesis-installer` for the buildable installer
 
 ## Next Steps
 
-See the epic breakdown in `planning-artifacts/epics.md` and story specs in `planning-artifacts/specs/` for implementation details.
+See `planning-artifacts/epics.md` for epic breakdown and `planning-artifacts/specs/`
+for the Charter/Lexicon spec kernels.
 
 ---
 
