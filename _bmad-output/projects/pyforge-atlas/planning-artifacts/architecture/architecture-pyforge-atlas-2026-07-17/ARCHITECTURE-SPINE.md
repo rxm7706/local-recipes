@@ -7,7 +7,8 @@ paradigm: 'declarative dataflow (pipes-and-filters over a declared Data Catalog)
 scope: 'Migration of the cf_atlas orchestrator to Kedro pipelines + Dagster orchestration + DuckDB compute, with BSL/Vizro read surface and MCP/A2A agent interfaces (FR-1..FR-22, Waves 0 + A–H)'
 status: final
 created: '2026-07-17'
-updated: '2026-07-17'
+updated: '2026-08-02'
+currency_review: "Reviewed 2026-08-02 — the FR-9 Capability Map row still stated the pre-correction '28-CLI port' claim after the PRD's 2026-08-01 CAP-8 fix (AUD-ATLAS-041). Row corrected to match: 8 dashboard pages + factory-status ship in v1, full 28-CLI inventory deferred (DW-D2-1). No other capability-map row referenced the overclaim."
 binds: [FR-1, FR-2, FR-3, FR-4, FR-5, FR-6, FR-7, FR-8, FR-9, FR-10, FR-11, FR-12, FR-13, FR-14, FR-15, FR-16, FR-17, FR-18, FR-19, FR-20, FR-21, FR-22]
 sources:
   - 'docs/specs/cfe-atlas-datapipeline-kedro-migration.md (v5.6 — the binding contract; §-references below point here)'
@@ -308,7 +309,7 @@ Deployment & environments (the operational envelope this altitude owns):
 | FR-6 Dagster orchestration | `dagster/` compile target | AD-1, AD-6, AD-23 |
 | FR-7 MCP surface | `src/<pkg>/mcp/` | AD-7, AD-23 |
 | FR-8 BSL | `src/<pkg>/bsl/` | AD-8 |
-| FR-9 Vizro read surface (28-CLI port, 3 exceptions, factory-status page) | `vizro_app/` | AD-8, AD-17 |
+| FR-9 Vizro read surface (8 dashboard pages + factory-status ship in v1, 3 exceptions surfaced read-only; full 28-CLI inventory port deferred, `DW-D2-1` — *corrected 2026-08-02, matching the PRD's 2026-08-01 CAP-8 correction, AUD-ATLAS-041*) | `vizro_app/` | AD-8, AD-17 |
 | FR-10 data-quality contracts | node contracts + `hooks/` | AD-9 |
 | FR-11 A2A | `src/<pkg>/a2a/` | AD-20 |
 | FR-12 lineage/observability | `hooks/` instrumentation | AD-20 |

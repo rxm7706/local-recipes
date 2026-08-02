@@ -1,5 +1,7 @@
 ---
 stepsCompleted: [1, 2, 3, 4, 5, 6]
+updated: '2026-08-02'
+currency_review: "Reviewed 2026-08-02 against the PRD's 2026-08-01 CAP-8 correction (AUD-ATLAS-041, PR #216): this report's FR-9 language ('Read surface migrates from 28 CLIs to Vizro/Vizro-AI... live-confirmed consumer CLIs port first') never claimed the corrected-away overclaim, unlike architecture.md's Capability Map row (fixed same pass). False-positive currency finding; no content drift."
 documentsIncluded:
   prd: prds/prd-pyforge-atlas-2026-07-17/prd.md
   prdAddendum: prds/prd-pyforge-atlas-2026-07-17/addendum.md
