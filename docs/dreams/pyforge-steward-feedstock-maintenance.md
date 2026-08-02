@@ -1,10 +1,30 @@
 ---
 title: "Dream — PyForge Steward: Feedstock Maintenance Automation"
 date: 2026-08-02
-status: dreamt
+status: archived
+archived-reason: absorbed
 owner: steward
 scope: "Autotick updates, feedstock maintenance, conda-forge integration"
 ---
+
+> **Superseded.** This Dream's full vision — upstream monitoring, autotick orchestration,
+> safe test-bumps, bot-comment routing, bulk maintenance groups, and health tracking across
+> 769 feedstocks — is already covered by pre-existing legacy Tier-1 specs, not by anything in
+> Steward's own scope: [`docs/specs/feedstock-refresh.md`](../specs/feedstock-refresh.md)
+> (upstream monitoring + bulk maintenance across all 769 feedstocks, Tracks A/B),
+> [`docs/specs/feedstock-failure-remediation.md`](../specs/feedstock-failure-remediation.md)
+> (autotick/bot-comment triage — FLAKE/REAL_FIX/BLOCKED — and CI re-trigger), and
+> [`docs/specs/feedstock-platform-expansion.md`](../specs/feedstock-platform-expansion.md)
+> (the local-build-before-push safety discipline this Dream calls "safe version bumps").
+> Steward's real, already-authored Spec (`spec-pyforge-steward`, CAP-1..CAP-4) is
+> credentials/deploy/provisioning/budget — it has never covered feedstock maintenance, so this
+> is not a duplicate of Steward's own work; it is a mistagged restatement of a *different*,
+> already-real surface. Created 2026-08-02 in the same bulk commit already found this session
+> to contain fabricated content (a false migration note, boilerplate test-architecture docs,
+> and four sibling duplicate dreams — Marshal's loop-orchestrator, Mason's recipe-validator,
+> Atlas's intelligence-platform, Warden's compliance-gates — all retired the same day). Retired
+> same day rather than spec'd as new Steward work. See
+> `spec-pyforge-steward-feedstock-maintenance` for the retirement record.
 
 # PyForge Steward — Feedstock Maintenance Automation
 
