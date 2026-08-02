@@ -171,7 +171,7 @@ skill = "bmad-dev-auto"
 
 [adapter]
 name = "claude"               # claude | codex | gemini | copilot | antigravity | opencode-http | <custom .bmad-loop/profiles/*.toml>
-model = "opus"                 # repo-wide override (stock default: "" = CLI default model). 2026-08-02: sonnet -> opus, operator call -- dev and review both opus for now, pending FR-51 tier-batching.
+model = "sonnet"               # repo-wide override (stock default: "" = CLI default model). 2026-08-02: briefly opus, reverted same day (operator token-budget call) -- dev stays sonnet, review alone carries the opus raise (see [adapter.review]).
 cleanup_session_on_finish = true
 # extra_args replaces the profile's default permission-bypass flags when set:
 # extra_args = ["--permission-mode", "bypassPermissions"]
