@@ -1,6 +1,6 @@
 ---
 id: SPEC-unity-data-stack
-owner-dream: docs/dreams/unity-data-stack.md
+owner-dream: docs/dreams/unity-data-stack.md  # dream archived 2026-08-02 (absorbed, narrative only); consolidated narrative home: docs/dreams/pyforge-atlas.md § The estate Atlas hosts. This SPEC's contract is unchanged and stays the chain's owner-dream link (dream_chain_check INV-1).
 surface:
   # NOTE (2026-07-25): globs that would claim THIS repo's shared root files
   # (pixi.toml/pixi.lock/src/**/tests/**/helm/**) were removed — this project's

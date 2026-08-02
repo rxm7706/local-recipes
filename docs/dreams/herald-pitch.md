@@ -2,8 +2,18 @@
 title: Herald's Pitch Deck — Moment 1 Orchestration (Consolidated)
 type: dream
 owner: herald
-status: specified
+status: archived
+archived-reason: absorbed
 ---
+
+> **Narrative consolidated 2026-08-02 (dream-level only).** This Dream's narrative now lives
+> in [`docs/dreams/pyforge-herald.md`](pyforge-herald.md) under "What is real." **Its downstream
+> chain stays fully live and untouched**: `spec-herald-pitch` (7 capabilities, 4 companions —
+> `artifact-tracking-matrix.md`, `bridge-protocol.md`, `six-act-framework.md`,
+> `station-roster.md`) remains real, verified, ready-for-decomposition work — the Spec's own
+> "Next Steps" (feed to `bmad-prd` → `bmad-architecture` → `bmad-create-epics-and-stories`) have
+> not run yet. Only this top-level Dream file consolidates; nothing downstream was merged,
+> retired, or reworded.
 
 # Herald's Pitch Deck — Moment 1 Orchestration (Consolidated)
 

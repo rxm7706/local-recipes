@@ -2,8 +2,18 @@
 title: Genesis installer — the seed, made executable
 type: dream
 owner: marshal
-status: specified
+status: archived
+archived-reason: absorbed
 ---
+
+> **Narrative consolidated 2026-08-02 (dream-level only).** This Dream's narrative now lives
+> in [`docs/dreams/pyforge-marshal.md`](pyforge-marshal.md) under "Kept separate on purpose."
+> Unlike this session's other Marshal satellite retirements, **its downstream chain is
+> untouched and stays fully live**: `spec-genesis-installer`, `prds/prd-genesis-installer-2026-07-25/`,
+> `architecture/architecture-genesis-installer-2026-07-25/`, and `epics-genesis-installer.md`
+> all remain exactly as they were — real, substantial, Marshal-owned buildable work with its
+> own FR/AD range, deliberately kept separate from `marshal` the CLI's own FR-1..65. Only the
+> top-level Dream file consolidates; nothing downstream was merged, retired, or reworded.
 
 # Genesis installer — the seed, made executable
 

@@ -1,10 +1,22 @@
 ---
 title: "Dream — PyForge Testing Charter: Systematic Testing for the Guild"
 date: 2026-08-02
-status: specified
+status: archived
+archived-reason: absorbed
 owner: marshal
 scope: "Testing framework, quality gates, systematic coverage across all stations"
 ---
+
+> **Narrative consolidated 2026-08-02 (dream-level only).** This Dream's narrative now lives
+> in [`docs/dreams/pyforge-marshal.md`](pyforge-marshal.md) under "The frontier." **Its
+> downstream Spec stays fully live and untouched**: `spec-pyforge-testing-charter` (5
+> capabilities) is real — CAP-1 and CAP-2 are shipped (verified on disk, not this Dream's own
+> claims, which this Spec found partly inaccurate when it verified them: neither herald nor
+> warden had complete test architecture, and six other stations already had real pytest
+> coverage this Dream's "no systematic test architecture at all" line missed). CAP-3 (a shared
+> `pyforge-testing-kit` package) and CAP-4 (a CI coverage gate) are real, unbuilt, and not yet
+> decomposed to a PRD. Only this top-level Dream file consolidates; the Spec and its
+> `station-tea-status.md` companion were not merged, retired, or reworded.
 
 # Dream: PyForge Testing Charter — Systematic Testing for the Guild
 

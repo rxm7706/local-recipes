@@ -1,9 +1,9 @@
 ---
 title: Doctor (pyforge-doctor)
 created: 2026-07-25
-updated: 2026-08-01
+updated: 2026-08-02
 status: final
-currency_review: Reviewed 2026-08-04 — spec/brief timestamp bump was structural (project relocation / memlog story-completion recording), not content drift; PRD unchanged.
+currency_review: "Reviewed 2026-08-02 — dream-consolidation pass added §4.5 (FR-10..13, the frontier decomposed from the fresh docs/dreams/pyforge-doctor.md, replacing the retired pyforge-doctor-dependency-health.md). §5/§6.2 updated to mark the persistent-fleet-health-surface non-goal as graduated (FR-11), not reopened wholesale. Prior 2026-08-04 entry (structural, spec/brief timestamp bump) superseded by this one."
 inputs:
   - '_bmad-output/projects/pyforge-doctor/planning-artifacts/briefs/brief-pyforge-doctor-2026-07-25/brief.md'
   - '_bmad-output/projects/pyforge-doctor/planning-artifacts/research/domain-preflight-health-diagnostics-tooling-research-2026-07-25.md'
@@ -312,6 +312,77 @@ an agent to parse without scraping text output.
 - No information present in the human-readable output is absent from `--json` output
   (parity requirement).
 
+### 4.5 The frontier, decomposed (v1.x — added 2026-08-02)
+
+**Description:** Four capabilities this PRD's own §5/§6.2 already named as candidate
+v1.x additions ("a possible v1.x addition, not a v1 commitment"), decomposed for real
+following the dream-consolidation pass. None reopen the "no new scanning engine" or
+"no real dependency-graph resolver" boundaries §5 draws — each is a synthesis or
+wiring layer over data Doctor already gathers, or a source that already exists
+elsewhere in the factory. Sequenced after Epics 1-3 (v1's walking skeleton) ship and
+prove themselves, not concurrent with them.
+
+**Functional Requirements:**
+
+#### FR-10: Health scoring
+
+An operator can see a composite health grade (A–F) per dependency, synthesized from
+Doctor's own already-gathered Finding data across axes (age/staleness, CVE exposure,
+abandonment signal) — an aggregation layer over CAP-1..3's existing output, not a
+fourth scanning instrument.
+
+**Consequences (testable):**
+- The grade is a pure function over an already-gathered `list[Finding]` — no new
+  subprocess/MCP call of its own (same discipline FR-7's `--prescribe` already holds).
+- The same Finding set always produces the same grade (deterministic, no
+  timestamp-in-logic-path, mirroring NFR-1's read-only/pure-function precedent).
+- An incomplete axis gather degrades the grade to explicitly `incomplete`, never a
+  false `A` — a grade must never overstate confidence it does not have.
+
+#### FR-11: Persistent fleet-health surface
+
+An operator can see the fleet's health condition as a tracked, at-a-glance surface
+instead of reconstructing it from a point-in-time `monitor --fleet` snapshot — the
+graduation §6.2's `[NOTE FOR PM]` already flagged as worth revisiting.
+
+**Consequences (testable):**
+- The surface is strictly derived output written from a `monitor --fleet` run (FR-4's
+  existing Finding/Source shape) — never a second, independent gather path.
+- Regenerating the surface from the same underlying findings is idempotent.
+- The surface's own schema is versioned the same way `DoctorReport` is (FR-9's
+  `schema_version` precedent) so a consumer can detect a format change.
+
+#### FR-12: Adoption-tracking watch axis
+
+An operator can add `adoption` to `monitor --fleet`'s `--watch` set and get
+cf_atlas's `adoption-stage` and `version-downloads` signals — named as candidate
+sources in Doctor's own original Dream but never wired in — normalized into the same
+Finding shape as the existing staleness/cve/abandonment axes.
+
+**Consequences (testable):**
+- Follows FR-5's MCP-first/CLI-fallback pattern exactly; both paths normalize to the
+  identical Finding shape.
+- `adoption` is **not** added to the default `--watch` set (FR-4's default stays
+  `staleness`+`cve` unless explicitly widened) — additive, not a default-behavior
+  change.
+- A new `Source` enum member is added for it (FR-2's closed-taxonomy convention
+  extended, never an open/stringly-typed source).
+
+#### FR-13: Safe upgrade-path recommendation
+
+A Prescription from `diagnose --prescribe` can name a specific next-safe-version
+target, not just rank and explain — the narrow slice of "Version Intelligence" that
+survives verification, explicitly not the real dependency-graph resolver §5 excludes.
+
+**Consequences (testable):**
+- The recommendation is single-hop only — this package's own next safe version,
+  sourced from atlas's existing `behind-upstream`/version data — never a transitive
+  multi-package resolution.
+- A Prescription with no confidently-known safe version states that plainly rather
+  than guessing one.
+- `--prescribe` stays a pure function over already-gathered data (FR-7's existing
+  discipline preserved — no new subprocess/MCP call added to `prescribe` itself).
+
 ## 5. Non-Goals (Explicit)
 
 - **No auto-remediation actuator in v1.** Doctor never opens PRs, patches files, or
@@ -319,13 +390,18 @@ an agent to parse without scraping text output.
   every domain precedent surveyed and warden's own `--doctor` design. A future
   `--fix`/actuator (if ever built) is explicitly out of this PRD's scope.
 - **No persistent fleet-health surface (dashboard/tracked-issue/status file) in v1.**
-  CLI + JSON output only; Renovate-Dashboard-style persistence is a possible v1.x
-  addition, not a v1 commitment.
-- **No new scanning engines or data sources.** Doctor consolidates warden + atlas; it
-  does not add a third detection instrument in v1 beyond the one credential-hygiene
-  check category (FR-3).
+  CLI + JSON output only. *(Graduated 2026-08-02: this is now FR-11, decomposed as a
+  v1.x addition strictly derived from `monitor --fleet`'s existing output — not a
+  reopening of "v1 is CLI+JSON only," a scheduled extension of it.)*
+- **No new scanning engines or data sources beyond the one credential-hygiene check
+  category (FR-3).** Doctor consolidates warden + atlas; it does not add a third
+  detection *instrument*. FR-10 (health scoring) and FR-12 (adoption-tracking) do not
+  cross this line — FR-10 aggregates Doctor's own already-gathered findings, and
+  FR-12 wires an *existing* atlas source into the axis set, not a new one.
 - **No real dependency-graph resolver for `--prescribe`.** Ranking + a lag-magnitude
-  tiebreaker only; true topological multi-hop ordering is deferred.
+  tiebreaker only; true topological multi-hop ordering is deferred. FR-13's
+  upgrade-path recommendation is explicitly bounded to single-hop, this-package-only
+  — it does not cross into resolver territory.
 - **No waiver-authoring UI for `accepted-risk`.** The partition (FR-6) exists for
   forward-compatibility; authoring/managing waivers is out of v1.
 - **Not a general-purpose OSS health-check tool.** Scoped to this factory's own
@@ -349,14 +425,26 @@ an agent to parse without scraping text output.
 ### 6.2 Out of Scope for MVP
 
 - Auto-remediation / `--fix` actuator — see §5.
-- Persistent fleet-health surface — see §5. `[NOTE FOR PM]`: revisit if operator
-  adoption of `monitor --fleet` in v1 shows the CLI-only glance isn't sticky.
-- Real dependency-graph topological resolver — see §5.
+- Real dependency-graph topological resolver — see §5. (FR-13's single-hop
+  recommendation does not cross this line.)
 - Waiver-authoring UI — see §5.
-- New scanning engines beyond credential/env hygiene — see §5.
+- New scanning engines/instruments beyond credential/env hygiene — see §5. (FR-10 and
+  FR-12 do not cross this line — see §5's updated non-goal text.)
 - Cross-crew integration (Steward for credentials/ops, Scribe for knowledge) —
   Vision-level only, not v1 scope; Doctor stays narrow to warden+atlas until the
   consolidation thesis is proven.
+
+### 6.3 In Scope for v1.x (added 2026-08-02, sequenced after §6.1 ships)
+
+- Health scoring (FR-10) — composite A–F grade over already-gathered findings.
+- Persistent fleet-health surface (FR-11) — the `[NOTE FOR PM]` graduation from the
+  original §6.2, now decomposed for real.
+- Adoption-tracking watch axis (FR-12) — wires cf_atlas's existing `adoption-stage`/
+  `version-downloads` sources into `monitor --fleet`.
+- Safe upgrade-path recommendation (FR-13) — single-hop only, bounded per §5.
+
+Not concurrent with §6.1 — sequenced after Epic 1-3's walking skeleton ships and
+proves itself, per the Spec's own Assumptions.
 
 ## 7. Success Metrics
 

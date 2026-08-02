@@ -2,8 +2,26 @@
 title: Unity Data Stack — the enterprise innersource platform
 type: dream
 owner: atlas
-status: specified
+status: archived
+archived-reason: absorbed
 ---
+
+> **Superseded (narrative only).** This Dream's narrative now lives in
+> [`docs/dreams/pyforge-atlas.md`](pyforge-atlas.md) § *The estate Atlas
+> hosts*, which names Unity Data Stack as a separate, substantial initiative
+> that Atlas's project tree hosts — **not** a capability of Atlas's own
+> `cf_atlas` pipeline (`spec-pyforge-atlas`'s Capabilities are untouched) and
+> **not** a duplicate of anything Atlas already builds. This is a dream-level
+> consolidation only: Unity's own contract — 9 capabilities, FR-1–60 — still
+> lives at `spec-unity-data-stack/SPEC.md`, with its own PRD
+> (`prds/prd-unity-data-stack-2026-07-25/`) and Architecture spine
+> (`architecture/architecture-unity-data-stack-2026-07-25/`) already
+> produced; neither is touched by this consolidation. It is also **not**
+> "the work is done" — epics/stories are deliberately not yet decomposed
+> (planning ran to PRD + Architecture depth only) and no code has been
+> written; the platform remains planning-complete and unscheduled. Archived
+> 2026-08-02 as the narrative entry point only; its Spec/PRD/Architecture
+> chain continues independently.
 
 # Unity Data Stack — a python-first innersource delivery model
 

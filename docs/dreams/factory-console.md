@@ -2,8 +2,17 @@
 title: Factory console — the whole pipeline on one page
 type: dream
 owner: marshal
-status: realized
+status: archived
+archived-reason: absorbed
 ---
+
+> **Narrative consolidated 2026-08-02 (dream-level only).** This Dream's narrative now lives
+> in [`docs/dreams/pyforge-marshal.md`](pyforge-marshal.md) under "Kept separate on purpose."
+> **Its downstream chain stays fully live and untouched**: `spec-factory-console` (companions
+> `console-contract.md`, `drill-evidence.md`) remains the current, binding reference for this
+> Dream's still-unbuilt frontier (per-Dream drill-through, a delivery/notables feed, a
+> fleet-health strip). No PRD exists for it yet — only this top-level Dream file consolidates;
+> nothing downstream was merged, retired, or reworded.
 
 # Factory console — the whole pipeline on one page
 

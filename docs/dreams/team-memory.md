@@ -2,8 +2,28 @@
 title: Team memory — what the team knows, the agents know
 type: dream
 owner: scribe
-status: specified
+status: archived
+archived-reason: absorbed
 ---
+
+> **Superseded.** This Dream carried Scribe's shared, version-controlled
+> memory layer as a standalone contract — MEM-1 (memory is committed, not
+> personal), MEM-2 (recall is scoped, not a dump), MEM-3 (entries carry
+> provenance, so a stale one is visibly stale) — inherited from [[sentinel]]'s
+> knowledge-graph core when that Dream was absorbed 2026-07-25.
+> [`docs/dreams/pyforge-scribe.md`](pyforge-scribe.md) (status: specified)
+> now carries this scope directly: MEM-1 is `spec-pyforge-scribe`'s CAP-1
+> (`scribe capture` / `--promote` into `.claude/memory/`) plus AD-1
+> (append-only, git-committed); MEM-2 is CAP-3's grounded, cited `scribe
+> recall <query>`; MEM-3 is CAP-2's per-node source/commit traceability plus
+> the Non-goals' compile-time staleness signal. The legacy 10-story
+> `docs/specs/claude-team-memory.md` spec this Dream pointed to was already
+> absorbed as Scribe's Wave 1 foundation on 2026-07-25; Epic 1 is now 3 of 5
+> stories shipped (1.1 package scaffold + capture, 1.2 `CLAUDE.md` wiring,
+> 1.3 promotion workflow) and `.claude/memory/` is live in this repo today.
+> Consolidated into one Dream 2026-08-02 rather than left as a second live
+> contract for the same surface. See `spec-team-memory` for the retirement
+> record.
 
 # Team memory — memory that belongs to the team, not one session
 

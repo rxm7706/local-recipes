@@ -2,8 +2,27 @@
 title: Upstream discovery — package it before it's asked for
 type: dream
 owner: atlas
-status: specified
+status: archived
+archived-reason: absorbed
 ---
+
+> **Superseded (narrative only).** This Dream's narrative now lives in
+> [`docs/dreams/pyforge-atlas.md`](pyforge-atlas.md) § *The estate Atlas
+> hosts*, which names Upstream Discovery as a separate initiative that
+> Atlas's project tree hosts — **not** a capability of Atlas's own `cf_atlas`
+> pipeline (`spec-pyforge-atlas`'s Capabilities are untouched) and **not** a
+> duplicate of anything Atlas already builds (it is a candidate-sourcing
+> layer that would feed [[packaging-factory]], distinct from Atlas's
+> intelligence signals). This is a dream-level consolidation only: the
+> project's own contract — 5 capabilities, re-grounded in Atlas's shipped
+> Kedro dataflow after the legacy phase-based design was superseded by the
+> migration — still lives at `spec-upstream-discovery/SPEC.md`; it is not
+> touched by this consolidation. It is honestly the earliest-stage of
+> Atlas's three satellites and **not** "the work is done": the Spec itself is
+> `status: draft`, with no PRD, no Architecture, and zero implementation —
+> six open questions remain, including which of Atlas's 7 closed pipelines
+> should host it. Archived 2026-08-02 as the narrative entry point only; its
+> Spec continues independently.
 
 # Upstream discovery — sense what the world is building
 

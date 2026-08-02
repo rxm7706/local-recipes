@@ -2,8 +2,17 @@
 title: Agent portability — BMAD on any agent, never vendor-locked
 type: practice
 owner: marshal
-status: dreamt
+status: archived
+archived-reason: absorbed
 ---
+
+> **Superseded 2026-08-02 (dream consolidation).** This practice's concrete, buildable
+> decomposition already lives in [`docs/dreams/pyforge-marshal.md`](pyforge-marshal.md) as
+> CAP-6 / Epic 6 ("Portability proven, not claimed": skill-tree projection, adapter probe,
+> conformance matrix, entry-file drift detection — FR-41..48 in `spec-pyforge-marshal`'s
+> real PRD). As a standing practice it does not "end," but its narrative now lives in the
+> consolidated Dream rather than a separate document. See `spec-agent-portability` for the
+> retirement record.
 
 # Agent portability — the method outlives the tool
 
