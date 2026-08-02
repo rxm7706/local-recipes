@@ -3,9 +3,29 @@ title: "Herald Pitch Expansion — Moment 1 Orchestration"
 slug: brief-herald-pitch-2026-08-01
 status: ready
 created: 2026-08-01
-updated: 2026-08-01
+updated: 2026-08-02
 context: pyforge-herald
 ---
+
+> **Consolidated 2026-08-02.** This brief is now the single canonical Brief for the
+> `pyforge-herald` station (per an explicit, same-day user override of the
+> keep-chains-separate convention this repo otherwise follows). Content below is
+> unchanged from its original 2026-08-01 authoring at
+> `planning-artifacts/briefs/brief-herald-pitch-2026-08-01/brief.md`. No other live Brief
+> existed to fold in: Herald's Moments 2–4 chain (`spec-herald-moments-2-4` →
+> `prd-herald-moments-2-4-2026-08-02` → `architecture-herald-moments-2-4-2026-08-02`) went
+> straight from Dream to Spec to PRD with no separate Brief tier of its own — its PRD is
+> now folded into `prd-pyforge-herald-2026-08-01/prd.md` as a satellite section instead. A
+> second candidate, `product-brief-deckcraft.md` (+ its distillate), was investigated and
+> found to be orphaned debris from an *already-completed, separate* 2026-08-01
+> consolidation (`spec-deckcraft` → `spec-herald-pitch` CAP-2 "Deckcraft Framework"; see
+> commit `409b3357bd`) whose PRD/Architecture/Spec were archived at that time — the brief
+> itself was left behind by oversight. It has now been moved to
+> `archive/_bmad-output/projects/pyforge-herald/planning-artifacts/briefs/` alongside its
+> already-archived siblings, not folded in here, since folding it in would resurrect scope
+> (a full AI-generation PPTX pipeline) that this station's chain deliberately narrowed away
+> from in that prior pass — only the "render markdown to PPTX" slice survived, as CAP-2 /
+> HER-5 below.
 
 # Herald Pitch Expansion — Moment 1 Orchestration
 

@@ -42,11 +42,25 @@ it is anyone being **told**.
   6-artifact export set proven repeatedly (`deck-export`). This is
   production-ready. Full orchestration detail (design-code-bridge +
   deckcraft + video-scripts + modernist-identity, the 9-station expansion,
-  artifact tracking, 7 capabilities) lives in `spec-herald-pitch` —
+  artifact tracking, 7 capabilities) lived in `spec-herald-pitch` —
   [[herald-pitch]] itself is archived (dream-level consolidation,
-  2026-08-02) but its Spec is real, unbuilt, and ready for the
-  PRD/Architecture/Epics decomposition its own "Next Steps" call for; that
-  work has not run yet.
+  2026-08-02). **Station-level consolidation, later the same day:** those 7
+  capabilities are now folded inline into `spec-pyforge-herald/SPEC.md` as
+  HER-4..HER-10 (`spec-herald-pitch` itself is archived, unmodified, at
+  `archive/_bmad-output/projects/pyforge-herald/planning-artifacts/specs/`).
+  Their PRD/Architecture decomposition had, in fact, already run — the same
+  2026-08-01 commit that produced `spec-herald-pitch` also produced
+  `prd-pyforge-herald-2026-08-01/prd.md` and
+  `architecture-herald-pitch-2026-08-01/ARCHITECTURE-SPINE.md` — so the
+  prior wording here ("ready for... that work has not run yet") was already
+  stale before today's consolidation; both documents are now this station's
+  single canonical PRD and Architecture. The Epics decomposition is a
+  genuine gap, not a stale claim: `planning-artifacts/epics.md` /
+  `epics-with-stories.md` are entirely Moments-2-4 content — Moment 1's own
+  epic breakdown from the 2026-08-01 regeneration appears to have been
+  overwritten by later Moments-2-4 epics work and was not found anywhere in
+  the current tree during the 2026-08-02 consolidation; recoverable only via
+  git history if needed.
 - **The bridge, mechanized (`pyforge-herald` CLI)** — the Design↔Code seed/pull
   loop proven manually on 7 decks in one day is being packaged as a
   deterministic CLI (`herald deck seed/pull/status/watch`, `SPEC-design-code-bridge`
@@ -107,3 +121,26 @@ re-scoped infrastructure and the fleet-chain regeneration machinery) ·
   consolidation. [[fleet-chain-completeness]] (the orchestrated-regeneration
   workflow that had been filed here) was reassigned to `owner: marshal` the
   same day — it is machinery, not Herald's communication-surface scope.
+- **2026-08-02 (station-level consolidation, later the same day, corrects the
+  two entries above)** — Per an explicit user override of this repo's own
+  same-day keep-chains-separate convention, both "stays fully live and
+  untouched" / "unchanged by this consolidation" claims above are now
+  **false**. The station's multiple Brief/PRD/Architecture/Spec chains were
+  merged into one of each: `brief-herald-pitch-2026-08-01/brief.md`,
+  `prd-pyforge-herald-2026-08-01/prd.md` (now also carrying the Moments 2–4
+  PRD as a Satellite section), `architecture-herald-pitch-2026-08-01/ARCHITECTURE-SPINE.md`
+  (now also carrying the Moments 2–4 architecture as AD-11..AD-20), and
+  `spec-pyforge-herald/SPEC.md` (now also carrying `spec-herald-pitch`'s
+  CAP-1..7 as HER-4..10 and `spec-herald-moments-2-4`'s CAP-1..3 as
+  HER-11..13). Every folded-in source document is preserved, unmodified, at
+  the mirrored path under `archive/_bmad-output/projects/pyforge-herald/…`
+  (a rename, not a deletion — see git history for provenance if the
+  `archive/` copy is ever removed). `product-brief-deckcraft.md` (+
+  distillate, project-context, sprint-status, 3 research files) was
+  investigated separately and found to be orphaned debris from an
+  *already-completed* 2026-08-01 consolidation (`spec-deckcraft` folded into
+  `spec-herald-pitch` CAP-2, now HER-5) whose own PRD/Architecture/Spec were
+  archived at that time; it has been moved to the same `archive/` location
+  as its siblings, not folded in as live station scope. Epics were
+  deliberately left untouched by this pass (still Moments-2-4-only; see the
+  note in "What is real" above).

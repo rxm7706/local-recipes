@@ -5,13 +5,17 @@ surface:
   - src/shared/packages/pyforge-marshal/**    # the CLI this Spec builds (not yet created)
 companions:
   - glossary.md                                              # spec-authored: the vocabulary + the gate-mode/autonomy ladder
-  - ../../prds/prd-pyforge-marshal-2026-07-25/prd.md                                             # adopted (chain): FR-1..FR-58 / NFR-1..NFR-14 with testable consequences
-  - ../../architecture/architecture-pyforge-marshal-2026-07-25/architecture.md                                    # adopted (chain): the 39 ADs, structural seed, stack, diagrams
-  - ../../epics.md                                           # adopted (chain): 6 epics / 40 stories, FR coverage map, story DAG
+  - extraction-manifest.md                                   # spec-authored (genesis-installer, folded in 2026-08-02): the V1 per-artifact classification manifest CAP-10 (was genesis-installer CAP-1) is judged against
+  - ../../prds/prd-pyforge-marshal-2026-07-25/prd.md                                             # adopted (chain): FR-1..FR-65 / NFR-1..NFR-14 with testable consequences, incl. the folded-in Satellite: Genesis Installer PRD (FR1..FR62, own numbering)
+  - ../../architecture/architecture-pyforge-marshal-2026-07-25/architecture.md                                    # adopted (chain): the 50 ADs, structural seed, stack, diagrams, incl. the folded-in Satellite: Genesis Installer Architecture (AD-51..AD-65)
+  - ../../epics.md                                           # adopted (chain): 6 epics / 40 stories, FR coverage map, story DAG (marshal's own FR-1..65 range only)
+  - ../../epics-genesis-installer.md                         # adopted (chain, UNCHANGED / out of scope for this consolidation): the installer's own 6 epics / 36 stories (epics 7-12), still a SEPARATE document per explicit instruction
   - ../../architecture/architecture-pyforge-marshal-2026-07-25/reviews/review-ad25-39-adversarial-2026-07-25.md   # adopted (chain): the BLOCKED-ON verdict behind § Open Questions
 sources:
   - ../../../../../../docs/dreams/pyforge-marshal.md
-  - ../../product-brief-pyforge-marshal.md
+  - ../../product-brief-pyforge-marshal.md                   # incl. the folded-in Satellite: Genesis Installer section
+  - ../../../../../../docs/dreams/genesis-installer.md       # the genesis-installer Dream (unchanged; its downstream chain is what this consolidation folds in)
+  - archive/_bmad-output/projects/pyforge-marshal/planning-artifacts/research/product-brief-pyforge-genesis.md  # archived original of the folded-in satellite brief
   # Sibling, NOT superseded: ../../../../local-recipes/planning-artifacts/specs/spec-bmad-loop-governance/SPEC.md
   # is a narrow governance-surface Spec binding the SHIPPED machinery (`.bmad-loop/**`) into the
   # governance map. THIS Spec is the `marshal` CLI product that productizes that capability.
@@ -19,6 +23,8 @@ sources:
 ---
 
 > **Canonical contract.** This SPEC and the files in `companions:` are the complete, preservation-validated contract for what to build, test, and validate. Source documents listed in frontmatter are for traceability only — consult them only if you need narrative rationale or prose color this contract intentionally omits.
+
+> **Consolidated 2026-08-02 (explicit user override).** genesis-installer's own Spec (`spec-genesis-installer/SPEC.md`) is folded into this Spec below: its capabilities continue this Spec's own `CAP-n` sequence (CAP-10..CAP-18), its constraints/non-goals/success-signal/assumptions/open-questions are appended into the matching sections here, and its AD-01..AD-09 references are renumbered AD-51..AD-59 to match the merged architecture doc. See `archive/_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-genesis-installer/` for the original standalone documents. `epics-genesis-installer.md` is unchanged and out of scope for this consolidation.
 
 # marshal CLI — graduated autonomy, productized
 
@@ -64,6 +70,36 @@ A pain to solve and an opportunity to capture, on the same clock. The capability
   - **intent:** An operator's finished wave lands on `main` without a human driving the last mile — the landing rules declared once as policy, executed and refused deterministically, with the same supervisor/journal/verdict triad every other stage already has.
   - **success:** Landing rules — required checks, merge strategy, label rules (including repo-specific ones like this fork's `maintenance` label and its ungated env-sync trigger), branch retirement, and resync — compose from the policy layers with per-key provenance; `marshal land` opens or updates the PR, applies labels, waits on required checks, merges, retires the branch and resyncs — idempotently and re-entrantly, so a half-landed story (PR open, checks green, merge never issued) converges on re-run; refusal semantics mirror teardown: no merge on a red required check, no merge past an unacknowledged advisory finding, no silent force; every landing leaves a journal verdict recording which checks were required, which passed, what merged, and under whose authority; and wrap-never-absorb is carried unchanged — the engine keeps dev/verify/review/commit and deliberately leaves this gap open; Marshal fills it around the engine.
 
+- **CONSOLIDATION NOTE (2026-08-02, explicit user override):** CAP-10..CAP-18 below are genesis-installer's own CAP-1..CAP-9, folded into this Spec verbatim except for renumbering (continuing this Spec's own sequence past its highest existing id, CAP-9) and AD-01..AD-09 -> AD-51..AD-59 (to match the merged architecture doc's Satellite section). See `archive/_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-genesis-installer/SPEC.md` for the original standalone document, and its `.memlog.md` entries (replayed verbatim, original CAP-1..9/AD-01..09 labels, after this Spec's own memlog history) for the distillation record.
+
+- **CAP-10**
+  - **intent:** A maintainer can declare the operating model as data — every artifact in exactly one class — so adding a model artifact never requires touching engine code.
+  - **success:** A coverage check HARD-fails when any known artifact carries no class (deferral is an explicit enumerated state, not a gap); `genesis explain <artifact>` prints that artifact's class, rationale, and update behavior; adding an artifact to the model is provably a manifest-only diff.
+- **CAP-11**
+  - **intent:** An operator can carry the model's rule text inside files their team writes freely, and have only that text upgrade.
+  - **success:** An update replaces only the marked span, byte for byte, leaving the rest of the file identical; a hand-edit inside the span is detected by body hash and reported; deleting the markers is recorded as a permanent opt-out that later runs respect; nested or overlapping regions are rejected with a specific error; no run can produce a conflict marker.
+- **CAP-12**
+  - **intent:** A team can layer the model onto a repository that already builds and ships, reviewing exactly what will change before anything is written.
+  - **success:** `genesis adopt` runs detect → plan → confirm → apply, dry-run by default and completing in under 10 seconds on a `local-recipes`-sized repo, emitting a machine-readable plan naming each artifact's path, class, detected state, proposed action, and rationale; against `local-recipes` at the shipped model version the plan is **empty**; a second run on an unchanged repo is likewise empty and writes nothing; it refuses on a hand-edited managed artifact and on a dirty git worktree; a `present-legacy` artifact is recorded and preserved, never modified or deleted; and paths passed to `--skip` are recorded and honored on every later run.
+- **CAP-13**
+  - **intent:** An installed repo can prove in CI that it still conforms to the model.
+  - **success:** `genesis check` is read-only with writes structurally unreachable, exits non-zero on any HARD finding, emits typed stable findings each carrying a documented remedy, supports `--json` for CI annotation, reports the repo's model version against the bundled one, and completes offline in under 5 seconds on a `local-recipes`-sized repo.
+- **CAP-14**
+  - **intent:** A maintainer can create a new repository already born Dream-first, rather than assembling the model by hand.
+  - **success:** `genesis init <path>` yields a tree with the tier layout, one seeded Dream conforming to the Tier-0 frontmatter contract, the BMAD multi-project subtree and its `PROJECTS.md` row, the `.gitignore` model region, the selected agent adapters, and the detector wired into CI — after which `genesis check` is green, offline, with zero network calls, in under five minutes wall-clock; `init` refuses a non-empty directory without `--force`, directing the operator to `adopt`.
+- **CAP-15**
+  - **intent:** An already-installed repository can take a later version of the model without hand edits, and without the upgrade being able to reach the team's own work.
+  - **success:** `genesis update` writes a plan and changes nothing until `--run`; a simulated breaking model change (v1 → v2) is absorbed by a version-ordered, applied-once migration with no manual edits; `copied-seeded` artifacts are *offered*, never imposed; and an attempted write to any never-write path is a hard error asserted by test.
+- **CAP-16**
+  - **intent:** Every per-tool agent entry point in an installed repo derives from one contract, so they cannot drift apart.
+  - **success:** The four V1 adapters (`CLAUDE.md`, `.cursor/rules/specs.mdc`, `.github/copilot-instructions.md`, `GEMINI.md`) render from a single neutral-contract source; adding a fifth is a manifest entry plus a wrapper template with no engine change; an adapter file that already exists with repo-specific content receives the model as a managed region rather than an overwrite.
+- **CAP-17**
+  - **intent:** A repo carries a legible record of what Genesis owns in it and what it has already done.
+  - **success:** One git-tracked, schema-validated, do-not-hand-edit state file records `model_version`, `genesis_version`, mode, adopted/updated timestamps, `agents[]`, `managed[]` (path + class + content hash), `skips[]`, `legacy[]`, and `migrations_applied[]`; an invalid file surfaces as a `state-invalid` finding rather than a crash; state is written last, after every file write succeeds, in one atomic replace.
+- **CAP-18**
+  - **intent:** An air-gapped or firewalled team can install and operate the model with no egress.
+  - **success:** An egress-counter test asserts zero network calls across `init`, `adopt --dry-run`, `adopt --apply`, and `check`; the only reachable network path is an explicit `--template <url>`; every runtime dependency resolves from conda-forge or an internal mirror.
+
 ## Constraints
 
 - **Wrap, never absorb.** The harness is a declared runtime dependency — never vendored, never forked, never patched in place. Marshal owns provisioning, supervision, gates-as-objects, landing, status and portability; it does **not** own the dev/verify/review/commit engine. Decided on evidence, not preference: the harness is already conda-packaged here so absorbing buys nothing on distribution, and every known gap sits *outside* the engine. Revisited only on the recorded fork triggers (upstream stall, unadaptable contract break, a declined load-bearing fix, or a licence change away from MIT).
@@ -90,6 +126,35 @@ A pain to solve and an opportunity to capture, on the same clock. The capability
 - **No destructive default, no AI attribution.** Marshal never force-pushes; teardown refuses on unmerged work absent an explicit flag; mutating commands are idempotent and converge on re-run. No co-author trailer, model line or generated-with line is ever emitted — a commit trailer is part of the permanent authorship and blame record.
 - **Acceptance is deterministic and machine-checkable end to end.** Exit codes, journal entries, gate records and git history are the oracle — never an agent's assertion that it passed.
 
+- **Genesis-installer constraints, folded in 2026-08-02 (own architecture AD-51..AD-59; see the architecture doc's Satellite section).** Two are flagged as contradicting Marshal's own constraints above rather than silently resolved — see the two CONTRADICTION notes inline below; neither is decided by this consolidation:
+- **Five artifact classes, a closed set** — `referenced` · `copied-managed` · `copied-seeded` · `generated-derived` · `hybrid-managed-region`. REFERENCED is never materialized (version range only); COPIED·MANAGED is tool-owned and regenerated wholesale; COPIED·SEEDED is written once and repo-owned forever; GENERATED·DERIVED is recomputed every run; HYBRID·MANAGED-REGION is a repo-owned file with a tool-owned marker span, of which only the span is replaced. **Classification rule:** by *who must be able to change it* and *how an installed repo takes a later model upgrade for it*. The Dream's three-way split was one class short — "copied" must divide into MANAGED and SEEDED, because that is exactly what decides whether an upgrade may rewrite a file. Per-artifact V1 assignment: `extraction-manifest.md`.
+- **The never-write set is structural** — `docs/dreams/*.md` (except the one `init` seed), `**/planning-artifacts/**` (except the `init`-seeded `specs/README.md`), `**/implementation-artifacts/**`, `docs/specs/*.md` (legacy tier), and `_bmad/bmm/**` + `_bmad/core/**` (installer-owned). Upgrading the model can never touch the work made with it.
+- **The never-write guard lives at the lowest write primitive, not at call sites.** Every byte written to a target repo passes through one `fs` module holding an immutable path set frozen at construction; each write resolves to an absolute, symlink-resolved path and matches against the set *before* opening anything — unresolved matching would miss `_bmad-output/planning-artifacts`, which is a symlink into a project's Tier-2 tree. An AST meta-test enumerates write calls outside `fs`, so no future code path can route around the guard. Templates write through `fs` like everything else: a template that writes outside its declared paths is a hard error.
+- **AD-51 — CLI is typer + rich, confined to `cli.py`.** No other module imports either, so `--json` output and library use stay presentation-free. Plan rendering is the product's main human surface, so warden's argparse minimalism is deliberately not adopted.
+  - **⚠ CONTRADICTION (flagged 2026-08-02, not resolved here).** Marshal's own CLI is **argparse** — stated in the architecture's Structural Seed (`cli/ # argparse tree, envelope rendering, exit-code emission only`) and already **shipped**: Story 1.1 landed `core/{model,findings,verdict}.py` and `cli/` on argparse, merged to main. AD-51 above specifies **typer + rich** for genesis-installer's own (unbuilt) CLI, and its rationale text explicitly says "warden's argparse minimalism is not adopted" — the same argparse choice Marshal itself made. If genesis-installer's verbs fold into the `marshal` binary (per the 2026-07-31 operator decision recorded in the satellite's own memlog, "FOLD THE CLI INTO MARSHAL; RETIRE THE `genesis` BINARY"), one CLI framework must win for the whole binary. This consolidation does not decide which — it is left for whoever resolves Open Question 17 (installer verb mapping) to also settle.
+- **AD-52 — one Genesis-owned state file at `.genesis/state.yml`.** Copier's answers file is opaque and tool-owned: never read by Genesis, written only via Copier. Answers are re-supplied programmatically from Genesis state on every Copier call, so Genesis state is the single source of truth and the answers file stays an implementation detail.
+- **AD-53 — one canonical marker grammar, rendered per comment syntax.** The format is *declared* per artifact in the manifest, never sniffed from content; the marker `sha` covers the region body only, so the marker line is not self-referential; nested or overlapping regions are a hard error.
+- **AD-54 — `genesis check` re-implements the generic subset of this repo's `bmad_drift_check.py`; it does not import, vendor, or extract it.** It borrows the proven design (the `Finding` shape, the HARD/DRIFT/INFO ladder, the coverage check, `--json`). Roughly 85% of that 662-line script is `local-recipes` factory-specific and meaningless elsewhere. The two detectors coexist; convergence is explicitly out of V1, which keeps `local-recipes` uncoupled from a Genesis release.
+  - **⚠ CONTRADICTION (flagged 2026-08-02, not resolved here).** Marshal's own FR-65/AD-50 (shipped 2026-08-01, after this AD-54/CAP-13 pair was authored) built a **different** `marshal check` that does the opposite of what AD-54 rules out for its own verb: FR-65's `marshal check` **routes to** `scripts/detectors.py`'s registry — "a route, not a reimplementation (wrap-never-absorb applies to detector tooling exactly as it does to the engine)" — and its non-goal is explicitly "Converging `genesis check` with `bmad-drift-check`... out of V1" here on this same AD. The two verbs also answer different questions (Marshal's: does *this* repo pass its own detector registry; genesis-installer's CAP-13: does an *installed, external* repo still conform to the model it adopted), so this may not need reconciling as one verb — but if both are named `check` under one `marshal` binary, that is a second concrete instance of the collision Open Question 17 already names for `init`. Left open, not decided here.
+- **AD-55 — the manifest is one YAML document, keyed by stable artifact id, never by path** (paths are per-repo). Each entry carries class, path, format, regions with anchors, `since`/`until` model-version bounds, `applies_to`, and rationale. One file keeps coverage a single-pass check and makes the manifest reviewable as a diff — which matters, because the manifest *is* the product's contract.
+- **AD-56 — region insertion uses a declared ordered anchor list with an append-at-EOF fallback, and never guesses mid-file.** It never inserts inside a fenced code block, and always reports the chosen anchor in the plan so a human reviewing the plan can veto placement.
+- **AD-57 — the plan is a machine-readable artifact at `.genesis/plan.json`, gitignored by default**, carrying a `repo_fingerprint` (git HEAD + dirty flag + hashes of the artifacts it names); apply **refuses** a plan whose fingerprint no longer matches. Deliberately not committed: a plan is cheap to regenerate, while a committed stale plan is a hazard.
+- **AD-58 — no `eject` verb ships in V1, but state must not preclude one.** For every managed artifact, state records `id`, `path`, `class`, `body_sha`, and `inserted_region_span` — enough for a future eject to strip markers and forget the artifacts without touching content.
+- **AD-59 — legacy conventions are preserved, recorded in `state.legacy[]`, and at most advised** (an INFO finding naming the successor); never migrated, never written to. Genesis ships no automated Tier-1 → Tier-2 migration: legacy content is the team's work product and falls inside the never-write set.
+- **One pipeline for every mutating verb:** `resolve → detect → plan → apply`. `check` is `adopt`'s detect+plan with the apply stage structurally unreachable — which is why "check never writes" is a guarantee rather than a discipline. Detect is pure (no I/O side effects); apply consumes only a serializable plan and never re-derives state; hash guards are evaluated in detect and never in apply.
+- **Managed-region replacement is pure byte-span substitution** between markers — never a three-way merge, never semantic markdown parsing. A half-merged file and a conflict marker are therefore not representable states.
+- **Idempotence is *defined* as plan-emptiness:** a verb is idempotent iff detect+plan immediately after a successful apply yields zero actions. This makes the `local-recipes` oracle and adopt-run-twice the same assertion against different repos — one mechanism, two proofs.
+- **The empty-plan oracle runs in Genesis's own CI**, so model drift in the repository the model was extracted from fails Genesis's build the day it appears, rather than at the next install.
+- **Copier is a dependency, not a framework.** Exactly one module imports it, and only its public `run_copy` / `run_update` / `run_recopy`; pinned `>=9.17,<10` by range with a version-range sync test. `--force` maps to `run_recopy` semantics (discarding local evolution of managed artifacts) and requires explicit confirmation. Copier's code-executing template features stay gated behind an explicit `--unsafe` flag.
+- **`adopt` and `update` are dry-run/two-phase by default and refuse on a dirty git worktree**, because git is the designated undo mechanism. No verb may leave a repo partially applied: apply is transactional per plan, or it reverts. State is written **last**, after all file writes succeed, in one atomic replace — the `bmad-switch` marker/symlink desync lesson encoded.
+- **Two clocks:** CLI semver and operating-model semver move independently, are both recorded in state, and are both reported by `genesis version`. Migrations are keyed to model version only, are pure plan-producing functions that never write directly, and are applied exactly once.
+- **Genesis installs the machinery; Marshal operates it.** Marshal owns the *source* of `scripts/bmad-switch` and `scripts/bmad-loop-worktree`; Genesis owns their *delivery* as COPIED·MANAGED artifacts and never forks them. Genesis's write scope is a repo's structure and conventions; Marshal's is a repo's executions.
+- **Air-gap by construction:** no module imports `requests`, `httpx`, or `urllib.request` (meta-test enforced); templates ship in-package; the only network path is Copier's git fetch behind an explicit `--template <url>`. Accepted trade-off: a model change requires a package release, and `--template` is the escape valve.
+- **Packaging clones `pyforge-warden`'s shape exactly** — pixi workspace member, hatchling, `packages = ["src/pyforge"]`, a `genesis` console entry point, and a **lean** environment with `no-default-feature = true`. The lean env is mandatory, not cosmetic: bmad-loop worktrees materialize it, never the fat `local-recipes` env. Python `>=3.12`; `pyforge.genesis` shares the `pyforge` namespace with warden and atlas.
+- **Touching root `pixi.toml` fires this repo's two always-on PR gates** (the `maintenance` label and a regenerated `environment.yaml`) and stales `docs/reference/library-llms-full.md`; all three are acceptance criteria on the packaging work, not follow-ups.
+- **Genesis's own artifacts obey the tier discipline it installs:** planning artifacts are Tier 2, story specs are durable and tracked under `planning-artifacts/specs/`, and nothing it produces may be git-tracked under `implementation-artifacts/`.
+- **Every finding type is a member of one enum with a documented remedy string**; ad-hoc error strings are forbidden, and non-zero exit codes are distinct and documented per failure mode.
+
 ## Non-goals
 
 - **Reimplementing the dev/verify/review/commit engine.** Marshal is the factory floor around it, not the engine.
@@ -107,11 +172,43 @@ A pain to solve and an opportunity to capture, on the same clock. The capability
 - **Formal L1–L5 story-mode labelling beyond the gate-mode mapping.** Frontier.
 - **Claiming to be "the orchestrator."** Marshal is the station around one, and positioning must stay honest about it. *(Scope clarified 2026-07-31: this targets the engine claim — bmad-loop remains the dev/verify/review/commit orchestrator. It does not bar Marshal from sequencing on other stations' verdicts, which it consumes and never authors; see the sequencing constraint.)*
 
+- **Genesis-installer non-goals, folded in 2026-08-02:**
+- **Operating the machinery Genesis installs** — bmad-loop runs, quality gates, escalation, graduated autonomy, worktree lifecycle, and run-time project switching are Marshal's.
+- **Machine and toolchain health** — Genesis performs a minimal presence-and-floor probe of REFERENCED dependencies (so it works in a repo that has not adopted Doctor) and delegates to `doctor check` when available, rather than growing its own probe suite.
+- **Deck content, and the Dream's other two faces** — the Dream casts Genesis as three things: the master narrative, the alignment deck (`presentations/pyforge-genesis/`, already real), and the seed. **This contract covers only the seed.** Genesis lays down `presentations/<slug>/` and its conventions; Herald fills and round-trips them.
+- **Repository creation on a git host** — `genesis init` makes a tree, not a GitHub repo.
+- **Non-git targets** — they forfeit the update story entirely, which is the whole product.
+- **Composable feature modules** (adopting a subset of the model) — V1.x; the manifest's `applies_to` field is shaped to allow a future `groups[]` without a schema break.
+- **`check --fix`** — V1.x; requires a fixable/unfixable distinction per finding type.
+- **`genesis eject`** — V1.x; state is shaped for it but no verb ships.
+- **A hosted registry of installations or fleet conformance scorecards** — Genesis is not a service and keeps no central record; installed repos run `check` in their own CI.
+- **Publishing the model as a separately versioned artifact** — V2; `--template` is the seam.
+- **Automated Tier-1 (`docs/specs/`) → Tier-2 migration** — preserve and mark only.
+- **Converging `genesis check` with `bmad-drift-check`** — explicitly out of V1.
+- **Windows parity beyond `init` / `check`** — best-effort; the loop machinery is Linux/macOS, Windows via WSL.
+- **Authoring any conda recipe** — `copier` is consumed from the existing conda-forge feedstock, so the core work triggers neither the CFE skill-invocation rule nor its closeout retro.
+
 ## Success signal
 
 An operator launches a wave against an approved spec, goes to bed, and wakes to merged code plus a complete paper trail nobody had to remember to file: **no story merged without a green verify and a passing scope check**; **every unattended run terminated as completed, escalated, or stopped-with-a-named-reason, with zero idle-strand-to-cap events**; and **every merged story's spec promoted into tracked artifacts with no human action** — while several loop homes ran concurrently with isolation verification passing and at least two adapters hold a dated passing conformance row. Each verdict reads from exit codes, journal entries and git history alone.
 
 Deliberately **not** optimized, and tracked as counter-metrics: raw story throughput (optimizing it reproduces the documented failure of agents spending days on impossible solutions), adapter count (two proven beat six claimed), and reduction in escalation count (fewer escalations is only good if precision holds — driving the number down by widening what the agent guesses at is the exact failure this product exists to prevent).
+
+**Genesis-installer's own success signal, folded in 2026-08-02** (a second, independent success criterion — the two are not merged into one statement because they measure different things: Marshal's above measures a wave of stories landing unattended; this one measures a second repository being installed and upgraded):
+
+A second repository, created by `genesis init`, runs a full Dream → spec → epics →
+loop-driven build and then **takes a later model upgrade via `genesis update` with no hand
+edits** — `genesis check` green before and after. Alongside it, `genesis adopt --dry-run`
+against `local-recipes` at the shipped model version produces an **empty plan**, proving
+the model Genesis carries and the repository it was extracted from are the same model.
+Both verdicts read from exit codes and produced files alone.
+
+The signal has two named falsifiers, and reaching either pauses or rescopes the work
+rather than shipping around it: **K-01** — the managed-region merge proves unreliable on
+real files (corruption or an unresolvable conflict in either of the first two adopters);
+**K-02** — the empty-plan oracle cannot be reached without special-casing the model into
+incoherence, which would mean the model is not actually extractable and the Dream's
+stabilization gate was called too early.
 
 ## Assumptions
 
@@ -125,6 +222,14 @@ Deliberately **not** optimized, and tracked as counter-metrics: raw story throug
 - Performance envelope: `init` and `status` under 10 seconds on a warm checkout, supervisor poll ≤ 60 seconds — and the poll interval must never exceed the active prompt-cache TTL, the documented mechanism behind the largest circulated cost overruns.
 - 80% escalation precision is a first target absent a baseline.
 - **Live-evidence counts cited across the chain are point-in-time and were already stale at review** (4 loop homes exist today, not 7; 93 skill directories, not 92). No capability contract may hard-code these numbers.
+
+**Genesis-installer's own assumptions, folded in 2026-08-02:**
+- Genesis targets git repositories only; non-git targets forfeit the update story entirely.
+- The operating model has genuinely stabilized — the Dream's own gate. Evidence: pyforge-atlas shipped 32 stories and pyforge-warden 31 through it; the durable-story-specs convention closed the last known hole on 2026-07-25.
+- Copier's `run_copy` / `run_update` / `run_recopy` signatures are stable across 9.x, and its answers-file path is template-configurable (the second is AD-52's fallback trigger). Both are gated by Spike-0, which is a critical gate on the materialization work rather than an accompanying task.
+- HTML-comment markers are unambiguous in the specific markdown files the manifest names.
+- The first two adopters are `local-recipes` (the oracle) and one greenfield pyforge sibling; external adoption is post-V1.
+- Marshal accepts ownership of `bmad-switch` / `bmad-loop-worktree` *source* while Genesis owns *delivery*. This is not yet ratified in Marshal's own planning chain.
 
 ## Open Questions
 
@@ -146,6 +251,12 @@ Deliberately **not** optimized, and tracked as counter-metrics: raw story throug
 14. **Does the 25-minute idle threshold false-positive on legitimately slow verify steps?** Needs one wave of data.
 15. **Where does a story's declared difficulty live** — story-spec frontmatter or the epics document? CAP-7 reads it through one accessor so this can be settled without reshaping tiering.
 16. **What minimal story exercises spec → change → verify → commit** while staying adapter-agnostic and cheap enough to serve as the conformance smoke?
-17. **Installer verb mapping** *(added 2026-07-31)*. The genesis installer folds into the `marshal` CLI (Epics 10–12), but `genesis init` collides with the shipped `marshal init <slug>`, and 19 installer story keys carry the old verbs. The mapping is undecided; nothing may assume either resolution.
+17. **Installer verb mapping** *(added 2026-07-31; enriched 2026-08-02 at consolidation)*. The genesis installer folds into the `marshal` CLI (Epics 10–12), but `genesis init` collides with the shipped `marshal init <slug>`, and 19 installer story keys carry the old verbs. **A second collision surfaced at the 2026-08-02 brief/PRD/architecture/Spec consolidation, after this question was first written**: `marshal check` (FR-65/AD-50, shipped 2026-08-01) routes to `scripts/detectors.py`'s registry and answers *"does **this** repo pass its own detector registry?"*; CAP-13 above (genesis-installer's former CAP-4) re-implements a generic subset of `bmad_drift_check.py` and answers a different question, *"does an **installed, external** repo still conform to the model it adopted?"* — same verb name, different scope, under one CLI. The mapping is undecided; nothing may assume either resolution, for `init`, `check`, or any other verb.
 
 *Wrap-versus-absorb is deliberately absent here: it was resolved in the chain and is carried as the first Constraint, with the recorded fork triggers as its revisit path. Five further capability questions raised by the 2026-07-31 architecture audit (Tier-2 serialization, tool-surface brokering, escalation knowledge, the enterprise seam, inter-station sequencing) were resolved by operator ruling the same day and are rendered above as constraints, CAP-9, and non-goal reaffirmations — the memlog carries each decision.*
+
+**Genesis-installer's own open questions, folded in 2026-08-02** (distinct numbering `K-03`/`OQ-*`, not merged into the numbered list above):
+
+- **K-03 has no quantified threshold in any source.** At what migrations-per-model-minor-version rate does the model become too volatile to install, and who makes that call?
+- **Does `genesis init` create a repository or only a tree?** Creation on a git host is scoped out, but a local `git init` and first commit are left unstated.
+- **Is append-at-EOF always a safe anchor fallback?** AD-56 chose the fallback for an unmatched anchor, but did not close whether an unfamiliar `CLAUDE.md` deserves a refusal instead.

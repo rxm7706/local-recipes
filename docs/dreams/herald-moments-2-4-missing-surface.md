@@ -12,13 +12,23 @@ archived-reason: absorbed
 > [`docs/dreams/pyforge-herald.md`](pyforge-herald.md) (status: specified), which
 > consolidates Herald's constitutive Dream with this one into a single current-state
 > narrative. **This is not a "duplicate" or "finished" retirement** — Moments 2–4 are
-> real, active, in-progress work: as of 2026-08-02 the Spec, PRD, Architecture and
-> Epics chain this Dream produced (`_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-herald-moments-2-4/`
-> and its downstream PRD/Architecture/Epics) is complete and **stays exactly as it is,
-> live and unarchived** — it remains Herald's execution reference for building
-> Progress/Success/Operations. Only this top-level Dream file folds into the
-> consolidated narrative; nothing downstream of it closes. See
-> `spec-herald-moments-2-4-missing-surface` for the retirement record.
+> real, active, in-progress work, and remain exactly as unbuilt today as when this Dream
+> was written; only the filing location of their planning chain changed (below).
+>
+> **Update 2026-08-02 (station-level consolidation, later the same day).** The Spec, PRD
+> and Architecture chain this Dream produced originally **stayed exactly as it was, live
+> and unarchived**, as first written here. That has since changed: per an explicit user
+> override of this repo's keep-chains-separate convention, `spec-herald-moments-2-4`'s 3
+> capabilities are folded into `spec-pyforge-herald/SPEC.md` as HER-11–HER-13, its PRD into
+> `prd-pyforge-herald-2026-08-01/prd.md` as a Satellite section, and its Architecture into
+> `architecture-herald-pitch-2026-08-01/ARCHITECTURE-SPINE.md` as AD-11–AD-20. Its
+> `epic-structure.md` companion is relocated to `specs/spec-pyforge-herald/`; `epics.md` /
+> `epics-with-stories.md` (the Epics tier) are untouched by this pass and remain the
+> execution reference for Moments 2–4 story-level work. The original `spec-herald-moments-2-4/`
+> folder (`SPEC.md` + `.memlog.md`) is archived, unmodified, at
+> `archive/_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-herald-moments-2-4/`.
+> See `spec-herald-moments-2-4-missing-surface` for the retirement record (also updated
+> with this same correction).
 
 # Herald — Moments 2–4 Missing Surface
 

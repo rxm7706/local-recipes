@@ -157,6 +157,8 @@ project, and spec maps to exactly one Dream; the herald CLI's status capability
 | [`durable-runs.md`](durable-runs.md) | dreamt | Work survives the machine that made it — no commit, spec or verdict exists only on one disk; the loop pushes at its own stage boundaries. |
 | [`pr-lifecycle.md`](pr-lifecycle.md) | dreamt | A story lands itself — open, label, wait for checks, merge, resync; landing rules declared as policy instead of remembered. Resolves marshal open question #10. |
 | [`one-front-door.md`](one-front-door.md) | dreamt | Marshal drives everything BMAD installs — one composed surface over 11 packages, 51 skills, 10 detectors and the engine; the runtime half of [`genesis-installer`](genesis-installer.md). **Draft for refinement.** |
+| [`unified-container.md`](unified-container.md) | dreamt | All 8 stations in one Docker/Podman image — one boot, the whole Guild available; motivated by the 2026-08-02 per-station architecture consolidation. |
+| [`bmad-output-hygiene.md`](bmad-output-hygiene.md) | dreamt | One fabricated bulk commit stamped dead test scaffolding, a hollow sprint-status template, and (in places) fake test-architecture/README content across all 8 stations, inconsistently fixed since — a 5-agent audit mapped exactly what's real vs. debris. |
 
 **Applications**
 

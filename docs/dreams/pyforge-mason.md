@@ -71,10 +71,16 @@ mason environment lock                        # conflicting worlds -> one lockfi
 
 Mason is also the station registered to eventually repackage
 [[presenton-pixi-image]] (an air-gapped, conda-native rebuild of the Presenton
-AI deck-generation app for OpenShift) — but that Dream is archived separately
-(blocked on its own unresolved Phase-0 decision gate, not folded into this
-narrative) and shares no architecture, code, or timeline with the `mason` CLI
-described above.
+AI deck-generation app for OpenShift) — that Dream stays archived separately
+(blocked on its own unresolved Phase-0 decision gate) and shares no
+architecture, code, or timeline with the `mason` CLI described above. **This
+Dream-level narrative is the only thing that stays separate** — as of
+2026-08-02, `presenton-pixi-image`'s brief/PRD/architecture/Spec were
+consolidated into this station's own single planning-chain documents (each
+carries a "Satellite: Presenton" section) per explicit user override of the
+earlier separation decision; the Dream itself, its epics, and its
+blocked-status were deliberately left untouched. See
+`docs/dreams/presenton-pixi-image.md` for the full account.
 
 ## The frontier
 

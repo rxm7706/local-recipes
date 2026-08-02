@@ -74,12 +74,26 @@ vision lives in the FRs named below, not as separate documents to track:
 **Genesis installer** (`genesis init` / `genesis adopt` — standing up a repo
 with the pixi environment, bmad-method, multi-project wiring, and the
 BMM/BMB/TEA modules in one command) is real, substantial, Marshal-owned
-buildable work — but it is not the `marshal` CLI itself. It keeps its own PRD,
-Architecture, and epics (`prds/prd-genesis-installer-2026-07-25/`,
-`architecture/architecture-genesis-installer-2026-07-25/`,
-`epics-genesis-installer.md`), referenced here, not merged into Marshal's own
-FR range. Constitutive records (the Charter, the Guild's membership) and the
-machine that installs them are different nouns.
+buildable work — but it is not the `marshal` CLI itself. **Only its epics stay
+kept separate now** (`epics-genesis-installer.md`, its own 6 epics / 36
+stories, epics 7–12) — unchanged. *(Revised 2026-08-02, explicit user
+override.)* Its brief, PRD, architecture, and Spec were **consolidated** into
+this station's own single brief / PRD / architecture / Spec
+(`product-brief-pyforge-marshal.md`, `prds/prd-pyforge-marshal-2026-07-25/prd.md`,
+`architecture/architecture-pyforge-marshal-2026-07-25/architecture.md`,
+`specs/spec-pyforge-marshal/SPEC.md`), each carrying a clearly labelled
+"Satellite: Genesis Installer" section (brief/PRD) or continued `AD-`/`CAP-`
+numbering (architecture: `AD-51..AD-65`; Spec: `CAP-10..CAP-18`) rather than
+the previously-separate documents. This reverses the "not merged into
+Marshal's own FR range" line that stood here before — the FR range is still
+distinct (genesis-installer's own `FR1..FR62`, no dash, never renumbered into
+Marshal's `FR-1..FR-65`), but the *documents* are no longer separate. The four
+original standalone documents are preserved at
+`archive/_bmad-output/projects/pyforge-marshal/planning-artifacts/{research/product-brief-pyforge-genesis.md,
+prds/prd-genesis-installer-2026-07-25/, architecture/architecture-genesis-installer-2026-07-25/,
+specs/spec-genesis-installer/}`. Constitutive records (the Charter, the
+Guild's membership) and the machine that installs them are still different
+nouns; that boundary is unchanged by this consolidation.
 
 **Factory console** (the GitHub Pages program console at
 `docs/dashboard/`, published from `main`, two-source refresh, the Dreamscape
@@ -169,3 +183,21 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   `spec-fleet-chain-completeness` stays live, undecomposed. All four of this
   second pass keep their Specs untouched; only the top-level Dream files
   consolidated.
+- **2026-08-02 (third pass, explicit user override)** — the "genesis-installer
+  kept separate on purpose" call from the pass above is **reversed for
+  brief/PRD/architecture/Spec**: those four are now folded into this station's
+  own single chain (§ Kept separate on purpose, above, revised). Only the
+  installer's epics (`epics-genesis-installer.md`) stay separate, unchanged.
+  Architecture gains AD-51..AD-65 (genesis-installer's former AD-01..AD-15);
+  the Spec gains CAP-10..CAP-18 (former CAP-1..CAP-9); the PRD gains a
+  Satellite section carrying genesis-installer's own FR1..FR62 (no dash,
+  never renumbered into this PRD's own FR-1..FR-65). Two contradictions
+  surfaced by the fold are flagged, not resolved, in the merged Spec's
+  Constraints: the CLI framework (Marshal's shipped `argparse` vs
+  genesis-installer's designed-but-unbuilt `typer`+`rich`), and a `check`
+  verb collision (`marshal check`/FR-65 routes to `scripts/detectors.py`;
+  genesis-installer's `genesis check`/CAP-13 re-implements a generic subset
+  of `bmad_drift_check.py` for a different, external-repo question) — both
+  feed the pre-existing Open Question 17 (installer verb mapping, still
+  undecided). The four original standalone documents survive at
+  `archive/_bmad-output/projects/pyforge-marshal/planning-artifacts/`.
