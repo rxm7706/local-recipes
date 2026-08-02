@@ -128,6 +128,79 @@ arguing about thresholds forever, and it keeps the detector honest.
 
 ---
 
+## The Exemplar
+
+**`pyforge-atlas` is the single exemplar for all 16 stages of the Dream-to-Code chain.**
+
+**Full pipeline (16 stages — verified in generator.py and index.html):**
+Dream · Deck · Spec · Rsch · Brief · PRD · UX · Arch · Context · Epics · Sprint · TEA · Gates · Code · Tested · Retro
+
+**Stage definitions:**
+- **Dream** — Raw human aspiration / starting point, documented in `docs/dreams/`
+- **Deck** — Rendered presentation of the Dream (Herald renders via design system)
+- **Spec** — Five-field BMAD spec: Problem/Goal/Scope/Success/Constraints
+- **Rsch** — Research stage: domain, market, and technical research (runs `bmad-domain-research`, `bmad-market-research`, `bmad-technical-research`)
+- **Brief** — Research findings summary and key insights synthesized from Rsch stage
+- **PRD** — Product requirements document with features, success metrics, out-of-scope
+- **UX** — User experience design (UI mockups, flows, component specs) — optional per surface
+- **Arch** — Architecture and API specifications with implementation contracts
+- **Context** — Project context, assumptions, and dependencies documentation
+- **Epics** — Epic breakdown, epics-with-stories, acceptance criteria per story
+- **Sprint** — Sprint planning with velocity estimates and story-to-epic mapping
+- **TEA** — Test Architecture: test strategy, coverage targets, test-per-story specs
+- **Gates** — Implementation readiness gates (spec-complete, architecture-final, tests-passing)
+- **Code** — Source code implementation of stories and features
+- **Tested** — **Code + Tests (per TEA) + PR + Merged + Retro** — full delivery cycle, execution complete
+- **Retro** — Retrospective capturing lessons learned, feedback, and next improvements
+
+**BMAD skill execution sequence (mapped to skills):**
+
+| Stage | Skill | Input | Output | Notes |
+|---|---|---|---|---|
+| 1. Dream | — | Raw aspiration in `docs/dreams/` | Dream file exists | Pre-BMAD; human-authored |
+| 2. Deck | Herald | Dream + spec (draft OK) | Deck HTML/PDF | Renders from Dream; runs in parallel with spec chain |
+| 3. Spec | `bmad-spec` | Dream | `SPEC.md` (5-field contract) | Problem/Goal/Scope/Success/Constraints |
+| 4. Rsch | `bmad-domain-research` + `bmad-market-research` + `bmad-technical-research` | Spec | Research artifacts in `planning-artifacts/research/` | Domain + market + technical research; outputs to `research/<topic>-research-<date>.md` |
+| 5. Brief | `bmad-prd` | Spec + Research | `prd.md` research synthesis section | Research findings summary and key insights |
+| 6. PRD | `bmad-prd` | Spec + Research + Brief | `prd.md` (full) | Features, success metrics, out-of-scope |
+| 7. UX | Surface-specific design work | Spec + PRD | UI mockups, flows, component specs | **Optional** — skipped for non-UI/backend surfaces |
+| 8. Arch | `bmad-architecture` | Spec + PRD | `ARCHITECTURE-SPINE.md` + contracts | API specs, deployment model, dependencies |
+| 9. Context | `bmad-document-project` | Spec + PRD + Arch | Project context doc | Assumptions, platform context, dependencies |
+| 10. Epics | `bmad-create-epics-and-stories` | Spec + PRD + Arch | `epics.md` + `epics-with-stories.md` | Epic definitions, story rollup |
+| 11. Sprint | `bmad-create-story` (per epic) | Epics | Story specs + velocity mapping | Story-to-epic, effort estimates |
+| 12. TEA | `bmad-create-story` or standalone | Spec + Epics | `test-architecture.md` + per-story test specs | Test strategy, coverage targets |
+| 13. Gates | `bmad-check-implementation-readiness` | All upstream artifacts | Gate report (pass/fail) | Verify readiness before implementation |
+| 14. Code | `bmad-dev-auto` / `bmad-loop` | Stories + TEA | Source code in repo | Implementation from story specs |
+| 15. Tested | `bmad-loop` (delivery cycle) | Code + TEA | PR + Merged + Tests passing | Code + Tests per TEA + PR + Merged + Retro |
+| 16. Retro | `bmad-retrospective` | Session logs + merged PRs | Retrospective + skill updates | Lessons learned + BMAD improvements |
+
+**Parallelization notes:**
+- **Deck** renders while **Spec** is being produced (can start from draft Spec)
+- **Rsch** is gathered during **PRD** workshops/interviews (collected, not a separate phase)
+- **Context** is typically derived from the Spec/PRD/Arch chain rather than standalone work
+- **UX** runs parallel to **Arch** for user-facing surfaces; omitted entirely for backend/infrastructure work
+
+**What an exemplar is:**
+- The most complete and mature project in the portfolio
+- The working tree reference when documentation and code diverge
+- The source of truth for layout, conventions, and completeness standards
+
+**Selection criteria — verified facts:**
+- **Atlas:** 14/16 stages complete (missing: tea-new, ux-n/a) ✅ EXEMPLAR
+  - All research disciplines present (3/3: domain, market, technical)
+  - Final retro delivered (2026-07-25)
+  - Sharded planning structure with dated folders
+  - Highest conformance in portfolio
+  
+- **Warden:** 13/16 stages complete (missing: retro-no, tea-new, ux-n/a)
+  - Research incomplete (2/3: domain, market; missing technical)
+  - No retro delivered yet
+  - Sharded planning structure (matches atlas pattern)
+
+- **Others:** Varying stages of completion (converging toward atlas's pattern)
+
+**Why atlas is the exemplar:** It has the most complete chain — specifically, retro is shipped (a terminal stage), all research disciplines are present, and the planning structure matches the v6.10 standard that all projects are adopting.
+
 ## Planning-artifacts detail
 
 This document is the conformance target. When it and pyforge-atlas disagree,

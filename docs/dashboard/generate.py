@@ -1092,7 +1092,7 @@ FLEET_LABELS = {
 # second question (is it drivable? does it verify?), and `ux` / `context` / `gates` /
 # `retro` are real chain artifacts that had no dot at all.
 FLEET_STAGES = ("dream", "deck", "spec", "research", "brief", "prd", "ux", "arch",
-                "context", "epics", "sprint", "gates", "code", "verify", "retro")
+                "context", "epics", "sprint", "tea", "gates", "code", "verify", "retro")
 # Stages whose dot stands for a SET: {stage: the artifacts that must all be present}.
 RESEARCH_TYPES = ("domain", "market", "technical")
 DECK_FAMILY = ("prototype", "exec", "infographic", "marp", "standalone", "pptx")
@@ -1118,7 +1118,7 @@ _STALE_DAYS = 30
 # they expire when something downstream contradicts them, which is what the
 # stale-by-dependency check is for.
 _SHELF_LIFE_DEFAULT = 90
-_SHELF_LIFE = {"dream": None, "spec": None, "context": None, "retro": None}
+_SHELF_LIFE = {"dream": None, "spec": None, "context": None, "tea": None, "retro": None}
 
 def _frontmatter_scalars(path: Path, keys: tuple[str, ...]) -> dict[str, str]:
     """The named top-level scalars from a file's `---` frontmatter, comments stripped."""
@@ -1447,7 +1447,8 @@ def _stage_globs(slug: str, project: str, primary: bool) -> dict[str, list[str]]
         "arch":     [f"{pa}/architecture/architecture-{slug}-*/*.md"],
         "context":  [f"{proj}/project-context-{slug}.md"],
         "epics":    [f"{pa}/epics-{slug}.md"],
-        "sprint":   [f"{pa}/sprint-status-ledger-{slug}.yaml"],
+        "sprint":   [f"{pa}/sprint-status-{slug}.yaml"],
+        "tea":      [f"{proj}/tests/test_*.py", f"{proj}/tests/**/*.spec.ts"],
         "gates":    [f"{pa}/implementation-readiness-report*{slug}*.md",
                      f"{pa}/validation-report-PRD*{slug}*.md"],
         "code":     [f"src/shared/packages/{slug}/pyproject.toml"],
@@ -1463,7 +1464,8 @@ def _stage_globs(slug: str, project: str, primary: bool) -> dict[str, list[str]]
         g["arch"] += [f"{pa}/architecture.md"]
         g["context"] += [f"{proj}/project-context.md", f"{pa}/project-context.md"]
         g["epics"] += [f"{pa}/epics.md"]
-        g["sprint"] += [f"{pa}/sprint-status-ledger.yaml"]
+        g["sprint"] += [f"{pa}/sprint-status.yaml"]
+        g["tea"] += [f"{proj}/tests/test_*.py", f"{proj}/tests/**/*.spec.ts"]
         g["gates"] += [f"{pa}/implementation-readiness-report*.md",
                        f"{pa}/validation-report-PRD*.md"]
         g["retro"] += [f"{pa}/retros/*.md"]

@@ -1,6 +1,7 @@
 ---
 title: Herald's Proclamation Surfaces — Moments 2–4
 slug: herald-moments-2-4
+owner-dream: herald-moments-2-4-missing-surface
 status: draft
 created: 2026-08-02
 updated: 2026-08-02

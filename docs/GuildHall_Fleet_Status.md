@@ -2,19 +2,20 @@
 
 ## PyForge Guild — Dream-to-Code Pipeline State
 
-### Fleet Status: 8 Stations + Infrastructure
+### Fleet Status: 8 Stations + Infrastructure (16-Stage Pipeline)
 
+**Pipeline stages:** Dream · Deck · Spec · Rsch · Brief · PRD · UX · Arch · Context · Epics · Sprint · TEA · Gates · Code · Tested · Retro
 
-| **Layer**        | **DREAM** | **Decks** | **SPEC** | Research | Brief | **PRD** | **ARCH** | **EPIC** | **STORY** | **TEST** | **Dev Status** |
-| ---------------- | :-------: | :-------: | :------: | :------: | :---: | :-----: | :------: | :------: | :-------: | :------: | -------------- |
-| **🎺 Herald**    |    ✅    |    ✅    |    ✅    |    ✅    |  ✅  |   ✅   |    ✅    |    ✅    |    ✅    |    ✅    | 🚀 Coding      |
-| **⚔️ Marshal** |    ✅    |    📋    |    ✅    |    ✅    |  ✅  |   ✅   |    ✅    |    ✅    |    ✅    |    ⏳    | 📋 Queued      |
-| **🗺️ Atlas**   |    ✅    |    ⏳    |    ✅    |    ✅    |  ✅  |   ✅   |    ✅    |    ✅    |    ✅    |    ⏳    | 🏗️ Ready     |
-| **🛡️ Warden**  |    ✅    |    ⏳    |    ✅    |    ✅    |  ✅  |   ✅   |    ✅    |    ✅    |    ✅    |    ✅    | 🏗️ Ready     |
-| **🧱 Mason**     |    ✅    |    🎯    |    ✅    |    ✅    |  ✅  |   ✅   |    ✅    |    ✅    |    ✅    |    ⏳    | 🎯 Next        |
-| **🏥 Doctor**    |    ✅    |    📋    |    ✅    |    ✅    |  ✅  |   ✅   |    ✅    |    ✅    |    ✅    |    ⏳    | 🏗️ Ready     |
-| **📖 Scribe**    |    ✅    |    🎯    |    ✅    |    ✅    |  ✅  |   ✅   |    ✅    |    ✅    |    ✅    |    ⏳    | 🎯 Next        |
-| **👑 Steward**   |    ✅    |    🎯    |    ✅    |    ✅    |  ✅  |   ✅   |    ✅    |    ✅    |    ✅    |    ⏳    | 🎯 Next        |
+| **Station** | **Dream** | **Deck** | **Spec** | **Rsch** | **Brief** | **PRD** | **UX** | **Arch** | **Context** | **Epics** | **Sprint** | **TEA** | **Gates** | **Code** | **Tested** | **Retro** | **Status** |
+| --- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | --- |
+| **🎺 Herald** | 🚀 | ✅ | ✅ | ✅ | ✅ | ✅ | ◯ | ✅ | ◯ | ✅ | ✅ | 🏗️ | ◯ | 🚀 | ⏳ | ⏳ | 🚀 Coding |
+| **⚔️ Marshal** | 🚀 | 📋 | ✅ | ✅ | 🏗️ | ✅ | ◯ | ✅ | ◯ | ✅ | ✅ | 🏗️ | ◯ | 📋 | ⏳ | ⏳ | 📋 Queued |
+| **🗺️ Atlas** | 🚀 | ⏳ | ✅ | ✅ | ✅ | ✅ | ◯ | ✅ | ◯ | ✅ | ✅ | 🏗️ | ◯ | 🏗️ | ⏳ | ⏳ | 🏗️ Ready |
+| **🛡️ Warden** | 🚀 | ⏳ | ✅ | ✅ | ✅ | ✅ | ◯ | ✅ | ◯ | ✅ | ✅ | 🏗️ | ◯ | 🏗️ | ⏳ | ⏳ | 🏗️ Ready |
+| **🧱 Mason** | 🚀 | 🎯 | ✅ | ✅ | ✅ | ✅ | ◯ | ✅ | ◯ | ✅ | ✅ | 🏗️ | ◯ | 🎯 | ⏳ | ⏳ | 🎯 Next |
+| **🏥 Doctor** | 🚀 | 📋 | ✅ | ✅ | ✅ | ✅ | ◯ | ✅ | ◯ | ✅ | ✅ | 🏗️ | ◯ | 🏗️ | ⏳ | ⏳ | 🏗️ Ready |
+| **📖 Scribe** | 🚀 | 🎯 | ✅ | ✅ | ✅ | ✅ | ◯ | ✅ | ◯ | ✅ | ✅ | 🏗️ | ◯ | 🎯 | ⏳ | ⏳ | 🎯 Next |
+| **👑 Steward** | 🚀 | 🎯 | ✅ | ✅ | ✅ | ✅ | ◯ | ✅ | ◯ | ✅ | ✅ | 🏗️ | ◯ | 🎯 | ⏳ | ⏳ | 🎯 Next |
 
 ---
 
@@ -45,7 +46,9 @@
 | **bmad-full**                  | —                 | research-{domain,market,tech}.md, product-brief.md | analysis output    | PRD.md              | PRD + brief           | architecture.md, epics.md, specs/*.md | story-*.md               | sprint-status.yaml, code, tests, PR, merged code, retro-findings.md |
 | **PyForge Guild** (8 stations) | —                 | ✅ research/, briefs/                              | ✅ analysis output | ✅ prds/            | ✅ PRD + brief        | ✅ architecture/, epics.md, specs/    | ✅ story specs           | 🚀 (Herald coding; 8/8 have 1–22 code artifacts)                   |
 
-**Local-Recipes Customization (Extends bmad-full with 15-stage tracking):**
+**Local-Recipes Customization (Extends bmad-full with 16-stage tracking):**
+
+**Note:** The columns below show sub-components of the full 16-stage pipeline (dream, deck, spec, research, brief, prd, ux, arch, context, epics, sprint, tea, gates, code, tested, retro). This table focuses on key planning + research disciplines. For the full pipeline status, see the phase-grouped view below.
 
 
 | **Station** | **DREAM** | **SPEC** | **Domain-Res** | **Market-Res** | **Tech-Res** | **BRIEF** | **PRD** | **ARCH** | **EPIC** | **STORY-SPECS** | **DEV** | **TEST** | **DELIVERY** | **RETRO** | **Status**          |
@@ -63,11 +66,13 @@
 
 ## COMMAND CENTER: PyForge Guild Fleet — Phase-Grouped View
 
-**Overview:** 8 stations tracked across 4 SDLC phases with flow and artifact mapping.
+**Overview:** 8 stations tracked across 4 SDLC phases with required exit artifacts marked ✓.
 
-### ANALYSIS Phase (Dream → Pitch)
+**Phase Exit Criteria:** A phase is complete when all ✓ marked artifacts exist and have the required status (✅ = delivered). Optional artifacts (unmarked) may be deferred.
 
-| **Station** | **DREAMS** | **res-domain** | **res-market** | **res-tech** | **prod-brief** | **prfaq** | **brainstorm** | **forge-idea** | **PITCH-DECKS** | **Status** |
+### ANALYSIS Phase (Dream → Product Brief ✓ required)
+
+| **Station** | **DREAMS** | **res-domain** | **res-market** | **res-tech** | **prod-brief** ✓ | **prfaq** | **brainstorm** | **forge-idea** | **PITCH-DECKS** | **Status** |
 | --- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | --- |
 | **🎺 Herald** | 🚀 | ✅ | ✅ | ✅ | ✅ | ◯ | ◯ | ◯ | 🚀 | Moments 2–4 coding |
 | **⚔️ Marshal** | 🚀 | ✅ | ✅ | ✅ | 🏗️ | ◯ | ◯ | ◯ | 🚀 | Ready for DEV |
@@ -78,15 +83,11 @@
 | **📖 Scribe** | 🚀 | ✅ | ✅ | ✅ | ✅ | ◯ | ◯ | ◯ | 🚀 | Queued |
 | **👑 Steward** | 🚀 | ✅ | ✅ | ✅ | ✅ | ◯ | ◯ | ◯ | 🚀 | Queued |
 
-**Flow:** Dream inspiration → market/domain/technical research → product brief → pitch deck  
-**Artifacts:** research-domain.md, research-market.md, research-tech.md, product-brief.md, pitch decks (Herald family)  
-**Gate:** All 8 stations complete analysis; optional PRFAQ/brainstorm/forge-idea steps deferred
-
 ---
 
-### PLANNING Phase (PRD → Validation)
+### PLANNING Phase (PRD ✓ required; validation optional)
 
-| **Station** | **PRD** | **valid-report** | **Status** |
+| **Station** | **PRD** ✓ | **valid-report** | **Status** |
 | --- | :---: | :---: | --- |
 | **🎺 Herald** | ✅ | ◯ | Moments 2–4 coding |
 | **⚔️ Marshal** | ✅ | ◯ | Ready for DEV |
@@ -97,15 +98,11 @@
 | **📖 Scribe** | ✅ | ◯ | Queued |
 | **👑 Steward** | ✅ | ◯ | Queued |
 
-**Flow:** PRD requirements → validation gate (optional, high-confidence projects defer)  
-**Artifacts:** prd.md, validation-report.md (optional)  
-**Gate:** All 8 stations have PRD; validation deferred for now
-
 ---
 
-### SOLUTIONING Phase (Architecture → Readiness)
+### SOLUTIONING Phase (Arch + Epics + Specs ✓ required; readiness optional)
 
-| **Station** | **arch** | **epics** | **specs** | **ready-report** | **Status** |
+| **Station** | **arch** ✓ | **epics** ✓ | **specs** ✓ | **ready-report** | **Status** |
 | --- | :---: | :---: | :---: | :---: | --- |
 | **🎺 Herald** | ✅ | ✅ | ✅ | ◯ | Moments 2–4 coding |
 | **⚔️ Marshal** | ✅ | ✅ | ✅ | ◯ | Ready for DEV |
@@ -116,39 +113,32 @@
 | **📖 Scribe** | ✅ | ✅ | ✅ | ◯ | Queued |
 | **👑 Steward** | ✅ | ✅ | ✅ | ◯ | Queued |
 
-**Flow:** Architecture spine → epic decomposition → per-story specs → readiness gate (optional)  
-**Artifacts:** architecture.md, epics.md, specs/*.md, readiness-report.md (optional)  
-**Gate:** All 8 stations complete; readiness checks deferred (high-confidence projects auto-clear)
-
 ---
 
-### IMPLEMENTATION Phase (Execution → Shipped)
+### IMPLEMENTATION Phase (Tested ✓ required; e2e optional)
+**Tested = Code + Tests (per TEA) + PR + Merged + Retro**
 
-| **Station** | **sprint-status** | **code** | **tests** | **PR** | **merged** | **retro** | **e2e-tests** | **TESTS-ARCH** | **Status** |
+| **Station** | **sprint-status** | **TEA** | **code** ✓ | **tests** ✓ | **PR** | **merged** ✓ | **retro** ✓ | **e2e-tests** | **Status** |
 | --- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | --- |
-| **🎺 Herald** | ✅ | 🚀 | ⏳ | ⏳ | ⏳ | ⏳ | ◯ | 🚀 | Moments 2–4 coding |
-| **⚔️ Marshal** | ✅ | 📋 | ⏳ | ⏳ | ⏳ | ⏳ | ◯ | 🚀 | Ready for DEV |
-| **🗺️ Atlas** | ✅ | 🏗️ | ⏳ | ⏳ | ⏳ | ⏳ | ◯ | 🚀 | Ready for DEV |
-| **🛡️ Warden** | ✅ | 🏗️ | ⏳ | ⏳ | ⏳ | ⏳ | ◯ | 🚀 | Ready for DEV |
-| **🧱 Mason** | ✅ | 🎯 | ⏳ | ⏳ | ⏳ | ⏳ | ◯ | 🚀 | Queued |
-| **🏥 Doctor** | ✅ | 🏗️ | ⏳ | ⏳ | ⏳ | ⏳ | ◯ | 🚀 | Ready for DEV |
-| **📖 Scribe** | ✅ | 🎯 | ⏳ | ⏳ | ⏳ | ⏳ | ◯ | 🚀 | Queued |
-| **👑 Steward** | ✅ | 🎯 | ⏳ | ⏳ | ⏳ | ⏳ | ◯ | 🚀 | Queued |
-
-**Flow:** Sprint planning → code development → unit tests → PR submission → code review → merge → retrospective → e2e test automation → test infrastructure  
-**Artifacts:** sprint-status.yaml, code/, tests/, PR, merged commits, retro-findings.md, e2e-tests.yaml, test-architecture.md  
-**Gate:** Herald actively coding (Moments 2–4); 7 others queued or ready; e2e-test automation ready (test-architecture.md + playwright scaffold) for fleet deployment
+| **🎺 Herald** | ✅ | 🚀 | 🚀 | ⏳ | ⏳ | ⏳ | ⏳ | ◯ | Moments 2–4 coding |
+| **⚔️ Marshal** | ✅ | 🚀 | 📋 | ⏳ | ⏳ | ⏳ | ⏳ | ◯ | Ready for DEV |
+| **🗺️ Atlas** | ✅ | 🚀 | 🏗️ | ⏳ | ⏳ | ⏳ | ⏳ | ◯ | Ready for DEV |
+| **🛡️ Warden** | ✅ | 🚀 | 🏗️ | ⏳ | ⏳ | ⏳ | ⏳ | ◯ | Ready for DEV |
+| **🧱 Mason** | ✅ | 🚀 | 🎯 | ⏳ | ⏳ | ⏳ | ⏳ | ◯ | Queued |
+| **🏥 Doctor** | ✅ | 🚀 | 🏗️ | ⏳ | ⏳ | ⏳ | ⏳ | ◯ | Ready for DEV |
+| **📖 Scribe** | ✅ | 🚀 | 🎯 | ⏳ | ⏳ | ⏳ | ⏳ | ◯ | Queued |
+| **👑 Steward** | ✅ | 🚀 | 🎯 | ⏳ | ⏳ | ⏳ | ⏳ | ◯ | Queued |
 
 ---
 
 ### COMMAND CENTER Summary
 
-| **Phase** | **Flow** | **All 8 Stations** | **Next Milestone** |
-| --- | --- | :---: | --- |
-| **ANALYSIS** | Dream → Pitch deck | ✅ Complete | All dreams drafted & pitched (🚀 ongoing) |
-| **PLANNING** | PRD requirements | ✅ Complete | Validation gates optional |
-| **SOLUTIONING** | Architecture → specs | ✅ Complete | Readiness checks optional |
-| **IMPLEMENTATION** | Code → ship + retro | 🚀 Herald coding; 7 queued | Deploy to marshal, atlas, warden, doctor, then mason/scribe/steward |
+| **Phase** | **Status** |
+| --- | --- |
+| **ANALYSIS** (Dream → Pitch) | ✅ Complete |
+| **PLANNING** (PRD) | ✅ Complete |
+| **SOLUTIONING** (Arch → Epics) | ✅ Complete |
+| **IMPLEMENTATION** (Code → Retro) | 🚀 Herald coding; 7 queued |
 
 ---
 
