@@ -155,10 +155,12 @@ file = true
 
 [review]
 enabled = true
-# repo-wide override (stock default: "recommended") -- run the independent
-# second-opinion review on every story rather than only when a dev pass
-# self-recommends one.
-trigger = "always"            # recommended | always
+# repo-wide override, stock default: "recommended" (2026-08-02: switched back to
+# stock from "always" -- operator call, paired with raising [adapter.review].model
+# to opus: fewer review passes, stronger when they happen. Trusts the dev pass's
+# own self-assessment of whether it needs review -- the exact self-grading "always"
+# existed to not depend on; revisit if that trust turns out to be misplaced.
+trigger = "recommended"       # recommended | always
 
 [stories]
 source = "sprint-status"      # sprint-status | stories
@@ -169,7 +171,7 @@ skill = "bmad-dev-auto"
 
 [adapter]
 name = "claude"               # claude | codex | gemini | copilot | antigravity | opencode-http | <custom .bmad-loop/profiles/*.toml>
-model = "sonnet"               # repo-wide override (stock default: "" = CLI default model)
+model = "sonnet"               # repo-wide override (stock default: "" = CLI default model). 2026-08-02: briefly opus, reverted same day (operator token-budget call) -- dev stays sonnet, review alone carries the opus raise (see [adapter.review]).
 cleanup_session_on_finish = true
 # extra_args replaces the profile's default permission-bypass flags when set:
 # extra_args = ["--permission-mode", "bypassPermissions"]
@@ -181,7 +183,7 @@ cleanup_session_on_finish = true
 # in the resolved difficulty's model map; an absent stage inherits
 # [adapter].model.
 [adapter.review]
-model = "fable"                # repo-wide override -- review misses ship false-greens; strongest model where it pays
+model = "opus"                 # repo-wide override -- review misses ship false-greens; strongest model where it pays
 
 [sweep]
 auto = "never"                 # never | per-epic | run-end
