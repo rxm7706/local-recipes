@@ -210,3 +210,9 @@ was confirmed to be permanent-by-design record, not clutter — none were flagge
   left unstamped since a readiness report is a point-in-time snapshot, not a living document.
   Fleet currency findings 16 → 4, all 4 remaining genuine and intentionally visible. Dream
   re-closed (`specified` → `realized`).
+- **2026-08-02** — User caught a CAP-12 scoping oversight: genesis was never checked (the sweep
+  only covered the 8 non-constitutive stations), but it carries its own `prd`/`arch` pair and was
+  stale too. Same structural-only pattern as scribe/steward/warden, confirmed via genesis's own
+  PRD `currency_review`; architecture.md and epics.md (both already state "nothing here" —
+  constitutive, ships no product) re-stamped. Currency findings 4 → 3; doctor/mason/warden's 3
+  genuine findings unchanged.

@@ -3,7 +3,8 @@ name: pyforge-genesis
 type: architecture
 status: final
 created: 2026-07-28
-updated: 2026-07-28
+updated: '2026-08-02'
+currency_review: "Reviewed 2026-08-02 — the PRD's own currency_review confirms its 2026-08-01 updated: bump was structural (project relocation / memlog story-completion recording), not content drift. This document's 'there is no build substrate here' claim re-checked against the unchanged PRD and confirmed current; no changes made."
 ---
 
 # Architecture — pyforge-genesis (constitutive)

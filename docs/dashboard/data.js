@@ -2856,7 +2856,7 @@ window.DASHBOARD_DATA = {
       }
     }
   },
-  "snapshot": "<span>2026-08-02 21:58 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-02 22:10 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -2905,7 +2905,7 @@ window.DASHBOARD_DATA = {
     {
       "slug": "bmad-output-hygiene",
       "title": "One fabricated commit, eight stations of debris",
-      "status": "specified",
+      "status": "realized",
       "owner": "marshal",
       "type": "dream",
       "chain": {
@@ -4548,11 +4548,11 @@ window.DASHBOARD_DATA = {
       "verify": 90,
       "retro": null
     },
-    "sound": 2,
+    "sound": 3,
     "live": 20,
     "reached": 9,
     "gaps": 12,
-    "findings": 4,
+    "findings": 3,
     "rows": [
       {
         "label": "atlas",
@@ -4813,7 +4813,7 @@ window.DASHBOARD_DATA = {
           "brief": "",
           "prd": "2026-08-01",
           "ux": "",
-          "arch": "2026-07-28",
+          "arch": "2026-08-02",
           "context": "",
           "epics": "2026-08-02",
           "sprint": "",
@@ -4877,15 +4877,7 @@ window.DASHBOARD_DATA = {
         ],
         "gaps": [],
         "partial": [],
-        "staleBy": [
-          {
-            "kind": "feeds",
-            "stage": "prd",
-            "than": "arch",
-            "at": "2026-08-01",
-            "other": "2026-07-28"
-          }
-        ],
+        "staleBy": [],
         "furthest": "epics",
         "updated": "2026-08-02",
         "age": 0,
@@ -7089,7 +7081,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-02",
           "deck": "",
-          "spec": "2026-08-02T16:53",
+          "spec": "2026-08-02T17:00",
           "research": "2026-07-31",
           "brief": "",
           "prd": "",
@@ -7138,7 +7130,7 @@ window.DASHBOARD_DATA = {
           }
         },
         "archived": false,
-        "dreamStatus": "specified",
+        "dreamStatus": "realized",
         "ownerDream": "bmad-output-hygiene",
         "noDream": false,
         "unowned": false,
@@ -10176,22 +10168,11 @@ window.DASHBOARD_DATA = {
         "owner": "steward",
         "blockedOn": "",
         "chain": {}
-      },
-      {
-        "slug": "bmad-output-hygiene",
-        "title": "One fabricated commit, eight stations of debris",
-        "status": "specified",
-        "owner": "marshal",
-        "blockedOn": "",
-        "chain": {
-          "spec": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-bmad-output-hygiene"
-        }
       }
     ],
     "blocked": 0,
     "byOwner": {
-      "steward": 1,
-      "marshal": 1
+      "steward": 1
     },
     "practices": [
       {
@@ -10302,13 +10283,13 @@ window.DASHBOARD_DATA = {
         "counts": {
           "dreamt": 0,
           "pitched": 0,
-          "specified": 1,
-          "realized": 1,
+          "specified": 0,
+          "realized": 2,
           "archived": 10,
           "practice": 4
         },
         "line": "paused 2.1",
-        "load": 1,
+        "load": 0,
         "blocked": 0,
         "dreams": [
           {
@@ -10403,6 +10384,13 @@ window.DASHBOARD_DATA = {
             "blockedOn": ""
           },
           {
+            "slug": "bmad-output-hygiene",
+            "title": "One fabricated commit, eight stations of debris",
+            "status": "realized",
+            "type": "dream",
+            "blockedOn": ""
+          },
+          {
             "slug": "pyforge-marshal",
             "title": "Marshal — autonomy a human can trust",
             "status": "realized",
@@ -10414,13 +10402,6 @@ window.DASHBOARD_DATA = {
             "title": "Regenerable factory — every line of code under a spec it can be rebuilt from",
             "status": "realized",
             "type": "practice",
-            "blockedOn": ""
-          },
-          {
-            "slug": "bmad-output-hygiene",
-            "title": "One fabricated commit, eight stations of debris",
-            "status": "specified",
-            "type": "dream",
             "blockedOn": ""
           }
         ]
@@ -12262,8 +12243,8 @@ window.DASHBOARD_DATA = {
       "subject": "Merge bmad-loop/20260731-115548-f223/1-9-packaging-distribution-and-version-reporting into loop/pyforge-marshal (bmad-lo"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-02 21:58 UTC",
-    "generatedEpoch": 1785707924
+    "generatedAt": "2026-08-02 22:10 UTC",
+    "generatedEpoch": 1785708651
   },
   "storySpecs": [
     {
