@@ -88,9 +88,17 @@ compile.
 
 - **CAP-6 — `project-context.md` drift fix.**
   - **intent:** Regenerate Mason's and Herald's `project-context.md` in place
-    (each is the sole copy at its path) so claimed story counts match reality
-    (Mason: 38/38 → 4/38; Herald: 17/17 → 4/17, per each Dream/ledger).
-  - **success:** Both files' claimed counts match `sprint-status-ledger.yaml`.
+    (each is the sole copy at its path). Live re-check at execution time found
+    the Dream's cited "real" counts (Mason 4/38, Herald 4/17) had themselves
+    gone stale — the ledgers now show Mason 4/48 and Herald 4/27 (story
+    inventories grew after the Dream's 2026-08-02 audit). Both files were also
+    fabricated beyond the count: a generic "Choreography & Story Executor" /
+    "Presentation Deck & Infographic Layer" role label, and reference paths
+    pointing at a `SPEC.md`/`architecture.md` that don't exist at those
+    locations. Regenerated both with accurate role descriptions, live counts
+    from `sprint-status-ledger.yaml`, and correct file paths.
+  - **success:** Both files' claimed counts match `sprint-status-ledger.yaml`;
+    all referenced paths exist.
 
 - **CAP-7 — `PROJECTS.md` Dream-pointer fix.**
   - **intent:** In `_bmad-output/PROJECTS.md`'s Projects table, repoint mason's
