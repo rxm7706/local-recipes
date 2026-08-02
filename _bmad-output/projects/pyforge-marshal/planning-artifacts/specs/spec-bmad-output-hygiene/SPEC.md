@@ -6,8 +6,8 @@ companions: []
 sources:
   - ../../../../../../docs/dreams/bmad-output-hygiene.md
 assumptions:
-  - Deletions (CAP-1, CAP-2) are safe because a live grep at spec-authoring time
-    confirmed neither dead-scaffolding paths nor planning-artifacts/sprint-status.yaml
+  - Archival moves (CAP-1, CAP-2) are safe because a live grep at spec-authoring
+    time confirmed neither dead-scaffolding paths nor planning-artifacts/sprint-status.yaml
     are read by any tracked script — only the same-named but distinct
     implementation-artifacts/sprint-status.yaml (Tier-3) and sprint-status-ledger.yaml
     are live-read by dashboard tooling.
@@ -33,19 +33,24 @@ compile.
 
 ## Capabilities
 
-- **CAP-1 — dead test-scaffolding removal.**
-  - **intent:** Remove `tests/`, `pytest.ini`, and `playwright.config.ts` from
-    the 7 station roots that carry them with zero real tests (atlas, doctor,
-    marshal, mason, scribe, steward, warden) — the real, wired suites live at
-    `src/shared/packages/pyforge-<station>/tests/`.
-  - **success:** None of the 7 directories contain these paths; no test runner
-    or CI config anywhere in the repo referenced them (verified before removal).
+- **CAP-1 — dead test-scaffolding archival.**
+  - **intent:** `git mv` `tests/`, `pytest.ini`, and `playwright.config.ts` out
+    of the 7 station roots that carry them with zero real tests (atlas,
+    doctor, marshal, mason, scribe, steward, warden) into the mirrored
+    `archive/_bmad-output/projects/<station>/...` path (the existing
+    consolidation convention) — never delete outright. The real, wired suites
+    live at `src/shared/packages/pyforge-<station>/tests/` and are untouched.
+  - **success:** None of the 7 station roots contain these paths; each exists
+    under its mirrored `archive/` path; no test runner or CI config anywhere
+    in the repo referenced the original paths (verified before moving).
 
-- **CAP-2 — hollow `sprint-status.yaml` removal.**
-  - **intent:** Delete the dead, identical-shape `planning-artifacts/sprint-status.yaml`
-    stub (`0%`, empty arrays) from all 9 `pyforge-*` projects; `sprint-status-ledger.yaml`
-    is the live, tracked twin already read by dashboard tooling.
-  - **success:** File absent in all 9 projects; `dashboard_drift_check.py` and
+- **CAP-2 — hollow `sprint-status.yaml` archival.**
+  - **intent:** `git mv` the dead, identical-shape `planning-artifacts/sprint-status.yaml`
+    stub (`0%`, empty arrays) out of all 9 `pyforge-*` projects into the
+    mirrored `archive/` path; `sprint-status-ledger.yaml` is the live, tracked
+    twin already read by dashboard tooling and is untouched.
+  - **success:** File absent from its original path in all 9 projects, present
+    under its mirrored `archive/` path; `dashboard_drift_check.py` and
     `bmad_drift_check.py` still exit 0 afterward.
 
 - **CAP-3 — Genesis `test-architecture.md` fix.**
@@ -89,23 +94,24 @@ compile.
   - **success:** Both pointers resolve to an existing `type: dream` file that is
     each station's actual charter.
 
-- **CAP-8 — relocate the misfiled local-recipes doc set.**
-  - **intent:** 12 files under `pyforge-marshal/planning-artifacts/` plus
-    `SYNC-RUNBOOK.md` at the `pyforge-marshal` project root declare
-    `project_name`/`project: local-recipes` in their own frontmatter — they are
-    local-recipes' entire PRD/architecture set (`PRD.md`, `architecture.md` +
-    its 4 split parts, `integration-architecture.md`, `validation-report-PRD.md`,
-    `implementation-readiness-report.md`, `index.md`, `project-overview.md`,
-    `source-tree-analysis.md`, `deployment-guide.md`, `development-guide.md`,
-    `project-parts.json`), misfiled under the wrong BMAD project (matches the
-    marker/symlink-desync hazard CLAUDE.md already documents; independently
-    corroborated because CLAUDE.md itself cites `SYNC-RUNBOOK.md` at the
-    local-recipes path). `git mv` all 13 to
-    `_bmad-output/projects/local-recipes/` (12 into `planning-artifacts/`,
-    `SYNC-RUNBOOK.md` to the project root), preserving history.
-  - **success:** All 13 files exist under `local-recipes/`, absent from
-    `pyforge-marshal/`; marshal's own spec/PRD/architecture chain (confirmed to
-    never cite these files) is unaffected.
+- **CAP-8 — fix CLAUDE.md's stale `local-recipes` pointer (revised; was a
+  proposed relocation, reverted).**
+  - **intent:** 13 files (12 under `pyforge-marshal/planning-artifacts/` plus
+    `SYNC-RUNBOOK.md` at the project root) carry `project_name`/`project:
+    local-recipes` in their own frontmatter, which looked like misfiling.
+    `scripts/bmad_drift_check.py` (lines 50–53) records that this factory-doc
+    set was deliberately moved from the placeholder `local-recipes` BMAD
+    project to `pyforge-marshal` on 2026-07-28 (Charter §5 dissolution; owned
+    by Marshal via the `regenerable-factory` practice) — the files are exactly
+    where they belong. **CLAUDE.md §"Keeping BMAD artifacts in sync"** (lines
+    102, 107) was never updated after that move and still says
+    `_bmad-output/projects/local-recipes/`, which is what caused the
+    misdiagnosis. Fix CLAUDE.md's two mentions to `pyforge-marshal` instead.
+  - **success:** CLAUDE.md's text matches where `bmad_drift_check.py`,
+    `pixi.toml`, and `docs/dashboard/generate.py` actually read from.
+  - **note:** A relocation was executed, then reverted in full (verified via
+    `git status` and a post-revert `bmad-drift-check --integrity-only` pass)
+    before this branch went anywhere. Left here for the record.
 
 - **CAP-9 — marshal-brief layout fix.**
   - **intent:** `product-brief-pyforge-marshal.md` is marshal's genuine, sole
@@ -122,17 +128,20 @@ compile.
 - Every change lands only under `_bmad-output/`, `docs/dreams/`, and this
   branch — nothing in `recipes/` or `pixi.toml` is touched. The PR needs the
   `maintenance` label; the pixi/`environment.yaml` sync gate does not apply.
-- CAP-1 and CAP-2 deletions each require a live, grep-verified "nothing reads
-  this path" check immediately before removal — not just trust in the Dream's
-  original 2026-08-02 audit, which can go stale as tooling changes underfoot.
-- Archival (CAP-5) always uses `git mv` into the mirrored `archive/` path.
-  Nothing in this spec is hard-deleted except the two confirmed-dead,
-  confirmed-unread stub file classes in CAP-1/CAP-2.
+- Nothing in this spec is ever hard-deleted. Every removal (CAP-1, CAP-2,
+  CAP-5) is a `git mv` into the mirrored `archive/_bmad-output/projects/<station>/...`
+  path, matching the existing consolidation convention (user directive,
+  mid-execution).
+- CAP-1 and CAP-2 archival moves each require a live, grep-verified "nothing
+  reads this path" check immediately before moving — not just trust in the
+  Dream's original 2026-08-02 audit, which can go stale as tooling changes
+  underfoot.
 
 ## Non-goals
 
-- No content edits to the relocated local-recipes files (CAP-8) beyond the
-  move itself — any drift within them is a separate matter.
+- No relocation of the pyforge-marshal-owned factory-doc set (`PRD.md`,
+  `architecture.md`, etc.) — that placement is correct and intentional
+  (2026-07-28 move); only CLAUDE.md's stale pointer to it is fixed (CAP-8).
 - No new PRD, architecture, or epics chain for this cleanup itself.
 - No changes to `recipes/`, the `conda-forge-expert` skill, or any station's
   actual product code.

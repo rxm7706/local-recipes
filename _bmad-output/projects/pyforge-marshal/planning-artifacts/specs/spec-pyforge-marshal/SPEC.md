@@ -13,7 +13,7 @@ companions:
   - ../../architecture/architecture-pyforge-marshal-2026-07-25/reviews/review-ad25-39-adversarial-2026-07-25.md   # adopted (chain): the BLOCKED-ON verdict behind § Open Questions
 sources:
   - ../../../../../../docs/dreams/pyforge-marshal.md
-  - ../../product-brief-pyforge-marshal.md                   # incl. the folded-in Satellite: Genesis Installer section
+  - ../../briefs/brief-pyforge-marshal-2026-07-25/brief.md    # incl. the folded-in Satellite: Genesis Installer section
   - ../../../../../../docs/dreams/genesis-installer.md       # the genesis-installer Dream (unchanged; its downstream chain is what this consolidation folds in)
   - archive/_bmad-output/projects/pyforge-marshal/planning-artifacts/research/product-brief-pyforge-genesis.md  # archived original of the folded-in satellite brief
   # Sibling, NOT superseded: ../../../../local-recipes/planning-artifacts/specs/spec-bmad-loop-governance/SPEC.md
