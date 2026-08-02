@@ -6,7 +6,10 @@
 
 ## Overview
 
-mason is a [role] station in the PyForge factory, responsible for [responsibilities].
+mason is the **packaging** station in the PyForge factory, responsible for
+productizing the `conda-forge-expert` capability: recipe authoring, package
+builds, and environment lockfiles (`mason recipe/package/environment`).
+Never forks the craft — wraps the CFE skill + MCP surface.
 
 ## Structure
 
@@ -22,18 +25,13 @@ _bmad-output/projects/pyforge-mason/
 │   ├── architecture/               — Architectural design specs
 │   └── briefs/                     — Brief summaries
 ├── implementation-artifacts/       — Local-only (gitignored)
-├── .bmad-config.toml             — Team config (checked in)
-├── .bmad-config.user.toml        — User config (gitignored)
-├── pytest.ini                      — Unit/integration test config
-├── playwright.config.ts            — E2E browser automation config
-└── tests/                          — Test scaffold
-    ├── unit/                       — Unit tests
-    ├── integration/                — Integration tests
-    ├── e2e/                        — End-to-end tests
-    ├── meta/                       — Meta-tests (invariants)
-    ├── mocks/                      — Test mocks
-    └── conftest.py                 — Shared fixtures
+├── .bmad-config.toml                — Team config (checked in)
+└── .bmad-config.user.toml           — User config (gitignored)
 ```
+
+Real unit/integration/meta tests live at `src/shared/packages/pyforge-mason/tests/`,
+not in this planning tree — this project has no `pytest.ini`, `playwright.config.ts`,
+or `tests/` of its own.
 
 ## Tiers
 
@@ -58,26 +56,15 @@ _bmad-output/projects/pyforge-mason/
 2. Review the Spec and PRD for the product contract
 3. Check the Epics and Stories for implementation scope
 4. Look at Test Architecture for coverage expectations
-5. Run tests locally: `pixi run -e local-recipes pytest tests/`
+5. Run the real test suite: `pixi run -e local-recipes pytest src/shared/packages/pyforge-mason/tests/`
 
 ## Testing
 
 ```bash
-# Unit tests
-pytest tests/unit/ -v
-
-# Integration tests
-pytest tests/integration/ -v
-
-# E2E tests
-pytest tests/e2e/ --headed
-
-# All tests
-pytest tests/ -v
-
-# Coverage report
-pytest tests/ --cov=src/pyforge_mason --cov-report=html
+pixi run -e local-recipes pytest src/shared/packages/pyforge-mason/tests/ -v
 ```
+
+See `src/shared/packages/pyforge-mason/README.md` for the full test/coverage setup.
 
 ## Next Steps
 

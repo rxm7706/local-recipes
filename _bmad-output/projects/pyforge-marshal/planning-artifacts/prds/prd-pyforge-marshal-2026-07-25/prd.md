@@ -10,7 +10,7 @@ cli: marshal
 owner-dream: docs/dreams/pyforge-marshal.md
 mode: headless
 inputs:
-  - planning-artifacts/product-brief-pyforge-marshal.md
+  - planning-artifacts/briefs/brief-pyforge-marshal-2026-07-25/brief.md
   - planning-artifacts/research/market-agent-orchestration-research-2026-07-25.md
   - planning-artifacts/research/domain-agent-portability-and-governance-research-2026-07-25.md
   - docs/dreams/pyforge-marshal.md
@@ -30,7 +30,7 @@ inputs:
 
 This PRD is for the Marshal builder, the Ecosystem Crew's station owners, and the downstream architecture and epic-breakdown workflows. It is structured Glossary-first so that downstream artifacts inherit exact vocabulary; features are grouped with globally-numbered FRs nested beneath them; cross-cutting NFRs are separate; and inferences are tagged `[ASSUMPTION]` inline and indexed in §13.
 
-It builds on, and does not duplicate, the product brief (`planning-artifacts/product-brief-pyforge-marshal.md`) and the two cited research reports under `planning-artifacts/research/`. Two sections carry decisions rather than requirements and are load-bearing for everything downstream: **§5 — the wrap-versus-absorb decision** and **§6 — the agent-portability fold**. Read those before §7.
+It builds on, and does not duplicate, the product brief (`planning-artifacts/briefs/brief-pyforge-marshal-2026-07-25/brief.md`) and the two cited research reports under `planning-artifacts/research/`. Two sections carry decisions rather than requirements and are load-bearing for everything downstream: **§5 — the wrap-versus-absorb decision** and **§6 — the agent-portability fold**. Read those before §7.
 
 ---
 

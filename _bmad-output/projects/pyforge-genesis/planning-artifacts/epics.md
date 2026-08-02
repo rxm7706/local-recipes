@@ -2,7 +2,9 @@
 title: "Epics — pyforge-genesis (constitutive)"
 status: final
 created: 2026-07-28
+updated: '2026-08-02'
 project: pyforge-genesis
+currency_review: "Reviewed 2026-08-02 — the architecture's own currency_review confirms it is unchanged. This document's 'no epics, and that is the contract' claim re-checked and confirmed current; no changes made."
 ---
 
 # Epics — pyforge-genesis

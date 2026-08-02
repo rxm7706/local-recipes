@@ -4,6 +4,8 @@ inputDocuments:
   - _bmad-output/projects/pyforge-steward/planning-artifacts/prds/prd-pyforge-steward-2026-07-25/prd.md
   - _bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-pyforge-steward-2026-07-25/ARCHITECTURE-SPINE.md
 mode: headless-express
+updated: '2026-08-02'
+currency_review: "Reviewed 2026-08-02 — the architecture spine's own currency_review confirms its FR-1..FR-18 binds are unchanged. Epic/story breakdown re-checked against that unchanged architecture and confirmed current; no changes made."
 ---
 
 # pyforge-steward - Epic Breakdown

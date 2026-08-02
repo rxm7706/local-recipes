@@ -14,7 +14,7 @@ binds:
   - NFR-1..NFR-14
 sources:
   - planning-artifacts/prd.md
-  - planning-artifacts/product-brief-pyforge-marshal.md
+  - planning-artifacts/briefs/brief-pyforge-marshal-2026-07-25/brief.md
   - planning-artifacts/research/market-agent-orchestration-research-2026-07-25.md
   - planning-artifacts/research/domain-agent-portability-and-governance-research-2026-07-25.md
   - _bmad-output/projects/local-recipes/planning-artifacts/specs/spec-bmad-loop-governance/SPEC.md

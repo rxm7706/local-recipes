@@ -1616,6 +1616,13 @@ def scan_fleet(projects: dict, pitch_cards: list[dict] | None = None) -> dict:
 _FEEDS = (("research", "brief"), ("brief", "prd"), ("prd", "arch"), ("spec", "prd"),
           ("arch", "epics"), ("epics", "sprint"), ("prd", "gates"), ("code", "retro"))
 
+# A spec's `.memlog.md` gets a fresh `updated:` on every append -- routine corrections,
+# validation passes, cross-reference fixes -- far more often than its PRD is touched. A
+# same-day or next-day gap is that normal cadence, not "the input moved and the output was
+# never re-derived". Below this many days, a feed pair does not count as stale; the same
+# "always red, gets ignored" trap this module already suppresses for `behind-code`.
+_FEEDS_GRACE_DAYS = 2
+
 
 def _currency(slug: str, stages: dict, updated_at: dict, na: set, today,
               realized: bool = False) -> list[dict]:
@@ -1625,7 +1632,14 @@ def _currency(slug: str, stages: dict, updated_at: dict, na: set, today,
     for up, down in _FEEDS:
         u, d = updated_at.get(up, ""), updated_at.get(down, "")
         if u and d and u > d and up not in na and down not in na:
-            out.append({"kind": "feeds", "stage": up, "than": down, "at": u, "other": d})
+            try:
+                uy, um, ud = (int(x) for x in u[:10].split("-"))
+                dy, dm, dd = (int(x) for x in d[:10].split("-"))
+                gap_days = (date(uy, um, ud) - date(dy, dm, dd)).days
+            except ValueError:
+                gap_days = _FEEDS_GRACE_DAYS + 1  # unparseable date: don't silently suppress
+            if gap_days > _FEEDS_GRACE_DAYS:
+                out.append({"kind": "feeds", "stage": up, "than": down, "at": u, "other": d})
     for st in FLEET_STAGES:
         life = _SHELF_LIFE.get(st, _SHELF_LIFE_DEFAULT)
         when = updated_at.get(st, "")

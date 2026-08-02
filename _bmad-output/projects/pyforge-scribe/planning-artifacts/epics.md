@@ -11,6 +11,8 @@ inputDocuments:
   - _bmad-output/projects/pyforge-scribe/planning-artifacts/briefs/brief-pyforge-scribe-2026-07-25/brief.md
   - docs/specs/claude-team-memory.md
 mode: headless-express — no interactive elicitation; epic/story structure drafted directly from the PRD's Wave 1/Wave 2 split and the architecture spine's module breakdown
+updated: '2026-08-02'
+currency_review: "Reviewed 2026-08-02 — the architecture spine's own currency_review confirms its FR-1..FR-15 binds are unchanged. Epic/story breakdown re-checked against that unchanged architecture and confirmed current; no changes made."
 ---
 
 # pyforge-scribe - Epic Breakdown
