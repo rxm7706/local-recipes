@@ -9,76 +9,93 @@ status: specified
 
 ## The Dream
 
-The Proclaimer's charter, **re-scoped by the 2026-07-23 ownership review**:
-Herald is the factory's *voice and visual surface*. Invisible engineering is
+Herald is the factory's **voice and visual surface**. Invisible engineering is
 failed engineering; Herald exists so nothing the factory does stays invisible.
+Not infrastructure — BMAD monorepo/multi-project machinery and cross-agent
+portability belong to [[pyforge-marshal]] (the 2026-07-23 ownership review;
+reaffirmed 2026-08-02 when [[fleet-chain-completeness]]'s orchestrated
+regeneration machinery moved to Marshal for the same reason). Herald keeps
+the communication face only.
 
-**Herald's work is continuous, not a bookend** *(corrected 2026-07-25 — this
-Dream previously said "first to touch a Dream and last to touch a release",
-which reads as two touchpoints with silence between them; and the pitch deck was
-being treated on the console as though it were Herald's whole contribution).*
-There are **four moments of proclamation**, and every product and every Smith
-passes through all of them:
+Herald's work spans **four moments of proclamation**, and every product and
+every Smith passes through all of them:
 
 | # | Moment | What Herald owes | Lands as |
 |---|---|---|---|
-| **1** | **Pitch** — a Dream must be argued, not merely filed | the case made legible to humans who did not dream it | the deck family (`pitched`) |
+| **1** | **Pitch** — a Dream must be argued, not merely filed | the case made legible to humans who did not dream it | the deck family |
 | **2** | **Progress** — a build in flight is not self-explaining | what changed, what it cost, what it unblocked | release notables, run telemetry as imagery |
 | **3** | **Success** — shipping is not the same as being known to have shipped | the claim, with the evidence attached | the release proclamation |
-| **4** | **Operations** — the long tail nobody announces | fixes, updates, deprecations, **decommissions** | change + end-of-life notices |
+| **4** | **Operations** — the long tail nobody announces | fixes, updates, deprecations, decommissions | change + end-of-life notices |
 
-Moment 1 is simply the **first** time Herald has something to do — it is not the
-extent of the job.
-
-**Moment 4 needs no new vocabulary at all.** Ending is one act, and it is
-**scale-invariant**: archiving a Dream, a package, an application or a whole
-platform is the same state (`archived`), with the same four reasons
-(absorbed / retired / terminal / blocked). "Decommission" is not a separate
-concept that maps onto archiving — it *is* archiving, at a larger scale.
-[[artifact-console]] is the worked example: built, run, superseded by the
-Guildhall, archived as `retired`.
-
-So the gap is not in the lifecycle — it is entirely in Herald's craft. **The
-board records that a thing ended; nobody is told it ended.**
-
-The corollary for the Guildhall: the Fleet's `deck` column marks Herald's *first*
-touch, not his contribution. Moments 2–4 produce artifacts the board does not yet
-track.
-
-What Herald is **not** (the correction): not infrastructure. BMAD
-monorepo/multi-project machinery and cross-agent portability moved to
-[[pyforge-marshal]] — they are execution substrate, and the harness is the
-unit of governance. Herald keeps their communication face only.
+Moment 1 is the **first** thing Herald had to build, not the extent of the
+job — the bookend framing ("first to touch a Dream, last to touch a release")
+was retired 2026-07-25 because it reads as two touchpoints with silence
+between them. Moment 4 needs no new lifecycle vocabulary: ending is one act,
+scale-invariant across a Dream, a package, an application or a platform
+(`archived`, with one of four reasons). What is missing is not the state —
+it is anyone being **told**.
 
 ## What is real
 
-- **The deck family** — 10 decks on one byte-identical engine (`presentations/`), Modernist design system bound to every one, full 6-artifact export sets + `deck-export`. See [[herald-pitch]] for the complete Moment 1 orchestration (design-code-bridge + deckcraft + video-scripts + modernist-identity frameworks consolidated).
-- **The bridge** — Design↔Code as one surface, seed/pull proven on 7 decks in one day; the `herald` CLI specced to 5 CAPs, zero open questions. See [[herald-pitch]] § Tier 1a for framework details.
-- **The stage** — the program console publishes the factory's state ([[factory-console]], Marshal's ledger; in the persona ideal Herald proclaims from it).
+- **The deck family (Moment 1 content)** — decks live on one shared engine
+  under `presentations/`, bound to the Modernist design system, with the
+  6-artifact export set proven repeatedly (`deck-export`). This is
+  production-ready; see [[herald-pitch]] for the full orchestration
+  (design-code-bridge + deckcraft + video-scripts + modernist-identity,
+  the 9-station expansion, artifact tracking).
+- **The bridge, mechanized (`pyforge-herald` CLI)** — the Design↔Code seed/pull
+  loop proven manually on 7 decks in one day is being packaged as a
+  deterministic CLI (`herald deck seed/pull/status/watch`, `SPEC-design-code-bridge`
+  CAP-1..5, FR-01–FR-26). This is **in progress, not finished**: as of
+  2026-08-02 the foundation is 4 of 17 stories done (package scaffold, the
+  MCP-transport spike, the bridge-core skeleton, the registry module) —
+  real code at `src/shared/packages/pyforge-herald/` (`bridge.py`, `cli.py`,
+  `errors.py`, `registry.py`, `state.py`, `transport/`), with tests. The CLI
+  parser currently exposes only the empty `deck` subcommand group; `seed`,
+  `pull`, `status` and `watch` are not wired up yet. The loop
+  (`loop/pyforge-herald`) is paused mid-story on the next one, the fallback
+  transport adapter (1.3).
+- **The stage** — the program console publishes the factory's state
+  ([[factory-console]], Marshal's ledger; in the persona ideal Herald
+  proclaims from it).
 
-## The frontier
+## The frontier — Moments 2–4, active now
 
-- **Moment 1 (Pitch)** — See [[herald-pitch]] for the complete 9-station expansion with Aggressive artifact strategy (144 tracked files), Layered architecture (Tier 0 Vision → Tier 1 Capabilities → Tier 2 Feature), file locations, and workflow orchestration.
-- **Moment 2 (Progress)** — `updates compile` / `broadcast` — release notables composed from run telemetry and delivered where the audience lives. Specced but no implementation surface yet.
-- **Moment 3 (Success)** — Release proclamations. Specced but no implementation surface yet.
-- **Moment 4 (Operations)** — Deprecation notices, end-of-life announcements, decommission guidance. No surface yet. The *state* is fine (`archived` + `archived-reason: retired`); what is absent is anyone being **told**. A retired product currently just stops appearing.
+Moments 2, 3 and 4 were specced but had no implementation surface. **This is
+now Herald's active, in-progress work** — not aspirational, not shipped:
+
+- **Moment 2 (Progress)** — `herald progress` / release notables composed
+  from run telemetry and cost data, delivered where the audience lives.
+- **Moment 3 (Success)** — `herald success` — a claim ("Project X shipped;
+  here is the proof") backed by retrievable evidence (tests, metrics,
+  adoption), gated on operator review before publish.
+- **Moment 4 (Operations)** — `herald notice` — deprecation, fix and
+  end-of-life notices with a permanent, indexed archive. A retired product
+  currently just stops appearing; nobody is told it ended.
+
+As of 2026-08-02 the full planning chain for these three surfaces exists —
+Spec (`spec-herald-moments-2-4`), PRD, Architecture and Epics (7 epics,
+~12–19 stories, unified CLI + web dashboard + automation triggers, all three
+orchestration decisions locked) — but **zero stories are implemented yet**.
+This is the immediate next build target once the bridge foundation above
+clears its own remaining stories.
 
 ## Kinships
 
-[[pyforge-charter]] (charter section) · [[herald-pitch]] (Moment 1 complete orchestration: design-code-bridge + deckcraft + video-scripts + modernist-identity frameworks + 9-station expansion) · [[pyforge-marshal]] (receives the re-scoped infrastructure) · [[pyforge-scribe]] (the inward voice to Herald's outward) · [[factory-console]] (the stage Herald proclaims from).
+[[pyforge-charter]] (charter section) · [[herald-pitch]] (Moment 1 complete
+orchestration) · [[pyforge-marshal]] (owns the re-scoped infrastructure and
+the fleet-chain regeneration machinery) · [[pyforge-scribe]] (the inward
+voice to Herald's outward) · [[factory-console]] (the stage Herald proclaims
+from).
 
 ## Realization log
 
-- **2026-07-23** — persona Dream seeded during the ownership review; scope
-  corrected (infrastructure → Marshal); deck + Design project already live
-  (`presentations/pyforge-herald/`).
-- **2026-07-25** — **lifecycle correction.** The bookend framing ("first…last")
-  was replaced with the four moments of proclamation. Prompted by the observation
-  that the console was treating the pitch deck as Herald's whole job — a Dream
-  must be pitched, its *progress* proclaimed, its *success* proclaimed, and its
-  *operational stages* (fixes, updates, decommissions) proclaimed too.
-  **Corrected twice within the hour:** the first draft claimed moment 4 was
-  "unmodelled" (it is not — ending is `archived`), and the second still treated
-  decommission as a distinct concept *mapped onto* archiving. It is not distinct.
-  Ending is one scale-invariant act — Dream, package, application, platform, same
-  state and same four reasons. The lifecycle needs nothing; only Herald does.
+- **2026-08-02** — Consolidated. Folded [[herald-moments-2-4-missing-surface]]'s
+  vision into this Dream (single narrative for Herald's voice-and-visual
+  scope); that Dream is now `archived` / `absorbed` — its own downstream
+  chain (Spec, PRD, Architecture, Epics under
+  `_bmad-output/projects/pyforge-herald/planning-artifacts/`) stays live and
+  is the active execution reference for Moments 2–4, unchanged by this
+  consolidation. [[fleet-chain-completeness]] (the orchestrated-regeneration
+  workflow that had been filed here) was reassigned to `owner: marshal` the
+  same day — it is machinery, not Herald's communication-surface scope.

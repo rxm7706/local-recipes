@@ -1,7 +1,7 @@
 ---
 spec: upstream-discovery
 status: draft
-owner-dream: docs/dreams/upstream-discovery.md
+owner-dream: docs/dreams/upstream-discovery.md  # dream archived 2026-08-02 (absorbed, narrative only); consolidated narrative home: docs/dreams/pyforge-atlas.md § The estate Atlas hosts. This SPEC's contract is unchanged and stays the chain's owner-dream link (dream_chain_check INV-1).
 program: regenerable-factory (pyforge-atlas post-migration extension)
 companions:
   - tier-taxonomy.md

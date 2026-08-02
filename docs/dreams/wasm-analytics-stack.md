@@ -2,8 +2,29 @@
 title: WASM Data Stack
 type: dream
 owner: atlas
-status: specified
+status: archived
+archived-reason: absorbed
 ---
+
+> **Superseded (narrative only).** This Dream's narrative now lives in
+> [`docs/dreams/pyforge-atlas.md`](pyforge-atlas.md) § *The estate Atlas
+> hosts*, which names the Wasm Analytics Stack as a separate, substantial
+> initiative that Atlas's project tree hosts — **not** a capability of
+> Atlas's own `cf_atlas` pipeline (`spec-pyforge-atlas`'s Capabilities are
+> untouched) and **not** a duplicate of anything Atlas already builds (Atlas's
+> own G1 Pyodide/DuckDB-WASM compilation is a kinship this project reuses for
+> its own out-of-scope v2 dashboard, not the same project). This is a
+> dream-level consolidation only: the project's own contract — 5
+> capabilities, FR-1–17, honestly narrowed from its founding gist's broader
+> claim — still lives at `spec-wasm-analytics-stack/SPEC.md`, with its own
+> PRD (`prds/prd-wasm-analytics-stack-2026-07-25/`) and Architecture spine
+> (`architecture/architecture-wasm-analytics-stack-2026-07-25/`) already
+> produced; neither is touched by this consolidation. It is also **not**
+> "the work is done" — epics/stories are deliberately not yet decomposed
+> (planning ran to PRD + Architecture depth only) and no code has been
+> written; the project remains planning-complete and unscheduled. Archived
+> 2026-08-02 as the narrative entry point only; its Spec/PRD/Architecture
+> chain continues independently.
 
 # Wasm-first analytics — sandboxed pipelines for the hardened enterprise
 

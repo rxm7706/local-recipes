@@ -2,8 +2,23 @@
 title: Herald — Moments 2–4 Missing Surface
 type: dream
 owner: herald
-status: pitched
+status: archived
+archived-reason: absorbed
 ---
+
+> **Superseded — the vision moved, the work did not stop.** This Dream's narrative
+> (Moments 2–4 are specced but unbuilt; Herald owes Progress, Success and Operations
+> surfaces the same way it owes Pitch) is now told inside
+> [`docs/dreams/pyforge-herald.md`](pyforge-herald.md) (status: specified), which
+> consolidates Herald's constitutive Dream with this one into a single current-state
+> narrative. **This is not a "duplicate" or "finished" retirement** — Moments 2–4 are
+> real, active, in-progress work: as of 2026-08-02 the Spec, PRD, Architecture and
+> Epics chain this Dream produced (`_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-herald-moments-2-4/`
+> and its downstream PRD/Architecture/Epics) is complete and **stays exactly as it is,
+> live and unarchived** — it remains Herald's execution reference for building
+> Progress/Success/Operations. Only this top-level Dream file folds into the
+> consolidated narrative; nothing downstream of it closes. See
+> `spec-herald-moments-2-4-missing-surface` for the retirement record.
 
 # Herald — Moments 2–4 Missing Surface
 
