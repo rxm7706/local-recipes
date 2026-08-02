@@ -508,6 +508,7 @@
      Half-filled so it reads as neither done nor missing at a glance. */
   .fdot.part { background: linear-gradient(90deg, var(--done) 50%, var(--pending-ground) 50%);
                border: 1px solid var(--slate-faint); }
+  .fdot.required { border: 2px solid var(--accent); }
   .fleetrow.arch > summary { opacity: .5; }
   .fstale { display: block; margin-top: 4px; color: var(--active); }
   .owrow { display: block; padding: 2px 0; line-height: 1.5; }
@@ -542,6 +543,7 @@
   .fledger span { font-family: var(--mono); font-size: 10.5px; color: var(--slate); }
   .fledger b { color: var(--ink-soft); font-weight: 600; }
   .fledger .none { color: var(--slate-faint); opacity: .7; }
+  .fledger span.required b { font-weight: 700; text-decoration: underline; text-decoration-thickness: 1.5px; text-underline-offset: 2px; }
   @media (max-width: 720px) { .fleetrow > summary { grid-template-columns: 78px auto 1fr auto; }
     .fleet-prog, .fleet-ver, .fleetrow .smith, .fmarks { display: none; } .fledger { padding-left: 0; } }
 
@@ -553,10 +555,14 @@
   .cc-table td { padding: 8px 6px; border-bottom: 1px solid var(--line-soft); font-family: var(--mono); }
   .cc-table tr:last-child td { border-bottom: none; }
   .cc-station-col { width: 120px; }
-  .cc-phase-col { text-align: center; font-size: 11px; }
+  .cc-phase-col { text-align: center; font-size: 11px; padding: 8px 4px; }
+  .cc-phase-col.required { font-weight: 600; text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 3px; }
+  .cc-phase-exit { font-size: 10px; color: var(--slate); font-weight: normal; display: block; margin-top: 2px; }
   .cc-station { display: flex; align-items: center; gap: 6px; font-weight: 600; white-space: nowrap; }
   .cc-dots { text-align: center; padding: 8px 4px; }
   .cc-fdot { width: 10px; height: 10px; border-radius: 3px; background: var(--done); cursor: help; display: inline-block; margin: 0 3px; vertical-align: middle; }
+  .cc-fdot.required { border: 2px solid var(--accent); }
+  .cc-blocked { font-size: 11px; color: var(--gate); font-weight: 600; padding: 6px; background: var(--gate-ground); border-radius: 4px; margin-left: 8px; display: inline-block; }
   .cc-fdot.miss { background: var(--pending-ground); border: 1px solid var(--slate-faint); }
   .cc-fdot.active { background: var(--active); }
   .cc-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-top: 12px; }
@@ -796,7 +802,7 @@
 
   <details class="dreams zsec" id="fleetsec" hidden open>
     <summary><span class="program-h" id="fleeth">Fleet</span><span class="zcaret">▸</span></summary>
-    <div class="dflow"><b>Dream → Code, per project</b> — every stage of the chain, its furthest reach, when it last moved, and the shipped version. Dots left→right: <b>Dream · Deck · Spec · Rsch · Brief · PRD · Arch · Epics · Code</b>; hover a dot for its date, click a row for the full ledger.<br><b>These are chain <em>stages</em>, not Dream states</b> — a different axis from The Guild below, which counts Dreams per state. <b>backfilled</b> = the chain was retro-fitted after the fact (mandated for anything that shipped before the model existed) — true history, not an error. <b>overtaken</b> = the Spec still carries open questions while its PRD and architecture already exist.</div>
+    <div class="dflow"><b>Dream → Code, per project</b> — every stage of the chain, its furthest reach, when it last moved, and the shipped version. Dots left→right: <b>Dream · Deck · Spec · Rsch · Brief · PRD · UX · Arch · Context · Epics · Sprint · TEA · Gates · Code · Tested · Retro</b>; hover a dot for its date, click a row for the full ledger.<br><b>These are chain <em>stages</em>, not Dream states</b> — a different axis from The Guild below, which counts Dreams per state. <b>backfilled</b> = the chain was retro-fitted after the fact (mandated for anything that shipped before the model existed) — true history, not an error. <b>overtaken</b> = the Spec still carries open questions while its PRD and architecture already exist.</div>
     <div id="fleetrows"></div>
   </details>
 
@@ -808,7 +814,7 @@
 
   <details class="dreams zsec" id="guildsec" hidden open>
     <summary><span class="program-h" id="guildh">The Guild</span><span class="zcaret">▸</span></summary>
-    <div class="dflow"><b>Every station, everything it owns</b> — the accountability view the <code>owner:</code> through-line exists for. All eight Smiths render, including empty ones, so a thin station is visible rather than absent. Click a row for its Dreams.<br><b>Counts are Dream <em>states</em>, not chain stages</b> — this is a different axis from Fleet above, which tracks the 9-stage Dream→Code chain per project. A Dream sits in exactly one state; <em>practice</em> is outside the lifecycle (tended, never finished).</div>
+    <div class="dflow"><b>Every station, everything it owns</b> — the accountability view the <code>owner:</code> through-line exists for. All eight Smiths render, including empty ones, so a thin station is visible rather than absent. Click a row for its Dreams.<br><b>Counts are Dream <em>states</em>, not chain stages</b> — this is a different axis from Fleet above, which tracks the 16-stage Dream→Code chain per project. A Dream sits in exactly one state; <em>practice</em> is outside the lifecycle (tended, never finished).</div>
     <div id="guildrows"></div>
   </details>
 
@@ -994,7 +1000,7 @@
 
   // ---- 2b · Campaigns (program-scale efforts; completed collapse, active leads) ----
   const CAMPAIGNS = window.DASHBOARD_DATA.campaigns || [];
-  const CAMP_STAGES = ["research","brief","prd","architecture","epics"];
+  const CAMP_STAGES = ["research","brief","prd","arch","epics"];
   const CBADGE = { running:"cb-running", queued:"cb-queued", held:"cb-partial", future:"cb-queued",
                    done:"cb-landed", landed:"cb-landed", partial:"cb-partial",
                    active:"cb-running", completed:"cb-landed" };
@@ -1069,9 +1075,19 @@
     });
 
     // Build consolidated table: one row per station, columns for each phase
+    const phaseExitCriteria = window.DASHBOARD_DATA.fleet?.exitCriteria || {};
+    const requiredByPhase = window.DASHBOARD_DATA.fleet?.required || {};
+
     const tableHtml = '<table class="cc-table cc-consolidated"><thead><tr>' +
       '<th class="cc-station-col">Station</th>' +
-      CC.phases.map(p => '<th class="cc-phase-col">' + esc(p.name.replace(' Phase', '')) + '</th>').join('') +
+      CC.phases.map(p => {
+        const isRequired = requiredByPhase[p.id] && requiredByPhase[p.id].length > 0;
+        const exitText = phaseExitCriteria[p.id] || '';
+        return '<th class="cc-phase-col' + (isRequired ? ' required' : '') + '">' +
+          esc(p.name.replace(' Phase', '')) +
+          (exitText ? '<span class="cc-phase-exit">' + esc(exitText) + '</span>' : '') +
+          '</th>';
+      }).join('') +
       '</tr></thead><tbody>' +
       Object.entries(stations).map(([name, data]) => {
         return '<tr>' +
@@ -1079,12 +1095,15 @@
           CC.phases.map(phase => {
             const phaseData = data.phases[phase.id];
             if (!phaseData) return '<td></td>';
+            const isPhaseRequired = requiredByPhase[phase.id] || [];
             const dots = phase.artifacts.map(artifact => {
               const status = phaseData.statuses[artifact] || '◯';
+              const isRequired = isPhaseRequired.includes(artifact);
               let cls = 'miss';  // default: missing
               if (status === '✅') cls = '';  // done: green
               else if (status === '🚀') cls = 'active';  // active: orange
-              return '<span class="cc-fdot ' + cls + '" title="' + esc(artifact) + '"></span>';
+              if (isRequired) cls += ' required';
+              return '<span class="cc-fdot ' + cls + '" title="' + esc(artifact + (isRequired ? ' ✓ required' : '')) + '"></span>';
             }).join('');
             return '<td class="cc-dots">' + dots + '</td>';
           }).join('') +
@@ -1104,7 +1123,7 @@
   const FLEET = window.DASHBOARD_DATA.fleet || null;
   const FLABEL = {dream:"Dream", deck:"Deck", spec:"Spec", research:"Research", brief:"Brief",
                   prd:"PRD", ux:"UX", arch:"Architecture", context:"Context", epics:"Epics",
-                  sprint:"Sprint feed", gates:"Gate reports", code:"Code", verify:"Verify",
+                  sprint:"Sprint feed", tea:"Test Architecture", gates:"Gate reports", code:"Code", tested:"Tested",
                   retro:"Retro"};
   if (FLEET && FLEET.rows && FLEET.rows.length) {
     document.getElementById("fleetsec").hidden = false;
@@ -1118,15 +1137,24 @@
       (FLEET.gaps || 0) + " gaps · " + (FLEET.findings || 0) + " out of date" +
       (FLEET.rows.length - live.length ? " · " + (FLEET.rows.length - live.length) + " archived" : "");
     document.getElementById("fleetrows").innerHTML = FLEET.rows.map(r => {
+      const requiredStages = FLEET.required || {};
+      const isStageRequired = s => {
+        for (let phaseId in requiredStages) {
+          if (requiredStages[phaseId].includes(s)) return true;
+        }
+        return false;
+      };
       const dots = FLEET.stages.map(s => {
         const na = (r.na || []).includes(s), has = !!r.stages[s];
         const sub = (r.sub || {})[s];
+        const required = isStageRequired(s);
         // A set-valued stage renders PARTIAL rather than green: one green dot for
         // `research` hid five stations missing an entire discipline, and one for `deck`
         // hid an incomplete six-artifact family.
         const part = has && sub && sub.n < sub.of;
-        const cls = na ? "na" : (part ? "part" : (has ? "" : "miss"));
-        let tip = FLABEL[s] + (na ? " — not in scope" : (has ? " — " + r.stages[s] : " — missing"));
+        let cls = na ? "na" : (part ? "part" : (has ? "" : "miss"));
+        if (required) cls += " required";
+        let tip = FLABEL[s] + (required ? ' ✓ required' : '') + (na ? " — not in scope" : (has ? " — " + r.stages[s] : " — missing"));
         if (sub) tip += " · " + sub.n + "/" + sub.of +
           (sub.missing && sub.missing.length ? " (missing " + sub.missing.join(", ") + ")" : "") +
           (sub.inherited ? " · inherited from the station" : "");
@@ -1134,7 +1162,8 @@
       }).join("");
       const ledger = FLEET.stages.map(s => {
         const na = (r.na || []).includes(s), v = r.stages[s], sub = (r.sub || {})[s];
-        return '<span><b>' + FLABEL[s] + '</b> ' +
+        const required = isStageRequired(s);
+        return '<span' + (required ? ' class="required"' : '') + '><b>' + FLABEL[s] + (required ? ' ✓' : '') + '</b> ' +
           (na ? '<span class="none">n/a</span>' : (v || '<span class="none">—</span>')) +
           (sub ? ' <span class="none">' + sub.n + '/' + sub.of +
                  (sub.inherited ? ' inherited' : '') + '</span>' : '') + '</span>';
