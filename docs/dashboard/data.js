@@ -2856,7 +2856,7 @@ window.DASHBOARD_DATA = {
       }
     }
   },
-  "snapshot": "<span>2026-08-02 18:19 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-02 18:30 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -2948,12 +2948,13 @@ window.DASHBOARD_DATA = {
     {
       "slug": "factory-console",
       "title": "Factory console — the whole pipeline on one page",
-      "status": "realized",
+      "status": "archived",
       "owner": "marshal",
       "type": "dream",
       "chain": {
         "spec": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-factory-console"
-      }
+      },
+      "archived_reason": "absorbed"
     },
     {
       "slug": "fidelity-enforcement",
@@ -2969,12 +2970,13 @@ window.DASHBOARD_DATA = {
     {
       "slug": "fleet-chain-completeness",
       "title": "Fleet Chain Completeness — Orchestrated Dream-to-Code Regeneration",
-      "status": "dreamt",
+      "status": "archived",
       "owner": "marshal",
       "type": "dream",
       "chain": {
         "spec": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-fleet-chain-completeness"
-      }
+      },
+      "archived_reason": "absorbed"
     },
     {
       "slug": "fleet-stewardship",
@@ -3011,12 +3013,13 @@ window.DASHBOARD_DATA = {
     {
       "slug": "herald-pitch",
       "title": "Herald's Pitch Deck — Moment 1 Orchestration (Consolidated)",
-      "status": "specified",
+      "status": "archived",
       "owner": "herald",
       "type": "dream",
       "chain": {
         "spec": "_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-herald-pitch"
-      }
+      },
+      "archived_reason": "absorbed"
     },
     {
       "slug": "microsoft-org-sweep",
@@ -3252,12 +3255,13 @@ window.DASHBOARD_DATA = {
     {
       "slug": "pyforge-testing-charter",
       "title": "\"Dream — PyForge Testing Charter: Systematic Testing for the Guild\"",
-      "status": "specified",
+      "status": "archived",
       "owner": "marshal",
       "type": "dream",
       "chain": {
         "spec": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-testing-charter"
-      }
+      },
+      "archived_reason": "absorbed"
     },
     {
       "slug": "pyforge-warden-compliance-gates",
@@ -3499,7 +3503,7 @@ window.DASHBOARD_DATA = {
       "title": "agent-portability — retirement record",
       "caps": 0,
       "companions": 0,
-      "updated": "2026-07-29",
+      "updated": "2026-08-02",
       "dream": "agent-portability",
       "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-agent-portability"
     },
@@ -3549,7 +3553,7 @@ window.DASHBOARD_DATA = {
       "title": "durable-runs — retirement record",
       "caps": 6,
       "companions": 0,
-      "updated": "2026-08-01",
+      "updated": "2026-08-02",
       "dream": "durable-runs",
       "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-durable-runs"
     },
@@ -3569,7 +3573,7 @@ window.DASHBOARD_DATA = {
       "title": "fidelity-enforcement — retirement record",
       "caps": 9,
       "companions": 3,
-      "updated": "2026-08-01",
+      "updated": "2026-08-02",
       "dream": "fidelity-enforcement",
       "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-fidelity-enforcement"
     },
@@ -3579,7 +3583,7 @@ window.DASHBOARD_DATA = {
       "title": "fleet chain completeness",
       "caps": 5,
       "companions": 0,
-      "updated": "",
+      "updated": "2026-08-02",
       "dream": "fleet-chain-completeness",
       "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-fleet-chain-completeness"
     },
@@ -3609,7 +3613,7 @@ window.DASHBOARD_DATA = {
       "title": "one-front-door — retirement record",
       "caps": 5,
       "companions": 1,
-      "updated": "2026-08-01",
+      "updated": "2026-08-02",
       "dream": "one-front-door",
       "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-one-front-door"
     },
@@ -3619,7 +3623,7 @@ window.DASHBOARD_DATA = {
       "title": "pr-lifecycle — retirement record",
       "caps": 6,
       "companions": 0,
-      "updated": "2026-08-01",
+      "updated": "2026-08-02",
       "dream": "pr-lifecycle",
       "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pr-lifecycle"
     },
@@ -4101,11 +4105,25 @@ window.DASHBOARD_DATA = {
       "link": "docs/dreams/durable-runs.md"
     },
     {
+      "name": "Factory console — the whole pipeline on one page",
+      "reason": "absorbed",
+      "owner": "marshal",
+      "note": "Factory console — the whole pipeline on one page",
+      "link": "docs/dreams/factory-console.md"
+    },
+    {
       "name": "Fidelity enforcement — a contract is only a contract if something fails against it",
       "reason": "absorbed",
       "owner": "marshal",
       "note": "Fidelity enforcement — a contract is only a contract if something fails against it",
       "link": "docs/dreams/fidelity-enforcement.md"
+    },
+    {
+      "name": "Fleet Chain Completeness — Orchestrated Dream-to-Code Regeneration",
+      "reason": "absorbed",
+      "owner": "marshal",
+      "note": "Fleet Chain Completeness — Orchestrated Dream-to-Code Regeneration",
+      "link": "docs/dreams/fleet-chain-completeness.md"
     },
     {
       "name": "Genesis installer — the seed, made executable",
@@ -4120,6 +4138,13 @@ window.DASHBOARD_DATA = {
       "owner": "herald",
       "note": "Herald — Moments 2–4 Missing Surface",
       "link": "docs/dreams/herald-moments-2-4-missing-surface.md"
+    },
+    {
+      "name": "Herald's Pitch Deck — Moment 1 Orchestration (Consolidated)",
+      "reason": "absorbed",
+      "owner": "herald",
+      "note": "Herald's Pitch Deck — Moment 1 Orchestration (Consolidated)",
+      "link": "docs/dreams/herald-pitch.md"
     },
     {
       "name": "Microsoft org sweep — audit one upstream org, package what is missing",
@@ -4190,6 +4215,13 @@ window.DASHBOARD_DATA = {
       "owner": "steward",
       "note": "\"Dream — PyForge Steward: Feedstock Maintenance Automation\"",
       "link": "docs/dreams/pyforge-steward-feedstock-maintenance.md"
+    },
+    {
+      "name": "\"Dream — PyForge Testing Charter: Systematic Testing for the Guild\"",
+      "reason": "absorbed",
+      "owner": "marshal",
+      "note": "\"Dream — PyForge Testing Charter: Systematic Testing for the Guild\"",
+      "link": "docs/dreams/pyforge-testing-charter.md"
     },
     {
       "name": "\"Dream — PyForge Warden: Compliance Gates\"",
@@ -4556,9 +4588,9 @@ window.DASHBOARD_DATA = {
       "retro": null
     },
     "sound": 2,
-    "live": 23,
+    "live": 19,
     "reached": 8,
-    "gaps": 19,
+    "gaps": 13,
     "findings": 13,
     "rows": [
       {
@@ -5059,7 +5091,7 @@ window.DASHBOARD_DATA = {
           "retro": ""
         },
         "updatedAt": {
-          "dream": "2026-08-01",
+          "dream": "2026-08-02",
           "deck": "2026-08-01",
           "spec": "2026-08-01",
           "research": "2026-07-31",
@@ -6709,8 +6741,8 @@ window.DASHBOARD_DATA = {
             ]
           }
         },
-        "archived": false,
-        "dreamStatus": "specified",
+        "archived": true,
+        "dreamStatus": "archived",
         "ownerDream": "herald-pitch",
         "noDream": false,
         "unowned": false,
@@ -6769,9 +6801,9 @@ window.DASHBOARD_DATA = {
           "retro": ""
         },
         "updatedAt": {
-          "dream": "2026-07-25",
+          "dream": "2026-08-02",
           "deck": "",
-          "spec": "2026-07-29",
+          "spec": "2026-08-02",
           "research": "2026-07-31",
           "brief": "",
           "prd": "",
@@ -7299,9 +7331,9 @@ window.DASHBOARD_DATA = {
           "retro": ""
         },
         "updatedAt": {
-          "dream": "2026-07-31",
+          "dream": "2026-08-02",
           "deck": "",
-          "spec": "2026-08-01T08:22",
+          "spec": "2026-08-02",
           "research": "2026-07-31",
           "brief": "",
           "prd": "",
@@ -7455,8 +7487,8 @@ window.DASHBOARD_DATA = {
             ]
           }
         },
-        "archived": false,
-        "dreamStatus": "realized",
+        "archived": true,
+        "dreamStatus": "archived",
         "ownerDream": "factory-console",
         "noDream": false,
         "unowned": false,
@@ -7511,9 +7543,9 @@ window.DASHBOARD_DATA = {
           "retro": ""
         },
         "updatedAt": {
-          "dream": "2026-08-01",
+          "dream": "2026-08-02",
           "deck": "",
-          "spec": "2026-08-01T08:25",
+          "spec": "2026-08-02",
           "research": "2026-07-31",
           "brief": "",
           "prd": "",
@@ -7601,7 +7633,7 @@ window.DASHBOARD_DATA = {
         "stages": {
           "dream": "2026-08-01",
           "deck": "",
-          "spec": "",
+          "spec": "2026-08-02",
           "research": "2026-07-16",
           "brief": "",
           "prd": "",
@@ -7617,7 +7649,7 @@ window.DASHBOARD_DATA = {
           "retro": ""
         },
         "updatedAt": {
-          "dream": "2026-08-01",
+          "dream": "2026-08-02",
           "deck": "",
           "spec": "2026-08-02T13:19",
           "research": "2026-07-31",
@@ -7667,8 +7699,8 @@ window.DASHBOARD_DATA = {
             ]
           }
         },
-        "archived": false,
-        "dreamStatus": "dreamt",
+        "archived": true,
+        "dreamStatus": "archived",
         "ownerDream": "fleet-chain-completeness",
         "noDream": false,
         "unowned": false,
@@ -7685,8 +7717,7 @@ window.DASHBOARD_DATA = {
           "research"
         ],
         "gaps": [
-          "deck",
-          "spec"
+          "deck"
         ],
         "partial": [],
         "staleBy": [],
@@ -7696,7 +7727,7 @@ window.DASHBOARD_DATA = {
         "stale": false,
         "version": "",
         "progress": "",
-        "complete": 1,
+        "complete": 2,
         "of": 3
       },
       {
@@ -7724,7 +7755,7 @@ window.DASHBOARD_DATA = {
           "retro": ""
         },
         "updatedAt": {
-          "dream": "2026-07-31",
+          "dream": "2026-08-02",
           "deck": "",
           "spec": "2026-07-31T21:05",
           "research": "2026-07-31",
@@ -7951,9 +7982,9 @@ window.DASHBOARD_DATA = {
           "retro": ""
         },
         "updatedAt": {
-          "dream": "2026-07-31",
+          "dream": "2026-08-02",
           "deck": "",
-          "spec": "2026-08-01T08:30",
+          "spec": "2026-08-02",
           "research": "2026-07-31",
           "brief": "",
           "prd": "",
@@ -8057,9 +8088,9 @@ window.DASHBOARD_DATA = {
           "retro": ""
         },
         "updatedAt": {
-          "dream": "2026-07-31",
+          "dream": "2026-08-02",
           "deck": "",
-          "spec": "2026-08-01T08:33",
+          "spec": "2026-08-02",
           "research": "2026-07-31",
           "brief": "",
           "prd": "",
@@ -8319,8 +8350,8 @@ window.DASHBOARD_DATA = {
             ]
           }
         },
-        "archived": false,
-        "dreamStatus": "specified",
+        "archived": true,
+        "dreamStatus": "archived",
         "ownerDream": "pyforge-testing-charter",
         "noDream": false,
         "unowned": false,
@@ -10174,43 +10205,9 @@ window.DASHBOARD_DATA = {
     }
   },
   "backlog": {
-    "rows": [
-      {
-        "slug": "fleet-chain-completeness",
-        "title": "Fleet Chain Completeness — Orchestrated Dream-to-Code Regeneration",
-        "status": "dreamt",
-        "owner": "marshal",
-        "blockedOn": "",
-        "chain": {
-          "spec": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-fleet-chain-completeness"
-        }
-      },
-      {
-        "slug": "herald-pitch",
-        "title": "Herald's Pitch Deck — Moment 1 Orchestration (Consolidated)",
-        "status": "specified",
-        "owner": "herald",
-        "blockedOn": "",
-        "chain": {
-          "spec": "_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-herald-pitch"
-        }
-      },
-      {
-        "slug": "pyforge-testing-charter",
-        "title": "\"Dream — PyForge Testing Charter: Systematic Testing for the Guild\"",
-        "status": "specified",
-        "owner": "marshal",
-        "blockedOn": "",
-        "chain": {
-          "spec": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-testing-charter"
-        }
-      }
-    ],
+    "rows": [],
     "blocked": 0,
-    "byOwner": {
-      "marshal": 2,
-      "herald": 1
-    },
+    "byOwner": {},
     "practices": [
       {
         "slug": "agent-portability",
@@ -10282,13 +10279,13 @@ window.DASHBOARD_DATA = {
         "counts": {
           "dreamt": 0,
           "pitched": 0,
-          "specified": 2,
+          "specified": 1,
           "realized": 0,
-          "archived": 1,
+          "archived": 2,
           "practice": 0
         },
         "line": "paused 1.3",
-        "load": 1,
+        "load": 0,
         "blocked": 0,
         "dreams": [
           {
@@ -10301,7 +10298,7 @@ window.DASHBOARD_DATA = {
           {
             "slug": "herald-pitch",
             "title": "Herald's Pitch Deck — Moment 1 Orchestration (Consolidated)",
-            "status": "specified",
+            "status": "archived",
             "type": "dream",
             "blockedOn": ""
           },
@@ -10318,15 +10315,15 @@ window.DASHBOARD_DATA = {
         "station": "marshal",
         "total": 15,
         "counts": {
-          "dreamt": 1,
+          "dreamt": 0,
           "pitched": 0,
-          "specified": 1,
-          "realized": 2,
-          "archived": 7,
+          "specified": 0,
+          "realized": 1,
+          "archived": 10,
           "practice": 4
         },
         "line": "paused 2.1",
-        "load": 2,
+        "load": 0,
         "blocked": 0,
         "dreams": [
           {
@@ -10351,8 +10348,22 @@ window.DASHBOARD_DATA = {
             "blockedOn": ""
           },
           {
+            "slug": "factory-console",
+            "title": "Factory console — the whole pipeline on one page",
+            "status": "archived",
+            "type": "dream",
+            "blockedOn": ""
+          },
+          {
             "slug": "fidelity-enforcement",
             "title": "Fidelity enforcement — a contract is only a contract if something fails against it",
+            "status": "archived",
+            "type": "dream",
+            "blockedOn": ""
+          },
+          {
+            "slug": "fleet-chain-completeness",
+            "title": "Fleet Chain Completeness — Orchestrated Dream-to-Code Regeneration",
             "status": "archived",
             "type": "dream",
             "blockedOn": ""
@@ -10386,9 +10397,9 @@ window.DASHBOARD_DATA = {
             "blockedOn": ""
           },
           {
-            "slug": "fleet-chain-completeness",
-            "title": "Fleet Chain Completeness — Orchestrated Dream-to-Code Regeneration",
-            "status": "dreamt",
+            "slug": "pyforge-testing-charter",
+            "title": "\"Dream — PyForge Testing Charter: Systematic Testing for the Guild\"",
+            "status": "archived",
             "type": "dream",
             "blockedOn": ""
           },
@@ -10407,13 +10418,6 @@ window.DASHBOARD_DATA = {
             "blockedOn": ""
           },
           {
-            "slug": "factory-console",
-            "title": "Factory console — the whole pipeline on one page",
-            "status": "realized",
-            "type": "dream",
-            "blockedOn": ""
-          },
-          {
             "slug": "pyforge-marshal",
             "title": "Marshal — autonomy a human can trust",
             "status": "realized",
@@ -10425,13 +10429,6 @@ window.DASHBOARD_DATA = {
             "title": "Regenerable factory — every line of code under a spec it can be rebuilt from",
             "status": "realized",
             "type": "practice",
-            "blockedOn": ""
-          },
-          {
-            "slug": "pyforge-testing-charter",
-            "title": "\"Dream — PyForge Testing Charter: Systematic Testing for the Guild\"",
-            "status": "specified",
-            "type": "dream",
             "blockedOn": ""
           }
         ]
@@ -12266,8 +12263,8 @@ window.DASHBOARD_DATA = {
       "subject": "Merge bmad-loop/20260731-115548-f223/1-9-packaging-distribution-and-version-reporting into loop/pyforge-marshal (bmad-lo"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-02 18:19 UTC",
-    "generatedEpoch": 1785694785
+    "generatedAt": "2026-08-02 18:30 UTC",
+    "generatedEpoch": 1785695459
   },
   "storySpecs": [
     {

@@ -81,6 +81,17 @@ Architecture, and epics (`prds/prd-genesis-installer-2026-07-25/`,
 FR range. Constitutive records (the Charter, the Guild's membership) and the
 machine that installs them are different nouns.
 
+**Factory console** (the GitHub Pages program console at
+`docs/dashboard/`, published from `main`, two-source refresh, the Dreamscape
+lifecycle board) is shipped and real — the "every run stays visible" doctrine
+above, given a front door. Folded in here 2026-08-02 (dream-level only):
+`spec-factory-console` (2 companions — `console-contract.md`,
+`drill-evidence.md`) stays live and untouched, since real frontier work is
+still named against it — per-Dream drill-through to deck/spec/BMAD-project
+rows, a delivery/notables feed, and a fleet-health strip fed from
+[[pyforge-doctor]]. No PRD exists for it yet; this Spec is the current,
+binding reference for that unbuilt work, not this Dream's prose.
+
 ## The frontier — real, not yet built
 
 **Fleet-chain completeness** — an orchestrated workflow that regenerates a
@@ -90,8 +101,25 @@ a consolidated Dream, pausing for human review before committing. Moved here
 and visual surface" scope) and consolidated from its own former dream file.
 Genuinely unbuilt — the eight-phase workflow it describes is exactly what this
 session's own dream-consolidation pass did by hand, station by station. Real
-enough to warrant its own Spec rather than a line item in this one; not yet
-authored.
+enough to warrant its own Spec — authored 2026-08-02 (`spec-fleet-chain-completeness`,
+5 capabilities: orchestrated regeneration, code-status preservation, an audit
+mode, review-gated orphan cleanup, per-project configurability) — not yet
+decomposed to PRD/Architecture/Epics.
+
+**Fleet-wide test architecture** (`spec-pyforge-testing-charter`, 5
+capabilities) — mixed disposition, folded in 2026-08-02 from its own former
+dream file. Two capabilities already shipped this session: CAP-1 (the
+dashboard's `tea` glob corrected to `src/shared/packages/<slug>/tests/**/test_*.py`,
+verified on disk in `docs/dashboard/generate.py`) and CAP-2 (real, generated
+`test-architecture.md` for all 8 stations, replacing the six boilerplate
+stand-ins a prior bulk commit had fabricated). CAP-5 (test architecture stays
+current as stories land) is an ongoing practice, not a one-time build. **CAP-3
+(a shared `pyforge-testing-kit` package — verified 2026-08-02, does not yet
+exist) and CAP-4 (a CI coverage gate — verified 2026-08-02, no
+`--cov-fail-under` in any workflow) are real, unbuilt, and not yet decomposed
+to a PRD.** The Spec (and its `station-tea-status.md` companion — the real,
+verified per-station test-file counts this Dream's own claims got wrong) stays
+live as the reference for that remaining work.
 
 Other open frontier items, unchanged: many-lines-one-floor concurrency (a
 floor that survives two writers, not just isolated worktrees); crossing the
@@ -129,3 +157,15 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   architecture decision (F-3/AD-26) in its own acceptance criteria — fixed
   the same pass. Marshal's chain re-verified end to end: all 65 FRs trace to
   a story both directions, 50/50 unique story ids, zero dangling dependencies.
+- **2026-08-02 (second pass)** — factory-console archived as absorbed
+  (dream-level only, `spec-factory-console` stays live for its own unbuilt
+  frontier). herald-pitch (Herald's) similarly folded there. pyforge-testing-charter
+  archived as absorbed — `spec-pyforge-testing-charter` stays live: 2 of its 5
+  capabilities (correct dashboard TEA signal, real per-station test
+  architecture) already shipped this session; the shared `pyforge-testing-kit`
+  package and a CI coverage gate remain real, unbuilt, undecomposed work.
+  fleet-chain-completeness's own dream file (this session's first pass had
+  moved it in from Herald and given it a Spec) archived the same way —
+  `spec-fleet-chain-completeness` stays live, undecomposed. All four of this
+  second pass keep their Specs untouched; only the top-level Dream files
+  consolidated.

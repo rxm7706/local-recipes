@@ -40,9 +40,13 @@ it is anyone being **told**.
 - **The deck family (Moment 1 content)** — decks live on one shared engine
   under `presentations/`, bound to the Modernist design system, with the
   6-artifact export set proven repeatedly (`deck-export`). This is
-  production-ready; see [[herald-pitch]] for the full orchestration
-  (design-code-bridge + deckcraft + video-scripts + modernist-identity,
-  the 9-station expansion, artifact tracking).
+  production-ready. Full orchestration detail (design-code-bridge +
+  deckcraft + video-scripts + modernist-identity, the 9-station expansion,
+  artifact tracking, 7 capabilities) lives in `spec-herald-pitch` —
+  [[herald-pitch]] itself is archived (dream-level consolidation,
+  2026-08-02) but its Spec is real, unbuilt, and ready for the
+  PRD/Architecture/Epics decomposition its own "Next Steps" call for; that
+  work has not run yet.
 - **The bridge, mechanized (`pyforge-herald` CLI)** — the Design↔Code seed/pull
   loop proven manually on 7 decks in one day is being packaged as a
   deterministic CLI (`herald deck seed/pull/status/watch`, `SPEC-design-code-bridge`
@@ -82,14 +86,18 @@ clears its own remaining stories.
 
 ## Kinships
 
-[[pyforge-charter]] (charter section) · [[herald-pitch]] (Moment 1 complete
-orchestration) · [[pyforge-marshal]] (owns the re-scoped infrastructure and
-the fleet-chain regeneration machinery) · [[pyforge-scribe]] (the inward
-voice to Herald's outward) · [[factory-console]] (the stage Herald proclaims
-from).
+[[pyforge-charter]] (charter section) · [[pyforge-marshal]] (owns the
+re-scoped infrastructure and the fleet-chain regeneration machinery) ·
+[[pyforge-scribe]] (the inward voice to Herald's outward) ·
+[[factory-console]] (the stage Herald proclaims from).
 
 ## Realization log
 
+- **2026-08-02 (second pass)** — Folded [[herald-pitch]] (Moment 1 complete
+  orchestration, 7 capabilities) into this Dream's narrative. Dream-level
+  consolidation only — `spec-herald-pitch` and its 4 companions stay fully
+  live and untouched; that Spec's own PRD/Architecture/Epics decomposition
+  has not run yet, unlike Moments 2–4's chain (below), which already has.
 - **2026-08-02** — Consolidated. Folded [[herald-moments-2-4-missing-surface]]'s
   vision into this Dream (single narrative for Herald's voice-and-visual
   scope); that Dream is now `archived` / `absorbed` — its own downstream
