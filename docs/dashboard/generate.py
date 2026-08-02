@@ -52,7 +52,8 @@ PROJECT_SOURCES = {
     "marshal": "_bmad-output/projects/pyforge-marshal/implementation-artifacts/sprint-status.yaml",
     "mason": "_bmad-output/projects/pyforge-mason/implementation-artifacts/sprint-status.yaml",
     "steward": "_bmad-output/projects/pyforge-steward/implementation-artifacts/sprint-status.yaml",
-    "genesis": "_bmad-output/projects/pyforge-genesis/implementation-artifacts/sprint-status.yaml",
+    # No "genesis" entry: pyforge-genesis dissolved 2026-08-02 -- constitutive, no stories,
+    # no implementation-artifacts/ of its own.
 }
 
 # git-history DONE detection (used by --source git). Verified against main's subjects.
@@ -737,16 +738,24 @@ def _git_date(path: Path) -> str:
 
 
 def scan_specs() -> list[dict]:
-    """Spec KERNELS only (Row 4) — .../specs/spec-<slug>/SPEC.md. For per-story specs (Row 7) see scan_story_specs()."""
+    """Spec KERNELS only (Row 4) — .../specs/spec-<slug>/SPEC.md. For per-story specs (Row 7) see scan_story_specs().
+
+    Includes docs/governance/spec-*/ -- the two constitutive (`owner: guild`) kernels,
+    which live outside `_bmad-output/projects/` entirely since 2026-08-02 (`pyforge-genesis`
+    dissolved; see GOVERNANCE_DIR).
+    """
     rows: list[dict] = []
-    for spec_dir in sorted((REPO_ROOT / "_bmad-output" / "projects").glob(
-            "*/planning-artifacts/specs/spec-*")):
+    spec_dirs = (sorted((REPO_ROOT / "_bmad-output" / "projects").glob(
+            "*/planning-artifacts/specs/spec-*"))
+        + sorted((REPO_ROOT / GOVERNANCE_DIR).glob("spec-*")))
+    for spec_dir in spec_dirs:
         smd = spec_dir / "SPEC.md"
         if not smd.is_file():
             continue
         text = smd.read_text(encoding="utf-8")
         slug = spec_dir.name.removeprefix("spec-")
-        project = spec_dir.relative_to(REPO_ROOT / "_bmad-output" / "projects").parts[0]
+        project = (GOVERNANCE_DIR if spec_dir.parent == REPO_ROOT / GOVERNANCE_DIR
+                   else spec_dir.relative_to(REPO_ROOT / "_bmad-output" / "projects").parts[0])
         m = re.search(r"^#\s+(.+)$", text, re.M)
         title = (m.group(1).strip() if m else slug)
         title = re.sub(r"^SPEC\s*[—–-]\s*", "", title)
@@ -1093,6 +1102,11 @@ FLEET_LABELS = {
 # `retro` are real chain artifacts that had no dot at all.
 FLEET_STAGES = ("dream", "deck", "spec", "research", "brief", "prd", "ux", "arch",
                 "context", "epics", "sprint", "tea", "gates", "code", "verify", "retro")
+# Where a guild-owned (constitutive, `owner: guild`) chain's Spec kernel lives — NOT a
+# `_bmad-output/projects/<x>/` tree, because it ships no product and owns no Smith-shaped
+# scaffolding (2026-08-02: pyforge-genesis dissolved, Charter/Lexicon specs moved here).
+# `_fleet_chains()`/`_stage_globs()` special-case this sentinel value of `project`.
+GOVERNANCE_DIR = "docs/governance"
 # Stages whose dot stands for a SET: {stage: the artifacts that must all be present}.
 RESEARCH_TYPES = ("domain", "market", "technical")
 DECK_FAMILY = ("prototype", "exec", "infographic", "marp", "standalone", "pptx")
@@ -1168,6 +1182,14 @@ def _fleet_chains() -> list[tuple[str, str, str, str]]:
         od = _frontmatter_scalars(d / "SPEC.md", ("owner-dream",)).get("owner-dream", "")
         if od:
             owner_dream.setdefault(slug, Path(od.strip("'\"")).stem)
+    for d in sorted(REPO_ROOT.glob(f"{GOVERNANCE_DIR}/spec-*")):
+        if not (d / "SPEC.md").is_file():
+            continue
+        slug = d.name[len("spec-"):]
+        spec_project.setdefault(slug, GOVERNANCE_DIR)
+        od = _frontmatter_scalars(d / "SPEC.md", ("owner-dream",)).get("owner-dream", "")
+        if od:
+            owner_dream.setdefault(slug, Path(od.strip("'\"")).stem)
     dreams = {f.stem: _frontmatter_scalars(f, ("owner", "status"))
               for f in sorted(DREAMS_DIR.glob("*.md")) if f.name != "README.md"}
     out = []
@@ -1192,7 +1214,8 @@ def _fleet_chains() -> list[tuple[str, str, str, str]]:
 
 
 _ISO = re.compile(r"(\d{4}-\d{2}-\d{2})")
-_GIT_SCOPES = ("docs/dreams", "_bmad-output", "presentations", "src/shared/packages")
+_GIT_SCOPES = ("docs/dreams", "docs/governance", "_bmad-output", "presentations",
+               "src/shared/packages")
 _GIT_FIRST: dict[str, str] = {}
 _GIT_LAST: dict[str, str] = {}
 
@@ -1423,6 +1446,20 @@ def _stage_globs(slug: str, project: str, primary: bool) -> dict[str, list[str]]
     adds it. Until then those artifacts answer only for the primary chain, and
     `unattributed` below reports what that leaves unaccounted for.
     """
+    if project == GOVERNANCE_DIR:
+        # Guild-owned, constitutive: no product, no Smith-shaped scaffolding. Only
+        # dream/deck/spec apply -- everything else stays an empty glob (never matches, so
+        # the stage stays unreached and `required` never grows past `spec` for this chain).
+        gdir = f"{GOVERNANCE_DIR}/spec-{slug}"
+        empty: list[str] = []
+        return {
+            "dream": [f"docs/dreams/{slug}.md"],
+            "deck": [f"presentations/{slug}/project/*.html"],
+            "spec": [f"{gdir}/SPEC.md", f"{gdir}/.memlog.md"],
+            "research": empty, "brief": empty, "prd": empty, "ux": empty, "arch": empty,
+            "context": empty, "epics": empty, "sprint": empty, "tea": empty, "gates": empty,
+            "code": empty, "verify": empty, "retro": empty,
+        }
     pa = f"_bmad-output/projects/{project}/planning-artifacts"
     proj = f"_bmad-output/projects/{project}"
     g: dict[str, list[str]] = {
@@ -1539,7 +1576,9 @@ def scan_fleet(projects: dict, pitch_cards: list[dict] | None = None) -> dict:
         required = [s for s in FLEET_STAGES[:cut + 1] if s not in na]
         gaps = [s for s in required if not stages[s]]
         partial = [st for st, s in sub.items() if s["n"] and s["n"] < s["of"]]
-        updated = _last_touched([f"docs/dreams/{slug}.md", f"{'_bmad-output/projects/' + project}"]
+        project_path = (f"{GOVERNANCE_DIR}/spec-{slug}" if project == GOVERNANCE_DIR
+                        else f"_bmad-output/projects/{project}")
+        updated = _last_touched([f"docs/dreams/{slug}.md", project_path]
                                 + ([f"presentations/{project}", f"src/shared/packages/{project}"]
                                    if primary else [f"presentations/{slug}"]))
         age = ""
