@@ -2,7 +2,7 @@
 title: One fabricated commit, eight stations of debris
 type: dream
 owner: marshal
-status: realized
+status: specified
 ---
 
 # One fabricated commit, eight stations of debris
@@ -42,6 +42,10 @@ consolidations (a handful found, distinct from the bulk-commit problem) is archi
   `archive/_bmad-output/...` convention already used for today's satellite-chain moves.
 - `_bmad-output/PROJECTS.md`'s per-project `Dream:` pointers name the actual station-charter
   Dream file (`type: dream`), not a stale filename or a `type: practice` satellite.
+- The fleet dashboard (`docs/dashboard/generate.py --source sprint-status`) reports zero
+  `gaps` for herald: its brief and architecture directories are named `brief-pyforge-herald-*`
+  / `architecture-pyforge-herald-*`, matching every other station's convention and the
+  `_stage_globs()` pattern that scores them.
 
 ## What is real
 
@@ -78,6 +82,31 @@ moved — this section is the evidence base for the cleanup above, not yet acted
     into the station charter during an earlier consolidation). Should point at
     `docs/dreams/pyforge-herald.md`.
   - Fix is a two-line edit to `_bmad-output/PROJECTS.md`'s Projects table; no archiving needed.
+
+### Cluster 4 — the fleet dashboard reports a real gap for herald (found 2026-08-02, post-realization)
+
+The user reported the program console (`docs/dashboard/`) showing stations "out of date, missing
+artifacts, and a gap" for the 8 primary stations. Verified against `docs/dashboard/generate.py`'s
+own fleet scan (`python3 docs/dashboard/generate.py --source sprint-status`), confirmed **on
+`main`, before any of this Dream's cleanup** — not something the cleanup branch introduced:
+
+- **Herald has real gaps: `['brief', 'arch']`.** `_stage_globs()` looks for
+  `briefs/brief-pyforge-herald-*/brief*.md` and `architecture/architecture-pyforge-herald-*/*.md`
+  (matching every other station's `brief-<slug>-<date>`/`architecture-<slug>-<date>` naming), but
+  herald's actual directories are `briefs/brief-herald-pitch-2026-08-01/` and
+  `architecture/architecture-herald-pitch-2026-08-01/` — named after the pre-consolidation
+  `herald-pitch` Dream, not the station slug `pyforge-herald`. The content is current and real
+  (confirmed in the earlier "dreams by station" conversation); the *directory name* is what's
+  wrong. `prds/prd-pyforge-herald-2026-08-01/` already uses the correct convention — only brief
+  and architecture are inconsistent within herald's own tree. Same root cause, same fix shape as
+  the marshal brief CAP-9 already corrected in this cleanup.
+- The other 7 stations (atlas, doctor, marshal, mason, scribe, steward, warden) show `gaps: []` —
+  no real gaps. Their `partial: ['research']` and `staleBy` currency findings are, on inspection,
+  either pre-existing/expected (research is intentionally inherited from the station by satellite
+  chains, coded as such) or a natural, correct consequence of files this Dream's own cleanup
+  touched today (a freshly-edited file is legitimately "newer" than an untouched sibling stage) —
+  not bugs. "Out of date" in the user's report is this dashboard-generation snapshot being stale
+  relative to the cleanup commits already on this branch, not a second defect class.
 
 ### Confirmed clean, no action needed
 
@@ -120,3 +149,7 @@ was confirmed to be permanent-by-design record, not clutter — none were flagge
   file into the standard `briefs/brief-<slug>-<date>/` layout every other station uses. Both
   drift checkers (`bmad-drift-check --integrity-only`, `dashboard_drift_check.py`) verified clean
   of everything this Dream touched before closing.
+- **2026-08-02** — Reopened (`realized` → `specified`): user reported the fleet dashboard showing
+  stations out of date, missing artifacts, and a gap. Verified against `main` (pre-existing, not
+  branch-introduced) and root-caused to Cluster 4 above — herald's brief/architecture directories
+  are misnamed. CAP-10 added to `spec-bmad-output-hygiene` to fix it.
