@@ -886,7 +886,14 @@ def scan_campaign() -> dict:
 # ---- build campaign (implementation lines across all bmad-projects) ----------
 
 IMPL_CAMPAIGN = [
-    # pkey = data.js projects key when the line is dashboard-wired; stories = static count otherwise
+    # pkey = data.js projects key when the line is dashboard-wired (done/total live
+    # via `projects`); everything else derives from its own sprint-status-ledger.yaml
+    # (IMPL_CAMPAIGN_LEDGER below) -- `stories`/`state` here are only the FALLBACK
+    # when no ledger exists yet (wasm/unity: genuinely 0 stories, PRD+arch only).
+    # 2026-08-02: this used to be a static, 2026-07-25-dated snapshot with `done`
+    # hardcoded to 0 forever for every non-pkey row -- marshal read "0/40" the whole
+    # time it was actually 10/50, same bug on mason (0/38, actually 4/48) and
+    # steward (0/18, actually 3/26). Never derived, so it never caught up.
     {"slug": "pyforge-herald",       "pkey": "herald", "stories": 17, "state": "running",
      "note": "line 1 — smallest full product, spec settled 0 OQs"},
     {"slug": "pyforge-doctor",       "pkey": "doctor", "stories": 12, "state": "running",
@@ -901,7 +908,7 @@ IMPL_CAMPAIGN = [
      "note": "operator Phase-0 gates: MS disconnected-stack check + memory-subsystem scope"},
     {"slug": "pyforge-marshal",      "pkey": None, "stories": 40, "state": "held",
      "note": "AD-25–39 adversarial pass + floor quiescence (touches loop machinery)"},
-    {"slug": "pyforge-genesis",      "pkey": None, "stories": 36, "state": "held",
+    {"slug": "genesis-installer",    "pkey": None, "stories": 36, "state": "held",
      "note": "last — model stability + consumes marshal-owned scripts"},
     {"slug": "wasm-analytics-stack", "pkey": None, "stories": 0,  "state": "future",
      "note": "PRD+arch only by design; stories decompose when scheduled"},
@@ -909,9 +916,53 @@ IMPL_CAMPAIGN = [
      "note": "PRD+arch only by design; stories decompose when scheduled"},
 ]
 
+# Live ledger source for the non-`pkey` rows above: (ledger path, epic_min, epic_max),
+# either bound `None` meaning unbounded. marshal's own ledger also carries the
+# genesis-installer satellite's Epics 7+ (absorbed 2026-08-02, EXEMPLAR-STANDARD.md) --
+# both rows read the SAME file, split by epic number, matching the split already
+# verified by hand: Epics 1-6 = 40 backlog + 10 done = marshal proper; Epics 7+ = 36
+# backlog = genesis-installer. presenton-pixi-image's stories are a separate epics
+# file (`epics-presenton-pixi-image.md`) not cleanly split out of mason's shared
+# ledger, and it's independently confirmed still Phase-0-blocked (0 done) -- left on
+# its static fallback rather than guessing a partition.
+IMPL_CAMPAIGN_LEDGER: dict[str, tuple[str, int | None, int | None]] = {
+    "pyforge-marshal": ("_bmad-output/projects/pyforge-marshal/planning-artifacts/sprint-status-ledger.yaml", None, 6),
+    "genesis-installer": ("_bmad-output/projects/pyforge-marshal/planning-artifacts/sprint-status-ledger.yaml", 7, None),
+    "pyforge-mason": ("_bmad-output/projects/pyforge-mason/planning-artifacts/sprint-status-ledger.yaml", None, None),
+    "pyforge-steward": ("_bmad-output/projects/pyforge-steward/planning-artifacts/sprint-status-ledger.yaml", None, None),
+}
+_LEDGER_STORY_KEY = re.compile(r"^(\d+)-\d+-")
+
+
+def _ledger_done_total(rel_path: str, epic_min: int | None, epic_max: int | None) -> tuple[int, int] | None:
+    """`(done, total)` for a ledger's story-shaped keys, optionally epic-filtered.
+
+    Non-story keys (`epic-N`, `epic-N-retrospective`) are excluded -- they aren't
+    stories and would double-count. `None` if the ledger doesn't exist yet.
+    """
+    p = REPO_ROOT / rel_path
+    if not p.is_file():
+        return None
+    statuses = parse_sprint_status(p)
+    done = total = 0
+    for key, status in statuses.items():
+        m = _LEDGER_STORY_KEY.match(key)
+        if not m:
+            continue
+        epic = int(m.group(1))
+        if epic_min is not None and epic < epic_min:
+            continue
+        if epic_max is not None and epic > epic_max:
+            continue
+        total += 1
+        if status == "done":
+            done += 1
+    return done, total
+
 
 def scan_impl_campaign(projects: dict) -> dict:
-    """Build-campaign roster; wired lines derive done/total live from `projects`."""
+    """Build-campaign roster; wired lines derive done/total live from `projects`,
+    unwired lines derive it from their own sprint-status-ledger.yaml (IMPL_CAMPAIGN_LEDGER)."""
     rows: list[dict] = []
     for e in IMPL_CAMPAIGN:
         done, total = 0, e["stories"]
@@ -919,7 +970,16 @@ def scan_impl_campaign(projects: dict) -> dict:
             stories = [s for ep in projects[e["pkey"]]["epics"] for s in ep["stories"]]
             total = len(stories)
             done = sum(1 for s in stories if s[1] == "done")
-        state = "done" if total and done == total else e["state"]
+        elif e["slug"] in IMPL_CAMPAIGN_LEDGER:
+            live = _ledger_done_total(*IMPL_CAMPAIGN_LEDGER[e["slug"]])
+            if live is not None:
+                done, total = live
+        if total and done == total:
+            state = "done"
+        elif done > 0:
+            state = "running"
+        else:
+            state = e["state"]
         rows.append({**e, "done": done, "total": total, "state": state})
     running = sum(1 for r in rows if r["state"] == "running")
     dn = sum(1 for r in rows if r["state"] == "done")
