@@ -1447,7 +1447,7 @@ def _stage_globs(slug: str, project: str, primary: bool) -> dict[str, list[str]]
         "arch":     [f"{pa}/architecture/architecture-{slug}-*/*.md"],
         "context":  [f"{proj}/project-context-{slug}.md"],
         "epics":    [f"{pa}/epics-{slug}.md"],
-        "sprint":   [f"{pa}/sprint-status-{slug}.yaml"],
+        "sprint":   [f"{pa}/sprint-status-ledger-{slug}.yaml"],
         "tea":      [f"{proj}/tests/test_*.py", f"{proj}/tests/**/*.spec.ts"],
         "gates":    [f"{pa}/implementation-readiness-report*{slug}*.md",
                      f"{pa}/validation-report-PRD*{slug}*.md"],
@@ -1464,7 +1464,7 @@ def _stage_globs(slug: str, project: str, primary: bool) -> dict[str, list[str]]
         g["arch"] += [f"{pa}/architecture.md"]
         g["context"] += [f"{proj}/project-context.md", f"{pa}/project-context.md"]
         g["epics"] += [f"{pa}/epics.md"]
-        g["sprint"] += [f"{pa}/sprint-status.yaml"]
+        g["sprint"] += [f"{pa}/sprint-status-ledger.yaml"]
         g["tea"] += [f"{proj}/tests/test_*.py", f"{proj}/tests/**/*.spec.ts"]
         g["gates"] += [f"{pa}/implementation-readiness-report*.md",
                        f"{pa}/validation-report-PRD*.md"]

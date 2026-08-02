@@ -11,6 +11,7 @@ companions:
   - six-act-framework.md
   - station-roster.md
   - bridge-protocol.md
+owner-dream: docs/dreams/herald-pitch.md
 sources:
   - ../../docs/dreams/herald-pitch.md
 ---
