@@ -1,10 +1,29 @@
 ---
 title: "Dream — PyForge Atlas Intelligence Platform"
 date: 2026-08-02
-status: dreamt
+status: archived
+archived-reason: duplicate
 owner: atlas
 scope: "Intelligence layer, cf_atlas data pipeline, phase orchestration, schema evolution"
 ---
+
+> **Superseded.** This Dream restates scope already fully realized by
+> [`docs/dreams/pyforge-atlas.md`](pyforge-atlas.md) (status: realized) and its shipped
+> 38-story, 11-wave chain (Waves 0, A–H, I). Its "Realization" list maps directly onto
+> already-shipped waves: Discovery Engine → Wave B/H (pipeline porting, factory personas);
+> Schema Evolution → the schema v29→v30 work Wave I's post-audit truth-up already covers;
+> Phase Orchestrator (Kedro/Dagster) → Wave C ("Integrate kedro-dagster for scheduling +
+> execution"); DuckDB Analytics → Wave F, story F1, verbatim ("DuckDB consolidation + prove
+> the cold-start claim"); air-gap capability → already implemented repo-wide via the
+> `<HOST>_BASE_URL` redirect pattern documented in `project-context.md`. Its own
+> "Acceptance" criteria ("all 15 phases ported," "schema v29→v30 migration tested,"
+> "dashboards consuming cf_atlas data live") describe work that is already done — Atlas is
+> 100% code-complete (38/38 stories, 930 real tests, retro delivered). Created 2026-08-02
+> in the same bulk commit already found this session to contain fabricated content (a false
+> migration note, boilerplate test-architecture docs, and two other duplicate dreams —
+> Marshal's loop-orchestrator, Mason's recipe-validator — retired the same way). Retired
+> same day rather than spec'd as new work. See `spec-pyforge-atlas-intelligence-platform`
+> for the retirement record.
 
 # PyForge Atlas — Intelligence Platform
 

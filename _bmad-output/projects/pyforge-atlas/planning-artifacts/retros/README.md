@@ -34,7 +34,9 @@ Waves map 1:1 to epics: Epic 1 = Wave 0 · 2 = A · 3 = B · 4 = C · 5 = D · 6
 | Epic | Wave | Retro |
 |---|---|---|
 | 1–8 | 0, A–G | this directory, written 2026-07-25 |
-| 9 | H | **satisfied by the CFE Rule-2 retro** — skill v8.78.0→v8.79.0, PR #103. Recorded `done` in `sprint-status.yaml` before these ran. |
+| 9 | H | this directory (`epic-9-wave-h-karpathy-wiki.md`), written 2026-08-02, plus the CFE Rule-2 retro — skill v8.78.0→v8.79.0, PR #103. The two are complementary, not duplicative: Rule-2 covers skill/phase-engineering guidance, this directory covers epic execution quality. `sprint-status.yaml` recorded Epic 9's retro `done` on the Rule-2 retro alone before the epic-format one existed — the 11-day gap between them is the currency finding that prompted writing it. |
+| 10 | I | this directory (`epic-10-wave-i-post-audit-truth-up.md`), written 2026-08-02 (epic shipped 2026-07-29) |
 
-Written 2026-07-25, one week after ship (2026-07-18), on the operator's decision
-to run rather than waive them.
+Epics 1–8 written 2026-07-25, one week after ship (2026-07-18), on the
+operator's decision to run rather than waive them. Epics 9–10 written
+2026-08-02 to close the gap the dashboard's currency check flagged.

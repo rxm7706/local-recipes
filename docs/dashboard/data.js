@@ -2830,7 +2830,7 @@ window.DASHBOARD_DATA = {
       }
     }
   },
-  "snapshot": "<span>2026-08-02 16:55 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-02 17:18 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -3040,10 +3040,13 @@ window.DASHBOARD_DATA = {
     {
       "slug": "pyforge-atlas-intelligence-platform",
       "title": "\"Dream — PyForge Atlas Intelligence Platform\"",
-      "status": "dreamt",
+      "status": "archived",
       "owner": "atlas",
       "type": "dream",
-      "chain": {}
+      "chain": {
+        "spec": "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas-intelligence-platform"
+      },
+      "archived_reason": "duplicate"
     },
     {
       "slug": "pyforge-atlas",
@@ -3315,6 +3318,16 @@ window.DASHBOARD_DATA = {
       "updated": "2026-07-30",
       "dream": "pyforge-atlas",
       "path": "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas"
+    },
+    {
+      "slug": "pyforge-atlas-intelligence-platform",
+      "project": "pyforge-atlas",
+      "title": "pyforge-atlas-intelligence-platform — retirement record",
+      "caps": 0,
+      "companions": 0,
+      "updated": "",
+      "dream": "pyforge-atlas-intelligence-platform",
+      "path": "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas-intelligence-platform"
     },
     {
       "slug": "unity-data-stack",
@@ -3632,7 +3645,7 @@ window.DASHBOARD_DATA = {
       "title": "pyforge-mason-recipe-validator — retirement record",
       "caps": 0,
       "companions": 0,
-      "updated": "",
+      "updated": "2026-08-02",
       "dream": "pyforge-mason-recipe-validator",
       "path": "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason-recipe-validator"
     },
@@ -3965,6 +3978,13 @@ window.DASHBOARD_DATA = {
       "owner": "atlas",
       "note": "Microsoft org sweep — audit one upstream org, package what is missing",
       "link": "docs/dreams/microsoft-org-sweep.md"
+    },
+    {
+      "name": "\"Dream — PyForge Atlas Intelligence Platform\"",
+      "reason": "duplicate",
+      "owner": "atlas",
+      "note": "\"Dream — PyForge Atlas Intelligence Platform\"",
+      "link": "docs/dreams/pyforge-atlas-intelligence-platform.md"
     },
     {
       "name": "\"Dream — PyForge Marshal: Loop Orchestrator\"",
@@ -4309,11 +4329,11 @@ window.DASHBOARD_DATA = {
       "verify": 90,
       "retro": null
     },
-    "sound": 1,
-    "live": 40,
+    "sound": 2,
+    "live": 39,
     "reached": 8,
-    "gaps": 45,
-    "findings": 16,
+    "gaps": 43,
+    "findings": 13,
     "rows": [
       {
         "label": "atlas",
@@ -4347,15 +4367,15 @@ window.DASHBOARD_DATA = {
           "brief": "2026-07-25",
           "prd": "2026-08-01",
           "ux": "",
-          "arch": "2026-07-17",
+          "arch": "2026-08-02",
           "context": "2026-08-04",
-          "epics": "2026-07-29",
+          "epics": "2026-08-02",
           "sprint": "2026-08-02",
           "tea": "2026-07-30",
-          "gates": "2026-07-17",
+          "gates": "2026-08-02",
           "code": "2026-07-29",
           "verify": "2026-07-29",
-          "retro": "2026-07-25"
+          "retro": "2026-08-02"
         },
         "sub": {
           "research": {
@@ -4413,29 +4433,7 @@ window.DASHBOARD_DATA = {
         ],
         "gaps": [],
         "partial": [],
-        "staleBy": [
-          {
-            "kind": "feeds",
-            "stage": "prd",
-            "than": "arch",
-            "at": "2026-08-01",
-            "other": "2026-07-17"
-          },
-          {
-            "kind": "feeds",
-            "stage": "prd",
-            "than": "gates",
-            "at": "2026-08-01",
-            "other": "2026-07-17"
-          },
-          {
-            "kind": "feeds",
-            "stage": "code",
-            "than": "retro",
-            "at": "2026-07-29",
-            "other": "2026-07-25"
-          }
-        ],
+        "staleBy": [],
         "furthest": "retro",
         "updated": "2026-08-02",
         "age": 0,
@@ -5574,19 +5572,19 @@ window.DASHBOARD_DATA = {
             ]
           }
         },
-        "archived": false,
-        "dreamStatus": "dreamt",
-        "ownerDream": "",
+        "archived": true,
+        "dreamStatus": "archived",
+        "ownerDream": "pyforge-atlas-intelligence-platform",
         "noDream": false,
         "unowned": false,
         "backfilled": false,
         "openQuestions": 0,
         "overtaken": false,
         "na": [
+          "dream",
           "ux"
         ],
         "required": [
-          "dream",
           "deck",
           "spec",
           "research"
@@ -5603,8 +5601,8 @@ window.DASHBOARD_DATA = {
         "stale": false,
         "version": "",
         "progress": "",
-        "complete": 2,
-        "of": 4
+        "complete": 1,
+        "of": 3
       },
       {
         "label": "unity",
@@ -8764,7 +8762,7 @@ window.DASHBOARD_DATA = {
         "stages": {
           "dream": "2026-08-02",
           "deck": "",
-          "spec": "",
+          "spec": "2026-08-02",
           "research": "2026-07-25",
           "brief": "",
           "prd": "",
@@ -8782,7 +8780,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-02",
           "deck": "",
-          "spec": "",
+          "spec": "2026-08-02",
           "research": "2026-07-25",
           "brief": "",
           "prd": "",
@@ -8850,8 +8848,7 @@ window.DASHBOARD_DATA = {
           "research"
         ],
         "gaps": [
-          "deck",
-          "spec"
+          "deck"
         ],
         "partial": [
           "research"
@@ -8863,7 +8860,7 @@ window.DASHBOARD_DATA = {
         "stale": false,
         "version": "",
         "progress": "",
-        "complete": 1,
+        "complete": 2,
         "of": 3
       },
       {
@@ -9893,8 +9890,8 @@ window.DASHBOARD_DATA = {
         "task": "spec-surface-check",
         "guards": "every tracked file under a Spec surface",
         "state": "drift",
-        "findings": 761,
-        "verdict": "FINDINGS (761):",
+        "findings": 762,
+        "verdict": "FINDINGS (762):",
         "runbook": ""
       },
       {
@@ -9963,14 +9960,6 @@ window.DASHBOARD_DATA = {
         "chain": {
           "spec": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pr-lifecycle"
         }
-      },
-      {
-        "slug": "pyforge-atlas-intelligence-platform",
-        "title": "\"Dream — PyForge Atlas Intelligence Platform\"",
-        "status": "dreamt",
-        "owner": "atlas",
-        "blockedOn": "",
-        "chain": {}
       },
       {
         "slug": "pyforge-doctor-dependency-health",
@@ -10100,11 +10089,11 @@ window.DASHBOARD_DATA = {
     "byOwner": {
       "marshal": 6,
       "herald": 3,
-      "atlas": 4,
       "doctor": 1,
       "scribe": 2,
       "steward": 1,
       "warden": 1,
+      "atlas": 3,
       "mason": 1
     },
     "practices": [
@@ -10336,15 +10325,15 @@ window.DASHBOARD_DATA = {
         "station": "atlas",
         "total": 6,
         "counts": {
-          "dreamt": 1,
+          "dreamt": 0,
           "pitched": 0,
           "specified": 3,
           "realized": 1,
-          "archived": 1,
+          "archived": 2,
           "practice": 0
         },
         "line": "complete",
-        "load": 4,
+        "load": 3,
         "blocked": 0,
         "dreams": [
           {
@@ -10357,7 +10346,7 @@ window.DASHBOARD_DATA = {
           {
             "slug": "pyforge-atlas-intelligence-platform",
             "title": "\"Dream — PyForge Atlas Intelligence Platform\"",
-            "status": "dreamt",
+            "status": "archived",
             "type": "dream",
             "blockedOn": ""
           },
@@ -12162,8 +12151,8 @@ window.DASHBOARD_DATA = {
       "subject": "Merge bmad-loop/20260731-115548-f223/1-9-packaging-distribution-and-version-reporting into loop/pyforge-marshal (bmad-lo"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-02 16:55 UTC",
-    "generatedEpoch": 1785689750
+    "generatedAt": "2026-08-02 17:18 UTC",
+    "generatedEpoch": 1785691104
   },
   "storySpecs": [
     {

@@ -122,3 +122,37 @@ the scaffold wave would have pre-empted all three.
 
 Recorded in `docs/dreams/pyforge-marshal.md`. This is the first time a completed
 effort's retrospective changed the harness that runs the next one.
+
+---
+
+## Update 2026-08-02 — Waves H and I retros landed; Action A4 recurred
+
+This synthesis covered epics 1-8 (waves 0, A-G) as of 2026-07-25. Two per-epic
+retros were missing since — `epic-9-wave-h-karpathy-wiki.md` (Wave H, shipped
+2026-07-18, predates this synthesis) and `epic-10-wave-i-post-audit-truth-up.md`
+(Epic 10 / Wave I, shipped 2026-07-29, postdates it) — and now exist alongside
+this file. Read them for the full local findings; only what is genuinely
+cross-wave is appended here.
+
+**Action A4 ("promote a deferral to contract level on its second cross-wave
+repeat") recurred in a different shape.** Finding 4 above tracked *daemon
+bring-up* deferred three times (C1, G3, H4) before promotion. Wave I surfaced
+the same structural failure for a different kind of repeat: stories I4 (10.5)
+and I5 (10.6) both finalized `done` while their review pass was still actively
+recommending a follow-up, because `max_followup_reviews` — an unchosen upstream
+default of 1 — was spent rather than the reviewer being satisfied. It was the
+*second* occurrence, not the third, that triggered the fix inside Wave I itself
+(cap raised to 2, explicitly chosen; a new `deferred_work_check.py` detector
+closing the same "gitignored refile target" leak Finding 5 named). That the fix
+landed on the second repeat, in-epic, rather than needing a third instance and a
+later retro, is A4 working as designed — the opposite of Finding 4's own history.
+
+**Action A5 ("never file durable record in Tier-3") held under real pressure.**
+`DW-I4-1` and `DW-I5-1` were promoted out of gitignored `implementation-artifacts/`
+into the tracked ledger the same day each was created, and the `deferred_work_check.py`
+detector born from the finding above immediately found five more damped
+recommendations across three *other* projects (atlas, marshal, warden) — evidence
+the rule generalizes past the case that motivated it.
+
+A2, A3, A7 status is unchanged by Wave H/I evidence and stays open per the
+Actions table above.

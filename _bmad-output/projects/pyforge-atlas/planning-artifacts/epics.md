@@ -8,6 +8,8 @@ inputDocuments:
 project: pyforge-atlas
 status: final
 created: 2026-07-17
+updated: '2026-08-02'
+currency_review: "Reviewed 2026-08-02 — Story D2's acceptance criteria (line ~675) and the Epic 5 summary (line ~166) still carried the pre-correction '28-CLI, all answerable' overclaim after the PRD's 2026-08-01 CAP-8 fix and architecture.md's matching correction (AUD-ATLAS-041). Both corrected to: 8 dashboard pages + factory-status ship in v1, full 28-CLI inventory deferred (DW-D2-1). No other epic/story referenced the overclaim."
 generatedBy: bmad-create-epics-and-stories (unattended Tier-2 stage 3)
 ---
 
@@ -163,7 +165,7 @@ The operator watches scheduled, retried, per-node-timed runs in the Dagster UI a
 **FRs covered:** FR-6 (core).
 
 ### Epic 5: Wave D — Semantic Layer & Dashboards (3 stories: D1, D2, D3)
-Every read-only question the 28 CLIs answered is answerable from BSL-driven Vizro pages plus a natural-language field callable from Claude Code.
+The live-confirmed consumer CLIs are answerable from BSL-driven Vizro pages (8 dashboard pages + factory-status ship in v1; full 28-CLI inventory deferred, `DW-D2-1`) plus a natural-language field callable from Claude Code.
 **FRs covered:** FR-8, FR-9.
 
 ### Epic 6: Wave E — A2A Integration, Lineage & Observability (2 stories: E1, E2)
@@ -672,7 +674,7 @@ So that every read-only question is answerable from a page meeting the agent-leg
 **When** the Vizro app is built
 **Then** a Vizro dashboard serves the core KPIs currently locked in CLIs
 **And** a "factory status" page reads the BMAD artifact state (sprint-status.yaml, epics frontmatter, `bmad-drift-check --specs` JSON) — agent-readable per § 13.2
-**And** each read-only legacy CLI question is answerable from a Vizro page, where for the three FR-9 exceptions (`add-handoff`, `inventory-match`, `library-futures`) "answerable" means the latest-report artifact is surfaced read-only — the bar covers all 28
+**And** the live-confirmed consumer CLIs are answerable from a Vizro page, where for the three FR-9 exceptions (`add-handoff`, `inventory-match`, `library-futures`) "answerable" means the latest-report artifact is surfaced read-only — 8 dashboard pages + factory-status ship in v1; the full 28-CLI inventory port is deferred (`DW-D2-1`) *(corrected 2026-08-02, matching the PRD's 2026-08-01 CAP-8 correction, AUD-ATLAS-041 — this line previously claimed the bar covered all 28)*
 **And** the live-confirmed consumer set ports first: `behind-upstream`, `query-atlas`, `whodepends`, `feedstock-health`, `my-feedstocks`, `detail-cf-atlas`, `staleness-report`
 **And** pages meet the § 2.1 agent-legibility bar (semantic HTML, ARIA, deterministic layouts; NFR-8) and public-facing breadth stays at the factory-status page (SM-C4).
 
