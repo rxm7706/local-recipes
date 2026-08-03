@@ -164,6 +164,7 @@ project, and spec maps to exactly one Dream; the herald CLI's status capability
 | [`bmad-loop-forward-dependency-blindness.md`](bmad-loop-forward-dependency-blindness.md) | realized | `bmad-loop`'s picker has no `depends_on` concept and will dispatch a story whose own documented `**Deps:**` names a later epic — 3 instances fixed in marshal (the only affected station); `forward_dependency_check.py` closes the gap for good. |
 | [`sprint-status-auto-promote.md`](sprint-status-auto-promote.md) | dreamt | A landed story doesn't reach the dashboard/tracked ledger until someone remembers to run `promote_sprint_status.py` + regenerate — bit the same session 3 times; wants the promotion triggered by landing itself, not a periodic human check. |
 | [`loop-home-fleet-refresh.md`](loop-home-fleet-refresh.md) | dreamt | Refreshing every loop-home from `main` is a hand-run ritual with real judgment calls; `loop-push-watch`/`dashboard-watch` already automate the push side but neither was running all session — no auto-start exists anywhere. |
+| [`dream-to-code-model-self-verification.md`](dream-to-code-model-self-verification.md) | dreamt | Two follow-ups named at the 2026-07-23 Dream-to-Code restructure were never built: a `dream_chain_check.py --dreams` mode, and dogfooding `bmad-spec` against the model's own governing docs — both confirmed still genuinely missing. |
 
 **Applications**
 
