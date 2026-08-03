@@ -161,7 +161,13 @@ class _RecordingFs:
         self.symlink_reads: list[Path] = []
 
     def is_dir(self, path: Path) -> bool:
-        return path in self._dirs
+        # A seeded symlink resolves as a directory: `run_spin`'s backlink
+        # gate probes presence with `read_symlink_target` and then
+        # DANGLING-ness with `is_dir` (a review finding -- a link whose
+        # target was removed passed the presence check and then made
+        # `ensure_dir` raise `FileExistsError` under a launch-failure code).
+        # A scenario that seeds a backlink is describing a healthy one.
+        return path in self._dirs or path in self._symlinks
 
     def exists(self, path: Path) -> bool:
         # Story 1.6: a read -- never recorded. Nothing exists beyond the

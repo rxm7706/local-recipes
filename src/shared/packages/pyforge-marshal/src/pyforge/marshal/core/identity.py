@@ -331,7 +331,17 @@ def resolve_feed(raw_keys: Sequence[str]) -> FeedResolution:
             # claim a well-formed key failed to resolve.
             if isinstance(raw, str):
                 display = raw
-                message = f"unresolved story reference: {raw}"
+                # Quoted in the MESSAGE (but not in `display`, which is
+                # structured data the caller renders itself). Review finding
+                # (Edge Case Hunter, reproduced live via `marshal factory
+                # spin`, this function's only caller in the tree): a feed key
+                # carrying `\nrun_id: ...\npid: 1` forged whole lines of that
+                # command's text report -- printing a run id and a pid for a
+                # launch that was REFUSED. `cli/gate.py`'s `_render_text`
+                # documents the convention this follows: finding MESSAGES stay
+                # unquoted so they read as prose, so every message that
+                # interpolates an untrusted value quotes it at CONSTRUCTION.
+                message = f"unresolved story reference: {raw!r}"
             else:
                 display = repr(raw)
                 message = (

@@ -164,11 +164,17 @@ own six codes: ``MRS-SPIN-001`` (a malformed project slug, checked before
 any I/O -- the same pre-I/O shape gate every sibling command's own
 ``MRS-INIT-001``/``MRS-PREFLIGHT-010``/``MRS-TEARDOWN-001`` applies),
 ``MRS-SPIN-002`` (the loop home is not provisioned -- ``fs.is_dir(home)`` is
-``False``), ``MRS-SPIN-003`` (the harness process could not be LAUNCHED at
-all -- covers ``spin``'s detached launch, ``run_foreground``'s synchronous
-one, and ``attach``'s exec alike: all three share the identical underlying
-failure mode, a missing binary or a launch-time ``OSError``, so one code
-serves all three rather than three near-duplicates), ``MRS-SPIN-004`` (the
+``False``, its Tier-3 backlink is absent, or that backlink dangles),
+``MRS-SPIN-003`` (NO harness process was started, and none can have been --
+covers ``spin``'s detached launch, ``run_foreground``'s synchronous one, and
+``attach``'s exec failing to launch at all (a missing binary, a launch-time
+``OSError``), AND ``run_spin``'s two pre-spawn filesystem setup failures,
+creating the run directory and journaling the ``intent``, which abort before
+``HarnessPort.spin`` is ever called. Review finding, Blind Hunter: the
+earlier wording said "could not be LAUNCHED at all", which was false for
+those latter two of its six emit sites. One code serves them all because
+they share the property a caller acts on -- nothing is running, so a retry
+is safe -- and each site's own message names which one it was), ``MRS-SPIN-004`` (the
 harness's own self-minted ``harness_run_id`` could not be recovered within
 ``spin``'s bounded poll window -- the detached spawn itself still
 succeeded), ``MRS-SPIN-005`` (the story feed is missing or unparseable --

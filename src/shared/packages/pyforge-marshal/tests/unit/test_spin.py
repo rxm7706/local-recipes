@@ -68,6 +68,13 @@ class FakeFs:
         # can raise can model that, which is why the unguarded call survived
         # the review pass that ADDED the backlink gate.
         self.fail_read_symlink_target: Exception | None = None
+        # A backlink that EXISTS but whose target was removed (a repo
+        # re-clone, a moved checkout). `read_symlink_target` still returns
+        # the target -- the link is there -- but `is_dir` FOLLOWS the link,
+        # so it is False. Only a fake that can express that gap between the
+        # two probes can model the case where the presence check passes and
+        # the very next write then fails.
+        self.tier3_dangling = False
         self.read_symlink_target_calls: list[Path] = []
         self.calls: list[str] = []
         self._events = events if events is not None else []
@@ -87,7 +94,18 @@ class FakeFs:
 
     def is_dir(self, path: Path) -> bool:
         self.calls.append("is_dir")
-        return path in self.dirs
+        if path in self.dirs:
+            return True
+        # A path this fake has already reported as a healthy backlink also
+        # resolves as a directory -- that is what "points at the canonical
+        # store" MEANS -- unless the test declared it dangling. Without this
+        # the fake would describe an impossible world (a symlink to a real
+        # store that is somehow not a directory) for every scenario.
+        return (
+            path in self.read_symlink_target_calls
+            and self.tier3_backlink
+            and not self.tier3_dangling
+        )
 
     def read_symlink_target(self, path: Path) -> Path | None:
         self.calls.append("read_symlink_target")
@@ -138,6 +156,14 @@ class FakeHarness:
         self._events = events if events is not None else []
         self.calls: list[str] = []
         self.feed_error: str | None = None
+        # `story_feed_error`'s port docstring promises "never raises", so
+        # this fake could only ever model a method that honors it -- which
+        # is precisely why `run_spin`'s unguarded call to it survived three
+        # review passes. bmad_loop's own parsing can raise `RecursionError`
+        # (deeply-nested YAML: a RuntimeError, so `yaml.YAMLError` misses
+        # it) or a plain `ValueError` (`int()` on an over-long digit run)
+        # past the adapter's catch tuples.
+        self.fail_feed_error: Exception | None = None
         self.feed_keys: tuple[str, ...] = ()
         self.spin_result: SpinResult = SpinResult(
             pid=4242, harness_run_id="acme-20260803T054512123Z-ab12cd"
@@ -153,6 +179,8 @@ class FakeHarness:
 
     def story_feed_error(self, project: Path) -> str | None:
         self.calls.append("story_feed_error")
+        if self.fail_feed_error:
+            raise self.fail_feed_error
         return self.feed_error
 
     def story_feed_keys(self, project: Path) -> tuple[str, ...]:
@@ -259,7 +287,7 @@ def test_spin_happy_path_mints_run_id_journals_and_spawns(home, capsys):
     assert "feed: resolved 2 of 2" in out
     assert "1.1" in out and "1.2" in out
     assert "pid: 4242" in out
-    assert "harness_run_id: acme-20260803T054512123Z-ab12cd" in out
+    assert "harness_run_id: 'acme-20260803T054512123Z-ab12cd'" in out
 
     # Exactly one spin() call, against the resolved home.
     [spin_call] = harness.spin_calls
@@ -1002,3 +1030,288 @@ def test_spin_oversized_preview_writes_the_sidecar_blob_before_its_line(home):
     assert intent_line["payload"] == {"sidecar_ref": f"blobs/{blob_path.name}"}
     # ...and the blob was written before it.
     assert fs.calls.index("write_text_atomic") < fs.calls.index("append_line")
+
+
+# --- review pass 4: the text projection is not a shell for forged output ------
+
+
+def test_render_text_quotes_a_newline_injected_selector(home, capsys):
+    """Review finding (Edge Case Hunter, reproduced live): ``_render_text``
+    interpolated every field RAW, so a newline inside one forged whole lines
+    of the report. ``--story $'9.9\\nfindings:\\n  MRS-SPIN-001 [error] ...'``
+    printed a ``findings:`` block that no ``Finding`` produced, on a run that
+    had genuinely LAUNCHED and exited 0. ``cli/gate.py``'s own
+    ``_render_text`` already carries exactly this ``!r`` hardening across two
+    of its own review passes; this module shipped without it."""
+    forged = "9.9\nfindings:\n  MRS-SPIN-001 [error] FORGED: launch refused"
+    fs = FakeFs(dirs={home})
+    harness = FakeHarness()
+    harness.feed_keys = ("1-1-first-story",)
+
+    assert run_spin(_spin_namespace("acme", story=forged), fs=fs, harness=harness) == EXIT_OK
+
+    out = capsys.readouterr().out
+    # The run really did launch, so a `findings:` header is a pure forgery.
+    assert harness.spin_calls != []
+    # The forgery is STRUCTURAL: no line of the report may begin with the
+    # injected header (the substring survives, escaped, inside the quoted
+    # value -- that is the whole point of quoting it).
+    assert not any(line.startswith("findings:") for line in out.splitlines())
+    assert not any("FORGED" in line for line in out.splitlines() if "story=" not in line)
+    # The value is still REPORTED -- quoted, so the newline is visible as an
+    # escape rather than structural, on one line.
+    assert repr(forged) in out
+
+
+def test_render_text_quotes_newline_injected_feed_keys(home, capsys):
+    """The same forgery from the OTHER untrusted direction: a raw feed key.
+    Reproduced live -- a key carrying ``\\nrun_id: ...\\npid: 1`` printed a
+    run id and a pid for a launch that was REFUSED (nothing minted, nothing
+    spawned), which is strictly worse than the selector case."""
+    fs = FakeFs(dirs={home})
+    harness = FakeHarness()
+    harness.feed_keys = ("zz\nrun_id: acme-FORGED-000\npid: 1",)
+
+    exit_code = run_spin(_spin_namespace("acme"), fs=fs, harness=harness)
+
+    out = capsys.readouterr().out
+    assert exit_code != EXIT_OK
+    assert harness.spin_calls == []
+    # No LINE of the report may be forged -- the key survives escaped, on
+    # one line, in both the `unresolved:` list and the MRS-IDENT-001 message
+    # (quoted at construction, per `cli/gate.py`'s documented split).
+    assert not any(line.startswith("run_id:") for line in out.splitlines())
+    assert not any(line.startswith("pid:") for line in out.splitlines())
+    assert repr(harness.feed_keys[0]) in out
+
+
+def test_render_text_renders_none_as_the_json_spelling(home, capsys):
+    """``_render_text`` is documented as a pure projection of the SAME
+    envelope the ``--format json`` path prints (AD-14), but it leaked the
+    Python ``repr`` ``None`` where JSON renders ``null`` -- which a shell
+    consumer could read as a literal harness run id named ``None``."""
+    fs = FakeFs(dirs={home})
+    harness = FakeHarness()
+    harness.feed_keys = ("1-1-first-story",)
+    harness.spin_result = SpinResult(pid=4242, harness_run_id=None)
+
+    run_spin(_spin_namespace("acme"), fs=fs, harness=harness)
+
+    out = capsys.readouterr().out
+    assert "harness_run_id: null" in out
+    assert "epic=null story=null max_count=null" in out
+    assert "None" not in out
+
+
+def test_spin_non_utf8_story_selector_does_not_crash_after_the_spawn(home, monkeypatch):
+    """Review finding (Edge Case Hunter, reproduced live end-to-end): Python
+    decodes ``argv`` with ``surrogateescape``, so a non-UTF-8 byte in
+    ``--story`` reached a strict UTF-8 stdout and raised
+    ``UnicodeEncodeError`` -- a ``ValueError`` subclass the ``except OSError``
+    guard never saw. It fired AFTER the detached child was live and both
+    journal entries were fsynced: a traceback instead of the run id the
+    operator needs to attach. Two independent fixes are asserted here --
+    ``repr`` keeps the surrogate out of the encoder, and ``_emit``'s guard
+    now catches it anyway."""
+    fs = FakeFs(dirs={home})
+    harness = FakeHarness()
+    harness.feed_keys = ("1-1-first-story",)
+
+    real_print = builtins.print
+
+    def _strict_utf8_print(*args, **kwargs):
+        # Model a strict UTF-8 stdout: encoding the payload is what raises.
+        for arg in args:
+            if isinstance(arg, str):
+                arg.encode("utf-8")
+        return real_print(*args, **kwargs)
+
+    monkeypatch.setattr(builtins, "print", _strict_utf8_print)
+
+    exit_code = run_spin(_spin_namespace("acme", story="\udcff"), fs=fs, harness=harness)
+
+    assert exit_code == EXIT_OK
+    assert harness.spin_calls != []
+
+
+# --- review pass 4: guards on the two remaining raising call sites ------------
+
+
+@pytest.mark.parametrize(
+    "exc",
+    [
+        RecursionError("maximum recursion depth exceeded"),
+        ValueError("Exceeds the limit (4300 digits) for integer string conversion"),
+    ],
+    ids=["recursion", "value"],
+)
+def test_spin_story_feed_error_that_raises_exits_cleanly_as_mrs_spin_005(home, capsys, exc):
+    """Review finding (Blind Hunter + Edge Case Hunter, each reproduced
+    independently against a real feed): ``story_feed_error``'s own port
+    docstring promises "never raises", but its adapter's catch tuples are
+    not exhaustive over what bmad_loop's parsing throws. This call site was
+    unguarded while its SIBLING 17 lines below had been wrapped for exactly
+    this shape by an earlier pass -- the asymmetry between two adjacent
+    calls was the defect."""
+    fs = FakeFs(dirs={home})
+    harness = FakeHarness()
+    harness.fail_feed_error = exc
+
+    exit_code = run_spin(_spin_namespace("acme"), fs=fs, harness=harness)
+
+    assert exit_code == exit_code_for(Verdict.ERROR)
+    assert "MRS-SPIN-005" in capsys.readouterr().out
+    assert harness.spin_calls == []
+    assert "create_dir_exclusive" not in fs.calls
+
+
+def test_spin_story_feed_error_that_raises_never_escapes_through_main(home, monkeypatch):
+    """The same defect at the level it was observable: ``main()``'s own
+    documented "never raises" contract (it catches only
+    ``SystemExit``/``KeyboardInterrupt``)."""
+    fs = FakeFs(dirs={home})
+    harness = FakeHarness()
+    harness.fail_feed_error = RecursionError("maximum recursion depth exceeded")
+
+    monkeypatch.setattr(
+        spin_module, "run_spin", lambda args: run_spin(args, fs=fs, harness=harness)
+    )
+
+    assert main(["factory", "spin", "acme"]) == exit_code_for(Verdict.ERROR)
+
+
+def test_spin_feed_key_past_the_int_conversion_limit_is_mrs_spin_005(home, capsys):
+    """``core.identity.resolve_feed`` catches only ``MalformedStoryKeyError``
+    around its own ``normalize`` calls, so a raw feed key whose epic position
+    exceeds CPython's 4300-digit int-conversion limit raises a PLAIN
+    ``ValueError`` through it (reproduced live against a real
+    ``sprint-status.yaml`` using YAML explicit-key syntax). ``cli/spin.py`` is
+    that function's only caller in the tree, so the crash is newly reachable
+    with this story."""
+    fs = FakeFs(dirs={home})
+    harness = FakeHarness()
+    harness.feed_keys = ("1" * 4301 + "-1-story",)
+
+    exit_code = run_spin(_spin_namespace("acme"), fs=fs, harness=harness)
+
+    assert exit_code == exit_code_for(Verdict.ERROR)
+    assert "MRS-SPIN-005" in capsys.readouterr().out
+    assert harness.spin_calls == []
+
+
+def test_spin_story_selector_past_the_int_conversion_limit_previews_empty(home):
+    """The same CPython limit reached from ``argv`` instead of the feed:
+    ``_filter_preview`` caught only ``MalformedStoryKeyError``, so
+    ``--story <4301-digit epic>.1`` escaped as a raw ``ValueError`` from any
+    shell with one long argument. Widened to ``ValueError`` (a strict
+    superset -- ``MalformedStoryKeyError`` IS one), so it previews empty
+    exactly as any other unparseable selector does, and still launches (the
+    spec's Never clause forbids pre-refusing on a zero-count preview)."""
+    fs = FakeFs(dirs={home})
+    harness = FakeHarness()
+    harness.feed_keys = ("1-1-first-story",)
+
+    exit_code = run_spin(
+        _spin_namespace("acme", story="1" * 4301 + ".1"), fs=fs, harness=harness
+    )
+
+    assert exit_code == EXIT_OK
+    # The 4301-digit selector pushes the intent payload past
+    # SIDECAR_THRESHOLD_BYTES, so the preview lands in the sidecar blob.
+    assert json.loads(next(iter(fs.written_texts.values())))["preview"] == []
+    assert harness.spin_calls != []
+
+
+# --- review pass 4: a dangling backlink is a provisioning gap, not a launch one
+
+
+def test_spin_dangling_tier3_backlink_refuses_as_mrs_spin_002(home, capsys):
+    """Review finding (Blind Hunter, reproduced): a backlink that EXISTS but
+    whose target was removed (a repo re-clone, a moved checkout) passed the
+    presence check the previous pass added, then made
+    ``ensure_dir(run_dir.parent)`` raise ``FileExistsError`` -- surfacing as
+    ``MRS-SPIN-003`` ("cannot create run directory ...: File exists:
+    <implementation-artifacts>"), a LAUNCH-failure code naming a path that is
+    not the run directory, for the same provisioning gap that gate exists to
+    catch."""
+    fs = FakeFs(dirs={home})
+    fs.tier3_dangling = True
+    harness = FakeHarness()
+    harness.feed_keys = ("1-1-first-story",)
+
+    exit_code = run_spin(_spin_namespace("acme"), fs=fs, harness=harness)
+
+    out = capsys.readouterr().out
+    assert exit_code == exit_code_for(Verdict.ERROR)
+    assert "MRS-SPIN-002" in out
+    assert "MRS-SPIN-003" not in out
+    assert "dangling" in out
+    # Refused before the first write, exactly as an absent backlink is.
+    assert "ensure_dir" not in fs.calls
+    assert "create_dir_exclusive" not in fs.calls
+    assert harness.spin_calls == []
+
+
+# --- review pass 4: the two MRS-SPIN-003 branches nothing exercised -----------
+
+
+def test_spin_run_directory_creation_failure_is_mrs_spin_003(home, capsys):
+    """Review finding (Blind Hunter, grep-verified): ``FakeFs`` has shipped a
+    ``fail_create_dir_exclusive`` hook since this module's first pass and NO
+    test ever assigned it, leaving this branch entirely unpinned."""
+    fs = FakeFs(dirs={home})
+    fs.fail_create_dir_exclusive = FsError("cannot create run directory: Read-only file system")
+    harness = FakeHarness()
+    harness.feed_keys = ("1-1-first-story",)
+
+    exit_code = run_spin(_spin_namespace("acme"), fs=fs, harness=harness)
+
+    assert exit_code == exit_code_for(Verdict.ERROR)
+    assert "MRS-SPIN-003" in capsys.readouterr().out
+    # Nothing was launched -- MRS-SPIN-003's own "safe to retry" meaning.
+    assert harness.spin_calls == []
+    assert "append_line" not in fs.calls
+
+
+def test_spin_intent_journal_write_failure_never_spawns(home, capsys):
+    """The single most important NEGATIVE invariant in this module, and it
+    was unpinned (review finding, Blind Hunter): AD-6's write-before-act says
+    if the ``intent`` cannot be DURABLY recorded, do not act. The behaviour
+    was already correct; nothing protected it from regression."""
+    fs = FakeFs(dirs={home})
+    fs.fail_append_line = FsError("cannot append to journal: No space left on device")
+    harness = FakeHarness()
+    harness.feed_keys = ("1-1-first-story",)
+
+    exit_code = run_spin(_spin_namespace("acme"), fs=fs, harness=harness)
+
+    assert exit_code == exit_code_for(Verdict.ERROR)
+    assert "MRS-SPIN-003" in capsys.readouterr().out
+    # The whole point: no process was started.
+    assert harness.spin_calls == []
+
+
+@pytest.mark.parametrize("command", ["spin", "attach"], ids=["spin", "attach"])
+def test_loop_home_root_resolution_failure_is_mrs_spin_002(monkeypatch, capsys, command):
+    """The ``except (RuntimeError, OSError)`` arm around ``_home_path`` exists
+    in BOTH ``run_spin`` and ``run_attach`` and neither was covered (review
+    finding, Blind Hunter, grep-verified)."""
+    fs = FakeFs()
+    harness = FakeHarness()
+
+    def _boom(_slug):
+        raise RuntimeError("Could not determine home directory")
+
+    monkeypatch.setattr(spin_module, "_home_path", _boom)
+
+    if command == "spin":
+        exit_code = run_spin(_spin_namespace("acme"), fs=fs, harness=harness)
+        stream = capsys.readouterr().out
+    else:
+        exit_code = run_attach(_attach_namespace("acme"), fs=fs, harness=harness)
+        stream = capsys.readouterr().err
+
+    assert exit_code == exit_code_for(Verdict.ERROR)
+    assert "MRS-SPIN-002" in stream
+    assert harness.spin_calls == []
+    assert harness.attach_calls == []

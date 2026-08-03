@@ -48,7 +48,11 @@ the harness rather than merely probing it:
 
 - ``story_feed_keys`` -- the raw, pre-parse population of story references
   in ``project``'s configured feed (bmad_loop's ``SprintStatus.stories[*].key``
-  UNION ``unknown_keys``, file order), independent of Marshal's own
+  UNION ``unknown_keys`` -- each group in the feed's own file order, the two
+  groups concatenated rather than interleaved back together, since
+  re-deriving a true file-order interleaving would need a second
+  independent parse of the raw YAML, exactly what FR-52 forbids), independent
+  of Marshal's own
   ``core.identity.normalize()`` -- AD-38's ``M`` (the denominator of
   "resolved N of M") must be counted before any parsing this package does,
   or a silently-dropped key would report a false "N of N" (see
@@ -71,7 +75,11 @@ the harness rather than merely probing it:
   not be LAUNCHED at all.
 - ``attach`` -- execs ``bmad-loop attach``, inheriting this process's own
   stdio (interactive by design -- it hands the terminal to the
-  multiplexer), blocks until it exits, and returns its exit code verbatim.
+  multiplexer), blocks until it exits, and returns its exit code, normalized
+  for a signal-killed child (the shell's ``128 + N`` convention -- a raw
+  negative ``returncode`` would be OS-truncated by ``sys.exit``). Callers
+  that surface it to a shell project it further through
+  ``core.verdict.relay_exit_code``; see ``cli/spin.py``.
   Raises ``HarnessError`` only when the process could not be LAUNCHED at
   all -- the SAME split ``spin`` uses, deliberately distinct from every
   OTHER method on this Protocol, which never raises for anything but an

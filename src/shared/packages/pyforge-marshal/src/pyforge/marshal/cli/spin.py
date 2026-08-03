@@ -115,7 +115,6 @@ from ..adapters.fs_local import FsError, LocalFs
 from ..adapters.harness_bmadloop import BmadLoopHarness, HarnessError
 from ..core import policy
 from ..core.identity import (
-    MalformedStoryKeyError,
     StoryKey,
     normalize,
     render_feed_key,
@@ -251,7 +250,18 @@ def _filter_preview(
     if story is not None:
         try:
             target = normalize(story)
-        except MalformedStoryKeyError:
+        # `ValueError`, not just `MalformedStoryKeyError` (which is a
+        # ValueError SUBCLASS, so this stays a strict superset of the
+        # documented case). `normalize` ends in `int(match.group("epic"))`,
+        # and `_KEY_RE` happily matches an arbitrarily long digit run -- so
+        # `--story <4301-digit epic>.1` raises CPython >= 3.11's PLAIN
+        # ValueError ("Exceeds the limit (4300 digits) for integer string
+        # conversion") past this catch and out of `main()` as a raw
+        # traceback (reproduced live by both reviewers, reachable from any
+        # shell with one long argument). `core/journal.py` already
+        # documents this exact CPython behaviour and widened its own
+        # catches for it; this call site is the same class.
+        except ValueError:
             keys = ()
         else:
             keys = [key for key in keys if key == target]
@@ -348,8 +358,10 @@ def add_factory_subparser(subparsers: argparse._SubParsersAction) -> None:
         help="Attach to a live run's session -- separate, non-destructive (AD-22).",
         description=(
             "Execs 'bmad-loop attach', inheriting this process's own "
-            "stdio, and relays its exit code directly -- interactive by "
-            "design, and never mutates run state."
+            "stdio -- interactive by design, and never mutates run state. "
+            "Its exit code is PROJECTED, not relayed verbatim: 0, 1 and 130 "
+            "pass through, anything else collapses to Marshal's ERROR code "
+            "(4). See core.verdict.relay_exit_code."
         ),
     )
     attach_parser.add_argument("slug", help="The BMAD project slug whose loop home to attach to.")
@@ -409,7 +421,7 @@ def run_spin(
                 code="MRS-SPIN-002",
                 severity=Severity.ERROR,
                 message=(
-                    f"loop home not provisioned: {home} is not a directory "
+                    f"loop home not provisioned: {str(home)!r} is not a directory "
                     f"-- run 'marshal init {slug}' first"
                 ),
                 path=str(home),
@@ -445,7 +457,27 @@ def run_spin(
         return relay_exit_code(code)
 
     # --- story feed must resolve -- refuse early, before any write ----------
-    feed_error = harness.story_feed_error(home)
+    # `story_feed_error`'s own port docstring promises "never raises" (the
+    # message text IS the return value), but its adapter's catch tuples are
+    # not exhaustive over what bmad_loop's own parsing can throw -- review
+    # finding, reproduced independently by both reviewers against a real
+    # feed: deeply-nested YAML raises `RecursionError` (a RuntimeError, so
+    # `yaml.YAMLError` never sees it), and an over-long digit run in a key
+    # raises a plain `ValueError` out of bmad_loop's own `int()`. Either
+    # escaped this call site as a raw traceback out of `main()`, whose only
+    # catches are SystemExit/KeyboardInterrupt.
+    #
+    # Guarded here rather than in the adapter because the promise this
+    # protects is `main()`'s, and because the SIBLING call 17 lines below
+    # was already wrapped for exactly this shape by an earlier pass -- the
+    # asymmetry between two adjacent calls was the defect. `core/journal.py`
+    # catches this same (ValueError, TypeError, RecursionError) trio for the
+    # same reason; the adapter's own tuples are a pre-existing gap
+    # `cli/init.py` shares and are left for a focused pass.
+    try:
+        feed_error = harness.story_feed_error(home)
+    except (ValueError, TypeError, RecursionError, OSError) as exc:
+        feed_error = f"cannot read story feed: {exc}"
     if feed_error is not None:
         findings.append(
             Finding(code="MRS-SPIN-005", severity=Severity.ERROR, message=feed_error)
@@ -469,7 +501,27 @@ def run_spin(
             Finding(code="MRS-SPIN-005", severity=Severity.ERROR, message=str(exc))
         )
         return _emit(args, data, findings)
-    resolution = resolve_feed(raw_keys)
+    # `resolve_feed` catches only `MalformedStoryKeyError` around its own
+    # `normalize` calls, so a raw feed key whose epic position exceeds
+    # CPython's 4300-digit int-conversion limit raises a PLAIN ValueError
+    # through it (review finding, reproduced live against a real
+    # sprint-status.yaml using YAML explicit-key syntax). This module is
+    # `resolve_feed`'s only caller in the tree, so the crash is newly
+    # reachable with this story; guarded HERE rather than by widening
+    # `core/identity.py`, which is deliberately outside this story's Code
+    # Map. A feed key Marshal cannot even attempt to parse is exactly
+    # MRS-SPIN-005's own "missing or unparseable" scenario.
+    try:
+        resolution = resolve_feed(raw_keys)
+    except ValueError as exc:
+        findings.append(
+            Finding(
+                code="MRS-SPIN-005",
+                severity=Severity.ERROR,
+                message=f"cannot parse the story feed's keys: {exc}",
+            )
+        )
+        return _emit(args, data, findings)
     data["feed"] = {
         "resolved": len(resolution.resolved),
         "total": resolution.total,
@@ -530,7 +582,10 @@ def run_spin(
             Finding(
                 code="MRS-SPIN-002",
                 severity=Severity.ERROR,
-                message=f"cannot read the loop home Tier-3 backlink {tier3_path}: {exc}",
+                message=(
+                    f"cannot read the loop home Tier-3 backlink "
+                    f"{str(tier3_path)!r}: {exc}"
+                ),
                 path=str(tier3_path),
             )
         )
@@ -541,9 +596,34 @@ def run_spin(
                 code="MRS-SPIN-002",
                 severity=Severity.ERROR,
                 message=(
-                    f"loop home Tier-3 backlink not provisioned: {tier3_path} "
+                    f"loop home Tier-3 backlink not provisioned: {str(tier3_path)!r} "
                     f"is not a symlink to the canonical store -- run "
                     f"'marshal init {slug}' first"
+                ),
+                path=str(tier3_path),
+            )
+        )
+        return _emit(args, data, findings)
+    # A backlink that EXISTS but DANGLES (its target removed -- a repo
+    # re-clone, a moved checkout) passes the presence check above, then made
+    # `ensure_dir(run_dir.parent)` raise `FileExistsError` from
+    # `Path.mkdir(parents=True, exist_ok=True)`, since a dangling symlink is
+    # not a directory. Review finding, reproduced: that surfaced as
+    # `MRS-SPIN-003 [error] cannot create run directory <run-dir>: [Errno 17]
+    # File exists: <implementation-artifacts>` -- a LAUNCH-failure code, and a
+    # message naming a path that is not the one it says it is, for what is
+    # unambiguously the same provisioning gap the presence check above exists
+    # to catch. `is_dir` follows the link, so it is False for exactly the
+    # dangling case and True for a healthy one.
+    if not fs.is_dir(tier3_path):
+        findings.append(
+            Finding(
+                code="MRS-SPIN-002",
+                severity=Severity.ERROR,
+                message=(
+                    f"loop home Tier-3 backlink is dangling: {str(tier3_path)!r} "
+                    f"points at {str(tier3_target)!r}, which is not a directory "
+                    f"-- run 'marshal init {slug}' first"
                 ),
                 path=str(tier3_path),
             )
@@ -565,7 +645,7 @@ def run_spin(
             Finding(
                 code="MRS-SPIN-003",
                 severity=Severity.ERROR,
-                message=f"cannot create run directory {run_dir}: {exc}",
+                message=f"cannot create run directory {str(run_dir)!r}: {exc}",
             )
         )
         return _emit(args, data, findings)
@@ -691,34 +771,73 @@ def run_spin(
     return _emit(args, data, findings)
 
 
+def _scalar(value: object) -> str:
+    """Render one ``data`` scalar for the text projection: ``None`` as the
+    JSON spelling ``null`` (so the two ``--format`` paths agree instead of
+    the text one leaking a Python ``repr``), every string quoted, every
+    other value as-is. See ``_render_text``'s own comment for why the
+    quoting is load-bearing rather than cosmetic."""
+    if value is None:
+        return "null"
+    if isinstance(value, str):
+        return repr(value)
+    return str(value)
+
+
 def _render_text(data: Mapping[str, object], findings: tuple[Finding, ...]) -> str:
     """A pure projection of the SAME envelope ``data``/``findings`` the
     ``--format json`` path prints (AD-14), matching every sibling command's
     own ``_render_text`` convention."""
-    lines = [f"factory spin: {data['slug']}"]
+    # Every field here whose content is attacker- or typo-controlled is
+    # rendered through `_scalar` (i.e. `repr`), exactly as `cli/gate.py`'s
+    # own `_render_text` already does across two of its review passes --
+    # this module shipped without that hardening and both reviewers
+    # reproduced the consequence live. A newline inside any of them forges
+    # whole lines of this report: `--story $'9.9\nfindings:\n  MRS-SPIN-001
+    # [error] FORGED: launch refused'` printed a `findings:` block that no
+    # Finding produced, on a run that had genuinely LAUNCHED (rc=0), and a
+    # raw feed key carrying `\nrun_id: ...\npid: 1` printed a run id and pid
+    # for a launch that was REFUSED. `--format json` was never affected
+    # (`ensure_ascii=True`, and JSON escapes newlines) -- but text is the
+    # DEFAULT, so the default invocation is the exposed one.
+    #
+    # Quoting also makes this path encoding-safe, which is why `_emit`'s own
+    # guard below could stay narrow for so long: Python decodes argv with
+    # `surrogateescape`, so a non-UTF-8 byte in `--story` reached a strict
+    # UTF-8 stdout and raised `UnicodeEncodeError` -- AFTER the detached
+    # child was live and both journal entries fsynced, i.e. a traceback
+    # instead of the run id the operator needs to attach. `repr` output is
+    # pure ASCII, so the surrogate can no longer reach the encoder.
+    #
+    # Finding MESSAGES are deliberately NOT quoted -- they are Marshal's own
+    # prose and must stay readable, the same split `cli/gate.py` documents;
+    # every message that interpolates an untrusted value quotes it at
+    # construction instead (see the `MRS-SPIN-001`/`002` sites above).
+    lines = [f"factory spin: {_scalar(data['slug'])}"]
     if "home" in data:
-        lines.append(f"home: {data['home']}")
+        lines.append(f"home: {_scalar(str(data['home']))}")
     if "feed" in data:
         feed = data["feed"]
         lines.append(f"feed: resolved {feed['resolved']} of {feed['total']}")
         if feed["unresolved"]:
-            lines.append(f"  unresolved: {', '.join(feed['unresolved'])}")
+            lines.append(f"  unresolved: {', '.join(repr(key) for key in feed['unresolved'])}")
     if "selector" in data:
         selector = data["selector"]
         lines.append(
-            f"selector: epic={selector['epic']} story={selector['story']} "
-            f"max_count={selector['max_count']}"
+            f"selector: epic={_scalar(selector['epic'])} "
+            f"story={_scalar(selector['story'])} "
+            f"max_count={_scalar(selector['max_count'])}"
         )
     if "preview" in data:
         lines.append(f"preview ({len(data['preview'])}): {', '.join(data['preview'])}")
     if "run_id" in data:
         lines.append(f"run_id: {data['run_id']}")
     if "log" in data:
-        lines.append(f"log: {data['log']}")
+        lines.append(f"log: {_scalar(str(data['log']))}")
     if "pid" in data:
         lines.append(f"pid: {data['pid']}")
     if "harness_run_id" in data:
-        lines.append(f"harness_run_id: {data['harness_run_id']}")
+        lines.append(f"harness_run_id: {_scalar(data['harness_run_id'])}")
     if findings:
         lines.append("findings:")
         for finding in findings:
@@ -733,12 +852,21 @@ def _emit(args: argparse.Namespace, data: dict[str, object], findings: list[Find
     )
     # Same flush + broken-pipe-suppression convention as every sibling
     # command's own _emit (cli/init.py, cli/gate.py, cli/config.py).
+    #
+    # `UnicodeEncodeError` is caught alongside `OSError` for the same
+    # reason and with the same remedy: `_render_text`'s quoting now keeps
+    # surrogates out of the encoder, but this is the LAST line between a
+    # print failure and a raw traceback out of `main()` -- and by the time
+    # it runs on the success path the detached child is already live and
+    # both journal entries are fsynced, so the work is done and a dead or
+    # undecodable stdout must not turn it into a crash. A `ValueError`
+    # subclass, so the pre-existing `OSError` catch never saw it.
     try:
         if args.format == "json":
             print(json.dumps(envelope.to_json_dict(), indent=2, sort_keys=True), flush=True)
         else:
             print(_render_text(envelope.data, envelope.findings), flush=True)
-    except OSError:
+    except (OSError, UnicodeEncodeError):
         _suppress_downstream_pipe_close()
     return exit_code_for(envelope.verdict)
 
@@ -792,7 +920,7 @@ def run_attach(
             code="MRS-SPIN-002",
             severity=Severity.ERROR,
             message=(
-                f"loop home not provisioned: {home} is not a directory -- "
+                f"loop home not provisioned: {str(home)!r} is not a directory -- "
                 f"run 'marshal init {slug}' first"
             ),
             path=str(home),
@@ -828,13 +956,16 @@ def _relay_attach_finding(finding: Finding) -> int:
     unlike its sibling ``_emit``: an unwritable stderr (a closed pipe, a
     full disk) raised ``OSError`` straight out of ``run_attach``, breaking
     ``main()``'s own documented "never raises" contract with a raw
-    traceback. Guarded here exactly as ``_emit`` guards its own."""
+    traceback. Guarded here exactly as ``_emit`` guards its own -- including
+    that guard's own ``UnicodeEncodeError`` arm, since the slug this path
+    reports reaches it straight from ``argv`` (decoded with
+    ``surrogateescape``) and every finding here quotes it."""
     try:
         print(
             f"error: {finding.code} [{finding.severity.value}] {finding.message}",
             file=sys.stderr,
             flush=True,
         )
-    except OSError:
+    except (OSError, UnicodeEncodeError):
         _suppress_downstream_pipe_close()
     return exit_code_for(compute_verdict((finding,)))
