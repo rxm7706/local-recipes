@@ -116,3 +116,23 @@ def test_mtime_returns_none_for_an_embedded_null_byte(observer, monkeypatch):
 
     monkeypatch.setattr(pathlib.Path, "stat", _raise_value_error)
     assert observer.mtime(pathlib.Path("/tmp/whatever")) is None
+
+
+def test_capture_pane_timeout_stays_below_the_supervisor_tick():
+    """Follow-up review finding: ``_CAPTURE_PANE_TIMEOUT_S``'s own comment
+    states a cross-MODULE invariant -- "sized well below the supervisor's
+    own 60s tick ... so a hung or misbehaving tmux binary degrades one
+    sample to None rather than stalling an entire tick" -- against a
+    constant that lives in a different file, and nothing pinned the two
+    together. A future story shortening ``_TICK_SECONDS`` (or introducing
+    the policy knob its own docstring anticipates) would silently invert
+    the relationship and make every tick wait on tmux, with no test
+    failing. This codebase pins exactly this kind of cross-artifact
+    coupling elsewhere; now this pair too."""
+    from pyforge.marshal.supervisor.__main__ import _TICK_SECONDS
+
+    assert module._CAPTURE_PANE_TIMEOUT_S < _TICK_SECONDS, (
+        "a capture-pane timeout at or above the supervisor's own tick lets a "
+        "hung tmux stall the whole heartbeat loop -- the exact failure the "
+        "constant's own comment says it is sized to prevent"
+    )

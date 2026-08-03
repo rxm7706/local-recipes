@@ -8,22 +8,33 @@ attempted whether or not it itself succeeded.
 
 **Order of operations (``run_supervisor``).** Read the run's own
 ``journal.jsonl`` ONCE (``FsPort.read_text`` + ``core.journal.fold`` -- no
-second read, ever) -> inert-check: if no ``phase: outcome, kind:
-"run-launch"`` entry names THIS ``run_id``, exit immediately, code 0, no
-write at all (AD-25: the journal is the single source of run truth, so
-"was this run really started by Marshal" is a journal question, never a
-lock file -- see this story's own Design Notes) -> append one
+second read, ever) -> inert-check: if no ``kind: "run-launch"`` entry in
+EITHER ``phase: intent`` or ``phase: outcome`` names THIS ``run_id``, exit
+immediately, code 0, no journal write at all (AD-25: the journal is the
+single source of run truth, so "was this run really started by Marshal" is
+a journal question, never a lock file -- see this story's own Design
+Notes). Accepting the INTENT phase too is load-bearing, not belt-and-
+braces: ``cli/spin.py`` spawns this sidecar whether or not its own
+outcome-entry append succeeded (``MRS-SPIN-006``), and AD-6's write-before-
+act ordering guarantees the intent entry lands BEFORE any spawn is
+attempted -- so on the outcome-append-failure branch the intent entry is
+the ONLY proof of Marshal ownership that exists, and an outcome-only check
+would exit inert on a live run Marshal genuinely started. Then: append one
 ``observation`` entry (``kind="supervisor-attach"``, payload ``{pid,
-watched_pid}``) -> loop while ``ProcessPort.is_alive(watched_pid)``: sleep a
-fixed 60s tick (``_TICK_SECONDS`` -- no policy knob exists for this yet,
-and inventing one against no real caller would be speculative surface, per
-this codebase's own precedent), sample ``ClockPort.now()`` plus
+watched_pid}``) -> take ONE ``ProcessPort.is_alive(watched_pid)`` reading
+and loop while it holds: sleep a fixed 60s tick (``_TICK_SECONDS`` -- no
+policy knob exists for this yet, and inventing one against no real caller
+would be speculative surface, per this codebase's own precedent), sample
+``ClockPort.now()`` plus a FRESH ``is_alive`` reading plus
 ``SessionObserverPort.pane_content``/``mtime`` (gathered to prove the
 injection seam Story 3.5's own ``core/supervise.py`` will consume -- NONE
 of these samples drive a decision here; see this story's own Design Notes
 for why), append one ``observation`` (``kind="supervisor-heartbeat"``,
-payload ``{pid, watched_alive: true, sampled_at}``) -> when the watched
-process is no longer alive, append one final ``observation``
+payload ``{pid, watched_alive, sampled_at}``) -- ``watched_alive`` carries
+that tick's own fresh reading, so the tick that discovers the watched
+process just died journals one truthful ``false`` heartbeat rather than a
+tautological ``true`` -- and let that same reading decide whether another
+tick follows. When it does not, append one final ``observation``
 (``kind="supervisor-detach"``, payload ``{pid, reason:
 "watched-process-exited"}``) and exit 0.
 
@@ -46,10 +57,11 @@ later epic's own FR-36..40 scope, explicitly out of this story's Surface.
 **Why the read side never loads sidecars.** ``core.journal.fold`` accepts
 an optional ``sidecars`` mapping for large, sidecar-referenced payloads;
 this module never supplies one. The ONE fact this read needs -- whether a
-``phase: outcome, kind: "run-launch"`` entry exists for this run -- lives
-entirely in that entry's ``kind``/``phase``/``run_id`` fields, never in its
-payload, and that outcome's own payload (``{pid, harness_run_id}``,
-``cli/spin.py``'s own shape) is always small enough to inline. A payload
+``kind: "run-launch"`` entry in either governed phase exists for this run
+-- lives entirely in that entry's ``kind``/``phase``/``run_id`` fields,
+never in its payload, and either payload (``{pid, harness_run_id}`` for the
+outcome, the selector shape for the intent -- both ``cli/spin.py``'s own)
+is always small enough to inline. A payload
 this small can never be sidecar-referenced under
 ``core.journal.SIDECAR_THRESHOLD_BYTES``'s own threshold, so loading
 sidecars here would read files this check never needs.
@@ -100,6 +112,7 @@ from ..adapters.clock_system import SystemClock
 from ..adapters.fs_local import FsError, LocalFs
 from ..adapters.observer_mux import MultiplexerObserver
 from ..adapters.process_posix import PosixProcess
+from ..core import policy
 from ..core.journal import (
     JournalEntryId,
     Phase,
@@ -200,9 +213,39 @@ def run_supervisor(
         for entry in fold_result.by_kind(_LAUNCH_KIND)
     )
     if not started_by_marshal:
-        # The AC's own "inert on a run it did not start" -- no write at all,
-        # not even a failed-attempt record: there is nothing this process
-        # may legitimately claim happened against a run it did not launch.
+        # The AC's own "inert on a run it did not start" -- no JOURNAL write
+        # at all, not even a failed-attempt record: there is nothing this
+        # process may legitimately claim happened against a run it did not
+        # launch.
+        #
+        # A diagnostic on this process's OWN stderr, though, is not a
+        # journal write and costs nothing (review finding): this exit used
+        # to be completely silent, so an operator holding a
+        # `supervisor.log` could not tell the legitimate "not my run" case
+        # apart from the pathological one where the run-launch line IS
+        # present but `fold` could not evaluate it (a torn/truncated append,
+        # a stray non-JSON byte) -- which quarantines the line, empties
+        # `by_kind`, and silently strands a genuinely Marshal-started run
+        # with no supervision. The two other inert paths here already print;
+        # this one now does too, and names the quarantine count so the two
+        # causes are distinguishable at a glance. (Making a quarantined
+        # run-launch line itself RECOVERABLE is the separately-logged
+        # deferred item -- this only makes it visible.)
+        quarantined = len(fold_result.quarantined)
+        if quarantined:
+            print(
+                f"supervisor: no run-launch entry for run {run_id} in "
+                f"{journal_path}, but {quarantined} journal line(s) were "
+                "unevaluable -- staying inert, though this run's ownership "
+                "could not be proven either way",
+                file=sys.stderr,
+            )
+        else:
+            print(
+                f"supervisor: no run-launch entry for run {run_id} in "
+                f"{journal_path} -- not a run Marshal started, staying inert",
+                file=sys.stderr,
+            )
         return 0
 
     writer_id = f"supervisor-{os.getpid()}"
@@ -300,6 +343,25 @@ def main(argv: Sequence[str] | None = None) -> int:
         )
         return 1
     home, slug, run_id, watched_pid_text, log_path_text = args
+    # `slug` and `run_id` are BOTH path components of the journal this
+    # process reads AND appends to (`_run_dir`), so an unvalidated value
+    # composes a path outside the run directory -- `slug="../.."`, or a
+    # `run_id` carrying a separator -- and `FsPort.append_line` opens
+    # O_CREAT. `cli/spin.py` refuses a malformed slug via this same
+    # `core.policy._is_valid_project_slug` before ANY filesystem touch
+    # (`core/journal.py` applies it to run-id minting too); this second
+    # entry point re-derives the identical paths, so it needs the identical
+    # gate (review finding -- `main()` guarded `watched_pid` for exactly
+    # this "malformed direct invocation" reachability class while leaving
+    # the two arguments that actually become path segments open). Importing
+    # `core.policy` is allowed here: this story's new AD-9 contract forbids
+    # `supervisor` -> `cli`, never `supervisor` -> `core`.
+    if not policy._is_valid_project_slug(slug):
+        print(f"supervisor: invalid project slug {slug!r}", file=sys.stderr)
+        return 1
+    if not run_id or "/" in run_id or "\\" in run_id or run_id in (".", ".."):
+        print(f"supervisor: invalid run id {run_id!r}", file=sys.stderr)
+        return 1
     try:
         watched_pid = int(watched_pid_text)
     except ValueError:

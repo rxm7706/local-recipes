@@ -58,8 +58,10 @@ here (the supervisor could not be launched at all) registers
 ``MRS-SPIN-007`` (``Verdict.WARN``): the harness launch itself already
 succeeded, so losing supervision degrades the run to unsupervised, never
 invalidates the launch (matches architecture.md's own "a supervisor crash
-degrades to an unsupervised run ... never to a corrupted one"). On success,
-``data["supervisor_pid"]`` joins the envelope/text report.
+degrades to an unsupervised run ... never to a corrupted one").
+``data["supervisor_log"]`` joins the envelope/text report unconditionally
+(the detached sidecar's only diagnostic channel, needed whether or not the
+spawn succeeded); ``data["supervisor_pid"]`` joins it on success.
 
 **``--foreground``.** Calls the synchronous, stdio-inheriting
 ``HarnessPort.run_foreground`` INSTEAD of the detached ``spin`` path and
@@ -803,13 +805,28 @@ def run_spin(
 
     # --- spawn the supervisor sidecar -- the LAST step (Story 3.4, AD-9) ----
     # Deliberately AFTER the outcome-entry append above is attempted --
-    # succeeded or not -- never right after harness.spin() returns: the
-    # supervisor's own inert-check reads that SAME outcome entry back off
-    # disk, so spawning it any earlier would race the supervisor against an
-    # entry that is not yet durably journaled (it would see no run-launch
-    # outcome yet, conclude this run is not one Marshal started, and exit
-    # inert before the entry it was waiting for ever lands).
+    # succeeded or not. The supervisor's own inert-check reads this run's
+    # journal back off disk to prove Marshal ownership, and it accepts
+    # EITHER the intent or the outcome run-launch entry, so ordering this
+    # spawn after the outcome append is no longer a correctness requirement
+    # (the intent entry is written fsync=True BEFORE harness.spin(), so
+    # ownership is already provable at any point after that). It stays last
+    # for a different, still-live reason: everything above can add findings
+    # to this same report, and a supervisor that attached BEFORE the outcome
+    # entry landed would interleave its own observation entries with
+    # cli/spin.py's own outcome append -- two writers appending to one
+    # journal with no ordering guarantee between them. Keeping the spawn
+    # last means the launch's own intent/outcome pair is closed before a
+    # second writer ever opens the file.
     supervisor_log = run_dir / _SUPERVISOR_LOG_FILENAME
+    # Reported unconditionally, BEFORE the spawn attempt (review finding):
+    # this file is the detached supervisor's only diagnostic channel -- its
+    # stderr goes nowhere else -- so an operator whose supervisor dies 60s
+    # later on an unwritable journal needs the path whether or not the spawn
+    # itself succeeded. `data["log"]` above carries the harness's own log for
+    # exactly this reason, recorded there as a prior review finding: "a
+    # warning ... without saying where the output went is unactionable".
+    data["supervisor_log"] = str(supervisor_log)
     try:
         supervisor_pid = process.spawn_detached(
             [
@@ -837,7 +854,7 @@ def run_spin(
                 message=(
                     f"bmad-loop run launched (pid {spin_result.pid}) but its "
                     f"supervisor could not be spawned: {exc} -- the run "
-                    "continues unsupervised"
+                    f"continues unsupervised (supervisor log: {supervisor_log})"
                 ),
             )
         )
@@ -914,8 +931,13 @@ def _render_text(data: Mapping[str, object], findings: tuple[Finding, ...]) -> s
         lines.append(f"pid: {data['pid']}")
     if "harness_run_id" in data:
         lines.append(f"harness_run_id: {_scalar(data['harness_run_id'])}")
+    if "supervisor_log" in data:
+        lines.append(f"supervisor_log: {_scalar(str(data['supervisor_log']))}")
     if "supervisor_pid" in data:
-        lines.append(f"supervisor_pid: {data['supervisor_pid']}")
+        # Through `_scalar` like every sibling scalar here (review finding):
+        # a raw f-string opts this one field out of the single helper that
+        # exists to keep the text and JSON projections agreeing.
+        lines.append(f"supervisor_pid: {_scalar(data['supervisor_pid'])}")
     if findings:
         lines.append("findings:")
         for finding in findings:

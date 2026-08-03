@@ -415,3 +415,94 @@ def test_main_rejects_a_zero_or_negative_watched_pid(capsys):
         rc = main(["/home", "acme", "acme-run-1", bad_pid, "/home/supervisor.log"])
         assert rc != 0
         assert "must be positive" in capsys.readouterr().err.lower()
+
+
+def test_main_rejects_a_slug_that_escapes_the_run_directory(capsys):
+    """Follow-up review finding (both reviewers): ``main()`` guarded
+    ``watched_pid`` for the "malformed direct invocation" reachability class
+    while leaving the two arguments that actually become PATH SEGMENTS of
+    the journal (``slug``, ``run_id``) entirely unvalidated. ``_run_dir``
+    composes them straight into a path, and ``FsPort.append_line`` opens
+    ``O_CREAT`` -- so a traversing slug pointed this sidecar's reads and
+    appends outside the run directory. ``cli/spin.py`` refuses a malformed
+    slug via this same ``core.policy._is_valid_project_slug`` before ANY
+    filesystem touch; this second entry point re-derives the identical paths
+    and now applies the identical gate."""
+    for bad_slug in ("../../../../tmp/evil", "..", "acme/../..", ""):
+        rc = main(["/home/acme-loop", bad_slug, "acme-run-1", "4242", "/home/s.log"])
+        assert rc != 0, f"slug {bad_slug!r} was accepted"
+        assert "invalid project slug" in capsys.readouterr().err.lower()
+
+
+def test_main_rejects_a_run_id_that_escapes_the_run_directory(capsys):
+    """The ``run_id`` half of the same finding: it is the LAST path segment
+    of the run directory, so a separator or a dot-segment in it relocates
+    the journal just as effectively as a traversing slug does."""
+    for bad_run_id in ("../../evil", "..", ".", "acme/run", "", "a\\b"):
+        rc = main(["/home/acme-loop", "acme", bad_run_id, "4242", "/home/s.log"])
+        assert rc != 0, f"run_id {bad_run_id!r} was accepted"
+        assert "invalid run id" in capsys.readouterr().err.lower()
+
+
+def test_main_accepts_a_real_spin_minted_run_id(monkeypatch):
+    """Negative control for the two guards above -- the real ``run_id``
+    shape ``cli/spin.py`` mints (``<slug>-<timestamp>-<suffix>``) must still
+    pass, or the guards would have broken every genuine invocation."""
+    calls: list[str] = []
+
+    def _fake_run_supervisor(home, slug, run_id, watched_pid, log_path):
+        calls.append(run_id)
+        return 0
+
+    monkeypatch.setattr(supervisor_main, "run_supervisor", _fake_run_supervisor)
+    rc = main(
+        ["/home/acme-loop", "acme", "acme-20260803T101112000Z-abcd1234", "4242", "/home/s.log"]
+    )
+    assert rc == 0
+    assert calls == ["acme-20260803T101112000Z-abcd1234"]
+
+
+def test_inert_exit_prints_a_diagnostic_naming_the_run(capsys):
+    """Follow-up review finding: the inert exit was COMPLETELY silent -- no
+    journal write (correct, per the AC) but also nothing on this process's
+    own stderr, which is redirected to ``supervisor.log`` and is the only
+    diagnostic channel a detached sidecar has. An operator holding that log
+    saw an empty file and could not tell the run had been examined at all."""
+    fs = FakeFs(journal_text=_launch_outcome_line("some-other-run") + "\n")
+
+    rc = run_supervisor(
+        _HOME, "acme", "acme-run-1", 4242,
+        _LOG_PATH,
+        fs=fs, process=FakeProcess(alive_for=1), clock=FakeClock(),
+        observer=FakeObserver(), sleep=_no_sleep,
+    )
+
+    assert rc == 0
+    assert fs.appended_lines == []
+    err = capsys.readouterr().err
+    assert "acme-run-1" in err
+    assert "not a run marshal started" in err.lower()
+
+
+def test_inert_exit_on_a_quarantined_journal_says_so_distinctly(capsys):
+    """The half of the already-deferred quarantine finding that IS this
+    story's to fix: when ``fold`` cannot evaluate the run-launch line (a
+    torn append, a stray non-JSON byte), ``by_kind`` comes back empty and
+    this sidecar stays inert on a run Marshal genuinely DID start. Making
+    such a line recoverable is the separately-logged deferred item; making
+    the two causes distinguishable in the log is not, and used to be
+    impossible -- both exits printed nothing at all."""
+    fs = FakeFs(journal_text="{not valid json at all\n")
+
+    rc = run_supervisor(
+        _HOME, "acme", "acme-run-1", 4242,
+        _LOG_PATH,
+        fs=fs, process=FakeProcess(alive_for=1), clock=FakeClock(),
+        observer=FakeObserver(), sleep=_no_sleep,
+    )
+
+    assert rc == 0
+    assert fs.appended_lines == []
+    err = capsys.readouterr().err
+    assert "unevaluable" in err.lower()
+    assert "1 journal line" in err.lower()

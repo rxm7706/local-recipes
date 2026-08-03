@@ -5,7 +5,8 @@
 raises -- an unavailable pane or an unreadable path is this port's own
 documented ``None``, not a failure.
 
-``tmux`` directly, via this module's OWN ``subprocess`` call -- NOT
+This adapter invokes ``tmux`` directly, via this module's OWN
+``subprocess`` call -- NOT
 ``adapters/process_posix.py``'s ``ProcessPort.run`` (adapters never import
 each other, AD-4; the Code Map is explicit that this module "cannot reuse
 process_posix.py"). ``bmad_loop`` itself supports more than one multiplexer

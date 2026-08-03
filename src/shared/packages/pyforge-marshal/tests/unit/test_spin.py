@@ -1086,9 +1086,16 @@ def test_spin_spawns_the_supervisor_with_the_expected_argv(home):
 
 
 def test_spin_spawns_the_supervisor_after_the_outcome_append_not_right_after_spin(home):
-    """The spec's own ordering requirement: spawning any earlier -- straight
-    after ``harness.spin()`` returns -- would race the supervisor's own
-    inert-check against an outcome entry that is not yet durably journaled."""
+    """The spec's own ordering requirement: the spawn is the LAST step.
+
+    Follow-up review finding: this docstring used to justify the ordering by
+    a race the code no longer has -- the supervisor's inert-check was
+    widened (by the first review pass) to accept the INTENT run-launch entry
+    too, and that entry is written ``fsync=True`` BEFORE ``harness.spin()``,
+    so ownership is already provable at any point after it. The ordering is
+    still required, for the reason ``cli/spin.py``'s own comment now gives:
+    it keeps this command's intent/outcome pair closed before a SECOND
+    writer (the sidecar) ever opens the same journal."""
     events: list[str] = []
     fs = FakeFs(dirs={home}, events=events)
     harness = FakeHarness(events=events)
@@ -1502,3 +1509,98 @@ def test_loop_home_root_resolution_failure_is_mrs_spin_002(monkeypatch, capsys, 
     assert "MRS-SPIN-002" in stream
     assert harness.spin_calls == []
     assert harness.attach_calls == []
+
+
+def test_spin_still_spawns_the_supervisor_when_the_outcome_append_fails(home, capsys):
+    """Follow-up review finding: the whole reason the supervisor's own
+    inert-check was widened to accept the INTENT run-launch entry is THIS
+    branch -- ``MRS-SPIN-006``, where a live harness process exists but its
+    outcome entry never reached disk. ``cli/spin.py``'s comment says the
+    spawn happens "whether or not the outcome append itself succeeded", yet
+    nothing asserted the two coexist: no Story 3.4 test set
+    ``fail_append_line_on_call = 2``, and the ``MRS-SPIN-006`` test passed
+    no ``process=`` at all. Someone moving the spawn inside the outcome
+    ``try`` (or into its ``else``) would keep every test green while
+    silently making the widened inert-check dead code and leaving exactly
+    the runs that most need supervision unsupervised."""
+    fs = FakeFs(dirs={home})
+    fs.fail_append_line_on_call = 2  # intent (#1) lands; outcome (#2) fails
+    harness = FakeHarness()
+    harness.feed_keys = ("1-1-first-story",)
+    process = FakeProcess()
+
+    exit_code = run_spin(_spin_namespace("acme"), fs=fs, harness=harness, process=process)
+
+    assert exit_code == EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-SPIN-006" in out
+    # The spawn was still attempted, and succeeded -- an unsupervised run is
+    # never the price of a paper-trail gap.
+    assert process.calls == ["spawn_detached"]
+    assert f"supervisor_pid: {process.spawn_result}" in out
+    # Only the intent actually landed, so the ONLY journal proof of Marshal
+    # ownership the sidecar will find is the intent entry -- the exact state
+    # the widened inert-check exists to handle.
+    assert len(fs.appended_lines) == 1
+
+
+def test_spin_reports_both_mrs_spin_006_and_mrs_spin_007_together(home, capsys):
+    """The compound failure: the outcome append fails AND the supervisor
+    cannot be spawned. Both are WARN-tier paper-trail/supervision gaps over
+    an already-successful launch, so both must surface -- neither may mask
+    the other, and the launch itself must still report success."""
+    fs = FakeFs(dirs={home})
+    fs.fail_append_line_on_call = 2
+    harness = FakeHarness()
+    harness.feed_keys = ("1-1-first-story",)
+    process = FakeProcess()
+    process.fail_spawn = ProcessError("cannot launch: python not found")
+
+    exit_code = run_spin(_spin_namespace("acme"), fs=fs, harness=harness, process=process)
+
+    assert exit_code == EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-SPIN-006" in out
+    assert "MRS-SPIN-007" in out
+    assert len(harness.spin_calls) == 1
+
+
+def test_spin_reports_the_supervisor_log_path_even_when_the_spawn_fails(home, capsys):
+    """Follow-up review finding: ``supervisor.log`` is the detached
+    sidecar's ONLY diagnostic channel -- its stderr goes nowhere else -- but
+    it appeared in neither ``data`` nor the ``MRS-SPIN-007`` message, so an
+    operator whose supervisor died later held a pid and no path to any
+    output. ``data["log"]`` carries the harness's own log for exactly this
+    reason, added there as a prior review finding."""
+    fs = FakeFs(dirs={home})
+    harness = FakeHarness()
+    harness.feed_keys = ("1-1-first-story",)
+    process = FakeProcess()
+    process.fail_spawn = ProcessError("cannot launch: python not found")
+
+    run_spin(_spin_namespace("acme", fmt="json"), fs=fs, harness=harness, process=process)
+
+    envelope = json.loads(capsys.readouterr().out)
+    supervisor_log = envelope["data"]["supervisor_log"]
+    assert supervisor_log.endswith("supervisor.log")
+    # Named in the finding message too -- a warning that supervision was
+    # lost is unactionable without saying where the output would have gone.
+    [finding] = [f for f in envelope["findings"] if f["code"] == "MRS-SPIN-007"]
+    assert supervisor_log in finding["message"]
+
+
+def test_spin_reports_the_supervisor_log_path_on_success_too(home, capsys):
+    """Reported unconditionally, not only on failure: a supervisor that
+    spawns fine and dies 60s later on an unwritable journal is precisely the
+    case where the operator needs this path, and that run's ``spin`` output
+    is all they have."""
+    fs = FakeFs(dirs={home})
+    harness = FakeHarness()
+    harness.feed_keys = ("1-1-first-story",)
+    process = FakeProcess()
+
+    run_spin(_spin_namespace("acme", fmt="json"), fs=fs, harness=harness, process=process)
+
+    envelope = json.loads(capsys.readouterr().out)
+    assert envelope["data"]["supervisor_log"].endswith("supervisor.log")
+    assert envelope["data"]["supervisor_log"] == str(process.spawn_calls[0]["log_path"])

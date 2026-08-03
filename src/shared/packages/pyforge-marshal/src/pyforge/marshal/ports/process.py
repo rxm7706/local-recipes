@@ -91,7 +91,11 @@ class ProcessPort(Protocol):
         returns ``True`` -- existence is the only question this method
         answers; ownership is never inferred from a permission failure,
         which is exactly the case a signal-based liveness probe cannot tell
-        apart from "gone" without this distinction."""
+        apart from "gone" without this distinction. "NEVER raises" is
+        literal and includes a ``pid`` the host cannot even represent (one
+        outside C ``int`` range, which the POSIX probe rejects with a bare
+        ``OverflowError`` rather than an ``OSError``): unprobeable is
+        reported as ``False``, never as an exception."""
         ...
 
     def spawn_detached(

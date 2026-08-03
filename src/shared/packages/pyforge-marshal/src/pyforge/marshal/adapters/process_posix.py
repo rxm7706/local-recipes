@@ -135,6 +135,20 @@ class PosixProcess:
             # explicit that existence, not ownership, is the question, so
             # this is a live process, not an absent one.
             return True
+        except (OverflowError, ValueError):
+            # NOT an OSError (review finding): `os.kill` raises a bare
+            # `OverflowError` for a pid outside C `int` range (and a
+            # `ValueError` for other unconvertible integer inputs), so
+            # neither is caught by the clause below. `main()`'s own argv
+            # guard rejects only a NON-POSITIVE pid, so a malformed
+            # invocation carrying an absurdly large pid reached here and
+            # killed the supervisor with a raw traceback AFTER its
+            # `supervisor-attach` entry was already journaled -- a dangling
+            # attach with no matching detach, exactly the silent supervisor
+            # death AD-9 says must never happen. A pid this method cannot
+            # even probe is, for this port's two-valued contract, not
+            # confirmed alive.
+            return False
         except OSError:
             # Any other OSError (e.g. EINVAL for an invalid signal number,
             # unreachable here since 0 is always valid, kept only so this
@@ -158,7 +172,17 @@ class PosixProcess:
             raise ProcessError("cannot launch an empty argv (no executable given)")
         try:
             log_file = open(log_path, "wb")
-        except OSError as exc:
+        except (OSError, ValueError) as exc:
+            # `ValueError` alongside `OSError` (review finding): `open()`
+            # raises a plain `ValueError` -- not an `OSError` -- for a path
+            # containing an embedded NUL byte, the SAME CPython split this
+            # method's own `Popen` call below (and `run()` above, and both
+            # `observer_mux.py` methods) already guards. Left uncaught here
+            # it escaped this port's documented "raises ProcessError only"
+            # contract as a raw traceback through `cli/spin.py`'s own
+            # `except ProcessError` -- and does so at the one point where a
+            # live, already-launched harness process exists, so the crash
+            # would strand a running run with no outcome record.
             raise ProcessError(f"cannot open log {log_path}: {exc}") from exc
         # Mirrors harness_bmadloop.py::spin's own split: opening the log and
         # launching the child are two DISTINCT failure modes with two

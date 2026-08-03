@@ -215,8 +215,16 @@ def test_is_alive_true_for_this_process_itself(process):
 
 def test_is_alive_false_for_a_reaped_process(process, tmp_path):
     """A child that has exited AND been reaped (``wait()``) no longer has a
-    process-table entry -- the one unambiguous "gone" case ``os.kill(pid,
-    0)`` can report without depending on PID reuse timing."""
+    process-table entry -- the clearest "gone" case ``os.kill(pid, 0)`` can
+    report.
+
+    Follow-up review finding: this docstring used to claim the case was
+    reachable "without depending on PID reuse timing". It is not --
+    ``wait()`` frees the pid, so on a busy host the kernel may hand it to an
+    unrelated process before the assertion runs, and ``is_alive`` would then
+    correctly answer ``True``. The window is very small (nothing else here
+    forks), so this stays as the practical "gone" characterization it always
+    was; the docstring no longer asserts an immunity it does not have."""
     child = subprocess.Popen([sys.executable, "-c", "pass"], cwd=tmp_path)
     child.wait()
     assert process.is_alive(child.pid) is False
@@ -235,6 +243,20 @@ def test_is_alive_true_when_permission_denied(process, monkeypatch):
 
     monkeypatch.setattr(process_posix_module.os, "kill", _raise_eperm)
     assert process.is_alive(1) is True
+
+
+def test_is_alive_false_for_a_pid_outside_c_int_range(process):
+    """Follow-up review finding (both reviewers): ``os.kill`` raises a bare
+    ``OverflowError`` -- NOT an ``OSError`` -- for a pid larger than C
+    ``int``, so it escaped every clause here and broke this method's
+    "NEVER raises" contract. It was reachable in production:
+    ``supervisor/__main__.py::main`` guards only a NON-POSITIVE pid, so a
+    malformed invocation carrying an absurd pid crashed the sidecar with a
+    raw traceback AFTER its ``supervisor-attach`` entry was journaled --
+    leaving a dangling attach with no detach, the exact silent supervisor
+    death AD-9 forbids."""
+    assert process.is_alive(2**31) is False
+    assert process.is_alive(2**70) is False
 
 
 def test_is_alive_false_on_an_unexpected_oserror(process, monkeypatch):
@@ -316,6 +338,23 @@ def test_spawn_detached_wraps_an_embedded_null_byte(process, tmp_path):
             [sys.executable, "-c", "print('hi\x00there')"],
             cwd=tmp_path,
             log_path=tmp_path / "spawned.log",
+        )
+
+
+def test_spawn_detached_wraps_an_embedded_null_byte_in_the_log_path(process, tmp_path):
+    """Follow-up review finding: the ``open(log_path, "wb")`` that precedes
+    the ``Popen`` had only an ``OSError`` clause, but ``open()`` raises a
+    plain ``ValueError`` for a path carrying an embedded NUL -- the SAME
+    CPython split already guarded at the sibling ``Popen`` call above, at
+    ``run``'s own call, and in both ``observer_mux`` methods. Left uncaught
+    it escaped this port's "raises ProcessError only" contract straight
+    through ``cli/spin.py``'s own ``except ProcessError``, at the one point
+    where a live harness process already exists."""
+    with pytest.raises(ProcessError, match="cannot open log"):
+        process.spawn_detached(
+            [sys.executable, "-c", "pass"],
+            cwd=tmp_path,
+            log_path=tmp_path / "spawned\x00.log",
         )
 
 
