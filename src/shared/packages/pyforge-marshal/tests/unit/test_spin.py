@@ -22,6 +22,7 @@ import jsonschema
 import pytest
 from pyforge.marshal.adapters.fs_local import FsError
 from pyforge.marshal.adapters.harness_bmadloop import HarnessError
+from pyforge.marshal.adapters.process_posix import ProcessError
 from pyforge.marshal.cli import spin as spin_module
 from pyforge.marshal.cli.main import main
 from pyforge.marshal.cli.spin import _non_negative_int, run_attach, run_spin
@@ -233,6 +234,57 @@ class FakeHarness:
         if self.fail_run_foreground:
             raise self.fail_run_foreground
         return self.foreground_result
+
+
+class FakeProcess:
+    """Fakes ``ProcessPort``'s ONE method ``run_spin`` calls (Story 3.4):
+    ``spawn_detached``, the supervisor sidecar's own launch. Mirrors
+    ``FakeHarness``/``FakeFs``'s identical per-story-scoped fake
+    convention -- ``run_spin`` never calls ``ProcessPort.run``, so this
+    fake implements only what it needs."""
+
+    def __init__(self, *, events: list[str] | None = None) -> None:
+        self._events = events if events is not None else []
+        self.calls: list[str] = []
+        self.spawn_result: int = 424242
+        self.fail_spawn: Exception | None = None
+        self.spawn_calls: list[dict[str, object]] = []
+
+    def spawn_detached(self, argv: list[str], *, cwd: Path, log_path: Path) -> int:
+        self.calls.append("spawn_detached")
+        self._events.append("spawn_detached")
+        self.spawn_calls.append({"argv": list(argv), "cwd": cwd, "log_path": log_path})
+        if self.fail_spawn:
+            raise self.fail_spawn
+        return self.spawn_result
+
+
+class _StubProcess:
+    """The default supervisor-spawn stand-in for every test in this file
+    that PRE-DATES Story 3.4 and does not itself exercise supervisor-spawn
+    behavior (the overwhelming majority) -- returns a fixed pid without
+    touching the real filesystem/subprocess machinery, so ``run_spin``'s
+    own NEW last step (spawning the supervisor sidecar) cannot fail these
+    tests over a real I/O concern that has nothing to do with what they
+    actually test (``FakeFs``'s own ``home``/``run_dir`` never exist on the
+    real disk -- a REAL ``PosixProcess.spawn_detached`` would raise
+    ``ProcessError`` trying to open a log file under a directory that was
+    only ever recorded in a fake, registering a spurious ``MRS-SPIN-007``
+    in every one of them)."""
+
+    def spawn_detached(self, argv: list[str], *, cwd: Path, log_path: Path) -> int:
+        return 999999
+
+
+@pytest.fixture(autouse=True)
+def _default_supervisor_spawn_succeeds(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Pins ``run_spin``'s own DI default (``process: ProcessPort | None =
+    None`` -> ``PosixProcess()``) to ``_StubProcess`` for every test that
+    does not pass its own ``process=`` fake explicitly -- an explicit
+    keyword argument always wins over this module-level patch, since
+    ``run_spin`` only ever constructs ``PosixProcess()`` when ``process``
+    is ``None``."""
+    monkeypatch.setattr(spin_module, "PosixProcess", lambda: _StubProcess())
 
 
 @pytest.fixture(autouse=True)
@@ -1003,6 +1055,213 @@ def test_spin_unconfirmed_run_id_warning_names_the_log_path(home, capsys):
     assert str(harness.spin_calls[0]["log_path"]) in out
 
 
+# --- Story 3.4: the supervisor sidecar spawn -----------------------------------
+
+
+def test_spin_spawns_the_supervisor_with_the_expected_argv(home):
+    fs = FakeFs(dirs={home})
+    harness = FakeHarness()
+    harness.feed_keys = ("1-1-first-story",)
+    process = FakeProcess()
+
+    exit_code = run_spin(_spin_namespace("acme"), fs=fs, harness=harness, process=process)
+
+    assert exit_code == EXIT_OK
+    [call] = process.spawn_calls
+    run_id = json.loads(fs.appended_lines[0][1])["run_id"]
+    assert call["argv"] == [
+        sys.executable,
+        "-m",
+        "pyforge.marshal.supervisor",
+        str(home),
+        "acme",
+        run_id,
+        "4242",  # harness.spin_result's own pid
+        str(call["log_path"]),
+    ]
+    assert call["cwd"] == home
+    assert call["log_path"].name == "supervisor.log"
+    # A SEPARATE file from the harness's own redirected log.
+    assert call["log_path"] != harness.spin_calls[0]["log_path"]
+
+
+def test_the_supervisor_accepts_the_argv_spin_actually_builds(home, monkeypatch, capsys):
+    """Review finding: the two halves of this story's deliberately-
+    unimportable boundary were pinned only by matching LITERALS -- this
+    module restates the argv it expects, and ``test_supervisor.py``
+    restates the argv its own parser accepts, with nothing driving one
+    against the other. A later story adding a sixth required argument, or
+    tightening ``run_id`` validation, updates the supervisor's own tests,
+    leaves this module's literal untouched, and both suites stay green
+    while every real sidecar exits 1 with ``usage:`` into ``supervisor.log``
+    and every run silently goes unsupervised.
+
+    Worse, misordering is absorbed silently rather than loudly: a
+    slug/run_id SWAP passes BOTH of ``main()``'s own gates (a minted run id
+    is a valid slug, and a slug is a valid run id), so it degrades to an
+    inert exit 0 rather than an error.
+
+    This drives the argv ``run_spin`` genuinely produced through the
+    supervisor's OWN ``main()`` and asserts the five values it recovers
+    compose the SAME run directory ``run_spin`` wrote its journal into.
+    ``run_supervisor`` is stubbed out, so this stays pure parsing --
+    ``test_supervisor_run_path_agreement.py`` pins the path helpers
+    themselves; this pins the interface that feeds them.
+
+    A test module is not part of the ``pyforge.marshal`` package, so
+    importing both sides here does not touch the AD-9 contract."""
+    from pyforge.marshal.supervisor import __main__ as supervisor_main
+
+    fs = FakeFs(dirs={home})
+    harness = FakeHarness()
+    harness.feed_keys = ("1-1-first-story",)
+    process = FakeProcess()
+
+    exit_code = run_spin(_spin_namespace("acme"), fs=fs, harness=harness, process=process)
+    assert exit_code == EXIT_OK
+    [call] = process.spawn_calls
+    argv = call["argv"]
+
+    # The journal `run_spin` itself appended to -- the file the sidecar this
+    # argv launches must find its own run-launch entry in.
+    journal_path = fs.appended_lines[0][0]
+
+    recovered: list[tuple[Path, str, str, int, Path]] = []
+    monkeypatch.setattr(
+        supervisor_main,
+        "run_supervisor",
+        lambda home, slug, run_id, watched_pid, log_path: (
+            recovered.append((home, slug, run_id, watched_pid, log_path)) or 0
+        ),
+    )
+
+    # `[:3]` is the interpreter invocation; the supervisor's own `main()`
+    # parses exactly the tail.
+    assert argv[:3] == [sys.executable, "-m", "pyforge.marshal.supervisor"]
+    assert supervisor_main.main(argv[3:]) == 0, capsys.readouterr().err
+
+    [(got_home, got_slug, got_run_id, got_pid, got_log)] = recovered
+    assert (
+        supervisor_main._run_dir(got_home, got_slug, got_run_id)
+        / supervisor_main._JOURNAL_FILENAME
+        == journal_path
+    )
+    assert got_pid == harness.spin_result.pid
+    assert got_log == call["log_path"]
+
+
+def test_spin_spawns_the_supervisor_after_the_outcome_append_not_right_after_spin(home):
+    """The spec's own ordering requirement: the spawn is the LAST step.
+
+    Follow-up review finding: this docstring used to justify the ordering by
+    a race the code no longer has -- the supervisor's inert-check was
+    widened (by the first review pass) to accept the INTENT run-launch entry
+    too, and that entry is written ``fsync=True`` BEFORE ``harness.spin()``,
+    so ownership is already provable at any point after it. The ordering is
+    still required, for the reason ``cli/spin.py``'s own comment now gives:
+    it keeps this command's intent/outcome pair closed before a SECOND
+    writer (the sidecar) ever opens the same journal."""
+    events: list[str] = []
+    fs = FakeFs(dirs={home}, events=events)
+    harness = FakeHarness(events=events)
+    harness.feed_keys = ("1-1-first-story",)
+    process = FakeProcess(events=events)
+
+    run_spin(_spin_namespace("acme"), fs=fs, harness=harness, process=process)
+
+    spin_index = events.index("spin")
+    spawn_index = events.index("spawn_detached")
+    append_indices = [i for i, event in enumerate(events) if event == "append_line"]
+    assert len(append_indices) == 2  # intent, then outcome
+    outcome_append_index = append_indices[1]
+    assert spin_index < outcome_append_index < spawn_index
+
+
+def test_spin_reports_the_supervisor_pid_in_json_and_text(home, capsys):
+    fs = FakeFs(dirs={home})
+    harness = FakeHarness()
+    harness.feed_keys = ("1-1-first-story",)
+    process = FakeProcess()
+    process.spawn_result = 555555
+
+    run_spin(_spin_namespace("acme"), fs=fs, harness=harness, process=process)
+    out = capsys.readouterr().out
+    assert "supervisor_pid: 555555" in out
+
+    fs2 = FakeFs(dirs={home})
+    harness2 = FakeHarness()
+    harness2.feed_keys = ("1-1-first-story",)
+    process2 = FakeProcess()
+    process2.spawn_result = 555555
+    run_spin(_spin_namespace("acme", fmt="json"), fs=fs2, harness=harness2, process=process2)
+    envelope = json.loads(capsys.readouterr().out)
+    assert envelope["data"]["supervisor_pid"] == 555555
+
+
+def test_spin_supervisor_spawn_failure_registers_mrs_spin_007_but_still_exits_ok(home, capsys):
+    """The harness launch already succeeded (a live process exists) --
+    losing supervision degrades the run to unsupervised, never invalidates
+    the launch: WARN, not error, matching MRS-SPIN-006's own precedent."""
+    fs = FakeFs(dirs={home})
+    harness = FakeHarness()
+    harness.feed_keys = ("1-1-first-story",)
+    process = FakeProcess()
+    process.fail_spawn = ProcessError("cannot launch: python not found")
+
+    exit_code = run_spin(_spin_namespace("acme"), fs=fs, harness=harness, process=process)
+
+    assert exit_code == EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-SPIN-007" in out
+    assert "warn" in out.lower()
+    # The harness run itself is entirely unaffected: both journal entries
+    # landed, and the harness was launched exactly once.
+    assert len(fs.appended_lines) == 2
+    assert len(harness.spin_calls) == 1
+    assert "pid: 4242" in out
+
+
+def test_spin_supervisor_spawn_failure_omits_supervisor_pid_from_data(home, capsys):
+    fs = FakeFs(dirs={home})
+    harness = FakeHarness()
+    harness.feed_keys = ("1-1-first-story",)
+    process = FakeProcess()
+    process.fail_spawn = ProcessError("cannot launch: python not found")
+
+    run_spin(_spin_namespace("acme", fmt="json"), fs=fs, harness=harness, process=process)
+
+    envelope = json.loads(capsys.readouterr().out)
+    assert "supervisor_pid" not in envelope["data"]
+
+
+def test_spin_no_supervisor_spawn_attempted_when_the_harness_launch_itself_fails(home, capsys):
+    """A harness launch failure returns BEFORE the new spawn step is ever
+    reached -- there is no live process to supervise."""
+    fs = FakeFs(dirs={home})
+    harness = FakeHarness()
+    harness.feed_keys = ("1-1-first-story",)
+    harness.fail_spin = HarnessError("bmad-loop binary not found")
+    process = FakeProcess()
+
+    exit_code = run_spin(_spin_namespace("acme"), fs=fs, harness=harness, process=process)
+
+    assert exit_code != EXIT_OK
+    assert process.spawn_calls == []
+    assert "MRS-SPIN-007" not in capsys.readouterr().out
+
+
+def test_spin_foreground_never_spawns_a_supervisor(home):
+    """``--foreground`` writes nothing and mints no run id -- there is
+    nothing this story's own sidecar could meaningfully watch."""
+    fs = FakeFs(dirs={home})
+    harness = FakeHarness()
+    process = FakeProcess()
+
+    run_spin(_spin_namespace("acme", foreground=True), fs=fs, harness=harness, process=process)
+
+    assert process.spawn_calls == []
+
+
 # --- follow-up review pass: the sidecar branch of _append_entry ----------------
 
 
@@ -1315,3 +1574,144 @@ def test_loop_home_root_resolution_failure_is_mrs_spin_002(monkeypatch, capsys, 
     assert "MRS-SPIN-002" in stream
     assert harness.spin_calls == []
     assert harness.attach_calls == []
+
+
+def test_spin_still_spawns_the_supervisor_when_the_outcome_append_fails(home, capsys):
+    """Follow-up review finding: the whole reason the supervisor's own
+    inert-check was widened to accept the INTENT run-launch entry is THIS
+    branch -- ``MRS-SPIN-006``, where a live harness process exists but its
+    outcome entry never reached disk. ``cli/spin.py``'s comment says the
+    spawn happens "whether or not the outcome append itself succeeded", yet
+    nothing asserted the two coexist: no Story 3.4 test set
+    ``fail_append_line_on_call = 2``, and the ``MRS-SPIN-006`` test passed
+    no ``process=`` at all. Someone moving the spawn inside the outcome
+    ``try`` (or into its ``else``) would keep every test green while
+    silently making the widened inert-check dead code and leaving exactly
+    the runs that most need supervision unsupervised."""
+    fs = FakeFs(dirs={home})
+    fs.fail_append_line_on_call = 2  # intent (#1) lands; outcome (#2) fails
+    harness = FakeHarness()
+    harness.feed_keys = ("1-1-first-story",)
+    process = FakeProcess()
+
+    exit_code = run_spin(_spin_namespace("acme"), fs=fs, harness=harness, process=process)
+
+    assert exit_code == EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-SPIN-006" in out
+    # The spawn was still attempted, and succeeded -- an unsupervised run is
+    # never the price of a paper-trail gap.
+    assert process.calls == ["spawn_detached"]
+    assert f"supervisor_pid: {process.spawn_result}" in out
+    # Only the intent actually landed, so the ONLY journal proof of Marshal
+    # ownership the sidecar will find is the intent entry -- the exact state
+    # the widened inert-check exists to handle.
+    assert len(fs.appended_lines) == 1
+
+
+def test_spin_reports_both_mrs_spin_006_and_mrs_spin_007_together(home, capsys):
+    """The compound failure: the outcome append fails AND the supervisor
+    cannot be spawned. Both are WARN-tier paper-trail/supervision gaps over
+    an already-successful launch, so both must surface -- neither may mask
+    the other, and the launch itself must still report success."""
+    fs = FakeFs(dirs={home})
+    fs.fail_append_line_on_call = 2
+    harness = FakeHarness()
+    harness.feed_keys = ("1-1-first-story",)
+    process = FakeProcess()
+    process.fail_spawn = ProcessError("cannot launch: python not found")
+
+    exit_code = run_spin(_spin_namespace("acme"), fs=fs, harness=harness, process=process)
+
+    assert exit_code == EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-SPIN-006" in out
+    assert "MRS-SPIN-007" in out
+    assert len(harness.spin_calls) == 1
+
+
+def test_spin_reports_the_supervisor_log_path_even_when_the_spawn_fails(home, capsys):
+    """Follow-up review finding: ``supervisor.log`` is the detached
+    sidecar's ONLY diagnostic channel -- its stderr goes nowhere else -- but
+    it appeared in neither ``data`` nor the ``MRS-SPIN-007`` message, so an
+    operator whose supervisor died later held a pid and no path to any
+    output. ``data["log"]`` carries the harness's own log for exactly this
+    reason, added there as a prior review finding."""
+    fs = FakeFs(dirs={home})
+    harness = FakeHarness()
+    harness.feed_keys = ("1-1-first-story",)
+    process = FakeProcess()
+    process.fail_spawn = ProcessError("cannot launch: python not found")
+
+    run_spin(_spin_namespace("acme", fmt="json"), fs=fs, harness=harness, process=process)
+
+    envelope = json.loads(capsys.readouterr().out)
+    supervisor_log = envelope["data"]["supervisor_log"]
+    assert supervisor_log.endswith("supervisor.log")
+    # Named in the finding message too -- a warning that supervision was
+    # lost is unactionable without saying where the output would have gone.
+    [finding] = [f for f in envelope["findings"] if f["code"] == "MRS-SPIN-007"]
+    assert supervisor_log in finding["message"]
+
+
+def test_spin_reports_the_supervisor_log_path_on_success_too(home, capsys):
+    """Reported unconditionally, not only on failure: a supervisor that
+    spawns fine and dies 60s later on an unwritable journal is precisely the
+    case where the operator needs this path, and that run's ``spin`` output
+    is all they have."""
+    fs = FakeFs(dirs={home})
+    harness = FakeHarness()
+    harness.feed_keys = ("1-1-first-story",)
+    process = FakeProcess()
+
+    run_spin(_spin_namespace("acme", fmt="json"), fs=fs, harness=harness, process=process)
+
+    envelope = json.loads(capsys.readouterr().out)
+    assert envelope["data"]["supervisor_log"].endswith("supervisor.log")
+    assert envelope["data"]["supervisor_log"] == str(process.spawn_calls[0]["log_path"])
+
+
+def test_mrs_spin_007_quotes_the_supervisor_log_path(home, capsys, monkeypatch):
+    """Review finding: ``_render_text``'s own comment states that finding
+    MESSAGES are deliberately NOT quoted and requires "every message that
+    interpolates an untrusted value quotes it at construction instead" --
+    which ``MRS-SPIN-001``/``002`` do. ``MRS-SPIN-007`` shipped with a RAW
+    path built from ``BMAD_LOOP_HOME_ROOT``, which ``cli/init.py`` reads
+    unvalidated, so a newline in it forged whole lines of the DEFAULT text
+    report on a run that genuinely launched -- reintroducing on this
+    story's own new finding exactly the defect a prior pass fixed for
+    ``--story`` and raw feed keys."""
+    poisoned_root = (
+        str(home.parent) + "\nfindings:\n  MRS-SPIN-001 [error] FORGED: launch refused"
+    )
+    monkeypatch.setenv("BMAD_LOOP_HOME_ROOT", poisoned_root)
+    poisoned_home = Path(poisoned_root) / "acme"
+
+    fs = FakeFs(dirs={poisoned_home})
+    harness = FakeHarness()
+    harness.feed_keys = ("1-1-first-story",)
+    process = FakeProcess()
+    process.fail_spawn = ProcessError("cannot launch: python not found")
+
+    exit_code = run_spin(_spin_namespace("acme"), fs=fs, harness=harness, process=process)
+
+    # The launch genuinely SUCCEEDED -- MRS-SPIN-007 is a WARN.
+    assert exit_code == EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-SPIN-007" in out
+    # The forged text still APPEARS -- it is part of the path -- but only
+    # ever escaped inside a quoted scalar, never as a line of its own. That
+    # distinction is the whole defect: forgery is about line STRUCTURE.
+    assert "FORGED" in out
+    # Exactly one `findings:` header -- the report's own.
+    assert [line for line in out.splitlines() if line.startswith("findings:")] == [
+        "findings:"
+    ]
+    # ...and no forged FINDING line: every rendered finding is one of the
+    # report's own, at the `_render_text` indent.
+    forged = [
+        line
+        for line in out.splitlines()
+        if line.startswith("  MRS-") and "MRS-SPIN-007" not in line
+    ]
+    assert forged == [], forged
