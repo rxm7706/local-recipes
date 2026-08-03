@@ -10,6 +10,7 @@ from pathlib import Path
 import pytest
 
 from pyforge.marshal.adapters.fs_local import FsError, LocalFs, _tmp_sibling
+from pyforge.marshal.core.egress import Redacted
 
 
 @pytest.fixture
@@ -377,3 +378,80 @@ def test_copy_file_raises_fs_error_on_unwritable_destination_parent(fs, tmp_path
     blocked.write_text("occupied", encoding="utf-8")
     with pytest.raises(FsError):
         fs.copy_file(src, blocked / "dst.txt")
+
+
+# --- write_redacted_atomic (Story 2.6, AD-34) ---------------------------------
+
+
+def test_write_redacted_atomic_writes_the_payloads_text(fs, tmp_path):
+    target = tmp_path / "gate-record.json"
+    fs.write_redacted_atomic(target, Redacted(text='{"a": 1}'))
+    assert target.read_text(encoding="utf-8") == '{"a": 1}'
+
+
+def test_write_redacted_atomic_creates_parent_dirs(fs, tmp_path):
+    target = tmp_path / "nested" / "deeper" / "gate-record.json"
+    fs.write_redacted_atomic(target, Redacted(text="{}"))
+    assert target.read_text(encoding="utf-8") == "{}"
+
+
+def test_write_redacted_atomic_overwrites_existing_content(fs, tmp_path):
+    target = tmp_path / "gate-record.json"
+    target.write_text("old", encoding="utf-8")
+    fs.write_redacted_atomic(target, Redacted(text="new"))
+    assert target.read_text(encoding="utf-8") == "new"
+
+
+def test_write_redacted_atomic_leaves_no_temp_file_behind(fs, tmp_path):
+    target = tmp_path / "gate-record.json"
+    fs.write_redacted_atomic(target, Redacted(text="{}"))
+    leftovers = [p for p in tmp_path.iterdir() if p.name != "gate-record.json"]
+    assert leftovers == []
+
+
+def test_write_redacted_atomic_raises_fs_error_on_unwritable_target(fs, tmp_path):
+    blocked = tmp_path / "not-a-directory"
+    blocked.write_text("occupied", encoding="utf-8")
+    with pytest.raises(FsError):
+        fs.write_redacted_atomic(blocked / "gate-record.json", Redacted(text="{}"))
+
+
+@pytest.mark.parametrize("bogus_payload", ["a bare str", None, {"text": "{}"}, 123])
+def test_write_redacted_atomic_rejects_a_non_redacted_payload(fs, tmp_path, bogus_payload):
+    """Regression (review finding, verified live): without a type check,
+    a non-``Redacted`` payload crashed with a raw ``AttributeError`` on
+    ``payload.text`` instead of the documented ``TypeError`` contract."""
+    with pytest.raises(TypeError, match="Redacted"):
+        fs.write_redacted_atomic(tmp_path / "gate-record.json", bogus_payload)
+
+
+@pytest.mark.parametrize("bogus_path", ["a-bare-str-path", None, 123])
+def test_write_redacted_atomic_rejects_a_non_path_path(fs, tmp_path, bogus_path):
+    """Regression (follow-up review finding, verified live): the original
+    guarded only ``payload``, so a ``str`` path escaped as a raw
+    ``AttributeError: 'str' object has no attribute 'parent'`` -- the same
+    failure class the ``payload`` guard exists to prevent."""
+    with pytest.raises(TypeError, match="path must be a Path"):
+        fs.write_redacted_atomic(bogus_path, Redacted(text="{}"))
+
+
+@pytest.mark.parametrize("path", [Path("/"), Path(".")], ids=["root", "dot"])
+def test_write_redacted_atomic_rejects_a_path_with_no_file_name(path):
+    """Review finding, verified live: `_tmp_sibling` raised its own
+    `ValueError: PosixPath('/') has an empty name`, which
+    `write_text_atomic`'s `except OSError` does not catch -- so it escaped
+    both failure modes `write_redacted_atomic` and `ports/record.py`
+    document (`TypeError` or `FsError`)."""
+    with pytest.raises(FsError, match="no file name"):
+        LocalFs().write_redacted_atomic(path, Redacted(text="{}"))
+
+
+def test_write_redacted_atomic_payload_diagnostic_does_not_echo_the_value(tmp_path):
+    """Review finding: the diagnostic interpolated the rejected payload, which
+    is precisely the unredacted object this port exists to refuse -- and it
+    escapes as a raw traceback into the harness log."""
+    secret = "ghp_" + "a" * 36
+    with pytest.raises(TypeError) as excinfo:
+        LocalFs().write_redacted_atomic(tmp_path / "r.json", secret)
+    assert secret not in str(excinfo.value)
+    assert "Redacted" in str(excinfo.value)
