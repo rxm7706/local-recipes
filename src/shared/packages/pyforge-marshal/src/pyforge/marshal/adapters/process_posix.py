@@ -23,10 +23,24 @@ project-defined (this repo's own ``pyforge-marshal-test`` verify command can
 legitimately run for minutes) -- Marshal has no policy field for a
 per-command timeout budget today, so ``run`` defaults to ``None`` (no
 timeout) rather than inventing an arbitrary ceiling.
+
+Story 3.4 adds ``is_alive``/``spawn_detached`` -- the supervisor's own
+liveness-probe and generic detached-spawn seam. ``is_alive`` is a bare
+``os.kill(pid, 0)`` (POSIX's own "does this pid exist" idiom -- signal ``0``
+is never actually delivered, only the kernel's existence/permission check
+runs), translating its two failure modes into the two-valued answer this
+port's own docstring promises rather than a raised exception either way.
+``spawn_detached`` mirrors ``adapters/harness_bmadloop.py::BmadLoopHarness.
+spin``'s own ``Popen``/log-file/``start_new_session`` recipe almost exactly
+(this module cannot import that one -- adapters never import each other,
+AD-4) -- MINUS that method's own harness-run-id log poll, which is specific
+to ``bmad-loop run``'s own stdout convention and has no place in a generic
+primitive.
 """
 
 from __future__ import annotations
 
+import os
 import subprocess
 from collections.abc import Sequence
 from pathlib import Path
@@ -105,3 +119,90 @@ class PosixProcess:
         return ProcessResult(
             returncode=result.returncode, stdout=result.stdout, stderr=result.stderr
         )
+
+    def is_alive(self, pid: int) -> bool:
+        try:
+            os.kill(pid, 0)
+        except ProcessLookupError:
+            # ESRCH: no process with this pid exists (or it exists but is a
+            # zombie the kernel has already reclaimed) -- the only "gone"
+            # case this port promises.
+            return False
+        except PermissionError:
+            # EPERM: a process with this pid exists but this Marshal
+            # invocation lacks permission to signal it (a different user's
+            # process reusing the pid) -- this port's own docstring is
+            # explicit that existence, not ownership, is the question, so
+            # this is a live process, not an absent one.
+            return True
+        except OSError:
+            # Any other OSError (e.g. EINVAL for an invalid signal number,
+            # unreachable here since 0 is always valid, kept only so this
+            # method holds its own "never raises" contract against a future
+            # platform quirk this file's author did not anticipate) reports
+            # the conservative "not confirmed alive" answer rather than
+            # escaping raw -- mirrors this module's own run()'s "raise
+            # ProcessError, never a bare exception" discipline, one step
+            # further: this method's contract has no exception slot at all.
+            return False
+        return True
+
+    def spawn_detached(
+        self, argv: Sequence[str], *, cwd: Path, log_path: Path
+    ) -> int:
+        if not argv:
+            # Same guard as run() above, and for the identical reason: there
+            # is no argv[0] to exec, and this Protocol's "raises ProcessError
+            # only" contract must hold for every caller, not just the ones
+            # that happen to pre-validate a non-empty argv themselves.
+            raise ProcessError("cannot launch an empty argv (no executable given)")
+        try:
+            log_file = open(log_path, "wb")
+        except OSError as exc:
+            raise ProcessError(f"cannot open log {log_path}: {exc}") from exc
+        # Mirrors harness_bmadloop.py::spin's own split: opening the log and
+        # launching the child are two DISTINCT failure modes with two
+        # distinct messages, so the open above stays outside this block's
+        # exception handling -- the `with` here exists solely to guarantee
+        # the descriptor is closed in THIS (parent) process once the child
+        # has its own duplicated copy, exactly like that method's own
+        # comment explains.
+        with log_file:
+            try:
+                process = subprocess.Popen(
+                    list(argv),
+                    cwd=cwd,
+                    start_new_session=True,
+                    stdin=subprocess.DEVNULL,
+                    stdout=log_file,
+                    stderr=log_file,
+                    # PYTHONUNBUFFERED=1 (review finding): this method's own
+                    # docstring -- and its caller, cli/spin.py's supervisor-
+                    # spawn step -- describe it as mirroring
+                    # harness_bmadloop.py::spin's detach recipe "exactly",
+                    # but that method forces this env var specifically
+                    # because a child's stdout is fully block-buffered once
+                    # redirected to a regular file. This generic primitive
+                    # had no caller who needed it yet (the supervisor writes
+                    # no stdout today), but leaving it off a seam other
+                    # future callers will reuse risks silently reintroducing
+                    # the exact bug that env var was added to fix.
+                    env={**os.environ, "PYTHONUNBUFFERED": "1"},
+                )
+            except FileNotFoundError as exc:
+                # NOT necessarily "the executable is missing" (review
+                # finding): Popen raises this identical exception when `cwd`
+                # itself cannot be chdir'd into (e.g. a removed loop-home
+                # directory) -- a materially different cause this message
+                # used to misreport. Neither this method's docstring nor its
+                # caller can distinguish the two from the raised exception
+                # alone, so the message states only what is actually known.
+                raise ProcessError(f"cannot launch {list(argv)!r}: {exc}") from exc
+            except ValueError as exc:
+                # subprocess.Popen raises a plain ValueError (not an
+                # OSError) for an embedded NUL byte in argv -- the same
+                # CPython behavior run()'s own identical catch documents.
+                raise ProcessError(f"cannot launch {list(argv)!r}: {exc}") from exc
+            except OSError as exc:
+                raise ProcessError(f"cannot launch {list(argv)!r}: {exc}") from exc
+        return process.pid

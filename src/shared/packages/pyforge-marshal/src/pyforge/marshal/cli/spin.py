@@ -38,7 +38,28 @@ selector and the echoed preview -- THIS is "the resolved story list ...
 recorded in the journal" -- -> ``HarnessPort.spin`` -> ``append_line`` an
 ``outcome`` entry (same kind, ``intent_id`` set, ``fsync=False``) carrying
 ``pid``/``harness_run_id`` as a plain correlation field, never a key/path/
-grouping value (AD-25) -> print the same resolved list and run id.
+grouping value (AD-25) -> ``ProcessPort.spawn_detached`` the supervisor
+sidecar (Story 3.4, AD-9) as the LAST step, whether or not the outcome
+append itself succeeded -> print the same resolved list and run id.
+
+Story 3.4 (the supervisor's own process lifecycle, AD-9/AD-20/AD-25) adds
+the sidecar spawn: a new, injectable ``process: ProcessPort | None = None``
+(default ``PosixProcess()``, matching ``fs``/``harness``'s own DI
+convention) whose ``spawn_detached`` launches ``python -m
+pyforge.marshal.supervisor <home> <slug> <run_id> <spin_result.pid>
+<supervisor_log>`` detached, redirecting its own stdout/stderr to a SEPARATE
+log file from the harness's own (``_SUPERVISOR_LOG_FILENAME``, never
+``_LOG_FILENAME``). Placed strictly AFTER the outcome-entry append is
+attempted (succeeded or not) -- never right after ``harness.spin()``
+returns -- because the supervisor's own inert-check reads that SAME
+outcome entry back off disk; spawning it any earlier would race the
+supervisor against an entry that is not yet journaled. A ``ProcessError``
+here (the supervisor could not be launched at all) registers
+``MRS-SPIN-007`` (``Verdict.WARN``): the harness launch itself already
+succeeded, so losing supervision degrades the run to unsupervised, never
+invalidates the launch (matches architecture.md's own "a supervisor crash
+degrades to an unsupervised run ... never to a corrupted one"). On success,
+``data["supervisor_pid"]`` joins the envelope/text report.
 
 **``--foreground``.** Calls the synchronous, stdio-inheriting
 ``HarnessPort.run_foreground`` INSTEAD of the detached ``spin`` path and
@@ -92,12 +113,16 @@ sole authority for which stories a run actually executes. Never
 pre-refuses on a zero-count preview (the spec's own Never clause): that
 judgment belongs to the harness's own engine at run time.
 
-Registers ``MRS-SPIN-001`` through ``MRS-SPIN-006`` (``core/findings.py``/
+Registers ``MRS-SPIN-001`` through ``MRS-SPIN-007`` (``core/findings.py``/
 ``core/verdict.py``) -- see those modules' own docstrings for the full
 per-code rationale. ``MRS-SPIN-006`` joined the original five in review,
 splitting "launched, but its outcome could not be journaled" (``WARN`` -- a
 live process now exists) off ``MRS-SPIN-003``'s "never launched, safe to
-retry" (``ERROR``).
+retry" (``ERROR``). ``MRS-SPIN-007`` (Story 3.4) is the supervisor-spawn
+failure -- the SAME ``WARN`` tier as ``MRS-SPIN-006``, for the same reason:
+a live, launched harness process is never re-classified as a failure over a
+DIFFERENT paper-trail gap (losing supervision rather than losing the
+outcome journal entry).
 """
 
 from __future__ import annotations
@@ -113,6 +138,7 @@ from pathlib import Path
 
 from ..adapters.fs_local import FsError, LocalFs
 from ..adapters.harness_bmadloop import BmadLoopHarness, HarnessError
+from ..adapters.process_posix import PosixProcess, ProcessError
 from ..core import policy
 from ..core.identity import (
     StoryKey,
@@ -132,6 +158,7 @@ from ..core.model import Finding, Severity, build_envelope
 from ..core.verdict import compute_verdict, exit_code_for, relay_exit_code
 from ..ports.fs import FsPort
 from ..ports.harness import HarnessPort
+from ..ports.process import ProcessPort
 from .config import _suppress_downstream_pipe_close
 from .init import _home_path
 
@@ -144,6 +171,10 @@ from .init import _home_path
 # "starting" line and otherwise left for an operator to read directly.
 _JOURNAL_FILENAME = "journal.jsonl"
 _LOG_FILENAME = "harness.log"
+# The supervisor sidecar's OWN redirected stdout/stderr -- a SEPARATE file
+# from the harness's own _LOG_FILENAME, since they are two distinct detached
+# processes (Story 3.4, AD-9).
+_SUPERVISOR_LOG_FILENAME = "supervisor.log"
 
 # The "kind" every entry this module writes carries -- one launch attempt,
 # one intent/outcome pair, always this same kind (no other kind exists yet
@@ -373,9 +404,11 @@ def run_spin(
     *,
     fs: FsPort | None = None,
     harness: HarnessPort | None = None,
+    process: ProcessPort | None = None,
 ) -> int:
     fs = fs if fs is not None else LocalFs()
     harness = harness if harness is not None else BmadLoopHarness()
+    process = process if process is not None else PosixProcess()
 
     slug = args.slug
     findings: list[Finding] = []
@@ -768,6 +801,49 @@ def run_spin(
             )
         )
 
+    # --- spawn the supervisor sidecar -- the LAST step (Story 3.4, AD-9) ----
+    # Deliberately AFTER the outcome-entry append above is attempted --
+    # succeeded or not -- never right after harness.spin() returns: the
+    # supervisor's own inert-check reads that SAME outcome entry back off
+    # disk, so spawning it any earlier would race the supervisor against an
+    # entry that is not yet durably journaled (it would see no run-launch
+    # outcome yet, conclude this run is not one Marshal started, and exit
+    # inert before the entry it was waiting for ever lands).
+    supervisor_log = run_dir / _SUPERVISOR_LOG_FILENAME
+    try:
+        supervisor_pid = process.spawn_detached(
+            [
+                sys.executable,
+                "-m",
+                "pyforge.marshal.supervisor",
+                str(home),
+                slug,
+                run_id,
+                str(spin_result.pid),
+                str(supervisor_log),
+            ],
+            cwd=home,
+            log_path=supervisor_log,
+        )
+    except ProcessError as exc:
+        # The harness launch already succeeded (a live process exists) --
+        # losing supervision degrades the run to unsupervised, never
+        # invalidates the launch: WARN, the same tier as MRS-SPIN-006's own
+        # "a different paper-trail gap over an already-successful launch".
+        findings.append(
+            Finding(
+                code="MRS-SPIN-007",
+                severity=Severity.WARN,
+                message=(
+                    f"bmad-loop run launched (pid {spin_result.pid}) but its "
+                    f"supervisor could not be spawned: {exc} -- the run "
+                    "continues unsupervised"
+                ),
+            )
+        )
+    else:
+        data["supervisor_pid"] = supervisor_pid
+
     return _emit(args, data, findings)
 
 
@@ -838,6 +914,8 @@ def _render_text(data: Mapping[str, object], findings: tuple[Finding, ...]) -> s
         lines.append(f"pid: {data['pid']}")
     if "harness_run_id" in data:
         lines.append(f"harness_run_id: {_scalar(data['harness_run_id'])}")
+    if "supervisor_pid" in data:
+        lines.append(f"supervisor_pid: {data['supervisor_pid']}")
     if findings:
         lines.append("findings:")
         for finding in findings:

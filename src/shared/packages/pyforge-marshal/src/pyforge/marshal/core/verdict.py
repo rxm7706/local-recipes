@@ -138,10 +138,17 @@ and, for ``006`` specifically, matching AD-21's amendment (F-17) for a lone
 unclosed journal ``intent`` generally: a launch that already succeeded is
 never re-classified as a failure over a paper-trail gap. A malformed raw
 feed key surfaces via the EXISTING ``MRS-IDENT-001`` (already
-``Verdict.UNEVALUABLE``) -- no new code was needed for that scenario. Later
-stories populate the table further as they add real codes. The mechanism (a
-total, fail-loud lookup) is separately proven via ``monkeypatch``-injected
-synthetic entries in ``tests/unit/test_verdict.py``.
+``Verdict.UNEVALUABLE``) -- no new code was needed for that scenario.
+Story 3.4's ``cli/spin.py`` (the supervisor's own process lifecycle,
+AD-9/AD-20/AD-25) adds ``MRS-SPIN-007`` (the supervisor sidecar's
+``ProcessPort.spawn_detached`` raised ``ProcessError`` after the harness
+itself already launched successfully) -- classified ``Verdict.WARN``, the
+same tier as ``MRS-SPIN-006`` and for the same reason: a live,
+already-launched process is never re-classified as a failure over a
+paper-trail gap, here the absence of a supervisor rather than a missing
+outcome entry. Later stories populate the table further as they add real
+codes. The mechanism (a total, fail-loud lookup) is separately proven via
+``monkeypatch``-injected synthetic entries in ``tests/unit/test_verdict.py``.
 
 Every other module *feeds* findings; only this module *projects* them to a
 verdict and an exit code -- enforced by the sole-ownership meta-test
@@ -221,6 +228,8 @@ _RELAY_PASSTHROUGH: frozenset[int] = frozenset(
 # Story 3.3's cli/spin.py adds the ninth real caller's SIX codes (MRS-SPIN-006
 # joined 001-005 in review, splitting "launched but its outcome could not be
 # journaled" off MRS-SPIN-003's "never launched, safe to retry").
+# Story 3.4's cli/spin.py adds a SEVENTH code to the same caller,
+# MRS-SPIN-007, at the same WARN tier as MRS-SPIN-006.
 _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-IDENT-001": Verdict.UNEVALUABLE,
     "MRS-IDENT-002": Verdict.UNEVALUABLE,
@@ -266,6 +275,7 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-SPIN-004": Verdict.WARN,
     "MRS-SPIN-005": Verdict.ERROR,
     "MRS-SPIN-006": Verdict.WARN,
+    "MRS-SPIN-007": Verdict.WARN,
 }
 
 
