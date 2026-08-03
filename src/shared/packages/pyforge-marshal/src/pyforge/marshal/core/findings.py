@@ -158,10 +158,47 @@ is missing from the caller-supplied ``sidecars`` mapping, or whose text is
 not valid JSON, or whose decoded value is not itself a JSON object). Both
 classify ``Verdict.UNEVALUABLE`` (AD-8): a quarantined line's own story key
 and decision domain could not be evaluated, never a gate that failed --
-see ``core/verdict.py``. Later stories append further real codes here as
-they gain their own real callers. The registry MECHANISM
-(format check, then membership check) is separately proven via
-``monkeypatch``-injected synthetic codes in ``tests/unit/test_findings.py``.
+see ``core/verdict.py``. Story 3.3's ``cli/spin.py`` (``marshal factory
+spin``/``attach``, FR-9/FR-17) adds the registry's ninth real caller and its
+own six codes: ``MRS-SPIN-001`` (a malformed project slug, checked before
+any I/O -- the same pre-I/O shape gate every sibling command's own
+``MRS-INIT-001``/``MRS-PREFLIGHT-010``/``MRS-TEARDOWN-001`` applies),
+``MRS-SPIN-002`` (the loop home is not provisioned -- ``fs.is_dir(home)`` is
+``False``), ``MRS-SPIN-003`` (the harness process could not be LAUNCHED at
+all -- covers ``spin``'s detached launch, ``run_foreground``'s synchronous
+one, and ``attach``'s exec alike: all three share the identical underlying
+failure mode, a missing binary or a launch-time ``OSError``, so one code
+serves all three rather than three near-duplicates), ``MRS-SPIN-004`` (the
+harness's own self-minted ``harness_run_id`` could not be recovered within
+``spin``'s bounded poll window -- the detached spawn itself still
+succeeded), ``MRS-SPIN-005`` (the story feed is missing or unparseable --
+``HarnessPort.story_feed_error`` returned non-``None``), and ``MRS-SPIN-006``
+(the detached spawn itself SUCCEEDED, but its ``outcome`` entry could not be
+journaled -- review finding, Blind Hunter, verified live: this case
+originally reused ``MRS-SPIN-003``, conflating "never launched, safe to
+retry" with "a live process now exists, unaccounted for in the journal" --
+a caller treating either alike as safe-to-retry could double-spawn a second
+concurrent run). ``MRS-SPIN-001`` classifies ``Verdict.UNEVALUABLE``, the
+same tier as every sibling pre-I/O shape gate: Marshal cannot determine what
+to launch. ``MRS-SPIN-002``/``003``/``005`` classify ``Verdict.ERROR``, the
+same tier as every other real-precondition-checked-and-failed code
+(``MRS-INIT-003/004/005``, ``MRS-PREFLIGHT-001``-``009``,
+``MRS-TEARDOWN-002/003``): a real operation was attempted (or a real
+precondition was checked) and did not converge, never "could not evaluate".
+``MRS-SPIN-004``/``006`` classify ``Verdict.WARN``, the same tier as
+``MRS-POLICY-005``/``MRS-PREFLIGHT-011``/``MRS-GATE-004`` -- and, for
+``006`` specifically, the SAME tier AD-21's amendment (F-17) already assigns
+a lone unclosed journal ``intent`` generally ("an unclosed intent... stays
+open and is reported... classifies WARN, not error... escalating it is an
+operator decision, never automatic"): a launch that already succeeded is
+never re-classified as a failure over a paper-trail gap this codebase's own
+architecture already treats as WARN system-wide. A malformed raw feed key
+surfaces via the EXISTING ``MRS-IDENT-001`` (``core/identity.py``, already
+``Verdict.UNEVALUABLE``) -- no new code was needed for that scenario, per
+this story's own spec. Later stories append further real codes here as they
+gain their own real callers. The registry MECHANISM (format check, then
+membership check) is separately proven via ``monkeypatch``-injected
+synthetic codes in ``tests/unit/test_findings.py``.
 
 This module is pure data: no I/O, no subprocess, no network, no clock
 (AD-4).
@@ -192,6 +229,7 @@ CODE_PATTERN = re.compile(r"MRS-[A-Z][A-Z0-9]*-[0-9]{3}")
 # Story 2.1's cli/gate.py/core/gate.py add the seventh real caller's five codes.
 # Story 2.4's core/gate.py::classify_doc_only_declaration adds a sixth code.
 # Story 3.2's core/journal.py::fold adds the eighth real caller's two codes.
+# Story 3.3's cli/spin.py adds the ninth real caller's five codes.
 REGISTERED_CODES: frozenset[str] = frozenset(
     {
         "MRS-IDENT-001",
@@ -232,6 +270,12 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-GATE-006",
         "MRS-JOURNAL-001",
         "MRS-JOURNAL-002",
+        "MRS-SPIN-001",
+        "MRS-SPIN-002",
+        "MRS-SPIN-003",
+        "MRS-SPIN-004",
+        "MRS-SPIN-005",
+        "MRS-SPIN-006",
     }
 )
 

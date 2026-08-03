@@ -112,10 +112,33 @@ evaluate). Story 3.2's ``core/journal.py::fold`` adds ``MRS-JOURNAL-001``
 or invalid-JSON sidecar blob) -- both classify ``Verdict.UNEVALUABLE``,
 the same tier as every other "Marshal could not determine the answer"
 code: a quarantined line's own story key and decision domain could not be
-evaluated, never a gate that failed. Later stories populate the table
-further as they add real codes. The mechanism (a total, fail-loud lookup) is
-separately proven via ``monkeypatch``-injected synthetic entries in
-``tests/unit/test_verdict.py``.
+evaluated, never a gate that failed. Story 3.3's ``cli/spin.py`` (``marshal
+factory spin``/``attach``, FR-9/FR-17) adds six more codes.
+``MRS-SPIN-001`` (a malformed project slug, checked before any I/O)
+classifies ``Verdict.UNEVALUABLE``, the same tier as every sibling pre-I/O
+shape gate (``MRS-INIT-001``/``MRS-PREFLIGHT-010``/``MRS-TEARDOWN-001``):
+Marshal cannot determine what to launch. ``MRS-SPIN-002`` (the loop home is
+not provisioned), ``MRS-SPIN-003`` (the harness process could not be
+launched at all -- shared by ``spin``'s detached launch, ``run_foreground``'s
+synchronous one, and ``attach``'s exec, all the same underlying failure
+mode), and ``MRS-SPIN-005`` (the story feed is missing or unparseable)
+classify ``Verdict.ERROR``, the same tier as every other
+real-precondition-checked-and-failed code. ``MRS-SPIN-004`` (the harness's
+own self-minted ``harness_run_id`` could not be recovered within the
+bounded poll window -- the detached spawn itself already succeeded) and
+``MRS-SPIN-006`` (the detached spawn itself succeeded, but its ``outcome``
+entry could not be journaled -- distinct from ``MRS-SPIN-003``'s "never
+launched" tier, review finding: reusing 003 there conflated "safe to
+retry" with "a live, unaccounted-for process") classify ``Verdict.WARN``,
+the same tier as ``MRS-POLICY-005``/``MRS-PREFLIGHT-011``/``MRS-GATE-004`` --
+and, for ``006`` specifically, matching AD-21's amendment (F-17) for a lone
+unclosed journal ``intent`` generally: a launch that already succeeded is
+never re-classified as a failure over a paper-trail gap. A malformed raw
+feed key surfaces via the EXISTING ``MRS-IDENT-001`` (already
+``Verdict.UNEVALUABLE``) -- no new code was needed for that scenario. Later
+stories populate the table further as they add real codes. The mechanism (a
+total, fail-loud lookup) is separately proven via ``monkeypatch``-injected
+synthetic entries in ``tests/unit/test_verdict.py``.
 
 Every other module *feeds* findings; only this module *projects* them to a
 verdict and an exit code -- enforced by the sole-ownership meta-test
@@ -180,6 +203,7 @@ GUARDED_EXIT_CODES: frozenset[int] = frozenset(_EXIT_BY_VERDICT.values()) | {
 # Story 2.4's core/gate.py::classify_doc_only_declaration adds MRS-GATE-006,
 # joining MRS-GATE-001 at GATE_FAILED.
 # Story 3.2's core/journal.py::fold adds MRS-JOURNAL-001/002, both UNEVALUABLE.
+# Story 3.3's cli/spin.py adds the ninth real caller's five codes.
 _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-IDENT-001": Verdict.UNEVALUABLE,
     "MRS-IDENT-002": Verdict.UNEVALUABLE,
@@ -219,6 +243,12 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-GATE-006": Verdict.GATE_FAILED,
     "MRS-JOURNAL-001": Verdict.UNEVALUABLE,
     "MRS-JOURNAL-002": Verdict.UNEVALUABLE,
+    "MRS-SPIN-001": Verdict.UNEVALUABLE,
+    "MRS-SPIN-002": Verdict.ERROR,
+    "MRS-SPIN-003": Verdict.ERROR,
+    "MRS-SPIN-004": Verdict.WARN,
+    "MRS-SPIN-005": Verdict.ERROR,
+    "MRS-SPIN-006": Verdict.WARN,
 }
 
 

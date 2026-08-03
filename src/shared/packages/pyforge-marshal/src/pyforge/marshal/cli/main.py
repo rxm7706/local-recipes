@@ -11,7 +11,10 @@ FR-1/FR-2) is the second, dispatched to ``cli/init.py``. ``homes`` (Story
 1.6, FR-4/FR-8) is the third, ``preflight`` (Story 1.7, FR-7/FR-47/FR-52)
 is the fourth, and ``teardown`` (Story 1.8, NFR-6/AD-29) is the fifth, all
 three dispatched to the SAME ``cli/init.py`` module (see that
-module's own docstring for why). Not wired through the
+module's own docstring for why). ``gate`` (Story 2.1, FR-20) dispatches to
+``cli/gate.py``, and ``factory`` (Story 3.3, FR-9/FR-17, AD-3/AD-22/AD-25)
+-- Marshal's first launch verb, with nested ``spin``/``attach`` actions --
+dispatches to ``cli/spin.py``. Not wired through the
 envelope/finding machinery ITSELF: mirrors ``pyforge-doctor``'s
 ``__main__.py`` exit-relay pattern (structure: return an int, never raise,
 relay argparse's own code, clamp anything foreign) -- individual
@@ -73,6 +76,7 @@ from ..core.verdict import EXIT_OK, EXIT_SIGINT, EXIT_USAGE, GUARDED_EXIT_CODES
 from . import config as config_cli
 from . import gate as gate_cli
 from . import init as init_cli
+from . import spin as spin_cli
 
 # Scaffold stage (Story 1.1): __init__.py stays empty (no __version__
 # constant), so the version string duplicates pyproject.toml's version
@@ -191,6 +195,7 @@ def _build_parser() -> argparse.ArgumentParser:
     init_cli.add_preflight_subparser(subparsers)
     init_cli.add_teardown_subparser(subparsers)
     gate_cli.add_gate_subparser(subparsers)
+    spin_cli.add_factory_subparser(subparsers)
     return parser
 
 

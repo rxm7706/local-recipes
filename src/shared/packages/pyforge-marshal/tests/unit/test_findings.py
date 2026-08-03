@@ -26,7 +26,8 @@ def test_registered_codes_contains_the_real_codes():
     harness-version check into two tiers. Story 2.1's cli/gate.py/core/gate.py
     add MRS-GATE-001/002/003/004/005. Story 2.4's
     core/gate.py::classify_doc_only_declaration adds MRS-GATE-006. Story
-    3.2's core/journal.py::fold adds MRS-JOURNAL-001/002. This
+    3.2's core/journal.py::fold adds MRS-JOURNAL-001/002. Story 3.3's
+    cli/spin.py adds MRS-SPIN-001/002/003/004/005/006. This
     asserts the registry's exact real contents."""
     assert findings.REGISTERED_CODES == frozenset(
         {
@@ -68,6 +69,12 @@ def test_registered_codes_contains_the_real_codes():
             "MRS-GATE-006",
             "MRS-JOURNAL-001",
             "MRS-JOURNAL-002",
+            "MRS-SPIN-001",
+            "MRS-SPIN-002",
+            "MRS-SPIN-003",
+            "MRS-SPIN-004",
+            "MRS-SPIN-005",
+            "MRS-SPIN-006",
         }
     )
 
