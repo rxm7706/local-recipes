@@ -859,7 +859,27 @@ def run_spin(
     if project_policy_path.is_file():
         try:
             project_policy_data = _read_project_policy(project_policy_path)
-        except PolicyIOError:
+        except Exception:  # noqa: BLE001 -- deliberate, see below
+            # BROAD on purpose (review finding), and the only broad except in
+            # this module. This read is the LAST step on the post-launch
+            # path: by the time it runs a real bmad-loop process is already
+            # live and journalled, and the detached supervisor has not been
+            # spawned yet. Anything that escapes here therefore leaves the
+            # worst state this command can produce -- a running, UNSUPERVISED
+            # harness -- and exits non-zero, which invites the caller to
+            # retry and double-dispatch the very story the live run is
+            # already working (the exact hazard this story's Design Notes
+            # give as the reason `stop`+`resume` is the retry primitive).
+            #
+            # `PolicyIOError` alone was under-inclusive against this
+            # module's own stated rule one comment up ("must never abort an
+            # otherwise-successful harness launch"): `_read_project_policy`
+            # translates the I/O and parse failures it anticipates, but
+            # `tomllib.load` raises a bare `RecursionError` on a deeply
+            # nested document, which is neither an `OSError` nor a
+            # `ValueError` and so passed straight through. The value being
+            # read is a supplementary tuning number for a soft ladder; no
+            # failure to obtain it justifies abandoning a live run.
             project_policy_data = {}
     effective_policy, policy_findings = policy.compose(
         project_slug=slug, project=project_policy_data, flags={}

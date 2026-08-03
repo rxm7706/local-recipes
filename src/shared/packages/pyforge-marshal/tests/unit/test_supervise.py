@@ -15,6 +15,7 @@ from pyforge.marshal.core.supervise import (
     LadderRung,
     Sample,
     evaluate_idle,
+    idle_anchor,
     idle_since,
     rung_at,
     rung_index,
@@ -265,3 +266,87 @@ def test_sample_is_a_plain_frozen_dataclass():
     sample = _sample(0)
     with pytest.raises(AttributeError):
         sample.pane_content = "mutated"  # type: ignore[misc]
+
+
+# --- the monotonic elapsed basis (review finding) ----------------------------
+
+
+def _mono_sample(
+    *, wall_ms: int, mono_s: float | None, pane: str | None = "same"
+) -> Sample:
+    return Sample(
+        moment=_T0 + timedelta(milliseconds=wall_ms),
+        pane_content=pane,
+        log_mtime=1.0,
+        monotonic_s=mono_s,
+    )
+
+
+def test_monotonic_readings_win_over_a_jumped_wall_clock():
+    """Review finding: elapsed idle time must be measured monotonically.
+
+    A host suspended mid-run (or an NTP step) advances the WALL clock across
+    an interval in which the session was not running and could not possibly
+    have produced output. Scored on ``moment`` alone, an hour of suspend at
+    the shipped 25-minute default reached ``NUDGE`` on the first tick after
+    wake and would have hard-stopped and relaunched a perfectly healthy
+    engine on the next one. ``time.monotonic()`` excludes suspended time and
+    cannot be stepped, so the pair of monotonic readings is the truth.
+    """
+    samples = [
+        _mono_sample(wall_ms=0, mono_s=100.0),
+        # One hour of wall clock, one second of real elapsed time.
+        _mono_sample(wall_ms=3_600_000, mono_s=101.0),
+    ]
+    assert evaluate_idle(samples, threshold_s=60.0) == LadderRung.NONE
+
+
+def test_monotonic_readings_still_escalate_on_genuine_elapsed_time():
+    """The mirror of the test above -- the guard must not have simply
+    disabled escalation. Here the wall clock barely moves while the
+    monotonic reading records genuine elapsed idleness, and the ladder
+    climbs on the monotonic evidence."""
+    samples = [
+        _mono_sample(wall_ms=0, mono_s=100.0),
+        _mono_sample(wall_ms=1, mono_s=280.0),
+    ]
+    assert evaluate_idle(samples, threshold_s=60.0) == LadderRung.DEFER
+
+
+def test_wall_clock_is_the_fallback_when_either_endpoint_lacks_a_reading():
+    """Backwards compatibility is explicit, not incidental: a sequence that
+    carries only ``moment`` (every synthetic test predating the field, and
+    any future caller replaying journalled samples) keeps the previous
+    behaviour exactly."""
+    both_missing = [_mono_sample(wall_ms=0, mono_s=None), _mono_sample(wall_ms=120_000, mono_s=None)]
+    assert evaluate_idle(both_missing, threshold_s=60.0) == LadderRung.STOP_AND_RETRY
+
+    # One endpoint short is still a fallback -- a half-monotonic pair cannot
+    # be subtracted meaningfully.
+    anchor_missing = [
+        _mono_sample(wall_ms=0, mono_s=None),
+        _mono_sample(wall_ms=120_000, mono_s=101.0),
+    ]
+    assert evaluate_idle(anchor_missing, threshold_s=60.0) == LadderRung.STOP_AND_RETRY
+
+
+def test_idle_anchor_returns_the_whole_sample_idle_since_reports():
+    """``idle_anchor`` exists so the supervisor's post-nudge rebase can pin
+    BOTH of the anchor's time readings. Pinning only ``moment`` while
+    letting ``monotonic_s`` fall to the current tick's reading would restart
+    the very elapsed count the rebase exists to preserve."""
+    samples = [
+        _mono_sample(wall_ms=0, mono_s=100.0, pane="a"),
+        _mono_sample(wall_ms=1_000, mono_s=101.0, pane="b"),
+        _mono_sample(wall_ms=2_000, mono_s=102.0, pane="b"),
+    ]
+    anchor = idle_anchor(samples)
+    assert anchor is not None
+    assert anchor.moment == idle_since(samples)
+    assert anchor.monotonic_s == 101.0
+
+
+def test_idle_anchor_guards_match_idle_since():
+    assert idle_anchor([]) is None
+    with pytest.raises(TypeError):
+        idle_anchor("not-a-sample-sequence")

@@ -1140,6 +1140,47 @@ def test_spin_surfaces_a_malformed_idle_threshold_minutes_project_policy_finding
     assert harness.spin_calls  # the harness launch was actually attempted
 
 
+def test_spin_never_aborts_a_live_launch_over_an_unreadable_project_policy(
+    home, tmp_path, monkeypatch, capsys
+):
+    """Review finding: this read is the LAST step on the post-launch path.
+    By the time it runs a real bmad-loop process is already live and
+    journalled, and the detached supervisor has not been spawned yet -- so
+    anything escaping here leaves the worst state this command can produce
+    (a running, UNSUPERVISED harness) and exits non-zero, which invites the
+    caller to retry and double-dispatch the very story the live run is
+    already working.
+
+    Catching only ``PolicyIOError`` was under-inclusive against this
+    module's own stated rule that the read "must never abort an otherwise-
+    successful harness launch": ``tomllib.load`` raises a bare
+    ``RecursionError`` on a deeply nested document, which is neither an
+    ``OSError`` nor a ``ValueError`` and passed straight through."""
+    fs = FakeFs(dirs={home})
+    harness = FakeHarness()
+    harness.feed_keys = ("1-1-first-story",)
+
+    policy_path = tmp_path / "marshal-policy.toml"
+    policy_path.write_text("idle_threshold_minutes = 30\n", encoding="utf-8")
+    monkeypatch.setattr(
+        spin_module, "conventional_project_policy_path", lambda slug: policy_path
+    )
+
+    def _explode(path):
+        raise RecursionError("maximum recursion depth exceeded")
+
+    monkeypatch.setattr(spin_module, "_read_project_policy", _explode)
+
+    exit_code = run_spin(_spin_namespace("acme", fmt="json"), fs=fs, harness=harness)
+
+    envelope = json.loads(capsys.readouterr().out)
+    # The launch stands, the supervisor is still spawned, and the threshold
+    # simply falls back to its composed default.
+    assert exit_code == EXIT_OK
+    assert "supervisor_pid" in envelope["data"]
+    assert harness.spin_calls
+
+
 def test_the_supervisor_accepts_the_argv_spin_actually_builds(home, monkeypatch, capsys):
     """Review finding: the two halves of this story's deliberately-
     unimportable boundary were pinned only by matching LITERALS -- this

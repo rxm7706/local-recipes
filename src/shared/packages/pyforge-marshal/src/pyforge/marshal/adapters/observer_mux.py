@@ -193,6 +193,24 @@ class MultiplexerObserver:
             # `text`, must degrade to this port's own documented `False`,
             # never raise.
             return False
+        # A settle AFTER the submitting Enter, not only before it (review
+        # finding). `tmux send-keys` returns as soon as tmux has queued the
+        # keys, NOT when the target program has processed them and redrawn.
+        # The supervisor re-captures this very pane immediately after this
+        # call returns, to rebase its sample history onto the nudge's own
+        # echo -- and with no settle here that capture caught the PRE-submit
+        # frame (input line still holding the typed text). The post-submit
+        # redraw -- input cleared, the message moved into the transcript --
+        # then landed in the NEXT tick's capture, 60s later, where it read
+        # as fresh session output and re-armed the idle window. That is the
+        # nudge -> re-arm -> nudge loop the rebase exists to close, reopened
+        # through a timing door: `stop-and-retry` stayed unreachable no
+        # matter how wedged the session was.
+        #
+        # Reusing the same constant as the paste/Enter settle: both are the
+        # same "give the target program a moment to catch up" wait, and one
+        # tunable is easier to reason about than two.
+        time.sleep(_SEND_TEXT_SETTLE_S)
         return submit.returncode == 0
 
     def mtime(self, path: Path) -> float | None:

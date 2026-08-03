@@ -405,9 +405,22 @@ def _valid_positive_number(value: object) -> int | float | None:
     than one that refuses the value, so this refuses it."""
     if isinstance(value, bool):
         return None
-    if isinstance(value, (int, float)) and value > 0 and math.isfinite(value):
-        return value
-    return None
+    if not (isinstance(value, (int, float)) and value > 0 and math.isfinite(value)):
+        return None
+    # The DERIVED quantity must stay finite too (review finding). Every
+    # consumer of this field converts it to seconds, and `1e308 * 60.0` is
+    # `inf` -- a value that is finite here, composes cleanly, renders as the
+    # effective policy, and is then rejected by the supervisor's own
+    # `threshold_s` guard one process later. The sidecar exits 1 immediately
+    # and silently (its stderr goes only to `supervisor.log`), while `spin`
+    # has already printed a `supervisor_pid` and exited 0 -- so the operator
+    # is told the run is supervised when nothing is watching it. Rejecting
+    # it HERE turns that into the ordinary malformed-value finding the
+    # operator can actually see and act on, which is this validator's whole
+    # reason for rejecting `inf` in the first place.
+    if not math.isfinite(float(value) * 60.0):
+        return None
+    return value
 
 
 def _malformed_finding(code: str, key: str, layer_name: str, raw_value: object) -> Finding:

@@ -92,12 +92,19 @@ class FakeProcess:
     ``run_supervisor``'s loop deterministically instead of an unbounded
     ``while True`` (see that function's own docstring)."""
 
-    def __init__(self, *, alive_for: int) -> None:
+    def __init__(self, *, alive_for: int, dead_pids: set[int] | None = None) -> None:
         self.alive_for = alive_for
         self.calls = 0
+        # Pids this fake reports dead REGARDLESS of the call budget -- the
+        # only way to model a specific process dying while others live,
+        # which is what a `bmad-loop resume` that launched and was then
+        # rejected looks like from the supervisor's side.
+        self.dead_pids = dead_pids or set()
 
     def is_alive(self, pid: int) -> bool:
         self.calls += 1
+        if pid in self.dead_pids:
+            return False
         return self.calls <= self.alive_for
 
 
@@ -108,6 +115,11 @@ class FakeClock:
     def now(self) -> datetime:
         self.calls += 1
         return datetime(2026, 8, 3, 5, 45, 12, tzinfo=timezone.utc)
+
+    def monotonic(self) -> float:
+        # A frozen clock's monotonic reading is frozen too -- this fake
+        # models a supervisor for which no time passes at all.
+        return 1000.0
 
 
 class AdvancingClock:
@@ -125,12 +137,30 @@ class AdvancingClock:
     def __init__(self, *, start: datetime | None = None) -> None:
         self._now = start if start is not None else datetime(2026, 8, 3, 5, 45, 12, tzinfo=timezone.utc)
         self.calls = 0
+        # Advanced in LOCKSTEP with `_now` by default -- an ordinary host
+        # where nothing suspends the process and nothing steps the wall
+        # clock, so the two agree. `jump_wall_clock` below breaks that
+        # agreement deliberately, which is the whole point of having both.
+        self._monotonic = 1000.0
 
     def now(self) -> datetime:
         self.calls += 1
         return self._now
 
+    def monotonic(self) -> float:
+        return self._monotonic
+
     def sleep(self, seconds: float) -> None:
+        self._now += timedelta(seconds=seconds)
+        self._monotonic += seconds
+
+    def jump_wall_clock(self, seconds: float) -> None:
+        """Advance the WALL clock only, leaving the monotonic reading where
+        it was -- exactly what a host suspend or an NTP step looks like from
+        inside this process (``CLOCK_MONOTONIC`` excludes suspended time and
+        cannot be stepped). Used to prove the idle ladder scores elapsed
+        time monotonically and so cannot be tricked into escalating against
+        a healthy run by a clock that jumped."""
         self._now += timedelta(seconds=seconds)
 
 
@@ -141,6 +171,8 @@ class FakeObserver:
         pane: str | None = None,
         pane_sequence: list[str | None] | None = None,
         send_text_result: bool = True,
+        mtime: float | None = 1_760_000_000.0,
+        mtime_sequence: list[float | None] | None = None,
     ) -> None:
         self.pane = pane
         self.pane_sequence = pane_sequence
@@ -148,6 +180,22 @@ class FakeObserver:
         self.mtime_calls: list[Path] = []
         self.send_text_calls: list[tuple[str, str]] = []
         self.send_text_result = send_text_result
+        # A real, CONSTANT float by default -- never `None` (review
+        # finding). This fake used to return `None` from `mtime`
+        # unconditionally, which no production run can ever do:
+        # `cli/spin.py` opens `harness.log` before it spawns the supervisor
+        # at all, so `mtime()` always finds the file. That single hardcoded
+        # `None` is what let a dead "unobservable" guard -- one that
+        # demanded pane AND mtime both be `None` -- pass three consecutive
+        # review passes while the ladder was, in production, free to nudge,
+        # hard-stop and relaunch a perfectly healthy run whose only problem
+        # was that tmux was unreachable. A constant float is the honest
+        # default: the log exists, and a quiet engine simply is not writing
+        # to it.
+        # `mtime_value`, not `mtime`: the attribute would otherwise shadow
+        # the method of the same name on every instance.
+        self.mtime_value = mtime
+        self.mtime_sequence = mtime_sequence
 
     def pane_content(self, session: str) -> str | None:
         self.pane_content_calls.append(session)
@@ -158,7 +206,10 @@ class FakeObserver:
 
     def mtime(self, path: Path) -> float | None:
         self.mtime_calls.append(path)
-        return None
+        if self.mtime_sequence is not None:
+            index = len(self.mtime_calls) - 1
+            return self.mtime_sequence[min(index, len(self.mtime_sequence) - 1)]
+        return self.mtime_value
 
     def send_text(self, session: str, text: str) -> bool:
         self.send_text_calls.append((session, text))
@@ -1066,9 +1117,13 @@ def test_an_unobservable_session_is_never_treated_as_idle():
     only act on evidence it actually has."""
     fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
     clock = AdvancingClock()
-    # `FakeObserver.mtime` always returns None; `pane=None` makes the pane
-    # unobservable too, so every sample is (None, None).
+    # `pane=None` with the fake's DEFAULT constant mtime float -- which is
+    # what a real run looks like when tmux is unreachable (review finding).
+    # `cli/spin.py` creates `harness.log` before spawning the supervisor, so
+    # `mtime()` always finds it; the pane is the only channel that can
+    # actually go dark, and it is the only one that observes the agent.
     observer = FakeObserver(pane=None)
+    assert observer.mtime_value is not None, "the log exists in a real run"
     harness = FakeHarness()
 
     rc = run_supervisor(
@@ -1086,6 +1141,120 @@ def test_an_unobservable_session_is_never_treated_as_idle():
     # Heartbeat-only supervision still runs, and the run ends its own way.
     assert kinds.count("supervisor-heartbeat") >= 1
     assert entries[-1]["payload"]["reason"] == "watched-process-exited"
+
+
+def test_a_flaky_pane_capture_never_re_arms_the_idle_window():
+    """Review finding: a pane capture that merely FLAKES -- a 5s
+    ``capture-pane`` timeout under load, a window-teardown race -- returned
+    ``None`` for one tick and then text again. Recorded as samples, that is
+    TWO changes (text -> None, None -> text), and each one re-armed the idle
+    window. A wedged session whose capture flaked once per threshold window
+    could never accumulate a full threshold, and burned to the token cap
+    without the ladder ever firing. Unobservable ticks are dropped, not
+    recorded, so the idle anchor survives the gap and elapsed time keeps
+    accruing across it."""
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+    clock = AdvancingClock()
+    # Wedged: the same pane text throughout, but the capture flakes on every
+    # other tick. Recorded as samples that is a change EVERY tick (text ->
+    # None -> text ...), so the anchor reset every tick and a full threshold
+    # could never accumulate -- the session stayed wedged forever with the
+    # ladder permanently at rest. A single one-off flake only DELAYS
+    # escalation by a tick, which is why this pattern recurs.
+    observer = FakeObserver(
+        pane_sequence=["stuck", None, "stuck", None, "stuck", None, "stuck", None]
+    )
+    harness = FakeHarness()
+
+    rc = run_supervisor(
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, 1.0,
+        fs=fs, process=FakeProcess(alive_for=8), clock=clock, observer=observer,
+        harness=harness, sleep=clock.sleep,
+    )
+
+    assert rc == 0
+    kinds = [json.loads(line)["kind"] for _, line, _ in fs.appended_lines]
+    # The flakes must NOT have reset the window: the ladder still escalates.
+    assert "idle-nudge" in kinds, "flaked ticks must not re-arm the window"
+
+
+def test_a_wall_clock_jump_never_escalates_the_ladder():
+    """Review finding: elapsed idle time is measured MONOTONICALLY, so a
+    host suspend or an NTP step cannot be scored as accumulated idleness.
+
+    A laptop suspended for an hour mid-run advances the wall clock across an
+    interval in which the session was not running and could not possibly
+    have produced output. Measured on `moment` alone, the first tick after
+    wake crossed the threshold and nudged, and the tick after that hard-
+    stopped and relaunched a perfectly healthy engine -- at the shipped
+    25-minute default.
+    """
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+    clock = AdvancingClock()
+    observer = FakeObserver(pane="working")
+    harness = FakeHarness()
+
+    real_sleep = clock.sleep
+    ticks = {"n": 0}
+
+    def _sleep_then_suspend(seconds: float) -> None:
+        real_sleep(seconds)
+        ticks["n"] += 1
+        if ticks["n"] == 2:
+            # One hour of wall clock, zero monotonic seconds: exactly what a
+            # suspend looks like from inside this process.
+            #
+            # On the SECOND tick's sleep, deliberately: the jump has to land
+            # between two samples to show up as a delta at all. Applied
+            # during the first tick's sleep it is absorbed into the very
+            # first sample's own `moment` and no elapsed calculation ever
+            # sees it -- which makes the test vacuous.
+            clock.jump_wall_clock(3600.0)
+
+    rc = run_supervisor(
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, 25.0,
+        fs=fs, process=FakeProcess(alive_for=6), clock=clock, observer=observer,
+        harness=harness, sleep=_sleep_then_suspend,
+    )
+
+    assert rc == 0
+    kinds = [json.loads(line)["kind"] for _, line, _ in fs.appended_lines]
+    assert not any(kind.startswith("idle-") for kind in kinds), (
+        "a wall-clock jump is not elapsed idle time"
+    )
+    assert harness.stop_calls == []
+    assert observer.send_text_calls == []
+
+
+def test_a_resume_that_did_not_take_is_not_a_clean_completion():
+    """Review finding: ``HarnessPort.resume`` returning a pid proves only
+    that the spawn worked. ``bmad-loop resume`` exits non-zero -- after
+    starting normally -- for an unknown run ref, a run whose engine it still
+    considers alive, an already-finished run, or missing base skills. The
+    supervisor journaled a fully successful ``{old_pid, new_pid}`` retry
+    with no finding, then detached with the ordinary
+    ``"watched-process-exited"``: a failed recovery written into an
+    append-only EVIDENCE journal as a clean completion."""
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+    clock = AdvancingClock()
+    observer = FakeObserver(pane="idle")
+    harness = FakeHarness()
+    # The resumed pid is dead from the moment it is handed over -- the
+    # signature of a `resume` that launched and was then rejected.
+    process = FakeProcess(alive_for=10, dead_pids={harness.resume_result})
+
+    rc = run_supervisor(
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, 1.0,
+        fs=fs, process=process, clock=clock, observer=observer,
+        harness=harness, sleep=clock.sleep,
+    )
+
+    assert rc == 0
+    entries = [json.loads(line) for _, line, _ in fs.appended_lines]
+    detach = entries[-1]
+    assert detach["kind"] == "supervisor-detach"
+    assert detach["payload"]["reason"] == "idle-retry-failed"
+    assert detach["payload"]["finding"]["code"] == "MRS-SUPV-002"
 
 
 def test_second_threshold_crossing_fires_stop_and_retry():
@@ -1733,6 +1902,31 @@ def test_run_supervisor_rejects_a_threshold_that_overflows_to_infinite_seconds(c
     # Rejected BEFORE anything is journaled: no dangling `supervisor-attach`.
     assert fs.appended_lines == []
     assert "positive finite" in capsys.readouterr().err
+
+
+def test_run_supervisor_rejects_a_non_numeric_threshold(capsys):
+    """Review finding: the guard began with an unprotected ``float()``, 13
+    lines before the try/except that would have contained it. A direct
+    caller -- which this guard's own justification names as the reason it
+    exists -- got a raw ``TypeError``/``ValueError`` out of the function
+    instead of the clean non-zero return, so the failure mode the guard
+    exists to handle escaped through the guard itself.
+
+    (A NUMERIC string like ``"25"`` is deliberately absent below: ``float``
+    converts it, so it is a valid threshold, not a rejected one.)"""
+    for bad_threshold in ("abc", "", None, object(), [25]):
+        fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+
+        rc = run_supervisor(
+            _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, bad_threshold,
+            fs=fs, process=FakeProcess(alive_for=3), clock=AdvancingClock(),
+            observer=FakeObserver(pane="idle"), harness=FakeHarness(), sleep=_no_sleep,
+        )
+
+        assert rc == 1, bad_threshold
+        # Rejected BEFORE anything is journaled: no dangling attach.
+        assert fs.appended_lines == [], bad_threshold
+        assert "positive finite" in capsys.readouterr().err
 
 
 # --- main(): argv parsing + dispatch --------------------------------------------

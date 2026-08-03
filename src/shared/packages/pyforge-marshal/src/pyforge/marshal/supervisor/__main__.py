@@ -222,7 +222,7 @@ from ..core.supervise import (
     LadderRung,
     Sample,
     evaluate_idle,
-    idle_since,
+    idle_anchor,
     rung_at,
     rung_index,
 )
@@ -416,7 +416,17 @@ def run_supervisor(
     #
     # Returning before the attach entry is written keeps the failure a clean
     # non-zero exit with nothing dangling in the journal.
-    threshold_s = float(idle_threshold_minutes) * 60.0
+    # The conversion itself is guarded (review finding): this guard's own
+    # stated justification is that `run_supervisor` is a public entry point
+    # driven directly, and a direct caller is exactly the one who can pass a
+    # non-numeric `idle_threshold_minutes`. An unprotected `float()` raised
+    # `TypeError`/`ValueError` out of the function instead of producing the
+    # clean non-zero return this block exists to produce -- the failure mode
+    # it guards against, escaping through the guard itself.
+    try:
+        threshold_s = float(idle_threshold_minutes) * 60.0
+    except (TypeError, ValueError):
+        threshold_s = float("nan")
     if not (threshold_s > 0) or not math.isfinite(threshold_s):
         print(
             f"supervisor: idle threshold minutes must resolve to a positive "
@@ -613,6 +623,28 @@ def run_supervisor(
         # skips straight to `defer`, guaranteeing at most one retry cycle.
         already_retried = False
 
+        # Set when a stop-and-retry swap succeeds, cleared by the NEXT
+        # tick's own liveness reading -- the one check that can tell a
+        # resume bmad-loop ACCEPTED from one it merely launched and then
+        # rejected (review finding). `HarnessPort.resume` returns the pid
+        # of the process it spawned, which proves only that the spawn
+        # itself worked: `bmad-loop resume` exits non-zero, after starting
+        # normally, for an unknown run ref, a run whose engine it still
+        # considers alive, an already-finished run, or missing base skills.
+        # In every one of those cases the supervisor journaled a fully
+        # successful `{old_pid, new_pid}` retry with no finding at all, and
+        # then detached with the ordinary `"watched-process-exited"` -- a
+        # failed recovery recorded as a clean completion, in an append-only
+        # EVIDENCE journal. A resumed engine that is gone one tick later did
+        # not take.
+        retry_verify_pending = False
+        # A finding to carry on the final `supervisor-detach` payload, set
+        # only by the verification above. The ladder's own rungs journal
+        # their findings on their own outcome entries; this one has no rung
+        # to hang on, because the thing that failed is only observable a
+        # tick after its outcome was already written.
+        detach_finding: dict[str, object] | None = None
+
         # `watched_alive` is carried across iterations rather than
         # re-derived from a second `is_alive` call at the top of the loop
         # (review finding, Story 3.4): the PREVIOUS shape checked is_alive()
@@ -633,7 +665,23 @@ def run_supervisor(
         while watched_alive and not deferred:
             sleep(_TICK_SECONDS)
             moment = clock.now()
+            # Both readings, taken together (review finding): `moment` is the
+            # wall-clock instant the journal records, `monotonic_now` is the
+            # suspend-immune basis `core/supervise.py` measures ELAPSED idle
+            # time from. See `ports/clock.py::monotonic` for why the two
+            # cannot be the same reading.
+            monotonic_now = clock.monotonic()
             watched_alive = process.is_alive(watched_pid)
+
+            if retry_verify_pending and watched_alive:
+                # The resumed engine survived a whole tick, so bmad-loop
+                # accepted the run -- the retry is verified and this stops
+                # being an open question. The FAILING half of this check
+                # lives after the loop (see there): a resume that is
+                # rejected usually leaves the pid dead before the very next
+                # `while` test, so the loop never runs another tick to
+                # notice it here.
+                retry_verify_pending = False
 
             # `watched_alive` gates the whole block (review finding): this
             # value is THIS tick's own fresh reading, so if the watched
@@ -650,9 +698,57 @@ def run_supervisor(
                 # function itself.
                 pane_content = observer.pane_content(session_name)
                 log_mtime = observer.mtime(harness_log_path)
-                samples.append(
-                    Sample(moment=moment, pane_content=pane_content, log_mtime=log_mtime)
-                )
+                if pane_content is not None:
+                    # UNOBSERVABLE is not IDLE, keyed on the PANE (review
+                    # finding -- and the defect three prior passes each
+                    # aimed at and missed). The previous guard demanded that
+                    # `pane_content` AND `log_mtime` both be `None`, which
+                    # in a real run can never happen: `cli/spin.py` opens
+                    # `harness.log` before it spawns this sidecar at all, so
+                    # `mtime()` always returns a float and the guard was
+                    # simply dead code. With tmux merely missing from the
+                    # detached sidecar's PATH the pane read `None` on every
+                    # tick while that static float held the sample equal to
+                    # its predecessor forever -- no re-arm is possible from
+                    # an unchanging value -- so the ladder ran its full
+                    # sequence (nudge, then a genuine `stop`+`resume`, then
+                    # a terminal `defer` that hard-stops the run) against a
+                    # process observed ALIVE on every one of those ticks.
+                    #
+                    # The pane is the only channel that observes the AGENT.
+                    # `harness.log` is the bmad-loop ENGINE's own stdout, and
+                    # a working agent can go a long time without the engine
+                    # writing a line -- so a frozen `harness.log` mtime is
+                    # not evidence of idleness, only the absence of one kind
+                    # of evidence. When the pane is dark this run cannot be
+                    # observed right now, and an unobservable run gets
+                    # heartbeat-only supervision, exactly like one whose
+                    # `harness_run_id` never resolved.
+                    #
+                    # The sample is DROPPED rather than appended (review
+                    # finding, second defect): a `None` differs from the text
+                    # captured either side of it, so a pane capture that
+                    # merely flaked once -- a 5s `capture-pane` timeout under
+                    # load, a window-teardown race -- entered the history as
+                    # TWO changes (text -> None, None -> text) and re-armed
+                    # the idle window every time it happened. A wedged
+                    # session whose capture flakes once per threshold window
+                    # could never accumulate a full threshold, and burned to
+                    # the token cap. Dropping it keeps the history to
+                    # genuine observations only: the idle anchor survives
+                    # the gap, elapsed time keeps accruing across it (a
+                    # session that produced nothing while unobserved was
+                    # still producing nothing), and real output on the far
+                    # side still re-arms by differing from the last sample
+                    # actually observed.
+                    samples.append(
+                        Sample(
+                            moment=moment,
+                            pane_content=pane_content,
+                            log_mtime=log_mtime,
+                            monotonic_s=monotonic_now,
+                        )
+                    )
                 # Bound the history (review finding): `evaluate_idle` needs
                 # only the most recent CHANGE point and the latest sample, so
                 # once this tick observed a change, everything before the
@@ -686,34 +782,19 @@ def run_supervisor(
                     # sample still supplies the elapsed-time endpoint.
                     del samples[2:-1]
 
-                latest = samples[-1]
-                if latest.pane_content is None and latest.log_mtime is None:
-                    # UNOBSERVABLE is not IDLE (review finding). `None !=
-                    # None` is `False`, so an unobserved history never
-                    # re-arms and reads as maximal idleness -- and since
-                    # `defer` now hard-stops the run rather than merely
-                    # detaching, that turns a broken observation channel
-                    # (tmux missing from this detached sidecar's PATH, the
-                    # session torn down, `harness.log` absent) into a killed
-                    # HEALTHY run. The ladder must only act on evidence it
-                    # actually has; a run it cannot see gets heartbeat-only
-                    # supervision, exactly like one whose `harness_run_id`
-                    # never resolved.
+                if pane_content is None or not samples:
+                    # This tick could not observe the run, so it has no
+                    # evidence to act on -- see the append guard above for
+                    # why the PANE alone answers that question and why the
+                    # sample was dropped rather than recorded. `not samples`
+                    # covers the opening ticks of a run whose pane has never
+                    # once been readable: nothing was ever appended, so
+                    # there is no history to evaluate.
                     #
-                    # Tested against THIS tick's own sample, not against the
-                    # whole history (follow-up review finding): the previous
-                    # `all(...)` form only caught a channel that never worked
-                    # from tick one. A channel that breaks MID-RUN leaves
-                    # exactly one stale observed sample alive at the front of
-                    # the history -- the trim above retains it, because going
-                    # dark is itself a "change" -- so `all(...)` stayed
-                    # `False` forever and the ladder ran anyway, anchored on
-                    # the instant the channel died. A healthy engine whose
-                    # tmux window closed while it kept working in-process was
-                    # nudged, then genuinely hard-stopped and relaunched. The
-                    # current sample is the only one that answers "can this
-                    # run be observed RIGHT NOW", and it subsumes the
-                    # never-observable case it replaces.
+                    # Skipping only the ladder, never the heartbeat: the
+                    # heartbeat below still appends unconditionally, so an
+                    # unobservable run stays visibly supervised rather than
+                    # going silent in the journal.
                     rung = LadderRung.NONE
                 else:
                     rung = evaluate_idle(samples, threshold_s=threshold_s)
@@ -808,12 +889,39 @@ def run_supervisor(
                         # no-op -- so doing it unconditionally is strictly
                         # safer than conditioning it on a signal that cannot
                         # answer the question being asked.
-                        anchor = idle_since(samples) or moment
+                        # BOTH of the anchor's readings are pinned, not just
+                        # its wall-clock `moment` (review finding): elapsed
+                        # idle time is now measured monotonically, so letting
+                        # `monotonic_s` fall to THIS tick's reading while
+                        # pinning `moment` would restart the very count this
+                        # rebase exists to preserve -- silently making
+                        # `stop-and-retry` unreachable again.
+                        anchor_sample = idle_anchor(samples)
+                        rebased_pane = observer.pane_content(session_name)
+                        if rebased_pane is None:
+                            # The pane went dark in the same instant. Keep
+                            # the pre-nudge text already observed this tick
+                            # rather than seeding the history with a `None`:
+                            # the history holds genuine observations only
+                            # (see the append guard above), and a `None`
+                            # baseline would itself re-arm the window on the
+                            # next readable tick -- the same spurious re-arm
+                            # dropping unobservable samples exists to stop.
+                            rebased_pane = pane_content
                         samples[:] = [
                             Sample(
-                                moment=anchor,
-                                pane_content=observer.pane_content(session_name),
+                                moment=(
+                                    anchor_sample.moment
+                                    if anchor_sample is not None
+                                    else moment
+                                ),
+                                pane_content=rebased_pane,
                                 log_mtime=log_mtime,
+                                monotonic_s=(
+                                    anchor_sample.monotonic_s
+                                    if anchor_sample is not None
+                                    else monotonic_now
+                                ),
                             )
                         ]
                         _append_outcome(_NUDGE_KIND, intent_id, outcome_payload)
@@ -976,6 +1084,11 @@ def run_supervisor(
                                     samples.clear()
                                     rung = LadderRung.NONE
                                     already_retried = True
+                                    # Verified on the NEXT tick, never here:
+                                    # `resume` returning a pid proves the
+                                    # spawn worked, not that bmad-loop
+                                    # accepted the run (review finding).
+                                    retry_verify_pending = True
                                     # Stale `watched_alive` (review
                                     # finding): this tick's own heartbeat
                                     # append below still runs AFTER this
@@ -1071,10 +1184,46 @@ def run_supervisor(
                 },
             )
 
-        _append(
-            "supervisor-detach",
-            {"pid": pid, "reason": detach_reason or "watched-process-exited"},
-        )
+        if retry_verify_pending and not watched_alive:
+            # The resumed engine never survived a tick -- see
+            # `retry_verify_pending`'s own declaration for why the pid
+            # `resume` handed back is not by itself evidence the resume was
+            # accepted. `bmad-loop resume` exits non-zero AFTER starting
+            # normally for an unknown run ref, a run whose engine it still
+            # considers alive, an already-finished run, or missing base
+            # skills; in every one of those cases this supervisor had
+            # already journaled a clean `{old_pid, new_pid}` retry, and was
+            # about to journal the ordinary `"watched-process-exited"` on
+            # top of it -- recording a failed recovery as a normal
+            # completion in an append-only EVIDENCE journal.
+            #
+            # Checked HERE rather than at the top of the next tick because
+            # there usually is no next tick: the swap recomputes
+            # `watched_alive` against the new pid, so a rejected resume ends
+            # the loop immediately.
+            detach_finding = Finding(
+                code="MRS-SUPV-002",
+                severity=Severity.WARN,
+                message=(
+                    f"resumed harness run {harness_run_id!r} (pid "
+                    f"{watched_pid}) did not survive its first tick after a "
+                    "stop-and-retry -- the resume did not take, so the story "
+                    "this run was working is neither progressing nor "
+                    "supervised"
+                ),
+            ).to_json_dict()
+            # Never the ordinary `"watched-process-exited"`: this is a failed
+            # recovery, the same reason class a `resume` that raises outright
+            # already earns.
+            detach_reason = "idle-retry-failed"
+
+        detach_payload: dict[str, object] = {
+            "pid": pid,
+            "reason": detach_reason or "watched-process-exited",
+        }
+        if detach_finding is not None:
+            detach_payload["finding"] = detach_finding
+        _append("supervisor-detach", detach_payload)
     except (FsError, ValueError) as exc:
         # AD-30's own journal is unwritable -- looping forever against it
         # would spin this process indefinitely with zero further signal.
@@ -1201,13 +1350,15 @@ def main(argv: Sequence[str] | None = None) -> int:
         # append-only EVIDENCE journal. (An earlier pass rejected a
         # hardcoded `watched_alive: true` on exactly this ground: a field
         # that can only ever carry one value is not an observation.) This
-        # story's own Always bullet enumerates exactly TWO detach reasons
-        # (Story 3.5 adds `"idle-deferred"` alongside the original
-        # `"watched-process-exited"`), so the honest fix is at the boundary
-        # rather than a third reason code: refuse a pid this process could
-        # never probe, the same "raise/refuse rather than silently
-        # misinterpret" discipline the non-positive guard above already
-        # applies.
+        # honest fix is at the BOUNDARY rather than in the reason
+        # vocabulary: refuse a pid this process could never probe, the same
+        # "raise/refuse rather than silently misinterpret" discipline the
+        # non-positive guard above already applies. (This passage used to
+        # justify that by claiming the story enumerates "exactly two" detach
+        # reasons. It does not -- the same story also added
+        # `"idle-retry-failed"` for a `resume` that fails after a confirmed
+        # `stop` -- and the argument never rested on the count anyway, only
+        # on refusing to journal an exit this process never observed.)
         print(
             f"supervisor: watched pid {watched_pid} is not probeable "
             f"(above {_MAX_PROBEABLE_PID})",

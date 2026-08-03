@@ -229,19 +229,59 @@ def test_send_text_pastes_then_submits_against_the_resolved_window(observer, mon
     assert calls[2] == ["tmux", "send-keys", "-t", "%7", "Enter"]
 
 
-def test_send_text_sleeps_between_the_paste_and_the_enter(observer, monkeypatch):
-    slept: list[float] = []
+def test_send_text_settles_after_the_enter_as_well_as_before_it(observer, monkeypatch):
+    """Two settles, and the SECOND one is what protects the supervisor.
+
+    ``tmux send-keys`` returns once tmux has queued the keys, not once the
+    target program has processed them and redrawn. The supervisor
+    re-captures this very pane the instant ``send_text`` returns, to rebase
+    its sample history onto the nudge's own echo -- so with no settle after
+    the Enter that capture caught the PRE-submit frame, and the post-submit
+    redraw landed in the next tick's capture instead, where it read as fresh
+    session output and re-armed the idle window. That is the
+    nudge -> re-arm -> nudge loop the rebase exists to close, reopened
+    through a timing door (review finding).
+    """
+    events: list[object] = []
 
     def _fake_run(argv, **kwargs):
+        events.append(argv[1] if argv[1] == "list-windows" else " ".join(argv[4:]))
         if argv[1] == "list-windows":
             return _list_windows_result(argv, [("%7", "1")])
         return subprocess.CompletedProcess(args=argv, returncode=0, stdout="")
 
     monkeypatch.setattr(module.subprocess, "run", _fake_run)
-    monkeypatch.setattr(module.time, "sleep", slept.append)
+    monkeypatch.setattr(module.time, "sleep", lambda seconds: events.append(seconds))
 
     observer.send_text("acme-session", "hi")
-    assert slept == [module._SEND_TEXT_SETTLE_S]
+
+    # Ordering is the assertion, not just the count: settle BETWEEN the
+    # literal paste and the Enter, and again AFTER the Enter, before the
+    # caller can re-read the pane.
+    assert events == [
+        "list-windows",
+        "-l hi",
+        module._SEND_TEXT_SETTLE_S,
+        "Enter",
+        module._SEND_TEXT_SETTLE_S,
+    ]
+
+
+def test_send_text_does_not_settle_after_a_failed_paste(observer, monkeypatch):
+    """The post-Enter settle is skipped when the paste never landed -- an
+    early ``False`` return must not pay a delay for a submit it never made."""
+    slept: list[float] = []
+
+    def _fake_run(argv, **kwargs):
+        if argv[1] == "list-windows":
+            return _list_windows_result(argv, [("%7", "1")])
+        return subprocess.CompletedProcess(args=argv, returncode=1, stdout="")
+
+    monkeypatch.setattr(module.subprocess, "run", _fake_run)
+    monkeypatch.setattr(module.time, "sleep", slept.append)
+
+    assert observer.send_text("acme-session", "hi") is False
+    assert slept == []
 
 
 def test_send_text_returns_false_when_no_window_resolves(observer, monkeypatch):

@@ -120,6 +120,42 @@ class Sample:
     moment: datetime
     pane_content: str | None
     log_mtime: float | None
+    #: A SUSPEND-IMMUNE elapsed-time basis (``ClockPort.monotonic()``), kept
+    #: alongside ``moment`` rather than replacing it (review finding).
+    #: ``moment`` is a wall-clock reading, and wall clocks JUMP: a laptop
+    #: suspended mid-run, or an NTP step, moves ``moment`` forward by the
+    #: whole gap while the session was not running at all, and the ladder
+    #: scored that gap as accumulated idleness. At the shipped 25-minute
+    #: default a one-hour suspend meant a nudge on the first tick after
+    #: wake and a genuine ``stop``+``resume`` of a perfectly healthy engine
+    #: 60 seconds later. ``time.monotonic()`` excludes suspended time and
+    #: cannot be stepped, so it is the correct basis for "how long has this
+    #: been quiet"; ``moment`` remains the basis for everything a HUMAN or
+    #: the journal reads, and stays the anchor ``idle_since`` returns.
+    #:
+    #: Optional, defaulting to ``None``, so a caller that has only wall-clock
+    #: readings (every synthetic-sequence test that predates this field, and
+    #: any future caller replaying journalled samples) keeps the previous
+    #: behaviour exactly: ``evaluate_idle`` falls back to ``moment`` deltas
+    #: whenever either endpoint lacks a monotonic reading, and uses the
+    #: monotonic pair whenever both carry one.
+    monotonic_s: float | None = None
+
+
+def _anchor_index(samples: Sequence[Sample]) -> int:
+    """The index of the most recent sample that showed fresh output --
+    ``0`` when no change was ever observed. Assumes a NON-EMPTY ``samples``
+    (both public callers guard first). Private: the single scan
+    ``idle_since`` and ``evaluate_idle`` share, so the anchor they each
+    derive genuinely cannot disagree."""
+    anchor = 0
+    for index, (previous, current) in enumerate(zip(samples, samples[1:]), start=1):
+        if (
+            current.pane_content != previous.pane_content
+            or current.log_mtime != previous.log_mtime
+        ):
+            anchor = index
+    return anchor
 
 
 def idle_since(samples: Sequence[Sample]) -> datetime | None:
@@ -154,16 +190,31 @@ def idle_since(samples: Sequence[Sample]) -> datetime | None:
             "samples must be a sequence of Sample (not a bare str/bytes), "
             f"got {samples!r}"
         )
+    anchor = idle_anchor(samples)
+    return None if anchor is None else anchor.moment
+
+
+def idle_anchor(samples: Sequence[Sample]) -> Sample | None:
+    """The whole ``Sample`` ``idle_since`` reports the ``moment`` of --
+    ``samples[0]`` when no change was ever observed, ``None`` for an empty
+    ``samples``. Same guards, same scan.
+
+    Public alongside ``idle_since`` because the supervisor's post-nudge
+    rebase must preserve BOTH of the anchor's time readings, not just its
+    wall-clock ``moment``: the rebase collapses the sample history onto the
+    echoed pane text while pinning the idle window's origin, and pinning
+    only ``moment`` while letting ``monotonic_s`` fall to the CURRENT tick's
+    reading would restart the very elapsed count the rebase exists to
+    preserve -- silently making ``stop-and-retry`` unreachable again, the
+    exact defect the rebase was introduced to fix."""
+    if isinstance(samples, (str, bytes, bytearray)) or not isinstance(samples, Sequence):
+        raise TypeError(
+            "samples must be a sequence of Sample (not a bare str/bytes), "
+            f"got {samples!r}"
+        )
     if not samples:
         return None
-    reference_moment = samples[0].moment
-    for previous, current in zip(samples, samples[1:]):
-        if (
-            current.pane_content != previous.pane_content
-            or current.log_mtime != previous.log_mtime
-        ):
-            reference_moment = current.moment
-    return reference_moment
+    return samples[_anchor_index(samples)]
 
 
 def evaluate_idle(samples: Sequence[Sample], *, threshold_s: float) -> LadderRung:
@@ -210,12 +261,24 @@ def evaluate_idle(samples: Sequence[Sample], *, threshold_s: float) -> LadderRun
     if not samples:
         return LadderRung.NONE
 
-    # Never `None` here -- the empty-`samples` case already returned above --
-    # but spelled as an `or` fallback rather than an `assert`, which `-O`
-    # strips and this package therefore never relies on for control flow.
-    reference_moment = idle_since(samples) or samples[0].moment
+    anchor = samples[_anchor_index(samples)]
+    latest = samples[-1]
 
-    idle_elapsed_s = (samples[-1].moment - reference_moment).total_seconds()
+    # MONOTONIC when both endpoints carry one, wall-clock otherwise (review
+    # finding). `moment` is a wall-clock reading and wall clocks JUMP -- a
+    # host suspended mid-run, or an NTP step, advances it across an interval
+    # in which the session was not running and could not possibly have
+    # produced output. Scoring that gap as accumulated idleness fired a
+    # nudge on the first tick after wake and a genuine `stop`+`resume` of a
+    # healthy engine one tick later, at the shipped 25-minute default.
+    # `time.monotonic()` does not advance across suspend and cannot be
+    # stepped, so a monotonic pair measures what this function actually
+    # means by "elapsed". The wall-clock fallback keeps every synthetic
+    # sequence that supplies only `moment` behaving exactly as before.
+    if anchor.monotonic_s is not None and latest.monotonic_s is not None:
+        idle_elapsed_s = latest.monotonic_s - anchor.monotonic_s
+    else:
+        idle_elapsed_s = (latest.moment - anchor.moment).total_seconds()
     # Defensive floor at zero: a caller handing a non-chronological sequence
     # (the last sample's own moment earlier than the reference one) is a
     # contract violation this function does not otherwise validate for --

@@ -372,6 +372,17 @@ def test_idle_threshold_minutes_accepts_a_fractional_value():
         float("inf"),
         float("-inf"),
         float("nan"),
+        # Follow-up review finding: FINITE here, infinite where it is used.
+        # Every consumer converts this field to seconds, and `1e308 * 60.0`
+        # is `inf` -- so this value passed the validator, composed cleanly,
+        # rendered as the effective policy, and was then rejected by the
+        # supervisor's own `threshold_s` guard one process later. The
+        # sidecar exits 1 immediately and silently (its stderr goes only to
+        # supervisor.log) while `spin` has already printed a
+        # `supervisor_pid` and exited 0 -- the operator is told the run is
+        # supervised when nothing is watching it. Rejecting it here makes it
+        # the ordinary, visible malformed-value finding instead.
+        1e308,
     ],
 )
 def test_idle_threshold_minutes_rejects_non_positive_or_non_numeric_values(bad_value):
