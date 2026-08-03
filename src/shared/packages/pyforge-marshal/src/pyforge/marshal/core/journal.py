@@ -368,6 +368,22 @@ class PreparedWrite:
             )
 
 
+def _sidecar_path_for(entry_id: JournalEntryId) -> str:
+    """The ONE derivation of an entry's sidecar-blob path, shared by
+    ``prepare_for_write`` (which emits it) and ``_parse_entry`` (which binds
+    a resolved ``sidecar_ref`` back to it) -- so the write and read sides
+    can never disagree about the naming convention.
+
+    Built via ``str.join`` into a single placeholder, not a two-placeholder
+    ``f"{a}-{b}"`` -- the AD-23 guard (``tests/meta/
+    test_ad23_inline_key_format_guard.py``) flags exactly that shape as an
+    inline story-key format regardless of what the two values actually mean,
+    and a ``(writer_id, counter)`` pair joined by ``"-"`` is structurally
+    indistinguishable from one to that best-effort static scan."""
+    id_fragment = "-".join((entry_id.writer_id, str(entry_id.counter)))
+    return f"blobs/{id_fragment}.json"
+
+
 def prepare_for_write(entry: JournalEntry) -> PreparedWrite:
     """Pure sidecar-threshold decision (AD-30): if ``entry.payload``'s own
     UTF-8 JSON byte length exceeds ``SIDECAR_THRESHOLD_BYTES``, the returned
@@ -391,14 +407,7 @@ def prepare_for_write(entry: JournalEntry) -> PreparedWrite:
             sidecar_content=None,
         )
 
-    # Built via `str.join` into a single placeholder, not a two-placeholder
-    # `f"{a}-{b}"` -- the AD-23 guard (tests/meta/test_ad23_inline_key_format
-    # _guard.py) flags exactly that shape as an inline story-key format
-    # regardless of what the two values actually mean, and a (writer_id,
-    # counter) pair joined by "-" is structurally indistinguishable from one
-    # to that best-effort static scan.
-    id_fragment = "-".join((entry.id.writer_id, str(entry.id.counter)))
-    sidecar_relative_path = f"blobs/{id_fragment}.json"
+    sidecar_relative_path = _sidecar_path_for(entry.id)
     document["payload"] = {"sidecar_ref": sidecar_relative_path}
     return PreparedWrite(
         line=json.dumps(document, sort_keys=True),
@@ -409,9 +418,11 @@ def prepare_for_write(entry: JournalEntry) -> PreparedWrite:
 
 @dataclass(frozen=True)
 class QuarantinedRecord:
-    """One quarantined journal line (AD-30): ``raw`` is the original line
-    text that failed to parse, fail validation, or resolve a sidecar
-    reference. ``story``/``kind`` are the best-effort-recovered scope pair
+    """One quarantined journal line (AD-30): ``raw`` is the line that failed
+    to parse, failed validation, or failed to resolve a sidecar reference --
+    the original text when the line was a ``str``, else its ``repr()``
+    (``_display_line``, for a caller-supplied non-``str`` element).
+    ``story``/``kind`` are the best-effort-recovered scope pair
     -- ALWAYS both ``None`` together or both set together: AD-30's rule is
     that a partial recovery (one but not the other) carries no meaningful
     scope, so it widens to the whole run rather than being represented
@@ -508,28 +519,56 @@ class FoldResult:
 
     def by_kind(self, kind: str) -> tuple[JournalEntry, ...]:
         """Every evaluable entry whose ``kind`` equals ``kind``, in
-        ``entries``'s own AD-28 total order."""
+        ``entries``'s own AD-28 total order. Raises ``TypeError`` for a
+        non-``str`` ``kind`` -- see ``for_story``."""
+        if not isinstance(kind, str):
+            raise TypeError(f"kind must be a str, got {kind!r}")
         return tuple(entry for entry in self.entries if entry.kind == kind)
 
     def for_story(self, story: StoryKey) -> tuple[JournalEntry, ...]:
         """Every evaluable entry whose ``story`` equals ``story``, in
-        ``entries``'s own AD-28 total order."""
+        ``entries``'s own AD-28 total order.
+
+        Raises ``TypeError`` for a non-``StoryKey`` ``story`` (review
+        finding, verified live): ``for_story("3.1")`` silently returned
+        ``()`` for a caller who passed a raw key string, and
+        ``for_story(None)`` silently returned every run-scoped entry --
+        both indistinguishable from "this story has no entries." AD-23
+        gives ``core.identity`` sole ownership of the key format precisely
+        so a raw string never stands in for a parsed key; this guard is the
+        same one ``is_evaluable`` already applies."""
+        if not isinstance(story, StoryKey):
+            raise TypeError(f"story must be a StoryKey, got {story!r}")
         return tuple(entry for entry in self.entries if entry.story == story)
 
     def is_evaluable(self, story: StoryKey | None, kind: str | None) -> bool:
         """``False`` if some quarantine scoped exactly to ``(story, kind)``
         or widened to the whole run (``(None, None)``, AD-30); ``True``
-        otherwise. ``is_evaluable(None, None)`` answers "is the whole run
-        evaluable" -- ``False`` the instant ANY line quarantines, since
-        every whole-run quarantine widens to exactly that pair.
+        otherwise.
 
-        Raises ``ValueError`` for an ASYMMETRIC pair (exactly one of
+        ``is_evaluable(None, None)`` asks specifically about the RUN-LEVEL
+        scope -- the facts no single story owns -- so it is ``False`` only
+        when some quarantine actually widened to the whole run, NOT whenever
+        any line at all quarantines. A narrowly-scoped quarantine leaves the
+        run-level scope evaluable, which is the entire point of AD-30's
+        narrow scoping and of this story's own AC ("records provably
+        unaffected stay evaluable"). An earlier draft of this docstring
+        claimed ``False`` "the instant ANY line quarantines" -- a review
+        finding caught live that the code has never behaved that way, and
+        that behaving that way would defeat narrow scoping altogether.
+
+        Raises ``TypeError`` for a ``story``/``kind`` of the wrong type, and
+        ``ValueError`` for an ASYMMETRIC pair (exactly one of
         ``story``/``kind`` is ``None``) -- mirrors ``QuarantinedRecord``'s
         own both-or-neither invariant. A quarantine record can never carry
         an asymmetric scope, so a caller asking one would always get a
         (possibly wrong) ``True`` with no real answer behind it -- a
         footgun a review finding caught live rather than a legitimate
         query."""
+        if story is not None and not isinstance(story, StoryKey):
+            raise TypeError(f"story must be a StoryKey or None, got {story!r}")
+        if kind is not None and not isinstance(kind, str):
+            raise TypeError(f"kind must be a str or None, got {kind!r}")
         if (story is None) != (kind is None):
             raise ValueError(
                 "story and kind must be both None or both set -- no "
@@ -568,21 +607,37 @@ def fold(
     ``id`` -- surfaces in ``FoldResult.orphaned_outcomes``, never silently
     paired or dropped.
 
-    Raises ``TypeError`` for a bare ``str`` ``lines`` (mirrors
-    ``identity.resolve_feed``'s own bare-str guard -- a ``str`` satisfies
-    ``Sequence[str]``, so ``fold("not-a-list")`` would otherwise shred into
-    per-character garbage quarantine records instead of the documented,
-    reported failure), or for a ``sidecars`` that isn't a ``Mapping``
-    (mirrors ``core.policy.compose``'s identical contract-violation guard
-    on its own ``project``/``flags`` parameters -- review finding, verified
-    live: ``fold(lines, sidecars=None)`` used to raise an unguarded
-    ``AttributeError`` the instant any line needed sidecar resolution,
-    aborting the WHOLE fold and losing every other entry -- the exact
-    failure this function's own docstring promises never happens)."""
-    if isinstance(lines, str):
+    A blank or whitespace-only element is SKIPPED, not quarantined:
+    ``FsPort.append_line`` owns each line's trailing newline
+    (``PreparedWrite``'s own contract), so a journal file always ends in one
+    and the obvious caller -- ``text.split("\\n")`` -- always yields a final
+    ``""``. Quarantining that terminator artifact recovered no
+    ``(story, kind)``, widened to ``(None, None)``, and made an otherwise
+    perfectly intact run wholly unevaluable (review finding, verified live).
+    No real journal line is ever blank: ``prepare_for_write`` always emits a
+    JSON object.
+
+    Raises ``TypeError`` unless ``lines`` is a ``Sequence`` that is not
+    itself a character/byte string (mirrors ``identity.resolve_feed``'s own
+    bare-str guard -- a ``str`` satisfies ``Sequence[str]``, so
+    ``fold("not-a-list")`` would otherwise shred into per-character garbage
+    quarantine records instead of the documented, reported failure -- and
+    extended to every other non-sequence footgun a review found live:
+    ``bytes``/``bytearray`` shred the same way per byte, a ``Mapping``
+    silently folded its KEYS as journal lines with zero signal, and
+    ``fold(None)``/``fold(42)`` died with a bare ``'NoneType' object is not
+    iterable`` naming no contract). Raises ``TypeError`` likewise for a
+    ``sidecars`` that isn't a ``Mapping`` (mirrors ``core.policy.compose``'s
+    identical contract-violation guard on its own ``project``/``flags``
+    parameters -- review finding, verified live: ``fold(lines,
+    sidecars=None)`` used to raise an unguarded ``AttributeError`` the
+    instant any line needed sidecar resolution, aborting the WHOLE fold and
+    losing every other entry -- the exact failure this function's own
+    docstring promises never happens)."""
+    if isinstance(lines, (str, bytes, bytearray)) or not isinstance(lines, Sequence):
         raise TypeError(
-            "lines must be a sequence of journal-line strings, not a bare "
-            f"str: {lines!r}"
+            "lines must be a sequence of journal-line strings (not a bare "
+            f"str/bytes, and not a mapping or other non-sequence), got {lines!r}"
         )
     if isinstance(sidecars, str) or not isinstance(sidecars, Mapping):
         raise TypeError(f"sidecars must be a Mapping, got {sidecars!r}")
@@ -590,6 +645,8 @@ def fold(
     parsed: list[JournalEntry] = []
     quarantined: list[QuarantinedRecord] = []
     for raw_line in lines:
+        if isinstance(raw_line, str) and not raw_line.strip():
+            continue
         try:
             entry = _parse_entry(raw_line, sidecars)
         except _SidecarUnresolved as exc:
@@ -598,13 +655,12 @@ def fold(
                 _quarantine(_display_line(raw_line), story, kind, "MRS-JOURNAL-002", str(exc))
             )
         except (ValueError, TypeError, RecursionError) as exc:
-            # RecursionError too (review finding, verified live:
-            # `json.loads` on an adversarially/corruptly deep-nested line or
-            # sidecar blob raises RecursionError, a RuntimeError subclass
-            # that a bare `(ValueError, TypeError)` catch does not see --
-            # the same "one bad line must never abort the whole fold"
-            # guarantee this function's docstring makes, for a distinct
-            # exception type.
+            # RecursionError too (review finding, verified live): `json.loads`
+            # on an adversarially/corruptly deep-nested line or sidecar blob
+            # raises RecursionError, a RuntimeError subclass that a bare
+            # `(ValueError, TypeError)` catch does not see -- the same "one
+            # bad line must never abort the whole fold" guarantee this
+            # function's docstring makes, for a distinct exception type.
             story, kind = _best_effort_recover(raw_line)
             quarantined.append(
                 _quarantine(_display_line(raw_line), story, kind, "MRS-JOURNAL-001", str(exc))
@@ -722,6 +778,24 @@ def _parse_entry(raw_line: str, sidecars: Mapping[str, str | None]) -> JournalEn
     if ref is None:
         return entry
 
+    # Bind the reference to the entry that owns it (review finding, verified
+    # live): `prepare_for_write` derives the blob path SOLELY from the
+    # entry's own `(writer_id, counter)`, so the placeholder a real writer
+    # emits always names exactly this path. Resolving whatever path the line
+    # happens to name instead let entry `cli-1/2` reference `cli-1/1`'s blob
+    # and silently adopt that entry's payload -- zero quarantine, zero
+    # signal, in an append-only artifact whose whole value is being
+    # tamper-evident. A mismatch is definitionally corruption or forgery, so
+    # it quarantines (MRS-JOURNAL-002) rather than resolving; this also
+    # rejects path traversal and absolute refs for free.
+    expected_ref = _sidecar_path_for(entry.id)
+    if ref != expected_ref:
+        raise _SidecarUnresolved(
+            f"sidecar_ref {ref!r} does not name this entry's own blob "
+            f"{expected_ref!r} -- a payload placeholder is only ever emitted "
+            "for the entry that owns it"
+        )
+
     blob = sidecars.get(ref)
     if blob is None:
         raise _SidecarUnresolved(f"missing sidecar blob for {ref!r}")
@@ -731,7 +805,15 @@ def _parse_entry(raw_line: str, sidecars: Mapping[str, str | None]) -> JournalEn
         raise _SidecarUnresolved(f"sidecar blob {ref!r} is not valid JSON: {exc}") from exc
     try:
         return replace(entry, payload=resolved_payload)
-    except ValueError as exc:
+    except (ValueError, TypeError, RecursionError) as exc:
+        # TypeError/RecursionError too (review finding, verified live): a
+        # blob nested deeply enough still DECODES via json.loads above, then
+        # fails inside JournalEntry.__post_init__'s own copy.deepcopy /
+        # json.dumps with RecursionError. Caught only as ValueError, that
+        # escaped to `fold`'s outer catch and was reported as MRS-JOURNAL-001
+        # -- a LINE parse failure -- defeating the exact discrimination the
+        # two codes exist to make. The failure domain is the sidecar either
+        # way, so it belongs to MRS-JOURNAL-002.
         raise _SidecarUnresolved(
             f"sidecar blob {ref!r} resolved to an invalid payload: {exc}"
         ) from exc

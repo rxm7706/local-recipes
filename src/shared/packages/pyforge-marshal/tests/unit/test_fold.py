@@ -333,8 +333,17 @@ def test_shape_failure_with_only_kind_recoverable_widens_to_whole_run():
 # --- sidecar resolution: the I/O & Edge-Case Matrix ------------------------
 
 
-@pytest.mark.parametrize("sidecars", [{}, {"blobs/cli-1-9.json": None}])
-def test_missing_or_none_sidecar_blob_is_quarantined(sidecars):
+@pytest.mark.parametrize("blob_is_none", [False, True], ids=["absent", "none-valued"])
+def test_missing_or_none_sidecar_blob_is_quarantined(blob_is_none):
+    """Both unresolvable-blob spellings quarantine MRS-JOURNAL-002: the path
+    absent from `sidecars` entirely, and the path present but mapped to
+    `None` (the caller could not read it).
+
+    The None-valued case derives its key from `prepared.sidecar_relative_path`
+    rather than hardcoding `blobs/cli-1-9.json` (review finding): a hardcoded
+    path silently degenerates into a duplicate of the absent case if
+    `prepare_for_write`'s naming convention ever changes, leaving this branch
+    untested with no failing test to signal it."""
     entry = build_entry(
         id=_valid_id(counter=9),
         ts=_ts(0),
@@ -345,6 +354,7 @@ def test_missing_or_none_sidecar_blob_is_quarantined(sidecars):
         payload={"data": "x" * 5000},
     )
     prepared = prepare_for_write(entry)
+    sidecars = {prepared.sidecar_relative_path: None} if blob_is_none else {}
     result = fold([prepared.line], sidecars=sidecars)
     assert result.entries == ()
     assert len(result.quarantined) == 1
@@ -580,3 +590,173 @@ def test_mrs_journal_001_is_registered_and_classifies_unevaluable():
 
 def test_mrs_journal_002_is_registered_and_classifies_unevaluable():
     assert verdict.classify("MRS-JOURNAL-002") is Verdict.UNEVALUABLE
+
+
+# --- review-pass regressions: input guards, blank lines, sidecar binding ----
+
+
+def test_fold_skips_blank_and_whitespace_only_lines():
+    """Review finding, verified live: `FsPort.append_line` owns each line's
+    trailing newline, so a journal file always ends in one and the obvious
+    caller (`text.split("\n")`) always yields a final `""`. Quarantining that
+    terminator artifact recovered no (story, kind), widened to (None, None),
+    and made an otherwise perfectly intact run WHOLLY unevaluable."""
+    entry = build_entry(
+        id=_valid_id(),
+        ts=_ts(0),
+        run_id="run-1",
+        kind="run-started",
+        phase=Phase.INTENT,
+        story=StoryKey(epic=3, seq=1),
+        payload={},
+    )
+    result = fold([_line(entry), "", "   ", "\t"])
+    assert len(result.entries) == 1
+    assert result.quarantined == ()
+    assert result.is_evaluable(StoryKey(epic=3, seq=1), "run-started") is True
+    assert result.is_evaluable(None, None) is True
+
+
+@pytest.mark.parametrize(
+    "bad_lines",
+    [b'{"a": 1}', bytearray(b'{"a": 1}'), {"line-a": "line-b"}, None, 42],
+    ids=["bytes", "bytearray", "mapping", "none", "int"],
+)
+def test_fold_rejects_non_sequence_lines(bad_lines):
+    """Review finding, verified live: the guard covered only a bare `str`.
+    `bytes`/`bytearray` shredded into one quarantine record PER BYTE, a
+    Mapping silently folded its KEYS as journal lines with zero signal, and
+    `fold(None)`/`fold(42)` died with a bare "'NoneType' object is not
+    iterable" naming no contract -- asymmetric with the `sidecars` guard
+    added three lines away in the previous review pass."""
+    with pytest.raises(TypeError, match="lines"):
+        fold(bad_lines)  # type: ignore[arg-type]
+
+
+def test_sidecar_ref_naming_another_entrys_blob_is_quarantined():
+    """Review finding, verified live: `prepare_for_write` derives the blob
+    path SOLELY from the entry's own (writer_id, counter), but resolution
+    used to honour whatever path the line named -- so entry `cli-1/2` could
+    reference `cli-1/1`'s blob and silently adopt that entry's payload, with
+    zero quarantine and zero signal, in an append-only artifact whose whole
+    value is being tamper-evident."""
+    owner = build_entry(
+        id=_valid_id(counter=1),
+        ts=_ts(0),
+        run_id="run-1",
+        kind="run-started",
+        phase=Phase.INTENT,
+        payload={"secret": "x" * 5000},
+    )
+    prepared = prepare_for_write(owner)
+    forged = json.dumps(
+        {
+            "id": {"writer_id": "cli-1", "counter": 2},
+            "ts": _ts(1),
+            "run_id": "run-1",
+            "kind": "run-started",
+            "phase": "observation",
+            "payload": {"sidecar_ref": prepared.sidecar_relative_path},
+        }
+    )
+    result = fold(
+        [forged], sidecars={prepared.sidecar_relative_path: prepared.sidecar_content}
+    )
+    assert result.entries == ()
+    assert len(result.quarantined) == 1
+    assert result.quarantined[0].finding.code == "MRS-JOURNAL-002"
+
+
+def test_sidecar_ref_using_path_traversal_is_quarantined():
+    """Falls out of the same own-blob binding: a ref that is not this
+    entry's derived path never resolves, so traversal and absolute refs are
+    rejected without a separate path-sanitizing rule."""
+    line = json.dumps(
+        {
+            "id": {"writer_id": "cli-1", "counter": 0},
+            "ts": _ts(0),
+            "run_id": "run-1",
+            "kind": "run-started",
+            "phase": "observation",
+            "payload": {"sidecar_ref": "../../etc/passwd"},
+        }
+    )
+    result = fold([line], sidecars={"../../etc/passwd": '{"pwned": true}'})
+    assert result.entries == ()
+    assert result.quarantined[0].finding.code == "MRS-JOURNAL-002"
+
+
+def test_deeply_nested_sidecar_blob_is_quarantined_as_a_sidecar_failure():
+    """Review finding, verified live: a blob nested deeply enough still
+    DECODES via `json.loads`, then fails inside `JournalEntry.__post_init__`'s
+    own copy.deepcopy/json.dumps with RecursionError. Caught only as
+    ValueError, that escaped to `fold`'s outer catch and was reported as
+    MRS-JOURNAL-001 -- a LINE parse failure -- defeating the exact
+    discrimination the two codes exist to make."""
+    entry = build_entry(
+        id=_valid_id(counter=9),
+        ts=_ts(0),
+        run_id="run-1",
+        kind="run-started",
+        phase=Phase.INTENT,
+        payload={"data": "x" * 5000},
+    )
+    prepared = prepare_for_write(entry)
+    deep_blob = '{"d": ' + "[" * 600 + "]" * 600 + "}"
+    result = fold([prepared.line], sidecars={prepared.sidecar_relative_path: deep_blob})
+    assert result.entries == ()
+    assert len(result.quarantined) == 1
+    assert result.quarantined[0].finding.code == "MRS-JOURNAL-002"
+
+
+# --- review-pass regressions: the query surface ----------------------------
+
+
+def test_is_evaluable_run_scope_is_unaffected_by_a_narrowly_scoped_quarantine():
+    """Review finding: this method's docstring used to claim `False` "the
+    instant ANY line quarantines". The code has never behaved that way, and
+    behaving that way would defeat AD-30's narrow scoping and this story's
+    own AC ("records provably unaffected stay evaluable")."""
+    good = build_entry(
+        id=_valid_id(),
+        ts=_ts(0),
+        run_id="run-1",
+        kind="run-started",
+        phase=Phase.INTENT,
+        story=StoryKey(epic=3, seq=1),
+        payload={},
+    )
+    narrow = json.dumps(
+        {"story": "3.1", "kind": "gate-verdict", "ts": _ts(1)}  # run_id/id missing
+    )
+    result = fold([_line(good), narrow])
+    assert result.quarantined[0].story == StoryKey(epic=3, seq=1)
+    assert result.is_evaluable(StoryKey(epic=3, seq=1), "gate-verdict") is False
+    assert result.is_evaluable(None, None) is True
+
+
+@pytest.mark.parametrize("bad_story", ["3.1", None, 31], ids=["str", "none", "int"])
+def test_for_story_rejects_a_non_story_key(bad_story):
+    """Review finding, verified live: `for_story("3.1")` silently returned
+    `()` for a caller passing a raw key string, and `for_story(None)`
+    silently returned every run-scoped entry -- both indistinguishable from
+    "this story has no entries", and asymmetric with the strict guard
+    `is_evaluable` grew three methods away."""
+    result = fold([])
+    with pytest.raises(TypeError, match="story"):
+        result.for_story(bad_story)  # type: ignore[arg-type]
+
+
+def test_by_kind_rejects_a_non_str_kind():
+    result = fold([])
+    with pytest.raises(TypeError, match="kind"):
+        result.by_kind(None)  # type: ignore[arg-type]
+
+
+@pytest.mark.parametrize(
+    ("story", "kind"), [("3.1", "k"), (31, "k"), (StoryKey(epic=3, seq=1), 7)]
+)
+def test_is_evaluable_rejects_wrong_types(story, kind):
+    result = fold([])
+    with pytest.raises(TypeError):
+        result.is_evaluable(story, kind)  # type: ignore[arg-type]
