@@ -165,6 +165,7 @@ project, and spec maps to exactly one Dream; the herald CLI's status capability
 | [`sprint-status-auto-promote.md`](sprint-status-auto-promote.md) | dreamt | A landed story doesn't reach the dashboard/tracked ledger until someone remembers to run `promote_sprint_status.py` + regenerate — bit the same session 3 times; wants the promotion triggered by landing itself, not a periodic human check. |
 | [`loop-home-fleet-refresh.md`](loop-home-fleet-refresh.md) | dreamt | Refreshing every loop-home from `main` is a hand-run ritual with real judgment calls; `loop-push-watch`/`dashboard-watch` already automate the push side but neither was running all session — no auto-start exists anywhere. |
 | [`dream-to-code-model-self-verification.md`](dream-to-code-model-self-verification.md) | dreamt | Two follow-ups named at the 2026-07-23 Dream-to-Code restructure were never built: a `dream_chain_check.py --dreams` mode, and dogfooding `bmad-spec` against the model's own governing docs — both confirmed still genuinely missing. |
+| [`jira-github-projects-sync.md`](jira-github-projects-sync.md) | dreamt | Bidirectional GitHub Projects V2 ↔ Jira Cloud sync, no third-party SaaS, zero-loop + idempotent — full v1 draft spec handed in whole, staged at `docs/intake/jira-github-projects-sync/`. |
 
 **Applications**
 
