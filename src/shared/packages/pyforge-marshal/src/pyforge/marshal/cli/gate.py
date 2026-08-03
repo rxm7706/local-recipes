@@ -5,11 +5,23 @@ config`` resolves its own project layer, runs each configured command
 through the injected ``ProcessPort``, and folds the outcomes into Marshal's
 verdict lattice via ``core/gate.py``'s pure classification.
 
-**Why there is no arbitrary-command flag (AD-17).** Verify commands run
-ONLY from ``EffectivePolicy.verify_commands`` (composed via
-``core.policy.compose()``) -- there is deliberately no other execution
-channel on this command, so AD-17's allowlist-only rule holds structurally,
-not by a runtime check.
+**Why there is no arbitrary-command flag, and no ``--project-policy``
+(AD-17).** Verify commands run ONLY from ``EffectivePolicy.verify_commands``
+composed from the CONVENTIONAL project-policy path -- there is deliberately
+no other execution channel on this command, so AD-17's allowlist-only rule
+holds structurally, not by a runtime check.
+
+``marshal config`` additionally accepts ``--project-policy PATH`` to compose
+against a policy file anywhere on disk. That flag is deliberately ABSENT
+here, and must not be added: ``config`` only PRINTS the policy it reads,
+whereas ``gate evaluate`` EXECUTES its ``verify_commands``. An arbitrary
+path is therefore exactly the ad-hoc command channel AD-17 forbids -- it
+would run a file outside ``_bmad-output/projects/`` while still reporting
+``data["slug"]``, asserting a project scope the run never had, and FR-20's
+"another project's gates never run" would hold for neither the slug nor the
+file. (Review finding: it did exactly that, verified live -- a policy file
+in ``/tmp`` declaring an arbitrary command ran it and reported ``clean``,
+exit 0, under ``"slug": "pyforge-marshal"``.)
 
 **Project-slug/policy resolution is IMPORTED, not reimplemented.**
 ``ENV_ACTIVE_PROJECT``, ``conventional_project_policy_path``,
@@ -64,7 +76,7 @@ from pathlib import Path
 
 from ..adapters.process_posix import PosixProcess, ProcessError
 from ..core import gate, policy
-from ..core.model import Finding, Severity, build_envelope
+from ..core.model import Finding, Severity, Status, build_envelope, status_for
 from ..core.verdict import compute_verdict, exit_code_for
 from ..ports.process import ProcessPort
 from .config import (
@@ -109,13 +121,9 @@ def add_gate_subparser(subparsers: argparse._SubParsersAction) -> None:
         metavar="SLUG",
         help=f"The active project slug; falls back to ${ENV_ACTIVE_PROJECT} when omitted.",
     )
-    evaluate_parser.add_argument(
-        "--project-policy",
-        type=Path,
-        default=None,
-        metavar="PATH",
-        help="A TOML file supplying the project policy layer (overrides the conventional path).",
-    )
+    # No --project-policy here, unlike `marshal config` -- see this module's
+    # own docstring for why an arbitrary policy path on a command that RUNS
+    # what it reads is the ad-hoc execution channel AD-17 forbids.
     evaluate_parser.add_argument(
         "--run",
         dest="run_id",
@@ -148,10 +156,11 @@ def run_evaluate(args: argparse.Namespace, *, process: ProcessPort | None = None
         args.project if args.project is not None else os.environ.get(ENV_ACTIVE_PROJECT, "")
     )
 
-    # Resolves the project-policy SOURCE exactly like run_config: an
-    # explicit --project-policy always wins; otherwise the conventional path
-    # is consulted only if it exists as a file. Reused, not reimplemented,
-    # so "another project's gates never run" (FR-20) holds by construction.
+    # The CONVENTIONAL path is the only policy source this command will
+    # read -- `run_config`'s `--project-policy` override is deliberately not
+    # offered here (see the module docstring). Resolution itself is reused,
+    # not reimplemented, so "another project's gates never run" (FR-20)
+    # holds by construction.
     #
     # Review finding: unlike run_config (which only ever PRINTS a
     # mis-resolved policy), this command RUNS the verify_commands a
@@ -167,8 +176,8 @@ def run_evaluate(args: argparse.Namespace, *, process: ProcessPort | None = None
     # (no new finding code needed).
     project_data: Mapping[str, object] = {}
     io_findings: list[Finding] = []
-    policy_source: Path | None = args.project_policy
-    if policy_source is None and project_slug and policy._is_valid_project_slug(project_slug):
+    policy_source: Path | None = None
+    if project_slug and policy._is_valid_project_slug(project_slug):
         candidate = conventional_project_policy_path(project_slug)
         if candidate.is_file():
             policy_source = candidate
@@ -182,7 +191,7 @@ def run_evaluate(args: argparse.Namespace, *, process: ProcessPort | None = None
         project_slug=project_slug, project=project_data, flags={}
     )
     # io_findings FIRST: mirrors cli/config.py::run_config's own ordering --
-    # a --project-policy read failure is the root CAUSE of every
+    # an unreadable conventional policy file is the root CAUSE of every
     # "layer=default" symptom compose() then reports, so the operator
     # scanning top-down should meet cause before consequence.
     findings: list[Finding] = [*io_findings, *policy_findings]
@@ -225,7 +234,27 @@ def run_evaluate(args: argparse.Namespace, *, process: ProcessPort | None = None
 
         commands = effective.verify_commands.value
         if not commands:
-            command_findings.append(gate.no_commands_configured_finding())
+            # MRS-GATE-004 asserts the allowlist is UNCONFIGURED. When an
+            # error-class policy finding already explains why composition
+            # fell back to bare defaults -- an unreadable or malformed
+            # conventional policy file (MRS-POLICY-004), a malformed slug
+            # (MRS-POLICY-006), a rejected layer (MRS-POLICY-002) -- that
+            # assertion is false: the operator DID configure commands and
+            # Marshal could not read them. Emitting it anyway misdirects
+            # triage toward "add a verify command" when the real fix is the
+            # policy file (review finding, verified live: a TOML syntax
+            # error produced MRS-POLICY-004 and MRS-GATE-004 side by side).
+            #
+            # Suppressing it can never turn the run green: the finding that
+            # replaces it is error-class by definition of this branch, so
+            # compute_verdict already yields a non-ok verdict -- the same
+            # ok-status gate cli/config.py::run_config uses before its own
+            # side effects, for the same "Marshal could not determine what
+            # the operator intended" reason. The I/O matrix's
+            # "--project/env both omitted" row is unaffected: MRS-POLICY-005
+            # is a WARN, so status stays OK and both findings still surface.
+            if status_for(compute_verdict(findings)) is Status.OK:
+                command_findings.append(gate.no_commands_configured_finding())
             data["commands"] = []
         else:
             reports: list[dict[str, object]] = []
@@ -272,15 +301,35 @@ def run_evaluate(args: argparse.Namespace, *, process: ProcessPort | None = None
         command="gate evaluate", verdict=verdict_value, data=data, findings=tuple(findings)
     )
 
+    if args.format == "json":
+        rendered = json.dumps(envelope.to_json_dict(), indent=2, sort_keys=True)
+    else:
+        rendered = _render_text(envelope.data, envelope.findings)
+
     # flush=True + the broken-pipe guard mirror cli/config.py::run_config
     # exactly -- see that function's comment for the full rationale (stdout
     # is block-buffered when piped/redirected, so an un-flushed write never
     # touches the fd inside this guard).
     try:
-        if args.format == "json":
-            print(json.dumps(envelope.to_json_dict(), indent=2, sort_keys=True), flush=True)
-        else:
-            print(_render_text(envelope.data, envelope.findings), flush=True)
+        print(rendered, flush=True)
+    except UnicodeEncodeError:
+        # Review finding: this command is the first to print ARBITRARY child
+        # output, and adapters/process_posix.py decodes it with
+        # errors="replace" -- so a verify command emitting one undecodable
+        # byte puts U+FFFD in the text render. When stdout's own encoding
+        # cannot represent it (PYTHONIOENCODING=ascii, a non-UTF-8 locale),
+        # print raises UnicodeEncodeError -- a ValueError, which main()'s
+        # SystemExit/KeyboardInterrupt relay does NOT catch, so the
+        # invocation would die on a traceback and lose its verdict-derived
+        # exit code (observed: exit 1 for a gate that had really failed, 3).
+        # Re-emit backslash-escaped rather than crash; a partial first write
+        # may repeat a prefix, which is the right trade against losing the
+        # verdict entirely. --format json needs no such guard (json.dumps
+        # defaults to ensure_ascii=True).
+        try:
+            print(rendered.encode("ascii", "backslashreplace").decode("ascii"), flush=True)
+        except OSError:
+            _suppress_downstream_pipe_close()
     except OSError:
         _suppress_downstream_pipe_close()
 

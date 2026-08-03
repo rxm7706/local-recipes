@@ -57,6 +57,24 @@ def test_classify_outcome_failing_command_captures_the_real_exit_code():
     assert "127" in finding.message
 
 
+def test_classify_outcome_signal_termination_is_not_reported_as_an_exit_code():
+    """Review finding: ``subprocess`` reports a signal-terminated child as a
+    NEGATIVE returncode, so the message read "exited -9" -- an exit status no
+    process can return, telling an operator their check FAILED when the OOM
+    killer or a CI SIGTERM ended it before it produced any result.
+
+    The classification deliberately stays MRS-GATE-001/GATE_FAILED: the
+    command really did run and really did not pass, and re-routing it to
+    UNEVALUABLE would move the verdict TOWARD green on an ambiguity."""
+    result = ProcessResult(returncode=-9, stdout="", stderr="")
+    report, finding = gate.classify_outcome("pytest -q", result)
+    assert report["returncode"] == -9
+    assert "signal 9" in finding.message
+    assert "exited -9" not in finding.message
+    assert finding.code == "MRS-GATE-001"
+    assert classify(finding.code) is Verdict.GATE_FAILED
+
+
 # --- classify_outcome: result=None, a command that never ran -----------------
 # (I/O matrix: "command not resolvable" -> MRS-GATE-002; "malformed command
 # string" -> MRS-GATE-003 -- both share the same result=None shape, only the
@@ -104,6 +122,19 @@ def test_classify_outcome_requires_failure_code_and_reason_when_result_is_none()
         gate.classify_outcome("cmd", None, failure_code="MRS-GATE-002")
     with pytest.raises(ValueError):
         gate.classify_outcome("cmd", None, failure_reason="whatever")
+
+
+def test_classify_outcome_rejects_a_result_alongside_a_declared_failure():
+    """Review finding: the under-specified direction failed loud, but the
+    OVER-specified one was silent -- a caller passing both a ProcessResult
+    and a declared failure got a passing report and no finding, silently
+    DROPPING the failure. That is the one direction this function must never
+    fail quietly in, so it now fails loud symmetrically."""
+    result = ProcessResult(returncode=0, stdout="", stderr="")
+    with pytest.raises(ValueError):
+        gate.classify_outcome("cmd", result, failure_code="MRS-GATE-002")
+    with pytest.raises(ValueError):
+        gate.classify_outcome("cmd", result, failure_reason="never ran")
 
 
 # --- no_commands_configured_finding (I/O matrix: "zero verify commands") -----

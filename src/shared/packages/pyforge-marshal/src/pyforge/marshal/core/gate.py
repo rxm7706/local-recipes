@@ -79,8 +79,19 @@ def classify_outcome(
     A non-``None`` ``result`` always classifies via ``result.returncode``:
     ``0`` reports ``resolvable: True``, the captured output, and no finding
     (a passing command is not itself news); non-zero reports the same shape
-    plus one ``MRS-GATE-001`` finding naming the command and its exit code.
+    plus one ``MRS-GATE-001`` finding naming the command and how it ended.
+    Passing a ``result`` AND a declared failure is a caller bug and raises
+    ``ValueError``: silently preferring the result would DROP the caller's
+    failure and report a pass, the one direction this function must never
+    fail quietly in.
     """
+    if result is not None and (failure_code is not None or failure_reason is not None):
+        raise ValueError(
+            "failure_code/failure_reason are only meaningful when result is "
+            "None (the command never ran) -- passing both a result and a "
+            "declared failure would silently drop the failure"
+        )
+
     if result is None:
         if failure_code is None or failure_reason is None:
             raise ValueError(
@@ -97,6 +108,20 @@ def classify_outcome(
         )
 
     if result.returncode != 0:
+        # A NEGATIVE returncode is POSIX for "terminated by signal N"
+        # (subprocess reports -N), not an exit status any process can
+        # return -- "exited -9" reads as an exit code and tells an operator
+        # their check failed when the OOM killer or a CI SIGTERM ended it
+        # before it produced any result at all. The classification stays
+        # MRS-GATE-001/GATE_FAILED either way: the command really did run
+        # and really did not pass, and re-routing a killed check toward
+        # UNEVALUABLE would move the verdict TOWARD green, which this
+        # module never does on an ambiguity.
+        outcome = (
+            f"was terminated by signal {-result.returncode}"
+            if result.returncode < 0
+            else f"exited {result.returncode}"
+        )
         return (
             {
                 "command": command,
@@ -108,7 +133,7 @@ def classify_outcome(
             Finding(
                 code="MRS-GATE-001",
                 severity=Severity.ERROR,
-                message=f"verify command {command!r} exited {result.returncode}",
+                message=f"verify command {command!r} {outcome}",
             ),
         )
 
