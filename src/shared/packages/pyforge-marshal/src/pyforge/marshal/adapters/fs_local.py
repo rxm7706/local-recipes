@@ -60,7 +60,15 @@ def _tmp_sibling(path: Path) -> Path:
 
 
 class LocalFs:
-    """``ports.FsPort``'s sole implementation."""
+    """Sole implementation of BOTH ``ports.FsPort`` and -- since Story 2.6 --
+    the egress-classified ``ports.RecordPort`` (``write_redacted_atomic``).
+
+    That dual role is deliberate (one atomic-write mechanism, two typed
+    entry points) but it means the AD-34 egress boundary on this class is
+    exactly one method call wide: ``write_text_atomic`` reaches the same
+    durable sink accepting a bare ``str``. Tracked in ``deferred-work.md``
+    (the ``FsPort``/``VcsPort`` classification entry); named here because
+    this docstring is where a reader learns what the adapter implements."""
 
     def read_text(self, path: Path) -> str | None:
         try:

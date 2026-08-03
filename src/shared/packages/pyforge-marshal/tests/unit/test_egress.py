@@ -8,13 +8,20 @@ from __future__ import annotations
 
 import dataclasses
 import json
+from datetime import datetime, timedelta
 from pathlib import Path
 
 import jsonschema
 import pytest
 
 from pyforge.marshal.adapters.fs_local import LocalFs
-from pyforge.marshal.core.egress import EGRESS_PORTS, Redacted, build_gate_record, to_redacted
+from pyforge.marshal.core.egress import (
+    _TIMESTAMP_PATTERN,
+    EGRESS_PORTS,
+    Redacted,
+    build_gate_record,
+    to_redacted,
+)
 from pyforge.marshal.core.identity import MalformedStoryKeyError
 from pyforge.marshal.core.model import Verdict
 from pyforge.marshal.core.policy import REDACTED_SENTINEL
@@ -42,7 +49,11 @@ def test_redacted_wraps_text():
 
 
 def test_redacted_rejects_non_str_text():
-    with pytest.raises(ValueError):
+    """TypeError, not ValueError (review finding): the other two type guards
+    in the same three-call egress pipeline (`to_redacted`'s non-Mapping
+    payload, `write_redacted_atomic`'s non-`Redacted`/non-`Path` arguments)
+    both raise TypeError for this identical category."""
+    with pytest.raises(TypeError):
         Redacted(text=123)  # type: ignore[arg-type]
 
 
@@ -592,3 +603,186 @@ def test_egress_ports_registry_contents():
         "VcsPort": False,
         "RecordPort": True,
     }
+
+
+# --- review pass 3: token-run tail, producer<->schema agreement ----------------
+
+
+@pytest.mark.parametrize("tail_length", [1, 5, 12, 20, 36])
+def test_separated_token_leaks_no_tail_below_the_tolerant_floor(tail_length):
+    """Regression (review finding, verified live). The tolerant
+    `sk-[A-Za-z0-9_-]{40,}` pattern only fires at 40+ characters, so a
+    SHORTER separated token fell through to the contiguous
+    `sk-[A-Za-z0-9]{20,}`, which redacted the leading run and left the
+    remainder in plaintext: `"sk-" + "c"*25 + "-" + "d"*12` became
+    `"***REDACTED***-dddddddddddd"`. The previous pass's regression test
+    happened to pick a 51-character run, clearing the floor and never
+    exercising the gap."""
+    tail = "d" * tail_length
+    leaked = "sk-" + "c" * 25 + "-" + tail
+    document = json.loads(to_redacted({"note": leaked}).text)
+    assert document["note"] == REDACTED_SENTINEL
+    assert tail not in document["note"]
+
+
+def test_adjacent_tokens_leak_no_tail():
+    """Regression (review finding, verified live): `ghp_[A-Za-z0-9]{36,}`
+    greedily consumed the `sk` of an immediately following token, destroying
+    the `sk-` prefix the next pattern needed to match the remainder --
+    `"***REDACTED***-bbbb..."`."""
+    leaked = "ghp_" + "a" * 36 + "sk-" + "b" * 45
+    document = json.loads(to_redacted({"note": leaked}).text)
+    assert document["note"] == REDACTED_SENTINEL
+    assert "b" not in document["note"]
+
+
+def test_secret_shaped_key_that_also_contains_a_token_is_redacted_in_its_name():
+    """Regression (review finding, verified live): the `is_secret_key` branch
+    replaced the VALUE and `continue`d before the key ever reached
+    `_redact_string`, so a key that was BOTH secret-shaped and token-shaped
+    had the credential in its own name emitted verbatim as a JSON key --
+    the one case `_redact`'s own docstring claims is rewritten."""
+    token = "ghp_" + "a" * 36
+    document = json.loads(to_redacted({f"{token}_TOKEN": "v"}).text)
+    assert token not in json.dumps(document)
+    assert list(document) == [REDACTED_SENTINEL]
+
+
+def test_ordinary_secret_shaped_key_keeps_its_name():
+    """Control for the regression above: a key with no token shape in it must
+    still keep its NAME (the name is not the secret) so records stay
+    findable -- only its value is replaced."""
+    document = json.loads(to_redacted({"API_TOKEN": "hunter2"}).text)
+    assert document == {"API_TOKEN": REDACTED_SENTINEL}
+
+
+@pytest.mark.parametrize(
+    "timestamp",
+    [
+        "2026-08-03T00:00+00:00",  # no seconds
+        "2026-08-03T00:00:00+0000",  # compact offset
+        "2026-08-03T00:00:00+00",  # abbreviated offset
+        "20260803T000000Z",  # basic ISO form
+    ],
+)
+def test_build_gate_record_rejects_iso_forms_its_own_schema_rejects(timestamp):
+    """Regression (review finding, verified live): `datetime.fromisoformat`
+    accepts these four legitimate UTC ISO-8601 spellings, the packaged
+    schema's `timestamp` pattern rejects all four, and `build_gate_record`
+    checked only the former -- so a well-behaved caller wrote a durable,
+    `$id`-bearing record no consumer validating against the shipped contract
+    would accept."""
+    assert datetime.fromisoformat(timestamp).utcoffset() == timedelta(0)
+    with pytest.raises(ValueError, match="canonical UTC ISO-8601 spelling"):
+        build_gate_record(
+            story_key="2.6",
+            commands=[],
+            scope_check_verdict=None,
+            tree_revision="abc123",
+            timestamp=timestamp,
+        )
+
+
+@pytest.mark.parametrize(
+    "timestamp",
+    ["2026-08-03T00:00:00Z", "2026-08-03T00:00:00+00:00", "2026-08-03T00:00:00.123456Z"],
+)
+def test_every_timestamp_the_producer_accepts_validates_against_the_schema(timestamp):
+    """The accept direction of the same agreement -- the previous pass only
+    pinned the reject direction."""
+    record = build_gate_record(
+        story_key="2.6",
+        commands=[],
+        scope_check_verdict=None,
+        tree_revision="abc123",
+        timestamp=timestamp,
+    )
+    jsonschema.validate(record, _schema())
+
+
+def test_producer_and_schema_share_one_timestamp_pattern():
+    """Pins the two spellings character-for-character, so the asymmetry
+    cannot silently reopen."""
+    assert _TIMESTAMP_PATTERN.pattern == _schema()["properties"]["timestamp"]["pattern"]
+
+
+def test_schema_scope_check_verdict_enum_matches_the_verdict_vocabulary():
+    """Review finding: the schema hand-duplicates `core.model.Verdict`'s six
+    values with nothing keeping the two in sync, so adding a seventh Verdict
+    member would ship a producer emitting schema-invalid records with the
+    whole suite green (`build_gate_record` validates against `Verdict`, the
+    schema against its own frozen list)."""
+    enum_values = _schema()["properties"]["scope_check_verdict"]["enum"]
+    assert None in enum_values
+    assert sorted(v for v in enum_values if v is not None) == sorted(
+        member.value for member in Verdict
+    )
+
+
+@pytest.mark.parametrize(
+    "entry",
+    [
+        {"command": "pytest", "returncode": 0, "resolvable": False},
+        {"command": "pytest", "returncode": None, "resolvable": False, "stdout": "all good"},
+        {"command": "pytest", "returncode": None, "resolvable": True},
+    ],
+)
+def test_schema_rejects_the_self_contradictory_entries_the_producer_rejects(entry):
+    """Review finding, verified live: `_validate_command_report` enforces both
+    cross-field invariants since the previous pass, but the SCHEMA -- the
+    durable contract a non-Python consumer reads -- documented them only in
+    prose, so a hand-written self-contradictory entry validated clean."""
+    with pytest.raises(ValueError):
+        build_gate_record(
+            story_key="2.6",
+            commands=[entry],
+            scope_check_verdict=None,
+            tree_revision="abc123",
+            timestamp="2026-08-03T00:00:00Z",
+        )
+
+    record = {
+        "story": "2.6",
+        "commands": [entry],
+        "scope_check_verdict": None,
+        "tree_revision": "abc123",
+        "timestamp": "2026-08-03T00:00:00Z",
+    }
+    with pytest.raises(jsonschema.ValidationError):
+        jsonschema.validate(record, _schema())
+
+
+@pytest.mark.parametrize(
+    "entry",
+    [
+        {"command": "pytest", "returncode": None, "resolvable": False},
+        {"command": "pytest", "returncode": 0, "resolvable": True, "stdout": "", "stderr": ""},
+        {"command": "pytest", "returncode": 1, "resolvable": True},
+    ],
+)
+def test_schema_still_accepts_every_consistent_entry(entry):
+    """The tightened schema must not reject what `classify_outcome` really
+    emits -- both directions, producer and contract."""
+    record = build_gate_record(
+        story_key="2.6",
+        commands=[entry],
+        scope_check_verdict=None,
+        tree_revision="abc123",
+        timestamp="2026-08-03T00:00:00Z",
+    )
+    jsonschema.validate(record, _schema())
+
+
+def test_unknown_command_report_keys_of_mixed_types_still_raise_value_error():
+    """Review finding, verified live: the diagnostic did `sorted(unknown)`,
+    which raises its own bare `TypeError` for a Mapping with both `str` and
+    non-`str` keys -- masking the `ValueError` this validator documents for
+    every malformed-input case."""
+    with pytest.raises(ValueError, match="unknown key"):
+        build_gate_record(
+            story_key="2.6",
+            commands=[{"command": "x", "returncode": 0, "resolvable": True, "bogus": 1, 7: "z"}],
+            scope_check_verdict=None,
+            tree_revision="abc123",
+            timestamp="2026-08-03T00:00:00Z",
+        )
