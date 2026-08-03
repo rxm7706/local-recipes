@@ -77,6 +77,7 @@ def test_all_defaults_values_match_default_policy():
     assert seed["max_dev_attempts"].value == DEFAULT_POLICY["max_dev_attempts"]
     assert seed["max_review_cycles"].value == DEFAULT_POLICY["max_review_cycles"]
     assert seed["max_followup_reviews"].value == DEFAULT_POLICY["max_followup_reviews"]
+    assert seed["idle_threshold_minutes"].value == DEFAULT_POLICY["idle_threshold_minutes"]
 
 
 def test_project_overrides_one_key():
@@ -202,7 +203,7 @@ def test_different_inputs_produce_different_hash():
     assert first.content_hash != second.content_hash
 
 
-def test_seed_view_returns_all_five_seed_fields():
+def test_seed_view_returns_all_six_seed_fields():
     effective, _ = compose(project_slug="acme", project={}, flags={})
     seed = effective.seed_view()
     assert set(seed.keys()) == {
@@ -211,6 +212,7 @@ def test_seed_view_returns_all_five_seed_fields():
         "max_dev_attempts",
         "max_review_cycles",
         "max_followup_reviews",
+        "idle_threshold_minutes",
     }
     assert all(isinstance(field, PolicyField) for field in seed.values())
 
@@ -223,6 +225,7 @@ def test_seed_fields_are_not_reachable_as_public_attributes():
         "max_dev_attempts",
         "max_review_cycles",
         "max_followup_reviews",
+        "idle_threshold_minutes",
     ):
         assert not hasattr(effective, key)
 
@@ -240,7 +243,7 @@ def test_secret_redaction_via_synthetic_field_name():
     assert redact("gate_mode", "none") == "none"
 
 
-def test_none_of_the_real_nine_fields_are_secret_shaped():
+def test_none_of_the_real_ten_fields_are_secret_shaped():
     all_keys = {
         "verify_commands",
         "worktree_seed_paths",
@@ -251,6 +254,7 @@ def test_none_of_the_real_nine_fields_are_secret_shaped():
         "max_dev_attempts",
         "max_review_cycles",
         "max_followup_reviews",
+        "idle_threshold_minutes",
     }
     assert not any(is_secret_key(key) for key in all_keys)
 
@@ -321,6 +325,43 @@ def test_verify_commands_valid_list_accepted():
     assert findings == ()
     assert effective.verify_commands.value == ("pytest -q",)
     assert effective.verify_commands.layer is PolicyLayer.PROJECT
+
+
+# --- idle_threshold_minutes validation (Story 3.5, FR-12) --------------------
+
+
+def test_idle_threshold_minutes_project_override_applies():
+    effective, findings = compose(
+        project_slug="acme", project={"idle_threshold_minutes": 10}, flags={}
+    )
+    assert findings == ()
+    field = effective.seed_view()["idle_threshold_minutes"]
+    assert field.value == 10
+    assert field.layer is PolicyLayer.PROJECT
+
+
+def test_idle_threshold_minutes_accepts_a_fractional_value():
+    """Unlike the int-only attempt-count fields, a fractional minute value
+    is accepted -- useful for a synthetic sub-minute threshold no
+    whole-number value could express."""
+    effective, findings = compose(
+        project_slug="acme", project={"idle_threshold_minutes": 0.5}, flags={}
+    )
+    assert findings == ()
+    assert effective.seed_view()["idle_threshold_minutes"].value == 0.5
+
+
+@pytest.mark.parametrize("bad_value", [0, -5, -0.5, "25", None, True, False])
+def test_idle_threshold_minutes_rejects_non_positive_or_non_numeric_values(bad_value):
+    effective, findings = compose(
+        project_slug="acme", project={"idle_threshold_minutes": bad_value}, flags={}
+    )
+    assert effective.seed_view()["idle_threshold_minutes"].value == DEFAULT_POLICY[
+        "idle_threshold_minutes"
+    ]
+    assert len(findings) == 1
+    assert findings[0].code == "MRS-POLICY-003"
+    assert findings[0].path == "project"
 
 
 # --- the "excluded, not poisoned" fallback semantics -------------------------
@@ -445,6 +486,7 @@ def test_effective_policy_rejects_non_policy_field_seed_value():
                 "max_dev_attempts": PolicyField(value=2, layer="default", raw_source=2),
                 "max_review_cycles": PolicyField(value=3, layer="default", raw_source=3),
                 "max_followup_reviews": PolicyField(value=1, layer="default", raw_source=1),
+                "idle_threshold_minutes": PolicyField(value=25, layer="default", raw_source=25),
             },
         )
 
@@ -460,7 +502,7 @@ def test_effective_policy_seed_is_a_read_only_mapping_proxy():
 # --- schema hygiene -----------------------------------------------------------
 
 
-def test_schema_file_declares_the_nine_keys():
+def test_schema_file_declares_the_ten_keys():
     package_dir = Path(pyforge.marshal.__file__).resolve().parent
     schema = json.loads(
         (package_dir / "schemas" / "policy.json").read_text(encoding="utf-8")
@@ -476,6 +518,7 @@ def test_schema_file_declares_the_nine_keys():
         "max_dev_attempts",
         "max_review_cycles",
         "max_followup_reviews",
+        "idle_threshold_minutes",
     }
     assert set(schema["properties"].keys()) == set(schema["required"])
 

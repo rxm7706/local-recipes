@@ -64,8 +64,12 @@ _UNSETTABLE_KEYS = frozenset(
     {"verify_commands", "worktree_seed_paths", "model_tier_map", "frozen_surfaces"}
 )
 
-# Field render order: the 4 static keys, then the 5 seed keys -- matches the
+# Field render order: the 4 static keys, then the 6 seed keys -- matches the
 # spec's own enumeration order (Boundaries & Constraints, second bullet).
+# `idle_threshold_minutes` (Story 3.5) is deliberately NOT a `--set` target
+# (unlike the other 5 scalar seed keys) -- no AC asks for a CLI override
+# surface for it, and `marshal-policy.toml`'s project layer already covers
+# "configurable" (FR-12's own AC wording).
 _FIELD_ORDER: tuple[str, ...] = (
     "verify_commands",
     "worktree_seed_paths",
@@ -76,6 +80,7 @@ _FIELD_ORDER: tuple[str, ...] = (
     "max_dev_attempts",
     "max_review_cycles",
     "max_followup_reviews",
+    "idle_threshold_minutes",
 )
 
 
@@ -181,7 +186,7 @@ def _parse_set_flags(raw_items: list[tuple[str, str]]) -> dict[str, object]:
 
 
 def _iter_fields(effective: policy.EffectivePolicy):
-    """Yield ``(key, PolicyField)`` for all 9 keys in ``_FIELD_ORDER``. Seed
+    """Yield ``(key, PolicyField)`` for all 10 keys in ``_FIELD_ORDER``. Seed
     fields are read exclusively through ``seed_view()`` -- never through
     ``effective._seed`` directly (AD-26; guarded by
     ``tests/meta/test_ad26_seed_field_access_guard.py``)."""
@@ -202,7 +207,7 @@ def _json_safe(value: object) -> object:
 
 
 def _policy_fields_payload(effective: policy.EffectivePolicy) -> dict[str, object]:
-    """The flat 9-key document matching ``schemas/policy.json`` exactly:
+    """The flat 10-key document matching ``schemas/policy.json`` exactly:
     one ``{value, layer, raw_source}`` object per policy key, with any
     secret-shaped field's ``value``/``raw_source`` redacted."""
     payload: dict[str, object] = {}

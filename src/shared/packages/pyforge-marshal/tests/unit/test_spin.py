@@ -1078,6 +1078,10 @@ def test_spin_spawns_the_supervisor_with_the_expected_argv(home):
         run_id,
         "4242",  # harness.spin_result's own pid
         str(call["log_path"]),
+        # Story 3.5's 6th positional: the effective idle_threshold_minutes
+        # (core.policy.DEFAULT_POLICY's own value -- no project-policy file
+        # exists for the "acme" slug this test fixture uses).
+        "25",
     ]
     assert call["cwd"] == home
     assert call["log_path"].name == "supervisor.log"
@@ -1102,7 +1106,7 @@ def test_the_supervisor_accepts_the_argv_spin_actually_builds(home, monkeypatch,
     inert exit 0 rather than an error.
 
     This drives the argv ``run_spin`` genuinely produced through the
-    supervisor's OWN ``main()`` and asserts the five values it recovers
+    supervisor's OWN ``main()`` and asserts the six values it recovers
     compose the SAME run directory ``run_spin`` wrote its journal into.
     ``run_supervisor`` is stubbed out, so this stays pure parsing --
     ``test_supervisor_run_path_agreement.py`` pins the path helpers
@@ -1126,12 +1130,15 @@ def test_the_supervisor_accepts_the_argv_spin_actually_builds(home, monkeypatch,
     # argv launches must find its own run-launch entry in.
     journal_path = fs.appended_lines[0][0]
 
-    recovered: list[tuple[Path, str, str, int, Path]] = []
+    recovered: list[tuple[Path, str, str, int, Path, float]] = []
     monkeypatch.setattr(
         supervisor_main,
         "run_supervisor",
-        lambda home, slug, run_id, watched_pid, log_path: (
-            recovered.append((home, slug, run_id, watched_pid, log_path)) or 0
+        lambda home, slug, run_id, watched_pid, log_path, idle_threshold_minutes: (
+            recovered.append(
+                (home, slug, run_id, watched_pid, log_path, idle_threshold_minutes)
+            )
+            or 0
         ),
     )
 
@@ -1140,7 +1147,7 @@ def test_the_supervisor_accepts_the_argv_spin_actually_builds(home, monkeypatch,
     assert argv[:3] == [sys.executable, "-m", "pyforge.marshal.supervisor"]
     assert supervisor_main.main(argv[3:]) == 0, capsys.readouterr().err
 
-    [(got_home, got_slug, got_run_id, got_pid, got_log)] = recovered
+    [(got_home, got_slug, got_run_id, got_pid, got_log, got_threshold)] = recovered
     assert (
         supervisor_main._run_dir(got_home, got_slug, got_run_id)
         / supervisor_main._JOURNAL_FILENAME
@@ -1148,6 +1155,7 @@ def test_the_supervisor_accepts_the_argv_spin_actually_builds(home, monkeypatch,
     )
     assert got_pid == harness.spin_result.pid
     assert got_log == call["log_path"]
+    assert got_threshold == 25.0
 
 
 def test_spin_spawns_the_supervisor_after_the_outcome_append_not_right_after_spin(home):

@@ -259,8 +259,8 @@ def test_config_defaults_only_exits_zero(capsys, monkeypatch):
     assert "content_hash" in captured.out
 
 
-def test_config_prints_all_nine_keys(capsys, monkeypatch):
-    """AC: 'every one of the 9 keys prints its effective value and winning
+def test_config_prints_all_ten_keys(capsys, monkeypatch):
+    """AC: 'every one of the 10 keys prints its effective value and winning
     layer' -- checked exhaustively, not just a couple of spot-checked
     fields. The layer half is counted, not merely detected: exactly one
     `(layer=...)` suffix per key line, so a regression that drops the
@@ -279,13 +279,14 @@ def test_config_prints_all_nine_keys(capsys, monkeypatch):
         "max_dev_attempts",
         "max_review_cycles",
         "max_followup_reviews",
+        "idle_threshold_minutes",
     ):
         assert f"{key}:" in captured.out, f"marshal config did not print {key!r}"
-    assert captured.out.count("(layer=") == 9
+    assert captured.out.count("(layer=") == 10
 
 
 def test_config_redacts_a_secret_shaped_field(capsys, monkeypatch):
-    """None of the 9 real fields are secret-shaped today -- proven via a
+    """None of the 10 real fields are secret-shaped today -- proven via a
     monkeypatched suffix set so `gate_mode` becomes secret-shaped for the
     duration of this test, exercising the REAL `marshal config` render path
     (not just core.policy.redact() called directly, as in

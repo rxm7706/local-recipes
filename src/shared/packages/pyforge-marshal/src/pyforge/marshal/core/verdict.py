@@ -146,7 +146,17 @@ itself already launched successfully) -- classified ``Verdict.WARN``, the
 same tier as ``MRS-SPIN-006`` and for the same reason: a live,
 already-launched process is never re-classified as a failure over a
 paper-trail gap, here the absence of a supervisor rather than a missing
-outcome entry. Later stories populate the table further as they add real
+outcome entry. Story 3.5's ``supervisor/__main__.py`` (idle-strand
+detection, AD-9/AD-20) adds a NEW area, ``MRS-SUPV-*``: ``MRS-SUPV-001``
+(the idle ladder's ``nudge`` rung could not deliver its text --
+``SessionObserverPort.send_text`` returned ``False``), ``MRS-SUPV-002``
+(the ``stop-and-retry`` rung's ``HarnessPort.stop``/``.resume`` call raised
+``HarnessError``), and ``MRS-SUPV-003`` (the run-launch outcome entry's
+``harness_run_id`` is unavailable, so the ladder cannot act at all for this
+run). All three classify ``Verdict.WARN``, the same tier as
+``MRS-SPIN-004``/``006``/``007`` and for the identical reason: each names a
+degraded-but-still-supervised condition, never a failure that invalidates
+the run itself. Later stories populate the table further as they add real
 codes. The mechanism (a total, fail-loud lookup) is separately proven via
 ``monkeypatch``-injected synthetic entries in ``tests/unit/test_verdict.py``.
 
@@ -230,6 +240,8 @@ _RELAY_PASSTHROUGH: frozenset[int] = frozenset(
 # journaled" off MRS-SPIN-003's "never launched, safe to retry").
 # Story 3.4's cli/spin.py adds a SEVENTH code to the same caller,
 # MRS-SPIN-007, at the same WARN tier as MRS-SPIN-006.
+# Story 3.5's supervisor/__main__.py adds a NEW area, MRS-SUPV-* (three
+# codes), all classified WARN alongside MRS-SPIN-004/006/007.
 _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-IDENT-001": Verdict.UNEVALUABLE,
     "MRS-IDENT-002": Verdict.UNEVALUABLE,
@@ -276,6 +288,9 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-SPIN-005": Verdict.ERROR,
     "MRS-SPIN-006": Verdict.WARN,
     "MRS-SPIN-007": Verdict.WARN,
+    "MRS-SUPV-001": Verdict.WARN,
+    "MRS-SUPV-002": Verdict.WARN,
+    "MRS-SUPV-003": Verdict.WARN,
 }
 
 
