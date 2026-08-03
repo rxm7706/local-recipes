@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:local-recipes:pyforge-marshal:journal.v1",
+  "title": "MarshalJournalEntry",
+  "description": "One journal line's shape (Story 3.1, AD-28/AD-30): {id, ts, run_id, story?, kind, phase, intent_id?, payload}. additionalProperties is false at both the document and the entryId level, matching gate-record.json's/policy.json's own closed-schema discipline. id/intent_id are structured {writer_id, counter} objects, never a delimited string -- the composite nature AD-28 describes is literal in the shape. The allOf below enforces AD-28's mandatory-on-outcome, absent-otherwise intent_id rule -- the same invariant core.journal.JournalEntry.__post_init__ enforces on the producing side. This schema describes one already-serialized JSON line (core.journal.prepare_for_write's PreparedWrite.line, parsed); jsonschema validates it only in tests, matching gate-record.json's own precedent (src/ never runtime-validates against it).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "ts", "run_id", "kind", "phase", "payload"],
+  "allOf": [
+    {
+      "description": "AD-28: intent_id is mandatory on every outcome entry and absent on every intent/observation entry.",
+      "if": {
+        "required": ["phase"],
+        "properties": { "phase": { "const": "outcome" } }
+      },
+      "then": { "required": ["intent_id"] },
+      "else": { "not": { "required": ["intent_id"] } }
+    }
+  ],
+  "properties": {
+    "id": {
+      "$ref": "#/$defs/entryId",
+      "description": "The composite (writer_id, counter) id -- monotonic within a writer, never across the run (AD-28)."
+    },
+    "ts": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])T([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]\\.[0-9]{3}Z$",
+      "description": "Millisecond-precision UTC ISO-8601, 'T'/'Z' only, exactly 3 fractional digits -- one canonical spelling, since AD-28's total order (ts, writer_id, counter) string-compares ts directly and two legitimate spellings of the same instant would sort inconsistently. Deliberately stricter than gate-record.json's own timestamp pattern (see core.journal's module docstring) -- gate records are never string-sorted against each other."
+    },
+    "run_id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "\\S",
+      "description": "The AD-25 run id this entry belongs to. The \\S pattern rejects a whitespace-only value that minLength alone admits, matching build_entry's own .strip() check."
+    },
+    "story": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+[a-z]?$",
+      "description": "The canonicalized story key (AD-23/AD-38), e.g. \"2.6\" or \"6.1a\" -- omitted entirely when the entry carries no story."
+    },
+    "kind": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "\\S",
+      "description": "The entry's kind, as configured by its writer (e.g. a gate verdict, a story transition). The \\S pattern rejects a whitespace-only value that minLength alone admits, matching build_entry's own .strip() check."
+    },
+    "phase": {
+      "enum": ["intent", "outcome", "observation"],
+      "description": "AD-28's three-valued vocabulary."
+    },
+    "intent_id": {
+      "$ref": "#/$defs/entryId",
+      "description": "The composite id of the intent entry this outcome closes (AD-28). Mandatory on every outcome, absent on every intent/observation -- see this document's own allOf."
+    },
+    "payload": {
+      "type": "object",
+      "description": "Command-specific payload, opaque to this schema -- payloads over 4 KiB are rewritten to {\"sidecar_ref\": \"blobs/<writer_id>-<counter>.json\"} by core.journal.prepare_for_write before this shape is ever serialized (AD-30)."
+    }
+  },
+  "$defs": {
+    "entryId": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["writer_id", "counter"],
+      "description": "The composite (writer_id, counter) id (AD-28) -- structured, never a delimited string.",
+      "properties": {
+        "writer_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9_-]*$",
+          "description": "Unique per appending process (a supervisor, a CLI invocation). Filesystem-safe: it becomes part of a sidecar blob filename."
+        },
+        "counter": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Monotonic WITHIN this writer -- never across the run (AD-28)."
+        }
+      }
+    }
+  }
+}

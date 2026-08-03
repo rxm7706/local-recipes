@@ -185,6 +185,17 @@ class _RecordingFs:
         self.write_paths.append(dst)
         self._files.add(dst)
 
+    def append_line(self, path: Path, line: str, *, fsync: bool) -> None:
+        # Story 3.1: not reached by any scenario this module drives today
+        # (no CLI wiring exists yet -- see core/journal.py's module
+        # docstring), implemented so the guard would not crash if a future
+        # scenario reaches it, mirroring ensure_dir's own precedent.
+        self.write_paths.append(path)
+
+    def create_dir_exclusive(self, path: Path) -> None:
+        # Story 3.1: same precedent as append_line above.
+        self.write_paths.append(path)
+
 
 def test_every_observed_write_resolves_under_the_home_or_canonical_tier3_store(
     tmp_path, monkeypatch
