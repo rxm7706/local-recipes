@@ -52,6 +52,14 @@ symlink (Design Notes -- a symlinked ``.claude/settings.json`` would mean an
 edit inside the home silently mutates the main checkout's copy), so this is
 a distinct primitive from ``repoint_symlink_atomic`` rather than a second
 call to it.
+
+Story 3.1 (the run journal writer, AD-25/AD-28/AD-30) adds two more
+primitives: ``append_line`` -- AD-30's one serialized append protocol, a
+single ``os.write()`` on an ``O_APPEND``-opened descriptor with no buffered
+stream held open, so two uncoordinated writers can never interleave a
+partial line -- and ``create_dir_exclusive`` -- AD-25's ``mkdir``, exclusive
+by definition, so a run-directory collision is a hard finding, never an
+append.
 """
 
 from __future__ import annotations
@@ -145,4 +153,34 @@ class FsPort(Protocol):
         like ``remove_empty_dir``'s split between "safe refusal" and this
         port's own I/O. Raises ``FsError`` on any failure (``src`` missing,
         naming a directory, or unreadable; ``dst``'s parent unwritable)."""
+        ...
+
+    def append_line(self, path: Path, line: str, *, fsync: bool) -> None:
+        """AD-30's one serialized append protocol: a single ``os.write()``
+        of ``(line + "\\n").encode("utf-8")`` on a descriptor opened
+        ``O_WRONLY | O_APPEND | O_CREAT`` (mode ``0o666``, matching
+        ``_tmp_sibling``'s existing mode), ``fsync``ed only when
+        ``fsync=True``, then closed -- no buffered stream (``open()``/
+        ``fdopen()``) is ever held open across appends, so two uncoordinated
+        writers can never interleave a partial line. Does **not** create
+        ``path``'s parent directory (unlike ``write_text_atomic``): the run
+        directory's existence is itself a meaningful precondition (see
+        ``create_dir_exclusive`` below), so a missing parent is a real
+        ``FsError``, not an auto-create. Raises ``FsError`` if ``line``
+        contains an embedded newline, if the OS reports a short write (never
+        silently retried -- see the implementation's own docstring for why),
+        or on any other I/O failure. The concurrency guarantee is a
+        LOCAL-filesystem property of ``O_APPEND``; not guaranteed atomic on
+        every network filesystem."""
+        ...
+
+    def create_dir_exclusive(self, path: Path) -> None:
+        """A bare ``path.mkdir()`` (no ``parents=True``, no ``exist_ok``) --
+        AD-25's ``mkdir``, not ``O_EXCL``: directories are already exclusive
+        via ``mkdir(2)``'s own ``EEXIST``. Raises
+        ``DirectoryAlreadyExistsError`` (a distinguishable ``FsError``
+        subtype, defined on ``adapters.fs_local``) when ``path`` already
+        exists -- a collision is a hard finding, never an append, and
+        ``path`` is left untouched. Any other ``OSError`` raises plain
+        ``FsError``."""
         ...

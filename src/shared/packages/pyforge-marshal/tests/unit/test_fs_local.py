@@ -4,12 +4,19 @@ AD-4/AD-11) -- ``LocalFs`` against real ``tmp_path`` I/O.
 
 from __future__ import annotations
 
+import json
 import os
+import threading
 from pathlib import Path
 
 import pytest
 
-from pyforge.marshal.adapters.fs_local import FsError, LocalFs, _tmp_sibling
+from pyforge.marshal.adapters.fs_local import (
+    DirectoryAlreadyExistsError,
+    FsError,
+    LocalFs,
+    _tmp_sibling,
+)
 from pyforge.marshal.core.egress import Redacted
 
 
@@ -455,3 +462,224 @@ def test_write_redacted_atomic_payload_diagnostic_does_not_echo_the_value(tmp_pa
         LocalFs().write_redacted_atomic(tmp_path / "r.json", secret)
     assert secret not in str(excinfo.value)
     assert "Redacted" in str(excinfo.value)
+
+
+# --- append_line (Story 3.1, AD-30) -------------------------------------------
+
+
+def test_append_line_creates_the_file_and_writes_one_line(fs, tmp_path):
+    target = tmp_path / "journal.jsonl"
+    fs.append_line(target, '{"a": 1}', fsync=False)
+    assert target.read_text(encoding="utf-8") == '{"a": 1}\n'
+
+
+def test_append_line_appends_subsequent_lines_without_truncating(fs, tmp_path):
+    target = tmp_path / "journal.jsonl"
+    fs.append_line(target, '{"a": 1}', fsync=False)
+    fs.append_line(target, '{"a": 2}', fsync=False)
+    fs.append_line(target, '{"a": 3}', fsync=False)
+    assert target.read_text(encoding="utf-8") == '{"a": 1}\n{"a": 2}\n{"a": 3}\n'
+
+
+def test_append_line_with_fsync_true_still_appends(fs, tmp_path):
+    """The AD-30 rule is that fsync=True must not change the WRITE
+    behavior -- only whether the data is flushed to disk before returning
+    (the actual fsync CALL is verified separately below via monkeypatch)."""
+    target = tmp_path / "journal.jsonl"
+    fs.append_line(target, '{"a": 1}', fsync=True)
+    assert target.read_text(encoding="utf-8") == '{"a": 1}\n'
+
+
+def test_append_line_calls_os_fsync_only_when_requested(fs, tmp_path, monkeypatch):
+    """Review finding: nothing previously proved os.fsync was actually
+    called (or skipped) -- a deleted or inverted `if fsync: os.fsync(fd)`
+    line would have passed every prior test, since they only checked final
+    file content."""
+    calls = []
+    real_fsync = os.fsync
+    monkeypatch.setattr(os, "fsync", lambda fd: (calls.append(fd), real_fsync(fd))[1])
+
+    target = tmp_path / "journal.jsonl"
+    fs.append_line(target, '{"a": 1}', fsync=True)
+    assert len(calls) == 1
+
+    fs.append_line(target, '{"a": 2}', fsync=False)
+    assert len(calls) == 1  # unchanged -- fsync=False must not call it
+
+
+def test_append_line_raises_fs_error_when_parent_directory_is_missing(fs, tmp_path):
+    """Does NOT auto-mkdir, unlike write_text_atomic -- a missing run
+    directory is a real precondition failure, not something to create
+    around (see create_dir_exclusive)."""
+    target = tmp_path / "runs" / "run-1" / "journal.jsonl"
+    with pytest.raises(FsError):
+        fs.append_line(target, '{"a": 1}', fsync=False)
+
+
+def test_append_line_leaves_no_temp_file_behind(fs, tmp_path):
+    """AD-30: no buffered stream, no temp-file-then-replace -- append_line
+    writes directly to the target, so nothing else should ever appear
+    beside it."""
+    target = tmp_path / "journal.jsonl"
+    fs.append_line(target, '{"a": 1}', fsync=False)
+    leftovers = [p for p in tmp_path.iterdir() if p.name != "journal.jsonl"]
+    assert leftovers == []
+
+
+def test_append_line_rejects_a_line_with_an_embedded_newline(fs, tmp_path):
+    """Review finding: this primitive's entire contract is "one physical
+    line per call" -- an unrejected embedded newline would silently split
+    into two physical lines with no error raised anywhere."""
+    target = tmp_path / "journal.jsonl"
+    with pytest.raises(FsError, match="embedded newline"):
+        fs.append_line(target, '{"a": 1}\n{"a": 2}', fsync=False)
+    assert not target.exists()
+
+
+def test_append_line_raises_fs_error_on_a_short_write(fs, tmp_path, monkeypatch):
+    """Review finding: POSIX permits write() to consume fewer bytes than
+    requested even for a regular file; a short write must be surfaced as a
+    loud failure, never silently completed (a retry could let a different
+    writer's complete line land in the gap) and never silently truncated."""
+    target = tmp_path / "journal.jsonl"
+    real_write = os.write
+    monkeypatch.setattr(os, "write", lambda fd, data: real_write(fd, data[:1]) if data else 0)
+    with pytest.raises(FsError, match="short write"):
+        fs.append_line(target, '{"a": 1}', fsync=False)
+
+
+# --- create_dir_exclusive (Story 3.1, AD-25) ----------------------------------
+
+
+def test_create_dir_exclusive_creates_a_fresh_directory(fs, tmp_path):
+    target = tmp_path / "run-1"
+    fs.create_dir_exclusive(target)
+    assert target.is_dir()
+
+
+def test_create_dir_exclusive_raises_directory_already_exists_error_on_collision(
+    fs, tmp_path
+):
+    target = tmp_path / "run-1"
+    target.mkdir()
+    (target / "keep-me.txt").write_text("x", encoding="utf-8")
+    with pytest.raises(DirectoryAlreadyExistsError):
+        fs.create_dir_exclusive(target)
+    # the real directory and its content must survive the collision
+    assert (target / "keep-me.txt").read_text(encoding="utf-8") == "x"
+
+
+def test_directory_already_exists_error_is_an_fs_error(fs, tmp_path):
+    target = tmp_path / "run-1"
+    target.mkdir()
+    with pytest.raises(FsError):
+        fs.create_dir_exclusive(target)
+
+
+def test_create_dir_exclusive_raises_plain_fs_error_when_parent_is_missing(fs, tmp_path):
+    """No parents=True -- a missing parent is a different failure than a
+    collision, and must NOT be misreported as DirectoryAlreadyExistsError."""
+    target = tmp_path / "absent-parent" / "run-1"
+    with pytest.raises(FsError) as excinfo:
+        fs.create_dir_exclusive(target)
+    assert not isinstance(excinfo.value, DirectoryAlreadyExistsError)
+
+
+def test_create_dir_exclusive_does_not_create_parent_dirs(fs, tmp_path):
+    target = tmp_path / "absent-parent" / "run-1"
+    with pytest.raises(FsError):
+        fs.create_dir_exclusive(target)
+    assert not target.exists()
+
+
+# --- append_line concurrency (Story 3.1, this story's headline AC) -----------
+
+
+def test_append_line_is_safe_under_concurrent_writers(fs, tmp_path):
+    """AD-30's own concurrency proof: one long-lived writer appending many
+    lines in a loop, alongside several short-lived writers each appending a
+    handful of lines then exiting, ALL targeting the same file concurrently,
+    each thread owning its own writer_id and a LOCALLY-owned monotonic
+    counter (no lock -- AD-28 requires none). After joining every thread,
+    every line must parse as JSON (zero malformed lines -- proves
+    atomicity) and the set of (writer_id, counter) pairs across every line
+    must have zero duplicates and a size equal to the total append count
+    (proves identity -- a malformed-line-only assertion would pass even if
+    the id invariant were violated)."""
+    target = tmp_path / "journal.jsonl"
+    long_lived_line_count = 200
+    short_lived_writer_count = 8
+    short_lived_line_count = 15
+
+    def write_lines(writer_id: str, count: int) -> None:
+        for counter in range(count):
+            line = json.dumps({"writer_id": writer_id, "counter": counter})
+            fs.append_line(target, line, fsync=False)
+
+    threads = [
+        threading.Thread(target=write_lines, args=("long-lived", long_lived_line_count))
+    ]
+    for index in range(short_lived_writer_count):
+        threads.append(
+            threading.Thread(
+                target=write_lines, args=(f"short-lived-{index}", short_lived_line_count)
+            )
+        )
+
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join()
+
+    lines = target.read_text(encoding="utf-8").splitlines()
+    total_expected = long_lived_line_count + short_lived_writer_count * short_lived_line_count
+    assert len(lines) == total_expected
+
+    pairs = []
+    for line in lines:
+        document = json.loads(line)  # raises if any line is malformed JSON
+        pairs.append((document["writer_id"], document["counter"]))
+
+    assert len(pairs) == len(set(pairs)) == total_expected
+
+
+def test_append_line_is_safe_under_concurrent_writers_near_the_sidecar_threshold(
+    fs, tmp_path
+):
+    """Review finding: the test above only exercises very short lines --
+    nothing proved the same atomicity/identity guarantee holds for lines
+    near the 4 KiB sidecar boundary (core.journal.SIDECAR_THRESHOLD_BYTES),
+    which is exactly the largest a real inlined journal line is ever meant
+    to get and the likeliest place for a short write to actually surface."""
+    target = tmp_path / "journal.jsonl"
+    writer_count = 6
+    lines_per_writer = 20
+    padding = "x" * 3900  # each line lands comfortably under ~4 KiB total
+
+    def write_lines(writer_id: str, count: int) -> None:
+        for counter in range(count):
+            line = json.dumps(
+                {"writer_id": writer_id, "counter": counter, "padding": padding}
+            )
+            fs.append_line(target, line, fsync=False)
+
+    threads = [
+        threading.Thread(target=write_lines, args=(f"writer-{index}", lines_per_writer))
+        for index in range(writer_count)
+    ]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join()
+
+    lines = target.read_text(encoding="utf-8").splitlines()
+    total_expected = writer_count * lines_per_writer
+    assert len(lines) == total_expected
+
+    pairs = []
+    for line in lines:
+        document = json.loads(line)  # raises if any line is malformed JSON
+        assert document["padding"] == padding  # proves no cross-writer truncation/splicing
+        pairs.append((document["writer_id"], document["counter"]))
+
+    assert len(pairs) == len(set(pairs)) == total_expected
