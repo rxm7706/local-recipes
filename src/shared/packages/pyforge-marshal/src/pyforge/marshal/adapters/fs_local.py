@@ -202,8 +202,14 @@ class LocalFs:
         review finding, verified live: without this check, a caller passing
         e.g. a bare ``str`` or ``None`` crashed with a raw
         ``AttributeError`` on ``payload.text``, not the ``FsError``
-        contract this method's own docstring promised). Otherwise raises
-        ``FsError`` on failure, identical to ``write_text_atomic``."""
+        contract this method's own docstring promised). ``path`` is guarded
+        the same way for the same reason (follow-up review finding, verified
+        live: the original guarded only one of the two parameters, so a
+        ``str`` path still escaped as ``AttributeError: 'str' object has no
+        attribute 'parent'``). Otherwise raises ``FsError`` on failure,
+        identical to ``write_text_atomic``."""
+        if not isinstance(path, Path):
+            raise TypeError(f"path must be a Path, got {path!r}")
         if not isinstance(payload, Redacted):
             raise TypeError(f"payload must be a Redacted instance, got {payload!r}")
         self.write_text_atomic(path, payload.text)

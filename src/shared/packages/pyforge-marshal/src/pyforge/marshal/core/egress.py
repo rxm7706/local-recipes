@@ -89,10 +89,35 @@ from .policy import REDACTED_SENTINEL, is_secret_key
 #     very secret this fixture exists to catch. An open-ended quantifier
 #     consumes the WHOLE contiguous alnum run instead, so nothing partial
 #     survives.
+# (3) A SEPARATOR-TOLERANT `sk-` variant (follow-up review finding, verified
+#     live). `sk-[A-Za-z0-9]{20,}` requires 20 CONTIGUOUS alnum characters
+#     after `sk-`, which neither dominant real-world format satisfies: an
+#     OpenAI project key (`sk-proj-<48>T3BlbkFJ<48>`) and an Anthropic key
+#     (`sk-ant-api03-<40>-<40>`) both put a `-` within the first 8
+#     characters, so BOTH passed through in FULL PLAINTEXT -- the exact
+#     credential shape a Marshal gate record is most likely to capture,
+#     since Marshal's own agent sessions authenticate with one. The same
+#     gap leaked the TAIL of any separated token (`"sk-" + "c"*25 + "-" +
+#     "d"*25` redacted only the first run: `"***REDACTED***-ddd..."`).
+#     `sk-[A-Za-z0-9_-]{40,}` covers both, with the length floor raised to
+#     40 deliberately: every real provider key is far longer than 40
+#     characters, while an ordinary hyphenated value that merely STARTS
+#     with `sk-` (a `pytest -k sk-some-selector` expression, a branch name)
+#     is almost never 40+ characters of unbroken `[A-Za-z0-9_-]`. The
+#     residual over-redaction risk is accepted: mangling a rare command
+#     string in an evidence record is strictly less harmful than writing a
+#     live API key to durable storage.
+#
+# ORDER IS LOAD-BEARING: the separator-tolerant `sk-` pattern must run
+# BEFORE the contiguous one. Reversed, the contiguous pattern consumes the
+# leading run of a separated token, substitutes the sentinel, and destroys
+# the `sk-` prefix the tolerant pattern needs to match the remainder --
+# re-opening the exact tail-leak described above.
 _TOKEN_SHAPE_PATTERNS: tuple[re.Pattern[str], ...] = (
     re.compile(r"(?<![A-Za-z0-9_])ghp_[A-Za-z0-9]{36,}"),
     re.compile(r"(?<![A-Za-z0-9_])github_pat_[A-Za-z0-9_]{20,}"),
     re.compile(r"(?<![A-Za-z0-9_])AKIA[0-9A-Z]{16,}"),
+    re.compile(r"(?<![A-Za-z0-9_])sk-[A-Za-z0-9_-]{40,}"),
     re.compile(r"(?<![A-Za-z0-9_])sk-[A-Za-z0-9]{20,}"),
 )
 
@@ -146,16 +171,26 @@ def _redact(value: object) -> object:
     existing suffix vocabulary rather than inventing a second one; every
     other value recurses (a nested ``Mapping``/``list``/``tuple``) or, for a
     bare ``str``, is shape-scanned via ``_redact_string``. Every other
-    scalar (int, float, bool, ``None``) passes through unchanged."""
+    scalar (int, float, bool, ``None``) passes through unchanged.
+
+    A ``str`` KEY is itself shape-scanned too (follow-up review finding,
+    verified live: previously only VALUES were scanned, so a token-shaped
+    key -- the natural shape of a captured environment, header map, or
+    URL-keyed map, all of which a future egress caller may fold into a
+    record -- was written verbatim). A key matching ``is_secret_key`` keeps
+    its NAME (the name is not the secret; only its value is replaced), so
+    only a key that literally CONTAINS a token shape is rewritten. Bound: two
+    distinct token-shaped keys in one mapping collapse to a single sentinel
+    key and the later value wins -- accepted, since the alternative is
+    emitting the credential."""
     if isinstance(value, Mapping):
-        return {
-            key: (
-                REDACTED_SENTINEL
-                if isinstance(key, str) and is_secret_key(key)
-                else _redact(inner)
-            )
-            for key, inner in value.items()
-        }
+        redacted_map: dict[object, object] = {}
+        for key, inner in value.items():
+            if isinstance(key, str) and is_secret_key(key):
+                redacted_map[key] = REDACTED_SENTINEL
+                continue
+            redacted_map[_redact_string(key) if isinstance(key, str) else key] = _redact(inner)
+        return redacted_map
     if isinstance(value, (list, tuple)):
         return [_redact(item) for item in value]
     if isinstance(value, str):
@@ -181,8 +216,16 @@ def to_redacted(payload: Mapping[str, object]) -> Redacted:
         raise TypeError(f"payload must be a Mapping, got {payload!r}")
     redacted = _redact(payload)
     try:
-        text = json.dumps(redacted, sort_keys=True)
-    except TypeError as exc:
+        # allow_nan=False (follow-up review finding, verified live): the
+        # default True emits bare `NaN`/`Infinity` tokens, which are NOT
+        # valid RFC-8259 JSON -- so a payload carrying a float NaN wrote a
+        # durable record no strict parser (jq, Go, Rust, a `parse_constant`
+        # -guarded json.loads) can read back, silently, instead of the
+        # TypeError this function's own docstring promises. With it False,
+        # json.dumps raises ValueError, which is re-raised as the documented
+        # TypeError alongside the unserializable-type case.
+        text = json.dumps(redacted, sort_keys=True, allow_nan=False)
+    except (TypeError, ValueError) as exc:
         raise TypeError(f"payload contains a non-JSON-serializable value: {exc}") from exc
     return Redacted(text=text)
 
@@ -239,6 +282,35 @@ def _validate_command_report(entry: Mapping[str, object], index: int) -> dict[st
             raise ValueError(
                 f"commands[{index}][{key!r}] must be a str when present, got {entry[key]!r}"
             )
+    # Cross-field consistency (follow-up review finding, verified live). The
+    # schema DOCUMENTS both invariants in prose -- `returncode` is "null when
+    # the command never ran (resolvable: false)" and stdout/stderr are
+    # "present only when resolvable is true" -- but nothing enforced them, so
+    # a report asserting a command both never ran AND exited 0 with captured
+    # output was accepted here and validated clean against the schema. For a
+    # record whose entire purpose is proving months later what was checked
+    # and what it said, an internally false entry is worse than a rejected
+    # one. `core.gate.classify_outcome` -- the sole real producer of this
+    # shape -- already satisfies both: its unresolvable branch emits
+    # `returncode: None` with no stdout/stderr keys, and both resolvable
+    # branches emit an int returncode with both keys present.
+    present_optional = sorted(_OPTIONAL_COMMAND_KEYS & set(entry.keys()))
+    if not resolvable:
+        if returncode is not None:
+            raise ValueError(
+                f"commands[{index}] is unresolvable (resolvable: False) so 'returncode' "
+                f"must be None, got {returncode!r}"
+            )
+        if present_optional:
+            raise ValueError(
+                f"commands[{index}] is unresolvable (resolvable: False) so it must carry "
+                f"no {present_optional} -- a command that never ran captured no output"
+            )
+    elif returncode is None:
+        raise ValueError(
+            f"commands[{index}] is resolvable (resolvable: True) so 'returncode' must be "
+            "an int, got None"
+        )
     return dict(entry)
 
 

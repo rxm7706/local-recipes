@@ -32,11 +32,22 @@ literal ``class Foo(Protocol):`` base spelled as the bare name ``Protocol``
 or an attribute access ending in ``.Protocol`` -- a Protocol reached only
 through an intermediate alias that never spells either shape is out of
 scope. Guard (2)'s bare-str detection recognizes a bare ``str`` annotation,
-no annotation at all, and an ``Optional[str]``/``str | None`` union -- it
-does NOT recognize ``*args``/``**kwargs``, a ``str`` buried inside a
-container type (``list[str]``), or an annotation reached only through a
-type alias; none of those shapes appear on any port method in this package
-today. Guard (3) only recognizes a literal ``_TOKEN_SHAPE_PATTERNS`` token
+no annotation at all, an ``Optional[str]``/``str | None`` union, and the
+``Any``/``object`` escape hatches, across both ``def`` and ``async def``
+methods -- it does NOT recognize ``*args``/``**kwargs``, a ``str`` buried
+inside a container type (``list[str]``), or an annotation reached only
+through a type alias; none of those shapes appear on any port method in
+this package today.
+
+Guards (1) and (2) scan the ``ports/`` package RECURSIVELY, but they scan
+only ``ports/`` -- **not** ``adapters/``. AD-34's own sentence is "a
+meta-test asserts no egress **adapter** accepts a bare string", so this is
+a narrower guard than the rule names: it proves the PROTOCOL is typed
+correctly, and relies on the adapter conforming to the Protocol it
+implements. `LocalFs.write_redacted_atomic` does conform today; the gap is
+recorded in ``deferred-work.md`` rather than left implicit.
+
+Guard (3) only recognizes a literal ``_TOKEN_SHAPE_PATTERNS`` token
 (an ``ast.Name``, an ``ast.Attribute.attr``, or an ``ast.ImportFrom``
 alias) -- it cannot catch ``getattr``-based dynamic access.
 """
@@ -80,7 +91,11 @@ def _non_egress_modules() -> list[Path]:
 
 
 def _port_modules() -> list[Path]:
-    return sorted(p for p in PORTS_DIR.glob("*.py") if p.name != "__init__.py")
+    # rglob, not glob (follow-up review finding): the non-recursive form let a
+    # Protocol defined in a ports/ SUBPACKAGE escape guards (1) and (2)
+    # entirely -- and this same module already used rglob for guard (3)'s
+    # surface, so the two scans disagreed about what "the ports package" means.
+    return sorted(p for p in PORTS_DIR.rglob("*.py") if p.name != "__init__.py")
 
 
 # --- guard (1)/(2): Protocol discovery + bare-str-param detection ------------
@@ -122,7 +137,13 @@ def _is_bare_str_annotation(annotation: ast.expr | None) -> bool:
     Bounds."""
     if annotation is None:
         return True
-    if isinstance(annotation, ast.Name) and annotation.id == "str":
+    # `Any`/`object` accept a bare str exactly as readily as `str` does
+    # (follow-up review finding, verified live: `payload: Any` on a synthetic
+    # egress port produced zero violations) -- an escape hatch that would
+    # defeat the one structural guarantee AD-34 rests on.
+    if isinstance(annotation, ast.Name) and annotation.id in ("str", "Any", "object"):
+        return True
+    if isinstance(annotation, ast.Attribute) and annotation.attr in ("Any", "object"):
         return True
     if isinstance(annotation, ast.Constant) and annotation.value == "str":
         return True
@@ -146,7 +167,10 @@ def _is_bare_str_annotation(annotation: ast.expr | None) -> bool:
 def _bare_str_param_violations(cls: ast.ClassDef) -> list[str]:
     violations: list[str] = []
     for item in cls.body:
-        if not isinstance(item, ast.FunctionDef):
+        # AsyncFunctionDef too (follow-up review finding, verified live: an
+        # `async def` egress method with a bare-str parameter produced zero
+        # violations -- the guard did not look at async methods at all).
+        if not isinstance(item, (ast.FunctionDef, ast.AsyncFunctionDef)):
             continue
         params = [*item.args.posonlyargs, *item.args.args, *item.args.kwonlyargs]
         for param in params:
@@ -305,6 +329,48 @@ def test_guard_is_alive_synthetic_str_union_none_param_on_egress_port_fires():
     cls = _protocol_classes(ast.parse(synthetic))[0]
     violations = _bare_str_param_violations(cls)
     assert "RecordPort.write_redacted_atomic(payload)" in violations
+
+
+def test_guard_is_alive_synthetic_async_method_bare_str_param_fires():
+    """Review finding, verified live: the guard iterated only
+    `ast.FunctionDef`, so an `async def` egress method with a bare-str
+    parameter produced ZERO violations -- invisible to the one structural
+    guarantee AD-34 rests on."""
+    synthetic = (
+        "from typing import Protocol\n\n"
+        "class RecordPort(Protocol):\n"
+        "    async def write_redacted_atomic(self, path, payload: str) -> None: ...\n"
+    )
+    cls = _protocol_classes(ast.parse(synthetic))[0]
+    assert _bare_str_param_violations(cls) == [
+        "RecordPort.write_redacted_atomic(path)",
+        "RecordPort.write_redacted_atomic(payload)",
+    ]
+
+
+@pytest.mark.parametrize("annotation", ["Any", "object", "typing.Any"])
+def test_guard_is_alive_synthetic_any_or_object_param_fires(annotation):
+    """Review finding, verified live: `Any`/`object` accept a bare str as
+    readily as `str` does, yet produced zero violations -- an escape hatch
+    around the egress type boundary."""
+    synthetic = (
+        "import typing\n"
+        "from typing import Protocol, Any\n"
+        "from pathlib import Path\n\n"
+        "class RecordPort(Protocol):\n"
+        f"    def write_redacted_atomic(self, path: Path, payload: {annotation}) -> None: ...\n"
+    )
+    cls = _protocol_classes(ast.parse(synthetic))[0]
+    assert _bare_str_param_violations(cls) == ["RecordPort.write_redacted_atomic(payload)"]
+
+
+def test_port_scan_is_recursive():
+    """Review finding: `_port_modules()` used a non-recursive glob while this
+    same module's guard-(3) surface used rglob, so a Protocol in a ports/
+    subpackage escaped guards (1) and (2) entirely."""
+    import inspect
+
+    assert "rglob" in inspect.getsource(_port_modules)
 
 
 def test_guard_does_not_fire_on_the_real_record_port():
