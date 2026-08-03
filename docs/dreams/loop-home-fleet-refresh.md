@@ -69,6 +69,14 @@ the verdict from the first pass.
   show up stale again — either the force-push actually happens (closing the
   loop for good) or the verdict is recorded somewhere durable enough that a
   second pass doesn't repeat the archaeology.
+- `.bmad-loop/policy.toml` rendering is a checked step of the same pull-side
+  tool, not a separately-remembered `marshal config --write-harness-policy .`
+  — the refresh reports a loop-home whose policy file is missing or stale
+  the same way it reports a missed fast-forward.
+- Opening a landing PR always re-verifies the remote branch state first
+  (`git log main..origin/loop/pyforge-<station>`), never trusts a watcher's
+  last-known-good push — closing the PR #243/#244 gap structurally instead
+  of by discipline alone.
 
 ## What is real
 
@@ -111,6 +119,26 @@ the verdict from the first pass.
   independently re-verified twice this session with the same conclusion —
   concrete evidence the "re-derive the verdict every time" cost is real, not
   hypothetical.
+- **A related standing risk, same theme**: `.bmad-loop/policy.toml` inside
+  each loop-home is untracked (`git ls-files` confirms zero matches), so it
+  cannot survive whatever event first breaks it (a fresh provision, a
+  teardown/recreate, or anything short of the render step re-running) —
+  recovery is `marshal config --write-harness-policy .`, a step nothing
+  currently prompts for either. Checked live 2026-08-03: all 8 current
+  loop-homes have their policy file present, so this is not an active break
+  today — but it is the same class of gap as the two watchers above, a
+  required companion step with no trigger of its own.
+- **A concrete near-miss from opening a landing PR mid-session**: PR #243
+  was meant to land two stories but only landed one — the second story's
+  commit existed in the local loop-home checkout but had not actually been
+  pushed to origin yet (the newly-started `loop-push-watch` hadn't reached
+  its next interval), and `gh pr create --head loop/pyforge-marshal` builds
+  the PR from the *remote* branch state, not the local one. A follow-up PR
+  (#244) landed the missed story. The fix in the moment was discipline (push
+  explicitly, then re-verify `git log main..origin/loop/pyforge-<station>`
+  before opening any landing PR) — automation for the pull/refresh side
+  described above should apply the same rule: never trust a watcher's
+  interval when about to act on "what's on origin right now."
 
 ## Constraints
 
@@ -151,3 +179,12 @@ the verdict from the first pass.
   own Story 2.4 dev pass. All three safety layers (prevention, detection,
   human review) were silent simultaneously; only the third caught it, late.
   Findings folded into "What is real" above.
+- **2026-08-03** — Folded in a related standing risk surfaced from a memory
+  review: `.bmad-loop/policy.toml` is untracked in every loop-home and has no
+  render trigger of its own (previously known from PR #139's own incident,
+  re-checked live — currently fine on all 8 homes, but the same
+  no-auto-trigger shape as the two watchers). Also folded in a concrete
+  near-miss from this same session: PR #243 silently landed only one of two
+  intended stories because the PR was opened against a stale remote branch
+  state — the fix (verify origin before opening any landing PR) is now a
+  named requirement above, not just a lesson learned in the moment.
