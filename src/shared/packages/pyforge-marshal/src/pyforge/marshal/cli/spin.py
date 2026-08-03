@@ -63,6 +63,16 @@ degrades to an unsupervised run ... never to a corrupted one").
 (the detached sidecar's only diagnostic channel, needed whether or not the
 spawn succeeded); ``data["supervisor_pid"]`` joins it on success.
 
+Story 3.5 (idle-strand detection, AD-9/AD-20, FR-12) grows the supervisor
+spawn's argv from 5 to 6 positionals: the effective ``idle_threshold_minutes``
+(``core.policy.EffectivePolicy.seed_view()``'s own 10th SEED key, resolved by
+composing against the SAME conventional project-policy layer ``marshal
+config`` reads -- a missing or unreadable file degrades to Marshal's own
+``DEFAULT_POLICY`` value rather than aborting an otherwise-successful
+launch, since this is a supplementary numeric value for the supervisor's
+own soft ladder, never a launch precondition) is appended as the LAST argv
+element, the same mechanism ``watched_pid``/``log_path`` already use.
+
 **``--foreground``.** Calls the synchronous, stdio-inheriting
 ``HarnessPort.run_foreground`` INSTEAD of the detached ``spin`` path and
 relays its result, bypassing the envelope entirely (mirrors
@@ -161,7 +171,12 @@ from ..core.verdict import compute_verdict, exit_code_for, relay_exit_code
 from ..ports.fs import FsPort
 from ..ports.harness import HarnessPort
 from ..ports.process import ProcessPort
-from .config import _suppress_downstream_pipe_close
+from .config import (
+    PolicyIOError,
+    _read_project_policy,
+    _suppress_downstream_pipe_close,
+    conventional_project_policy_path,
+)
 from .init import _home_path
 
 # The run journal's own filename, under the run directory (architecture.md's
@@ -827,6 +842,37 @@ def run_spin(
     # exactly this reason, recorded there as a prior review finding: "a
     # warning ... without saying where the output went is unactionable".
     data["supervisor_log"] = str(supervisor_log)
+
+    # --- resolve idle_threshold_minutes for the supervisor's 6th argv -------
+    # (Story 3.5, FR-12). Reads the SAME conventional project-policy layer
+    # `marshal config` composes against -- a nonexistent file (the common
+    # case in this repo's own test fixtures, and for any project with no
+    # tuned overrides) composes against an empty project layer, landing on
+    # `core.policy.DEFAULT_POLICY`'s own default (25). A read failure (a
+    # corrupt or unreadable file) degrades the SAME way: this is a
+    # supplementary numeric value for the supervisor's own soft ladder, not
+    # a launch precondition, so it must never abort an otherwise-successful
+    # harness launch the way a `--project-policy` read failure aborts
+    # `marshal config` itself.
+    project_policy_path = conventional_project_policy_path(slug)
+    project_policy_data: Mapping[str, object] = {}
+    if project_policy_path.is_file():
+        try:
+            project_policy_data = _read_project_policy(project_policy_path)
+        except PolicyIOError:
+            project_policy_data = {}
+    effective_policy, policy_findings = policy.compose(
+        project_slug=slug, project=project_policy_data, flags={}
+    )
+    # Surfaced into this report the same way every other finding here is
+    # (review finding): this variable used to be captured and never looked
+    # at again, so a malformed `idle_threshold_minutes` override in the
+    # project's own marshal-policy.toml produced a real Finding (e.g.
+    # MRS-POLICY-003) that never reached the operator -- the effective
+    # value silently fell back to the code default with zero diagnostic.
+    findings.extend(policy_findings)
+    idle_threshold_minutes = effective_policy.seed_view()["idle_threshold_minutes"].value
+
     try:
         supervisor_pid = process.spawn_detached(
             [
@@ -838,6 +884,7 @@ def run_spin(
                 run_id,
                 str(spin_result.pid),
                 str(supervisor_log),
+                str(idle_threshold_minutes),
             ],
             cwd=home,
             log_path=supervisor_log,

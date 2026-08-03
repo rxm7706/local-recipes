@@ -2,11 +2,12 @@
 architecture spine AD-10/AD-16/AD-26/AD-35).
 
 ``compose()`` is the pure fold ``defaults -> repo_defaults -> project -> flags,
-last wins`` (AD-16) over Marshal's own CLOSED 9-key policy vocabulary
-(FR-49/50/51/53/54) -- not a mirror of the harness's much larger
-``.bmad-loop/policy.toml`` key surface (that mapping is Story 1.10's rendering
-concern). Every field is wrapped in a ``PolicyField{value, layer, raw_source}``
-so an operator can always answer "why is this value what it is?" (AD-16).
+last wins`` (AD-16) over Marshal's own CLOSED 10-key policy vocabulary
+(FR-49/50/51/53/54, plus FR-12's ``idle_threshold_minutes``, Story 3.5) --
+not a mirror of the harness's much larger ``.bmad-loop/policy.toml`` key
+surface (that mapping is Story 1.10's rendering concern). Every field is
+wrapped in a ``PolicyField{value, layer, raw_source}`` so an operator can
+always answer "why is this value what it is?" (AD-16).
 
 **The 4-layer precedence (as of Story 1.10):** ``DEFAULT_POLICY`` (code) ->
 ``repo_defaults`` (tracked at `_bmad-output/policy-defaults.toml`, for repo-wide
@@ -18,14 +19,16 @@ and the previous (better) layer's value stands.
 
 **Static vs seed (AD-26).** 4 fields are STATIC -- public ``EffectivePolicy``
 attributes, each a ``PolicyField``: ``verify_commands``,
-``worktree_seed_paths``, ``merge_subject_template``, ``model_tier_map``. 5
+``worktree_seed_paths``, ``merge_subject_template``, ``model_tier_map``. 6
 fields are SEED -- epics.md's own named examples ("frozen surfaces, gate
 mode, attempt counts"): ``gate_mode``, ``frozen_surfaces``,
-``max_dev_attempts``, ``max_review_cycles``, ``max_followup_reviews``. Seed
-fields live ONLY in a private ``_seed`` mapping; ``seed_view()`` is the sole
-whitelisted accessor (closing F-8: it is what lets ``marshal config``/FR-54
-and FR-53 validation range over every key without contradicting "reading a
-seed field outside the journal fold fails a meta-test"). A composed
+``max_dev_attempts``, ``max_review_cycles``, ``max_followup_reviews``, and
+(Story 3.5) ``idle_threshold_minutes`` -- the closest existing analog to
+that same "operator-tunable numeric ceiling" shape. Seed fields live ONLY
+in a private ``_seed`` mapping; ``seed_view()`` is the sole whitelisted
+accessor (closing F-8: it is what lets ``marshal config``/FR-54 and FR-53
+validation range over every key without contradicting "reading a seed
+field outside the journal fold fails a meta-test"). A composed
 ``EffectivePolicy`` only ever holds the INITIAL seed values -- the LIVE value
 during a run comes solely from ``core/journal``'s fold (AD-26); this module
 has no notion of a run at all.
@@ -120,6 +123,10 @@ _SEED_KEYS: frozenset[str] = frozenset(
         "max_dev_attempts",
         "max_review_cycles",
         "max_followup_reviews",
+        # Story 3.5's 10th key, joining the vocabulary alongside its closest
+        # existing analogs (max_dev_attempts/max_review_cycles/
+        # max_followup_reviews) -- see this module's own docstring for why.
+        "idle_threshold_minutes",
     }
 )
 _ALL_KEYS: frozenset[str] = _STATIC_KEYS | _SEED_KEYS
@@ -194,6 +201,13 @@ DEFAULT_POLICY: Mapping[str, object] = {
     # fix and hand-copies one decision into every station. Seeded here, no
     # project layer needs to restate it and a new station inherits it.
     "max_followup_reviews": 2,
+    # Story 3.5's FR-12: the supervisor's idle-ladder threshold, materially
+    # below the session budget (NFR requires it configurable with this
+    # default). 25 minutes -- long enough that a session mid-thought on a
+    # slow tool call is never mistaken for wedged, short enough to catch a
+    # genuinely stuck run in minutes rather than burning the multi-million-
+    # token session cap it exists to protect.
+    "idle_threshold_minutes": 25,
 }
 
 # Secret redaction (Boundaries & Constraints): a case-insensitive suffix
@@ -367,6 +381,22 @@ def _valid_attempt_count(value: object) -> int | None:
     return None
 
 
+def _valid_positive_number(value: object) -> int | float | None:
+    """``idle_threshold_minutes``'s own validator (Story 3.5): mirrors
+    ``_valid_attempt_count``'s shape but for a STRICTLY positive number
+    rather than a non-negative int -- an idle threshold of zero has no
+    coherent meaning (every tick would immediately cross it), unlike an
+    attempt-count ceiling of zero (a legitimate "never retry" policy).
+    ``int`` or ``float`` both accepted (unlike the int-only attempt-count
+    fields): a synthetic test fixture may want a sub-minute threshold no
+    whole-number minute value could express."""
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, (int, float)) and value > 0:
+        return value
+    return None
+
+
 def _malformed_finding(code: str, key: str, layer_name: str, raw_value: object) -> Finding:
     # redact() before formatting -- a secret-shaped key given a malformed
     # value must not leak its raw value into the finding message, the one
@@ -532,7 +562,7 @@ def _compose_worktree_seed_paths(
 class EffectivePolicy:
     """The composed, immutable policy value (AD-10): 4 public STATIC
     ``PolicyField`` attributes plus a private ``_seed`` mapping holding the
-    5 SEED fields (AD-26). ``seed_view()`` is the sole whitelisted accessor
+    6 SEED fields (AD-26). ``seed_view()`` is the sole whitelisted accessor
     for ``_seed`` -- ``tests/meta/test_ad26_seed_field_access_guard.py``
     fails the build if any other module IN THE INSTALLED PACKAGE accesses
     the ``_seed`` attribute directly (its scan surface; test code and
@@ -615,7 +645,7 @@ class EffectivePolicy:
     def content_hash(self) -> str:
         """``sha256`` hex digest over a canonical sorted-key JSON
         serialization of every field's FULL ``{value, layer, raw_source}``
-        (4 static + 5 seed) -- AD-35's naming primitive. Hashing only
+        (4 static + 6 seed) -- AD-35's naming primitive. Hashing only
         ``value`` would let two compositions with identical values but
         DIFFERENT winning layers collide on the same hash, so
         ``materialize()``'s write-once check would silently keep stale
@@ -759,6 +789,15 @@ def compose(
             "max_followup_reviews",
             _valid_attempt_count,
             DEFAULT_POLICY["max_followup_reviews"],
+            project,
+            flags,
+            findings,
+            "MRS-POLICY-003",
+        ),
+        "idle_threshold_minutes": _merge_field(
+            "idle_threshold_minutes",
+            _valid_positive_number,
+            DEFAULT_POLICY["idle_threshold_minutes"],
             project,
             flags,
             findings,

@@ -1078,11 +1078,51 @@ def test_spin_spawns_the_supervisor_with_the_expected_argv(home):
         run_id,
         "4242",  # harness.spin_result's own pid
         str(call["log_path"]),
+        # Story 3.5's 6th positional: the effective idle_threshold_minutes
+        # (core.policy.DEFAULT_POLICY's own value -- no project-policy file
+        # exists for the "acme" slug this test fixture uses).
+        "25",
     ]
     assert call["cwd"] == home
     assert call["log_path"].name == "supervisor.log"
     # A SEPARATE file from the harness's own redirected log.
     assert call["log_path"] != harness.spin_calls[0]["log_path"]
+
+
+def test_spin_surfaces_a_malformed_idle_threshold_minutes_project_policy_finding(
+    home, tmp_path, monkeypatch, capsys
+):
+    """Review finding: ``policy.compose()``'s own ``Finding`` list for the
+    ``idle_threshold_minutes`` lookup used to be captured into a variable
+    that was never looked at again -- a malformed override in the
+    project's own ``marshal-policy.toml`` produced a real
+    ``MRS-POLICY-003`` finding that never reached the operator, and the
+    effective value silently fell back to the code default with zero
+    diagnostic. It must now be surfaced into this command's own findings,
+    the same way every other finding here already is -- WITHOUT aborting
+    an otherwise-successful launch (this is a supplementary value for the
+    supervisor's own soft ladder, never a launch precondition)."""
+    fs = FakeFs(dirs={home})
+    harness = FakeHarness()
+    harness.feed_keys = ("1-1-first-story",)
+
+    policy_path = tmp_path / "marshal-policy.toml"
+    policy_path.write_text('idle_threshold_minutes = "not-a-number"\n', encoding="utf-8")
+    monkeypatch.setattr(
+        spin_module, "conventional_project_policy_path", lambda slug: policy_path
+    )
+
+    exit_code = run_spin(_spin_namespace("acme", fmt="json"), fs=fs, harness=harness)
+
+    envelope = json.loads(capsys.readouterr().out)
+    codes = [finding["code"] for finding in envelope["findings"]]
+    assert "MRS-POLICY-003" in codes
+    # The launch itself still succeeded -- a malformed supplementary value
+    # must never abort an otherwise-successful harness launch (only the
+    # overall exit code reflects the surfaced finding's own severity).
+    assert exit_code != EXIT_OK
+    assert "supervisor_pid" in envelope["data"]
+    assert harness.spin_calls  # the harness launch was actually attempted
 
 
 def test_the_supervisor_accepts_the_argv_spin_actually_builds(home, monkeypatch, capsys):
@@ -1102,7 +1142,7 @@ def test_the_supervisor_accepts_the_argv_spin_actually_builds(home, monkeypatch,
     inert exit 0 rather than an error.
 
     This drives the argv ``run_spin`` genuinely produced through the
-    supervisor's OWN ``main()`` and asserts the five values it recovers
+    supervisor's OWN ``main()`` and asserts the six values it recovers
     compose the SAME run directory ``run_spin`` wrote its journal into.
     ``run_supervisor`` is stubbed out, so this stays pure parsing --
     ``test_supervisor_run_path_agreement.py`` pins the path helpers
@@ -1126,12 +1166,15 @@ def test_the_supervisor_accepts_the_argv_spin_actually_builds(home, monkeypatch,
     # argv launches must find its own run-launch entry in.
     journal_path = fs.appended_lines[0][0]
 
-    recovered: list[tuple[Path, str, str, int, Path]] = []
+    recovered: list[tuple[Path, str, str, int, Path, float]] = []
     monkeypatch.setattr(
         supervisor_main,
         "run_supervisor",
-        lambda home, slug, run_id, watched_pid, log_path: (
-            recovered.append((home, slug, run_id, watched_pid, log_path)) or 0
+        lambda home, slug, run_id, watched_pid, log_path, idle_threshold_minutes: (
+            recovered.append(
+                (home, slug, run_id, watched_pid, log_path, idle_threshold_minutes)
+            )
+            or 0
         ),
     )
 
@@ -1140,7 +1183,7 @@ def test_the_supervisor_accepts_the_argv_spin_actually_builds(home, monkeypatch,
     assert argv[:3] == [sys.executable, "-m", "pyforge.marshal.supervisor"]
     assert supervisor_main.main(argv[3:]) == 0, capsys.readouterr().err
 
-    [(got_home, got_slug, got_run_id, got_pid, got_log)] = recovered
+    [(got_home, got_slug, got_run_id, got_pid, got_log, got_threshold)] = recovered
     assert (
         supervisor_main._run_dir(got_home, got_slug, got_run_id)
         / supervisor_main._JOURNAL_FILENAME
@@ -1148,6 +1191,7 @@ def test_the_supervisor_accepts_the_argv_spin_actually_builds(home, monkeypatch,
     )
     assert got_pid == harness.spin_result.pid
     assert got_log == call["log_path"]
+    assert got_threshold == 25.0
 
 
 def test_spin_spawns_the_supervisor_after_the_outcome_append_not_right_after_spin(home):

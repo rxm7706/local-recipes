@@ -101,6 +101,16 @@ the harness rather than merely probing it:
   invocation of ``bmad-loop run`` -- detached or foreground alike -- to
   funnel through this one module; a second, CLI-side subprocess call would
   violate that as surely as skipping the seam entirely.
+
+Story 3.5 (idle-strand detection, AD-9/AD-20) adds two more methods --
+``stop``/``resume``, the supervisor's own ``stop-and-retry`` ladder rung
+primitive, confirmed live as the one intended, supported pairing for
+recovering an unresponsive engine: ``stop`` synchronously halts it (SIGTERM,
+then force-kill, tearing down its tmux session) and ``resume`` detach-
+launches a fresh engine attempt against the SAME ``run_id``, which
+re-derives its own state and self-clears any stale session left behind.
+Both share ``run_id`` naming the HARNESS's own self-minted run id, never
+Marshal's own journal ``run_id`` -- see each method's own docstring.
 """
 
 from __future__ import annotations
@@ -229,4 +239,41 @@ class HarnessPort(Protocol):
         counterpart to ``spin``'s always-detached launch. Raises
         ``HarnessError`` only when the process could not be LAUNCHED at
         all."""
+        ...
+
+    def stop(self, project: Path, run_id: str) -> bool:
+        """The idle ladder's ``stop-and-retry`` first half (Story 3.5,
+        AD-9/AD-20): synchronously run ``bmad-loop stop <run_id>`` against
+        ``project`` (``run_id`` is the HARNESS's own self-minted run id --
+        ``SpinResult.harness_run_id``/the run-launch outcome entry's field of
+        the same name -- never Marshal's own journal ``run_id``). Confirmed
+        live as the intended hard-stop primitive against an unresponsive
+        engine: it SIGTERMs then force-kills the engine and tears down its
+        tmux session, needing no cooperation from the target. ``True`` iff
+        the stop itself succeeded (the exit code the installed 0.9.0
+        ``cmd_stop`` reports for "stopped"); ``False`` for any other
+        determinable outcome (e.g. the run had already finished) -- NOT an
+        exceptional shape, the same "a non-zero/negative result is the
+        ordinary answer" split every other method on this Protocol not
+        documented to raise for it uses. Raises ``HarnessError`` only when
+        the process could not be LAUNCHED (or run to completion) at all,
+        mirroring ``spin``'s own convention."""
+        ...
+
+    def resume(self, project: Path, run_id: str, *, log_path: Path) -> int:
+        """The idle ladder's ``stop-and-retry`` second half (Story 3.5,
+        AD-9/AD-20): detach-launch ``bmad-loop resume <run_id>`` against
+        ``project`` (the SAME ``run_id`` ``stop`` was given), redirecting
+        both streams to ``log_path`` and closing stdin -- new session, never
+        waited on, mirroring ``spin``'s own detached-launch recipe exactly
+        (this is a resumed engine run, which the installed 0.9.0
+        ``_resume_paused_run`` drives exactly like a fresh ``bmad-loop run``
+        -- synchronous and unbounded in the child, so it must never be
+        waited on here either). Confirmed live as the intended recovery
+        primitive: it re-derives the run's state from ``run_id`` alone and
+        self-clears any stale tmux session left behind by ``stop``, so it
+        needs no other input from this call. Returns the newly spawned
+        process's pid. Raises ``HarnessError`` only when the process could
+        not be LAUNCHED at all -- the SAME split ``spin``/``attach``/
+        ``run_foreground`` share."""
         ...

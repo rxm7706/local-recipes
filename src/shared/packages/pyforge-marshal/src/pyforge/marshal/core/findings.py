@@ -209,10 +209,26 @@ already launched successfully). It classifies ``Verdict.WARN``, the same
 tier as ``MRS-SPIN-006`` and for the identical reason: a live,
 already-launched process is never re-classified as a failure over a
 paper-trail gap -- here "no supervisor is watching this run" rather than
-"the outcome entry could not be journaled." Later stories append further
-real codes here as they gain their own real callers. The registry
-MECHANISM (format check, then membership check) is separately proven via
-``monkeypatch``-injected synthetic codes in ``tests/unit/test_findings.py``.
+"the outcome entry could not be journaled." Story 3.5's
+``supervisor/__main__.py`` (idle-strand detection, AD-9/AD-20) adds the
+registry's tenth real caller and a NEW area, ``MRS-SUPV-*``, its own three
+codes: ``MRS-SUPV-001`` (the idle ladder's ``nudge`` rung resolved no
+window to deliver its text to, or delivery otherwise failed --
+``SessionObserverPort.send_text`` returned ``False``), ``MRS-SUPV-002``
+(the ``stop-and-retry`` rung's ``HarnessPort.stop``/``.resume`` call
+raised ``HarnessError`` -- the tick loop continues watching the
+possibly-still-wedged original pid rather than crashing), and
+``MRS-SUPV-003`` (the run-launch outcome entry's ``harness_run_id`` field
+is unavailable, so the ladder cannot act at all for this run -- journaled
+once at attach; the tick loop continues heartbeat-only). All three
+classify ``Verdict.WARN``, the same tier as ``MRS-SPIN-004``/``006``/
+``007``: each names a DEGRADED-but-still-supervised condition (a nudge that
+could not be delivered, a stop-and-retry that could not complete, a ladder
+that cannot act at all) over a run that is never itself invalidated by it.
+Later stories append further real codes here as they gain their own real
+callers. The registry MECHANISM (format check, then membership check) is
+separately proven via ``monkeypatch``-injected synthetic codes in
+``tests/unit/test_findings.py``.
 
 This module is pure data: no I/O, no subprocess, no network, no clock
 (AD-4).
@@ -248,6 +264,9 @@ CODE_PATTERN = re.compile(r"MRS-[A-Z][A-Z0-9]*-[0-9]{3}")
 # journaled" off MRS-SPIN-003's "never launched, safe to retry").
 # Story 3.4's cli/spin.py adds a SEVENTH code to the same caller,
 # MRS-SPIN-007 (the supervisor sidecar could not be spawned).
+# Story 3.5's supervisor/__main__.py adds the tenth real caller's own NEW
+# area, MRS-SUPV-* (three codes: nudge-send failure, stop/resume failure,
+# harness-run-id-unavailable).
 REGISTERED_CODES: frozenset[str] = frozenset(
     {
         "MRS-IDENT-001",
@@ -295,6 +314,9 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-SPIN-005",
         "MRS-SPIN-006",
         "MRS-SPIN-007",
+        "MRS-SUPV-001",
+        "MRS-SUPV-002",
+        "MRS-SUPV-003",
     }
 )
 
