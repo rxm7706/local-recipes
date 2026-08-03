@@ -27,6 +27,14 @@ Story 2.6 adds ``write_redacted_atomic`` -- ``ports.record.RecordPort``'s
 sole implementation (AD-34). It delegates entirely to ``write_text_atomic``:
 no new write mechanics, only a type boundary that accepts a
 ``core.egress.Redacted`` payload instead of a bare ``str``.
+
+Story 3.1 adds ``append_line``/``create_dir_exclusive`` -- AD-30's/AD-25's
+physical protocols, both genuinely new write mechanics (a raw ``os.write()``
+on an ``O_APPEND`` descriptor; a bare ``mkdir()``), unlike every prior
+method added here since Story 1.4, which all delegate to or vary the same
+temp-file-then-``os.replace`` idiom. It also adds
+``DirectoryAlreadyExistsError``, a distinguishable ``FsError`` subtype for
+``create_dir_exclusive``'s collision case.
 """
 
 from __future__ import annotations
@@ -47,6 +55,16 @@ class FsError(Exception):
     unwritable parent directory, or a ``repoint_symlink_atomic`` target that
     is a real file/directory rather than a symlink. Never lets a raw
     ``OSError`` or ``UnicodeDecodeError`` escape this module."""
+
+
+class DirectoryAlreadyExistsError(FsError):
+    """Raised by ``create_dir_exclusive`` when ``path`` already exists
+    (Story 3.1, AD-25): ``mkdir`` is exclusive by definition, so a run
+    directory collision is a hard finding, never an append. A distinguishable
+    ``FsError`` subtype -- not folded into the generic message -- so a
+    caller can structurally tell a collision apart from any other I/O
+    failure, matching ``remove_empty_dir``'s own "safe refusal vs. real
+    failure" split."""
 
 
 def _tmp_sibling(path: Path) -> Path:
@@ -235,3 +253,67 @@ class LocalFs:
         if not path.name:
             raise FsError(f"cannot write {path}: path has no file name")
         self.write_text_atomic(path, payload.text)
+
+    def append_line(self, path: Path, line: str, *, fsync: bool) -> None:
+        """AD-30's one serialized append protocol (Story 3.1): a single
+        ``os.write()`` of ``line``'s UTF-8 bytes plus a trailing newline, on
+        a descriptor opened ``O_WRONLY | O_APPEND | O_CREAT`` (mode
+        ``0o666``, matching ``_tmp_sibling``'s existing mode), ``fsync``ed
+        only when ``fsync=True``, then closed -- no buffered stream
+        (``open()``/``fdopen()``) is held open across the call, so two
+        uncoordinated writers targeting the same path can never interleave a
+        partial line. Does NOT create ``path``'s parent directory (unlike
+        ``write_text_atomic``): a missing run directory is a real
+        precondition failure here, not something to auto-create around (see
+        ``create_dir_exclusive``).
+
+        Raises ``FsError`` if ``line`` contains an embedded newline (review
+        finding: this primitive's entire contract is "one physical line per
+        call" -- a caller-supplied string that already contains ``\\n``
+        would silently split into multiple physical lines with no error) or
+        if the OS reports a short write (review finding: POSIX permits
+        ``write()`` to consume fewer bytes than requested even for a regular
+        file; retrying the remainder would risk a second, unretried writer's
+        complete line landing in between the two partial writes of this
+        call, which is worse than failing loudly -- so a short write is
+        surfaced as a hard failure instead, never silently completed or
+        silently truncated).
+
+        This method's concurrency guarantee is a LOCAL-filesystem property
+        of ``O_APPEND`` (POSIX write(2)); it is not guaranteed atomic on
+        every network filesystem (e.g. classic NFS), where two writers can
+        still interleave. Marshal's canonical Tier-3 store is a local path
+        on the host running the loop home (review finding: this caveat was
+        previously undocumented)."""
+        if "\n" in line:
+            raise FsError(f"cannot append to {path}: line must not contain an embedded newline")
+        try:
+            fd = os.open(path, os.O_WRONLY | os.O_APPEND | os.O_CREAT, 0o666)
+            try:
+                data = (line + "\n").encode("utf-8")
+                written = os.write(fd, data)
+                if written != len(data):
+                    raise OSError(
+                        f"short write: wrote {written} of {len(data)} bytes -- "
+                        "never retried (see this method's own docstring)"
+                    )
+                if fsync:
+                    os.fsync(fd)
+            finally:
+                os.close(fd)
+        except OSError as exc:
+            raise FsError(f"cannot append to {path}: {exc}") from exc
+
+    def create_dir_exclusive(self, path: Path) -> None:
+        """AD-25's ``mkdir``, not ``O_EXCL`` (Story 3.1, F-31): a bare
+        ``path.mkdir()`` with no ``parents=True``/``exist_ok`` --
+        ``mkdir(2)`` already fails ``EEXIST``. Raises
+        ``DirectoryAlreadyExistsError`` when ``path`` already exists,
+        leaving it untouched; any other ``OSError`` raises plain
+        ``FsError``."""
+        try:
+            path.mkdir()
+        except FileExistsError as exc:
+            raise DirectoryAlreadyExistsError(f"{path} already exists") from exc
+        except OSError as exc:
+            raise FsError(f"cannot create directory {path}: {exc}") from exc
