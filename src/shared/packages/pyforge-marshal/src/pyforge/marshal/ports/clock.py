@@ -36,3 +36,26 @@ class ClockPort(Protocol):
         contract). Never raises: a system clock read has no failure mode
         this package needs to model."""
         ...
+
+    def monotonic(self) -> float:
+        """A monotonic reading in fractional seconds from an UNSPECIFIED
+        origin -- comparable only against another reading from this same
+        method, in this same process. Never raises.
+
+        Exists because ``now`` cannot answer "how long has this been quiet"
+        (review finding, Story 3.5). A wall clock JUMPS: a host suspended
+        mid-run, or an NTP step, advances ``now`` across an interval in
+        which the supervised session was not running at all, and
+        ``core/supervise.py`` scored that gap as accumulated idleness --
+        enough, at the shipped 25-minute default, to nudge and then hard-stop
+        and relaunch a perfectly healthy engine within two ticks of a
+        laptop waking up. A monotonic reading does not advance across
+        suspend and cannot be stepped backward or forward, so it is the
+        correct basis for every ELAPSED-time decision.
+
+        The division of labour is deliberate: ``now`` remains the basis for
+        every value a human or the append-only journal reads (timestamps
+        must be real wall-clock instants), and ``monotonic`` is the basis
+        for durations. Both readings are taken by the caller and passed into
+        the pure core as plain values, never called from inside it (AD-20)."""
+        ...

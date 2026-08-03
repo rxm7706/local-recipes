@@ -259,8 +259,8 @@ def test_config_defaults_only_exits_zero(capsys, monkeypatch):
     assert "content_hash" in captured.out
 
 
-def test_config_prints_all_nine_keys(capsys, monkeypatch):
-    """AC: 'every one of the 9 keys prints its effective value and winning
+def test_config_prints_all_ten_keys(capsys, monkeypatch):
+    """AC: 'every one of the 10 keys prints its effective value and winning
     layer' -- checked exhaustively, not just a couple of spot-checked
     fields. The layer half is counted, not merely detected: exactly one
     `(layer=...)` suffix per key line, so a regression that drops the
@@ -279,13 +279,14 @@ def test_config_prints_all_nine_keys(capsys, monkeypatch):
         "max_dev_attempts",
         "max_review_cycles",
         "max_followup_reviews",
+        "idle_threshold_minutes",
     ):
         assert f"{key}:" in captured.out, f"marshal config did not print {key!r}"
-    assert captured.out.count("(layer=") == 9
+    assert captured.out.count("(layer=") == 10
 
 
 def test_config_redacts_a_secret_shaped_field(capsys, monkeypatch):
-    """None of the 9 real fields are secret-shaped today -- proven via a
+    """None of the 10 real fields are secret-shaped today -- proven via a
     monkeypatched suffix set so `gate_mode` becomes secret-shaped for the
     duration of this test, exercising the REAL `marshal config` render path
     (not just core.policy.redact() called directly, as in
@@ -776,6 +777,32 @@ def test_config_set_on_a_list_or_mapping_key_is_a_usage_error(capsys):
     captured = capsys.readouterr()
     assert "verify_commands" in captured.err
     assert "--project-policy" in captured.err
+
+
+def test_config_set_on_idle_threshold_minutes_is_a_usage_error(capsys):
+    """Review finding: the `_FIELD_ORDER` comment already stated
+    `idle_threshold_minutes` "is deliberately NOT a --set target", but the
+    key was in neither `_UNSETTABLE_KEYS` nor `_INT_SET_KEYS` -- so
+    `--set idle_threshold_minutes=30` was silently accepted as an
+    unconverted raw string and only failed later inside `compose()` as a
+    misleading `MRS-POLICY-003` "malformed value" finding. It must now be
+    rejected the same clean way the other 4 non-settable keys are: a usage
+    error at the flag boundary, never a policy finding at all."""
+    exit_code = main(["config", "--set", "idle_threshold_minutes=30"])
+    assert exit_code == EXIT_USAGE
+    captured = capsys.readouterr()
+    assert "idle_threshold_minutes" in captured.err
+    assert "--project-policy" in captured.err
+    assert "MRS-POLICY-003" not in captured.err
+    # Second review finding: the shared rejection message called every
+    # unsettable key "list/mapping-typed", which is true of the other 4 and
+    # FALSE of this one -- a plain positive number excluded for an entirely
+    # different reason (no AC asks for a CLI override surface for it).
+    # Telling an operator a numeric key is list/mapping-typed is a false
+    # statement about their own policy vocabulary that sends them looking
+    # for a type error which does not exist.
+    assert "list/mapping-typed" not in captured.err
+    assert "project-policy-only" in captured.err
 
 
 def test_handler_returning_none_is_clamped_to_usage(monkeypatch):
