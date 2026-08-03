@@ -111,6 +111,21 @@ on this class either never raises (``binary_present``, ``harness_version``,
 ``story_feed_error``) or raises for "unimportable/unresolvable", a
 categorically different condition from "the OS could not start this
 process".
+
+Story 3.5 (idle-strand detection, AD-9/AD-20) adds ``stop``/``resume`` --
+the supervisor's own ``stop-and-retry`` ladder rung, confirmed live as the
+one intended pairing for recovering an unresponsive engine (never a bare
+re-``bmad-loop run``, which mints an unrelated run id with no in-flight
+lock and would double-dispatch): ``stop`` runs ``["bmad-loop", "stop",
+run_id]`` SYNCHRONOUSLY (mirrors ``attach``'s captured-output shape, not
+``spin``'s detached one -- a hard stop is a quick, bounded operation, never
+a long-running engine loop) and returns whether it actually stopped a live
+run; ``resume`` detach-launches ``["bmad-loop", "resume", run_id]``
+(mirrors ``spin``'s own recipe exactly -- a resumed engine run is
+synchronous and unbounded in the child, exactly like a fresh ``bmad-loop
+run``) and returns the new pid. Both join ``spin``/``attach``/
+``run_foreground`` as the only methods on this class raising
+``HarnessError`` for a plain launch failure.
 """
 
 from __future__ import annotations
@@ -490,6 +505,15 @@ _SPIN_LOG_POLL_TIMEOUT_S = 5.0
 # (anchors at line start) against each line of `spin`'s own redirected log.
 _RUN_STARTING_RE = re.compile(r"^run (\S+) starting\b")
 
+# Story 3.5's `stop` -- a synchronous SIGTERM-then-force-kill against a
+# possibly-wedged engine plus its tmux session teardown, confirmed live
+# against the installed 0.9.0 `cmd_stop`/`runs.stop_run`. Bounded rather than
+# unbounded (unlike `_VERSION_TIMEOUT_S`'s tight preflight budget, this call
+# has no shared budget to protect, but an unresponsive `bmad-loop` binary
+# must still degrade to a reported failure rather than hang the supervisor's
+# own tick loop indefinitely).
+_STOP_TIMEOUT_S = 30.0
+
 
 class HarnessError(Exception):
     """Raised by ``BmadLoopHarness`` methods that are documented to raise
@@ -800,3 +824,95 @@ class BmadLoopHarness:
         except OSError as exc:
             raise HarnessError(f"cannot launch bmad-loop run: {exc}") from exc
         return self._normalize_returncode(result.returncode)
+
+    def stop(self, project: Path, run_id: str) -> bool:
+        # Synchronous, capturing output like `attach`/`run_foreground` do NOT
+        # (those inherit stdio by design) -- `stop` is not interactive, and
+        # capturing keeps this call's own stdout/stderr from leaking into
+        # the supervisor's own redirected log uninterpreted.
+        try:
+            result = subprocess.run(
+                ["bmad-loop", "stop", run_id],
+                cwd=project,
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+                stdin=subprocess.DEVNULL,
+                timeout=_STOP_TIMEOUT_S,
+            )
+        except subprocess.TimeoutExpired as exc:
+            raise HarnessError(
+                f"bmad-loop stop {run_id} timed out after {_STOP_TIMEOUT_S}s: {exc}"
+            ) from exc
+        except (OSError, ValueError) as exc:
+            # `ValueError` alongside `OSError` (the same CPython split this
+            # module's own `spin`/`spawn_detached` sibling already guards):
+            # `subprocess.run` raises a plain `ValueError` -- not an
+            # `OSError` -- for an embedded NUL byte in an argv element.
+            raise HarnessError(f"cannot launch bmad-loop stop: {exc}") from exc
+        # A non-zero exit is the ordinary "did not stop" shape (already
+        # finished, or some other non-launch failure the installed 0.9.0
+        # `cmd_stop` reports) -- never raised, matching this Protocol's own
+        # documented split.
+        return result.returncode == 0
+
+    def resume(self, project: Path, run_id: str, *, log_path: Path) -> int:
+        # Mirrors `spin`'s own detached-launch recipe exactly: `bmad-loop
+        # resume` drives a resumed engine run synchronously and
+        # unboundedly in the child (confirmed live against the installed
+        # 0.9.0 `_resume_paused_run`, which calls `engine.run()` directly),
+        # so it must never be waited on here either.
+        #
+        # APPEND, never "wb" (review finding): `log_path` here is the
+        # WEDGED run's own `harness.log` -- the same file `cli/spin.py`
+        # created and the original engine attempt has been writing to for
+        # however long it ran. Truncating it destroys the only record of
+        # what the run was doing when it stopped producing output, which is
+        # the single most valuable artifact at exactly the moment
+        # `stop-and-retry` fires. `spin`'s own `"wb"` is correct there
+        # because that file is brand new; here it never is.
+        try:
+            log_file = open(log_path, "ab")
+        except (OSError, ValueError) as exc:
+            raise HarnessError(
+                f"cannot open resume log {str(log_path)!r}: {exc}"
+            ) from exc
+        with log_file:
+            # A visible seam between the two attempts (review finding): the
+            # append above preserves the wedged attempt's output, but without
+            # a delimiter the resumed engine's output is byte-concatenated
+            # onto it, so the operator reading this file after a
+            # stop-and-retry cannot tell where the record they came for ends.
+            # Best-effort only -- a marker that cannot be written must never
+            # be the reason a recovery does not happen, and the `flush` keeps
+            # it ordered ahead of the child's own writes to the same fd.
+            try:
+                log_file.write(
+                    f"\n--- marshal stop-and-retry: resuming {run_id} ---\n".encode(
+                        "utf-8"
+                    )
+                )
+                log_file.flush()
+            except (OSError, ValueError):
+                pass
+            try:
+                process = subprocess.Popen(
+                    ["bmad-loop", "resume", run_id],
+                    cwd=project,
+                    start_new_session=True,
+                    stdin=subprocess.DEVNULL,
+                    stdout=log_file,
+                    stderr=log_file,
+                    # Same env hardening `spin` applies, for the same
+                    # reasons (stdout block-buffers once redirected to a
+                    # regular file; `cwd` must never influence which code a
+                    # detached `python`-less `bmad-loop` child resolves --
+                    # this one execs the installed `bmad-loop` binary
+                    # directly, not `python -m`, but the env is inherited
+                    # unconditionally regardless).
+                    env={**os.environ, "PYTHONUNBUFFERED": "1"},
+                )
+            except (FileNotFoundError, ValueError, OSError) as exc:
+                raise HarnessError(f"cannot launch bmad-loop resume: {exc}") from exc
+        return process.pid

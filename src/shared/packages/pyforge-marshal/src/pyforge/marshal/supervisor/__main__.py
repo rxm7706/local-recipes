@@ -1,10 +1,10 @@
-"""The supervisor sidecar's actual entry point (Story 3.4, architecture
+"""The supervisor sidecar's actual entry point (Story 3.4/3.5, architecture
 spine AD-9/AD-20/AD-25/AD-28/AD-30): ``python -m pyforge.marshal.supervisor
-<home> <slug> <run_id> <watched_pid> <log_path>``. ``cli/spin.py`` detach-
-spawns exactly this invocation (via ``ProcessPort.spawn_detached``) as the
-LAST step of a successful ``marshal factory spin`` -- see that module's own
-docstring for why "last", after the ``run-launch`` outcome entry append is
-attempted whether or not it itself succeeded.
+<home> <slug> <run_id> <watched_pid> <log_path> <idle_threshold_minutes>``.
+``cli/spin.py`` detach-spawns exactly this invocation (via ``ProcessPort.
+spawn_detached``) as the LAST step of a successful ``marshal factory spin``
+-- see that module's own docstring for why "last", after the ``run-launch``
+outcome entry append is attempted whether or not it itself succeeded.
 
 **Order of operations (``run_supervisor``).** Read the run's own
 ``journal.jsonl`` ONCE (``FsPort.read_text`` + ``core.journal.fold``, plus
@@ -19,43 +19,137 @@ a journal question, never a lock file -- see this story's own Design
 Notes). Accepting the INTENT phase too is load-bearing, not belt-and-
 braces: ``cli/spin.py`` spawns this sidecar whether or not its own
 outcome-entry append succeeded (``MRS-SPIN-006``), and AD-6's write-before-
-act ordering guarantees the intent entry lands BEFORE any spawn is
+act ordering guarantees the intent entry lands BEFORE any spawn is even
 attempted -- so on the outcome-append-failure branch the intent entry is
 the ONLY proof of Marshal ownership that exists, and an outcome-only check
 would exit inert on a live run Marshal genuinely started. Then: append one
 ``observation`` entry (``kind="supervisor-attach"``, payload ``{pid,
-watched_pid}``) -> take ONE ``ProcessPort.is_alive(watched_pid)`` reading
-and loop while it holds: sleep a fixed 60s tick (``_TICK_SECONDS`` -- no
-policy knob exists for this yet, and inventing one against no real caller
-would be speculative surface, per this codebase's own precedent), sample
-``ClockPort.now()`` plus a FRESH ``is_alive`` reading plus
-``SessionObserverPort.pane_content``/``mtime`` (gathered to prove the
-injection seam Story 3.5's own ``core/supervise.py`` will consume -- NONE
-of these samples drive a decision here; see this story's own Design Notes
-for why), append one ``observation`` (``kind="supervisor-heartbeat"``,
-payload ``{pid, watched_alive, sampled_at}``) -- ``watched_alive`` carries
-that tick's own fresh reading, so the tick that discovers the watched
-process just died journals one truthful ``false`` heartbeat rather than a
-tautological ``true`` -- and let that same reading decide whether another
-tick follows. When it does not, append one final ``observation``
-(``kind="supervisor-detach"``, payload ``{pid, reason:
-"watched-process-exited"}``) and exit 0.
+watched_pid}``) -> resolve ``harness_run_id`` once, from that SAME
+run-launch outcome entry's own payload (Story 3.5 -- see "Idle-strand
+detection" below) -> take ONE ``ProcessPort.is_alive(watched_pid)`` reading
+and loop while it holds AND the idle ladder has not deferred: sleep a fixed
+60s tick (``_TICK_SECONDS`` -- no policy knob exists for this yet, and
+inventing one against no real caller would be speculative surface, per this
+codebase's own precedent), sample ``ClockPort.now()`` plus a FRESH
+``is_alive`` reading plus (when ``harness_run_id`` resolved)
+``SessionObserverPort.pane_content``/``mtime`` against the REAL session/log
+target, evaluate the idle ladder and act on any escalation, then append one
+``observation`` (``kind="supervisor-heartbeat"``, payload ``{pid,
+watched_alive, sampled_at}``) -- ``watched_alive`` carries that tick's own
+fresh reading, so the tick that discovers the watched process just died
+journals one truthful ``false`` heartbeat rather than a tautological
+``true`` -- and let that same reading (plus the ladder's own terminal
+``defer``) decide whether another tick follows. When the loop ends, append
+one final ``observation`` (``kind="supervisor-detach"``, payload ``{pid,
+reason}`` -- ``"watched-process-exited"``, Story 3.5's own terminal ladder
+rung ``"idle-deferred"``, or ``"idle-retry-failed"`` when a
+``stop-and-retry``'s ``resume`` failed after its ``stop`` had already
+succeeded) and exit 0.
 
-Every append here is a ``Phase.OBSERVATION`` entry: no ``intent_id``, no
-write-before-act pairing (AD-6 governs irreversible/externally-visible
-ACTIONS; this sidecar only ever records what it independently observed),
-and every write uses ``fsync=False`` -- matching ``cli/spin.py``'s own
-``outcome``-entry convention, since an observation carries no invariant
-that a crash between the write and an fsync would silently violate. A
-journal append failure (``FsError``) at ANY point -- the attach entry, a
-heartbeat, or the final detach -- is fatal to this process: it prints a
-diagnostic to its own stderr (already redirected to ``log_path`` by the
-parent's ``spawn_detached`` call -- this module never opens ``log_path``
-itself) and exits non-zero rather than looping forever against a journal it
-cannot durably write to. A dead supervisor with no further heartbeats is
-itself a later-detectable condition (AD-9: "a dead supervisor is a reported
-condition ... never silence") -- surfacing it as a `status` finding is a
-later epic's own FR-36..40 scope, explicitly out of this story's Surface.
+**Idle-strand detection (Story 3.5, AD-9/AD-20, FR-12).** The two
+placeholder gaps Story 3.4 explicitly left for this story are closed here:
+the tmux SESSION passed to the observer is no longer Marshal's own
+``run_id`` (a name no live tmux session was ever actually keyed by) but
+``f"bmad-loop-{harness_run_id}"`` -- the harness's OWN self-minted run id,
+recovered ONCE at attach from the run-launch outcome entry's own
+``harness_run_id`` field (the SAME fold already read for the inert-check,
+never a second read) -- and the log path sampled for mtime is no longer
+this sidecar's OWN redirected log but the run's real ``harness.log``
+(``_HARNESS_LOG_FILENAME``, the SAME literal ``cli/spin.py``'s own
+``_LOG_FILENAME`` names). If ``harness_run_id`` cannot be resolved (the
+outcome entry is missing entirely -- ``MRS-SPIN-006``'s own scenario -- or
+its ``harness_run_id`` field is ``None``/blank -- ``MRS-SPIN-004``'s own
+scenario), a ``MRS-SUPV-003`` finding is journaled ONCE at attach (a new
+``kind="idle-harness-run-id-unavailable"`` observation) and the ladder is
+never evaluated for this run -- the tick loop continues heartbeat-only, per
+this story's own Always bullet: "if it is unavailable, the ladder cannot
+act ... no crash, no guess."
+
+Each tick (when ``harness_run_id`` resolved) accumulates one
+``core.supervise.Sample`` (the fresh clock reading, the freshly captured
+pane text, the freshly read log mtime) into this invocation's own
+in-memory list, and calls the PURE ``core.supervise.evaluate_idle`` over
+the WHOLE accumulated sequence -- no port, no clock call, no I/O inside
+that function itself (AD-20). The computed ``LadderRung`` is compared
+against the rung this tick loop last acted on (``core.supervise.
+rung_index``, since ``LadderRung`` carries no intrinsic ordering); a HIGHER
+rung is acted on and journaled as one ``intent`` entry then one ``outcome``
+entry (matching the existing ``Phase`` pairing rule -- never a single
+combined entry), and the bookkeeping variable is then synced to the
+freshly computed rung regardless of whether an action fired -- which is
+what lets "fresh output re-arms the window" happen with NO special-cased
+reset code here: a sample whose pane/mtime changed makes
+``evaluate_idle`` itself return ``NONE`` again on the very next call, and
+syncing the bookkeeping variable down to that ``NONE`` is what lets a LATER
+full threshold re-escalate the ladder from scratch.
+
+- ``nudge`` (first threshold crossing): ``SessionObserverPort.send_text``
+  delivers a short continuation prompt into the resolved window. A ``False``
+  return (no window resolved, or delivery failed) registers ``MRS-SUPV-001``
+  in the outcome payload -- the ladder still advances its own bookkeeping,
+  so a failed nudge is not retried every tick. On SUCCESS the pane is
+  re-captured and the sample history collapsed onto that text while keeping
+  ``core.supervise.idle_since``'s own anchor: the nudge types into the very
+  pane this loop samples, so without the rebase its own echo reads as fresh
+  output, re-arms the window it was escalating from, and the ladder cycles
+  nudge -> re-arm -> nudge forever without ever reaching the next rung
+  (review finding). "Fresh output" means the SESSION's, never this
+  supervisor's own.
+- ``stop-and-retry`` (second threshold crossing): ``HarnessPort.stop`` then
+  ``.resume`` against ``harness_run_id`` -- confirmed live (this story's own
+  Design Notes) as the one supported pairing for recovering an unresponsive
+  engine, never a bare re-``bmad-loop run``. On success, ``watched_pid`` is
+  replaced by the new pid, the sample history is CLEARED (a fresh engine
+  attempt starts its own fresh idle window), and the bookkeeping rung resets
+  to ``NONE``. The three failure shapes are deliberately distinct: ``stop``
+  itself raising registers ``MRS-SUPV-002`` and keeps watching the
+  (possibly still-wedged) ORIGINAL pid, so the ladder naturally re-escalates
+  to ``defer``; ``stop`` returning ``False`` skips ``resume`` entirely and
+  records ``stopped: false`` with its own ``MRS-SUPV-002`` (never an
+  ``already_finished`` claim this process did not observe); and ``resume``
+  raising AFTER a successful ``stop`` leaves the original pid confirmed
+  dead, so the loop ends via ``"idle-retry-failed"`` rather than letting the
+  next tick mask a failed recovery as an ordinary completion. At most ONE
+  stop-and-retry ever fires per run (``already_retried``): a later idle
+  recurrence may still earn a ``nudge``, but that rung and everything above
+  it collapses to ``defer``.
+- ``defer`` (third threshold crossing, terminal): a best-effort
+  ``HarnessPort.stop`` against the watched run (a deferred run must not keep
+  burning tokens unsupervised; a failure here is tolerated but registers
+  ``MRS-SUPV-002``, since it is the worst case this story exists to
+  prevent), journaled, then the tick loop's own final ``supervisor-detach``
+  carries ``reason: "idle-deferred"`` instead of
+  ``"watched-process-exited"`` -- no further ladder or heartbeat activity
+  follows.
+
+Two guards sit between ``evaluate_idle`` and those branches, both review
+findings. Escalation is clamped to ONE rung per tick (``rung_at``): the
+ladder is a fixed 3-rung sequence, but ``evaluate_idle`` floor-divides, so
+any threshold shorter than twice ``_TICK_SECONDS`` would otherwise let a
+single tick jump straight to ``defer`` and hard-stop a healthy run without
+ever nudging it. And a sample history in which NOTHING was ever observed
+(no pane AND no log mtime, for every sample) is treated as ``NONE`` rather
+than as idleness -- ``None != None`` is ``False``, so such a history never
+re-arms and reads as maximal idleness, which since ``defer`` gained its
+stop call would turn a broken observation channel into a killed HEALTHY
+run. The ladder acts only on evidence it actually has.
+
+Every append here is a ``Phase.OBSERVATION`` entry EXCEPT the three ladder
+actions above, which are ``Phase.INTENT`` then ``Phase.OUTCOME`` pairs
+(AD-6's write-before-act: the intent is fsynced BEFORE the action is
+attempted, matching ``cli/spin.py``'s own launch-intent convention) --
+every other write here uses ``fsync=False``, since an observation carries
+no invariant a crash between the write and an fsync would silently
+violate. A journal append failure (``FsError``) at ANY point -- the attach
+entry, a heartbeat, a ladder action, or the final detach -- is fatal to
+this process: it prints a diagnostic to its own stderr (already redirected
+to ``log_path`` by the parent's ``spawn_detached`` call -- this module
+never opens ``log_path`` itself) and exits non-zero rather than looping
+forever against a journal it cannot durably write to. A dead supervisor
+with no further heartbeats is itself a later-detectable condition (AD-9: "a
+dead supervisor is a reported condition ... never silence") -- surfacing it
+as a `status` finding is a later epic's own FR-36..40 scope, explicitly out
+of this story's Surface.
 
 **Why the read side DOES load sidecars.** ``core.journal.fold`` accepts an
 optional ``sidecars`` mapping for large, sidecar-referenced payloads, and
@@ -94,33 +188,15 @@ three helpers are pure, private, and byte-for-byte reusable, importing them
 from ``cli/spin.py`` would violate the very contract this story exists to
 add. Each is reproduced here verbatim rather than promoted to a shared
 module neither story's own Code Map asks for (Simplicity First: match what
-each story actually needs, not a speculative third location).
-
-**Why ``pane_content``'s ``session`` argument and ``mtime``'s ``path``
-argument are placeholders, not a real resolved multiplexer session or
-usage file.** ``bmad_loop`` itself names its own tmux session
-``f"bmad-loop-{harness_run_id}"`` (its ``runs.py::session_name``,
-confirmed live against the installed 0.9.0 package) -- keyed by the
-HARNESS's own self-minted run id, not Marshal's own ``run_id`` this
-process's argv carries. Resolving that real name would mean either
-importing ``bmad_loop`` directly (forbidden here by AD-3's OWN contract,
-which already lists this package in its ``source_modules``) or duplicating
-a private naming convention from a package this story's Code Map never
-asks it to reach into. Neither is this story's call to make speculatively
--- ``core/supervise.py`` (Story 3.5), the first REAL consumer of a pane
-sample, is where that resolution belongs, once a real decision needs a real
-value. This tick therefore samples ``pane_content(run_id)`` (Marshal's own,
-always-known identifier -- a session name no live tmux session will ever
-actually carry, so this always degrades to the documented, non-erroring
-``None``) and ``mtime(log_path)`` (the one concrete file this process's own
-argv already names -- its OWN redirected log, not the harness's), proving
-the seam without inventing an unreviewed cross-package convention. Logged
-as a follow-up in ``deferred-work.md``.
+each story actually needs, not a speculative third location). The same
+applies to ``_HARNESS_LOG_FILENAME`` (Story 3.5): it duplicates
+``cli/spin.py``'s own ``_LOG_FILENAME`` literal for the identical reason.
 """
 
 from __future__ import annotations
 
 import json
+import math
 import os
 import sys
 import time
@@ -130,6 +206,7 @@ from pathlib import Path
 
 from ..adapters.clock_system import SystemClock
 from ..adapters.fs_local import FsError, LocalFs
+from ..adapters.harness_bmadloop import BmadLoopHarness, HarnessError
 from ..adapters.observer_mux import MultiplexerObserver
 from ..adapters.process_posix import PosixProcess
 from ..core import policy
@@ -140,16 +217,34 @@ from ..core.journal import (
     fold,
     prepare_for_write,
 )
+from ..core.model import Finding, Severity
+from ..core.supervise import (
+    LadderRung,
+    Sample,
+    evaluate_idle,
+    idle_anchor,
+    rung_at,
+    rung_index,
+)
 from ..ports.clock import ClockPort
 from ..ports.fs import FsPort
+from ..ports.harness import HarnessPort
 from ..ports.observer import SessionObserverPort
 from ..ports.process import ProcessPort
 
-# Matches cli/spin.py's own _JOURNAL_FILENAME/_LAUNCH_KIND -- duplicated,
-# not imported, per this module's own docstring (the new AD-9 contract
-# forbids importing anything from pyforge.marshal.cli at all).
+# Matches cli/spin.py's own _JOURNAL_FILENAME/_LAUNCH_KIND/_LOG_FILENAME --
+# duplicated, not imported, per this module's own docstring (the new AD-9
+# contract forbids importing anything from pyforge.marshal.cli at all).
 _JOURNAL_FILENAME = "journal.jsonl"
 _LAUNCH_KIND = "run-launch"
+_HARNESS_LOG_FILENAME = "harness.log"
+
+# The idle ladder's own journal kinds (Story 3.5) -- each fires as one
+# Phase.INTENT entry then one Phase.OUTCOME entry, never combined.
+_NUDGE_KIND = "idle-nudge"
+_STOP_AND_RETRY_KIND = "idle-stop-and-retry"
+_DEFER_KIND = "idle-defer"
+_HARNESS_RUN_ID_UNAVAILABLE_KIND = "idle-harness-run-id-unavailable"
 
 # No policy knob exists for this yet (this story's own Never clause) -- a
 # fixed constant is the only defensible value with no real caller to size a
@@ -161,6 +256,30 @@ _TICK_SECONDS = 60.0
 # verified live). `main()`'s own upper-bound guard below explains why this
 # is refused at the boundary rather than absorbed by `is_alive`.
 _MAX_PROBEABLE_PID = 2**31 - 1
+
+# The idle ladder's nudge text (Story 3.5) -- delivered verbatim via
+# `SessionObserverPort.send_text` into the session's live window, as if
+# typed and submitted at its prompt. Plain, short, and non-committal: this
+# sidecar cannot know what the agent was doing, only that it stopped
+# producing observable output.
+#
+# Deliberately free of shell metacharacters (review finding). `send_text`
+# delivers this as a literal keystroke stream followed by Enter, and the
+# window it resolves is whichever one tmux marks ACTIVE -- which is the
+# agent's in the ordinary case, but is whatever an attached operator last
+# selected otherwise, and is a plain shell once the agent's own process
+# exits. The previous wording contained a `;` (a shell command separator)
+# and a clause opening with `if`, so a mis-targeted nudge did not merely
+# land harmlessly in the wrong pane: it ran one bogus command and then left
+# the shell hanging at a `>` continuation prompt forever -- which this same
+# supervisor would then read back as a permanently unchanging pane. With no
+# `;`, `|`, `&`, `$`, backtick or quote anywhere in it, the worst case is
+# now a single "command not found" line.
+_NUDGE_TEXT = (
+    "Marshal idle check. No output has been observed from this session for "
+    "a while. Please continue if you are still working, or report your "
+    "current status if you are blocked or waiting on something."
+)
 
 
 def _tier3_path(home: Path, slug: str) -> Path:
@@ -220,33 +339,102 @@ def _sidecar_refs(lines: Sequence[str]) -> tuple[str, ...]:
     return tuple(refs)
 
 
+def _resolve_harness_run_id(fold_result, run_id: str) -> str | None:
+    """The run-launch OUTCOME entry's own ``harness_run_id`` field (Story
+    3.5) -- recovered from the SAME fold this module's own inert-check
+    already computed, never a second read. ``None`` if no matching outcome
+    entry exists (``MRS-SPIN-006``'s own scenario: the outcome append
+    itself failed, so only the intent entry -- which carries no
+    ``harness_run_id`` field at all -- proves ownership) or its
+    ``harness_run_id`` field is ``None``/blank (``MRS-SPIN-004``'s own
+    scenario: the harness's self-minted id could not be confirmed within
+    ``spin``'s own poll window). Either way the idle ladder has no
+    session/harness target to act against for this run."""
+    for entry in fold_result.by_kind(_LAUNCH_KIND):
+        if entry.run_id == run_id and entry.phase is Phase.OUTCOME:
+            candidate = entry.payload.get("harness_run_id")
+            return candidate if isinstance(candidate, str) and candidate else None
+    return None
+
+
 def run_supervisor(
     home: Path,
     slug: str,
     run_id: str,
     watched_pid: int,
+    # Story 3.4's own placeholder mtime-observation target -- kept ONLY for
+    # the argv contract's own shape/stability (never renumbered or removed;
+    # doing so is out of this fix's own scope). Story 3.5 replaced its one
+    # real use with the internally-derived `harness_log_path` below, so
+    # `log_path` itself is no longer read anywhere in this function's body.
     log_path: Path,
+    idle_threshold_minutes: float,
     *,
     fs: FsPort | None = None,
     process: ProcessPort | None = None,
     clock: ClockPort | None = None,
     observer: SessionObserverPort | None = None,
+    harness: HarnessPort | None = None,
     sleep: Callable[[float], None] = time.sleep,
 ) -> int:
     """The sidecar's own testable core -- everything ``__main__``'s own
     ``main()`` does after parsing argv. Every collaborator is DI'd with an
     adapter default (matching ``cli/spin.py``'s own ``fs``/``harness``
     convention), including ``sleep`` -- injecting a no-op callable is how
-    this story's own tests exercise a multi-tick heartbeat loop in
+    this story's own tests exercise a multi-tick heartbeat/ladder loop in
     milliseconds rather than minutes (AD-20's own "every supervisor
     behaviour has a test that runs in milliseconds" requirement); a real
     invocation's own bounded-iteration-count safety valve is
-    ``ProcessPort.is_alive`` itself eventually reporting ``False``, which a
-    test controls directly through a fake ``ProcessPort``."""
+    ``ProcessPort.is_alive`` itself eventually reporting ``False`` (or the
+    idle ladder itself deferring), which a test controls directly through a
+    fake ``ProcessPort``/``ClockPort``."""
     fs = fs if fs is not None else LocalFs()
     process = process if process is not None else PosixProcess()
     clock = clock if clock is not None else SystemClock()
     observer = observer if observer is not None else MultiplexerObserver()
+    harness = harness if harness is not None else BmadLoopHarness()
+
+    # Validated on the DERIVED seconds value, at THIS entry point, before
+    # anything is journaled (follow-up review finding -- two defects, one
+    # guard):
+    #
+    # 1. `main()`'s own guard checks `idle_threshold_minutes` for finiteness
+    #    but the ladder consumes `minutes * 60`, and a finite-but-enormous
+    #    value overflows that product to `inf` (`1e308 * 60.0` is `inf`).
+    #    `inf` is exactly what both this guard and `core/policy.py`'s
+    #    validator were added to reject, because every elapsed/`inf`
+    #    floor-divides to `NONE` -- silently disabling the idle ladder for
+    #    the run's whole life with no diagnostic anywhere. Checking the
+    #    quantity actually used closes the door the minutes-only check left
+    #    open.
+    # 2. `run_supervisor` is a public entry point in its own right (every
+    #    test in this package drives it directly, never through `main()`),
+    #    and it carried no threshold guard at all -- a bad value surfaced a
+    #    tick later as `evaluate_idle`'s `ValueError`, caught by the
+    #    journal-write handler and misreported as "cannot append to
+    #    journal", leaving a `supervisor-attach` with no matching detach.
+    #
+    # Returning before the attach entry is written keeps the failure a clean
+    # non-zero exit with nothing dangling in the journal.
+    # The conversion itself is guarded (review finding): this guard's own
+    # stated justification is that `run_supervisor` is a public entry point
+    # driven directly, and a direct caller is exactly the one who can pass a
+    # non-numeric `idle_threshold_minutes`. An unprotected `float()` raised
+    # `TypeError`/`ValueError` out of the function instead of producing the
+    # clean non-zero return this block exists to produce -- the failure mode
+    # it guards against, escaping through the guard itself.
+    try:
+        threshold_s = float(idle_threshold_minutes) * 60.0
+    except (TypeError, ValueError):
+        threshold_s = float("nan")
+    if not (threshold_s > 0) or not math.isfinite(threshold_s):
+        print(
+            f"supervisor: idle threshold minutes must resolve to a positive "
+            f"finite number of seconds, got {idle_threshold_minutes} "
+            f"({threshold_s}s)",
+            file=sys.stderr,
+        )
+        return 1
 
     run_dir = _run_dir(home, slug, run_id)
     journal_path = run_dir / _JOURNAL_FILENAME
@@ -336,18 +524,29 @@ def run_supervisor(
             )
         return 0
 
+    harness_run_id = _resolve_harness_run_id(fold_result, run_id)
+
     writer_id = f"supervisor-{os.getpid()}"
     pid = os.getpid()
     counter = 0
 
-    def _append(kind: str, payload: Mapping[str, object]) -> None:
+    def _write_entry(
+        kind: str,
+        phase: Phase,
+        payload: Mapping[str, object],
+        *,
+        intent_id: JournalEntryId | None = None,
+        fsync: bool,
+    ) -> JournalEntryId:
         nonlocal counter
+        entry_id = JournalEntryId(writer_id, counter)
         entry = build_entry(
-            id=JournalEntryId(writer_id, counter),
+            id=entry_id,
             ts=_format_entry_ts(clock.now()),
             run_id=run_id,
             kind=kind,
-            phase=Phase.OBSERVATION,
+            phase=phase,
+            intent_id=intent_id,
             payload=payload,
         )
         counter += 1
@@ -356,15 +555,100 @@ def run_supervisor(
             fs.write_text_atomic(
                 run_dir / prepared.sidecar_relative_path, prepared.sidecar_content
             )
-        fs.append_line(journal_path, prepared.line, fsync=False)
+        fs.append_line(journal_path, prepared.line, fsync=fsync)
+        return entry_id
+
+    def _append(kind: str, payload: Mapping[str, object]) -> None:
+        _write_entry(kind, Phase.OBSERVATION, payload, fsync=False)
+
+    def _append_intent(kind: str, payload: Mapping[str, object]) -> JournalEntryId:
+        return _write_entry(kind, Phase.INTENT, payload, fsync=True)
+
+    def _append_outcome(
+        kind: str, intent_id: JournalEntryId, payload: Mapping[str, object]
+    ) -> None:
+        _write_entry(kind, Phase.OUTCOME, payload, intent_id=intent_id, fsync=False)
 
     try:
         _append("supervisor-attach", {"pid": pid, "watched_pid": watched_pid})
 
+        # --- Story 3.5: resolve the ladder's real session/log target, or --
+        # journal once that it cannot act at all for this run.
+        session_name: str | None = None
+        harness_log_path: Path | None = None
+        if harness_run_id is not None:
+            # bmad_loop's own fixed formula (confirmed live against the
+            # installed 0.9.0 runs.py::session_name) -- keyed by the
+            # HARNESS's own self-minted run id, never Marshal's own run_id.
+            session_name = f"bmad-loop-{harness_run_id}"
+            harness_log_path = run_dir / _HARNESS_LOG_FILENAME
+        else:
+            unavailable_finding = Finding(
+                code="MRS-SUPV-003",
+                severity=Severity.WARN,
+                message=(
+                    f"run {run_id}'s harness_run_id is unavailable -- the "
+                    "idle ladder cannot act for this run; continuing "
+                    "heartbeat-only supervision"
+                ),
+            )
+            _append(
+                _HARNESS_RUN_ID_UNAVAILABLE_KIND,
+                {"finding": unavailable_finding.to_json_dict()},
+            )
+
+        samples: list[Sample] = []
+        last_acted_rung = LadderRung.NONE
+        deferred = False
+        # The `supervisor-detach` reason this loop will carry when it ends,
+        # or `None` for the ordinary "the watched process exited" case
+        # (review finding). Two DIFFERENT conditions used to share the single
+        # `deferred` flag and therefore the single `"idle-deferred"` reason:
+        # the terminal `defer` rung, and a `stop-and-retry` whose `resume()`
+        # failed after its `stop()` had already succeeded. The second is not
+        # a deferral -- no `idle-defer` intent/outcome pair exists for it --
+        # so a consumer counting deferrals by entry kind saw zero while one
+        # reading detach reasons saw one, and the run was labelled with a
+        # reason class (FR-16's own unit) that misdescribes what happened.
+        detach_reason: str | None = None
+        # Set the FIRST (and only) time a stop-and-retry fully succeeds
+        # (``stop()`` AND ``resume()`` both), and NEVER reset afterwards --
+        # unlike `samples`/`last_acted_rung`, which restart a fresh idle
+        # window for the new pid (review finding, bounded-retry ladder):
+        # without this, a persistently-wedged resumed process gets another
+        # full clean idle window every tick forever, and the ladder can
+        # cycle nudge -> stop-and-retry -> reset indefinitely, never reaching
+        # the terminal `defer` rung. Checked below, right after computing
+        # each tick's rung: any FURTHER idle recurrence once this is `True`
+        # skips straight to `defer`, guaranteeing at most one retry cycle.
+        already_retried = False
+
+        # Set when a stop-and-retry swap succeeds, cleared by the NEXT
+        # tick's own liveness reading -- the one check that can tell a
+        # resume bmad-loop ACCEPTED from one it merely launched and then
+        # rejected (review finding). `HarnessPort.resume` returns the pid
+        # of the process it spawned, which proves only that the spawn
+        # itself worked: `bmad-loop resume` exits non-zero, after starting
+        # normally, for an unknown run ref, a run whose engine it still
+        # considers alive, an already-finished run, or missing base skills.
+        # In every one of those cases the supervisor journaled a fully
+        # successful `{old_pid, new_pid}` retry with no finding at all, and
+        # then detached with the ordinary `"watched-process-exited"` -- a
+        # failed recovery recorded as a clean completion, in an append-only
+        # EVIDENCE journal. A resumed engine that is gone one tick later did
+        # not take.
+        retry_verify_pending = False
+        # A finding to carry on the final `supervisor-detach` payload, set
+        # only by the verification above. The ladder's own rungs journal
+        # their findings on their own outcome entries; this one has no rung
+        # to hang on, because the thing that failed is only observable a
+        # tick after its outcome was already written.
+        detach_finding: dict[str, object] | None = None
+
         # `watched_alive` is carried across iterations rather than
         # re-derived from a second `is_alive` call at the top of the loop
-        # (review finding): the PREVIOUS shape checked is_alive() BEFORE
-        # sleeping, to decide whether to enter a tick at all, then
+        # (review finding, Story 3.4): the PREVIOUS shape checked is_alive()
+        # BEFORE sleeping, to decide whether to enter a tick at all, then
         # unconditionally wrote `watched_alive: True` into the heartbeat
         # that followed -- a value that could ONLY ever be True (the loop
         # body cannot run otherwise) and that was already up to
@@ -378,16 +662,519 @@ def run_supervisor(
         # before the final `supervisor-detach`, rather than a silent jump
         # straight from a string of `True` heartbeats to detach.
         watched_alive = process.is_alive(watched_pid)
-        while watched_alive:
+        while watched_alive and not deferred:
             sleep(_TICK_SECONDS)
             moment = clock.now()
+            # Both readings, taken together (review finding): `moment` is the
+            # wall-clock instant the journal records, `monotonic_now` is the
+            # suspend-immune basis `core/supervise.py` measures ELAPSED idle
+            # time from. See `ports/clock.py::monotonic` for why the two
+            # cannot be the same reading.
+            monotonic_now = clock.monotonic()
             watched_alive = process.is_alive(watched_pid)
-            # Sampled to prove the injection seam (AD-20) -- neither value
-            # drives any decision in this story; see this module's own
-            # docstring for why `run_id`/`log_path` are placeholder
-            # arguments rather than a resolved real session/usage file.
-            observer.pane_content(run_id)
-            observer.mtime(log_path)
+
+            if retry_verify_pending and watched_alive:
+                # The resumed engine survived a whole tick, so bmad-loop
+                # accepted the run -- the retry is verified and this stops
+                # being an open question. The FAILING half of this check
+                # lives after the loop (see there): a resume that is
+                # rejected usually leaves the pid dead before the very next
+                # `while` test, so the loop never runs another tick to
+                # notice it here.
+                retry_verify_pending = False
+
+            # `watched_alive` gates the whole block (review finding): this
+            # value is THIS tick's own fresh reading, so if the watched
+            # process exited naturally in the very tick an idle threshold
+            # also crosses, the ladder must not fire against a process that
+            # is already gone -- a genuinely successful completion must
+            # never be misreported as an `idle-defer` outcome. The ordinary
+            # heartbeat below still appends unconditionally either way.
+            if watched_alive and session_name is not None and harness_log_path is not None:
+                # Sampled against the REAL session/log target (Story 3.5,
+                # closing the two placeholder gaps this module's own
+                # docstring names) -- feeds the pure `evaluate_idle` decision
+                # (AD-20): no port, no clock call, no I/O inside that
+                # function itself.
+                pane_content = observer.pane_content(session_name)
+                log_mtime = observer.mtime(harness_log_path)
+                if pane_content is not None:
+                    # UNOBSERVABLE is not IDLE, keyed on the PANE (review
+                    # finding -- and the defect three prior passes each
+                    # aimed at and missed). The previous guard demanded that
+                    # `pane_content` AND `log_mtime` both be `None`, which
+                    # in a real run can never happen: `cli/spin.py` opens
+                    # `harness.log` before it spawns this sidecar at all, so
+                    # `mtime()` always returns a float and the guard was
+                    # simply dead code. With tmux merely missing from the
+                    # detached sidecar's PATH the pane read `None` on every
+                    # tick while that static float held the sample equal to
+                    # its predecessor forever -- no re-arm is possible from
+                    # an unchanging value -- so the ladder ran its full
+                    # sequence (nudge, then a genuine `stop`+`resume`, then
+                    # a terminal `defer` that hard-stops the run) against a
+                    # process observed ALIVE on every one of those ticks.
+                    #
+                    # The pane is the only channel that observes the AGENT.
+                    # `harness.log` is the bmad-loop ENGINE's own stdout, and
+                    # a working agent can go a long time without the engine
+                    # writing a line -- so a frozen `harness.log` mtime is
+                    # not evidence of idleness, only the absence of one kind
+                    # of evidence. When the pane is dark this run cannot be
+                    # observed right now, and an unobservable run gets
+                    # heartbeat-only supervision, exactly like one whose
+                    # `harness_run_id` never resolved.
+                    #
+                    # The sample is DROPPED rather than appended (review
+                    # finding, second defect): a `None` differs from the text
+                    # captured either side of it, so a pane capture that
+                    # merely flaked once -- a 5s `capture-pane` timeout under
+                    # load, a window-teardown race -- entered the history as
+                    # TWO changes (text -> None, None -> text) and re-armed
+                    # the idle window every time it happened. A wedged
+                    # session whose capture flakes once per threshold window
+                    # could never accumulate a full threshold, and burned to
+                    # the token cap. Dropping it keeps the history to
+                    # genuine observations only: the idle anchor survives
+                    # the gap, elapsed time keeps accruing across it (a
+                    # session that produced nothing while unobserved was
+                    # still producing nothing), and real output on the far
+                    # side still re-arms by differing from the last sample
+                    # actually observed.
+                    samples.append(
+                        Sample(
+                            moment=moment,
+                            pane_content=pane_content,
+                            log_mtime=log_mtime,
+                            monotonic_s=monotonic_now,
+                        )
+                    )
+                # Bound the history (review finding): `evaluate_idle` needs
+                # only the most recent CHANGE point and the latest sample, so
+                # once this tick observed a change, everything before the
+                # previous sample is dead weight. Without this the list grows
+                # one pane capture per tick for the whole life of the run --
+                # unbounded memory in a sidecar designed to outlive multi-day
+                # runs, plus an O(n) rescan every 60s. Dropping only on a
+                # CHANGE keeps the semantics identical: the retained pair
+                # still pins the same reference moment `idle_since` would
+                # have found in the full history.
+                if len(samples) > 2 and (
+                    samples[-1].pane_content != samples[-2].pane_content
+                    or samples[-1].log_mtime != samples[-2].log_mtime
+                ):
+                    del samples[:-2]
+                elif len(samples) > 3:
+                    # The NO-change half of the same bound (review finding):
+                    # the trim above only ever fires on a tick that observed
+                    # a change, so the two paths that never observe one again
+                    # -- an unobservable channel (below, which is
+                    # heartbeat-only and so never terminates via `defer`) and
+                    # a run whose ladder is forced to rest -- kept appending
+                    # one `Sample` per tick for the whole life of the run,
+                    # which is precisely the unbounded growth plus O(n)
+                    # rescan the trim above claims to have fixed. Semantics
+                    # are again identical: with every sample from index 1
+                    # onward equal, `idle_since` derives the same reference
+                    # moment from `[first, second, latest]` as it does from
+                    # the full history -- the pair at the front still pins
+                    # the last change point (or its absence), and the latest
+                    # sample still supplies the elapsed-time endpoint.
+                    del samples[2:-1]
+
+                if pane_content is None or not samples:
+                    # This tick could not observe the run, so it has no
+                    # evidence to act on -- see the append guard above for
+                    # why the PANE alone answers that question and why the
+                    # sample was dropped rather than recorded. `not samples`
+                    # covers the opening ticks of a run whose pane has never
+                    # once been readable: nothing was ever appended, so
+                    # there is no history to evaluate.
+                    #
+                    # Skipping only the ladder, never the heartbeat: the
+                    # heartbeat below still appends unconditionally, so an
+                    # unobservable run stays visibly supervised rather than
+                    # going silent in the journal.
+                    rung = LadderRung.NONE
+                else:
+                    rung = evaluate_idle(samples, threshold_s=threshold_s)
+
+                # One rung per tick, never a jump (review finding): the
+                # ladder is a FIXED 3-rung sequence (this story's own Never
+                # clause), but `evaluate_idle` floor-divides, so any
+                # threshold shorter than twice `_TICK_SECONDS` lets a single
+                # tick land two or three rungs higher than the last one
+                # acted on -- `idle_threshold_minutes = 0.25` reaches `DEFER`
+                # on the second sample and hard-stops a healthy run without
+                # ever nudging it. Nothing validates the threshold against
+                # the tick (and `core/policy.py`'s validator explicitly
+                # admits sub-minute values), so the sequence is kept intact
+                # here instead of rejecting the small thresholds.
+                if rung_index(rung) > rung_index(last_acted_rung) + 1:
+                    rung = rung_at(rung_index(last_acted_rung) + 1)
+
+                if already_retried and rung_index(rung) >= rung_index(
+                    LadderRung.STOP_AND_RETRY
+                ):
+                    # Bounded-retry gate (review finding): one retry cycle
+                    # already happened for this run and is never undone, so
+                    # a further idle recurrence on the new pid's window can
+                    # never earn a SECOND stop-and-retry -- it escalates
+                    # straight to the terminal rung. `nudge` is deliberately
+                    # left reachable (this gate used to swallow it too,
+                    # collapsing the post-retry ladder to NONE -> DEFER):
+                    # the first response to a resumed run going quiet should
+                    # still be the harmless one, not an immediate hard stop
+                    # of what may simply be a long build or test.
+                    rung = LadderRung.DEFER
+
+                if rung_index(rung) > rung_index(last_acted_rung):
+                    if rung is LadderRung.NUDGE:
+                        intent_id = _append_intent(_NUDGE_KIND, {"session": session_name})
+                        sent = observer.send_text(session_name, _NUDGE_TEXT)
+                        outcome_payload: dict[str, object] = {"sent": sent}
+                        if not sent:
+                            # The ladder still advances its own bookkeeping
+                            # below (this story's own I/O matrix) -- a
+                            # failed nudge is not retried every tick.
+                            nudge_finding = Finding(
+                                code="MRS-SUPV-001",
+                                severity=Severity.WARN,
+                                message=(
+                                    f"could not deliver a nudge to session "
+                                    f"{session_name!r} -- no window resolved "
+                                    "or delivery failed"
+                                ),
+                            )
+                            outcome_payload["finding"] = nudge_finding.to_json_dict()
+                        # The nudge's own echo must not re-arm the very
+                        # window it was escalating from (review finding, and
+                        # the defect that made this ladder unable to reach
+                        # `stop-and-retry` at all). `send_text` types into
+                        # the SAME pane `pane_content` samples, so the next
+                        # tick's capture differs from this one's,
+                        # `evaluate_idle` reads that as fresh output, the
+                        # rung falls back to `NONE`, and the run cycles
+                        # nudge -> re-arm -> nudge forever while staying
+                        # wedged. "Fresh output" means the SESSION's output,
+                        # never this supervisor's own.
+                        #
+                        # Fixed by collapsing the history onto the
+                        # post-nudge pane text while PRESERVING the idle
+                        # anchor `idle_since` had already established: the
+                        # echoed text becomes the baseline every later
+                        # sample is compared against (so it counts as no
+                        # change), and elapsed idle time keeps accruing from
+                        # where it genuinely started, so one more full
+                        # threshold reaches `stop-and-retry`. Genuine agent
+                        # output after the nudge still differs from that
+                        # baseline and still re-arms, exactly as before. A
+                        # `None` re-capture (the pane became unobservable in
+                        # the same instant) degrades to the previous
+                        # behaviour rather than inventing a baseline.
+                        #
+                        # Rebased REGARDLESS of `sent` (follow-up review
+                        # finding): `send_text` sends the text and the
+                        # submitting `Enter` as two separate tmux calls and
+                        # reports only the second one's fate, so a `False`
+                        # return does NOT mean nothing was typed -- a paste
+                        # that landed before a failing or timing-out `Enter`
+                        # leaves the supervisor's own text sitting in the
+                        # observed pane while this branch skipped the very
+                        # rebase that neutralizes it, reopening the
+                        # nudge -> re-arm -> nudge loop through the
+                        # partial-delivery door. When nothing was in fact
+                        # typed the re-capture simply equals the pane already
+                        # sampled this tick, making the rebase a semantic
+                        # no-op -- so doing it unconditionally is strictly
+                        # safer than conditioning it on a signal that cannot
+                        # answer the question being asked.
+                        # BOTH of the anchor's readings are pinned, not just
+                        # its wall-clock `moment` (review finding): elapsed
+                        # idle time is now measured monotonically, so letting
+                        # `monotonic_s` fall to THIS tick's reading while
+                        # pinning `moment` would restart the very count this
+                        # rebase exists to preserve -- silently making
+                        # `stop-and-retry` unreachable again.
+                        anchor_sample = idle_anchor(samples)
+                        rebased_pane = observer.pane_content(session_name)
+                        if rebased_pane is None:
+                            # The pane went dark in the same instant. Keep
+                            # the pre-nudge text already observed this tick
+                            # rather than seeding the history with a `None`:
+                            # the history holds genuine observations only
+                            # (see the append guard above), and a `None`
+                            # baseline would itself re-arm the window on the
+                            # next readable tick -- the same spurious re-arm
+                            # dropping unobservable samples exists to stop.
+                            rebased_pane = pane_content
+                        samples[:] = [
+                            Sample(
+                                moment=(
+                                    anchor_sample.moment
+                                    if anchor_sample is not None
+                                    else moment
+                                ),
+                                pane_content=rebased_pane,
+                                log_mtime=log_mtime,
+                                monotonic_s=(
+                                    anchor_sample.monotonic_s
+                                    if anchor_sample is not None
+                                    else monotonic_now
+                                ),
+                            )
+                        ]
+                        _append_outcome(_NUDGE_KIND, intent_id, outcome_payload)
+                    elif rung is LadderRung.STOP_AND_RETRY:
+                        intent_id = _append_intent(
+                            _STOP_AND_RETRY_KIND,
+                            {"harness_run_id": harness_run_id, "old_pid": watched_pid},
+                        )
+                        try:
+                            stopped = harness.stop(home, harness_run_id)
+                        except HarnessError as exc:
+                            # `stop()` itself could not even be run (review
+                            # finding: distinct from a `resume()` failure
+                            # below) -- the tick loop continues watching the
+                            # (possibly still-wedged) ORIGINAL pid rather
+                            # than crashing (this story's own I/O matrix) --
+                            # neither `watched_pid` nor the sample history
+                            # changes, so the ladder naturally re-escalates
+                            # to `defer` once elapsed time crosses the third
+                            # threshold.
+                            retry_finding = Finding(
+                                code="MRS-SUPV-002",
+                                severity=Severity.WARN,
+                                message=(
+                                    "stop-and-retry failed for harness run "
+                                    f"{harness_run_id!r}: {exc}"
+                                ),
+                            )
+                            _append_outcome(
+                                _STOP_AND_RETRY_KIND,
+                                intent_id,
+                                {
+                                    "old_pid": watched_pid,
+                                    "finding": retry_finding.to_json_dict(),
+                                },
+                            )
+                        else:
+                            if not stopped:
+                                # `stop()`'s own documented `False`: the run
+                                # was not stopped. `resume()` must never be
+                                # called after it -- doing so could relaunch
+                                # a run that already completed.
+                                #
+                                # Recorded as `stopped: false` and NOT as
+                                # `already_finished: true` (review finding):
+                                # the port documents `False` as "any other
+                                # determinable outcome", of which "already
+                                # finished" is only ONE example -- a
+                                # rejected run id, a run owned by another
+                                # host, or any other non-launch failure
+                                # reports identically. Writing the
+                                # already-finished reading into an
+                                # append-only EVIDENCE journal asserted a
+                                # completion this process never observed,
+                                # and directly contradicted its OWN fresh
+                                # `is_alive` reading from the top of this
+                                # same tick, which is what let the ladder
+                                # run at all. The WARN says what is actually
+                                # known: the wedged run was not stopped, and
+                                # no retry was attempted.
+                                not_stopped_finding = Finding(
+                                    code="MRS-SUPV-002",
+                                    severity=Severity.WARN,
+                                    message=(
+                                        "stop-and-retry: bmad-loop reported "
+                                        f"harness run {harness_run_id!r} was "
+                                        "not stopped, so no resume was "
+                                        "attempted"
+                                    ),
+                                )
+                                _append_outcome(
+                                    _STOP_AND_RETRY_KIND,
+                                    intent_id,
+                                    {
+                                        "old_pid": watched_pid,
+                                        "stopped": False,
+                                        "finding": not_stopped_finding.to_json_dict(),
+                                    },
+                                )
+                            else:
+                                try:
+                                    new_pid = harness.resume(
+                                        home, harness_run_id, log_path=harness_log_path
+                                    )
+                                except HarnessError as exc:
+                                    # `stop()` succeeded -- the original pid
+                                    # is CONFIRMED dead, not "possibly still
+                                    # wedged" -- so a `resume()` failure
+                                    # here is distinct from the
+                                    # `stop()`-failed branch above (review
+                                    # finding): falling through would let
+                                    # the NEXT tick's ordinary `is_alive`
+                                    # reading (naturally `False`) exit the
+                                    # loop via the routine
+                                    # "watched-process-exited" detach,
+                                    # silently masking a failed recovery as
+                                    # an ordinary completion. Treated as
+                                    # unrecoverable instead: `deferred` ends
+                                    # the loop the same way reaching
+                                    # `defer` itself would.
+                                    resume_finding = Finding(
+                                        code="MRS-SUPV-002",
+                                        severity=Severity.WARN,
+                                        message=(
+                                            "stop-and-retry: stop succeeded "
+                                            "but resume failed for harness "
+                                            f"run {harness_run_id!r}: {exc}"
+                                        ),
+                                    )
+                                    _append_outcome(
+                                        _STOP_AND_RETRY_KIND,
+                                        intent_id,
+                                        {
+                                            "old_pid": watched_pid,
+                                            "finding": resume_finding.to_json_dict(),
+                                        },
+                                    )
+                                    deferred = True
+                                    # NOT `"idle-deferred"` (review
+                                    # finding): the ladder never reached its
+                                    # `defer` rung, and no `idle-defer`
+                                    # intent/outcome pair exists to back
+                                    # that claim up. This is a failed
+                                    # recovery, a materially different
+                                    # reason class from an exhausted idle
+                                    # ladder.
+                                    detach_reason = "idle-retry-failed"
+                                    # Stale `watched_alive` (follow-up
+                                    # review finding, same defect class the
+                                    # success branch below already fixed):
+                                    # `stop()` returned True, so the pid
+                                    # this tick read as alive at its top has
+                                    # since been killed -- and this tick's
+                                    # own heartbeat still appends below.
+                                    # Left alone it asserts `watched_alive:
+                                    # True` for a process the supervisor
+                                    # itself just stopped, and it is the
+                                    # LAST heartbeat any consumer will ever
+                                    # see for this run.
+                                    watched_alive = process.is_alive(watched_pid)
+                                else:
+                                    _append_outcome(
+                                        _STOP_AND_RETRY_KIND,
+                                        intent_id,
+                                        {"old_pid": watched_pid, "new_pid": new_pid},
+                                    )
+                                    # A successful retry starts its own
+                                    # fresh idle window (this story's own
+                                    # Always bullet): the new engine
+                                    # attempt gets a clean sample history
+                                    # and the ladder resets to its resting
+                                    # position. `already_retried` is set
+                                    # here, and ONLY here, never reset --
+                                    # the ladder's own bounded-retry gate
+                                    # (review finding): a further idle
+                                    # recurrence on this fresh window
+                                    # escalates straight to `defer` instead
+                                    # of repeating this branch.
+                                    watched_pid = new_pid
+                                    samples.clear()
+                                    rung = LadderRung.NONE
+                                    already_retried = True
+                                    # Verified on the NEXT tick, never here:
+                                    # `resume` returning a pid proves the
+                                    # spawn worked, not that bmad-loop
+                                    # accepted the run (review finding).
+                                    retry_verify_pending = True
+                                    # Stale `watched_alive` (review
+                                    # finding): this tick's own heartbeat
+                                    # append below still runs AFTER this
+                                    # branch and would otherwise carry the
+                                    # OLD pid's reading taken at the top of
+                                    # the tick -- recompute against the NEW
+                                    # pid so the heartbeat this tick writes
+                                    # is honest.
+                                    watched_alive = process.is_alive(watched_pid)
+                    elif rung is LadderRung.DEFER:
+                        intent_id = _append_intent(_DEFER_KIND, {"watched_pid": watched_pid})
+                        # Best-effort (review finding): a failed stop must
+                        # never block the defer outcome from being
+                        # journaled, nor keep this loop running against a
+                        # process it has already decided to abandon --
+                        # `defer` is terminal either way, whether or not the
+                        # stop call itself succeeded.
+                        defer_payload: dict[str, object] = {"watched_pid": watched_pid}
+                        try:
+                            stopped = harness.stop(home, harness_run_id)
+                        except HarnessError as exc:
+                            stopped = False
+                            defer_detail = f"the stop call itself failed: {exc}"
+                        else:
+                            # A SENTENCE FRAGMENT, not a sentence (follow-up
+                            # review finding): both branches are interpolated
+                            # into the same "could not stop harness run
+                            # {id} -- {detail}" frame below, and this one used
+                            # to restate the whole clause ("bmad-loop reported
+                            # harness run '...' was not stopped"), producing
+                            # the doubled, unreadable "could not stop harness
+                            # run bmad-loop reported harness run '...' was not
+                            # stopped -- the run may still be running". The
+                            # frame names the run; the detail says only what
+                            # is known about WHY.
+                            defer_detail = (
+                                "bmad-loop reported it was not stopped"
+                            )
+                        defer_payload["stopped"] = stopped
+                        if not stopped:
+                            # A failed stop at the TERMINAL rung is the worst
+                            # case this whole story exists to prevent, and it
+                            # used to be journaled as a bare `stopped: false`
+                            # with no registered finding at all (review
+                            # finding) -- unlike the identical call one
+                            # branch up, which registers MRS-SUPV-002. The
+                            # supervisor is about to exit; if the stop did
+                            # not take, the wedged run keeps burning tokens
+                            # with nobody watching it and nothing above WARN
+                            # tier anywhere saying so.
+                            defer_finding = Finding(
+                                code="MRS-SUPV-002",
+                                severity=Severity.WARN,
+                                message=(
+                                    "defer: could not stop harness run "
+                                    f"{harness_run_id!r} -- {defer_detail} "
+                                    "-- the run may still be running, now "
+                                    "unsupervised"
+                                ),
+                            )
+                            defer_payload["finding"] = defer_finding.to_json_dict()
+                        _append_outcome(_DEFER_KIND, intent_id, defer_payload)
+                        deferred = True
+                        detach_reason = "idle-deferred"
+                        # Stale `watched_alive` (follow-up review finding):
+                        # the terminal stop above may have just killed the
+                        # very pid this tick read as alive at its top, and
+                        # this tick's heartbeat -- the LAST one this run will
+                        # ever produce -- still appends below. A consumer
+                        # reading the final heartbeat used to see
+                        # `watched_alive: True` for a process the supervisor
+                        # itself had already stopped, immediately under an
+                        # `idle-defer` outcome saying so. Recomputed for the
+                        # same reason the stop-and-retry branch above
+                        # recomputes: a heartbeat is an observation, and an
+                        # observation taken before the action it reports on
+                        # is not one.
+                        watched_alive = process.is_alive(watched_pid)
+                # Synced regardless of whether an action fired above: this
+                # is what makes "fresh output re-arms the window" work with
+                # no special-cased reset -- a sample whose pane/mtime
+                # changed makes `evaluate_idle` itself return `NONE` again,
+                # and mirroring that back into this bookkeeping variable is
+                # what lets a LATER full threshold re-escalate from scratch.
+                last_acted_rung = rung
+
             _append(
                 "supervisor-heartbeat",
                 {
@@ -397,10 +1184,46 @@ def run_supervisor(
                 },
             )
 
-        _append(
-            "supervisor-detach",
-            {"pid": pid, "reason": "watched-process-exited"},
-        )
+        if retry_verify_pending and not watched_alive:
+            # The resumed engine never survived a tick -- see
+            # `retry_verify_pending`'s own declaration for why the pid
+            # `resume` handed back is not by itself evidence the resume was
+            # accepted. `bmad-loop resume` exits non-zero AFTER starting
+            # normally for an unknown run ref, a run whose engine it still
+            # considers alive, an already-finished run, or missing base
+            # skills; in every one of those cases this supervisor had
+            # already journaled a clean `{old_pid, new_pid}` retry, and was
+            # about to journal the ordinary `"watched-process-exited"` on
+            # top of it -- recording a failed recovery as a normal
+            # completion in an append-only EVIDENCE journal.
+            #
+            # Checked HERE rather than at the top of the next tick because
+            # there usually is no next tick: the swap recomputes
+            # `watched_alive` against the new pid, so a rejected resume ends
+            # the loop immediately.
+            detach_finding = Finding(
+                code="MRS-SUPV-002",
+                severity=Severity.WARN,
+                message=(
+                    f"resumed harness run {harness_run_id!r} (pid "
+                    f"{watched_pid}) did not survive its first tick after a "
+                    "stop-and-retry -- the resume did not take, so the story "
+                    "this run was working is neither progressing nor "
+                    "supervised"
+                ),
+            ).to_json_dict()
+            # Never the ordinary `"watched-process-exited"`: this is a failed
+            # recovery, the same reason class a `resume` that raises outright
+            # already earns.
+            detach_reason = "idle-retry-failed"
+
+        detach_payload: dict[str, object] = {
+            "pid": pid,
+            "reason": detach_reason or "watched-process-exited",
+        }
+        if detach_finding is not None:
+            detach_payload["finding"] = detach_finding
+        _append("supervisor-detach", detach_payload)
     except (FsError, ValueError) as exc:
         # AD-30's own journal is unwritable -- looping forever against it
         # would spin this process indefinitely with zero further signal.
@@ -427,7 +1250,7 @@ def run_supervisor(
 
 def main(argv: Sequence[str] | None = None) -> int:
     """Parse ``sys.argv`` (or an injected ``argv`` for testing) into
-    ``run_supervisor``'s five positional arguments and relay its exit code.
+    ``run_supervisor``'s six positional arguments and relay its exit code.
     This is the ONLY place this module reads its own command line -- AD-9's
     "reads argv once at start and touches no other externally-writable
     input for its own control flow" is literal here: no further read of
@@ -449,14 +1272,21 @@ def main(argv: Sequence[str] | None = None) -> int:
         )
         return 1
     args = list(sys.argv[1:]) if argv is None else list(argv)
-    if len(args) != 5 or not all(isinstance(arg, str) for arg in args):
+    if len(args) != 6 or not all(isinstance(arg, str) for arg in args):
         print(
             "usage: python -m pyforge.marshal.supervisor <home> <slug> "
-            "<run_id> <watched_pid> <log_path>",
+            "<run_id> <watched_pid> <log_path> <idle_threshold_minutes>",
             file=sys.stderr,
         )
         return 1
-    home, slug, run_id, watched_pid_text, log_path_text = args
+    (
+        home,
+        slug,
+        run_id,
+        watched_pid_text,
+        log_path_text,
+        idle_threshold_minutes_text,
+    ) = args
     # `home` is the ROOT of the very path `slug` and `run_id` are guarded as
     # segments of, and was the one argv element validated nowhere (review
     # finding). A relative value resolves the journal against this process's
@@ -520,18 +1350,53 @@ def main(argv: Sequence[str] | None = None) -> int:
         # append-only EVIDENCE journal. (An earlier pass rejected a
         # hardcoded `watched_alive: true` on exactly this ground: a field
         # that can only ever carry one value is not an observation.) This
-        # story's own Always bullet enumerates exactly ONE detach reason, so
-        # the honest fix is at the boundary rather than a second reason
-        # code: refuse a pid this process could never probe, the same
+        # honest fix is at the BOUNDARY rather than in the reason
+        # vocabulary: refuse a pid this process could never probe, the same
         # "raise/refuse rather than silently misinterpret" discipline the
-        # non-positive guard above already applies.
+        # non-positive guard above already applies. (This passage used to
+        # justify that by claiming the story enumerates "exactly two" detach
+        # reasons. It does not -- the same story also added
+        # `"idle-retry-failed"` for a `resume` that fails after a confirmed
+        # `stop` -- and the argument never rested on the count anyway, only
+        # on refusing to journal an exit this process never observed.)
         print(
             f"supervisor: watched pid {watched_pid} is not probeable "
             f"(above {_MAX_PROBEABLE_PID})",
             file=sys.stderr,
         )
         return 1
-    return run_supervisor(Path(home), slug, run_id, watched_pid, Path(log_path_text))
+    try:
+        idle_threshold_minutes = float(idle_threshold_minutes_text)
+    except ValueError:
+        print(
+            f"supervisor: invalid idle threshold minutes "
+            f"{idle_threshold_minutes_text!r}",
+            file=sys.stderr,
+        )
+        return 1
+    # `not (x > 0)` plus an explicit finiteness check, never a bare `<= 0`
+    # (review finding -- the exact footgun `core/supervise.py`'s own guard
+    # documents, repeated here). IEEE 754 makes EVERY comparison against
+    # `float('nan')` false, so `<= 0` passed a NaN threshold straight
+    # through; `evaluate_idle` then raised `ValueError` on the first ladder
+    # tick, which this module's own journal-write handler catches and
+    # reports as "cannot append to journal" -- blaming the journal for an
+    # argv defect and leaving a `supervisor-attach` with no matching
+    # `supervisor-detach`, the dangling-attach state AD-9 forbids. `inf`
+    # passed too, and silently disabled the ladder for the run's whole life
+    # (every elapsed/inf floor-divides to rung `NONE`). `core/policy.py`
+    # rejects both at the policy layer, but this is a separate public entry
+    # point reachable with any argv at all.
+    if not (idle_threshold_minutes > 0) or not math.isfinite(idle_threshold_minutes):
+        print(
+            f"supervisor: idle threshold minutes must be a positive finite "
+            f"number, got {idle_threshold_minutes}",
+            file=sys.stderr,
+        )
+        return 1
+    return run_supervisor(
+        Path(home), slug, run_id, watched_pid, Path(log_path_text), idle_threshold_minutes
+    )
 
 
 if __name__ == "__main__":

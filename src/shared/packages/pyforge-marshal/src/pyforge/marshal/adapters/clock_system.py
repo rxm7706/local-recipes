@@ -9,6 +9,7 @@ milliseconds against a synthetic sample sequence, never a real sleep).
 
 from __future__ import annotations
 
+import time
 from datetime import datetime, timezone
 
 
@@ -17,3 +18,12 @@ class SystemClock:
 
     def now(self) -> datetime:
         return datetime.now(timezone.utc)
+
+    def monotonic(self) -> float:
+        # `time.monotonic`, never `time.time`: this reading exists precisely
+        # to be immune to the wall-clock jumps `now` above is subject to
+        # (see the port's own docstring). On Linux this is `CLOCK_MONOTONIC`,
+        # which EXCLUDES time the host spent suspended -- which is the
+        # behaviour the idle ladder wants, since a suspended session cannot
+        # have been producing output during the gap either.
+        return time.monotonic()

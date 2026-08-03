@@ -1078,11 +1078,107 @@ def test_spin_spawns_the_supervisor_with_the_expected_argv(home):
         run_id,
         "4242",  # harness.spin_result's own pid
         str(call["log_path"]),
+        # Story 3.5's 6th positional: the effective idle_threshold_minutes
+        # (core.policy.DEFAULT_POLICY's own value -- no project-policy file
+        # exists for the "acme" slug this test fixture uses).
+        "25",
     ]
     assert call["cwd"] == home
     assert call["log_path"].name == "supervisor.log"
     # A SEPARATE file from the harness's own redirected log.
     assert call["log_path"] != harness.spin_calls[0]["log_path"]
+
+
+def test_spin_surfaces_a_malformed_idle_threshold_minutes_project_policy_finding(
+    home, tmp_path, monkeypatch, capsys
+):
+    """Review finding: ``policy.compose()``'s own ``Finding`` list for the
+    ``idle_threshold_minutes`` lookup used to be captured into a variable
+    that was never looked at again -- a malformed override in the
+    project's own ``marshal-policy.toml`` produced a real
+    ``MRS-POLICY-003`` finding that never reached the operator, and the
+    effective value silently fell back to the code default with zero
+    diagnostic. It must now be surfaced into this command's own findings.
+
+    But NOT by splicing them in verbatim (second review finding): every
+    ``MRS-POLICY-00{1,2,3,4,6}`` classifies ``Verdict.UNEVALUABLE`` -> exit
+    1, which is right for ``marshal config`` (whose whole job IS the policy)
+    and wrong here, where the policy is a supplementary input read AFTER a
+    real harness process is already live. Any unknown key or malformed value
+    ANYWHERE in a project's policy file would have made ``marshal factory
+    spin`` exit 1 over a successfully launched, supervised run -- and a
+    caller that retries on non-zero would then double-dispatch the same
+    story, the exact hazard this story's own Design Notes give as the reason
+    ``stop``+``resume`` is the retry primitive. One WARN-tier
+    ``MRS-SPIN-008`` carries every underlying message instead."""
+    fs = FakeFs(dirs={home})
+    harness = FakeHarness()
+    harness.feed_keys = ("1-1-first-story",)
+
+    policy_path = tmp_path / "marshal-policy.toml"
+    policy_path.write_text('idle_threshold_minutes = "not-a-number"\n', encoding="utf-8")
+    monkeypatch.setattr(
+        spin_module, "conventional_project_policy_path", lambda slug: policy_path
+    )
+
+    exit_code = run_spin(_spin_namespace("acme", fmt="json"), fs=fs, harness=harness)
+
+    envelope = json.loads(capsys.readouterr().out)
+    findings_by_code = {finding["code"]: finding for finding in envelope["findings"]}
+    assert "MRS-SPIN-008" in findings_by_code
+    assert findings_by_code["MRS-SPIN-008"]["severity"] == "warn"
+    # The underlying policy finding's own code and message survive into the
+    # re-tiered one -- the diagnostic is preserved, only its verdict tier is
+    # not inherited.
+    assert "MRS-POLICY-003" in findings_by_code["MRS-SPIN-008"]["message"]
+    assert "MRS-POLICY-003" not in findings_by_code, "verbatim splice inverts the verdict"
+    # The launch itself succeeded, so the command succeeds: a malformed
+    # supplementary value must never re-classify a live, already-launched,
+    # supervised run as a failure.
+    assert exit_code == EXIT_OK
+    assert "supervisor_pid" in envelope["data"]
+    assert harness.spin_calls  # the harness launch was actually attempted
+
+
+def test_spin_never_aborts_a_live_launch_over_an_unreadable_project_policy(
+    home, tmp_path, monkeypatch, capsys
+):
+    """Review finding: this read is the LAST step on the post-launch path.
+    By the time it runs a real bmad-loop process is already live and
+    journalled, and the detached supervisor has not been spawned yet -- so
+    anything escaping here leaves the worst state this command can produce
+    (a running, UNSUPERVISED harness) and exits non-zero, which invites the
+    caller to retry and double-dispatch the very story the live run is
+    already working.
+
+    Catching only ``PolicyIOError`` was under-inclusive against this
+    module's own stated rule that the read "must never abort an otherwise-
+    successful harness launch": ``tomllib.load`` raises a bare
+    ``RecursionError`` on a deeply nested document, which is neither an
+    ``OSError`` nor a ``ValueError`` and passed straight through."""
+    fs = FakeFs(dirs={home})
+    harness = FakeHarness()
+    harness.feed_keys = ("1-1-first-story",)
+
+    policy_path = tmp_path / "marshal-policy.toml"
+    policy_path.write_text("idle_threshold_minutes = 30\n", encoding="utf-8")
+    monkeypatch.setattr(
+        spin_module, "conventional_project_policy_path", lambda slug: policy_path
+    )
+
+    def _explode(path):
+        raise RecursionError("maximum recursion depth exceeded")
+
+    monkeypatch.setattr(spin_module, "_read_project_policy", _explode)
+
+    exit_code = run_spin(_spin_namespace("acme", fmt="json"), fs=fs, harness=harness)
+
+    envelope = json.loads(capsys.readouterr().out)
+    # The launch stands, the supervisor is still spawned, and the threshold
+    # simply falls back to its composed default.
+    assert exit_code == EXIT_OK
+    assert "supervisor_pid" in envelope["data"]
+    assert harness.spin_calls
 
 
 def test_the_supervisor_accepts_the_argv_spin_actually_builds(home, monkeypatch, capsys):
@@ -1102,7 +1198,7 @@ def test_the_supervisor_accepts_the_argv_spin_actually_builds(home, monkeypatch,
     inert exit 0 rather than an error.
 
     This drives the argv ``run_spin`` genuinely produced through the
-    supervisor's OWN ``main()`` and asserts the five values it recovers
+    supervisor's OWN ``main()`` and asserts the six values it recovers
     compose the SAME run directory ``run_spin`` wrote its journal into.
     ``run_supervisor`` is stubbed out, so this stays pure parsing --
     ``test_supervisor_run_path_agreement.py`` pins the path helpers
@@ -1126,12 +1222,15 @@ def test_the_supervisor_accepts_the_argv_spin_actually_builds(home, monkeypatch,
     # argv launches must find its own run-launch entry in.
     journal_path = fs.appended_lines[0][0]
 
-    recovered: list[tuple[Path, str, str, int, Path]] = []
+    recovered: list[tuple[Path, str, str, int, Path, float]] = []
     monkeypatch.setattr(
         supervisor_main,
         "run_supervisor",
-        lambda home, slug, run_id, watched_pid, log_path: (
-            recovered.append((home, slug, run_id, watched_pid, log_path)) or 0
+        lambda home, slug, run_id, watched_pid, log_path, idle_threshold_minutes: (
+            recovered.append(
+                (home, slug, run_id, watched_pid, log_path, idle_threshold_minutes)
+            )
+            or 0
         ),
     )
 
@@ -1140,7 +1239,7 @@ def test_the_supervisor_accepts_the_argv_spin_actually_builds(home, monkeypatch,
     assert argv[:3] == [sys.executable, "-m", "pyforge.marshal.supervisor"]
     assert supervisor_main.main(argv[3:]) == 0, capsys.readouterr().err
 
-    [(got_home, got_slug, got_run_id, got_pid, got_log)] = recovered
+    [(got_home, got_slug, got_run_id, got_pid, got_log, got_threshold)] = recovered
     assert (
         supervisor_main._run_dir(got_home, got_slug, got_run_id)
         / supervisor_main._JOURNAL_FILENAME
@@ -1148,6 +1247,7 @@ def test_the_supervisor_accepts_the_argv_spin_actually_builds(home, monkeypatch,
     )
     assert got_pid == harness.spin_result.pid
     assert got_log == call["log_path"]
+    assert got_threshold == 25.0
 
 
 def test_spin_spawns_the_supervisor_after_the_outcome_append_not_right_after_spin(home):
