@@ -38,15 +38,27 @@ convenience -- this module is its OWN prerequisite for every later Epic-3
 story (3.2's fold, 3.3's launch, 3.4's supervisor), so nothing in the tree
 can call it yet. See ``deferred-work.md`` for the tracked follow-ups.
 
-This module implements neither the journal's READ side (the fold,
-quarantine-on-malformed-line, ``unevaluable`` scoping -- Story 3.2's own
-title and AC set) nor AD-25's ``sessions/`` namespace (no session concept
-exists anywhere in this codebase today; logged as a follow-up).
+Story 3.2 adds this module's READ side: ``fold(lines, sidecars) ->
+FoldResult`` parses each raw journal line independently, pairs
+``outcome``/``intent`` entries by ``JournalEntryId`` equality alone (AD-28
+-- no positional or heuristic pairing, ever), and quarantines any line that
+fails to parse/validate or references an unresolvable sidecar blob, scoped
+to its own ``(story, kind)`` or widened to the whole run when neither
+recovers (AD-30). ``FoldResult.by_kind``/``for_story``/``is_evaluable`` are
+the one generic query surface every future consumer (Story 2.3's
+frozen-surface scope check, Epic 4's spec-promotion/reconciliation
+stories) reads Marshal's accumulating run state through -- AD-26's "exactly
+one producer" rule, extended from ``EffectivePolicy``'s seed fields to the
+journal's own derived facts. This module still implements no CLI wiring
+(``cli/gate.py``'s ``--run`` stays the ``MRS-GATE-005`` stub Story 2.1 left
+it) and no session-scoped fold -- AD-25's ``sessions/`` namespace remains
+entirely unimplemented (no session concept exists anywhere in this
+codebase today; logged as a follow-up in ``deferred-work.md``).
 
 This module is pure data: no I/O, no subprocess, no network, no clock, no
 ``pyforge.marshal.adapters`` import (AD-4) -- only ``copy``, ``json``,
-``re``, ``collections.abc``, ``dataclasses``, ``datetime``, ``enum``, and
-this package's own ``.identity``/``.policy``.
+``re``, ``collections.abc``, ``dataclasses``, ``datetime``, ``enum``,
+``types``, and this package's own ``.identity``/``.model``/``.policy``.
 """
 
 from __future__ import annotations
@@ -54,13 +66,15 @@ from __future__ import annotations
 import copy
 import json
 import re
-from collections.abc import Mapping
-from dataclasses import dataclass
+from collections.abc import Mapping, Sequence
+from dataclasses import dataclass, replace
 from datetime import datetime
 from enum import StrEnum
+from types import MappingProxyType
 
 from . import policy
-from .identity import StoryKey
+from .identity import MalformedStoryKeyError, StoryKey, normalize
+from .model import Finding, Severity
 
 # AD-28's three-valued phase vocabulary. The earlier two-valued set forced
 # gate verdicts, story transitions, and other non-outcome facts into
@@ -390,4 +404,404 @@ def prepare_for_write(entry: JournalEntry) -> PreparedWrite:
         line=json.dumps(document, sort_keys=True),
         sidecar_relative_path=sidecar_relative_path,
         sidecar_content=payload_text,
+    )
+
+
+@dataclass(frozen=True)
+class QuarantinedRecord:
+    """One quarantined journal line (AD-30): ``raw`` is the original line
+    text that failed to parse, fail validation, or resolve a sidecar
+    reference. ``story``/``kind`` are the best-effort-recovered scope pair
+    -- ALWAYS both ``None`` together or both set together: AD-30's rule is
+    that a partial recovery (one but not the other) carries no meaningful
+    scope, so it widens to the whole run rather than being represented
+    here at all (enforced at construction, matching this module's own
+    ``JournalEntry``/``JournalEntryId`` convention). ``finding`` is the
+    registered ``MRS-JOURNAL-001``/``MRS-JOURNAL-002`` ``Finding`` this
+    quarantine surfaces (AD-8: unevaluable is a failure, never silently
+    dropped)."""
+
+    raw: str
+    story: StoryKey | None
+    kind: str | None
+    finding: Finding
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.raw, str):
+            raise ValueError(f"raw must be a str, got {self.raw!r}")
+        if self.story is not None and not isinstance(self.story, StoryKey):
+            raise ValueError(f"story must be a StoryKey or None, got {self.story!r}")
+        if self.kind is not None and not isinstance(self.kind, str):
+            raise ValueError(f"kind must be a str or None, got {self.kind!r}")
+        if (self.story is None) != (self.kind is None):
+            raise ValueError(
+                "story and kind must be both None or both set together -- "
+                "AD-30's scope widens to (None, None) unless BOTH recover, "
+                f"got story={self.story!r}, kind={self.kind!r}"
+            )
+        if not isinstance(self.finding, Finding):
+            raise ValueError(f"finding must be a Finding, got {self.finding!r}")
+
+
+@dataclass(frozen=True)
+class FoldResult:
+    """The journal fold's total result (Story 3.2, AD-26/AD-28/AD-30) --
+    Marshal's ONE producer for every accumulating run-state value (story
+    transitions, gate verdicts, escalations, deferrals, consumption,
+    supervisor actions, frozen surfaces, attempt counts, effective gate
+    mode): nothing else may derive them independently.
+
+    ``entries`` is every evaluable entry (sidecar-resolved where
+    applicable), in AD-28's total order ``(ts, writer_id, counter)`` -- a
+    plain tuple sort, since ``ts`` is already Story 3.1's one canonical,
+    string-sortable spelling. ``open_intents`` is every ``intent``-phase
+    entry whose id is never referenced by an ``outcome.intent_id`` --
+    reported, never inferred closed. ``orphaned_outcomes`` is every
+    ``outcome``-phase entry whose ``intent_id`` matched no known
+    ``intent`` entry's id -- including a forged/self-referencing outcome
+    whose ``intent_id`` equals its own ``id`` (closes the Story 3.1
+    review's deferred self-reference gap, ``deferred-work.md``).
+    ``quarantined`` is every parse/validation/sidecar failure (AD-30), one
+    ``Finding`` each. ``entries``/``open_intents``/``orphaned_outcomes``
+    overlap by design -- the latter two are query VIEWS over ``entries``,
+    not a disjoint partition of it.
+
+    ``by_kind``/``for_story``/``is_evaluable`` are the ONE generic query
+    surface a future real writer's consumer uses -- no kind-specific
+    accessor exists here, since no real writer emits any of the 9
+    illustrative kinds above yet (mirrors this module's Story 3.1 "pure
+    mechanism, zero real caller" precedent)."""
+
+    entries: tuple[JournalEntry, ...]
+    open_intents: tuple[JournalEntry, ...]
+    orphaned_outcomes: tuple[JournalEntry, ...]
+    quarantined: tuple[QuarantinedRecord, ...]
+
+    def __post_init__(self) -> None:
+        for field_name, value in (
+            ("entries", self.entries),
+            ("open_intents", self.open_intents),
+            ("orphaned_outcomes", self.orphaned_outcomes),
+        ):
+            if not all(isinstance(item, JournalEntry) for item in value):
+                raise ValueError(
+                    f"{field_name} must contain only JournalEntry instances, "
+                    f"got {value!r}"
+                )
+        if not all(isinstance(item, QuarantinedRecord) for item in self.quarantined):
+            raise ValueError(
+                "quarantined must contain only QuarantinedRecord instances, "
+                f"got {self.quarantined!r}"
+            )
+        # Review finding, verified live: type-checking alone let a
+        # Phase.OUTCOME entry construct cleanly inside open_intents (and
+        # vice versa for orphaned_outcomes) -- mirrors this module's own
+        # dataclass-invariant-at-construction convention (JournalEntry,
+        # QuarantinedRecord) rather than trusting every future constructor
+        # of this value type to get the phase right unchecked. fold() itself
+        # never produces such a mismatch; this closes the gap for any other
+        # constructor.
+        if not all(entry.phase is Phase.INTENT for entry in self.open_intents):
+            raise ValueError("open_intents must contain only Phase.INTENT entries")
+        if not all(entry.phase is Phase.OUTCOME for entry in self.orphaned_outcomes):
+            raise ValueError("orphaned_outcomes must contain only Phase.OUTCOME entries")
+
+    def by_kind(self, kind: str) -> tuple[JournalEntry, ...]:
+        """Every evaluable entry whose ``kind`` equals ``kind``, in
+        ``entries``'s own AD-28 total order."""
+        return tuple(entry for entry in self.entries if entry.kind == kind)
+
+    def for_story(self, story: StoryKey) -> tuple[JournalEntry, ...]:
+        """Every evaluable entry whose ``story`` equals ``story``, in
+        ``entries``'s own AD-28 total order."""
+        return tuple(entry for entry in self.entries if entry.story == story)
+
+    def is_evaluable(self, story: StoryKey | None, kind: str | None) -> bool:
+        """``False`` if some quarantine scoped exactly to ``(story, kind)``
+        or widened to the whole run (``(None, None)``, AD-30); ``True``
+        otherwise. ``is_evaluable(None, None)`` answers "is the whole run
+        evaluable" -- ``False`` the instant ANY line quarantines, since
+        every whole-run quarantine widens to exactly that pair.
+
+        Raises ``ValueError`` for an ASYMMETRIC pair (exactly one of
+        ``story``/``kind`` is ``None``) -- mirrors ``QuarantinedRecord``'s
+        own both-or-neither invariant. A quarantine record can never carry
+        an asymmetric scope, so a caller asking one would always get a
+        (possibly wrong) ``True`` with no real answer behind it -- a
+        footgun a review finding caught live rather than a legitimate
+        query."""
+        if (story is None) != (kind is None):
+            raise ValueError(
+                "story and kind must be both None or both set -- no "
+                f"quarantine record ever scopes asymmetrically, got "
+                f"story={story!r}, kind={kind!r}"
+            )
+        for record in self.quarantined:
+            if record.story is None and record.kind is None:
+                return False
+            if record.story == story and record.kind == kind:
+                return False
+        return True
+
+
+def fold(
+    lines: Sequence[str],
+    *,
+    sidecars: Mapping[str, str | None] = MappingProxyType({}),
+) -> FoldResult:
+    """The journal's READ side (Story 3.2, AD-26/AD-28/AD-30): folds
+    ``lines`` -- a run's own journal file, already split into individual
+    JSON-line strings by the caller (no file I/O here) -- into the run's
+    accumulated state. Every line is parsed and reconstructed
+    independently via the SAME invariants ``build_entry`` already enforces
+    (AD-23's story-key parser included, never a second one); a failure at
+    any step quarantines that ONE line -- it never aborts the fold or
+    drops any other entry. ``sidecars`` maps a ``sidecar_ref`` relative
+    path to its already-read blob text, or omits/``None``s a path the
+    caller could not read.
+
+    ``intent``/``outcome`` pairing is EXCLUSIVELY by ``JournalEntryId``
+    equality (AD-28) -- a dict lookup over an already-hashable id, never
+    positional, timestamp-adjacency, or ordinal pairing. An ``outcome``
+    whose ``intent_id`` matches no known ``intent`` id -- including a
+    forged/self-referencing outcome whose ``intent_id`` equals its own
+    ``id`` -- surfaces in ``FoldResult.orphaned_outcomes``, never silently
+    paired or dropped.
+
+    Raises ``TypeError`` for a bare ``str`` ``lines`` (mirrors
+    ``identity.resolve_feed``'s own bare-str guard -- a ``str`` satisfies
+    ``Sequence[str]``, so ``fold("not-a-list")`` would otherwise shred into
+    per-character garbage quarantine records instead of the documented,
+    reported failure), or for a ``sidecars`` that isn't a ``Mapping``
+    (mirrors ``core.policy.compose``'s identical contract-violation guard
+    on its own ``project``/``flags`` parameters -- review finding, verified
+    live: ``fold(lines, sidecars=None)`` used to raise an unguarded
+    ``AttributeError`` the instant any line needed sidecar resolution,
+    aborting the WHOLE fold and losing every other entry -- the exact
+    failure this function's own docstring promises never happens)."""
+    if isinstance(lines, str):
+        raise TypeError(
+            "lines must be a sequence of journal-line strings, not a bare "
+            f"str: {lines!r}"
+        )
+    if isinstance(sidecars, str) or not isinstance(sidecars, Mapping):
+        raise TypeError(f"sidecars must be a Mapping, got {sidecars!r}")
+
+    parsed: list[JournalEntry] = []
+    quarantined: list[QuarantinedRecord] = []
+    for raw_line in lines:
+        try:
+            entry = _parse_entry(raw_line, sidecars)
+        except _SidecarUnresolved as exc:
+            story, kind = _best_effort_recover(raw_line)
+            quarantined.append(
+                _quarantine(_display_line(raw_line), story, kind, "MRS-JOURNAL-002", str(exc))
+            )
+        except (ValueError, TypeError, RecursionError) as exc:
+            # RecursionError too (review finding, verified live:
+            # `json.loads` on an adversarially/corruptly deep-nested line or
+            # sidecar blob raises RecursionError, a RuntimeError subclass
+            # that a bare `(ValueError, TypeError)` catch does not see --
+            # the same "one bad line must never abort the whole fold"
+            # guarantee this function's docstring makes, for a distinct
+            # exception type.
+            story, kind = _best_effort_recover(raw_line)
+            quarantined.append(
+                _quarantine(_display_line(raw_line), story, kind, "MRS-JOURNAL-001", str(exc))
+            )
+        else:
+            parsed.append(entry)
+
+    parsed.sort(key=lambda entry: (entry.ts, entry.id))
+
+    intents_by_id: dict[JournalEntryId, JournalEntry] = {
+        entry.id: entry for entry in parsed if entry.phase is Phase.INTENT
+    }
+    matched_intent_ids: set[JournalEntryId] = set()
+    orphaned_outcomes: list[JournalEntry] = []
+    for entry in parsed:
+        if entry.phase is not Phase.OUTCOME:
+            continue
+        if entry.intent_id in intents_by_id:
+            matched_intent_ids.add(entry.intent_id)
+        else:
+            orphaned_outcomes.append(entry)
+
+    open_intents = tuple(
+        entry
+        for entry in parsed
+        if entry.phase is Phase.INTENT and entry.id not in matched_intent_ids
+    )
+
+    return FoldResult(
+        entries=tuple(parsed),
+        open_intents=open_intents,
+        orphaned_outcomes=tuple(orphaned_outcomes),
+        quarantined=tuple(quarantined),
+    )
+
+
+def _display_line(raw_line: object) -> str:
+    """A quarantine's ``raw`` field is always a ``str`` (``QuarantinedRecord``
+    enforces it) -- but a caller-supplied ``lines`` element need not be one
+    (the same footgun ``identity.resolve_feed`` guards its own per-entry
+    loop against). A non-``str`` line is ``repr()``'d for reporting rather
+    than passed through, matching ``resolve_feed``'s identical convention."""
+    return raw_line if isinstance(raw_line, str) else repr(raw_line)
+
+
+def _parse_entry_id(raw: object) -> JournalEntryId:
+    """Reconstruct one ``{writer_id, counter}`` object into a
+    ``JournalEntryId`` -- the SAME composite id shape ``JournalEntry``
+    already enforces (AD-28). A non-``Mapping`` input raises the identical
+    ``ValueError`` class every other shape failure in this module does, so
+    ``_parse_entry``'s single catch-all in ``fold`` handles it uniformly."""
+    if not isinstance(raw, Mapping):
+        raise ValueError(f"entry id must be a JSON object, got {raw!r}")
+    return JournalEntryId(writer_id=raw.get("writer_id"), counter=raw.get("counter"))
+
+
+def _sidecar_ref(payload: Mapping[str, object]) -> str | None:
+    """Return ``payload``'s sidecar path if ``payload`` is EXACTLY
+    ``{"sidecar_ref": <str>}`` -- the one shape ``prepare_for_write`` ever
+    emits in the payload's place (AD-30) -- else ``None``. A payload that
+    merely happens to carry a ``sidecar_ref`` key ALONGSIDE other keys is a
+    real inline payload, not a placeholder."""
+    if len(payload) == 1 and isinstance(payload.get("sidecar_ref"), str):
+        return payload["sidecar_ref"]
+    return None
+
+
+class _SidecarUnresolved(ValueError):
+    """Internal: raised by ``_parse_entry`` when a payload's
+    ``sidecar_ref`` cannot be resolved -- the path is absent from
+    ``sidecars`` (or maps to ``None``), or its blob text is not valid
+    JSON, or the resolved value is not itself a JSON object -- registers
+    ``MRS-JOURNAL-002``, distinct from every other parse/validation
+    failure (``MRS-JOURNAL-001``). A ``ValueError`` subclass so ``fold``'s
+    loop can catch it FIRST, ahead of the general ``ValueError`` catch for
+    every other failure."""
+
+
+def _parse_entry(raw_line: str, sidecars: Mapping[str, str | None]) -> JournalEntry:
+    """Parse and reconstruct ONE raw journal line into a fully-validated,
+    sidecar-resolved ``JournalEntry`` -- via the SAME invariants
+    ``build_entry`` already enforces (AD-23/AD-28), never a second parser.
+    Raises ``ValueError`` for any parse/shape failure (``MRS-JOURNAL-001``)
+    or ``_SidecarUnresolved`` (a ``ValueError`` subclass) specifically for
+    an unresolvable ``sidecar_ref`` (``MRS-JOURNAL-002``) -- ``fold`` is
+    the only place either is caught; this function itself never
+    quarantines anything, so it stays a plain, reusable parse step.
+
+    A payload carrying a sidecar reference is resolved via
+    ``dataclasses.replace`` AFTER the entry already constructed
+    successfully with the placeholder payload in place -- ``build_entry``'s
+    generic ``payload: Mapping[str, object]`` shape accepts
+    ``{"sidecar_ref": ...}`` just as readily as any other small payload, so
+    every OTHER invariant (``ts``/``run_id``/``kind``/``phase``/
+    ``intent_id``/``story``) is validated once, uniformly, before this
+    function ever looks at whether a sidecar needs resolving."""
+    document = json.loads(raw_line)
+    if not isinstance(document, Mapping):
+        raise ValueError(f"journal line must decode to a JSON object, got {document!r}")
+
+    story_raw = document.get("story")
+    intent_id_raw = document.get("intent_id")
+    entry = build_entry(
+        id=_parse_entry_id(document.get("id")),
+        ts=document.get("ts"),
+        run_id=document.get("run_id"),
+        kind=document.get("kind"),
+        phase=document.get("phase"),
+        payload=document.get("payload"),
+        story=normalize(story_raw) if story_raw is not None else None,
+        intent_id=_parse_entry_id(intent_id_raw) if intent_id_raw is not None else None,
+    )
+
+    ref = _sidecar_ref(entry.payload)
+    if ref is None:
+        return entry
+
+    blob = sidecars.get(ref)
+    if blob is None:
+        raise _SidecarUnresolved(f"missing sidecar blob for {ref!r}")
+    try:
+        resolved_payload = json.loads(blob)
+    except (json.JSONDecodeError, TypeError, RecursionError) as exc:
+        raise _SidecarUnresolved(f"sidecar blob {ref!r} is not valid JSON: {exc}") from exc
+    try:
+        return replace(entry, payload=resolved_payload)
+    except ValueError as exc:
+        raise _SidecarUnresolved(
+            f"sidecar blob {ref!r} resolved to an invalid payload: {exc}"
+        ) from exc
+
+
+def _scope(
+    story: StoryKey | None, kind: str | None
+) -> tuple[StoryKey | None, str | None]:
+    """AD-30's explicit widening rule: a quarantined line's scope is the
+    ``(story, kind)`` pair ONLY when BOTH recover; either missing widens to
+    ``(None, None)`` -- the whole run. No partial-recovery heuristic exists
+    beyond this (a line that recovers one but not the other has no
+    meaningful partial key to scope against)."""
+    if story is None or kind is None:
+        return None, None
+    return story, kind
+
+
+def _best_effort_recover(raw_line: object) -> tuple[StoryKey | None, str | None]:
+    """Best-effort ``(story, kind)`` recovery straight off ``raw_line``'s
+    raw JSON -- independent of, and tolerant of, whatever failure
+    quarantined it (e.g. a document missing ``run_id`` but carrying valid
+    ``story``/``kind`` fields still recovers both here). Re-parses
+    ``raw_line`` itself (rather than threading a partially-built document
+    through the caller) so this stays a single, self-contained recovery
+    step usable from every quarantine site, including a totally
+    unparseable line. Also tolerates ``RecursionError`` from an
+    adversarially/corruptly deep-nested line -- the same class of failure
+    ``fold``'s own outer catch guards against, reachable here too since
+    this function re-parses independently (review finding, verified
+    live)."""
+    try:
+        document = json.loads(raw_line)
+    except (json.JSONDecodeError, TypeError, RecursionError):
+        return None, None
+    if not isinstance(document, Mapping):
+        return None, None
+
+    story: StoryKey | None = None
+    raw_story = document.get("story")
+    if isinstance(raw_story, str):
+        try:
+            story = normalize(raw_story)
+        except MalformedStoryKeyError:
+            story = None
+
+    kind: str | None = None
+    raw_kind = document.get("kind")
+    if isinstance(raw_kind, str) and raw_kind.strip():
+        kind = raw_kind
+
+    return _scope(story, kind)
+
+
+def _quarantine(
+    raw_line: str,
+    story: StoryKey | None,
+    kind: str | None,
+    code: str,
+    message: str,
+) -> QuarantinedRecord:
+    # `path=raw_line` mirrors `core.identity`'s own MRS-IDENT-001/002
+    # convention (Finding.path names the offending raw input) -- review
+    # finding, verified live: without it, a Finding pulled out of
+    # QuarantinedRecord.finding in isolation (exactly what a future
+    # Envelope.findings consumer would do) carried no reference back to
+    # which line it came from.
+    return QuarantinedRecord(
+        raw=raw_line,
+        story=story,
+        kind=kind,
+        finding=Finding(code=code, severity=Severity.ERROR, message=message, path=raw_line),
     )
