@@ -108,17 +108,39 @@ from .policy import REDACTED_SENTINEL, is_secret_key
 #     string in an evidence record is strictly less harmful than writing a
 #     live API key to durable storage.
 #
-# ORDER IS LOAD-BEARING: the separator-tolerant `sk-` pattern must run
-# BEFORE the contiguous one. Reversed, the contiguous pattern consumes the
-# leading run of a separated token, substitutes the sentinel, and destroys
-# the `sk-` prefix the tolerant pattern needs to match the remainder --
-# re-opening the exact tail-leak described above.
+# (4) A TRAILING `_TOKEN_RUN_TAIL` on every pattern (second follow-up review
+#     finding, verified live). Fixes (2) and (3) each closed the tail leak
+#     for one shape and left it open for another, because a pattern that
+#     stops mid-run still substitutes a sentinel and leaves the remainder
+#     in plaintext -- the same "the record LOOKS redacted while half the
+#     secret sits beside it" failure, three passes running:
+#       * `"sk-" + "c"*25 + "-" + "d"*12` -> `"***REDACTED***-dddddddddddd"`.
+#         The separated run is 38 characters, UNDER the tolerant pattern's
+#         40-char floor, so the contiguous `sk-[A-Za-z0-9]{20,}` matched the
+#         leading run alone. Fix (3)'s own regression test happened to pick a
+#         51-character run, clearing the floor and never exercising the gap.
+#       * `"ghp_" + "a"*36 + "sk-" + "b"*45` -> `"***REDACTED***-bbbb..."`.
+#         `ghp_[A-Za-z0-9]{36,}` greedily ate the `a`s AND the following
+#         `sk`, destroying the `sk-` prefix the next pattern needed.
+#     A trailing `[A-Za-z0-9_-]*` makes every match consume the WHOLE
+#     adjoining token-ish run, so no partial tail can survive whichever
+#     pattern happens to fire. It can only ever extend a substitution that
+#     was already going to happen, so it adds no new over-redaction risk to
+#     a value not already classified as a token.
+#
+# ORDER: the separator-tolerant `sk-` pattern is kept before the contiguous
+# one for readability (most-specific first). Since fix (4), order is no
+# longer load-bearing -- either `sk-` pattern now consumes the entire run --
+# but the tolerant one is still required on its own: a real Anthropic key
+# (`sk-ant-api03-...`) has only 3 contiguous alnum characters after `sk-`,
+# so the contiguous pattern never matches it at all.
+_TOKEN_RUN_TAIL = r"[A-Za-z0-9_-]*"
 _TOKEN_SHAPE_PATTERNS: tuple[re.Pattern[str], ...] = (
-    re.compile(r"(?<![A-Za-z0-9_])ghp_[A-Za-z0-9]{36,}"),
-    re.compile(r"(?<![A-Za-z0-9_])github_pat_[A-Za-z0-9_]{20,}"),
-    re.compile(r"(?<![A-Za-z0-9_])AKIA[0-9A-Z]{16,}"),
-    re.compile(r"(?<![A-Za-z0-9_])sk-[A-Za-z0-9_-]{40,}"),
-    re.compile(r"(?<![A-Za-z0-9_])sk-[A-Za-z0-9]{20,}"),
+    re.compile(r"(?<![A-Za-z0-9_])ghp_[A-Za-z0-9]{36,}" + _TOKEN_RUN_TAIL),
+    re.compile(r"(?<![A-Za-z0-9_])github_pat_[A-Za-z0-9_]{20,}" + _TOKEN_RUN_TAIL),
+    re.compile(r"(?<![A-Za-z0-9_])AKIA[0-9A-Z]{16,}" + _TOKEN_RUN_TAIL),
+    re.compile(r"(?<![A-Za-z0-9_])sk-[A-Za-z0-9_-]{40,}" + _TOKEN_RUN_TAIL),
+    re.compile(r"(?<![A-Za-z0-9_])sk-[A-Za-z0-9]{20,}" + _TOKEN_RUN_TAIL),
 )
 
 # The one registry (AD-34), keyed by Protocol class NAME (a string, not an
@@ -150,8 +172,15 @@ class Redacted:
     text: str
 
     def __post_init__(self) -> None:
+        # TypeError, not ValueError (review finding): the other two type
+        # guards in this same three-call pipeline -- `to_redacted`'s
+        # non-Mapping payload and `LocalFs.write_redacted_atomic`'s
+        # non-`Redacted`/non-`Path` arguments -- both raise TypeError for
+        # the identical "wrong type supplied" category, so a caller
+        # wrapping the pipeline in one `except TypeError` handled two of
+        # three failure points.
         if not isinstance(self.text, str):
-            raise ValueError(f"text must be a str, got {self.text!r}")
+            raise TypeError(f"text must be a str, got {self.text!r}")
 
 
 def _redact_string(value: str) -> str:
@@ -187,7 +216,15 @@ def _redact(value: object) -> object:
         redacted_map: dict[object, object] = {}
         for key, inner in value.items():
             if isinstance(key, str) and is_secret_key(key):
-                redacted_map[key] = REDACTED_SENTINEL
+                # Shape-scan the NAME too (review finding, verified live):
+                # the two halves are not mutually exclusive, and the
+                # secret-key branch used to `continue` before the key ever
+                # reached `_redact_string`, so a key that was BOTH
+                # secret-shaped and token-shaped (`"ghp_" + "a"*36 +
+                # "_TOKEN"`) had its value redacted while the credential in
+                # its own name was emitted verbatim as a JSON key -- the one
+                # case this function's own docstring claims is rewritten.
+                redacted_map[_redact_string(key)] = REDACTED_SENTINEL
                 continue
             redacted_map[_redact_string(key) if isinstance(key, str) else key] = _redact(inner)
         return redacted_map
@@ -243,6 +280,22 @@ _REQUIRED_COMMAND_KEYS: frozenset[str] = frozenset({"command", "returncode", "re
 _OPTIONAL_COMMAND_KEYS: frozenset[str] = frozenset({"stdout", "stderr"})
 _ALL_COMMAND_KEYS: frozenset[str] = _REQUIRED_COMMAND_KEYS | _OPTIONAL_COMMAND_KEYS
 
+# Kept CHARACTER-FOR-CHARACTER identical to `schemas/gate-record.json`'s own
+# `timestamp` pattern (review finding, verified live). `datetime.
+# fromisoformat` is far more permissive than that pattern on Python 3.11+:
+# it also accepts a missing seconds field (`2026-08-03T00:00+00:00`), the
+# compact offset forms `+0000`/`+00`, and the basic ISO form
+# (`20260803T000000Z`). All four are legitimate UTC ISO-8601 and all four
+# were ACCEPTED by `build_gate_record` and then REJECTED by the packaged
+# schema -- so a well-behaved caller wrote a durable, `$id`-bearing record
+# no consumer validating against the shipped contract would accept, while
+# that schema's own description claimed "the pattern enforces what
+# build_gate_record() itself enforces". `tests/unit/test_egress.py` pins the
+# two spellings together in BOTH directions.
+_TIMESTAMP_PATTERN = re.compile(
+    r"^[0-9]{4}-[0-9]{2}-[0-9]{2}[T ][0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]+)?(Z|[+-]00:00)$"
+)
+
 
 def _validate_command_report(entry: Mapping[str, object], index: int) -> dict[str, object]:
     """One ``commands`` entry must carry ``command``/``returncode``/
@@ -262,8 +315,14 @@ def _validate_command_report(entry: Mapping[str, object], index: int) -> dict[st
         )
     unknown = set(entry.keys()) - _ALL_COMMAND_KEYS
     if unknown:
+        # `sorted(map(repr, ...))`, not `sorted(...)` (review finding,
+        # verified live): a Mapping is not required to have str keys, and
+        # `sorted({1, "bogus"})` raises its own bare TypeError ("'<' not
+        # supported between instances of 'int' and 'str'") from inside this
+        # validator -- masking the ValueError this function documents for
+        # every malformed-input case.
         raise ValueError(
-            f"commands[{index}] has unknown key(s) {sorted(unknown)} -- only "
+            f"commands[{index}] has unknown key(s) {sorted(map(repr, unknown))} -- only "
             f"{sorted(_ALL_COMMAND_KEYS)} are permitted: {entry!r}"
         )
     command = entry["command"]
@@ -342,8 +401,11 @@ def build_gate_record(
     does not exist yet, so ``None`` is the only value any real caller can
     supply today). ``tree_revision`` must be a non-empty ``str``.
     ``timestamp`` must be a UTC ISO-8601 string, validated via ``datetime.
-    fromisoformat`` with a zero tz offset -- PARSING only, this function
-    never calls ``datetime.now()`` (AD-4 stays clock-free).
+    fromisoformat`` with a zero tz offset AND against ``_TIMESTAMP_PATTERN``
+    -- the schema's own spelling, since `fromisoformat` accepts several
+    legitimate forms `schemas/gate-record.json` does not (review finding;
+    see that constant). PARSING only, this function never calls
+    ``datetime.now()`` (AD-4 stays clock-free).
 
     Raises ``ValueError`` (or ``MalformedStoryKeyError``, a ``ValueError``
     subclass) for any malformed input -- a caller bug, not a real-world
@@ -395,6 +457,17 @@ def build_gate_record(
         )
     if offset != timedelta(0):
         raise ValueError(f"timestamp must be UTC (zero tz offset), got {timestamp!r}")
+    # Last, so the two more specific diagnostics above still win for the
+    # mistakes they name. See `_TIMESTAMP_PATTERN`: everything reaching here
+    # is already a valid UTC ISO-8601 instant, but only the schema's own
+    # canonical spelling may be EMITTED, or the record fails the contract it
+    # is written against.
+    if not _TIMESTAMP_PATTERN.match(timestamp):
+        raise ValueError(
+            "timestamp must use schemas/gate-record.json's canonical UTC ISO-8601 "
+            "spelling, YYYY-MM-DDTHH:MM:SS[.ffffff] followed by 'Z' or '+00:00' "
+            f"(seconds are required and the offset may not be abbreviated), got {timestamp!r}"
+        )
 
     return {
         "story": str(key),
