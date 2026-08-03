@@ -50,7 +50,7 @@ development_status:
   2-5-gate-mode-ladder-with-autonomy-labels: done
   2-6-gate-evidence-record-with-redaction-at-egress: done
   2-7-a-gate-binds-to-the-specs-success-signal: blocked
-  3-1-run-identity-and-the-journal-writer: backlog
+  3-1-run-identity-and-the-journal-writer: done
   3-2-the-journal-fold-one-producer-for-accumulating-run-state: backlog
   3-3-detached-launch-with-scoped-story-selection: backlog
   3-4-supervisor-process-lifecycle: backlog
