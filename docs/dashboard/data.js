@@ -204,19 +204,19 @@ window.DASHBOARD_DATA = {
         "E6"
       ],
       "inflight": {
-        "key": "3.4",
-        "title": "Supervisor process lifecycle",
+        "key": "3.5",
+        "title": "Idle-strand detection",
         "phase": "dev",
         "attempt": "1",
-        "startEpoch": 1785772907,
+        "startEpoch": 1785782088,
         "median": 92,
         "lo": 27,
         "hi": 450,
-        "phaseAsOf": "2026-08-03 16:32 UTC"
+        "phaseAsOf": "2026-08-03 19:53 UTC"
       },
       "velocity": {
         "derived": true,
-        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 18 of 50 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
+        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 19 of 50 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
         "bars": [
           [
             "1.1",
@@ -289,6 +289,10 @@ window.DASHBOARD_DATA = {
           [
             "3.3",
             169
+          ],
+          [
+            "3.4",
+            153
           ]
         ],
         "foot": [
@@ -303,12 +307,12 @@ window.DASHBOARD_DATA = {
             ""
           ],
           [
-            "18/50",
+            "19/50",
             "stories complete",
             "var(--done)"
           ],
           [
-            "32",
+            "31",
             "remaining",
             ""
           ]
@@ -317,9 +321,9 @@ window.DASHBOARD_DATA = {
       "timing": {
         "derived": true,
         "metric": "active agent-compute per story (dev + review; excludes gate-pause wait) — from bmad-loop run journals",
-        "total": 2019,
-        "totalLabel": "~33.6 h active compute",
-        "note": "Derived from 18 measured stories; a story still in flight contributes only its closed sessions.",
+        "total": 2172,
+        "totalLabel": "~36.2 h active compute",
+        "note": "Derived from 19 measured stories; a story still in flight contributes only its closed sessions.",
         "perStory": {
           "1.1": 165,
           "1.2": 65,
@@ -338,17 +342,18 @@ window.DASHBOARD_DATA = {
           "2.6": 121,
           "3.1": 57,
           "3.2": 91,
-          "3.3": 169
+          "3.3": 169,
+          "3.4": 153
         },
         "epicMin": {
           "E1": 1343,
           "E2": 359,
-          "E3": 317
+          "E3": 470
         }
       },
       "lineState": {
         "state": "in flight",
-        "at": "3.4"
+        "at": "3.5"
       },
       "epics": [
         {
@@ -469,12 +474,12 @@ window.DASHBOARD_DATA = {
             ],
             [
               "3.4",
-              "active",
+              "done",
               "Supervisor process lifecycle"
             ],
             [
               "3.5",
-              "pending",
+              "active",
               "Idle-strand detection"
             ],
             [
@@ -2908,7 +2913,7 @@ window.DASHBOARD_DATA = {
       }
     }
   },
-  "snapshot": "<span>2026-08-03 16:32 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-03 19:53 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -4605,7 +4610,7 @@ window.DASHBOARD_DATA = {
           "stories": 40,
           "state": "running",
           "note": "epics 1-6 — AD-25–39 adversarial pass + floor quiescence (touches loop machinery)",
-          "done": 18,
+          "done": 19,
           "total": 50
         },
         {
@@ -5054,8 +5059,8 @@ window.DASHBOARD_DATA = {
           "sprint": "2026-08-03",
           "tea": "2026-08-03",
           "gates": "2026-08-02",
-          "code": "2026-07-31",
-          "verify": "2026-07-31",
+          "code": "2026-08-03",
+          "verify": "2026-08-03",
           "retro": ""
         },
         "sub": {
@@ -5119,7 +5124,7 @@ window.DASHBOARD_DATA = {
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "18/50",
+        "progress": "19/50",
         "complete": 13,
         "of": 13
       },
@@ -11191,7 +11196,7 @@ window.DASHBOARD_DATA = {
           "archived": 10,
           "practice": 4
         },
-        "line": "in flight 3.4",
+        "line": "in flight 3.5",
         "load": 6,
         "blocked": 0,
         "dreams": [
@@ -13189,21 +13194,21 @@ window.DASHBOARD_DATA = {
     "running": [
       {
         "station": "Marshal",
-        "story": "3.4",
+        "story": "3.5",
         "phase": "dev",
-        "startEpoch": 1785772907
+        "startEpoch": 1785782088
       }
     ],
     "lastShipped": {
       "station": "marshal",
-      "story": "3.3",
-      "epoch": 1785772902,
-      "sha": "4f88f16e7",
-      "subject": "Merge bmad-loop/20260803-023308-65b7/3-3-detached-launch-with-scoped-story-selection into loop/pyforge-marshal (bmad-loo"
+      "story": "3.4",
+      "epoch": 1785782088,
+      "sha": "cb57737f2",
+      "subject": "Merge bmad-loop/20260803-023308-65b7/3-4-supervisor-process-lifecycle into loop/pyforge-marshal (bmad-loop)"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-03 16:32 UTC",
-    "generatedEpoch": 1785774756
+    "generatedAt": "2026-08-03 19:53 UTC",
+    "generatedEpoch": 1785786825
   },
   "storySpecs": [
     {
@@ -13226,9 +13231,9 @@ window.DASHBOARD_DATA = {
     },
     {
       "station": "pyforge-marshal",
-      "done": 18,
+      "done": 19,
       "tracked": 11,
-      "gap": 7
+      "gap": 8
     },
     {
       "station": "pyforge-mason",

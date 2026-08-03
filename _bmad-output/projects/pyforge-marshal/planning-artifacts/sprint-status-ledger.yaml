@@ -53,7 +53,7 @@ development_status:
   3-1-run-identity-and-the-journal-writer: done
   3-2-the-journal-fold-one-producer-for-accumulating-run-state: done
   3-3-detached-launch-with-scoped-story-selection: done
-  3-4-supervisor-process-lifecycle: backlog
+  3-4-supervisor-process-lifecycle: done
   3-5-idle-strand-detection: backlog
   3-6-budget-ceilings-and-the-heaviest-story-advisory: backlog
   3-7-escalation-deferral-and-resume: backlog
