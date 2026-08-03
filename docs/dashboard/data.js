@@ -209,10 +209,10 @@ window.DASHBOARD_DATA = {
         "phase": "dev",
         "attempt": "1",
         "startEpoch": 1785744524,
-        "median": 94,
+        "median": 92,
         "lo": 27,
         "hi": 450,
-        "phaseAsOf": "2026-08-03 08:14 UTC"
+        "phaseAsOf": "2026-08-03 08:28 UTC"
       },
       "velocity": {
         "derived": true,
@@ -2882,7 +2882,7 @@ window.DASHBOARD_DATA = {
       }
     }
   },
-  "snapshot": "<span>2026-08-03 08:14 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-03 08:28 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -3078,6 +3078,14 @@ window.DASHBOARD_DATA = {
       "type": "dream",
       "chain": {},
       "archived_reason": "absorbed"
+    },
+    {
+      "slug": "loop-home-fleet-refresh",
+      "title": "Refreshing every loop-home from main is a hand-run ritual",
+      "status": "dreamt",
+      "owner": "marshal",
+      "type": "dream",
+      "chain": {}
     },
     {
       "slug": "microsoft-org-sweep",
@@ -3362,6 +3370,14 @@ window.DASHBOARD_DATA = {
         "spec": "_bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-sentinel"
       },
       "archived_reason": "absorbed"
+    },
+    {
+      "slug": "sprint-status-auto-promote",
+      "title": "The dashboard goes stale because promotion is a remembered step",
+      "status": "dreamt",
+      "owner": "marshal",
+      "type": "dream",
+      "chain": {}
     },
     {
       "slug": "team-memory",
@@ -4622,9 +4638,9 @@ window.DASHBOARD_DATA = {
       "retro": null
     },
     "sound": 3,
-    "live": 23,
+    "live": 25,
     "reached": 9,
-    "gaps": 17,
+    "gaps": 22,
     "findings": 0,
     "rows": [
       {
@@ -8067,6 +8083,114 @@ window.DASHBOARD_DATA = {
         "of": 3
       },
       {
+        "label": "loop-home-fleet-refresh",
+        "slug": "loop-home-fleet-refresh",
+        "project": "pyforge-marshal",
+        "dream": "loop-home-fleet-refresh",
+        "owner": "marshal",
+        "stages": {
+          "dream": "",
+          "deck": "",
+          "spec": "",
+          "research": "2026-07-16",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "tea": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "updatedAt": {
+          "dream": "",
+          "deck": "",
+          "spec": "",
+          "research": "2026-07-31",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "tea": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "sub": {
+          "research": {
+            "have": {
+              "domain": true,
+              "market": true,
+              "technical": true
+            },
+            "n": 3,
+            "of": 3,
+            "missing": [],
+            "inherited": true
+          },
+          "deck": {
+            "have": {
+              "prototype": false,
+              "exec": false,
+              "infographic": false,
+              "marp": false,
+              "standalone": false,
+              "pptx": false
+            },
+            "n": 0,
+            "of": 6,
+            "missing": [
+              "exec",
+              "infographic",
+              "marp",
+              "pptx",
+              "prototype",
+              "standalone"
+            ]
+          }
+        },
+        "archived": false,
+        "dreamStatus": "dreamt",
+        "ownerDream": "",
+        "noDream": true,
+        "unowned": false,
+        "backfilled": false,
+        "openQuestions": 0,
+        "overtaken": false,
+        "na": [
+          "ux"
+        ],
+        "required": [
+          "dream",
+          "deck",
+          "spec",
+          "research"
+        ],
+        "gaps": [
+          "dream",
+          "deck",
+          "spec"
+        ],
+        "partial": [],
+        "staleBy": [],
+        "furthest": "research",
+        "updated": "2026-08-03",
+        "age": 0,
+        "stale": false,
+        "version": "",
+        "progress": "",
+        "complete": 1,
+        "of": 4
+      },
+      {
         "label": "multi-loop-isolation",
         "slug": "multi-loop-isolation",
         "project": "pyforge-marshal",
@@ -8705,6 +8829,113 @@ window.DASHBOARD_DATA = {
         "version": "",
         "progress": "",
         "complete": 3,
+        "of": 4
+      },
+      {
+        "label": "sprint-status-auto-promote",
+        "slug": "sprint-status-auto-promote",
+        "project": "pyforge-marshal",
+        "dream": "sprint-status-auto-promote",
+        "owner": "marshal",
+        "stages": {
+          "dream": "2026-08-03",
+          "deck": "",
+          "spec": "",
+          "research": "2026-07-16",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "tea": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "updatedAt": {
+          "dream": "2026-08-03",
+          "deck": "",
+          "spec": "",
+          "research": "2026-07-31",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "tea": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "sub": {
+          "research": {
+            "have": {
+              "domain": true,
+              "market": true,
+              "technical": true
+            },
+            "n": 3,
+            "of": 3,
+            "missing": [],
+            "inherited": true
+          },
+          "deck": {
+            "have": {
+              "prototype": false,
+              "exec": false,
+              "infographic": false,
+              "marp": false,
+              "standalone": false,
+              "pptx": false
+            },
+            "n": 0,
+            "of": 6,
+            "missing": [
+              "exec",
+              "infographic",
+              "marp",
+              "pptx",
+              "prototype",
+              "standalone"
+            ]
+          }
+        },
+        "archived": false,
+        "dreamStatus": "dreamt",
+        "ownerDream": "",
+        "noDream": false,
+        "unowned": false,
+        "backfilled": false,
+        "openQuestions": 0,
+        "overtaken": false,
+        "na": [
+          "ux"
+        ],
+        "required": [
+          "dream",
+          "deck",
+          "spec",
+          "research"
+        ],
+        "gaps": [
+          "deck",
+          "spec"
+        ],
+        "partial": [],
+        "staleBy": [],
+        "furthest": "research",
+        "updated": "2026-08-03",
+        "age": 0,
+        "stale": false,
+        "version": "",
+        "progress": "",
+        "complete": 2,
         "of": 4
       },
       {
@@ -10546,6 +10777,22 @@ window.DASHBOARD_DATA = {
         }
       },
       {
+        "slug": "loop-home-fleet-refresh",
+        "title": "Refreshing every loop-home from main is a hand-run ritual",
+        "status": "dreamt",
+        "owner": "marshal",
+        "blockedOn": "",
+        "chain": {}
+      },
+      {
+        "slug": "sprint-status-auto-promote",
+        "title": "The dashboard goes stale because promotion is a remembered step",
+        "status": "dreamt",
+        "owner": "marshal",
+        "blockedOn": "",
+        "chain": {}
+      },
+      {
         "slug": "unified-container",
         "title": "One container, eight stations",
         "status": "dreamt",
@@ -10556,7 +10803,7 @@ window.DASHBOARD_DATA = {
     ],
     "blocked": 0,
     "byOwner": {
-      "marshal": 2,
+      "marshal": 4,
       "steward": 1
     },
     "practices": [
@@ -10664,9 +10911,9 @@ window.DASHBOARD_DATA = {
       },
       {
         "station": "marshal",
-        "total": 19,
+        "total": 21,
         "counts": {
-          "dreamt": 2,
+          "dreamt": 4,
           "pitched": 0,
           "specified": 0,
           "realized": 3,
@@ -10674,7 +10921,7 @@ window.DASHBOARD_DATA = {
           "practice": 4
         },
         "line": "in flight 2.5",
-        "load": 2,
+        "load": 4,
         "blocked": 0,
         "dreams": [
           {
@@ -10764,6 +11011,20 @@ window.DASHBOARD_DATA = {
           {
             "slug": "genesis-installer-name-retirement",
             "title": "Retire genesis-installer — one marshal CLI, one PRD/architecture/epics chain",
+            "status": "dreamt",
+            "type": "dream",
+            "blockedOn": ""
+          },
+          {
+            "slug": "loop-home-fleet-refresh",
+            "title": "Refreshing every loop-home from main is a hand-run ritual",
+            "status": "dreamt",
+            "type": "dream",
+            "blockedOn": ""
+          },
+          {
+            "slug": "sprint-status-auto-promote",
+            "title": "The dashboard goes stale because promotion is a remembered step",
             "status": "dreamt",
             "type": "dream",
             "blockedOn": ""
@@ -12650,14 +12911,14 @@ window.DASHBOARD_DATA = {
     ],
     "lastShipped": {
       "station": "marshal",
-      "story": "2.2",
-      "epoch": 1785742180,
-      "sha": "0d4589023",
-      "subject": "Merge bmad-loop/20260803-020344-884a/2-2-verdict-aggregation-that-never-false-greens into loop/pyforge-marshal (bmad-loo"
+      "story": "2.4",
+      "epoch": 1785744908,
+      "sha": "20710ae06",
+      "subject": "marshal: promote Story 2.4 to done, refresh dashboard"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-03 08:14 UTC",
-    "generatedEpoch": 1785744891
+    "generatedAt": "2026-08-03 08:28 UTC",
+    "generatedEpoch": 1785745723
   },
   "storySpecs": [
     {

@@ -163,6 +163,7 @@ project, and spec maps to exactly one Dream; the herald CLI's status capability
 | [`genesis-installer-name-retirement.md`](genesis-installer-name-retirement.md) | dreamt | genesis-installer should retire completely — not just renumbered, but a full PRD/architecture/epics rewrite that actually decides the CLI framework contradiction (argparse vs typer+rich) and the `init`/`check` verb collisions the mechanical fold-in left open. |
 | [`bmad-loop-forward-dependency-blindness.md`](bmad-loop-forward-dependency-blindness.md) | realized | `bmad-loop`'s picker has no `depends_on` concept and will dispatch a story whose own documented `**Deps:**` names a later epic — 3 instances fixed in marshal (the only affected station); `forward_dependency_check.py` closes the gap for good. |
 | [`sprint-status-auto-promote.md`](sprint-status-auto-promote.md) | dreamt | A landed story doesn't reach the dashboard/tracked ledger until someone remembers to run `promote_sprint_status.py` + regenerate — bit the same session 3 times; wants the promotion triggered by landing itself, not a periodic human check. |
+| [`loop-home-fleet-refresh.md`](loop-home-fleet-refresh.md) | dreamt | Refreshing every loop-home from `main` is a hand-run ritual with real judgment calls; `loop-push-watch`/`dashboard-watch` already automate the push side but neither was running all session — no auto-start exists anywhere. |
 
 **Applications**
 
