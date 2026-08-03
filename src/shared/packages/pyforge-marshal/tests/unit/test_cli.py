@@ -1021,6 +1021,11 @@ def test_gate_evaluate_run_flag_reports_mrs_gate_005_and_skips_commands(
     assert "run-42" in payload["findings"][0]["message"]
     assert payload["data"]["commands"] == []
     assert payload["data"]["scope"] != "policy-seed-only"
+    # AD-26: the --run branch stays a refusal -- a run-scoped answer must
+    # come from the (not-yet-existing) journal fold, never from policy
+    # directly, so no gate_mode/autonomy_label key ever appears here.
+    assert "gate_mode" not in payload["data"]
+    assert "autonomy_label" not in payload["data"]
 
 
 def test_gate_evaluate_no_run_in_flight_scope_is_policy_seed_only(capsys, monkeypatch):
@@ -1032,6 +1037,95 @@ def test_gate_evaluate_no_run_in_flight_scope_is_policy_seed_only(capsys, monkey
     payload = json.loads(capsys.readouterr().out)
     assert payload["data"]["scope"] == "policy-seed-only"
     assert "mid-run freezes not visible" in payload["data"]["scope_note"]
+
+
+def test_gate_evaluate_no_run_reports_gate_mode_autonomy_label(capsys, monkeypatch):
+    """FR-24: the already-selected gate mode IS an autonomy declaration --
+    every no-`--run` envelope carries `data.gate_mode`/`data.autonomy_label`,
+    data (not prose), alongside the existing `scope: policy-seed-only`.
+    Marshal's own DEFAULT_POLICY selects `per-story-spec-approval` (L2) when
+    no project policy overrides it."""
+    monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
+    exit_code = main(["gate", "evaluate", "--format", "json"])
+    assert exit_code == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["data"]["scope"] == "policy-seed-only"
+    assert payload["data"]["gate_mode"] == "per-story-spec-approval"
+    assert payload["data"]["autonomy_label"] == {
+        "level": "L2",
+        "name": "Task-Based / Operator",
+        "meaning": "Human approves each unit's contract before work proceeds.",
+    }
+
+
+def test_gate_evaluate_no_run_reports_project_overridden_gate_mode_label(
+    tmp_path, capsys, monkeypatch
+):
+    """The label tracks the EFFECTIVE (post-composition) gate mode, not just
+    the built-in default -- a project policy selecting `per-epic` (L3)
+    surfaces the L3 label, not L2."""
+    _conventional_policy(
+        tmp_path, monkeypatch, "acme", 'gate_mode = "per-epic"\n'
+    )
+    exit_code = main(["gate", "evaluate", "--project", "acme", "--format", "json"])
+    assert exit_code == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["data"]["gate_mode"] == "per-epic"
+    assert payload["data"]["autonomy_label"]["level"] == "L3"
+    assert payload["data"]["autonomy_label"]["name"] == "Conditional / Context Gates"
+
+
+def test_gate_evaluate_no_run_default_text_format_shows_gate_mode_and_label(
+    capsys, monkeypatch
+):
+    """AD-14: `--format text` is a pure projection of the SAME envelope
+    `data` `--format json` prints -- review finding, verified live that the
+    original diff added `data.gate_mode`/`data.autonomy_label` without
+    updating `_render_text`, leaving the DEFAULT (non-JSON) invocation
+    silent about the one thing this story exists to surface."""
+    monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
+    exit_code = main(["gate", "evaluate"])
+    assert exit_code == 0
+    out = capsys.readouterr().out
+    assert "gate mode: per-story-spec-approval" in out
+    assert "L2" in out
+    assert "Task-Based / Operator" in out
+
+
+def test_gate_evaluate_run_flag_default_text_format_omits_gate_mode_line(
+    tmp_path, capsys, monkeypatch
+):
+    """The --run branch carries no gate_mode/autonomy_label key (AD-26), so
+    the text projection must not print a `gate mode:` line for it either."""
+    monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
+    _conventional_policy(tmp_path, monkeypatch, "acme", 'verify_commands = ["false"]\n')
+    exit_code = main(["gate", "evaluate", "--project", "acme", "--run", "run-42"])
+    assert exit_code == 1
+    out = capsys.readouterr().out
+    assert "gate mode:" not in out
+
+
+def test_gate_evaluate_no_run_malformed_gate_mode_falls_back_to_default_label(
+    tmp_path, capsys, monkeypatch
+):
+    """`_valid_gate_mode` already rejects an out-of-vocabulary `gate_mode` at
+    composition time (falls through to the next layer), so
+    `describe_gate_mode` only ever receives one of the 3 known values via
+    this real CLI path -- proven end-to-end here, alongside the existing
+    `MRS-POLICY-*` malformed-value finding, rather than merely asserted in
+    `describe_gate_mode`'s own unit tests."""
+    _conventional_policy(tmp_path, monkeypatch, "acme", 'gate_mode = "bogus"\n')
+    exit_code = main(["gate", "evaluate", "--project", "acme", "--format", "json"])
+    # the malformed value itself is a hard finding (MRS-POLICY-003, matching
+    # `test_config_set_bogus_gate_mode_prints_fallback_and_nonzero_exit`'s
+    # own precedent) -- this test's own concern is that describe_gate_mode
+    # still received a VALID fallback value rather than the bogus one.
+    assert exit_code != 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["data"]["gate_mode"] == "per-story-spec-approval"
+    assert payload["data"]["autonomy_label"]["level"] == "L2"
+    codes = [finding["code"] for finding in payload["findings"]]
+    assert any(code.startswith("MRS-POLICY-") for code in codes)
 
 
 def test_gate_evaluate_project_flag_wins_over_env(tmp_path, capsys, monkeypatch):
