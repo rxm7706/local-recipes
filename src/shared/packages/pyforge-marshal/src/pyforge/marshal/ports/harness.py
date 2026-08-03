@@ -41,12 +41,92 @@ profiles), and the generic ``binary_present`` primitive must stay a dumb
 PATH check with no adapter-specific branching -- so resolving the binary
 NAME needs its own seam, symmetric with ``adapter_seed_files``/
 ``adapter_first_run_note``.
+
+Story 3.3 (``marshal factory spin``/``attach``, FR-9/FR-17, AD-3/AD-22/
+AD-25/AD-38) adds four more methods -- the first ones that actually LAUNCH
+the harness rather than merely probing it:
+
+- ``story_feed_keys`` -- the raw, pre-parse population of story references
+  in ``project``'s configured feed (bmad_loop's ``SprintStatus.stories[*].key``
+  UNION ``unknown_keys`` -- each group in the feed's own file order, the two
+  groups concatenated rather than interleaved back together, since
+  re-deriving a true file-order interleaving would need a second
+  independent parse of the raw YAML, exactly what FR-52 forbids), independent
+  of Marshal's own
+  ``core.identity.normalize()`` -- AD-38's ``M`` (the denominator of
+  "resolved N of M") must be counted before any parsing this package does,
+  or a silently-dropped key would report a false "N of N" (see
+  ``core/identity.py``'s own ``resolve_feed`` docstring). Callers are
+  expected to check ``story_feed_error`` first; this method still raises
+  ``HarnessError`` (never silently degrades to an empty tuple, which would
+  misreport a real read failure as "zero non-empty records" -- AD-8) for
+  any failure a caller reaches it despite that gate (a TOCTOU window, or a
+  caller that skips the gate).
+- ``spin`` -- the ONE detached-launch primitive (AD-3, AD-22): builds
+  ``["bmad-loop", "run"]`` plus ``--epic``/``--story``/``--max-stories``
+  when given, launches it detached (new session, ``stdin`` closed, both
+  streams redirected to ``log_path``), and returns immediately without
+  waiting -- never blocks the invoking shell. Also makes a bounded,
+  best-effort attempt to read the harness's own self-minted run id back out
+  of that redirected log (``bmad-loop run``'s own ``"run {id} starting"``
+  line) so it can be recorded as the ``harness_run_id`` correlation field
+  (AD-25) -- degrading to ``None`` if the window elapses first, never
+  hanging the caller. Raises ``HarnessError`` only when the process could
+  not be LAUNCHED at all.
+- ``attach`` -- execs ``bmad-loop attach``, inheriting this process's own
+  stdio (interactive by design -- it hands the terminal to the
+  multiplexer), blocks until it exits, and returns its exit code, normalized
+  for a signal-killed child (the shell's ``128 + N`` convention -- a raw
+  negative ``returncode`` would be OS-truncated by ``sys.exit``). Callers
+  that surface it to a shell project it further through
+  ``core.verdict.relay_exit_code``; see ``cli/spin.py``.
+  Raises ``HarnessError`` only when the process could not be LAUNCHED at
+  all -- the SAME split ``spin`` uses, deliberately distinct from every
+  OTHER method on this Protocol, which never raises for anything but an
+  unimportable ``bmad_loop`` or a resolution failure (see
+  ``ports/process.py::ProcessPort.run``'s identical convention, which this
+  mirrors: a non-zero exit is the ordinary, expected shape here, never an
+  exceptional one).
+- ``run_foreground`` -- beyond the Code Map's own literal three-method
+  enumeration, for the same reason ``adapter_binary`` was added above it:
+  the spec's own Always bullet requires ``--foreground`` to call "a
+  synchronous, stdio-inheriting HarnessPort path INSTEAD OF the detached
+  one" (explicitly two distinct paths) and "relay its exit code" --
+  language ``spin``'s own always-detached, always-``SpinResult``-returning
+  contract cannot satisfy no matter how it is called. Mirrors ``attach``'s
+  shape exactly (inherits stdio, blocks, returns the real exit code, raises
+  ``HarnessError`` only on a launch failure) but drives ``bmad-loop run``
+  instead of ``bmad-loop attach``, with the SAME ``--epic``/``--story``/
+  ``--max-stories`` selector flags ``spin`` accepts. AD-3 requires every
+  invocation of ``bmad-loop run`` -- detached or foreground alike -- to
+  funnel through this one module; a second, CLI-side subprocess call would
+  violate that as surely as skipping the seam entirely.
 """
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol
+
+
+@dataclass(frozen=True)
+class SpinResult:
+    """The result of a detached ``HarnessPort.spin`` launch (Story 3.3,
+    AD-25): mirrors ``ports/process.py``'s ``ProcessResult`` -- a plain,
+    frozen value type carrying only facts the caller could not have known in
+    advance. ``pid`` is the spawned process's OS process id (always known --
+    a constructed ``SpinResult`` always represents a launch that actually
+    started; a launch that could not start raises ``HarnessError`` instead
+    and never produces one). ``harness_run_id`` is the harness's own
+    self-minted run identifier, recovered from its redirected log within a
+    bounded poll window, or ``None`` when that window elapsed first without
+    a match -- never used as a key, a path segment, or a grouping field
+    (AD-25); it is a plain correlation fact for the journal's ``outcome``
+    entry."""
+
+    pid: int
+    harness_run_id: str | None
 
 
 class HarnessPort(Protocol):
@@ -93,4 +173,60 @@ class HarnessPort(Protocol):
         resolves and parses; otherwise the harness's own error text (a
         missing config, a missing feed file, or invalid YAML/shape). Never
         raises."""
+        ...
+
+    def story_feed_keys(self, project: Path) -> tuple[str, ...]:
+        """The RAW, pre-parse population of story references in
+        ``project``'s configured feed (bmad_loop's own
+        ``SprintStatus.stories[*].key`` UNION ``unknown_keys``, in file
+        order) -- AD-38's ``M``, independent of ``core.identity.normalize()``.
+        Callers should check ``story_feed_error`` first; raises
+        ``HarnessError`` for any failure (an unimportable ``bmad_loop``, an
+        unresolvable config, or an unparseable feed) reached despite that
+        gate."""
+        ...
+
+    def spin(
+        self,
+        project: Path,
+        *,
+        epic: int | None,
+        story: str | None,
+        max_count: int | None,
+        log_path: Path,
+    ) -> SpinResult:
+        """Detach-launch ``bmad-loop run`` against ``project`` (``--epic``/
+        ``--story``/``--max-stories`` appended when given), redirecting both
+        streams to ``log_path`` and closing stdin -- new session, never
+        waited on, returns as soon as the process starts. Makes a bounded,
+        best-effort attempt to recover the harness's own self-minted run id
+        from ``log_path`` before returning; ``SpinResult.harness_run_id`` is
+        ``None`` if that window elapses first. Raises ``HarnessError`` only
+        when the process could not be LAUNCHED at all (missing binary, a
+        launch-time ``OSError``) -- distinct from every other method on this
+        Protocol except ``attach``/``run_foreground``, which share this
+        convention."""
+        ...
+
+    def attach(self, project: Path) -> int:
+        """Exec ``bmad-loop attach`` against ``project``, inheriting this
+        process's own stdio, and return its exit code once it exits --
+        interactive by design; hands the terminal to the multiplexer. Raises
+        ``HarnessError`` only when the process could not be LAUNCHED at all."""
+        ...
+
+    def run_foreground(
+        self,
+        project: Path,
+        *,
+        epic: int | None,
+        story: str | None,
+        max_count: int | None,
+    ) -> int:
+        """Run ``bmad-loop run`` against ``project`` (the SAME selector flags
+        ``spin`` accepts) synchronously, inheriting this process's own stdio,
+        and return its exit code once it exits -- the ``--foreground``
+        counterpart to ``spin``'s always-detached launch. Raises
+        ``HarnessError`` only when the process could not be LAUNCHED at
+        all."""
         ...

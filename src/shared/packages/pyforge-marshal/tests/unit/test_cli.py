@@ -895,7 +895,10 @@ def test_help_lists_gate_subcommand(capsys):
     `add_gate_subparser` deleted from `cli/main.py` entirely."""
     exit_code = main(["--help"])
     assert exit_code == 0
-    assert "{config,init,homes,preflight,teardown,gate}" in capsys.readouterr().out
+    assert (
+        "{config,init,homes,preflight,teardown,gate,factory}"
+        in capsys.readouterr().out
+    )
 
 
 def test_gate_missing_evaluate_action_is_a_usage_error(capsys):

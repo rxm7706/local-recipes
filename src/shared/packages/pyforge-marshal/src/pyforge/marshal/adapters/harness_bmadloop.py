@@ -89,19 +89,44 @@ outside the declared minor range" (now a non-blocking warning); see that
 call site's own docstring for how it uses the split. ``--version`` has no
 blocking tier at all -- it only ever prints warning lines, since it never
 blocks (informational, not a gate).
+
+Story 3.3 (``marshal factory spin``/``attach``, FR-9/FR-17, AD-3/AD-22/
+AD-25/AD-38) gives this module its first job that actually LAUNCHES a real
+``bmad-loop`` process rather than only probing or configuring one:
+``story_feed_keys`` (the raw, pre-parse population of story references --
+``sprintstatus.SprintStatus.stories[*].key`` UNION ``unknown_keys``, file
+order), ``spin`` (the ONE detached-launch primitive -- ``subprocess.Popen``
+with ``start_new_session=True``, closed stdin, both streams redirected to a
+caller-given log path, never waited on), ``attach`` (execs ``bmad-loop
+attach``, inheriting this process's own stdio, blocking until it exits),
+and ``run_foreground`` (the ``--foreground`` counterpart to ``spin`` --
+``bmad-loop run`` inheriting stdio synchronously, beyond the spec's own
+literal three-method Code Map enumeration for the reason ``ports/harness.py``'s
+own docstring gives). ``spin``/``attach``/``run_foreground`` are the ONLY
+methods on this class that raise ``HarnessError`` for a plain launch
+failure (mirrors ``ports/process.py::ProcessPort.run``'s "a non-zero exit is
+the ordinary shape, a launch failure is the exceptional one" split) rather
+than degrading or raising for a wider failure class -- every prior method
+on this class either never raises (``binary_present``, ``harness_version``,
+``story_feed_error``) or raises for "unimportable/unresolvable", a
+categorically different condition from "the OS could not start this
+process".
 """
 
 from __future__ import annotations
 
 import os
+import re
 import shutil
 import subprocess
 import threading
+import time
 from pathlib import Path
 
 import tomlkit
 
 from ..core import policy
+from ..ports.harness import SpinResult
 
 # --- the vendored, project-agnostic harness policy template ----------------
 #
@@ -449,6 +474,22 @@ def harness_version_is_major_mismatch(text: str | None) -> bool:
 # A healthy argparse `action="version"` responds in milliseconds.
 _VERSION_TIMEOUT_S = 5.0
 
+# Story 3.3's `spin` -- a BOUNDED, best-effort poll for the harness's own
+# self-minted run id, never an indefinite wait (the spec's own Never
+# clause: "do not block indefinitely waiting for harness_run_id"). "A few
+# seconds" per the spec's Always bullet; short enough that a caller's own
+# CLI invocation still "returns promptly" (AD-22) even in the degrading
+# case where the window elapses with no match.
+_SPIN_LOG_POLL_INTERVAL_S = 0.2
+_SPIN_LOG_POLL_TIMEOUT_S = 5.0
+
+# `bmad-loop run`'s own `cmd_run` prints exactly this line to stdout the
+# instant a run starts (verified live against the installed 0.9.0 `cli.py`:
+# `print(f"run {run_id} starting (attach: bmad-loop attach)")`) -- the ONE
+# text this module is permitted to parse (AD-3), matched with `.match()`
+# (anchors at line start) against each line of `spin`'s own redirected log.
+_RUN_STARTING_RE = re.compile(r"^run (\S+) starting\b")
+
 
 class HarnessError(Exception):
     """Raised by ``BmadLoopHarness`` methods that are documented to raise
@@ -583,3 +624,179 @@ class BmadLoopHarness:
         except (OSError, UnicodeDecodeError) as exc:
             return f"cannot read story feed: {exc}"
         return None
+
+    def story_feed_keys(self, project: Path) -> tuple[str, ...]:
+        """AD-38's ``M``: the raw, pre-parse population of story references
+        in ``project``'s configured feed. Callers are expected to have
+        already checked ``story_feed_error`` (this method's own
+        preconditions ARE that method's own reads, repeated); the same
+        defensive catches that method's docstring explains apply here too,
+        but raise ``HarnessError`` rather than returning error text -- this
+        method's return type has no "error" slot, and silently degrading to
+        ``()`` would misreport a real read failure as "zero non-empty
+        records", exactly the false-green AD-8 exists to forbid."""
+        try:
+            from bmad_loop import bmadconfig, sprintstatus
+        except ImportError as exc:
+            raise HarnessError(f"bmad_loop is not importable: {exc}") from exc
+        try:
+            paths = bmadconfig.load_paths(project)
+        except bmadconfig.BmadConfigError as exc:
+            raise HarnessError(str(exc)) from exc
+        except (OSError, UnicodeDecodeError) as exc:
+            raise HarnessError(f"cannot read bmad-config: {exc}") from exc
+        except (AttributeError, TypeError) as exc:
+            raise HarnessError(f"invalid bmad-config shape: {exc}") from exc
+        try:
+            feed = sprintstatus.load(paths.sprint_status)
+        except sprintstatus.SprintStatusError as exc:
+            raise HarnessError(str(exc)) from exc
+        except (OSError, UnicodeDecodeError) as exc:
+            raise HarnessError(f"cannot read story feed: {exc}") from exc
+        # `stories` then `unknown_keys`, each already in the feed's own file
+        # order (sprintstatus.load's single ordered-dict iteration keeps
+        # both -- see that module's own `load`) -- the union this port's
+        # docstring promises, not a re-derived interleaving (which would
+        # need re-parsing the raw YAML ourselves, exactly the second
+        # independent notion of feed shape FR-52 forbids).
+        return tuple(story.key for story in feed.stories) + feed.unknown_keys
+
+    @staticmethod
+    def _run_argv(
+        *, epic: int | None, story: str | None, max_count: int | None
+    ) -> list[str]:
+        """The one argv builder shared by ``spin``/``run_foreground`` --
+        ``["bmad-loop", "run"]`` plus ``--epic``/``--story``/``--max-stories``
+        when given, EXACTLY the flag names the installed 0.9.0 ``cli.py``
+        registers (verified live) -- never Marshal's own ``--max-count``
+        spelling (``cli/spin.py``'s CLI-facing name), which only this
+        function translates. ``--project`` is deliberately never appended:
+        both callers set ``cwd=project`` on the subprocess instead, and
+        ``bmad-loop run --project`` defaults to ``"."`` (the installed
+        ``cli.py``'s own ``add()`` helper), so the two are equivalent and
+        the caller-supplied ``project`` never needs to round-trip through a
+        second, string-rendered form."""
+        argv = ["bmad-loop", "run"]
+        if epic is not None:
+            argv += ["--epic", str(epic)]
+        if story is not None:
+            argv += ["--story", story]
+        if max_count is not None:
+            argv += ["--max-stories", str(max_count)]
+        return argv
+
+    def _poll_for_harness_run_id(self, log_path: Path) -> str | None:
+        """A bounded poll (``_SPIN_LOG_POLL_INTERVAL_S`` steps, never past
+        ``_SPIN_LOG_POLL_TIMEOUT_S``) of ``log_path`` for ``_RUN_STARTING_RE``
+        -- never indefinite (the spec's own Never clause). Re-reads the whole
+        file each step (the file is at most a handful of KiB by the time this
+        line appears -- `bmad-loop run` prints it before any per-story
+        adapter output); a missing/unreadable file at any step is treated
+        the same as "not there yet", not a fatal error -- the file may not
+        exist for the first instant after ``Popen`` returns."""
+        deadline = time.monotonic() + _SPIN_LOG_POLL_TIMEOUT_S
+        while True:
+            try:
+                text = log_path.read_text(encoding="utf-8", errors="replace")
+            except OSError:
+                text = ""
+            for line in text.splitlines():
+                match = _RUN_STARTING_RE.match(line)
+                if match:
+                    return match.group(1)
+            if time.monotonic() >= deadline:
+                return None
+            time.sleep(_SPIN_LOG_POLL_INTERVAL_S)
+
+    def spin(
+        self,
+        project: Path,
+        *,
+        epic: int | None,
+        story: str | None,
+        max_count: int | None,
+        log_path: Path,
+    ) -> SpinResult:
+        argv = self._run_argv(epic=epic, story=story, max_count=max_count)
+        try:
+            log_file = open(log_path, "wb")
+        except OSError as exc:
+            raise HarnessError(f"cannot open spin log {log_path}: {exc}") from exc
+        # A `with` block over the ALREADY-OPENED file (not `with open(...) as
+        # log_file:` wrapping both steps): opening and launching are two
+        # distinct failure modes with two distinct messages ("cannot open
+        # spin log" vs "cannot launch bmad-loop run"), so the open above must
+        # stay outside this block's own exception handling -- the `with`
+        # here exists solely to guarantee the close, mirroring the
+        # try/finally this replaces.
+        with log_file:
+            try:
+                process = subprocess.Popen(
+                    argv,
+                    cwd=project,
+                    start_new_session=True,
+                    stdin=subprocess.DEVNULL,
+                    stdout=log_file,
+                    stderr=log_file,
+                    # Review finding (Blind Hunter, verified live): CPython's
+                    # stdout is FULLY block-buffered -- not line-buffered --
+                    # the instant it is redirected to a regular file rather
+                    # than a tty, and `bmad-loop run`'s own "starting" print
+                    # (verified against the installed cli.py) carries no
+                    # `flush=True`. Left to the AMBIENT environment, this
+                    # module's own poll below would only see that line once
+                    # the child's stdio buffer fills or the whole (possibly
+                    # minutes-long) run exits -- defeating both the poll AND
+                    # AD-22's "returns promptly" in any shell that does not
+                    # happen to already export PYTHONUNBUFFERED (this
+                    # session's own dev environment does, which is exactly
+                    # what let the bug through undetected). Forcing it here,
+                    # on the CHILD's own env, makes the poll's promptness a
+                    # property of this call, never of whatever invoked it.
+                    env={**os.environ, "PYTHONUNBUFFERED": "1"},
+                )
+            except OSError as exc:
+                raise HarnessError(f"cannot launch bmad-loop run: {exc}") from exc
+            # The child already holds its own duplicated descriptor
+            # (Popen's own fork+exec dance) -- closing this end in the
+            # parent (as the `with` block exits) is safe, and correct: an
+            # unclosed copy here would leak across every future subprocess
+            # this LONG-LIVED CLI process spawns.
+
+        harness_run_id = self._poll_for_harness_run_id(log_path)
+        return SpinResult(pid=process.pid, harness_run_id=harness_run_id)
+
+    @staticmethod
+    def _normalize_returncode(returncode: int) -> int:
+        """``subprocess.CompletedProcess.returncode`` is NEGATIVE when the
+        child was killed by a signal (``-N`` for signal ``N``, POSIX
+        convention) -- review finding (Edge Case Hunter, verified live): a
+        raw negative value handed to ``sys.exit``/``SystemExit`` gets
+        OS-truncated (``exit()`` takes a byte), silently producing a
+        different, misleading process exit status for a caller checking
+        ``$?`` than the negative Python value itself claims. Mirrors the
+        128+signal POSIX shell convention (the same one every plain shell
+        reports for a signal-killed job) rather than inventing a new one."""
+        return 128 - returncode if returncode < 0 else returncode
+
+    def attach(self, project: Path) -> int:
+        try:
+            result = subprocess.run(["bmad-loop", "attach"], cwd=project)
+        except OSError as exc:
+            raise HarnessError(f"cannot launch bmad-loop attach: {exc}") from exc
+        return self._normalize_returncode(result.returncode)
+
+    def run_foreground(
+        self,
+        project: Path,
+        *,
+        epic: int | None,
+        story: str | None,
+        max_count: int | None,
+    ) -> int:
+        argv = self._run_argv(epic=epic, story=story, max_count=max_count)
+        try:
+            result = subprocess.run(argv, cwd=project)
+        except OSError as exc:
+            raise HarnessError(f"cannot launch bmad-loop run: {exc}") from exc
+        return self._normalize_returncode(result.returncode)
