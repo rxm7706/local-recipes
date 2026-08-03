@@ -47,7 +47,7 @@ development_status:
   2-2-verdict-aggregation-that-never-false-greens: done
   2-3-frozen-surface-scope-check-narrowing-only: blocked
   2-4-doc-only-story-classification: done
-  2-5-gate-mode-ladder-with-autonomy-labels: backlog
+  2-5-gate-mode-ladder-with-autonomy-labels: done
   2-6-gate-evidence-record-with-redaction-at-egress: backlog
   2-7-a-gate-binds-to-the-specs-success-signal: blocked
   3-1-run-identity-and-the-journal-writer: backlog
