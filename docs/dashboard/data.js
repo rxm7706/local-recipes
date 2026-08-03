@@ -204,15 +204,15 @@ window.DASHBOARD_DATA = {
         "E6"
       ],
       "inflight": {
-        "key": "2.2",
-        "title": "Verdict aggregation that never false-greens",
+        "key": "2.4",
+        "title": "Doc-only story classification",
         "phase": "dev",
         "attempt": "1",
-        "startEpoch": 1785740624,
+        "startEpoch": 1785742388,
         "median": 94,
-        "lo": 62,
+        "lo": 1,
         "hi": 450,
-        "phaseAsOf": "2026-08-03 07:26 UTC"
+        "phaseAsOf": "2026-08-03 07:52 UTC"
       },
       "velocity": {
         "derived": true,
@@ -264,7 +264,7 @@ window.DASHBOARD_DATA = {
           ],
           [
             "2.2",
-            1
+            27
           ]
         ],
         "foot": [
@@ -274,17 +274,17 @@ window.DASHBOARD_DATA = {
             "var(--done)"
           ],
           [
-            "1–450 min",
+            "27–450 min",
             "observed range",
             ""
           ],
           [
-            "11/50",
+            "12/50",
             "stories complete",
             "var(--done)"
           ],
           [
-            "39",
+            "38",
             "remaining",
             ""
           ]
@@ -293,8 +293,8 @@ window.DASHBOARD_DATA = {
       "timing": {
         "derived": true,
         "metric": "active agent-compute per story (dev + review; excludes gate-pause wait) — from bmad-loop run journals",
-        "total": 1486,
-        "totalLabel": "~24.8 h active compute",
+        "total": 1512,
+        "totalLabel": "~25.2 h active compute",
         "note": "Derived from 12 measured stories; a story still in flight contributes only its closed sessions.",
         "perStory": {
           "1.1": 165,
@@ -308,16 +308,16 @@ window.DASHBOARD_DATA = {
           "1.9": 80,
           "1.10": 62,
           "2.1": 142,
-          "2.2": 1
+          "2.2": 27
         },
         "epicMin": {
           "E1": 1343,
-          "E2": 143
+          "E2": 169
         }
       },
       "lineState": {
         "state": "in flight",
-        "at": "2.2"
+        "at": "2.4"
       },
       "epics": [
         {
@@ -387,7 +387,7 @@ window.DASHBOARD_DATA = {
             ],
             [
               "2.2",
-              "active",
+              "done",
               "Verdict aggregation that never false-greens"
             ],
             [
@@ -397,7 +397,7 @@ window.DASHBOARD_DATA = {
             ],
             [
               "2.4",
-              "pending",
+              "active",
               "Doc-only story classification"
             ],
             [
@@ -2877,7 +2877,7 @@ window.DASHBOARD_DATA = {
       }
     }
   },
-  "snapshot": "<span>2026-08-03 07:26 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-03 07:52 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -2922,6 +2922,14 @@ window.DASHBOARD_DATA = {
         "spec": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-artifact-console"
       },
       "archived_reason": "retired"
+    },
+    {
+      "slug": "bmad-loop-forward-dependency-blindness",
+      "title": "bmad-loop can't see a story's own documented dependency",
+      "status": "realized",
+      "owner": "marshal",
+      "type": "dream",
+      "chain": {}
     },
     {
       "slug": "bmad-output-hygiene",
@@ -4534,7 +4542,7 @@ window.DASHBOARD_DATA = {
           "stories": 40,
           "state": "running",
           "note": "epics 1-6 — AD-25–39 adversarial pass + floor quiescence (touches loop machinery)",
-          "done": 11,
+          "done": 12,
           "total": 50
         },
         {
@@ -4609,9 +4617,9 @@ window.DASHBOARD_DATA = {
       "retro": null
     },
     "sound": 3,
-    "live": 22,
+    "live": 23,
     "reached": 9,
-    "gaps": 15,
+    "gaps": 18,
     "findings": 0,
     "rows": [
       {
@@ -4980,7 +4988,7 @@ window.DASHBOARD_DATA = {
           "arch": "2026-08-02",
           "context": "2026-06-20",
           "epics": "2026-08-02",
-          "sprint": "2026-08-02",
+          "sprint": "2026-08-03",
           "tea": "2026-08-02",
           "gates": "2026-08-02",
           "code": "2026-07-31",
@@ -5044,11 +5052,11 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "verify",
-        "updated": "2026-08-02",
-        "age": 1,
+        "updated": "2026-08-03",
+        "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "11/50",
+        "progress": "12/50",
         "complete": 13,
         "of": 13
       },
@@ -6655,8 +6663,8 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-02",
-        "age": 1,
+        "updated": "2026-08-03",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -6761,8 +6769,8 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-02",
-        "age": 1,
+        "updated": "2026-08-03",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -6867,8 +6875,8 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-02",
-        "age": 1,
+        "updated": "2026-08-03",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -6973,13 +6981,121 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-02",
-        "age": 1,
+        "updated": "2026-08-03",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 2,
         "of": 3
+      },
+      {
+        "label": "bmad-loop-forward-dependency-blindness",
+        "slug": "bmad-loop-forward-dependency-blindness",
+        "project": "pyforge-marshal",
+        "dream": "bmad-loop-forward-dependency-blindness",
+        "owner": "marshal",
+        "stages": {
+          "dream": "",
+          "deck": "",
+          "spec": "",
+          "research": "2026-07-16",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "tea": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "updatedAt": {
+          "dream": "",
+          "deck": "",
+          "spec": "",
+          "research": "2026-07-31",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "tea": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "sub": {
+          "research": {
+            "have": {
+              "domain": true,
+              "market": true,
+              "technical": true
+            },
+            "n": 3,
+            "of": 3,
+            "missing": [],
+            "inherited": true
+          },
+          "deck": {
+            "have": {
+              "prototype": false,
+              "exec": false,
+              "infographic": false,
+              "marp": false,
+              "standalone": false,
+              "pptx": false
+            },
+            "n": 0,
+            "of": 6,
+            "missing": [
+              "exec",
+              "infographic",
+              "marp",
+              "pptx",
+              "prototype",
+              "standalone"
+            ]
+          }
+        },
+        "archived": false,
+        "dreamStatus": "realized",
+        "ownerDream": "",
+        "noDream": true,
+        "unowned": false,
+        "backfilled": false,
+        "openQuestions": 0,
+        "overtaken": false,
+        "na": [
+          "ux"
+        ],
+        "required": [
+          "dream",
+          "deck",
+          "spec",
+          "research"
+        ],
+        "gaps": [
+          "dream",
+          "deck",
+          "spec"
+        ],
+        "partial": [],
+        "staleBy": [],
+        "furthest": "research",
+        "updated": "2026-08-03",
+        "age": 0,
+        "stale": false,
+        "version": "",
+        "progress": "",
+        "complete": 1,
+        "of": 4
       },
       {
         "label": "bmad-loop-governance",
@@ -7079,8 +7195,8 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-02",
-        "age": 1,
+        "updated": "2026-08-03",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -7185,8 +7301,8 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-02",
-        "age": 1,
+        "updated": "2026-08-03",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -7292,8 +7408,8 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-02",
-        "age": 1,
+        "updated": "2026-08-03",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -7398,8 +7514,8 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-02",
-        "age": 1,
+        "updated": "2026-08-03",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -7504,8 +7620,8 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-02",
-        "age": 1,
+        "updated": "2026-08-03",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -7610,8 +7726,8 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-02",
-        "age": 1,
+        "updated": "2026-08-03",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -7716,8 +7832,8 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-02",
-        "age": 1,
+        "updated": "2026-08-03",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -7832,8 +7948,8 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "epics",
-        "updated": "2026-08-02",
-        "age": 1,
+        "updated": "2026-08-03",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -7938,8 +8054,8 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-02",
-        "age": 1,
+        "updated": "2026-08-03",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -8044,8 +8160,8 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-02",
-        "age": 1,
+        "updated": "2026-08-03",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -8150,8 +8266,8 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-02",
-        "age": 1,
+        "updated": "2026-08-03",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -8256,8 +8372,8 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-02",
-        "age": 1,
+        "updated": "2026-08-03",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -8362,8 +8478,8 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-02",
-        "age": 1,
+        "updated": "2026-08-03",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -8468,8 +8584,8 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-02",
-        "age": 1,
+        "updated": "2026-08-03",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -8579,8 +8695,8 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "epics",
-        "updated": "2026-08-02",
-        "age": 1,
+        "updated": "2026-08-03",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -10544,16 +10660,16 @@ window.DASHBOARD_DATA = {
       },
       {
         "station": "marshal",
-        "total": 18,
+        "total": 19,
         "counts": {
           "dreamt": 2,
           "pitched": 0,
           "specified": 0,
-          "realized": 2,
+          "realized": 3,
           "archived": 10,
           "practice": 4
         },
-        "line": "in flight 2.2",
+        "line": "in flight 2.4",
         "load": 2,
         "blocked": 0,
         "dreams": [
@@ -10660,6 +10776,13 @@ window.DASHBOARD_DATA = {
             "title": "Agent tool surface — every craft reachable through one governed API",
             "status": "realized",
             "type": "practice",
+            "blockedOn": ""
+          },
+          {
+            "slug": "bmad-loop-forward-dependency-blindness",
+            "title": "bmad-loop can't see a story's own documented dependency",
+            "status": "realized",
+            "type": "dream",
             "blockedOn": ""
           },
           {
@@ -12516,9 +12639,9 @@ window.DASHBOARD_DATA = {
     "running": [
       {
         "station": "Marshal",
-        "story": "2.2",
+        "story": "2.4",
         "phase": "dev",
-        "startEpoch": 1785740624
+        "startEpoch": 1785742388
       }
     ],
     "lastShipped": {
@@ -12529,8 +12652,8 @@ window.DASHBOARD_DATA = {
       "subject": "Merge bmad-loop/20260802-183704-36df/2-1-standalone-verify-command-runner-project-scoped into loop/pyforge-marshal (bmad"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-03 07:26 UTC",
-    "generatedEpoch": 1785741967
+    "generatedAt": "2026-08-03 07:52 UTC",
+    "generatedEpoch": 1785743527
   },
   "storySpecs": [
     {
@@ -12553,9 +12676,9 @@ window.DASHBOARD_DATA = {
     },
     {
       "station": "pyforge-marshal",
-      "done": 11,
+      "done": 12,
       "tracked": 11,
-      "gap": 0
+      "gap": 1
     },
     {
       "station": "pyforge-mason",

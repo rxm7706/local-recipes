@@ -161,6 +161,7 @@ project, and spec maps to exactly one Dream; the herald CLI's status capability
 | [`bmad-output-hygiene.md`](bmad-output-hygiene.md) | dreamt | One fabricated bulk commit stamped dead test scaffolding, a hollow sprint-status template, and (in places) fake test-architecture/README content across all 8 stations, inconsistently fixed since — a 5-agent audit mapped exactly what's real vs. debris. |
 | [`dashboard-project-path-derivation.md`](dashboard-project-path-derivation.md) | dreamt | The dashboard builds links/`have` checks by gluing a roster slug straight onto a project directory — broke twice already for absorbed/dissolved satellites; wants one derivation helper instead of one override dict per occurrence. |
 | [`genesis-installer-name-retirement.md`](genesis-installer-name-retirement.md) | dreamt | genesis-installer should retire completely — not just renumbered, but a full PRD/architecture/epics rewrite that actually decides the CLI framework contradiction (argparse vs typer+rich) and the `init`/`check` verb collisions the mechanical fold-in left open. |
+| [`bmad-loop-forward-dependency-blindness.md`](bmad-loop-forward-dependency-blindness.md) | realized | `bmad-loop`'s picker has no `depends_on` concept and will dispatch a story whose own documented `**Deps:**` names a later epic — 3 instances fixed in marshal (the only affected station); `forward_dependency_check.py` closes the gap for good. |
 
 **Applications**
 
