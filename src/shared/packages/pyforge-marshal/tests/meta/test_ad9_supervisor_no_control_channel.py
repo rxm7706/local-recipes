@@ -84,18 +84,31 @@ def test_supervisor_package_exists_and_has_source_files():
     assert _supervisor_source_files()
 
 
-def _is_import_module_call(node: ast.AST) -> bool:
-    """``True`` for a call shaped like ``importlib.import_module(...)`` OR a
-    bare ``import_module(...)`` (the latter reachable via ``from importlib
-    import import_module``) -- review finding: the static ``ast.Import``/
+# Every callable that takes a module NAME as a literal string argument and
+# returns the imported module -- the shapes the static ast.Import/
+# ast.ImportFrom scan below is structurally blind to. `import_module` was
+# added by one review pass; `__import__` (CPython's own import builtin, and
+# the shorter of the two spellings) by the next -- it is the same evasion
+# family, not a new one, and was left open while its rarer sibling was
+# closed.
+_LAZY_IMPORT_CALLABLES = frozenset({"import_module", "__import__"})
+
+
+def _is_lazy_import_call(node: ast.AST) -> bool:
+    """``True`` for a call shaped like ``importlib.import_module(...)`` /
+    ``builtins.__import__(...)`` (attribute spelling) OR a bare
+    ``import_module(...)`` / ``__import__(...)`` (name spelling, the former
+    reachable via ``from importlib import import_module``, the latter always
+    available as a builtin) -- review finding: the static ``ast.Import``/
     ``ast.ImportFrom`` scan below cannot see a module name that arrives as a
     STRING argument to a function call rather than an import statement, so
-    ``importlib.import_module("socket")`` evaded it entirely."""
+    ``importlib.import_module("socket")`` -- and, until this pass,
+    ``__import__("socket")`` -- evaded it entirely."""
     func = node.func
     if isinstance(func, ast.Attribute):
-        return func.attr == "import_module"
+        return func.attr in _LAZY_IMPORT_CALLABLES
     if isinstance(func, ast.Name):
-        return func.id == "import_module"
+        return func.id in _LAZY_IMPORT_CALLABLES
     return False
 
 
@@ -114,14 +127,14 @@ def _forbidden_module_references(tree: ast.AST, path: str = "<test>") -> list[st
                 offenders.append(f"{path}:{node.lineno} imports from {node.module!r}")
         elif (
             isinstance(node, ast.Call)
-            and _is_import_module_call(node)
+            and _is_lazy_import_call(node)
             and node.args
             and isinstance(node.args[0], ast.Constant)
             and isinstance(node.args[0].value, str)
             and node.args[0].value.split(".")[0] in _FORBIDDEN_TOP_LEVEL_MODULES
         ):
             offenders.append(
-                f"{path}:{node.lineno} calls import_module({node.args[0].value!r})"
+                f"{path}:{node.lineno} lazily imports {node.args[0].value!r}"
             )
     return offenders
 
@@ -144,24 +157,38 @@ def test_supervisor_imports_no_socket_or_multiprocessing_module():
         'from multiprocessing import Process',
         'import importlib\nimportlib.import_module("socket")',
         'from importlib import import_module\nimport_module("multiprocessing")',
+        '__import__("socket")',
+        'import builtins\nbuiltins.__import__("multiprocessing")',
     ],
 )
 def test_forbidden_module_references_catches_every_evasion_shape(snippet):
     """Proves the scanner itself catches a synthetic violation of each
-    shape (plain import, ``from`` import, and BOTH ``importlib.
-    import_module`` call spellings -- review finding: the original scan
-    only ever saw the first two, so a lazily-imported ``socket`` via
-    ``importlib.import_module("socket")`` evaded it entirely) -- run
+    shape (plain import, ``from`` import, both ``importlib.import_module``
+    call spellings, and both ``__import__`` builtin spellings) -- run
     against an in-memory snippet, never the real supervisor source, so this
-    test cannot be satisfied by coincidentally-clean production code."""
+    test cannot be satisfied by coincidentally-clean production code.
+
+    Two successive review findings built this list: the original scan saw
+    only the first two shapes, so ``importlib.import_module("socket")``
+    evaded it; the widening that closed THAT left ``__import__("socket")``
+    -- the shorter, always-available spelling of the identical evasion --
+    open."""
     tree = ast.parse(snippet)
     assert _forbidden_module_references(tree)
 
 
-def test_forbidden_module_references_does_not_flag_an_unrelated_import_module_call():
+@pytest.mark.parametrize(
+    "snippet",
+    [
+        'import importlib\nimportlib.import_module("json")',
+        '__import__("json")',
+    ],
+)
+def test_forbidden_module_references_does_not_flag_an_unrelated_lazy_import(snippet):
     """The widened check must stay scoped to the two forbidden module
-    NAMES -- a lazy import of an unrelated module must not false-positive."""
-    tree = ast.parse('import importlib\nimportlib.import_module("json")')
+    NAMES -- a lazy import of an unrelated module must not false-positive,
+    in either callable spelling."""
+    tree = ast.parse(snippet)
     assert _forbidden_module_references(tree) == []
 
 

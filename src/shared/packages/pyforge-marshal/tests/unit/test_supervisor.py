@@ -39,8 +39,17 @@ class FakeFs:
     unreachable by this story's own small payloads but implemented for
     completeness, mirroring ``test_spin.py``'s own ``FakeFs``)."""
 
-    def __init__(self, *, journal_text: str | None = None) -> None:
+    def __init__(
+        self,
+        *,
+        journal_text: str | None = None,
+        blobs: dict[Path, str] | None = None,
+    ) -> None:
         self.journal_text = journal_text
+        # Sidecar blobs, keyed by their FULL path under the run directory.
+        # Any path NOT in this map reads back as the journal text, matching
+        # this fake's original single-file behaviour.
+        self.blobs = dict(blobs or {})
         self.read_text_calls: list[Path] = []
         self.appended_lines: list[tuple[Path, str, bool]] = []
         self.written_texts: dict[Path, str] = {}
@@ -54,6 +63,10 @@ class FakeFs:
         self.read_text_calls.append(path)
         if self.fail_read_text:
             raise self.fail_read_text
+        if self.blobs:
+            # FsPort.read_text's own "absent" contract for a blob this test
+            # deliberately did not provide.
+            return self.blobs.get(path, self.journal_text if path.suffix != ".json" else None)
         return self.journal_text
 
     def append_line(self, path: Path, line: str, *, fsync: bool) -> None:
@@ -249,6 +262,179 @@ def test_attaches_when_the_journal_has_only_an_intent_entry_and_no_outcome_yet()
         "supervisor-attach",
         "supervisor-detach",
     ]
+
+
+def _big_intent_prepared(run_id: str, *, stories: int = 200):
+    """A ``phase: intent, kind: "run-launch"`` entry whose payload is big
+    enough to be SIDECAR-REFERENCED -- ``cli/spin.py`` puts one rendered
+    feed key per RESOLVED story into ``preview``, so the payload grows with
+    the project and crosses ``core.journal.SIDECAR_THRESHOLD_BYTES`` at
+    roughly 150 stories."""
+    entry = build_entry(
+        id=JournalEntryId("spin-1", 0),
+        ts="2026-08-03T05:45:00.000Z",
+        run_id=run_id,
+        kind="run-launch",
+        phase=Phase.INTENT,
+        payload={
+            "epic": None,
+            "story": None,
+            "max_count": None,
+            "preview": [
+                f"{i // 10 + 1}.{i % 10 + 1}-some-representative-story-slug"
+                for i in range(stories)
+            ],
+        },
+    )
+    prepared = prepare_for_write(entry)
+    assert prepared.sidecar_relative_path is not None, (
+        "this fixture is only meaningful if the payload actually crosses "
+        "the inline threshold"
+    )
+    return prepared
+
+
+def test_attaches_when_the_only_run_launch_entry_is_sidecar_referenced():
+    """Follow-up review finding, reproduced live. ``run_supervisor`` used to
+    call ``fold(lines)`` with NO ``sidecars`` mapping, on the module
+    docstring's stated ground that both ``cli/spin.py`` payloads are
+    "always small enough to inline". False for the INTENT payload: its
+    ``preview`` list is unbounded (one key per resolved story), so a
+    large-enough project writes it as a ``{"sidecar_ref": ...}``
+    placeholder, ``fold`` quarantines the line as unresolvable
+    (``MRS-JOURNAL-002``), ``by_kind("run-launch")`` comes back EMPTY, and
+    the sidecar exits inert.
+
+    That is exactly the ``MRS-SPIN-006`` state the phase-widening exists to
+    serve -- the outcome append failed, so the sidecar-referenced intent is
+    the ONLY ownership proof on disk -- meaning the largest projects lost
+    supervision precisely when their outcome could not be journaled. No
+    corruption is involved: it is deterministic on story count."""
+    prepared = _big_intent_prepared("acme-run-1")
+    run_dir = supervisor_main._run_dir(_HOME, "acme", "acme-run-1")
+    fs = FakeFs(
+        journal_text=prepared.line + "\n",
+        blobs={run_dir / prepared.sidecar_relative_path: prepared.sidecar_content},
+    )
+
+    rc = run_supervisor(
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
+        fs=fs, process=FakeProcess(alive_for=0), clock=FakeClock(),
+        observer=FakeObserver(), sleep=_no_sleep,
+    )
+
+    assert rc == 0
+    entries = [json.loads(line) for _, line, _ in fs.appended_lines]
+    assert [entry["kind"] for entry in entries] == [
+        "supervisor-attach",
+        "supervisor-detach",
+    ]
+    # The blob is read from the run directory, exactly once, alongside the
+    # journal -- never re-read, and never from anywhere else.
+    assert fs.read_text_calls == [
+        run_dir / supervisor_main._JOURNAL_FILENAME,
+        run_dir / prepared.sidecar_relative_path,
+    ]
+
+
+def test_inert_when_a_sidecar_referenced_entry_names_a_different_run():
+    """The sidecar resolution must not weaken the ownership check itself --
+    a resolvable blob for some OTHER run is still not this run's launch."""
+    prepared = _big_intent_prepared("some-other-run")
+    run_dir = supervisor_main._run_dir(_HOME, "acme", "acme-run-1")
+    fs = FakeFs(
+        journal_text=prepared.line + "\n",
+        blobs={run_dir / prepared.sidecar_relative_path: prepared.sidecar_content},
+    )
+
+    rc = run_supervisor(
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
+        fs=fs, process=FakeProcess(alive_for=5), clock=FakeClock(),
+        observer=FakeObserver(), sleep=_no_sleep,
+    )
+
+    assert rc == 0
+    assert fs.appended_lines == []
+
+
+def test_sidecar_refs_rejects_any_ref_that_walks_out_of_the_run_directory():
+    """No blob content can redirect this sidecar's control flow (the
+    inert-check reads only ``kind``/``phase``/``run_id``, all of which live
+    in the journal LINE) -- but the REF itself becomes a path handed to
+    ``FsPort.read_text``, so a corrupt or forged one must never point the
+    read outside the run directory. ``fold`` independently re-validates
+    every ref against its owning entry's id; this is the first gate."""
+    def _line(ref: str) -> str:
+        return json.dumps({"payload": {"sidecar_ref": ref}})
+
+    hostile = [
+        "../../../../etc/passwd",
+        "blobs/../../../etc/passwd",
+        "/etc/passwd",
+        "blobs/",
+        "blobs/..",
+        "blobs/sub/dir.json",
+        "blobs\\evil.json",
+    ]
+    assert supervisor_main._sidecar_refs([_line(ref) for ref in hostile]) == ()
+    # ...while the one real shape prepare_for_write emits is accepted.
+    assert supervisor_main._sidecar_refs([_line("blobs/spin-1-0.json")]) == (
+        "blobs/spin-1-0.json",
+    )
+
+
+def test_sidecar_refs_skips_unparseable_and_non_placeholder_lines():
+    """``fold`` is the one place a malformed line is judged -- this scan
+    must never raise on one, and must never mistake a real inline payload
+    that merely CARRIES a ``sidecar_ref`` key for a placeholder."""
+    lines = [
+        "{not valid json at all",
+        "",
+        json.dumps({"payload": {"sidecar_ref": "blobs/a-0.json", "extra": 1}}),
+        json.dumps({"payload": {"sidecar_ref": 42}}),
+        json.dumps({"payload": "sidecar_ref not even a mapping"}),
+        json.dumps(["sidecar_ref"]),
+    ]
+    assert supervisor_main._sidecar_refs(lines) == ()
+
+
+def test_a_missing_sidecar_blob_still_leaves_the_supervisor_inert():
+    """An unreadable/absent blob maps to ``None``, which ``fold`` treats
+    exactly as it already treats an absent one -- the line quarantines and
+    the sidecar stays inert (and now SAYS so), rather than crashing."""
+    prepared = _big_intent_prepared("acme-run-1")
+    fs = FakeFs(journal_text=prepared.line + "\n", blobs={})
+    fs.blobs = {Path("/nowhere.json"): "{}"}  # non-empty, but not the real ref
+
+    rc = run_supervisor(
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
+        fs=fs, process=FakeProcess(alive_for=5), clock=FakeClock(),
+        observer=FakeObserver(), sleep=_no_sleep,
+    )
+
+    assert rc == 0
+    assert fs.appended_lines == []
+
+
+def test_inert_when_the_journal_read_raises_a_plain_value_error():
+    """Follow-up review finding: ``LocalFs.read_text`` translates only
+    ``(OSError, UnicodeDecodeError)`` into ``FsError``, but an embedded NUL
+    byte in a path makes ``Path.read_text`` raise a PLAIN ``ValueError`` --
+    the same CPython split this story already guards at ``spawn_detached``'s
+    ``open()`` and in both ``observer_mux`` methods. Unreachable through
+    ``main()`` (``execve`` argv cannot carry a NUL) but this is the FIRST
+    call ``run_supervisor`` makes, and it is a public function."""
+    fs = FakeFs()
+    fs.fail_read_text = ValueError("embedded null byte")
+
+    rc = run_supervisor(
+        _HOME, "acme", "acme-run-1", 1, _LOG_PATH,
+        fs=fs, process=FakeProcess(alive_for=5), clock=FakeClock(),
+        observer=FakeObserver(), sleep=_no_sleep,
+    )
+
+    assert rc == 0
+    assert fs.appended_lines == []
 
 
 def test_inert_when_the_outcome_entry_belongs_to_a_different_run_id():

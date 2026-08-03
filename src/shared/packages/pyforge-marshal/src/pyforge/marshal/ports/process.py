@@ -113,5 +113,12 @@ class ProcessPort(Protocol):
         (an empty ``argv``, a missing executable, a permission/launch
         ``OSError``, or ``log_path`` could not be opened for writing) -- the
         SAME split ``run`` documents, since a detached child's own exit
-        status is never observed by this call at all, let alone returned."""
+        status is never observed by this call at all, let alone returned.
+
+        ``cwd`` sets the child's working directory ONLY -- never where its
+        code is resolved from. A Python child launched here runs its
+        interpreter's INSTALLED environment (``PYTHONSAFEPATH``), so a
+        stdlib-shadowing module or a same-named package sitting in ``cwd``
+        cannot decide what the child imports; see the implementing
+        adapter's own comment for the review finding behind that."""
         ...

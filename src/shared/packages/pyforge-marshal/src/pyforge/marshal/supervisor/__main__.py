@@ -7,8 +7,11 @@ docstring for why "last", after the ``run-launch`` outcome entry append is
 attempted whether or not it itself succeeded.
 
 **Order of operations (``run_supervisor``).** Read the run's own
-``journal.jsonl`` ONCE (``FsPort.read_text`` + ``core.journal.fold`` -- no
-second read, ever) -> inert-check: if no ``kind: "run-launch"`` entry in
+``journal.jsonl`` ONCE (``FsPort.read_text`` + ``core.journal.fold``, plus
+any sidecar blob that journal's own lines reference -- see "Why the read
+side DOES load sidecars" below; the journal itself is never re-read, and
+nothing is read again after this point) -> inert-check: if no
+``kind: "run-launch"`` entry in
 EITHER ``phase: intent`` or ``phase: outcome`` names THIS ``run_id``, exit
 immediately, code 0, no journal write at all (AD-25: the journal is the
 single source of run truth, so "was this run really started by Marshal" is
@@ -54,17 +57,33 @@ itself a later-detectable condition (AD-9: "a dead supervisor is a reported
 condition ... never silence") -- surfacing it as a `status` finding is a
 later epic's own FR-36..40 scope, explicitly out of this story's Surface.
 
-**Why the read side never loads sidecars.** ``core.journal.fold`` accepts
-an optional ``sidecars`` mapping for large, sidecar-referenced payloads;
-this module never supplies one. The ONE fact this read needs -- whether a
-``kind: "run-launch"`` entry in either governed phase exists for this run
--- lives entirely in that entry's ``kind``/``phase``/``run_id`` fields,
-never in its payload, and either payload (``{pid, harness_run_id}`` for the
-outcome, the selector shape for the intent -- both ``cli/spin.py``'s own)
-is always small enough to inline. A payload
-this small can never be sidecar-referenced under
-``core.journal.SIDECAR_THRESHOLD_BYTES``'s own threshold, so loading
-sidecars here would read files this check never needs.
+**Why the read side DOES load sidecars.** ``core.journal.fold`` accepts an
+optional ``sidecars`` mapping for large, sidecar-referenced payloads, and
+quarantines any line whose ``sidecar_ref`` it cannot resolve
+(``MRS-JOURNAL-002``) -- a quarantined line never reaches ``by_kind``, so
+it is invisible to the inert-check above. This module used to supply no
+mapping at all, on the stated ground that both ``cli/spin.py`` payloads are
+"always small enough to inline". That was FALSE for the intent entry
+(review finding, reproduced live): ``cli/spin.py`` puts its whole echoed
+``preview`` -- one rendered feed key per RESOLVED story, unbounded -- into
+that payload, which crosses ``core.journal.SIDECAR_THRESHOLD_BYTES`` at
+roughly 150 stories and is then written as a ``{"sidecar_ref": ...}``
+placeholder. On the ``MRS-SPIN-006`` branch (the outcome append itself
+failed) that sidecar-referenced intent is the ONLY ownership proof on disk
+-- exactly the case the phase-widening above exists to serve -- so a
+large-project run whose outcome could not be journaled went silently
+unsupervised. Each referenced blob is therefore read alongside the journal
+(``_sidecar_refs`` + ``FsPort.read_text``) and handed to ``fold``.
+
+This does not weaken AD-9's "touches no other externally-writable input for
+its own control flow": no blob's CONTENT can redirect anything here. The
+inert-check reads only ``kind``/``phase``/``run_id``, all of which live in
+the journal LINE itself; resolving a sidecar only decides whether that line
+survives folding at all. Refs are accepted solely in
+``prepare_for_write``'s own ``blobs/<name>`` shape (no separators, no dot
+segments) so a corrupt or forged ref cannot walk this read out of the run
+directory, and ``fold`` independently re-validates every ref against the
+owning entry's own id before resolving it.
 
 **Why this module duplicates, rather than imports, ``cli/spin.py``'s own
 ``_tier3_path``/``_run_dir``/``_format_entry_ts`` helpers.** This story's
@@ -101,6 +120,7 @@ as a follow-up in ``deferred-work.md``.
 
 from __future__ import annotations
 
+import json
 import os
 import sys
 import time
@@ -155,6 +175,45 @@ def _format_entry_ts(moment: datetime) -> str:
     return moment.strftime("%Y-%m-%dT%H:%M:%S.") + f"{moment.microsecond // 1000:03d}Z"
 
 
+def _sidecar_refs(lines: Sequence[str]) -> tuple[str, ...]:
+    """Every ``{"sidecar_ref": <str>}`` payload placeholder named by
+    ``lines``, in order, deduplicated -- ``core.journal.fold``'s own
+    ``sidecars`` mapping is keyed by exactly these strings (see this
+    module's own docstring for why the read side needs them at all).
+
+    Deliberately tolerant: a line this scan cannot parse is SKIPPED, never
+    raised on -- ``fold`` is the one place a malformed line is judged, and
+    quarantining is its job, not this helper's. Refs are accepted only in
+    ``core.journal._sidecar_path_for``'s own ``blobs/<name>`` shape, with
+    no path separators and no dot segments in ``<name>``, so a corrupt or
+    forged ref can never walk the caller's ``read_text`` outside the run
+    directory."""
+    refs: list[str] = []
+    seen: set[str] = set()
+    for line in lines:
+        if '"sidecar_ref"' not in line:
+            continue
+        try:
+            document = json.loads(line)
+        except (ValueError, TypeError, RecursionError):
+            continue
+        if not isinstance(document, Mapping):
+            continue
+        payload = document.get("payload")
+        if not isinstance(payload, Mapping) or len(payload) != 1:
+            continue
+        ref = payload.get("sidecar_ref")
+        if not isinstance(ref, str) or not ref.startswith("blobs/"):
+            continue
+        name = ref[len("blobs/") :]
+        if not name or "/" in name or "\\" in name or name in (".", ".."):
+            continue
+        if ref not in seen:
+            seen.add(ref)
+            refs.append(ref)
+    return tuple(refs)
+
+
 def run_supervisor(
     home: Path,
     slug: str,
@@ -188,15 +247,38 @@ def run_supervisor(
 
     try:
         text = fs.read_text(journal_path)
-    except FsError as exc:
+    except (FsError, ValueError) as exc:
         # Cannot even determine whether this run is one Marshal started --
         # the only safe reading of "inert on a run it did not start" is to
         # STAY inert rather than assume ownership this read cannot prove.
+        #
+        # `ValueError` alongside `FsError` (review finding): `LocalFs.
+        # read_text` translates only `(OSError, UnicodeDecodeError)`, but an
+        # embedded NUL byte in a path makes `Path.read_text` raise a PLAIN
+        # `ValueError` -- the same CPython split this story already guards at
+        # `spawn_detached`'s `open()`, at `run()`'s `subprocess.run`, and in
+        # both `observer_mux` methods. Unreachable through `main()` today
+        # (`execve` argv cannot carry a NUL), but this is the FIRST call
+        # `run_supervisor` makes, and it is a public function a future
+        # non-argv entry point can reach directly.
         print(f"supervisor: cannot read journal {journal_path}: {exc}", file=sys.stderr)
         return 0
 
     lines = text.split("\n") if text is not None else []
-    fold_result = fold(lines)
+    # Sidecar-referenced payloads must be resolvable or `fold` quarantines
+    # the whole line -- including a `run-launch` intent whose unbounded
+    # `preview` payload crossed the inline threshold (review finding; see
+    # this module's own docstring for why the previous "always small enough
+    # to inline" rationale was false and what it cost). A blob this read
+    # cannot get hold of maps to `None`, which `fold` treats exactly as it
+    # already treats an absent one.
+    sidecars: dict[str, str | None] = {}
+    for ref in _sidecar_refs(lines):
+        try:
+            sidecars[ref] = fs.read_text(run_dir / ref)
+        except (FsError, ValueError):
+            sidecars[ref] = None
+    fold_result = fold(lines, sidecars=sidecars)
     # Widened to accept EITHER phase (review finding, both reviewers):
     # checking ONLY the OUTCOME entry meant that when cli/spin.py's own
     # outcome-journal append itself fails (MRS-SPIN-006 -- a live harness

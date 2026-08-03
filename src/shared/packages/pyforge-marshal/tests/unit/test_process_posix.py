@@ -302,6 +302,39 @@ def test_spawn_detached_launches_and_redirects_both_streams_to_the_log(
     assert "stderr line" in log_text
 
 
+def test_spawn_detached_child_does_not_import_from_its_cwd(process, tmp_path):
+    """Follow-up review finding, reproduced live: ``cwd`` sets the child's
+    working directory, but WITHOUT ``PYTHONSAFEPATH`` it also lands on the
+    child's ``sys.path[0]`` -- and every caller hands this method a ``cwd``
+    whose contents it does not own (``cli/spin.py`` passes the loop home, an
+    arbitrary project checkout). A stdlib-shadowing module there therefore
+    chose what the detached child ran, while the parent had already been
+    handed a pid and reported success.
+
+    Asserts the EFFECT, not just the kwarg: a hostile ``json.py`` sits in
+    the child's own cwd and must not be what it imports."""
+    (tmp_path / "json.py").write_text(
+        "raise SystemExit('shadowed stdlib json was imported')\n", encoding="utf-8"
+    )
+    marker = tmp_path / "imported-from.txt"
+    script = (
+        "import json, pathlib\n"
+        f"pathlib.Path({str(marker)!r}).write_text(json.__file__, encoding='utf-8')\n"
+    )
+    log_path = tmp_path / "shadow.log"
+
+    process.spawn_detached([sys.executable, "-c", script], cwd=tmp_path, log_path=log_path)
+
+    deadline = time.monotonic() + 5.0
+    while not marker.exists() and time.monotonic() < deadline:
+        time.sleep(0.05)
+    assert marker.exists(), (
+        "the detached child never completed -- it most likely imported the "
+        f"shadowing json.py in its cwd; log: {log_path.read_text(encoding='utf-8')}"
+    )
+    assert str(tmp_path) not in marker.read_text(encoding="utf-8")
+
+
 def test_spawn_detached_raises_process_error_for_a_missing_executable(
     process, tmp_path
 ):
@@ -397,6 +430,15 @@ def test_spawn_detached_calls_popen_with_the_detach_recipe(process, tmp_path, mo
     # it here would silently reintroduce that same bug for any future
     # caller of this now-generic primitive.
     assert kwargs["env"]["PYTHONUNBUFFERED"] == "1"
+    # PYTHONSAFEPATH=1 (follow-up review finding, verified live): `python
+    # -m <pkg>` puts `cwd` on `sys.path[0]`, and every caller of this method
+    # hands it a `cwd` whose contents it does not own -- cli/spin.py passes
+    # the LOOP HOME, an arbitrary project checkout. Without this, a
+    # stdlib-shadowing module or a stray `pyforge/` directory at that root
+    # decided what the detached child imported: it died at import with a raw
+    # ModuleNotFoundError (or silently ran the wrong module) while the
+    # parent had already been handed a pid and reported success.
+    assert kwargs["env"]["PYTHONSAFEPATH"] == "1"
     # The child still inherits every OTHER ambient variable -- this is an
     # addition to os.environ, never a replacement of it.
     assert kwargs["env"]["PATH"] == os.environ["PATH"]

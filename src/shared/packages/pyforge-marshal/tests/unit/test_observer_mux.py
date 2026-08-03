@@ -118,6 +118,35 @@ def test_mtime_returns_none_for_an_embedded_null_byte(observer, monkeypatch):
     assert observer.mtime(pathlib.Path("/tmp/whatever")) is None
 
 
+def test_pane_content_passes_the_capture_timeout_to_subprocess_run(observer, monkeypatch):
+    """Follow-up review finding: every fake in this module was
+    ``def _fake_run(argv, **kwargs)`` and asserted only ``argv``, so
+    NOTHING pinned the ``timeout=`` kwarg actually reaching
+    ``subprocess.run`` -- deleting it from the adapter left this whole
+    suite green, ``test_capture_pane_timeout_stays_below_the_supervisor_
+    tick`` included (it compares two constants, one of which nothing would
+    then read), while a hung ``tmux`` blocked the heartbeat loop
+    indefinitely: the exact failure that constant exists to prevent. This
+    test pins the constant to its USE, not just its value."""
+    seen: dict[str, object] = {}
+
+    def _fake_run(argv, **kwargs):
+        seen.update(kwargs)
+        return subprocess.CompletedProcess(args=argv, returncode=0, stdout="")
+
+    monkeypatch.setattr(module.subprocess, "run", _fake_run)
+    observer.pane_content("acme-session")
+
+    assert seen["timeout"] == module._CAPTURE_PANE_TIMEOUT_S
+    # The decoding discipline this adapter shares with every other
+    # subprocess caller in the package -- pinned in the same place, since
+    # dropping any of it silently changes what reaches `to_redacted`.
+    assert seen["capture_output"] is True
+    assert seen["text"] is True
+    assert seen["encoding"] == "utf-8"
+    assert seen["errors"] == "replace"
+
+
 def test_capture_pane_timeout_stays_below_the_supervisor_tick():
     """Follow-up review finding: ``_CAPTURE_PANE_TIMEOUT_S``'s own comment
     states a cross-MODULE invariant -- "sized well below the supervisor's

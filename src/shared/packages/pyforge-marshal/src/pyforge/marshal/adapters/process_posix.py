@@ -124,9 +124,13 @@ class PosixProcess:
         try:
             os.kill(pid, 0)
         except ProcessLookupError:
-            # ESRCH: no process with this pid exists (or it exists but is a
-            # zombie the kernel has already reclaimed) -- the only "gone"
-            # case this port promises.
+            # ESRCH: no process with this pid exists -- the only "gone" case
+            # this port promises. NOTE (review finding, verified live): a
+            # ZOMBIE does NOT land here. An exited-but-unreaped child still
+            # holds its pid slot, so `os.kill(pid, 0)` SUCCEEDS on it and
+            # this method reports it alive; only reaping (the parent's
+            # `wait`, or a reparenting init that reaps) frees the pid and
+            # produces ESRCH. This comment used to claim the opposite.
             return False
         except PermissionError:
             # EPERM: a process with this pid exists but this Marshal
@@ -211,7 +215,25 @@ class PosixProcess:
                     # no stdout today), but leaving it off a seam other
                     # future callers will reuse risks silently reintroducing
                     # the exact bug that env var was added to fix.
-                    env={**os.environ, "PYTHONUNBUFFERED": "1"},
+                    #
+                    # PYTHONSAFEPATH=1 (review finding, verified live):
+                    # `python -m <pkg>` puts `cwd` on `sys.path[0]`, and
+                    # every caller of this method passes a `cwd` it does not
+                    # own the contents of -- `cli/spin.py` passes the LOOP
+                    # HOME, an arbitrary project checkout. A stdlib-shadowing
+                    # module or a stray `pyforge/` directory at that root
+                    # therefore decided which code the detached child ran:
+                    # it died at import with a raw `ModuleNotFoundError` (or
+                    # silently ran the wrong module) while the parent had
+                    # already been handed a pid and reported success. A
+                    # detached child must run the interpreter's INSTALLED
+                    # environment, never whatever happens to sit in the
+                    # directory it was pointed at.
+                    env={
+                        **os.environ,
+                        "PYTHONUNBUFFERED": "1",
+                        "PYTHONSAFEPATH": "1",
+                    },
                 )
             except FileNotFoundError as exc:
                 # NOT necessarily "the executable is missing" (review
