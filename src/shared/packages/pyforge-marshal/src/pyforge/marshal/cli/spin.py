@@ -42,7 +42,7 @@ grouping value (AD-25) -> print the same resolved list and run id.
 
 **``--foreground``.** Calls the synchronous, stdio-inheriting
 ``HarnessPort.run_foreground`` INSTEAD of the detached ``spin`` path and
-relays its exit code directly, bypassing the envelope entirely (mirrors
+relays its result, bypassing the envelope entirely (mirrors
 ``run_attach``/``cli/main.py``'s ``--version`` precedent for a command that
 legitimately steps outside the envelope) -- documented in its own ``--help``
 text as unsafe for resumes (forward documentation only; ``marshal factory
@@ -51,7 +51,18 @@ through the SAME two shared precondition gates as the detached path (a
 malformed slug or an unprovisioned home are real preconditions independent
 of foreground-vs-detached), but skips the story-feed/journal machinery
 entirely -- there is no minted run id and nothing to journal for a launch
-that never called ``spin``.
+that never called ``spin``, and it needs no Tier-3 backlink because it
+writes nothing.
+
+**Relayed exit codes are PROJECTED, never verbatim.** Both no-envelope
+paths (``--foreground`` and ``run_attach``) return their child's code
+through ``core.verdict.relay_exit_code``: in-domain codes (notably ``0``,
+``1``, and ``EXIT_SIGINT``) pass through untouched, anything else collapses
+to the ERROR rung. ``cli/main.py`` admits only ``GUARDED_EXIT_CODES`` from
+a handler (AD-7's frozen domain) and clamps the rest to ``EXIT_USAGE``, so
+returning a raw child code reported ``5``/``7``/``137``/``143`` as a
+Marshal USAGE error -- see ``relay_exit_code``'s own docstring for the full
+review finding.
 
 **``run_attach``.** A SEPARATE, non-destructive command (the AC's own
 wording) -- it never mutates run state, never selects among multiple runs
@@ -65,8 +76,8 @@ and return the SAME verdict tier ``run_spin``'s identical gates would (via
 a real, registered ``Finding`` -- never a bare exit-code literal; only
 ``core/verdict.py`` may embed one, AD-7), and its happy path hands the
 terminal to the multiplexer and relays ``bmad-loop attach``'s own exit code
-verbatim -- which the spec's own I/O matrix documents as sometimes
-non-zero ("no runs found").
+(through the same projection described below) -- which the spec's own I/O
+matrix documents as sometimes non-zero ("no runs found").
 
 **Why no ``deploy``-side selection grammar.** ``core.identity`` stays
 untouched by this story (not in its Code Map) -- ``_filter_preview`` lives
@@ -80,9 +91,12 @@ sole authority for which stories a run actually executes. Never
 pre-refuses on a zero-count preview (the spec's own Never clause): that
 judgment belongs to the harness's own engine at run time.
 
-Registers ``MRS-SPIN-001`` through ``MRS-SPIN-005`` (``core/findings.py``/
+Registers ``MRS-SPIN-001`` through ``MRS-SPIN-006`` (``core/findings.py``/
 ``core/verdict.py``) -- see those modules' own docstrings for the full
-per-code rationale.
+per-code rationale. ``MRS-SPIN-006`` joined the original five in review,
+splitting "launched, but its outcome could not be journaled" (``WARN`` -- a
+live process now exists) off ``MRS-SPIN-003``'s "never launched, safe to
+retry" (``ERROR``).
 """
 
 from __future__ import annotations
@@ -115,7 +129,7 @@ from ..core.journal import (
     prepare_for_write,
 )
 from ..core.model import Finding, Severity, build_envelope
-from ..core.verdict import compute_verdict, exit_code_for
+from ..core.verdict import compute_verdict, exit_code_for, relay_exit_code
 from ..ports.fs import FsPort
 from ..ports.harness import HarnessPort
 from .config import _suppress_downstream_pipe_close
@@ -313,9 +327,11 @@ def add_factory_subparser(subparsers: argparse._SubParsersAction) -> None:
         action="store_true",
         help=(
             "Run 'bmad-loop run' inline instead of detached, blocking this "
-            "invocation until it exits and relaying its exit code. UNSAFE "
-            "for resumes (marshal factory resume is a separate, later "
-            "story's scope) -- forward documentation only."
+            "invocation until it exits and relaying its exit code (projected "
+            "into marshal's own exit-code domain: 0/1/130 pass through, any "
+            "other non-zero reports as an error). UNSAFE for resumes "
+            "(marshal factory resume is a separate, later story's scope) -- "
+            "forward documentation only."
         ),
     )
     spin_parser.add_argument(
@@ -418,10 +434,14 @@ def run_spin(
                 )
             )
             return _emit(args, data, findings)
-        # Relays bmad-loop run's own exit code directly, bypassing the
-        # envelope entirely (mirrors run_attach/cli/main.py --version's
-        # existing precedent) -- see this module's own docstring.
-        return code
+        # Relays bmad-loop run's own result, bypassing the envelope entirely
+        # (mirrors run_attach/cli/main.py --version's existing precedent) --
+        # through core.verdict's own `relay_exit_code` projection, never the
+        # raw child code: main() admits only GUARDED_EXIT_CODES from a
+        # handler (AD-7's frozen domain), so returning the raw value here
+        # silently reported every out-of-domain child code as EXIT_USAGE.
+        # See that function's own docstring for the full review finding.
+        return relay_exit_code(code)
 
     # --- story feed must resolve -- refuse early, before any write ----------
     feed_error = harness.story_feed_error(home)
@@ -464,6 +484,46 @@ def run_spin(
     )
     data["selector"] = {"epic": args.epic, "story": args.story, "max_count": args.max_count}
     data["preview"] = [render_feed_key(key) for key in preview]
+
+    # --- Tier-3 backlink must exist -- the LAST precondition before the ----
+    # first write, and the only one the write path alone needs (which is why
+    # --foreground, which writes nothing, returns above without it).
+    #
+    # Review finding (Blind Hunter + Edge Case Hunter, both verified live):
+    # `fs.is_dir(home)` was the ONLY home precondition, so a home whose
+    # Tier-3 backlink is absent still reached `fs.ensure_dir(run_dir.parent)`
+    # below -- whose `parents=True` then FABRICATED
+    # `_bmad-output/projects/<slug>/implementation-artifacts/runs/` as real
+    # local directories inside the home, and wrote this run's journal and
+    # harness.log into them, at exit 0 with no finding at all. Two harms:
+    # NFR-8 (those journals must survive worktree teardown -- through the
+    # backlink they live in the canonical store; fabricated locally they die
+    # with the home), and a later repair `marshal init <slug>` is then
+    # PERMANENTLY refused by its own MRS-INIT-005 ("a real, non-empty
+    # directory -- refusing to replace it with a backlink").
+    #
+    # A missing backlink IS a provisioning gap, so this is MRS-SPIN-002's own
+    # scenario ("loop home not provisioned"), not a new code -- and presence
+    # is the whole check: `marshal homes`' own MRS-HOMES-002 realpath-vs-
+    # canonical comparison needs a VcsPort-derived repo root this command
+    # does not take. A backlink that EXISTS but points elsewhere still writes
+    # through to a single, real Tier-3 store; only its ABSENCE causes the
+    # fabrication above.
+    tier3_path = _tier3_path(home, slug)
+    if fs.read_symlink_target(tier3_path) is None:
+        findings.append(
+            Finding(
+                code="MRS-SPIN-002",
+                severity=Severity.ERROR,
+                message=(
+                    f"loop home Tier-3 backlink not provisioned: {tier3_path} "
+                    f"is not a symlink to the canonical store -- run "
+                    f"'marshal init {slug}' first"
+                ),
+                path=str(tier3_path),
+            )
+        )
+        return _emit(args, data, findings)
 
     # --- mint the run id, THEN create its directory (AD-25/AD-6) ------------
     writer_id = _writer_id()
@@ -706,7 +766,10 @@ def run_attach(
         return _relay_attach_finding(finding)
 
     try:
-        return harness.attach(home)
+        # Same `relay_exit_code` projection --foreground uses, for the same
+        # reason (AD-7's frozen domain vs main()'s handler clamp) -- see
+        # core/verdict.py's own docstring for the review finding.
+        return relay_exit_code(harness.attach(home))
     except HarnessError as exc:
         finding = Finding(
             code="MRS-SPIN-003",
@@ -717,9 +780,27 @@ def run_attach(
 
 
 def _relay_attach_finding(finding: Finding) -> int:
-    """``run_attach``'s own no-envelope error path: print the finding's
-    message to stderr and project its classification straight to an exit
-    code -- the same ``compute_verdict``/``exit_code_for`` machinery every
-    enveloped command uses, minus the envelope itself."""
-    print(f"error: {finding.message}", file=sys.stderr)
+    """``run_attach``'s own no-envelope error path: print the finding to
+    stderr and project its classification straight to an exit code -- the
+    same ``compute_verdict``/``exit_code_for`` machinery every enveloped
+    command uses, minus the envelope itself.
+
+    Two review findings, both verified live. (1) The line printed only
+    ``finding.message``, dropping the CODE every other command in this
+    package emits (``_render_text``'s own ``{code} [{severity}] {message}``
+    shape) -- so ``marshal factory attach ../escaped`` and the IDENTICAL
+    ``run_spin`` refusal were uncorrelatable by an operator or a log
+    scraper. It now uses that same shape. (2) The ``print`` was unguarded,
+    unlike its sibling ``_emit``: an unwritable stderr (a closed pipe, a
+    full disk) raised ``OSError`` straight out of ``run_attach``, breaking
+    ``main()``'s own documented "never raises" contract with a raw
+    traceback. Guarded here exactly as ``_emit`` guards its own."""
+    try:
+        print(
+            f"error: {finding.code} [{finding.severity.value}] {finding.message}",
+            file=sys.stderr,
+            flush=True,
+        )
+    except OSError:
+        _suppress_downstream_pipe_close()
     return exit_code_for(compute_verdict((finding,)))

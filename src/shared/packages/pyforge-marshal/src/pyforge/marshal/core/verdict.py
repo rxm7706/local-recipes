@@ -203,7 +203,9 @@ GUARDED_EXIT_CODES: frozenset[int] = frozenset(_EXIT_BY_VERDICT.values()) | {
 # Story 2.4's core/gate.py::classify_doc_only_declaration adds MRS-GATE-006,
 # joining MRS-GATE-001 at GATE_FAILED.
 # Story 3.2's core/journal.py::fold adds MRS-JOURNAL-001/002, both UNEVALUABLE.
-# Story 3.3's cli/spin.py adds the ninth real caller's five codes.
+# Story 3.3's cli/spin.py adds the ninth real caller's SIX codes (MRS-SPIN-006
+# joined 001-005 in review, splitting "launched but its outcome could not be
+# journaled" off MRS-SPIN-003's "never launched, safe to retry").
 _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-IDENT-001": Verdict.UNEVALUABLE,
     "MRS-IDENT-002": Verdict.UNEVALUABLE,
@@ -299,3 +301,32 @@ def exit_code_for(verdict: Verdict | str) -> int:
     closed 6-member lattice (AD-7). ``EXIT_SIGINT`` is never produced here;
     it lives at the CLI boundary."""
     return _EXIT_BY_VERDICT[Verdict(verdict)]
+
+
+def relay_exit_code(child_code: int) -> int:
+    """Project a RELAYED child process's exit code into the frozen domain
+    (AD-7) -- for the handlers that hand a terminal to another process and
+    report its result instead of an ``Envelope``'s (Story 3.3's
+    ``marshal factory spin --foreground`` and ``marshal factory attach``).
+
+    Review finding (Blind Hunter + Edge Case Hunter, both verified live):
+    those two handlers returned the child's raw code, but ``cli/main.py``
+    admits only ``GUARDED_EXIT_CODES`` from a handler and clamps everything
+    else to ``EXIT_USAGE`` as an "internal wiring bug" -- so a child exiting
+    5/7/137/143 surfaced as ``2``, which in THIS package's own lattice reads
+    as scope-violation/usage, not as the harness failing. That also silently
+    voided ``BmadLoopHarness._normalize_returncode``: its ``128 + N`` signal
+    convention lands outside the domain for every signal except ``SIGINT``
+    (``130``), so a SIGTERM'd foreground run reported a usage error.
+
+    AD-7's domain is frozen, so widening it is not the fix; making the
+    projection DELIBERATE is. An already-in-domain code passes through
+    untouched (notably ``0``, ``1``, and ``EXIT_SIGINT`` -- so a Ctrl-C'd
+    child still reports ``130``); anything else collapses to the ERROR rung,
+    the honest statement that the relayed process failed in a way this
+    package's own closed vocabulary cannot name more precisely. ``bool`` is
+    excluded exactly as ``main()`` excludes it: ``True`` numerically equals
+    ``1`` but is not an exit code."""
+    if isinstance(child_code, bool) or child_code not in GUARDED_EXIT_CODES:
+        return _EXIT_BY_VERDICT[Verdict.ERROR]
+    return child_code

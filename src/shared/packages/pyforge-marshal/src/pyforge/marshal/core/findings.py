@@ -229,7 +229,9 @@ CODE_PATTERN = re.compile(r"MRS-[A-Z][A-Z0-9]*-[0-9]{3}")
 # Story 2.1's cli/gate.py/core/gate.py add the seventh real caller's five codes.
 # Story 2.4's core/gate.py::classify_doc_only_declaration adds a sixth code.
 # Story 3.2's core/journal.py::fold adds the eighth real caller's two codes.
-# Story 3.3's cli/spin.py adds the ninth real caller's five codes.
+# Story 3.3's cli/spin.py adds the ninth real caller's SIX codes (MRS-SPIN-006
+# joined 001-005 in review, splitting "launched but its outcome could not be
+# journaled" off MRS-SPIN-003's "never launched, safe to retry").
 REGISTERED_CODES: frozenset[str] = frozenset(
     {
         "MRS-IDENT-001",

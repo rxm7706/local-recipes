@@ -12,15 +12,20 @@ convention.
 from __future__ import annotations
 
 import argparse
+import builtins
+import errno
 import json
+import sys
 from pathlib import Path
 
 import jsonschema
 import pytest
 from pyforge.marshal.adapters.fs_local import FsError
 from pyforge.marshal.adapters.harness_bmadloop import HarnessError
+from pyforge.marshal.cli import spin as spin_module
+from pyforge.marshal.cli.main import main
 from pyforge.marshal.cli.spin import _non_negative_int, run_attach, run_spin
-from pyforge.marshal.core.verdict import EXIT_OK
+from pyforge.marshal.core.verdict import EXIT_OK, EXIT_SIGINT, Verdict, exit_code_for
 from pyforge.marshal.ports.harness import SpinResult
 
 _SCHEMA_PATH = (
@@ -36,12 +41,28 @@ _SCHEMA_PATH = (
 class FakeFs:
     """Fakes just enough of ``FsPort`` for ``run_spin``/``run_attach`` to
     reach every write path: ``is_dir`` (the loop-home-provisioned gate),
+    ``read_symlink_target`` (the Tier-3 backlink gate),
     ``ensure_dir``/``create_dir_exclusive`` (the run directory), and
     ``append_line``/``write_text_atomic`` (the journal + any sidecar
-    blob)."""
+    blob).
 
-    def __init__(self, *, dirs: set[Path] | None = None, events: list[str] | None = None) -> None:
+    ``tier3_backlink`` defaults to ``True`` -- a provisioned home HAS a
+    backlink, so every pre-existing scenario keeps describing the same
+    world it always did. Setting it ``False`` models the home this fake
+    could not previously express AT ALL, which is exactly why the missing
+    gate survived the first review pass: a fake with no
+    ``read_symlink_target`` can only ever model a well-formed home."""
+
+    def __init__(
+        self,
+        *,
+        dirs: set[Path] | None = None,
+        events: list[str] | None = None,
+        tier3_backlink: bool = True,
+    ) -> None:
         self.dirs: set[Path] = set(dirs or set())
+        self.tier3_backlink = tier3_backlink
+        self.read_symlink_target_calls: list[Path] = []
         self.calls: list[str] = []
         self._events = events if events is not None else []
         self.created_dirs: list[Path] = []
@@ -61,6 +82,13 @@ class FakeFs:
     def is_dir(self, path: Path) -> bool:
         self.calls.append("is_dir")
         return path in self.dirs
+
+    def read_symlink_target(self, path: Path) -> Path | None:
+        self.calls.append("read_symlink_target")
+        self.read_symlink_target_calls.append(path)
+        if not self.tier3_backlink:
+            return None
+        return Path("/canonical/store") / path.name
 
     def ensure_dir(self, path: Path) -> None:
         self.calls.append("ensure_dir")
@@ -627,7 +655,7 @@ def test_attach_relays_the_exit_code_and_builds_no_envelope(home, capsys):
     assert harness.attach_calls == [home]
 
 
-def test_attach_no_runs_found_relays_a_nonzero_exit_code_verbatim(home):
+def test_attach_no_runs_found_relays_its_nonzero_exit_code(home):
     fs = FakeFs(dirs={home})
     harness = FakeHarness()
     harness.attach_result = 1  # bmad-loop attach's own "no runs found" exit
@@ -669,3 +697,187 @@ def test_attach_launch_failure(home, capsys):
 
     assert exit_code != EXIT_OK
     assert "cannot launch bmad-loop attach" in capsys.readouterr().err
+
+
+# --- relayed exit codes are PROJECTED into the frozen domain, not verbatim ----
+#
+# Review finding (Blind Hunter + Edge Case Hunter, both verified live): the
+# two no-envelope paths returned their child's RAW exit code, but `main()`
+# admits only `GUARDED_EXIT_CODES` from a handler and clamps the rest to
+# `EXIT_USAGE` -- so a harness exiting 5/7/137/143 reported as a marshal
+# USAGE error, and `BmadLoopHarness._normalize_returncode`'s own 128+N
+# signal convention (added by the PREVIOUS review pass) was voided outright.
+# The `main()`-level tests below are the coverage class whose absence let
+# that through: every pre-existing test called `run_spin`/`run_attach`
+# directly, where the clamp is not in the picture at all.
+
+
+@pytest.mark.parametrize("passthrough", [0, 1, EXIT_SIGINT])
+def test_spin_foreground_passes_in_domain_exit_codes_through_untouched(home, passthrough):
+    fs = FakeFs(dirs={home})
+    harness = FakeHarness()
+    harness.foreground_result = passthrough
+
+    exit_code = run_spin(_spin_namespace("acme", foreground=True), fs=fs, harness=harness)
+
+    assert exit_code == passthrough
+
+
+@pytest.mark.parametrize("child_code", [5, 7, 128, 137, 143, 255])
+def test_spin_foreground_projects_out_of_domain_exit_codes_to_the_error_rung(home, child_code):
+    fs = FakeFs(dirs={home})
+    harness = FakeHarness()
+    harness.foreground_result = child_code
+
+    exit_code = run_spin(_spin_namespace("acme", foreground=True), fs=fs, harness=harness)
+
+    assert exit_code == exit_code_for(Verdict.ERROR)
+
+
+@pytest.mark.parametrize("child_code", [5, 137, 143])
+def test_attach_projects_out_of_domain_exit_codes_to_the_error_rung(home, child_code):
+    fs = FakeFs(dirs={home})
+    harness = FakeHarness()
+    harness.attach_result = child_code
+
+    exit_code = run_attach(_attach_namespace("acme"), fs=fs, harness=harness)
+
+    assert exit_code == exit_code_for(Verdict.ERROR)
+
+
+@pytest.mark.parametrize(
+    ("child_code", "expected"),
+    [
+        (0, EXIT_OK),
+        (1, 1),
+        (EXIT_SIGINT, EXIT_SIGINT),
+        (5, exit_code_for(Verdict.ERROR)),
+        (137, exit_code_for(Verdict.ERROR)),  # SIGKILL, via _normalize_returncode's 128+N
+        (143, exit_code_for(Verdict.ERROR)),  # SIGTERM, likewise
+    ],
+)
+def test_foreground_relay_survives_mains_handler_clamp(
+    home, monkeypatch, child_code, expected
+):
+    """End-to-end through ``main()`` -- the ONLY level at which the original
+    defect was observable. Before the fix every out-of-domain row here
+    returned ``EXIT_USAGE`` (2)."""
+    fs = FakeFs(dirs={home})
+    harness = FakeHarness()
+    harness.foreground_result = child_code
+
+    def _fake_run_spin(args):
+        return run_spin(args, fs=fs, harness=harness)
+
+    monkeypatch.setattr(spin_module, "run_spin", _fake_run_spin)
+
+    assert main(["factory", "spin", "acme", "--foreground"]) == expected
+
+
+@pytest.mark.parametrize(
+    ("child_code", "expected"),
+    [(0, EXIT_OK), (1, 1), (5, exit_code_for(Verdict.ERROR)), (137, exit_code_for(Verdict.ERROR))],
+)
+def test_attach_relay_survives_mains_handler_clamp(home, monkeypatch, child_code, expected):
+    fs = FakeFs(dirs={home})
+    harness = FakeHarness()
+    harness.attach_result = child_code
+
+    def _fake_run_attach(args):
+        return run_attach(args, fs=fs, harness=harness)
+
+    monkeypatch.setattr(spin_module, "run_attach", _fake_run_attach)
+
+    assert main(["factory", "attach", "acme"]) == expected
+
+
+# --- the Tier-3 backlink is a real precondition of the WRITE path -------------
+
+
+def test_spin_missing_tier3_backlink_refuses_before_any_write(home, capsys):
+    """Review finding (both reviewers, verified live): ``fs.is_dir(home)``
+    was the only home gate, so a home with no Tier-3 backlink reached
+    ``ensure_dir(parents=True)``, which FABRICATED the whole
+    ``_bmad-output/projects/<slug>/implementation-artifacts/runs/`` tree as
+    real local directories and wrote the journal into them -- at exit 0,
+    silently violating NFR-8 and poisoning any later ``marshal init`` with
+    its own MRS-INIT-005."""
+    fs = FakeFs(dirs={home}, tier3_backlink=False)
+    harness = FakeHarness()
+    harness.feed_keys = ("1-1-first-story",)
+
+    exit_code = run_spin(_spin_namespace("acme"), fs=fs, harness=harness)
+
+    assert exit_code != EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-SPIN-002" in out
+    assert "Tier-3 backlink" in out
+    # Nothing minted, nothing created, nothing journaled, nothing spawned.
+    assert fs.created_dirs == []
+    assert fs.ensure_dir_calls == []
+    assert fs.appended_lines == []
+    assert harness.spin_calls == []
+
+
+def test_spin_checks_the_backlink_at_the_local_tier3_path(home):
+    fs = FakeFs(dirs={home})
+    harness = FakeHarness()
+    harness.feed_keys = ("1-1-first-story",)
+
+    run_spin(_spin_namespace("acme"), fs=fs, harness=harness)
+
+    assert fs.read_symlink_target_calls == [
+        home / "_bmad-output" / "projects" / "acme" / "implementation-artifacts"
+    ]
+
+
+def test_spin_foreground_needs_no_tier3_backlink(home):
+    """``--foreground`` writes nothing at all, so the backlink is not one of
+    its preconditions -- it must still launch against a home the detached
+    path would (correctly) refuse."""
+    fs = FakeFs(dirs={home}, tier3_backlink=False)
+    harness = FakeHarness()
+    harness.foreground_result = 0
+
+    assert run_spin(_spin_namespace("acme", foreground=True), fs=fs, harness=harness) == EXIT_OK
+    assert harness.calls == ["run_foreground"]
+    assert fs.read_symlink_target_calls == []
+
+
+# --- run_attach's own no-envelope error path ---------------------------------
+
+
+def test_attach_error_path_prints_the_finding_code(capsys):
+    """Review finding: the message printed without its CODE, so the operator
+    (and any log scraper) could not correlate an attach refusal with the
+    IDENTICAL run_spin refusal, which prints the code in its envelope."""
+    fs = FakeFs()
+    harness = FakeHarness()
+
+    run_attach(_attach_namespace("../escaped-dir"), fs=fs, harness=harness)
+
+    err = capsys.readouterr().err
+    assert "MRS-SPIN-001" in err
+    assert "malformed project slug" in err
+
+
+def test_attach_error_path_survives_an_unwritable_stderr(capsys, monkeypatch):
+    """Review finding (Edge Case Hunter, verified live): the print was
+    unguarded, unlike its sibling ``_emit`` -- an unwritable stderr raised
+    ``OSError`` straight out of ``run_attach``, breaking ``main()``'s own
+    documented "never raises" contract with a raw traceback."""
+    fs = FakeFs()
+    harness = FakeHarness()
+
+    real_print = builtins.print
+
+    def _exploding_print(*args, **kwargs):
+        if kwargs.get("file") is sys.stderr:
+            raise OSError(errno.ENOSPC, "No space left on device")
+        return real_print(*args, **kwargs)
+
+    monkeypatch.setattr(builtins, "print", _exploding_print)
+
+    exit_code = run_attach(_attach_namespace("../escaped-dir"), fs=fs, harness=harness)
+
+    assert exit_code != EXIT_OK
