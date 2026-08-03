@@ -34,7 +34,7 @@ that. ``classify_outcome`` therefore takes an explicit ``failure_code``
 (required whenever ``result`` is ``None``) rather than guessing or hiding a
 second concept behind one code.
 
-Four real codes register here (the registry's seventh real caller, joining
+Five real codes register here (the registry's seventh real caller, joining
 ``core/identity.py``/``core/policy.py`` and ``cli/init.py``'s five commands
 -- see ``core/findings.py``'s own docstring for the exact per-code mapping):
 ``MRS-GATE-001`` (a command ran and exited non-zero) classifies
@@ -47,8 +47,13 @@ executable could not be launched, or its string could not be
 the check at all. ``MRS-GATE-004`` (``verify_commands`` composed to the
 empty tuple) classifies ``Verdict.WARN`` -- see
 ``no_commands_configured_finding``'s own docstring for why this is a
-distinct, non-blocking case from ``MRS-GATE-002``/``003``. See
-``core/verdict.py`` for the classification table itself.
+distinct, non-blocking case from ``MRS-GATE-002``/``003``. Story 2.4's
+``classify_doc_only_declaration`` adds the fifth, ``MRS-GATE-006`` (the
+worktree has no changes AND the story was not declared doc-only -- the one
+combination indistinguishable from a story that silently failed to do its
+work) -- classifies ``Verdict.GATE_FAILED``, the same tier as
+``MRS-GATE-001``: a real, determinable outcome, never "could not evaluate".
+See ``core/verdict.py`` for the classification table itself.
 """
 
 from __future__ import annotations
@@ -186,3 +191,50 @@ def no_commands_configured_finding() -> Finding:
             "the empty tuple; nothing was run"
         ),
     )
+
+
+def classify_doc_only_declaration(
+    *, declared_doc_only: bool, has_uncommitted_changes: bool
+) -> tuple[dict[str, object], Finding | None]:
+    """Classify a story's already-established doc-only declaration against
+    the worktree's already-established change state (Story 2.4, FR-23).
+
+    Both inputs are facts a caller already gathered -- ``declared_doc_only``
+    from the story's own declaration, ``has_uncommitted_changes`` from
+    something like ``VcsPort.has_uncommitted_changes`` (Story 1.8) -- never
+    gathered here (AD-4): this function does no I/O, no VCS call, no
+    spec-file read, exactly like ``classify_outcome`` takes an
+    already-obtained ``ProcessResult``.
+
+    Fails ONLY when the worktree has no changes AND the story was not
+    declared doc-only -- that is the one combination indistinguishable from
+    a story that silently failed to do its work, and it reports one
+    ``MRS-GATE-006`` finding naming the exact condition. Every other
+    combination -- declared with no changes (the exemption this function
+    exists for), declared with changes (nothing to suppress), or undeclared
+    with changes (an ordinary story) -- returns ``(report, None)``: a
+    doc-only declaration never produces a worse outcome than an undeclared
+    one, and a story with real changes is never penalized regardless of its
+    declaration.
+
+    The returned ``report`` always carries both input facts
+    (``declared_doc_only``, ``has_uncommitted_changes``), regardless of
+    which branch ran, so a future caller has something to fold into its own
+    output/record either way -- mirroring ``classify_outcome``'s own report
+    shape.
+    """
+    report: dict[str, object] = {
+        "declared_doc_only": declared_doc_only,
+        "has_uncommitted_changes": has_uncommitted_changes,
+    }
+    if not has_uncommitted_changes and not declared_doc_only:
+        return report, Finding(
+            code="MRS-GATE-006",
+            severity=Severity.ERROR,
+            message=(
+                "no worktree changes and the story was not declared "
+                "doc-only -- a story must either produce a change or "
+                "declare its deliverable as doc-only"
+            ),
+        )
+    return report, None
