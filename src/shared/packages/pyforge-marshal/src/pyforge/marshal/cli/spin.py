@@ -56,13 +56,14 @@ writes nothing.
 
 **Relayed exit codes are PROJECTED, never verbatim.** Both no-envelope
 paths (``--foreground`` and ``run_attach``) return their child's code
-through ``core.verdict.relay_exit_code``: in-domain codes (notably ``0``,
-``1``, and ``EXIT_SIGINT``) pass through untouched, anything else collapses
-to the ERROR rung. ``cli/main.py`` admits only ``GUARDED_EXIT_CODES`` from
-a handler (AD-7's frozen domain) and clamps the rest to ``EXIT_USAGE``, so
-returning a raw child code reported ``5``/``7``/``137``/``143`` as a
-Marshal USAGE error -- see ``relay_exit_code``'s own docstring for the full
-review finding.
+through ``core.verdict.relay_exit_code``: EXACTLY ``0``, ``1`` and
+``EXIT_SIGINT`` pass through untouched, anything else -- including a child's
+coincidental ``2``/``3``/``4``, which in THIS package's lattice would assert
+a usage/scope/gate judgment Marshal never made -- collapses to the ERROR
+rung. ``cli/main.py`` admits only ``GUARDED_EXIT_CODES`` from a handler
+(AD-7's frozen domain) and clamps the rest to ``EXIT_USAGE``, so returning a
+raw child code reported ``5``/``7``/``137``/``143`` as a Marshal USAGE error
+-- see ``relay_exit_code``'s own docstring for both review findings.
 
 **``run_attach``.** A SEPARATE, non-destructive command (the AC's own
 wording) -- it never mutates run state, never selects among multiple runs
@@ -509,8 +510,32 @@ def run_spin(
     # does not take. A backlink that EXISTS but points elsewhere still writes
     # through to a single, real Tier-3 store; only its ABSENCE causes the
     # fabrication above.
+    #
+    # `read_symlink_target` RAISES `FsError` on any `OSError` -- its own
+    # implementation comment names the concrete trigger, a `PermissionError`
+    # from an unsearchable ancestor on this package's 3.12 floor. This call
+    # was the ONLY unguarded `FsPort` call in `run_spin` (review finding,
+    # Blind Hunter + Edge Case Hunter, both verified live): every sibling
+    # call site guards it (`cli/init.py`'s own two blocking probes do), every
+    # OTHER fs call in this function guards it, and `main()` catches only
+    # `SystemExit`/`KeyboardInterrupt` -- so an escape here surfaced as a raw
+    # traceback, breaking that function's own documented "never raises"
+    # contract. Exactly the class of defect this same story already fixed
+    # twice (`story_feed_keys`, `_relay_attach_finding`).
     tier3_path = _tier3_path(home, slug)
-    if fs.read_symlink_target(tier3_path) is None:
+    try:
+        tier3_target = fs.read_symlink_target(tier3_path)
+    except FsError as exc:
+        findings.append(
+            Finding(
+                code="MRS-SPIN-002",
+                severity=Severity.ERROR,
+                message=f"cannot read the loop home Tier-3 backlink {tier3_path}: {exc}",
+                path=str(tier3_path),
+            )
+        )
+        return _emit(args, data, findings)
+    if tier3_target is None:
         findings.append(
             Finding(
                 code="MRS-SPIN-002",
@@ -573,7 +598,14 @@ def run_spin(
         return _emit(args, data, findings)
 
     # --- the detached spawn itself --------------------------------------------
+    # The log path is reported (review finding, Blind Hunter): it was
+    # computed, handed to `spin`, and then dropped -- absent from `data`,
+    # from both journal entries, and from MRS-SPIN-004's own message. For a
+    # DETACHED child the operator no longer has its stdout, so this file is
+    # the only diagnostic they have; a warning that the run id "could not be
+    # confirmed" without saying where the output went is unactionable.
     log_path = run_dir / _LOG_FILENAME
+    data["log"] = str(log_path)
     try:
         spin_result = harness.spin(
             home,
@@ -621,7 +653,7 @@ def run_spin(
                 message=(
                     f"bmad-loop run launched (pid {spin_result.pid}) but its "
                     "own self-minted run id could not be confirmed within "
-                    "the poll window"
+                    f"the poll window -- see {log_path}"
                 ),
             )
         )
@@ -681,6 +713,8 @@ def _render_text(data: Mapping[str, object], findings: tuple[Finding, ...]) -> s
         lines.append(f"preview ({len(data['preview'])}): {', '.join(data['preview'])}")
     if "run_id" in data:
         lines.append(f"run_id: {data['run_id']}")
+    if "log" in data:
+        lines.append(f"log: {data['log']}")
     if "pid" in data:
         lines.append(f"pid: {data['pid']}")
     if "harness_run_id" in data:

@@ -189,6 +189,18 @@ GUARDED_EXIT_CODES: frozenset[int] = frozenset(_EXIT_BY_VERDICT.values()) | {
     EXIT_SIGINT,
 }
 
+# The codes `relay_exit_code` lets through from a RELAYED child process --
+# deliberately a strict subset of GUARDED_EXIT_CODES (which is what a
+# HANDLER may return, a different question). Only these three carry the same
+# meaning whether Marshal or a child process produced them: success,
+# "could not be evaluated", and interrupted-by-SIGINT. The rest of the
+# admitted domain (EXIT_USAGE, and the SCOPE_VIOLATION/GATE_FAILED rungs)
+# names a judgment Marshal itself makes -- relaying a child's coincidental
+# 2/3/4 would assert one Marshal never evaluated. See `relay_exit_code`.
+_RELAY_PASSTHROUGH: frozenset[int] = frozenset(
+    {EXIT_OK, _EXIT_BY_VERDICT[Verdict.UNEVALUABLE], EXIT_SIGINT}
+)
+
 # Story 1.2's core/identity.py -- the table's first real classifications.
 # Story 1.3's core/policy.py/cli/config.py add the second real caller's six codes.
 # Story 1.4's cli/init.py adds the third real caller's four codes.
@@ -320,13 +332,27 @@ def relay_exit_code(child_code: int) -> int:
     (``130``), so a SIGTERM'd foreground run reported a usage error.
 
     AD-7's domain is frozen, so widening it is not the fix; making the
-    projection DELIBERATE is. An already-in-domain code passes through
-    untouched (notably ``0``, ``1``, and ``EXIT_SIGINT`` -- so a Ctrl-C'd
-    child still reports ``130``); anything else collapses to the ERROR rung,
-    the honest statement that the relayed process failed in a way this
-    package's own closed vocabulary cannot name more precisely. ``bool`` is
-    excluded exactly as ``main()`` excludes it: ``True`` numerically equals
-    ``1`` but is not an exit code."""
-    if isinstance(child_code, bool) or child_code not in GUARDED_EXIT_CODES:
+    projection DELIBERATE is. Exactly ``_RELAY_PASSTHROUGH`` passes through
+    untouched -- ``0``, ``1``, and ``EXIT_SIGINT`` (so a Ctrl-C'd child still
+    reports ``130``); anything else collapses to the ERROR rung, the honest
+    statement that the relayed process failed in a way this package's own
+    closed vocabulary cannot name more precisely. ``bool`` is excluded
+    exactly as ``main()`` excludes it: ``True`` numerically equals ``1`` but
+    is not an exit code.
+
+    Follow-up review finding (Blind Hunter + Edge Case Hunter, both verified
+    live): the first version of this fix tested membership in
+    ``GUARDED_EXIT_CODES``, which is ``{0, 1, 2, 3, 4, 130}`` -- so ``2``,
+    ``3`` and ``4`` ALSO passed through, reproducing the very misreport this
+    function exists to prevent. A child exiting ``2`` still surfaced as
+    ``EXIT_USAGE`` (a Marshal usage error it never committed), and one
+    exiting ``3`` asserted the ``GATE_FAILED`` rung -- a gate verdict Marshal
+    never evaluated -- from a process whose exit codes are its own, not this
+    package's. ``bmad-loop attach`` in particular returns ``subprocess.call``
+    of a multiplexer, an unconstrained code. The passthrough set is now
+    spelled explicitly rather than borrowed from the full admitted domain,
+    which made the docstring's and ``--foreground``'s ``--help`` text's own
+    "0/1/130" claim factually false."""
+    if isinstance(child_code, bool) or child_code not in _RELAY_PASSTHROUGH:
         return _EXIT_BY_VERDICT[Verdict.ERROR]
     return child_code

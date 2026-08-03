@@ -62,6 +62,12 @@ class FakeFs:
     ) -> None:
         self.dirs: set[Path] = set(dirs or set())
         self.tier3_backlink = tier3_backlink
+        # `LocalFs.read_symlink_target` RAISES `FsError` on any `OSError`
+        # (its own implementation comment names the trigger: a
+        # `PermissionError` from an unsearchable ancestor). Only a fake that
+        # can raise can model that, which is why the unguarded call survived
+        # the review pass that ADDED the backlink gate.
+        self.fail_read_symlink_target: Exception | None = None
         self.read_symlink_target_calls: list[Path] = []
         self.calls: list[str] = []
         self._events = events if events is not None else []
@@ -86,6 +92,8 @@ class FakeFs:
     def read_symlink_target(self, path: Path) -> Path | None:
         self.calls.append("read_symlink_target")
         self.read_symlink_target_calls.append(path)
+        if self.fail_read_symlink_target:
+            raise self.fail_read_symlink_target
         if not self.tier3_backlink:
             return None
         return Path("/canonical/store") / path.name
@@ -564,13 +572,17 @@ def test_spin_unconfirmed_harness_run_id_warns_but_still_exits_0(home, capsys):
 
 
 def test_spin_foreground_relays_the_exit_code_and_skips_the_journal(home):
+    # `1` is a genuine passthrough code; this test previously used `3`, which
+    # the follow-up review pass established must NOT pass through (it is the
+    # GATE_FAILED rung -- a judgment marshal never made). The projection of
+    # 2/3/4 has its own parametrized coverage below.
     fs = FakeFs(dirs={home})
     harness = FakeHarness()
-    harness.foreground_result = 3
+    harness.foreground_result = 1
 
     exit_code = run_spin(_spin_namespace("acme", foreground=True), fs=fs, harness=harness)
 
-    assert exit_code == 3
+    assert exit_code == 1
     assert harness.calls == ["run_foreground"]
     assert fs.created_dirs == []
     assert fs.appended_lines == []
@@ -723,7 +735,7 @@ def test_spin_foreground_passes_in_domain_exit_codes_through_untouched(home, pas
     assert exit_code == passthrough
 
 
-@pytest.mark.parametrize("child_code", [5, 7, 128, 137, 143, 255])
+@pytest.mark.parametrize("child_code", [2, 3, 4, 5, 7, 128, 137, 143, 255])
 def test_spin_foreground_projects_out_of_domain_exit_codes_to_the_error_rung(home, child_code):
     fs = FakeFs(dirs={home})
     harness = FakeHarness()
@@ -734,7 +746,7 @@ def test_spin_foreground_projects_out_of_domain_exit_codes_to_the_error_rung(hom
     assert exit_code == exit_code_for(Verdict.ERROR)
 
 
-@pytest.mark.parametrize("child_code", [5, 137, 143])
+@pytest.mark.parametrize("child_code", [2, 3, 4, 5, 137, 143])
 def test_attach_projects_out_of_domain_exit_codes_to_the_error_rung(home, child_code):
     fs = FakeFs(dirs={home})
     harness = FakeHarness()
@@ -751,6 +763,9 @@ def test_attach_projects_out_of_domain_exit_codes_to_the_error_rung(home, child_
         (0, EXIT_OK),
         (1, 1),
         (EXIT_SIGINT, EXIT_SIGINT),
+        (2, exit_code_for(Verdict.ERROR)),  # was EXIT_USAGE -- see the class below
+        (3, exit_code_for(Verdict.ERROR)),  # was the GATE_FAILED rung
+        (4, exit_code_for(Verdict.ERROR)),
         (5, exit_code_for(Verdict.ERROR)),
         (137, exit_code_for(Verdict.ERROR)),  # SIGKILL, via _normalize_returncode's 128+N
         (143, exit_code_for(Verdict.ERROR)),  # SIGTERM, likewise
@@ -881,3 +896,109 @@ def test_attach_error_path_survives_an_unwritable_stderr(capsys, monkeypatch):
     exit_code = run_attach(_attach_namespace("../escaped-dir"), fs=fs, harness=harness)
 
     assert exit_code != EXIT_OK
+
+
+# --- follow-up review pass: the last unguarded FsPort call --------------------
+
+
+def test_spin_unreadable_tier3_backlink_exits_cleanly_as_mrs_spin_002(home, capsys):
+    """Review finding (Blind Hunter + Edge Case Hunter, both verified live):
+    ``fs.read_symlink_target`` was the ONLY unguarded ``FsPort`` call left in
+    ``run_spin`` -- added by the PREVIOUS pass's own backlink-gate fix. It
+    raises ``FsError`` on any ``OSError``, and ``main()`` catches only
+    ``SystemExit``/``KeyboardInterrupt``, so an unsearchable ancestor
+    surfaced as a raw traceback instead of the clean refusal every other
+    precondition in this function produces."""
+    fs = FakeFs(dirs={home})
+    fs.fail_read_symlink_target = FsError("cannot read symlink: Permission denied")
+    harness = FakeHarness()
+    harness.feed_keys = ("1-1-first-story",)
+
+    exit_code = run_spin(_spin_namespace("acme"), fs=fs, harness=harness)
+
+    assert exit_code == exit_code_for(Verdict.ERROR)
+    assert "MRS-SPIN-002" in capsys.readouterr().out
+    # Refused BEFORE the first write, exactly as an absent backlink is.
+    assert "create_dir_exclusive" not in fs.calls
+    assert "append_line" not in fs.calls
+    assert harness.spin_calls == []
+
+
+def test_spin_unreadable_tier3_backlink_never_escapes_through_main(home, monkeypatch):
+    """The same defect at the level it was actually observable: ``main()``'s
+    own documented "never raises" contract."""
+    fs = FakeFs(dirs={home})
+    fs.fail_read_symlink_target = FsError("cannot read symlink: Permission denied")
+    harness = FakeHarness()
+    harness.feed_keys = ("1-1-first-story",)
+
+    monkeypatch.setattr(
+        spin_module, "run_spin", lambda args: run_spin(args, fs=fs, harness=harness)
+    )
+
+    assert main(["factory", "spin", "acme"]) == exit_code_for(Verdict.ERROR)
+
+
+# --- follow-up review pass: the harness log path is reported -------------------
+
+
+def test_spin_reports_the_harness_log_path(home, capsys):
+    """Review finding (Blind Hunter): the log path was computed, handed to
+    ``spin``, and then dropped -- absent from ``data``, from both journal
+    entries, and from the text render. For a DETACHED child whose stdout the
+    operator no longer has, that file is their only diagnostic."""
+    fs = FakeFs(dirs={home})
+    harness = FakeHarness()
+    harness.feed_keys = ("1-1-first-story",)
+
+    run_spin(_spin_namespace("acme", fmt="json"), fs=fs, harness=harness)
+
+    envelope = json.loads(capsys.readouterr().out)
+    log_path = envelope["data"]["log"]
+    assert log_path.endswith("harness.log")
+    # The same path `spin` was actually told to redirect into.
+    assert str(harness.spin_calls[0]["log_path"]) == log_path
+
+
+def test_spin_unconfirmed_run_id_warning_names_the_log_path(home, capsys):
+    """``MRS-SPIN-004`` said the run id "could not be confirmed" without
+    saying where to look -- unactionable for a detached process."""
+    fs = FakeFs(dirs={home})
+    harness = FakeHarness()
+    harness.feed_keys = ("1-1-first-story",)
+    harness.spin_result = SpinResult(pid=4242, harness_run_id=None)
+
+    assert run_spin(_spin_namespace("acme"), fs=fs, harness=harness) == EXIT_OK
+
+    out = capsys.readouterr().out
+    assert "MRS-SPIN-004" in out
+    assert str(harness.spin_calls[0]["log_path"]) in out
+
+
+# --- follow-up review pass: the sidecar branch of _append_entry ----------------
+
+
+def test_spin_oversized_preview_writes_the_sidecar_blob_before_its_line(home):
+    """Review finding (Blind Hunter): ``_append_entry``'s sidecar branch was
+    reachable from ``run_spin`` (a preview list long enough to push the
+    payload past ``SIDECAR_THRESHOLD_BYTES``) but entirely unexercised --
+    no test built a payload that large. The ordering is the invariant that
+    matters: the blob must land BEFORE the line referencing it, or a reader
+    can observe a ``sidecar_ref`` that does not yet resolve."""
+    events: list[str] = []
+    fs = FakeFs(dirs={home}, events=events)
+    harness = FakeHarness(events=events)
+    # ~700 keys of ~8 JSON bytes each clears the 4096-byte threshold.
+    harness.feed_keys = tuple(f"1-{n}-story" for n in range(1, 701))
+
+    assert run_spin(_spin_namespace("acme"), fs=fs, harness=harness) == EXIT_OK
+
+    assert len(fs.written_texts) == 1
+    blob_path, blob_content = next(iter(fs.written_texts.items()))
+    assert blob_path.parent.name == "blobs"
+    assert "1.700" in blob_content
+    # The intent line embeds the placeholder, not the payload...
+    intent_line = json.loads(fs.appended_lines[0][1])
+    assert intent_line["payload"] == {"sidecar_ref": f"blobs/{blob_path.name}"}
+    # ...and the blob was written before it.
+    assert fs.calls.index("write_text_atomic") < fs.calls.index("append_line")
