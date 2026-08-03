@@ -442,6 +442,20 @@ def run_evaluate(args: argparse.Namespace, *, process: ProcessPort | None = None
         data["scope"] = "policy-seed-only"
         data["scope_note"] = "mid-run freezes not visible"
 
+        # FR-24: the ALREADY-selected gate mode IS an autonomy declaration --
+        # `seed_view()` is the sole whitelisted accessor for the seed-tagged
+        # `gate_mode` field (AD-26), and this IS the one place a seed field
+        # is legitimately the live value (see this module's own "Scope"
+        # note above). `describe_gate_mode` is pure data, never prose, and
+        # folding its result into `data` here -- before `build_envelope` --
+        # is what makes it appear in every envelope this branch produces,
+        # `--format json` and the text projection alike (AD-14).
+        gate_mode_report = gate.describe_gate_mode(
+            effective.seed_view()["gate_mode"].value
+        )
+        data["gate_mode"] = gate_mode_report["gate_mode"]
+        data["autonomy_label"] = gate_mode_report["autonomy_label"]
+
         commands = effective.verify_commands.value
         if not commands:
             # MRS-GATE-004 asserts the allowlist is UNCONFIGURED. When an
@@ -613,6 +627,16 @@ def _render_text(data: Mapping[str, object], findings: tuple[Finding, ...]) -> s
         else "policy source: (none read)",
         f"scope: {data['scope']} ({data['scope_note']})",
     ]
+    if "gate_mode" in data:
+        # Story 2.5/FR-24: absent in the --run branch (that scope never
+        # reads gate_mode at all, AD-26), present here alongside every
+        # other policy-seed-only field -- AD-14 requires this projection,
+        # not just the `--format json` path, to carry it.
+        autonomy = data["autonomy_label"]
+        lines.append(
+            f"gate mode: {data['gate_mode']} "
+            f"({autonomy['level']} -- {autonomy['name']})"
+        )
     commands = data.get("commands") or []
     if commands:
         lines.append("commands:")

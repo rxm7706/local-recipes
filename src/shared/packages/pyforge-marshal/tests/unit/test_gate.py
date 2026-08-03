@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import pytest
 
-from pyforge.marshal.core import findings, gate, verdict
+from pyforge.marshal.core import findings, gate, policy, verdict
 from pyforge.marshal.core.findings import UnregisteredFindingCodeError
 from pyforge.marshal.core.model import Finding, Severity, Verdict
 from pyforge.marshal.core.verdict import classify
@@ -312,3 +312,47 @@ def test_classify_doc_only_declaration_failure_and_an_independent_scope_violatio
     )
     result = verdict.compute_verdict([doc_only_finding, scope_violation_finding])
     assert result is Verdict.GATE_FAILED
+
+
+# --- describe_gate_mode (Story 2.5, FR-24, I/O matrix's first 3 rows) --------
+
+
+def test_describe_gate_mode_per_story_spec_approval_is_l2():
+    report = gate.describe_gate_mode("per-story-spec-approval")
+    assert report == {
+        "gate_mode": "per-story-spec-approval",
+        "autonomy_label": policy.GATE_MODE_AUTONOMY_LABELS["per-story-spec-approval"],
+    }
+    assert report["autonomy_label"]["level"] == "L2"
+
+
+def test_describe_gate_mode_per_epic_is_l3():
+    report = gate.describe_gate_mode("per-epic")
+    assert report["gate_mode"] == "per-epic"
+    assert report["autonomy_label"]["level"] == "L3"
+    assert report["autonomy_label"]["name"] == "Conditional / Context Gates"
+
+
+def test_describe_gate_mode_none_is_l4():
+    report = gate.describe_gate_mode("none")
+    assert report["gate_mode"] == "none"
+    assert report["autonomy_label"]["level"] == "L4"
+    assert report["autonomy_label"]["name"] == "Approver"
+
+
+def test_describe_gate_mode_returns_a_fresh_dict_not_an_alias():
+    """Mutating the returned report must never mutate the module-level
+    `GATE_MODE_AUTONOMY_LABELS` constant it was shaped from."""
+    report = gate.describe_gate_mode("per-epic")
+    report["autonomy_label"]["level"] = "TAMPERED"
+    assert policy.GATE_MODE_AUTONOMY_LABELS["per-epic"]["level"] == "L3"
+
+
+def test_describe_gate_mode_rejects_out_of_vocabulary_mode():
+    """Defensive: unreachable via the real caller since `compose()` already
+    restricts `gate_mode` to the 3-value vocabulary -- an out-of-vocabulary
+    call is a programmer error, so this raises `ValueError` naming the
+    invalid value, never a silent default and never a `Finding` (mirrors
+    `core/verdict.py::classify()`'s own precedent)."""
+    with pytest.raises(ValueError, match="bogus"):
+        gate.describe_gate_mode("bogus")

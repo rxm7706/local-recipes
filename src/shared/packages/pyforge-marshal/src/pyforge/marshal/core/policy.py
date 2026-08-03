@@ -127,6 +127,44 @@ _ALL_KEYS: frozenset[str] = _STATIC_KEYS | _SEED_KEYS
 _STAGE_NAMES: frozenset[str] = frozenset({"dev", "review", "triage"})
 _GATE_MODES: frozenset[str] = frozenset({"none", "per-epic", "per-story-spec-approval"})
 
+# FR-24's gate-mode ladder: each of _GATE_MODES's 3 values IS an autonomy
+# declaration, keyed by exactly those 3 values -- DATA, never an
+# interpolated prose string, so a caller renders or compares it without
+# re-deriving the mapping. Verbatim from the PRD/glossary's own table:
+# `per-story-spec-approval` -> L2 "Task-Based / Operator" (human approves
+# each unit's contract before work proceeds); `per-epic` -> L3 "Conditional
+# / Context Gates" (machine-readable boundaries, human at epic seams -- the
+# production ceiling); `none` -> L4 "Approver" (runs independently,
+# surfaces only at blockers or pre-specified conditions). L5 "Observer" is
+# the table's fourth row, but it names an unbuilt gate mode with no
+# `_GATE_MODES` counterpart, so it has no entry here.
+# `core/gate.py::describe_gate_mode` is the sole consumer that shapes one
+# entry into an envelope-ready report; see that module for why an
+# out-of-vocabulary key raises rather than returning a Finding.
+GATE_MODE_AUTONOMY_LABELS: Mapping[str, Mapping[str, str]] = {
+    "per-story-spec-approval": {
+        "level": "L2",
+        "name": "Task-Based / Operator",
+        "meaning": "Human approves each unit's contract before work proceeds.",
+    },
+    "per-epic": {
+        "level": "L3",
+        "name": "Conditional / Context Gates",
+        "meaning": (
+            "Machine-readable boundaries; human at epic seams. The "
+            "production ceiling."
+        ),
+    },
+    "none": {
+        "level": "L4",
+        "name": "Approver",
+        "meaning": (
+            "Runs independently; surfaces only at blockers or "
+            "pre-specified conditions."
+        ),
+    },
+}
+
 # The conservative charset a project slug may draw from -- it is interpolated
 # as ONE literal path segment of the generated worktree_seed_paths entry
 # (`_bmad-output/projects/<slug>/implementation-artifacts`), so anything that
