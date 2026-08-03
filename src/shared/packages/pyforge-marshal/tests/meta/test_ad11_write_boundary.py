@@ -347,6 +347,39 @@ class _RecordingHarness:
         return SpinResult(pid=4242, harness_run_id="20260803T101112000Z-abcd1234")
 
 
+class _RecordingProcess:
+    """Fakes ``ProcessPort``'s ``spawn_detached`` for Story 3.4's supervisor
+    spawn, on exactly the same principle ``_RecordingHarness.spin`` uses: the
+    call itself launches a process (not a write this guard tracks), but the
+    LOG PATH it is handed is a real write target -- ``PosixProcess.
+    spawn_detached`` ``open(log_path, "wb")``s it, truncating or creating a
+    file entirely OUTSIDE ``FsPort`` -- so that path is recorded and guarded
+    like any other.
+
+    Injecting this at all is the review finding this class exists for: the
+    Story 3.3 scenario below passed no ``process=``, so it drove the REAL
+    ``PosixProcess`` and thereby (a) left a genuine non-``FsPort`` write into
+    the canonical Tier-3 store completely unguarded -- invisible to
+    ``fs.write_paths``, whose count assertion still passed -- and (b) stood
+    one ``_RecordingFs`` behaviour change (any fake that actually creates the
+    run directory) away from spawning a real detached Python process out of a
+    meta-test. This is verbatim the omission class this file's own docstring
+    records the Story 3.3 review catching one story earlier."""
+
+    def __init__(self) -> None:
+        self.spawn_log_paths: list[Path] = []
+
+    def run(self, argv, *, cwd: Path, timeout_s: float | None = None):  # pragma: no cover
+        raise AssertionError("run_spin must never call ProcessPort.run")
+
+    def is_alive(self, pid: int) -> bool:  # pragma: no cover
+        raise AssertionError("run_spin must never call ProcessPort.is_alive")
+
+    def spawn_detached(self, argv, *, cwd: Path, log_path: Path) -> int:
+        self.spawn_log_paths.append(log_path)
+        return 5150
+
+
 def test_preflight_writes_resolve_under_the_home_or_the_ack_state_path(
     tmp_path, monkeypatch
 ):
@@ -461,7 +494,15 @@ def test_spin_writes_resolve_under_the_home_and_reach_it_through_the_tier3_backl
     those in-home paths a view of the canonical store rather than a second,
     local copy of it. (The refusal behaviour when the backlink is absent is
     ``test_spin.py``'s own
-    ``test_spin_missing_tier3_backlink_refuses_before_any_write``.)"""
+    ``test_spin_missing_tier3_backlink_refuses_before_any_write``.)
+
+    Extended again for Story 3.4 (follow-up review finding, both reviewers),
+    which added a SECOND non-``FsPort`` write target to this same command:
+    the supervisor sidecar's own ``supervisor.log``, opened directly by
+    ``PosixProcess.spawn_detached``. The identical omission repeated one
+    story later -- this scenario passed no ``process=``, so the real adapter
+    ran and the new write went entirely unguarded while the count assertion
+    above kept passing. See ``_RecordingProcess``'s own docstring."""
     monkeypatch.setenv("BMAD_LOOP_HOME_ROOT", str(tmp_path / "loop-homes"))
     slug = "acme"
     home = tmp_path / "loop-homes" / slug
@@ -472,11 +513,12 @@ def test_spin_writes_resolve_under_the_home_and_reach_it_through_the_tier3_backl
 
     fs = _RecordingFs({home}, symlinks={tier3_local: tier3_canonical})
     harness = _RecordingHarness()
+    process = _RecordingProcess()
 
     args = argparse.Namespace(
         slug=slug, epic=None, story=None, max_count=None, foreground=False, format="text"
     )
-    exit_code = run_spin(args, fs=fs, harness=harness)
+    exit_code = run_spin(args, fs=fs, harness=harness, process=process)
 
     assert exit_code == EXIT_OK
     # Non-vacuous: the run directory's parent (ensure_dir), the run directory
@@ -484,16 +526,25 @@ def test_spin_writes_resolve_under_the_home_and_reach_it_through_the_tier3_backl
     # outcome, both to the same journal.jsonl) -- four recorded writes.
     assert len(fs.write_paths) == 4, f"unexpected write set: {fs.write_paths}"
     assert harness.spin_log_paths, "no spin log path was observed -- the guard would be vacuous"
+    # Story 3.4: the supervisor's own log is the SECOND non-FsPort write
+    # target this command hands out, and it must be guarded exactly like the
+    # harness log above -- without this the guard is blind to it entirely.
+    assert process.spawn_log_paths, (
+        "no supervisor log path was observed -- run_spin no longer spawns a "
+        "supervisor, or stopped routing it through the injected ProcessPort, "
+        "and this half of the guard has gone vacuous"
+    )
 
     home_resolved = home.resolve()
-    for path in [*fs.write_paths, *harness.spin_log_paths]:
+    guarded_paths = [*fs.write_paths, *harness.spin_log_paths, *process.spawn_log_paths]
+    for path in guarded_paths:
         resolved = Path(path).resolve()
         assert home_resolved in resolved.parents, (
             f"write to {path} does not resolve under the provisioned home {home}"
         )
 
     # Every one of those paths sits under the local Tier-3 path...
-    for path in [*fs.write_paths, *harness.spin_log_paths]:
+    for path in guarded_paths:
         assert tier3_local in Path(path).parents, (
             f"write to {path} does not pass through the Tier-3 path {tier3_local}"
         )

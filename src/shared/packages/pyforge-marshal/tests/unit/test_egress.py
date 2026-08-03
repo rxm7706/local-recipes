@@ -602,6 +602,8 @@ def test_egress_ports_registry_contents():
         "HarnessPort": False,
         "VcsPort": False,
         "RecordPort": True,
+        "ClockPort": False,
+        "SessionObserverPort": False,
     }
 
 
