@@ -22,6 +22,11 @@ mtime/permissions), not the temp-file-then-``os.replace`` dance the other
 writers here use: seeding a gitignored adapter config is a plain
 copy-when-absent (the caller already checked absence), not a repoint of a
 name already in use by a live reader.
+
+Story 2.6 adds ``write_redacted_atomic`` -- ``ports.record.RecordPort``'s
+sole implementation (AD-34). It delegates entirely to ``write_text_atomic``:
+no new write mechanics, only a type boundary that accepts a
+``core.egress.Redacted`` payload instead of a bare ``str``.
 """
 
 from __future__ import annotations
@@ -30,6 +35,8 @@ import os
 import shutil
 import threading
 from pathlib import Path
+
+from ..core.egress import Redacted
 
 
 class FsError(Exception):
@@ -184,3 +191,19 @@ class LocalFs:
             shutil.copy2(src, dst)
         except OSError as exc:
             raise FsError(f"cannot copy {src} to {dst}: {exc}") from exc
+
+    def write_redacted_atomic(self, path: Path, payload: Redacted) -> None:
+        """``RecordPort``'s sole implementation (Story 2.6): delegates
+        entirely to ``write_text_atomic`` -- the same atomic write; the
+        only difference is the accepted TYPE (``Redacted``, never a bare
+        ``str``), enforced structurally by ``ports/record.py``'s own
+        annotation and the AD-34 meta-test. Raises ``TypeError`` if
+        ``payload`` is not a ``Redacted`` instance (a contract violation --
+        review finding, verified live: without this check, a caller passing
+        e.g. a bare ``str`` or ``None`` crashed with a raw
+        ``AttributeError`` on ``payload.text``, not the ``FsError``
+        contract this method's own docstring promised). Otherwise raises
+        ``FsError`` on failure, identical to ``write_text_atomic``."""
+        if not isinstance(payload, Redacted):
+            raise TypeError(f"payload must be a Redacted instance, got {payload!r}")
+        self.write_text_atomic(path, payload.text)

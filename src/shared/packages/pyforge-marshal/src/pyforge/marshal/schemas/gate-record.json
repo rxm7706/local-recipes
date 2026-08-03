@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:local-recipes:pyforge-marshal:gate-record.v1",
+  "title": "MarshalGateRecord",
+  "description": "The dict shape core.egress.build_gate_record() produces (Story 2.6, AD-34): a durable record of one completed gate evaluation -- the commands run, their exit codes, the scope-check verdict, the tree revision, and a UTC ISO-8601 timestamp. additionalProperties is false at both the document and the commandReport level, matching policy.json's/envelope.v1.json's own closed-schema discipline. This is the shape a RecordPort implementation persists AFTER the record has been passed through core.egress.to_redacted() -- this schema describes the pre-redaction dict shape build_gate_record() returns; jsonschema validates it only in tests (src/ never runtime-validates against it, matching policy.json's own precedent).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["story", "commands", "scope_check_verdict", "tree_revision", "timestamp"],
+  "properties": {
+    "story": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+[a-z]?$",
+      "description": "The canonicalized story key (AD-23/AD-38), e.g. \"2.6\" or \"6.1a\" -- core.identity.normalize()'s one dot form. Named \"story\", not \"story_key\": the latter ends in the _KEY suffix core.policy.is_secret_key matches, which would redact the record's own story identifier on every real to_redacted() call."
+    },
+    "commands": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/commandReport" },
+      "description": "One entry per configured verify command, mirroring core.gate.classify_outcome's own report shape."
+    },
+    "scope_check_verdict": {
+      "description": "The scope-check verdict (Story 2.3, not shipped yet), or null -- the only value any real caller can supply today.",
+      "enum": ["clean", "warn", "unevaluable", "scope-violation", "gate-failed", "error", null]
+    },
+    "tree_revision": {
+      "type": "string",
+      "minLength": 1,
+      "description": "An already-gathered fact identifying the evaluated tree state -- this schema does not prescribe its format (e.g. a git SHA)."
+    },
+    "timestamp": {
+      "type": "string",
+      "description": "A UTC ISO-8601 timestamp (zero tz offset), parsed -- never generated -- by build_gate_record()."
+    }
+  },
+  "$defs": {
+    "commandReport": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["command", "returncode", "resolvable"],
+      "properties": {
+        "command": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The verify command string, as configured."
+        },
+        "returncode": {
+          "type": ["integer", "null"],
+          "description": "The process exit code, or null when the command never ran (resolvable: false)."
+        },
+        "resolvable": {
+          "type": "boolean",
+          "description": "Whether the command actually ran to completion (classify_outcome's own field)."
+        },
+        "stdout": {
+          "type": "string",
+          "description": "Captured stdout -- present only when resolvable is true."
+        },
+        "stderr": {
+          "type": "string",
+          "description": "Captured stderr -- present only when resolvable is true."
+        }
+      }
+    }
+  }
+}

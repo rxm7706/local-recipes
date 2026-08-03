@@ -10,6 +10,7 @@ from pathlib import Path
 import pytest
 
 from pyforge.marshal.adapters.fs_local import FsError, LocalFs, _tmp_sibling
+from pyforge.marshal.core.egress import Redacted
 
 
 @pytest.fixture
@@ -377,3 +378,48 @@ def test_copy_file_raises_fs_error_on_unwritable_destination_parent(fs, tmp_path
     blocked.write_text("occupied", encoding="utf-8")
     with pytest.raises(FsError):
         fs.copy_file(src, blocked / "dst.txt")
+
+
+# --- write_redacted_atomic (Story 2.6, AD-34) ---------------------------------
+
+
+def test_write_redacted_atomic_writes_the_payloads_text(fs, tmp_path):
+    target = tmp_path / "gate-record.json"
+    fs.write_redacted_atomic(target, Redacted(text='{"a": 1}'))
+    assert target.read_text(encoding="utf-8") == '{"a": 1}'
+
+
+def test_write_redacted_atomic_creates_parent_dirs(fs, tmp_path):
+    target = tmp_path / "nested" / "deeper" / "gate-record.json"
+    fs.write_redacted_atomic(target, Redacted(text="{}"))
+    assert target.read_text(encoding="utf-8") == "{}"
+
+
+def test_write_redacted_atomic_overwrites_existing_content(fs, tmp_path):
+    target = tmp_path / "gate-record.json"
+    target.write_text("old", encoding="utf-8")
+    fs.write_redacted_atomic(target, Redacted(text="new"))
+    assert target.read_text(encoding="utf-8") == "new"
+
+
+def test_write_redacted_atomic_leaves_no_temp_file_behind(fs, tmp_path):
+    target = tmp_path / "gate-record.json"
+    fs.write_redacted_atomic(target, Redacted(text="{}"))
+    leftovers = [p for p in tmp_path.iterdir() if p.name != "gate-record.json"]
+    assert leftovers == []
+
+
+def test_write_redacted_atomic_raises_fs_error_on_unwritable_target(fs, tmp_path):
+    blocked = tmp_path / "not-a-directory"
+    blocked.write_text("occupied", encoding="utf-8")
+    with pytest.raises(FsError):
+        fs.write_redacted_atomic(blocked / "gate-record.json", Redacted(text="{}"))
+
+
+@pytest.mark.parametrize("bogus_payload", ["a bare str", None, {"text": "{}"}, 123])
+def test_write_redacted_atomic_rejects_a_non_redacted_payload(fs, tmp_path, bogus_payload):
+    """Regression (review finding, verified live): without a type check,
+    a non-``Redacted`` payload crashed with a raw ``AttributeError`` on
+    ``payload.text`` instead of the documented ``TypeError`` contract."""
+    with pytest.raises(TypeError, match="Redacted"):
+        fs.write_redacted_atomic(tmp_path / "gate-record.json", bogus_payload)
