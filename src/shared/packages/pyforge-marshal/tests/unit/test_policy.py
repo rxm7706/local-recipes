@@ -797,3 +797,36 @@ def test_effective_policy_repr_redacts_secret_shaped_fields(monkeypatch):
     assert "'none'" not in text
     # non-secret fields still repr their real values
     assert "acme" in text
+
+
+# --- GATE_MODE_AUTONOMY_LABELS (Story 2.5, FR-24) -----------------------------
+
+
+def test_gate_mode_autonomy_labels_keys_equal_gate_modes_exactly():
+    """The mapping is keyed by exactly `_GATE_MODES`'s 3 values -- neither
+    more (e.g. the unbuilt L5 'Observer' row) nor fewer."""
+    assert set(policy.GATE_MODE_AUTONOMY_LABELS.keys()) == policy._GATE_MODES
+    assert len(policy.GATE_MODE_AUTONOMY_LABELS) == 3
+
+
+@pytest.mark.parametrize("mode", sorted(policy._GATE_MODES))
+def test_gate_mode_autonomy_labels_entry_shape(mode):
+    """Every entry is `{"level": ..., "name": ..., "meaning": ...}` -- three
+    non-empty string keys, data rather than an interpolated prose string."""
+    entry = policy.GATE_MODE_AUTONOMY_LABELS[mode]
+    assert set(entry.keys()) == {"level", "name", "meaning"}
+    for key in ("level", "name", "meaning"):
+        assert isinstance(entry[key], str)
+        assert entry[key] != ""
+
+
+def test_gate_mode_autonomy_labels_verbatim_fr24_text():
+    """The verbatim FR-24/glossary label text (level + name); the exact
+    mapping this story's Always section names."""
+    labels = policy.GATE_MODE_AUTONOMY_LABELS
+    assert labels["per-story-spec-approval"]["level"] == "L2"
+    assert labels["per-story-spec-approval"]["name"] == "Task-Based / Operator"
+    assert labels["per-epic"]["level"] == "L3"
+    assert labels["per-epic"]["name"] == "Conditional / Context Gates"
+    assert labels["none"]["level"] == "L4"
+    assert labels["none"]["name"] == "Approver"
