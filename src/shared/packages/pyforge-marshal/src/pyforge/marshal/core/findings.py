@@ -122,9 +122,29 @@ major-mismatch case; it is now split into its own code because it does
 NOT block: ``MRS-PREFLIGHT-002`` remains for ``harness_version is None``
 or a genuine major-version mismatch (``Verdict.ERROR``, blocking,
 unchanged), while ``MRS-PREFLIGHT-011`` classifies ``Verdict.WARN``
-(non-blocking) -- see ``core/verdict.py``. Later stories
-append further real codes here as they gain their own real callers. The
-registry MECHANISM
+(non-blocking) -- see ``core/verdict.py``. Story 2.1's ``cli/gate.py``/
+``core/gate.py`` (``marshal gate evaluate``, FR-20) add the registry's
+seventh real caller and its own five codes: ``MRS-GATE-001`` (a configured
+verify command ran and exited non-zero), ``MRS-GATE-002`` (a verify
+command's executable could not be launched at all -- surfaced by the
+injected ``ProcessPort``, never a pre-flight ``shutil.which`` check),
+``MRS-GATE-003`` (a verify command's string could not be ``shlex.split``,
+e.g. an unterminated quote), ``MRS-GATE-004`` (``verify_commands`` composed
+to the empty tuple -- Marshal's own ``DEFAULT_POLICY`` value, not a
+project's declared intent to skip gating), and ``MRS-GATE-005`` (``--run
+<id>`` was supplied but no run-journal fold exists yet -- ``core/journal``
+is Story 3.1/3.2, both ``backlog``). ``MRS-GATE-001`` classifies
+``Verdict.GATE_FAILED`` -- the table's first classification into that rung,
+distinct from every prior code's ``Verdict.ERROR``/``Verdict.UNEVALUABLE``
+tier: a REAL check ran and failed, not "an internal Marshal operation
+failed" or "could not evaluate". ``MRS-GATE-002``/``003``/``005`` classify
+``Verdict.UNEVALUABLE`` (Marshal could not run the check at all -- the same
+tier as ``MRS-PREFLIGHT-006``'s own verify-command-resolvability code);
+``MRS-GATE-004`` classifies ``Verdict.WARN``, the same tier as
+``MRS-POLICY-005``/``MRS-PREFLIGHT-011`` -- a legitimate, non-blocking
+bootstrap state, never a silent ``clean`` -- see ``core/verdict.py``. Later
+stories append further real codes here as they gain their own real callers.
+The registry MECHANISM
 (format check, then membership check) is separately proven via
 ``monkeypatch``-injected synthetic codes in ``tests/unit/test_findings.py``.
 
@@ -154,6 +174,7 @@ CODE_PATTERN = re.compile(r"MRS-[A-Z][A-Z0-9]*-[0-9]{3}")
 # Story 1.8's cli/init.py::run_teardown adds the sixth real caller's three codes.
 # Story 1.9's cli/init.py::run_preflight adds an eleventh code, graduating
 # the harness-version check into two tiers.
+# Story 2.1's cli/gate.py/core/gate.py add the seventh real caller's five codes.
 REGISTERED_CODES: frozenset[str] = frozenset(
     {
         "MRS-IDENT-001",
@@ -186,6 +207,11 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-TEARDOWN-001",
         "MRS-TEARDOWN-002",
         "MRS-TEARDOWN-003",
+        "MRS-GATE-001",
+        "MRS-GATE-002",
+        "MRS-GATE-003",
+        "MRS-GATE-004",
+        "MRS-GATE-005",
     }
 )
 

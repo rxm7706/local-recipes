@@ -71,6 +71,7 @@ from ..adapters.harness_bmadloop import (
 )
 from ..core.verdict import EXIT_OK, EXIT_SIGINT, EXIT_USAGE, GUARDED_EXIT_CODES
 from . import config as config_cli
+from . import gate as gate_cli
 from . import init as init_cli
 
 # Scaffold stage (Story 1.1): __init__.py stays empty (no __version__
@@ -189,6 +190,7 @@ def _build_parser() -> argparse.ArgumentParser:
     init_cli.add_homes_subparser(subparsers)
     init_cli.add_preflight_subparser(subparsers)
     init_cli.add_teardown_subparser(subparsers)
+    gate_cli.add_gate_subparser(subparsers)
     return parser
 
 
