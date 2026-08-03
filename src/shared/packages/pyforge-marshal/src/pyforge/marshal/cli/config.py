@@ -354,7 +354,9 @@ def _render_text(data: Mapping[str, object], findings: tuple[Finding, ...]) -> s
 
 
 def _read_project_policy(path: Path) -> Mapping[str, object]:
-    """Read ``--project-policy`` via ``tomllib``. Wraps every failure mode
+    """Read a project policy file via ``tomllib`` -- either ``marshal
+    config``'s ``--project-policy`` override or, for every other caller, the
+    CONVENTIONAL project path. Wraps every failure mode
     (missing file, a directory, unreadable, malformed TOML, bytes that are
     not valid UTF-8) into ``PolicyIOError`` rather than letting a raw
     exception propagate out of ``run_config()``. ``UnicodeDecodeError`` must
@@ -366,7 +368,20 @@ def _read_project_policy(path: Path) -> Mapping[str, object]:
         with open(path, "rb") as handle:
             return tomllib.load(handle)
     except (OSError, UnicodeDecodeError, tomllib.TOMLDecodeError) as exc:
-        raise PolicyIOError(f"cannot read --project-policy {path}: {exc}") from exc
+        # "project policy", NOT "--project-policy" (review finding, verified
+        # live): this helper serves the CONVENTIONAL path for every caller
+        # except `marshal config`'s own override flag, and `marshal gate
+        # evaluate` deliberately has no such flag at all -- so a TOML syntax
+        # error in a project's conventional policy told the operator to fix
+        # a flag that command rejects with a usage error.
+        #
+        # `!r` on the path (review finding, verified live): `gate evaluate`'s
+        # default `--format text` renders finding messages one per line, so a
+        # newline in the path forged a `findings:` block that no finding
+        # produced. A POSIX filename may contain a newline, and for the
+        # conventional path this string can be a symlink TARGET -- chosen by
+        # whoever can write inside the projects tree.
+        raise PolicyIOError(f"cannot read project policy {str(path)!r}: {exc}") from exc
 
 
 def run_config(args: argparse.Namespace) -> int:

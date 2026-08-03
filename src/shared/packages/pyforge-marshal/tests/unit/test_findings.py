@@ -23,7 +23,8 @@ def test_registered_codes_contains_the_real_codes():
     cli/init.py::run_preflight adds MRS-PREFLIGHT-001..010. Story 1.8's
     cli/init.py::run_teardown adds MRS-TEARDOWN-001/002/003. Story 1.9's
     cli/init.py::run_preflight adds MRS-PREFLIGHT-011, graduating the
-    harness-version check into two tiers. This asserts the registry's exact
+    harness-version check into two tiers. Story 2.1's cli/gate.py/core/gate.py
+    add MRS-GATE-001/002/003/004/005. This asserts the registry's exact
     real contents."""
     assert findings.REGISTERED_CODES == frozenset(
         {
@@ -57,6 +58,11 @@ def test_registered_codes_contains_the_real_codes():
             "MRS-TEARDOWN-001",
             "MRS-TEARDOWN-002",
             "MRS-TEARDOWN-003",
+            "MRS-GATE-001",
+            "MRS-GATE-002",
+            "MRS-GATE-003",
+            "MRS-GATE-004",
+            "MRS-GATE-005",
         }
     )
 
