@@ -44,7 +44,7 @@ development_status:
   12-5-cli-contract-idempotence-harness-and-performance-gates: backlog
   12-6-readme-adoption-guide-and-the-finding-remedy-reference: backlog
   2-1-standalone-verify-command-runner-project-scoped: done
-  2-2-verdict-aggregation-that-never-false-greens: backlog
+  2-2-verdict-aggregation-that-never-false-greens: done
   2-3-frozen-surface-scope-check-narrowing-only: blocked
   2-4-doc-only-story-classification: backlog
   2-5-gate-mode-ladder-with-autonomy-labels: backlog
@@ -93,7 +93,7 @@ development_status:
   8-2-region-parser-span-discovery-nesting-rejection-fence-awareness: backlog
   8-3-span-substitution-the-update-primitive: backlog
   8-4-anchor-resolution-and-region-insertion: backlog
-  8-5-marker-deletion-as-a-sanctioned-opt-out: backlog
+  8-5-marker-deletion-as-a-sanctioned-opt-out: blocked
   9-1-findings-model-severity-types-remedies: backlog
   9-2-repo-inventory-walker-and-artifact-classification: backlog
   9-3-content-hashing-for-managed-files-and-regions: backlog
