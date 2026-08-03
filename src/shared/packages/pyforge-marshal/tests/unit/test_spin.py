@@ -1098,10 +1098,19 @@ def test_spin_surfaces_a_malformed_idle_threshold_minutes_project_policy_finding
     project's own ``marshal-policy.toml`` produced a real
     ``MRS-POLICY-003`` finding that never reached the operator, and the
     effective value silently fell back to the code default with zero
-    diagnostic. It must now be surfaced into this command's own findings,
-    the same way every other finding here already is -- WITHOUT aborting
-    an otherwise-successful launch (this is a supplementary value for the
-    supervisor's own soft ladder, never a launch precondition)."""
+    diagnostic. It must now be surfaced into this command's own findings.
+
+    But NOT by splicing them in verbatim (second review finding): every
+    ``MRS-POLICY-00{1,2,3,4,6}`` classifies ``Verdict.UNEVALUABLE`` -> exit
+    1, which is right for ``marshal config`` (whose whole job IS the policy)
+    and wrong here, where the policy is a supplementary input read AFTER a
+    real harness process is already live. Any unknown key or malformed value
+    ANYWHERE in a project's policy file would have made ``marshal factory
+    spin`` exit 1 over a successfully launched, supervised run -- and a
+    caller that retries on non-zero would then double-dispatch the same
+    story, the exact hazard this story's own Design Notes give as the reason
+    ``stop``+``resume`` is the retry primitive. One WARN-tier
+    ``MRS-SPIN-008`` carries every underlying message instead."""
     fs = FakeFs(dirs={home})
     harness = FakeHarness()
     harness.feed_keys = ("1-1-first-story",)
@@ -1115,12 +1124,18 @@ def test_spin_surfaces_a_malformed_idle_threshold_minutes_project_policy_finding
     exit_code = run_spin(_spin_namespace("acme", fmt="json"), fs=fs, harness=harness)
 
     envelope = json.loads(capsys.readouterr().out)
-    codes = [finding["code"] for finding in envelope["findings"]]
-    assert "MRS-POLICY-003" in codes
-    # The launch itself still succeeded -- a malformed supplementary value
-    # must never abort an otherwise-successful harness launch (only the
-    # overall exit code reflects the surfaced finding's own severity).
-    assert exit_code != EXIT_OK
+    findings_by_code = {finding["code"]: finding for finding in envelope["findings"]}
+    assert "MRS-SPIN-008" in findings_by_code
+    assert findings_by_code["MRS-SPIN-008"]["severity"] == "warn"
+    # The underlying policy finding's own code and message survive into the
+    # re-tiered one -- the diagnostic is preserved, only its verdict tier is
+    # not inherited.
+    assert "MRS-POLICY-003" in findings_by_code["MRS-SPIN-008"]["message"]
+    assert "MRS-POLICY-003" not in findings_by_code, "verbatim splice inverts the verdict"
+    # The launch itself succeeded, so the command succeeds: a malformed
+    # supplementary value must never re-classify a live, already-launched,
+    # supervised run as a failure.
+    assert exit_code == EXIT_OK
     assert "supervisor_pid" in envelope["data"]
     assert harness.spin_calls  # the harness launch was actually attempted
 

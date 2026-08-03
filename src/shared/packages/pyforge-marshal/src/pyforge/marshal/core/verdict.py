@@ -241,7 +241,11 @@ _RELAY_PASSTHROUGH: frozenset[int] = frozenset(
 # Story 3.4's cli/spin.py adds a SEVENTH code to the same caller,
 # MRS-SPIN-007, at the same WARN tier as MRS-SPIN-006.
 # Story 3.5's supervisor/__main__.py adds a NEW area, MRS-SUPV-* (three
-# codes), all classified WARN alongside MRS-SPIN-004/006/007.
+# codes), all classified WARN alongside MRS-SPIN-004/006/007, and cli/spin.py
+# gains MRS-SPIN-008 (project-policy findings raised while resolving the
+# supervisor's idle threshold) at that same WARN tier -- see core/findings.py
+# for why those findings must NOT keep MRS-POLICY-*'s own UNEVALUABLE tier
+# when they surface from an already-successful launch.
 _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-IDENT-001": Verdict.UNEVALUABLE,
     "MRS-IDENT-002": Verdict.UNEVALUABLE,
@@ -288,6 +292,7 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-SPIN-005": Verdict.ERROR,
     "MRS-SPIN-006": Verdict.WARN,
     "MRS-SPIN-007": Verdict.WARN,
+    "MRS-SPIN-008": Verdict.WARN,
     "MRS-SUPV-001": Verdict.WARN,
     "MRS-SUPV-002": Verdict.WARN,
     "MRS-SUPV-003": Verdict.WARN,

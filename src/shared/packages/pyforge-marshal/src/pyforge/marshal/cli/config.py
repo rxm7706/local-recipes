@@ -179,8 +179,21 @@ def _parse_set_item(item: str) -> tuple[str, str]:
     if not sep:
         raise argparse.ArgumentTypeError(f"--set {item!r} must be KEY=VALUE")
     if key in _UNSETTABLE_KEYS:
+        # The message branches on WHY the key is unsettable (review finding):
+        # 4 of the 5 are genuinely list/mapping-typed (no string value could
+        # satisfy their validators), but `idle_threshold_minutes` is a plain
+        # positive number excluded for an entirely different reason -- no AC
+        # asks for a CLI override surface for it. Telling an operator that a
+        # numeric key is "list/mapping-typed" is a false statement about
+        # their own policy vocabulary, and sends them looking for a type
+        # error that does not exist.
+        reason = (
+            "the list/mapping-typed key"
+            if key != "idle_threshold_minutes"
+            else "the project-policy-only key"
+        )
         raise argparse.ArgumentTypeError(
-            f"--set cannot target the list/mapping-typed key {key!r}; "
+            f"--set cannot target {reason} {key!r}; "
             "supply it via the --project-policy TOML layer"
         )
     return key, raw_value

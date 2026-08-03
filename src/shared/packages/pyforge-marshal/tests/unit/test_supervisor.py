@@ -896,21 +896,27 @@ def test_fresh_output_after_nudge_resets_the_window():
     further ladder action until a fresh full threshold elapses."""
     fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
     clock = AdvancingClock()
-    # Ticks 1-4: "idle" (nudge fires at tick 4, elapsed=180s/150s=1.2).
-    # Tick 5: "responded" -- a change, resetting the window.
-    # Ticks 6-8: "responded" again (no further change) -- elapsed since the
-    # reset reaches 180s by tick 8 (300-... wait: reference becomes tick5's
-    # own moment; tick8 moment is 3 ticks later = 180s -> rung 1 (NUDGE)
-    # again, proving the re-arm allowed a SECOND nudge.
-    observer = FakeObserver(pane_sequence=["idle"] * 4 + ["responded"] * 4)
+    # threshold_s = 150 (2.5min) against a 60s tick. `pane_sequence` is
+    # indexed by CALL, not by tick, and a successful nudge now makes one
+    # extra `pane_content` call of its own (the post-nudge re-capture that
+    # rebases the baseline -- see the echo test below), so the calls run:
+    #   0-3  ticks 1-4  "idle"        -> nudge fires at tick 4 (180s/150s)
+    #   4    the nudge's own re-capture: the echoed text it just typed
+    #   5    tick 5     "responded"   -- GENUINE fresh output: re-arms
+    #   6-8  ticks 6-8  "responded"   -- no further change; 180s elapsed
+    #                                    since the re-arm by tick 8 -> a
+    #                                    SECOND nudge, which is the point.
+    observer = FakeObserver(
+        pane_sequence=["idle"] * 4 + ["idle+nudge echo"] + ["responded"] * 5
+    )
 
     # alive_for=9, not 8 (review finding): the ladder -- including the
     # SECOND nudge this test's whole point is to prove fires -- is now
     # gated on THIS tick's own fresh `watched_alive`, so tick 8 (where it
     # fires) must not be the LAST tick `FakeProcess` reports alive for.
-    # `FakeObserver.pane_sequence` clamps to its last element for any tick
-    # index beyond its own length, so the harmless extra 9th tick just
-    # samples "responded" again.
+    # `FakeObserver.pane_sequence` clamps to its last element for any call
+    # index beyond its own length, so the harmless extra calls just sample
+    # "responded" again.
     rc = run_supervisor(
         _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, 2.5,
         fs=fs, process=FakeProcess(alive_for=9), clock=clock, observer=observer,
@@ -925,6 +931,161 @@ def test_fresh_output_after_nudge_resets_the_window():
         (_SESSION_NAME, supervisor_main._NUDGE_TEXT),
         (_SESSION_NAME, supervisor_main._NUDGE_TEXT),
     ]
+
+
+def test_the_nudge_text_carries_no_shell_metacharacters():
+    """Review finding: ``send_text`` delivers this text as a literal
+    keystroke stream followed by Enter, into whichever window tmux marks
+    ACTIVE -- the agent's in the ordinary case, but whatever an attached
+    operator last selected otherwise, and a plain shell once the agent's own
+    process exits. The previous wording contained a ``;`` (a shell command
+    separator) and a clause opening with ``if``, so a mis-targeted nudge ran
+    one bogus command and then left the shell hanging at a ``>``
+    continuation prompt forever -- which this same supervisor would then
+    read back as a permanently unchanging pane."""
+    text = supervisor_main._NUDGE_TEXT
+    for metacharacter in ";|&$`'\"\\<>(){}[]*?!#\n\r":
+        assert metacharacter not in text, f"{metacharacter!r} is shell-significant"
+
+
+def test_every_ladder_journal_entry_conforms_to_the_frozen_journal_schema():
+    """Review finding: the one ``jsonschema.validate`` call on this side ran
+    over a run that produces only attach/heartbeat/detach entries. The three
+    ladder kinds are the FIRST entries this module writes with ``phase:
+    intent``, a populated ``intent_id``, and a nested ``finding`` object in
+    the payload -- a mismatch in any of those shapes shipped green and would
+    have surfaced only when a real supervisor wrote an unreadable line into
+    a live run's journal."""
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+    clock = AdvancingClock()
+    observer = FakeObserver(pane="idle", send_text_result=False)  # forces MRS-SUPV-001
+    harness = FakeHarness()
+    harness.stop_result = False  # forces MRS-SUPV-002 on the retry rung
+
+    rc = run_supervisor(
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, 1.0,
+        fs=fs, process=FakeProcess(alive_for=12), clock=clock, observer=observer,
+        harness=harness, sleep=clock.sleep,
+    )
+
+    assert rc == 0
+    entries = [json.loads(line) for _, line, _ in fs.appended_lines]
+    ladder_kinds = {e["kind"] for e in entries if e["kind"].startswith("idle-")}
+    assert ladder_kinds == {"idle-nudge", "idle-stop-and-retry", "idle-defer"}
+    # Both finding-bearing payload shapes are exercised above.
+    assert any("finding" in e["payload"] for e in entries if e["phase"] == "outcome")
+
+    schema = _journal_schema()
+    for entry in entries:
+        jsonschema.validate(instance=entry, schema=schema)
+
+
+def test_the_nudges_own_echo_does_not_re_arm_the_idle_window():
+    """Review finding, and the defect that made this ladder unable to
+    escalate AT ALL: ``send_text`` types into the SAME pane ``pane_content``
+    samples, so the tick after a nudge captures a pane containing the text
+    the supervisor itself just typed. Read as "fresh output" that re-arms
+    the window, the rung falls back to ``NONE`` and the run cycles nudge ->
+    re-arm -> nudge forever without ever reaching ``stop-and-retry`` --
+    which is precisely the wedged-session recovery FR-12 exists to perform.
+
+    "Fresh output" means the SESSION's output, never this supervisor's own.
+    The nudge therefore re-captures the pane and rebases its sample history
+    onto that text while PRESERVING the idle anchor, so elapsed idle time
+    keeps accruing and one more full threshold reaches the next rung."""
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+    clock = AdvancingClock()
+    # threshold_s = 90 (1.5min), 60s tick. Calls: 0-2 ticks 1-3 "idle"
+    # (nudge fires at tick 3, 120s/90s = 1.33); call 3 is the nudge's own
+    # re-capture, which for the first time shows the echoed text; every
+    # later call keeps showing it, because the session is genuinely wedged
+    # and produces nothing further. Tick 4 (180s since the anchor) must
+    # therefore reach STOP_AND_RETRY. Before the fix, tick 4's
+    # "idle+nudge echo" differed from tick 3's "idle" and reset the rung to
+    # NONE instead.
+    observer = FakeObserver(pane_sequence=["idle"] * 3 + ["idle+nudge echo"] * 8)
+    harness = FakeHarness()
+
+    rc = run_supervisor(
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, 1.5,
+        fs=fs, process=FakeProcess(alive_for=8), clock=clock, observer=observer,
+        harness=harness, sleep=clock.sleep,
+    )
+
+    assert rc == 0
+    entries = [json.loads(line) for _, line, _ in fs.appended_lines]
+    kinds = [entry["kind"] for entry in entries]
+    assert kinds.count("idle-nudge") == 2, "exactly one nudge firing"
+    retry_outcome = next(
+        e for e in entries if e["kind"] == "idle-stop-and-retry" and e["phase"] == "outcome"
+    )
+    assert retry_outcome["payload"]["new_pid"] == harness.resume_result
+    assert harness.stop_calls == [(_HOME, _HARNESS_RUN_ID)]
+
+
+def test_a_short_threshold_never_skips_a_ladder_rung():
+    """Review finding: the ladder is a FIXED 3-rung sequence (this story's
+    own Never clause), but ``evaluate_idle`` floor-divides elapsed idle time
+    by the threshold -- so any threshold shorter than twice the fixed 60s
+    tick lets ONE tick land several rungs above the last one acted on.
+    Nothing validates the threshold against the tick, and
+    ``core/policy.py``'s validator explicitly admits sub-minute values, so
+    ``idle_threshold_minutes = 0.25`` used to reach ``DEFER`` on the second
+    sample -- hard-stopping a healthy run without ever nudging it. Every
+    rung must still be visited, in order, one per tick."""
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+    clock = AdvancingClock()
+    observer = FakeObserver(pane="idle")
+    harness = FakeHarness()
+
+    # threshold_s = 15 against a 60s tick: tick 2 alone floor-divides to 4,
+    # capped at DEFER. The clamp walks NUDGE -> STOP_AND_RETRY -> DEFER
+    # instead, one rung per tick.
+    rc = run_supervisor(
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, 0.25,
+        fs=fs, process=FakeProcess(alive_for=12), clock=clock, observer=observer,
+        harness=harness, sleep=clock.sleep,
+    )
+
+    assert rc == 0
+    entries = [json.loads(line) for _, line, _ in fs.appended_lines]
+    ladder = [e["kind"] for e in entries if e["phase"] == "intent"]
+    assert ladder[0] == "idle-nudge", "the first response is never a hard stop"
+    assert "idle-stop-and-retry" in ladder
+    assert ladder[-1] == "idle-defer"
+    assert entries[-1]["payload"]["reason"] == "idle-deferred"
+
+
+def test_an_unobservable_session_is_never_treated_as_idle():
+    """Review finding: ``None != None`` is ``False``, so a sample history in
+    which NOTHING was ever observed -- no pane (tmux missing from this
+    detached sidecar's PATH, or the session torn down) and no harness log --
+    never re-arms and reads as maximal idleness. That was tolerable while
+    ``defer`` merely detached; now that it hard-stops the run, it turns a
+    broken observation channel into a KILLED HEALTHY run. The ladder must
+    only act on evidence it actually has."""
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+    clock = AdvancingClock()
+    # `FakeObserver.mtime` always returns None; `pane=None` makes the pane
+    # unobservable too, so every sample is (None, None).
+    observer = FakeObserver(pane=None)
+    harness = FakeHarness()
+
+    rc = run_supervisor(
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, 1.0,
+        fs=fs, process=FakeProcess(alive_for=10), clock=clock, observer=observer,
+        harness=harness, sleep=clock.sleep,
+    )
+
+    assert rc == 0
+    entries = [json.loads(line) for _, line, _ in fs.appended_lines]
+    kinds = [entry["kind"] for entry in entries]
+    assert not any(kind.startswith("idle-") for kind in kinds), "no ladder action"
+    assert harness.stop_calls == []
+    assert observer.send_text_calls == []
+    # Heartbeat-only supervision still runs, and the run ends its own way.
+    assert kinds.count("supervisor-heartbeat") >= 1
+    assert entries[-1]["payload"]["reason"] == "watched-process-exited"
 
 
 def test_second_threshold_crossing_fires_stop_and_retry():
@@ -1016,10 +1177,16 @@ def test_stop_and_retry_failure_registers_a_finding_and_keeps_watching_original_
 
 def test_stop_and_retry_stop_returns_false_skips_resume():
     """I/O matrix (review finding): ``HarnessPort.stop``'s own documented
-    ``False`` return (no exception -- the watched run had already
-    finished on its own) must skip ``resume()`` entirely rather than
-    relaunching a run that already completed; the outcome records
-    ``already_finished`` instead of a ``new_pid``."""
+    ``False`` return (no exception) must skip ``resume()`` entirely rather
+    than relaunching a run that may already have completed.
+
+    The outcome records ``stopped: False`` plus a registered finding, NOT
+    ``already_finished: True`` (second review finding): the port documents
+    ``False`` as "any other determinable outcome", of which "already
+    finished" is only one example, so asserting a completion here would
+    write into an append-only evidence journal a claim this process never
+    observed -- and one that contradicts the fresh ``is_alive`` reading
+    from the very same tick that let the ladder run."""
     fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
     clock = AdvancingClock()
     observer = FakeObserver(pane="idle")
@@ -1038,7 +1205,13 @@ def test_stop_and_retry_stop_returns_false_skips_resume():
         e for e in entries if e["kind"] == "idle-stop-and-retry" and e["phase"] == "outcome"
     ]
     assert len(retry_outcomes) == 1
-    assert retry_outcomes[0]["payload"] == {"old_pid": 4242, "already_finished": True}
+    payload = retry_outcomes[0]["payload"]
+    assert payload["old_pid"] == 4242
+    assert payload["stopped"] is False
+    assert "already_finished" not in payload, "never assert an unobserved completion"
+    assert "new_pid" not in payload
+    assert payload["finding"]["code"] == "MRS-SUPV-002"
+    assert payload["finding"]["severity"] == "warn"
     assert harness.resume_calls == []
 
 
@@ -1049,11 +1222,17 @@ def test_resume_failure_after_a_successful_stop_is_treated_as_unrecoverable_and_
     falling through to the ordinary tick loop would let the NEXT tick's
     routine ``is_alive`` reading (naturally ``False``) exit via the
     ordinary ``"watched-process-exited"`` detach, silently masking a
-    failed recovery as an ordinary completion. This must instead defer:
-    the SAME ``idle-stop-and-retry`` outcome records the failure and the
-    final detach reports ``reason: "idle-deferred"`` -- no separate
-    ``idle-defer`` kind is journaled, since this is a distinct path from
-    reaching the third rung."""
+    failed recovery as an ordinary completion. This must instead end the
+    loop: the SAME ``idle-stop-and-retry`` outcome records the failure and
+    no separate ``idle-defer`` kind is journaled, since this is a distinct
+    path from reaching the third rung.
+
+    The detach reason is ``"idle-retry-failed"``, NOT ``"idle-deferred"``
+    (second review finding): the ladder never reached its ``defer`` rung and
+    no ``idle-defer`` pair exists to back that claim up, so a consumer
+    counting deferrals by entry kind saw zero while one reading detach
+    reasons saw one. A failed recovery is a materially different reason
+    class from an exhausted idle ladder -- FR-16's own unit of capture."""
     fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
     clock = AdvancingClock()
     observer = FakeObserver(pane="idle")
@@ -1085,7 +1264,7 @@ def test_resume_failure_after_a_successful_stop_is_treated_as_unrecoverable_and_
     ]
     assert "idle-defer" not in [e["kind"] for e in entries]
     assert entries[-1]["kind"] == "supervisor-detach"
-    assert entries[-1]["payload"]["reason"] == "idle-deferred"
+    assert entries[-1]["payload"]["reason"] == "idle-retry-failed"
 
 
 def test_heartbeat_after_a_successful_pid_swap_reports_the_new_pids_fresh_reading():
@@ -1130,9 +1309,17 @@ def test_already_retried_bounds_the_ladder_to_one_retry_cycle():
     persistently-wedged resumed process gets another full clean idle
     window every time the ladder resets -- cycling nudge -> stop-and-retry
     -> reset forever and never reaching the terminal ``defer`` rung. After
-    ONE successful stop-and-retry, a SECOND idle recurrence on the new
-    pid's fresh window must skip straight to ``defer`` instead of firing
-    ``nudge``/``stop-and-retry`` again."""
+    ONE successful stop-and-retry, no SECOND stop-and-retry may ever fire:
+    that rung and everything above it collapses to ``defer``.
+
+    A second ``nudge`` IS still allowed (second review finding). The gate
+    used to swallow every rung above ``NONE``, which collapsed the
+    post-retry ladder to ``NONE -> DEFER`` -- so the FIRST threshold
+    crossing on a freshly resumed run hard-stopped it, with none of the
+    harmless-first-response grace an un-retried run gets. A resumed engine
+    that goes quiet for one threshold may simply be running a long build;
+    nudging it first costs nothing, and only the rung that actually kills
+    work is bounded."""
     fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
     clock = AdvancingClock()
     observer = FakeObserver(pane="idle")  # never changes -- keeps re-idling forever
@@ -1141,22 +1328,25 @@ def test_already_retried_bounds_the_ladder_to_one_retry_cycle():
     # threshold_s = 90 (1.5min): tick3 NUDGE, tick4 STOP_AND_RETRY (success
     # -- pid swap, `already_retried` set). The new pid's own fresh window
     # then re-accumulates the SAME "idle" pane: tick5 NONE (first sample
-    # post-reset), tick6 NONE (elapsed 60s < 90s), tick7 elapsed 120s would
-    # ordinarily be a first NUDGE crossing -- but `already_retried` forces
-    # straight to `defer` instead. alive_for=9 keeps every one of these
-    # ticks (plus the post-swap recompute's own extra credit) non-terminal.
+    # post-reset), tick6 NONE (elapsed 60s < 90s), tick7 NUDGE again (the
+    # grace this gate deliberately preserves), tick8 would ordinarily be a
+    # second STOP_AND_RETRY -- but `already_retried` forces `defer` instead.
+    # alive_for=12 keeps every one of those ticks (plus the post-swap
+    # recompute's own extra `is_alive` call) non-terminal.
     rc = run_supervisor(
         _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, 1.5,
-        fs=fs, process=FakeProcess(alive_for=9), clock=clock, observer=observer,
+        fs=fs, process=FakeProcess(alive_for=12), clock=clock, observer=observer,
         harness=harness, sleep=clock.sleep,
     )
 
     assert rc == 0
     entries = [json.loads(line) for _, line, _ in fs.appended_lines]
     kinds = [entry["kind"] for entry in entries]
-    # Exactly ONE nudge and ONE stop-and-retry cycle -- never a second,
-    # even though the pane stays "idle" forever after the reset.
-    assert kinds.count("idle-nudge") == 2
+    # Two nudges (one per idle window -- the grace survives the retry), but
+    # exactly ONE stop-and-retry ever, even though the pane stays "idle"
+    # forever after the reset. Each kind counts 2 entries per firing
+    # (intent + outcome).
+    assert kinds.count("idle-nudge") == 4
     assert kinds.count("idle-stop-and-retry") == 2
     assert kinds.count("idle-defer") == 2
     assert kinds[-1] == "supervisor-detach"
@@ -1172,36 +1362,39 @@ def test_defer_calls_harness_stop_and_records_success():
     its own loop -- the watched harness process itself kept running,
     fully unsupervised. ``defer`` now makes a best-effort
     ``HarnessPort.stop`` call against it; when that succeeds, this outcome
-    records ``stopped: True`` (the FAILURE case is covered by
-    ``test_third_threshold_crossing_fires_defer_and_detaches`` below)."""
+    records ``stopped: True`` and carries NO finding (the FAILURE case is
+    covered by ``test_third_threshold_crossing_fires_defer_and_detaches``
+    below)."""
     fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
     clock = AdvancingClock()
     observer = FakeObserver(pane="idle")
     harness = FakeHarness()
 
-    # threshold_s = 15 (0.25min) against a 60s tick: tick 2 alone (60s
-    # elapsed since the first sample) already crosses THREE thresholds
-    # (60/15=4, capped at DEFER) -- the ladder jumps straight there
-    # without ever visiting nudge/stop-and-retry, isolating the DEFER
-    # branch's own new `harness.stop` call from the (separately tested)
-    # stop-and-retry rung.
+    # The ladder is walked rung by rung to reach `defer` (nudge tick3,
+    # stop-and-retry tick4, nudge tick7, defer tick8 via the already-retried
+    # gate). It used to be short-circuited here with a 15s threshold, which
+    # made ONE tick jump straight from `NONE` to `DEFER` -- that shortcut is
+    # exactly the rung-skipping the escalation clamp now (correctly)
+    # forbids, and it has its own test below. `defer`'s own stop call is the
+    # SECOND one the fake records, and its watched pid is the post-swap one.
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, 0.25,
-        fs=fs, process=FakeProcess(alive_for=4), clock=clock, observer=observer,
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, 1.5,
+        fs=fs, process=FakeProcess(alive_for=12), clock=clock, observer=observer,
         harness=harness, sleep=clock.sleep,
     )
 
     assert rc == 0
     entries = [json.loads(line) for _, line, _ in fs.appended_lines]
     kinds = [entry["kind"] for entry in entries]
-    assert "idle-nudge" not in kinds
-    assert "idle-stop-and-retry" not in kinds
     assert kinds.count("idle-defer") == 2
     defer_outcome = next(
         e for e in entries if e["kind"] == "idle-defer" and e["phase"] == "outcome"
     )
-    assert defer_outcome["payload"] == {"watched_pid": 4242, "stopped": True}
-    assert harness.stop_calls == [(_HOME, _HARNESS_RUN_ID)]
+    assert defer_outcome["payload"] == {
+        "watched_pid": harness.resume_result,
+        "stopped": True,
+    }
+    assert harness.stop_calls[-1] == (_HOME, _HARNESS_RUN_ID)
     assert entries[-1]["payload"]["reason"] == "idle-deferred"
 
 
@@ -1282,7 +1475,16 @@ def test_third_threshold_crossing_fires_defer_and_detaches():
     # than merely journaling and exiting -- this fixture's `fail_stop`
     # means that call also raises, so `stopped` is `False`, but the defer
     # outcome is still journaled and the loop still exits regardless.
-    assert defer_outcome["payload"] == {"watched_pid": 4242, "stopped": False}
+    #
+    # A failed stop at the TERMINAL rung also registers a finding (second
+    # review finding): it used to be swallowed into a bare `stopped: false`
+    # with nothing at WARN tier anywhere, even though it is the worst case
+    # this whole story exists to prevent -- the supervisor exits while the
+    # wedged run keeps burning tokens with nobody watching it.
+    assert defer_outcome["payload"]["watched_pid"] == 4242
+    assert defer_outcome["payload"]["stopped"] is False
+    assert defer_outcome["payload"]["finding"]["code"] == "MRS-SUPV-002"
+    assert defer_outcome["payload"]["finding"]["severity"] == "warn"
 
 
 # --- main(): argv parsing + dispatch --------------------------------------------
@@ -1480,11 +1682,21 @@ def test_main_rejects_a_non_numeric_idle_threshold(capsys):
     assert "invalid idle threshold minutes" in capsys.readouterr().err.lower()
 
 
-def test_main_rejects_a_non_positive_idle_threshold(capsys):
-    for bad_threshold in ("0", "-1", "-25"):
+def test_main_rejects_a_non_positive_or_non_finite_idle_threshold(capsys):
+    """``nan``/``inf`` alongside zero and the negatives (review finding).
+    The guard used to be a bare ``<= 0``, the exact footgun
+    ``core/supervise.py``'s own guard documents: IEEE 754 makes EVERY
+    comparison against ``nan`` false, so a NaN threshold sailed through and
+    only surfaced one tick later as ``evaluate_idle``'s ``ValueError`` --
+    which this module's journal-write handler catches and reports as
+    "cannot append to journal", blaming the journal for an argv defect and
+    leaving a ``supervisor-attach`` with no matching ``supervisor-detach``.
+    ``inf`` passed too, and silently disabled the ladder for the run's whole
+    life (every elapsed/inf floor-divides to rung ``NONE``)."""
+    for bad_threshold in ("0", "-1", "-25", "nan", "NaN", "inf", "-inf", "Infinity"):
         rc = main(["/home", "acme", "acme-run-1", "4242", "/home/s.log", bad_threshold])
         assert rc != 0, f"threshold {bad_threshold!r} was accepted"
-        assert "must be positive" in capsys.readouterr().err.lower()
+        assert "must be a positive finite number" in capsys.readouterr().err.lower()
 
 
 def test_main_accepts_a_fractional_idle_threshold(monkeypatch):

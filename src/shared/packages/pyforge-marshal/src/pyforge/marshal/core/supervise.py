@@ -60,10 +60,12 @@ class LadderRung(StrEnum):
 #: The ladder's fixed rung sequence (the spec's own Never clause: "nudge ->
 #: stop-and-retry -> defer is a fixed 3-rung sequence", never policy-shaped).
 #: ``evaluate_idle`` indexes into this by floor-divided elapsed-threshold
-#: multiples; ``supervisor/__main__.py`` imports it to compare a freshly
-#: computed rung against the one it last acted on (``StrEnum`` members carry
-#: no intrinsic ordering, so an ordinal lookup table is the one place this
-#: package expresses "how far up the ladder" a rung sits).
+#: multiples. It is PRIVATE to this module: cross-module callers reach the
+#: ordering only through the public ``rung_index`` below (``StrEnum`` members
+#: carry no intrinsic ordering, so an ordinal lookup table is the one place
+#: this package expresses "how far up the ladder" a rung sits). Review
+#: finding: this comment used to claim ``supervisor/__main__.py`` imports
+#: this tuple, which it never did -- it imports ``rung_index``.
 _RUNGS_IN_ORDER: tuple[LadderRung, ...] = (
     LadderRung.NONE,
     LadderRung.NUDGE,
@@ -76,10 +78,30 @@ def rung_index(rung: LadderRung) -> int:
     """``rung``'s position in ``_RUNGS_IN_ORDER`` (0 = ``NONE`` .. 3 =
     ``DEFER``) -- the one place this package expresses ladder ordering,
     since ``LadderRung`` is a plain ``StrEnum`` with no intrinsic ``<``/``>``
-    relationship. Used both here (to build the return value) and by
-    ``supervisor/__main__.py`` (to compare a freshly computed rung against
-    the last one it acted on)."""
+    relationship. This is the module's PUBLIC ordering accessor and the only
+    one ``supervisor/__main__.py`` imports (to compare a freshly computed
+    rung against the last one it acted on, and to clamp escalation to one
+    rung per tick)."""
     return _RUNGS_IN_ORDER.index(rung)
+
+
+def rung_at(index: int) -> LadderRung:
+    """The rung at ``index``, CLAMPED into ``_RUNGS_IN_ORDER``'s own range
+    (below 0 -> ``NONE``, above 3 -> ``DEFER``) -- ``rung_index``'s inverse,
+    and the only way a caller outside this module can name "one rung above
+    this one" without reaching into the private tuple.
+
+    ``supervisor/__main__.py`` uses it to clamp escalation to a single rung
+    per tick (review finding): the ladder is a FIXED 3-rung sequence, but
+    ``evaluate_idle`` floor-divides, so ONE tick can land several rungs
+    higher than the last one acted on whenever ``threshold_s`` is small
+    relative to the caller's own polling interval -- e.g. a 15s threshold
+    sampled every 60s reaches ``DEFER`` on the second sample, never firing
+    ``nudge`` or ``stop-and-retry`` at all. Clamping keeps the sequence
+    intact for every threshold, instead of rejecting the small ones."""
+    if index < 0:
+        return _RUNGS_IN_ORDER[0]
+    return _RUNGS_IN_ORDER[min(index, len(_RUNGS_IN_ORDER) - 1)]
 
 
 @dataclass(frozen=True)
@@ -97,6 +119,35 @@ class Sample:
     moment: datetime
     pane_content: str | None
     log_mtime: float | None
+
+
+def idle_since(samples: Sequence[Sample]) -> datetime | None:
+    """The moment ``samples`` last showed fresh output -- the reference point
+    the idle window is measured FROM. ``samples[0].moment`` when no change
+    was ever observed across the whole sequence, and ``None`` for an empty
+    ``samples``. Pure; no validation beyond what the scan itself needs.
+
+    Factored out of ``evaluate_idle`` (which delegates to it, so the two can
+    never disagree) because the CALLER needs the same anchor for a reason
+    the ladder decision alone does not cover: after the supervisor's own
+    ``nudge`` types text into the observed pane, that pane's next capture
+    differs from the previous one, and the change is the supervisor's OWN
+    output rather than the session's. Left alone, that re-arms the very
+    window the nudge was escalating from -- the ladder returns to ``NONE``
+    and can never reach ``stop-and-retry``, no matter how wedged the session
+    is (review finding). The caller fixes this by collapsing its sample
+    history onto the post-nudge pane text while preserving THIS anchor, and
+    it needs a way to ask for the anchor to do so."""
+    if not samples:
+        return None
+    reference_moment = samples[0].moment
+    for previous, current in zip(samples, samples[1:]):
+        if (
+            current.pane_content != previous.pane_content
+            or current.log_mtime != previous.log_mtime
+        ):
+            reference_moment = current.moment
+    return reference_moment
 
 
 def evaluate_idle(samples: Sequence[Sample], *, threshold_s: float) -> LadderRung:
@@ -143,13 +194,10 @@ def evaluate_idle(samples: Sequence[Sample], *, threshold_s: float) -> LadderRun
     if not samples:
         return LadderRung.NONE
 
-    reference_moment = samples[0].moment
-    for previous, current in zip(samples, samples[1:]):
-        if (
-            current.pane_content != previous.pane_content
-            or current.log_mtime != previous.log_mtime
-        ):
-            reference_moment = current.moment
+    # Never `None` here -- the empty-`samples` case already returned above --
+    # but spelled as an `or` fallback rather than an `assert`, which `-O`
+    # strips and this package therefore never relies on for control flow.
+    reference_moment = idle_since(samples) or samples[0].moment
 
     idle_elapsed_s = (samples[-1].moment - reference_moment).total_seconds()
     # Defensive floor at zero: a caller handing a non-chronological sequence

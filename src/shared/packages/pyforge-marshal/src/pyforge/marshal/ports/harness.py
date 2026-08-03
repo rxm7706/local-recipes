@@ -272,7 +272,11 @@ class HarnessPort(Protocol):
         waited on here either). Confirmed live as the intended recovery
         primitive: it re-derives the run's state from ``run_id`` alone and
         self-clears any stale tmux session left behind by ``stop``, so it
-        needs no other input from this call. Returns the newly spawned
+        needs no other input from this call. ``log_path`` is APPENDED to,
+        never truncated (review finding): unlike ``spin``'s own brand-new
+        log, the file this method is given is the WEDGED run's existing
+        ``harness.log``, whose accumulated content is the only evidence of
+        why the run stopped producing output. Returns the newly spawned
         process's pid. Raises ``HarnessError`` only when the process could
         not be LAUNCHED at all -- the SAME split ``spin``/``attach``/
         ``run_foreground`` share."""

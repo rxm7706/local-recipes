@@ -120,6 +120,23 @@ def test_resume_builds_the_expected_argv_and_returns_the_new_pid(harness, tmp_pa
     assert kwargs["stderr"] is kwargs["stdout"]
 
 
+def test_resume_appends_to_the_log_and_never_truncates_it(harness, tmp_path, monkeypatch):
+    """Review finding: ``resume`` opened its ``log_path`` with mode ``"wb"``,
+    copied from ``spin``'s own detach recipe. But the file ``spin`` opens is
+    brand new, while the one ``resume`` is handed is the WEDGED run's
+    existing ``harness.log`` -- everything the original engine attempt wrote
+    for however long it ran. Truncating it destroyed the only record of what
+    the run was doing when it stopped producing output, at exactly the
+    moment ``stop-and-retry`` fires and that record is most valuable."""
+    monkeypatch.setattr(module.subprocess, "Popen", lambda argv, **kw: _FakeProcess(pid=1))
+    log_path = tmp_path / "harness.log"
+    log_path.write_text("the wedged run's own output\n", encoding="utf-8")
+
+    harness.resume(tmp_path, "acme-run", log_path=log_path)
+
+    assert log_path.read_text(encoding="utf-8") == "the wedged run's own output\n"
+
+
 def test_resume_forces_pythonunbuffered_on_the_child_env(harness, tmp_path, monkeypatch):
     captured_env: dict = {}
 

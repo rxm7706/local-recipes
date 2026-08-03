@@ -104,6 +104,7 @@ from __future__ import annotations
 import copy
 import hashlib
 import json
+import math
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from enum import StrEnum
@@ -389,10 +390,22 @@ def _valid_positive_number(value: object) -> int | float | None:
     attempt-count ceiling of zero (a legitimate "never retry" policy).
     ``int`` or ``float`` both accepted (unlike the int-only attempt-count
     fields): a synthetic test fixture may want a sub-minute threshold no
-    whole-number minute value could express."""
+    whole-number minute value could express.
+
+    Non-FINITE values are rejected alongside zero/negative ones (review
+    finding). ``float('nan')`` already failed the ``> 0`` test (IEEE 754
+    makes every relational comparison against NaN false), but
+    ``float('inf')`` passed it -- and TOML 1.0 spells ``inf`` natively, so a
+    project's own ``marshal-policy.toml`` could set it. An infinite
+    threshold composes cleanly, renders as the effective value, and then
+    silently disables the idle ladder FOREVER for every supervised run
+    (``core/supervise.py`` floor-divides elapsed seconds by it, which is
+    always ``0.0`` -- rung ``NONE``, permanently). A knob that can be set to
+    a value which quietly turns the feature off with no diagnostic is worse
+    than one that refuses the value, so this refuses it."""
     if isinstance(value, bool):
         return None
-    if isinstance(value, (int, float)) and value > 0:
+    if isinstance(value, (int, float)) and value > 0 and math.isfinite(value):
         return value
     return None
 

@@ -11,7 +11,14 @@ from __future__ import annotations
 from datetime import datetime, timedelta, timezone
 
 import pytest
-from pyforge.marshal.core.supervise import LadderRung, Sample, evaluate_idle, rung_index
+from pyforge.marshal.core.supervise import (
+    LadderRung,
+    Sample,
+    evaluate_idle,
+    idle_since,
+    rung_at,
+    rung_index,
+)
 
 _T0 = datetime(2026, 8, 3, 5, 45, 12, tzinfo=timezone.utc)
 
@@ -126,6 +133,50 @@ def test_none_of_the_first_two_samples_ever_repeated_still_counts_as_idle():
 
 
 # --- rung_index ----------------------------------------------------------------
+
+
+def test_rung_at_is_rung_index_inverse_and_clamps_out_of_range():
+    """``rung_at`` is how a caller outside this module names "one rung above
+    this one" without reaching into the private ordering tuple -- the
+    supervisor uses it to clamp escalation to a single rung per tick. It is
+    total: no index can raise or wrap backwards."""
+    for expected in (LadderRung.NONE, LadderRung.NUDGE, LadderRung.STOP_AND_RETRY, LadderRung.DEFER):
+        assert rung_at(rung_index(expected)) is expected
+    assert rung_at(-1) is LadderRung.NONE
+    assert rung_at(-999) is LadderRung.NONE
+    assert rung_at(4) is LadderRung.DEFER
+    assert rung_at(10**6) is LadderRung.DEFER
+
+
+def test_idle_since_returns_the_latest_change_point():
+    """The anchor ``evaluate_idle`` measures from, exposed because the
+    CALLER needs the same value: after the supervisor's own nudge types into
+    the observed pane, it rebases its sample history onto that text while
+    preserving this anchor, so the supervisor's OWN output cannot re-arm the
+    window it was escalating from."""
+    changed = _sample(300, pane="different")
+    samples = [_sample(0), _sample(100), changed, _sample(400, pane="different")]
+    assert idle_since(samples) == changed.moment
+
+
+def test_idle_since_falls_back_to_the_first_sample_when_nothing_ever_changed():
+    samples = [_sample(0), _sample(100), _sample(200)]
+    assert idle_since(samples) == samples[0].moment
+
+
+def test_idle_since_returns_none_for_an_empty_sequence():
+    assert idle_since([]) is None
+
+
+def test_idle_since_and_evaluate_idle_can_never_disagree():
+    """``evaluate_idle`` delegates to ``idle_since`` rather than repeating
+    the scan, so the rung and the anchor are always derived from the same
+    reading of the same sequence."""
+    samples = [_sample(0), _sample(100), _sample(250, pane="fresh"), _sample(450, pane="fresh")]
+    anchor = idle_since(samples)
+    elapsed_s = (samples[-1].moment - anchor).total_seconds()
+    assert evaluate_idle(samples, threshold_s=elapsed_s) == LadderRung.NUDGE
+    assert evaluate_idle(samples, threshold_s=elapsed_s / 2) == LadderRung.STOP_AND_RETRY
 
 
 def test_rung_index_orders_the_ladder_ascending():

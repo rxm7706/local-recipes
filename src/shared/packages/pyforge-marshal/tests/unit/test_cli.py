@@ -794,6 +794,15 @@ def test_config_set_on_idle_threshold_minutes_is_a_usage_error(capsys):
     assert "idle_threshold_minutes" in captured.err
     assert "--project-policy" in captured.err
     assert "MRS-POLICY-003" not in captured.err
+    # Second review finding: the shared rejection message called every
+    # unsettable key "list/mapping-typed", which is true of the other 4 and
+    # FALSE of this one -- a plain positive number excluded for an entirely
+    # different reason (no AC asks for a CLI override surface for it).
+    # Telling an operator a numeric key is list/mapping-typed is a false
+    # statement about their own policy vocabulary that sends them looking
+    # for a type error which does not exist.
+    assert "list/mapping-typed" not in captured.err
+    assert "project-policy-only" in captured.err
 
 
 def test_handler_returning_none_is_clamped_to_usage(monkeypatch):

@@ -864,13 +864,42 @@ def run_spin(
     effective_policy, policy_findings = policy.compose(
         project_slug=slug, project=project_policy_data, flags={}
     )
-    # Surfaced into this report the same way every other finding here is
-    # (review finding): this variable used to be captured and never looked
-    # at again, so a malformed `idle_threshold_minutes` override in the
-    # project's own marshal-policy.toml produced a real Finding (e.g.
-    # MRS-POLICY-003) that never reached the operator -- the effective
-    # value silently fell back to the code default with zero diagnostic.
-    findings.extend(policy_findings)
+    # Surfaced into this report -- but RE-TIERED, never extended verbatim
+    # (review finding, two passes). The findings themselves must reach the
+    # operator: this variable was once captured and never looked at again,
+    # so a malformed `idle_threshold_minutes` override in the project's own
+    # marshal-policy.toml silently fell back to the code default with zero
+    # diagnostic. But splicing them in as-is was the opposite error:
+    # MRS-POLICY-001/002/003/004/006 all classify `Verdict.UNEVALUABLE`
+    # (exit 1), which is right for `marshal config` -- whose whole job IS
+    # the policy -- and wrong here, where the policy is a supplementary
+    # input read AFTER a real harness process is already live. Any unknown
+    # key or malformed value ANYWHERE in the project's policy file would
+    # have made `marshal factory spin` exit 1 over a successfully launched,
+    # supervised run, and a caller that retries on non-zero would then
+    # double-dispatch the same story -- the exact hazard this story's own
+    # Design Notes give as the reason `stop`+`resume` is the retry
+    # primitive. One WARN-tier MRS-SPIN-008 carries every underlying
+    # message instead, preserving the diagnostic without inverting the
+    # launch's own verdict.
+    if policy_findings:
+        findings.append(
+            Finding(
+                code="MRS-SPIN-008",
+                severity=Severity.WARN,
+                message=(
+                    "the project policy layer produced "
+                    f"{len(policy_findings)} finding(s) while resolving the "
+                    "supervisor's idle threshold (the launch itself is "
+                    "unaffected; the threshold fell back to its composed "
+                    "default): "
+                    + "; ".join(
+                        f"{finding.code}: {finding.message}"
+                        for finding in policy_findings
+                    )
+                ),
+            )
+        )
     idle_threshold_minutes = effective_policy.seed_view()["idle_threshold_minutes"].value
 
     try:

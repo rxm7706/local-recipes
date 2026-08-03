@@ -78,6 +78,7 @@ def test_registered_codes_contains_the_real_codes():
             "MRS-SPIN-005",
             "MRS-SPIN-006",
             "MRS-SPIN-007",
+            "MRS-SPIN-008",
             "MRS-SUPV-001",
             "MRS-SUPV-002",
             "MRS-SUPV-003",

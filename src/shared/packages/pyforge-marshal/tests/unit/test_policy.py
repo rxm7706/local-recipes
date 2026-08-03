@@ -351,7 +351,29 @@ def test_idle_threshold_minutes_accepts_a_fractional_value():
     assert effective.seed_view()["idle_threshold_minutes"].value == 0.5
 
 
-@pytest.mark.parametrize("bad_value", [0, -5, -0.5, "25", None, True, False])
+@pytest.mark.parametrize(
+    "bad_value",
+    [
+        0,
+        -5,
+        -0.5,
+        "25",
+        None,
+        True,
+        False,
+        # Review finding: `nan` already failed the `> 0` test (IEEE 754 makes
+        # every comparison against it false), but `inf` PASSED it -- and TOML
+        # 1.0 spells `inf` natively, so a project's own marshal-policy.toml
+        # could set it. An infinite threshold composed cleanly, rendered as
+        # the effective value, and then silently disabled the idle ladder for
+        # every supervised run forever (elapsed/inf floor-divides to rung
+        # NONE). A knob that can be set to a value which quietly turns the
+        # feature off with no diagnostic is worse than one that refuses it.
+        float("inf"),
+        float("-inf"),
+        float("nan"),
+    ],
+)
 def test_idle_threshold_minutes_rejects_non_positive_or_non_numeric_values(bad_value):
     effective, findings = compose(
         project_slug="acme", project={"idle_threshold_minutes": bad_value}, flags={}

@@ -863,8 +863,17 @@ class BmadLoopHarness:
         # unboundedly in the child (confirmed live against the installed
         # 0.9.0 `_resume_paused_run`, which calls `engine.run()` directly),
         # so it must never be waited on here either.
+        #
+        # APPEND, never "wb" (review finding): `log_path` here is the
+        # WEDGED run's own `harness.log` -- the same file `cli/spin.py`
+        # created and the original engine attempt has been writing to for
+        # however long it ran. Truncating it destroys the only record of
+        # what the run was doing when it stopped producing output, which is
+        # the single most valuable artifact at exactly the moment
+        # `stop-and-retry` fires. `spin`'s own `"wb"` is correct there
+        # because that file is brand new; here it never is.
         try:
-            log_file = open(log_path, "wb")
+            log_file = open(log_path, "ab")
         except (OSError, ValueError) as exc:
             raise HarnessError(
                 f"cannot open resume log {str(log_path)!r}: {exc}"
