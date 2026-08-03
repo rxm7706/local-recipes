@@ -59,6 +59,7 @@ import argparse
 from pathlib import Path
 
 from pyforge.marshal.cli.init import run_homes, run_init, run_preflight, run_teardown
+from pyforge.marshal.cli.spin import run_spin
 from pyforge.marshal.core.verdict import EXIT_OK
 from pyforge.marshal.ports.vcs import WorktreeEntry
 
@@ -135,17 +136,38 @@ class _RecordingFs:
     (tier3_backlink's ``ensure_dir``/symlink repoint, the planning-artifacts
     symlink repoint, marker write), recording each write path."""
 
-    def __init__(self, dirs: set[Path], *, files: set[Path] | None = None) -> None:
+    def __init__(
+        self,
+        dirs: set[Path],
+        *,
+        files: set[Path] | None = None,
+        symlinks: dict[Path, Path] | None = None,
+    ) -> None:
         self._dirs = dirs
         # Story 1.7: a distinct membership set from `_dirs` -- run_preflight's
         # seed-file loop probes `exists()` on plain FILE paths (a home
         # destination, a main-checkout source), never `is_dir()`.
         self._files = files if files is not None else set()
+        # Story 3.3: `run_spin` gates its whole write path on the Tier-3
+        # BACKLINK existing (a real symlink), so a scenario driving it must
+        # be able to say one does. Defaults to empty -- the "no symlinks at
+        # all" world every pre-existing scenario already described.
+        self._symlinks = symlinks if symlinks is not None else {}
         self._texts: dict[Path, str] = {}
         self.write_paths: list[Path] = []
+        # A READ, recorded separately from write_paths: Story 3.3's guard
+        # needs to prove the backlink was CONSULTED, which the write paths
+        # alone cannot show (they resolve under the home either way).
+        self.symlink_reads: list[Path] = []
 
     def is_dir(self, path: Path) -> bool:
-        return path in self._dirs
+        # A seeded symlink resolves as a directory: `run_spin`'s backlink
+        # gate probes presence with `read_symlink_target` and then
+        # DANGLING-ness with `is_dir` (a review finding -- a link whose
+        # target was removed passed the presence check and then made
+        # `ensure_dir` raise `FileExistsError` under a launch-failure code).
+        # A scenario that seeds a backlink is describing a healthy one.
+        return path in self._dirs or path in self._symlinks
 
     def exists(self, path: Path) -> bool:
         # Story 1.6: a read -- never recorded. Nothing exists beyond the
@@ -161,7 +183,8 @@ class _RecordingFs:
         self.write_paths.append(path)
 
     def read_symlink_target(self, path: Path) -> Path | None:
-        return None
+        self.symlink_reads.append(path)
+        return self._symlinks.get(path)
 
     def repoint_symlink_atomic(self, path: Path, target: Path) -> None:
         self.write_paths.append(path)
@@ -186,14 +209,14 @@ class _RecordingFs:
         self._files.add(dst)
 
     def append_line(self, path: Path, line: str, *, fsync: bool) -> None:
-        # Story 3.1: not reached by any scenario this module drives today
-        # (no CLI wiring exists yet -- see core/journal.py's module
-        # docstring), implemented so the guard would not crash if a future
-        # scenario reaches it, mirroring ensure_dir's own precedent.
+        # Story 3.1 implemented this speculatively (no CLI wiring existed
+        # yet). Story 3.3's `run_spin` is the first scenario that actually
+        # reaches it -- see this module's own `test_spin_writes_...` below.
         self.write_paths.append(path)
 
     def create_dir_exclusive(self, path: Path) -> None:
-        # Story 3.1: same precedent as append_line above.
+        # Story 3.1: same precedent as append_line above, likewise first
+        # reached by Story 3.3's `run_spin` scenario.
         self.write_paths.append(path)
 
 
@@ -273,7 +296,13 @@ class _RecordingHarness:
     """Fakes ``HarnessPort`` in full, all-converged, so ``run_preflight``
     reaches its two writes (the seed-file copy, the ack-state write) without
     tripping any OTHER finding first. Harness methods are all reads -- never
-    recorded, mirroring ``_RecordingVcs``'s own read/write split."""
+    recorded, mirroring ``_RecordingVcs``'s own read/write split -- with one
+    Story 3.3 exception: ``spin`` is handed a LOG PATH it will write to, so
+    that path is recorded (``spin_log_paths``) and guarded like any other
+    write target."""
+
+    def __init__(self) -> None:
+        self.spin_log_paths: list[Path] = []
 
     def binary_present(self, binary: str) -> bool:
         return True
@@ -295,6 +324,27 @@ class _RecordingHarness:
 
     def story_feed_error(self, project: Path) -> str | None:
         return None
+
+    # --- Story 3.3's three additions ------------------------------------------
+    def story_feed_keys(self, project: Path) -> tuple[str, ...]:
+        return ("1-1-first-story", "1-2-second-story")
+
+    def spin(
+        self,
+        project: Path,
+        *,
+        epic: int | None,
+        story: str | None,
+        max_count: int | None,
+        log_path: Path,
+    ):
+        from pyforge.marshal.ports.harness import SpinResult
+
+        # A read from this guard's standpoint (it launches a process, it does
+        # not write through FsPort) -- but the LOG PATH it is handed is a
+        # real write target, so record it for the assertion below.
+        self.spin_log_paths.append(log_path)
+        return SpinResult(pid=4242, harness_run_id="20260803T101112000Z-abcd1234")
 
 
 def test_preflight_writes_resolve_under_the_home_or_the_ack_state_path(
@@ -386,3 +436,71 @@ def test_teardown_produces_zero_fs_writes_and_its_one_vcs_write_resolves_under_t
         assert resolved == home_resolved or home_resolved in resolved.parents, (
             f"write to {path} does not resolve under the provisioned home {home}"
         )
+
+
+def test_spin_writes_resolve_under_the_home_and_reach_it_through_the_tier3_backlink(
+    tmp_path, monkeypatch
+):
+    """Story 3.3: ``marshal factory spin`` is the FIRST command in this
+    package that writes a journal, and the first scenario this guard drives
+    that reaches ``create_dir_exclusive``/``append_line`` at all (both were
+    implemented speculatively by Story 3.1).
+
+    Review finding (Blind Hunter): this guard was extended for stories
+    1.4/1.5/1.6/1.7/1.8 but NOT for 3.3 -- and the defect the same review
+    pass found is exactly the class it exists to catch. ``run_spin`` gated
+    only on ``fs.is_dir(home)``, so against a home with NO Tier-3 backlink
+    its ``ensure_dir(parents=True)`` fabricated the local
+    ``_bmad-output/.../implementation-artifacts/runs/`` tree as real
+    directories and journaled into them -- paths that resolve under the home
+    (so the containment assertion below alone would have passed) but that do
+    NOT reach the canonical store, dying with the next ``marshal teardown``
+    (NFR-8). Containment under the home therefore cannot be the whole claim
+    here -- it holds either way. The second assertion is what distinguishes
+    the two worlds: the backlink must have been READ, which is what makes
+    those in-home paths a view of the canonical store rather than a second,
+    local copy of it. (The refusal behaviour when the backlink is absent is
+    ``test_spin.py``'s own
+    ``test_spin_missing_tier3_backlink_refuses_before_any_write``.)"""
+    monkeypatch.setenv("BMAD_LOOP_HOME_ROOT", str(tmp_path / "loop-homes"))
+    slug = "acme"
+    home = tmp_path / "loop-homes" / slug
+    tier3_local = home / "_bmad-output" / "projects" / slug / "implementation-artifacts"
+    tier3_canonical = (
+        tmp_path / "repo" / "_bmad-output" / "projects" / slug / "implementation-artifacts"
+    )
+
+    fs = _RecordingFs({home}, symlinks={tier3_local: tier3_canonical})
+    harness = _RecordingHarness()
+
+    args = argparse.Namespace(
+        slug=slug, epic=None, story=None, max_count=None, foreground=False, format="text"
+    )
+    exit_code = run_spin(args, fs=fs, harness=harness)
+
+    assert exit_code == EXIT_OK
+    # Non-vacuous: the run directory's parent (ensure_dir), the run directory
+    # itself (create_dir_exclusive), and the two journal appends (intent +
+    # outcome, both to the same journal.jsonl) -- four recorded writes.
+    assert len(fs.write_paths) == 4, f"unexpected write set: {fs.write_paths}"
+    assert harness.spin_log_paths, "no spin log path was observed -- the guard would be vacuous"
+
+    home_resolved = home.resolve()
+    for path in [*fs.write_paths, *harness.spin_log_paths]:
+        resolved = Path(path).resolve()
+        assert home_resolved in resolved.parents, (
+            f"write to {path} does not resolve under the provisioned home {home}"
+        )
+
+    # Every one of those paths sits under the local Tier-3 path...
+    for path in [*fs.write_paths, *harness.spin_log_paths]:
+        assert tier3_local in Path(path).parents, (
+            f"write to {path} does not pass through the Tier-3 path {tier3_local}"
+        )
+    # ...and that path was VERIFIED to be a backlink before anything was
+    # written, which is the part that makes the line above mean "reaches the
+    # canonical store" rather than merely "is inside the home".
+    assert fs.symlink_reads == [tier3_local], (
+        "run_spin wrote without first confirming the Tier-3 backlink -- "
+        f"symlink reads were {fs.symlink_reads}"
+    )
