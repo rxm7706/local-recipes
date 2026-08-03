@@ -14,7 +14,7 @@ contract → never here (BMAD planning-artifacts).
 - `agentic-sdlc/` — the four-views white paper, infographic + masterclass HTMLs,
   and updated Marp draft, staged for the `presentations/agentic-sdlc` four-views
   refresh (`docs/dreams/agentic-sdlc-autonomy.md`).
-- `jira-github-projects-sync/` — a complete externally-authored v1 draft spec
-  (PRD, two candidate architectures, epics/stories, acceptance checklist) for a
-  bidirectional GitHub Projects V2 ↔ Jira Cloud sync engine, staged for
-  `docs/dreams/jira-github-projects-sync.md`.
+- `jira-github-projects-sync/` — a complete externally-authored technical
+  draft (PRD, two candidate architectures, epics/stories, acceptance
+  checklist) for a bidirectional GitHub Projects V2 ↔ Jira Cloud sync engine,
+  staged for `docs/dreams/jira-github-projects-sync.md`.
