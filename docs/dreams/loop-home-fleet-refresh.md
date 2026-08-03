@@ -159,6 +159,16 @@ the verdict from the first pass.
   (`loop_push_watch.py`'s own docstring already names that as the durable
   fix, upstream, out of this repo's hands — this Dream is about running the
   stopgap that already exists, plus building the missing pull-side half).
+- Not a request to automate opening a story's own landing PR into `main` —
+  that is already fully specified as **Story 4.8, `marshal land`** ("the
+  last mile lands itself," Epic 4, depends on S-4.4/S-4.7): opens/updates
+  the PR without duplicating, applies labels, waits on required checks,
+  merges by policy, retires the branch, resyncs, refuses on red checks,
+  journals every landing. Confirmed live 2026-08-03 after manually landing
+  ~10 marshal stories one PR at a time this session (2.1 through 3.2) — the
+  exact gap 4.8 already closes. This Dream's own scope is the *other*
+  direction (main → loop-home) plus fleet-wide push/refresh, which 4.8 does
+  not cover.
 
 ## Realization log
 
