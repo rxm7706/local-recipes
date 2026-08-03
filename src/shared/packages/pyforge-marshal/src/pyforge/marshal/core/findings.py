@@ -201,10 +201,18 @@ never re-classified as a failure over a paper-trail gap this codebase's own
 architecture already treats as WARN system-wide. A malformed raw feed key
 surfaces via the EXISTING ``MRS-IDENT-001`` (``core/identity.py``, already
 ``Verdict.UNEVALUABLE``) -- no new code was needed for that scenario, per
-this story's own spec. Later stories append further real codes here as they
-gain their own real callers. The registry MECHANISM (format check, then
-membership check) is separately proven via ``monkeypatch``-injected
-synthetic codes in ``tests/unit/test_findings.py``.
+this story's own spec. Story 3.4's ``cli/spin.py`` (the supervisor's own
+process lifecycle, AD-9/AD-20/AD-25) adds a SEVENTH code to the SAME
+caller: ``MRS-SPIN-007`` (``ProcessPort.spawn_detached`` raised
+``ProcessError`` spawning the supervisor sidecar, after the harness itself
+already launched successfully). It classifies ``Verdict.WARN``, the same
+tier as ``MRS-SPIN-006`` and for the identical reason: a live,
+already-launched process is never re-classified as a failure over a
+paper-trail gap -- here "no supervisor is watching this run" rather than
+"the outcome entry could not be journaled." Later stories append further
+real codes here as they gain their own real callers. The registry
+MECHANISM (format check, then membership check) is separately proven via
+``monkeypatch``-injected synthetic codes in ``tests/unit/test_findings.py``.
 
 This module is pure data: no I/O, no subprocess, no network, no clock
 (AD-4).
@@ -238,6 +246,8 @@ CODE_PATTERN = re.compile(r"MRS-[A-Z][A-Z0-9]*-[0-9]{3}")
 # Story 3.3's cli/spin.py adds the ninth real caller's SIX codes (MRS-SPIN-006
 # joined 001-005 in review, splitting "launched but its outcome could not be
 # journaled" off MRS-SPIN-003's "never launched, safe to retry").
+# Story 3.4's cli/spin.py adds a SEVENTH code to the same caller,
+# MRS-SPIN-007 (the supervisor sidecar could not be spawned).
 REGISTERED_CODES: frozenset[str] = frozenset(
     {
         "MRS-IDENT-001",
@@ -284,6 +294,7 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-SPIN-004",
         "MRS-SPIN-005",
         "MRS-SPIN-006",
+        "MRS-SPIN-007",
     }
 )
 

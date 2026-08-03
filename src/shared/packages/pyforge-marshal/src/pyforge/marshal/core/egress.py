@@ -173,15 +173,24 @@ _TOKEN_SHAPE_PATTERNS: tuple[re.Pattern[str], ...] = (
 
 # The one registry (AD-34), keyed by Protocol class NAME (a string, not an
 # imported class) -- see the module docstring for why. `RecordPort` is the
-# first and only port classified `egress: true`; the other four are already
+# first and only port classified `egress: true`; the rest are already
 # documented (or self-evidently, for VcsPort/HarnessPort) as non-egress --
 # every path they touch stays inside the local filesystem/git repo/host.
+# Story 3.4 adds `ClockPort` (a system-clock read -- nothing leaves this
+# host at all) and `SessionObserverPort` (its own `pane_content` ALREADY
+# redacts via `to_redacted` at the adapter's own capture site -- the port
+# itself never accepts or forwards an unredacted payload to a durable/
+# third-party sink, so it is an observation-only port, not an egress one,
+# the same reasoning `ProcessPort`'s own docstring gives for the AD-34
+# process-spawn carve-out).
 EGRESS_PORTS: Mapping[str, bool] = {
     "ProcessPort": False,
     "FsPort": False,
     "HarnessPort": False,
     "VcsPort": False,
     "RecordPort": True,
+    "ClockPort": False,
+    "SessionObserverPort": False,
 }
 
 

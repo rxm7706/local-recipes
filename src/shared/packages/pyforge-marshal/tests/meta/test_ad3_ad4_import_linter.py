@@ -1,10 +1,13 @@
-"""Meta test -- AD-3/AD-4 import-linter contracts (Story 1.1).
+"""Meta test -- AD-3/AD-4 import-linter contracts (Story 1.1). Story 3.4
+adds a THIRD contract (AD-9, ``tests/meta/test_ad9_supervisor_no_control_channel.py``
+owns ITS OWN shape assertions) -- this file's own scope stays AD-3/AD-4
+only, plus the total contract-count guard below.
 
 Invokes the real ``lint-imports`` CLI (import-linter, provisioned in the
 root ``pixi.toml``'s ``[feature.pyforge-marshal.dependencies]``) against
-this package's own ``pyproject.toml`` and asserts both contracts are KEPT
-against the installed package. Separately parses the same
-``pyproject.toml`` to assert the two contracts' declared
+this package's own ``pyproject.toml`` and asserts the AD-3/AD-4 contracts
+are KEPT against the installed package. Separately parses the same
+``pyproject.toml`` to assert those two contracts' declared
 ``source_modules``/``forbidden_modules`` are exactly what AD-3/AD-4
 require -- so a future edit that silently narrows or widens either
 contract's scope is caught even if the tree at the time still happens to
@@ -45,8 +48,8 @@ def _contract_forbidding(forbidden_module: str) -> dict:
     raise AssertionError(f"no contract forbids {forbidden_module!r}")
 
 
-def test_pyproject_declares_exactly_two_contracts():
-    assert len(_contracts()) == 2
+def test_pyproject_declares_exactly_three_contracts():
+    assert len(_contracts()) == 3
 
 
 def test_ad4_core_purity_contract_shape():
@@ -192,10 +195,10 @@ def test_lint_imports_passes_against_the_installed_package():
     # A loose regex, not an exact-substring match on the whole summary line:
     # a future import-linter release reformatting its report (spacing,
     # wording) should not break this test over something unrelated to the
-    # contracts themselves. The "2 kept" contract COUNT is separately
-    # enforced by test_pyproject_declares_exactly_two_contracts (which reads
-    # the config, not lint-imports' stdout) -- this only needs to confirm
-    # nothing broke.
+    # contracts themselves. The "3 kept" contract COUNT is separately
+    # enforced by test_pyproject_declares_exactly_three_contracts (which
+    # reads the config, not lint-imports' stdout) -- this only needs to
+    # confirm nothing broke.
     assert re.search(r"\b0\s+broken\b", stdout), (
         f"expected a '0 broken' summary in lint-imports output:\n{stdout}"
     )

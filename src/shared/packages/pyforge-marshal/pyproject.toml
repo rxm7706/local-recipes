@@ -90,3 +90,18 @@ forbidden_modules = ["bmad_loop"]
 # loosen it: cli/core/ports/supervisor still may never themselves write
 # `import bmad_loop`.
 allow_indirect_imports = true
+
+[[tool.importlinter.contracts]]
+name = "AD-9: the supervisor has no control channel back to cli"
+type = "forbidden"
+# Story 3.4: the supervisor is a separate OS process that observes a run
+# from outside and never trusts session self-report (AD-9) -- a session
+# can never disable, silence, or reconfigure its own supervisor. The
+# session's own front door (cli/) already has no code path back into a
+# separate OS process's internals; this contract makes that absence
+# structural rather than an unenforced convention. Deliberately the
+# mirror image of the AD-3 contract above (which lists `supervisor` in
+# ITS OWN source_modules, forbidding supervisor -> bmad_loop): this one
+# forbids the other direction, supervisor -> cli.
+source_modules = ["pyforge.marshal.supervisor"]
+forbidden_modules = ["pyforge.marshal.cli"]

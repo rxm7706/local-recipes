@@ -27,7 +27,8 @@ def test_registered_codes_contains_the_real_codes():
     add MRS-GATE-001/002/003/004/005. Story 2.4's
     core/gate.py::classify_doc_only_declaration adds MRS-GATE-006. Story
     3.2's core/journal.py::fold adds MRS-JOURNAL-001/002. Story 3.3's
-    cli/spin.py adds MRS-SPIN-001/002/003/004/005/006. This
+    cli/spin.py adds MRS-SPIN-001/002/003/004/005/006. Story 3.4's
+    cli/spin.py adds a seventh code to the same caller, MRS-SPIN-007. This
     asserts the registry's exact real contents."""
     assert findings.REGISTERED_CODES == frozenset(
         {
@@ -75,6 +76,7 @@ def test_registered_codes_contains_the_real_codes():
             "MRS-SPIN-004",
             "MRS-SPIN-005",
             "MRS-SPIN-006",
+            "MRS-SPIN-007",
         }
     )
 
