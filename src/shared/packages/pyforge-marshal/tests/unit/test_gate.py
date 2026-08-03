@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import pytest
 
-from pyforge.marshal.core import gate
+from pyforge.marshal.core import findings, gate, verdict
 from pyforge.marshal.core.findings import UnregisteredFindingCodeError
 from pyforge.marshal.core.model import Finding, Severity, Verdict
 from pyforge.marshal.core.verdict import classify
@@ -191,3 +191,124 @@ def test_classify_outcome_still_accepts_the_two_documented_launch_failures():
         assert report["resolvable"] is False
         assert finding is not None
         assert finding.code == code
+
+
+# --- classify_doc_only_declaration (Story 2.4, I/O matrix truth table) -------
+
+
+def test_classify_doc_only_declaration_declared_and_no_changes_passes():
+    """Doc-only declared, no worktree changes: the exemption this function
+    exists for -- passes with no finding."""
+    report, finding = gate.classify_doc_only_declaration(
+        declared_doc_only=True, has_uncommitted_changes=False
+    )
+    assert finding is None
+    assert report == {"declared_doc_only": True, "has_uncommitted_changes": False}
+
+
+def test_classify_doc_only_declaration_declared_and_has_changes_passes():
+    """Doc-only declared, worktree HAS changes: nothing to suppress -- still
+    passes with no finding."""
+    report, finding = gate.classify_doc_only_declaration(
+        declared_doc_only=True, has_uncommitted_changes=True
+    )
+    assert finding is None
+    assert report == {"declared_doc_only": True, "has_uncommitted_changes": True}
+
+
+def test_classify_doc_only_declaration_undeclared_and_no_changes_fails_mrs_gate_006():
+    """NOT declared doc-only, no worktree changes: the one combination
+    indistinguishable from a story that silently failed to do its work --
+    the only failing branch, reporting the new MRS-GATE-006 finding."""
+    report, finding = gate.classify_doc_only_declaration(
+        declared_doc_only=False, has_uncommitted_changes=False
+    )
+    assert report == {"declared_doc_only": False, "has_uncommitted_changes": False}
+    assert finding is not None
+    assert finding.code == "MRS-GATE-006"
+    assert finding.severity is Severity.ERROR
+    assert "doc-only" in finding.message
+    assert classify(finding.code) is Verdict.GATE_FAILED
+
+
+def test_classify_doc_only_declaration_undeclared_and_has_changes_passes():
+    """NOT declared doc-only, worktree HAS changes: an ordinary story --
+    nothing to flag, passes with no finding."""
+    report, finding = gate.classify_doc_only_declaration(
+        declared_doc_only=False, has_uncommitted_changes=True
+    )
+    assert finding is None
+    assert report == {"declared_doc_only": False, "has_uncommitted_changes": True}
+
+
+def test_classify_doc_only_declaration_pass_never_suppresses_an_independent_scope_violation(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    """AC4's independence property: a doc-only PASS must never suppress a
+    co-occurring, independently-emitted scope-violation-shaped finding.
+
+    No real code classifies to ``Verdict.SCOPE_VIOLATION`` yet (Story 2.3's
+    scope check is not built) -- mirrors ``test_verdict.py``'s own
+    ``synthetic_registry`` fixture idiom: monkeypatch a synthetic code onto
+    ``findings.REGISTERED_CODES`` and ``verdict._CLASSIFY_TABLE`` so the
+    proof does not depend on Story 2.3 existing.
+    """
+    synthetic_code = "MRS-TST-201"
+    monkeypatch.setattr(
+        findings, "REGISTERED_CODES", frozenset({synthetic_code})
+    )
+    monkeypatch.setattr(
+        verdict, "_CLASSIFY_TABLE", {synthetic_code: Verdict.SCOPE_VIOLATION}
+    )
+
+    _, doc_only_finding = gate.classify_doc_only_declaration(
+        declared_doc_only=True, has_uncommitted_changes=False
+    )
+    assert doc_only_finding is None
+
+    scope_violation_finding = Finding(
+        code=synthetic_code, severity=Severity.ERROR, message="frozen surface touched"
+    )
+    result = verdict.compute_verdict([scope_violation_finding])
+    assert result is Verdict.SCOPE_VIOLATION
+
+
+def test_classify_doc_only_declaration_failure_and_an_independent_scope_violation_fold_to_the_stronger_verdict(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    """Complementary to the PASS-side independence test above: when
+    ``classify_doc_only_declaration`` itself FAILS (``MRS-GATE-006``,
+    ``Verdict.GATE_FAILED``) alongside an independent scope-violation-shaped
+    finding, the aggregate verdict is ``GATE_FAILED`` -- the stronger of the
+    two per ``LATTICE_ORDER`` (``error > gate-failed > scope-violation >
+    ...``). Proves the two findings fold together correctly rather than one
+    silently dominating for the wrong reason (review finding: the PASS-side
+    test above only proved the passing case never suppresses a scope
+    violation; the failing case was unexercised).
+
+    Extends (rather than replaces) the real registry/classify-table so the
+    real ``MRS-GATE-006`` entry stays valid alongside the synthetic code.
+    """
+    synthetic_code = "MRS-TST-202"
+    monkeypatch.setattr(
+        findings,
+        "REGISTERED_CODES",
+        findings.REGISTERED_CODES | frozenset({synthetic_code}),
+    )
+    monkeypatch.setattr(
+        verdict,
+        "_CLASSIFY_TABLE",
+        {**verdict._CLASSIFY_TABLE, synthetic_code: Verdict.SCOPE_VIOLATION},
+    )
+
+    _, doc_only_finding = gate.classify_doc_only_declaration(
+        declared_doc_only=False, has_uncommitted_changes=False
+    )
+    assert doc_only_finding is not None
+    assert doc_only_finding.code == "MRS-GATE-006"
+
+    scope_violation_finding = Finding(
+        code=synthetic_code, severity=Severity.ERROR, message="frozen surface touched"
+    )
+    result = verdict.compute_verdict([doc_only_finding, scope_violation_finding])
+    assert result is Verdict.GATE_FAILED
