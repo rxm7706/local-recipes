@@ -214,10 +214,24 @@ class LocalFs:
         the same way for the same reason (follow-up review finding, verified
         live: the original guarded only one of the two parameters, so a
         ``str`` path still escaped as ``AttributeError: 'str' object has no
-        attribute 'parent'``). Otherwise raises ``FsError`` on failure,
-        identical to ``write_text_atomic``."""
+        attribute 'parent'``). A ``Path`` with no file name (``Path("/")``,
+        ``Path(".")``) raises ``FsError`` (follow-up review finding, verified
+        live: ``_tmp_sibling`` raised its own ``ValueError: PosixPath('/')
+        has an empty name``, which ``write_text_atomic``'s ``except OSError``
+        does not catch, so it escaped both failure modes this method and
+        ``ports/record.py`` document). Otherwise raises ``FsError`` on
+        failure, identical to ``write_text_atomic``."""
         if not isinstance(path, Path):
             raise TypeError(f"path must be a Path, got {path!r}")
         if not isinstance(payload, Redacted):
-            raise TypeError(f"payload must be a Redacted instance, got {payload!r}")
+            # The TYPE only, never the value: a `Redacted` is safe to print
+            # but a wrongly-typed payload is exactly the unredacted object
+            # this port exists to refuse, and an exception message escapes as
+            # a raw traceback (`cli/main.py` catches only SystemExit /
+            # KeyboardInterrupt) into the harness log. Review finding.
+            raise TypeError(
+                f"payload must be a Redacted instance, got {type(payload).__name__}"
+            )
+        if not path.name:
+            raise FsError(f"cannot write {path}: path has no file name")
         self.write_text_atomic(path, payload.text)

@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "urn:local-recipes:pyforge-marshal:gate-record.v1",
   "title": "MarshalGateRecord",
-  "description": "The dict shape core.egress.build_gate_record() produces (Story 2.6, AD-34): a durable record of one completed gate evaluation -- the commands run, their exit codes, the scope-check verdict, the tree revision, and a UTC ISO-8601 timestamp. additionalProperties is false at both the document and the commandReport level, matching policy.json's/envelope.v1.json's own closed-schema discipline. This schema describes the dict shape build_gate_record() RETURNS, before core.egress.to_redacted() is applied. Redaction only ever replaces string CONTENT with the sentinel, never adds, removes or retypes a field, so a redacted record still validates against this same schema -- but this document is the pre-redaction contract, which is the one build_gate_record() is written against. jsonschema validates it only in tests (src/ never runtime-validates against it, matching policy.json's own precedent).",
+  "description": "The dict shape core.egress.build_gate_record() produces (Story 2.6, AD-34): a durable record of one completed gate evaluation -- the commands run, their exit codes, the scope-check verdict, the tree revision, and a UTC ISO-8601 timestamp. additionalProperties is false at both the document and the commandReport level, matching policy.json's/envelope.v1.json's own closed-schema discipline. This schema describes the dict shape build_gate_record() RETURNS, before core.egress.to_redacted() is applied. For a record built by build_gate_record(), redaction only ever replaces string CONTENT with the sentinel -- it never adds, removes or retypes a field -- so a redacted gate record still validates against this same schema, and a test asserts exactly that. The general to_redacted() serializer has one shape this claim does NOT cover (review finding, verified live): two DISTINCT token-shaped mapping KEYS both rewrite to the sentinel and therefore collapse into one entry, dropping a field. build_gate_record's field names are fixed and none is token-shaped, so no gate record can reach that case. jsonschema validates this document only in tests (src/ never runtime-validates against it, matching policy.json's own precedent).",
   "type": "object",
   "additionalProperties": false,
   "required": ["story", "commands", "scope_check_verdict", "tree_revision", "timestamp"],
@@ -24,12 +24,13 @@
     "tree_revision": {
       "type": "string",
       "minLength": 1,
-      "description": "An already-gathered fact identifying the evaluated tree state -- this schema does not prescribe its format (e.g. a git SHA)."
+      "pattern": "\\S",
+      "description": "An already-gathered fact identifying the evaluated tree state -- this schema does not prescribe its format (e.g. a git SHA). The \\S pattern rejects a whitespace-only value that minLength alone admits (review finding, verified live), matching build_gate_record's own .strip() check: a record identifying the evaluated tree as \"   \" proves nothing."
     },
     "timestamp": {
       "type": "string",
-      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}[T ][0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]+)?(Z|[+-]00:00)$",
-      "description": "A UTC ISO-8601 timestamp (zero tz offset), parsed -- never generated -- by build_gate_record(). The pattern enforces what build_gate_record() itself enforces: a bare 'type: string' let the schema green-light records (a hand-written one, or one from a non-Python consumer) that build_gate_record would reject outright, e.g. \"yesterday afternoon\" or a +05:00 offset. That claim is now literally true in BOTH directions -- build_gate_record matches this exact pattern as core.egress._TIMESTAMP_PATTERN, and a test pins the two spellings together. Before that (review finding, verified live) datetime.fromisoformat's greater permissiveness let the producer emit four legitimate UTC forms this pattern rejects -- a missing seconds field, the compact offsets +0000/+00, and the basic form 20260803T000000Z -- so a well-behaved caller wrote a durable record that failed its own contract."
+      "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])[T ]([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9](\\.[0-9]+)?(Z|[+-]00:00)$",
+      "description": "A UTC ISO-8601 timestamp (zero tz offset), parsed -- never generated -- by build_gate_record(). The pattern is kept character-for-character identical to core.egress._TIMESTAMP_PATTERN and a test pins the two spellings together, so the SPELLING half is enforced identically on both sides: a bare 'type: string' let the schema green-light records (a hand-written one, or one from a non-Python consumer) that build_gate_record rejects outright, e.g. \"yesterday afternoon\" or a +05:00 offset, and datetime.fromisoformat's greater permissiveness let the producer emit four legitimate UTC forms this pattern rejects -- a missing seconds field, the compact offsets +0000/+00, and the basic form 20260803T000000Z. Every date/time component also carries its real range (review finding, verified live): with bare [0-9]{2} groups this pattern accepted 2026-13-45T99:99:99Z, and 2026-08-03T24:00:00Z passed BOTH sides while fromisoformat silently resolves hour 24 to the NEXT day -- a durable record whose stored text and meaning disagree. One asymmetry REMAINS and is stated rather than claimed away: a regex cannot express calendar validity, so 2026-02-30T12:00:00Z matches this pattern while build_gate_record rejects it via fromisoformat. A consumer needing that guarantee must parse the value, not only validate it."
     }
   },
   "$defs": {
@@ -52,7 +53,8 @@
         "command": {
           "type": "string",
           "minLength": 1,
-          "description": "The verify command string, as configured."
+          "pattern": "\\S",
+          "description": "The verify command string, as configured. The \\S pattern rejects a whitespace-only value that minLength alone admits (review finding), matching build_gate_record's own .strip() check."
         },
         "returncode": {
           "type": ["integer", "null"],

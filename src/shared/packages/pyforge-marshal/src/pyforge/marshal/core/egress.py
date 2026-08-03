@@ -134,13 +134,41 @@ from .policy import REDACTED_SENTINEL, is_secret_key
 # but the tolerant one is still required on its own: a real Anthropic key
 # (`sk-ant-api03-...`) has only 3 contiguous alnum characters after `sk-`,
 # so the contiguous pattern never matches it at all.
+# (5) The GitHub prefix is `gh[pousr]_`, not `ghp_` alone, and the AWS one is
+#     `AKIA|ASIA` (follow-up review finding, both verified live: each omitted
+#     shape passed through in FULL PLAINTEXT while its covered sibling
+#     redacted). `ghp_` is only the CLASSIC USER PAT. The same 36-character
+#     body ships under `ghs_` (a GitHub App / Actions installation token --
+#     what `GITHUB_TOKEN` and `gh` itself carry), `gho_` (an OAuth user
+#     token, what a logged-in `gh` stores), `ghu_` (a user-to-server token)
+#     and `ghr_` (a refresh token). `ghs_` is the single likeliest credential
+#     to land in a gate record: it is what `git` echoes back inside the
+#     remote URL of a failed push (`https://x-access-token:ghs_...@github.
+#     com/o/r.git`), captured straight into a verify command's `stderr`.
+#     `ASIA` is the AWS STS TEMPORARY access key ID -- byte-identical in
+#     shape to `AKIA`, and the form anything assuming a role actually uses.
+#     This stays within the Boundaries clause's "small closed set of known
+#     token-shape regexes": these are the same four vocabularies spelled
+#     completely, not new shape classes.
+#
+# (6) The lookbehind is `(?<![A-Za-z0-9])`, NOT `(?<![A-Za-z0-9_])` (follow-up
+#     review finding, verified live: `"GITHUB_TOKEN_ghp_" + "a"*36` passed
+#     through in full plaintext, because `_` is the most common
+#     token-ADJACENT separator in env-var-shaped text and the lookbehind
+#     blocked exactly that). A previous pass rejected this as "the same
+#     knob pulled in opposite directions -- either fix re-opens the other";
+#     that reasoning does not hold for the `_` half specifically, verified
+#     against every over-redaction control in the suite: `risk-8f3a...`
+#     (the case the lookbehind was added for) has an ALNUM `i` before `sk-`,
+#     so dropping `_` from the class leaves it blocked exactly as before.
 _TOKEN_RUN_TAIL = r"[A-Za-z0-9_-]*"
+_TOKEN_LEAD = r"(?<![A-Za-z0-9])"
 _TOKEN_SHAPE_PATTERNS: tuple[re.Pattern[str], ...] = (
-    re.compile(r"(?<![A-Za-z0-9_])ghp_[A-Za-z0-9]{36,}" + _TOKEN_RUN_TAIL),
-    re.compile(r"(?<![A-Za-z0-9_])github_pat_[A-Za-z0-9_]{20,}" + _TOKEN_RUN_TAIL),
-    re.compile(r"(?<![A-Za-z0-9_])AKIA[0-9A-Z]{16,}" + _TOKEN_RUN_TAIL),
-    re.compile(r"(?<![A-Za-z0-9_])sk-[A-Za-z0-9_-]{40,}" + _TOKEN_RUN_TAIL),
-    re.compile(r"(?<![A-Za-z0-9_])sk-[A-Za-z0-9]{20,}" + _TOKEN_RUN_TAIL),
+    re.compile(_TOKEN_LEAD + r"gh[pousr]_[A-Za-z0-9]{36,}" + _TOKEN_RUN_TAIL),
+    re.compile(_TOKEN_LEAD + r"github_pat_[A-Za-z0-9_]{20,}" + _TOKEN_RUN_TAIL),
+    re.compile(_TOKEN_LEAD + r"(?:AKIA|ASIA)[0-9A-Z]{16,}" + _TOKEN_RUN_TAIL),
+    re.compile(_TOKEN_LEAD + r"sk-[A-Za-z0-9_-]{40,}" + _TOKEN_RUN_TAIL),
+    re.compile(_TOKEN_LEAD + r"sk-[A-Za-z0-9]{20,}" + _TOKEN_RUN_TAIL),
 )
 
 # The one registry (AD-34), keyed by Protocol class NAME (a string, not an
@@ -179,8 +207,14 @@ class Redacted:
         # the identical "wrong type supplied" category, so a caller
         # wrapping the pipeline in one `except TypeError` handled two of
         # three failure points.
+        # The TYPE only, never the value (follow-up review finding): an
+        # unredacted payload interpolated into an exception message escapes
+        # as a raw traceback on stderr. See `_safe_repr`. A whole rejected
+        # payload is maximally secret-bearing AND may carry a secret that
+        # matches no known shape, so shape-scanning it is not enough here --
+        # naming the type is fully diagnostic and cannot leak.
         if not isinstance(self.text, str):
-            raise TypeError(f"text must be a str, got {self.text!r}")
+            raise TypeError(f"text must be a str, got {type(self.text).__name__}")
 
 
 def _redact_string(value: str) -> str:
@@ -191,6 +225,21 @@ def _redact_string(value: str) -> str:
     for pattern in _TOKEN_SHAPE_PATTERNS:
         redacted = pattern.sub(REDACTED_SENTINEL, redacted)
     return redacted
+
+
+def _safe_repr(value: object) -> str:
+    """``repr(value)``, shape-scanned (follow-up review finding, verified
+    live). Every diagnostic in this module interpolates caller-supplied data,
+    and ``cli/main.py`` catches only ``SystemExit``/``KeyboardInterrupt``, so
+    a contract violation lands as a raw traceback on stderr -- which the
+    harness captures and logs. Without this, the ONE module whose stated
+    purpose is keeping credentials out of a sink printed them itself:
+    ``to_redacted("token=sk-ant-api03-...")`` raised ``TypeError: payload
+    must be a Mapping, got 'token=sk-ant-api03-...'``, and
+    ``_validate_command_report``'s ``{entry!r}`` echoed a whole command
+    report including its captured ``stdout``. Diagnostics get the same
+    redaction the record does -- nothing routes around ``_redact_string``."""
+    return _redact_string(repr(value))
 
 
 def _redact(value: object) -> object:
@@ -250,7 +299,8 @@ def to_redacted(payload: Mapping[str, object]) -> Redacted:
     ``core.model.Envelope.__post_init__``'s own "wrap json.dumps's failure"
     precedent."""
     if not isinstance(payload, Mapping):
-        raise TypeError(f"payload must be a Mapping, got {payload!r}")
+        # The TYPE only, never the value -- see `Redacted.__post_init__`.
+        raise TypeError(f"payload must be a Mapping, got {type(payload).__name__}")
     redacted = _redact(payload)
     try:
         # allow_nan=False (follow-up review finding, verified live): the
@@ -292,8 +342,21 @@ _ALL_COMMAND_KEYS: frozenset[str] = _REQUIRED_COMMAND_KEYS | _OPTIONAL_COMMAND_K
 # that schema's own description claimed "the pattern enforces what
 # build_gate_record() itself enforces". `tests/unit/test_egress.py` pins the
 # two spellings together in BOTH directions.
+#
+# Every date/time COMPONENT carries its real range (follow-up review finding,
+# verified live). With bare `[0-9]{2}` groups the pattern -- and therefore the
+# schema, which is pinned character-for-character to it -- green-lit
+# `2026-13-45T99:99:99Z`, and worse, `2026-08-03T24:00:00Z` passed BOTH the
+# schema and this producer while `datetime.fromisoformat` silently resolves
+# hour 24 to `2026-08-04T00:00:00+00:00`: a durable evidence record whose
+# stored text says one day and whose meaning is the next. Bound: a regex
+# cannot express calendar validity, so `2026-02-30T12:00:00Z` still matches
+# this pattern -- the producer rejects it via `fromisoformat`, the schema
+# alone cannot. That asymmetry is now stated in the schema's own description
+# rather than claimed away.
 _TIMESTAMP_PATTERN = re.compile(
-    r"^[0-9]{4}-[0-9]{2}-[0-9]{2}[T ][0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]+)?(Z|[+-]00:00)$"
+    r"^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])"
+    r"[T ]([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9](\.[0-9]+)?(Z|[+-]00:00)$"
 )
 
 
@@ -306,13 +369,16 @@ def _validate_command_report(entry: Mapping[str, object], index: int) -> dict[st
     of ``entry``) -- safe to `dict()`-copy rather than deep-copy since every
     permitted key's value is now a validated immutable scalar (``str``,
     ``int``, ``bool``, or ``None``)."""
+    # No message below echoes the whole `entry` (follow-up review finding,
+    # verified live: `{entry!r}` printed a command report's captured `stdout`
+    # verbatim, so a malformed report leaked exactly what this module exists
+    # to redact). The index plus the offending key names identify the entry
+    # precisely; individual values go through `_safe_repr`.
     if isinstance(entry, str) or not isinstance(entry, Mapping):
-        raise ValueError(f"commands[{index}] must be a Mapping, got {entry!r}")
+        raise ValueError(f"commands[{index}] must be a Mapping, got {type(entry).__name__}")
     missing = _REQUIRED_COMMAND_KEYS - set(entry.keys())
     if missing:
-        raise ValueError(
-            f"commands[{index}] is missing required key(s) {sorted(missing)}: {entry!r}"
-        )
+        raise ValueError(f"commands[{index}] is missing required key(s) {sorted(missing)}")
     unknown = set(entry.keys()) - _ALL_COMMAND_KEYS
     if unknown:
         # `sorted(map(repr, ...))`, not `sorted(...)` (review finding,
@@ -322,24 +388,33 @@ def _validate_command_report(entry: Mapping[str, object], index: int) -> dict[st
         # validator -- masking the ValueError this function documents for
         # every malformed-input case.
         raise ValueError(
-            f"commands[{index}] has unknown key(s) {sorted(map(repr, unknown))} -- only "
-            f"{sorted(_ALL_COMMAND_KEYS)} are permitted: {entry!r}"
+            f"commands[{index}] has unknown key(s) {sorted(map(_safe_repr, unknown))} -- only "
+            f"{sorted(_ALL_COMMAND_KEYS)} are permitted"
         )
     command = entry["command"]
-    if not isinstance(command, str) or command == "":
-        raise ValueError(f"commands[{index}]['command'] must be a non-empty str, got {command!r}")
+    # `.strip()`, not `== ""` (follow-up review finding, verified live): a
+    # whitespace-only command was accepted, storing an entry that proves
+    # nothing in a record whose entire purpose is proving what was checked.
+    if not isinstance(command, str) or not command.strip():
+        raise ValueError(
+            f"commands[{index}]['command'] must be a non-blank str, got {_safe_repr(command)}"
+        )
     resolvable = entry["resolvable"]
     if not isinstance(resolvable, bool):
-        raise ValueError(f"commands[{index}]['resolvable'] must be a bool, got {resolvable!r}")
+        raise ValueError(
+            f"commands[{index}]['resolvable'] must be a bool, got {_safe_repr(resolvable)}"
+        )
     returncode = entry["returncode"]
     if returncode is not None and (isinstance(returncode, bool) or not isinstance(returncode, int)):
         raise ValueError(
-            f"commands[{index}]['returncode'] must be an int or None, got {returncode!r}"
+            f"commands[{index}]['returncode'] must be an int or None, "
+            f"got {_safe_repr(returncode)}"
         )
     for key in _OPTIONAL_COMMAND_KEYS:
         if key in entry and not isinstance(entry[key], str):
             raise ValueError(
-                f"commands[{index}][{key!r}] must be a str when present, got {entry[key]!r}"
+                f"commands[{index}][{key!r}] must be a str when present, got "
+                f"{type(entry[key]).__name__}"
             )
     # Cross-field consistency (follow-up review finding, verified live). The
     # schema DOCUMENTS both invariants in prose -- `returncode` is "null when
@@ -431,11 +506,14 @@ def build_gate_record(
                 f"{sorted(member.value for member in Verdict)}, got {scope_check_verdict!r}"
             ) from exc
 
-    if not isinstance(tree_revision, str) or tree_revision == "":
-        raise ValueError(f"tree_revision must be a non-empty str, got {tree_revision!r}")
+    # `.strip()`, not `== ""` (follow-up review finding, verified live): a
+    # whitespace-only revision was accepted, so the record identified the
+    # evaluated tree state with `"   "`.
+    if not isinstance(tree_revision, str) or not tree_revision.strip():
+        raise ValueError(f"tree_revision must be a non-blank str, got {_safe_repr(tree_revision)}")
 
     if not isinstance(timestamp, str):
-        raise ValueError(f"timestamp must be a str, got {timestamp!r}")
+        raise ValueError(f"timestamp must be a str, got {type(timestamp).__name__}")
     try:
         parsed = datetime.fromisoformat(timestamp)
     except ValueError as exc:
@@ -463,10 +541,16 @@ def build_gate_record(
     # canonical spelling may be EMITTED, or the record fails the contract it
     # is written against.
     if not _TIMESTAMP_PATTERN.match(timestamp):
+        # The message names what the pattern ACTUALLY accepts (follow-up
+        # review finding): it also permits a space in place of the `T` and
+        # any number of fractional digits, so the previous, narrower wording
+        # left a caller unable to predict which inputs would be taken.
         raise ValueError(
             "timestamp must use schemas/gate-record.json's canonical UTC ISO-8601 "
-            "spelling, YYYY-MM-DDTHH:MM:SS[.ffffff] followed by 'Z' or '+00:00' "
-            f"(seconds are required and the offset may not be abbreviated), got {timestamp!r}"
+            "spelling, YYYY-MM-DD, then 'T' or a space, then HH:MM:SS with optional "
+            "fractional seconds, then 'Z' or '+00:00' (seconds are required, every "
+            "component must be in range, and the offset may not be abbreviated), got "
+            f"{timestamp!r}"
         )
 
     return {

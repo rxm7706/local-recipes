@@ -786,3 +786,250 @@ def test_unknown_command_report_keys_of_mixed_types_still_raise_value_error():
             tree_revision="abc123",
             timestamp="2026-08-03T00:00:00Z",
         )
+
+
+# --- follow-up review pass #3: vocabulary completeness, diagnostic leakage, --
+# component ranges, blank values ---------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "leaked",
+    [
+        "ghp_" + "a" * 36,
+        "ghs_" + "a" * 36,
+        "gho_" + "a" * 36,
+        "ghu_" + "a" * 36,
+        "ghr_" + "a" * 36,
+    ],
+    ids=["classic-pat", "app-installation", "oauth-user", "user-to-server", "refresh"],
+)
+def test_every_github_token_prefix_in_the_family_is_redacted(leaked):
+    """Review finding, verified live: only `ghp_` (the classic USER PAT) was
+    covered, so the four sibling prefixes sharing the identical 36-character
+    body passed through in FULL PLAINTEXT while `ghp_` redacted. `ghs_` is
+    the likeliest of all to reach a gate record -- it is what `GITHUB_TOKEN`
+    and `gh` carry, and what `git` echoes back inside the remote URL of a
+    failed push, straight into a verify command's captured stderr."""
+    document = json.loads(to_redacted({"stderr": f"remote: {leaked}"}).text)
+    assert leaked not in document["stderr"]
+    assert document["stderr"] == f"remote: {REDACTED_SENTINEL}"
+
+
+def test_github_app_token_inside_a_push_url_is_redacted():
+    """The concrete shape the finding was verified against."""
+    leaked = "ghs_" + "A" * 36
+    url = f"https://x-access-token:{leaked}@github.com/o/r.git"
+    document = json.loads(to_redacted({"stderr": url}).text)
+    assert leaked not in document["stderr"]
+    assert "ghs_" not in document["stderr"]
+
+
+@pytest.mark.parametrize("prefix", ["AKIA", "ASIA"], ids=["long-term", "sts-temporary"])
+def test_both_aws_access_key_prefixes_are_redacted(prefix):
+    """Review finding, verified live: `ASIA` (the AWS STS TEMPORARY access
+    key ID) is byte-identical in shape to `AKIA` and is what anything
+    assuming a role actually uses, yet was absent from the vocabulary."""
+    leaked = prefix + "IOSFODNN7EXAMPLE"
+    document = json.loads(to_redacted({"stdout": leaked}).text)
+    assert document["stdout"] == REDACTED_SENTINEL
+
+
+def test_token_preceded_by_an_underscore_is_redacted():
+    """Review finding, verified live: the lookbehind blocked `_`, the most
+    common token-ADJACENT separator in env-var-shaped text, so
+    `"GITHUB_TOKEN_ghp_" + "a"*36` passed through in full plaintext."""
+    leaked = "ghp_" + "a" * 36
+    document = json.loads(to_redacted({"note": f"GITHUB_TOKEN_{leaked}"}).text)
+    assert leaked not in document["note"]
+
+
+def test_dropping_underscore_from_the_lookbehind_keeps_every_over_redaction_control():
+    """The previous pass rejected the finding above as "the same knob pulled
+    in opposite directions -- either fix re-opens the other". It does not:
+    every control the lookbehind was added for has an ALNUM character before
+    the prefix, so `(?<![A-Za-z0-9])` still blocks all of them."""
+    controls = {
+        "tree_revision": "risk-8f3a9b2c1d4e5f6a7b8c9d0e1f2a3b4c",
+        "command": "pytest -k sk-test-selector",
+        "branch": "feature/sk-thing",
+        "prose": "AKIA is a prefix",
+        "note": "an ordinary task-list entry",
+    }
+    assert json.loads(to_redacted(controls).text) == controls
+
+
+def test_non_mapping_payload_diagnostic_does_not_echo_the_payload():
+    """Review finding, verified live: `to_redacted("token=sk-ant-api03-...")`
+    raised `TypeError: payload must be a Mapping, got 'token=sk-ant-...'`,
+    printing the credential from the ONE module whose stated purpose is
+    keeping credentials out of a sink. `cli/main.py` catches only
+    SystemExit/KeyboardInterrupt, so it escapes as a raw traceback the
+    harness logs."""
+    secret = "sk-ant-api03-" + "A" * 40 + "-" + "B" * 40
+    with pytest.raises(TypeError) as excinfo:
+        to_redacted(f"token={secret}")
+    assert secret not in str(excinfo.value)
+    assert "str" in str(excinfo.value)
+
+
+def test_redacted_text_type_diagnostic_does_not_echo_the_value():
+    with pytest.raises(TypeError) as excinfo:
+        Redacted(text=["ghp_" + "a" * 36])
+    assert "ghp_" not in str(excinfo.value)
+    assert "list" in str(excinfo.value)
+
+
+def test_command_report_diagnostics_do_not_echo_captured_output():
+    """Review finding, verified live: `_validate_command_report`'s `{entry!r}`
+    echoed the whole report -- including its captured `stdout` -- into a
+    ValueError message."""
+    leaked = "ghp_" + "a" * 36
+    with pytest.raises(ValueError) as excinfo:
+        build_gate_record(
+            story_key="2.6",
+            commands=[
+                {
+                    "command": "pytest -q",
+                    "returncode": 0,
+                    "resolvable": True,
+                    "stdout": f"leaked {leaked}",
+                    "bogus": 1,
+                }
+            ],
+            scope_check_verdict=None,
+            tree_revision="abc123",
+            timestamp="2026-08-03T00:00:00Z",
+        )
+    assert leaked not in str(excinfo.value)
+    assert "bogus" in str(excinfo.value)
+
+
+@pytest.mark.parametrize(
+    "timestamp",
+    [
+        "2026-08-03T24:00:00Z",
+        "2026-13-03T00:00:00Z",
+        "2026-08-45T00:00:00Z",
+        "2026-08-03T00:99:00Z",
+        "2026-08-03T00:00:99Z",
+    ],
+    ids=["hour-24", "month-13", "day-45", "minute-99", "second-99"],
+)
+def test_out_of_range_timestamp_components_are_rejected_by_producer_and_schema(timestamp):
+    """Review finding, verified live: with bare `[0-9]{2}` groups the shared
+    pattern green-lit `2026-13-45T99:99:99Z`, and `2026-08-03T24:00:00Z`
+    passed BOTH the schema and the producer while `datetime.fromisoformat`
+    silently resolves hour 24 to the NEXT day -- a durable evidence record
+    whose stored text and meaning disagree."""
+    with pytest.raises(ValueError):
+        build_gate_record(
+            story_key="2.6",
+            commands=[],
+            scope_check_verdict=None,
+            tree_revision="abc123",
+            timestamp=timestamp,
+        )
+    instance = {
+        "story": "2.6",
+        "commands": [],
+        "scope_check_verdict": None,
+        "tree_revision": "abc123",
+        "timestamp": timestamp,
+    }
+    with pytest.raises(jsonschema.ValidationError):
+        jsonschema.validate(instance=instance, schema=_schema())
+
+
+def test_calendar_invalid_timestamp_is_the_one_stated_producer_schema_asymmetry():
+    """A regex cannot express calendar validity, so Feb 30 matches the shared
+    pattern while the producer rejects it via `fromisoformat`. This is the
+    ONE remaining asymmetry, and the schema's description now states it
+    instead of claiming it away -- pinned here so the claim cannot silently
+    become wrong in either direction."""
+    timestamp = "2026-02-30T12:00:00Z"
+    with pytest.raises(ValueError):
+        build_gate_record(
+            story_key="2.6",
+            commands=[],
+            scope_check_verdict=None,
+            tree_revision="abc123",
+            timestamp=timestamp,
+        )
+    jsonschema.validate(
+        instance={
+            "story": "2.6",
+            "commands": [],
+            "scope_check_verdict": None,
+            "tree_revision": "abc123",
+            "timestamp": timestamp,
+        },
+        schema=_schema(),
+    )
+    assert "calendar validity" in _schema()["properties"]["timestamp"]["description"]
+
+
+@pytest.mark.parametrize("blank", ["   ", "\t", "\n"])
+def test_blank_tree_revision_is_rejected_by_producer_and_schema(blank):
+    """Review finding, verified live: `== ""` admitted a whitespace-only
+    value, so the record identified the evaluated tree state as `"   "`."""
+    with pytest.raises(ValueError, match="tree_revision must be a non-blank str"):
+        build_gate_record(
+            story_key="2.6",
+            commands=[],
+            scope_check_verdict=None,
+            tree_revision=blank,
+            timestamp="2026-08-03T00:00:00Z",
+        )
+    with pytest.raises(jsonschema.ValidationError):
+        jsonschema.validate(
+            instance={
+                "story": "2.6",
+                "commands": [],
+                "scope_check_verdict": None,
+                "tree_revision": blank,
+                "timestamp": "2026-08-03T00:00:00Z",
+            },
+            schema=_schema(),
+        )
+
+
+def test_blank_command_is_rejected_by_producer_and_schema():
+    with pytest.raises(ValueError, match=r"must be a non-blank str"):
+        build_gate_record(
+            story_key="2.6",
+            commands=[{"command": "   ", "returncode": 0, "resolvable": True}],
+            scope_check_verdict=None,
+            tree_revision="abc123",
+            timestamp="2026-08-03T00:00:00Z",
+        )
+    with pytest.raises(jsonschema.ValidationError):
+        jsonschema.validate(
+            instance={"command": "   ", "returncode": 0, "resolvable": True},
+            schema=_schema()["$defs"]["commandReport"],
+        )
+
+
+def test_a_redacted_gate_record_still_validates_against_the_schema(tmp_path):
+    """The schema's description stakes the pre-/post-redaction relationship on
+    exactly this ("a redacted gate record still validates against this same
+    schema") and nothing tested it (review finding) -- the end-to-end test
+    validated only the PRE-redaction dict."""
+    record = build_gate_record(
+        story_key="2-6",
+        commands=[
+            {
+                "command": "pytest -q",
+                "resolvable": True,
+                "returncode": 1,
+                "stdout": "auth failed: ghs_" + "a" * 36,
+                "stderr": "",
+            }
+        ],
+        scope_check_verdict=None,
+        tree_revision="abc123",
+        timestamp="2026-08-03T00:00:00Z",
+    )
+    written = json.loads(to_redacted(record).text)
+    jsonschema.validate(instance=written, schema=_schema())
+    assert written["commands"][0]["stdout"] == f"auth failed: {REDACTED_SENTINEL}"
+    assert written["story"] == "2.6"

@@ -433,3 +433,25 @@ def test_write_redacted_atomic_rejects_a_non_path_path(fs, tmp_path, bogus_path)
     failure class the ``payload`` guard exists to prevent."""
     with pytest.raises(TypeError, match="path must be a Path"):
         fs.write_redacted_atomic(bogus_path, Redacted(text="{}"))
+
+
+@pytest.mark.parametrize("path", [Path("/"), Path(".")], ids=["root", "dot"])
+def test_write_redacted_atomic_rejects_a_path_with_no_file_name(path):
+    """Review finding, verified live: `_tmp_sibling` raised its own
+    `ValueError: PosixPath('/') has an empty name`, which
+    `write_text_atomic`'s `except OSError` does not catch -- so it escaped
+    both failure modes `write_redacted_atomic` and `ports/record.py`
+    document (`TypeError` or `FsError`)."""
+    with pytest.raises(FsError, match="no file name"):
+        LocalFs().write_redacted_atomic(path, Redacted(text="{}"))
+
+
+def test_write_redacted_atomic_payload_diagnostic_does_not_echo_the_value(tmp_path):
+    """Review finding: the diagnostic interpolated the rejected payload, which
+    is precisely the unredacted object this port exists to refuse -- and it
+    escapes as a raw traceback into the harness log."""
+    secret = "ghp_" + "a" * 36
+    with pytest.raises(TypeError) as excinfo:
+        LocalFs().write_redacted_atomic(tmp_path / "r.json", secret)
+    assert secret not in str(excinfo.value)
+    assert "Redacted" in str(excinfo.value)
