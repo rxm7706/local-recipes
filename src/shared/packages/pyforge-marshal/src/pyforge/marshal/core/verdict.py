@@ -101,9 +101,14 @@ answer could not be produced. ``MRS-GATE-004`` (``verify_commands``
 composed to the empty tuple) classifies ``Verdict.WARN``, the same tier as
 ``MRS-POLICY-005``/``MRS-PREFLIGHT-011`` -- see ``core/gate.py``'s own
 ``no_commands_configured_finding`` docstring for why a brand-new project's
-own ``DEFAULT_POLICY`` value must not read as a blocking failure. Later
-stories populate the table
-further as they add real codes. The mechanism (a total, fail-loud lookup) is
+own ``DEFAULT_POLICY`` value must not read as a blocking failure. Story
+2.4's ``core/gate.py::classify_doc_only_declaration`` adds ``MRS-GATE-006``
+(no worktree changes AND the story was not declared doc-only) --
+classifies ``Verdict.GATE_FAILED``, the same tier as ``MRS-GATE-001``: a
+real, determinable outcome ("no change, not declared doc-only" is
+something Marshal evaluated and found, not something it could not
+evaluate). Later stories populate the table further as they add real
+codes. The mechanism (a total, fail-loud lookup) is
 separately proven via ``monkeypatch``-injected synthetic entries in
 ``tests/unit/test_verdict.py``.
 
@@ -167,6 +172,8 @@ GUARDED_EXIT_CODES: frozenset[int] = frozenset(_EXIT_BY_VERDICT.values()) | {
 # the harness-version check into two tiers.
 # Story 2.1's cli/gate.py/core/gate.py add the seventh real caller's five
 # codes -- MRS-GATE-001 is the table's first GATE_FAILED classification.
+# Story 2.4's core/gate.py::classify_doc_only_declaration adds MRS-GATE-006,
+# joining MRS-GATE-001 at GATE_FAILED.
 _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-IDENT-001": Verdict.UNEVALUABLE,
     "MRS-IDENT-002": Verdict.UNEVALUABLE,
@@ -203,6 +210,7 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-GATE-003": Verdict.UNEVALUABLE,
     "MRS-GATE-004": Verdict.WARN,
     "MRS-GATE-005": Verdict.UNEVALUABLE,
+    "MRS-GATE-006": Verdict.GATE_FAILED,
 }
 
 

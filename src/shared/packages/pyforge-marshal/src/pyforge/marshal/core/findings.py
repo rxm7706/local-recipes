@@ -142,7 +142,14 @@ failed" or "could not evaluate". ``MRS-GATE-002``/``003``/``005`` classify
 tier as ``MRS-PREFLIGHT-006``'s own verify-command-resolvability code);
 ``MRS-GATE-004`` classifies ``Verdict.WARN``, the same tier as
 ``MRS-POLICY-005``/``MRS-PREFLIGHT-011`` -- a legitimate, non-blocking
-bootstrap state, never a silent ``clean`` -- see ``core/verdict.py``. Later
+bootstrap state, never a silent ``clean`` -- see ``core/verdict.py``. Story
+2.4's ``core/gate.py::classify_doc_only_declaration`` adds a sixth code,
+``MRS-GATE-006`` (the worktree has no changes AND the story was not
+declared doc-only -- the one combination indistinguishable from a story
+that silently failed to do its work). It classifies ``Verdict.GATE_FAILED``,
+the same tier as ``MRS-GATE-001``: a real, determinable outcome (Marshal
+evaluated and found nothing produced while no doc-only exemption was
+claimed), never "could not evaluate" -- see ``core/verdict.py``. Later
 stories append further real codes here as they gain their own real callers.
 The registry MECHANISM
 (format check, then membership check) is separately proven via
@@ -175,6 +182,7 @@ CODE_PATTERN = re.compile(r"MRS-[A-Z][A-Z0-9]*-[0-9]{3}")
 # Story 1.9's cli/init.py::run_preflight adds an eleventh code, graduating
 # the harness-version check into two tiers.
 # Story 2.1's cli/gate.py/core/gate.py add the seventh real caller's five codes.
+# Story 2.4's core/gate.py::classify_doc_only_declaration adds a sixth code.
 REGISTERED_CODES: frozenset[str] = frozenset(
     {
         "MRS-IDENT-001",
@@ -212,6 +220,7 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-GATE-003",
         "MRS-GATE-004",
         "MRS-GATE-005",
+        "MRS-GATE-006",
     }
 )
 
