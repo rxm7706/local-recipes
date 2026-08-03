@@ -149,3 +149,13 @@ dependency happens to live in a later epic.
   before landing — a station with headings but no Deps field would have
   silently counted as "measured, 0 findings" instead of unmeasured, the exact
   false-green class this Dream exists to prevent.
+- **2026-08-03** — First real unblock: S-3.2 landed, so `2-3` was flipped
+  back to `backlog` (its own dep is now satisfied) — exactly the mechanism
+  this Dream designed for. Noted a known detector limitation surfaced by
+  this: `forward_dependency_check.py` flags `2-3` as a finding again
+  immediately after the correct unblock, because it only checks "is this
+  story's status non-actionable," not "has its declared dependency actually
+  landed." Not a bug in the unblock — a real enhancement opportunity for the
+  detector (check the dependency story's own status, not just this story's),
+  not urgent enough to build today. Left as a known, understood false
+  positive rather than silenced.
