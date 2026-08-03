@@ -27,6 +27,11 @@ class RecordPort(Protocol):
         """Write ``payload.text`` to ``path`` via the same
         temp-file-then-``os.replace`` atomic sequence ``FsPort.
         write_text_atomic`` already uses, creating parent directories as
-        needed. Raises ``FsError`` on failure -- this port adds no new
-        failure mode, only a narrower accepted payload type."""
+        needed. Raises ``FsError`` on write failure, identical to
+        ``FsPort.write_text_atomic``; additionally raises ``TypeError`` if
+        ``path`` is not a ``Path`` or ``payload`` is not a ``Redacted``
+        (review finding: this docstring previously promised "no new failure
+        mode", but the sole implementation grew both contract guards, so a
+        caller writing ``except FsError`` around the only failure this port
+        declared crashed on a contract violation instead of handling it)."""
         ...

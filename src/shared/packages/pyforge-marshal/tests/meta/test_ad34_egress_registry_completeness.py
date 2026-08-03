@@ -18,9 +18,10 @@ Three guards:
     literal ``ast.Name(id="str")``, so either shape silently passed an
     egress port's own structural guarantee).
 (3) No module other than ``core/egress.py`` references its private
-    ``_TOKEN_SHAPE_PATTERNS`` -- the structural proof that no call site can
-    hand-roll its own redaction against a copy of the token-shape
-    vocabulary.
+    ``_TOKEN_SHAPE_PATTERNS``, or embeds a hand-rolled COPY of the
+    token-shape vocabulary (a known prefix followed by a regex character
+    class) -- the structural proof that no call site can hand-roll its own
+    redaction against a copy of that vocabulary.
 
 Positively asserts the scan surfaces are non-empty and that ``RecordPort``
 (the one real egress port shipped so far) is classified ``True`` -- the
@@ -32,29 +33,36 @@ literal ``class Foo(Protocol):`` base spelled as the bare name ``Protocol``
 or an attribute access ending in ``.Protocol`` -- a Protocol reached only
 through an intermediate alias that never spells either shape is out of
 scope. Guard (2)'s bare-str detection recognizes a bare ``str`` annotation,
-no annotation at all, an ``Optional[str]``/``str | None`` union, and the
+no annotation at all, an ``Optional[str]``/``str | None`` union (quoted or
+unquoted -- a string annotation is parsed and re-checked), and the
 ``Any``/``object`` escape hatches, across both ``def`` and ``async def``
 methods -- it does NOT recognize ``*args``/``**kwargs``, a ``str`` buried
 inside a container type (``list[str]``), or an annotation reached only
 through a type alias; none of those shapes appear on any port method in
 this package today.
 
-Guards (1) and (2) scan the ``ports/`` package RECURSIVELY, but they scan
-only ``ports/`` -- **not** ``adapters/``. AD-34's own sentence is "a
+Guards (1) and (2) scan the ``ports/`` package RECURSIVELY and INCLUDE
+``ports/__init__.py`` (review finding: excluding it by name left a Protocol
+declared directly in the package init invisible to both guards), but they
+scan only ``ports/`` -- **not** ``adapters/``. AD-34's own sentence is "a
 meta-test asserts no egress **adapter** accepts a bare string", so this is
 a narrower guard than the rule names: it proves the PROTOCOL is typed
 correctly, and relies on the adapter conforming to the Protocol it
 implements. `LocalFs.write_redacted_atomic` does conform today; the gap is
 recorded in ``deferred-work.md`` rather than left implicit.
 
-Guard (3) only recognizes a literal ``_TOKEN_SHAPE_PATTERNS`` token
-(an ``ast.Name``, an ``ast.Attribute.attr``, or an ``ast.ImportFrom``
-alias) -- it cannot catch ``getattr``-based dynamic access.
+Guard (3) recognizes a literal ``_TOKEN_SHAPE_PATTERNS`` token (an
+``ast.Name``, an ``ast.Attribute.attr``, or an ``ast.ImportFrom`` alias)
+plus a copied regex literal matching ``_COPIED_TOKEN_REGEX`` -- it cannot
+catch ``getattr``-based dynamic access, nor a copy that reaches the same
+shapes by a different spelling (a runtime-assembled pattern, or one whose
+prefix is not immediately followed by a character class).
 """
 
 from __future__ import annotations
 
 import ast
+import re
 from pathlib import Path
 
 import pytest
@@ -70,6 +78,10 @@ PORTS_DIR = PACKAGE_DIR / "ports"
 _EGRESS_MODULE = PACKAGE_DIR / "core" / "egress.py"
 
 _PRIVATE_NAME = "_TOKEN_SHAPE_PATTERNS"
+# A hand-rolled COPY of the token-shape vocabulary: one of `core/egress.py`'s
+# known prefixes immediately followed by a regex character class. See
+# `_token_shape_pattern_references`.
+_COPIED_TOKEN_REGEX = re.compile(r"(?:ghp_|github_pat_|AKIA|sk-)\[")
 
 
 def _parse(path: Path) -> ast.Module:
@@ -90,12 +102,20 @@ def _non_egress_modules() -> list[Path]:
     return [path for path in _package_modules() if path != _EGRESS_MODULE]
 
 
-def _port_modules() -> list[Path]:
+def _port_modules(root: Path | None = None) -> list[Path]:
     # rglob, not glob (follow-up review finding): the non-recursive form let a
     # Protocol defined in a ports/ SUBPACKAGE escape guards (1) and (2)
     # entirely -- and this same module already used rglob for guard (3)'s
     # surface, so the two scans disagreed about what "the ports package" means.
-    return sorted(p for p in PORTS_DIR.rglob("*.py") if p.name != "__init__.py")
+    #
+    # `__init__.py` is NOT filtered out (review finding, verified live: both
+    # reviewers found it independently). Excluding it by name left a Protocol
+    # declared directly in `ports/__init__.py` invisible to guards (1) and
+    # (2) -- and that file is precisely where the Story-1.1 registry
+    # placeholder lived and where a future shared base Protocol or re-export
+    # would naturally go. `root` is injectable so the recursion itself can be
+    # proven behaviorally rather than by grepping this function's source.
+    return sorted((root if root is not None else PORTS_DIR).rglob("*.py"))
 
 
 # --- guard (1)/(2): Protocol discovery + bare-str-param detection ------------
@@ -145,8 +165,18 @@ def _is_bare_str_annotation(annotation: ast.expr | None) -> bool:
         return True
     if isinstance(annotation, ast.Attribute) and annotation.attr in ("Any", "object"):
         return True
-    if isinstance(annotation, ast.Constant) and annotation.value == "str":
-        return True
+    if isinstance(annotation, ast.Constant) and isinstance(annotation.value, str):
+        # A STRING annotation (`payload: "str | None"`) -- parse and recurse
+        # (review finding, verified live: the check used to compare the
+        # constant to the literal `"str"`, so the quoted forms
+        # `"str | None"`/`"Optional[str]"` produced ZERO violations while
+        # their unquoted equivalents fired correctly). A forward reference
+        # that does not parse is simply not bare-str-shaped.
+        try:
+            inner = ast.parse(annotation.value, mode="eval").body
+        except SyntaxError:
+            return False
+        return _is_bare_str_annotation(inner)
     if isinstance(annotation, ast.BinOp) and isinstance(annotation.op, ast.BitOr):
         return _is_bare_str_annotation(annotation.left) or _is_bare_str_annotation(
             annotation.right
@@ -194,6 +224,21 @@ def _token_shape_pattern_references(tree: ast.Module) -> list[int]:
         elif isinstance(node, ast.Attribute) and node.attr == _PRIVATE_NAME:
             violations.append(node.lineno)
         elif isinstance(node, ast.Name) and node.id == _PRIVATE_NAME:
+            violations.append(node.lineno)
+        # A COPIED regex literal (review finding). Importing the private name
+        # was the only thing the guard could see, yet the threat its own
+        # docstring names -- "no call site can hand-roll its own redaction
+        # against a COPY of this vocabulary" -- is served far more naturally
+        # by pasting `re.compile(r"ghp_[A-Za-z0-9]{36,}")` into another
+        # module, which was completely invisible. The signature is a known
+        # token prefix immediately followed by a regex character class, so
+        # ordinary prose mentioning `ghp_` or a test fixture containing a
+        # literal token does not trip it.
+        elif (
+            isinstance(node, ast.Constant)
+            and isinstance(node.value, str)
+            and _COPIED_TOKEN_REGEX.search(node.value)
+        ):
             violations.append(node.lineno)
     return sorted(violations)
 
@@ -364,13 +409,98 @@ def test_guard_is_alive_synthetic_any_or_object_param_fires(annotation):
     assert _bare_str_param_violations(cls) == ["RecordPort.write_redacted_atomic(payload)"]
 
 
-def test_port_scan_is_recursive():
+def test_port_scan_is_recursive(tmp_path):
     """Review finding: `_port_modules()` used a non-recursive glob while this
     same module's guard-(3) surface used rglob, so a Protocol in a ports/
-    subpackage escaped guards (1) and (2) entirely."""
-    import inspect
+    subpackage escaped guards (1) and (2) entirely.
 
-    assert "rglob" in inspect.getsource(_port_modules)
+    Behavioral, not textual (second review finding): this test used to assert
+    `"rglob" in inspect.getsource(_port_modules)`, which passes for ANY
+    implementation merely MENTIONING the string -- including a
+    `# was rglob, now glob` comment above a non-recursive call -- so the
+    regression it names was not actually guarded."""
+    (tmp_path / "top.py").write_text("", encoding="utf-8")
+    nested = tmp_path / "sub"
+    nested.mkdir()
+    (nested / "deep.py").write_text("", encoding="utf-8")
+
+    found = {p.name for p in _port_modules(root=tmp_path)}
+    assert found == {"top.py", "deep.py"}
+
+
+def test_port_scan_includes_package_init(tmp_path):
+    """Review finding, verified live by both reviewers: `__init__.py` was
+    filtered out by name, so a Protocol declared directly in
+    `ports/__init__.py` -- exactly where the Story-1.1 registry placeholder
+    lived -- escaped guards (1) and (2) entirely while producing violations
+    when parsed directly."""
+    (tmp_path / "__init__.py").write_text(
+        "from typing import Protocol\n\n"
+        "class RecordPort(Protocol):\n"
+        "    def write_redacted_atomic(self, path, payload: str) -> None: ...\n",
+        encoding="utf-8",
+    )
+    modules = _port_modules(root=tmp_path)
+    assert [p.name for p in modules] == ["__init__.py"]
+
+    cls = _protocol_classes(_parse(modules[0]))[0]
+    assert _bare_str_param_violations(cls) == [
+        "RecordPort.write_redacted_atomic(path)",
+        "RecordPort.write_redacted_atomic(payload)",
+    ]
+
+
+@pytest.mark.parametrize("annotation", ['"str"', '"str | None"', '"Optional[str]"'])
+def test_guard_is_alive_synthetic_quoted_str_annotation_fires(annotation):
+    """Review finding, verified live: the constant check compared the
+    annotation to the literal `"str"`, so the quoted UNION forms produced
+    zero violations while their unquoted equivalents fired correctly."""
+    synthetic = (
+        "from typing import Protocol, Optional\n"
+        "from pathlib import Path\n\n"
+        "class RecordPort(Protocol):\n"
+        f"    def write_redacted_atomic(self, path: Path, payload: {annotation}) -> None: ...\n"
+    )
+    cls = _protocol_classes(ast.parse(synthetic))[0]
+    assert _bare_str_param_violations(cls) == ["RecordPort.write_redacted_atomic(payload)"]
+
+
+def test_guard_does_not_fire_on_a_quoted_non_str_annotation():
+    """The real `ports/record.py` uses `from __future__ import annotations`,
+    so a stringified `Redacted` must stay clean."""
+    synthetic = (
+        "from typing import Protocol\n\n"
+        "class RecordPort(Protocol):\n"
+        '    def write_redacted_atomic(self, path: "Path", payload: "Redacted") -> None: ...\n'
+    )
+    cls = _protocol_classes(ast.parse(synthetic))[0]
+    assert _bare_str_param_violations(cls) == []
+
+
+def test_guard_is_alive_synthetic_copied_token_regex_fires():
+    """Review finding: guard (3) recognized only the literal
+    `_TOKEN_SHAPE_PATTERNS` name, so the most natural way to hand-roll
+    redaction -- pasting a COPY of the regex vocabulary into another module
+    -- was completely invisible to the guard whose docstring names exactly
+    that threat."""
+    copied = 'import re\nP = re.compile(r"ghp_[A-Za-z0-9]{36,}")\n'
+    assert _token_shape_pattern_references(ast.parse(copied)) == [2]
+
+    for prefix in ("github_pat_", "AKIA", "sk-"):
+        source = f'P = "{prefix}[A-Za-z0-9]+"\n'
+        assert _token_shape_pattern_references(ast.parse(source)) == [1], prefix
+
+
+def test_copied_token_regex_guard_does_not_fire_on_ordinary_text():
+    """It must key on a token prefix followed by a regex CHARACTER CLASS --
+    prose mentioning a prefix, or a literal token in a fixture, is not a
+    hand-rolled vocabulary."""
+    benign = (
+        'DOC = "a GitHub PAT starts with ghp_ and an AWS key with AKIA"\n'
+        'FIXTURE = "ghp_" + "a" * 36\n'
+        'SELECTOR = "pytest -k sk-some-selector"\n'
+    )
+    assert _token_shape_pattern_references(ast.parse(benign)) == []
 
 
 def test_guard_does_not_fire_on_the_real_record_port():

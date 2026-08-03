@@ -29,7 +29,7 @@
     "timestamp": {
       "type": "string",
       "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}[T ][0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]+)?(Z|[+-]00:00)$",
-      "description": "A UTC ISO-8601 timestamp (zero tz offset), parsed -- never generated -- by build_gate_record(). The pattern enforces what build_gate_record() itself enforces: a bare 'type: string' let the schema green-light records (a hand-written one, or one from a non-Python consumer) that build_gate_record would reject outright, e.g. \"yesterday afternoon\" or a +05:00 offset."
+      "description": "A UTC ISO-8601 timestamp (zero tz offset), parsed -- never generated -- by build_gate_record(). The pattern enforces what build_gate_record() itself enforces: a bare 'type: string' let the schema green-light records (a hand-written one, or one from a non-Python consumer) that build_gate_record would reject outright, e.g. \"yesterday afternoon\" or a +05:00 offset. That claim is now literally true in BOTH directions -- build_gate_record matches this exact pattern as core.egress._TIMESTAMP_PATTERN, and a test pins the two spellings together. Before that (review finding, verified live) datetime.fromisoformat's greater permissiveness let the producer emit four legitimate UTC forms this pattern rejects -- a missing seconds field, the compact offsets +0000/+00, and the basic form 20260803T000000Z -- so a well-behaved caller wrote a durable record that failed its own contract."
     }
   },
   "$defs": {
@@ -37,6 +37,17 @@
       "type": "object",
       "additionalProperties": false,
       "required": ["command", "returncode", "resolvable"],
+      "description": "One verify command's already-classified report. The allOf below ENFORCES the two invariants the property descriptions state in prose (review finding, verified live: without it a self-contradictory entry -- resolvable false AND returncode 0 AND captured stdout -- validated clean against this contract, which core.egress.build_gate_record itself rejects). For a record whose purpose is proving months later what was checked, an internally false entry is worse than a rejected one; a non-Python consumer reads this schema, not the Python validator.",
+      "allOf": [
+        {
+          "if": { "required": ["resolvable"], "properties": { "resolvable": { "const": false } } },
+          "then": {
+            "properties": { "returncode": { "type": "null" } },
+            "not": { "anyOf": [{ "required": ["stdout"] }, { "required": ["stderr"] }] }
+          },
+          "else": { "properties": { "returncode": { "type": "integer" } } }
+        }
+      ],
       "properties": {
         "command": {
           "type": "string",
