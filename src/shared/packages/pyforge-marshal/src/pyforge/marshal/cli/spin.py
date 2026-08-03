@@ -852,9 +852,25 @@ def run_spin(
                 code="MRS-SPIN-007",
                 severity=Severity.WARN,
                 message=(
+                    # `supervisor_log` quoted at construction (review
+                    # finding): `_render_text` deliberately does NOT quote
+                    # finding MESSAGES -- its own comment states the split
+                    # and requires "every message that interpolates an
+                    # untrusted value quotes it at construction instead",
+                    # which the `MRS-SPIN-001`/`002` sites above already do
+                    # (`{slug!r}`, `{str(home)!r}`). This message shipped
+                    # with a RAW path derived from `BMAD_LOOP_HOME_ROOT`,
+                    # which `cli/init.py::_loop_home_root` reads unvalidated
+                    # and only anchors to absolute -- so a newline in it
+                    # forged whole lines of this report (a second
+                    # `findings:` block, on a run that genuinely launched at
+                    # rc=0), reintroducing on this story's own new finding
+                    # exactly the defect a prior pass fixed for `--story`
+                    # and raw feed keys.
                     f"bmad-loop run launched (pid {spin_result.pid}) but its "
                     f"supervisor could not be spawned: {exc} -- the run "
-                    f"continues unsupervised (supervisor log: {supervisor_log})"
+                    f"continues unsupervised (supervisor log: "
+                    f"{str(supervisor_log)!r})"
                 ),
             )
         )

@@ -61,6 +61,21 @@ def test_ad9_supervisor_no_control_channel_contract_shape():
     assert contract["type"] == "forbidden"
     assert contract["source_modules"] == ["pyforge.marshal.supervisor"]
     assert contract["forbidden_modules"] == ["pyforge.marshal.cli"]
+    # `as_packages` defaults to True in import-linter's own `forbidden`
+    # contract (verified against the installed `importlinter/contracts/
+    # forbidden.py`), and that default is the ONLY reason this contract
+    # reaches `supervisor/__main__.py` at all -- `source_modules` names the
+    # PACKAGE, not the module. Review finding: setting the documented
+    # `as_packages = false` would leave `lint-imports` reporting "0 broken"
+    # and every assertion above passing while `supervisor/__main__.py`
+    # became free to `import pyforge.marshal.cli.spin`, making this whole
+    # AD-9 guarantee vacuous with a green suite. Pinned explicitly: absent
+    # (the default) or explicitly true, never false.
+    assert contract.get("as_packages", True) is True, (
+        "the AD-9 contract must apply to the supervisor PACKAGE, not just "
+        "the `pyforge.marshal.supervisor` module object -- `as_packages = "
+        "false` silently exempts every module inside it"
+    )
 
 
 def _installed_package_dir() -> Path:

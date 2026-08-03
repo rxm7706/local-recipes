@@ -361,6 +361,21 @@ def test_spawn_detached_raises_process_error_when_the_log_cannot_be_opened(
         )
 
 
+def test_spawn_detached_quotes_the_log_path_in_its_error_message(process, tmp_path):
+    """Review finding: this message is interpolated verbatim into
+    ``MRS-SPIN-007``'s own message, which ``cli/spin.py::_render_text``
+    prints UNQUOTED by design -- so a raw path here reopens the
+    report-forgery hole that finding's own ``{str(supervisor_log)!r}``
+    closes. Every other message in this module already reprs its
+    interpolated value (``{list(argv)!r}``, ``{argv[0]!r}``)."""
+    log_path = tmp_path / "no-such-dir" / "a\nfindings:\n  FORGED.log"
+    with pytest.raises(ProcessError) as excinfo:
+        process.spawn_detached(
+            [sys.executable, "-c", "pass"], cwd=tmp_path, log_path=log_path
+        )
+    assert "\n" not in str(excinfo.value)
+
+
 def test_spawn_detached_wraps_an_embedded_null_byte(process, tmp_path):
     """Mirrors ``run``'s own identical NUL-byte coverage: ``subprocess.Popen``
     raises a plain ``ValueError`` (not an ``OSError``) for a NUL byte in

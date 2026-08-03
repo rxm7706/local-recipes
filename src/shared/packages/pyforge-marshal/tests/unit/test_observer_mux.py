@@ -165,3 +165,48 @@ def test_capture_pane_timeout_stays_below_the_supervisor_tick():
         "hung tmux stall the whole heartbeat loop -- the exact failure the "
         "constant's own comment says it is sized to prevent"
     )
+
+
+def test_pane_content_returns_none_when_the_redaction_round_trip_breaks(monkeypatch):
+    """Review finding: ``to_redacted`` and the ``json.loads(...)["pane"]``
+    unwrap -- the ONLY two lines in this method that transform data -- sat
+    OUTSIDE the try that upholds the port's documented "never raises"
+    contract. Three passes hardened the inside of that try (NUL bytes,
+    timeouts, non-zero exits) and left the transform exposed, so the
+    contract rested entirely on ``to_redacted``'s CURRENT shape: any future
+    change that wraps, caps or truncates its output (a size ceiling on
+    captured text being the obvious one) raises ``JSONDecodeError``/
+    ``KeyError`` straight through a port that promises neither -- into
+    ``supervisor/__main__.py``'s tick, which catches only ``(FsError,
+    ValueError)``, killing the sidecar with a raw traceback AFTER
+    ``supervisor-attach`` is journaled."""
+
+    class _Truncated:
+        text = '{"pane": "abc'  # a plausible size-capped serialization
+
+    monkeypatch.setattr(module, "to_redacted", lambda payload: _Truncated())
+    monkeypatch.setattr(
+        module.subprocess,
+        "run",
+        lambda *a, **k: subprocess.CompletedProcess(a[0] if a else [], 0, "pane text", ""),
+    )
+
+    assert MultiplexerObserver().pane_content("acme-session") is None
+
+
+def test_pane_content_returns_none_when_the_redacted_payload_loses_its_key(monkeypatch):
+    """The ``LookupError`` half of the same guard: a serialization that
+    parses but no longer carries the ``pane`` key this adapter wraps and
+    unwraps symmetrically."""
+
+    class _Rekeyed:
+        text = '{"content": "abc"}'
+
+    monkeypatch.setattr(module, "to_redacted", lambda payload: _Rekeyed())
+    monkeypatch.setattr(
+        module.subprocess,
+        "run",
+        lambda *a, **k: subprocess.CompletedProcess(a[0] if a else [], 0, "pane text", ""),
+    )
+
+    assert MultiplexerObserver().pane_content("acme-session") is None

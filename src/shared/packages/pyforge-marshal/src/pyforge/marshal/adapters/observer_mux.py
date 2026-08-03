@@ -71,8 +71,25 @@ class MultiplexerObserver:
             # tmux's own "no such session" exit (and every other capture
             # failure) -- the pane simply cannot be observed right now.
             return None
-        redacted = to_redacted({"pane": result.stdout})
-        return json.loads(redacted.text)["pane"]
+        try:
+            redacted = to_redacted({"pane": result.stdout})
+            return json.loads(redacted.text)["pane"]
+        except (ValueError, LookupError, TypeError):
+            # Review finding: these two lines -- the only ones in this method
+            # that TRANSFORM data -- sat outside the try above, so this
+            # port's documented "never raises" contract rested entirely on
+            # `to_redacted`'s current shape rather than on anything this
+            # module enforces. The unwrap assumes `to_redacted` round-trips
+            # `{"pane": ...}` as resolvable JSON; any future change that
+            # wraps, caps or truncates its output (a size ceiling on captured
+            # text being the obvious one) turns that into a
+            # `JSONDecodeError`/`KeyError` escaping into
+            # `supervisor/__main__.py`'s tick, which catches only
+            # `(FsError, ValueError)` -- killing the sidecar with a raw
+            # traceback after `supervisor-attach`. An unusable capture is
+            # this port's own documented `None`, exactly like an unavailable
+            # pane.
+            return None
 
     def mtime(self, path: Path) -> float | None:
         try:

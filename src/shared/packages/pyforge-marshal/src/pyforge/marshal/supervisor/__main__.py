@@ -156,6 +156,12 @@ _LAUNCH_KIND = "run-launch"
 # knob against.
 _TICK_SECONDS = 60.0
 
+# C `INT_MAX`: the largest pid `os.kill(pid, 0)` can convert at all (above
+# it, CPython raises `OverflowError` before the kernel is ever consulted --
+# verified live). `main()`'s own upper-bound guard below explains why this
+# is refused at the boundary rather than absorbed by `is_alive`.
+_MAX_PROBEABLE_PID = 2**31 - 1
+
 
 def _tier3_path(home: Path, slug: str) -> Path:
     """Duplicates ``cli/spin.py``'s own helper of the same name verbatim --
@@ -395,13 +401,24 @@ def run_supervisor(
             "supervisor-detach",
             {"pid": pid, "reason": "watched-process-exited"},
         )
-    except FsError as exc:
+    except (FsError, ValueError) as exc:
         # AD-30's own journal is unwritable -- looping forever against it
         # would spin this process indefinitely with zero further signal.
         # Exit non-zero instead: a dead supervisor with no further
         # heartbeats, alongside a watched pid that is (or later becomes)
         # itself dead, is the later-detectable condition AD-9 promises
         # (surfacing it via `status` is a later epic's own scope).
+        #
+        # `ValueError` alongside `FsError` (review finding): the READ above
+        # was widened for exactly this CPython split one pass earlier, and
+        # the WRITE side -- the one that runs every 60s for this process's
+        # whole life -- was left narrow. `LocalFs.append_line` and
+        # `LocalFs.write_text_atomic` both translate only `OSError`, and
+        # `fs_local.py`'s own `write_redacted_atomic` docstring records a
+        # bare `ValueError` from `_tmp_sibling` escaping that very clause.
+        # An uncaught one here kills the sidecar with a raw traceback AFTER
+        # `supervisor-attach` is journaled -- the dangling attach with no
+        # matching detach AD-9 says must never happen.
         print(f"supervisor: cannot append to journal {journal_path}: {exc}", file=sys.stderr)
         return 1
 
@@ -416,8 +433,23 @@ def main(argv: Sequence[str] | None = None) -> int:
     input for its own control flow" is literal here: no further read of
     ``sys.argv``, no ``input()``, no ``sys.stdin`` read, anywhere in this
     package."""
+    # A bare `str` satisfies `Sequence[str]` and shreds one character per
+    # positional argument (review finding, verified: `main("ab142")` used to
+    # return 0 having dispatched `run_supervisor(Path('a'), 'b', '1', 4,
+    # Path('2'))` -- a RELATIVE home and a 1-char slug that both pass the
+    # gates below -- with no usage error at all), and a non-`str` element
+    # reached `"/" in run_id` as a raw `TypeError` past the arity gate.
+    # `core/journal.py::fold` and `core/identity.py::resolve_feed` each
+    # carry an explicit, documented guard for this same footgun; this
+    # module's own public entry point did not.
+    if isinstance(argv, (str, bytes, bytearray)):
+        print(
+            f"supervisor: argv must be a sequence of strings, got {type(argv).__name__}",
+            file=sys.stderr,
+        )
+        return 1
     args = list(sys.argv[1:]) if argv is None else list(argv)
-    if len(args) != 5:
+    if len(args) != 5 or not all(isinstance(arg, str) for arg in args):
         print(
             "usage: python -m pyforge.marshal.supervisor <home> <slug> "
             "<run_id> <watched_pid> <log_path>",
@@ -425,6 +457,20 @@ def main(argv: Sequence[str] | None = None) -> int:
         )
         return 1
     home, slug, run_id, watched_pid_text, log_path_text = args
+    # `home` is the ROOT of the very path `slug` and `run_id` are guarded as
+    # segments of, and was the one argv element validated nowhere (review
+    # finding). A relative value resolves the journal against this process's
+    # own CWD -- which `spawn_detached` sets to the loop home, so the read
+    # silently lands somewhere else entirely and this sidecar exits inert on
+    # a run it should have supervised. `cli/init.py::_loop_home_root`
+    # anchors its own root to absolute for the identical reason ("left
+    # relative, the two writers land in DIFFERENT directories"); this second
+    # entry point re-derives the same paths, so it refuses rather than
+    # re-anchors -- a relative home here means the caller is malformed, not
+    # that a default needs filling in.
+    if not Path(home).is_absolute():
+        print(f"supervisor: home must be an absolute path, got {home!r}", file=sys.stderr)
+        return 1
     # `slug` and `run_id` are BOTH path components of the journal this
     # process reads AND appends to (`_run_dir`), so an unvalidated value
     # composes a path outside the run directory -- `slug="../.."`, or a
@@ -462,6 +508,28 @@ def main(argv: Sequence[str] | None = None) -> int:
         # "raise/refuse rather than silently misinterpret" discipline every
         # other boundary in this package already applies.
         print(f"supervisor: watched pid must be positive, got {watched_pid}", file=sys.stderr)
+        return 1
+    if watched_pid > _MAX_PROBEABLE_PID:
+        # The upper half of the same guard (review finding). `is_alive` is
+        # deliberately two-valued and answers the CONSERVATIVE `False` for a
+        # pid it cannot even probe -- an `os.kill` `OverflowError` above C
+        # `INT_MAX` reads identically to a genuine ESRCH. That is right for
+        # that port's own contract, but this module then journals
+        # `supervisor-detach` with `reason: "watched-process-exited"` -- a
+        # definitive claim about an exit it never observed, written into an
+        # append-only EVIDENCE journal. (An earlier pass rejected a
+        # hardcoded `watched_alive: true` on exactly this ground: a field
+        # that can only ever carry one value is not an observation.) This
+        # story's own Always bullet enumerates exactly ONE detach reason, so
+        # the honest fix is at the boundary rather than a second reason
+        # code: refuse a pid this process could never probe, the same
+        # "raise/refuse rather than silently misinterpret" discipline the
+        # non-positive guard above already applies.
+        print(
+            f"supervisor: watched pid {watched_pid} is not probeable "
+            f"(above {_MAX_PROBEABLE_PID})",
+            file=sys.stderr,
+        )
         return 1
     return run_supervisor(Path(home), slug, run_id, watched_pid, Path(log_path_text))
 

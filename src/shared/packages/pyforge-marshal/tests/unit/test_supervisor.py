@@ -21,6 +21,7 @@ import json
 from datetime import datetime, timezone
 from pathlib import Path
 
+import jsonschema
 from pyforge.marshal.adapters.fs_local import FsError
 from pyforge.marshal.core.journal import (
     JournalEntryId,
@@ -124,6 +125,27 @@ def _no_sleep(seconds: float) -> None:
     pass
 
 
+class RecordingSleep:
+    """A no-op ``sleep`` that RECORDS what it was asked to wait for.
+
+    Review finding: ``_no_sleep`` discards its argument and no test read it
+    back, so ``sleep(_TICK_SECONDS)`` could be deleted from the loop
+    outright -- or handed ``0`` -- with all of this module green (every
+    loop here is bounded by ``FakeProcess.is_alive``, never by sleeping).
+    A real supervisor would then busy-spin: a ``tmux`` fork/exec, an
+    ``os.kill``, a ``Path.stat`` and one journal append per iteration at
+    disk speed, for the whole life of the run. ``_TICK_SECONDS`` was read
+    by exactly one other test, which only compares it to another constant
+    -- the "two constants, one of which nothing reads" shape that test's
+    own docstring levels at ITS predecessor."""
+
+    def __init__(self) -> None:
+        self.seconds: list[float] = []
+
+    def __call__(self, seconds: float) -> None:
+        self.seconds.append(seconds)
+
+
 def _launch_outcome_line(run_id: str, *, watched_pid: int = 4242) -> str:
     """A minimal, valid ``phase: outcome, kind: "run-launch"`` journal
     line -- the ONE entry ``run_supervisor``'s own inert-check looks for,
@@ -144,6 +166,25 @@ def _launch_outcome_line(run_id: str, *, watched_pid: int = 4242) -> str:
 _HOME = Path("/home/acme-loop")
 _LOG_PATH = Path("/home/acme-loop/supervisor.log")
 
+_SCHEMA_PATH = (
+    Path(__file__).resolve().parents[2]
+    / "src"
+    / "pyforge"
+    / "marshal"
+    / "schemas"
+    / "journal.json"
+)
+
+
+def _journal_schema() -> dict[str, object]:
+    """The packaged, frozen journal-entry contract -- ``test_journal.py``'s
+    own helper, reused here because the supervisor is the FIRST writer of
+    ``Phase.OBSERVATION`` entries into a real journal and no test on this
+    side ever validated one against it (review finding). ``test_journal.py``
+    validates its own SYNTHETIC entries; this validates the ones production
+    code actually builds."""
+    return json.loads(_SCHEMA_PATH.read_text(encoding="utf-8"))
+
 
 # --- normal attach: attach, heartbeat until the harness exits, then detach ----
 
@@ -153,6 +194,7 @@ def test_normal_attach_journals_attach_then_heartbeats_then_detach():
     process = FakeProcess(alive_for=3)
     clock = FakeClock()
     observer = FakeObserver()
+    sleep = RecordingSleep()
 
     rc = run_supervisor(
         _HOME,
@@ -164,12 +206,32 @@ def test_normal_attach_journals_attach_then_heartbeats_then_detach():
         process=process,
         clock=clock,
         observer=observer,
-        sleep=_no_sleep,
+        sleep=sleep,
     )
 
     assert rc == 0
-    # The journal is read exactly ONCE -- no second read anywhere.
-    assert len(fs.read_text_calls) == 1
+    # The journal is read exactly ONCE -- no second read anywhere -- and
+    # from the ONE path this run's own `_run_dir`/`_JOURNAL_FILENAME`
+    # compose (review finding: this asserted only the COUNT, so a
+    # regression that read some other path entirely -- a dropped `runs/`
+    # segment, `run_dir` itself -- still received this fake's journal text
+    # and passed every assertion below).
+    _journal_path = (
+        supervisor_main._run_dir(_HOME, "acme", "acme-run-1")
+        / supervisor_main._JOURNAL_FILENAME
+    )
+    assert fs.read_text_calls == [_journal_path]
+    # Every append lands in that same journal -- the WRITE half of the same
+    # pin (review finding: every assertion here unpacked `_, line, _`, so
+    # `_append` could have written to `observations.jsonl`, to `log_path`,
+    # or to a bare relative path with the whole suite green, and AD-25's
+    # single source of run truth would silently carry no supervision
+    # record at all).
+    assert {path for path, _, _ in fs.appended_lines} == {_journal_path}
+    # One real 60s tick per heartbeat -- not zero, and not some other
+    # interval (review finding: nothing read this back, so deleting the
+    # sleep entirely left a busy-spinning supervisor and a green suite).
+    assert sleep.seconds == [supervisor_main._TICK_SECONDS] * 3
 
     entries = [json.loads(line) for _, line, _ in fs.appended_lines]
     assert [entry["kind"] for entry in entries] == [
@@ -209,6 +271,17 @@ def test_normal_attach_journals_attach_then_heartbeats_then_detach():
     assert observer.pane_content_calls == ["acme-run-1"] * 3
     assert observer.mtime_calls == [_LOG_PATH] * 3
     assert clock.calls >= 4  # 1 attach ts + 3 heartbeat samples
+
+    # Every line this sidecar writes conforms to the packaged, frozen
+    # journal contract (review finding: nothing on this side validated a
+    # supervisor-written line against `schemas/journal.json`, although the
+    # supervisor is the first producer of `Phase.OBSERVATION` entries and
+    # the schema is `additionalProperties: false` with an `allOf` rule
+    # forbidding `intent_id` on a non-outcome entry -- a break would have
+    # surfaced only in whichever later story first read the file back).
+    schema = _journal_schema()
+    for entry in entries:
+        jsonschema.validate(instance=entry, schema=schema)
 
 
 # --- inert on a run it did not start -------------------------------------------
@@ -646,6 +719,74 @@ def test_main_accepts_a_real_spin_minted_run_id(monkeypatch):
     )
     assert rc == 0
     assert calls == ["acme-20260803T101112000Z-abcd1234"]
+
+
+def test_main_rejects_a_watched_pid_it_could_never_probe(capsys):
+    """Review finding, the UPPER half of the positivity guard above.
+    ``os.kill`` raises ``OverflowError`` above C ``INT_MAX`` (verified
+    live), and ``PosixProcess.is_alive`` deliberately answers the
+    conservative ``False`` for it -- correct for that port's two-valued
+    contract, but ``run_supervisor`` then journals ``supervisor-detach``
+    with ``reason: "watched-process-exited"``: a definitive claim about an
+    exit it never observed, written into an append-only EVIDENCE journal.
+    (A prior pass rejected a hardcoded ``watched_alive: true`` on exactly
+    this ground.) Refused at the boundary instead, since this story's own
+    Always bullet enumerates exactly one detach reason."""
+    for bad_pid in (str(2**31), str(2**63), "999999999999"):
+        rc = main(["/home", "acme", "acme-run-1", bad_pid, "/home/s.log"])
+        assert rc != 0, f"pid {bad_pid} was accepted"
+        assert "not probeable" in capsys.readouterr().err.lower()
+
+
+def test_main_accepts_the_largest_probeable_pid(monkeypatch):
+    """Negative control: the guard above must refuse only what ``os.kill``
+    genuinely cannot convert, never a real (if implausibly large) pid."""
+    calls: list[int] = []
+    monkeypatch.setattr(
+        supervisor_main,
+        "run_supervisor",
+        lambda home, slug, run_id, watched_pid, log_path: calls.append(watched_pid) or 0,
+    )
+    rc = main(
+        ["/home", "acme", "acme-run-1", str(supervisor_main._MAX_PROBEABLE_PID), "/home/s.log"]
+    )
+    assert rc == 0
+    assert calls == [supervisor_main._MAX_PROBEABLE_PID]
+
+
+def test_main_rejects_a_relative_home(capsys):
+    """Review finding: ``home`` is the ROOT of the very path ``slug`` and
+    ``run_id`` are guarded as segments of, and was the one argv element
+    validated nowhere. A relative value resolves the journal against this
+    process's own CWD (``spawn_detached`` sets that to the loop home), so
+    the read silently lands elsewhere and the sidecar exits inert on a run
+    it should have supervised -- the same split-brain
+    ``cli/init.py::_loop_home_root`` anchors its own root to avoid."""
+    for bad_home in ("relative/home", "", "."):
+        rc = main([bad_home, "acme", "acme-run-1", "4242", "/home/s.log"])
+        assert rc != 0, f"home {bad_home!r} was accepted"
+        assert "absolute path" in capsys.readouterr().err.lower()
+
+
+def test_main_rejects_a_bare_string_argv(capsys):
+    """Review finding, verified: a bare ``str`` satisfies ``Sequence[str]``
+    and shreds one character per positional argument -- ``main("ab142")``
+    returned 0 having dispatched ``run_supervisor(Path('a'), 'b', '1', 4,
+    Path('2'))``, a RELATIVE home and a 1-char slug that pass every other
+    gate, with no usage error at all. ``core/journal.py::fold`` and
+    ``core/identity.py::resolve_feed`` each carry an explicit guard for
+    this same footgun; this public entry point did not."""
+    rc = main("ab142")
+    assert rc != 0
+    assert "sequence of strings" in capsys.readouterr().err.lower()
+
+
+def test_main_rejects_a_non_string_argv_element(capsys):
+    """The other half: a non-``str`` element cleared the arity gate and
+    reached ``"/" in run_id`` as a raw ``TypeError``."""
+    rc = main([Path("/home"), "acme", 3, "4242", "/home/s.log"])
+    assert rc != 0
+    assert "usage" in capsys.readouterr().err.lower()
 
 
 def test_inert_exit_prints_a_diagnostic_naming_the_run(capsys):

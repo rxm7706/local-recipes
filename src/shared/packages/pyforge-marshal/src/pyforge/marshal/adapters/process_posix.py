@@ -187,7 +187,15 @@ class PosixProcess:
             # `except ProcessError` -- and does so at the one point where a
             # live, already-launched harness process exists, so the crash
             # would strand a running run with no outcome record.
-            raise ProcessError(f"cannot open log {log_path}: {exc}") from exc
+            #
+            # `log_path` quoted (review finding): this message is
+            # interpolated verbatim into `MRS-SPIN-007`'s own message, which
+            # `cli/spin.py::_render_text` prints unquoted by design -- so a
+            # raw path here reopens the report-forgery hole that finding's
+            # own `{str(supervisor_log)!r}` closes. Every other message in
+            # this module already reprs its interpolated value
+            # (`{list(argv)!r}`, `{argv[0]!r}`); this one did not.
+            raise ProcessError(f"cannot open log {str(log_path)!r}: {exc}") from exc
         # Mirrors harness_bmadloop.py::spin's own split: opening the log and
         # launching the child are two DISTINCT failure modes with two
         # distinct messages, so the open above stays outside this block's

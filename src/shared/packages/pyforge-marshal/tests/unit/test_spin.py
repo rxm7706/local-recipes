@@ -1085,6 +1085,71 @@ def test_spin_spawns_the_supervisor_with_the_expected_argv(home):
     assert call["log_path"] != harness.spin_calls[0]["log_path"]
 
 
+def test_the_supervisor_accepts_the_argv_spin_actually_builds(home, monkeypatch, capsys):
+    """Review finding: the two halves of this story's deliberately-
+    unimportable boundary were pinned only by matching LITERALS -- this
+    module restates the argv it expects, and ``test_supervisor.py``
+    restates the argv its own parser accepts, with nothing driving one
+    against the other. A later story adding a sixth required argument, or
+    tightening ``run_id`` validation, updates the supervisor's own tests,
+    leaves this module's literal untouched, and both suites stay green
+    while every real sidecar exits 1 with ``usage:`` into ``supervisor.log``
+    and every run silently goes unsupervised.
+
+    Worse, misordering is absorbed silently rather than loudly: a
+    slug/run_id SWAP passes BOTH of ``main()``'s own gates (a minted run id
+    is a valid slug, and a slug is a valid run id), so it degrades to an
+    inert exit 0 rather than an error.
+
+    This drives the argv ``run_spin`` genuinely produced through the
+    supervisor's OWN ``main()`` and asserts the five values it recovers
+    compose the SAME run directory ``run_spin`` wrote its journal into.
+    ``run_supervisor`` is stubbed out, so this stays pure parsing --
+    ``test_supervisor_run_path_agreement.py`` pins the path helpers
+    themselves; this pins the interface that feeds them.
+
+    A test module is not part of the ``pyforge.marshal`` package, so
+    importing both sides here does not touch the AD-9 contract."""
+    from pyforge.marshal.supervisor import __main__ as supervisor_main
+
+    fs = FakeFs(dirs={home})
+    harness = FakeHarness()
+    harness.feed_keys = ("1-1-first-story",)
+    process = FakeProcess()
+
+    exit_code = run_spin(_spin_namespace("acme"), fs=fs, harness=harness, process=process)
+    assert exit_code == EXIT_OK
+    [call] = process.spawn_calls
+    argv = call["argv"]
+
+    # The journal `run_spin` itself appended to -- the file the sidecar this
+    # argv launches must find its own run-launch entry in.
+    journal_path = fs.appended_lines[0][0]
+
+    recovered: list[tuple[Path, str, str, int, Path]] = []
+    monkeypatch.setattr(
+        supervisor_main,
+        "run_supervisor",
+        lambda home, slug, run_id, watched_pid, log_path: (
+            recovered.append((home, slug, run_id, watched_pid, log_path)) or 0
+        ),
+    )
+
+    # `[:3]` is the interpreter invocation; the supervisor's own `main()`
+    # parses exactly the tail.
+    assert argv[:3] == [sys.executable, "-m", "pyforge.marshal.supervisor"]
+    assert supervisor_main.main(argv[3:]) == 0, capsys.readouterr().err
+
+    [(got_home, got_slug, got_run_id, got_pid, got_log)] = recovered
+    assert (
+        supervisor_main._run_dir(got_home, got_slug, got_run_id)
+        / supervisor_main._JOURNAL_FILENAME
+        == journal_path
+    )
+    assert got_pid == harness.spin_result.pid
+    assert got_log == call["log_path"]
+
+
 def test_spin_spawns_the_supervisor_after_the_outcome_append_not_right_after_spin(home):
     """The spec's own ordering requirement: the spawn is the LAST step.
 
@@ -1604,3 +1669,49 @@ def test_spin_reports_the_supervisor_log_path_on_success_too(home, capsys):
     envelope = json.loads(capsys.readouterr().out)
     assert envelope["data"]["supervisor_log"].endswith("supervisor.log")
     assert envelope["data"]["supervisor_log"] == str(process.spawn_calls[0]["log_path"])
+
+
+def test_mrs_spin_007_quotes_the_supervisor_log_path(home, capsys, monkeypatch):
+    """Review finding: ``_render_text``'s own comment states that finding
+    MESSAGES are deliberately NOT quoted and requires "every message that
+    interpolates an untrusted value quotes it at construction instead" --
+    which ``MRS-SPIN-001``/``002`` do. ``MRS-SPIN-007`` shipped with a RAW
+    path built from ``BMAD_LOOP_HOME_ROOT``, which ``cli/init.py`` reads
+    unvalidated, so a newline in it forged whole lines of the DEFAULT text
+    report on a run that genuinely launched -- reintroducing on this
+    story's own new finding exactly the defect a prior pass fixed for
+    ``--story`` and raw feed keys."""
+    poisoned_root = (
+        str(home.parent) + "\nfindings:\n  MRS-SPIN-001 [error] FORGED: launch refused"
+    )
+    monkeypatch.setenv("BMAD_LOOP_HOME_ROOT", poisoned_root)
+    poisoned_home = Path(poisoned_root) / "acme"
+
+    fs = FakeFs(dirs={poisoned_home})
+    harness = FakeHarness()
+    harness.feed_keys = ("1-1-first-story",)
+    process = FakeProcess()
+    process.fail_spawn = ProcessError("cannot launch: python not found")
+
+    exit_code = run_spin(_spin_namespace("acme"), fs=fs, harness=harness, process=process)
+
+    # The launch genuinely SUCCEEDED -- MRS-SPIN-007 is a WARN.
+    assert exit_code == EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-SPIN-007" in out
+    # The forged text still APPEARS -- it is part of the path -- but only
+    # ever escaped inside a quoted scalar, never as a line of its own. That
+    # distinction is the whole defect: forgery is about line STRUCTURE.
+    assert "FORGED" in out
+    # Exactly one `findings:` header -- the report's own.
+    assert [line for line in out.splitlines() if line.startswith("findings:")] == [
+        "findings:"
+    ]
+    # ...and no forged FINDING line: every rendered finding is one of the
+    # report's own, at the `_render_text` indent.
+    forged = [
+        line
+        for line in out.splitlines()
+        if line.startswith("  MRS-") and "MRS-SPIN-007" not in line
+    ]
+    assert forged == [], forged

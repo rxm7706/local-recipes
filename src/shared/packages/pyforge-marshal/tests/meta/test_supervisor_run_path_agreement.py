@@ -28,6 +28,9 @@ allowed, the divergence is not.
 from __future__ import annotations
 
 import ast
+import os
+import subprocess
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -111,3 +114,36 @@ def test_the_supervisor_still_does_not_import_the_cli():
             if absolute.startswith("pyforge.marshal.cli") or relative_to_cli:
                 offenders.append(f"line {node.lineno}: from {'.' * node.level}{absolute}")
     assert not offenders, f"the supervisor must never import the cli (AD-9): {offenders}"
+
+
+def test_the_module_really_runs_under_dash_m(tmp_path):
+    """Review finding: every other supervisor test calls ``run_supervisor``
+    or ``main()`` IN-PROCESS, and the two real-child spawn tests in
+    ``test_process_posix.py`` use ``-c`` -- so nothing ever executed the
+    one invocation ``cli/spin.py`` actually builds,
+    ``python -m pyforge.marshal.supervisor``. If ``supervisor/__main__.py``
+    fell out of the wheel, or ``supervisor/__init__.py`` gained a failing
+    import-time side effect, every sidecar would die at import while
+    ``spawn_detached`` still returned a pid, ``spin`` still printed
+    ``supervisor_pid`` and exited 0, and every run went unsupervised with
+    the whole suite green.
+
+    Run with no arguments so it exits on the arity gate: this asserts the
+    module is IMPORTABLE and EXECUTABLE as ``__main__``, which is the part
+    no in-process test can prove. ``PYTHONSAFEPATH``/``cwd`` mirror
+    ``spawn_detached``'s own env, so the child resolves ``pyforge`` from the
+    installed environment exactly as a real sidecar does -- with ``cwd`` a
+    directory that is emphatically not the source tree."""
+    result = subprocess.run(
+        [sys.executable, "-m", "pyforge.marshal.supervisor"],
+        cwd=tmp_path,
+        capture_output=True,
+        text=True,
+        timeout=60,
+        env={**os.environ, "PYTHONSAFEPATH": "1", "PYTHONUNBUFFERED": "1"},
+    )
+    assert result.returncode == 1, (
+        f"expected the arity gate's own exit 1, got {result.returncode}\n"
+        f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
+    )
+    assert "usage: python -m pyforge.marshal.supervisor" in result.stderr
