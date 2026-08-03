@@ -879,6 +879,23 @@ class BmadLoopHarness:
                 f"cannot open resume log {str(log_path)!r}: {exc}"
             ) from exc
         with log_file:
+            # A visible seam between the two attempts (review finding): the
+            # append above preserves the wedged attempt's output, but without
+            # a delimiter the resumed engine's output is byte-concatenated
+            # onto it, so the operator reading this file after a
+            # stop-and-retry cannot tell where the record they came for ends.
+            # Best-effort only -- a marker that cannot be written must never
+            # be the reason a recovery does not happen, and the `flush` keeps
+            # it ordered ahead of the child's own writes to the same fd.
+            try:
+                log_file.write(
+                    f"\n--- marshal stop-and-retry: resuming {run_id} ---\n".encode(
+                        "utf-8"
+                    )
+                )
+                log_file.flush()
+            except (OSError, ValueError):
+                pass
             try:
                 process = subprocess.Popen(
                     ["bmad-loop", "resume", run_id],

@@ -223,6 +223,37 @@ def test_evaluate_idle_rejects_a_nan_threshold():
     assert evaluate_idle([_sample(0)], threshold_s=1.0) == LadderRung.NONE
 
 
+def test_idle_since_rejects_a_bare_string_samples_argument():
+    """Follow-up review finding: ``idle_since`` is PUBLIC and
+    ``supervisor/__main__.py`` calls it directly, not only through its
+    guarded sibling -- but it carried none of ``evaluate_idle``'s type
+    guards, so the same input that earns a documented ``TypeError`` one call
+    over raised a raw ``AttributeError`` from inside its own ``zip``. In the
+    supervisor's tick that exception class sits outside the ``except
+    (FsError, ValueError)`` handler and would kill the sidecar with a
+    traceback after ``supervisor-attach``."""
+    with pytest.raises(TypeError):
+        idle_since("not-a-list-of-samples")
+    with pytest.raises(TypeError):
+        idle_since(42)  # type: ignore[arg-type]
+
+
+def test_a_denormal_threshold_saturates_to_defer_rather_than_overflowing():
+    """Follow-up review finding: ``threshold_s`` only has to be positive and
+    finite to pass every guard, and a denormal-small one overflows
+    ``idle_elapsed_s / threshold_s`` to ``inf``. ``int(inf)`` raises
+    ``OverflowError`` -- neither ``FsError`` nor ``ValueError``, so it
+    escapes ``supervisor/__main__.py``'s own tick handler entirely and kills
+    the sidecar with a raw traceback after ``supervisor-attach``. An
+    infinite ratio IS ``DEFER`` by this function's own floor-and-cap
+    definition."""
+    samples = [_sample(0), _sample(60_000)]
+    assert evaluate_idle(samples, threshold_s=5e-324) == LadderRung.DEFER
+    # Negative control: a merely small threshold still floor-divides
+    # normally rather than taking the saturating path.
+    assert evaluate_idle(samples, threshold_s=30.0) == LadderRung.STOP_AND_RETRY
+
+
 def test_evaluate_idle_rejects_a_non_numeric_threshold():
     with pytest.raises(TypeError):
         evaluate_idle([_sample(0)], threshold_s="60")  # type: ignore[arg-type]

@@ -40,6 +40,7 @@ code on either side.
 
 from __future__ import annotations
 
+import math
 from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import datetime
@@ -137,7 +138,22 @@ def idle_since(samples: Sequence[Sample]) -> datetime | None:
     and can never reach ``stop-and-retry``, no matter how wedged the session
     is (review finding). The caller fixes this by collapsing its sample
     history onto the post-nudge pane text while preserving THIS anchor, and
-    it needs a way to ask for the anchor to do so."""
+    it needs a way to ask for the anchor to do so.
+
+    Raises ``TypeError`` for a bare ``str``/``bytes`` (or a non-``Sequence``)
+    ``samples``, exactly as ``evaluate_idle`` does -- review finding: this is
+    a PUBLIC function ``supervisor/__main__.py`` imports and calls directly,
+    not only through its guarded sibling, and without this guard the same
+    input that earns a documented ``TypeError`` one call over raised a raw
+    ``AttributeError`` from inside the ``zip`` below. In the supervisor's own
+    tick that exception class sits outside the ``except (FsError,
+    ValueError)`` handler and would kill the sidecar with a traceback after
+    ``supervisor-attach``."""
+    if isinstance(samples, (str, bytes, bytearray)) or not isinstance(samples, Sequence):
+        raise TypeError(
+            "samples must be a sequence of Sample (not a bare str/bytes), "
+            f"got {samples!r}"
+        )
     if not samples:
         return None
     reference_moment = samples[0].moment
@@ -217,6 +233,20 @@ def evaluate_idle(samples: Sequence[Sample], *, threshold_s: float) -> LadderRun
     # this only ever nudges a value that is already, to double precision,
     # indistinguishable from the boundary itself.
     ratio = idle_elapsed_s / threshold_s + 1e-9
+    # An OVERFLOWING ratio is the terminal rung, never an exception (review
+    # finding). `threshold_s` only has to be positive and finite to pass every
+    # guard above, and a denormal-small one (`idle_threshold_minutes` in the
+    # 1e-320 range -- absurd, but `core/policy.py`'s validator accepts it and
+    # this function's own contract does not bound it) overflows this division
+    # to `inf`. `int(inf)` raises `OverflowError`, which is neither `FsError`
+    # nor `ValueError`, so it escapes `supervisor/__main__.py`'s own tick
+    # handler entirely and kills the sidecar with a raw traceback after
+    # `supervisor-attach` -- the dangling-attach state AD-9 forbids. An
+    # infinite ratio means elapsed idle time dwarfs the window by every
+    # measure available here, which IS `DEFER` by this function's own
+    # floor-and-cap definition.
+    if not math.isfinite(ratio):
+        return _RUNGS_IN_ORDER[-1]
     index = int(ratio)
     index = min(index, len(_RUNGS_IN_ORDER) - 1)
     return _RUNGS_IN_ORDER[index]

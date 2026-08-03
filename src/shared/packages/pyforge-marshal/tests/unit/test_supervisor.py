@@ -1487,6 +1487,254 @@ def test_third_threshold_crossing_fires_defer_and_detaches():
     assert defer_outcome["payload"]["finding"]["severity"] == "warn"
 
 
+class _AliveUntilStopped:
+    """``is_alive`` reports ``True`` until the harness has been stopped
+    ``after`` times.
+
+    ``FakeProcess``'s call counter cannot express the one thing these tests
+    need: a ``bmad-loop stop`` that actually KILLS the watched pid. Keying
+    liveness off the fake harness's own ``stop_calls`` models the real POSIX
+    consequence, which is what makes it possible to ask whether the
+    heartbeat written in the SAME tick as a stop tells the truth about it."""
+
+    def __init__(self, harness: FakeHarness, *, after: int) -> None:
+        self.harness = harness
+        self.after = after
+        self.calls = 0
+
+    def is_alive(self, pid: int) -> bool:
+        self.calls += 1
+        return len(self.harness.stop_calls) < self.after
+
+
+def test_a_channel_that_breaks_mid_run_is_never_treated_as_idle():
+    """Follow-up review finding: the "UNOBSERVABLE is not IDLE" guard tested
+    the WHOLE history, so it only ever caught a channel that never worked
+    from tick one. A channel that breaks MID-RUN (the engine's tmux window
+    closed while it kept working in-process, `harness.log` never present)
+    leaves exactly one stale observed sample alive at the front of the
+    history -- the trim retains it, because going dark is itself a "change"
+    -- so the all-`None` test stayed `False` forever and the ladder ran
+    anyway, anchored on the instant the channel died. A perfectly healthy
+    run was nudged, then genuinely hard-stopped and relaunched."""
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+    clock = AdvancingClock()
+    # Three ticks of genuine, CHANGING output, then the pane goes dark for
+    # good (`FakeObserver` clamps to the last element). `mtime` is always
+    # None, so from tick 4 on nothing at all is observable.
+    observer = FakeObserver(pane_sequence=["a", "b", "c", None])
+    harness = FakeHarness()
+
+    rc = run_supervisor(
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, 1.0,
+        fs=fs, process=FakeProcess(alive_for=8), clock=clock, observer=observer,
+        harness=harness, sleep=clock.sleep,
+    )
+
+    assert rc == 0
+    entries = [json.loads(line) for _, line, _ in fs.appended_lines]
+    kinds = [entry["kind"] for entry in entries]
+    # Eight ticks at a 1-minute threshold: before the fix this reached
+    # `idle-nudge`, `idle-stop-and-retry` AND `idle-defer` against a
+    # perfectly healthy process.
+    assert not any(kind.startswith("idle-") for kind in kinds), "no ladder action"
+    assert harness.stop_calls == []
+    assert observer.send_text_calls == []
+    assert entries[-1]["payload"]["reason"] == "watched-process-exited"
+
+
+def test_a_nudge_reporting_failed_delivery_still_neutralizes_its_own_echo():
+    """Follow-up review finding: ``send_text`` sends the text and the
+    submitting ``Enter`` as two separate tmux calls and reports only the
+    SECOND one's fate, so a ``False`` return does not mean nothing was
+    typed. The rebase that neutralizes the supervisor's own echo used to be
+    conditioned on that return, so a paste that landed before a failing or
+    timing-out ``Enter`` left the nudge text sitting in the observed pane
+    with nothing collapsing it away -- reopening, through the
+    partial-delivery door, the exact nudge -> re-arm -> nudge loop that
+    makes this ladder unable to escalate at all."""
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+    clock = AdvancingClock()
+    # Pane captures: tick1 sample, tick2 sample, then the post-nudge
+    # re-capture and everything after it show the partially-delivered nudge
+    # text -- a change the SESSION never produced.
+    observer = FakeObserver(
+        pane_sequence=["idle", "idle", "idle+nudge-echo"], send_text_result=False
+    )
+    harness = FakeHarness()
+
+    rc = run_supervisor(
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, 1.0,
+        fs=fs, process=FakeProcess(alive_for=6), clock=clock, observer=observer,
+        harness=harness, sleep=clock.sleep,
+    )
+
+    assert rc == 0
+    entries = [json.loads(line) for _, line, _ in fs.appended_lines]
+    kinds = [entry["kind"] for entry in entries]
+    # The delivery failure is still reported honestly...
+    nudge_outcome = next(
+        e for e in entries if e["kind"] == "idle-nudge" and e["phase"] == "outcome"
+    )
+    assert nudge_outcome["payload"]["sent"] is False
+    assert nudge_outcome["payload"]["finding"]["code"] == "MRS-SUPV-001"
+    # ...and the ladder still ESCALATES, which is the whole point: before
+    # the fix the echo re-armed the window every cycle and `stop-and-retry`
+    # was unreachable no matter how wedged the session was.
+    assert "idle-stop-and-retry" in kinds
+    assert harness.stop_calls != []
+
+
+def test_history_pruning_preserves_the_idle_anchor():
+    """Follow-up review finding: the history trim only fired on a tick that
+    observed a CHANGE, so the runs that never observe one again -- exactly
+    the wedged and unobservable ones -- grew one ``Sample`` per tick for
+    their whole life. The no-change prune added alongside it must be
+    semantics-preserving: with every sample from the second onward equal,
+    ``idle_since`` has to derive the SAME reference moment from the pruned
+    ``[first, second, latest]`` as it would from the full history, so the
+    rung still crosses on exactly the tick it always did."""
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+    clock = AdvancingClock()
+    observer = FakeObserver(pane="idle")
+    harness = FakeHarness()
+
+    # A 3-minute threshold against the fixed 60s tick: the history reaches
+    # four samples (and is therefore pruned) at tick 4, which is also the
+    # tick whose elapsed idle time first equals one full threshold. A prune
+    # that moved the anchor would shift this crossing.
+    rc = run_supervisor(
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, 3.0,
+        fs=fs, process=FakeProcess(alive_for=5), clock=clock, observer=observer,
+        harness=harness, sleep=clock.sleep,
+    )
+
+    assert rc == 0
+    entries = [json.loads(line) for _, line, _ in fs.appended_lines]
+    kinds = [entry["kind"] for entry in entries]
+    assert kinds.count("idle-nudge") == 2, "exactly one intent/outcome pair"
+    # Three heartbeats precede it -- the nudge lands on the fourth tick, not
+    # earlier (a lost anchor) and not later (a mis-pruned reference).
+    assert kinds[: kinds.index("idle-nudge")].count("supervisor-heartbeat") == 3
+
+
+def test_the_heartbeat_written_when_defer_stops_the_run_is_not_stale():
+    """Follow-up review finding: the ``defer`` rung's own ``harness.stop``
+    can kill the very pid this tick read as alive at its top, and this
+    tick's heartbeat -- the LAST one this run will ever produce -- still
+    appends afterwards. It carried the pre-stop reading, so a consumer
+    reading the final heartbeat saw ``watched_alive: True`` for a process
+    the supervisor itself had just stopped, immediately under an
+    ``idle-defer`` outcome saying otherwise. The stop-and-retry branch
+    already recomputed for exactly this reason."""
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+    clock = AdvancingClock()
+    observer = FakeObserver(pane="idle")
+    harness = FakeHarness()
+    # `defer`'s stop is the SECOND one the ladder makes (stop-and-retry's is
+    # the first), and only it is fatal to the watched process here.
+    process = _AliveUntilStopped(harness, after=2)
+
+    rc = run_supervisor(
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, 1.5,
+        fs=fs, process=process, clock=clock, observer=observer,
+        harness=harness, sleep=clock.sleep,
+    )
+
+    assert rc == 0
+    entries = [json.loads(line) for _, line, _ in fs.appended_lines]
+    assert entries[-1]["payload"]["reason"] == "idle-deferred"
+    heartbeats = [e for e in entries if e["kind"] == "supervisor-heartbeat"]
+    assert heartbeats[-1]["payload"]["watched_alive"] is False
+
+
+def test_the_heartbeat_written_when_a_resume_fails_is_not_stale():
+    """The same defect class on the other branch that stops the watched
+    process: ``stop()`` succeeded (so the old pid is CONFIRMED dead) and
+    ``resume()`` then failed. That tick's heartbeat also appends after the
+    fact, and also used to assert the dead pid was alive."""
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+    clock = AdvancingClock()
+    observer = FakeObserver(pane="idle")
+    harness = FakeHarness()
+    harness.fail_resume = HarnessError("engine refused to resume")
+    process = _AliveUntilStopped(harness, after=1)
+
+    rc = run_supervisor(
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, 1.5,
+        fs=fs, process=process, clock=clock, observer=observer,
+        harness=harness, sleep=clock.sleep,
+    )
+
+    assert rc == 0
+    entries = [json.loads(line) for _, line, _ in fs.appended_lines]
+    assert entries[-1]["payload"]["reason"] == "idle-retry-failed"
+    heartbeats = [e for e in entries if e["kind"] == "supervisor-heartbeat"]
+    assert heartbeats[-1]["payload"]["watched_alive"] is False
+
+
+def test_the_defer_finding_names_the_run_once_and_reads_as_one_sentence():
+    """Follow-up review finding: the non-raising half of ``defer``'s stop
+    handling built a COMPLETE sentence ("bmad-loop reported harness run
+    '...' was not stopped") and then interpolated it into a frame that
+    already said "could not stop harness run ", producing the doubled,
+    unreadable "could not stop harness run bmad-loop reported harness run
+    '...' was not stopped". The frame names the run; the detail says only
+    what is known about why."""
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+    clock = AdvancingClock()
+    observer = FakeObserver(pane="idle")
+    harness = FakeHarness()
+    # `stop()`'s own documented non-raising `False`, at BOTH rungs: the
+    # stop-and-retry rung skips its resume and resets nothing, so the ladder
+    # keeps escalating to `defer`, where the same `False` comes back.
+    harness.stop_result = False
+
+    rc = run_supervisor(
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, 1.0,
+        fs=fs, process=FakeProcess(alive_for=8), clock=clock, observer=observer,
+        harness=harness, sleep=clock.sleep,
+    )
+
+    assert rc == 0
+    entries = [json.loads(line) for _, line, _ in fs.appended_lines]
+    defer_outcome = next(
+        e for e in entries if e["kind"] == "idle-defer" and e["phase"] == "outcome"
+    )
+    message = defer_outcome["payload"]["finding"]["message"]
+    assert message.count("harness run") == 1
+    assert message == (
+        f"defer: could not stop harness run {_HARNESS_RUN_ID!r} -- bmad-loop "
+        "reported it was not stopped -- the run may still be running, now "
+        "unsupervised"
+    )
+
+
+def test_run_supervisor_rejects_a_threshold_that_overflows_to_infinite_seconds(capsys):
+    """Follow-up review finding, two defects one guard: ``main()`` checked
+    ``idle_threshold_minutes`` for finiteness, but the ladder consumes
+    ``minutes * 60`` -- and a finite-but-enormous value overflows that
+    product to ``inf``, which is precisely the value both that guard and
+    ``core/policy.py``'s validator exist to reject (every elapsed/``inf``
+    floor-divides to ``NONE``, silently disabling the idle ladder for the
+    run's whole life). ``run_supervisor`` is also a public entry point in
+    its own right and carried no threshold guard at all, so a bad value
+    surfaced a tick later as a ``ValueError`` misreported as "cannot append
+    to journal", leaving a ``supervisor-attach`` with no matching detach."""
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+
+    rc = run_supervisor(
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, 1e308,
+        fs=fs, process=FakeProcess(alive_for=3), clock=AdvancingClock(),
+        observer=FakeObserver(pane="idle"), harness=FakeHarness(), sleep=_no_sleep,
+    )
+
+    assert rc == 1
+    # Rejected BEFORE anything is journaled: no dangling `supervisor-attach`.
+    assert fs.appended_lines == []
+    assert "positive finite" in capsys.readouterr().err
+
+
 # --- main(): argv parsing + dispatch --------------------------------------------
 
 

@@ -359,6 +359,10 @@ def test_pane_content_passes_the_capture_timeout_to_subprocess_run(observer, mon
     monkeypatch.setattr(module.subprocess, "run", _fake_run)
     observer.pane_content("acme-session")
 
+    # Review finding: without this the loop below passes VACUOUSLY the day
+    # the adapter stops calling `subprocess.run` at all -- an empty `seen`
+    # asserts nothing while reading as a green cross-call hardening check.
+    assert len(seen) == 2
     for kwargs in seen:
         assert kwargs["timeout"] == module._CAPTURE_PANE_TIMEOUT_S
         assert kwargs["capture_output"] is True

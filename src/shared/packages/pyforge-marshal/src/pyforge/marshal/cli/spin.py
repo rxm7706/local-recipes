@@ -882,6 +882,14 @@ def run_spin(
     # primitive. One WARN-tier MRS-SPIN-008 carries every underlying
     # message instead, preserving the diagnostic without inverting the
     # launch's own verdict.
+    #
+    # The wording says "every key a finding names", never "the threshold"
+    # (follow-up review finding): `compose()` is called over the WHOLE 10-key
+    # vocabulary, so an unknown key or a malformed `max_dev_attempts`
+    # anywhere in the project's policy file lands here too -- and the earlier
+    # text asserted, on every such launch, that the idle threshold had fallen
+    # back to its default when it had not. A diagnostic that names the wrong
+    # key sends the operator hunting a defect that is not there.
     if policy_findings:
         findings.append(
             Finding(
@@ -889,10 +897,10 @@ def run_spin(
                 severity=Severity.WARN,
                 message=(
                     "the project policy layer produced "
-                    f"{len(policy_findings)} finding(s) while resolving the "
+                    f"{len(policy_findings)} finding(s) while composing the "
                     "supervisor's idle threshold (the launch itself is "
-                    "unaffected; the threshold fell back to its composed "
-                    "default): "
+                    "unaffected; every key a finding below names kept its "
+                    "composed default instead of the project's own value): "
                     + "; ".join(
                         f"{finding.code}: {finding.message}"
                         for finding in policy_findings

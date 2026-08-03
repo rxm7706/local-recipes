@@ -134,7 +134,14 @@ def test_resume_appends_to_the_log_and_never_truncates_it(harness, tmp_path, mon
 
     harness.resume(tmp_path, "acme-run", log_path=log_path)
 
-    assert log_path.read_text(encoding="utf-8") == "the wedged run's own output\n"
+    contents = log_path.read_text(encoding="utf-8")
+    assert contents.startswith("the wedged run's own output\n")
+    # Follow-up review finding: the append preserves the wedged attempt's
+    # output, but with no delimiter the resumed engine's output is
+    # byte-concatenated onto it and the operator cannot tell where the record
+    # they came for ends. The marker is written BEFORE the child is spawned,
+    # so it always separates the two streams.
+    assert "--- marshal stop-and-retry: resuming acme-run ---" in contents
 
 
 def test_resume_forces_pythonunbuffered_on_the_child_env(harness, tmp_path, monkeypatch):

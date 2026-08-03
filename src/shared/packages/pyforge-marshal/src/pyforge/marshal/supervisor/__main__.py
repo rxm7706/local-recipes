@@ -394,6 +394,38 @@ def run_supervisor(
     observer = observer if observer is not None else MultiplexerObserver()
     harness = harness if harness is not None else BmadLoopHarness()
 
+    # Validated on the DERIVED seconds value, at THIS entry point, before
+    # anything is journaled (follow-up review finding -- two defects, one
+    # guard):
+    #
+    # 1. `main()`'s own guard checks `idle_threshold_minutes` for finiteness
+    #    but the ladder consumes `minutes * 60`, and a finite-but-enormous
+    #    value overflows that product to `inf` (`1e308 * 60.0` is `inf`).
+    #    `inf` is exactly what both this guard and `core/policy.py`'s
+    #    validator were added to reject, because every elapsed/`inf`
+    #    floor-divides to `NONE` -- silently disabling the idle ladder for
+    #    the run's whole life with no diagnostic anywhere. Checking the
+    #    quantity actually used closes the door the minutes-only check left
+    #    open.
+    # 2. `run_supervisor` is a public entry point in its own right (every
+    #    test in this package drives it directly, never through `main()`),
+    #    and it carried no threshold guard at all -- a bad value surfaced a
+    #    tick later as `evaluate_idle`'s `ValueError`, caught by the
+    #    journal-write handler and misreported as "cannot append to
+    #    journal", leaving a `supervisor-attach` with no matching detach.
+    #
+    # Returning before the attach entry is written keeps the failure a clean
+    # non-zero exit with nothing dangling in the journal.
+    threshold_s = float(idle_threshold_minutes) * 60.0
+    if not (threshold_s > 0) or not math.isfinite(threshold_s):
+        print(
+            f"supervisor: idle threshold minutes must resolve to a positive "
+            f"finite number of seconds, got {idle_threshold_minutes} "
+            f"({threshold_s}s)",
+            file=sys.stderr,
+        )
+        return 1
+
     run_dir = _run_dir(home, slug, run_id)
     journal_path = run_dir / _JOURNAL_FILENAME
 
@@ -555,7 +587,6 @@ def run_supervisor(
                 {"finding": unavailable_finding.to_json_dict()},
             )
 
-        threshold_s = float(idle_threshold_minutes) * 60.0
         samples: list[Sample] = []
         last_acted_rung = LadderRung.NONE
         deferred = False
@@ -637,22 +668,52 @@ def run_supervisor(
                     or samples[-1].log_mtime != samples[-2].log_mtime
                 ):
                     del samples[:-2]
+                elif len(samples) > 3:
+                    # The NO-change half of the same bound (review finding):
+                    # the trim above only ever fires on a tick that observed
+                    # a change, so the two paths that never observe one again
+                    # -- an unobservable channel (below, which is
+                    # heartbeat-only and so never terminates via `defer`) and
+                    # a run whose ladder is forced to rest -- kept appending
+                    # one `Sample` per tick for the whole life of the run,
+                    # which is precisely the unbounded growth plus O(n)
+                    # rescan the trim above claims to have fixed. Semantics
+                    # are again identical: with every sample from index 1
+                    # onward equal, `idle_since` derives the same reference
+                    # moment from `[first, second, latest]` as it does from
+                    # the full history -- the pair at the front still pins
+                    # the last change point (or its absence), and the latest
+                    # sample still supplies the elapsed-time endpoint.
+                    del samples[2:-1]
 
-                if all(
-                    sample.pane_content is None and sample.log_mtime is None
-                    for sample in samples
-                ):
+                latest = samples[-1]
+                if latest.pane_content is None and latest.log_mtime is None:
                     # UNOBSERVABLE is not IDLE (review finding). `None !=
-                    # None` is `False`, so an all-`None` history never
+                    # None` is `False`, so an unobserved history never
                     # re-arms and reads as maximal idleness -- and since
                     # `defer` now hard-stops the run rather than merely
                     # detaching, that turns a broken observation channel
                     # (tmux missing from this detached sidecar's PATH, the
                     # session torn down, `harness.log` absent) into a killed
                     # HEALTHY run. The ladder must only act on evidence it
-                    # actually has; a run it cannot see at all gets
-                    # heartbeat-only supervision, exactly like one whose
-                    # `harness_run_id` never resolved.
+                    # actually has; a run it cannot see gets heartbeat-only
+                    # supervision, exactly like one whose `harness_run_id`
+                    # never resolved.
+                    #
+                    # Tested against THIS tick's own sample, not against the
+                    # whole history (follow-up review finding): the previous
+                    # `all(...)` form only caught a channel that never worked
+                    # from tick one. A channel that breaks MID-RUN leaves
+                    # exactly one stale observed sample alive at the front of
+                    # the history -- the trim above retains it, because going
+                    # dark is itself a "change" -- so `all(...)` stayed
+                    # `False` forever and the ladder ran anyway, anchored on
+                    # the instant the channel died. A healthy engine whose
+                    # tmux window closed while it kept working in-process was
+                    # nudged, then genuinely hard-stopped and relaunched. The
+                    # current sample is the only one that answers "can this
+                    # run be observed RIGHT NOW", and it subsumes the
+                    # never-observable case it replaces.
                     rung = LadderRung.NONE
                 else:
                     rung = evaluate_idle(samples, threshold_s=threshold_s)
@@ -705,42 +766,56 @@ def run_supervisor(
                                 ),
                             )
                             outcome_payload["finding"] = nudge_finding.to_json_dict()
-                        else:
-                            # The nudge's own echo must not re-arm the very
-                            # window it was escalating from (review finding,
-                            # and the defect that made this ladder unable to
-                            # reach `stop-and-retry` at all). `send_text`
-                            # types into the SAME pane `pane_content`
-                            # samples, so the next tick's capture differs
-                            # from this one's, `evaluate_idle` reads that as
-                            # fresh output, the rung falls back to `NONE`,
-                            # and the run cycles nudge -> re-arm -> nudge
-                            # forever while staying wedged. "Fresh output"
-                            # means the SESSION's output, never this
-                            # supervisor's own.
-                            #
-                            # Fixed by collapsing the history onto the
-                            # post-nudge pane text while PRESERVING the idle
-                            # anchor `idle_since` had already established:
-                            # the echoed text becomes the baseline every
-                            # later sample is compared against (so it counts
-                            # as no change), and elapsed idle time keeps
-                            # accruing from where it genuinely started, so
-                            # one more full threshold reaches
-                            # `stop-and-retry`. Genuine agent output after
-                            # the nudge still differs from that baseline and
-                            # still re-arms, exactly as before. A `None`
-                            # re-capture (the pane became unobservable in the
-                            # same instant) degrades to the previous
-                            # behaviour rather than inventing a baseline.
-                            anchor = idle_since(samples) or moment
-                            samples[:] = [
-                                Sample(
-                                    moment=anchor,
-                                    pane_content=observer.pane_content(session_name),
-                                    log_mtime=log_mtime,
-                                )
-                            ]
+                        # The nudge's own echo must not re-arm the very
+                        # window it was escalating from (review finding, and
+                        # the defect that made this ladder unable to reach
+                        # `stop-and-retry` at all). `send_text` types into
+                        # the SAME pane `pane_content` samples, so the next
+                        # tick's capture differs from this one's,
+                        # `evaluate_idle` reads that as fresh output, the
+                        # rung falls back to `NONE`, and the run cycles
+                        # nudge -> re-arm -> nudge forever while staying
+                        # wedged. "Fresh output" means the SESSION's output,
+                        # never this supervisor's own.
+                        #
+                        # Fixed by collapsing the history onto the
+                        # post-nudge pane text while PRESERVING the idle
+                        # anchor `idle_since` had already established: the
+                        # echoed text becomes the baseline every later
+                        # sample is compared against (so it counts as no
+                        # change), and elapsed idle time keeps accruing from
+                        # where it genuinely started, so one more full
+                        # threshold reaches `stop-and-retry`. Genuine agent
+                        # output after the nudge still differs from that
+                        # baseline and still re-arms, exactly as before. A
+                        # `None` re-capture (the pane became unobservable in
+                        # the same instant) degrades to the previous
+                        # behaviour rather than inventing a baseline.
+                        #
+                        # Rebased REGARDLESS of `sent` (follow-up review
+                        # finding): `send_text` sends the text and the
+                        # submitting `Enter` as two separate tmux calls and
+                        # reports only the second one's fate, so a `False`
+                        # return does NOT mean nothing was typed -- a paste
+                        # that landed before a failing or timing-out `Enter`
+                        # leaves the supervisor's own text sitting in the
+                        # observed pane while this branch skipped the very
+                        # rebase that neutralizes it, reopening the
+                        # nudge -> re-arm -> nudge loop through the
+                        # partial-delivery door. When nothing was in fact
+                        # typed the re-capture simply equals the pane already
+                        # sampled this tick, making the rebase a semantic
+                        # no-op -- so doing it unconditionally is strictly
+                        # safer than conditioning it on a signal that cannot
+                        # answer the question being asked.
+                        anchor = idle_since(samples) or moment
+                        samples[:] = [
+                            Sample(
+                                moment=anchor,
+                                pane_content=observer.pane_content(session_name),
+                                log_mtime=log_mtime,
+                            )
+                        ]
                         _append_outcome(_NUDGE_KIND, intent_id, outcome_payload)
                     elif rung is LadderRung.STOP_AND_RETRY:
                         intent_id = _append_intent(
@@ -866,6 +941,19 @@ def run_supervisor(
                                     # reason class from an exhausted idle
                                     # ladder.
                                     detach_reason = "idle-retry-failed"
+                                    # Stale `watched_alive` (follow-up
+                                    # review finding, same defect class the
+                                    # success branch below already fixed):
+                                    # `stop()` returned True, so the pid
+                                    # this tick read as alive at its top has
+                                    # since been killed -- and this tick's
+                                    # own heartbeat still appends below.
+                                    # Left alone it asserts `watched_alive:
+                                    # True` for a process the supervisor
+                                    # itself just stopped, and it is the
+                                    # LAST heartbeat any consumer will ever
+                                    # see for this run.
+                                    watched_alive = process.is_alive(watched_pid)
                                 else:
                                     _append_outcome(
                                         _STOP_AND_RETRY_KIND,
@@ -910,11 +998,21 @@ def run_supervisor(
                             stopped = harness.stop(home, harness_run_id)
                         except HarnessError as exc:
                             stopped = False
-                            defer_detail = f"{harness_run_id!r}: {exc}"
+                            defer_detail = f"the stop call itself failed: {exc}"
                         else:
+                            # A SENTENCE FRAGMENT, not a sentence (follow-up
+                            # review finding): both branches are interpolated
+                            # into the same "could not stop harness run
+                            # {id} -- {detail}" frame below, and this one used
+                            # to restate the whole clause ("bmad-loop reported
+                            # harness run '...' was not stopped"), producing
+                            # the doubled, unreadable "could not stop harness
+                            # run bmad-loop reported harness run '...' was not
+                            # stopped -- the run may still be running". The
+                            # frame names the run; the detail says only what
+                            # is known about WHY.
                             defer_detail = (
-                                f"bmad-loop reported harness run "
-                                f"{harness_run_id!r} was not stopped"
+                                "bmad-loop reported it was not stopped"
                             )
                         defer_payload["stopped"] = stopped
                         if not stopped:
@@ -933,14 +1031,29 @@ def run_supervisor(
                                 severity=Severity.WARN,
                                 message=(
                                     "defer: could not stop harness run "
-                                    f"{defer_detail} -- the run may still be "
-                                    "running, now unsupervised"
+                                    f"{harness_run_id!r} -- {defer_detail} "
+                                    "-- the run may still be running, now "
+                                    "unsupervised"
                                 ),
                             )
                             defer_payload["finding"] = defer_finding.to_json_dict()
                         _append_outcome(_DEFER_KIND, intent_id, defer_payload)
                         deferred = True
                         detach_reason = "idle-deferred"
+                        # Stale `watched_alive` (follow-up review finding):
+                        # the terminal stop above may have just killed the
+                        # very pid this tick read as alive at its top, and
+                        # this tick's heartbeat -- the LAST one this run will
+                        # ever produce -- still appends below. A consumer
+                        # reading the final heartbeat used to see
+                        # `watched_alive: True` for a process the supervisor
+                        # itself had already stopped, immediately under an
+                        # `idle-defer` outcome saying so. Recomputed for the
+                        # same reason the stop-and-retry branch above
+                        # recomputes: a heartbeat is an observation, and an
+                        # observation taken before the action it reports on
+                        # is not one.
+                        watched_alive = process.is_alive(watched_pid)
                 # Synced regardless of whether an action fired above: this
                 # is what makes "fresh output re-arms the window" work with
                 # no special-cased reset -- a sample whose pane/mtime

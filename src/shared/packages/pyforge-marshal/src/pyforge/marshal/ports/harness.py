@@ -276,8 +276,10 @@ class HarnessPort(Protocol):
         never truncated (review finding): unlike ``spin``'s own brand-new
         log, the file this method is given is the WEDGED run's existing
         ``harness.log``, whose accumulated content is the only evidence of
-        why the run stopped producing output. Returns the newly spawned
-        process's pid. Raises ``HarnessError`` only when the process could
+        why the run stopped producing output -- and a one-line boundary
+        marker is written ahead of the resumed child's own output (review
+        finding), so the two attempts' streams are separable rather than
+        byte-concatenated. Returns the newly spawned process's pid. Raises ``HarnessError`` only when the process could
         not be LAUNCHED at all -- the SAME split ``spin``/``attach``/
         ``run_foreground`` share."""
         ...
