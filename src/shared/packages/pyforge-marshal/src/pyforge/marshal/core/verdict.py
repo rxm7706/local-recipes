@@ -112,10 +112,36 @@ evaluate). Story 3.2's ``core/journal.py::fold`` adds ``MRS-JOURNAL-001``
 or invalid-JSON sidecar blob) -- both classify ``Verdict.UNEVALUABLE``,
 the same tier as every other "Marshal could not determine the answer"
 code: a quarantined line's own story key and decision domain could not be
-evaluated, never a gate that failed. Later stories populate the table
-further as they add real codes. The mechanism (a total, fail-loud lookup) is
-separately proven via ``monkeypatch``-injected synthetic entries in
-``tests/unit/test_verdict.py``.
+evaluated, never a gate that failed. Story 3.3's ``cli/spin.py`` (``marshal
+factory spin``/``attach``, FR-9/FR-17) adds six more codes.
+``MRS-SPIN-001`` (a malformed project slug, checked before any I/O)
+classifies ``Verdict.UNEVALUABLE``, the same tier as every sibling pre-I/O
+shape gate (``MRS-INIT-001``/``MRS-PREFLIGHT-010``/``MRS-TEARDOWN-001``):
+Marshal cannot determine what to launch. ``MRS-SPIN-002`` (the loop home is
+not provisioned), ``MRS-SPIN-003`` (NO harness process was started and none
+can have been -- shared by ``spin``'s detached launch, ``run_foreground``'s
+synchronous one and ``attach``'s exec failing to launch, AND by
+``run_spin``'s two pre-spawn filesystem setup failures, which abort before
+``HarnessPort.spin`` is called; see ``core/findings.py`` for why one code
+serves them all), and ``MRS-SPIN-005`` (the story feed is missing or
+unparseable)
+classify ``Verdict.ERROR``, the same tier as every other
+real-precondition-checked-and-failed code. ``MRS-SPIN-004`` (the harness's
+own self-minted ``harness_run_id`` could not be recovered within the
+bounded poll window -- the detached spawn itself already succeeded) and
+``MRS-SPIN-006`` (the detached spawn itself succeeded, but its ``outcome``
+entry could not be journaled -- distinct from ``MRS-SPIN-003``'s "never
+launched" tier, review finding: reusing 003 there conflated "safe to
+retry" with "a live, unaccounted-for process") classify ``Verdict.WARN``,
+the same tier as ``MRS-POLICY-005``/``MRS-PREFLIGHT-011``/``MRS-GATE-004`` --
+and, for ``006`` specifically, matching AD-21's amendment (F-17) for a lone
+unclosed journal ``intent`` generally: a launch that already succeeded is
+never re-classified as a failure over a paper-trail gap. A malformed raw
+feed key surfaces via the EXISTING ``MRS-IDENT-001`` (already
+``Verdict.UNEVALUABLE``) -- no new code was needed for that scenario. Later
+stories populate the table further as they add real codes. The mechanism (a
+total, fail-loud lookup) is separately proven via ``monkeypatch``-injected
+synthetic entries in ``tests/unit/test_verdict.py``.
 
 Every other module *feeds* findings; only this module *projects* them to a
 verdict and an exit code -- enforced by the sole-ownership meta-test
@@ -166,6 +192,18 @@ GUARDED_EXIT_CODES: frozenset[int] = frozenset(_EXIT_BY_VERDICT.values()) | {
     EXIT_SIGINT,
 }
 
+# The codes `relay_exit_code` lets through from a RELAYED child process --
+# deliberately a strict subset of GUARDED_EXIT_CODES (which is what a
+# HANDLER may return, a different question). Only these three carry the same
+# meaning whether Marshal or a child process produced them: success,
+# "could not be evaluated", and interrupted-by-SIGINT. The rest of the
+# admitted domain (EXIT_USAGE, and the SCOPE_VIOLATION/GATE_FAILED rungs)
+# names a judgment Marshal itself makes -- relaying a child's coincidental
+# 2/3/4 would assert one Marshal never evaluated. See `relay_exit_code`.
+_RELAY_PASSTHROUGH: frozenset[int] = frozenset(
+    {EXIT_OK, _EXIT_BY_VERDICT[Verdict.UNEVALUABLE], EXIT_SIGINT}
+)
+
 # Story 1.2's core/identity.py -- the table's first real classifications.
 # Story 1.3's core/policy.py/cli/config.py add the second real caller's six codes.
 # Story 1.4's cli/init.py adds the third real caller's four codes.
@@ -180,6 +218,9 @@ GUARDED_EXIT_CODES: frozenset[int] = frozenset(_EXIT_BY_VERDICT.values()) | {
 # Story 2.4's core/gate.py::classify_doc_only_declaration adds MRS-GATE-006,
 # joining MRS-GATE-001 at GATE_FAILED.
 # Story 3.2's core/journal.py::fold adds MRS-JOURNAL-001/002, both UNEVALUABLE.
+# Story 3.3's cli/spin.py adds the ninth real caller's SIX codes (MRS-SPIN-006
+# joined 001-005 in review, splitting "launched but its outcome could not be
+# journaled" off MRS-SPIN-003's "never launched, safe to retry").
 _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-IDENT-001": Verdict.UNEVALUABLE,
     "MRS-IDENT-002": Verdict.UNEVALUABLE,
@@ -219,6 +260,12 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-GATE-006": Verdict.GATE_FAILED,
     "MRS-JOURNAL-001": Verdict.UNEVALUABLE,
     "MRS-JOURNAL-002": Verdict.UNEVALUABLE,
+    "MRS-SPIN-001": Verdict.UNEVALUABLE,
+    "MRS-SPIN-002": Verdict.ERROR,
+    "MRS-SPIN-003": Verdict.ERROR,
+    "MRS-SPIN-004": Verdict.WARN,
+    "MRS-SPIN-005": Verdict.ERROR,
+    "MRS-SPIN-006": Verdict.WARN,
 }
 
 
@@ -269,3 +316,46 @@ def exit_code_for(verdict: Verdict | str) -> int:
     closed 6-member lattice (AD-7). ``EXIT_SIGINT`` is never produced here;
     it lives at the CLI boundary."""
     return _EXIT_BY_VERDICT[Verdict(verdict)]
+
+
+def relay_exit_code(child_code: int) -> int:
+    """Project a RELAYED child process's exit code into the frozen domain
+    (AD-7) -- for the handlers that hand a terminal to another process and
+    report its result instead of an ``Envelope``'s (Story 3.3's
+    ``marshal factory spin --foreground`` and ``marshal factory attach``).
+
+    Review finding (Blind Hunter + Edge Case Hunter, both verified live):
+    those two handlers returned the child's raw code, but ``cli/main.py``
+    admits only ``GUARDED_EXIT_CODES`` from a handler and clamps everything
+    else to ``EXIT_USAGE`` as an "internal wiring bug" -- so a child exiting
+    5/7/137/143 surfaced as ``2``, which in THIS package's own lattice reads
+    as scope-violation/usage, not as the harness failing. That also silently
+    voided ``BmadLoopHarness._normalize_returncode``: its ``128 + N`` signal
+    convention lands outside the domain for every signal except ``SIGINT``
+    (``130``), so a SIGTERM'd foreground run reported a usage error.
+
+    AD-7's domain is frozen, so widening it is not the fix; making the
+    projection DELIBERATE is. Exactly ``_RELAY_PASSTHROUGH`` passes through
+    untouched -- ``0``, ``1``, and ``EXIT_SIGINT`` (so a Ctrl-C'd child still
+    reports ``130``); anything else collapses to the ERROR rung, the honest
+    statement that the relayed process failed in a way this package's own
+    closed vocabulary cannot name more precisely. ``bool`` is excluded
+    exactly as ``main()`` excludes it: ``True`` numerically equals ``1`` but
+    is not an exit code.
+
+    Follow-up review finding (Blind Hunter + Edge Case Hunter, both verified
+    live): the first version of this fix tested membership in
+    ``GUARDED_EXIT_CODES``, which is ``{0, 1, 2, 3, 4, 130}`` -- so ``2``,
+    ``3`` and ``4`` ALSO passed through, reproducing the very misreport this
+    function exists to prevent. A child exiting ``2`` still surfaced as
+    ``EXIT_USAGE`` (a Marshal usage error it never committed), and one
+    exiting ``3`` asserted the ``GATE_FAILED`` rung -- a gate verdict Marshal
+    never evaluated -- from a process whose exit codes are its own, not this
+    package's. ``bmad-loop attach`` in particular returns ``subprocess.call``
+    of a multiplexer, an unconstrained code. The passthrough set is now
+    spelled explicitly rather than borrowed from the full admitted domain,
+    which made the docstring's and ``--foreground``'s ``--help`` text's own
+    "0/1/130" claim factually false."""
+    if isinstance(child_code, bool) or child_code not in _RELAY_PASSTHROUGH:
+        return _EXIT_BY_VERDICT[Verdict.ERROR]
+    return child_code
