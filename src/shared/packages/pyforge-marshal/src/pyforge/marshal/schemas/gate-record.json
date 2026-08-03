@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "urn:local-recipes:pyforge-marshal:gate-record.v1",
   "title": "MarshalGateRecord",
-  "description": "The dict shape core.egress.build_gate_record() produces (Story 2.6, AD-34): a durable record of one completed gate evaluation -- the commands run, their exit codes, the scope-check verdict, the tree revision, and a UTC ISO-8601 timestamp. additionalProperties is false at both the document and the commandReport level, matching policy.json's/envelope.v1.json's own closed-schema discipline. This is the shape a RecordPort implementation persists AFTER the record has been passed through core.egress.to_redacted() -- this schema describes the pre-redaction dict shape build_gate_record() returns; jsonschema validates it only in tests (src/ never runtime-validates against it, matching policy.json's own precedent).",
+  "description": "The dict shape core.egress.build_gate_record() produces (Story 2.6, AD-34): a durable record of one completed gate evaluation -- the commands run, their exit codes, the scope-check verdict, the tree revision, and a UTC ISO-8601 timestamp. additionalProperties is false at both the document and the commandReport level, matching policy.json's/envelope.v1.json's own closed-schema discipline. This schema describes the dict shape build_gate_record() RETURNS, before core.egress.to_redacted() is applied. Redaction only ever replaces string CONTENT with the sentinel, never adds, removes or retypes a field, so a redacted record still validates against this same schema -- but this document is the pre-redaction contract, which is the one build_gate_record() is written against. jsonschema validates it only in tests (src/ never runtime-validates against it, matching policy.json's own precedent).",
   "type": "object",
   "additionalProperties": false,
   "required": ["story", "commands", "scope_check_verdict", "tree_revision", "timestamp"],
@@ -28,7 +28,8 @@
     },
     "timestamp": {
       "type": "string",
-      "description": "A UTC ISO-8601 timestamp (zero tz offset), parsed -- never generated -- by build_gate_record()."
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}[T ][0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]+)?(Z|[+-]00:00)$",
+      "description": "A UTC ISO-8601 timestamp (zero tz offset), parsed -- never generated -- by build_gate_record(). The pattern enforces what build_gate_record() itself enforces: a bare 'type: string' let the schema green-light records (a hand-written one, or one from a non-Python consumer) that build_gate_record would reject outright, e.g. \"yesterday afternoon\" or a +05:00 offset."
     }
   },
   "$defs": {

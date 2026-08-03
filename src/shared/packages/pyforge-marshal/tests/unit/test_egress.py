@@ -6,6 +6,7 @@ gate record against the packaged ``schemas/gate-record.json``.
 
 from __future__ import annotations
 
+import dataclasses
 import json
 from pathlib import Path
 
@@ -47,7 +48,11 @@ def test_redacted_rejects_non_str_text():
 
 def test_redacted_is_frozen():
     wrapped = Redacted(text="{}")
-    with pytest.raises(Exception):
+    # The specific type, not a bare `Exception` (review finding): a bare
+    # `pytest.raises(Exception)` passes on ANY exception, including an
+    # unrelated AttributeError from a typo in the test body -- so it would
+    # keep passing even if the dataclass stopped being frozen.
+    with pytest.raises(dataclasses.FrozenInstanceError):
         wrapped.text = "other"  # type: ignore[misc]
 
 
@@ -155,6 +160,78 @@ def test_ordinary_word_containing_a_token_prefix_mid_word_is_not_redacted():
     ordinary = "risk-8f3a9b2c1d4e5f6a7b8c9d0e1f2a3b4c"
     redacted = to_redacted({"tree_revision": ordinary})
     assert json.loads(redacted.text) == {"tree_revision": ordinary}
+
+
+@pytest.mark.parametrize(
+    "leaked",
+    [
+        "sk-proj-" + "a" * 48 + "T3BlbkFJ" + "b" * 48,
+        "sk-ant-api03-" + "A" * 40 + "-" + "B" * 40,
+    ],
+    ids=["openai-project-key", "anthropic-api-key"],
+)
+def test_real_provider_key_formats_with_internal_separators_are_redacted(leaked):
+    """Regression (follow-up review finding, verified live): the original
+    `sk-[A-Za-z0-9]{20,}` needed 20 CONTIGUOUS alnum characters after `sk-`,
+    which neither dominant real-world key format has -- both put a `-` within
+    the first 8 characters, so both passed through in FULL PLAINTEXT. This is
+    the credential shape a Marshal gate record is most likely to capture,
+    since Marshal's own agent sessions authenticate with one."""
+    document = json.loads(to_redacted({"stdout": f"auth: {leaked}"}).text)
+    assert leaked not in document["stdout"]
+    assert "sk-" not in document["stdout"]
+    assert document["stdout"] == f"auth: {REDACTED_SENTINEL}"
+
+
+def test_separated_token_does_not_leak_its_tail():
+    """Regression (follow-up review finding, verified live): a token whose
+    contiguous run ended at a separator had only that first run redacted,
+    leaving the remainder in plaintext behind a sentinel that made the record
+    LOOK redacted -- `"***REDACTED***-ddddddddd..."`."""
+    leaked = "sk-" + "c" * 25 + "-" + "d" * 25
+    document = json.loads(to_redacted({"note": leaked}).text)
+    assert document["note"] == REDACTED_SENTINEL
+    assert "d" * 25 not in document["note"]
+
+
+def test_short_hyphenated_value_starting_with_sk_is_not_over_redacted():
+    """The separator-tolerant pattern's 40-character floor exists so an
+    ordinary hyphenated value that merely STARTS with `sk-` survives."""
+    ordinary = "sk-test-selector"
+    assert json.loads(to_redacted({"command": f"pytest -k {ordinary}"}).text) == {
+        "command": f"pytest -k {ordinary}"
+    }
+
+
+def test_token_shaped_mapping_key_is_redacted():
+    """Regression (follow-up review finding, verified live): only VALUES were
+    shape-scanned, so a token-shaped KEY -- the natural shape of a captured
+    environment or header map -- was written verbatim."""
+    leaked = "ghp_" + "a" * 36
+    document = json.loads(to_redacted({leaked: "v"}).text)
+    assert leaked not in document
+    assert document == {REDACTED_SENTINEL: "v"}
+
+
+def test_secret_shaped_key_keeps_its_name_and_only_loses_its_value():
+    """Key-scanning must not rename a secret-shaped key: the NAME is not the
+    secret, and the record stays readable only if the field is still findable."""
+    assert json.loads(to_redacted({"API_TOKEN": "x"}).text) == {"API_TOKEN": REDACTED_SENTINEL}
+
+
+def test_ordinary_mapping_keys_are_untouched():
+    payload = {"command": "pytest -x", "nested": {"revision": "abc123"}}
+    assert json.loads(to_redacted(payload).text) == payload
+
+
+@pytest.mark.parametrize("value", [float("nan"), float("inf"), float("-inf")])
+def test_to_redacted_rejects_non_finite_floats(value):
+    """Regression (follow-up review finding, verified live): json.dumps
+    defaults to allow_nan=True, so a non-finite float was written as a bare
+    `NaN`/`Infinity` token -- not valid RFC-8259 JSON, unreadable by any
+    strict parser -- silently, instead of the documented TypeError."""
+    with pytest.raises(TypeError, match="non-JSON-serializable"):
+        to_redacted({"ratio": value})
 
 
 def test_to_redacted_raises_type_error_for_a_non_json_serializable_value():
@@ -324,6 +401,85 @@ def test_build_gate_record_rejects_malformed_command_entries(entry):
             tree_revision="abc123",
             timestamp="2026-08-03T00:00:00+00:00",
         )
+
+
+@pytest.mark.parametrize(
+    "entry",
+    [
+        # unresolvable but carrying a returncode -- "never ran" AND "exited 0"
+        {"command": "pytest -q", "resolvable": False, "returncode": 0},
+        # unresolvable but carrying captured output
+        {"command": "pytest -q", "resolvable": False, "returncode": None, "stdout": "hi"},
+        {"command": "pytest -q", "resolvable": False, "returncode": None, "stderr": "hi"},
+        # resolvable but with no returncode -- ran, yet no exit code
+        {"command": "pytest -q", "resolvable": True, "returncode": None},
+    ],
+    ids=["unresolvable-with-returncode", "unresolvable-stdout", "unresolvable-stderr",
+         "resolvable-without-returncode"],
+)
+def test_build_gate_record_rejects_self_contradictory_command_entries(entry):
+    """Regression (follow-up review finding, verified live): the schema
+    DOCUMENTS both invariants in prose but nothing enforced them, so a report
+    asserting a command both never ran and exited 0 with captured output was
+    accepted here AND validated clean against the schema. For a record whose
+    purpose is proving what was checked, an internally false entry is worse
+    than a rejected one."""
+    with pytest.raises(ValueError):
+        build_gate_record(
+            story_key="2.6",
+            commands=[entry],
+            scope_check_verdict=None,
+            tree_revision="abc123",
+            timestamp="2026-08-03T00:00:00+00:00",
+        )
+
+
+def test_build_gate_record_accepts_classify_outcome_s_own_two_shapes():
+    """The sole real producer of this shape (`core.gate.classify_outcome`)
+    emits exactly these two entries -- the new consistency check must not
+    reject its own upstream."""
+    record = build_gate_record(
+        story_key="2.6",
+        commands=_valid_commands(),
+        scope_check_verdict=None,
+        tree_revision="abc123",
+        timestamp="2026-08-03T00:00:00+00:00",
+    )
+    assert record["commands"] == _valid_commands()
+
+
+@pytest.mark.parametrize(
+    "bogus", ["yesterday afternoon", "2026-08-03T00:00:00+05:00", "2026-08-03"]
+)
+def test_schema_rejects_a_timestamp_build_gate_record_would_reject(bogus):
+    """Regression (follow-up review finding, verified live): `timestamp` was a
+    bare `"type": "string"`, so the durable, $id-bearing contract green-lit
+    records `build_gate_record` itself rejects -- while `story`,
+    `tree_revision` and `command` all carried constraints."""
+    record = build_gate_record(
+        story_key="2.6",
+        commands=[],
+        scope_check_verdict=None,
+        tree_revision="abc123",
+        timestamp="2026-08-03T00:00:00+00:00",
+    )
+    record["timestamp"] = bogus
+    with pytest.raises(jsonschema.ValidationError):
+        jsonschema.validate(instance=record, schema=_schema())
+
+
+@pytest.mark.parametrize(
+    "good", ["2026-08-03T00:00:00Z", "2026-08-03T00:00:00+00:00", "2026-08-03T00:00:00.123456Z"]
+)
+def test_schema_accepts_every_utc_form_build_gate_record_accepts(good):
+    record = build_gate_record(
+        story_key="2.6",
+        commands=[],
+        scope_check_verdict=None,
+        tree_revision="abc123",
+        timestamp=good,
+    )
+    jsonschema.validate(instance=record, schema=_schema())
 
 
 def test_build_gate_record_command_reports_are_copies_not_aliases():

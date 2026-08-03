@@ -423,3 +423,13 @@ def test_write_redacted_atomic_rejects_a_non_redacted_payload(fs, tmp_path, bogu
     ``payload.text`` instead of the documented ``TypeError`` contract."""
     with pytest.raises(TypeError, match="Redacted"):
         fs.write_redacted_atomic(tmp_path / "gate-record.json", bogus_payload)
+
+
+@pytest.mark.parametrize("bogus_path", ["a-bare-str-path", None, 123])
+def test_write_redacted_atomic_rejects_a_non_path_path(fs, tmp_path, bogus_path):
+    """Regression (follow-up review finding, verified live): the original
+    guarded only ``payload``, so a ``str`` path escaped as a raw
+    ``AttributeError: 'str' object has no attribute 'parent'`` -- the same
+    failure class the ``payload`` guard exists to prevent."""
+    with pytest.raises(TypeError, match="path must be a Path"):
+        fs.write_redacted_atomic(bogus_path, Redacted(text="{}"))
