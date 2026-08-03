@@ -54,11 +54,20 @@ combination indistinguishable from a story that silently failed to do its
 work) -- classifies ``Verdict.GATE_FAILED``, the same tier as
 ``MRS-GATE-001``: a real, determinable outcome, never "could not evaluate".
 See ``core/verdict.py`` for the classification table itself.
+
+Story 2.5's ``describe_gate_mode`` (FR-24) registers no sixth finding code.
+It shapes the already-selected ``gate_mode`` into an autonomy-label report
+by looking up ``core/policy.py``'s ``GATE_MODE_AUTONOMY_LABELS``, and raises
+``ValueError`` -- never a ``Finding`` -- for a value outside the closed
+3-mode vocabulary ``core/policy.compose()`` already restricts at
+composition time: the same precedent ``core/verdict.py::classify()`` sets
+for a registered-but-unclassified code.
 """
 
 from __future__ import annotations
 
 from ..ports.process import ProcessResult
+from . import policy
 from .model import Finding, Severity, Status, status_for
 from .verdict import classify
 
@@ -238,3 +247,35 @@ def classify_doc_only_declaration(
             ),
         )
     return report, None
+
+
+def describe_gate_mode(gate_mode: str) -> dict[str, object]:
+    """Shape an already-selected ``gate_mode`` into its FR-24 autonomy-label
+    report (Story 2.5).
+
+    Pure, no I/O: the caller already read ``gate_mode`` from policy (e.g.
+    ``EffectivePolicy.seed_view()["gate_mode"].value``) -- mirrors
+    ``classify_outcome``/``classify_doc_only_declaration``'s own "caller
+    already gathered the fact" shape. Returns a FRESH, JSON-serializable
+    plain dict -- never an alias into ``policy.GATE_MODE_AUTONOMY_LABELS``
+    -- e.g. ``{"gate_mode": "per-epic", "autonomy_label": {"level": "L3",
+    "name": "Conditional / Context Gates", "meaning": "..."}}``.
+
+    ``gate_mode`` must be one of the 3 keys ``policy.GATE_MODE_AUTONOMY_
+    LABELS`` defines -- the same closed vocabulary ``core/policy.compose()``
+    already restricts any composed ``EffectivePolicy`` to at composition
+    time (``_valid_gate_mode``). An out-of-vocabulary value is therefore an
+    internal-consistency violation, not a real-world outcome an operator
+    needs a machine-readable ``Finding`` for, so this raises ``ValueError``
+    naming the invalid value -- mirroring ``core/verdict.py::classify()``'s
+    own precedent for a registered-but-unclassified code, never a silent
+    default and never a new ``MRS-GATE-*`` code.
+    """
+    try:
+        label = policy.GATE_MODE_AUTONOMY_LABELS[gate_mode]
+    except KeyError as exc:
+        raise ValueError(
+            f"gate_mode {gate_mode!r} is not one of the known autonomy-"
+            f"labeled modes {sorted(policy.GATE_MODE_AUTONOMY_LABELS)}"
+        ) from exc
+    return {"gate_mode": gate_mode, "autonomy_label": dict(label)}
