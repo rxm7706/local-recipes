@@ -22,6 +22,11 @@ mtime/permissions), not the temp-file-then-``os.replace`` dance the other
 writers here use: seeding a gitignored adapter config is a plain
 copy-when-absent (the caller already checked absence), not a repoint of a
 name already in use by a live reader.
+
+Story 2.6 adds ``write_redacted_atomic`` -- ``ports.record.RecordPort``'s
+sole implementation (AD-34). It delegates entirely to ``write_text_atomic``:
+no new write mechanics, only a type boundary that accepts a
+``core.egress.Redacted`` payload instead of a bare ``str``.
 """
 
 from __future__ import annotations
@@ -30,6 +35,8 @@ import os
 import shutil
 import threading
 from pathlib import Path
+
+from ..core.egress import Redacted
 
 
 class FsError(Exception):
@@ -53,7 +60,15 @@ def _tmp_sibling(path: Path) -> Path:
 
 
 class LocalFs:
-    """``ports.FsPort``'s sole implementation."""
+    """Sole implementation of BOTH ``ports.FsPort`` and -- since Story 2.6 --
+    the egress-classified ``ports.RecordPort`` (``write_redacted_atomic``).
+
+    That dual role is deliberate (one atomic-write mechanism, two typed
+    entry points) but it means the AD-34 egress boundary on this class is
+    exactly one method call wide: ``write_text_atomic`` reaches the same
+    durable sink accepting a bare ``str``. Tracked in ``deferred-work.md``
+    (the ``FsPort``/``VcsPort`` classification entry); named here because
+    this docstring is where a reader learns what the adapter implements."""
 
     def read_text(self, path: Path) -> str | None:
         try:
@@ -184,3 +199,39 @@ class LocalFs:
             shutil.copy2(src, dst)
         except OSError as exc:
             raise FsError(f"cannot copy {src} to {dst}: {exc}") from exc
+
+    def write_redacted_atomic(self, path: Path, payload: Redacted) -> None:
+        """``RecordPort``'s sole implementation (Story 2.6): delegates
+        entirely to ``write_text_atomic`` -- the same atomic write; the
+        only difference is the accepted TYPE (``Redacted``, never a bare
+        ``str``), enforced structurally by ``ports/record.py``'s own
+        annotation and the AD-34 meta-test. Raises ``TypeError`` if
+        ``payload`` is not a ``Redacted`` instance (a contract violation --
+        review finding, verified live: without this check, a caller passing
+        e.g. a bare ``str`` or ``None`` crashed with a raw
+        ``AttributeError`` on ``payload.text``, not the ``FsError``
+        contract this method's own docstring promised). ``path`` is guarded
+        the same way for the same reason (follow-up review finding, verified
+        live: the original guarded only one of the two parameters, so a
+        ``str`` path still escaped as ``AttributeError: 'str' object has no
+        attribute 'parent'``). A ``Path`` with no file name (``Path("/")``,
+        ``Path(".")``) raises ``FsError`` (follow-up review finding, verified
+        live: ``_tmp_sibling`` raised its own ``ValueError: PosixPath('/')
+        has an empty name``, which ``write_text_atomic``'s ``except OSError``
+        does not catch, so it escaped both failure modes this method and
+        ``ports/record.py`` document). Otherwise raises ``FsError`` on
+        failure, identical to ``write_text_atomic``."""
+        if not isinstance(path, Path):
+            raise TypeError(f"path must be a Path, got {path!r}")
+        if not isinstance(payload, Redacted):
+            # The TYPE only, never the value: a `Redacted` is safe to print
+            # but a wrongly-typed payload is exactly the unredacted object
+            # this port exists to refuse, and an exception message escapes as
+            # a raw traceback (`cli/main.py` catches only SystemExit /
+            # KeyboardInterrupt) into the harness log. Review finding.
+            raise TypeError(
+                f"payload must be a Redacted instance, got {type(payload).__name__}"
+            )
+        if not path.name:
+            raise FsError(f"cannot write {path}: path has no file name")
+        self.write_text_atomic(path, payload.text)

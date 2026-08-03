@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:local-recipes:pyforge-marshal:gate-record.v1",
+  "title": "MarshalGateRecord",
+  "description": "The dict shape core.egress.build_gate_record() produces (Story 2.6, AD-34): a durable record of one completed gate evaluation -- the commands run, their exit codes, the scope-check verdict, the tree revision, and a UTC ISO-8601 timestamp. additionalProperties is false at both the document and the commandReport level, matching policy.json's/envelope.v1.json's own closed-schema discipline. This schema describes the dict shape build_gate_record() RETURNS, before core.egress.to_redacted() is applied. For a record built by build_gate_record(), redaction only ever replaces string CONTENT with the sentinel -- it never adds, removes or retypes a field -- so a redacted gate record still validates against this same schema, and a test asserts exactly that. The general to_redacted() serializer has one shape this claim does NOT cover (review finding, verified live): two DISTINCT token-shaped mapping KEYS both rewrite to the sentinel and therefore collapse into one entry, dropping a field. build_gate_record's field names are fixed and none is token-shaped, so no gate record can reach that case. jsonschema validates this document only in tests (src/ never runtime-validates against it, matching policy.json's own precedent).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["story", "commands", "scope_check_verdict", "tree_revision", "timestamp"],
+  "properties": {
+    "story": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+[a-z]?$",
+      "description": "The canonicalized story key (AD-23/AD-38), e.g. \"2.6\" or \"6.1a\" -- core.identity.normalize()'s one dot form. Named \"story\", not \"story_key\": the latter ends in the _KEY suffix core.policy.is_secret_key matches, which would redact the record's own story identifier on every real to_redacted() call."
+    },
+    "commands": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/commandReport" },
+      "description": "One entry per configured verify command, mirroring core.gate.classify_outcome's own report shape."
+    },
+    "scope_check_verdict": {
+      "description": "The scope-check verdict (Story 2.3, not shipped yet), or null -- the only value any real caller can supply today.",
+      "enum": ["clean", "warn", "unevaluable", "scope-violation", "gate-failed", "error", null]
+    },
+    "tree_revision": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "\\S",
+      "description": "An already-gathered fact identifying the evaluated tree state -- this schema does not prescribe its format (e.g. a git SHA). The \\S pattern rejects a whitespace-only value that minLength alone admits (review finding, verified live), matching build_gate_record's own .strip() check: a record identifying the evaluated tree as \"   \" proves nothing."
+    },
+    "timestamp": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])[T ]([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9](\\.[0-9]+)?(Z|[+-]00:00)$",
+      "description": "A UTC ISO-8601 timestamp (zero tz offset), parsed -- never generated -- by build_gate_record(). The pattern is kept character-for-character identical to core.egress._TIMESTAMP_PATTERN and a test pins the two spellings together, so the SPELLING half is enforced identically on both sides: a bare 'type: string' let the schema green-light records (a hand-written one, or one from a non-Python consumer) that build_gate_record rejects outright, e.g. \"yesterday afternoon\" or a +05:00 offset, and datetime.fromisoformat's greater permissiveness let the producer emit four legitimate UTC forms this pattern rejects -- a missing seconds field, the compact offsets +0000/+00, and the basic form 20260803T000000Z. Every date/time component also carries its real range (review finding, verified live): with bare [0-9]{2} groups this pattern accepted 2026-13-45T99:99:99Z, and 2026-08-03T24:00:00Z passed BOTH sides while fromisoformat silently resolves hour 24 to the NEXT day -- a durable record whose stored text and meaning disagree. One asymmetry REMAINS and is stated rather than claimed away: a regex cannot express calendar validity, so 2026-02-30T12:00:00Z matches this pattern while build_gate_record rejects it via fromisoformat. A consumer needing that guarantee must parse the value, not only validate it."
+    }
+  },
+  "$defs": {
+    "commandReport": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["command", "returncode", "resolvable"],
+      "description": "One verify command's already-classified report. The allOf below ENFORCES the two invariants the property descriptions state in prose (review finding, verified live: without it a self-contradictory entry -- resolvable false AND returncode 0 AND captured stdout -- validated clean against this contract, which core.egress.build_gate_record itself rejects). For a record whose purpose is proving months later what was checked, an internally false entry is worse than a rejected one; a non-Python consumer reads this schema, not the Python validator.",
+      "allOf": [
+        {
+          "if": { "required": ["resolvable"], "properties": { "resolvable": { "const": false } } },
+          "then": {
+            "properties": { "returncode": { "type": "null" } },
+            "not": { "anyOf": [{ "required": ["stdout"] }, { "required": ["stderr"] }] }
+          },
+          "else": { "properties": { "returncode": { "type": "integer" } } }
+        }
+      ],
+      "properties": {
+        "command": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S",
+          "description": "The verify command string, as configured. The \\S pattern rejects a whitespace-only value that minLength alone admits (review finding), matching build_gate_record's own .strip() check."
+        },
+        "returncode": {
+          "type": ["integer", "null"],
+          "description": "The process exit code, or null when the command never ran (resolvable: false)."
+        },
+        "resolvable": {
+          "type": "boolean",
+          "description": "Whether the command actually ran to completion (classify_outcome's own field)."
+        },
+        "stdout": {
+          "type": "string",
+          "description": "Captured stdout -- present only when resolvable is true."
+        },
+        "stderr": {
+          "type": "string",
+          "description": "Captured stderr -- present only when resolvable is true."
+        }
+      }
+    }
+  }
+}
