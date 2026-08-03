@@ -212,7 +212,7 @@ window.DASHBOARD_DATA = {
         "median": 94,
         "lo": 62,
         "hi": 450,
-        "phaseAsOf": "2026-08-02 23:52 UTC"
+        "phaseAsOf": "2026-08-03 00:07 UTC"
       },
       "velocity": {
         "derived": true,
@@ -2866,7 +2866,7 @@ window.DASHBOARD_DATA = {
       }
     }
   },
-  "snapshot": "<span>2026-08-02 23:52 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-03 00:07 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -4502,7 +4502,7 @@ window.DASHBOARD_DATA = {
           "pkey": null,
           "stories": 40,
           "state": "running",
-          "note": "AD-25–39 adversarial pass + floor quiescence (touches loop machinery)",
+          "note": "epics 1-6 — AD-25–39 adversarial pass + floor quiescence (touches loop machinery)",
           "done": 10,
           "total": 50
         },
@@ -4511,7 +4511,7 @@ window.DASHBOARD_DATA = {
           "pkey": null,
           "stories": 36,
           "state": "held",
-          "note": "last — model stability + consumes marshal-owned scripts",
+          "note": "epics 7-12 (same ledger as pyforge-marshal, split by epic) — last, model stability + consumes marshal-owned scripts",
           "epics_path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/epics-genesis-installer.md",
           "done": 0,
           "total": 36
@@ -4580,7 +4580,7 @@ window.DASHBOARD_DATA = {
     "sound": 3,
     "live": 21,
     "reached": 9,
-    "gaps": 15,
+    "gaps": 14,
     "findings": 0,
     "rows": [
       {
@@ -7169,7 +7169,7 @@ window.DASHBOARD_DATA = {
         "dream": "dashboard-project-path-derivation",
         "owner": "marshal",
         "stages": {
-          "dream": "",
+          "dream": "2026-08-02",
           "deck": "",
           "spec": "",
           "research": "2026-07-16",
@@ -7187,7 +7187,7 @@ window.DASHBOARD_DATA = {
           "retro": ""
         },
         "updatedAt": {
-          "dream": "",
+          "dream": "2026-08-02",
           "deck": "",
           "spec": "",
           "research": "2026-07-31",
@@ -7240,7 +7240,7 @@ window.DASHBOARD_DATA = {
         "archived": false,
         "dreamStatus": "dreamt",
         "ownerDream": "",
-        "noDream": true,
+        "noDream": false,
         "unowned": false,
         "backfilled": false,
         "openQuestions": 0,
@@ -7255,7 +7255,6 @@ window.DASHBOARD_DATA = {
           "research"
         ],
         "gaps": [
-          "dream",
           "deck",
           "spec"
         ],
@@ -7267,7 +7266,7 @@ window.DASHBOARD_DATA = {
         "stale": false,
         "version": "",
         "progress": "",
-        "complete": 1,
+        "complete": 2,
         "of": 4
       },
       {
@@ -12376,8 +12375,8 @@ window.DASHBOARD_DATA = {
       "subject": "Merge bmad-loop/20260731-115548-f223/1-9-packaging-distribution-and-version-reporting into loop/pyforge-marshal (bmad-lo"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-02 23:52 UTC",
-    "generatedEpoch": 1785714728
+    "generatedAt": "2026-08-03 00:07 UTC",
+    "generatedEpoch": 1785715668
   },
   "storySpecs": [
     {
