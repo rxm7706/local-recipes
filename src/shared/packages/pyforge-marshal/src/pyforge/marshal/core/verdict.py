@@ -107,8 +107,13 @@ own ``DEFAULT_POLICY`` value must not read as a blocking failure. Story
 classifies ``Verdict.GATE_FAILED``, the same tier as ``MRS-GATE-001``: a
 real, determinable outcome ("no change, not declared doc-only" is
 something Marshal evaluated and found, not something it could not
-evaluate). Later stories populate the table further as they add real
-codes. The mechanism (a total, fail-loud lookup) is
+evaluate). Story 3.2's ``core/journal.py::fold`` adds ``MRS-JOURNAL-001``
+(an unparseable/invalid journal line) and ``MRS-JOURNAL-002`` (a missing
+or invalid-JSON sidecar blob) -- both classify ``Verdict.UNEVALUABLE``,
+the same tier as every other "Marshal could not determine the answer"
+code: a quarantined line's own story key and decision domain could not be
+evaluated, never a gate that failed. Later stories populate the table
+further as they add real codes. The mechanism (a total, fail-loud lookup) is
 separately proven via ``monkeypatch``-injected synthetic entries in
 ``tests/unit/test_verdict.py``.
 
@@ -174,6 +179,7 @@ GUARDED_EXIT_CODES: frozenset[int] = frozenset(_EXIT_BY_VERDICT.values()) | {
 # codes -- MRS-GATE-001 is the table's first GATE_FAILED classification.
 # Story 2.4's core/gate.py::classify_doc_only_declaration adds MRS-GATE-006,
 # joining MRS-GATE-001 at GATE_FAILED.
+# Story 3.2's core/journal.py::fold adds MRS-JOURNAL-001/002, both UNEVALUABLE.
 _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-IDENT-001": Verdict.UNEVALUABLE,
     "MRS-IDENT-002": Verdict.UNEVALUABLE,
@@ -211,6 +217,8 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-GATE-004": Verdict.WARN,
     "MRS-GATE-005": Verdict.UNEVALUABLE,
     "MRS-GATE-006": Verdict.GATE_FAILED,
+    "MRS-JOURNAL-001": Verdict.UNEVALUABLE,
+    "MRS-JOURNAL-002": Verdict.UNEVALUABLE,
 }
 
 

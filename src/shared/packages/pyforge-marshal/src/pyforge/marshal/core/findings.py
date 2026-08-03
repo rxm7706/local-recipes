@@ -149,9 +149,17 @@ declared doc-only -- the one combination indistinguishable from a story
 that silently failed to do its work). It classifies ``Verdict.GATE_FAILED``,
 the same tier as ``MRS-GATE-001``: a real, determinable outcome (Marshal
 evaluated and found nothing produced while no doc-only exemption was
-claimed), never "could not evaluate" -- see ``core/verdict.py``. Later
-stories append further real codes here as they gain their own real callers.
-The registry MECHANISM
+claimed), never "could not evaluate" -- see ``core/verdict.py``. Story
+3.2's ``core/journal.py::fold`` adds the registry's eighth real caller and
+its own two codes: ``MRS-JOURNAL-001`` (a journal line that failed to
+parse as JSON, or parsed but failed one of ``build_entry``'s own shape
+invariants) and ``MRS-JOURNAL-002`` (a ``sidecar_ref`` payload whose blob
+is missing from the caller-supplied ``sidecars`` mapping, or whose text is
+not valid JSON, or whose decoded value is not itself a JSON object). Both
+classify ``Verdict.UNEVALUABLE`` (AD-8): a quarantined line's own story key
+and decision domain could not be evaluated, never a gate that failed --
+see ``core/verdict.py``. Later stories append further real codes here as
+they gain their own real callers. The registry MECHANISM
 (format check, then membership check) is separately proven via
 ``monkeypatch``-injected synthetic codes in ``tests/unit/test_findings.py``.
 
@@ -183,6 +191,7 @@ CODE_PATTERN = re.compile(r"MRS-[A-Z][A-Z0-9]*-[0-9]{3}")
 # the harness-version check into two tiers.
 # Story 2.1's cli/gate.py/core/gate.py add the seventh real caller's five codes.
 # Story 2.4's core/gate.py::classify_doc_only_declaration adds a sixth code.
+# Story 3.2's core/journal.py::fold adds the eighth real caller's two codes.
 REGISTERED_CODES: frozenset[str] = frozenset(
     {
         "MRS-IDENT-001",
@@ -221,6 +230,8 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-GATE-004",
         "MRS-GATE-005",
         "MRS-GATE-006",
+        "MRS-JOURNAL-001",
+        "MRS-JOURNAL-002",
     }
 )
 
