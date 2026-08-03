@@ -82,7 +82,26 @@ the declared minor range) classified ``Verdict.WARN`` -- a legitimate,
 non-blocking heads-up, the same reasoning as ``MRS-POLICY-005``'s own
 ``Verdict.WARN`` tier, and distinct from ``MRS-PREFLIGHT-002`` (unchanged:
 ``harness_version is None`` or a genuine major-version mismatch), which
-stays ``Verdict.ERROR``. Later
+stays ``Verdict.ERROR``. Story 2.1's ``cli/gate.py``/``core/gate.py``
+(``marshal gate evaluate``, FR-20) add five more codes. ``MRS-GATE-001`` (a
+configured verify command ran and exited non-zero) classifies
+``Verdict.GATE_FAILED`` -- this table's FIRST classification into that
+rung: a REAL check ran and failed, the lattice's own dedicated "a gate
+failed" tier, distinct from every ``Verdict.ERROR``-tier code before it
+(those are all "an internal Marshal operation failed", never "a project's
+own gate failed"); matches Story 2.2's own AC text that a failing verify
+command is this exact rung. ``MRS-GATE-002`` (the command's executable
+could not be launched at all) and ``MRS-GATE-003`` (the command's string
+could not be ``shlex.split``) classify ``Verdict.UNEVALUABLE`` -- Marshal
+could not run the check at all, matching Story 2.2's own AC text: "a
+missing verify command ... produces unevaluable". ``MRS-GATE-005`` (``--run
+<id>`` supplied with no run-journal fold available yet) classifies
+``Verdict.UNEVALUABLE`` too, for the same reason: the requested run-scoped
+answer could not be produced. ``MRS-GATE-004`` (``verify_commands``
+composed to the empty tuple) classifies ``Verdict.WARN``, the same tier as
+``MRS-POLICY-005``/``MRS-PREFLIGHT-011`` -- see ``core/gate.py``'s own
+``no_commands_configured_finding`` docstring for why a brand-new project's
+own ``DEFAULT_POLICY`` value must not read as a blocking failure. Later
 stories populate the table
 further as they add real codes. The mechanism (a total, fail-loud lookup) is
 separately proven via ``monkeypatch``-injected synthetic entries in
@@ -146,6 +165,8 @@ GUARDED_EXIT_CODES: frozenset[int] = frozenset(_EXIT_BY_VERDICT.values()) | {
 # Story 1.8's cli/init.py::run_teardown adds the sixth real caller's three codes.
 # Story 1.9's cli/init.py::run_preflight adds an eleventh code, graduating
 # the harness-version check into two tiers.
+# Story 2.1's cli/gate.py/core/gate.py add the seventh real caller's five
+# codes -- MRS-GATE-001 is the table's first GATE_FAILED classification.
 _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-IDENT-001": Verdict.UNEVALUABLE,
     "MRS-IDENT-002": Verdict.UNEVALUABLE,
@@ -177,6 +198,11 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-TEARDOWN-001": Verdict.UNEVALUABLE,
     "MRS-TEARDOWN-002": Verdict.ERROR,
     "MRS-TEARDOWN-003": Verdict.ERROR,
+    "MRS-GATE-001": Verdict.GATE_FAILED,
+    "MRS-GATE-002": Verdict.UNEVALUABLE,
+    "MRS-GATE-003": Verdict.UNEVALUABLE,
+    "MRS-GATE-004": Verdict.WARN,
+    "MRS-GATE-005": Verdict.UNEVALUABLE,
 }
 
 

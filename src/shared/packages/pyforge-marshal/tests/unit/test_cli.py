@@ -6,8 +6,11 @@ returns an int and never raises ``SystemExit`` itself.
 
 from __future__ import annotations
 
+import argparse
+import io
 import json
 import re
+import sys
 import tomllib
 from pathlib import Path
 from unittest.mock import patch
@@ -842,3 +845,1011 @@ def test_init_dispatches_to_run_init_with_parsed_args(monkeypatch):
     # BEFORE main() builds a fresh parser -- which it does on every call.
     assert main(["init", "acme"]) == 0
     assert received == ["acme"]
+
+
+# --- Story 2.1: the `gate evaluate` subcommand -------------------------------
+#
+# These exercise `main()` end-to-end against REAL, trivial, fast verify
+# commands (`true`/`false`/a nonexistent binary/a malformed shlex string),
+# matching this package's own "real I/O, not heavy mocking" convention (see
+# `test_vcs_git.py`) -- `run_evaluate`'s DI seam (`process: ProcessPort |
+# None`) exists for callers that need a fake, but the CLI-wiring layer here
+# proves the real PosixProcess integration. The pure per-command
+# classification is separately, exhaustively covered by `test_gate.py` with
+# synthetic ProcessResults, and PosixProcess itself by `test_process_posix.py`.
+#
+# Every policy fixture below goes through `_conventional_policy`, because the
+# CONVENTIONAL path is the only policy source `gate evaluate` reads: unlike
+# `marshal config` it deliberately offers no `--project-policy` override (a
+# command that RUNS what it reads must not accept an arbitrary path -- see
+# `cli/gate.py`'s module docstring). That makes these tests exercise the real
+# production resolution rather than a test-only flag.
+
+
+def _conventional_policy(tmp_path, monkeypatch, slug, body):
+    """Plant a project policy at the only source `gate evaluate` reads, and
+    point the repo root at `tmp_path`.
+
+    BOTH `repo_root` bindings are patched: `cli/gate.py` imports the name
+    directly (`from .config import ..., repo_root`), a separate binding from
+    `config_module.repo_root`, and it is also what the spawned commands get
+    as their `cwd` -- so patching only one leaves execution pointed at the
+    real checkout.
+    """
+    from pyforge.marshal.cli import config as config_module
+    from pyforge.marshal.cli import gate as gate_module
+
+    monkeypatch.setattr(config_module, "repo_root", lambda: tmp_path)
+    monkeypatch.setattr(gate_module, "repo_root", lambda: tmp_path)
+    policy_dir = tmp_path / "_bmad-output" / "projects" / slug / "planning-artifacts"
+    policy_dir.mkdir(parents=True, exist_ok=True)
+    policy_path = policy_dir / "marshal-policy.toml"
+    policy_path.write_text(body, encoding="utf-8")
+    return policy_path
+
+
+def test_help_lists_gate_subcommand(capsys):
+    """Asserts the SUBCOMMAND-LIST token, not a bare "gate" substring.
+    Review finding: `preflight`'s own help line ends "... and gate on
+    first-run acknowledgement", so a substring check stayed green with
+    `add_gate_subparser` deleted from `cli/main.py` entirely."""
+    exit_code = main(["--help"])
+    assert exit_code == 0
+    assert "{config,init,homes,preflight,teardown,gate}" in capsys.readouterr().out
+
+
+def test_gate_missing_evaluate_action_is_a_usage_error(capsys):
+    exit_code = main(["gate"])
+    assert exit_code == EXIT_USAGE
+    captured = capsys.readouterr()
+    assert captured.err
+
+
+def test_gate_evaluate_all_commands_pass_exits_clean(tmp_path, capsys, monkeypatch):
+    monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
+    # --project supplied so the composition carries no MRS-POLICY-005
+    # "no active project" warn finding alongside the command results --
+    # this test's own concern is a pure clean/gate-only verdict.
+    _conventional_policy(tmp_path, monkeypatch, "acme", 'verify_commands = ["true"]\n')
+    exit_code = main(["gate", "evaluate", "--project", "acme", "--format", "json"])
+    assert exit_code == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["verdict"] == "clean"
+    assert payload["status"] == "ok"
+    assert payload["data"]["commands"] == [
+        {"command": "true", "resolvable": True, "returncode": 0, "stdout": "", "stderr": ""}
+    ]
+
+
+def test_gate_evaluate_one_command_fails_reports_gate_failed(tmp_path, capsys, monkeypatch):
+    monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
+    _conventional_policy(
+        tmp_path, monkeypatch, "acme", 'verify_commands = ["true", "false"]\n'
+    )
+    exit_code = main(["gate", "evaluate", "--project", "acme", "--format", "json"])
+    assert exit_code == 3
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["verdict"] == "gate-failed"
+    assert payload["status"] == "error"
+    codes = [finding["code"] for finding in payload["findings"]]
+    assert "MRS-GATE-001" in codes
+    # the failing command's own report still names it and its real exit code
+    failing = next(c for c in payload["data"]["commands"] if c["command"] == "false")
+    assert failing["returncode"] == 1
+    assert failing["resolvable"] is True
+
+
+def test_gate_evaluate_unresolvable_command_reports_unevaluable(tmp_path, capsys, monkeypatch):
+    monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
+    _conventional_policy(
+        tmp_path,
+        monkeypatch,
+        "acme",
+        'verify_commands = ["definitely-not-a-real-binary-xyz"]\n',
+    )
+    exit_code = main(["gate", "evaluate", "--project", "acme", "--format", "json"])
+    assert exit_code == 1
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["verdict"] == "unevaluable"
+    codes = [finding["code"] for finding in payload["findings"]]
+    assert "MRS-GATE-002" in codes
+    assert payload["data"]["commands"] == [
+        {
+            "command": "definitely-not-a-real-binary-xyz",
+            "resolvable": False,
+            "returncode": None,
+        }
+    ]
+
+
+def test_gate_evaluate_malformed_command_reports_unevaluable(tmp_path, capsys, monkeypatch):
+    monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
+    _conventional_policy(
+        tmp_path, monkeypatch, "acme", 'verify_commands = ["\'unterminated"]\n'
+    )
+    exit_code = main(["gate", "evaluate", "--project", "acme", "--format", "json"])
+    assert exit_code == 1
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["verdict"] == "unevaluable"
+    codes = [finding["code"] for finding in payload["findings"]]
+    assert "MRS-GATE-003" in codes
+    assert payload["data"]["commands"] == [
+        {"command": "'unterminated", "resolvable": False, "returncode": None}
+    ]
+
+
+def test_gate_evaluate_zero_commands_configured_reports_warn(capsys, monkeypatch):
+    """Bare defaults (no --project-policy, no active project) compose
+    verify_commands=() -- MRS-GATE-004, never a silent 'clean'."""
+    monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
+    exit_code = main(["gate", "evaluate", "--format", "json"])
+    assert exit_code == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["verdict"] == "warn"
+    codes = [finding["code"] for finding in payload["findings"]]
+    assert "MRS-GATE-004" in codes
+
+
+def test_gate_evaluate_missing_project_and_empty_allowlist_surface_both_findings(
+    capsys, monkeypatch
+):
+    """I/O matrix: '--project/env both omitted' -> MRS-POLICY-005 (no active
+    project) AND MRS-GATE-004 (empty allowlist) surface together."""
+    monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
+    exit_code = main(["gate", "evaluate", "--format", "json"])
+    assert exit_code == 0
+    payload = json.loads(capsys.readouterr().out)
+    codes = {finding["code"] for finding in payload["findings"]}
+    assert {"MRS-POLICY-005", "MRS-GATE-004"} <= codes
+
+
+def test_gate_evaluate_run_flag_reports_mrs_gate_005_and_skips_commands(
+    tmp_path, capsys, monkeypatch
+):
+    monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
+    # A command that would otherwise fail -- proves --run truly skips running
+    # any configured command rather than merely also reporting MRS-GATE-005.
+    _conventional_policy(tmp_path, monkeypatch, "acme", 'verify_commands = ["false"]\n')
+    exit_code = main(
+        ["gate", "evaluate", "--project", "acme", "--run", "run-42", "--format", "json"]
+    )
+    assert exit_code == 1
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["verdict"] == "unevaluable"
+    codes = [finding["code"] for finding in payload["findings"]]
+    assert codes == ["MRS-GATE-005"]
+    assert "run-42" in payload["findings"][0]["message"]
+    assert payload["data"]["commands"] == []
+    assert payload["data"]["scope"] != "policy-seed-only"
+
+
+def test_gate_evaluate_no_run_in_flight_scope_is_policy_seed_only(capsys, monkeypatch):
+    """AC: with no --run supplied, data.scope == 'policy-seed-only' plus a
+    'mid-run freezes not visible' note (AD-26/F-3)."""
+    monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
+    exit_code = main(["gate", "evaluate", "--format", "json"])
+    assert exit_code == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["data"]["scope"] == "policy-seed-only"
+    assert "mid-run freezes not visible" in payload["data"]["scope_note"]
+
+
+def test_gate_evaluate_project_flag_wins_over_env(tmp_path, capsys, monkeypatch):
+    """Precedence proven by EXECUTION, not just by the reported slug: both
+    slugs have a real conventional policy, with distinct commands whose exit
+    codes differ, so the run's verdict alone identifies which one was read."""
+    monkeypatch.setenv("BMAD_ACTIVE_PROJECT", "env-slug")
+    _conventional_policy(tmp_path, monkeypatch, "env-slug", 'verify_commands = ["false"]\n')
+    _conventional_policy(tmp_path, monkeypatch, "flag-slug", 'verify_commands = ["true"]\n')
+    exit_code = main(["gate", "evaluate", "--project", "flag-slug", "--format", "json"])
+    assert exit_code == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["data"]["slug"] == "flag-slug"
+    assert payload["data"]["commands"][0]["command"] == "true"
+
+
+def test_gate_evaluate_only_the_selected_projects_conventional_policy_is_read(
+    tmp_path, capsys, monkeypatch
+):
+    """I/O matrix: 'wrong project never runs' -- reuses cli/config.py's own
+    conventional-path resolution, so only the SLUG-matching project's file
+    is ever read; a differently-slugged project's own commands never
+    execute. Proven constructively: two projects, two DISTINCT verify
+    commands, and only the selected slug's command shows up in the report."""
+    _conventional_policy(tmp_path, monkeypatch, "acme", 'verify_commands = ["true"]\n')
+    _conventional_policy(
+        tmp_path, monkeypatch, "other-slug", 'verify_commands = ["false"]\n'
+    )
+
+    exit_code = main(["gate", "evaluate", "--project", "acme", "--format", "json"])
+    assert exit_code == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["data"]["commands"] == [
+        {"command": "true", "resolvable": True, "returncode": 0, "stdout": "", "stderr": ""}
+    ]
+
+    exit_code_other = main(["gate", "evaluate", "--project", "other-slug", "--format", "json"])
+    assert exit_code_other == 3
+    payload_other = json.loads(capsys.readouterr().out)
+    assert payload_other["data"]["commands"][0]["command"] == "false"
+
+
+def test_gate_evaluate_traversal_shaped_slug_never_reads_or_runs_a_file(
+    tmp_path, capsys, monkeypatch
+):
+    """Review finding (security): `conventional_project_policy_path` builds
+    its path by naive string interpolation with no traversal check, so an
+    unvalidated `--project '../../../../whatever'` could resolve OUTSIDE
+    `_bmad-output/projects/` -- and unlike `marshal config` (which only
+    PRINTS a mis-resolved policy), `gate evaluate` would EXECUTE whatever
+    verify_commands that file declares. Proven constructively: a real file
+    sits at the traversal target with a command that would leave a marker
+    if run; the malformed slug must be rejected (MRS-POLICY-006,
+    unevaluable) before that file is ever read, so the marker never appears."""
+    from pyforge.marshal.cli import config as config_module
+    from pyforge.marshal.cli import gate as gate_module
+
+    monkeypatch.setattr(config_module, "repo_root", lambda: tmp_path / "repo")
+    monkeypatch.setattr(gate_module, "repo_root", lambda: tmp_path / "repo")
+    (tmp_path / "repo" / "_bmad-output" / "projects").mkdir(parents=True)
+    marker = tmp_path / "marker-outside-projects"
+    evil_dir = tmp_path / "outside" / "planning-artifacts"
+    evil_dir.mkdir(parents=True)
+    (evil_dir / "marshal-policy.toml").write_text(
+        f'verify_commands = ["touch {marker}"]\n', encoding="utf-8"
+    )
+
+    exit_code = main(
+        ["gate", "evaluate", "--project", "../../outside", "--format", "json"]
+    )
+    assert exit_code == 1
+    payload = json.loads(capsys.readouterr().out)
+    codes = [finding["code"] for finding in payload["findings"]]
+    assert "MRS-POLICY-006" in codes
+    assert payload["data"]["commands"] == []
+    assert not marker.exists()
+
+
+def test_gate_evaluate_rejects_an_arbitrary_project_policy_path(tmp_path, capsys, monkeypatch):
+    """Review finding (security): `gate evaluate` briefly carried `marshal
+    config`'s `--project-policy PATH` flag. On `config` that flag only PRINTS
+    the policy it reads; here it EXECUTED the `verify_commands` of any file on
+    disk -- verified live, a policy in /tmp ran an arbitrary command and the
+    envelope reported `verdict: clean`, exit 0, under `"slug":
+    "pyforge-marshal"`, asserting a project scope the run never had. That is
+    precisely the ad-hoc command channel AD-17 forbids and the story spec's
+    own **Never** clause rules out ("there is deliberately no such flag"), so
+    the flag is gone: argparse must reject it, and the file must not run."""
+    monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
+    _conventional_policy(tmp_path, monkeypatch, "acme", "verify_commands = []\n")
+    marker = tmp_path / "foreign-policy-was-executed"
+    foreign = tmp_path / "foreign.toml"
+    foreign.write_text(f'verify_commands = ["touch {marker}"]\n', encoding="utf-8")
+
+    exit_code = main(
+        ["gate", "evaluate", "--project", "acme", "--project-policy", str(foreign)]
+    )
+
+    assert exit_code == EXIT_USAGE
+    assert "--project-policy" in capsys.readouterr().err
+    assert not marker.exists()
+
+
+def test_run_evaluate_uses_the_injected_process_port(tmp_path, capsys, monkeypatch):
+    """Review finding: the `process: ProcessPort | None` DI seam the spec
+    mandates ("injected the same DI way cli/init.py injects VcsPort") was
+    entirely unexercised -- `main()` dispatches `handler(args)`, so no
+    production path can reach the parameter, and no test passed it either.
+    Every gate test would have stayed green with the parameter deleted and
+    `PosixProcess()` hardcoded.
+
+    The configured command is a binary that does NOT exist: a real
+    PosixProcess would raise ProcessError -> MRS-GATE-002 -> exit 1, so a
+    clean exit 0 carrying the fake's own stdout can only mean the injected
+    port was the one actually used."""
+    from pyforge.marshal.cli import gate as gate_module
+    from pyforge.marshal.ports.process import ProcessResult
+
+    calls: list[tuple[list[str], object]] = []
+
+    class _RecordingProcess:
+        def run(self, argv, *, cwd, timeout_s=None):
+            # `cwd` is RECORDED, not discarded (review finding): no test
+            # asserted the working directory `cli/gate.py` spawns commands
+            # in, so a regression to `Path.cwd()` -- which would gate a
+            # different tree than the one `data["root"]` reports -- shipped
+            # green. The write-boundary test cannot cover it either: it runs
+            # only `true`/`false`, which write nothing anywhere.
+            calls.append((list(argv), cwd))
+            return ProcessResult(returncode=0, stdout="injected-stdout", stderr="")
+
+    monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
+    _conventional_policy(
+        tmp_path,
+        monkeypatch,
+        "acme",
+        'verify_commands = ["definitely-not-a-real-binary-xyz"]\n',
+    )
+    args = argparse.Namespace(project="acme", run_id=None, format="json")
+
+    exit_code = gate_module.run_evaluate(args, process=_RecordingProcess())
+
+    assert exit_code == 0
+    assert [argv for argv, _ in calls] == [["definitely-not-a-real-binary-xyz"]]
+    # The spawn `cwd` is the tree the envelope says it evaluated -- not the
+    # process's own working directory.
+    assert [str(cwd) for _, cwd in calls] == [str(tmp_path)]
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["verdict"] == "clean"
+    assert payload["data"]["commands"][0]["stdout"] == "injected-stdout"
+    assert payload["data"]["root"] == str(tmp_path)
+
+
+def test_gate_evaluate_text_format_survives_output_stdout_cannot_encode(
+    tmp_path, capsys, monkeypatch
+):
+    """Review finding: this is the first command to print ARBITRARY child
+    output, and the adapter decodes it with errors="replace", so one
+    undecodable byte puts U+FFFD into the text render. On a stdout whose
+    encoding cannot represent it, `print` raises UnicodeEncodeError -- a
+    ValueError, which `main()`'s SystemExit/KeyboardInterrupt relay does NOT
+    catch, so the run died on a traceback and returned 1 for a gate that had
+    really failed with 3. pytest's own capsys is a UTF-8 buffer, so no
+    existing test could reach this; an ascii TextIOWrapper stands in."""
+    from pyforge.marshal.cli import gate as gate_module
+    from pyforge.marshal.ports.process import ProcessResult
+
+    class _NonAsciiProcess:
+        def run(self, argv, *, cwd, timeout_s=None):
+            # U+FFFD is exactly what the adapter's errors="replace" produces
+            # from an undecodable byte -- see test_process_posix.py's
+            # test_run_replaces_undecodable_output.
+            return ProcessResult(returncode=1, stdout="caf\ufffd", stderr="")
+
+    monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
+    _conventional_policy(tmp_path, monkeypatch, "acme", 'verify_commands = ["true"]\n')
+    buffer = io.BytesIO()
+    monkeypatch.setattr(
+        sys, "stdout", io.TextIOWrapper(buffer, encoding="ascii", errors="strict")
+    )
+    args = argparse.Namespace(project="acme", run_id=None, format="text")
+
+    exit_code = gate_module.run_evaluate(args, process=_NonAsciiProcess())
+    sys.stdout.flush()
+
+    # The verdict-derived exit code survives, and the output is emitted
+    # backslash-escaped rather than lost to a traceback.
+    assert exit_code == 3
+    written = buffer.getvalue()
+    assert b"caf" in written
+    assert rb"\ufffd" in written
+
+
+def test_gate_evaluate_unreadable_policy_does_not_also_claim_it_is_unconfigured(
+    tmp_path, capsys, monkeypatch
+):
+    """Review finding: MRS-GATE-004 asserts the allowlist is UNCONFIGURED.
+    When the conventional policy file exists but cannot be parsed, the
+    operator DID configure commands and Marshal could not read them --
+    emitting "no verify commands configured" alongside MRS-POLICY-004
+    misdirects triage toward "add a verify command" when the real fix is the
+    syntax error. Verified live before the fix: both codes side by side.
+
+    The run must still never be green: MRS-POLICY-004 keeps it unevaluable."""
+    monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
+    _conventional_policy(
+        tmp_path, monkeypatch, "acme", "verify_commands = [ this is not toml\n"
+    )
+    exit_code = main(["gate", "evaluate", "--project", "acme", "--format", "json"])
+
+    assert exit_code == 1
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["verdict"] == "unevaluable"
+    codes = {finding["code"] for finding in payload["findings"]}
+    assert "MRS-POLICY-004" in codes
+    assert "MRS-GATE-004" not in codes
+
+
+def test_gate_evaluate_unconfigured_project_slug_uses_bare_defaults(capsys, monkeypatch):
+    """A project slug with no conventional policy file composes against
+    Marshal's bare defaults (verify_commands=()) -- it can never accidentally
+    pick up some OTHER project's commands."""
+    monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
+    exit_code = main(
+        ["gate", "evaluate", "--project", "definitely-not-a-real-marshal-project", "--format", "json"]
+    )
+    assert exit_code == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["data"]["commands"] == []
+    codes = [finding["code"] for finding in payload["findings"]]
+    assert "MRS-GATE-004" in codes
+
+
+def test_gate_evaluate_text_format_is_a_projection_of_the_same_data(tmp_path, capsys, monkeypatch):
+    monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
+    _conventional_policy(
+        tmp_path, monkeypatch, "acme", 'verify_commands = ["true", "false"]\n'
+    )
+    exit_code = main(["gate", "evaluate", "--project", "acme"])
+    assert exit_code == 3
+    out = capsys.readouterr().out
+    assert "scope: policy-seed-only" in out
+    # Quoted: every command string is rendered with `!r` so a newline inside
+    # one cannot forge report structure -- see
+    # test_gate_evaluate_text_format_cannot_be_forged_by_a_command_string.
+    assert "'true': returncode=0" in out
+    assert "'false': returncode=1" in out
+    assert "MRS-GATE-001" in out
+
+
+def test_gate_evaluate_text_format_includes_captured_output(tmp_path, capsys, monkeypatch):
+    """Review finding: `--format text` is the DEFAULT, and the AC's wording is
+    "reported per command WITH captured output" -- but every other text-format
+    test uses `true`/`false`, whose stdout and stderr are both empty, so the
+    two render branches that carry captured output were never executed by any
+    test. A regression dropping them would have shipped green."""
+    monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
+    _conventional_policy(
+        tmp_path,
+        monkeypatch,
+        "acme",
+        """verify_commands = ["sh -c 'echo to-stdout; echo to-stderr >&2; exit 1'"]\n""",
+    )
+    exit_code = main(["gate", "evaluate", "--project", "acme"])
+    assert exit_code == 3
+    out = capsys.readouterr().out
+    assert "to-stdout" in out
+    assert "to-stderr" in out
+
+
+def test_gate_evaluate_json_envelope_validates_against_envelope_schema(
+    tmp_path, capsys, monkeypatch
+):
+    monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
+    _conventional_policy(tmp_path, monkeypatch, "acme", 'verify_commands = ["true"]\n')
+    exit_code = main(["gate", "evaluate", "--project", "acme", "--format", "json"])
+    assert exit_code == 0
+    payload = json.loads(capsys.readouterr().out)
+    envelope_schema = json.loads(
+        (_SCHEMA_PATH.parent / "envelope.v1.json").read_text(encoding="utf-8")
+    )
+    jsonschema.validate(instance=payload, schema=envelope_schema)
+    assert payload["command"] == "gate evaluate"
+
+
+def test_gate_evaluate_deterministic_across_two_runs(tmp_path, capsys, monkeypatch):
+    """NFR-1/FR-21: the same tree, the same configured commands, no model
+    call anywhere in the path -- two consecutive runs produce an identical
+    verdict and exit code."""
+    monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
+    _conventional_policy(
+        tmp_path, monkeypatch, "acme", 'verify_commands = ["true", "false"]\n'
+    )
+    argv = ["gate", "evaluate", "--project", "acme", "--format", "json"]
+
+    exit_code_1 = main(argv)
+    payload_1 = json.loads(capsys.readouterr().out)
+    exit_code_2 = main(argv)
+    payload_2 = json.loads(capsys.readouterr().out)
+
+    assert exit_code_1 == exit_code_2
+    assert payload_1["verdict"] == payload_2["verdict"]
+    assert payload_1["data"] == payload_2["data"]
+
+
+def test_gate_evaluate_writes_no_file_under_the_repo_root_it_evaluates(
+    tmp_path, capsys, monkeypatch
+):
+    """AC: 'no file has been added, removed, or modified by Marshal itself'
+    -- gate evaluate reads a policy file and spawns read-only-from-Marshal's-
+    perspective subprocesses; it performs no filesystem write of its own.
+
+    `_conventional_policy` makes `tmp_path` the resolved repo root AND the
+    spawned commands' own `cwd`, so this snapshot now covers the directory
+    Marshal actually operates in. (Review finding: the earlier version
+    snapshotted a `tmp_path` that held nothing but the policy file the test
+    itself wrote, and was never the execution root at all.) Content, not
+    just the path set, is compared -- an in-place rewrite leaves the tree
+    listing identical."""
+    monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
+    _conventional_policy(
+        tmp_path, monkeypatch, "acme", 'verify_commands = ["true", "false"]\n'
+    )
+
+    def _snapshot():
+        return {
+            str(p.relative_to(tmp_path)): (p.read_bytes() if p.is_file() else None)
+            for p in sorted(tmp_path.rglob("*"))
+        }
+
+    before = _snapshot()
+    exit_code = main(["gate", "evaluate", "--project", "acme"])
+    capsys.readouterr()
+
+    assert exit_code == 3
+    assert _snapshot() == before
+
+
+# --- Story 2.1 follow-up review pass -- regression guards ------------------
+
+
+def test_gate_evaluate_symlinked_policy_out_of_tree_is_refused_and_never_runs(
+    tmp_path, capsys, monkeypatch
+):
+    """A conventional policy path that RESOLVES outside
+    `_bmad-output/projects/` must be refused, not executed.
+
+    Review finding, verified live before the fix: the slug-shape gate proves
+    the SLUG is well-formed, and `conventional_project_policy_path` builds a
+    path -- neither proves where that path LANDS. Planting the conventional
+    file as a symlink to an out-of-tree policy ran that policy's
+    `verify_commands` and reported `verdict: clean`, `status: ok`, exit 0
+    under `"slug": "acme"` -- the same "asserting a project scope the run
+    never had" failure the previous pass removed `--project-policy` for.
+
+    Asserts BOTH halves: the command never ran (the marker is the real
+    evidence), and the refusal is non-green (MRS-POLICY-004 classifies
+    UNEVALUABLE) rather than a silent skip to the exit-0 MRS-GATE-004 path.
+    """
+    monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    marker = outside / "PROOF"
+    (outside / "evil.toml").write_text(
+        f'verify_commands = ["touch {marker}"]\n', encoding="utf-8"
+    )
+    root = tmp_path / "repo"
+    policy_path = _conventional_policy(root, monkeypatch, "acme", "")
+    policy_path.unlink()
+    policy_path.symlink_to(outside / "evil.toml")
+
+    exit_code = main(["gate", "evaluate", "--project", "acme", "--format", "json"])
+    payload = json.loads(capsys.readouterr().out)
+
+    assert not marker.exists()
+    assert exit_code == 1
+    assert payload["verdict"] == "unevaluable"
+    # MRS-POLICY-004 alone: the "no verify commands configured" finding is
+    # correctly suppressed, because the operator DID configure commands and
+    # Marshal refused to read them -- the same ok-status gate that branch
+    # already carries.
+    assert [f["code"] for f in payload["findings"]] == ["MRS-POLICY-004"]
+    assert "outside" in payload["findings"][0]["message"]
+    assert payload["data"]["policy_source"] is None
+
+
+def test_gate_evaluate_text_format_cannot_be_forged_by_a_policy_path(
+    tmp_path, capsys, monkeypatch
+):
+    """Review finding: the pass that quoted `slug` and the command strings
+    left `root` and `policy source` interpolated RAW. Both are paths, POSIX
+    filenames may contain newlines, and `policy_source` is a symlink TARGET
+    -- chosen by whoever can write inside the projects tree, the same actor
+    the containment check already assumes. A policy whose filename embedded
+    a `findings:` block printed one on a run whose envelope carried none."""
+    monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
+    forged = "real.toml\nfindings:\n  MRS-GATE-001 [error] FORGED-BY-PATH"
+    policy_path = _conventional_policy(tmp_path, monkeypatch, "acme", "")
+    target = policy_path.parent / forged
+    target.write_text('verify_commands = ["true"]\n', encoding="utf-8")
+    policy_path.unlink()
+    policy_path.symlink_to(target)
+
+    exit_code = main(["gate", "evaluate", "--project", "acme"])
+    out = capsys.readouterr().out
+
+    assert exit_code == 0
+    # The envelope carried no findings, so no LINE of the report may be a
+    # findings block or a finding -- the newline renders as an escape inside
+    # the quoted path, not as report structure. (A substring check would not
+    # discriminate: "findings:" legitimately appears inside the escaped
+    # path, which is exactly the point.)
+    lines = out.splitlines()
+    assert "findings:" not in lines
+    assert not any(line.startswith("  MRS-GATE-001") for line in lines)
+    assert sum("FORGED-BY-PATH" in line for line in lines) == 1
+    assert "\\n" in out
+
+
+def test_gate_evaluate_symlinked_policy_inside_the_project_is_read_and_recorded(
+    tmp_path, capsys, monkeypatch
+):
+    """The containment check refuses only what ESCAPES the project. A
+    symlink pointing elsewhere inside the project's OWN directory is a
+    legitimate layout (this repo symlinks artifact directories the same
+    way), so it must still compose -- and `data["policy_source"]` records
+    the RESOLVED target, not the symlink, so the file that really supplied
+    the commands is auditable."""
+    monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
+    policy_path = _conventional_policy(tmp_path, monkeypatch, "acme", "")
+    shared = tmp_path / "_bmad-output" / "projects" / "acme" / "shared.toml"
+    shared.write_text('verify_commands = ["true"]\n', encoding="utf-8")
+    policy_path.unlink()
+    policy_path.symlink_to(shared)
+
+    exit_code = main(["gate", "evaluate", "--project", "acme", "--format", "json"])
+    payload = json.loads(capsys.readouterr().out)
+
+    assert exit_code == 0
+    assert payload["verdict"] == "clean"
+    assert payload["data"]["policy_source"] == str(shared.resolve())
+    assert [entry["command"] for entry in payload["data"]["commands"]] == ["true"]
+
+
+def test_gate_evaluate_symlink_to_another_project_is_refused_and_never_runs(
+    tmp_path, capsys, monkeypatch
+):
+    """FR-20's "another project's gates never run", through the filesystem.
+
+    Review finding, verified live: fencing containment at the shared
+    `projects/` ROOT let one project's conventional path symlink to
+    ANOTHER's. `--project acme` ran victim's `verify_commands` -- the marker
+    file was created -- and reported `verdict: clean`, `status: ok`, exit 0
+    under `"slug": "acme"`, which is exactly the "asserting a project scope
+    the run never had" failure the `--project-policy` removal and the
+    out-of-tree containment check were each meant to make structural. The
+    fence is the SLUG's own directory now, so this is refused.
+    """
+    monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
+    marker = tmp_path / "VICTIM_RAN"
+    victim_policy = _conventional_policy(
+        tmp_path, monkeypatch, "victim", f'verify_commands = ["touch {marker}"]\n'
+    )
+    policy_path = _conventional_policy(tmp_path, monkeypatch, "acme", "")
+    policy_path.unlink()
+    policy_path.symlink_to(victim_policy)
+
+    exit_code = main(["gate", "evaluate", "--project", "acme", "--format", "json"])
+    payload = json.loads(capsys.readouterr().out)
+
+    assert not marker.exists()
+    assert exit_code == 1
+    assert payload["verdict"] == "unevaluable"
+    assert [f["code"] for f in payload["findings"]] == ["MRS-POLICY-004"]
+    assert payload["data"]["policy_source"] is None
+
+
+def test_gate_evaluate_relocated_projects_tree_is_refused_and_never_runs(
+    tmp_path, capsys, monkeypatch
+):
+    """The containment fence must not be relocatable along with the thing it
+    fences.
+
+    Review finding, verified live: `_resolve_policy_source` resolved BOTH
+    the candidate and the `projects/` root, so symlinking
+    `_bmad-output/projects` itself out of the tree made the fence move too
+    -- containment held trivially and an out-of-repo policy's command ran,
+    creating its marker, `verdict: clean`, exit 0. The project directory is
+    anchored against `repo_root()` itself now.
+    """
+    monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
+    from pyforge.marshal.cli import config as config_module
+    from pyforge.marshal.cli import gate as gate_module
+
+    root = tmp_path / "repo"
+    (root / "_bmad-output").mkdir(parents=True)
+    monkeypatch.setattr(config_module, "repo_root", lambda: root)
+    monkeypatch.setattr(gate_module, "repo_root", lambda: root)
+
+    outside = tmp_path / "outside"
+    (outside / "evil" / "planning-artifacts").mkdir(parents=True)
+    marker = tmp_path / "OUTSIDE_RAN"
+    (outside / "evil" / "planning-artifacts" / "marshal-policy.toml").write_text(
+        f'verify_commands = ["touch {marker}"]\n', encoding="utf-8"
+    )
+    (root / "_bmad-output" / "projects").symlink_to(outside)
+
+    exit_code = main(["gate", "evaluate", "--project", "evil", "--format", "json"])
+    payload = json.loads(capsys.readouterr().out)
+
+    assert not marker.exists()
+    assert exit_code == 1
+    assert payload["verdict"] == "unevaluable"
+    assert [f["code"] for f in payload["findings"]] == ["MRS-POLICY-004"]
+    assert payload["data"]["policy_source"] is None
+
+
+@pytest.mark.parametrize("kind", ["dangling", "loop"])
+def test_gate_evaluate_broken_symlink_policy_is_not_a_green_gate(
+    kind, tmp_path, capsys, monkeypatch
+):
+    """A broken symlink is a CONFIGURED policy that cannot be followed, not
+    an absent one.
+
+    Review finding, verified live for both shapes: `is_file()`/`is_dir()`
+    are False for a dangling link and for a symlink loop, so both composed
+    bare defaults and reported MRS-GATE-004 "no verify commands configured"
+    -> warn -> exit 0, having run nothing -- telling the operator to add a
+    command they had already added. This repo's own CLAUDE.md documents the
+    `_bmad-output` symlinks as routinely desyncing, so it is a live failure
+    mode whose outcome was the green half of the lattice.
+    """
+    monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
+    policy_path = _conventional_policy(tmp_path, monkeypatch, "acme", "")
+    policy_path.unlink()
+    if kind == "dangling":
+        policy_path.symlink_to(tmp_path / "gone.toml")
+    else:
+        policy_path.symlink_to(policy_path)
+
+    exit_code = main(["gate", "evaluate", "--project", "acme", "--format", "json"])
+    payload = json.loads(capsys.readouterr().out)
+
+    assert exit_code == 1
+    assert payload["verdict"] == "unevaluable"
+    codes = [f["code"] for f in payload["findings"]]
+    assert codes == ["MRS-POLICY-004"]
+    assert "MRS-GATE-004" not in codes
+
+
+def test_gate_evaluate_shell_syntax_never_half_runs_green(tmp_path, capsys, monkeypatch):
+    """`true && false` must not report `clean`.
+
+    Review finding, verified live for `&&`, `|` and `>`: `PosixProcess` never
+    passes `shell=True`, so `shlex.split` handed the operators to `true` as
+    ordinary arguments; `true` ignored them, exited 0, and the envelope said
+    `verdict: clean`, exit 0, with ZERO findings while the `false` half never
+    ran. Preflight's own resolvability check cannot catch it either -- it
+    inspects `tokens[0]`, and `true` resolves.
+    """
+    monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
+    _conventional_policy(
+        tmp_path, monkeypatch, "acme", 'verify_commands = ["true && false"]\n'
+    )
+
+    exit_code = main(["gate", "evaluate", "--project", "acme", "--format", "json"])
+    payload = json.loads(capsys.readouterr().out)
+
+    assert exit_code == 1
+    assert payload["verdict"] == "unevaluable"
+    assert [f["code"] for f in payload["findings"]] == ["MRS-GATE-003"]
+    assert "shell syntax" in payload["findings"][0]["message"]
+    assert payload["data"]["commands"][0]["resolvable"] is False
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        # Spaced forms -- the only ones the original whole-token denylist
+        # could see.
+        "echo hi | grep nope",
+        "true > /dev/null",
+        "a & b",
+        "true >> log",
+        "true && false",
+        "a || b",
+        # NO-SPACE forms (review finding, each verified live reporting
+        # `clean`, exit 0, ZERO findings before the fix). This is the more
+        # common way an operator writes a redirect, and every pre-existing
+        # test of this guard used a spaced form, so the suite could not see
+        # the hole.
+        "true >out.txt",
+        "echo hi|grep nope",
+        "true 2>/dev/null",
+        "true &> /dev/null",
+        "true 1> /dev/null",
+        "cmd <in.txt",
+        "a 2>&1",
+        # `;` was deliberately excluded by the previous guard (to spare
+        # `find -exec cmd \\;`), which made the classic command separator a
+        # silent green. Escaping is tracked now, so it is included.
+        "true ; false",
+        "true;false",
+    ],
+)
+def test_gate_evaluate_every_shell_operator_form_fails_closed(
+    command, tmp_path, capsys, monkeypatch
+):
+    """Each detected operator form lands `unevaluable`, never `clean`."""
+    monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
+    _conventional_policy(
+        tmp_path, monkeypatch, "acme", f"verify_commands = [{command!r}]\n"
+    )
+    exit_code = main(["gate", "evaluate", "--project", "acme", "--format", "json"])
+    payload = json.loads(capsys.readouterr().out)
+    assert exit_code == 1
+    assert payload["verdict"] == "unevaluable"
+    assert [f["code"] for f in payload["findings"]] == ["MRS-GATE-003"]
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        # A metacharacter QUOTED as data, in each spelling operators
+        # actually use. Review finding: `shlex.split` strips quotes, so the
+        # old whole-token denylist saw a lone quoted operator as
+        # byte-identical to a bare one and failed these CLOSED -- a valid
+        # verify command permanently `unevaluable` with no escape hatch.
+        "echo '|'",
+        "echo \"|\"",
+        "echo '>'",
+        "echo '&&'",
+        "echo ';'",
+        # BACKSLASH-escaped, the form that makes `;` safe to include:
+        # `find . -exec cmd \\;` passes a bare `;` as a legitimate argument.
+        "echo \\;",
+        "echo \\|",
+        # And an ordinary command with no metacharacter at all -- the shape
+        # of this repo's own real policy-declared verify commands.
+        "echo ok",
+    ],
+)
+def test_gate_evaluate_quoted_or_escaped_metacharacters_still_run(
+    command, tmp_path, capsys, monkeypatch
+):
+    """The guard must fire on SYNTAX, never on DATA -- otherwise it fails
+    closed on legitimate commands and trains the gate away."""
+    monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
+    # `json.dumps`, not `{command!r}`: Python's repr emits a SINGLE-quoted
+    # string, which TOML reads as a LITERAL string where `\\;` stays two
+    # characters -- so a backslash-escaped case would reach the guard
+    # double-escaped and prove the opposite of what it claims. A TOML basic
+    # string uses JSON's own escape rules.
+    _conventional_policy(
+        tmp_path, monkeypatch, "acme", f"verify_commands = [{json.dumps(command)}]\n"
+    )
+    exit_code = main(["gate", "evaluate", "--project", "acme", "--format", "json"])
+    payload = json.loads(capsys.readouterr().out)
+    assert exit_code == 0
+    assert payload["verdict"] == "clean"
+    assert payload["data"]["commands"][0]["returncode"] == 0
+
+
+def test_gate_evaluate_quoted_shell_metacharacters_still_run(tmp_path, capsys, monkeypatch):
+    """The operator check matches WHOLE tokens only, so a metacharacter
+    inside a quoted argument (where it is inert data, not shell syntax) must
+    still execute -- otherwise the fix would fail-closed on legitimate
+    commands and train the gate away."""
+    monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
+    _conventional_policy(
+        tmp_path, monkeypatch, "acme", 'verify_commands = ["echo \'a && b\'"]\n'
+    )
+
+    exit_code = main(["gate", "evaluate", "--project", "acme", "--format", "json"])
+    payload = json.loads(capsys.readouterr().out)
+
+    assert exit_code == 0
+    assert payload["verdict"] == "clean"
+    assert payload["data"]["commands"][0]["stdout"] == "a && b\n"
+
+
+def test_gate_evaluate_unstattable_policy_path_never_escapes_main(
+    tmp_path, capsys, monkeypatch
+):
+    """`Path.is_file()` PROPAGATES PermissionError on this package's 3.12
+    floor (3.13+ suppresses all OSError), so an unsearchable
+    planning-artifacts/ crashed straight out through `main()`'s
+    SystemExit/KeyboardInterrupt relay: a traceback, no envelope, and an
+    exit code unrelated to any verdict. `cli/init.py::run_preflight` already
+    carried this guard; `cli/gate.py` did not.
+
+    The 3.12 semantics are simulated (the suite may run on 3.13+, where the
+    real filesystem condition can no longer produce the exception)."""
+    monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
+    _conventional_policy(tmp_path, monkeypatch, "acme", 'verify_commands = ["false"]\n')
+    real_is_file = Path.is_file
+
+    def _raising_is_file(self):
+        if self.name == "marshal-policy.toml":
+            raise PermissionError(13, "Permission denied")
+        return real_is_file(self)
+
+    with patch.object(Path, "is_file", _raising_is_file):
+        exit_code = main(["gate", "evaluate", "--project", "acme", "--format", "json"])
+    payload = json.loads(capsys.readouterr().out)
+
+    # No traceback, a real envelope, and a verdict-derived exit code. The
+    # guard treats an unstattable path as PRESENT, so the read is attempted:
+    # here it succeeds (only `is_file` was made to raise), the policy
+    # composes, and `false` really runs -- exit 3, not a crash and not the
+    # silent exit-0 fallback. A read that genuinely fails lands
+    # MRS-POLICY-004 instead (covered by the read-failure test below).
+    assert exit_code == 3
+    assert payload["verdict"] == "gate-failed"
+    assert payload["data"]["commands"][0]["command"] == "false"
+
+
+def test_gate_evaluate_directory_on_the_policy_path_is_not_a_green_gate(
+    tmp_path, capsys, monkeypatch
+):
+    """A directory squatting on `marshal-policy.toml` used to make
+    `is_file()` False, compose bare defaults, and exit 0 on MRS-GATE-004
+    having run nothing. It must report the unreadable policy instead."""
+    monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
+    policy_path = _conventional_policy(tmp_path, monkeypatch, "acme", "")
+    policy_path.unlink()
+    policy_path.mkdir()
+
+    exit_code = main(["gate", "evaluate", "--project", "acme", "--format", "json"])
+    payload = json.loads(capsys.readouterr().out)
+
+    assert exit_code == 1
+    assert payload["findings"][0]["code"] == "MRS-POLICY-004"
+
+
+def test_policy_read_failure_never_names_a_flag_gate_evaluate_does_not_have(
+    tmp_path, capsys, monkeypatch
+):
+    """`MRS-POLICY-004`'s message said "cannot read --project-policy ..." for
+    a CONVENTIONAL-path read -- pointing the operator at a flag `marshal gate
+    evaluate` rejects with a usage error (and which this command's own
+    docstring spends eighteen lines explaining must never come back)."""
+    monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
+    _conventional_policy(tmp_path, monkeypatch, "acme", "verify_commands = [oops\n")
+
+    exit_code = main(["gate", "evaluate", "--project", "acme", "--format", "json"])
+    payload = json.loads(capsys.readouterr().out)
+
+    assert exit_code == 1
+    message = payload["findings"][0]["message"]
+    assert payload["findings"][0]["code"] == "MRS-POLICY-004"
+    assert "--project-policy" not in message
+    assert message.startswith("cannot read project policy ")
+
+
+def test_gate_evaluate_text_format_cannot_be_forged_by_a_command_string(
+    tmp_path, capsys, monkeypatch
+):
+    """A newline inside a verify command forged whole lines of the default
+    text report -- verified live, a command string ending
+    `\\nfindings:\\n  MRS-GATE-001 [error] FORGED` printed a `findings:`
+    block no finding produced. Quoting renders it as `\\n`, inert."""
+    monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
+    _conventional_policy(
+        tmp_path,
+        monkeypatch,
+        "acme",
+        'verify_commands = ["true\\nfindings:\\n  MRS-GATE-001 [error] FORGED"]\n',
+    )
+
+    exit_code = main(["gate", "evaluate", "--project", "acme"])
+    out = capsys.readouterr().out
+
+    # The command itself is legitimate argv (`true` with four ignored
+    # arguments), so it runs and passes -- exit 0 with NO findings. That is
+    # precisely what made the forgery dangerous: the report printed a
+    # `findings:` block while the envelope carried none.
+    assert exit_code == 0
+    assert "\nfindings:\n  MRS-GATE-001 [error] FORGED" not in out
+    assert "\\nfindings:" in out
+
+
+def test_gate_evaluate_text_format_cannot_be_forged_by_a_slug(tmp_path, capsys, monkeypatch):
+    """The header line interpolated `data["slug"]` raw, so a newline in
+    `--project` forged report structure even though a malformed slug never
+    reaches a policy read at all."""
+    monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
+    from pyforge.marshal.cli import config as config_module
+    from pyforge.marshal.cli import gate as gate_module
+
+    monkeypatch.setattr(config_module, "repo_root", lambda: tmp_path)
+    monkeypatch.setattr(gate_module, "repo_root", lambda: tmp_path)
+
+    exit_code = main(
+        ["gate", "evaluate", "--project", "bad\nfindings:\n  MRS-GATE-001 [error] FORGED"]
+    )
+    out = capsys.readouterr().out
+
+    assert exit_code == 1
+    assert "\nfindings:\n  MRS-GATE-001 [error] FORGED" not in out
+
+
+def test_gate_evaluate_envelope_records_the_tree_and_policy_it_evaluated(
+    tmp_path, capsys, monkeypatch
+):
+    """An envelope asserting `clean` must say WHERE and FROM WHAT. `slug`
+    alone does not: `repo_root()` is `__file__`-derived (which tree gets
+    gated depends on which copy of the package is importable), and the
+    conventional path can be a symlink, so slug + convention do not
+    determine the file that was read."""
+    monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
+    policy_path = _conventional_policy(
+        tmp_path, monkeypatch, "acme", 'verify_commands = ["true"]\n'
+    )
+
+    exit_code = main(["gate", "evaluate", "--project", "acme", "--format", "json"])
+    payload = json.loads(capsys.readouterr().out)
+
+    assert exit_code == 0
+    assert payload["data"]["root"] == str(tmp_path)
+    assert payload["data"]["policy_source"] == str(policy_path.resolve())
