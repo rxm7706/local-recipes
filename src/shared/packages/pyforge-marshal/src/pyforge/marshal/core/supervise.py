@@ -13,6 +13,14 @@ needs none of ``evaluate_idle``'s sequence-scanning machinery: a ceiling
 check is a single comparison against the LATEST observed quantity, never a
 history of samples.
 
+Story 3.7 (escalation, deferral, and resume, architecture spine AD-20/AD-45)
+adds a THIRD pure decision, ``EscalationStatus``/``evaluate_escalation`` --
+a single-observation classification (like ``evaluate_ceiling``, not a
+sequence scan like ``evaluate_idle``) over bmad-loop's own run-level pause
+fields, used by ``supervisor/__main__.py`` at loop-end to detect an
+escalation exactly once, and by ``cli/spin.py``'s ``marshal factory resume``
+as its live refusal gate.
+
 **Why this is pure (AD-20).** The decision itself must be a function over a
 ``Sequence[Sample]`` alone: no port, no clock call, no I/O -- every value it
 needs (the moment each sample was taken, what was observed) is a fact the
@@ -398,3 +406,66 @@ def evaluate_ceiling(observed: float, limit: float) -> CeilingStatus:
     if observed >= _APPROACH_RATIO * limit:
         return CeilingStatus.APPROACHING
     return CeilingStatus.NONE
+
+
+# =============================================================================
+# Story 3.7: escalation detection (AD-20/AD-45, FR-15/16/17) -- a THIRD and
+# unrelated pure decision this module hosts, for the identical "no port, no
+# clock call, no I/O" reason `evaluate_idle`/`evaluate_ceiling` above are
+# pure: the supervisor's own tick loop gathers the three inputs as plain
+# values, already read off a `HarnessPort.run_status_snapshot` result, and
+# this function makes no decision from anything but them.
+# =============================================================================
+
+
+class EscalationStatus(StrEnum):
+    """Escalation's classification of ``RunState``'s own pause fields (Story
+    3.7): ``NONE`` (not this kind of pause at all), ``UNRESOLVED`` (paused
+    for escalation, and the story's task is still ``Phase.ESCALATED``), or
+    ``RESOLVED`` (paused for escalation, but the story's task has already
+    moved off ``ESCALATED`` -- bmad-loop's own ``rearm_escalation`` flips the
+    task's phase back to ``pending`` WITHOUT clearing the pause itself; the
+    caller resumes the run separately -- so this state is reachable only
+    between a human resolving the escalation and the resume that actually
+    clears it). This ``StrEnum`` itself carries no ordering, mirroring
+    ``LadderRung``/``CeilingStatus``'s own convention -- no caller needs
+    one."""
+
+    NONE = "none"
+    UNRESOLVED = "unresolved"
+    RESOLVED = "resolved"
+
+
+def evaluate_escalation(
+    paused_stage: str | None, paused_story_key: str | None, task_phase: str | None
+) -> EscalationStatus:
+    """Pure: classifies bmad-loop's own run-level pause fields
+    (``RunState.paused_stage``/``.paused_story_key``, plus the paused
+    story's own task ``phase``) into ``EscalationStatus``. No port, no clock
+    call, no I/O -- every value is a fact the CALLER already gathered (via
+    ``HarnessPort.run_status_snapshot``), mirroring ``evaluate_idle``/
+    ``evaluate_ceiling``'s own "the decision core receives values, never
+    reads them itself" convention (AD-20).
+
+    ``UNRESOLVED`` iff ``paused_stage == "escalation" and paused_story_key is
+    not None and task_phase == "escalated"`` -- the story's own intent-
+    contract wording, verbatim. Otherwise: ``NONE`` when ``paused_stage`` is
+    not ``"escalation"`` at all (not this kind of pause -- includes ``None``,
+    every other pause stage bmad-loop names, and a malformed/unexpected
+    value); ``RESOLVED`` when ``paused_stage == "escalation"`` but the
+    ``UNRESOLVED`` condition does not hold (``paused_story_key`` missing, or
+    the task's phase has already moved off ``"escalated"``) -- the only
+    reachable shape is the human-resolved-but-not-yet-resumed window this
+    class's own docstring describes.
+
+    No type guard beyond ordinary equality: unlike ``evaluate_idle``'s
+    ``threshold_s``/``evaluate_ceiling``'s ``limit``, none of these three
+    inputs has an invalid-input class analogous to non-finite/non-numeric --
+    every ``str | None`` value compares safely, and an unexpected string
+    simply fails the equality checks it needs to (correctly classifying as
+    ``NONE``/``RESOLVED``, never raising)."""
+    if paused_stage != "escalation":
+        return EscalationStatus.NONE
+    if paused_story_key is not None and task_phase == "escalated":
+        return EscalationStatus.UNRESOLVED
+    return EscalationStatus.RESOLVED

@@ -182,7 +182,10 @@ _TOKEN_SHAPE_PATTERNS: tuple[re.Pattern[str], ...] = (
 # itself never accepts or forwards an unredacted payload to a durable/
 # third-party sink, so it is an observation-only port, not an egress one,
 # the same reasoning `ProcessPort`'s own docstring gives for the AD-34
-# process-spawn carve-out).
+# process-spawn carve-out). Story 3.7 adds `NotifyPort` (a durable file
+# marker plus a desktop notification -- both a durable and a third-party
+# sink, AD-34's own criterion): classified `True`, joining `RecordPort` as
+# the second real egress port.
 EGRESS_PORTS: Mapping[str, bool] = {
     "ProcessPort": False,
     "FsPort": False,
@@ -191,6 +194,7 @@ EGRESS_PORTS: Mapping[str, bool] = {
     "RecordPort": True,
     "ClockPort": False,
     "SessionObserverPort": False,
+    "NotifyPort": True,
 }
 
 

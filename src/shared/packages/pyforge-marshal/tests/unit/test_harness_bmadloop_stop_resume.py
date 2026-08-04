@@ -140,8 +140,13 @@ def test_resume_appends_to_the_log_and_never_truncates_it(harness, tmp_path, mon
     # output, but with no delimiter the resumed engine's output is
     # byte-concatenated onto it and the operator cannot tell where the record
     # they came for ends. The marker is written BEFORE the child is spawned,
-    # so it always separates the two streams.
-    assert "--- marshal stop-and-retry: resuming acme-run ---" in contents
+    # so it always separates the two streams. Caller-neutral wording
+    # (follow-up review finding): `cli/spin.py`'s own `marshal factory
+    # resume` is this method's second caller and is NOT a stop-and-retry, so
+    # the seam must not attribute an operator-driven resume to the
+    # supervisor's automatic idle recovery.
+    assert "--- marshal: resuming acme-run ---" in contents
+    assert "stop-and-retry" not in contents
 
 
 def test_resume_forces_pythonunbuffered_on_the_child_env(harness, tmp_path, monkeypatch):

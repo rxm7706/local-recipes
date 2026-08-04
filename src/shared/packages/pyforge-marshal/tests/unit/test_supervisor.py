@@ -33,7 +33,7 @@ from pyforge.marshal.core.journal import (
     prepare_for_write,
 )
 from pyforge.marshal.core.supervise import CeilingStatus
-from pyforge.marshal.ports.harness import UsageSnapshot
+from pyforge.marshal.ports.harness import DeferredStory, RunStatusSnapshot, UsageSnapshot
 from pyforge.marshal.supervisor import __main__ as supervisor_main
 from pyforge.marshal.supervisor.__main__ import main, run_supervisor
 
@@ -108,6 +108,20 @@ class FakeProcess:
         if pid in self.dead_pids:
             return False
         return self.calls <= self.alive_for
+
+
+class _ExitTrackingProcess(FakeProcess):
+    """``FakeProcess`` that remembers its own LAST ``is_alive`` answer, so a
+    test can make some other fake's behaviour depend on "has the watched pid
+    exited yet" without consuming a call from the aliveness budget itself."""
+
+    def __init__(self, *, alive_for: int) -> None:
+        super().__init__(alive_for=alive_for)
+        self.last_alive = True
+
+    def is_alive(self, pid: int) -> bool:
+        self.last_alive = super().is_alive(pid)
+        return self.last_alive
 
 
 class FakeClock:
@@ -271,6 +285,15 @@ class FakeHarness:
         # lets a test model a story TRANSITION across ticks, which a single
         # constant `usage_snapshot_result` cannot.
         self.usage_snapshot_sequence: list[UsageSnapshot | None] | None = None
+        # Story 3.7's own read seam -- defaults to `None` (inert), matching
+        # `usage_snapshot_result`'s own "every pre-existing test sees no
+        # deferral/escalation activity" convention.
+        self.run_status_snapshot_result: RunStatusSnapshot | None = None
+        self.run_status_snapshot_calls: list[tuple[Path, str]] = []
+        # A per-call sequence, mirroring `usage_snapshot_sequence`'s own
+        # convention -- lets a test model a deferred-story set growing
+        # across ticks, or an escalation appearing only at loop-end.
+        self.run_status_snapshot_sequence: list[RunStatusSnapshot | None] | None = None
 
     def stop(self, project: Path, run_id: str) -> bool:
         self.stop_calls.append((project, run_id))
@@ -290,6 +313,40 @@ class FakeHarness:
             index = len(self.usage_snapshot_calls) - 1
             return self.usage_snapshot_sequence[min(index, len(self.usage_snapshot_sequence) - 1)]
         return self.usage_snapshot_result
+
+    def run_status_snapshot(self, project: Path, run_id: str) -> RunStatusSnapshot | None:
+        self.run_status_snapshot_calls.append((project, run_id))
+        if self.run_status_snapshot_sequence is not None:
+            index = len(self.run_status_snapshot_calls) - 1
+            return self.run_status_snapshot_sequence[
+                min(index, len(self.run_status_snapshot_sequence) - 1)
+            ]
+        return self.run_status_snapshot_result
+
+
+class FakeNotify:
+    """Fakes ``ports.NotifyPort`` (Story 3.7) -- both methods succeed by
+    default (``notify_file`` is a no-op, ``notify_desktop`` returns
+    ``True``); a test injects ``fail_notify_file``/``fail_notify_desktop``
+    to exercise the mandatory-vs-best-effort split."""
+
+    def __init__(self) -> None:
+        self.notify_file_calls: list[tuple[Path, object]] = []
+        self.notify_desktop_calls: list[object] = []
+        self.fail_notify_file: Exception | None = None
+        self.fail_notify_desktop: Exception | None = None
+        self.notify_desktop_result: bool = True
+
+    def notify_file(self, path: Path, payload: object) -> None:
+        self.notify_file_calls.append((path, payload))
+        if self.fail_notify_file:
+            raise self.fail_notify_file
+
+    def notify_desktop(self, payload: object) -> bool:
+        self.notify_desktop_calls.append(payload)
+        if self.fail_notify_desktop:
+            raise self.fail_notify_desktop
+        return self.notify_desktop_result
 
 
 def _no_sleep(seconds: float) -> None:
@@ -341,6 +398,28 @@ def _launch_outcome_line(
         ts="2026-08-03T05:45:00.000Z",
         run_id=run_id,
         kind="run-launch",
+        phase=Phase.OUTCOME,
+        intent_id=JournalEntryId("spin-1", 0),
+        payload={"pid": watched_pid, "harness_run_id": harness_run_id},
+    )
+    return prepare_for_write(entry).line
+
+
+def _resume_outcome_line(
+    run_id: str, *, watched_pid: int = 4242, harness_run_id: str | None = _HARNESS_RUN_ID
+) -> str:
+    """The ``cli/spin.py::run_resume`` counterpart to ``_launch_outcome_line``
+    above -- a ``phase: outcome, kind: "run-resume"`` journal line, same
+    ``{pid, harness_run_id}`` payload shape. Review finding (Story 3.7 pass
+    1): a supervisor spawned by ``run_resume`` journals ONLY this kind, never
+    ``"run-launch"`` -- both ``started_by_marshal`` and
+    ``_resolve_harness_run_id`` must recognize it or a resumed run's own
+    supervisor is permanently inert."""
+    entry = build_entry(
+        id=JournalEntryId("spin-1", 1),
+        ts="2026-08-03T05:45:00.000Z",
+        run_id=run_id,
+        kind="run-resume",
         phase=Phase.OUTCOME,
         intent_id=JournalEntryId("spin-1", 0),
         payload={"pid": watched_pid, "harness_run_id": harness_run_id},
@@ -767,6 +846,34 @@ def test_inert_when_the_outcome_entry_belongs_to_a_different_run_id():
 
     assert rc == 0
     assert fs.appended_lines == []
+
+
+def test_a_run_started_via_resume_is_recognized_and_supervised():
+    """Review finding (Story 3.7 pass 1): before this fix, a supervisor
+    spawned by ``marshal factory resume`` found no ``"run-launch"`` entry
+    for its own ``run_id`` (its journal carries only ``"run-resume"``),
+    concluded "not a run Marshal started", and exited inert BEFORE ever
+    entering the tick loop -- disabling the idle ladder, budget ceilings,
+    and this same story's own escalation/deferral detection for every
+    resumed run, with the CLI still reporting a live ``supervisor_pid`` as
+    though one had attached. A real supervisor journals `supervisor-attach`
+    (and, once the watched process exits, `supervisor-detach`) -- the exact
+    behavior a `"run-launch"`-kind journal already produces in
+    ``test_normal_attach_journals_attach_then_heartbeats_then_detach``
+    above."""
+    fs = FakeFs(journal_text=_resume_outcome_line("acme-run-1") + "\n")
+    process = FakeProcess(alive_for=1)
+
+    rc = run_supervisor(
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN, _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs, process=process, clock=FakeClock(), observer=FakeObserver(),
+        sleep=_no_sleep,
+    )
+
+    assert rc == 0
+    kinds = [json.loads(line)["kind"] for _, line, _ in fs.appended_lines]
+    assert "supervisor-attach" in kinds
+    assert "supervisor-detach" in kinds
 
 
 def test_inert_when_the_journal_read_itself_fails():
@@ -2744,6 +2851,672 @@ def test_a_budget_breach_with_no_harness_run_id_never_re_fires_on_later_ticks():
     stops = [e for e in entries if e["kind"] == "budget-stop"]
     assert len(stops) == 2, "exactly one intent + one outcome, never one pair per tick"
     assert [e["phase"] for e in stops] == ["intent", "outcome"]
+
+
+# --- Story 3.7: deferral capture (AD-45, FR-16) ----------------------------------
+
+
+def _snapshot(
+    *,
+    paused_stage: str | None = None,
+    paused_story_key: str | None = None,
+    paused_reason: str | None = None,
+    escalated_spec_file: str | None = None,
+    escalated_task_phase: str | None = None,
+    deferred: tuple[DeferredStory, ...] = (),
+) -> RunStatusSnapshot:
+    return RunStatusSnapshot(
+        paused_stage=paused_stage,
+        paused_story_key=paused_story_key,
+        paused_reason=paused_reason,
+        escalated_spec_file=escalated_spec_file,
+        escalated_task_phase=escalated_task_phase,
+        deferred=deferred,
+    )
+
+
+def _deferred_story(
+    story_key: str,
+    *,
+    reason: str | None = "verify exhausted its retry budget",
+    attempt: int = 2,
+    branch: str = "loop/3.6",
+    worktree_path: str = "/home/acme-loop/.worktrees/3.6",
+    spec_file: str | None = "spec-3-6.md",
+) -> DeferredStory:
+    return DeferredStory(
+        story_key=story_key,
+        reason=reason,
+        attempt=attempt,
+        branch=branch,
+        worktree_path=worktree_path,
+        spec_file=spec_file,
+    )
+
+
+def test_a_deferred_story_is_journaled_once_even_though_observed_every_tick():
+    """I/O matrix: "one story-deferred observation on the FIRST tick it's
+    observed, never repeated" -- a constant snapshot is read fresh every
+    tick, but the same story key must never re-journal."""
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+    clock = AdvancingClock()
+    observer = FakeObserver(pane="idle")
+    harness = FakeHarness()
+    harness.run_status_snapshot_result = _snapshot(
+        deferred=(_deferred_story("3-6-budget-ceilings-and-the-heaviest-story-advisory"),)
+    )
+
+    rc = run_supervisor(
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs, process=FakeProcess(alive_for=6), clock=clock, observer=observer,
+        harness=harness, sleep=clock.sleep,
+    )
+
+    assert rc == 0
+    entries = [json.loads(line) for _, line, _ in fs.appended_lines]
+    deferred_entries = [e for e in entries if e["kind"] == "story-deferred"]
+    assert len(deferred_entries) == 1
+    entry = deferred_entries[0]
+    assert entry["phase"] == "observation"
+    assert entry["payload"] == {
+        "story_key": "3.6",
+        "reason": "verify exhausted its retry budget",
+        "attempt": 2,
+        "branch": "loop/3.6",
+        "worktree_path": "/home/acme-loop/.worktrees/3.6",
+        "spec_file": "spec-3-6.md",
+    }
+    # Read every tick the process stayed alive, not just once.
+    assert len(harness.run_status_snapshot_calls) > 1
+
+
+def test_two_deferred_stories_each_journal_their_own_observation():
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+    clock = AdvancingClock()
+    observer = FakeObserver(pane="idle")
+    harness = FakeHarness()
+    harness.run_status_snapshot_result = _snapshot(
+        deferred=(_deferred_story("3.5", reason="a plugin veto"), _deferred_story("3.6"))
+    )
+
+    rc = run_supervisor(
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs, process=FakeProcess(alive_for=4), clock=clock, observer=observer,
+        harness=harness, sleep=clock.sleep,
+    )
+
+    assert rc == 0
+    entries = [json.loads(line) for _, line, _ in fs.appended_lines]
+    keys = {e["payload"]["story_key"] for e in entries if e["kind"] == "story-deferred"}
+    assert keys == {"3.5", "3.6"}
+
+
+def test_a_story_deferred_mid_run_is_journaled_starting_the_tick_it_appears():
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+    clock = AdvancingClock()
+    observer = FakeObserver(pane="idle")
+    harness = FakeHarness()
+    # Clamps to the last element for every call past index 1 -- covers both
+    # further per-tick deferral checks and the final loop-end escalation
+    # check (whose own `paused_stage` here is always None, so it never
+    # interferes with this test's own assertion).
+    harness.run_status_snapshot_sequence = [
+        _snapshot(deferred=()),
+        _snapshot(deferred=(_deferred_story("3.6"),)),
+    ]
+
+    rc = run_supervisor(
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs, process=FakeProcess(alive_for=6), clock=clock, observer=observer,
+        harness=harness, sleep=clock.sleep,
+    )
+
+    assert rc == 0
+    entries = [json.loads(line) for _, line, _ in fs.appended_lines]
+    deferred_entries = [e for e in entries if e["kind"] == "story-deferred"]
+    assert len(deferred_entries) == 1
+
+
+def test_no_deferred_stories_journals_nothing():
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+    clock = AdvancingClock()
+    observer = FakeObserver(pane="idle")
+    harness = FakeHarness()
+
+    rc = run_supervisor(
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs, process=FakeProcess(alive_for=3), clock=clock, observer=observer,
+        harness=harness, sleep=clock.sleep,
+    )
+
+    assert rc == 0
+    entries = [json.loads(line) for _, line, _ in fs.appended_lines]
+    assert not [e for e in entries if e["kind"] == "story-deferred"]
+
+
+def test_deferral_capture_is_skipped_when_harness_run_id_never_resolved():
+    """Deferral capture needs `state.json`'s own path, which needs
+    `harness_run_id` -- gated identically to the idle ladder's own
+    `MRS-SUPV-003` scenario."""
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1", harness_run_id=None) + "\n")
+    clock = AdvancingClock()
+    observer = FakeObserver(pane="idle")
+    harness = FakeHarness()
+    harness.run_status_snapshot_result = _snapshot(deferred=(_deferred_story("3.6"),))
+
+    rc = run_supervisor(
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs, process=FakeProcess(alive_for=3), clock=clock, observer=observer,
+        harness=harness, sleep=clock.sleep,
+    )
+
+    assert rc == 0
+    assert harness.run_status_snapshot_calls == []
+    entries = [json.loads(line) for _, line, _ in fs.appended_lines]
+    assert not [e for e in entries if e["kind"] == "story-deferred"]
+
+
+def test_a_story_deferred_after_the_last_live_tick_is_still_journaled():
+    """Follow-up review finding: the per-tick capture only runs while
+    `watched_alive`, so a story bmad-loop defers AFTER this supervisor's last
+    live tick was silently dropped -- and that is the COMMON shape, since
+    deferring the run's last story is immediately followed by the engine
+    finishing and the watched pid exiting, usually well inside one tick.
+    Modelled here by a snapshot that only shows the deferral once the
+    process is already gone."""
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+    clock = AdvancingClock()
+    observer = FakeObserver(pane="idle")
+    process = _ExitTrackingProcess(alive_for=3)
+
+    class _DeferredOnlyOnceDead(FakeHarness):
+        """The deferral only becomes visible in `state.json` AFTER the
+        watched pid is gone -- keyed off the process fake itself rather
+        than a call index, so this test cannot silently stop testing what
+        it names if the tick loop's own read count ever changes."""
+
+        def run_status_snapshot(self, project, run_id):
+            self.run_status_snapshot_calls.append((project, run_id))
+            if process.last_alive:
+                return _snapshot(deferred=())
+            return _snapshot(deferred=(_deferred_story("3.6"),))
+
+    harness = _DeferredOnlyOnceDead()
+
+    rc = run_supervisor(
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs, process=process, clock=clock, observer=observer,
+        harness=harness, sleep=clock.sleep,
+    )
+
+    assert rc == 0
+    entries = [json.loads(line) for _, line, _ in fs.appended_lines]
+    deferred_entries = [e for e in entries if e["kind"] == "story-deferred"]
+    assert len(deferred_entries) == 1
+    assert deferred_entries[0]["payload"]["story_key"] == "3.6"
+    assert deferred_entries[0]["phase"] == "observation"
+
+
+def test_the_post_loop_deferral_flush_never_repeats_a_story_already_journaled():
+    """The flush shares the per-tick site's own already-journaled set, so a
+    story observed mid-run is reported exactly once in total -- not once by
+    the tick and again by the flush."""
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+    clock = AdvancingClock()
+    observer = FakeObserver(pane="idle")
+    harness = FakeHarness()
+    harness.run_status_snapshot_result = _snapshot(
+        deferred=(_deferred_story("3.6"),)
+    )
+
+    rc = run_supervisor(
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs, process=FakeProcess(alive_for=3), clock=clock, observer=observer,
+        harness=harness, sleep=clock.sleep,
+    )
+
+    assert rc == 0
+    entries = [json.loads(line) for _, line, _ in fs.appended_lines]
+    assert len([e for e in entries if e["kind"] == "story-deferred"]) == 1
+
+
+def test_the_post_loop_deferral_flush_still_runs_when_the_idle_ladder_deferred():
+    """The flush is gated on `harness_run_id` alone, exactly like the
+    per-tick site: a deferral bmad-loop recorded is an OBSERVATION, so
+    Marshal's own idle-ladder decision to give up on the process must not
+    suppress it."""
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+    clock = AdvancingClock()
+    observer = FakeObserver(pane="frozen")
+    harness = FakeHarness()
+    harness.run_status_snapshot_result = _snapshot(
+        deferred=(_deferred_story("3.6"),)
+    )
+
+    rc = run_supervisor(
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs, process=FakeProcess(alive_for=40), clock=clock, observer=observer,
+        harness=harness, sleep=clock.sleep,
+    )
+
+    assert rc == 0
+    entries = [json.loads(line) for _, line, _ in fs.appended_lines]
+    assert len([e for e in entries if e["kind"] == "story-deferred"]) == 1
+
+
+# --- Story 3.7: escalation detection (AD-45, FR-15) -------------------------------
+
+
+def test_an_unresolved_escalation_journals_notifies_and_sets_the_detach_reason():
+    """I/O matrix: "Escalation raised" -- one escalation-detected
+    observation; file marker written; desktop notify attempted;
+    detach_reason="escalation-paused"."""
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+    process = FakeProcess(alive_for=2)
+    clock = FakeClock()
+    observer = FakeObserver(pane="idle")
+    harness = FakeHarness()
+    harness.run_status_snapshot_result = _snapshot(
+        paused_stage="escalation",
+        paused_story_key="3-7-escalation-deferral-and-resume",
+        paused_reason="the frozen spec contradicts itself",
+        escalated_spec_file="spec-3-7.md",
+        escalated_task_phase="escalated",
+    )
+    notify = FakeNotify()
+
+    rc = run_supervisor(
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs, process=process, clock=clock, observer=observer,
+        harness=harness, notify=notify, sleep=_no_sleep,
+    )
+
+    assert rc == 0
+    entries = [json.loads(line) for _, line, _ in fs.appended_lines]
+    escalation_entries = [e for e in entries if e["kind"] == "escalation-detected"]
+    assert len(escalation_entries) == 1
+    entry = escalation_entries[0]
+    assert entry["phase"] == "observation"
+    assert entry["payload"] == {
+        "story_key": "3.7",
+        "reason": "the frozen spec contradicts itself",
+        "spec_file": "spec-3-7.md",
+    }
+    assert entries[-1]["payload"]["reason"] == "escalation-paused"
+
+    assert len(notify.notify_file_calls) == 1
+    marker_path, marker_payload = notify.notify_file_calls[0]
+    assert marker_path == supervisor_main._run_dir(_HOME, "acme", "acme-run-1") / "ESCALATION"
+    # "story_key" is renamed to "story" for the REDACTED notify payload
+    # (mirrors core.egress.build_gate_record's own rename: `to_redacted`
+    # treats any "*_key"-suffixed field NAME as secret-shaped and would
+    # otherwise replace the story identifier's own VALUE outright).
+    assert json.loads(marker_payload.text) == {
+        "story": entry["payload"]["story_key"],
+        "reason": entry["payload"]["reason"],
+        "spec_file": entry["payload"]["spec_file"],
+    }
+    assert len(notify.notify_desktop_calls) == 1
+    assert notify.notify_desktop_calls[0] is marker_payload
+
+
+def test_ordinary_finish_never_journals_an_escalation():
+    """I/O matrix: "Ordinary finish" -- no `paused_stage` at all -> no
+    escalation entry, the ordinary detach reason unchanged."""
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+    process = FakeProcess(alive_for=2)
+    clock = FakeClock()
+    observer = FakeObserver(pane="idle")
+    harness = FakeHarness()
+    harness.run_status_snapshot_result = _snapshot()
+    notify = FakeNotify()
+
+    rc = run_supervisor(
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs, process=process, clock=clock, observer=observer,
+        harness=harness, notify=notify, sleep=_no_sleep,
+    )
+
+    assert rc == 0
+    entries = [json.loads(line) for _, line, _ in fs.appended_lines]
+    assert not [e for e in entries if e["kind"] == "escalation-detected"]
+    assert entries[-1]["payload"]["reason"] == "watched-process-exited"
+    assert notify.notify_file_calls == []
+    assert notify.notify_desktop_calls == []
+
+
+def test_a_pause_at_a_different_stage_never_journals_an_escalation():
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+    process = FakeProcess(alive_for=2)
+    clock = FakeClock()
+    observer = FakeObserver(pane="idle")
+    harness = FakeHarness()
+    harness.run_status_snapshot_result = _snapshot(paused_stage="spec-approval")
+    notify = FakeNotify()
+
+    rc = run_supervisor(
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs, process=process, clock=clock, observer=observer,
+        harness=harness, notify=notify, sleep=_no_sleep,
+    )
+
+    assert rc == 0
+    entries = [json.loads(line) for _, line, _ in fs.appended_lines]
+    assert not [e for e in entries if e["kind"] == "escalation-detected"]
+    assert entries[-1]["payload"]["reason"] == "watched-process-exited"
+
+
+def test_a_resolved_escalation_never_journals_an_escalation():
+    """The story's own task has moved off `escalated` (a human already
+    ran `rearm_escalation`) -- `EscalationStatus.RESOLVED`, never
+    `UNRESOLVED`."""
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+    process = FakeProcess(alive_for=2)
+    clock = FakeClock()
+    observer = FakeObserver(pane="idle")
+    harness = FakeHarness()
+    harness.run_status_snapshot_result = _snapshot(
+        paused_stage="escalation",
+        paused_story_key="3.7",
+        paused_reason="the frozen spec contradicts itself",
+        escalated_task_phase="pending",
+    )
+    notify = FakeNotify()
+
+    rc = run_supervisor(
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs, process=process, clock=clock, observer=observer,
+        harness=harness, notify=notify, sleep=_no_sleep,
+    )
+
+    assert rc == 0
+    entries = [json.loads(line) for _, line, _ in fs.appended_lines]
+    assert not [e for e in entries if e["kind"] == "escalation-detected"]
+    assert notify.notify_file_calls == []
+
+
+def test_run_status_snapshot_read_failure_falls_back_to_the_ordinary_detach_reason():
+    """I/O matrix: "run_status_snapshot read failure" -- returns None;
+    loop-end falls back to the ordinary detach reason exactly as if
+    unread. Never raises."""
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+    process = FakeProcess(alive_for=2)
+    clock = FakeClock()
+    observer = FakeObserver(pane="idle")
+    harness = FakeHarness()
+    harness.run_status_snapshot_result = None
+    notify = FakeNotify()
+
+    rc = run_supervisor(
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs, process=process, clock=clock, observer=observer,
+        harness=harness, notify=notify, sleep=_no_sleep,
+    )
+
+    assert rc == 0
+    entries = [json.loads(line) for _, line, _ in fs.appended_lines]
+    assert entries[-1]["payload"]["reason"] == "watched-process-exited"
+
+
+def test_an_idle_defer_takes_precedence_over_an_unresolved_escalation():
+    """The idle ladder's own `detach_reason` is already more specific by
+    the time this tick loop ends -- the escalation check must never
+    overwrite it (the spec's own Always bullet, mirroring the existing
+    `detach_reason or "watched-process-exited"` fallback idiom)."""
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+    clock = AdvancingClock()
+    observer = FakeObserver(pane="idle")
+    harness = FakeHarness()
+    harness.run_status_snapshot_result = _snapshot(
+        paused_stage="escalation",
+        paused_story_key="3.7",
+        paused_reason="ambiguous",
+        escalated_task_phase="escalated",
+    )
+    notify = FakeNotify()
+
+    # threshold_s = 15 against a 60s tick -- reaches `defer` immediately.
+    rc = run_supervisor(
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
+        0.25, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs, process=FakeProcess(alive_for=12), clock=clock, observer=observer,
+        harness=harness, notify=notify, sleep=clock.sleep,
+    )
+
+    assert rc == 0
+    entries = [json.loads(line) for _, line, _ in fs.appended_lines]
+    assert entries[-1]["payload"]["reason"] == "idle-deferred"
+    assert not [e for e in entries if e["kind"] == "escalation-detected"]
+    assert notify.notify_file_calls == []
+
+
+def test_a_budget_breach_takes_precedence_over_an_unresolved_escalation():
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+    clock = AdvancingClock()
+    observer = FakeObserver(pane="idle")
+    harness = FakeHarness()
+    harness.run_status_snapshot_result = _snapshot(
+        paused_stage="escalation",
+        paused_story_key="3.7",
+        paused_reason="ambiguous",
+        escalated_task_phase="escalated",
+    )
+    notify = FakeNotify()
+
+    rc = run_supervisor(
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY, 1.5,
+        fs=fs, process=FakeProcess(alive_for=10), clock=clock, observer=observer,
+        harness=harness, notify=notify, sleep=clock.sleep,
+    )
+
+    assert rc == 0
+    entries = [json.loads(line) for _, line, _ in fs.appended_lines]
+    assert entries[-1]["payload"]["reason"] == "budget-run-wall_clock-exceeded"
+    assert not [e for e in entries if e["kind"] == "escalation-detected"]
+
+
+def test_a_failed_file_marker_write_registers_a_warn_but_the_detach_still_proceeds():
+    """I/O matrix: "File-marker write failure -> MRS-SUPV-007 (WARN),
+    detach still proceeds"."""
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+    process = FakeProcess(alive_for=2)
+    clock = FakeClock()
+    observer = FakeObserver(pane="idle")
+    harness = FakeHarness()
+    harness.run_status_snapshot_result = _snapshot(
+        paused_stage="escalation",
+        paused_story_key="3.7",
+        paused_reason="ambiguous",
+        escalated_task_phase="escalated",
+    )
+    notify = FakeNotify()
+    notify.fail_notify_file = FsError("disk full")
+
+    rc = run_supervisor(
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs, process=process, clock=clock, observer=observer,
+        harness=harness, notify=notify, sleep=_no_sleep,
+    )
+
+    assert rc == 0
+    entries = [json.loads(line) for _, line, _ in fs.appended_lines]
+    assert entries[-1]["payload"]["reason"] == "escalation-paused"
+    assert entries[-1]["payload"]["finding"]["code"] == "MRS-SUPV-007"
+    assert entries[-1]["payload"]["finding"]["severity"] == "warn"
+    # Best-effort desktop notify is still attempted even after the
+    # mandatory write failed.
+    assert len(notify.notify_desktop_calls) == 1
+
+
+def test_a_desktop_notify_failure_is_fully_swallowed():
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+    process = FakeProcess(alive_for=2)
+    clock = FakeClock()
+    observer = FakeObserver(pane="idle")
+    harness = FakeHarness()
+    harness.run_status_snapshot_result = _snapshot(
+        paused_stage="escalation",
+        paused_story_key="3.7",
+        paused_reason="ambiguous",
+        escalated_task_phase="escalated",
+    )
+    notify = FakeNotify()
+    notify.fail_notify_desktop = RuntimeError("notifier crashed")
+
+    rc = run_supervisor(
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs, process=process, clock=clock, observer=observer,
+        harness=harness, notify=notify, sleep=_no_sleep,
+    )
+
+    assert rc == 0
+    entries = [json.loads(line) for _, line, _ in fs.appended_lines]
+    assert entries[-1]["payload"]["reason"] == "escalation-paused"
+    assert "finding" not in entries[-1]["payload"]
+    assert len(notify.notify_file_calls) == 1
+
+
+def test_a_desktop_notify_returning_false_never_affects_the_detach():
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+    process = FakeProcess(alive_for=2)
+    clock = FakeClock()
+    observer = FakeObserver(pane="idle")
+    harness = FakeHarness()
+    harness.run_status_snapshot_result = _snapshot(
+        paused_stage="escalation",
+        paused_story_key="3.7",
+        paused_reason="ambiguous",
+        escalated_task_phase="escalated",
+    )
+    notify = FakeNotify()
+    notify.notify_desktop_result = False
+
+    rc = run_supervisor(
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs, process=process, clock=clock, observer=observer,
+        harness=harness, notify=notify, sleep=_no_sleep,
+    )
+
+    assert rc == 0
+    entries = [json.loads(line) for _, line, _ in fs.appended_lines]
+    assert entries[-1]["payload"]["reason"] == "escalation-paused"
+    assert "finding" not in entries[-1]["payload"]
+
+
+def test_escalation_never_evaluated_when_harness_run_id_unavailable():
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1", harness_run_id=None) + "\n")
+    process = FakeProcess(alive_for=2)
+    clock = FakeClock()
+    observer = FakeObserver(pane="idle")
+    harness = FakeHarness()
+    harness.run_status_snapshot_result = _snapshot(
+        paused_stage="escalation", paused_story_key="3.7", escalated_task_phase="escalated"
+    )
+    notify = FakeNotify()
+
+    rc = run_supervisor(
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs, process=process, clock=clock, observer=observer,
+        harness=harness, notify=notify, sleep=_no_sleep,
+    )
+
+    assert rc == 0
+    assert harness.run_status_snapshot_calls == []
+    entries = [json.loads(line) for _, line, _ in fs.appended_lines]
+    assert entries[-1]["payload"]["reason"] == "watched-process-exited"
+
+
+def test_default_notify_construction_never_touches_the_real_filesystem_when_inert():
+    """The default ``notify: NotifyPort | None = None`` -> ``FileDesktopNotifier()``
+    construction is cheap and side-effect-free -- every pre-existing test in
+    this file (none of which passes ``notify=``) must stay unaffected."""
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+    process = FakeProcess(alive_for=2)
+    clock = FakeClock()
+    observer = FakeObserver(pane="idle")
+    harness = FakeHarness()
+
+    rc = run_supervisor(
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs, process=process, clock=clock, observer=observer, harness=harness, sleep=_no_sleep,
+    )
+
+    assert rc == 0
+
+
+def test_escalation_and_deferral_journal_entries_conform_to_the_frozen_journal_schema():
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+    clock = AdvancingClock()
+    observer = FakeObserver(pane="idle")
+    harness = FakeHarness()
+    harness.run_status_snapshot_sequence = [
+        _snapshot(deferred=(_deferred_story("3.6"),)),
+        _snapshot(
+            paused_stage="escalation",
+            paused_story_key="3.7",
+            paused_reason="ambiguous",
+            escalated_spec_file="spec-3-7.md",
+            escalated_task_phase="escalated",
+            deferred=(_deferred_story("3.6"),),
+        ),
+    ]
+    notify = FakeNotify()
+
+    rc = run_supervisor(
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs, process=FakeProcess(alive_for=3), clock=clock, observer=observer,
+        harness=harness, notify=notify, sleep=clock.sleep,
+    )
+
+    assert rc == 0
+    entries = [json.loads(line) for _, line, _ in fs.appended_lines]
+    kinds = {e["kind"] for e in entries}
+    assert {"story-deferred", "escalation-detected"} <= kinds
+
+    schema = _journal_schema()
+    for entry in entries:
+        jsonschema.validate(instance=entry, schema=schema)
 
 
 # --- main(): argv parsing + dispatch --------------------------------------------

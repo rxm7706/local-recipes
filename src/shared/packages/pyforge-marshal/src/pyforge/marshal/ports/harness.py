@@ -126,6 +126,34 @@ missing/wrong-typed field) degrades to ``None``, mirroring
 ``harness_version``'s own "never raises" convention: a usage read is a
 supplementary, best-effort input, never a precondition an enforcement
 decision can block on.
+
+Story 3.7 (escalation, deferral, and resume, AD-9/AD-45, FR-15/16/17) adds
+two more methods -- the first reading the SAME ``state.json``
+``usage_snapshot`` already reads (never a second file), the second a wholly
+different bmad-loop-owned artifact:
+
+- ``run_status_snapshot`` -- the run-level pause fields
+  (``RunState.paused_stage``/``.paused_story_key``/``.paused_reason``) plus
+  every currently-``Phase.DEFERRED`` task, mirroring ``usage_snapshot``'s
+  own shape/docstring conventions closely: never raises (the identical
+  ``(OSError, ValueError, KeyError, TypeError, AttributeError,
+  ArithmeticError, RecursionError)`` guard, reused verbatim -- see that
+  method's own docstring for why it is this wide), and any pane/session-
+  derived free text it reads (``paused_reason``, each deferred task's
+  ``defer_reason``) is redacted at capture, before it is ever returned
+  (AD-34) -- the exact wrap/unwrap round-trip
+  ``adapters/observer_mux.py::pane_content`` already established for the
+  identical purpose.
+- ``resolution_reference`` -- AD-3's own seam closing a gap the story's
+  intent-contract literally could not satisfy without it: resolving an
+  escalation's resolution marker requires calling
+  ``bmad_loop.resolve.resolution_path``, and AD-3 confines every
+  ``bmad_loop`` import to this one module, so ``cli/spin.py``'s own
+  ``marshal factory resume`` cannot make that call directly (a genuine
+  intent-contract inaccuracy -- see the spec's own Spec Change Log). Never
+  raises: an unimportable ``bmad_loop`` or any failure resolving/probing
+  the path degrades to ``None``, the same "no marker recorded" shape a
+  genuinely absent one produces.
 """
 
 from __future__ import annotations
@@ -190,6 +218,67 @@ class UsageSnapshot:
     story_weighted_tokens: int | None
     run_weighted_tokens: int
     sample_path: Path
+
+
+@dataclass(frozen=True)
+class DeferredStory:
+    """One ``Phase.DEFERRED`` task, as read off bmad-loop's own
+    ``state.json`` (Story 3.7, FR-16) -- a plain, frozen value type mirroring
+    ``UsageSnapshot``'s own "facts the caller could not have known in
+    advance" convention. ``story_key`` is the task's own
+    ``StoryTask.story_key`` (bmad-loop's native slug spelling, never
+    Marshal's canonical dot form -- callers that journal it render it via
+    ``core.identity``, mirroring every other harness-native key this package
+    re-spells at its own journal boundary). ``reason`` is
+    ``StoryTask.defer_reason``, already redacted at capture (AD-34) -- free
+    text with no upstream taxonomy (bmad-loop itself declares no enum for
+    it), so this field carries it verbatim rather than inventing structure
+    bmad-loop does not provide. ``attempt``/``branch``/``worktree_path`` are
+    the SAME fields ``StoryTask`` itself carries, unredacted (none is
+    session-authored free text). ``spec_file`` is the artifact where
+    whatever preserved work exists lives, or ``None`` when bmad-loop never
+    recorded one for this task."""
+
+    story_key: str
+    reason: str | None
+    attempt: int
+    branch: str
+    worktree_path: str
+    spec_file: str | None
+
+
+@dataclass(frozen=True)
+class RunStatusSnapshot:
+    """One tick's worth of bmad-loop's own run-level pause state plus every
+    currently-deferred story (Story 3.7, FR-15/16/17) --
+    ``HarnessPort.run_status_snapshot`` returns this or ``None``, mirroring
+    ``UsageSnapshot``'s own shape. ``paused_stage``/``paused_story_key`` are
+    ``RunState``'s own same-named fields, verbatim (``paused_stage ==
+    "escalation"`` is the one value ``core.supervise.evaluate_escalation``
+    cares about; every other value -- ``None``, ``"spec-approval"``,
+    ``"epic-boundary"``, ... -- is simply not this kind of pause).
+    ``paused_reason`` is ``RunState.paused_reason``, already redacted at
+    capture (AD-34). ``escalated_spec_file``/``escalated_task_phase`` are
+    ``paused_story_key``'s own task's ``spec_file``/``phase`` (the artifact
+    needing a decision, and the fact ``evaluate_escalation`` classifies) --
+    both ``None`` when ``paused_story_key`` is ``None`` or names no known
+    task. ``deferred`` is every task currently ``Phase.DEFERRED``, in
+    ``state.json``'s own ``tasks`` iteration order. ``finished`` is
+    ``RunState.finished`` -- bmad-loop's own "this run reached its end"
+    flag, and the FIRST thing its own ``resume`` refuses on (follow-up
+    review finding: a detached launch never surfaces the child's exit code,
+    so without reading this flag up front ``marshal factory resume``
+    reported a successful resume for a run ``bmad-loop resume`` had already
+    rejected). Trailing and defaulted so a caller constructing this value
+    for a pause-only concern need not supply it."""
+
+    paused_stage: str | None
+    paused_story_key: str | None
+    paused_reason: str | None
+    escalated_spec_file: str | None
+    escalated_task_phase: str | None
+    deferred: tuple[DeferredStory, ...]
+    finished: bool = False
 
 
 class HarnessPort(Protocol):
@@ -348,4 +437,34 @@ class HarnessPort(Protocol):
         ``None`` -- this is a supplementary, best-effort reporting input
         (AD-32: "recorded for reporting and cost attribution only"), never a
         precondition an enforcement ceiling can block on."""
+        ...
+
+    def run_status_snapshot(self, project: Path, run_id: str) -> RunStatusSnapshot | None:
+        """bmad-loop's own run-level pause state plus every currently
+        ``Phase.DEFERRED`` task, read from ``<project>/.bmad-loop/runs/
+        <run_id>/state.json`` (Story 3.7, FR-15/16/17) -- ``run_id`` is the
+        HARNESS's own self-minted run id, the SAME one ``usage_snapshot``/
+        ``stop``/``resume`` take, never Marshal's own journal ``run_id``.
+        Never raises: any read/parse failure degrades to ``None``, the
+        identical shape and guard ``usage_snapshot`` documents. Any pane/
+        session-derived free text this method reads (``paused_reason``, each
+        deferred task's ``defer_reason``) is redacted at capture, before it
+        is ever returned (AD-34) -- everything downstream only ever sees the
+        already-scrubbed plain ``str``."""
+        ...
+
+    def resolution_reference(
+        self, project: Path, run_id: str, story_key: str
+    ) -> str | None:
+        """The path to an escalation's resolution marker (Story 3.7,
+        AD-3/AD-45) -- ``<project>/.bmad-loop/runs/<run_id>/resolve/
+        <story_key>/resolution.json``'s own posix path if that file exists
+        on disk, else ``None`` (a ``--no-interactive`` resolve is never
+        guaranteed to leave one). ``run_id`` is the HARNESS's own self-
+        minted run id; ``story_key`` is bmad-loop's own native slug spelling
+        (``RunStatusSnapshot.paused_story_key``, never Marshal's canonical
+        dot form -- the resolve marker is filed under the harness's own
+        spelling). Never raises: an unimportable ``bmad_loop`` or any
+        failure resolving the path degrades to ``None``, the same shape a
+        genuinely absent marker produces."""
         ...

@@ -165,8 +165,29 @@ AD-32's own F-24 amendment: never ``unevaluable``). All three classify
 ``Verdict.WARN`` too, for the identical reason the story's own
 ``MRS-SUPV-001/002/003`` already do. The same story adds ``MRS-SPIN-009``
 (FR-14's non-blocking preflight advisory) at that same ``Verdict.WARN``
-tier, alongside ``MRS-SPIN-004/006/007/008``. Later stories populate the
-table further as they add real codes. The mechanism (a total, fail-loud
+tier, alongside ``MRS-SPIN-004/006/007/008``. Story 3.7 (escalation,
+deferral, and resume, AD-9/AD-34/AD-45) adds ``MRS-SUPV-007`` (the
+mandatory escalation file-marker write failed) to the same ``Verdict.WARN``
+tier as this area's own 001-006: the escalation was detected and journaled
+regardless, so only the durable marker's own write failed -- a degraded-
+but-still-supervised condition, never a failure that invalidates the
+detach. The same story adds ``MRS-SPIN-010`` (``marshal factory resume``
+refused: a live ``run_status_snapshot`` read classified the paused
+escalation ``EscalationStatus.UNRESOLVED``) and ``MRS-SPIN-011`` (``marshal
+factory resume`` refused: no resumable run) to ``cli/spin.py``'s own area,
+both classified ``Verdict.ERROR`` -- the same tier as ``MRS-SPIN-002/003/
+005``: a real refusal gate ran and blocked the resume BEFORE any spawn,
+never a degraded-but-proceeding launch (unlike ``MRS-SPIN-004/006/007/008/
+009``, which all describe an ALREADY-launched process). Review finding
+(pass 1): the same caller adds ``MRS-SPIN-012`` (the resume refusal gate's
+own live ``run_status_snapshot`` read returned ``None`` -- an unconfirmed,
+not a positively-cleared, escalation status) at ``Verdict.WARN`` -- the
+gate proceeds rather than refuses on mere ambiguity (refusing every resume
+on a transient read hiccup would make the ordinary, never-escalated case
+newly unreliable), so this is a degraded-but-proceeding condition, the
+same tier as ``MRS-SPIN-004/006/007/008/009``, never the refusal tier its
+two siblings above use. Later stories populate the table further as they
+add real codes. The mechanism (a total, fail-loud
 lookup) is separately proven via ``monkeypatch``-injected synthetic entries
 in ``tests/unit/test_verdict.py``.
 
@@ -259,6 +280,14 @@ _RELAY_PASSTHROUGH: frozenset[int] = frozenset(
 # Story 3.6's supervisor/__main__.py adds MRS-SUPV-004/005/006 (budget-warn,
 # budget-stop failure, stale usage evidence) to the same area, all WARN, and
 # cli/spin.py gains MRS-SPIN-009 (FR-14's preflight advisory), also WARN.
+# Story 3.7's supervisor/__main__.py adds MRS-SUPV-007 (escalation
+# file-marker write failure) to the same area, WARN; cli/spin.py gains
+# MRS-SPIN-010/011 (resume refused: unresolved escalation / no resumable
+# run), both ERROR, plus MRS-SPIN-012 (the live status read failed, so the
+# escalation gate confirmed nothing and resume proceeds anyway) -- WARN, not
+# ERROR, for AD-32's own reason: an unreadable sample is ambiguity, and
+# refusing on it would make the ordinary, never-escalated resume newly
+# unreliable.
 _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-IDENT-001": Verdict.UNEVALUABLE,
     "MRS-IDENT-002": Verdict.UNEVALUABLE,
@@ -313,6 +342,10 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-SUPV-004": Verdict.WARN,
     "MRS-SUPV-005": Verdict.WARN,
     "MRS-SUPV-006": Verdict.WARN,
+    "MRS-SUPV-007": Verdict.WARN,
+    "MRS-SPIN-010": Verdict.ERROR,
+    "MRS-SPIN-011": Verdict.ERROR,
+    "MRS-SPIN-012": Verdict.WARN,
 }
 
 
