@@ -728,7 +728,7 @@ def test_real_record_port_is_classified_egress_true():
     assert EGRESS_PORTS["RecordPort"] is True
 
 
-def test_egress_ports_registry_has_exactly_the_seven_known_ports():
+def test_egress_ports_registry_has_exactly_the_eight_known_ports():
     assert set(EGRESS_PORTS.keys()) == {
         "ProcessPort",
         "FsPort",
@@ -737,4 +737,23 @@ def test_egress_ports_registry_has_exactly_the_seven_known_ports():
         "RecordPort",
         "ClockPort",
         "SessionObserverPort",
+        "NotifyPort",
     }
+
+
+def test_notify_port_is_classified_egress_true():
+    assert EGRESS_PORTS["NotifyPort"] is True
+
+
+def test_guard_does_not_fire_on_the_real_notify_port():
+    """The real, shipped ``NotifyPort`` (``notify_file(path: Path, payload:
+    Redacted)``, ``notify_desktop(payload: Redacted)``) must produce zero
+    violations -- no parameter on either method is str-shaped (Story 3.7's
+    own reason for NOT literally mirroring the intent-contract's
+    ``notify_desktop(title: str, payload: Redacted)`` wording -- see that
+    port's own module docstring)."""
+    from pyforge.marshal.ports import notify as notify_module
+
+    module_path = Path(notify_module.__file__)
+    cls = _protocol_classes(_parse(module_path))[0]
+    assert _bare_str_param_violations(cls) == []

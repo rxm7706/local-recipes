@@ -149,7 +149,47 @@ sole authority for which stories a run actually executes. Never
 pre-refuses on a zero-count preview (the spec's own Never clause): that
 judgment belongs to the harness's own engine at run time.
 
-Registers ``MRS-SPIN-001`` through ``MRS-SPIN-009`` (``core/findings.py``/
+Story 3.7 (escalation, deferral, and resume, AD-3/AD-25/AD-45,
+FR-15/16/17) adds ``marshal factory resume``, this module's second launch
+verb: ``run_resume`` finds the most recent Marshal run directory for
+``slug`` under the Tier-3 store (``<tier3>/runs/<slug>-*``, sorted --
+``MRS-SPIN-011`` if none exists), folds its journal to recover the
+harness's own self-minted ``harness_run_id`` (the SAME
+``run-launch``-outcome-entry lookup ``supervisor/__main__.py::
+_resolve_harness_run_id`` performs, reproduced here rather than imported --
+this module already duplicates several of ITS own helpers across that same
+AD-9 boundary, and the new one is small, pure, and private; ``MRS-SPIN-011``
+again if it cannot be recovered), then calls ``HarnessPort.
+run_status_snapshot`` **live** and classifies it via ``core.supervise.
+evaluate_escalation`` -- never trusting the historical journal for the
+resolved/unresolved question, only for discovering which ``harness_run_id``
+to check (the spec's own Always bullet: an arbitrarily long gap can
+separate detection from a resume attempt, and only a fresh read answers "is
+it STILL unresolved right now"). ``EscalationStatus.UNRESOLVED`` refuses
+with ``MRS-SPIN-010`` before any spawn, mint, or journal write. Otherwise it
+mints a FRESH Marshal run id (never reusing the prior one -- AD-25), journals
+a ``"run-resume"`` intent carrying AD-45's four back-reference fields
+(``story_key``, ``reason``, ``resolution_reference`` -- via the new
+``HarnessPort.resolution_reference`` seam, since AD-3 confines the
+``bmad_loop.resolve`` import this needs to ``adapters/harness_bmadloop.py``
+alone, never this module directly -- and ``resolver``, via
+``getpass.getuser()``, AD-27's own "attributable, not authenticated" trust
+model) before spawning, detach-launches ``HarnessPort.resume`` (the
+identical detached-launch recipe ``spin`` uses), journals the outcome, and
+spawns a fresh supervisor sidecar via ``_spawn_supervisor_sidecar`` -- the
+SAME argv-construction/policy-composition logic ``run_spin``'s own tail
+already performs, extracted into a shared helper (Story 3.7) so the two
+launch verbs cannot drift out of agreement over what a supervisor sidecar's
+10-positional argv looks like. ``resume`` accepts no ``--epic``/``--story``/
+``--max-count`` (the spec's own Never clause: ``bmad-loop resume`` itself
+ignores them, rebuilding the engine from state-pinned scope only) and no
+``--foreground`` (no synchronous ``HarnessPort`` counterpart to
+``resume`` exists, unlike ``spin``'s own ``run_foreground`` -- inventing one
+with no real caller would be speculative surface this story's own Code Map
+does not ask for; a factual inaccuracy in the intent-contract's own literal
+wording, recorded in the spec's Spec Change Log).
+
+Registers ``MRS-SPIN-001`` through ``MRS-SPIN-012`` (``core/findings.py``/
 ``core/verdict.py``) -- see those modules' own docstrings for the full
 per-code rationale. ``MRS-SPIN-006`` joined the original five in review,
 splitting "launched, but its outcome could not be journaled" (``WARN`` -- a
@@ -161,12 +201,20 @@ DIFFERENT paper-trail gap (losing supervision rather than losing the
 outcome journal entry). ``MRS-SPIN-008`` (Story 3.5) is the project-policy
 composition finding wrapper. ``MRS-SPIN-009`` (Story 3.6) is the FR-14
 preflight advisory above -- also ``WARN``: it is a non-blocking heads-up
-about the story about to run, never a launch precondition.
+about the story about to run, never a launch precondition. ``MRS-SPIN-010``/
+``MRS-SPIN-011`` (Story 3.7) are ``resume``'s own two refusal codes -- both
+``ERROR``, since both block a real spawn from ever happening, unlike every
+other ``MRS-SPIN-*`` WARN above, which all describe an ALREADY-launched
+process. ``MRS-SPIN-012`` (Story 3.7, added in review) is the third code
+``resume`` alone raises, and the only ``WARN`` of the three: the live
+escalation gate could not read the run's status at all, so it proceeds
+without having confirmed anything -- ambiguity, never a refusal.
 """
 
 from __future__ import annotations
 
 import argparse
+import getpass
 import json
 import os
 import secrets
@@ -191,10 +239,12 @@ from ..core.journal import (
     JournalEntryId,
     Phase,
     build_entry,
+    fold,
     mint_run_id,
     prepare_for_write,
 )
 from ..core.model import Finding, Severity, build_envelope
+from ..core.supervise import EscalationStatus, evaluate_escalation
 from ..core.verdict import compute_verdict, exit_code_for, relay_exit_code
 from ..ports.fs import FsPort
 from ..ports.harness import HarnessPort
@@ -226,6 +276,11 @@ _SUPERVISOR_LOG_FILENAME = "supervisor.log"
 # in this package's own vocabulary; a future story's supervisor/gate/etc.
 # kinds are that story's own concern).
 _LAUNCH_KIND = "run-launch"
+# Story 3.7's own resume kind -- a SEPARATE intent/outcome pair from
+# `_LAUNCH_KIND` above (a resume is a distinct action from a launch, even
+# though both mint a fresh Marshal run id and spawn a supervisor sidecar the
+# same way).
+_RESUME_KIND = "run-resume"
 
 # Story 3.6's FR-14 preflight advisory (MRS-SPIN-009) -- a fixed "this spec
 # is large" threshold, calibrated against this repo's own existing story
@@ -577,6 +632,227 @@ def add_factory_subparser(subparsers: argparse._SubParsersAction) -> None:
     )
     attach_parser.add_argument("slug", help="The BMAD project slug whose loop home to attach to.")
     attach_parser.set_defaults(handler=run_attach)
+
+    resume_parser = factory_subparsers.add_parser(
+        "resume",
+        help="Resume a paused bmad-loop run, refusing an unresolved escalation (AD-45).",
+        description=(
+            "Finds the most recent Marshal run for the loop home, checks "
+            "LIVE whether its blocking escalation (if any) is still "
+            "unresolved -- refusing before any spawn if so -- then "
+            "detach-launches 'bmad-loop resume' and re-attaches a fresh "
+            "supervisor, journaling an AD-45 back-reference to the "
+            "resolving decision. No --epic/--story/--max-count (bmad-loop "
+            "resume itself rebuilds from state-pinned scope only)."
+        ),
+    )
+    resume_parser.add_argument("slug", help="The BMAD project slug whose loop home to resume.")
+    resume_parser.add_argument(
+        "--format",
+        choices=("text", "json"),
+        default="text",
+        help="Output format (default: text).",
+    )
+    resume_parser.set_defaults(handler=run_resume)
+
+
+def _spawn_supervisor_sidecar(
+    process: ProcessPort,
+    findings: list[Finding],
+    data: dict[str, object],
+    *,
+    home: Path,
+    slug: str,
+    run_id: str,
+    watched_pid: int,
+    run_dir: Path,
+    launched_via: str = "bmad-loop run",
+) -> None:
+    """Resolve the supervisor's 5 supplementary values (idle threshold plus
+    Story 3.6's 4 budget ceilings) from the project-policy composition and
+    spawn the detached sidecar with the standard 10-positional argv --
+    extracted (Story 3.7) from ``run_spin``'s own original inline tail so
+    ``run_resume`` shares this EXACT logic rather than a second, drifting
+    copy; a pure extraction, ``run_spin``'s own behavior is unchanged.
+    Mutates ``findings``/``data`` in place, mirroring every other step in
+    this module's two launch verbs.
+
+    ``launched_via`` (review finding) names the command that actually
+    started ``watched_pid`` in ``MRS-SPIN-007``'s own message -- defaults to
+    ``run_spin``'s own ``"bmad-loop run"``; ``run_resume`` passes
+    ``"bmad-loop resume"`` so a supervisor-spawn failure after a RESUME
+    never misreports itself as a fresh launch.
+
+    Deliberately AFTER the caller's own launch outcome entry has been
+    journaled (succeeded or not) -- see ``run_spin``'s own docstring for why
+    the spawn stays last: everything before it can add findings to the same
+    report, and a supervisor that attached before the outcome landed would
+    interleave its own observation entries with this module's own append,
+    two writers racing one journal file with no ordering guarantee between
+    them."""
+    supervisor_log = run_dir / _SUPERVISOR_LOG_FILENAME
+    # Reported unconditionally, BEFORE the spawn attempt (review finding,
+    # preserved from run_spin's own original tail): this file is the
+    # detached supervisor's only diagnostic channel -- its stderr goes
+    # nowhere else -- so an operator whose supervisor dies 60s later on an
+    # unwritable journal needs the path whether or not the spawn itself
+    # succeeded.
+    data["supervisor_log"] = str(supervisor_log)
+
+    # --- resolve idle_threshold_minutes for the supervisor's 6th argv -------
+    # (Story 3.5, FR-12). Reads the SAME conventional project-policy layer
+    # `marshal config` composes against -- a nonexistent file (the common
+    # case in this repo's own test fixtures, and for any project with no
+    # tuned overrides) composes against an empty project layer, landing on
+    # `core.policy.DEFAULT_POLICY`'s own default (25). A read failure (a
+    # corrupt or unreadable file) degrades the SAME way: this is a
+    # supplementary numeric value for the supervisor's own soft ladder, not
+    # a launch precondition, so it must never abort an otherwise-successful
+    # harness launch the way a `--project-policy` read failure aborts
+    # `marshal config` itself.
+    project_policy_path = conventional_project_policy_path(slug)
+    project_policy_data: Mapping[str, object] = {}
+    if project_policy_path.is_file():
+        try:
+            project_policy_data = _read_project_policy(project_policy_path)
+        except Exception:  # noqa: BLE001 -- deliberate, see below
+            # BROAD on purpose (review finding), and the only broad except in
+            # this module. This read is the LAST step on the post-launch
+            # path: by the time it runs a real bmad-loop process is already
+            # live and journalled, and the detached supervisor has not been
+            # spawned yet. Anything that escapes here therefore leaves the
+            # worst state this command can produce -- a running, UNSUPERVISED
+            # harness -- and exits non-zero, which invites the caller to
+            # retry and double-dispatch the very story the live run is
+            # already working (the exact hazard this story's Design Notes
+            # give as the reason `stop`+`resume` is the retry primitive).
+            #
+            # `PolicyIOError` alone was under-inclusive against this
+            # module's own stated rule one comment up ("must never abort an
+            # otherwise-successful harness launch"): `_read_project_policy`
+            # translates the I/O and parse failures it anticipates, but
+            # `tomllib.load` raises a bare `RecursionError` on a deeply
+            # nested document, which is neither an `OSError` nor a
+            # `ValueError` and so passed straight through. The value being
+            # read is a supplementary tuning number for a soft ladder; no
+            # failure to obtain it justifies abandoning a live run.
+            project_policy_data = {}
+    effective_policy, policy_findings = policy.compose(
+        project_slug=slug, project=project_policy_data, flags={}
+    )
+    # Surfaced into this report -- but RE-TIERED, never extended verbatim
+    # (review finding, two passes). The findings themselves must reach the
+    # operator: this variable was once captured and never looked at again,
+    # so a malformed `idle_threshold_minutes` override in the project's own
+    # marshal-policy.toml silently fell back to the code default with zero
+    # diagnostic. But splicing them in as-is was the opposite error:
+    # MRS-POLICY-001/002/003/004/006 all classify `Verdict.UNEVALUABLE`
+    # (exit 1), which is right for `marshal config` -- whose whole job IS
+    # the policy -- and wrong here, where the policy is a supplementary
+    # input read AFTER a real harness process is already live. Any unknown
+    # key or malformed value ANYWHERE in the project's policy file would
+    # have made `marshal factory spin` exit 1 over a successfully launched,
+    # supervised run, and a caller that retries on non-zero would then
+    # double-dispatch the same story -- the exact hazard this story's own
+    # Design Notes give as the reason `stop`+`resume` is the retry
+    # primitive. One WARN-tier MRS-SPIN-008 carries every underlying
+    # message instead, preserving the diagnostic without inverting the
+    # launch's own verdict.
+    #
+    # The wording says "every key a finding names", never "the threshold"
+    # (follow-up review finding): `compose()` is called over the WHOLE 14-key
+    # vocabulary, so an unknown key or a malformed `max_dev_attempts`
+    # anywhere in the project's policy file lands here too -- and the earlier
+    # text asserted, on every such launch, that the idle threshold had fallen
+    # back to its default when it had not. A diagnostic that names the wrong
+    # key sends the operator hunting a defect that is not there.
+    if policy_findings:
+        findings.append(
+            Finding(
+                code="MRS-SPIN-008",
+                severity=Severity.WARN,
+                message=(
+                    "the project policy layer produced "
+                    f"{len(policy_findings)} finding(s) while composing the "
+                    "supervisor's idle threshold (the launch itself is "
+                    "unaffected; every key a finding below names kept its "
+                    "composed default instead of the project's own value): "
+                    + "; ".join(
+                        f"{finding.code}: {finding.message}"
+                        for finding in policy_findings
+                    )
+                ),
+            )
+        )
+    idle_threshold_minutes = effective_policy.seed_view()["idle_threshold_minutes"].value
+    # Story 3.6's 4 budget-ceiling values -- resolved from the SAME
+    # `effective_policy` composition idle_threshold_minutes above already
+    # reads (never a second `compose()` call), and appended as argv
+    # positionals 7-10, mirroring idle_threshold_minutes's own 6th-argv
+    # wiring exactly.
+    max_tokens_per_story = effective_policy.seed_view()["max_tokens_per_story"].value
+    max_tokens_per_run = effective_policy.seed_view()["max_tokens_per_run"].value
+    max_wall_clock_minutes_per_story = effective_policy.seed_view()[
+        "max_wall_clock_minutes_per_story"
+    ].value
+    max_wall_clock_minutes_per_run = effective_policy.seed_view()[
+        "max_wall_clock_minutes_per_run"
+    ].value
+
+    try:
+        supervisor_pid = process.spawn_detached(
+            [
+                sys.executable,
+                "-m",
+                "pyforge.marshal.supervisor",
+                str(home),
+                slug,
+                run_id,
+                str(watched_pid),
+                str(supervisor_log),
+                str(idle_threshold_minutes),
+                str(max_tokens_per_story),
+                str(max_tokens_per_run),
+                str(max_wall_clock_minutes_per_story),
+                str(max_wall_clock_minutes_per_run),
+            ],
+            cwd=home,
+            log_path=supervisor_log,
+        )
+    except ProcessError as exc:
+        # The harness launch already succeeded (a live process exists) --
+        # losing supervision degrades the run to unsupervised, never
+        # invalidates the launch: WARN, the same tier as MRS-SPIN-006's own
+        # "a different paper-trail gap over an already-successful launch".
+        findings.append(
+            Finding(
+                code="MRS-SPIN-007",
+                severity=Severity.WARN,
+                message=(
+                    # `supervisor_log` quoted at construction (review
+                    # finding): `_render_text` deliberately does NOT quote
+                    # finding MESSAGES -- its own comment states the split
+                    # and requires "every message that interpolates an
+                    # untrusted value quotes it at construction instead",
+                    # which the `MRS-SPIN-001`/`002` sites above already do
+                    # (`{slug!r}`, `{str(home)!r}`). This message shipped
+                    # with a RAW path derived from `BMAD_LOOP_HOME_ROOT`,
+                    # which `cli/init.py::_loop_home_root` reads unvalidated
+                    # and only anchors to absolute -- so a newline in it
+                    # forged whole lines of this report (a second
+                    # `findings:` block, on a run that genuinely launched at
+                    # rc=0), reintroducing on this story's own new finding
+                    # exactly the defect a prior pass fixed for `--story`
+                    # and raw feed keys.
+                    f"{launched_via} launched (pid {watched_pid}) but its "
+                    f"supervisor could not be spawned: {exc} -- the run "
+                    f"continues unsupervised (supervisor log: "
+                    f"{str(supervisor_log)!r})"
+                ),
+            )
+        )
+    else:
+        data["supervisor_pid"] = supervisor_pid
 
 
 def run_spin(
@@ -1036,170 +1312,439 @@ def run_spin(
     # journal with no ordering guarantee between them. Keeping the spawn
     # last means the launch's own intent/outcome pair is closed before a
     # second writer ever opens the file.
-    supervisor_log = run_dir / _SUPERVISOR_LOG_FILENAME
-    # Reported unconditionally, BEFORE the spawn attempt (review finding):
-    # this file is the detached supervisor's only diagnostic channel -- its
-    # stderr goes nowhere else -- so an operator whose supervisor dies 60s
-    # later on an unwritable journal needs the path whether or not the spawn
-    # itself succeeded. `data["log"]` above carries the harness's own log for
-    # exactly this reason, recorded there as a prior review finding: "a
-    # warning ... without saying where the output went is unactionable".
-    data["supervisor_log"] = str(supervisor_log)
-
-    # --- resolve idle_threshold_minutes for the supervisor's 6th argv -------
-    # (Story 3.5, FR-12). Reads the SAME conventional project-policy layer
-    # `marshal config` composes against -- a nonexistent file (the common
-    # case in this repo's own test fixtures, and for any project with no
-    # tuned overrides) composes against an empty project layer, landing on
-    # `core.policy.DEFAULT_POLICY`'s own default (25). A read failure (a
-    # corrupt or unreadable file) degrades the SAME way: this is a
-    # supplementary numeric value for the supervisor's own soft ladder, not
-    # a launch precondition, so it must never abort an otherwise-successful
-    # harness launch the way a `--project-policy` read failure aborts
-    # `marshal config` itself.
-    project_policy_path = conventional_project_policy_path(slug)
-    project_policy_data: Mapping[str, object] = {}
-    if project_policy_path.is_file():
-        try:
-            project_policy_data = _read_project_policy(project_policy_path)
-        except Exception:  # noqa: BLE001 -- deliberate, see below
-            # BROAD on purpose (review finding), and the only broad except in
-            # this module. This read is the LAST step on the post-launch
-            # path: by the time it runs a real bmad-loop process is already
-            # live and journalled, and the detached supervisor has not been
-            # spawned yet. Anything that escapes here therefore leaves the
-            # worst state this command can produce -- a running, UNSUPERVISED
-            # harness -- and exits non-zero, which invites the caller to
-            # retry and double-dispatch the very story the live run is
-            # already working (the exact hazard this story's Design Notes
-            # give as the reason `stop`+`resume` is the retry primitive).
-            #
-            # `PolicyIOError` alone was under-inclusive against this
-            # module's own stated rule one comment up ("must never abort an
-            # otherwise-successful harness launch"): `_read_project_policy`
-            # translates the I/O and parse failures it anticipates, but
-            # `tomllib.load` raises a bare `RecursionError` on a deeply
-            # nested document, which is neither an `OSError` nor a
-            # `ValueError` and so passed straight through. The value being
-            # read is a supplementary tuning number for a soft ladder; no
-            # failure to obtain it justifies abandoning a live run.
-            project_policy_data = {}
-    effective_policy, policy_findings = policy.compose(
-        project_slug=slug, project=project_policy_data, flags={}
+    _spawn_supervisor_sidecar(
+        process,
+        findings,
+        data,
+        home=home,
+        slug=slug,
+        run_id=run_id,
+        watched_pid=spin_result.pid,
+        run_dir=run_dir,
     )
-    # Surfaced into this report -- but RE-TIERED, never extended verbatim
-    # (review finding, two passes). The findings themselves must reach the
-    # operator: this variable was once captured and never looked at again,
-    # so a malformed `idle_threshold_minutes` override in the project's own
-    # marshal-policy.toml silently fell back to the code default with zero
-    # diagnostic. But splicing them in as-is was the opposite error:
-    # MRS-POLICY-001/002/003/004/006 all classify `Verdict.UNEVALUABLE`
-    # (exit 1), which is right for `marshal config` -- whose whole job IS
-    # the policy -- and wrong here, where the policy is a supplementary
-    # input read AFTER a real harness process is already live. Any unknown
-    # key or malformed value ANYWHERE in the project's policy file would
-    # have made `marshal factory spin` exit 1 over a successfully launched,
-    # supervised run, and a caller that retries on non-zero would then
-    # double-dispatch the same story -- the exact hazard this story's own
-    # Design Notes give as the reason `stop`+`resume` is the retry
-    # primitive. One WARN-tier MRS-SPIN-008 carries every underlying
-    # message instead, preserving the diagnostic without inverting the
-    # launch's own verdict.
-    #
-    # The wording says "every key a finding names", never "the threshold"
-    # (follow-up review finding): `compose()` is called over the WHOLE 14-key
-    # vocabulary, so an unknown key or a malformed `max_dev_attempts`
-    # anywhere in the project's policy file lands here too -- and the earlier
-    # text asserted, on every such launch, that the idle threshold had fallen
-    # back to its default when it had not. A diagnostic that names the wrong
-    # key sends the operator hunting a defect that is not there.
-    if policy_findings:
-        findings.append(
-            Finding(
-                code="MRS-SPIN-008",
-                severity=Severity.WARN,
-                message=(
-                    "the project policy layer produced "
-                    f"{len(policy_findings)} finding(s) while composing the "
-                    "supervisor's idle threshold (the launch itself is "
-                    "unaffected; every key a finding below names kept its "
-                    "composed default instead of the project's own value): "
-                    + "; ".join(
-                        f"{finding.code}: {finding.message}"
-                        for finding in policy_findings
-                    )
-                ),
-            )
-        )
-    idle_threshold_minutes = effective_policy.seed_view()["idle_threshold_minutes"].value
-    # Story 3.6's 4 budget-ceiling values -- resolved from the SAME
-    # `effective_policy` composition idle_threshold_minutes above already
-    # reads (never a second `compose()` call), and appended as argv
-    # positionals 7-10, mirroring idle_threshold_minutes's own 6th-argv
-    # wiring exactly.
-    max_tokens_per_story = effective_policy.seed_view()["max_tokens_per_story"].value
-    max_tokens_per_run = effective_policy.seed_view()["max_tokens_per_run"].value
-    max_wall_clock_minutes_per_story = effective_policy.seed_view()[
-        "max_wall_clock_minutes_per_story"
-    ].value
-    max_wall_clock_minutes_per_run = effective_policy.seed_view()[
-        "max_wall_clock_minutes_per_run"
-    ].value
 
+    return _emit(args, data, findings)
+
+
+def _latest_run_dir(home: Path, slug: str) -> Path | None:
+    """The most recent Marshal run directory for ``slug`` under this loop
+    home's Tier-3 store (``<tier3>/runs/<slug>-*``, sorted -- AD-25's own
+    "sortable chronologically within a slug"), or ``None`` if none exists.
+    A plain ``Path.glob``, not routed through ``FsPort`` (no directory-
+    listing primitive exists on that port; adding one for this single,
+    read-only caller would be disproportionate -- mirrors this module's own
+    ``_prior_attempt_keys``/``_large_spec_bytes`` precedent, Story 3.6)."""
+    runs_dir = _tier3_path(home, slug) / "runs"
     try:
-        supervisor_pid = process.spawn_detached(
-            [
-                sys.executable,
-                "-m",
-                "pyforge.marshal.supervisor",
-                str(home),
-                slug,
-                run_id,
-                str(spin_result.pid),
-                str(supervisor_log),
-                str(idle_threshold_minutes),
-                str(max_tokens_per_story),
-                str(max_tokens_per_run),
-                str(max_wall_clock_minutes_per_story),
-                str(max_wall_clock_minutes_per_run),
-            ],
-            cwd=home,
-            log_path=supervisor_log,
-        )
-    except ProcessError as exc:
-        # The harness launch already succeeded (a live process exists) --
-        # losing supervision degrades the run to unsupervised, never
-        # invalidates the launch: WARN, the same tier as MRS-SPIN-006's own
-        # "a different paper-trail gap over an already-successful launch".
+        candidates = sorted(path for path in runs_dir.glob(f"{slug}-*") if path.is_dir())
+    except OSError:
+        return None
+    return candidates[-1] if candidates else None
+
+
+def _resolve_harness_run_id_for_resume(fs: FsPort, run_dir: Path, run_id: str) -> str | None:
+    """``run_dir``'s own launch OUTCOME entry's ``harness_run_id`` field --
+    the SAME lookup ``supervisor/__main__.py::_resolve_harness_run_id``
+    performs, reproduced here rather than imported (this module already
+    duplicates several of that module's own small, pure, private helpers
+    across the identical AD-9 boundary -- e.g. ``_tier3_path``/``_run_dir``
+    below). Checks BOTH ``_LAUNCH_KIND`` and ``_RESUME_KIND`` (a run this
+    resume is chaining off of may itself have been minted by an earlier
+    ``marshal factory resume``, whose own outcome entry carries the SAME
+    field under the other kind) -- ``None`` if the journal cannot be read,
+    or neither kind has a matching outcome entry with a real
+    ``harness_run_id``."""
+    try:
+        text = fs.read_text(run_dir / _JOURNAL_FILENAME)
+    except FsError:
+        return None
+    lines = text.split("\n") if text is not None else []
+    fold_result = fold(lines)
+    for kind in (_LAUNCH_KIND, _RESUME_KIND):
+        for entry in fold_result.by_kind(kind):
+            if entry.run_id != run_id or entry.phase is not Phase.OUTCOME:
+                continue
+            candidate = entry.payload.get("harness_run_id")
+            if isinstance(candidate, str) and candidate:
+                return candidate
+    return None
+
+
+def _render_story_key_best_effort(raw: str | None) -> str | None:
+    """Marshal's own canonical dot form for a harness-native story key
+    (``core.identity``'s own ``normalize``/``render_feed_key``), falling
+    back to ``raw`` unchanged when it does not parse -- mirrors
+    ``supervisor/__main__.py::_feed_key_form``'s identical convention and
+    identical rationale (a key this package cannot normalize is still
+    better attribution than none). ``None`` in, ``None`` out."""
+    if raw is None:
+        return None
+    try:
+        return render_feed_key(normalize(raw))
+    except ValueError:
+        return raw
+
+
+def run_resume(
+    args: argparse.Namespace,
+    *,
+    fs: FsPort | None = None,
+    harness: HarnessPort | None = None,
+    process: ProcessPort | None = None,
+) -> int:
+    fs = fs if fs is not None else LocalFs()
+    harness = harness if harness is not None else BmadLoopHarness()
+    process = process if process is not None else PosixProcess()
+
+    slug = args.slug
+    findings: list[Finding] = []
+    data: dict[str, object] = {"slug": slug}
+
+    # --- slug shape -- blocking, before ANY filesystem/harness touch --------
+    if not policy._is_valid_project_slug(slug):
         findings.append(
             Finding(
-                code="MRS-SPIN-007",
-                severity=Severity.WARN,
+                code="MRS-SPIN-001",
+                severity=Severity.ERROR,
                 message=(
-                    # `supervisor_log` quoted at construction (review
-                    # finding): `_render_text` deliberately does NOT quote
-                    # finding MESSAGES -- its own comment states the split
-                    # and requires "every message that interpolates an
-                    # untrusted value quotes it at construction instead",
-                    # which the `MRS-SPIN-001`/`002` sites above already do
-                    # (`{slug!r}`, `{str(home)!r}`). This message shipped
-                    # with a RAW path derived from `BMAD_LOOP_HOME_ROOT`,
-                    # which `cli/init.py::_loop_home_root` reads unvalidated
-                    # and only anchors to absolute -- so a newline in it
-                    # forged whole lines of this report (a second
-                    # `findings:` block, on a run that genuinely launched at
-                    # rc=0), reintroducing on this story's own new finding
-                    # exactly the defect a prior pass fixed for `--story`
-                    # and raw feed keys.
-                    f"bmad-loop run launched (pid {spin_result.pid}) but its "
-                    f"supervisor could not be spawned: {exc} -- the run "
-                    f"continues unsupervised (supervisor log: "
-                    f"{str(supervisor_log)!r})"
+                    f"malformed project slug {slug!r} -- must be one safe "
+                    "path segment (letters, digits, '.', '_', '-'; not '.' "
+                    "or '..'; at most 255 characters)"
                 ),
             )
         )
-    else:
-        data["supervisor_pid"] = supervisor_pid
+        return _emit(args, data, findings)
+
+    # --- loop home + Tier-3 backlink must be provisioned ---------------------
+    # A simplified restatement of run_spin's own identical checks (its own
+    # extensively-commented block explains each individual failure mode this
+    # mirrors -- MRS-SPIN-002 covers all of them, matching that function's
+    # own single-code convention for "loop home not provisioned").
+    try:
+        home = _home_path(slug)
+    except (RuntimeError, OSError) as exc:
+        findings.append(
+            Finding(
+                code="MRS-SPIN-002",
+                severity=Severity.ERROR,
+                message=f"resolving the loop-home root: {exc}",
+            )
+        )
+        return _emit(args, data, findings)
+    data["home"] = str(home)
+
+    if not fs.is_dir(home):
+        findings.append(
+            Finding(
+                code="MRS-SPIN-002",
+                severity=Severity.ERROR,
+                message=(
+                    f"loop home not provisioned: {str(home)!r} is not a directory "
+                    f"-- run 'marshal init {slug}' first"
+                ),
+                path=str(home),
+            )
+        )
+        return _emit(args, data, findings)
+
+    tier3_path = _tier3_path(home, slug)
+    try:
+        tier3_target = fs.read_symlink_target(tier3_path)
+    except FsError as exc:
+        findings.append(
+            Finding(
+                code="MRS-SPIN-002",
+                severity=Severity.ERROR,
+                message=(
+                    f"cannot read the loop home Tier-3 backlink "
+                    f"{str(tier3_path)!r}: {exc}"
+                ),
+                path=str(tier3_path),
+            )
+        )
+        return _emit(args, data, findings)
+    if tier3_target is None or not fs.is_dir(tier3_path):
+        findings.append(
+            Finding(
+                code="MRS-SPIN-002",
+                severity=Severity.ERROR,
+                message=(
+                    f"loop home Tier-3 backlink not provisioned or dangling: "
+                    f"{str(tier3_path)!r} -- run 'marshal init {slug}' first"
+                ),
+                path=str(tier3_path),
+            )
+        )
+        return _emit(args, data, findings)
+
+    # --- find the most recent Marshal run for this slug ----------------------
+    prior_run_dir = _latest_run_dir(home, slug)
+    if prior_run_dir is None:
+        findings.append(
+            Finding(
+                code="MRS-SPIN-011",
+                severity=Severity.ERROR,
+                message=(
+                    f"no resumable run found for {slug!r} under "
+                    f"{str(tier3_path / 'runs')!r}"
+                ),
+            )
+        )
+        return _emit(args, data, findings)
+    prior_run_id = prior_run_dir.name
+    data["resumed_from_run"] = prior_run_id
+
+    harness_run_id = _resolve_harness_run_id_for_resume(fs, prior_run_dir, prior_run_id)
+    if harness_run_id is None:
+        findings.append(
+            Finding(
+                code="MRS-SPIN-011",
+                severity=Severity.ERROR,
+                message=(
+                    f"run {prior_run_id!r}'s harness_run_id could not be "
+                    "recovered from its own journal -- nothing to resume"
+                ),
+            )
+        )
+        return _emit(args, data, findings)
+    data["harness_run_id"] = harness_run_id
+
+    # --- live escalation-refusal gate (AD-45) --------------------------------
+    # NEVER trusts the historical journal for the resolved/unresolved
+    # question -- only for discovering which harness_run_id to check (the
+    # spec's own Always bullet).
+    status_snapshot = harness.run_status_snapshot(home, harness_run_id)
+    if status_snapshot is None:
+        # Review finding: a read/parse failure at exactly this live gate must
+        # never be SILENT -- the gate's whole purpose is to positively
+        # confirm the escalation is resolved before letting resume proceed,
+        # and an unreadable state.json means it cannot. Mirrors AD-32's own
+        # "a stale/unreadable sample degrades to a registered WARN, never a
+        # silent pass" precedent for the budget ceilings' identical
+        # ambiguity -- proceeding anyway (rather than refusing outright) so
+        # a transient hiccup never makes the ordinary, never-escalated
+        # resume newly unreliable.
+        findings.append(
+            Finding(
+                code="MRS-SPIN-012",
+                severity=Severity.WARN,
+                message=(
+                    f"could not read run {harness_run_id!r}'s live status -- "
+                    "proceeding without confirming any escalation is resolved"
+                ),
+            )
+        )
+    elif status_snapshot.finished:
+        # Follow-up review finding: `harness.resume` DETACHES (AD-22), so the
+        # child's exit code is never visible here -- and `bmad-loop resume`'s
+        # own first act is to refuse an already-finished run (`run <id>
+        # already finished`, exit 1) AFTER starting normally. Without this
+        # gate the command reported a pid, journaled a "run-resume" OUTCOME,
+        # and spawned a supervisor for a resume that never happened -- a
+        # clean-looking resume in an append-only EVIDENCE journal that is
+        # simply false. Refused with MRS-SPIN-011, whose registered meaning
+        # ("no resumable run") is exactly this: a finished run is not one.
+        findings.append(
+            Finding(
+                code="MRS-SPIN-011",
+                severity=Severity.ERROR,
+                message=(
+                    f"run {harness_run_id!r} already finished -- nothing to "
+                    "resume"
+                ),
+            )
+        )
+        return _emit(args, data, findings)
+
+    paused_stage = status_snapshot.paused_stage if status_snapshot is not None else None
+    paused_story_key = (
+        status_snapshot.paused_story_key if status_snapshot is not None else None
+    )
+    task_phase = (
+        status_snapshot.escalated_task_phase if status_snapshot is not None else None
+    )
+    escalation_status = evaluate_escalation(paused_stage, paused_story_key, task_phase)
+    if escalation_status is EscalationStatus.UNRESOLVED:
+        findings.append(
+            Finding(
+                code="MRS-SPIN-010",
+                severity=Severity.ERROR,
+                message=(
+                    f"resume refused: story {paused_story_key!r} is still "
+                    "escalated and unresolved -- resolve it (e.g. "
+                    "'bmad-loop resolve') before resuming"
+                ),
+            )
+        )
+        return _emit(args, data, findings)
+
+    # Review finding: `paused_story_key` is a GENERIC field shared by every
+    # bmad-loop pause reason (spec-approval, epic-boundary, a stories-mode
+    # checkpoint, ...), not just escalation. Populating AD-45's back-
+    # reference fields for any of those would produce a "run-resume" journal
+    # entry that LOOKS like an escalation was resolved when nothing of the
+    # sort happened. `EscalationStatus.RESOLVED` is exactly (and only) "this
+    # pause WAS an escalation, and it no longer is" -- the one case AD-45's
+    # fields describe.
+    was_resolved_escalation = escalation_status is EscalationStatus.RESOLVED
+    story_key = paused_story_key if was_resolved_escalation else None
+    reason = (
+        status_snapshot.paused_reason
+        if status_snapshot is not None and was_resolved_escalation
+        else None
+    )
+    spec_file = (
+        status_snapshot.escalated_spec_file
+        if status_snapshot is not None and was_resolved_escalation
+        else None
+    )
+    resolution_reference = (
+        harness.resolution_reference(home, harness_run_id, story_key)
+        if story_key is not None
+        else None
+    )
+    try:
+        resolver = getpass.getuser()
+    except (OSError, KeyError):
+        # Realistic in a detached/headless automation context -- exactly
+        # where `marshal factory resume` is meant to run (AD-22) -- when no
+        # pwd entry exists and none of LOGNAME/USER/LNAME/USERNAME is set.
+        # AD-45's own attribution is already "attributable, not
+        # authenticated" (AD-27/F-4); an unresolvable identity is simply
+        # another unattested value, never a reason to crash the command.
+        resolver = None
+    rendered_story_key = _render_story_key_best_effort(story_key)
+    if rendered_story_key is not None:
+        data["story_key"] = rendered_story_key
+    if resolution_reference is not None:
+        # Conditional, exactly like `story_key` above (follow-up review
+        # finding): the overwhelmingly common resume is an ordinary,
+        # never-escalated one, where a bare `resolution_reference: null`
+        # line reports on a field that has no meaning outside a resolved
+        # escalation -- and made `_render_text`'s own `"resolution_reference"
+        # in data` guard dead as a discriminator. The JOURNAL payload below
+        # still carries the field unconditionally (AD-45 names it as one of
+        # its four, and an explicit `null` there is the evidence record's own
+        # "asked, and there was none").
+        data["resolution_reference"] = resolution_reference
+
+    # --- mint a NEW Marshal run id, journal "run-resume" intent (AD-25/AD-45) ---
+    writer_id = _writer_id()
+    mint_moment = _now_utc()
+    run_id = mint_run_id(slug, _format_utc_compact(mint_moment), _random_token())
+    data["run_id"] = run_id
+
+    run_dir = _run_dir(home, slug, run_id)
+    try:
+        fs.ensure_dir(run_dir.parent)
+        fs.create_dir_exclusive(run_dir)
+    except FsError as exc:
+        findings.append(
+            Finding(
+                code="MRS-SPIN-003",
+                severity=Severity.ERROR,
+                message=f"cannot create run directory {str(run_dir)!r}: {exc}",
+            )
+        )
+        return _emit(args, data, findings)
+
+    intent_id = JournalEntryId(writer_id, 0)
+    intent_entry = build_entry(
+        id=intent_id,
+        ts=_format_entry_ts(mint_moment),
+        run_id=run_id,
+        kind=_RESUME_KIND,
+        phase=Phase.INTENT,
+        payload={
+            "resumed_from_run": prior_run_id,
+            "harness_run_id": harness_run_id,
+            "story_key": rendered_story_key,
+            "reason": reason,
+            "spec_file": spec_file,
+            "resolution_reference": resolution_reference,
+            "resolver": resolver,
+        },
+    )
+    try:
+        _append_entry(fs, run_dir, intent_entry, fsync=True)
+    except FsError as exc:
+        findings.append(
+            Finding(
+                code="MRS-SPIN-003",
+                severity=Severity.ERROR,
+                message=f"cannot journal the resume intent: {exc}",
+            )
+        )
+        return _emit(args, data, findings)
+
+    # --- the detached resume itself -------------------------------------------
+    log_path = run_dir / _LOG_FILENAME
+    data["log"] = str(log_path)
+    try:
+        pid = harness.resume(home, harness_run_id, log_path=log_path)
+    except HarnessError as exc:
+        findings.append(
+            Finding(
+                code="MRS-SPIN-003",
+                severity=Severity.ERROR,
+                message=f"cannot launch bmad-loop resume: {exc}",
+            )
+        )
+        # AD-6: the attempt is journaled as a FAILED outcome, never as a
+        # successful launch -- run id and directory already exist by this
+        # point, so the failure must still be recorded against them.
+        outcome_entry = build_entry(
+            id=JournalEntryId(writer_id, 1),
+            ts=_format_entry_ts(_now_utc()),
+            run_id=run_id,
+            kind=_RESUME_KIND,
+            phase=Phase.OUTCOME,
+            intent_id=intent_id,
+            payload={"pid": None, "harness_run_id": None, "error": str(exc)},
+        )
+        try:
+            _append_entry(fs, run_dir, outcome_entry, fsync=False)
+        except FsError:
+            pass
+        return _emit(args, data, findings)
+
+    data["pid"] = pid
+
+    outcome_entry = build_entry(
+        id=JournalEntryId(writer_id, 1),
+        ts=_format_entry_ts(_now_utc()),
+        run_id=run_id,
+        kind=_RESUME_KIND,
+        phase=Phase.OUTCOME,
+        intent_id=intent_id,
+        payload={"pid": pid, "harness_run_id": harness_run_id},
+    )
+    try:
+        _append_entry(fs, run_dir, outcome_entry, fsync=False)
+    except FsError as exc:
+        findings.append(
+            Finding(
+                code="MRS-SPIN-006",
+                severity=Severity.WARN,
+                message=(
+                    f"bmad-loop resume launched (pid {pid}) but its "
+                    f"outcome could not be journaled: {exc}"
+                ),
+            )
+        )
+
+    # --- spawn a fresh supervisor sidecar -- the LAST step (Story 3.4, AD-9) ---
+    _spawn_supervisor_sidecar(
+        process,
+        findings,
+        data,
+        home=home,
+        slug=slug,
+        run_id=run_id,
+        watched_pid=pid,
+        run_dir=run_dir,
+        launched_via="bmad-loop resume",
+    )
 
     return _emit(args, data, findings)
 
@@ -1217,10 +1762,15 @@ def _scalar(value: object) -> str:
     return str(value)
 
 
-def _render_text(data: Mapping[str, object], findings: tuple[Finding, ...]) -> str:
+def _render_text(
+    data: Mapping[str, object], findings: tuple[Finding, ...], command: str = "factory spin"
+) -> str:
     """A pure projection of the SAME envelope ``data``/``findings`` the
     ``--format json`` path prints (AD-14), matching every sibling command's
-    own ``_render_text`` convention."""
+    own ``_render_text`` convention. ``command`` (Story 3.7) is the same
+    envelope-command string ``_emit`` derives -- ``run_resume`` shares this
+    function with ``run_spin`` rather than a second copy, so it must not
+    hardcode "factory spin" as its own header line."""
     # Every field here whose content is attacker- or typo-controlled is
     # rendered through `_scalar` (i.e. `repr`), exactly as `cli/gate.py`'s
     # own `_render_text` already does across two of its review passes --
@@ -1246,9 +1796,13 @@ def _render_text(data: Mapping[str, object], findings: tuple[Finding, ...]) -> s
     # prose and must stay readable, the same split `cli/gate.py` documents;
     # every message that interpolates an untrusted value quotes it at
     # construction instead (see the `MRS-SPIN-001`/`002` sites above).
-    lines = [f"factory spin: {_scalar(data['slug'])}"]
+    lines = [f"{command}: {_scalar(data['slug'])}"]
     if "home" in data:
         lines.append(f"home: {_scalar(str(data['home']))}")
+    if "resumed_from_run" in data:
+        lines.append(f"resumed_from_run: {_scalar(data['resumed_from_run'])}")
+    if "story_key" in data:
+        lines.append(f"story_key: {_scalar(data['story_key'])}")
     if "feed" in data:
         feed = data["feed"]
         lines.append(f"feed: resolved {feed['resolved']} of {feed['total']}")
@@ -1271,6 +1825,8 @@ def _render_text(data: Mapping[str, object], findings: tuple[Finding, ...]) -> s
         lines.append(f"pid: {data['pid']}")
     if "harness_run_id" in data:
         lines.append(f"harness_run_id: {_scalar(data['harness_run_id'])}")
+    if "resolution_reference" in data:
+        lines.append(f"resolution_reference: {_scalar(data['resolution_reference'])}")
     if "supervisor_log" in data:
         lines.append(f"supervisor_log: {_scalar(str(data['supervisor_log']))}")
     if "supervisor_pid" in data:
@@ -1286,9 +1842,15 @@ def _render_text(data: Mapping[str, object], findings: tuple[Finding, ...]) -> s
 
 
 def _emit(args: argparse.Namespace, data: dict[str, object], findings: list[Finding]) -> int:
+    # `args.factory_command` is the subparsers `dest` (Story 3.7:
+    # "spin"/"resume") -- defaulted to "spin" for every test in this module
+    # that hand-builds an `argparse.Namespace` and calls `run_spin` directly,
+    # bypassing `add_factory_subparser` entirely (this module's own existing
+    # convention, predating this story).
+    command = f"factory {getattr(args, 'factory_command', 'spin')}"
     verdict_value = compute_verdict(tuple(findings))
     envelope = build_envelope(
-        command="factory spin", verdict=verdict_value, data=data, findings=tuple(findings)
+        command=command, verdict=verdict_value, data=data, findings=tuple(findings)
     )
     # Same flush + broken-pipe-suppression convention as every sibling
     # command's own _emit (cli/init.py, cli/gate.py, cli/config.py).
@@ -1305,7 +1867,7 @@ def _emit(args: argparse.Namespace, data: dict[str, object], findings: list[Find
         if args.format == "json":
             print(json.dumps(envelope.to_json_dict(), indent=2, sort_keys=True), flush=True)
         else:
-            print(_render_text(envelope.data, envelope.findings), flush=True)
+            print(_render_text(envelope.data, envelope.findings, command), flush=True)
     except (OSError, UnicodeEncodeError):
         _suppress_downstream_pipe_close()
     return exit_code_for(envelope.verdict)

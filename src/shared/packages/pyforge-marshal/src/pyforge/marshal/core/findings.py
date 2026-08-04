@@ -269,6 +269,38 @@ classifies ``Verdict.WARN`` for the same reason ``MRS-SPIN-004``/``006``/
 launch precondition, and never re-classifies an otherwise-clean launch as a
 failure.
 
+Story 3.7 (escalation, deferral, and resume, AD-9/AD-34/AD-45,
+FR-15/16/17) adds a TWELFTH code to ``supervisor/__main__.py``'s own
+``MRS-SUPV-*`` area, ``MRS-SUPV-007`` (the mandatory escalation file-marker
+write -- ``NotifyPort.notify_file`` -- raised ``FsError``; the desktop
+notify is fully best-effort and registers no finding at all). It classifies
+``Verdict.WARN``, the same tier as this area's own 001-006: a degraded-but-
+still-supervised condition (the escalation was detected and journaled
+regardless; only the durable marker's own write failed) never itself
+invalidates the detach. The same story adds two more codes to
+``cli/spin.py``'s own caller: ``MRS-SPIN-010`` (``marshal factory resume``
+refused -- a live ``run_status_snapshot`` read classified
+``EscalationStatus.UNRESOLVED`` before any spawn) and ``MRS-SPIN-011``
+(``marshal factory resume`` refused -- no resumable Marshal run exists for
+the slug, or the one found could not have its ``harness_run_id`` recovered
+from its own journal). Both classify
+``Verdict.ERROR``, the same tier as every other real-precondition-checked-
+and-failed code on this caller (``MRS-SPIN-002/003/005``): a real refusal
+gate ran and blocked the resume, never "could not evaluate" and never a
+degraded-but-proceeding launch.
+
+Review finding (pass 1): the SAME caller adds a THIRTEENTH code,
+``MRS-SPIN-012`` -- the live ``run_status_snapshot`` read the resume
+refusal gate depends on returned ``None`` (a ``state.json`` read/parse
+failure at exactly the moment ``resume`` runs), so the gate could not
+positively confirm the escalation is resolved and proceeded anyway
+(mirrors AD-32's own "a stale/unreadable sample degrades to a registered
+WARN, never a silent pass" precedent for the budget ceilings' identical
+ambiguity). It classifies ``Verdict.WARN``: the launch is not refused on
+mere ambiguity -- refusing every resume on a transient read hiccup would
+make the common case (resuming an ordinary, never-escalated pause) newly
+unreliable -- but the ambiguity is never silent.
+
 Later stories append further real codes here as they gain their own real
 callers. The registry MECHANISM (format check, then membership check) is
 separately proven via ``monkeypatch``-injected synthetic codes in
@@ -316,6 +348,12 @@ CODE_PATTERN = re.compile(r"MRS-[A-Z][A-Z0-9]*-[0-9]{3}")
 # Story 3.6's supervisor/__main__.py adds three more MRS-SUPV-* codes
 # (budget-warn, budget-stop failure, stale usage evidence), and cli/spin.py
 # adds a NINTH code, MRS-SPIN-009 (the FR-14 preflight advisory).
+# Story 3.7's supervisor/__main__.py adds a SEVENTH MRS-SUPV-* code,
+# MRS-SUPV-007 (the mandatory escalation file-marker write failed), and
+# cli/spin.py adds a TENTH, ELEVENTH and TWELFTH code: MRS-SPIN-010 (resume
+# refused: unresolved escalation), MRS-SPIN-011 (resume refused: no
+# resumable run) and MRS-SPIN-012 (resume proceeding without having been
+# able to read the run's live status at all -- added in review).
 REGISTERED_CODES: frozenset[str] = frozenset(
     {
         "MRS-IDENT-001",
@@ -371,6 +409,10 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-SUPV-004",
         "MRS-SUPV-005",
         "MRS-SUPV-006",
+        "MRS-SUPV-007",
+        "MRS-SPIN-010",
+        "MRS-SPIN-011",
+        "MRS-SPIN-012",
     }
 )
 

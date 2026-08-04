@@ -13,9 +13,11 @@ from datetime import datetime, timedelta, timezone
 import pytest
 from pyforge.marshal.core.supervise import (
     CeilingStatus,
+    EscalationStatus,
     LadderRung,
     Sample,
     evaluate_ceiling,
+    evaluate_escalation,
     evaluate_idle,
     idle_anchor,
     idle_since,
@@ -414,3 +416,70 @@ def test_evaluate_ceiling_rejects_a_boolean_limit():
     ``_valid_positive_number``/``_valid_attempt_count`` validators apply."""
     with pytest.raises(TypeError):
         evaluate_ceiling(50, True)  # type: ignore[arg-type]
+
+
+# --- evaluate_escalation (Story 3.7, AD-20/AD-45) -------------------------------
+
+
+def test_not_paused_at_all_is_none():
+    assert evaluate_escalation(None, None, None) == EscalationStatus.NONE
+
+
+def test_paused_at_a_different_stage_is_none():
+    """Any pause stage other than ``"escalation"`` -- spec-approval,
+    epic-boundary, story-gate, plan/story-checkpoint, or an unrecognized
+    future value -- is simply not this kind of pause."""
+    for stage in ("spec-approval", "epic-boundary", "story-gate", "plan-checkpoint", "bogus"):
+        assert (
+            evaluate_escalation(stage, "3-7-escalation-deferral-and-resume", "escalated")
+            == EscalationStatus.NONE
+        )
+
+
+def test_escalation_paused_with_the_task_still_escalated_is_unresolved():
+    assert (
+        evaluate_escalation("escalation", "3-7-escalation-deferral-and-resume", "escalated")
+        == EscalationStatus.UNRESOLVED
+    )
+
+
+def test_escalation_paused_with_no_story_key_is_resolved():
+    """A malformed/incomplete pause record -- `paused_stage` names an
+    escalation but no `paused_story_key` is set -- is never `UNRESOLVED`
+    (that classification's own definition requires a story key); it falls
+    through to `RESOLVED`, this function's own "not this exact unresolved
+    shape" catch-all for a stage-escalation pause."""
+    assert evaluate_escalation("escalation", None, "escalated") == EscalationStatus.RESOLVED
+
+
+def test_escalation_paused_with_the_task_no_longer_escalated_is_resolved():
+    """bmad-loop's own ``rearm_escalation`` flips the task's phase back to
+    ``pending`` WITHOUT clearing the pause itself -- the caller resumes the
+    run separately. This is the one window `RESOLVED` describes: a human
+    has re-armed the story, but the run has not yet been resumed."""
+    assert (
+        evaluate_escalation("escalation", "3-7-escalation-deferral-and-resume", "pending")
+        == EscalationStatus.RESOLVED
+    )
+
+
+def test_escalation_paused_with_no_task_phase_at_all_is_resolved():
+    """A story key is set but the task's own phase could not be read (e.g.
+    the task disappeared from `state.json`'s own ``tasks`` map) --
+    `task_phase=None` can never equal `"escalated"`, so this is `RESOLVED`,
+    never `UNRESOLVED`: the classification is never permissive by default."""
+    assert (
+        evaluate_escalation("escalation", "3-7-escalation-deferral-and-resume", None)
+        == EscalationStatus.RESOLVED
+    )
+
+
+def test_evaluate_escalation_never_raises_on_unexpected_string_values():
+    """No type guard beyond ordinary equality (this function's own
+    docstring) -- an unexpected string for any of the three inputs simply
+    fails the equality checks it needs to, never raising."""
+    assert evaluate_escalation("ESCALATION", "3.7", "escalated") == EscalationStatus.NONE
+    assert (
+        evaluate_escalation("escalation", "3-7-escalation-deferral-and-resume", "ESCALATED")
+        == EscalationStatus.RESOLVED
+    )
