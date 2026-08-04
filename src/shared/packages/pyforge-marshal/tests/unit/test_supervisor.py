@@ -32,6 +32,8 @@ from pyforge.marshal.core.journal import (
     build_entry,
     prepare_for_write,
 )
+from pyforge.marshal.core.supervise import CeilingStatus
+from pyforge.marshal.ports.harness import UsageSnapshot
 from pyforge.marshal.supervisor import __main__ as supervisor_main
 from pyforge.marshal.supervisor.__main__ import main, run_supervisor
 
@@ -173,6 +175,21 @@ class FakeObserver:
         send_text_result: bool = True,
         mtime: float | None = 1_760_000_000.0,
         mtime_sequence: list[float | None] | None = None,
+        # Story 3.6's own budget-ceiling staleness query -- a SEPARATE
+        # sequence from `mtime`/`mtime_sequence` above, keyed by `path.name
+        # == "state.json"` (see `mtime()` below): the idle ladder's own
+        # `harness_log_path` query and the budget block's `state.json` query
+        # are two DIFFERENT paths in the same tick, so sharing one counter/
+        # constant between them would make every pre-existing test's
+        # `mtime_calls`/`mtime_sequence` assertion (indexed by call count)
+        # silently start counting the WRONG query. Defaults to `float("inf")`
+        # -- an mtime infinitely in the future can never be "stale" relative
+        # to any `moment` a test's clock produces, so every pre-existing
+        # test (none of which configures this) sees the budget token
+        # ceilings stay perpetually fresh and unexercised, exactly like the
+        # large default ceiling constants above keep them at
+        # `CeilingStatus.NONE`.
+        state_json_mtime: float | None = float("inf"),
     ) -> None:
         self.pane = pane
         self.pane_sequence = pane_sequence
@@ -196,6 +213,8 @@ class FakeObserver:
         # the method of the same name on every instance.
         self.mtime_value = mtime
         self.mtime_sequence = mtime_sequence
+        self.state_json_mtime = state_json_mtime
+        self.state_json_mtime_calls: list[Path] = []
 
     def pane_content(self, session: str) -> str | None:
         self.pane_content_calls.append(session)
@@ -205,6 +224,13 @@ class FakeObserver:
         return self.pane
 
     def mtime(self, path: Path) -> float | None:
+        # Path-aware (Story 3.6): `state.json` (the budget block's own
+        # staleness query) is answered from a SEPARATE field/counter than
+        # every other path (the idle ladder's own `harness_log_path`) --
+        # see this class's own docstring comment on `state_json_mtime`.
+        if path.name == "state.json":
+            self.state_json_mtime_calls.append(path)
+            return self.state_json_mtime
         self.mtime_calls.append(path)
         if self.mtime_sequence is not None:
             index = len(self.mtime_calls) - 1
@@ -218,20 +244,33 @@ class FakeObserver:
 
 class FakeHarness:
     """Fakes ``HarnessPort``'s ``stop``/``resume`` -- the idle ladder's
-    ``stop-and-retry`` rung. Defaults to succeeding (``stop`` returns
-    ``True``, ``resume`` returns ``resume_result``); a test injects
+    ``stop-and-retry`` rung -- and (Story 3.6) ``usage_snapshot``, the
+    budget ceilings' own usage-read seam. Defaults to succeeding (``stop``
+    returns ``True``, ``resume`` returns ``resume_result``); a test injects
     ``fail_stop``/``fail_resume`` to exercise the ``HarnessError`` path, or
     sets ``stop_result = False`` to model ``stop()``'s own documented "the
     run had already finished" outcome (not an exception -- see that port
-    method's own docstring)."""
+    method's own docstring). ``usage_snapshot_result`` defaults to ``None``
+    (the "could not read usage" degrade every real adapter method shares) --
+    every pre-existing test in this file that constructs a bare
+    ``FakeHarness()`` therefore sees no story tracked and no token ceiling
+    ever evaluated, matching ``FakeObserver``'s own inert-by-default
+    ``state_json_mtime``."""
 
     def __init__(self) -> None:
         self.stop_calls: list[tuple[Path, str]] = []
         self.resume_calls: list[dict[str, object]] = []
+        self.usage_snapshot_calls: list[tuple[Path, str]] = []
         self.fail_stop: Exception | None = None
         self.fail_resume: Exception | None = None
         self.stop_result: bool = True
         self.resume_result: int = 555555
+        self.usage_snapshot_result: UsageSnapshot | None = None
+        # A per-call sequence (mirrors `FakeObserver.pane_sequence`'s own
+        # convention: indexed by call count, clamped to the last element) --
+        # lets a test model a story TRANSITION across ticks, which a single
+        # constant `usage_snapshot_result` cannot.
+        self.usage_snapshot_sequence: list[UsageSnapshot | None] | None = None
 
     def stop(self, project: Path, run_id: str) -> bool:
         self.stop_calls.append((project, run_id))
@@ -244,6 +283,13 @@ class FakeHarness:
         if self.fail_resume:
             raise self.fail_resume
         return self.resume_result
+
+    def usage_snapshot(self, project: Path, run_id: str) -> UsageSnapshot | None:
+        self.usage_snapshot_calls.append((project, run_id))
+        if self.usage_snapshot_sequence is not None:
+            index = len(self.usage_snapshot_calls) - 1
+            return self.usage_snapshot_sequence[min(index, len(self.usage_snapshot_sequence) - 1)]
+        return self.usage_snapshot_result
 
 
 def _no_sleep(seconds: float) -> None:
@@ -310,6 +356,19 @@ _LOG_PATH = Path("/home/acme-loop/supervisor.log")
 # test in this file stays behaviourally unaffected by the ladder's addition.
 _IDLE_THRESHOLD_MINUTES = 25.0
 
+# Story 3.6's 4 budget-ceiling arguments -- large, inert-by-default values
+# (matching core.policy's own DEFAULT_POLICY) passed to every pre-existing
+# `run_supervisor` call in this file that does not itself exercise the
+# ceilings: combined with `FakeObserver`'s own default-fresh
+# `state_json_mtime` (see that class below) and `FakeHarness.usage_snapshot`
+# defaulting to `None`, every ceiling here stays at `CeilingStatus.NONE` for
+# the whole life of every pre-existing test, so none of their journal-entry
+# assertions change.
+_MAX_TOKENS_PER_STORY = 4_000_000.0
+_MAX_TOKENS_PER_RUN = 40_000_000.0
+_MAX_WALL_CLOCK_MINUTES_PER_STORY = 240.0
+_MAX_WALL_CLOCK_MINUTES_PER_RUN = 600.0
+
 _SCHEMA_PATH = (
     Path(__file__).resolve().parents[2]
     / "src"
@@ -338,6 +397,10 @@ def _harness_log_path() -> Path:
     return _run_dir() / supervisor_main._HARNESS_LOG_FILENAME
 
 
+def _state_json_path() -> Path:
+    return supervisor_main._bmad_loop_state_json_path(_HOME, _HARNESS_RUN_ID)
+
+
 # --- normal attach: attach, heartbeat until the harness exits, then detach ----
 
 
@@ -354,7 +417,7 @@ def test_normal_attach_journals_attach_then_heartbeats_then_detach():
         "acme-run-1",
         4242,
         _LOG_PATH,
-        _IDLE_THRESHOLD_MINUTES,
+        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN, _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
         fs=fs,
         process=process,
         clock=clock,
@@ -387,8 +450,14 @@ def test_normal_attach_journals_attach_then_heartbeats_then_detach():
     assert sleep.seconds == [supervisor_main._TICK_SECONDS] * 3
 
     entries = [json.loads(line) for _, line, _ in fs.appended_lines]
+    # `harness=` is unset here, so `usage_snapshot` falls through to the real
+    # `BmadLoopHarness()` default, which finds no real `state.json` on disk
+    # and returns `None` -- Story 3.6's own `budget-usage-stale` finding
+    # (`MRS-SUPV-006`) therefore fires exactly once, on the first tick, and
+    # never again (`usage_stale` latches).
     assert [entry["kind"] for entry in entries] == [
         "supervisor-attach",
+        "budget-usage-stale",
         "supervisor-heartbeat",
         "supervisor-heartbeat",
         "supervisor-heartbeat",
@@ -401,7 +470,9 @@ def test_normal_attach_journals_attach_then_heartbeats_then_detach():
 
     supervisor_pid = entries[0]["payload"]["pid"]
     assert entries[0]["payload"] == {"pid": supervisor_pid, "watched_pid": 4242}
-    for heartbeat in entries[1:4]:
+    # entries[1] is `budget-usage-stale` (see the comment above) -- the 3
+    # heartbeats are entries[2:5].
+    for heartbeat in entries[2:5]:
         assert heartbeat["payload"]["pid"] == supervisor_pid
         assert "sampled_at" in heartbeat["payload"]
     # The first two heartbeats sample a still-alive process; the THIRD is
@@ -409,7 +480,7 @@ def test_normal_attach_journals_attach_then_heartbeats_then_detach():
     # has just exited -- `watched_alive` is a genuine per-tick observation
     # (review finding), never a hardcoded `True` that only a separate
     # `supervisor-detach` entry could ever contradict.
-    assert [heartbeat["payload"]["watched_alive"] for heartbeat in entries[1:4]] == [
+    assert [heartbeat["payload"]["watched_alive"] for heartbeat in entries[2:5]] == [
         True,
         True,
         False,
@@ -431,7 +502,12 @@ def test_normal_attach_journals_attach_then_heartbeats_then_detach():
     # means no ladder ACTION would have fired regardless (elapsed is always
     # 0); this is purely about how many ticks even attempt the sample.
     assert observer.pane_content_calls == [_SESSION_NAME] * 2
+    # `state.json`'s own mtime (the budget block's staleness query) is a
+    # SEPARATE `FakeObserver` counter (`state_json_mtime_calls`), not
+    # `mtime_calls` -- see that fake's own `mtime()` docstring -- so this
+    # assertion is unaffected by Story 3.6's new staleness query.
     assert observer.mtime_calls == [_harness_log_path()] * 2
+    assert observer.state_json_mtime_calls == [_state_json_path()] * 2
     assert clock.calls >= 4  # 1 attach ts + 3 heartbeat samples
 
     # Every line this sidecar writes conforms to the packaged, frozen
@@ -454,7 +530,7 @@ def test_inert_when_the_journal_does_not_exist_at_all():
     process = FakeProcess(alive_for=5)
 
     rc = run_supervisor(
-        _HOME, "acme", "bogus-run", 1, _LOG_PATH, _IDLE_THRESHOLD_MINUTES,
+        _HOME, "acme", "bogus-run", 1, _LOG_PATH, _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN, _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
         fs=fs, process=process, clock=FakeClock(), observer=FakeObserver(),
         sleep=_no_sleep,
     )
@@ -488,7 +564,7 @@ def test_attaches_when_the_journal_has_only_an_intent_entry_and_no_outcome_yet()
     fs = FakeFs(journal_text=prepare_for_write(intent_entry).line + "\n")
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, _IDLE_THRESHOLD_MINUTES,
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN, _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
         fs=fs, process=FakeProcess(alive_for=0), clock=FakeClock(), observer=FakeObserver(),
         sleep=_no_sleep,
     )
@@ -557,7 +633,7 @@ def test_attaches_when_the_only_run_launch_entry_is_sidecar_referenced():
     )
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, _IDLE_THRESHOLD_MINUTES,
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN, _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
         fs=fs, process=FakeProcess(alive_for=0), clock=FakeClock(),
         observer=FakeObserver(), sleep=_no_sleep,
     )
@@ -588,7 +664,7 @@ def test_inert_when_a_sidecar_referenced_entry_names_a_different_run():
     )
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, _IDLE_THRESHOLD_MINUTES,
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN, _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
         fs=fs, process=FakeProcess(alive_for=5), clock=FakeClock(),
         observer=FakeObserver(), sleep=_no_sleep,
     )
@@ -647,7 +723,7 @@ def test_a_missing_sidecar_blob_still_leaves_the_supervisor_inert():
     fs.blobs = {Path("/nowhere.json"): "{}"}  # non-empty, but not the real ref
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, _IDLE_THRESHOLD_MINUTES,
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN, _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
         fs=fs, process=FakeProcess(alive_for=5), clock=FakeClock(),
         observer=FakeObserver(), sleep=_no_sleep,
     )
@@ -668,7 +744,7 @@ def test_inert_when_the_journal_read_raises_a_plain_value_error():
     fs.fail_read_text = ValueError("embedded null byte")
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 1, _LOG_PATH, _IDLE_THRESHOLD_MINUTES,
+        _HOME, "acme", "acme-run-1", 1, _LOG_PATH, _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN, _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
         fs=fs, process=FakeProcess(alive_for=5), clock=FakeClock(),
         observer=FakeObserver(), sleep=_no_sleep,
     )
@@ -684,7 +760,7 @@ def test_inert_when_the_outcome_entry_belongs_to_a_different_run_id():
     fs = FakeFs(journal_text=_launch_outcome_line("some-other-run") + "\n")
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 1, _LOG_PATH, _IDLE_THRESHOLD_MINUTES,
+        _HOME, "acme", "acme-run-1", 1, _LOG_PATH, _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN, _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
         fs=fs, process=FakeProcess(alive_for=5), clock=FakeClock(), observer=FakeObserver(),
         sleep=_no_sleep,
     )
@@ -701,7 +777,7 @@ def test_inert_when_the_journal_read_itself_fails():
     fs.fail_read_text = FsError("Permission denied")
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 1, _LOG_PATH, _IDLE_THRESHOLD_MINUTES,
+        _HOME, "acme", "acme-run-1", 1, _LOG_PATH, _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN, _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
         fs=fs, process=FakeProcess(alive_for=5), clock=FakeClock(), observer=FakeObserver(),
         sleep=_no_sleep,
     )
@@ -718,7 +794,7 @@ def test_watched_process_already_dead_journals_attach_then_immediately_detach():
     process = FakeProcess(alive_for=0)  # is_alive() is False on the FIRST call
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, _IDLE_THRESHOLD_MINUTES,
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN, _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
         fs=fs, process=process, clock=FakeClock(), observer=FakeObserver(),
         sleep=_no_sleep,
     )
@@ -742,7 +818,7 @@ def test_journal_append_failure_mid_loop_exits_nonzero_and_stops_looping():
     process = FakeProcess(alive_for=10)
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, _IDLE_THRESHOLD_MINUTES,
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN, _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
         fs=fs, process=process, clock=FakeClock(), observer=FakeObserver(),
         sleep=_no_sleep,
     )
@@ -765,7 +841,7 @@ def test_journal_append_failure_prints_a_diagnostic_to_stderr(capsys):
     fs.fail_append_line_on_call = 1  # even the attach entry itself fails
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, _IDLE_THRESHOLD_MINUTES,
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN, _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
         fs=fs, process=FakeProcess(alive_for=5), clock=FakeClock(), observer=FakeObserver(),
         sleep=_no_sleep,
     )
@@ -791,7 +867,7 @@ def test_pane_unavailable_the_tick_proceeds_without_it():
     observer = FakeObserver(pane=None)  # "no session by that name"
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, _IDLE_THRESHOLD_MINUTES,
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN, _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
         fs=fs, process=process, clock=FakeClock(), observer=observer,
         sleep=_no_sleep,
     )
@@ -799,8 +875,13 @@ def test_pane_unavailable_the_tick_proceeds_without_it():
     assert rc == 0
     assert observer.pane_content_calls == [_SESSION_NAME]
     entries = [json.loads(line) for _, line, _ in fs.appended_lines]
+    # `harness=` is unset, so `usage_snapshot` falls through to the real
+    # `BmadLoopHarness()` default (no real `state.json` on disk), firing
+    # Story 3.6's `budget-usage-stale` once on the first tick -- same as
+    # `test_normal_attach_journals_attach_then_heartbeats_then_detach`.
     assert [entry["kind"] for entry in entries] == [
         "supervisor-attach",
+        "budget-usage-stale",
         "supervisor-heartbeat",
         "supervisor-heartbeat",
         "supervisor-detach",
@@ -822,7 +903,7 @@ def test_harness_run_id_unavailable_journals_once_and_stays_heartbeat_only():
     observer = FakeObserver(pane="unchanged")
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, _IDLE_THRESHOLD_MINUTES,
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN, _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
         fs=fs, process=process, clock=FakeClock(), observer=observer,
         sleep=_no_sleep,
     )
@@ -854,7 +935,7 @@ def test_harness_run_id_blank_string_is_also_unavailable():
     fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1", harness_run_id="") + "\n")
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, _IDLE_THRESHOLD_MINUTES,
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN, _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
         fs=fs, process=FakeProcess(alive_for=1), clock=FakeClock(), observer=FakeObserver(),
         sleep=_no_sleep,
     )
@@ -884,7 +965,7 @@ def test_first_threshold_crossing_fires_a_nudge_intent_then_outcome():
     # correct despite the comment's wrong reasoning). Ticks 1-3 stay under
     # one threshold; tick 5 stays at the SAME rung (no re-fire).
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, 2.5,
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, 2.5, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN, _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
         fs=fs, process=FakeProcess(alive_for=5), clock=clock, observer=observer,
         sleep=clock.sleep,
     )
@@ -893,8 +974,13 @@ def test_first_threshold_crossing_fires_a_nudge_intent_then_outcome():
     entries = [json.loads(line) for _, line, _ in fs.appended_lines]
     kinds = [entry["kind"] for entry in entries]
     assert kinds.count("idle-nudge") == 2  # one intent, one outcome
+    # `harness=` is unset, so `usage_snapshot` falls through to the real
+    # `BmadLoopHarness()` default (no real `state.json` on disk), firing
+    # Story 3.6's `budget-usage-stale` once on the first tick -- same as
+    # the other pre-existing tests above that don't inject a `FakeHarness`.
     assert kinds == [
         "supervisor-attach",
+        "budget-usage-stale",
         "supervisor-heartbeat",
         "supervisor-heartbeat",
         "supervisor-heartbeat",
@@ -927,7 +1013,7 @@ def test_nudge_send_failure_registers_a_finding_but_still_advances_bookkeeping()
     observer = FakeObserver(pane="idle", send_text_result=False)
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, 2.5,
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, 2.5, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN, _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
         fs=fs, process=FakeProcess(alive_for=5), clock=clock, observer=observer,
         sleep=clock.sleep,
     )
@@ -969,7 +1055,7 @@ def test_fresh_output_after_nudge_resets_the_window():
     # index beyond its own length, so the harmless extra calls just sample
     # "responded" again.
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, 2.5,
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, 2.5, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN, _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
         fs=fs, process=FakeProcess(alive_for=9), clock=clock, observer=observer,
         sleep=clock.sleep,
     )
@@ -1014,7 +1100,7 @@ def test_every_ladder_journal_entry_conforms_to_the_frozen_journal_schema():
     harness.stop_result = False  # forces MRS-SUPV-002 on the retry rung
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, 1.0,
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, 1.0, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN, _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
         fs=fs, process=FakeProcess(alive_for=12), clock=clock, observer=observer,
         harness=harness, sleep=clock.sleep,
     )
@@ -1058,7 +1144,7 @@ def test_the_nudges_own_echo_does_not_re_arm_the_idle_window():
     harness = FakeHarness()
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, 1.5,
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, 1.5, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN, _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
         fs=fs, process=FakeProcess(alive_for=8), clock=clock, observer=observer,
         harness=harness, sleep=clock.sleep,
     )
@@ -1093,7 +1179,7 @@ def test_a_short_threshold_never_skips_a_ladder_rung():
     # capped at DEFER. The clamp walks NUDGE -> STOP_AND_RETRY -> DEFER
     # instead, one rung per tick.
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, 0.25,
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, 0.25, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN, _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
         fs=fs, process=FakeProcess(alive_for=12), clock=clock, observer=observer,
         harness=harness, sleep=clock.sleep,
     )
@@ -1127,7 +1213,7 @@ def test_an_unobservable_session_is_never_treated_as_idle():
     harness = FakeHarness()
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, 1.0,
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, 1.0, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN, _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
         fs=fs, process=FakeProcess(alive_for=10), clock=clock, observer=observer,
         harness=harness, sleep=clock.sleep,
     )
@@ -1167,7 +1253,7 @@ def test_a_flaky_pane_capture_never_re_arms_the_idle_window():
     harness = FakeHarness()
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, 1.0,
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, 1.0, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN, _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
         fs=fs, process=FakeProcess(alive_for=8), clock=clock, observer=observer,
         harness=harness, sleep=clock.sleep,
     )
@@ -1212,7 +1298,7 @@ def test_a_wall_clock_jump_never_escalates_the_ladder():
             clock.jump_wall_clock(3600.0)
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, 25.0,
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, 25.0, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN, _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
         fs=fs, process=FakeProcess(alive_for=6), clock=clock, observer=observer,
         harness=harness, sleep=_sleep_then_suspend,
     )
@@ -1244,7 +1330,7 @@ def test_a_resume_that_did_not_take_is_not_a_clean_completion():
     process = FakeProcess(alive_for=10, dead_pids={harness.resume_result})
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, 1.0,
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, 1.0, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN, _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
         fs=fs, process=process, clock=clock, observer=observer,
         harness=harness, sleep=clock.sleep,
     )
@@ -1280,7 +1366,7 @@ def test_second_threshold_crossing_fires_stop_and_retry():
     # this budget is exhausted -- `stop`/`resume` are still each called
     # exactly once, which is all this test asserts.
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, 1.5,
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, 1.5, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN, _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
         fs=fs, process=FakeProcess(alive_for=8), clock=clock, observer=observer,
         harness=harness, sleep=clock.sleep,
     )
@@ -1319,7 +1405,7 @@ def test_stop_and_retry_failure_registers_a_finding_and_keeps_watching_original_
     # (tick 6, see below) must not be the LAST one `FakeProcess` reports
     # alive for.
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, 1.5,
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, 1.5, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN, _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
         fs=fs, process=FakeProcess(alive_for=7), clock=clock, observer=observer,
         harness=harness, sleep=clock.sleep,
     )
@@ -1363,7 +1449,7 @@ def test_stop_and_retry_stop_returns_false_skips_resume():
     harness.stop_result = False
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, 1.5,
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, 1.5, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN, _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
         fs=fs, process=FakeProcess(alive_for=8), clock=clock, observer=observer,
         harness=harness, sleep=clock.sleep,
     )
@@ -1409,7 +1495,7 @@ def test_resume_failure_after_a_successful_stop_is_treated_as_unrecoverable_and_
     harness.fail_resume = HarnessError("bmad-loop resume: connection refused")
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, 1.5,
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, 1.5, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN, _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
         fs=fs, process=FakeProcess(alive_for=8), clock=clock, observer=observer,
         harness=harness, sleep=clock.sleep,
     )
@@ -1454,7 +1540,7 @@ def test_heartbeat_after_a_successful_pid_swap_reports_the_new_pids_fresh_readin
     # answers `False` for. If the heartbeat below shows `True`, the
     # recompute never happened.
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, 1.5,
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, 1.5, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN, _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
         fs=fs, process=FakeProcess(alive_for=5), clock=clock, observer=observer,
         harness=harness, sleep=clock.sleep,
     )
@@ -1503,7 +1589,7 @@ def test_already_retried_bounds_the_ladder_to_one_retry_cycle():
     # alive_for=12 keeps every one of those ticks (plus the post-swap
     # recompute's own extra `is_alive` call) non-terminal.
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, 1.5,
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, 1.5, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN, _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
         fs=fs, process=FakeProcess(alive_for=12), clock=clock, observer=observer,
         harness=harness, sleep=clock.sleep,
     )
@@ -1547,7 +1633,7 @@ def test_defer_calls_harness_stop_and_records_success():
     # forbids, and it has its own test below. `defer`'s own stop call is the
     # SECOND one the fake records, and its watched pid is the post-swap one.
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, 1.5,
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, 1.5, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN, _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
         fs=fs, process=FakeProcess(alive_for=12), clock=clock, observer=observer,
         harness=harness, sleep=clock.sleep,
     )
@@ -1590,7 +1676,7 @@ def test_ladder_skips_the_tick_where_the_process_exits_naturally():
     # ladder must be skipped for that tick rather than fire against an
     # already-exited process.
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, 2.5,
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, 2.5, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN, _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
         fs=fs, process=FakeProcess(alive_for=4), clock=clock, observer=observer,
         harness=harness, sleep=clock.sleep,
     )
@@ -1620,7 +1706,7 @@ def test_third_threshold_crossing_fires_defer_and_detaches():
     harness.fail_stop = HarnessError("unreachable")  # never resets progress
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, 1.0,
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, 1.0, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN, _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
         fs=fs, process=FakeProcess(alive_for=10), clock=clock, observer=observer,
         harness=harness, sleep=clock.sleep,
     )
@@ -1695,7 +1781,7 @@ def test_a_channel_that_breaks_mid_run_is_never_treated_as_idle():
     harness = FakeHarness()
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, 1.0,
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, 1.0, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN, _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
         fs=fs, process=FakeProcess(alive_for=8), clock=clock, observer=observer,
         harness=harness, sleep=clock.sleep,
     )
@@ -1733,7 +1819,7 @@ def test_a_nudge_reporting_failed_delivery_still_neutralizes_its_own_echo():
     harness = FakeHarness()
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, 1.0,
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, 1.0, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN, _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
         fs=fs, process=FakeProcess(alive_for=6), clock=clock, observer=observer,
         harness=harness, sleep=clock.sleep,
     )
@@ -1773,7 +1859,7 @@ def test_history_pruning_preserves_the_idle_anchor():
     # tick whose elapsed idle time first equals one full threshold. A prune
     # that moved the anchor would shift this crossing.
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, 3.0,
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, 3.0, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN, _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
         fs=fs, process=FakeProcess(alive_for=5), clock=clock, observer=observer,
         harness=harness, sleep=clock.sleep,
     )
@@ -1805,7 +1891,7 @@ def test_the_heartbeat_written_when_defer_stops_the_run_is_not_stale():
     process = _AliveUntilStopped(harness, after=2)
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, 1.5,
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, 1.5, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN, _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
         fs=fs, process=process, clock=clock, observer=observer,
         harness=harness, sleep=clock.sleep,
     )
@@ -1830,7 +1916,7 @@ def test_the_heartbeat_written_when_a_resume_fails_is_not_stale():
     process = _AliveUntilStopped(harness, after=1)
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, 1.5,
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, 1.5, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN, _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
         fs=fs, process=process, clock=clock, observer=observer,
         harness=harness, sleep=clock.sleep,
     )
@@ -1860,7 +1946,7 @@ def test_the_defer_finding_names_the_run_once_and_reads_as_one_sentence():
     harness.stop_result = False
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, 1.0,
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, 1.0, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN, _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
         fs=fs, process=FakeProcess(alive_for=8), clock=clock, observer=observer,
         harness=harness, sleep=clock.sleep,
     )
@@ -1893,7 +1979,7 @@ def test_run_supervisor_rejects_a_threshold_that_overflows_to_infinite_seconds(c
     fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
 
     rc = run_supervisor(
-        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, 1e308,
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, 1e308, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN, _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
         fs=fs, process=FakeProcess(alive_for=3), clock=AdvancingClock(),
         observer=FakeObserver(pane="idle"), harness=FakeHarness(), sleep=_no_sleep,
     )
@@ -1918,7 +2004,7 @@ def test_run_supervisor_rejects_a_non_numeric_threshold(capsys):
         fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
 
         rc = run_supervisor(
-            _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, bad_threshold,
+            _HOME, "acme", "acme-run-1", 4242, _LOG_PATH, bad_threshold, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN, _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
             fs=fs, process=FakeProcess(alive_for=3), clock=AdvancingClock(),
             observer=FakeObserver(pane="idle"), harness=FakeHarness(), sleep=_no_sleep,
         )
@@ -1929,14 +2015,769 @@ def test_run_supervisor_rejects_a_non_numeric_threshold(capsys):
         assert "positive finite" in capsys.readouterr().err
 
 
+# --- Story 3.6: budget ceilings (AD-20/AD-32) ------------------------------------
+#
+# `AdvancingClock` makes elapsed monotonic minutes equal the TICK COUNT
+# (each `sleep(_TICK_SECONDS)` advances `.monotonic()` by exactly 60s, and
+# `run_started_monotonic`/`story_started_monotonic` are captured before any
+# tick runs) -- so a `max_wall_clock_minutes_per_*` of ``N`` breaches on the
+# tick whose 1-indexed count first reaches ``N``, and approaches on the
+# first tick whose count is ``>= 0.8 * N`` while still ``< N``.
+
+
+def test_run_wall_clock_ceiling_approaching_journals_a_budget_warn():
+    """I/O matrix: ``run_elapsed_minutes >= 0.8 * limit``, not yet breached
+    -> one ``budget-warn`` observation on the rising edge; the run
+    continues (never a ``budget-stop``)."""
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+    clock = AdvancingClock()
+    observer = FakeObserver(pane="idle")
+    harness = FakeHarness()
+
+    rc = run_supervisor(
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY, 2.5,
+        # `alive_for=3`: the pre-loop `is_alive` reading is call #1, so only
+        # ticks 1-2 (calls #2-#3) see `watched_alive=True` and run the
+        # budget block at all -- tick 2's own elapsed (2.0min) is the one
+        # that crosses `0.8 * 2.5 = 2.0`.
+        fs=fs, process=FakeProcess(alive_for=3), clock=clock, observer=observer,
+        harness=harness, sleep=clock.sleep,
+    )
+
+    assert rc == 0
+    entries = [json.loads(line) for _, line, _ in fs.appended_lines]
+    kinds = [entry["kind"] for entry in entries]
+    assert kinds.count("budget-warn") == 1
+    assert "budget-stop" not in kinds
+    assert harness.stop_calls == []
+    warn_entry = next(e for e in entries if e["kind"] == "budget-warn")
+    assert warn_entry["phase"] == "observation"
+    assert warn_entry["payload"]["scope"] == "run"
+    assert warn_entry["payload"]["metric"] == "wall_clock"
+    assert warn_entry["payload"]["finding"]["code"] == "MRS-SUPV-004"
+    assert warn_entry["payload"]["finding"]["severity"] == "warn"
+    # The ordinary exit: the ceiling never breached within `alive_for=2`.
+    assert entries[-1]["payload"]["reason"] == "watched-process-exited"
+
+
+def test_run_wall_clock_ceiling_breach_stops_and_detaches():
+    """I/O matrix: ``run_elapsed_minutes >= limit`` -> ``budget-stop``
+    intent/outcome, best-effort ``HarnessPort.stop``, detach reason
+    ``budget-run-wall_clock-exceeded``. Never ``stop-and-retry``."""
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+    clock = AdvancingClock()
+    observer = FakeObserver(pane="idle")
+    harness = FakeHarness()
+
+    rc = run_supervisor(
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY, 1.5,
+        fs=fs, process=FakeProcess(alive_for=10), clock=clock, observer=observer,
+        harness=harness, sleep=clock.sleep,
+    )
+
+    assert rc == 0
+    entries = [json.loads(line) for _, line, _ in fs.appended_lines]
+    kinds = [entry["kind"] for entry in entries]
+    # Two entries share this kind -- one intent, one outcome (mirrors the
+    # idle ladder's own `idle-defer` pair).
+    assert kinds.count("budget-stop") == 2
+    # Terminal: the budget-stop pair, then this tick's own ordinary
+    # heartbeat, then the final detach -- nothing after.
+    assert kinds[-3:] == ["budget-stop", "supervisor-heartbeat", "supervisor-detach"]
+    assert harness.stop_calls == [(_HOME, _HARNESS_RUN_ID)]
+
+    stop_intent, stop_outcome = (e for e in entries if e["kind"] == "budget-stop")
+    assert stop_intent["phase"] == "intent"
+    assert stop_outcome["phase"] == "outcome"
+    assert stop_outcome["intent_id"] == stop_intent["id"]
+    assert stop_intent["payload"]["scope"] == "run"
+    assert stop_intent["payload"]["metric"] == "wall_clock"
+    assert stop_outcome["payload"]["stopped"] is True
+    assert "finding" not in stop_outcome["payload"]
+
+    assert entries[-1]["payload"]["reason"] == "budget-run-wall_clock-exceeded"
+
+
+def test_run_wall_clock_ceiling_breach_with_a_failed_stop_still_detaches():
+    """I/O matrix: "A failed stop is recorded (MRS-SUPV-005) but the loop
+    still exits" -- mirrors the idle ladder's own ``defer``-with-failed-stop
+    shape, one code higher in the SAME area."""
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+    clock = AdvancingClock()
+    observer = FakeObserver(pane="idle")
+    harness = FakeHarness()
+    harness.fail_stop = HarnessError("unreachable")
+
+    rc = run_supervisor(
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY, 1.5,
+        fs=fs, process=FakeProcess(alive_for=10), clock=clock, observer=observer,
+        harness=harness, sleep=clock.sleep,
+    )
+
+    assert rc == 0
+    entries = [json.loads(line) for _, line, _ in fs.appended_lines]
+    stop_intent, stop_outcome = (e for e in entries if e["kind"] == "budget-stop")
+    assert stop_outcome["payload"]["stopped"] is False
+    assert stop_outcome["payload"]["finding"]["code"] == "MRS-SUPV-005"
+    assert stop_outcome["payload"]["finding"]["severity"] == "warn"
+    assert entries[-1]["payload"]["reason"] == "budget-run-wall_clock-exceeded"
+
+
+def test_story_wall_clock_ceiling_breach_uses_the_story_scope_reason():
+    """The per-story sibling of the two tests above -- ``harness_run_id``
+    must resolve a current story (via ``usage_snapshot``) before the
+    per-story wall-clock ceiling has anything to measure from."""
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+    clock = AdvancingClock()
+    observer = FakeObserver(pane="idle")
+    harness = FakeHarness()
+    harness.usage_snapshot_result = UsageSnapshot(
+        story_key="3.6",
+        story_weighted_tokens=100,
+        run_weighted_tokens=100,
+        sample_path=_HOME / ".bmad-loop" / "runs" / _HARNESS_RUN_ID / "state.json",
+    )
+
+    rc = run_supervisor(
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
+        1.5, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs, process=FakeProcess(alive_for=10), clock=clock, observer=observer,
+        harness=harness, sleep=clock.sleep,
+    )
+
+    assert rc == 0
+    entries = [json.loads(line) for _, line, _ in fs.appended_lines]
+    stop_intent, stop_outcome = (e for e in entries if e["kind"] == "budget-stop")
+    assert stop_intent["payload"]["scope"] == "story"
+    assert stop_intent["payload"]["metric"] == "wall_clock"
+    assert entries[-1]["payload"]["reason"] == "budget-story-wall_clock-exceeded"
+
+
+def test_token_ceiling_breach_on_a_fresh_sample():
+    """I/O matrix: "Per-story token ceiling, fresh sample" -- a resolved
+    current story, ``state.json`` mtime within ``idle_threshold_minutes`` ->
+    weighted per-story tokens compared to ``max_tokens_per_story``; breach
+    stops the run exactly like a wall-clock breach does."""
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+    clock = AdvancingClock()
+    # `state_json_mtime` defaults to `float("inf")` -- always fresh.
+    observer = FakeObserver(pane="idle")
+    harness = FakeHarness()
+    harness.usage_snapshot_result = UsageSnapshot(
+        story_key="3.6",
+        story_weighted_tokens=150,
+        run_weighted_tokens=150,
+        sample_path=_HOME / ".bmad-loop" / "runs" / _HARNESS_RUN_ID / "state.json",
+    )
+
+    rc = run_supervisor(
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES, 100.0, _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs, process=FakeProcess(alive_for=5), clock=clock, observer=observer,
+        harness=harness, sleep=clock.sleep,
+    )
+
+    assert rc == 0
+    entries = [json.loads(line) for _, line, _ in fs.appended_lines]
+    stop_intent, stop_outcome = (e for e in entries if e["kind"] == "budget-stop")
+    assert stop_intent["payload"]["scope"] == "story"
+    assert stop_intent["payload"]["metric"] == "tokens"
+    assert stop_intent["payload"]["observed"] == 150
+    assert stop_intent["payload"]["limit"] == 100.0
+    assert entries[-1]["payload"]["reason"] == "budget-story-tokens-exceeded"
+    # The state.json staleness query itself was made (path-aware, separate
+    # from the idle ladder's own harness.log query).
+    assert observer.state_json_mtime_calls
+
+
+def test_stale_usage_sample_skips_both_token_ceilings_but_not_wall_clock():
+    """I/O matrix: a stale/unresolvable ``state.json`` mtime journals
+    ``MRS-SUPV-006`` ONCE (never on every tick) and skips BOTH token
+    ceilings for that tick; the wall-clock ceilings remain evaluable and
+    binding (AD-32's own "no ceiling exists that can only be evaluated from
+    session-written data")."""
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+    clock = AdvancingClock()
+    # Ancient mtime relative to any `moment` this clock ever produces.
+    observer = FakeObserver(pane="idle", state_json_mtime=0.0)
+    harness = FakeHarness()
+    # Would BREACH immediately if the staleness gate did not skip it.
+    harness.usage_snapshot_result = UsageSnapshot(
+        story_key="3.6",
+        story_weighted_tokens=10_000_000,
+        run_weighted_tokens=10_000_000,
+        sample_path=_HOME / ".bmad-loop" / "runs" / _HARNESS_RUN_ID / "state.json",
+    )
+
+    rc = run_supervisor(
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs, process=FakeProcess(alive_for=3), clock=clock, observer=observer,
+        harness=harness, sleep=clock.sleep,
+    )
+
+    assert rc == 0
+    entries = [json.loads(line) for _, line, _ in fs.appended_lines]
+    kinds = [entry["kind"] for entry in entries]
+    # Journaled once, at the FIRST tick, despite THREE ticks all being
+    # stale -- never a flood of identical findings.
+    assert kinds.count("budget-usage-stale") == 1
+    assert "budget-stop" not in kinds
+    assert "budget-warn" not in kinds
+    stale_entry = next(e for e in entries if e["kind"] == "budget-usage-stale")
+    assert stale_entry["phase"] == "observation"
+    assert stale_entry["payload"]["finding"]["code"] == "MRS-SUPV-006"
+    assert stale_entry["payload"]["finding"]["severity"] == "warn"
+    # Never `unevaluable`, never a run-halting rung -- the run still exits
+    # ordinarily (`watched-process-exited`, not any `budget-*-exceeded`).
+    assert entries[-1]["payload"]["reason"] == "watched-process-exited"
+
+
+def test_usage_read_failure_with_a_fresh_mtime_also_journals_stale_evidence():
+    """Review finding: `usage_snapshot` returning `None` for a NON-staleness
+    reason (a fresh `state.json` mtime, but the read/parse itself failed --
+    a torn concurrent write, a momentary `bmad_loop` import failure) must
+    NOT silently disable both token ceilings with zero diagnostic. Widened
+    to fire the SAME `MRS-SUPV-006` a stale mtime fires, since the
+    operational consequence -- both token ceilings unevaluable this tick,
+    wall-clock remains binding -- is identical either way."""
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+    clock = AdvancingClock()
+    # `state_json_mtime` defaults to `float("inf")` -- always FRESH.
+    observer = FakeObserver(pane="idle")
+    harness = FakeHarness()
+    harness.usage_snapshot_result = None  # the read itself failed
+
+    rc = run_supervisor(
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs, process=FakeProcess(alive_for=3), clock=clock, observer=observer,
+        harness=harness, sleep=clock.sleep,
+    )
+
+    assert rc == 0
+    entries = [json.loads(line) for _, line, _ in fs.appended_lines]
+    kinds = [entry["kind"] for entry in entries]
+    assert kinds.count("budget-usage-stale") == 1
+    stale_entry = next(e for e in entries if e["kind"] == "budget-usage-stale")
+    assert stale_entry["payload"]["finding"]["code"] == "MRS-SUPV-006"
+    assert "unreadable" in stale_entry["payload"]["finding"]["message"]
+    assert entries[-1]["payload"]["reason"] == "watched-process-exited"
+
+
+def test_a_breach_on_one_ceiling_suppresses_a_same_tick_warn_on_another():
+    """Review finding: `_act_on_budget_transition`'s ``deferred`` guard used
+    to sit only inside the ``BREACHED`` branch, so a DIFFERENT ceiling
+    crossing into ``APPROACHING`` in the SAME tick -- after an earlier
+    ceiling already breached and set ``deferred = True`` -- still journaled
+    a ``budget-warn`` chronologically AFTER the terminal ``budget-stop``
+    pair, for a run already ending. The run-level wall-clock ceiling
+    breaches immediately (limit tiny); the run-level token ceiling
+    simultaneously crosses into APPROACHING (80% of a much larger limit) on
+    the very same tick -- only the breach may act."""
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+    clock = AdvancingClock()
+    observer = FakeObserver(pane="idle")
+    harness = FakeHarness()
+    # 850 / 1_000 = 0.85 >= the fixed 0.8 approach ratio -- APPROACHING.
+    harness.usage_snapshot_result = UsageSnapshot(
+        story_key=None, story_weighted_tokens=None, run_weighted_tokens=850,
+        sample_path=_HOME / ".bmad-loop" / "runs" / _HARNESS_RUN_ID / "state.json",
+    )
+
+    rc = run_supervisor(
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
+        # A 1-second-scale wall-clock-per-run ceiling breaches on tick 1;
+        # the token-per-run ceiling (1_000) is evaluated in the SAME tick.
+        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, 1_000,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY, 1e-9,
+        fs=fs, process=FakeProcess(alive_for=3), clock=clock, observer=observer,
+        harness=harness, sleep=clock.sleep,
+    )
+
+    assert rc == 0
+    entries = [json.loads(line) for _, line, _ in fs.appended_lines]
+    kinds = [entry["kind"] for entry in entries]
+    assert "budget-stop" in kinds
+    # The token ceiling's own APPROACHING transition never got to fire --
+    # the wall-clock breach's `deferred = True` (checked BEFORE either
+    # branch now) suppressed it, even though 850 >= 0.8 * 1_000 is true.
+    assert "budget-warn" not in kinds
+    stop_index = kinds.index("budget-stop")
+    detach_index = kinds.index("supervisor-detach")
+    assert stop_index < detach_index
+    assert entries[-1]["payload"]["reason"] == "budget-run-wall_clock-exceeded"
+
+
+def test_no_single_current_story_skips_per_story_ceilings_only():
+    """I/O matrix: zero or >1 non-terminal ``StoryTask`` -> ``usage_snapshot``
+    reports ``story_key=None``; per-story ceilings are skipped, but per-run
+    ceilings (wall-clock AND, on a fresh sample, tokens) are still
+    evaluated."""
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+    clock = AdvancingClock()
+    observer = FakeObserver(pane="idle")
+    harness = FakeHarness()
+    harness.usage_snapshot_result = UsageSnapshot(
+        story_key=None,
+        story_weighted_tokens=None,
+        run_weighted_tokens=500,
+        sample_path=_HOME / ".bmad-loop" / "runs" / _HARNESS_RUN_ID / "state.json",
+    )
+
+    rc = run_supervisor(
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, 400.0,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs, process=FakeProcess(alive_for=3), clock=clock, observer=observer,
+        harness=harness, sleep=clock.sleep,
+    )
+
+    assert rc == 0
+    entries = [json.loads(line) for _, line, _ in fs.appended_lines]
+    stop_intent, _stop_outcome = (e for e in entries if e["kind"] == "budget-stop")
+    # The RUN token ceiling still fired -- 500 >= 400 -- even though no
+    # single current story was ever resolvable.
+    assert stop_intent["payload"]["scope"] == "run"
+    assert stop_intent["payload"]["metric"] == "tokens"
+    assert "budget-usage" not in [e["kind"] for e in entries]
+
+
+def test_budget_usage_journals_the_canonical_feed_key_not_the_harness_slug():
+    """REGRESSION (review finding): ``UsageSnapshot.story_key`` carries
+    bmad-loop's OWN key spelling verbatim -- the full slug, verified live as
+    e.g. ``"3-6-budget-ceilings-and-the-heaviest-story-advisory"`` -- while
+    every other story identifier Marshal writes goes through
+    ``render_feed_key`` (the dot form; see ``cli/spin.py``'s own
+    ``data["preview"]``). Journaling the raw form put the SAME story under
+    two identities in ONE run's evidence, so a consumer joining per-story
+    cost back to the launch preview by exact match found nothing.
+
+    The pre-existing transition tests never caught it because they hand-build
+    ``UsageSnapshot(story_key="3.6", ...)`` -- already the dot form, a shape
+    the real adapter never produces."""
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+    clock = AdvancingClock()
+    observer = FakeObserver(pane="idle")
+    harness = FakeHarness()
+    sample_path = _HOME / ".bmad-loop" / "runs" / _HARNESS_RUN_ID / "state.json"
+    harness.usage_snapshot_sequence = [
+        UsageSnapshot(
+            story_key="3-6-budget-ceilings-and-the-heaviest-story-advisory",
+            story_weighted_tokens=1_000, run_weighted_tokens=1_000,
+            sample_path=sample_path,
+        ),
+    ]
+
+    rc = run_supervisor(
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs, process=FakeProcess(alive_for=2), clock=clock, observer=observer,
+        harness=harness, sleep=clock.sleep,
+    )
+
+    assert rc == 0
+    entries = [json.loads(line) for _, line, _ in fs.appended_lines]
+    usage_entries = [e for e in entries if e["kind"] == "budget-usage"]
+    assert usage_entries, "the run-end flush must journal the current story"
+    assert usage_entries[-1]["payload"]["story_key"] == "3.6"
+
+
+def test_a_per_story_breach_names_the_story_in_its_warn_and_stop_payloads():
+    """REGRESSION (review finding): a ``scope="story"`` transition journaled
+    ``scope``/``metric``/``observed``/``limit`` and nothing else, so the
+    ``budget-warn``/``budget-stop`` pair -- and the
+    ``budget-story-tokens-exceeded`` detach reason derived from it -- said
+    WHAT was exceeded but never WHICH story exceeded it.
+
+    The only per-story identity anywhere in the run's evidence was the
+    adjacent ``budget-usage`` entry, so a consumer building FR-13's
+    per-story enforcement view had to recover the attribution by POSITION in
+    the journal rather than read it off the entry that made the decision.
+
+    The key is journaled in ``render_feed_key``'s dot form for the same
+    reason ``budget-usage`` is: one story must never appear under two
+    spellings in one run's evidence."""
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+    clock = AdvancingClock()
+    observer = FakeObserver(pane="idle")
+    harness = FakeHarness()
+    sample_path = _HOME / ".bmad-loop" / "runs" / _HARNESS_RUN_ID / "state.json"
+    harness.usage_snapshot_sequence = [
+        UsageSnapshot(
+            story_key="3-6-budget-ceilings-and-the-heaviest-story-advisory",
+            story_weighted_tokens=1_000, run_weighted_tokens=1_000,
+            sample_path=sample_path,
+        ),
+    ]
+
+    rc = run_supervisor(
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES, 500.0, _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs, process=FakeProcess(alive_for=3), clock=clock, observer=observer,
+        harness=harness, sleep=clock.sleep,
+    )
+
+    assert rc == 0
+    entries = [json.loads(line) for _, line, _ in fs.appended_lines]
+    stop_intent, stop_outcome = (e for e in entries if e["kind"] == "budget-stop")
+    assert stop_intent["payload"]["scope"] == "story"
+    assert stop_intent["payload"]["metric"] == "tokens"
+    assert stop_intent["payload"]["story_key"] == "3.6"
+    assert stop_outcome["payload"]["story_key"] == "3.6"
+
+
+def test_a_per_run_breach_never_attributes_itself_to_a_story():
+    """The complement of the test above: a ``scope="run"`` ceiling is not
+    any one story's fault, so naming the story that merely happened to be
+    current when the RUN total crossed would be false attribution. The
+    per-run payloads stay unattributed even when a current story IS
+    resolvable."""
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+    clock = AdvancingClock()
+    observer = FakeObserver(pane="idle")
+    harness = FakeHarness()
+    sample_path = _HOME / ".bmad-loop" / "runs" / _HARNESS_RUN_ID / "state.json"
+    harness.usage_snapshot_sequence = [
+        UsageSnapshot(
+            story_key="3-6-budget-ceilings-and-the-heaviest-story-advisory",
+            story_weighted_tokens=100, run_weighted_tokens=500,
+            sample_path=sample_path,
+        ),
+    ]
+
+    rc = run_supervisor(
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, 400.0,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs, process=FakeProcess(alive_for=3), clock=clock, observer=observer,
+        harness=harness, sleep=clock.sleep,
+    )
+
+    assert rc == 0
+    entries = [json.loads(line) for _, line, _ in fs.appended_lines]
+    stop_intent, stop_outcome = (e for e in entries if e["kind"] == "budget-stop")
+    assert stop_intent["payload"]["scope"] == "run"
+    assert "story_key" not in stop_intent["payload"]
+    assert "story_key" not in stop_outcome["payload"]
+
+
+def test_budget_usage_falls_back_to_the_raw_key_when_it_cannot_be_normalized():
+    """An unparseable harness key is still better attribution than none --
+    ``normalize`` is the sole parser (AD-23), never a second-guessing regex,
+    so a key it rejects is journaled verbatim rather than dropped."""
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+    clock = AdvancingClock()
+    observer = FakeObserver(pane="idle")
+    harness = FakeHarness()
+    sample_path = _HOME / ".bmad-loop" / "runs" / _HARNESS_RUN_ID / "state.json"
+    harness.usage_snapshot_sequence = [
+        UsageSnapshot(
+            story_key="not-a-story-key", story_weighted_tokens=1_000,
+            run_weighted_tokens=1_000, sample_path=sample_path,
+        ),
+    ]
+
+    rc = run_supervisor(
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs, process=FakeProcess(alive_for=2), clock=clock, observer=observer,
+        harness=harness, sleep=clock.sleep,
+    )
+
+    assert rc == 0
+    entries = [json.loads(line) for _, line, _ in fs.appended_lines]
+    usage_entries = [e for e in entries if e["kind"] == "budget-usage"]
+    assert usage_entries[-1]["payload"]["story_key"] == "not-a-story-key"
+
+
+def test_no_budget_observation_is_journaled_after_a_terminal_budget_stop():
+    """REGRESSION (review finding): the ``deferred`` guard added one pass
+    earlier sits INSIDE ``_act_on_budget_transition``, so it suppressed a
+    second same-tick ``budget-warn`` but nothing else. A ceiling that
+    breached wrote its terminal ``budget-stop`` pair and execution then FELL
+    THROUGH -- spending another ``usage_snapshot`` read against a run just
+    killed and appending ``budget-usage``/``budget-usage-stale``
+    observations CHRONOLOGICALLY AFTER the terminal pair, for a run already
+    ending.
+
+    The end-of-run ``budget-usage`` flush is the one legitimate exception:
+    it is written deliberately after the loop, before the detach entry."""
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+    clock = AdvancingClock()
+    observer = FakeObserver(pane="idle")
+    harness = FakeHarness()
+
+    rc = run_supervisor(
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY, 1.5,
+        fs=fs, process=FakeProcess(alive_for=10), clock=clock, observer=observer,
+        harness=harness, sleep=clock.sleep,
+    )
+
+    assert rc == 0
+    entries = [json.loads(line) for _, line, _ in fs.appended_lines]
+    kinds = [entry["kind"] for entry in entries]
+    stop_outcome_index = max(
+        i for i, e in enumerate(entries)
+        if e["kind"] == "budget-stop" and e["phase"] == "outcome"
+    )
+    assert "budget-usage-stale" not in kinds[stop_outcome_index:], (
+        "a stale-evidence observation landed after the terminal budget-stop"
+    )
+
+
+def test_story_transition_journals_usage_for_the_outgoing_story():
+    """I/O matrix: the current story key differs from the last observed one
+    -> one ``budget-usage`` observation attributes the OUTGOING story's last
+    known weighted tokens as ``cost_estimate`` (the spec's own Always
+    bullet: no dollar pricing table exists, so the weighted-token total
+    itself IS the cost proxy); per-story elapsed/tally resets for the new
+    one."""
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+    clock = AdvancingClock()
+    observer = FakeObserver(pane="idle")
+    harness = FakeHarness()
+    sample_path = _HOME / ".bmad-loop" / "runs" / _HARNESS_RUN_ID / "state.json"
+    harness.usage_snapshot_sequence = [
+        UsageSnapshot(
+            story_key="3.6", story_weighted_tokens=1_000, run_weighted_tokens=1_000,
+            sample_path=sample_path,
+        ),
+        UsageSnapshot(
+            story_key="3.6", story_weighted_tokens=2_000, run_weighted_tokens=2_000,
+            sample_path=sample_path,
+        ),
+        UsageSnapshot(
+            story_key="3.7", story_weighted_tokens=50, run_weighted_tokens=2_050,
+            sample_path=sample_path,
+        ),
+    ]
+
+    rc = run_supervisor(
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs, process=FakeProcess(alive_for=4), clock=clock, observer=observer,
+        harness=harness, sleep=clock.sleep,
+    )
+
+    assert rc == 0
+    entries = [json.loads(line) for _, line, _ in fs.appended_lines]
+    usage_entries = [e for e in entries if e["kind"] == "budget-usage"]
+    # TWO entries (review finding): the mid-run transition away from "3.6"
+    # AND the run-end flush of "3.7" (which the watched process's own exit
+    # ends before any LATER transition could ever be observed for it) --
+    # the fix for "a run's final story never got a budget-usage entry at
+    # all" (this story's own acceptance criterion: "consumption is
+    # journaled per story").
+    assert len(usage_entries) == 2
+    assert usage_entries[0]["phase"] == "observation"
+    assert usage_entries[0]["payload"] == {
+        "story_key": "3.6",
+        "cost_estimate": 2_000,
+    }
+    assert usage_entries[1]["phase"] == "observation"
+    assert usage_entries[1]["payload"] == {
+        "story_key": "3.7",
+        "cost_estimate": 50,
+    }
+    # Every new Story 3.6 entry kind still conforms to the packaged, frozen
+    # journal contract -- the same schema-validation discipline Story 3.5's
+    # own `test_normal_attach_journals_attach_then_heartbeats_then_detach`
+    # applies to the FIRST producer of `Phase.OBSERVATION` entries.
+    schema = _journal_schema()
+    for entry in entries:
+        jsonschema.validate(instance=entry, schema=schema)
+
+
+def test_story_transition_with_zero_weighted_tokens_journals_a_null_cost_estimate():
+    """The spec's own Never clause: ``cost_estimate`` "stays null only if
+    bmad-loop's own state ever reports zero sessions for a task" --
+    operationally, a weighted total of exactly 0 (the shape
+    ``UsageSnapshot``'s own 4 fields can express)."""
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+    clock = AdvancingClock()
+    observer = FakeObserver(pane="idle")
+    harness = FakeHarness()
+    sample_path = _HOME / ".bmad-loop" / "runs" / _HARNESS_RUN_ID / "state.json"
+    harness.usage_snapshot_sequence = [
+        UsageSnapshot(
+            story_key="3.6", story_weighted_tokens=0, run_weighted_tokens=0,
+            sample_path=sample_path,
+        ),
+        UsageSnapshot(
+            story_key="3.7", story_weighted_tokens=10, run_weighted_tokens=10,
+            sample_path=sample_path,
+        ),
+    ]
+
+    rc = run_supervisor(
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs, process=FakeProcess(alive_for=3), clock=clock, observer=observer,
+        harness=harness, sleep=clock.sleep,
+    )
+
+    assert rc == 0
+    entries = [json.loads(line) for _, line, _ in fs.appended_lines]
+    usage_entries = [e for e in entries if e["kind"] == "budget-usage"]
+    # TWO entries, same reason as the previous test's own review-finding
+    # comment: the transition away from "3.6" AND the run-end flush of the
+    # still-current "3.7".
+    assert len(usage_entries) == 2
+    assert usage_entries[0]["payload"] == {"story_key": "3.6", "cost_estimate": None}
+    assert usage_entries[1]["payload"] == {"story_key": "3.7", "cost_estimate": 10}
+
+
+def test_single_story_run_with_no_transition_still_journals_one_budget_usage_entry():
+    """Review finding: a `marshal factory spin --story <key>` launch (a
+    common, single-story invocation) NEVER observes a story-key transition
+    -- the run's only story is current from the first tick to the process's
+    own exit. Before the run-end flush fix, this shape produced ZERO
+    `budget-usage` entries at all, silently failing this story's own
+    acceptance criterion ("consumption is journaled per story") for the
+    single-story case specifically."""
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+    clock = AdvancingClock()
+    observer = FakeObserver(pane="idle")
+    harness = FakeHarness()
+    sample_path = _HOME / ".bmad-loop" / "runs" / _HARNESS_RUN_ID / "state.json"
+    harness.usage_snapshot_result = UsageSnapshot(
+        story_key="3.6", story_weighted_tokens=4_200, run_weighted_tokens=4_200,
+        sample_path=sample_path,
+    )
+
+    rc = run_supervisor(
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs, process=FakeProcess(alive_for=3), clock=clock, observer=observer,
+        harness=harness, sleep=clock.sleep,
+    )
+
+    assert rc == 0
+    entries = [json.loads(line) for _, line, _ in fs.appended_lines]
+    usage_entries = [e for e in entries if e["kind"] == "budget-usage"]
+    assert len(usage_entries) == 1
+    assert usage_entries[0]["payload"] == {"story_key": "3.6", "cost_estimate": 4_200}
+    # The flush lands BEFORE the final `supervisor-detach`, never after.
+    detach_index = next(i for i, e in enumerate(entries) if e["kind"] == "supervisor-detach")
+    usage_index = next(i for i, e in enumerate(entries) if e["kind"] == "budget-usage")
+    assert usage_index < detach_index
+
+
+def test_harness_run_id_unavailable_still_evaluates_the_run_wall_clock_ceiling():
+    """I/O matrix / AD-32's own rule: the per-run wall-clock ceiling needs
+    no ``harness_run_id`` at all -- it must stay evaluable even when the
+    idle ladder itself cannot act (``MRS-SUPV-003``'s own scenario)."""
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1", harness_run_id=None) + "\n")
+    clock = AdvancingClock()
+    observer = FakeObserver(pane="idle")
+    harness = FakeHarness()
+
+    rc = run_supervisor(
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY, 1.5,
+        fs=fs, process=FakeProcess(alive_for=10), clock=clock, observer=observer,
+        harness=harness, sleep=clock.sleep,
+    )
+
+    assert rc == 0
+    entries = [json.loads(line) for _, line, _ in fs.appended_lines]
+    kinds = [entry["kind"] for entry in entries]
+    assert "budget-stop" in kinds
+    # No harness_run_id to stop against -- best-effort, never raised.
+    assert harness.stop_calls == []
+    stop_outcome = next(
+        e for e in entries if e["kind"] == "budget-stop" and e["phase"] == "outcome"
+    )
+    assert stop_outcome["payload"]["stopped"] is False
+    assert stop_outcome["payload"]["finding"]["code"] == "MRS-SUPV-005"
+    # Supervision CONTINUES: nothing was stopped, so detaching here would
+    # only blind the one process watching a live, runaway harness (review
+    # finding -- this assertion previously pinned the opposite, a detach
+    # with `reason="budget-run-wall_clock-exceeded"` for a stop that never
+    # happened). Mirrors `MRS-SUPV-003`'s own "cannot act for this run;
+    # continuing heartbeat-only supervision" precedent, and the run ends on
+    # the ordinary watched-process-exited path instead.
+    assert entries[-1]["payload"]["reason"] == "watched-process-exited"
+
+
+def test_a_budget_breach_with_no_harness_run_id_never_re_fires_on_later_ticks():
+    """The rising-edge latch is what makes "continue heartbeat-only" safe
+    (review finding): once the ceiling reads ``BREACHED`` the rank check
+    makes every later tick a no-op, so a breach that could not be acted on
+    journals exactly ONE ``budget-stop`` pair rather than one per tick for
+    the rest of the run's life."""
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1", harness_run_id=None) + "\n")
+    clock = AdvancingClock()
+    observer = FakeObserver(pane="idle")
+    harness = FakeHarness()
+
+    rc = run_supervisor(
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY, 1.5,
+        fs=fs, process=FakeProcess(alive_for=20), clock=clock, observer=observer,
+        harness=harness, sleep=clock.sleep,
+    )
+
+    assert rc == 0
+    entries = [json.loads(line) for _, line, _ in fs.appended_lines]
+    stops = [e for e in entries if e["kind"] == "budget-stop"]
+    assert len(stops) == 2, "exactly one intent + one outcome, never one pair per tick"
+    assert [e["phase"] for e in stops] == ["intent", "outcome"]
+
+
 # --- main(): argv parsing + dispatch --------------------------------------------
 
 
 def test_main_parses_argv_and_dispatches_to_run_supervisor(monkeypatch):
-    calls: list[tuple[Path, str, str, int, Path, float]] = []
+    calls: list[tuple[Path, str, str, int, Path, float, float, float, float, float]] = []
 
-    def _fake_run_supervisor(home, slug, run_id, watched_pid, log_path, idle_threshold_minutes):
-        calls.append((home, slug, run_id, watched_pid, log_path, idle_threshold_minutes))
+    def _fake_run_supervisor(
+        home,
+        slug,
+        run_id,
+        watched_pid,
+        log_path,
+        idle_threshold_minutes,
+        max_tokens_per_story,
+        max_tokens_per_run,
+        max_wall_clock_minutes_per_story,
+        max_wall_clock_minutes_per_run,
+    ):
+        calls.append(
+            (
+                home,
+                slug,
+                run_id,
+                watched_pid,
+                log_path,
+                idle_threshold_minutes,
+                max_tokens_per_story,
+                max_tokens_per_run,
+                max_wall_clock_minutes_per_story,
+                max_wall_clock_minutes_per_run,
+            )
+        )
         return 0
 
     monkeypatch.setattr(supervisor_main, "run_supervisor", _fake_run_supervisor)
@@ -1949,6 +2790,10 @@ def test_main_parses_argv_and_dispatches_to_run_supervisor(monkeypatch):
             "4242",
             "/home/acme-loop/supervisor.log",
             "25",
+            "4000000",
+            "40000000",
+            "240",
+            "600",
         ]
     )
 
@@ -1961,6 +2806,10 @@ def test_main_parses_argv_and_dispatches_to_run_supervisor(monkeypatch):
             4242,
             Path("/home/acme-loop/supervisor.log"),
             25.0,
+            4000000.0,
+            40000000.0,
+            240.0,
+            600.0,
         )
     ]
 
@@ -1972,7 +2821,20 @@ def test_main_rejects_the_wrong_argument_count(capsys):
 
 
 def test_main_rejects_a_non_integer_watched_pid(capsys):
-    rc = main(["/home", "acme", "acme-run-1", "not-a-pid", "/home/supervisor.log", "25"])
+    rc = main(
+        [
+            "/home",
+            "acme",
+            "acme-run-1",
+            "not-a-pid",
+            "/home/supervisor.log",
+            "25",
+            "4000000",
+            "40000000",
+            "240",
+            "600",
+        ]
+    )
     assert rc != 0
     assert "invalid watched pid" in capsys.readouterr().err.lower()
 
@@ -1984,7 +2846,20 @@ def test_main_rejects_a_zero_or_negative_watched_pid(capsys):
     cleanly rather than let ``is_alive`` silently probe an unintended
     target."""
     for bad_pid in ("0", "-1"):
-        rc = main(["/home", "acme", "acme-run-1", bad_pid, "/home/supervisor.log", "25"])
+        rc = main(
+            [
+                "/home",
+                "acme",
+                "acme-run-1",
+                bad_pid,
+                "/home/supervisor.log",
+                "25",
+                "4000000",
+                "40000000",
+                "240",
+                "600",
+            ]
+        )
         assert rc != 0
         assert "must be positive" in capsys.readouterr().err.lower()
 
@@ -2001,7 +2876,20 @@ def test_main_rejects_a_slug_that_escapes_the_run_directory(capsys):
     filesystem touch; this second entry point re-derives the identical paths
     and now applies the identical gate."""
     for bad_slug in ("../../../../tmp/evil", "..", "acme/../..", ""):
-        rc = main(["/home/acme-loop", bad_slug, "acme-run-1", "4242", "/home/s.log", "25"])
+        rc = main(
+            [
+                "/home/acme-loop",
+                bad_slug,
+                "acme-run-1",
+                "4242",
+                "/home/s.log",
+                "25",
+                "4000000",
+                "40000000",
+                "240",
+                "600",
+            ]
+        )
         assert rc != 0, f"slug {bad_slug!r} was accepted"
         assert "invalid project slug" in capsys.readouterr().err.lower()
 
@@ -2011,7 +2899,20 @@ def test_main_rejects_a_run_id_that_escapes_the_run_directory(capsys):
     of the run directory, so a separator or a dot-segment in it relocates
     the journal just as effectively as a traversing slug does."""
     for bad_run_id in ("../../evil", "..", ".", "acme/run", "", "a\\b"):
-        rc = main(["/home/acme-loop", "acme", bad_run_id, "4242", "/home/s.log", "25"])
+        rc = main(
+            [
+                "/home/acme-loop",
+                "acme",
+                bad_run_id,
+                "4242",
+                "/home/s.log",
+                "25",
+                "4000000",
+                "40000000",
+                "240",
+                "600",
+            ]
+        )
         assert rc != 0, f"run_id {bad_run_id!r} was accepted"
         assert "invalid run id" in capsys.readouterr().err.lower()
 
@@ -2022,7 +2923,18 @@ def test_main_accepts_a_real_spin_minted_run_id(monkeypatch):
     pass, or the guards would have broken every genuine invocation."""
     calls: list[str] = []
 
-    def _fake_run_supervisor(home, slug, run_id, watched_pid, log_path, idle_threshold_minutes):
+    def _fake_run_supervisor(
+        home,
+        slug,
+        run_id,
+        watched_pid,
+        log_path,
+        idle_threshold_minutes,
+        max_tokens_per_story,
+        max_tokens_per_run,
+        max_wall_clock_minutes_per_story,
+        max_wall_clock_minutes_per_run,
+    ):
         calls.append(run_id)
         return 0
 
@@ -2035,6 +2947,10 @@ def test_main_accepts_a_real_spin_minted_run_id(monkeypatch):
             "4242",
             "/home/s.log",
             "25",
+            "4000000",
+            "40000000",
+            "240",
+            "600",
         ]
     )
     assert rc == 0
@@ -2053,7 +2969,20 @@ def test_main_rejects_a_watched_pid_it_could_never_probe(capsys):
     this ground.) Refused at the boundary instead, since this story's own
     Always bullet enumerates exactly two detach reasons."""
     for bad_pid in (str(2**31), str(2**63), "999999999999"):
-        rc = main(["/home", "acme", "acme-run-1", bad_pid, "/home/s.log", "25"])
+        rc = main(
+            [
+                "/home",
+                "acme",
+                "acme-run-1",
+                bad_pid,
+                "/home/s.log",
+                "25",
+                "4000000",
+                "40000000",
+                "240",
+                "600",
+            ]
+        )
         assert rc != 0, f"pid {bad_pid} was accepted"
         assert "not probeable" in capsys.readouterr().err.lower()
 
@@ -2062,13 +2991,23 @@ def test_main_accepts_the_largest_probeable_pid(monkeypatch):
     """Negative control: the guard above must refuse only what ``os.kill``
     genuinely cannot convert, never a real (if implausibly large) pid."""
     calls: list[int] = []
-    monkeypatch.setattr(
-        supervisor_main,
-        "run_supervisor",
-        lambda home, slug, run_id, watched_pid, log_path, idle_threshold_minutes: (
-            calls.append(watched_pid) or 0
-        ),
-    )
+
+    def _fake_run_supervisor(
+        home,
+        slug,
+        run_id,
+        watched_pid,
+        log_path,
+        idle_threshold_minutes,
+        max_tokens_per_story,
+        max_tokens_per_run,
+        max_wall_clock_minutes_per_story,
+        max_wall_clock_minutes_per_run,
+    ):
+        calls.append(watched_pid)
+        return 0
+
+    monkeypatch.setattr(supervisor_main, "run_supervisor", _fake_run_supervisor)
     rc = main(
         [
             "/home",
@@ -2077,6 +3016,10 @@ def test_main_accepts_the_largest_probeable_pid(monkeypatch):
             str(supervisor_main._MAX_PROBEABLE_PID),
             "/home/s.log",
             "25",
+            "4000000",
+            "40000000",
+            "240",
+            "600",
         ]
     )
     assert rc == 0
@@ -2092,7 +3035,20 @@ def test_main_rejects_a_relative_home(capsys):
     it should have supervised -- the same split-brain
     ``cli/init.py::_loop_home_root`` anchors its own root to avoid."""
     for bad_home in ("relative/home", "", "."):
-        rc = main([bad_home, "acme", "acme-run-1", "4242", "/home/s.log", "25"])
+        rc = main(
+            [
+                bad_home,
+                "acme",
+                "acme-run-1",
+                "4242",
+                "/home/s.log",
+                "25",
+                "4000000",
+                "40000000",
+                "240",
+                "600",
+            ]
+        )
         assert rc != 0, f"home {bad_home!r} was accepted"
         assert "absolute path" in capsys.readouterr().err.lower()
 
@@ -2119,7 +3075,20 @@ def test_main_rejects_a_non_string_argv_element(capsys):
 
 
 def test_main_rejects_a_non_numeric_idle_threshold(capsys):
-    rc = main(["/home", "acme", "acme-run-1", "4242", "/home/s.log", "not-a-number"])
+    rc = main(
+        [
+            "/home",
+            "acme",
+            "acme-run-1",
+            "4242",
+            "/home/s.log",
+            "not-a-number",
+            "4000000",
+            "40000000",
+            "240",
+            "600",
+        ]
+    )
     assert rc != 0
     assert "invalid idle threshold minutes" in capsys.readouterr().err.lower()
 
@@ -2136,21 +3105,57 @@ def test_main_rejects_a_non_positive_or_non_finite_idle_threshold(capsys):
     ``inf`` passed too, and silently disabled the ladder for the run's whole
     life (every elapsed/inf floor-divides to rung ``NONE``)."""
     for bad_threshold in ("0", "-1", "-25", "nan", "NaN", "inf", "-inf", "Infinity"):
-        rc = main(["/home", "acme", "acme-run-1", "4242", "/home/s.log", bad_threshold])
+        rc = main(
+            [
+                "/home",
+                "acme",
+                "acme-run-1",
+                "4242",
+                "/home/s.log",
+                bad_threshold,
+                "4000000",
+                "40000000",
+                "240",
+                "600",
+            ]
+        )
         assert rc != 0, f"threshold {bad_threshold!r} was accepted"
         assert "must be a positive finite number" in capsys.readouterr().err.lower()
 
 
 def test_main_accepts_a_fractional_idle_threshold(monkeypatch):
     calls: list[float] = []
-    monkeypatch.setattr(
-        supervisor_main,
-        "run_supervisor",
-        lambda home, slug, run_id, watched_pid, log_path, idle_threshold_minutes: (
-            calls.append(idle_threshold_minutes) or 0
-        ),
+
+    def _fake_run_supervisor(
+        home,
+        slug,
+        run_id,
+        watched_pid,
+        log_path,
+        idle_threshold_minutes,
+        max_tokens_per_story,
+        max_tokens_per_run,
+        max_wall_clock_minutes_per_story,
+        max_wall_clock_minutes_per_run,
+    ):
+        calls.append(idle_threshold_minutes)
+        return 0
+
+    monkeypatch.setattr(supervisor_main, "run_supervisor", _fake_run_supervisor)
+    rc = main(
+        [
+            "/home",
+            "acme",
+            "acme-run-1",
+            "4242",
+            "/home/s.log",
+            "0.5",
+            "4000000",
+            "40000000",
+            "240",
+            "600",
+        ]
     )
-    rc = main(["/home", "acme", "acme-run-1", "4242", "/home/s.log", "0.5"])
     assert rc == 0
     assert calls == [0.5]
 
@@ -2165,7 +3170,7 @@ def test_inert_exit_prints_a_diagnostic_naming_the_run(capsys):
 
     rc = run_supervisor(
         _HOME, "acme", "acme-run-1", 4242,
-        _LOG_PATH, _IDLE_THRESHOLD_MINUTES,
+        _LOG_PATH, _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN, _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
         fs=fs, process=FakeProcess(alive_for=1), clock=FakeClock(),
         observer=FakeObserver(), sleep=_no_sleep,
     )
@@ -2189,7 +3194,7 @@ def test_inert_exit_on_a_quarantined_journal_says_so_distinctly(capsys):
 
     rc = run_supervisor(
         _HOME, "acme", "acme-run-1", 4242,
-        _LOG_PATH, _IDLE_THRESHOLD_MINUTES,
+        _LOG_PATH, _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN, _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
         fs=fs, process=FakeProcess(alive_for=1), clock=FakeClock(),
         observer=FakeObserver(), sleep=_no_sleep,
     )

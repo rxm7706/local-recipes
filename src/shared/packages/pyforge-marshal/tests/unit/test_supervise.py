@@ -12,8 +12,10 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 from pyforge.marshal.core.supervise import (
+    CeilingStatus,
     LadderRung,
     Sample,
+    evaluate_ceiling,
     evaluate_idle,
     idle_anchor,
     idle_since,
@@ -350,3 +352,65 @@ def test_idle_anchor_guards_match_idle_since():
     assert idle_anchor([]) is None
     with pytest.raises(TypeError):
         idle_anchor("not-a-sample-sequence")
+
+
+# --- evaluate_ceiling (Story 3.6, AD-20/AD-32) ---------------------------------
+
+
+def test_evaluate_ceiling_below_the_approach_ratio_is_none():
+    assert evaluate_ceiling(50, 100) == CeilingStatus.NONE
+    assert evaluate_ceiling(79.9, 100) == CeilingStatus.NONE
+
+
+def test_evaluate_ceiling_at_the_approach_ratio_is_approaching():
+    assert evaluate_ceiling(80, 100) == CeilingStatus.APPROACHING
+    assert evaluate_ceiling(99.9, 100) == CeilingStatus.APPROACHING
+
+
+def test_evaluate_ceiling_at_or_above_the_limit_is_breached():
+    assert evaluate_ceiling(100, 100) == CeilingStatus.BREACHED
+    assert evaluate_ceiling(1_000_000, 100) == CeilingStatus.BREACHED
+
+
+def test_evaluate_ceiling_zero_observed_is_none():
+    assert evaluate_ceiling(0, 100) == CeilingStatus.NONE
+
+
+def test_evaluate_ceiling_rejects_a_non_positive_limit():
+    with pytest.raises(ValueError):
+        evaluate_ceiling(50, 0)
+    with pytest.raises(ValueError):
+        evaluate_ceiling(50, -1)
+
+
+def test_evaluate_ceiling_rejects_a_nan_limit():
+    """The identical review finding ``evaluate_idle``'s own ``threshold_s``
+    guard already documents and fixes: IEEE 754 makes every relational
+    comparison against ``float('nan')`` false, so a bare ``<= 0`` would let
+    a NaN limit sail through -- ``not (limit > 0)`` catches it."""
+    with pytest.raises(ValueError):
+        evaluate_ceiling(50, float("nan"))
+    # Negative control: the fix must not reject anything valid.
+    assert evaluate_ceiling(50, 100) == CeilingStatus.NONE
+
+
+def test_evaluate_ceiling_rejects_an_infinite_limit():
+    """A limit that can never be reached silently disables the ceiling --
+    the same class of footgun ``core/policy.py::_valid_positive_number``
+    already rejects at the policy layer; this is the core's own defense in
+    depth for a direct caller."""
+    with pytest.raises(ValueError):
+        evaluate_ceiling(50, float("inf"))
+
+
+def test_evaluate_ceiling_rejects_a_non_numeric_limit():
+    with pytest.raises(TypeError):
+        evaluate_ceiling(50, "100")  # type: ignore[arg-type]
+
+
+def test_evaluate_ceiling_rejects_a_boolean_limit():
+    """``isinstance(True, int)`` is ``True`` in Python -- a boolean limit is
+    never a meaningful ceiling, the same guard ``core/policy.py``'s own
+    ``_valid_positive_number``/``_valid_attempt_count`` validators apply."""
+    with pytest.raises(TypeError):
+        evaluate_ceiling(50, True)  # type: ignore[arg-type]

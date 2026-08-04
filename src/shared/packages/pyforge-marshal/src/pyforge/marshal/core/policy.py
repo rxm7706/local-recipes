@@ -2,12 +2,13 @@
 architecture spine AD-10/AD-16/AD-26/AD-35).
 
 ``compose()`` is the pure fold ``defaults -> repo_defaults -> project -> flags,
-last wins`` (AD-16) over Marshal's own CLOSED 10-key policy vocabulary
-(FR-49/50/51/53/54, plus FR-12's ``idle_threshold_minutes``, Story 3.5) --
-not a mirror of the harness's much larger ``.bmad-loop/policy.toml`` key
-surface (that mapping is Story 1.10's rendering concern). Every field is
-wrapped in a ``PolicyField{value, layer, raw_source}`` so an operator can
-always answer "why is this value what it is?" (AD-16).
+last wins`` (AD-16) over Marshal's own CLOSED 14-key policy vocabulary
+(FR-49/50/51/53/54, plus FR-12's ``idle_threshold_minutes`` (Story 3.5) and
+FR-13's 4 budget ceilings (Story 3.6)) -- not a mirror of the harness's much
+larger ``.bmad-loop/policy.toml`` key surface (that mapping is Story 1.10's
+rendering concern). Every field is wrapped in a ``PolicyField{value, layer,
+raw_source}`` so an operator can always answer "why is this value what it
+is?" (AD-16).
 
 **The 4-layer precedence (as of Story 1.10):** ``DEFAULT_POLICY`` (code) ->
 ``repo_defaults`` (tracked at `_bmad-output/policy-defaults.toml`, for repo-wide
@@ -19,13 +20,16 @@ and the previous (better) layer's value stands.
 
 **Static vs seed (AD-26).** 4 fields are STATIC -- public ``EffectivePolicy``
 attributes, each a ``PolicyField``: ``verify_commands``,
-``worktree_seed_paths``, ``merge_subject_template``, ``model_tier_map``. 6
+``worktree_seed_paths``, ``merge_subject_template``, ``model_tier_map``. 10
 fields are SEED -- epics.md's own named examples ("frozen surfaces, gate
 mode, attempt counts"): ``gate_mode``, ``frozen_surfaces``,
-``max_dev_attempts``, ``max_review_cycles``, ``max_followup_reviews``, and
-(Story 3.5) ``idle_threshold_minutes`` -- the closest existing analog to
-that same "operator-tunable numeric ceiling" shape. Seed fields live ONLY
-in a private ``_seed`` mapping; ``seed_view()`` is the sole whitelisted
+``max_dev_attempts``, ``max_review_cycles``, ``max_followup_reviews``,
+(Story 3.5) ``idle_threshold_minutes``, and (Story 3.6) the 4 budget
+ceilings ``max_tokens_per_story``, ``max_tokens_per_run``,
+``max_wall_clock_minutes_per_story``, ``max_wall_clock_minutes_per_run`` --
+each the closest existing analog to that same "operator-tunable numeric
+ceiling" shape. Seed fields live ONLY in a private ``_seed`` mapping;
+``seed_view()`` is the sole whitelisted
 accessor (closing F-8: it is what lets ``marshal config``/FR-54 and FR-53
 validation range over every key without contradicting "reading a seed
 field outside the journal fold fails a meta-test"). A composed
@@ -82,7 +86,7 @@ support for ``--set`` on the four list/mapping-typed fields
 (``verify_commands``, ``worktree_seed_paths``, ``model_tier_map``,
 ``frozen_surfaces``) -- that is a ``cli/config.py`` UX restriction on which
 flags it exposes, not a restriction this module enforces (``compose()``
-itself layers all 9 keys uniformly across all 3 layers, matching AD-16's
+itself layers all 14 keys uniformly across all 3 layers, matching AD-16's
 "no per-key reordering").
 
 **Marshal's own built-in defaults** (``DEFAULT_POLICY``) are a DIFFERENT
@@ -112,7 +116,7 @@ from types import MappingProxyType
 
 from .model import Finding, Severity
 
-# --- the closed 9-key vocabulary --------------------------------------------
+# --- the closed 14-key vocabulary -------------------------------------------
 
 _STATIC_KEYS: frozenset[str] = frozenset(
     {"verify_commands", "worktree_seed_paths", "merge_subject_template", "model_tier_map"}
@@ -128,6 +132,15 @@ _SEED_KEYS: frozenset[str] = frozenset(
         # existing analogs (max_dev_attempts/max_review_cycles/
         # max_followup_reviews) -- see this module's own docstring for why.
         "idle_threshold_minutes",
+        # Story 3.6's 4 budget-ceiling keys (FR-13, AD-32) -- per-story/
+        # per-run x tokens/wall-clock, reusing idle_threshold_minutes's own
+        # validator (`_valid_positive_number`), the closest existing analog:
+        # both are operator-tunable numeric ceilings with no coherent
+        # "zero or unbounded" reading.
+        "max_tokens_per_story",
+        "max_tokens_per_run",
+        "max_wall_clock_minutes_per_story",
+        "max_wall_clock_minutes_per_run",
     }
 )
 _ALL_KEYS: frozenset[str] = _STATIC_KEYS | _SEED_KEYS
@@ -209,11 +222,41 @@ DEFAULT_POLICY: Mapping[str, object] = {
     # genuinely stuck run in minutes rather than burning the multi-million-
     # token session cap it exists to protect.
     "idle_threshold_minutes": 25,
+    # Story 3.6's FR-13: the 4 externally-enforced budget ceilings (AD-32).
+    #
+    # RE-CALIBRATED against measured data (review finding). The first pass
+    # picked these by analogy (2x bmad-loop's own in-session per-story guard,
+    # ~1.5x a cited 25.8M blowout, 4h/10h) WITHOUT measuring what this
+    # factory's stories actually cost -- and every one of the four landed
+    # BELOW ordinary observed behaviour, which would have hard-stopped
+    # essentially every run in its first story. Measured across 30 real
+    # bmad-loop runs / 53 completed stories on this factory:
+    #
+    #   per-story weighted tokens: max 21.7M; 46 of 53 stories exceeded the
+    #     old 4M default (the story that INTRODUCED these ceilings cost 12.9M)
+    #   per-run   weighted tokens: max 111.6M (an 8-story wave) vs the old 40M
+    #   per-story wall clock:      max 518 min; 5 of 40 exceeded the old 240
+    #   per-run   wall clock:      max 1040 min; 2 of 30 exceeded the old 600
+    #
+    # A ceiling is a RUNAWAY BACKSTOP, not a routine trip: each default below
+    # sits at roughly 2.5-4.5x the observed maximum, so it fires only on
+    # behaviour with no precedent in this corpus while still bounding the run
+    # (C-6: "every run has a ceiling; there is no unbounded mode"). The
+    # per-run token ceiling carries the widest margin because a run's total
+    # scales with its story count -- 500M is ~36 stories at the observed
+    # ~14M average, comfortably above any wave shape seen so far. All four
+    # stay operator-tunable via the same policy layers idle_threshold_minutes
+    # already uses; a project running materially heavier or lighter stories
+    # should set its own.
+    "max_tokens_per_story": 50_000_000,
+    "max_tokens_per_run": 500_000_000,
+    "max_wall_clock_minutes_per_story": 1_440,
+    "max_wall_clock_minutes_per_run": 2_880,
 }
 
 # Secret redaction (Boundaries & Constraints): a case-insensitive suffix
 # match against a field NAME renders a fixed sentinel instead of the value.
-# None of the 9 real fields match today -- proven via a synthetic fixture in
+# None of the 14 real fields match today -- proven via a synthetic fixture in
 # tests/unit/test_policy.py, mirroring findings.py/verdict.py's own
 # "empty/unused registry, mechanism proven synthetically" precedent.
 SECRET_KEY_SUFFIXES: frozenset[str] = frozenset({"_TOKEN", "_KEY", "_SECRET", "_PASSWORD"})
@@ -383,7 +426,24 @@ def _valid_attempt_count(value: object) -> int | None:
 
 
 def _valid_positive_number(value: object) -> int | float | None:
-    """``idle_threshold_minutes``'s own validator (Story 3.5): mirrors
+    """Shared by ``idle_threshold_minutes`` (Story 3.5) and Story 3.6's four
+    budget ceilings -- every operator-tunable numeric ceiling with no
+    coherent "zero or unbounded" reading.
+
+    Read the rationale below as written FOR ``idle_threshold_minutes``
+    (review finding: it was, and the wording still is). It generalizes to
+    the four budget ceilings in substance -- a zero or infinite ceiling is
+    equally meaningless, and the same "a knob that quietly turns the feature
+    off is worse than one that refuses the value" argument applies -- but
+    two specifics do NOT: the token ceilings are counts, not minutes, and
+    nothing converts them to seconds, so the ``* 60.0`` guard at the bottom
+    binds them for no reason of their own. It is deliberately left shared
+    anyway: it rejects only values above ~1.5e306, which no real token
+    ceiling approaches, and one validator with one behaviour beats four
+    near-identical copies. The only visible cost is that the resulting
+    ``MRS-POLICY-003`` message reasons about seconds for a token count.
+
+    ``idle_threshold_minutes``'s own validator (Story 3.5): mirrors
     ``_valid_attempt_count``'s shape but for a STRICTLY positive number
     rather than a non-negative int -- an idle threshold of zero has no
     coherent meaning (every tick would immediately cross it), unlike an
@@ -405,7 +465,35 @@ def _valid_positive_number(value: object) -> int | float | None:
     than one that refuses the value, so this refuses it."""
     if isinstance(value, bool):
         return None
-    if not (isinstance(value, (int, float)) and value > 0 and math.isfinite(value)):
+    if not isinstance(value, (int, float)):
+        return None
+    # `float(value)` FIRST, and inside a guard (review finding). `math.
+    # isfinite` takes a C double, so it raises `OverflowError` -- not
+    # `ValueError`, not `TypeError` -- on a Python int too large to convert,
+    # and NOTHING catches it: `compose()`'s own "never raises on malformed
+    # CONTENT" guarantee breaks and the exception escapes to the caller.
+    # `tomllib` does not enforce TOML's own 64-bit integer bound, so a
+    # project's `marshal-policy.toml` carrying a long digit string (e.g.
+    # `max_tokens_per_run = 999...9`, 300+ digits) reaches here as an
+    # arbitrary-precision int. Story 3.6 is what makes this reachable in
+    # practice: `idle_threshold_minutes` is a MINUTES value nobody writes 300
+    # digits of, while the four new keys are TOKEN COUNTS -- exactly the kind
+    # of knob an operator sets to "effectively unlimited" by mashing digits.
+    #
+    # The consequence is worst in `cli/spin.py::run_spin`, which calls
+    # `compose()` only AFTER `harness.spin()` has already launched the run
+    # and journaled its `run-launch` outcome: the traceback leaves a LIVE,
+    # UNSUPERVISED harness and exits non-zero, which invites the caller to
+    # retry and double-dispatch the very story the live run is already
+    # working -- the exact hazard that module's own comments say the
+    # surrounding `RecursionError` guard exists to prevent. Rejecting the
+    # value here turns it back into the ordinary `MRS-POLICY-003`
+    # malformed-value finding every other bad value already produces.
+    try:
+        as_float = float(value)
+    except (OverflowError, ValueError):
+        return None
+    if not (as_float > 0 and math.isfinite(as_float)):
         return None
     # The DERIVED quantity must stay finite too (review finding). Every
     # consumer of this field converts it to seconds, and `1e308 * 60.0` is
@@ -418,7 +506,7 @@ def _valid_positive_number(value: object) -> int | float | None:
     # it HERE turns that into the ordinary malformed-value finding the
     # operator can actually see and act on, which is this validator's whole
     # reason for rejecting `inf` in the first place.
-    if not math.isfinite(float(value) * 60.0):
+    if not math.isfinite(as_float * 60.0):
         return None
     return value
 
@@ -588,7 +676,7 @@ def _compose_worktree_seed_paths(
 class EffectivePolicy:
     """The composed, immutable policy value (AD-10): 4 public STATIC
     ``PolicyField`` attributes plus a private ``_seed`` mapping holding the
-    6 SEED fields (AD-26). ``seed_view()`` is the sole whitelisted accessor
+    10 SEED fields (AD-26). ``seed_view()`` is the sole whitelisted accessor
     for ``_seed`` -- ``tests/meta/test_ad26_seed_field_access_guard.py``
     fails the build if any other module IN THE INSTALLED PACKAGE accesses
     the ``_seed`` attribute directly (its scan surface; test code and
@@ -659,7 +747,7 @@ class EffectivePolicy:
         return f"{type(self).__name__}({static}, _seed={{{seed}}})"
 
     def seed_view(self) -> Mapping[str, PolicyField]:
-        """The sole whitelisted accessor for the 5 seed-tagged fields
+        """The sole whitelisted accessor for the 10 seed-tagged fields
         (AD-26, closing F-8): a read-only mapping keyed by field name. This
         is what lets ``marshal config`` (FR-54) print every effective key
         and FR-53 validation range over every key without contradicting
@@ -707,7 +795,7 @@ def compose(
     *, project_slug: str, repo_defaults: Mapping[str, object] | None = None, project: Mapping[str, object], flags: Mapping[str, object]
 ) -> tuple[EffectivePolicy, tuple[Finding, ...]]:
     """The pure fold ``defaults -> repo_defaults -> project -> flags``, last
-    wins (AD-16), over Marshal's closed 9-key policy vocabulary. Never reads a
+    wins (AD-16), over Marshal's closed 14-key policy vocabulary. Never reads a
     file or an env var -- ``repo_defaults``/``project``/``flags`` arrive as
     already-parsed mappings; the CLI boundary (``cli/config.py``) does the
     file/env I/O and calls this. The ``repo_defaults`` parameter was added in
@@ -824,6 +912,42 @@ def compose(
             "idle_threshold_minutes",
             _valid_positive_number,
             DEFAULT_POLICY["idle_threshold_minutes"],
+            project,
+            flags,
+            findings,
+            "MRS-POLICY-003",
+        ),
+        "max_tokens_per_story": _merge_field(
+            "max_tokens_per_story",
+            _valid_positive_number,
+            DEFAULT_POLICY["max_tokens_per_story"],
+            project,
+            flags,
+            findings,
+            "MRS-POLICY-003",
+        ),
+        "max_tokens_per_run": _merge_field(
+            "max_tokens_per_run",
+            _valid_positive_number,
+            DEFAULT_POLICY["max_tokens_per_run"],
+            project,
+            flags,
+            findings,
+            "MRS-POLICY-003",
+        ),
+        "max_wall_clock_minutes_per_story": _merge_field(
+            "max_wall_clock_minutes_per_story",
+            _valid_positive_number,
+            DEFAULT_POLICY["max_wall_clock_minutes_per_story"],
+            project,
+            flags,
+            findings,
+            "MRS-POLICY-003",
+        ),
+        "max_wall_clock_minutes_per_run": _merge_field(
+            "max_wall_clock_minutes_per_run",
+            _valid_positive_number,
+            DEFAULT_POLICY["max_wall_clock_minutes_per_run"],
             project,
             flags,
             findings,

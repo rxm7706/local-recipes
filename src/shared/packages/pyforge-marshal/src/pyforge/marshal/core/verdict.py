@@ -156,9 +156,19 @@ detection, AD-9/AD-20) adds a NEW area, ``MRS-SUPV-*``: ``MRS-SUPV-001``
 run). All three classify ``Verdict.WARN``, the same tier as
 ``MRS-SPIN-004``/``006``/``007`` and for the identical reason: each names a
 degraded-but-still-supervised condition, never a failure that invalidates
-the run itself. Later stories populate the table further as they add real
-codes. The mechanism (a total, fail-loud lookup) is separately proven via
-``monkeypatch``-injected synthetic entries in ``tests/unit/test_verdict.py``.
+the run itself. Story 3.6 (budget ceilings, AD-20/AD-32) adds THREE more
+codes to the same area: ``MRS-SUPV-004`` (a budget ceiling transitioned
+``NONE``->``APPROACHING``), ``MRS-SUPV-005`` (a budget ceiling BREACHED and
+the terminal stop call failed or had no ``harness_run_id`` to target), and
+``MRS-SUPV-006`` (a token-ceiling usage sample is ``stale-evidence`` --
+AD-32's own F-24 amendment: never ``unevaluable``). All three classify
+``Verdict.WARN`` too, for the identical reason the story's own
+``MRS-SUPV-001/002/003`` already do. The same story adds ``MRS-SPIN-009``
+(FR-14's non-blocking preflight advisory) at that same ``Verdict.WARN``
+tier, alongside ``MRS-SPIN-004/006/007/008``. Later stories populate the
+table further as they add real codes. The mechanism (a total, fail-loud
+lookup) is separately proven via ``monkeypatch``-injected synthetic entries
+in ``tests/unit/test_verdict.py``.
 
 Every other module *feeds* findings; only this module *projects* them to a
 verdict and an exit code -- enforced by the sole-ownership meta-test
@@ -246,6 +256,9 @@ _RELAY_PASSTHROUGH: frozenset[int] = frozenset(
 # supervisor's idle threshold) at that same WARN tier -- see core/findings.py
 # for why those findings must NOT keep MRS-POLICY-*'s own UNEVALUABLE tier
 # when they surface from an already-successful launch.
+# Story 3.6's supervisor/__main__.py adds MRS-SUPV-004/005/006 (budget-warn,
+# budget-stop failure, stale usage evidence) to the same area, all WARN, and
+# cli/spin.py gains MRS-SPIN-009 (FR-14's preflight advisory), also WARN.
 _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-IDENT-001": Verdict.UNEVALUABLE,
     "MRS-IDENT-002": Verdict.UNEVALUABLE,
@@ -293,9 +306,13 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-SPIN-006": Verdict.WARN,
     "MRS-SPIN-007": Verdict.WARN,
     "MRS-SPIN-008": Verdict.WARN,
+    "MRS-SPIN-009": Verdict.WARN,
     "MRS-SUPV-001": Verdict.WARN,
     "MRS-SUPV-002": Verdict.WARN,
     "MRS-SUPV-003": Verdict.WARN,
+    "MRS-SUPV-004": Verdict.WARN,
+    "MRS-SUPV-005": Verdict.WARN,
+    "MRS-SUPV-006": Verdict.WARN,
 }
 
 

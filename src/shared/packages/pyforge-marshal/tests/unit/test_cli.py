@@ -259,8 +259,8 @@ def test_config_defaults_only_exits_zero(capsys, monkeypatch):
     assert "content_hash" in captured.out
 
 
-def test_config_prints_all_ten_keys(capsys, monkeypatch):
-    """AC: 'every one of the 10 keys prints its effective value and winning
+def test_config_prints_all_fourteen_keys(capsys, monkeypatch):
+    """AC: 'every one of the 14 keys prints its effective value and winning
     layer' -- checked exhaustively, not just a couple of spot-checked
     fields. The layer half is counted, not merely detected: exactly one
     `(layer=...)` suffix per key line, so a regression that drops the
@@ -280,13 +280,17 @@ def test_config_prints_all_ten_keys(capsys, monkeypatch):
         "max_review_cycles",
         "max_followup_reviews",
         "idle_threshold_minutes",
+        "max_tokens_per_story",
+        "max_tokens_per_run",
+        "max_wall_clock_minutes_per_story",
+        "max_wall_clock_minutes_per_run",
     ):
         assert f"{key}:" in captured.out, f"marshal config did not print {key!r}"
-    assert captured.out.count("(layer=") == 10
+    assert captured.out.count("(layer=") == 14
 
 
 def test_config_redacts_a_secret_shaped_field(capsys, monkeypatch):
-    """None of the 10 real fields are secret-shaped today -- proven via a
+    """None of the 14 real fields are secret-shaped today -- proven via a
     monkeypatched suffix set so `gate_mode` becomes secret-shaped for the
     duration of this test, exercising the REAL `marshal config` render path
     (not just core.policy.redact() called directly, as in
@@ -583,9 +587,9 @@ def test_config_non_utf8_project_policy_reports_finding_not_crash(tmp_path, caps
 
 
 def test_field_order_matches_the_closed_policy_vocabulary():
-    """The 9-key vocabulary is declared in three places (_FIELD_ORDER, the
+    """The 14-key vocabulary is declared in three places (_FIELD_ORDER, the
     _STATIC_KEYS/_SEED_KEYS sets, schemas/policy.json). This is the derive-
-    don't-declare tie: adding a 10th key to core/policy.py without updating
+    don't-declare tie: adding a 15th key to core/policy.py without updating
     the render order or the schema fails HERE, instead of silently vanishing
     from `marshal config` output and the materialized artifact while still
     being hashed."""
@@ -801,6 +805,29 @@ def test_config_set_on_idle_threshold_minutes_is_a_usage_error(capsys):
     # Telling an operator a numeric key is list/mapping-typed is a false
     # statement about their own policy vocabulary that sends them looking
     # for a type error which does not exist.
+    assert "list/mapping-typed" not in captured.err
+    assert "project-policy-only" in captured.err
+
+
+@pytest.mark.parametrize(
+    "key",
+    [
+        "max_tokens_per_story",
+        "max_tokens_per_run",
+        "max_wall_clock_minutes_per_story",
+        "max_wall_clock_minutes_per_run",
+    ],
+)
+def test_config_set_on_a_budget_ceiling_is_a_usage_error(capsys, key):
+    """Story 3.6's 4 new keys join `idle_threshold_minutes` as
+    project-policy-only -- rejected the SAME clean way at the flag
+    boundary, never as a `MRS-POLICY-003` "malformed value" finding."""
+    exit_code = main(["config", "--set", f"{key}=30"])
+    assert exit_code == EXIT_USAGE
+    captured = capsys.readouterr()
+    assert key in captured.err
+    assert "--project-policy" in captured.err
+    assert "MRS-POLICY-003" not in captured.err
     assert "list/mapping-typed" not in captured.err
     assert "project-policy-only" in captured.err
 

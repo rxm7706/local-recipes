@@ -57,17 +57,33 @@ ENV_ACTIVE_PROJECT = "BMAD_ACTIVE_PROJECT"
 # two (gate_mode, merge_subject_template) stay plain strings.
 _INT_SET_KEYS = frozenset({"max_dev_attempts", "max_review_cycles", "max_followup_reviews"})
 
+# The subset of `_UNSETTABLE_KEYS` that is scalar-typed but excluded from
+# `--set` for the "no AC asks for a CLI override surface" reason, never the
+# "no string value could satisfy this validator" reason the 4 list/
+# mapping-typed keys share (`_parse_set_item`'s own reason-branching
+# message). `idle_threshold_minutes` (Story 3.5) plus Story 3.6's 4 budget
+# ceilings.
+_PROJECT_POLICY_ONLY_KEYS = frozenset(
+    {
+        "idle_threshold_minutes",
+        "max_tokens_per_story",
+        "max_tokens_per_run",
+        "max_wall_clock_minutes_per_story",
+        "max_wall_clock_minutes_per_run",
+    }
+)
+
 # The 4 list/mapping-typed fields --set cannot express (no string value
 # could ever satisfy their validators) PLUS `idle_threshold_minutes` (Story
-# 3.5, review finding): a scalar this codebase deliberately excludes from
-# `--set` for a DIFFERENT reason (no AC asks for a CLI override surface for
-# it -- see the `_FIELD_ORDER` comment below), but the comment there had
-# said so for a while before this frozenset actually enforced it -- an
-# unenforced `--set idle_threshold_minutes=...` reached `compose()` as a
-# raw string and came back as a misleading "malformed value" finding
-# (MRS-POLICY-003) instead of this same clean usage error. Naming any of
-# these 5 keys on `--set` is a usage error, not a policy finding. See the
-# module docstring.
+# 3.5, review finding) PLUS Story 3.6's 4 budget-ceiling keys: a scalar this
+# codebase deliberately excludes from `--set` for a DIFFERENT reason (no AC
+# asks for a CLI override surface for any of these 5 -- see the
+# `_FIELD_ORDER` comment below), but the comment there had said so for a
+# while before this frozenset actually enforced it -- an unenforced
+# `--set idle_threshold_minutes=...` reached `compose()` as a raw string and
+# came back as a misleading "malformed value" finding (MRS-POLICY-003)
+# instead of this same clean usage error. Naming any of these 9 keys on
+# `--set` is a usage error, not a policy finding. See the module docstring.
 _UNSETTABLE_KEYS = frozenset(
     {
         "verify_commands",
@@ -75,15 +91,20 @@ _UNSETTABLE_KEYS = frozenset(
         "model_tier_map",
         "frozen_surfaces",
         "idle_threshold_minutes",
+        "max_tokens_per_story",
+        "max_tokens_per_run",
+        "max_wall_clock_minutes_per_story",
+        "max_wall_clock_minutes_per_run",
     }
 )
 
-# Field render order: the 4 static keys, then the 6 seed keys -- matches the
-# spec's own enumeration order (Boundaries & Constraints, second bullet).
-# `idle_threshold_minutes` (Story 3.5) is deliberately NOT a `--set` target
-# (unlike the other 5 scalar seed keys) -- no AC asks for a CLI override
-# surface for it, and `marshal-policy.toml`'s project layer already covers
-# "configurable" (FR-12's own AC wording).
+# Field render order: the 4 static keys, then the 10 seed keys -- matches
+# the spec's own enumeration order (Boundaries & Constraints, second
+# bullet). `idle_threshold_minutes` (Story 3.5) and Story 3.6's 4 budget
+# ceilings are deliberately NOT `--set` targets (unlike the other 5 scalar
+# seed keys) -- no AC asks for a CLI override surface for any of them, and
+# `marshal-policy.toml`'s project layer already covers "configurable"
+# (FR-12/FR-13's own AC wording).
 _FIELD_ORDER: tuple[str, ...] = (
     "verify_commands",
     "worktree_seed_paths",
@@ -95,6 +116,10 @@ _FIELD_ORDER: tuple[str, ...] = (
     "max_review_cycles",
     "max_followup_reviews",
     "idle_threshold_minutes",
+    "max_tokens_per_story",
+    "max_tokens_per_run",
+    "max_wall_clock_minutes_per_story",
+    "max_wall_clock_minutes_per_run",
 )
 
 
@@ -180,17 +205,18 @@ def _parse_set_item(item: str) -> tuple[str, str]:
         raise argparse.ArgumentTypeError(f"--set {item!r} must be KEY=VALUE")
     if key in _UNSETTABLE_KEYS:
         # The message branches on WHY the key is unsettable (review finding):
-        # 4 of the 5 are genuinely list/mapping-typed (no string value could
-        # satisfy their validators), but `idle_threshold_minutes` is a plain
-        # positive number excluded for an entirely different reason -- no AC
-        # asks for a CLI override surface for it. Telling an operator that a
-        # numeric key is "list/mapping-typed" is a false statement about
-        # their own policy vocabulary, and sends them looking for a type
-        # error that does not exist.
+        # 4 of the 9 are genuinely list/mapping-typed (no string value could
+        # satisfy their validators), but `idle_threshold_minutes` and Story
+        # 3.6's 4 budget ceilings are plain positive numbers excluded for an
+        # entirely different reason -- no AC asks for a CLI override surface
+        # for any of them. Telling an operator that a numeric key is
+        # "list/mapping-typed" is a false statement about their own policy
+        # vocabulary, and sends them looking for a type error that does not
+        # exist.
         reason = (
-            "the list/mapping-typed key"
-            if key != "idle_threshold_minutes"
-            else "the project-policy-only key"
+            "the project-policy-only key"
+            if key in _PROJECT_POLICY_ONLY_KEYS
+            else "the list/mapping-typed key"
         )
         raise argparse.ArgumentTypeError(
             f"--set cannot target {reason} {key!r}; "
@@ -213,7 +239,7 @@ def _parse_set_flags(raw_items: list[tuple[str, str]]) -> dict[str, object]:
 
 
 def _iter_fields(effective: policy.EffectivePolicy):
-    """Yield ``(key, PolicyField)`` for all 10 keys in ``_FIELD_ORDER``. Seed
+    """Yield ``(key, PolicyField)`` for all 14 keys in ``_FIELD_ORDER``. Seed
     fields are read exclusively through ``seed_view()`` -- never through
     ``effective._seed`` directly (AD-26; guarded by
     ``tests/meta/test_ad26_seed_field_access_guard.py``)."""
@@ -234,7 +260,7 @@ def _json_safe(value: object) -> object:
 
 
 def _policy_fields_payload(effective: policy.EffectivePolicy) -> dict[str, object]:
-    """The flat 10-key document matching ``schemas/policy.json`` exactly:
+    """The flat 14-key document matching ``schemas/policy.json`` exactly:
     one ``{value, layer, raw_source}`` object per policy key, with any
     secret-shaped field's ``value``/``raw_source`` redacted."""
     payload: dict[str, object] = {}
