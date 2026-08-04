@@ -147,10 +147,34 @@ plausible read/parse failure (a missing file, malformed JSON, a missing or
 wrong-typed field), and all of them degrade to ``None`` rather than
 propagating -- this is a supplementary, best-effort reporting input (AD-32),
 never a precondition an enforcement ceiling can block on.
+
+Story 3.7 (escalation, deferral, and resume, AD-9/AD-45, FR-15/16/17) adds
+``run_status_snapshot``/``resolution_reference``. ``run_status_snapshot``
+reads the SAME ``state.json`` ``usage_snapshot`` reads (the identical lazy
+``bmad_loop.journal.load_state`` import, the identical widened
+``(OSError, ValueError, KeyError, TypeError, AttributeError,
+ArithmeticError, RecursionError)`` guard -- reused verbatim, not re-derived
+narrower, per this story's own Always bullet), collecting the run-level
+pause fields plus every ``Phase.DEFERRED`` task. ``paused_reason`` and each
+deferred task's own ``defer_reason`` are redacted at capture (AD-34), via
+the SAME ``to_redacted({"k": text}); json.loads(redacted.text)["k"]``
+wrap/unwrap round-trip ``adapters/observer_mux.py::pane_content`` already
+established for this same purpose -- a per-field, narrowly-guarded helper
+(``(ValueError, LookupError, TypeError)``) so one field's redaction failure
+degrades only that field to ``None``, never the whole snapshot.
+``resolution_reference`` lazily imports ``bmad_loop.resolve.
+resolution_path`` -- AD-3 confines every ``bmad_loop`` import to this one
+module, so this is the seam ``cli/spin.py``'s ``marshal factory resume``
+must call through rather than importing ``bmad_loop.resolve`` itself (the
+spec's own intent-contract literally names a direct import site in
+``cli/spin.py`` -- a genuine inaccuracy about this package's own AD-3
+import-linter contract, recorded in the spec's Spec Change Log and
+corrected here).
 """
 
 from __future__ import annotations
 
+import json
 import os
 import re
 import shutil
@@ -162,7 +186,8 @@ from pathlib import Path
 import tomlkit
 
 from ..core import policy
-from ..ports.harness import SpinResult, UsageSnapshot
+from ..core.egress import to_redacted
+from ..ports.harness import DeferredStory, RunStatusSnapshot, SpinResult, UsageSnapshot
 
 # --- the vendored, project-agnostic harness policy template ----------------
 #
@@ -1032,3 +1057,108 @@ class BmadLoopHarness:
             run_weighted_tokens=run_weighted_tokens,
             sample_path=run_dir / "state.json",
         )
+
+    @staticmethod
+    def _redact_text(text: str) -> str | None:
+        """AD-34's own redaction-at-capture idiom
+        (``adapters/observer_mux.py::pane_content``'s wrap/unwrap round-trip,
+        reused verbatim), applied to one ``state.json`` free-text field at a
+        time. Narrowly guarded (``(ValueError, LookupError, TypeError)``,
+        the SAME tuple that method's own transform lines catch) so a single
+        field's redaction failure degrades only that field to ``None``,
+        never the whole snapshot ``run_status_snapshot`` is building."""
+        try:
+            redacted = to_redacted({"text": text})
+            return json.loads(redacted.text)["text"]
+        except (ValueError, LookupError, TypeError):
+            return None
+
+    def run_status_snapshot(self, project: Path, run_id: str) -> RunStatusSnapshot | None:
+        # Lazy import, this method's own instance -- see the module
+        # docstring's Story 3.7 paragraph. Reads the SAME state.json
+        # `usage_snapshot` reads, via the SAME seam.
+        try:
+            from bmad_loop.journal import load_state
+        except ImportError:
+            return None
+        run_dir = Path(project) / ".bmad-loop" / "runs" / run_id
+        # The identical widened guard `usage_snapshot` documents at length --
+        # reused verbatim (this story's own Always bullet), covering every
+        # read this method performs against `state`, not only its initial
+        # load.
+        try:
+            state = load_state(run_dir)
+            paused_stage = state.paused_stage
+            paused_story_key = state.paused_story_key
+            paused_reason = (
+                self._redact_text(state.paused_reason)
+                if state.paused_reason is not None
+                else None
+            )
+            escalated_spec_file: str | None = None
+            escalated_task_phase: str | None = None
+            if paused_story_key is not None:
+                paused_task = state.tasks.get(paused_story_key)
+                if paused_task is not None:
+                    escalated_spec_file = paused_task.spec_file
+                    escalated_task_phase = paused_task.phase.value
+            deferred: list[DeferredStory] = []
+            for task in state.tasks.values():
+                # `StrEnum` members compare equal to their own value, but a
+                # plain string comparison against the literal is used here
+                # (rather than importing `bmad_loop.model.Phase`) -- AD-3
+                # reserves that import for the seam alone; this module
+                # already names bmad-loop-owned raw values by their known-
+                # live shape elsewhere (e.g. `_RUN_STARTING_RE`).
+                if task.phase.value != "deferred":
+                    continue
+                deferred.append(
+                    DeferredStory(
+                        story_key=task.story_key,
+                        reason=(
+                            self._redact_text(task.defer_reason)
+                            if task.defer_reason is not None
+                            else None
+                        ),
+                        attempt=task.attempt,
+                        branch=task.branch,
+                        worktree_path=task.worktree_path,
+                        spec_file=task.spec_file,
+                    )
+                )
+        except (
+            OSError,
+            ValueError,
+            KeyError,
+            TypeError,
+            AttributeError,
+            ArithmeticError,
+            RecursionError,
+        ):
+            return None
+        return RunStatusSnapshot(
+            paused_stage=paused_stage,
+            paused_story_key=paused_story_key,
+            paused_reason=paused_reason,
+            escalated_spec_file=escalated_spec_file,
+            escalated_task_phase=escalated_task_phase,
+            deferred=tuple(deferred),
+        )
+
+    def resolution_reference(
+        self, project: Path, run_id: str, story_key: str
+    ) -> str | None:
+        # Lazy import, this method's own instance -- the seam AD-3 reserves
+        # for the one call `cli/spin.py`'s `marshal factory resume` could
+        # not otherwise make (see the module docstring's Story 3.7
+        # paragraph).
+        try:
+            from bmad_loop.resolve import resolution_path
+        except ImportError:
+            return None
+        run_dir = Path(project) / ".bmad-loop" / "runs" / run_id
+        try:
+            path = resolution_path(run_dir, story_key)
+            return path.as_posix() if path.is_file() else None
+        except (OSError, ValueError, TypeError):
+            return None

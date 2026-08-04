@@ -193,6 +193,29 @@ table exists or is introduced, so the weighted-token total itself IS the
 proxy -- ``null`` only when bmad-loop's own state reported zero sessions
 for that task) before the per-story bookkeeping resets for the new story.
 
+**Escalation and deferral (Story 3.7, AD-9/AD-34/AD-45, FR-15/16/17).** Two
+new, independent journal kinds close the gap named in this story's own
+Intent: bmad-loop's own run-level escalation pause and per-story deferral
+were previously externally unobservable. Deferral capture runs EVERY tick
+while ``watched_alive`` holds (``Phase.DEFERRED`` does not pause the run,
+so a deferred story is a fact that can appear mid-run, more than once, for
+different stories -- see this function's own inline comment for why it is
+gated on ``harness_run_id`` alone, never on ``deferred``/idle/budget
+state): a local ``set[str]`` of already-journaled story keys keeps each one
+to a single ``"story-deferred"`` observation. Escalation detection is the
+opposite shape -- exactly ONCE, at loop-end, only when no idle-ladder or
+budget-ceiling action has already set a more specific ``detach_reason``
+(see this story's own Design Notes for why: ``state.json``'s pause fields
+are durable BEFORE the watched process ever exits, so polling for them
+while still alive is pure waste). ``core.supervise.evaluate_escalation``
+classifies the read; on ``UNRESOLVED`` this sidecar journals one
+``"escalation-detected"`` observation, writes a durable
+``NotifyPort.notify_file`` marker (mandatory; a failure registers
+``MRS-SUPV-007`` but never blocks the detach) and attempts a best-effort
+``NotifyPort.notify_desktop`` (any failure fully swallowed), then sets
+``detach_reason = "escalation-paused"`` before the ordinary
+``detach_payload`` construction below.
+
 Every append here is a ``Phase.OBSERVATION`` entry EXCEPT the ladder/budget
 actions above, which are ``Phase.INTENT`` then ``Phase.OUTCOME`` pairs
 (AD-6's write-before-act: the intent is fsynced BEFORE the action is
@@ -266,9 +289,11 @@ from pathlib import Path
 from ..adapters.clock_system import SystemClock
 from ..adapters.fs_local import FsError, LocalFs
 from ..adapters.harness_bmadloop import BmadLoopHarness, HarnessError
+from ..adapters.notify_file_desktop import FileDesktopNotifier
 from ..adapters.observer_mux import MultiplexerObserver
 from ..adapters.process_posix import PosixProcess
 from ..core import policy
+from ..core.egress import to_redacted
 from ..core.identity import normalize, render_feed_key
 from ..core.journal import (
     JournalEntryId,
@@ -280,9 +305,11 @@ from ..core.journal import (
 from ..core.model import Finding, Severity
 from ..core.supervise import (
     CeilingStatus,
+    EscalationStatus,
     LadderRung,
     Sample,
     evaluate_ceiling,
+    evaluate_escalation,
     evaluate_idle,
     idle_anchor,
     rung_at,
@@ -291,14 +318,27 @@ from ..core.supervise import (
 from ..ports.clock import ClockPort
 from ..ports.fs import FsPort
 from ..ports.harness import HarnessPort
+from ..ports.notify import NotifyPort
 from ..ports.observer import SessionObserverPort
 from ..ports.process import ProcessPort
 
-# Matches cli/spin.py's own _JOURNAL_FILENAME/_LAUNCH_KIND/_LOG_FILENAME --
-# duplicated, not imported, per this module's own docstring (the new AD-9
-# contract forbids importing anything from pyforge.marshal.cli at all).
+# Matches cli/spin.py's own _JOURNAL_FILENAME/_LAUNCH_KIND/_RESUME_KIND/
+# _LOG_FILENAME -- duplicated, not imported, per this module's own docstring
+# (the new AD-9 contract forbids importing anything from pyforge.marshal.cli
+# at all).
 _JOURNAL_FILENAME = "journal.jsonl"
 _LAUNCH_KIND = "run-launch"
+# Story 3.7 review finding: a supervisor spawned by `marshal factory resume`
+# journals its own intent/outcome pair under `cli/spin.py::_RESUME_KIND`
+# ("run-resume"), never `_LAUNCH_KIND` -- a resume is a distinct action from
+# a launch (AD-45's own back-reference fields have no place on an ordinary
+# launch). Both `started_by_marshal` and `_resolve_harness_run_id` below
+# must recognize EITHER kind as proof of Marshal ownership for `run_id`, or
+# every resumed run's supervisor concludes "not a run Marshal started" and
+# exits inert before ever entering the tick loop -- silently disabling the
+# idle ladder, budget ceilings, and this very story's own escalation/
+# deferral detection for every resumed run.
+_RESUME_KIND = "run-resume"
 _HARNESS_LOG_FILENAME = "harness.log"
 
 # The idle ladder's own journal kinds (Story 3.5) -- each fires as one
@@ -316,6 +356,19 @@ _BUDGET_WARN_KIND = "budget-warn"
 _BUDGET_STOP_KIND = "budget-stop"
 _BUDGET_USAGE_KIND = "budget-usage"
 _BUDGET_USAGE_STALE_KIND = "budget-usage-stale"
+
+# Story 3.7's own journal kinds (escalation, deferral, and resume, AD-45,
+# FR-15/16/17). Both are single Phase.OBSERVATION entries -- neither is an
+# ACTION this sidecar takes (unlike the ladder/budget intent/outcome pairs
+# above): a deferral is bmad-loop's own engine decision, merely observed
+# here, and an escalation is likewise something bmad-loop's own pause
+# already did.
+_STORY_DEFERRED_KIND = "story-deferred"
+_ESCALATION_DETECTED_KIND = "escalation-detected"
+
+# The durable escalation file marker's own filename, under the run
+# directory (the spec's own Always bullet: "writes <run_dir>/ESCALATION").
+_ESCALATION_MARKER_FILENAME = "ESCALATION"
 
 
 def _feed_key_form(raw: str) -> str:
@@ -479,11 +532,16 @@ def _resolve_harness_run_id(fold_result, run_id: str) -> str | None:
     ``harness_run_id`` field is ``None``/blank (``MRS-SPIN-004``'s own
     scenario: the harness's self-minted id could not be confirmed within
     ``spin``'s own poll window). Either way the idle ladder has no
-    session/harness target to act against for this run."""
-    for entry in fold_result.by_kind(_LAUNCH_KIND):
-        if entry.run_id == run_id and entry.phase is Phase.OUTCOME:
-            candidate = entry.payload.get("harness_run_id")
-            return candidate if isinstance(candidate, str) and candidate else None
+    session/harness target to act against for this run.
+
+    Checks both ``_LAUNCH_KIND`` and ``_RESUME_KIND`` (Story 3.7 review
+    finding): a resumed run's outcome entry carries the SAME
+    ``harness_run_id`` field under ``_RESUME_KIND`` instead."""
+    for kind in (_LAUNCH_KIND, _RESUME_KIND):
+        for entry in fold_result.by_kind(kind):
+            if entry.run_id == run_id and entry.phase is Phase.OUTCOME:
+                candidate = entry.payload.get("harness_run_id")
+                return candidate if isinstance(candidate, str) and candidate else None
     return None
 
 
@@ -512,6 +570,7 @@ def run_supervisor(
     clock: ClockPort | None = None,
     observer: SessionObserverPort | None = None,
     harness: HarnessPort | None = None,
+    notify: NotifyPort | None = None,
     sleep: Callable[[float], None] = time.sleep,
 ) -> int:
     """The sidecar's own testable core -- everything ``__main__``'s own
@@ -524,12 +583,16 @@ def run_supervisor(
     invocation's own bounded-iteration-count safety valve is
     ``ProcessPort.is_alive`` itself eventually reporting ``False`` (or the
     idle ladder itself deferring), which a test controls directly through a
-    fake ``ProcessPort``/``ClockPort``."""
+    fake ``ProcessPort``/``ClockPort``. ``notify`` is Story 3.7's own
+    escalation-notification seam -- no new argv positional (mirrors
+    ``harness``'s own default-construction convention, never a caller-
+    supplied value read off ``sys.argv``)."""
     fs = fs if fs is not None else LocalFs()
     process = process if process is not None else PosixProcess()
     clock = clock if clock is not None else SystemClock()
     observer = observer if observer is not None else MultiplexerObserver()
     harness = harness if harness is not None else BmadLoopHarness()
+    notify = notify if notify is not None else FileDesktopNotifier()
 
     # Validated on the DERIVED seconds value, at THIS entry point, before
     # anything is journaled (follow-up review finding -- two defects, one
@@ -650,7 +713,8 @@ def run_supervisor(
     # run was Marshal-started.
     started_by_marshal = any(
         entry.phase in (Phase.INTENT, Phase.OUTCOME) and entry.run_id == run_id
-        for entry in fold_result.by_kind(_LAUNCH_KIND)
+        for kind in (_LAUNCH_KIND, _RESUME_KIND)
+        for entry in fold_result.by_kind(kind)
     )
     if not started_by_marshal:
         # The AC's own "inert on a run it did not start" -- no JOURNAL write
@@ -797,6 +861,16 @@ def run_supervisor(
         # the run" posture would be defeated by a flood of identical
         # findings otherwise).
         usage_stale = False
+
+        # Story 3.7's own deferral-capture bookkeeping (FR-16): every story
+        # key this run has already journaled a `"story-deferred"`
+        # observation for, so a story that stays `Phase.DEFERRED` across
+        # many ticks is reported exactly ONCE -- mirrors the budget block's
+        # own "last status acted on" convention above, adapted to a set
+        # rather than a per-(scope,metric) enum, since deferral is a
+        # per-story membership fact, not a rising edge over an ordered
+        # status.
+        deferred_story_keys: set[str] = set()
 
         samples: list[Sample] = []
         last_acted_rung = LadderRung.NONE
@@ -1060,6 +1134,36 @@ def run_supervisor(
                 # `while` test, so the loop never runs another tick to
                 # notice it here.
                 retry_verify_pending = False
+
+            # --- Story 3.7: deferral capture (AD-45, FR-16) ------------------
+            # Per-STORY, observed EVERY tick while `watched_alive` -- a
+            # SEPARATE, budget/idle-independent path (the spec's own
+            # Boundaries text): `Phase.DEFERRED` does not pause the run
+            # (bmad-loop's own engine picks the next story), so a deferred
+            # story is a fact that can appear -- potentially several times,
+            # for several different stories -- during a still-live run, not
+            # only at its end. Gated on `harness_run_id` alone (no
+            # `not deferred` check, unlike the budget block below): this is
+            # an OBSERVATION, never an action, so it has nothing to skip
+            # even if a budget/idle decision already ended this same tick.
+            if watched_alive and harness_run_id is not None:
+                status_snapshot = harness.run_status_snapshot(home, harness_run_id)
+                if status_snapshot is not None:
+                    for deferred_story in status_snapshot.deferred:
+                        if deferred_story.story_key in deferred_story_keys:
+                            continue
+                        deferred_story_keys.add(deferred_story.story_key)
+                        _append(
+                            _STORY_DEFERRED_KIND,
+                            {
+                                "story_key": _feed_key_form(deferred_story.story_key),
+                                "reason": deferred_story.reason,
+                                "attempt": deferred_story.attempt,
+                                "branch": deferred_story.branch,
+                                "worktree_path": deferred_story.worktree_path,
+                                "spec_file": deferred_story.spec_file,
+                            },
+                        )
 
             # --- Story 3.6: budget ceilings (AD-20/AD-32) -------------------
             # Gated on `watched_alive` alone -- NEVER on `session_name`/
@@ -1843,6 +1947,81 @@ def run_supervisor(
                     ),
                 },
             )
+
+        # --- Story 3.7: escalation detection (AD-45, FR-15) -----------------
+        # A RUN-level fact, detected exactly ONCE, only when the tick loop
+        # has ended and no OTHER `detach_reason` has already been set by the
+        # idle ladder or a budget breach -- those stay more specific and take
+        # precedence (the spec's own Always bullet, mirroring the existing
+        # `detach_reason or "watched-process-exited"` fallback idiom below
+        # exactly: an escalation pause and a wedged/over-budget process are
+        # mutually exclusive causes of the same watched pid exiting).
+        if detach_reason is None and harness_run_id is not None:
+            status_snapshot = harness.run_status_snapshot(home, harness_run_id)
+            if status_snapshot is not None:
+                escalation_status = evaluate_escalation(
+                    status_snapshot.paused_stage,
+                    status_snapshot.paused_story_key,
+                    status_snapshot.escalated_task_phase,
+                )
+                if escalation_status is EscalationStatus.UNRESOLVED:
+                    # `paused_story_key` is guaranteed non-None here --
+                    # `EscalationStatus.UNRESOLVED`'s own definition requires
+                    # it.
+                    escalation_payload: dict[str, object] = {
+                        "story_key": _feed_key_form(status_snapshot.paused_story_key),
+                        "reason": status_snapshot.paused_reason,
+                        "spec_file": status_snapshot.escalated_spec_file,
+                    }
+                    _append(_ESCALATION_DETECTED_KIND, escalation_payload)
+
+                    # `to_redacted` treats any "*_key"-suffixed field NAME as
+                    # secret-shaped (`core.policy.is_secret_key`) and
+                    # replaces its VALUE outright -- the same landmine
+                    # `core.egress.build_gate_record` already renames its
+                    # own output field to dodge ("story", never
+                    # "story_key"), for the identical reason: redacting the
+                    # record's own story identifier silently defeats
+                    # retrievability. The notify payload mirrors that
+                    # rename; the JOURNAL entry above keeps "story_key"
+                    # verbatim (the spec's own literal field name).
+                    notify_payload = to_redacted(
+                        {
+                            "story": escalation_payload["story_key"],
+                            "reason": escalation_payload["reason"],
+                            "spec_file": escalation_payload["spec_file"],
+                        }
+                    )
+                    marker_path = run_dir / _ESCALATION_MARKER_FILENAME
+                    # Mandatory: always attempted. A write failure is
+                    # tolerated (MRS-SUPV-007, WARN) -- the detach must still
+                    # proceed; the escalation is already journaled above
+                    # regardless of whether the durable marker landed.
+                    try:
+                        notify.notify_file(marker_path, notify_payload)
+                    except FsError as exc:
+                        marker_finding = Finding(
+                            code="MRS-SUPV-007",
+                            severity=Severity.WARN,
+                            message=(
+                                f"cannot write escalation file marker "
+                                f"{str(marker_path)!r}: {exc}"
+                            ),
+                        )
+                        detach_finding = marker_finding.to_json_dict()
+                    # Best-effort: any exception or a `False` return is
+                    # swallowed entirely -- never affects the detach outcome
+                    # (the spec's own Always bullet). Broad on purpose, the
+                    # SAME "must never abandon a live, already-decided
+                    # outcome over a diagnostic call" reasoning
+                    # `cli/spin.py`'s own lone broad `except Exception` block
+                    # already documents for the identical class of call.
+                    try:
+                        notify.notify_desktop(notify_payload)
+                    except Exception:  # noqa: BLE001 -- deliberate, see above
+                        pass
+
+                    detach_reason = "escalation-paused"
 
         detach_payload: dict[str, object] = {
             "pid": pid,

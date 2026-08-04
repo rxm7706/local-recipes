@@ -25,9 +25,10 @@ from pyforge.marshal.adapters.harness_bmadloop import HarnessError
 from pyforge.marshal.adapters.process_posix import ProcessError
 from pyforge.marshal.cli import spin as spin_module
 from pyforge.marshal.cli.main import main
-from pyforge.marshal.cli.spin import _non_negative_int, run_attach, run_spin
+from pyforge.marshal.cli.spin import _non_negative_int, run_attach, run_resume, run_spin
+from pyforge.marshal.core.journal import JournalEntryId, Phase, build_entry, prepare_for_write
 from pyforge.marshal.core.verdict import EXIT_OK, EXIT_SIGINT, Verdict, exit_code_for
-from pyforge.marshal.ports.harness import SpinResult
+from pyforge.marshal.ports.harness import RunStatusSnapshot, SpinResult
 
 _SCHEMA_PATH = (
     Path(__file__).resolve().parents[2]
@@ -92,6 +93,9 @@ class FakeFs:
         # written" (fail_append_line above, unconditional).
         self.fail_append_line_on_call: int | None = None
         self._append_line_call_count = 0
+        # Story 3.7's own `run_resume` read seam -- see `read_text` below.
+        self.read_text_contents: dict[Path, str] = {}
+        self.fail_read_text: Exception | None = None
 
     def is_dir(self, path: Path) -> bool:
         self.calls.append("is_dir")
@@ -144,6 +148,17 @@ class FakeFs:
         self.calls.append("write_text_atomic")
         self.written_texts[path] = content
 
+    def read_text(self, path: Path) -> str | None:
+        """Story 3.7's own ``run_resume`` needs this to resolve a prior
+        run's ``harness_run_id`` -- keyed by full path (mirrors
+        ``test_supervisor.py::FakeFs``'s own ``journal_text`` convention,
+        extended to per-path content since ``run_resume`` reads a DIFFERENT
+        run's journal than the one it is about to write)."""
+        self.calls.append("read_text")
+        if self.fail_read_text:
+            raise self.fail_read_text
+        return self.read_text_contents.get(path)
+
 
 class FakeHarness:
     """Fakes ``HarnessPort``'s Story 3.3 methods (``story_feed_error``,
@@ -177,6 +192,17 @@ class FakeHarness:
         self.foreground_result: int = 0
         self.fail_run_foreground: Exception | None = None
         self.foreground_calls: list[dict[str, object]] = []
+        # Story 3.7's own `run_resume` seam -- `run_status_snapshot`
+        # defaults to `None` (inert -- resume proceeds), and `resume`
+        # defaults to succeeding with a fixed pid, mirroring `spin_result`'s
+        # own "succeeds by default" convention.
+        self.run_status_snapshot_result: object | None = None
+        self.run_status_snapshot_calls: list[tuple[Path, str]] = []
+        self.resolution_reference_result: str | None = None
+        self.resolution_reference_calls: list[tuple[Path, str, str]] = []
+        self.resume_result: int = 636363
+        self.fail_resume: Exception | None = None
+        self.resume_calls: list[dict[str, object]] = []
 
     def story_feed_error(self, project: Path) -> str | None:
         self.calls.append("story_feed_error")
@@ -234,6 +260,24 @@ class FakeHarness:
         if self.fail_run_foreground:
             raise self.fail_run_foreground
         return self.foreground_result
+
+    def run_status_snapshot(self, project: Path, run_id: str) -> object | None:
+        self.calls.append("run_status_snapshot")
+        self.run_status_snapshot_calls.append((project, run_id))
+        return self.run_status_snapshot_result
+
+    def resolution_reference(self, project: Path, run_id: str, story_key: str) -> str | None:
+        self.calls.append("resolution_reference")
+        self.resolution_reference_calls.append((project, run_id, story_key))
+        return self.resolution_reference_result
+
+    def resume(self, project: Path, run_id: str, *, log_path: Path) -> int:
+        self.calls.append("resume")
+        self._events.append("resume")
+        self.resume_calls.append({"project": project, "run_id": run_id, "log_path": log_path})
+        if self.fail_resume:
+            raise self.fail_resume
+        return self.resume_result
 
 
 class FakeProcess:
@@ -322,6 +366,10 @@ def _spin_namespace(
 
 def _attach_namespace(slug: str) -> argparse.Namespace:
     return argparse.Namespace(slug=slug)
+
+
+def _resume_namespace(slug: str, *, fmt: str = "text") -> argparse.Namespace:
+    return argparse.Namespace(slug=slug, format=fmt, factory_command="resume")
 
 
 # --- happy path, whole feed ----------------------------------------------------
@@ -2163,3 +2211,547 @@ def test_mrs_spin_007_quotes_the_supervisor_log_path(home, capsys, monkeypatch):
         if line.startswith("  MRS-") and "MRS-SPIN-007" not in line
     ]
     assert forged == [], forged
+
+
+# =============================================================================
+# Story 3.7: `marshal factory resume` (AD-3/AD-25/AD-45, FR-15/16/17)
+# =============================================================================
+
+
+def _outcome_line(
+    run_id: str, *, kind: str = "run-launch", harness_run_id: str | None, watched_pid: int = 4242
+) -> str:
+    """A minimal, valid ``phase: outcome`` journal line for a PRIOR run --
+    the one entry ``_resolve_harness_run_id_for_resume`` looks for. Mirrors
+    ``test_supervisor.py::_launch_outcome_line``'s identical shape,
+    parameterized by ``kind`` so a test can model either an ordinary
+    ``run-launch`` origin or a CHAINED prior ``run-resume``."""
+    entry = build_entry(
+        id=JournalEntryId("spin-1", 1),
+        ts="2026-08-01T00:00:00.000Z",
+        run_id=run_id,
+        kind=kind,
+        phase=Phase.OUTCOME,
+        intent_id=JournalEntryId("spin-1", 0),
+        payload={"pid": watched_pid, "harness_run_id": harness_run_id},
+    )
+    return prepare_for_write(entry).line
+
+
+def _seed_prior_run(home: Path, slug: str, run_id: str) -> Path:
+    """Creates a REAL directory on disk at the prior run's own Tier-3 path
+    -- ``_latest_run_dir`` globs the real filesystem directly (no
+    directory-listing primitive exists on ``FsPort``; mirrors this
+    module's own ``_prior_attempt_keys``/``_large_spec_bytes`` precedent,
+    Story 3.6). The caller still configures ``FakeFs.read_text_contents``
+    for the journal ``run_resume`` reads back through the injected
+    ``fs``."""
+    run_dir = (
+        home / "_bmad-output" / "projects" / slug / "implementation-artifacts" / "runs" / run_id
+    )
+    run_dir.mkdir(parents=True)
+    return run_dir
+
+
+def _seed_resolvable_prior_run(
+    home: Path, slug: str, fs: FakeFs, *, run_id: str, harness_run_id: str, kind: str = "run-launch"
+) -> Path:
+    prior_dir = _seed_prior_run(home, slug, run_id)
+    fs.read_text_contents[prior_dir / spin_module._JOURNAL_FILENAME] = (
+        _outcome_line(run_id, kind=kind, harness_run_id=harness_run_id) + "\n"
+    )
+    return prior_dir
+
+
+# --- happy path --------------------------------------------------------------------
+
+
+def test_resume_happy_path_journals_ad45_fields_and_spawns(home):
+    slug = "acme"
+    fs = FakeFs(dirs={home})
+    _seed_resolvable_prior_run(
+        home, slug, fs, run_id="acme-20260801T000000000Z-aaaa", harness_run_id="acme-hh01"
+    )
+    harness = FakeHarness()
+    harness.run_status_snapshot_result = RunStatusSnapshot(
+        paused_stage="escalation",
+        paused_story_key="3-7-escalation-deferral-and-resume",
+        paused_reason="the frozen spec contradicts itself",
+        escalated_spec_file="spec-3-7.md",
+        # Already re-armed by a human -- EscalationStatus.RESOLVED.
+        escalated_task_phase="pending",
+        deferred=(),
+    )
+    harness.resolution_reference_result = "/home/acme-loop/.bmad-loop/runs/acme-hh01/resolve/3-7-escalation-deferral-and-resume/resolution.json"
+    process = FakeProcess()
+
+    exit_code = run_resume(_resume_namespace(slug), fs=fs, harness=harness, process=process)
+
+    assert exit_code == EXIT_OK
+    entries = [json.loads(line) for _, line, _ in fs.appended_lines]
+    assert [e["kind"] for e in entries] == ["run-resume", "run-resume"]
+    intent, outcome = entries
+    assert intent["phase"] == "intent"
+    assert outcome["phase"] == "outcome"
+    assert outcome["intent_id"] == intent["id"]
+    assert intent["payload"]["resumed_from_run"] == "acme-20260801T000000000Z-aaaa"
+    assert intent["payload"]["harness_run_id"] == "acme-hh01"
+    assert intent["payload"]["story_key"] == "3.7"
+    assert intent["payload"]["reason"] == "the frozen spec contradicts itself"
+    assert intent["payload"]["spec_file"] == "spec-3-7.md"
+    assert intent["payload"]["resolution_reference"] == harness.resolution_reference_result
+    assert intent["payload"]["resolver"]
+    assert outcome["payload"]["pid"] == harness.resume_result
+    assert outcome["payload"]["harness_run_id"] == "acme-hh01"
+    new_run_dir = spin_module._run_dir(home, slug, intent["run_id"])
+    assert harness.resume_calls == [
+        {
+            "project": home,
+            "run_id": "acme-hh01",
+            "log_path": new_run_dir / spin_module._LOG_FILENAME,
+        }
+    ]
+    assert harness.resolution_reference_calls == [
+        (home, "acme-hh01", "3-7-escalation-deferral-and-resume")
+    ]
+    assert process.spawn_calls, "a fresh supervisor sidecar is spawned"
+    argv = process.spawn_calls[0]["argv"]
+    assert argv[:3] == [sys.executable, "-m", "pyforge.marshal.supervisor"]
+    assert argv[3] == str(home)
+    assert argv[4] == slug
+    assert argv[5] == intent["run_id"]
+    assert argv[6] == str(harness.resume_result)
+
+
+def test_resume_proceeds_with_a_null_resolution_reference_when_no_marker_exists(home):
+    """I/O matrix: "Resolution marker absent" -- ``resolution_reference:
+    null`` in the ``run-resume`` payload; resume still proceeds."""
+    slug = "acme"
+    fs = FakeFs(dirs={home})
+    _seed_resolvable_prior_run(
+        home, slug, fs, run_id="acme-20260801T000000000Z-aaaa", harness_run_id="acme-hh01"
+    )
+    harness = FakeHarness()
+    harness.resolution_reference_result = None
+    process = FakeProcess()
+
+    exit_code = run_resume(_resume_namespace(slug), fs=fs, harness=harness, process=process)
+
+    assert exit_code == EXIT_OK
+    intent = json.loads(fs.appended_lines[0][1])
+    assert intent["payload"]["resolution_reference"] is None
+
+
+def test_resume_picks_the_most_recent_prior_run_when_several_exist(home):
+    slug = "acme"
+    fs = FakeFs(dirs={home})
+    _seed_prior_run(home, slug, "acme-20260801T000000000Z-aaaa")
+    _seed_resolvable_prior_run(
+        home, slug, fs, run_id="acme-20260802T000000000Z-bbbb", harness_run_id="acme-hh-newer"
+    )
+    harness = FakeHarness()
+    process = FakeProcess()
+
+    exit_code = run_resume(_resume_namespace(slug), fs=fs, harness=harness, process=process)
+
+    assert exit_code == EXIT_OK
+    intent = json.loads(fs.appended_lines[0][1])
+    assert intent["payload"]["resumed_from_run"] == "acme-20260802T000000000Z-bbbb"
+    assert intent["payload"]["harness_run_id"] == "acme-hh-newer"
+
+
+def test_resume_resolves_harness_run_id_from_a_chained_prior_resume(home):
+    """The immediately prior run may itself have been minted by an earlier
+    ``marshal factory resume`` -- its own outcome entry carries
+    ``harness_run_id`` under ``kind: "run-resume"``, not ``"run-launch"``."""
+    slug = "acme"
+    fs = FakeFs(dirs={home})
+    _seed_resolvable_prior_run(
+        home,
+        slug,
+        fs,
+        run_id="acme-20260801T000000000Z-aaaa",
+        harness_run_id="acme-hh02",
+        kind="run-resume",
+    )
+    harness = FakeHarness()
+    process = FakeProcess()
+
+    exit_code = run_resume(_resume_namespace(slug), fs=fs, harness=harness, process=process)
+
+    assert exit_code == EXIT_OK
+    assert harness.resume_calls[0]["run_id"] == "acme-hh02"
+
+
+def test_resume_resolver_attribution_uses_getpass_getuser(home, monkeypatch):
+    monkeypatch.setattr(spin_module.getpass, "getuser", lambda: "operator-42")
+    slug = "acme"
+    fs = FakeFs(dirs={home})
+    _seed_resolvable_prior_run(
+        home, slug, fs, run_id="acme-20260801T000000000Z-aaaa", harness_run_id="acme-hh01"
+    )
+    harness = FakeHarness()
+    process = FakeProcess()
+
+    run_resume(_resume_namespace(slug), fs=fs, harness=harness, process=process)
+
+    intent = json.loads(fs.appended_lines[0][1])
+    assert intent["payload"]["resolver"] == "operator-42"
+
+
+def test_resume_resolver_falls_back_to_none_when_getpass_fails(home, monkeypatch):
+    """Review finding (Story 3.7 pass 1): ``getpass.getuser()`` can raise
+    ``OSError``/``KeyError`` when no pwd entry exists and none of
+    LOGNAME/USER/LNAME/USERNAME is set -- a realistic condition in a
+    detached/headless automation context, exactly where ``marshal factory
+    resume`` is meant to run (AD-22). Must degrade to ``resolver: None``,
+    never crash the command with a raw traceback."""
+
+    def _raise():
+        raise OSError("no such user")
+
+    monkeypatch.setattr(spin_module.getpass, "getuser", _raise)
+    slug = "acme"
+    fs = FakeFs(dirs={home})
+    _seed_resolvable_prior_run(
+        home, slug, fs, run_id="acme-20260801T000000000Z-aaaa", harness_run_id="acme-hh01"
+    )
+    harness = FakeHarness()
+    process = FakeProcess()
+
+    exit_code = run_resume(_resume_namespace(slug), fs=fs, harness=harness, process=process)
+
+    assert exit_code == EXIT_OK
+    intent = json.loads(fs.appended_lines[0][1])
+    assert intent["payload"]["resolver"] is None
+
+
+def test_resume_does_not_populate_ad45_fields_for_a_non_escalation_pause(home):
+    """Review finding (Story 3.7 pass 1): ``paused_story_key`` is a GENERIC
+    field shared by every bmad-loop pause reason (spec-approval,
+    epic-boundary, a stories-mode checkpoint...), not just escalation.
+    Before this fix, ``run_resume`` populated AD-45's back-reference fields
+    for ANY paused_story_key regardless of pause type, producing a
+    ``run-resume`` journal entry that looked exactly like an escalation was
+    resolved when nothing of the sort happened."""
+    slug = "acme"
+    fs = FakeFs(dirs={home})
+    _seed_resolvable_prior_run(
+        home, slug, fs, run_id="acme-20260801T000000000Z-aaaa", harness_run_id="acme-hh01"
+    )
+    harness = FakeHarness()
+    harness.run_status_snapshot_result = RunStatusSnapshot(
+        paused_stage="spec-approval",
+        paused_story_key="3.9",
+        paused_reason="awaiting human plan review",
+        escalated_spec_file="spec-3-9.md",
+        escalated_task_phase=None,
+        deferred=(),
+    )
+    harness.resolution_reference_result = "should-never-be-read"
+    process = FakeProcess()
+
+    exit_code = run_resume(_resume_namespace(slug), fs=fs, harness=harness, process=process)
+
+    assert exit_code == EXIT_OK
+    intent = json.loads(fs.appended_lines[0][1])
+    assert intent["payload"]["story_key"] is None
+    assert intent["payload"]["reason"] is None
+    assert intent["payload"]["spec_file"] is None
+    assert intent["payload"]["resolution_reference"] is None
+    assert harness.resolution_reference_calls == []
+
+
+def test_resume_warns_and_proceeds_when_live_status_read_fails(home, capsys):
+    """Review finding (Story 3.7 pass 1): a live ``run_status_snapshot``
+    read failure at exactly this gate must never be SILENT -- the gate's
+    whole purpose is to positively confirm the escalation is resolved
+    before letting resume proceed. Mirrors AD-32's own "a stale/unreadable
+    sample degrades to a registered WARN, never a silent pass" precedent."""
+    slug = "acme"
+    fs = FakeFs(dirs={home})
+    _seed_resolvable_prior_run(
+        home, slug, fs, run_id="acme-20260801T000000000Z-aaaa", harness_run_id="acme-hh01"
+    )
+    harness = FakeHarness()
+    harness.run_status_snapshot_result = None
+    process = FakeProcess()
+
+    exit_code = run_resume(_resume_namespace(slug), fs=fs, harness=harness, process=process)
+
+    assert exit_code == EXIT_OK
+    assert "MRS-SPIN-012" in capsys.readouterr().out
+    assert process.spawn_calls, "an unconfirmed (not positively-refused) status must not block resume"
+
+
+def test_resume_text_output_labels_itself_factory_resume(home, capsys):
+    slug = "acme"
+    fs = FakeFs(dirs={home})
+    _seed_resolvable_prior_run(
+        home, slug, fs, run_id="acme-20260801T000000000Z-aaaa", harness_run_id="acme-hh01"
+    )
+    harness = FakeHarness()
+    process = FakeProcess()
+
+    run_resume(_resume_namespace(slug), fs=fs, harness=harness, process=process)
+
+    out = capsys.readouterr().out
+    assert out.startswith("factory resume:")
+    assert "'acme'" in out
+
+
+def test_resume_json_envelope_command_is_factory_resume(home, capsys):
+    slug = "acme"
+    fs = FakeFs(dirs={home})
+    _seed_resolvable_prior_run(
+        home, slug, fs, run_id="acme-20260801T000000000Z-aaaa", harness_run_id="acme-hh01"
+    )
+    harness = FakeHarness()
+    process = FakeProcess()
+
+    run_resume(_resume_namespace(slug, fmt="json"), fs=fs, harness=harness, process=process)
+
+    envelope = json.loads(capsys.readouterr().out)
+    assert envelope["command"] == "factory resume"
+
+
+# --- refusal: unresolved escalation (MRS-SPIN-010) ----------------------------------
+
+
+def test_resume_refuses_when_escalation_is_unresolved(home, capsys):
+    slug = "acme"
+    fs = FakeFs(dirs={home})
+    _seed_resolvable_prior_run(
+        home, slug, fs, run_id="acme-20260801T000000000Z-aaaa", harness_run_id="acme-hh01"
+    )
+    harness = FakeHarness()
+    harness.run_status_snapshot_result = RunStatusSnapshot(
+        paused_stage="escalation",
+        paused_story_key="3.7",
+        paused_reason="ambiguous",
+        escalated_spec_file="spec-3-7.md",
+        escalated_task_phase="escalated",
+        deferred=(),
+    )
+    process = FakeProcess()
+
+    exit_code = run_resume(_resume_namespace(slug), fs=fs, harness=harness, process=process)
+
+    assert exit_code == exit_code_for(Verdict.ERROR)
+    out = capsys.readouterr().out
+    assert "MRS-SPIN-010" in out
+    assert fs.appended_lines == []
+    assert process.spawn_calls == []
+    assert "resume" not in harness.calls
+    assert "resolution_reference" not in harness.calls
+
+
+def test_resume_refusal_never_raises(home):
+    """Refusal itself never raises (the I/O matrix's own Error Handling
+    column)."""
+    slug = "acme"
+    fs = FakeFs(dirs={home})
+    _seed_resolvable_prior_run(
+        home, slug, fs, run_id="acme-20260801T000000000Z-aaaa", harness_run_id="acme-hh01"
+    )
+    harness = FakeHarness()
+    harness.run_status_snapshot_result = RunStatusSnapshot(
+        paused_stage="escalation",
+        paused_story_key="3.7",
+        paused_reason=None,
+        escalated_spec_file=None,
+        escalated_task_phase="escalated",
+        deferred=(),
+    )
+    process = FakeProcess()
+    run_resume(_resume_namespace(slug), fs=fs, harness=harness, process=process)
+
+
+# --- refusal: no resumable run (MRS-SPIN-011) ----------------------------------------
+
+
+def test_resume_refuses_when_no_prior_run_exists(home, capsys):
+    fs = FakeFs(dirs={home})
+    harness = FakeHarness()
+    process = FakeProcess()
+
+    exit_code = run_resume(_resume_namespace("acme"), fs=fs, harness=harness, process=process)
+
+    assert exit_code == exit_code_for(Verdict.ERROR)
+    out = capsys.readouterr().out
+    assert "MRS-SPIN-011" in out
+    assert fs.appended_lines == []
+    assert process.spawn_calls == []
+
+
+def test_resume_refuses_when_harness_run_id_cannot_be_resolved(home, capsys):
+    slug = "acme"
+    fs = FakeFs(dirs={home})
+    # A prior run directory exists, but its journal carries no matching
+    # outcome entry -- fs.read_text returns None (unconfigured).
+    _seed_prior_run(home, slug, "acme-20260801T000000000Z-aaaa")
+    harness = FakeHarness()
+    process = FakeProcess()
+
+    exit_code = run_resume(_resume_namespace(slug), fs=fs, harness=harness, process=process)
+
+    assert exit_code == exit_code_for(Verdict.ERROR)
+    out = capsys.readouterr().out
+    assert "MRS-SPIN-011" in out
+    assert process.spawn_calls == []
+
+
+def test_resume_refuses_when_the_prior_journal_read_fails(home, capsys):
+    slug = "acme"
+    fs = FakeFs(dirs={home})
+    _seed_prior_run(home, slug, "acme-20260801T000000000Z-aaaa")
+    fs.fail_read_text = FsError("permission denied")
+    harness = FakeHarness()
+    process = FakeProcess()
+
+    exit_code = run_resume(_resume_namespace(slug), fs=fs, harness=harness, process=process)
+
+    assert exit_code == exit_code_for(Verdict.ERROR)
+    assert "MRS-SPIN-011" in capsys.readouterr().out
+
+
+# --- shared pre-I/O gates (reused codes) ---------------------------------------------
+
+
+def test_resume_rejects_a_malformed_slug(capsys):
+    fs = FakeFs()
+    harness = FakeHarness()
+    process = FakeProcess()
+
+    exit_code = run_resume(
+        _resume_namespace("../escaped"), fs=fs, harness=harness, process=process
+    )
+
+    assert exit_code == exit_code_for(Verdict.UNEVALUABLE)
+    assert "MRS-SPIN-001" in capsys.readouterr().out
+    assert fs.calls == []
+
+
+def test_resume_rejects_an_unprovisioned_loop_home(capsys):
+    fs = FakeFs()  # no dirs at all
+    harness = FakeHarness()
+    process = FakeProcess()
+
+    exit_code = run_resume(_resume_namespace("acme"), fs=fs, harness=harness, process=process)
+
+    assert exit_code == exit_code_for(Verdict.ERROR)
+    assert "MRS-SPIN-002" in capsys.readouterr().out
+
+
+def test_resume_rejects_a_dangling_tier3_backlink(home, capsys):
+    fs = FakeFs(dirs={home})
+    fs.tier3_dangling = True
+
+    exit_code = run_resume(
+        _resume_namespace("acme"), fs=fs, harness=FakeHarness(), process=FakeProcess()
+    )
+
+    assert exit_code == exit_code_for(Verdict.ERROR)
+    assert "MRS-SPIN-002" in capsys.readouterr().out
+
+
+# --- launch/journal failure paths ------------------------------------------------------
+
+
+def test_resume_launch_failure_journals_a_failed_outcome(home, capsys):
+    slug = "acme"
+    fs = FakeFs(dirs={home})
+    _seed_resolvable_prior_run(
+        home, slug, fs, run_id="acme-20260801T000000000Z-aaaa", harness_run_id="acme-hh01"
+    )
+    harness = FakeHarness()
+    harness.fail_resume = HarnessError("cannot launch: bmad-loop not found")
+    process = FakeProcess()
+
+    exit_code = run_resume(_resume_namespace(slug), fs=fs, harness=harness, process=process)
+
+    assert exit_code == exit_code_for(Verdict.ERROR)
+    assert "MRS-SPIN-003" in capsys.readouterr().out
+    entries = [json.loads(line) for _, line, _ in fs.appended_lines]
+    assert [e["kind"] for e in entries] == ["run-resume", "run-resume"]
+    assert entries[1]["phase"] == "outcome"
+    assert entries[1]["payload"]["pid"] is None
+    assert "cannot launch" in entries[1]["payload"]["error"]
+    assert process.spawn_calls == []
+
+
+def test_resume_outcome_write_failure_registers_a_warn_but_still_spawns(home, capsys):
+    slug = "acme"
+    fs = FakeFs(dirs={home})
+    _seed_resolvable_prior_run(
+        home, slug, fs, run_id="acme-20260801T000000000Z-aaaa", harness_run_id="acme-hh01"
+    )
+    # Call #1 is the intent append; call #2 is the outcome append.
+    fs.fail_append_line_on_call = 2
+    harness = FakeHarness()
+    process = FakeProcess()
+
+    exit_code = run_resume(_resume_namespace(slug), fs=fs, harness=harness, process=process)
+
+    assert exit_code == EXIT_OK
+    assert "MRS-SPIN-006" in capsys.readouterr().out
+    assert process.spawn_calls, "supervisor still spawned despite the journal gap"
+
+
+def test_resume_supervisor_spawn_failure_registers_a_warn(home, capsys):
+    slug = "acme"
+    fs = FakeFs(dirs={home})
+    _seed_resolvable_prior_run(
+        home, slug, fs, run_id="acme-20260801T000000000Z-aaaa", harness_run_id="acme-hh01"
+    )
+    harness = FakeHarness()
+    process = FakeProcess()
+    process.fail_spawn = ProcessError("cannot launch: python not found")
+
+    exit_code = run_resume(_resume_namespace(slug), fs=fs, harness=harness, process=process)
+
+    assert exit_code == EXIT_OK
+    out = capsys.readouterr().out
+    assert "MRS-SPIN-007" in out
+    # Review finding (Story 3.7 pass 1): `_spawn_supervisor_sidecar` is
+    # shared with `run_spin`, and its MRS-SPIN-007 message used to hardcode
+    # "bmad-loop run launched..." even when reached via `run_resume` -- a
+    # misleading diagnostic, since the process actually launched was
+    # `bmad-loop resume`.
+    assert "bmad-loop resume launched" in out
+    assert "bmad-loop run launched" not in out
+
+
+# --- no --epic/--story/--max-count, no --foreground -----------------------------------
+
+
+@pytest.mark.parametrize("flag", ["--epic", "--story", "--max-count", "--foreground"])
+def test_resume_cli_rejects_spin_only_flags(flag):
+    """bmad-loop resume itself ignores scope selectors, rebuilding the
+    engine from state-pinned scope only (the spec's own Never clause); no
+    synchronous HarnessPort counterpart to resume exists, unlike spin's own
+    --foreground."""
+    parser = argparse.ArgumentParser()
+    subparsers = parser.add_subparsers(dest="command")
+    spin_module.add_factory_subparser(subparsers)
+
+    argv = ["factory", "resume", "acme", flag]
+    if flag in ("--epic", "--max-count"):
+        argv.append("1")
+    elif flag == "--story":
+        argv.append("1.1")
+
+    with pytest.raises(SystemExit):
+        parser.parse_args(argv)
+
+
+def test_resume_cli_accepts_slug_and_format():
+    parser = argparse.ArgumentParser()
+    subparsers = parser.add_subparsers(dest="command")
+    spin_module.add_factory_subparser(subparsers)
+
+    args = parser.parse_args(["factory", "resume", "acme", "--format", "json"])
+
+    assert args.slug == "acme"
+    assert args.format == "json"
+    assert args.handler is run_resume
