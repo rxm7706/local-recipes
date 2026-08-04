@@ -3,6 +3,16 @@
 an accumulating sequence of tick-sampled observations into a position on the
 3-rung idle ladder (``nudge`` -> ``stop-and-retry`` -> ``defer``).
 
+Story 3.6 (budget ceilings, architecture spine AD-20/AD-32) adds a SECOND,
+unrelated pure decision to this module: ``CeilingStatus``/``evaluate_ceiling``
+-- a single-observation (not a sequence) ceiling check over ``(observed,
+limit)``, used by ``supervisor/__main__.py`` for the 4 new externally-
+enforced budget ceilings (per-story/per-run x tokens/wall-clock, FR-13). It
+shares this module's own "pure, no I/O, no port" discipline (AD-20) but
+needs none of ``evaluate_idle``'s sequence-scanning machinery: a ceiling
+check is a single comparison against the LATEST observed quantity, never a
+history of samples.
+
 **Why this is pure (AD-20).** The decision itself must be a function over a
 ``Sequence[Sample]`` alone: no port, no clock call, no I/O -- every value it
 needs (the moment each sample was taken, what was observed) is a fact the
@@ -313,3 +323,78 @@ def evaluate_idle(samples: Sequence[Sample], *, threshold_s: float) -> LadderRun
     index = int(ratio)
     index = min(index, len(_RUNGS_IN_ORDER) - 1)
     return _RUNGS_IN_ORDER[index]
+
+
+# =============================================================================
+# Story 3.6: budget ceilings (AD-20/AD-32, FR-13) -- CeilingStatus/
+# evaluate_ceiling, a second and unrelated pure decision this module hosts
+# for the same "no port, no clock call, no I/O" reason evaluate_idle above
+# is pure: the supervisor's own tick loop gathers `observed`/`limit` as
+# plain values (a monotonic elapsed-minutes reading, or a weighted token
+# count read via HarnessPort.usage_snapshot) and this function makes no
+# decision from anything but the two numbers it is handed.
+# =============================================================================
+
+
+class CeilingStatus(StrEnum):
+    """One ceiling's position relative to its configured limit, in ascending
+    severity order (this ``StrEnum`` itself carries no ordering -- exactly
+    ``LadderRung``'s own convention above, for the same reason: the
+    supervisor's tick loop tracks "the last status it acted on" per
+    ceiling and needs to detect a RISING edge, never a `<`/`>` on the enum
+    members themselves)."""
+
+    NONE = "none"
+    APPROACHING = "approaching"
+    BREACHED = "breached"
+
+
+#: The fixed ratio of ``limit`` at which a ceiling transitions from ``NONE``
+#: to ``APPROACHING`` (the spec's own Always bullet: "'Approaching' is a
+#: fixed 80% ratio, not a policy knob -- no real caller has asked for that to
+#: be tunable", mirroring ``_TICK_SECONDS``'s own "no knob without a caller"
+#: precedent above). Private: no caller outside this module needs the raw
+#: ratio, only the ``CeilingStatus`` it produces.
+_APPROACH_RATIO = 0.8
+
+
+def evaluate_ceiling(observed: float, limit: float) -> CeilingStatus:
+    """Pure: ``observed`` against ``limit`` (both operate on comparable
+    units -- e.g. minutes for wall-clock, weighted token count for tokens --
+    the CALLER's own concern, never this function's). No port, no clock
+    call, no I/O.
+
+    ``BREACHED`` when ``observed >= limit``; ``APPROACHING`` when
+    ``observed >= _APPROACH_RATIO * limit`` (and not yet breached); ``NONE``
+    otherwise -- a single comparison, never a sequence scan (unlike
+    ``evaluate_idle`` above, a ceiling has no "idle window" to re-arm; the
+    supervisor's own tick loop is what tracks whether THIS observation is a
+    rising edge over the LAST one it acted on).
+
+    Guards ``limit`` exactly as ``evaluate_idle`` guards its own
+    ``threshold_s``: raises ``TypeError`` for a non-numeric ``limit``
+    (``bool`` included, since ``isinstance(True, int)`` is ``True`` in
+    Python and a boolean limit is never a meaningful ceiling), and
+    ``ValueError`` for a non-positive or non-finite ``limit`` -- via a
+    NEGATED ``>`` comparison (`not (limit > 0)`), never a direct ``<= 0``:
+    IEEE 754 makes every relational comparison against ``float('nan')``
+    false, so a direct ``<= 0`` would let a NaN limit sail through instead
+    of being rejected like every other invalid value (the identical review
+    finding ``evaluate_idle``'s own ``threshold_s`` guard already documents
+    and fixes). ``observed`` carries no such guard: a caller-derived
+    quantity (elapsed monotonic minutes, a weighted token count) is always a
+    plain, already-validated number by construction, and a negative
+    ``observed`` (which cannot occur for either of this story's two metrics)
+    would still produce a coherent, harmless ``NONE`` rather than a
+    surprising exception."""
+    if isinstance(limit, bool) or not isinstance(limit, (int, float)):
+        raise TypeError(f"limit must be a number, got {limit!r}")
+    if not (limit > 0):
+        raise ValueError(f"limit must be positive, got {limit!r}")
+    if not math.isfinite(limit):
+        raise ValueError(f"limit must be finite, got {limit!r}")
+    if observed >= limit:
+        return CeilingStatus.BREACHED
+    if observed >= _APPROACH_RATIO * limit:
+        return CeilingStatus.APPROACHING
+    return CeilingStatus.NONE
