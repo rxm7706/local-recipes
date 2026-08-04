@@ -983,8 +983,25 @@ class BmadLoopHarness:
             story_weighted_tokens: int | None = None
             if len(non_terminal) == 1:
                 task = non_terminal[0]
-                story_key = task.story_key
-                story_weighted_tokens = task.tokens.weighted_total(cache_read_weight)
+                # `if task.story_key` guards the pair, not just the tally
+                # (review finding). `UsageSnapshot`'s own docstring states
+                # `story_weighted_tokens` is `None` in LOCKSTEP with
+                # `story_key` -- "never a number attributed to 'no story'".
+                # `bmad_loop`'s `StoryTask.from_dict` does not reject a null
+                # or empty `story_key`, so a state.json carrying one made the
+                # sole non-terminal task set the tally while leaving the key
+                # `None`, publishing exactly the shape the docstring promises
+                # cannot occur. Both current supervisor consumers happen to
+                # re-check `usage.story_key is not None` independently, so
+                # nothing misbehaves today -- but an exposed invariant that
+                # only holds because every caller redundantly re-verifies it
+                # is a trap for the next one that reads the docstring and
+                # trusts it. Such a task's consumption still counts toward
+                # `run_weighted_tokens` below (it is summed over ALL tasks);
+                # it simply cannot be attributed to a story.
+                if task.story_key:
+                    story_key = task.story_key
+                    story_weighted_tokens = task.tokens.weighted_total(cache_read_weight)
             run_weighted_tokens = sum(
                 task.tokens.weighted_total(cache_read_weight) for task in state.tasks.values()
             )

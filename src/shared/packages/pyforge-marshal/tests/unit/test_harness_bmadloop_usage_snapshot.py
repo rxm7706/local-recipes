@@ -145,6 +145,41 @@ def test_usage_snapshot_reports_no_story_when_more_than_one_non_terminal_task(ha
     assert snapshot.run_weighted_tokens == 300
 
 
+@pytest.mark.parametrize("empty_key", [None, ""])
+def test_usage_snapshot_never_attributes_a_tally_to_an_unnamed_story(
+    harness, tmp_path, empty_key
+):
+    """Review finding: the sole non-terminal task carrying a null or empty
+    ``story_key`` published ``story_key=None`` beside a NON-``None``
+    ``story_weighted_tokens`` -- exactly the shape ``UsageSnapshot``'s own
+    docstring promises cannot occur ("``story_weighted_tokens`` is ``None``
+    in lockstep with ``story_key`` -- never a number attributed to 'no
+    story'").
+
+    ``bmad_loop``'s ``StoryTask.from_dict`` does not reject either value, so
+    this is reachable from a syntactically-valid ``state.json``. Both current
+    supervisor consumers independently re-check ``usage.story_key is not
+    None``, so nothing misbehaved -- which is precisely why it needed
+    pinning: an invariant that holds only because every caller redundantly
+    re-verifies it is a trap for the next caller that reads the docstring and
+    trusts it instead.
+
+    The unattributable task's consumption must still reach
+    ``run_weighted_tokens`` (that sum spans ALL tasks, terminal or not), so
+    the per-RUN token ceiling stays correct -- only the per-STORY
+    attribution is withheld."""
+    task = _task("placeholder", "dev-running", input_tokens=100)
+    task["story_key"] = empty_key
+    _write_state(tmp_path, "acme-run-1", tasks={"3.6": task})
+
+    snapshot = harness.usage_snapshot(tmp_path, "acme-run-1")
+
+    assert snapshot is not None
+    assert snapshot.story_key is None
+    assert snapshot.story_weighted_tokens is None
+    assert snapshot.run_weighted_tokens == 100
+
+
 def test_usage_snapshot_zero_tasks_reports_no_story_and_zero_run_tokens(harness, tmp_path):
     _write_state(tmp_path, "acme-run-1", tasks={})
 

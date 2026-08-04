@@ -898,6 +898,29 @@ def run_supervisor(
                 return
             if deferred:
                 return
+            # A per-STORY transition names its story (review finding). The
+            # payloads carried only `scope`/`metric`/`observed`/`limit`, so a
+            # `budget-warn`/`budget-stop` pair for `scope="story"` -- and the
+            # `budget-story-tokens-exceeded` detach reason derived from it --
+            # said WHAT was exceeded but never WHICH story exceeded it. The
+            # only per-story identity in the run's evidence was the adjacent
+            # `budget-usage` entry, so a consumer building FR-13's per-story
+            # enforcement view had to recover the attribution by position in
+            # the journal rather than read it. `current_story_key` is a free
+            # variable of the enclosing tick loop and is already updated for
+            # THIS tick by the time either story-scope ceiling is evaluated
+            # (the wall-clock one is guarded on it being set; the token one
+            # runs after the same tick's story-key transition block), so it
+            # is the correct attribution at the moment of the transition.
+            # `_feed_key_form` for the same reason the `budget-usage` sites
+            # use it: one story must not appear under two spellings in one
+            # journal. Run-scope transitions stay unattributed -- naming any
+            # single story there would be false.
+            story_context: dict[str, object] = (
+                {"story_key": _feed_key_form(current_story_key)}
+                if scope == "story" and current_story_key is not None
+                else {}
+            )
             if status_after is CeilingStatus.APPROACHING:
                 warn_finding = Finding(
                     code="MRS-SUPV-004",
@@ -912,6 +935,7 @@ def run_supervisor(
                     {
                         "scope": scope,
                         "metric": metric,
+                        **story_context,
                         "observed": observed,
                         "limit": limit,
                         "finding": warn_finding.to_json_dict(),
@@ -924,10 +948,20 @@ def run_supervisor(
             # `deferred` still `False`.
             intent_id = _append_intent(
                 _BUDGET_STOP_KIND,
-                {"scope": scope, "metric": metric, "observed": observed, "limit": limit},
+                {
+                    "scope": scope,
+                    "metric": metric,
+                    **story_context,
+                    "observed": observed,
+                    "limit": limit,
+                },
             )
             stopped = False
-            stop_payload: dict[str, object] = {"scope": scope, "metric": metric}
+            stop_payload: dict[str, object] = {
+                "scope": scope,
+                "metric": metric,
+                **story_context,
+            }
             if harness_run_id is None:
                 # No harness_run_id to stop against -- e.g. the per-run
                 # wall-clock ceiling, the one budget check evaluable even

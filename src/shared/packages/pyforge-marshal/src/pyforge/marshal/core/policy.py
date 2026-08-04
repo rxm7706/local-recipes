@@ -465,7 +465,35 @@ def _valid_positive_number(value: object) -> int | float | None:
     than one that refuses the value, so this refuses it."""
     if isinstance(value, bool):
         return None
-    if not (isinstance(value, (int, float)) and value > 0 and math.isfinite(value)):
+    if not isinstance(value, (int, float)):
+        return None
+    # `float(value)` FIRST, and inside a guard (review finding). `math.
+    # isfinite` takes a C double, so it raises `OverflowError` -- not
+    # `ValueError`, not `TypeError` -- on a Python int too large to convert,
+    # and NOTHING catches it: `compose()`'s own "never raises on malformed
+    # CONTENT" guarantee breaks and the exception escapes to the caller.
+    # `tomllib` does not enforce TOML's own 64-bit integer bound, so a
+    # project's `marshal-policy.toml` carrying a long digit string (e.g.
+    # `max_tokens_per_run = 999...9`, 300+ digits) reaches here as an
+    # arbitrary-precision int. Story 3.6 is what makes this reachable in
+    # practice: `idle_threshold_minutes` is a MINUTES value nobody writes 300
+    # digits of, while the four new keys are TOKEN COUNTS -- exactly the kind
+    # of knob an operator sets to "effectively unlimited" by mashing digits.
+    #
+    # The consequence is worst in `cli/spin.py::run_spin`, which calls
+    # `compose()` only AFTER `harness.spin()` has already launched the run
+    # and journaled its `run-launch` outcome: the traceback leaves a LIVE,
+    # UNSUPERVISED harness and exits non-zero, which invites the caller to
+    # retry and double-dispatch the very story the live run is already
+    # working -- the exact hazard that module's own comments say the
+    # surrounding `RecursionError` guard exists to prevent. Rejecting the
+    # value here turns it back into the ordinary `MRS-POLICY-003`
+    # malformed-value finding every other bad value already produces.
+    try:
+        as_float = float(value)
+    except (OverflowError, ValueError):
+        return None
+    if not (as_float > 0 and math.isfinite(as_float)):
         return None
     # The DERIVED quantity must stay finite too (review finding). Every
     # consumer of this field converts it to seconds, and `1e308 * 60.0` is
@@ -478,7 +506,7 @@ def _valid_positive_number(value: object) -> int | float | None:
     # it HERE turns that into the ordinary malformed-value finding the
     # operator can actually see and act on, which is this validator's whole
     # reason for rejecting `inf` in the first place.
-    if not math.isfinite(float(value) * 60.0):
+    if not math.isfinite(as_float * 60.0):
         return None
     return value
 

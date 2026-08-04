@@ -462,6 +462,38 @@ def test_budget_ceiling_rejects_non_positive_or_non_numeric_values(key, bad_valu
     assert findings[0].path == "project"
 
 
+@pytest.mark.parametrize("key", _BUDGET_CEILING_KEYS)
+def test_budget_ceiling_rejects_an_arbitrary_precision_int_without_raising(key):
+    """Review finding: an int too large to convert to a C double made
+    ``compose()`` RAISE ``OverflowError`` out of ``math.isfinite`` instead of
+    returning the ordinary malformed-value finding.
+
+    ``tomllib`` does not enforce TOML's own 64-bit integer bound, so a
+    project's ``marshal-policy.toml`` carrying a long digit string reaches
+    the validator as an arbitrary-precision Python ``int``. That is a far
+    more plausible way to write these four keys -- they are TOKEN COUNTS, and
+    "effectively unlimited" invites mashing digits -- than it ever was for
+    ``idle_threshold_minutes``, a minutes value.
+
+    The blast radius is what makes this worth a test rather than a shrug:
+    ``cli/spin.py::run_spin`` calls ``compose()`` only AFTER ``harness.spin()``
+    has launched the run and journaled its ``run-launch`` outcome, so the
+    escaping traceback left a LIVE, UNSUPERVISED harness behind a non-zero
+    exit -- inviting a retrying caller to double-dispatch the story the live
+    run was already working. ``compose()``'s contract is that malformed
+    CONTENT never raises; this pins it for the one input class that broke
+    it."""
+    huge = int("9" * 400)
+    assert huge > 0  # it is not the sign check that must reject this
+
+    effective, findings = compose(project_slug="acme", project={key: huge}, flags={})
+
+    assert effective.seed_view()[key].value == DEFAULT_POLICY[key]
+    assert len(findings) == 1
+    assert findings[0].code == "MRS-POLICY-003"
+    assert findings[0].path == "project"
+
+
 def test_budget_ceiling_default_values():
     """50M/500M tokens, 24h/48h wall-clock -- pinned here so a future
     accidental edit to ``DEFAULT_POLICY`` is caught by a failing test, not

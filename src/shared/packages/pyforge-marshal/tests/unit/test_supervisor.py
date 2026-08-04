@@ -2394,6 +2394,86 @@ def test_budget_usage_journals_the_canonical_feed_key_not_the_harness_slug():
     assert usage_entries[-1]["payload"]["story_key"] == "3.6"
 
 
+def test_a_per_story_breach_names_the_story_in_its_warn_and_stop_payloads():
+    """REGRESSION (review finding): a ``scope="story"`` transition journaled
+    ``scope``/``metric``/``observed``/``limit`` and nothing else, so the
+    ``budget-warn``/``budget-stop`` pair -- and the
+    ``budget-story-tokens-exceeded`` detach reason derived from it -- said
+    WHAT was exceeded but never WHICH story exceeded it.
+
+    The only per-story identity anywhere in the run's evidence was the
+    adjacent ``budget-usage`` entry, so a consumer building FR-13's
+    per-story enforcement view had to recover the attribution by POSITION in
+    the journal rather than read it off the entry that made the decision.
+
+    The key is journaled in ``render_feed_key``'s dot form for the same
+    reason ``budget-usage`` is: one story must never appear under two
+    spellings in one run's evidence."""
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+    clock = AdvancingClock()
+    observer = FakeObserver(pane="idle")
+    harness = FakeHarness()
+    sample_path = _HOME / ".bmad-loop" / "runs" / _HARNESS_RUN_ID / "state.json"
+    harness.usage_snapshot_sequence = [
+        UsageSnapshot(
+            story_key="3-6-budget-ceilings-and-the-heaviest-story-advisory",
+            story_weighted_tokens=1_000, run_weighted_tokens=1_000,
+            sample_path=sample_path,
+        ),
+    ]
+
+    rc = run_supervisor(
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES, 500.0, _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs, process=FakeProcess(alive_for=3), clock=clock, observer=observer,
+        harness=harness, sleep=clock.sleep,
+    )
+
+    assert rc == 0
+    entries = [json.loads(line) for _, line, _ in fs.appended_lines]
+    stop_intent, stop_outcome = (e for e in entries if e["kind"] == "budget-stop")
+    assert stop_intent["payload"]["scope"] == "story"
+    assert stop_intent["payload"]["metric"] == "tokens"
+    assert stop_intent["payload"]["story_key"] == "3.6"
+    assert stop_outcome["payload"]["story_key"] == "3.6"
+
+
+def test_a_per_run_breach_never_attributes_itself_to_a_story():
+    """The complement of the test above: a ``scope="run"`` ceiling is not
+    any one story's fault, so naming the story that merely happened to be
+    current when the RUN total crossed would be false attribution. The
+    per-run payloads stay unattributed even when a current story IS
+    resolvable."""
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+    clock = AdvancingClock()
+    observer = FakeObserver(pane="idle")
+    harness = FakeHarness()
+    sample_path = _HOME / ".bmad-loop" / "runs" / _HARNESS_RUN_ID / "state.json"
+    harness.usage_snapshot_sequence = [
+        UsageSnapshot(
+            story_key="3-6-budget-ceilings-and-the-heaviest-story-advisory",
+            story_weighted_tokens=100, run_weighted_tokens=500,
+            sample_path=sample_path,
+        ),
+    ]
+
+    rc = run_supervisor(
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, 400.0,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs, process=FakeProcess(alive_for=3), clock=clock, observer=observer,
+        harness=harness, sleep=clock.sleep,
+    )
+
+    assert rc == 0
+    entries = [json.loads(line) for _, line, _ in fs.appended_lines]
+    stop_intent, stop_outcome = (e for e in entries if e["kind"] == "budget-stop")
+    assert stop_intent["payload"]["scope"] == "run"
+    assert "story_key" not in stop_intent["payload"]
+    assert "story_key" not in stop_outcome["payload"]
+
+
 def test_budget_usage_falls_back_to_the_raw_key_when_it_cannot_be_normalized():
     """An unparseable harness key is still better attribution than none --
     ``normalize`` is the sole parser (AD-23), never a second-guessing regex,
