@@ -73,6 +73,23 @@ launch, since this is a supplementary numeric value for the supervisor's
 own soft ladder, never a launch precondition) is appended as the LAST argv
 element, the same mechanism ``watched_pid``/``log_path`` already use.
 
+Story 3.6 (budget ceilings, AD-20/AD-32, FR-13) grows the argv further, 6 ->
+10: the 4 budget-ceiling SEED keys (``max_tokens_per_story``,
+``max_tokens_per_run``, ``max_wall_clock_minutes_per_story``,
+``max_wall_clock_minutes_per_run``) are resolved from the SAME
+``effective_policy`` composition ``idle_threshold_minutes`` already reads
+(never a second ``compose()`` call) and appended in that order, mirroring
+``idle_threshold_minutes``'s own wiring exactly. The same story adds a
+non-blocking FR-14 preflight advisory (``MRS-SPIN-009``) after
+``resolve_feed`` succeeds and before the harness launches: for each
+resolved story key, a fixed-threshold check of its spec file's byte size
+plus a best-effort scan of this loop home's OWN prior ``.bmad-loop/runs/*/
+state.json`` files for a matching task with ``attempt >= 2`` or a terminal
+``deferred``/``escalated`` phase -- either signal emits one WARN naming the
+story and the reason(s); never blocks the launch, and "declared difficulty"
+is deliberately NOT an input (see ``deferred-work.md``: no
+difficulty-classification mechanism exists anywhere in this codebase yet).
+
 **``--foreground``.** Calls the synchronous, stdio-inheriting
 ``HarnessPort.run_foreground`` INSTEAD of the detached ``spin`` path and
 relays its result, bypassing the envelope entirely (mirrors
@@ -125,7 +142,7 @@ sole authority for which stories a run actually executes. Never
 pre-refuses on a zero-count preview (the spec's own Never clause): that
 judgment belongs to the harness's own engine at run time.
 
-Registers ``MRS-SPIN-001`` through ``MRS-SPIN-007`` (``core/findings.py``/
+Registers ``MRS-SPIN-001`` through ``MRS-SPIN-009`` (``core/findings.py``/
 ``core/verdict.py``) -- see those modules' own docstrings for the full
 per-code rationale. ``MRS-SPIN-006`` joined the original five in review,
 splitting "launched, but its outcome could not be journaled" (``WARN`` -- a
@@ -134,7 +151,10 @@ retry" (``ERROR``). ``MRS-SPIN-007`` (Story 3.4) is the supervisor-spawn
 failure -- the SAME ``WARN`` tier as ``MRS-SPIN-006``, for the same reason:
 a live, launched harness process is never re-classified as a failure over a
 DIFFERENT paper-trail gap (losing supervision rather than losing the
-outcome journal entry).
+outcome journal entry). ``MRS-SPIN-008`` (Story 3.5) is the project-policy
+composition finding wrapper. ``MRS-SPIN-009`` (Story 3.6) is the FR-14
+preflight advisory above -- also ``WARN``: it is a non-blocking heads-up
+about the story about to run, never a launch precondition.
 """
 
 from __future__ import annotations
@@ -156,6 +176,7 @@ from ..core.identity import (
     StoryKey,
     normalize,
     render_feed_key,
+    render_filename_slug,
     resolve_feed,
 )
 from ..core.journal import (
@@ -198,6 +219,69 @@ _SUPERVISOR_LOG_FILENAME = "supervisor.log"
 # in this package's own vocabulary; a future story's supervisor/gate/etc.
 # kinds are that story's own concern).
 _LAUNCH_KIND = "run-launch"
+
+# Story 3.6's FR-14 preflight advisory (MRS-SPIN-009) -- a fixed "this spec
+# is large" threshold, calibrated against this repo's own existing story
+# specs under `_bmad-output/implementation-artifacts/spec-*.md` (a live
+# sample spans roughly 20-62KB; 40_000 bytes sits at the upper-middle of
+# that range -- large enough that a spec below it is unremarkable, without
+# waiting for the single largest outlier). Not a policy knob (the spec's own
+# Never clause names "declared difficulty" as deliberately out of scope for
+# this advisory; a size threshold is simpler still, and no caller has asked
+# for it to be tunable).
+_LARGE_SPEC_BYTES = 40_000
+
+# bmad-loop's own per-run phase strings a task can be LEFT in (never
+# progressed past) -- the raw JSON values `runs.py`'s own state.json writes,
+# read here WITHOUT importing bmad_loop (this module is not
+# `adapters/harness_bmadloop.py`, the one seam AD-3 reserves for that
+# import) -- a best-effort scan reads the raw dict, matching
+# `supervisor/__main__.py`'s own precedent of parsing bmad-loop-owned output
+# by its known-live shape rather than through the package.
+_PRIOR_ATTEMPT_PHASES = frozenset({"deferred", "escalated"})
+
+
+def _prior_attempt_history(home: Path, story_key: str) -> bool:
+    """FR-14's own prior-attempt signal (Story 3.6, best-effort, never
+    raises): ``True`` if any of this loop home's OWN past bmad-loop runs
+    (``.bmad-loop/runs/*/state.json``) recorded a task for ``story_key``
+    with ``attempt >= 2`` or a phase in ``_PRIOR_ATTEMPT_PHASES``. Reads the
+    raw JSON document directly (never ``bmad_loop.journal.load_state`` --
+    that seam belongs solely to ``adapters/harness_bmadloop.py``, AD-3) and
+    skips any file this cannot parse as a JSON object with the expected
+    shape -- one unreadable or malformed prior run must never abort the
+    scan, still less the whole command."""
+    for state_path in home.glob(".bmad-loop/runs/*/state.json"):
+        try:
+            document = json.loads(state_path.read_text(encoding="utf-8"))
+        except (OSError, ValueError, UnicodeDecodeError):
+            continue
+        if not isinstance(document, Mapping):
+            continue
+        tasks = document.get("tasks")
+        if not isinstance(tasks, Mapping):
+            continue
+        task = tasks.get(story_key)
+        if not isinstance(task, Mapping):
+            continue
+        attempt = task.get("attempt", 0)
+        phase = task.get("phase")
+        # `(int, float)`, not `int` alone (review finding, defensive): this
+        # reads RAW JSON, never through `bmad_loop`'s own `int(d["attempt"])`
+        # coercion (that seam belongs solely to `adapters/harness_bmadloop.py`,
+        # AD-3) -- a `state.json` written by a future or non-conforming
+        # writer could serialize `"attempt": 2.0`, which JSON parses as a
+        # Python `float`, silently failing this `isinstance(attempt, int)`
+        # check and suppressing a genuine prior-attempt signal.
+        if (
+            isinstance(attempt, (int, float))
+            and not isinstance(attempt, bool)
+            and attempt >= 2
+        ):
+            return True
+        if isinstance(phase, str) and phase in _PRIOR_ATTEMPT_PHASES:
+            return True
+    return False
 
 
 def _non_negative_int(text: str) -> int:
@@ -581,6 +665,40 @@ def run_spin(
         findings.extend(resolution.findings)
         return _emit(args, data, findings)
 
+    # --- Story 3.6 FR-14: preflight advisory (MRS-SPIN-009) -----------------
+    # Non-blocking: for each RESOLVED story key, warn when its spec size or
+    # prior-attempt history in THIS SAME loop home suggests it is likely to
+    # exceed budget. Never changes `_emit`'s own exit-code handling beyond
+    # the ordinary WARN-tier this command's other WARN findings already get
+    # (MRS-SPIN-004/006/007/008); "declared difficulty" is deliberately not
+    # an input (see the module docstring's own Never clause / the
+    # deferred-work.md entry this story adds).
+    for key in resolution.resolved:
+        reasons: list[str] = []
+        spec_path = _tier3_path(home, slug) / f"spec-{render_filename_slug(key)}.md"
+        try:
+            spec_size = spec_path.stat().st_size
+        except OSError:
+            spec_size = 0
+        if spec_size >= _LARGE_SPEC_BYTES:
+            reasons.append(f"spec size {spec_size} bytes >= {_LARGE_SPEC_BYTES}")
+        if _prior_attempt_history(home, render_feed_key(key)):
+            reasons.append(
+                "a prior run in this loop home recorded attempt >= 2 or a "
+                "deferred/escalated outcome for this story"
+            )
+        if reasons:
+            findings.append(
+                Finding(
+                    code="MRS-SPIN-009",
+                    severity=Severity.WARN,
+                    message=(
+                        f"story {render_feed_key(key)!r} may exceed budget: "
+                        + "; ".join(reasons)
+                    ),
+                )
+            )
+
     # --- echoed preview -------------------------------------------------------
     preview = _filter_preview(
         resolution.resolved, epic=args.epic, story=args.story, max_count=args.max_count
@@ -904,7 +1022,7 @@ def run_spin(
     # launch's own verdict.
     #
     # The wording says "every key a finding names", never "the threshold"
-    # (follow-up review finding): `compose()` is called over the WHOLE 10-key
+    # (follow-up review finding): `compose()` is called over the WHOLE 14-key
     # vocabulary, so an unknown key or a malformed `max_dev_attempts`
     # anywhere in the project's policy file lands here too -- and the earlier
     # text asserted, on every such launch, that the idle threshold had fallen
@@ -929,6 +1047,19 @@ def run_spin(
             )
         )
     idle_threshold_minutes = effective_policy.seed_view()["idle_threshold_minutes"].value
+    # Story 3.6's 4 budget-ceiling values -- resolved from the SAME
+    # `effective_policy` composition idle_threshold_minutes above already
+    # reads (never a second `compose()` call), and appended as argv
+    # positionals 7-10, mirroring idle_threshold_minutes's own 6th-argv
+    # wiring exactly.
+    max_tokens_per_story = effective_policy.seed_view()["max_tokens_per_story"].value
+    max_tokens_per_run = effective_policy.seed_view()["max_tokens_per_run"].value
+    max_wall_clock_minutes_per_story = effective_policy.seed_view()[
+        "max_wall_clock_minutes_per_story"
+    ].value
+    max_wall_clock_minutes_per_run = effective_policy.seed_view()[
+        "max_wall_clock_minutes_per_run"
+    ].value
 
     try:
         supervisor_pid = process.spawn_detached(
@@ -942,6 +1073,10 @@ def run_spin(
                 str(spin_result.pid),
                 str(supervisor_log),
                 str(idle_threshold_minutes),
+                str(max_tokens_per_story),
+                str(max_tokens_per_run),
+                str(max_wall_clock_minutes_per_story),
+                str(max_wall_clock_minutes_per_run),
             ],
             cwd=home,
             log_path=supervisor_log,

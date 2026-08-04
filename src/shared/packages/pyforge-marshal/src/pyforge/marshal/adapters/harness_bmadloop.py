@@ -126,6 +126,27 @@ synchronous and unbounded in the child, exactly like a fresh ``bmad-loop
 run``) and returns the new pid. Both join ``spin``/``attach``/
 ``run_foreground`` as the only methods on this class raising
 ``HarnessError`` for a plain launch failure.
+
+Story 3.6 (budget ceilings, AD-9/AD-32, FR-13) adds ``usage_snapshot`` -- the
+first method on this class that reads ``bmad_loop``'s own PER-RUN state
+(``<project>/.bmad-loop/runs/<run_id>/state.json``, never a project-wide
+file) rather than its packaged profile/config surface. Lazily imports
+``bmad_loop.journal.load_state`` (the SAME "one import per method, inside
+the method body" discipline every other method on this class already
+follows), finds the sole ``StoryTask`` with ``not task.terminal`` (zero or
+more than one such task yields ``story_key=None`` -- ``UsageSnapshot``'s own
+"no single current story" shape), and computes each weighted total via
+``TokenUsage.weighted_total(state.cache_read_weight())`` -- bmad-loop's OWN
+cost-proportional metric, already computed by the installed harness for its
+own in-session budget guard (the ``[limits]`` block this module's
+``_POLICY_TEMPLATE`` above renders, deliberately never widened or
+duplicated by this story -- see the spec's own Never clause). Joins
+``story_feed_error``/``harness_version``/``binary_present`` as a method that
+NEVER raises: ``(OSError, ValueError, KeyError, TypeError)`` covers every
+plausible read/parse failure (a missing file, malformed JSON, a missing or
+wrong-typed field), and all of them degrade to ``None`` rather than
+propagating -- this is a supplementary, best-effort reporting input (AD-32),
+never a precondition an enforcement ceiling can block on.
 """
 
 from __future__ import annotations
@@ -141,7 +162,7 @@ from pathlib import Path
 import tomlkit
 
 from ..core import policy
-from ..ports.harness import SpinResult
+from ..ports.harness import SpinResult, UsageSnapshot
 
 # --- the vendored, project-agnostic harness policy template ----------------
 #
@@ -916,3 +937,62 @@ class BmadLoopHarness:
             except (FileNotFoundError, ValueError, OSError) as exc:
                 raise HarnessError(f"cannot launch bmad-loop resume: {exc}") from exc
         return process.pid
+
+    def usage_snapshot(self, project: Path, run_id: str) -> UsageSnapshot | None:
+        # Lazy import, this method's own instance -- see the module
+        # docstring's Story 3.6 paragraph. `bmad_loop.journal.load_state`
+        # reads `<project>/.bmad-loop/runs/<run_id>/state.json` whole via
+        # `json.loads(target.read_text(...))`, then `RunState.from_dict`
+        # coerces every field -- an unreadable file raises `OSError`, a
+        # malformed document raises `json.JSONDecodeError` (a `ValueError`
+        # subclass), and a missing/wrong-typed field inside `from_dict`
+        # raises `KeyError` (a required key absent) or `TypeError`/
+        # `ValueError` (e.g. `int(d["epic"])` on a non-numeric value,
+        # `Phase(d["phase"])` on an unknown phase string); a wrong-TYPED
+        # (but present) `policy_snapshot` field (e.g. a JSON string instead
+        # of an object) survives `from_dict` unvalidated and raises
+        # `AttributeError` only once `cache_read_weight()` calls `.get()`
+        # on it below.
+        try:
+            from bmad_loop.journal import load_state
+        except ImportError:
+            return None
+        run_dir = Path(project) / ".bmad-loop" / "runs" / run_id
+        # Review finding: EVERYTHING derived from `state` -- not just
+        # `load_state` itself -- must stay inside this guard. `cache_read_
+        # weight()` is normally self-guarded (it catches KeyError/TypeError/
+        # ValueError internally and floors to 0.1), but that guard assumes
+        # `policy_snapshot` is itself a Mapping; `RunState.from_dict` never
+        # validates that assumption (`policy_snapshot=d.get("policy_
+        # snapshot", {})` accepts whatever JSON type was present), so a
+        # syntactically-valid `state.json` carrying e.g.
+        # `"policy_snapshot": "corrupted"` makes `.get("limits")` raise a
+        # bare `AttributeError` -- outside every exception this method
+        # previously caught, escaping to `supervisor/__main__.py`'s tick
+        # loop uncaught and killing the sidecar with a dangling
+        # `supervisor-attach` and no matching `supervisor-detach` (exactly
+        # the AD-9 "never silent" failure this whole port promises never to
+        # produce). This method's own contract is "never raises"; the try
+        # now covers every read this method performs against `state`, not
+        # only its initial load.
+        try:
+            state = load_state(run_dir)
+            cache_read_weight = state.cache_read_weight()
+            non_terminal = [task for task in state.tasks.values() if not task.terminal]
+            story_key: str | None = None
+            story_weighted_tokens: int | None = None
+            if len(non_terminal) == 1:
+                task = non_terminal[0]
+                story_key = task.story_key
+                story_weighted_tokens = task.tokens.weighted_total(cache_read_weight)
+            run_weighted_tokens = sum(
+                task.tokens.weighted_total(cache_read_weight) for task in state.tasks.values()
+            )
+        except (OSError, ValueError, KeyError, TypeError, AttributeError):
+            return None
+        return UsageSnapshot(
+            story_key=story_key,
+            story_weighted_tokens=story_weighted_tokens,
+            run_weighted_tokens=run_weighted_tokens,
+            sample_path=run_dir / "state.json",
+        )

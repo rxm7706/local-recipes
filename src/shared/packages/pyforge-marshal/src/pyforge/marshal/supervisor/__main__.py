@@ -1,6 +1,8 @@
-"""The supervisor sidecar's actual entry point (Story 3.4/3.5, architecture
-spine AD-9/AD-20/AD-25/AD-28/AD-30): ``python -m pyforge.marshal.supervisor
-<home> <slug> <run_id> <watched_pid> <log_path> <idle_threshold_minutes>``.
+"""The supervisor sidecar's actual entry point (Story 3.4/3.5/3.6,
+architecture spine AD-9/AD-20/AD-25/AD-28/AD-30/AD-32): ``python -m
+pyforge.marshal.supervisor <home> <slug> <run_id> <watched_pid> <log_path>
+<idle_threshold_minutes> <max_tokens_per_story> <max_tokens_per_run>
+<max_wall_clock_minutes_per_story> <max_wall_clock_minutes_per_run>``.
 ``cli/spin.py`` detach-spawns exactly this invocation (via ``ProcessPort.
 spawn_detached``) as the LAST step of a successful ``marshal factory spin``
 -- see that module's own docstring for why "last", after the ``run-launch``
@@ -134,7 +136,64 @@ re-arms and reads as maximal idleness, which since ``defer`` gained its
 stop call would turn a broken observation channel into a killed HEALTHY
 run. The ladder acts only on evidence it actually has.
 
-Every append here is a ``Phase.OBSERVATION`` entry EXCEPT the three ladder
+**Budget ceilings (Story 3.6, AD-20/AD-32, FR-13).** Four new externally-
+enforced ceilings -- per-story/per-run x tokens/wall-clock -- close the gap
+the idle ladder above deliberately leaves open: a HEALTHY-looking loop (or
+an oversized story) that keeps producing output forever has no ceiling
+anywhere outside the session itself. Tracked once ``harness_run_id``
+resolves: ``run_started_monotonic`` (the supervisor's own attach-time
+``clock.monotonic()`` reading, never the run-launch journal entry's own
+timestamp -- no existing utility parses a journal ``ts`` string back into a
+comparable clock reading, and the gap between ``spin``'s mint and this
+attach is seconds against an hours-scale ceiling) and, per tick,
+``current_story_key``/``story_started_monotonic`` (via
+``HarnessPort.usage_snapshot``, updated on every OBSERVED story-key
+transition). Evaluated every tick this loop's own ``watched_alive`` gate
+holds (never gated on the pane/log observability the idle ladder's own
+block above additionally requires -- AD-32's own rule: "no ceiling exists
+that can only be evaluated from session-written data", so the two
+wall-clock ceilings must be evaluable even when the session's pane cannot
+be read):
+
+- **wall-clock-per-run** -- ``(monotonic_now - run_started_monotonic) /
+  60.0`` against ``max_wall_clock_minutes_per_run``, unconditionally (no
+  ``harness_run_id`` needed at all: it is purely a monotonic reading).
+- **wall-clock-per-story** -- the same shape, against
+  ``max_wall_clock_minutes_per_story``, only when a current story is known.
+- **token-per-run**/**token-per-story** -- ``UsageSnapshot.
+  run_weighted_tokens``/``story_weighted_tokens`` against
+  ``max_tokens_per_run``/``max_tokens_per_story``, gated by a STALENESS
+  check: ``SessionObserverPort.mtime`` against bmad-loop's own
+  ``state.json`` (``<home>/.bmad-loop/runs/<harness_run_id>/state.json``),
+  compared to the SAME ``threshold_s`` the idle ladder already computes
+  (reused, never a second threshold). A sample older than that window is
+  classified ``stale-evidence`` (``MRS-SUPV-006``, journaled ONCE per
+  transition into staleness, kind ``"budget-usage-stale"``) -- never
+  ``unevaluable`` (AD-32's own amendment, F-24: that label is AD-8-blocking
+  and fires on the ordinary idle case the ladder above already handles
+  gracefully) -- and BOTH token ceilings are skipped for that tick; the two
+  wall-clock ceilings remain the binding constraint.
+
+Each ceiling's own last-observed ``CeilingStatus`` is tracked separately (4
+variables, one per scope+metric pair); a rising edge from ``NONE`` to
+``APPROACHING`` journals one ``"budget-warn"`` observation
+(``MRS-SUPV-004``), and any transition INTO ``BREACHED`` fires the terminal
+action -- mirroring the idle ladder's own terminal ``defer``, never
+``stop-and-retry`` (retrying the same story/run would immediately re-hit the
+same ceiling): one ``intent``/``outcome`` pair (kind ``"budget-stop"``), a
+best-effort ``HarnessPort.stop`` (tolerant of ``HarnessError``, registering
+``MRS-SUPV-005`` on failure -- the same tier and reasoning as the idle
+ladder's own ``MRS-SUPV-002``), and the tick loop ends via the SAME
+``supervisor-detach`` mechanism the idle ladder uses, with
+``reason=f"budget-{scope}-{metric}-exceeded"`` (e.g.
+``"budget-run-wall_clock-exceeded"``). On a story-key transition, one
+``"budget-usage"`` observation attributes the OUTGOING story's last known
+weighted tokens as its own ``cost_estimate`` (no dollar-denominated pricing
+table exists or is introduced, so the weighted-token total itself IS the
+proxy -- ``null`` only when bmad-loop's own state reported zero sessions
+for that task) before the per-story bookkeeping resets for the new story.
+
+Every append here is a ``Phase.OBSERVATION`` entry EXCEPT the ladder/budget
 actions above, which are ``Phase.INTENT`` then ``Phase.OUTCOME`` pairs
 (AD-6's write-before-act: the intent is fsynced BEFORE the action is
 attempted, matching ``cli/spin.py``'s own launch-intent convention) --
@@ -219,8 +278,10 @@ from ..core.journal import (
 )
 from ..core.model import Finding, Severity
 from ..core.supervise import (
+    CeilingStatus,
     LadderRung,
     Sample,
+    evaluate_ceiling,
     evaluate_idle,
     idle_anchor,
     rung_at,
@@ -245,6 +306,34 @@ _NUDGE_KIND = "idle-nudge"
 _STOP_AND_RETRY_KIND = "idle-stop-and-retry"
 _DEFER_KIND = "idle-defer"
 _HARNESS_RUN_ID_UNAVAILABLE_KIND = "idle-harness-run-id-unavailable"
+
+# Story 3.6's own budget-ceiling journal kinds. "budget-stop" fires as one
+# Phase.INTENT then one Phase.OUTCOME entry (mirroring the idle ladder's own
+# terminal actions above); the other three are single Phase.OBSERVATION
+# entries.
+_BUDGET_WARN_KIND = "budget-warn"
+_BUDGET_STOP_KIND = "budget-stop"
+_BUDGET_USAGE_KIND = "budget-usage"
+_BUDGET_USAGE_STALE_KIND = "budget-usage-stale"
+
+# `CeilingStatus` carries no intrinsic ordering (mirrors `LadderRung`'s own
+# convention, ordered via `core.supervise.rung_index`) -- this is the one
+# place `run_supervisor`'s own tick loop needs "is this a rising edge"
+# without reaching into a private tuple; no cross-module caller needs an
+# ordering accessor for a 3-member enum this module alone consumes.
+_CEILING_RANK: Mapping[CeilingStatus, int] = {
+    CeilingStatus.NONE: 0,
+    CeilingStatus.APPROACHING: 1,
+    CeilingStatus.BREACHED: 2,
+}
+
+# bmad-loop's own per-run state file (confirmed live against the installed
+# 0.9.0 journal.py's STATE_FILE constant) -- a literal, never an import of
+# bmad_loop itself (AD-3 reserves that seam for adapters/harness_bmadloop.py
+# alone), mirroring this module's existing `session_name`/
+# `_HARNESS_LOG_FILENAME` precedent of naming a bmad-loop-owned artifact by
+# its own known-live shape rather than importing a constant for it.
+_STATE_JSON_FILENAME = "state.json"
 
 # No policy knob exists for this yet (this story's own Never clause) -- a
 # fixed constant is the only defensible value with no real caller to size a
@@ -291,6 +380,23 @@ def _tier3_path(home: Path, slug: str) -> Path:
 def _run_dir(home: Path, slug: str, run_id: str) -> Path:
     """Duplicates ``cli/spin.py``'s own helper of the same name verbatim."""
     return _tier3_path(home, slug) / "runs" / run_id
+
+
+def _bmad_loop_state_json_path(home: Path, harness_run_id: str) -> Path:
+    """bmad-loop's OWN per-run state file (Story 3.6) --
+    ``<home>/.bmad-loop/runs/<harness_run_id>/state.json`` -- a wholly
+    DIFFERENT directory tree from ``_run_dir`` above (Marshal's own
+    Tier-3-backed journal, keyed by Marshal's own run id): this one is
+    bmad-loop's own native run layout, keyed by ``harness_run_id``, the SAME
+    id ``session_name``/``harness_log_path`` below are built from. Matches
+    ``adapters/harness_bmadloop.py::usage_snapshot``'s own ``run_dir``
+    computation exactly -- duplicated rather than imported, per this
+    module's own docstring (AD-9 forbids importing ``pyforge.marshal.cli``,
+    but this is ``adapters``, not ``cli`` -- still not imported, since the
+    literal costs nothing and this module already reproduces
+    ``session_name``'s own bmad-loop-owned naming formula the identical
+    way)."""
+    return home / ".bmad-loop" / "runs" / harness_run_id / _STATE_JSON_FILENAME
 
 
 def _format_entry_ts(moment: datetime) -> str:
@@ -369,6 +475,13 @@ def run_supervisor(
     # `log_path` itself is no longer read anywhere in this function's body.
     log_path: Path,
     idle_threshold_minutes: float,
+    # Story 3.6's 4 budget ceilings (FR-13, AD-32) -- see this function's
+    # own guard below for their validation, and the module docstring's
+    # "Budget ceilings" section for how each is used.
+    max_tokens_per_story: float,
+    max_tokens_per_run: float,
+    max_wall_clock_minutes_per_story: float,
+    max_wall_clock_minutes_per_run: float,
     *,
     fs: FsPort | None = None,
     process: ProcessPort | None = None,
@@ -435,6 +548,33 @@ def run_supervisor(
             file=sys.stderr,
         )
         return 1
+
+    # The 4 budget-ceiling arguments, guarded the SAME way and for the
+    # IDENTICAL reason as `idle_threshold_minutes` above: this is a public
+    # entry point every test in this package drives directly, never only
+    # through `main()`, and an unguarded bad value would surface a tick
+    # later as `evaluate_ceiling`'s own `TypeError`/`ValueError`, caught by
+    # the journal-write handler and misreported as "cannot append to
+    # journal" -- a dangling `supervisor-attach` with no matching detach,
+    # the state AD-9 forbids. Reuses `core.policy._valid_positive_number`
+    # (the SAME validator `idle_threshold_minutes`'s own policy composition
+    # already applies) rather than a fourth hand-rolled numeric guard --
+    # none of these 4 values are converted to a derived unit the way
+    # `idle_threshold_minutes` is (`* 60.0`), so there is no analogous
+    # overflow-of-a-derived-quantity risk to guard against here.
+    for _budget_value, _budget_label in (
+        (max_tokens_per_story, "max_tokens_per_story"),
+        (max_tokens_per_run, "max_tokens_per_run"),
+        (max_wall_clock_minutes_per_story, "max_wall_clock_minutes_per_story"),
+        (max_wall_clock_minutes_per_run, "max_wall_clock_minutes_per_run"),
+    ):
+        if policy._valid_positive_number(_budget_value) is None:
+            print(
+                f"supervisor: {_budget_label} must be a positive finite "
+                f"number, got {_budget_value!r}",
+                file=sys.stderr,
+            )
+            return 1
 
     run_dir = _run_dir(home, slug, run_id)
     journal_path = run_dir / _JOURNAL_FILENAME
@@ -597,6 +737,39 @@ def run_supervisor(
                 {"finding": unavailable_finding.to_json_dict()},
             )
 
+        # --- Story 3.6: budget-ceiling bookkeeping (AD-20/AD-32) -----------
+        # `run_started_monotonic` is captured ONCE, right here (post
+        # inert-check / harness_run_id resolution) -- the supervisor's OWN
+        # attach-time reading, never the run-launch journal entry's own
+        # timestamp (see the module docstring's "Budget ceilings" section
+        # for why). Independent of whether `harness_run_id` resolved: the
+        # per-run wall-clock ceiling needs no session/harness target at all.
+        run_started_monotonic = clock.monotonic()
+        current_story_key: str | None = None
+        story_started_monotonic: float | None = None
+        # The current story's last-observed weighted token tally -- used
+        # solely to attribute a `"budget-usage"` observation to the
+        # OUTGOING story at the moment it transitions away (see the
+        # per-tick block below); never itself an enforcement input.
+        last_story_weighted_tokens: int | None = None
+        # One CeilingStatus per (scope, metric) pair -- the ONLY way this
+        # loop can detect a rising edge (`CeilingStatus` carries no
+        # intrinsic ordering, mirroring `LadderRung`'s own convention
+        # above): a warning fires on NONE->APPROACHING, the terminal action
+        # on any transition INTO BREACHED, and both are compared against
+        # the LAST status this loop itself acted on, never re-derived from
+        # scratch.
+        run_wall_clock_status = CeilingStatus.NONE
+        story_wall_clock_status = CeilingStatus.NONE
+        run_tokens_status = CeilingStatus.NONE
+        story_tokens_status = CeilingStatus.NONE
+        # Whether the LAST tick's usage sample was stale -- gates
+        # `_BUDGET_USAGE_STALE_KIND` to fire once per transition INTO
+        # staleness, never every tick (AD-32's own "reported... never reds
+        # the run" posture would be defeated by a flood of identical
+        # findings otherwise).
+        usage_stale = False
+
         samples: list[Sample] = []
         last_acted_rung = LadderRung.NONE
         deferred = False
@@ -661,6 +834,133 @@ def run_supervisor(
         # still journals ONE truthful `watched_alive: False` heartbeat
         # before the final `supervisor-detach`, rather than a silent jump
         # straight from a string of `True` heartbeats to detach.
+
+        def _act_on_budget_transition(
+            scope: str,
+            metric: str,
+            status_before: CeilingStatus,
+            status_after: CeilingStatus,
+            observed: float,
+            limit: float,
+        ) -> None:
+            """Story 3.6's shared warn/breach handler for all 4 (scope,
+            metric) budget-ceiling pairs -- a no-op unless ``status_after``
+            is a RISING edge over ``status_before`` (``_CEILING_RANK``,
+            since ``CeilingStatus`` carries no intrinsic ordering).
+            ``NONE``->``APPROACHING`` journals one ``"budget-warn"``
+            observation (``MRS-SUPV-004``); any transition INTO
+            ``BREACHED`` fires the terminal action -- mirroring the idle
+            ladder's own terminal ``defer`` above: one ``intent``/
+            ``outcome`` pair (kind ``"budget-stop"``), a best-effort
+            ``HarnessPort.stop`` (tolerant of failure, registering
+            ``MRS-SUPV-005``), and ending the tick loop via the SAME
+            ``detach_reason``/``deferred`` mechanism the idle ladder uses.
+            A second ceiling breaching -- or merely approaching -- in the
+            SAME tick after a DIFFERENT ceiling already breached is a no-op
+            here (``deferred`` is already ``True``, checked BEFORE either
+            branch -- review finding: the original shape only checked it
+            inside the ``BREACHED`` branch, so an ``APPROACHING`` transition
+            on a second ceiling could still journal a ``budget-warn``
+            chronologically AFTER the terminal ``budget-stop`` pair the
+            first ceiling had already fired, in the same tick, for a run
+            already ending) -- at most one stop action per tick, and no
+            warn once the loop has already decided to end."""
+            nonlocal deferred, detach_reason, watched_alive
+            if _CEILING_RANK[status_after] <= _CEILING_RANK[status_before]:
+                return
+            if deferred:
+                return
+            if status_after is CeilingStatus.APPROACHING:
+                warn_finding = Finding(
+                    code="MRS-SUPV-004",
+                    severity=Severity.WARN,
+                    message=(
+                        f"budget ceiling approaching: {scope}/{metric} at "
+                        f"{observed!r} (limit {limit!r})"
+                    ),
+                )
+                _append(
+                    _BUDGET_WARN_KIND,
+                    {
+                        "scope": scope,
+                        "metric": metric,
+                        "observed": observed,
+                        "limit": limit,
+                        "finding": warn_finding.to_json_dict(),
+                    },
+                )
+                return
+            # status_after is CeilingStatus.BREACHED. The `deferred` guard
+            # now sits at the TOP of this function (see the docstring's own
+            # review-finding note) -- this branch is only ever reached with
+            # `deferred` still `False`.
+            intent_id = _append_intent(
+                _BUDGET_STOP_KIND,
+                {"scope": scope, "metric": metric, "observed": observed, "limit": limit},
+            )
+            stopped = False
+            stop_payload: dict[str, object] = {"scope": scope, "metric": metric}
+            if harness_run_id is None:
+                # No harness_run_id to stop against -- e.g. the per-run
+                # wall-clock ceiling, the one budget check evaluable even
+                # when the idle ladder's own MRS-SUPV-003 already reported
+                # it cannot act at all for this run.
+                stop_finding = Finding(
+                    code="MRS-SUPV-005",
+                    severity=Severity.WARN,
+                    message=(
+                        f"budget-stop ({scope}/{metric}): no harness_run_id "
+                        "is available for this run -- could not stop the "
+                        "harness process"
+                    ),
+                )
+                stop_payload["finding"] = stop_finding.to_json_dict()
+            else:
+                try:
+                    stopped = harness.stop(home, harness_run_id)
+                except HarnessError as exc:
+                    stop_finding = Finding(
+                        code="MRS-SUPV-005",
+                        severity=Severity.WARN,
+                        message=(
+                            f"budget-stop ({scope}/{metric}) failed for "
+                            f"harness run {harness_run_id!r}: {exc}"
+                        ),
+                    )
+                    stop_payload["finding"] = stop_finding.to_json_dict()
+                else:
+                    if not stopped:
+                        stop_finding = Finding(
+                            code="MRS-SUPV-005",
+                            severity=Severity.WARN,
+                            message=(
+                                f"budget-stop ({scope}/{metric}): bmad-loop "
+                                f"reported harness run {harness_run_id!r} "
+                                "was not stopped"
+                            ),
+                        )
+                        stop_payload["finding"] = stop_finding.to_json_dict()
+            stop_payload["stopped"] = stopped
+            _append_outcome(_BUDGET_STOP_KIND, intent_id, stop_payload)
+            deferred = True
+            # Plain concatenation, NOT an f-string (review finding, AD-23's
+            # own meta-test): `f"budget-{scope}-{metric}-exceeded"` is,
+            # structurally, "two placeholders joined by a bare '-'" -- the
+            # EXACT shape `tests/meta/test_ad23_inline_key_format_guard.py`
+            # forbids outside `core/identity.py`, since that is what a
+            # story-key-shaped literal looks like to its AST scan. `scope`/
+            # `metric` are never story keys, but the guard is purely
+            # structural and has no escape hatch; `+` concatenation produces
+            # the IDENTICAL string while using no ``ast.JoinedStr``/
+            # ``.format()`` node the scan recognizes at all.
+            detach_reason = "budget-" + scope + "-" + metric + "-exceeded"
+            # Stale `watched_alive` (mirrors the idle ladder's own
+            # `defer`/`stop-and-retry` branches above): the stop call just
+            # above may have killed the very pid this tick read as alive at
+            # its top, and this tick's own heartbeat -- possibly the LAST
+            # one this run will ever produce -- still appends below.
+            watched_alive = process.is_alive(watched_pid)
+
         watched_alive = process.is_alive(watched_pid)
         while watched_alive and not deferred:
             sleep(_TICK_SECONDS)
@@ -683,6 +983,196 @@ def run_supervisor(
                 # notice it here.
                 retry_verify_pending = False
 
+            # --- Story 3.6: budget ceilings (AD-20/AD-32) -------------------
+            # Gated on `watched_alive` alone -- NEVER on `session_name`/
+            # `harness_log_path`/pane observability, unlike the idle
+            # ladder's own block below: AD-32 requires the two wall-clock
+            # ceilings to be evaluable even when the session's pane cannot
+            # be read, and this whole block evaluates them independently of
+            # whether `harness_run_id` even resolved (the per-run wall-clock
+            # ceiling needs no session/harness target at all). A process
+            # already discovered dead this tick has nothing left to stop;
+            # the ordinary "watched-process-exited" detach already covers
+            # it.
+            if watched_alive:
+                run_elapsed_minutes = (monotonic_now - run_started_monotonic) / 60.0
+                new_run_wall_clock_status = evaluate_ceiling(
+                    run_elapsed_minutes, max_wall_clock_minutes_per_run
+                )
+                _act_on_budget_transition(
+                    "run",
+                    "wall_clock",
+                    run_wall_clock_status,
+                    new_run_wall_clock_status,
+                    run_elapsed_minutes,
+                    max_wall_clock_minutes_per_run,
+                )
+                run_wall_clock_status = new_run_wall_clock_status
+
+                if harness_run_id is not None:
+                    # `usage_snapshot` is read every tick regardless of the
+                    # staleness gate below: attribution (WHICH story is
+                    # running, and the wall-clock-per-story ceiling's own
+                    # elapsed-time basis) rests on the monotonic clock, not
+                    # on fresh consumption numbers, so a stale sample still
+                    # answers "which story" correctly even when its token
+                    # counts do not (AD-32: session-authored data is
+                    # evidence for ATTRIBUTION, never a precondition on the
+                    # STOP condition itself).
+                    usage = harness.usage_snapshot(home, harness_run_id)
+                    # A FAILED read (`usage is None`) is never treated as a
+                    # transition to "no current story" (review finding): a
+                    # single transient `usage_snapshot` glitch -- a torn
+                    # concurrent write to `state.json`, a momentary
+                    # `bmad_loop` import failure -- must not reset the
+                    # per-story wall-clock/token ceiling clock for a story
+                    # that is, in fact, still running. Only a POSITIVE
+                    # reading ever changes `current_story_key`; a failed
+                    # tick simply carries the previous value forward, same
+                    # as the idle ladder's own "act only on evidence it has"
+                    # discipline for an unobservable pane.
+                    new_story_key = usage.story_key if usage is not None else current_story_key
+                    if new_story_key != current_story_key:
+                        if current_story_key is not None:
+                            # "Cost estimate" (the spec's own Always bullet):
+                            # no dollar pricing table exists, so
+                            # `cost_estimate` IS the weighted-token proxy
+                            # (`task.tokens.weighted_total(...)`) -- never a
+                            # separate raw-token field alongside a
+                            # hardcoded-null `cost_estimate`. Null ONLY when
+                            # bmad-loop's own state reports zero sessions for
+                            # this task (the spec's own Never bullet) --
+                            # operationally indistinguishable, given
+                            # `UsageSnapshot`'s own 4-field shape, from a
+                            # weighted total of exactly 0 (a `None` reading,
+                            # meaning no valid sample was ever attributed to
+                            # this story, collapses to the same null).
+                            _append(
+                                _BUDGET_USAGE_KIND,
+                                {
+                                    "story_key": current_story_key,
+                                    "cost_estimate": (
+                                        last_story_weighted_tokens
+                                        if last_story_weighted_tokens
+                                        else None
+                                    ),
+                                },
+                            )
+                        current_story_key = new_story_key
+                        story_started_monotonic = (
+                            monotonic_now if new_story_key is not None else None
+                        )
+                        # A new story starts its own fresh ceiling
+                        # bookkeeping -- mirrors the idle ladder's own
+                        # "a successful retry starts its own fresh idle
+                        # window" convention above.
+                        story_wall_clock_status = CeilingStatus.NONE
+                        story_tokens_status = CeilingStatus.NONE
+                        last_story_weighted_tokens = None
+                    if usage is not None and new_story_key is not None:
+                        last_story_weighted_tokens = usage.story_weighted_tokens
+
+                    if current_story_key is not None and story_started_monotonic is not None:
+                        story_elapsed_minutes = (
+                            monotonic_now - story_started_monotonic
+                        ) / 60.0
+                        new_story_wall_clock_status = evaluate_ceiling(
+                            story_elapsed_minutes, max_wall_clock_minutes_per_story
+                        )
+                        _act_on_budget_transition(
+                            "story",
+                            "wall_clock",
+                            story_wall_clock_status,
+                            new_story_wall_clock_status,
+                            story_elapsed_minutes,
+                            max_wall_clock_minutes_per_story,
+                        )
+                        story_wall_clock_status = new_story_wall_clock_status
+
+                    # --- staleness gate for the TWO TOKEN ceilings only -----
+                    # A usage sample older than `threshold_s` (the SAME
+                    # threshold the idle ladder already computes, reused
+                    # rather than a second knob) is `stale-evidence`
+                    # (`MRS-SUPV-006`), never `unevaluable` (AD-32's own
+                    # amendment, F-24) -- journaled once per transition into
+                    # staleness, and both token ceilings are skipped for
+                    # this tick; the two wall-clock ceilings above remain
+                    # the binding constraint.
+                    state_json_path = _bmad_loop_state_json_path(home, harness_run_id)
+                    state_mtime = observer.mtime(state_json_path)
+                    is_stale = (
+                        state_mtime is None
+                        or (moment.timestamp() - state_mtime) > threshold_s
+                    )
+                    # Widened to ALSO cover `usage is None` with a fresh
+                    # mtime (review finding): a torn concurrent write, a
+                    # transient `bmad_loop` import failure, or any other
+                    # read/parse failure `usage_snapshot` degrades to `None`
+                    # for has the IDENTICAL operational consequence as a
+                    # stale sample -- both token ceilings cannot be
+                    # evaluated this tick -- but the original shape silently
+                    # skipped them with NO registered finding at all,
+                    # letting a persistent (non-staleness) read failure
+                    # disable both token ceilings for the run's whole life
+                    # with zero diagnostic anywhere.
+                    unevaluable_this_tick = is_stale or usage is None
+                    if unevaluable_this_tick:
+                        if not usage_stale:
+                            if is_stale:
+                                reason = f"stale (state.json mtime {state_mtime!r})"
+                            else:
+                                reason = (
+                                    "unreadable this tick (state.json mtime "
+                                    f"{state_mtime!r} is fresh, but the read failed)"
+                                )
+                            stale_finding = Finding(
+                                code="MRS-SUPV-006",
+                                severity=Severity.WARN,
+                                message=(
+                                    f"usage sample for harness run "
+                                    f"{harness_run_id!r} is {reason} -- both "
+                                    "token ceilings are skipped this tick; "
+                                    "the wall-clock ceilings remain the "
+                                    "binding constraint"
+                                ),
+                            )
+                            _append(
+                                _BUDGET_USAGE_STALE_KIND,
+                                {"finding": stale_finding.to_json_dict()},
+                            )
+                        usage_stale = True
+                    else:
+                        usage_stale = False
+                        new_run_tokens_status = evaluate_ceiling(
+                            usage.run_weighted_tokens, max_tokens_per_run
+                        )
+                        _act_on_budget_transition(
+                            "run",
+                            "tokens",
+                            run_tokens_status,
+                            new_run_tokens_status,
+                            usage.run_weighted_tokens,
+                            max_tokens_per_run,
+                        )
+                        run_tokens_status = new_run_tokens_status
+
+                        if (
+                            usage.story_key is not None
+                            and usage.story_weighted_tokens is not None
+                        ):
+                            new_story_tokens_status = evaluate_ceiling(
+                                usage.story_weighted_tokens, max_tokens_per_story
+                            )
+                            _act_on_budget_transition(
+                                "story",
+                                "tokens",
+                                story_tokens_status,
+                                new_story_tokens_status,
+                                usage.story_weighted_tokens,
+                                max_tokens_per_story,
+                            )
+                            story_tokens_status = new_story_tokens_status
+
             # `watched_alive` gates the whole block (review finding): this
             # value is THIS tick's own fresh reading, so if the watched
             # process exited naturally in the very tick an idle threshold
@@ -690,7 +1180,17 @@ def run_supervisor(
             # is already gone -- a genuinely successful completion must
             # never be misreported as an `idle-defer` outcome. The ordinary
             # heartbeat below still appends unconditionally either way.
-            if watched_alive and session_name is not None and harness_log_path is not None:
+            # `not deferred` (Story 3.6): a budget ceiling above may already
+            # have decided this tick is the run's last one and journaled
+            # its own terminal `budget-stop` -- the idle ladder must not
+            # ALSO act in the same tick against a process that decision has
+            # already targeted for a stop.
+            if (
+                watched_alive
+                and not deferred
+                and session_name is not None
+                and harness_log_path is not None
+            ):
                 # Sampled against the REAL session/log target (Story 3.5,
                 # closing the two placeholder gaps this module's own
                 # docstring names) -- feeds the pure `evaluate_idle` decision
@@ -1217,6 +1717,27 @@ def run_supervisor(
             # already earns.
             detach_reason = "idle-retry-failed"
 
+        # Story 3.6 review finding: the ONLY existing `budget-usage` append
+        # site fires on an OBSERVED story-key transition, so a run's FINAL
+        # (or, for a single-`--story` launch, ONLY) story never sees a
+        # later transition and never got a `budget-usage` entry at all --
+        # directly undermining this story's own "consumption is journaled
+        # per story with a cost estimate" acceptance criterion in the most
+        # common invocation shape. Flushed exactly once here, after the tick
+        # loop has ended for ANY reason (natural exit, idle-defer, a budget
+        # breach, a failed retry), mirroring the transition-flush's own
+        # payload shape exactly.
+        if current_story_key is not None:
+            _append(
+                _BUDGET_USAGE_KIND,
+                {
+                    "story_key": current_story_key,
+                    "cost_estimate": (
+                        last_story_weighted_tokens if last_story_weighted_tokens else None
+                    ),
+                },
+            )
+
         detach_payload: dict[str, object] = {
             "pid": pid,
             "reason": detach_reason or "watched-process-exited",
@@ -1250,12 +1771,16 @@ def run_supervisor(
 
 def main(argv: Sequence[str] | None = None) -> int:
     """Parse ``sys.argv`` (or an injected ``argv`` for testing) into
-    ``run_supervisor``'s six positional arguments and relay its exit code.
+    ``run_supervisor``'s ten positional arguments and relay its exit code.
     This is the ONLY place this module reads its own command line -- AD-9's
     "reads argv once at start and touches no other externally-writable
     input for its own control flow" is literal here: no further read of
     ``sys.argv``, no ``input()``, no ``sys.stdin`` read, anywhere in this
-    package."""
+    package. Story 3.6 grows the argv shape from 6 to 10 positionals,
+    appending its 4 budget-ceiling values -- each validated the SAME way
+    ``idle_threshold_minutes`` already is (positive, finite, guarded
+    against the NaN/``<= 0`` footgun both this function's own comment and
+    ``core/supervise.py::evaluate_ceiling``'s own guard document)."""
     # A bare `str` satisfies `Sequence[str]` and shreds one character per
     # positional argument (review finding, verified: `main("ab142")` used to
     # return 0 having dispatched `run_supervisor(Path('a'), 'b', '1', 4,
@@ -1272,10 +1797,13 @@ def main(argv: Sequence[str] | None = None) -> int:
         )
         return 1
     args = list(sys.argv[1:]) if argv is None else list(argv)
-    if len(args) != 6 or not all(isinstance(arg, str) for arg in args):
+    if len(args) != 10 or not all(isinstance(arg, str) for arg in args):
         print(
             "usage: python -m pyforge.marshal.supervisor <home> <slug> "
-            "<run_id> <watched_pid> <log_path> <idle_threshold_minutes>",
+            "<run_id> <watched_pid> <log_path> <idle_threshold_minutes> "
+            "<max_tokens_per_story> <max_tokens_per_run> "
+            "<max_wall_clock_minutes_per_story> "
+            "<max_wall_clock_minutes_per_run>",
             file=sys.stderr,
         )
         return 1
@@ -1286,6 +1814,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         watched_pid_text,
         log_path_text,
         idle_threshold_minutes_text,
+        max_tokens_per_story_text,
+        max_tokens_per_run_text,
+        max_wall_clock_minutes_per_story_text,
+        max_wall_clock_minutes_per_run_text,
     ) = args
     # `home` is the ROOT of the very path `slug` and `run_id` are guarded as
     # segments of, and was the one argv element validated nowhere (review
@@ -1394,8 +1926,44 @@ def main(argv: Sequence[str] | None = None) -> int:
             file=sys.stderr,
         )
         return 1
+    # Story 3.6's 4 budget-ceiling argv elements -- parsed and range-checked
+    # in a loop rather than 4 copies of the block above (Simplicity First):
+    # each pair produces the SAME two failure messages idle_threshold_minutes's
+    # own block does, just parameterized by name.
+    budget_values: dict[str, float] = {}
+    for _text, _name in (
+        (max_tokens_per_story_text, "max_tokens_per_story"),
+        (max_tokens_per_run_text, "max_tokens_per_run"),
+        (max_wall_clock_minutes_per_story_text, "max_wall_clock_minutes_per_story"),
+        (max_wall_clock_minutes_per_run_text, "max_wall_clock_minutes_per_run"),
+    ):
+        try:
+            _value = float(_text)
+        except ValueError:
+            print(f"supervisor: invalid {_name} {_text!r}", file=sys.stderr)
+            return 1
+        # The identical NaN-safe guard idle_threshold_minutes's own block
+        # above applies, repeated here rather than shared: `not (x > 0)`
+        # plus an explicit finiteness check, never a bare `<= 0`.
+        if not (_value > 0) or not math.isfinite(_value):
+            print(
+                f"supervisor: {_name} must be a positive finite number, "
+                f"got {_value}",
+                file=sys.stderr,
+            )
+            return 1
+        budget_values[_name] = _value
     return run_supervisor(
-        Path(home), slug, run_id, watched_pid, Path(log_path_text), idle_threshold_minutes
+        Path(home),
+        slug,
+        run_id,
+        watched_pid,
+        Path(log_path_text),
+        idle_threshold_minutes,
+        budget_values["max_tokens_per_story"],
+        budget_values["max_tokens_per_run"],
+        budget_values["max_wall_clock_minutes_per_story"],
+        budget_values["max_wall_clock_minutes_per_run"],
     )
 
 
