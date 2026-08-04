@@ -224,6 +224,64 @@ def test_usage_snapshot_returns_none_for_a_non_mapping_policy_snapshot(harness, 
     assert harness.usage_snapshot(tmp_path, "acme-run-1") is None
 
 
+def test_usage_snapshot_returns_none_for_a_non_finite_cache_read_weight(harness, tmp_path):
+    """Review finding: a syntactically-valid document carrying
+    ``"cache_read_weight": Infinity`` (which ``json`` both emits and accepts
+    by default) makes ``TokenUsage.weighted_total``'s own
+    ``round(cache_read * weight)`` raise ``OverflowError`` -- an
+    ``ArithmeticError``, not a ``ValueError``, so it escaped every exception
+    this method caught and, in production, killed the supervisor sidecar
+    with a dangling ``supervisor-attach`` and no matching detach."""
+    run_dir = tmp_path / ".bmad-loop" / "runs" / "acme-run-1"
+    run_dir.mkdir(parents=True)
+    state = {
+        "run_id": "acme-run-1",
+        "project": str(tmp_path),
+        "started_at": "2026-08-03T00:00:00Z",
+        "policy_snapshot": {"limits": {"cache_read_weight": float("inf")}},
+        "tasks": {"3.6": _task("3.6", "dev-running", cache_read_tokens=1_000)},
+    }
+    (run_dir / "state.json").write_text(json.dumps(state), encoding="utf-8")
+
+    assert harness.usage_snapshot(tmp_path, "acme-run-1") is None
+
+
+def test_usage_snapshot_returns_none_for_a_deeply_nested_document(harness, tmp_path):
+    """``json.loads`` raises ``RecursionError`` -- NOT a ``ValueError`` -- on
+    a deeply nested document (review finding, same "never raises" contract
+    as the case above)."""
+    run_dir = tmp_path / ".bmad-loop" / "runs" / "acme-run-1"
+    run_dir.mkdir(parents=True)
+    (run_dir / "state.json").write_text(
+        "[" * 200_000 + "]" * 200_000, encoding="utf-8"
+    )
+
+    assert harness.usage_snapshot(tmp_path, "acme-run-1") is None
+
+
+def test_usage_snapshot_reports_bmad_loops_own_slug_key_form(harness, tmp_path):
+    """Documents what this port actually returns (review finding): the RAW
+    ``task.story_key`` bmad-loop wrote, which live data shows is the full
+    sprint-status slug -- NOT Marshal's own dot-form feed key. Every other
+    test in this file uses a fabricated ``"3.6"``; this one pins the real
+    shape, and ``supervisor/__main__.py::_feed_key_form`` is what normalizes
+    it before journaling."""
+    _write_state(
+        tmp_path,
+        "acme-run-1",
+        tasks={
+            "3-6-budget-ceilings-and-the-heaviest-story-advisory": _task(
+                "3-6-budget-ceilings-and-the-heaviest-story-advisory", "dev-running"
+            )
+        },
+    )
+
+    snapshot = harness.usage_snapshot(tmp_path, "acme-run-1")
+
+    assert snapshot is not None
+    assert snapshot.story_key == "3-6-budget-ceilings-and-the-heaviest-story-advisory"
+
+
 def test_usage_snapshot_returns_none_for_an_unknown_phase(harness, tmp_path):
     """``Phase(d["phase"])`` raises ``ValueError`` for a phase string
     outside the closed enum -- e.g. a document written by a NEWER

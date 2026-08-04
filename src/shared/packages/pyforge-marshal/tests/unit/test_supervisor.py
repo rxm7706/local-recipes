@@ -2353,6 +2353,114 @@ def test_no_single_current_story_skips_per_story_ceilings_only():
     assert "budget-usage" not in [e["kind"] for e in entries]
 
 
+def test_budget_usage_journals_the_canonical_feed_key_not_the_harness_slug():
+    """REGRESSION (review finding): ``UsageSnapshot.story_key`` carries
+    bmad-loop's OWN key spelling verbatim -- the full slug, verified live as
+    e.g. ``"3-6-budget-ceilings-and-the-heaviest-story-advisory"`` -- while
+    every other story identifier Marshal writes goes through
+    ``render_feed_key`` (the dot form; see ``cli/spin.py``'s own
+    ``data["preview"]``). Journaling the raw form put the SAME story under
+    two identities in ONE run's evidence, so a consumer joining per-story
+    cost back to the launch preview by exact match found nothing.
+
+    The pre-existing transition tests never caught it because they hand-build
+    ``UsageSnapshot(story_key="3.6", ...)`` -- already the dot form, a shape
+    the real adapter never produces."""
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+    clock = AdvancingClock()
+    observer = FakeObserver(pane="idle")
+    harness = FakeHarness()
+    sample_path = _HOME / ".bmad-loop" / "runs" / _HARNESS_RUN_ID / "state.json"
+    harness.usage_snapshot_sequence = [
+        UsageSnapshot(
+            story_key="3-6-budget-ceilings-and-the-heaviest-story-advisory",
+            story_weighted_tokens=1_000, run_weighted_tokens=1_000,
+            sample_path=sample_path,
+        ),
+    ]
+
+    rc = run_supervisor(
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs, process=FakeProcess(alive_for=2), clock=clock, observer=observer,
+        harness=harness, sleep=clock.sleep,
+    )
+
+    assert rc == 0
+    entries = [json.loads(line) for _, line, _ in fs.appended_lines]
+    usage_entries = [e for e in entries if e["kind"] == "budget-usage"]
+    assert usage_entries, "the run-end flush must journal the current story"
+    assert usage_entries[-1]["payload"]["story_key"] == "3.6"
+
+
+def test_budget_usage_falls_back_to_the_raw_key_when_it_cannot_be_normalized():
+    """An unparseable harness key is still better attribution than none --
+    ``normalize`` is the sole parser (AD-23), never a second-guessing regex,
+    so a key it rejects is journaled verbatim rather than dropped."""
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+    clock = AdvancingClock()
+    observer = FakeObserver(pane="idle")
+    harness = FakeHarness()
+    sample_path = _HOME / ".bmad-loop" / "runs" / _HARNESS_RUN_ID / "state.json"
+    harness.usage_snapshot_sequence = [
+        UsageSnapshot(
+            story_key="not-a-story-key", story_weighted_tokens=1_000,
+            run_weighted_tokens=1_000, sample_path=sample_path,
+        ),
+    ]
+
+    rc = run_supervisor(
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs, process=FakeProcess(alive_for=2), clock=clock, observer=observer,
+        harness=harness, sleep=clock.sleep,
+    )
+
+    assert rc == 0
+    entries = [json.loads(line) for _, line, _ in fs.appended_lines]
+    usage_entries = [e for e in entries if e["kind"] == "budget-usage"]
+    assert usage_entries[-1]["payload"]["story_key"] == "not-a-story-key"
+
+
+def test_no_budget_observation_is_journaled_after_a_terminal_budget_stop():
+    """REGRESSION (review finding): the ``deferred`` guard added one pass
+    earlier sits INSIDE ``_act_on_budget_transition``, so it suppressed a
+    second same-tick ``budget-warn`` but nothing else. A ceiling that
+    breached wrote its terminal ``budget-stop`` pair and execution then FELL
+    THROUGH -- spending another ``usage_snapshot`` read against a run just
+    killed and appending ``budget-usage``/``budget-usage-stale``
+    observations CHRONOLOGICALLY AFTER the terminal pair, for a run already
+    ending.
+
+    The end-of-run ``budget-usage`` flush is the one legitimate exception:
+    it is written deliberately after the loop, before the detach entry."""
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+    clock = AdvancingClock()
+    observer = FakeObserver(pane="idle")
+    harness = FakeHarness()
+
+    rc = run_supervisor(
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY, 1.5,
+        fs=fs, process=FakeProcess(alive_for=10), clock=clock, observer=observer,
+        harness=harness, sleep=clock.sleep,
+    )
+
+    assert rc == 0
+    entries = [json.loads(line) for _, line, _ in fs.appended_lines]
+    kinds = [entry["kind"] for entry in entries]
+    stop_outcome_index = max(
+        i for i, e in enumerate(entries)
+        if e["kind"] == "budget-stop" and e["phase"] == "outcome"
+    )
+    assert "budget-usage-stale" not in kinds[stop_outcome_index:], (
+        "a stale-evidence observation landed after the terminal budget-stop"
+    )
+
+
 def test_story_transition_journals_usage_for_the_outgoing_story():
     """I/O matrix: the current story key differs from the last observed one
     -> one ``budget-usage`` observation attributes the OUTGOING story's last
@@ -2515,7 +2623,6 @@ def test_harness_run_id_unavailable_still_evaluates_the_run_wall_clock_ceiling()
     entries = [json.loads(line) for _, line, _ in fs.appended_lines]
     kinds = [entry["kind"] for entry in entries]
     assert "budget-stop" in kinds
-    assert entries[-1]["payload"]["reason"] == "budget-run-wall_clock-exceeded"
     # No harness_run_id to stop against -- best-effort, never raised.
     assert harness.stop_calls == []
     stop_outcome = next(
@@ -2523,6 +2630,40 @@ def test_harness_run_id_unavailable_still_evaluates_the_run_wall_clock_ceiling()
     )
     assert stop_outcome["payload"]["stopped"] is False
     assert stop_outcome["payload"]["finding"]["code"] == "MRS-SUPV-005"
+    # Supervision CONTINUES: nothing was stopped, so detaching here would
+    # only blind the one process watching a live, runaway harness (review
+    # finding -- this assertion previously pinned the opposite, a detach
+    # with `reason="budget-run-wall_clock-exceeded"` for a stop that never
+    # happened). Mirrors `MRS-SUPV-003`'s own "cannot act for this run;
+    # continuing heartbeat-only supervision" precedent, and the run ends on
+    # the ordinary watched-process-exited path instead.
+    assert entries[-1]["payload"]["reason"] == "watched-process-exited"
+
+
+def test_a_budget_breach_with_no_harness_run_id_never_re_fires_on_later_ticks():
+    """The rising-edge latch is what makes "continue heartbeat-only" safe
+    (review finding): once the ceiling reads ``BREACHED`` the rank check
+    makes every later tick a no-op, so a breach that could not be acted on
+    journals exactly ONE ``budget-stop`` pair rather than one per tick for
+    the rest of the run's life."""
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1", harness_run_id=None) + "\n")
+    clock = AdvancingClock()
+    observer = FakeObserver(pane="idle")
+    harness = FakeHarness()
+
+    rc = run_supervisor(
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY, 1.5,
+        fs=fs, process=FakeProcess(alive_for=20), clock=clock, observer=observer,
+        harness=harness, sleep=clock.sleep,
+    )
+
+    assert rc == 0
+    entries = [json.loads(line) for _, line, _ in fs.appended_lines]
+    stops = [e for e in entries if e["kind"] == "budget-stop"]
+    assert len(stops) == 2, "exactly one intent + one outcome, never one pair per tick"
+    assert [e["phase"] for e in stops] == ["intent", "outcome"]
 
 
 # --- main(): argv parsing + dispatch --------------------------------------------

@@ -269,6 +269,7 @@ from ..adapters.harness_bmadloop import BmadLoopHarness, HarnessError
 from ..adapters.observer_mux import MultiplexerObserver
 from ..adapters.process_posix import PosixProcess
 from ..core import policy
+from ..core.identity import normalize, render_feed_key
 from ..core.journal import (
     JournalEntryId,
     Phase,
@@ -315,6 +316,29 @@ _BUDGET_WARN_KIND = "budget-warn"
 _BUDGET_STOP_KIND = "budget-stop"
 _BUDGET_USAGE_KIND = "budget-usage"
 _BUDGET_USAGE_STALE_KIND = "budget-usage-stale"
+
+
+def _feed_key_form(raw: str) -> str:
+    """Render a harness-native story key in Marshal's OWN canonical external
+    form (review finding). ``UsageSnapshot.story_key`` carries bmad-loop's
+    key spelling verbatim -- the full slug, e.g.
+    ``"3-6-budget-ceilings-and-the-heaviest-story-advisory"`` -- while every
+    other story identifier Marshal writes to a journal or envelope goes
+    through ``render_feed_key`` (the dot form, ``"3.6"``; see
+    ``cli/spin.py``'s own ``data["preview"]``). Journaling the raw form put
+    the SAME story under two identities in one run's evidence, so a
+    consumer joining per-story cost back to the launch preview by exact
+    match found nothing.
+
+    Falls back to ``raw`` unchanged when it does not parse: a key this
+    package cannot normalize is still better attribution than none, and
+    ``normalize`` is the sole parser (AD-23) -- never a second-guessing
+    regex here."""
+    try:
+        return render_feed_key(normalize(raw))
+    except ValueError:
+        # `MalformedStoryKeyError` is a `ValueError`.
+        return raw
 
 # `CeilingStatus` carries no intrinsic ordering (mirrors `LadderRung`'s own
 # convention, ordered via `core.supervise.rung_index`) -- this is the one
@@ -728,8 +752,12 @@ def run_supervisor(
                 severity=Severity.WARN,
                 message=(
                     f"run {run_id}'s harness_run_id is unavailable -- the "
-                    "idle ladder cannot act for this run; continuing "
-                    "heartbeat-only supervision"
+                    "idle ladder cannot act for this run, and neither can "
+                    "the two token ceilings, the per-story wall-clock "
+                    "ceiling, or per-story cost attribution (Story 3.6: all "
+                    "four read the harness run's own state.json); the "
+                    "per-run wall-clock ceiling remains the only binding "
+                    "constraint; continuing heartbeat-only supervision"
                 ),
             )
             _append(
@@ -942,6 +970,22 @@ def run_supervisor(
                         stop_payload["finding"] = stop_finding.to_json_dict()
             stop_payload["stopped"] = stopped
             _append_outcome(_BUDGET_STOP_KIND, intent_id, stop_payload)
+            if harness_run_id is None:
+                # Nothing was stopped, because there was nothing to stop
+                # against -- so do NOT end supervision (review finding). The
+                # original shape set `deferred`/`detach_reason` here too, so
+                # a per-run wall-clock breach on a run whose `harness_run_id`
+                # never resolved journaled a `budget-stop` it had not
+                # performed and then DETACHED -- leaving a live, runaway
+                # harness process with the one thing watching it now gone.
+                # That is strictly worse than not having the ceiling at all.
+                # Instead this mirrors `MRS-SUPV-003`'s own precedent for the
+                # identical "cannot act for this run" condition: journal the
+                # WARN once and continue heartbeat-only. Nothing re-fires on
+                # later ticks -- this ceiling's status is already `BREACHED`,
+                # so the rank check at the top of this function makes every
+                # subsequent tick a no-op.
+                return
             deferred = True
             # Plain concatenation, NOT an f-string (review finding, AD-23's
             # own meta-test): `f"budget-{scope}-{metric}-exceeded"` is,
@@ -994,7 +1038,20 @@ def run_supervisor(
             # already discovered dead this tick has nothing left to stop;
             # the ordinary "watched-process-exited" detach already covers
             # it.
-            if watched_alive:
+            #
+            # `and not deferred` (review finding): the `deferred` guard added
+            # one pass earlier sits INSIDE `_act_on_budget_transition`, which
+            # suppresses a second same-tick `budget-warn` but does nothing
+            # about the rest of this block. A ceiling that breaches here
+            # writes its terminal `budget-stop` intent/outcome pair and then
+            # execution FALLS THROUGH -- spending another `usage_snapshot`
+            # read against a run just killed, and appending `budget-usage`
+            # and/or `budget-usage-stale` observations CHRONOLOGICALLY AFTER
+            # the terminal pair, for a run already ending. Re-checking here
+            # covers the whole block, not just the warn branch. (The idle
+            # ladder's own block below is already `elif`-chained behind its
+            # own `deferred` handling.)
+            if watched_alive and not deferred:
                 run_elapsed_minutes = (monotonic_now - run_started_monotonic) / 60.0
                 new_run_wall_clock_status = evaluate_ceiling(
                     run_elapsed_minutes, max_wall_clock_minutes_per_run
@@ -1009,7 +1066,14 @@ def run_supervisor(
                 )
                 run_wall_clock_status = new_run_wall_clock_status
 
-                if harness_run_id is not None:
+                # `and not deferred` (review finding): the per-RUN wall-clock
+                # ceiling evaluated just above may have breached IN THIS
+                # TICK, writing its terminal `budget-stop` pair -- and
+                # everything below would then still run, spending a
+                # `usage_snapshot` read against a run just killed and
+                # appending `budget-usage`/`budget-usage-stale` observations
+                # chronologically AFTER that terminal pair.
+                if harness_run_id is not None and not deferred:
                     # `usage_snapshot` is read every tick regardless of the
                     # staleness gate below: attribution (WHICH story is
                     # running, and the wall-clock-per-story ceiling's own
@@ -1050,7 +1114,7 @@ def run_supervisor(
                             _append(
                                 _BUDGET_USAGE_KIND,
                                 {
-                                    "story_key": current_story_key,
+                                    "story_key": _feed_key_form(current_story_key),
                                     "cost_estimate": (
                                         last_story_weighted_tokens
                                         if last_story_weighted_tokens
@@ -1116,7 +1180,15 @@ def run_supervisor(
                     # disable both token ceilings for the run's whole life
                     # with zero diagnostic anywhere.
                     unevaluable_this_tick = is_stale or usage is None
-                    if unevaluable_this_tick:
+                    if deferred:
+                        # The per-STORY wall-clock ceiling evaluated just
+                        # above may have breached IN THIS TICK (review
+                        # finding, the same defect as the `harness_run_id`
+                        # guard on this block): a run whose terminal
+                        # `budget-stop` pair is already journaled gets no
+                        # further budget observations appended after it.
+                        pass
+                    elif unevaluable_this_tick:
                         if not usage_stale:
                             if is_stale:
                                 reason = f"stale (state.json mtime {state_mtime!r})"
@@ -1731,7 +1803,7 @@ def run_supervisor(
             _append(
                 _BUDGET_USAGE_KIND,
                 {
-                    "story_key": current_story_key,
+                    "story_key": _feed_key_form(current_story_key),
                     "cost_estimate": (
                         last_story_weighted_tokens if last_story_weighted_tokens else None
                     ),

@@ -1058,12 +1058,180 @@ def test_spin_unconfirmed_run_id_warning_names_the_log_path(home, capsys):
 # --- Story 3.6 FR-14: the preflight advisory (MRS-SPIN-009) --------------------
 #
 # Both signals read the REAL filesystem directly (``Path.stat()``/
-# ``Path.glob()``), never through the injected ``FsPort`` -- that port has
-# no stat-like or glob-like method, per this story's own Code Map ("use fs
-# if this module already has one available for stat-like checks, else
-# Path.stat()"). ``home`` is a genuine path under pytest's own ``tmp_path``
-# sandbox (see the ``home`` fixture above), so these tests write real files
-# there rather than configuring ``FakeFs``.
+# ``Path.glob()``/``Path.read_text()``), never through the injected
+# ``FsPort``. ``FsPort`` has no stat-like or glob-like method, which is what
+# this story's own Code Map anticipates ("use fs if this module already has
+# one available for stat-like checks, else Path.stat()") -- but it DOES
+# expose ``read_text``/``exists`` (review finding: the earlier wording here
+# claimed otherwise), so the prior-attempt scan's own file reads could be
+# routed through the port even though the glob and the size check cannot.
+# Routing them is deferred, not decided against: it needs a port-surface
+# decision, and until then a caller injecting a fake fs still gets an
+# advisory that reads the real filesystem. See ``deferred-work.md``.
+# ``home`` is a genuine path under pytest's own ``tmp_path`` sandbox (see
+# the ``home`` fixture above), so these tests write real files there rather
+# than configuring ``FakeFs``.
+
+
+def test_preflight_advisory_warns_on_a_real_titled_spec_filename(home, capsys):
+    """REGRESSION (review finding -- this half of the advisory was dead code
+    in production, and the whole suite stayed green).
+
+    The first implementation probed one exact path,
+    ``spec-{render_filename_slug(key)}.md`` (``spec-1-1.md``) -- the literal
+    formula the story's own intent contract names. But every spec
+    ``bmad-dev-auto`` actually writes carries a descriptive title after the
+    key: its step-01 derives ``spec-{slug}.md`` from a slug that LEADS with
+    the story number and continues with the intent text, so real files are
+    ``spec-1-1-package-spine-verdict-lattice-....md``. ``stat()`` therefore
+    always raised, ``spec_size`` was pinned at 0, and the size signal could
+    never fire on real data. Verified against this project's own Tier-3
+    store: 21 of 21 specs carry a title; 7 would have crossed the threshold.
+
+    The pre-existing test above passes only because it fabricates the
+    untitled name -- which is why this one uses the shape bmad-loop and
+    bmad-dev-auto really produce."""
+    fs = FakeFs(dirs={home})
+    harness = FakeHarness()
+    harness.feed_keys = ("1-1-first-story",)
+
+    spec_dir = home / "_bmad-output" / "projects" / "acme" / "implementation-artifacts"
+    spec_dir.mkdir(parents=True)
+    (spec_dir / "spec-1-1-package-spine-and-the-verdict-lattice.md").write_bytes(
+        b"x" * (spin_module._LARGE_SPEC_BYTES + 1)
+    )
+
+    exit_code = run_spin(_spin_namespace("acme", fmt="json"), fs=fs, harness=harness)
+
+    envelope = json.loads(capsys.readouterr().out)
+    findings_by_code = {finding["code"]: finding for finding in envelope["findings"]}
+    assert "MRS-SPIN-009" in findings_by_code
+    assert "spec size" in findings_by_code["MRS-SPIN-009"]["message"]
+    assert exit_code == EXIT_OK
+
+
+def test_preflight_advisory_does_not_confuse_story_3_6_with_story_3_60(home, capsys):
+    """The titled-filename glob is anchored on a trailing hyphen, so story
+    ``1.1`` cannot be advised on the strength of story ``1.10``'s spec."""
+    fs = FakeFs(dirs={home})
+    harness = FakeHarness()
+    harness.feed_keys = ("1-1-first-story",)
+
+    spec_dir = home / "_bmad-output" / "projects" / "acme" / "implementation-artifacts"
+    spec_dir.mkdir(parents=True)
+    (spec_dir / "spec-1-10-a-completely-different-story.md").write_bytes(
+        b"x" * (spin_module._LARGE_SPEC_BYTES + 1)
+    )
+
+    exit_code = run_spin(_spin_namespace("acme", fmt="json"), fs=fs, harness=harness)
+
+    envelope = json.loads(capsys.readouterr().out)
+    codes = {finding["code"] for finding in envelope["findings"]}
+    assert "MRS-SPIN-009" not in codes
+    assert exit_code == EXIT_OK
+
+
+def test_preflight_advisory_warns_on_a_real_bmad_loop_state_json_shape(home, capsys):
+    """REGRESSION (review finding -- the OTHER half of the dead advisory).
+
+    bmad-loop keys ``state.json``'s ``tasks`` map by its OWN key spelling,
+    the full sprint-status slug -- verified against 5 live runs on this
+    machine, e.g. ``"3-6-budget-ceilings-and-the-heaviest-story-advisory"``.
+    The first implementation looked the task up by ``render_feed_key(key)``,
+    the dot form ``"3.6"``, so it could never hit on real data; the
+    pre-existing tests pass only because they fabricate
+    ``{"tasks": {"1.1": ...}}``, a shape bmad-loop never writes.
+
+    Matching now normalizes both sides through ``core.identity`` (AD-23's
+    sole parser), so today's slug keys AND the fabricated dot keys both
+    resolve to the same ``StoryKey``."""
+    fs = FakeFs(dirs={home})
+    harness = FakeHarness()
+    harness.feed_keys = ("1-1-first-story",)
+
+    prior_run_dir = home / ".bmad-loop" / "runs" / "acme-20260803-023308-65b7"
+    prior_run_dir.mkdir(parents=True)
+    (prior_run_dir / "state.json").write_text(
+        json.dumps(
+            {
+                "run_id": "acme-20260803-023308-65b7",
+                "project": str(home),
+                "tasks": {
+                    "1-1-first-story": {
+                        "story_key": "1-1-first-story",
+                        "epic": 1,
+                        "phase": "dev-running",
+                        "attempt": 3,
+                    }
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    exit_code = run_spin(_spin_namespace("acme", fmt="json"), fs=fs, harness=harness)
+
+    envelope = json.loads(capsys.readouterr().out)
+    findings_by_code = {finding["code"]: finding for finding in envelope["findings"]}
+    assert "MRS-SPIN-009" in findings_by_code
+    assert "attempt" in findings_by_code["MRS-SPIN-009"]["message"]
+    assert exit_code == EXIT_OK
+
+
+def test_preflight_advisory_only_covers_the_selected_stories(home, capsys):
+    """REGRESSION (review finding): the advisory ran BEFORE
+    ``_filter_preview``, so it iterated the whole resolved feed and warned
+    about stories ``--epic``/``--story``/``--max-count`` had already
+    excluded from this launch -- up to N-1 WARN findings, and a WARN verdict
+    on the exit envelope, about work that will not run. The acceptance
+    criterion is "preflight warns when a SELECTED story is likely to exceed
+    the session budget"."""
+    fs = FakeFs(dirs={home})
+    harness = FakeHarness()
+    harness.feed_keys = ("1-1-first-story", "9-9-the-heavy-one")
+
+    spec_dir = home / "_bmad-output" / "projects" / "acme" / "implementation-artifacts"
+    spec_dir.mkdir(parents=True)
+    (spec_dir / "spec-9-9-the-heavy-one.md").write_bytes(
+        b"x" * (spin_module._LARGE_SPEC_BYTES + 1)
+    )
+
+    exit_code = run_spin(
+        _spin_namespace("acme", story="1-1-first-story", fmt="json"), fs=fs, harness=harness
+    )
+
+    envelope = json.loads(capsys.readouterr().out)
+    codes = {finding["code"] for finding in envelope["findings"]}
+    assert envelope["data"]["preview"] == ["1.1"]
+    assert "MRS-SPIN-009" not in codes, (
+        "warned about story 9.9, which this launch's own --story selector excludes"
+    )
+    assert exit_code == EXIT_OK
+
+
+def test_preflight_advisory_survives_a_deeply_nested_prior_state_json(home, capsys):
+    """``json.loads`` raises ``RecursionError`` -- NOT a ``ValueError`` -- on
+    a deeply nested document, and the scan's own docstring promises one
+    malformed prior run never aborts the scan, still less the whole command
+    (review finding: it escaped ``run_spin`` and ``main()``, crashing
+    ``marshal factory spin`` with a traceback before any launch)."""
+    fs = FakeFs(dirs={home})
+    harness = FakeHarness()
+    harness.feed_keys = ("1-1-first-story",)
+
+    prior_run_dir = home / ".bmad-loop" / "runs" / "acme-prior-run"
+    prior_run_dir.mkdir(parents=True)
+    (prior_run_dir / "state.json").write_text(
+        "[" * 200_000 + "]" * 200_000, encoding="utf-8"
+    )
+
+    exit_code = run_spin(_spin_namespace("acme", fmt="json"), fs=fs, harness=harness)
+
+    envelope = json.loads(capsys.readouterr().out)
+    codes = {finding["code"] for finding in envelope["findings"]}
+    assert "MRS-SPIN-009" not in codes
+    assert exit_code == EXIT_OK
+    assert harness.spin_calls
 
 
 def test_preflight_advisory_warns_on_an_oversized_spec(home, capsys):
@@ -1221,10 +1389,10 @@ def test_spin_spawns_the_supervisor_with_the_expected_argv(home):
         "25",
         # Story 3.6's 7th-10th positionals: the 4 budget ceilings, likewise
         # DEFAULT_POLICY's own values.
-        "4000000",
-        "40000000",
-        "240",
-        "600",
+        "50000000",
+        "500000000",
+        "1440",
+        "2880",
     ]
     assert call["cwd"] == home
     assert call["log_path"].name == "supervisor.log"
@@ -1424,10 +1592,10 @@ def test_the_supervisor_accepts_the_argv_spin_actually_builds(home, monkeypatch,
     assert got_pid == harness.spin_result.pid
     assert got_log == call["log_path"]
     assert got_threshold == 25.0
-    assert got_max_tokens_per_story == 4_000_000.0
-    assert got_max_tokens_per_run == 40_000_000.0
-    assert got_max_wall_clock_minutes_per_story == 240.0
-    assert got_max_wall_clock_minutes_per_run == 600.0
+    assert got_max_tokens_per_story == 50_000_000.0
+    assert got_max_tokens_per_run == 500_000_000.0
+    assert got_max_wall_clock_minutes_per_story == 1_440.0
+    assert got_max_wall_clock_minutes_per_run == 2_880.0
 
 
 def test_spin_spawns_the_supervisor_after_the_outcome_append_not_right_after_spin(home):

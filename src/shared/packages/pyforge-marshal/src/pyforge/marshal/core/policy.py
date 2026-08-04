@@ -223,22 +223,35 @@ DEFAULT_POLICY: Mapping[str, object] = {
     # token session cap it exists to protect.
     "idle_threshold_minutes": 25,
     # Story 3.6's FR-13: the 4 externally-enforced budget ceilings (AD-32).
-    # [ASSUMPTION: max_tokens_per_story=4M is 2x bmad-loop's own in-session
-    # 2M per-story warn-only guard, so Marshal's external ceiling is the
-    # backstop that fires only once the in-session one has already failed
-    # to stop things; max_tokens_per_run=40M is roughly 1.5x FR-14's own
-    # cited 25.8M-token keystone-story blowout (review finding: NOT "an
-    # order of magnitude", the previous wording here overstated the margin
-    # by ~6.5x), generous headroom for a multi-story overnight wave without
-    # being so large the ceiling stops meaning anything;
-    # max_wall_clock_minutes_per_story=240 (4h);
-    # max_wall_clock_minutes_per_run=600 (10h, overnight-wave-sized). All
-    # four are operator-tunable via the same policy layers
-    # idle_threshold_minutes already uses.]
-    "max_tokens_per_story": 4_000_000,
-    "max_tokens_per_run": 40_000_000,
-    "max_wall_clock_minutes_per_story": 240,
-    "max_wall_clock_minutes_per_run": 600,
+    #
+    # RE-CALIBRATED against measured data (review finding). The first pass
+    # picked these by analogy (2x bmad-loop's own in-session per-story guard,
+    # ~1.5x a cited 25.8M blowout, 4h/10h) WITHOUT measuring what this
+    # factory's stories actually cost -- and every one of the four landed
+    # BELOW ordinary observed behaviour, which would have hard-stopped
+    # essentially every run in its first story. Measured across 30 real
+    # bmad-loop runs / 53 completed stories on this factory:
+    #
+    #   per-story weighted tokens: max 21.7M; 46 of 53 stories exceeded the
+    #     old 4M default (the story that INTRODUCED these ceilings cost 12.9M)
+    #   per-run   weighted tokens: max 111.6M (an 8-story wave) vs the old 40M
+    #   per-story wall clock:      max 518 min; 5 of 40 exceeded the old 240
+    #   per-run   wall clock:      max 1040 min; 2 of 30 exceeded the old 600
+    #
+    # A ceiling is a RUNAWAY BACKSTOP, not a routine trip: each default below
+    # sits at roughly 2.5-4.5x the observed maximum, so it fires only on
+    # behaviour with no precedent in this corpus while still bounding the run
+    # (C-6: "every run has a ceiling; there is no unbounded mode"). The
+    # per-run token ceiling carries the widest margin because a run's total
+    # scales with its story count -- 500M is ~36 stories at the observed
+    # ~14M average, comfortably above any wave shape seen so far. All four
+    # stay operator-tunable via the same policy layers idle_threshold_minutes
+    # already uses; a project running materially heavier or lighter stories
+    # should set its own.
+    "max_tokens_per_story": 50_000_000,
+    "max_tokens_per_run": 500_000_000,
+    "max_wall_clock_minutes_per_story": 1_440,
+    "max_wall_clock_minutes_per_run": 2_880,
 }
 
 # Secret redaction (Boundaries & Constraints): a case-insensitive suffix
@@ -413,7 +426,24 @@ def _valid_attempt_count(value: object) -> int | None:
 
 
 def _valid_positive_number(value: object) -> int | float | None:
-    """``idle_threshold_minutes``'s own validator (Story 3.5): mirrors
+    """Shared by ``idle_threshold_minutes`` (Story 3.5) and Story 3.6's four
+    budget ceilings -- every operator-tunable numeric ceiling with no
+    coherent "zero or unbounded" reading.
+
+    Read the rationale below as written FOR ``idle_threshold_minutes``
+    (review finding: it was, and the wording still is). It generalizes to
+    the four budget ceilings in substance -- a zero or infinite ceiling is
+    equally meaningless, and the same "a knob that quietly turns the feature
+    off is worse than one that refuses the value" argument applies -- but
+    two specifics do NOT: the token ceilings are counts, not minutes, and
+    nothing converts them to seconds, so the ``* 60.0`` guard at the bottom
+    binds them for no reason of their own. It is deliberately left shared
+    anyway: it rejects only values above ~1.5e306, which no real token
+    ceiling approaches, and one validator with one behaviour beats four
+    near-identical copies. The only visible cost is that the resulting
+    ``MRS-POLICY-003`` message reasons about seconds for a token count.
+
+    ``idle_threshold_minutes``'s own validator (Story 3.5): mirrors
     ``_valid_attempt_count``'s shape but for a STRICTLY positive number
     rather than a non-negative int -- an idle threshold of zero has no
     coherent meaning (every tick would immediately cross it), unlike an

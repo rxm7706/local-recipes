@@ -173,9 +173,18 @@ class UsageSnapshot:
     alike -- a completed story's consumption still counted against the
     run's own ceiling). ``sample_path`` is the ``state.json`` path this
     snapshot was read from, for a caller that wants to independently check
-    its own freshness (Story 3.6's own staleness gate does exactly this via
-    ``SessionObserverPort.mtime``, never a freshness notion this dataclass
-    carries itself)."""
+    its own freshness via ``SessionObserverPort.mtime`` -- never a freshness
+    notion this dataclass carries itself.
+
+    Corrected (review finding): the wording here used to claim Story 3.6's
+    staleness gate consumes this field. It does not -- ``supervisor/
+    __main__.py`` recomputes the same path from ``home``/``harness_run_id``,
+    because it must stat the sample even on a tick where ``usage_snapshot``
+    returned ``None`` and there is no snapshot to read a path off. The two
+    derivations are a genuine duplication, now pinned by
+    ``tests/meta/test_supervisor_run_path_agreement.py`` (a divergence would
+    otherwise make every sample look permanently stale, silently disabling
+    both token ceilings for a run's whole life behind nothing but a WARN)."""
 
     story_key: str | None
     story_weighted_tokens: int | None

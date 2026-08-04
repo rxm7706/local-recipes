@@ -988,7 +988,26 @@ class BmadLoopHarness:
             run_weighted_tokens = sum(
                 task.tokens.weighted_total(cache_read_weight) for task in state.tasks.values()
             )
-        except (OSError, ValueError, KeyError, TypeError, AttributeError):
+        # `ArithmeticError` and `RecursionError` alongside the rest (review
+        # finding): neither is a `ValueError`, and both are reachable from a
+        # syntactically-valid `state.json` this method promises never to
+        # raise on. `json.loads` raises `RecursionError` on a deeply nested
+        # document; `OverflowError` (an `ArithmeticError`) comes out of
+        # `round(cache_read * weight)` when the file carries a non-finite
+        # weight, and out of `int(d["epic"])`/`int(d["attempt"])` inside
+        # `from_dict` when it carries a value like `1e400`. Escaping here
+        # kills the sidecar with a dangling `supervisor-attach` and no
+        # matching `supervisor-detach` -- the exact AD-9 "never silent"
+        # failure the paragraph above says this port must never produce.
+        except (
+            OSError,
+            ValueError,
+            KeyError,
+            TypeError,
+            AttributeError,
+            ArithmeticError,
+            RecursionError,
+        ):
             return None
         return UsageSnapshot(
             story_key=story_key,

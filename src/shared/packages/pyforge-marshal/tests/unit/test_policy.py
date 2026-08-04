@@ -463,13 +463,38 @@ def test_budget_ceiling_rejects_non_positive_or_non_numeric_values(key, bad_valu
 
 
 def test_budget_ceiling_default_values():
-    """The spec's own Design Notes assumption: 4M/40M tokens,
-    4h/10h wall-clock -- pinned here so a future accidental edit to
-    ``DEFAULT_POLICY`` is caught by a failing test, not silently."""
-    assert DEFAULT_POLICY["max_tokens_per_story"] == 4_000_000
-    assert DEFAULT_POLICY["max_tokens_per_run"] == 40_000_000
-    assert DEFAULT_POLICY["max_wall_clock_minutes_per_story"] == 240
-    assert DEFAULT_POLICY["max_wall_clock_minutes_per_run"] == 600
+    """50M/500M tokens, 24h/48h wall-clock -- pinned here so a future
+    accidental edit to ``DEFAULT_POLICY`` is caught by a failing test, not
+    silently.
+
+    RE-CALIBRATED in review. The first pass picked 4M/40M/240/600 by
+    analogy without measuring, and every one landed BELOW ordinary observed
+    behaviour on this factory (46 of 53 real stories exceeded the 4M
+    per-story token ceiling; the story that introduced these ceilings cost
+    12.9M), so a supervised run would have breached and stopped itself in
+    its first story. See ``DEFAULT_POLICY``'s own comment for the measured
+    corpus each value is derived from."""
+    assert DEFAULT_POLICY["max_tokens_per_story"] == 50_000_000
+    assert DEFAULT_POLICY["max_tokens_per_run"] == 500_000_000
+    assert DEFAULT_POLICY["max_wall_clock_minutes_per_story"] == 1_440
+    assert DEFAULT_POLICY["max_wall_clock_minutes_per_run"] == 2_880
+
+
+def test_budget_ceiling_defaults_clear_the_observed_workload():
+    """The calibration CONTRACT, not just the literals (review finding): a
+    ceiling that trips on ordinary work is worse than no ceiling, because it
+    stops healthy runs and trains operators to raise it blindly. Measured
+    maxima across 30 real bmad-loop runs / 53 completed stories on this
+    factory, each of which a default must sit clear of with headroom."""
+    observed_max_story_tokens = 21_700_000
+    observed_max_run_tokens = 111_600_000
+    observed_max_story_minutes = 519
+    observed_max_run_minutes = 1_041
+
+    assert DEFAULT_POLICY["max_tokens_per_story"] > observed_max_story_tokens
+    assert DEFAULT_POLICY["max_tokens_per_run"] > observed_max_run_tokens
+    assert DEFAULT_POLICY["max_wall_clock_minutes_per_story"] > observed_max_story_minutes
+    assert DEFAULT_POLICY["max_wall_clock_minutes_per_run"] > observed_max_run_minutes
 
 
 # --- the "excluded, not poisoned" fallback semantics -------------------------
@@ -601,10 +626,10 @@ def test_effective_policy_rejects_non_policy_field_seed_value():
                 "max_followup_reviews": PolicyField(value=1, layer="default", raw_source=1),
                 "idle_threshold_minutes": PolicyField(value=25, layer="default", raw_source=25),
                 "max_tokens_per_story": PolicyField(
-                    value=4_000_000, layer="default", raw_source=4_000_000
+                    value=50_000_000, layer="default", raw_source=50_000_000
                 ),
                 "max_tokens_per_run": PolicyField(
-                    value=40_000_000, layer="default", raw_source=40_000_000
+                    value=500_000_000, layer="default", raw_source=500_000_000
                 ),
                 "max_wall_clock_minutes_per_story": PolicyField(
                     value=240, layer="default", raw_source=240
