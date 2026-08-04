@@ -28,6 +28,7 @@ allowed, the divergence is not.
 from __future__ import annotations
 
 import ast
+import json
 import os
 import subprocess
 import sys
@@ -35,6 +36,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
+from pyforge.marshal.adapters.harness_bmadloop import BmadLoopHarness
 from pyforge.marshal.cli import spin as spin_module
 from pyforge.marshal.supervisor import __main__ as supervisor_module
 
@@ -64,6 +66,49 @@ def test_launch_kind_agrees():
     ``cli/spin.py`` writes -- a rename on either side alone makes every
     supervisor inert on every run."""
     assert supervisor_module._LAUNCH_KIND == spin_module._LAUNCH_KIND
+
+
+def test_bmad_loop_state_json_path_agrees_with_the_adapters_own_derivation(tmp_path):
+    """Story 3.6 review finding -- a SECOND duplicated path, unpinned by
+    this file until now.
+
+    ``supervisor/__main__.py::_bmad_loop_state_json_path`` and
+    ``adapters/harness_bmadloop.py::usage_snapshot`` each derive
+    ``<home>/.bmad-loop/runs/<harness_run_id>/state.json`` independently
+    (the supervisor needs the path even on a tick where ``usage_snapshot``
+    returned ``None``, so it cannot simply read ``UsageSnapshot.
+    sample_path``). If bmad-loop's own run layout changes and only one side
+    follows, the supervisor stats a path that no longer exists, ``mtime``
+    returns ``None``, EVERY sample is classified stale, and both token
+    ceilings are disabled for the run's whole life -- behind nothing louder
+    than a ``MRS-SUPV-006`` WARN. Same duplication-is-allowed,
+    divergence-is-not contract as the four assertions above.
+
+    Reads through the real adapter against a synthetic ``state.json``, since
+    ``sample_path`` is only populated on a SUCCESSFUL read."""
+    run_id = "acme-20260803T054512123Z-a1b2c3d4"
+    run_dir = tmp_path / ".bmad-loop" / "runs" / run_id
+    run_dir.mkdir(parents=True)
+    (run_dir / "state.json").write_text(
+        json.dumps(
+            {
+                "run_id": run_id,
+                "project": str(tmp_path),
+                "started_at": "2026-08-03T00:00:00Z",
+                "policy_snapshot": {"limits": {"cache_read_weight": 0.1}},
+                "tasks": {},
+            }
+        ),
+        encoding="utf-8",
+    )
+    snapshot = BmadLoopHarness().usage_snapshot(tmp_path, run_id)
+    assert snapshot is not None, (
+        "the adapter could not read a minimal synthetic state.json -- this "
+        "test cannot pin the path agreement without a successful read"
+    )
+    assert snapshot.sample_path == supervisor_module._bmad_loop_state_json_path(
+        tmp_path, run_id
+    )
 
 
 @pytest.mark.parametrize(

@@ -239,6 +239,36 @@ invite a retrying caller to double-dispatch the story. ``MRS-SPIN-008``
 therefore classifies ``Verdict.WARN``, for the identical reason
 ``MRS-SPIN-006``/``007`` do: a launch that already succeeded is never
 re-classified as a failure over a diagnostic about something else.
+
+Story 3.6 (budget ceilings, AD-20/AD-32, FR-13) adds THREE more codes to
+``supervisor/__main__.py``'s own ``MRS-SUPV-*`` area: ``MRS-SUPV-004`` (a
+budget ceiling transitioned ``NONE`` -> ``APPROACHING`` -- the 80%-of-limit
+warning, journaled once on the rising edge), ``MRS-SUPV-005`` (a budget
+ceiling BREACHED and the terminal ``HarnessPort.stop`` call either raised
+``HarnessError``, reported the run was not stopped, or had no
+``harness_run_id`` to stop against -- the identical shape ``MRS-SUPV-002``
+already registers for the idle ladder's own ``stop``/``resume`` failures,
+given a distinct code because a budget breach and an idle-ladder action are
+different DECISIONS reaching the same kind of stop-call failure), and
+``MRS-SUPV-006`` (a token-ceiling usage sample is ``stale-evidence`` --
+``state.json``'s own mtime is older than the reused idle-ladder threshold,
+or unresolvable -- AD-32's own amendment, F-24: this is NEVER
+``unevaluable``, which is AD-8-blocking and would red the run over the
+ordinary case FR-12's ladder already handles gracefully with a nudge; both
+token ceilings are simply skipped for that tick, and the wall-clock
+ceilings remain the binding constraint). All three classify
+``Verdict.WARN``, the same tier as the story's own ``MRS-SUPV-001/002/003``
+and every DEGRADED-but-still-supervised condition this area already
+registers -- a budget warning, a failed stop, or stale evidence never
+itself invalidates the run's supervision. The same story adds a NINTH code
+to ``cli/spin.py``: ``MRS-SPIN-009`` (FR-14's own non-blocking preflight
+advisory -- a resolved story's spec size or prior-attempt history in this
+loop home's own past runs suggests it is likely to exceed budget). It
+classifies ``Verdict.WARN`` for the same reason ``MRS-SPIN-004``/``006``/
+``007``/``008`` do: a heads-up about a story about to run is never a
+launch precondition, and never re-classifies an otherwise-clean launch as a
+failure.
+
 Later stories append further real codes here as they gain their own real
 callers. The registry MECHANISM (format check, then membership check) is
 separately proven via ``monkeypatch``-injected synthetic codes in
@@ -283,6 +313,9 @@ CODE_PATTERN = re.compile(r"MRS-[A-Z][A-Z0-9]*-[0-9]{3}")
 # harness-run-id-unavailable), and an EIGHTH cli/spin.py code, MRS-SPIN-008
 # (the project-policy layer produced findings while resolving the
 # supervisor's idle threshold, over an already-live launch).
+# Story 3.6's supervisor/__main__.py adds three more MRS-SUPV-* codes
+# (budget-warn, budget-stop failure, stale usage evidence), and cli/spin.py
+# adds a NINTH code, MRS-SPIN-009 (the FR-14 preflight advisory).
 REGISTERED_CODES: frozenset[str] = frozenset(
     {
         "MRS-IDENT-001",
@@ -331,9 +364,13 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-SPIN-006",
         "MRS-SPIN-007",
         "MRS-SPIN-008",
+        "MRS-SPIN-009",
         "MRS-SUPV-001",
         "MRS-SUPV-002",
         "MRS-SUPV-003",
+        "MRS-SUPV-004",
+        "MRS-SUPV-005",
+        "MRS-SUPV-006",
     }
 )
 

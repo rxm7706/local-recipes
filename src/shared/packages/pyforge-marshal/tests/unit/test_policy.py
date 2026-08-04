@@ -2,7 +2,7 @@
 AD-10/AD-16/AD-26/AD-35) -- ``compose()`` across every I/O & Edge-Case
 Matrix scenario, provenance per layer, determinism of ``content_hash``,
 ``seed_view()`` isolation, secret redaction (via a synthetic fixture, since
-none of the 9 real fields are secret-shaped), and the "compose() never
+none of the 14 real fields are secret-shaped), and the "compose() never
 raises on malformed CONTENT" guarantee.
 
 ``MRS-POLICY-001/002/003`` are real, already-registered codes (Story 1.3's
@@ -78,6 +78,16 @@ def test_all_defaults_values_match_default_policy():
     assert seed["max_review_cycles"].value == DEFAULT_POLICY["max_review_cycles"]
     assert seed["max_followup_reviews"].value == DEFAULT_POLICY["max_followup_reviews"]
     assert seed["idle_threshold_minutes"].value == DEFAULT_POLICY["idle_threshold_minutes"]
+    assert seed["max_tokens_per_story"].value == DEFAULT_POLICY["max_tokens_per_story"]
+    assert seed["max_tokens_per_run"].value == DEFAULT_POLICY["max_tokens_per_run"]
+    assert (
+        seed["max_wall_clock_minutes_per_story"].value
+        == DEFAULT_POLICY["max_wall_clock_minutes_per_story"]
+    )
+    assert (
+        seed["max_wall_clock_minutes_per_run"].value
+        == DEFAULT_POLICY["max_wall_clock_minutes_per_run"]
+    )
 
 
 def test_project_overrides_one_key():
@@ -203,7 +213,7 @@ def test_different_inputs_produce_different_hash():
     assert first.content_hash != second.content_hash
 
 
-def test_seed_view_returns_all_six_seed_fields():
+def test_seed_view_returns_all_ten_seed_fields():
     effective, _ = compose(project_slug="acme", project={}, flags={})
     seed = effective.seed_view()
     assert set(seed.keys()) == {
@@ -213,6 +223,10 @@ def test_seed_view_returns_all_six_seed_fields():
         "max_review_cycles",
         "max_followup_reviews",
         "idle_threshold_minutes",
+        "max_tokens_per_story",
+        "max_tokens_per_run",
+        "max_wall_clock_minutes_per_story",
+        "max_wall_clock_minutes_per_run",
     }
     assert all(isinstance(field, PolicyField) for field in seed.values())
 
@@ -226,12 +240,16 @@ def test_seed_fields_are_not_reachable_as_public_attributes():
         "max_review_cycles",
         "max_followup_reviews",
         "idle_threshold_minutes",
+        "max_tokens_per_story",
+        "max_tokens_per_run",
+        "max_wall_clock_minutes_per_story",
+        "max_wall_clock_minutes_per_run",
     ):
         assert not hasattr(effective, key)
 
 
 def test_secret_redaction_via_synthetic_field_name():
-    """None of the 9 real fields are secret-shaped -- the mechanism is
+    """None of the 14 real fields are secret-shaped -- the mechanism is
     proven against a synthetic fixture, mirroring findings.py/verdict.py's
     own "empty registry, mechanism proven synthetically" precedent."""
     assert is_secret_key("GITHUB_TOKEN")
@@ -243,7 +261,7 @@ def test_secret_redaction_via_synthetic_field_name():
     assert redact("gate_mode", "none") == "none"
 
 
-def test_none_of_the_real_ten_fields_are_secret_shaped():
+def test_none_of_the_real_fourteen_fields_are_secret_shaped():
     all_keys = {
         "verify_commands",
         "worktree_seed_paths",
@@ -255,6 +273,10 @@ def test_none_of_the_real_ten_fields_are_secret_shaped():
         "max_review_cycles",
         "max_followup_reviews",
         "idle_threshold_minutes",
+        "max_tokens_per_story",
+        "max_tokens_per_run",
+        "max_wall_clock_minutes_per_story",
+        "max_wall_clock_minutes_per_run",
     }
     assert not any(is_secret_key(key) for key in all_keys)
 
@@ -397,6 +419,116 @@ def test_idle_threshold_minutes_rejects_non_positive_or_non_numeric_values(bad_v
     assert findings[0].path == "project"
 
 
+# --- budget ceilings validation (Story 3.6, FR-13) ----------------------------
+# The 4 new keys reuse `_valid_positive_number` verbatim -- the SAME
+# validator `idle_threshold_minutes` above already exercises -- so this
+# section mirrors that one's shape rather than re-deriving the bad-value
+# matrix from scratch.
+
+_BUDGET_CEILING_KEYS = (
+    "max_tokens_per_story",
+    "max_tokens_per_run",
+    "max_wall_clock_minutes_per_story",
+    "max_wall_clock_minutes_per_run",
+)
+
+
+@pytest.mark.parametrize("key", _BUDGET_CEILING_KEYS)
+def test_budget_ceiling_project_override_applies(key):
+    effective, findings = compose(project_slug="acme", project={key: 10}, flags={})
+    assert findings == ()
+    field = effective.seed_view()[key]
+    assert field.value == 10
+    assert field.layer is PolicyLayer.PROJECT
+
+
+@pytest.mark.parametrize("key", _BUDGET_CEILING_KEYS)
+def test_budget_ceiling_accepts_a_fractional_value(key):
+    effective, findings = compose(project_slug="acme", project={key: 0.5}, flags={})
+    assert findings == ()
+    assert effective.seed_view()[key].value == 0.5
+
+
+@pytest.mark.parametrize("key", _BUDGET_CEILING_KEYS)
+@pytest.mark.parametrize(
+    "bad_value",
+    [0, -5, -0.5, "25", None, True, False, float("inf"), float("-inf"), float("nan"), 1e308],
+)
+def test_budget_ceiling_rejects_non_positive_or_non_numeric_values(key, bad_value):
+    effective, findings = compose(project_slug="acme", project={key: bad_value}, flags={})
+    assert effective.seed_view()[key].value == DEFAULT_POLICY[key]
+    assert len(findings) == 1
+    assert findings[0].code == "MRS-POLICY-003"
+    assert findings[0].path == "project"
+
+
+@pytest.mark.parametrize("key", _BUDGET_CEILING_KEYS)
+def test_budget_ceiling_rejects_an_arbitrary_precision_int_without_raising(key):
+    """Review finding: an int too large to convert to a C double made
+    ``compose()`` RAISE ``OverflowError`` out of ``math.isfinite`` instead of
+    returning the ordinary malformed-value finding.
+
+    ``tomllib`` does not enforce TOML's own 64-bit integer bound, so a
+    project's ``marshal-policy.toml`` carrying a long digit string reaches
+    the validator as an arbitrary-precision Python ``int``. That is a far
+    more plausible way to write these four keys -- they are TOKEN COUNTS, and
+    "effectively unlimited" invites mashing digits -- than it ever was for
+    ``idle_threshold_minutes``, a minutes value.
+
+    The blast radius is what makes this worth a test rather than a shrug:
+    ``cli/spin.py::run_spin`` calls ``compose()`` only AFTER ``harness.spin()``
+    has launched the run and journaled its ``run-launch`` outcome, so the
+    escaping traceback left a LIVE, UNSUPERVISED harness behind a non-zero
+    exit -- inviting a retrying caller to double-dispatch the story the live
+    run was already working. ``compose()``'s contract is that malformed
+    CONTENT never raises; this pins it for the one input class that broke
+    it."""
+    huge = int("9" * 400)
+    assert huge > 0  # it is not the sign check that must reject this
+
+    effective, findings = compose(project_slug="acme", project={key: huge}, flags={})
+
+    assert effective.seed_view()[key].value == DEFAULT_POLICY[key]
+    assert len(findings) == 1
+    assert findings[0].code == "MRS-POLICY-003"
+    assert findings[0].path == "project"
+
+
+def test_budget_ceiling_default_values():
+    """50M/500M tokens, 24h/48h wall-clock -- pinned here so a future
+    accidental edit to ``DEFAULT_POLICY`` is caught by a failing test, not
+    silently.
+
+    RE-CALIBRATED in review. The first pass picked 4M/40M/240/600 by
+    analogy without measuring, and every one landed BELOW ordinary observed
+    behaviour on this factory (46 of 53 real stories exceeded the 4M
+    per-story token ceiling; the story that introduced these ceilings cost
+    12.9M), so a supervised run would have breached and stopped itself in
+    its first story. See ``DEFAULT_POLICY``'s own comment for the measured
+    corpus each value is derived from."""
+    assert DEFAULT_POLICY["max_tokens_per_story"] == 50_000_000
+    assert DEFAULT_POLICY["max_tokens_per_run"] == 500_000_000
+    assert DEFAULT_POLICY["max_wall_clock_minutes_per_story"] == 1_440
+    assert DEFAULT_POLICY["max_wall_clock_minutes_per_run"] == 2_880
+
+
+def test_budget_ceiling_defaults_clear_the_observed_workload():
+    """The calibration CONTRACT, not just the literals (review finding): a
+    ceiling that trips on ordinary work is worse than no ceiling, because it
+    stops healthy runs and trains operators to raise it blindly. Measured
+    maxima across 30 real bmad-loop runs / 53 completed stories on this
+    factory, each of which a default must sit clear of with headroom."""
+    observed_max_story_tokens = 21_700_000
+    observed_max_run_tokens = 111_600_000
+    observed_max_story_minutes = 519
+    observed_max_run_minutes = 1_041
+
+    assert DEFAULT_POLICY["max_tokens_per_story"] > observed_max_story_tokens
+    assert DEFAULT_POLICY["max_tokens_per_run"] > observed_max_run_tokens
+    assert DEFAULT_POLICY["max_wall_clock_minutes_per_story"] > observed_max_story_minutes
+    assert DEFAULT_POLICY["max_wall_clock_minutes_per_run"] > observed_max_run_minutes
+
+
 # --- the "excluded, not poisoned" fallback semantics -------------------------
 
 
@@ -514,12 +646,29 @@ def test_effective_policy_rejects_non_policy_field_seed_value():
             merge_subject_template=PolicyField(value="x", layer="default", raw_source="x"),
             model_tier_map=PolicyField(value={}, layer="default", raw_source={}),
             _seed={
+                # All 10 seed keys present (an INCOMPLETE mapping would
+                # raise for that reason instead, never reaching the
+                # per-value type check this test exists to exercise) --
+                # exactly one value ("gate_mode") is a bare str, not a
+                # PolicyField.
                 "gate_mode": "none",
                 "frozen_surfaces": PolicyField(value=(), layer="default", raw_source=()),
                 "max_dev_attempts": PolicyField(value=2, layer="default", raw_source=2),
                 "max_review_cycles": PolicyField(value=3, layer="default", raw_source=3),
                 "max_followup_reviews": PolicyField(value=1, layer="default", raw_source=1),
                 "idle_threshold_minutes": PolicyField(value=25, layer="default", raw_source=25),
+                "max_tokens_per_story": PolicyField(
+                    value=50_000_000, layer="default", raw_source=50_000_000
+                ),
+                "max_tokens_per_run": PolicyField(
+                    value=500_000_000, layer="default", raw_source=500_000_000
+                ),
+                "max_wall_clock_minutes_per_story": PolicyField(
+                    value=240, layer="default", raw_source=240
+                ),
+                "max_wall_clock_minutes_per_run": PolicyField(
+                    value=600, layer="default", raw_source=600
+                ),
             },
         )
 
@@ -535,7 +684,7 @@ def test_effective_policy_seed_is_a_read_only_mapping_proxy():
 # --- schema hygiene -----------------------------------------------------------
 
 
-def test_schema_file_declares_the_ten_keys():
+def test_schema_file_declares_the_fourteen_keys():
     package_dir = Path(pyforge.marshal.__file__).resolve().parent
     schema = json.loads(
         (package_dir / "schemas" / "policy.json").read_text(encoding="utf-8")
@@ -552,6 +701,10 @@ def test_schema_file_declares_the_ten_keys():
         "max_review_cycles",
         "max_followup_reviews",
         "idle_threshold_minutes",
+        "max_tokens_per_story",
+        "max_tokens_per_run",
+        "max_wall_clock_minutes_per_story",
+        "max_wall_clock_minutes_per_run",
     }
     assert set(schema["properties"].keys()) == set(schema["required"])
 
@@ -865,7 +1018,7 @@ def test_effective_policy_repr_redacts_secret_shaped_fields(monkeypatch):
     """The dataclass-generated repr printed every raw value -- an unredacted
     egress through any traceback/log/debugger. The custom __repr__ routes
     every value/raw_source through redact() keyed on the field name (proven
-    synthetically: none of the 9 real fields is secret-shaped)."""
+    synthetically: none of the 14 real fields is secret-shaped)."""
     monkeypatch.setattr(policy, "SECRET_KEY_SUFFIXES", frozenset({"_MODE"}))
     effective, _ = compose(project_slug="acme", project={"gate_mode": "none"}, flags={})
     text = repr(effective)

@@ -111,6 +111,21 @@ launches a fresh engine attempt against the SAME ``run_id``, which
 re-derives its own state and self-clears any stale session left behind.
 Both share ``run_id`` naming the HARNESS's own self-minted run id, never
 Marshal's own journal ``run_id`` -- see each method's own docstring.
+
+Story 3.6 (budget ceilings, AD-9/AD-32, FR-13) adds ``usage_snapshot`` --
+the "adapter-reported usage read from files the session wrote" AD-9's own
+docstring already names, and AD-32's own carve-out: session-authored usage
+is read for REPORTING and cost attribution only, never as an enforcement
+ceiling's stop condition (that half rests solely on wall-clock/process-
+liveness, evaluable without this method at all -- see
+``core/supervise.py::evaluate_ceiling``). Reads ``bmad_loop``'s own
+``state.json`` (``bmad_loop.journal.load_state``, the SAME lazy-import seam
+``multiplexer_backend_available``/``adapter_binary`` already use) and never
+raises -- any read/parse failure (a missing file, malformed JSON, a
+missing/wrong-typed field) degrades to ``None``, mirroring
+``harness_version``'s own "never raises" convention: a usage read is a
+supplementary, best-effort input, never a precondition an enforcement
+decision can block on.
 """
 
 from __future__ import annotations
@@ -137,6 +152,44 @@ class SpinResult:
 
     pid: int
     harness_run_id: str | None
+
+
+@dataclass(frozen=True)
+class UsageSnapshot:
+    """One tick's worth of adapter-reported usage (Story 3.6, AD-9/AD-32) --
+    a plain, frozen value type ``HarnessPort.usage_snapshot`` returns,
+    mirroring ``SpinResult``'s own "facts the caller could not have known in
+    advance" convention. ``story_key`` is the sole ``StoryTask`` with
+    ``not task.terminal`` in bmad-loop's own ``state.json``, or ``None``
+    when zero or more than one such task exists (the run is between
+    stories, or -- a shape this story's own Never clause does not rule out
+    -- concurrently driving more than one; either way there is no single
+    story to attribute per-story consumption to this tick).
+    ``story_weighted_tokens`` is ``None`` in lockstep with ``story_key``
+    (never a number attributed to "no story"); when ``story_key`` is set it
+    is that task's own ``TokenUsage.weighted_total(cache_read_weight)``.
+    ``run_weighted_tokens`` is the run-wide sum of that SAME weighted total
+    across every task in ``RunState.tasks`` (terminal and non-terminal
+    alike -- a completed story's consumption still counted against the
+    run's own ceiling). ``sample_path`` is the ``state.json`` path this
+    snapshot was read from, for a caller that wants to independently check
+    its own freshness via ``SessionObserverPort.mtime`` -- never a freshness
+    notion this dataclass carries itself.
+
+    Corrected (review finding): the wording here used to claim Story 3.6's
+    staleness gate consumes this field. It does not -- ``supervisor/
+    __main__.py`` recomputes the same path from ``home``/``harness_run_id``,
+    because it must stat the sample even on a tick where ``usage_snapshot``
+    returned ``None`` and there is no snapshot to read a path off. The two
+    derivations are a genuine duplication, now pinned by
+    ``tests/meta/test_supervisor_run_path_agreement.py`` (a divergence would
+    otherwise make every sample look permanently stale, silently disabling
+    both token ceilings for a run's whole life behind nothing but a WARN)."""
+
+    story_key: str | None
+    story_weighted_tokens: int | None
+    run_weighted_tokens: int
+    sample_path: Path
 
 
 class HarnessPort(Protocol):
@@ -282,4 +335,17 @@ class HarnessPort(Protocol):
         byte-concatenated. Returns the newly spawned process's pid. Raises ``HarnessError`` only when the process could
         not be LAUNCHED at all -- the SAME split ``spin``/``attach``/
         ``run_foreground`` share."""
+        ...
+
+    def usage_snapshot(self, project: Path, run_id: str) -> UsageSnapshot | None:
+        """The current per-story/per-run token consumption bmad-loop's own
+        ``state.json`` reports for the run ``run_id`` names (Story 3.6,
+        AD-9/AD-32) -- ``run_id`` is the HARNESS's own self-minted run id,
+        the SAME one ``stop``/``resume`` take, never Marshal's own journal
+        ``run_id``. Never raises: any failure reading or parsing
+        ``<project>/.bmad-loop/runs/<run_id>/state.json`` (a missing file, a
+        malformed JSON document, a missing or wrong-typed field) returns
+        ``None`` -- this is a supplementary, best-effort reporting input
+        (AD-32: "recorded for reporting and cost attribution only"), never a
+        precondition an enforcement ceiling can block on."""
         ...
