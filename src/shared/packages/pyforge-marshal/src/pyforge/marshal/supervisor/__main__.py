@@ -201,8 +201,11 @@ while ``watched_alive`` holds (``Phase.DEFERRED`` does not pause the run,
 so a deferred story is a fact that can appear mid-run, more than once, for
 different stories -- see this function's own inline comment for why it is
 gated on ``harness_run_id`` alone, never on ``deferred``/idle/budget
-state): a local ``set[str]`` of already-journaled story keys keeps each one
-to a single ``"story-deferred"`` observation. Escalation detection is the
+state), plus ONE final flush after the tick loop ends (a story deferred
+after the last live tick -- the run's own last story being the common case
+-- would otherwise never be observed by a tick at all). A local ``set[str]``
+of already-journaled story keys, shared by both sites, keeps each story to a
+single ``"story-deferred"`` observation. Escalation detection is the
 opposite shape -- exactly ONCE, at loop-end, only when no idle-ladder or
 budget-ceiling action has already set a more specific ``detach_reason``
 (see this story's own Design Notes for why: ``state.json``'s pause fields
@@ -317,7 +320,7 @@ from ..core.supervise import (
 )
 from ..ports.clock import ClockPort
 from ..ports.fs import FsPort
-from ..ports.harness import HarnessPort
+from ..ports.harness import HarnessPort, RunStatusSnapshot
 from ..ports.notify import NotifyPort
 from ..ports.observer import SessionObserverPort
 from ..ports.process import ProcessPort
@@ -872,6 +875,30 @@ def run_supervisor(
         # status.
         deferred_story_keys: set[str] = set()
 
+        def _capture_deferrals(status_snapshot: RunStatusSnapshot | None) -> None:
+            """Journal one ``"story-deferred"`` observation per story key
+            this run has not already reported. Shared verbatim by the
+            per-tick site inside the loop and the single post-loop flush
+            after it (follow-up review finding) -- one body, so the two
+            sites cannot drift over the payload's own shape."""
+            if status_snapshot is None:
+                return
+            for deferred_story in status_snapshot.deferred:
+                if deferred_story.story_key in deferred_story_keys:
+                    continue
+                deferred_story_keys.add(deferred_story.story_key)
+                _append(
+                    _STORY_DEFERRED_KIND,
+                    {
+                        "story_key": _feed_key_form(deferred_story.story_key),
+                        "reason": deferred_story.reason,
+                        "attempt": deferred_story.attempt,
+                        "branch": deferred_story.branch,
+                        "worktree_path": deferred_story.worktree_path,
+                        "spec_file": deferred_story.spec_file,
+                    },
+                )
+
         samples: list[Sample] = []
         last_acted_rung = LadderRung.NONE
         deferred = False
@@ -1147,23 +1174,7 @@ def run_supervisor(
             # an OBSERVATION, never an action, so it has nothing to skip
             # even if a budget/idle decision already ended this same tick.
             if watched_alive and harness_run_id is not None:
-                status_snapshot = harness.run_status_snapshot(home, harness_run_id)
-                if status_snapshot is not None:
-                    for deferred_story in status_snapshot.deferred:
-                        if deferred_story.story_key in deferred_story_keys:
-                            continue
-                        deferred_story_keys.add(deferred_story.story_key)
-                        _append(
-                            _STORY_DEFERRED_KIND,
-                            {
-                                "story_key": _feed_key_form(deferred_story.story_key),
-                                "reason": deferred_story.reason,
-                                "attempt": deferred_story.attempt,
-                                "branch": deferred_story.branch,
-                                "worktree_path": deferred_story.worktree_path,
-                                "spec_file": deferred_story.spec_file,
-                            },
-                        )
+                _capture_deferrals(harness.run_status_snapshot(home, harness_run_id))
 
             # --- Story 3.6: budget ceilings (AD-20/AD-32) -------------------
             # Gated on `watched_alive` alone -- NEVER on `session_name`/
@@ -1926,6 +1937,20 @@ def run_supervisor(
             # recovery, the same reason class a `resume` that raises outright
             # already earns.
             detach_reason = "idle-retry-failed"
+
+        # Story 3.7 follow-up review finding: the per-tick capture above only
+        # runs while `watched_alive`, so a story bmad-loop defers AFTER this
+        # supervisor's last live tick is never observed by one -- and the
+        # most common deferral of all is exactly that shape, since deferring
+        # the run's LAST story is immediately followed by the engine
+        # finishing and the watched pid exiting, usually well inside a single
+        # 60s tick. Flushed once here, after the tick loop has ended for ANY
+        # reason, through the SAME already-journaled set the per-tick site
+        # uses (so a story already reported mid-run is never repeated) --
+        # the identical shape, and the identical rationale, as the
+        # `budget-usage` flush directly below.
+        if harness_run_id is not None:
+            _capture_deferrals(harness.run_status_snapshot(home, harness_run_id))
 
         # Story 3.6 review finding: the ONLY existing `budget-usage` append
         # site fires on an OBSERVED story-key transition, so a run's FINAL

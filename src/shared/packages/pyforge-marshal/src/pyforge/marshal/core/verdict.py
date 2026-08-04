@@ -283,7 +283,11 @@ _RELAY_PASSTHROUGH: frozenset[int] = frozenset(
 # Story 3.7's supervisor/__main__.py adds MRS-SUPV-007 (escalation
 # file-marker write failure) to the same area, WARN; cli/spin.py gains
 # MRS-SPIN-010/011 (resume refused: unresolved escalation / no resumable
-# run), both ERROR.
+# run), both ERROR, plus MRS-SPIN-012 (the live status read failed, so the
+# escalation gate confirmed nothing and resume proceeds anyway) -- WARN, not
+# ERROR, for AD-32's own reason: an unreadable sample is ambiguity, and
+# refusing on it would make the ordinary, never-escalated resume newly
+# unreliable.
 _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-IDENT-001": Verdict.UNEVALUABLE,
     "MRS-IDENT-002": Verdict.UNEVALUABLE,

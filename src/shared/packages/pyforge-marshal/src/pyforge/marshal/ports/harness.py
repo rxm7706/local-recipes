@@ -128,8 +128,8 @@ supplementary, best-effort input, never a precondition an enforcement
 decision can block on.
 
 Story 3.7 (escalation, deferral, and resume, AD-9/AD-45, FR-15/16/17) adds
-two more methods, both reading the SAME ``state.json`` ``usage_snapshot``
-already reads (never a second file), plus a third reading a wholly
+two more methods -- the first reading the SAME ``state.json``
+``usage_snapshot`` already reads (never a second file), the second a wholly
 different bmad-loop-owned artifact:
 
 - ``run_status_snapshot`` -- the run-level pause fields
@@ -263,7 +263,14 @@ class RunStatusSnapshot:
     needing a decision, and the fact ``evaluate_escalation`` classifies) --
     both ``None`` when ``paused_story_key`` is ``None`` or names no known
     task. ``deferred`` is every task currently ``Phase.DEFERRED``, in
-    ``state.json``'s own ``tasks`` iteration order."""
+    ``state.json``'s own ``tasks`` iteration order. ``finished`` is
+    ``RunState.finished`` -- bmad-loop's own "this run reached its end"
+    flag, and the FIRST thing its own ``resume`` refuses on (follow-up
+    review finding: a detached launch never surfaces the child's exit code,
+    so without reading this flag up front ``marshal factory resume``
+    reported a successful resume for a run ``bmad-loop resume`` had already
+    rejected). Trailing and defaulted so a caller constructing this value
+    for a pause-only concern need not supply it."""
 
     paused_stage: str | None
     paused_story_key: str | None
@@ -271,6 +278,7 @@ class RunStatusSnapshot:
     escalated_spec_file: str | None
     escalated_task_phase: str | None
     deferred: tuple[DeferredStory, ...]
+    finished: bool = False
 
 
 class HarnessPort(Protocol):

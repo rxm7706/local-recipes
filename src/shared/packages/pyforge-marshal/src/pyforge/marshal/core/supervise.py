@@ -14,7 +14,7 @@ check is a single comparison against the LATEST observed quantity, never a
 history of samples.
 
 Story 3.7 (escalation, deferral, and resume, architecture spine AD-20/AD-45)
-adds a FOURTH pure decision, ``EscalationStatus``/``evaluate_escalation`` --
+adds a THIRD pure decision, ``EscalationStatus``/``evaluate_escalation`` --
 a single-observation classification (like ``evaluate_ceiling``, not a
 sequence scan like ``evaluate_idle``) over bmad-loop's own run-level pause
 fields, used by ``supervisor/__main__.py`` at loop-end to detect an
@@ -366,6 +366,48 @@ class CeilingStatus(StrEnum):
 _APPROACH_RATIO = 0.8
 
 
+def evaluate_ceiling(observed: float, limit: float) -> CeilingStatus:
+    """Pure: ``observed`` against ``limit`` (both operate on comparable
+    units -- e.g. minutes for wall-clock, weighted token count for tokens --
+    the CALLER's own concern, never this function's). No port, no clock
+    call, no I/O.
+
+    ``BREACHED`` when ``observed >= limit``; ``APPROACHING`` when
+    ``observed >= _APPROACH_RATIO * limit`` (and not yet breached); ``NONE``
+    otherwise -- a single comparison, never a sequence scan (unlike
+    ``evaluate_idle`` above, a ceiling has no "idle window" to re-arm; the
+    supervisor's own tick loop is what tracks whether THIS observation is a
+    rising edge over the LAST one it acted on).
+
+    Guards ``limit`` exactly as ``evaluate_idle`` guards its own
+    ``threshold_s``: raises ``TypeError`` for a non-numeric ``limit``
+    (``bool`` included, since ``isinstance(True, int)`` is ``True`` in
+    Python and a boolean limit is never a meaningful ceiling), and
+    ``ValueError`` for a non-positive or non-finite ``limit`` -- via a
+    NEGATED ``>`` comparison (`not (limit > 0)`), never a direct ``<= 0``:
+    IEEE 754 makes every relational comparison against ``float('nan')``
+    false, so a direct ``<= 0`` would let a NaN limit sail through instead
+    of being rejected like every other invalid value (the identical review
+    finding ``evaluate_idle``'s own ``threshold_s`` guard already documents
+    and fixes). ``observed`` carries no such guard: a caller-derived
+    quantity (elapsed monotonic minutes, a weighted token count) is always a
+    plain, already-validated number by construction, and a negative
+    ``observed`` (which cannot occur for either of this story's two metrics)
+    would still produce a coherent, harmless ``NONE`` rather than a
+    surprising exception."""
+    if isinstance(limit, bool) or not isinstance(limit, (int, float)):
+        raise TypeError(f"limit must be a number, got {limit!r}")
+    if not (limit > 0):
+        raise ValueError(f"limit must be positive, got {limit!r}")
+    if not math.isfinite(limit):
+        raise ValueError(f"limit must be finite, got {limit!r}")
+    if observed >= limit:
+        return CeilingStatus.BREACHED
+    if observed >= _APPROACH_RATIO * limit:
+        return CeilingStatus.APPROACHING
+    return CeilingStatus.NONE
+
+
 # =============================================================================
 # Story 3.7: escalation detection (AD-20/AD-45, FR-15/16/17) -- a THIRD and
 # unrelated pure decision this module hosts, for the identical "no port, no
@@ -427,45 +469,3 @@ def evaluate_escalation(
     if paused_story_key is not None and task_phase == "escalated":
         return EscalationStatus.UNRESOLVED
     return EscalationStatus.RESOLVED
-
-
-def evaluate_ceiling(observed: float, limit: float) -> CeilingStatus:
-    """Pure: ``observed`` against ``limit`` (both operate on comparable
-    units -- e.g. minutes for wall-clock, weighted token count for tokens --
-    the CALLER's own concern, never this function's). No port, no clock
-    call, no I/O.
-
-    ``BREACHED`` when ``observed >= limit``; ``APPROACHING`` when
-    ``observed >= _APPROACH_RATIO * limit`` (and not yet breached); ``NONE``
-    otherwise -- a single comparison, never a sequence scan (unlike
-    ``evaluate_idle`` above, a ceiling has no "idle window" to re-arm; the
-    supervisor's own tick loop is what tracks whether THIS observation is a
-    rising edge over the LAST one it acted on).
-
-    Guards ``limit`` exactly as ``evaluate_idle`` guards its own
-    ``threshold_s``: raises ``TypeError`` for a non-numeric ``limit``
-    (``bool`` included, since ``isinstance(True, int)`` is ``True`` in
-    Python and a boolean limit is never a meaningful ceiling), and
-    ``ValueError`` for a non-positive or non-finite ``limit`` -- via a
-    NEGATED ``>`` comparison (`not (limit > 0)`), never a direct ``<= 0``:
-    IEEE 754 makes every relational comparison against ``float('nan')``
-    false, so a direct ``<= 0`` would let a NaN limit sail through instead
-    of being rejected like every other invalid value (the identical review
-    finding ``evaluate_idle``'s own ``threshold_s`` guard already documents
-    and fixes). ``observed`` carries no such guard: a caller-derived
-    quantity (elapsed monotonic minutes, a weighted token count) is always a
-    plain, already-validated number by construction, and a negative
-    ``observed`` (which cannot occur for either of this story's two metrics)
-    would still produce a coherent, harmless ``NONE`` rather than a
-    surprising exception."""
-    if isinstance(limit, bool) or not isinstance(limit, (int, float)):
-        raise TypeError(f"limit must be a number, got {limit!r}")
-    if not (limit > 0):
-        raise ValueError(f"limit must be positive, got {limit!r}")
-    if not math.isfinite(limit):
-        raise ValueError(f"limit must be finite, got {limit!r}")
-    if observed >= limit:
-        return CeilingStatus.BREACHED
-    if observed >= _APPROACH_RATIO * limit:
-        return CeilingStatus.APPROACHING
-    return CeilingStatus.NONE

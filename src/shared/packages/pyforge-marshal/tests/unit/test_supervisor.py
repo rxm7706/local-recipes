@@ -110,6 +110,20 @@ class FakeProcess:
         return self.calls <= self.alive_for
 
 
+class _ExitTrackingProcess(FakeProcess):
+    """``FakeProcess`` that remembers its own LAST ``is_alive`` answer, so a
+    test can make some other fake's behaviour depend on "has the watched pid
+    exited yet" without consuming a call from the aliveness budget itself."""
+
+    def __init__(self, *, alive_for: int) -> None:
+        super().__init__(alive_for=alive_for)
+        self.last_alive = True
+
+    def is_alive(self, pid: int) -> bool:
+        self.last_alive = super().is_alive(pid)
+        return self.last_alive
+
+
 class FakeClock:
     def __init__(self) -> None:
         self.calls = 0
@@ -3010,6 +3024,100 @@ def test_deferral_capture_is_skipped_when_harness_run_id_never_resolved():
     assert harness.run_status_snapshot_calls == []
     entries = [json.loads(line) for _, line, _ in fs.appended_lines]
     assert not [e for e in entries if e["kind"] == "story-deferred"]
+
+
+def test_a_story_deferred_after_the_last_live_tick_is_still_journaled():
+    """Follow-up review finding: the per-tick capture only runs while
+    `watched_alive`, so a story bmad-loop defers AFTER this supervisor's last
+    live tick was silently dropped -- and that is the COMMON shape, since
+    deferring the run's last story is immediately followed by the engine
+    finishing and the watched pid exiting, usually well inside one tick.
+    Modelled here by a snapshot that only shows the deferral once the
+    process is already gone."""
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+    clock = AdvancingClock()
+    observer = FakeObserver(pane="idle")
+    process = _ExitTrackingProcess(alive_for=3)
+
+    class _DeferredOnlyOnceDead(FakeHarness):
+        """The deferral only becomes visible in `state.json` AFTER the
+        watched pid is gone -- keyed off the process fake itself rather
+        than a call index, so this test cannot silently stop testing what
+        it names if the tick loop's own read count ever changes."""
+
+        def run_status_snapshot(self, project, run_id):
+            self.run_status_snapshot_calls.append((project, run_id))
+            if process.last_alive:
+                return _snapshot(deferred=())
+            return _snapshot(deferred=(_deferred_story("3.6"),))
+
+    harness = _DeferredOnlyOnceDead()
+
+    rc = run_supervisor(
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs, process=process, clock=clock, observer=observer,
+        harness=harness, sleep=clock.sleep,
+    )
+
+    assert rc == 0
+    entries = [json.loads(line) for _, line, _ in fs.appended_lines]
+    deferred_entries = [e for e in entries if e["kind"] == "story-deferred"]
+    assert len(deferred_entries) == 1
+    assert deferred_entries[0]["payload"]["story_key"] == "3.6"
+    assert deferred_entries[0]["phase"] == "observation"
+
+
+def test_the_post_loop_deferral_flush_never_repeats_a_story_already_journaled():
+    """The flush shares the per-tick site's own already-journaled set, so a
+    story observed mid-run is reported exactly once in total -- not once by
+    the tick and again by the flush."""
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+    clock = AdvancingClock()
+    observer = FakeObserver(pane="idle")
+    harness = FakeHarness()
+    harness.run_status_snapshot_result = _snapshot(
+        deferred=(_deferred_story("3.6"),)
+    )
+
+    rc = run_supervisor(
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs, process=FakeProcess(alive_for=3), clock=clock, observer=observer,
+        harness=harness, sleep=clock.sleep,
+    )
+
+    assert rc == 0
+    entries = [json.loads(line) for _, line, _ in fs.appended_lines]
+    assert len([e for e in entries if e["kind"] == "story-deferred"]) == 1
+
+
+def test_the_post_loop_deferral_flush_still_runs_when_the_idle_ladder_deferred():
+    """The flush is gated on `harness_run_id` alone, exactly like the
+    per-tick site: a deferral bmad-loop recorded is an OBSERVATION, so
+    Marshal's own idle-ladder decision to give up on the process must not
+    suppress it."""
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+    clock = AdvancingClock()
+    observer = FakeObserver(pane="frozen")
+    harness = FakeHarness()
+    harness.run_status_snapshot_result = _snapshot(
+        deferred=(_deferred_story("3.6"),)
+    )
+
+    rc = run_supervisor(
+        _HOME, "acme", "acme-run-1", 4242, _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES, _MAX_TOKENS_PER_STORY, _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY, _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs, process=FakeProcess(alive_for=40), clock=clock, observer=observer,
+        harness=harness, sleep=clock.sleep,
+    )
+
+    assert rc == 0
+    entries = [json.loads(line) for _, line, _ in fs.appended_lines]
+    assert len([e for e in entries if e["kind"] == "story-deferred"]) == 1
 
 
 # --- Story 3.7: escalation detection (AD-45, FR-15) -------------------------------

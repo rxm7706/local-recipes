@@ -31,6 +31,7 @@ def _write_state(
     paused_stage: str | None = None,
     paused_story_key: str | None = None,
     paused_reason: str | None = None,
+    finished: bool = False,
 ) -> Path:
     run_dir = project / ".bmad-loop" / "runs" / run_id
     run_dir.mkdir(parents=True)
@@ -41,6 +42,7 @@ def _write_state(
         "paused_stage": paused_stage,
         "paused_story_key": paused_story_key,
         "paused_reason": paused_reason,
+        "finished": finished,
         "tasks": tasks,
     }
     state_path = run_dir / "state.json"
@@ -88,6 +90,26 @@ def test_no_pause_and_no_deferred_stories_reports_a_clean_snapshot(harness, tmp_
     assert snapshot.paused_reason is None
     assert snapshot.escalated_spec_file is None
     assert snapshot.escalated_task_phase is None
+    assert snapshot.finished is False
+
+
+def test_a_finished_run_reports_finished(harness, tmp_path):
+    """``RunState.finished`` -- the flag ``bmad-loop resume``'s own
+    ``_resume_paused_run`` refuses on before anything else, so
+    ``cli/spin.py``'s own resume gate must be able to read it (follow-up
+    review finding: a detached launch never surfaces the child's exit
+    code)."""
+    _write_state(
+        tmp_path,
+        "acme-run-1",
+        tasks={"3.6": _task("3.6", "done")},
+        finished=True,
+    )
+
+    snapshot = harness.run_status_snapshot(tmp_path, "acme-run-1")
+
+    assert snapshot is not None
+    assert snapshot.finished is True
     assert snapshot.deferred == ()
 
 

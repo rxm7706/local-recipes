@@ -189,7 +189,7 @@ with no real caller would be speculative surface this story's own Code Map
 does not ask for; a factual inaccuracy in the intent-contract's own literal
 wording, recorded in the spec's Spec Change Log).
 
-Registers ``MRS-SPIN-001`` through ``MRS-SPIN-011`` (``core/findings.py``/
+Registers ``MRS-SPIN-001`` through ``MRS-SPIN-012`` (``core/findings.py``/
 ``core/verdict.py``) -- see those modules' own docstrings for the full
 per-code rationale. ``MRS-SPIN-006`` joined the original five in review,
 splitting "launched, but its outcome could not be journaled" (``WARN`` -- a
@@ -205,7 +205,10 @@ about the story about to run, never a launch precondition. ``MRS-SPIN-010``/
 ``MRS-SPIN-011`` (Story 3.7) are ``resume``'s own two refusal codes -- both
 ``ERROR``, since both block a real spawn from ever happening, unlike every
 other ``MRS-SPIN-*`` WARN above, which all describe an ALREADY-launched
-process.
+process. ``MRS-SPIN-012`` (Story 3.7, added in review) is the third code
+``resume`` alone raises, and the only ``WARN`` of the three: the live
+escalation gate could not read the run's status at all, so it proceeds
+without having confirmed anything -- ambiguity, never a refusal.
 """
 
 from __future__ import annotations
@@ -1531,6 +1534,28 @@ def run_resume(
                 ),
             )
         )
+    elif status_snapshot.finished:
+        # Follow-up review finding: `harness.resume` DETACHES (AD-22), so the
+        # child's exit code is never visible here -- and `bmad-loop resume`'s
+        # own first act is to refuse an already-finished run (`run <id>
+        # already finished`, exit 1) AFTER starting normally. Without this
+        # gate the command reported a pid, journaled a "run-resume" OUTCOME,
+        # and spawned a supervisor for a resume that never happened -- a
+        # clean-looking resume in an append-only EVIDENCE journal that is
+        # simply false. Refused with MRS-SPIN-011, whose registered meaning
+        # ("no resumable run") is exactly this: a finished run is not one.
+        findings.append(
+            Finding(
+                code="MRS-SPIN-011",
+                severity=Severity.ERROR,
+                message=(
+                    f"run {harness_run_id!r} already finished -- nothing to "
+                    "resume"
+                ),
+            )
+        )
+        return _emit(args, data, findings)
+
     paused_stage = status_snapshot.paused_stage if status_snapshot is not None else None
     paused_story_key = (
         status_snapshot.paused_story_key if status_snapshot is not None else None
@@ -1591,7 +1616,17 @@ def run_resume(
     rendered_story_key = _render_story_key_best_effort(story_key)
     if rendered_story_key is not None:
         data["story_key"] = rendered_story_key
-    data["resolution_reference"] = resolution_reference
+    if resolution_reference is not None:
+        # Conditional, exactly like `story_key` above (follow-up review
+        # finding): the overwhelmingly common resume is an ordinary,
+        # never-escalated one, where a bare `resolution_reference: null`
+        # line reports on a field that has no meaning outside a resolved
+        # escalation -- and made `_render_text`'s own `"resolution_reference"
+        # in data` guard dead as a discriminator. The JOURNAL payload below
+        # still carries the field unconditionally (AD-45 names it as one of
+        # its four, and an explicit `null` there is the evidence record's own
+        # "asked, and there was none").
+        data["resolution_reference"] = resolution_reference
 
     # --- mint a NEW Marshal run id, journal "run-resume" intent (AD-25/AD-45) ---
     writer_id = _writer_id()

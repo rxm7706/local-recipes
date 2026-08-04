@@ -2342,6 +2342,33 @@ def test_resume_proceeds_with_a_null_resolution_reference_when_no_marker_exists(
     assert intent["payload"]["resolution_reference"] is None
 
 
+def test_resume_omits_resolution_reference_from_the_report_when_there_is_none(
+    home, capsys
+):
+    """Follow-up review finding: the REPORT field is conditional, exactly
+    like `story_key` -- the overwhelmingly common resume is an ordinary,
+    never-escalated one, where a bare `resolution_reference: null` line
+    reports on a field with no meaning outside a resolved escalation. The
+    JOURNAL payload keeps it unconditionally (AD-45 names it as one of its
+    four)."""
+    slug = "acme"
+    fs = FakeFs(dirs={home})
+    _seed_resolvable_prior_run(
+        home, slug, fs, run_id="acme-20260801T000000000Z-aaaa", harness_run_id="acme-hh01"
+    )
+    harness = FakeHarness()
+    harness.resolution_reference_result = None
+    process = FakeProcess()
+
+    exit_code = run_resume(_resume_namespace(slug), fs=fs, harness=harness, process=process)
+
+    assert exit_code == EXIT_OK
+    out = capsys.readouterr().out
+    assert "resolution_reference" not in out
+    intent = json.loads(fs.appended_lines[0][1])
+    assert "resolution_reference" in intent["payload"]
+
+
 def test_resume_picks_the_most_recent_prior_run_when_several_exist(home):
     slug = "acme"
     fs = FakeFs(dirs={home})
@@ -2582,6 +2609,72 @@ def test_resume_refuses_when_no_prior_run_exists(home, capsys):
     assert "MRS-SPIN-011" in out
     assert fs.appended_lines == []
     assert process.spawn_calls == []
+
+
+def test_resume_refuses_an_already_finished_run(home, capsys):
+    """Follow-up review finding: `harness.resume` DETACHES (AD-22), so the
+    child's exit code is invisible here -- and `bmad-loop resume`'s own FIRST
+    act is to refuse an already-finished run (`run <id> already finished`,
+    exit 1) AFTER starting normally. Without reading `RunState.finished` up
+    front, `marshal factory resume` on a slug whose last run simply COMPLETED
+    reported a pid, journaled a clean `run-resume` outcome, and spawned a
+    supervisor for a resume that never happened."""
+    slug = "acme"
+    fs = FakeFs(dirs={home})
+    _seed_resolvable_prior_run(
+        home, slug, fs, run_id="acme-20260801T000000000Z-aaaa", harness_run_id="acme-hh01"
+    )
+    harness = FakeHarness()
+    harness.run_status_snapshot_result = RunStatusSnapshot(
+        paused_stage=None,
+        paused_story_key=None,
+        paused_reason=None,
+        escalated_spec_file=None,
+        escalated_task_phase=None,
+        deferred=(),
+        finished=True,
+    )
+    process = FakeProcess()
+
+    exit_code = run_resume(_resume_namespace(slug), fs=fs, harness=harness, process=process)
+
+    assert exit_code == exit_code_for(Verdict.ERROR)
+    out = capsys.readouterr().out
+    assert "MRS-SPIN-011" in out
+    assert "already finished" in out
+    # Refused BEFORE any spawn, any journal write, and any run directory.
+    assert harness.resume_calls == []
+    assert fs.appended_lines == []
+    assert process.spawn_calls == []
+
+
+def test_resume_proceeds_for_a_run_that_is_not_finished(home):
+    """The gate reads `finished` alone -- a stopped, crashed, or
+    interrupted run is NOT finished, and `bmad-loop resume` resumes every
+    one of those (its own `clear_pause()` re-arms them), so Marshal must
+    never refuse them for lack of a `paused_stage`."""
+    slug = "acme"
+    fs = FakeFs(dirs={home})
+    _seed_resolvable_prior_run(
+        home, slug, fs, run_id="acme-20260801T000000000Z-aaaa", harness_run_id="acme-hh01"
+    )
+    harness = FakeHarness()
+    harness.run_status_snapshot_result = RunStatusSnapshot(
+        paused_stage=None,
+        paused_story_key=None,
+        paused_reason=None,
+        escalated_spec_file=None,
+        escalated_task_phase=None,
+        deferred=(),
+        finished=False,
+    )
+    process = FakeProcess()
+
+    exit_code = run_resume(_resume_namespace(slug), fs=fs, harness=harness, process=process)
+
+    assert exit_code == EXIT_OK
+    assert harness.resume_calls
+    assert process.spawn_calls
 
 
 def test_resume_refuses_when_harness_run_id_cannot_be_resolved(home, capsys):

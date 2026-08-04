@@ -910,14 +910,17 @@ class BmadLoopHarness:
         # 0.9.0 `_resume_paused_run`, which calls `engine.run()` directly),
         # so it must never be waited on here either.
         #
-        # APPEND, never "wb" (review finding): `log_path` here is the
-        # WEDGED run's own `harness.log` -- the same file `cli/spin.py`
-        # created and the original engine attempt has been writing to for
-        # however long it ran. Truncating it destroys the only record of
-        # what the run was doing when it stopped producing output, which is
-        # the single most valuable artifact at exactly the moment
-        # `stop-and-retry` fires. `spin`'s own `"wb"` is correct there
-        # because that file is brand new; here it never is.
+        # APPEND, never "wb" (review finding): on the supervisor's own
+        # stop-and-retry path `log_path` is the WEDGED run's own
+        # `harness.log` -- the same file `cli/spin.py` created and the
+        # original engine attempt has been writing to for however long it
+        # ran. Truncating it destroys the only record of what the run was
+        # doing when it stopped producing output, which is the single most
+        # valuable artifact at exactly the moment `stop-and-retry` fires.
+        # `spin`'s own `"wb"` is correct there because that file is brand
+        # new. Appending is also correct for `marshal factory resume`'s own
+        # brand-new run-directory log (Story 3.7's second caller), where
+        # "ab" simply creates it.
         try:
             log_file = open(log_path, "ab")
         except (OSError, ValueError) as exc:
@@ -930,14 +933,19 @@ class BmadLoopHarness:
             # a delimiter the resumed engine's output is byte-concatenated
             # onto it, so the operator reading this file after a
             # stop-and-retry cannot tell where the record they came for ends.
+            # Deliberately NOT labelled "stop-and-retry" (follow-up review
+            # finding): this method has two callers, and `cli/spin.py`'s own
+            # `marshal factory resume` is an operator-driven resume, never
+            # the supervisor's automatic idle recovery -- attributing one to
+            # the other in the log is a false diagnostic. Which caller it
+            # was stays recoverable from the journal (`idle-stop-and-retry`
+            # vs `run-resume`), where the two are already distinct kinds.
             # Best-effort only -- a marker that cannot be written must never
             # be the reason a recovery does not happen, and the `flush` keeps
             # it ordered ahead of the child's own writes to the same fd.
             try:
                 log_file.write(
-                    f"\n--- marshal stop-and-retry: resuming {run_id} ---\n".encode(
-                        "utf-8"
-                    )
+                    f"\n--- marshal: resuming {run_id} ---\n".encode("utf-8")
                 )
                 log_file.flush()
             except (OSError, ValueError):
@@ -1088,6 +1096,11 @@ class BmadLoopHarness:
         # load.
         try:
             state = load_state(run_dir)
+            # `RunState.finished` -- bmad-loop's own `_resume_paused_run`
+            # refuses on it before doing anything else, so `cli/spin.py`'s
+            # `marshal factory resume` must be able to see it too (a
+            # detached launch never surfaces the child's exit code).
+            finished = bool(state.finished)
             paused_stage = state.paused_stage
             paused_story_key = state.paused_story_key
             paused_reason = (
@@ -1143,6 +1156,7 @@ class BmadLoopHarness:
             escalated_spec_file=escalated_spec_file,
             escalated_task_phase=escalated_task_phase,
             deferred=tuple(deferred),
+            finished=finished,
         )
 
     def resolution_reference(

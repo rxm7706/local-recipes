@@ -350,9 +350,10 @@ CODE_PATTERN = re.compile(r"MRS-[A-Z][A-Z0-9]*-[0-9]{3}")
 # adds a NINTH code, MRS-SPIN-009 (the FR-14 preflight advisory).
 # Story 3.7's supervisor/__main__.py adds a SEVENTH MRS-SUPV-* code,
 # MRS-SUPV-007 (the mandatory escalation file-marker write failed), and
-# cli/spin.py adds a TENTH and ELEVENTH code, MRS-SPIN-010 (resume refused:
-# unresolved escalation) and MRS-SPIN-011 (resume refused: no resumable
-# run).
+# cli/spin.py adds a TENTH, ELEVENTH and TWELFTH code: MRS-SPIN-010 (resume
+# refused: unresolved escalation), MRS-SPIN-011 (resume refused: no
+# resumable run) and MRS-SPIN-012 (resume proceeding without having been
+# able to read the run's live status at all -- added in review).
 REGISTERED_CODES: frozenset[str] = frozenset(
     {
         "MRS-IDENT-001",
