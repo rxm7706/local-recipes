@@ -1,0 +1,95 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.20.2"
+
+package:
+  name: prefab-ui
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/prefab-ui/prefab_ui-${{ version }}.tar.gz
+  sha256: 4ac17ebf8ec1c5a918a188625837fc608157907430a59c4feb8adac80e01262b
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - prefab = prefab_ui.cli:app
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - hatchling
+    - uv-dynamic-versioning >=0.7.0
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - cyclopts >=4
+    - pydantic >=2.11
+    - rich >=13
+
+tests:
+  - python:
+      imports:
+        - prefab_ui
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+  - requirements:
+      run:
+        - python ${{ python_min }}.*
+        - pip
+    script:
+      - prefab --help
+
+about:
+  summary: The generative UI framework that even humans can use.
+  homepage: https://prefab.prefect.io
+  documentation: https://prefab.prefect.io
+  repository: https://github.com/PrefectHQ/prefab
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: prefab-ui
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: prefab-ui
+  cfe-purls:
+    - pkg:conda/prefab-ui@${{ version }}?channel=conda-forge
+    - pkg:pypi/prefab-ui@${{ version }}
+  cfe-upstream-repo: https://github.com/PrefectHQ/prefab
+  cfe-upstream-homepage: https://prefab.prefect.io
+  cfe-import-names: [prefab_ui]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: pypi-only
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: "2026-08-05T00:00:00Z"
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: "2026-08-05T00:00:00Z"
+  cfe-local-build-status: success
+  cfe-local-build-datetime: "2026-08-05T00:00:00Z"
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # Packaged so recipes/fastmcp-v4's "apps" extra (fastmcp-slim[apps] /
+#    # fastmcp[apps]) has a real candidate on conda-forge - prefab-ui was
+#    # otherwise absent under every checked spelling (prefab-ui/prefab_ui/
+#    # prefabui). Same author/tooling as fastmcp (PrefectHQ, hatchling +
+#    # uv-dynamic-versioning host pattern).
+####

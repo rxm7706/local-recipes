@@ -1,0 +1,377 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: fastmcp
+  version: "4.0.0b1"
+
+recipe:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  - url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/fastmcp-${{ version }}.tar.gz
+    sha256: f98d69588a73e1672840558641d5d0f111e207baffe001f3465713a53ebb6b4c
+    target_directory: fastmcp/
+  - url: https://pypi.org/packages/source/${{ name[0] }}/fastmcp-slim/fastmcp_slim-${{ version }}.tar.gz
+    sha256: 158efb25720e0cb301711146b2d05d181de95cd91fe70e87c251ad14b123d665
+    target_directory: fastmcp-slim/
+  - url: https://pypi.org/packages/source/${{ name[0] }}/fastmcp-remote/fastmcp_remote-${{ version }}.tar.gz
+    sha256: c868b084c8d3f66ba691cca5801ceeba3ef3cdd4cd85a4e540c627e8779b3801
+    target_directory: fastmcp-remote/
+  - url: https://pypi.org/packages/source/${{ name[0] }}/fastmcp-tasks/fastmcp_tasks-${{ version }}.tar.gz
+    sha256: 44f3a70a4241f82ff81c9fce477969aeb8cc06430985d7c37cb393eba791360e
+    target_directory: fastmcp-tasks/
+
+build:
+  number: 0
+
+outputs:
+  - package:
+      name: fastmcp-slim
+      version: ${{ version }}
+
+    build:
+      noarch: python
+      script: ${{ PYTHON }} -m pip install ./fastmcp-slim -vv --no-deps --no-build-isolation
+      python:
+        entry_points:
+          - fastmcp = fastmcp.cli:app
+
+    requirements:
+      host:
+        - python ${{ python_min }}.*
+        - hatchling
+        - uv-dynamic-versioning >=0.7.0
+        - pip
+      run:
+        - python >=${{ python_min }},<4
+        - email-validator >=2.0.0
+        - mcp-types >=2.0.0,<3.0.0
+        - platformdirs >=4.0.0
+        - pydantic >=2.12.0
+        - pydantic-settings >=2.0.0
+        - python-dotenv >=1.1.0
+        - rich >=13.9.4
+        - typing_extensions >=4.0.0
+      run_constraints:
+        - anthropic >=0.48.0
+        - authlib >=1.6.11
+        - azure-identity >=1.16.0
+        - cyclopts >=4.0.0
+        - exceptiongroup >=1.2.2
+        - google-genai >=1.18.0
+        - griffelib >=2.0.0
+        - httpx2 >=2.5.0
+        - joserfc >=1.1.0
+        - jsonref >=1.1.0
+        - jsonschema-path >=0.3.4
+        - mcp >=2.0.0,<3.0.0
+        - openai >=1.102.0
+        - openapi-pydantic >=0.5.1
+        - opentelemetry-api >=1.28.0
+        - packaging >=24.0
+        - prefab-ui >=0.18.0
+        - pydantic-monty ==0.0.17
+        #- "py-key-value-aio[filetree,keyring,memory]>=0.4.4,<0.5.0",
+        - py-key-value-aio >=0.4.4,<0.5.0
+        - pyjwt >=2.12.0
+        - pyperclip >=1.9.0
+        - python-multipart >=0.0.26
+        - pyyaml >=6.0,<7.0
+        - starlette >=1.0.1
+        - uncalled-for >=0.2.0
+        - uvicorn >=0.35
+        - watchfiles >=1.0.0
+        - websockets >=15.0.1
+
+    tests:
+      - python:
+          imports:
+            - fastmcp
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - "*"
+
+    about:
+      summary: The dependency-slim FastMCP package.
+      license_file: fastmcp/LICENSE
+
+  - package:
+      name: fastmcp-remote
+      version: ${{ version }}
+
+    build:
+      noarch: python
+      script: ${{ PYTHON }} -m pip install ./fastmcp-remote -vv --no-deps --no-build-isolation
+      python:
+        entry_points:
+          - fastmcp-remote = fastmcp_remote.cli:main
+
+    requirements:
+      host:
+        - python ${{ python_min }}.*
+        - hatchling
+        - uv-dynamic-versioning >=0.7.0
+        - pip
+      run:
+        - python >=${{ python_min }},<4
+        - fastmcp-slim =${{ version }}
+        - authlib >=1.6.11
+        - cyclopts >=4.0.0
+        - exceptiongroup >=1.2.2
+        - griffelib >=2.0.0
+        - httpx2 >=2.5.0
+        - joserfc >=1.1.0
+        - jsonref >=1.1.0
+        - jsonschema-path >=0.3.4
+        - mcp >=2.0.0,<3.0.0
+        - openapi-pydantic >=0.5.1
+        - opentelemetry-api >=1.28.0
+        - packaging >=24.0
+        - py-key-value-aio >=0.4.4,<0.5.0
+        #- "py-key-value-aio[filetree,keyring,memory]>=0.4.4,<0.5.0",
+        - aiofile >=3.5.0
+        - anyio >=4.4.0
+        - cachetools >=5.0.0
+        - keyring >=25.6.0
+        - pyperclip >=1.9.0
+        - python-multipart >=0.0.26
+        - pyyaml >=6.0,<7.0
+        - starlette >=1.0.1
+        - uncalled-for >=0.2.0
+        - uvicorn >=0.35
+        - watchfiles >=1.0.0
+        - websockets >=15.0.1
+
+    tests:
+      - python:
+          imports:
+            - fastmcp_remote
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - "*"
+      - requirements:
+          run:
+            - python ${{ python_min }}.*
+            - pip
+        script:
+          - fastmcp-remote --help
+
+    about:
+      summary: A Python stdio bridge for remote MCP servers, powered by FastMCP.
+      license_file: fastmcp/LICENSE
+
+  - package:
+      name: fastmcp-tasks
+      version: ${{ version }}
+
+    build:
+      noarch: python
+      script: ${{ PYTHON }} -m pip install ./fastmcp-tasks -vv --no-deps --no-build-isolation
+
+    requirements:
+      host:
+        - python ${{ python_min }}.*
+        - hatchling
+        - uv-dynamic-versioning >=0.7.0
+        - pip
+      run:
+        - python >=${{ python_min }},<4
+        - fastmcp-slim =${{ version }}
+        - authlib >=1.6.11
+        - cyclopts >=4.0.0
+        - exceptiongroup >=1.2.2
+        - griffelib >=2.0.0
+        - httpx2 >=2.5.0
+        - joserfc >=1.1.0
+        - jsonref >=1.1.0
+        - jsonschema-path >=0.3.4
+        - mcp >=2.0.0,<3.0.0
+        - openapi-pydantic >=0.5.1
+        - opentelemetry-api >=1.28.0
+        - packaging >=24.0
+        - py-key-value-aio >=0.4.4,<0.5.0
+        #- "py-key-value-aio[filetree,keyring,memory]>=0.4.4,<0.5.0",
+        - aiofile >=3.5.0
+        - anyio >=4.4.0
+        - cachetools >=5.0.0
+        - keyring >=25.6.0
+        - pydocket >=0.20.0
+        - pyperclip >=1.9.0
+        - python-multipart >=0.0.26
+        - pyyaml >=6.0,<7.0
+        - starlette >=1.0.1
+        - uncalled-for >=0.2.0
+        - uvicorn >=0.35
+        - watchfiles >=1.0.0
+        - websockets >=15.0.1
+        - if: win
+          then:
+            # burner-redis 0.1.7's Windows build crashes the interpreter
+            # (native fault) under pytest-xdist; pydocket floors it at
+            # >=0.1.6 only, so the solver is free to pick 0.1.7 unless
+            # capped here. See recipes/burner-redis (built locally at 0.1.6
+            # specifically to satisfy this - conda-forge's channel only
+            # retains 0.1.7).
+            - burner-redis <0.1.7
+
+    tests:
+      - python:
+          imports:
+            - fastmcp_tasks
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - "*"
+
+    about:
+      summary: Background task execution for FastMCP servers via the io.modelcontextprotocol/tasks extension (SEP-2663).
+      license_file: fastmcp/LICENSE
+
+  - package:
+      name: fastmcp
+      version: ${{ version }}
+
+    build:
+      noarch: python
+      script: ${{ PYTHON }} -m pip install ./fastmcp -vv --no-deps --no-build-isolation
+
+    requirements:
+      host:
+        - python ${{ python_min }}.*
+        - hatchling
+        - uv-dynamic-versioning >=0.7.0
+        - pip
+      run:
+        - python >=${{ python_min }},<4
+        - fastmcp-slim =${{ version }}
+        - authlib >=1.6.11
+        - cyclopts >=4.0.0
+        - exceptiongroup >=1.2.2
+        - griffelib >=2.0.0
+        - httpx2 >=2.5.0
+        - joserfc >=1.1.0
+        - jsonref >=1.1.0
+        - jsonschema-path >=0.3.4
+        - mcp >=2.0.0,<3.0.0
+        - openapi-pydantic >=0.5.1
+        - opentelemetry-api >=1.28.0
+        - packaging >=24.0
+        - py-key-value-aio >=0.4.4,<0.5.0
+        #- "py-key-value-aio[filetree,keyring,memory]>=0.4.4,<0.5.0",
+        - aiofile >=3.5.0
+        - anyio >=4.4.0
+        - cachetools >=5.0.0
+        - keyring >=25.6.0
+        - pyperclip >=1.9.0
+        - python-multipart >=0.0.26
+        - pyyaml >=6.0,<7.0
+        - starlette >=1.0.1
+        - uncalled-for >=0.2.0
+        - uvicorn >=0.35
+        - watchfiles >=1.0.0
+        - websockets >=15.0.1
+      run_constraints:
+        - anthropic >=0.48.0
+        - azure-identity >=1.16.0
+        - fastmcp-tasks ==${{ version }}
+        - google-genai >=1.18.0
+        - openai >=1.102.0
+        - prefab-ui >=0.18.0
+        - pydantic-monty ==0.0.17
+        - pyjwt >=2.12.0
+
+    tests:
+      - python:
+          imports:
+            - fastmcp
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - "*"
+      - requirements:
+          run:
+            - python ${{ python_min }}.*
+            - pip
+        script:
+          - fastmcp --help
+
+    about:
+      license_file: fastmcp/LICENSE
+
+about:
+  summary: The fast, Pythonic way to build MCP servers and clients.
+  homepage: https://gofastmcp.com
+  documentation: https://gofastmcp.com
+  repository: https://github.com/PrefectHQ/fastmcp
+  license: Apache-2.0
+  license_file: fastmcp/LICENSE
+
+extra:
+  recipe-maintainers:
+    - dbast
+    - moritzwilksch
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: fastmcp
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: fastmcp
+  cfe-purls:
+    - pkg:conda/fastmcp@${{ version }}?channel=conda-forge
+    - pkg:pypi/fastmcp@${{ version }}
+    - pkg:conda/fastmcp-slim@${{ version }}?channel=conda-forge
+    - pkg:pypi/fastmcp-slim@${{ version }}
+    - pkg:conda/fastmcp-remote@${{ version }}?channel=conda-forge
+    - pkg:pypi/fastmcp-remote@${{ version }}
+    - pkg:conda/fastmcp-tasks@${{ version }}?channel=conda-forge
+    - pkg:pypi/fastmcp-tasks@${{ version }}
+  cfe-upstream-repo: https://github.com/PrefectHQ/fastmcp
+  cfe-upstream-homepage: https://gofastmcp.com
+  cfe-import-names: [fastmcp, fastmcp_remote, fastmcp_tasks]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: pypi-only
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: "n/a - this is a local-only pre-release preview, not the deployed feedstock (which stays at the stable 3.4.5 line in recipes/fastmcp/)"
+  cfe-forge-blocker-list:
+    - "PRE-RELEASE: 4.0.0b1 is not a stable/GA release. Per the skill's security boundary (Ask First on pinning to a pre-release), this recipe is local-only and must NOT be submitted to staged-recipes until fastmcp ships a v4.0.0 stable tag."
+    - "fastmcp-remote and fastmcp-tasks have NO existing conda-forge feedstocks (lookup_feedstock: exists=False for both) - a real submission would need two net-new feedstocks alongside fastmcp/fastmcp-slim's own v4 update, not just a version bump."
+    - "RESOLVED locally: prefab-ui (the fastmcp-slim 'apps' extra's sole dep) was absent from conda-forge under every checked spelling - now packaged at recipes/prefab-ui (0.20.2), built+tested GREEN locally. Still not on the real conda-forge channel, so a staged-recipes submission of this fastmcp-v4 preview would still need prefab-ui submitted first."
+    - "RESOLVED locally: fastmcp-tasks' upstream pyproject.toml pins burner-redis<0.1.7 on sys_platform=='win32' only (a native-crash workaround in 0.1.7). conda-forge's channel only retains 0.1.7 (no older build kept), so recipes/burner-redis (0.1.6) was packaged locally to backfill it - built+tested GREEN (abi3audit + upstream's own BurnerRedis() smoke test, both python_min and latest Python legs). The `if: win` selector is now wired into this recipe's fastmcp-tasks output, gated by this directory's conda-forge.yml `noarch_platforms` (G12) - only linux-64 has actually been built/tested here."
+    - "bot.run_deps_from_wheel: true (present on the DEPLOYED fastmcp-feedstock's conda-forge.yml) would be unsafe if copied onto this recipe unmodified - fastmcp/fastmcp-remote/fastmcp-tasks run: all manually flatten PEP 508 extras (client/server/mcp) that are NOT unconditional in the wheel's own METADATA, so an autotick regen from wheel metadata would silently drop them (G86-class risk). The conda-forge.yml added alongside this recipe deliberately omits any `bot:` block for that reason."
+  cfe-last-checked: "2026-08-05T00:00:00Z"
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: "2026-08-05T00:00:00Z"
+  cfe-local-build-status: success
+  cfe-local-build-datetime: "2026-08-05T00:00:00Z"
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # Sibling of recipes/fastmcp (the stable 3.4.5 mirror of the deployed
+#    # conda-forge feedstock). This directory tracks the pre-release v4 line,
+#    # which is the version that adopts mcp>=2.0.0 (mcp-types + httpx2 are new
+#    # hard deps upstream added alongside it; both already exist on
+#    # conda-forge). fastmcp-remote and fastmcp-tasks are new PyPI
+#    # distributions in the same jlowin/fastmcp uv workspace, version-locked
+#    # to fastmcp/fastmcp-slim via the same git tag - folded in as sibling
+#    # outputs here (each with its own real PyPI sdist source) rather than as
+#    # separate recipes, since they share one release cadence and an
+#    # independent-recipe layout would need synchronized version bumps across
+#    # 4 files on every future prerelease anyway.
+# requirements:
+#  run:
+#    # fastmcp / fastmcp-remote run: both flatten fastmcp-slim's client+server
+#    # extras in full (incl. the nested "mcp" extra those extras reference,
+#    # and py-key-value-aio's own filetree/keyring/memory extras) - conda has
+#    # no extras mechanism, see SKILL.md G25.
+#    # fastmcp-tasks run: flattens only the "server" extra (fastmcp-slim[server]),
+#    # matching its own pyproject.toml.
+####

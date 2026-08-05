@@ -1,0 +1,12 @@
+conda_build_tool: rattler-build
+conda_install_tool: pixi
+# fastmcp-tasks' run: carries an `if: win / then:` selector (burner-redis
+# <0.1.7, G12) - only the WIN leg differs (an extra Windows-only cap); the
+# noarch package itself is platform-agnostic Python. This build has only
+# been exercised on linux-64 (osx_64/win_64 not locally built/tested) - the
+# list flips conda-smithy's noarch-selector lint from reject to trust, it
+# is not a claim that all three platforms were built here.
+noarch_platforms:
+  - linux_64
+  - osx_64
+  - win_64

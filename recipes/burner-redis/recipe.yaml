@@ -1,0 +1,133 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.1.6"
+
+package:
+  name: burner-redis
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/b/burner-redis/burner_redis-${{ version }}.tar.gz
+  sha256: 362091d98c09953ef99be8bd026d75fad42599a0f153211e1a22d3e3029c7cfb
+
+build:
+  number: 0
+  # abi3-py310 packages build once at python_min and ship one artifact per
+  # platform (SKILL.md G21/G49; reference/abi3-matrix-collapse.md Variant A -
+  # the upstream abi3 floor (py310) matches conda-forge-pinning's default).
+  skip: is_abi3 and not is_python_min
+  script:
+    env:
+      # Per conda-forge.org/docs/maintainer/example_recipes/rust/.
+      CARGO_PROFILE_RELEASE_STRIP: symbols
+      CARGO_PROFILE_RELEASE_LTO: fat
+    content:
+      - cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
+      - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    version_independent: ${{ is_abi3 }}
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+        - crossenv
+        - maturin >=1,<2
+    - ${{ compiler("c") }}
+    - ${{ stdlib("c") }}
+    - ${{ compiler("rust") }}
+    - cargo-bundle-licenses
+  host:
+    - if: is_abi3
+      then: python-abi3
+    - python
+    - pip
+    - maturin >=1,<2
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - burner_redis
+      pip_check: true
+      python_version:
+        - if: is_abi3
+          then: ${{ python_min }}.*
+        - "*"
+  - requirements:
+      run:
+        - python ${{ python_min }}.*
+    script:
+      # Upstream's own conda smoke test (.github/conda-smoke/recipe.yaml)
+      # instantiates the extension directly, not just imports it.
+      - python -c "import burner_redis; burner_redis.BurnerRedis()"
+  - if: is_abi3
+    then:
+      requirements:
+        run:
+          - abi3audit
+      script:
+        - if: unix
+          then: abi3audit $SP_DIR/burner_redis/_burner_redis.abi3.so -s -v --assume-minimum-abi3 ${{ python_min }}
+          else: abi3audit %SP_DIR%\burner_redis\_burner_redis.pyd -s -v --assume-minimum-abi3 ${{ python_min }}
+
+about:
+  summary: An embedded, in-process Redis-compatible database
+  homepage: https://github.com/PrefectHQ/burner-redis
+  repository: https://github.com/PrefectHQ/burner-redis
+  license: MIT
+  license_file:
+    - LICENSE
+    - THIRDPARTY.yml
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: burner-redis
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: burner-redis
+  cfe-purls:
+    - pkg:conda/burner-redis@${{ version }}?channel=conda-forge
+    - pkg:pypi/burner-redis@${{ version }}
+  cfe-upstream-repo: https://github.com/PrefectHQ/burner-redis
+  cfe-upstream-homepage: https://github.com/PrefectHQ/burner-redis
+  cfe-import-names: [burner_redis]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: compiled
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/burner-redis-feedstock
+  cfe-forge-recipe-updates-needed: "n/a - this local recipe deliberately targets 0.1.6, BELOW the deployed feedstock's current 0.1.7. See cfe-forge-blocker-list."
+  cfe-forge-blocker-list:
+    - "The deployed conda-forge feedstock ships ONLY 0.1.7 (confirmed via channeldata.json - subdirs linux-64/osx-64/osx-arm64/win-64, version 0.1.7, no older builds retained). Pinned this local recipe to 0.1.6 specifically because fastmcp-tasks (recipes/fastmcp-v4) needs `burner-redis<0.1.7` on win32 only - 0.1.7's Windows build has a native-crash bug (upstream's own fastmcp_tasks/pyproject.toml comment). Not itself blocked; this is a deliberate version-floor build to backfill what conda-forge's channel doesn't retain."
+    - "IMPORTANT - keep this artifact OUT of the shared build_artifacts/<config> channel (G52/G104). pydocket's own wheel (0.23.1, the cf-current build) unconditionally requires burner-redis>=0.1.7 on EVERY platform, not just non-Windows - only fastmcp-tasks' downstream override caps it lower, and only on win32. Under strict channel priority, having 0.1.6 present in the same channel as any pydocket-dependent recipe's build shadows conda-forge's 0.1.7 entirely (even on linux/osx, where nothing needs the cap) and breaks that recipe's pip_check. Verified live: this exact failure hit recipes/fastmcp-v4's fastmcp-tasks output when both were built into the same build_artifacts/linux64 channel; moved to a dedicated build_artifacts/isolated/burner-redis/ channel and the shared channel rebuilds clean again. Only pass this recipe's channel explicitly (`--channel file://.../build_artifacts/isolated/burner-redis`) when actually testing the win32-only code path."
+  cfe-last-checked: "2026-08-05T00:00:00Z"
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: "2026-08-05T00:00:00Z"
+  cfe-local-build-status: success
+  cfe-local-build-datetime: "2026-08-05T00:00:00Z"
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # Rust/PyO3 (maturin) package. Cargo.toml: [lib] name = "_burner_redis",
+#    # crate-type = cdylib, pyo3 features = ["extension-module", "abi3-py310"].
+#    # pyproject.toml [tool.maturin]: module-name = "burner_redis._burner_redis",
+#    # python-source = "python" -> compiled ext lands at
+#    # $SP_DIR/burner_redis/_burner_redis.abi3.so.
+#    # Cargo.toml [features] default = ["vendored-lua"] (mlua/vendored) -
+#    # the DEFAULT build statically compiles its own Lua from source, so no
+#    # external `lua` host dep is needed on Linux/macOS. Upstream's own
+#    # .github/conda-smoke/recipe.yaml only disables this
+#    # (--no-default-features + host `lua`) for a WINDOWS-specific
+#    # non-vendored-Lua smoke test; not relevant to this linux-64 build.
+####
