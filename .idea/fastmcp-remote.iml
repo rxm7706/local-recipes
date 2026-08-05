@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module external.system.id="pyproject.toml" type="PYTHON_MODULE" version="4">
+  <component name="NewModuleRootManager">
+    <content url="file://$MODULE_DIR$/build_artifacts/linux64/src_cache/144b079f0785efb9_extracted/fastmcp_remote" />
+    <orderEntry type="sourceFolder" forTests="false" />
+  </component>
+</module>

@@ -2,6 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
+      <module fileurl="file://$PROJECT_DIR$/.idea/atproto-mcp.iml" filepath="$PROJECT_DIR$/.idea/atproto-mcp.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/bmad-dashboard.iml" filepath="$PROJECT_DIR$/.idea/bmad-dashboard.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/clean-fixture.iml" filepath="$PROJECT_DIR$/.idea/clean-fixture.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/config-precedence-fixture.iml" filepath="$PROJECT_DIR$/.idea/config-precedence-fixture.iml" />
@@ -10,6 +11,11 @@
       <module fileurl="file://$PROJECT_DIR$/.idea/deptry-stdlib-fixture.iml" filepath="$PROJECT_DIR$/.idea/deptry-stdlib-fixture.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/deptry-unused-fixture.iml" filepath="$PROJECT_DIR$/.idea/deptry-unused-fixture.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/f4-unused-dep-fixture.iml" filepath="$PROJECT_DIR$/.idea/f4-unused-dep-fixture.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/fastmcp.iml" filepath="$PROJECT_DIR$/.idea/fastmcp.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/fastmcp-app-examples.iml" filepath="$PROJECT_DIR$/.idea/fastmcp-app-examples.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/fastmcp-remote.iml" filepath="$PROJECT_DIR$/.idea/fastmcp-remote.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/fastmcp-slim.iml" filepath="$PROJECT_DIR$/.idea/fastmcp-slim.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/fastmcp-slim@1.iml" filepath="$PROJECT_DIR$/.idea/fastmcp-slim@1.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/mybmad-dashboard.iml" filepath="$PROJECT_DIR$/.idea/mybmad-dashboard.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/pyforge-atlas.iml" filepath="$PROJECT_DIR$/.idea/pyforge-atlas.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/pyforge-atlas-kedro-viz.iml" filepath="$PROJECT_DIR$/.idea/pyforge-atlas-kedro-viz.iml" />
@@ -21,7 +27,9 @@
       <module fileurl="file://$PROJECT_DIR$/.idea/pyforge-steward.iml" filepath="$PROJECT_DIR$/.idea/pyforge-steward.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/pyforge-warden.iml" filepath="$PROJECT_DIR$/.idea/pyforge-warden.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/sentinel-fixture.iml" filepath="$PROJECT_DIR$/.idea/sentinel-fixture.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/smart-home.iml" filepath="$PROJECT_DIR$/.idea/smart-home.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/staged-recipes.iml" filepath="$PROJECT_DIR$/.idea/staged-recipes.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/testing-demo.iml" filepath="$PROJECT_DIR$/.idea/testing-demo.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/vuln-critical-fixture.iml" filepath="$PROJECT_DIR$/.idea/vuln-critical-fixture.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/vuln-high-fixture.iml" filepath="$PROJECT_DIR$/.idea/vuln-high-fixture.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/vuln-kev-fail-on-kev-false-fixture.iml" filepath="$PROJECT_DIR$/.idea/vuln-kev-fail-on-kev-false-fixture.iml" />
