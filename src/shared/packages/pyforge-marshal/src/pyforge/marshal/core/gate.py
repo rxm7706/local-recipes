@@ -76,6 +76,21 @@ freeze). Both pure, both driven entirely by already-resolved inputs
 (``core/journal``'s ``FrozenPath`` and a caller-supplied ``changed_files``
 tuple -- this module still performs no VCS I/O itself, matching
 ``classify_outcome``'s own already-obtained-``ProcessResult`` shape).
+
+Story 2.7's ``check_spec_binding`` (AD-4/AD-31/AD-49) adds two more real
+codes, reusing ``Verdict.SCOPE_VIOLATION`` -- the same rung ``MRS-GATE-
+007``/``008`` classify -- per AD-49's own text ("an untraceable or
+mismatched binding cannot itself be waived to green", the same closed
+lattice every other admission criterion participates in). ``MRS-GATE-010``
+(``declared_commands is None`` -- no tracked spec, or a tracked spec with
+no parseable ``## Verification`` -> ``**Commands:**`` Success signal) and
+``MRS-GATE-011`` (one per declared command absent from ``policy_commands``
+-- narrowed or removed from the policy since the spec was tracked) are
+both pure, driven entirely by already-resolved inputs (``core.spec_binding.
+parse_success_signal``'s already-parsed ``declared_commands`` tuple and the
+caller's own ``policy_commands`` -- this module performs no spec-file read
+itself, matching every other function in this module's "caller already
+gathered the fact" shape).
 """
 
 from __future__ import annotations
@@ -403,3 +418,73 @@ def check_scope(
                 )
             )
     return tuple(result)
+
+
+# --- Story 2.7: a gate binds to the spec's Success signal (AD-4/AD-31/AD-49) -
+
+
+def check_spec_binding(
+    declared_commands: tuple[str, ...] | None,
+    policy_commands: tuple[str, ...],
+) -> tuple[Finding, ...]:
+    """Confirm the commands a tracked spec's own Success signal declared are
+    still among the ones policy currently runs (AD-49). Pure, no I/O.
+
+    ``declared_commands is None`` -- no tracked spec, or a tracked spec with
+    no parseable ``## Verification`` -> ``**Commands:**`` section (``core.
+    spec_binding.parse_success_signal`` returned ``None``) -- reports ONE
+    ``MRS-GATE-010`` finding naming the missing binding (AC2: "reported
+    explicitly ... never evaluated silently against nothing").
+
+    Otherwise, ONE-DIRECTIONAL (AC per the spec's own Boundaries):
+    every command in ``declared_commands`` NOT present in ``policy_commands``
+    gets its own ``MRS-GATE-011`` finding, naming the narrowed/removed
+    command. A ``policy_commands`` that runs commands ``declared_commands``
+    never named is NOT itself a finding -- the spec's Success signal is a
+    floor policy must still clear, never a ceiling policy may not exceed. An
+    empty ``declared_commands`` (the spec's own ``## Verification`` section
+    exists but declares no commands at all) therefore reports no findings:
+    there is nothing declared to miss.
+
+    Two normalizations happen before that comparison, both review findings
+    (P2/P6):
+
+    - ``declared_commands`` is DEDUPLICATED first (order-preserving, via
+      ``dict.fromkeys``) -- a spec that accidentally repeats the same
+      command string in two bullets reports exactly ONE ``MRS-GATE-011``
+      for it, not one per repetition (the same command missing is one fact,
+      not several).
+    - The membership test collapses incidental whitespace runs to a single
+      space on BOTH sides (``" ".join(command.split())``) before comparing
+      -- a spec bullet and a policy entry that differ only by, say, a
+      double space are the same command in effect and must not be reported
+      as narrowed/removed. This is intentionally SHALLOW: no shell-aware
+      argument parsing, just whitespace collapse.
+    """
+    if declared_commands is None:
+        return (
+            Finding(
+                code="MRS-GATE-010",
+                severity=Severity.ERROR,
+                message=(
+                    "no Success signal to bind against -- the story has no "
+                    "tracked spec, or its tracked spec has no parseable "
+                    "## Verification -> **Commands:** section"
+                ),
+            ),
+        )
+    normalized_policy = {" ".join(command.split()) for command in policy_commands}
+    return tuple(
+        Finding(
+            code="MRS-GATE-011",
+            severity=Severity.ERROR,
+            message=(
+                f"verify command {command!r} is named in the story's "
+                "tracked spec Success signal but is no longer among the "
+                "policy's verify_commands -- narrowed or removed since the "
+                "spec was tracked"
+            ),
+        )
+        for command in dict.fromkeys(declared_commands)
+        if " ".join(command.split()) not in normalized_policy
+    )

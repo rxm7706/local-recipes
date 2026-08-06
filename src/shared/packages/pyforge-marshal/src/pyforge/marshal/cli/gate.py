@@ -95,6 +95,37 @@ not apply here either -- ``ports/process.py`` is explicitly carved out of
 AD-34's egress-port set (argv/environment to a child process, and this
 CLI's own stdout, are inside Marshal's trust boundary, not a
 durable/third-party sink).
+
+**Spec binding (Story 2.7, AD-4/AD-31/AD-49).** Reuses the SAME ``--story``
+flag -- no new one -- and runs whenever ``--story`` is supplied, with or
+without ``--scope-check``. The story key is resolved and its tracked spec
+text located EXACTLY ONCE per invocation (``identity.resolve_feed`` +
+``_find_spec_text``, the identical machinery ``--scope-check`` already
+uses), and that single result feeds BOTH checks when both are requested --
+never a second lookup. An unresolvable ``--story`` value skips the binding
+check the same way it skips ``--scope-check``, surfacing via the existing
+``MRS-IDENT-001`` (no second finding for the same fact). With no
+resolvable active project, the binding check does not run either -- there
+is no ``specs/`` directory to look in -- but it now reports the SAME loud
+``MRS-GATE-009`` "no resolvable active project" finding ``--scope-check``'s
+own identical precondition already reports for the identical root cause
+(review finding, P1: an earlier version of this guard folded the
+precondition into a bare ``and``, so an invalid or empty project produced
+NO finding and NO ``spec_binding`` key at all -- a syntactically-malformed
+slug happened to stay non-``ok`` only because ``policy.compose()``
+independently reports ``MRS-POLICY-006`` for it, and nothing at all saved
+an EMPTY slug, exactly the silent-skip AD-49 exists to close). This check
+runs regardless of whether ``--scope-check`` was also requested -- it is
+independent of that flag. When ``--run <id>`` was requested but its fold
+is unavailable, the binding check is ALSO skipped, for the identical
+reason ``--scope-check``'s own result is omitted then: ``MRS-GATE-005``
+already reports the one root cause in the same envelope, and a second
+finding here would be a redundant symptom of it. ``core.spec_binding.
+parse_success_signal`` extracts the spec's declared commands (pure);
+``core.gate.check_spec_binding`` compares them against ``effective.
+verify_commands`` (pure) -- the commands this invocation's own policy
+declares, independent of whether this particular run actually executed
+them.
 """
 
 from __future__ import annotations
@@ -109,7 +140,7 @@ from pathlib import Path
 from ..adapters.fs_local import FsError, LocalFs
 from ..adapters.process_posix import PosixProcess, ProcessError
 from ..adapters.vcs_git import GitVcs, VcsCommandError
-from ..core import gate, identity, journal, policy
+from ..core import gate, identity, journal, policy, spec_binding
 from ..core.identity import StoryKey, render_filename_slug
 from ..core.model import Finding, Severity, Status, build_envelope, status_for
 from ..core.spec_surface import SurfaceParseError, parse_declared_surface
@@ -206,7 +237,12 @@ def add_gate_subparser(subparsers: argparse._SubParsersAction) -> None:
         dest="story",
         default=None,
         metavar="KEY",
-        help="The story whose epic's policy surface --scope-check checks against.",
+        help=(
+            "The story whose epic's policy surface --scope-check checks "
+            "against. Also binds the gate to this story's own tracked spec "
+            "Success signal (Story 2.7, AD-49), with or without "
+            "--scope-check."
+        ),
     )
     evaluate_parser.add_argument(
         "--format",
@@ -467,21 +503,30 @@ def _find_spec_text(root: Path, project_slug: str, story_key: StoryKey) -> str |
 
 def _run_scope_check(
     *,
-    root: Path,
     project_slug: str,
     story_arg: str | None,
+    story_key: StoryKey | None,
+    spec_text: str | None,
     effective: policy.EffectivePolicy,
     run_requested: bool,
     fold_result: journal.FoldResult | None,
     vcs: VcsPort,
 ) -> tuple[dict[str, object] | None, tuple[Finding, ...]]:
-    """The impure edge for ``--scope-check`` (Story 2.3): gathers the story
-    key, the story's own spec text, and the worktree's changed files, then
-    delegates classification entirely to ``core.gate.compute_effective_
-    surface``/``check_scope`` (pure). Returns ``(data, findings)`` --
-    ``data`` is ``None`` when a run-scoped fold was requested but
-    unavailable (``MRS-GATE-005`` already covers that in the caller's own
-    findings; nothing further is reported here)."""
+    """The impure edge for ``--scope-check`` (Story 2.3): gathers the
+    worktree's changed files and delegates classification entirely to
+    ``core.gate.compute_effective_surface``/``check_scope`` (pure). Returns
+    ``(data, findings)`` -- ``data`` is ``None`` when a run-scoped fold was
+    requested but unavailable (``MRS-GATE-005`` already covers that in the
+    caller's own findings; nothing further is reported here).
+
+    ``story_key``/``spec_text`` (Story 2.7) are ALREADY resolved by the
+    caller (``run_evaluate``) -- this function no longer resolves ``--story``
+    or reads the spec file itself, so the shared spec-binding check (which
+    needs the SAME two values) never triggers a second lookup. ``story_key
+    is None`` with ``story_arg`` set means the caller's own
+    ``identity.resolve_feed`` found it unresolvable; the ``MRS-IDENT-001``
+    finding for that is already in the caller's ``command_findings`` (added
+    once, not returned again here)."""
     if run_requested and fold_result is None:
         return None, ()
 
@@ -510,11 +555,11 @@ def _run_scope_check(
                 ),
             ),
         )
-
-    resolution = identity.resolve_feed([story_arg])
-    if resolution.unresolved:
-        return {"checked": False, "reason": "--story is not a valid story key"}, resolution.findings
-    story_key = resolution.resolved[0]
+    if story_key is None:
+        # Unresolvable --story value -- the caller already reported the
+        # existing MRS-IDENT-001 for this exact fact (Story 2.3's own
+        # precedent, unchanged); no second finding here.
+        return {"checked": False, "reason": "--story is not a valid story key"}, ()
 
     home = _home_path(project_slug)
     try:
@@ -536,7 +581,6 @@ def _run_scope_check(
         )
 
     policy_surface = effective.epic_surfaces.value.get(str(story_key.epic), ())
-    spec_text = _find_spec_text(root, project_slug, story_key)
     try:
         spec_surface = parse_declared_surface(spec_text) if spec_text is not None else None
     except SurfaceParseError as exc:
@@ -838,11 +882,32 @@ def run_evaluate(
                     command_findings.append(finding)
             data["commands"] = reports
 
+    # Story 2.7: resolve --story and locate its tracked spec text EXACTLY
+    # ONCE per invocation, regardless of how many of --scope-check/the
+    # spec-binding check --story feeds -- never a second `identity.
+    # resolve_feed`/`_find_spec_text` call for the same fact (this module's
+    # own docstring). An unresolvable --story surfaces via the EXISTING
+    # MRS-IDENT-001, added here so it is reported exactly once whether or
+    # not --scope-check was also requested. `spec_text` stays None (never
+    # attempted) when the active project itself does not resolve -- there
+    # is no `specs/` directory to look in.
+    story_key: StoryKey | None = None
+    spec_text: str | None = None
+    if args.story is not None:
+        resolution = identity.resolve_feed([args.story])
+        if resolution.unresolved:
+            command_findings.extend(resolution.findings)
+        else:
+            story_key = resolution.resolved[0]
+            if project_slug and policy._is_valid_project_slug(project_slug):
+                spec_text = _find_spec_text(root, project_slug, story_key)
+
     if args.scope_check:
         scope_data, scope_findings = _run_scope_check(
-            root=root,
             project_slug=project_slug,
             story_arg=args.story,
+            story_key=story_key,
+            spec_text=spec_text,
             effective=effective,
             run_requested=args.run_id is not None,
             fold_result=fold_result,
@@ -851,6 +916,53 @@ def run_evaluate(
         if scope_data is not None:
             data["scope_check"] = scope_data
         command_findings.extend(scope_findings)
+
+    # Story 2.7 (AD-4/AD-31/AD-49): whenever --story resolved to a real
+    # story key, confirm the story's own tracked spec Success signal
+    # against the commands THIS invocation's policy declares. Skipped when
+    # a --run fold was requested but unavailable, mirroring --scope-check's
+    # own suppression immediately above: MRS-GATE-005 already reports the
+    # one root cause in this same envelope, and a second finding here would
+    # be a redundant symptom of it.
+    #
+    # Review finding (P1, Blind Hunter + Edge Case Hunter): "the active
+    # project resolves" is its OWN precondition -- like --scope-check's own
+    # identical top-of-function guard -- and must be reported the same loud
+    # way when it fails, never folded into a bare `and` that silently drops
+    # the whole check with no finding and no `spec_binding` key. This runs
+    # regardless of whether --scope-check was also requested (this check is
+    # independent of that flag).
+    if story_key is not None and not (args.run_id is not None and fold_result is None):
+        if not project_slug or not policy._is_valid_project_slug(project_slug):
+            command_findings.append(
+                Finding(
+                    code="MRS-GATE-009",
+                    severity=Severity.ERROR,
+                    message=(
+                        "cannot bind the gate to the story's tracked spec "
+                        "Success signal: no resolvable --project/active "
+                        "project"
+                    ),
+                )
+            )
+        else:
+            declared_commands = (
+                spec_binding.parse_success_signal(spec_text)
+                if spec_text is not None
+                else None
+            )
+            binding_findings = gate.check_spec_binding(
+                declared_commands, effective.verify_commands.value
+            )
+            data["spec_binding"] = {
+                "story": str(story_key),
+                "declared_commands": (
+                    list(declared_commands) if declared_commands is not None else None
+                ),
+                "has_binding": declared_commands is not None,
+                "violations": len(binding_findings),
+            }
+            command_findings.extend(binding_findings)
 
     # Same "io/policy findings before per-command findings" ordering
     # rationale as above, one level up: the operator should meet policy-level
@@ -974,6 +1086,14 @@ def _render_text(data: Mapping[str, object], findings: tuple[Finding, ...]) -> s
             )
         else:
             lines.append(f"scope check: not evaluated ({scope_check['reason']})")
+    if "spec_binding" in data:
+        # Story 2.7 (AD-14: this text projection carries the same data as
+        # --format json).
+        spec_binding_data = data["spec_binding"]
+        lines.append(
+            f"spec binding: {spec_binding_data['story']} -- "
+            f"{spec_binding_data['violations']} violation(s)"
+        )
     if findings:
         lines.append("findings:")
         for finding in findings:

@@ -45,11 +45,11 @@ development_status:
   12-6-readme-adoption-guide-and-the-finding-remedy-reference: backlog
   2-1-standalone-verify-command-runner-project-scoped: done
   2-2-verdict-aggregation-that-never-false-greens: done
-  2-3-frozen-surface-scope-check-narrowing-only: review
+  2-3-frozen-surface-scope-check-narrowing-only: done
   2-4-doc-only-story-classification: done
   2-5-gate-mode-ladder-with-autonomy-labels: done
   2-6-gate-evidence-record-with-redaction-at-egress: done
-  2-7-a-gate-binds-to-the-specs-success-signal: blocked
+  2-7-a-gate-binds-to-the-specs-success-signal: review
   3-1-run-identity-and-the-journal-writer: done
   3-2-the-journal-fold-one-producer-for-accumulating-run-state: done
   3-3-detached-launch-with-scoped-story-selection: done

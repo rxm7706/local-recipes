@@ -1796,8 +1796,15 @@ def test_gate_evaluate_scope_check_multiline_surface_block_reports_mrs_gate_009(
     )
     specs_dir.mkdir(parents=True, exist_ok=True)
     key = StoryKey(epic=2, seq=3)
+    # A `## Verification` section with no `**Commands:**` sub-list parses to
+    # an EMPTY declared-commands tuple (Story 2.7), not `None` -- so the
+    # spec-binding check this story's own --story wiring now runs
+    # unconditionally (independent of --scope-check) reports nothing here,
+    # and this test still isolates the ONE thing it means to pin: the
+    # multi-line `surface:` block's own MRS-GATE-009.
     (specs_dir / f"spec-{render_filename_slug(key)}-scope.md").write_text(
-        '---\ntitle: \'x\'\nsurface:\n  - "recipes/x/**"\n---\n\n<intent-contract>\n',
+        '---\ntitle: \'x\'\nsurface:\n  - "recipes/x/**"\n---\n\n'
+        "<intent-contract>\n\n## Verification\n",
         encoding="utf-8",
     )
     args = _scope_check_args(story="2.3")
@@ -1816,9 +1823,23 @@ def test_gate_evaluate_scope_check_vcs_failure_reports_mrs_gate_009(
     tmp_path, capsys, monkeypatch
 ):
     from pyforge.marshal.cli import gate as gate_module
+    from pyforge.marshal.core.identity import StoryKey, render_filename_slug
 
     monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
     _write_epic_surfaces_policy(tmp_path, monkeypatch, "acme", "")
+    # See the multi-line-surface test above: a bare `## Verification`
+    # section (Story 2.7) keeps the now-unconditional spec-binding check
+    # silent, so this test still isolates the VCS failure's own
+    # MRS-GATE-009.
+    specs_dir = (
+        tmp_path / "_bmad-output" / "projects" / "acme" / "planning-artifacts" / "specs"
+    )
+    specs_dir.mkdir(parents=True, exist_ok=True)
+    key = StoryKey(epic=2, seq=3)
+    (specs_dir / f"spec-{render_filename_slug(key)}.md").write_text(
+        "---\ntitle: 'x'\n---\n\n<intent-contract>\n\n## Verification\n",
+        encoding="utf-8",
+    )
     args = _scope_check_args(story="2.3")
 
     exit_code = gate_module.run_evaluate(
@@ -1880,6 +1901,280 @@ def test_gate_evaluate_scope_check_run_scope_unavailable_omits_scope_check_data(
     assert codes == ["MRS-GATE-005"]
     assert "scope_check" not in payload["data"]
     assert exit_code == 1
+
+
+# --- Story 2.7: `gate evaluate --story` binds to the spec's Success signal --
+#
+# AD-4/AD-31/AD-49: reuses the EXISTING `--story` flag, no new one. Runs
+# whenever `--story` is supplied, WITH or WITHOUT `--scope-check`.
+
+
+def _story_args(*, project="acme", run_id=None, scope_check=False, story="2.3", format="json"):
+    return argparse.Namespace(
+        project=project,
+        run_id=run_id,
+        scope_check=scope_check,
+        story=story,
+        format=format,
+    )
+
+
+def _write_tracked_spec(tmp_path, slug, key, *, commands=()):
+    """A minimal tracked spec at the DURABLE `specs/spec-<key>.md` path
+    (Story 4.1's own promotion target) with a `## Verification` ->
+    `**Commands:**` Success signal declaring exactly `commands`."""
+    from pyforge.marshal.core.identity import render_filename_slug
+
+    specs_dir = (
+        tmp_path / "_bmad-output" / "projects" / slug / "planning-artifacts" / "specs"
+    )
+    specs_dir.mkdir(parents=True, exist_ok=True)
+    commands_block = "\n".join(f"- `{command}` -- expected: ok." for command in commands)
+    (specs_dir / f"spec-{render_filename_slug(key)}.md").write_text(
+        "---\ntitle: 'x'\n---\n\n<intent-contract>\n\n"
+        f"## Verification\n\n**Commands:**\n{commands_block}\n",
+        encoding="utf-8",
+    )
+
+
+def test_gate_evaluate_story_with_no_tracked_spec_reports_mrs_gate_010(
+    tmp_path, capsys, monkeypatch
+):
+    """No `--scope-check` at all -- the binding check still runs off the
+    bare `--story` flag."""
+    from pyforge.marshal.cli import gate as gate_module
+    from pyforge.marshal.core.model import Verdict
+
+    monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
+    _conventional_policy(tmp_path, monkeypatch, "acme", 'verify_commands = ["true"]\n')
+    args = _story_args()
+
+    exit_code = gate_module.run_evaluate(args)
+    payload = json.loads(capsys.readouterr().out)
+    codes = [finding["code"] for finding in payload["findings"]]
+    assert "MRS-GATE-010" in codes
+    assert payload["data"]["spec_binding"]["declared_commands"] is None
+    # Review finding (P3): `has_binding` must be False for "no spec tracked
+    # at all" -- distinct from "N commands narrowed" (`violations == 1` is
+    # ambiguous between the two without this field).
+    assert payload["data"]["spec_binding"]["has_binding"] is False
+    assert payload["data"]["spec_binding"]["violations"] == 1
+    assert payload["verdict"] == Verdict.SCOPE_VIOLATION.value
+    assert exit_code == 2
+
+
+def test_gate_evaluate_story_no_story_supplied_skips_binding_check(
+    tmp_path, capsys, monkeypatch
+):
+    from pyforge.marshal.cli import gate as gate_module
+
+    monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
+    _conventional_policy(tmp_path, monkeypatch, "acme", 'verify_commands = ["true"]\n')
+    args = _story_args(story=None)
+
+    exit_code = gate_module.run_evaluate(args)
+    payload = json.loads(capsys.readouterr().out)
+    codes = [finding["code"] for finding in payload["findings"]]
+    assert "MRS-GATE-010" not in codes
+    assert "MRS-GATE-011" not in codes
+    assert "spec_binding" not in payload["data"]
+    assert exit_code == 0
+
+
+def test_gate_evaluate_story_declared_commands_subset_of_policy_no_binding_finding(
+    tmp_path, capsys, monkeypatch
+):
+    from pyforge.marshal.cli import gate as gate_module
+    from pyforge.marshal.core.identity import StoryKey
+
+    monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
+    _conventional_policy(
+        tmp_path, monkeypatch, "acme", 'verify_commands = ["true", "false"]\n'
+    )
+    _write_tracked_spec(tmp_path, "acme", StoryKey(epic=2, seq=3), commands=("true",))
+    args = _story_args()
+
+    exit_code = gate_module.run_evaluate(args)
+    payload = json.loads(capsys.readouterr().out)
+    codes = [finding["code"] for finding in payload["findings"]]
+    assert "MRS-GATE-010" not in codes
+    assert "MRS-GATE-011" not in codes
+    assert payload["data"]["spec_binding"]["declared_commands"] == ["true"]
+    assert payload["data"]["spec_binding"]["has_binding"] is True
+    assert payload["data"]["spec_binding"]["violations"] == 0
+    assert exit_code == 3  # "false" itself still fails, MRS-GATE-001
+
+
+def test_gate_evaluate_story_narrowed_command_reports_mrs_gate_011(
+    tmp_path, capsys, monkeypatch
+):
+    """The spec's own Success signal promised `missing-check`, but the
+    policy's `verify_commands` no longer runs it -- narrowed since
+    tracking."""
+    from pyforge.marshal.cli import gate as gate_module
+    from pyforge.marshal.core.identity import StoryKey
+    from pyforge.marshal.core.model import Verdict
+
+    monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
+    _conventional_policy(tmp_path, monkeypatch, "acme", 'verify_commands = ["true"]\n')
+    _write_tracked_spec(
+        tmp_path, "acme", StoryKey(epic=2, seq=3), commands=("true", "missing-check")
+    )
+    args = _story_args()
+
+    exit_code = gate_module.run_evaluate(args)
+    payload = json.loads(capsys.readouterr().out)
+    finding = next(f for f in payload["findings"] if f["code"] == "MRS-GATE-011")
+    assert "missing-check" in finding["message"]
+    assert payload["verdict"] == Verdict.SCOPE_VIOLATION.value
+    assert exit_code == 2
+
+
+def test_gate_evaluate_story_extra_policy_command_is_not_a_finding(
+    tmp_path, capsys, monkeypatch
+):
+    """One-directional (AC): policy running MORE than the spec declared is
+    not itself a binding violation -- the spec's promise is a floor."""
+    from pyforge.marshal.cli import gate as gate_module
+    from pyforge.marshal.core.identity import StoryKey
+
+    monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
+    _conventional_policy(
+        tmp_path, monkeypatch, "acme", 'verify_commands = ["true", "false"]\n'
+    )
+    _write_tracked_spec(tmp_path, "acme", StoryKey(epic=2, seq=3), commands=("true",))
+    args = _story_args()
+
+    exit_code = gate_module.run_evaluate(args)
+    payload = json.loads(capsys.readouterr().out)
+    codes = [finding["code"] for finding in payload["findings"]]
+    assert "MRS-GATE-010" not in codes
+    assert "MRS-GATE-011" not in codes
+
+
+def test_gate_evaluate_story_unresolved_story_key_skips_binding_reports_only_mrs_ident_001(
+    tmp_path, capsys, monkeypatch
+):
+    from pyforge.marshal.cli import gate as gate_module
+
+    monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
+    _conventional_policy(tmp_path, monkeypatch, "acme", 'verify_commands = ["true"]\n')
+    args = _story_args(story="not-a-story-key")
+
+    exit_code = gate_module.run_evaluate(args)
+    payload = json.loads(capsys.readouterr().out)
+    codes = [finding["code"] for finding in payload["findings"]]
+    assert codes == ["MRS-IDENT-001"]
+    assert "spec_binding" not in payload["data"]
+    assert exit_code == 1
+
+
+def test_gate_evaluate_story_no_resolvable_project_reports_mrs_gate_009(
+    tmp_path, capsys, monkeypatch
+):
+    """Review finding (P1): an empty --project/active project must be
+    reported the SAME loud way --scope-check's own identical precondition
+    already reports it (MRS-GATE-009), never a silent skip -- this test
+    used to assert the opposite (no finding at all, exit 0), which was
+    exactly the false-green shape AD-49 exists to close."""
+    from pyforge.marshal.cli import gate as gate_module
+
+    monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
+    args = _story_args(project="")
+
+    exit_code = gate_module.run_evaluate(args)
+    payload = json.loads(capsys.readouterr().out)
+    codes = [finding["code"] for finding in payload["findings"]]
+    assert "MRS-GATE-009" in codes
+    assert "MRS-GATE-010" not in codes
+    assert "spec_binding" not in payload["data"]
+    assert exit_code == 1
+
+
+def test_gate_evaluate_story_syntactically_invalid_project_reports_mrs_gate_009(
+    tmp_path, capsys, monkeypatch
+):
+    """The non-trivial case (P1): a NON-EMPTY but syntactically invalid
+    project slug also fails `policy._is_valid_project_slug` -- unlike the
+    empty-string case above, this exercises the actual validity check
+    rather than short-circuiting on truthiness, and previously produced NO
+    finding at all for the spec-binding check specifically (only an
+    unrelated MRS-POLICY-006, from policy composition, happened to keep the
+    verdict off `ok`)."""
+    from pyforge.marshal.cli import gate as gate_module
+
+    monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
+    args = _story_args(project="bad/slug")
+
+    exit_code = gate_module.run_evaluate(args)
+    payload = json.loads(capsys.readouterr().out)
+    codes = [finding["code"] for finding in payload["findings"]]
+    assert "MRS-GATE-009" in codes
+    assert "MRS-GATE-010" not in codes
+    assert "spec_binding" not in payload["data"]
+    assert exit_code == 1
+
+
+def test_gate_evaluate_story_run_scope_unavailable_skips_binding_check_too(
+    tmp_path, capsys, monkeypatch
+):
+    """Mirrors --scope-check's own suppression (MRS-GATE-005 already covers
+    the one root cause) -- with no --scope-check at all this time, proving
+    the guard is not accidentally scope-check-specific."""
+    from pyforge.marshal.cli import gate as gate_module
+
+    monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
+    monkeypatch.setenv("BMAD_LOOP_HOME_ROOT", str(tmp_path / "loop-homes"))
+    _conventional_policy(tmp_path, monkeypatch, "acme", 'verify_commands = ["true"]\n')
+    args = _story_args(run_id="run-99")
+
+    exit_code = gate_module.run_evaluate(args)
+    payload = json.loads(capsys.readouterr().out)
+    codes = [finding["code"] for finding in payload["findings"]]
+    assert codes == ["MRS-GATE-005"]
+    assert "spec_binding" not in payload["data"]
+    assert exit_code == 1
+
+
+def test_gate_evaluate_story_and_scope_check_share_one_spec_lookup(
+    tmp_path, capsys, monkeypatch
+):
+    """`_find_spec_text` is called EXACTLY ONCE per invocation, its result
+    used for both --scope-check and the spec-binding check (the story's
+    own "Never duplicate" constraint)."""
+    from pyforge.marshal.cli import gate as gate_module
+    from pyforge.marshal.core.identity import StoryKey
+
+    monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
+    _conventional_policy(
+        tmp_path,
+        monkeypatch,
+        "acme",
+        'verify_commands = ["true"]\nepic_surfaces = { "2" = ["recipes/x/**"] }\n',
+    )
+    _write_tracked_spec(tmp_path, "acme", StoryKey(epic=2, seq=3), commands=("true",))
+
+    calls: list[str] = []
+    original = gate_module._find_spec_text
+
+    def _counting_find_spec_text(root, project_slug, story_key):
+        calls.append(project_slug)
+        return original(root, project_slug, story_key)
+
+    monkeypatch.setattr(gate_module, "_find_spec_text", _counting_find_spec_text)
+    args = _story_args(scope_check=True)
+
+    exit_code = gate_module.run_evaluate(
+        args, vcs=_FakeVcs(changed=("recipes/x/recipe.yaml",))
+    )
+    payload = json.loads(capsys.readouterr().out)
+    assert len(calls) == 1
+    assert payload["data"]["scope_check"]["checked"] is True
+    assert payload["data"]["spec_binding"]["declared_commands"] == ["true"]
+    codes = [finding["code"] for finding in payload["findings"]]
+    assert "MRS-GATE-010" not in codes
+    assert "MRS-GATE-011" not in codes
+    assert exit_code == 0
 
 
 # --- Story 2.1 follow-up review pass -- regression guards ------------------
