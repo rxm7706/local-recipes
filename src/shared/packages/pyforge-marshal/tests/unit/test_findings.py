@@ -108,6 +108,8 @@ def test_registered_codes_contains_the_real_codes():
             "MRS-DEPLOY-003",
             "MRS-GATE-010",
             "MRS-GATE-011",
+            "MRS-TEARDOWN-004",
+            "MRS-DEPLOY-004",
         }
     )
 

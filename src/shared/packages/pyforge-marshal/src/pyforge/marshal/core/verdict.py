@@ -227,7 +227,17 @@ policy's own ``verify_commands``) -- both classify ``Verdict.
 SCOPE_VIOLATION``, the SAME rung as ``MRS-GATE-007``/``008``: AD-49 states
 plainly that "an untraceable or mismatched binding cannot itself be waived
 to green", the identical closed-lattice reasoning already governing this
-codebase's other ``SCOPE_VIOLATION`` codes.
+codebase's other ``SCOPE_VIOLATION`` codes. Story 4.2 (teardown
+reachability and spec-recovery assistance, AD-27/AD-29) adds
+``MRS-TEARDOWN-004`` (an unreachable-promotion refusal met with ``--force``
+but no, or a mismatched, ``--abandon`` set) at ``Verdict.ERROR`` -- the
+same tier as ``MRS-TEARDOWN-003``: a real refusal gate ran and the
+operator's own override attempt did not satisfy it, never "could not
+evaluate". ``MRS-DEPLOY-004`` (``deploy recover-spec`` found a genuinely
+orphaned key -- no Tier-3 snapshot, no ``epics.md`` section) classifies
+``Verdict.WARN``, the same tier as ``MRS-DEPLOY-001``/``002``: a
+paper-trail gap reported for the operator's attention, never itself a
+failed operation.
 Later stories populate the table further as they add real codes. The mechanism (a total, fail-loud
 lookup) is separately proven via ``monkeypatch``-injected synthetic entries
 in ``tests/unit/test_verdict.py``.
@@ -407,6 +417,8 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-DEPLOY-003": Verdict.UNEVALUABLE,
     "MRS-GATE-010": Verdict.SCOPE_VIOLATION,
     "MRS-GATE-011": Verdict.SCOPE_VIOLATION,
+    "MRS-TEARDOWN-004": Verdict.ERROR,
+    "MRS-DEPLOY-004": Verdict.WARN,
 }
 
 

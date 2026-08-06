@@ -240,10 +240,21 @@ class PromotionPlan:
     ``to_promote`` -- every ``SpecCandidate`` that is durable, not yet
     promoted, and carries valid content -- plus ``gaps``, one registered
     ``Finding`` per problem (a merged story with no Tier-3 spec at all, or
-    one whose Tier-3 spec fails the minimal parse)."""
+    one whose Tier-3 spec fails the minimal parse).
+
+    ``missing_spec_keys`` (Story 4.2): the subset of ``gaps`` that are
+    specifically "durable, no Tier-3 spec at all" (``MRS-DEPLOY-001``), as a
+    structured ``frozenset[StoryKey]`` rather than something a caller would
+    need to regex out of a ``Finding``'s human ``message``. Added for
+    ``cli/deploy.py::unreachable_promotions_for_slug`` (Story 4.2's own
+    "exactly one implementation of is this slug's story durable" reuse
+    requirement, AD-24/AD-33): teardown's reachability check needs this
+    same durable-with-no-spec-at-all set as a first-class value, not text to
+    parse back out of a paper-trail message meant for humans."""
 
     to_promote: tuple[SpecCandidate, ...]
     gaps: tuple[Finding, ...]
+    missing_spec_keys: frozenset[StoryKey] = frozenset()
 
 
 # A `status:` key at the LINE START of the frontmatter block, after
@@ -309,6 +320,7 @@ def classify_promotion_candidates(
 
     to_promote: list[SpecCandidate] = []
     gaps: list[Finding] = []
+    missing_spec_keys: set[StoryKey] = set()
     for key in sorted(merged_keys):
         if key in already_promoted:
             continue
@@ -325,6 +337,7 @@ def classify_promotion_candidates(
                     path=None,
                 )
             )
+            missing_spec_keys.add(key)
             continue
         if not is_valid_spec_text(candidate.text):
             gaps.append(
@@ -342,4 +355,8 @@ def classify_promotion_candidates(
             continue
         to_promote.append(candidate)
 
-    return PromotionPlan(to_promote=tuple(to_promote), gaps=tuple(gaps))
+    return PromotionPlan(
+        to_promote=tuple(to_promote),
+        gaps=tuple(gaps),
+        missing_spec_keys=frozenset(missing_spec_keys),
+    )

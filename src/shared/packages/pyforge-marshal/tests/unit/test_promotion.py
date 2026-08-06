@@ -372,3 +372,32 @@ def test_plan_order_is_deterministic_by_sorted_story_key():
     )
 
     assert plan.to_promote == (candidate_a, candidate_b)
+
+
+def test_missing_spec_keys_names_only_the_no_spec_at_all_case():
+    """Story 4.2's own extension: ``missing_spec_keys`` carries the
+    durable-with-no-Tier-3-spec-at-all subset of ``gaps`` (MRS-DEPLOY-001)
+    as a structured set, NOT the invalid-spec case (MRS-DEPLOY-002, a
+    zero-byte/truncated spec that DOES exist) -- teardown's reachability
+    check needs exactly this partition, per the story's own Always bullet."""
+    missing_key = StoryKey(1, 3)
+    invalid_key = StoryKey(1, 4)
+    promoted_key = StoryKey(1, 5)
+    invalid = SpecCandidate(story_key=invalid_key, path="spec-1-4.md", text=None)
+    promoted = SpecCandidate(story_key=promoted_key, path="spec-1-5.md", text=_VALID_SPEC)
+
+    plan = classify_promotion_candidates(
+        candidates=(invalid, promoted),
+        merged_keys=frozenset({missing_key, invalid_key, promoted_key}),
+        already_promoted=frozenset(),
+    )
+
+    assert plan.missing_spec_keys == frozenset({missing_key})
+    assert plan.to_promote == (promoted,)
+
+
+def test_missing_spec_keys_defaults_to_empty_for_a_clean_plan():
+    plan = classify_promotion_candidates(
+        candidates=(), merged_keys=frozenset(), already_promoted=frozenset()
+    )
+    assert plan.missing_spec_keys == frozenset()

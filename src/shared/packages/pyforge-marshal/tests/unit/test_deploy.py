@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import argparse
 import json
+from pathlib import Path
 
 import pytest
 
@@ -426,3 +427,230 @@ def test_promote_text_format_renders_a_summary(tmp_path, capsys, monkeypatch):
     assert "deploy promote:" in output
     assert "promoted: 1" in output
     assert exit_code == 0
+
+
+# =====================================================================
+# ``unreachable_promotions_for_slug`` (Story 4.2).
+# =====================================================================
+
+
+def test_unreachable_promotions_for_slug_names_durable_unpromoted_and_missing_spec(
+    tmp_path,
+):
+    """Both cases the story's own Always bullet names: durable-but-
+    unpromoted (a valid Tier-3 spec exists, ``plan.to_promote``) and
+    durable-with-no-spec-at-all (``plan.missing_spec_keys``) -- but NOT a
+    durable story whose spec exists and merely fails validation
+    (MRS-DEPLOY-002 is deliberately excluded)."""
+    _write_tier3_spec(tmp_path, "acme", "1-2", _VALID_SPEC)  # unpromoted, valid
+    _write_tier3_spec(tmp_path, "acme", "1-4", "")  # exists but invalid -- excluded
+    vcs = _FakeVcs(
+        main_subjects=(
+            "Merge 1-2 into main",
+            "Merge 1-3 into main",  # no Tier-3 spec at all -- missing
+            "Merge 1-4 into main",
+        )
+    )
+
+    keys = deploy_module.unreachable_promotions_for_slug(tmp_path, "acme", vcs=vcs, fs=LocalFs())
+
+    assert set(str(key) for key in keys) == {"1.2", "1.3"}
+
+
+def test_unreachable_promotions_for_slug_excludes_already_promoted(tmp_path):
+    _write_tier3_spec(tmp_path, "acme", "3-8", _VALID_SPEC)
+    _write_tracked_spec(tmp_path, "acme", "3-8", _VALID_SPEC)
+    vcs = _FakeVcs(main_subjects=("Merge 3-8 into main",))
+
+    keys = deploy_module.unreachable_promotions_for_slug(tmp_path, "acme", vcs=vcs, fs=LocalFs())
+
+    assert keys == ()
+
+
+def test_unreachable_promotions_for_slug_empty_for_malformed_slug(tmp_path):
+    vcs = _FakeVcs()
+    keys = deploy_module.unreachable_promotions_for_slug(tmp_path, "../evil", vcs=vcs, fs=LocalFs())
+    assert keys == ()
+
+
+def test_unreachable_promotions_for_slug_empty_when_main_history_unreadable(tmp_path):
+    """Undeterminable durability degrades to 'name nothing unreachable' --
+    this function's signature carries no findings channel (documented in
+    its own docstring and this story's Spec Change Log)."""
+    vcs = _FakeVcs(main_raises=True)
+    keys = deploy_module.unreachable_promotions_for_slug(tmp_path, "acme", vcs=vcs, fs=LocalFs())
+    assert keys == ()
+
+
+def test_unreachable_promotions_for_slug_is_computed_fresh_not_cached(tmp_path):
+    """No caching anywhere (the story's own Never bullet): two calls with
+    DIFFERENT git state produce different answers."""
+    vcs = _FakeVcs(main_subjects=("Merge 6-1 into main",))
+    first = deploy_module.unreachable_promotions_for_slug(tmp_path, "acme", vcs=vcs, fs=LocalFs())
+    assert set(str(key) for key in first) == {"6.1"}
+
+    _write_tier3_spec(tmp_path, "acme", "6-1", _VALID_SPEC)
+    second = deploy_module.unreachable_promotions_for_slug(tmp_path, "acme", vcs=vcs, fs=LocalFs())
+    assert set(str(key) for key in second) == {"6.1"}  # still unreachable: unpromoted now
+
+
+# =====================================================================
+# ``marshal deploy recover-spec`` (Story 4.2).
+# =====================================================================
+
+
+def _recover_args(*, slug: str = "acme", key: str = "4.2", format: str = "json") -> argparse.Namespace:
+    return argparse.Namespace(slug=slug, key=key, format=format)
+
+
+def _write_run_snapshot(tmp_path, slug: str, run_id: str, filename_key: str, text: str) -> Path:
+    run_dir = (
+        tmp_path
+        / "_bmad-output"
+        / "projects"
+        / slug
+        / "implementation-artifacts"
+        / "runs"
+        / run_id
+    )
+    run_dir.mkdir(parents=True, exist_ok=True)
+    path = run_dir / f"spec-{filename_key}.md"
+    path.write_text(text, encoding="utf-8")
+    return path
+
+
+_EPICS_MD = """## Epic 4: Landing with a durable paper trail
+
+### Story 4.1: Story-spec promotion with a durability predicate
+
+As the operator,
+I want every merged story's spec promoted automatically,
+So that promoted means durable.
+
+**Type:** feature • **Effort:** L
+
+**Acceptance Criteria:**
+
+**Given** a merged story
+**Then** it is promoted
+
+### Story 4.2: Teardown reachability and spec-recovery assistance
+
+As the operator,
+I want teardown to compute durability at teardown time and to help me when a spec is missing,
+So that a stale flag can never authorize destroying the last copy.
+
+**Type:** feature • **Effort:** M
+
+**Acceptance Criteria:**
+
+**Given** a loop home with merged stories
+**Then** the refusal predicate is reachability computed at teardown time
+
+### Story 4.3: Merge-subject conformance and review-cap landing
+
+As the operator,
+I want more landing rules,
+So that landing is safe.
+"""
+
+
+def test_recover_spec_reports_snapshots_most_recent_first_and_writes_nothing(
+    tmp_path, capsys, monkeypatch
+):
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    older = _write_run_snapshot(tmp_path, "acme", "run-a", "4-2", "old snapshot")
+    newer = _write_run_snapshot(tmp_path, "acme", "run-b", "4-2-title", "new snapshot")
+    import os as os_module
+    import time
+
+    old_time = time.time() - 1000
+    os_module.utime(older, (old_time, old_time))
+
+    exit_code = deploy_module.run_recover_spec(_recover_args(), fs=LocalFs())
+
+    payload = json.loads(capsys.readouterr().out)
+    assert exit_code == 0
+    paths = [entry["path"] for entry in payload["data"]["snapshots"]]
+    assert paths == [str(newer), str(older)]
+    assert "recovered" not in payload["data"]
+    assert "recovered_path" not in payload["data"]
+
+
+def test_recover_spec_falls_back_to_epics_derived_regeneration(tmp_path, capsys, monkeypatch):
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    epics_path = tmp_path / "_bmad-output" / "projects" / "acme" / "planning-artifacts" / "epics.md"
+    epics_path.parent.mkdir(parents=True, exist_ok=True)
+    epics_path.write_text(_EPICS_MD, encoding="utf-8")
+
+    exit_code = deploy_module.run_recover_spec(_recover_args(), fs=LocalFs())
+
+    payload = json.loads(capsys.readouterr().out)
+    assert exit_code == 0
+    assert payload["data"]["snapshots"] == []
+    assert payload["data"]["recovered"] is True
+    dest = Path(payload["data"]["recovered_path"])
+    content = dest.read_text(encoding="utf-8")
+    assert "recovery_source: 'epics-derived-contract-only'" in content
+    assert "status: 'draft'" in content
+    assert "I want teardown to compute durability at teardown time" in content
+    assert "the refusal predicate is reachability computed at teardown time" in content
+    # Never claims to be more than a reduced contract-only spec.
+    assert "## Code Map" not in content
+    assert "## Design Notes" not in content
+
+
+def test_recover_spec_never_overwrites_an_existing_recovered_file(tmp_path, capsys, monkeypatch):
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    dest = (
+        tmp_path
+        / "_bmad-output"
+        / "projects"
+        / "acme"
+        / "implementation-artifacts"
+        / "spec-4-2-recovered.md"
+    )
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    dest.write_text("PRE-EXISTING", encoding="utf-8")
+
+    exit_code = deploy_module.run_recover_spec(_recover_args(), fs=LocalFs())
+
+    payload = json.loads(capsys.readouterr().out)
+    assert exit_code == 0
+    assert payload["data"]["already_present"] is True
+    assert dest.read_text(encoding="utf-8") == "PRE-EXISTING"
+
+
+def test_recover_spec_reports_orphaned_key_when_nothing_found(tmp_path, capsys, monkeypatch):
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+
+    exit_code = deploy_module.run_recover_spec(_recover_args(key="9.9"), fs=LocalFs())
+
+    payload = json.loads(capsys.readouterr().out)
+    codes = [finding["code"] for finding in payload["findings"]]
+    assert "MRS-DEPLOY-004" in codes
+    assert payload["verdict"] == "warn"
+    assert exit_code == 0
+    assert "recovered" not in payload["data"]
+
+
+def test_recover_spec_malformed_key_reports_mrs_ident_001(tmp_path, capsys, monkeypatch):
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+
+    exit_code = deploy_module.run_recover_spec(_recover_args(key="not-a-key"), fs=LocalFs())
+
+    payload = json.loads(capsys.readouterr().out)
+    codes = [finding["code"] for finding in payload["findings"]]
+    assert "MRS-IDENT-001" in codes
+    assert exit_code != 0
+
+
+def test_recover_spec_malformed_slug_reports_mrs_policy_006(tmp_path, capsys, monkeypatch):
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+
+    exit_code = deploy_module.run_recover_spec(_recover_args(slug="../evil"), fs=LocalFs())
+
+    payload = json.loads(capsys.readouterr().out)
+    codes = [finding["code"] for finding in payload["findings"]]
+    assert "MRS-POLICY-006" in codes
+    assert exit_code != 0

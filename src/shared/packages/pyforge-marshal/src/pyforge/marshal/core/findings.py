@@ -406,6 +406,23 @@ the identical closed-lattice reasoning this codebase's other
 ``SCOPE_VIOLATION`` codes already carry, never a ``WARN`` folded into an
 otherwise-green verdict.
 
+Story 4.2 (teardown reachability and spec-recovery assistance, AD-27/AD-29)
+adds two more codes. ``MRS-TEARDOWN-004`` (``cli/init.py::run_teardown``,
+joining the ``MRS-TEARDOWN-*`` area Story 1.8 opened): an AD-29
+unreachable-promotion refusal was met with ``--force`` but no ``--abandon``,
+or an ``--abandon`` set that does not EXACTLY match the reachability check's
+own reported set (a superset or a subset both refuse -- no vacuous or
+partial abandonment). Classifies ``Verdict.ERROR``, the same tier as
+``MRS-TEARDOWN-003``: a real refusal gate ran and the operator's own
+override attempt did not satisfy it. ``MRS-DEPLOY-004``
+(``cli/deploy.py::run_recover_spec``, joining the ``MRS-DEPLOY-*`` area
+Story 4.1 opened): a story key has neither a surviving Tier-3 run-worktree
+snapshot nor an ``epics.md`` section to regenerate from -- a genuinely
+orphaned key, reported rather than fabricated. Classifies ``Verdict.WARN``,
+the same tier as ``MRS-DEPLOY-001``/``002``: a paper-trail gap reported for
+the operator's attention, not itself a failed operation (recovery
+correctly found nothing to recover, and said so).
+
 Later stories append further real codes here as they gain their own real
 callers. The registry MECHANISM (format check, then membership check) is
 separately proven via ``monkeypatch``-injected synthetic codes in
@@ -471,6 +488,10 @@ CODE_PATTERN = re.compile(r"MRS-[A-Z][A-Z0-9]*-[0-9]{3}")
 # caller's own NEW area, MRS-DEPLOY-* (three codes: missing spec for a
 # merged story, invalid/truncated spec, and a commit-history-read or
 # promotion-write failure).
+# Story 4.2's cli/init.py/cli/deploy.py add two more codes:
+# MRS-TEARDOWN-004 (an unreachable-promotion refusal met with --force but
+# no/mismatched --abandon) and MRS-DEPLOY-004 (recover-spec found a
+# genuinely orphaned key -- no snapshot, no epics.md section).
 # Story 2.7's cli/gate.py/core/gate.py add MRS-GATE-010/011 (missing/
 # unparseable Success signal binding; a declared command narrowed or
 # removed from policy since tracking) -- both SCOPE_VIOLATION, the same
@@ -543,6 +564,8 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-DEPLOY-003",
         "MRS-GATE-010",
         "MRS-GATE-011",
+        "MRS-TEARDOWN-004",
+        "MRS-DEPLOY-004",
     }
 )
 
