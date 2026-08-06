@@ -1,4 +1,3 @@
-<!-- Promoted from implementation-artifacts/ to tracked specs on 2026-08-04 -->
 ---
 title: 'Story 1.7: Preflight, adapter config seeding, and first-run acknowledgement'
 type: 'feature'

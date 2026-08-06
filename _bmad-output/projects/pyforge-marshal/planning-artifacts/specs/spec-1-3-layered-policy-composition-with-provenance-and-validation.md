@@ -1,4 +1,3 @@
-<!-- Promoted from implementation-artifacts/ to tracked specs on 2026-08-04 -->
 ---
 title: 'Story 1.3: Layered policy composition with provenance and validation'
 type: 'feature'
