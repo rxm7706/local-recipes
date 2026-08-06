@@ -462,3 +462,45 @@ class GitVcs:
             raise VcsCommandError(
                 f"git branch {flag} failed for {branch}: {result.stderr.strip()}"
             )
+
+    def push(self, repo_root: Path, branch: str) -> None:
+        """Story 3.8 (AD-46): resolves whether ``branch`` already has a
+        configured upstream via ``git rev-parse --abbrev-ref
+        <branch>@{upstream}`` -- exit 0 means one exists (``origin/x``-shaped
+        output, split on the first ``/`` into the remote name and the
+        remote-side branch name, then pushed EXPLICITLY,
+        ``git push <remote> <branch>:<remote_branch>``); any non-zero exit
+        (128: no upstream configured, the ordinary case for a brand-new
+        station/per-story branch) falls back to ``git push origin <branch>``,
+        the branch's first push. Both forms name ``branch`` EXPLICITLY as the
+        source refspec (never a bare ``git push``, whose target depends on
+        ``repo_root``'s own currently checked-out HEAD via ``push.default``)
+        -- refs are shared across every worktree of one repo, so ``repo_root``
+        need not have ``branch`` checked out at all; any worktree of the same
+        repo (typically ``repo_common_root``'s own result) resolves the same
+        local ref. Deliberately never ``-u``/``--set-upstream``: that would
+        silently rewrite the branch's own tracking config, which is the
+        operator's choice to make, not this durability watcher's. Never
+        ``--force``/``--force-with-lease`` (the port's own contract) -- a
+        rejected non-fast-forward push is a real failure, surfaced as
+        ``VcsCommandError`` like any other."""
+        upstream_check = _run(
+            ["git", "-C", str(repo_root), "rev-parse", "--abbrev-ref", f"{branch}@{{upstream}}"]
+        )
+        if upstream_check.returncode == 0:
+            upstream = upstream_check.stdout.strip()
+            remote, _, remote_branch = upstream.partition("/")
+            if not remote or not remote_branch:
+                # An upstream ref with no `/` (or an empty remote-side name)
+                # is not a shape a real `@{upstream}` resolution produces --
+                # refuse to guess rather than push to a malformed target.
+                raise VcsCommandError(
+                    f"cannot parse upstream {upstream!r} for {branch} into "
+                    "<remote>/<remote_branch>"
+                )
+            args = ["git", "-C", str(repo_root), "push", remote, f"{branch}:{remote_branch}"]
+        else:
+            args = ["git", "-C", str(repo_root), "push", "origin", branch]
+        result = _run(args, timeout_s=_GIT_CHECKOUT_TIMEOUT_S)
+        if result.returncode != 0:
+            raise VcsCommandError(f"git push failed for {branch}: {result.stderr.strip()}")
