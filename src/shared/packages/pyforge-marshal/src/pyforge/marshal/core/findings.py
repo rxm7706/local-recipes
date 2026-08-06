@@ -301,6 +301,16 @@ mere ambiguity -- refusing every resume on a transient read hiccup would
 make the common case (resuming an ordinary, never-escalated pause) newly
 unreliable -- but the ambiguity is never silent.
 
+Story 3.8 (stage-bound durability and fleet-launch wiring, AD-46/FR-61)
+adds an EIGHTH code to ``supervisor/__main__.py``'s own ``MRS-SUPV-*``
+area, ``MRS-SUPV-008`` (a durability push -- ``VcsPort.push``, at a stage
+boundary or the interval-watcher fallback -- raised ``VcsCommandError``).
+It classifies ``Verdict.WARN``, the same tier as this area's own 001-007:
+AD-46 states plainly that durability is "best-effort against transient
+network conditions, never a new refusal gate" -- a failed push never
+invalidates the run's own supervision, and the tick loop continues
+regardless.
+
 Later stories append further real codes here as they gain their own real
 callers. The registry MECHANISM (format check, then membership check) is
 separately proven via ``monkeypatch``-injected synthetic codes in
@@ -354,6 +364,9 @@ CODE_PATTERN = re.compile(r"MRS-[A-Z][A-Z0-9]*-[0-9]{3}")
 # refused: unresolved escalation), MRS-SPIN-011 (resume refused: no
 # resumable run) and MRS-SPIN-012 (resume proceeding without having been
 # able to read the run's live status at all -- added in review).
+# Story 3.8's supervisor/__main__.py adds an EIGHTH MRS-SUPV-* code,
+# MRS-SUPV-008 (a durability push -- stage-boundary or interval-watcher --
+# failed).
 REGISTERED_CODES: frozenset[str] = frozenset(
     {
         "MRS-IDENT-001",
@@ -413,6 +426,7 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-SPIN-010",
         "MRS-SPIN-011",
         "MRS-SPIN-012",
+        "MRS-SUPV-008",
     }
 )
 

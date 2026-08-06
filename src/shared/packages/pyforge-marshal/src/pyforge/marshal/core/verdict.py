@@ -186,8 +186,12 @@ gate proceeds rather than refuses on mere ambiguity (refusing every resume
 on a transient read hiccup would make the ordinary, never-escalated case
 newly unreliable), so this is a degraded-but-proceeding condition, the
 same tier as ``MRS-SPIN-004/006/007/008/009``, never the refusal tier its
-two siblings above use. Later stories populate the table further as they
-add real codes. The mechanism (a total, fail-loud
+two siblings above use. Story 3.8 (stage-bound durability and fleet-launch
+wiring, AD-46) adds ``MRS-SUPV-008`` (a durability push failed) to the same
+``Verdict.WARN`` tier as this area's own 001-007: AD-46's own "best-effort
+against transient network conditions, never a new refusal gate" -- a
+failed push never invalidates the run's own supervision. Later stories
+populate the table further as they add real codes. The mechanism (a total, fail-loud
 lookup) is separately proven via ``monkeypatch``-injected synthetic entries
 in ``tests/unit/test_verdict.py``.
 
@@ -288,6 +292,8 @@ _RELAY_PASSTHROUGH: frozenset[int] = frozenset(
 # ERROR, for AD-32's own reason: an unreadable sample is ambiguity, and
 # refusing on it would make the ordinary, never-escalated resume newly
 # unreliable.
+# Story 3.8's supervisor/__main__.py adds MRS-SUPV-008 (a durability push
+# failed), WARN, alongside this area's own 001-007.
 _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-IDENT-001": Verdict.UNEVALUABLE,
     "MRS-IDENT-002": Verdict.UNEVALUABLE,
@@ -346,6 +352,7 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-SPIN-010": Verdict.ERROR,
     "MRS-SPIN-011": Verdict.ERROR,
     "MRS-SPIN-012": Verdict.WARN,
+    "MRS-SUPV-008": Verdict.WARN,
 }
 
 
