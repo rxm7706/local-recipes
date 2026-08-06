@@ -65,7 +65,7 @@ development_status:
   4-4-batch-pull-request-with-hygiene-preflight: backlog
   4-5-feed-refresh-with-truth-partitioned-by-domain: backlog
   4-6-deploy-idempotence-and-reconciliation-of-open-intents: backlog
-  4-7-landing-rules-as-declared-policy: backlog
+  4-7-landing-rules-as-declared-policy: review
   4-8-marshal-land-the-last-mile-lands-itself: backlog
   4-9-derived-surfaces-regenerate-on-main-the-shared-store-takes-a-lock: backlog
   5-1-fleet-view: backlog

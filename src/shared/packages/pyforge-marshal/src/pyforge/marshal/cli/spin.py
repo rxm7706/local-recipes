@@ -760,7 +760,7 @@ def _spawn_supervisor_sidecar(
     # launch's own verdict.
     #
     # The wording says "every key a finding names", never "the threshold"
-    # (follow-up review finding): `compose()` is called over the WHOLE 14-key
+    # (follow-up review finding): `compose()` is called over the WHOLE 19-key
     # vocabulary, so an unknown key or a malformed `max_dev_attempts`
     # anywhere in the project's policy file lands here too -- and the earlier
     # text asserted, on every such launch, that the idle threshold had fallen

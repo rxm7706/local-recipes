@@ -20,6 +20,7 @@ import pytest
 
 import pyforge.marshal
 from pyforge.marshal.core import policy, verdict
+from pyforge.marshal.core.landing import LandingRule
 from pyforge.marshal.core.model import Verdict
 from pyforge.marshal.core.policy import (
     DEFAULT_POLICY,
@@ -62,6 +63,11 @@ def test_all_defaults_every_field_is_layer_default():
     assert effective.merge_subject_template.layer is PolicyLayer.DEFAULT
     assert effective.model_tier_map.layer is PolicyLayer.DEFAULT
     assert effective.worktree_seed_paths.layer is PolicyLayer.DEFAULT
+    assert effective.epic_surfaces.layer is PolicyLayer.DEFAULT
+    assert effective.landing_rules.layer is PolicyLayer.DEFAULT
+    assert effective.landing_merge_strategy.layer is PolicyLayer.DEFAULT
+    assert effective.landing_branch_retirement.layer is PolicyLayer.DEFAULT
+    assert effective.landing_resync.layer is PolicyLayer.DEFAULT
     for field in effective.seed_view().values():
         assert field.layer is PolicyLayer.DEFAULT
 
@@ -261,12 +267,17 @@ def test_secret_redaction_via_synthetic_field_name():
     assert redact("gate_mode", "none") == "none"
 
 
-def test_none_of_the_real_fourteen_fields_are_secret_shaped():
+def test_none_of_the_real_keys_are_secret_shaped():
     all_keys = {
         "verify_commands",
         "worktree_seed_paths",
         "merge_subject_template",
         "model_tier_map",
+        "epic_surfaces",
+        "landing_rules",
+        "landing_merge_strategy",
+        "landing_branch_retirement",
+        "landing_resync",
         "gate_mode",
         "frozen_surfaces",
         "max_dev_attempts",
@@ -463,6 +474,458 @@ def test_verify_commands_valid_list_accepted():
     assert findings == ()
     assert effective.verify_commands.value == ("pytest -q",)
     assert effective.verify_commands.layer is PolicyLayer.PROJECT
+
+
+# --- landing_rules / landing_merge_strategy / landing_branch_retirement /
+# landing_resync validation (Story 4.7, AD-40) --------------------------------
+
+
+def test_landing_keys_are_static_not_seed():
+    effective, _ = compose(project_slug="acme", project={}, flags={})
+    for key in (
+        "landing_rules",
+        "landing_merge_strategy",
+        "landing_branch_retirement",
+        "landing_resync",
+    ):
+        assert key not in effective.seed_view()
+        assert isinstance(getattr(effective, key), PolicyField)
+
+
+def test_landing_keys_default_values():
+    """The I/O & Edge-Case Matrix's 'no landing keys declared at any layer'
+    row."""
+    effective, findings = compose(project_slug="acme", project={}, flags={})
+    assert findings == ()
+    assert effective.landing_rules.value == ()
+    assert effective.landing_merge_strategy.value == "merge"
+    assert effective.landing_branch_retirement.value is True
+    assert effective.landing_resync.value is True
+    for key in (
+        "landing_rules",
+        "landing_merge_strategy",
+        "landing_branch_retirement",
+        "landing_resync",
+    ):
+        assert getattr(effective, key).layer is PolicyLayer.DEFAULT
+
+
+def test_landing_rules_valid_rule_with_both_label_and_required_check():
+    """The I/O & Edge-Case Matrix's 'valid landing_rules with both label and
+    required_check set' row."""
+    effective, findings = compose(
+        project_slug="acme",
+        project={
+            "landing_rules": [
+                {
+                    "name": "both",
+                    "trigger_path_glob": "recipes/**",
+                    "trigger_mode": "exclude",
+                    "label": "maintenance",
+                    "required_check": "some-check",
+                }
+            ]
+        },
+        flags={},
+    )
+    assert findings == ()
+    assert effective.landing_rules.value == (
+        LandingRule(
+            name="both",
+            trigger_path_glob="recipes/**",
+            trigger_mode="exclude",
+            label="maintenance",
+            required_check="some-check",
+            ungated=False,
+        ),
+    )
+    assert effective.landing_rules.layer is PolicyLayer.PROJECT
+
+
+def test_landing_rules_this_repos_own_two_real_rules():
+    """This project's own `marshal-policy.toml` seeds exactly these two
+    rules -- proven directly against the same shape, matching the Manual
+    check the spec names. `trigger_mode` differs between the two
+    (corrected in review, 2026-08-06): `maintenance-label` is "exclude",
+    `environment-yaml-sync` is "include" -- the two rules need OPPOSITE
+    match directions, which is exactly why `trigger_mode` exists."""
+    effective, findings = compose(
+        project_slug="acme",
+        project={
+            "landing_rules": [
+                {
+                    "name": "maintenance-label",
+                    "trigger_path_glob": "recipes/**",
+                    "trigger_mode": "exclude",
+                    "label": "maintenance",
+                    "ungated": False,
+                },
+                {
+                    "name": "environment-yaml-sync",
+                    "trigger_path_glob": "pixi.toml",
+                    "trigger_mode": "include",
+                    "required_check": "environment-yaml-sync",
+                    "ungated": True,
+                },
+            ]
+        },
+        flags={},
+    )
+    assert findings == ()
+    assert effective.landing_rules.value == (
+        LandingRule(
+            name="maintenance-label",
+            trigger_path_glob="recipes/**",
+            trigger_mode="exclude",
+            label="maintenance",
+            ungated=False,
+        ),
+        LandingRule(
+            name="environment-yaml-sync",
+            trigger_path_glob="pixi.toml",
+            trigger_mode="include",
+            required_check="environment-yaml-sync",
+            ungated=True,
+        ),
+    )
+
+
+def test_landing_rules_rejects_rule_with_neither_label_nor_required_check():
+    """The I/O & Edge-Case Matrix's 'a rule with neither label nor
+    required_check' row: rejected, finding names the layer and the rule."""
+    effective, findings = compose(
+        project_slug="acme",
+        project={
+            "landing_rules": [
+                {"name": "meaningless", "trigger_path_glob": "a/**", "trigger_mode": "exclude"}
+            ]
+        },
+        flags={},
+    )
+    assert effective.landing_rules.value == DEFAULT_POLICY["landing_rules"]
+    assert effective.landing_rules.layer is PolicyLayer.DEFAULT
+    assert len(findings) == 1
+    assert findings[0].code == "MRS-POLICY-002"
+    assert findings[0].path == "project"
+    assert "meaningless" in findings[0].message
+
+
+def test_landing_rules_rejects_duplicate_name_in_the_same_tuple():
+    """The I/O & Edge-Case Matrix's 'a rule with a duplicate name' row."""
+    effective, findings = compose(
+        project_slug="acme",
+        project={
+            "landing_rules": [
+                {"name": "dup", "trigger_path_glob": "a/**", "trigger_mode": "exclude", "label": "x"},
+                {"name": "dup", "trigger_path_glob": "b/**", "trigger_mode": "exclude", "label": "y"},
+            ]
+        },
+        flags={},
+    )
+    assert effective.landing_rules.value == DEFAULT_POLICY["landing_rules"]
+    assert len(findings) == 1
+    assert findings[0].code == "MRS-POLICY-002"
+    assert "dup" in findings[0].message
+
+
+def test_landing_rules_rejects_non_list():
+    effective, findings = compose(
+        project_slug="acme", project={"landing_rules": "not-a-list"}, flags={}
+    )
+    assert effective.landing_rules.value == DEFAULT_POLICY["landing_rules"]
+    assert len(findings) == 1
+    assert findings[0].code == "MRS-POLICY-002"
+
+
+def test_landing_rules_rejects_empty_name():
+    effective, findings = compose(
+        project_slug="acme",
+        project={
+            "landing_rules": [
+                {"name": "", "trigger_path_glob": "a/**", "trigger_mode": "exclude", "label": "x"}
+            ]
+        },
+        flags={},
+    )
+    assert effective.landing_rules.value == DEFAULT_POLICY["landing_rules"]
+    assert len(findings) == 1
+    assert findings[0].code == "MRS-POLICY-002"
+
+
+def test_landing_rules_rejects_empty_trigger_path_glob():
+    effective, findings = compose(
+        project_slug="acme",
+        project={
+            "landing_rules": [
+                {"name": "x", "trigger_path_glob": "", "trigger_mode": "exclude", "label": "x"}
+            ]
+        },
+        flags={},
+    )
+    assert effective.landing_rules.value == DEFAULT_POLICY["landing_rules"]
+    assert len(findings) == 1
+    assert findings[0].code == "MRS-POLICY-002"
+
+
+def test_landing_rules_rejects_unknown_field_in_rule():
+    effective, findings = compose(
+        project_slug="acme",
+        project={
+            "landing_rules": [
+                {
+                    "name": "x",
+                    "trigger_path_glob": "a/**",
+                    "trigger_mode": "exclude",
+                    "label": "x",
+                    "bogus": "y",
+                }
+            ]
+        },
+        flags={},
+    )
+    assert effective.landing_rules.value == DEFAULT_POLICY["landing_rules"]
+    assert len(findings) == 1
+    assert findings[0].code == "MRS-POLICY-002"
+
+
+def test_landing_rules_rejects_non_bool_ungated():
+    effective, findings = compose(
+        project_slug="acme",
+        project={
+            "landing_rules": [
+                {
+                    "name": "x",
+                    "trigger_path_glob": "a/**",
+                    "trigger_mode": "exclude",
+                    "label": "x",
+                    "ungated": "yes",
+                }
+            ]
+        },
+        flags={},
+    )
+    assert effective.landing_rules.value == DEFAULT_POLICY["landing_rules"]
+    assert len(findings) == 1
+    assert findings[0].code == "MRS-POLICY-002"
+
+
+def test_landing_rules_flag_layer_wins_over_project():
+    effective, findings = compose(
+        project_slug="acme",
+        project={
+            "landing_rules": [
+                {"name": "p", "trigger_path_glob": "a/**", "trigger_mode": "exclude", "label": "x"}
+            ]
+        },
+        flags={
+            "landing_rules": [
+                {"name": "f", "trigger_path_glob": "b/**", "trigger_mode": "include", "label": "y"}
+            ]
+        },
+    )
+    assert findings == ()
+    assert effective.landing_rules.value == (
+        LandingRule(name="f", trigger_path_glob="b/**", trigger_mode="include", label="y"),
+    )
+    assert effective.landing_rules.layer is PolicyLayer.FLAG
+
+
+# --- landing_rules: trigger_mode validation (bad_spec fix, 2026-08-06) -------
+
+
+def test_landing_rules_rejects_missing_trigger_mode():
+    """`trigger_mode` has no default -- a rule that omits it entirely is
+    malformed, the same as any other missing required field."""
+    effective, findings = compose(
+        project_slug="acme",
+        project={"landing_rules": [{"name": "x", "trigger_path_glob": "a/**", "label": "y"}]},
+        flags={},
+    )
+    assert effective.landing_rules.value == DEFAULT_POLICY["landing_rules"]
+    assert len(findings) == 1
+    assert findings[0].code == "MRS-POLICY-002"
+
+
+@pytest.mark.parametrize("bad_mode", ["both", "EXCLUDE", "", None, 1, ["exclude"]])
+def test_landing_rules_rejects_trigger_mode_outside_closed_vocabulary(bad_mode):
+    """Same closed-vocabulary validation shape as `landing_merge_strategy`'s
+    own `_valid_merge_strategy`."""
+    effective, findings = compose(
+        project_slug="acme",
+        project={
+            "landing_rules": [
+                {
+                    "name": "x",
+                    "trigger_path_glob": "a/**",
+                    "trigger_mode": bad_mode,
+                    "label": "y",
+                }
+            ]
+        },
+        flags={},
+    )
+    assert effective.landing_rules.value == DEFAULT_POLICY["landing_rules"]
+    assert len(findings) == 1
+    assert findings[0].code == "MRS-POLICY-002"
+
+
+@pytest.mark.parametrize("mode", ["exclude", "include"])
+def test_landing_rules_accepts_both_trigger_modes(mode):
+    effective, findings = compose(
+        project_slug="acme",
+        project={
+            "landing_rules": [
+                {"name": "x", "trigger_path_glob": "a/**", "trigger_mode": mode, "label": "y"}
+            ]
+        },
+        flags={},
+    )
+    assert findings == ()
+    assert effective.landing_rules.value[0].trigger_mode == mode
+
+
+# --- landing_rules: ungated requires required_check (review finding P3) -----
+
+
+def test_landing_rules_rejects_ungated_without_required_check():
+    """`ungated=True` on a label-only rule is a nonsensical combination:
+    "ungated" describes a check that can't be suppressed by a label, which
+    is meaningless without a check."""
+    effective, findings = compose(
+        project_slug="acme",
+        project={
+            "landing_rules": [
+                {
+                    "name": "x",
+                    "trigger_path_glob": "a/**",
+                    "trigger_mode": "exclude",
+                    "label": "y",
+                    "ungated": True,
+                }
+            ]
+        },
+        flags={},
+    )
+    assert effective.landing_rules.value == DEFAULT_POLICY["landing_rules"]
+    assert len(findings) == 1
+    assert findings[0].code == "MRS-POLICY-002"
+
+
+def test_landing_rules_accepts_ungated_with_required_check():
+    effective, findings = compose(
+        project_slug="acme",
+        project={
+            "landing_rules": [
+                {
+                    "name": "x",
+                    "trigger_path_glob": "a/**",
+                    "trigger_mode": "include",
+                    "required_check": "some-check",
+                    "ungated": True,
+                }
+            ]
+        },
+        flags={},
+    )
+    assert findings == ()
+    assert effective.landing_rules.value[0].ungated is True
+
+
+# --- landing_rules: malformed finding names the specific bad rule (P6) ------
+
+
+def test_landing_rules_malformed_finding_names_the_specific_bad_rule():
+    """With several rules in the list, the finding must point at the ONE
+    malformed entry by name, not just dump the entire raw list -- a human
+    scanning the message for the bad rule among several valid siblings
+    needs a direct pointer."""
+    effective, findings = compose(
+        project_slug="acme",
+        project={
+            "landing_rules": [
+                {"name": "good1", "trigger_path_glob": "a/**", "trigger_mode": "exclude", "label": "x"},
+                {"name": "bad-one", "trigger_path_glob": "b/**", "trigger_mode": "exclude"},
+                {"name": "good2", "trigger_path_glob": "c/**", "trigger_mode": "exclude", "label": "y"},
+            ]
+        },
+        flags={},
+    )
+    assert effective.landing_rules.value == DEFAULT_POLICY["landing_rules"]
+    assert len(findings) == 1
+    assert "bad-one" in findings[0].message
+    assert "good1" not in findings[0].message
+    assert "good2" not in findings[0].message
+
+
+@pytest.mark.parametrize("strategy", ["merge", "squash", "rebase"])
+def test_landing_merge_strategy_accepts_closed_vocabulary(strategy):
+    effective, findings = compose(
+        project_slug="acme", project={"landing_merge_strategy": strategy}, flags={}
+    )
+    assert findings == ()
+    assert effective.landing_merge_strategy.value == strategy
+    assert effective.landing_merge_strategy.layer is PolicyLayer.PROJECT
+
+
+def test_landing_merge_strategy_rejects_value_outside_closed_vocabulary():
+    """The I/O & Edge-Case Matrix's 'landing_merge_strategy outside the
+    closed vocabulary' row."""
+    effective, findings = compose(
+        project_slug="acme", project={"landing_merge_strategy": "fast-forward"}, flags={}
+    )
+    assert effective.landing_merge_strategy.value == DEFAULT_POLICY["landing_merge_strategy"]
+    assert effective.landing_merge_strategy.layer is PolicyLayer.DEFAULT
+    assert len(findings) == 1
+    assert findings[0].code == "MRS-POLICY-002"
+    assert findings[0].path == "project"
+
+
+@pytest.mark.parametrize("key", ["landing_branch_retirement", "landing_resync"])
+def test_landing_bool_keys_accept_valid_bool(key):
+    effective, findings = compose(project_slug="acme", project={key: False}, flags={})
+    assert findings == ()
+    assert getattr(effective, key).value is False
+    assert getattr(effective, key).layer is PolicyLayer.PROJECT
+
+
+@pytest.mark.parametrize("key", ["landing_branch_retirement", "landing_resync"])
+@pytest.mark.parametrize("bad_value", ["true", 1, 0, None, [], {}])
+def test_landing_bool_keys_reject_non_bool_values(key, bad_value):
+    effective, findings = compose(project_slug="acme", project={key: bad_value}, flags={})
+    assert getattr(effective, key).value == DEFAULT_POLICY[key]
+    assert getattr(effective, key).layer is PolicyLayer.DEFAULT
+    assert len(findings) == 1
+    assert findings[0].code == "MRS-POLICY-002"
+
+
+def test_landing_rules_value_is_a_tuple_of_landing_rule_instances():
+    effective, _ = compose(
+        project_slug="acme",
+        project={
+            "landing_rules": [
+                {"name": "x", "trigger_path_glob": "a/**", "trigger_mode": "exclude", "label": "y"}
+            ]
+        },
+        flags={},
+    )
+    assert isinstance(effective.landing_rules.value, tuple)
+    assert all(isinstance(rule, LandingRule) for rule in effective.landing_rules.value)
+
+
+def test_content_hash_handles_a_nonempty_landing_rules():
+    """Guards content_hash against crashing on a LandingRule-holding field --
+    json.dumps cannot natively serialize a dataclass instance, so
+    core/policy.py's `_to_plain` must convert it first."""
+    effective, _ = compose(
+        project_slug="acme",
+        project={
+            "landing_rules": [
+                {"name": "x", "trigger_path_glob": "a/**", "trigger_mode": "exclude", "label": "y"}
+            ]
+        },
+        flags={},
+    )
+    assert isinstance(effective.content_hash, str) and len(effective.content_hash) == 64
 
 
 # --- idle_threshold_minutes validation (Story 3.5, FR-12) --------------------
@@ -686,6 +1149,11 @@ def test_invalid_flag_does_not_discard_a_valid_project_override():
         ({}, {"gate_mode": 123}),
         ({}, {"max_review_cycles": -5}),
         ({}, {"worktree_seed_paths": "not-a-list"}),
+        ({"landing_rules": "not-a-list"}, {}),
+        ({"landing_rules": [{"name": "x"}]}, {}),
+        ({"landing_merge_strategy": "fast-forward"}, {}),
+        ({"landing_branch_retirement": "yes"}, {}),
+        ({}, {"landing_resync": None}),
     ],
 )
 def test_compose_never_raises_on_malformed_layer_content(project, flags):
@@ -740,6 +1208,10 @@ def test_effective_policy_rejects_non_policy_field_static_attribute():
             merge_subject_template=PolicyField(value="x", layer="default", raw_source="x"),
             model_tier_map=PolicyField(value={}, layer="default", raw_source={}),
             epic_surfaces=PolicyField(value={}, layer="default", raw_source={}),
+            landing_rules=PolicyField(value=(), layer="default", raw_source=()),
+            landing_merge_strategy=PolicyField(value="merge", layer="default", raw_source="merge"),
+            landing_branch_retirement=PolicyField(value=True, layer="default", raw_source=True),
+            landing_resync=PolicyField(value=True, layer="default", raw_source=True),
             _seed=seed,
         )
 
@@ -752,6 +1224,10 @@ def test_effective_policy_rejects_incomplete_seed_mapping():
             merge_subject_template=PolicyField(value="x", layer="default", raw_source="x"),
             model_tier_map=PolicyField(value={}, layer="default", raw_source={}),
             epic_surfaces=PolicyField(value={}, layer="default", raw_source={}),
+            landing_rules=PolicyField(value=(), layer="default", raw_source=()),
+            landing_merge_strategy=PolicyField(value="merge", layer="default", raw_source="merge"),
+            landing_branch_retirement=PolicyField(value=True, layer="default", raw_source=True),
+            landing_resync=PolicyField(value=True, layer="default", raw_source=True),
             _seed={"gate_mode": PolicyField(value="none", layer="default", raw_source="none")},
         )
 
@@ -764,6 +1240,10 @@ def test_effective_policy_rejects_non_policy_field_seed_value():
             merge_subject_template=PolicyField(value="x", layer="default", raw_source="x"),
             model_tier_map=PolicyField(value={}, layer="default", raw_source={}),
             epic_surfaces=PolicyField(value={}, layer="default", raw_source={}),
+            landing_rules=PolicyField(value=(), layer="default", raw_source=()),
+            landing_merge_strategy=PolicyField(value="merge", layer="default", raw_source="merge"),
+            landing_branch_retirement=PolicyField(value=True, layer="default", raw_source=True),
+            landing_resync=PolicyField(value=True, layer="default", raw_source=True),
             _seed={
                 # All 10 seed keys present (an INCOMPLETE mapping would
                 # raise for that reason instead, never reaching the
@@ -803,7 +1283,7 @@ def test_effective_policy_seed_is_a_read_only_mapping_proxy():
 # --- schema hygiene -----------------------------------------------------------
 
 
-def test_schema_file_declares_the_fifteen_keys():
+def test_schema_file_declares_the_nineteen_keys():
     package_dir = Path(pyforge.marshal.__file__).resolve().parent
     schema = json.loads(
         (package_dir / "schemas" / "policy.json").read_text(encoding="utf-8")
@@ -815,6 +1295,10 @@ def test_schema_file_declares_the_fifteen_keys():
         "merge_subject_template",
         "model_tier_map",
         "epic_surfaces",
+        "landing_rules",
+        "landing_merge_strategy",
+        "landing_branch_retirement",
+        "landing_resync",
         "gate_mode",
         "frozen_surfaces",
         "max_dev_attempts",
