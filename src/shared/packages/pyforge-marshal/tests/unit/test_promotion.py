@@ -17,6 +17,7 @@ from pyforge.marshal.core.promotion import (
 )
 
 _TEMPLATE = "Merge {key} into main"
+_PROJECT_SLUG = "pyforge-marshal"
 
 _VALID_SPEC = "---\ntitle: 'x'\nstatus: 'shipped'\n---\n\nbody\n"
 
@@ -87,25 +88,43 @@ def test_extract_story_key_from_bmadloop_merge_subject_parses_a_real_one():
         "Merge bmad-loop/20260803-023308-65b7/2-4-doc-only-story-classification "
         "into loop/pyforge-marshal (bmad-loop)"
     )
-    assert extract_story_key_from_bmadloop_merge_subject(subject) == StoryKey(2, 4)
+    assert extract_story_key_from_bmadloop_merge_subject(subject, _PROJECT_SLUG) == StoryKey(2, 4)
 
 
 def test_extract_story_key_from_bmadloop_merge_subject_parses_a_different_project():
     """Not marshal-specific -- every project in this factory uses the same
-    bmad-loop merge shape (verified against pyforge-warden's own history)."""
+    bmad-loop merge shape (verified against pyforge-warden's own history) --
+    as long as the CALLER passes the matching project_slug."""
     subject = (
         "Merge bmad-loop/20260724-042801-7c01/6-7-epss-feed-the-min-epss-gate "
         "into loop/pyforge-warden (bmad-loop)"
     )
-    assert extract_story_key_from_bmadloop_merge_subject(subject) == StoryKey(6, 7)
+    assert extract_story_key_from_bmadloop_merge_subject(subject, "pyforge-warden") == StoryKey(
+        6, 7
+    )
+
+
+def test_extract_story_key_from_bmadloop_merge_subject_rejects_a_different_projects_merge():
+    """Live cross-project collision this scoping exists to prevent
+    (post-merge finding, 2026-08-06): pyforge-warden's own Story 6.8 merge
+    must NOT be read as pyforge-marshal's Story 6.8 just because the key
+    segment happens to parse -- the merge TARGET has to match too."""
+    warden_subject = (
+        "Merge bmad-loop/20260724-055419-3c0e/6-8-baseline-grandfathering "
+        "into loop/pyforge-warden (bmad-loop)"
+    )
+    assert extract_story_key_from_bmadloop_merge_subject(warden_subject, _PROJECT_SLUG) is None
 
 
 def test_extract_story_key_from_bmadloop_merge_subject_returns_none_for_github_shape():
-    assert extract_story_key_from_bmadloop_merge_subject(_REAL_SUBJECT_2_3) is None
+    assert extract_story_key_from_bmadloop_merge_subject(_REAL_SUBJECT_2_3, _PROJECT_SLUG) is None
 
 
 def test_extract_story_key_from_bmadloop_merge_subject_returns_none_for_non_merge():
-    assert extract_story_key_from_bmadloop_merge_subject(_REAL_SUBJECT_NOT_A_MERGE_1) is None
+    assert (
+        extract_story_key_from_bmadloop_merge_subject(_REAL_SUBJECT_NOT_A_MERGE_1, _PROJECT_SLUG)
+        is None
+    )
 
 
 # --- merged_story_keys -------------------------------------------------------
@@ -113,7 +132,7 @@ def test_extract_story_key_from_bmadloop_merge_subject_returns_none_for_non_merg
 
 def test_merged_story_keys_parses_conforming_subjects():
     subjects = ("Merge 1.2 into main", "Merge 3.8 into main")
-    assert merged_story_keys(subjects, _TEMPLATE) == frozenset(
+    assert merged_story_keys(subjects, _TEMPLATE, _PROJECT_SLUG) == frozenset(
         {StoryKey(1, 2), StoryKey(3, 8)}
     )
 
@@ -127,16 +146,16 @@ def test_merged_story_keys_skips_a_non_story_merge_subject():
         "pixi update requires-pixi = \">=0.75.0\"",
         "Merge 2.3 into main",
     )
-    assert merged_story_keys(subjects, _TEMPLATE) == frozenset({StoryKey(2, 3)})
+    assert merged_story_keys(subjects, _TEMPLATE, _PROJECT_SLUG) == frozenset({StoryKey(2, 3)})
 
 
 def test_merged_story_keys_empty_subjects_returns_empty_set():
-    assert merged_story_keys((), _TEMPLATE) == frozenset()
+    assert merged_story_keys((), _TEMPLATE, _PROJECT_SLUG) == frozenset()
 
 
 def test_merged_story_keys_deduplicates_repeated_subjects():
     subjects = ("Merge 1.2 into main", "Merge 1.2 into main")
-    assert merged_story_keys(subjects, _TEMPLATE) == frozenset({StoryKey(1, 2)})
+    assert merged_story_keys(subjects, _TEMPLATE, _PROJECT_SLUG) == frozenset({StoryKey(1, 2)})
 
 
 def test_merged_story_keys_recognizes_real_github_merge_subjects_too():
@@ -144,7 +163,7 @@ def test_merged_story_keys_recognizes_real_github_merge_subjects_too():
     is entirely GitHub PR-merge subjects, never the templated form -- both
     must be recognized by the SAME `merged_story_keys` call."""
     subjects = (_REAL_SUBJECT_2_3, _REAL_SUBJECT_3_8, _REAL_SUBJECT_AMBIGUOUS)
-    assert merged_story_keys(subjects, _TEMPLATE) == frozenset({StoryKey(2, 3), StoryKey(3, 8)})
+    assert merged_story_keys(subjects, _TEMPLATE, _PROJECT_SLUG) == frozenset({StoryKey(2, 3), StoryKey(3, 8)})
 
 
 def test_merged_story_keys_recognizes_real_bmadloop_merge_subjects_too():
@@ -157,14 +176,14 @@ def test_merged_story_keys_recognizes_real_bmadloop_merge_subjects_too():
         "into loop/pyforge-marshal (bmad-loop)"
     )
     subjects = (_REAL_SUBJECT_2_3, bmadloop_subject, _REAL_SUBJECT_NON_STORY_1)
-    assert merged_story_keys(subjects, _TEMPLATE) == frozenset({StoryKey(2, 3), StoryKey(2, 4)})
+    assert merged_story_keys(subjects, _TEMPLATE, _PROJECT_SLUG) == frozenset({StoryKey(2, 3), StoryKey(2, 4)})
 
 
 def test_merged_story_keys_tries_templated_pattern_before_github_pattern():
     """A subject conforming to the templated form is still recognized even
     though it would also superficially resemble neither GitHub shape."""
     subjects = ("Merge 5.5 into main",)
-    assert merged_story_keys(subjects, _TEMPLATE) == frozenset({StoryKey(5, 5)})
+    assert merged_story_keys(subjects, _TEMPLATE, _PROJECT_SLUG) == frozenset({StoryKey(5, 5)})
 
 
 # --- count_conforming_subjects ------------------------------------------------
@@ -178,12 +197,12 @@ def test_count_conforming_subjects_counts_both_patterns_not_deduplicated():
         _REAL_SUBJECT_AMBIGUOUS,  # conforms to neither -- not counted
         _REAL_SUBJECT_NOT_A_MERGE_1,
     )
-    assert count_conforming_subjects(subjects, _TEMPLATE) == 3
+    assert count_conforming_subjects(subjects, _TEMPLATE, _PROJECT_SLUG) == 3
 
 
 def test_count_conforming_subjects_zero_for_no_conforming_subjects():
     subjects = (_REAL_SUBJECT_NOT_A_MERGE_1, _REAL_SUBJECT_NOT_A_MERGE_2)
-    assert count_conforming_subjects(subjects, _TEMPLATE) == 0
+    assert count_conforming_subjects(subjects, _TEMPLATE, _PROJECT_SLUG) == 0
 
 
 # --- is_valid_spec_text -------------------------------------------------------

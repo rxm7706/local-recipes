@@ -91,20 +91,39 @@ _GITHUB_MERGE_SUBJECT_RE = re.compile(r"^Merge pull request #\d+ from \S+/(?P<br
 # project in this factory (warden, herald, scribe, atlas all carry the
 # identical shape in their own history), not something local to marshal.
 _BMADLOOP_MERGE_SUBJECT_RE = re.compile(
-    r"^Merge bmad-loop/\S+/(?P<key_slug>\S+) into \S+ \(bmad-loop\)$"
+    r"^Merge bmad-loop/\S+/(?P<key_slug>\S+) into (?P<target>\S+) \(bmad-loop\)$"
 )
 
 
-def extract_story_key_from_bmadloop_merge_subject(subject: str) -> StoryKey | None:
+def extract_story_key_from_bmadloop_merge_subject(
+    subject: str, project_slug: str
+) -> StoryKey | None:
     """The third merge-subject pattern ``merged_story_keys`` tries: matches
     bmad-loop's own native merge-commit shape and parses the story key from
     the middle ``<key>-<description>`` segment (between the run-id and
-    ``into``). Same failure-tolerant shape as
+    ``into``).
+
+    ``project_slug`` is REQUIRED, not optional (live cross-project
+    collision, found running this for real against local-recipes: this one
+    repo hosts every BMAD project's loop-driven history in ONE shared `git
+    log`, and pyforge-warden's own Story 6.8 -- "Merge bmad-loop/.../6-8-
+    baseline-grandfathering into loop/pyforge-warden (bmad-loop)" -- was
+    silently misread as pyforge-MARSHAL's own Story 6.8, reporting a false
+    "merged but no spec" gap for a story that has nothing to do with this
+    project at all). The merge target must equal ``loop/<project_slug>``
+    -- this repo's own loop-home branch convention (confirmed live:
+    `loop/pyforge-marshal`, `loop/pyforge-warden`, `loop/pyforge-herald`,
+    `loop/pyforge-scribe` all follow it) -- or the subject is treated as
+    NOT belonging to this project, same as any other non-matching subject.
+
+    Same failure-tolerant shape as
     ``extract_story_key_from_github_merge_subject``: returns ``None``,
-    never raises, for either a non-matching subject or a segment whose
-    leading token isn't a parseable story key."""
+    never raises, for a non-matching subject, a wrong-project target, or a
+    key segment whose leading token isn't a parseable story key."""
     match = _BMADLOOP_MERGE_SUBJECT_RE.match(subject)
     if match is None:
+        return None
+    if match.group("target") != f"loop/{project_slug}":
         return None
     try:
         return normalize(match.group("key_slug"))
@@ -139,12 +158,16 @@ def extract_story_key_from_github_merge_subject(subject: str) -> StoryKey | None
         return None
 
 
-def _classify_merge_subject(subject: str, template: str) -> StoryKey | None:
+def _classify_merge_subject(subject: str, template: str, project_slug: str) -> StoryKey | None:
     """Try all three merge-subject patterns ``merged_story_keys`` recognizes,
     in order, returning the first match or ``None`` if none conform.
     Factored out so ``merged_story_keys`` (deduplicated by key) and
     ``count_conforming_subjects`` (a raw per-subject diagnostic count) share
-    one classification, never copies that could silently diverge."""
+    one classification, never copies that could silently diverge.
+    ``project_slug`` scopes the bmad-loop pattern only (see
+    ``extract_story_key_from_bmadloop_merge_subject``'s own docstring for
+    why that scoping is required, not optional, in this shared-history
+    repo)."""
     try:
         return parse_merge_subject(subject, template)
     except MergeSubjectConformanceError:
@@ -152,39 +175,47 @@ def _classify_merge_subject(subject: str, template: str) -> StoryKey | None:
     key = extract_story_key_from_github_merge_subject(subject)
     if key is not None:
         return key
-    return extract_story_key_from_bmadloop_merge_subject(subject)
+    return extract_story_key_from_bmadloop_merge_subject(subject, project_slug)
 
 
-def merged_story_keys(subjects: tuple[str, ...], template: str) -> frozenset[StoryKey]:
+def merged_story_keys(
+    subjects: tuple[str, ...], template: str, project_slug: str
+) -> frozenset[StoryKey]:
     """Every ``StoryKey`` whose merge subject appears in ``subjects``
     (AD-24, AD-33): each subject is classified via
     ``_classify_merge_subject`` -- first the AD-24 templated form
     (``core.identity.parse_merge_subject``), then, if that doesn't conform,
-    the GitHub PR-merge form (``extract_story_key_from_github_merge_subject``
-    above). A subject matching NEITHER is silently skipped, never raised --
-    most of any real repository's commit history is not a story merge.
-    Pure: no I/O, no ``VcsPort`` -- ``subjects`` is the caller's
+    the GitHub PR-merge form, then bmad-loop's own native form (scoped to
+    ``project_slug`` -- see that extractor's own docstring for the live
+    cross-project collision this scoping prevents). A subject matching
+    NONE of the three is silently skipped, never raised -- most of any
+    real repository's commit history is not a story merge for THIS
+    project. Pure: no I/O, no ``VcsPort`` -- ``subjects`` is the caller's
     already-gathered ``VcsPort.commit_subjects`` result."""
     keys: set[StoryKey] = set()
     for subject in subjects:
-        key = _classify_merge_subject(subject, template)
+        key = _classify_merge_subject(subject, template, project_slug)
         if key is not None:
             keys.add(key)
     return frozenset(keys)
 
 
-def count_conforming_subjects(subjects: tuple[str, ...], template: str) -> int:
+def count_conforming_subjects(subjects: tuple[str, ...], template: str, project_slug: str) -> int:
     """Diagnostic-only (Story 4.1 review fix): how many of ``subjects``
-    conform to EITHER merge-subject pattern ``merged_story_keys`` tries --
+    conform to ANY merge-subject pattern ``merged_story_keys`` tries --
     a raw per-subject count, deliberately NOT deduplicated by key the way
     ``merged_story_keys``'s own ``frozenset`` result is. Exists so
     ``cli/deploy.py`` can report ``data.subjects_examined``/
     ``data.subjects_matched`` and an operator can tell "genuinely nothing
     has merged yet" apart from "the detection mechanism examined N commits
-    and none of them conformed to either recognized pattern" -- a silent
+    and none of them conformed to any recognized pattern" -- a silent
     zero-vs-zero ambiguity a prior version of this run reported no way to
     distinguish."""
-    return sum(1 for subject in subjects if _classify_merge_subject(subject, template) is not None)
+    return sum(
+        1
+        for subject in subjects
+        if _classify_merge_subject(subject, template, project_slug) is not None
+    )
 
 
 @dataclass(frozen=True)

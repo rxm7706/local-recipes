@@ -300,9 +300,11 @@ def run_promote(
         if main_subjects is not None:
             template = effective.merge_subject_template.value
             combined_subjects = tuple(origin_subjects) + tuple(main_subjects)
-            merged_keys = promotion.merged_story_keys(combined_subjects, template)
+            merged_keys = promotion.merged_story_keys(combined_subjects, template, project_slug)
             subjects_examined = len(combined_subjects)
-            subjects_matched = promotion.count_conforming_subjects(combined_subjects, template)
+            subjects_matched = promotion.count_conforming_subjects(
+                combined_subjects, template, project_slug
+            )
             plan = promotion.classify_promotion_candidates(
                 candidates=candidates,
                 merged_keys=merged_keys,
