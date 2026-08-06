@@ -933,3 +933,152 @@ def test_push_raises_on_a_malformed_upstream_with_no_remote_slash(vcs, repo):
 
     with pytest.raises(VcsCommandError, match="cannot parse upstream"):
         vcs.push(repo, "main")
+
+
+# --- changed_files (Story 2.3, AD-27) -----------------------------------------
+
+
+def test_changed_files_clean_worktree_no_commits_ahead_returns_empty(vcs, repo):
+    assert vcs.changed_files(repo, repo, base="main") == ()
+
+
+def test_changed_files_reports_a_committed_change_since_base(vcs, repo, tmp_path):
+    home = tmp_path / "home"
+    vcs.add_worktree(repo, home, "loop/x", base="main")
+    (home / "new-file.txt").write_text("hello\n", encoding="utf-8")
+    _git(home, "add", "new-file.txt")
+    _git(home, "commit", "-m", "add new-file.txt")
+
+    assert vcs.changed_files(repo, home, base="main") == ("new-file.txt",)
+
+
+def test_changed_files_reports_an_untracked_file(vcs, repo, tmp_path):
+    home = tmp_path / "home"
+    vcs.add_worktree(repo, home, "loop/x", base="main")
+    (home / "scratch.txt").write_text("uncommitted\n", encoding="utf-8")
+
+    assert vcs.changed_files(repo, home, base="main") == ("scratch.txt",)
+
+
+def test_changed_files_reports_an_uncommitted_modification(vcs, repo, tmp_path):
+    home = tmp_path / "home"
+    vcs.add_worktree(repo, home, "loop/x", base="main")
+    (home / "README.md").write_text("changed\n", encoding="utf-8")
+
+    assert vcs.changed_files(repo, home, base="main") == ("README.md",)
+
+
+def test_changed_files_is_the_union_of_committed_and_uncommitted(vcs, repo, tmp_path):
+    home = tmp_path / "home"
+    vcs.add_worktree(repo, home, "loop/x", base="main")
+    (home / "committed.txt").write_text("a\n", encoding="utf-8")
+    _git(home, "add", "committed.txt")
+    _git(home, "commit", "-m", "add committed.txt")
+    (home / "dirty.txt").write_text("b\n", encoding="utf-8")
+
+    assert vcs.changed_files(repo, home, base="main") == ("committed.txt", "dirty.txt")
+
+
+def test_changed_files_a_path_changed_both_ways_is_deduplicated(vcs, repo, tmp_path):
+    home = tmp_path / "home"
+    vcs.add_worktree(repo, home, "loop/x", base="main")
+    (home / "README.md").write_text("commit one\n", encoding="utf-8")
+    _git(home, "add", "README.md")
+    _git(home, "commit", "-m", "modify README")
+    (home / "README.md").write_text("dirty on top\n", encoding="utf-8")
+
+    assert vcs.changed_files(repo, home, base="main") == ("README.md",)
+
+
+def test_changed_files_a_rename_reports_only_the_new_path(vcs, repo, tmp_path):
+    home = tmp_path / "home"
+    vcs.add_worktree(repo, home, "loop/x", base="main")
+    _git(home, "mv", "README.md", "RENAMED.md")
+
+    result = vcs.changed_files(repo, home, base="main")
+    assert "RENAMED.md" in result
+    assert "README.md" not in result
+
+
+def test_changed_files_a_committed_rename_reports_only_the_new_path(vcs, repo, tmp_path):
+    """Review finding (Edge Case Hunter): unlike the uncommitted-rename case
+    above (already handled by the porcelain branch's own " -> " parsing), a
+    COMMITTED rename is reported by `git diff`, which without rename
+    detection (`-M`) shows BOTH the old (now-nonexistent) and new paths as
+    separate changed entries."""
+    home = tmp_path / "home"
+    vcs.add_worktree(repo, home, "loop/x", base="main")
+    _git(home, "mv", "README.md", "COMMITTED-RENAME.md")
+    _git(home, "commit", "-m", "rename README")
+
+    result = vcs.changed_files(repo, home, base="main")
+    assert "COMMITTED-RENAME.md" in result
+    assert "README.md" not in result
+
+
+def test_changed_files_an_untracked_directory_reports_each_file_individually(
+    vcs, repo, tmp_path
+):
+    """Review finding (Blind Hunter + Edge Case Hunter): git's default
+    `--untracked-files=normal` collapses a wholly-new untracked directory
+    into a single "dir/" porcelain line -- which never matches a
+    file-shaped glob (e.g. "newthing/*.yaml"), silently breaking scope/
+    frozen-path checking for every file inside it."""
+    home = tmp_path / "home"
+    vcs.add_worktree(repo, home, "loop/x", base="main")
+    newdir = home / "newthing"
+    newdir.mkdir()
+    (newdir / "a.yaml").write_text("a\n", encoding="utf-8")
+    (newdir / "b.yaml").write_text("b\n", encoding="utf-8")
+
+    result = vcs.changed_files(repo, home, base="main")
+    assert "newthing/a.yaml" in result
+    assert "newthing/b.yaml" in result
+    assert "newthing" not in result
+    assert "newthing/" not in result
+
+
+def test_changed_files_a_non_ascii_path_round_trips_literally(vcs, repo, tmp_path):
+    """Review finding (Blind Hunter + Edge Case Hunter): git's default
+    `core.quotePath=true` C-escapes/quotes a non-ASCII path (e.g.
+    `"caf\\303\\251.txt"` for `café.txt`) instead of emitting the literal
+    UTF-8 path -- a path in that shape never matches its own glob."""
+    home = tmp_path / "home"
+    vcs.add_worktree(repo, home, "loop/x", base="main")
+    (home / "café.txt").write_text("x\n", encoding="utf-8")
+
+    result = vcs.changed_files(repo, home, base="main")
+    assert "café.txt" in result
+
+
+def test_changed_files_git_diff_runs_against_the_worktrees_own_head(vcs, repo, tmp_path):
+    """Review-motivated regression: `HEAD` is per-worktree, and `base`/refs
+    are shared across every worktree of one repo -- if `changed_files` ran
+    `git diff` against `repo_root`'s own checked-out HEAD instead of
+    `worktree_path`'s, a commit made only in the LINKED worktree would
+    never appear (repo_root's own HEAD never moved)."""
+    home = tmp_path / "home"
+    vcs.add_worktree(repo, home, "loop/x", base="main")
+    (home / "only-in-worktree.txt").write_text("x\n", encoding="utf-8")
+    _git(home, "add", "only-in-worktree.txt")
+    _git(home, "commit", "-m", "worktree-only commit")
+
+    # repo (the main checkout) never advanced past `main`.
+    assert vcs.changed_files(repo, repo, base="main") == ()
+    assert vcs.changed_files(repo, home, base="main") == ("only-in-worktree.txt",)
+
+
+def test_changed_files_raises_on_an_unresolvable_base(vcs, repo):
+    with pytest.raises(VcsCommandError):
+        vcs.changed_files(repo, repo, base="no-such-ref")
+
+
+def test_changed_files_returns_a_sorted_tuple(vcs, repo, tmp_path):
+    home = tmp_path / "home"
+    vcs.add_worktree(repo, home, "loop/x", base="main")
+    (home / "z.txt").write_text("z\n", encoding="utf-8")
+    (home / "a.txt").write_text("a\n", encoding="utf-8")
+
+    result = vcs.changed_files(repo, home, base="main")
+    assert result == tuple(sorted(result))
+    assert result == ("a.txt", "z.txt")

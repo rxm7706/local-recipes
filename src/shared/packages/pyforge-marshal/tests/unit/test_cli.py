@@ -259,12 +259,12 @@ def test_config_defaults_only_exits_zero(capsys, monkeypatch):
     assert "content_hash" in captured.out
 
 
-def test_config_prints_all_fourteen_keys(capsys, monkeypatch):
-    """AC: 'every one of the 14 keys prints its effective value and winning
-    layer' -- checked exhaustively, not just a couple of spot-checked
-    fields. The layer half is counted, not merely detected: exactly one
-    `(layer=...)` suffix per key line, so a regression that drops the
-    suffix from all but one line cannot ship green."""
+def test_config_prints_all_fifteen_keys(capsys, monkeypatch):
+    """AC: 'every one of the (now 15) keys prints its effective value and
+    winning layer' -- checked exhaustively, not just a couple of
+    spot-checked fields. The layer half is counted, not merely detected:
+    exactly one `(layer=...)` suffix per key line, so a regression that
+    drops the suffix from all but one line cannot ship green."""
     monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
     exit_code = main(["config"])
     assert exit_code == 0
@@ -274,6 +274,7 @@ def test_config_prints_all_fourteen_keys(capsys, monkeypatch):
         "worktree_seed_paths",
         "merge_subject_template",
         "model_tier_map",
+        "epic_surfaces",
         "gate_mode",
         "frozen_surfaces",
         "max_dev_attempts",
@@ -286,7 +287,7 @@ def test_config_prints_all_fourteen_keys(capsys, monkeypatch):
         "max_wall_clock_minutes_per_run",
     ):
         assert f"{key}:" in captured.out, f"marshal config did not print {key!r}"
-    assert captured.out.count("(layer=") == 14
+    assert captured.out.count("(layer=") == 15
 
 
 def test_config_redacts_a_secret_shaped_field(capsys, monkeypatch):
@@ -1064,6 +1065,11 @@ def test_gate_evaluate_run_flag_reports_mrs_gate_005_and_skips_commands(
     tmp_path, capsys, monkeypatch
 ):
     monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
+    # Hermetic: --run now resolves a real loop home via _home_path (Story
+    # 2.3) -- pin BMAD_LOOP_HOME_ROOT under tmp_path so this test never
+    # depends on (or collides with) whatever a real operator's own
+    # ~/.bmad-loops happens to contain.
+    monkeypatch.setenv("BMAD_LOOP_HOME_ROOT", str(tmp_path / "loop-homes"))
     # A command that would otherwise fail -- proves --run truly skips running
     # any configured command rather than merely also reporting MRS-GATE-005.
     _conventional_policy(tmp_path, monkeypatch, "acme", 'verify_commands = ["false"]\n')
@@ -1321,7 +1327,9 @@ def test_run_evaluate_uses_the_injected_process_port(tmp_path, capsys, monkeypat
         "acme",
         'verify_commands = ["definitely-not-a-real-binary-xyz"]\n',
     )
-    args = argparse.Namespace(project="acme", run_id=None, format="json")
+    args = argparse.Namespace(
+        project="acme", run_id=None, scope_check=False, story=None, format="json"
+    )
 
     exit_code = gate_module.run_evaluate(args, process=_RecordingProcess())
 
@@ -1363,7 +1371,9 @@ def test_gate_evaluate_text_format_survives_output_stdout_cannot_encode(
     monkeypatch.setattr(
         sys, "stdout", io.TextIOWrapper(buffer, encoding="ascii", errors="strict")
     )
-    args = argparse.Namespace(project="acme", run_id=None, format="text")
+    args = argparse.Namespace(
+        project="acme", run_id=None, scope_check=False, story=None, format="text"
+    )
 
     exit_code = gate_module.run_evaluate(args, process=_NonAsciiProcess())
     sys.stdout.flush()
@@ -1519,6 +1529,357 @@ def test_gate_evaluate_writes_no_file_under_the_repo_root_it_evaluates(
 
     assert exit_code == 3
     assert _snapshot() == before
+
+
+# --- Story 2.3: `gate evaluate --scope-check` --------------------------------
+#
+# `run_evaluate`'s `vcs`/`fs` DI seams exist for exactly this: a fake
+# `VcsPort` stands in for a real git worktree (this story's own pure-core
+# tests already cover `GitVcs.changed_files` against a real repo in
+# test_vcs_git.py), matching the existing `process=` injection convention
+# above (`_RecordingProcess`).
+
+
+class _FakeVcs:
+    """A minimal ``VcsPort`` stand-in: ``changed_files`` returns a
+    caller-configured tuple, or raises ``VcsCommandError`` when
+    ``fail_with`` is set. ``repo_common_root`` is a no-op passthrough --
+    nothing in these tests inspects its return value."""
+
+    def __init__(self, changed=(), *, fail_with: str | None = None):
+        self._changed = changed
+        self._fail_with = fail_with
+
+    def repo_common_root(self, start):
+        return start
+
+    def changed_files(self, repo_root, worktree_path, *, base):
+        if self._fail_with is not None:
+            from pyforge.marshal.adapters.vcs_git import VcsCommandError
+
+            raise VcsCommandError(self._fail_with)
+        return self._changed
+
+
+def _scope_check_args(*, project="acme", run_id=None, story=None, format="json"):
+    return argparse.Namespace(
+        project=project,
+        run_id=run_id,
+        scope_check=True,
+        story=story,
+        format=format,
+    )
+
+
+def _write_epic_surfaces_policy(tmp_path, monkeypatch, slug, epic_surfaces_toml, extra=""):
+    from pyforge.marshal.cli import config as config_module
+    from pyforge.marshal.cli import gate as gate_module
+
+    monkeypatch.setattr(config_module, "repo_root", lambda: tmp_path)
+    monkeypatch.setattr(gate_module, "repo_root", lambda: tmp_path)
+    policy_dir = tmp_path / "_bmad-output" / "projects" / slug / "planning-artifacts"
+    policy_dir.mkdir(parents=True, exist_ok=True)
+    (policy_dir / "marshal-policy.toml").write_text(
+        epic_surfaces_toml + extra, encoding="utf-8"
+    )
+
+
+def test_gate_evaluate_scope_check_without_story_reports_mrs_gate_009(
+    tmp_path, capsys, monkeypatch
+):
+    from pyforge.marshal.cli import gate as gate_module
+
+    monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
+    _write_epic_surfaces_policy(tmp_path, monkeypatch, "acme", "")
+    args = _scope_check_args(story=None)
+
+    exit_code = gate_module.run_evaluate(args, vcs=_FakeVcs())
+    payload = json.loads(capsys.readouterr().out)
+    codes = [finding["code"] for finding in payload["findings"]]
+    assert "MRS-GATE-009" in codes
+    assert exit_code == 1
+
+
+def test_gate_evaluate_scope_check_without_active_project_reports_mrs_gate_009(
+    capsys, monkeypatch,
+):
+    from pyforge.marshal.cli import gate as gate_module
+
+    monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
+    args = _scope_check_args(project="", story="2.3")
+
+    exit_code = gate_module.run_evaluate(args, vcs=_FakeVcs())
+    # Review finding (Blind Hunter): this test previously asserted only
+    # exit_code == 1, which would pass for ANY unrelated failure producing
+    # the same exit code -- unlike every sibling test in this block, it
+    # never confirmed MRS-GATE-009 specifically appeared.
+    payload = json.loads(capsys.readouterr().out)
+    codes = [finding["code"] for finding in payload["findings"]]
+    assert "MRS-GATE-009" in codes
+    assert exit_code == 1
+
+
+def test_gate_evaluate_scope_check_unresolved_story_reports_mrs_ident_001(
+    tmp_path, capsys, monkeypatch
+):
+    from pyforge.marshal.cli import gate as gate_module
+
+    monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
+    _write_epic_surfaces_policy(tmp_path, monkeypatch, "acme", "")
+    args = _scope_check_args(story="not-a-story-key")
+
+    exit_code = gate_module.run_evaluate(args, vcs=_FakeVcs())
+    payload = json.loads(capsys.readouterr().out)
+    codes = [finding["code"] for finding in payload["findings"]]
+    assert "MRS-IDENT-001" in codes
+    assert exit_code == 1
+
+
+def test_gate_evaluate_scope_check_changed_file_inside_surface_passes(
+    tmp_path, capsys, monkeypatch
+):
+    from pyforge.marshal.cli import gate as gate_module
+
+    monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
+    _write_epic_surfaces_policy(
+        tmp_path,
+        monkeypatch,
+        "acme",
+        'epic_surfaces = { "2" = ["recipes/x/**"] }\n',
+    )
+    args = _scope_check_args(story="2.3")
+
+    exit_code = gate_module.run_evaluate(
+        args, vcs=_FakeVcs(changed=("recipes/x/recipe.yaml",))
+    )
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["data"]["scope_check"]["checked"] is True
+    assert payload["data"]["scope_check"]["violations"] == 0
+    codes = [finding["code"] for finding in payload["findings"]]
+    assert "MRS-GATE-007" not in codes
+    assert "MRS-GATE-008" not in codes
+
+
+def test_gate_evaluate_scope_check_changed_file_outside_surface_reports_mrs_gate_007(
+    tmp_path, capsys, monkeypatch
+):
+    from pyforge.marshal.cli import gate as gate_module
+    from pyforge.marshal.core.model import Verdict
+
+    monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
+    _write_epic_surfaces_policy(
+        tmp_path,
+        monkeypatch,
+        "acme",
+        'epic_surfaces = { "2" = ["recipes/x/**"] }\n',
+    )
+    args = _scope_check_args(story="2.3")
+
+    exit_code = gate_module.run_evaluate(
+        args, vcs=_FakeVcs(changed=("recipes/y/recipe.yaml",))
+    )
+    payload = json.loads(capsys.readouterr().out)
+    codes = [finding["code"] for finding in payload["findings"]]
+    assert "MRS-GATE-007" in codes
+    assert payload["verdict"] == Verdict.SCOPE_VIOLATION.value
+    assert exit_code == 2
+
+
+def test_gate_evaluate_scope_check_frozen_seed_path_reports_mrs_gate_008(
+    tmp_path, capsys, monkeypatch
+):
+    from pyforge.marshal.cli import gate as gate_module
+
+    monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
+    _write_epic_surfaces_policy(
+        tmp_path,
+        monkeypatch,
+        "acme",
+        'epic_surfaces = { "2" = ["recipes/x/**"] }\n'
+        'frozen_surfaces = ["recipes/x/recipe.yaml"]\n',
+    )
+    args = _scope_check_args(story="2.3")
+
+    exit_code = gate_module.run_evaluate(
+        args, vcs=_FakeVcs(changed=("recipes/x/recipe.yaml",))
+    )
+    payload = json.loads(capsys.readouterr().out)
+    frozen_finding = next(
+        finding for finding in payload["findings"] if finding["code"] == "MRS-GATE-008"
+    )
+    assert "policy" in frozen_finding["message"]
+
+
+def test_gate_evaluate_scope_check_spec_declared_surface_narrows(
+    tmp_path, capsys, monkeypatch
+):
+    from pyforge.marshal.cli import gate as gate_module
+    from pyforge.marshal.core.identity import StoryKey, render_filename_slug
+
+    monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
+    _write_epic_surfaces_policy(
+        tmp_path,
+        monkeypatch,
+        "acme",
+        'epic_surfaces = { "2" = ["recipes/x/**", "recipes/y/**"] }\n',
+    )
+    specs_dir = (
+        tmp_path
+        / "_bmad-output"
+        / "projects"
+        / "acme"
+        / "planning-artifacts"
+        / "specs"
+    )
+    specs_dir.mkdir(parents=True, exist_ok=True)
+    key = StoryKey(epic=2, seq=3)
+    (specs_dir / f"spec-{render_filename_slug(key)}-scope.md").write_text(
+        "---\ntitle: 'x'\nsurface: [\"recipes/x/**\"]\n---\n\n<intent-contract>\n",
+        encoding="utf-8",
+    )
+    args = _scope_check_args(story="2.3")
+
+    # recipes/y/** is in the POLICY surface but excluded by the spec's own
+    # narrower declaration -- a change there must now violate.
+    exit_code = gate_module.run_evaluate(
+        args, vcs=_FakeVcs(changed=("recipes/y/recipe.yaml",))
+    )
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["data"]["scope_check"]["spec_surface"] == ["recipes/x/**"]
+    assert payload["data"]["scope_check"]["effective_surface"] == ["recipes/x/**"]
+    codes = [finding["code"] for finding in payload["findings"]]
+    assert "MRS-GATE-007" in codes
+
+
+def test_find_spec_text_degrades_to_none_on_a_non_utf8_spec_file(tmp_path):
+    """Review finding: a non-UTF-8 spec file must degrade to "nothing to
+    narrow against" (None) like every other best-effort read in this
+    module, not crash with a raw UnicodeDecodeError."""
+    from pyforge.marshal.cli.gate import _find_spec_text
+    from pyforge.marshal.core.identity import StoryKey, render_filename_slug
+
+    specs_dir = (
+        tmp_path / "_bmad-output" / "projects" / "acme" / "planning-artifacts" / "specs"
+    )
+    specs_dir.mkdir(parents=True, exist_ok=True)
+    key = StoryKey(epic=2, seq=3)
+    (specs_dir / f"spec-{render_filename_slug(key)}.md").write_bytes(b"\xff\xfe not utf-8")
+
+    assert _find_spec_text(tmp_path, "acme", key) is None
+
+
+def test_gate_evaluate_scope_check_multiline_surface_block_reports_mrs_gate_009(
+    tmp_path, capsys, monkeypatch
+):
+    """AD-27, review finding (Edge Case Hunter): a multi-line YAML `surface:`
+    block in the story's own tracked spec is a form the parser does not
+    support -- it must be reported and skipped (MRS-GATE-009), never
+    silently treated as "no declared surface" (which would widen the
+    effective surface back to the bare policy surface)."""
+    from pyforge.marshal.cli import gate as gate_module
+    from pyforge.marshal.core.identity import StoryKey, render_filename_slug
+
+    monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
+    _write_epic_surfaces_policy(
+        tmp_path,
+        monkeypatch,
+        "acme",
+        'epic_surfaces = { "2" = ["recipes/x/**"] }\n',
+    )
+    specs_dir = (
+        tmp_path
+        / "_bmad-output"
+        / "projects"
+        / "acme"
+        / "planning-artifacts"
+        / "specs"
+    )
+    specs_dir.mkdir(parents=True, exist_ok=True)
+    key = StoryKey(epic=2, seq=3)
+    (specs_dir / f"spec-{render_filename_slug(key)}-scope.md").write_text(
+        '---\ntitle: \'x\'\nsurface:\n  - "recipes/x/**"\n---\n\n<intent-contract>\n',
+        encoding="utf-8",
+    )
+    args = _scope_check_args(story="2.3")
+
+    exit_code = gate_module.run_evaluate(
+        args, vcs=_FakeVcs(changed=("recipes/x/recipe.yaml",))
+    )
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["data"]["scope_check"]["checked"] is False
+    codes = [finding["code"] for finding in payload["findings"]]
+    assert "MRS-GATE-009" in codes
+    assert exit_code == 1
+
+
+def test_gate_evaluate_scope_check_vcs_failure_reports_mrs_gate_009(
+    tmp_path, capsys, monkeypatch
+):
+    from pyforge.marshal.cli import gate as gate_module
+
+    monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
+    _write_epic_surfaces_policy(tmp_path, monkeypatch, "acme", "")
+    args = _scope_check_args(story="2.3")
+
+    exit_code = gate_module.run_evaluate(
+        args, vcs=_FakeVcs(fail_with="not a git repository")
+    )
+    payload = json.loads(capsys.readouterr().out)
+    codes = [finding["code"] for finding in payload["findings"]]
+    assert "MRS-GATE-009" in codes
+    assert exit_code == 1
+
+
+def test_gate_evaluate_scope_check_unconfigured_epic_flags_every_changed_file(
+    tmp_path, capsys, monkeypatch
+):
+    """Pins the CORRECT, currently-unproven behavior (review finding, Blind
+    Hunter): an unconfigured epic (`epic_surfaces` left at its DEFAULT `{}`)
+    makes `compute_effective_surface` always empty, so EVERY changed file
+    for that epic is flagged MRS-GATE-007 -- deny-by-default, consistent
+    with "narrowing only". A future accidental change to "skip the check
+    when unconfigured" must regress this test, not ship silently."""
+    from pyforge.marshal.cli import gate as gate_module
+    from pyforge.marshal.core.model import Verdict
+
+    monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
+    # No `epic_surfaces` key at all -- composes to DEFAULT_POLICY's `{}`.
+    _write_epic_surfaces_policy(tmp_path, monkeypatch, "acme", "")
+    args = _scope_check_args(story="2.3")
+
+    exit_code = gate_module.run_evaluate(
+        args, vcs=_FakeVcs(changed=("recipes/anything/recipe.yaml",))
+    )
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["data"]["scope_check"]["checked"] is True
+    assert payload["data"]["scope_check"]["policy_surface"] == []
+    assert payload["data"]["scope_check"]["effective_surface"] == []
+    codes = [finding["code"] for finding in payload["findings"]]
+    assert "MRS-GATE-007" in codes
+    assert payload["verdict"] == Verdict.SCOPE_VIOLATION.value
+    assert exit_code == 2
+
+
+def test_gate_evaluate_scope_check_run_scope_unavailable_omits_scope_check_data(
+    tmp_path, capsys, monkeypatch
+):
+    """When ``--run`` was requested but its fold could not be produced,
+    MRS-GATE-005 already reports the root cause -- the scope check itself
+    contributes no second, redundant finding, and `data` carries no
+    `scope_check` key at all."""
+    from pyforge.marshal.cli import gate as gate_module
+
+    monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
+    monkeypatch.setenv("BMAD_LOOP_HOME_ROOT", str(tmp_path / "loop-homes"))
+    _write_epic_surfaces_policy(tmp_path, monkeypatch, "acme", "")
+    args = _scope_check_args(story="2.3", run_id="run-99")
+
+    exit_code = gate_module.run_evaluate(args, vcs=_FakeVcs())
+    payload = json.loads(capsys.readouterr().out)
+    codes = [finding["code"] for finding in payload["findings"]]
+    assert codes == ["MRS-GATE-005"]
+    assert "scope_check" not in payload["data"]
+    assert exit_code == 1
 
 
 # --- Story 2.1 follow-up review pass -- regression guards ------------------

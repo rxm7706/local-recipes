@@ -529,3 +529,112 @@ class GitVcs:
         result = _run(args, timeout_s=_GIT_PUSH_TIMEOUT_S)
         if result.returncode != 0:
             raise VcsCommandError(f"git push failed for {branch}: {result.stderr.strip()}")
+
+    def changed_files(
+        self, repo_root: Path, worktree_path: Path, *, base: str
+    ) -> tuple[str, ...]:
+        """Story 2.3 (AD-27): the union of a committed diff and the
+        working-tree's own dirty/untracked state, both run against
+        ``worktree_path`` -- see the port's own docstring for why ``HEAD``
+        must resolve from ``worktree_path``, never ``repo_root``.
+        ``repo_root`` is accepted for interface parity with every other
+        ``VcsPort`` method (and for a future caller that wants it echoed
+        for provenance) but is not itself used to run either git
+        invocation below.
+
+        ``-c core.quotePath=false`` on BOTH invocations (review finding,
+        Blind Hunter + Edge Case Hunter, independently): git's own default
+        (``core.quotePath=true``) C-escapes/quotes any path containing a
+        non-ASCII or otherwise "unusual" byte (e.g. ``"caf\\303\\251.txt"``
+        for ``café.txt``) instead of emitting the literal UTF-8 path. Such a
+        path would never match its own glob in ``compute_effective_surface``
+        /``check_scope``, silently defeating scope/frozen-path checking for
+        it -- pinned explicitly, mirroring ``is_branch_merged``'s/
+        ``has_uncommitted_changes``'s own explicit-config-pin discipline
+        rather than depending on the operator's config."""
+        diff_result = _run(
+            [
+                "git",
+                "-C",
+                str(worktree_path),
+                "-c",
+                "core.quotePath=false",
+                "diff",
+                # -M: rename detection (review finding, Edge Case Hunter).
+                # Without it, a committed rename shows up as BOTH the old
+                # (now-nonexistent) path and the new path as separate
+                # "changed" entries -- the old, no-longer-real path would
+                # then be judged against the effective/frozen surfaces
+                # alongside the new one. --name-status (not --name-only)
+                # is used so a rename's status prefix ("R100") can be
+                # detected and only its NEW path kept.
+                "-M",
+                "--name-status",
+                f"{base}...HEAD",
+            ]
+        )
+        if diff_result.returncode != 0:
+            raise VcsCommandError(
+                f"git diff --name-status -M {base}...HEAD failed in "
+                f"{worktree_path}: {diff_result.stderr.strip()}"
+            )
+        committed: set[str] = set()
+        for line in diff_result.stdout.splitlines():
+            if not line.strip():
+                continue
+            fields = line.split("\t")
+            status = fields[0]
+            if status.startswith("R") or status.startswith("C"):
+                # "R100\told\tnew" (rename) / "C100\told\tnew" (copy) --
+                # only the NEW path is currently live.
+                if len(fields) < 3:
+                    continue
+                committed.add(fields[-1])
+            elif len(fields) >= 2:
+                committed.add(fields[1])
+
+        # -c status.showUntrackedFiles=normal: same explicit-config-pin
+        # discipline as has_uncommitted_changes above -- an operator's own
+        # config setting it to "no" must not silently hide an untracked
+        # change from this scope check.
+        #
+        # --untracked-files=all (review finding, Blind Hunter + Edge Case
+        # Hunter, independently): git's own default
+        # (--untracked-files=normal) collapses a wholly-new untracked
+        # DIRECTORY into a single "dir/" porcelain line instead of listing
+        # each file inside it -- that bare directory path never matches a
+        # file-shaped glob (e.g. "recipes/newthing/*.yaml"), silently
+        # breaking both the allowlist check and frozen-path protection for
+        # every file inside a brand-new untracked directory.
+        status_result = _run(
+            [
+                "git",
+                "-C",
+                str(worktree_path),
+                "-c",
+                "status.showUntrackedFiles=normal",
+                "-c",
+                "core.quotePath=false",
+                "status",
+                "--porcelain",
+                "--untracked-files=all",
+            ]
+        )
+        if status_result.returncode != 0:
+            raise VcsCommandError(
+                f"git status --porcelain failed in {worktree_path}: "
+                f"{status_result.stderr.strip()}"
+            )
+        dirty: set[str] = set()
+        for line in status_result.stdout.splitlines():
+            if not line.strip():
+                continue
+            # Porcelain v1 short format: a fixed 2-char status code, one
+            # space, then the path -- a rename/copy carries
+            # "OLD -> NEW", of which only NEW is a currently-live path.
+            entry = line[3:]
+            if " -> " in entry:
+                entry = entry.split(" -> ", 1)[1]
+            dirty.add(entry)
+
+        return tuple(sorted(committed | dirty))
