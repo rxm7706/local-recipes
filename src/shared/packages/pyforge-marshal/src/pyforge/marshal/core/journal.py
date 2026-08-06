@@ -48,15 +48,26 @@ FoldResult`` parses each raw journal line independently, pairs
 fails to parse/validate or references an unresolvable sidecar blob, scoped
 to its own ``(story, kind)`` or widened to the whole run when neither
 recovers (AD-30). ``FoldResult.by_kind``/``for_story``/``is_evaluable`` are
-the one generic query surface every future consumer (Story 2.3's
-frozen-surface scope check, Epic 4's spec-promotion/reconciliation
-stories) reads Marshal's accumulating run state through -- AD-26's "exactly
-one producer" rule, extended from ``EffectivePolicy``'s seed fields to the
-journal's own derived facts. This module still implements no CLI wiring
-(``cli/gate.py``'s ``--run`` stays the ``MRS-GATE-005`` stub Story 2.1 left
-it) and no session-scoped fold -- AD-25's ``sessions/`` namespace remains
-entirely unimplemented (no session concept exists anywhere in this
-codebase today; logged as a follow-up in ``deferred-work.md``).
+the one generic query surface every future consumer (Epic 4's
+spec-promotion/reconciliation stories) reads Marshal's accumulating run
+state through -- AD-26's "exactly one producer" rule, extended from
+``EffectivePolicy``'s seed fields to the journal's own derived facts. This
+module still implements no CLI wiring (``cli/gate.py``'s ``--run`` stays
+the ``MRS-GATE-005`` stub Story 2.1 left it) and no session-scoped fold --
+AD-25's ``sessions/`` namespace remains entirely unimplemented (no session
+concept exists anywhere in this codebase today; logged as a follow-up in
+``deferred-work.md``).
+
+Story 2.3 adds the first KIND-SPECIFIC query method, ``FoldResult.
+live_frozen_surfaces(seed)`` (AD-26/AD-27): the frozen-surface scope
+check's own accessor, folding a policy-supplied seed with every
+``"freeze-declared"``/``"freeze-removed"`` observation (the two new
+recognized ``kind`` string constants ``KIND_FREEZE_DECLARED``/
+``KIND_FREEZE_REMOVED`` below) into the live set, each entry carrying its
+own ``FrozenPath`` provenance (the declaring story's key, or ``None`` for
+a policy-seeded entry). ``cli/gate.py`` now also swaps its own
+``MRS-GATE-005`` ``--run`` stub for a real call into ``fold`` above --
+Story 3.2's own fold finally gains this module's second real caller.
 
 This module is pure data: no I/O, no subprocess, no network, no clock, no
 ``pyforge.marshal.adapters`` import (AD-4) -- only ``copy``, ``json``,
@@ -123,6 +134,25 @@ _ENTRY_TIMESTAMP_PATTERN = re.compile(
 )
 
 SIDECAR_THRESHOLD_BYTES = 4096
+
+# Story 2.3's two new observation kinds (AD-26/AD-27): "registered" here in
+# the same sense every OTHER kind this module's own docstring names is --
+# this module keeps no closed kind-registry/enum (`kind` is any non-blank
+# str, per `JournalEntry.__post_init__`); these are documented string
+# constants so every real caller (this module's own `FoldResult.
+# live_frozen_surfaces` below, and `cli/gate.py`'s eventual writer of a
+# `"freeze-declared"` entry, a future story's concern) spells the same
+# literal rather than each re-deriving it.
+#
+# "freeze-declared" -- payload `{path, story_key}`: a story spec NARROWING
+# its own writable surface by freezing a path (AD-27's asymmetry table: any
+# gate mode, since narrowing is always safe for the party it constrains).
+# "freeze-removed" -- payload `{path}`: a freeze lifted, WIDENING the
+# surface -- policy- or operator-attributed only (enforced at the CALL
+# SITE that would emit it, never inside this pure module, which has no
+# notion of who is calling).
+KIND_FREEZE_DECLARED = "freeze-declared"
+KIND_FREEZE_REMOVED = "freeze-removed"
 
 
 def mint_run_id(slug: str, utc_compact: str, random_token: str) -> str:
@@ -481,6 +511,35 @@ class QuarantinedRecord:
 
 
 @dataclass(frozen=True)
+class FrozenPath:
+    """One entry in the LIVE frozen-surface set (Story 2.3, AD-26/AD-27):
+    ``path`` is the frozen glob/path itself, ``story_key`` is the
+    DECLARING story's key for a journal-declared freeze (a
+    ``"freeze-declared"`` observation's own payload), or ``None`` for a
+    policy-seeded entry -- ``frozen_surfaces`` (the policy layer's initial
+    seed, AD-26) has no natural story-key owner, since it is
+    project-declared, not story-declared. This provenance is what lets
+    ``core/gate.py::check_scope`` name "the story that froze it" in a
+    violation finding, which a bare ``tuple[str, ...]`` cannot carry.
+
+    ``story_key`` is a plain ``str`` (the JSON journal payload's own raw
+    field), never a ``core.identity.StoryKey`` -- this dataclass carries
+    whatever string a ``"freeze-declared"`` entry's payload names, with no
+    re-validation against the story-key grammar; a malformed one is still
+    useful provenance for a human reading a finding message, even though it
+    would fail ``core.identity.normalize``."""
+
+    path: str
+    story_key: str | None
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.path, str) or not self.path:
+            raise ValueError(f"path must be a non-empty str, got {self.path!r}")
+        if self.story_key is not None and not isinstance(self.story_key, str):
+            raise ValueError(f"story_key must be a str or None, got {self.story_key!r}")
+
+
+@dataclass(frozen=True)
 class FoldResult:
     """The journal fold's total result (Story 3.2, AD-26/AD-28/AD-30) --
     Marshal's ONE producer for every accumulating run-state value (story
@@ -639,6 +698,60 @@ class FoldResult:
             if record.story == story and record.kind == kind:
                 return False
         return True
+
+    def live_frozen_surfaces(self, seed: tuple[str, ...]) -> tuple[FrozenPath, ...]:
+        """The LIVE frozen-surface set (Story 2.3, AD-26): ``seed`` (the
+        policy layer's initial ``frozen_surfaces``, AD-26's own "policy
+        supplies only the initial set") folded with every
+        ``"freeze-declared"``/``"freeze-removed"`` observation in this
+        result's own ``entries`` -- ALREADY in AD-28 total order, so this
+        walks them chronologically rather than by-kind-then-by-kind (which
+        would lose the correct outcome for a path frozen, unfrozen, and
+        re-frozen across several entries).
+
+        This is the ONE producer of the live frozen set (AD-26's own
+        "exactly one producer" rule, extended from ``EffectivePolicy``'s
+        seed fields to the journal's own derived facts): reading
+        ``EffectivePolicy.seed_view()["frozen_surfaces"]`` directly where a
+        LIVE answer is needed is a meta-test failure (mirrors
+        ``EffectivePolicy.seed_view()``'s own "whitelisted accessor and
+        nothing else" discipline, extended here to this method). A
+        standalone, policy-seed-only evaluation (AD-26's own F-3
+        resolution) still calls this method -- with an EMPTY synthetic
+        ``FoldResult`` (``entries=()``) -- rather than reading ``seed``
+        directly, so the "produced solely by the fold" invariant holds
+        structurally even in the one case where the live value and the
+        seed value happen to coincide.
+
+        A later ``"freeze-declared"`` for a path already frozen
+        OVERWRITES the earlier entry's provenance (the story that most
+        recently (re-)declared the freeze is the one a violation should
+        name); a ``"freeze-removed"`` removes the path entirely, whatever
+        its provenance. A malformed entry -- a non-``str``/blank ``path``
+        in either kind's payload, or a non-``str`` ``story_key`` in a
+        ``"freeze-declared"`` payload -- is SKIPPED, never raised: a
+        journal fold already quarantines what it cannot parse (AD-30), and
+        an entry that parsed as a valid ``JournalEntry`` but carries a
+        malformed domain-specific payload for THIS kind is this method's
+        own concern, not the generic fold's -- skipping it is the same
+        "never abort on one bad entry" posture ``fold`` itself keeps."""
+        if not isinstance(seed, tuple) or not all(isinstance(path, str) for path in seed):
+            raise TypeError(f"seed must be a tuple of str, got {seed!r}")
+
+        live: dict[str, FrozenPath] = {
+            path: FrozenPath(path=path, story_key=None) for path in seed if path
+        }
+        for entry in self.entries:
+            if entry.kind == KIND_FREEZE_DECLARED:
+                path = entry.payload.get("path")
+                story_key = entry.payload.get("story_key")
+                if isinstance(path, str) and path and isinstance(story_key, str):
+                    live[path] = FrozenPath(path=path, story_key=story_key)
+            elif entry.kind == KIND_FREEZE_REMOVED:
+                path = entry.payload.get("path")
+                if isinstance(path, str) and path:
+                    live.pop(path, None)
+        return tuple(live.values())
 
 
 def fold(

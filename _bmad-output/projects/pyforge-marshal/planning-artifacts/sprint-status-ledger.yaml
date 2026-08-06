@@ -45,7 +45,7 @@ development_status:
   12-6-readme-adoption-guide-and-the-finding-remedy-reference: backlog
   2-1-standalone-verify-command-runner-project-scoped: done
   2-2-verdict-aggregation-that-never-false-greens: done
-  2-3-frozen-surface-scope-check-narrowing-only: backlog
+  2-3-frozen-surface-scope-check-narrowing-only: review
   2-4-doc-only-story-classification: done
   2-5-gate-mode-ladder-with-autonomy-labels: done
   2-6-gate-evidence-record-with-redaction-at-egress: done
@@ -108,7 +108,7 @@ development_status:
   epic-11-retrospective: optional
   epic-12: backlog
   epic-12-retrospective: optional
-  epic-2: backlog
+  epic-2: in-progress
   epic-2-retrospective: optional
   epic-3: done
   epic-3-retrospective: done

@@ -329,6 +329,122 @@ def test_model_tier_map_non_string_model_name_falls_back_and_reports():
     assert findings[0].code == "MRS-POLICY-002"
 
 
+# --- epic_surfaces validation (Story 2.3, AD-27) ------------------------------
+
+
+def test_epic_surfaces_is_static_not_seed():
+    effective, _ = compose(project_slug="acme", project={}, flags={})
+    assert "epic_surfaces" not in effective.seed_view()
+    assert isinstance(effective.epic_surfaces, PolicyField)
+
+
+def test_epic_surfaces_defaults_to_empty_mapping():
+    effective, findings = compose(project_slug="acme", project={}, flags={})
+    assert findings == ()
+    assert effective.epic_surfaces.value == {}
+    assert effective.epic_surfaces.value == DEFAULT_POLICY["epic_surfaces"]
+    assert effective.epic_surfaces.layer is PolicyLayer.DEFAULT
+
+
+def test_epic_surfaces_valid_shape_accepted():
+    effective, findings = compose(
+        project_slug="acme",
+        project={"epic_surfaces": {"2": ["recipes/x/**", "recipes/y/**"]}},
+        flags={},
+    )
+    assert findings == ()
+    assert effective.epic_surfaces.value == {"2": ("recipes/x/**", "recipes/y/**")}
+    assert effective.epic_surfaces.layer is PolicyLayer.PROJECT
+
+
+def test_epic_surfaces_multiple_epics():
+    effective, findings = compose(
+        project_slug="acme",
+        project={"epic_surfaces": {"2": ["a/**"], "3": ["b/**"]}},
+        flags={},
+    )
+    assert findings == ()
+    assert effective.epic_surfaces.value == {"2": ("a/**",), "3": ("b/**",)}
+
+
+def test_epic_surfaces_rejects_non_mapping_falls_back_and_reports():
+    effective, findings = compose(
+        project_slug="acme", project={"epic_surfaces": "not-a-mapping"}, flags={}
+    )
+    assert effective.epic_surfaces.value == DEFAULT_POLICY["epic_surfaces"]
+    assert effective.epic_surfaces.layer is PolicyLayer.DEFAULT
+    assert len(findings) == 1
+    assert findings[0].code == "MRS-POLICY-002"
+
+
+def test_epic_surfaces_rejects_non_string_epic_key():
+    effective, findings = compose(
+        project_slug="acme", project={"epic_surfaces": {2: ["a/**"]}}, flags={}
+    )
+    assert effective.epic_surfaces.value == DEFAULT_POLICY["epic_surfaces"]
+    assert len(findings) == 1
+    assert findings[0].code == "MRS-POLICY-002"
+
+
+def test_epic_surfaces_rejects_empty_string_epic_key():
+    effective, findings = compose(
+        project_slug="acme", project={"epic_surfaces": {"": ["a/**"]}}, flags={}
+    )
+    assert effective.epic_surfaces.value == DEFAULT_POLICY["epic_surfaces"]
+    assert len(findings) == 1
+    assert findings[0].code == "MRS-POLICY-002"
+
+
+def test_epic_surfaces_rejects_non_numeric_epic_key():
+    """Review finding (Blind Hunter): a typo'd key like "epic-2" or "2 "
+    previously composed successfully with no diagnostic and could never
+    match any real epic (str(story_key.epic) is always plain digits) -- a
+    permanently dead, silently-inert allowlist entry."""
+    effective, findings = compose(
+        project_slug="acme", project={"epic_surfaces": {"epic-2": ["a/**"]}}, flags={}
+    )
+    assert effective.epic_surfaces.value == DEFAULT_POLICY["epic_surfaces"]
+    assert len(findings) == 1
+    assert findings[0].code == "MRS-POLICY-002"
+
+
+def test_epic_surfaces_rejects_non_str_tuple_value():
+    effective, findings = compose(
+        project_slug="acme", project={"epic_surfaces": {"2": "recipes/x/**"}}, flags={}
+    )
+    assert effective.epic_surfaces.value == DEFAULT_POLICY["epic_surfaces"]
+    assert len(findings) == 1
+    assert findings[0].code == "MRS-POLICY-002"
+
+
+def test_epic_surfaces_rejects_empty_glob_string_in_value():
+    effective, findings = compose(
+        project_slug="acme", project={"epic_surfaces": {"2": ["a/**", ""]}}, flags={}
+    )
+    assert effective.epic_surfaces.value == DEFAULT_POLICY["epic_surfaces"]
+    assert len(findings) == 1
+    assert findings[0].code == "MRS-POLICY-002"
+
+
+def test_epic_surfaces_value_is_deeply_immutable():
+    effective, _ = compose(
+        project_slug="acme", project={"epic_surfaces": {"2": ["a/**"]}}, flags={}
+    )
+    with pytest.raises(TypeError):
+        effective.epic_surfaces.value["3"] = ("b/**",)  # type: ignore[index]
+
+
+def test_epic_surfaces_flag_layer_wins_over_project():
+    effective, findings = compose(
+        project_slug="acme",
+        project={"epic_surfaces": {"2": ["a/**"]}},
+        flags={"epic_surfaces": {"2": ["b/**"]}},
+    )
+    assert findings == ()
+    assert effective.epic_surfaces.value == {"2": ("b/**",)}
+    assert effective.epic_surfaces.layer is PolicyLayer.FLAG
+
+
 def test_verify_commands_non_string_entry_falls_back_and_reports():
     effective, findings = compose(
         project_slug="acme", project={"verify_commands": ["ok", 123]}, flags={}
@@ -623,6 +739,7 @@ def test_effective_policy_rejects_non_policy_field_static_attribute():
             worktree_seed_paths=PolicyField(value=(), layer="default", raw_source=()),
             merge_subject_template=PolicyField(value="x", layer="default", raw_source="x"),
             model_tier_map=PolicyField(value={}, layer="default", raw_source={}),
+            epic_surfaces=PolicyField(value={}, layer="default", raw_source={}),
             _seed=seed,
         )
 
@@ -634,6 +751,7 @@ def test_effective_policy_rejects_incomplete_seed_mapping():
             worktree_seed_paths=PolicyField(value=(), layer="default", raw_source=()),
             merge_subject_template=PolicyField(value="x", layer="default", raw_source="x"),
             model_tier_map=PolicyField(value={}, layer="default", raw_source={}),
+            epic_surfaces=PolicyField(value={}, layer="default", raw_source={}),
             _seed={"gate_mode": PolicyField(value="none", layer="default", raw_source="none")},
         )
 
@@ -645,6 +763,7 @@ def test_effective_policy_rejects_non_policy_field_seed_value():
             worktree_seed_paths=PolicyField(value=(), layer="default", raw_source=()),
             merge_subject_template=PolicyField(value="x", layer="default", raw_source="x"),
             model_tier_map=PolicyField(value={}, layer="default", raw_source={}),
+            epic_surfaces=PolicyField(value={}, layer="default", raw_source={}),
             _seed={
                 # All 10 seed keys present (an INCOMPLETE mapping would
                 # raise for that reason instead, never reaching the
@@ -684,7 +803,7 @@ def test_effective_policy_seed_is_a_read_only_mapping_proxy():
 # --- schema hygiene -----------------------------------------------------------
 
 
-def test_schema_file_declares_the_fourteen_keys():
+def test_schema_file_declares_the_fifteen_keys():
     package_dir = Path(pyforge.marshal.__file__).resolve().parent
     schema = json.loads(
         (package_dir / "schemas" / "policy.json").read_text(encoding="utf-8")
@@ -695,6 +814,7 @@ def test_schema_file_declares_the_fourteen_keys():
         "worktree_seed_paths",
         "merge_subject_template",
         "model_tier_map",
+        "epic_surfaces",
         "gate_mode",
         "frozen_surfaces",
         "max_dev_attempts",

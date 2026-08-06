@@ -95,10 +95,15 @@ _UNSETTABLE_KEYS = frozenset(
         "max_tokens_per_run",
         "max_wall_clock_minutes_per_story",
         "max_wall_clock_minutes_per_run",
+        # Story 2.3's 5th list/mapping-typed field (AD-27) -- no string
+        # value could satisfy `_valid_epic_surfaces`'s
+        # `Mapping[str, tuple[str, ...]]` shape either, the same reason the
+        # other 4 list/mapping-typed keys above are excluded.
+        "epic_surfaces",
     }
 )
 
-# Field render order: the 4 static keys, then the 10 seed keys -- matches
+# Field render order: the 5 static keys, then the 10 seed keys -- matches
 # the spec's own enumeration order (Boundaries & Constraints, second
 # bullet). `idle_threshold_minutes` (Story 3.5) and Story 3.6's 4 budget
 # ceilings are deliberately NOT `--set` targets (unlike the other 5 scalar
@@ -110,6 +115,7 @@ _FIELD_ORDER: tuple[str, ...] = (
     "worktree_seed_paths",
     "merge_subject_template",
     "model_tier_map",
+    "epic_surfaces",
     "gate_mode",
     "frozen_surfaces",
     "max_dev_attempts",

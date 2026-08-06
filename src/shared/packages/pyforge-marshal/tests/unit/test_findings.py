@@ -35,8 +35,9 @@ def test_registered_codes_contains_the_real_codes():
     cli/spin.py adds a ninth code, MRS-SPIN-009. Story 3.7's
     supervisor/__main__.py adds MRS-SUPV-007 to the same area, and
     cli/spin.py adds MRS-SPIN-010/011/012. Story 3.8's
-    supervisor/__main__.py adds MRS-SUPV-008 to the same area. This asserts
-    the registry's exact real contents."""
+    supervisor/__main__.py adds MRS-SUPV-008 to the same area. Story 2.3's
+    cli/gate.py/core/gate.py add MRS-GATE-007/008/009. This asserts the
+    registry's exact real contents."""
     assert findings.REGISTERED_CODES == frozenset(
         {
             "MRS-IDENT-001",
@@ -97,6 +98,9 @@ def test_registered_codes_contains_the_real_codes():
             "MRS-SPIN-011",
             "MRS-SPIN-012",
             "MRS-SUPV-008",
+            "MRS-GATE-007",
+            "MRS-GATE-008",
+            "MRS-GATE-009",
         }
     )
 
