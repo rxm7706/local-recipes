@@ -60,6 +60,29 @@ the same scope ``remove_worktree``/``delete_branch`` already confine
 themselves to. Still not an egress port (``core/egress.py``): the payload
 is git objects a story's own dev/review process already produced, never
 session-derived free text this port itself forwards.
+
+Story 4.1 (story-spec promotion, AD-13/AD-24/AD-29/AD-33) adds two more
+methods, ``cli/deploy.py``'s (``marshal deploy promote``) own two
+primitives:
+
+- ``commit_subjects`` -- ``git log <ref> --format=%s``, read-only: every
+  commit subject reachable from ``ref``, newest-first (``git log``'s own
+  default order). ``cli/deploy.py`` feeds this into
+  ``core.promotion.merged_story_keys`` (AD-33: git is the sole authority
+  for "merged or not"; this method is that authority's one read
+  primitive) to answer AD-29's "pushed to the remote" route
+  (``ref="origin/main"``) and "merged to the integration branch" route
+  (``ref="main"``) -- the caller decides which ``ref`` each route needs;
+  this method has no branch-name opinion of its own.
+- ``commit_paths`` -- the one write: stages EXACTLY ``paths`` (an
+  individual ``git add -- <path>`` per entry, never ``git add -A``) and
+  commits ONLY those paths (``git commit -m <message> -- <path> <path>
+  ...``, never a bare ``git commit`` that would sweep in a pre-existing
+  index) -- the literal AD-29 requirement that a promotion commit contain
+  only promotion paths. Returns the new commit's sha
+  (``git rev-parse HEAD`` immediately after). Raises ``VcsCommandError``
+  if ``paths`` is empty (a caller with nothing to promote must never call
+  this) or on any git failure.
 """
 
 from __future__ import annotations
@@ -191,4 +214,29 @@ class VcsPort(Protocol):
         Read-only. Raises ``VcsCommandError`` on any git failure (an
         unresolvable ``base``, ``worktree_path`` not inside a git
         repository, a corrupted repo)."""
+        ...
+
+    def commit_subjects(self, repo_root: Path, ref: str) -> tuple[str, ...]:
+        """Every commit subject line reachable from ``ref`` (Story 4.1,
+        AD-33), newest-first (``git log <ref> --format=%s``'s own default
+        order) -- read-only, and deliberately not deduplicated or filtered:
+        the caller (``core.promotion.merged_story_keys``) tolerates a
+        subject that isn't a story-merge subject at all, so this method's
+        job is exhaustive enumeration, not classification. Raises
+        ``VcsCommandError`` if ``ref`` does not resolve (e.g. no ``origin``
+        remote configured for ``ref="origin/main"``, or a corrupted repo
+        with no ``main``) or on any other git failure."""
+        ...
+
+    def commit_paths(self, repo_root: Path, paths: tuple[Path, ...], message: str) -> str:
+        """Story 4.1 (AD-29): stages exactly ``paths`` -- one ``git add --
+        <path>`` per entry, never ``git add -A`` -- then commits ONLY those
+        paths (``git commit -m <message> -- <path> <path> ...``, never a
+        bare ``git commit`` that would sweep in a pre-existing index) and
+        returns the new commit's sha (``git rev-parse HEAD`` immediately
+        after). ``repo_root`` need not have any of ``paths`` staged already
+        -- this method does the staging itself. Raises ``VcsCommandError``
+        if ``paths`` is empty (a caller with nothing to promote must never
+        reach this method) or on any git failure (an unwritable index, a
+        path outside the working tree, nothing to commit)."""
         ...

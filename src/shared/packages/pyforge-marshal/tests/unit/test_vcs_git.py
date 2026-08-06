@@ -1082,3 +1082,77 @@ def test_changed_files_returns_a_sorted_tuple(vcs, repo, tmp_path):
     result = vcs.changed_files(repo, home, base="main")
     assert result == tuple(sorted(result))
     assert result == ("a.txt", "z.txt")
+
+
+# --- commit_subjects/commit_paths (Story 4.1, AD-29/AD-33) -----------------
+
+
+def test_commit_subjects_returns_every_subject_reachable_from_ref(vcs, repo):
+    _git(repo, "commit", "--allow-empty", "-m", "second commit")
+    _git(repo, "commit", "--allow-empty", "-m", "third commit")
+
+    subjects = vcs.commit_subjects(repo, "main")
+
+    assert subjects == ("third commit", "second commit", "initial")
+
+
+def test_commit_subjects_raises_on_an_unresolvable_ref(vcs, repo):
+    with pytest.raises(VcsCommandError):
+        vcs.commit_subjects(repo, "no-such-ref")
+
+
+def test_commit_subjects_raises_when_no_origin_remote_configured(vcs, repo):
+    """The "no origin remote" case that `cli/deploy.py`'s push route treats
+    as ordinary/best-effort still raises VcsCommandError from THIS method --
+    the port itself makes no distinction; the caller decides how to react."""
+    with pytest.raises(VcsCommandError):
+        vcs.commit_subjects(repo, "origin/main")
+
+
+def test_commit_paths_stages_and_commits_only_the_named_paths(vcs, repo):
+    (repo / "tracked.txt").write_text("already tracked\n", encoding="utf-8")
+    _git(repo, "add", "tracked.txt")
+    _git(repo, "commit", "-m", "add tracked.txt")
+
+    # An unrelated change sits in the working tree/index -- proof the commit
+    # this method makes contains ONLY the named path, never a pre-existing
+    # index (AD-29's own literal requirement).
+    (repo / "tracked.txt").write_text("modified but NOT committed\n", encoding="utf-8")
+    (repo / "promoted.txt").write_text("promoted content\n", encoding="utf-8")
+
+    sha = vcs.commit_paths(repo, (repo / "promoted.txt",), "marshal: promote 1 story spec(s)")
+
+    assert sha == _git(repo, "rev-parse", "HEAD").stdout.strip()
+    show = _git(repo, "show", "--name-only", "--format=", "HEAD")
+    committed_files = [line for line in show.stdout.splitlines() if line.strip()]
+    assert committed_files == ["promoted.txt"]
+    # tracked.txt's uncommitted modification is untouched by the commit.
+    status = _git(repo, "status", "--porcelain")
+    assert "tracked.txt" in status.stdout
+
+
+def test_commit_paths_commits_multiple_paths_in_one_commit(vcs, repo):
+    (repo / "a.txt").write_text("a\n", encoding="utf-8")
+    (repo / "b.txt").write_text("b\n", encoding="utf-8")
+
+    vcs.commit_paths(repo, (repo / "a.txt", repo / "b.txt"), "marshal: promote 2 story spec(s)")
+
+    show = _git(repo, "show", "--name-only", "--format=", "HEAD")
+    committed_files = sorted(line for line in show.stdout.splitlines() if line.strip())
+    assert committed_files == ["a.txt", "b.txt"]
+    log = _git(repo, "log", "-1", "--format=%s")
+    assert log.stdout.strip() == "marshal: promote 2 story spec(s)"
+
+
+def test_commit_paths_raises_on_empty_paths(vcs, repo):
+    with pytest.raises(VcsCommandError):
+        vcs.commit_paths(repo, (), "marshal: promote 0 story spec(s)")
+
+
+def test_commit_paths_returns_the_new_commit_sha(vcs, repo):
+    (repo / "c.txt").write_text("c\n", encoding="utf-8")
+
+    sha = vcs.commit_paths(repo, (repo / "c.txt",), "marshal: promote 1 story spec(s)")
+
+    assert sha == _git(repo, "rev-parse", "HEAD").stdout.strip()
+    assert sha != _git(repo, "rev-parse", "HEAD~1").stdout.strip()

@@ -14,7 +14,9 @@ three dispatched to the SAME ``cli/init.py`` module (see that
 module's own docstring for why). ``gate`` (Story 2.1, FR-20) dispatches to
 ``cli/gate.py``, and ``factory`` (Story 3.3, FR-9/FR-17, AD-3/AD-22/AD-25)
 -- Marshal's first launch verb, with nested ``spin``/``attach`` actions --
-dispatches to ``cli/spin.py``. Not wired through the
+dispatches to ``cli/spin.py``. ``deploy`` (Story 4.1, FR-30/FR-31,
+AD-13/AD-29), with a nested ``promote`` action, dispatches to
+``cli/deploy.py``. Not wired through the
 envelope/finding machinery ITSELF: mirrors ``pyforge-doctor``'s
 ``__main__.py`` exit-relay pattern (structure: return an int, never raise,
 relay argparse's own code, clamp anything foreign) -- individual
@@ -74,6 +76,7 @@ from ..adapters.harness_bmadloop import (
 )
 from ..core.verdict import EXIT_OK, EXIT_SIGINT, EXIT_USAGE, GUARDED_EXIT_CODES
 from . import config as config_cli
+from . import deploy as deploy_cli
 from . import gate as gate_cli
 from . import init as init_cli
 from . import spin as spin_cli
@@ -196,6 +199,7 @@ def _build_parser() -> argparse.ArgumentParser:
     init_cli.add_teardown_subparser(subparsers)
     gate_cli.add_gate_subparser(subparsers)
     spin_cli.add_factory_subparser(subparsers)
+    deploy_cli.add_deploy_subparser(subparsers)
     return parser
 
 
