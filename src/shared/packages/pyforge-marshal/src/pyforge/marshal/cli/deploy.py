@@ -313,7 +313,16 @@ def run_promote(
 
             commit_targets: list[Path] = []
             for spec_candidate in plan.to_promote:
-                dest = specs_dir / f"spec-{render_filename_slug(spec_candidate.story_key)}.md"
+                # Preserve the Tier-3 file's own descriptive filename
+                # (e.g. "spec-2-3-frozen-surface-scope-check-narrowing-
+                # only.md") rather than deriving a bare "spec-<key>.md" --
+                # every prior promotion in this archive (Epic 3's 8
+                # specs, promoted by hand) used the source's own title
+                # slug, and a bare rename here would be the one
+                # promoted spec in the whole tracked archive without a
+                # human-readable title (live finding, first real run of
+                # this command against this repo, 2026-08-06).
+                dest = specs_dir / Path(spec_candidate.path).name
                 try:
                     fs.copy_file(Path(spec_candidate.path), dest)
                 except FsError as exc:
