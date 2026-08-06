@@ -1,4 +1,3 @@
-<!-- Promoted from implementation-artifacts/ to tracked specs on 2026-08-04 -->
 ---
 title: 'Story 1.5: Single-sourced Tier-3 store via backlink'
 type: 'feature'

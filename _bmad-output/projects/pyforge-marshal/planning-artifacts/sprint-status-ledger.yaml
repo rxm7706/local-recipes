@@ -49,7 +49,7 @@ development_status:
   2-4-doc-only-story-classification: done
   2-5-gate-mode-ladder-with-autonomy-labels: done
   2-6-gate-evidence-record-with-redaction-at-egress: done
-  2-7-a-gate-binds-to-the-specs-success-signal: review
+  2-7-a-gate-binds-to-the-specs-success-signal: done
   3-1-run-identity-and-the-journal-writer: done
   3-2-the-journal-fold-one-producer-for-accumulating-run-state: done
   3-3-detached-launch-with-scoped-story-selection: done
@@ -108,7 +108,7 @@ development_status:
   epic-11-retrospective: optional
   epic-12: backlog
   epic-12-retrospective: optional
-  epic-2: in-progress
+  epic-2: done
   epic-2-retrospective: optional
   epic-3: done
   epic-3-retrospective: done

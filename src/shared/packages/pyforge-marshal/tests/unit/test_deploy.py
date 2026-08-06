@@ -123,7 +123,12 @@ def test_promote_copies_and_commits_a_durable_unpromoted_spec(tmp_path, capsys, 
     assert payload["verdict"] == "clean"
     assert exit_code == 0
 
-    dest = _tracked_path(tmp_path, "acme", "1-2")
+    # The Tier-3 file's own descriptive filename ("1-2-title") is preserved
+    # verbatim into the tracked archive, never collapsed to a bare
+    # "spec-1-2.md" -- every prior promotion in this archive used the
+    # source's own title slug (live finding, first real run against this
+    # repo, 2026-08-06).
+    dest = _tracked_path(tmp_path, "acme", "1-2-title")
     assert dest.read_text(encoding="utf-8") == _VALID_SPEC
     assert len(vcs.commit_calls) == 1
     committed_paths, message = vcs.commit_calls[0]
