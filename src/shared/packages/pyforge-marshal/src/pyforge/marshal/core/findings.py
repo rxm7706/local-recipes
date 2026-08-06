@@ -391,6 +391,21 @@ than a new one, since both describe the identical caller-facing shape
 ("a run-scoped answer was requested and Marshal could not honor it") and
 the identical ``Verdict.UNEVALUABLE`` classification.
 
+Story 2.7 (a gate binds to the spec's Success signal, AD-4/AD-31/AD-49)
+adds two more codes to ``cli/gate.py``/``core/gate.py``'s own area:
+``MRS-GATE-010`` (``core.gate.check_spec_binding`` was given
+``declared_commands is None`` -- no tracked spec exists for the story
+``--story`` names, or its tracked spec's ``## Verification`` ->
+``**Commands:**`` section could not be parsed at all) and ``MRS-GATE-011``
+(one per command the spec's own Success signal declared that is no longer
+present in the policy's ``verify_commands`` -- narrowed or removed since
+the spec was tracked). Both classify ``Verdict.SCOPE_VIOLATION``, the SAME
+rung ``MRS-GATE-007``/``008`` already use: per AD-49's own text, "an
+untraceable or mismatched binding cannot itself be waived to green" --
+the identical closed-lattice reasoning this codebase's other
+``SCOPE_VIOLATION`` codes already carry, never a ``WARN`` folded into an
+otherwise-green verdict.
+
 Later stories append further real codes here as they gain their own real
 callers. The registry MECHANISM (format check, then membership check) is
 separately proven via ``monkeypatch``-injected synthetic codes in
@@ -456,6 +471,10 @@ CODE_PATTERN = re.compile(r"MRS-[A-Z][A-Z0-9]*-[0-9]{3}")
 # caller's own NEW area, MRS-DEPLOY-* (three codes: missing spec for a
 # merged story, invalid/truncated spec, and a commit-history-read or
 # promotion-write failure).
+# Story 2.7's cli/gate.py/core/gate.py add MRS-GATE-010/011 (missing/
+# unparseable Success signal binding; a declared command narrowed or
+# removed from policy since tracking) -- both SCOPE_VIOLATION, the same
+# rung as MRS-GATE-007/008.
 REGISTERED_CODES: frozenset[str] = frozenset(
     {
         "MRS-IDENT-001",
@@ -522,6 +541,8 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-DEPLOY-001",
         "MRS-DEPLOY-002",
         "MRS-DEPLOY-003",
+        "MRS-GATE-010",
+        "MRS-GATE-011",
     }
 )
 
